@@ -931,6 +931,7 @@ void Actors::sleep_wakeUp(ActorIndex index){ m_mustSleep[index]->wakeUp(m_area);
 void Actors::sleep_wakeUpEarly(ActorIndex index){ m_mustSleep[index]->wakeUpEarly(m_area); }
 void Actors::sleep_setSpot(ActorIndex index, BlockIndex location) { m_mustSleep[index]->setLocation(location); }
 void Actors::sleep_makeTired(ActorIndex index) { m_mustSleep[index]->tired(m_area); }
+void Actors::sleep_clearObjective(ActorIndex index) { m_mustSleep[index]->clearObjective(); }
 bool Actors::sleep_isAwake(ActorIndex index) const { return m_mustSleep[index]->isAwake(); }
 Percent Actors::sleep_getPercentDoneSleeping(ActorIndex index) const { return m_mustSleep[index]->getSleepPercent(); }
 Percent Actors::sleep_getPercentTired(ActorIndex index) const { return m_mustSleep[index]->getTiredPercent(); }

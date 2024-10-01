@@ -79,6 +79,7 @@ void MustSleep::tired(Area& area)
 	if(m_needsSleep)
 		sleep(area);
 	else
+
 	{
 		m_needsSleep = true;
 		m_tiredEvent.maybeUnschedule();
@@ -122,7 +123,10 @@ void MustSleep::wakeUp(Area& area)
 	actors.stamina_setFull(actor);
 	// Objective complete releases all reservations.
 	if(m_objective != nullptr)
+	{
 		actors.objective_complete(actor, *m_objective);
+		m_objective = nullptr;
+	}
 	actors.vision_createFacadeIfCanSee(actor);
 }
 void MustSleep::makeSleepObjective(Area& area)
@@ -143,6 +147,7 @@ void MustSleep::wakeUpEarly(Area& area)
 	m_sleepEvent.pause();
 	Step overide = AnimalSpecies::getStepsTillSleepOveride(area.getActors().getSpecies(m_actor.getIndex()));
 	m_tiredEvent.schedule(area.m_simulation, overide, *this);
+	area.getActors().vision_createFacadeIfCanSee(m_actor.getIndex());
 	//TODO: partial stamina recovery.
 }
 void MustSleep::setLocation(BlockIndex block)

@@ -195,17 +195,27 @@ BlockIndex MustEat::getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireabili
 {
 	std::array<BlockIndex, maxRankedEatDesire> candidates;
 	candidates.fill(BlockIndex::null());
-	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
-	{
-		uint32_t eatDesire = getDesireToEatSomethingAt(area, block);
-		if(eatDesire == maxRankedEatDesire)
-			return true;
-		if(eatDesire < getMinimumAcceptableDesire(area))
+	ActorIndex actor = m_actor.getIndex();
+	//TODO: abstract predicate generation from PathRequest constructor and use here as well.
+	std::function<bool(BlockIndex)> predicate;
+	if(area.getActors().isSentient(actor))
+		predicate = [&](BlockIndex block)
+		{
+			uint32_t eatDesire = getDesireToEatSomethingAt(area, block);
+			if(eatDesire < getMinimumAcceptableDesire(area))
+				return false;
+			if(eatDesire == maxRankedEatDesire)
+				return true;
+			if(eatDesire != 0 && candidates[eatDesire - 1u].empty())
+				candidates[eatDesire - 1u] = block;
 			return false;
-		if(eatDesire != 0 && candidates[eatDesire - 1u].empty())
-			candidates[eatDesire - 1u] = block;
-		return false;
-	};
+		};
+	else
+		// Nonsentients aren't picky.
+		predicate = [&](BlockIndex block)
+		{
+			return getDesireToEatSomethingAt(area, block) != 0;
+		};
 	BlockIndex output = area.getActors().getBlockWhichIsAdjacentWithPredicate(m_actor.getIndex(), predicate);
 	if(output.exists())
 		return output;

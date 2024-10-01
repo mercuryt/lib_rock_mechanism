@@ -36,7 +36,7 @@ class GetToSafeTemperaturePathRequest final : public PathRequest
 {
 	GetToSafeTemperatureObjective& m_objective;
 public:
-	GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& o);
+	GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& o, ActorIndex actor);
 	GetToSafeTemperaturePathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, FindPathResult& result);
 	[[nodiscard]] std::string name() const { return "get to safe temperature"; }

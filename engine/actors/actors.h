@@ -401,7 +401,8 @@ public:
 	void sleep_wakeUpEarly(ActorIndex actor);
 	void sleep_setSpot(ActorIndex index, BlockIndex location);
 	void sleep_makeTired(ActorIndex index);
-	[[nodiscard]] BlockIndex sleep_getSpot(ActorIndex index) const ;
+	void sleep_clearObjective(ActorIndex index);
+	[[nodiscard]] BlockIndex sleep_getSpot(ActorIndex index) const;
 	[[nodiscard]] bool sleep_isAwake(ActorIndex index) const;
 	[[nodiscard]] Percent sleep_getPercentDoneSleeping(ActorIndex index) const;
 	[[nodiscard]] Percent sleep_getPercentTired(ActorIndex index) const;
@@ -422,6 +423,7 @@ public:
 	[[nodiscard]] bool eat_canEatItem(ActorIndex index, ItemIndex item) const;
 	[[nodiscard]] bool eat_canEatPlant(ActorIndex index, PlantIndex plant) const;
 	[[nodiscard]] Percent eat_getPercentStarved(ActorIndex index) const;
+	[[nodiscard]] BlockIndex eat_getAdjacentBlockWithTheMostDesiredFood(ActorIndex index) const;
 	// For Testing.
 	[[nodiscard]] Mass eat_getMassFoodRequested(ActorIndex index) const;
 	[[nodiscard]] uint32_t eat_getDesireToEatSomethingAt(ActorIndex index, BlockIndex block) const;

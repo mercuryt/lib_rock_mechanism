@@ -24,6 +24,10 @@ Percent Actors::eat_getPercentStarved(ActorIndex index) const
 {
 	return m_mustEat[index]->getPercentStarved();
 }
+BlockIndex Actors::eat_getAdjacentBlockWithTheMostDesiredFood(ActorIndex index) const
+{
+	return m_mustEat[index]->getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability(m_area);
+}
 uint32_t Actors::eat_getDesireToEatSomethingAt(ActorIndex index, BlockIndex block) const
 {
 	return m_mustEat[index]->getDesireToEatSomethingAt(m_area, block);

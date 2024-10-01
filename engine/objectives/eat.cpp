@@ -18,7 +18,8 @@ void EatEvent::execute(Simulation&, Area* area)
 {
 	Actors& actors = area->getActors();
 	ActorIndex actor = m_actor.getIndex();
-	BlockIndex blockContainingFood = getBlockWithMostDesiredFoodInReach(*area);
+	//TODO: use the version of this method on mustEat and delete this one.
+	BlockIndex blockContainingFood = actors.eat_getAdjacentBlockWithTheMostDesiredFood(actor);
 	if(blockContainingFood.empty())
 	{
 		actors.objective_canNotCompleteSubobjective(actor);
@@ -61,28 +62,6 @@ void EatEvent::execute(Simulation&, Area* area)
 	}
 }
 void EatEvent::clearReferences(Simulation&, Area*) { m_eatObjective.m_eatEvent.clearPointer(); }
-BlockIndex EatEvent::getBlockWithMostDesiredFoodInReach(Area& area) const
-{
-	BlockIndex found;
-	uint32_t highestDesirability = 0;
-	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
-	{
-		MustEat& mustEat = *area.getActors().m_mustEat[m_actor.getIndex()].get();
-		uint32_t blockDesirability = mustEat.getDesireToEatSomethingAt(area, block);
-		if(blockDesirability == maxRankedEatDesire)
-			return true;
-		if(blockDesirability >= mustEat.getMinimumAcceptableDesire(area) && blockDesirability > highestDesirability)
-		{
-			found = block;
-			highestDesirability = blockDesirability;
-		}
-		return false;
-	};
-	BlockIndex output = area.getActors().getBlockWhichIsAdjacentWithPredicate(m_actor.getIndex(), predicate);
-	if(output.empty())
-	       output = found;	
-	return output;
-}
 void EatEvent::eatPreparedMeal(Area& area, ItemIndex item)
 {
 	Actors& actors = area.getActors();
@@ -171,20 +150,31 @@ EatPathRequest::EatPathRequest(Area& area, EatObjective& eo, ActorIndex actor) :
 	{
 		// initalize candidates with null values.
 		m_candidates.fill(BlockIndex::null());
-		auto minimum = mustEat.getMinimumAcceptableDesire(area);
-		// Only sentients expect prepared food on at first, animals will accept unprepared food as soon as they are hungry.
-		uint32_t maximum = area.getActors().isSentient(actor) ? maxRankedEatDesire : maxRankedEatDesire - 1;
-		predicate = [&mustEat, this, &area, minimum, maximum](BlockIndex block)
+		if(area.getActors().isSentient(actor))
 		{
-			uint32_t eatDesire = mustEat.getDesireToEatSomethingAt(area, block);
-			if(eatDesire < minimum)
+			// Sentients will only return true if the come across a maxRankedDesire (prepared meal).
+			// Otherwise they will store candidates ranked by desire.
+			// EatPathRequest::callback may use one of those candidates, if the actor is hungry enough.
+			auto minimum = mustEat.getMinimumAcceptableDesire(area);
+			predicate = [&mustEat, this, &area, minimum](BlockIndex block)
+			{
+				uint32_t eatDesire = mustEat.getDesireToEatSomethingAt(area, block);
+				if(eatDesire < minimum)
+					return false;
+				if(eatDesire == maxRankedEatDesire)
+					return true;
+				if(eatDesire != 0 && m_candidates[eatDesire - 1u].empty())
+					m_candidates[eatDesire - 1u] = block;
 				return false;
-			if(eatDesire == maximum)
-				return true;
-			if(eatDesire != 0 && m_candidates[eatDesire - 1u].empty())
-				m_candidates[eatDesire - 1u] = block;
-			return false;
-		};
+			};
+		}
+		else
+			// Nonsentients will eat whatever they come across first.
+			// Having preference would be nice but this is better for performance.
+			predicate = [&mustEat, &area](BlockIndex block)
+			{
+				return mustEat.getDesireToEatSomethingAt(area, block) != 0;
+			};
 	}
 	//TODO: maxRange.
 	bool unreserved = false;

@@ -4,11 +4,10 @@
 #include "../blocks/blocks.h"
 #include "../pathRequest.h"
 //TODO: Detour locked to true for emergency moves.
-GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& o) : m_objective(o)
+GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& o, ActorIndex actor) : m_objective(o)
 {
 	Actors& actors = area.getActors();
 	Blocks& blocks = area.getBlocks();
-	ActorIndex actor = getActor();
 	DestinationCondition condition = [&actors, &blocks, actor](BlockIndex location, Facing facing)
 	{
 		for(BlockIndex adjacent : actors.getBlocksWhichWouldBeOccupiedAtLocationAndFacing(actor, location, facing))
@@ -79,7 +78,7 @@ void GetToSafeTemperatureObjective::execute(Area& area, ActorIndex actor)
 	if(actors.temperature_isSafeAtCurrentLocation(actor))
 		actors.objective_complete(actor, *this);
 	else
-		actors.move_pathRequestRecord(actor, std::make_unique<GetToSafeTemperaturePathRequest>(area, *this));
+		actors.move_pathRequestRecord(actor, std::make_unique<GetToSafeTemperaturePathRequest>(area, *this, actor));
 }
 void GetToSafeTemperatureObjective::cancel(Area& area, ActorIndex actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
 void GetToSafeTemperatureObjective::reset(Area& area, ActorIndex actor) 

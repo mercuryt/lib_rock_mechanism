@@ -28,7 +28,6 @@ public:
 	void eatActor(Area& area, ActorIndex actor);
 	void eatPlantLeaves(Area& area, PlantIndex plant);
 	void eatFruitFromPlant(Area& area, PlantIndex plant);
-	[[nodiscard]] BlockIndex getBlockWithMostDesiredFoodInReach(Area& area) const;
 	[[nodiscard]] uint32_t getDesireToEatSomethingAt(Area& area, BlockIndex block) const;
 	[[nodiscard]] uint32_t getMinimumAcceptableDesire() const;
 	[[nodiscard]] std::string name() const { return "eat"; }

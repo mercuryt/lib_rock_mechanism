@@ -38,6 +38,7 @@ public:
 	void unschedule();
 	void notTired(Area& area);
 	void scheduleTiredEvent(Area& area);
+	void clearObjective() { m_objective = nullptr; }
 	[[nodiscard]] bool isAwake() const { return m_isAwake; }
 	[[nodiscard]] bool getNeedsSleep() const { return m_needsSleep; }
 	[[nodiscard]] BlockIndex getLocation() const { return m_location; }

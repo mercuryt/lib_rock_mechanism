@@ -428,7 +428,7 @@ bool HasObjectives::hasTask(ObjectiveTypeId objectiveTypeId) const
 }
 bool HasObjectives::hasNeed(NeedType needType) const
 {
-	return std::ranges::find(m_needsQueue, needType, [](const auto& objective){ return objective->getNeedType(); }) != m_tasksQueue.end();
+	return std::ranges::find(m_needsQueue, needType, [](const auto& objective){ return objective->getNeedType(); }) != m_needsQueue.end();
 }
 // Does not use ::cancel because needs to move supressed objective into storage.
 void HasObjectives::cannotFulfillNeed(Area& area, Objective& objective)

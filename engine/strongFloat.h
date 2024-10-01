@@ -11,6 +11,11 @@ class StrongFloat
 protected:
 	float data;
 public:
+	using This = StrongFloat<Derived>;
+	constexpr StrongFloat() : data(FLT_MAX) { }
+	constexpr StrongFloat(const float& d) : data(d) { }
+	constexpr StrongFloat(const This& o) { data = o.data; }
+	constexpr StrongFloat(const This&& o) { data = o.data; }
 	constexpr static Derived create(const float& d) { Derived der; der.set(d); return der; }
 	constexpr static Derived null() { return create(FLT_MAX); }
 	[[nodiscard]] constexpr bool exists() const { return data != FLT_MAX; }
