@@ -10,6 +10,7 @@
 #include "designations.h"
 #include "index.h"
 #include "pathMemo.h"
+#include "reference.h"
 #include "types.h"
 #include "callbackTypes.h"
 #include "dataVector.h"
@@ -46,14 +47,14 @@ class TerrainFacade final
 	// 	sizeof(FindPathResult) == 32, so 2 can fit on a cache line.
 	// 	So if Config::pathRequestsPerThread is a multiple of 2 there will never be a shared cache line being written to.
 	DataVector<FindPathResult, PathRequestIndex> m_pathRequestResultsNoHuristic;
-	DataVector<PathRequest*, PathRequestIndex> m_pathRequestNoHuristic;
+	DataVector<ActorReference, PathRequestIndex> m_pathRequestActorNoHuristic;
 	// With Huristic.
 	DataVector<BlockIndex, PathRequestIndex> m_pathRequestStartPositionWithHuristic;
 	DataVector<AccessCondition, PathRequestIndex> m_pathRequestAccessConditionsWithHuristic;
 	DataVector<DestinationCondition, PathRequestIndex> m_pathRequestDestinationConditionsWithHuristic;
 	DataVector<BlockIndex, PathRequestIndex> m_pathRequestHuristic;
 	DataVector<FindPathResult, PathRequestIndex> m_pathRequestResultsWithHuristic;
-	DataVector<PathRequest*, PathRequestIndex> m_pathRequestWithHuristic;
+	DataVector<ActorReference, PathRequestIndex> m_pathRequestActorWithHuristic;
 	// Not indexed by BlockIndex because size is mulipied by max adjacent.
 	std::vector<bool> m_enterable;
 	Area& m_area;

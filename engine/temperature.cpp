@@ -117,9 +117,9 @@ void AreaHasTemperature::updateAmbientSurfaceTemperature()
 	static Temperature maxDailySwing = Temperature::create(35);
 	static uint32_t hottestHourOfDay = 14;
 	int32_t hour = DateTime(m_area.m_simulation.m_step).hour;
-	uint32_t hoursFromHottestHourOfDay = std::abs((int32_t)hottestHourOfDay - hour);
-	uint32_t halfDay = Config::hoursPerDay / 2;
-	setAmbientSurfaceTemperature(dailyAverage + ((maxDailySwing * (std::min(0u, halfDay - hoursFromHottestHourOfDay))) / halfDay) - (maxDailySwing / 2));
+	int32_t hoursFromHottestHourOfDay = std::abs((int32_t)hottestHourOfDay - hour);
+	int32_t halfDay = Config::hoursPerDay / 2;
+	setAmbientSurfaceTemperature(dailyAverage + ((maxDailySwing * (std::max(0, halfDay - hoursFromHottestHourOfDay))) / halfDay) - (maxDailySwing / 2));
 }
 void AreaHasTemperature::addMeltableSolidBlockAboveGround(BlockIndex block)
 {
@@ -138,8 +138,8 @@ void AreaHasTemperature::removeMeltableSolidBlockAboveGround(BlockIndex block)
 Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature() const
 {
 	// TODO: Latitude and altitude.
-	static Temperature yearlyHottestDailyAverage = Temperature::create(300);
-	static Temperature yearlyColdestDailyAverage = Temperature::create(280);
+	static Temperature yearlyHottestDailyAverage = Temperature::create(290);
+	static Temperature yearlyColdestDailyAverage = Temperature::create(270);
 	static uint32_t dayOfYearOfSolstice = Config::daysPerYear / 2;
 	int32_t day = DateTime(m_area.m_simulation.m_step).day;
 	uint32_t daysFromSolstice = std::abs(day - (int32_t)dayOfYearOfSolstice);

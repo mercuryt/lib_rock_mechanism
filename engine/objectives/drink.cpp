@@ -8,6 +8,11 @@
 // Drink Threaded Task.
 DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, ActorIndex actor) : m_drinkObjective(drob)
 {
+	if(m_drinkObjective.m_noDrinkFound)
+	{
+		createGoToEdge(area, actor, m_drinkObjective.m_detour);
+		return;
+	}
 	std::function<bool(BlockIndex)> predicate = [this, &area, actor](BlockIndex block)
 	{
 		return m_drinkObjective.containsSomethingDrinkable(area, block, actor);
@@ -17,25 +22,25 @@ DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, ActorIndex 
 	createGoAdjacentToCondition(area, actor, predicate, drob.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null(), reserve);
 }
 DrinkPathRequest::DrinkPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	m_drinkObjective(static_cast<DrinkObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))),
-	m_noDrinkFound(data["noDrinkFound"].get<bool>())
+	m_drinkObjective(static_cast<DrinkObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
 {
 	nlohmann::from_json(data, *this);
 }
 void DrinkPathRequest::callback(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
+	ActorIndex actor = getActor();
 	if(result.path.empty())
 	{
 		if(!result.useCurrentPosition)
 		{
-			if(m_noDrinkFound)
-				actors.objective_canNotFulfillNeed(getActor(), m_drinkObjective);
+			if(m_drinkObjective.m_noDrinkFound)
+				actors.objective_canNotFulfillNeed(actor, m_drinkObjective);
 			else
 			{
 				// Nothing to drink here, try to leave.
-				m_noDrinkFound = true;
-				createGoToEdge(area, getActor(), m_drinkObjective.m_detour);
+				m_drinkObjective.m_noDrinkFound = true;
+				m_drinkObjective.execute(area, actor);
 			}
 		}
 		else
@@ -43,15 +48,12 @@ void DrinkPathRequest::callback(Area& area, FindPathResult& result)
 	}
 	else
 		actors.move_setPath(getActor(), result.path);
-	if(m_noDrinkFound)
-		m_drinkObjective.m_noDrinkFound = true;
 }
 Json DrinkPathRequest::toJson() const
 {
 	Json output;
 	nlohmann::to_json(output, *this);
 	output["objective"] = &m_drinkObjective;
-	output["noDrinkFound"] = m_noDrinkFound;
 	return output;
 }
 // Drink Objective.

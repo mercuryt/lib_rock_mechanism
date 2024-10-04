@@ -274,6 +274,7 @@ public:
 	void move_pathRequestCallback(ActorIndex index, BlockIndices path, bool useCurrentLocation, bool reserveDestination);
 	void move_pathRequestMaybeCancel(ActorIndex index);
 	void move_pathRequestRecord(ActorIndex index, std::unique_ptr<PathRequest> pathRequest);
+	void move_updatePathRequestTerrainFacadeIndex(const ActorIndex& index, const PathRequestIndex& newPathRequestIndex);
 	void move_appendToLinePath(ActorIndex index, BlockIndex block) { m_leadFollowPath[index].add(block); }
 	[[nodiscard]] bool move_tryToReserveProposedDestination(ActorIndex index, BlockIndices& path);
 	[[nodiscard]] bool move_tryToReserveOccupied(ActorIndex index);

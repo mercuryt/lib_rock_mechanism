@@ -32,7 +32,7 @@ TEST_CASE("dig")
 	areaBuilderUtil::setSolidLayers(area, 2, 3, dirt);
 	FactionId faction = simulation.createFaction(L"Tower of Power");
 	area.m_blockDesignations.registerFaction(faction);
-	DigObjectiveType digObjectiveType;
+	const DigObjectiveType& digObjectiveType = static_cast<const DigObjectiveType&>(ObjectiveType::getByName("dig"));
 	ActorIndex dwarf1 = actors.create({
 		.species=dwarf,
 		.location=blocks.getIndex_i(1, 1, 4),
@@ -56,11 +56,13 @@ TEST_CASE("dig")
 		simulation.doStep();
 		// One step to activate the project and reserve the pick.
 		simulation.doStep();
+		REQUIRE(project.reservationsComplete());
 		// One step to select haul type.
 		simulation.doStep();
 		// Another step to path to the pick.
+		REQUIRE(actors.move_hasPathRequest(dwarf1));
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(dwarf1).empty());
+		REQUIRE(!actors.move_getPath(dwarf1).empty());
 		REQUIRE(items.isAdjacentToLocation(pick, actors.move_getDestination(dwarf1)));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, items.getLocation(pick));
 		REQUIRE(actors.canPickUp_isCarryingItem(dwarf1, pick));

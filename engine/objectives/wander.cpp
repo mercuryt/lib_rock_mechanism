@@ -46,8 +46,8 @@ Json WanderObjective::toJson() const
 }
 void WanderObjective::execute(Area& area, ActorIndex actor) 
 { 
-	std::unique_ptr<PathRequest> m_pathRequest = std::make_unique<WanderPathRequest>(area, *this, actor);
-	area.getActors().move_pathRequestRecord(actor, std::move(m_pathRequest));
+	std::unique_ptr<PathRequest> pathRequest = std::make_unique<WanderPathRequest>(area, *this, actor);
+	area.getActors().move_pathRequestRecord(actor, std::move(pathRequest));
 }
 void WanderObjective::cancel(Area& area, ActorIndex actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
 bool WanderObjective::hasPathRequest(const Area& area, ActorIndex actor) const { return area.getActors().move_hasPathRequest(actor); }

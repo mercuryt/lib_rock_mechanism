@@ -12,6 +12,12 @@
 #include <cstdint>
 #include <iostream>
 
+#ifndef NDEBUG
+    constexpr bool DEBUG = true;
+#else
+    constexpr bool DEBUG = false;
+#endif
+
 using StepWidth = uint64_t;
 class Step : public StrongInteger<Step, StepWidth>
 {

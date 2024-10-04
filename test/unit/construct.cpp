@@ -35,7 +35,7 @@ TEST_CASE("construct")
 	areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
 	FactionId faction = simulation.createFaction(L"Tower Of Power");
 	area.m_blockDesignations.registerFaction(faction);
-	ConstructObjectiveType constructObjectiveType;
+	const ConstructObjectiveType& constructObjectiveType = static_cast<const ConstructObjectiveType&>(ObjectiveType::getByName("construct"));
 	ActorIndex dwarf1 = actors.create(ActorParamaters{
 		.species=dwarf,
 		.location=blocks.getIndex_i(1, 1, 2),

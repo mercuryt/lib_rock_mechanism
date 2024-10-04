@@ -39,7 +39,7 @@ void GetToSafeTemperaturePathRequest::callback(Area& area, FindPathResult& resul
 			m_objective.execute(area, actor);
 		}
 	}
-	if(result.useCurrentPosition)
+	else if(result.useCurrentPosition)
 		// Current position is now safe.
 		actors.objective_complete(actor, m_objective);
 	else

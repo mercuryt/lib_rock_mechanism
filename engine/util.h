@@ -62,12 +62,12 @@ namespace util
 		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 		return converter.from_bytes(str);
 	}
-	[[maybe_unused]]inline Percent fractionToPercent(int numerator, int denominator)
+	inline Percent fractionToPercent(int numerator, int denominator)
 	{
-		return Percent::create(((float)numerator / (float)denominator) * 100);
+		return Percent::create(std::round(((float)numerator / (float)denominator) * 100.f));
 	}
 	template<typename T>
-	inline bool sortedVectorContainsDuplicates(std::vector<T> vector)
+	inline bool sortedVectorContainsDuplicates(const std::vector<T>& vector)
 	{
 		auto it = std::adjacent_find(vector.begin(), vector.end());
 		return it == vector.end();
@@ -103,7 +103,7 @@ namespace util
 		input.erase(std::unique(input.begin(), input.end()), input.end());
 	}
 	template<typename T>
-	bool vectorContains(const std::vector<T>& vector,const  T& value) 
+	bool vectorContains(const std::vector<T>& vector, const T& value) 
 	{
 		return std::ranges::find(vector, value) != vector.end();
 	}

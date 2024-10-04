@@ -27,6 +27,7 @@ void PathRequest::create(Area& area, ActorIndex actor, DestinationCondition dest
 	if(m_reserve)
 		assert(m_unreserved);
 	assert(actor.exists());
+	assert(m_actor.empty());
 	m_actor = actor;
 	m_detour = detour;
 	m_maxRange = maxRange;

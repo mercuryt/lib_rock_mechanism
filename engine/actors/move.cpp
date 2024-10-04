@@ -357,6 +357,10 @@ void Actors::move_pathRequestRecord(ActorIndex index, std::unique_ptr<PathReques
 	assert(pathRequest->exists());
 	m_pathRequest[index] = std::move(pathRequest);
 }
+void Actors::move_updatePathRequestTerrainFacadeIndex(const ActorIndex& index, const PathRequestIndex& newPathRequestIndex)
+{
+	m_pathRequest[index]->update(newPathRequestIndex);
+}
 void Actors::move_pathRequestMaybeCancel(ActorIndex index)
 {
 	if(m_pathRequest[index] != nullptr)
