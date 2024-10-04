@@ -16,7 +16,7 @@ public:
 	using This = StrongInteger<Derived, T, NULL_VALUE>;
 	constexpr static T MAX_VALUE = NULL_VALUE - 1;
 	constexpr StrongInteger() : data(NULL_VALUE) { }
-	constexpr StrongInteger(T d) : data(d) { }
+	constexpr StrongInteger(const T& d) : data(d) { }
 	constexpr StrongInteger(const This& o) { data = o.data; }
 	constexpr StrongInteger(const This&& o) { data = o.data; }
 	constexpr Derived& operator=(const This& o) { data = o.data; return static_cast<Derived&>(*this); }
@@ -138,39 +138,39 @@ class StrongIntegerSet
 public:
 	StrongIntegerSet(std::initializer_list<StrongInteger> i) : data(i) { }
 	StrongIntegerSet() = default;
-	void add(StrongInteger index) { assert(index.exists()); assert(!contains(index)); data.push_back(index); }
-	void addAllowNull(StrongInteger index) { if(index.exists()) assert(!contains(index)); data.push_back(index); }
+	void add(const StrongInteger& index) { assert(index.exists()); assert(!contains(index)); data.push_back(index); }
+	void addAllowNull(const StrongInteger& index) { if(index.exists()) assert(!contains(index)); data.push_back(index); }
 	template <class T>
 	void add(T&& begin, T&& end) { assert(begin <= end); while(begin != end) { maybeAdd(*begin); ++begin; } }
-	void maybeAdd(StrongInteger index) { assert(index.exists()); if(!contains(index)) data.push_back(index); }
-	void addNonunique(StrongInteger index) { data.push_back(index); }
-	void remove(StrongInteger index) { assert(index.exists()); assert(contains(index)); remove(find(index)); }
+	void maybeAdd(const StrongInteger& index) { assert(index.exists()); if(!contains(index)) data.push_back(index); }
+	void addNonunique(const StrongInteger& index) { data.push_back(index); }
+	void remove(const StrongInteger& index) { assert(index.exists()); assert(contains(index)); remove(find(index)); }
 	void remove(std::vector<StrongInteger>::iterator iter) { (*iter) = data.back(); data.pop_back(); }
 	template <class Predicate>
 	void remove_if(Predicate&& predicate) { std::ranges::remove_if(data, predicate); }
-	void maybeRemove(StrongInteger index) { assert(index.exists()); auto found = find(index); if(found != data.end()) remove(found); }
-	void update(StrongInteger oldIndex, StrongInteger newIndex) { assert(oldIndex.exists()); assert(newIndex.exists()); assert(!contains(newIndex)); auto found = find(oldIndex); assert(found != data.end()); (*found) = newIndex;}
+	void maybeRemove(const StrongInteger& index) { assert(index.exists()); auto found = find(index); if(found != data.end()) remove(found); }
+	void update(const StrongInteger& oldIndex, const StrongInteger& newIndex) { assert(oldIndex.exists()); assert(newIndex.exists()); assert(!contains(newIndex)); auto found = find(oldIndex); assert(found != data.end()); (*found) = newIndex;}
 	void clear() { data.clear(); }
-	void reserve(int size) { data.reserve(size); }
+	void reserve(const int& size) { data.reserve(size); }
 	void swap(StrongIntegerSet<StrongInteger>& other) { std::swap(data, other.data); }
 	template<typename Predicate>
 	void erase_if(Predicate&& predicate) { std::erase_if(data, predicate); }
-	void merge(StrongIntegerSet<StrongInteger>& other) { for(StrongInteger index : other) maybeAdd(index); }
+	void merge(const StrongIntegerSet<StrongInteger>& other) { for(StrongInteger index : other) maybeAdd(index); }
 	template <class T>
-	void merge(T& other) { add(other.begin(), other.end()); }
+	void merge(const T& other) { add(other.begin(), other.end()); }
 	template<typename Sort>
 	void sort(Sort&& sort) { std::ranges::sort(data, sort); }
 	template<typename Target>
-	void copy(Target& target) { std::ranges::copy(data, target); }
+	void copy(const Target& target) { std::ranges::copy(data, target); }
 	template<typename Predicate, typename Target>
-	void copy_if(Target&& target, Predicate&& predicate) { std::ranges::copy_if(data, target, predicate); }
-	void removeDuplicatesAndValue(StrongInteger index);
-	void concatAssertUnique(StrongIntegerSet<StrongInteger>&& other) { for(const auto& item : other.data) add(item); }
-	void concatIgnoreUnique(StrongIntegerSet<StrongInteger>&& other) { for(const auto& item : other.data) maybeAdd(item); }
-	void updateValue(StrongInteger oldValue, StrongInteger newValue) { assert(!contains(newValue)); auto found = find(oldValue); assert(found != data.end()); (*found) = newValue; }
+	void copy_if(const Target&& target, const Predicate&& predicate) { std::ranges::copy_if(data, target, predicate); }
+	void removeDuplicatesAndValue(const StrongInteger& index);
+	void concatAssertUnique(const StrongIntegerSet<StrongInteger>&& other) { for(const auto& item : other.data) add(item); }
+	void concatIgnoreUnique(const StrongIntegerSet<StrongInteger>&& other) { for(const auto& item : other.data) maybeAdd(item); }
+	void updateValue(const StrongInteger& oldValue, const StrongInteger& newValue) { assert(!contains(newValue)); auto found = find(oldValue); assert(found != data.end()); (*found) = newValue; }
 	void unique() { std::ranges::sort(data); std::ranges::unique(data); }
 	[[nodiscard]] size_t size() const { return data.size(); }
-	[[nodiscard]] bool contains(StrongInteger index) const { return find(index) != data.end(); }
+	[[nodiscard]] bool contains(const StrongInteger& index) const { return find(index) != data.end(); }
 	[[nodiscard]] bool empty() const { return data.empty(); }
 	[[nodiscard]] std::vector<StrongInteger>::iterator find(StrongInteger index) { return std::ranges::find(data, index); }
 	[[nodiscard]] std::vector<StrongInteger>::const_iterator find(StrongInteger index) const { return std::ranges::find(data, index); }
@@ -185,7 +185,7 @@ public:
 	[[nodiscard]] StrongInteger random(Simulation& simulation) const;
 	[[nodiscard]] StrongInteger front() const { return data.front(); }
 	[[nodiscard]] StrongInteger back() const { return data.back(); }
-	[[nodiscard]] StrongInteger operator[](uint i) const { assert(i < size()); return data[i]; }
+	[[nodiscard]] StrongInteger operator[](const uint& i) const { assert(i < size()); return data[i]; }
 	[[nodiscard]] auto back_inserter() { return std::back_inserter(data); }
 	[[nodiscard]] bool operator==(const StrongIntegerSet<StrongInteger>& other) { return this == &other; }
 	template<uint arraySize>

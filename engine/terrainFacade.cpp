@@ -26,6 +26,7 @@ TerrainFacade::TerrainFacade(Area& area, MoveTypeId moveType) : m_area(area), m_
 }
 void TerrainFacade::doStep()
 {
+	Actors& actors = m_area.getActors();
 	// Read step.
 	// Breadth first.
 	uint numberOfRequests = m_pathRequestStartPositionNoHuristic.size();
@@ -46,6 +47,7 @@ void TerrainFacade::doStep()
 		assert(memo.empty());
 		for(uint i = begin; i < end; ++i)
 		{
+			assert(actors.move_hasPathRequest(m_pathRequestActorNoHuristic[PathRequestIndex::create(i)].getIndex()));
 			findPathForIndexNoHuristic(PathRequestIndex::create(i), memo);
 			assert(memo.empty());
 		}
@@ -77,26 +79,30 @@ void TerrainFacade::doStep()
 	}
 	// Write step.
 	// Move the callback and result data so we can flush the data store and generate new requests for next step within callbacks.
-	auto pathRequests = std::move(m_pathRequestNoHuristic);
+	auto pathRequestActors = std::move(m_pathRequestActorNoHuristic);
 	auto results = std::move(m_pathRequestResultsNoHuristic);
-	assert(pathRequests.size() == results.size());
-	auto pathRequests2 = std::move(m_pathRequestWithHuristic);
+	assert(pathRequestActors.size() == results.size());
+	auto pathRequestActors2 = std::move(m_pathRequestActorWithHuristic);
 	auto results2 = std::move(m_pathRequestResultsWithHuristic);
-	assert(pathRequests2.size() == results2.size());
+	assert(pathRequestActors2.size() == results2.size());
 	clearPathRequests();
-	Actors& actors = m_area.getActors();
 	// Breadth First.
-	for(PathRequestIndex i = PathRequestIndex::create(0); i < pathRequests.size(); ++i)
+	for(PathRequestIndex i = PathRequestIndex::create(0); i < pathRequestActors.size(); ++i)
 	{
 		// Move path request here and nullify the moved from location so that the callback can create a new request.
-		std::unique_ptr<PathRequest> pathRequest = actors.move_movePathRequestData(pathRequests[i]->getActor());
+		assert(pathRequestActors[i].exists());
+		ActorIndex actor = pathRequestActors[i].getIndex();
+		assert(actors.move_hasPathRequest(actor));
+		std::unique_ptr<PathRequest> pathRequest = actors.move_movePathRequestData(actor);
+		if constexpr(DEBUG)
+			pathRequestActors[i].clear();
 		pathRequest->callback(m_area, results[i]);
 	}
 	// Depth First.
-	for(PathRequestIndex i = PathRequestIndex::create(0); i < pathRequests2.size(); ++i)
+	for(PathRequestIndex i = PathRequestIndex::create(0); i < pathRequestActors2.size(); ++i)
 	{
 		// Move path request here and nullify the moved from location so that the callback can create a new request.
-		std::unique_ptr<PathRequest> pathRequest = actors.move_movePathRequestData(pathRequests2[i]->getActor());
+		std::unique_ptr<PathRequest> pathRequest = actors.move_movePathRequestData(pathRequestActors2[i].getIndex());
 		pathRequest->callback(m_area, results2[i]);
 	}
 }
@@ -127,14 +133,14 @@ void TerrainFacade::clearPathRequests()
 	m_pathRequestAccessConditionsNoHuristic.clear();
 	m_pathRequestDestinationConditionsNoHuristic.clear();
 	m_pathRequestResultsNoHuristic.clear();
-	m_pathRequestNoHuristic.clear();
+	m_pathRequestActorNoHuristic.clear();
 
 	m_pathRequestStartPositionWithHuristic.clear();
 	m_pathRequestAccessConditionsWithHuristic.clear();
 	m_pathRequestDestinationConditionsWithHuristic.clear();
 	m_pathRequestHuristic.clear();
 	m_pathRequestResultsWithHuristic.clear();
-	m_pathRequestWithHuristic.clear();
+	m_pathRequestActorWithHuristic.clear();
 }
 bool TerrainFacade::getValueForBit(BlockIndex from, BlockIndex to) const
 {
@@ -152,7 +158,7 @@ PathRequestIndex TerrainFacade::getPathRequestIndexNoHuristic()
 	m_pathRequestAccessConditionsNoHuristic.resize(newSize);
 	m_pathRequestDestinationConditionsNoHuristic.resize(newSize);
 	m_pathRequestResultsNoHuristic.resize(newSize);
-	m_pathRequestNoHuristic.resize(newSize);
+	m_pathRequestActorNoHuristic.resize(newSize);
 	return index;
 }
 PathRequestIndex TerrainFacade::getPathRequestIndexWithHuristic()
@@ -164,7 +170,7 @@ PathRequestIndex TerrainFacade::getPathRequestIndexWithHuristic()
 	m_pathRequestDestinationConditionsWithHuristic.resize(newSize);
 	m_pathRequestHuristic.resize(newSize);
 	m_pathRequestResultsWithHuristic.resize(newSize);
-	m_pathRequestWithHuristic.resize(newSize);
+	m_pathRequestActorWithHuristic.resize(newSize);
 	return index;
 }
 PathRequestIndex TerrainFacade::registerPathRequestNoHuristic(BlockIndex start, const AccessCondition& access, const DestinationCondition& destination, PathRequest& pathRequest)
@@ -173,7 +179,7 @@ PathRequestIndex TerrainFacade::registerPathRequestNoHuristic(BlockIndex start, 
 	m_pathRequestStartPositionNoHuristic[index] = start;
 	m_pathRequestAccessConditionsNoHuristic[index] = access;
 	m_pathRequestDestinationConditionsNoHuristic[index] = destination;
-	m_pathRequestNoHuristic[index] = &pathRequest;
+	m_pathRequestActorNoHuristic[index] = pathRequest.getActor().toReference(m_area);
 	pathRequest.update(index);
 	return index;
 }
@@ -184,7 +190,7 @@ PathRequestIndex TerrainFacade::registerPathRequestWithHuristic(BlockIndex start
 	m_pathRequestAccessConditionsWithHuristic[index] = access;
 	m_pathRequestDestinationConditionsWithHuristic[index] = destination;
 	m_pathRequestHuristic[index] = huristic;
-	m_pathRequestWithHuristic[index] = &pathRequest;
+	m_pathRequestActorWithHuristic[index] = pathRequest.getActor().toReference(m_area);
 	pathRequest.update(index);
 	return index;
 }
@@ -205,7 +211,7 @@ void TerrainFacade::resizePathRequestWithHuristic(PathRequestIndex size)
 	m_pathRequestAccessConditionsWithHuristic.resize(size);
 	m_pathRequestDestinationConditionsWithHuristic.resize(size);
 	m_pathRequestHuristic.resize(size);
-	m_pathRequestWithHuristic.resize(size);
+	m_pathRequestActorWithHuristic.resize(size);
 	m_pathRequestResultsWithHuristic.resize(size);
 }
 void TerrainFacade::resizePathRequestNoHuristic(PathRequestIndex size)
@@ -214,7 +220,7 @@ void TerrainFacade::resizePathRequestNoHuristic(PathRequestIndex size)
 	m_pathRequestStartPositionNoHuristic.resize(size);
 	m_pathRequestAccessConditionsNoHuristic.resize(size);
 	m_pathRequestDestinationConditionsNoHuristic.resize(size);
-	m_pathRequestNoHuristic.resize(size);
+	m_pathRequestActorNoHuristic.resize(size);
 	m_pathRequestResultsNoHuristic.resize(size);
 }
 void TerrainFacade::movePathRequestNoHuristic(PathRequestIndex oldIndex, PathRequestIndex newIndex)
@@ -223,9 +229,10 @@ void TerrainFacade::movePathRequestNoHuristic(PathRequestIndex oldIndex, PathReq
 	m_pathRequestAccessConditionsNoHuristic[newIndex] = m_pathRequestAccessConditionsNoHuristic[oldIndex];
 	m_pathRequestDestinationConditionsNoHuristic[newIndex] = m_pathRequestDestinationConditionsNoHuristic[oldIndex];
 	m_pathRequestStartPositionNoHuristic[newIndex] = m_pathRequestStartPositionNoHuristic[oldIndex];
-	m_pathRequestNoHuristic[newIndex] = m_pathRequestNoHuristic[oldIndex];
+	m_pathRequestActorNoHuristic[newIndex] = m_pathRequestActorNoHuristic[oldIndex];
 	m_pathRequestResultsNoHuristic[newIndex] = m_pathRequestResultsNoHuristic[oldIndex];
-	m_pathRequestNoHuristic[newIndex]->update(newIndex);
+	ActorIndex actor = m_pathRequestActorNoHuristic[newIndex].getIndex();
+	m_area.getActors().move_updatePathRequestTerrainFacadeIndex(actor, newIndex);
 }
 void TerrainFacade::movePathRequestWithHuristic(PathRequestIndex oldIndex, PathRequestIndex newIndex)
 {
@@ -233,10 +240,11 @@ void TerrainFacade::movePathRequestWithHuristic(PathRequestIndex oldIndex, PathR
 	m_pathRequestAccessConditionsWithHuristic[newIndex] = m_pathRequestAccessConditionsWithHuristic[oldIndex];
 	m_pathRequestDestinationConditionsWithHuristic[newIndex] = m_pathRequestDestinationConditionsWithHuristic[oldIndex];
 	m_pathRequestStartPositionWithHuristic[newIndex] = m_pathRequestStartPositionWithHuristic[oldIndex];
-	m_pathRequestWithHuristic[newIndex] = m_pathRequestWithHuristic[oldIndex];
+	m_pathRequestActorWithHuristic[newIndex] = m_pathRequestActorWithHuristic[oldIndex];
 	m_pathRequestResultsWithHuristic[newIndex] = m_pathRequestResultsWithHuristic[oldIndex];
 	m_pathRequestHuristic[newIndex] = m_pathRequestHuristic[oldIndex];
-	m_pathRequestWithHuristic[newIndex]->update(newIndex);
+	ActorIndex actor = m_pathRequestActorWithHuristic[newIndex].getIndex();
+	m_area.getActors().move_updatePathRequestTerrainFacadeIndex(actor, newIndex);
 }
 void TerrainFacade::unregisterNoHuristic(PathRequestIndex index)
 {

@@ -4,7 +4,7 @@ void Blocks::project_add(BlockIndex index, Project& project)
 	FactionId faction = project.getFaction();
 	auto& projects = m_projects[index];
 	assert(!projects.contains(faction) || !projects[faction].contains(&project));
-	projects[faction].insert(&project);
+	projects.getOrCreate(faction).insert(&project);
 }
 void Blocks::project_remove(BlockIndex index, Project& project)
 {

@@ -12,7 +12,7 @@
   "daysTillDieWithoutFluid": 4,
   "daysFluidDrinkFrequency": 1,
   "daysTillDieInUnsafeTemperature": 1,
-  "minimumSafeTemperature": 261,
+  "minimumSafeTemperature": 268,
   "maximumSafeTemperature": 316,
   "daysSleepFrequency": 1,
   "hoursTillSleepOveride": 6,

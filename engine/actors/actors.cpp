@@ -737,11 +737,12 @@ void Actors::scheduleNeeds(ActorIndex index)
 void Actors::setShape(ActorIndex index, ShapeId shape)
 {
 	BlockIndex location = m_location[index];
+	Facing facing = m_facing[index];
 	if(location.exists())
 		exit(index);
 	m_shape[index] = shape;
 	if(location.exists())
-		setLocation(index, location);
+		setLocationAndFacing(index, location, facing);
 }
 void Actors::setLocation(ActorIndex index, BlockIndex block)
 {

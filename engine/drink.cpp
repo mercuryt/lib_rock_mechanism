@@ -40,7 +40,6 @@ void MustDrink::drink(Area& area, CollisionVolume volume)
 	assert(m_volumeDrinkRequested >= volume);
 	assert(m_volumeDrinkRequested != 0);
 	assert(volume != 0);
-	assert(m_objective != nullptr);
 	m_volumeDrinkRequested -= volume;
 	m_thirstEvent.unschedule();
 	Step stepsToNextThirstEvent;
@@ -49,15 +48,18 @@ void MustDrink::drink(Area& area, CollisionVolume volume)
 	Step stepsTillDie = AnimalSpecies::getStepsTillDieWithoutFluid(actors.getSpecies(actor));
 	if(m_volumeDrinkRequested == 0)
 	{
-		actors.objective_complete(actor, *m_objective);
+		// Might drink without objective if forced to while objective is supressed.
+		if(m_objective != nullptr)
+			actors.objective_complete(actor, *m_objective);
 		stepsToNextThirstEvent = stepsTillDie;
 		actors.grow_maybeStart(actor);
 	}
 	else
 	{
-		actors.objective_subobjectiveComplete(actor);
+		if(m_objective != nullptr)
+			actors.objective_subobjectiveComplete(actor);
 		//TODO: This doesn't seem to make sense.
-		stepsToNextThirstEvent = Step::create(util::scaleByFraction(stepsTillDie.get(), m_volumeDrinkRequested.get(), stepsTillDie.get()));
+		stepsToNextThirstEvent = Step::create(util::scaleByFraction(stepsTillDie.get(), drinkVolumeFor(area, actor).get(), m_volumeDrinkRequested.get()));
 	}
 	m_thirstEvent.schedule(area, stepsToNextThirstEvent, actor);
 }

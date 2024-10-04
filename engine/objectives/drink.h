@@ -40,7 +40,6 @@ public:
 class DrinkPathRequest final : public PathRequest
 {
 	DrinkObjective& m_drinkObjective;
-	bool m_noDrinkFound = false;
 public:
 	DrinkPathRequest(Area& area, DrinkObjective& drob, ActorIndex actor);
 	DrinkPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
