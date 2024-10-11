@@ -144,11 +144,13 @@ public:
 	void add(T&& begin, T&& end) { assert(begin <= end); while(begin != end) { maybeAdd(*begin); ++begin; } }
 	void maybeAdd(const StrongInteger& index) { assert(index.exists()); if(!contains(index)) data.push_back(index); }
 	void addNonunique(const StrongInteger& index) { data.push_back(index); }
+	void pushFrontNonunique(const StrongInteger& index) { data.insert(data.begin(), index); }
 	void remove(const StrongInteger& index) { assert(index.exists()); assert(contains(index)); remove(find(index)); }
 	void remove(std::vector<StrongInteger>::iterator iter) { (*iter) = data.back(); data.pop_back(); }
 	template <class Predicate>
 	void remove_if(Predicate&& predicate) { std::ranges::remove_if(data, predicate); }
 	void maybeRemove(const StrongInteger& index) { assert(index.exists()); auto found = find(index); if(found != data.end()) remove(found); }
+	void popBack() { data.pop_back(); }
 	void update(const StrongInteger& oldIndex, const StrongInteger& newIndex) { assert(oldIndex.exists()); assert(newIndex.exists()); assert(!contains(newIndex)); auto found = find(oldIndex); assert(found != data.end()); (*found) = newIndex;}
 	void clear() { data.clear(); }
 	void reserve(const int& size) { data.reserve(size); }
@@ -165,6 +167,7 @@ public:
 	template<typename Predicate, typename Target>
 	void copy_if(const Target&& target, const Predicate&& predicate) { std::ranges::copy_if(data, target, predicate); }
 	void removeDuplicatesAndValue(const StrongInteger& index);
+	void removeDuplicates() { std::sort(data.begin(), data.end()); data.erase(std::unique(data.begin(), data.end()), data.end()); }
 	void concatAssertUnique(const StrongIntegerSet<StrongInteger>&& other) { for(const auto& item : other.data) add(item); }
 	void concatIgnoreUnique(const StrongIntegerSet<StrongInteger>&& other) { for(const auto& item : other.data) maybeAdd(item); }
 	void updateValue(const StrongInteger& oldValue, const StrongInteger& newValue) { assert(!contains(newValue)); auto found = find(oldValue); assert(found != data.end()); (*found) = newValue; }

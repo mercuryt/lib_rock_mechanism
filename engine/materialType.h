@@ -25,14 +25,14 @@ class SpoilData
 {
 	DataVector<MaterialTypeId, SpoilsDataTypeId> m_materialType;
 	DataVector<ItemTypeId, SpoilsDataTypeId> m_itemType;
-	DataVector<double, SpoilsDataTypeId> m_chance;
+	DataVector<Percent, SpoilsDataTypeId> m_chance;
 	DataVector<Quantity, SpoilsDataTypeId> m_min;
 	DataVector<Quantity, SpoilsDataTypeId> m_max;
 public:
-	static SpoilsDataTypeId create(const MaterialTypeId mt, const ItemTypeId it, const double c, const Quantity mi, const Quantity ma);
+	static SpoilsDataTypeId create(const MaterialTypeId mt, const ItemTypeId it, const Percent c, const Quantity mi, const Quantity ma);
 	[[nodiscard]] static MaterialTypeId getMaterialType(SpoilsDataTypeId id);
 	[[nodiscard]] static ItemTypeId getItemType(SpoilsDataTypeId id);
-	[[nodiscard]] static double getChance(SpoilsDataTypeId id);
+	[[nodiscard]] static Percent getChance(SpoilsDataTypeId id);
 	[[nodiscard]] static Quantity getMin(SpoilsDataTypeId id);
 	[[nodiscard]] static Quantity getMax(SpoilsDataTypeId id);
 };

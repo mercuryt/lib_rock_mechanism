@@ -9,7 +9,7 @@ const MaterialCategoryTypeId MaterialTypeCategory::byName(const std::string&& na
 }
 void MaterialTypeCategory::create(std::string name) { materialTypeCategoryData.m_name.add(name); }
 const std::string& MaterialTypeCategory::getName(MaterialCategoryTypeId id){ return materialTypeCategoryData.m_name[id]; }
-SpoilsDataTypeId SpoilData::create(const MaterialTypeId mt, const ItemTypeId it, const double c, const Quantity mi, const Quantity ma)
+SpoilsDataTypeId SpoilData::create(const MaterialTypeId mt, const ItemTypeId it, const Percent c, const Quantity mi, const Quantity ma)
 {
 	spoilData.m_materialType.add(mt);
 	spoilData.m_itemType.add(it);
@@ -20,7 +20,7 @@ SpoilsDataTypeId SpoilData::create(const MaterialTypeId mt, const ItemTypeId it,
 }
 MaterialTypeId SpoilData::getMaterialType(SpoilsDataTypeId id) { return spoilData.m_materialType[id]; };
 ItemTypeId SpoilData::getItemType(SpoilsDataTypeId id) { return spoilData.m_itemType[id]; };
-double SpoilData::getChance(SpoilsDataTypeId id) { return spoilData.m_chance[id]; };
+Percent SpoilData::getChance(SpoilsDataTypeId id) { return spoilData.m_chance[id]; };
 Quantity SpoilData::getMin(SpoilsDataTypeId id) { return spoilData.m_min[id]; };
 Quantity SpoilData::getMax(SpoilsDataTypeId id) { return spoilData.m_max[id]; };
 MaterialTypeId MaterialType::byName(const std::string name)

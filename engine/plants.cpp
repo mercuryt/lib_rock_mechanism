@@ -117,10 +117,11 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 void Plants::destroy(PlantIndex index)
 {
 	// No need to explicitly unschedule events here, destorying the event holder will do it.
-	const PlantIndex& s = PlantIndex::create(size());
-	if(s != 1)
-		moveIndex(index, s - 1);
-	resize(s - 1);
+	exit(index);
+	const auto& s = PlantIndex::create(size() - 1);
+	if(index != s)
+		moveIndex(s, index);
+	resize(s);
 }
 void Plants::die(PlantIndex index)
 {

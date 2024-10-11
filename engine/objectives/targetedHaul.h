@@ -10,7 +10,7 @@ class TargetedHaulObjective final : public Objective
 {
 	TargetedHaulProject& m_project;
 public:
-	TargetedHaulObjective(ActorIndex a, TargetedHaulProject& p);
+	TargetedHaulObjective(TargetedHaulProject& p);
 	TargetedHaulObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	void execute(Area&, ActorIndex actor);
 	void cancel(Area&, ActorIndex actor);

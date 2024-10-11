@@ -15,7 +15,7 @@ public:
 	void doStep(Simulation&, Area* area);
 	void insert(std::unique_ptr<ThreadedTask>&& task);
 	void remove(ThreadedTask& task);
-	void clear();
+	void clear(Simulation& simulation, Area* area);
 	// For testing.
 	[[maybe_unused, nodiscard]]inline uint32_t count() { return m_tasksForNextStep.size(); }
 };

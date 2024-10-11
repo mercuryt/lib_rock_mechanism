@@ -109,7 +109,7 @@ ActorOrItemIndex ActorOrItemIndex::getLeader(Area& area) const
 	else
 		return area.getItems().getLeader(m_index);
 }
-bool ActorOrItemIndex::canEnterCurrentlyFrom(Area& area, BlockIndex destination, BlockIndex origin)
+bool ActorOrItemIndex::canEnterCurrentlyFrom(Area& area, const BlockIndex& destination, const BlockIndex& origin)
 {
 	if(isActor())
 	{
@@ -123,6 +123,21 @@ bool ActorOrItemIndex::canEnterCurrentlyFrom(Area& area, BlockIndex destination,
 		Items& items = area.getItems();
 		ShapeId shape = items.getShape(m_index.toItem());
 		auto& occupied = items.getBlocks(m_index.toItem());
+		return area.getBlocks().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
+	}
+}
+bool ActorOrItemIndex::canEnterCurrentlyFromWithOccupied(Area& area, const BlockIndex& destination, const BlockIndex& origin, const BlockIndices& occupied)
+{
+	if(isActor())
+	{
+		Actors& actors = area.getActors();
+		ShapeId shape = actors.getShape(m_index.toActor());
+		return area.getBlocks().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
+	}
+	else
+	{
+		Items& items = area.getItems();
+		ShapeId shape = items.getShape(m_index.toItem());
 		return area.getBlocks().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
 	}
 }

@@ -32,6 +32,15 @@ Project* Blocks::project_get(BlockIndex index, FactionId faction) const
 	if(!projects.contains(faction))
 		return nullptr;
 	for(Project* project : projects[faction])
+		return project;
+	return nullptr;
+}
+Project* Blocks::project_getIfBegun(BlockIndex index, FactionId faction) const
+{
+	auto& projects = m_projects[index];
+	if(!projects.contains(faction))
+		return nullptr;
+	for(Project* project : projects[faction])
 		if(project->finishEventExists())
 			return project;
 	return nullptr;

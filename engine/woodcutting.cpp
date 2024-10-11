@@ -79,7 +79,7 @@ void WoodCuttingProject::onComplete()
 	m_area.m_hasWoodCuttingDesignations.clearAll(m_location);
 	Actors& actors = m_area.getActors();
 	for(auto& [actor, projectWorker] : workers)
-		actors.objective_complete(actor.getIndex(), projectWorker.objective);
+		actors.objective_complete(actor.getIndex(), *projectWorker.objective);
 }
 void WoodCuttingProject::onCancel()
 {

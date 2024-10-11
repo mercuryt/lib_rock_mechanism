@@ -25,6 +25,7 @@ TEST_CASE("dig")
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	Items& items = area.getItems();
 	Actors& actors = area.getActors();
@@ -52,9 +53,7 @@ TEST_CASE("dig")
 		REQUIRE(digObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		REQUIRE(actors.objective_getCurrentName(dwarf1) == "dig");
-		// One step to find the designation.
-		simulation.doStep();
-		// One step to activate the project and reserve the pick.
+		// One step to find the designation, activate the project, and reserve the pick.
 		simulation.doStep();
 		REQUIRE(project.reservationsComplete());
 		// One step to select haul type.
@@ -88,37 +87,70 @@ TEST_CASE("dig")
 		for(BlockIndex block : tunnel)
 			area.m_hasDigDesignations.designate(faction, block, nullptr);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
+		// Find project, reserve, and activate.
+		simulation.doStep();
+		DigProject& project = *static_cast<DigProject*>(blocks.project_get(stairsLocation1, faction));
+		REQUIRE(project.reservationsComplete());
+		REQUIRE(project.getWorkers().contains(dwarf1.toReference(area)));
+		// Select a haul type to take the pick to the project site.
+		simulation.doStep();
+		REQUIRE(actors.move_hasPathRequest(dwarf1));
+		// Path to pick.
+		simulation.doStep();
+		REQUIRE(blocks.isAdjacentToIncludingCornersAndEdges(pickLocation, actors.move_getDestination(dwarf1)));
+		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, pickLocation);
+		REQUIRE(actors.move_hasPathRequest(dwarf1));
+		// Path to project.
+		simulation.doStep();
+		REQUIRE(blocks.isAdjacentToIncludingCornersAndEdges(stairsLocation1, actors.move_getDestination(dwarf1)));
+		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, stairsLocation1);
 		REQUIRE(actors.objective_getCurrentName(dwarf1) == "dig");
 		std::function<bool()> predicate = [&]() { return !blocks.solid_is(stairsLocation1); };
-		simulation.fastForwardUntillPredicate(predicate, 45);
+		simulation.fastForwardUntillPredicate(predicate, 180);
+		actors.satisfyNeeds(dwarf1);
 		DigObjective& objective = actors.objective_getCurrent<DigObjective>(dwarf1);
-		REQUIRE(objective.name() == "dig");
+		REQUIRE(actors.objective_getCurrentName(dwarf1) == "dig");
 		REQUIRE(objective.getProject() == nullptr);
 		REQUIRE(blocks.blockFeature_contains(stairsLocation1, BlockFeatureType::stairs));
 		REQUIRE(blocks.shape_shapeAndMoveTypeCanEnterEverFrom(stairsLocation1, actors.getShape(dwarf1), actors.getMoveType(dwarf1), aboveStairs));
+		const auto& terrainFacade = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(dwarf1));
+		REQUIRE(terrainFacade.accessable(aboveStairs, actors.getFacing(dwarf1), stairsLocation1, dwarf1));
 		REQUIRE(actors.move_hasPathRequest(dwarf1));
-		// Find next project.
+		REQUIRE(!blocks.isReserved(stairsLocation1, faction));
+		// Find next project, make reservations, and activate.
 		simulation.doStep();
 		REQUIRE(&actors.objective_getCurrent<DigObjective>(dwarf1) == &objective);
-		REQUIRE(objective.getProject() != nullptr);
-		REQUIRE(objective.getProject()->getLocation() == stairsLocation2);
 		REQUIRE(actors.move_getDestination(dwarf1).empty());
-		REQUIRE(!items.reservable_hasAnyReservations(pick));
-		// Make reservations and activate.
-		simulation.doStep();
 		REQUIRE(objective.getProject() != nullptr);
 		REQUIRE(items.reservable_hasAnyReservations(pick));
 		// Select haul type to get pick to location.
 		simulation.doStep();
 		REQUIRE(objective.getProject() != nullptr);
-		REQUIRE(objective.getProject()->getProjectWorkerFor(dwarf1Ref).haulSubproject);
+		REQUIRE(objective.getProject()->getProjectWorkerFor(dwarf1Ref).haulSubproject != nullptr);
 		// Path to locaton.
 		simulation.doStep();
 		REQUIRE(&actors.objective_getCurrent<DigObjective>(dwarf1) == &objective);
-		std::function<bool()> predicate2 = [&]() { return !blocks.solid_is(stairsLocation2); };
-		simulation.fastForwardUntillPredicate(predicate2, 45);
-		std::function<bool()> predicate3 = [&]() { return !blocks.solid_is(tunnelEnd); };
-		simulation.fastForwardUntillPredicate(predicate3, 100);
+		std::function<bool()> predicate2 = [&]() { return !blocks.solid_is(tunnelStart); };
+		simulation.fastForwardUntillPredicate(predicate2, 180);
+		actors.satisfyNeeds(dwarf1);
+		// We are already adjacent to the next target, no need to path.
+		DigProject& project2 = *static_cast<DigProject*>(blocks.project_get(stairsLocation2, faction));
+		REQUIRE(actors.objective_getCurrentName(dwarf1) == "dig");
+		DigObjective& objective2 = actors.objective_getCurrent<DigObjective>(dwarf1);
+		REQUIRE(objective2.getProject() != nullptr);
+		REQUIRE(objective2.getProject() == &project2);
+		// Aready adjacent, no pathing required.
+		REQUIRE(!actors.move_hasPathRequest(dwarf1));
+		REQUIRE(!project2.reservationsComplete());
+		simulation.doStep();
+		REQUIRE(project2.reservationsComplete());
+		REQUIRE(!actors.move_hasPathRequest(dwarf1));
+		std::function<bool()> predicate3 = [&]() { return !blocks.solid_is(stairsLocation2); };
+		simulation.fastForwardUntillPredicate(predicate3, 180);
+		actors.satisfyNeeds(dwarf1);
+		REQUIRE(objective.name() == "dig");
+		std::function<bool()> predicate4 = [&]() { return !blocks.solid_is(tunnelEnd); };
+		simulation.fastForwardUntillPredicate(predicate4, 600);
 	}
 	SUBCASE("tunnel into cliff face with equipmentSet pick")
 	{
@@ -134,9 +166,7 @@ TEST_CASE("dig")
 		actors.equipment_add(dwarf1, pick);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		REQUIRE(actors.objective_getCurrentName(dwarf1) == "dig");
-		// Find project.
-		simulation.doStep();
-		// Reserve.
+		// Find project, reserve and activate.
 		simulation.doStep();
 		REQUIRE(items.reservable_isFullyReserved(pick, faction));
 		REQUIRE(actors.project_get(dwarf1)->reservationsComplete());

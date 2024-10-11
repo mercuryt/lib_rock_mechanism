@@ -622,7 +622,7 @@ TEST_CASE("stockpile")
 		HaulSubproject& haulSubproject = *project.getProjectWorkerFor(dwarf1Ref).haulSubproject;
 		REQUIRE(haulSubproject.getHaulStrategy() == HaulStrategy::Cart);
 		items.destroy(cart1);
-		REQUIRE(actors.project_get(dwarf1)->getWorkers().at(dwarf1.toReference(area)).haulSubproject == nullptr);
+		REQUIRE(actors.project_get(dwarf1)->getWorkers()[dwarf1.toReference(area)].haulSubproject == nullptr);
 		REQUIRE(project.getHaulRetries() == 0);
 		// Fast forward until haul project retry event spawns the haul retry threaded task.
 		simulation.fastForward(Config::stepsFrequencyToLookForHaulSubprojects);

@@ -19,6 +19,7 @@ TEST_CASE("fluids smaller")
 	static FluidTypeId mercury = FluidType::byName("mercury");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	SUBCASE("Create Fluid 100")
 	{
@@ -1270,6 +1271,7 @@ TEST_CASE("area larger")
 	static FluidTypeId water = FluidType::byName("water");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(20,20,20);
+	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	SUBCASE("Flow across flat area double stack")
 	{
@@ -1499,6 +1501,7 @@ TEST_CASE("fluids multi scale")
 		uint32_t maxZ = scaleW + 1;
 		uint32_t halfMaxX = maxX / 2;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
+		area.m_hasRain.disable();
 		Blocks& blocks = area.getBlocks();
 		simulation.m_step = Step::create(0);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
@@ -1560,6 +1563,7 @@ TEST_CASE("fluids multi scale")
 		uint32_t maxZ = scaleW + 1;
 		uint32_t thirdMaxX = maxX / 3;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
+		area.m_hasRain.disable();
 		Blocks& blocks = area.getBlocks();
 		simulation.m_step = Step::create(0);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
@@ -1627,6 +1631,7 @@ TEST_CASE("fluids multi scale")
 		uint32_t maxZ = scaleW + 1;
 		uint32_t quarterMaxX = maxX / 4;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
+		area.m_hasRain.disable();
 		Blocks& blocks = area.getBlocks();
 		simulation.m_step = Step::create(0);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
@@ -1723,6 +1728,7 @@ TEST_CASE("fluids multi scale")
 		uint32_t maxZ = scaleW + 1;
 		uint32_t quarterMaxX = maxX / 4;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
+		area.m_hasRain.disable();
 		Blocks& blocks = area.getBlocks();
 		simulation.m_step = Step::create(0);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
@@ -1787,6 +1793,7 @@ TEST_CASE("fluids multi scale")
 		uint32_t maxZ = scaleW + 1;
 		uint32_t quarterMaxX = maxX / 4;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
+		area.m_hasRain.disable();
 		Blocks& blocks = area.getBlocks();
 		simulation.m_step = Step::create(0);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
@@ -1863,6 +1870,7 @@ TEST_CASE("fluids multi scale")
 		uint32_t halfMaxX = maxX / 2;
 		uint32_t halfMaxY = maxY / 2;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
+		area.m_hasRain.disable();
 		Blocks& blocks = area.getBlocks();
 		simulation.m_step = Step::create(0);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);

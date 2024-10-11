@@ -76,7 +76,7 @@ uint32_t CraftStepProject::getWorkerCraftScore(const ActorIndex actor) const
 void CraftStepProject::onComplete()
 {
 	auto& [actor, projectWorker] = *m_workers.begin();
-	Objective& objective = projectWorker.objective;
+	Objective& objective = *projectWorker.objective;
 	m_craftJob.hasCraftingLocationsAndJobs.stepComplete(m_craftJob, actor.getIndex());
 	m_area.getActors().objective_complete(actor.getIndex(), objective);
 }

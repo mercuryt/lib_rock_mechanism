@@ -4,6 +4,7 @@
 #include "../area.h"
 #include "../itemType.h"
 #include "index.h"
+#include "moveType.h"
 #include "sleep.h"
 #include "types.h"
 void Actors::canPickUp_pickUpItem(ActorIndex index, ItemIndex item)
@@ -75,13 +76,14 @@ ItemIndex Actors::canPickUp_tryToPutDownItem(ActorIndex index, BlockIndex locati
 	ItemIndex item = m_carrying[index].getItem();
 	Blocks& blocks = m_area.getBlocks();
 	ShapeId shape = m_area.getItems().getShape(item);
-	auto predicate = [&](BlockIndex block) { return blocks.shape_canEnterCurrentlyWithAnyFacing(block, shape, {}); };
-	BlockIndex location2 = blocks.getBlockInRangeWithCondition(location, maxRange, predicate);
-	if(location2.empty())
+	static const MoveTypeId& moveType = MoveType::byName("none");
+	auto predicate = [&](BlockIndex block) { return blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(block, shape, moveType, {}); };
+	BlockIndex targetLocation = blocks.getBlockInRangeWithCondition(location, maxRange, predicate);
+	if(targetLocation.empty())
 		return ItemIndex::null();
 	m_carrying[index].clear();
 	move_updateIndividualSpeed(index);
-	m_area.getItems().setLocationAndFacing(item, location2, Facing::create(0));
+	m_area.getItems().setLocationAndFacing(item, targetLocation, Facing::create(0));
 	return item;
 }
 ActorOrItemIndex Actors::canPickUp_tryToPutDownIfAny(ActorIndex index, BlockIndex location, DistanceInBlocks maxRange)
@@ -181,7 +183,7 @@ bool Actors::canPickUp_actor(ActorIndex index, ActorIndex actor) const
 }
 bool Actors::canPickUp_anyWithMass(ActorIndex index, Mass mass) const
 {
-	return canPickUp_speedIfCarryingQuantity(index, mass, Quantity::create(0)) > 0;
+	return canPickUp_speedIfCarryingQuantity(index, mass, Quantity::create(1)) > 0;
 }
 bool Actors::canPickUp_polymorphicUnencombered(ActorIndex index, ActorOrItemIndex actorOrItemIndex) const
 {

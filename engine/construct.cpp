@@ -80,7 +80,7 @@ void ConstructProject::onComplete()
 	auto workers = std::move(m_workers);
 	m_area.m_hasConstructionDesignations.clearAll(m_location);
 	for(auto& [actor, projectWorker] : workers)
-		actors.objective_complete(actor.getIndex(), projectWorker.objective);
+		actors.objective_complete(actor.getIndex(), *projectWorker.objective);
 }
 void ConstructProject::onCancel()
 {

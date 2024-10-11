@@ -4,10 +4,11 @@
 #include "../simulation.h"
 #include "../simulation/hasItems.h"
 #include "../util.h"
-#include "actors/actors.h"
-#include "index.h"
-#include "portables.h"
-#include "types.h"
+#include "../actors/actors.h"
+#include "../index.h"
+#include "../moveType.h"
+#include "../portables.h"
+#include "../types.h"
 #include <memory>
 #include <ranges>
 // RemarkItemForStockPilingEvent
@@ -90,7 +91,8 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	ItemIndex index = ItemIndex::create(size());
 	// TODO: This 'toItem' call should not be neccessary. Why does ItemIndex + int = HasShapeIndex?
 	resize(index + 1);
-	Portables::create(index, ItemType::getMoveType(itemParamaters.itemType), ItemType::getShape(itemParamaters.itemType), itemParamaters.faction, itemParamaters.isStatic, itemParamaters.quantity);
+	const MoveTypeId& moveType = ItemType::getMoveType(itemParamaters.itemType);
+	Portables::create(index, moveType, ItemType::getShape(itemParamaters.itemType), itemParamaters.faction, itemParamaters.isStatic, itemParamaters.quantity);
 	assert(m_canBeStockPiled[index] == nullptr);
 	m_craftJobForWorkPiece[index] = itemParamaters.craftJob;
 	assert(m_hasCargo[index] == nullptr);
@@ -112,6 +114,9 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 		assert(m_quantity[index] == 1);
 	if(itemParamaters.location.exists())
 		setLocationAndFacing(index, itemParamaters.location, itemParamaters.facing);
+	static const MoveTypeId rolling = MoveType::byName("roll");
+	if(moveType == rolling && ItemType::getInternalVolume(itemType) != 0)
+		m_area.m_hasHaulTools.registerHaulTool(m_area, index);
 	return index;
 }
 void Items::resize(ItemIndex newSize)
@@ -148,6 +153,11 @@ void Items::moveIndex(ItemIndex oldIndex, ItemIndex newIndex)
 	m_quantity[newIndex] = m_quantity[oldIndex];
 	m_referenceTarget[newIndex] = std::move(m_referenceTarget[oldIndex]);
 	m_referenceTarget[newIndex]->index = newIndex;
+	if(m_onSurface.contains(oldIndex))
+	{
+		m_onSurface.remove(oldIndex);
+		m_onSurface.add(newIndex);
+	}
 	Blocks& blocks = m_area.getBlocks();
 	for(BlockIndex block : m_blocks[newIndex])
 		blocks.item_updateIndex(block, oldIndex, newIndex);
@@ -155,7 +165,7 @@ void Items::moveIndex(ItemIndex oldIndex, ItemIndex newIndex)
 void Items::setLocation(ItemIndex index, BlockIndex block)
 {
 	assert(index.exists());
-	assert(!m_location[index].exists());
+	assert(m_location[index].exists());
 	assert(block.exists());
 	Facing facing = m_area.getBlocks().facingToSetWhenEnteringFrom(block, m_location[index]);
 	setLocationAndFacing(index, block, facing);
@@ -178,10 +188,12 @@ void Items::setLocationAndFacing(ItemIndex index, BlockIndex block, Facing facin
 			return;
 		}
 	}
+	auto& occupiedBlocks = m_blocks[index];
 	for(auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
 	{
 		BlockIndex occupied = blocks.offset(block, x, y, z);
 		blocks.item_record(occupied, index, CollisionVolume::create(v));
+		occupiedBlocks.add(occupied);
 	}
 	if(blocks.isOnSurface(block))
 		m_onSurface.add(index);
@@ -193,12 +205,10 @@ void Items::exit(ItemIndex index)
 	assert(m_location[index].exists());
 	BlockIndex location = m_location[index];
 	auto& blocks = m_area.getBlocks();
-	for(auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
-	{
-		BlockIndex occupied = blocks.offset(location, x, y, z);
+	for(BlockIndex occupied : m_blocks[index])
 		blocks.item_erase(occupied, index);
-	}
 	m_location[index].clear();
+	m_blocks[index].clear();
 	if(blocks.isOnSurface(location))
 		m_onSurface.remove(index);
 }
@@ -269,9 +279,12 @@ void Items::destroy(ItemIndex index)
 	// No need to explicitly unschedule events here, destorying the event holder will do it.
 	if(hasLocation(index))
 		exit(index);
-	const ItemIndex& s = ItemIndex::create(size() - 2);
-	if(s != 1)
-		moveIndex(index, s);
+	static const MoveTypeId rolling = MoveType::byName("roll");
+	if(m_moveType[index] == rolling && ItemType::getInternalVolume(m_itemType[index]) != 0)
+		m_area.m_hasHaulTools.unregisterHaulTool(m_area, index);
+	const auto& s = ItemIndex::create(size() - 1);
+	if(index != s)
+		moveIndex(s, index);
 	resize(s);
 }
 bool Items::isGeneric(ItemIndex index) const { return ItemType::getGeneric(m_itemType[index]); }
@@ -317,18 +330,26 @@ void Items::log(ItemIndex index) const
 // Wrapper methods.
 void Items::stockpile_maybeUnsetAndScheduleReset(ItemIndex index, FactionId faction, Step duration)
 {
-	m_canBeStockPiled[index]->maybeUnsetAndScheduleReset(m_area, faction, duration);
+	if(m_canBeStockPiled[index] != nullptr)
+		m_canBeStockPiled[index]->maybeUnsetAndScheduleReset(m_area, faction, duration);
 }
 void Items::stockpile_set(ItemIndex index, FactionId faction)
 {
+	if(m_canBeStockPiled[index] == nullptr)
+		m_canBeStockPiled[index] = std::make_unique<ItemCanBeStockPiled>();
 	m_canBeStockPiled[index]->set(faction);
 }
 void Items::stockpile_maybeUnset(ItemIndex index, FactionId faction)
 {
-	m_canBeStockPiled[index]->maybeUnset(faction);
+	if(m_canBeStockPiled[index] != nullptr)
+		m_canBeStockPiled[index]->maybeUnset(faction);
+	if(m_canBeStockPiled[index]->empty())
+		m_canBeStockPiled[index] = nullptr;
 }
 bool Items::stockpile_canBeStockPiled(ItemIndex index, const FactionId faction) const
 {
+	if(m_canBeStockPiled[index] == nullptr)
+		return false;
 	return m_canBeStockPiled[index]->contains(faction);
 }
 void Items::load(const Json& data)
@@ -361,7 +382,7 @@ void Items::loadCargoAndCraftJobs(const Json& data)
 	for(const Json& pair : data["hasCargo"])
 	{
 		ItemIndex index = pair[0];
-		m_hasCargo[index] = std::make_unique<ItemHasCargo>();
+		m_hasCargo[index] = std::make_unique<ItemHasCargo>(m_itemType[index]);
 		ItemHasCargo& hasCargo = *m_hasCargo[index].get();
 		nlohmann::from_json(pair[1], hasCargo);
 	}

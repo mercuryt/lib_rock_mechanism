@@ -94,23 +94,22 @@ void Portables::followActor(HasShapeIndex index, ActorIndex actor)
 	Actors& actors = m_area.getActors();
 	assert(!m_leader[index].exists());
 	m_leader[index] = ActorOrItemIndex::createForActor(actor);
-	assert(!actors.m_follower[index].exists());
-	actors.m_follower[index] = getActorOrItemIndex(index);
+	assert(!actors.m_follower[actor].exists());
+	actors.m_follower[actor] = getActorOrItemIndex(index);
 	ActorIndex lineLeader = getLineLeader(index);
 	actors.move_updateActualSpeed(lineLeader);
-	actors.move_appendToLinePath(lineLeader, m_location[index]);
+	actors.lineLead_appendToPath(lineLeader, m_location[index]);
 }
 void Portables::followItem(HasShapeIndex index, ItemIndex item)
 {
 	Actors& actors = m_area.getActors();
-	assert(!m_leader[index].exists());
 	assert(!m_leader[index].exists());
 	m_leader[index] = ActorOrItemIndex::createForItem(item);
 	assert(!m_area.getItems().m_follower[index].exists());
 	m_area.getItems().m_follower[index] = getActorOrItemIndex(index);
 	ActorIndex lineLeader = getLineLeader(index);
 	actors.move_updateActualSpeed(lineLeader);
-	actors.move_appendToLinePath(lineLeader, m_location[index]);
+	actors.lineLead_appendToPath(lineLeader, m_location[index]);
 }
 void Portables::followPolymorphic(HasShapeIndex index, ActorOrItemIndex actorOrItem)
 {
@@ -122,10 +121,9 @@ void Portables::followPolymorphic(HasShapeIndex index, ActorOrItemIndex actorOrI
 void Portables::unfollowActor(HasShapeIndex index, ActorIndex actor)
 {
 	assert(!isLeading(index));
-	assert(isFollowing(index) == actor);
+	assert(isFollowing(index));
+	assert(m_leader[index] == actor.toActorOrItemIndex());
 	Actors& actors = m_area.getActors();
-	actors.m_follower[actor].clear();
-	m_leader[index].clear();
 	if(!isFollowing(actor))
 	{
 		// Actor is line leader.
@@ -133,23 +131,28 @@ void Portables::unfollowActor(HasShapeIndex index, ActorIndex actor)
 		actors.lineLead_clearPath(actor);
 	}
 	ActorIndex lineLeader = getLineLeader(index);
+	actors.m_follower[actor].clear();
+	m_leader[index].clear();
 	m_area.getActors().move_updateActualSpeed(lineLeader);
 }
 void Portables::unfollowItem(HasShapeIndex index, ItemIndex item)
 {
 	assert(!isLeading(index));
 	m_area.getItems().m_follower[item].clear();
+	ActorIndex lineLeader = getLineLeader(index);
 	m_leader[index].clear();
-	m_area.getActors().move_updateActualSpeed(getLineLeader(index));
+	Items& items = m_area.getItems();
+	items.m_follower[item].clear();
+	m_area.getActors().move_updateActualSpeed(lineLeader);
 }
 void Portables::unfollow(HasShapeIndex index)
 {
 	ActorOrItemIndex leader = m_leader[index];
 	assert(leader.isLeading(m_area));
 	if(leader.isActor())
-		unfollowActor(index, ActorIndex::cast(leader.get()));
+		unfollowActor(index, leader.getActor());
 	else
-		unfollowItem(index, ItemIndex::cast(leader.get()));
+		unfollowItem(index, leader.getItem());
 }
 void Portables::unfollowIfAny(HasShapeIndex index)
 {
@@ -158,19 +161,21 @@ void Portables::unfollowIfAny(HasShapeIndex index)
 }
 void Portables::leadAndFollowDisband(HasShapeIndex index)
 {
-	//Recurse to the end of the line and then unfollow forward to the front.
-	ActorOrItemIndex follower = m_follower[index];
-	if(follower.exists())
+	ActorOrItemIndex follower = getActorOrItemIndex(index);
+	// Go to the back of the line.
+	while(follower.isLeading(m_area))
+		follower = follower.getFollower(m_area);
+	// Iterate to the second from front unfollowing all followers.
+	// TODO: This will cause a redundant updateActualSpeed for each follower.
+	ActorOrItemIndex leader;
+	while(follower.isFollowing(m_area))
 	{
-		if(follower.isActor())
-			m_area.getActors().leadAndFollowDisband(follower.get());
-		else
-			m_area.getItems().leadAndFollowDisband(follower.get());
+		leader = follower.getLeader(m_area);
+		follower.unfollow(m_area);
+		follower = leader;
 	}
-	if(m_leader[index].exists())
-		unfollow(index);
-	else
-		assert(m_isActors);
+	m_area.getActors().lineLead_clearPath(leader.getActor());
+		
 }
 bool Portables::isFollowing(HasShapeIndex index) const
 {
@@ -184,15 +189,15 @@ bool Portables::isLeadingActor(HasShapeIndex index, ActorIndex actor) const
 {
 	if(!isLeading(index))
 		return false;
-	const auto& leader = m_leader[index];
-	return leader.isActor() && leader.getActor() == actor;
+	const auto& follower = m_follower[index];
+	return follower.isActor() && follower.getActor() == actor;
 }
 bool Portables::isLeadingItem(HasShapeIndex index, ItemIndex item) const
 {
 	if(!isLeading(index))
 		return false;
-	const auto& leader = m_leader[index];
-	return leader.isItem() && leader.getItem() == item;
+	const auto& follower = m_follower[index];
+	return follower.isItem() && follower.getItem() == item;
 }
 bool Portables::isLeadingPolymorphic(HasShapeIndex index, ActorOrItemIndex actorOrItem) const
 {
@@ -206,7 +211,7 @@ Speed Portables::lead_getSpeed(HasShapeIndex index)
 	assert(m_area.getActors().isLeading(actorIndex));
 	ActorOrItemIndex wrapped = getActorOrItemIndex(index);
 	std::vector<ActorOrItemIndex> actorsAndItems;
-	while(true)
+	while(wrapped.exists())
 	{
 		actorsAndItems.push_back(wrapped);
 		if(!wrapped.isLeading(m_area))
@@ -424,6 +429,8 @@ bool Portables::reservable_exists(HasShapeIndex index, const FactionId faction) 
 }
 bool Portables::reservable_isFullyReserved(HasShapeIndex index, const FactionId faction) const
 {
+	if(m_reservables[index] == nullptr)
+		return false;
 	return m_reservables[index]->isFullyReserved(faction);
 }
 Quantity Portables::reservable_getUnreservedCount(HasShapeIndex index, const FactionId faction) const
@@ -432,6 +439,8 @@ Quantity Portables::reservable_getUnreservedCount(HasShapeIndex index, const Fac
 }
 void Portables::onDestroy_subscribe(HasShapeIndex index, HasOnDestroySubscriptions& hasSubscriptions)
 {
+	if(m_destroy[index] == nullptr)
+		m_destroy[index] = std::make_unique<OnDestroy>();
 	hasSubscriptions.subscribe(*m_destroy[index].get());
 }
 void Portables::onDestroy_subscribeThreadSafe(HasShapeIndex index, HasOnDestroySubscriptions& hasSubscriptions)
@@ -452,5 +461,7 @@ void Portables::onDestroy_unsubscribeAll(HasShapeIndex index)
 }
 void Portables::onDestroy_merge(HasShapeIndex index, OnDestroy& other)
 {
+	if(m_destroy[index] == nullptr)
+		m_destroy[index] = std::make_unique<OnDestroy>();
 	m_destroy[index]->merge(other);
 }

@@ -38,6 +38,8 @@ TEST_CASE("equip and unequip")
 	});
 	BlockIndex swordLocation = blocks.getIndex_i(8,8,1);
 	ItemIndex longsword = items.create({.itemType=ItemType::byName("long sword"), .materialType=MaterialType::byName("bronze"), .location=swordLocation, .quality=Quality::create(20), .percentWear=Percent::create(10)});
+	REQUIRE(items.getBlocks(longsword).size() == 1);
+	REQUIRE(items.getBlocks(longsword).front() == swordLocation);
 	std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(longsword.toReference(area));
 	actors.objective_addTaskToStart(dwarf1, std::move(objective));
 	REQUIRE(actors.move_hasPathRequest(dwarf1));

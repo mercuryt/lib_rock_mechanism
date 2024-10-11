@@ -14,7 +14,6 @@
 
 #include <vector>
 #include <utility>
-#include <unordered_map>
 
 class ProjectFinishEvent;
 class ProjectTryToHaulEvent;
@@ -29,8 +28,8 @@ struct DeserializationMemo;
 struct ProjectWorker final
 {
 	HaulSubproject* haulSubproject;
-	Objective& objective;
-	ProjectWorker(Objective& o) : haulSubproject(nullptr), objective(o) { }
+	Objective* objective;
+	ProjectWorker(Objective& o) : haulSubproject(nullptr), objective(&o) { }
 	ProjectWorker(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 };
@@ -79,9 +78,9 @@ class Project
 	// Required items which will be destroyed at the end of the project.
 	ItemReferences m_toConsume;
 	// Required items which are equiped by workers (tools).
-	std::unordered_map<ActorReference, std::vector<std::pair<ProjectRequirementCounts*, ItemReference>>, ActorReference::Hash> m_reservedEquipment;
+	SmallMap<ActorReference, SmallMap<ProjectRequirementCounts*, ItemReference>> m_reservedEquipment;
 	// Targets for haul subprojects awaiting dispatch.
-	std::unordered_map<ActorOrItemReference, std::pair<ProjectRequirementCounts*, Quantity>, ActorOrItemReference::Hash> m_toPickup;
+	SmallMap<ActorOrItemReference, std::pair<ProjectRequirementCounts*, Quantity>> m_toPickup;
 	// To be called by addWorkerThreadedTask, after validating the worker has access to the project location.
 	void addWorker(ActorIndex actor, Objective& objective);
 	// Load requirements from child class.
@@ -90,10 +89,10 @@ class Project
 	void setup();
 protected:
 	// Workers who have passed the candidate screening and ProjectWorker, which holds a reference to the worker's objective and a pointer to it's haul subproject.
-	std::unordered_map<ActorReference, ProjectWorker, ActorReference::Hash> m_workers;
+	SmallMap<ActorReference, ProjectWorker> m_workers;
 	// Required shapes which don't need to be hauled because they are already at or adjacent to m_location.
 	// To be used by StockpileProject::onComplete.
-	std::unordered_map<ActorOrItemReference, Quantity, ActorOrItemReference::Hash> m_alreadyAtSite;
+	SmallMap<ActorOrItemReference, Quantity> m_alreadyAtSite;
 	// Workers present at the job site, waiting for haulers to deliver required materiels.
 	ActorReferences m_waiting;
 	// Workers currently doing the 'actual' work.
@@ -196,7 +195,7 @@ public:
 	virtual ~Project() = default;
 	[[nodiscard]] bool operator==(const Project& other) const { return &other == this; }
 	// For testing.
-	[[nodiscard]] ProjectWorker& getProjectWorkerFor(ActorReference actor) { return m_workers.at(actor); }
+	[[nodiscard]] ProjectWorker& getProjectWorkerFor(ActorReference actor) { return m_workers[actor]; }
 	[[nodiscard, maybe_unused]] auto& getWorkers() { return m_workers; }
 	[[nodiscard, maybe_unused]] Quantity getHaulRetries() const { return m_haulRetries; }
 	[[nodiscard, maybe_unused]] bool hasTryToHaulThreadedTask() const { return m_tryToHaulThreadedTask.exists(); }
@@ -255,8 +254,8 @@ class ProjectTryToAddWorkersThreadedTask final : public ThreadedTask
 {
 	Project& m_project;
 	ActorReferences m_cannotPathToJobSite;
-	std::unordered_map<ActorOrItemReference, Quantity, ActorOrItemReference::Hash> m_alreadyAtSite;
-	std::unordered_map<ActorReference, std::vector<std::pair<ProjectRequirementCounts*, ItemReference>>, ActorReference::Hash> m_reservedEquipment;
+	SmallMap<ActorOrItemReference, Quantity> m_alreadyAtSite;
+	SmallMap<ActorReference, SmallMap<ProjectRequirementCounts*, ItemReference>> m_reservedEquipment;
 	HasOnDestroySubscriptions m_hasOnDestroy;
 	void resetProjectCounts();
 public:

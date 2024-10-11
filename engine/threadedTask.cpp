@@ -35,4 +35,9 @@ void ThreadedTaskEngine::remove(ThreadedTask& task)
 	assert(std::ranges::find_if(m_tasksForNextStep, [&](auto& t) { return t.get() == &task; }) != m_tasksForNextStep.end());
 	std::erase_if(m_tasksForNextStep, [&](auto& t) { return t.get() == &task; });
 }
-void ThreadedTaskEngine::clear() { m_tasksForNextStep.clear(); }
+void ThreadedTaskEngine::clear(Simulation& simulation, Area* area)
+{
+	for(auto& task : m_tasksForNextStep)
+		task->clearReferences(simulation, area);
+	m_tasksForNextStep.clear();
+}

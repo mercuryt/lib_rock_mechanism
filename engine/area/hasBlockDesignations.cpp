@@ -4,15 +4,15 @@
 #include "../json.h"
 #include "../deserializationMemo.h"
 #include "blocks/blocks.h"
-AreaHasBlockDesignationsForFaction::AreaHasBlockDesignationsForFaction(Area& area) : m_area(area)
+AreaHasBlockDesignationsForFaction::AreaHasBlockDesignationsForFaction(Area& area) : m_areaSize(BlockIndex::create(area.getBlocks().size()))
 {
-	m_designations.resize((int)area.getBlocks().size() * (int)BlockDesignation::BLOCK_DESIGNATION_MAX);
+	m_designations.resize(m_areaSize.get() * (uint)BlockDesignation::BLOCK_DESIGNATION_MAX);
 }
-AreaHasBlockDesignationsForFaction::AreaHasBlockDesignationsForFaction(const Json& data, DeserializationMemo&, Area& area) : 
-	m_area(area), m_designations(data.get<std::vector<bool>>()) { }
+AreaHasBlockDesignationsForFaction::AreaHasBlockDesignationsForFaction(const Json& data, DeserializationMemo&) : 
+	m_designations(data.get<std::vector<bool>>()) { }
 int AreaHasBlockDesignationsForFaction::getIndex(BlockIndex index, BlockDesignation designation) const
 {
-	return ((int)m_area.getBlocks().size() * (int)designation) + index.get();
+	return (m_areaSize.get() * (uint)designation) + index.get();
 }
 void AreaHasBlockDesignationsForFaction::set(BlockIndex index, BlockDesignation designation)
 {
@@ -61,7 +61,7 @@ void AreaHasBlockDesignations::load(const Json& data, DeserializationMemo& deser
 	{
 		FactionId faction = pair[0].get<FactionId>();
 		const Json& designationData = pair[1];
-		m_data.try_emplace(faction, designationData, deserializationMemo, m_area);
+		m_data.emplace(faction, designationData, deserializationMemo);
 	}
 }
 Json AreaHasBlockDesignations::toJson() const
