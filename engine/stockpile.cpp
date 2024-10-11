@@ -89,7 +89,7 @@ void StockPileProject::onComplete()
 		hasStockPiles.destroyProject(*this);
 	Actors& actors = m_area.getActors();
 	for(auto& [actor, projectWorker] : workers)
-		actors.objective_complete(actor.getIndex(), projectWorker.objective);
+		actors.objective_complete(actor.getIndex(), *projectWorker.objective);
 }
 void StockPileProject::onReserve()
 {
@@ -456,7 +456,7 @@ void AreaHasStockPilesForFaction::addItem(ItemIndex item)
 	StockPile* stockPile = getStockPileFor(item);
 	ItemReference ref = items.getReference(item);
 	if(stockPile == nullptr)
-		m_itemsWithoutDestinationsByItemType[items.getItemType(item)].add(ref);
+		m_itemsWithoutDestinationsByItemType.getOrCreate(items.getItemType(item)).add(ref);
 	else
 	{
 		m_itemsWithDestinationsByStockPile[stockPile].add(ref);

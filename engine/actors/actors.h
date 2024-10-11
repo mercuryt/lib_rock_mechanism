@@ -259,14 +259,14 @@ public:
 	void move_clearPath(ActorIndex index);
 	void move_callback(ActorIndex index);
 	void move_schedule(ActorIndex index);
-	void move_setDestination(ActorIndex index, BlockIndex destination, bool detour = false, bool adjacent = false, bool unreserved = true, bool reserve = true);
-	void move_setDestinationAdjacentToLocation(ActorIndex index, BlockIndex destination, bool detour = false, bool unreserved = true, bool reserve = true);
-	void move_setDestinationAdjacentToActor(ActorIndex index, ActorIndex other, bool detour = false, bool unreserved = true, bool reserve = true);
-	void move_setDestinationAdjacentToItem(ActorIndex index, ItemIndex item, bool detour = false, bool unreserved = true, bool reserve = true);
-	void move_setDestinationAdjacentToPolymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex, bool detour = false, bool unreserved = true, bool reserve = true);
-	void move_setDestinationAdjacentToPlant(ActorIndex index, PlantIndex plant, bool detour = false, bool unreserved = true, bool reserve = true);
-	void move_setDestinationAdjacentToFluidType(ActorIndex index, FluidTypeId fluidType, bool detour = false, bool unreserved = true, bool reserve = true, DistanceInBlocks maxRange = DistanceInBlocks::null());
-	void move_setDestinationAdjacentToDesignation(ActorIndex index, BlockDesignation designation, bool detour = false, bool unreserved = true, bool reserve = true, DistanceInBlocks maxRange = DistanceInBlocks::null());
+	void move_setDestination(ActorIndex index, BlockIndex destination, bool detour = false, bool adjacent = false, bool unreserved = false, bool reserve = false);
+	void move_setDestinationAdjacentToLocation(ActorIndex index, BlockIndex destination, bool detour = false, bool unreserved = false, bool reserve = false);
+	void move_setDestinationAdjacentToActor(ActorIndex index, ActorIndex other, bool detour = false, bool unreserved = false, bool reserve = false);
+	void move_setDestinationAdjacentToItem(ActorIndex index, ItemIndex item, bool detour = false, bool unreserved = false, bool reserve = false);
+	void move_setDestinationAdjacentToPolymorphic(ActorIndex index, ActorOrItemIndex actorOrItemIndex, bool detour = false, bool unreserved = false, bool reserve = false);
+	void move_setDestinationAdjacentToPlant(ActorIndex index, PlantIndex plant, bool detour = false, bool unreserved = false, bool reserve = false);
+	void move_setDestinationAdjacentToFluidType(ActorIndex index, FluidTypeId fluidType, bool detour = false, bool unreserved = false, bool reserve = false, DistanceInBlocks maxRange = DistanceInBlocks::null());
+	void move_setDestinationAdjacentToDesignation(ActorIndex index, BlockDesignation designation, bool detour = false, bool unreserved = false, bool reserve = false, DistanceInBlocks maxRange = DistanceInBlocks::null());
 	void move_setDestinationToEdge(ActorIndex index, bool detour = false);
 	void move_clearAllEventsAndTasks(ActorIndex index);
 	void move_onDeath(ActorIndex index);
@@ -275,7 +275,6 @@ public:
 	void move_pathRequestMaybeCancel(ActorIndex index);
 	void move_pathRequestRecord(ActorIndex index, std::unique_ptr<PathRequest> pathRequest);
 	void move_updatePathRequestTerrainFacadeIndex(const ActorIndex& index, const PathRequestIndex& newPathRequestIndex);
-	void move_appendToLinePath(ActorIndex index, BlockIndex block) { m_leadFollowPath[index].add(block); }
 	[[nodiscard]] bool move_tryToReserveProposedDestination(ActorIndex index, BlockIndices& path);
 	[[nodiscard]] bool move_tryToReserveOccupied(ActorIndex index);
 	[[nodiscard]] Speed move_getIndividualSpeedWithAddedMass(ActorIndex index, Mass mass) const;
@@ -369,13 +368,14 @@ public:
 	[[nodiscard]] bool canReserve_tryToReserveLocation(ActorIndex index, BlockIndex block, std::unique_ptr<DishonorCallback> callback = nullptr);
 	[[nodiscard]] bool canReserve_tryToReserveItem(ActorIndex index, ItemIndex item, Quantity quantity, std::unique_ptr<DishonorCallback> callback = nullptr);
 	[[nodiscard]] bool canReserve_hasReservationWith(ActorIndex index, Reservable& reservable) const;
+	[[nodiscard]] bool canReserve_canReserveLocation(const ActorIndex& index, const BlockIndex& block, const Facing& facing) const;
 private:
 	[[nodiscard]] CanReserve& canReserve_get(ActorIndex index);
 	// Project.
 public:
 	[[nodiscard]] bool project_exists(ActorIndex index) const { return m_project[index] != nullptr; }
-	[[nodiscard]] Project* project_get(ActorIndex index) const { return m_project[index]; }
-	void project_set(ActorIndex index, Project& project) { m_project[index] = &project; }
+	[[nodiscard]] Project* project_get(ActorIndex index) const { assert(m_project[index] != nullptr); return m_project[index]; }
+	void project_set(ActorIndex index, Project& project) { assert(m_project[index] == nullptr); m_project[index] = &project; }
 	void project_unset(ActorIndex index) { assert(m_project[index] != nullptr); m_project[index] = nullptr; }
 	void project_maybeUnset(ActorIndex index) { m_project[index] = nullptr; }
 	// -Equipment.
@@ -477,8 +477,14 @@ public:
 	[[nodiscard]] Percent grow_getPercent(ActorIndex index) const;
 	// For Line leader.
 	[[nodiscard]] BlockIndices lineLead_getPath(ActorIndex index) const;
+	[[nodiscard]] BlockIndices lineLead_getOccupiedBlocks(ActorIndex index) const;
 	[[nodiscard]] bool lineLead_pathEmpty(ActorIndex index) const;
+	[[nodiscard]] ShapeId lineLead_getLargestShape(ActorIndex index) const;
+	[[nodiscard]] MoveTypeId lineLead_getMoveType(ActorIndex index) const;
 	void lineLead_clearPath(ActorIndex index);
+	void lineLead_appendToPath(ActorIndex index, BlockIndex block);
+	void lineLead_pushFront(ActorIndex index, BlockIndex block);
+	void lineLead_popBackUnlessOccupiedByFollower(ActorIndex index);
 	// For testing.
 	[[nodiscard]] bool grow_getEventExists(ActorIndex index) const;
 	[[nodiscard]] Percent grow_getEventPercent(ActorIndex index) const;

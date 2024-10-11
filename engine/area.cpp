@@ -120,7 +120,8 @@ Area::~Area()
 {
 	// Explicitly clear event schedule, threaded tasks, and path requests before destructing data tables because they have custom destructors which remove their references. These destructors must be called before the things they refer to are destroyed.
 	m_eventSchedule.clear();
-	m_threadedTaskEngine.clear();
+	// Threaded task engine needs to have simulation and area passed while event schedule does not because event schedule stores those references.
+	m_threadedTaskEngine.clear(m_simulation, this);
 	m_hasTerrainFacades.clearPathRequests();
 }
 Json Area::toJson() const

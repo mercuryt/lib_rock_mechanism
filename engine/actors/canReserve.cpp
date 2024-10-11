@@ -4,22 +4,17 @@
 #include "../blocks/blocks.h"
 void Actors::canReserve_clearAll(ActorIndex index)
 {
-	if(m_canReserve[index] != nullptr)
-		m_canReserve[index]->deleteAllWithoutCallback();
+	m_canReserve[index]->deleteAllWithoutCallback();
 }
 void Actors::canReserve_setFaction(ActorIndex index, FactionId faction)
 {
-	reservable_unreserveAll(index);
-	if(faction.empty())
-		m_canReserve[index] = nullptr;
-	else if(m_canReserve[index] != nullptr)
-		m_canReserve[index]->setFaction(faction);
+	m_canReserve[index]->setFaction(faction);
 }
 void Actors::canReserve_reserveLocation(ActorIndex index, BlockIndex block, std::unique_ptr<DishonorCallback> callback)
 {
 	if(callback == nullptr)
 		callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_area, index.toReference(m_area));
-	m_area.getBlocks().reserve(block, canReserve_get(index));
+	m_area.getBlocks().reserve(block, canReserve_get(index), std::move(callback));
 }
 void Actors::canReserve_reserveItem(ActorIndex index, ItemIndex item, Quantity quantity, std::unique_ptr<DishonorCallback> callback)
 {
@@ -47,14 +42,19 @@ bool Actors::canReserve_tryToReserveItem(ActorIndex index, ItemIndex item, Quant
 }
 bool Actors::canReserve_hasReservationWith(ActorIndex index, Reservable& reservable) const
 {
-	if(m_canReserve[index] == nullptr)
-		return false;
 	return m_canReserve[index]->hasReservationWith(reservable);
+}
+bool Actors::canReserve_canReserveLocation(const ActorIndex& index, const BlockIndex& location, const Facing& facing) const
+{
+	Blocks& blocks = m_area.getBlocks();
+	FactionId faction = m_faction[index];
+	assert(faction.exists());
+	for(BlockIndex occupied : Shape::getBlocksOccupiedAt(m_shape[index], blocks, location, facing))
+		if(blocks.isReserved(occupied, faction))
+			return false;
+	return true;
 }
 CanReserve& Actors::canReserve_get(ActorIndex index)
 {
-	assert(hasFaction(index));
-	if(m_canReserve[index] == nullptr)
-		m_canReserve[index] = std::make_unique<CanReserve>(getFaction(index));
 	return *m_canReserve[index];
 }

@@ -609,14 +609,13 @@ void Actors::moveIndex(ActorIndex oldIndex, ActorIndex newIndex)
 }
 void Actors::destroy(ActorIndex index)
 {
-	// No need to explicitly unschedule events or threaded tasks here, destorying the holder will do it.
+	// No need to explicitly unschedule events here, destorying the event holder will do it.
 	if(hasLocation(index))
 		exit(index);
-	move_pathRequestMaybeCancel(index);
-	const ActorIndex& s = ActorIndex::create(size());
-	if(s != 1)
-		moveIndex(index, s - 1);
-	resize(s - 1);
+	const auto& s = ActorIndex::create(size() - 1);
+	if(index != s)
+		moveIndex(s, index);
+	resize(s);
 }
 ActorIndices Actors::getAll() const
 {
@@ -669,7 +668,8 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_needsSafeTemperature[index] = std::make_unique<ActorNeedsSafeTemperature>(m_area, index);
 	m_canGrow[index] = std::make_unique<CanGrow>(m_area, index, params.getPercentGrown(simulation));
 	m_skillSet[index] = std::make_unique<SkillSet>();
-	assert(m_canReserve[index] == nullptr);
+	// TODO: can reserve is not needed for non sentients or actors without factions.
+	m_canReserve[index] = std::make_unique<CanReserve>(params.faction);
 	assert(m_hasUniform[index] == nullptr);
 	// CanPickUp.
 	m_carrying[index].clear();
@@ -703,6 +703,8 @@ ActorIndex Actors::create(ActorParamaters params)
 	stamina_setFull(index);
 	if(isSentient(index))
 		params.generateEquipment(m_area, index);
+	else if(params.faction.exists())
+		m_area.m_hasHaulTools.registerYokeableActor(m_area, index);
 	sharedConstructor(index);
 	scheduleNeeds(index);
 	if(params.location.exists())
@@ -777,11 +779,8 @@ void Actors::exit(ActorIndex index)
 	assert(m_location[index].exists());
 	BlockIndex location = m_location[index];
 	auto& blocks = m_area.getBlocks();
-	for(auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
-	{
-		BlockIndex occupied = blocks.offset(location, x, y, z);
+	for(BlockIndex occupied : m_blocks[index])
 		blocks.actor_erase(occupied, index);
-	}
 	m_location[index].clear();
 	m_blocks[index].clear();
 	if(blocks.isOnSurface(location))
@@ -826,6 +825,8 @@ void Actors::die(ActorIndex index, CauseOfDeath causeOfDeath)
 		setStatic(index, true);
 	m_area.m_visionFacadeBuckets.remove(index);
 	move_pathRequestMaybeCancel(index);
+	if(!isSentient(index) && hasFaction(index))
+		m_area.m_hasHaulTools.unregisterYokeableActor(m_area, index);
 }
 void Actors::passout(ActorIndex, Step)
 {
@@ -835,6 +836,8 @@ void Actors::leaveArea(ActorIndex index)
 {
 	combat_onLeaveArea(index);
 	move_onLeaveArea(index);
+	if(!isSentient(index) && hasFaction(index))
+		m_area.m_hasHaulTools.unregisterYokeableActor(m_area, index);
 	exit(index);
 }
 void Actors::wait(ActorIndex index, Step duration)

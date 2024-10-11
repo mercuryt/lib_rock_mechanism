@@ -14,7 +14,7 @@ DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, ActorInde
 	};
 	DistanceInBlocks maxRange = Config::maxRangeToSearchForDigDesignations;
 	bool unreserved = true;
-	//TODO: We don't need the whole path here, just the destination and facing.
+	//TODO: We don't need the whole path here, just the destination.
 	createGoAdjacentToCondition(area, actor, predicate, m_digObjective.m_detour, unreserved, maxRange, BlockIndex::null());
 }
 DigPathRequest::DigPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
@@ -30,19 +30,7 @@ void DigPathRequest::callback(Area& area, FindPathResult& result)
 		actors.objective_canNotCompleteObjective(actor, m_digObjective);
 	else
 	{
-		if(result.useCurrentPosition)
-		{
-			if(!actors.move_tryToReserveOccupied(actor))
-			{
-				actors.objective_canNotCompleteSubobjective(actor);
-				return;
-			}
-		}
-		else if(!actors.move_tryToReserveProposedDestination(actor, result.path))
-		{
-			actors.objective_canNotCompleteSubobjective(actor);
-			return;
-		}
+		// No need to reserve here, we are just checking for access.
 		BlockIndex target = result.blockThatPassedPredicate;
 		DigProject& project = area.m_hasDigDesignations.getForFactionAndBlock(actors.getFactionId(actor), target);
 		if(project.canAddWorker(actor))
@@ -80,7 +68,7 @@ void DigObjective::execute(Area& area, ActorIndex actor)
 	{
 		Actors& actors = area.getActors();
 		DigProject* project = nullptr;
-		std::function<bool(BlockIndex)> predicate = [&area, this, project, &actors, actor](BlockIndex block) mutable
+		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) mutable
 		{ 
 			if(!getJoinableProjectAt(area, block, actor))
 				return false;
@@ -90,9 +78,9 @@ void DigObjective::execute(Area& area, ActorIndex actor)
 			return false;
 		};
 		[[maybe_unused]] BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
-		if(project != nullptr)
+		if(adjacent.exists())
 		{
-			assert(adjacent.exists());
+			assert(project != nullptr);
 			joinProject(*project, actor);
 			return;
 		}

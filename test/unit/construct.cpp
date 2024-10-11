@@ -29,6 +29,7 @@ TEST_CASE("construct")
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
@@ -36,9 +37,10 @@ TEST_CASE("construct")
 	FactionId faction = simulation.createFaction(L"Tower Of Power");
 	area.m_blockDesignations.registerFaction(faction);
 	const ConstructObjectiveType& constructObjectiveType = static_cast<const ConstructObjectiveType&>(ObjectiveType::getByName("construct"));
+	BlockIndex dwarf1Start = blocks.getIndex_i(1, 1, 2);
 	ActorIndex dwarf1 = actors.create(ActorParamaters{
 		.species=dwarf,
-		.location=blocks.getIndex_i(1, 1, 2),
+		.location=dwarf1Start,
 		.faction=faction,
 	});
 	ActorReference dwarf1Ref = dwarf1.toReference(area);
@@ -79,15 +81,20 @@ TEST_CASE("construct")
 		REQUIRE(constructObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));
 		REQUIRE(actors.objective_getCurrentName(dwarf1) == "construct");
-		// Search for accessable project.
-		simulation.doStep();
-		REQUIRE(project.hasCandidate(dwarf1));
-		// Activete project and reserve all required.
+		ConstructObjective& objective = actors.objective_getCurrent<ConstructObjective>(dwarf1);
+		REQUIRE(objective.joinableProjectExistsAt(area, wallLocation, dwarf1));
+		const auto& terrainFacade = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(dwarf1));
+		REQUIRE(terrainFacade.accessable(dwarf1Start, actors.getFacing(dwarf1), wallLocation, dwarf1));
+		// Search for accessable project, activete project and reserve all required.
 		simulation.doStep();
 		REQUIRE(actors.project_get(dwarf1) == &project);
 		REQUIRE(project.reservationsComplete());
+		REQUIRE(project.hasTryToHaulThreadedTask());
 		// Select a haul strategy and create a subproject.
 		simulation.doStep();
+		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1.toReference(area));
+		REQUIRE(projectWorker.haulSubproject != nullptr);
+		REQUIRE(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
 		// Find a path.
 		simulation.doStep();
 		REQUIRE(actors.move_getDestination(dwarf1) .exists());

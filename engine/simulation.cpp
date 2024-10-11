@@ -101,7 +101,7 @@ Simulation::~Simulation()
 	m_hasAreas->clearAll();
 	m_hourlyEvent.maybeUnschedule();
 	m_eventSchedule.clear();
-	m_threadedTaskEngine.clear();
+	m_threadedTaskEngine.clear(*this, nullptr);
 }
 // Note: Does not handle fluids.
 void Simulation::fastForward(Step steps)

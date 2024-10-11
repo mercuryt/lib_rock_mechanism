@@ -10,6 +10,7 @@
 #include "../blocks/blocks.h"
 #include "config.h"
 #include "eventSchedule.h"
+#include "items/items.h"
 Speed Actors::move_getIndividualSpeedWithAddedMass(ActorIndex index, Mass mass) const
 {
 	Speed output = Speed::create(m_agility[index].get() * Config::unitsOfMoveSpeedPerUnitOfAgility);
@@ -87,22 +88,23 @@ void Actors::move_callback(ActorIndex index)
 		ActorOrItemIndex follower = getFollower(index);
 		if(follower.exists())
 		{
-			const auto &path = lineLead_getPath(index);
+			const auto& path = lineLead_getPath(index);
+			const auto& occupiedBlocks = lineLead_getOccupiedBlocks(index);
 			while (follower.exists())
 			{
 				auto found = std::ranges::find(path, follower.getLocation(m_area));
 				assert(found != path.begin());
 				BlockIndex followerNextStep = *(--found);
-				if (!blocks.shape_anythingCanEnterEver(followerNextStep) || !blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, follower.getShape(m_area), follower.getMoveType(m_area), follower.getLocation(m_area)))
+				if (!blocks.shape_anythingCanEnterEver(followerNextStep) || !blocks.shape_shapeAndMoveTypeCanEnterEverFrom(followerNextStep, follower.getShape(m_area), follower.getMoveType(m_area), follower.getLocation(m_area)))
 				{
 					// Path is permanantly blocked for follower, repath.
 					move_setDestination(index, m_destination[index]);
 					return;
 				}
-				if (!follower.canEnterCurrentlyFrom(m_area, followerNextStep, follower.getLocation(m_area)))
+				if (!follower.canEnterCurrentlyFromWithOccupied(m_area, followerNextStep, follower.getLocation(m_area), occupiedBlocks))
 				{
 					// TODO: this repeats 12 lines from above starting at 68.
-					// Path is blocked temporarily, wait.
+					// Path is blocked temporarily, wait until retries are exhausted, then repath.
 					if (m_moveRetries[index] == Config::moveTryAttemptsBeforeDetour)
 					{
 						if (m_hasObjectives[index]->hasCurrent())
@@ -128,6 +130,7 @@ void Actors::move_callback(ActorIndex index)
 		follower = getFollower(index);
 		if(follower.exists())
 		{
+			lineLead_pushFront(index, block);
 			auto& path = m_leadFollowPath[index];
 			while (follower.exists())
 			{
@@ -140,6 +143,7 @@ void Actors::move_callback(ActorIndex index)
 				follower.setLocationAndFacing(m_area, followerNextStep, facing);
 				follower = follower.getFollower(m_area);
 			}
+			lineLead_popBackUnlessOccupiedByFollower(index);
 		}
 		if(block == m_destination[index])
 		{
@@ -210,7 +214,7 @@ void Actors::move_setDestinationAdjacentToActor(ActorIndex index, ActorIndex oth
 void Actors::move_setDestinationAdjacentToItem(ActorIndex index, ItemIndex item, bool detour, bool unreserved, bool reserve)
 {
 	assert(!isAdjacentToItem(index, item));
-	assert(!isAdjacentToLocation(index, m_location[item]));
+	assert(!isAdjacentToLocation(index, m_area.getItems().getLocation(item)));
 	assert(m_pathRequest[index] == nullptr);
 	m_pathRequest[index] = std::make_unique<PathRequest>(PathRequest::create());
 	m_pathRequest[index]->createGoAdjacentToItem(m_area, index, item, detour, unreserved, DistanceInBlocks::null(), reserve);

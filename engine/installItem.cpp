@@ -9,7 +9,15 @@
 // Project.
 InstallItemProject::InstallItemProject(Area& area, ItemReference i, BlockIndex l, Facing facing, FactionId faction) :
 	Project(faction, area, l, Quantity::create(1)), m_item(i), m_facing(facing) { }
-void InstallItemProject::onComplete() { m_area.getItems().setLocationAndFacing(m_item.getIndex(), m_location, m_facing); }
+void InstallItemProject::onComplete()
+{
+	m_area.getItems().setLocationAndFacing(m_item.getIndex(), m_location, m_facing);
+	auto workers = m_workers;
+	Actors& actors = m_area.getActors();
+	m_area.m_hasInstallItemDesignations.getForFaction(m_faction).remove(m_area, m_item.getIndex());
+	for(auto& [actor, projectWorker] : workers)
+		actors.objective_complete(actor.getIndex(), *projectWorker.objective);
+}
 // HasDesignations.
 void HasInstallItemDesignationsForFaction::add(Area& area, BlockIndex block, ItemIndex item, Facing facing, FactionId faction)
 {

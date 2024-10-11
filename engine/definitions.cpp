@@ -336,7 +336,7 @@ void definitions::loadItemTypes()
 			spoils.push_back(SpoilData::create(
 				spoilMaterialType,
 				ItemType::byName(spoilData["itemType"].get<std::string>()),
-				spoilData["chance"].get<double>(),
+				spoilData["chance"].get<Percent>(),
 				spoilData["min"].get<Quantity>(),
 				spoilData["max"].get<Quantity>()
 			));

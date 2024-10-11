@@ -63,7 +63,7 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> DigProject::getByp
 	{
 		for(SpoilsDataTypeId spoilDataId : MaterialType::getSpoilData(materialType))
 		{
-			if(!random.chance(SpoilData::getChance(spoilDataId)))
+			if(!random.percentChance(SpoilData::getChance(spoilDataId)))
 				continue;
 			//TODO: reduce yield for block features.
 			Quantity quantity = Quantity::create(random.getInRange(SpoilData::getMin(spoilDataId).get(), SpoilData::getMax(spoilDataId).get()));
@@ -98,10 +98,10 @@ void DigProject::onComplete()
 	}
 	// Remove designations for other factions as well as owning faction.
 	auto workers = std::move(m_workers);
-	m_area.m_hasDigDesignations.clearAll(m_location);
 	Actors& actors = m_area.getActors();
+	m_area.m_hasDigDesignations.clearAll(m_location);
 	for(auto& [actor, projectWorker] : workers)
-		actors.objective_complete(actor.getIndex(), projectWorker.objective);
+		actors.objective_complete(actor.getIndex(), *projectWorker.objective);
 }
 void DigProject::onCancel()
 {
@@ -172,10 +172,14 @@ Json HasDigDesignationsForFaction::toJson() const
 void HasDigDesignationsForFaction::designate(BlockIndex block, const BlockFeatureType* blockFeatureType)
 {
 	assert(!m_data.contains(block));
-	m_area.getBlocks().designation_set(block, m_faction, BlockDesignation::Dig);
+	Blocks& blocks = m_area.getBlocks();
+	blocks.designation_set(block, m_faction, BlockDesignation::Dig);
 	// To be called when block is no longer a suitable location, for example if it got dug out already.
 	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<DigLocationDishonorCallback>(m_faction, m_area, block);
-	m_data.try_emplace(block, m_faction, m_area, block, blockFeatureType, std::move(locationDishonorCallback));
+	auto result = m_data.try_emplace(block, m_faction, m_area, block, blockFeatureType, std::move(locationDishonorCallback));
+	assert(result.second);
+	DigProject& project = result.first->second;
+	assert(static_cast<DigProject*>(blocks.project_get(block, m_faction)) == &project);
 }
 void HasDigDesignationsForFaction::undesignate(BlockIndex block)
 {

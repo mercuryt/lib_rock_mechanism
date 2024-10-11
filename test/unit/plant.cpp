@@ -14,6 +14,7 @@ TEST_CASE("plant")
 	static FluidTypeId water = FluidType::byName("water");
 	Simulation simulation(L"test", DateTime::toSteps(12, 100, 1200));
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	Plants& plants = area.getPlants();
 	BlockIndex location = blocks.getIndex_i(5, 5, 2);
@@ -57,6 +58,7 @@ TEST_CASE("plantFruits")
 	uint16_t dayOfYear = PlantSpecies::getDayOfYearToStartHarvest(wheatGrass);
 	Simulation simulation(L"test", DateTime::toSteps(24, dayOfYear - 1, 1200));
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_hasRain.disable();
 	Plants& plants = area.getPlants();
 	Blocks& blocks = area.getBlocks();
 	BlockIndex location = blocks.getIndex_i(5, 5, 2);
@@ -75,6 +77,7 @@ TEST_CASE("harvestSeasonEnds")
 	Step step = DateTime::toSteps(24, dayOfYear - 1, 1200) + PlantSpecies::getStepsDurationHarvest(wheatGrass);
 	Simulation simulation(L"test", step);
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	Plants& plants = area.getPlants();
 	BlockIndex location = blocks.getIndex_i(5, 5, 2);

@@ -19,6 +19,7 @@ TEST_CASE("Area")
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation(L"", Step::create(1));
 	Area& area = simulation.m_hasAreas->createArea(10, 10, 10);
+	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	SUBCASE("Make Area")
@@ -192,8 +193,9 @@ TEST_CASE("vision-threading")
 {
 	static MaterialTypeId marble = MaterialType::byName("marble");
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
-	Simulation simulation;
+	Simulation simulation(L"", Step::create(100000000000));
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_hasRain.disable();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
@@ -211,11 +213,11 @@ TEST_CASE("vision-threading")
 	});
 	REQUIRE(area.m_visionFacadeBuckets.getForStep(simulation.m_step).size() == 1);
 	REQUIRE(actors.vision_hasFacade(a2));
+	REQUIRE(&actors.vision_getFacadeBucket(a2) != &area.m_visionFacadeBuckets.getForStep(simulation.m_step));
+	simulation.doStep();
 	REQUIRE(&actors.vision_getFacadeBucket(a2) == &area.m_visionFacadeBuckets.getForStep(simulation.m_step));
-	area.doStep();
 	REQUIRE(actors.vision_canSeeActor(a1, a2));
-	++simulation.m_step;
-	area.doStep();
+	simulation.doStep();
 	REQUIRE(actors.vision_canSeeActor(a2, a1));
 }
 TEST_CASE("multiMergeOnAdd")
@@ -223,6 +225,7 @@ TEST_CASE("multiMergeOnAdd")
 	static FluidTypeId water = FluidType::byName("water");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(2,2,1);
+	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	BlockIndex block1 = blocks.getIndex_i(0, 0, 0);
 	BlockIndex block2 = blocks.getIndex_i(0, 1, 0);
@@ -252,6 +255,7 @@ inline void fourFluidsTestParallel(uint32_t scale, Step steps)
 	static FluidTypeId lava = FluidType::byName("lava");
 	Simulation simulation(L"", Step::create(0));
 	Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
+	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);

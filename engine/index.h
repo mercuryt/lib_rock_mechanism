@@ -138,6 +138,7 @@ using ActorIndices = StrongIntegerSet<ActorIndex>;
 using PlantIndices = StrongIntegerSet<PlantIndex>;
 using ItemIndices = StrongIntegerSet<ItemIndex>;
 using HasShapeIndices = StrongIntegerSet<HasShapeIndex>;
+//TODO: This wrapper seems pointless.
 template <class StrongInteger>
 class IndicesSetBase
 {

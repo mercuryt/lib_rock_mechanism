@@ -10,16 +10,19 @@ void Items::cargo_addActor(ItemIndex index, ActorIndex actor)
 	assert(ItemType::getInternalVolume(m_itemType[index]).exists());
 	assert(ItemType::getInternalVolume(m_itemType[index]) > m_area.getActors().getVolume(actor));
 	if(m_hasCargo[index] == nullptr)
-		m_hasCargo[index] = std::make_unique<ItemHasCargo>();
+		m_hasCargo[index] = std::make_unique<ItemHasCargo>(m_itemType[index]);
 	m_hasCargo[index]->addActor(m_area, actor);
 }
 void Items::cargo_addItem(ItemIndex index, ItemIndex item, Quantity quantity)
 {
 	assert(getLocation(item).empty());
 	if(m_hasCargo[index] == nullptr)
-		m_hasCargo[index] = std::make_unique<ItemHasCargo>();
-	if(isGeneric(item))
+		m_hasCargo[index] = std::make_unique<ItemHasCargo>(m_itemType[index]);
+	if(isGeneric(item) && quantity != m_quantity[item])
+	{
+		removeQuantity(item, quantity);
 		m_hasCargo[index]->addItemGeneric(m_area, getItemType(item), getMaterialType(item), quantity);
+	}
 	else
 		m_hasCargo[index]->addItem(m_area, item);
 }
@@ -27,7 +30,7 @@ void Items::cargo_addItemGeneric(ItemIndex index, ItemTypeId itemType, MaterialT
 {
 	assert(ItemType::getIsGeneric(itemType));
 	if(m_hasCargo[index] == nullptr)
-		m_hasCargo[index] = std::make_unique<ItemHasCargo>();
+		m_hasCargo[index] = std::make_unique<ItemHasCargo>(m_itemType[index]);
 	m_hasCargo[index]->addItemGeneric(m_area, itemType, materialType, quantity);
 }
 void Items::cargo_addPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItemIndex, Quantity quantity)
@@ -35,7 +38,7 @@ void Items::cargo_addPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItemIn
 	assert(actorOrItemIndex.exists());
 	assert(actorOrItemIndex.getLocation(m_area).empty());
 	if(m_hasCargo[index] == nullptr)
-		m_hasCargo[index] = std::make_unique<ItemHasCargo>();
+		m_hasCargo[index] = std::make_unique<ItemHasCargo>(m_itemType[index]);
 	if(actorOrItemIndex.isActor())
 		cargo_addActor(index, actorOrItemIndex.getActor());
 	else
@@ -44,7 +47,7 @@ void Items::cargo_addPolymorphic(ItemIndex index, ActorOrItemIndex actorOrItemIn
 void Items::cargo_addFluid(ItemIndex index, FluidTypeId fluidType, CollisionVolume volume)
 {
 	if(m_hasCargo[index] == nullptr)
-		m_hasCargo[index] = std::make_unique<ItemHasCargo>();
+		m_hasCargo[index] = std::make_unique<ItemHasCargo>(m_itemType[index]);
 	m_hasCargo[index]->addFluid(fluidType, volume);
 }
 void Items::cargo_loadActor(ItemIndex index, ActorIndex actor)
@@ -133,7 +136,7 @@ void Items::cargo_unloadItemToLocation(ItemIndex index, ItemIndex item, BlockInd
 	assert(cargo_containsItem(index, item));
 	assert(getLocation(item).empty());
 	cargo_removeItem(index, item);
-	setLocation(item, location);
+	setLocationAndFacing(item, location, Facing::create(0));
 }
 void Items::cargo_updateItemIndex(ItemIndex index, ItemIndex oldIndex, ItemIndex newIndex)
 {
@@ -161,15 +164,16 @@ ActorOrItemIndex Items::cargo_unloadPolymorphicToLocation(ItemIndex index, Actor
 		cargo_unloadActorToLocation(index, actorOrItem.getActor(), location);
 	}
 	else
-		if(isGeneric(actorOrItem.getItem()))
+	{
+		ItemIndex item = actorOrItem.getItem();
+		if(isGeneric(item) && m_area.getItems().getQuantity(item) != quantity)
 		{
-			ItemIndex unloaded = cargo_unloadGenericItemToLocation(index, actorOrItem.getItem(), location, quantity);
+			ItemIndex unloaded = cargo_unloadGenericItemToLocation(index, item, location, quantity);
 			return ActorOrItemIndex::createForItem(unloaded);
 		}
 		else
-		{
-			cargo_unloadItemToLocation(index, actorOrItem.getItem(), location);
-		}
+			cargo_unloadItemToLocation(index, item, location);
+	}
 	return actorOrItem;
 }
 void Items::cargo_unloadFluidToLocation(ItemIndex index, CollisionVolume volume, BlockIndex location)

@@ -54,6 +54,7 @@ public:
 	void maybeUnsetAndScheduleReset(Area& area, FactionId faction, Step duration);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool contains(const FactionId faction) const { return m_data.contains(faction); }
+	[[nodiscard]] bool empty() const { return m_data.empty(); }
 	friend class ReMarkItemForStockPilingEvent;
 };
 class ItemHasCargo final
@@ -67,6 +68,7 @@ class ItemHasCargo final
 	Mass m_mass = Mass::create(0);
 	CollisionVolume m_fluidVolume = CollisionVolume::create(0);
 public:
+	ItemHasCargo(const ItemTypeId& itemType) : m_maxVolume(ItemType::getInternalVolume(itemType)) { }
 	void addItem(Area& area, ItemIndex itemIndex);
 	void addActor(Area& area, ActorIndex actorIndex);
 	void addFluid(FluidTypeId fluidType, CollisionVolume volume);

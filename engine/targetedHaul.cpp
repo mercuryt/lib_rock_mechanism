@@ -22,10 +22,10 @@ Json TargetedHaulProject::toJson() const
 void TargetedHaulProject::onComplete()
 {
 	auto workers = std::move(m_workers);
-	m_area.m_hasTargetedHauling.complete(*this);
 	Actors& actors = m_area.getActors();
+	m_area.m_hasTargetedHauling.complete(*this);
 	for(auto& [actor, projectWorker] : workers)
-		actors.objective_complete(actor.getIndex(), projectWorker.objective);
+		actors.objective_complete(actor.getIndex(), *projectWorker.objective);
 }
 void TargetedHaulProject::onDelivered(ActorOrItemIndex delivered) { delivered.setLocationAndFacing(m_area, m_location, Facing::create(0)); }
 // Objective.
@@ -42,7 +42,7 @@ TargetedHaulProject& AreaHasTargetedHauling::begin(ActorIndices workers, ItemInd
 	TargetedHaulProject& project = m_projects.emplace_back(actors.getFactionId(workers.front()), m_area, destination, ref);
 	for(ActorIndex actor : workers)
 	{
-		std::unique_ptr<Objective> objective = std::make_unique<TargetedHaulObjective>(actor, project);
+		std::unique_ptr<Objective> objective = std::make_unique<TargetedHaulObjective>(project);
 		actors.objective_addTaskToStart(actor, std::move(objective));
 	}
 	return m_projects.back();

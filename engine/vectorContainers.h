@@ -100,8 +100,6 @@ public:
  */
 template<typename T>
 concept MoveConstructible = std::is_move_constructible_v<T>;
-template<typename K, typename V>
-class SmallMapStable;
 template<typename K, MoveConstructible V>
 class SmallMap
 {

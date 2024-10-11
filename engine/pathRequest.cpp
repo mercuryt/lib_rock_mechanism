@@ -33,12 +33,13 @@ void PathRequest::create(Area& area, ActorIndex actor, DestinationCondition dest
 	m_maxRange = maxRange;
 	m_huristicDestination = huristicDestination;
 	Actors& actors = area.getActors();
-	TerrainFacade& terrainFacade = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor));
+	MoveTypeId moveType = actors.isLeading(actor) ? actors.lineLead_getMoveType(actor) : actors.getMoveType(actor);
+	TerrainFacade& terrainFacade = area.m_hasTerrainFacades.getForMoveType(moveType);
 	AccessCondition access = terrainFacade.makeAccessConditionForActor(actor, detour, maxRange);
 	if(huristicDestination.empty())
-		terrainFacade.registerPathRequestNoHuristic(actors.getLocation(actor), access, destination, *this);
+		terrainFacade.registerPathRequestNoHuristic(actors.getLocation(actor), actors.getFacing(actor), access, destination, *this);
 	else
-		terrainFacade.registerPathRequestWithHuristic(actors.getLocation(actor), access, destination, huristicDestination, *this);
+		terrainFacade.registerPathRequestWithHuristic(actors.getLocation(actor), actors.getFacing(actor), access, destination, huristicDestination, *this);
 	assert(m_index.exists());
 }
 void PathRequest::createGoTo(Area& area, ActorIndex actor, BlockIndex destination, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
@@ -78,12 +79,17 @@ void PathRequest::createGoToAnyOf(Area& area, ActorIndex actor, BlockIndices des
 	//TODO: handle no destinations.
 	assert(!destinations.empty());
 	if(Shape::getIsMultiTile(shape))
-		destinationCondition = [shape, &area, destinations](BlockIndex location, Facing facing) 
+		destinationCondition = [shape, &area, &actors, destinations, actor, unreserved](BlockIndex location, Facing facing) 
 		{
-			BlockIndices blocks = Shape::getBlocksOccupiedAt(shape, area.getBlocks(), location, facing);
-			for(BlockIndex block : blocks)
-				if(destinations.contains(block))
-					return std::make_pair(true, location);
+			// Multi tile actors must be checked if any of the spots to be occupied are reserved.
+			// TODO: since we already have shape and faction calling into actors is probably not the best choice here.
+			if(!unreserved || actors.canReserve_canReserveLocation(actor, location, facing))
+			{
+				BlockIndices blocks = Shape::getBlocksOccupiedAt(shape, area.getBlocks(), location, facing);
+				for(BlockIndex block : blocks)
+					if(destinations.contains(block))
+						return std::make_pair(true, location);
+			}
 			return std::make_pair(false, BlockIndex::null());
 		};
 	else
@@ -145,12 +151,13 @@ void PathRequest::createGoAdjacentToFluidType(Area& area, ActorIndex actor, Flui
 void PathRequest::createGoAdjacentToDesignation(Area& area, ActorIndex actor, BlockDesignation designation, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
 {
 	m_designation = designation;
-	Blocks& blocks = area.getBlocks();
 	FactionId faction = area.getActors().getFactionId(actor);
-	std::function<bool(BlockIndex)> condition = [&blocks, faction, designation](BlockIndex index){
-		return blocks.designation_has(index, faction, designation);
+	AreaHasBlockDesignationsForFaction& designations = area.m_blockDesignations.getForFaction(faction);
+	auto offset = designations.getOffsetForDesignation(BlockDesignation::SowSeeds);
+	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block){
+		return designations.checkWithOffset(offset, block);
 	};
-	createGoAdjacentToCondition(area, actor, condition, detour, unreserved, maxRange, BlockIndex::null(), reserve);
+	createGoAdjacentToCondition(area, actor, predicate, detour, unreserved, maxRange, BlockIndex::null(), reserve);
 }
 void PathRequest::createGoToEdge(Area& area, ActorIndex actor, bool detour)
 {
@@ -180,23 +187,27 @@ void PathRequest::createGoAdjacentToCondition(Area& area, ActorIndex actor, std:
 		assert(faction.exists());
 		m_unreserved = true;
 	}
-	ShapeId shape = area.getActors().getShape(actor);
+	Actors& actors = area.getActors();
+	ShapeId shape = actors.getShape(actor);
 	DestinationCondition destinationCondition;
 	Blocks& blocks = area.getBlocks();
-	//TODO: use seperate lambdas rather then always passing unreserved and faction.
+	//TODO: use seperate lambdas rather then always passing unreserved and faction?
 	if(Shape::getIsMultiTile(shape))
-       		destinationCondition = [shape, &blocks, condition, unreserved, faction](BlockIndex location, Facing facing) 
-		{ 
-			for(BlockIndex block : Shape::getBlocksWhichWouldBeAdjacentAt(shape, blocks, location, facing))
-				if(condition(block) && (!unreserved || !blocks.isReserved(block, faction)))
-					return std::make_pair(true, block);
+       		destinationCondition = [shape, &blocks, &actors, condition, unreserved, faction, actor](BlockIndex location, Facing facing) 
+		{
+			// TODO: since we already have shape and faction calling into actors is probably not the best choice here.
+			if(!unreserved || actors.canReserve_canReserveLocation(actor, location, facing))
+				for(BlockIndex block : Shape::getBlocksWhichWouldBeAdjacentAt(shape, blocks, location, facing))
+					if(condition(block))
+						return std::make_pair(true, block);
 			return std::make_pair(false, BlockIndex::null());
 		};
 	else
        		destinationCondition = [&blocks, condition, unreserved, faction](BlockIndex index, Facing) { 
-			for(BlockIndex block : blocks.getAdjacentWithEdgeAndCornerAdjacent(index))
-				if(condition(block) && (!unreserved || !blocks.isReserved(block, faction)))
-					return std::make_pair(true, block);
+			if(!unreserved || !blocks.isReserved(index, faction))
+				for(BlockIndex block : blocks.getAdjacentWithEdgeAndCornerAdjacent(index))
+					if(condition(block))
+						return std::make_pair(true, block);
 			return std::make_pair(false, BlockIndex::null());
 	};
 	create(area, actor, destinationCondition, detour, maxRange, huristicDestination, reserve);

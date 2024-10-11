@@ -18,14 +18,14 @@
 #include <memory>
 // Project worker.
 ProjectWorker::ProjectWorker(const Json& data, DeserializationMemo& deserializationMemo) : 
-	objective(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))
+	objective(deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))
 {
 	assert(deserializationMemo.m_haulSubprojects.contains(data["haulSubproject"].get<uintptr_t>()));
 	haulSubproject = deserializationMemo.m_haulSubprojects.at(data["haulSubproject"].get<uintptr_t>());
 }
 Json ProjectWorker::toJson() const
 {
-	return {{"haulSubproject", haulSubproject}, {"objective", &objective}};
+	return {{"haulSubproject", haulSubproject}, {"objective", objective}};
 }
 // DishonorCallback.
 ProjectRequiredShapeDishonoredCallback::ProjectRequiredShapeDishonoredCallback(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : 
@@ -75,9 +75,8 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep(Simulation&, Area*)
 				return std::make_pair(true, block);
 			return std::make_pair(false, BlockIndex::null());
 		};
-
 		// Path result is unused, running only for condition side effect.
-		[[maybe_unused]] FindPathResult result = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actorIndex)).findPathAdjacentToConditionAndUnreserved(actors.getLocation(actorIndex), actors.getShape(actorIndex), actors.getFacing(actorIndex), condition, m_project.m_faction);
+		[[maybe_unused]] FindPathResult result = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actorIndex)).findPathAdjacentToCondition(actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), condition);
 		// Only make at most one per step.
 		// TODO: Would it be better to do them all at once instead of one per step? Better temporal locality, higher risk of lag spike.
 		if(m_haulProjectParamaters.strategy != HaulStrategy::None)
@@ -105,10 +104,10 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep(Simulation&, Area*)
 			m_project.m_tryToHaulEvent.schedule(Config::stepsFrequencyToLookForHaulSubprojects, m_project);
 		}
 	}
-	else if(!m_haulProjectParamaters.validate(m_project.m_area))
+	else
 	{
 		ActorOrItemReference ref = m_haulProjectParamaters.toHaul;
-		if(m_project.m_toPickup.at(ref).second >= m_haulProjectParamaters.quantity)
+		if(m_project.m_toPickup[ref].second < m_haulProjectParamaters.quantity || !m_haulProjectParamaters.validate(m_project.m_area))
 		{
 			// Something that was avalible during read step is now reserved. Ensure that there is a new threaded task to try again.
 			if(!m_project.m_tryToHaulThreadedTask.exists())
@@ -158,13 +157,16 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 	{
 		ActorIndex candidateIndex = candidate.getIndex();
 		assert(!m_project.getWorkers().contains(candidate));
-		// Verify the worker can path to the job site.
-		TerrainFacade& terrainFacade = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(candidateIndex));
-		FindPathResult result = terrainFacade.findPathAdjacentToAndUnreserved(actors.getLocation(candidateIndex), actors.getShape(candidateIndex), actors.getFacing(candidateIndex), m_project.m_location, m_project.m_faction);
-		if(result.path.empty() && !result.useCurrentPosition)
+		if(!actors.isAdjacentToLocation(candidateIndex, m_project.m_location))
 		{
-			m_cannotPathToJobSite.add(candidate);
-			continue;
+			// Verify the worker can path to the job site.
+			TerrainFacade& terrainFacade = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(candidateIndex));
+			FindPathResult result = terrainFacade.findPathAdjacentToAndUnreserved(actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), m_project.m_location, m_project.m_faction);
+			if(result.path.empty() && !result.useCurrentPosition)
+			{
+				m_cannotPathToJobSite.add(candidate);
+				continue;
+			}
 		}
 		if(!m_project.reservationsComplete())
 		{
@@ -184,7 +186,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 					projectRequirementCounts.reserved += quantity;
 					assert(projectRequirementCounts.reserved <= projectRequirementCounts.required);
 					ItemReference itemRef = items.getReference(itemIndex);
-					m_reservedEquipment[candidate].emplace_back(&projectRequirementCounts, itemRef);
+					m_reservedEquipment.getOrCreate(candidate).insert(&projectRequirementCounts, itemRef);
 				}
 			auto recordItemOnGround = [&](ActorOrItemIndex actorOrItem, ProjectRequirementCounts& counts)
 			{
@@ -251,7 +253,8 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 				return std::make_pair(false, BlockIndex::null());
 			};
 			// TODO: Path is not used, find path is run for side effects of predicate.
-			[[maybe_unused]] FindPathResult result = terrainFacade.findPathAdjacentToConditionAndUnreserved(actors.getLocation(candidateIndex), actors.getShape(candidateIndex), actors.getFacing(candidateIndex), predicate, m_project.m_faction);
+			TerrainFacade& terrainFacade = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(candidateIndex));
+			[[maybe_unused]] FindPathResult result = terrainFacade.findPathAdjacentToCondition(actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), predicate);
 		}
 	}
 	if(!m_project.reservationsComplete())
@@ -487,7 +490,7 @@ void Project::loadWorkers(const Json& data, DeserializationMemo& deserialization
 		for(const Json& pair : data["workers"])
 		{
 			ActorIndex actor = pair[0].get<ActorIndex>();
-			m_workers.try_emplace(actors.getReference(actor), pair[1], deserializationMemo);
+			m_workers.emplace(actors.getReference(actor), pair[1], deserializationMemo);
 			actors.project_set(actor, *this);
 		}
 	if(data.contains("candidates"))
@@ -632,7 +635,6 @@ void Project::addWorker(ActorIndex actor, Objective& objective)
 void Project::addWorkerCandidate(ActorIndex actor, Objective& objective)
 {
 	Actors& actors = m_area.getActors();
-	assert(actors.project_exists(actor));
 	assert(canAddWorker(actor));
 	actors.project_set(actor, *this);
 	if(!m_requirementsLoaded)
@@ -662,9 +664,9 @@ void Project::commandWorker(ActorIndex actor)
 		// Candidates do nothing but wait.
 		return;
 	}
-	if(m_workers.at(actorRef).haulSubproject != nullptr)
+	if(m_workers[actorRef].haulSubproject != nullptr)
 		// The worker has been dispatched to fetch an item.
-		m_workers.at(actorRef).haulSubproject->commandWorker(actor);
+		m_workers[actorRef].haulSubproject->commandWorker(actor);
 	else
 	{
 		// The worker has not been dispatched to fetch an actor or an item.
@@ -674,7 +676,7 @@ void Project::commandWorker(ActorIndex actor)
 			if(actors.isAdjacentToLocation(actor, m_location))
 				addToMaking(actor);
 			else
-				actors.move_setDestinationAdjacentToLocation(actor, m_location, m_workers.at(actorRef).objective.m_detour);
+				actors.move_setDestinationAdjacentToLocation(actor, m_location, m_workers[actorRef].objective->m_detour);
 		}
 		else if(m_toPickup.empty())
 		{
@@ -684,14 +686,14 @@ void Project::commandWorker(ActorIndex actor)
 				{
 					assert(!m_reservedEquipment.contains(actorRef));
 					// We have no use for this worker so release them.
-					actors.objective_canNotCompleteObjective(actor, m_workers.at(actorRef).objective);
+					actors.objective_canNotCompleteObjective(actor, *m_workers[actorRef].objective);
 				}
 				else
 				{
 					// Any tools being carried are marked delivered.
 					if(m_reservedEquipment.contains(actorRef))
 					{
-						for(auto& pair : m_reservedEquipment.at(actorRef))
+						for(auto& pair : m_reservedEquipment[actorRef])
 						{
 							++pair.first->delivered;	
 							assert(pair.first->delivered <= pair.first->reserved);
@@ -707,7 +709,7 @@ void Project::commandWorker(ActorIndex actor)
 				}
 			}
 			else
-				actors.move_setDestinationAdjacentToLocation(actor, m_location, m_workers.at(actorRef).objective.m_detour);
+				actors.move_setDestinationAdjacentToLocation(actor, m_location, m_workers[actorRef].objective->m_detour);
 			//TODO: Schedule end of waiting and cancelation of task.
 		}
 		else
@@ -732,15 +734,19 @@ void Project::removeWorker(ActorIndex actor)
 	}
 	assert(m_workers.contains(actorRef));
 	actors.project_unset(actor);
-	if(m_workers.at(actorRef).haulSubproject != nullptr)
-		m_workers.at(actorRef).haulSubproject->removeWorker(actor);
+	if(m_workers[actorRef].haulSubproject != nullptr)
+		m_workers[actorRef].haulSubproject->removeWorker(actor);
 	if(m_making.contains(actorRef))
 		removeFromMaking(actor);
 	m_workers.erase(actorRef);
-	if(m_reservedEquipment.contains(actorRef))
+	auto found = m_reservedEquipment.find(actorRef);
+	if(found != m_reservedEquipment.end())
 	{
-		ItemReference item = m_reservedEquipment.at(actorRef).front().second;
-		items.reservable_unreserveAll(item.getIndex());
+		for(auto& pair : found.second())
+		{
+			ItemReference item = pair.second;
+			items.reservable_unreserveAll(item.getIndex());
+		}
 	}
 	else if(m_workers.empty())
 	{
@@ -823,7 +829,7 @@ void Project::haulSubprojectComplete(HaulSubproject& haulSubproject)
 	m_haulSubprojects.remove(haulSubproject);
 	for(ActorReference actor : workers)
 	{
-		m_workers.at(actor).haulSubproject = nullptr;
+		m_workers[actor].haulSubproject = nullptr;
 		commandWorker(actor.getIndex());
 	}
 }
@@ -837,7 +843,7 @@ void Project::haulSubprojectCancel(HaulSubproject& haulSubproject)
 		actors.unfollowIfAny(index);
 		actors.move_clearPath(index);
 		actors.canReserve_clearAll(index);
-		m_workers.at(actor).haulSubproject = nullptr;
+		m_workers[actor].haulSubproject = nullptr;
 		ActorOrItemIndex wasCarrying = m_area.getActors().canPickUp_tryToPutDownPolymorphic(index, actors.getLocation(index));
 		if(wasCarrying.empty())
 		{
@@ -873,15 +879,15 @@ void Project::addToPickup(ActorOrItemIndex actorOrItem, ProjectRequirementCounts
 	if(m_toPickup.contains(ref))
 		m_toPickup[ref].second += quantity;
 	else
-		m_toPickup.try_emplace(ref, &counts, quantity);
+		m_toPickup.emplace(ref, &counts, quantity);
 }
 void Project::removeToPickup(ActorOrItemIndex actorOrItem, Quantity quantity)
 {
 	ActorOrItemReference ref = actorOrItem.toReference(m_area);
-	if(m_toPickup.at(ref).second == quantity)
+	if(m_toPickup[ref].second == quantity)
 		m_toPickup.erase(ref);
 	else
-		m_toPickup.at(ref).second -= quantity;
+		m_toPickup[ref].second -= quantity;
 }
 void Project::reset()
 {
@@ -941,7 +947,7 @@ std::vector<std::pair<ActorIndex, Objective*>> Project::getWorkersAndCandidatesW
 	std::vector<std::pair<ActorIndex, Objective*>> output;
 	output.reserve(m_workers.size() + m_workerCandidatesAndTheirObjectives.size());
 	for(auto& pair : m_workers)
-		output.emplace_back(pair.first.getIndex(), &pair.second.objective);
+		output.emplace_back(pair.first.getIndex(), pair.second.objective);
 	for(auto& pair : m_workerCandidatesAndTheirObjectives)
 		output.emplace_back(pair.first.getIndex(), pair.second);
 	return output;

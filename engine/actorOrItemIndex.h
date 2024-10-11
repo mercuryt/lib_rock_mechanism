@@ -50,7 +50,8 @@ public:
 	[[nodiscard]] ActorOrItemIndex getFollower(Area& area) const;
 	[[nodiscard]] ActorOrItemIndex getLeader(Area& area) const;
 
-	[[nodiscard]] bool canEnterCurrentlyFrom(Area& area, BlockIndex destination, BlockIndex origin);
+	[[nodiscard]] bool canEnterCurrentlyFrom(Area& area, const BlockIndex& destination, const BlockIndex& origin);
+	[[nodiscard]] bool canEnterCurrentlyFromWithOccupied(Area& area, const BlockIndex& destination, const BlockIndex& origin, const BlockIndices& occupied);
 
 	[[nodiscard]] BlockIndex getLocation(const Area& area) const;
 	[[nodiscard]] const BlockIndices& getBlocks(Area& area) const;

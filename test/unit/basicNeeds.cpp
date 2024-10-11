@@ -299,7 +299,7 @@ TEST_CASE("basicNeedsNonsentient")
 		REQUIRE(actors.eat_getMassFoodRequested(bear) != 0);
 		REQUIRE(actors.objective_getCurrentName(bear) == "eat");
 		REQUIRE(actors.move_hasPathRequest(bear));
-		FindPathResult result = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(bear)).findPathTo(actors.getLocation(bear), actors.getShape(bear), actors.getFacing(bear), actors.getLocation(deer));
+		FindPathResult result = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(bear)).findPathTo(actors.getLocation(bear), actors.getFacing(bear), actors.getShape(bear), actors.getLocation(deer));
 		REQUIRE(!result.path.empty());
 		EatObjective& objective = actors.objective_getCurrent<EatObjective>(bear);
 		REQUIRE(!objective.hasLocation());

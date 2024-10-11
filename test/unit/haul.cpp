@@ -50,26 +50,35 @@ TEST_CASE("haul")
 	{
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 2, 2);
 		ItemIndex boulder1 = items.create({.itemType=boulder, .materialType=marble, .location=chunkLocation, .quantity=Quantity::create(1)});
-		ItemIndex boulder2= items.create({.itemType=boulder, .materialType=lead, .location=blocks.getIndex_i(6,2,2), .quantity=Quantity::create(1)});
+		ItemIndex boulder2 = items.create({.itemType=boulder, .materialType=lead, .location=blocks.getIndex_i(6,2,2), .quantity=Quantity::create(1)});
 		REQUIRE(actors.canPickUp_item(dwarf1, boulder1));
 		REQUIRE(!actors.canPickUp_item(dwarf1, boulder2));
 		actors.canPickUp_pickUpItem(dwarf1, boulder1);
+		REQUIRE(items.getLocation(boulder1).empty());
 		BlockIndex destination = blocks.getIndex_i(5, 5, 2);
-		actors.move_setDestination(dwarf1, destination);
+		actors.move_setDestinationAdjacentToLocation(dwarf1, destination);
 		simulation.doStep();
 		REQUIRE(!actors.move_getPath(dwarf1).empty());
-		while(actors.getLocation(dwarf1) != destination)
+		while(!actors.isAdjacentToLocation(dwarf1, destination))
 			simulation.doStep();
-		auto item = actors.canPickUp_tryToPutDownItem(dwarf1, actors.getLocation(dwarf1));
+		auto item = actors.canPickUp_tryToPutDownItem(dwarf1, destination);
 		assert(item.exists());
 		REQUIRE(blocks.item_getCount(destination, boulder, marble) == 1);
+		REQUIRE(items.getLocation(boulder1).exists());
+		REQUIRE(items.getLocation(boulder1) == destination);
 	}
 	SUBCASE("has haul tools")
 	{
 		BlockIndex cartLocation = blocks.getIndex_i(1, 2, 2);
-		ItemIndex cart1 = items.create({.itemType=cart, .materialType=poplarWood, .quality=Quality::create(3u), .percentWear=Percent::create(0)});
+		items.create({
+			.itemType=cart,
+			.materialType=poplarWood,
+			.location=cartLocation,
+			.quality=Quality::create(3u),
+			.percentWear=Percent::create(0),
+			.facing=Facing::create(0),
+		});
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .quantity=Quantity::create(1u)});
-		items.setLocation(cart1, cartLocation);
 		REQUIRE(area.m_hasHaulTools.hasToolToHaulItem(area, faction, chunk1));
 	}
 	SUBCASE("individual haul strategy")
@@ -79,7 +88,7 @@ TEST_CASE("haul")
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=marble, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(ActorIndices({dwarf1}), chunk1, destination);
 		REQUIRE(actors.objective_getCurrentName(dwarf1) == "haul");
-		REQUIRE(simulation.m_threadedTaskEngine.count() == 1);
+		REQUIRE(project.hasTryToAddWorkersThreadedTask());
 		// One step to activate the project and make reservations.
 		simulation.doStep();
 		// One step to run the create subproject threaded task and set the strategy.
@@ -167,15 +176,24 @@ TEST_CASE("haul")
 			simulation.fastForwardUntillActorIsAdjacentToItem(area, dwarf1, chunk1);
 		if(actors.move_getDestination(dwarf1).exists())
 			simulation.fastForwardUntillActorHasNoDestination(area, dwarf1);
-		REQUIRE(actors.isFollowing(dwarf2));
-		REQUIRE(actors.isLeading(dwarf1));
+		ActorIndex leader = dwarf1;
+		ActorIndex follower = dwarf2;
+		if(actors.isFollowing(dwarf2))
+			REQUIRE(actors.isLeading(dwarf1));
+		else
+		{
+			leader = dwarf2;
+			follower = dwarf1;
+			REQUIRE(actors.isFollowing(dwarf1));
+			REQUIRE(actors.isLeading(dwarf2));
+		}
 		// Another step to path.
 		simulation.doStep();
-		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, destination);
+		simulation.fastForwardUntillActorIsAdjacentToDestination(area, leader, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		REQUIRE(blocks.item_getCount(destination, chunk, gold) == 1);
-		REQUIRE(!actors.isFollowing(dwarf2));
-		REQUIRE(!actors.isLeadingActor(dwarf1, dwarf2));
+		REQUIRE(!actors.isFollowing(follower));
+		REQUIRE(!actors.isLeadingActor(leader, follower));
 		REQUIRE(actors.objective_getCurrentName(dwarf1) != "haul");
 		REQUIRE(actors.objective_getCurrentName(dwarf2) != "haul");
 	}
@@ -195,6 +213,8 @@ TEST_CASE("haul")
 		BlockIndex panniersLocation = blocks.getIndex_i(5, 1, 2);
 		ItemIndex panniers1 = items.create({.itemType=panniers, .materialType=poplarWood, .location=panniersLocation, .quality=Quality::create(3u), .percentWear=Percent::create(0)});
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(ActorIndices({dwarf1}), chunk1, destination);
+		auto haulParams = HaulSubproject::tryToSetHaulStrategy(project, panniers1.toActorOrItemIndex(), dwarf1);
+		REQUIRE(haulParams.strategy == HaulStrategy::Panniers);
 		// One step to activate the project and make reservations.
 		simulation.doStep();
 		ActorOrItemIndex polymorphicChunk1 = ActorOrItemIndex::createForItem(chunk1);

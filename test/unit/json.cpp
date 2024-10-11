@@ -216,7 +216,7 @@ TEST_CASE("json")
 		REQUIRE(objective.getProject() == actors.project_get(dwarf2));
 		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf2.toReference(area));
 		REQUIRE(projectWorker.haulSubproject);
-		REQUIRE(projectWorker.objective == actors.objective_getCurrent<Objective>(dwarf2));
+		REQUIRE(projectWorker.objective == &actors.objective_getCurrent<Objective>(dwarf2));
 		HaulSubproject& haulSubproject = *projectWorker.haulSubproject;
 		REQUIRE(haulSubproject.getWorkers().contains(dwarf2));
 		REQUIRE(haulSubproject.getHaulStrategy() == HaulStrategy::Individual);

@@ -63,6 +63,15 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex 
 	}
 	return true;
 }
+bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(BlockIndex index, ShapeId shape, MoveTypeId moveType, const BlockIndices& occupied) const
+{
+	if(Shape::getIsRadiallySymetrical(shape))
+		return shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(index, shape, moveType, Facing::create(0), occupied);
+	for(Facing facing = Facing::create(0); facing < 4; ++facing)
+		if(shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(index, shape, moveType, facing, occupied))
+			return true;
+	return false;
+}
 bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(BlockIndex index, ShapeId shape, MoveTypeId moveType) const
 {
 	if(Shape::getIsRadiallySymetrical(shape))

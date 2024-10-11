@@ -59,10 +59,10 @@ public:
 	[[nodiscard]] bool isLeadingItem(HasShapeIndex index, ItemIndex item) const;
 	[[nodiscard]] bool isLeadingPolymorphic(HasShapeIndex index, ActorOrItemIndex actorOrItem) const;
 	[[nodiscard]] bool lead_allCanMove(HasShapeIndex index) const;
-	[[nodiscard]] ActorOrItemIndex getFollower(HasShapeIndex index) { return m_leader[index]; }
-	[[nodiscard]] ActorOrItemIndex getLeader(HasShapeIndex index) { return m_follower[index]; }
-	[[nodiscard]] const  ActorOrItemIndex getFollower(HasShapeIndex index) const { return m_leader[index]; }
-	[[nodiscard]] const ActorOrItemIndex getLeader(HasShapeIndex index) const { return m_follower[index]; }
+	[[nodiscard]] ActorOrItemIndex getFollower(HasShapeIndex index) { return m_follower[index]; }
+	[[nodiscard]] ActorOrItemIndex getLeader(HasShapeIndex index) { return m_leader[index]; }
+	[[nodiscard]] const  ActorOrItemIndex getFollower(HasShapeIndex index) const { return m_follower[index]; }
+	[[nodiscard]] const ActorOrItemIndex getLeader(HasShapeIndex index) const { return m_leader[index]; }
 	// For testing.
 	[[nodiscard]] Speed lead_getSpeed(HasShapeIndex index);
 	// Reservations.

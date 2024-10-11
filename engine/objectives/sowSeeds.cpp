@@ -5,6 +5,7 @@
 #include "../simulation.h"
 #include "actors/actors.h"
 #include "blocks/blocks.h"
+#include "designations.h"
 #include "types.h"
 
 struct DeserializationMemo;
@@ -65,10 +66,12 @@ BlockIndex SowSeedsObjective::getBlockToSowAt(Area& area, BlockIndex location, F
 {
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFactionId(actor);
-	std::function<bool(BlockIndex)> predicate = [&area, faction](BlockIndex block)
+	AreaHasBlockDesignationsForFaction& designations = area.m_blockDesignations.getForFaction(faction);
+	Blocks& blocks = area.getBlocks();
+	auto offset = designations.getOffsetForDesignation(BlockDesignation::SowSeeds);
+	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
 	{
-		auto& blocks = area.getBlocks();
-		return blocks.designation_has(block, faction, BlockDesignation::SowSeeds) && !blocks.isReserved(block, faction);
+		return designations.checkWithOffset(offset, block) && !blocks.isReserved(block, faction);
 	};
 	return actors.getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(actor, location, facing, predicate);
 }

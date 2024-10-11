@@ -354,6 +354,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, FluidTypeId
 	// CanEnterCurrently methods which are not prefixed with static are to be used only for dynamic shapes.
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex index, ShapeId shape, MoveTypeId moveType, const Facing facing, const BlockIndices& occupied) const;
 	[[nodiscard]] Facing shape_canEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(BlockIndex index, ShapeId shape, MoveTypeId moveType, const BlockIndices& occupied) const;
 	[[nodiscard]] bool shape_canEnterCurrentlyWithAnyFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const;
 	[[nodiscard]] bool shape_canEnterCurrentlyFrom(BlockIndex index, ShapeId shape, BlockIndex other, const BlockIndices& occupied) const;
 	[[nodiscard]] bool shape_canEnterCurrentlyWithFacing(BlockIndex index, ShapeId shape, Facing facing, const BlockIndices& occupied) const;
@@ -399,6 +400,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, FluidTypeId
 	void project_remove(BlockIndex index, Project& project);
 	Percent project_getPercentComplete(BlockIndex index, FactionId faction) const;
 	[[nodiscard]] Project* project_get(BlockIndex index, FactionId faction) const;
+	[[nodiscard]] Project* project_getIfBegun(BlockIndex index, FactionId faction) const;
 	// -Temperature
 	void temperature_freeze(BlockIndex index, FluidTypeId fluidType);
 	void temperature_melt(BlockIndex index);

@@ -119,7 +119,7 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 	}
 	for(ActorReference actor : m_workers)
 	{
-		m_project.m_workers.at(actor).haulSubproject = this;
+		m_project.m_workers[actor].haulSubproject = this;
 		commandWorker(actor.getIndex());
 	}
 }
@@ -202,7 +202,7 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 {
 	ActorReference ref = m_project.m_area.getActors().getReference(actor);
 	assert(m_workers.contains(ref));
-	Objective& objective = m_project.m_workers.at(ref).objective;
+	Objective& objective = *m_project.m_workers[ref].objective;
 	bool detour = objective.m_detour;
 	bool hasCargo = false;
 	Area& area = m_project.m_area;
@@ -233,7 +233,7 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 					ActorOrItemIndex cargo = actors.canPickUp_tryToPutDownPolymorphic(actor, actorLocation);
 					if(cargo.empty())
 					{
-						// Cargo cannot be put down here, try again
+						//TODO: Cargo cannot be put down here, try again
 					}
 					complete(cargo);
 				}
@@ -245,7 +245,6 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 				if(toHaulIndex.isAdjacentToActor(area, actor))
 				{
 					actors.canReserve_clearAll(actor);
-					toHaulIndex.reservable_unreserve(area, m_project.m_canReserve);
 					actors.canPickUp_pickUpPolymorphic(actor, toHaulIndex, m_quantity);
 					commandWorker(actor);
 				}
@@ -292,10 +291,7 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 				if(actors.isAdjacentToLocation(actor, m_project.m_location))
 				{
 					// At destination.
-					toHaulIndex.unfollow(area);
-					for(ActorReference actor : m_workers)
-						if(actor != m_leader)
-							actors.unfollow(actor.getIndex());
+					actors.leadAndFollowDisband(m_leader.getIndex());
 					toHaulIndex.setLocationAndFacing(area, actorLocation, Facing::create(0));
 					complete(toHaulIndex);
 				}
@@ -341,7 +337,7 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 						Facing facing = blocks.facingToSetWhenEnteringFrom(m_project.m_location, block);
 						if(blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(block, actors.getShape(actor), actors.getMoveType(actor), facing) && !blocks.isReserved(block, faction))
 						{
-							m_liftPoints[ref] = block;
+							m_liftPoints.insert(ref, block);
 							actors.canReserve_reserveLocation(actor, block);
 							// Destination, detour, adjacent, unreserved, reserve
 							actors.move_setDestination(actor, block, detour);
@@ -396,7 +392,7 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 						// Can load here.
 						//TODO: set delay for loading.
 						toHaulIndex.reservable_maybeUnreserve(area, m_project.m_canReserve, m_quantity);
-						items.cargo_addPolymorphic(m_haulTool.getIndex(), toHaulIndex, m_quantity);
+						items.cargo_loadPolymorphic(m_haulTool.getIndex(), toHaulIndex, m_quantity);
 						actors.canReserve_clearAll(actor);
 						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
 					}
@@ -699,8 +695,8 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	HaulSubprojectParamaters output;
 	ActorOrItemReference toHaulRef = toHaul.toReference(project.m_area);
 	output.toHaul = toHaul.toReference(project.m_area);
-	output.projectRequirementCounts = project.m_toPickup.at(toHaulRef).first;
-	Quantity maxQuantityRequested = project.m_toPickup.at(toHaulRef).second;
+	output.projectRequirementCounts = project.m_toPickup[toHaulRef].first;
+	Quantity maxQuantityRequested = project.m_toPickup[toHaulRef].second;
 	Speed minimumSpeed = project.getMinimumHaulSpeed();
 	ActorIndices workers;
 	// TODO: shouldn't this be m_waiting?
@@ -842,13 +838,12 @@ void HaulSubproject::complete(ActorOrItemIndex delivered)
 		assert(false);
 	for(ActorReference worker : m_workers)
 		actors.canReserve_clearAll(worker.getIndex());
-	delivered.reservable_reserve(m_project.m_area, m_project.m_canReserve, m_quantity);
-	ActorIndices workers;
 	m_project.onDelivered(delivered);
+	auto workers = std::move(m_workers);
 	m_project.m_haulSubprojects.remove(*this);
-	for(ActorReference worker : m_workers)
+	for(ActorReference worker : workers)
 	{
-		project.m_workers.at(worker).haulSubproject = nullptr;
+		project.m_workers[worker].haulSubproject = nullptr;
 		project.commandWorker(worker.getIndex());
 	}
 }

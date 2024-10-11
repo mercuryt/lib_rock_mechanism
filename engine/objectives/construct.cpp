@@ -9,7 +9,7 @@
 // PathRequest.
 ConstructPathRequest::ConstructPathRequest(Area& area, ConstructObjective& co, ActorIndex actor) : m_constructObjective(co)
 {
-	std::function<bool(BlockIndex)> constructCondition = [&](BlockIndex block)
+	std::function<bool(BlockIndex)> constructCondition = [&, actor](BlockIndex block)
 	{
 		return m_constructObjective.joinableProjectExistsAt(area, block, actor);
 	};
@@ -30,21 +30,7 @@ void ConstructPathRequest::callback(Area& area, FindPathResult& result)
 		actors.objective_canNotCompleteObjective(actor, m_constructObjective);
 	else
 	{
-		if(result.useCurrentPosition)
-		{
-			if(!actors.move_tryToReserveOccupied(actor))
-			{
-				// Proposed location while constructing has been reserved already, try to find another.
-				m_constructObjective.execute(area, actor);
-				return;
-			}
-		}
-		else if(!actors.move_tryToReserveProposedDestination(actor, result.path))
-		{
-			// Proposed location while constructing has been reserved already, try to find another.
-			m_constructObjective.execute(area, actor);
-			return;
-		}
+		// No need to reserve here, we are just checking for access.
 		BlockIndex target = result.blockThatPassedPredicate;
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFactionId(actor), target);
 		if(project.canAddWorker(actor))
