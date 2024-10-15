@@ -110,7 +110,7 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 	{
 		m_beastOfBurden.setTarget(actors.getReferenceTarget(paramaters.beastOfBurden));
 		std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<HaulSubprojectDishonorCallback>(*this);
-		items.reservable_reserve(m_beastOfBurden.getIndex(), m_project.m_canReserve, Quantity::create(1u), std::move(dishonorCallback));
+		actors.reservable_reserve(m_beastOfBurden.getIndex(), m_project.m_canReserve, Quantity::create(1u), std::move(dishonorCallback));
 	}
 	if(m_toHaul.getIndexPolymorphic().isGeneric(area))
 	{

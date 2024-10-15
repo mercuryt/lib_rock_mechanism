@@ -115,7 +115,8 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	if(itemParamaters.location.exists())
 		setLocationAndFacing(index, itemParamaters.location, itemParamaters.facing);
 	static const MoveTypeId rolling = MoveType::byName("roll");
-	if(moveType == rolling && ItemType::getInternalVolume(itemType) != 0)
+	static const ItemTypeId panniers = ItemType::byName("panniers");
+	if(itemType == panniers  || (moveType == rolling && ItemType::getInternalVolume(itemType) != 0))
 		m_area.m_hasHaulTools.registerHaulTool(m_area, index);
 	return index;
 }

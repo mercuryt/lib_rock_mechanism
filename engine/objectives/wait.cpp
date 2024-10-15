@@ -7,7 +7,6 @@
 WaitObjective::WaitObjective(Area& area, Step duration, ActorIndex actor) :
 	Objective(Priority::create(0)), m_event(area.m_eventSchedule)
 {
-
 	m_event.schedule(duration, area, *this, actor);
 }
 WaitObjective::WaitObjective(const Json& data, Area& area, ActorIndex actor) :

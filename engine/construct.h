@@ -72,7 +72,7 @@ class HasConstructionDesignationsForFaction final
 {
 	FactionId m_faction;
 	//TODO: More then one construct project targeting a given block should be able to exist simultaniously.
-	std::unordered_map<BlockIndex, ConstructProject, BlockIndex::Hash> m_data;
+	SmallMapStable<BlockIndex, ConstructProject> m_data;
 public:
 	HasConstructionDesignationsForFaction(FactionId p) : m_faction(p) { }
 	HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction);
@@ -92,7 +92,8 @@ public:
 class AreaHasConstructionDesignations final
 {
 	Area& m_area;
-	std::unordered_map<FactionId, HasConstructionDesignationsForFaction, FactionId::Hash> m_data;
+	//TODO: Why does this have to be stable?
+	SmallMapStable<FactionId, HasConstructionDesignationsForFaction> m_data;
 public:
 	AreaHasConstructionDesignations(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
@@ -109,5 +110,5 @@ public:
 	bool areThereAnyForFaction(FactionId faction) const;
 	bool contains(FactionId faction, BlockIndex block) const;
 	ConstructProject& getProject(FactionId faction, BlockIndex block);
-	HasConstructionDesignationsForFaction& getForFaction(FactionId faction) { return m_data.at(faction); }
+	HasConstructionDesignationsForFaction& getForFaction(FactionId faction) { return m_data[faction]; }
 };

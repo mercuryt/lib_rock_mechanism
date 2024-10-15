@@ -275,6 +275,7 @@ public:
 	void move_pathRequestMaybeCancel(ActorIndex index);
 	void move_pathRequestRecord(ActorIndex index, std::unique_ptr<PathRequest> pathRequest);
 	void move_updatePathRequestTerrainFacadeIndex(const ActorIndex& index, const PathRequestIndex& newPathRequestIndex);
+	[[nodiscard]] bool move_destinationIsAdjacentToLocation(ActorIndex index, BlockIndex location);
 	[[nodiscard]] bool move_tryToReserveProposedDestination(ActorIndex index, BlockIndices& path);
 	[[nodiscard]] bool move_tryToReserveOccupied(ActorIndex index);
 	[[nodiscard]] Speed move_getIndividualSpeedWithAddedMass(ActorIndex index, Mass mass) const;

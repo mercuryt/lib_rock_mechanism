@@ -98,7 +98,7 @@ void DigObjective::delay(Area& area, ActorIndex actor)
 { 
 	cancel(area, actor); 
 	m_project = nullptr;
-	area.getActors().project_unset(actor);
+	area.getActors().project_maybeUnset(actor);
 }
 void DigObjective::reset(Area& area, ActorIndex actor) 
 { 

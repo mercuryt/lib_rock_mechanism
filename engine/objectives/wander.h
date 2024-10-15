@@ -12,6 +12,7 @@ class WanderObjective;
 class WanderPathRequest final : public PathRequest
 {
 	WanderObjective& m_objective;
+	BlockIndex m_lastBlock;
 	uint16_t m_blockCounter = 0;
 public:
 	WanderPathRequest(Area& area, WanderObjective& objective, ActorIndex actor);
@@ -22,6 +23,7 @@ public:
 };
 class WanderObjective final : public Objective
 {
+	BlockIndex m_destination;
 public:
 	WanderObjective();
 	WanderObjective(const Json& data);
@@ -34,4 +36,5 @@ public:
 	[[nodiscard]] bool canResume() const { return false; }
 	// For testing.
 	[[nodiscard]] bool hasPathRequest(const Area& area, ActorIndex actor) const;
+	friend class WanderPathRequest;
 };
