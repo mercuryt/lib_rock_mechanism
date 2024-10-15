@@ -67,18 +67,17 @@ struct DigLocationDishonorCallback final : public DishonorCallback
 // Part of HasDigDesignations.
 class HasDigDesignationsForFaction final
 {
-	Area& m_area;
 	FactionId m_faction;
-	std::unordered_map<BlockIndex, DigProject, BlockIndex::Hash> m_data;
+	SmallMapStable<BlockIndex, DigProject> m_data;
 public:
-	HasDigDesignationsForFaction(FactionId p, Area& a) : m_area(a), m_faction(p) { }
+	HasDigDesignationsForFaction(FactionId p) : m_faction(p) { }
 	HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
-	void designate(BlockIndex block, const BlockFeatureType* blockFeatureType);
+	void designate(Area& area, BlockIndex block, const BlockFeatureType* blockFeatureType);
 	void undesignate(BlockIndex block);
 	// To be called by undesignate as well as by DigProject::onCancel.
-	void remove(BlockIndex block);
-	void removeIfExists(BlockIndex block);
+	void remove(Area& area, BlockIndex block);
+	void removeIfExists(Area& area, BlockIndex block);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] const BlockFeatureType* getForBlock(BlockIndex block) const;
 	[[nodiscard]] bool empty() const;
@@ -88,7 +87,8 @@ public:
 class AreaHasDigDesignations final
 {
 	Area& m_area;
-	std::unordered_map<FactionId, HasDigDesignationsForFaction, FactionId::Hash> m_data;
+	//TODO: Why must this be stable?
+	SmallMapStable<FactionId, HasDigDesignationsForFaction> m_data;
 public:
 	AreaHasDigDesignations(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
@@ -103,6 +103,6 @@ public:
 	void clearReservations();
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool areThereAnyForFaction(FactionId faction) const;
-	[[nodiscard]] bool contains(FactionId faction, BlockIndex block) const { return m_data.at(faction).m_data.contains(block); }
+	[[nodiscard]] bool contains(FactionId faction, BlockIndex block) const { return m_data[faction].m_data.contains(block); }
 	[[nodiscard]] DigProject& getForFactionAndBlock(FactionId faction, BlockIndex block);
 };

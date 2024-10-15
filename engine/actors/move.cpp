@@ -11,6 +11,7 @@
 #include "config.h"
 #include "eventSchedule.h"
 #include "items/items.h"
+#include <ranges>
 Speed Actors::move_getIndividualSpeedWithAddedMass(ActorIndex index, Mass mass) const
 {
 	Speed output = Speed::create(m_agility[index].get() * Config::unitsOfMoveSpeedPerUnitOfAgility);
@@ -92,9 +93,12 @@ void Actors::move_callback(ActorIndex index)
 			const auto& occupiedBlocks = lineLead_getOccupiedBlocks(index);
 			while (follower.exists())
 			{
-				auto found = std::ranges::find(path, follower.getLocation(m_area));
-				assert(found != path.begin());
-				BlockIndex followerNextStep = *(--found);
+				BlockIndex currentFollowerLocation = follower.getLocation(m_area);
+				auto found = std::ranges::find(std::views::reverse(path), currentFollowerLocation);
+				assert(found != std::ranges::end(std::views::reverse(path)));
+				if(path.size() != 1)
+					assert(found != std::ranges::end(std::views::reverse(path)) - 1);
+				BlockIndex followerNextStep = *(found + 1);
 				if (!blocks.shape_anythingCanEnterEver(followerNextStep) || !blocks.shape_shapeAndMoveTypeCanEnterEverFrom(followerNextStep, follower.getShape(m_area), follower.getMoveType(m_area), follower.getLocation(m_area)))
 				{
 					// Path is permanantly blocked for follower, repath.
@@ -135,11 +139,13 @@ void Actors::move_callback(ActorIndex index)
 			while (follower.exists())
 			{
 				BlockIndex currentFollowerLocation = follower.getLocation(m_area);
-				auto found = std::ranges::find(path, currentFollowerLocation);
-				assert(found != path.begin());
-				assert(found != path.end());
-				BlockIndex followerNextStep = *(--found);
+				auto found = std::ranges::find(std::views::reverse(path), currentFollowerLocation);
+				assert(found != std::ranges::end(std::views::reverse(path)));
+				if(path.size() != 1)
+					assert(found != std::ranges::end(std::views::reverse(path)) - 1);
+				BlockIndex followerNextStep = *(found + 1);
 				Facing facing = blocks.facingToSetWhenEnteringFrom(followerNextStep, currentFollowerLocation);
+				// TODO: check if follower can enter currently, it may be block by it's leader moving but not vacating, perhaps due to turning.
 				follower.setLocationAndFacing(m_area, followerNextStep, facing);
 				follower = follower.getFollower(m_area);
 			}
@@ -319,6 +325,11 @@ bool Actors::move_tryToReserveOccupied(ActorIndex index)
 		blocks.reserve(location, canReserve);
 	}
 	return true;
+}
+bool Actors::move_destinationIsAdjacentToLocation(ActorIndex index, BlockIndex location)
+{
+	assert(m_destination[index].exists());
+	return m_area.getBlocks().isAdjacentToIncludingCornersAndEdges(location, m_destination[index]);
 }
 void Actors::move_pathRequestCallback(ActorIndex index, BlockIndices path, bool useCurrentLocation, bool reserveDestination)
 {

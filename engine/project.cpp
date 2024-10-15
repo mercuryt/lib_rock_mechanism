@@ -83,7 +83,7 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep(Simulation&, Area*)
 			return;
 	}
 }
-void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep(Simulation&, Area*)
+void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep(Simulation&, Area* area)
 {
 	if(m_haulProjectParamaters.strategy == HaulStrategy::None)
 	{
@@ -107,7 +107,11 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep(Simulation&, Area*)
 	else
 	{
 		ActorOrItemReference ref = m_haulProjectParamaters.toHaul;
-		if(m_project.m_toPickup[ref].second < m_haulProjectParamaters.quantity || !m_haulProjectParamaters.validate(m_project.m_area))
+		assert(m_project.m_toPickup.contains(ref));
+		if(
+			m_project.m_toPickup[ref].second < m_haulProjectParamaters.quantity ||
+			!m_haulProjectParamaters.validate(m_project.m_area)
+		)
 		{
 			// Something that was avalible during read step is now reserved. Ensure that there is a new threaded task to try again.
 			if(!m_project.m_tryToHaulThreadedTask.exists())
@@ -122,6 +126,22 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep(Simulation&, Area*)
 			// Remove the target of the new haulSubproject from m_toPickup.
 			m_project.removeToPickup(m_haulProjectParamaters.toHaul.getIndexPolymorphic(), m_haulProjectParamaters.quantity);
 			m_project.onSubprojectCreated(subproject);
+			if(m_project.m_toPickup.empty())
+			{
+				Actors& actors = area->getActors();
+				// All subprojects have been dispatched, any remaining workers are sent to the project site.
+				for(auto [ workerRef, projectWorker] : m_project.m_workers)
+				{
+					ActorIndex worker = workerRef.getIndex();
+					if(
+						projectWorker.haulSubproject == nullptr &&
+						!actors.isAdjacentToLocation(worker, m_project.m_location) &&
+						!actors.move_hasEvent(worker) &&
+						actors.move_getPath(worker).empty()
+					)
+						actors.move_setDestinationAdjacentToLocation(worker, m_project.m_location);
+				}
+			}
 		}
 	}
 }
@@ -464,7 +484,7 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) :
 			ProjectRequirementCounts& projectRequirementCounts = *deserializationMemo.m_projectRequirementCounts.at(tuple[1].get<uintptr_t>());
 			Quantity quantity = tuple[2].get<Quantity>();
 			ActorOrItemReference ref = actorOrItem.toReference(m_area);
-			m_toPickup[ref] = std::make_pair(&projectRequirementCounts, quantity);
+			m_toPickup.insert(ref, std::make_pair(&projectRequirementCounts, quantity));
 		}
 	if(data.contains("haulSubprojects"))
 		for(const Json& haulSubprojectData : data["haulSubprojects"])
@@ -804,8 +824,9 @@ void Project::cancel()
 {
 	m_canReserve.deleteAllWithoutCallback();
 	m_area.getBlocks().project_remove(m_location, *this);
-	//for(auto& [actor, projectWorker] : m_workers)
-		//actor->m_project = nullptr;
+	Actors& actors = m_area.getActors();
+	for(auto& [actor, projectWorker] : m_workers)
+		actors.project_unset(actor.getIndex());
 	onCancel();
 }
 void Project::scheduleFinishEvent(Step start)
@@ -844,12 +865,17 @@ void Project::haulSubprojectCancel(HaulSubproject& haulSubproject)
 		actors.move_clearPath(index);
 		actors.canReserve_clearAll(index);
 		m_workers[actor].haulSubproject = nullptr;
-		ActorOrItemIndex wasCarrying = m_area.getActors().canPickUp_tryToPutDownPolymorphic(index, actors.getLocation(index));
-		if(wasCarrying.empty())
+		if(actors.canPickUp_exists(index))
 		{
-			// Could not find a place to put down carrying. 
-			// Wander somewhere else, hopefully we can put down there.
-			actors.objective_addTaskToStart(index, std::make_unique<WanderObjective>());
+			ActorOrItemIndex wasCarrying = actors.canPickUp_tryToPutDownPolymorphic(index, actors.getLocation(index));
+			if(wasCarrying.empty())
+			{
+				// Could not find a place to put down carrying. 
+				// Wander somewhere else, hopefully we can put down there.
+				actors.objective_addTaskToStart(index, std::make_unique<WanderObjective>());
+			}
+			else
+				commandWorker(index);
 		}
 		else
 			commandWorker(index);

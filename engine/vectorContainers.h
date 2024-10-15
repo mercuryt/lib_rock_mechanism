@@ -240,7 +240,7 @@ public:
 	void erase(const K&& key) { erase(key); }
 	void clear() { m_data.clear(); }
 	template<typename ...Args>
-	V& emplace(const K& key, Args&& ...args) { return *m_data.emplace(key, std::make_unique<V>(args...)).get(); }
+	V& emplace(const K& key, Args&& ...args) { return *m_data.emplace(key, std::make_unique<V>(std::forward<Args>(args)...)).get(); }
 	template<typename ...Args>
 	V& emplace(const K&& key, const Args&& ...args) { return emplace(key, std::forward<Args>(args)...);  }
 	void swap(This& other) { m_data.swap(other.m_data); }
@@ -250,8 +250,8 @@ public:
 	[[nodiscard]] bool contains(const K&& key) const { return contains(key); }
 	[[nodiscard]] V& operator[](const K& key) { return *m_data[key].get(); }
 	[[nodiscard]] V& operator[](const K&& key) { return *(*this)[key].get(); }
-	[[nodiscard]] const V& operator[](const K& key) const { return *const_cast<This&>(*this)[key].get(); }
-	[[nodiscard]] const V& operator[](const K&& key) const { return *(*this)[key].get(); }
+	[[nodiscard]] const V& operator[](const K& key) const { return const_cast<This&>(*this)[key]; }
+	[[nodiscard]] const V& operator[](const K&& key) const { return const_cast<This&>(*this)[key]; }
 	[[nodiscard]] iterator find(const K& key) { return m_data.find(key); }
 	[[nodiscard]] iterator find(const K&& key) { return find(key); }
 	[[nodiscard]] const_iterator find(const K& key) const { return findData(key); }

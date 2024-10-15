@@ -48,6 +48,7 @@ public:
 	void unfollowIfAny(HasShapeIndex index);
 	void unfollowActor(HasShapeIndex index, ActorIndex actor);
 	void unfollowItem(HasShapeIndex index, ItemIndex actor);
+	void maybeLeadAndFollowDisband(HasShapeIndex index);
 	void leadAndFollowDisband(HasShapeIndex index);
 	void setCarrier(HasShapeIndex index, ActorOrItemIndex carrier);
 	void unsetCarrier(HasShapeIndex index, ActorOrItemIndex carrier);

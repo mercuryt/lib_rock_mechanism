@@ -187,6 +187,8 @@ TEST_CASE("haul")
 			REQUIRE(actors.isFollowing(dwarf1));
 			REQUIRE(actors.isLeading(dwarf2));
 		}
+		REQUIRE(items.isFollowing(chunk1));
+		REQUIRE(items.isLeading(chunk1));
 		// Another step to path.
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, leader, destination);
@@ -213,12 +215,12 @@ TEST_CASE("haul")
 		BlockIndex panniersLocation = blocks.getIndex_i(5, 1, 2);
 		ItemIndex panniers1 = items.create({.itemType=panniers, .materialType=poplarWood, .location=panniersLocation, .quality=Quality::create(3u), .percentWear=Percent::create(0)});
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(ActorIndices({dwarf1}), chunk1, destination);
-		auto haulParams = HaulSubproject::tryToSetHaulStrategy(project, panniers1.toActorOrItemIndex(), dwarf1);
-		REQUIRE(haulParams.strategy == HaulStrategy::Panniers);
 		// One step to activate the project and make reservations.
 		simulation.doStep();
 		ActorOrItemIndex polymorphicChunk1 = ActorOrItemIndex::createForItem(chunk1);
 		REQUIRE(HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(area, dwarf1, donkey1, panniers1, polymorphicChunk1, project.getMinimumHaulSpeed()) > 0);
+		auto haulParams = HaulSubproject::tryToSetHaulStrategy(project, chunk1.toActorOrItemIndex(), dwarf1);
+		REQUIRE(haulParams.strategy == HaulStrategy::Panniers);
 		// Another step to select the haul strategy and create the subproject.
 		simulation.doStep();
 		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);

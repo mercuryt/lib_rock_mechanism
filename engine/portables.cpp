@@ -68,6 +68,7 @@ void Portables::create(HasShapeIndex index, MoveTypeId moveType, ShapeId shape, 
 {
 	HasShapes::create(index, shape, faction, isStatic);
 	m_moveType[index] = moveType;
+	//TODO: leave as nullptr to start, create as needed.
 	m_reservables[index] = std::make_unique<Reservable>(quantity);
 	assert(m_destroy[index] == nullptr);
 	assert(m_follower[index].empty());
@@ -105,8 +106,8 @@ void Portables::followItem(HasShapeIndex index, ItemIndex item)
 	Actors& actors = m_area.getActors();
 	assert(!m_leader[index].exists());
 	m_leader[index] = ActorOrItemIndex::createForItem(item);
-	assert(!m_area.getItems().m_follower[index].exists());
-	m_area.getItems().m_follower[index] = getActorOrItemIndex(index);
+	assert(!m_area.getItems().m_follower[item].exists());
+	m_area.getItems().m_follower[item] = getActorOrItemIndex(index);
 	ActorIndex lineLeader = getLineLeader(index);
 	actors.move_updateActualSpeed(lineLeader);
 	actors.lineLead_appendToPath(lineLeader, m_location[index]);
@@ -161,6 +162,7 @@ void Portables::unfollowIfAny(HasShapeIndex index)
 }
 void Portables::leadAndFollowDisband(HasShapeIndex index)
 {
+	assert(isFollowing(index) || isLeading(index));
 	ActorOrItemIndex follower = getActorOrItemIndex(index);
 	// Go to the back of the line.
 	while(follower.isLeading(m_area))
@@ -176,6 +178,11 @@ void Portables::leadAndFollowDisband(HasShapeIndex index)
 	}
 	m_area.getActors().lineLead_clearPath(leader.getActor());
 		
+}
+void Portables::maybeLeadAndFollowDisband(HasShapeIndex index)
+{
+	if(isFollowing(index) || isLeading(index))
+		leadAndFollowDisband(index);
 }
 bool Portables::isFollowing(HasShapeIndex index) const
 {
@@ -353,10 +360,7 @@ void Portables::reservable_maybeUnreserve(HasShapeIndex index, CanReserve& canRe
 }
 void Portables::reservable_unreserveAll(HasShapeIndex index)
 {
-	if(m_reservables[index] == nullptr)
-		return;
 	m_reservables[index]->clearAll();
-	m_reservables[index] = nullptr;
 }
 void Portables::reservable_setDishonorCallback(HasShapeIndex index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
 {
@@ -417,20 +421,14 @@ Json Portables::toJson() const
 }
 bool Portables::reservable_hasAnyReservations(HasShapeIndex index) const
 {
-	if(m_reservables[index] != nullptr)
-		assert(m_reservables[index]->hasAnyReservations());
-	return m_reservables[index] != nullptr;
+	return m_reservables[index]->hasAnyReservations();
 }
 bool Portables::reservable_exists(HasShapeIndex index, const FactionId faction) const
 {
-	if(m_reservables[index] == nullptr)
-		return false;
 	return m_reservables[index]->hasAnyReservationsWith(faction);
 }
 bool Portables::reservable_isFullyReserved(HasShapeIndex index, const FactionId faction) const
 {
-	if(m_reservables[index] == nullptr)
-		return false;
 	return m_reservables[index]->isFullyReserved(faction);
 }
 Quantity Portables::reservable_getUnreservedCount(HasShapeIndex index, const FactionId faction) const

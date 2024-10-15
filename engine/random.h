@@ -5,7 +5,6 @@
 #include <random>
 #include <algorithm>
 #include <cassert>
-#include <unordered_map>
 
 class Random
 {
@@ -49,20 +48,6 @@ public:
 				copy.erase(copy.begin() + index);
 			}
 			return output;
-		}
-	//TODO: duplication.
-	template<typename T>
-		T& getInMap(const std::unordered_map<T, float>&& map)
-		{
-			float previous = 0;
-			// Make probabilities cumulative.
-			for(auto& pair : map)
-				previous = (pair.second += previous);
-			float roll = getInRange(0.f, previous);
-			for(auto& pair : map)
-				if(roll <= pair.second)
-					return const_cast<T&>(pair.first);
-			assert(false);
 		}
 	uint32_t deterministicScramble(uint32_t seed);
 };

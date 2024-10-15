@@ -346,7 +346,7 @@ void HasObjectives::destroy(Area& area, Objective& objective)
 	}
 	actors.canReserve_clearAll(m_actor);
 	actors.reservable_unreserveAll(m_actor);
-	actors.leadAndFollowDisband(m_actor);
+	actors.maybeLeadAndFollowDisband(m_actor);
 	if(actors.canPickUp_exists(m_actor))
 	{
 		ActorOrItemIndex wasCarrying = area.getActors().canPickUp_tryToPutDownPolymorphic(m_actor, actors.getLocation(m_actor));
@@ -456,7 +456,7 @@ void HasObjectives::cannotFulfillObjective(Area& area, Objective& objective)
 	Actors& actors = area.getActors();
 	actors.move_clearPath(m_actor);
 	actors.canReserve_clearAll(m_actor);
-	actors.leadAndFollowDisband(m_actor);
+	actors.maybeLeadAndFollowDisband(m_actor);
 	// Store delay to wait before trying again.
 	m_prioritySet.setDelay(area, objective.getTypeId());
 	cancel(area, objective);
