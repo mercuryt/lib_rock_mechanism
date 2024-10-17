@@ -17,7 +17,8 @@ public:
 	void remove(ThreadedTask& task);
 	void clear(Simulation& simulation, Area* area);
 	// For testing.
-	[[maybe_unused, nodiscard]]inline uint32_t count() { return m_tasksForNextStep.size(); }
+	[[maybe_unused, nodiscard]] inline uint32_t count() const { return m_tasksForNextStep.size(); }
+	[[nodiscard]] bool empty() const { return count() == 0; }
 };
 class ThreadedTask
 {

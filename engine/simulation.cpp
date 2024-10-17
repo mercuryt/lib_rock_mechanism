@@ -86,6 +86,8 @@ FactionId Simulation::createFaction(std::wstring name) { return m_hasFactions.cr
 DateTime Simulation::getDateTime() const { return DateTime(m_step); }
 Step Simulation::getNextEventStep()
 {
+	if(!m_threadedTaskEngine.empty())
+		return m_step;
 	Step nextAreaStep = getAreas().getNextEventStep();
 	if(nextAreaStep.empty())
 		nextAreaStep = Step::max();
@@ -125,17 +127,17 @@ void Simulation::fastForwardUntill(DateTime dateTime)
 	assert(dateTime.toSteps() > m_step);
 	fastForward(dateTime.toSteps() - m_step);
 }
-void Simulation::fastForwardUntillActorIsAtDestination(Area& area, ActorIndex actor, BlockIndex destination)
+void Simulation::fastForwardUntillActorIsAtDestination(Area& area, const ActorIndex& actor, const BlockIndex& destination)
 {
 	assert(area.getActors().move_getDestination(actor) == destination);
 	fastForwardUntillActorIsAt(area, actor, destination);
 }
-void Simulation::fastForwardUntillActorIsAt(Area& area, ActorIndex actor, BlockIndex destination)
+void Simulation::fastForwardUntillActorIsAt(Area& area, const ActorIndex& actor, const BlockIndex& destination)
 {
 	std::function<bool()> predicate = [&](){ return area.getActors().getLocation(actor) == destination; };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorIsAdjacentToDestination(Area& area, ActorIndex actor, BlockIndex destination)
+void Simulation::fastForwardUntillActorIsAdjacentToDestination(Area& area, const ActorIndex& actor, const BlockIndex& destination)
 {
 	Actors& actors = area.getActors();
 	assert(!actors.move_getPath(actor).empty());
@@ -146,33 +148,33 @@ void Simulation::fastForwardUntillActorIsAdjacentToDestination(Area& area, Actor
 	std::function<bool()> predicate = [&](){ return actors.isAdjacentToLocation(actor, destination); };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorIsAdjacentToLocation(Area& area, ActorIndex actor, BlockIndex block)
+void Simulation::fastForwardUntillActorIsAdjacentToLocation(Area& area, const ActorIndex& actor, const BlockIndex& block)
 {
 	std::function<bool()> predicate = [&](){ return area.getActors().isAdjacentToLocation(actor, block); };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorIsAdjacentToActor(Area& area, ActorIndex actor, ActorIndex other)
+void Simulation::fastForwardUntillActorIsAdjacentToActor(Area& area, const ActorIndex& actor, const ActorIndex& other)
 {
 	std::function<bool()> predicate = [&](){ return area.getActors().isAdjacentToActor(actor, other); };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorIsAdjacentToItem(Area& area, ActorIndex actor, ItemIndex item)
+void Simulation::fastForwardUntillActorIsAdjacentToItem(Area& area, const ActorIndex& actor, const ItemIndex& item)
 {
 	std::function<bool()> predicate = [&](){ return area.getActors().isAdjacentToItem(actor, item); };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorHasNoDestination(Area& area, ActorIndex actor)
+void Simulation::fastForwardUntillActorHasNoDestination(Area& area, const ActorIndex& actor)
 {
 	std::function<bool()> predicate = [&](){ return area.getActors().move_getDestination(actor).empty(); };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorHasEquipment(Area& area, ActorIndex actor, ItemIndex item)
+void Simulation::fastForwardUntillActorHasEquipment(Area& area, const ActorIndex& actor, const ItemIndex& item)
 {
 	Actors& actors = area.getActors();
 	std::function<bool()> predicate = [&](){ return actors.equipment_containsItem(actor, item); };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillPredicate(std::function<bool()> predicate, uint32_t minutes)
+void Simulation::fastForwardUntillPredicate(std::function<bool()>& predicate, uint32_t minutes)
 {
 	assert(!predicate());
 	[[maybe_unused]] Step lastStep = m_step + (Config::stepsPerMinute * minutes);
@@ -185,6 +187,10 @@ void Simulation::fastForwardUntillPredicate(std::function<bool()> predicate, uin
 		if(predicate())
 			break;
 	}
+}
+void Simulation::fastForwardUntillPredicate(std::function<bool()>&& predicate, uint32_t minutes)
+{
+	fastForwardUntillPredicate(predicate, minutes);
 }
 void Simulation::fastForwardUntillNextEvent()
 {

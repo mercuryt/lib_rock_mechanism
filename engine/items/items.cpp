@@ -163,18 +163,19 @@ void Items::moveIndex(ItemIndex oldIndex, ItemIndex newIndex)
 	for(BlockIndex block : m_blocks[newIndex])
 		blocks.item_updateIndex(block, oldIndex, newIndex);
 }
-void Items::setLocation(ItemIndex index, BlockIndex block)
+ItemIndex Items::setLocation(ItemIndex index, BlockIndex block)
 {
 	assert(index.exists());
 	assert(m_location[index].exists());
 	assert(block.exists());
 	Facing facing = m_area.getBlocks().facingToSetWhenEnteringFrom(block, m_location[index]);
-	setLocationAndFacing(index, block, facing);
+	return setLocationAndFacing(index, block, facing);
 }
-void Items::setLocationAndFacing(ItemIndex index, BlockIndex block, Facing facing)
+ItemIndex Items::setLocationAndFacing(ItemIndex index, BlockIndex block, Facing facing)
 {
 	assert(index.exists());
 	assert(block.exists());
+	assert(m_location[index] != block);
 	if(m_location[index].exists())
 		exit(index);
 	m_location[index] = block;
@@ -182,12 +183,11 @@ void Items::setLocationAndFacing(ItemIndex index, BlockIndex block, Facing facin
 	Blocks& blocks = m_area.getBlocks();
 	if(isGeneric(index) && m_static[index])
 	{
+		// Check for existing generic item to combine with.
 		ItemIndex found = blocks.item_getGeneric(block, getItemType(index), getMaterialType(index));
 		if(found.exists())
-		{
-			merge(found, index);
-			return;
-		}
+			// Return the index of the found item, which may be different then it was before 'index' was destroyed by merge.
+			return merge(found, index);
 	}
 	auto& occupiedBlocks = m_blocks[index];
 	for(auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
@@ -200,6 +200,7 @@ void Items::setLocationAndFacing(ItemIndex index, BlockIndex block, Facing facin
 		m_onSurface.add(index);
 	else
 		m_onSurface.remove(index);
+	return index;
 }
 void Items::exit(ItemIndex index)
 {
@@ -224,8 +225,10 @@ void Items::addQuantity(ItemIndex index, Quantity delta)
 		m_reservables[index]->setMaxReservations(newQuantity);
 }
 // May destroy.
-void Items::removeQuantity(ItemIndex index, Quantity delta)
+void Items::removeQuantity(ItemIndex index, Quantity delta, CanReserve* canReserve)
 {
+	if(canReserve != nullptr)
+		reservable_maybeUnreserve(index, *canReserve, delta);
 	if(m_quantity[index] == delta)
 		destroy(index);
 	else
@@ -248,16 +251,21 @@ void Items::install(ItemIndex index, BlockIndex block, Facing facing, FactionId 
 			m_area.m_hasCraftingLocationsAndJobs.getForFaction(faction).addLocation(ItemType::getCraftLocationStepTypeCategory(item), craftLocation);
 	}
 }
-void Items::merge(ItemIndex index, ItemIndex other)
+ItemIndex Items::merge(ItemIndex index, ItemIndex other)
 {
+	assert(index != other);
 	assert(m_itemType[index] == m_itemType[other]);
 	assert(m_materialType[index] == m_materialType[other]);
 	if(m_reservables[other] != nullptr)
 		reservable_merge(index, *m_reservables[other]);
 	m_quantity[index] += m_quantity[other];
+	assert(m_quantity[index] == m_reservables[index]->getMaxReservations());
 	if(m_destroy[other] != nullptr)
 		onDestroy_merge(index, *m_destroy[other]);
+	// Store a reference to index because it's ItemIndex may change when other is destroyed.
+	ItemReference ref = index.toReference(m_area);
 	destroy(other);
+	return ref.getIndex();
 }
 void Items::setQuality(ItemIndex index, Quality quality)
 {

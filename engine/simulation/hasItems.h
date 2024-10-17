@@ -22,10 +22,10 @@ class SimulationHasItems final
 public:
 	SimulationHasItems() = default;
 	SimulationHasItems(const Json& data, DeserializationMemo& deserializationMemo);
-	void registerItem(ItemId id, Items& store, ItemIndex index);
-	void removeItem(ItemId id);
+	void registerItem(const ItemId& id, Items& store, const ItemIndex& index);
+	void removeItem(const ItemId& id);
 	[[nodiscard]] ItemId getNextId() { return ++m_nextId; }
-	[[nodiscard]] ItemIndex getIndexForId(ItemId id) const;
-	[[nodiscard]] Area& getAreaForId(ItemId id) const;
+	[[nodiscard]] ItemIndex getIndexForId(const ItemId& id) const;
+	[[nodiscard]] Area& getAreaForId(const ItemId& id) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SimulationHasItems, m_nextId);
 };

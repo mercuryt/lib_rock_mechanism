@@ -35,7 +35,7 @@ void Blocks::item_erase(BlockIndex index, ItemIndex item)
 void Blocks::item_setTemperature(BlockIndex index, Temperature temperature)
 {
 	Items& items = m_area.getItems();
-	for(auto [item, volume] : m_itemVolume[index])
+	for(const ItemIndex& item : m_items[index])
 		items.setTemperature(item, temperature);
 }
 void Blocks::item_disperseAll(BlockIndex index)
@@ -61,6 +61,9 @@ void Blocks::item_updateIndex(BlockIndex index, ItemIndex oldIndex, ItemIndex ne
 	auto found = std::ranges::find(m_items[index], oldIndex);
 	assert(found != m_items[index].end());
 	(*found) = newIndex; 
+	auto found2 = std::ranges::find(m_itemVolume[index], oldIndex, [](const auto& pair) { return pair.first; });
+	assert(found2 != m_itemVolume[index].end());
+	(*found2).first = newIndex; 
 }
 ItemIndex Blocks::item_addGeneric(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
 {
@@ -89,29 +92,27 @@ ItemIndex Blocks::item_addGeneric(BlockIndex index, ItemTypeId itemType, Materia
 }
 Quantity Blocks::item_getCount(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType) const
 {
-	auto& itemsInBlock = m_itemVolume[index];
+	auto& itemsInBlock = m_items[index];
 	Items& items = m_area.getItems();
-	auto found = std::ranges::find_if(itemsInBlock, [&](auto pair)
+	auto found = std::ranges::find_if(itemsInBlock, [&](const ItemIndex& item)
 	{
-		ItemIndex item = pair.first;
 		return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType;
 	});
 	if(found == itemsInBlock.end())
 		return Quantity::create(0);
 	else
-		return items.getQuantity(found->first);
+		return items.getQuantity(*found);
 }
 ItemIndex Blocks::item_getGeneric(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType) const
 {
-	auto& itemsInBlock = m_itemVolume[index];
+	auto& itemsInBlock = m_items[index];
 	Items& items = m_area.getItems();
-	auto found = std::ranges::find_if(itemsInBlock, [&](auto pair) { 
-		ItemIndex item = pair.first;
+	auto found = std::ranges::find_if(itemsInBlock, [&](const ItemIndex& item) { 
 		return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType;
 	});
 	if(found == itemsInBlock.end())
 		return ItemIndex::null();
-	return found->first;
+	return *found;
 }
 // TODO: buggy
 bool Blocks::item_hasInstalledType(BlockIndex index, ItemTypeId itemType) const
@@ -128,7 +129,7 @@ bool Blocks::item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(BlockIndex inde
 {
 	Items& items = m_area.getItems();
 	Actors& actors = m_area.getActors();
-	for(auto [item, volume] : m_itemVolume[index])
+	for(const ItemIndex& item : m_items[index])
 	{
 		ItemTypeId itemType = items.getItemType(item);
 		//TODO: account for container weight when full, needs to have fluid type passed in.
@@ -141,7 +142,7 @@ bool Blocks::item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, c
 {
 	Items& items = m_area.getItems();
 	Actors& actors = m_area.getActors();
-	for(auto [item, volume]  : m_itemVolume[index])
+	for(const ItemIndex& item : m_items[index])
 	{
 		ItemTypeId itemType = items.getItemType(item);
 		if(ItemType::getInternalVolume(itemType) != 0 && ItemType::getCanHoldFluids(itemType) &&

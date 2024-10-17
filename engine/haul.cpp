@@ -233,6 +233,7 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 					ActorOrItemIndex cargo = actors.canPickUp_tryToPutDownPolymorphic(actor, actorLocation);
 					if(cargo.empty())
 					{
+						assert(false);
 						//TODO: Cargo cannot be put down here, try again
 					}
 					complete(cargo);
@@ -245,6 +246,7 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 				if(toHaulIndex.isAdjacentToActor(area, actor))
 				{
 					actors.canReserve_clearAll(actor);
+					toHaulIndex.reservable_unreserve(area, m_project.m_canReserve, m_quantity);
 					actors.canPickUp_pickUpPolymorphic(actor, toHaulIndex, m_quantity);
 					commandWorker(actor);
 				}
@@ -827,11 +829,14 @@ void HaulSubproject::complete(ActorOrItemIndex delivered)
 	if(delivered.isItem())
 	{
 		ItemIndex deliveredIndex = ItemIndex::cast(delivered.get());
+		// Reserve dropped off item with project.
+		// Items are not reserved durring transit because reserved items don't move.
+		items.reservable_reserve(deliveredIndex, m_project.getCanReserve(), m_quantity);
 		if(m_projectRequirementCounts.consumed)
-			m_project.m_toConsume.add(items.getReference(deliveredIndex));
+			m_project.m_toConsume.getOrInsert(items.getReference(deliveredIndex), Quantity::create(0)) += m_quantity;
 		if(items.isWorkPiece(deliveredIndex))
 			delivered.setLocationAndFacing(m_project.m_area, m_project.m_location, Facing::create(0));
-		m_project.m_deliveredItems.add(items.getReference(deliveredIndex));
+		m_project.m_deliveredItems.maybeAdd(deliveredIndex, m_project.m_area);
 	}
 	else
 		//TODO: deliver actors.

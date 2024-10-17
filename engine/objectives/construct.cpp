@@ -96,7 +96,7 @@ void ConstructObjective::delay(Area& area, ActorIndex actor)
 {
 	cancel(area, actor);
 	m_project = nullptr;
-	area.getActors().project_unset(actor);
+	area.getActors().project_maybeUnset(actor);
 }
 void ConstructObjective::reset(Area& area, ActorIndex actor)
 {

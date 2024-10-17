@@ -33,8 +33,8 @@ void Blocks::actor_setTemperature(BlockIndex index, Temperature temperature)
 {
 	assert(temperature_get(index) == temperature);
 	Actors& actors = m_area.getActors();
-	for(auto pair : m_actorVolume[index])
-		actors.temperature_onChange(pair.first);
+	for(const ActorIndex& actor : m_actors[index])
+		actors.temperature_onChange(actor);
 }
 void Blocks::actor_updateIndex(BlockIndex index, ActorIndex oldIndex, ActorIndex newIndex)
 {

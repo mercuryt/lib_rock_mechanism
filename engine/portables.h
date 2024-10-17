@@ -77,6 +77,7 @@ public:
 	void reservable_merge(HasShapeIndex, Reservable& other);
 	[[nodiscard]] bool reservable_hasAnyReservations(HasShapeIndex index) const;
 	[[nodiscard]] bool reservable_exists(HasShapeIndex index, const FactionId faction) const;
+	[[nodiscard]] bool reservable_existsFor(HasShapeIndex index, const CanReserve& canReserve) const;
 	[[nodiscard]] bool reservable_isFullyReserved(HasShapeIndex index, const FactionId faction) const;
 	[[nodiscard]] Quantity reservable_getUnreservedCount(HasShapeIndex index, const FactionId faction) const;
 	// On Destroy.

@@ -427,6 +427,10 @@ bool Portables::reservable_exists(HasShapeIndex index, const FactionId faction) 
 {
 	return m_reservables[index]->hasAnyReservationsWith(faction);
 }
+bool Portables::reservable_existsFor(HasShapeIndex index, const CanReserve& canReserve) const
+{
+	return m_reservables[index]->hasAnyReservationsFor(canReserve);
+}
 bool Portables::reservable_isFullyReserved(HasShapeIndex index, const FactionId faction) const
 {
 	return m_reservables[index]->isFullyReserved(faction);

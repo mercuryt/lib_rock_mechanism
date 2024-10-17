@@ -72,15 +72,16 @@ public:
 	// For testing.
 	[[maybe_unused]] void fastForwardUntill(DateTime now);
 	[[maybe_unused]] void fastForward(Step step);
-	[[maybe_unused]] void fastForwardUntillActorIsAtDestination(Area& area, ActorIndex actor, BlockIndex destination);
-	[[maybe_unused]] void fastForwardUntillActorIsAt(Area& area, ActorIndex actor, BlockIndex destination);
-	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToDestination(Area& area, ActorIndex actor, BlockIndex destination);
-	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToLocation(Area& area, ActorIndex actor, BlockIndex block);
-	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToActor(Area& area, ActorIndex actor, ActorIndex other);
-	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToItem(Area& area, ActorIndex actor, ItemIndex other);
-	[[maybe_unused]] void fastForwardUntillActorHasNoDestination(Area& area, ActorIndex actor);
-	[[maybe_unused]] void fastForwardUntillActorHasEquipment(Area& area, ActorIndex actor, ItemIndex item);
-	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()> predicate, uint32_t minutes = 10);
+	[[maybe_unused]] void fastForwardUntillActorIsAtDestination(Area& area, const ActorIndex& actor, const BlockIndex& destination);
+	[[maybe_unused]] void fastForwardUntillActorIsAt(Area& area, const ActorIndex& actor, const BlockIndex& destination);
+	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToDestination(Area& area, const ActorIndex& actor, const BlockIndex& destination);
+	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToLocation(Area& area, const ActorIndex& actor, const BlockIndex& block);
+	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToActor(Area& area, const ActorIndex& actor, const ActorIndex& other);
+	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToItem(Area& area, const ActorIndex& actor, const ItemIndex& other);
+	[[maybe_unused]] void fastForwardUntillActorHasNoDestination(Area& area, const ActorIndex& actor);
+	[[maybe_unused]] void fastForwardUntillActorHasEquipment(Area& area, const ActorIndex& actor, const ItemIndex& item);
+	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()>&& predicate, uint32_t minutes = 10);
+	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()>& predicate, uint32_t minutes = 10);
 	[[maybe_unused]] void fastForwardUntillNextEvent();
 	[[nodiscard, maybe_unused]] DeserializationMemo& getDeserializationMemo() { return m_deserializationMemo; }
 	// temportary.

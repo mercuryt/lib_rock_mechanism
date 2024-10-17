@@ -11,6 +11,7 @@ struct CraftJob;
 class Area;
 class Simulation;
 class EventSchedule;
+class CanReserve;
 
 struct ItemParamaters final
 {
@@ -124,16 +125,19 @@ public:
 	ItemIndex create(ItemParamaters paramaters);
 	void destroy(ItemIndex index);
 	void setName(ItemIndex index, std::wstring name);
-	void setLocation(ItemIndex index, BlockIndex block);
-	void setLocationAndFacing(ItemIndex index, BlockIndex block, Facing facing);
+	// Returns index in case of nongeneric or generics with a type not present at the location.
+	// If a generic of the same type is found return it instead.
+	ItemIndex setLocation(ItemIndex index, BlockIndex block);
+	ItemIndex setLocationAndFacing(ItemIndex index, BlockIndex block, Facing facing);
 	void exit(ItemIndex index);
 	void setShape(ItemIndex index, ShapeId shape);
 	void pierced(ItemIndex index, Volume volume);
 	void setTemperature(ItemIndex index, Temperature temperature);
 	void addQuantity(ItemIndex index, Quantity delta);
-	void removeQuantity(ItemIndex index, Quantity delta);
+	void removeQuantity(ItemIndex index, Quantity delta, CanReserve* canReserve = nullptr);
 	void install(ItemIndex index, BlockIndex block, Facing facing, FactionId faction);
-	void merge(ItemIndex index, ItemIndex item);
+	// Returns the index of the item which was passed in as 'index', it may have changed with 'item' being destroyed
+	ItemIndex merge(ItemIndex index, ItemIndex item);
 	void setOnSurface(ItemIndex index);
 	void setNotOnSurface(ItemIndex index);
 	void setQuality(ItemIndex index, Quality quality);

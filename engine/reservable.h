@@ -60,6 +60,7 @@ public:
 	[[nodiscard]] bool isFullyReserved(const FactionId faction) const;
 	[[nodiscard]] bool hasAnyReservations() const;
 	[[nodiscard]] bool hasAnyReservationsWith(const FactionId faction) const;
+	[[nodiscard]] bool hasAnyReservationsFor(const CanReserve& canReserve) const;
 	[[nodiscard]] SmallMap<CanReserve*, Quantity>& getReservedBy();
 	[[nodiscard]] Quantity getUnreservedCount(const FactionId faction) const;
 	[[nodiscard]] Quantity getMaxReservations() const { return m_maxReservations; }
