@@ -60,6 +60,7 @@ bool Reservable::isFullyReserved(const FactionId faction) const
 }
 bool Reservable::hasAnyReservations() const { return !m_canReserves.empty(); }
 bool Reservable::hasAnyReservationsWith(const FactionId faction) const { return m_reservedCounts.contains(faction); }
+bool Reservable::hasAnyReservationsFor(const CanReserve& canReserve) const { return m_canReserves.contains(&const_cast<CanReserve&>(canReserve)); }
 SmallMap<CanReserve*, Quantity>& Reservable::getReservedBy() { return m_canReserves; }
 void Reservable::reserveFor(CanReserve& canReserve, const Quantity quantity, std::unique_ptr<DishonorCallback> dishonorCallback) 
 {
@@ -184,6 +185,7 @@ void Reservable::merge(Reservable& reservable)
 	}
 	reservable.m_canReserves.clear();
 	reservable.m_dishonorCallbacks.clear();
+	m_maxReservations += reservable.m_maxReservations;
 }
 Quantity Reservable::getUnreservedCount(const FactionId faction) const
 {

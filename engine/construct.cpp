@@ -85,12 +85,11 @@ void ConstructProject::onComplete()
 void ConstructProject::onCancel()
 {
 	ActorIndices copy = getWorkersAndCandidates();
-	m_area.m_hasConstructionDesignations.remove(m_faction, m_location);
 	Actors& actors = m_area.getActors();
+	m_area.m_hasConstructionDesignations.remove(m_faction, m_location);
 	for(ActorIndex actor : copy)
 	{
 		actors.objective_getCurrent<ConstructObjective>(actor).m_project = nullptr;
-		actors.project_unset(actor);
 		actors.objective_reset(actor);
 		actors.objective_canNotCompleteSubobjective(actor);
 	}

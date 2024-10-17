@@ -86,8 +86,7 @@ ItemIndex Actors::canPickUp_tryToPutDownItem(ActorIndex index, BlockIndex locati
 		return ItemIndex::null();
 	m_carrying[index].clear();
 	move_updateIndividualSpeed(index);
-	m_area.getItems().setLocationAndFacing(item, targetLocation, Facing::create(0));
-	return item;
+	return m_area.getItems().setLocationAndFacing(item, targetLocation, Facing::create(0));
 }
 ActorOrItemIndex Actors::canPickUp_tryToPutDownIfAny(ActorIndex index, BlockIndex location, DistanceInBlocks maxRange)
 {

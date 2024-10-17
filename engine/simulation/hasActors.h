@@ -22,9 +22,9 @@ public:
 	SimulationHasActors() = default;
 	Json toJson() const;
 	[[nodiscard]] ActorId getNextId() { return ++m_nextId; }
-	void registerActor(ActorId id, Actors& store, ActorIndex index);
-	void removeActor(ActorId id);
-	ActorIndex getIndexForId(ActorId id) const;
-	Area& getAreaForId(ActorId id) const;
+	void registerActor(const ActorId& id, Actors& store, const ActorIndex& index);
+	void removeActor(const ActorId& id);
+	ActorIndex getIndexForId(const ActorId& id) const;
+	Area& getAreaForId(const ActorId& id) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SimulationHasActors, m_nextId);
 };

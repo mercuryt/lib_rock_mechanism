@@ -220,7 +220,7 @@ public:
 		[[nodiscard]] const V& second() const { return m_iter->second; }
 		[[nodiscard]] const Pair* operator->() const { return &*m_iter; }
 	};
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallMap, keys, values);
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallMap, m_data);
 };
 template<typename K, typename V>
 class SmallMapStable
@@ -292,5 +292,5 @@ public:
 		[[nodiscard]] const V& second() const { return *m_iter->second.get(); }
 		[[nodiscard]] const Pair* operator->() const { return &*m_iter; }
 	};
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallMapStable, keys, values);
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallMapStable, m_data);
 };

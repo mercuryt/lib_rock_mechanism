@@ -109,6 +109,7 @@ public:
 	[[nodiscard]] AccessCondition makeAccessCondition(ShapeId shape, BlockIndex start, BlockIndices initalBlocks, bool detour, DistanceInBlocks maxRange) const;
 	// For testing.
 	[[nodiscard]] bool accessable(BlockIndex from, Facing startFacing, BlockIndex to, ActorIndex actor) const;
+	[[nodiscard]] bool empty() const { return m_pathRequestStartFacingNoHuristic.empty() && m_pathRequestStartFacingWithHuristic.empty(); }
 };
 class AreaHasTerrainFacades
 {
@@ -122,4 +123,5 @@ public:
 	void maybeRegisterMoveType(MoveTypeId moveType);
 	void clearPathRequests();
 	[[nodiscard]] TerrainFacade& getForMoveType(MoveTypeId);
+	[[nodiscard]] bool empty() const { for(const auto& pair : m_data) { if(!pair.second.empty()) return false; } return true; }
 };

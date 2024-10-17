@@ -26,6 +26,7 @@ public:
 	[[nodiscard]] std::string toS() const;
 	[[nodiscard]] std::list<FluidGroup>& getAll() { return m_fluidGroups; }
 	[[nodiscard]] SmallSet<FluidGroup*>& getUnstable() { return m_unstableFluidGroups; }
+	[[nodiscard]] const SmallSet<FluidGroup*>& getUnstable() const { return m_unstableFluidGroups; }
 	// For assert.
 	[[nodiscard]] bool contains(const FluidGroup& fluidGroup);
 };

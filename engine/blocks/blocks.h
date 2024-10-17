@@ -49,8 +49,10 @@ class Blocks
 	DataVector<FluidTypeId, BlockIndex> m_mist;
 	DataVector<CollisionVolume, BlockIndex> m_totalFluidVolume;
 	DataVector<DistanceInBlocks, BlockIndex> m_mistInverseDistanceFromSource;
+	//TODO: make these SmallMaps.
 	DataVector<std::vector<std::pair<ActorIndex, CollisionVolume>>, BlockIndex> m_actorVolume;
 	DataVector<std::vector<std::pair<ItemIndex, CollisionVolume>>, BlockIndex> m_itemVolume;
+	// TODO: Make these small vectors.
 	DataVector<ActorIndicesForBlock, BlockIndex> m_actors;
 	DataVector<ItemIndicesForBlock, BlockIndex> m_items;
 	DataBitSet<BlockIndex> m_hasActors;

@@ -76,7 +76,7 @@ class Project
 	//TODO: required actors are not suported in several places.
 	std::vector<std::pair<ActorQuery, ProjectRequirementCounts>> m_requiredActors;
 	// Required items which will be destroyed at the end of the project.
-	ItemReferences m_toConsume;
+	SmallMap<ItemReference, Quantity> m_toConsume;
 	// Required items which are equiped by workers (tools).
 	SmallMap<ActorReference, SmallMap<ProjectRequirementCounts*, ItemReference>> m_reservedEquipment;
 	// Targets for haul subprojects awaiting dispatch.
@@ -159,6 +159,7 @@ public:
 	void clearReservations();
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] FactionId getFaction() { return m_faction; }
+	[[nodiscard]] CanReserve& getCanReserve() { return m_canReserve; }
 	[[nodiscard]] Speed getMinimumHaulSpeed() const { return m_minimumMoveSpeed; }
 	[[nodiscard]] bool reservationsComplete() const;
 	[[nodiscard]] bool deliveriesComplete() const;
@@ -204,6 +205,7 @@ public:
 	[[nodiscard, maybe_unused]] bool hasTryToReserveEvent() const { return m_tryToReserveEvent.exists(); }
 	[[nodiscard, maybe_unused]] bool finishEventExists() const { return m_finishEvent.exists(); }
 	[[nodiscard, maybe_unused]] Step getFinishStep() const { return m_finishEvent.getStep(); }
+	[[nodiscard, maybe_unused]] auto getToPickup() const { return m_toPickup; }
 	friend class ProjectFinishEvent;
 	friend class ProjectTryToHaulEvent;
 	friend class ProjectTryToReserveEvent;

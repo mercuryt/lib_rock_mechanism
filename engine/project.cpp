@@ -223,7 +223,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 					assert(counts.delivered <= counts.reserved);
 					ActorOrItemReference ref = actorOrItem.toReference(m_project.m_area);
 					assert(!m_alreadyAtSite.contains(ref));
-					m_alreadyAtSite[ref] = quantity;
+					m_alreadyAtSite.insert(ref, quantity);
 				}
 				else
 					// TODO: project shoud be read only here, requires tracking reservationsComplete seperately for task.
@@ -465,8 +465,8 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) :
 			deserializationMemo.m_projectRequirementCounts[pair[1]["address"].get<uintptr_t>()] = &m_requiredActors.back().second;
 		}
 	if(data.contains("toConsume"))
-		for(const Json& itemIndex : data["toConsume"])
-			m_toConsume.add(itemIndex.get<ItemIndex>(), m_area);
+		for(const Json& pair : data["toConsume"])
+			m_toConsume.insert(pair[0].get<ItemIndex>().toReference(m_area), pair[1].get<Quantity>());
 	if(data.contains("toPickup"))
 		for(const Json& tuple : data["toPickup"])
 		{
@@ -570,8 +570,8 @@ Json Project::toJson() const
 	if(!m_toConsume.empty())
 	{
 		data["toConsume"] = Json::array();
-		for(ItemReference item : m_toConsume)
-			data["toConsume"].push_back(item);
+		for(auto& [item, quantity] : m_toConsume)
+			data["toConsume"].push_back({item, quantity});
 	}
 	if(!m_toPickup.empty())
 	{
@@ -805,8 +805,8 @@ void Project::complete()
 	m_canReserve.deleteAllWithoutCallback();
 	auto& blocks = m_area.getBlocks();
 	blocks.project_remove(m_location, *this);
-	for(ItemReference item : m_toConsume)
-		items.destroy(item.getIndex());
+	for(auto [item, quantity] : m_toConsume)
+		items.removeQuantity(item.getIndex(), quantity);
 	if(!m_area.m_hasStockPiles.contains(m_faction))
 		m_area.m_hasStockPiles.registerFaction(m_faction);
 	for(auto& [itemType, materialType, quantity] : getByproducts())
