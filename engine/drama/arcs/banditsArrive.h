@@ -32,7 +32,7 @@ class BanditsLeaveScheduledEvent final : public ScheduledEvent
 {
 	BanditsArriveDramaArc& m_dramaticArc;
 public:
-	BanditsLeaveScheduledEvent(BanditsArriveDramaArc& event, Simulation& simulation, Step duration, Step start = Step::create(1)) : ScheduledEvent(simulation, duration, start), m_dramaticArc(event) { }
+	BanditsLeaveScheduledEvent(BanditsArriveDramaArc& event, Simulation& simulation, const Step& duration, const Step start = Step::create(1)) : ScheduledEvent(simulation, duration, start), m_dramaticArc(event) { }
 	void execute(Simulation&, Area*) { m_dramaticArc.callback(); }
 	void clearReferences(Simulation&, Area*) { m_dramaticArc.m_scheduledEvent.clearPointer(); }
 };

@@ -13,8 +13,8 @@ class ConstructObjectiveType final : public ObjectiveType
 public:
 	ConstructObjectiveType() = default;
 	ConstructObjectiveType(const Json&, DeserializationMemo&){ }
-	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
-	[[nodiscard]] bool canBeAssigned(Area& area, ActorIndex actor) const;
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
+	[[nodiscard]] bool canBeAssigned(Area& area, const ActorIndex& actor) const;
 	[[nodiscard]] std::string name() const { return "construct"; }
 };
 class ConstructObjective final : public Objective
@@ -24,18 +24,18 @@ class ConstructObjective final : public Objective
 public:
 	ConstructObjective() : Objective(Config::constructObjectivePriority) { }
 	ConstructObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, ActorIndex actor);
-	void cancel(Area& area, ActorIndex actor);
-	void delay(Area& area, ActorIndex actor);
-	void reset(Area& area, ActorIndex actor);
-	void joinProject(ConstructProject& project, ActorIndex actor);
-	void onProjectCannotReserve(Area& area, ActorIndex actor);
+	void execute(Area& area, const ActorIndex& actor);
+	void cancel(Area& area, const ActorIndex& actor);
+	void delay(Area& area, const ActorIndex& actor);
+	void reset(Area& area, const ActorIndex& actor);
+	void joinProject(ConstructProject& project, const ActorIndex& actor);
+	void onProjectCannotReserve(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "construct"; }
-	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(Area& area, BlockIndex location, Facing facing, ActorIndex actor);
-	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(Area& area, BlockIndex block, ActorIndex actor);
-	[[nodiscard]] bool joinableProjectExistsAt(Area& area, BlockIndex block, ActorIndex actor) const;
-	[[nodiscard]] bool canJoinProjectAdjacentToLocationAndFacing(Area& area, BlockIndex block, Facing facing, ActorIndex actor) const;
+	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(Area& area, const BlockIndex& location, const Facing& facing, const ActorIndex& actor);
+	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(Area& area, const BlockIndex& block, const ActorIndex& actor);
+	[[nodiscard]] bool joinableProjectExistsAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
+	[[nodiscard]] bool canJoinProjectAdjacentToLocationAndFacing(Area& area, const BlockIndex& block, const Facing& facing, const ActorIndex& actor) const;
 	friend class ConstructPathRequest;
 	friend class ConstructProject;
 	// For Testing.
@@ -45,9 +45,9 @@ class ConstructPathRequest final : public PathRequest
 {
 	ConstructObjective& m_constructObjective;
 public:
-	ConstructPathRequest(Area& area, ConstructObjective& co, ActorIndex actor);
+	ConstructPathRequest(Area& area, ConstructObjective& co, const ActorIndex& actor);
 	ConstructPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, FindPathResult& result);
+	void callback(Area& area, const FindPathResult& result);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() { return "construct"; }
 };

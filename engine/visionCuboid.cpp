@@ -29,7 +29,7 @@ void AreaHasVisionCuboids::clearDestroyed()
 {
 	std::erase_if(m_visionCuboids, [](VisionCuboid& visionCuboid){ return visionCuboid.m_destroy; });
 }
-void AreaHasVisionCuboids::blockIsNeverOpaque(BlockIndex block)
+void AreaHasVisionCuboids::blockIsNeverOpaque(const BlockIndex& block)
 {
 	if(m_blockVisionCuboids.empty())
 		return;
@@ -41,7 +41,7 @@ void AreaHasVisionCuboids::blockIsNeverOpaque(BlockIndex block)
 		toCombine->extend(cuboid);
 	clearDestroyed();
 }
-void AreaHasVisionCuboids::blockIsSometimesOpaque(BlockIndex block)
+void AreaHasVisionCuboids::blockIsSometimesOpaque(const BlockIndex& block)
 {
 	if(m_blockVisionCuboids.empty())
 		return;
@@ -50,7 +50,7 @@ void AreaHasVisionCuboids::blockIsSometimesOpaque(BlockIndex block)
 	visionCuboid->splitAt(block);
 	clearDestroyed();
 }
-void AreaHasVisionCuboids::blockFloorIsNeverOpaque(BlockIndex block)
+void AreaHasVisionCuboids::blockFloorIsNeverOpaque(const BlockIndex& block)
 {
 	if(m_blockVisionCuboids.empty())
 		return;
@@ -61,7 +61,7 @@ void AreaHasVisionCuboids::blockFloorIsNeverOpaque(BlockIndex block)
 		toCombine->extend(visionCuboid->m_cuboid);
 	clearDestroyed();
 }
-void AreaHasVisionCuboids::blockFloorIsSometimesOpaque(BlockIndex block)
+void AreaHasVisionCuboids::blockFloorIsSometimesOpaque(const BlockIndex& block)
 {
 	if(m_blockVisionCuboids.empty())
 		return;
@@ -70,14 +70,14 @@ void AreaHasVisionCuboids::blockFloorIsSometimesOpaque(BlockIndex block)
 	visionCuboid->splitBelow(block);
 	clearDestroyed();
 }
-void AreaHasVisionCuboids::set(BlockIndex block, VisionCuboid& visionCuboid)
+void AreaHasVisionCuboids::set(const BlockIndex& block, VisionCuboid& visionCuboid)
 {
 	if(m_blockVisionCuboids.empty())
 		return;
 	m_blockVisionCuboids[block] = &visionCuboid;
 	m_blockVisionCuboidIds[block] = visionCuboid.m_id;
 }
-void AreaHasVisionCuboids::unset(BlockIndex block)
+void AreaHasVisionCuboids::unset(const BlockIndex& block)
 {
 	if(m_blockVisionCuboids.empty())
 		return;
@@ -114,7 +114,7 @@ VisionCuboid* AreaHasVisionCuboids::getTargetToCombineWith(const Cuboid& cuboid)
 		}
 	return nullptr;
 }
-VisionCuboid* AreaHasVisionCuboids::getVisionCuboidFor(BlockIndex block)
+VisionCuboid* AreaHasVisionCuboids::getVisionCuboidFor(const BlockIndex& block)
 {
 	assert(!m_blockVisionCuboids.empty());
 	return m_blockVisionCuboids[block];
@@ -141,7 +141,7 @@ bool VisionCuboid::canCombineWith(const Cuboid& cuboid) const
 	return true;
 }
 // Used when a block is no longer always transparent.
-void VisionCuboid::splitAt(BlockIndex split)
+void VisionCuboid::splitAt(const BlockIndex& split)
 {
 	assert(!m_destroy);
 	assert(m_cuboid.contains(split));
@@ -182,7 +182,7 @@ void VisionCuboid::splitAt(BlockIndex split)
 	}
 }
 // Used when a floor is no longer always transparent.
-void VisionCuboid::splitBelow(BlockIndex split)
+void VisionCuboid::splitBelow(const BlockIndex& split)
 {
 	assert(!m_destroy);
 	m_destroy = true;

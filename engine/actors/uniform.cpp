@@ -5,19 +5,19 @@
 #include "../objectives/uniform.h"
 #include "../area.h"
 #include "../simulation.h"
-void ActorHasUniform::load(Area& area, const Json& data, FactionId faction)
+void ActorHasUniform::load(Area& area, const Json& data, const FactionId& faction)
 {
 	if(data.contains("m_uniform"))
 		m_uniform = &area.m_simulation.m_hasUniforms.getForFaction(faction).byName(data["m_uniform"].get<std::wstring>());
 	// Don't serialize uniform objective, create from the objective deserialization instead.
 }
-void ActorHasUniform::set(ActorIndex index, Area& area, Uniform& uniform)
+void ActorHasUniform::set(const ActorIndex& index, Area& area, Uniform& uniform)
 {
 	if(m_objective)
 		m_objective->cancel(area, index);
 	m_uniform = &uniform;
 }
-void ActorHasUniform::unset(ActorIndex index, Area& area)
+void ActorHasUniform::unset(const ActorIndex& index, Area& area)
 {
 	if(m_objective)
 		m_objective->cancel(area, index);
@@ -34,7 +34,7 @@ void ActorHasUniform::clearObjective(UniformObjective& objective)
 	assert(*m_objective == objective);
 	m_objective = nullptr;
 }
-void Actors::uniform_set(ActorIndex index, Uniform& uniform)
+void Actors::uniform_set(const ActorIndex& index, Uniform& uniform)
 {
 	if(uniform_exists(index))
 		uniform_unset(index);
@@ -43,21 +43,21 @@ void Actors::uniform_set(ActorIndex index, Uniform& uniform)
 	m_hasUniform[index]->recordObjective(*static_cast<UniformObjective*>(objective.get()));
 	m_hasObjectives[index]->addTaskToStart(m_area, std::move(objective));
 }
-void Actors::uniform_unset(ActorIndex index)
+void Actors::uniform_unset(const ActorIndex& index)
 {
 	assert(uniform_exists(index));
 	m_hasUniform[index]->unset(index, m_area);
 	m_hasUniform[index] = nullptr;
 }
-bool Actors::uniform_exists(ActorIndex index) const
+bool Actors::uniform_exists(const ActorIndex& index) const
 {
 	return m_hasUniform[index] != nullptr;
 }
-Uniform& Actors::uniform_get(ActorIndex index)
+Uniform& Actors::uniform_get(const ActorIndex& index)
 {
 	return m_hasUniform[index]->get();
 }
-const Uniform& Actors::uniform_get(ActorIndex index) const
+const Uniform& Actors::uniform_get(const ActorIndex& index) const
 {
 	return m_hasUniform[index]->get();
 }

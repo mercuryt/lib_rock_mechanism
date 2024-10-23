@@ -49,60 +49,60 @@ class Plants final : public HasShapes
 	DataVector<Percent, PlantIndex> m_percentFoliage;
 	DataVector<uint8_t, PlantIndex> m_wildGrowth;
 	DataVector<CollisionVolume, PlantIndex> m_volumeFluidRequested;
-	void resize(PlantIndex newSize);
-	void moveIndex(PlantIndex oldIndex, PlantIndex newIndex);
-	void updateFluidVolumeRequested(PlantIndex index);
+	void resize(const PlantIndex& newSize);
+	void moveIndex(const PlantIndex& oldIndex, const PlantIndex& newIndex);
+	void updateFluidVolumeRequested(const PlantIndex& index);
 public:
 	PlantIndexSet m_onSurface;
 	Plants(Area& area);
 	void load(const Json& data);
 	void onChangeAmbiantSurfaceTemperature();
 	PlantIndex create(PlantParamaters paramaters);
-	void destroy(PlantIndex index);
-	void die(PlantIndex index);
-	void remove(PlantIndex index) { die(index); } // TODO: seperate remove from die when corpse is added.
-	void setTemperature(PlantIndex index, Temperature temperature);
-	void setHasFluidForNow(PlantIndex index);
-	void setMaybeNeedsFluid(PlantIndex index);
-	void addFluid(PlantIndex index, CollisionVolume volume, FluidTypeId fluidType);
-	void setDayOfYear(PlantIndex index, uint32_t dayOfYear);
-	void setQuantityToHarvest(PlantIndex index);
-	void harvest(PlantIndex index, Quantity quantity);
-	void endOfHarvest(PlantIndex index);
-	void updateGrowingStatus(PlantIndex index);
-	void removeFoliageMass(PlantIndex index, Mass mass);
-	void doWildGrowth(PlantIndex index, uint8_t count = 1);
-	void removeFruitQuantity(PlantIndex index, Quantity quantity);
-	void makeFoliageGrowthEvent(PlantIndex index);
-	void foliageGrowth(PlantIndex index);
-	void updateShape(PlantIndex index);
-	void setShape(PlantIndex index, ShapeId shape);
-	void setLocation(PlantIndex index, BlockIndex location, Facing facing);
-	void exit(PlantIndex index);
+	void destroy(const PlantIndex& index);
+	void die(const PlantIndex& index);
+	void remove(const PlantIndex& index) { die(index); } // TODO: seperate remove from die when corpse is added.
+	void setTemperature(const PlantIndex& index, const Temperature& temperature);
+	void setHasFluidForNow(const PlantIndex& index);
+	void setMaybeNeedsFluid(const PlantIndex& index);
+	void addFluid(const PlantIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType);
+	void setDayOfYear(const PlantIndex& index, uint32_t dayOfYear);
+	void setQuantityToHarvest(const PlantIndex& index);
+	void harvest(const PlantIndex& index, const Quantity& quantity);
+	void endOfHarvest(const PlantIndex& index);
+	void updateGrowingStatus(const PlantIndex& index);
+	void removeFoliageMass(const PlantIndex& index, const Mass& mass);
+	void doWildGrowth(const PlantIndex& index, uint8_t count = 1);
+	void removeFruitQuantity(const PlantIndex& index, const Quantity& quantity);
+	void makeFoliageGrowthEvent(const PlantIndex& index);
+	void foliageGrowth(const PlantIndex& index);
+	void updateShape(const PlantIndex& index);
+	void setShape(const PlantIndex& index, const ShapeId& shape);
+	void setLocation(const PlantIndex& index, const BlockIndex& location, const Facing& facing);
+	void exit(const PlantIndex& index);
 	void fromJson(Plants& plants, Area& area, const Json& data);
 	[[nodiscard]] PlantIndexSet& getOnSurface() { return m_onSurface; }
-	[[nodiscard]] bool isOnSurface(PlantIndex index) { return m_onSurface.contains(index); }
-	[[nodiscard]] bool blockIsFull(BlockIndex index);
+	[[nodiscard]] bool isOnSurface(const PlantIndex& index) { return m_onSurface.contains(index); }
+	[[nodiscard]] bool blockIsFull(const BlockIndex& index);
 	[[nodiscard]] PlantIndices getAll() const;
-	[[nodiscard]] PlantSpeciesId getSpecies(PlantIndex index) const;
-	[[nodiscard]] Mass getFruitMass(PlantIndex index) const;
+	[[nodiscard]] PlantSpeciesId getSpecies(const PlantIndex& index) const;
+	[[nodiscard]] Mass getFruitMass(const PlantIndex& index) const;
 	// Not const: updates cache.
-	[[nodiscard]] bool hasFluidSource(PlantIndex index);
-	[[nodiscard]] bool isGrowing(PlantIndex index) const { return m_growthEvent.exists(index); }
-	[[nodiscard]] Percent getPercentGrown(PlantIndex index) const;
-	[[nodiscard]] DistanceInBlocks getRootRange(PlantIndex index) const;
-	[[nodiscard]] Percent getPercentFoliage(PlantIndex index) const;
-	[[nodiscard]] Mass getFoliageMass(PlantIndex index) const;
-	[[nodiscard]] Step getStepAtWhichPlantWillDieFromLackOfFluid(PlantIndex index) const;
-	[[nodiscard]] Quantity getQuantityToHarvest(PlantIndex index) const { return m_quantityToHarvest[index]; }
-	[[nodiscard]] Step stepsPerShapeChange(PlantIndex index) const;
-	[[nodiscard]] bool readyToHarvest(PlantIndex index) const { return m_quantityToHarvest[index] != 0; }
-	[[nodiscard]] CollisionVolume getVolumeFluidRequested(PlantIndex index) const { return m_volumeFluidRequested[index]; }
-	[[nodiscard]] bool temperatureEventExists(PlantIndex index) const;
-	[[nodiscard]] bool fluidEventExists(PlantIndex index) const;
-	[[nodiscard]] bool growthEventExists(PlantIndex index) const;
+	[[nodiscard]] bool hasFluidSource(const PlantIndex& index);
+	[[nodiscard]] bool isGrowing(const PlantIndex& index) const { return m_growthEvent.exists(index); }
+	[[nodiscard]] Percent getPercentGrown(const PlantIndex& index) const;
+	[[nodiscard]] DistanceInBlocks getRootRange(const PlantIndex& index) const;
+	[[nodiscard]] Percent getPercentFoliage(const PlantIndex& index) const;
+	[[nodiscard]] Mass getFoliageMass(const PlantIndex& index) const;
+	[[nodiscard]] Step getStepAtWhichPlantWillDieFromLackOfFluid(const PlantIndex& index) const;
+	[[nodiscard]] Quantity getQuantityToHarvest(const PlantIndex& index) const { return m_quantityToHarvest[index]; }
+	[[nodiscard]] Step stepsPerShapeChange(const PlantIndex& index) const;
+	[[nodiscard]] bool readyToHarvest(const PlantIndex& index) const { return m_quantityToHarvest[index] != 0; }
+	[[nodiscard]] CollisionVolume getVolumeFluidRequested(const PlantIndex& index) const { return m_volumeFluidRequested[index]; }
+	[[nodiscard]] bool temperatureEventExists(const PlantIndex& index) const;
+	[[nodiscard]] bool fluidEventExists(const PlantIndex& index) const;
+	[[nodiscard]] bool growthEventExists(const PlantIndex& index) const;
 	[[nodiscard]] Json toJson() const;
-	void log(PlantIndex index) const;
+	void log(const PlantIndex& index) const;
 	friend class PlantGrowthEvent;
 	friend class PlantShapeGrowthEvent;
 	friend class PlantFoliageGrowthEvent;
@@ -117,65 +117,65 @@ class PlantGrowthEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantGrowthEvent(Area& area, Step delay, PlantIndex p, Step start = Step::null());
+	PlantGrowthEvent(Area& area, const Step& delay, const PlantIndex& p, const Step start = Step::null());
 	PlantGrowthEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
+	void onMoveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };
 class PlantShapeGrowthEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantShapeGrowthEvent(Area& area, Step delay, PlantIndex p, Step start = Step::null());
+	PlantShapeGrowthEvent(Area& area, const Step& delay, const PlantIndex& p, const Step start = Step::null());
 	PlantShapeGrowthEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
+	void onMoveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };
 class PlantFoliageGrowthEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantFoliageGrowthEvent(Area& area, Step delay, PlantIndex p, Step start = Step::null());
+	PlantFoliageGrowthEvent(Area& area, const Step& delay, const PlantIndex& p, const Step start = Step::null());
 	PlantFoliageGrowthEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
+	void onMoveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };
 class PlantEndOfHarvestEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantEndOfHarvestEvent(Area& area, Step delay, PlantIndex p, Step start = Step::null());
+	PlantEndOfHarvestEvent(Area& area, const Step& delay, const PlantIndex& p, const Step start = Step::null());
 	PlantEndOfHarvestEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
+	void onMoveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };
 class PlantFluidEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantFluidEvent(Area& area, Step delay, PlantIndex p, Step start = Step::null());
+	PlantFluidEvent(Area& area, const Step& delay, const PlantIndex& p, const Step start = Step::null());
 	PlantFluidEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
+	void onMoveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };
 class PlantTemperatureEvent final : public ScheduledEvent
 {
 	PlantIndex m_plant;
 public:
-	PlantTemperatureEvent(Area& area, Step delay, PlantIndex p, Step start = Step::null());
+	PlantTemperatureEvent(Area& area, const Step& delay, const PlantIndex& p, const Step start = Step::null());
 	PlantTemperatureEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area* area);
-	void onMoveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
+	void onMoveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex) { assert(m_plant == oldIndex.toPlant()); m_plant = PlantIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };

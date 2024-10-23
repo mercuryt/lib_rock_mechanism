@@ -18,11 +18,11 @@ struct TestTaskObjective final : public Objective
 {
 	bool& x;
 	TestTaskObjective(Priority priority, bool& ax) : Objective(priority), x(ax) { }
-	void execute(Area&, ActorIndex) { x = !x; }
-	void cancel(Area&, ActorIndex) { }
-	void delay(Area&, ActorIndex) { }
-	void reset(Area&, ActorIndex) { }
-	void detour(Area&, ActorIndex) { }
+	void execute(Area&, const ActorIndex&) { x = !x; }
+	void cancel(Area&, const ActorIndex&) { }
+	void delay(Area&, const ActorIndex&) { }
+	void reset(Area&, const ActorIndex&) { }
+	void detour(Area&, const ActorIndex&) { }
 	std::string name() const { return "test task"; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveType::getIdByName("construct"); }
 };
@@ -31,11 +31,11 @@ struct TestNeedObjective final : public Objective
 {
 	bool& x;
 	TestNeedObjective(Priority priority, bool& ax) : Objective(priority), x(ax) { }
-	void execute(Area&, ActorIndex) { x = !x; }
-	void cancel(Area&, ActorIndex) { }
-	void delay(Area&, ActorIndex) { }
-	void reset(Area&, ActorIndex) { }
-	void detour(Area&, ActorIndex) { }
+	void execute(Area&, const ActorIndex&) { x = !x; }
+	void cancel(Area&, const ActorIndex&) { }
+	void delay(Area&, const ActorIndex&) { }
+	void reset(Area&, const ActorIndex&) { }
+	void detour(Area&, const ActorIndex&) { }
 	std::string name() const { return "test need"; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveType::getIdByName("dig"); }
 	[[nodiscard]] bool isNeed() const { return true; }

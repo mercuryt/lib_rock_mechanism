@@ -33,7 +33,7 @@ std::vector<XYZ> getNthAdjacentOffsets(uint32_t n)
 	}
 	return cache[n];
 }
-BlockIndices getNthAdjacentBlocks(Area& area, BlockIndex center, uint32_t i)
+BlockIndices getNthAdjacentBlocks(Area& area, const BlockIndex& center, uint32_t i)
 {
 	BlockIndices output;
 	for(XYZ& offset : getNthAdjacentOffsets(i))

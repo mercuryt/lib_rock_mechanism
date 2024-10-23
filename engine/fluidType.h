@@ -31,12 +31,12 @@ class FluidType
 public:
 	[[nodiscard]] static const FluidTypeId byName(const std::string name);
 	static FluidTypeId create(FluidTypeParamaters& p);
-	static void setFreezesInto(FluidTypeId fluid, MaterialTypeId material);
-	[[nodiscard]] static std::string getName(FluidTypeId id);
-	[[nodiscard]] static uint32_t getViscosity(FluidTypeId id);
-	[[nodiscard]] static Density getDensity(FluidTypeId id);
-	[[nodiscard]] static Step getMistDuration(FluidTypeId id);
-	[[nodiscard]] static DistanceInBlocks getMaxMistSpread(FluidTypeId id);
-	[[nodiscard]] static MaterialTypeId getFreezesInto(FluidTypeId id);
+	static void setFreezesInto(const FluidTypeId& fluid, const MaterialTypeId& material);
+	[[nodiscard]] static std::string getName(const FluidTypeId& id);
+	[[nodiscard]] static uint32_t getViscosity(const FluidTypeId& id);
+	[[nodiscard]] static Density getDensity(const FluidTypeId& id);
+	[[nodiscard]] static Step getMistDuration(const FluidTypeId& id);
+	[[nodiscard]] static DistanceInBlocks getMaxMistSpread(const FluidTypeId& id);
+	[[nodiscard]] static MaterialTypeId getFreezesInto(const FluidTypeId& id);
 };
 inline FluidType fluidTypeData;

@@ -46,8 +46,8 @@ public:
 	[[nodiscard]] static BlockIndices getBlocksOccupiedAndAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing);
 	[[nodiscard]] static std::vector<std::pair<BlockIndex, CollisionVolume>> getBlocksOccupiedAtWithVolumes(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing);
 	[[nodiscard]] static BlockIndices getBlocksWhichWouldBeAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing);
-	[[nodiscard]] static BlockIndex getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing, std::function<bool(BlockIndex)> predicate);
-	[[nodiscard]] static BlockIndex getBlockWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing, std::function<bool(BlockIndex)> predicate);
+	[[nodiscard]] static BlockIndex getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing, std::function<bool(const BlockIndex&)> predicate);
+	[[nodiscard]] static BlockIndex getBlockWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing, std::function<bool(const BlockIndex&)> predicate);
 	[[nodiscard]] static CollisionVolume getCollisionVolumeAtLocationBlock(const ShapeId& id);
 	[[nodiscard]] static std::vector<std::array<int32_t, 4>> getPositions(const ShapeId& id);
 	[[nodiscard]] static std::string getName(const ShapeId& id);

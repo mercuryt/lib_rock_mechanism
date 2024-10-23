@@ -8,7 +8,7 @@
 
 class HasOnDestroySubscriptions;
 class Objective;
-class DeserializationMemo;
+struct DeserializationMemo;
 class Area;
 class Project;
 

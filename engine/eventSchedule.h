@@ -26,12 +26,12 @@ public:
 	// If the value 0 is passed then the current step is used for start
 	// Passing a differernt start is for deserializing.
 	// TODO: Use Step::null() instead.
-	ScheduledEvent(Simulation& simulation, const Step delay, const Step start = Step::null());
+	ScheduledEvent(Simulation& simulation, const Step& delay, const Step start = Step::null());
 	void cancel(Simulation& simulation, Area* area);
 	virtual void execute(Simulation& simulation, Area* area) = 0;
 	virtual void clearReferences(Simulation& simulation, Area* area) = 0;
 	virtual void onCancel(Simulation&, Area*) { }
-	virtual void onMoveIndex([[maybe_unused]] HasShapeIndex oldIndex, [[maybe_unused]] HasShapeIndex newIndex) { }
+	virtual void onMoveIndex([[maybe_unused]] const HasShapeIndex& oldIndex, [[maybe_unused]] const HasShapeIndex& newIndex) { }
 	virtual ~ScheduledEvent() = default;
 	[[nodiscard]] Percent percentComplete(Simulation& simulation) const;
 	[[nodiscard]] float fractionComplete(Simulation& simulation) const;
@@ -52,7 +52,7 @@ public:
 	std::map<Step, std::list<std::unique_ptr<ScheduledEvent>>> m_data;
 	void schedule(std::unique_ptr<ScheduledEvent> scheduledEvent);
 	void unschedule(ScheduledEvent& scheduledEvent);
-	void doStep(const Step stepNumber);
+	void doStep(const Step& stepNumber);
 	void clear();
 	[[nodiscard]] Step getNextEventStep() const;
 	[[nodiscard]] Simulation& getSimulation() { return m_simulation; }

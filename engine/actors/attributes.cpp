@@ -3,7 +3,7 @@
 #include "config.h"
 #include "types.h"
 
-void Actors::attributes_onUpdateGrowthPercent(ActorIndex index)
+void Actors::attributes_onUpdateGrowthPercent(const ActorIndex& index)
 {
 	updateStrength(index);
 	updateAgility(index);
@@ -13,26 +13,26 @@ void Actors::attributes_onUpdateGrowthPercent(ActorIndex index)
 	combat_update(index);
 	move_updateIndividualSpeed(index);
 }
-[[nodiscard]] AttributeLevel Actors::getStrength(ActorIndex index) const { return m_strength[index]; }
-[[nodiscard]] AttributeLevelBonusOrPenalty Actors::getStrengthBonusOrPenalty(ActorIndex index) const { return m_strengthBonusOrPenalty[index]; }
-[[nodiscard]] float Actors::getStrengthModifier(ActorIndex index) const { return m_strengthModifier[index]; }
-void Actors::addStrengthModifier(ActorIndex index, float modifier) 
+[[nodiscard]] AttributeLevel Actors::getStrength(const ActorIndex& index) const { return m_strength[index]; }
+[[nodiscard]] AttributeLevelBonusOrPenalty Actors::getStrengthBonusOrPenalty(const ActorIndex& index) const { return m_strengthBonusOrPenalty[index]; }
+[[nodiscard]] float Actors::getStrengthModifier(const ActorIndex& index) const { return m_strengthModifier[index]; }
+void Actors::addStrengthModifier(const ActorIndex& index, float modifier) 
 { 
 	m_strengthModifier[index] += modifier; 
 	onStrengthChanged(index);
 }
-void Actors::addStrengthBonusOrPenalty(ActorIndex index, AttributeLevelBonusOrPenalty bonusOrPenalty)
+void Actors::addStrengthBonusOrPenalty(const ActorIndex& index, const AttributeLevelBonusOrPenalty& bonusOrPenalty)
 {
 	m_strengthBonusOrPenalty[index] += bonusOrPenalty;
 	onStrengthChanged(index);
 }
-void Actors::onStrengthChanged(ActorIndex index)
+void Actors::onStrengthChanged(const ActorIndex& index)
 {
 	updateStrength(index);
 	canPickUp_updateUnencomberedCarryMass(index);
 	combat_update(index);
 }
-void Actors::updateStrength(ActorIndex index)
+void Actors::updateStrength(const ActorIndex& index)
 {
 	AnimalSpeciesId species = getSpecies(index);
 	Percent grown = getPercentGrown(index);
@@ -41,25 +41,25 @@ void Actors::updateStrength(ActorIndex index)
 	m_strength[index] = AttributeLevel::create(util::scaleByPercentRange(max.get(), min.get(), grown));
 }
 
-[[nodiscard]] AttributeLevel Actors::getDextarity(ActorIndex index) const { return m_dextarity[index]; }
-[[nodiscard]] AttributeLevelBonusOrPenalty Actors::getDextarityBonusOrPenalty(ActorIndex index) const { return m_dextarityBonusOrPenalty[index]; }
-[[nodiscard]] float Actors::getDextarityModifier(ActorIndex index) const { return m_dextarityModifier[index]; }
-void Actors::addDextarityModifier(ActorIndex index, float modifier) 
+[[nodiscard]] AttributeLevel Actors::getDextarity(const ActorIndex& index) const { return m_dextarity[index]; }
+[[nodiscard]] AttributeLevelBonusOrPenalty Actors::getDextarityBonusOrPenalty(const ActorIndex& index) const { return m_dextarityBonusOrPenalty[index]; }
+[[nodiscard]] float Actors::getDextarityModifier(const ActorIndex& index) const { return m_dextarityModifier[index]; }
+void Actors::addDextarityModifier(const ActorIndex& index, float modifier) 
 { 
 	m_dextarityModifier[index] += modifier; 
 	onDextarityChanged(index);
 }
-void Actors::addDextarityBonusOrPenalty(ActorIndex index, AttributeLevelBonusOrPenalty bonusOrPenalty)
+void Actors::addDextarityBonusOrPenalty(const ActorIndex& index, const AttributeLevelBonusOrPenalty& bonusOrPenalty)
 {
 	m_dextarityBonusOrPenalty[index] += bonusOrPenalty;
 	onDextarityChanged(index);
 }
-void Actors::onDextarityChanged(ActorIndex index)
+void Actors::onDextarityChanged(const ActorIndex& index)
 {
 	updateDextarity(index);
 	combat_update(index);
 }
-void Actors::updateDextarity(ActorIndex index)
+void Actors::updateDextarity(const ActorIndex& index)
 {
 	AnimalSpeciesId species = getSpecies(index);
 	Percent grown = getPercentGrown(index);
@@ -68,26 +68,26 @@ void Actors::updateDextarity(ActorIndex index)
 	m_dextarity[index] = AttributeLevel::create(util::scaleByPercentRange(max.get(), min.get(), grown));
 }
 
-[[nodiscard]] AttributeLevel Actors::getAgility(ActorIndex index) const { return m_agility[index]; }
-[[nodiscard]] AttributeLevelBonusOrPenalty Actors::getAgilityBonusOrPenalty(ActorIndex index) const { return m_agilityBonusOrPenalty[index]; }
-[[nodiscard]] float Actors::getAgilityModifier(ActorIndex index) const { return m_agilityModifier[index]; }
-void Actors::addAgilityModifier(ActorIndex index, float modifier) 
+[[nodiscard]] AttributeLevel Actors::getAgility(const ActorIndex& index) const { return m_agility[index]; }
+[[nodiscard]] AttributeLevelBonusOrPenalty Actors::getAgilityBonusOrPenalty(const ActorIndex& index) const { return m_agilityBonusOrPenalty[index]; }
+[[nodiscard]] float Actors::getAgilityModifier(const ActorIndex& index) const { return m_agilityModifier[index]; }
+void Actors::addAgilityModifier(const ActorIndex& index, float modifier) 
 { 
 	m_agilityModifier[index] += modifier; 
 	onAgilityChanged(index);
 }
-void Actors::addAgilityBonusOrPenalty(ActorIndex index, AttributeLevelBonusOrPenalty bonusOrPenalty)
+void Actors::addAgilityBonusOrPenalty(const ActorIndex& index, const AttributeLevelBonusOrPenalty& bonusOrPenalty)
 {
 	m_agilityBonusOrPenalty[index] += bonusOrPenalty;
 	onAgilityChanged(index);
 }
-void Actors::onAgilityChanged(ActorIndex index)
+void Actors::onAgilityChanged(const ActorIndex& index)
 {
 	updateAgility(index);
 	move_updateIndividualSpeed(index);
 	combat_update(index);
 }
-void Actors::updateAgility(ActorIndex index)
+void Actors::updateAgility(const ActorIndex& index)
 {
 	AnimalSpeciesId species = getSpecies(index);
 	Percent grown = getPercentGrown(index);
@@ -96,20 +96,20 @@ void Actors::updateAgility(ActorIndex index)
 	m_agility[index] = AttributeLevel::create(util::scaleByPercentRange(max.get(), min.get(), grown));
 }
 
-[[nodiscard]] Mass Actors::getIntrinsicMass(ActorIndex index) const { return m_mass[index]; }
-[[nodiscard]] int32_t Actors::getIntrinsicMassBonusOrPenalty(ActorIndex index) const { return m_massBonusOrPenalty[index]; }
-[[nodiscard]] float Actors::getIntrinsicMassModifier(ActorIndex index) const { return m_massModifier[index]; }
-void Actors::addIntrinsicMassModifier(ActorIndex index, float modifier) 
+[[nodiscard]] Mass Actors::getIntrinsicMass(const ActorIndex& index) const { return m_mass[index]; }
+[[nodiscard]] int32_t Actors::getIntrinsicMassBonusOrPenalty(const ActorIndex& index) const { return m_massBonusOrPenalty[index]; }
+[[nodiscard]] float Actors::getIntrinsicMassModifier(const ActorIndex& index) const { return m_massModifier[index]; }
+void Actors::addIntrinsicMassModifier(const ActorIndex& index, float modifier) 
 { 
 	m_massModifier[index] += modifier; 
 	onIntrinsicMassChanged(index);
 }
-void Actors::addIntrinsicMassBonusOrPenalty(ActorIndex index, uint32_t bonusOrPenalty)
+void Actors::addIntrinsicMassBonusOrPenalty(const ActorIndex& index, uint32_t bonusOrPenalty)
 {
 	m_massBonusOrPenalty[index] += bonusOrPenalty;
 	onIntrinsicMassChanged(index);
 }
-void Actors::updateIntrinsicMass(ActorIndex index)
+void Actors::updateIntrinsicMass(const ActorIndex& index)
 {
 	AnimalSpeciesId species = getSpecies(index);
 	Percent grown = getPercentGrown(index);
@@ -117,7 +117,7 @@ void Actors::updateIntrinsicMass(ActorIndex index)
 	Mass min = AnimalSpecies::getMass(species)[1];
 	m_mass[index] = Mass::create(util::scaleByPercentRange(max.get(), min.get(), grown));
 }
-void Actors::onIntrinsicMassChanged(ActorIndex index)
+void Actors::onIntrinsicMassChanged(const ActorIndex& index)
 {
 	updateIntrinsicMass(index);
 	move_updateIndividualSpeed(index);

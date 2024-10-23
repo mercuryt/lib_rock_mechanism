@@ -10,33 +10,34 @@ AreaHasBlockDesignationsForFaction::AreaHasBlockDesignationsForFaction(Area& are
 }
 AreaHasBlockDesignationsForFaction::AreaHasBlockDesignationsForFaction(const Json& data, DeserializationMemo&) : 
 	m_designations(data.get<std::vector<bool>>()) { }
-int AreaHasBlockDesignationsForFaction::getIndex(BlockIndex index, BlockDesignation designation) const
+uint32_t AreaHasBlockDesignationsForFaction::getIndex(const BlockIndex& index, const BlockDesignation designation) const
 {
 	return (m_areaSize.get() * (uint)designation) + index.get();
 }
-void AreaHasBlockDesignationsForFaction::set(BlockIndex index, BlockDesignation designation)
+void AreaHasBlockDesignationsForFaction::set(const BlockIndex& index, const BlockDesignation designation)
 {
+	assert(index.exists());
 	assert(!m_designations[getIndex(index, designation)]);
 	m_designations[getIndex(index, designation)] = true;
 }
-void AreaHasBlockDesignationsForFaction::unset(BlockIndex index, BlockDesignation designation)
+void AreaHasBlockDesignationsForFaction::unset(const BlockIndex& index, const BlockDesignation designation)
 {
 	assert(m_designations[getIndex(index, designation)]);
 	m_designations[getIndex(index, designation)] = false;
 }
-void AreaHasBlockDesignationsForFaction::maybeSet(BlockIndex index, BlockDesignation designation)
+void AreaHasBlockDesignationsForFaction::maybeSet(const BlockIndex& index, const BlockDesignation designation)
 {
 	m_designations[getIndex(index, designation)] = true;
 }
-void AreaHasBlockDesignationsForFaction::maybeUnset(BlockIndex index, BlockDesignation designation)
+void AreaHasBlockDesignationsForFaction::maybeUnset(const BlockIndex& index, const BlockDesignation designation)
 {
 	m_designations[getIndex(index, designation)] = false;
 }
-bool AreaHasBlockDesignationsForFaction::check(BlockIndex index, BlockDesignation designation) const
+bool AreaHasBlockDesignationsForFaction::check(const BlockIndex& index, const BlockDesignation designation) const
 {
 	return m_designations[getIndex(index, designation)];
 }
-BlockDesignation AreaHasBlockDesignationsForFaction::getDisplayDesignation(BlockIndex index) const
+BlockDesignation AreaHasBlockDesignationsForFaction::getDisplayDesignation(const BlockIndex& index) const
 {
 	for(int i = 0; i < (int)BlockDesignation::BLOCK_DESIGNATION_MAX; ++i)
 		if(check(index, (BlockDesignation)i))
@@ -44,7 +45,7 @@ BlockDesignation AreaHasBlockDesignationsForFaction::getDisplayDesignation(Block
 	assert(false);
 	return BlockDesignation::Construct;
 }
-bool AreaHasBlockDesignationsForFaction::empty(BlockIndex index) const
+bool AreaHasBlockDesignationsForFaction::empty(const BlockIndex& index) const
 {
 	for(int i = 0; i < (int)BlockDesignation::BLOCK_DESIGNATION_MAX; ++i)
 		if(check(index, (BlockDesignation)i))

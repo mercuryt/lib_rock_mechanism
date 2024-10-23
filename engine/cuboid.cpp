@@ -4,7 +4,7 @@
 #include "blocks/blocks.h"
 
 #include <cassert>
-Cuboid::Cuboid(Blocks& b, BlockIndex h, BlockIndex l) : m_blocks(&b), m_highest(h), m_lowest(l)
+Cuboid::Cuboid(Blocks& b, const BlockIndex& h, const BlockIndex& l) : m_blocks(&b), m_highest(h), m_lowest(l)
 {
 	if(!m_highest.exists())
 	{
@@ -24,7 +24,7 @@ BlockIndices Cuboid::toSet()
 		output.add(block);
 	return output;
 }
-bool Cuboid::contains(BlockIndex block) const
+bool Cuboid::contains(const BlockIndex& block) const
 {
 	if(!m_highest.exists())
 	{
@@ -82,11 +82,11 @@ void Cuboid::merge(const Cuboid& cuboid)
 	m_highest = sum.m_highest;
 	m_lowest = sum.m_lowest;
 }
-void Cuboid::setFrom(BlockIndex block)
+void Cuboid::setFrom(const BlockIndex& block)
 {
 	m_highest = m_lowest = block;
 }
-void Cuboid::setFrom(Blocks& blocks, BlockIndex a, BlockIndex b)
+void Cuboid::setFrom(Blocks& blocks, const BlockIndex& a, const BlockIndex& b)
 {
 	Cuboid result = fromBlockPair(blocks, a, b);
 	m_highest = result.m_highest;
@@ -94,7 +94,7 @@ void Cuboid::setFrom(Blocks& blocks, BlockIndex a, BlockIndex b)
 	m_blocks = &blocks;
 }
 void Cuboid::clear() { m_lowest.clear(); m_highest.clear(); m_blocks = nullptr;}
-Cuboid Cuboid::getFace(Facing facing) const
+Cuboid Cuboid::getFace(const Facing& facing) const
 {
 	assert(facing < 6);
 	Point3D highest = m_blocks->getCoordinates(m_highest);
@@ -160,11 +160,11 @@ size_t Cuboid::size() const
 	return ((highest.x + 1) - lowest.x).get() * ((highest.y + 1) - lowest.y).get() * ((highest.z + 1) - lowest.z).get();
 }
 // static method
-Cuboid Cuboid::fromBlock(Blocks& blocks, BlockIndex block)
+Cuboid Cuboid::fromBlock(Blocks& blocks, const BlockIndex& block)
 {
 	return Cuboid(blocks, block, block);
 }
-Cuboid Cuboid::fromBlockPair(Blocks& blocks, BlockIndex a, BlockIndex b)
+Cuboid Cuboid::fromBlockPair(Blocks& blocks, const BlockIndex& a, const BlockIndex& b)
 {
 	Point3D aCoordinates = blocks.getCoordinates(a);
 	Point3D bCoordinates = blocks.getCoordinates(b);
@@ -184,7 +184,7 @@ bool Cuboid::operator==(const Cuboid& cuboid) const
 {
 	return m_lowest == cuboid.m_lowest && m_highest == cuboid.m_highest;
 }
-Cuboid::iterator::iterator(Blocks& blocks, BlockIndex lowest, BlockIndex highest) : m_blocks(blocks) 
+Cuboid::iterator::iterator(Blocks& blocks, const BlockIndex& lowest, const BlockIndex& highest) : m_blocks(blocks) 
 {
 	if(!lowest.exists())
 	{

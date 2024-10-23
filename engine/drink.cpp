@@ -11,12 +11,12 @@
 #include "animalSpecies.h"
 #include <algorithm>
 // Must Drink.
-MustDrink::MustDrink(Area& area, ActorIndex a) :
+MustDrink::MustDrink(Area& area, const ActorIndex& a) :
 	m_thirstEvent(area.m_eventSchedule)
 {
 	m_actor.setTarget(area.getActors().getReferenceTarget(a));
 }
-MustDrink::MustDrink(Area& area, const Json& data, ActorIndex a, AnimalSpeciesId species) : 
+MustDrink::MustDrink(Area& area, const Json& data, const ActorIndex& a, const AnimalSpeciesId& species) : 
 	m_thirstEvent(area.m_eventSchedule), m_fluidType(AnimalSpecies::getFluidType(species)),
        	m_volumeDrinkRequested(data["volumeDrinkRequested"].get<CollisionVolume>())
 {
@@ -35,7 +35,7 @@ Json MustDrink::toJson() const
 		data["thirstEventStart"] = m_thirstEvent.getStartStep();
 	return data;
 }
-void MustDrink::drink(Area& area, CollisionVolume volume)
+void MustDrink::drink(Area& area, const CollisionVolume& volume)
 {
 	assert(m_volumeDrinkRequested >= volume);
 	assert(m_volumeDrinkRequested != 0);
@@ -95,21 +95,21 @@ void MustDrink::scheduleDrinkEvent(Area& area)
 	Step frequency = AnimalSpecies::getStepsFluidDrinkFrequency(species);
 	m_thirstEvent.schedule(area, frequency, actor);
 }
-void MustDrink::setFluidType(FluidTypeId fluidType) { m_fluidType = fluidType; }
+void MustDrink::setFluidType(const FluidTypeId& fluidType) { m_fluidType = fluidType; }
 Percent MustDrink::getPercentDeadFromThirst() const
 {
 	if(!m_thirstEvent.exists())
 		return Percent::create(0);
 	return m_thirstEvent.percentComplete();
 }
-CollisionVolume MustDrink::drinkVolumeFor(Area& area, ActorIndex actor) { return CollisionVolume::create(std::max(1u, area.getActors().getMass(actor).get() / Config::unitsBodyMassPerUnitFluidConsumed)); }
+CollisionVolume MustDrink::drinkVolumeFor(Area& area, const ActorIndex& actor) { return CollisionVolume::create(std::max(1u, area.getActors().getMass(actor).get() / Config::unitsBodyMassPerUnitFluidConsumed)); }
 // Drink Event.
-DrinkEvent::DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, ActorIndex actor, const Step start) :
+DrinkEvent::DrinkEvent(Area& area, const Step& delay, DrinkObjective& drob, const ActorIndex& actor, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_drinkObjective(drob) 
 {
 	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
 }
-DrinkEvent::DrinkEvent(Area& area, const Step delay, DrinkObjective& drob, ActorIndex actor, ItemIndex item, const Step start) :
+DrinkEvent::DrinkEvent(Area& area, const Step& delay, DrinkObjective& drob, const ActorIndex& actor, const ItemIndex& item, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_drinkObjective(drob)
 {
 	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
@@ -145,7 +145,7 @@ void DrinkEvent::execute(Simulation&, Area* area)
 	actors.drink_do(actor, volume);
 }
 void DrinkEvent::clearReferences(Simulation&, Area*) { m_drinkObjective.m_drinkEvent.clearPointer(); }
-ThirstEvent::ThirstEvent(Area& area, const Step delay, ActorIndex a, const Step start) :
+ThirstEvent::ThirstEvent(Area& area, const Step& delay, const ActorIndex& a, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_actor(a) { }
 void ThirstEvent::execute(Simulation&, Area* area) { area->getActors().drink_setNeedsFluid(m_actor); }
 void ThirstEvent::clearReferences(Simulation&, Area* area) { area->getActors().m_mustDrink[m_actor]->m_thirstEvent.clearPointer(); }

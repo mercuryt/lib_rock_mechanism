@@ -14,10 +14,10 @@ class SkillType final
 	DataVector<float, SkillTypeId> m_xpPerLevelModifier;
 	DataVector<SkillExperiencePoints, SkillTypeId> m_level1Xp;
 public:
-	static void create(SkillTypeParamaters& p);
+	static void create(const SkillTypeParamaters& p);
 	static SkillTypeId byName(std::string name);
-	[[nodiscard]] static std::string getName(SkillTypeId id);
-	[[nodiscard]] static float getXpPerLevelModifier(SkillTypeId id);
-	[[nodiscard]] static SkillExperiencePoints getLevel1Xp(SkillTypeId id);
+	[[nodiscard]] static std::string getName(const SkillTypeId& id);
+	[[nodiscard]] static float getXpPerLevelModifier(const SkillTypeId& id);
+	[[nodiscard]] static SkillExperiencePoints getLevel1Xp(const SkillTypeId& id);
 };
 inline SkillType skillTypeData;

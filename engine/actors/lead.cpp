@@ -1,12 +1,12 @@
 #include "actors.h"
 #include "index.h"
-BlockIndices Actors::lineLead_getPath(ActorIndex index) const
+BlockIndices Actors::lineLead_getPath(const ActorIndex& index) const
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
 	return m_leadFollowPath[index];
 }
-ShapeId Actors::lineLead_getLargestShape(ActorIndex index) const
+ShapeId Actors::lineLead_getLargestShape(const ActorIndex& index) const
 {
 	ShapeId output = m_shape[index];
 	ActorOrItemIndex follower = index.toActorOrItemIndex();
@@ -19,13 +19,13 @@ ShapeId Actors::lineLead_getLargestShape(ActorIndex index) const
 	}
 	return output;
 }
-MoveTypeId Actors::lineLead_getMoveType(ActorIndex index) const
+MoveTypeId Actors::lineLead_getMoveType(const ActorIndex& index) const
 {
 	//TODO: iterate line and find most restrictive move type
 	MoveTypeId output = m_moveType[index];
 	return output;
 }
-BlockIndices Actors::lineLead_getOccupiedBlocks(ActorIndex index) const
+BlockIndices Actors::lineLead_getOccupiedBlocks(const ActorIndex& index) const
 {
 	BlockIndices output;
 	assert(isLeading(index));
@@ -40,20 +40,20 @@ BlockIndices Actors::lineLead_getOccupiedBlocks(ActorIndex index) const
 	output.removeDuplicates();
 	return output;
 }
-bool Actors::lineLead_pathEmpty(ActorIndex index) const
+bool Actors::lineLead_pathEmpty(const ActorIndex& index) const
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
 	return m_leadFollowPath[index].empty();
 }
-void Actors::lineLead_pushFront(ActorIndex index, BlockIndex block)
+void Actors::lineLead_pushFront(const ActorIndex& index, const BlockIndex& block)
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
 	assert(m_location[index] == block);
 	m_leadFollowPath[index].pushFrontNonunique(block);
 }
-void Actors::lineLead_popBackUnlessOccupiedByFollower(ActorIndex index)
+void Actors::lineLead_popBackUnlessOccupiedByFollower(const ActorIndex& index)
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
@@ -65,11 +65,11 @@ void Actors::lineLead_popBackUnlessOccupiedByFollower(ActorIndex index)
 		m_leadFollowPath[index].popBack();
 	assert(m_leadFollowPath[index].size() >= 2);
 }
-void Actors::lineLead_clearPath(ActorIndex index)
+void Actors::lineLead_clearPath(const ActorIndex& index)
 {
 	m_leadFollowPath[index].clear();
 }
-void Actors::lineLead_appendToPath(ActorIndex index, BlockIndex block)
+void Actors::lineLead_appendToPath(const ActorIndex& index, const BlockIndex& block)
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));

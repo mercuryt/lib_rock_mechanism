@@ -7,7 +7,7 @@
 #include "reference.h"
 #include "types.h"
 // PathRequest.
-ConstructPathRequest::ConstructPathRequest(Area& area, ConstructObjective& co, ActorIndex actor) : m_constructObjective(co)
+ConstructPathRequest::ConstructPathRequest(Area& area, ConstructObjective& co, const ActorIndex& actor) : m_constructObjective(co)
 {
 	std::function<bool(BlockIndex)> constructCondition = [&, actor](BlockIndex block)
 	{
@@ -22,7 +22,7 @@ ConstructPathRequest::ConstructPathRequest(const Json& data, DeserializationMemo
 {
 	nlohmann::from_json(data, *this);
 }
-void ConstructPathRequest::callback(Area& area, FindPathResult& result)
+void ConstructPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = getActor();
@@ -58,7 +58,7 @@ Json ConstructObjective::toJson() const
 		data["project"] = m_project;
 	return data;
 }
-void ConstructObjective::execute(Area& area, ActorIndex actor)
+void ConstructObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	if(m_project != nullptr)
@@ -66,7 +66,7 @@ void ConstructObjective::execute(Area& area, ActorIndex actor)
 	else
 	{
 		ConstructProject* project = nullptr;
-		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block)
+		std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block)
 		{
 			if(joinableProjectExistsAt(area, block, actor))
 			{
@@ -86,19 +86,19 @@ void ConstructObjective::execute(Area& area, ActorIndex actor)
 		actors.move_pathRequestRecord(actor, std::move(request));
 	}
 }
-void ConstructObjective::cancel(Area& area, ActorIndex actor)
+void ConstructObjective::cancel(Area& area, const ActorIndex& actor)
 {
 	if(m_project != nullptr)
 		m_project->removeWorker(actor);
 	area.getActors().move_pathRequestMaybeCancel(actor);
 }
-void ConstructObjective::delay(Area& area, ActorIndex actor)
+void ConstructObjective::delay(Area& area, const ActorIndex& actor)
 {
 	cancel(area, actor);
 	m_project = nullptr;
 	area.getActors().project_maybeUnset(actor);
 }
-void ConstructObjective::reset(Area& area, ActorIndex actor)
+void ConstructObjective::reset(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	if(m_project)
@@ -113,18 +113,18 @@ void ConstructObjective::reset(Area& area, ActorIndex actor)
 	area.getActors().move_pathRequestMaybeCancel(actor);
 	actors.canReserve_clearAll(actor);
 }
-void ConstructObjective::onProjectCannotReserve(Area&, ActorIndex)
+void ConstructObjective::onProjectCannotReserve(Area&, const ActorIndex&)
 {
 	assert(m_project);
 	m_cannotJoinWhileReservationsAreNotComplete.insert(m_project);
 }
-void ConstructObjective::joinProject(ConstructProject& project, ActorIndex actor)
+void ConstructObjective::joinProject(ConstructProject& project, const ActorIndex& actor)
 {
 	assert(m_project == nullptr);
 	m_project = &project;
 	project.addWorkerCandidate(actor, *this);
 }
-ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(Area& area, BlockIndex location, Facing facing, ActorIndex actor)
+ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(Area& area, const BlockIndex& location, const Facing& facing, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	for(BlockIndex adjacent : actors.getAdjacentBlocksAtLocationWithFacing(actor, location, facing))
@@ -135,7 +135,7 @@ ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(Area
 	}
 	return nullptr;
 }
-ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(Area& area, BlockIndex block, ActorIndex actor)
+ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(Area& area, const BlockIndex& block, const ActorIndex& actor)
 {
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
@@ -148,17 +148,17 @@ ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(Area& area, 
 		return &project;
 	return nullptr;
 }
-bool ConstructObjective::joinableProjectExistsAt(Area& area, BlockIndex block, ActorIndex actor) const
+bool ConstructObjective::joinableProjectExistsAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const
 {
 	return const_cast<ConstructObjective*>(this)->getProjectWhichActorCanJoinAt(area, block, actor) != nullptr;
 }
-bool ConstructObjective::canJoinProjectAdjacentToLocationAndFacing(Area& area, BlockIndex location, Facing facing, ActorIndex actor) const
+bool ConstructObjective::canJoinProjectAdjacentToLocationAndFacing(Area& area, const BlockIndex& location, const Facing& facing, const ActorIndex& actor) const
 {
 	return const_cast<ConstructObjective*>(this)->getProjectWhichActorCanJoinAdjacentTo(area, location, facing, actor) != nullptr;
 }
 // ObjectiveType.
-bool ConstructObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
+bool ConstructObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
 	return area.m_hasConstructionDesignations.areThereAnyForFaction(area.getActors().getFactionId(actor));
 }
-std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Area&, ActorIndex) const { return std::make_unique<ConstructObjective>(); }
+std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Area&, const ActorIndex&) const { return std::make_unique<ConstructObjective>(); }

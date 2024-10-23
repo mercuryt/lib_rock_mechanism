@@ -20,25 +20,25 @@ class ActorOrItemIndex
 {
 	HasShapeIndex m_index;
 	bool m_isActor = false;
-	ActorOrItemIndex(HasShapeIndex i, bool isA) : m_index(i), m_isActor(isA) { }
+	ActorOrItemIndex(const HasShapeIndex& i, bool isA) : m_index(i), m_isActor(isA) { }
 	static void setActorBit(HasShapeIndex& index);
 	static void unsetActorBit(HasShapeIndex& index);
-	[[nodiscard]] static bool getActorBit(HasShapeIndex& index);
+	[[nodiscard]] static bool getActorBit(const HasShapeIndex& index);
 public:
 	ActorOrItemIndex() = default;
-	static ActorOrItemIndex createForActor(ActorIndex actor) { return ActorOrItemIndex(actor, true); }
-	static ActorOrItemIndex createForItem(ItemIndex item) { return ActorOrItemIndex(item, false); }
+	static ActorOrItemIndex createForActor(const ActorIndex& actor) { return ActorOrItemIndex(actor, true); }
+	static ActorOrItemIndex createForItem(const ItemIndex& item) { return ActorOrItemIndex(item, false); }
 	void clear() { m_index.clear(); m_isActor = false; }
-	void updateIndex(HasShapeIndex index) { m_index = index; }
-	void setLocationAndFacing(Area& area, BlockIndex location, Facing facing) const;
-	void followActor(Area& area, ActorIndex actor) const;
-	void followItem(Area& area, ItemIndex item) const;
-	void followPolymorphic(Area& area, ActorOrItemIndex actorOrItem) const;
+	void updateIndex(const HasShapeIndex& index) { m_index = index; }
+	void setLocationAndFacing(Area& area, const BlockIndex& location, const Facing& facing) const;
+	void followActor(Area& area, const ActorIndex& actor) const;
+	void followItem(Area& area, const ItemIndex& item) const;
+	void followPolymorphic(Area& area, const ActorOrItemIndex& actorOrItem) const;
 	void unfollow(Area& area) const;
 	std::string toString() const;
 	[[nodiscard]] ActorIndex getActor() const { return ActorIndex::create(m_index.get()); }
 	[[nodiscard]] ItemIndex getItem() const { return ItemIndex::create(m_index.get()); }
-	[[nodiscard]] ActorOrItemReference toReference(Area& area);
+	[[nodiscard]] ActorOrItemReference toReference(Area& area) const;
 	[[nodiscard]] bool exists() const { return m_index.exists(); }
 	[[nodiscard]] bool empty() const { return m_index.empty(); }
 	[[nodiscard]] HasShapeIndex get() const { return m_index; }
@@ -56,10 +56,10 @@ public:
 	[[nodiscard]] BlockIndex getLocation(const Area& area) const;
 	[[nodiscard]] const BlockIndices& getBlocks(Area& area) const;
 	[[nodiscard]] BlockIndices getAdjacentBlocks(Area& area) const;
-	[[nodiscard]] bool isAdjacent(const Area& area, ActorOrItemIndex other) const;
-	[[nodiscard]] bool isAdjacentToActor(const Area& area, ActorIndex other) const;
-	[[nodiscard]] bool isAdjacentToItem(const Area& area, ItemIndex item) const;
-	[[nodiscard]] bool isAdjacentToLocation(const Area& area, BlockIndex location) const;
+	[[nodiscard]] bool isAdjacent(const Area& area, const ActorOrItemIndex& other) const;
+	[[nodiscard]] bool isAdjacentToActor(const Area& area, const ActorIndex& other) const;
+	[[nodiscard]] bool isAdjacentToItem(const Area& area, const ItemIndex& item) const;
+	[[nodiscard]] bool isAdjacentToLocation(const Area& area, const BlockIndex& location) const;
 
 	[[nodiscard]] ShapeId getShape(const Area& area) const;
 	[[nodiscard]] MoveTypeId getMoveType(const Area& area) const;
@@ -74,10 +74,10 @@ public:
 	{
 		[[nodiscard]] size_t operator()(const ActorOrItemIndex& actorOrItem) const;
 	};
-	void reservable_reserve(Area& area, CanReserve& canReserve, Quantity quantity = Quantity::create(0), std::unique_ptr<DishonorCallback> callback = nullptr) const;
-	void reservable_unreserve(Area& area, CanReserve& canReserve, Quantity quantity = Quantity::create(0)) const;
-	void reservable_maybeUnreserve(Area& area, CanReserve& canReserve, Quantity quantity = Quantity::create(0)) const;
-	void reservable_unreserveFaction(Area& area, const FactionId faction) const;
-	[[nodiscard]] Quantity reservable_getUnreservedCount(Area& area, const FactionId faction) const;
+	void reservable_reserve(Area& area, CanReserve& canReserve, const Quantity quantity = Quantity::create(0), std::unique_ptr<DishonorCallback> callback = nullptr) const;
+	void reservable_unreserve(Area& area, CanReserve& canReserve, const Quantity quantity = Quantity::create(0)) const;
+	void reservable_maybeUnreserve(Area& area, CanReserve& canReserve, const Quantity quantity = Quantity::create(0)) const;
+	void reservable_unreserveFaction(Area& area, const FactionId& faction) const;
+	[[nodiscard]] Quantity reservable_getUnreservedCount(Area& area, const FactionId& faction) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ActorOrItemIndex, m_index, m_isActor);
 };

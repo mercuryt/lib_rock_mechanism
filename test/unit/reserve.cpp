@@ -9,7 +9,7 @@ struct TestReservationDishonorCallback1 final : public DishonorCallback
 {
 	bool& fired;
 	TestReservationDishonorCallback1(bool& f) : fired(f) { }
-	void execute(Quantity o, Quantity n)
+	void execute(const Quantity& o, const Quantity& n)
 	{
 			REQUIRE(o == 1);
 			REQUIRE(n == 0);
@@ -21,7 +21,7 @@ struct TestReservationDishonorCallback2 final : public DishonorCallback
 {
 	bool& fired;
 	TestReservationDishonorCallback2(bool& f) : fired(f) { }
-	void execute(Quantity o, Quantity n)
+	void execute(const Quantity& o, const Quantity& n)
 	{
 			REQUIRE(o == 2);
 			REQUIRE(n == 1);

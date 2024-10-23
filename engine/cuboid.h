@@ -15,23 +15,23 @@ public:
 	BlockIndex m_highest;
 	BlockIndex m_lowest;
 
-	Cuboid(Blocks& blocks, BlockIndex h, BlockIndex l);
+	Cuboid(Blocks& blocks, const BlockIndex& h, const BlockIndex& l);
 	Cuboid() = default;
 	void merge(const Cuboid& cuboid);
-	void setFrom(BlockIndex block);
-	void setFrom(Blocks& blocks, BlockIndex a, BlockIndex b);
+	void setFrom(const BlockIndex& block);
+	void setFrom(Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
 	void clear();
 	[[nodiscard]] BlockIndices toSet();
-	[[nodiscard]] bool contains(const BlockIndex block) const;
+	[[nodiscard]] bool contains(const BlockIndex& block) const;
 	[[nodiscard]] bool canMerge(const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid sum(const Cuboid& cuboid) const;
-	[[nodiscard]] Cuboid getFace(Facing faceing) const;
+	[[nodiscard]] Cuboid getFace(const Facing& faceing) const;
 	[[nodiscard]] bool overlapsWith(const Cuboid& cuboid) const;
 	[[nodiscard]] size_t size() const;
 	[[nodiscard]] bool empty() const { return size() == 0; }
 	[[nodiscard]] bool operator==(const Cuboid& cuboid) const;
-	[[nodiscard]] static Cuboid fromBlock(Blocks& blocks, BlockIndex block);
-	[[nodiscard]] static Cuboid fromBlockPair(Blocks& blocks, BlockIndex a, BlockIndex b);
+	[[nodiscard]] static Cuboid fromBlock(Blocks& blocks, const BlockIndex& block);
+	[[nodiscard]] static Cuboid fromBlockPair(Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
 	class iterator 
 	{
 	private:
@@ -42,7 +42,7 @@ public:
 		void setToEnd();
 	public:
 		iterator(Blocks& blocks, Point3D low, Point3D high) : m_start(low), m_end(high), m_current(low), m_blocks(blocks)  { }
-		iterator(Blocks& blocks, BlockIndex lowest, BlockIndex highest);
+		iterator(Blocks& blocks, const BlockIndex& lowest, const BlockIndex& highest);
 		iterator& operator++();
 		iterator operator++(int);
 		bool operator==(const iterator& other) const { return m_current == other.m_current; }

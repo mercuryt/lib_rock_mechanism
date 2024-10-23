@@ -11,38 +11,38 @@
 
 namespace areaBuilderUtil
 {
-	inline void setSolidLayer(Area& area, DistanceInBlocks z, MaterialTypeId materialType)
+	inline void setSolidLayer(Area& area, const DistanceInBlocks& z, const MaterialTypeId& materialType)
 	{
 		Blocks& blocks = area.getBlocks();
 		for(DistanceInBlocks x = DistanceInBlocks::create(0); x != blocks.m_sizeX; ++x)
 			for(DistanceInBlocks y = DistanceInBlocks::create(0); y != blocks.m_sizeY; ++y)
 				blocks.solid_set(blocks.getIndex({x, y, z}), materialType, false);
 	}
-	inline void setSolidLayer(Area& area, uint z, MaterialTypeId materialType)
+	inline void setSolidLayer(Area& area, uint z, const MaterialTypeId& materialType)
 	{
 		setSolidLayer(area, DistanceInBlocks::create(z), materialType);
 	}
-	inline void setSolidLayers(Area& area, DistanceInBlocks zbegin, DistanceInBlocks zend, MaterialTypeId materialType)
+	inline void setSolidLayers(Area& area, DistanceInBlocks zbegin, const DistanceInBlocks& zend, const MaterialTypeId& materialType)
 	{
 		for(;zbegin <= zend; ++zbegin)
 			setSolidLayer(area, zbegin, materialType);
 	}
-	inline void setSolidLayers(Area& area, uint zbegin, uint zend, MaterialTypeId materialType)
+	inline void setSolidLayers(Area& area, uint zbegin, uint zend, const MaterialTypeId& materialType)
 	{
 		setSolidLayers(area, DistanceInBlocks::create(zbegin), DistanceInBlocks::create(zend), materialType);
 	}
-	inline void setSolidWall(Area& area, BlockIndex start, BlockIndex end, MaterialTypeId materialType)
+	inline void setSolidWall(Area& area, const BlockIndex& start, const BlockIndex& end, const MaterialTypeId& materialType)
 	{
 		Blocks& blocks = area.getBlocks();
 		Cuboid cuboid(blocks, end, start);
 		for(BlockIndex block : cuboid)
 			blocks.solid_set(block, materialType, false);
 	}
-	inline void setSolidWall(Area& area, uint start, uint end, MaterialTypeId materialType)
+	inline void setSolidWall(Area& area, uint start, uint end, const MaterialTypeId& materialType)
 	{
 		setSolidWall(area, BlockIndex::create(start), BlockIndex::create(end), materialType);
 	}
-	inline void setSolidWalls(Area& area, DistanceInBlocks height, MaterialTypeId materialType)
+	inline void setSolidWalls(Area& area, const DistanceInBlocks& height, const MaterialTypeId& materialType)
 	{	
 		Blocks& blocks = area.getBlocks();
 		for(DistanceInBlocks z = DistanceInBlocks::create(0); z != height + 1; ++ z)
@@ -59,11 +59,11 @@ namespace areaBuilderUtil
 			}
 		}
 	}
-	inline void setSolidWalls(Area& area, uint height, MaterialTypeId materialType)
+	inline void setSolidWalls(Area& area, uint height, const MaterialTypeId& materialType)
 	{
 		setSolidWalls(area, DistanceInBlocks::create(height), materialType);
 	}
-	inline void makeBuilding(Area& area, Cuboid cuboid, MaterialTypeId materialType)
+	inline void makeBuilding(Area& area, Cuboid cuboid, const MaterialTypeId& materialType)
 	{
 		Blocks& blocks = area.getBlocks();
 		Point3D highCoordinates = blocks.getCoordinates(cuboid.m_highest);
@@ -84,7 +84,7 @@ namespace areaBuilderUtil
 			for(DistanceInBlocks y = DistanceInBlocks::create(0); y != highCoordinates.y + 1; ++y)
 				blocks.blockFeature_construct(blocks.getIndex(x, y, highCoordinates.z + 1), BlockFeatureType::floor, materialType);
 	}
-	inline void setFullFluidCuboid(Area& area, BlockIndex low, BlockIndex high, FluidTypeId fluidType)
+	inline void setFullFluidCuboid(Area& area, const BlockIndex& low, const BlockIndex& high, FluidTypeId fluidType)
 	{
 		Blocks& blocks = area.getBlocks();
 		assert(blocks.fluid_getTotalVolume(low) == 0);

@@ -3,7 +3,7 @@
 #include "json.h"
 struct DishonorCallback
 {
-	virtual void execute(Quantity oldCount, Quantity newCount) = 0;
+	virtual void execute(const Quantity& oldCount, const Quantity& newCount) = 0;
 	virtual ~DishonorCallback() = default;
 	virtual Json toJson() const = 0;
 };

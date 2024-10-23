@@ -3,7 +3,7 @@
 #include "../items/items.h"
 #include "../deserializationMemo.h"
 #include "../area.h"
-EquipItemObjective::EquipItemObjective(ItemReference item) : Objective(Config::equipPriority), m_item(item) { }
+EquipItemObjective::EquipItemObjective(const ItemReference& item) : Objective(Config::equipPriority), m_item(item) { }
 EquipItemObjective::EquipItemObjective(const Json& data, Area& area) : Objective(data)
 {
 	m_item.load(data["item"], area);
@@ -14,7 +14,7 @@ Json EquipItemObjective::toJson() const
 	data["item"] = m_item;
 	return data;
 }
-void EquipItemObjective::execute(Area& area, ActorIndex actor)
+void EquipItemObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	ItemIndex item = m_item.getIndex();
@@ -34,5 +34,5 @@ void EquipItemObjective::execute(Area& area, ActorIndex actor)
 			actors.objective_canNotCompleteObjective(actor, *this);
 	}
 }
-void EquipItemObjective::cancel(Area& area, ActorIndex actor) { area.getActors().canReserve_clearAll(actor); }
-void EquipItemObjective::reset(Area& area, ActorIndex actor) { cancel(area, actor); }
+void EquipItemObjective::cancel(Area& area, const ActorIndex& actor) { area.getActors().canReserve_clearAll(actor); }
+void EquipItemObjective::reset(Area& area, const ActorIndex& actor) { cancel(area, actor); }

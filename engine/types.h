@@ -11,6 +11,7 @@
 #include <compare>
 #include <cstdint>
 #include <iostream>
+#include <string>
 
 #ifndef NDEBUG
     constexpr bool DEBUG = true;
@@ -329,9 +330,13 @@ struct Point3D
 			return z <=> other.z;
 	}
 	void operator+=(const Vector3D& other);
-	void log()
+	[[nodiscard]] std::string toString() const 
 	{
-		std::cout << "(" << x.get() << "," << y.get() << "," << z.get() << ")";
+		return "(" + std::to_string(x.get()) + "," + std::to_string(y.get()) + "," + std::to_string(z.get()) + ")";
+	}
+	void log() const 
+	{
+		std::cout << toString() << std::endl;
 	}
 };
 struct Point3D_fractional

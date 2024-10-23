@@ -19,7 +19,7 @@ namespace definitions
 	void loadMoveTypes();
 	void loadMaterialTypes();
 	void loadSkillTypes();
-	[[nodiscard]] AttackTypeId loadAttackType(const Json& data, SkillTypeId defaultSkill);
+	[[nodiscard]] AttackTypeId loadAttackType(const Json& data, const SkillTypeId& defaultSkill);
 	[[nodiscard]] std::pair<ItemQuery, Quantity> loadItemQuery(const Json& data);
 	[[nodiscard]] std::unordered_map<std::string, MaterialTypeConstructionDataParamaters> loadMaterialTypeConstuctionData();
 	//void loadMedicalProjectTypes()

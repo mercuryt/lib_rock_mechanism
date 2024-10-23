@@ -11,8 +11,8 @@ struct MaterialType;
 class StockPileObjectiveType final : public ObjectiveType
 {
 public:
-	bool canBeAssigned(Area& area, ActorIndex actor) const;
-	std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
+	bool canBeAssigned(Area& area, const ActorIndex& actor) const;
+	std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
 	StockPileObjectiveType() = default;
 	[[nodiscard]] std::string name() const { return "stockpile"; }
 };
@@ -25,11 +25,11 @@ public:
 	StockPileProject* m_project = nullptr;
 	StockPileObjective();
 	StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, ActorIndex actor);
-	void cancel(Area& area, ActorIndex actor);
-	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
-	void reset(Area& area, ActorIndex actor) { cancel(area, actor); }
-	[[nodiscard]] bool destinationCondition(Area& area, BlockIndex block, const ItemIndex item, ActorIndex actor);
+	void execute(Area& area, const ActorIndex& actor);
+	void cancel(Area& area, const ActorIndex& actor);
+	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
+	void reset(Area& area, const ActorIndex& actor) { cancel(area, actor); }
+	[[nodiscard]] bool destinationCondition(Area& area, const BlockIndex& block, const ItemIndex& item, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
 	std::string name() const { return "stockpile"; }
 	friend class StockPilePathRequest;
@@ -39,9 +39,9 @@ class StockPilePathRequest final : public PathRequest
 {
 	StockPileObjective& m_objective;
 public:
-	StockPilePathRequest(Area& area, StockPileObjective& spo);
+	StockPilePathRequest(Area& area, StockPileObjective& spo, const ActorIndex& actor);
 	StockPilePathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, FindPathResult& result);
+	void callback(Area& area, const FindPathResult& result);
 	[[nodiscard]] std::string name() const { return "stockpile"; }
 	[[nodiscard]] Json toJson() const;
 };

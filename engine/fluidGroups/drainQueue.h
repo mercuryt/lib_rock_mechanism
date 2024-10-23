@@ -20,7 +20,7 @@ public:
 	DrainQueue(FluidGroup& fluidGroup);
 	void buildFor(BlockIndices& members);
 	void initalizeForStep();
-	void recordDelta(CollisionVolume volume, CollisionVolume flowCapacity, CollisionVolume flowTillNextStep);
+	void recordDelta(const CollisionVolume& volume, const CollisionVolume& flowCapacity, const CollisionVolume& flowTillNextStep);
 	void applyDelta();
 	[[nodiscard]] CollisionVolume groupLevel() const;
 	void findGroupEnd();

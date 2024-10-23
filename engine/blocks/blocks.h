@@ -76,11 +76,11 @@ public:
 	const DistanceInBlocks m_sizeX;
 	const DistanceInBlocks m_sizeY;
 	const DistanceInBlocks m_sizeZ;
-	Blocks(Area& area, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z);
+	Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	void resize(BlockIndex count);
-	void initalize(BlockIndex index);
-	void recordAdjacent(BlockIndex index);
+	void resize(const BlockIndex& count);
+	void initalize(const BlockIndex& index);
+	void recordAdjacent(const BlockIndex& index);
 	void assignLocationBuckets();
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Cuboid getAll();
@@ -89,76 +89,77 @@ public:
 	[[nodiscard]] BlockIndex getIndex(Point3D coordinates) const;
 	BlockIndex maybeGetIndexFromOffset(Point3D coordinates, const std::array<int8_t, 3> offset) const;
 	BlockIndex maybeGetIndexFromOffsetOnEdge(Point3D coordinates, const std::array<int8_t, 3> offset) const;
-	[[nodiscard]] BlockIndex getIndex(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) const;
+	[[nodiscard]] BlockIndex getIndex(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) const;
 	[[nodiscard]] BlockIndex getIndex_i(uint x, uint y, uint z) const;
+	// Pass by value because it will be modified.
 	[[nodiscard]] Point3D getCoordinates(BlockIndex index) const;
-	Point3D_fractional getCoordinatesFractional(BlockIndex index) const;
-	[[nodiscard]] DistanceInBlocks getZ(BlockIndex index) const;
-	[[nodiscard]] BlockIndex getAtFacing(BlockIndex index, Facing facing) const;
+	Point3D_fractional getCoordinatesFractional(const BlockIndex& index) const;
+	[[nodiscard]] DistanceInBlocks getZ(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndex getAtFacing(const BlockIndex& index, const Facing& facing) const;
 	[[nodiscard]] BlockIndex getCenterAtGroundLevel() const;
 	// TODO: Calculate on demand from offset vector?
-	[[nodiscard]] const std::array<BlockIndex, 6>& getDirectlyAdjacent(BlockIndex index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<18> getAdjacentWithEdgeAdjacent(BlockIndex index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<26> getAdjacentWithEdgeAndCornerAdjacent(BlockIndex index) const;
-	[[nodiscard]] std::array<BlockIndex, 26> getAdjacentWithEdgeAndCornerAdjacentUnfiltered(BlockIndex index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<20> getEdgeAndCornerAdjacentOnly(BlockIndex index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<12> getEdgeAdjacentOnly(BlockIndex index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<4> getEdgeAdjacentOnSameZLevelOnly(BlockIndex index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<4> getAdjacentOnSameZLevelOnly(BlockIndex index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<4> getEdgeAdjacentOnlyOnNextZLevelDown(BlockIndex index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<8> getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(BlockIndex index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<4> getEdgeAdjacentOnlyOnNextZLevelUp(BlockIndex index) const;
+	[[nodiscard]] const std::array<BlockIndex, 6>& getDirectlyAdjacent(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<18> getAdjacentWithEdgeAdjacent(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<26> getAdjacentWithEdgeAndCornerAdjacent(const BlockIndex& index) const;
+	[[nodiscard]] std::array<BlockIndex, 26> getAdjacentWithEdgeAndCornerAdjacentUnfiltered(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<20> getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<12> getEdgeAdjacentOnly(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<4> getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<4> getAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<4> getEdgeAdjacentOnlyOnNextZLevelDown(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<8> getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<4> getEdgeAdjacentOnlyOnNextZLevelUp(const BlockIndex& index) const;
 	//TODO: Under what circumstances is this integer distance preferable to taxiDistance or fractional distance?
-	[[nodiscard]] DistanceInBlocks distance(BlockIndex index, BlockIndex other) const;
-	[[nodiscard]] DistanceInBlocks taxiDistance(BlockIndex index, BlockIndex other) const;
-	[[nodiscard]] DistanceInBlocks distanceSquared(BlockIndex index, BlockIndex other) const;
-	[[nodiscard]] DistanceInBlocksFractional distanceFractional(BlockIndex index, BlockIndex other) const;
-	[[nodiscard]] bool squareOfDistanceIsMoreThen(BlockIndex index, BlockIndex other, DistanceInBlocksFractional distanceSquared) const;
-	[[nodiscard]] bool isAdjacentToAny(BlockIndex index, BlockIndices& blocks) const;
-	[[nodiscard]] bool isAdjacentTo(BlockIndex index, BlockIndex other) const;
-	[[nodiscard]] bool isAdjacentToIncludingCornersAndEdges(BlockIndex index, BlockIndex other) const;
-	[[nodiscard]] bool isAdjacentToActor(BlockIndex index, ActorIndex actor) const;
-	[[nodiscard]] bool isAdjacentToItem(BlockIndex index, ItemIndex item) const;
-	[[nodiscard]] bool isConstructed(BlockIndex index) const;
-	[[nodiscard]] bool canSeeIntoFromAlways(BlockIndex index, BlockIndex other) const;
-	void moveContentsTo(BlockIndex index, BlockIndex other);
-	[[nodiscard]] Mass getMass(BlockIndex index) const;
+	[[nodiscard]] DistanceInBlocks distance(const BlockIndex& index, const BlockIndex& other) const;
+	[[nodiscard]] DistanceInBlocks taxiDistance(const BlockIndex& index, const BlockIndex& other) const;
+	[[nodiscard]] DistanceInBlocks distanceSquared(const BlockIndex& index, const BlockIndex& other) const;
+	[[nodiscard]] DistanceInBlocksFractional distanceFractional(const BlockIndex& index, const BlockIndex& other) const;
+	[[nodiscard]] bool squareOfDistanceIsMoreThen(const BlockIndex& index, const BlockIndex& other, DistanceInBlocksFractional distanceSquared) const;
+	[[nodiscard]] bool isAdjacentToAny(const BlockIndex& index, BlockIndices& blocks) const;
+	[[nodiscard]] bool isAdjacentTo(const BlockIndex& index, const BlockIndex& other) const;
+	[[nodiscard]] bool isAdjacentToIncludingCornersAndEdges(const BlockIndex& index, const BlockIndex& other) const;
+	[[nodiscard]] bool isAdjacentToActor(const BlockIndex& index, const ActorIndex& actor) const;
+	[[nodiscard]] bool isAdjacentToItem(const BlockIndex& index, const ItemIndex& item) const;
+	[[nodiscard]] bool isConstructed(const BlockIndex& index) const;
+	[[nodiscard]] bool canSeeIntoFromAlways(const BlockIndex& index, const BlockIndex& other) const;
+	void moveContentsTo(const BlockIndex& index, const BlockIndex& other);
+	[[nodiscard]] Mass getMass(const BlockIndex& index) const;
 	// Get block at offset coordinates. Can return nullptr.
-	[[nodiscard]] BlockIndex offset(BlockIndex index, int32_t ax, int32_t ay, int32_t az) const;
-	[[nodiscard]] BlockIndex offsetNotNull(BlockIndex index, int32_t ax, int32_t ay, int32_t az) const;
-	[[nodiscard]] BlockIndex indexAdjacentToAtCount(BlockIndex index, AdjacentIndex adjacentCount) const;
-	[[nodiscard]] std::array<int32_t, 3> relativeOffsetTo(BlockIndex index, BlockIndex other) const; 
+	[[nodiscard]] BlockIndex offset(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const;
+	[[nodiscard]] BlockIndex offsetNotNull(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const;
+	[[nodiscard]] BlockIndex indexAdjacentToAtCount(const BlockIndex& index, const AdjacentIndex& adjacentCount) const;
+	[[nodiscard]] std::array<int32_t, 3> relativeOffsetTo(const BlockIndex& index, const BlockIndex& other) const; 
 	[[nodiscard]] std::array<int, 26> makeOffsetsForAdjacentCountTable() const;
-	[[nodiscard]] bool canSeeThrough(BlockIndex index) const;
-	[[nodiscard]] bool canSeeThroughFloor(BlockIndex index) const;
-	[[nodiscard]] bool canSeeThroughFrom(BlockIndex index, BlockIndex other) const;
-	[[nodiscard]] Facing facingToSetWhenEnteringFrom(BlockIndex index, BlockIndex other) const;
-	[[nodiscard]] Facing facingToSetWhenEnteringFromIncludingDiagonal(BlockIndex index, BlockIndex other, Facing inital = Facing::create(0)) const;
-	[[nodiscard]] bool isSupport(BlockIndex index) const;
-	[[nodiscard]] bool isOutdoors(BlockIndex index) const;
-	[[nodiscard]] bool isExposedToSky(BlockIndex index) const;
-	[[nodiscard]] bool isUnderground(BlockIndex index) const;
-	[[nodiscard]] bool isEdge(BlockIndex index) const;
-	[[nodiscard]] bool isOnSurface(BlockIndex index) const { return isOutdoors(index) && !isUnderground(index); }
-	[[nodiscard]] bool hasLineOfSightTo(BlockIndex index, BlockIndex other) const;
+	[[nodiscard]] bool canSeeThrough(const BlockIndex& index) const;
+	[[nodiscard]] bool canSeeThroughFloor(const BlockIndex& index) const;
+	[[nodiscard]] bool canSeeThroughFrom(const BlockIndex& index, const BlockIndex& other) const;
+	[[nodiscard]] Facing facingToSetWhenEnteringFrom(const BlockIndex& index, const BlockIndex& other) const;
+	[[nodiscard]] Facing facingToSetWhenEnteringFromIncludingDiagonal(const BlockIndex& index, const BlockIndex& other, const Facing inital = Facing::create(0)) const;
+	[[nodiscard]] bool isSupport(const BlockIndex& index) const;
+	[[nodiscard]] bool isOutdoors(const BlockIndex& index) const;
+	[[nodiscard]] bool isExposedToSky(const BlockIndex& index) const;
+	[[nodiscard]] bool isUnderground(const BlockIndex& index) const;
+	[[nodiscard]] bool isEdge(const BlockIndex& index) const;
+	[[nodiscard]] bool isOnSurface(const BlockIndex& index) const { return isOutdoors(index) && !isUnderground(index); }
+	[[nodiscard]] bool hasLineOfSightTo(const BlockIndex& index, const BlockIndex& other) const;
 	// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape comparing to m_totalStaticVolume.
-	[[nodiscard]] bool shapeAndMoveTypeCanEnterEver(BlockIndex index, ShapeId shape, MoveTypeId moveType) const;
-	[[nodiscard]] BlockIndex getBlockBelow(BlockIndex index) const;
-	[[nodiscard]] BlockIndex getBlockAbove(BlockIndex index) const;
-	[[nodiscard]] BlockIndex getBlockNorth(BlockIndex index) const;
-	[[nodiscard]] BlockIndex getBlockWest(BlockIndex index) const;
-	[[nodiscard]] BlockIndex getBlockSouth(BlockIndex index) const;
-	[[nodiscard]] BlockIndex getBlockEast(BlockIndex index) const;
-	[[nodiscard]] LocationBucket& getLocationBucket(BlockIndex index);
-	[[nodiscard]] Cuboid getZLevel(DistanceInBlocks z);
+	[[nodiscard]] bool shapeAndMoveTypeCanEnterEver(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType) const;
+	[[nodiscard]] BlockIndex getBlockBelow(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndex getBlockAbove(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndex getBlockNorth(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndex getBlockWest(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndex getBlockSouth(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndex getBlockEast(const BlockIndex& index) const;
+	[[nodiscard]] LocationBucket& getLocationBucket(const BlockIndex& index);
+	[[nodiscard]] Cuboid getZLevel(const DistanceInBlocks& z);
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
-	void setExposedToSky(BlockIndex index, bool exposed);
-	void setBelowExposedToSky(BlockIndex index);
-	void setBelowNotExposedToSky(BlockIndex index);
-	void setBelowVisible(BlockIndex index);
+	void setExposedToSky(const BlockIndex& index, bool exposed);
+	void setBelowExposedToSky(const BlockIndex& index);
+	void setBelowNotExposedToSky(const BlockIndex& index);
+	void setBelowVisible(const BlockIndex& index);
 	//TODO: Use std::function instead of template.
 	template <typename F>
-	[[nodiscard]] BlockIndices collectAdjacentsWithCondition(BlockIndex index, F&& condition)
+	[[nodiscard]] BlockIndices collectAdjacentsWithCondition(const BlockIndex& index, F&& condition)
 	{
 		BlockIndices output;
 		std::stack<BlockIndex> openList;
@@ -178,7 +179,7 @@ public:
 		return output;
 	}
 	template <typename F>
-	[[nodiscard]] BlockIndex getBlockInRangeWithCondition(BlockIndex index, DistanceInBlocks range, F&& condition)
+	[[nodiscard]] BlockIndex getBlockInRangeWithCondition(const BlockIndex& index, const DistanceInBlocks& range, F&& condition)
 	{
 		std::stack<BlockIndex> open;
 		open.push(index);
@@ -199,7 +200,7 @@ public:
 		}
 		return BlockIndex::null();
 	}
-	[[nodiscard]] BlockIndices collectAdjacentsInRange(BlockIndex index, DistanceInBlocks range);
+	[[nodiscard]] BlockIndices collectAdjacentsInRange(const BlockIndex& index, const DistanceInBlocks& range);
 	static inline constexpr std::array<std::array<int8_t, 3>, 26> offsetsListAllAdjacent{{
 		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
 		{0,1,-1}, {0,0,-1}, {0,-1,-1},
@@ -214,203 +215,202 @@ public:
 		{1,1,1}, {1,0,1}, {1,-1,1}
 	}};
 	// -Designation
-	[[nodiscard]] bool designation_has(BlockIndex index, FactionId faction, BlockDesignation designation) const;
-	void designation_set(BlockIndex index, FactionId faction, BlockDesignation designation);
-	void designation_unset(BlockIndex index, FactionId faction, BlockDesignation designation);
-	void designation_maybeUnset(BlockIndex index, FactionId faction, BlockDesignation designation);
+	[[nodiscard]] bool designation_has(const BlockIndex& index, const FactionId& faction, const BlockDesignation& designation) const;
+	void designation_set(const BlockIndex& index, const FactionId& faction, const BlockDesignation& designation);
+	void designation_unset(const BlockIndex& index, const FactionId& faction, const BlockDesignation& designation);
+	void designation_maybeUnset(const BlockIndex& index, const FactionId& faction, const BlockDesignation& designation);
 	// -Solid.
-	void solid_set(BlockIndex index, MaterialTypeId materialType, bool constructed);
-	void solid_setNot(BlockIndex index);
-	[[nodiscard]] bool solid_is(BlockIndex index) const;
-	[[nodiscard]] MaterialTypeId solid_get(BlockIndex index) const;
+	void solid_set(const BlockIndex& index, const MaterialTypeId& materialType, bool constructed);
+	void solid_setNot(const BlockIndex& index);
+	[[nodiscard]] bool solid_is(const BlockIndex& index) const;
+	[[nodiscard]] MaterialTypeId solid_get(const BlockIndex& index) const;
 	// -BlockFeature.
-	void blockFeature_construct(BlockIndex index, const BlockFeatureType& featureType, MaterialTypeId materialType);
-	void blockFeature_hew(BlockIndex index, const BlockFeatureType& featureType);
-	void blockFeature_remove(BlockIndex index, const BlockFeatureType& type);
-	void blockFeature_removeAll(BlockIndex index);
-	void blockFeature_lock(BlockIndex index, const BlockFeatureType& type);
-	void blockFeature_unlock(BlockIndex index, const BlockFeatureType& type);
-	void blockFeature_close(BlockIndex index, const BlockFeatureType& type);
-	void blockFeature_open(BlockIndex index, const BlockFeatureType& type);
-	void blockFeature_setTemperature(BlockIndex index, Temperature temperature);
-	[[nodiscard]] const BlockFeature* blockFeature_atConst(BlockIndex index, const BlockFeatureType& blockFeatueType) const;
-	[[nodiscard]] BlockFeature* blockFeature_at(BlockIndex index, const BlockFeatureType& blockFeatueType);
-	[[nodiscard]] const BlockIndices& blockFeature_get(BlockIndex index) const;
-	[[nodiscard]] bool blockFeature_empty(BlockIndex index) const;
-	[[nodiscard]] bool blockFeature_blocksEntrance(BlockIndex index) const;
-	[[nodiscard]] bool blockFeature_canStandAbove(BlockIndex index) const;
-	[[nodiscard]] bool blockFeature_canStandIn(BlockIndex index) const;
-	[[nodiscard]] bool blockFeature_isSupport(BlockIndex index) const;
-	[[nodiscard]] bool blockFeature_canEnterFromBelow(BlockIndex index) const;
-	[[nodiscard]] bool blockFeature_canEnterFromAbove(BlockIndex index, BlockIndex from) const;
-	[[nodiscard]] MaterialTypeId blockFeature_getMaterialType(BlockIndex index) const;
-	[[nodiscard]] bool blockFeature_contains(BlockIndex index, const BlockFeatureType& blockFeatureType) const;
+	void blockFeature_construct(const BlockIndex& index, const BlockFeatureType& featureType, const MaterialTypeId& materialType);
+	void blockFeature_hew(const BlockIndex& index, const BlockFeatureType& featureType);
+	void blockFeature_remove(const BlockIndex& index, const BlockFeatureType& type);
+	void blockFeature_removeAll(const BlockIndex& index);
+	void blockFeature_lock(const BlockIndex& index, const BlockFeatureType& type);
+	void blockFeature_unlock(const BlockIndex& index, const BlockFeatureType& type);
+	void blockFeature_close(const BlockIndex& index, const BlockFeatureType& type);
+	void blockFeature_open(const BlockIndex& index, const BlockFeatureType& type);
+	void blockFeature_setTemperature(const BlockIndex& index, const Temperature& temperature);
+	[[nodiscard]] const BlockFeature* blockFeature_atConst(const BlockIndex& index, const BlockFeatureType& blockFeatueType) const;
+	[[nodiscard]] BlockFeature* blockFeature_at(const BlockIndex& index, const BlockFeatureType& blockFeatueType);
+	[[nodiscard]] const BlockIndices& blockFeature_get(const BlockIndex& index) const;
+	[[nodiscard]] bool blockFeature_empty(const BlockIndex& index) const;
+	[[nodiscard]] bool blockFeature_blocksEntrance(const BlockIndex& index) const;
+	[[nodiscard]] bool blockFeature_canStandAbove(const BlockIndex& index) const;
+	[[nodiscard]] bool blockFeature_canStandIn(const BlockIndex& index) const;
+	[[nodiscard]] bool blockFeature_isSupport(const BlockIndex& index) const;
+	[[nodiscard]] bool blockFeature_canEnterFromBelow(const BlockIndex& index) const;
+	[[nodiscard]] bool blockFeature_canEnterFromAbove(const BlockIndex& index, const BlockIndex& from) const;
+	[[nodiscard]] MaterialTypeId blockFeature_getMaterialType(const BlockIndex& index) const;
+	[[nodiscard]] bool blockFeature_contains(const BlockIndex& index, const BlockFeatureType& blockFeatureType) const;
 	// -Fluids
-	void fluid_spawnMist(BlockIndex index, FluidTypeId fluidType, DistanceInBlocks maxMistSpread = DistanceInBlocks::create(0));
-	void fluid_clearMist(BlockIndex index);
-	DistanceInBlocks fluid_getMistInverseDistanceToSource(BlockIndex) const;
-	FluidGroup* fluid_getGroup(BlockIndex index, FluidTypeId fluidType) const;
+	void fluid_spawnMist(const BlockIndex& index, const FluidTypeId& fluidType, const DistanceInBlocks maxMistSpread = DistanceInBlocks::create(0));
+	void fluid_clearMist(const BlockIndex& index);
+	DistanceInBlocks fluid_getMistInverseDistanceToSource(const BlockIndex& block) const;
+	FluidGroup* fluid_getGroup(const BlockIndex& index, const FluidTypeId& fluidType) const;
 	// Add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
-	void fluid_add(BlockIndex index, CollisionVolume volume, FluidTypeId fluidType);
+	void fluid_add(const BlockIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType);
 	// To be used durring read step.
-	void fluid_remove(BlockIndex index, CollisionVolume volume, FluidTypeId fluidType);
+	void fluid_remove(const BlockIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType);
 	// To be used used durring write step.
-	void fluid_removeSyncronus(BlockIndex index, CollisionVolume volume, FluidTypeId fluidType);
+	void fluid_removeSyncronus(const BlockIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType);
 	// Move less dense fluids to their group's excessVolume until Config::maxBlockVolume is achieved.
-	void fluid_resolveOverfull(BlockIndex index);
-	void fluid_onBlockSetSolid(BlockIndex index);
-	void fluid_onBlockSetNotSolid(BlockIndex index);
-	void fluid_mistSetFluidTypeAndInverseDistance(BlockIndex index, FluidTypeId fluidType, DistanceInBlocks inverseDistance);
+	void fluid_resolveOverfull(const BlockIndex& index);
+	void fluid_onBlockSetSolid(const BlockIndex& index);
+	void fluid_onBlockSetNotSolid(const BlockIndex& index);
+	void fluid_mistSetFluidTypeAndInverseDistance(const BlockIndex& index, const FluidTypeId& fluidType, const DistanceInBlocks& inverseDistance);
 	// TODO: This could probably be resolved in a better way.
 	// Exposing these two methods breaks encapusalition a bit but allows better performance from fluidGroup.
-	void fluid_setAllUnstableExcept(BlockIndex index, FluidTypeId fluidType);
+	void fluid_setAllUnstableExcept(const BlockIndex& index, const FluidTypeId& fluidType);
 	// To be used by DrainQueue / FillQueue.
-	void fluid_drainInternal(BlockIndex index, CollisionVolume volume, FluidTypeId fluidType);
-	void fluid_fillInternal(BlockIndex index, CollisionVolume volume, FluidGroup& fluidGroup);
+	void fluid_drainInternal(const BlockIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType);
+	void fluid_fillInternal(const BlockIndex& index, const CollisionVolume& volume, FluidGroup& fluidGroup);
 	// To be used by fluid group split, so the blocks which will be in soon to be created groups can briefly have fluid without having a fluidGroup.
 	// Fluid group will be set again in addBlock within the new group's constructor.
 	// This prevents a problem where addBlock attempts to remove a block from a group which it has already been removed from.
 	// TODO: Seems messy.
-	void fluid_unsetGroupInternal(BlockIndex index, FluidTypeId fluidType);
+	void fluid_unsetGroupInternal(const BlockIndex& index, const FluidTypeId& fluidType);
 	// To be called from FluidGroup::splitStep only.
-	[[nodiscard]] bool fluid_undisolveInternal(BlockIndex index, FluidGroup& fluidGroup);
-private:void fluid_destroyData(BlockIndex index, FluidTypeId fluidType);
-	void fluid_setTotalVolume(BlockIndex index, CollisionVolume volume);
-public: [[nodiscard]] bool fluid_canEnterCurrently(BlockIndex index, FluidTypeId fluidType) const;
-	[[nodiscard]] bool fluid_isAdjacentToGroup(BlockIndex index, const FluidGroup* fluidGroup) const;
-	[[nodiscard]] CollisionVolume fluid_volumeOfTypeCanEnter(BlockIndex index, FluidTypeId fluidType) const;
-	[[nodiscard]] CollisionVolume fluid_volumeOfTypeContains(BlockIndex index, FluidTypeId fluidType) const;
-	[[nodiscard]] FluidTypeId fluid_getTypeWithMostVolume(BlockIndex index) const;
-	[[nodiscard]] bool fluid_canEnterEver(BlockIndex index) const;
-	[[nodiscard]] bool fluid_typeCanEnterCurrently(BlockIndex index, FluidTypeId fluidType) const;
-	[[nodiscard]] bool fluid_any(BlockIndex index) const;
-	[[nodiscard]] bool fluid_contains(BlockIndex index, FluidTypeId fluidType) const;
-	[[nodiscard]] std::vector<FluidData>& fluid_getAll(BlockIndex index);
-	[[nodiscard]] std::vector<FluidData>& fluid_getAllSortedByDensityAscending(BlockIndex index);
-	[[nodiscard]] CollisionVolume fluid_getTotalVolume(BlockIndex index) const;
-	[[nodiscard]] FluidTypeId fluid_getMist(BlockIndex index) const;
-	[[nodiscard]] std::vector<FluidData>::iterator fluid_getDataIterator(BlockIndex index, FluidTypeId fluidType);
-	[[nodiscard]] const FluidData* fluid_getData(BlockIndex index, FluidTypeId fluidType) const;
-	[[nodiscard]] FluidData* fluid_getData(BlockIndex index, FluidTypeId fluidType);
+	[[nodiscard]] bool fluid_undisolveInternal(const BlockIndex& index, FluidGroup& fluidGroup);
+private:void fluid_destroyData(const BlockIndex& index, const FluidTypeId& fluidType);
+	void fluid_setTotalVolume(const BlockIndex& index, const CollisionVolume& volume);
+public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, const FluidTypeId& fluidType) const;
+	[[nodiscard]] bool fluid_isAdjacentToGroup(const BlockIndex& index, const FluidGroup& fluidGroup) const;
+	[[nodiscard]] CollisionVolume fluid_volumeOfTypeCanEnter(const BlockIndex& index, const FluidTypeId& fluidType) const;
+	[[nodiscard]] CollisionVolume fluid_volumeOfTypeContains(const BlockIndex& index, const FluidTypeId& fluidType) const;
+	[[nodiscard]] FluidTypeId fluid_getTypeWithMostVolume(const BlockIndex& index) const;
+	[[nodiscard]] bool fluid_canEnterEver(const BlockIndex& index) const;
+	[[nodiscard]] bool fluid_typeCanEnterCurrently(const BlockIndex& index, const FluidTypeId& fluidType) const;
+	[[nodiscard]] bool fluid_any(const BlockIndex& index) const;
+	[[nodiscard]] bool fluid_contains(const BlockIndex& index, const FluidTypeId& fluidType) const;
+	[[nodiscard]] std::vector<FluidData>& fluid_getAll(const BlockIndex& index);
+	[[nodiscard]] std::vector<FluidData>& fluid_getAllSortedByDensityAscending(const BlockIndex& index);
+	[[nodiscard]] CollisionVolume fluid_getTotalVolume(const BlockIndex& index) const;
+	[[nodiscard]] FluidTypeId fluid_getMist(const BlockIndex& index) const;
+	[[nodiscard]] std::vector<FluidData>::iterator fluid_getDataIterator(const BlockIndex& index, const FluidTypeId& fluidType);
+	[[nodiscard]] const FluidData* fluid_getData(const BlockIndex& index, const FluidTypeId& fluidType) const;
+	[[nodiscard]] FluidData* fluid_getData(const BlockIndex& index, const FluidTypeId& fluidType);
 	// -Fire
-	void fire_setPointer(BlockIndex index, SmallMapStable<MaterialTypeId, Fire>* pointer);
-	void fire_clearPointer(BlockIndex index);
-	[[nodiscard]] bool fire_exists(BlockIndex index) const;
-	[[nodiscard]] FireStage fire_getStage(BlockIndex index) const;
-	[[nodiscard]] Fire& fire_get(BlockIndex index, MaterialTypeId materialType);
+	void fire_setPointer(const BlockIndex& index, SmallMapStable<MaterialTypeId, Fire>* pointer);
+	void fire_clearPointer(const BlockIndex& index);
+	[[nodiscard]] bool fire_exists(const BlockIndex& index) const;
+	[[nodiscard]] FireStage fire_getStage(const BlockIndex& index) const;
+	[[nodiscard]] Fire& fire_get(const BlockIndex& index, const MaterialTypeId& materialType);
 	// -Reservations
-	void reserve(BlockIndex index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback = nullptr);
-	void unreserve(BlockIndex index, CanReserve& canReserve);
-	void unreserveAll(BlockIndex index);
-	void setReservationDishonorCallback(BlockIndex index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback);
-	[[nodiscard]] bool isReserved(BlockIndex index, const FactionId faction) const;
+	void reserve(const BlockIndex& index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback = nullptr);
+	void unreserve(const BlockIndex& index, CanReserve& canReserve);
+	void unreserveAll(const BlockIndex& index);
+	void setReservationDishonorCallback(const BlockIndex& index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback);
+	[[nodiscard]] bool isReserved(const BlockIndex& index, const FactionId& faction) const;
 	// -Actors
-	void actor_record(BlockIndex index, ActorIndex actor, CollisionVolume volume);
-	void actor_erase(BlockIndex index, ActorIndex actor);
-	void actor_setTemperature(BlockIndex index, Temperature temperature);
-	void actor_updateIndex(BlockIndex index, ActorIndex oldIndex, ActorIndex newIndex);
-	[[nodiscard]] bool actor_canStandIn(BlockIndex index) const;
-	[[nodiscard]] bool actor_contains(BlockIndex index, ActorIndex actor) const;
-	[[nodiscard]] bool actor_empty(BlockIndex index) const;
-	[[nodiscard]] Volume actor_volumeOf(BlockIndex index, ActorIndex actor) const;
-	[[nodiscard]] ActorIndicesForBlock& actor_getAll(BlockIndex index);
-	[[nodiscard]] const ActorIndicesForBlock& actor_getAllConst(BlockIndex index) const;
+	void actor_record(const BlockIndex& index, const ActorIndex& actor, const CollisionVolume& volume);
+	void actor_erase(const BlockIndex& index, const ActorIndex& actor);
+	void actor_setTemperature(const BlockIndex& index, const Temperature& temperature);
+	void actor_updateIndex(const BlockIndex& index, const ActorIndex& oldIndex, const ActorIndex& newIndex);
+	[[nodiscard]] bool actor_canStandIn(const BlockIndex& index) const;
+	[[nodiscard]] bool actor_contains(const BlockIndex& index, const ActorIndex& actor) const;
+	[[nodiscard]] bool actor_empty(const BlockIndex& index) const;
+	[[nodiscard]] Volume actor_volumeOf(const BlockIndex& index, const ActorIndex& actor) const;
+	[[nodiscard]] ActorIndicesForBlock& actor_getAll(const BlockIndex& index);
+	[[nodiscard]] const ActorIndicesForBlock& actor_getAllConst(const BlockIndex& index) const;
 	// -Items
-	void item_record(BlockIndex index, ItemIndex item, CollisionVolume volume);
-	void item_erase(BlockIndex index, ItemIndex item);
-	void item_setTemperature(BlockIndex index, Temperature temperature);
-	void item_disperseAll(BlockIndex index);
-	void item_updateIndex(BlockIndex index, ItemIndex oldIndex, ItemIndex newIndex);
-	ItemIndex item_addGeneric(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity);
-	//ItemIndex get(BlockIndex index, ItemType& itemType) const;
-	[[nodiscard]] Quantity item_getCount(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType) const;
-	[[nodiscard]] ItemIndex item_getGeneric(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType) const;
-	[[nodiscard]] ItemIndicesForBlock& item_getAll(BlockIndex index);
-	const ItemIndicesForBlock& item_getAll(BlockIndex index) const;
-	[[nodiscard]] bool item_hasInstalledType(BlockIndex index, ItemTypeId itemType) const;
-	[[nodiscard]] bool item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(BlockIndex index, const ActorIndex actor) const;
-	[[nodiscard]] bool item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, const ActorIndex actor, FluidTypeId fluidType) const;
-	[[nodiscard]] bool item_empty(BlockIndex index) const;
-	[[nodiscard]] bool item_contains(BlockIndex index, ItemIndex item) const;
+	void item_record(const BlockIndex& index, const ItemIndex& item, const CollisionVolume& volume);
+	void item_erase(const BlockIndex& index, const ItemIndex& item);
+	void item_setTemperature(const BlockIndex& index, const Temperature& temperature);
+	void item_disperseAll(const BlockIndex& index);
+	void item_updateIndex(const BlockIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex);
+	ItemIndex item_addGeneric(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity);
+	//ItemIndex get(const BlockIndex& index, ItemType& itemType) const;
+	[[nodiscard]] Quantity item_getCount(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType) const;
+	[[nodiscard]] ItemIndex item_getGeneric(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType) const;
+	[[nodiscard]] ItemIndicesForBlock& item_getAll(const BlockIndex& index);
+	const ItemIndicesForBlock& item_getAll(const BlockIndex& index) const;
+	[[nodiscard]] bool item_hasInstalledType(const BlockIndex& index, const ItemTypeId& itemType) const;
+	[[nodiscard]] bool item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(const BlockIndex& index, const ActorIndex& actor) const;
+	[[nodiscard]] bool item_hasContainerContainingFluidTypeCarryableBy(const BlockIndex& index, const ActorIndex& actor, const FluidTypeId& fluidType) const;
+	[[nodiscard]] bool item_empty(const BlockIndex& index) const;
+	[[nodiscard]] bool item_contains(const BlockIndex& index, const ItemIndex& item) const;
 	// -Plant
-	void plant_create(BlockIndex index, PlantSpeciesId plantSpecies, Percent growthPercent = Percent::null());
-	void plant_updateGrowingStatus(BlockIndex index);
-	void plant_clearPointer(BlockIndex index);
-	void plant_setTemperature(BlockIndex index, Temperature temperature);
-	void plant_erase(BlockIndex index);
-	void plant_set(BlockIndex index, PlantIndex plant);
-	PlantIndex plant_get(BlockIndex index);
-	PlantIndex plant_get(BlockIndex index) const;
-	bool plant_canGrowHereCurrently(BlockIndex index, PlantSpeciesId plantSpecies) const;
-	bool plant_canGrowHereAtSomePointToday(BlockIndex index, PlantSpeciesId plantSpecies) const;
-	bool plant_canGrowHereEver(BlockIndex index, PlantSpeciesId plantSpecies) const;
-	bool plant_anythingCanGrowHereEver(BlockIndex index) const;
-	bool plant_exists(BlockIndex index) const;
+	void plant_create(const BlockIndex& index, const PlantSpeciesId& plantSpecies, Percent growthPercent = Percent::null());
+	void plant_updateGrowingStatus(const BlockIndex& index);
+	void plant_setTemperature(const BlockIndex& index, const Temperature& temperature);
+	void plant_erase(const BlockIndex& index);
+	void plant_set(const BlockIndex& index, const PlantIndex& plant);
+	PlantIndex plant_get(const BlockIndex& index);
+	PlantIndex plant_get(const BlockIndex& index) const;
+	bool plant_canGrowHereCurrently(const BlockIndex& index, const PlantSpeciesId& plantSpecies) const;
+	bool plant_canGrowHereAtSomePointToday(const BlockIndex& index, const PlantSpeciesId& plantSpecies) const;
+	bool plant_canGrowHereEver(const BlockIndex& index, const PlantSpeciesId& plantSpecies) const;
+	bool plant_anythingCanGrowHereEver(const BlockIndex& index) const;
+	bool plant_exists(const BlockIndex& index) const;
 	// -Shape / Move
-	void shape_addStaticVolume(BlockIndex index, CollisionVolume volume);
-	void shape_removeStaticVolume(BlockIndex index, CollisionVolume volume);
-	[[nodiscard]] bool shape_anythingCanEnterEver(BlockIndex index) const;
-	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverFrom(BlockIndex index, ShapeId shape, MoveTypeId moveType, const BlockIndex block) const;
-	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithFacing(BlockIndex index, ShapeId shape, MoveTypeId moveType, const Facing facing) const;
-	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(BlockIndex index, ShapeId shape, MoveTypeId moveType) const;
+	void shape_addStaticVolume(const BlockIndex& index, const CollisionVolume& volume);
+	void shape_removeStaticVolume(const BlockIndex& index, const CollisionVolume& volume);
+	[[nodiscard]] bool shape_anythingCanEnterEver(const BlockIndex& index) const;
+	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverFrom(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& block) const;
+	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing& facing) const;
+	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType) const;
 	// CanEnterCurrently methods which are not prefixed with static are to be used only for dynamic shapes.
-	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(BlockIndex index, ShapeId shape, MoveTypeId moveType, const Facing facing, const BlockIndices& occupied) const;
-	[[nodiscard]] Facing shape_canEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const;
-	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(BlockIndex index, ShapeId shape, MoveTypeId moveType, const BlockIndices& occupied) const;
-	[[nodiscard]] bool shape_canEnterCurrentlyWithAnyFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const;
-	[[nodiscard]] bool shape_canEnterCurrentlyFrom(BlockIndex index, ShapeId shape, BlockIndex other, const BlockIndices& occupied) const;
-	[[nodiscard]] bool shape_canEnterCurrentlyWithFacing(BlockIndex index, ShapeId shape, Facing facing, const BlockIndices& occupied) const;
-	[[nodiscard]] bool shape_moveTypeCanEnter(BlockIndex index, MoveTypeId moveType) const;
-	[[nodiscard]] bool shape_moveTypeCanEnterFrom(BlockIndex index, MoveTypeId moveType, const BlockIndex from) const;
-	[[nodiscard]] bool shape_moveTypeCanBreath(BlockIndex index, MoveTypeId moveType) const;
+	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing& facing, const BlockIndices& occupied) const;
+	[[nodiscard]] Facing shape_canEnterCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_canEnterCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_canEnterCurrentlyFrom(const BlockIndex& index, const ShapeId& shape, const BlockIndex& other, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_canEnterCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing& facing, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_moveTypeCanEnter(const BlockIndex& index, const MoveTypeId& moveType) const;
+	[[nodiscard]] bool shape_moveTypeCanEnterFrom(const BlockIndex& index, const MoveTypeId& moveType, const BlockIndex& from) const;
+	[[nodiscard]] bool shape_moveTypeCanBreath(const BlockIndex& index, const MoveTypeId& moveType) const;
 	// Static shapes are items or actors who are laying on the ground immobile.
 	// They do not collide with dynamic shapes and have their own volume data.
-	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithFacing(BlockIndex index, ShapeId Shape, const Facing& facing, const BlockIndices& occupied) const;
-	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithAnyFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const;
-	[[nodiscard]] std::pair<bool, Facing> shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const;
-	[[nodiscard]] bool shape_staticShapeCanEnterWithFacing(BlockIndex index, ShapeId shape, Facing facing, const BlockIndices& occupied) const;
-	[[nodiscard]] bool shape_staticShapeCanEnterWithAnyFacing(BlockIndex index, ShapeId shape, const BlockIndices& occupied) const;
-	[[nodiscard]] MoveCost shape_moveCostFrom(BlockIndex index, MoveTypeId moveType, const BlockIndex from) const;
-	[[nodiscard]] bool shape_canStandIn(BlockIndex index) const;
-	[[nodiscard]] CollisionVolume shape_getDynamicVolume(BlockIndex index) const;
-	[[nodiscard]] CollisionVolume shape_getStaticVolume(BlockIndex index) const;
-	[[nodiscard]] Quantity shape_getQuantityOfItemWhichCouldFit(BlockIndex index, ItemTypeId itemType) const;
+	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithFacing(const BlockIndex& index, const ShapeId& Shape, const Facing& facing, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const BlockIndices& occupied) const;
+	[[nodiscard]] std::pair<bool, Facing> shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_staticShapeCanEnterWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing& facing, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_staticShapeCanEnterWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const BlockIndices& occupied) const;
+	[[nodiscard]] MoveCost shape_moveCostFrom(const BlockIndex& index, const MoveTypeId& moveType, const BlockIndex& from) const;
+	[[nodiscard]] bool shape_canStandIn(const BlockIndex& index) const;
+	[[nodiscard]] CollisionVolume shape_getDynamicVolume(const BlockIndex& index) const;
+	[[nodiscard]] CollisionVolume shape_getStaticVolume(const BlockIndex& index) const;
+	[[nodiscard]] Quantity shape_getQuantityOfItemWhichCouldFit(const BlockIndex& index, const ItemTypeId& itemType) const;
 	// -FarmField
-	void farm_insert(BlockIndex index, FactionId faction, FarmField& farmField);
-	void farm_remove(BlockIndex index, FactionId faction);
-	void farm_designateForHarvestIfPartOfFarmField(BlockIndex index, PlantIndex plant);
-	void farm_designateForGiveFluidIfPartOfFarmField(BlockIndex index, PlantIndex plant);
-	void farm_maybeDesignateForSowingIfPartOfFarmField(BlockIndex index);
-	void farm_removeAllHarvestDesignations(BlockIndex index);
-	void farm_removeAllGiveFluidDesignations(BlockIndex index);
-	void farm_removeAllSowSeedsDesignations(BlockIndex index);
-	[[nodiscard]] bool farm_isSowingSeasonFor(PlantSpeciesId species) const;
-	[[nodiscard]] bool farm_contains(BlockIndex index, FactionId faction) const;
-	[[nodiscard]] FarmField* farm_get(BlockIndex index, FactionId faction);
-	[[nodiscard]] const FarmField* farm_get(BlockIndex index, FactionId faction) const;
+	void farm_insert(const BlockIndex& index, const FactionId& faction, FarmField& farmField);
+	void farm_remove(const BlockIndex& index, const FactionId& faction);
+	void farm_designateForHarvestIfPartOfFarmField(const BlockIndex& index, const PlantIndex& plant);
+	void farm_designateForGiveFluidIfPartOfFarmField(const BlockIndex& index, const PlantIndex& plant);
+	void farm_maybeDesignateForSowingIfPartOfFarmField(const BlockIndex& index);
+	void farm_removeAllHarvestDesignations(const BlockIndex& index);
+	void farm_removeAllGiveFluidDesignations(const BlockIndex& index);
+	void farm_removeAllSowSeedsDesignations(const BlockIndex& index);
+	[[nodiscard]] bool farm_isSowingSeasonFor(const PlantSpeciesId& species) const;
+	[[nodiscard]] bool farm_contains(const BlockIndex& index, const FactionId& faction) const;
+	[[nodiscard]] FarmField* farm_get(const BlockIndex& index, const FactionId& faction);
+	[[nodiscard]] const FarmField* farm_get(const BlockIndex& index, const FactionId& faction) const;
 	// -StockPile
-	void stockpile_recordMembership(BlockIndex index, StockPile& stockPile);
-	void stockpile_recordNoLongerMember(BlockIndex index, StockPile& stockPile);
+	void stockpile_recordMembership(const BlockIndex& index, StockPile& stockPile);
+	void stockpile_recordNoLongerMember(const BlockIndex& index, StockPile& stockPile);
 	// When an item is added or removed update avalibility for all stockpiles.
-	void stockpile_updateActive(BlockIndex index);
-	[[nodiscard]] StockPile* stockpile_getForFaction(BlockIndex index, FactionId faction);
-	[[nodiscard]] const StockPile* stockpile_getForFaction(BlockIndex index, FactionId faction) const;
-	[[nodiscard]] bool stockpile_contains(BlockIndex index, FactionId faction) const;
-	[[nodiscard]] bool stockpile_isAvalible(BlockIndex index, FactionId faction) const;
+	void stockpile_updateActive(const BlockIndex& index);
+	[[nodiscard]] StockPile* stockpile_getForFaction(const BlockIndex& index, const FactionId& faction);
+	[[nodiscard]] const StockPile* stockpile_getForFaction(const BlockIndex& index, const FactionId& faction) const;
+	[[nodiscard]] bool stockpile_contains(const BlockIndex& index, const FactionId& faction) const;
+	[[nodiscard]] bool stockpile_isAvalible(const BlockIndex& index, const FactionId& faction) const;
 	// -Project
-	void project_add(BlockIndex index, Project& project);
-	void project_remove(BlockIndex index, Project& project);
-	Percent project_getPercentComplete(BlockIndex index, FactionId faction) const;
-	[[nodiscard]] Project* project_get(BlockIndex index, FactionId faction) const;
-	[[nodiscard]] Project* project_getIfBegun(BlockIndex index, FactionId faction) const;
+	void project_add(const BlockIndex& index, Project& project);
+	void project_remove(const BlockIndex& index, Project& project);
+	Percent project_getPercentComplete(const BlockIndex& index, const FactionId& faction) const;
+	[[nodiscard]] Project* project_get(const BlockIndex& index, const FactionId& faction) const;
+	[[nodiscard]] Project* project_getIfBegun(const BlockIndex& index, const FactionId& faction) const;
 	// -Temperature
-	void temperature_freeze(BlockIndex index, FluidTypeId fluidType);
-	void temperature_melt(BlockIndex index);
-	void temperature_apply(BlockIndex index, Temperature temperature, TemperatureDelta delta);
-	void temperature_updateDelta(BlockIndex index, TemperatureDelta delta);
-	const Temperature& temperature_getAmbient(BlockIndex index) const;
-	Temperature temperature_getDailyAverageAmbient(BlockIndex index) const;
-	Temperature temperature_get(BlockIndex index) const;
+	void temperature_freeze(const BlockIndex& index, const FluidTypeId& fluidType);
+	void temperature_melt(const BlockIndex& index);
+	void temperature_apply(const BlockIndex& index, const Temperature& temperature, const TemperatureDelta& delta);
+	void temperature_updateDelta(const BlockIndex& index, const TemperatureDelta& delta);
+	const Temperature& temperature_getAmbient(const BlockIndex& index) const;
+	Temperature temperature_getDailyAverageAmbient(const BlockIndex& index) const;
+	Temperature temperature_get(const BlockIndex& index) const;
 	Blocks(Blocks&) = delete;
 	Blocks(Blocks&&) = delete;
 };

@@ -6,11 +6,10 @@
 #include "../terrainFacade.h"
 #include "types.h"
 // Searches for an Item and destination to make a hauling project for m_objective.m_actor.
-StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo) : m_objective(spo)
+StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo, const ActorIndex& actor) : m_objective(spo)
 {
 	assert(m_objective.m_project == nullptr);
 	assert(m_objective.m_destination.empty());
-	ActorIndex actor = getActor();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	assert(!actors.project_exists(actor));
@@ -18,7 +17,7 @@ StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo) 
 	if(!m_objective.m_item.exists())
 	{
 		auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
-		std::function<bool(BlockIndex)> blocksContainsItemCondition = [this, &hasStockPiles, &items, actor](BlockIndex block)
+		std::function<bool(const BlockIndex&)> blocksContainsItemCondition = [this, &hasStockPiles, &items, actor](const BlockIndex& block)
 		{
 			ItemIndex item = hasStockPiles.getHaulableItemForAt(actor, block);
 			if(item.empty())
@@ -32,14 +31,15 @@ StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo) 
 	}
 	else
 	{
-		std::function<bool(BlockIndex)> condition = [this, &area, actor](BlockIndex block) { return m_objective.destinationCondition(area, block, m_objective.m_item.getIndex(), actor); };
+		std::function<bool(const BlockIndex&)> condition = [this, &area, actor](const BlockIndex& block) { return m_objective.destinationCondition(area, block, m_objective.m_item.getIndex(), actor); };
 		bool unreserved = false;
 		DistanceInBlocks maxRange = Config::maxRangeToSearchForStockPiles;
 		createGoAdjacentToCondition(area, actor, condition, m_objective.m_detour, unreserved, maxRange, BlockIndex::null());
 	}
 }
-void StockPilePathRequest::callback(Area& area, FindPathResult& result)
+void StockPilePathRequest::callback(Area& area, const FindPathResult& result)
 {
+	assert(m_objective.m_destination.empty());
 	Actors& actors = area.getActors();
 	ActorIndex actor = getActor();
 	FactionId faction = actors.getFactionId(actor);
@@ -113,11 +113,11 @@ Json StockPilePathRequest::toJson() const
 	return output;
 }
 // Objective Type.
-bool StockPileObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
+bool StockPileObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
 	return area.m_hasStockPiles.getForFaction(area.getActors().getFactionId(actor)).isAnyHaulingAvailableFor(actor);
 }
-std::unique_ptr<Objective> StockPileObjectiveType::makeFor(Area&, ActorIndex) const
+std::unique_ptr<Objective> StockPileObjectiveType::makeFor(Area&, const ActorIndex&) const
 {
 	return std::make_unique<StockPileObjective>();
 }
@@ -132,19 +132,19 @@ Json StockPileObjective::toJson() const
 		data["project"] = *m_project;
 	return data;
 }
-void StockPileObjective::execute(Area& area, ActorIndex actor) 
+void StockPileObjective::execute(Area& area, const ActorIndex& actor) 
 { 
 	// If there is no project to work on dispatch a threaded task to either find one or call cannotFulfillObjective.
 	if(m_project == nullptr)
 	{
 		Actors& actors = area.getActors();
 		assert(!actors.project_exists(actor));
-		actors.move_pathRequestRecord(actor, std::make_unique<StockPilePathRequest>(area, *this));
+		actors.move_pathRequestRecord(actor, std::make_unique<StockPilePathRequest>(area, *this, actor));
 	}
 	else
 		m_project->commandWorker(actor);
 }
-void StockPileObjective::cancel(Area& area, ActorIndex actor)
+void StockPileObjective::cancel(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	if(m_project != nullptr)
@@ -158,7 +158,7 @@ void StockPileObjective::cancel(Area& area, ActorIndex actor)
 	actors.move_pathRequestMaybeCancel(actor);
 	actors.canReserve_clearAll(actor);
 }
-bool StockPileObjective::destinationCondition(Area& area, BlockIndex block, const ItemIndex item, ActorIndex actor)
+bool StockPileObjective::destinationCondition(Area& area, const BlockIndex& block, const ItemIndex& item, const ActorIndex& actor)
 {
 	Blocks& blocks = area.getBlocks();
 	Items& items = area.getItems();

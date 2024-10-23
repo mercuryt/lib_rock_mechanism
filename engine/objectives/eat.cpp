@@ -9,7 +9,7 @@
 #include "kill.h"
 #include "types.h"
 
-EatEvent::EatEvent(Area& area, const Step delay, EatObjective& eo, ActorIndex actor, const Step start) :
+EatEvent::EatEvent(Area& area, const Step& delay, EatObjective& eo, const ActorIndex& actor, const Step start) :
        	ScheduledEvent(area.m_simulation, delay, start), m_eatObjective(eo)
 {
 	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
@@ -62,7 +62,7 @@ void EatEvent::execute(Simulation&, Area* area)
 	}
 }
 void EatEvent::clearReferences(Simulation&, Area*) { m_eatObjective.m_eatEvent.clearPointer(); }
-void EatEvent::eatPreparedMeal(Area& area, ItemIndex item)
+void EatEvent::eatPreparedMeal(Area& area, const ItemIndex& item)
 {
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
@@ -74,7 +74,7 @@ void EatEvent::eatPreparedMeal(Area& area, ItemIndex item)
 	mustEat.eat(area, massEaten);
 	items.destroy(item);
 }
-void EatEvent::eatGenericItem(Area& area, ItemIndex item)
+void EatEvent::eatGenericItem(Area& area, const ItemIndex& item)
 {
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
@@ -89,7 +89,7 @@ void EatEvent::eatGenericItem(Area& area, ItemIndex item)
 	if(items.getQuantity(item) == 0)
 		items.destroy(item);
 }
-void EatEvent::eatActor(Area& area, ActorIndex actor)
+void EatEvent::eatActor(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	assert(!actors.isAlive(actor));
@@ -100,7 +100,7 @@ void EatEvent::eatActor(Area& area, ActorIndex actor)
 	mustEat.eat(area, massEaten);
 	actors.removeMassFromCorpse(actor, massEaten);
 }
-void EatEvent::eatPlantLeaves(Area& area, PlantIndex plant)
+void EatEvent::eatPlantLeaves(Area& area, const PlantIndex& plant)
 {
 	Plants& plants = area.getPlants();
 	MustEat& mustEat = *area.getActors().m_mustEat[m_actor.getIndex()].get();
@@ -109,7 +109,7 @@ void EatEvent::eatPlantLeaves(Area& area, PlantIndex plant)
 	mustEat.eat(area, massEaten);
 	plants.removeFoliageMass(plant, massEaten);
 }
-void EatEvent::eatFruitFromPlant(Area& area, PlantIndex plant)
+void EatEvent::eatFruitFromPlant(Area& area, const PlantIndex& plant)
 {
 	Plants& plants = area.getPlants();
 	MustEat& mustEat = *area.getActors().m_mustEat[m_actor.getIndex()].get();
@@ -127,15 +127,15 @@ EatPathRequest::EatPathRequest(const Json& data, DeserializationMemo& deserializ
 {
 	nlohmann::from_json(data, *this);
 }
-EatPathRequest::EatPathRequest(Area& area, EatObjective& eo, ActorIndex actor) : m_eatObjective(eo)
+EatPathRequest::EatPathRequest(Area& area, EatObjective& eo, const ActorIndex& actor) : m_eatObjective(eo)
 {
 	assert(m_eatObjective.m_location.empty());
 	Blocks& blocks = area.getBlocks();
 	MustEat& mustEat = *area.getActors().m_mustEat[actor].get();
-	std::function<bool(BlockIndex)> predicate = nullptr;
+	std::function<bool(const BlockIndex&)> predicate = nullptr;
 	if(m_eatObjective.m_tryToHunt)
 	{
-		predicate = [&](BlockIndex block)
+		predicate = [&](const BlockIndex& block)
 		{
 			for(ActorIndex actor : blocks.actor_getAll(block))
 				if(mustEat.canEatActor(area, actor))
@@ -156,7 +156,7 @@ EatPathRequest::EatPathRequest(Area& area, EatObjective& eo, ActorIndex actor) :
 			// Otherwise they will store candidates ranked by desire.
 			// EatPathRequest::callback may use one of those candidates, if the actor is hungry enough.
 			auto minimum = mustEat.getMinimumAcceptableDesire(area);
-			predicate = [&mustEat, this, &area, minimum](BlockIndex block)
+			predicate = [&mustEat, this, &area, minimum](const BlockIndex& block)
 			{
 				uint32_t eatDesire = mustEat.getDesireToEatSomethingAt(area, block);
 				if(eatDesire < minimum)
@@ -171,16 +171,16 @@ EatPathRequest::EatPathRequest(Area& area, EatObjective& eo, ActorIndex actor) :
 		else
 			// Nonsentients will eat whatever they come across first.
 			// Having preference would be nice but this is better for performance.
-			predicate = [&mustEat, &area](BlockIndex block)
+			predicate = [&mustEat, &area](const BlockIndex& block)
 			{
 				return mustEat.getDesireToEatSomethingAt(area, block) != 0;
 			};
 	}
 	//TODO: maxRange.
 	bool unreserved = false;
-	createGoAdjacentToCondition(area, actor, predicate, m_eatObjective.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null());
+	createGoAdjacentToCondition(area, actor, predicate, m_eatObjective.m_detour, unreserved, DistanceInBlocks::max(), BlockIndex::null());
 }
-void EatPathRequest::callback(Area& area, FindPathResult& result)
+void EatPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = getActor();
@@ -247,7 +247,7 @@ Json EatPathRequest::toJson() const
 }
 // Objective.
 EatObjective::EatObjective(Area& area) : Objective(Config::eatPriority), m_eatEvent(area.m_eventSchedule) { }
-EatObjective::EatObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area, ActorIndex actor) : 
+EatObjective::EatObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const ActorIndex& actor) : 
 	Objective(data, deserializationMemo), 
 	m_eatEvent(deserializationMemo.m_simulation.m_eventSchedule), 
 	m_noFoodFound(data["noFoodFound"].get<bool>())
@@ -267,7 +267,7 @@ Json EatObjective::toJson() const
 		data["eatStart"] = m_eatEvent.getStartStep();
 	return data;
 }
-void EatObjective::execute(Area& area, ActorIndex actor)
+void EatObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	MustEat& mustEat = *area.getActors().m_mustEat[actor].get();
@@ -275,7 +275,7 @@ void EatObjective::execute(Area& area, ActorIndex actor)
 	if(m_noFoodFound && mustEat.getMinimumAcceptableDesire(area) == 0)
 	{
 		// We have determined that there is no food here and have attempted to path to the edge of the area so we can leave.
-		if(actors.predicateForAnyOccupiedBlock(actor, [&area](BlockIndex block){ return area.getBlocks().isEdge(block); }))
+		if(actors.predicateForAnyOccupiedBlock(actor, [&area](const BlockIndex& block){ return area.getBlocks().isEdge(block); }))
 			// We are at the edge and can leave.
 			actors.leaveArea(actor);
 		else
@@ -322,26 +322,26 @@ void EatObjective::execute(Area& area, ActorIndex actor)
 		}
 	}
 }
-void EatObjective::cancel(Area& area, ActorIndex actor)
+void EatObjective::cancel(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
 	m_eatEvent.maybeUnschedule();
 	actors.m_mustEat[actor]->m_eatObjective = nullptr;
 }
-void EatObjective::delay(Area& area, ActorIndex actor)
+void EatObjective::delay(Area& area, const ActorIndex& actor)
 {
 	area.getActors().move_pathRequestMaybeCancel(actor);
 	m_eatEvent.maybeUnschedule();
 }
-void EatObjective::reset(Area& area, ActorIndex actor)
+void EatObjective::reset(Area& area, const ActorIndex& actor)
 {
 	delay(area, actor);
 	m_location.clear();
 	m_noFoodFound = false;
 	area.getActors().canReserve_clearAll(actor);
 }
-void EatObjective::makePathRequest(Area& area, ActorIndex actor)
+void EatObjective::makePathRequest(Area& area, const ActorIndex& actor)
 {
 	std::unique_ptr<PathRequest> request = std::make_unique<EatPathRequest>(area, *this, actor);
 	area.getActors().move_pathRequestRecord(actor, std::move(request));
@@ -350,7 +350,7 @@ void EatObjective::noFoodFound()
 {
 	m_noFoodFound = true;
 }
-bool EatObjective::canEatAt(Area& area, BlockIndex block, ActorIndex actor) const
+bool EatObjective::canEatAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const
 {
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();

@@ -122,7 +122,7 @@ BlockIndices Shape::getBlocksWhichWouldBeAdjacentAt(const ShapeId& id, const Blo
 	}
 	return output;
 }
-BlockIndex Shape::getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing, std::function<bool(BlockIndex)> predicate)
+BlockIndex Shape::getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing, std::function<bool(const BlockIndex&)> predicate)
 {
 	for(auto [x, y, z, v] : shapeData.m_occupiedOffsetsCache[id].at(facing.get()))
 	{
@@ -132,7 +132,7 @@ BlockIndex Shape::getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id,
 	}
 	return BlockIndex::null();
 }
-BlockIndex Shape::getBlockWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing, std::function<bool(BlockIndex)> predicate)
+BlockIndex Shape::getBlockWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing, std::function<bool(const BlockIndex&)> predicate)
 {
 	for(auto [x, y, z] : shapeData.m_adjacentOffsetsCache[id].at(facing.get()))
 	{

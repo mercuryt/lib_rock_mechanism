@@ -61,14 +61,14 @@ public:
 	bool m_merged = false;
 	bool m_disolved = false;
 
-	FluidGroup(FluidTypeId ft, BlockIndices& blocks, Area& area, bool checkMerge = true);
+	FluidGroup(const FluidTypeId& ft, BlockIndices& blocks, Area& area, bool checkMerge = true);
 	FluidGroup(const FluidGroup&) = delete;
-	void addFluid(CollisionVolume fluidVolume);
-	void removeFluid(CollisionVolume fluidVolume);
-	void addBlock(BlockIndex block, bool checkMerge = true);
-	void removeBlock(BlockIndex block);
+	void addFluid(const CollisionVolume& fluidVolume);
+	void removeFluid(const CollisionVolume& fluidVolume);
+	void addBlock(const BlockIndex& block, bool checkMerge = true);
+	void removeBlock(const BlockIndex& block);
 	void removeBlocks(BlockIndices& blocks);
-	void addMistFor(BlockIndex block);
+	void addMistFor(const BlockIndex& block);
 	// Takes a pointer to the other fluid group because we may switch them inorder to merge into the larger one.
 	// Return the larger.
 	FluidGroup* merge(FluidGroup* fluidGroup);
@@ -78,14 +78,14 @@ public:
 	void mergeStep();
 	void splitStep();
 	void setUnstable();
-	void addDiagonalsFor(BlockIndex block);
+	void addDiagonalsFor(const BlockIndex& block);
 	void validate() const;
 	void validate(SmallSet<FluidGroup*> toErase) const;
 	void log() const;
 	void logFill() const;
 	[[nodiscard]] CollisionVolume totalVolume() const;
 	[[nodiscard]] BlockIndices& getBlocks() { return m_drainQueue.m_set; }
-	[[nodiscard]] bool dispositionIsStable(CollisionVolume fillVolume, CollisionVolume drainVolume) const;
+	[[nodiscard]] bool dispositionIsStable(const CollisionVolume& fillVolume, const CollisionVolume& drainVolume) const;
 	[[nodiscard]] bool operator==(const FluidGroup& fluidGroup) const { return &fluidGroup == this; }
 	friend class Area;
 };

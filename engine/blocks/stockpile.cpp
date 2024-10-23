@@ -4,17 +4,17 @@
 #include "items/items.h"
 #include "shape.h"
 #include "types.h"
-void Blocks::stockpile_recordMembership(BlockIndex index, StockPile& stockPile)
+void Blocks::stockpile_recordMembership(const BlockIndex& index, StockPile& stockPile)
 {
 	assert(!stockpile_contains(index, stockPile.getFaction()));
-	m_stockPiles[index].emplace(stockPile.getFaction(), &stockPile, false);
+	m_stockPiles.getOrCreate(index).emplace(stockPile.getFaction(), &stockPile, false);
 	if(stockpile_isAvalible(index, stockPile.getFaction()))
 	{
 		m_stockPiles[index][stockPile.getFaction()].active = true;
 		stockPile.incrementOpenBlocks();
 	}
 }
-void Blocks::stockpile_recordNoLongerMember(BlockIndex index, StockPile& stockPile)
+void Blocks::stockpile_recordNoLongerMember(const BlockIndex& index, StockPile& stockPile)
 {
 	assert(stockpile_contains(index, stockPile.getFaction()));
 	if(stockpile_isAvalible(index, stockPile.getFaction()))
@@ -24,7 +24,7 @@ void Blocks::stockpile_recordNoLongerMember(BlockIndex index, StockPile& stockPi
 	else
 		m_stockPiles[index].erase(stockPile.getFaction());
 }
-void Blocks::stockpile_updateActive(BlockIndex index)
+void Blocks::stockpile_updateActive(const BlockIndex& index)
 {
 	for(auto& [faction, blockHasStockPile] : m_stockPiles[index])
 	{
@@ -41,7 +41,7 @@ void Blocks::stockpile_updateActive(BlockIndex index)
 		}
 	}
 }
-bool Blocks::stockpile_isAvalible(BlockIndex index, FactionId faction) const 
+bool Blocks::stockpile_isAvalible(const BlockIndex& index, const FactionId& faction) const 
 { 
 	assert(stockpile_contains(index, faction));
 	if(item_empty(index))
@@ -58,14 +58,14 @@ bool Blocks::stockpile_isAvalible(BlockIndex index, FactionId faction) const
 	CollisionVolume volume = Shape::getCollisionVolumeAtLocationBlock(items.getShape(item));
 	return shape_getStaticVolume(index) + volume <= Config::maxBlockVolume;
 }
-bool Blocks::stockpile_contains(BlockIndex index, FactionId faction) const
+bool Blocks::stockpile_contains(const BlockIndex& index, const FactionId& faction) const
 {
 	auto found = m_stockPiles.find(index);
 	if(found == m_stockPiles.end())
 		return false;
 	return found.second().contains(faction);
 }
-StockPile* Blocks::stockpile_getForFaction(BlockIndex index, FactionId faction)
+StockPile* Blocks::stockpile_getForFaction(const BlockIndex& index, const FactionId& faction)
 {
 	auto indexIter = m_stockPiles.find(index);
 	if(indexIter == m_stockPiles.end())

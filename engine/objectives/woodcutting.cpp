@@ -5,24 +5,23 @@
 #include "../blocks/blocks.h"
 #include "reference.h"
 #include "types.h"
-WoodCuttingPathRequest::WoodCuttingPathRequest(Area& area, WoodCuttingObjective& woodCuttingObjective) :
+WoodCuttingPathRequest::WoodCuttingPathRequest(Area& area, WoodCuttingObjective& woodCuttingObjective, const ActorIndex& actor) :
 	m_woodCuttingObjective(woodCuttingObjective)
 {
-	ActorIndex actor = getActor();
-	std::function<bool(BlockIndex)> predicate = [this, &area, actor](BlockIndex block)
+	std::function<bool(const BlockIndex&)> predicate = [this, &area, actor](const BlockIndex& block)
 	{
 		return m_woodCuttingObjective.getJoinableProjectAt(area, block, actor) != nullptr;
 	};
 	DistanceInBlocks maxRange = Config::maxRangeToSearchForWoodCuttingDesignations;
 	bool unreserved = true;
-	createGoAdjacentToCondition(area, getActor(), predicate, m_woodCuttingObjective.m_detour, unreserved, maxRange, BlockIndex::null());
+	createGoAdjacentToCondition(area, actor, predicate, m_woodCuttingObjective.m_detour, unreserved, maxRange, BlockIndex::null());
 }
 WoodCuttingPathRequest::WoodCuttingPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_woodCuttingObjective(static_cast<WoodCuttingObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
 {
 	nlohmann::from_json(data, *this);
 }
-void WoodCuttingPathRequest::callback(Area& area, FindPathResult& result)
+void WoodCuttingPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = getActor();
@@ -73,7 +72,7 @@ Json WoodCuttingObjective::toJson() const
 		data["project"] = m_project;
 	return data;
 }
-void WoodCuttingObjective::execute(Area& area, ActorIndex actor)
+void WoodCuttingObjective::execute(Area& area, const ActorIndex& actor)
 {
 	if(m_project != nullptr)
 		m_project->commandWorker(actor);
@@ -81,7 +80,7 @@ void WoodCuttingObjective::execute(Area& area, ActorIndex actor)
 	{
 		Actors& actors = area.getActors();
 		WoodCuttingProject* project = nullptr;
-		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) 
+		std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block) 
 		{ 
 			if(!getJoinableProjectAt(area, block, actor))
 				return false;
@@ -90,29 +89,29 @@ void WoodCuttingObjective::execute(Area& area, ActorIndex actor)
 				return true;
 			return false;
 		};
-		[[maybe_unused]] BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
+		BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
 		if(project != nullptr)
 		{
 			assert(adjacent.exists());
 			joinProject(*project, actor);
 			return;
 		}
-		actors.move_pathRequestRecord(actor, std::make_unique<WoodCuttingPathRequest>(area, *this));
+		actors.move_pathRequestRecord(actor, std::make_unique<WoodCuttingPathRequest>(area, *this, actor));
 	}
 }
-void WoodCuttingObjective::cancel(Area& area, ActorIndex actor)
+void WoodCuttingObjective::cancel(Area& area, const ActorIndex& actor)
 {
 	if(m_project != nullptr)
 		m_project->removeWorker(actor);
 	area.getActors().move_pathRequestMaybeCancel(actor);
 }
-void WoodCuttingObjective::delay(Area& area, ActorIndex actor)
+void WoodCuttingObjective::delay(Area& area, const ActorIndex& actor)
 {
 	cancel(area, actor);
 	m_project = nullptr;
 	area.getActors().project_unset(actor);
 }
-void WoodCuttingObjective::reset(Area& area, ActorIndex actor) 
+void WoodCuttingObjective::reset(Area& area, const ActorIndex& actor) 
 { 
 	Actors& actors = area.getActors();
 	if(m_project)
@@ -127,18 +126,18 @@ void WoodCuttingObjective::reset(Area& area, ActorIndex actor)
 	actors.move_pathRequestMaybeCancel(actor);
 	actors.canReserve_clearAll(actor);
 }
-void WoodCuttingObjective::onProjectCannotReserve(Area&, ActorIndex)
+void WoodCuttingObjective::onProjectCannotReserve(Area&, const ActorIndex&)
 {
 	assert(m_project);
 	m_cannotJoinWhileReservationsAreNotComplete.insert(m_project);
 }
-void WoodCuttingObjective::joinProject(WoodCuttingProject& project, ActorIndex actor)
+void WoodCuttingObjective::joinProject(WoodCuttingProject& project, const ActorIndex& actor)
 {
 	assert(m_project == nullptr);
 	m_project = &project;
 	project.addWorkerCandidate(actor, *this);
 }
-WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(Area& area, BlockIndex block, ActorIndex actor)
+WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(Area& area, const BlockIndex& block, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFactionId(actor);
@@ -151,12 +150,12 @@ WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(Area& area, Block
 		return nullptr;
 	return &output;
 }
-bool WoodCuttingObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
+bool WoodCuttingObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
 	//TODO: check for any axes?
 	return area.m_hasWoodCuttingDesignations.areThereAnyForFaction(area.getActors().getFactionId(actor));
 }
-std::unique_ptr<Objective> WoodCuttingObjectiveType::makeFor(Area&, ActorIndex) const
+std::unique_ptr<Objective> WoodCuttingObjectiveType::makeFor(Area&, const ActorIndex&) const
 {
 	std::unique_ptr<Objective> objective = std::make_unique<WoodCuttingObjective>();
 	return objective;

@@ -1,12 +1,12 @@
 #include "blocks.h"
-void Blocks::project_add(BlockIndex index, Project& project)
+void Blocks::project_add(const BlockIndex& index, Project& project)
 {
 	FactionId faction = project.getFaction();
 	auto& projects = m_projects[index];
 	assert(!projects.contains(faction) || !projects[faction].contains(&project));
 	projects.getOrCreate(faction).insert(&project);
 }
-void Blocks::project_remove(BlockIndex index, Project& project)
+void Blocks::project_remove(const BlockIndex& index, Project& project)
 {
 	FactionId faction = project.getFaction();
 	auto& projects = m_projects[index];
@@ -16,7 +16,7 @@ void Blocks::project_remove(BlockIndex index, Project& project)
 	else
 		projects[faction].erase(&project);
 }
-Percent Blocks::project_getPercentComplete(BlockIndex index, FactionId faction) const
+Percent Blocks::project_getPercentComplete(const BlockIndex& index, const FactionId& faction) const
 {
 	auto& projects = m_projects[index];
 	if(!projects.contains(faction))
@@ -26,7 +26,7 @@ Percent Blocks::project_getPercentComplete(BlockIndex index, FactionId faction) 
 			return project->getPercentComplete();
 	return Percent::create(0);
 }
-Project* Blocks::project_get(BlockIndex index, FactionId faction) const
+Project* Blocks::project_get(const BlockIndex& index, const FactionId& faction) const
 {
 	auto& projects = m_projects[index];
 	if(!projects.contains(faction))
@@ -35,7 +35,7 @@ Project* Blocks::project_get(BlockIndex index, FactionId faction) const
 		return project;
 	return nullptr;
 }
-Project* Blocks::project_getIfBegun(BlockIndex index, FactionId faction) const
+Project* Blocks::project_getIfBegun(const BlockIndex& index, const FactionId& faction) const
 {
 	auto& projects = m_projects[index];
 	if(!projects.contains(faction))

@@ -11,7 +11,7 @@ struct UniformElement final
 {
 	ItemQuery itemQuery;
 	Quantity quantity;
-	UniformElement(ItemTypeId itemType, Quantity quantity = Quantity::create(1), MaterialTypeId materialType = MaterialTypeId::null(), Quality qualityMin = Quality::create(0));
+	UniformElement(const ItemTypeId& itemType, const Quantity quantity = Quantity::create(1), const MaterialTypeId materialType = MaterialTypeId::null(), const Quality qualityMin = Quality::create(0));
 	[[nodiscard]] bool operator==(const UniformElement& other) const { return &other == this; }
 };
 struct Uniform final
@@ -25,7 +25,7 @@ class SimulationHasUniformsForFaction final
 	FactionId m_faction;
 	SmallMap<std::wstring, Uniform> m_data;
 public:
-	SimulationHasUniformsForFaction(FactionId faction) : m_faction(faction) { }
+	SimulationHasUniformsForFaction(const FactionId& faction) : m_faction(faction) { }
 	Uniform& createUniform(std::wstring& name, std::vector<UniformElement>& elements);
 	void destroyUniform(Uniform& uniform);
 	Uniform& byName(std::wstring name){ assert(m_data.contains(name)); return m_data[name]; }
@@ -35,7 +35,7 @@ class SimulationHasUniforms final
 {
 	FactionIdMap<SimulationHasUniformsForFaction> m_data;
 public:
-	void registerFaction(FactionId faction) { m_data.emplace(faction, faction); }
-	void unregisterFaction(FactionId faction) { m_data.erase(faction); }
-	SimulationHasUniformsForFaction& getForFaction(FactionId faction);
+	void registerFaction(const FactionId& faction) { m_data.emplace(faction, faction); }
+	void unregisterFaction(const FactionId& faction) { m_data.erase(faction); }
+	SimulationHasUniformsForFaction& getForFaction(const FactionId& faction);
 };

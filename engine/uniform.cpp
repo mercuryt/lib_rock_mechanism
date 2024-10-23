@@ -5,7 +5,7 @@
 #include <chrono>
 #include <cinttypes>
 #include <math.h>
-UniformElement::UniformElement(ItemTypeId itemType, Quantity quantity, MaterialTypeId materialType,[[maybe_unused]] Quality qualityMin) :
+UniformElement::UniformElement(const ItemTypeId& itemType, const Quantity quantity, const MaterialTypeId materialType,[[maybe_unused]] const Quality qualityMin) :
 	itemQuery(itemType, materialType), quantity(quantity) { }
 Uniform& SimulationHasUniformsForFaction::createUniform(std::wstring& name, std::vector<UniformElement>& elements)
 {
@@ -16,7 +16,7 @@ void SimulationHasUniformsForFaction::destroyUniform(Uniform& uniform)
 	m_data.erase(uniform.name);
 }
 SmallMap<std::wstring, Uniform>& SimulationHasUniformsForFaction::getAll(){ return m_data; }
-SimulationHasUniformsForFaction& SimulationHasUniforms::getForFaction(FactionId faction) 
+SimulationHasUniformsForFaction& SimulationHasUniforms::getForFaction(const FactionId& faction) 
 { 
 	if(!m_data.contains(faction))
 		registerFaction(faction);

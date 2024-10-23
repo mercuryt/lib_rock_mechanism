@@ -4,7 +4,7 @@
 #include "plants.h"
 #include "reference.h"
 #include "types.h"
-bool Blocks::blockFeature_contains(BlockIndex block, const BlockFeatureType& blockFeatureType) const
+bool Blocks::blockFeature_contains(const BlockIndex& block, const BlockFeatureType& blockFeatureType) const
 {
 	for(const BlockFeature& blockFeature : m_features[block])
 		if(blockFeature.blockFeatureType == &blockFeatureType)
@@ -12,32 +12,32 @@ bool Blocks::blockFeature_contains(BlockIndex block, const BlockFeatureType& blo
 	return false;
 }
 // Can return nullptr.
-BlockFeature* Blocks::blockFeature_at(BlockIndex block, const BlockFeatureType& blockFeatureType)
+BlockFeature* Blocks::blockFeature_at(const BlockIndex& block, const BlockFeatureType& blockFeatureType)
 {
 	for(BlockFeature& blockFeature : m_features[block])
 		if(blockFeature.blockFeatureType == &blockFeatureType)
 			return &blockFeature;
 	return nullptr;
 }
-const BlockFeature* Blocks::blockFeature_atConst(BlockIndex block, const BlockFeatureType& blockFeatureType) const
+const BlockFeature* Blocks::blockFeature_atConst(const BlockIndex& block, const BlockFeatureType& blockFeatureType) const
 {
 	return const_cast<Blocks&>(*this).blockFeature_at(block, blockFeatureType);
 }
-void Blocks::blockFeature_remove(BlockIndex block, const BlockFeatureType& blockFeatureType)
+void Blocks::blockFeature_remove(const BlockIndex& block, const BlockFeatureType& blockFeatureType)
 {
 	assert(!solid_is(block));
 	std::erase_if(m_features[block], [&](BlockFeature& bf) { return bf.blockFeatureType == &blockFeatureType; });
 	m_area.m_opacityFacade.update(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
-void Blocks::blockFeature_removeAll(BlockIndex block)
+void Blocks::blockFeature_removeAll(const BlockIndex& block)
 {
 	assert(!solid_is(block));
 	m_features[block].clear();
 	m_area.m_opacityFacade.update(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
-void Blocks::blockFeature_construct(BlockIndex block, const BlockFeatureType& blockFeatureType, MaterialTypeId materialType)
+void Blocks::blockFeature_construct(const BlockIndex& block, const BlockFeatureType& blockFeatureType, const MaterialTypeId& materialType)
 {
 	Plants& plants = m_area.getPlants();
 	assert(!solid_is(block));
@@ -60,7 +60,7 @@ void Blocks::blockFeature_construct(BlockIndex block, const BlockFeatureType& bl
 	m_area.m_opacityFacade.update(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
-void Blocks::blockFeature_hew(BlockIndex block, const BlockFeatureType& blockFeatureType)
+void Blocks::blockFeature_hew(const BlockIndex& block, const BlockFeatureType& blockFeatureType)
 {
 	assert(solid_is(block));
 	m_features[block].emplace_back(&blockFeatureType, solid_get(block), true);
@@ -68,7 +68,7 @@ void Blocks::blockFeature_hew(BlockIndex block, const BlockFeatureType& blockFea
 	m_area.m_opacityFacade.update(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
-void Blocks::blockFeature_setTemperature(BlockIndex block, Temperature temperature)
+void Blocks::blockFeature_setTemperature(const BlockIndex& block, const Temperature& temperature)
 {
 	for(BlockFeature& feature : m_features[block])
 	{
@@ -78,28 +78,28 @@ void Blocks::blockFeature_setTemperature(BlockIndex block, Temperature temperatu
 			m_area.m_fires.ignite(block, feature.materialType);
 	}
 }
-void Blocks::blockFeature_lock(BlockIndex block, const BlockFeatureType& blockFeatueType)
+void Blocks::blockFeature_lock(const BlockIndex& block, const BlockFeatureType& blockFeatueType)
 {
 	assert(blockFeature_contains(block, blockFeatueType));
 	BlockFeature& blockFeature = *blockFeature_at(block, blockFeatueType);
 	blockFeature.locked = true;
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
-void Blocks::blockFeature_unlock(BlockIndex block, const BlockFeatureType& blockFeatueType)
+void Blocks::blockFeature_unlock(const BlockIndex& block, const BlockFeatureType& blockFeatueType)
 {
 	assert(blockFeature_contains(block, blockFeatueType));
 	BlockFeature& blockFeature = *blockFeature_at(block, blockFeatueType);
 	blockFeature.locked = false;
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
-void Blocks::blockFeature_close(BlockIndex block, const BlockFeatureType& blockFeatueType)
+void Blocks::blockFeature_close(const BlockIndex& block, const BlockFeatureType& blockFeatueType)
 {
 	assert(blockFeature_contains(block, blockFeatueType));
 	BlockFeature& blockFeature = *blockFeature_at(block, blockFeatueType);
 	blockFeature.closed = true;
 	m_area.m_opacityFacade.update(block);
 }
-void Blocks::blockFeature_open(BlockIndex block, const BlockFeatureType& blockFeatueType)
+void Blocks::blockFeature_open(const BlockIndex& block, const BlockFeatureType& blockFeatueType)
 {
 	assert(blockFeature_contains(block, blockFeatueType));
 	BlockFeature& blockFeature = *blockFeature_at(block, blockFeatueType);
@@ -107,7 +107,7 @@ void Blocks::blockFeature_open(BlockIndex block, const BlockFeatureType& blockFe
 	m_area.m_opacityFacade.update(block);
 }
 // Blocks entrance from all angles, does not include floor and hatch which only block from below.
-bool Blocks::blockFeature_blocksEntrance(BlockIndex block) const
+bool Blocks::blockFeature_blocksEntrance(const BlockIndex& block) const
 {
 	for(const BlockFeature& blockFeature : m_features[block])
 	{
@@ -118,28 +118,28 @@ bool Blocks::blockFeature_blocksEntrance(BlockIndex block) const
 	}
 	return false;
 }
-bool Blocks::blockFeature_canStandIn(BlockIndex block) const
+bool Blocks::blockFeature_canStandIn(const BlockIndex& block) const
 {
 	for(const BlockFeature& blockFeature : m_features[block])
 		if(blockFeature.blockFeatureType->canStandIn)
 			return true;
 	return false;
 }
-bool Blocks::blockFeature_canStandAbove(BlockIndex block) const
+bool Blocks::blockFeature_canStandAbove(const BlockIndex& block) const
 {
 	for(const BlockFeature& blockFeature : m_features[block])
 		if(blockFeature.blockFeatureType->canStandAbove)
 			return true;
 	return false;
 }
-bool Blocks::blockFeature_isSupport(BlockIndex block) const
+bool Blocks::blockFeature_isSupport(const BlockIndex& block) const
 {
 	for(const BlockFeature& blockFeature : m_features[block])
 		if(blockFeature.blockFeatureType->isSupportAgainstCaveIn)
 			return true;
 	return false;
 }
-bool Blocks::blockFeature_canEnterFromBelow(BlockIndex block) const
+bool Blocks::blockFeature_canEnterFromBelow(const BlockIndex& block) const
 {
 	for(const BlockFeature& blockFeature : m_features[block])
 		if(blockFeature.blockFeatureType == &BlockFeatureType::floor || blockFeature.blockFeatureType == &BlockFeatureType::floorGrate ||
@@ -148,7 +148,7 @@ bool Blocks::blockFeature_canEnterFromBelow(BlockIndex block) const
 			return false;
 	return true;
 }
-bool Blocks::blockFeature_canEnterFromAbove([[maybe_unused]] BlockIndex block, BlockIndex from) const
+bool Blocks::blockFeature_canEnterFromAbove([[maybe_unused]] const BlockIndex& block, const BlockIndex& from) const
 {
 	assert(shape_anythingCanEnterEver(block));
 	for(const BlockFeature& blockFeature : m_features[from])
@@ -158,13 +158,13 @@ bool Blocks::blockFeature_canEnterFromAbove([[maybe_unused]] BlockIndex block, B
 			return false;
 	return true;
 }
-MaterialTypeId Blocks::blockFeature_getMaterialType(BlockIndex block) const
+MaterialTypeId Blocks::blockFeature_getMaterialType(const BlockIndex& block) const
 {
 	if(m_features[block].empty())
 		return MaterialTypeId::null();
 	return m_features[block][0].materialType;
 }
-bool Blocks::blockFeature_empty(BlockIndex index) const
+bool Blocks::blockFeature_empty(const BlockIndex& index) const
 {
 	return m_features[index].empty();
 }

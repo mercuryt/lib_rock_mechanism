@@ -26,10 +26,10 @@ protected:
 	DramaArc(DramaEngine& engine, DramaArcType type, Area* area = nullptr) : m_engine(engine), m_area(area), m_type(type) { }
 	DramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);
 	void actorsLeave(ActorIndices actors);
-	[[nodiscard]] BlockIndex getEntranceToArea(ShapeId shape, MoveTypeId moveType) const;
-	[[nodiscard]] BlockIndex findLocationOnEdgeForNear(ShapeId shape, MoveTypeId moveType, BlockIndex origin, DistanceInBlocks distance, BlockIndices& exclude) const;
-	[[nodiscard]] bool blockIsConnectedToAtLeast(BlockIndex block, ShapeId shape, MoveTypeId moveType, uint16_t count) const;
-	[[nodiscard]] Facing getFacingAwayFromEdge(BlockIndex block) const;
+	[[nodiscard]] BlockIndex getEntranceToArea(const ShapeId& shape, const MoveTypeId& moveType) const;
+	[[nodiscard]] BlockIndex findLocationOnEdgeForNear(const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& origin, const DistanceInBlocks& distance, const BlockIndices& exclude) const;
+	[[nodiscard]] bool blockIsConnectedToAtLeast(const BlockIndex& block, const ShapeId& shape, const MoveTypeId& moveType, uint16_t count) const;
+	[[nodiscard]] Facing getFacingAwayFromEdge(const BlockIndex& block) const;
 	[[nodiscard]] std::vector<AnimalSpeciesId> getSentientSpecies() const;
 	[[nodiscard]] virtual Json toJson() const;
 	static std::unique_ptr<DramaArc> load(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);

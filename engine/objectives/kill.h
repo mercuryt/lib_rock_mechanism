@@ -22,7 +22,7 @@ class KillInputAction final : public InputAction
 {
 	ActorIndex m_killer;
 	ActorIndex m_target;
-	KillInputAction(ActorIndices actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, ActorIndex killer, ActorIndex target);
+	KillInputAction(ActorIndices actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, const ActorIndex& killer, const ActorIndex& target);
 	void execute();
 };
 */
@@ -32,9 +32,9 @@ class KillObjective final : public Objective
 public:
 	KillObjective(ActorReference t);
 	KillObjective(const Json& data, Area& area);
-	void execute(Area& area, ActorIndex actor);
-	void cancel(Area& area, ActorIndex actor);
-	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
-	void reset(Area& area, ActorIndex actor);
+	void execute(Area& area, const ActorIndex& actor);
+	void cancel(Area& area, const ActorIndex& actor);
+	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
+	void reset(Area& area, const ActorIndex& actor);
 	std::string name() const { return "kill"; }
 };

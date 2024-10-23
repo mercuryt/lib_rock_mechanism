@@ -13,12 +13,12 @@ class WaitObjective final : public Objective
 	HasScheduledEvent<WaitScheduledEvent> m_event;
 public:
 	// Priority of waiting is 0.
-	WaitObjective(Area& area, Step duration, ActorIndex actor);
-	WaitObjective(const Json& data, Area& area, ActorIndex actor);
-	void execute(Area& area, ActorIndex actor);
-	void delay(Area& area, ActorIndex actor) { reset(area, actor); }
-	void cancel(Area& area, ActorIndex actor) { reset(area, actor); }
-	void reset(Area& area, ActorIndex actor);
+	WaitObjective(Area& area, const Step& duration, const ActorIndex& actor);
+	WaitObjective(const Json& data, Area& area, const ActorIndex& actor);
+	void execute(Area& area, const ActorIndex& actor);
+	void delay(Area& area, const ActorIndex& actor) { reset(area, actor); }
+	void cancel(Area& area, const ActorIndex& actor) { reset(area, actor); }
+	void reset(Area& area, const ActorIndex& actor);
 	[[nodiscard]] std::string name() const { return "wait"; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool canResume() const { return false; }
@@ -29,7 +29,7 @@ class WaitScheduledEvent final : public ScheduledEvent
 	ActorReference m_actor;
 	WaitObjective& m_objective;
 public:
-	WaitScheduledEvent(Step delay, Area& area, WaitObjective& wo, ActorIndex actor, Step start = Step::null());
+	WaitScheduledEvent(const Step& delay, Area& area, WaitObjective& wo, const ActorIndex& actor, const Step start = Step::null());
 	void execute(Simulation&, Area* area) { m_objective.execute(*area, m_actor.getIndex()); }
 	void clearReferences(Simulation&, Area*) { m_objective.m_event.clearPointer(); }
 };

@@ -4,7 +4,7 @@
 #include "area.h"
 #include "items/items.h"
 #include "onDestroy.h"
-GiveItemObjective::GiveItemObjective(Area& area, ItemIndex item, ActorIndex recipient) :
+GiveItemObjective::GiveItemObjective(Area& area, const ItemIndex& item, const ActorIndex& recipient) :
 	Objective(Config::equipPriority)
 { 
 	m_item.setTarget(area.getItems().getReferenceTarget(item));
@@ -25,7 +25,7 @@ Json GiveItemObjective::toJson() const
 	data["recipient"] = m_recipient;
 	return data;
 }
-void GiveItemObjective::execute(Area& area, ActorIndex actor)
+void GiveItemObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	if(!actors.isAdjacentToActor(actor, m_recipient.getIndex()))
@@ -44,9 +44,9 @@ void GiveItemObjective::execute(Area& area, ActorIndex actor)
 			actors.objective_canNotCompleteObjective(actor, *this);
 	}
 }
-void GiveItemObjective::cancel(Area& area, ActorIndex actor) { area.getActors().canReserve_clearAll(actor); }
-void GiveItemObjective::reset(Area& area, ActorIndex actor) { cancel(area, actor); }
-void GiveItemObjective::createOnDestroyCallbacks(Area& area, ActorIndex actor) 
+void GiveItemObjective::cancel(Area& area, const ActorIndex& actor) { area.getActors().canReserve_clearAll(actor); }
+void GiveItemObjective::reset(Area& area, const ActorIndex& actor) { cancel(area, actor); }
+void GiveItemObjective::createOnDestroyCallbacks(Area& area, const ActorIndex& actor) 
 { 
 	m_hasOnDestroySubscriptions.setCallback(std::make_unique<CancelObjectiveOnDestroyCallBack>(actor.toReference(area), *this, area));
 	// Item.

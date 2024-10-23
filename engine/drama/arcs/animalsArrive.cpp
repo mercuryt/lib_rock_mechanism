@@ -179,15 +179,15 @@ std::pair<AnimalSpeciesId, Quantity> AnimalsArriveDramaArc::getSpeciesAndQuantit
 	}
 	return {species, quantity};
 }
-bool AnimalsArriveDramaArc::isSmall(ShapeId shape)
+bool AnimalsArriveDramaArc::isSmall(const ShapeId& shape)
 {
 	return CollisionVolume::create(Shape::getPositions(shape).front()[3]) < Config::maxBlockVolume / 4 && Shape::getPositions(shape).size() == 1;
 }
-bool AnimalsArriveDramaArc::isLarge(ShapeId shape)
+bool AnimalsArriveDramaArc::isLarge(const ShapeId& shape)
 {
 	return Shape::getPositions(shape).size() > 8;
 }
-bool AnimalsArriveDramaArc::isMedium(ShapeId shape)
+bool AnimalsArriveDramaArc::isMedium(const ShapeId& shape)
 {
 	return !isSmall(shape) && !isLarge(shape);
 }

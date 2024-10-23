@@ -7,8 +7,8 @@ class DrinkEvent;
 class DrinkObjectiveType final : public ObjectiveType
 {
 public:
-	[[nodiscard]] bool canBeAssigned(Area&, ActorIndex) const { assert(false); }
-	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, ActorIndex) const { assert(false); }
+	[[nodiscard]] bool canBeAssigned(Area&, const ActorIndex&) const { assert(false); }
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, const ActorIndex&) const { assert(false); }
 	DrinkObjectiveType() = default;
 	DrinkObjectiveType(const Json&, DeserializationMemo&);
 	[[nodiscard]] std::string name() const { return "drink"; }
@@ -19,19 +19,19 @@ class DrinkObjective final : public Objective
 	bool m_noDrinkFound = false;
 public:
 	DrinkObjective(Area& area);
-	DrinkObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area, ActorIndex actor);
-	void execute(Area& area, ActorIndex actor);
-	void cancel(Area& area, ActorIndex actor);
-	void delay(Area& area, ActorIndex actor);
-	void reset(Area& area, ActorIndex actor);
-	void makePathRequest(Area& area, ActorIndex actor);
+	DrinkObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const ActorIndex& actor);
+	void execute(Area& area, const ActorIndex& actor);
+	void cancel(Area& area, const ActorIndex& actor);
+	void delay(Area& area, const ActorIndex& actor);
+	void reset(Area& area, const ActorIndex& actor);
+	void makePathRequest(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "drink"; }
-	[[nodiscard]] bool canDrinkAt(Area& area, const BlockIndex block, Facing facing, ActorIndex actor) const;
-	[[nodiscard]] BlockIndex getAdjacentBlockToDrinkAt(Area& area, BlockIndex block, Facing facing, ActorIndex actor) const;
-	[[nodiscard]] bool canDrinkItemAt(Area& area, BlockIndex block, ActorIndex actor) const;
-	[[nodiscard]] ItemIndex getItemToDrinkFromAt(Area& area, BlockIndex block, ActorIndex actor) const;
-	[[nodiscard]] bool containsSomethingDrinkable(Area& area, BlockIndex block, ActorIndex actor) const;
+	[[nodiscard]] bool canDrinkAt(Area& area, const BlockIndex& block, const Facing& facing, const ActorIndex& actor) const;
+	[[nodiscard]] BlockIndex getAdjacentBlockToDrinkAt(Area& area, const BlockIndex& block, const Facing& facing, const ActorIndex& actor) const;
+	[[nodiscard]] bool canDrinkItemAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
+	[[nodiscard]] ItemIndex getItemToDrinkFromAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
+	[[nodiscard]] bool containsSomethingDrinkable(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
 	[[nodiscard]] bool isNeed() const { return true; }
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::drink; }
 	friend class DrinkEvent;
@@ -41,9 +41,9 @@ class DrinkPathRequest final : public PathRequest
 {
 	DrinkObjective& m_drinkObjective;
 public:
-	DrinkPathRequest(Area& area, DrinkObjective& drob, ActorIndex actor);
+	DrinkPathRequest(Area& area, DrinkObjective& drob, const ActorIndex& actor);
 	DrinkPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, FindPathResult& result);
+	void callback(Area& area, const FindPathResult& result);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() { return "drink"; }
 };

@@ -91,7 +91,7 @@ void DramaArc::actorsLeave(ActorIndices actorsLeaving)
 		}
 	}
 }
-BlockIndex DramaArc::getEntranceToArea(ShapeId shape, MoveTypeId moveType) const
+BlockIndex DramaArc::getEntranceToArea(const ShapeId& shape, const MoveTypeId& moveType) const
 {
 	BlockIndices candidates;
 	Blocks& blocks = m_area->getBlocks();
@@ -115,11 +115,11 @@ BlockIndex DramaArc::getEntranceToArea(ShapeId shape, MoveTypeId moveType) const
 	assert(candidate.exists());
 	return candidate;
 }
-BlockIndex DramaArc::findLocationOnEdgeForNear(ShapeId shape, MoveTypeId moveType, BlockIndex origin, DistanceInBlocks distance, BlockIndices& exclude) const
+BlockIndex DramaArc::findLocationOnEdgeForNear(const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& origin, const DistanceInBlocks& distance, const BlockIndices& exclude) const
 {
 	Facing facing = getFacingAwayFromEdge(origin);
 	Blocks& blocks = m_area->getBlocks();
-	auto predicate = [&](BlockIndex thisBlock) -> bool {
+	auto predicate = [&](const BlockIndex& thisBlock) -> bool {
 		if(exclude.contains(thisBlock))
 			return false;
 		// TODO: A single method doing both of these with one iteration would be faster.
@@ -133,7 +133,7 @@ BlockIndex DramaArc::findLocationOnEdgeForNear(ShapeId shape, MoveTypeId moveTyp
 	// Get block in range of origin which satisifies predicate.
 	return blocks.getBlockInRangeWithCondition(origin, distance, predicate);
 }
-bool DramaArc::blockIsConnectedToAtLeast(BlockIndex origin, [[maybe_unused]] ShapeId shape, MoveTypeId moveType, uint16_t count) const
+bool DramaArc::blockIsConnectedToAtLeast(const BlockIndex& origin, [[maybe_unused]] const ShapeId& shape, const MoveTypeId& moveType, uint16_t count) const
 {
 	BlockIndices accumulated;
 	std::stack<BlockIndex> open;
@@ -156,7 +156,7 @@ bool DramaArc::blockIsConnectedToAtLeast(BlockIndex origin, [[maybe_unused]] Sha
 	}
 	return false;
 }
-Facing DramaArc::getFacingAwayFromEdge(BlockIndex block) const
+Facing DramaArc::getFacingAwayFromEdge(const BlockIndex& block) const
 {
 	Blocks& blocks = m_area->getBlocks();
 	assert(blocks.isEdge(block));

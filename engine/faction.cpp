@@ -1,7 +1,7 @@
 #include "faction.h"
 #include "deserializationMemo.h"
 #include "simulation.h"
-Faction& SimulationHasFactions::getById(FactionId id)
+Faction& SimulationHasFactions::getById(const FactionId& id)
 {
 	return m_factions.at(id.get());
 }
@@ -15,11 +15,11 @@ FactionId SimulationHasFactions::byName(std::wstring name)
 {
 	return std::ranges::find(m_factions, name, &Faction::name)->id;
 }
-bool SimulationHasFactions::isAlly(FactionId a, FactionId b)
+bool SimulationHasFactions::isAlly(const FactionId& a, const FactionId& b)
 {
 	return getById(a).allies.contains(b);
 }
-bool SimulationHasFactions::isEnemy(FactionId a, FactionId b)
+bool SimulationHasFactions::isEnemy(const FactionId& a, const FactionId& b)
 {
 	return getById(a).enemies.contains(b);
 }

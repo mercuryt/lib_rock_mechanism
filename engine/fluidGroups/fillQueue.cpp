@@ -38,7 +38,7 @@ void FillQueue::initalizeForStep()
 	m_overfull.clear();
 	validate();
 }
-void FillQueue::recordDelta(CollisionVolume volume, CollisionVolume flowCapacity, CollisionVolume flowTillNextStep)
+void FillQueue::recordDelta(const CollisionVolume& volume, const CollisionVolume& flowCapacity, const CollisionVolume& flowTillNextStep)
 {
 	assert((m_groupStart->capacity >= volume));
 	assert(volume != 0);

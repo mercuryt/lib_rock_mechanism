@@ -39,7 +39,7 @@ struct ProjectRequirementCounts final
 	Quantity delivered = Quantity::create(0);
 	Quantity reserved = Quantity::create(0);
 	bool consumed;
-	ProjectRequirementCounts(Quantity r, bool c) : required(r), consumed(c) { }
+	ProjectRequirementCounts(const Quantity& r, bool c) : required(r), consumed(c) { }
 	//TODO: Why isn't intrusive deserializer working here?
 	ProjectRequirementCounts(const Json& data) :
 		required(data["required"].get<Quantity>()), delivered(data["delivered"].get<Quantity>()), 
@@ -52,7 +52,7 @@ struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
 	ActorOrItemReference m_actorOrItem;
 	ProjectRequiredShapeDishonoredCallback(Project& p, ActorOrItemReference actorOrItem) : m_project(p), m_actorOrItem(actorOrItem) { }
 	ProjectRequiredShapeDishonoredCallback(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
-	void execute(Quantity oldCount, Quantity newCount);
+	void execute(const Quantity& oldCount, const Quantity& newCount);
 	[[nodiscard]] Json toJson() const;
 };
 // Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, and onComplete.
@@ -82,7 +82,7 @@ class Project
 	// Targets for haul subprojects awaiting dispatch.
 	SmallMap<ActorOrItemReference, std::pair<ProjectRequirementCounts*, Quantity>> m_toPickup;
 	// To be called by addWorkerThreadedTask, after validating the worker has access to the project location.
-	void addWorker(ActorIndex actor, Objective& objective);
+	void addWorker(const ActorIndex& actor, Objective& objective);
 	// Load requirements from child class.
 	void recordRequiredActorsAndItems();
 	// After create.
@@ -110,12 +110,12 @@ protected:
 	Area& m_area;
 	FactionId m_faction;
 	BlockIndex m_location;
-	Project(FactionId f, Area& a, BlockIndex l, Quantity mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
+	Project(const FactionId& f, Area& a, const BlockIndex& l, const Quantity& mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
 	Project(const Json& data, DeserializationMemo& deserializationMemo);
 private:
 	// Count how many times we have attempted to create a haul subproject.
 	// Once we hit the limit, defined as projectTryToMakeSubprojectRetriesBeforeProjectDelay in config.json, the project calls setDelayOn.
-	Quantity m_haulRetries  = Quantity::create(0);
+	Quantity m_haulRetries = Quantity::create(0);
 	//TODO: Decrement by a config value instead of 1.
 	Speed m_minimumMoveSpeed = Speed::create(0);
 	Quantity m_maxWorkers = Quantity::create(0);
@@ -127,14 +127,14 @@ private:
 public:
 	// Seperated from primary Json constructor because must be run after objectives are created.
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
-	void addWorkerCandidate(ActorIndex actor, Objective& objective);
-	void removeWorkerCandidate(ActorIndex actor);
+	void addWorkerCandidate(const ActorIndex& actor, Objective& objective);
+	void removeWorkerCandidate(const ActorIndex& actor);
 	// To be called by Objective::execute.
-	void commandWorker(ActorIndex actor);
+	void commandWorker(const ActorIndex& actor);
 	// To be called by Objective::interupt.
-	void removeWorker(ActorIndex actor);
-	void addToMaking(ActorIndex actor);
-	void removeFromMaking(ActorIndex actor);
+	void removeWorker(const ActorIndex& actor);
+	void addToMaking(const ActorIndex& actor);
+	void removeFromMaking(const ActorIndex& actor);
 	void complete();
 	// To be called by the player for manually created project types or in place of reset otherwise.
 	void cancel();
@@ -149,8 +149,8 @@ public:
 	// Calls offDelay.
 	void setDelayOff();
 	// Record reserved shapes which need haul subprojects dispatched for them.
-	void addToPickup(ActorOrItemIndex actor, ProjectRequirementCounts& counts, Quantity quantity);
-	void removeToPickup(ActorOrItemIndex actor, Quantity quantity);
+	void addToPickup(const ActorOrItemIndex& actor, ProjectRequirementCounts& counts, const Quantity& quantity);
+	void removeToPickup(const ActorOrItemIndex& actor, const Quantity& quantity);
 	// To be called when the last worker is removed, when a haul subproject repetidly fails, or when a required reservation is dishonored, resets to pre-reservations status.
 	void reset();
 	// TODO: Implimentation of this.
@@ -166,14 +166,14 @@ public:
 	[[nodiscard]] bool isOnDelay() { return m_delay; }
 	// Block where the work will be done.
 	[[nodiscard]] BlockIndex getLocation() const { return m_location; }
-	[[nodiscard]] bool hasCandidate(const ActorIndex actor) const;
+	[[nodiscard]] bool hasCandidate(const ActorIndex& actor) const;
 	// When cannotCompleteSubobjective is called do we reset and try again or do we call cannotCompleteObjective?
 	// Should be false for objectives like targeted hauling, where if the specific target is inaccessable there is no fallback possible.
 	[[nodiscard]] virtual bool canReset() const { return true; }
 	[[nodiscard]] ActorIndices getWorkersAndCandidates();
 	[[nodiscard]] std::vector<std::pair<ActorIndex, Objective*>> getWorkersAndCandidatesWithObjectives();
 	[[nodiscard]] Percent getPercentComplete() const { return m_finishEvent.exists() ? m_finishEvent.percentComplete() : Percent::create(0); }
-	[[nodiscard]] virtual bool canAddWorker(const ActorIndex actor) const;
+	[[nodiscard]] virtual bool canAddWorker(const ActorIndex& actor) const;
 	// What would the total delay time be if we started from scratch now with current workers?
 	[[nodiscard]] virtual Step getDuration() const = 0;
 	// True for stockpile because there is no 'work' to do after the hauling is done.
@@ -181,10 +181,10 @@ public:
 	virtual void onComplete() = 0;
 	virtual void onReserve() { }
 	virtual void onCancel() { }
-	virtual void onAddToMaking(ActorIndex) { }
-	virtual void onDelivered(ActorOrItemIndex) { }
+	virtual void onAddToMaking(const ActorIndex&) { }
+	virtual void onDelivered(const ActorOrItemIndex&) { }
 	virtual void onSubprojectCreated(HaulSubproject& subproject) { (void)subproject; }
-	virtual void onActorOrItemReservationDishonored(ActorOrItemIndex, Quantity, Quantity) { reset(); }
+	virtual void onActorOrItemReservationDishonored(const ActorOrItemIndex&, const Quantity&, const Quantity&) { reset(); }
 	// Projects which are initiated by the users, such as dig or construct, must be delayed when they cannot be completed. Projectes which are initiated automatically, such as Stockpile or Craft, can be canceled.
 	virtual void onDelay() = 0;
 	virtual void offDelay() = 0;
@@ -221,7 +221,7 @@ class ProjectFinishEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:
-	ProjectFinishEvent(const Step delay, Project& p, const Step start = Step::null());
+	ProjectFinishEvent(const Step& delay, Project& p, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -229,7 +229,7 @@ class ProjectTryToHaulEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:
-	ProjectTryToHaulEvent(const Step delay, Project& p, const Step start = Step::null());
+	ProjectTryToHaulEvent(const Step& delay, Project& p, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -237,7 +237,7 @@ class ProjectTryToReserveEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:
-	ProjectTryToReserveEvent(const Step delay, Project& p, const Step start = Step::null());
+	ProjectTryToReserveEvent(const Step& delay, Project& p, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -250,7 +250,7 @@ public:
 	void readStep(Simulation& simulation, Area* area);
 	void writeStep(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
-	[[nodiscard]] bool blockContainsDesiredItem(const BlockIndex block, ActorIndex hauler);
+	[[nodiscard]] bool blockContainsDesiredItem(const BlockIndex& block, const ActorIndex& hauler);
 };
 class ProjectTryToAddWorkersThreadedTask final : public ThreadedTask
 {
@@ -273,6 +273,6 @@ class BlockHasProjects
 public:
 	void add(Project& project);
 	void remove(Project& project);
-	Percent getProjectPercentComplete(FactionId faction) const;
-	[[nodiscard]] Project* get(FactionId faction) const;
+	Percent getProjectPercentComplete(const FactionId& faction) const;
+	[[nodiscard]] Project* get(const FactionId& faction) const;
 };

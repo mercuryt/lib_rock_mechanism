@@ -7,7 +7,7 @@
 #include <cassert>
 #include <algorithm>
 struct Hit;
-struct BodyPartType;
+class BodyPartType;
 enum class WoundType { Pierce, Cut, Bludgeon };
 
 inline WoundType woundTypeByName(std::string name)
@@ -19,7 +19,7 @@ inline WoundType woundTypeByName(std::string name)
 	assert(name == "Bludgeon");
 	return WoundType::Bludgeon;
 }
-inline std::string getWoundTypeName(WoundType woundType)
+inline std::string getWoundTypeName(const WoundType& woundType)
 {
 	if(woundType == WoundType::Pierce)
 		return "Pierce";
@@ -30,9 +30,9 @@ inline std::string getWoundTypeName(WoundType woundType)
 }
 namespace WoundCalculations
 {
-	Step getStepsTillHealed(const Hit& hit, BodyPartTypeId bodyPartType, uint32_t scale);
-	uint32_t getBleedVolumeRate(const Hit& hit, BodyPartTypeId bodyPartType, uint32_t scale);
-	Percent getPercentTemporaryImpairment(const Hit& hit, BodyPartTypeId bodyPartType, uint32_t scale);
-	Percent getPercentPermanentImpairment(const Hit& hit, BodyPartTypeId bodyPartType, uint32_t scale);
+	Step getStepsTillHealed(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale);
+	uint32_t getBleedVolumeRate(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale);
+	Percent getPercentTemporaryImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale);
+	Percent getPercentPermanentImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale);
 	WoundType byName(std::string name);
 }

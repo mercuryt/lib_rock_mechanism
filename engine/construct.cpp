@@ -56,7 +56,7 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> ConstructProject::
 {
 	return MaterialType::construction_getByproducts(m_materialType);
 }
-uint32_t ConstructProject::getWorkerConstructScore(ActorIndex actor) const
+uint32_t ConstructProject::getWorkerConstructScore(const ActorIndex& actor) const
 {
 	Actors& actors = m_area.getActors();
 	SkillTypeId constructSkill = MaterialType::construction_getSkill(m_materialType);
@@ -115,11 +115,11 @@ ConstructionLocationDishonorCallback::ConstructionLocationDishonorCallback(const
 	m_area(deserializationMemo.area(data["area"])),
 	m_location(data["location"].get<BlockIndex>()) { }
 Json ConstructionLocationDishonorCallback::toJson() const { return Json({{"type", "ConstructionLocationDishonorCallback"}, {"faction", m_faction}, {"location", m_location}}); }
-void ConstructionLocationDishonorCallback::execute([[maybe_unused]] Quantity oldCount, [[maybe_unused]] Quantity newCount)
+void ConstructionLocationDishonorCallback::execute([[maybe_unused]] const Quantity& oldCount, [[maybe_unused]] const Quantity& newCount)
 {
 	m_area.m_hasConstructionDesignations.getForFaction(m_faction).undesignate(m_location);
 }
-HasConstructionDesignationsForFaction::HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction) :
+HasConstructionDesignationsForFaction::HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const FactionId& faction) :
 	m_faction(faction)
 {
 	for(const Json& pair : data["projects"])
@@ -147,7 +147,7 @@ Json HasConstructionDesignationsForFaction::toJson() const
 	return {{"projects", projects}};
 }
 // If blockFeatureType is null then construct a wall rather then a feature.
-void HasConstructionDesignationsForFaction::designate(Area& area, BlockIndex block, const BlockFeatureType* blockFeatureType, MaterialTypeId materialType)
+void HasConstructionDesignationsForFaction::designate(Area& area, const BlockIndex& block, const BlockFeatureType* blockFeatureType, const MaterialTypeId& materialType)
 {
 	assert(!contains(block));
 	Blocks& blocks = area.getBlocks();
@@ -155,13 +155,13 @@ void HasConstructionDesignationsForFaction::designate(Area& area, BlockIndex blo
 	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<ConstructionLocationDishonorCallback>(m_faction, area, block);
 	m_data.emplace(block, m_faction, area, block, blockFeatureType, materialType, std::move(locationDishonorCallback));
 }
-void HasConstructionDesignationsForFaction::undesignate(BlockIndex block)
+void HasConstructionDesignationsForFaction::undesignate(const BlockIndex& block)
 {
 	assert(m_data.contains(block));
 	ConstructProject& project = m_data[block];
 	project.cancel();
 }
-void HasConstructionDesignationsForFaction::remove(Area& area, BlockIndex block)
+void HasConstructionDesignationsForFaction::remove(Area& area, const BlockIndex& block)
 {
 	assert(contains(block));
 	m_data.erase(block);
@@ -173,13 +173,13 @@ void AreaHasConstructionDesignations::clearReservations()
 		for(auto& pair2 : pair.second->m_data)
 			pair2.second->clearReservations();
 }
-void HasConstructionDesignationsForFaction::removeIfExists(Area& area, BlockIndex block)
+void HasConstructionDesignationsForFaction::removeIfExists(Area& area, const BlockIndex& block)
 {
 	if(m_data.contains(block))
 		remove(area, block);
 }
-bool HasConstructionDesignationsForFaction::contains(BlockIndex block) const { return m_data.contains(block); }
-const BlockFeatureType* HasConstructionDesignationsForFaction::getForBlock(BlockIndex block) const { return m_data[block].m_blockFeatureType; }
+bool HasConstructionDesignationsForFaction::contains(const BlockIndex& block) const { return m_data.contains(block); }
+const BlockFeatureType* HasConstructionDesignationsForFaction::getForBlock(const BlockIndex& block) const { return m_data[block].m_blockFeatureType; }
 bool HasConstructionDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
 void AreaHasConstructionDesignations::load([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo)
@@ -211,46 +211,46 @@ Json AreaHasConstructionDesignations::toJson() const
 	}
 	return data;
 }
-void AreaHasConstructionDesignations::addFaction(FactionId faction)
+void AreaHasConstructionDesignations::addFaction(const FactionId& faction)
 {
 	assert(!m_data.contains(faction));
 	m_data.emplace(faction, faction);
 }
-void AreaHasConstructionDesignations::removeFaction(FactionId faction)
+void AreaHasConstructionDesignations::removeFaction(const FactionId& faction)
 {
 	assert(m_data.contains(faction));
 	m_data.erase(faction);
 }
-void AreaHasConstructionDesignations::designate(FactionId faction, BlockIndex block, const BlockFeatureType* blockFeatureType, MaterialTypeId materialType)
+void AreaHasConstructionDesignations::designate(const FactionId& faction, const BlockIndex& block, const BlockFeatureType* blockFeatureType, const MaterialTypeId& materialType)
 {
 	if(!m_data.contains(faction))
 		addFaction(faction);
 	m_data[faction].designate(m_area, block, blockFeatureType, materialType);
 }
-void AreaHasConstructionDesignations::undesignate(FactionId faction, BlockIndex block)
+void AreaHasConstructionDesignations::undesignate(const FactionId& faction, const BlockIndex& block)
 {
 	m_data[faction].undesignate(block);
 }
-void AreaHasConstructionDesignations::remove(FactionId faction, BlockIndex block)
+void AreaHasConstructionDesignations::remove(const FactionId& faction, const BlockIndex& block)
 {
 	assert(m_data.contains(faction));
 	m_data[faction].remove(m_area, block);
 }
-void AreaHasConstructionDesignations::clearAll(BlockIndex block)
+void AreaHasConstructionDesignations::clearAll(const BlockIndex& block)
 {
 	for(auto& pair : m_data)
 		pair.second->removeIfExists(m_area, block);
 }
-bool AreaHasConstructionDesignations::areThereAnyForFaction(FactionId faction) const
+bool AreaHasConstructionDesignations::areThereAnyForFaction(const FactionId& faction) const
 {
 	if(!m_data.contains(faction))
 		return false;
 	return !m_data[faction].empty();
 }
-bool AreaHasConstructionDesignations::contains(FactionId faction, BlockIndex block) const
+bool AreaHasConstructionDesignations::contains(const FactionId& faction, const BlockIndex& block) const
 {
 	if(!m_data.contains(faction))
 		return false;
 	return m_data[faction].contains(block);
 }
-ConstructProject& AreaHasConstructionDesignations::getProject(FactionId faction, BlockIndex block) { return m_data[faction].m_data[block]; }
+ConstructProject& AreaHasConstructionDesignations::getProject(const FactionId& faction, const BlockIndex& block) { return m_data[faction].m_data[block]; }

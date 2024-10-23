@@ -6,52 +6,52 @@
 #include "../animalSpecies.h"
 #include "types.h"
 
-void Actors::grow_maybeStart(ActorIndex index)
+void Actors::grow_maybeStart(const ActorIndex& index)
 {
 	m_canGrow[index]->maybeStart(m_area);
 }
-void Actors::grow_stop(ActorIndex index)
+void Actors::grow_stop(const ActorIndex& index)
 {
 	m_canGrow[index]->stop();
 }
-void Actors::grow_updateGrowingStatus(ActorIndex index)
+void Actors::grow_updateGrowingStatus(const ActorIndex& index)
 {
 	m_canGrow[index]->updateGrowingStatus(m_area);
 }
-void Actors::grow_setPercent(ActorIndex index, Percent percentGrown)
+void Actors::grow_setPercent(const ActorIndex& index, const Percent& percentGrown)
 {
 	m_canGrow[index]->setGrowthPercent(m_area, percentGrown);
 }
-bool Actors::grow_isGrowing(ActorIndex index) const
+bool Actors::grow_isGrowing(const ActorIndex& index) const
 {
 	return m_canGrow[index]->isGrowing();
 }
-Percent Actors::grow_getPercent(ActorIndex index) const
+Percent Actors::grow_getPercent(const ActorIndex& index) const
 {
 	return m_canGrow[index]->growthPercent();
 }
-bool Actors::grow_getEventExists(ActorIndex index) const
+bool Actors::grow_getEventExists(const ActorIndex& index) const
 {
 	return m_canGrow[index]->getEvent().exists();
 }
-Percent Actors::grow_getEventPercent(ActorIndex index) const
+Percent Actors::grow_getEventPercent(const ActorIndex& index) const
 {
 	return m_canGrow[index]->getEvent().percentComplete();
 }
-Step Actors::grow_getEventStep(ActorIndex index) const
+Step Actors::grow_getEventStep(const ActorIndex& index) const
 {
 	return m_canGrow[index]->getEvent().getStep();
 }
-bool Actors::grow_eventIsPaused(ActorIndex index) const
+bool Actors::grow_eventIsPaused(const ActorIndex& index) const
 {
 	return m_canGrow[index]->getEvent().isPaused();
 }
-CanGrow::CanGrow(Area& area, ActorIndex a, Percent pg) :
+CanGrow::CanGrow(Area& area, const ActorIndex& a, const Percent& pg) :
 	m_event(area.m_eventSchedule), m_percentGrown(pg)
 {
 	m_actor.setTarget(area.getActors().getReferenceTarget(a));
 }
-CanGrow::CanGrow(Area& area, const Json& data, ActorIndex a) : m_event(area.m_eventSchedule), m_percentGrown(data["percentGrown"].get<Percent>())
+CanGrow::CanGrow(Area& area, const Json& data, const ActorIndex& a) : m_event(area.m_eventSchedule), m_percentGrown(data["percentGrown"].get<Percent>())
 {
 	m_actor.setTarget(area.getActors().getReferenceTarget(a));
 	if(data.contains("eventStart"))
@@ -67,7 +67,7 @@ Json CanGrow::toJson() const
 	}
 	return data;
 }
-void CanGrow::setGrowthPercent(Area& area, Percent percent)
+void CanGrow::setGrowthPercent(Area& area, const Percent& percent)
 {
 	m_percentGrown = percent;
 	// Restart the growth event.
@@ -135,5 +135,5 @@ void CanGrow::unschedule()
 {
 	m_event.unschedule();
 }
-AnimalGrowthEvent::AnimalGrowthEvent(Step delay, Area& area, CanGrow& cg, Step start) :
+AnimalGrowthEvent::AnimalGrowthEvent(const Step& delay, Area& area, CanGrow& cg, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_canGrow(cg) { }

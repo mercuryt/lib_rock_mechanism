@@ -7,7 +7,7 @@
 #include "../types.h"
 #include "../itemType.h"
 #include <iterator>
-void Blocks::item_record(BlockIndex index, ItemIndex item, CollisionVolume volume)
+void Blocks::item_record(const BlockIndex& index, const ItemIndex& item, const CollisionVolume& volume)
 {
 	m_itemVolume[index].emplace_back(item, volume);
 	Items& items = m_area.getItems();
@@ -17,7 +17,7 @@ void Blocks::item_record(BlockIndex index, ItemIndex item, CollisionVolume volum
 	else
 		m_dynamicVolume[index] += volume;
 }
-void Blocks::item_erase(BlockIndex index, ItemIndex item)
+void Blocks::item_erase(const BlockIndex& index, const ItemIndex& item)
 {
 	Items& items = m_area.getItems();
 	auto& blockItems = m_items[index];
@@ -32,13 +32,13 @@ void Blocks::item_erase(BlockIndex index, ItemIndex item)
 	(*iter2) = blockItemVolume.back();
 	blockItemVolume.pop_back();
 }
-void Blocks::item_setTemperature(BlockIndex index, Temperature temperature)
+void Blocks::item_setTemperature(const BlockIndex& index, const Temperature& temperature)
 {
 	Items& items = m_area.getItems();
 	for(const ItemIndex& item : m_items[index])
 		items.setTemperature(item, temperature);
 }
-void Blocks::item_disperseAll(BlockIndex index)
+void Blocks::item_disperseAll(const BlockIndex& index)
 {
 	auto& itemsInBlock = m_itemVolume[index];
 	if(itemsInBlock.empty())
@@ -56,7 +56,7 @@ void Blocks::item_disperseAll(BlockIndex index)
 		items.setLocation(item, block);
 	}
 }
-void Blocks::item_updateIndex(BlockIndex index, ItemIndex oldIndex, ItemIndex newIndex)
+void Blocks::item_updateIndex(const BlockIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex)
 {
 	auto found = std::ranges::find(m_items[index], oldIndex);
 	assert(found != m_items[index].end());
@@ -65,7 +65,7 @@ void Blocks::item_updateIndex(BlockIndex index, ItemIndex oldIndex, ItemIndex ne
 	assert(found2 != m_itemVolume[index].end());
 	(*found2).first = newIndex; 
 }
-ItemIndex Blocks::item_addGeneric(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
+ItemIndex Blocks::item_addGeneric(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity)
 {
 	Items& items = m_area.getItems();
 	CollisionVolume volume = Shape::getCollisionVolumeAtLocationBlock(ItemType::getShape(itemType)) * quantity;
@@ -79,9 +79,9 @@ ItemIndex Blocks::item_addGeneric(BlockIndex index, ItemTypeId itemType, Materia
 		ItemIndex item = items.create(ItemParamaters{
 			.itemType=itemType,
 			.materialType=materialType,
+			.location=index,
 			.quantity=quantity,
 		});
-		blockItems.add(item);
 		return item;
 	}
 	else
@@ -90,7 +90,7 @@ ItemIndex Blocks::item_addGeneric(BlockIndex index, ItemTypeId itemType, Materia
 		return *found;
 	}
 }
-Quantity Blocks::item_getCount(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType) const
+Quantity Blocks::item_getCount(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType) const
 {
 	auto& itemsInBlock = m_items[index];
 	Items& items = m_area.getItems();
@@ -103,7 +103,7 @@ Quantity Blocks::item_getCount(BlockIndex index, ItemTypeId itemType, MaterialTy
 	else
 		return items.getQuantity(*found);
 }
-ItemIndex Blocks::item_getGeneric(BlockIndex index, ItemTypeId itemType, MaterialTypeId materialType) const
+ItemIndex Blocks::item_getGeneric(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType) const
 {
 	auto& itemsInBlock = m_items[index];
 	Items& items = m_area.getItems();
@@ -115,7 +115,7 @@ ItemIndex Blocks::item_getGeneric(BlockIndex index, ItemTypeId itemType, Materia
 	return *found;
 }
 // TODO: buggy
-bool Blocks::item_hasInstalledType(BlockIndex index, ItemTypeId itemType) const
+bool Blocks::item_hasInstalledType(const BlockIndex& index, const ItemTypeId& itemType) const
 {
 	auto& itemsInBlock = m_itemVolume[index];
 	Items& items = m_area.getItems();
@@ -125,7 +125,7 @@ bool Blocks::item_hasInstalledType(BlockIndex index, ItemTypeId itemType) const
 	});
 	return found != itemsInBlock.end() && items.isInstalled(found->first);
 }
-bool Blocks::item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(BlockIndex index, const ActorIndex actor) const
+bool Blocks::item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(const BlockIndex& index, const ActorIndex& actor) const
 {
 	Items& items = m_area.getItems();
 	Actors& actors = m_area.getActors();
@@ -138,7 +138,7 @@ bool Blocks::item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(BlockIndex inde
 	}
 	return false;
 }
-bool Blocks::item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, const ActorIndex actor, FluidTypeId fluidType) const
+bool Blocks::item_hasContainerContainingFluidTypeCarryableBy(const BlockIndex& index, const ActorIndex& actor, const FluidTypeId& fluidType) const
 {
 	Items& items = m_area.getItems();
 	Actors& actors = m_area.getActors();
@@ -153,19 +153,19 @@ bool Blocks::item_hasContainerContainingFluidTypeCarryableBy(BlockIndex index, c
 	}
 	return false;
 }
-bool Blocks::item_empty(BlockIndex index) const
+bool Blocks::item_empty(const BlockIndex& index) const
 {
 	return m_itemVolume[index].empty();
 }
-bool Blocks::item_contains(BlockIndex index, ItemIndex item) const
+bool Blocks::item_contains(const BlockIndex& index, const ItemIndex& item) const
 {
 	return m_items[index].contains(item);
 }
-ItemIndicesForBlock& Blocks::item_getAll(BlockIndex index)
+ItemIndicesForBlock& Blocks::item_getAll(const BlockIndex& index)
 {
 	return m_items[index];
 }
-const ItemIndicesForBlock& Blocks::item_getAll(BlockIndex index) const
+const ItemIndicesForBlock& Blocks::item_getAll(const BlockIndex& index) const
 {
 	return const_cast<Blocks*>(this)->item_getAll(index);
 }

@@ -87,7 +87,7 @@ public:
 	//WorldLocation* m_worldLocation;
 
 	// Create blocks and store adjacent
-	Area(AreaId id, std::wstring n, Simulation& s, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z);
+	Area(AreaId id, std::wstring n, Simulation& s, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z);
 	Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s);
 	Area(const Area& area) = delete;
 	Area(const Area&& area) = delete;
@@ -102,7 +102,7 @@ public:
 	void doStepCaveIn();
 	void stepCaveInRead();
 	void stepCaveInWrite();
-	void registerPotentialCaveIn(BlockIndex block);
+	void registerPotentialCaveIn(const BlockIndex& block);
 	// To be called periodically by Simulation.
 	void updateClimate();
 
@@ -126,7 +126,7 @@ public:
 	[[nodiscard]] bool operator==(const Area& other) const { return this == &other; }
 	// For testing.
 	[[maybe_unused]] void logActorsAndItems() const;
-	[[nodiscard]] Quantity getTotalCountOfItemTypeOnSurface(ItemTypeId itemType) const;
+	[[nodiscard]] Quantity getTotalCountOfItemTypeOnSurface(const ItemTypeId& itemType) const;
 };
 inline void to_json(Json& data, const Area* const& area){ data = area->m_id; }
 inline void to_json(Json& data, const Area& area){ data = area.m_id; }

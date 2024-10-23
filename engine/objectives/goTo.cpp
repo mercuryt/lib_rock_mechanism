@@ -16,7 +16,7 @@ Json GoToObjective::toJson() const
 	data["location"] = m_location;
 	return data;
 }
-void GoToObjective::execute(Area& area, ActorIndex actor)
+void GoToObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	if(actors.getLocation(actor) != m_location)

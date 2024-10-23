@@ -13,7 +13,7 @@ void FluidQueue::setBlocks(BlockIndices& blocks)
 			m_queue.emplace_back(block);
 	m_set.swap(blocks);
 }
-void FluidQueue::maybeAddBlock(BlockIndex block)
+void FluidQueue::maybeAddBlock(const BlockIndex& block)
 {
 	if(m_set.contains(block))
 		return;
@@ -28,19 +28,19 @@ void FluidQueue::maybeAddBlocks(BlockIndices& blocks)
 			m_queue.emplace_back(block);
 	m_set.merge(blocks);
 }
-void FluidQueue::removeBlock(BlockIndex block)
+void FluidQueue::removeBlock(const BlockIndex& block)
 {
 	m_set.remove(block);
 	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return futureFlowBlock.block == block; });
 }
-void FluidQueue::maybeRemoveBlock(BlockIndex block)
+void FluidQueue::maybeRemoveBlock(const BlockIndex& block)
 {
 	if(m_set.contains(block))
 		removeBlock(block);
 }
 void FluidQueue::removeBlocks(BlockIndices& blocks)
 {
-	m_set.erase_if([&](BlockIndex block){ return blocks.contains(block); });
+	m_set.erase_if([&](const BlockIndex& block){ return blocks.contains(block); });
 	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return blocks.contains(futureFlowBlock.block); });
 }
 void FluidQueue::merge(FluidQueue& fluidQueue)
@@ -71,7 +71,7 @@ CollisionVolume FluidQueue::groupFlowTillNextStepPerBlock() const
 	assert(m_groupEnd->capacity < m_groupStart->capacity);
 	return m_groupStart->capacity - m_groupEnd->capacity;
 }
-bool FluidQueue::groupContains(BlockIndex block) const
+bool FluidQueue::groupContains(const BlockIndex& block) const
 {
 	return std::ranges::find(m_groupStart, m_groupEnd, block, &FutureFlowBlock::block) != m_groupEnd;
 }

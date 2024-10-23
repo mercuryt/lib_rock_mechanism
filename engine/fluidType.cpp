@@ -17,10 +17,10 @@ FluidTypeId FluidType::create(FluidTypeParamaters& p)
 	return FluidTypeId::create(fluidTypeData.m_name.size() - 1);
 }
 // Static method.
-void FluidType::setFreezesInto(FluidTypeId fluid, MaterialTypeId material) { fluidTypeData.m_freezesInto[fluid] = material; }
-std::string FluidType::getName(FluidTypeId id) { return fluidTypeData.m_name[id]; };
-uint32_t FluidType::getViscosity(FluidTypeId id) { return fluidTypeData.m_viscosity[id]; };
-Density FluidType::getDensity(FluidTypeId id) { return fluidTypeData.m_density[id]; };
-Step FluidType::getMistDuration(FluidTypeId id) { return fluidTypeData.m_mistDuration[id]; };
-DistanceInBlocks FluidType::getMaxMistSpread(FluidTypeId id) { return fluidTypeData.m_maxMistSpread[id]; };
-MaterialTypeId FluidType::getFreezesInto(FluidTypeId id) { return fluidTypeData.m_freezesInto[id]; };
+void FluidType::setFreezesInto(const FluidTypeId& fluid, const MaterialTypeId& material) { fluidTypeData.m_freezesInto[fluid] = material; }
+std::string FluidType::getName(const FluidTypeId& id) { return fluidTypeData.m_name[id]; };
+uint32_t FluidType::getViscosity(const FluidTypeId& id) { return fluidTypeData.m_viscosity[id]; };
+Density FluidType::getDensity(const FluidTypeId& id) { return fluidTypeData.m_density[id]; };
+Step FluidType::getMistDuration(const FluidTypeId& id) { return fluidTypeData.m_mistDuration[id]; };
+DistanceInBlocks FluidType::getMaxMistSpread(const FluidTypeId& id) { return fluidTypeData.m_maxMistSpread[id]; };
+MaterialTypeId FluidType::getFreezesInto(const FluidTypeId& id) { return fluidTypeData.m_freezesInto[id]; };

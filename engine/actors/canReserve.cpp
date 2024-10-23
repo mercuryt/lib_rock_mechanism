@@ -2,27 +2,27 @@
 #include "../area.h"
 #include "../items/items.h"
 #include "../blocks/blocks.h"
-void Actors::canReserve_clearAll(ActorIndex index)
+void Actors::canReserve_clearAll(const ActorIndex& index)
 {
 	m_canReserve[index]->deleteAllWithoutCallback();
 }
-void Actors::canReserve_setFaction(ActorIndex index, FactionId faction)
+void Actors::canReserve_setFaction(const ActorIndex& index, FactionId faction)
 {
 	m_canReserve[index]->setFaction(faction);
 }
-void Actors::canReserve_reserveLocation(ActorIndex index, BlockIndex block, std::unique_ptr<DishonorCallback> callback)
+void Actors::canReserve_reserveLocation(const ActorIndex& index, const BlockIndex& block, std::unique_ptr<DishonorCallback> callback)
 {
 	if(callback == nullptr)
 		callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_area, index.toReference(m_area));
 	m_area.getBlocks().reserve(block, canReserve_get(index), std::move(callback));
 }
-void Actors::canReserve_reserveItem(ActorIndex index, ItemIndex item, Quantity quantity, std::unique_ptr<DishonorCallback> callback)
+void Actors::canReserve_reserveItem(const ActorIndex& index, const ItemIndex& item, const Quantity& quantity, std::unique_ptr<DishonorCallback> callback)
 {
 	if(callback == nullptr)
 		callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_area, index.toReference(m_area));
 	m_area.getItems().reservable_reserve(item, canReserve_get(index), quantity, std::move(callback));
 }
-bool Actors::canReserve_tryToReserveLocation(ActorIndex index, BlockIndex block, std::unique_ptr<DishonorCallback> callback)
+bool Actors::canReserve_tryToReserveLocation(const ActorIndex& index, const BlockIndex& block, std::unique_ptr<DishonorCallback> callback)
 {
 	if(callback == nullptr)
 		callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_area, index.toReference(m_area));
@@ -31,7 +31,7 @@ bool Actors::canReserve_tryToReserveLocation(ActorIndex index, BlockIndex block,
 	canReserve_reserveLocation(index, block, std::move(callback));
 	return true;
 }
-bool Actors::canReserve_tryToReserveItem(ActorIndex index, ItemIndex item, Quantity quantity, std::unique_ptr<DishonorCallback> callback)
+bool Actors::canReserve_tryToReserveItem(const ActorIndex& index, const ItemIndex& item, const Quantity& quantity, std::unique_ptr<DishonorCallback> callback)
 {
 	if(callback == nullptr)
 		callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_area, index.toReference(m_area));
@@ -40,7 +40,7 @@ bool Actors::canReserve_tryToReserveItem(ActorIndex index, ItemIndex item, Quant
 	canReserve_reserveItem(index, item, quantity, std::move(callback));
 	return true;
 }
-bool Actors::canReserve_hasReservationWith(ActorIndex index, Reservable& reservable) const
+bool Actors::canReserve_hasReservationWith(const ActorIndex& index, Reservable& reservable) const
 {
 	return m_canReserve[index]->hasReservationWith(reservable);
 }
@@ -54,7 +54,7 @@ bool Actors::canReserve_canReserveLocation(const ActorIndex& index, const BlockI
 			return false;
 	return true;
 }
-CanReserve& Actors::canReserve_get(ActorIndex index)
+CanReserve& Actors::canReserve_get(const ActorIndex& index)
 {
 	return *m_canReserve[index];
 }
