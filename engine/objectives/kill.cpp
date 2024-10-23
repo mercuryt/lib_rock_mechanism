@@ -8,7 +8,7 @@
 #include "reference.h"
 #include <memory>
 /*
-KillInputAction::KillInputAction(ActorIndices actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, ActorIndex killer, ActorIndex target) : InputAction(actors, emplacementType, inputQueue), m_killer(killer), m_target(target) 
+KillInputAction::KillInputAction(ActorIndices actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, const ActorIndex& killer, const ActorIndex& target) : InputAction(actors, emplacementType, inputQueue), m_killer(killer), m_target(target) 
 {
        	m_onDestroySubscriptions.subscribe(m_target.m_onDestroy); 
 }
@@ -23,7 +23,7 @@ KillObjective::KillObjective(const Json& data, Area& area) : Objective(data)
 { 
 	m_target.load(data["target"], area);
 }
-void KillObjective::execute(Area& area, ActorIndex actor)
+void KillObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	ActorIndex target = m_target.getIndex();
@@ -47,11 +47,11 @@ void KillObjective::execute(Area& area, ActorIndex actor)
 		if(!actors.combat_isOnCoolDown(actor))
 			actors.combat_attackMeleeRange(actor, target);
 }
-void KillObjective::cancel(Area& area, ActorIndex actor)
+void KillObjective::cancel(Area& area, const ActorIndex& actor)
 {
 	area.getActors().move_pathRequestMaybeCancel(actor);
 }
-void KillObjective::reset(Area& area, ActorIndex actor) 
+void KillObjective::reset(Area& area, const ActorIndex& actor) 
 { 
 	cancel(area, actor); 
 	area.getActors().canReserve_clearAll(actor);

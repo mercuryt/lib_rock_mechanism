@@ -22,24 +22,24 @@
 #include <numeric>
 
 //TODO: reuse blocks as m_fillQueue.m_set.
-FluidGroup::FluidGroup(FluidTypeId ft, BlockIndices& blocks, Area& area, bool checkMerge) :
+FluidGroup::FluidGroup(const FluidTypeId& ft, BlockIndices& blocks, Area& area, bool checkMerge) :
 	m_fillQueue(*this), m_drainQueue(*this), m_area(area), m_fluidType(ft)
 {
 	for(BlockIndex block : blocks)
 		if(m_area.getBlocks().fluid_contains(block, m_fluidType))
 			addBlock(block, checkMerge);
 }
-void FluidGroup::addFluid(CollisionVolume volume)
+void FluidGroup::addFluid(const CollisionVolume& volume)
 {
 	m_excessVolume += volume.get();
 	setUnstable();
 }
-void FluidGroup::removeFluid(CollisionVolume volume)
+void FluidGroup::removeFluid(const CollisionVolume& volume)
 {
 	m_excessVolume -= volume.get();
 	setUnstable();
 }
-void FluidGroup::addBlock(BlockIndex block, bool checkMerge)
+void FluidGroup::addBlock(const BlockIndex& block, bool checkMerge)
 {
 	assert(!m_merged);
 	assert(m_area.getBlocks().fluid_contains(block, m_fluidType));
@@ -91,7 +91,7 @@ void FluidGroup::addBlock(BlockIndex block, bool checkMerge)
 		larger->addDiagonalsFor(block);
 	larger->addMistFor(block);
 }
-void FluidGroup::removeBlock(BlockIndex block)
+void FluidGroup::removeBlock(const BlockIndex& block)
 {
 	setUnstable();
 	m_drainQueue.removeBlock(block);
@@ -130,7 +130,7 @@ void FluidGroup::setUnstable()
 	m_stable = false;
 	m_area.m_hasFluidGroups.markUnstable(*this);
 }
-void FluidGroup::addDiagonalsFor(BlockIndex block)
+void FluidGroup::addDiagonalsFor(const BlockIndex& block)
 {
 	auto& blocks = m_area.getBlocks();
 	for(BlockIndex diagonal : blocks.getEdgeAdjacentOnSameZLevelOnly(block))
@@ -146,7 +146,7 @@ void FluidGroup::addDiagonalsFor(BlockIndex block)
 				m_diagonalBlocks.add(diagonal);
 		}
 }
-void FluidGroup::addMistFor(BlockIndex block)
+void FluidGroup::addMistFor(const BlockIndex& block)
 {
 	auto& blocks = m_area.getBlocks();
 	if(FluidType::getMistDuration(m_fluidType) != 0 &&
@@ -192,10 +192,10 @@ FluidGroup* FluidGroup::merge(FluidGroup* smaller)
 	// Merge diagonal seep if enabled.
 	if constexpr (Config::fluidsSeepDiagonalModifier != 0)
 	{
-		smaller->m_diagonalBlocks.erase_if([&](BlockIndex block){
+		smaller->m_diagonalBlocks.erase_if([&](const BlockIndex& block){
 			return !larger->m_drainQueue.m_set.contains(block) && !larger->m_fillQueue.m_set.contains(block);
 		});
-		larger->m_diagonalBlocks.erase_if([&](BlockIndex block){
+		larger->m_diagonalBlocks.erase_if([&](const BlockIndex& block){
 			return smaller->m_drainQueue.m_set.contains(block) || smaller->m_fillQueue.m_set.contains(block);
 		});
 		larger->m_diagonalBlocks.merge(smaller->m_diagonalBlocks);
@@ -447,7 +447,7 @@ void FluidGroup::readStep()
 			possiblyNoLongerAdjacent.maybeAdd(block);
 	// Seperate into contiguous groups. Each block in potentialNewGroups might be in a seperate group.
 	// If there is only one potential new group there can not be a split: there needs to be another group to split from.
-	potentialNewGroups.erase_if([&](BlockIndex block){ return !futureBlocks.contains(block); });
+	potentialNewGroups.erase_if([&](const BlockIndex& block){ return !futureBlocks.contains(block); });
 	if(potentialNewGroups.size() > 1)
 	{
 		BlockIndices closed;
@@ -527,7 +527,7 @@ void FluidGroup::writeStep()
 	for([[maybe_unused]] BlockIndex block : m_futureAddToFillQueue)
 		assert(!m_futureRemoveFromFillQueue.contains(block));
 	// Don't add to drain queue if taken by another fluid group already.
-	m_futureAddToDrainQueue.erase_if([&](BlockIndex block){
+	m_futureAddToDrainQueue.erase_if([&](const BlockIndex& block){
 		auto found = blocks.fluid_getData(block, m_fluidType);
 		return found && found->group != this;
 	});
@@ -672,7 +672,7 @@ void FluidGroup::splitStep()
 	m_fillQueue.removeBlocks(formerFill);
 	m_futureNewEmptyAdjacents = m_futureGroups.back().futureAdjacent;
 	if constexpr (Config::fluidsSeepDiagonalModifier != 0)
-		m_diagonalBlocks.erase_if([&](BlockIndex block){
+		m_diagonalBlocks.erase_if([&](const BlockIndex& block){
 			for(BlockIndex diagonal : m_area.getBlocks().getEdgeAdjacentOnSameZLevelOnly(block))
 				if(m_futureGroups.back().members.contains(diagonal))
 					return false;
@@ -722,7 +722,7 @@ CollisionVolume FluidGroup::totalVolume() const
 		output += m_area.getBlocks().fluid_volumeOfTypeContains(block, m_fluidType);
 	return output;
 }
-bool FluidGroup::dispositionIsStable(CollisionVolume fillVolume, CollisionVolume drainVolume) const
+bool FluidGroup::dispositionIsStable(const CollisionVolume& fillVolume, const CollisionVolume& drainVolume) const
 {
 	auto& blocks = m_area.getBlocks();
 	DistanceInBlocks drainZ = blocks.getZ(m_drainQueue.m_groupStart->block);

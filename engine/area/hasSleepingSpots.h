@@ -2,7 +2,7 @@
 #include "../config.h"
 #include "../index.h"
 struct Faction;
-class DeserializationMemo;
+struct DeserializationMemo;
 class Area;
 class AreaHasSleepingSpots final
 {
@@ -12,7 +12,7 @@ public:
 	AreaHasSleepingSpots(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-	void designate(FactionId faction, BlockIndex block);
-	void undesignate(FactionId faction, BlockIndex block);
-	bool containsUnassigned(BlockIndex block) const { return m_unassigned.contains(block); }
+	void designate(const FactionId& faction, const BlockIndex& block);
+	void undesignate(const FactionId& faction, const BlockIndex& block);
+	bool containsUnassigned(const BlockIndex& block) const { return m_unassigned.contains(block); }
 };

@@ -23,7 +23,7 @@
 #include <string>
 #include <sys/types.h>
 
-Area::Area(AreaId id, std::wstring n, Simulation& s, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) :
+Area::Area(AreaId id, std::wstring n, Simulation& s, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) :
 	m_blocks(std::make_unique<Blocks>(*this, x, y, z)),
 	m_actors(std::make_unique<Actors>(*this)),
 	m_plants(std::make_unique<Plants>(*this)),
@@ -228,7 +228,7 @@ void Area::logActorsAndItems() const
 	for(ItemIndex item : items.getOnSurface())
 		items.log(item);
 }
-Quantity Area::getTotalCountOfItemTypeOnSurface(ItemTypeId itemType) const
+Quantity Area::getTotalCountOfItemTypeOnSurface(const ItemTypeId& itemType) const
 {
 	const Items& items = getItems();
 	Quantity output = Quantity::create(0);

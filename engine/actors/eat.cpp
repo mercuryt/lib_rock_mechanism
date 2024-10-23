@@ -1,54 +1,54 @@
 #include "actors.h"
 #include "../eat.h"
-void Actors::eat_do(ActorIndex index, Mass mass)
+void Actors::eat_do(const ActorIndex& index, const Mass& mass)
 {
 	m_mustEat[index]->eat(m_area, mass);
 }
-bool Actors::eat_isHungry(ActorIndex index) const
+bool Actors::eat_isHungry(const ActorIndex& index) const
 {
 	return m_mustEat[index]->needsFood();
 }
-bool Actors::eat_canEatActor(ActorIndex index, ActorIndex other) const
+bool Actors::eat_canEatActor(const ActorIndex& index, const ActorIndex& other) const
 {
 	return m_mustEat[index]->canEatActor(m_area, other);
 }
-bool Actors::eat_canEatItem(ActorIndex index, ItemIndex item) const
+bool Actors::eat_canEatItem(const ActorIndex& index, const ItemIndex& item) const
 {
 	return m_mustEat[index]->canEatItem(m_area, item);
 }
-bool Actors::eat_canEatPlant(ActorIndex index, PlantIndex plant) const
+bool Actors::eat_canEatPlant(const ActorIndex& index, const PlantIndex& plant) const
 {
 	return m_mustEat[index]->canEatPlant(m_area, plant);
 }
-Percent Actors::eat_getPercentStarved(ActorIndex index) const
+Percent Actors::eat_getPercentStarved(const ActorIndex& index) const
 {
 	return m_mustEat[index]->getPercentStarved();
 }
-BlockIndex Actors::eat_getAdjacentBlockWithTheMostDesiredFood(ActorIndex index) const
+BlockIndex Actors::eat_getAdjacentBlockWithTheMostDesiredFood(const ActorIndex& index) const
 {
 	return m_mustEat[index]->getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability(m_area);
 }
-uint32_t Actors::eat_getDesireToEatSomethingAt(ActorIndex index, BlockIndex block) const
+uint32_t Actors::eat_getDesireToEatSomethingAt(const ActorIndex& index, const BlockIndex& block) const
 {
 	return m_mustEat[index]->getDesireToEatSomethingAt(m_area, block);
 }
-uint32_t Actors::eat_getMinimumAcceptableDesire(ActorIndex index) const
+uint32_t Actors::eat_getMinimumAcceptableDesire(const ActorIndex& index) const
 {
 	return m_mustEat[index]->getMinimumAcceptableDesire(m_area);
 }
-bool Actors::eat_hasObjective(ActorIndex index) const
+bool Actors::eat_hasObjective(const ActorIndex& index) const
 {
 	return m_mustEat[index]->hasObjecive();
 }
-Mass Actors::eat_getMassFoodRequested(ActorIndex index) const
+Mass Actors::eat_getMassFoodRequested(const ActorIndex& index) const
 {
 	return m_mustEat[index]->getMassFoodRequested();
 }
-Step Actors::eat_getHungerEventStep(ActorIndex index) const
+Step Actors::eat_getHungerEventStep(const ActorIndex& index) const
 {
 	return m_mustEat[index]->getHungerEventStep();
 }
-bool Actors::eat_hasHungerEvent(ActorIndex index) const
+bool Actors::eat_hasHungerEvent(const ActorIndex& index) const
 {
 	return m_mustEat[index]->hasHungerEvent();
 }

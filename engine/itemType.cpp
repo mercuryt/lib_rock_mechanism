@@ -11,22 +11,22 @@
 
 #include <iostream>
 #include <numbers>
-AttackTypeId ItemType::getRangedAttackType(ItemTypeId id)
+AttackTypeId ItemType::getRangedAttackType(const ItemTypeId& id)
 {
 	for(AttackTypeId attackType : itemTypeData.m_attackTypes[id])
 		if(AttackType::getProjectileItemType(attackType).exists())
 			return attackType;
 	return AttackTypeId::null();
 }
-bool ItemType::hasRangedAttack(ItemTypeId id) { return getRangedAttackType(id).exists(); }
-bool ItemType::hasMeleeAttack(ItemTypeId id)
+bool ItemType::hasRangedAttack(const ItemTypeId& id) { return getRangedAttackType(id).exists(); }
+bool ItemType::hasMeleeAttack(const ItemTypeId& id)
 {
 	for(AttackTypeId attackType : itemTypeData.m_attackTypes[id])
 		if(AttackType::getProjectileItemType(attackType).empty())
 			return true;
 	return false;
 }
-BlockIndex ItemType::getCraftLocation(ItemTypeId id, Blocks& blocks, BlockIndex location, Facing facing)
+BlockIndex ItemType::getCraftLocation(const ItemTypeId& id, Blocks& blocks, const BlockIndex& location, const Facing& facing)
 {
 	assert(itemTypeData.m_craftLocationStepTypeCategory[id] != CraftStepTypeCategoryId::null());
 	auto [x, y, z] = util::rotateOffsetToFacing(itemTypeData.m_craftLocationOffset[id], facing);
@@ -66,30 +66,30 @@ void ItemType::create(ItemTypeParamaters& p)
 	itemTypeData.m_wearable_rigid.add(p.wearable_rigid);
 	itemTypeData.m_wearable_bodyPartsCovered.add(p.wearable_bodyPartsCovered);
 }
-std::vector<MaterialCategoryTypeId>& ItemType::getMaterialTypeCategories(ItemTypeId id) { return itemTypeData.m_materialTypeCategories[id]; }
-std::string& ItemType::getName(ItemTypeId id) { return itemTypeData.m_name[id]; }
-std::array<int32_t, 3>& ItemType::getCraftLocationOffset(ItemTypeId id) { return itemTypeData.m_craftLocationOffset[id]; }
-ShapeId ItemType::getShape(ItemTypeId id) { return itemTypeData.m_shape[id]; }
-MoveTypeId ItemType::getMoveType(ItemTypeId id) { return itemTypeData.m_moveType[id]; }
-FluidTypeId ItemType::getEdibleForDrinkersOf(ItemTypeId id) { return itemTypeData.m_edibleForDrinkersOf[id]; }
-CraftStepTypeCategoryId ItemType::getCraftLocationStepTypeCategory(ItemTypeId id) { return itemTypeData.m_craftLocationStepTypeCategory[id]; }
-Volume ItemType::getVolume(ItemTypeId id) { return itemTypeData.m_volume[id]; }
-Volume ItemType::getInternalVolume(ItemTypeId id) { return itemTypeData.m_internalVolume[id]; }
-uint32_t ItemType::getValue(ItemTypeId id) { return itemTypeData.m_value[id]; }
-bool ItemType::getInstallable(ItemTypeId id) { return itemTypeData.m_installable[id]; }
-bool ItemType::getGeneric(ItemTypeId id) { return itemTypeData.m_generic[id]; }
-bool ItemType::getCanHoldFluids(ItemTypeId id) { return itemTypeData.m_canHoldFluids[id]; }
-std::vector<AttackTypeId> ItemType::getAttackTypes(ItemTypeId id) { return itemTypeData.m_attackTypes[id]; }
-SkillTypeId ItemType::getCombatSkill(ItemTypeId id) { return itemTypeData.m_combatSkill[id]; }
-Step ItemType::getAttackCoolDownBase(ItemTypeId id) { return itemTypeData.m_attackCoolDownBase[id]; }
-bool ItemType::getIsWeapon(ItemTypeId id) { return !itemTypeData.m_attackTypes[id].empty(); }
-bool ItemType::getIsGeneric(ItemTypeId id) { return !itemTypeData.m_generic[id]; }
-uint32_t ItemType::getWearable_defenseScore(ItemTypeId id) { return itemTypeData.m_wearable_defenseScore[id]; }
-uint32_t ItemType::getWearable_layer(ItemTypeId id) { return itemTypeData.m_wearable_layer[id]; }
-uint32_t ItemType::getWearable_bodyTypeScale(ItemTypeId id) { return itemTypeData.m_wearable_bodyTypeScale[id]; }
-uint32_t ItemType::getWearable_forceAbsorbedUnpiercedModifier(ItemTypeId id) { return itemTypeData.m_wearable_forceAbsorbedUnpiercedModifier[id]; }
-uint32_t ItemType::getWearable_forceAbsorbedPiercedModifier(ItemTypeId id) { return itemTypeData.m_wearable_forceAbsorbedPiercedModifier[id]; }
-Percent ItemType::getWearable_percentCoverage(ItemTypeId id) { return itemTypeData.m_wearable_percentCoverage[id]; }
-bool ItemType::getWearable_rigid(ItemTypeId id) { return itemTypeData.m_wearable_rigid[id]; }
-std::vector<BodyPartTypeId>& ItemType::getWearable_bodyPartsCovered(ItemTypeId id) { return itemTypeData.m_wearable_bodyPartsCovered[id]; }
-bool ItemType::getIsWearable(ItemTypeId id) { return !itemTypeData.m_wearable_bodyPartsCovered[id].empty(); }
+std::vector<MaterialCategoryTypeId>& ItemType::getMaterialTypeCategories(const ItemTypeId& id) { return itemTypeData.m_materialTypeCategories[id]; }
+std::string& ItemType::getName(const ItemTypeId& id) { return itemTypeData.m_name[id]; }
+std::array<int32_t, 3>& ItemType::getCraftLocationOffset(const ItemTypeId& id) { return itemTypeData.m_craftLocationOffset[id]; }
+ShapeId ItemType::getShape(const ItemTypeId& id) { return itemTypeData.m_shape[id]; }
+MoveTypeId ItemType::getMoveType(const ItemTypeId& id) { return itemTypeData.m_moveType[id]; }
+FluidTypeId ItemType::getEdibleForDrinkersOf(const ItemTypeId& id) { return itemTypeData.m_edibleForDrinkersOf[id]; }
+CraftStepTypeCategoryId ItemType::getCraftLocationStepTypeCategory(const ItemTypeId& id) { return itemTypeData.m_craftLocationStepTypeCategory[id]; }
+Volume ItemType::getVolume(const ItemTypeId& id) { return itemTypeData.m_volume[id]; }
+Volume ItemType::getInternalVolume(const ItemTypeId& id) { return itemTypeData.m_internalVolume[id]; }
+uint32_t ItemType::getValue(const ItemTypeId& id) { return itemTypeData.m_value[id]; }
+bool ItemType::getInstallable(const ItemTypeId& id) { return itemTypeData.m_installable[id]; }
+bool ItemType::getGeneric(const ItemTypeId& id) { return itemTypeData.m_generic[id]; }
+bool ItemType::getCanHoldFluids(const ItemTypeId& id) { return itemTypeData.m_canHoldFluids[id]; }
+std::vector<AttackTypeId> ItemType::getAttackTypes(const ItemTypeId& id) { return itemTypeData.m_attackTypes[id]; }
+SkillTypeId ItemType::getCombatSkill(const ItemTypeId& id) { return itemTypeData.m_combatSkill[id]; }
+Step ItemType::getAttackCoolDownBase(const ItemTypeId& id) { return itemTypeData.m_attackCoolDownBase[id]; }
+bool ItemType::getIsWeapon(const ItemTypeId& id) { return !itemTypeData.m_attackTypes[id].empty(); }
+bool ItemType::getIsGeneric(const ItemTypeId& id) { return !itemTypeData.m_generic[id]; }
+uint32_t ItemType::getWearable_defenseScore(const ItemTypeId& id) { return itemTypeData.m_wearable_defenseScore[id]; }
+uint32_t ItemType::getWearable_layer(const ItemTypeId& id) { return itemTypeData.m_wearable_layer[id]; }
+uint32_t ItemType::getWearable_bodyTypeScale(const ItemTypeId& id) { return itemTypeData.m_wearable_bodyTypeScale[id]; }
+uint32_t ItemType::getWearable_forceAbsorbedUnpiercedModifier(const ItemTypeId& id) { return itemTypeData.m_wearable_forceAbsorbedUnpiercedModifier[id]; }
+uint32_t ItemType::getWearable_forceAbsorbedPiercedModifier(const ItemTypeId& id) { return itemTypeData.m_wearable_forceAbsorbedPiercedModifier[id]; }
+Percent ItemType::getWearable_percentCoverage(const ItemTypeId& id) { return itemTypeData.m_wearable_percentCoverage[id]; }
+bool ItemType::getWearable_rigid(const ItemTypeId& id) { return itemTypeData.m_wearable_rigid[id]; }
+std::vector<BodyPartTypeId>& ItemType::getWearable_bodyPartsCovered(const ItemTypeId& id) { return itemTypeData.m_wearable_bodyPartsCovered[id]; }
+bool ItemType::getIsWearable(const ItemTypeId& id) { return !itemTypeData.m_wearable_bodyPartsCovered[id].empty(); }

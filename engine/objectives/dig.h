@@ -11,8 +11,8 @@ class DigProject;
 class DigObjectiveType final : public ObjectiveType
 {
 public:
-	[[nodiscard]] bool canBeAssigned(Area& area, ActorIndex actor) const;
-	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
+	[[nodiscard]] bool canBeAssigned(Area& area, const ActorIndex& actor) const;
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
 	DigObjectiveType() = default;
 	DigObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
 	[[nodiscard]] std::string name() const { return "dig"; }
@@ -24,14 +24,14 @@ class DigObjective final : public Objective
 public:
 	DigObjective() : Objective(Config::digObjectivePriority) { }
 	DigObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, ActorIndex actor);
-	void cancel(Area& area, ActorIndex actor);
-	void delay(Area& area, ActorIndex actor);
-	void reset(Area& area, ActorIndex actor);
-	void onProjectCannotReserve(Area& area, ActorIndex actor);
-	void joinProject(DigProject& project, ActorIndex actor);
+	void execute(Area& area, const ActorIndex& actor);
+	void cancel(Area& area, const ActorIndex& actor);
+	void delay(Area& area, const ActorIndex& actor);
+	void reset(Area& area, const ActorIndex& actor);
+	void onProjectCannotReserve(Area& area, const ActorIndex& actor);
+	void joinProject(DigProject& project, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] DigProject* getJoinableProjectAt(Area& area, BlockIndex block, ActorIndex actor);
+	[[nodiscard]] DigProject* getJoinableProjectAt(Area& area, BlockIndex block, const ActorIndex& actor);
 	[[nodiscard]] std::string name() const { return "dig"; }
 	friend class DigPathRequest;
 	friend class DigProject;
@@ -44,9 +44,9 @@ class DigPathRequest final : public PathRequest
 	DigObjective& m_digObjective;
 	// Result is the block which will be the actors location while doing the digging.
 public:
-	DigPathRequest(Area& area, DigObjective& digObjective, ActorIndex actor);
+	DigPathRequest(Area& area, DigObjective& digObjective, const ActorIndex& actor);
 	DigPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, FindPathResult& result);
+	void callback(Area& area, const FindPathResult& result);
 	void clearReferences(Simulation&, Area* area);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() { return "dig"; }

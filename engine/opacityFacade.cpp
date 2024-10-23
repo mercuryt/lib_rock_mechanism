@@ -12,7 +12,7 @@ void OpacityFacade::initalize()
 	for(BlockIndex block : m_area.getBlocks().getAll())
 		update(block);
 }
-void OpacityFacade::update(BlockIndex index)
+void OpacityFacade::update(const BlockIndex& index)
 {
 	Blocks& blocks = m_area.getBlocks();
 	assert(index < m_fullOpacity.size());
@@ -29,26 +29,26 @@ void OpacityFacade::validate() const
 		assert(blocks.canSeeThroughFloor(block) != m_floorOpacity[block]);
 	}
 }
-bool OpacityFacade::isOpaque(BlockIndex index) const
+bool OpacityFacade::isOpaque(const BlockIndex& index) const
 {
 	assert(index < m_fullOpacity.size());
 	assert(m_fullOpacity[index] != m_area.getBlocks().canSeeThrough(index));
 	return m_fullOpacity[index];
 }
-bool OpacityFacade::floorIsOpaque(BlockIndex index) const
+bool OpacityFacade::floorIsOpaque(const BlockIndex& index) const
 {
 	assert(index < m_fullOpacity.size());
 	assert(m_floorOpacity.size() == m_fullOpacity.size());
 	assert(m_floorOpacity[index] != m_area.getBlocks().canSeeThroughFloor(index));
 	return m_floorOpacity[index];
 }
-bool  OpacityFacade::hasLineOfSight(BlockIndex from, BlockIndex to) const
+bool  OpacityFacade::hasLineOfSight(const BlockIndex& from, const BlockIndex& to) const
 {
 	Point3D fromCoords = m_area.getBlocks().getCoordinates(from);
 	Point3D toCoords = m_area.getBlocks().getCoordinates(to);
 	return hasLineOfSight(from, fromCoords, to, toCoords);
 }
-bool  OpacityFacade::hasLineOfSight(BlockIndex fromIndex, Point3D fromCoords, BlockIndex toIndex, Point3D toCoords) const
+bool  OpacityFacade::hasLineOfSight(const BlockIndex& fromIndex, Point3D fromCoords, const BlockIndex& toIndex, Point3D toCoords) const
 {
 	assert(!isOpaque(toIndex));
 	assert(!isOpaque(fromIndex));
@@ -91,7 +91,7 @@ bool  OpacityFacade::hasLineOfSight(BlockIndex fromIndex, Point3D fromCoords, Bl
 			return true;
 	}
 }
-bool OpacityFacade::canSeeIntoFrom(BlockIndex previousIndex, BlockIndex currentIndex, DistanceInBlocks oldZ, DistanceInBlocks z) const
+bool OpacityFacade::canSeeIntoFrom(const BlockIndex& previousIndex, const BlockIndex& currentIndex, const DistanceInBlocks& oldZ, const DistanceInBlocks& z) const
 {
 	assert(!isOpaque(previousIndex));
 	if(isOpaque(currentIndex))

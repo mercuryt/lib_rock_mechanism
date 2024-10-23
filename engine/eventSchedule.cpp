@@ -4,7 +4,7 @@
 #include "util.h"
 #include "area.h"
 #include <cassert>
-ScheduledEvent::ScheduledEvent(Simulation& simulation, const Step delay, const Step start) :
+ScheduledEvent::ScheduledEvent(Simulation& simulation, const Step& delay, const Step start) :
 	m_startStep(start.empty() ? simulation.m_step : start), m_step(m_startStep + delay)
 {
 	assert(delay != 0);
@@ -47,7 +47,7 @@ void EventSchedule::unschedule(ScheduledEvent& scheduledEvent)
 	scheduledEvent.m_cancel = true;
 	scheduledEvent.clearReferences(m_simulation, m_area);
 }
-void EventSchedule::doStep(Step stepNumber)
+void EventSchedule::doStep(const Step& stepNumber)
 {
 	if(m_data.begin()->first > stepNumber)
 		return;

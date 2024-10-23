@@ -9,13 +9,13 @@ class GiveItemObjective final : public Objective
 	// This objective is dependent on receipent being alive but cannot reserve them, use onDestory instead.
 	HasOnDestroySubscriptions m_hasOnDestroySubscriptions;
 public:
-	GiveItemObjective(Area& area, ItemIndex item, ActorIndex receipent);
+	GiveItemObjective(Area& area, const ItemIndex& item, const ActorIndex& receipent);
 	GiveItemObjective(const Json& data, Area& area);
-	void execute(Area& area, ActorIndex actor);
-	void cancel(Area& area, ActorIndex actor);
-	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
-	void reset(Area& area, ActorIndex actor);
-	void createOnDestroyCallbacks(Area& area, ActorIndex actor);
+	void execute(Area& area, const ActorIndex& actor);
+	void cancel(Area& area, const ActorIndex& actor);
+	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
+	void reset(Area& area, const ActorIndex& actor);
+	void createOnDestroyCallbacks(Area& area, const ActorIndex& actor);
 	[[nodiscard]] std::string name() const { return "give item"; }
 	[[nodiscard]] Json toJson() const;
 };

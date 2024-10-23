@@ -47,7 +47,7 @@ class DigProject final : public Project
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.
-	DigProject(FactionId faction, Area& area, BlockIndex block, const BlockFeatureType* bft, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
+	DigProject(const FactionId& faction, Area& area, const BlockIndex& block, const BlockFeatureType* bft, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
 		Project(faction, area, block, Config::maxNumberOfWorkersForDigProject, std::move(locationDishonorCallback)), m_blockFeatureType(bft) { }
 	DigProject(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Step getDuration() const;
@@ -59,9 +59,9 @@ struct DigLocationDishonorCallback final : public DishonorCallback
 	FactionId m_faction;
 	Area& m_area;
 	BlockIndex m_location;
-	DigLocationDishonorCallback(FactionId f, Area& a, BlockIndex l) : m_faction(f), m_area(a), m_location(l) { }
+	DigLocationDishonorCallback(const FactionId& f, Area& a, const BlockIndex& l) : m_faction(f), m_area(a), m_location(l) { }
 	DigLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Quantity oldCount, Quantity newCount);
+	void execute(const Quantity& oldCount, const Quantity& newCount);
 	[[nodiscard]] Json toJson() const;
 };
 // Part of HasDigDesignations.
@@ -70,16 +70,16 @@ class HasDigDesignationsForFaction final
 	FactionId m_faction;
 	SmallMapStable<BlockIndex, DigProject> m_data;
 public:
-	HasDigDesignationsForFaction(FactionId p) : m_faction(p) { }
-	HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction);
+	HasDigDesignationsForFaction(const FactionId& p) : m_faction(p) { }
+	HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const FactionId& faction);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
-	void designate(Area& area, BlockIndex block, const BlockFeatureType* blockFeatureType);
-	void undesignate(BlockIndex block);
+	void designate(Area& area, const BlockIndex& block, const BlockFeatureType* blockFeatureType);
+	void undesignate(const BlockIndex& block);
 	// To be called by undesignate as well as by DigProject::onCancel.
-	void remove(Area& area, BlockIndex block);
-	void removeIfExists(Area& area, BlockIndex block);
+	void remove(Area& area, const BlockIndex& block);
+	void removeIfExists(Area& area, const BlockIndex& block);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] const BlockFeatureType* getForBlock(BlockIndex block) const;
+	[[nodiscard]] const BlockFeatureType* getForBlock(const BlockIndex& block) const;
 	[[nodiscard]] bool empty() const;
 	friend class AreaHasDigDesignations;
 };
@@ -93,16 +93,16 @@ public:
 	AreaHasDigDesignations(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
-	void addFaction(FactionId faction);
-	void removeFaction(FactionId faction);
+	void addFaction(const FactionId& faction);
+	void removeFaction(const FactionId& faction);
 	// If blockFeatureType is null then dig out fully rather then digging out a feature.
-	void designate(FactionId faction, BlockIndex block, const BlockFeatureType* blockFeatureType);
-	void undesignate(FactionId faction, BlockIndex block);
-	void remove(FactionId faction, BlockIndex block);
-	void clearAll(BlockIndex block);
+	void designate(const FactionId& faction, const BlockIndex& block, const BlockFeatureType* blockFeatureType);
+	void undesignate(const FactionId& faction, const BlockIndex& block);
+	void remove(const FactionId& faction, const BlockIndex& block);
+	void clearAll(const BlockIndex& block);
 	void clearReservations();
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] bool areThereAnyForFaction(FactionId faction) const;
-	[[nodiscard]] bool contains(FactionId faction, BlockIndex block) const { return m_data[faction].m_data.contains(block); }
-	[[nodiscard]] DigProject& getForFactionAndBlock(FactionId faction, BlockIndex block);
+	[[nodiscard]] bool areThereAnyForFaction(const FactionId& faction) const;
+	[[nodiscard]] bool contains(const FactionId& faction, const BlockIndex& block) const { return m_data[faction].m_data.contains(block); }
+	[[nodiscard]] DigProject& getForFactionAndBlock(const FactionId& faction, const BlockIndex& block);
 };

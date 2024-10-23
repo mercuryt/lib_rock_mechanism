@@ -20,7 +20,7 @@
 #include "objectives/leaveArea.h"
 #include "objectives/uniform.h"
 // Handle
-void PathRequest::create(Area& area, ActorIndex actor, DestinationCondition destination, bool detour, DistanceInBlocks maxRange, BlockIndex huristicDestination, bool reserve)
+void PathRequest::create(Area& area, const ActorIndex& actor, DestinationCondition destination, bool detour, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve)
 {
 	// Store paramaters for serialization.
 	m_reserve = reserve;
@@ -42,7 +42,7 @@ void PathRequest::create(Area& area, ActorIndex actor, DestinationCondition dest
 		terrainFacade.registerPathRequestWithHuristic(actors.getLocation(actor), actors.getFacing(actor), access, destination, huristicDestination, *this);
 	assert(m_index.exists());
 }
-void PathRequest::createGoTo(Area& area, ActorIndex actor, BlockIndex destination, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
+void PathRequest::createGoTo(Area& area, const ActorIndex& actor, const BlockIndex& destination, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve)
 {
 	m_unreserved = unreserved;
 	m_destination = destination;
@@ -52,13 +52,13 @@ void PathRequest::createGoTo(Area& area, ActorIndex actor, BlockIndex destinatio
 		faction = area.getActors().getFactionId(actor);
 	// TODO: Pathing to a specific block that is reserved should do nothing but instead we iterate every block in range.
 	// 	fix by adding a predicate to path request which prevents the call to findPath.
-	DestinationCondition destinationCondition = [destination, &blocks, faction](BlockIndex index, Facing) {
+	DestinationCondition destinationCondition = [destination, &blocks, faction](const BlockIndex& index, const Facing&) {
 		bool result = index == destination && (faction.empty() || !blocks.isReserved(index, faction));
 		return std::make_pair(result, index);
 	};
 	create(area, actor, destinationCondition, detour, maxRange, destination, reserve);
 }
-void PathRequest::createGoToAnyOf(Area& area, ActorIndex actor, BlockIndices destinations, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination, bool reserve)
+void PathRequest::createGoToAnyOf(Area& area, const ActorIndex& actor, BlockIndices destinations, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve)
 {
 	m_destinations = destinations;
 	m_unreserved = unreserved;
@@ -70,16 +70,16 @@ void PathRequest::createGoToAnyOf(Area& area, ActorIndex actor, BlockIndices des
 	{
 		assert(area.getActors().getFaction(actor).exists());
 		FactionId faction = area.getActors().getFactionId(actor);
-		destinations.remove_if([&blocks, faction](BlockIndex index){ return !blocks.isReserved(index, faction); });
+		destinations.remove_if([&blocks, faction](const BlockIndex& index){ return !blocks.isReserved(index, faction); });
 	}
 	MoveTypeId moveType = actors.getMoveType(actor);
-	destinations.remove_if([&blocks, &moveType](BlockIndex index){
+	destinations.remove_if([&blocks, &moveType](const BlockIndex& index){
 		return !blocks.shape_anythingCanEnterEver(index) || !blocks.shape_moveTypeCanEnter(index, moveType);
 	});
 	//TODO: handle no destinations.
 	assert(!destinations.empty());
 	if(Shape::getIsMultiTile(shape))
-		destinationCondition = [shape, &area, &actors, destinations, actor, unreserved](BlockIndex location, Facing facing) 
+		destinationCondition = [shape, &area, &actors, destinations, actor, unreserved](const BlockIndex& location, const Facing& facing) 
 		{
 			// Multi tile actors must be checked if any of the spots to be occupied are reserved.
 			// TODO: since we already have shape and faction calling into actors is probably not the best choice here.
@@ -93,14 +93,14 @@ void PathRequest::createGoToAnyOf(Area& area, ActorIndex actor, BlockIndices des
 			return std::make_pair(false, BlockIndex::null());
 		};
 	else
-		destinationCondition = [destinations](BlockIndex index, Facing) { 
+		destinationCondition = [destinations](const BlockIndex& index, const Facing&) { 
 				if(destinations.contains(index))
 					return std::make_pair(true, index);
 				return std::make_pair(false, BlockIndex::null());
 			};
 	create(area, actor, destinationCondition, detour, maxRange, huristicDestination, reserve);
 }
-void PathRequest::createGoAdjacentToLocation(Area& area, ActorIndex actor, BlockIndex destination, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
+void PathRequest::createGoAdjacentToLocation(Area& area, const ActorIndex& actor, const BlockIndex& destination, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve)
 {
 	m_adjacent = true;
 	m_destination = destination;
@@ -111,74 +111,74 @@ void PathRequest::createGoAdjacentToLocation(Area& area, ActorIndex actor, Block
 	createGoToAnyOf(area, actor, candidates, detour, unreserved, maxRange, destination, reserve);
 
 }
-void PathRequest::createGoAdjacentToActor(Area& area, ActorIndex actor, ActorIndex other, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
+void PathRequest::createGoAdjacentToActor(Area& area, const ActorIndex& actor, const ActorIndex& other, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve)
 {
 	Actors& actors = area.getActors();
 	//TODO: make getAdjacentBlocks return a vector rather then a set.
 	auto otherAdjacent = actors.getAdjacentBlocks(other);
 	createGoToAnyOf(area, actor, otherAdjacent, detour, unreserved, maxRange, actors.getLocation(other), reserve);
 }
-void PathRequest::createGoAdjacentToItem(Area& area, ActorIndex actor, ItemIndex item, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
+void PathRequest::createGoAdjacentToItem(Area& area, const ActorIndex& actor, const ItemIndex& item, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve)
 {
 	Items& items = area.getItems();
 	//TODO: make getAdjacentBlocks return a vector rather then a set.
 	auto itemAdjacent = items.getAdjacentBlocks(item);
 	createGoToAnyOf(area, actor, itemAdjacent, detour, unreserved, maxRange, items.getLocation(item), reserve);
 }
-void PathRequest::createGoAdjacentToPlant(Area& area, ActorIndex actor, PlantIndex plant, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
+void PathRequest::createGoAdjacentToPlant(Area& area, const ActorIndex& actor, const PlantIndex& plant, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve)
 {
 	Plants& plants = area.getPlants();
 	//TODO: make getAdjacentBlocks return a vector rather then a set.
 	auto plantAdjacent = plants.getAdjacentBlocks(plant);
 	createGoToAnyOf(area, actor, plantAdjacent, detour, unreserved, maxRange, plants.getLocation(plant), reserve);
 }
-void PathRequest::createGoAdjacentToPolymorphic(Area& area, ActorIndex actor, ActorOrItemIndex actorOrItem, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
+void PathRequest::createGoAdjacentToPolymorphic(Area& area, const ActorIndex& actor, const ActorOrItemIndex& actorOrItem, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve)
 {
 	if(actorOrItem.isActor())
 		createGoAdjacentToActor(area, actor, actorOrItem.getActor(), detour, unreserved, maxRange, reserve);
 	else
 		createGoAdjacentToItem(area, actor, actorOrItem.getItem(), detour, unreserved, maxRange, reserve);
 }
-void PathRequest::createGoAdjacentToFluidType(Area& area, ActorIndex actor, FluidTypeId fluidType, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
+void PathRequest::createGoAdjacentToFluidType(Area& area, const ActorIndex& actor, const FluidTypeId& fluidType, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve)
 {
 	m_fluidType = fluidType;
 	Blocks& blocks = area.getBlocks();
-	std::function<bool(BlockIndex)> condition = [&blocks, fluidType](BlockIndex index){
+	std::function<bool(BlockIndex)> condition = [&blocks, fluidType](const BlockIndex& index){
 		return blocks.fluid_contains(index, fluidType);
 	};
 	createGoAdjacentToCondition(area, actor, condition, detour, unreserved, maxRange, BlockIndex::null(), reserve);
 }
-void PathRequest::createGoAdjacentToDesignation(Area& area, ActorIndex actor, BlockDesignation designation, bool detour, bool unreserved, DistanceInBlocks maxRange, bool reserve)
+void PathRequest::createGoAdjacentToDesignation(Area& area, const ActorIndex& actor, const BlockDesignation& designation, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve)
 {
 	m_designation = designation;
 	FactionId faction = area.getActors().getFactionId(actor);
 	AreaHasBlockDesignationsForFaction& designations = area.m_blockDesignations.getForFaction(faction);
-	auto offset = designations.getOffsetForDesignation(BlockDesignation::SowSeeds);
-	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block){
+	auto offset = designations.getOffsetForDesignation(designation);
+	std::function<bool(BlockIndex)> predicate = [&, offset](const BlockIndex& block){
 		return designations.checkWithOffset(offset, block);
 	};
 	createGoAdjacentToCondition(area, actor, predicate, detour, unreserved, maxRange, BlockIndex::null(), reserve);
 }
-void PathRequest::createGoToEdge(Area& area, ActorIndex actor, bool detour)
+void PathRequest::createGoToEdge(Area& area, const ActorIndex& actor, bool detour)
 {
 	Blocks& blocks = area.getBlocks();
-	std::function<bool(BlockIndex)> condition = [&blocks](BlockIndex index){ return blocks.isEdge(index); };
-	createGoAdjacentToCondition(area, actor, condition, detour, false, DistanceInBlocks::null(), BlockIndex::null());
+	std::function<bool(BlockIndex)> condition = [&blocks](const BlockIndex& index){ return blocks.isEdge(index); };
+	createGoAdjacentToCondition(area, actor, condition, detour, false, DistanceInBlocks::max(), BlockIndex::null());
 }
-void PathRequest::createGoToCondition(Area& area, ActorIndex actor, DestinationCondition condition, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination, bool reserve)
+void PathRequest::createGoToCondition(Area& area, const ActorIndex& actor, DestinationCondition condition, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve)
 {
 	FactionId faction;
 	if(unreserved)
 		faction = area.getActors().getFactionId(actor);
 	Blocks& blocks = area.getBlocks();
 	//TODO: use seperate lambdas rather then always passing unreserved and faction.
-	DestinationCondition destinationCondition = [&blocks, condition, unreserved, faction](BlockIndex index, Facing facing) { 
+	DestinationCondition destinationCondition = [&blocks, condition, unreserved, faction](const BlockIndex& index, const Facing& facing) { 
 		bool result = condition(index, facing).first && (!unreserved || !blocks.isReserved(index, faction));
 		return std::make_pair(result, index);
 	};
 	create(area, actor, destinationCondition, detour, maxRange, huristicDestination, reserve);
 }
-void PathRequest::createGoAdjacentToCondition(Area& area, ActorIndex actor, std::function<bool(BlockIndex)> condition, bool detour, bool unreserved, DistanceInBlocks maxRange, BlockIndex huristicDestination, bool reserve)
+void PathRequest::createGoAdjacentToCondition(Area& area, const ActorIndex& actor, std::function<bool(const BlockIndex&)> condition, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve)
 {
 	FactionId faction;
 	if(unreserved)
@@ -193,7 +193,7 @@ void PathRequest::createGoAdjacentToCondition(Area& area, ActorIndex actor, std:
 	Blocks& blocks = area.getBlocks();
 	//TODO: use seperate lambdas rather then always passing unreserved and faction?
 	if(Shape::getIsMultiTile(shape))
-       		destinationCondition = [shape, &blocks, &actors, condition, unreserved, faction, actor](BlockIndex location, Facing facing) 
+       		destinationCondition = [shape, &blocks, &actors, condition, unreserved, faction, actor](const BlockIndex& location, const Facing& facing) 
 		{
 			// TODO: since we already have shape and faction calling into actors is probably not the best choice here.
 			if(!unreserved || actors.canReserve_canReserveLocation(actor, location, facing))
@@ -203,7 +203,7 @@ void PathRequest::createGoAdjacentToCondition(Area& area, ActorIndex actor, std:
 			return std::make_pair(false, BlockIndex::null());
 		};
 	else
-       		destinationCondition = [&blocks, condition, unreserved, faction](BlockIndex index, Facing) { 
+       		destinationCondition = [&blocks, condition, unreserved, faction](const BlockIndex& index, const Facing&) { 
 			if(!unreserved || !blocks.isReserved(index, faction))
 				for(BlockIndex block : blocks.getAdjacentWithEdgeAndCornerAdjacent(index))
 					if(condition(block))
@@ -212,7 +212,7 @@ void PathRequest::createGoAdjacentToCondition(Area& area, ActorIndex actor, std:
 	};
 	create(area, actor, destinationCondition, detour, maxRange, huristicDestination, reserve);
 }
-void PathRequest::cancel(Area& area, ActorIndex actor)
+void PathRequest::cancel(Area& area, const ActorIndex& actor)
 {
 	TerrainFacade& terrainFacade = area.m_hasTerrainFacades.getForMoveType(area.getActors().getMoveType(actor));
 	if(m_huristicDestination.exists())
@@ -236,7 +236,7 @@ void PathRequest::reset()
 	m_reserve = false;
 	m_reserveBlockThatPassesPredicate = false;
 }
-void PathRequest::callback(Area& area, FindPathResult& result)
+void PathRequest::callback(Area& area, const FindPathResult& result)
 {
 	area.getActors().move_pathRequestCallback(m_actor, result.path, result.useCurrentPosition, m_reserve);
 }
@@ -275,7 +275,7 @@ std::unique_ptr<PathRequest> PathRequest::load(Area& area, const Json& data, Des
 	assert(data["type"] == "uniform");
 	return std::make_unique<UniformPathRequest>(data, deserializationMemo);
 }
-void ObjectivePathRequest::callback(Area& area, FindPathResult& result)
+void ObjectivePathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = getActor();
@@ -317,7 +317,7 @@ void ObjectivePathRequest::callback(Area& area, FindPathResult& result)
 		actors.move_setPath(actor, result.path);
 	onSuccess(area, result.blockThatPassedPredicate);
 }
-void PathRequest::update(PathRequestIndex newIndex)
+void PathRequest::update(const PathRequestIndex& newIndex)
 {
 	assert(newIndex.exists());
 	m_index = newIndex;
@@ -335,7 +335,7 @@ Json ObjectivePathRequest::toJson() const
 	output["reserve"] = m_reserveBlockThatPassedPredicate;
 	return output;
 }
-void NeedPathRequest::callback(Area& area, FindPathResult& result)
+void NeedPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = getActor();

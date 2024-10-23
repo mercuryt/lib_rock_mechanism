@@ -2,7 +2,7 @@
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"
 #include "../area.h"
-CraftPathRequest::CraftPathRequest(Area& area, CraftObjective& co, ActorIndex actor) : m_craftObjective(co)
+CraftPathRequest::CraftPathRequest(Area& area, CraftObjective& co, const ActorIndex& actor) : m_craftObjective(co)
 {
 	assert(m_craftObjective.m_craftJob == nullptr);
 	Actors& actors = area.getActors();
@@ -87,7 +87,7 @@ Json CraftPathRequest::toJson() const
 }
 // ObjectiveType.
 CraftObjectiveType::CraftObjectiveType(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) : m_skillType(data["skillType"].get<SkillTypeId>()) { }
-bool CraftObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
+bool CraftObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
 	Actors& actors = area.getActors();
 	auto& hasCrafting = area.m_hasCraftingLocationsAndJobs.getForFaction(actors.getFactionId(actor));
@@ -105,7 +105,7 @@ bool CraftObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
 	}
 	return false;
 }
-std::unique_ptr<Objective> CraftObjectiveType::makeFor(Area&, ActorIndex) const
+std::unique_ptr<Objective> CraftObjectiveType::makeFor(Area&, const ActorIndex&) const
 {
 	return std::make_unique<CraftObjective>(m_skillType);
 }
@@ -131,20 +131,20 @@ Json CraftObjective::toJson() const
 	}
 	return data;
 }
-void CraftObjective::execute(Area& area, ActorIndex actor)
+void CraftObjective::execute(Area& area, const ActorIndex& actor)
 {
 	if(m_craftJob)
 		m_craftJob->craftStepProject->commandWorker(actor);
 	else
 		area.getActors().move_pathRequestRecord(actor, std::make_unique<CraftPathRequest>(area, *this, actor));
 }
-void CraftObjective::cancel(Area& area, ActorIndex actor)
+void CraftObjective::cancel(Area& area, const ActorIndex& actor)
 {
 	area.getActors().move_pathRequestMaybeCancel(actor);
 	if(m_craftJob && m_craftJob->craftStepProject)
 		m_craftJob->craftStepProject->cancel();
 }
-void CraftObjective::reset(Area& area, ActorIndex actor)
+void CraftObjective::reset(Area& area, const ActorIndex& actor)
 {
 	area.getActors().canReserve_clearAll(actor);
 	m_craftJob = nullptr;

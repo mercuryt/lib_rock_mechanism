@@ -8,7 +8,7 @@
 // Equip uniform.
 UniformPathRequest::UniformPathRequest(Area& area, UniformObjective& objective) : m_objective(objective)
 {
-	std::function<bool(BlockIndex)> predicate = [&area, this](BlockIndex block){
+	std::function<bool(BlockIndex)> predicate = [&area, this](const BlockIndex& block){
 		return m_objective.blockContainsItem(area, block);
 	};
 	bool unreserved = false;
@@ -20,7 +20,7 @@ UniformPathRequest::UniformPathRequest(const Json& data, DeserializationMemo& de
 {
 	nlohmann::from_json(data, *this);
 }
-void UniformPathRequest::callback(Area& area, FindPathResult& result)
+void UniformPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = getActor();
@@ -77,12 +77,12 @@ Json UniformPathRequest::toJson() const
 	return output;
 }
 // UniformObjective
-UniformObjective::UniformObjective(Area& area, ActorIndex actor) :
+UniformObjective::UniformObjective(Area& area, const ActorIndex& actor) :
 	Objective(Config::equipPriority), m_elementsCopy(area.getActors().uniform_get(actor).elements)
 { 
 	assert(area.getActors().uniform_exists(actor)); 
 }
-UniformObjective::UniformObjective(const Json& data, Area& area, ActorIndex actor) :
+UniformObjective::UniformObjective(const Json& data, Area& area, const ActorIndex& actor) :
 	Objective(data)
 { 
 	area.getActors().m_hasUniform[actor]->recordObjective(*this);
@@ -93,7 +93,7 @@ Json UniformObjective::toJson() const
 	data["item"] = m_item;
 	return data;
 }
-void UniformObjective::execute(Area& area, ActorIndex actor)
+void UniformObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	if(m_item.getIndex().exists())
@@ -113,7 +113,7 @@ void UniformObjective::execute(Area& area, ActorIndex actor)
 	}		
 	else
 	{
-		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block){ return blockContainsItem(area, block); };
+		std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block){ return blockContainsItem(area, block); };
 		BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
 		if(adjacent.exists())
 			equip(area, getItemAtBlock(area, adjacent), actor);
@@ -121,19 +121,19 @@ void UniformObjective::execute(Area& area, ActorIndex actor)
 			actors.move_pathRequestRecord(actor, std::make_unique<UniformPathRequest>(area, *this));
 	}
 }
-void UniformObjective::cancel(Area& area, ActorIndex actor)
+void UniformObjective::cancel(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
 }
-void UniformObjective::reset(Area& area, ActorIndex actor)
+void UniformObjective::reset(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	actors.canReserve_clearAll(actor);
 	actors.move_pathRequestMaybeCancel(actor);
 	m_item.clear();
 }
-ItemIndex UniformObjective::getItemAtBlock(Area& area, BlockIndex block)
+ItemIndex UniformObjective::getItemAtBlock(Area& area, const BlockIndex& block)
 {
 	for(ItemIndex item : area.getBlocks().item_getAll(block))
 		for(auto& element : m_elementsCopy)
@@ -141,8 +141,8 @@ ItemIndex UniformObjective::getItemAtBlock(Area& area, BlockIndex block)
 				return item;
 	return ItemIndex::null();
 }
-void UniformObjective::select(Area& area, ItemIndex item) { m_item.setTarget(area.getItems().getReferenceTarget(item)); }
-void UniformObjective::equip(Area& area, ItemIndex item, ActorIndex actor)
+void UniformObjective::select(Area& area, const ItemIndex& item) { m_item.setTarget(area.getItems().getReferenceTarget(item)); }
+void UniformObjective::equip(Area& area, const ItemIndex& item, const ActorIndex& actor)
 {
 	Items& items = area.getItems();
 	for(auto& element : m_elementsCopy)

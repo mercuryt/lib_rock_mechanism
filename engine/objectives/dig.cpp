@@ -6,9 +6,9 @@
 #include "../terrainFacade.h"
 #include "reference.h"
 #include "types.h"
-DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, ActorIndex actor) : m_digObjective(digObjective)
+DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, const ActorIndex& actor) : m_digObjective(digObjective)
 {
-	std::function<bool(BlockIndex)> predicate = [&area, this, actor](BlockIndex block)
+	std::function<bool(const BlockIndex&)> predicate = [&area, this, actor](BlockIndex block)
 	{
 		return m_digObjective.getJoinableProjectAt(area, block, actor) != nullptr;
 	};
@@ -22,7 +22,7 @@ DigPathRequest::DigPathRequest(const Json& data, DeserializationMemo& deserializ
 {
 	nlohmann::from_json(data, *this);
 }
-void DigPathRequest::callback(Area& area, FindPathResult& result)
+void DigPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = getActor();
@@ -60,7 +60,7 @@ Json DigObjective::toJson() const
 		data["project"] = m_project;
 	return data;
 }
-void DigObjective::execute(Area& area, ActorIndex actor)
+void DigObjective::execute(Area& area, const ActorIndex& actor)
 {
 	if(m_project != nullptr)
 		m_project->commandWorker(actor);
@@ -68,7 +68,7 @@ void DigObjective::execute(Area& area, ActorIndex actor)
 	{
 		Actors& actors = area.getActors();
 		DigProject* project = nullptr;
-		std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) mutable
+		std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block) mutable
 		{ 
 			if(!getJoinableProjectAt(area, block, actor))
 				return false;
@@ -77,7 +77,7 @@ void DigObjective::execute(Area& area, ActorIndex actor)
 				return true;
 			return false;
 		};
-		[[maybe_unused]] BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
+		BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
 		if(adjacent.exists())
 		{
 			assert(project != nullptr);
@@ -88,19 +88,19 @@ void DigObjective::execute(Area& area, ActorIndex actor)
 		actors.move_pathRequestRecord(actor, std::move(request));
 	}
 }
-void DigObjective::cancel(Area& area, ActorIndex actor)
+void DigObjective::cancel(Area& area, const ActorIndex& actor)
 {
 	if(m_project != nullptr)
 		m_project->removeWorker(actor);
 	area.getActors().move_pathRequestMaybeCancel(actor);
 }
-void DigObjective::delay(Area& area, ActorIndex actor) 
+void DigObjective::delay(Area& area, const ActorIndex& actor) 
 { 
 	cancel(area, actor); 
 	m_project = nullptr;
 	area.getActors().project_maybeUnset(actor);
 }
-void DigObjective::reset(Area& area, ActorIndex actor) 
+void DigObjective::reset(Area& area, const ActorIndex& actor) 
 { 
 	Actors& actors = area.getActors();
 	if(m_project)
@@ -115,18 +115,18 @@ void DigObjective::reset(Area& area, ActorIndex actor)
 	area.getActors().move_pathRequestMaybeCancel(actor);
 	actors.canReserve_clearAll(actor);
 }
-void DigObjective::onProjectCannotReserve(Area&, ActorIndex)
+void DigObjective::onProjectCannotReserve(Area&, const ActorIndex&)
 {
 	assert(m_project);
 	m_cannotJoinWhileReservationsAreNotComplete.insert(m_project);
 }
-void DigObjective::joinProject(DigProject& project, ActorIndex actor)
+void DigObjective::joinProject(DigProject& project, const ActorIndex& actor)
 {
 	assert(!m_project);
 	m_project = &project;
 	project.addWorkerCandidate(actor, *this);
 }
-DigProject* DigObjective::getJoinableProjectAt(Area& area, BlockIndex block, ActorIndex actor)
+DigProject* DigObjective::getJoinableProjectAt(Area& area, BlockIndex block, const ActorIndex& actor)
 {
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
@@ -140,12 +140,12 @@ DigProject* DigObjective::getJoinableProjectAt(Area& area, BlockIndex block, Act
 		return nullptr;
 	return &output;
 }
-bool DigObjectiveType::canBeAssigned(Area& area, ActorIndex actor) const
+bool DigObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
 	//TODO: check for any picks?
 	return area.m_hasDigDesignations.areThereAnyForFaction(area.getActors().getFactionId(actor));
 }
-std::unique_ptr<Objective> DigObjectiveType::makeFor(Area&, ActorIndex) const
+std::unique_ptr<Objective> DigObjectiveType::makeFor(Area&, const ActorIndex&) const
 {
 	std::unique_ptr<Objective> objective = std::make_unique<DigObjective>();
 	return objective;

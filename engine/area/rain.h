@@ -19,8 +19,8 @@ public:
 	AreaHasRain(Area& a, Simulation& s);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-	void start(FluidTypeId fluidType, Percent intensityPercent, Step stepsDuration);
-	void start(Percent intensityPercent, Step stepsDuration) { start(m_defaultRainFluidType, intensityPercent, stepsDuration); }
+	void start(const FluidTypeId& fluidType, const Percent& intensityPercent, const Step& stepsDuration);
+	void start(const Percent& intensityPercent, const Step& stepsDuration) { start(m_defaultRainFluidType, intensityPercent, stepsDuration); }
 	void schedule(Step restartAt);
 	void stop();
 	void doStep();
@@ -35,7 +35,7 @@ public:
 class RainEvent final : public ScheduledEvent
 {
 public:
-	RainEvent(Step delay, Simulation& simulation, Step start = Step::null());
+	RainEvent(const Step& delay, Simulation& simulation, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };

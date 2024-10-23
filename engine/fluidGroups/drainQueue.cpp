@@ -31,7 +31,7 @@ void DrainQueue::initalizeForStep()
 	m_futureNoLongerFull.clear();
 	m_futurePotentialNoLongerAdjacent.clear();
 }
-void DrainQueue::recordDelta(CollisionVolume volume, CollisionVolume flowCapacity, CollisionVolume flowTillNextStep)
+void DrainQueue::recordDelta(const CollisionVolume& volume, const CollisionVolume& flowCapacity, const CollisionVolume& flowTillNextStep)
 {
 	assert(volume != 0);
 	assert((m_groupStart != m_groupEnd));

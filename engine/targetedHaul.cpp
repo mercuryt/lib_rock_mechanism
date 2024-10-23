@@ -35,7 +35,7 @@ void AreaHasTargetedHauling::load(const Json& data, DeserializationMemo& deseria
 	for(const Json& project : data["projects"])
 		m_projects.emplace_back(project, deserializationMemo, area);
 }
-TargetedHaulProject& AreaHasTargetedHauling::begin(ActorIndices workers, ItemIndex item, BlockIndex destination)
+TargetedHaulProject& AreaHasTargetedHauling::begin(const ActorIndices& workers, const ItemIndex& item, const BlockIndex& destination)
 {
 	Actors& actors = m_area.getActors();
 	ItemReference ref = m_area.getItems().getReference(item);

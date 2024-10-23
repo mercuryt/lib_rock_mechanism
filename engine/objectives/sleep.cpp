@@ -4,7 +4,7 @@
 #include "actors/actors.h"
 #include "blocks/blocks.h"
 // Path Request.
-SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so, ActorIndex actor) : m_sleepObjective(so)
+SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so, const ActorIndex& actor) : m_sleepObjective(so)
 {
 	Actors& actors = area.getActors();
 	BlockIndex sleepSpot = actors.sleep_getSpot(actor);
@@ -13,7 +13,7 @@ SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so, ActorIndex ac
 		bool unreserved = actors.getFaction(actor).exists();
 		bool reserve = unreserved;
 		// TODO: Reserving the sleep spot means only one actor per spot.
-		createGoTo(area, actor, sleepSpot, m_sleepObjective.m_detour, unreserved, DistanceInBlocks::null(), reserve);
+		createGoTo(area, actor, sleepSpot, m_sleepObjective.m_detour, unreserved, DistanceInBlocks::max(), reserve);
 		return;
 	}
 	assert(actors.sleep_getSpot(actor).empty());
@@ -26,7 +26,7 @@ SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so, ActorIndex ac
 		m_maxDesireCandidate = area.getActors().getLocation(actor);
 	if(m_maxDesireCandidate.empty())
 	{
-		std::function<bool(BlockIndex)> condition = [this, &area, actor](BlockIndex block)
+		std::function<bool(BlockIndex)> condition = [this, &area, actor](const BlockIndex& block)
 		{
 			uint32_t desire = m_sleepObjective.desireToSleepAt(area, block, actor);
 			if(desire == 3)
@@ -41,10 +41,10 @@ SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so, ActorIndex ac
 			return false;
 		};
 		bool unreserved = actors.getFaction(actor).exists();
-		createGoAdjacentToCondition(area, actor, condition, m_sleepObjective.m_detour, unreserved, DistanceInBlocks::null(), BlockIndex::null());
+		createGoAdjacentToCondition(area, actor, condition, m_sleepObjective.m_detour, unreserved, DistanceInBlocks::max(), BlockIndex::null());
 	}
 }
-void SleepPathRequest::callback(Area& area, FindPathResult& result)
+void SleepPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	ActorIndex actor = getActor();
 	Actors& actors = area.getActors();
@@ -103,7 +103,7 @@ Json SleepObjective::toJson() const
 	data["noWhereToSleepFound"] = m_noWhereToSleepFound;
 	return data;
 }
-void SleepObjective::execute(Area& area, ActorIndex actor)
+void SleepObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	Blocks& blocks = area.getBlocks();
@@ -113,7 +113,7 @@ void SleepObjective::execute(Area& area, ActorIndex actor)
 	{
 		if(m_noWhereToSleepFound)
 		{
-			if(actors.predicateForAnyOccupiedBlock(actor, [&area](BlockIndex block){ return area.getBlocks().isEdge(block); }))
+			if(actors.predicateForAnyOccupiedBlock(actor, [&area](const BlockIndex& block){ return area.getBlocks().isEdge(block); }))
 				// We are at the edge and can leave.
 				actors.leaveArea(actor);
 			else
@@ -146,7 +146,7 @@ void SleepObjective::execute(Area& area, ActorIndex actor)
 			execute(area, actor);
 		}
 }
-uint32_t SleepObjective::desireToSleepAt(Area& area, BlockIndex block, ActorIndex actor) const
+uint32_t SleepObjective::desireToSleepAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const
 {
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
@@ -159,21 +159,21 @@ uint32_t SleepObjective::desireToSleepAt(Area& area, BlockIndex block, ActorInde
 	else
 		return 2;
 }
-void SleepObjective::cancel(Area& area, ActorIndex actor)
+void SleepObjective::cancel(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
 	actors.canReserve_clearAll(actor);
 	actors.sleep_clearObjective(actor);
 }
-void SleepObjective::reset(Area& area, ActorIndex actor)
+void SleepObjective::reset(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
 	actors.canReserve_clearAll(actor);
 	m_noWhereToSleepFound = false;
 }
-void SleepObjective::selectLocation(Area& area, BlockIndex location, ActorIndex actor)
+void SleepObjective::selectLocation(Area& area, const BlockIndex& location, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	actors.sleep_setSpot(actor, location);
@@ -182,11 +182,11 @@ void SleepObjective::selectLocation(Area& area, BlockIndex location, ActorIndex 
 	else
 		execute(area, actor);
 }
-void SleepObjective::makePathRequest(Area& area, ActorIndex actor)
+void SleepObjective::makePathRequest(Area& area, const ActorIndex& actor)
 {
 	area.getActors().move_pathRequestRecord(actor, std::make_unique<SleepPathRequest>(area, *this, actor));
 }
-bool SleepObjective::onCanNotRepath(Area& area, ActorIndex actor)
+bool SleepObjective::onCanNotRepath(Area& area, const ActorIndex& actor)
 {
 	BlockIndex sleepSpot = area.getActors().sleep_getSpot(actor);
 	if(sleepSpot.empty())

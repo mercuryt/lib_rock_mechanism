@@ -8,12 +8,12 @@ class StationObjective final : public Objective
 {
 	BlockIndex m_location;
 public:
-	StationObjective(BlockIndex l) : Objective(Config::stationPriority), m_location(l) { }
+	StationObjective(const BlockIndex& l) : Objective(Config::stationPriority), m_location(l) { }
 	StationObjective(const Json& data);
-	void execute(Area& area, ActorIndex actor);
-	void cancel(Area&, ActorIndex) { }
-	void delay(Area&, ActorIndex) { }
-	void reset(Area& area, ActorIndex actor);
+	void execute(Area& area, const ActorIndex& actor);
+	void cancel(Area&, const ActorIndex&) { }
+	void delay(Area&, const ActorIndex&) { }
+	void reset(Area& area, const ActorIndex& actor);
 	std::string name() const { return "station"; }
 };
 /*

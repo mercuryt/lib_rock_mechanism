@@ -14,14 +14,14 @@ BodyPartTypeId BodyPartType::byName(std::string name)
 	assert(found != bodyPartTypeData.m_name.end());
 	return BodyPartTypeId::create(found - bodyPartTypeData.m_name.begin());
 }
-std::string& BodyPartType::getName(BodyPartTypeId id) { return bodyPartTypeData.m_name[id]; };
-Volume BodyPartType::getVolume(BodyPartTypeId id) { return bodyPartTypeData.m_volume[id]; };
-bool BodyPartType::getDoesLocamotion(BodyPartTypeId id) { return bodyPartTypeData.m_doesLocamotion[id]; };
-bool BodyPartType::getDoesManipulation(BodyPartTypeId id) { return bodyPartTypeData.m_doesManipulation[id]; };
-bool BodyPartType::getVital(BodyPartTypeId id) { return bodyPartTypeData.m_vital[id]; };
-std::vector<std::pair<AttackTypeId, MaterialTypeId>>& BodyPartType::getAttackTypesAndMaterials(BodyPartTypeId id) { return bodyPartTypeData.m_attackTypesAndMaterials[id]; };
+std::string& BodyPartType::getName(const BodyPartTypeId& id) { return bodyPartTypeData.m_name[id]; };
+Volume BodyPartType::getVolume(const BodyPartTypeId& id) { return bodyPartTypeData.m_volume[id]; };
+bool BodyPartType::getDoesLocamotion(const BodyPartTypeId& id) { return bodyPartTypeData.m_doesLocamotion[id]; };
+bool BodyPartType::getDoesManipulation(const BodyPartTypeId& id) { return bodyPartTypeData.m_doesManipulation[id]; };
+bool BodyPartType::getVital(const BodyPartTypeId& id) { return bodyPartTypeData.m_vital[id]; };
+std::vector<std::pair<AttackTypeId, MaterialTypeId>>& BodyPartType::getAttackTypesAndMaterials(const BodyPartTypeId& id) { return bodyPartTypeData.m_attackTypesAndMaterials[id]; };
 
-bool BodyType::hasBodyPart(BodyTypeId id, BodyPartTypeId bodyPartType)
+bool BodyType::hasBodyPart(const BodyTypeId& id, const BodyPartTypeId& bodyPartType)
 {
 	return std::ranges::find(bodyTypeData.m_bodyPartTypes[id], bodyPartType) != bodyTypeData.m_bodyPartTypes[id].end();
 }
@@ -36,5 +36,5 @@ BodyTypeId BodyType::byName(std::string name)
 	assert(found != bodyTypeData.m_name.end());
 	return BodyTypeId::create(found - bodyTypeData.m_name.begin());
 }
-std::string BodyType::getName(BodyTypeId id) { return bodyTypeData.m_name[id]; }
-std::vector<BodyPartTypeId>& BodyType::getBodyPartTypes(BodyTypeId id) { return bodyTypeData.m_bodyPartTypes[id]; }
+std::string BodyType::getName(const BodyTypeId& id) { return bodyTypeData.m_name[id]; }
+std::vector<BodyPartTypeId>& BodyType::getBodyPartTypes(const BodyTypeId& id) { return bodyTypeData.m_bodyPartTypes[id]; }

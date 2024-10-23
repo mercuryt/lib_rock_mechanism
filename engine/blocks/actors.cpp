@@ -2,7 +2,7 @@
 #include "../actors/actors.h"
 #include "../area.h"
 #include "types.h"
-void Blocks::actor_record(BlockIndex index, ActorIndex actor, CollisionVolume volume)
+void Blocks::actor_record(const BlockIndex& index, const ActorIndex& actor, const CollisionVolume& volume)
 {
 	Actors& actors = m_area.getActors();
 	m_actorVolume[index].emplace_back(actor, volume);
@@ -12,7 +12,7 @@ void Blocks::actor_record(BlockIndex index, ActorIndex actor, CollisionVolume vo
 	else
 		m_dynamicVolume[index] += volume;
 }
-void Blocks::actor_erase(BlockIndex index, ActorIndex actor)
+void Blocks::actor_erase(const BlockIndex& index, const ActorIndex& actor)
 {
 	Actors& actors = m_area.getActors();
 	auto& blockActors = m_actors[index];
@@ -29,14 +29,14 @@ void Blocks::actor_erase(BlockIndex index, ActorIndex actor)
 	(*iter2) = blockActorVolume.back();
 	blockActorVolume.pop_back();
 }
-void Blocks::actor_setTemperature(BlockIndex index, Temperature temperature)
+void Blocks::actor_setTemperature(const BlockIndex& index, const Temperature& temperature)
 {
 	assert(temperature_get(index) == temperature);
 	Actors& actors = m_area.getActors();
 	for(const ActorIndex& actor : m_actors[index])
 		actors.temperature_onChange(actor);
 }
-void Blocks::actor_updateIndex(BlockIndex index, ActorIndex oldIndex, ActorIndex newIndex)
+void Blocks::actor_updateIndex(const BlockIndex& index, const ActorIndex& oldIndex, const ActorIndex& newIndex)
 {
 	auto found = std::ranges::find(m_actors[index], oldIndex);
 	assert(found != m_actors[index].end());
@@ -45,15 +45,15 @@ void Blocks::actor_updateIndex(BlockIndex index, ActorIndex oldIndex, ActorIndex
 	assert(found2 != m_actorVolume[index].end());
 	found2->first = newIndex; 
 }
-bool Blocks::actor_contains(BlockIndex index, ActorIndex actor) const
+bool Blocks::actor_contains(const BlockIndex& index, const ActorIndex& actor) const
 {
 	return m_actors[index].contains(actor);
 }
-bool Blocks::actor_empty(BlockIndex index) const
+bool Blocks::actor_empty(const BlockIndex& index) const
 {
 	return m_actors[index].empty();
 }
-ActorIndicesForBlock& Blocks::actor_getAll(BlockIndex index)
+ActorIndicesForBlock& Blocks::actor_getAll(const BlockIndex& index)
 {
 	return m_actors[index];
 }

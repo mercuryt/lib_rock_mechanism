@@ -16,7 +16,7 @@ class InstallItemProject final : public Project
 	Facing m_facing;
 public:
 	// Max one worker.
-	InstallItemProject(Area& area, ItemReference i, BlockIndex l, Facing facing, FactionId faction);
+	InstallItemProject(Area& area, const ItemReference& i, const BlockIndex& l, const Facing& facing, const FactionId& faction);
 	void onComplete();
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const { return {}; }
 	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const { ItemQuery query(m_item); return {{m_item, Quantity::create(1)}}; }
@@ -32,20 +32,20 @@ class HasInstallItemDesignationsForFaction final
 	std::unordered_map<BlockIndex, InstallItemProject, BlockIndex::Hash> m_designations;
 	FactionId m_faction;
 public:
-	HasInstallItemDesignationsForFaction(FactionId faction) : m_faction(faction) { }
-	void add(Area& area, BlockIndex block, ItemIndex item, Facing facing, FactionId faction);
-	void remove(Area& area, ItemIndex item);
+	HasInstallItemDesignationsForFaction(const FactionId& faction) : m_faction(faction) { }
+	void add(Area& area, const BlockIndex& block, const ItemIndex& item, const Facing& facing, const FactionId& faction);
+	void remove(Area& area, const ItemIndex& item);
 	bool empty() const { return m_designations.empty(); }
-	bool contains(const BlockIndex block) const { return m_designations.contains(block); }
-	InstallItemProject& getForBlock(BlockIndex block) { return m_designations.at(block); }
+	bool contains(const BlockIndex& block) const { return m_designations.contains(block); }
+	InstallItemProject& getForBlock(const BlockIndex& block) { return m_designations.at(block); }
 	friend class AreaHasInstallItemDesignations;
 };
 class AreaHasInstallItemDesignations final
 {
 	std::unordered_map<FactionId, HasInstallItemDesignationsForFaction, FactionId::Hash> m_data;
 public:
-	void registerFaction(FactionId faction) { m_data.emplace(faction, faction); }
-	void unregisterFaction(FactionId faction) { m_data.erase(faction); }
+	void registerFaction(const FactionId& faction) { m_data.emplace(faction, faction); }
+	void unregisterFaction(const FactionId& faction) { m_data.erase(faction); }
 	void clearReservations();
-	HasInstallItemDesignationsForFaction& getForFaction(FactionId faction) { assert(m_data.contains(faction)); return m_data.at(faction);}
+	HasInstallItemDesignationsForFaction& getForFaction(const FactionId& faction) { assert(m_data.contains(faction)); return m_data.at(faction);}
 };

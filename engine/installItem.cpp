@@ -7,7 +7,7 @@
 #include "terrainFacade.h"
 
 // Project.
-InstallItemProject::InstallItemProject(Area& area, ItemReference i, BlockIndex l, Facing facing, FactionId faction) :
+InstallItemProject::InstallItemProject(Area& area, const ItemReference& i, const BlockIndex& l, const Facing& facing, const FactionId& faction) :
 	Project(faction, area, l, Quantity::create(1)), m_item(i), m_facing(facing) { }
 void InstallItemProject::onComplete()
 {
@@ -19,7 +19,7 @@ void InstallItemProject::onComplete()
 		actors.objective_complete(actor.getIndex(), *projectWorker.objective);
 }
 // HasDesignations.
-void HasInstallItemDesignationsForFaction::add(Area& area, BlockIndex block, ItemIndex item, Facing facing, FactionId faction)
+void HasInstallItemDesignationsForFaction::add(Area& area, const BlockIndex& block, const ItemIndex& item, const Facing& facing, const FactionId& faction)
 {
 	assert(!m_designations.contains(block));
 	m_designations.try_emplace(block, area, area.getItems().getReference(item), block, facing, faction);
@@ -30,7 +30,7 @@ void AreaHasInstallItemDesignations::clearReservations()
 		for(auto& pair2 : pair.second.m_designations)
 			pair2.second.clearReservations();
 }
-void HasInstallItemDesignationsForFaction::remove(Area& area, ItemIndex item)
+void HasInstallItemDesignationsForFaction::remove(Area& area, const ItemIndex& item)
 {
 	assert(m_designations.contains(area.getItems().getLocation(item)));
 	m_designations.erase(area.getItems().getLocation(item));

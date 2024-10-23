@@ -8,8 +8,8 @@ class InstallItemProject;
 class InstallItemObjectiveType final : public ObjectiveType
 {
 public:
-	bool canBeAssigned(Area& area, ActorIndex actor) const;
-	std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
+	bool canBeAssigned(Area& area, const ActorIndex& actor) const;
+	std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
 	std::string name() const { return "install Item"; }
 };
 class InstallItemObjective final : public Objective
@@ -18,10 +18,10 @@ class InstallItemObjective final : public Objective
 public:
 	InstallItemObjective();
 	InstallItemObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, ActorIndex actor); 
-	void cancel(Area& area, ActorIndex actor);
-	void delay(Area&, ActorIndex) { }
-	void reset(Area& area, ActorIndex actor);
+	void execute(Area& area, const ActorIndex& actor); 
+	void cancel(Area& area, const ActorIndex& actor);
+	void delay(Area&, const ActorIndex&) { }
+	void reset(Area& area, const ActorIndex& actor);
 	[[nodiscard]] std::string name() const { return "install item"; }
 	[[nodiscard]] Json toJson() const;
 	friend class InstallItemPathRequest;
@@ -31,9 +31,9 @@ class InstallItemPathRequest final : public PathRequest
 {
 	InstallItemObjective& m_installItemObjective;
 public:
-	InstallItemPathRequest(Area& area, InstallItemObjective& iio);
+	InstallItemPathRequest(Area& area, InstallItemObjective& iio, const ActorIndex& actor);
 	InstallItemPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, FindPathResult& result);
+	void callback(Area& area, const FindPathResult& result);
 	[[nodiscard]] std::string name() const { return "install item"; }
 	[[nodiscard]] Json toJson() const;
 };

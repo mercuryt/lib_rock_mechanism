@@ -14,7 +14,7 @@
 #include <memory>
 
 Portables::Portables(Area& area, bool isActors) : HasShapes(area), m_isActors(isActors) { }
-void Portables::resize(HasShapeIndex newSize)
+void Portables::resize(const HasShapeIndex& newSize)
 {
 	HasShapes::resize(newSize);
 	m_moveType.resize(newSize);
@@ -24,7 +24,7 @@ void Portables::resize(HasShapeIndex newSize)
 	m_leader.resize(newSize);
 	m_carrier.resize(newSize);
 }
-void Portables::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
+void Portables::moveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex)
 {
 	HasShapes::moveIndex(oldIndex, newIndex);
 	m_moveType[newIndex] = m_moveType[oldIndex];
@@ -64,7 +64,7 @@ void Portables::moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
 		}
 	}
 }
-void Portables::create(HasShapeIndex index, MoveTypeId moveType, ShapeId shape, FactionId faction, bool isStatic, Quantity quantity)
+void Portables::create(const HasShapeIndex& index, const MoveTypeId& moveType, const ShapeId& shape, const FactionId& faction, bool isStatic, const Quantity& quantity)
 {
 	HasShapes::create(index, shape, faction, isStatic);
 	m_moveType[index] = moveType;
@@ -75,22 +75,26 @@ void Portables::create(HasShapeIndex index, MoveTypeId moveType, ShapeId shape, 
 	assert(m_leader[index].empty());
 	assert(m_carrier[index].empty());
 }
-void Portables::log(HasShapeIndex index) const
+void Portables::log(const HasShapeIndex& index) const
 {
-	std::cout 
-		<< "moveType: " << MoveType::getName(m_moveType[index])
-	       	<< ", leading: " << m_follower[index].toString()
-	       	<< ", following: " << m_follower[index].toString()
-	       	<< ", carrier: " << m_carrier[index].toString();
+	std::cout << ", moveType: " << MoveType::getName(m_moveType[index]);
+	if(m_follower[index].exists())
+		std::cout << ", leading: " << m_follower[index].toString();
+	if(m_leader[index].exists())
+		std::cout << ", following: " << m_follower[index].toString();
+	if(m_carrier[index].exists())
+	       	std::cout << ", carrier: " << m_carrier[index].toString();
+	if(m_location[index].exists())
+		std::cout << ", location: " << m_area.getBlocks().getCoordinates(m_location[index]).toString();
 }
-ActorOrItemIndex Portables::getActorOrItemIndex(HasShapeIndex index)
+ActorOrItemIndex Portables::getActorOrItemIndex(const HasShapeIndex& index)
 {
 	if(m_isActors)
 		return ActorOrItemIndex::createForActor(ActorIndex::cast(index));
 	else
 		return ActorOrItemIndex::createForItem(ItemIndex::cast(index));
 }
-void Portables::followActor(HasShapeIndex index, ActorIndex actor)
+void Portables::followActor(const HasShapeIndex& index, const ActorIndex& actor)
 {
 	Actors& actors = m_area.getActors();
 	assert(!m_leader[index].exists());
@@ -101,7 +105,7 @@ void Portables::followActor(HasShapeIndex index, ActorIndex actor)
 	actors.move_updateActualSpeed(lineLeader);
 	actors.lineLead_appendToPath(lineLeader, m_location[index]);
 }
-void Portables::followItem(HasShapeIndex index, ItemIndex item)
+void Portables::followItem(const HasShapeIndex& index, const ItemIndex& item)
 {
 	Actors& actors = m_area.getActors();
 	assert(!m_leader[index].exists());
@@ -112,14 +116,14 @@ void Portables::followItem(HasShapeIndex index, ItemIndex item)
 	actors.move_updateActualSpeed(lineLeader);
 	actors.lineLead_appendToPath(lineLeader, m_location[index]);
 }
-void Portables::followPolymorphic(HasShapeIndex index, ActorOrItemIndex actorOrItem)
+void Portables::followPolymorphic(const HasShapeIndex& index, const ActorOrItemIndex& actorOrItem)
 {
 	if(actorOrItem.isActor())
 		followActor(index, ActorIndex::cast(actorOrItem.get()));
 	else
 		followItem(index, ItemIndex::cast(actorOrItem.get()));
 }
-void Portables::unfollowActor(HasShapeIndex index, ActorIndex actor)
+void Portables::unfollowActor(const HasShapeIndex& index, const ActorIndex& actor)
 {
 	assert(!isLeading(index));
 	assert(isFollowing(index));
@@ -136,7 +140,7 @@ void Portables::unfollowActor(HasShapeIndex index, ActorIndex actor)
 	m_leader[index].clear();
 	m_area.getActors().move_updateActualSpeed(lineLeader);
 }
-void Portables::unfollowItem(HasShapeIndex index, ItemIndex item)
+void Portables::unfollowItem(const HasShapeIndex& index, const ItemIndex& item)
 {
 	assert(!isLeading(index));
 	m_area.getItems().m_follower[item].clear();
@@ -146,7 +150,7 @@ void Portables::unfollowItem(HasShapeIndex index, ItemIndex item)
 	items.m_follower[item].clear();
 	m_area.getActors().move_updateActualSpeed(lineLeader);
 }
-void Portables::unfollow(HasShapeIndex index)
+void Portables::unfollow(const HasShapeIndex& index)
 {
 	ActorOrItemIndex leader = m_leader[index];
 	assert(leader.isLeading(m_area));
@@ -155,12 +159,12 @@ void Portables::unfollow(HasShapeIndex index)
 	else
 		unfollowItem(index, leader.getItem());
 }
-void Portables::unfollowIfAny(HasShapeIndex index)
+void Portables::unfollowIfAny(const HasShapeIndex& index)
 {
 	if(m_leader[index].exists())
 		unfollow(index);
 }
-void Portables::leadAndFollowDisband(HasShapeIndex index)
+void Portables::leadAndFollowDisband(const HasShapeIndex& index)
 {
 	assert(isFollowing(index) || isLeading(index));
 	ActorOrItemIndex follower = getActorOrItemIndex(index);
@@ -179,41 +183,41 @@ void Portables::leadAndFollowDisband(HasShapeIndex index)
 	m_area.getActors().lineLead_clearPath(leader.getActor());
 		
 }
-void Portables::maybeLeadAndFollowDisband(HasShapeIndex index)
+void Portables::maybeLeadAndFollowDisband(const HasShapeIndex& index)
 {
 	if(isFollowing(index) || isLeading(index))
 		leadAndFollowDisband(index);
 }
-bool Portables::isFollowing(HasShapeIndex index) const
+bool Portables::isFollowing(const HasShapeIndex& index) const
 {
 	return m_leader[index].exists();
 }
-bool Portables::isLeading(HasShapeIndex index) const
+bool Portables::isLeading(const HasShapeIndex& index) const
 {
 	return m_follower[index].exists();
 }
-bool Portables::isLeadingActor(HasShapeIndex index, ActorIndex actor) const
+bool Portables::isLeadingActor(const HasShapeIndex& index, const ActorIndex& actor) const
 {
 	if(!isLeading(index))
 		return false;
 	const auto& follower = m_follower[index];
 	return follower.isActor() && follower.getActor() == actor;
 }
-bool Portables::isLeadingItem(HasShapeIndex index, ItemIndex item) const
+bool Portables::isLeadingItem(const HasShapeIndex& index, const ItemIndex& item) const
 {
 	if(!isLeading(index))
 		return false;
 	const auto& follower = m_follower[index];
 	return follower.isItem() && follower.getItem() == item;
 }
-bool Portables::isLeadingPolymorphic(HasShapeIndex index, ActorOrItemIndex actorOrItem) const
+bool Portables::isLeadingPolymorphic(const HasShapeIndex& index, const ActorOrItemIndex& actorOrItem) const
 {
 	return m_follower[index] == actorOrItem;
 }
-Speed Portables::lead_getSpeed(HasShapeIndex index)
+Speed Portables::lead_getSpeed(const HasShapeIndex& index)
 {
 	assert(m_isActors);
-	ActorIndex actorIndex = ActorIndex::cast(index);
+	const ActorIndex& actorIndex = ActorIndex::cast(index);
 	assert(!m_area.getActors().isFollowing(actorIndex));
 	assert(m_area.getActors().isLeading(actorIndex));
 	ActorOrItemIndex wrapped = getActorOrItemIndex(index);
@@ -227,7 +231,7 @@ Speed Portables::lead_getSpeed(HasShapeIndex index)
 	}
 	return getMoveSpeedForGroupWithAddedMass(m_area, actorsAndItems, Mass::create(0), Mass::create(0));
 }
-ActorIndex Portables::getLineLeader(HasShapeIndex index)
+ActorIndex Portables::getLineLeader(const HasShapeIndex& index)
 {
 	// Recursively traverse to the front of the line and return the leader.
 	ActorOrItemIndex leader = m_leader[index];
@@ -247,7 +251,7 @@ Speed Portables::getMoveSpeedForGroup(const Area& area, std::vector<ActorOrItemI
 {
 	return getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, Mass::create(0), Mass::create(0));
 }
-Speed Portables::getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, Mass addedRollingMass, Mass addedDeadMass)
+Speed Portables::getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, const Mass& addedRollingMass, const Mass& addedDeadMass)
 {
 	Mass rollingMass = addedRollingMass;
 	Mass deadMass = addedDeadMass;
@@ -257,7 +261,7 @@ Speed Portables::getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector
 	{
 		if(index.isItem())
 		{
-			ItemIndex itemIndex = ItemIndex::cast(index.get());
+			const ItemIndex& itemIndex = ItemIndex::cast(index.get());
 			Mass mass = area.getItems().getMass(itemIndex);
 			static MoveTypeId roll = MoveType::byName("roll");
 			if(area.getItems().getMoveType(itemIndex) == roll)
@@ -268,7 +272,7 @@ Speed Portables::getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector
 		else
 		{
 			assert(index.isActor());
-			ActorIndex actorIndex = ActorIndex::cast(index.get());
+			const ActorIndex& actorIndex = ActorIndex::cast(index.get());
 			const Actors& actors = area.getActors();
 			if(actors.move_canMove(actorIndex))
 			{
@@ -289,22 +293,22 @@ Speed Portables::getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector
 		return Speed::create(0);
 	return Speed::create(std::ceil(lowestMoveSpeed.get() * ratio * ratio));
 }
-void Portables::setCarrier(HasShapeIndex index, ActorOrItemIndex carrier)
+void Portables::setCarrier(const HasShapeIndex& index, ActorOrItemIndex carrier)
 {
 	assert(!m_carrier[index].exists());
 	m_carrier[index] = carrier;
 }
-void Portables::unsetCarrier(HasShapeIndex index, ActorOrItemIndex carrier)
+void Portables::unsetCarrier(const HasShapeIndex& index, ActorOrItemIndex carrier)
 {
 	assert(m_carrier[index] == carrier);
 	m_carrier[index].clear();
 }
-void Portables::updateIndexInCarrier(HasShapeIndex oldIndex, HasShapeIndex newIndex)
+void Portables::updateIndexInCarrier(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex)
 {
 	if(m_carrier[newIndex].isActor())
 	{
 		// Carrier is actor, either via canPickUp or equipmentSet.
-		ActorIndex actor = ActorIndex::cast(m_carrier[newIndex].get());
+		const ActorIndex& actor = ActorIndex::cast(m_carrier[newIndex].get());
 		Actors& actors = m_area.getActors();
 		if(m_isActors)
 		{
@@ -325,7 +329,7 @@ void Portables::updateIndexInCarrier(HasShapeIndex oldIndex, HasShapeIndex newIn
 	else
 	{
 		// Carrier is item.
-		ItemIndex item = ItemIndex::cast(m_carrier[newIndex].get());
+		const ItemIndex& item = ItemIndex::cast(m_carrier[newIndex].get());
 		Items& items = m_area.getItems();
 		assert(ItemType::getInternalVolume(items.getItemType(item)) != 0);
 		if(m_isActors)
@@ -342,31 +346,31 @@ void Portables::updateIndexInCarrier(HasShapeIndex oldIndex, HasShapeIndex newIn
 		}
 	}
 }
-void Portables::reservable_reserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity, std::unique_ptr<DishonorCallback> callback)
+void Portables::reservable_reserve(const HasShapeIndex& index, CanReserve& canReserve, const Quantity quantity, std::unique_ptr<DishonorCallback> callback)
 {
 	m_reservables[index]->reserveFor(canReserve, quantity, std::move(callback));
 }
-void Portables::reservable_unreserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity)
+void Portables::reservable_unreserve(const HasShapeIndex& index, CanReserve& canReserve, const Quantity quantity)
 {
 	m_reservables[index]->clearReservationFor(canReserve, quantity);
 }
-void Portables::reservable_unreserveFaction(HasShapeIndex index, const FactionId faction)
+void Portables::reservable_unreserveFaction(const HasShapeIndex& index, const FactionId& faction)
 {
 	m_reservables[index]->clearReservationsFor(faction);
 }
-void Portables::reservable_maybeUnreserve(HasShapeIndex index, CanReserve& canReserve, Quantity quantity)
+void Portables::reservable_maybeUnreserve(const HasShapeIndex& index, CanReserve& canReserve, const Quantity quantity)
 {
 	m_reservables[index]->maybeClearReservationFor(canReserve, quantity);
 }
-void Portables::reservable_unreserveAll(HasShapeIndex index)
+void Portables::reservable_unreserveAll(const HasShapeIndex& index)
 {
 	m_reservables[index]->clearAll();
 }
-void Portables::reservable_setDishonorCallback(HasShapeIndex index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
+void Portables::reservable_setDishonorCallback(const HasShapeIndex& index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
 {
 	m_reservables[index]->setDishonorCallbackFor(canReserve, std::move(callback));
 }
-void Portables::reservable_merge(HasShapeIndex index, Reservable& other)
+void Portables::reservable_merge(const HasShapeIndex& index, Reservable& other)
 {
 	m_reservables[index]->merge(other);
 }
@@ -380,7 +384,7 @@ void Portables::load(const Json& data)
 	DeserializationMemo& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
 	for(const Json& pair : data["reservable"])
 	{
-		HasShapeIndex index = pair[0];
+		const HasShapeIndex& index = pair[0];
 		m_reservables[index] = std::make_unique<Reservable>(pair[1]["maxReservations"].get<Quantity>());
 		uintptr_t address;
 		pair[1]["address"].get_to(address);
@@ -389,7 +393,7 @@ void Portables::load(const Json& data)
 	m_destroy.resize(m_moveType.size());
 	for(const Json& pair : data["onDestroy"])
 	{
-		HasShapeIndex index = pair[0];
+		const HasShapeIndex& index = pair[0];
 		m_destroy[index] = std::make_unique<OnDestroy>(pair[1], deserializationMemo);
 		uintptr_t address;
 		pair[1]["address"].get_to(address);
@@ -419,49 +423,49 @@ Json Portables::toJson() const
 	}
 	return output;
 }
-bool Portables::reservable_hasAnyReservations(HasShapeIndex index) const
+bool Portables::reservable_hasAnyReservations(const HasShapeIndex& index) const
 {
 	return m_reservables[index]->hasAnyReservations();
 }
-bool Portables::reservable_exists(HasShapeIndex index, const FactionId faction) const
+bool Portables::reservable_exists(const HasShapeIndex& index, const FactionId& faction) const
 {
 	return m_reservables[index]->hasAnyReservationsWith(faction);
 }
-bool Portables::reservable_existsFor(HasShapeIndex index, const CanReserve& canReserve) const
+bool Portables::reservable_existsFor(const HasShapeIndex& index, const CanReserve& canReserve) const
 {
 	return m_reservables[index]->hasAnyReservationsFor(canReserve);
 }
-bool Portables::reservable_isFullyReserved(HasShapeIndex index, const FactionId faction) const
+bool Portables::reservable_isFullyReserved(const HasShapeIndex& index, const FactionId& faction) const
 {
 	return m_reservables[index]->isFullyReserved(faction);
 }
-Quantity Portables::reservable_getUnreservedCount(HasShapeIndex index, const FactionId faction) const
+Quantity Portables::reservable_getUnreservedCount(const HasShapeIndex& index, const FactionId& faction) const
 {
 	return m_reservables[index]->getUnreservedCount(faction);
 }
-void Portables::onDestroy_subscribe(HasShapeIndex index, HasOnDestroySubscriptions& hasSubscriptions)
+void Portables::onDestroy_subscribe(const HasShapeIndex& index, HasOnDestroySubscriptions& hasSubscriptions)
 {
 	if(m_destroy[index] == nullptr)
 		m_destroy[index] = std::make_unique<OnDestroy>();
 	hasSubscriptions.subscribe(*m_destroy[index].get());
 }
-void Portables::onDestroy_subscribeThreadSafe(HasShapeIndex index, HasOnDestroySubscriptions& hasSubscriptions)
+void Portables::onDestroy_subscribeThreadSafe(const HasShapeIndex& index, HasOnDestroySubscriptions& hasSubscriptions)
 {
 	std::lock_guard<std::mutex> lock(HasOnDestroySubscriptions::m_mutex);
 	onDestroy_subscribe(index, hasSubscriptions);
 }
-void Portables::onDestroy_unsubscribe(HasShapeIndex index, HasOnDestroySubscriptions& hasSubscriptions)
+void Portables::onDestroy_unsubscribe(const HasShapeIndex& index, HasOnDestroySubscriptions& hasSubscriptions)
 {
 	m_destroy[index]->unsubscribe(hasSubscriptions);
 	if(m_destroy[index]->empty())
 		m_destroy[index] = nullptr;
 }
-void Portables::onDestroy_unsubscribeAll(HasShapeIndex index)
+void Portables::onDestroy_unsubscribeAll(const HasShapeIndex& index)
 {
 	m_destroy[index]->unsubscribeAll();
 	m_destroy[index] = nullptr;
 }
-void Portables::onDestroy_merge(HasShapeIndex index, OnDestroy& other)
+void Portables::onDestroy_merge(const HasShapeIndex& index, OnDestroy& other)
 {
 	if(m_destroy[index] == nullptr)
 		m_destroy[index] = std::make_unique<OnDestroy>();

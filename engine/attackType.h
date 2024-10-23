@@ -35,17 +35,17 @@ class AttackType final
 	DataVector<SkillTypeId, AttackTypeId> m_skillType;
 	DataVector<ItemTypeId, AttackTypeId> m_projectileItemType;
 public:
-	static AttackTypeId create(AttackTypeParamaters& p);
+	static AttackTypeId create(const AttackTypeParamaters& p);
 	static AttackTypeId byName(std::string name);
-	[[nodiscard]] static std::string getName(AttackTypeId id);
-	[[nodiscard]] static uint32_t getArea(AttackTypeId id);
-	[[nodiscard]] static Force getBaseForce(AttackTypeId id);
-	[[nodiscard]] static DistanceInBlocksFractional getRange(AttackTypeId id);
-	[[nodiscard]] static CombatScore getCombatScore(AttackTypeId id);
-	[[nodiscard]] static Step getCoolDown(AttackTypeId id);
-	[[nodiscard]] static bool getProjectile(AttackTypeId id);
-	[[nodiscard]] static WoundType getWoundType(AttackTypeId id);
-	[[nodiscard]] static SkillTypeId getSkillType(AttackTypeId id);
-	[[nodiscard]] static ItemTypeId getProjectileItemType(AttackTypeId id);
+	[[nodiscard]] static std::string getName(const AttackTypeId& id);
+	[[nodiscard]] static uint32_t getArea(const AttackTypeId& id);
+	[[nodiscard]] static Force getBaseForce(const AttackTypeId& id);
+	[[nodiscard]] static DistanceInBlocksFractional getRange(const AttackTypeId& id);
+	[[nodiscard]] static CombatScore getCombatScore(const AttackTypeId& id);
+	[[nodiscard]] static Step getCoolDown(const AttackTypeId& id);
+	[[nodiscard]] static bool getProjectile(const AttackTypeId& id);
+	[[nodiscard]] static WoundType getWoundType(const AttackTypeId& id);
+	[[nodiscard]] static SkillTypeId getSkillType(const AttackTypeId& id);
+	[[nodiscard]] static ItemTypeId getProjectileItemType(const AttackTypeId& id);
 };
 inline AttackType attackTypeData;

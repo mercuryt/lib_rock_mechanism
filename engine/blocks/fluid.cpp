@@ -5,16 +5,16 @@
 #include "../area.h"
 #include "../deserializationMemo.h"
 #include "../types.h"
-std::vector<FluidData>::iterator Blocks::fluid_getDataIterator(BlockIndex index, FluidTypeId fluidType)
+std::vector<FluidData>::iterator Blocks::fluid_getDataIterator(const BlockIndex& index, const FluidTypeId& fluidType)
 {
 	auto& fluid = m_fluid[index];
 	return std::ranges::find(fluid, fluidType, &FluidData::type);
 }
-const FluidData* Blocks::fluid_getData(BlockIndex index, FluidTypeId fluidType) const
+const FluidData* Blocks::fluid_getData(const BlockIndex& index, const FluidTypeId& fluidType) const
 {
 	return const_cast<Blocks*>(this)->fluid_getData(index, fluidType);
 }
-FluidData* Blocks::fluid_getData(BlockIndex index, FluidTypeId fluidType)
+FluidData* Blocks::fluid_getData(const BlockIndex& index, const FluidTypeId& fluidType)
 {
 	auto& fluid = m_fluid[index];
 	auto iter = fluid_getDataIterator(index, fluidType);
@@ -22,7 +22,7 @@ FluidData* Blocks::fluid_getData(BlockIndex index, FluidTypeId fluidType)
 		return nullptr;
 	return &*iter;
 }
-void Blocks::fluid_destroyData(BlockIndex index, FluidTypeId fluidType)
+void Blocks::fluid_destroyData(const BlockIndex& index, const FluidTypeId& fluidType)
 {
 	auto& fluid = m_fluid[index];
 	auto iter = std::ranges::find(fluid, fluidType, &FluidData::type);
@@ -30,7 +30,7 @@ void Blocks::fluid_destroyData(BlockIndex index, FluidTypeId fluidType)
 	std::swap(*iter, fluid.back());
 	fluid.pop_back();
 }
-void Blocks::fluid_setTotalVolume(BlockIndex index, CollisionVolume newTotal)
+void Blocks::fluid_setTotalVolume(const BlockIndex& index, const CollisionVolume& newTotal)
 {
 	CollisionVolume checkTotal = CollisionVolume::create(0);
 	for(FluidData data : m_fluid[index])
@@ -38,7 +38,7 @@ void Blocks::fluid_setTotalVolume(BlockIndex index, CollisionVolume newTotal)
 	assert(checkTotal == newTotal);
 	m_totalFluidVolume[index] = newTotal;
 }
-void Blocks::fluid_spawnMist(BlockIndex index, FluidTypeId fluidType, DistanceInBlocks maxMistSpread)
+void Blocks::fluid_spawnMist(const BlockIndex& index, const FluidTypeId& fluidType, const DistanceInBlocks maxMistSpread)
 {
 	FluidTypeId mist = m_mist[index];
 	if(mist.exists() && (mist == fluidType || FluidType::getDensity(mist) > FluidType::getDensity(fluidType)))
@@ -47,21 +47,21 @@ void Blocks::fluid_spawnMist(BlockIndex index, FluidTypeId fluidType, DistanceIn
 	m_mistInverseDistanceFromSource[index] = maxMistSpread != 0 ? maxMistSpread : FluidType::getMaxMistSpread(fluidType);
 	MistDisperseEvent::emplace(m_area, FluidType::getMistDuration(fluidType), fluidType, index);
 }
-void Blocks::fluid_clearMist(BlockIndex index)
+void Blocks::fluid_clearMist(const BlockIndex& index)
 {
 	m_mist[index].clear();
 	m_mistInverseDistanceFromSource[index] = DistanceInBlocks::create(0);
 }
-DistanceInBlocks Blocks::fluid_getMistInverseDistanceToSource(BlockIndex index) const
+DistanceInBlocks Blocks::fluid_getMistInverseDistanceToSource(const BlockIndex& index) const
 {
 	return m_mistInverseDistanceFromSource[index];
 }
-void Blocks::fluid_mistSetFluidTypeAndInverseDistance(BlockIndex index, FluidTypeId fluidType, DistanceInBlocks inverseDistance)
+void Blocks::fluid_mistSetFluidTypeAndInverseDistance(const BlockIndex& index, const FluidTypeId& fluidType, const DistanceInBlocks& inverseDistance)
 {
 	m_mist[index] = fluidType;
 	m_mistInverseDistanceFromSource[index] = inverseDistance;
 }
-FluidGroup* Blocks::fluid_getGroup(BlockIndex index, FluidTypeId fluidType) const
+FluidGroup* Blocks::fluid_getGroup(const BlockIndex& index, const FluidTypeId& fluidType) const
 {
 	auto found = fluid_getData(index, fluidType);
 	if(!found)
@@ -69,7 +69,7 @@ FluidGroup* Blocks::fluid_getGroup(BlockIndex index, FluidTypeId fluidType) cons
 	assert(found->type == fluidType);
 	return found->group;
 }
-void Blocks::fluid_add(BlockIndex index, CollisionVolume volume, FluidTypeId fluidType)
+void Blocks::fluid_add(const BlockIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType)
 {
 	assert(!solid_is(index));
 	// If a suitable fluid group exists already then just add to it's excessVolume.
@@ -101,13 +101,13 @@ void Blocks::fluid_add(BlockIndex index, CollisionVolume volume, FluidTypeId flu
 		fluid_resolveOverfull(index);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
-void Blocks::fluid_setAllUnstableExcept(BlockIndex index, FluidTypeId fluidType)
+void Blocks::fluid_setAllUnstableExcept(const BlockIndex& index, const FluidTypeId& fluidType)
 {
 	for(FluidData& fluidData : m_fluid[index])
 		if(fluidData.type != fluidType)
 			fluidData.group->m_stable = false;
 }
-void Blocks::fluid_drainInternal(BlockIndex index, CollisionVolume volume, FluidTypeId fluidType)
+void Blocks::fluid_drainInternal(const BlockIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType)
 {
 	auto iter = fluid_getDataIterator(index, fluidType);
 	assert(iter != m_fluid[index].end());
@@ -121,7 +121,7 @@ void Blocks::fluid_drainInternal(BlockIndex index, CollisionVolume volume, Fluid
 	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
-void Blocks::fluid_fillInternal(BlockIndex index, CollisionVolume volume, FluidGroup& fluidGroup)
+void Blocks::fluid_fillInternal(const BlockIndex& index, const CollisionVolume& volume, FluidGroup& fluidGroup)
 {
 	FluidData* found = fluid_getData(index, fluidGroup.m_fluidType);
 	if(!found)
@@ -136,12 +136,12 @@ void Blocks::fluid_fillInternal(BlockIndex index, CollisionVolume volume, FluidG
 	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
-void Blocks::fluid_unsetGroupInternal(BlockIndex index, FluidTypeId fluidType)
+void Blocks::fluid_unsetGroupInternal(const BlockIndex& index, const FluidTypeId& fluidType)
 {
 	FluidData* found = fluid_getData(index, fluidType);
 	found->group = nullptr;
 }
-bool Blocks::fluid_undisolveInternal(BlockIndex index, FluidGroup& fluidGroup)
+bool Blocks::fluid_undisolveInternal(const BlockIndex& index, FluidGroup& fluidGroup)
 {
 	FluidData* found = fluid_getData(index, fluidGroup.m_fluidType);
 	if(found || fluid_canEnterCurrently(index, fluidGroup.m_fluidType))
@@ -171,12 +171,12 @@ bool Blocks::fluid_undisolveInternal(BlockIndex index, FluidGroup& fluidGroup)
 	}
 	return false;
 }
-void Blocks::fluid_remove(BlockIndex index, CollisionVolume volume, FluidTypeId fluidType)
+void Blocks::fluid_remove(const BlockIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType)
 {
 	assert(volume <= fluid_volumeOfTypeContains(index, fluidType));
 	fluid_getGroup(index, fluidType)->removeFluid(volume);
 }
-void Blocks::fluid_removeSyncronus(BlockIndex index, CollisionVolume volume, FluidTypeId fluidType)
+void Blocks::fluid_removeSyncronus(const BlockIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType)
 {
 	assert(volume <= fluid_volumeOfTypeContains(index, fluidType));
 	assert(m_totalFluidVolume[index] >= volume);
@@ -194,7 +194,7 @@ void Blocks::fluid_removeSyncronus(BlockIndex index, CollisionVolume volume, Flu
 	fluid_setTotalVolume(index, m_totalFluidVolume[index] - volume);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
-bool Blocks::fluid_canEnterCurrently(BlockIndex index, FluidTypeId fluidType) const
+bool Blocks::fluid_canEnterCurrently(const BlockIndex& index, const FluidTypeId& fluidType) const
 {
 	if(m_totalFluidVolume[index] < Config::maxBlockVolume)
 		return true;
@@ -203,18 +203,18 @@ bool Blocks::fluid_canEnterCurrently(BlockIndex index, FluidTypeId fluidType) co
 			return true;
 	return false;
 }
-bool Blocks::fluid_canEnterEver(BlockIndex index) const
+bool Blocks::fluid_canEnterEver(const BlockIndex& index) const
 {
 	return !solid_is(index);
 }
-bool Blocks::fluid_isAdjacentToGroup(BlockIndex index, const FluidGroup* fluidGroup) const
+bool Blocks::fluid_isAdjacentToGroup(const BlockIndex& index, const FluidGroup& fluidGroup) const
 {
 	for(BlockIndex adjacent : getDirectlyAdjacent(index))
-		if(adjacent.exists() && fluid_contains(adjacent, fluidGroup->m_fluidType) && fluid_getGroup(adjacent, fluidGroup->m_fluidType) == fluidGroup)
+		if(adjacent.exists() && fluid_contains(adjacent, fluidGroup.m_fluidType) && fluid_getGroup(adjacent, fluidGroup.m_fluidType) == &fluidGroup)
 			return true;
 	return false;
 }
-CollisionVolume Blocks::fluid_volumeOfTypeCanEnter(BlockIndex index, FluidTypeId fluidType) const
+CollisionVolume Blocks::fluid_volumeOfTypeCanEnter(const BlockIndex& index, const FluidTypeId& fluidType) const
 {
 	CollisionVolume output = Config::maxBlockVolume;
 	for(const FluidData& fluidData : m_fluid[index])
@@ -222,14 +222,14 @@ CollisionVolume Blocks::fluid_volumeOfTypeCanEnter(BlockIndex index, FluidTypeId
 			output -= fluidData.volume;
 	return output;
 }
-CollisionVolume Blocks::fluid_volumeOfTypeContains(BlockIndex index, FluidTypeId fluidType) const
+CollisionVolume Blocks::fluid_volumeOfTypeContains(const BlockIndex& index, const FluidTypeId& fluidType) const
 {
 	const auto found = fluid_getData(index, fluidType);
 	if(!found)
 		return CollisionVolume::create(0);
 	return found->volume;
 }
-FluidTypeId Blocks::fluid_getTypeWithMostVolume(BlockIndex index) const
+FluidTypeId Blocks::fluid_getTypeWithMostVolume(const BlockIndex& index) const
 {
 	assert(!m_fluid[index].empty());
 	CollisionVolume volume = CollisionVolume::create(0);
@@ -240,11 +240,11 @@ FluidTypeId Blocks::fluid_getTypeWithMostVolume(BlockIndex index) const
 	assert(output.exists());
 	return output;
 }
-FluidTypeId Blocks::fluid_getMist(BlockIndex index) const
+FluidTypeId Blocks::fluid_getMist(const BlockIndex& index) const
 {
 	return m_mist[index];
 }
-void Blocks::fluid_resolveOverfull(BlockIndex index)
+void Blocks::fluid_resolveOverfull(const BlockIndex& index)
 {
 	std::vector<FluidTypeId> toErase;
 	// Fluid types are sorted by density.
@@ -295,7 +295,7 @@ void Blocks::fluid_resolveOverfull(BlockIndex index)
 	}
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
-void Blocks::fluid_onBlockSetSolid(BlockIndex index)
+void Blocks::fluid_onBlockSetSolid(const BlockIndex& index)
 {
 	// Displace fluids.
 	for(FluidData& fluidData : m_fluid[index])
@@ -335,7 +335,7 @@ void Blocks::fluid_onBlockSetSolid(BlockIndex index)
 			for(FluidData& fluidData : m_fluid[adjacent])
 				fluidData.group->m_fillQueue.maybeRemoveBlock(index);
 }
-void Blocks::fluid_onBlockSetNotSolid(BlockIndex index)
+void Blocks::fluid_onBlockSetNotSolid(const BlockIndex& index)
 {
 	for(BlockIndex adjacent : getDirectlyAdjacent(index))
 		if(adjacent.exists() && fluid_canEnterEver(adjacent))
@@ -345,12 +345,12 @@ void Blocks::fluid_onBlockSetNotSolid(BlockIndex index)
 				fluidData.group->m_stable = false;
 			}
 }
-bool Blocks::fluid_contains(BlockIndex index, FluidTypeId fluidType) const
+bool Blocks::fluid_contains(const BlockIndex& index, const FluidTypeId& fluidType) const
 {
 	auto fluid = m_fluid[index];
 	return std::ranges::find(fluid, fluidType, &FluidData::type) != fluid.end();
 }
-CollisionVolume Blocks::fluid_getTotalVolume(BlockIndex index) const
+CollisionVolume Blocks::fluid_getTotalVolume(const BlockIndex& index) const
 {
 	CollisionVolume total = CollisionVolume::create(0);
 	for(FluidData data : m_fluid[index])
@@ -358,16 +358,16 @@ CollisionVolume Blocks::fluid_getTotalVolume(BlockIndex index) const
 	assert(total == m_totalFluidVolume[index]);
 	return m_totalFluidVolume[index];
 }
-std::vector<FluidData>& Blocks::fluid_getAll(BlockIndex index)
+std::vector<FluidData>& Blocks::fluid_getAll(const BlockIndex& index)
 {
 	return m_fluid[index];
 }
-std::vector<FluidData>& Blocks::fluid_getAllSortedByDensityAscending(BlockIndex index)
+std::vector<FluidData>& Blocks::fluid_getAllSortedByDensityAscending(const BlockIndex& index)
 {
 	std::ranges::sort(m_fluid[index], std::less<Density>(), [](const auto& data) { return FluidType::getDensity(data.type); });
 	return m_fluid[index];
 }
-bool Blocks::fluid_any(BlockIndex index) const
+bool Blocks::fluid_any(const BlockIndex& index) const
 {
 	return !m_fluid[index].empty();
 }

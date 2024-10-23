@@ -15,7 +15,7 @@
 #include "actors/actors.h"
 #include <cstdint>
 // Static method.
-Wound::Wound(Area& area, ActorIndex a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph) :
+Wound::Wound(Area& area, const ActorIndex& a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph) :
 	woundType(wt), bodyPart(bp), hit(h), bleedVolumeRate(bvr), percentHealed(ph), healEvent(area.m_eventSchedule)
 {
 	AnimalSpeciesId species = area.getActors().getSpecies(a);
@@ -66,7 +66,7 @@ Json BodyPart::toJson() const
 		data["wounds"].push_back(wound.toJson());
 	return data;
 }
-Body::Body(Area& area, ActorIndex a) :  m_bleedEvent(area.m_eventSchedule), m_woundsCloseEvent(area.m_eventSchedule), m_actor(a) { }
+Body::Body(Area& area, const ActorIndex& a) :  m_bleedEvent(area.m_eventSchedule), m_woundsCloseEvent(area.m_eventSchedule), m_actor(a) { }
 void Body::initalize(Area& area)
 {
 	AnimalSpeciesId species = area.getActors().getSpecies(m_actor);
@@ -78,7 +78,7 @@ void Body::initalize(Area& area)
 	}
 	m_volumeOfBlood = healthyBloodVolume();
 }
-Body::Body(const Json& data, DeserializationMemo& deserializationMemo, ActorIndex a) :
+Body::Body(const Json& data, DeserializationMemo& deserializationMemo, const ActorIndex& a) :
        	m_bleedEvent(deserializationMemo.m_simulation.m_eventSchedule),
 	m_woundsCloseEvent(deserializationMemo.m_simulation.m_eventSchedule),
 	m_actor(a),
@@ -137,7 +137,7 @@ BodyPart& Body::pickABodyPartByVolume(Simulation& simulation)
 	assert(false);
 	return m_bodyParts.front();
 }
-BodyPart& Body::pickABodyPartByType(BodyPartTypeId bodyPartType)
+BodyPart& Body::pickABodyPartByType(const BodyPartTypeId& bodyPartType)
 {
 	for(BodyPart& bodyPart : m_bodyParts)
 		if(bodyPart.bodyPartType == bodyPartType)
@@ -395,14 +395,14 @@ bool Body::isInjured() const
 			return true;
 	return false;
 }
-bool Body::hasBodyPart(BodyPartTypeId bodyPartType) const
+bool Body::hasBodyPart(const BodyPartTypeId& bodyPartType) const
 {
 	for(const BodyPart& bodyPart : m_bodyParts)
 		if(bodyPart.bodyPartType == bodyPartType)
 			return true;
 	return false;
 }
-Percent Body::getImpairPercentFor(BodyPartTypeId bodyPartType) const
+Percent Body::getImpairPercentFor(const BodyPartTypeId& bodyPartType) const
 {
 	Percent output = Percent::create(0);
 	for(const BodyPart& bodyPart : m_bodyParts)
@@ -419,9 +419,9 @@ std::vector<Wound*> Body::getAllWounds()
 			output.push_back(&const_cast<Wound&>(wound));
 	return output;
 }
-WoundHealEvent::WoundHealEvent(Simulation& simulation, const Step delay, Wound& w, Body& b, const Step start) :
+WoundHealEvent::WoundHealEvent(Simulation& simulation, const Step& delay, Wound& w, Body& b, const Step start) :
 	ScheduledEvent(simulation, delay, start), m_wound(w), m_body(b) {}
-BleedEvent::BleedEvent(Simulation& simulation, const Step delay, Body& b, const Step start) :
+BleedEvent::BleedEvent(Simulation& simulation, const Step& delay, Body& b, const Step start) :
 	ScheduledEvent(simulation, delay, start), m_body(b) {}
-WoundsCloseEvent::WoundsCloseEvent(Simulation& simulation, const Step delay, Body& b, const Step start) :
+WoundsCloseEvent::WoundsCloseEvent(Simulation& simulation, const Step& delay, Body& b, const Step start) :
 	ScheduledEvent(simulation, delay, start), m_body(b) {}

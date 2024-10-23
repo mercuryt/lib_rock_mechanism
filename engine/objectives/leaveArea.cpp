@@ -5,7 +5,7 @@
 
 LeaveAreaObjective::LeaveAreaObjective(Priority priority) :
 	Objective(priority) { }
-void LeaveAreaObjective::execute(Area& area, ActorIndex actor)
+void LeaveAreaObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	if(actors.isOnEdge(actor))
@@ -18,7 +18,7 @@ LeaveAreaPathRequest::LeaveAreaPathRequest(Area& area, LeaveAreaObjective& objec
 {
 	createGoToEdge(area, getActor(), m_objective.m_detour);
 }
-void LeaveAreaPathRequest::callback(Area& area, FindPathResult& result)
+void LeaveAreaPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = getActor();

@@ -13,7 +13,7 @@ ActorQuery::ActorQuery(const Json& data, Area& area) :
 		actor.setTarget(area.getActors().getReferenceTarget(data["actor"].get<ActorIndex>()));
 }
 // ActorQuery, to be used to search for actors.
-bool ActorQuery::query(Area& area, ActorIndex other) const
+bool ActorQuery::query(Area& area, const ActorIndex& other) const
 {
 	if(actor.exists())
 		return actor.getIndex() == other;
@@ -24,5 +24,5 @@ bool ActorQuery::query(Area& area, ActorIndex other) const
 		return false;
 	return true;
 }
-ActorQuery ActorQuery::makeFor(ActorReference a) { return ActorQuery(a); }
-ActorQuery ActorQuery::makeForCarryWeight(Mass cw) { return ActorQuery(cw, false, false); }
+ActorQuery ActorQuery::makeFor(const ActorReference& a) { return ActorQuery(a); }
+ActorQuery ActorQuery::makeForCarryWeight(const Mass& cw) { return ActorQuery(cw, false, false); }

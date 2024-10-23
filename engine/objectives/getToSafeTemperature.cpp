@@ -4,11 +4,11 @@
 #include "../blocks/blocks.h"
 #include "../pathRequest.h"
 //TODO: Detour locked to true for emergency moves.
-GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& o, ActorIndex actor) : m_objective(o)
+GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& o, const ActorIndex& actor) : m_objective(o)
 {
 	Actors& actors = area.getActors();
 	Blocks& blocks = area.getBlocks();
-	DestinationCondition condition = [&actors, &blocks, actor](BlockIndex location, Facing facing)
+	DestinationCondition condition = [&actors, &blocks, actor](const BlockIndex& location, const Facing& facing)
 	{
 		for(BlockIndex adjacent : actors.getBlocksWhichWouldBeOccupiedAtLocationAndFacing(actor, location, facing))
 			if(actors.temperature_isSafe(actor, blocks.temperature_get(adjacent)))
@@ -16,14 +16,14 @@ GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(Area& area, Get
 		return std::make_pair(false, BlockIndex::null());
 	};
 	bool unreserved = false;
-	createGoToCondition(area, actor, condition, m_objective.m_detour, unreserved, DistanceInBlocks::null());
+	createGoToCondition(area, actor, condition, m_objective.m_detour, unreserved, DistanceInBlocks::max());
 }
 GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_objective(static_cast<GetToSafeTemperatureObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
 {
 	nlohmann::from_json(data, static_cast<PathRequest&>(*this));
 }
-void GetToSafeTemperaturePathRequest::callback(Area& area, FindPathResult& result)
+void GetToSafeTemperaturePathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = getActor();
@@ -61,13 +61,13 @@ Json GetToSafeTemperatureObjective::toJson() const
 	data["noWhereSafeFound"] = m_noWhereWithSafeTemperatureFound;
 	return data;
 }
-void GetToSafeTemperatureObjective::execute(Area& area, ActorIndex actor)
+void GetToSafeTemperatureObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	if(m_noWhereWithSafeTemperatureFound)
 	{
 		Blocks& blocks = area.getBlocks();
-		if(actors.predicateForAnyOccupiedBlock(actor, [&blocks](BlockIndex block){ return blocks.isEdge(block); }))
+		if(actors.predicateForAnyOccupiedBlock(actor, [&blocks](const BlockIndex& block){ return blocks.isEdge(block); }))
 			// We are at the edge and can leave.
 			actors.leaveArea(actor);
 		else
@@ -80,8 +80,8 @@ void GetToSafeTemperatureObjective::execute(Area& area, ActorIndex actor)
 	else
 		actors.move_pathRequestRecord(actor, std::make_unique<GetToSafeTemperaturePathRequest>(area, *this, actor));
 }
-void GetToSafeTemperatureObjective::cancel(Area& area, ActorIndex actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
-void GetToSafeTemperatureObjective::reset(Area& area, ActorIndex actor) 
+void GetToSafeTemperatureObjective::cancel(Area& area, const ActorIndex& actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
+void GetToSafeTemperatureObjective::reset(Area& area, const ActorIndex& actor) 
 { 
 	cancel(area, actor); 
 	m_noWhereWithSafeTemperatureFound = false; 

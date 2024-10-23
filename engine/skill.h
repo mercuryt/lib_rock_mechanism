@@ -14,7 +14,7 @@ public:
 	SkillLevel m_level;
 	SkillExperiencePoints m_xp;
 	SkillExperiencePoints m_xpForNextLevel;
-	Skill(SkillTypeId st, SkillLevel l = SkillLevel::create(0), SkillExperiencePoints xp = SkillExperiencePoints::create(0)) :
+	Skill(const SkillTypeId& st, SkillLevel l = SkillLevel::create(0), SkillExperiencePoints xp = SkillExperiencePoints::create(0)) :
 		m_skillType(st), m_level(l), m_xp(xp) { setup(); }
 	Skill(const Json& data) : 
 		m_skillType(SkillType::byName(data["skillType"].get<std::string>())),
@@ -69,7 +69,7 @@ public:
 			data["skills"].push_back(pair.second.toJson());
 		return data;
 	}
-	void addXp(SkillTypeId skillType, SkillExperiencePoints xp)
+	void addXp(const SkillTypeId& skillType, SkillExperiencePoints xp)
 	{
 		//TODO: We are searching m_skills twice if a skill with the provided type exists.
 		if(!m_skills.contains(skillType))
@@ -77,7 +77,7 @@ public:
 		else
 			m_skills[skillType].addXp(xp);
 	}
-	SkillLevel get(SkillTypeId skillType) const
+	SkillLevel get(const SkillTypeId& skillType) const
 	{
 		const auto found = m_skills.find(skillType);
 		if(found == m_skills.end())

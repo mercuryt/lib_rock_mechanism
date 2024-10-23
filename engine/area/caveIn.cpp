@@ -24,7 +24,7 @@ void Area::stepCaveInRead()
 	//TODO: blockQueue.insert?
 	//blockQueue.insert(blockQueue.end(), m_caveInCheck.begin(), m_caveInCheck.end());
 	// For some reason the above line adds 64 elements to blockQueue rather then the expected 2.
-	for(BlockIndex block : m_caveInCheck)
+	for(const BlockIndex& block : m_caveInCheck)
 		blockQueue.push_back(block);
 	std::stack<BlockIndex> toAddToBlockQueue;
 	BlockIndices checklist(m_caveInCheck);
@@ -73,7 +73,7 @@ void Area::stepCaveInRead()
 				{
 					BlockIndices* oldChunk = chunksByBlock[block];
 					BlockIndices* newChunk = chunksByBlock[adjacent];
-					for(BlockIndex b : *oldChunk)
+					for(const BlockIndex& b : *oldChunk)
 					{
 						chunksByBlock.insert(b, newChunk);
 						newChunk->add(b);
@@ -82,7 +82,7 @@ void Area::stepCaveInRead()
 					if(anchoredChunks.contains(oldChunk))
 					{
 						anchoredChunks.insert(newChunk);
-						for(BlockIndex b : *oldChunk)
+						for(const BlockIndex& b : *oldChunk)
 							checklist.remove(b);
 					}
 					std::erase(chunks, *oldChunk);
@@ -119,7 +119,7 @@ void Area::stepCaveInRead()
 		if(blockIsAnchored)
 		{
 			anchoredChunks.insert(chunksByBlock[block]);
-			for(BlockIndex b : *chunksByBlock[block])
+			for(const BlockIndex& b : *chunksByBlock[block])
 				//TODO: Why is this 'maybe'?
 				checklist.maybeRemove(b);
 		}
@@ -140,7 +140,7 @@ void Area::stepCaveInRead()
 		{
 			BlockIndices blocksAbsorbingImpact;
 			DistanceInBlocks smallestFallDistance = DistanceInBlocks::create(UINT16_MAX);
-			for(BlockIndex block : chunk)
+			for(const BlockIndex& block : chunk)
 			{
 				DistanceInBlocks verticalFallDistance = DistanceInBlocks::create(0);
 				BlockIndex below = blocks.getBlockBelow(block);
@@ -170,7 +170,7 @@ void Area::stepCaveInRead()
 
 			// Calculate energy of fall.
 			uint32_t fallEnergy = 0;
-			for(BlockIndex block : chunk)
+			for(const BlockIndex& block : chunk)
 				fallEnergy += blocks.getMass(block).get();
 			fallEnergy *= smallestFallDistance.get();
 			
@@ -181,7 +181,7 @@ void Area::stepCaveInRead()
 
 	// Sort by z low to high so blocks don't overwrite eachother when moved down.
 	// TODO: why is it necessary to alias m_blocks like this? Clangd throws a compile error.
-	auto compare = [&blocks](BlockIndex a, BlockIndex b) { return blocks.getZ(a) < blocks.getZ(b); };
+	auto compare = [&blocks](const BlockIndex& a, const BlockIndex& b) { return blocks.getZ(a) < blocks.getZ(b); };
 	for(auto& [chunk, fallDistance, fallEnergy] : fallingChunksWithDistanceAndEnergy)
 	{
 		chunk.sort(compare);
@@ -199,7 +199,7 @@ void Area::stepCaveInWrite()
 		DistanceInBlocks zDiff;
 		// Move blocks down.
 		BlockIndex below;
-		for(BlockIndex block : chunk)
+		for(const BlockIndex& block : chunk)
 		{
 			zDiff = fallDistance;
 			below = block;
@@ -215,7 +215,7 @@ void Area::stepCaveInWrite()
 		//TODO: disperse energy of fall by 'mining' out blocks absorbing impact
 	}
 }
-void Area::registerPotentialCaveIn(BlockIndex block)
+void Area::registerPotentialCaveIn(const BlockIndex& block)
 {
 	m_caveInCheck.add(block);
 }

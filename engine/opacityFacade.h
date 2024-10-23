@@ -15,11 +15,11 @@ class OpacityFacade final
 public:
 	OpacityFacade(Area& area);
 	void initalize();
-	void update(const BlockIndex block);
+	void update(const BlockIndex& block);
 	void validate() const;
-	[[nodiscard]] bool isOpaque(BlockIndex index) const;
-	[[nodiscard]] bool floorIsOpaque(BlockIndex index) const;
-	[[nodiscard]] bool hasLineOfSight(BlockIndex from, BlockIndex to) const;
-	[[nodiscard]] bool hasLineOfSight(BlockIndex fromIndex, Point3D fromCoords, BlockIndex toIndex, Point3D toCoords) const;
-	[[nodiscard]] bool canSeeIntoFrom(BlockIndex previousIndex, BlockIndex currentIndex, DistanceInBlocks oldZ, DistanceInBlocks z) const;
+	[[nodiscard]] bool isOpaque(const BlockIndex& index) const;
+	[[nodiscard]] bool floorIsOpaque(const BlockIndex& index) const;
+	[[nodiscard]] bool hasLineOfSight(const BlockIndex& from, const BlockIndex& to) const;
+	[[nodiscard]] bool hasLineOfSight(const BlockIndex& fromIndex, Point3D fromCoords, const BlockIndex& toIndex, Point3D toCoords) const;
+	[[nodiscard]] bool canSeeIntoFrom(const BlockIndex& previousIndex, const BlockIndex& currentIndex, const DistanceInBlocks& oldZ, const DistanceInBlocks& z) const;
 };

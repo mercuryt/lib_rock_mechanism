@@ -25,7 +25,7 @@ void VisionFacade::setArea(Area& area)
 	//VisionFacade is a member of an array so it can't have arguments passed to it's constructor
 	m_area = &area;
 }
-void VisionFacade::addActor(ActorIndex actor)
+void VisionFacade::addActor( const ActorIndex& actor)
 {
 	assert(m_area != nullptr);
 	Actors& actorData = m_area->getActors();
@@ -39,7 +39,7 @@ void VisionFacade::addActor(ActorIndex actor)
 	hasFacade.m_visionFacade = this;
 	hasFacade.m_index = VisionFacadeIndex::create(m_actors.size() - 1);
 }
-void VisionFacade::removeActor(ActorIndex actor)
+void VisionFacade::removeActor( const ActorIndex& actor)
 {
 	Actors& actorData = m_area->getActors();
 	auto [visionFacade, index] = actorData.vision_getFacadeWithIndex(actor);
@@ -47,7 +47,7 @@ void VisionFacade::removeActor(ActorIndex actor)
 	assert(visionFacade == this);
 	remove(index);
 }
-void VisionFacade::remove(VisionFacadeIndex index)
+void VisionFacade::remove( const VisionFacadeIndex& index)
 {
 	assert(m_actors.size() > index);
 	m_actors.remove(index);
@@ -55,26 +55,26 @@ void VisionFacade::remove(VisionFacadeIndex index)
 	m_locations.remove(index);
 	m_results.remove(index);
 }
-ActorIndex VisionFacade::getActor(VisionFacadeIndex index)  
+ActorIndex VisionFacade::getActor( const VisionFacadeIndex& index)  
 { 
 	assert(m_actors.size() > index); 
 	return m_actors[index]; 
 }
-BlockIndex VisionFacade::getLocation(VisionFacadeIndex index)  
+BlockIndex VisionFacade::getLocation( const VisionFacadeIndex& index)  
 {
        	assert(m_actors.size() > index); 
 	Actors& actorData = m_area->getActors();
 	assert(actorData.getLocation(m_actors[index]) == m_locations[index]);
 	return m_locations[index]; 
 }
-DistanceInBlocks VisionFacade::getRange(VisionFacadeIndex index) const 
+DistanceInBlocks VisionFacade::getRange( const VisionFacadeIndex& index) const 
 { 
 	assert(m_actors.size() > index); 
 	Actors& actorData = m_area->getActors();
 	assert(actorData.vision_getRange(m_actors[index]) == m_ranges[index]);
 	return m_ranges[index]; 
 }
-ActorIndices& VisionFacade::getResults(VisionFacadeIndex index)
+ActorIndices& VisionFacade::getResults( const VisionFacadeIndex& index)
 { 
 	assert(m_actors.size() > index); 
 	return m_area->getActors().vision_getCanSee(m_actors[index]);
@@ -88,17 +88,17 @@ DistanceInBlocks VisionFacade::taxiDistance(Point3D a, Point3D b)
 		std::abs((int)a.z.get() - (int)b.z.get())
 	);
 }
-void VisionFacade::updateLocation(VisionFacadeIndex index, BlockIndex& location)
+void VisionFacade::updateLocation( const VisionFacadeIndex& index, const BlockIndex& location)
 {
 	assert(m_area->getActors().getLocation(m_actors[index]) == location);
 	m_locations[index] = location;
 }
-void VisionFacade::updateRange(VisionFacadeIndex index, DistanceInBlocks range)
+void VisionFacade::updateRange( const VisionFacadeIndex& index,  const DistanceInBlocks& range)
 {
 	assert(m_area->getActors().vision_getRange(m_actors[index]) == range);
 	m_ranges[index] = range;
 }
-void VisionFacade::readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex end)
+void VisionFacade::readStepSegment( const VisionFacadeIndex& begin,  const VisionFacadeIndex& end)
 {
 	assert(m_area != nullptr);
 	Blocks& blocks = m_area->getBlocks();
@@ -202,16 +202,16 @@ VisionFacadeBuckets::VisionFacadeBuckets(Area& area) : m_area(area)
 	for(VisionFacade& visionFacade : m_data)
 		visionFacade.setArea(area);
 }
-VisionFacade& VisionFacadeBuckets::facadeForActor(ActorIndex actor)
+VisionFacade& VisionFacadeBuckets::facadeForActor( const ActorIndex& actor)
 {
 	ActorId id = m_area.getActors().getId(actor);
 	return m_data[id.get() % Config::actorDoVisionInterval];
 }
-void VisionFacadeBuckets::add(ActorIndex actor)
+void VisionFacadeBuckets::add( const ActorIndex& actor)
 {
 	facadeForActor(actor).addActor(actor);
 }
-void VisionFacadeBuckets::remove(ActorIndex actor)
+void VisionFacadeBuckets::remove( const ActorIndex& actor)
 {
 	facadeForActor(actor).removeActor(actor);
 }
@@ -232,7 +232,7 @@ void HasVisionFacade::clearVisionFacade()
 		clear();
 	m_visionFacade = nullptr;
 }
-void HasVisionFacade::create(Area& area, ActorIndex actor)
+void HasVisionFacade::create(Area& area,  const ActorIndex& actor)
 {
 	assert(empty());
 	assert(!m_visionFacade);
@@ -240,12 +240,12 @@ void HasVisionFacade::create(Area& area, ActorIndex actor)
 	assert(!empty());
 	assert(m_visionFacade);
 }
-void HasVisionFacade::updateRange(DistanceInBlocks range)
+void HasVisionFacade::updateRange( const DistanceInBlocks& range)
 {
 	assert(m_visionFacade);
 	m_visionFacade->updateRange(m_index, range);
 }
-void HasVisionFacade::updateLocation(BlockIndex& location)
+void HasVisionFacade::updateLocation(const BlockIndex& location)
 {
 	assert(m_visionFacade);
 	m_visionFacade->updateLocation(m_index, location);

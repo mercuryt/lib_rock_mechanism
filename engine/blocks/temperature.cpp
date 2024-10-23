@@ -4,7 +4,7 @@
 #include "../itemType.h"
 #include "materialType.h"
 #include "types.h"
-void Blocks::temperature_updateDelta(BlockIndex index, TemperatureDelta deltaDelta)
+void Blocks::temperature_updateDelta(const BlockIndex& index, const TemperatureDelta& deltaDelta)
 {
 	m_temperatureDelta[index] += deltaDelta;
 	Temperature temperature = Temperature::create(m_temperatureDelta[index].get() + temperature_getAmbient(index).get());
@@ -25,7 +25,7 @@ void Blocks::temperature_updateDelta(BlockIndex index, TemperatureDelta deltaDel
 		//TODO: FluidGroups.
 	}
 }
-void Blocks::temperature_freeze(BlockIndex index, FluidTypeId fluidType)
+void Blocks::temperature_freeze(const BlockIndex& index, const FluidTypeId& fluidType)
 {
 	assert(FluidType::getFreezesInto(fluidType).exists());
 	static ItemTypeId chunk = ItemType::byName("chunk");
@@ -43,7 +43,7 @@ void Blocks::temperature_freeze(BlockIndex index, FluidTypeId fluidType)
 	else
 		item_addGeneric(index, chunk, FluidType::getFreezesInto(fluidType),  chunkQuantity);
 }
-void Blocks::temperature_melt(BlockIndex index)
+void Blocks::temperature_melt(const BlockIndex& index)
 {
 	assert(solid_is(index));
 	assert(MaterialType::getMeltsInto(solid_get(index)).exists());
@@ -52,7 +52,7 @@ void Blocks::temperature_melt(BlockIndex index)
 	fluid_add(index, Config::maxBlockVolume, fluidType);
 	m_area.m_hasFluidGroups.clearMergedFluidGroups();
 }
-const Temperature& Blocks::temperature_getAmbient(BlockIndex index) const 
+const Temperature& Blocks::temperature_getAmbient(const BlockIndex& index) const 
 {
 	if(m_underground[index])
 	{
@@ -63,7 +63,7 @@ const Temperature& Blocks::temperature_getAmbient(BlockIndex index) const
 	}
 	return m_area.m_hasTemperature.getAmbientSurfaceTemperature();
 }
-Temperature Blocks::temperature_getDailyAverageAmbient(BlockIndex index) const 
+Temperature Blocks::temperature_getDailyAverageAmbient(const BlockIndex& index) const 
 {
 	if(m_underground[index])
 	{
@@ -74,7 +74,7 @@ Temperature Blocks::temperature_getDailyAverageAmbient(BlockIndex index) const
 	}
 	return m_area.m_hasTemperature.getDailyAverageAmbientSurfaceTemperature();
 }
-Temperature Blocks::temperature_get(BlockIndex index) const
+Temperature Blocks::temperature_get(const BlockIndex& index) const
 {
 	Temperature ambiant = temperature_getAmbient(index);
 	TemperatureDelta delta = m_temperatureDelta[index];

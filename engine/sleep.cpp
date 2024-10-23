@@ -9,17 +9,17 @@
 #include "objectives/sleep.h"
 #include <cassert>
 // Sleep Event.
-SleepEvent::SleepEvent(Simulation& simulation, Step step, MustSleep& ns, const Step start) :
+SleepEvent::SleepEvent(Simulation& simulation, const Step& step, MustSleep& ns, const Step start) :
 	ScheduledEvent(simulation, step, start), m_needsSleep(ns) { }
 void SleepEvent::execute(Simulation&, Area* area){ m_needsSleep.wakeUp(*area); }
 void SleepEvent::clearReferences(Simulation&, Area*){ m_needsSleep.m_sleepEvent.clearPointer(); }
 // Tired Event.
-TiredEvent::TiredEvent(Simulation& simulation, Step step, MustSleep& ns, const Step start) :
+TiredEvent::TiredEvent(Simulation& simulation, const Step& step, MustSleep& ns, const Step start) :
 	ScheduledEvent(simulation, step, start), m_needsSleep(ns) { }
 void TiredEvent::execute(Simulation&, Area* area){ m_needsSleep.tired(*area); }
 void TiredEvent::clearReferences(Simulation&, Area*){ m_needsSleep.m_tiredEvent.clearPointer(); }
 // Needs Sleep.
-MustSleep::MustSleep(Area& area, ActorIndex a) :
+MustSleep::MustSleep(Area& area, const ActorIndex& a) :
 	m_sleepEvent(area.m_eventSchedule), m_tiredEvent(area.m_eventSchedule)
 { 
 	m_actor.setTarget(area.getActors().getReferenceTarget(a));
@@ -29,7 +29,7 @@ void MustSleep::scheduleTiredEvent(Area& area)
 	Step frequency = AnimalSpecies::getStepsSleepFrequency(area.getActors().getSpecies(m_actor.getIndex()));
 	m_tiredEvent.schedule(area.m_simulation, frequency, *this);
 }
-MustSleep::MustSleep(Area& area, const Json& data, ActorIndex a) :
+MustSleep::MustSleep(Area& area, const Json& data, const ActorIndex& a) :
 	m_sleepEvent(area.m_eventSchedule), m_tiredEvent(area.m_eventSchedule),
 	m_location(data.contains("location") ? data["location"].get<BlockIndex>() : BlockIndex::null()),
 	m_needsSleep(data["needsSleep"].get<bool>()), m_isAwake(data["isAwake"].get<bool>())
@@ -96,8 +96,8 @@ void MustSleep::sleep(Area& area)
 	sleep(area, duration);
 }
 // Involuntary sleep.
-void MustSleep::passout(Area& area, Step duration) { sleep(area, duration, true); }
-void MustSleep::sleep(Area& area, Step duration, bool force)
+void MustSleep::passout(Area& area, const Step& duration) { sleep(area, duration, true); }
+void MustSleep::sleep(Area& area, const Step& duration, bool force)
 {
 	assert(m_isAwake);
 	ActorIndex actor = m_actor.getIndex();
@@ -150,7 +150,7 @@ void MustSleep::wakeUpEarly(Area& area)
 	area.getActors().vision_createFacadeIfCanSee(m_actor.getIndex());
 	//TODO: partial stamina recovery.
 }
-void MustSleep::setLocation(BlockIndex block)
+void MustSleep::setLocation(const BlockIndex& block)
 {
 	m_location = block;
 }

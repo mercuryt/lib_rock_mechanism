@@ -21,7 +21,7 @@ struct FutureFlowBlock
 	CollisionVolume capacity = CollisionVolume::create(0);
 	CollisionVolume delta = CollisionVolume::create(0);
 	// No need to initalize capacity and delta here, they will be set at the begining of read step.
-	FutureFlowBlock(BlockIndex b) : block(b) { assert(b.exists()); }
+	FutureFlowBlock(const BlockIndex& b) : block(b) { assert(b.exists()); }
 };
 
 /*
@@ -40,13 +40,13 @@ public:
 	void buildFor(BlockIndices& members);
 	void initalizeForStep();
 	void setBlocks(BlockIndices& blocks);
-	void maybeAddBlock(BlockIndex block);
+	void maybeAddBlock(const BlockIndex& block);
 	void maybeAddBlocks(BlockIndices& blocks);
-	void removeBlock(BlockIndex block);
-	void maybeRemoveBlock(BlockIndex block);
+	void removeBlock(const BlockIndex& block);
+	void maybeRemoveBlock(const BlockIndex& block);
 	void removeBlocks(BlockIndices& blocks);
 	void findGroupEnd();
-	void recordDelta(CollisionVolume volume);
+	void recordDelta(const CollisionVolume& volume);
 	void applyDelta();
 	void merge(FluidQueue& fluidQueue);
 	void noChange();
@@ -54,5 +54,5 @@ public:
 	[[nodiscard]] CollisionVolume groupLevel() const;
 	[[nodiscard]] CollisionVolume groupCapacityPerBlock() const;
 	[[nodiscard]] CollisionVolume groupFlowTillNextStepPerBlock() const;
-	[[nodiscard]] bool groupContains(BlockIndex block) const;
+	[[nodiscard]] bool groupContains(const BlockIndex& block) const;
 };

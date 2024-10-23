@@ -136,7 +136,7 @@ void definitions::loadSkillTypes()
 		SkillType::create(p);
 	}
 }
-AttackTypeId definitions::loadAttackType(const Json& data, SkillTypeId defaultSkill)
+AttackTypeId definitions::loadAttackType(const Json& data, const SkillTypeId& defaultSkill)
 {
 	AttackTypeParamaters p{
 		.name=data["name"].get<std::string>(),

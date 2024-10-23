@@ -9,7 +9,7 @@
 #include "../plants.h"
 #include <string>
 
-Blocks::Blocks(Area& area, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) : m_area(area), m_sizeX(x), m_sizeY(y), m_sizeZ(z)
+Blocks::Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) : m_area(area), m_sizeX(x), m_sizeY(y), m_sizeZ(z)
 {
 	BlockIndex count = BlockIndex::create((x * y * z).get());
 	resize(count);
@@ -17,7 +17,7 @@ Blocks::Blocks(Area& area, DistanceInBlocks x, DistanceInBlocks y, DistanceInBlo
 		initalize(i);
 	m_offsetsForAdjacentCountTable = makeOffsetsForAdjacentCountTable();
 }
-void Blocks::resize(BlockIndex count)
+void Blocks::resize(const BlockIndex& count)
 {
 	m_reservables.resize(count);
 	m_materialType.resize(count);
@@ -46,7 +46,7 @@ void Blocks::resize(BlockIndex count)
 	m_constructed.resize(count);
 }
 // Create from scratch, not load from json.
-void Blocks::initalize(BlockIndex index)
+void Blocks::initalize(const BlockIndex& index)
 {
 	// Default initalization is fine for most things.
 	m_exposedToSky.set(index);
@@ -63,7 +63,7 @@ void Blocks::initalize(BlockIndex index)
 	m_outdoors.set(index);
 	recordAdjacent(index);
 }
-BlockIndex Blocks::offset(BlockIndex index, int32_t ax, int32_t ay, int32_t az) const
+BlockIndex Blocks::offset(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const
 {
 	Point3D coordinates = getCoordinates(index);
 	ax += coordinates.x.get();
@@ -162,7 +162,7 @@ BlockIndex Blocks::getIndex_i(uint x, uint y, uint z) const
 {
 	return getIndex(DistanceInBlocks::create(x), DistanceInBlocks::create(y), DistanceInBlocks::create(z));
 }
-BlockIndex Blocks::getIndex(DistanceInBlocks x, DistanceInBlocks y, DistanceInBlocks z) const
+BlockIndex Blocks::getIndex(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) const
 {
 	return getIndex({x,y,z});
 }
@@ -175,16 +175,16 @@ Point3D Blocks::getCoordinates(BlockIndex index) const
 	output.x = DistanceInBlocks::create(index.get()) - (output.y * m_sizeX);
 	return output;
 }
-Point3D_fractional Blocks::getCoordinatesFractional(BlockIndex index) const
+Point3D_fractional Blocks::getCoordinatesFractional(const BlockIndex& index) const
 {
 	Point3D coordinates = getCoordinates(index);
 	return {coordinates.x.toFloat(), coordinates.y.toFloat(), coordinates.z.toFloat()}; 
 }
-DistanceInBlocks Blocks::getZ(BlockIndex index) const
+DistanceInBlocks Blocks::getZ(const BlockIndex& index) const
 {
 	return DistanceInBlocks::create(index.get()) / (m_sizeX * m_sizeY);
 }
-BlockIndex Blocks::getAtFacing(BlockIndex index, Facing facing) const
+BlockIndex Blocks::getAtFacing(const BlockIndex& index, const Facing& facing) const
 {
 	return m_directlyAdjacent[index][facing.get()];
 }
@@ -199,17 +199,17 @@ BlockIndex Blocks::getCenterAtGroundLevel() const
 	}
 	return center;
 }
-Cuboid Blocks::getZLevel(DistanceInBlocks z)
+Cuboid Blocks::getZLevel(const DistanceInBlocks& z)
 {
 	return Cuboid(*this, getIndex({m_sizeX - 1, m_sizeY - 1, z}), getIndex({DistanceInBlocks::create(0), DistanceInBlocks::create(0), z}));
 }
-LocationBucket& Blocks::getLocationBucket(BlockIndex index)
+LocationBucket& Blocks::getLocationBucket(const BlockIndex& index)
 {
 	assert(m_locationBucket[index] != nullptr);
 	return *m_locationBucket[index];
 }
 template<uint size, bool filter>
-auto getAdjacentWithOffsets(const Blocks& blocks, const BlockIndex index, const std::array<int8_t, 3>* offsetList) -> std::array<BlockIndex, size>
+auto getAdjacentWithOffsets(const Blocks& blocks, const BlockIndex& index, const std::array<int8_t, 3>* offsetList) -> std::array<BlockIndex, size>
 {
 	std::array<BlockIndex, size> output;
 	Point3D coordinates = blocks.getCoordinates(index);
@@ -245,7 +245,7 @@ auto getAdjacentWithOffsets(const Blocks& blocks, const BlockIndex index, const 
 		}
 	return output;
 }
-void Blocks::recordAdjacent(BlockIndex index)
+void Blocks::recordAdjacent(const BlockIndex& index)
 {
 	static constexpr std::array<std::array<int8_t, 3>, 6> offsetsList{{{0,0,-1}, {0,-1,0}, {-1,0,0}, {0,1,0}, {1,0,0}, {0,0,1}}};
 	m_directlyAdjacent[index] = getAdjacentWithOffsets<6, false>(*this, index, &offsetsList.front());
@@ -255,36 +255,36 @@ void Blocks::assignLocationBuckets()
 	for(BlockIndex index : getAll())
 		m_locationBucket[index] = &m_area.m_locationBuckets.getBucketFor(index);
 }
-const std::array<BlockIndex, 6>& Blocks::getDirectlyAdjacent(BlockIndex index) const
+const std::array<BlockIndex, 6>& Blocks::getDirectlyAdjacent(const BlockIndex& index) const
 {
 	assert(m_directlyAdjacent.size() > index);
 	return m_directlyAdjacent[index];
 }
-BlockIndex Blocks::getBlockBelow(BlockIndex index) const 
+BlockIndex Blocks::getBlockBelow(const BlockIndex& index) const 
 {
 	return m_directlyAdjacent[index][0];
 }
-BlockIndex Blocks::getBlockAbove(BlockIndex index) const
+BlockIndex Blocks::getBlockAbove(const BlockIndex& index) const
 {
 	return m_directlyAdjacent[index][5];
 }
-BlockIndex Blocks::getBlockNorth(BlockIndex index) const
+BlockIndex Blocks::getBlockNorth(const BlockIndex& index) const
 {
 	return m_directlyAdjacent[index][3];
 }
-BlockIndex Blocks::getBlockWest(BlockIndex index) const
+BlockIndex Blocks::getBlockWest(const BlockIndex& index) const
 {
 	return m_directlyAdjacent[index][2];
 }
-BlockIndex Blocks::getBlockSouth(BlockIndex index) const
+BlockIndex Blocks::getBlockSouth(const BlockIndex& index) const
 {
 	return m_directlyAdjacent[index][1];
 }
-BlockIndex Blocks::getBlockEast(BlockIndex index) const
+BlockIndex Blocks::getBlockEast(const BlockIndex& index) const
 {
 	return m_directlyAdjacent[index][4];
 }
-BlockIndexArrayNotNull<18> Blocks::getAdjacentWithEdgeAdjacent(BlockIndex index) const
+BlockIndexArrayNotNull<18> Blocks::getAdjacentWithEdgeAdjacent(const BlockIndex& index) const
 {
 	static constexpr std::array<std::array<int8_t, 3>, 18>  offsetsList{{
 		{-1,0,-1}, 
@@ -302,15 +302,15 @@ BlockIndexArrayNotNull<18> Blocks::getAdjacentWithEdgeAdjacent(BlockIndex index)
 	return BlockIndexArrayNotNull<18>(getAdjacentWithOffsets<18, true>(*this, index, offsetsList.begin()));
 }
 // TODO: cache.
-BlockIndexArrayNotNull<26> Blocks::getAdjacentWithEdgeAndCornerAdjacent(BlockIndex index) const
+BlockIndexArrayNotNull<26> Blocks::getAdjacentWithEdgeAndCornerAdjacent(const BlockIndex& index) const
 {
 	return getAdjacentWithOffsets<26, true>(*this, index, offsetsListAllAdjacent.begin());
 }
-std::array<BlockIndex, 26> Blocks::getAdjacentWithEdgeAndCornerAdjacentUnfiltered(BlockIndex index) const
+std::array<BlockIndex, 26> Blocks::getAdjacentWithEdgeAndCornerAdjacentUnfiltered(const BlockIndex& index) const
 {
 	return getAdjacentWithOffsets<26, false>(*this, index, offsetsListAllAdjacent.begin());
 }
-BlockIndexArrayNotNull<12> Blocks::getEdgeAdjacentOnly(BlockIndex index) const
+BlockIndexArrayNotNull<12> Blocks::getEdgeAdjacentOnly(const BlockIndex& index) const
 {
 	static constexpr std::array<std::array<int8_t, 3>, 12>  offsetsList{{
 		{-1,0,-1}, {0,-1,-1},
@@ -324,7 +324,7 @@ BlockIndexArrayNotNull<12> Blocks::getEdgeAdjacentOnly(BlockIndex index) const
 	}};
 	return getAdjacentWithOffsets<12, true>(*this, index, offsetsList.begin());
 }
-BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnSameZLevelOnly(BlockIndex index) const
+BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const
 {
 	static constexpr std::array<std::array<int8_t, 3>, 4>  offsetsList{{
 		{-1,-1,0}, {1,1,0}, 
@@ -332,7 +332,7 @@ BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnSameZLevelOnly(BlockIndex ind
 	}};
 	return getAdjacentWithOffsets<4, true>(*this, index, offsetsList.begin());
 }
-BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnlyOnNextZLevelDown(BlockIndex index) const
+BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnlyOnNextZLevelDown(const BlockIndex& index) const
 {
 	static constexpr std::array<std::array<int8_t, 3>, 4>  offsetsList{{
 		{-1,0,-1}, {0,-1,-1},
@@ -340,7 +340,7 @@ BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnlyOnNextZLevelDown(BlockIndex
 	}};
 	return getAdjacentWithOffsets<4, true>(*this, index, offsetsList.begin());
 }
-BlockIndexArrayNotNull<8> Blocks::getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(BlockIndex index) const
+BlockIndexArrayNotNull<8> Blocks::getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(const BlockIndex& index) const
 {
 	static constexpr std::array<std::array<int8_t, 3>, 8>  offsetsList{{
 		{-1,-1,-1}, {-1,0,-1}, {-1, 1, -1},
@@ -349,7 +349,7 @@ BlockIndexArrayNotNull<8> Blocks::getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(B
 	}};
 	return getAdjacentWithOffsets<8, true>(*this, index, offsetsList.begin());
 }
-BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnlyOnNextZLevelUp(BlockIndex index) const
+BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnlyOnNextZLevelUp(const BlockIndex& index) const
 {
 	static constexpr std::array<std::array<int8_t, 3>, 4>  offsetsList{{
 		{-1,0,1}, {0,-1,1},
@@ -357,7 +357,7 @@ BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnlyOnNextZLevelUp(BlockIndex i
 	}};
 	return getAdjacentWithOffsets<4, true>(*this, index, offsetsList.begin());
 }
-BlockIndexArrayNotNull<20> Blocks::getEdgeAndCornerAdjacentOnly(BlockIndex index) const
+BlockIndexArrayNotNull<20> Blocks::getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const
 {
 	static constexpr std::array<std::array<int8_t, 3>, 20>  offsetsList{{
 		{-1,-1,-1},
@@ -383,7 +383,7 @@ BlockIndexArrayNotNull<20> Blocks::getEdgeAndCornerAdjacentOnly(BlockIndex index
 	}};
 	return getAdjacentWithOffsets<20, true>(*this, index, offsetsList.begin());
 }
-BlockIndexArrayNotNull<4> Blocks::getAdjacentOnSameZLevelOnly(BlockIndex index) const
+BlockIndexArrayNotNull<4> Blocks::getAdjacentOnSameZLevelOnly(const BlockIndex& index) const
 {
 	static constexpr std::array<std::array<int8_t, 3>, 4>  offsetsList{{
 		{-1,0,0}, {1,0,0}, 
@@ -391,11 +391,11 @@ BlockIndexArrayNotNull<4> Blocks::getAdjacentOnSameZLevelOnly(BlockIndex index) 
 	}};
 	return getAdjacentWithOffsets<4, true>(*this, index, offsetsList.begin());
 }
-DistanceInBlocks Blocks::distance(BlockIndex index, BlockIndex otherIndex) const
+DistanceInBlocks Blocks::distance(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
 	return DistanceInBlocks::create(pow(distanceSquared(index, otherIndex).get(), 0.5));
 }
-DistanceInBlocks Blocks::taxiDistance(BlockIndex index, BlockIndex otherIndex) const
+DistanceInBlocks Blocks::taxiDistance(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(otherIndex);
@@ -405,7 +405,7 @@ DistanceInBlocks Blocks::taxiDistance(BlockIndex index, BlockIndex otherIndex) c
 		abs((int)coordinates.z.get() - (int)otherCoordinates.z.get())
 	);
 }
-DistanceInBlocks Blocks::distanceSquared(BlockIndex index, BlockIndex other) const
+DistanceInBlocks Blocks::distanceSquared(const BlockIndex& index, const BlockIndex& other) const
 {
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(other);
@@ -414,7 +414,7 @@ DistanceInBlocks Blocks::distanceSquared(BlockIndex index, BlockIndex other) con
 	DistanceInBlocks dz = DistanceInBlocks::create(abs((int)coordinates.z.get() - (int)otherCoordinates.z.get()));
 	return DistanceInBlocks::create(pow(dx.get(), 2) + pow(dy.get(), 2) + pow(dz.get(), 2));
 }
-DistanceInBlocksFractional Blocks::distanceFractional(BlockIndex index, BlockIndex otherIndex) const
+DistanceInBlocksFractional Blocks::distanceFractional(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
 	Point3D_fractional coordinates = getCoordinatesFractional(index);
 	Point3D_fractional otherCoordinates = getCoordinatesFractional(otherIndex);
@@ -423,39 +423,39 @@ DistanceInBlocksFractional Blocks::distanceFractional(BlockIndex index, BlockInd
 	DistanceInBlocksFractional dz = DistanceInBlocksFractional::create(std::abs(coordinates.z.get() - otherCoordinates.z.get()));
 	return DistanceInBlocksFractional::create(std::pow((std::pow(dx.get(), 2) + std::pow(dy.get(), 2) + std::pow(dz.get(), 2)), 0.5));
 }
-bool Blocks::squareOfDistanceIsMoreThen(BlockIndex index, BlockIndex otherIndex, DistanceInBlocksFractional otherDistanceSquared) const
+bool Blocks::squareOfDistanceIsMoreThen(const BlockIndex& index, const BlockIndex& otherIndex, DistanceInBlocksFractional otherDistanceSquared) const
 {
 	return distanceSquared(index, otherIndex)> otherDistanceSquared.get();
 }
-bool Blocks::isAdjacentToAny(BlockIndex index, BlockIndices& blocks) const
+bool Blocks::isAdjacentToAny(const BlockIndex& index, BlockIndices& blocks) const
 {
 	for(BlockIndex adjacent : getDirectlyAdjacent(index))
 		if(adjacent.exists() && blocks.contains(adjacent))
 			return true;
 	return false;
 }
-bool Blocks::isAdjacentTo(BlockIndex index, BlockIndex otherIndex) const
+bool Blocks::isAdjacentTo(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
 	for(BlockIndex adjacent : getDirectlyAdjacent(index))
 		if(adjacent.exists() && otherIndex == adjacent)
 			return true;
 	return false;
 }
-bool Blocks::isAdjacentToIncludingCornersAndEdges(BlockIndex index, BlockIndex otherIndex) const
+bool Blocks::isAdjacentToIncludingCornersAndEdges(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
 	const auto& adjacents = getAdjacentWithEdgeAndCornerAdjacent(index);
 	return std::ranges::find(adjacents, otherIndex) != adjacents.end();
 }
-bool Blocks::isAdjacentToActor(BlockIndex index, ActorIndex actor) const
+bool Blocks::isAdjacentToActor(const BlockIndex& index, const ActorIndex& actor) const
 {
 	return m_area.getActors().isAdjacentToLocation(actor, index);
 }
-void Blocks::setExposedToSky(BlockIndex index, bool exposed)
+void Blocks::setExposedToSky(const BlockIndex& index, bool exposed)
 {
 	m_exposedToSky.set(index, exposed);
 	plant_updateGrowingStatus(index);
 }
-void Blocks::setBelowExposedToSky(BlockIndex index)
+void Blocks::setBelowExposedToSky(const BlockIndex& index)
 {
 	BlockIndex block = getBlockBelow(index);
 	while(block.exists() && canSeeThroughFrom(block, getBlockAbove(block)) && !m_exposedToSky[block])
@@ -465,7 +465,7 @@ void Blocks::setBelowExposedToSky(BlockIndex index)
 		block = getBlockBelow(block);
 	}
 }
-void Blocks::setBelowVisible(BlockIndex index)
+void Blocks::setBelowVisible(const BlockIndex& index)
 {
 	BlockIndex block = getBlockBelow(index);
 	while(block.exists() && canSeeThroughFrom(block, getBlockAbove(block)) && !m_visible[block])
@@ -474,7 +474,7 @@ void Blocks::setBelowVisible(BlockIndex index)
 		block = getBlockBelow(block);
 	}
 }
-void Blocks::setBelowNotExposedToSky(BlockIndex index)
+void Blocks::setBelowNotExposedToSky(const BlockIndex& index)
 {
 	BlockIndex block = getBlockBelow(index);
 	while(block.exists() && m_exposedToSky[block])
@@ -484,7 +484,7 @@ void Blocks::setBelowNotExposedToSky(BlockIndex index)
 		block = getBlockBelow(block);
 	}
 }
-void Blocks::solid_set(BlockIndex index, MaterialTypeId materialType, bool constructed)
+void Blocks::solid_set(const BlockIndex& index, const MaterialTypeId& materialType, bool constructed)
 {
 	assert(m_itemVolume[index].empty());
 	Plants& plants = m_area.getPlants();
@@ -516,7 +516,7 @@ void Blocks::solid_set(BlockIndex index, MaterialTypeId materialType, bool const
 		m_reservables[index] = nullptr;
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
-void Blocks::solid_setNot(BlockIndex index)
+void Blocks::solid_setNot(const BlockIndex& index)
 {
 	if(!solid_is(index))
 		return;
@@ -537,20 +537,20 @@ void Blocks::solid_setNot(BlockIndex index)
 	m_reservables[index] = nullptr;
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
-MaterialTypeId Blocks::solid_get(BlockIndex index) const
+MaterialTypeId Blocks::solid_get(const BlockIndex& index) const
 {
 	return m_materialType[index];
 }
-bool Blocks::solid_is(BlockIndex index) const
+bool Blocks::solid_is(const BlockIndex& index) const
 {
 	return m_materialType[index].exists();
 }
-Mass Blocks::getMass(BlockIndex index) const
+Mass Blocks::getMass(const BlockIndex& index) const
 {
 	assert(solid_is(index));
 	return MaterialType::getDensity(m_materialType[index]) * Volume::create(Config::maxBlockVolume.get());
 }
-bool Blocks::canSeeIntoFromAlways(BlockIndex to, BlockIndex from) const
+bool Blocks::canSeeIntoFromAlways(const BlockIndex& to, const BlockIndex& from) const
 {
 	if(solid_is(to) && !MaterialType::getTransparent(m_materialType[to]))
 		return false;
@@ -578,7 +578,7 @@ bool Blocks::canSeeIntoFromAlways(BlockIndex to, BlockIndex from) const
 	}
 	return true;
 }
-void Blocks::moveContentsTo(BlockIndex from, BlockIndex to)
+void Blocks::moveContentsTo(const BlockIndex& from, const BlockIndex& to)
 {
 	if(solid_is(from))
 	{
@@ -587,7 +587,7 @@ void Blocks::moveContentsTo(BlockIndex from, BlockIndex to)
 	}
 	//TODO: other stuff falls?
 }
-BlockIndex Blocks::offsetNotNull(BlockIndex index, int32_t ax, int32_t ay, int32_t az) const
+BlockIndex Blocks::offsetNotNull(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const
 {
 	Point3D coordinates = getCoordinates(index);
 	assert((int)coordinates.x.get() + ax >= 0);
@@ -598,7 +598,7 @@ BlockIndex Blocks::offsetNotNull(BlockIndex index, int32_t ax, int32_t ay, int32
 	coordinates.z += az;
 	return getIndex(coordinates);
 }
-BlockIndex Blocks::indexAdjacentToAtCount(BlockIndex index, AdjacentIndex adjacentCount) const
+BlockIndex Blocks::indexAdjacentToAtCount(const BlockIndex& index, const AdjacentIndex& adjacentCount) const
 {
 	// If block is on edge check for the offset being beyond the area. If so return BlockIndex::null().
 	if(m_isEdge[index])
@@ -625,7 +625,7 @@ std::array<int, 26> Blocks::makeOffsetsForAdjacentCountTable() const
 		output[i++] = (z * sy * sx) + (y * sx) + x;
 	return output;
 }
-std::array<int32_t, 3> Blocks::relativeOffsetTo(BlockIndex index, BlockIndex otherIndex) const
+std::array<int32_t, 3> Blocks::relativeOffsetTo(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(otherIndex);
@@ -635,7 +635,7 @@ std::array<int32_t, 3> Blocks::relativeOffsetTo(BlockIndex index, BlockIndex oth
 		(int)(otherCoordinates.z - coordinates.z).get()
 	};
 }
-bool Blocks::canSeeThrough(BlockIndex index) const
+bool Blocks::canSeeThrough(const BlockIndex& index) const
 {
 	if(solid_is(index) && !MaterialType::getTransparent(solid_get(index)))
 		return false;
@@ -644,7 +644,7 @@ bool Blocks::canSeeThrough(BlockIndex index) const
 		return false;
 	return true;
 }
-bool Blocks::canSeeThroughFloor(BlockIndex index) const
+bool Blocks::canSeeThroughFloor(const BlockIndex& index) const
 {
 	const BlockFeature* floor = blockFeature_atConst(index, BlockFeatureType::floor);
 	if(floor != nullptr && !MaterialType::getTransparent(floor->materialType))
@@ -654,7 +654,7 @@ bool Blocks::canSeeThroughFloor(BlockIndex index) const
 		return false;
 	return true;
 }
-bool Blocks::canSeeThroughFrom(BlockIndex index, BlockIndex otherIndex) const
+bool Blocks::canSeeThroughFrom(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
 	if(!canSeeThrough(index))
 		return false;
@@ -677,7 +677,7 @@ bool Blocks::canSeeThroughFrom(BlockIndex index, BlockIndex otherIndex) const
 	}
 	return true;
 }
-Facing Blocks::facingToSetWhenEnteringFrom(BlockIndex index, BlockIndex otherIndex) const
+Facing Blocks::facingToSetWhenEnteringFrom(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(otherIndex);
@@ -689,7 +689,7 @@ Facing Blocks::facingToSetWhenEnteringFrom(BlockIndex index, BlockIndex otherInd
 		return Facing::create(2);
 	return Facing::create(0);
 }
-Facing Blocks::facingToSetWhenEnteringFromIncludingDiagonal(BlockIndex index, BlockIndex otherIndex, Facing inital) const
+Facing Blocks::facingToSetWhenEnteringFromIncludingDiagonal(const BlockIndex& index, const BlockIndex& otherIndex, const Facing inital) const
 {
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(otherIndex);
@@ -721,32 +721,32 @@ Facing Blocks::facingToSetWhenEnteringFromIncludingDiagonal(BlockIndex index, Bl
 	assert(false);
 	return Facing::null();
 }
-bool Blocks::isSupport(BlockIndex index) const
+bool Blocks::isSupport(const BlockIndex& index) const
 {
 	return solid_is(index) || blockFeature_isSupport(index);
 }
-bool Blocks::isOutdoors(BlockIndex index) const
+bool Blocks::isOutdoors(const BlockIndex& index) const
 {
 	return m_outdoors[index];
 }
-bool Blocks::isUnderground(BlockIndex index) const
+bool Blocks::isUnderground(const BlockIndex& index) const
 {
 	return m_underground[index];
 }
-bool Blocks::isExposedToSky(BlockIndex index) const
+bool Blocks::isExposedToSky(const BlockIndex& index) const
 {
 	return m_exposedToSky[index];
 }
-bool Blocks::isEdge(BlockIndex index) const
+bool Blocks::isEdge(const BlockIndex& index) const
 {
 	return m_isEdge[index];
 }
-bool Blocks::hasLineOfSightTo(BlockIndex index, BlockIndex other) const
+bool Blocks::hasLineOfSightTo(const BlockIndex& index, const BlockIndex& other) const
 {
 	return m_area.m_opacityFacade.hasLineOfSight(index, other);
 }
-BlockIndices Blocks::collectAdjacentsInRange(BlockIndex index, DistanceInBlocks range)
+BlockIndices Blocks::collectAdjacentsInRange(const BlockIndex& index, const DistanceInBlocks& range)
 {
-	auto condition = [&](BlockIndex b){ return taxiDistance(b, index) <= range; };
+	auto condition = [&](const BlockIndex& b){ return taxiDistance(b, index) <= range; };
 	return collectAdjacentsWithCondition(index, condition);
 }

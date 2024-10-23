@@ -12,10 +12,10 @@ class TargetedHaulObjective final : public Objective
 public:
 	TargetedHaulObjective(TargetedHaulProject& p);
 	TargetedHaulObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area&, ActorIndex actor);
-	void cancel(Area&, ActorIndex actor);
-	void delay(Area&, ActorIndex) { }
-	void reset(Area& area, ActorIndex actor) { cancel(area, actor); }
+	void execute(Area&, const ActorIndex& actor);
+	void cancel(Area&, const ActorIndex& actor);
+	void delay(Area&, const ActorIndex&) { }
+	void reset(Area& area, const ActorIndex& actor) { cancel(area, actor); }
 	[[nodiscard]] std::string name() const { return "haul"; }
 	[[nodiscard]] Json toJson() const;
 };

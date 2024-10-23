@@ -23,18 +23,18 @@ class AreaHasVisionCuboids final
 public:
 	void initalize(Area& area);
 	void clearDestroyed();
-	void blockIsNeverOpaque(BlockIndex block);
-	void blockIsSometimesOpaque(BlockIndex block);
-	void blockFloorIsNeverOpaque(BlockIndex block);
-	void blockFloorIsSometimesOpaque(BlockIndex block);
-	void set(BlockIndex block, VisionCuboid& visionCuboid);
-	void unset(BlockIndex block);
+	void blockIsNeverOpaque(const BlockIndex& block);
+	void blockIsSometimesOpaque(const BlockIndex& block);
+	void blockFloorIsNeverOpaque(const BlockIndex& block);
+	void blockFloorIsSometimesOpaque(const BlockIndex& block);
+	void set(const BlockIndex& block, VisionCuboid& visionCuboid);
+	void unset(const BlockIndex& block);
 	VisionCuboid& emplace(Cuboid& cuboid);
 	[[nodiscard]] VisionCuboid* getTargetToCombineWith(const Cuboid& cuboid);
-	[[nodiscard]] VisionCuboidId getIdFor(BlockIndex index) const { return m_blockVisionCuboidIds[index]; }
+	[[nodiscard]] VisionCuboidId getIdFor(const BlockIndex& index) const { return m_blockVisionCuboidIds[index]; }
 	// For testing.
 	[[nodiscard]] size_t size() { return m_visionCuboids.size(); }
-	[[nodiscard]] VisionCuboid* getVisionCuboidFor(BlockIndex block);
+	[[nodiscard]] VisionCuboid* getVisionCuboidFor(const BlockIndex& block);
 };
 
 class VisionCuboid final
@@ -48,7 +48,7 @@ public:
 	VisionCuboid(Area& area, Cuboid& cuboid, VisionCuboidId id);
 	[[nodiscard]] bool canSeeInto(const Cuboid& cuboid) const;
 	[[nodiscard]] bool canCombineWith(const Cuboid& cuboid) const;
-	void splitAt(BlockIndex split);
-	void splitBelow(BlockIndex split);
+	void splitAt(const BlockIndex& split);
+	void splitBelow(const BlockIndex& split);
 	void extend(Cuboid& cuboid);
 };

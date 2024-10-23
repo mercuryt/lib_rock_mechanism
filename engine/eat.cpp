@@ -14,7 +14,7 @@
 #include "plants.h"
 #include "items/items.h"
 #include "blocks/blocks.h"
-HungerEvent::HungerEvent(Area& area, const Step delay, ActorIndex a, const Step start) :
+HungerEvent::HungerEvent(Area& area, const Step& delay, const ActorIndex& a, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_actor(a) { }
 void HungerEvent::execute(Simulation&, Area* area)
 {
@@ -24,7 +24,7 @@ void HungerEvent::clearReferences(Simulation&, Area* area)
 { 
 	area->getActors().m_mustEat[m_actor].get()->m_hungerEvent.clearPointer(); 
 }
-MustEat::MustEat(Area& area, ActorIndex a) : 
+MustEat::MustEat(Area& area, const ActorIndex& a) : 
 	m_hungerEvent(area.m_eventSchedule)
 {
 	m_actor.setTarget(area.getActors().getReferenceTarget(a));
@@ -34,7 +34,7 @@ void MustEat::scheduleHungerEvent(Area& area)
 	Step eatFrequency = AnimalSpecies::getStepsEatFrequency(area.getActors().getSpecies(m_actor.getIndex()));
 	m_hungerEvent.schedule(area, eatFrequency, m_actor.getIndex());
 }
-MustEat::MustEat(Area& area, const Json& data, ActorIndex a, AnimalSpeciesId species) : 
+MustEat::MustEat(Area& area, const Json& data, const ActorIndex& a, AnimalSpeciesId species) : 
 	m_hungerEvent(area.m_eventSchedule), m_massFoodRequested(data["massFoodRequested"].get<Mass>())
 {
 	m_actor.setTarget(area.getActors().getReferenceTarget(a));
@@ -55,19 +55,18 @@ Json MustEat::toJson() const
 	data["hungerEventStart"] = m_hungerEvent.getStartStep();
 	return data;
 }
-bool MustEat::canEatActor(Area& area, const ActorIndex actor) const
+bool MustEat::canEatActor(Area& area, const ActorIndex& actor) const
 {
 	Actors& actors = area.getActors();
 	if(actors.isAlive(actor))
 		return false;
 	AnimalSpeciesId species = actors.getSpecies(m_actor.getIndex());
-	if(!AnimalSpecies::getEatsMeat(species))
-		return false;
+	assert(AnimalSpecies::getEatsMeat(species));
 	if(AnimalSpecies::getFluidType(species) != AnimalSpecies::getFluidType(actors.getSpecies(actor)))
 		return false;
 	return true;
 }
-bool MustEat::canEatPlant(Area& area, const PlantIndex plant) const
+bool MustEat::canEatPlant(Area& area, const PlantIndex& plant) const
 {
 	AnimalSpeciesId species = area.getActors().getSpecies(m_actor.getIndex());
 	Plants& plants = area.getPlants();
@@ -77,7 +76,7 @@ bool MustEat::canEatPlant(Area& area, const PlantIndex plant) const
 		return true;
 	return false;
 }
-bool MustEat::canEatItem(Area& area, const ItemIndex item) const
+bool MustEat::canEatItem(Area& area, const ItemIndex& item) const
 {
 	return ItemType::getEdibleForDrinkersOf(area.getItems().getItemType(item)) == area.getActors().drink_getFluidType(m_actor.getIndex());
 }
@@ -145,7 +144,7 @@ Percent MustEat::getPercentStarved() const
 		return Percent::create(0);
 	return m_hungerEvent.percentComplete();
 }
-uint32_t MustEat::getDesireToEatSomethingAt(Area& area, BlockIndex block) const
+uint32_t MustEat::getDesireToEatSomethingAt(Area& area, const BlockIndex& block) const
 {
 	Blocks& blocks = area.getBlocks();
 	Items& items = area.getItems();
@@ -197,9 +196,9 @@ BlockIndex MustEat::getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireabili
 	candidates.fill(BlockIndex::null());
 	ActorIndex actor = m_actor.getIndex();
 	//TODO: abstract predicate generation from PathRequest constructor and use here as well.
-	std::function<bool(BlockIndex)> predicate;
+	std::function<bool(const BlockIndex&)> predicate;
 	if(area.getActors().isSentient(actor))
-		predicate = [&](BlockIndex block)
+		predicate = [&](const BlockIndex& block)
 		{
 			uint32_t eatDesire = getDesireToEatSomethingAt(area, block);
 			if(eatDesire < getMinimumAcceptableDesire(area))
@@ -212,7 +211,7 @@ BlockIndex MustEat::getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireabili
 		};
 	else
 		// Nonsentients aren't picky.
-		predicate = [&](BlockIndex block)
+		predicate = [&](const BlockIndex& block)
 		{
 			return getDesireToEatSomethingAt(area, block) != 0;
 		};

@@ -18,7 +18,7 @@ class GivePlantsFluidEvent final : public ScheduledEvent
 	ActorReference m_actor;
 	GivePlantsFluidObjective& m_objective;
 public:
-	GivePlantsFluidEvent(Step step, Area& area, GivePlantsFluidObjective& gpfo, ActorIndex actor, const Step start = Step::null());
+	GivePlantsFluidEvent(const Step& step, Area& area, GivePlantsFluidObjective& gpfo, const ActorIndex& actor, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 	void onCancel(Simulation& simulation, Area* area);
@@ -28,17 +28,17 @@ class GivePlantsFluidPathRequest final : public PathRequest
 {
 	GivePlantsFluidObjective& m_objective;
 public:
-	GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective, ActorIndex actor);
+	GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective, const ActorIndex& actor);
 	GivePlantsFluidPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, FindPathResult& result);
+	void callback(Area& area, const FindPathResult& result);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "give plants fluid"; }
 };
 class GivePlantsFluidObjectiveType final : public ObjectiveType
 {
 public:
-	bool canBeAssigned(Area& area, ActorIndex actor) const;
-	std::unique_ptr<Objective> makeFor(Area& area, ActorIndex actor) const;
+	bool canBeAssigned(Area& area, const ActorIndex& actor) const;
+	std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
 	GivePlantsFluidObjectiveType() = default;
 	GivePlantsFluidObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
 	[[nodiscard]] std::string name() const { return "give plants fluid"; }
@@ -50,21 +50,21 @@ class GivePlantsFluidObjective final : public Objective
 	HasScheduledEvent<GivePlantsFluidEvent> m_event;
 public:
 	GivePlantsFluidObjective(Area& area);
-	GivePlantsFluidObjective(const Json& data, Area& area, ActorIndex actor);
+	GivePlantsFluidObjective(const Json& data, Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
-	void execute(Area& area, ActorIndex actor);
-	void cancel(Area& area, ActorIndex actor);
-	void fillContainer(Area& area, BlockIndex fillLocation, ActorIndex actor);
-	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
-	void selectPlantLocation(Area& area, BlockIndex block, ActorIndex actor);
-	void selectItem(Area& area, ItemIndex item, ActorIndex actor);
-	void reset(Area& area, ActorIndex actor);
-	void makePathRequest(Area& area, ActorIndex actor);
+	void execute(Area& area, const ActorIndex& actor);
+	void cancel(Area& area, const ActorIndex& actor);
+	void fillContainer(Area& area, const BlockIndex& fillLocation, const ActorIndex& actor);
+	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
+	void selectPlantLocation(Area& area, const BlockIndex& block, const ActorIndex& actor);
+	void selectItem(Area& area, const ItemIndex& item, const ActorIndex& actor);
+	void reset(Area& area, const ActorIndex& actor);
+	void makePathRequest(Area& area, const ActorIndex& actor);
 	[[nodiscard]] std::string name() const { return "give plants fluid"; }
-	[[nodiscard]] bool canFillAt(Area& area, BlockIndex block) const;
-	[[nodiscard]] ItemIndex getItemToFillFromAt(Area& area, BlockIndex block) const;
-	[[nodiscard]] bool canGetFluidHaulingItemAt(Area& area, BlockIndex location, ActorIndex actor) const;
-	[[nodiscard]] ItemIndex getFluidHaulingItemAt(Area& area, BlockIndex location, ActorIndex actor) const;
+	[[nodiscard]] bool canFillAt(Area& area, const BlockIndex& block) const;
+	[[nodiscard]] ItemIndex getItemToFillFromAt(Area& area, const BlockIndex& block) const;
+	[[nodiscard]] bool canGetFluidHaulingItemAt(Area& area, const BlockIndex& location, const ActorIndex& actor) const;
+	[[nodiscard]] ItemIndex getFluidHaulingItemAt(Area& area, const BlockIndex& location, const ActorIndex& actor) const;
 	friend class GivePlantsFluidEvent;
 	friend class GivePlantsFluidPathRequest;
 	// For testing.

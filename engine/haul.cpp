@@ -91,7 +91,7 @@ HaulSubprojectDishonorCallback::HaulSubprojectDishonorCallback(const Json data, 
 	m_haulSubproject(*deserializationMemo.m_haulSubprojects.at(data["haulSubproject"])) { }
 HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters) :
 	m_project(p), m_toHaul(paramaters.toHaul),
-       	m_quantity(paramaters.quantity), m_strategy(paramaters.strategy),
+	m_quantity(paramaters.quantity), m_strategy(paramaters.strategy),
 	m_projectRequirementCounts(*paramaters.projectRequirementCounts)
 {
 	Area& area = m_project.m_area;
@@ -198,7 +198,7 @@ Json HaulSubproject::toJson() const
 	}
 	return data;
 }
-void HaulSubproject::commandWorker(ActorIndex actor)
+void HaulSubproject::commandWorker(const ActorIndex& actor)
 {
 	ActorReference ref = m_project.m_area.getActors().getReference(actor);
 	assert(m_workers.contains(ref));
@@ -664,14 +664,14 @@ void HaulSubproject::commandWorker(ActorIndex actor)
 			assert(false); // this method should only be called after a strategy is choosen.
 	}
 }
-void HaulSubproject::addWorker(ActorIndex actor)
+void HaulSubproject::addWorker(const ActorIndex& actor)
 {
 	ActorReference ref = m_project.m_area.getActors().getReference(actor);
 	assert(!m_workers.contains(ref));
 	m_workers.add(ref);
 	commandWorker(actor);
 }
-void HaulSubproject::removeWorker(ActorIndex actor)
+void HaulSubproject::removeWorker(const ActorIndex& actor)
 {
 	ActorReference ref = m_project.m_area.getActors().getReference(actor);
 	assert(m_workers.contains(ref));
@@ -681,15 +681,15 @@ void HaulSubproject::cancel()
 {
 	m_project.haulSubprojectCancel(*this);
 }
-bool HaulSubproject::allWorkersAreAdjacentTo(ActorOrItemIndex actorOrItem)
+bool HaulSubproject::allWorkersAreAdjacentTo(const ActorOrItemIndex& actorOrItem)
 {
 	return std::all_of(m_workers.begin(), m_workers.end(), [&](ActorReference worker) { return actorOrItem.isAdjacentToActor(m_project.m_area, worker.getIndex()); });
 }
-bool HaulSubproject::allWorkersAreAdjacentTo(ItemIndex index)
+bool HaulSubproject::allWorkersAreAdjacentTo(const ItemIndex& index)
 {
 	return std::all_of(m_workers.begin(), m_workers.end(), [&](ActorReference worker) { return m_project.m_area.getItems().isAdjacentToActor(index, worker.getIndex()); });
 }
-HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& project, ActorOrItemIndex toHaul, ActorIndex worker)
+HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& project, const ActorOrItemIndex& toHaul, const ActorIndex& worker)
 {
 	// TODO: make exception for slow haul if very close.
 	Actors& actors = project.m_area.getActors();
@@ -815,7 +815,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	assert(output.strategy == HaulStrategy::None);
 	return output;
 }
-void HaulSubproject::complete(ActorOrItemIndex delivered)
+void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 {
 	Actors& actors = m_project.m_area.getActors();
 	Items& items = m_project.m_area.getItems();
@@ -853,7 +853,7 @@ void HaulSubproject::complete(ActorOrItemIndex delivered)
 	}
 }
 // Class method.
-ActorIndices HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Project& project, ActorIndex leader, const ActorOrItemIndex toHaul)
+ActorIndices HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Project& project, const ActorIndex& leader, const ActorOrItemIndex& toHaul)
 {
 	std::vector<ActorOrItemIndex> actorsAndItems;
 	ActorIndices output;
@@ -881,7 +881,7 @@ ActorIndices HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Project& pro
 	return output;
 }
 //Class method.
-Speed HaulSubproject::getSpeedWithHaulToolAndCargo(const Area& area, const ActorIndex leader, const ItemIndex haulTool, const ActorOrItemIndex toHaul, Quantity quantity)
+Speed HaulSubproject::getSpeedWithHaulToolAndCargo(const Area& area, const ActorIndex& leader, const ItemIndex& haulTool, const ActorOrItemIndex& toHaul, const Quantity& quantity)
 {
 	std::vector<ActorOrItemIndex> actorsAndItems;
 	actorsAndItems.push_back(ActorOrItemIndex::createForActor(leader));
@@ -890,7 +890,7 @@ Speed HaulSubproject::getSpeedWithHaulToolAndCargo(const Area& area, const Actor
 	return Portables::getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, toHaul.getSingleUnitMass(area) * quantity, Mass::create(0));
 }
 // Class method.
-Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const Area& area, const ActorIndex leader, const ItemIndex haulTool, const ActorOrItemIndex toHaul, Speed minimumSpeed)
+Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const Area& area, const ActorIndex& leader, const ItemIndex& haulTool, const ActorOrItemIndex& toHaul, const Speed& minimumSpeed)
 {
 	assert(minimumSpeed != 0);
 	Quantity quantity = Quantity::create(0);
@@ -899,7 +899,7 @@ Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(con
 	return quantity;
 }
 // Class method.
-Speed HaulSubproject::getSpeedWithHaulToolAndAnimal(const Area& area, const ActorIndex leader, const ActorIndex yoked, const ItemIndex haulTool, const ActorOrItemIndex toHaul, Quantity quantity)
+Speed HaulSubproject::getSpeedWithHaulToolAndAnimal(const Area& area, const ActorIndex& leader, const ActorIndex& yoked, const ItemIndex& haulTool, const ActorOrItemIndex& toHaul, const Quantity& quantity)
 {
 	std::vector<ActorOrItemIndex> actorsAndItems;
 	actorsAndItems.push_back(ActorOrItemIndex::createForActor(leader));
@@ -909,7 +909,7 @@ Speed HaulSubproject::getSpeedWithHaulToolAndAnimal(const Area& area, const Acto
 	return Portables::getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, toHaul.getSingleUnitMass(area) * quantity, Mass::create(0));
 }
 // Class method.
-Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(const Area& area, const ActorIndex leader, ActorIndex yoked, const ItemIndex haulTool, const ActorOrItemIndex toHaul, Speed minimumSpeed)
+Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(const Area& area, const ActorIndex& leader, const ActorIndex& yoked, const ItemIndex& haulTool, const ActorOrItemIndex& toHaul, const Speed& minimumSpeed)
 {
 	assert(minimumSpeed != 0);
 	Quantity quantity = Quantity::create(0);
@@ -918,7 +918,7 @@ Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndA
 	return quantity;
 }
 // Class method.
-ActorIndices HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, ActorIndex leader, const ActorOrItemIndex toHaul, const ItemIndex haulTool)
+ActorIndices HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, const ActorIndex& leader, const ActorOrItemIndex& toHaul, const ItemIndex& haulTool)
 {
 	std::vector<ActorOrItemIndex> actorsAndItems;
 	ActorIndices output;
@@ -948,7 +948,7 @@ ActorIndices HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(const Proj
 	return output;
 }
 // Class method.
-Speed HaulSubproject::getSpeedWithPannierBearerAndPanniers(const Area& area, const ActorIndex leader, const ActorIndex pannierBearer, const ItemIndex panniers, const ActorOrItemIndex toHaul, Quantity quantity)
+Speed HaulSubproject::getSpeedWithPannierBearerAndPanniers(const Area& area, const ActorIndex& leader, const ActorIndex& pannierBearer, const ItemIndex& panniers, const ActorOrItemIndex& toHaul, const Quantity& quantity)
 {
 	std::vector<ActorOrItemIndex> actorsAndItems;
 	actorsAndItems.push_back(ActorOrItemIndex::createForActor(leader));
@@ -957,7 +957,7 @@ Speed HaulSubproject::getSpeedWithPannierBearerAndPanniers(const Area& area, con
 	return Portables::getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, Mass::create(0), (toHaul.getSingleUnitMass(area) * quantity) + area.getItems().getMass(panniers));
 }
 // Class method.
-Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(const Area& area, const ActorIndex leader, const ActorIndex pannierBearer, const ItemIndex panniers, const ActorOrItemIndex toHaul, Speed minimumSpeed)
+Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(const Area& area, const ActorIndex& leader, const ActorIndex& pannierBearer, const ItemIndex& panniers, const ActorOrItemIndex& toHaul, const Speed& minimumSpeed)
 {
 	assert(minimumSpeed != 0);
 	Quantity quantity = Quantity::create(0);
@@ -966,34 +966,34 @@ Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniers
 	return quantity;
 }
 //TODO: optimize?
-bool AreaHasHaulTools::hasToolToHaulItem(const Area& area, FactionId faction, ItemIndex item) const
+bool AreaHasHaulTools::hasToolToHaulItem(const Area& area, const FactionId& faction, const ItemIndex& item) const
 {
 	return getToolToHaulItem(area, faction, item).exists();
 }
-bool AreaHasHaulTools::hasToolToHaulActor(const Area& area, FactionId faction, ActorIndex actor) const
+bool AreaHasHaulTools::hasToolToHaulActor(const Area& area, const FactionId& faction, const ActorIndex& actor) const
 {
 	return getToolToHaulActor(area, faction, actor).exists();
 }
-bool AreaHasHaulTools::hasToolToHaulPolymorphic(const Area& area, FactionId faction, const ActorOrItemIndex hasShape) const
+bool AreaHasHaulTools::hasToolToHaulPolymorphic(const Area& area, const FactionId& faction, const ActorOrItemIndex& hasShape) const
 {
 	return getToolToHaulPolymorphic(area, faction, hasShape).exists();
 }
-ItemIndex AreaHasHaulTools::getToolToHaulItem(const Area& area, FactionId faction, ItemIndex item) const
+ItemIndex AreaHasHaulTools::getToolToHaulItem(const Area& area, const FactionId& faction, const ItemIndex& item) const
 {
 	Volume volume = area.getItems().getVolume(item);
 	return getToolToHaulVolume(area, faction, volume);
 }
-ItemIndex AreaHasHaulTools::getToolToHaulActor(const Area& area, FactionId faction, ActorIndex actor) const
+ItemIndex AreaHasHaulTools::getToolToHaulActor(const Area& area, const FactionId& faction, const ActorIndex& actor) const
 {
 	Volume volume = area.getActors().getVolume(actor);
 	return getToolToHaulVolume(area, faction, volume);
 }
-ItemIndex AreaHasHaulTools::getToolToHaulPolymorphic(const Area& area, FactionId faction, const ActorOrItemIndex toHaul) const
+ItemIndex AreaHasHaulTools::getToolToHaulPolymorphic(const Area& area, const FactionId& faction, const ActorOrItemIndex& toHaul) const
 {
 	Volume volume = toHaul.getVolume(area);
 	return getToolToHaulVolume(area, faction, volume);
 }
-ItemIndex AreaHasHaulTools::getToolToHaulVolume(const Area& area, FactionId faction, Volume volume) const
+ItemIndex AreaHasHaulTools::getToolToHaulVolume(const Area& area, const FactionId& faction, const Volume& volume) const
 {
 	// Items like panniers with no move type also have internal volume but aren't relevent for this method.
 	static MoveTypeId none = MoveType::byName("none");
@@ -1007,11 +1007,11 @@ ItemIndex AreaHasHaulTools::getToolToHaulVolume(const Area& area, FactionId fact
 	}
 	return ItemIndex::null();
 }
-bool AreaHasHaulTools::hasToolToHaulFluid(const Area& area, FactionId faction) const
+bool AreaHasHaulTools::hasToolToHaulFluid(const Area& area, const FactionId& faction) const
 {
 	return getToolToHaulFluid(area, faction).exists();
 }
-ItemIndex AreaHasHaulTools::getToolToHaulFluid(const Area& area, FactionId faction) const
+ItemIndex AreaHasHaulTools::getToolToHaulFluid(const Area& area, const FactionId& faction) const
 {
 	const Items& items = area.getItems();
 	for(ItemReference item : m_haulTools)
@@ -1022,7 +1022,7 @@ ItemIndex AreaHasHaulTools::getToolToHaulFluid(const Area& area, FactionId facti
 	}
 	return ItemIndex::null();
 }
-ActorIndex AreaHasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Area& area, FactionId faction, const ItemIndex haulTool, Mass cargoMass, Speed minimumHaulSpeed) const
+ActorIndex AreaHasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Area& area, const FactionId& faction, const ItemIndex& haulTool, const Mass& cargoMass, const Speed& minimumHaulSpeed) const
 {
 	[[maybe_unused]] static MoveTypeId rollingType = MoveType::byName("roll");
 	assert(area.getItems().getMoveType(haulTool) == rollingType);
@@ -1036,7 +1036,7 @@ ActorIndex AreaHasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMin
 	}
 	return ActorIndex::null();
 }
-ActorIndex AreaHasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed(const Area& area, FactionId faction, const ActorOrItemIndex hasShape, Speed minimumHaulSpeed) const
+ActorIndex AreaHasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed(const Area& area, const FactionId& faction, const ActorOrItemIndex& hasShape, const Speed& minimumHaulSpeed) const
 {
 	//TODO: Account for pannier mass?
 	const Actors& actors = area.getActors();
@@ -1048,7 +1048,7 @@ ActorIndex AreaHasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed
 	}
 	return ActorIndex::null();
 }
-ItemIndex AreaHasHaulTools::getPanniersForActorToHaul(const Area& area, FactionId faction, const ActorIndex actor, const ActorOrItemIndex toHaul) const
+ItemIndex AreaHasHaulTools::getPanniersForActorToHaul(const Area& area, const FactionId& faction, const ActorIndex& actor, const ActorOrItemIndex& toHaul) const
 {
 	const Items& items = area.getItems();
 	const Actors& actors = area.getActors();
@@ -1060,28 +1060,28 @@ ItemIndex AreaHasHaulTools::getPanniersForActorToHaul(const Area& area, FactionI
 	}
 	return ItemIndex::null();
 }
-void AreaHasHaulTools::registerHaulTool(const Area& area, ItemIndex item)
+void AreaHasHaulTools::registerHaulTool(const Area& area, const ItemIndex& item)
 {
 	const ItemReference ref = area.getItems().getReferenceConst(item);
 	assert(!m_haulTools.contains(ref));
 	assert(ItemType::getInternalVolume(area.getItems().getItemType(item)) != 0);
 	m_haulTools.add(ref);
 }
-void AreaHasHaulTools::registerYokeableActor(const Area& area, ActorIndex actor)
+void AreaHasHaulTools::registerYokeableActor(const Area& area, const ActorIndex& actor)
 {
-	ActorReference ref = area.getActors().getReference(actor); 
+	ActorReference ref = area.getActors().getReference(actor);
 	assert(!m_yolkableActors.contains(ref));
 	m_yolkableActors.add(ref);
 }
-void AreaHasHaulTools::unregisterHaulTool(const Area& area, ItemIndex item)
+void AreaHasHaulTools::unregisterHaulTool(const Area& area, const ItemIndex& item)
 {
-	const ItemReference ref = area.getItems().getReferenceConst(item); 
+	const ItemReference ref = area.getItems().getReferenceConst(item);
 	assert(m_haulTools.contains(ref));
 	m_haulTools.remove(ref);
 }
-void AreaHasHaulTools::unregisterYokeableActor(const Area& area, ActorIndex actor)
+void AreaHasHaulTools::unregisterYokeableActor(const Area& area, const ActorIndex& actor)
 {
-	ActorReference ref = area.getActors().getReference(actor); 
+	ActorReference ref = area.getActors().getReference(actor);
 	assert(m_yolkableActors.contains(ref));
 	m_yolkableActors.remove(ref);
 }

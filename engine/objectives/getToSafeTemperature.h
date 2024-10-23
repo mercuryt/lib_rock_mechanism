@@ -11,8 +11,8 @@ struct FindPathResult;
 class GetToSafeTemperatureObjectiveType final : public ObjectiveType
 {
 public:
-	[[nodiscard]] bool canBeAssigned(Area&, ActorIndex) const { assert(false); }
-	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, ActorIndex) const { assert(false); }
+	[[nodiscard]] bool canBeAssigned(Area&, const ActorIndex&) const { assert(false); }
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, const ActorIndex&) const { assert(false); }
 	GetToSafeTemperatureObjectiveType() = default;
 	GetToSafeTemperatureObjectiveType(const Json&, DeserializationMemo&);
 	[[nodiscard]] std::string name() const { return "get to safe temperature"; }
@@ -23,10 +23,10 @@ class GetToSafeTemperatureObjective final : public Objective
 public:
 	GetToSafeTemperatureObjective() : Objective(Config::getToSafeTemperaturePriority) { }
 	GetToSafeTemperatureObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, ActorIndex actor);
-	void cancel(Area& area, ActorIndex actor);
-	void delay(Area& area, ActorIndex actor) { cancel(area, actor); }
-	void reset(Area& area, ActorIndex actor);
+	void execute(Area& area, const ActorIndex& actor);
+	void cancel(Area& area, const ActorIndex& actor);
+	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
+	void reset(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "get to safe temperature"; }
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::temperature; }
@@ -36,9 +36,9 @@ class GetToSafeTemperaturePathRequest final : public PathRequest
 {
 	GetToSafeTemperatureObjective& m_objective;
 public:
-	GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& o, ActorIndex actor);
+	GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& o, const ActorIndex& actor);
 	GetToSafeTemperaturePathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, FindPathResult& result);
+	void callback(Area& area, const FindPathResult& result);
 	[[nodiscard]] std::string name() const { return "get to safe temperature"; }
 	[[nodiscard]] Json toJson() const;
 };

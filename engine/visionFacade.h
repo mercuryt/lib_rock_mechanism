@@ -21,22 +21,22 @@ public:
 	VisionFacade();
 	// Used as part of initalizaton.
 	void setArea(Area& area);
-	void addActor(ActorIndex actor);
-	void removeActor(ActorIndex actor);
+	void addActor(const ActorIndex& actor);
+	void removeActor(const ActorIndex& actor);
 	// TODO: What is this for? Used in clean-up? But why?
-	void remove(VisionFacadeIndex index);
-	void updateRange(VisionFacadeIndex index, DistanceInBlocks range);
-	void updateLocation(VisionFacadeIndex index, BlockIndex& location);
-	void readStepSegment(VisionFacadeIndex begin, VisionFacadeIndex end);
+	void remove(const VisionFacadeIndex& index);
+	void updateRange(const VisionFacadeIndex& index, const DistanceInBlocks& range);
+	void updateLocation(const VisionFacadeIndex& index, const BlockIndex& location);
+	void readStepSegment(const VisionFacadeIndex& begin, const VisionFacadeIndex& end);
 	void doStep();
 	void readStep();
 	void writeStep();
 	void clear();
-	void updateActorIndex(VisionFacadeIndex index, ActorIndex newIndex) { m_actors[index] = newIndex; }
-	[[nodiscard]] ActorIndex getActor(VisionFacadeIndex index);
-	[[nodiscard]] BlockIndex getLocation(VisionFacadeIndex index);
-	[[nodiscard]] DistanceInBlocks getRange(VisionFacadeIndex index) const;
-	[[nodiscard]] ActorIndices& getResults(VisionFacadeIndex index);
+	void updateActorIndex(const VisionFacadeIndex& index, const ActorIndex& newIndex) { m_actors[index] = newIndex; }
+	[[nodiscard]] ActorIndex getActor(const VisionFacadeIndex& index);
+	[[nodiscard]] BlockIndex getLocation(const VisionFacadeIndex& index);
+	[[nodiscard]] DistanceInBlocks getRange(const VisionFacadeIndex& index) const;
+	[[nodiscard]] ActorIndices& getResults(const VisionFacadeIndex& index);
 	[[nodiscard]] size_t size() const { return m_actors.size(); }
 	[[nodiscard]] static DistanceInBlocks taxiDistance(Point3D a, Point3D b);
 };
@@ -46,13 +46,13 @@ class VisionFacadeBuckets final
 {
 	Area& m_area;
 	std::array<VisionFacade, Config::actorDoVisionInterval> m_data;
-	VisionFacade& facadeForActor(ActorIndex actor);
+	VisionFacade& facadeForActor(const ActorIndex& actor);
 public:
 	VisionFacadeBuckets(Area& area);
-	void add(ActorIndex actor);
-	void remove(ActorIndex actor);
+	void add(const ActorIndex& actor);
+	void remove(const ActorIndex& actor);
 	void clear();
-	void doStep(Step step) { getForStep(step).doStep(); }
+	void doStep(const Step& step) { getForStep(step).doStep(); }
 	[[nodiscard]] VisionFacade& getForStep(Step step);
 };
 // RAII handle for vision facade data.
@@ -66,14 +66,14 @@ public:
 	// To be called when leaving an area. Also calls clear if !empty().
 	void clearVisionFacade();
 	// Create facade data, to be used when actor enters area, wakes up, or temporary blindness ends.
-	void create(Area& area, ActorIndex actor);
+	void create(Area& area, const ActorIndex& actor);
 	// Call on sleep or blinding.
 	void clear();
 	// Call when vision range changes.
-	void updateRange(DistanceInBlocks range);
+	void updateRange(const DistanceInBlocks& range);
 	// Call when move.
-	void updateLocation(BlockIndex& location);
-	void updateActorIndex(ActorIndex newIndex) { m_visionFacade->updateActorIndex(m_index, newIndex); }
+	void updateLocation(const BlockIndex& location);
+	void updateActorIndex(const ActorIndex& newIndex) { m_visionFacade->updateActorIndex(m_index, newIndex); }
 	[[nodiscard]] bool empty() const { return m_index.empty(); }
 	[[nodiscard]] VisionFacadeIndex getIndex() const { return m_index; }
 	friend class VisionFacade;

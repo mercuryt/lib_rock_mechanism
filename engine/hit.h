@@ -16,8 +16,8 @@ struct Hit
 	uint32_t depth;
 	MaterialTypeId materialType;
 	const WoundType woundType;
-	Hit(uint32_t a, Force f, MaterialTypeId mt, const WoundType wt) : area(a), force(f), depth(0), materialType(mt), woundType(wt) { }
-	Hit(Json data) : area(data["area"].get<uint32_t>()), force(data["force"].get<Force>()), depth(data["depth"].get<uint32_t>()), materialType(MaterialType::byName(data["materialType"].get<std::string>())), woundType(woundTypeByName(data["woundType"].get<std::string>())) { }
+	Hit(uint32_t a, const Force& f, const MaterialTypeId& mt, const WoundType& wt) : area(a), force(f), depth(0), materialType(mt), woundType(wt) { }
+	Hit(const Json& data) : area(data["area"].get<uint32_t>()), force(data["force"].get<Force>()), depth(data["depth"].get<uint32_t>()), materialType(MaterialType::byName(data["materialType"].get<std::string>())), woundType(woundTypeByName(data["woundType"].get<std::string>())) { }
 	Json toJson() const 
 	{
 		Json data;
