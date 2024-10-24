@@ -68,6 +68,7 @@ void ConstructProject::onComplete()
 	Blocks& blocks = m_area.getBlocks();
 	Actors& actors = m_area.getActors();
 	assert(!blocks.solid_is(m_location));
+	m_area.m_hasConstructionDesignations.clearAll(m_location);
 	if(m_blockFeatureType == nullptr)
 	{
 		blocks.item_disperseAll(m_location);
@@ -78,7 +79,6 @@ void ConstructProject::onComplete()
 	else
 		blocks.blockFeature_construct(m_location, *m_blockFeatureType, m_materialType);
 	auto workers = std::move(m_workers);
-	m_area.m_hasConstructionDesignations.clearAll(m_location);
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(), *projectWorker.objective);
 }
@@ -164,8 +164,8 @@ void HasConstructionDesignationsForFaction::undesignate(const BlockIndex& block)
 void HasConstructionDesignationsForFaction::remove(Area& area, const BlockIndex& block)
 {
 	assert(contains(block));
-	m_data.erase(block);
 	area.getBlocks().designation_unset(block, m_faction, BlockDesignation::Construct);
+	m_data.erase(block);
 }
 void AreaHasConstructionDesignations::clearReservations()
 {
