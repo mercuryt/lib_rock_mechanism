@@ -134,9 +134,12 @@ void Actors::canPickUp_removeItem(const ActorIndex& index, const ItemIndex& item
 	assert(m_carrying[index].isItem());
 	assert(m_carrying[index].get().toItem() == item);
 	m_carrying[index].clear();
-	Items& items = m_area.getItems();
-	items.destroy(item);
 	move_updateIndividualSpeed(index);
+}
+void Actors::canPickUp_destroyItem(const ActorIndex& index, const ItemIndex& item)
+{
+	canPickUp_removeItem(index, item);
+	m_area.getItems().destroy(item);
 }
 ItemIndex Actors::canPickUp_getItem(const ActorIndex& index) const
 {

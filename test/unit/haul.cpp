@@ -204,7 +204,6 @@ TEST_CASE("haul")
 		BlockIndex destination = blocks.getIndex_i(8, 8, 2);
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 5, 2);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .location=chunkLocation, .quantity=Quantity::create(1u)});
-		items.setLocation(chunk1, chunkLocation);
 		REQUIRE(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInital) == 0);
 		BlockIndex donkeyLocation = blocks.getIndex_i(1, 2, 2);
 		ActorIndex donkey1 = actors.create({
@@ -253,7 +252,6 @@ TEST_CASE("haul")
 		BlockIndex destination = blocks.getIndex_i(5, 5, 2);
 		BlockIndex boulderLocation = blocks.getIndex_i(1, 5, 2);
 		ItemIndex boulder1 = items.create({.itemType=boulder, .materialType=lead, .location=boulderLocation, .quantity=Quantity::create(1u)});
-		items.setLocation(boulder1, boulderLocation);
 		BlockIndex donkeyLocation = blocks.getIndex_i(4, 3, 2);
 		ActorIndex donkey1 = actors.create({
 			.species=donkey,
@@ -305,7 +303,6 @@ TEST_CASE("haul")
 		ActorReference dwarf2Ref = dwarf2.toReference(area);
 		BlockIndex cartLocation = blocks.getIndex_i(7, 1, 2);
 		ItemIndex cart1 = items.create({.itemType=cart, .materialType=poplarWood, .location=cartLocation, .quality=Quality::create(3u), .percentWear=Percent::create(0)});
-		items.setLocation(cart1, cartLocation);
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(ActorIndices({dwarf1, dwarf2}), cargo1, destination);
 		// One step to activate the project and make reservations.
 		simulation.doStep();

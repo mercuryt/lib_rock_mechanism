@@ -369,7 +369,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 						ActorOrItemIndex delivered;
 						if(m_genericItemType.exists())
 						{
-							items.cargo_unloadPolymorphicToLocation(haulToolIndex, toHaulIndex, m_project.m_location, m_quantity);
+							items.cargo_unloadPolymorphicToLocation(haulToolIndex, toHaulIndex, actorLocation, m_quantity);
 							delivered = ActorOrItemIndex::createForItem(haulToolIndex);
 						}
 						else
@@ -530,7 +530,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 							delivered = ActorOrItemIndex::createForItem(item);
 						}
 						// TODO: set rotation?
-						actors.unfollow(m_beastOfBurden.getIndex());
+						actors.leadAndFollowDisband(actor);
 						complete(delivered);
 					}
 					else
@@ -563,7 +563,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 						// Actor can harness beast to item.
 						// Don't check if item is adjacent to beast, allow it to teleport.
 						// TODO: Make not teleport.
-						items.followActor(m_haulTool.getIndex(), actor);
+						items.followActor(m_haulTool.getIndex(), m_beastOfBurden.getIndex());
 						// Skip adjacent check, potentially teleport.
 						actors.canReserve_clearAll(actor);
 						actors.move_setDestinationAdjacentToPolymorphic(actor, toHaulIndex, detour);

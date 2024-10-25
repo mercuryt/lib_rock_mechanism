@@ -301,6 +301,7 @@ public:
 	void canPickUp_removeFluidVolume(const ActorIndex& index, const CollisionVolume& volume);
 	void canPickUp_add(const ActorIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity);
 	void canPickUp_removeItem(const ActorIndex& index, const ItemIndex& item);
+	void canPickUp_destroyItem(const ActorIndex& index, const ItemIndex& item);
 	void canPickUp_updateActorIndex(const ActorIndex& index, const ActorIndex& oldIndex, const ActorIndex& newIndex);
 	void canPickUp_updateItemIndex(const ActorIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex);
 	void canPickUp_updateUnencomberedCarryMass(const ActorIndex& index);
