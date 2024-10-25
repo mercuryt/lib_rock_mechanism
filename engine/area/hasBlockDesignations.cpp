@@ -68,7 +68,7 @@ void AreaHasBlockDesignations::load(const Json& data, DeserializationMemo& deser
 Json AreaHasBlockDesignations::toJson() const
 {
 	Json output;
-	for(auto& [faction, designations] : m_data)
-		output.push_back({faction, designations.toJson()});
+	for(const auto& [faction, designations] : m_data)
+		output.push_back({faction, designations->toJson()});
 	return output;
 }

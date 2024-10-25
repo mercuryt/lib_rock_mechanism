@@ -34,7 +34,8 @@ public:
 class AreaHasBlockDesignations final
 {
 	Area& m_area;
-	SmallMap<FactionId, AreaHasBlockDesignationsForFaction> m_data;
+	// Must be stable because a reference to AreaHasBlockDesignationsForFaction is stored in path condition callback for goAdjacentToDesignation.
+	SmallMapStable<FactionId, AreaHasBlockDesignationsForFaction> m_data;
 public:
 	AreaHasBlockDesignations(Area& area) : m_area(area) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);

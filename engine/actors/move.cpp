@@ -61,13 +61,14 @@ void Actors::move_callback(const ActorIndex& index)
 	assert(m_pathIter[index] != m_path[index].end());
 	BlockIndex block = *m_pathIter[index];
 	Blocks& blocks = m_area.getBlocks();
+	BlockIndices occupiedBlocks = isLeading(index) ? lineLead_getOccupiedBlocks(index) : m_blocks[index];
 	// Path has become permanantly blocked since being generated, repath.
 	if(!blocks.shape_anythingCanEnterEver(block) || !blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, m_shape[index], m_moveType[index], m_location[index]))
 	{
 		move_setDestination(index, m_destination[index]);
 		return;
 	}
-	if(!blocks.shape_canEnterCurrentlyFrom(block, m_shape[index], m_location[index], m_blocks[index]))
+	if(!blocks.shape_canEnterCurrentlyFrom(block, m_shape[index], m_location[index], occupiedBlocks))
 	{
 		// Path is temporarily blocked, wait a bit and then detour if still blocked.
 		if(m_moveRetries[index] == Config::moveTryAttemptsBeforeDetour)
@@ -90,7 +91,6 @@ void Actors::move_callback(const ActorIndex& index)
 		if(follower.exists())
 		{
 			const auto& path = lineLead_getPath(index);
-			const auto& occupiedBlocks = lineLead_getOccupiedBlocks(index);
 			while (follower.exists())
 			{
 				BlockIndex currentFollowerLocation = follower.getLocation(m_area);

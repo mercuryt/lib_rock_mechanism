@@ -23,6 +23,8 @@ void TargetedHaulProject::onComplete()
 {
 	auto workers = std::move(m_workers);
 	Actors& actors = m_area.getActors();
+	Items& items = m_area.getItems();
+	items.setLocationAndFacing(m_item.getIndex(), m_location, actors.getFacing(workers.begin()->first.getIndex()));
 	m_area.m_hasTargetedHauling.complete(*this);
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(), *projectWorker.objective);
