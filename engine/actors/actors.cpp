@@ -717,9 +717,9 @@ ActorIndex Actors::create(ActorParamaters params)
 }
 void Actors::sharedConstructor(const ActorIndex& index)
 {
+	m_body[index]->initalize(m_area);
 	combat_update(index);
 	move_updateIndividualSpeed(index);
-	m_body[index]->initalize(m_area);
 	m_mustDrink[index]->setFluidType(AnimalSpecies::getFluidType(m_species[index]));
 	if(vision_canSeeAnything(index))
 		m_area.m_visionFacadeBuckets.add(index);

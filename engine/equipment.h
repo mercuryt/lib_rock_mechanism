@@ -29,24 +29,24 @@ class EquipmentSet
 public:
 	EquipmentSet(Area& area, const Json& data);
 	EquipmentSet() = default;
-	void addEquipment(Area& area, ItemIndex equipment);
-	void removeEquipment(Area& area, ItemIndex equipment);
-	void modifyImpact(Area& area, Hit& hit, BodyPartTypeId bodyPartType);
-	void addGeneric(Area& area, ItemTypeId itemType, MaterialTypeId MaterialType, Quantity quantity);
-	void removeGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity);
-	void updateCarrierIndexForContents(Area& area, ItemIndex newIndex);
+	void addEquipment(Area& area, const ItemIndex& equipment);
+	void removeEquipment(Area& area, const ItemIndex& equipment);
+	void modifyImpact(Area& area, Hit& hit, const BodyPartTypeId& bodyPartType);
+	void addGeneric(Area& area, const ItemTypeId& itemType, const MaterialTypeId& MaterialType, const Quantity& quantity);
+	void removeGeneric(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity);
+	void updateCarrierIndexForContents(Area& area, const ItemIndex& newIndex);
 	std::vector<Attack> getMeleeAttacks(Area& area);
 	auto& getRangedWeapons() { return m_rangedWeapons; }
-	[[nodiscard]] bool contains(ItemIndex item) const;
-	[[nodiscard]] bool containsItemType(const Area& area, ItemTypeId itemType) const;
+	[[nodiscard]] bool contains(const ItemIndex& item) const;
+	[[nodiscard]] bool containsItemType(const Area& area, const ItemTypeId& itemType) const;
 	[[nodiscard]] bool hasWeapons() const { return !m_meleeWeapons.empty() || !m_rangedWeapons.empty(); }
 	[[nodiscard]] Step getLongestMeleeWeaponCoolDown(Area& area) const;
 	[[nodiscard]] const Mass& getMass() const { return m_mass; }
-	[[nodiscard]] bool canEquipCurrently(const Area& area, ActorIndex actor, ItemIndex item) const;
+	[[nodiscard]] bool canEquipCurrently(const Area& area, const ActorIndex& actor, const ItemIndex& item) const;
 	[[nodiscard]] bool empty() const { return m_equipments.empty(); }
-	[[nodiscard]] ItemIndex getWeaponToAttackAtRange(Area& area, DistanceInBlocksFractional range);
-	[[nodiscard]] ItemIndex getAmmoForRangedWeapon(Area& area, ItemIndex weapon);
+	[[nodiscard]] ItemIndex getWeaponToAttackAtRange(Area& area, const DistanceInBlocksFractional& range);
+	[[nodiscard]] ItemIndex getAmmoForRangedWeapon(Area& area, const ItemIndex& weapon);
 	[[nodiscard]] auto& getAll() { return m_equipments; }
-	[[nodiscard]] bool hasAnyEquipmentWithReservations(Area& area, ActorIndex actor) const;
+	[[nodiscard]] bool hasAnyEquipmentWithReservations(Area& area, const ActorIndex& actor) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(EquipmentSet, m_equipments);
 };

@@ -319,6 +319,15 @@ void definitions::loadItemTypes()
 		if(data.contains("materialTypeCategories"))
 			for(const Json& materialTypeCategoryName : data["materialTypeCategories"])
 				p.materialTypeCategories.push_back(MaterialTypeCategory::byName(materialTypeCategoryName.get<std::string>()));
+		if(data.contains("weaponData"))
+		{
+			SkillTypeId skill = SkillType::byName(data["weaponData"]["combatSkill"]);
+			for (const Json& attackTypeData : data["weaponData"]["attackTypes"])
+				p.attackTypes.emplace_back(loadAttackType(attackTypeData, skill));
+			p.attackCoolDownBase = data["weaponData"].contains("coolDownSeconds") ?
+				Step::create((float)Config::stepsPerSecond.get() * data["weaponData"]["coolDownSeconds"].get<float>()) :
+				Config::attackCoolDownDurationBaseSteps;
+		}
 		ItemType::create(p);
 	}
 	// Now that item types are loaded we can load material type spoil and construction data.

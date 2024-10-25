@@ -42,7 +42,7 @@ void Actors::combat_attackMeleeRange(const ActorIndex& index, const ActorIndex& 
 			coolDownDuration = AttackType::getCoolDown(attack.attackType);
 			if(coolDownDuration.empty())
 				coolDownDuration = ItemType::getAttackCoolDownBase(items.getItemType(attack.item));
-			coolDownDuration = Step::create(coolDownDuration.get() * m_coolDownDurationModifier[index]);
+			coolDownDuration = std::max(Step::create(1), Step::create(coolDownDuration.get() * m_coolDownDurationModifier[index]));
 		}
 	}
 	m_coolDownEvent.schedule(index, m_area, index, coolDownDuration);
@@ -158,7 +158,7 @@ void Actors::combat_update(const ActorIndex& index)
 	Step baseOnMissCoolDownDuration = m_equipmentSet[index]->hasWeapons() ?
 	       	m_equipmentSet[index]->getLongestMeleeWeaponCoolDown(m_area) : 
 		Config::attackCoolDownDurationBaseSteps;
-	m_onMissCoolDownMelee[index] = baseOnMissCoolDownDuration * m_coolDownDurationModifier[index];
+	m_onMissCoolDownMelee[index] = std::max(Step::create(1), Step::create((float)baseOnMissCoolDownDuration.get() * m_coolDownDurationModifier[index]));
 	//Find max range.
 	m_maxRange[index] = m_maxMeleeRange[index];
 	for(ItemReference item : m_equipmentSet[index]->getRangedWeapons())
@@ -201,7 +201,7 @@ void Actors::combat_setTarget(const ActorIndex& index, const ActorIndex& actor)
 }
 void Actors::combat_recordTargetedBy(const ActorIndex& index, const ActorIndex& actor)
 {
-	assert(m_target[index] == actor);
+	assert(m_target[actor] == index);
 	assert(!m_targetedBy[index].contains(actor));
 	m_targetedBy[index].add(actor);
 }
@@ -275,7 +275,7 @@ Percent Actors::combat_projectileHitPercent(const ActorIndex& index, const Attac
 {
 	Percent chance = Percent::create(100 - std::pow(distanceToActorFractional(index, target).get(), Config::projectileHitChanceFallsOffWithRangeExponent));
 	chance += m_skillSet[index]->get(AttackType::getSkillType(attack.attackType)).get() * Config::projectileHitPercentPerSkillPoint;
-	chance += (getVolume(target) - Config::projectileMedianTargetVolume).get() * Config::projectileHitPercentPerUnitVolume;
+	chance += (getVolume(target) * Config::projectileHitPercentPerUnitVolume).get();
 	chance += m_dextarity[index].get() * Config::projectileHitPercentPerPointDextarity;
 	if(attack.item.exists())
 	{

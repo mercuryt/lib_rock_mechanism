@@ -8,6 +8,7 @@
 	"weaponData":
 	{
 		"combatSkill": "mace",
+		"coolDownSeconds": 1.25,
 		"attackTypes":
 		[
 			{

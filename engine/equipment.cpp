@@ -19,7 +19,7 @@ EquipmentSet::EquipmentSet(Area& area, const Json& data)
 	for(const Json& itemIndex : data["equipments"])
 		addEquipment(area, itemIndex.get<ItemIndex>());
 }
-void EquipmentSet::addEquipment(Area& area, ItemIndex equipment)
+void EquipmentSet::addEquipment(Area& area, const ItemIndex& equipment)
 {
 	assert(!contains(equipment));
 	Items& items = area.getItems();
@@ -48,17 +48,17 @@ void EquipmentSet::addEquipment(Area& area, ItemIndex equipment)
 	}
 	//TODO: m_rangedWeaponAmmo
 }
-void EquipmentSet::addGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
+void EquipmentSet::addGeneric(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity)
 {
 	m_equipments.addGeneric(area, itemType, materialType, quantity);
 	m_mass += ItemType::getVolume(itemType) * MaterialType::getDensity(materialType) * quantity;
 }
-void EquipmentSet::removeGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
+void EquipmentSet::removeGeneric(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity)
 {
 	m_equipments.addGeneric(area, itemType, materialType, quantity);
 	m_mass -= ItemType::getVolume(itemType) * MaterialType::getDensity(materialType) * quantity;
 }
-void EquipmentSet::removeEquipment(Area& area, ItemIndex equipment)
+void EquipmentSet::removeEquipment(Area& area, const ItemIndex& equipment)
 {
 	assert(contains(equipment));
 	assert(m_mass >= area.getItems().getMass(equipment));
@@ -67,7 +67,7 @@ void EquipmentSet::removeEquipment(Area& area, ItemIndex equipment)
 	if(ItemType::getIsWearable(area.getItems().getItemType(equipment)))
 		m_wearable.remove(equipment);
 }
-void EquipmentSet::modifyImpact(Area& area, Hit& hit, BodyPartTypeId bodyPartType)
+void EquipmentSet::modifyImpact(Area& area, Hit& hit, const BodyPartTypeId& bodyPartType)
 {
 	if(!m_wearable.isSorted())
 	{
@@ -122,11 +122,11 @@ std::vector<Attack> EquipmentSet::getMeleeAttacks(Area& area)
 	}
 	return output;
 }
-bool EquipmentSet::contains(ItemIndex item) const
+bool EquipmentSet::contains(const ItemIndex& item) const
 {
 	return m_equipments.contains(item);
 }
-bool EquipmentSet::containsItemType(const Area& area, ItemTypeId itemType) const
+bool EquipmentSet::containsItemType(const Area& area, const ItemTypeId& itemType) const
 {
 	const Items& items = area.getItems();
 	return m_equipments.contains([&items, itemType](const ItemReference& item){ return items.getItemType(item.getIndex()) == itemType; });
@@ -144,7 +144,7 @@ Step EquipmentSet::getLongestMeleeWeaponCoolDown(Area& area) const
 	assert(output != 0);
 	return output;
 }
-bool EquipmentSet::canEquipCurrently(const Area& area, ActorIndex actor, ItemIndex equipment) const
+bool EquipmentSet::canEquipCurrently(const Area& area, const ActorIndex& actor, const ItemIndex& equipment) const
 {
 	assert(!m_equipments.contains(equipment));
 	ItemTypeId itemType = area.getItems().getItemType(equipment);
@@ -164,7 +164,7 @@ bool EquipmentSet::canEquipCurrently(const Area& area, ActorIndex actor, ItemInd
 	}
 	return true;
 }
-ItemIndex EquipmentSet::getWeaponToAttackAtRange(Area& area, DistanceInBlocksFractional range)
+ItemIndex EquipmentSet::getWeaponToAttackAtRange(Area& area, const DistanceInBlocksFractional& range)
 {
 	for(ItemReference item : m_rangedWeapons)
 	{
@@ -177,7 +177,7 @@ ItemIndex EquipmentSet::getWeaponToAttackAtRange(Area& area, DistanceInBlocksFra
 	}
 	return ItemIndex::null();
 }
-ItemIndex EquipmentSet::getAmmoForRangedWeapon(Area& area, ItemIndex weapon)
+ItemIndex EquipmentSet::getAmmoForRangedWeapon(Area& area, const ItemIndex& weapon)
 {
 	ItemTypeId weaponType = area.getItems().getItemType(weapon);
 	assert(ItemType::getIsWeapon(weaponType));
@@ -192,7 +192,7 @@ ItemIndex EquipmentSet::getAmmoForRangedWeapon(Area& area, ItemIndex weapon)
 	}
 	return ItemIndex::null();
 }
-bool EquipmentSet::hasAnyEquipmentWithReservations(Area& area, ActorIndex actor) const
+bool EquipmentSet::hasAnyEquipmentWithReservations(Area& area, const ActorIndex& actor) const
 {
 	FactionId faction = area.getActors().getFaction(actor);
 	if(faction.exists())
@@ -201,7 +201,7 @@ bool EquipmentSet::hasAnyEquipmentWithReservations(Area& area, ActorIndex actor)
 				return true;
 	return false;
 }
-void EquipmentSet::updateCarrierIndexForContents(Area& area, ItemIndex newIndex)
+void EquipmentSet::updateCarrierIndexForContents(Area& area, const ItemIndex& newIndex)
 {
 	Items& items = area.getItems();
 	for(ItemReference item : m_equipments)
