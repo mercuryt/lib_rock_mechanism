@@ -3,6 +3,7 @@
 void Actors::equipment_add(const ActorIndex& index, const ItemIndex& item)
 {
 	m_equipmentSet[index]->addEquipment(m_area, item);
+	combat_update(index);
 }
 void Actors::equipment_addGeneric(const ActorIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materalType, const Quantity& quantity)
 {

@@ -30,7 +30,7 @@ CraftStepTypeCategoryId CraftStepTypeCategory::byName(const std::string name)
 {
 	auto found = craftStepTypeCategoryData.m_name.find(name);
 	assert(found != craftStepTypeCategoryData.m_name.end());
-	return CraftStepTypeCategoryId::create(found - craftStepTypeCategoryData.m_name.end());
+	return CraftStepTypeCategoryId::create(found - craftStepTypeCategoryData.m_name.begin());
 }
 std::string CraftStepTypeCategory::getName(CraftStepTypeCategoryId id) { return craftStepTypeCategoryData.m_name[id]; }
 

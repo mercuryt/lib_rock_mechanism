@@ -50,7 +50,9 @@ TEST_CASE("combat")
 	}
 	SUBCASE("strike rabbit")
 	{
+		REQUIRE(ItemType::getIsWeapon(ItemType::byName("long sword")));
 		CombatScore initalScore = actors.combat_getCombatScore(dwarf1);
+		REQUIRE(actors.combat_getAttackTable(dwarf1).size() == 4);
 		ItemIndex longsword = items.create({
 			.itemType=ItemType::byName("long sword"),
 			.materialType=MaterialType::byName("bronze"),
@@ -58,6 +60,7 @@ TEST_CASE("combat")
 			.percentWear=Percent::create(10)
 		});
 		actors.equipment_add(dwarf1, longsword);
+		REQUIRE(actors.combat_getAttackTable(dwarf1).size() == 7);
 		ItemIndex pants = items.create({
 			.itemType=ItemType::byName("pants"),
 			.materialType=MaterialType::byName("plant matter"),
@@ -101,7 +104,7 @@ TEST_CASE("combat")
 	}
 	SUBCASE("flanking enemies reduce combat score")
 	{
-		CombatScore initalScore = actors.combat_getCombatScore(dwarf1);
+		CombatScore initalScore = actors.combat_getCurrentMeleeCombatScore(dwarf1);
 		actors.create({
 			.species=AnimalSpecies::byName("dwarf rabbit"),
 			.location=blocks.getIndex_i(2, 1, 1),
@@ -110,7 +113,7 @@ TEST_CASE("combat")
 			.species=AnimalSpecies::byName("dwarf rabbit"),
 			.location=blocks.getIndex_i(1, 2, 1),
 		});
-		REQUIRE(actors.combat_getCombatScore(dwarf1) < initalScore);
+		REQUIRE(actors.combat_getCurrentMeleeCombatScore(dwarf1) < initalScore);
 	}
 	SUBCASE("shoot rabbit")
 	{

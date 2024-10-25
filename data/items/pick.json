@@ -9,6 +9,7 @@
 	"weaponData":
 	{
 		"combatSkill": "pick",
+		"coolDownSeconds": 1.75,
 		"attackTypes":
 		[
 			{

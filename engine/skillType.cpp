@@ -3,7 +3,7 @@ SkillTypeId SkillType::byName(std::string name)
 {
 	auto found = skillTypeData.m_name.find(name);
 	assert(found != skillTypeData.m_name.end());
-	return SkillTypeId::create(found - skillTypeData.m_name.end());
+	return SkillTypeId::create(found - skillTypeData.m_name.begin());
 }
 void SkillType::create(const SkillTypeParamaters& p)
 {
