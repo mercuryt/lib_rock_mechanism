@@ -17,6 +17,7 @@ TEST_CASE("wound")
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
@@ -28,9 +29,8 @@ TEST_CASE("wound")
 	BlockIndex pondLocation = blocks.getIndex_i(3, 7, 1);
 	blocks.solid_setNot(pondLocation);
 	blocks.fluid_add(pondLocation, Config::maxBlockVolume, FluidType::byName("water"));
-	ItemIndex fruit = items.create({.itemType=ItemType::byName("apple"), .materialType=MaterialType::byName("fruit"), .quantity=Quantity::create(50u)});
 	BlockIndex fruitLocation = blocks.getIndex_i(6, 5, 2);
-	items.setLocation(fruit, fruitLocation);
+	items.create({.itemType=ItemType::byName("apple"), .materialType=MaterialType::byName("fruit"), .location=fruitLocation, .quantity=Quantity::create(50u)});
 	SUBCASE("bleed to death")
 	{
 		// Area, force, material type, wound type

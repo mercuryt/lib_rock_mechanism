@@ -68,17 +68,22 @@ void ConstructProject::onComplete()
 	Blocks& blocks = m_area.getBlocks();
 	Actors& actors = m_area.getActors();
 	assert(!blocks.solid_is(m_location));
-	m_area.m_hasConstructionDesignations.clearAll(m_location);
-	if(m_blockFeatureType == nullptr)
+	// Store values we will need to complete before destroying construction project.
+	const auto blockFeatureType = m_blockFeatureType;
+	const auto location = m_location;
+	const auto materialType = m_materialType;
+	auto workers = std::move(m_workers);
+	// Destroy project.
+	m_area.m_hasConstructionDesignations.remove(m_faction, m_location);
+	if(blockFeatureType == nullptr)
 	{
-		blocks.item_disperseAll(m_location);
+		blocks.item_disperseAll(location);
 		//TODO: disperse actors.
 		// Arguments: materialType, constructed.
-		blocks.solid_set(m_location, m_materialType, true);
+		blocks.solid_set(location, materialType, true);
 	}
 	else
-		blocks.blockFeature_construct(m_location, *m_blockFeatureType, m_materialType);
-	auto workers = std::move(m_workers);
+		blocks.blockFeature_construct(location, *blockFeatureType, materialType);
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(), *projectWorker.objective);
 }
