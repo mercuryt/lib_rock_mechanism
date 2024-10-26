@@ -77,22 +77,26 @@ void CraftStepProject::onComplete()
 {
 	auto& [actor, projectWorker] = *m_workers.begin();
 	Objective& objective = *projectWorker.objective;
-	m_craftJob.hasCraftingLocationsAndJobs.stepComplete(m_craftJob, actor.getIndex());
-	m_area.getActors().objective_complete(actor.getIndex(), objective);
+	Area& area = m_area;
+	const ActorIndex actorIndex = actor.getIndex();
+	// This is destroyed here.
+	m_craftJob.hasCraftingLocationsAndJobs.stepComplete(m_craftJob, actorIndex);
+	area.getActors().objective_complete(actorIndex, objective);
 }
 void CraftStepProject::onCancel()
 {
 	ActorIndices workersAndCandidates = getWorkersAndCandidates();
 	CraftJob& craftJob = m_craftJob;
+	Area& area = m_area;
+	// This is destroyed here.
 	m_area.m_hasCraftingLocationsAndJobs.getForFaction(m_faction).stepDestroy(craftJob);
-	Actors& actors = m_area.getActors();
+	Actors& actors = area.getActors();
 	for(ActorIndex actor : workersAndCandidates)
 	{
-		actors.project_unset(actor);
 		CraftObjective& objective = actors.objective_getCurrent<CraftObjective>(actor);
-		//TODO: This records this fail job for this actor regardless of if it might still be possible via another location or subsitute required hasShape.
+		//TODO: This records this fail job for this actor regardless of if it might still be possible via another location or subsitute required actor or item.
 		objective.recordFailedJob(craftJob);
-		objective.reset(m_area, actor);
+		objective.reset(area, actor);
 		actors.objective_canNotCompleteSubobjective(actor);
 	}
 }
@@ -112,8 +116,9 @@ std::vector<std::pair<ItemQuery, Quantity>> CraftStepProject::getConsumed() cons
 	for(auto& pair : output)
 		if(pair.first.m_materialType.exists())
 		{
-			assert(pair.first.m_item.exists() && (pair.first.m_materialTypeCategory.empty() || pair.first.m_materialTypeCategory == MaterialType::getMaterialTypeCategory(m_craftJob.materialType)));
-			pair.first.specalize(m_craftJob.materialType);
+			pair.first.validate();
+			if(!pair.first.m_item.exists() && !pair.first.m_materialType.exists())
+				pair.first.specalize(m_craftJob.materialType);
 		}
 	return output;
 }
@@ -268,8 +273,8 @@ Json HasCraftingLocationsAndJobsForFaction::toJson() const
 }
 void HasCraftingLocationsAndJobsForFaction::addLocation(CraftStepTypeCategoryId category, const BlockIndex& block)
 {
-	m_locationsByCategory[category].add(block);
-	util::addUniqueToVectorAssert(m_stepTypeCategoriesByLocation[block], category);
+	m_locationsByCategory.getOrCreate(category).add(block);
+	util::addUniqueToVectorAssert(m_stepTypeCategoriesByLocation.getOrCreate(block), category);
 }
 void HasCraftingLocationsAndJobsForFaction::removeLocation(CraftStepTypeCategoryId category, const BlockIndex& block)
 {
@@ -321,7 +326,6 @@ void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, con
 {
 	craftJob.totalSkillPoints += craftJob.craftStepProject->getWorkerCraftScore(actor);
 	BlockIndex location = craftJob.craftStepProject->getLocation();
-	unindexAssigned(craftJob);
 	++craftJob.stepIterator;
 	if(craftJob.stepIterator == CraftJobType::getStepTypes(craftJob.craftJobType).end())
 		jobComplete(craftJob, location);
@@ -354,10 +358,19 @@ void HasCraftingLocationsAndJobsForFaction::stepDestroy(CraftJob& craftJob)
 void HasCraftingLocationsAndJobsForFaction::indexUnassigned(CraftJob& craftJob)
 {
 	const CraftStepType& craftStepType = *craftJob.stepIterator;
-	util::addUniqueToVectorAssert(m_unassignedProjectsByStepTypeCategory[craftStepType.craftStepTypeCategory], &craftJob);
-	util::addUniqueToVectorAssert(m_unassignedProjectsBySkill[craftStepType.skillType], &craftJob);
+	util::addUniqueToVectorAssert(m_unassignedProjectsByStepTypeCategory.getOrCreate(craftStepType.craftStepTypeCategory), &craftJob);
+	util::addUniqueToVectorAssert(m_unassignedProjectsBySkill.getOrCreate(craftStepType.skillType), &craftJob);
 }
-void HasCraftingLocationsAndJobsForFaction::unindexAssigned(CraftJob& craftJob)
+void HasCraftingLocationsAndJobsForFaction::maybeUnindexUnassigned(CraftJob& craftJob)
+{
+	const auto& category = craftJob.stepIterator->craftStepTypeCategory;
+	if(!m_unassignedProjectsByStepTypeCategory.contains(category))
+		return;
+	const auto& vector = m_unassignedProjectsByStepTypeCategory[category];
+	if(std::ranges::find(vector, &craftJob) != vector.end())
+		unindexUnassigned(craftJob);
+}
+void HasCraftingLocationsAndJobsForFaction::unindexUnassigned(CraftJob& craftJob)
 {
 	const CraftStepType& craftStepType = *craftJob.stepIterator;
 	if(m_unassignedProjectsByStepTypeCategory[craftStepType.craftStepTypeCategory].size() == 1)
@@ -416,7 +429,7 @@ void HasCraftingLocationsAndJobsForFaction::makeAndAssignStepProject(CraftJob& c
 	std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<CraftStepProjectHasShapeDishonorCallback>(*craftJob.craftStepProject.get());
 	craftJob.craftStepProject->setLocationDishonorCallback(std::move(dishonorCallback));
 	craftJob.craftStepProject->addWorkerCandidate(actor, objective);
-	unindexAssigned(craftJob);
+	unindexUnassigned(craftJob);
 }
 bool HasCraftingLocationsAndJobsForFaction::hasLocationsFor(const CraftJobTypeId& craftJobType) const
 {

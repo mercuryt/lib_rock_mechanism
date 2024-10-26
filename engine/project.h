@@ -184,7 +184,7 @@ public:
 	virtual void onAddToMaking(const ActorIndex&) { }
 	virtual void onDelivered(const ActorOrItemIndex&) { }
 	virtual void onSubprojectCreated(HaulSubproject& subproject) { (void)subproject; }
-	virtual void onActorOrItemReservationDishonored(const ActorOrItemIndex&, const Quantity&, const Quantity&) { reset(); }
+	virtual void onActorOrItemReservationDishonored(const ActorOrItemIndex&, const Quantity&, const Quantity&) { if(canReset()) reset(); else cancel(); }
 	// Projects which are initiated by the users, such as dig or construct, must be delayed when they cannot be completed. Projectes which are initiated automatically, such as Stockpile or Craft, can be canceled.
 	virtual void onDelay() = 0;
 	virtual void offDelay() = 0;

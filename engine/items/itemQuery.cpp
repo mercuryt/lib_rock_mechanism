@@ -52,15 +52,45 @@ bool ItemQuery::operator==(const ItemQuery& itemQuery) const
 }
 void ItemQuery::specalize(Area& area, const ItemIndex& item)
 {
-	assert(m_itemType.exists() && !m_item.exists() && area.getItems().getItemType(item) == m_itemType);
+	assert(m_itemType.exists() && m_item.empty() && area.getItems().getItemType(item) == m_itemType);
 	m_item.setTarget(area.getItems().getReferenceTarget(item));
 	m_itemType.clear();
+	m_materialType.clear();
+	m_materialTypeCategory.clear();
 }
 void ItemQuery::specalize(const MaterialTypeId& materialType)
 {
 	assert(m_materialTypeCategory.empty() || MaterialType::getMaterialTypeCategory(materialType) == m_materialTypeCategory);
+	assert(m_materialType.empty());
+	assert(m_item.empty());
 	m_materialType = materialType;
 	m_materialTypeCategory.clear();
+}
+void ItemQuery::maybeSpecalize(const MaterialTypeId& materialType)
+{
+	if(m_item.empty() && m_materialType.empty())
+		specalize(materialType);
+}
+void ItemQuery::validate() const
+{
+	if(m_item.exists())
+	{
+		assert(m_itemType.empty());
+		assert(m_materialType.empty());
+		assert(m_materialTypeCategory.empty());
+	}
+	if(m_itemType.exists())
+		assert(m_item.empty());
+	if(m_materialType.exists())
+	{
+		assert(m_materialTypeCategory.empty());
+		assert(m_itemType.exists());
+	}
+	if(m_materialTypeCategory.exists())
+	{
+		assert(m_materialType.empty());
+		assert(m_itemType.exists());
+	}
 }
 void to_json(Json& data, const ItemQuery& itemQuery)
 {

@@ -829,6 +829,8 @@ void Project::cancel()
 	Actors& actors = m_area.getActors();
 	for(auto& [actor, projectWorker] : m_workers)
 		actors.project_unset(actor.getIndex());
+	m_tryToAddWorkersThreadedTask.maybeCancel(m_area.m_simulation, &m_area);
+	m_tryToHaulThreadedTask.maybeCancel(m_area.m_simulation, &m_area);
 	onCancel();
 }
 void Project::scheduleFinishEvent(Step start)

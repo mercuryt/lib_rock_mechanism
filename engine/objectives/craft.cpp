@@ -1,4 +1,5 @@
 #include "craft.h"
+#include "skillType.h"
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"
 #include "../area.h"
@@ -28,9 +29,10 @@ CraftPathRequest::CraftPathRequest(const Json& data, DeserializationMemo& deseri
 {
 	nlohmann::from_json(data, *this);
 }
-void CraftPathRequest::callback(Area& area, FindPathResult& result)
+void CraftPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
+	Blocks& blocks = area.getBlocks();
 	ActorIndex actor = getActor();
 	if(result.path.empty() && !result.useCurrentPosition)
 	{
@@ -39,13 +41,13 @@ void CraftPathRequest::callback(Area& area, FindPathResult& result)
 	}
 	if(result.useCurrentPosition)
 	{
-		if(!actors.move_tryToReserveOccupied(actor))
+		if(blocks.isReserved(actors.getLocation(actor), actors.getFaction(actor)))
 		{
-			actors.objective_canNotCompleteSubobjective(actor);
-			return;
+				actors.objective_canNotCompleteSubobjective(actor);
+				return;
 		}
 	}
-	else if(!actors.move_tryToReserveProposedDestination(actor, result.path))
+	else if(blocks.isReserved(result.blockThatPassedPredicate, actors.getFaction(actor)))
 	{
 		actors.objective_canNotCompleteSubobjective(actor);
 		return;
@@ -109,6 +111,7 @@ std::unique_ptr<Objective> CraftObjectiveType::makeFor(Area&, const ActorIndex&)
 {
 	return std::make_unique<CraftObjective>(m_skillType);
 }
+std::string CraftObjectiveType::name() const { return "craft: " + SkillType::getName(m_skillType); }
 // Objective.
 CraftObjective::CraftObjective(SkillTypeId st) : Objective(Config::craftObjectivePriority), m_skillType(st) { }
 CraftObjective::CraftObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
@@ -131,6 +134,7 @@ Json CraftObjective::toJson() const
 	}
 	return data;
 }
+std::string CraftObjective::name() const { return "craft: " + SkillType::getName(m_skillType); }
 void CraftObjective::execute(Area& area, const ActorIndex& actor)
 {
 	if(m_craftJob)
