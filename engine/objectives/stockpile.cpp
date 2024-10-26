@@ -9,7 +9,7 @@
 StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo, const ActorIndex& actor) : m_objective(spo)
 {
 	assert(m_objective.m_project == nullptr);
-	assert(m_objective.m_destination.empty());
+	assert(!m_objective.hasDestination());
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	assert(!actors.project_exists(actor));
@@ -39,7 +39,6 @@ StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo, 
 }
 void StockPilePathRequest::callback(Area& area, const FindPathResult& result)
 {
-	assert(m_objective.m_destination.empty());
 	Actors& actors = area.getActors();
 	ActorIndex actor = getActor();
 	FactionId faction = actors.getFactionId(actor);
@@ -54,7 +53,8 @@ void StockPilePathRequest::callback(Area& area, const FindPathResult& result)
 			ItemIndex item = hasStockPiles.getHaulableItemForAt(actor, result.blockThatPassedPredicate);
 			if(item.exists())
 				m_objective.m_item.setTarget(area.getItems().getReferenceTarget(item));
-			m_objective.execute(area, actor);
+			// Reenter with item set.
+			callback(area, result);
 		}
 	}
 	else
@@ -63,7 +63,8 @@ void StockPilePathRequest::callback(Area& area, const FindPathResult& result)
 		{
 			// No stockpile found.
 			Items& items = area.getItems();
-			m_objective.m_closedList.emplace_back(items.getItemType(m_objective.m_item.getIndex()), items.getMaterialType(m_objective.m_item.getIndex()));
+			const ItemIndex& itemIndex = m_objective.m_item.getIndex();
+			m_objective.m_closedList.emplace_back(items.getItemType(itemIndex), items.getMaterialType(itemIndex));
 			m_objective.execute(area, actor);
 		}
 		else
@@ -74,10 +75,11 @@ void StockPilePathRequest::callback(Area& area, const FindPathResult& result)
 			else
 			{
 				// Destination found, join or create a project.
+				assert(m_objective.m_stockPileLocation.exists());
 				FactionId faction = actors.getFactionId(actor);
 				Blocks& blocks = area.getBlocks();
-				assert(blocks.stockpile_getForFaction(m_objective.m_destination, faction));
-				StockPile& stockpile = *blocks.stockpile_getForFaction(m_objective.m_destination, faction);
+				assert(blocks.stockpile_getForFaction(m_objective.m_stockPileLocation, faction));
+				StockPile& stockpile = *blocks.stockpile_getForFaction(m_objective.m_stockPileLocation, faction);
 				if(stockpile.hasProjectNeedingMoreWorkers())
 					stockpile.addToProjectNeedingMoreWorkers(actor, m_objective);
 				else
@@ -95,7 +97,7 @@ void StockPilePathRequest::callback(Area& area, const FindPathResult& result)
 					}
 					else
 						// No projects found, make one.
-						hasStockPiles.makeProject(m_objective.m_item.getIndex(), m_objective.m_destination, m_objective, actor);
+						hasStockPiles.makeProject(m_objective.m_item.getIndex(), m_objective.m_stockPileLocation, m_objective, actor);
 				}
 			}
 		}
@@ -163,7 +165,7 @@ bool StockPileObjective::destinationCondition(Area& area, const BlockIndex& bloc
 	Blocks& blocks = area.getBlocks();
 	Items& items = area.getItems();
 	Actors& actors = area.getActors();
-	assert(m_destination.empty());
+	assert(m_stockPileLocation.empty());
 	if(!blocks.shape_staticCanEnterCurrentlyWithAnyFacing(block, items.getShape(item), items.getBlocks(item)))
 		return false;
 	if(!blocks.item_empty(block))
@@ -178,6 +180,6 @@ bool StockPileObjective::destinationCondition(Area& area, const BlockIndex& bloc
 		return false;
 	if(!stockpile->accepts(item))
 		return false;
-	m_destination = block;
+	m_stockPileLocation = block;
 	return true;
 };

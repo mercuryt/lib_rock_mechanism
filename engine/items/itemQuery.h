@@ -20,6 +20,8 @@ public:
 	ItemQuery(const Json& data, Area& area);
 	void specalize(Area& area, const ItemIndex& item);
 	void specalize(const MaterialTypeId& materialType);
+	void maybeSpecalize(const MaterialTypeId& materialType);
+	void validate() const;
 	[[nodiscard]] bool query(Area& area, const ItemIndex& item) const;
 	[[nodiscard]] bool operator==(const ItemQuery& itemQuery) const;
 	[[nodiscard]] Json toJson() const;

@@ -20,7 +20,7 @@ class StockPileObjective final : public Objective
 {
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId>> m_closedList;
 	ItemReference m_item;
-	BlockIndex m_destination;
+	BlockIndex m_stockPileLocation;
 public:
 	StockPileProject* m_project = nullptr;
 	StockPileObjective();
@@ -32,6 +32,9 @@ public:
 	[[nodiscard]] bool destinationCondition(Area& area, const BlockIndex& block, const ItemIndex& item, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
 	std::string name() const { return "stockpile"; }
+	// For debug.
+	[[nodiscard]] bool hasItem() const { return m_item.exists(); }
+	[[nodiscard]] bool hasDestination() const { return m_stockPileLocation.exists(); }
 	friend class StockPilePathRequest;
 };
 // Searches for an Item and destination to make or find a hauling project for m_objective.m_actor.

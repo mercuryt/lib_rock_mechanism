@@ -90,6 +90,7 @@ public:
 	void clear() { m_target = nullptr; }
 	ItemIndex getIndex() const { assert(exists()); return m_target->index; }
 	bool exists() const { return m_target != nullptr; }
+	bool empty() const { return m_target == nullptr; }
 	void load(const Json& data, Area& area);
 	bool operator==(const ItemReference& other) const { return other.m_target == m_target; } 
 	std::strong_ordering operator<=>(const ItemReference& other) const { return m_target <=> other.m_target; }

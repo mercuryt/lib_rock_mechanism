@@ -79,7 +79,7 @@ class CraftStepProject final : public Project
 	void offDelay() { assert(false); }
 	void onAddToMaking(const ActorIndex& actor);
 	[[nodiscard]] bool canReset() const { return false; }
-	void onHasShapeReservationDishonored(const ActorOrItemIndex&, const Quantity&, const Quantity&) { cancel(); }
+	void onActorOrItemReservationDishonored(const ActorOrItemIndex&, const Quantity&, const Quantity&) { cancel(); }
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
@@ -184,7 +184,8 @@ public:
 	// List a project as being in need of workers.
 	void indexUnassigned(CraftJob& craftJob);
 	// Unlist a project.
-	void unindexAssigned(CraftJob& craftJob);
+	void unindexUnassigned(CraftJob& craftJob);
+	void maybeUnindexUnassigned(CraftJob& craftJob);
 	// To be called when all steps are complete.
 	void jobComplete(CraftJob& craftJob, const BlockIndex& location);
 	// Generate a project step for craftJob and dispatch the worker from objective.
