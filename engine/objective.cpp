@@ -411,6 +411,7 @@ void HasObjectives::cannotCompleteSubobjective(Area& area)
 	if(m_currentObjective == nullptr)
 		getNext(area);
 	else
+		//TODO: call reset here?
 		m_currentObjective->execute(area, m_actor);
 }
 Objective& HasObjectives::getCurrent() 

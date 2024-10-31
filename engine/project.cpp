@@ -128,18 +128,26 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep(Simulation&, Area* ar
 			m_project.onSubprojectCreated(subproject);
 			if(m_project.m_toPickup.empty())
 			{
-				Actors& actors = area->getActors();
 				// All subprojects have been dispatched, any remaining workers are sent to the project site.
+				// TODO: could be optimized maybe.
+				Actors& actors = area->getActors();
 				for(auto [ workerRef, projectWorker] : m_project.m_workers)
 				{
 					ActorIndex worker = workerRef.getIndex();
-					if(
-						projectWorker.haulSubproject == nullptr &&
-						!actors.isAdjacentToLocation(worker, m_project.m_location) &&
-						!actors.move_hasEvent(worker) &&
-						actors.move_getPath(worker).empty()
-					)
-						actors.move_setDestinationAdjacentToLocation(worker, m_project.m_location);
+					if(projectWorker.haulSubproject == nullptr)
+					{
+						if(m_project.canRecruitHaulingWorkersOnly())
+						{
+							projectWorker.objective->reset(*area, worker);
+							actors.objective_canNotCompleteSubobjective(worker);
+						}
+						else if(
+							!actors.isAdjacentToLocation(worker, m_project.m_location) &&
+							!actors.move_hasEvent(worker) &&
+							actors.move_getPath(worker).empty()
+						)
+							actors.move_setDestinationAdjacentToLocation(worker, m_project.m_location);
+					}
 				}
 			}
 		}
@@ -175,6 +183,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 	Items& items = m_project.m_area.getItems();
 	for(auto& [candidate, objective] : m_project.m_workerCandidatesAndTheirObjectives)
 	{
+		assert(!m_project.m_making.contains(candidate));
 		ActorIndex candidateIndex = candidate.getIndex();
 		assert(!m_project.getWorkers().contains(candidate));
 		if(!actors.isAdjacentToLocation(candidateIndex, m_project.m_location))
@@ -309,6 +318,8 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 }
 void ProjectTryToAddWorkersThreadedTask::writeStep(Simulation&, Area*)
 {
+	for(auto& [actor, objective] : m_project.m_workerCandidatesAndTheirObjectives)
+		assert(!m_project.m_making.contains(actor));
 	m_hasOnDestroy.unsubscribeAll();
 	auto toReleaseWithProjectDelay = m_cannotPathToJobSite;
 	Items& items = m_project.m_area.getItems();
@@ -656,13 +667,14 @@ void Project::addWorker(const ActorIndex& actor, Objective& objective)
 }
 void Project::addWorkerCandidate(const ActorIndex& actor, Objective& objective)
 {
-	Actors& actors = m_area.getActors();
+	assert(!hasCandidate(actor));
 	assert(canAddWorker(actor));
+	Actors& actors = m_area.getActors();
+	ActorReference actorRef = actors.getReference(actor);
+	assert(!m_making.contains(actorRef));
 	actors.project_set(actor, *this);
 	if(!m_requirementsLoaded)
 		recordRequiredActorsAndItems();
-	ActorReference actorRef = actors.getReference(actor);
-	assert(std::ranges::find(m_workerCandidatesAndTheirObjectives, actorRef, &std::pair<ActorReference, Objective*>::first) == m_workerCandidatesAndTheirObjectives.end());
 	m_workerCandidatesAndTheirObjectives.emplace_back(actorRef, &objective);
 	if(!m_tryToAddWorkersThreadedTask.exists())
 		m_tryToAddWorkersThreadedTask.create(*this);
@@ -678,6 +690,7 @@ void Project::removeWorkerCandidate(const ActorIndex& actor)
 // To be called by Objective::execute.
 void Project::commandWorker(const ActorIndex& actor)
 {
+	assert(!m_making.contains(actor));
 	Actors& actors = m_area.getActors();
 	ActorReference actorRef = actors.getReference(actor);
 	if(!m_workers.contains(actorRef))
@@ -749,13 +762,14 @@ void Project::removeWorker(const ActorIndex& actor)
 	ActorReference actorRef = actors.getReference(actor);
 	Items& items = m_area.getItems();
 	assert(actors.project_get(actor) == this);
+	actors.project_unset(actor);
 	if(hasCandidate(actor))
 	{
+		assert(!m_workers.contains(actorRef));
 		removeWorkerCandidate(actor);
 		return;
 	}
 	assert(m_workers.contains(actorRef));
-	actors.project_unset(actor);
 	if(m_workers[actorRef].haulSubproject != nullptr)
 		m_workers[actorRef].haulSubproject->removeWorker(actor);
 	if(m_making.contains(actorRef))
@@ -949,6 +963,7 @@ void Project::reset()
 bool Project::canAddWorker(const ActorIndex& actor) const
 {
 	ActorReference ref = m_area.getActors().getReference(actor);
+	assert(!m_making.contains(ref));
 	assert(!m_workers.contains(ref));
 	return m_maxWorkers > m_workers.size();
 }
@@ -961,6 +976,11 @@ bool Project::hasCandidate(const ActorIndex& actor) const
 {
 	ActorReference ref = m_area.getActors().getReference(actor);
 	return std::ranges::find(m_workerCandidatesAndTheirObjectives, ref, &std::pair<ActorReference, Objective*>::first) != m_workerCandidatesAndTheirObjectives.end();
+}
+bool Project::hasWorker(const ActorIndex& actor) const
+{
+	ActorReference ref = m_area.getActors().getReference(actor);
+	return m_workers.contains(ref);
 }
 ActorIndices Project::getWorkersAndCandidates()
 {

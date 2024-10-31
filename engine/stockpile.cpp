@@ -46,19 +46,20 @@ void StockPileUpdateInputAction::execute()
 */
 StockPileProject::StockPileProject(const FactionId& faction, Area& area, const BlockIndex& block, const ItemIndex& item, const Quantity& quantity, const Quantity& maxWorkers) :
 	Project(faction, area, block, maxWorkers),
+	m_item(item.toReference(area)),
 	m_quantity(quantity),
 	m_itemType(area.getItems().getItemType(item)),
 	m_materialType(area.getItems().getMaterialType(item)),
-	m_stockpile(*area.getBlocks().stockpile_getForFaction(block, faction)) { }
+	m_stockpile(*area.getBlocks().stockpile_getForFaction(block, faction))
+	{ }
 StockPileProject::StockPileProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
 	Project(data, deserializationMemo),
+	m_item(data["item"].get<ItemIndex>().toReference(area)),
 	m_quantity(data["quantity"].get<Quantity>()),
 	m_itemType(ItemType::byName(data["itemType"].get<std::string>())),
 	m_materialType(MaterialType::byName(data["materialType"].get<std::string>())),
 	m_stockpile(*deserializationMemo.m_stockpiles.at(data["stockpile"].get<uintptr_t>()))
-{
-	m_item.load(data["item"], area);
-}
+	{ }
 Json StockPileProject::toJson() const
 {
 	Json data = Project::toJson();
@@ -81,13 +82,14 @@ void StockPileProject::onComplete()
 	auto workers = std::move(m_workers);
 	auto& hasStockPiles = m_area.m_hasStockPiles.getForFaction(m_stockpile.m_faction);
 	m_area.m_hasStocks.getForFaction(m_faction).record(m_area, delivered);
+	Actors& actors = m_area.getActors();
 	if(delivered == m_item.getIndex())
-		// Either non-generic or whole stack.
+		// Either non-generic or whole stack, remove item from hasStockPiles.
+		// Implcitly destroys 'this'.
 		hasStockPiles.removeItem(m_item.getIndex());
 	else
 		// Partial stack of generic.
 		hasStockPiles.destroyProject(*this);
-	Actors& actors = m_area.getActors();
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(), *projectWorker.objective);
 }
@@ -101,13 +103,17 @@ void StockPileProject::onReserve()
 void StockPileProject::onCancel()
 {
 	ActorIndices workersAndCandidates = getWorkersAndCandidates();
-	m_area.m_hasStockPiles.getForFaction(m_faction).destroyProject(*this);
 	Actors& actors = m_area.getActors();
+	Area& area = m_area;
+	// This is destroyed here.
+	m_area.m_hasStockPiles.getForFaction(m_faction).destroyProject(*this);
 	for(ActorIndex actor : workersAndCandidates)
 	{
 		StockPileObjective& objective = actors.objective_getCurrent<StockPileObjective>(actor);
-		actors.project_unset(actor);
+		// clear objective.m_project so reset does not try to cancel it.
 		objective.m_project = nullptr;
+		actors.project_unset(actor);
+		objective.reset(area, actor);
 		actors.objective_canNotCompleteSubobjective(actor);
 	}
 }
@@ -459,7 +465,7 @@ void AreaHasStockPilesForFaction::addItem(const ItemIndex& item)
 		m_itemsWithoutDestinationsByItemType.getOrCreate(items.getItemType(item)).add(ref);
 	else
 	{
-		m_itemsWithDestinationsByStockPile[stockPile].add(ref);
+		m_itemsWithDestinationsByStockPile.getOrCreate(stockPile).add(ref);
 		m_itemsWithDestinationsWithoutProjects.add(ref);
 	}
 }
@@ -485,12 +491,12 @@ void AreaHasStockPilesForFaction::removeItem(const ItemIndex& item)
 	if(m_itemsWithoutDestinationsByItemType.contains(itemType) && m_itemsWithoutDestinationsByItemType[itemType].contains(ref))
 		m_itemsWithoutDestinationsByItemType[itemType].remove(ref);
 	else
+		m_itemsWithDestinationsWithoutProjects.maybeRemove(ref);
+	if (m_projectsByItem.contains(ref))
 	{
-		m_itemsWithDestinationsWithoutProjects.remove(ref);
-		if(m_projectsByItem.contains(ref))
-			for(StockPileProject& stockPileProject : m_projectsByItem.at(ref))
-				removeFromItemsWithDestinationByStockPile(stockPileProject.m_stockpile, item);
-			// We don't need to cancel the stockpile projects here because they will be canceled by dishonorCallback anyway.
+		for (StockPileProject &stockPileProject : m_projectsByItem[ref])
+			removeFromItemsWithDestinationByStockPile(stockPileProject.m_stockpile, item);
+		m_projectsByItem.erase(ref);
 	}
 }
 void AreaHasStockPilesForFaction::removeFromItemsWithDestinationByStockPile(const StockPile& stockPile, const ItemIndex& item)
@@ -552,21 +558,25 @@ void AreaHasStockPilesForFaction::makeProject(const ItemIndex& item, const Block
 	assert(blocks.stockpile_contains(destination, faction));
 	// Quantity per project is the ammount that can be hauled by hand, if any, or one.
 	// TODO: Hauling a load of generics with tools.
-	Quantity quantity = actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(actor, items.getMass(item), Config::minimumHaulSpeedInital);
+	Quantity quantity = std::min({
+		items.getQuantity(item), 
+		actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(actor, items.getSingleUnitMass(item), Config::minimumHaulSpeedInital),
+		blocks.shape_getQuantityOfItemWhichCouldFit(destination, items.getItemType(item))
+	});
+	// Max workers is one if at least one can be hauled by hand.
 	Quantity maxWorkers = Quantity::create(1);
-	if(quantity != 0)
+	if(quantity == 0)
 	{
 		quantity = Quantity::create(1);
 		maxWorkers = Quantity::create(2);
 	}
 	ItemReference ref = m_area.getItems().getReference(item);
-	StockPileProject& project = m_projectsByItem[ref].emplace_back(faction, m_area, destination, item, quantity, maxWorkers);
+	StockPileProject& project = m_projectsByItem.getOrCreate(ref).emplace_back(faction, m_area, destination, item, quantity, maxWorkers);
 	std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<StockPileHasShapeDishonorCallback>(project);
 	project.setLocationDishonorCallback(std::move(dishonorCallback));
 	project.addWorkerCandidate(actor, objective);
 	objective.m_project = &project;
-	actors.project_set(actor, project);
-	m_itemsWithDestinationsWithoutProjects.remove(ref);
+	m_itemsWithDestinationsWithoutProjects.maybeRemove(ref);
 }
 void AreaHasStockPilesForFaction::cancelProject(StockPileProject& project)
 {
@@ -576,12 +586,11 @@ void AreaHasStockPilesForFaction::cancelProject(StockPileProject& project)
 }
 void AreaHasStockPilesForFaction::destroyProject(StockPileProject& project)
 {
-	if(m_projectsByItem.at(project.m_item).size() == 1)
+	if(m_projectsByItem[project.m_item].size() == 1)
 		m_projectsByItem.erase(project.m_item);
 	else
-		m_projectsByItem.at(project.m_item).remove(project);
+		m_projectsByItem[project.m_item].remove(project);
 }
-
 void AreaHasStockPilesForFaction::addQuery(StockPile& stockPile, const ItemQuery& query)
 {
 	stockPile.addQuery(query);
@@ -634,14 +643,14 @@ AreaHasStockPilesForFaction& AreaHasStockPiles::getForFaction(const FactionId& f
 {
 	if(!m_data.contains(faction))
 		registerFaction(faction);
-	return m_data.at(faction);
+	return m_data[faction];
 }
 void AreaHasStockPiles::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& pair : data)
 	{
 		FactionId faction = pair[0].get<FactionId>();
-		m_data.try_emplace(faction, pair[1], deserializationMemo, m_area, faction);
+		m_data.emplace(faction, pair[1], deserializationMemo, m_area, faction);
 	}
 }
 void AreaHasStockPiles::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
@@ -649,13 +658,13 @@ void AreaHasStockPiles::loadWorkers(const Json& data, DeserializationMemo& deser
 	for(const Json& pair : data)
 	{
 		FactionId faction = pair[0].get<FactionId>();
-		m_data.at(faction).loadWorkers(pair[1], deserializationMemo);
+		m_data[faction].loadWorkers(pair[1], deserializationMemo);
 	}
 }
 void AreaHasStockPiles::clearReservations()
 {
 	for(auto& pair : m_data)
-		for(auto& pair : pair.second.m_projectsByItem)
+		for(auto& pair : pair.second->m_projectsByItem)
 			for(auto& project : pair.second)
 				project.clearReservations();
 }
@@ -664,7 +673,7 @@ Json AreaHasStockPiles::toJson() const
 	Json data;
 	for(auto& pair : m_data)
 	{
-		Json jsonPair{pair.first, pair.second.toJson()};
+		Json jsonPair{pair.first, pair.second->toJson()};
 		data.push_back(jsonPair);
 	}
 	return data;

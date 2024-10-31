@@ -848,6 +848,7 @@ void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 	m_project.m_haulSubprojects.remove(*this);
 	for(ActorReference worker : workers)
 	{
+		assert(!project.m_making.contains(worker));
 		project.m_workers[worker].haulSubproject = nullptr;
 		project.commandWorker(worker.getIndex());
 	}

@@ -60,7 +60,10 @@ ActorIndex Actors::canPickUp_tryToPutDownActor(const ActorIndex& index, const Bl
 	ActorIndex other = m_carrying[index].getActor();
 	Blocks& blocks = m_area.getBlocks();
 	ShapeId shape = m_shape[other];
-	auto predicate = [&](const BlockIndex& block) { return blocks.shape_canEnterCurrentlyWithAnyFacing(block, shape, {}); };
+	auto predicate = [&](const BlockIndex& block) {
+		return blocks.shape_anythingCanEnterEver(block) && 
+			blocks.shape_staticShapeCanEnterWithAnyFacing(block, shape, {});
+	};
 	BlockIndex location2 = blocks.getBlockInRangeWithCondition(location, maxRange, predicate);
 	if(location2.empty())
 		return ActorIndex::null();
@@ -76,10 +79,9 @@ ItemIndex Actors::canPickUp_tryToPutDownItem(const ActorIndex& index, const Bloc
 	ItemIndex item = m_carrying[index].getItem();
 	Blocks& blocks = m_area.getBlocks();
 	ShapeId shape = m_area.getItems().getShape(item);
-	static const MoveTypeId& moveType = MoveType::byName("none");
 	auto predicate = [&](const BlockIndex& block) {
 		return blocks.shape_anythingCanEnterEver(block) && 
-			blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(block, shape, moveType, {});
+			blocks.shape_staticShapeCanEnterWithAnyFacing(block, shape, {});
 	};
 	BlockIndex targetLocation = blocks.getBlockInRangeWithCondition(location, maxRange, predicate);
 	if(targetLocation.empty())

@@ -20,7 +20,7 @@
 #include "objectives/leaveArea.h"
 #include "objectives/uniform.h"
 // Handle
-void PathRequest::create(Area& area, const ActorIndex& actor, DestinationCondition destination, bool detour, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve)
+void PathRequest::create(Area& area, const ActorIndex& actor, const BlockIndex& start, const Facing& startFacing, DestinationCondition destination, bool detour, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve)
 {
 	// Store paramaters for serialization.
 	m_reserve = reserve;
@@ -35,14 +35,19 @@ void PathRequest::create(Area& area, const ActorIndex& actor, DestinationConditi
 	Actors& actors = area.getActors();
 	MoveTypeId moveType = actors.isLeading(actor) ? actors.lineLead_getMoveType(actor) : actors.getMoveType(actor);
 	TerrainFacade& terrainFacade = area.m_hasTerrainFacades.getForMoveType(moveType);
-	AccessCondition access = terrainFacade.makeAccessConditionForActor(actor, detour, maxRange);
+	AccessCondition access = terrainFacade.makeAccessConditionForActor(actor, start, detour, maxRange);
 	if(huristicDestination.empty())
-		terrainFacade.registerPathRequestNoHuristic(actors.getLocation(actor), actors.getFacing(actor), access, destination, *this);
+		terrainFacade.registerPathRequestNoHuristic(start, startFacing, access, destination, *this);
 	else
-		terrainFacade.registerPathRequestWithHuristic(actors.getLocation(actor), actors.getFacing(actor), access, destination, huristicDestination, *this);
+		terrainFacade.registerPathRequestWithHuristic(start, startFacing, access, destination, huristicDestination, *this);
 	assert(m_index.exists());
 }
 void PathRequest::createGoTo(Area& area, const ActorIndex& actor, const BlockIndex& destination, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve)
+{
+	Actors& actors = area.getActors();
+	createGoToFrom(area, actor, actors.getLocation(actor), actors.getFacing(actor), destination, detour, unreserved, maxRange, reserve);
+}
+void PathRequest::createGoToFrom(Area& area, const ActorIndex& actor, const BlockIndex& start, const Facing& startFacing, const BlockIndex& destination, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve)
 {
 	m_unreserved = unreserved;
 	m_destination = destination;
@@ -56,7 +61,7 @@ void PathRequest::createGoTo(Area& area, const ActorIndex& actor, const BlockInd
 		bool result = index == destination && (faction.empty() || !blocks.isReserved(index, faction));
 		return std::make_pair(result, index);
 	};
-	create(area, actor, destinationCondition, detour, maxRange, destination, reserve);
+	create(area, actor, start, startFacing, destinationCondition, detour, maxRange, destination, reserve);
 }
 void PathRequest::createGoToAnyOf(Area& area, const ActorIndex& actor, BlockIndices destinations, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve)
 {
@@ -98,7 +103,7 @@ void PathRequest::createGoToAnyOf(Area& area, const ActorIndex& actor, BlockIndi
 					return std::make_pair(true, index);
 				return std::make_pair(false, BlockIndex::null());
 			};
-	create(area, actor, destinationCondition, detour, maxRange, huristicDestination, reserve);
+	create(area, actor, actors.getLocation(actor), actors.getFacing(actor), destinationCondition, detour, maxRange, huristicDestination, reserve);
 }
 void PathRequest::createGoAdjacentToLocation(Area& area, const ActorIndex& actor, const BlockIndex& destination, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve)
 {
@@ -176,9 +181,10 @@ void PathRequest::createGoToCondition(Area& area, const ActorIndex& actor, Desti
 		bool result = condition(index, facing).first && (!unreserved || !blocks.isReserved(index, faction));
 		return std::make_pair(result, index);
 	};
-	create(area, actor, destinationCondition, detour, maxRange, huristicDestination, reserve);
+	Actors& actors = area.getActors();
+	create(area, actor, actors.getLocation(actor), actors.getFacing(actor), destinationCondition, detour, maxRange, huristicDestination, reserve);
 }
-void PathRequest::createGoAdjacentToCondition(Area& area, const ActorIndex& actor, std::function<bool(const BlockIndex&)> condition, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve)
+void PathRequest::createGoAdjacentToConditionFrom(Area& area, const ActorIndex& actor, const BlockIndex& start, const Facing& startFacing, std::function<bool(const BlockIndex&)> condition, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve)
 {
 	FactionId faction;
 	if(unreserved)
@@ -210,7 +216,12 @@ void PathRequest::createGoAdjacentToCondition(Area& area, const ActorIndex& acto
 						return std::make_pair(true, block);
 			return std::make_pair(false, BlockIndex::null());
 	};
-	create(area, actor, destinationCondition, detour, maxRange, huristicDestination, reserve);
+	create(area, actor, start, startFacing, destinationCondition, detour, maxRange, huristicDestination, reserve);
+}
+void PathRequest::createGoAdjacentToCondition(Area& area, const ActorIndex& actor, std::function<bool(const BlockIndex&)> condition, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve)
+{
+	Actors& actors = area.getActors();
+	createGoAdjacentToConditionFrom(area, actor, actors.getLocation(actor), actors.getFacing(actor), condition, detour, unreserved, maxRange, huristicDestination, reserve);
 }
 void PathRequest::cancel(Area& area, const ActorIndex& actor)
 {
