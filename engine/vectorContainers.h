@@ -117,6 +117,8 @@ public:
 		m_data.emplace_back(key, std::move(value));
 	}
 	void insert(K key, V&& value) { insert(key, value); }
+	void maybeInsert(K key, V& value) { if(!contains(key)) insert(key, value); }
+	void maybeInsert(K key, V&& value) { maybeInsert(key, value); }
 	void erase(const K& key)
 	{
 		auto iter = std::ranges::find(m_data, key, &Pair::first);
@@ -260,6 +262,13 @@ public:
 	[[nodiscard]] iterator end() { return {*this, size()}; }
 	[[nodiscard]] const_iterator begin() const { return {*this, 0}; }
 	[[nodiscard]] const_iterator end() const { return {*this, size()}; }
+	[[nodiscard]] V& getOrCreate(const K& key)
+	{
+		auto iter = std::ranges::find(m_data, key, &Pair::first);
+		if(iter == m_data.end())
+			return *(m_data.emplace_back(key, std::make_unique<V>()).second);
+		return *(iter->second);
+	}
 	class iterator
 	{
 		Data::iterator m_iter;

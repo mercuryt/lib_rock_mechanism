@@ -167,6 +167,7 @@ public:
 	// Block where the work will be done.
 	[[nodiscard]] BlockIndex getLocation() const { return m_location; }
 	[[nodiscard]] bool hasCandidate(const ActorIndex& actor) const;
+	[[nodiscard]] bool hasWorker(const ActorIndex& actor) const;
 	// When cannotCompleteSubobjective is called do we reset and try again or do we call cannotCompleteObjective?
 	// Should be false for objectives like targeted hauling, where if the specific target is inaccessable there is no fallback possible.
 	[[nodiscard]] virtual bool canReset() const { return true; }
@@ -206,6 +207,7 @@ public:
 	[[nodiscard, maybe_unused]] bool finishEventExists() const { return m_finishEvent.exists(); }
 	[[nodiscard, maybe_unused]] Step getFinishStep() const { return m_finishEvent.getStep(); }
 	[[nodiscard, maybe_unused]] auto getToPickup() const { return m_toPickup; }
+	[[nodiscard]] Quantity getMaxWorkers() const { return m_maxWorkers; }
 	friend class ProjectFinishEvent;
 	friend class ProjectTryToHaulEvent;
 	friend class ProjectTryToReserveEvent;

@@ -128,6 +128,7 @@ public:
 	void addGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity);
 	void removeGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity);
 	void maybeAdd(ItemIndex index, Area& area) { if(!contains(index)) data.emplace_back(area, index); }
+	void maybeRemove(ItemReference ref) { auto found = find(ref); if(found != data.end()) { std::swap(*found, data.back()); data.resize(data.size() - 1); } }
 	void maybeRemove(ItemIndex index) { auto found = find(index); if(found != data.end()) { std::swap(*found, data.back()); data.resize(data.size() - 1); } }
 	void merge(ItemIndices indices, Area& area) { for(ItemIndex index : indices) maybeAdd(index, area); }
 	template<typename Predicate>

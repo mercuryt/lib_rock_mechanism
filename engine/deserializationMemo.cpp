@@ -82,7 +82,7 @@ std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data, 
 	else if(name == "sow seeds")
 		output =  std::make_unique<SowSeedsObjective>(data, area, actor);
 	else if(name == "stockpile")
-		output =  std::make_unique<StockPileObjective>(data, *this);
+		output =  std::make_unique<StockPileObjective>(data, *this, area);
 	else if(name == "wait")
 		output =  std::make_unique<WaitObjective>(data, area, actor);
 	else

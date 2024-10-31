@@ -105,7 +105,7 @@ public:
 	[[nodiscard]] FindPathResult findPathAdjacentToCondition(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const DestinationCondition& destinationCondition, BlockIndex huristicDestination = BlockIndex::null(), bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathAdjacentToConditionAndUnreserved(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const DestinationCondition& destinationCondition, const FactionId& faction, BlockIndex huristicDestination = BlockIndex::null(), bool detour = false) const;
 	[[nodiscard]] size_t getPathRequestCount() const { return m_pathRequestAccessConditionsNoHuristic.size() + m_pathRequestAccessConditionsWithHuristic.size(); }
-	[[nodiscard]] AccessCondition makeAccessConditionForActor(const ActorIndex& actor, bool detour, const DistanceInBlocks maxRange = DistanceInBlocks::max()) const;
+	[[nodiscard]] AccessCondition makeAccessConditionForActor(const ActorIndex& actor, const BlockIndex& start, bool detour, const DistanceInBlocks maxRange = DistanceInBlocks::max()) const;
 	[[nodiscard]] AccessCondition makeAccessCondition(const ShapeId& shape, const BlockIndex& start, const BlockIndices& initalBlocks, bool detour, const DistanceInBlocks maxRange = DistanceInBlocks::max()) const;
 	// For testing.
 	[[nodiscard]] bool accessable(const BlockIndex& from, const Facing& startFacing, const BlockIndex& to, const ActorIndex& actor) const;

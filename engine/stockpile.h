@@ -14,7 +14,6 @@
 #include <vector>
 #include <utility>
 #include <tuple>
-#include <unordered_map>
 #include <list>
 
 class StockPilePathRequest;
@@ -131,6 +130,9 @@ public:
 	friend class AreaHasStockPilesForFaction;
 	// For testing.
 	[[nodiscard, maybe_unused]] ItemIndex getItem() { return m_item.getIndex(); }
+	StockPileProject(const StockPileProject&) = delete;
+	StockPileProject(StockPileProject&&) noexcept = delete;
+	void operator=(const StockPileProject&) noexcept = delete;
 };
 class ReenableStockPileScheduledEvent final : public ScheduledEvent
 {
@@ -178,11 +180,11 @@ class AreaHasStockPilesForFaction
 	ItemTypeMap<ItemReferences> m_itemsWithoutDestinationsByItemType;
 	// Only when an item is added here does it get designated for stockpileing.
 	ItemReferences m_itemsWithDestinationsWithoutProjects;
-	//TODO: Replace these unordered_maps with medium maps.
+	//TODO: Replace these SmallMaps with medium maps?
 	// The stockpile used as index here is not neccesarily where the item will go, it is used to prove that there is somewhere the item could go.
-	std::unordered_map<StockPile*, ItemReferences> m_itemsWithDestinationsByStockPile;
+	SmallMap<StockPile*, ItemReferences> m_itemsWithDestinationsByStockPile;
 	// Multiple projects per item due to generic item stacking.
-	std::unordered_map<ItemReference, std::list<StockPileProject>, ItemReference::Hash> m_projectsByItem;
+	SmallMap<ItemReference, std::list<StockPileProject>> m_projectsByItem;
 	std::list<StockPile> m_stockPiles;
 	Area& m_area;
 	FactionId m_faction;
@@ -213,6 +215,7 @@ public:
 	[[nodiscard]] ItemIndex getHaulableItemForAt(const ActorIndex& actor, const BlockIndex& block);
 	[[nodiscard]] StockPile* getStockPileFor(const ItemIndex& item) const;
 	friend class StockPilePathRequest;
+	friend class StockPileDestinationPathRequest;
 	friend class StockPile;
 	friend class AreaHasStockPiles;
 	// For testing.
@@ -223,13 +226,13 @@ public:
 class AreaHasStockPiles
 {
 	Area& m_area;
-	std::unordered_map<FactionId, AreaHasStockPilesForFaction, FactionId::Hash> m_data;
+	SmallMapStable<FactionId, AreaHasStockPilesForFaction> m_data;
 public:
 	AreaHasStockPiles(Area& a) : m_area(a) { }
-	void registerFaction(const FactionId& faction) { assert(!m_data.contains(faction)); m_data.try_emplace(faction, m_area, faction); }
+	void registerFaction(const FactionId& faction) { assert(!m_data.contains(faction)); m_data.emplace(faction, m_area, faction); }
 	void unregisterFaction(const FactionId& faction) { assert(m_data.contains(faction)); m_data.erase(faction); }
-	void removeItemFromAllFactions(const ItemIndex& item) { for(auto& pair : m_data) { pair.second.removeItem(item); } }
-	void removeBlockFromAllFactions(const BlockIndex& block) { for(auto& pair : m_data) { pair.second.removeBlock(block); }} 
+	void removeItemFromAllFactions(const ItemIndex& item) { for(auto& pair : m_data) { pair.second->removeItem(item); } }
+	void removeBlockFromAllFactions(const BlockIndex& block) { for(auto& pair : m_data) { pair.second->removeBlock(block); }} 
 	void clearReservations();
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
