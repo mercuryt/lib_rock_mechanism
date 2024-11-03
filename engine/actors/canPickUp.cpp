@@ -61,19 +61,32 @@ ActorIndex Actors::canPickUp_tryToPutDownActor(const ActorIndex& index, const Bl
 	assert(m_carrying[index].exists());
 	assert(m_carrying[index].isActor());
 	ActorIndex other = m_carrying[index].getActor();
+	assert(m_static[other]);
 	Blocks& blocks = m_area.getBlocks();
 	ShapeId shape = m_shape[other];
 	auto predicate = [&](const BlockIndex& block) {
 		return blocks.shape_anythingCanEnterEver(block) && 
 			blocks.shape_staticShapeCanEnterWithAnyFacing(block, shape, {});
 	};
-	BlockIndex location2 = blocks.getBlockInRangeWithCondition(location, maxRange, predicate);
-	if(location2.empty())
+	BlockIndex targetLocation = blocks.getBlockInRangeWithCondition(location, maxRange, predicate);
+	if(targetLocation.empty())
+	{
+		static const MoveTypeId moveTypeNone = MoveType::byName("none");
+		// No location found, try again without respecting Config::maxBlockVolume.
+		auto predicate2 = [&](const BlockIndex &block)
+		{
+			return blocks.shape_anythingCanEnterEver(block) &&
+				   blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, shape, moveTypeNone);
+		};
+		targetLocation = blocks.getBlockInRangeWithCondition(location, maxRange, predicate2);
+	}
+	if(targetLocation.empty())
+		// There is nowhere to put down then actor even ignoring max block volume, i.e. it is a multi block shape which is interfearing with unenterable blocks.
 		return ActorIndex::null();
 	m_carrying[index].clear();
 	unsetCarrier(other, ActorOrItemIndex::createForActor(index));
 	move_updateIndividualSpeed(index);
-	setLocation(other, location2);
+	setLocation(other, targetLocation);
 	return other;
 }
 ItemIndex Actors::canPickUp_tryToPutDownItem(const ActorIndex& index, const BlockIndex& location, const DistanceInBlocks maxRange)
@@ -81,15 +94,29 @@ ItemIndex Actors::canPickUp_tryToPutDownItem(const ActorIndex& index, const Bloc
 	assert(m_carrying[index].exists());
 	assert(m_carrying[index].isItem());
 	ItemIndex item = m_carrying[index].getItem();
+	assert(m_static[item]);
 	Blocks& blocks = m_area.getBlocks();
 	Items& items = m_area.getItems();
 	ShapeId shape = m_area.getItems().getShape(item);
+	// Find a location to put down the carried item.
 	auto predicate = [&](const BlockIndex& block) {
 		return blocks.shape_anythingCanEnterEver(block) && 
 			blocks.shape_staticShapeCanEnterWithAnyFacing(block, shape, {});
 	};
 	BlockIndex targetLocation = blocks.getBlockInRangeWithCondition(location, maxRange, predicate);
 	if(targetLocation.empty())
+	{
+		static const MoveTypeId moveTypeNone = MoveType::byName("none");
+		// No location found, try again without respecting Config::maxBlockVolume.
+		auto predicate2 = [&](const BlockIndex &block)
+		{
+			return blocks.shape_anythingCanEnterEver(block) &&
+				   blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, shape, moveTypeNone);
+		};
+		targetLocation = blocks.getBlockInRangeWithCondition(location, maxRange, predicate2);
+	}
+	if(targetLocation.empty())
+		// There is nowhere to put down then item even ignoring max block volume, i.e. it is a multi block shape which is interfearing with unenterable blocks.
 		return ItemIndex::null();
 	m_carrying[index].clear();
 	items.unsetCarrier(item, ActorOrItemIndex::createForActor(index));

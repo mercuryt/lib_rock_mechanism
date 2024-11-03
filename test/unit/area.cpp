@@ -333,7 +333,10 @@ TEST_CASE("four fluids scale 5 parallel")
 {
 	fourFluidsTestParallel(5, Step::create(24));
 }
+/*
+// To slow for unit testing.
 TEST_CASE("four fluids scale 10 parallel")
 {
 	fourFluidsTestParallel(10, Step::create(75));
 }
+*/

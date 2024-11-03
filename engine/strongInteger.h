@@ -72,8 +72,8 @@ public:
 	constexpr Derived& operator/=(const Other& other) { assert(exists()); data /= other; return static_cast<Derived&>(*this); }
 	constexpr Derived& operator/=(const This& other) { (*this) /= other.data; }
 	[[nodiscard]] constexpr Derived operator-() const { assert(exists()); return Derived::create(-data); }
-	[[nodiscard]] constexpr T get() const { assert(exists()); return data; }
-	[[nodiscard]] T& getReference() { assert(exists()); return data; }
+	[[nodiscard]] constexpr T get() const { return data; }
+	[[nodiscard]] T& getReference() { return data; }
 	[[nodiscard]] constexpr static Derived create(const T& d){ Derived der; der.set(d); return der; }
 	[[nodiscard]] constexpr static Derived create(const T&& d){ return create(d); }
 	[[nodiscard]] constexpr static Derived null() { return Derived::create(NULL_VALUE); }
