@@ -6,13 +6,12 @@
 #include "terrainFacade.h"
 #include "types.h"
 // Equip uniform.
-UniformPathRequest::UniformPathRequest(Area& area, UniformObjective& objective) : m_objective(objective)
+UniformPathRequest::UniformPathRequest(Area& area, UniformObjective& objective, const ActorIndex& actor) : m_objective(objective)
 {
 	std::function<bool(BlockIndex)> predicate = [&area, this](const BlockIndex& block){
 		return m_objective.blockContainsItem(area, block);
 	};
 	bool unreserved = false;
-	ActorIndex actor = getActor();
 	createGoAdjacentToCondition(area, actor, predicate, m_objective.m_detour, unreserved, Config::maxRangeToSearchForUniformEquipment, BlockIndex::null());
 }
 UniformPathRequest::UniformPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
@@ -96,7 +95,7 @@ Json UniformObjective::toJson() const
 void UniformObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
-	if(m_item.getIndex().exists())
+	if(m_item.exists())
 	{
 		if(!actors.isAdjacentToItem(actor, m_item.getIndex()))
 			actors.move_setDestinationAdjacentToItem(actor, m_item.getIndex());
@@ -118,7 +117,7 @@ void UniformObjective::execute(Area& area, const ActorIndex& actor)
 		if(adjacent.exists())
 			equip(area, getItemAtBlock(area, adjacent), actor);
 		else
-			actors.move_pathRequestRecord(actor, std::make_unique<UniformPathRequest>(area, *this));
+			actors.move_pathRequestRecord(actor, std::make_unique<UniformPathRequest>(area, *this, actor));
 	}
 }
 void UniformObjective::cancel(Area& area, const ActorIndex& actor)

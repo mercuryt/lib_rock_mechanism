@@ -13,6 +13,7 @@ void ActorHasUniform::load(Area& area, const Json& data, const FactionId& factio
 }
 void ActorHasUniform::set(const ActorIndex& index, Area& area, Uniform& uniform)
 {
+	assert(m_uniform == nullptr);
 	if(m_objective)
 		m_objective->cancel(area, index);
 	m_uniform = &uniform;
@@ -36,8 +37,10 @@ void ActorHasUniform::clearObjective(UniformObjective& objective)
 }
 void Actors::uniform_set(const ActorIndex& index, Uniform& uniform)
 {
-	if(uniform_exists(index))
-		uniform_unset(index);
+	if(m_hasUniform[index] == nullptr)
+		m_hasUniform[index] = std::make_unique<ActorHasUniform>();
+	else
+		m_hasUniform[index]->unset(index, m_area);
 	m_hasUniform[index]->set(index, m_area, uniform);
 	std::unique_ptr<Objective> objective = std::make_unique<UniformObjective>(m_area, index);
 	m_hasUniform[index]->recordObjective(*static_cast<UniformObjective*>(objective.get()));

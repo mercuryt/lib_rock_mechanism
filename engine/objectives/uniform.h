@@ -33,7 +33,7 @@ class UniformPathRequest final : public PathRequest
 {
 	UniformObjective& m_objective;
 public:
-	UniformPathRequest(Area& area, UniformObjective& objective);
+	UniformPathRequest(Area& area, UniformObjective& objective, const ActorIndex& actor);
 	UniformPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
 	void callback(Area& area, const FindPathResult& result);
 	[[nodiscard]] Json toJson() const;
