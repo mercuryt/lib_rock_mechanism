@@ -6,7 +6,11 @@
 void AreaHasStocksForFaction::record(Area& area, ItemIndex item)
 {
 	Items& items = area.getItems();
-	m_data.getOrCreate(items.getItemType(item)).getOrCreate(items.getMaterialType(item)).add(item);
+	const ItemTypeId& itemType = items.getItemType(item);
+	const MaterialTypeId& materialType = items.getMaterialType(item);
+	if(!ItemType::getIsGeneric(itemType))
+		assert(!m_data.contains(itemType) || !m_data[itemType].contains(materialType) || !m_data[itemType][materialType].contains(item));
+	m_data.getOrCreate(itemType).getOrCreate(materialType).maybeAdd(item);
 }
 void AreaHasStocksForFaction::unrecord(Area& area, ItemIndex item)
 {

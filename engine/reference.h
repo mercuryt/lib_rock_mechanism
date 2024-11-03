@@ -50,15 +50,15 @@ public:
 	[[nodiscard]] bool contains(ActorReference& ref) const { return find(ref) != data.end(); }
 	[[nodiscard]] bool contains(ActorIndex index) const { return find(index) != data.end(); }
 	template<typename Predicate>
-	[[nodiscard]] std::vector<ActorReference>::iterator find(Predicate predicate) { return std::ranges::find_if(data, predicate); }
+	[[nodiscard]] std::vector<ActorReference>::iterator find(const Predicate&& predicate) { return std::ranges::find_if(data, predicate); }
 	template<typename Predicate>
-	[[nodiscard]] std::vector<ActorReference>::const_iterator find(Predicate predicate) const { return std::ranges::find_if(data, predicate); }
+	[[nodiscard]] std::vector<ActorReference>::const_iterator find(const Predicate&& predicate) const { return std::ranges::find_if(data, predicate); }
 	void add(ActorReference ref) { assert(!contains(ref)); data.push_back(ref); }
 	void remove(ActorReference ref) { assert(contains(ref)); auto found = find(ref); std::swap(*found, data.back()); data.resize(data.size() - 1); }
 	void add(ActorIndex index, Area& area) { data.emplace_back(area, index); }
 	void remove(ActorIndex index) { auto found = find(index); std::swap(*found, data.back()); data.resize(data.size() - 1); }
 	template<typename Predicate>
-	void removeIf(Predicate predicate) { std::erase_if(data, predicate); }
+	void removeIf(const Predicate&& predicate) { std::erase_if(data, predicate); }
 	void clear() { data.clear(); }
 	void maybeAdd(ActorIndex index, Area& area) { if(!contains(index)) data.emplace_back(area, index); }
 	void maybeRemove(ActorIndex index) { auto found = find(index); if(found != data.end()) { std::swap(*found, data.back()); data.resize(data.size() - 1); } }
@@ -85,7 +85,7 @@ class ItemReference final
 public:
 	ItemReference(const ItemReferenceTarget& target) : m_target(&target) { }
 	ItemReference() : m_target(nullptr) { }
-	ItemReference(Area& area, ItemIndex index);
+	ItemReference(Area& area, const ItemIndex& index);
 	void setTarget(const ItemReferenceTarget& target) { m_target = &target; }
 	void clear() { m_target = nullptr; }
 	ItemIndex getIndex() const { assert(exists()); return m_target->index; }
@@ -108,31 +108,32 @@ protected:
 public:
 	ItemReferences(const Json& data, Area& area) { for(const Json& irData : data) add(irData.get<ItemIndex>(), area); }
 	ItemReferences() = default;
-	[[nodiscard]] auto find(ItemReference ref) { return std::ranges::find(data, ref); }
-	[[nodiscard]] auto find(ItemIndex index) { return std::ranges::find(data, index, [](const auto& ref){return ref.getIndex();}); }
-	[[nodiscard]] auto find(ItemReference ref) const { return std::ranges::find(data, ref); }
-	[[nodiscard]] auto find(ItemIndex index) const { return std::ranges::find(data, index, [](const auto& ref){return ref.getIndex();}); }
-	[[nodiscard]] bool contains(ItemReference& ref) const { return find(ref) != data.end(); }
-	[[nodiscard]] bool contains(ItemIndex index) const { return find(index) != data.end(); }
+	[[nodiscard]] auto find(const ItemReference& ref) { return std::ranges::find(data, ref); }
+	[[nodiscard]] auto find(const ItemIndex& index) { return std::ranges::find(data, index, [](const auto& ref){return ref.getIndex();}); }
+	[[nodiscard]] auto find(const ItemReference& ref) const { return std::ranges::find(data, ref); }
+	[[nodiscard]] auto find(const ItemIndex& index) const { return std::ranges::find(data, index, [](const auto& ref){return ref.getIndex();}); }
+	[[nodiscard]] bool contains(const ItemReference& ref) const { return find(ref) != data.end(); }
+	[[nodiscard]] bool contains(const ItemIndex& index) const { return find(index) != data.end(); }
 	template<typename Predicate>
-	[[nodiscard]] std::vector<ItemReference>::iterator find(Predicate predicate) { return std::ranges::find_if(data, predicate); }
+	[[nodiscard]] std::vector<ItemReference>::iterator find(const Predicate&& predicate) { return std::ranges::find_if(data, predicate); }
 	template<typename Predicate>
-	[[nodiscard]] std::vector<ItemReference>::const_iterator find(Predicate predicate) const { return std::ranges::find_if(data, predicate); }
-	void add(ItemReference ref) { assert(!contains(ref)); data.push_back(ref); }
-	void remove(ItemReference ref) { assert(contains(ref)); auto found = find(ref); std::swap(*found, data.back()); data.resize(data.size() - 1); }
-	void add(ItemIndex index, Area& area) { data.emplace_back(area, index); }
-	void remove(ItemIndex index) { auto found = find(index); std::swap(*found, data.back()); data.resize(data.size() - 1); }
+	[[nodiscard]] std::vector<ItemReference>::const_iterator find(const Predicate&& predicate) const { return std::ranges::find_if(data, predicate); }
+	void add(const ItemReference& ref) { assert(!contains(ref)); data.push_back(ref); }
+	void remove(const ItemReference& ref) { assert(contains(ref)); auto found = find(ref); std::swap(*found, data.back()); data.resize(data.size() - 1); }
+	void add(const ItemIndex& index, Area& area) { data.emplace_back(area, index); }
+	void remove(const ItemIndex& index) { auto found = find(index); std::swap(*found, data.back()); data.resize(data.size() - 1); }
 	template<typename Predicate>
-	void removeIf(Predicate predicate) { std::erase_if(data, predicate); }
+	void removeIf(const Predicate&& predicate) { std::erase_if(data, predicate); }
 	void clear() { data.clear(); }
-	void addGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity);
-	void removeGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity);
-	void maybeAdd(ItemIndex index, Area& area) { if(!contains(index)) data.emplace_back(area, index); }
-	void maybeRemove(ItemReference ref) { auto found = find(ref); if(found != data.end()) { std::swap(*found, data.back()); data.resize(data.size() - 1); } }
-	void maybeRemove(ItemIndex index) { auto found = find(index); if(found != data.end()) { std::swap(*found, data.back()); data.resize(data.size() - 1); } }
-	void merge(ItemIndices indices, Area& area) { for(ItemIndex index : indices) maybeAdd(index, area); }
+	void addGeneric(Area& area, ItemTypeId itemType, const MaterialTypeId& materialType, const Quantity& quantity);
+	void removeGeneric(Area& area, ItemTypeId itemType, const MaterialTypeId& materialType, const Quantity& quantity);
+	void maybeAdd(const ItemIndex& index, Area& area) { if(!contains(index)) data.emplace_back(area, index); }
+	void maybeAdd(const ItemReference& ref) { if(!contains(ref)) data.emplace_back(ref); }
+	void maybeRemove(const ItemReference& ref) { auto found = find(ref); if(found != data.end()) { std::swap(*found, data.back()); data.resize(data.size() - 1); } }
+	void maybeRemove(const ItemIndex& index) { auto found = find(index); if(found != data.end()) { std::swap(*found, data.back()); data.resize(data.size() - 1); } }
+	void merge(const ItemIndices& indices, Area& area) { for(ItemIndex index : indices) maybeAdd(index, area); }
 	template<typename Predicate>
-	[[nodiscard]] bool contains(Predicate predicate) const { return find(predicate) != data.end(); }
+	[[nodiscard]] bool contains(const Predicate&& predicate) const { return std::ranges::find_if(data, predicate) != data.end(); }
 	[[nodiscard]] auto begin() { return data.begin(); }
 	[[nodiscard]] auto end() { return data.end(); }
 	[[nodiscard]] auto begin() const { return data.begin(); }
@@ -147,10 +148,10 @@ class ItemReferencesMaybeSorted : public ItemReferences
 public:
 	template<typename Sort>
 		void sort(Sort sort) { assert(!sorted); std::ranges::sort(data, sort); sorted = true; }
-	void add(ItemReference ref) { sorted = false; ItemReferences::add(ref); }
-	void remove(ItemReference ref) { sorted = false; ItemReferences::remove(ref); }
-	void add(ItemIndex index, Area& area) { sorted = false; ItemReferences::add(index, area); }
-	void remove(ItemIndex index) { sorted = false; ItemReferences::remove(index); }
+	void add(const ItemReference& ref) { sorted = false; ItemReferences::add(ref); }
+	void remove(const ItemReference& ref) { sorted = false; ItemReferences::remove(ref); }
+	void add(const ItemIndex& index, Area& area) { sorted = false; ItemReferences::add(index, area); }
+	void remove(const ItemIndex& index) { sorted = false; ItemReferences::remove(index); }
 	[[nodiscard]] bool isSorted() const { return sorted; }
 };
 // Polymorphic reference wrapes either an actor or an item.

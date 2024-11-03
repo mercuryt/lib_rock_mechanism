@@ -78,18 +78,23 @@ void StockPileProject::onComplete()
 	for(auto& pair : m_alreadyAtSite)
 		pair.first.getIndexPolymorphic().setLocationAndFacing(m_area, m_location, Facing::create(0));
 	Blocks& blocks = m_area.getBlocks();
-	ItemIndex delivered = blocks.item_getGeneric(m_location, m_itemType, m_materialType);
+	ItemIndex deliveredItem = blocks.item_getGeneric(m_location, m_itemType, m_materialType);
 	auto workers = std::move(m_workers);
 	auto& hasStockPiles = m_area.m_hasStockPiles.getForFaction(m_stockpile.m_faction);
-	m_area.m_hasStocks.getForFaction(m_faction).record(m_area, delivered);
+	m_area.m_hasStocks.getForFaction(m_faction).record(m_area, deliveredItem);
 	Actors& actors = m_area.getActors();
-	if(delivered == m_item.getIndex())
+	if(items.stockpile_canBeStockPiled(deliveredItem, m_stockpile.m_faction))
+	{
 		// Either non-generic or whole stack, remove item from hasStockPiles.
 		// Implcitly destroys 'this'.
-		hasStockPiles.removeItem(m_item.getIndex());
+		hasStockPiles.removeItem(deliveredItem);
+	}
 	else
+	{
+		assert(items.isGeneric(deliveredItem));
 		// Partial stack of generic.
 		hasStockPiles.destroyProject(*this);
+	}
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(), *projectWorker.objective);
 }
@@ -112,7 +117,6 @@ void StockPileProject::onCancel()
 		StockPileObjective& objective = actors.objective_getCurrent<StockPileObjective>(actor);
 		// clear objective.m_project so reset does not try to cancel it.
 		objective.m_project = nullptr;
-		actors.project_unset(actor);
 		objective.reset(area, actor);
 		actors.objective_canNotCompleteSubobjective(actor);
 	}
@@ -441,7 +445,7 @@ void AreaHasStockPilesForFaction::destroyStockPile(StockPile& stockPile)
 				m_itemsWithDestinationsByStockPile[newStockPile].add(item);
 		}
 	// Remove the stockpile entry from items with destinations by stockpile.
-	m_itemsWithDestinationsByStockPile.erase(&stockPile);
+	m_itemsWithDestinationsByStockPile.maybeErase(&stockPile);
 	// Destruct.
 	m_stockPiles.remove(stockPile);
 }
@@ -527,7 +531,7 @@ void AreaHasStockPilesForFaction::setAvailable(StockPile& stockPile)
 			for(ItemReference item : m_itemsWithoutDestinationsByItemType[itemQuery.m_itemType])
 				if(stockPile.accepts(item.getIndex()))
 				{
-					m_itemsWithDestinationsByStockPile[&stockPile].add(item);
+					m_itemsWithDestinationsByStockPile.getOrCreate(&stockPile).add(item);
 					//TODO: remove item from items without destinations by item type.
 				}
 	}
@@ -538,13 +542,14 @@ void AreaHasStockPilesForFaction::setUnavailable(StockPile& stockPile)
 		util::removeFromVectorByValueUnordered(m_availableStockPilesByItemType[itemQuery.m_itemType], &stockPile);
 	if(m_itemsWithDestinationsByStockPile.contains(&stockPile))
 	{
+		Items& items = m_area.getItems();
 		for(ItemReference item : m_itemsWithDestinationsByStockPile[&stockPile])
 		{
 			StockPile* newStockPile = getStockPileFor(item.getIndex());
 			if(newStockPile == nullptr)
-				m_itemsWithoutDestinationsByItemType[m_area.getItems().getItemType(item.getIndex())].add(item);
+				m_itemsWithoutDestinationsByItemType.getOrCreate(items.getItemType(item.getIndex())).maybeAdd(item);
 			else
-				m_itemsWithDestinationsByStockPile[newStockPile].add(item);
+				m_itemsWithDestinationsByStockPile.getOrCreate(newStockPile).maybeAdd(item);
 		}
 		m_itemsWithDestinationsByStockPile.erase(&stockPile);
 	}

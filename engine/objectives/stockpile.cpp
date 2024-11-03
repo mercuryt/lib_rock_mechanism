@@ -137,30 +137,35 @@ StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo, 
 			if(items.stockpile_canBeStockPiled(item, faction))
 			{
 				// Item can be stockpiled, check if any of the stockpiles we have seen so far will accept it.
-				for (const auto &pair : m_stockpiles)
-					if (pair.first->accepts(item) && checkDestination(area, item, pair.second))
-					{
-						// Success
-						m_objective.m_item = item.toReference(area);
-						m_objective.m_stockPileLocation = pair.second;
-						return true;
-					}
+				for (const auto& [stockpile, blocks] : m_blocksByStockPile)
+					for(const BlockIndex& block : blocks)
+						if (stockpile->accepts(item) && checkDestination(area, item, block))
+						{
+							// Success
+							m_objective.m_item = item.toReference(area);
+							m_objective.m_stockPileLocation = block;
+							return true;
+						}
 				// Item does not match any stockpile seen so far, store it to compare against future stockpiles.
 				m_items.insert(item);
 			}
 		}
 		StockPile *stockPile = blocks.stockpile_getForFaction(block, faction);
-		if(stockPile != nullptr && !m_stockpiles.contains(stockPile))
+		if(stockPile != nullptr && (!m_blocksByStockPile.contains(stockPile) || !m_blocksByStockPile[stockPile].contains(block)))
 		{
 			if(blocks.isReserved(block, faction))
 				return false;
 			if(!blocks.item_empty(block))
 			{
+				// Block static volume is full, don't stockpile here.
+				if(blocks.shape_getStaticVolume(block) == Config::maxBlockVolume)
+					return false;
 				// There is more then one item type in this block, don't stockpile anything here.
 				if(blocks.item_getAll(block).size() != 1)
 					return false;
 				// Non generics don't stack, don't stockpile anything here if there is a non generic present.
-				if(!ItemType::getIsGeneric(items.getItemType(blocks.item_getAll(block).front())))
+				ItemTypeId itemType = items.getItemType(blocks.item_getAll(block).front());
+				if(!ItemType::getIsGeneric(itemType))
 					return false;
 			}
 			for(ItemIndex item : m_items)
@@ -172,7 +177,7 @@ StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo, 
 					return true;
 				}
 			// No item seen so far matches the found stockpile, store it to check against future items.
-			m_stockpiles.maybeInsert(stockPile, block);
+			m_blocksByStockPile.getOrCreate(stockPile).add(block);
 		}
 		return false;
 	};
@@ -302,11 +307,11 @@ void StockPileDestinationPathRequest::callback(Area& area, const FindPathResult&
 				{
 					m_objective.m_project = &stockPileProject;
 					stockPileProject.addWorkerCandidate(actor, m_objective);
+					return;
 				}
 		}
-		else
-			// No projects found, make one.
-			hasStockPiles.makeProject(m_objective.m_item.getIndex(), m_objective.m_stockPileLocation, m_objective, actor);
+		// No projects found, make one.
+		hasStockPiles.makeProject(m_objective.m_item.getIndex(), m_objective.m_stockPileLocation, m_objective, actor);
 	}
 }
 StockPileDestinationPathRequest::StockPileDestinationPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :

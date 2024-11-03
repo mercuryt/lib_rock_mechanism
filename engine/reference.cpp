@@ -3,7 +3,7 @@
 #include "area.h"
 #include "items/items.h"
 ActorReference::ActorReference(Area& area, ActorIndex index) { m_target = &area.getActors().getReferenceTarget(index); }
-ItemReference::ItemReference(Area& area, ItemIndex index) { m_target = &area.getItems().getReferenceTarget(index); }
+ItemReference::ItemReference(Area& area, const ItemIndex& index) { m_target = &area.getItems().getReferenceTarget(index); }
 void ActorReference::load(const Json& data, Area& area) { m_target = &area.getActors().getReferenceTarget(data.get<ActorIndex>()); }
 void ItemReference::load(const Json& data, Area& area) { m_target = &area.getItems().getReferenceTarget(data.get<ItemIndex>()); }
 void ActorOrItemReference::load(const Json& data, Area& area)
@@ -15,7 +15,7 @@ void ActorOrItemReference::load(const Json& data, Area& area)
 	else
 		setItem(area.getItems().getReferenceTarget(index.getItem()));
 }
-void ItemReferences::addGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
+void ItemReferences::addGeneric(Area& area, ItemTypeId itemType, const MaterialTypeId& materialType, const Quantity& quantity)
 {
 	auto found = find([&](const ItemReference& item) {
 		Items& items = area.getItems();
@@ -37,7 +37,7 @@ void ItemReferences::addGeneric(Area& area, ItemTypeId itemType, MaterialTypeId 
 		area.getItems().addQuantity(equipment, quantity);
 	}
 }
-void ItemReferences::removeGeneric(Area& area, ItemTypeId itemType, MaterialTypeId materialType, Quantity quantity)
+void ItemReferences::removeGeneric(Area& area, ItemTypeId itemType, const MaterialTypeId& materialType, const Quantity& quantity)
 {
 	Items& items = area.getItems();
 	auto found = find([&](const ItemReference& item) {

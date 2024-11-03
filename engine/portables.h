@@ -50,9 +50,10 @@ public:
 	void unfollowItem(const HasShapeIndex& index, const ItemIndex& item);
 	void maybeLeadAndFollowDisband(const HasShapeIndex& index);
 	void leadAndFollowDisband(const HasShapeIndex& index);
-	void setCarrier(const HasShapeIndex& index, ActorOrItemIndex carrier);
-	void unsetCarrier(const HasShapeIndex& index, ActorOrItemIndex carrier);
-	void updateCarrierIndex(const HasShapeIndex& index, HasShapeIndex newIndex) { m_carrier[index].updateIndex(newIndex); }
+	void setCarrier(const HasShapeIndex& index, const ActorOrItemIndex& carrier);
+	void maybeSetCarrier(const HasShapeIndex& index, const ActorOrItemIndex& carrier);
+	void unsetCarrier(const HasShapeIndex& index, const ActorOrItemIndex& carrier);
+	void updateCarrierIndex(const HasShapeIndex& index, const HasShapeIndex& newIndex) { m_carrier[index].updateIndex(newIndex); }
 	[[nodiscard]] MoveTypeId getMoveType(const HasShapeIndex& index) const { return m_moveType[index]; }
 	[[nodiscard]] bool isFollowing(const HasShapeIndex& index) const;
 	[[nodiscard]] bool isLeading(const HasShapeIndex& index) const;

@@ -293,12 +293,18 @@ Speed Portables::getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector
 		return Speed::create(0);
 	return Speed::create(std::ceil(lowestMoveSpeed.get() * ratio * ratio));
 }
-void Portables::setCarrier(const HasShapeIndex& index, ActorOrItemIndex carrier)
+void Portables::setCarrier(const HasShapeIndex& index, const ActorOrItemIndex& carrier)
 {
 	assert(!m_carrier[index].exists());
 	m_carrier[index] = carrier;
 }
-void Portables::unsetCarrier(const HasShapeIndex& index, ActorOrItemIndex carrier)
+void Portables::maybeSetCarrier(const HasShapeIndex& index, const ActorOrItemIndex& carrier)
+{
+	if(m_carrier[index] == carrier)
+		return;
+	setCarrier(index, carrier);
+}
+void Portables::unsetCarrier(const HasShapeIndex& index, const ActorOrItemIndex& carrier)
 {
 	assert(m_carrier[index] == carrier);
 	m_carrier[index].clear();

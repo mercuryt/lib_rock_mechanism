@@ -83,7 +83,7 @@ std::vector<AttackTypeId> ItemType::getAttackTypes(const ItemTypeId& id) { retur
 SkillTypeId ItemType::getCombatSkill(const ItemTypeId& id) { return itemTypeData.m_combatSkill[id]; }
 Step ItemType::getAttackCoolDownBase(const ItemTypeId& id) { return itemTypeData.m_attackCoolDownBase[id]; }
 bool ItemType::getIsWeapon(const ItemTypeId& id) { return !itemTypeData.m_attackTypes[id].empty(); }
-bool ItemType::getIsGeneric(const ItemTypeId& id) { return !itemTypeData.m_generic[id]; }
+bool ItemType::getIsGeneric(const ItemTypeId& id) { return itemTypeData.m_generic[id]; }
 uint32_t ItemType::getWearable_defenseScore(const ItemTypeId& id) { return itemTypeData.m_wearable_defenseScore[id]; }
 uint32_t ItemType::getWearable_layer(const ItemTypeId& id) { return itemTypeData.m_wearable_layer[id]; }
 uint32_t ItemType::getWearable_bodyTypeScale(const ItemTypeId& id) { return itemTypeData.m_wearable_bodyTypeScale[id]; }
