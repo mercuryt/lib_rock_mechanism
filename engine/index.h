@@ -55,9 +55,9 @@ class HasShapeIndex : public StrongInteger<HasShapeIndex, uint32_t>
 protected:
 	HasShapeIndex(uint32_t index) : StrongInteger<HasShapeIndex, uint32_t>(index) { }
 public:
-	HasShapeIndex(const PlantIndex&);
-	HasShapeIndex(const ItemIndex&);
-	HasShapeIndex(const ActorIndex&);
+	HasShapeIndex(const PlantIndex& index);
+	HasShapeIndex(const ItemIndex& index);
+	HasShapeIndex(const ActorIndex& index);
 	[[nodiscard]] static HasShapeIndex cast(const PlantIndex& o);
 	[[nodiscard]] static HasShapeIndex cast(const ItemIndex& o);
 	[[nodiscard]] static HasShapeIndex cast(const ActorIndex& o);
