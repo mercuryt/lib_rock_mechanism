@@ -18,6 +18,7 @@ void Actors::canPickUp_pickUpItemQuantity(const ActorIndex& index, const ItemInd
 	assert(quantity == 1 || ItemType::getGeneric(items.getItemType(item)));
 	assert(m_carrying[index].empty());
 	items.reservable_maybeUnreserve(item, *m_canReserve[index]);
+	assert(items.isStatic(item));
 	if(quantity == items.getQuantity(item))
 	{
 		m_carrying[index] = item.toActorOrItemIndex();
@@ -41,6 +42,7 @@ void Actors::canPickUp_pickUpActor(const ActorIndex& index, const ActorIndex& ot
 {
 	assert(!m_mustSleep[other]->isAwake() || !move_canMove(other));
 	assert(m_carrying[index].exists());
+	assert(m_static[index]);
 	m_reservables[other]->maybeClearReservationFor(*m_canReserve[index]);
 	if(m_location[other].exists())
 		exit(other);
@@ -94,9 +96,9 @@ ItemIndex Actors::canPickUp_tryToPutDownItem(const ActorIndex& index, const Bloc
 	assert(m_carrying[index].exists());
 	assert(m_carrying[index].isItem());
 	ItemIndex item = m_carrying[index].getItem();
-	assert(m_static[item]);
-	Blocks& blocks = m_area.getBlocks();
 	Items& items = m_area.getItems();
+	assert(items.isStatic(item));
+	Blocks& blocks = m_area.getBlocks();
 	ShapeId shape = m_area.getItems().getShape(item);
 	// Find a location to put down the carried item.
 	auto predicate = [&](const BlockIndex& block) {
@@ -111,7 +113,7 @@ ItemIndex Actors::canPickUp_tryToPutDownItem(const ActorIndex& index, const Bloc
 		auto predicate2 = [&](const BlockIndex &block)
 		{
 			return blocks.shape_anythingCanEnterEver(block) &&
-				   blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, shape, moveTypeNone);
+				blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, shape, moveTypeNone);
 		};
 		targetLocation = blocks.getBlockInRangeWithCondition(location, maxRange, predicate2);
 	}
