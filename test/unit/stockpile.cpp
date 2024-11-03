@@ -88,6 +88,9 @@ TEST_CASE("stockpile")
 		REQUIRE(actors.canPickUp_isCarryingItem(dwarf1, chunk1));
 		std::function<bool()> predicate = [&](){ return items.getLocation(chunk1) == stockpileLocation; };
 		simulation.fastForwardUntillPredicate(predicate);
+		CollisionVolume volume = Shape::getCollisionVolumeAtLocationBlock(ItemType::getShape(chunk));
+		REQUIRE(volume != 0);
+		REQUIRE(blocks.shape_getStaticVolume(stockpileLocation) == volume);
 		REQUIRE(!actors.project_exists(dwarf1));
 		REQUIRE(!objectiveType.canBeAssigned(area, dwarf1));
 		REQUIRE(actors.objective_getCurrentName(dwarf1) != "stockpile");
@@ -122,6 +125,7 @@ TEST_CASE("stockpile")
 		REQUIRE(items.stockpile_canBeStockPiled(chunk2, faction));
 		// Find the second item and stockpile slot.
 		simulation.doStep();
+		REQUIRE(actors.objective_getCurrentName(dwarf1) == "stockpile");
 		StockPileObjective& objective = actors.objective_getCurrent<StockPileObjective>(dwarf1);
 		REQUIRE(objective.getDestination() == stockpileLocation2);
 		REQUIRE(objective.getItem() == chunk2);
@@ -306,21 +310,41 @@ TEST_CASE("stockpile")
 		bool shouldBeTrue = blocks.stockpile_isAvalible(stockpileLocation, faction);
 		REQUIRE(shouldBeTrue);
 		REQUIRE(blocks.item_getCount(stockpileLocation, pile, sand) == 48);
+		CollisionVolume volume = Shape::getCollisionVolumeAtLocationBlock(ItemType::getShape(pile));
+		REQUIRE(volume != 0);
+		REQUIRE(blocks.shape_getStaticVolume(stockpileLocation) == volume * 48u);
 		REQUIRE(!actors.canPickUp_exists(dwarf1));
 		REQUIRE(actors.objective_getCurrentName(dwarf1) == "stockpile");
 		REQUIRE(actors.move_hasPathRequest(dwarf1));
-		auto predicate2 = [&]{ return !actors.move_getPath(dwarf1).empty(); };
-		simulation.fastForwardUntillPredicate(predicate2);
+		REQUIRE(objectiveType.canBeAssigned(area, dwarf1));
+		StockPileObjective& objective = actors.objective_getCurrent<StockPileObjective>(dwarf1);
+		// Find potential item and destination.
+		simulation.doStep();
+		REQUIRE(actors.objective_getCurrentName(dwarf1) == "stockpile");
+		REQUIRE(objective.hasItem());
+		REQUIRE(objective.hasDestination());
+		REQUIRE(objective.getItem() == cargo);
+		REQUIRE(objective.getDestination() == stockpileLocation);
+		// Confirm destination.
+		simulation.doStep();
+		REQUIRE(objective.getItem() == cargo);
+		REQUIRE(objective.getDestination() == stockpileLocation);
+		StockPileProject& project2 = static_cast<StockPileProject&>(*actors.project_get(dwarf1));
+		// select Haul strategy.
+		simulation.doStep();
+		ActorReference dwarf1Ref = dwarf1.toReference(area);
+		REQUIRE(project2.getProjectWorkerFor(dwarf1Ref).haulSubproject != nullptr);
+		REQUIRE(project2.getProjectWorkerFor(dwarf1Ref).haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
+		REQUIRE(actors.objective_getCurrentName(dwarf1) == "stockpile");
+		// Path to pickup.
+		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, cargoOrigin);
 		REQUIRE(actors.canPickUp_isCarryingItemGeneric(dwarf1, pile, sand, Quantity::create(48)));
 		REQUIRE(items.getQuantity(cargo) == 4);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, stockpileLocation);
 		auto predicate3 = [&]{ return blocks.item_getCount(stockpileLocation, pile, sand) == 96; };
 		simulation.fastForwardUntillPredicate(predicate3);
-		REQUIRE(blocks.item_getCount(stockpileLocation, pile, sand) == 96);
-		simulation.fastForwardUntillPredicate(predicate2);
-		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, cargoOrigin);
-		REQUIRE(actors.canPickUp_isCarryingItemGeneric(dwarf1, pile, sand, Quantity::create(4)));
+		simulation.fastForwardUntillPredicate([&](){ return actors.canPickUp_isCarryingItemGeneric(dwarf1, pile, sand, Quantity::create(4)); });
 		REQUIRE(blocks.item_getCount(cargoOrigin, pile, sand) == 0);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, stockpileLocation);
 		auto predicate4 = [&]{ return blocks.item_getCount(stockpileLocation, pile, sand) == 100; };
@@ -334,10 +358,12 @@ TEST_CASE("stockpile")
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(pile, sand);
 		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
-		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
+		BlockIndex stockpileLocation1 = blocks.getIndex_i(5, 5, 1);
+		BlockIndex stockpileLocation2 = blocks.getIndex_i(5, 6, 1);
 		BlockIndex cargoOrigin = blocks.getIndex_i(1, 8, 1);
-		stockpile.addBlock(stockpileLocation);
-		ItemIndex cargo = items.create({.itemType=pile, .materialType=sand, .location=cargoOrigin, .quantity=Quantity::create(100u)});
+		stockpile.addBlock(stockpileLocation1);
+		stockpile.addBlock(stockpileLocation2);
+		ItemIndex cargo = items.create({.itemType=pile, .materialType=sand, .location=cargoOrigin, .quantity=Quantity::create(200u)});
 		area.m_hasStockPiles.getForFaction(faction).addItem(cargo);
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		ActorIndex dwarf2 = actors.create({
@@ -348,40 +374,63 @@ TEST_CASE("stockpile")
 		actors.objective_setPriority(dwarf2, objectiveType.getId(), Priority::create(100));
 		// Both workers find hauling task.
 		simulation.doStep();
-		REQUIRE(actors.project_get(dwarf1));
-		REQUIRE(actors.project_exists(dwarf2));
-		// One worker is selected when the project makes reservations. This is the first worker.
+		// Confirm path
 		simulation.doStep();
-		// The second worker finds the task again, the first selects a haul strategy.
+		// Dwarf1 creates a project.
+		REQUIRE(actors.project_exists(dwarf1));
+		REQUIRE(!actors.project_exists(dwarf2));
+		// Dwarf2 finds the second stockpile location. Dwarf1 selects a haul strategy.
 		simulation.doStep();
-		// The second worker's project makes reservations, the first paths to cargoOrigin.
+		REQUIRE(actors.objective_getCurrentName(dwarf2) == "stockpile");
+		StockPileObjective& objective = actors.objective_getCurrent<StockPileObjective>(dwarf2);
+		REQUIRE(objective.hasDestination());
+		REQUIRE(objective.hasItem());
+		auto& projectWorker = static_cast<StockPileProject&>(*actors.project_get(dwarf1)).getProjectWorkerFor(dwarf1.toReference(area));
+		REQUIRE(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
+		// The second worker verifys drop off, creates project, makes reservations; the first paths to cargoOrigin.
 		simulation.doStep();
+		REQUIRE(actors.objective_getCurrentName(dwarf2) == "stockpile");
+		REQUIRE(objective.getDestination() == stockpileLocation1);
+		REQUIRE(objective.getItem() == cargo);
+		REQUIRE(blocks.isAdjacentToIncludingCornersAndEdges(cargoOrigin, actors.move_getDestination(dwarf1)));
+		StockPileProject& project = static_cast<StockPileProject&>(*actors.project_get(dwarf2));
 		// The second worker selects a haul strategy.
 		simulation.doStep();
+		REQUIRE(actors.project_exists(dwarf2));
+		REQUIRE(project.getProjectWorkerFor(dwarf2.toReference(area)).haulSubproject != nullptr);
+		REQUIRE(project.getProjectWorkerFor(dwarf2.toReference(area)).haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
 		// the second worker paths to cargoOrigin.
 		simulation.doStep();
+		REQUIRE(blocks.isAdjacentToIncludingCornersAndEdges(cargoOrigin, actors.move_getDestination(dwarf2)));
+		REQUIRE(blocks.isAdjacentToIncludingCornersAndEdges(cargoOrigin, actors.move_getDestination(dwarf1)));
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf2, cargoOrigin);
 		REQUIRE(actors.canPickUp_exists(dwarf2));
-		auto predicate1 = [&]{ return blocks.item_getCount(stockpileLocation, pile, sand) != 0; };
+		auto predicate1 = [&]{ return blocks.item_getCount(stockpileLocation1, pile, sand) != 0; };
 		REQUIRE(actors.objective_getCurrentName(dwarf2) == "stockpile");
 		simulation.fastForwardUntillPredicate(predicate1);
-		Quantity firstDeliveryQuantity = blocks.item_getCount(stockpileLocation, pile, sand);
+		Quantity firstDeliveryQuantity = blocks.item_getCount(stockpileLocation1, pile, sand);
 		REQUIRE(actors.objective_getCurrentName(dwarf2) == "stockpile");
-		auto predicate2 = [&]{ return blocks.item_getCount(stockpileLocation, pile, sand) > firstDeliveryQuantity; };
+		auto predicate2 = [&]{ return blocks.item_getCount(stockpileLocation1, pile, sand) > firstDeliveryQuantity; };
 		simulation.fastForwardUntillPredicate(predicate2);
 		if(actors.getActionDescription(dwarf2) != L"stockpile")
 			REQUIRE(actors.objective_getCurrentName(dwarf1) != "stockpile");
 		else
 			REQUIRE(actors.objective_getCurrentName(dwarf2) == "stockpile");
-		auto predicate3 = [&]{ return blocks.item_getCount(stockpileLocation, pile, sand) == 100; };
+		auto predicate3 = [&]{ return blocks.item_getCount(stockpileLocation1, pile, sand) == 96 || blocks.item_getCount(stockpileLocation2, pile, sand) == 96; };
 		simulation.fastForwardUntillPredicate(predicate3);
-		REQUIRE(!actors.project_get(dwarf1));
+		REQUIRE(actors.objective_getCurrentName(dwarf1) == "stockpile");
+		REQUIRE(actors.move_hasPathRequest(dwarf1));
+		simulation.doStep();
+		REQUIRE(actors.objective_getCurrentName(dwarf1) == "stockpile");
+		auto predicate4 = [&]{ return blocks.item_getCount(stockpileLocation1, pile, sand) == 100 && blocks.item_getCount(stockpileLocation2, pile, sand) == 100; };
+		simulation.fastForwardUntillPredicate(predicate4);
+		REQUIRE(!actors.project_exists(dwarf1));
 		REQUIRE(!actors.project_exists(dwarf2));
 		simulation.doStep();
 		REQUIRE(actors.objective_getCurrentName(dwarf1) != "stockpile");
 		REQUIRE(actors.objective_getCurrentName(dwarf2) != "stockpile");
 	}
-	SUBCASE("haul generic two stockpile blocks")
+	SUBCASE("haul generic two stockpile blocks and two piles")
 	{
 		std::vector<ItemQuery> queries;
 		queries.emplace_back(pile, sand);
@@ -401,8 +450,9 @@ TEST_CASE("stockpile")
 		REQUIRE(blocks.item_getCount(cargoOrigin1, pile, sand) < 100);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, stockpileLocation1);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, cargoOrigin1);
-		REQUIRE(actors.project_get(dwarf1));
-		REQUIRE(actors.project_get(dwarf1)->getLocation() == stockpileLocation1);
+		REQUIRE(actors.project_exists(dwarf1));
+		auto predicate = [&]{ return blocks.item_getCount(stockpileLocation1, pile, sand) == 100 && blocks.item_getCount(stockpileLocation2, pile, sand) == 100; };
+		simulation.fastForwardUntillPredicate(predicate);
 	}
 	SUBCASE("haul generic stockpile is adjacent to cargo")
 	{
@@ -415,11 +465,11 @@ TEST_CASE("stockpile")
 		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		stockpile.addBlock(stockpileLocation);
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
-		// One step to generate project.
+		// One step to find item and potential destination.
 		simulation.doStep();
-		REQUIRE(actors.project_get(dwarf1));
-		// One step to reserve.
+		// One step to verify, create, and reserve.
 		simulation.doStep();
+		REQUIRE(actors.project_exists(dwarf1));
 		REQUIRE(actors.project_get(dwarf1)->reservationsComplete());
 		// Since the only required item is already adjacent to the project site deleveries are also complete.
 		REQUIRE(actors.project_get(dwarf1)->deliveriesComplete());
@@ -466,14 +516,13 @@ TEST_CASE("stockpile")
 		auto condition = [&]{ return blocks.item_getCount(stockpileLocation, pile, sand) == 30; };
 		simulation.fastForwardUntillPredicate(condition);
 		REQUIRE(actors.getActionDescription(dwarf1) == L"stockpile");
-		REQUIRE(!actors.project_get(dwarf1));
+		REQUIRE(!actors.project_exists(dwarf1));
 		REQUIRE(actors.move_hasPathRequest(dwarf1));
-		// Step to create project.
+		// Step to find item and potential destination project.
 		simulation.doStep();
-		REQUIRE(actors.project_get(dwarf1));
-		// Step to reserve.
+		// Step to verify, create and reserve.
 		simulation.doStep();
-		REQUIRE(actors.project_get(dwarf1));
+		REQUIRE(actors.project_exists(dwarf1));
 		REQUIRE(actors.project_get(dwarf1)->reservationsComplete());
 		REQUIRE(actors.project_get(dwarf1)->deliveriesComplete());
 		REQUIRE(actors.project_get(dwarf1)->finishEventExists());
@@ -511,9 +560,9 @@ TEST_CASE("stockpile")
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
-		// Find item to stockpile, make project.
+		// Find item to stockpile.
 		simulation.doStep();
-		// Reserve required.
+		// Confirm destination, create project, and reserve.
 		simulation.doStep();
 		Project& project = *actors.project_get(dwarf1);
 		// Set haul strategy.
@@ -522,7 +571,7 @@ TEST_CASE("stockpile")
 		// Path to chunk.
 		simulation.doStep();
 		REQUIRE(actors.move_getDestination(dwarf1).exists());
-		REQUIRE(items.isAdjacentToActor(chunk1, dwarf1));
+		REQUIRE(items.isAdjacentToLocation(chunk1, actors.move_getDestination(dwarf1)));
 		auto path = actors.move_getPath(dwarf1);
 		REQUIRE(std::ranges::find(path, gateway) != path.end());
 		blocks.solid_set(gateway, wood, false);
@@ -545,9 +594,9 @@ TEST_CASE("stockpile")
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
-		// Find item to stockpile, make project.
+		// Find item to stockpil.
 		simulation.doStep();
-		// Reserve required.
+		// Confirm destination, make project, reserve required.
 		simulation.doStep();
 		Project& project = *actors.project_get(dwarf1);
 		// Set haul strategy.
@@ -587,13 +636,13 @@ TEST_CASE("stockpile")
 		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
 		REQUIRE(objectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
-		// Add candidate.
+		// Find candidates.
+		simulation.doStep();
+		// Reserve target and destination.
 		simulation.doStep();
 		REQUIRE(actors.project_exists(dwarf1));
 		Project& project = *actors.project_get(dwarf1);
-		REQUIRE(project.hasCandidate(dwarf1));
-		// Reserve target and destination.
-		simulation.doStep();
+		REQUIRE(project.hasWorker(dwarf1));
 		REQUIRE(project.reservationsComplete());
 		// Set haul strategy.
 		simulation.doStep();
@@ -625,13 +674,13 @@ TEST_CASE("stockpile")
 		area.m_hasStockPiles.getForFaction(faction).addItem(cargo);
 		REQUIRE(objectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
-		// Add candidate.
+		// Find candidates.
+		simulation.doStep();
+		// Confirm destination and reserve.
 		simulation.doStep();
 		REQUIRE(actors.project_exists(dwarf1));
 		Project& project = *actors.project_get(dwarf1);
-		REQUIRE(project.hasCandidate(dwarf1));
-		// Reserve target and destination.
-		simulation.doStep();
+		REQUIRE(project.hasWorker(dwarf1));
 		REQUIRE(project.reservationsComplete());
 		// Set haul strategy.
 		simulation.doStep();
@@ -644,7 +693,6 @@ TEST_CASE("stockpile")
 		// Fast forward until haul project retry event spawns the haul retry threaded task.
 		simulation.fastForward(Config::stepsFrequencyToLookForHaulSubprojects);
 		REQUIRE(project.hasTryToHaulThreadedTask());
-		simulation.doStep();
 		REQUIRE(project.getHaulRetries() == 1);
 		while(project.getHaulRetries() != Config::projectTryToMakeSubprojectRetriesBeforeProjectDelay - 1u)
 		{
@@ -669,8 +717,7 @@ TEST_CASE("stockpile")
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
-		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .quantity=Quantity::create(1u)});
-		items.setLocation(chunk1, chunkLocation);
+		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		// Find item to stockpile, make project.
@@ -695,15 +742,14 @@ TEST_CASE("stockpile")
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
-		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .quantity=Quantity::create(1u)});
-		items.setLocation(chunk1, chunkLocation);
+		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
-		// Find item to stockpile, make project.
+		// Find item to stockpile.
+		simulation.doStep();
+		// Confirm destination, create project, reserve.
 		simulation.doStep();
 		REQUIRE(actors.project_exists(dwarf1));
-		// Reserve required.
-		simulation.doStep();
 		REQUIRE(actors.project_get(dwarf1)->reservationsComplete());
 		// Set haul strategy.
 		simulation.doStep();
@@ -725,8 +771,7 @@ TEST_CASE("stockpile")
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
-		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .quantity=Quantity::create(1u)});
-		items.setLocation(chunk1, chunkLocation);
+		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		// Find item to stockpile, make project.
@@ -751,8 +796,7 @@ TEST_CASE("stockpile")
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
-		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .quantity=Quantity::create(1u)});
-		items.setLocation(chunk1, chunkLocation);
+		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		// Find item to stockpile, make project.
@@ -777,8 +821,7 @@ TEST_CASE("stockpile")
 		BlockIndex stockpileLocation = blocks.getIndex_i(5, 5, 1);
 		BlockIndex chunkLocation = blocks.getIndex_i(1, 8, 1);
 		stockpile.addBlock(stockpileLocation);
-		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .quantity=Quantity::create(1u)});
-		items.setLocation(chunk1, chunkLocation);
+		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		// Find item to stockpile, make project.

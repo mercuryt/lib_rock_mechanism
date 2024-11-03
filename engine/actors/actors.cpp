@@ -925,7 +925,21 @@ void Actors::log(const ActorIndex& index) const
 	if(m_project[index] != nullptr)
 		std::cout << ", project location: " << blocks.getCoordinates(m_project[index]->getLocation()).toString();
 	if(m_carrying[index].exists())
-		std::cout << m_carrying[index].toString();
+	{
+		std::cout << ", carrying: {";
+		if(m_carrying[index].isActor())
+			std::wcout << L"actor:" << getName(m_carrying[index].getActor());
+		else
+		{
+			ItemIndex item = m_carrying[index].getItem();
+			Items& items = m_area.getItems();
+			ItemTypeId itemType = items.getItemType(item);
+			std::cout << "item:" << ItemType::getName(itemType);
+			if(ItemType::getIsGeneric(itemType))
+				std::cout << ", quantity:" << std::to_string(items.getQuantity(item).get());
+		}
+		std::cout << "}";
+	}
 	std::cout << std::endl;
 }
 void Actors::satisfyNeeds(const ActorIndex& index)

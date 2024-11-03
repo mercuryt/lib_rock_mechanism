@@ -189,11 +189,12 @@ ItemIndex Items::setLocationAndFacing(const ItemIndex& index, const BlockIndex& 
 			// Return the index of the found item, which may be different then it was before 'index' was destroyed by merge.
 			return merge(found, index);
 	}
+	const Quantity& quantity = m_quantity[index];
 	auto& occupiedBlocks = m_blocks[index];
 	for(auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
 	{
 		BlockIndex occupied = blocks.offset(block, x, y, z);
-		blocks.item_record(occupied, index, CollisionVolume::create(v));
+		blocks.item_record(occupied, index, CollisionVolume::create((quantity * v).get()));
 		occupiedBlocks.add(occupied);
 	}
 	if(blocks.isOnSurface(block))
@@ -220,9 +221,14 @@ void Items::setTemperature(const ItemIndex&, const Temperature&)
 }
 void Items::addQuantity(const ItemIndex& index, const Quantity& delta)
 {
-	Quantity newQuantity = (m_quantity[index] += delta);
+	BlockIndex location = m_location[index];
+	Facing facing = m_facing[index];
+	// TODO: Update in place rather then exit, update, enter.
+	exit(index);
+	m_quantity[index] += delta;
+	setLocationAndFacing(index, location, facing);
 	if(m_reservables[index] != nullptr)
-		m_reservables[index]->setMaxReservations(newQuantity);
+		m_reservables[index]->setMaxReservations(m_quantity[index]);
 }
 // May destroy.
 void Items::removeQuantity(const ItemIndex& index, const Quantity& delta, CanReserve* canReserve)
@@ -234,9 +240,14 @@ void Items::removeQuantity(const ItemIndex& index, const Quantity& delta, CanRes
 	else
 	{
 		assert(delta < m_quantity[index]);
-		Quantity newQuantity = (m_quantity[index] -= delta);
+		// TODO: Update in place rather then exit, update, enter.
+		BlockIndex location = m_location[index];
+		Facing facing = m_facing[index];
+		exit(index);
+		m_quantity[index] -= delta;
+		setLocationAndFacing(index, location, facing);
 		if(m_reservables[index] != nullptr)
-			m_reservables[index]->setMaxReservations(newQuantity);
+			m_reservables[index]->setMaxReservations(m_quantity[index]);
 	}
 }
 void Items::install(const ItemIndex& index, const BlockIndex& block, const Facing& facing, const FactionId& faction)
@@ -258,7 +269,11 @@ ItemIndex Items::merge(const ItemIndex& index, const ItemIndex& other)
 	assert(m_materialType[index] == m_materialType[other]);
 	if(m_reservables[other] != nullptr)
 		reservable_merge(index, *m_reservables[other]);
+	BlockIndex location = m_location[index];
+	Facing facing = m_facing[index];
+	exit(index);
 	m_quantity[index] += m_quantity[other];
+	setLocationAndFacing(index, location, facing);
 	assert(m_quantity[index] == m_reservables[index]->getMaxReservations());
 	if(m_destroy[other] != nullptr)
 		onDestroy_merge(index, *m_destroy[other]);

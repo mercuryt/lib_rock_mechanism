@@ -7,11 +7,13 @@
 #include <regex>
 void Items::cargo_addActor(const ItemIndex& index, const ActorIndex& actor)
 {
+	Actors& actors = m_area.getActors();
 	assert(ItemType::getInternalVolume(m_itemType[index]).exists());
-	assert(ItemType::getInternalVolume(m_itemType[index]) > m_area.getActors().getVolume(actor));
+	assert(ItemType::getInternalVolume(m_itemType[index]) > actors.getVolume(actor));
 	if(m_hasCargo[index] == nullptr)
 		m_hasCargo[index] = std::make_unique<ItemHasCargo>(m_itemType[index]);
 	m_hasCargo[index]->addActor(m_area, actor);
+	actors.setCarrier(actor, ActorOrItemIndex::createForItem(index));
 }
 void Items::cargo_addItem(const ItemIndex& index, const ItemIndex& item, const Quantity& quantity)
 {
@@ -25,13 +27,17 @@ void Items::cargo_addItem(const ItemIndex& index, const ItemIndex& item, const Q
 	}
 	else
 		m_hasCargo[index]->addItem(m_area, item);
+	Items& items = m_area.getItems();
+	items.setCarrier(item, ActorOrItemIndex::createForItem(index));
 }
 void Items::cargo_addItemGeneric(const ItemIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity)
 {
 	assert(ItemType::getIsGeneric(itemType));
 	if(m_hasCargo[index] == nullptr)
 		m_hasCargo[index] = std::make_unique<ItemHasCargo>(m_itemType[index]);
-	m_hasCargo[index]->addItemGeneric(m_area, itemType, materialType, quantity);
+	ItemIndex addedItem = m_hasCargo[index]->addItemGeneric(m_area, itemType, materialType, quantity);
+	Items& items = m_area.getItems();
+	items.maybeSetCarrier(addedItem, ActorOrItemIndex::createForItem(index));
 }
 void Items::cargo_addPolymorphic(const ItemIndex& index, const ActorOrItemIndex& actorOrItemIndex, const Quantity& quantity)
 {
@@ -56,6 +62,7 @@ void Items::cargo_loadActor(const ItemIndex& index, const ActorIndex& actor)
 	assert(actors.hasLocation(actor));
 	actors.exit(actor);
 	cargo_addActor(index, actor);
+	actors.setCarrier(actor, ActorOrItemIndex::createForItem(index));
 }
 void Items::cargo_loadItem(const ItemIndex& index, const ItemIndex& item, const Quantity& quantity)
 {
@@ -63,6 +70,7 @@ void Items::cargo_loadItem(const ItemIndex& index, const ItemIndex& item, const 
 	assert(items.hasLocation(item));
 	items.exit(item);
 	cargo_addItem(index, item, quantity);
+	items.setCarrier(item, ActorOrItemIndex::createForItem(index));
 }
 void Items::cargo_loadPolymorphic(const ItemIndex& index, const ActorOrItemIndex& actorOrItem, const Quantity& quantity)
 {
@@ -94,6 +102,8 @@ void Items::cargo_removeActor(const ItemIndex& index, const ActorIndex& actor)
 	hasCargo.removeActor(m_area, actor);
 	if(hasCargo.empty())
 		m_hasCargo[index] = nullptr;
+	Actors& actors = m_area.getActors();
+	actors.unsetCarrier(actor, ActorOrItemIndex::createForItem(index));
 }
 void Items::cargo_removeItem(const ItemIndex& index, const ItemIndex& item)
 {
@@ -102,6 +112,8 @@ void Items::cargo_removeItem(const ItemIndex& index, const ItemIndex& item)
 	hasCargo.removeItem(m_area, item);
 	if(hasCargo.empty())
 		m_hasCargo[index] = nullptr;
+	Items& items = m_area.getItems();
+	items.unsetCarrier(item, ActorOrItemIndex::createForItem(index));
 }
 void Items::cargo_removeItemGeneric(const ItemIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity)
 {

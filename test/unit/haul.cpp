@@ -98,15 +98,18 @@ TEST_CASE("haul")
 		REQUIRE(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
 		// Another step to find the path.
 		simulation.doStep();
+		REQUIRE(items.reservable_hasAnyReservations(chunk1));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, chunkLocation);
 		REQUIRE(actors.canPickUp_exists(dwarf1));
 		REQUIRE(actors.canPickUp_getItem(dwarf1) == chunk1);
+		REQUIRE(!items.reservable_hasAnyReservations(chunk1));
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		REQUIRE(blocks.item_getCount(destination, chunk, marble) == 1);
 		REQUIRE(!actors.canPickUp_exists(dwarf1));
 		REQUIRE(actors.objective_getCurrentName(dwarf1) != "haul");
+		REQUIRE(!items.reservable_hasAnyReservations(chunk1));
 	}
 	SUBCASE("hand cart haul strategy")
 	{
@@ -135,9 +138,11 @@ TEST_CASE("haul")
 		REQUIRE(actors.isLeadingItem(dwarf1, cart));
 		// Another step to path from cart to chunk.
 		simulation.doStep();
+		REQUIRE(items.reservable_hasAnyReservations(chunk1));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, chunkLocation);
 		REQUIRE(items.cargo_getItems(cart).size() == 1);
 		REQUIRE(*(items.cargo_getItems(cart).begin()) == chunk1);
+		REQUIRE(!items.reservable_hasAnyReservations(chunk1));
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);

@@ -16,6 +16,7 @@ void Actors::canPickUp_pickUpItemQuantity(const ActorIndex& index, const ItemInd
 	Items& items = m_area.getItems();
 	assert(quantity <= items.getQuantity(item));
 	assert(quantity == 1 || ItemType::getGeneric(items.getItemType(item)));
+	assert(m_carrying[index].empty());
 	items.reservable_maybeUnreserve(item, *m_canReserve[index]);
 	if(quantity == items.getQuantity(item))
 	{
@@ -33,6 +34,7 @@ void Actors::canPickUp_pickUpItemQuantity(const ActorIndex& index, const ItemInd
 		});
 		m_carrying[index] = ActorOrItemIndex::createForItem(newItem);
 	}
+	items.setCarrier(m_carrying[index].getItem(), ActorOrItemIndex::createForActor(index));
 	move_updateIndividualSpeed(index);
 }
 void Actors::canPickUp_pickUpActor(const ActorIndex& index, const ActorIndex& other)
@@ -43,6 +45,7 @@ void Actors::canPickUp_pickUpActor(const ActorIndex& index, const ActorIndex& ot
 	if(m_location[other].exists())
 		exit(other);
 	m_carrying[index] = ActorOrItemIndex::createForActor(other);
+	setCarrier(other, ActorOrItemIndex::createForActor(index));
 	move_updateIndividualSpeed(index);
 }
 void Actors::canPickUp_pickUpPolymorphic(const ActorIndex& index, ActorOrItemIndex actorOrItemIndex, const Quantity& quantity)
@@ -68,6 +71,7 @@ ActorIndex Actors::canPickUp_tryToPutDownActor(const ActorIndex& index, const Bl
 	if(location2.empty())
 		return ActorIndex::null();
 	m_carrying[index].clear();
+	unsetCarrier(other, ActorOrItemIndex::createForActor(index));
 	move_updateIndividualSpeed(index);
 	setLocation(other, location2);
 	return other;
@@ -78,6 +82,7 @@ ItemIndex Actors::canPickUp_tryToPutDownItem(const ActorIndex& index, const Bloc
 	assert(m_carrying[index].isItem());
 	ItemIndex item = m_carrying[index].getItem();
 	Blocks& blocks = m_area.getBlocks();
+	Items& items = m_area.getItems();
 	ShapeId shape = m_area.getItems().getShape(item);
 	auto predicate = [&](const BlockIndex& block) {
 		return blocks.shape_anythingCanEnterEver(block) && 
@@ -87,6 +92,7 @@ ItemIndex Actors::canPickUp_tryToPutDownItem(const ActorIndex& index, const Bloc
 	if(targetLocation.empty())
 		return ItemIndex::null();
 	m_carrying[index].clear();
+	items.unsetCarrier(item, ActorOrItemIndex::createForActor(index));
 	move_updateIndividualSpeed(index);
 	return m_area.getItems().setLocationAndFacing(item, targetLocation, Facing::create(0));
 }
@@ -127,6 +133,7 @@ void Actors::canPickUp_add(const ActorIndex& index, const ItemTypeId& itemType, 
 	{
 		ItemIndex item = items.create({.itemType=itemType, .materialType=materialType, .quantity=quantity});
 		carrying = ActorOrItemIndex::createForItem(item);
+		items.setCarrier(item, ActorOrItemIndex::createForActor(index));
 	}
 	move_updateIndividualSpeed(index);
 }
@@ -135,6 +142,7 @@ void Actors::canPickUp_removeItem(const ActorIndex& index, const ItemIndex& item
 	assert(m_carrying[index].exists());
 	assert(m_carrying[index].isItem());
 	assert(m_carrying[index].get().toItem() == item);
+	m_area.getItems().unsetCarrier(m_carrying[index].getItem(), ActorOrItemIndex::createForActor(index));
 	m_carrying[index].clear();
 	move_updateIndividualSpeed(index);
 }
@@ -289,12 +297,14 @@ bool Actors::canPickUp_canPutDown(const ActorIndex& index, const BlockIndex& blo
 }
 void Actors::canPickUp_updateActorIndex(const ActorIndex& index, const ActorIndex& oldIndex, const ActorIndex& newIndex)
 {
-	assert(m_carrying[index].get().toActor() == oldIndex);
+	assert(oldIndex != newIndex);
 	assert(m_carrying[index].isActor());
+	assert(m_carrying[index].get().toActor() == oldIndex);
 	m_carrying[index].updateIndex(newIndex);
 }
 void Actors::canPickUp_updateItemIndex(const ActorIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex)
 {
+	assert(oldIndex != newIndex);
 	assert(m_carrying[index].isItem());
 	assert(m_carrying[index].getItem() == oldIndex);
 	m_carrying[index].updateIndex(newIndex);

@@ -369,15 +369,15 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 						ActorOrItemIndex delivered;
 						if(m_genericItemType.exists())
 						{
-							items.cargo_unloadPolymorphicToLocation(haulToolIndex, toHaulIndex, actorLocation, m_quantity);
-							delivered = ActorOrItemIndex::createForItem(haulToolIndex);
-						}
-						else
-						{
+							assert(toHaulIndex.isItem());
 							ItemIndex item = items.cargo_unloadGenericItemToLocation(haulToolIndex, m_genericItemType, m_genericMaterialType, actorLocation, m_quantity);
 							delivered = ActorOrItemIndex::createForItem(item);
 						}
-
+						else
+						{
+							items.cargo_unloadPolymorphicToLocation(haulToolIndex, toHaulIndex, actorLocation, m_quantity);
+							delivered = toHaulIndex;
+						}
 						// TODO: set rotation?
 						assert(delivered.exists());
 						complete(delivered);
@@ -393,9 +393,9 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 					{
 						// Can load here.
 						//TODO: set delay for loading.
-						toHaulIndex.reservable_maybeUnreserve(area, m_project.m_canReserve, m_quantity);
-						items.cargo_loadPolymorphic(m_haulTool.getIndex(), toHaulIndex, m_quantity);
+						toHaulIndex.reservable_unreserve(area, m_project.m_canReserve, m_quantity);
 						actors.canReserve_clearAll(actor);
+						items.cargo_loadPolymorphic(m_haulTool.getIndex(), toHaulIndex, m_quantity);
 						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
 					}
 					else
@@ -820,10 +820,6 @@ void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 	Actors& actors = m_project.m_area.getActors();
 	Items& items = m_project.m_area.getItems();
 	Project& project = m_project;
-	if(m_haulTool.exists())
-		items.reservable_unreserve(m_haulTool.getIndex(), m_project.m_canReserve);
-	if(m_beastOfBurden.exists())
-		actors.reservable_unreserve(m_beastOfBurden.getIndex(), m_project.m_canReserve);
 	m_projectRequirementCounts.delivered += m_quantity;
 	assert(m_projectRequirementCounts.delivered <= m_projectRequirementCounts.required);
 	if(delivered.isItem())

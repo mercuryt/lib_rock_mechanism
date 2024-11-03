@@ -257,7 +257,7 @@ CollisionVolume Blocks::shape_getStaticVolume(const BlockIndex& index) const
 }
 Quantity Blocks::shape_getQuantityOfItemWhichCouldFit(const BlockIndex& index, const ItemTypeId& itemType) const
 {
-	if(m_dynamicVolume[index] > Config::maxBlockVolume)
+	if(m_staticVolume[index] >= Config::maxBlockVolume)
 		return Quantity::create(0);
 	CollisionVolume freeVolume = Config::maxBlockVolume - m_staticVolume[index];
 	return Quantity::create((freeVolume / Shape::getCollisionVolumeAtLocationBlock(ItemType::getShape(itemType))).get());
