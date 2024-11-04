@@ -74,8 +74,18 @@ void AreaHasVisionCuboids::set(const BlockIndex& block, VisionCuboid& visionCubo
 {
 	if(m_blockVisionCuboids.empty())
 		return;
+	const VisionCuboidId oldCuboid = m_blockVisionCuboidIds[block];
 	m_blockVisionCuboids[block] = &visionCuboid;
 	m_blockVisionCuboidIds[block] = visionCuboid.m_id;
+	// Update stored vision cuboids.
+	for(const ActorIndex& actor : m_area->getBlocks().actor_getAll(block))
+	{
+		// Update visionCuboidId stored in VisionFacade.
+		m_area->m_visionFacadeBuckets.updateCuboid(actor, visionCuboid.m_id);
+		// Update visionCuboidId stored in LocationBuckets.
+		m_area->m_locationBuckets.updateCuboid(*m_area, actor, block, oldCuboid, visionCuboid.m_id);
+	}
+	
 }
 void AreaHasVisionCuboids::unset(const BlockIndex& block)
 {

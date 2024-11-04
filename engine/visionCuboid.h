@@ -15,6 +15,7 @@ class VisionCuboid;
 
 class AreaHasVisionCuboids final
 {
+	//TODO: store these in a data vector indexed by VisionCuboidId.
 	std::list<VisionCuboid> m_visionCuboids;
 	DataVector<VisionCuboid*, BlockIndex> m_blockVisionCuboids;
 	DataVector<VisionCuboidId, BlockIndex> m_blockVisionCuboidIds;

@@ -7,11 +7,10 @@ class DataVector
 {
 	std::vector<Contained> data;
 public:
-	using index = Index;
 	using iterator = std::vector<Contained>::iterator;
 	using const_iterator = std::vector<Contained>::const_iterator;
-	[[nodiscard]] Contained& operator[](Index index) { assert(index < size()); return data[index.get()]; }
-	[[nodiscard]] const Contained& operator[](Index index) const { assert(index < size()); return data[index.get()]; }
+	[[nodiscard]] Contained& operator[](const Index& index) { assert(index < size()); return data[index.get()]; }
+	[[nodiscard]] const Contained& operator[](const Index& index) const { assert(index < size()); return data[index.get()]; }
 	[[nodiscard]] size_t size() const { return data.size(); }
 	[[nodiscard]] iterator begin() { return data.begin(); }
 	[[nodiscard]] iterator end() { return data.end(); }
@@ -25,12 +24,17 @@ public:
 	[[nodiscard]] iterator find_if(const Predicate& predicate) { return std::ranges::find_if(data, predicate); }
 	template<typename Predicate>
 	[[nodiscard]] const_iterator find_if(const Predicate& predicate) const { return std::ranges::find_if(data, predicate); }
-	[[nodiscard]] Index& indexFor(const Contained& value) const { assert(contains(value)); return find(value) - begin(); }
+	[[nodiscard]] Index indexFor(const Contained& value) const { auto found = find(value); assert(found != end()); return Index::create(found - begin()); }
+	[[nodiscard]] auto front() -> Contained& { return data.front(); }
+	[[nodiscard]] auto back() -> Contained& { return data.back(); }
+	[[nodiscard]] auto front() const -> const Contained& { return data.front(); }
+	[[nodiscard]] auto back() const -> const Contained& { return data.back(); }
 	void reserve(const size_t& size) { data.reserve(size); }
 	void reserve(const Index& size) { data.reserve(size.get()); }
 	void resize(const size_t& size) { data.resize(size); }
 	void resize(const Index& size) { data.resize(size.get()); }
-	void add(const Contained value) { data.emplace_back(value); }
+	void add(const Contained& value) { data.emplace_back(value); }
+	void add(Contained&& value) { data.emplace_back(std::move(value)); }
 	void add() { data.resize(data.size() + 1); }
 	void clear() { data.clear(); }
 	void remove(const Index& index)

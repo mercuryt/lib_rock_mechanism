@@ -25,21 +25,24 @@ void VisionFacade::setArea(Area& area)
 	//VisionFacade is a member of an array so it can't have arguments passed to it's constructor
 	m_area = &area;
 }
-void VisionFacade::addActor( const ActorIndex& actor)
+void VisionFacade::addActor(const ActorIndex& actor)
 {
 	assert(m_area != nullptr);
 	Actors& actorData = m_area->getActors();
 	assert(!actorData.vision_hasFacade(actor));
+	assert(actorData.hasLocation(actor));
 	assert(m_ranges.size() == m_actors.size() && m_locations.size() == m_actors.size());
+	assert(actorData.vision_canSeeAnything(actor));
 	m_actors.add(actor);
 	m_ranges.add(actorData.vision_getRange(actor));
 	m_locations.add(actorData.getLocation(actor));
+	m_cuboids.add(m_area->m_visionCuboids.getIdFor(m_locations.back()));
 	m_results.add();
 	auto& hasFacade = m_area->getActors().vision_getHasVisionFacade(actor);
-	hasFacade.m_visionFacade = this;
+	assert(hasFacade.m_visionFacade == this);
 	hasFacade.m_index = VisionFacadeIndex::create(m_actors.size() - 1);
 }
-void VisionFacade::removeActor( const ActorIndex& actor)
+void VisionFacade::removeActor(const ActorIndex& actor)
 {
 	Actors& actorData = m_area->getActors();
 	auto [visionFacade, index] = actorData.vision_getFacadeWithIndex(actor);
@@ -47,34 +50,41 @@ void VisionFacade::removeActor( const ActorIndex& actor)
 	assert(visionFacade == this);
 	remove(index);
 }
-void VisionFacade::remove( const VisionFacadeIndex& index)
+void VisionFacade::remove(const VisionFacadeIndex& index)
 {
 	assert(m_actors.size() > index);
 	m_actors.remove(index);
 	m_ranges.remove(index);
 	m_locations.remove(index);
+	m_cuboids.remove(index);
 	m_results.remove(index);
 }
-ActorIndex VisionFacade::getActor( const VisionFacadeIndex& index)  
+ActorIndex VisionFacade::getActor(const VisionFacadeIndex& index) const
 { 
 	assert(m_actors.size() > index); 
 	return m_actors[index]; 
 }
-BlockIndex VisionFacade::getLocation( const VisionFacadeIndex& index)  
+BlockIndex VisionFacade::getLocation(const VisionFacadeIndex& index) const
 {
        	assert(m_actors.size() > index); 
 	Actors& actorData = m_area->getActors();
 	assert(actorData.getLocation(m_actors[index]) == m_locations[index]);
 	return m_locations[index]; 
 }
-DistanceInBlocks VisionFacade::getRange( const VisionFacadeIndex& index) const 
+DistanceInBlocks VisionFacade::getRange(const VisionFacadeIndex& index) const 
 { 
 	assert(m_actors.size() > index); 
 	Actors& actorData = m_area->getActors();
 	assert(actorData.vision_getRange(m_actors[index]) == m_ranges[index]);
 	return m_ranges[index]; 
 }
-ActorIndices& VisionFacade::getResults( const VisionFacadeIndex& index)
+VisionCuboidId VisionFacade::getCuboid(const VisionFacadeIndex& index) const
+{ 
+	const VisionCuboidId& cuboid = m_area->m_visionCuboids.getIdFor(m_locations[index]);
+	assert(m_cuboids[index] == cuboid);
+	return m_cuboids[index];
+}
+ActorIndices& VisionFacade::getResults(const VisionFacadeIndex& index) const
 { 
 	assert(m_actors.size() > index); 
 	return m_area->getActors().vision_getCanSee(m_actors[index]);
@@ -88,38 +98,45 @@ DistanceInBlocks VisionFacade::taxiDistance(Point3D a, Point3D b)
 		std::abs((int)a.z.get() - (int)b.z.get())
 	);
 }
-void VisionFacade::updateLocation( const VisionFacadeIndex& index, const BlockIndex& location)
+void VisionFacade::updateLocation(const VisionFacadeIndex& index, const BlockIndex& location)
 {
 	assert(m_area->getActors().getLocation(m_actors[index]) == location);
 	m_locations[index] = location;
+	// don't use updateVisionCuboid here because we want to allow overwriting with the same value.
+	m_cuboids[index] = m_area->m_visionCuboids.getIdFor(location);
 }
-void VisionFacade::updateRange( const VisionFacadeIndex& index,  const DistanceInBlocks& range)
+void VisionFacade::updateVisionCuboid(const VisionFacadeIndex& index, const VisionCuboidId& cuboid)
+{
+	assert(m_cuboids[index] != cuboid);
+	m_cuboids[index] = cuboid;
+}
+void VisionFacade::updateRange(const VisionFacadeIndex& index,  const DistanceInBlocks& range)
 {
 	assert(m_area->getActors().vision_getRange(m_actors[index]) == range);
 	m_ranges[index] = range;
 }
-void VisionFacade::readStepSegment( const VisionFacadeIndex& begin,  const VisionFacadeIndex& end)
+void VisionFacade::readStepSegment(const VisionFacadeIndex& begin,  const VisionFacadeIndex& end)
 {
 	assert(m_area != nullptr);
 	Blocks& blocks = m_area->getBlocks();
 	for(VisionFacadeIndex viewerIndex = begin; viewerIndex < end; ++viewerIndex)
 	{
-		DistanceInBlocks range = getRange(viewerIndex);
-		BlockIndex fromIndex = getLocation(viewerIndex);
+		const DistanceInBlocks& range = getRange(viewerIndex);
+		const BlockIndex& fromIndex = getLocation(viewerIndex);
+		const VisionCuboidId& fromVisionCuboidId = getCuboid(viewerIndex);
+		assert(fromVisionCuboidId != 0);
 		ActorIndices& result = getResults(viewerIndex);
 		result.clear();
 		// Collect results in a vector rather then a set to prevent cache thrashing.
-		Point3D fromCoords = blocks.getCoordinates(fromIndex);
-		LocationBuckets& locationBuckets = m_area->m_locationBuckets;
-		VisionCuboidId fromVisionCuboidId = m_area->m_visionCuboids.getIdFor(fromIndex);
-		assert(fromVisionCuboidId != 0);
+		const Point3D fromCoords = blocks.getCoordinates(fromIndex);
+		const LocationBuckets& locationBuckets = m_area->m_locationBuckets;
 		// Define a cuboid of locationBuckets around the watcher.
-		DistanceInBuckets endX = DistanceInBuckets::create(std::min(((fromCoords.x + range).get() / Config::locationBucketSize.get() + 1), locationBuckets.m_maxX.get()));
-		DistanceInBuckets beginX = DistanceInBuckets::create(std::max(0, int32_t(fromCoords.x.get()) - int32_t(range.get()))) / Config::locationBucketSize.get();
-		DistanceInBuckets endY = DistanceInBuckets::create(std::min(((fromCoords.y + range).get() / Config::locationBucketSize.get() + 1), locationBuckets.m_maxY.get()));
-		DistanceInBuckets beginY = DistanceInBuckets::create(std::max(0, int32_t(fromCoords.y.get()) - int32_t(range.get()))) / Config::locationBucketSize.get();
-		DistanceInBuckets endZ = DistanceInBuckets::create(std::min(((fromCoords.z + range).get() / Config::locationBucketSize.get() + 1), locationBuckets.m_maxZ.get()));
-		DistanceInBuckets beginZ = DistanceInBuckets::create(std::max(0, int32_t(fromCoords.z.get()) - int32_t(range.get()))) / Config::locationBucketSize.get();
+		const DistanceInBuckets endX = DistanceInBuckets::create(std::min(((fromCoords.x + range).get() / Config::locationBucketSize.get() + 1), locationBuckets.m_maxX.get()));
+		const DistanceInBuckets beginX = DistanceInBuckets::create(std::max(0, int32_t(fromCoords.x.get()) - int32_t(range.get()))) / Config::locationBucketSize.get();
+		const DistanceInBuckets endY = DistanceInBuckets::create(std::min(((fromCoords.y + range).get() / Config::locationBucketSize.get() + 1), locationBuckets.m_maxY.get()));
+		const DistanceInBuckets beginY = DistanceInBuckets::create(std::max(0, int32_t(fromCoords.y.get()) - int32_t(range.get()))) / Config::locationBucketSize.get();
+		const DistanceInBuckets endZ = DistanceInBuckets::create(std::min(((fromCoords.z + range).get() / Config::locationBucketSize.get() + 1), locationBuckets.m_maxZ.get()));
+		const DistanceInBuckets beginZ = DistanceInBuckets::create(std::max(0, int32_t(fromCoords.z.get()) - int32_t(range.get()))) / Config::locationBucketSize.get();
 		// Iterate defined cuboid of buckets.
 		for(DistanceInBuckets x = beginX; x != endX; ++x)
 			for(DistanceInBuckets y = beginY; y != endY; ++y)
@@ -127,20 +144,21 @@ void VisionFacade::readStepSegment( const VisionFacadeIndex& begin,  const Visio
 				{
 					assert(x * y * z < locationBuckets.m_buckets.size());
 					// Iterate actors in the defined cuboid.
-					LocationBucket& bucket = locationBuckets.get(x, y, z);
-					for(uint16_t i = 0; i < bucket.m_actorsMultiTile.size(); i++)
+					const LocationBucket& bucket = locationBuckets.get(x, y, z);
+					for(LocationBucketId i = LocationBucketId::create(0); i < bucket.m_actorsMultiTile.size(); ++i)
 					{
-						for(BlockIndex toIndex : bucket.m_blocksMultiTileActors[i])
+						for(const BlockIndex& toIndex : bucket.m_blocksMultiTileActors[i])
 						{
+							// Don't bother to filter by already being present in result.
 							Point3D toCoords = blocks.getCoordinates(toIndex);
 							// Refine bucket cuboid actors into sphere with radius == range.
 							if(taxiDistance(fromCoords, toCoords) <= range)
 							{
 								// Check sightlines.
-								VisionCuboidId toVisionCuboidId = m_area->m_visionCuboids.getIdFor(fromIndex);
-								assert(toVisionCuboidId != 0);
+								const VisionCuboidIdSet& toVisionCuboidIds = bucket.m_visionCuboidsMulitiTileActors[i];
+								assert(!toVisionCuboidIds.empty());
 								if(
-									fromVisionCuboidId == toVisionCuboidId ||
+									toVisionCuboidIds.contains(fromVisionCuboidId) ||
 									m_area->m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords)
 								  )
 								{
@@ -150,7 +168,7 @@ void VisionFacade::readStepSegment( const VisionFacadeIndex& begin,  const Visio
 							}
 						}
 					}
-					for(uint16_t i = 0; i < bucket.m_actorsSingleTile.size(); i++)
+					for(LocationBucketId i = LocationBucketId::create(0); i < bucket.m_actorsSingleTile.size(); ++i)
 					{
 						BlockIndex toIndex = bucket.m_blocksSingleTileActors[i];
 						Point3D toCoords = blocks.getCoordinates(toIndex);
@@ -158,7 +176,7 @@ void VisionFacade::readStepSegment( const VisionFacadeIndex& begin,  const Visio
 						if(taxiDistance(toCoords, fromCoords) <= range)
 						{
 							// Check sightlines.
-							VisionCuboidId toVisionCuboidId = m_area->m_visionCuboids.getIdFor(toIndex);
+							VisionCuboidId toVisionCuboidId = bucket.m_visionCuboidsSingleTileActors[i];
 							assert(toVisionCuboidId != 0);
 							if(
 								fromVisionCuboidId == toVisionCuboidId ||
@@ -202,23 +220,28 @@ VisionFacadeBuckets::VisionFacadeBuckets(Area& area) : m_area(area)
 	for(VisionFacade& visionFacade : m_data)
 		visionFacade.setArea(area);
 }
-VisionFacade& VisionFacadeBuckets::facadeForActor( const ActorIndex& actor)
+VisionFacade& VisionFacadeBuckets::getForActor(const ActorIndex& actor)
 {
 	ActorId id = m_area.getActors().getId(actor);
 	return m_data[id.get() % Config::actorDoVisionInterval];
 }
-void VisionFacadeBuckets::add( const ActorIndex& actor)
+void VisionFacadeBuckets::add(const ActorIndex& actor)
 {
-	facadeForActor(actor).addActor(actor);
+	getForActor(actor).addActor(actor);
 }
-void VisionFacadeBuckets::remove( const ActorIndex& actor)
+void VisionFacadeBuckets::remove(const ActorIndex& actor)
 {
-	facadeForActor(actor).removeActor(actor);
+	getForActor(actor).removeActor(actor);
 }
 void VisionFacadeBuckets::clear()
 {
 	for(VisionFacade& visionFacade : m_data)
 		visionFacade.clear();
+}
+void VisionFacadeBuckets::updateCuboid(const ActorIndex& actor, const VisionCuboidId& visionCuboidId)
+{
+	auto pair = m_area.getActors().vision_getFacadeWithIndex(actor);
+	pair.first->updateVisionCuboid(pair.second, visionCuboidId);
 }
 VisionFacade& VisionFacadeBuckets::getForStep(Step step)
 {
@@ -232,22 +255,31 @@ void HasVisionFacade::clearVisionFacade()
 		clear();
 	m_visionFacade = nullptr;
 }
-void HasVisionFacade::create(Area& area,  const ActorIndex& actor)
+void HasVisionFacade::initalize(Area& area,  const ActorIndex& actor)
 {
 	assert(empty());
-	assert(!m_visionFacade);
-	area.m_visionFacadeBuckets.add(actor);
-	assert(!empty());
-	assert(m_visionFacade);
+	assert(m_visionFacade == nullptr);
+	// Record which vision facade bucket this actor belongs to but don't register it yet. We don't know if it can see currently.
+	m_visionFacade = &area.m_visionFacadeBuckets.getForActor(actor);
 }
-void HasVisionFacade::updateRange( const DistanceInBlocks& range)
+void HasVisionFacade::create(Area& area, const ActorIndex& actor)
+{
+	assert(empty());
+	assert(m_visionFacade != nullptr);
+	assert(area.getActors().vision_canSeeAnything(actor));
+	assert(area.getActors().hasLocation(actor));
+	m_visionFacade->addActor(actor);
+	assert(!empty());
+}
+void HasVisionFacade::updateRange(const DistanceInBlocks& range)
 {
 	assert(m_visionFacade);
 	m_visionFacade->updateRange(m_index, range);
 }
 void HasVisionFacade::updateLocation(const BlockIndex& location)
 {
-	assert(m_visionFacade);
+	assert(m_visionFacade != nullptr);
+	assert(m_index.exists());
 	m_visionFacade->updateLocation(m_index, location);
 }
 void HasVisionFacade::clear()

@@ -30,7 +30,7 @@ void Actors::vision_swap(const ActorIndex& index, ActorIndices& toSwap)
 }
 bool Actors::vision_canSeeAnything(const ActorIndex& index) const
 {
-	return isAlive(index) && sleep_isAwake(index) && m_location[index].exists();
+	return isAlive(index) && sleep_isAwake(index);
 }
 bool Actors::vision_canSeeActor(const ActorIndex& index, const ActorIndex& actor) const 
 { 
