@@ -611,7 +611,11 @@ void Actors::destroy(const ActorIndex& index)
 {
 	// No need to explicitly unschedule events here, destorying the event holder will do it.
 	if(hasLocation(index))
+	{
+		if(vision_canSeeAnything(index))
+			m_hasVisionFacade[index].clear();
 		exit(index);
+	}
 	const auto& s = ActorIndex::create(size() - 1);
 	if(index != s)
 		moveIndex(s, index);
@@ -697,7 +701,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_speedIndividual[index] = Speed::create(0);
 	m_speedActual[index] = Speed::create(0);
 	m_moveRetries[index] = 0;
-	m_hasVisionFacade[index].create(m_area, index);
+	m_hasVisionFacade[index].initalize(m_area, index);
 	simulation.m_actors.registerActor(m_id[index], *this, index);
 	attributes_onUpdateGrowthPercent(index);
 	stamina_setFull(index);
@@ -721,8 +725,6 @@ void Actors::sharedConstructor(const ActorIndex& index)
 	combat_update(index);
 	move_updateIndividualSpeed(index);
 	m_mustDrink[index]->setFluidType(AnimalSpecies::getFluidType(m_species[index]));
-	if(vision_canSeeAnything(index))
-		m_area.m_visionFacadeBuckets.add(index);
 }
 void Actors::scheduleNeeds(const ActorIndex& index)
 {
@@ -767,7 +769,15 @@ void Actors::setLocationAndFacing(const ActorIndex& index, const BlockIndex& blo
 		BlockIndex occupied = blocks.offset(block, x, y, z);
 		blocks.actor_record(occupied, index, CollisionVolume::create(v));
 		m_blocks[index].add(occupied);
-		m_hasVisionFacade[index].updateLocation(block);
+		// Record in vision facade if has location and can currently see.
+		if(vision_canSeeAnything(index))
+		{
+			if (m_hasVisionFacade[index].empty())
+				m_hasVisionFacade[index].create(m_area, index);
+			else
+				m_hasVisionFacade[index].updateLocation(block);
+			assert(!m_hasVisionFacade[index].empty());
+		}
 	}
 	if(blocks.isOnSurface(block))
 		m_onSurface.add(index);

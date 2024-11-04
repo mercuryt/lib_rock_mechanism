@@ -1,6 +1,7 @@
 #pragma once
 #include "types.h"
 #include "index.h"
+#include "dataVector.h"
 #include <cstdint>
 #include <functional>
 class Area;
@@ -11,13 +12,16 @@ class VisionFacade;
 struct LocationBucket final
 {
 	//TODO: Use HybridSequence.
-	std::vector<BlockIndices> m_blocksMultiTileActors;
-	std::vector<ActorIndex> m_actorsMultiTile;
-	std::vector<BlockIndex> m_blocksSingleTileActors;
-	std::vector<ActorIndex> m_actorsSingleTile;
-	void insert(Area& area, ActorIndex actor, BlockIndices& blocks);
-	void erase(Area& area, ActorIndex actor);
-	void update(Area& area, ActorIndex actor, BlockIndices& blocks);
+	DataVector<BlockIndices, LocationBucketId> m_blocksMultiTileActors;
+	DataVector<ActorIndex, LocationBucketId> m_actorsMultiTile;
+	DataVector<VisionCuboidIdSet, LocationBucketId> m_visionCuboidsMulitiTileActors;
+	DataVector<BlockIndex, LocationBucketId> m_blocksSingleTileActors;
+	DataVector<ActorIndex, LocationBucketId> m_actorsSingleTile;
+	DataVector<VisionCuboidId, LocationBucketId> m_visionCuboidsSingleTileActors;
+	void insert(Area& area, const ActorIndex& actor, const BlockIndices& blocks);
+	void erase(Area& area, const ActorIndex& actor);
+	void update(Area& area, const ActorIndex& actor, const BlockIndices& blocks);
+	void updateCuboid(Area& area, const ActorIndex& actor, const VisionCuboidId& oldCuboid, const VisionCuboidId& newCuboid);
 	[[nodiscard]] size_t size() const { return m_actorsMultiTile.size() + m_actorsSingleTile.size(); }
 };
 class LocationBuckets
@@ -27,13 +31,15 @@ class LocationBuckets
 	DistanceInBuckets m_maxX;
 	DistanceInBuckets m_maxY;
 	DistanceInBuckets m_maxZ;
-	[[nodiscard]] LocationBucket& get(DistanceInBuckets x, DistanceInBuckets y, DistanceInBuckets z);
+	[[nodiscard]] LocationBucket& get(const DistanceInBuckets& x, const DistanceInBuckets& y, const DistanceInBuckets& z);
+	[[nodiscard]] const LocationBucket& get(const DistanceInBuckets& x, const DistanceInBuckets& y, const DistanceInBuckets& z) const;
 public:
 	LocationBuckets(Area& area) : m_area(area) { }
 	void initalize();
-	void add(ActorIndex actor);
-	void remove(ActorIndex actor);
-	void update(ActorIndex actor, BlockIndices& oldBlocks);
-	[[nodiscard]] LocationBucket& getBucketFor(const BlockIndex block);
+	void add(const ActorIndex& actor);
+	void remove(const ActorIndex& actor);
+	void update(const ActorIndex& actor, const BlockIndices& oldBlocks);
+	void updateCuboid(Area& area, const ActorIndex& actor, const BlockIndex& block, const VisionCuboidId& oldCuboid, const VisionCuboidId& newCuboid);
+	[[nodiscard]] LocationBucket& getBucketFor(const BlockIndex& block);
 	friend class VisionFacade;
 };

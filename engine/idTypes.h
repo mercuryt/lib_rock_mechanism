@@ -47,6 +47,7 @@ public:
 };
 inline void to_json(Json& data, const VisionCuboidId& index) { data = index.get(); }
 inline void from_json(const Json& data, VisionCuboidId& index) { index = VisionCuboidId::create(data.get<uint32_t>()); }
+using VisionCuboidIdSet = StrongIntegerSet<VisionCuboidId>;
 
 using FactionIdWidth = uint16_t;
 class FactionId : public StrongInteger<FactionId, FactionIdWidth>
@@ -243,3 +244,12 @@ public:
 	MaterialTypeConstructionDataId() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const MaterialTypeConstructionDataId& index) const { return index.get(); } };
 };
+
+using LocationBucketIdWidth = uint16_t;
+class LocationBucketId : public StrongInteger<LocationBucketId, LocationBucketIdWidth>
+{
+public:
+	LocationBucketId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const LocationBucketId& index) const { return index.get(); } };
+};
+using LocationBucketIdSet = StrongIntegerSet<LocationBucketId>;
