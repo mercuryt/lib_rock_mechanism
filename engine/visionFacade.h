@@ -15,6 +15,7 @@ class VisionFacade final
 	DataVector<ActorIndex, VisionFacadeIndex> m_actors;
 	DataVector<BlockIndex, VisionFacadeIndex> m_locations;
 	DataVector<VisionCuboidId, VisionFacadeIndex> m_cuboids;
+	DataVector<Point3D, VisionFacadeIndex> m_coordinates;
 	DataVector<DistanceInBlocks, VisionFacadeIndex> m_ranges;
 	DataVector<ActorIndices, VisionFacadeIndex> m_results;
 	Area* m_area = nullptr;
@@ -41,6 +42,7 @@ public:
 	[[nodiscard]] BlockIndex getLocation(const VisionFacadeIndex& index) const;
 	[[nodiscard]] DistanceInBlocks getRange(const VisionFacadeIndex& index) const;
 	[[nodiscard]] VisionCuboidId getCuboid( const VisionFacadeIndex& index) const;
+	[[nodiscard]] Point3D getFromCoords( const VisionFacadeIndex& index) const;
 	[[nodiscard]] ActorIndices& getResults(const VisionFacadeIndex& index) const;
 	[[nodiscard]] size_t size() const { return m_actors.size(); }
 	[[nodiscard]] static DistanceInBlocks taxiDistance(Point3D a, Point3D b);

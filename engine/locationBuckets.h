@@ -12,16 +12,15 @@ class VisionFacade;
 struct LocationBucket final
 {
 	//TODO: Use HybridSequence.
-	DataVector<BlockIndices, LocationBucketId> m_blocksMultiTileActors;
 	DataVector<ActorIndex, LocationBucketId> m_actorsMultiTile;
-	DataVector<VisionCuboidIdSet, LocationBucketId> m_visionCuboidsMulitiTileActors;
-	DataVector<BlockIndex, LocationBucketId> m_blocksSingleTileActors;
+	DataVector<SmallMap<Point3D, VisionCuboidId>, LocationBucketId> m_positionsAndCuboidsMultiTileActors;
 	DataVector<ActorIndex, LocationBucketId> m_actorsSingleTile;
+	DataVector<Point3D, LocationBucketId> m_positionsSingleTileActors;
 	DataVector<VisionCuboidId, LocationBucketId> m_visionCuboidsSingleTileActors;
 	void insert(Area& area, const ActorIndex& actor, const BlockIndices& blocks);
 	void erase(Area& area, const ActorIndex& actor);
 	void update(Area& area, const ActorIndex& actor, const BlockIndices& blocks);
-	void updateCuboid(Area& area, const ActorIndex& actor, const VisionCuboidId& oldCuboid, const VisionCuboidId& newCuboid);
+	void updateCuboid(Area& area, const ActorIndex& actor, const BlockIndex& block, const VisionCuboidId& oldCuboid, const VisionCuboidId& newCuboid);
 	[[nodiscard]] size_t size() const { return m_actorsMultiTile.size() + m_actorsSingleTile.size(); }
 };
 class LocationBuckets

@@ -17,6 +17,7 @@ public:
 	[[nodiscard]] const_iterator begin() const { return data.begin(); }
 	[[nodiscard]] const_iterator end() const { return data.end(); }
 	[[nodiscard]] bool empty() const { return data.empty(); }
+	[[nodiscard]] bool contains(const Contained& value) const { return find(value) != end(); }
 	[[nodiscard]] bool allAreSetTo(const Contained& value) const { return !std::ranges::any_of(data, [&](Contained d){ return d != value; }); }
 	[[nodiscard]] iterator find(const Contained& value) { return std::ranges::find(data, value); }
 	[[nodiscard]] const_iterator find(const Contained& value) const { return std::ranges::find(data, value); }

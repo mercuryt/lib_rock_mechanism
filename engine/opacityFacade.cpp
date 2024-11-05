@@ -44,16 +44,18 @@ bool OpacityFacade::floorIsOpaque(const BlockIndex& index) const
 }
 bool  OpacityFacade::hasLineOfSight(const BlockIndex& from, const BlockIndex& to) const
 {
+	if(from == to)
+		return true;
 	Point3D fromCoords = m_area.getBlocks().getCoordinates(from);
 	Point3D toCoords = m_area.getBlocks().getCoordinates(to);
-	return hasLineOfSight(from, fromCoords, to, toCoords);
+	return hasLineOfSight(from, fromCoords, toCoords);
 }
-bool  OpacityFacade::hasLineOfSight(const BlockIndex& fromIndex, Point3D fromCoords, const BlockIndex& toIndex, Point3D toCoords) const
+bool  OpacityFacade::hasLineOfSight(const BlockIndex& fromIndex, Point3D fromCoords, Point3D toCoords) const
 {
+	const BlockIndex& toIndex = m_area.getBlocks().getIndex(toCoords);
 	assert(!isOpaque(toIndex));
 	assert(!isOpaque(fromIndex));
-	if(fromIndex == toIndex)
-		return true;
+	assert(fromCoords != toCoords);
 	BlockIndex currentIndex = fromIndex;
 	//TODO: Would it be faster to use fixed percision number types?
 	float x = fromCoords.x.get();
