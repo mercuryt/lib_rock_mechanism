@@ -37,6 +37,7 @@ void VisionFacade::addActor(const ActorIndex& actor)
 	m_ranges.add(actorData.vision_getRange(actor));
 	m_locations.add(actorData.getLocation(actor));
 	m_cuboids.add(m_area->m_visionCuboids.getIdFor(m_locations.back()));
+	m_coordinates.add(m_area->getBlocks().getCoordinates(m_locations.back()));
 	m_results.add();
 	auto& hasFacade = m_area->getActors().vision_getHasVisionFacade(actor);
 	assert(hasFacade.m_visionFacade == this);
@@ -84,6 +85,11 @@ VisionCuboidId VisionFacade::getCuboid(const VisionFacadeIndex& index) const
 	assert(m_cuboids[index] == cuboid);
 	return m_cuboids[index];
 }
+Point3D VisionFacade::getFromCoords(const VisionFacadeIndex& index) const
+{
+	assert(m_area->getBlocks().getCoordinates(m_area->getActors().getLocation(m_actors[index])) == m_coordinates[index]);
+	return m_coordinates[index];
+}
 ActorIndices& VisionFacade::getResults(const VisionFacadeIndex& index) const
 { 
 	assert(m_actors.size() > index); 
@@ -102,6 +108,7 @@ void VisionFacade::updateLocation(const VisionFacadeIndex& index, const BlockInd
 {
 	assert(m_area->getActors().getLocation(m_actors[index]) == location);
 	m_locations[index] = location;
+	m_coordinates[index] = m_area->getBlocks().getCoordinates(location);
 	// don't use updateVisionCuboid here because we want to allow overwriting with the same value.
 	m_cuboids[index] = m_area->m_visionCuboids.getIdFor(location);
 }
@@ -118,17 +125,16 @@ void VisionFacade::updateRange(const VisionFacadeIndex& index,  const DistanceIn
 void VisionFacade::readStepSegment(const VisionFacadeIndex& begin,  const VisionFacadeIndex& end)
 {
 	assert(m_area != nullptr);
-	Blocks& blocks = m_area->getBlocks();
 	for(VisionFacadeIndex viewerIndex = begin; viewerIndex < end; ++viewerIndex)
 	{
 		const DistanceInBlocks& range = getRange(viewerIndex);
 		const BlockIndex& fromIndex = getLocation(viewerIndex);
 		const VisionCuboidId& fromVisionCuboidId = getCuboid(viewerIndex);
+		const Point3D& fromCoords = getFromCoords(viewerIndex);
 		assert(fromVisionCuboidId != 0);
 		ActorIndices& result = getResults(viewerIndex);
 		result.clear();
 		// Collect results in a vector rather then a set to prevent cache thrashing.
-		const Point3D fromCoords = blocks.getCoordinates(fromIndex);
 		const LocationBuckets& locationBuckets = m_area->m_locationBuckets;
 		// Define a cuboid of locationBuckets around the watcher.
 		const DistanceInBuckets endX = DistanceInBuckets::create(std::min(((fromCoords.x + range).get() / Config::locationBucketSize.get() + 1), locationBuckets.m_maxX.get()));
@@ -147,20 +153,19 @@ void VisionFacade::readStepSegment(const VisionFacadeIndex& begin,  const Vision
 					const LocationBucket& bucket = locationBuckets.get(x, y, z);
 					for(LocationBucketId i = LocationBucketId::create(0); i < bucket.m_actorsMultiTile.size(); ++i)
 					{
-						for(const BlockIndex& toIndex : bucket.m_blocksMultiTileActors[i])
+						for(auto pair : bucket.m_positionsAndCuboidsMultiTileActors[i])
 						{
-							// Don't bother to filter by already being present in result.
-							Point3D toCoords = blocks.getCoordinates(toIndex);
+							const Point3D& toCoords = pair.first;
+							const VisionCuboidId toVisionCuboidId = pair.second;
+							// Don't bother to filter by already being present in result, it would only catch multi tile shaps which straddle a bucket boundry.
 							// Refine bucket cuboid actors into sphere with radius == range.
 							if(taxiDistance(fromCoords, toCoords) <= range)
 							{
 								// Check sightlines.
-								const VisionCuboidIdSet& toVisionCuboidIds = bucket.m_visionCuboidsMulitiTileActors[i];
-								assert(!toVisionCuboidIds.empty());
-								if(
-									toVisionCuboidIds.contains(fromVisionCuboidId) ||
-									m_area->m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords)
-								  )
+								if (
+									fromVisionCuboidId == toVisionCuboidId ||
+									m_area->m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toCoords)
+								)
 								{
 									result.add(bucket.m_actorsMultiTile[i]);
 									break;
@@ -170,8 +175,7 @@ void VisionFacade::readStepSegment(const VisionFacadeIndex& begin,  const Vision
 					}
 					for(LocationBucketId i = LocationBucketId::create(0); i < bucket.m_actorsSingleTile.size(); ++i)
 					{
-						BlockIndex toIndex = bucket.m_blocksSingleTileActors[i];
-						Point3D toCoords = blocks.getCoordinates(toIndex);
+						Point3D toCoords = bucket.m_positionsSingleTileActors[i];
 						// Refine bucket cuboid actors into sphere with radius == range.
 						if(taxiDistance(toCoords, fromCoords) <= range)
 						{
@@ -180,7 +184,7 @@ void VisionFacade::readStepSegment(const VisionFacadeIndex& begin,  const Vision
 							assert(toVisionCuboidId != 0);
 							if(
 								fromVisionCuboidId == toVisionCuboidId ||
-								m_area->m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toIndex, toCoords)
+								m_area->m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toCoords)
 							  )
 								result.add(bucket.m_actorsSingleTile[i]);
 						}

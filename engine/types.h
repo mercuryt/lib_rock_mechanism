@@ -357,3 +357,4 @@ inline void Point3D::operator+=(const Vector3D& other)
 	y += other.y;
 	z += other.z;
 }
+using Point3DSet = SmallSet<Point3D>;

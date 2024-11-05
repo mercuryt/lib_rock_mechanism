@@ -9,25 +9,27 @@
 void LocationBucket::insert(Area& area, const ActorIndex& actor, const BlockIndices& blocks)
 {
 	Actors& actors = area.getActors();
+	Blocks& blocksData = area.getBlocks();
 	if(Shape::getIsMultiTile(actors.getShape(actor)))
 	{
 		[[maybe_unused]] auto iter = std::ranges::find(m_actorsMultiTile, actor);
-		assert(iter == m_actorsMultiTile.end());
+		assert(!m_actorsMultiTile.contains(actor));
 		m_actorsMultiTile.add(actor);
-		m_blocksMultiTileActors.add(blocks);
-		VisionCuboidIdSet cuboids;
+		m_positionsAndCuboidsMultiTileActors.add({});
 		for(const BlockIndex& block : blocks)
-			cuboids.maybeAdd(area.m_visionCuboids.getIdFor(block));
-		m_visionCuboidsMulitiTileActors.add(std::move(cuboids));
+			m_positionsAndCuboidsMultiTileActors.back().emplace(
+				blocksData.getCoordinates(block),
+				area.m_visionCuboids.getIdFor(block)
+			);
+
 	}
 	else
 	{
 		assert(blocks.size() == 1);
-		[[maybe_unused]] auto iter = std::ranges::find(m_actorsSingleTile, actor);
-		assert(iter == m_actorsSingleTile.end());
+		assert(!m_actorsSingleTile.contains(actor));
 		m_actorsSingleTile.add(actor);
-		m_blocksSingleTileActors.add(blocks.front());
-		m_visionCuboidsSingleTileActors.add(area.m_visionCuboids.getIdFor(m_blocksSingleTileActors.back()));
+		m_positionsSingleTileActors.add(blocksData.getCoordinates(blocks.front()));
+		m_visionCuboidsSingleTileActors.add(area.m_visionCuboids.getIdFor(blocks.front()));
 	}
 }
 void LocationBucket::erase(Area& area, const ActorIndex& actor)
@@ -39,8 +41,7 @@ void LocationBucket::erase(Area& area, const ActorIndex& actor)
 		assert(iter != m_actorsMultiTile.end());
 		LocationBucketId index = LocationBucketId::create(iter - m_actorsSingleTile.begin());
 		m_actorsMultiTile.remove(index);
-		m_blocksMultiTileActors.remove(index);
-		m_visionCuboidsMulitiTileActors.remove(index);
+		m_positionsAndCuboidsMultiTileActors.remove(index);
 	}
 	else
 	{
@@ -48,23 +49,25 @@ void LocationBucket::erase(Area& area, const ActorIndex& actor)
 		assert(iter != m_actorsSingleTile.end());
 		LocationBucketId index = LocationBucketId::create(iter - m_actorsSingleTile.begin());
 		m_actorsSingleTile.remove(index);
-		m_blocksSingleTileActors.remove(index);
+		m_positionsSingleTileActors.remove(index);
 		m_visionCuboidsSingleTileActors.remove(index);
 	}
 }
 void LocationBucket::update(Area& area, const ActorIndex& actor, const BlockIndices& blocks)
 {
 	Actors& actors = area.getActors();
+	Blocks& blocksData = area.getBlocks();
 	if(Shape::getIsMultiTile(actors.getShape(actor)))
 	{
 		auto iter = std::ranges::find(m_actorsMultiTile, actor);
 		assert(iter != m_actorsMultiTile.end());
 		LocationBucketId index = LocationBucketId::create(iter - m_actorsMultiTile.begin());
-		m_blocksMultiTileActors[index] = blocks;
-		VisionCuboidIdSet cuboids;
+		m_positionsAndCuboidsMultiTileActors[index].clear();
 		for(const BlockIndex& block : blocks)
-			cuboids.maybeAdd(area.m_visionCuboids.getIdFor(block));
-		m_visionCuboidsMulitiTileActors[index] = std::move(cuboids);
+			m_positionsAndCuboidsMultiTileActors[index].emplace(
+				blocksData.getCoordinates(block),
+				area.m_visionCuboids.getIdFor(block)
+			);
 	}
 	else
 	{
@@ -72,17 +75,20 @@ void LocationBucket::update(Area& area, const ActorIndex& actor, const BlockIndi
 		auto iter = std::ranges::find(m_actorsSingleTile, actor);
 		assert(iter != m_actorsSingleTile.end());
 		LocationBucketId index = LocationBucketId::create(iter - m_actorsSingleTile.begin());
-		m_blocksSingleTileActors[index] = blocks.front();
-		m_visionCuboidsSingleTileActors[index] = area.m_visionCuboids.getIdFor(m_blocksSingleTileActors.back());
+		m_positionsSingleTileActors[index] = blocksData.getCoordinates(blocks.front());
+		m_visionCuboidsSingleTileActors[index] = area.m_visionCuboids.getIdFor(actors.getLocation(actor));
 	}
 }
-void LocationBucket::updateCuboid(Area& area, const ActorIndex& actor, const VisionCuboidId& oldCuboid, const VisionCuboidId& newCuboid)
+void LocationBucket::updateCuboid(Area& area, const ActorIndex& actor, const BlockIndex& block, const VisionCuboidId& oldCuboid, const VisionCuboidId& newCuboid)
 {
 	Actors& actors = area.getActors();
+	Blocks& blocks = area.getBlocks();
 	if(Shape::getIsMultiTile(actors.getShape(actor)))
 	{
+		Point3D position = blocks.getCoordinates(block);
 		LocationBucketId index = m_actorsMultiTile.indexFor(actor);
-		m_visionCuboidsMulitiTileActors[index].update(oldCuboid, newCuboid);
+		assert(m_positionsAndCuboidsMultiTileActors[index][position] == oldCuboid);
+		m_positionsAndCuboidsMultiTileActors[index][position] = newCuboid;
 	}
 	else
 	{
@@ -170,5 +176,5 @@ void LocationBuckets::update(const ActorIndex& actor, const BlockIndices& oldBlo
 }
 void LocationBuckets::updateCuboid(Area& area, const ActorIndex& actor, const BlockIndex& block, const VisionCuboidId& oldCuboid, const VisionCuboidId& newCuboid)
 {
-	getBucketFor(block).updateCuboid(area, actor, oldCuboid, newCuboid);
+	getBucketFor(block).updateCuboid(area, actor, block, oldCuboid, newCuboid);
 }
