@@ -70,8 +70,8 @@ public:
 		[[nodiscard]] const T& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] T* operator->() { return &*m_iter; }
-		// Used by Open MP.
 		[[nodiscard]] iterator operator-(const iterator& other) { return m_iter - other.m_iter; }
+		[[nodiscard]] iterator operator+(const iterator& other) { return m_iter - other.m_iter; }
 		[[nodiscard]] iterator& operator+=(const iterator& other) { m_iter += other.m_iter; return *this; }
 		friend class const_iterator;
 	};
@@ -89,6 +89,7 @@ public:
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] const T* operator->() const { return &*m_iter; }
 		[[nodiscard]] iterator operator-(const iterator& other) { return m_iter - other.m_iter; }
+		[[nodiscard]] iterator operator+(const iterator& other) { return m_iter + other.m_iter; }
 		[[nodiscard]] iterator& operator+=(const iterator& other) { m_iter += other.m_iter; return *this; }
 	};
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallSet, m_data);
@@ -197,6 +198,7 @@ public:
 		iterator(std::vector<Pair>::iterator iter) : m_iter(iter) { }
 		iterator& operator++() { ++m_iter; return *this; }
 		[[nodiscard]] iterator operator+(uint steps) { return m_iter + steps; }
+		[[nodiscard]] iterator operator-(uint steps) { return m_iter - steps; }
 		[[nodiscard]] iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] Pair& operator*() { return *m_iter; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
@@ -215,6 +217,7 @@ public:
 		const_iterator(std::vector<Pair>::const_iterator iter) : m_iter(iter) { }
 		const_iterator& operator++() { ++m_iter; return *this; }
 		[[nodiscard]] const_iterator operator+(uint steps) { return m_iter + steps; }
+		[[nodiscard]] const_iterator operator-(uint steps) { return m_iter - steps; }
 		[[nodiscard]] const_iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
@@ -285,6 +288,8 @@ public:
 		[[nodiscard]] V& second() { return *m_iter->second.get(); }
 		[[nodiscard]] const V& second() const { return *m_iter->second.get(); }
 		[[nodiscard]] Pair* operator->() { return &*m_iter; }
+		[[nodiscard]] iterator operator+(uint steps) { return m_iter + steps; }
+		[[nodiscard]] iterator operator-(uint steps) { return m_iter - steps; }
 	};
 	class const_iterator
 	{
@@ -300,6 +305,8 @@ public:
 		[[nodiscard]] const K& first() const { return m_iter->first; }
 		[[nodiscard]] const V& second() const { return *m_iter->second.get(); }
 		[[nodiscard]] const Pair* operator->() const { return &*m_iter; }
+		[[nodiscard]] const_iterator operator+(uint steps) { return m_iter + steps; }
+		[[nodiscard]] const_iterator operator-(uint steps) { return m_iter - steps; }
 	};
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallMapStable, m_data);
 };

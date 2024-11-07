@@ -9,6 +9,7 @@
 #include "../designations.h"
 #include "../blockFeature.h"
 #include "../index.h"
+#include "../verySmallSet.h"
 
 #include "blockIndexArray.h"
 #include "dataVector.h"
@@ -54,7 +55,7 @@ class Blocks
 	DataVector<std::vector<std::pair<ItemIndex, CollisionVolume>>, BlockIndex> m_itemVolume;
 	// TODO: Make these small vectors.
 	DataVector<ActorIndicesForBlock, BlockIndex> m_actors;
-	DataVector<ItemIndicesForBlock, BlockIndex> m_items;
+	DataVector<VerySmallSet<ItemIndex, 3>, BlockIndex> m_items;
 	DataBitSet<BlockIndex> m_hasActors;
 	DataBitSet<BlockIndex> m_hasItems;
 	DataVector<PlantIndex, BlockIndex> m_plants;
@@ -326,8 +327,8 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	//ItemIndex get(const BlockIndex& index, ItemType& itemType) const;
 	[[nodiscard]] Quantity item_getCount(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType) const;
 	[[nodiscard]] ItemIndex item_getGeneric(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType) const;
-	[[nodiscard]] ItemIndicesForBlock& item_getAll(const BlockIndex& index);
-	const ItemIndicesForBlock& item_getAll(const BlockIndex& index) const;
+	[[nodiscard]] VerySmallSet<ItemIndex, 3>& item_getAll(const BlockIndex& index);
+	const VerySmallSet<ItemIndex, 3>& item_getAll(const BlockIndex& index) const;
 	[[nodiscard]] bool item_hasInstalledType(const BlockIndex& index, const ItemTypeId& itemType) const;
 	[[nodiscard]] bool item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(const BlockIndex& index, const ActorIndex& actor) const;
 	[[nodiscard]] bool item_hasContainerContainingFluidTypeCarryableBy(const BlockIndex& index, const ActorIndex& actor, const FluidTypeId& fluidType) const;
@@ -349,6 +350,8 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	// -Shape / Move
 	void shape_addStaticVolume(const BlockIndex& index, const CollisionVolume& volume);
 	void shape_removeStaticVolume(const BlockIndex& index, const CollisionVolume& volume);
+	void shape_addDynamicVolume(const BlockIndex& index, const CollisionVolume& volume);
+	void shape_removeDynamicVolume(const BlockIndex& index, const CollisionVolume& volume);
 	[[nodiscard]] bool shape_anythingCanEnterEver(const BlockIndex& index) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverFrom(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& block) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing& facing) const;

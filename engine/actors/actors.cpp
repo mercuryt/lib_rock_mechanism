@@ -832,7 +832,7 @@ void Actors::die(const ActorIndex& index, CauseOfDeath causeOfDeath)
 	if(m_project[index] != nullptr)
 		m_project[index]->removeWorker(index);
 	if(m_location[index].exists())
-		setStatic(index, true);
+		maybeSetStatic(index);
 	m_area.m_visionFacadeBuckets.remove(index);
 	move_pathRequestMaybeCancel(index);
 	if(!isSentient(index) && hasFaction(index))

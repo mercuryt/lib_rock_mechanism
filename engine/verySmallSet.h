@@ -12,26 +12,71 @@
 #include <array>
 #include <iterator>
 #include <vector>
-// Threshold defaults to the max number of Contained which could fit in the same stack space as a vector.
-template<typename Contained, int threshold = (sizeof(std::vector<Contained>) / sizeof(Contained)) - 1>
+#include <utility>
+// Threshold is the maximum which can be stored before a vector is used.
+template<typename Contained, int threshold>
 class VerySmallSet
 {
 	using This = VerySmallSet<Contained, threshold>;
-	union Data{ std::array<Contained, threshold> array; std::vector<Contained> vector; } data;
-	[[nodiscard]] bool isArray() const
+	union Data
+	{ 
+		std::array<Contained, threshold + 1> array; 
+		std::vector<Contained> vector;
+		Data(Data&& other) noexcept
+		{
+			if(other.isArray())
+				array = other.array;
+			else
+				vector = std::move(other.vector);
+		}
+		auto operator=(const Data& other) -> Data&
+		{
+			if(other.isArray())
+				array = other.array;
+			else
+				vector = other.vector;
+			return *this;
+		}
+		auto operator=(Data&& other) noexcept -> Data&
+		{
+			if(other.isArray())
+				array = other.array;
+			else
+				vector = std::move(other.vector);
+			return *this;
+		}
+		[[nodiscard]] bool isArray() const
+		{
+			// If the front of the union data is T::null() when cast to array then the data is currently an array.
+			// We can be confident that this is not a vector because a vector is made up of two pointers and T::null() is all 1s and a pointer starting with a 1 would be pointing to an address above the 140th terrabyte.
+			// TODO: we only really need to read / write the first bit.
+			return array.front() == Contained::null();
+		}
+		Data() { array.fill(Contained::null()); }
+		~Data() { if(!isArray()) vector.clear(); }
+	} data;
+	[[nodiscard]] bool isArray() const { return data.isArray(); }
+	[[nodiscard]] std::array<Contained, threshold + 1>::iterator findFirstArrayNull()
 	{
-		// If the front of the union data is T::null() when cast to array then the data is currently an array.
-		// TODO: We only really need to read / write the first bit.
-		return data.array.front() == Contained::null();
+		assert(isArray());
+		// Skip index 0 because it is a flag.
+		return std::ranges::find(data.array.begin() + 1, data.array.end(), Contained::null());
 	}
-	[[nodiscard]] auto findFirstArrayNull() const
+	[[nodiscard]] std::array<Contained, threshold + 1>::const_iterator findFirstArrayNull() const
 	{
 		assert(isArray());
 		// Skip index 0 because it is a flag.
 		return std::ranges::find(data.array.begin() + 1, data.array.end(), Contained::null());
 	}
 public:
-	void add(Contained value)
+	VerySmallSet() = default;
+	VerySmallSet(const This& other) { if(other.isArray()) data.array = other.array; else data.vector = other.vector; }
+	VerySmallSet(This&& other) noexcept { data = other.data; }
+	class iterator;
+	class const_iterator;
+	auto operator=(const This& other) -> This& { data = other.data; return *this; }
+	auto operator=(const This&& other) noexcept -> This& { data = std::move(other.data); return *this; }
+	void add(const Contained& value)
 	{
 		assert(!contains(value));
 		if(isArray())
@@ -43,6 +88,7 @@ public:
 				// Skip index 0 because it is a flag.
 				std::vector<Contained> vector(data.array.begin() + 1, data.array.end());
 				data.vector.swap(vector);
+				assert(!isArray());
 			}
 			else
 				(*iter) = value;
@@ -50,35 +96,46 @@ public:
 		else
 			data.vector.push_back(value);
 	}
-	void maybeAdd(Contained value)
+	void maybeAdd(const Contained& value)
 	{
 		if(!contains(value))
 			add(value);
 	}
-	void remove(Contained value)
+	void remove(const Contained& value)
 	{
-		assert(contains(value));
-		if(isArray())
-			util::removeFromArrayByValueUnordered(data.array, value);
-		else
-		{
-			util::removeFromVectorByValueUnordered(data.vector, value);
-			if(data.vector.size() == threshold)
-			{
-				// If the size has shrunk to the threshold then convert into an array.
-				std::array<Contained, threshold> array;
-				// Set the array flag.
-				array.front = Contained::null();
-				// Skip index 0 because it is a flag.
-				std::ranges::copy(data.vector, array.begin() + 1);
-				data.array.swap(array);
-			}
-		}
+		// TODO: This code is checking isArray() multiple times.
+		auto iter = find(value);
+		remove(iter);
 	}
-	void maybeRemove(Contained value)
+	void maybeRemove(const Contained& value)
 	{
 		if(contains(value))
 			remove(value);
+	}
+	void remove(iterator& iter)
+	{
+		if(isArray())
+		{
+			auto last = findFirstArrayNull();
+			--last;
+			*iter = *last;
+			*last = Contained::null();
+		}
+		else
+		{
+			util::removeFromVectorByIndexUnordered(data.vector, iter.getIndex());
+			if(data.vector.size() == threshold)
+			{
+				// If the size has shrunk to the threshold then convert into an array.
+				std::array<Contained, threshold + 1> array;
+				// Set the array flag.
+				array.front() = Contained::null();
+				// Skip index 0 because it is a flag.
+				std::ranges::copy(data.vector, array.begin() + 1);
+				data.array.swap(array);
+				assert(isArray());
+			}
+		}
 	}
 	void fromJson(const Json& json)
 	{
@@ -92,13 +149,14 @@ public:
 				item.get_to((*++iter));
 		}
 	}
-	[[nodiscard]] Json& toJson() const
+	[[nodiscard]] Json toJson() const
 	{
 		Json output;
 		for(Contained& value : data.array)
 			output.push_back(value);
+		return output;
 	}
-	[[nodiscard]] bool contains(Contained value) const
+	[[nodiscard]] bool contains(const Contained& value) const
 	{
 		if(isArray())
 			// Skip index 0 because it is a flag.
@@ -110,7 +168,7 @@ public:
 	{
 		if(isArray())
 			// Skip index 0 because it is a flag.
-			return std::ranges::find(data.array, Contained::null()) - (data.array.begin() + 1);
+			return findFirstArrayNull() - (data.array.begin() + 1);
 		else
 			return data.vector.size();
 	}
@@ -120,36 +178,95 @@ public:
 		if(isArray())
 		{
 			// Skip index 0 because it is a flag.
-			assert(offset + 1 < threshold);
+			assert(offset + 1u < data.array.size());
 			return data.array[offset + 1];
 		}
 		else
+		{
+			assert(offset < data.vector.size());
 			return data.vector[offset];
+		}
 	}
 	[[nodiscard]] const Contained& operator[](uint16_t offset) const
 	{
-		return const_cast<This*>(this)->at(offset);
+		return (const_cast<This&>(*this))[offset];
 	}
+	[[nodiscard]] Contained& front() { if(isArray()) return data.array[1]; else return data.vector[0]; }
+	[[nodiscard]] Contained& back() { if(isArray()) return data.array[findFirstArrayNull() - 1]; else return data.vector.back(); }
+	[[nodiscard]] const Contained& front() const { if(isArray()) return data.array[1]; else return data.vector[0]; }
+	[[nodiscard]] const Contained& back() const { if(isArray()) return data.array[findFirstArrayNull() - 1]; else return data.vector.back(); }
 	class iterator
 	{
 		This& set;
 		uint16_t offset;
 	public:
-		iterator(This& d, uint16_t o = 0) : set(d), offset(o) { }
-		[[nodiscard]] iterator& operator++() { ++offset; return *this; }
-		[[nodiscard]] Contained& operator*() { return set[offset]; }
-		[[nodiscard]] bool operator==(const This& other) { assert(&set == &other.set); return offset == other.offset; }
+		iterator(This& d, uint16_t o) : set(d), offset(o) { }
+		[[nodiscard]] Contained& operator*() { assert(offset < set.size()); return set[offset]; }
+		[[nodiscard]] const Contained& operator*() const { assert(offset < set.size()); return set[offset]; }
+		[[nodiscard]] Contained* operator->() { assert(offset < set.size()); return &set[offset]; }
+		iterator& operator++() { ++offset; return *this; }
+		iterator& operator++(int) { ++offset; return *this; }
+		[[nodiscard]] bool operator==(const iterator& other) const { assert(&set == &other.set); return offset == other.offset; }
+		[[nodiscard]] bool operator!=(const iterator& other) const { assert(&set == &other.set); return offset != other.offset; }
+		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) const { assert(&set == &other.set); return offset <=> other.offset; }
+		[[nodiscard]] iterator operator-(const iterator& other) const { assert(&other.set == &set); assert(offset >= other.offset); return iterator(set, uint(offset - other.offset)); }
+		[[nodiscard]] iterator operator+(const iterator& other) const { assert(&other.set == &set); return iterator(set, offset + uint(other.offset)); }
+		[[nodiscard]] uint16_t getIndex() const { return offset; }
 	};
-	class const_iterator : public iterator
+	// TODO: very repetetive here.
+	class const_iterator
 	{
+		const This& set;
+		uint16_t offset;
 	public:
-		const_iterator(This& d, uint16_t o = 0) : iterator(d, o) { }
-		[[nodiscard]] const Contained& operator*() { return iterator::set[iterator::offset]; }
+		const_iterator(const This& d, uint16_t o) : set(d), offset(o) { }
+		[[nodiscard]] const Contained& operator*() { assert(offset < set.size()); return set[offset]; }
+		[[nodiscard]] const Contained& operator*() const { assert(offset < set.size()); return set[offset]; }
+		[[nodiscard]] const Contained* operator->() { assert(offset < set.size()); return &set[offset]; }
+		const_iterator& operator++() { ++offset; return *this; }
+		const_iterator& operator++(int) { ++offset; return *this; }
+		[[nodiscard]] bool operator==(const const_iterator& other) const { assert(&set == &other.set); return offset == other.offset; }
+		[[nodiscard]] bool operator!=(const const_iterator& other) const { assert(&set == &other.set); return offset != other.offset; }
+		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { assert(&set == &other.set); return offset <=> other.offset; }
+		[[nodiscard]] const_iterator operator-(const const_iterator& other) const { assert(&other.set == &set); assert(offset >= other.offset); return const_iterator(set, offset - other.offset); }
+		[[nodiscard]] const_iterator operator+(const const_iterator& other) const { assert(&other.set == &set); return const_iterator(set, offset + other.offset); }
+		[[nodiscard]] uint16_t getIndex() const { return offset; }
 	};
-	[[nodiscard]] This::iterator begin() { return Iterator(*this); }
-	[[nodiscard]] This::iterator end() { return Iterator(*this, size()); }
-	[[nodiscard]] This::const_iterator begin() const { return Iterator(*this); }
-	[[nodiscard]] This::const_iterator end() const { return Iterator(*this, size()); }
+	[[nodiscard]] iterator begin() { return iterator(*this, 0); }
+	[[nodiscard]] iterator end() { return iterator(*this, size()); }
+	[[nodiscard]] const_iterator begin() const { return const_iterator(*this, 0); }
+	[[nodiscard]] const_iterator end() const { return const_iterator(*this, size()); }
+	[[nodiscard]] iterator find(const Contained& contained) { return iterator(*this, indexOf(contained)); }
+	[[nodiscard]] const_iterator find(const Contained& contained) const { return const_iterator(*this, indexOf(contained)); }
+	template<typename Condition>
+	[[nodiscard]] iterator find_if(Condition&& condition) { return iterator(*this, indexOf(condition)); }
+	template<typename Condition>
+	[[nodiscard]] const_iterator find_if(Condition&& condition) const { return const_iterator(*this, indexOf(condition)); }
+	[[nodiscard]] uint16_t indexOf(const Contained& value) const
+	{
+		if(isArray())
+			return std::ranges::find(data.array.begin() + 1, data.array.end(), value) - (data.array.begin() + 1);
+		else
+			return std::ranges::find(data.vector, value) - data.vector.begin();
+	}
+	template<typename Condition>
+	[[nodiscard]] uint16_t indexOf(Condition&& condition) const
+	{
+		if(isArray())
+		{
+			auto found = std::ranges::find_if(data.array.begin() + 1, data.array.end(), [&](const Contained& value){
+				// When no value fulfills the condition return one past the end. This represents end for the iterators.
+				return !value.exists() || condition(value);
+			});
+			// One is added to array begining due to flag.
+			return found - (data.array.begin() + 1);
+		}
+		else
+		{
+			auto found = std::ranges::find_if(data.vector, condition);
+			return found - data.vector.begin();
+		}
+	}
 };
 template<typename T, uint16_t threshold>
 inline void to_json(Json& data, const VerySmallSet<T, threshold>& set) { data = set.toJson(); }

@@ -99,7 +99,7 @@ void Portables::followActor(const HasShapeIndex& index, const ActorIndex& actor)
 	Actors& actors = m_area.getActors();
 	assert(!m_leader[index].exists());
 	m_leader[index] = ActorOrItemIndex::createForActor(actor);
-	m_static.unset(index);
+	maybeUnsetStatic(index);
 	assert(!actors.m_follower[actor].exists());
 	actors.m_follower[actor] = getActorOrItemIndex(index);
 	ActorIndex lineLeader = getLineLeader(index);
@@ -111,7 +111,7 @@ void Portables::followItem(const HasShapeIndex& index, const ItemIndex& item)
 	Actors& actors = m_area.getActors();
 	assert(!m_leader[index].exists());
 	m_leader[index] = ActorOrItemIndex::createForItem(item);
-	m_static.unset(index);
+	maybeUnsetStatic(index);
 	assert(!m_area.getItems().m_follower[item].exists());
 	m_area.getItems().m_follower[item] = getActorOrItemIndex(index);
 	ActorIndex lineLeader = getLineLeader(index);
@@ -132,7 +132,7 @@ void Portables::unfollowActor(const HasShapeIndex& index, const ActorIndex& acto
 	assert(m_leader[index] == actor.toActorOrItemIndex());
 	static const MoveTypeId& moveTypeNone = MoveType::byName("none");
 	if(!m_isActors || getMoveType(index) == moveTypeNone)
-		m_static.set(index);
+		setStatic(index);
 	Actors& actors = m_area.getActors();
 	if(!isFollowing(actor))
 	{
@@ -153,7 +153,7 @@ void Portables::unfollowItem(const HasShapeIndex& index, const ItemIndex& item)
 	m_leader[index].clear();
 	static const MoveTypeId& moveTypeNone = MoveType::byName("none");
 	if(!m_isActors || getMoveType(index) == moveTypeNone)
-		m_static.set(index);
+		setStatic(index);
 	Items& items = m_area.getItems();
 	items.m_follower[item].clear();
 	m_area.getActors().move_updateActualSpeed(lineLeader);

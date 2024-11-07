@@ -22,8 +22,9 @@ void Blocks::item_erase(const BlockIndex& index, const ItemIndex& item)
 	Items& items = m_area.getItems();
 	auto& blockItems = m_items[index];
 	auto& blockItemVolume = m_itemVolume[index];
-	auto iter = std::ranges::find(blockItems, item);
-	auto iter2 = m_itemVolume[index].begin() + (std::distance(blockItems.begin(), iter));
+	auto iter = blockItems.find(item);
+	uint16_t offset = (iter - blockItems.begin()).getIndex();
+	auto iter2 = m_itemVolume[index].begin() + offset;
 	if(items.isStatic(item))
 		m_staticVolume[index] -= iter2->second;
 	else
@@ -58,7 +59,7 @@ void Blocks::item_disperseAll(const BlockIndex& index)
 }
 void Blocks::item_updateIndex(const BlockIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex)
 {
-	auto found = std::ranges::find(m_items[index], oldIndex);
+	auto found = m_items[index].find(oldIndex);
 	assert(found != m_items[index].end());
 	(*found) = newIndex; 
 	auto found2 = std::ranges::find(m_itemVolume[index], oldIndex, [](const auto& pair) { return pair.first; });
@@ -86,15 +87,17 @@ ItemIndex Blocks::item_addGeneric(const BlockIndex& index, const ItemTypeId& ite
 	}
 	else
 	{
-		items.addQuantity(*found, quantity);
-		return *found;
+		ItemIndex item = *found;
+		assert(item.exists());
+		items.addQuantity(item, quantity);
+		return item;
 	}
 }
 Quantity Blocks::item_getCount(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType) const
 {
 	auto& itemsInBlock = m_items[index];
 	Items& items = m_area.getItems();
-	auto found = std::ranges::find_if(itemsInBlock, [&](const ItemIndex& item)
+	const auto found = itemsInBlock.find_if([&](const ItemIndex& item)
 	{
 		return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType;
 	});
@@ -107,7 +110,7 @@ ItemIndex Blocks::item_getGeneric(const BlockIndex& index, const ItemTypeId& ite
 {
 	auto& itemsInBlock = m_items[index];
 	Items& items = m_area.getItems();
-	auto found = std::ranges::find_if(itemsInBlock, [&](const ItemIndex& item) { 
+	const auto found = itemsInBlock.find_if([&](const ItemIndex& item) { 
 		return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType;
 	});
 	if(found == itemsInBlock.end())
@@ -161,11 +164,11 @@ bool Blocks::item_contains(const BlockIndex& index, const ItemIndex& item) const
 {
 	return m_items[index].contains(item);
 }
-ItemIndicesForBlock& Blocks::item_getAll(const BlockIndex& index)
+VerySmallSet<ItemIndex, 3>& Blocks::item_getAll(const BlockIndex& index)
 {
 	return m_items[index];
 }
-const ItemIndicesForBlock& Blocks::item_getAll(const BlockIndex& index) const
+const VerySmallSet<ItemIndex, 3>& Blocks::item_getAll(const BlockIndex& index) const
 {
 	return const_cast<Blocks*>(this)->item_getAll(index);
 }

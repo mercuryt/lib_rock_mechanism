@@ -38,7 +38,10 @@ protected:
 	[[nodiscard]] HasShapeIndex getNextIndex();
 public:
 	void setFaction(const HasShapeIndex& index, FactionId faction);
-	void setStatic(const HasShapeIndex& index, bool isStatic);
+	void setStatic(const HasShapeIndex& index);
+	void maybeSetStatic(const HasShapeIndex& index);
+	void unsetStatic(const HasShapeIndex& index);
+	void maybeUnsetStatic(const HasShapeIndex& index);
 	void log(const HasShapeIndex& index) const;
 	[[nodiscard]] size_t size() const { return m_shape.size(); }
 	[[nodiscard]] ShapeId getShape(const HasShapeIndex& index) const { return m_shape[index]; }

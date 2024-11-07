@@ -279,3 +279,12 @@ void Blocks::shape_removeStaticVolume(const BlockIndex& index, const CollisionVo
 	assert(m_staticVolume[index] >= volume);
 	m_staticVolume[index] -= volume;
 }
+void Blocks::shape_addDynamicVolume(const BlockIndex& index, const CollisionVolume& volume)
+{
+	m_dynamicVolume[index] += volume;
+}
+void Blocks::shape_removeDynamicVolume(const BlockIndex& index, const CollisionVolume& volume)
+{
+	assert(m_dynamicVolume[index] >= volume);
+	m_dynamicVolume[index] -= volume;
+}
