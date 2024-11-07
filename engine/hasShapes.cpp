@@ -42,23 +42,41 @@ void HasShapes::moveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& ne
 	m_static.set(newIndex, m_static[oldIndex]);
 	m_underground.set(newIndex, m_underground[oldIndex]);
 }
-void HasShapes::setStatic(const HasShapeIndex& index, bool isTrue)
+void HasShapes::setStatic(const HasShapeIndex& index)
 {
 	assert(!m_static[index]);
 	Blocks& blocks = m_area.getBlocks();
-	if(isTrue)
-		for(auto& [x, y, z, v] : Shape::positionsWithFacing(m_shape[index], m_facing[index]))
-		{
-			BlockIndex block = blocks.offset(m_location[index], x, y, z);
-			blocks.shape_addStaticVolume(block, CollisionVolume::create(v));
-		}
-	else
-		for(auto& [x, y, z, v] : Shape::positionsWithFacing(m_shape[index], m_facing[index]))
-		{
-			BlockIndex block = blocks.offset(m_location[index], x, y, z);
-			blocks.shape_removeStaticVolume(block, CollisionVolume::create(v));
-		}
-	m_static.set(index);
+	for(auto& [x, y, z, v] : Shape::positionsWithFacing(m_shape[index], m_facing[index]))
+	{
+		BlockIndex block = blocks.offset(m_location[index], x, y, z);
+		CollisionVolume volume = CollisionVolume::create(v);
+		blocks.shape_addStaticVolume(block, volume);
+		blocks.shape_removeDynamicVolume(block, volume);
+	}
+	m_static.set(index, true);
+}
+void HasShapes::maybeSetStatic(const HasShapeIndex& index)
+{
+	if(!m_static[index])
+		setStatic(index);
+}
+void HasShapes::unsetStatic(const HasShapeIndex& index)
+{
+	assert(m_static[index]);
+	Blocks& blocks = m_area.getBlocks();
+	for(auto& [x, y, z, v] : Shape::positionsWithFacing(m_shape[index], m_facing[index]))
+	{
+		BlockIndex block = blocks.offset(m_location[index], x, y, z);
+		CollisionVolume volume = CollisionVolume::create(v);
+		blocks.shape_removeStaticVolume(block, volume);
+		blocks.shape_addDynamicVolume(block, volume);
+	}
+	m_static.set(index, false);
+}
+void HasShapes::maybeUnsetStatic(const HasShapeIndex& index)
+{
+	if(m_static[index])
+		unsetStatic(index);
 }
 void HasShapes::sortRange(const HasShapeIndex& begin, const HasShapeIndex& end)
 {
@@ -191,7 +209,8 @@ ActorIndices HasShapes::getAdjacentActors(const HasShapeIndex& index) const
 {
 	ActorIndices output;
 	for(BlockIndex block : getOccupiedAndAdjacentBlocks(index))
-		output.merge(m_area.getBlocks().actor_getAll(block));
+		for(const ActorIndex& actor : m_area.getBlocks().actor_getAll(block))
+			output.maybeAdd(actor);
 	output.remove(index.toActor());
 	return output;
 }
@@ -199,7 +218,8 @@ ItemIndices HasShapes::getAdjacentItems(const HasShapeIndex& index) const
 {
 	ItemIndices output;
 	for(BlockIndex block : getOccupiedAndAdjacentBlocks(index))
-		output.merge(m_area.getBlocks().item_getAll(block));
+		for(const ItemIndex& item : m_area.getBlocks().item_getAll(block))
+			output.maybeAdd(item);
 	output.remove(index.toItem());
 	return output;
 }

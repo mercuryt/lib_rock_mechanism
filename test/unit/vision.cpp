@@ -13,6 +13,7 @@ TEST_CASE("vision")
 {
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	auto marble = MaterialType::byName("marble");

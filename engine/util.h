@@ -91,7 +91,7 @@ namespace util
 		return radians * (180.0/3.141592653589793238463);
 	}
 	template<typename T>
-	inline void removeFromVectorByIndexUnordered(std::vector<T>& vector, size_t index)
+	inline void removeFromVectorByIndexUnordered(std::vector<T>& vector, uint index)
 	{
 		std::swap(vector[index], vector.back());
 		vector.pop_back();
@@ -135,6 +135,14 @@ namespace util
 		if(last != iter)
 			*iter = *last;
 		*last = T::null();
+	}
+	template<typename T, int size>
+	inline void removeFromArrayByIndexUnordered(std::array<T, size>& array, const uint& index)
+	{
+		auto lastIndex = (std::ranges::find(array, T::null()) - 1) - array.begin();
+		if(lastIndex != index)
+			array[index] = array[lastIndex];
+		array[lastIndex] = T::null();
 	}
 	template<typename T>
 	inline void addUniqueToVectorAssert(std::vector<T>& vector, const T& value)

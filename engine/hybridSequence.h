@@ -8,7 +8,7 @@
 #include <iterator>
 #include <vector>
 #include <ranges>
-template <typename Contained, Contained null, uint capacity>
+template <typename Contained, const Contained& null, uint capacity>
 class HybridSequence
 {
 public:
@@ -34,7 +34,12 @@ public:
 	{
 		data.array = other.array;
 	}
-	void add(Contained value)
+	void addUnique(const Contained& value)
+	{
+		assert(!contains(value));
+		add(value);
+	}
+	void add(const Contained& value)
 	{
 		assert(value != null);
 		auto iter = firstEmptyInArray();
@@ -43,12 +48,12 @@ public:
 		else
 			data.vector.push_back(value);
 	}
-	void maybeAdd(Contained value)
+	void maybeAdd(const Contained& value)
 	{
 		if(!contains(value))
 			add(value);
 	}
-	void remove(Contained value)
+	void remove(const Contained& value)
 	{
 		assert(contains(value));
 		auto iter = std::ranges::find(begin(), data.array.end(), value);
@@ -62,12 +67,17 @@ public:
 		else
 			util::removeFromVectorByValueUnordered(data.vector, value);
 	}
+	void maybeRemove(Containd value)
+	{
+		if(contains(value))
+			remove(value);
+	}
 	void swap(const This& other)
 	{
 		// Since the vector is stored in line with the array the array swap will swap the vector as well.
 		data.array.swap(other.data.array);
 	}
-	[[nodiscard]] bool contains(Contained value)
+	[[nodiscard]] bool contains(const Contained& value)
 	{
 		auto iter = std::ranges::find(begin(), data.array.end(), value);
 		if(iter != data.array.end())
@@ -81,7 +91,7 @@ public:
 			output += data.vector.size();
 		return output;
 	}
-	[[nodiscard]] This::iterator find(Contained value)
+	[[nodiscard]] This::iterator find(const Contained& value)
 	{
 		auto iter = std::ranges::find(begin(), data.array.end(), value);
 		if(iter != data.array.end())
@@ -90,7 +100,7 @@ public:
 		if(iter2 == data.vector.end())
 			return (*this, capacity + data.vector.size());
 	}
-	[[nodiscard]] This::const_iterator find(Contained value) const
+	[[nodiscard]] This::const_iterator find(const Contained& value) const
 	{
 		return const_cast<This&>(*this).find(value);
 	}
