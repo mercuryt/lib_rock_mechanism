@@ -4,6 +4,7 @@
  */
 #pragma once
 #include "types.h"
+#include "hasShapeTypes.h"
 #include "config.h"
 #include "dishonorCallback.h"
 #include "index.h"
@@ -50,11 +51,11 @@ public:
 	[[nodiscard]] ActorOrItemIndex getFollower(Area& area) const;
 	[[nodiscard]] ActorOrItemIndex getLeader(Area& area) const;
 
-	[[nodiscard]] bool canEnterCurrentlyFrom(Area& area, const BlockIndex& destination, const BlockIndex& origin);
-	[[nodiscard]] bool canEnterCurrentlyFromWithOccupied(Area& area, const BlockIndex& destination, const BlockIndex& origin, const BlockIndices& occupied);
+	[[nodiscard]] bool canEnterCurrentlyFrom(Area& area, const BlockIndex& destination, const BlockIndex& origin) const;
+	[[nodiscard]] bool canEnterCurrentlyFromWithOccupied(Area& area, const BlockIndex& destination, const BlockIndex& origin, const OccupiedBlocksForHasShape& occupied) const;
 
 	[[nodiscard]] BlockIndex getLocation(const Area& area) const;
-	[[nodiscard]] const BlockIndices& getBlocks(Area& area) const;
+	[[nodiscard]] const OccupiedBlocksForHasShape& getBlocks(Area& area) const;
 	[[nodiscard]] BlockIndices getAdjacentBlocks(Area& area) const;
 	[[nodiscard]] bool isAdjacent(const Area& area, const ActorOrItemIndex& other) const;
 	[[nodiscard]] bool isAdjacentToActor(const Area& area, const ActorIndex& other) const;

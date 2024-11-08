@@ -25,9 +25,9 @@ MoveTypeId Actors::lineLead_getMoveType(const ActorIndex& index) const
 	MoveTypeId output = m_moveType[index];
 	return output;
 }
-BlockIndices Actors::lineLead_getOccupiedBlocks(const ActorIndex& index) const
+OccupiedBlocksForHasShape Actors::lineLead_getOccupiedBlocks(const ActorIndex& index) const
 {
-	BlockIndices output;
+	OccupiedBlocksForHasShape output;
 	assert(isLeading(index));
 	assert(!isFollowing(index));
 	ActorOrItemIndex follower = index.toActorOrItemIndex();

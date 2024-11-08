@@ -109,7 +109,7 @@ ActorOrItemIndex ActorOrItemIndex::getLeader(Area& area) const
 	else
 		return area.getItems().getLeader(m_index);
 }
-bool ActorOrItemIndex::canEnterCurrentlyFrom(Area& area, const BlockIndex& destination, const BlockIndex& origin)
+bool ActorOrItemIndex::canEnterCurrentlyFrom(Area& area, const BlockIndex& destination, const BlockIndex& origin) const
 {
 	if(isActor())
 	{
@@ -126,7 +126,7 @@ bool ActorOrItemIndex::canEnterCurrentlyFrom(Area& area, const BlockIndex& desti
 		return area.getBlocks().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
 	}
 }
-bool ActorOrItemIndex::canEnterCurrentlyFromWithOccupied(Area& area, const BlockIndex& destination, const BlockIndex& origin, const BlockIndices& occupied)
+bool ActorOrItemIndex::canEnterCurrentlyFromWithOccupied(Area& area, const BlockIndex& destination, const BlockIndex& origin, const OccupiedBlocksForHasShape& occupied) const 
 {
 	if(isActor())
 	{
@@ -143,7 +143,7 @@ bool ActorOrItemIndex::canEnterCurrentlyFromWithOccupied(Area& area, const Block
 }
 BlockIndex ActorOrItemIndex::getLocation(const Area& area) const 
 { return isActor() ? area.getActors().getLocation(m_index) : area.getItems().getLocation(m_index); }
-const BlockIndices& ActorOrItemIndex::getBlocks(Area& area) const
+const OccupiedBlocksForHasShape& ActorOrItemIndex::getBlocks(Area& area) const
 { return isActor() ? area.getActors().getBlocks(m_index) : area.getItems().getBlocks(m_index); }
 BlockIndices ActorOrItemIndex::getAdjacentBlocks(Area& area) const
 { return isActor() ? area.getActors().getAdjacentBlocks(m_index) : area.getItems().getAdjacentBlocks(m_index); }

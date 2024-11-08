@@ -79,6 +79,15 @@ public:
 	void add(const Contained& value)
 	{
 		assert(!contains(value));
+		addNonunique(value);
+	}
+	void maybeAdd(const Contained& value)
+	{
+		if(!contains(value))
+			add(value);
+	}
+	void addNonunique(const Contained& value)
+	{
 		if(isArray())
 		{
 			auto iter = findFirstArrayNull();
@@ -95,11 +104,6 @@ public:
 		}
 		else
 			data.vector.push_back(value);
-	}
-	void maybeAdd(const Contained& value)
-	{
-		if(!contains(value))
-			add(value);
 	}
 	void remove(const Contained& value)
 	{
@@ -137,13 +141,35 @@ public:
 			}
 		}
 	}
+	void removeDuplicates()
+	{
+		if(isArray())
+		{
+			std::sort(data.array.begin() + 1, findFirstArrayNull());
+			auto iter = data.array.begin() + 1;
+			while(iter != data.array.end() && iter->exists())
+			{
+				auto iter2 = iter + 1;
+				while(*iter2 == *iter)
+				{
+					(*iter2) = Contained::null();
+					++iter2;
+				}
+				iter = iter2;
+			}
+			// Sort a second time to shift any newly created nulls to the end.
+			std::sort(data.array.begin() + 1, data.array.end());
+		}
+		else
+			util::removeDuplicates(data.vector);
+	}
 	void fromJson(const Json& json)
 	{
-		if(data.size() > threshold)
-			data.get_to(data.vector);
+		if(size() > threshold)
+			json.get_to(data.vector);
 		else
 		{
-			data.array.front() = Contained::null();
+			data.array.fill(Contained::null());
 			auto iter = data.array.begin() ;
 			for(const Json& item : json)
 				item.get_to((*++iter));
@@ -152,7 +178,7 @@ public:
 	[[nodiscard]] Json toJson() const
 	{
 		Json output;
-		for(Contained& value : data.array)
+		for(const Contained& value : data.array)
 			output.push_back(value);
 		return output;
 	}
@@ -163,6 +189,12 @@ public:
 			return std::ranges::find(data.array.begin() + 1, data.array.end(), value) != data.array.end();
 		else
 			return std::ranges::find(data.vector, value) != data.vector.end();
+	}
+	[[nodiscard]] bool empty() const 
+	{
+		if(!isArray())
+			return false;
+		return data.array[1].empty();
 	}
 	[[nodiscard]] uint16_t size() const
 	{
@@ -268,7 +300,3 @@ public:
 		}
 	}
 };
-template<typename T, uint16_t threshold>
-inline void to_json(Json& data, const VerySmallSet<T, threshold>& set) { data = set.toJson(); }
-template<typename T, uint16_t threshold>
-inline void from_json(const Json& data, VerySmallSet<T, threshold>& set) { set.from_json(data); }

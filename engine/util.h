@@ -98,7 +98,7 @@ namespace util
 	}
 	template<typename T>
 	void removeDuplicates(std::vector<T>& input)
-       	{
+	{
 		std::sort(input.begin(), input.end());
 		input.erase(std::unique(input.begin(), input.end()), input.end());
 	}

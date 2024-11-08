@@ -62,7 +62,6 @@ void Items::cargo_loadActor(const ItemIndex& index, const ActorIndex& actor)
 	assert(actors.hasLocation(actor));
 	actors.exit(actor);
 	cargo_addActor(index, actor);
-	actors.setCarrier(actor, ActorOrItemIndex::createForItem(index));
 }
 void Items::cargo_loadItem(const ItemIndex& index, const ItemIndex& item, const Quantity& quantity)
 {
@@ -70,7 +69,6 @@ void Items::cargo_loadItem(const ItemIndex& index, const ItemIndex& item, const 
 	assert(items.hasLocation(item));
 	items.exit(item);
 	cargo_addItem(index, item, quantity);
-	items.setCarrier(item, ActorOrItemIndex::createForItem(index));
 }
 void Items::cargo_loadPolymorphic(const ItemIndex& index, const ActorOrItemIndex& actorOrItem, const Quantity& quantity)
 {

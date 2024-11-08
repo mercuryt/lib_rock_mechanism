@@ -32,7 +32,7 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithFacing(const BlockIndex& inde
 	}
 	return true;
 }
-bool Blocks::shape_canEnterCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing& facing, const BlockIndices& occupied) const
+bool Blocks::shape_canEnterCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing& facing, const OccupiedBlocksForHasShape& occupied) const
 {
 	assert(shape_anythingCanEnterEver(index));
 	for(auto& [x, y, z, v] : Shape::positionsWithFacing(shape, facing))
@@ -47,13 +47,13 @@ bool Blocks::shape_canEnterCurrentlyWithFacing(const BlockIndex& index, const Sh
 	}
 	return true;
 }
-bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing& facing, const BlockIndices& occupied) const
+bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing& facing, const OccupiedBlocksForHasShape& occupied) const
 {
 	assert(shape_anythingCanEnterEver(index));
 	for(auto& [x, y, z, v] : Shape::positionsWithFacing(shape, facing))
 	{
 		BlockIndex otherIndex = offset(index,x, y, z);
-		if(std::ranges::find(occupied, otherIndex) != occupied.end())
+		if(occupied.contains(otherIndex))
 			continue;
 		if(otherIndex.empty() || !shape_anythingCanEnterEver(otherIndex) ||
 			m_dynamicVolume[otherIndex] + v > Config::maxBlockVolume || 
@@ -63,7 +63,7 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const Block
 	}
 	return true;
 }
-bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndices& occupied) const
+bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const OccupiedBlocksForHasShape& occupied) const
 {
 	if(Shape::getIsRadiallySymetrical(shape))
 		return shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(index, shape, moveType, Facing::create(0), occupied);
@@ -186,12 +186,12 @@ MoveCost Blocks::shape_moveCostFrom(const BlockIndex& index, const MoveTypeId& m
 		return Config::goUpMoveCost;
 	return Config::baseMoveCost;
 }
-bool Blocks::shape_canEnterCurrentlyFrom(const BlockIndex& index, const ShapeId& shape, const BlockIndex& block, const BlockIndices& occupied) const
+bool Blocks::shape_canEnterCurrentlyFrom(const BlockIndex& index, const ShapeId& shape, const BlockIndex& block, const OccupiedBlocksForHasShape& occupied) const
 {
 	const Facing facing = facingToSetWhenEnteringFrom(index, block);
 	return shape_canEnterCurrentlyWithFacing(index, shape, facing, occupied);
 }
-bool Blocks::shape_canEnterCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const BlockIndices& occupied) const
+bool Blocks::shape_canEnterCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const
 {
 	if(Shape::getIsRadiallySymetrical(shape))
 		return shape_canEnterCurrentlyWithFacing(index, shape, Facing::create(0), occupied);
@@ -200,45 +200,45 @@ bool Blocks::shape_canEnterCurrentlyWithAnyFacing(const BlockIndex& index, const
 			return true;
 	return false;
 }
-Facing Blocks::shape_canEnterCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const BlockIndices& occupied) const
+Facing Blocks::shape_canEnterCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const
 {
 	for(Facing facing = Facing::create(0); facing < 4; ++facing)
 		if(shape_canEnterCurrentlyWithFacing(index, shape, facing, occupied))
 			return facing;
 	return Facing::null();
 }
-bool Blocks::shape_staticCanEnterCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing& facing, const BlockIndices& occupied) const
+bool Blocks::shape_staticCanEnterCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing& facing, const OccupiedBlocksForHasShape& occupied) const
 {
 	return shape_staticShapeCanEnterWithFacing(index, shape, facing, occupied);
 }
-bool Blocks::shape_staticCanEnterCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const BlockIndices& occupied) const
+bool Blocks::shape_staticCanEnterCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const
 {
 	for(Facing facing = Facing::create(0); facing < 4; ++facing)
 		if(shape_staticCanEnterCurrentlyWithFacing(index, shape, facing, occupied))
 			return true;
 	return false;
 }
-std::pair<bool, Facing> Blocks::shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const BlockIndices& occupied) const
+std::pair<bool, Facing> Blocks::shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const
 {
 	for(Facing facing = Facing::create(0); facing < 4; ++facing)
 		if(shape_staticCanEnterCurrentlyWithFacing(index, shape, facing, occupied))
 			return {true, facing};
 	return {false, Facing::create(0)};
 }
-bool Blocks::shape_staticShapeCanEnterWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing& facing, const BlockIndices& occupied) const
+bool Blocks::shape_staticShapeCanEnterWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing& facing, const OccupiedBlocksForHasShape& occupied) const
 {
 	for(auto& [x, y, z, v] : Shape::positionsWithFacing(shape, facing))
 	{
 		BlockIndex otherIndex = offset(index, x, y, z);
 		assert(otherIndex.exists());
-		if(std::ranges::find(occupied, otherIndex) != occupied.end())
+		if(occupied.contains(otherIndex))
 			continue;
 		if(m_staticVolume[otherIndex] + v > Config::maxBlockVolume)
 			return false;
 	}
 	return true;
 }
-bool Blocks::shape_staticShapeCanEnterWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const BlockIndices& occupied) const
+bool Blocks::shape_staticShapeCanEnterWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const
 {
 	if(Shape::getIsRadiallySymetrical(shape))
 		return shape_staticShapeCanEnterWithFacing(index, shape, Facing::create(0), occupied);

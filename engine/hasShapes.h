@@ -8,6 +8,7 @@
 #include "dataVector.h"
 #include "shape.h"
 #include "types.h"
+#include "hasShapeTypes.h"
 
 struct Shape;
 class Area;
@@ -22,7 +23,7 @@ protected:
 	DataVector<BlockIndex, HasShapeIndex> m_location;
 	DataVector<Facing, HasShapeIndex> m_facing;
 	DataVector<FactionId, HasShapeIndex> m_faction;
-	DataVector<BlockIndices, HasShapeIndex> m_blocks;
+	DataVector<OccupiedBlocksForHasShape, HasShapeIndex> m_blocks;
 	DataBitSet<HasShapeIndex> m_static;
 	//TODO: Do we need m_underground?
 	DataBitSet<HasShapeIndex> m_underground;
@@ -54,7 +55,7 @@ public:
 	[[nodiscard]] bool hasFaction(const HasShapeIndex& index) const { return m_faction[index].exists(); }
 	[[nodiscard]] bool isStatic(const HasShapeIndex& index) const { return m_static[index]; }
 	[[nodiscard]] bool isAdjacentToLocation(const HasShapeIndex& index, const BlockIndex& block) const;
-	[[nodiscard]] bool isAdjacentToAny(const HasShapeIndex& index, const BlockIndices& block) const;
+	[[nodiscard]] bool isAdjacentToAny(const HasShapeIndex &index, const BlockIndices& block) const;
 	[[nodiscard]] bool predicateForAnyOccupiedBlock(const HasShapeIndex& index, std::function<bool(const BlockIndex&)> predicate) const;
 	[[nodiscard]] bool predicateForAnyAdjacentBlock(const HasShapeIndex& index, std::function<bool(const BlockIndex&)> predicate) const;
 	[[nodiscard]] bool predicateForAnyOccupiedBlockAtLocationAndFacing(const HasShapeIndex& index, std::function<bool(const BlockIndex&)> predicate, const BlockIndex& location, const Facing& facing) const;
@@ -63,6 +64,7 @@ public:
 	[[nodiscard]] ItemIndices getAdjacentItems(const HasShapeIndex& index) const;
 	[[nodiscard]] ActorIndices getAdjacentActors(const HasShapeIndex& index) const;
 	[[nodiscard]] BlockIndices getAdjacentBlocksAtLocationWithFacing(const HasShapeIndex& index, const BlockIndex& block, const Facing& facing) const;
+	// TODO: return OccuipedBlocksForHasShape
 	[[nodiscard]] BlockIndices getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const HasShapeIndex& index, const BlockIndex& location, const Facing& facing) const;
 	[[nodiscard]] bool allBlocksAtLocationAndFacingAreReservable(const HasShapeIndex& index, const BlockIndex& location, const Facing& facing, const FactionId& faction) const;
 	[[nodiscard]] bool allOccupiedBlocksAreReservable(const HasShapeIndex& index, const FactionId& faction) const;
