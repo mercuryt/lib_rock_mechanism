@@ -98,7 +98,7 @@ public:
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ItemHasCargo, m_actors, m_items, m_fluidType, m_volume, m_mass, m_fluidVolume);
 	friend class Items;
 };
-class Items final : public Portables
+class Items final : public Portables<Items, ItemIndex>
 {
 	//TODO: change to bitset or remove.
 	ItemIndexSet m_onSurface;

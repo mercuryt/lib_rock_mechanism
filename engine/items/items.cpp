@@ -7,8 +7,8 @@
 #include "../actors/actors.h"
 #include "../index.h"
 #include "../moveType.h"
-#include "../portables.h"
 #include "../types.h"
+#include "../portables.hpp"
 #include <memory>
 #include <ranges>
 // RemarkItemForStockPilingEvent
@@ -138,7 +138,7 @@ void Items::resize(const ItemIndex& newSize)
 }
 void Items::moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex)
 {
-	Portables::moveIndex(oldIndex, newIndex.toHasShape());
+	Portables::moveIndex(oldIndex, newIndex);
 	m_canBeStockPiled[newIndex] = std::move(m_canBeStockPiled[oldIndex]);
 	m_craftJobForWorkPiece[newIndex] = m_craftJobForWorkPiece[oldIndex];
 	m_hasCargo[newIndex] = std::move(m_hasCargo[oldIndex]);

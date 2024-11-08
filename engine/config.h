@@ -20,6 +20,7 @@ namespace Config
 	inline constexpr float dataStoreVectorInitalSize = 10;
 	inline constexpr int maxActorsPerBlock = 4;
 	inline constexpr int maxItemsPerBlock = 4;
+	inline constexpr float goldenRatio = 1.61834f;
 
 	// sort command for vim:
 	// 	sort /\t/w* /w* /

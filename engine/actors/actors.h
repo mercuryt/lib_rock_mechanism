@@ -66,7 +66,7 @@ struct ActorParamaters
 	Percent getPercentTired(Simulation& simulation);
 	void generateEquipment(Area& area, const ActorIndex& actor);
 };
-class Actors final : public Portables
+class Actors final : public Portables<Actors, ActorIndex>
 {
 	ActorIndexSet m_onSurface;
 	DataVector<std::unique_ptr<ActorReferenceTarget>, ActorIndex> m_referenceTarget;

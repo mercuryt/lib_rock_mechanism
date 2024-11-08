@@ -19,74 +19,83 @@ class Area;
 class PathThreadedTask;
 class HasOnDestroySubscriptions;
 
+template<class Derived, class Index>
 class Portables : public HasShapes
 {
 protected:
-	DataVector<std::unique_ptr<Reservable>, HasShapeIndex> m_reservables;
-	DataVector<std::unique_ptr<OnDestroy>, HasShapeIndex> m_destroy;
-	DataVector<ActorOrItemIndex, HasShapeIndex> m_follower;
-	DataVector<ActorOrItemIndex, HasShapeIndex> m_leader;
-	DataVector<ActorOrItemIndex, HasShapeIndex> m_carrier;
-	DataVector<MoveTypeId, HasShapeIndex> m_moveType;
+	DataVector<std::unique_ptr<Reservable>, Index> m_reservables;
+	DataVector<std::unique_ptr<OnDestroy>, Index> m_destroy;
+	DataVector<ActorOrItemIndex, Index> m_follower;
+	DataVector<ActorOrItemIndex, Index> m_leader;
+	DataVector<ActorOrItemIndex, Index> m_carrier;
+	DataVector<MoveTypeId, Index> m_moveType;
 	bool m_isActors;
 	Portables(Area& area, bool isActors);
-	void create(const HasShapeIndex& index, const MoveTypeId& moveType, const ShapeId& shape, const FactionId& faction, bool isStatic, const Quantity& quantity);
-	void log(const HasShapeIndex& index) const;
-	void updateLeaderSpeedActual(const HasShapeIndex& index);
-	void updateIndexInCarrier(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex);
-	void resize(const HasShapeIndex& newSize);
-	void moveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex);
+	void create(const Index& index, const MoveTypeId& moveType, const ShapeId& shape, const FactionId& faction, bool isStatic, const Quantity& quantity);
+	void log(const Index& index) const;
+	void updateLeaderSpeedActual(const Index& index);
+	void updateIndexInCarrier(const Index& oldIndex, const Index& newIndex);
+	void resize(const Index& newSize);
+	void moveIndex(const Index& oldIndex, const Index& newIndex);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] ActorOrItemIndex getActorOrItemIndex(const HasShapeIndex& index);
-	[[nodiscard]] ActorIndex getLineLeader(const HasShapeIndex& index);
+	[[nodiscard]] ActorOrItemIndex getActorOrItemIndex(const Index& index);
 public:
 	void load(const Json& data);
-	void followActor(const HasShapeIndex& index, const ActorIndex& actor);
-	void followItem(const HasShapeIndex& index, const ItemIndex& item);
-	void followPolymorphic(const HasShapeIndex& index, const ActorOrItemIndex& ActorOrItem);
-	void unfollow(const HasShapeIndex& index);
-	void unfollowIfAny(const HasShapeIndex& index);
-	void unfollowActor(const HasShapeIndex& index, const ActorIndex& actor);
-	void unfollowItem(const HasShapeIndex& index, const ItemIndex& item);
-	void maybeLeadAndFollowDisband(const HasShapeIndex& index);
-	void leadAndFollowDisband(const HasShapeIndex& index);
-	void setCarrier(const HasShapeIndex& index, const ActorOrItemIndex& carrier);
-	void maybeSetCarrier(const HasShapeIndex& index, const ActorOrItemIndex& carrier);
-	void unsetCarrier(const HasShapeIndex& index, const ActorOrItemIndex& carrier);
-	void updateCarrierIndex(const HasShapeIndex& index, const HasShapeIndex& newIndex) { m_carrier[index].updateIndex(newIndex); }
-	[[nodiscard]] MoveTypeId getMoveType(const HasShapeIndex& index) const { return m_moveType[index]; }
-	[[nodiscard]] bool isFollowing(const HasShapeIndex& index) const;
-	[[nodiscard]] bool isLeading(const HasShapeIndex& index) const;
-	[[nodiscard]] bool isLeadingActor(const HasShapeIndex& index, const ActorIndex& actor) const;
-	[[nodiscard]] bool isLeadingItem(const HasShapeIndex& index, const ItemIndex& item) const;
-	[[nodiscard]] bool isLeadingPolymorphic(const HasShapeIndex& index, const ActorOrItemIndex& ActorOrItem) const;
-	[[nodiscard]] bool lead_allCanMove(const HasShapeIndex& index) const;
-	[[nodiscard]] ActorOrItemIndex getFollower(const HasShapeIndex& index) { return m_follower[index]; }
-	[[nodiscard]] ActorOrItemIndex getLeader(const HasShapeIndex& index) { return m_leader[index]; }
-	[[nodiscard]] const  ActorOrItemIndex getFollower(const HasShapeIndex& index) const { return m_follower[index]; }
-	[[nodiscard]] const ActorOrItemIndex getLeader(const HasShapeIndex& index) const { return m_leader[index]; }
+	void followActor(const Index& index, const ActorIndex& actor);
+	void followItem(const Index& index, const ItemIndex& item);
+	void followPolymorphic(const Index& index, const ActorOrItemIndex& ActorOrItem);
+	void unfollow(const Index& index);
+	void unfollowIfAny(const Index& index);
+	void unfollowActor(const Index& index, const ActorIndex& actor);
+	void unfollowItem(const Index& index, const ItemIndex& item);
+	void maybeLeadAndFollowDisband(const Index& index);
+	void leadAndFollowDisband(const Index& index);
+	void setCarrier(const Index& index, const ActorOrItemIndex& carrier);
+	void maybeSetCarrier(const Index& index, const ActorOrItemIndex& carrier);
+	void unsetCarrier(const Index& index, const ActorOrItemIndex& carrier);
+	void updateCarrierIndex(const Index& index, const HasShapeIndex& newIndex) { m_carrier[index].updateIndex(newIndex); }
+	void setFollower(const Index& index, const ActorOrItemIndex& follower) { m_follower[index] = follower; }
+	void setLeader(const Index& index, const ActorOrItemIndex& leader) { return m_leader[index] = leader; }
+	void unsetFollower(const Index& index, const ActorOrItemIndex& follower) { assert(m_follower[index] == follower); m_follower[index].clear(); }
+	void unsetLeader(const Index& index, const ActorOrItemIndex& leader) { assert(m_follower[index] == leader); m_leader[index].clear(); }
+	[[nodiscard]] ActorIndex getLineLeader(const Index& index);
+	[[nodiscard]] const MoveTypeId& getMoveType(const Index& index) const { return m_moveType[index]; }
+	[[nodiscard]] bool isFollowing(const Index& index) const;
+	[[nodiscard]] bool isLeading(const Index& index) const;
+	[[nodiscard]] bool isLeadingActor(const Index& index, const ActorIndex& actor) const;
+	[[nodiscard]] bool isLeadingItem(const Index& index, const ItemIndex& item) const;
+	[[nodiscard]] bool isLeadingPolymorphic(const Index& index, const ActorOrItemIndex& ActorOrItem) const;
+	[[nodiscard]] bool lead_allCanMove(const Index& index) const;
+	[[nodiscard]] ActorOrItemIndex& getFollower(const Index& index) { return m_follower[index]; }
+	[[nodiscard]] ActorOrItemIndex& getLeader(const Index& index) { return m_leader[index]; }
+	[[nodiscard]] const ActorOrItemIndex& getFollower(const Index& index) const { return m_follower[index]; }
+	[[nodiscard]] const ActorOrItemIndex& getLeader(const Index& index) const { return m_leader[index]; }
 	// For testing.
-	[[nodiscard]] Speed lead_getSpeed(const HasShapeIndex& index);
+	[[nodiscard]] Speed lead_getSpeed(const Index& index);
 	// Reservations.
 	// Quantity defaults to 0, which becomes maxReservations;
-	void reservable_reserve(const HasShapeIndex& index, CanReserve& canReserve, const Quantity quantity = Quantity::create(1), std::unique_ptr<DishonorCallback> callback = nullptr);
-	void reservable_unreserve(const HasShapeIndex& index, CanReserve& canReserve, const Quantity quantity = Quantity::create(1));
-	void reservable_unreserveFaction(const HasShapeIndex& index, const FactionId& faction);
-	void reservable_maybeUnreserve(const HasShapeIndex& index, CanReserve& canReserve, const Quantity quantity = Quantity::create(1));
-	void reservable_unreserveAll(const HasShapeIndex& index);
-	void reservable_setDishonorCallback(const HasShapeIndex& index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback);
-	void reservable_merge(const HasShapeIndex&, Reservable& other);
-	[[nodiscard]] bool reservable_hasAnyReservations(const HasShapeIndex& index) const;
-	[[nodiscard]] bool reservable_exists(const HasShapeIndex& index, const FactionId& faction) const;
-	[[nodiscard]] bool reservable_existsFor(const HasShapeIndex& index, const CanReserve& canReserve) const;
-	[[nodiscard]] bool reservable_isFullyReserved(const HasShapeIndex& index, const FactionId& faction) const;
-	[[nodiscard]] Quantity reservable_getUnreservedCount(const HasShapeIndex& index, const FactionId& faction) const;
+	void reservable_reserve(const Index& index, CanReserve& canReserve, const Quantity quantity = Quantity::create(1), std::unique_ptr<DishonorCallback> callback = nullptr);
+	void reservable_unreserve(const Index& index, CanReserve& canReserve, const Quantity quantity = Quantity::create(1));
+	void reservable_unreserveFaction(const Index& index, const FactionId& faction);
+	void reservable_maybeUnreserve(const Index& index, CanReserve& canReserve, const Quantity quantity = Quantity::create(1));
+	void reservable_unreserveAll(const Index& index);
+	void reservable_setDishonorCallback(const Index& index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback);
+	void reservable_merge(const Index&, Reservable& other);
+	[[nodiscard]] bool reservable_hasAnyReservations(const Index& index) const;
+	[[nodiscard]] bool reservable_exists(const Index& index, const FactionId& faction) const;
+	[[nodiscard]] bool reservable_existsFor(const Index& index, const CanReserve& canReserve) const;
+	[[nodiscard]] bool reservable_isFullyReserved(const Index& index, const FactionId& faction) const;
+	[[nodiscard]] Quantity reservable_getUnreservedCount(const Index& index, const FactionId& faction) const;
 	// On Destroy.
-	void onDestroy_subscribe(const HasShapeIndex& index, HasOnDestroySubscriptions& onDestroy);
-	void onDestroy_subscribeThreadSafe(const HasShapeIndex& index, HasOnDestroySubscriptions& onDestroy);
-	void onDestroy_unsubscribe(const HasShapeIndex& index, HasOnDestroySubscriptions& onDestroy);
-	void onDestroy_unsubscribeAll(const HasShapeIndex& index);
-	void onDestroy_merge(const HasShapeIndex& index, OnDestroy& other);
+	void onDestroy_subscribe(const Index& index, HasOnDestroySubscriptions& onDestroy);
+	void onDestroy_subscribeThreadSafe(const Index& index, HasOnDestroySubscriptions& onDestroy);
+	void onDestroy_unsubscribe(const Index& index, HasOnDestroySubscriptions& onDestroy);
+	void onDestroy_unsubscribeAll(const Index& index);
+	void onDestroy_merge(const Index& index, OnDestroy& other);
+};
+class PortablesHelpers
+{
+public:
 	// Static methods.
 	[[nodiscard]] static Speed getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, const Mass& addedRollingMass, const Mass& addedDeadMass);
 	[[nodiscard]] static Speed getMoveSpeedForGroup(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems);

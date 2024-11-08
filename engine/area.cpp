@@ -15,6 +15,7 @@
 #include "simulation.h"
 #include "simulation/hasAreas.h"
 #include "types.h"
+#include "portables.hpp"
 //#include "worldforge/worldLocation.h"
 #include <algorithm>
 #include <iostream>

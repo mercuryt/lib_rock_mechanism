@@ -15,7 +15,8 @@
 #include "../sleep.h"
 #include "../drink.h"
 #include "../eat.h"
-#include "../actors/grow.h"
+#include "../portables.hpp"
+#include "grow.h"
 #include "equipment.h"
 #include "eventSchedule.h"
 #include "hasShapes.h"
@@ -592,9 +593,9 @@ void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
 	{
 		ActorOrItemIndex carrying = m_carrying[newIndex];
 		if(carrying.isActor())
-			m_area.getActors().updateCarrierIndex(carrying.get(), newIndex);
+			m_area.getActors().updateCarrierIndex(carrying.getActor(), newIndex);
 		else
-			m_area.getItems().updateCarrierIndex(carrying.get(), newIndex);
+			m_area.getItems().updateCarrierIndex(carrying.getItem(), newIndex);
 	}
 	m_hasObjectives[newIndex]->updateActorIndex(newIndex);
 	if(m_pathRequest[newIndex] != nullptr)

@@ -14,6 +14,7 @@
 #include "terrainFacade.h"
 #include "types.h"
 #include "objectives/wander.h"
+#include "portables.hpp"
 #include <algorithm>
 #include <memory>
 // Project worker.
@@ -305,15 +306,15 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 				items.onDestroy_subscribe(pair2.second.getIndex(), m_hasOnDestroy);
 		for(auto& pair : m_alreadyAtSite)
 			if(pair.first.isActor())
-				actors.onDestroy_subscribe(pair.first.getIndex(), m_hasOnDestroy);
+				actors.onDestroy_subscribe(pair.first.getIndex().toActor(), m_hasOnDestroy);
 			else
-				items.onDestroy_subscribe(pair.first.getIndex(), m_hasOnDestroy);
+				items.onDestroy_subscribe(pair.first.getIndex().toItem(), m_hasOnDestroy);
 		// Accessing project here because we are modifing project from the readStep, probably unwisely.
 		for(auto& pair : m_project.m_toPickup)
 			if(pair.first.isActor())
-				actors.onDestroy_subscribe(pair.first.getIndex(), m_hasOnDestroy);
+				actors.onDestroy_subscribe(pair.first.getIndex().toActor(), m_hasOnDestroy);
 			else
-				items.onDestroy_subscribe(pair.first.getIndex(), m_hasOnDestroy);
+				items.onDestroy_subscribe(pair.first.getIndex().toItem(), m_hasOnDestroy);
 	}
 }
 void ProjectTryToAddWorkersThreadedTask::writeStep(Simulation&, Area*)
