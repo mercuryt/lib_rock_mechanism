@@ -481,7 +481,7 @@ public:
 	[[nodiscard]] Percent grow_getPercent(const ActorIndex& index) const;
 	// For Line leader.
 	[[nodiscard]] BlockIndices lineLead_getPath(const ActorIndex& index) const;
-	[[nodiscard]] BlockIndices lineLead_getOccupiedBlocks(const ActorIndex& index) const;
+	[[nodiscard]] OccupiedBlocksForHasShape lineLead_getOccupiedBlocks(const ActorIndex& index) const;
 	[[nodiscard]] bool lineLead_pathEmpty(const ActorIndex& index) const;
 	[[nodiscard]] ShapeId lineLead_getLargestShape(const ActorIndex& index) const;
 	[[nodiscard]] MoveTypeId lineLead_getMoveType(const ActorIndex& index) const;

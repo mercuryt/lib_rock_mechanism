@@ -164,11 +164,11 @@ bool Blocks::item_contains(const BlockIndex& index, const ItemIndex& item) const
 {
 	return m_items[index].contains(item);
 }
-VerySmallSet<ItemIndex, 3>& Blocks::item_getAll(const BlockIndex& index)
+ItemIndicesForBlock& Blocks::item_getAll(const BlockIndex& index)
 {
 	return m_items[index];
 }
-const VerySmallSet<ItemIndex, 3>& Blocks::item_getAll(const BlockIndex& index) const
+const ItemIndicesForBlock& Blocks::item_getAll(const BlockIndex& index) const
 {
 	return const_cast<Blocks*>(this)->item_getAll(index);
 }

@@ -6,6 +6,7 @@
 #include "../stockpile.h"
 #include "../farmFields.h"
 #include "../types.h"
+#include "../hasShapeTypes.h"
 #include "../designations.h"
 #include "../blockFeature.h"
 #include "../index.h"
@@ -35,9 +36,12 @@ struct BlockIsPartOfStockPile
 	bool active;
 };
 */
-//TODO: Upgrade these vectors to arrays.
-using ActorIndicesForBlock = ActorIndices; //ActorIndicesArray<Config::maxActorsPerBlock>;
-using ItemIndicesForBlock = ItemIndices; //ItemIndicesArray<Config::maxItemsPerBlock>;
+// The staticly allocated component of a vector takes up 24 bytes.
+// ActorIndex and ItemIndex are each 4 bytes.
+// One slot is reserved as a flag.
+// (24 / 4) - 1 = 5
+using ActorIndicesForBlock = VerySmallSet<ActorIndex, 5>;
+using ItemIndicesForBlock = VerySmallSet<ItemIndex, 5>;
 class Blocks
 {
 	std::array<int32_t, 26> m_offsetsForAdjacentCountTable;
@@ -53,9 +57,8 @@ class Blocks
 	//TODO: make these SmallMaps.
 	DataVector<std::vector<std::pair<ActorIndex, CollisionVolume>>, BlockIndex> m_actorVolume;
 	DataVector<std::vector<std::pair<ItemIndex, CollisionVolume>>, BlockIndex> m_itemVolume;
-	// TODO: Make these small vectors.
 	DataVector<ActorIndicesForBlock, BlockIndex> m_actors;
-	DataVector<VerySmallSet<ItemIndex, 3>, BlockIndex> m_items;
+	DataVector<ItemIndicesForBlock, BlockIndex> m_items;
 	DataBitSet<BlockIndex> m_hasActors;
 	DataBitSet<BlockIndex> m_hasItems;
 	DataVector<PlantIndex, BlockIndex> m_plants;
@@ -316,7 +319,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	[[nodiscard]] bool actor_empty(const BlockIndex& index) const;
 	[[nodiscard]] Volume actor_volumeOf(const BlockIndex& index, const ActorIndex& actor) const;
 	[[nodiscard]] ActorIndicesForBlock& actor_getAll(const BlockIndex& index);
-	[[nodiscard]] const ActorIndicesForBlock& actor_getAllConst(const BlockIndex& index) const;
+	[[nodiscard]] const ActorIndicesForBlock& actor_getAll(const BlockIndex& index) const;
 	// -Items
 	void item_record(const BlockIndex& index, const ItemIndex& item, const CollisionVolume& volume);
 	void item_erase(const BlockIndex& index, const ItemIndex& item);
@@ -327,8 +330,8 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	//ItemIndex get(const BlockIndex& index, ItemType& itemType) const;
 	[[nodiscard]] Quantity item_getCount(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType) const;
 	[[nodiscard]] ItemIndex item_getGeneric(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType) const;
-	[[nodiscard]] VerySmallSet<ItemIndex, 3>& item_getAll(const BlockIndex& index);
-	const VerySmallSet<ItemIndex, 3>& item_getAll(const BlockIndex& index) const;
+	[[nodiscard]] ItemIndicesForBlock& item_getAll(const BlockIndex& index);
+	const ItemIndicesForBlock& item_getAll(const BlockIndex& index) const;
 	[[nodiscard]] bool item_hasInstalledType(const BlockIndex& index, const ItemTypeId& itemType) const;
 	[[nodiscard]] bool item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(const BlockIndex& index, const ActorIndex& actor) const;
 	[[nodiscard]] bool item_hasContainerContainingFluidTypeCarryableBy(const BlockIndex& index, const ActorIndex& actor, const FluidTypeId& fluidType) const;
@@ -357,22 +360,22 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing& facing) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType) const;
 	// CanEnterCurrently methods which are not prefixed with static are to be used only for dynamic shapes.
-	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing& facing, const BlockIndices& occupied) const;
-	[[nodiscard]] Facing shape_canEnterCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const BlockIndices& occupied) const;
-	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndices& occupied) const;
-	[[nodiscard]] bool shape_canEnterCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const BlockIndices& occupied) const;
-	[[nodiscard]] bool shape_canEnterCurrentlyFrom(const BlockIndex& index, const ShapeId& shape, const BlockIndex& other, const BlockIndices& occupied) const;
-	[[nodiscard]] bool shape_canEnterCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing& facing, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing& facing, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] Facing shape_canEnterCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] bool shape_canEnterCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] bool shape_canEnterCurrentlyFrom(const BlockIndex& index, const ShapeId& shape, const BlockIndex& other, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] bool shape_canEnterCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing& facing, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] bool shape_moveTypeCanEnter(const BlockIndex& index, const MoveTypeId& moveType) const;
 	[[nodiscard]] bool shape_moveTypeCanEnterFrom(const BlockIndex& index, const MoveTypeId& moveType, const BlockIndex& from) const;
 	[[nodiscard]] bool shape_moveTypeCanBreath(const BlockIndex& index, const MoveTypeId& moveType) const;
 	// Static shapes are items or actors who are laying on the ground immobile.
 	// They do not collide with dynamic shapes and have their own volume data.
-	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithFacing(const BlockIndex& index, const ShapeId& Shape, const Facing& facing, const BlockIndices& occupied) const;
-	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const BlockIndices& occupied) const;
-	[[nodiscard]] std::pair<bool, Facing> shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const BlockIndices& occupied) const;
-	[[nodiscard]] bool shape_staticShapeCanEnterWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing& facing, const BlockIndices& occupied) const;
-	[[nodiscard]] bool shape_staticShapeCanEnterWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const BlockIndices& occupied) const;
+	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithFacing(const BlockIndex& index, const ShapeId& Shape, const Facing& facing, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] std::pair<bool, Facing> shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] bool shape_staticShapeCanEnterWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing& facing, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] bool shape_staticShapeCanEnterWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] MoveCost shape_moveCostFrom(const BlockIndex& index, const MoveTypeId& moveType, const BlockIndex& from) const;
 	[[nodiscard]] bool shape_canStandIn(const BlockIndex& index) const;
 	[[nodiscard]] CollisionVolume shape_getDynamicVolume(const BlockIndex& index) const;
