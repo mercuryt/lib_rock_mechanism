@@ -4,6 +4,7 @@
 #include "types.h"
 #include "actors/actors.h"
 #include "items/items.h"
+#include "portables.hpp"
 #include <compare>
 void ActorOrItemIndex::followActor(Area& area, const ActorIndex& actor) const
 {
@@ -36,37 +37,37 @@ void ActorOrItemIndex::setLocationAndFacing(Area& area, const BlockIndex& locati
 void ActorOrItemIndex::reservable_reserve(Area& area, CanReserve& canReserve, const Quantity quantity , std::unique_ptr<DishonorCallback> callback) const
 { 
 	if(isActor()) 
-		area.getActors().reservable_reserve(m_index, canReserve, quantity, std::move(callback));
+		area.getActors().reservable_reserve(m_index.toActor(), canReserve, quantity, std::move(callback));
 	else
-		area.getItems().reservable_reserve(m_index, canReserve, quantity, std::move(callback));
+		area.getItems().reservable_reserve(m_index.toItem(), canReserve, quantity, std::move(callback));
 }
 void ActorOrItemIndex::reservable_unreserve(Area& area, CanReserve& canReserve, const Quantity quantity) const
 { 
 	if(isActor()) 
-		area.getActors().reservable_unreserve(m_index, canReserve, quantity);
+		area.getActors().reservable_unreserve(m_index.toActor(), canReserve, quantity);
 	else
-		area.getItems().reservable_unreserve(m_index, canReserve, quantity);
+		area.getItems().reservable_unreserve(m_index.toItem(), canReserve, quantity);
 }
 void ActorOrItemIndex::reservable_maybeUnreserve(Area& area, CanReserve& canReserve, const Quantity quantity) const
 { 
 	if(isActor()) 
-		area.getActors().reservable_maybeUnreserve(m_index, canReserve, quantity);
+		area.getActors().reservable_maybeUnreserve(m_index.toActor(), canReserve, quantity);
 	else
-		area.getItems().reservable_maybeUnreserve(m_index, canReserve, quantity);
+		area.getItems().reservable_maybeUnreserve(m_index.toItem(), canReserve, quantity);
 }
 void ActorOrItemIndex::reservable_unreserveFaction(Area& area, const FactionId& faction) const
 { 
 	if(isActor()) 
-		area.getActors().reservable_unreserveFaction(m_index, faction);
+		area.getActors().reservable_unreserveFaction(m_index.toActor(), faction);
 	else
-		area.getItems().reservable_unreserveFaction(m_index, faction);
+		area.getItems().reservable_unreserveFaction(m_index.toItem(), faction);
 }
 void ActorOrItemIndex::unfollow(Area& area) const
 {
 	if(isActor())
-		area.getActors().unfollow(m_index);
+		area.getActors().unfollow(m_index.toActor());
 	else
-		area.getItems().unfollow(m_index);
+		area.getItems().unfollow(m_index.toItem());
 }
 std::string ActorOrItemIndex::toString() const
 {
@@ -76,38 +77,38 @@ ActorOrItemReference ActorOrItemIndex::toReference(Area& area) const
 {
 	ActorOrItemReference output;
 	if(isActor())
-		output.setActor(area.getActors().getReferenceTarget(ActorIndex::cast(m_index)));
+		output.setActor(area.getActors().getReferenceTarget(m_index.toActor()));
 	else
-		output.setItem(area.getItems().getReferenceTarget(ItemIndex::cast(m_index)));
+		output.setItem(area.getItems().getReferenceTarget(m_index.toItem()));
 	return output;
 }
 bool ActorOrItemIndex::isFollowing(Area& area) const
 {
 	if(isActor())
-		return area.getActors().isFollowing(m_index);
+		return area.getActors().isFollowing(m_index.toActor());
 	else
-		return area.getItems().isFollowing(m_index);
+		return area.getItems().isFollowing(m_index.toItem());
 }
 bool ActorOrItemIndex::isLeading(Area& area) const
 {
 	if(isActor())
-		return area.getActors().isLeading(m_index);
+		return area.getActors().isLeading(m_index.toActor());
 	else
-		return area.getItems().isLeading(m_index);
+		return area.getItems().isLeading(m_index.toItem());
 }
 ActorOrItemIndex ActorOrItemIndex::getFollower(Area& area) const
 {
 	if(isActor())
-		return area.getActors().getFollower(m_index);
+		return area.getActors().getFollower(m_index.toActor());
 	else
-		return area.getItems().getFollower(m_index);
+		return area.getItems().getFollower(m_index.toItem());
 }
 ActorOrItemIndex ActorOrItemIndex::getLeader(Area& area) const
 {
 	if(isActor())
-		return area.getActors().getLeader(m_index);
+		return area.getActors().getLeader(m_index.toActor());
 	else
-		return area.getItems().getLeader(m_index);
+		return area.getItems().getLeader(m_index.toItem());
 }
 bool ActorOrItemIndex::canEnterCurrentlyFrom(Area& area, const BlockIndex& destination, const BlockIndex& origin) const
 {
@@ -174,9 +175,9 @@ bool ActorOrItemIndex::isGeneric(const Area& area) const {return isActor() ? fal
 Quantity ActorOrItemIndex::reservable_getUnreservedCount(Area& area, const FactionId& faction) const
 {
 	if(isActor()) 
-		return area.getActors().reservable_getUnreservedCount(m_index, faction);
+		return area.getActors().reservable_getUnreservedCount(m_index.toActor(), faction);
 	else
-		return area.getItems().reservable_getUnreservedCount(m_index, faction);
+		return area.getItems().reservable_getUnreservedCount(m_index.toItem(), faction);
 }
 //TODO: Try to use bitbashing instead of m_isActor
 void ActorOrItemIndex::setActorBit(HasShapeIndex& index) { index.getReference() |= (1u << 31); }

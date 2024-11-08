@@ -14,6 +14,7 @@
 #include "../../engine/itemType.h"
 #include "../../engine/targetedHaul.h"
 #include "../../engine/animalSpecies.h"
+#include "../../engine/portables.hpp"
 #include "reference.h"
 #include "types.h"
 TEST_CASE("haul")

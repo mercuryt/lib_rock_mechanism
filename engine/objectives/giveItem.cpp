@@ -52,5 +52,5 @@ void GiveItemObjective::createOnDestroyCallbacks(Area& area, const ActorIndex& a
 	// Item.
 	area.getItems().onDestroy_subscribe(m_item.getIndex(), m_hasOnDestroySubscriptions);
 	// Recipient.
-	area.getActors().onDestroy_subscribe(m_item.getIndex(), m_hasOnDestroySubscriptions);
+	area.getActors().onDestroy_subscribe(actor, m_hasOnDestroySubscriptions);
 }

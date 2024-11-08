@@ -1,0 +1,485 @@
+#pragma once
+#include "portables.h"
+#include "actorOrItemIndex.h"
+#include "actors/actors.h"
+#include "deserializationMemo.h"
+#include "index.h"
+#include "items/items.h"
+#include "area.h"
+#include "onDestroy.h"
+#include "reservable.h"
+#include "simulation.h"
+#include "types.h"
+#include "moveType.h"
+#include <cstdint>
+#include <memory>
+
+template<class Derived, class Index>
+Portables<Derived, Index>::Portables(Area& area, bool isActors) : HasShapes(area), m_isActors(isActors) { }
+template<class Derived, class Index>
+void Portables<Derived, Index>::resize(const Index& newSize)
+{
+	HasShapes::resize(newSize);
+	m_moveType.resize(newSize);
+	m_destroy.resize(newSize);
+	m_reservables.resize(newSize);
+	m_follower.resize(newSize);
+	m_leader.resize(newSize);
+	m_carrier.resize(newSize);
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::moveIndex(const Index& oldIndex, const Index& newIndex)
+{
+	HasShapes::moveIndex(oldIndex, newIndex);
+	m_moveType[newIndex] = m_moveType[oldIndex];
+	m_destroy[newIndex] = std::move(m_destroy[oldIndex]);
+	m_reservables[newIndex] = std::move(m_reservables[oldIndex]);
+	m_follower[newIndex] = m_follower[oldIndex];
+	m_leader[newIndex] = m_leader[oldIndex];
+	m_carrier[newIndex] = m_carrier[oldIndex];
+	if(m_carrier[newIndex].exists())
+		updateIndexInCarrier(oldIndex, newIndex);
+	if(m_follower[newIndex].exists())
+	{
+		ActorOrItemIndex follower = m_follower[newIndex];
+		if(follower.isActor())
+		{
+			assert(m_area.getActors().getLeader(follower.getActor()).get() == oldIndex.get());
+			m_area.getActors().getLeader(follower.getActor()).updateIndex(newIndex);
+		}
+		else
+		{
+			assert(m_area.getItems().getLeader(follower.getItem()).get() == oldIndex.get());
+			m_area.getItems().getLeader(follower.getItem()).updateIndex(newIndex);
+		}
+	}
+	if(m_leader[newIndex].exists())
+	{
+		ActorOrItemIndex leader = m_leader[newIndex];
+		if(leader.isActor())
+		{
+			assert(m_area.getActors().getFollower(leader.getActor()).get() == oldIndex.get());
+			m_area.getActors().getFollower(leader.getActor()).updateIndex(newIndex);
+		}
+		else
+		{
+			assert(m_area.getItems().getFollower(leader.getItem()).get() == oldIndex.get());
+			m_area.getItems().getFollower(leader.getItem()).updateIndex(newIndex);
+		}
+	}
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::create(const Index& index, const MoveTypeId& moveType, const ShapeId& shape, const FactionId& faction, bool isStatic, const Quantity& quantity)
+{
+	HasShapes::create(index, shape, faction, isStatic);
+	m_moveType[index] = moveType;
+	//TODO: leave as nullptr to start, create as needed.
+	m_reservables[index] = std::make_unique<Reservable>(quantity);
+	assert(m_destroy[index] == nullptr);
+	assert(m_follower[index].empty());
+	assert(m_leader[index].empty());
+	assert(m_carrier[index].empty());
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::log(const Index& index) const
+{
+	std::cout << ", moveType: " << MoveType::getName(m_moveType[index]);
+	if(m_follower[index].exists())
+		std::cout << ", leading: " << m_follower[index].toString();
+	if(m_leader[index].exists())
+		std::cout << ", following: " << m_follower[index].toString();
+	if(m_carrier[index].exists())
+	       	std::cout << ", carrier: " << m_carrier[index].toString();
+	if(m_location[index].exists())
+		std::cout << ", location: " << m_area.getBlocks().getCoordinates(m_location[index]).toString();
+}
+template<class Derived, class Index>
+ActorOrItemIndex Portables<Derived, Index>::getActorOrItemIndex(const Index& index)
+{
+	if(m_isActors)
+		return ActorOrItemIndex::createForActor(ActorIndex::cast(index));
+	else
+		return ActorOrItemIndex::createForItem(ItemIndex::cast(index));
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::followActor(const Index& index, const ActorIndex& actor)
+{
+	Actors& actors = m_area.getActors();
+	assert(!m_leader[index].exists());
+	m_leader[index] = ActorOrItemIndex::createForActor(actor);
+	maybeUnsetStatic(index);
+	assert(!actors.getFollower(actor).exists());
+	actors.setFollower(actor, getActorOrItemIndex(index));
+	ActorIndex lineLeader = getLineLeader(index);
+	actors.move_updateActualSpeed(lineLeader);
+	actors.lineLead_appendToPath(lineLeader, m_location[index]);
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::followItem(const Index& index, const ItemIndex& item)
+{
+	Actors& actors = m_area.getActors();
+	assert(!m_leader[index].exists());
+	m_leader[index] = ActorOrItemIndex::createForItem(item);
+	maybeUnsetStatic(index);
+	assert(!m_area.getItems().getFollower(item).exists());
+	m_area.getItems().getFollower(item) = getActorOrItemIndex(index);
+	ActorIndex lineLeader = getLineLeader(index);
+	actors.move_updateActualSpeed(lineLeader);
+	actors.lineLead_appendToPath(lineLeader, m_location[index]);
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::followPolymorphic(const Index& index, const ActorOrItemIndex& actorOrItem)
+{
+	if(actorOrItem.isActor())
+		followActor(index, ActorIndex::cast(actorOrItem.get()));
+	else
+		followItem(index, ItemIndex::cast(actorOrItem.get()));
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::unfollowActor(const Index& index, const ActorIndex& actor)
+{
+	assert(!isLeading(index));
+	assert(isFollowing(index));
+	assert(m_leader[index] == actor.toActorOrItemIndex());
+	static const MoveTypeId& moveTypeNone = MoveType::byName("none");
+	if(!m_isActors || getMoveType(index) == moveTypeNone)
+		setStatic(index);
+	Actors& actors = m_area.getActors();
+	if(!actors.isFollowing(actor))
+	{
+		// Actor is line leader.
+		assert(!actors.lineLead_getPath(actor).empty());
+		actors.lineLead_clearPath(actor);
+	}
+	ActorIndex lineLeader = getLineLeader(index);
+	actors.unsetFollower(actor, getActorOrItemIndex(index));
+	m_leader[index].clear();
+	m_area.getActors().move_updateActualSpeed(lineLeader);
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::unfollowItem(const Index& index, const ItemIndex& item)
+{
+	assert(!isLeading(index));
+	ActorIndex lineLeader = getLineLeader(index);
+	m_leader[index].clear();
+	static const MoveTypeId& moveTypeNone = MoveType::byName("none");
+	if(!m_isActors || getMoveType(index) == moveTypeNone)
+		setStatic(index);
+	Items& items = m_area.getItems();
+	items.unsetFollower(item, getActorOrItemIndex(index));
+	m_area.getActors().move_updateActualSpeed(lineLeader);
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::unfollow(const Index& index)
+{
+	ActorOrItemIndex leader = m_leader[index];
+	assert(leader.isLeading(m_area));
+	if(leader.isActor())
+		unfollowActor(index, leader.getActor());
+	else
+		unfollowItem(index, leader.getItem());
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::unfollowIfAny(const Index& index)
+{
+	if(m_leader[index].exists())
+		unfollow(index);
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::leadAndFollowDisband(const Index& index)
+{
+	assert(isFollowing(index) || isLeading(index));
+	ActorOrItemIndex follower = getActorOrItemIndex(index);
+	// Go to the back of the line.
+	while(follower.isLeading(m_area))
+		follower = follower.getFollower(m_area);
+	// Iterate to the second from front unfollowing all followers.
+	// TODO: This will cause a redundant updateActualSpeed for each follower.
+	ActorOrItemIndex leader;
+	while(follower.isFollowing(m_area))
+	{
+		leader = follower.getLeader(m_area);
+		follower.unfollow(m_area);
+		follower = leader;
+	}
+	m_area.getActors().lineLead_clearPath(leader.getActor());
+		
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::maybeLeadAndFollowDisband(const Index& index)
+{
+	if(isFollowing(index) || isLeading(index))
+		leadAndFollowDisband(index);
+}
+template<class Derived, class Index>
+bool Portables<Derived, Index>::isFollowing(const Index& index) const
+{
+	return m_leader[index].exists();
+}
+template<class Derived, class Index>
+bool Portables<Derived, Index>::isLeading(const Index& index) const
+{
+	return m_follower[index].exists();
+}
+template<class Derived, class Index>
+bool Portables<Derived, Index>::isLeadingActor(const Index& index, const ActorIndex& actor) const
+{
+	if(!isLeading(index))
+		return false;
+	const auto& follower = m_follower[index];
+	return follower.isActor() && follower.getActor() == actor;
+}
+template<class Derived, class Index>
+bool Portables<Derived, Index>::isLeadingItem(const Index& index, const ItemIndex& item) const
+{
+	if(!isLeading(index))
+		return false;
+	const auto& follower = m_follower[index];
+	return follower.isItem() && follower.getItem() == item;
+}
+template<class Derived, class Index>
+bool Portables<Derived, Index>::isLeadingPolymorphic(const Index& index, const ActorOrItemIndex& actorOrItem) const
+{
+	return m_follower[index] == actorOrItem;
+}
+template<class Derived, class Index>
+Speed Portables<Derived, Index>::lead_getSpeed(const Index& index)
+{
+	assert(m_isActors);
+	const ActorIndex& actorIndex = ActorIndex::cast(index);
+	assert(!m_area.getActors().isFollowing(actorIndex));
+	assert(m_area.getActors().isLeading(actorIndex));
+	ActorOrItemIndex wrapped = getActorOrItemIndex(index);
+	std::vector<ActorOrItemIndex> actorsAndItems;
+	while(wrapped.exists())
+	{
+		actorsAndItems.push_back(wrapped);
+		if(!wrapped.isLeading(m_area))
+			break;
+		wrapped = wrapped.getFollower(m_area);
+	}
+	return PortablesHelpers::getMoveSpeedForGroupWithAddedMass(m_area, actorsAndItems, Mass::create(0), Mass::create(0));
+}
+template<class Derived, class Index>
+ActorIndex Portables<Derived, Index>::getLineLeader(const Index& index)
+{
+	// Recursively traverse to the front of the line and return the leader.
+	ActorOrItemIndex leader = m_leader[index];
+	if(!leader.exists())
+	{
+		assert(m_follower[index].exists());
+		assert(m_isActors);
+		return ActorIndex::cast(index);
+	}
+	if(leader.isActor())
+		return m_area.getActors().getLineLeader(leader.getActor());
+	else
+		return m_area.getItems().getLineLeader(leader.getItem());
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::setCarrier(const Index& index, const ActorOrItemIndex& carrier)
+{
+	assert(!m_carrier[index].exists());
+	m_carrier[index] = carrier;
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::maybeSetCarrier(const Index& index, const ActorOrItemIndex& carrier)
+{
+	if(m_carrier[index] == carrier)
+		return;
+	setCarrier(index, carrier);
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::unsetCarrier(const Index& index, const ActorOrItemIndex& carrier)
+{
+	assert(m_carrier[index] == carrier);
+	m_carrier[index].clear();
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::updateIndexInCarrier(const Index& oldIndex, const Index& newIndex)
+{
+	if(m_carrier[newIndex].isActor())
+	{
+		// Carrier is actor, either via canPickUp or equipmentSet.
+		const ActorIndex& actor = ActorIndex::cast(m_carrier[newIndex].get());
+		Actors& actors = m_area.getActors();
+		if(m_isActors)
+		{
+			// actor is carrying actor
+			ActorIndex oi = ActorIndex::cast(oldIndex);
+			ActorIndex ni = ActorIndex::cast(newIndex);
+			assert(actors.canPickUp_isCarryingActor(oi, actor));
+			actors.canPickUp_updateActorIndex(actor, oi, ni);
+		}
+		else
+		{
+			ItemIndex oi = ItemIndex::cast(oldIndex);
+			ItemIndex ni = ItemIndex::cast(newIndex);
+			if(actors.canPickUp_isCarryingItem(actor, oi))
+				actors.canPickUp_updateItemIndex(actor, oi, ni);
+		}
+	}
+	else
+	{
+		// Carrier is item.
+		const ItemIndex& item = ItemIndex::cast(m_carrier[newIndex].get());
+		Items& items = m_area.getItems();
+		assert(ItemType::getInternalVolume(items.getItemType(item)) != 0);
+		if(m_isActors)
+		{
+			ActorIndex oi = ActorIndex::cast(oldIndex);
+			ActorIndex ni = ActorIndex::cast(newIndex);
+			items.cargo_updateActorIndex(item, oi, ni);
+		}
+		else
+		{
+			ItemIndex oi = ItemIndex::cast(oldIndex);
+			ItemIndex ni = ItemIndex::cast(newIndex);
+			items.cargo_updateItemIndex(item, oi, ni);
+		}
+	}
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::reservable_reserve(const Index& index, CanReserve& canReserve, const Quantity quantity, std::unique_ptr<DishonorCallback> callback)
+{
+	m_reservables[index]->reserveFor(canReserve, quantity, std::move(callback));
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::reservable_unreserve(const Index& index, CanReserve& canReserve, const Quantity quantity)
+{
+	m_reservables[index]->clearReservationFor(canReserve, quantity);
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::reservable_unreserveFaction(const Index& index, const FactionId& faction)
+{
+	m_reservables[index]->clearReservationsFor(faction);
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::reservable_maybeUnreserve(const Index& index, CanReserve& canReserve, const Quantity quantity)
+{
+	m_reservables[index]->maybeClearReservationFor(canReserve, quantity);
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::reservable_unreserveAll(const Index& index)
+{
+	m_reservables[index]->clearAll();
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::reservable_setDishonorCallback(const Index& index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
+{
+	m_reservables[index]->setDishonorCallbackFor(canReserve, std::move(callback));
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::reservable_merge(const Index& index, Reservable& other)
+{
+	m_reservables[index]->merge(other);
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::load(const Json& data)
+{
+	nlohmann::from_json(data, static_cast<Portables&>(*this));
+	data["follower"].get_to(m_follower);
+	data["leader"].get_to(m_leader);
+	data["moveType"].get_to(m_moveType);
+	m_reservables.resize(m_moveType.size());
+	DeserializationMemo& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
+	for(const Json& pair : data["reservable"])
+	{
+		const Index& index = pair[0];
+		m_reservables[index] = std::make_unique<Reservable>(pair[1]["maxReservations"].get<Quantity>());
+		uintptr_t address;
+		pair[1]["address"].get_to(address);
+		deserializationMemo.m_reservables[address] = m_reservables[index].get();
+	}
+	m_destroy.resize(m_moveType.size());
+	for(const Json& pair : data["onDestroy"])
+	{
+		const Index& index = pair[0];
+		m_destroy[index] = std::make_unique<OnDestroy>(pair[1], deserializationMemo);
+		uintptr_t address;
+		pair[1]["address"].get_to(address);
+		deserializationMemo.m_reservables[address] = m_reservables[index].get();
+	}
+}
+template<class Derived, class Index>
+Json Portables<Derived, Index>::toJson() const
+{
+	Json output;
+	nlohmann::to_json(output, *this);
+	output.update({
+		{"follower", m_follower},
+		{"leader", m_leader},
+		{"destroy", Json::object()},
+		{"reservable", Json::object()},
+		{"moveType", m_moveType},
+	});
+	Index i = Index::create(0);
+	for(; i < m_moveType.size(); ++i)
+	{
+		// OnDestroy and Reservable don't serialize any data beyone their old address.
+		// To deserialize them we just create empties and store pointers to them in deserializationMemo.
+		if(m_destroy[i] != nullptr)
+			output[i.get()] = *m_destroy[i].get();
+		if(m_reservables[i] != nullptr)
+			output[i.get()] = reinterpret_cast<uintptr_t>(m_reservables[i].get());
+	}
+	return output;
+}
+template<class Derived, class Index>
+bool Portables<Derived, Index>::reservable_hasAnyReservations(const Index& index) const
+{
+	return m_reservables[index]->hasAnyReservations();
+}
+template<class Derived, class Index>
+bool Portables<Derived, Index>::reservable_exists(const Index& index, const FactionId& faction) const
+{
+	return m_reservables[index]->hasAnyReservationsWith(faction);
+}
+template<class Derived, class Index>
+bool Portables<Derived, Index>::reservable_existsFor(const Index& index, const CanReserve& canReserve) const
+{
+	return m_reservables[index]->hasAnyReservationsFor(canReserve);
+}
+template<class Derived, class Index>
+bool Portables<Derived, Index>::reservable_isFullyReserved(const Index& index, const FactionId& faction) const
+{
+	return m_reservables[index]->isFullyReserved(faction);
+}
+template<class Derived, class Index>
+Quantity Portables<Derived, Index>::reservable_getUnreservedCount(const Index& index, const FactionId& faction) const
+{
+	return m_reservables[index]->getUnreservedCount(faction);
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::onDestroy_subscribe(const Index& index, HasOnDestroySubscriptions& hasSubscriptions)
+{
+	if(m_destroy[index] == nullptr)
+		m_destroy[index] = std::make_unique<OnDestroy>();
+	hasSubscriptions.subscribe(*m_destroy[index].get());
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::onDestroy_subscribeThreadSafe(const Index& index, HasOnDestroySubscriptions& hasSubscriptions)
+{
+	std::lock_guard<std::mutex> lock(HasOnDestroySubscriptions::m_mutex);
+	onDestroy_subscribe(index, hasSubscriptions);
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::onDestroy_unsubscribe(const Index& index, HasOnDestroySubscriptions& hasSubscriptions)
+{
+	m_destroy[index]->unsubscribe(hasSubscriptions);
+	if(m_destroy[index]->empty())
+		m_destroy[index] = nullptr;
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::onDestroy_unsubscribeAll(const Index& index)
+{
+	m_destroy[index]->unsubscribeAll();
+	m_destroy[index] = nullptr;
+}
+template<class Derived, class Index>
+void Portables<Derived, Index>::onDestroy_merge(const Index& index, OnDestroy& other)
+{
+	if(m_destroy[index] == nullptr)
+		m_destroy[index] = std::make_unique<OnDestroy>();
+	m_destroy[index]->merge(other);
+}

@@ -9,6 +9,7 @@
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
+#include "../../engine/portables.hpp"
 #include "types.h"
 
 #include <memory>

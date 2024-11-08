@@ -16,6 +16,7 @@
 #include "simulation.h"
 #include "itemType.h"
 #include "moveType.h"
+#include "portables.hpp"
 
 #include <memory>
 #include <sys/types.h>
@@ -713,7 +714,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 		ItemIndex haulableItem = ItemIndex::cast(toHaul.get());
 		ActorOrItemIndex workerPolymorphic = ActorOrItemIndex::createForActor(worker);
 		std::vector<ActorOrItemIndex> list{workerPolymorphic, toHaul};
-		if(Portables::getMoveSpeedForGroup(project.m_area, list) >= minimumSpeed)
+		if(PortablesHelpers::getMoveSpeedForGroup(project.m_area, list) >= minimumSpeed)
 		{
 			output.strategy = HaulStrategy::IndividualCargoIsCart;
 			output.quantity = Quantity::create(1);
@@ -869,7 +870,7 @@ ActorIndices HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Project& pro
 		if(output.size() > 2) //TODO: More then two requires multiple followers for one leader.
 			break;
 		actorsAndItems.push_back(ActorOrItemIndex::createForActor(actorIndex));
-		Speed speed = Portables::getMoveSpeedForGroup(project.m_area, actorsAndItems);
+		Speed speed = PortablesHelpers::getMoveSpeedForGroup(project.m_area, actorsAndItems);
 		if(speed >= project.getMinimumHaulSpeed())
 			return output;
 	}
@@ -884,7 +885,7 @@ Speed HaulSubproject::getSpeedWithHaulToolAndCargo(const Area& area, const Actor
 	actorsAndItems.push_back(ActorOrItemIndex::createForActor(leader));
 	actorsAndItems.push_back(ActorOrItemIndex::createForItem(haulTool));
 	// actorsAndItems, rollingMass, deadMass
-	return Portables::getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, toHaul.getSingleUnitMass(area) * quantity, Mass::create(0));
+	return PortablesHelpers::getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, toHaul.getSingleUnitMass(area) * quantity, Mass::create(0));
 }
 // Class method.
 Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const Area& area, const ActorIndex& leader, const ItemIndex& haulTool, const ActorOrItemIndex& toHaul, const Speed& minimumSpeed)
@@ -903,7 +904,7 @@ Speed HaulSubproject::getSpeedWithHaulToolAndAnimal(const Area& area, const Acto
 	actorsAndItems.push_back(ActorOrItemIndex::createForActor(yoked));
 	actorsAndItems.push_back(ActorOrItemIndex::createForItem(haulTool));
 	// actorsAndItems, rollingMass, deadMass
-	return Portables::getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, toHaul.getSingleUnitMass(area) * quantity, Mass::create(0));
+	return PortablesHelpers::getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, toHaul.getSingleUnitMass(area) * quantity, Mass::create(0));
 }
 // Class method.
 Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(const Area& area, const ActorIndex& leader, const ActorIndex& yoked, const ItemIndex& haulTool, const ActorOrItemIndex& toHaul, const Speed& minimumSpeed)
@@ -936,7 +937,7 @@ ActorIndices HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(const Proj
 		actorsAndItems.push_back(ActorOrItemIndex::createForActor(actorIndex));
 		// If to haul is also haul tool then there is no cargo, we are hauling the haulTool itself.
 		Mass mass = toHaul == ActorOrItemIndex::createForItem(haulTool) ? Mass::create(0) : toHaul.getSingleUnitMass(project.m_area);
-		Speed speed = Portables::getMoveSpeedForGroupWithAddedMass(project.m_area, actorsAndItems, mass, Mass::create(0));
+		Speed speed = PortablesHelpers::getMoveSpeedForGroupWithAddedMass(project.m_area, actorsAndItems, mass, Mass::create(0));
 		if(speed >= project.getMinimumHaulSpeed())
 			return output;
 	}
@@ -951,7 +952,7 @@ Speed HaulSubproject::getSpeedWithPannierBearerAndPanniers(const Area& area, con
 	actorsAndItems.push_back(ActorOrItemIndex::createForActor(leader));
 	actorsAndItems.push_back(ActorOrItemIndex::createForActor(pannierBearer));
 	// actorsAndItems, rollingMass, deadMass
-	return Portables::getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, Mass::create(0), (toHaul.getSingleUnitMass(area) * quantity) + area.getItems().getMass(panniers));
+	return PortablesHelpers::getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, Mass::create(0), (toHaul.getSingleUnitMass(area) * quantity) + area.getItems().getMass(panniers));
 }
 // Class method.
 Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(const Area& area, const ActorIndex& leader, const ActorIndex& pannierBearer, const ItemIndex& panniers, const ActorOrItemIndex& toHaul, const Speed& minimumSpeed)
@@ -1028,7 +1029,7 @@ ActorIndex AreaHasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMin
 	{
 		ActorIndex index = actor.getIndex();
 		std::vector<ActorOrItemIndex> shapes = { ActorOrItemIndex::createForActor(index), ActorOrItemIndex::createForItem(haulTool) };
-		if(!actors.reservable_isFullyReserved(index, faction) && minimumHaulSpeed <= Portables::getMoveSpeedForGroupWithAddedMass(area, shapes, cargoMass, Mass::create(0)))
+		if(!actors.reservable_isFullyReserved(index, faction) && minimumHaulSpeed <= PortablesHelpers::getMoveSpeedForGroupWithAddedMass(area, shapes, cargoMass, Mass::create(0)))
 			return index;
 	}
 	return ActorIndex::null();

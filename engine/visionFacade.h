@@ -9,15 +9,19 @@
 class Area;
 class Actor;
 struct VisionCuboid;
+struct VisionFacadeData
+{
+	ActorIndex actor;
+	BlockIndex location;
+	VisionCuboidId cuboid;
+	Point3D coordinates;
+	DistanceInBlocks range;
+	ActorIndices results;
+};
 // Holds Actor pointers along with their vision range and location for high speed iteration during vision read step.
 class VisionFacade final
 {
-	DataVector<ActorIndex, VisionFacadeIndex> m_actors;
-	DataVector<BlockIndex, VisionFacadeIndex> m_locations;
-	DataVector<VisionCuboidId, VisionFacadeIndex> m_cuboids;
-	DataVector<Point3D, VisionFacadeIndex> m_coordinates;
-	DataVector<DistanceInBlocks, VisionFacadeIndex> m_ranges;
-	DataVector<ActorIndices, VisionFacadeIndex> m_results;
+	DataVector<VisionFacadeData, VisionFacadeIndex> m_data;
 	Area* m_area = nullptr;
 public:
 	VisionFacade();
@@ -36,7 +40,7 @@ public:
 	void writeStep();
 	void clear();
 	// To be called when actor index changes due to deletion or sorting.
-	void updateActorIndex(const VisionFacadeIndex& index, const ActorIndex& newIndex) { m_actors[index] = newIndex; }
+	void updateActorIndex(const VisionFacadeIndex& index, const ActorIndex& newIndex) { m_data[index].actor = newIndex; }
 	// These accessors get data from the internal DataVectors and assert they are still matching the cannonical data in Actors and AreaHasVisionCuboids.
 	[[nodiscard]] ActorIndex getActor(const VisionFacadeIndex& index) const;
 	[[nodiscard]] BlockIndex getLocation(const VisionFacadeIndex& index) const;
@@ -44,7 +48,7 @@ public:
 	[[nodiscard]] VisionCuboidId getCuboid( const VisionFacadeIndex& index) const;
 	[[nodiscard]] Point3D getFromCoords( const VisionFacadeIndex& index) const;
 	[[nodiscard]] ActorIndices& getResults(const VisionFacadeIndex& index) const;
-	[[nodiscard]] size_t size() const { return m_actors.size(); }
+	[[nodiscard]] size_t size() const { return m_data.size(); }
 	[[nodiscard]] static DistanceInBlocks taxiDistance(Point3D a, Point3D b);
 };
 // Divide actors into buckets by id.

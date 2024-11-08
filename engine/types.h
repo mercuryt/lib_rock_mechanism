@@ -334,6 +334,69 @@ struct Point3D
 	{
 		return "(" + std::to_string(x.get()) + "," + std::to_string(y.get()) + "," + std::to_string(z.get()) + ")";
 	}
+	static const int hilbertOrder = 1;
+	[[nodiscard]] uint32_t hilbertNumber()
+	{
+		int n = hilbertOrder;
+		int _x = x.get();
+		int _y = y.get();
+		int _z = z.get();
+		int index = 0;
+		int rx, ry, rz;
+
+		for (int i = n - 1; i >= 0; --i)
+		{
+			int mask = 1 << i;
+			rx = (_x & mask) > 0;
+			ry = (_y & mask) > 0;
+			rz = (_z & mask) > 0;
+
+			index <<= 3;
+
+			if (ry == 0)
+			{
+				if (rx == 1)
+				{
+					std::swap(_y, _z);
+					std::swap(ry, rz);
+				}
+				if (rz == 1)
+				{
+					index |= 1;
+					_x ^= mask;
+					_z ^= mask;
+				}
+				if (rx == 1)
+				{
+					index |= 2;
+					_y ^= mask;
+					_x ^= mask;
+				}
+			}
+			else
+			{
+				if (rz == 1)
+				{
+					index |= 4;
+					_x ^= mask;
+					_z ^= mask;
+				}
+				if (rx == 1)
+				{
+					index |= 5;
+					_y ^= mask;
+					_x ^= mask;
+				}
+				if (rz == 0)
+				{
+					index |= 6;
+					std::swap(_y, _z);
+					std::swap(ry, rz);
+				}
+			}
+		}
+		return index;
+	}
 	void log() const 
 	{
 		std::cout << toString() << std::endl;

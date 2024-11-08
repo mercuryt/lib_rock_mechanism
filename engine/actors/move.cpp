@@ -8,6 +8,7 @@
 #include "../util.h"
 #include "../pathRequest.h"
 #include "../blocks/blocks.h"
+#include "../portables.hpp"
 #include "config.h"
 #include "eventSchedule.h"
 #include "items/items.h"

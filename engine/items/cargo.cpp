@@ -3,6 +3,7 @@
 #include "../area.h"
 #include "../materialType.h"
 #include "../types.h"
+#include "../portables.hpp"
 #include "../actors/actors.h"
 #include <regex>
 void Items::cargo_addActor(const ItemIndex& index, const ActorIndex& actor)

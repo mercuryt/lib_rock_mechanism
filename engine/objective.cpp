@@ -23,6 +23,7 @@
 #include "objectives/drink.h"
 #include "objectives/getToSafeTemperature.h"
 #include "types.h"
+#include "portables.hpp"
 
 #include <cstdio>
 #include <numbers>
