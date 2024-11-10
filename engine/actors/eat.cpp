@@ -4,6 +4,10 @@ void Actors::eat_do(const ActorIndex& index, const Mass& mass)
 {
 	m_mustEat[index]->eat(m_area, mass);
 }
+void Actors::eat_setIsHungry(const ActorIndex& index)
+{
+	m_mustEat[index]->setNeedsFood(m_area);
+}
 bool Actors::eat_isHungry(const ActorIndex& index) const
 {
 	return m_mustEat[index]->needsFood();

@@ -120,12 +120,14 @@ void MustEat::setNeedsFood(Area& area)
 		actors.die(actor, CauseOfDeath::hunger);
 	else
 	{
+		m_hungerEvent.maybeUnschedule();
 		m_hungerEvent.schedule(area, AnimalSpecies::getStepsTillDieWithoutFood(species), actor);
 		actors.grow_stop(actor);
 		m_massFoodRequested = massFoodForBodyMass(area);
 		std::unique_ptr<Objective> objective = std::make_unique<EatObjective>(area);
 		m_eatObjective = static_cast<EatObjective*>(objective.get());
 		actors.objective_addNeed(actor, std::move(objective));
+		actors.grow_updateGrowingStatus(actor);
 	}
 }
 void MustEat::unschedule()

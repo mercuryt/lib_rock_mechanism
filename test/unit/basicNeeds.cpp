@@ -41,7 +41,7 @@ TEST_CASE("basicNeedsSentient")
 		BlockIndex pondLocation = blocks.getIndex_i(3, 3, 1);
 		blocks.solid_setNot(pondLocation);
 		blocks.fluid_add(pondLocation, CollisionVolume::create(100), water);
-		simulation.fastForward(AnimalSpecies::getStepsFluidDrinkFrequency(dwarf));
+		actors.drink_setNeedsFluid(actor);
 		REQUIRE(!actors.grow_isGrowing(actor));
 		REQUIRE(actors.drink_isThirsty(actor));
 		REQUIRE(actors.objective_getCurrentName(actor) == "drink");
@@ -67,8 +67,8 @@ TEST_CASE("basicNeedsSentient")
 			.quality=Quality::create(50),
 			.percentWear=Percent::create(0),
 		});
-		items.cargo_addFluid(bucket, water, CollisionVolume::create(10));
-		simulation.fastForward(AnimalSpecies::getStepsFluidDrinkFrequency(dwarf));
+		items.cargo_addFluid(bucket, water, CollisionVolume::create(2));
+		actors.drink_setNeedsFluid(actor);
 		REQUIRE(!actors.grow_isGrowing(actor));
 		REQUIRE(actors.drink_isThirsty(actor));
 		REQUIRE(actors.objective_getCurrentName(actor) == "drink");
@@ -81,7 +81,7 @@ TEST_CASE("basicNeedsSentient")
 		REQUIRE(!actors.drink_isThirsty(actor));
 		REQUIRE(actors.objective_getCurrentName(actor) != "drink");
 		CollisionVolume drinkVolume = MustDrink::drinkVolumeFor(area, actor);
-		REQUIRE(items.cargo_getFluidVolume(bucket) == CollisionVolume::create(10) - drinkVolume);
+		REQUIRE(items.cargo_getFluidVolume(bucket) == CollisionVolume::create(2) - drinkVolume);
 	}
 	SUBCASE("drink tea")
 	{
@@ -98,7 +98,7 @@ TEST_CASE("basicNeedsSentient")
 			.percentWear=Percent::create(0),
 		});
 		REQUIRE(actors.eat_getDesireToEatSomethingAt(actor, mealLocation) == maxRankedEatDesire);
-		simulation.fastForward(AnimalSpecies::getStepsEatFrequency(dwarf));
+		actors.eat_setIsHungry(actor);
 		REQUIRE(actors.eat_hasObjective(actor));
 		// Discard drink objective if exists.
 		if(actors.drink_getVolumeOfFluidRequested(actor) != 0)
@@ -129,13 +129,13 @@ TEST_CASE("basicNeedsSentient")
 			.quantity=Quantity::create(50),
 		});
 		REQUIRE(actors.eat_getDesireToEatSomethingAt(actor, fruitLocation) == 2);
-		simulation.fastForward(AnimalSpecies::getStepsEatFrequency(dwarf));
+		actors.eat_setIsHungry(actor);
 		// Discard drink objective if exists.
 		if(actors.drink_getVolumeOfFluidRequested(actor) != 0)
 			actors.drink_do(actor, actors.drink_getVolumeOfFluidRequested(actor));
 		REQUIRE(actors.eat_getPercentStarved(actor) == 0);
 		REQUIRE(actors.eat_getMinimumAcceptableDesire(actor) == 3);
-		simulation.fastForwardUntillPredicate([&](){ return actors.eat_getMinimumAcceptableDesire(actor) == 2; }, Config::minutesPerHour * 6);
+		simulation.fasterForwardUntillPredicate([&](){ return actors.eat_getMinimumAcceptableDesire(actor) == 2; }, Config::minutesPerHour * 6);
 		REQUIRE(actors.move_hasPathRequest(actor));
 		REQUIRE(actors.objective_getCurrentName(actor) == "eat");
 		const EatObjective& objective = actors.objective_getCurrent<EatObjective>(actor);
@@ -187,7 +187,7 @@ TEST_CASE("basicNeedsNonsentient")
 	SUBCASE("sleep outside at current location")
 	{
 		// Generate objectives, discard eat if it exists.
-		simulation.fastForward(AnimalSpecies::getStepsSleepFrequency(redDeer));
+		actors.sleep_makeTired(actor);
 		// Discard drink objective if exists.
 		if(actors.drink_getVolumeOfFluidRequested(actor) != 0)
 			actors.drink_do(actor, actors.drink_getVolumeOfFluidRequested(actor));
@@ -203,7 +203,7 @@ TEST_CASE("basicNeedsNonsentient")
 		REQUIRE(actors.move_getDestination(actor).empty());
 		REQUIRE(!actors.sleep_isAwake(actor));
 		// Wait for wake up.
-		simulation.fastForward(AnimalSpecies::getStepsSleepDuration(redDeer));
+		simulation.fasterForward(AnimalSpecies::getStepsSleepDuration(redDeer));
 		REQUIRE(actors.sleep_isAwake(actor));
 		REQUIRE(actors.sleep_hasTiredEvent(actor));
 		REQUIRE(actors.stamina_isFull(actor));
@@ -214,7 +214,7 @@ TEST_CASE("basicNeedsNonsentient")
 		blocks.plant_create(grassLocation, wheatGrass, Percent::create(100));
 		PlantIndex grass = blocks.plant_get(grassLocation);
 		// Generate objectives.
-		simulation.fastForward(AnimalSpecies::getStepsEatFrequency(redDeer));
+		actors.eat_setIsHungry(actor);
 		REQUIRE(actors.objective_getCurrentName(actor) == "eat");
 		REQUIRE(actors.eat_isHungry(actor));
 		REQUIRE(plants.getPercentFoliage(grass) == 100);
@@ -253,7 +253,7 @@ TEST_CASE("basicNeedsNonsentient")
 		{
 			simulation.fastForwardUntillActorIsAtDestination(area, actor, spot);
 			// Wait for wake up.
-			simulation.fastForward(AnimalSpecies::getStepsSleepDuration(redDeer));
+			simulation.fasterForward(AnimalSpecies::getStepsSleepDuration(redDeer));
 			REQUIRE(actors.sleep_isAwake(actor));
 			REQUIRE(actors.sleep_hasTiredEvent(actor));
 		}
@@ -261,10 +261,15 @@ TEST_CASE("basicNeedsNonsentient")
 		{
 			blocks.solid_set(spot, dirt, false);
 			simulation.fastForwardUntillActorIsAdjacentToLocation(area, actor, spot);
-			REQUIRE(actors.move_getDestination(actor).empty());
-			REQUIRE(actors.objective_getCurrentName(actor) == "sleep");
-			REQUIRE(actors.sleep_getSpot(actor).empty());
+			// The actor is unable to path into the destination, and so tries to create another path.
 			REQUIRE(actors.move_hasPathRequest(actor));
+			simulation.doStep();
+			// Actor chooses current location as new sleeping spot.
+			REQUIRE(!actors.move_hasPathRequest(actor));
+			REQUIRE(!actors.move_hasEvent(actor));
+			REQUIRE(actors.objective_getCurrentName(actor) == "sleep");
+			REQUIRE(actors.sleep_getSpot(actor).exists());
+			REQUIRE(!actors.sleep_isAwake(actor));
 		}
 		SUBCASE("cannot path to spot")
 		{
@@ -294,7 +299,7 @@ TEST_CASE("basicNeedsNonsentient")
 		actors.die(deer, CauseOfDeath::thirst);
 		REQUIRE(!actors.isAlive(deer));
 		REQUIRE(actors.eat_getDesireToEatSomethingAt(bear, actors.getLocation(deer)) != 0);
-		simulation.fastForward(AnimalSpecies::getStepsEatFrequency(blackBear));
+		actors.eat_setIsHungry(bear);
 		// Bear is hungry.
 		REQUIRE(actors.eat_getMassFoodRequested(bear) != 0);
 		REQUIRE(actors.objective_getCurrentName(bear) == "eat");
@@ -364,30 +369,17 @@ TEST_CASE("actorGrowth")
 	Step nextPercentIncreaseStep = actors.grow_getEventStep(actor);
 	REQUIRE(nextPercentIncreaseStep <= simulation.m_step + Config::stepsPerDay * 95);
 	REQUIRE(nextPercentIncreaseStep >= simulation.m_step + Config::stepsPerDay * 90);
-	simulation.fastForward(Config::stepsPerHour * 20);
+	simulation.fasterForward(Config::stepsPerHour * 20);
 	actors.satisfyNeeds(actor);
 	REQUIRE(actors.grow_getPercent(actor) == 45);
 	REQUIRE(!actors.grow_isGrowing(actor));
 	REQUIRE(!actors.temperature_isSafeAtCurrentLocation(actor));
-	simulation.fastForward(Config::stepsPerHour * 6);
+	simulation.fasterForward(Config::stepsPerHour * 6);
 	actors.satisfyNeeds(actor);
 	REQUIRE(actors.grow_isGrowing(actor));
 	REQUIRE(actors.temperature_isSafeAtCurrentLocation(actor));
 	Percent percentGrowthEventComplete = actors.grow_getEventPercent(actor);
 	REQUIRE(percentGrowthEventComplete == 1);
-	//TODO: This is too slow for unit tests, move to integration and replace with a version which sets event percent complete explicitly.
-	/*
-	simulation.fastForward(Config::stepsPerDay * 5);
-	REQUIRE(dwarf1.m_canGrow.getEventPercentComplete() == 6);
-	simulation.fastForward((Config::stepsPerDay * 50));
-	REQUIRE(dwarf1.m_canGrow.getEventPercentComplete() == 60);
-	simulation.fastForward((Config::stepsPerDay * 36));
-	REQUIRE(dwarf1.m_canGrow.getEventPercentComplete() == 99);
-	simulation.fastForwardUntillPredicate([&]{ return dwarf1.m_canGrow.growthPercent() != 45; }, 60 * 24 * 40);
-	REQUIRE(dwarf1.m_canGrow.growthPercent() == 46);
-	REQUIRE(dwarf1.m_canGrow.getEventPercentComplete() == 0);
-	REQUIRE(dwarf1.m_canGrow.isGrowing());
-	*/
 	actors.grow_setPercent(actor, Percent::create(20));
 	REQUIRE(actors.grow_getPercent(actor) == 20);
 	REQUIRE(actors.grow_getEventPercent(actor) == 0);
@@ -421,7 +413,7 @@ TEST_CASE("death")
 	SUBCASE("thirst")
 	{
 		// Generate objectives, discard eat if it exists.
-		simulation.fastForward(AnimalSpecies::getStepsFluidDrinkFrequency(redDeer));
+		actors.drink_setNeedsFluid(actor);
 		if(actors.eat_getMassFoodRequested(actor) != 0)
 			actors.eat_do(actor, actors.eat_getMassFoodRequested(actor));
 		// Subtract 2 rather then 1 because the event was scheduled on the previous step.
@@ -438,6 +430,7 @@ TEST_CASE("death")
 		blocks.fluid_add(pondLocation, CollisionVolume::create(100), FluidType::byName("water"));
 		// Generate objectives, discard drink if it exists.
 		REQUIRE(actors.eat_getHungerEventStep(actor) == AnimalSpecies::getStepsEatFrequency(redDeer) +  step);
+		actors.eat_setIsHungry(actor);
 		simulation.fastForward(AnimalSpecies::getStepsEatFrequency(redDeer));
 		REQUIRE(actors.eat_getHungerEventStep(actor) == AnimalSpecies::getStepsEatFrequency(redDeer) + AnimalSpecies::getStepsTillDieWithoutFood(redDeer) + step);
 		simulation.fastForward(AnimalSpecies::getStepsTillDieWithoutFood(redDeer) - 2);

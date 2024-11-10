@@ -285,7 +285,6 @@ void HasVisionFacade::clear()
 	{
 		assert(m_visionFacade != nullptr);
 		m_visionFacade->remove(m_index);
-		m_visionFacade = nullptr;
 		m_index.clear();
 	}
 }

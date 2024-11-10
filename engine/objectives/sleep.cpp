@@ -109,6 +109,7 @@ void SleepObjective::execute(Area& area, const ActorIndex& actor)
 	Blocks& blocks = area.getBlocks();
 	assert(actors.sleep_isAwake(actor));
 	BlockIndex sleepingSpot = actors.sleep_getSpot(actor);
+	// Check if the spot is still valid.
 	if(sleepingSpot.empty())
 	{
 		if(m_noWhereToSleepFound)

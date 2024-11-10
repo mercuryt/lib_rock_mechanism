@@ -306,7 +306,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	// -Reservations
 	void reserve(const BlockIndex& index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback = nullptr);
 	void unreserve(const BlockIndex& index, CanReserve& canReserve);
-	void unreserveAll(const BlockIndex& index);
+	void dishonorAllReservations(const BlockIndex& index);
 	void setReservationDishonorCallback(const BlockIndex& index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback);
 	[[nodiscard]] bool isReserved(const BlockIndex& index, const FactionId& faction) const;
 	// -Actors
