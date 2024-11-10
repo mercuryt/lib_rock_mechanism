@@ -33,7 +33,7 @@ struct PlantParamaters
 	Percent percentFoliageGrowth = Percent::null();
 	FactionId faction = FactionId::null();
 };
-class Plants final : public HasShapes
+class Plants final : public HasShapes<Plants, PlantIndex>
 {
 	HasScheduledEvents<PlantGrowthEvent> m_growthEvent;
 	//TODO: Why is this a seperate event from plant growth?

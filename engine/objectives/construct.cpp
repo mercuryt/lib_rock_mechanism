@@ -2,6 +2,7 @@
 #include "../area.h"
 #include "../construct.h"
 #include "../terrainFacade.h"
+#include "../hasShapes.hpp"
 #include "actors/actors.h"
 #include "blocks/blocks.h"
 #include "reference.h"

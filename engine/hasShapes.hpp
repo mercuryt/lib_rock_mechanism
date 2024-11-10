@@ -12,8 +12,10 @@
 #include <cstdint>
 #include <iostream>
 #include <ranges>
-HasShapes::HasShapes(Area& area) : m_area(area) { }
-void HasShapes::create(const HasShapeIndex& index, const ShapeId& shape, const FactionId& faction, bool isStatic)
+template<class Derived, class Index>
+HasShapes<Derived, Index>::HasShapes(Area& area) : m_area(area) { }
+template<class Derived, class Index>
+void HasShapes<Derived, Index>::create(const Index& index, const ShapeId& shape, const FactionId& faction, bool isStatic)
 {
 	assert(m_shape.size() > index);
 	// m_location, m_facing, and m_underground are to be set by calling the derived class setLocation method.
@@ -22,7 +24,8 @@ void HasShapes::create(const HasShapeIndex& index, const ShapeId& shape, const F
 	assert(m_blocks[index].empty());
 	m_static.set(index, isStatic);
 }
-void HasShapes::resize(const HasShapeIndex& newSize)
+template<class Derived, class Index>
+void HasShapes<Derived, Index>::resize(const Index& newSize)
 {
 	m_shape.resize(newSize);
 	m_location.resize(newSize);
@@ -32,7 +35,8 @@ void HasShapes::resize(const HasShapeIndex& newSize)
 	m_static.resize(newSize);
 	m_underground.resize(newSize);
 }
-void HasShapes::moveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex)
+template<class Derived, class Index>
+void HasShapes<Derived, Index>::moveIndex(const Index& oldIndex, const Index& newIndex)
 {
 	m_shape[newIndex] = m_shape[oldIndex];
 	m_location[newIndex] = m_location[oldIndex];
@@ -42,7 +46,8 @@ void HasShapes::moveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& ne
 	m_static.set(newIndex, m_static[oldIndex]);
 	m_underground.set(newIndex, m_underground[oldIndex]);
 }
-void HasShapes::setStatic(const HasShapeIndex& index)
+template<class Derived, class Index>
+void HasShapes<Derived, Index>::setStatic(const Index& index)
 {
 	assert(!m_static[index]);
 	Blocks& blocks = m_area.getBlocks();
@@ -55,12 +60,14 @@ void HasShapes::setStatic(const HasShapeIndex& index)
 	}
 	m_static.set(index, true);
 }
-void HasShapes::maybeSetStatic(const HasShapeIndex& index)
+template<class Derived, class Index>
+void HasShapes<Derived, Index>::maybeSetStatic(const Index& index)
 {
 	if(!m_static[index])
 		setStatic(index);
 }
-void HasShapes::unsetStatic(const HasShapeIndex& index)
+template<class Derived, class Index>
+void HasShapes<Derived, Index>::unsetStatic(const Index& index)
 {
 	assert(m_static[index]);
 	Blocks& blocks = m_area.getBlocks();
@@ -73,12 +80,14 @@ void HasShapes::unsetStatic(const HasShapeIndex& index)
 	}
 	m_static.set(index, false);
 }
-void HasShapes::maybeUnsetStatic(const HasShapeIndex& index)
+template<class Derived, class Index>
+void HasShapes<Derived, Index>::maybeUnsetStatic(const Index& index)
 {
 	if(m_static[index])
 		unsetStatic(index);
 }
-void HasShapes::sortRange(const HasShapeIndex& begin, const HasShapeIndex& end)
+template<class Derived, class Index>
+void HasShapes<Derived, Index>::sortRange(const Index& begin, const Index& end)
 {
 	assert(false);
 	assert(end > begin);
@@ -88,87 +97,104 @@ void HasShapes::sortRange(const HasShapeIndex& begin, const HasShapeIndex& end)
 	std::ranges::sort(zip.begin() + begin, zip.end() + end, SpatialSort);
 	*/
 }
-FactionId HasShapes::getFaction(const HasShapeIndex& index) const
+template<class Derived, class Index>
+FactionId HasShapes<Derived, Index>::getFaction(const Index& index) const
 { 
 	return m_faction[index];
 }
-bool HasShapes::isAdjacentToActor(const HasShapeIndex& index, const ActorIndex& actor) const
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::isAdjacentToActor(const Index& index, const ActorIndex& actor) const
 {
 	return isAdjacentToActorAt(index, m_location[index], m_facing[index], actor);
 }
-bool HasShapes::isAdjacentToItem(const HasShapeIndex& index, const ItemIndex& item) const
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::isAdjacentToItem(const Index& index, const ItemIndex& item) const
 {
 	return isAdjacentToItemAt(index, m_location[index], m_facing[index], item);
 }
-bool HasShapes::isAdjacentToPlant(const HasShapeIndex& index, const PlantIndex& plant) const
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::isAdjacentToPlant(const Index& index, const PlantIndex& plant) const
 {
 	return isAdjacentToPlantAt(index, m_location[index], m_facing[index], plant);
 }
-bool HasShapes::isAdjacentToActorAt(const HasShapeIndex& index, const BlockIndex& location, const Facing& facing, const ActorIndex& actor) const
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::isAdjacentToActorAt(const Index& index, const BlockIndex& location, const Facing& facing, const ActorIndex& actor) const
 {
 	auto occupied = getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing);
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return occupied.contains(block); };
 	return m_area.getActors().predicateForAnyAdjacentBlock(actor, predicate);
 }
-bool HasShapes::isAdjacentToItemAt(const HasShapeIndex& index, const BlockIndex& location, const Facing& facing, const ItemIndex& item) const
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::isAdjacentToItemAt(const Index& index, const BlockIndex& location, const Facing& facing, const ItemIndex& item) const
 {
 	auto occupied = getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing);
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return occupied.contains(block); };
 	return m_area.getItems().predicateForAnyAdjacentBlock(item, predicate);
 }
-bool HasShapes::isAdjacentToPlantAt(const HasShapeIndex& index, const BlockIndex& location, const Facing& facing, const PlantIndex& plant) const
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::isAdjacentToPlantAt(const Index& index, const BlockIndex& location, const Facing& facing, const PlantIndex& plant) const
 {
 	auto occupied = getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing);
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return occupied.contains(block); };
 	return m_area.getPlants().predicateForAnyAdjacentBlock(plant, predicate);
 }
-DistanceInBlocks HasShapes::distanceToActor(const HasShapeIndex& index, const ActorIndex& actor) const
+template<class Derived, class Index>
+DistanceInBlocks HasShapes<Derived, Index>::distanceToActor(const Index& index, const ActorIndex& actor) const
 {
 	// TODO: Make handle multi block creatures correctly somehow.
 	// Use line of sight?
 	return m_area.getBlocks().distance(m_location[index], m_area.getActors().getLocation(actor));
 }
-DistanceInBlocks HasShapes::distanceToItem(const HasShapeIndex& index, const ItemIndex& item) const
+template<class Derived, class Index>
+DistanceInBlocks HasShapes<Derived, Index>::distanceToItem(const Index& index, const ItemIndex& item) const
 {
 	// TODO: Make handle multi block creatures correctly somehow.
 	// Use line of sight?
 	return m_area.getBlocks().distance(m_location[index], m_area.getItems().getLocation(item));
 }
-DistanceInBlocksFractional HasShapes::distanceToActorFractional(const HasShapeIndex& index, const ActorIndex& actor) const
+template<class Derived, class Index>
+DistanceInBlocksFractional HasShapes<Derived, Index>::distanceToActorFractional(const Index& index, const ActorIndex& actor) const
 {
 	return m_area.getBlocks().distanceFractional(m_location[index], m_area.getActors().getLocation(actor));
 }
-DistanceInBlocksFractional HasShapes::distanceToItemFractional(const HasShapeIndex& index, const ItemIndex& item) const
+template<class Derived, class Index>
+DistanceInBlocksFractional HasShapes<Derived, Index>::distanceToItemFractional(const Index& index, const ItemIndex& item) const
 {
 	return m_area.getBlocks().distanceFractional(m_location[index], m_area.getItems().getLocation(item));
 }
-bool HasShapes::allOccupiedBlocksAreReservable(const HasShapeIndex& index, const FactionId& faction) const
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::allOccupiedBlocksAreReservable(const Index& index, const FactionId& faction) const
 {
 	return allBlocksAtLocationAndFacingAreReservable(index, m_location[index], m_facing[index], faction);
 }
-bool HasShapes::isAdjacentToLocation(const HasShapeIndex& index, const BlockIndex& location) const
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::isAdjacentToLocation(const Index& index, const BlockIndex& location) const
 {
 	std::function<bool(const BlockIndex)> predicate = [&](const BlockIndex block) { return block == location; };
 	return predicateForAnyAdjacentBlock(index, predicate);
 }
-bool HasShapes::isAdjacentToAny(const HasShapeIndex& index, const BlockIndices& locations) const
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::isAdjacentToAny(const Index& index, const BlockIndices& locations) const
 {
 	std::function<bool(const BlockIndex)> predicate = [&](const BlockIndex block) { return locations.contains(block); };
 	return predicateForAnyAdjacentBlock(index, predicate);
 }
-bool HasShapes::isOnEdgeAt(const HasShapeIndex& index, const BlockIndex& location, const Facing& facing) const
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::isOnEdgeAt(const Index& index, const BlockIndex& location, const Facing& facing) const
 {
 	Blocks& blocks = m_area.getBlocks();
 	std::function<bool(const BlockIndex)> predicate = [&blocks](const BlockIndex block) { return blocks.isEdge(block); };
 	return predicateForAnyOccupiedBlockAtLocationAndFacing(index, predicate, location, facing);
 }
-bool HasShapes::isOnEdge(const HasShapeIndex& index) const
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::isOnEdge(const Index& index) const
 {
 	Blocks& blocks = m_area.getBlocks();
 	std::function<bool(const BlockIndex)> predicate = [&blocks](const BlockIndex block) { return blocks.isEdge(block); };
 	return predicateForAnyOccupiedBlock(index, predicate);
 }
-bool HasShapes::predicateForAnyOccupiedBlock(const HasShapeIndex& index, std::function<bool(const BlockIndex&)> predicate) const
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::predicateForAnyOccupiedBlock(const Index& index, std::function<bool(const BlockIndex&)> predicate) const
 {
 	assert(!m_blocks[index].empty());
 	for(BlockIndex block : m_blocks[index])
@@ -176,14 +202,16 @@ bool HasShapes::predicateForAnyOccupiedBlock(const HasShapeIndex& index, std::fu
 			return true;
 	return false;
 }
-bool HasShapes::predicateForAnyOccupiedBlockAtLocationAndFacing(const HasShapeIndex& index, std::function<bool(const BlockIndex&)> predicate, const BlockIndex& location, const Facing& facing) const
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::predicateForAnyOccupiedBlockAtLocationAndFacing(const Index& index, std::function<bool(const BlockIndex&)> predicate, const BlockIndex& location, const Facing& facing) const
 {
 	for(BlockIndex occupied : const_cast<HasShapes&>(*this).getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing))
 		if(predicate(occupied))
 			return true;
 	return false;
 }
-bool HasShapes::predicateForAnyAdjacentBlock(const HasShapeIndex& index, std::function<bool(const BlockIndex&)> predicate) const
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::predicateForAnyAdjacentBlock(const Index& index, std::function<bool(const BlockIndex&)> predicate) const
 {
 	assert(m_location[index].exists());
 	//TODO: cache this.
@@ -195,7 +223,8 @@ bool HasShapes::predicateForAnyAdjacentBlock(const HasShapeIndex& index, std::fu
 	}
 	return false;
 }
-BlockIndices HasShapes::getAdjacentBlocks(const HasShapeIndex& index) const
+template<class Derived, class Index>
+BlockIndices HasShapes<Derived, Index>::getAdjacentBlocks(const Index& index) const
 {
 	BlockIndices output;
 	for(BlockIndex block : m_blocks[index])
@@ -205,53 +234,61 @@ BlockIndices HasShapes::getAdjacentBlocks(const HasShapeIndex& index) const
 	output.unique();
 	return output;
 }
-ActorIndices HasShapes::getAdjacentActors(const HasShapeIndex& index) const
+template<class Derived, class Index>
+ActorIndices HasShapes<Derived, Index>::getAdjacentActors(const Index& index) const
 {
 	ActorIndices output;
 	for(BlockIndex block : getOccupiedAndAdjacentBlocks(index))
 		for(const ActorIndex& actor : m_area.getBlocks().actor_getAll(block))
 			output.maybeAdd(actor);
-	output.remove(index.toActor());
 	return output;
 }
-ItemIndices HasShapes::getAdjacentItems(const HasShapeIndex& index) const
+template<class Derived, class Index>
+ItemIndices HasShapes<Derived, Index>::getAdjacentItems(const Index& index) const
 {
 	ItemIndices output;
 	for(BlockIndex block : getOccupiedAndAdjacentBlocks(index))
 		for(const ItemIndex& item : m_area.getBlocks().item_getAll(block))
 			output.maybeAdd(item);
-	output.remove(index.toItem());
 	return output;
 }
-BlockIndices HasShapes::getOccupiedAndAdjacentBlocks(const HasShapeIndex& index) const
+template<class Derived, class Index>
+BlockIndices HasShapes<Derived, Index>::getOccupiedAndAdjacentBlocks(const Index& index) const
 {
 	return Shape::getBlocksOccupiedAndAdjacentAt(m_shape[index], m_area.getBlocks(), m_location[index], m_facing[index]);
 }
-BlockIndices HasShapes::getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const HasShapeIndex& index, const BlockIndex& location, const Facing& facing) const
+template<class Derived, class Index>
+BlockIndices HasShapes<Derived, Index>::getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const Index& index, const BlockIndex& location, const Facing& facing) const
 {
 	return Shape::getBlocksOccupiedAt(m_shape[index], m_area.getBlocks(), location, facing);
 }
-BlockIndices HasShapes::getAdjacentBlocksAtLocationWithFacing(const HasShapeIndex& index, const BlockIndex& location, const Facing& facing) const
+template<class Derived, class Index>
+BlockIndices HasShapes<Derived, Index>::getAdjacentBlocksAtLocationWithFacing(const Index& index, const BlockIndex& location, const Facing& facing) const
 {
 	return Shape::getBlocksWhichWouldBeAdjacentAt(m_shape[index], m_area.getBlocks(), location, facing);
 }
-BlockIndex HasShapes::getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(const HasShapeIndex& index, const BlockIndex& location, const Facing& facing, std::function<bool(const BlockIndex&)>& predicate) const
+template<class Derived, class Index>
+BlockIndex HasShapes<Derived, Index>::getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(const Index& index, const BlockIndex& location, const Facing& facing, std::function<bool(const BlockIndex&)>& predicate) const
 {
 	return Shape::getBlockWhichWouldBeAdjacentAtWithPredicate(m_shape[index], m_area.getBlocks(), location, facing, predicate);
 }
-BlockIndex HasShapes::getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(const HasShapeIndex& index, const BlockIndex& location, const Facing& facing, std::function<bool(const BlockIndex&)>& predicate) const
+template<class Derived, class Index>
+BlockIndex HasShapes<Derived, Index>::getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(const Index& index, const BlockIndex& location, const Facing& facing, std::function<bool(const BlockIndex&)>& predicate) const
 {
 	return Shape::getBlockWhichWouldBeOccupiedAtWithPredicate(m_shape[index], m_area.getBlocks(), location, facing, predicate);
 }
-BlockIndex HasShapes::getBlockWhichIsAdjacentWithPredicate(const HasShapeIndex& index, std::function<bool(const BlockIndex&)>& predicate) const
+template<class Derived, class Index>
+BlockIndex HasShapes<Derived, Index>::getBlockWhichIsAdjacentWithPredicate(const Index& index, std::function<bool(const BlockIndex&)>& predicate) const
 {
 	return getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(index, m_location[index], m_facing[index], predicate);
 }
-BlockIndex HasShapes::getBlockWhichIsOccupiedWithPredicate(const HasShapeIndex& index, std::function<bool(const BlockIndex&)>& predicate) const
+template<class Derived, class Index>
+BlockIndex HasShapes<Derived, Index>::getBlockWhichIsOccupiedWithPredicate(const Index& index, std::function<bool(const BlockIndex&)>& predicate) const
 {
 	return getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(index, m_location[index], m_facing[index], predicate);
 }
-ItemIndex HasShapes::getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(const HasShapeIndex& index, const BlockIndex& location, const Facing& facing, std::function<bool(const ItemIndex&)>& predicate) const
+template<class Derived, class Index>
+ItemIndex HasShapes<Derived, Index>::getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(const Index& index, const BlockIndex& location, const Facing& facing, std::function<bool(const ItemIndex&)>& predicate) const
 {
 	for(auto [x, y, z] : Shape::adjacentPositionsWithFacing(m_shape[index], facing))
 	{
@@ -263,17 +300,20 @@ ItemIndex HasShapes::getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(cons
 	}
 	return ItemIndex::null();
 }
-ItemIndex HasShapes::getItemWhichIsAdjacentWithPredicate(const HasShapeIndex& index, std::function<bool(const ItemIndex&)>& predicate) const
+template<class Derived, class Index>
+ItemIndex HasShapes<Derived, Index>::getItemWhichIsAdjacentWithPredicate(const Index& index, std::function<bool(const ItemIndex&)>& predicate) const
 {
 	return getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(index, m_location[index], m_facing[index], predicate);
 }
-bool HasShapes::allBlocksAtLocationAndFacingAreReservable(const HasShapeIndex& index, const BlockIndex& location, const Facing& facing, const FactionId& faction) const
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::allBlocksAtLocationAndFacingAreReservable(const Index& index, const BlockIndex& location, const Facing& facing, const FactionId& faction) const
 {
 	Blocks& blocks = m_area.getBlocks();
 	std::function<bool(const BlockIndex&)> predicate = [&blocks, faction](const BlockIndex& occupied) { return blocks.isReserved(occupied, faction); };
 	return predicateForAnyOccupiedBlockAtLocationAndFacing(index, predicate, location, facing);
 }
-void HasShapes::log(const HasShapeIndex& index) const
+template<class Derived, class Index>
+void HasShapes<Derived, Index>::log(const Index& index) const
 {
 	if(!m_location[index].exists())
 	{

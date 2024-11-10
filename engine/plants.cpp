@@ -1,7 +1,7 @@
 #include "plants.h"
 #include "area.h"
 #include "eventSchedule.h"
-#include "hasShapes.h"
+#include "hasShapes.hpp"
 #include "index.h"
 #include "itemType.h"
 #include "plantSpecies.h"
@@ -11,7 +11,7 @@
 #include "types.h"
 
 Plants::Plants(Area& area) : 
-	HasShapes(area),
+	HasShapes<Plants, PlantIndex>(area),
 	m_growthEvent(area.m_eventSchedule),
 	m_shapeGrowthEvent(area.m_eventSchedule),
 	m_fluidEvent(area.m_eventSchedule),
@@ -21,7 +21,7 @@ Plants::Plants(Area& area) :
 { }
 void Plants::resize(const PlantIndex& newSize)
 {
-	HasShapes::resize(newSize.toHasShape());
+	HasShapes<Plants, PlantIndex>::resize(newSize);
 	m_growthEvent.resize(newSize);
 	m_shapeGrowthEvent.resize(newSize);
 	m_fluidEvent.resize(newSize);
@@ -38,7 +38,7 @@ void Plants::resize(const PlantIndex& newSize)
 }
 void Plants::moveIndex(const PlantIndex& oldIndex, const PlantIndex& newIndex)
 {
-	HasShapes::moveIndex(oldIndex.toHasShape(), newIndex.toHasShape());
+	HasShapes<Plants, PlantIndex>::moveIndex(oldIndex, newIndex);
 	m_growthEvent.moveIndex(oldIndex, newIndex);
 	m_shapeGrowthEvent.moveIndex(oldIndex, newIndex);
 	m_fluidEvent.moveIndex(oldIndex, newIndex);
@@ -78,7 +78,7 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 	m_percentGrown[index] = paramaters.percentGrown.empty() ? Percent::create(100) : paramaters.percentGrown;
 	if(paramaters.shape.empty())
 		paramaters.shape = PlantSpecies::shapeForPercentGrown(paramaters.species, m_percentGrown[index]);
-	HasShapes::create(index, paramaters.shape, paramaters.faction, true);
+	HasShapes<Plants, PlantIndex>::create(index, paramaters.shape, paramaters.faction, true);
 	m_species[index] = paramaters.species;
 	m_fluidSource[index].clear();
 	m_percentFoliage[index] = paramaters.percentFoliage.empty() ? Percent::create(100) : paramaters.percentFoliage;
