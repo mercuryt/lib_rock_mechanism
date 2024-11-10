@@ -76,10 +76,12 @@ void MustDrink::setNeedsFluid(Area& area)
 	{
 		m_volumeDrinkRequested = drinkVolumeFor(area, actor);
 		Step stepsTillDie = AnimalSpecies::getStepsTillDieWithoutFluid(actors.getSpecies(actor));
+		m_thirstEvent.maybeUnschedule();
 		m_thirstEvent.schedule(area, stepsTillDie, actor);
 		std::unique_ptr<Objective> objective = std::make_unique<DrinkObjective>(area);
 		m_objective = static_cast<DrinkObjective*>(objective.get());
 		actors.objective_addNeed(actor, std::move(objective));
+		actors.grow_updateGrowingStatus(actor);
 	}
 	else
 		actors.die(actor, CauseOfDeath::thirst);

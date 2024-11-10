@@ -19,7 +19,7 @@ void Blocks::unreserve(const BlockIndex& index, CanReserve& canReserve)
 	if(!m_reservables[index]->hasAnyReservations())
 		m_reservables[index] = nullptr;
 }
-void Blocks::unreserveAll(const BlockIndex& index)
+void Blocks::dishonorAllReservations(const BlockIndex& index)
 {
 	assert(m_reservables[index] != nullptr);
 	m_reservables[index] = nullptr;

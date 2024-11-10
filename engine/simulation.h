@@ -66,12 +66,15 @@ public:
 	//TODO: latitude, longitude, altitude.
 	[[nodiscard]] std::filesystem::path getPath() const  { return m_path; }
 	[[nodiscard, maybe_unused]] DateTime getDateTime() const;
-	[[nodiscard]] Step getNextEventStep();
+	[[nodiscard]] Step getNextStepToSimulate() const;
+	[[nodiscard]] Step getNextEventStep() const;
 	[[nodiscard]] SimulationHasAreas& getAreas();
+	[[nodiscard]] const SimulationHasAreas& getAreas() const;
 	~Simulation();
 	// For testing.
 	[[maybe_unused]] void fastForwardUntill(DateTime now);
 	[[maybe_unused]] void fastForward(Step step);
+	[[maybe_unused]] void fasterForward(Step step);
 	[[maybe_unused]] void fastForwardUntillActorIsAtDestination(Area& area, const ActorIndex& actor, const BlockIndex& destination);
 	[[maybe_unused]] void fastForwardUntillActorIsAt(Area& area, const ActorIndex& actor, const BlockIndex& destination);
 	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToDestination(Area& area, const ActorIndex& actor, const BlockIndex& destination);
@@ -82,6 +85,8 @@ public:
 	[[maybe_unused]] void fastForwardUntillActorHasEquipment(Area& area, const ActorIndex& actor, const ItemIndex& item);
 	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()>&& predicate, uint32_t minutes = 10);
 	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()>& predicate, uint32_t minutes = 10);
+	[[maybe_unused]] void fasterForwardUntillPredicate(std::function<bool()>& predicate, uint32_t minutes = 10);
+	[[maybe_unused]] void fasterForwardUntillPredicate(std::function<bool()>&& predicate, uint32_t minutes = 10);
 	[[maybe_unused]] void fastForwardUntillNextEvent();
 	[[nodiscard, maybe_unused]] DeserializationMemo& getDeserializationMemo() { return m_deserializationMemo; }
 	// temportary.

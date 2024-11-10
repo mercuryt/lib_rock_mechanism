@@ -79,7 +79,18 @@ void SimulationHasAreas::recordId(Area& area)
 {
 	m_areasById[area.m_id] = &area;
 }
-Step SimulationHasAreas::getNextEventStep()
+Step SimulationHasAreas::getNextEventStep() const
+{
+	Step output;
+	for(const Area& area : m_areas)
+	{
+		Step step = area.m_eventSchedule.getNextEventStep();
+		if(output.empty() || step < output)
+			output = step;
+	}
+	return output;
+}
+Step SimulationHasAreas::getNextStepToSimulate() const
 {
 	Step output;
 	for(const Area& area : m_areas)

@@ -84,16 +84,24 @@ void Simulation::save()
 }
 FactionId Simulation::createFaction(std::wstring name) { return m_hasFactions.createFaction(name); }
 DateTime Simulation::getDateTime() const { return DateTime(m_step); }
-Step Simulation::getNextEventStep()
+Step Simulation::getNextEventStep() const
 {
-	if(!m_threadedTaskEngine.empty())
-		return m_step;
-	Step nextAreaStep = getAreas().getNextEventStep();
+	Step nextAreaStep = getAreas().getNextStepToSimulate();
 	if(nextAreaStep.empty())
 		nextAreaStep = Step::max();
 	return std::min(m_eventSchedule.getNextEventStep(), nextAreaStep);
 }
+Step Simulation::getNextStepToSimulate() const
+{
+	if(!m_threadedTaskEngine.empty())
+		return m_step;
+	return getNextEventStep();
+}
 SimulationHasAreas& Simulation::getAreas()
+{
+	return *m_hasAreas;
+}
+const SimulationHasAreas& Simulation::getAreas() const
 {
 	return *m_hasAreas;
 }
@@ -105,13 +113,28 @@ Simulation::~Simulation()
 	m_eventSchedule.clear();
 	m_threadedTaskEngine.clear(*this, nullptr);
 }
-// Note: Does not handle fluids.
-void Simulation::fastForward(Step steps)
+void Simulation::fasterForward(Step steps)
 {
 	Step targetStep = m_step + steps;
 	while(!m_eventSchedule.m_data.empty())
 	{
 		Step nextStep = getNextEventStep();
+		if(nextStep <= targetStep)
+		{
+			m_step = nextStep;
+			doStep();
+		}
+		else
+			break;
+	}
+	m_step = targetStep + 1;
+}
+void Simulation::fastForward(Step steps)
+{
+	Step targetStep = m_step + steps;
+	while(!m_eventSchedule.m_data.empty())
+	{
+		Step nextStep = getNextStepToSimulate();
 		if(nextStep <= targetStep)
 		{
 			m_step = nextStep;
@@ -181,7 +204,20 @@ void Simulation::fastForwardUntillPredicate(std::function<bool()>& predicate, ui
 	while(!m_eventSchedule.m_data.empty())
 	{
 		if(m_threadedTaskEngine.count() == 0)
-			m_step = getNextEventStep();
+			m_step = getNextStepToSimulate();
+		assert(m_step <= lastStep);
+		doStep();
+		if(predicate())
+			break;
+	}
+}
+void Simulation::fasterForwardUntillPredicate(std::function<bool()>& predicate, uint32_t minutes)
+{
+	assert(!predicate());
+	[[maybe_unused]] Step lastStep = m_step + (Config::stepsPerMinute * minutes);
+	while(!m_eventSchedule.m_data.empty())
+	{
+		m_step = getNextEventStep();
 		assert(m_step <= lastStep);
 		doStep();
 		if(predicate())
@@ -191,6 +227,10 @@ void Simulation::fastForwardUntillPredicate(std::function<bool()>& predicate, ui
 void Simulation::fastForwardUntillPredicate(std::function<bool()>&& predicate, uint32_t minutes)
 {
 	fastForwardUntillPredicate(predicate, minutes);
+}
+void Simulation::fasterForwardUntillPredicate(std::function<bool()>&& predicate, uint32_t minutes)
+{
+	fasterForwardUntillPredicate(predicate, minutes);
 }
 void Simulation::fastForwardUntillNextEvent()
 {

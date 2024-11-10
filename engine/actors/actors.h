@@ -423,6 +423,7 @@ public:
 	[[nodiscard]] bool drink_hasThristEvent(const ActorIndex& index) const;
 	// Eat.
 	void eat_do(const ActorIndex& index, const Mass& mass);
+	void eat_setIsHungry(const ActorIndex& index);
 	[[nodiscard]] bool eat_isHungry(const ActorIndex& index) const;
 	[[nodiscard]] bool eat_canEatActor(const ActorIndex& index, const ActorIndex& other) const;
 	[[nodiscard]] bool eat_canEatItem(const ActorIndex& index, const ItemIndex& item) const;

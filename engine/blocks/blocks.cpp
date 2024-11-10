@@ -512,8 +512,8 @@ void Blocks::solid_set(const BlockIndex& index, const MaterialTypeId& materialTy
 	m_area.m_hasStockPiles.removeBlockFromAllFactions(index);
 	m_area.m_hasCraftingLocationsAndJobs.maybeRemoveLocation(index);
 	if(wasEmpty && m_reservables[index] != nullptr)
-		// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid block.
-		m_reservables[index] = nullptr;
+		// There are no reservations which can exist on both a solid and not solid block.
+		dishonorAllReservations(index);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
 void Blocks::solid_setNot(const BlockIndex& index)
