@@ -12,6 +12,7 @@
 #include "../config.h"
 #include "../random.h"
 #include "../items/items.h"
+#include "../hasShapes.hpp"
 #include "reference.h"
 
 #include <cstdint>

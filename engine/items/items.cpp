@@ -92,7 +92,7 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	// TODO: This 'toItem' call should not be neccessary. Why does ItemIndex + int = HasShapeIndex?
 	resize(index + 1);
 	const MoveTypeId& moveType = ItemType::getMoveType(itemParamaters.itemType);
-	Portables::create(index, moveType, ItemType::getShape(itemParamaters.itemType), itemParamaters.faction, itemParamaters.isStatic, itemParamaters.quantity);
+	Portables<Items, ItemIndex>::create(index, moveType, ItemType::getShape(itemParamaters.itemType), itemParamaters.faction, itemParamaters.isStatic, itemParamaters.quantity);
 	assert(m_canBeStockPiled[index] == nullptr);
 	m_craftJobForWorkPiece[index] = itemParamaters.craftJob;
 	assert(m_hasCargo[index] == nullptr);
@@ -122,7 +122,7 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 }
 void Items::resize(const ItemIndex& newSize)
 {
-	Portables::resize(newSize);
+	Portables<Items, ItemIndex>::resize(newSize);
 	m_canBeStockPiled.resize(newSize);
 	m_craftJobForWorkPiece.resize(newSize);
 	m_hasCargo.resize(newSize);
@@ -138,7 +138,7 @@ void Items::resize(const ItemIndex& newSize)
 }
 void Items::moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex)
 {
-	Portables::moveIndex(oldIndex, newIndex);
+	Portables<Items, ItemIndex>::moveIndex(oldIndex, newIndex);
 	m_canBeStockPiled[newIndex] = std::move(m_canBeStockPiled[oldIndex]);
 	m_craftJobForWorkPiece[newIndex] = m_craftJobForWorkPiece[oldIndex];
 	m_hasCargo[newIndex] = std::move(m_hasCargo[oldIndex]);
@@ -348,7 +348,7 @@ void Items::log(const ItemIndex& index) const
 		std::cout << "(" << m_quantity[index].get() << ")";
 	if(m_craftJobForWorkPiece[index] != nullptr)
 		std::cout << "{" << m_craftJobForWorkPiece[index]->getStep().get() << "}";
-	Portables::log(index);
+	Portables<Items, ItemIndex>::log(index);
 	std::cout << std::endl;
 }
 // Wrapper methods.
@@ -378,7 +378,7 @@ bool Items::stockpile_canBeStockPiled(const ItemIndex& index, const FactionId& f
 }
 void Items::load(const Json& data)
 {
-	static_cast<Portables*>(this)->load(data);
+	static_cast<Portables<Items, ItemIndex>*>(this)->load(data);
 	data["onSurface"].get_to(m_onSurface);
 	data["name"].get_to(m_name);
 	data["itemType"].get_to(m_itemType);
@@ -424,7 +424,7 @@ void to_json(Json& data, std::unique_ptr<ItemHasCargo> hasCargo) { data = *hasCa
 void to_json(Json& data, std::unique_ptr<ItemCanBeStockPiled> canBeStockPiled) { data = canBeStockPiled == nullptr ? Json{false} : canBeStockPiled->toJson(); }
 Json Items::toJson() const
 {
-	Json data = Portables::toJson();
+	Json data = Portables<Items, ItemIndex>::toJson();
 	data["id"] = m_id;
 	data["name"] = m_name;
 	data["location"] = m_location;

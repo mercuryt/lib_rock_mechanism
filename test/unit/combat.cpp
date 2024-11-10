@@ -13,6 +13,7 @@
 #include "../../engine/animalSpecies.h"
 #include "../../engine/types.h"
 #include "../../engine/itemType.h"
+#include "../../engine/hasShapes.hpp"
 #include <functional>
 TEST_CASE("combat")
 {

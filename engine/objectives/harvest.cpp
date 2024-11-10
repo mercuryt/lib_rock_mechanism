@@ -7,6 +7,7 @@
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"
 #include "../plants.h"
+#include "../hasShapes.hpp"
 #include "pathRequest.h"
 #include <memory>
 // Event.

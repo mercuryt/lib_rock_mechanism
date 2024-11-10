@@ -3,6 +3,7 @@
 #include "../config.h"
 #include "../farmFields.h"
 #include "../simulation.h"
+#include "../hasShapes.hpp"
 #include "actors/actors.h"
 #include "blocks/blocks.h"
 #include "designations.h"

@@ -250,7 +250,7 @@ void ActorParamaters::generateEquipment(Area& area, const ActorIndex& actor)
 template<class T>
 void to_json(const Json& data, std::unique_ptr<T>& t) { data = *t; }
 Actors::Actors(Area& area) :
-	Portables(area, true),
+	Portables<Actors, ActorIndex>(area, true),
 	m_coolDownEvent(area.m_eventSchedule),
 	m_moveEvent(area.m_eventSchedule)
 { }
@@ -269,7 +269,7 @@ Actors::~Actors()
 }
 void Actors::load(const Json& data)
 {
-	Portables::load(data);
+	Portables<Actors, ActorIndex>::load(data);
 	data["id"].get_to(m_id);
 	data["name"].get_to(m_name);
 	data["species"].get_to(m_species);
@@ -468,12 +468,12 @@ Json Actors::toJson() const
 	};
 	for(auto index : getAll())
 		output["pathIter"].push_back(m_pathIter[index] - m_path[index].begin());
-	output.update(Portables::toJson());
+	output.update(Portables<Actors, ActorIndex>::toJson());
 	return output;
 }
 void Actors::resize(const ActorIndex& newSize)
 {
-	Portables::resize(newSize);
+	Portables<Actors, ActorIndex>::resize(newSize);
 	m_referenceTarget.resize(newSize);
 	m_id.resize(newSize);
 	m_name.resize(newSize);
@@ -531,7 +531,7 @@ void Actors::resize(const ActorIndex& newSize)
 }
 void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
 {
-	Portables::moveIndex(oldIndex, newIndex);
+	Portables<Actors, ActorIndex>::moveIndex(oldIndex, newIndex);
 	m_referenceTarget[newIndex] = std::move(m_referenceTarget[oldIndex]);
 	m_id[newIndex] = m_id[oldIndex];
 	m_name[newIndex] = m_name[oldIndex];
@@ -644,7 +644,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	MoveTypeId moveType = AnimalSpecies::getMoveType(params.species);
 	m_area.m_hasTerrainFacades.maybeRegisterMoveType(moveType);
 	ShapeId shape = AnimalSpecies::shapeForPercentGrown(params.species, params.getPercentGrown(m_area.m_simulation));
-	Portables::create(index, moveType, shape, params.faction, isStatic, Quantity::create(1));
+	Portables<Actors, ActorIndex>::create(index, moveType, shape, params.faction, isStatic, Quantity::create(1));
 	Simulation& simulation = m_area.m_simulation;
 	m_referenceTarget[index] = std::make_unique<ActorReferenceTarget>(index);
 	m_id[index] = params.getId(simulation);
@@ -924,7 +924,7 @@ void Actors::log(const ActorIndex& index) const
 	Blocks& blocks = m_area.getBlocks();
 	std::wcout << m_name[index];
 	std::cout << "(" << AnimalSpecies::getName(m_species[index]) << ")";
-	Portables::log(index);
+	Portables<Actors, ActorIndex>::log(index);
 	if(objective_exists(index))
 		std::cout << ", current objective: " << objective_getCurrentName(index);
 	if(m_destination[index].exists())

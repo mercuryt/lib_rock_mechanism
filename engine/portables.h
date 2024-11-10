@@ -18,9 +18,12 @@ class MoveEvent;
 class Area;
 class PathThreadedTask;
 class HasOnDestroySubscriptions;
+class Actors;
+class Items;
+class Blocks;
 
 template<class Derived, class Index>
-class Portables : public HasShapes
+class Portables : public HasShapes<Derived, Index>
 {
 protected:
 	DataVector<std::unique_ptr<Reservable>, Index> m_reservables;
@@ -70,6 +73,11 @@ public:
 	[[nodiscard]] ActorOrItemIndex& getLeader(const Index& index) { return m_leader[index]; }
 	[[nodiscard]] const ActorOrItemIndex& getFollower(const Index& index) const { return m_follower[index]; }
 	[[nodiscard]] const ActorOrItemIndex& getLeader(const Index& index) const { return m_leader[index]; }
+	[[nodiscard]] Items& getItems() { return getArea().getItems(); }
+	[[nodiscard]] Actors& getActors() { return getArea().getActors(); }
+	[[nodiscard]] Area& getArea() { return HasShapes<Derived, Index>::getArea(); }
+	[[nodiscard]] const Area& getArea() const { return HasShapes<Derived, Index>::getArea(); }
+	[[nodiscard]] BlockIndex getLocation(const Index& index) const { return HasShapes<Derived, Index>::getLocation(index); }
 	// For testing.
 	[[nodiscard]] Speed lead_getSpeed(const Index& index);
 	// Reservations.

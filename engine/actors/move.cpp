@@ -230,7 +230,6 @@ void Actors::move_setDestinationAdjacentToItem(const ActorIndex& index, const It
 void Actors::move_setDestinationAdjacentToPlant(const ActorIndex& index, const PlantIndex& plant, bool detour, bool unreserved, bool reserve)
 {
 	assert(!isAdjacentToPlant(index, plant));
-	assert(!isAdjacentToLocation(index, m_location[plant]));
 	assert(m_pathRequest[index] == nullptr);
 	m_pathRequest[index] = std::make_unique<PathRequest>(PathRequest::create());
 	m_pathRequest[index]->createGoAdjacentToPlant(m_area, index, plant, detour, unreserved, DistanceInBlocks::max(), reserve);

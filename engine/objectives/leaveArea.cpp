@@ -2,6 +2,7 @@
 #include "../area.h"
 #include "../simulation.h"
 #include "../actors/actors.h"
+#include "../hasShapes.hpp"
 
 LeaveAreaObjective::LeaveAreaObjective(Priority priority) :
 	Objective(priority) { }

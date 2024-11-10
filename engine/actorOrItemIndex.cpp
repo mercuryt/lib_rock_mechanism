@@ -143,31 +143,31 @@ bool ActorOrItemIndex::canEnterCurrentlyFromWithOccupied(Area& area, const Block
 	}
 }
 BlockIndex ActorOrItemIndex::getLocation(const Area& area) const 
-{ return isActor() ? area.getActors().getLocation(m_index) : area.getItems().getLocation(m_index); }
+{ return isActor() ? area.getActors().getLocation(m_index.toActor()) : area.getItems().getLocation(m_index.toItem()); }
 const OccupiedBlocksForHasShape& ActorOrItemIndex::getBlocks(Area& area) const
-{ return isActor() ? area.getActors().getBlocks(m_index) : area.getItems().getBlocks(m_index); }
+{ return isActor() ? area.getActors().getBlocks(m_index.toActor()) : area.getItems().getBlocks(m_index.toItem()); }
 BlockIndices ActorOrItemIndex::getAdjacentBlocks(Area& area) const
-{ return isActor() ? area.getActors().getAdjacentBlocks(m_index) : area.getItems().getAdjacentBlocks(m_index); }
+{ return isActor() ? area.getActors().getAdjacentBlocks(m_index.toActor()) : area.getItems().getAdjacentBlocks(m_index.toItem()); }
 bool ActorOrItemIndex::isAdjacent(const Area& area, const ActorOrItemIndex& other) const
 {
 	const auto& otherBlocks = other.getBlocks(const_cast<Area&>(area));
-	return isActor() ? area.getActors().isAdjacentToAny(m_index, otherBlocks) : area.getItems().isAdjacentToAny(m_index, otherBlocks);
+	return isActor() ? area.getActors().isAdjacentToAny(m_index.toActor(), otherBlocks) : area.getItems().isAdjacentToAny(m_index.toItem(), otherBlocks);
 }
 bool ActorOrItemIndex::isAdjacentToActor(const Area& area, const ActorIndex& other) const
 {
-	return isActor() ? area.getActors().isAdjacentToActor(m_index, other) : area.getItems().isAdjacentToActor(m_index, other);
+	return isActor() ? area.getActors().isAdjacentToActor(m_index.toActor(), other) : area.getItems().isAdjacentToActor(m_index.toItem(), other);
 }
 bool ActorOrItemIndex::isAdjacentToItem(const Area& area, const ItemIndex& item) const
 {
-	return isActor() ? area.getActors().isAdjacentToItem(m_index, item) : area.getItems().isAdjacentToItem(m_index, item);
+	return isActor() ? area.getActors().isAdjacentToItem(m_index.toActor(), item) : area.getItems().isAdjacentToItem(m_index.toItem(), item);
 }
 bool ActorOrItemIndex::isAdjacentToLocation(const Area& area, const BlockIndex& location) const
 {
-	return isActor() ? area.getActors().isAdjacentToLocation(m_index, location) : area.getItems().isAdjacentToLocation(m_index, location);
+	return isActor() ? area.getActors().isAdjacentToLocation(m_index.toActor(), location) : area.getItems().isAdjacentToLocation(m_index.toItem(), location);
 }
-ShapeId ActorOrItemIndex::getShape(const Area& area) const { return isActor() ? area.getActors().getShape(m_index) : area.getItems().getShape(m_index); }
+ShapeId ActorOrItemIndex::getShape(const Area& area) const { return isActor() ? area.getActors().getShape(m_index.toActor()) : area.getItems().getShape(m_index.toItem()); }
 MoveTypeId ActorOrItemIndex::getMoveType(const Area& area) const{ return isActor() ? area.getActors().getMoveType(ActorIndex::cast(m_index)) : area.getItems().getMoveType(ItemIndex::cast(m_index)); }
-Facing ActorOrItemIndex::getFacing(const Area& area) const { return isActor() ? area.getActors().getFacing(m_index) : area.getItems().getFacing(m_index); }
+Facing ActorOrItemIndex::getFacing(const Area& area) const { return isActor() ? area.getActors().getFacing(m_index.toActor()) : area.getItems().getFacing(m_index.toItem()); }
 Mass ActorOrItemIndex::getMass(const Area& area) const { return isActor() ? area.getActors().getMass(ActorIndex::cast(m_index)) : area.getItems().getMass(ItemIndex::cast(m_index)); }
 Mass ActorOrItemIndex::getSingleUnitMass(const Area& area) const { return isActor() ? area.getActors().getMass(ActorIndex::cast(m_index)) : area.getItems().getSingleUnitMass(ItemIndex::cast(m_index)); }
 Volume ActorOrItemIndex::getVolume(const Area& area)  const { return isActor() ? area.getActors().getVolume(ActorIndex::cast(m_index)) : area.getItems().getVolume(ItemIndex::cast(m_index)); }

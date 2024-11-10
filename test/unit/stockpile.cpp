@@ -222,7 +222,7 @@ TEST_CASE("stockpile")
 		REQUIRE(actors.move_getDestination(project2WorkerRef.getIndex()).exists());
 		std::function<bool()> predicate = [&](){ return items.getLocation(chunk1) == stockpileLocation1; };
 		simulation.fastForwardUntillPredicate(predicate);
-		predicate = [&](){ return actors.getLocation(chunk2) == stockpileLocation2; };
+		predicate = [&](){ return items.getLocation(chunk2) == stockpileLocation2; };
 		simulation.fastForwardUntillPredicate(predicate);
 		REQUIRE(actors.objective_getCurrentName(project1WorkerRef.getIndex()) != "stockpile");
 		REQUIRE(actors.objective_getCurrentName(project2WorkerRef.getIndex()) != "stockpile");

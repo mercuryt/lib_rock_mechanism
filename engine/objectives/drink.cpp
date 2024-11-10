@@ -4,6 +4,7 @@
 #include "../actors/actors.h"
 #include "../items/items.h"
 #include "../plants.h"
+#include "../hasShapes.hpp"
 
 // Drink Threaded Task.
 DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, const ActorIndex& actor) : m_drinkObjective(drob)
