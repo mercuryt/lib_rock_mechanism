@@ -355,6 +355,7 @@ public:
 	[[nodiscard]] bool objective_exists(const ActorIndex& index) const;
 	[[nodiscard]] bool objective_hasTask(const ActorIndex& index, const ObjectiveTypeId& objectiveTypeId) const;
 	[[nodiscard]] bool objective_hasNeed(const ActorIndex& index, NeedType needType) const;
+	[[nodiscard]] bool objective_hasSupressedNeed(const ActorIndex &index, NeedType needType) const;
 	[[nodiscard]] Priority objective_getPriorityFor(const ActorIndex& index, const ObjectiveTypeId& objectiveType) const;
 	[[nodiscard]] std::string objective_getCurrentName(const ActorIndex& index) const;
 	template<typename T>
@@ -363,6 +364,7 @@ public:
 	[[nodiscard]] bool objective_queuesAreEmpty(const ActorIndex& index) const;
 	[[nodiscard]] bool objective_isOnDelay(const ActorIndex& index, const ObjectiveTypeId& objectiveTypeId) const;
 	[[nodiscard]] Step objective_getDelayEndFor(const ActorIndex& index, const ObjectiveTypeId& objectiveTypeId) const;
+	[[nodiscard]] Step objective_getNeedDelayRemaining(const ActorIndex& index, NeedType objectiveTypeId) const;
 	// CanReserve.
 	void canReserve_clearAll(const ActorIndex& index);
 	void canReserve_setFaction(const ActorIndex& index, FactionId faction);

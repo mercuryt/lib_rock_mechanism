@@ -31,6 +31,7 @@ public:
 	void notHungry(Area& area);
 	void setNeedsFood(Area& area);
 	void unschedule();
+	void setObjective(EatObjective& objective); 
 	[[nodiscard]] bool needsFood() const;
 	[[nodiscard]] Mass massFoodForBodyMass(Area& area) const;
 	[[nodiscard]] Mass getMassFoodRequested() const;
@@ -44,7 +45,7 @@ public:
 	friend class HungerEvent;
 	friend class EatObjective;
 	// For testing.
-	[[maybe_unused]] bool hasObjecive() const { return m_eatObjective != nullptr; }
+	[[maybe_unused]] bool hasObjective() const { return m_eatObjective != nullptr; }
 	[[maybe_unused]] bool hasHungerEvent() const { return m_hungerEvent.exists(); }
 	[[maybe_unused]] Step getHungerEventStep() const { return m_hungerEvent.getStep(); }
 };

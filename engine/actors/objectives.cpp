@@ -92,7 +92,15 @@ Step Actors::objective_getDelayEndFor(const ActorIndex& index, const ObjectiveTy
 {
 	return m_hasObjectives[index]->m_prioritySet.getDelayEndFor(objectiveTypeId);
 }
+Step Actors::objective_getNeedDelayRemaining(const ActorIndex& index, NeedType needType) const
+{
+	return m_hasObjectives[index]->getNeedDelayRemaining(needType);
+}
 bool Actors::objective_hasNeed(const ActorIndex& index, NeedType needType) const
 {
 	return m_hasObjectives[index]->hasNeed(needType);
+}
+bool Actors::objective_hasSupressedNeed(const ActorIndex& index, NeedType needType) const
+{
+	return m_hasObjectives[index]->hasSupressedNeed(needType);
 }

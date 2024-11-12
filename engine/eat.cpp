@@ -84,6 +84,7 @@ void MustEat::eat(Area& area, Mass mass)
 {
 	assert(mass <= m_massFoodRequested);
 	assert(mass != 0);
+	assert(m_eatObjective!= nullptr);
 	Actors& actors = area.getActors();
 	m_massFoodRequested -= mass;
 	m_hungerEvent.unschedule();
@@ -134,6 +135,7 @@ void MustEat::unschedule()
 {
 	m_hungerEvent.maybeUnschedule();
 }
+void MustEat::setObjective(EatObjective& objective) { assert(m_eatObjective == nullptr); m_eatObjective = &objective; }
 bool MustEat::needsFood() const { return m_massFoodRequested != 0; }
 Mass MustEat::massFoodForBodyMass(Area& area) const
 {

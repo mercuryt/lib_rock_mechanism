@@ -86,16 +86,19 @@ FactionId Simulation::createFaction(std::wstring name) { return m_hasFactions.cr
 DateTime Simulation::getDateTime() const { return DateTime(m_step); }
 Step Simulation::getNextEventStep() const
 {
-	Step nextAreaStep = getAreas().getNextStepToSimulate();
+	Step nextAreaStep = getAreas().getNextEventStep();
 	if(nextAreaStep.empty())
-		nextAreaStep = Step::max();
+		return m_eventSchedule.getNextEventStep();
 	return std::min(m_eventSchedule.getNextEventStep(), nextAreaStep);
 }
 Step Simulation::getNextStepToSimulate() const
 {
 	if(!m_threadedTaskEngine.empty())
 		return m_step;
-	return getNextEventStep();
+	Step nextAreaStep = getAreas().getNextStepToSimulate();
+	if(nextAreaStep.empty())
+		return getNextEventStep();
+	return std::min(nextAreaStep, getNextEventStep());
 }
 SimulationHasAreas& Simulation::getAreas()
 {
@@ -214,7 +217,7 @@ void Simulation::fastForwardUntillPredicate(std::function<bool()>& predicate, ui
 void Simulation::fasterForwardUntillPredicate(std::function<bool()>& predicate, uint32_t minutes)
 {
 	assert(!predicate());
-	[[maybe_unused]] Step lastStep = m_step + (Config::stepsPerMinute * minutes);
+	Step lastStep = m_step + (Config::stepsPerMinute * minutes);
 	while(!m_eventSchedule.m_data.empty())
 	{
 		m_step = getNextEventStep();
