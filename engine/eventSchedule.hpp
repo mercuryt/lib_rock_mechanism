@@ -20,51 +20,35 @@ public:
 	template<typename ...Args>
 	void schedule(Args&& ...args)
 	{
-		assert(m_event == nullptr);
+		assert(!exists());
 		std::unique_ptr<ScheduledEvent> event = std::make_unique<EventType>(args...);
 		m_event = event.get();
 		m_schedule->schedule(std::move(event));
 	}
 	void unschedule()
 	{
-		assert(m_event != nullptr);
+		assert(exists());
 		m_event->cancel(m_schedule->getSimulation(), m_schedule->getArea());
 		m_event = nullptr;
 	}
 	void maybeUnschedule()
 	{
-		if(m_event != nullptr)
+		if(exists())
 			unschedule();
 	}
-	void clearPointer()
-	{
-		assert(m_event != nullptr);
-		m_event = nullptr;
-	}
-	[[nodiscard]] Percent percentComplete() const
-	{
-		assert(m_event != nullptr);
-		return m_event->percentComplete(m_schedule->getSimulation());
-	}
-	[[nodiscard]] float fractionComplete() const
-	{
-		assert(m_event != nullptr);
-		return m_event->fractionComplete(m_schedule->getSimulation());
-	}
+	void clearPointer() { assert(exists()); m_event = nullptr; }
+	[[nodiscard]] Percent percentComplete() const { assert(exists()); return m_event->percentComplete(m_schedule->getSimulation()); }
+	[[nodiscard]] float fractionComplete() const { assert(exists()); return m_event->fractionComplete(m_schedule->getSimulation()); }
 	[[nodiscard]] bool exists() const { return m_event != nullptr; }
-	[[nodiscard]] const Step& getStep() const
-	{
-		assert(m_event != nullptr);
-		return m_event->m_step;
-	}
-	[[nodiscard]] Step getStartStep() const { return m_event->m_startStep; }
-	[[nodiscard]] Step remainingSteps() const { return m_event->remaningSteps(m_schedule->getSimulation()); }
-	[[nodiscard]] Step elapsedSteps() const { return m_event->elapsedSteps(m_schedule->getSimulation()); }
-	[[nodiscard]] Step duration() const { return m_event->duration(); }
+	[[nodiscard]] const Step& getStep() const { assert(exists()); return m_event->m_step; }
+	[[nodiscard]] Step getStartStep() const { assert(exists()); return m_event->m_startStep; }
+	[[nodiscard]] Step remainingSteps() const { assert(exists()); return m_event->remaningSteps(m_schedule->getSimulation()); }
+	[[nodiscard]] Step elapsedSteps() const { assert(exists()); return m_event->elapsedSteps(m_schedule->getSimulation()); }
+	[[nodiscard]] Step duration() const { assert(exists()); return m_event->duration(); }
 	[[nodiscard]] ScheduledEvent* getEvent() { return m_event; }
 	~HasScheduledEvent() 
 	{ 
-		if(m_event != nullptr)
+		if(exists())
 			m_event->cancel(m_schedule->getSimulation(), m_schedule->getArea());
 	}
 };

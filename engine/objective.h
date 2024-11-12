@@ -134,8 +134,8 @@ public:
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Priority getPriorityFor(const ObjectiveTypeId& objectiveTypeId) const;
 	// For testing.
-	[[nodiscard, maybe_unused]] bool isOnDelay(Area& area, const ObjectiveTypeId& objectiveTypeId) const;
-	[[nodiscard, maybe_unused]] Step getDelayEndFor(const ObjectiveTypeId& objectiveTypeId) const;
+	[[nodiscard]] bool isOnDelay(Area& area, const ObjectiveTypeId& objectiveTypeId) const;
+	[[nodiscard]] Step getDelayEndFor(const ObjectiveTypeId& objectiveTypeId) const;
 };
 class SupressedNeed final
 {
@@ -147,8 +147,8 @@ public:
 	SupressedNeed(Area& area, const Json& data, DeserializationMemo& deserializationMemo, const ActorReference& ref);
 	void callback(Area& area);
 	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] Step getDelayRemaining() const { return m_event.remainingSteps(); }
 	friend class SupressedNeedEvent;
-	[[nodiscard]] bool operator==(const SupressedNeed& supressedNeed){ return &supressedNeed == this; }
 };
 class SupressedNeedEvent final : public ScheduledEvent
 {
@@ -179,8 +179,7 @@ class HasObjectives final
 	// Voluntary tasks like harvest, dig, build, craft, guard, station, and kill go into task queue. Station and kill both have higher priority then baseline needs like eat but lower then needs like flee.
 	// findNewTask only adds one task at a time so there usually is only once objective in the queue. More then one task objective can be added by the user manually.
 	std::list<std::unique_ptr<Objective>> m_tasksQueue;
-	// Map is hash because SupressedNeed has no move constructor because it HasScheduledEvent.
-	std::unordered_map<NeedType, SupressedNeed> m_supressedNeeds;
+	SmallMapStable<NeedType, SupressedNeed> m_supressedNeeds;
 	Objective* m_currentObjective = nullptr;
 	ActorIndex m_actor;
 
@@ -224,6 +223,7 @@ public:
 	[[nodiscard]] bool hasTask(const ObjectiveTypeId& objectiveTypeId) const;
 	[[nodiscard]] bool hasNeed(const NeedType& objectiveTypeId) const;
 	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] Step getNeedDelayRemaining(NeedType needType) const;
 	friend class ObjectiveTypePrioritySet;
 	friend class SupressedNeed;
 };

@@ -42,7 +42,7 @@ uint32_t Actors::eat_getMinimumAcceptableDesire(const ActorIndex& index) const
 }
 bool Actors::eat_hasObjective(const ActorIndex& index) const
 {
-	return m_mustEat[index]->hasObjecive();
+	return m_mustEat[index]->hasObjective();
 }
 Mass Actors::eat_getMassFoodRequested(const ActorIndex& index) const
 {

@@ -12,6 +12,7 @@
 EatEvent::EatEvent(Area& area, const Step& delay, EatObjective& eo, const ActorIndex& actor, const Step start) :
        	ScheduledEvent(area.m_simulation, delay, start), m_eatObjective(eo)
 {
+	assert(area.getActors().eat_hasObjective(actor));
 	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
 }
 void EatEvent::execute(Simulation&, Area* area)
@@ -80,6 +81,7 @@ void EatEvent::eatGenericItem(Area& area, const ItemIndex& item)
 	Items& items = area.getItems();
 	assert(ItemType::getEdibleForDrinkersOf(items.getItemType(item)) == actors.drink_getFluidType(m_actor.getIndex()));
 	MustEat& mustEat = *area.getActors().m_mustEat[m_actor.getIndex()].get();
+	assert(mustEat.hasObjective());
 	Quantity quantityDesired = Quantity::create(std::ceil((float)mustEat.getMassFoodRequested().get() / (float)items.getSingleUnitMass(item).get()));
 	Quantity quantityEaten = std::min(quantityDesired, items.getQuantity(item));
 	Mass massEaten = std::min(mustEat.getMassFoodRequested(), items.getSingleUnitMass(item) * quantityEaten);
@@ -146,6 +148,8 @@ EatPathRequest::EatPathRequest(Area& area, EatObjective& eo, const ActorIndex& a
 			return false;
 		};
 	}
+	else if(m_eatObjective.m_noFoodFound)
+		createGoToEdge(area, actor, m_eatObjective.m_detour);
 	else
 	{
 		// initalize candidates with null values.
@@ -175,10 +179,10 @@ EatPathRequest::EatPathRequest(Area& area, EatObjective& eo, const ActorIndex& a
 			{
 				return mustEat.getDesireToEatSomethingAt(area, block) != 0;
 			};
+		// TODO: maxRange.
+		bool unreserved = false;
+		createGoAdjacentToCondition(area, actor, predicate, m_eatObjective.m_detour, unreserved, DistanceInBlocks::max(), BlockIndex::null());
 	}
-	//TODO: maxRange.
-	bool unreserved = false;
-	createGoAdjacentToCondition(area, actor, predicate, m_eatObjective.m_detour, unreserved, DistanceInBlocks::max(), BlockIndex::null());
 }
 void EatPathRequest::callback(Area& area, const FindPathResult& result)
 {
@@ -189,12 +193,37 @@ void EatPathRequest::callback(Area& area, const FindPathResult& result)
 	{
 		if(!m_huntResult.exists())
 		{
+			// Nothing found to hunt.
 			m_eatObjective.m_noFoodFound = true;
 			m_eatObjective.execute(area, actor);
-			return;
 		}
-		std::unique_ptr<Objective> killObjective = std::make_unique<KillObjective>(m_huntResult);
-		actors.m_hasObjectives[actor]->addNeed(area, std::move(killObjective));
+		else
+		{
+			// Hunt target found, create kill objective.
+			actors.m_hasObjectives[actor]->addNeed(area, std::make_unique<KillObjective>(m_huntResult));
+		}
+	}
+	else if(m_eatObjective.m_noFoodFound)
+	{
+		// Result of trying to leave area.
+		assert(actors.eat_getMinimumAcceptableDesire(actor) == 0);
+		if (actors.isOnEdge(actor))
+		{
+			// Leave area.
+			assert(result.useCurrentPosition);
+			m_eatObjective.execute(area, actor);
+		}
+		else if (result.path.empty())
+		{
+			// No path to edge, cannot fulfill.
+			assert(!result.useCurrentPosition);
+			m_eatObjective.m_noFoodFound = m_eatObjective.m_tryToHunt = false;
+			m_eatObjective.m_location.clear();
+			actors.objective_canNotFulfillNeed(actor, m_eatObjective);
+		}
+		else
+			// Path to edge found.
+			actors.move_setPath(actor, result.path);
 	}
 	else
 	{
@@ -271,16 +300,29 @@ void EatObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	MustEat& mustEat = *area.getActors().m_mustEat[actor].get();
+	// If the objective was supressed and then unsupressed MustEat::m_objective needs to be restored.
+	if(!mustEat.hasObjective())
+		mustEat.setObjective(*this);
 	// TODO: consider raising minimum desire level at which the actor tries to leave the area.
-	if(m_noFoodFound && mustEat.getMinimumAcceptableDesire(area) == 0)
+	if(m_noFoodFound) 
 	{
-		// We have determined that there is no food here and have attempted to path to the edge of the area so we can leave.
-		if(actors.predicateForAnyOccupiedBlock(actor, [&area](const BlockIndex& block){ return area.getBlocks().isEdge(block); }))
-			// We are at the edge and can leave.
-			actors.leaveArea(actor);
+		if(mustEat.getMinimumAcceptableDesire(area) == 0)
+		{
+			// Actor is hungry enough to leave the area.
+			if(actors.isOnEdge(actor))
+				// Actor is at the edge, leave.
+				actors.leaveArea(actor);
+			else
+				// Path to edge
+				makePathRequest(area, actor);
+		}
 		else
-			// No food and no escape, or not yet hungry enough for what is avalible.
+		{
+			// Not hungry enough to leave yet.
+			m_noFoodFound = m_tryToHunt = false;
+			m_location.clear();
 			actors.objective_canNotFulfillNeed(actor, *this);
+		}
 		return;
 	}
 	if(m_location.empty())
@@ -339,6 +381,7 @@ void EatObjective::reset(Area& area, const ActorIndex& actor)
 	delay(area, actor);
 	m_location.clear();
 	m_noFoodFound = false;
+	m_tryToHunt = false;
 	area.getActors().canReserve_clearAll(actor);
 }
 void EatObjective::makePathRequest(Area& area, const ActorIndex& actor)

@@ -117,7 +117,10 @@ Step ObjectiveTypePrioritySet::getDelayEndFor(const ObjectiveTypeId& objectiveTy
 }
 // SupressedNeed
 SupressedNeed::SupressedNeed(Area& area, std::unique_ptr<Objective> o, const ActorReference& ref) :
-	m_objective(std::move(o)), m_event(area.m_eventSchedule), m_actor(ref) { }
+	m_objective(std::move(o)), m_event(area.m_eventSchedule), m_actor(ref)
+{
+	m_event.schedule(area, *this);
+}
 SupressedNeed::SupressedNeed(Area& area, const Json& data, DeserializationMemo& deserializationMemo, const ActorReference& ref) :
 	m_event(area.m_eventSchedule), m_actor(ref)
 {
@@ -222,7 +225,7 @@ void HasObjectives::load(const Json& data, DeserializationMemo& deserializationM
 	if(data.contains("currentObjective"))
 		m_currentObjective = deserializationMemo.m_objectives.at(data["currentObjective"].get<uintptr_t>());
 	for(const Json& pair : data["supressedNeeds"])
-		m_supressedNeeds.try_emplace(pair[0].get<NeedType>(), area, pair[1], deserializationMemo, area.getActors().getReference(m_actor));
+		m_supressedNeeds.emplace(pair[0].get<NeedType>(), area, pair[1], deserializationMemo, area.getActors().getReference(m_actor));
 	m_prioritySet.load(data["prioritySet"], deserializationMemo);
 }
 Json HasObjectives::toJson() const
@@ -239,11 +242,17 @@ Json HasObjectives::toJson() const
 	data["supressedNeeds"] = Json::array();
 	for(auto& supressedNeed : m_supressedNeeds)
 	{
-		Json pair{supressedNeed.first, supressedNeed.second.toJson()};
+		Json pair{supressedNeed.first, supressedNeed.second->toJson()};
 		data["supressedNeeds"].push_back(pair);
 	}
 	data["prioritySet"] = m_prioritySet.toJson();
 	return data;
+}
+Step HasObjectives::getNeedDelayRemaining(NeedType needType) const
+{
+	assert(m_supressedNeeds.contains(needType));
+	const SupressedNeed& supressedNeed = m_supressedNeeds[needType];
+	return supressedNeed.getDelayRemaining();
 }
 void HasObjectives::getNext(Area& area)
 {
@@ -439,12 +448,13 @@ void HasObjectives::cannotFulfillNeed(Area& area, Objective& objective)
 	actors.move_clearPath(m_actor);
 	actors.canReserve_clearAll(m_actor);
 	NeedType needType = objective.getNeedType();
+	assert(!m_supressedNeeds.contains(needType));
 	bool isCurrent = m_currentObjective == &objective;
 	objective.cancel(area, m_actor);
 	auto found = std::ranges::find(m_needsQueue, needType, [](std::unique_ptr<Objective>& o) { return o->getNeedType(); });
 	assert(found != m_needsQueue.end());
 	// Store supressed need.
-	m_supressedNeeds.try_emplace(needType, area, std::move(*found), area.getActors().getReference(m_actor));
+	m_supressedNeeds.emplace(needType, area, std::move(*found), area.getActors().getReference(m_actor));
 	// Remove from needs queue.
 	m_typesOfNeedsInQueue.erase(needType);
 	m_needsQueue.erase(found);

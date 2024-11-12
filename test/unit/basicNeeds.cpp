@@ -135,9 +135,23 @@ TEST_CASE("basicNeedsSentient")
 			actors.drink_do(actor, actors.drink_getVolumeOfFluidRequested(actor));
 		REQUIRE(actors.eat_getPercentStarved(actor) == 0);
 		REQUIRE(actors.eat_getMinimumAcceptableDesire(actor) == 3);
-		simulation.fasterForwardUntillPredicate([&](){ return actors.eat_getMinimumAcceptableDesire(actor) == 2; }, Config::minutesPerHour * 6);
-		REQUIRE(actors.move_hasPathRequest(actor));
 		REQUIRE(actors.objective_getCurrentName(actor) == "eat");
+		NeedType eatNeedType = actors.objective_getCurrent<EatObjective>(actor).getNeedType();
+		// Search for acceptable food but fail to find.
+		// Supress need.
+		simulation.doStep();
+		REQUIRE(actors.objective_getCurrentName(actor) != "eat");
+		REQUIRE(actors.objective_hasSupressedNeed(actor, eatNeedType));
+		Step delayRemaning = actors.objective_getNeedDelayRemaining(actor, eatNeedType);
+		simulation.fasterForward(delayRemaning);
+		REQUIRE(!actors.objective_hasSupressedNeed(actor, eatNeedType));
+		REQUIRE(actors.objective_getCurrentName(actor) == "eat");
+		REQUIRE(actors.eat_getMinimumAcceptableDesire(actor) == 3);
+		simulation.doStep();
+		REQUIRE(actors.objective_hasSupressedNeed(actor, eatNeedType));
+		REQUIRE(actors.objective_getCurrentName(actor) == "wander");
+		simulation.fasterForwardUntillPredicate([&](){ return actors.eat_getMinimumAcceptableDesire(actor) == 2 && actors.objective_getCurrentName(actor) == "eat"; }, Config::minutesPerHour * 6);
+		REQUIRE(actors.move_hasPathRequest(actor));
 		const EatObjective& objective = actors.objective_getCurrent<EatObjective>(actor);
 		REQUIRE(actors.eat_canEatItem(actor, fruit));
 		REQUIRE(objective.canEatAt(area, fruitLocation, actor));

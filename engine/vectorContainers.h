@@ -24,7 +24,7 @@ public:
 		for(; begin != end; ++begin)
 			insert(*begin);
 	}
-	void insert(This::const_iterator begin, This::const_iterator end)
+	void insert(This::iterator begin, This::iterator end)
 	{
 		for(; begin != end; ++begin)
 			insert(*begin);
@@ -50,6 +50,10 @@ public:
 	}
 	void swap(This& other) { m_data.swap(other.m_data); }
 	[[nodiscard]] bool contains(const T& value) const { return std::ranges::find(m_data, value) != m_data.end(); }
+	[[nodiscard]] T& front() { return m_data.front(); }
+	[[nodiscard]] const T& front() const { return m_data.front(); }
+	[[nodiscard]] T& back() { return m_data.back(); }
+	[[nodiscard]] const T& back() const { return m_data.back(); }
 	[[nodiscard]] bool empty() const { return m_data.empty(); }
 	[[nodiscard]] uint size() const { return m_data.size(); }
 	[[nodiscard]] This::iterator begin() { return {*this, 0}; }
@@ -69,10 +73,12 @@ public:
 		[[nodiscard]] T& operator*() { return *m_iter; }
 		[[nodiscard]] const T& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] T* operator->() { return &*m_iter; }
 		[[nodiscard]] iterator operator-(const iterator& other) { return m_iter - other.m_iter; }
 		[[nodiscard]] iterator operator+(const iterator& other) { return m_iter - other.m_iter; }
 		[[nodiscard]] iterator& operator+=(const iterator& other) { m_iter += other.m_iter; return *this; }
+		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) { return m_iter <=> other.m_iter; }
 		friend class const_iterator;
 	};
 	class const_iterator
@@ -82,15 +88,17 @@ public:
 	public:
 		const_iterator(const This& s, uint i) : m_iter(s.m_data.begin() + i) { }
 		const_iterator(std::vector<T>::const_iterator i) : m_iter(i) { }
-		const_iterator(const iterator& i) : m_iter(i.m_iter) { }
+		const_iterator(const const_iterator& i) : m_iter(i.m_iter) { }
 		const_iterator& operator++() { ++m_iter; return *this; }
 		const_iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
+		iterator& operator+=(const const_iterator& other) { m_iter += other.m_iter; return *this; }
 		[[nodiscard]] const T& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const T* operator->() const { return &*m_iter; }
-		[[nodiscard]] iterator operator-(const iterator& other) { return m_iter - other.m_iter; }
-		[[nodiscard]] iterator operator+(const iterator& other) { return m_iter + other.m_iter; }
-		[[nodiscard]] iterator& operator+=(const iterator& other) { m_iter += other.m_iter; return *this; }
+		[[nodiscard]] iterator operator-(const const_iterator& other) { return m_iter - other.m_iter; }
+		[[nodiscard]] iterator operator+(const const_iterator& other) const { return m_iter + other.m_iter; }
+		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
 	};
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallSet, m_data);
 };
@@ -152,6 +160,10 @@ public:
 	[[nodiscard]] bool empty() const { return m_data.empty(); }
 	[[nodiscard]] bool contains(const K& key) const { return std::ranges::find(m_data, key, &Pair::first) != m_data.end(); }
 	[[nodiscard]] bool contains(const K&& key) const { return contains(key); }
+	[[nodiscard]] Pair& front() { return m_data.front(); }
+	[[nodiscard]] const Pair& front() const { return m_data.front(); }
+	[[nodiscard]] Pair& back() { return m_data.back(); }
+	[[nodiscard]] const Pair& back() const { return m_data.back(); }
 	[[nodiscard]] V& operator[](const K& key) 
 	{
 		auto iter = std::ranges::find(m_data, key, &Pair::first);
@@ -203,10 +215,12 @@ public:
 		[[nodiscard]] Pair& operator*() { return *m_iter; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const K& first() const { return m_iter->first; }
 		[[nodiscard]] V& second() { return m_iter->second; }
 		[[nodiscard]] const V& second() const { return m_iter->second; }
 		[[nodiscard]] Pair* operator->() { return &*m_iter; }
+		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) const { return m_iter <=> other.m_iter; }
 	};
 	class const_iterator
 	{
@@ -221,9 +235,11 @@ public:
 		[[nodiscard]] const_iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const K& first() const { return m_iter->first; }
 		[[nodiscard]] const V& second() const { return m_iter->second; }
 		[[nodiscard]] const Pair* operator->() const { return &*m_iter; }
+		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
 	};
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallMap, m_data);
 };
@@ -253,6 +269,10 @@ public:
 	[[nodiscard]] bool empty() const { return m_data.empty(); }
 	[[nodiscard]] bool contains(const K& key) const { return m_data.contains(key); }
 	[[nodiscard]] bool contains(const K&& key) const { return contains(key); }
+	[[nodiscard]] Pair& front() { return m_data.front(); }
+	[[nodiscard]] const Pair& front() const { return m_data.front(); }
+	[[nodiscard]] Pair& back() { return m_data.back(); }
+	[[nodiscard]] const Pair& back() const { return m_data.back(); }
 	[[nodiscard]] V& operator[](const K& key) { return *m_data[key].get(); }
 	[[nodiscard]] V& operator[](const K&& key) { return *(*this)[key].get(); }
 	[[nodiscard]] const V& operator[](const K& key) const { return const_cast<This&>(*this)[key]; }
@@ -284,12 +304,14 @@ public:
 		[[nodiscard]] Pair& operator*() { return *m_iter; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const K& first() const { return m_iter->first; }
 		[[nodiscard]] V& second() { return *m_iter->second.get(); }
 		[[nodiscard]] const V& second() const { return *m_iter->second.get(); }
 		[[nodiscard]] Pair* operator->() { return &*m_iter; }
 		[[nodiscard]] iterator operator+(uint steps) { return m_iter + steps; }
 		[[nodiscard]] iterator operator-(uint steps) { return m_iter - steps; }
+		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) const { return m_iter <=> other.m_iter; }
 	};
 	class const_iterator
 	{
@@ -302,11 +324,13 @@ public:
 		[[nodiscard]] const_iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const K& first() const { return m_iter->first; }
 		[[nodiscard]] const V& second() const { return *m_iter->second.get(); }
 		[[nodiscard]] const Pair* operator->() const { return &*m_iter; }
-		[[nodiscard]] const_iterator operator+(uint steps) { return m_iter + steps; }
-		[[nodiscard]] const_iterator operator-(uint steps) { return m_iter - steps; }
+		[[nodiscard]] iterator operator+(uint steps) { return m_iter + steps; }
+		[[nodiscard]] iterator operator-(uint steps) { return m_iter - steps; }
+		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
 	};
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallMapStable, m_data);
 };
