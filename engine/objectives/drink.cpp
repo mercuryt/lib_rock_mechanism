@@ -45,7 +45,11 @@ void DrinkPathRequest::callback(Area& area, const FindPathResult& result)
 			}
 		}
 		else
-			actors.objective_subobjectiveComplete(getActor());
+		{
+			// There is something to drink at the current location.
+			m_drinkObjective.m_noDrinkFound = false;
+			m_drinkObjective.execute(area, actor);
+		}
 	}
 	else
 		actors.move_setPath(getActor(), result.path);
@@ -77,15 +81,19 @@ Json DrinkObjective::toJson() const
 void DrinkObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
+	MustDrink &mustDrink = *area.getActors().m_mustDrink[actor].get();
+	// If the objective was supressed and then unsupressed MustDrink::m_objective needs to be restored.
+	if (!mustDrink.hasObjective())
+		mustDrink.setObjective(*this);
 	if(m_noDrinkFound)
 	{
 		// We have determined that there is no drink here and have attempted to path to the edge of the area so we can leave.
-		if(actors.predicateForAnyOccupiedBlock(actor, [&area](BlockIndex block){ return area.getBlocks().isEdge(block); }))
+		if(actors.isOnEdge(actor))
 			// We are at the edge and can leave.
 			actors.leaveArea(actor);
 		else
-			// No drink and no escape.
-			actors.objective_canNotFulfillNeed(actor, *this);
+			// Try to get to the edge.
+			makePathRequest(area, actor);
 		return;
 	}
 	if(!canDrinkAt(area, actors.getLocation(actor), actors.getFacing(actor), actor))

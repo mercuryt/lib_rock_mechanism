@@ -12,6 +12,7 @@
 #include "../../engine/blocks/blocks.h"
 #include "../../engine/itemType.h"
 #include "../../engine/objectives/eat.h"
+#include "../../engine/objectives/station.h"
 #include "types.h"
 TEST_CASE("basicNeedsSentient")
 {
@@ -419,19 +420,38 @@ TEST_CASE("death")
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName("marble"));
 	Actors& actors = area.getActors();
+	BlockIndex actorLocation = blocks.getIndex_i(1, 1, 2);
 	ActorIndex actor = actors.create(ActorParamaters{
 		.species=redDeer, 
 		.percentGrown=Percent::create(45),
-		.location=blocks.getIndex_i(1, 1, 2), 
+		.location=actorLocation, 
 	});
+	// Set low priority station to prevent wandering around while waiting for events.
+	Priority stationPriority = Priority::create(1);
+	actors.objective_addTaskToStart(actor, std::make_unique<StationObjective>(actorLocation, stationPriority));
 	SUBCASE("thirst")
 	{
 		// Generate objectives, discard eat if it exists.
 		actors.drink_setNeedsFluid(actor);
+		REQUIRE(actors.objective_getCurrentName(actor) == "drink");
+		REQUIRE(actors.move_hasPathRequest(actor));
+		// Fail to find anything to drink, create path request to area edge.
+		simulation.doStep();
+		REQUIRE(actors.objective_getCurrentName(actor) == "drink");
+		REQUIRE(actors.move_hasPathRequest(actor));
+		// Fail to path to edge, supress need.
+		simulation.doStep();
+		REQUIRE(actors.objective_getCurrentName(actor) != "drink");
+		Step delayTillDeathByDehydration = AnimalSpecies::getStepsTillDieWithoutFluid(redDeer);
+		// Delay must be even number or divide by  2 will cause a rounding error.
+		float delayMod2 = delayTillDeathByDehydration.get() % 2;
+		assert(delayMod2 == 0);
+		simulation.fasterForward(delayTillDeathByDehydration / 2);
+		REQUIRE(actors.drink_getPercentDead(actor) == 50);
 		if(actors.eat_getMassFoodRequested(actor) != 0)
 			actors.eat_do(actor, actors.eat_getMassFoodRequested(actor));
-		// Subtract 2 rather then 1 because the event was scheduled on the previous step.
-		simulation.fastForward(AnimalSpecies::getStepsTillDieWithoutFluid(redDeer) - 2);
+		delayTillDeathByDehydration = actors.drink_getStepsTillDead(actor);
+		simulation.fasterForward(delayTillDeathByDehydration - 1);
 		REQUIRE(actors.isAlive(actor));
 		simulation.doStep();
 		REQUIRE(!actors.isAlive(actor));
@@ -445,9 +465,7 @@ TEST_CASE("death")
 		// Generate objectives, discard drink if it exists.
 		REQUIRE(actors.eat_getHungerEventStep(actor) == AnimalSpecies::getStepsEatFrequency(redDeer) +  step);
 		actors.eat_setIsHungry(actor);
-		simulation.fastForward(AnimalSpecies::getStepsEatFrequency(redDeer));
-		REQUIRE(actors.eat_getHungerEventStep(actor) == AnimalSpecies::getStepsEatFrequency(redDeer) + AnimalSpecies::getStepsTillDieWithoutFood(redDeer) + step);
-		simulation.fastForward(AnimalSpecies::getStepsTillDieWithoutFood(redDeer) - 2);
+		simulation.fasterForward(AnimalSpecies::getStepsTillDieWithoutFood(redDeer) - 1);
 		REQUIRE(actors.isAlive(actor));
 		simulation.doStep();
 		REQUIRE(!actors.isAlive(actor));
@@ -459,7 +477,7 @@ TEST_CASE("death")
 		area.m_hasTemperature.addTemperatureSource(temperatureSourceLocation, TemperatureDelta::create(100000));
 		simulation.doStep();
 		REQUIRE(!actors.temperature_isSafeAtCurrentLocation(actor));
-		simulation.fastForward(AnimalSpecies::getStepsTillDieInUnsafeTemperature(actors.getSpecies(actor)) - 2);
+		simulation.fasterForward(AnimalSpecies::getStepsTillDieInUnsafeTemperature(actors.getSpecies(actor)) - 2);
 		REQUIRE(actors.isAlive(actor));
 		simulation.doStep();
 		REQUIRE(!actors.isAlive(actor));

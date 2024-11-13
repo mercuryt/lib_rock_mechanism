@@ -167,8 +167,8 @@ void PathRequest::createGoAdjacentToDesignation(Area& area, const ActorIndex& ac
 void PathRequest::createGoToEdge(Area& area, const ActorIndex& actor, bool detour)
 {
 	Blocks& blocks = area.getBlocks();
-	std::function<bool(BlockIndex)> condition = [&blocks](const BlockIndex& index){ return blocks.isEdge(index); };
-	createGoAdjacentToCondition(area, actor, condition, detour, false, DistanceInBlocks::max(), BlockIndex::null());
+	DestinationCondition condition = [&blocks](const BlockIndex& index, const Facing&)->std::pair<bool, BlockIndex>{ return {blocks.isEdge(index), index}; };
+	createGoToCondition(area, actor, condition, detour, false, DistanceInBlocks::max(), BlockIndex::null());
 }
 void PathRequest::createGoToCondition(Area& area, const ActorIndex& actor, DestinationCondition condition, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve)
 {
@@ -176,12 +176,34 @@ void PathRequest::createGoToCondition(Area& area, const ActorIndex& actor, Desti
 	if(unreserved)
 		faction = area.getActors().getFactionId(actor);
 	Blocks& blocks = area.getBlocks();
-	//TODO: use seperate lambdas rather then always passing unreserved and faction.
-	DestinationCondition destinationCondition = [&blocks, condition, unreserved, faction](const BlockIndex& index, const Facing& facing) mutable { 
-		bool result = condition(index, facing).first && (!unreserved || !blocks.isReserved(index, faction));
-		return std::make_pair(result, index);
-	};
 	Actors& actors = area.getActors();
+	DestinationCondition destinationCondition;
+	const ShapeId& shape = actors.getShape(actor);
+	//TODO: use seperate lambdas rather then always passing unreserved and faction.
+	if(Shape::getIsMultiTile(shape))
+	{
+		destinationCondition = [&blocks, condition, unreserved, faction, shape](const BlockIndex &index, const Facing &facing) mutable -> std::pair<bool, BlockIndex>
+		{
+			std::pair<bool, BlockIndex> output = {false, BlockIndex::null()};
+			for(const BlockIndex& block : Shape::getBlocksOccupiedAt(shape, blocks, index, facing))
+			{
+				if(unreserved && blocks.isReserved(index, faction))
+					return {false, BlockIndex::null()};
+				// Store rather then return imideatly because we have to make sure none of the blocks are reserved.
+				if(!output.first && blocks.isEdge(block))
+					output = {true, block};
+			}
+			return output;
+		};
+	}
+	else
+	{
+		destinationCondition = [&blocks, condition, unreserved, faction](const BlockIndex &index, const Facing &facing) mutable
+		{
+			bool result = condition(index, facing).first && (!unreserved || !blocks.isReserved(index, faction));
+			return std::make_pair(result, index);
+		};
+	}
 	create(area, actor, actors.getLocation(actor), actors.getFacing(actor), destinationCondition, detour, maxRange, huristicDestination, reserve);
 }
 void PathRequest::createGoAdjacentToConditionFrom(Area& area, const ActorIndex& actor, const BlockIndex& start, const Facing& startFacing, std::function<bool(const BlockIndex&)> condition, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve)

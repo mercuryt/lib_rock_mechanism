@@ -21,6 +21,14 @@ FluidTypeId Actors::drink_getFluidType(const ActorIndex& index) const
 {
 	return m_mustDrink[index]->getFluidType();
 }
+Percent Actors::drink_getPercentDead(const ActorIndex& index) const
+{
+	return m_mustDrink[index]->getPercentDead();
+}
+Step Actors::drink_getStepsTillDead(const ActorIndex& index) const
+{
+	return m_mustDrink[index]->getStepsTillDead();
+}
 bool Actors::drink_hasThristEvent(const ActorIndex& index) const
 {
 	return m_mustDrink[index]->thirstEventExists();

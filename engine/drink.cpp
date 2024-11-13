@@ -98,11 +98,15 @@ void MustDrink::scheduleDrinkEvent(Area& area)
 	m_thirstEvent.schedule(area, frequency, actor);
 }
 void MustDrink::setFluidType(const FluidTypeId& fluidType) { m_fluidType = fluidType; }
-Percent MustDrink::getPercentDeadFromThirst() const
+Percent MustDrink::getPercentDead() const
 {
-	if(!m_thirstEvent.exists())
-		return Percent::create(0);
+	assert(needsFluid());
 	return m_thirstEvent.percentComplete();
+}
+Step MustDrink::getStepsTillDead() const
+{
+	assert(needsFluid());
+	return m_thirstEvent.remainingSteps();
 }
 CollisionVolume MustDrink::drinkVolumeFor(Area& area, const ActorIndex& actor) { return CollisionVolume::create(std::max(1u, area.getActors().getMass(actor).get() / Config::unitsBodyMassPerUnitFluidConsumed)); }
 // Drink Event.
