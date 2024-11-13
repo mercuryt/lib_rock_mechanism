@@ -69,8 +69,7 @@ TEST_CASE("json")
 		PlantIndex sage1 = blocks.plant_get(blocks.getIndex_i(8,8,1));
 		plants.setMaybeNeedsFluid(sage1);
 		blocks.fluid_add(blocks.getIndex_i(3, 8, 1), CollisionVolume::create(10), water);
-		ItemIndex axe1 = items.create(ItemParamaters{.itemType=axe, .materialType=bronze, .quality=Quality::create(10), .percentWear=Percent::create(10)});
-		items.setLocation(axe1, blocks.getIndex_i(1,2,1));
+		items.create(ItemParamaters{.itemType=axe, .materialType=bronze, .location=blocks.getIndex_i(1,2,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
 		blocks.blockFeature_construct(blocks.getIndex_i(1,8,1), BlockFeatureType::stairs, wood);
 		blocks.blockFeature_construct(blocks.getIndex_i(9,1,1), BlockFeatureType::door, wood);
 		area.m_fires.ignite(blocks.getIndex_i(9,1,1), wood);
@@ -78,12 +77,9 @@ TEST_CASE("json")
 		actors.equipment_add(dwarf1, pants1);
 		ItemIndex saw1 = items.create({.itemType=saw, .materialType=bronze, .quality=Quality::create(50), .percentWear=Percent::create(30)});
 		actors.canPickUp_pickUpItem(dwarf1, saw1);
-		ItemIndex bucket1 = items.create({.itemType=bucket, .materialType=bronze, .quality=Quality::create(50), .percentWear=Percent::create(30)});
-		items.setLocation(bucket1, blocks.getIndex_i(0,0,1));
+		ItemIndex bucket1 = items.create({.itemType=bucket, .materialType=bronze, .location=blocks.getIndex_i(0,0,1), .quality=Quality::create(50), .percentWear=Percent::create(30)});
 		items.cargo_addFluid(bucket1, water, CollisionVolume::create(5));
-		ItemIndex bucket2 = items.create({.itemType=bucket, .materialType=bronze, .quality=Quality::create(50), .percentWear=Percent::create(30)});
-
-		items.setLocation(bucket2, blocks.getIndex_i(0,1,1));
+		ItemIndex bucket2 = items.create({.itemType=bucket, .materialType=bronze, .location=blocks.getIndex_i(0,1,1), .quality=Quality::create(50), .percentWear=Percent::create(30)});
 		items.cargo_addItemGeneric(bucket2, pile, sand, Quantity::create(1));
 		Json areaData = area.toJson();
 		Json simulationData = simulation.toJson();
@@ -179,8 +175,7 @@ TEST_CASE("json")
 		BlockIndex holeLocation = blocks.getIndex_i(8, 4, 0);
 		area.m_hasDigDesignations.addFaction(faction);
 		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
-		ItemIndex pick1 = items.create({.itemType=pick, .materialType=bronze, .quality=Quality::create(10), .percentWear=Percent::create(10)});
-		items.setLocation(pick1, blocks.getIndex_i(1,2,1));
+		items.create({.itemType=pick, .materialType=bronze, .location=blocks.getIndex_i(1,2,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
 		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.percentGrown=Percent::create(90),
@@ -278,8 +273,7 @@ TEST_CASE("json")
 		queries.emplace_back(pile);
 		StockPile& stockPile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		stockPile.addBlock(projectLocation1);
-		ItemIndex pile1 = items.create({.itemType=pile, .materialType=dirt, .quantity=Quantity::create(10)});
-		items.setLocation(pile1, pileLocation1);
+		ItemIndex pile1 = items.create({.itemType=pile, .materialType=dirt, .location=pileLocation1, .quantity=Quantity::create(10)});
 		REQUIRE(stockPile.accepts(pile1));
 		area.m_hasStockPiles.getForFaction(faction).addItem(pile1);
 		ActorIndex dwarf1 = actors.create({
@@ -337,12 +331,9 @@ TEST_CASE("json")
 		});
 		ObjectiveTypeId woodWorkingObjectiveType = ObjectiveType::getIdByName("wood working");
 		actors.objective_setPriority(dwarf1, woodWorkingObjectiveType, Priority::create(100));
-		ItemIndex saw = items.create({.itemType=ItemType::byName("saw"), .materialType=bronze, .quality=Quality::create(25), .percentWear=Percent::create(0)});
-		items.setLocation(saw, blocks.getIndex_i(3, 7, 1));
-		ItemIndex chisel = items.create({.itemType=ItemType::byName("chisel"), .materialType=bronze, .quality=Quality::create(25), .percentWear=Percent::create(0)});
-		items.setLocation(chisel, blocks.getIndex_i(3, 6, 1));
-		ItemIndex log = items.create({.itemType=ItemType::byName("log"), .materialType=wood, .quantity=Quantity::create(1)});
-		items.setLocation(log, blocks.getIndex_i(3, 8, 1));
+		items.create({.itemType=ItemType::byName("saw"), .materialType=bronze, .location=blocks.getIndex_i(3, 7, 1), .quality=Quality::create(25), .percentWear=Percent::create(0)});
+		items.create({.itemType=ItemType::byName("chisel"), .materialType=bronze, .location=blocks.getIndex_i(3, 6, 1), .quality=Quality::create(25), .percentWear=Percent::create(0)});
+		items.create({.itemType=ItemType::byName("log"), .materialType=wood, .location=blocks.getIndex_i(3, 8, 1), .quantity=Quantity::create(1)});
 		// One step to find the designation.
 		simulation.doStep();
 
@@ -368,8 +359,7 @@ TEST_CASE("json")
 	}
 	SUBCASE("drink")
 	{
-		ItemIndex bucket1 = items.create({.itemType=bucket, .materialType=bronze, .quality=Quality::create(25), .percentWear=Percent::create(0)});
-		items.setLocation(bucket1, blocks.getIndex_i(3, 7, 1));
+		ItemIndex bucket1 = items.create({.itemType=bucket, .materialType=bronze, .location=blocks.getIndex_i(3, 7, 1), .quality=Quality::create(25), .percentWear=Percent::create(0)});
 		items.cargo_addFluid(bucket1, water, CollisionVolume::create(10));
 		actors.create({
 			.species=dwarf,

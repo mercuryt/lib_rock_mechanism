@@ -89,7 +89,7 @@ void Reservable::clearReservationFor(CanReserve& canReserve, const Quantity quan
 	{
 		eraseReservationFor(canReserve);
 		util::removeFromVectorByValueUnordered(canReserve.m_reservables, this);
-		m_dishonorCallbacks.erase(&canReserve);
+		m_dishonorCallbacks.maybeErase(&canReserve);
 	}
 	else
 	{

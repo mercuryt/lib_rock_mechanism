@@ -72,6 +72,7 @@ void AreaHasVisionCuboids::blockFloorIsSometimesOpaque(const BlockIndex& block)
 }
 void AreaHasVisionCuboids::set(const BlockIndex& block, VisionCuboid& visionCuboid)
 {
+	assert(m_blockVisionCuboids[block] != &visionCuboid);
 	if(m_blockVisionCuboids.empty())
 		return;
 	const VisionCuboidId oldCuboid = m_blockVisionCuboidIds[block];
