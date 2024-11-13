@@ -34,9 +34,12 @@ public:
 	void unschedule();
 	void scheduleDrinkEvent(Area& area);
 	void setFluidType(const FluidTypeId& fluidType);
+	void setObjective(DrinkObjective& objective) { m_objective = &objective; }
+	[[nodiscard]] bool hasObjective() const { return m_objective != nullptr; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] CollisionVolume getVolumeFluidRequested() const { return m_volumeDrinkRequested; }
-	[[nodiscard]] Percent getPercentDeadFromThirst() const;
+	[[nodiscard]] Percent getPercentDead() const;
+	[[nodiscard]] Step getStepsTillDead() const;
 	[[nodiscard]] FluidTypeId getFluidType() const { return m_fluidType; }
 	[[nodiscard]] bool needsFluid() const { return m_volumeDrinkRequested != 0; }
 	[[nodiscard]] static CollisionVolume drinkVolumeFor(Area& area, const ActorIndex& actor);

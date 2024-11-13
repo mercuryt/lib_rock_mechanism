@@ -421,6 +421,8 @@ public:
 	[[nodiscard]] CollisionVolume drink_getVolumeOfFluidRequested(const ActorIndex& index) const;
 	[[nodiscard]] bool drink_isThirsty(const ActorIndex& index) const;
 	[[nodiscard]] FluidTypeId drink_getFluidType(const ActorIndex& index) const;
+	[[nodiscard]] Percent drink_getPercentDead(const ActorIndex& index) const;
+	[[nodiscard]] Step drink_getStepsTillDead(const ActorIndex& index) const;
 	// For Testing.
 	[[nodiscard]] bool drink_hasThristEvent(const ActorIndex& index) const;
 	// Eat.

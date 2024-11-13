@@ -30,7 +30,7 @@ void UnequipItemObjective::execute(Area& area, const ActorIndex& actor)
 		if(blocks.shape_canEnterCurrentlyWithAnyFacing(m_block, shape, occupied))
 		{
 			actors.equipment_remove(actor, item);
-			items.setLocation(item, m_block);
+			items.setLocationAndFacing(item, m_block, Facing::create(0));
 			actors.objective_complete(actor, *this);
 		}
 		else

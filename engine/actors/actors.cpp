@@ -834,7 +834,7 @@ void Actors::die(const ActorIndex& index, CauseOfDeath causeOfDeath)
 		m_project[index]->removeWorker(index);
 	if(m_location[index].exists())
 		maybeSetStatic(index);
-	m_area.m_visionFacadeBuckets.remove(index);
+	vision_clearFacade(index);
 	move_pathRequestMaybeCancel(index);
 	if(!isSentient(index) && hasFaction(index))
 		m_area.m_hasHaulTools.unregisterYokeableActor(m_area, index);

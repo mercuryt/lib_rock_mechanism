@@ -8,7 +8,7 @@ class StationObjective final : public Objective
 {
 	BlockIndex m_location;
 public:
-	StationObjective(const BlockIndex& l) : Objective(Config::stationPriority), m_location(l) { }
+	StationObjective(const BlockIndex& l, const Priority& priority = Config::stationPriority) : Objective(priority), m_location(l) { }
 	StationObjective(const Json& data);
 	void execute(Area& area, const ActorIndex& actor);
 	void cancel(Area&, const ActorIndex&) { }
