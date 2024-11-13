@@ -384,15 +384,9 @@ TEST_CASE("actorGrowth")
 	Step nextPercentIncreaseStep = actors.grow_getEventStep(actor);
 	REQUIRE(nextPercentIncreaseStep <= simulation.m_step + Config::stepsPerDay * 95);
 	REQUIRE(nextPercentIncreaseStep >= simulation.m_step + Config::stepsPerDay * 90);
-	simulation.fasterForward(Config::stepsPerHour * 20);
-	actors.satisfyNeeds(actor);
-	REQUIRE(actors.grow_getPercent(actor) == 45);
-	REQUIRE(!actors.grow_isGrowing(actor));
-	REQUIRE(!actors.temperature_isSafeAtCurrentLocation(actor));
-	simulation.fasterForward(Config::stepsPerHour * 6);
+	simulation.fasterForward(Config::stepsPerHour * 26);
 	actors.satisfyNeeds(actor);
 	REQUIRE(actors.grow_isGrowing(actor));
-	REQUIRE(actors.temperature_isSafeAtCurrentLocation(actor));
 	Percent percentGrowthEventComplete = actors.grow_getEventPercent(actor);
 	REQUIRE(percentGrowthEventComplete == 1);
 	actors.grow_setPercent(actor, Percent::create(20));

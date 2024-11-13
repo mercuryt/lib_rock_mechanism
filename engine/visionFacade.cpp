@@ -107,7 +107,7 @@ void VisionFacade::updateLocation(const VisionFacadeIndex& index, const BlockInd
 }
 void VisionFacade::updateVisionCuboid(const VisionFacadeIndex& index, const VisionCuboidId& cuboid)
 {
-	assert(m_data[index].cuboid != cuboid);
+	// Allow redundant assignments.
 	m_data[index].cuboid = cuboid;
 }
 void VisionFacade::updateRange(const VisionFacadeIndex& index,  const DistanceInBlocks& range)

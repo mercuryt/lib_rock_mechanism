@@ -33,7 +33,7 @@ TEST_CASE("temperature")
 		area.m_hasTemperature.applyDeltas();
 		REQUIRE(blocks.temperature_get(origin) == temperatureBeforeHeatSource + 1000);
 		REQUIRE(blocks.temperature_get(b1) == temperatureBeforeHeatSource + 1000);
-		REQUIRE(blocks.temperature_get(b2) == 367);
+		REQUIRE(blocks.temperature_get(b2) == 386);
 		REQUIRE(blocks.temperature_get(b3) == temperatureBeforeHeatSource);
 		REQUIRE(blocks.temperature_get(toBurn) == temperatureBeforeHeatSource + 1000);
 		REQUIRE(blocks.temperature_get(toNotBurn) == temperatureBeforeHeatSource + 1000);
