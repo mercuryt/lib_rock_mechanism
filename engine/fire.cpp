@@ -87,13 +87,13 @@ void AreaHasFires::load(const Json& data, DeserializationMemo&)
 		{
 			BlockIndex block = fireData["location"].get<BlockIndex>();
 			MaterialTypeId materialType = fireData["materialType"].get<MaterialTypeId>();
-			m_fires.at(block).emplace(materialType, m_area, block, materialType, fireData["hasPeaked"].get<bool>(), fireData["stage"].get<FireStage>(), fireData["start"].get<Step>());
+			m_fires[block].emplace(materialType, m_area, block, materialType, fireData["hasPeaked"].get<bool>(), fireData["stage"].get<FireStage>(), fireData["start"].get<Step>());
 		}
 }
 Fire& AreaHasFires::at(const BlockIndex& block, const MaterialTypeId& materialType) 
 {
-       	assert(m_fires.contains(block)); 
-       	assert(m_fires.at(block).contains(materialType)); 
+	assert(m_fires.contains(block)); 
+	assert(m_fires.at(block).contains(materialType)); 
 	return m_fires.at(block)[materialType]; 
 }
 bool AreaHasFires::contains(const BlockIndex& block, const MaterialTypeId& materialType) 

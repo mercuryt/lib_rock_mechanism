@@ -476,12 +476,13 @@ Json Plants::toJson() const
 void Plants::load(const Json& data)
 {
 	nlohmann::from_json(data, static_cast<HasShapes&>(*this));
-	m_growthEvent.load(m_area.m_simulation, data["m_growthEvent"]);
-	m_shapeGrowthEvent.load(m_area.m_simulation, data["m_shapeGrowthEvent"]);
-	m_fluidEvent.load(m_area.m_simulation, data["m_fluidEvent"]);
-	m_temperatureEvent.load(m_area.m_simulation, data["m_temperatureEvent"]);
-	m_endOfHarvestEvent.load(m_area.m_simulation, data["m_endOfHarvestEvent"]);
-	m_foliageGrowthEvent.load(m_area.m_simulation, data["m_foliageGrowthEvent"]);
+	PlantIndex size = PlantIndex::create(m_shape.size());
+	m_growthEvent.load(m_area.m_simulation, data["m_growthEvent"], size.toHasShape());
+	m_shapeGrowthEvent.load(m_area.m_simulation, data["m_shapeGrowthEvent"], size.toHasShape());
+	m_fluidEvent.load(m_area.m_simulation, data["m_fluidEvent"], size.toHasShape());
+	m_temperatureEvent.load(m_area.m_simulation, data["m_temperatureEvent"], size.toHasShape());
+	m_endOfHarvestEvent.load(m_area.m_simulation, data["m_endOfHarvestEvent"], size.toHasShape());
+	m_foliageGrowthEvent.load(m_area.m_simulation, data["m_foliageGrowthEvent"], size.toHasShape());
 	m_species = data["m_species"].get<DataVector<PlantSpeciesId, PlantIndex>>();
 	m_fluidSource = data["m_fluidSource"].get<DataVector<BlockIndex, PlantIndex>>();
 	m_quantityToHarvest = data["m_quantityToHarvest"].get<DataVector<Quantity, PlantIndex>>();
@@ -489,6 +490,10 @@ void Plants::load(const Json& data)
 	m_percentFoliage = data["m_percentFoliage"].get<DataVector<Percent, PlantIndex>>();
 	m_wildGrowth = data["m_wildGrowth"].get<DataVector<uint8_t, PlantIndex>>();
 	m_volumeFluidRequested = data["m_volumeFluidRequested"].get<DataVector<CollisionVolume, PlantIndex>>();
+	Blocks& blocks = m_area.getBlocks();
+	for(PlantIndex index : getAll())
+		for(BlockIndex block : m_blocks[index])
+			blocks.plant_set(block, index);
 }
 void to_json(Json& data, const Plants& plants)
 {

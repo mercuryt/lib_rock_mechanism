@@ -36,7 +36,7 @@ class PathRequest
 		PathRequest() = default;
 	public:
 		static PathRequest create() { return PathRequest(); }
-		PathRequest(const Json& data) { nlohmann::from_json(data, *this); }
+		PathRequest(const Json& data);
 		void updateActorIndex(const ActorIndex& newIndex) { assert(newIndex.exists()); m_actor = newIndex; }
 		void create(Area& area, const ActorIndex& actor, const BlockIndex& start, const Facing& startFacing, DestinationCondition destination, bool detour, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination = BlockIndex::null(), bool reserve = false);
 		void createGoToAnyOf(Area& area, const ActorIndex& actor, BlockIndices destinations, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination = BlockIndex::null(), bool reserve = false);
@@ -60,15 +60,14 @@ class PathRequest
 		void update(const PathRequestIndex& newIndex);
 		virtual void reset();
 		virtual void callback(Area& area, const FindPathResult& result);
-		[[nodiscard]] virtual Json toJson() const { return *this; }
+		[[nodiscard]] virtual Json toJson() const;
 		[[nodiscard]] bool exists() const { return m_index.exists(); }
 		[[nodiscard]] ActorIndex getActor() const { assert(m_actor.exists()); return m_actor; }
 		[[nodiscard]] std::string name() { return "basic"; }
 		[[nodiscard]] static std::unique_ptr<PathRequest> load(Area& area, const Json& data, DeserializationMemo& deserializationMemo);
 		virtual ~PathRequest() = default;
-		NLOHMANN_DEFINE_TYPE_INTRUSIVE(PathRequest, m_index, m_destinations, m_fluidType, m_actor, m_destination, m_huristicDestination, m_maxRange, m_designation, m_detour, m_unreserved, m_adjacent, m_reserve, m_reserveBlockThatPassesPredicate);
 };
-inline void to_json(Json& data, const std::unique_ptr<PathRequest>& pathRequest) { data = *pathRequest; }
+inline void to_json(Json& data, const std::unique_ptr<PathRequest>& pathRequest) { data = pathRequest->toJson(); }
 // Defines a standard callback to be subclassed by many objectives.
 class ObjectivePathRequest : public PathRequest
 {

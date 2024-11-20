@@ -58,4 +58,5 @@ public:
 	HarvestPathRequest(const Json& data, DeserializationMemo& deserializationMemo) : ObjectivePathRequest(data, deserializationMemo) { }
 	void onSuccess(Area& area, const BlockIndex& blockWhichPassedPredicate);
 	[[nodiscard]] std::string name() { return "harvest"; }
+	[[nodiscard]] Json toJson();
 };

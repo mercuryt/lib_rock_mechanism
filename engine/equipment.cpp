@@ -16,7 +16,7 @@
 #include <cstddef>
 EquipmentSet::EquipmentSet(Area& area, const Json& data)
 {
-	for(const Json& itemIndex : data["equipments"])
+	for(const Json& itemIndex : data["m_equipments"]["data"])
 		addEquipment(area, itemIndex.get<ItemIndex>());
 }
 void EquipmentSet::addEquipment(Area& area, const ItemIndex& equipment)

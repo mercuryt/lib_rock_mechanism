@@ -75,7 +75,8 @@ BlockIndex Blocks::offset(const BlockIndex& index, int32_t ax, int32_t ay, int32
 }
 void Blocks::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
-	m_materialType = data["solid"];
+	for(auto& [key, value] : data["solid"].items())
+		m_materialType[BlockIndex::create(std::stoi(key))] = value.get<MaterialTypeId>();
 	for(auto& [key, value] : data["features"].items())
 		m_features[BlockIndex::create(std::stoi(key))] = value.get<std::vector<BlockFeature>>();
 	for(auto& [key, value] : data["fluid"].items())
@@ -97,7 +98,7 @@ Json Blocks::toJson() const
 		{"x", m_sizeX},
 		{"y", m_sizeY},
 		{"z", m_sizeZ},
-		{"solid", m_materialType},
+		{"solid", Json::object()},
 		{"features", Json::object()},
 		{"fluid", Json::object()},
 		{"mist", Json::object()},
@@ -106,16 +107,19 @@ Json Blocks::toJson() const
 	};
 	for(BlockIndex i = BlockIndex::create(0); i < m_materialType.size(); ++i)
 	{
+		std::string strI = std::to_string(i.get());
 		if(!blockFeature_empty(i))
-			output["features"][std::to_string(i.get())] = m_features[i];
+			output["features"][strI] = m_features[i];
 		if(fluid_any(i))
-			output["fluid"][std::to_string(i.get())] = m_fluid[i];
+			output["fluid"][strI] = m_fluid[i];
 		if(m_mist[i].exists())
-			output["mist"][std::to_string(i.get())] = m_mist[i];
+			output["mist"][strI] = m_mist[i];
 		if(m_mistInverseDistanceFromSource[i] != 0)
-			output["mistInverseDistanceFromSource"][std::to_string(i.get())] = m_mistInverseDistanceFromSource[i];
+			output["mistInverseDistanceFromSource"][strI] = m_mistInverseDistanceFromSource[i];
 		if(m_reservables[i] != nullptr)
-			output["reservables"][std::to_string(i.get())] = reinterpret_cast<uintptr_t>(&m_reservables[i]);
+			output["reservables"][strI] = reinterpret_cast<uintptr_t>(&*m_reservables[i]);
+		if(m_materialType[i].exists())
+			output["solid"][strI] = m_materialType[i];
 	}
 	return output;
 }

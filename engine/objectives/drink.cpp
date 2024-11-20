@@ -23,10 +23,8 @@ DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, const Actor
 	createGoAdjacentToCondition(area, actor, predicate, drob.m_detour, unreserved, DistanceInBlocks::max(), BlockIndex::null(), reserve);
 }
 DrinkPathRequest::DrinkPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	m_drinkObjective(static_cast<DrinkObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
-{
-	nlohmann::from_json(data, *this);
-}
+	PathRequest(data),
+	m_drinkObjective(static_cast<DrinkObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))) { }
 void DrinkPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
@@ -56,9 +54,9 @@ void DrinkPathRequest::callback(Area& area, const FindPathResult& result)
 }
 Json DrinkPathRequest::toJson() const
 {
-	Json output;
-	nlohmann::to_json(output, *this);
+	Json output = PathRequest::toJson();
 	output["objective"] = &m_drinkObjective;
+	output["type"] = "drink";
 	return output;
 }
 // Drink Objective.

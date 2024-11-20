@@ -98,12 +98,13 @@ protected:
 	DataVector<EventType*, HasShapeIndex> m_events;
 public:
 	HasScheduledEvents(EventSchedule& s) : m_schedule(s) { assert(&s); }
-	void load(Simulation& simulation, const Json& data)
+	void load(Simulation& simulation, const Json& data, const HasShapeIndex& size)
 	{
-		for(const Json& eventData : data)
+		m_events.resize(size);
+		for(auto iter = data.begin(); iter != data.end(); ++iter)
 		{
-			HasShapeIndex index = eventData[0].get<HasShapeIndex>();
-			auto event = std::make_unique<EventType>(simulation, eventData[1]);
+			HasShapeIndex index = HasShapeIndex::create(std::stoi(iter.key()));
+			auto event = std::make_unique<EventType>(simulation, iter.value());
 			m_events[index] = event.get();
 			m_schedule.schedule(std::move(event));
 		}
@@ -167,12 +168,12 @@ public:
 	[[nodiscard]] ScheduledEvent* getEvent(HasShapeIndex index) { return m_events[index]; }
 	[[nodiscard]] Json toJson() const
 	{
-		Json output = Json::array();
+		Json output = Json::object();
 		int i = 0;
 		for(const EventType* event : m_events)
 		{
 			if(event != nullptr)
-				output.emplace_back(i, event->toJson());
+				output[std::to_string(i)] = event->toJson();
 			i++;
 		}
 		return output;
