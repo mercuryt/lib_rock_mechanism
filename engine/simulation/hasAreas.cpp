@@ -16,20 +16,20 @@ SimulationHasAreas::SimulationHasAreas(const Json& data, DeserializationMemo&, S
 }
 void SimulationHasAreas::doStep()
 {
-	for(Area& area : m_areas)
-		area.doStep();
+	for(auto& pair : m_areas)
+		pair.second->doStep();
 }
 void SimulationHasAreas::incrementHour()
 {
-	for(Area& area : m_areas)
-		area.updateClimate();
+	for(auto& pair : m_areas)
+		pair.second->updateClimate();
 }
 void SimulationHasAreas::save()
 {
-	for(Area& area : m_areas)
+	for(auto& pair : m_areas)
 	{
-		std::ofstream af(m_simulation.m_path/"area"/(std::to_string(area.m_id.get()) + ".json"));
-		af << area.toJson();
+		std::ofstream af(m_simulation.m_path/"area"/(std::to_string(pair.second->m_id.get()) + ".json"));
+		af << pair.second->toJson();
 	}
 }
 Area& SimulationHasAreas::createArea(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z, bool createDrama)
@@ -46,7 +46,7 @@ Area& SimulationHasAreas::createArea(uint x, uint y, uint z, bool createDrama)
 }
 Area& SimulationHasAreas::loadArea(const AreaId& id, std::wstring name, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z)
 {
-	Area& area = m_areas.emplace_back(id, name, m_simulation, x, y, z); 
+	Area& area = m_areas.emplace(id, id, name, m_simulation, x, y, z); 
 	m_areasById.insert(id, &area);
 	return area;
 }
@@ -57,11 +57,13 @@ void SimulationHasAreas::destroyArea(Area& area)
 	for(ActorIndex actor : actors.getAll())
 		actors.exit(actor);
 	m_areasById.erase(area.m_id);
-	m_areas.remove(area);
+	m_areas.erase(area.m_id);
 }
 Area& SimulationHasAreas::loadAreaFromJson(const Json& data, DeserializationMemo& deserializationMemo)
 {
-	return m_areas.emplace_back(data, deserializationMemo, m_simulation);
+	const AreaId id = AreaId::create(data["id"].get<uint>());
+	auto area = std::make_unique<Area>(data, deserializationMemo, m_simulation);
+	return m_areas.insert(id, std::move(area));
 }
 Area& SimulationHasAreas::loadAreaFromPath(const AreaId& id, DeserializationMemo& deserializationMemo)
 {
@@ -71,20 +73,20 @@ Area& SimulationHasAreas::loadAreaFromPath(const AreaId& id, DeserializationMemo
 }
 void SimulationHasAreas::clearAll()
 {
-	for(Area& area : m_areas)
-		area.clearReservations();
+	for(auto& pair : m_areas)
+		pair.second->clearReservations();
 	m_areas.clear();
 }
 void SimulationHasAreas::recordId(Area& area)
 {
-	m_areasById[area.m_id] = &area;
+	m_areasById.insert(area.m_id, &area);
 }
 Step SimulationHasAreas::getNextEventStep() const
 {
 	Step output;
-	for(const Area& area : m_areas)
+	for(const auto& pair : m_areas)
 	{
-		Step step = area.m_eventSchedule.getNextEventStep();
+		Step step = pair.second->m_eventSchedule.getNextEventStep();
 		if(output.empty() || step < output)
 			output = step;
 	}
@@ -93,8 +95,9 @@ Step SimulationHasAreas::getNextEventStep() const
 Step SimulationHasAreas::getNextStepToSimulate() const
 {
 	Step output;
-	for(const Area& area : m_areas)
+	for(const auto& pair : m_areas)
 	{
+		const Area& area = *pair.second;
 		if(!area.m_hasTerrainFacades.empty() || !area.m_hasFluidGroups.getUnstable().empty() || !area.m_threadedTaskEngine.empty())
 			return m_simulation.m_step;
 		Step step = area.m_eventSchedule.getNextEventStep();
@@ -106,7 +109,7 @@ Step SimulationHasAreas::getNextStepToSimulate() const
 Json SimulationHasAreas::toJson() const
 {
 	Json areaIds = Json::array();
-	for(const Area& area : m_areas)
-		areaIds.push_back(area.m_id);
+	for(const auto& pair : m_areas)
+		areaIds.push_back(pair.second->m_id);
 	return {{"areaIds", areaIds}, {"nextId", m_nextId}};
 }

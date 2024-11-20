@@ -89,8 +89,7 @@ TEST_CASE("woodcutting")
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf, treeLocation);
 		Step stepsDuration = project->getDuration();
-		// TODO: why plus 2?
-		simulation.fastForward(stepsDuration + 2);
+		simulation.fastForward(stepsDuration);
 		REQUIRE(!blocks.plant_exists(treeLocation));
 		REQUIRE(area.getTotalCountOfItemTypeOnSurface(log) == 10);
 		REQUIRE(area.getTotalCountOfItemTypeOnSurface(branch) == 20);

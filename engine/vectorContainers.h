@@ -257,6 +257,7 @@ public:
 	class const_iterator;
 	SmallMapStable() = default;
 	SmallMapStable(const std::initializer_list<std::pair<K, V>>& i) : m_data(i) { }
+	auto insert(const K& key, std::unique_ptr<V>&& value) -> V& { m_data.insert(key, std::move(value)); return *m_data[key]; }
 	void erase(const K& key) { m_data.erase(key); }
 	void erase(const K&& key) { erase(key); }
 	void clear() { m_data.clear(); }

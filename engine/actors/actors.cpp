@@ -270,6 +270,7 @@ Actors::~Actors()
 void Actors::load(const Json& data)
 {
 	Portables<Actors, ActorIndex>::load(data);
+	ActorIndex size = ActorIndex::create(m_location.size());
 	data["id"].get_to(m_id);
 	data["name"].get_to(m_name);
 	data["species"].get_to(m_species);
@@ -294,7 +295,7 @@ void Actors::load(const Json& data)
 	data["stamina"].get_to(m_stamina);
 	data["canSee"].get_to(m_canSee);
 	data["visionRange"].get_to(m_visionRange);
-	m_coolDownEvent.load(m_area.m_simulation, data["coolDownEvent"]);
+	m_coolDownEvent.load(m_area.m_simulation, data["coolDownEvent"], size.toHasShape());
 	data["targetedBy"].get_to(m_targetedBy);
 	data["target"].get_to(m_target);
 	data["onMissCoolDownMelee"].get_to(m_onMissCoolDownMelee);
@@ -302,104 +303,147 @@ void Actors::load(const Json& data)
 	data["maxRange"].get_to(m_maxRange);
 	data["coolDownDurationModifier"].get_to(m_coolDownDurationModifier);
 	data["combatScore"].get_to(m_combatScore);
-	m_moveEvent.load(m_area.m_simulation, data["moveEvent"]);
+	m_moveEvent.load(m_area.m_simulation, data["moveEvent"], size.toHasShape());
 	data["path"].get_to(m_path);
 	data["destination"].get_to(m_destination);
 	data["speedIndividual"].get_to(m_speedIndividual);
 	data["speedActual"].get_to(m_speedActual);
 	data["moveRetries"].get_to(m_moveRetries);
-	auto& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
-	m_skillSet.resize(m_id.size());
-	for(const Json& pair : data["skillSet"])
-	{
-		ActorIndex index = pair[0].get<ActorIndex>();
-		m_skillSet[index] = std::make_unique<SkillSet>();
-		m_skillSet[index]->load(pair[1]);
-	}
-	m_body.resize(m_id.size());
-	for(const Json& pair : data["body"])
-	{
-		ActorIndex index = pair[0].get<ActorIndex>();
-		m_body[index] = std::make_unique<Body>(pair[1], deserializationMemo, index);
-	}
-	m_mustSleep.resize(m_id.size());
-	for(const Json& pair : data["mustSleep"])
-	{
-		ActorIndex index = pair[0].get<ActorIndex>();
-		m_mustSleep[index] = std::make_unique<MustSleep>(m_area, pair[1], index);
-	}
-	m_mustDrink.resize(m_id.size());
-	for(const Json& pair : data["mustDrink"])
-	{
-		ActorIndex index = pair[0].get<ActorIndex>();
-		m_mustDrink[index] = std::make_unique<MustDrink>(m_area, pair[1], index, m_species[index]);
-	}
-	m_mustEat.resize(m_id.size());
-	for(const Json& pair : data["mustEat"])
-	{
-		ActorIndex index = pair[0].get<ActorIndex>();
-		m_mustEat[index] = std::make_unique<MustEat>(m_area, pair[1], index, m_species[index]);
-	}
-	m_needsSafeTemperature.resize(m_id.size());
-	for(const Json& pair : data["needsSafeTemperature"])
-	{
-		ActorIndex index = pair[0].get<ActorIndex>();
-		m_needsSafeTemperature[index] = std::make_unique<ActorNeedsSafeTemperature>(pair[1], index, m_area);
-	}
-	m_canGrow.resize(m_id.size());
-	for(const Json& pair : data["canGrow"])
-	{
-		ActorIndex index = pair[0].get<ActorIndex>();
-		m_canGrow[index] = std::make_unique<CanGrow>(m_area, pair[1], index);
-	}
-	m_equipmentSet.resize(m_id.size());
-	for(const Json& pair : data["equipmentSet"])
-	{
-		ActorIndex index = pair[0].get<ActorIndex>();
-		m_equipmentSet[index] = std::make_unique<EquipmentSet>(m_area, pair[1]);
-	}
-	m_hasUniform.resize(m_id.size());
-	for(const Json& pair : data["hasUniform"])
-	{
-		ActorIndex index = pair[0].get<ActorIndex>();
-		m_hasUniform[index] = std::make_unique<ActorHasUniform>();
-		m_hasUniform[index]->load(m_area, pair[1], m_faction[index]);
-	}
-	m_pathIter.resize(m_id.size());
-	for(const Json& pair : data["pathIter"])
-	{
-		ActorIndex index = pair[0].get<ActorIndex>();
-		m_pathIter[index] = m_path[index].begin() + pair[1].get<int>();
-	}
-	m_pathRequest.resize(m_id.size());
-	for(const Json& pair : data["pathRequest"])
-	{
-		ActorIndex index = pair[0].get<ActorIndex>();
-		m_pathRequest[index] = PathRequest::load(m_area, pair[1], deserializationMemo);
-	}
+	m_referenceTarget.resize(size);
 	for(ActorIndex index : getAll())
-		vision_createFacadeIfCanSee(index);
+		m_referenceTarget[index] = std::make_unique<ActorReferenceTarget>(index);
+	auto& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
+	m_skillSet.resize(size);
+	const auto& skillData = data["skillSet"];
+	for(auto iter = skillData.begin(); iter != skillData.end(); ++iter)
+	{
+		ActorIndex index = ActorIndex::create(std::stoi(iter.key()));
+		m_skillSet[index] = std::make_unique<SkillSet>();
+		m_skillSet[index]->load(iter.value());
+	}
+	m_body.resize(size);
+	const auto& bodyData = data["body"]["data"];
+	ActorIndex i = ActorIndex::create(0);
+	for(const Json& data : bodyData)
+	{
+		m_body[i] = std::make_unique<Body>(data, deserializationMemo, i);
+		++i;
+	}
+	m_mustSleep.resize(size);
+	i = ActorIndex::create(0);
+	const auto& sleepData = data["mustSleep"]["data"];
+	for(const Json& data : sleepData)
+	{
+		m_mustSleep[i] = std::make_unique<MustSleep>(m_area, data, i);
+		++i;
+	}
+	m_mustDrink.resize(size);
+	const auto& drinkData = data["mustDrink"]["data"];
+	i = ActorIndex::create(0);
+	for(const Json& data : drinkData)
+	{
+		m_mustDrink[i] = std::make_unique<MustDrink>(m_area, data, i, m_species[i]);
+		++i;
+	}
+	m_mustEat.resize(size);
+	i = ActorIndex::create(0);
+	const auto& eatData = data["mustEat"]["data"];
+	for(const Json& data : eatData)
+	{
+		m_mustEat[i] = std::make_unique<MustEat>(m_area, data, i, m_species[i]);
+		++i;
+	}
+	m_needsSafeTemperature.resize(size);
+	i = ActorIndex::create(0);
+	const auto& temperatureData = data["needsSafeTemperature"]["data"];
+	for(const Json& data : temperatureData)
+	{
+		m_needsSafeTemperature[i] = std::make_unique<ActorNeedsSafeTemperature>(data, i, m_area);
+		++i;
+	}
+	m_canGrow.resize(size);
+	i = ActorIndex::create(0);
+	const auto& growData = data["canGrow"]["data"];
+	for(const Json& data : growData)
+	{
+		m_canGrow[i] = std::make_unique<CanGrow>(m_area, data, i);
+		++i;
+	}
+	m_equipmentSet.resize(size);
+	const auto& equipmentData = data["equipmentSet"];
+	for(auto iter = equipmentData.begin(); iter != equipmentData.end(); ++iter)
+	{
+		ActorIndex index = ActorIndex::create(std::stoi(iter.key()));
+		m_equipmentSet[index] = std::make_unique<EquipmentSet>(m_area, iter.value());
+	}
+	m_hasUniform.resize(size);
+	const auto& uniformData = data["hasUniform"];
+	for(auto iter = uniformData.begin(); iter != uniformData.end(); ++iter)
+	{
+		ActorIndex index = ActorIndex::create(std::stoi(iter.key()));
+		m_hasUniform[index] = std::make_unique<ActorHasUniform>();
+		m_hasUniform[index]->load(m_area, iter.value(), m_faction[index]);
+	}
+	m_pathIter.resize(size);
+	const auto& pathIterData = data["pathIter"];
+	i = ActorIndex::create(0);
+	for(const Json& data : pathIterData)
+	{
+		if(!m_path[i].empty())
+			m_pathIter[i] = m_path[i].begin() + data.get<uint>();
+		++i;
+	}
+	m_pathRequest.resize(size);
+	const auto& pathRequestData = data["pathRequest"];
+	for(auto iter = pathRequestData.begin(); iter != pathRequestData.end(); ++iter)
+	{
+		ActorIndex index = ActorIndex::create(std::stoi(iter.key()));
+		m_pathRequest[index] = PathRequest::load(m_area, iter.value(), deserializationMemo);
+	}
+	m_hasVisionFacade.resize(size);
+	for(ActorIndex index : getAll())
+	{
+		m_hasVisionFacade[index].initalize(m_area, index);
+		Blocks &blocks = m_area.getBlocks();
+		if(m_location[index].exists())
+			for (auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
+			{
+				BlockIndex occupied = blocks.offset(m_location[index], x, y, z);
+				blocks.actor_record(occupied, index, CollisionVolume::create(v));
+			}
+	}
+	m_project.resize(size);
 }
 void Actors::loadObjectivesAndReservations(const Json& data)
 {
 	auto& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
 	m_hasObjectives.resize(m_id.size());
-	for(const Json& pair : data["hasObjectives"])
+	const auto& objectiveData = data["hasObjectives"]["data"];
+	ActorIndex index = ActorIndex::create(0);
+	for(const Json& data : objectiveData)
 	{
-		ActorIndex index = pair[0].get<ActorIndex>();
 		m_hasObjectives[index] = std::make_unique<HasObjectives>(index);
-		m_hasObjectives[index]->load(pair[1], deserializationMemo, m_area, index);
+		m_hasObjectives[index]->load(data, deserializationMemo, m_area, index);
+		++index;
 	}
 	m_canReserve.resize(m_id.size());
-	for(const Json& pair : data["canReserve"])
+	index = ActorIndex::create(0);
+	const auto& reserveData = data["canReserve"]["data"];
+	for(const Json& data : reserveData)
 	{
-		ActorIndex index = pair[0].get<ActorIndex>();
 		m_canReserve[index] = std::make_unique<CanReserve>(m_faction[index]);
-		m_canReserve[index]->load(pair[1], deserializationMemo, m_area);
+		m_canReserve[index]->load(data, deserializationMemo, m_area);
+		++index;
 	}
 }
 void to_json(Json& data, const std::unique_ptr<CanReserve>& canReserve) { data = canReserve->toJson(); }
-void to_json(Json& data, const std::unique_ptr<ActorHasUniform>& uniform) { data = *uniform; }
+void to_json(Json& data, const std::unique_ptr<ActorHasUniform>& hasUniform)
+{
+	if(hasUniform == nullptr)
+		data = false;
+	else
+		data = *hasUniform;
+}
 void to_json(Json& data, const std::unique_ptr<EquipmentSet>& equipmentSet) { data = *equipmentSet; }
 void to_json(Json& data, const std::unique_ptr<HasObjectives>& hasObjectives) { data = hasObjectives->toJson(); }
 void to_json(Json& data, const std::unique_ptr<Body>& body) { data = body->toJson(); }
@@ -436,13 +480,13 @@ Json Actors::toJson() const
 		{"body", m_body},
 		{"mustSleep", m_mustSleep},
 		{"mustDrink", m_mustDrink},
-		{"mustEat", m_mustSleep},
+		{"mustEat", m_mustEat},
 		{"needsSafeTemperature", m_needsSafeTemperature},
 		{"canGrow", m_canGrow},
-		{"skillSet", m_skillSet},
+		{"skillSet", Json::object()},
 		{"canReserve", m_canReserve},
-		{"hasUniform", m_hasUniform},
-		{"equipmentSet", m_equipmentSet},
+		{"hasUniform", Json::object()},
+		{"equipmentSet", Json::object()},
 		{"carrying", m_carrying},
 		{"stamina", m_stamina},
 		{"canSee", m_canSee},
@@ -458,7 +502,7 @@ Json Actors::toJson() const
 		{"coolDownDurationModifier", m_coolDownDurationModifier},
 		{"combatScore", m_combatScore},
 		{"moveEvent", m_moveEvent},
-		{"pathRequest", m_pathRequest},
+		{"pathRequest", Json::object()},
 		{"path", m_path},
 		{"pathIter", Json::array()},
 		{"destination", m_destination},
@@ -467,7 +511,18 @@ Json Actors::toJson() const
 		{"moveRetries", m_moveRetries},
 	};
 	for(auto index : getAll())
+	{
+		std::string i = std::to_string(index.get());
+		if(m_skillSet[index] != nullptr)
+			output["skillSet"][i] = m_skillSet[index]->toJson();
+		if(m_hasUniform[index] != nullptr)
+			output["uniform"][i] = *m_hasUniform[index];
+		if(m_equipmentSet[index] != nullptr)
+			output["equipmentSet"][i] = *m_equipmentSet[index];
 		output["pathIter"].push_back(m_pathIter[index] - m_path[index].begin());
+		if(m_pathRequest[index] != nullptr)
+			output["pathRequest"][i] = m_pathRequest[index]->toJson();
+	}
 	output.update(Portables<Actors, ActorIndex>::toJson());
 	return output;
 }

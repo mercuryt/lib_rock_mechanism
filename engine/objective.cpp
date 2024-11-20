@@ -201,8 +201,7 @@ Objective::Objective(const Json& data, [[maybe_unused]] DeserializationMemo& des
 }
 Json Objective::toJson() const 
 { 
-	return Json{{"type", getTypeId()}, {"priority", m_priority}, 
-		{"detour", m_detour}, {"address", reinterpret_cast<uintptr_t>(this)}}; 
+	return Json{{"priority", m_priority}, {"detour", m_detour}, {"address", reinterpret_cast<uintptr_t>(this)}, {"type", name()}}; 
 }
 CannotCompleteObjectiveDishonorCallback::CannotCompleteObjectiveDishonorCallback(Area& area, const Json& data) : 
 	m_area(area),

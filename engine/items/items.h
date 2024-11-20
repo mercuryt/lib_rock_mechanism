@@ -70,6 +70,7 @@ class ItemHasCargo final
 	CollisionVolume m_fluidVolume = CollisionVolume::create(0);
 public:
 	ItemHasCargo(const ItemTypeId& itemType) : m_maxVolume(ItemType::getInternalVolume(itemType)) { }
+	ItemHasCargo(const Json& data);
 	void addItem(Area& area, const ItemIndex& itemIndex);
 	void addActor(Area& area, const ActorIndex& actorIndex);
 	void addFluid(const FluidTypeId& fluidType, const CollisionVolume& volume);
@@ -95,7 +96,7 @@ public:
 	[[nodiscard]] bool containsGeneric(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity) const;
 	[[nodiscard]] bool empty() const { return m_fluidType.empty() && m_actors.empty() && m_items.empty(); }
 	[[nodiscard]] Mass getMass() const { return m_mass; }
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ItemHasCargo, m_actors, m_items, m_fluidType, m_volume, m_mass, m_fluidVolume);
+	[[nodiscard]] Json toJson() const;;
 	friend class Items;
 };
 class Items final : public Portables<Items, ItemIndex>

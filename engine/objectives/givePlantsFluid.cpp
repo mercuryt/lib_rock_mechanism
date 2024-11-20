@@ -64,10 +64,8 @@ GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(Area& area, GivePlantsFlu
 	}
 }
 GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	m_objective(static_cast<GivePlantsFluidObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
-{
-	nlohmann::from_json(data, *this);
-}
+	PathRequest(data),
+	m_objective(static_cast<GivePlantsFluidObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))) { }
 void GivePlantsFluidPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
@@ -101,9 +99,9 @@ void GivePlantsFluidPathRequest::callback(Area& area, const FindPathResult& resu
 }
 Json GivePlantsFluidPathRequest::toJson() const
 {
-	Json output;
-	nlohmann::to_json(output, *this);
+	Json output = PathRequest::toJson();
 	output["objective"] = &m_objective;
+	output["type"] = "give plants fluid";
 	return output;
 }
 bool GivePlantsFluidObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const

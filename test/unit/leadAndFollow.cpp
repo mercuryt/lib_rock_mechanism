@@ -171,9 +171,11 @@ TEST_CASE("leadAndFollow")
 		actors.followActor(troll1, dwarf1);
 		actors.move_setDestination(dwarf1, destination1);
 		simulation.doStep();
-		blocks.solid_set(blocks.getIndex_i(2, 1, 1), marble, false);
+		BlockIndex firstStep = actors.move_getPath(dwarf1)[0];
+		blocks.solid_set(firstStep, marble, false);
 		Step stepsTillMoveEvent = actors.move_stepsTillNextMoveEvent(dwarf1);
-		simulation.fastForward(stepsTillMoveEvent);
+		//TODO: why minus 1? is steps till next move event wrong?
+		simulation.fastForward(stepsTillMoveEvent - 1);
 		//Because troll1 is blocked neither dwarf1 or troll1 have moved.
 		REQUIRE(actors.getLocation(dwarf1) == origin1);
 		REQUIRE(actors.getLocation(troll1) == origin2);

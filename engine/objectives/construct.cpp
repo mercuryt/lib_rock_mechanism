@@ -19,10 +19,8 @@ ConstructPathRequest::ConstructPathRequest(Area& area, ConstructObjective& co, c
 	createGoAdjacentToCondition(area, actor, constructCondition, m_constructObjective.m_detour, unreserved, maxRange, BlockIndex::null());
 }
 ConstructPathRequest::ConstructPathRequest(const Json& data, DeserializationMemo& deserializationMemo) : 
-	m_constructObjective(static_cast<ConstructObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
-{
-	nlohmann::from_json(data, *this);
-}
+	PathRequest(data),
+	m_constructObjective(static_cast<ConstructObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))) { }
 void ConstructPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
@@ -43,9 +41,9 @@ void ConstructPathRequest::callback(Area& area, const FindPathResult& result)
 }
 Json ConstructPathRequest::toJson() const
 {
-	Json output;
-	nlohmann::to_json(output, *this);
+	Json output = PathRequest::toJson();
 	output["objective"] = &m_constructObjective;
+	output["type"] = "construct";
 	return output;
 }
 // Objective.

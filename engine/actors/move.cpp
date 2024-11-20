@@ -411,7 +411,7 @@ Step Actors::move_delayToMoveInto(const ActorIndex& index, const BlockIndex& blo
 Step Actors::move_stepsTillNextMoveEvent(const ActorIndex& index) const
 {
 	// Add 1 because we increment step number at the end of the step.
-       	return Step::create(1) + m_moveEvent.getStep(index) - m_area.m_simulation.m_step;
+	return Step::create(1) + m_moveEvent.getStep(index) - m_area.m_simulation.m_step;
 }
 bool Actors::move_canPathTo(const ActorIndex& index, const BlockIndex& destination)
 {
@@ -426,7 +426,7 @@ bool Actors::move_canPathFromTo(const ActorIndex& index, const BlockIndex& start
 MoveEvent::MoveEvent(const Step& delay, Area& area, const ActorIndex& actor, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_actor(actor) { }
 MoveEvent::MoveEvent(Simulation& simulation, const Json& data) :
-	ScheduledEvent(simulation, data)
+	ScheduledEvent(simulation, data["delay"].get<Step>(), data["start"].get<Step>())
 {
 	data["actor"].get_to(m_actor);
 }
@@ -434,8 +434,7 @@ void MoveEvent::execute(Simulation&, Area* area) { area->getActors().move_callba
 void MoveEvent::clearReferences(Simulation &, Area *area) { area->getActors().m_moveEvent.clearPointer(m_actor); }
 Json MoveEvent::toJson() const
 {
-	Json output;
-	nlohmann::to_json(output, *this);
+	Json output = {{"delay", duration()}, {"start", m_startStep}};
 	output["actor"] = m_actor;
 	return output;
 }

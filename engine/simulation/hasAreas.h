@@ -14,7 +14,7 @@ class SimulationHasAreas final
 	Simulation& m_simulation;
 	AreaId m_nextId = AreaId::create(0);
 	AreaIdMap<Area*> m_areasById;
-	std::list<Area> m_areas;
+	SmallMapStable<AreaId, Area> m_areas;
 public:
 	SimulationHasAreas(Simulation& simulation) : m_simulation(simulation) { }
 	SimulationHasAreas(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation);
@@ -35,5 +35,5 @@ public:
 	[[nodiscard]] Step getNextEventStep() const;
 	[[nodiscard]] Area& getById(const AreaId& id) const {return *m_areasById[id]; }
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::list<Area>& getAll() { return m_areas; }
+	[[nodiscard]] SmallMapStable<AreaId, Area>& getAll() { return m_areas; }
 };

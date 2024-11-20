@@ -25,13 +25,16 @@ void ReMarkItemForStockPilingEvent::clearReferences(Simulation&, Area*) { }
 // ItemCanBeStockPiled
 void ItemCanBeStockPiled::load(const Json& data, Area& area)
 {
-	data["data"].get_to(m_data);
-	for(const Json& pair : data["scheduledEvents"])
+	if(data.contains("data"))
 	{
-		FactionId faction = pair[0].get<FactionId>();
-		Step start = pair[1]["start"].get<Step>();
-		Step duration = pair[1]["duration"].get<Step>();
-		scheduleReset(area, faction, duration, start);
+		data["data"].get_to(m_data);
+		for(const Json& pair : data["scheduledEvents"])
+		{
+			FactionId faction = pair[0].get<FactionId>();
+			Step start = pair[1]["start"].get<Step>();
+			Step duration = pair[1]["duration"].get<Step>();
+			scheduleReset(area, faction, duration, start);
+		}
 	}
 }
 Json ItemCanBeStockPiled::toJson() const
@@ -386,29 +389,40 @@ void Items::load(const Json& data)
 	data["id"].get_to(m_id);
 	data["quality"].get_to(m_quality);
 	data["quantity"].get_to(m_quantity);
-	m_canBeStockPiled.resize(m_id.size());
-	for(const Json& pair : data["canBeStockPiled"])
+	m_referenceTarget.resize(m_id.size());
+	m_hasCargo.resize(m_id.size());
+	Blocks& blocks = m_area.getBlocks();
+	for(ItemIndex index : getAll())
 	{
-		ItemIndex index = pair[0];
+		m_referenceTarget[index] = std::make_unique<ItemReferenceTarget>(index);
+		if(m_location[index].exists())
+			for (auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
+			{
+				BlockIndex occupied = blocks.offset(m_location[index], x, y, z);
+				blocks.item_record(occupied, index, CollisionVolume::create((m_quantity[index] * v).get()));
+			}
+	}
+	m_canBeStockPiled.resize(m_id.size());
+	for(auto iter = data["canBeStockPiled"].begin(); iter != data["canBeStockPiled"].end(); ++iter)
+	{
+		const ItemIndex index = ItemIndex::create(std::stoi(iter.key()));
 		auto& canBeStockPiled = m_canBeStockPiled[index] = std::make_unique<ItemCanBeStockPiled>();
-		canBeStockPiled->load(pair[1], m_area);
+		canBeStockPiled->load(iter.value(), m_area);
 	}
 }
 void Items::loadCargoAndCraftJobs(const Json& data)
 {
 	m_craftJobForWorkPiece.resize(m_id.size());
-	for(const Json& pair : data["craftJobForWorkPiece"])
+	for(auto iter = data["craftJobForWorkPiece"].begin(); iter != data["craftJobForWorkPiece"].end(); ++iter)
 	{
-		ItemIndex index = pair[0].get<ItemIndex>();
-		m_craftJobForWorkPiece[index] = m_area.m_simulation.getDeserializationMemo().m_craftJobs.at(pair[1]);
+		ItemIndex index = ItemIndex::create(std::stoi(iter.key()));
+		m_craftJobForWorkPiece[index] = m_area.m_simulation.getDeserializationMemo().m_craftJobs.at(iter.value().get<uintptr_t>());
 	}
 	m_hasCargo.resize(m_id.size());
-	for(const Json& pair : data["hasCargo"])
+	for(auto iter = data["hasCargo"].begin(); iter != data["hasCargo"].end(); ++ iter)
 	{
-		ItemIndex index = pair[0];
-		m_hasCargo[index] = std::make_unique<ItemHasCargo>(m_itemType[index]);
-		ItemHasCargo& hasCargo = *m_hasCargo[index].get();
-		nlohmann::from_json(pair[1], hasCargo);
+		ItemIndex index = ItemIndex::create(std::stoi(iter.key()));
+		m_hasCargo[index] = std::make_unique<ItemHasCargo>(iter.value());
 	}
 }
 ItemIndices Items::getAll() const
@@ -420,7 +434,7 @@ ItemIndices Items::getAll() const
 		output.add(i);
 	return output;
 }
-void to_json(Json& data, std::unique_ptr<ItemHasCargo> hasCargo) { data = *hasCargo; }
+void to_json(Json& data, std::unique_ptr<ItemHasCargo> hasCargo) { data = hasCargo->toJson(); }
 void to_json(Json& data, std::unique_ptr<ItemCanBeStockPiled> canBeStockPiled) { data = canBeStockPiled == nullptr ? Json{false} : canBeStockPiled->toJson(); }
 Json Items::toJson() const
 {
@@ -434,25 +448,60 @@ Json Items::toJson() const
 	data["quantity"] = m_quantity;
 	data["percentWear"] = m_percentWear;
 	data["installed"] = m_installed;
-	data["canBeStockPiled"] = Json::array();
+	data["onSurface"] = m_onSurface;
+	data["canBeStockPiled"] = Json::object();
 	int i = 0;
 	for(const auto& canBeStockPiled : m_canBeStockPiled)
 	{
 		if(canBeStockPiled != nullptr)
-			data["canBeStockPiled"][i] = canBeStockPiled->toJson();
+			data["canBeStockPiled"][std::to_string(i)] = canBeStockPiled->toJson();
 		++i;
 	}
-	data["cargo"] = Json::array();
+	data["hasCargo"] = Json::object();
 	i = 0;
 	for(const std::unique_ptr<ItemHasCargo>& cargo : m_hasCargo)
 	{
 		if(cargo != nullptr)
-			data["canBeStockPiled"][i] = *cargo;
+			data["hasCargo"][std::to_string(i)] = cargo->toJson();
 		++i;
+	}
+	data["craftJobForWorkPiece"] = Json::object();
+	i = 0;
+	for(const CraftJob* job : m_craftJobForWorkPiece)
+	{
+		if(job != nullptr)
+			data["craftJobForWorkPiece"][std::to_string(i)] = reinterpret_cast<uintptr_t>(job);
 	}
 	return data;
 }
 // HasCargo.
+ItemHasCargo::ItemHasCargo(const Json& data)
+{
+	data["maxVolume"].get_to(m_maxVolume);
+	data["volume"].get_to(m_volume);
+	data["mass"].get_to(m_mass);
+	if(data.contains("actors"))
+		data["actors"].get_to(m_actors);
+	if(data.contains("items"))
+		data["items"].get_to(m_items);
+	if(data.contains("fluidType"))
+		data["fluidType"].get_to(m_fluidType);
+	if(data.contains("fluidVolume"))
+		data["fluidVolume"].get_to(m_fluidVolume);
+}
+Json ItemHasCargo::toJson() const
+{
+	Json output = {{"maxVolume", m_maxVolume}, {"volume", m_volume}, {"mass", m_mass}};
+	if(!m_actors.empty())
+		output["actors"] = m_actors;
+	if(!m_items.empty())
+		output["items"] = m_items;
+	if(!m_fluidType.empty())
+		output["fluidType"] = m_fluidType;
+	if(!m_fluidVolume.empty())
+		output["fluidVolume"] = m_fluidVolume;
+	return output;
+}
 void ItemHasCargo::addActor(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();

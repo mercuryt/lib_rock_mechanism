@@ -246,14 +246,13 @@ bool StockPilePathRequest::checkDestination(const Area& area, const ItemIndex& i
 	return true;
 }
 StockPilePathRequest::StockPilePathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	m_objective(static_cast<StockPileObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
-{
-	nlohmann::from_json(data, static_cast<PathRequest&>(*this));
-}
+	PathRequest(data),
+	m_objective(static_cast<StockPileObjective&>(*deserializationMemo.m_objectives[data["objective"]])) { }
 Json StockPilePathRequest::toJson() const
 {
 	Json output = PathRequest::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
+	output["type"] = "stockpile";
 	return output;
 }
 StockPileDestinationPathRequest::StockPileDestinationPathRequest(Area& area, StockPileObjective& spo, const ActorIndex& actor) : m_objective(spo)
@@ -315,10 +314,8 @@ void StockPileDestinationPathRequest::callback(Area& area, const FindPathResult&
 	}
 }
 StockPileDestinationPathRequest::StockPileDestinationPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	m_objective(static_cast<StockPileObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
-{
-	nlohmann::from_json(data, static_cast<PathRequest&>(*this));
-}
+	PathRequest(data),
+	m_objective(static_cast<StockPileObjective&>(*deserializationMemo.m_objectives[data["objective"]])) { }
 Json StockPileDestinationPathRequest::toJson() const
 {
 	Json output = PathRequest::toJson();

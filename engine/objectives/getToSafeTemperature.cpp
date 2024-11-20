@@ -19,10 +19,8 @@ GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(Area& area, Get
 	createGoToCondition(area, actor, condition, m_objective.m_detour, unreserved, DistanceInBlocks::max());
 }
 GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	m_objective(static_cast<GetToSafeTemperatureObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
-{
-	nlohmann::from_json(data, static_cast<PathRequest&>(*this));
-}
+	PathRequest(data),
+	m_objective(static_cast<GetToSafeTemperatureObjective&>(*deserializationMemo.m_objectives[data["objective"]])) { }
 void GetToSafeTemperaturePathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
@@ -50,6 +48,7 @@ Json GetToSafeTemperaturePathRequest::toJson() const
 {
 	Json output = PathRequest::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
+	output["type"] = "temperature";
 	return output;
 }
 GetToSafeTemperatureObjective::GetToSafeTemperatureObjective(const Json& data, DeserializationMemo& deserializationMemo) :

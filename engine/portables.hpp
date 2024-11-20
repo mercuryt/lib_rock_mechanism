@@ -380,28 +380,31 @@ void Portables<Derived, Index>::reservable_merge(const Index& index, Reservable&
 template<class Derived, class Index>
 void Portables<Derived, Index>::load(const Json& data)
 {
-	nlohmann::from_json(data, static_cast<Portables&>(*this));
+	nlohmann::from_json(data, static_cast<HasShapes<Derived, Index>&>(*this));
 	data["follower"].get_to(m_follower);
 	data["leader"].get_to(m_leader);
 	data["moveType"].get_to(m_moveType);
 	m_reservables.resize(m_moveType.size());
 	Area& area = getArea();
 	DeserializationMemo& deserializationMemo = area.m_simulation.getDeserializationMemo();
-	for(const Json& pair : data["reservable"])
+	assert(data["reservable"].type() == Json::value_t::object);
+	for(auto iter = data["reservable"].begin(); iter != data["reservable"].end(); ++iter)
 	{
-		const Index& index = pair[0];
-		m_reservables[index] = std::make_unique<Reservable>(pair[1]["maxReservations"].get<Quantity>());
+		const Index& index = Index::create(std::stoi(iter.key()));
+		const Quantity quantity = iter.value()["maxReservations"].get<Quantity>();
+		m_reservables[index] = std::make_unique<Reservable>(quantity);
 		uintptr_t address;
-		pair[1]["address"].get_to(address);
+		iter.value()["address"].get_to(address);
 		deserializationMemo.m_reservables[address] = m_reservables[index].get();
 	}
 	m_destroy.resize(m_moveType.size());
-	for(const Json& pair : data["onDestroy"])
+	assert(data["onDestroy"].type() == Json::value_t::object);
+	for(auto iter = data["onDestroy"].begin(); iter != data["onDestroy"].end(); ++iter)
 	{
-		const Index& index = pair[0];
-		m_destroy[index] = std::make_unique<OnDestroy>(pair[1], deserializationMemo);
+		const Index& index = Index::create(std::stoi(iter.key()));
+		m_destroy[index] = std::make_unique<OnDestroy>(iter.value(), deserializationMemo);
 		uintptr_t address;
-		pair[1]["address"].get_to(address);
+		iter.value().get_to(address);
 		deserializationMemo.m_reservables[address] = m_reservables[index].get();
 	}
 }
@@ -413,7 +416,7 @@ Json Portables<Derived, Index>::toJson() const
 	output.update({
 		{"follower", m_follower},
 		{"leader", m_leader},
-		{"destroy", Json::object()},
+		{"onDestroy", Json::object()},
 		{"reservable", Json::object()},
 		{"moveType", m_moveType},
 	});
@@ -423,9 +426,15 @@ Json Portables<Derived, Index>::toJson() const
 		// OnDestroy and Reservable don't serialize any data beyone their old address.
 		// To deserialize them we just create empties and store pointers to them in deserializationMemo.
 		if(m_destroy[i] != nullptr)
-			output[i.get()] = *m_destroy[i].get();
+			output["onDestroy"][std::to_string(i.get())] = *m_destroy[i].get();
 		if(m_reservables[i] != nullptr)
-			output[i.get()] = reinterpret_cast<uintptr_t>(m_reservables[i].get());
+		{
+			//TODO: Reservable::toJson
+			Json data;
+			data["address"] = reinterpret_cast<uintptr_t>(&*m_reservables[i]);
+			data["maxReservations"] = m_reservables[i]->getMaxReservations();
+			output["reservable"][std::to_string(i.get())] = data;
+		}
 	}
 	return output;
 }

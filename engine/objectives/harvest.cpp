@@ -163,3 +163,9 @@ void HarvestPathRequest::onSuccess(Area& area, const BlockIndex& blockWhichPasse
 {
 	static_cast<HarvestObjective&>(m_objective).select(area, blockWhichPassedPredicate, getActor());
 }
+Json HarvestPathRequest::toJson()
+{
+	Json output = PathRequest::toJson();
+	output["type"] = "harvest";
+	return output;
+}

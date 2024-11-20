@@ -18,10 +18,8 @@ DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, const Act
 	createGoAdjacentToCondition(area, actor, predicate, m_digObjective.m_detour, unreserved, maxRange, BlockIndex::null());
 }
 DigPathRequest::DigPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	m_digObjective(static_cast<DigObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
-{
-	nlohmann::from_json(data, *this);
-}
+	PathRequest(data),
+	m_digObjective(static_cast<DigObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))) { }
 void DigPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
@@ -45,9 +43,9 @@ void DigPathRequest::callback(Area& area, const FindPathResult& result)
 }
 Json DigPathRequest::toJson() const
 {
-	Json output;
-	nlohmann::to_json(output, *this);
+	Json output = PathRequest::toJson();
 	output["objective"] = &m_digObjective;
+	output["type"] = "dig";
 	return output;
 }
 DigObjective::DigObjective(const Json& data, DeserializationMemo& deserializationMemo) :

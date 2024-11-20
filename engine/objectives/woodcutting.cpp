@@ -17,10 +17,8 @@ WoodCuttingPathRequest::WoodCuttingPathRequest(Area& area, WoodCuttingObjective&
 	createGoAdjacentToCondition(area, actor, predicate, m_woodCuttingObjective.m_detour, unreserved, maxRange, BlockIndex::null());
 }
 WoodCuttingPathRequest::WoodCuttingPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	m_woodCuttingObjective(static_cast<WoodCuttingObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
-{
-	nlohmann::from_json(data, *this);
-}
+	PathRequest(data),
+	m_woodCuttingObjective(static_cast<WoodCuttingObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))) { }
 void WoodCuttingPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
@@ -56,8 +54,7 @@ void WoodCuttingPathRequest::callback(Area& area, const FindPathResult& result)
 }
 Json WoodCuttingPathRequest::toJson() const
 {
-	Json output;
-	nlohmann::to_json(output, *this);
+	Json output = PathRequest::toJson();
 	output["objective"] = &m_woodCuttingObjective;
 	return output;
 }

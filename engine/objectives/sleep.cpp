@@ -82,14 +82,12 @@ void SleepPathRequest::callback(Area& area, const FindPathResult& result)
 	}
 }
 SleepPathRequest::SleepPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	m_sleepObjective(static_cast<SleepObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
-{
-	nlohmann::from_json(data, static_cast<PathRequest&>(*this));
-}
+	PathRequest(data), m_sleepObjective(static_cast<SleepObjective&>(*deserializationMemo.m_objectives[data["objective"]])) { }
 Json SleepPathRequest::toJson() const
 {
 	Json output = PathRequest::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_sleepObjective);
+	output["type"] = "sleep";
 	return output;
 }
 // Sleep Objective.

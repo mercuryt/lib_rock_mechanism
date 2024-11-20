@@ -78,7 +78,7 @@ TEST_CASE("json")
 		ItemIndex saw1 = items.create({.itemType=saw, .materialType=bronze, .quality=Quality::create(50), .percentWear=Percent::create(30)});
 		actors.canPickUp_pickUpItem(dwarf1, saw1);
 		ItemIndex bucket1 = items.create({.itemType=bucket, .materialType=bronze, .location=blocks.getIndex_i(0,0,1), .quality=Quality::create(50), .percentWear=Percent::create(30)});
-		items.cargo_addFluid(bucket1, water, CollisionVolume::create(5));
+		items.cargo_addFluid(bucket1, water, CollisionVolume::create(1));
 		ItemIndex bucket2 = items.create({.itemType=bucket, .materialType=bronze, .location=blocks.getIndex_i(0,1,1), .quality=Quality::create(50), .percentWear=Percent::create(30)});
 		items.cargo_addItemGeneric(bucket2, pile, sand, Quantity::create(1));
 		Json areaData = area.toJson();
@@ -120,7 +120,7 @@ TEST_CASE("json")
 		REQUIRE(actors.sleep_hasTiredEvent(dwarf2));
 		// Objective.
 		REQUIRE(actors.objective_getPriorityFor(dwarf2, ObjectiveType::getIdByName("dig")) == 10);
-		REQUIRE(actors.objective_getCurrent<Objective>(dwarf2).getTypeId() == ObjectiveType::getIdByName("go to"));
+		REQUIRE(actors.objective_getCurrentName(dwarf2) == "go to");
 		GoToObjective& goToObjective = actors.objective_getCurrent<GoToObjective>(dwarf2);
 		REQUIRE(goToObjective.getLocation() == blocks2.getIndex_i(9,9,1));
 		// Equipment.
@@ -151,7 +151,7 @@ TEST_CASE("json")
 		REQUIRE(bucket3.exists());
 		REQUIRE(items.cargo_containsAnyFluid(bucket3));
 		REQUIRE(items.cargo_getFluidType(bucket3) == water);
-		REQUIRE(items.cargo_getFluidVolume(bucket3) == 5);
+		REQUIRE(items.cargo_getFluidVolume(bucket3) == 1);
 		REQUIRE(blocks2.item_getAll(blocks2.getIndex_i(0,1,1)).size() == 1);
 		ItemIndex bucket4 = blocks2.item_getAll(blocks2.getIndex_i(0,1,1))[0];
 		REQUIRE(bucket4.exists());
@@ -360,7 +360,7 @@ TEST_CASE("json")
 	SUBCASE("drink")
 	{
 		ItemIndex bucket1 = items.create({.itemType=bucket, .materialType=bronze, .location=blocks.getIndex_i(3, 7, 1), .quality=Quality::create(25), .percentWear=Percent::create(0)});
-		items.cargo_addFluid(bucket1, water, CollisionVolume::create(10));
+		items.cargo_addFluid(bucket1, water, CollisionVolume::create(2));
 		actors.create({
 			.species=dwarf,
 			.percentGrown=Percent::create(90),
@@ -523,7 +523,7 @@ TEST_CASE("json")
 	SUBCASE("give fluid to plant")
 	{
 		ItemIndex bucket1 = items.create({.itemType=bucket, .materialType=bronze, .location=blocks.getIndex_i(3, 7, 1), .quality=Quality::create(25), .percentWear=Percent::create(0)});
-		items.cargo_addFluid(bucket1, water, CollisionVolume::create(10));
+		items.cargo_addFluid(bucket1, water, CollisionVolume::create(2));
 		blocks.plant_create(blocks.getIndex_i(1,7,1), wheatGrass, Percent::create(100));
 		PlantIndex plant = blocks.plant_get(blocks.getIndex_i(1,7,1));
 		plants.setMaybeNeedsFluid(plant);

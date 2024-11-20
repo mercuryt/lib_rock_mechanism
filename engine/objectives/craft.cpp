@@ -23,12 +23,10 @@ CraftPathRequest::CraftPathRequest(Area& area, CraftObjective& co, const ActorIn
 	createGoToCondition(area, actor, predicate, m_craftObjective.m_detour, unreserved, Config::maxRangeToSearchForCraftingRequirements, BlockIndex::null());
 }
 CraftPathRequest::CraftPathRequest(const Json& data, DeserializationMemo& deserializationMemo) : 
+	PathRequest(data),
 	m_craftObjective(static_cast<CraftObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))),
 	m_craftJob(deserializationMemo.m_craftJobs.at(data["craftJob"].get<uintptr_t>())),
-	m_location(data["location"].get<BlockIndex>())
-{
-	nlohmann::from_json(data, *this);
-}
+	m_location(data["location"].get<BlockIndex>()) { }
 void CraftPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
@@ -80,11 +78,11 @@ void CraftPathRequest::callback(Area& area, const FindPathResult& result)
 }
 Json CraftPathRequest::toJson() const
 {
-	Json output;
-	nlohmann::to_json(output, *this);
+	Json output = PathRequest::toJson();
 	output["objective"] = &m_craftObjective;
 	output["job"] = m_craftJob;
 	output["location"] = m_location;
+	output["type"] = "craft";
 	return output;
 }
 // ObjectiveType.
