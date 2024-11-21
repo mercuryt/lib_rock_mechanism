@@ -13,7 +13,9 @@ FactionId SimulationHasFactions::createFaction(std::wstring name)
 }
 FactionId SimulationHasFactions::byName(std::wstring name)
 {
-	return std::ranges::find(m_factions, name, &Faction::name)->id;
+	auto found =  std::ranges::find(m_factions, name, &Faction::name);
+	assert(found != m_factions.end());
+	return found->id;
 }
 bool SimulationHasFactions::isAlly(const FactionId& a, const FactionId& b)
 {

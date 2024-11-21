@@ -49,7 +49,7 @@ public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.
 	DigProject(const FactionId& faction, Area& area, const BlockIndex& block, const BlockFeatureType* bft, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
 		Project(faction, area, block, Config::maxNumberOfWorkersForDigProject, std::move(locationDishonorCallback)), m_blockFeatureType(bft) { }
-	DigProject(const Json& data, DeserializationMemo& deserializationMemo);
+	DigProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	[[nodiscard]] Step getDuration() const;
 	[[nodiscard]] Json toJson() const;
 	friend class HasDigDesignationsForFaction;
@@ -71,7 +71,7 @@ class HasDigDesignationsForFaction final
 	SmallMapStable<BlockIndex, DigProject> m_data;
 public:
 	HasDigDesignationsForFaction(const FactionId& p) : m_faction(p) { }
-	HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const FactionId& faction);
+	HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const FactionId& faction, Area& area);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	void designate(Area& area, const BlockIndex& block, const BlockFeatureType* blockFeatureType);
 	void undesignate(const BlockIndex& block);
@@ -91,7 +91,7 @@ class AreaHasDigDesignations final
 	SmallMapStable<FactionId, HasDigDesignationsForFaction> m_data;
 public:
 	AreaHasDigDesignations(Area& a) : m_area(a) { }
-	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	void load(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	void addFaction(const FactionId& faction);
 	void removeFaction(const FactionId& faction);

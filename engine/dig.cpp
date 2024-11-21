@@ -37,7 +37,7 @@ void UndesignateDigInputAction::execute()
 		digDesginations.undesignate(faction, block);
 }
 */
-DigProject::DigProject(const Json& data, DeserializationMemo& deserializationMemo) : Project(data, deserializationMemo), 
+DigProject::DigProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : Project(data, deserializationMemo, area), 
 	m_blockFeatureType(data.contains("blockFeatureType") ? &BlockFeatureType::byName(data["blockFeatureType"].get<std::string>()) : nullptr) { }
 Json DigProject::toJson() const
 {
@@ -142,13 +142,13 @@ void DigLocationDishonorCallback::execute([[maybe_unused]] const Quantity& oldCo
 {
 	m_area.m_hasDigDesignations.undesignate(m_faction, m_location);
 }
-HasDigDesignationsForFaction::HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const FactionId& faction) : 
+HasDigDesignationsForFaction::HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const FactionId& faction, Area& area) :
 	m_faction(faction)
 {
 	for(const Json& pair : data["projects"])
 	{
 		BlockIndex block = pair[0].get<BlockIndex>();
-		m_data.emplace(block, pair[1], deserializationMemo);
+		m_data.emplace(block, pair[1], deserializationMemo, area);
 	}
 }
 void HasDigDesignationsForFaction::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
@@ -199,12 +199,12 @@ void HasDigDesignationsForFaction::removeIfExists(Area& area, const BlockIndex& 
 const BlockFeatureType* HasDigDesignationsForFaction::getForBlock(const BlockIndex& block) const { return m_data[block].m_blockFeatureType; }
 bool HasDigDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
-void AreaHasDigDesignations::load(const Json& data, DeserializationMemo& deserializationMemo)
+void AreaHasDigDesignations::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area)
 {
 	for(const Json& pair : data)
 	{
 		FactionId faction = pair[0].get<FactionId>();
-		m_data.emplace(faction, pair[1], deserializationMemo, faction);
+		m_data.emplace(faction, pair[1], deserializationMemo, faction, area);
 	}
 }
 void AreaHasDigDesignations::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)

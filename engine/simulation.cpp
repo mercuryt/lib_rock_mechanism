@@ -252,5 +252,7 @@ Json Simulation::toJson() const
 	output["factions"] = m_hasFactions;
 	output["hourEventStart"] = m_hourlyEvent.getStartStep();
 	output["drama"] = m_dramaEngine->toJson();
+	output["factions"] = m_hasFactions;
+	output["uniforms"] = m_hasUniforms;
 	return output;
 }

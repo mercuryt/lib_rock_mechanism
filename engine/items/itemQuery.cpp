@@ -92,14 +92,4 @@ void ItemQuery::validate() const
 		assert(m_itemType.exists());
 	}
 }
-void to_json(Json& data, const ItemQuery& itemQuery)
-{
-	if(itemQuery.m_item.exists())
-		data["item"] = itemQuery.m_item;
-	if(itemQuery.m_itemType.empty())
-		data["itemType"] = itemQuery.m_itemType;
-	if(itemQuery.m_materialType.empty())
-		data["materialType"] = itemQuery.m_materialType;
-	if(itemQuery.m_materialTypeCategory.empty())
-		data["materialTypeCategory"] = itemQuery.m_materialTypeCategory;
-}
+void to_json(Json& data, const ItemQuery& query) { data = query.toJson(); }

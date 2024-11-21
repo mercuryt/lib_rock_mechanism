@@ -87,8 +87,8 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load designations.
 	m_blockDesignations.load(data["designations"], deserializationMemo);
 	// Load Projects
-	m_hasConstructionDesignations.load(data["hasConstructionDesignations"], deserializationMemo);
-	m_hasDigDesignations.load(data["hasDigDesignations"], deserializationMemo);
+	m_hasConstructionDesignations.load(data["hasConstructionDesignations"], deserializationMemo, *this);
+	m_hasDigDesignations.load(data["hasDigDesignations"], deserializationMemo, *this);
 	m_hasCraftingLocationsAndJobs.load(data["hasCraftingLocationsAndJobs"], deserializationMemo);
 	m_hasStockPiles.load(data["hasStockPiles"], deserializationMemo);
 	m_hasWoodCuttingDesignations.load(data["hasWoodCuttingDesignations"], deserializationMemo);

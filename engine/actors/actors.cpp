@@ -393,13 +393,6 @@ void Actors::load(const Json& data)
 			m_pathIter[i] = m_path[i].begin() + data.get<uint>();
 		++i;
 	}
-	m_pathRequest.resize(size);
-	const auto& pathRequestData = data["pathRequest"];
-	for(auto iter = pathRequestData.begin(); iter != pathRequestData.end(); ++iter)
-	{
-		ActorIndex index = ActorIndex::create(std::stoi(iter.key()));
-		m_pathRequest[index] = PathRequest::load(m_area, iter.value(), deserializationMemo);
-	}
 	m_hasVisionFacade.resize(size);
 	for(ActorIndex index : getAll())
 	{
@@ -434,6 +427,13 @@ void Actors::loadObjectivesAndReservations(const Json& data)
 		m_canReserve[index] = std::make_unique<CanReserve>(m_faction[index]);
 		m_canReserve[index]->load(data, deserializationMemo, m_area);
 		++index;
+	}
+	m_pathRequest.resize(m_id.size());
+	const auto& pathRequestData = data["pathRequest"];
+	for(auto iter = pathRequestData.begin(); iter != pathRequestData.end(); ++iter)
+	{
+		ActorIndex index = ActorIndex::create(std::stoi(iter.key()));
+		m_pathRequest[index] = PathRequest::load(m_area, iter.value(), deserializationMemo);
 	}
 }
 void to_json(Json& data, const std::unique_ptr<CanReserve>& canReserve) { data = canReserve->toJson(); }

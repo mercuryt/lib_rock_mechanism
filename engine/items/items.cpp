@@ -26,8 +26,9 @@ void ReMarkItemForStockPilingEvent::clearReferences(Simulation&, Area*) { }
 void ItemCanBeStockPiled::load(const Json& data, Area& area)
 {
 	if(data.contains("data"))
-	{
-		data["data"].get_to(m_data);
+		for(const Json& faction : data["data"])
+			m_data.add(faction.get<FactionId>());
+	if(data.contains("scheduledEvents"))
 		for(const Json& pair : data["scheduledEvents"])
 		{
 			FactionId faction = pair[0].get<FactionId>();
@@ -35,7 +36,6 @@ void ItemCanBeStockPiled::load(const Json& data, Area& area)
 			Step duration = pair[1]["duration"].get<Step>();
 			scheduleReset(area, faction, duration, start);
 		}
-	}
 }
 Json ItemCanBeStockPiled::toJson() const
 {
@@ -389,6 +389,7 @@ void Items::load(const Json& data)
 	data["id"].get_to(m_id);
 	data["quality"].get_to(m_quality);
 	data["quantity"].get_to(m_quantity);
+	data["percentWear"].get_to(m_percentWear);
 	m_referenceTarget.resize(m_id.size());
 	m_hasCargo.resize(m_id.size());
 	Blocks& blocks = m_area.getBlocks();

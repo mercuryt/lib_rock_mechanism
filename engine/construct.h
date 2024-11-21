@@ -51,7 +51,7 @@ public:
 	// BlockFeatureType can be null, meaning the block is to be filled with a constructed wall.
 	ConstructProject(const FactionId& faction, Area& a, const BlockIndex& b, const BlockFeatureType* bft, const MaterialTypeId& mt, std::unique_ptr<DishonorCallback> dishonorCallback) : 
 		Project(faction, a, b, Config::maxNumberOfWorkersForConstructionProject, std::move(dishonorCallback)), m_blockFeatureType(bft), m_materialType(mt) { }
-	ConstructProject(const Json& data, DeserializationMemo& deserializationMemo);
+	ConstructProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	[[nodiscard]] Json toJson() const;
 	// What would the total delay time be if we started from scratch now with current workers?
 	friend class HasConstructionDesignationsForFaction;
@@ -75,7 +75,7 @@ class HasConstructionDesignationsForFaction final
 	SmallMapStable<BlockIndex, ConstructProject> m_data;
 public:
 	HasConstructionDesignationsForFaction(const FactionId& p) : m_faction(p) { }
-	HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const FactionId& faction);
+	HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const FactionId& faction, Area& area);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	// If blockFeatureType is null then construct a wall rather then a feature.
@@ -96,7 +96,7 @@ class AreaHasConstructionDesignations final
 	SmallMapStable<FactionId, HasConstructionDesignationsForFaction> m_data;
 public:
 	AreaHasConstructionDesignations(Area& a) : m_area(a) { }
-	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	void load(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void addFaction(const FactionId& faction);

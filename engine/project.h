@@ -111,7 +111,7 @@ protected:
 	FactionId m_faction;
 	BlockIndex m_location;
 	Project(const FactionId& f, Area& a, const BlockIndex& l, const Quantity& mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
-	Project(const Json& data, DeserializationMemo& deserializationMemo);
+	Project(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 private:
 	// Count how many times we have attempted to create a haul subproject.
 	// Once we hit the limit, defined as projectTryToMakeSubprojectRetriesBeforeProjectDelay in config.json, the project calls setDelayOn.

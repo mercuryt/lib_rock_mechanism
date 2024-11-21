@@ -88,7 +88,7 @@ class CraftStepProject final : public Project
 public:
 	CraftStepProject(const FactionId& faction, Area& area, const BlockIndex& location, const CraftStepType& cst, CraftJob& cj) : 
 		Project(faction, area, location, Quantity::create(1)), m_craftStepType(cst), m_craftJob(cj) { }
-	CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj);
+	CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj, Area& area);
 	// No toJson needed here, the base class one has everything.
 	[[nodiscard]] uint32_t getWorkerCraftScore(const ActorIndex& actor) const;
 };
@@ -144,7 +144,7 @@ struct CraftJob final
 	{ 
 		stepIterator = CraftJobType::getStepTypes(craftJobType).begin();
 	}
-	CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj);
+	CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj, Area& area);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Quality getQuality() const;
 	[[nodiscard]] Step getStep() const;

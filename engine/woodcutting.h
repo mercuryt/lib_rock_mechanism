@@ -45,7 +45,7 @@ public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.
 	WoodCuttingProject(FactionId faction, Area& area, const BlockIndex& block, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
 		Project(faction, area, block, Config::maxNumberOfWorkersForWoodCuttingProject, std::move(locationDishonorCallback)) { }
-	WoodCuttingProject(const Json& data, DeserializationMemo& deserializationMemo);
+	WoodCuttingProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	// No toJson is needed here.
 	Step getDuration() const;
 	friend class HasWoodCuttingDesignationsForFaction;
