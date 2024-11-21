@@ -32,7 +32,7 @@ void UndesignateConstructInputAction::execute()
 }
 */
 // Project.
-ConstructProject::ConstructProject(const Json& data, DeserializationMemo& deserializationMemo) : Project(data, deserializationMemo),
+ConstructProject::ConstructProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : Project(data, deserializationMemo, area),
 	m_blockFeatureType(data.contains("blockFeatureType") ? &BlockFeatureType::byName(data["blockFeatureType"].get<std::string>()) : nullptr),
 	m_materialType(MaterialType::byName(data["materialType"].get<std::string>())) { }
 Json ConstructProject::toJson() const
@@ -124,13 +124,13 @@ void ConstructionLocationDishonorCallback::execute([[maybe_unused]] const Quanti
 {
 	m_area.m_hasConstructionDesignations.getForFaction(m_faction).undesignate(m_location);
 }
-HasConstructionDesignationsForFaction::HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const FactionId& faction) :
+HasConstructionDesignationsForFaction::HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const FactionId& faction, Area& area) :
 	m_faction(faction)
 {
 	for(const Json& pair : data["projects"])
 	{
 		BlockIndex block = pair[0].get<BlockIndex>();
-		m_data.emplace(block, pair[1], deserializationMemo);
+		m_data.emplace(block, pair[1], deserializationMemo, area);
 	}
 }
 void HasConstructionDesignationsForFaction::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
@@ -187,12 +187,12 @@ bool HasConstructionDesignationsForFaction::contains(const BlockIndex& block) co
 const BlockFeatureType* HasConstructionDesignationsForFaction::getForBlock(const BlockIndex& block) const { return m_data[block].m_blockFeatureType; }
 bool HasConstructionDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
-void AreaHasConstructionDesignations::load([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo)
+void AreaHasConstructionDesignations::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area)
 {
 	for(const Json& pair : data)
 	{
 		FactionId faction = pair[0].get<FactionId>();
-		m_data.emplace(faction, pair[1], deserializationMemo, faction);
+		m_data.emplace(faction, pair[1], deserializationMemo, faction, area);
 	}
 }
 void AreaHasConstructionDesignations::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
@@ -206,7 +206,7 @@ void AreaHasConstructionDesignations::loadWorkers(const Json& data, Deserializat
 }
 Json AreaHasConstructionDesignations::toJson() const
 {
-	Json data;
+	Json data = Json::array();
 	for(auto& pair : m_data)
 	{
 		Json jsonPair;

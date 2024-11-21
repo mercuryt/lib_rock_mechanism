@@ -21,12 +21,19 @@
 ProjectWorker::ProjectWorker(const Json& data, DeserializationMemo& deserializationMemo) :
 	objective(deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))
 {
-	assert(deserializationMemo.m_haulSubprojects.contains(data["haulSubproject"].get<uintptr_t>()));
-	haulSubproject = deserializationMemo.m_haulSubprojects.at(data["haulSubproject"].get<uintptr_t>());
+	if(data.contains("haulSubproject"))
+	{
+		uintptr_t address = data["haulSubproject"].get<uintptr_t>();
+		assert(deserializationMemo.m_haulSubprojects.contains(address));
+		haulSubproject = deserializationMemo.m_haulSubprojects.at(address);
+	}
 }
 Json ProjectWorker::toJson() const
 {
-	return {{"haulSubproject", haulSubproject}, {"objective", objective}};
+	Json output {{"objective", objective}};
+	if(haulSubproject != nullptr)
+		output["haulSubproject"] = (uintptr_t)haulSubproject;
+	return output;
 }
 // DishonorCallback.
 ProjectRequiredShapeDishonoredCallback::ProjectRequiredShapeDishonoredCallback(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
@@ -448,12 +455,12 @@ Project::Project(const FactionId& f, Area& a, const BlockIndex& l, const Quantit
 	m_area.getBlocks().reserve(m_location, m_canReserve, std::move(locationDishonorCallback));
 	m_area.getBlocks().project_add(m_location, *this);
 }
-Project::Project(const Json& data, DeserializationMemo& deserializationMemo) :
-	m_finishEvent(deserializationMemo.m_simulation.m_eventSchedule),
-	m_tryToHaulEvent(deserializationMemo.m_simulation.m_eventSchedule),
-	m_tryToReserveEvent(deserializationMemo.m_simulation.m_eventSchedule),
-	m_tryToHaulThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine),
-	m_tryToAddWorkersThreadedTask(deserializationMemo.m_simulation.m_threadedTaskEngine),
+Project::Project(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
+	m_finishEvent(area.m_eventSchedule),
+	m_tryToHaulEvent(area.m_eventSchedule),
+	m_tryToReserveEvent(area.m_eventSchedule),
+	m_tryToHaulThreadedTask(area.m_threadedTaskEngine),
+	m_tryToAddWorkersThreadedTask(area.m_threadedTaskEngine),
 	m_canReserve(data["faction"].get<FactionId>()),
 	m_area(deserializationMemo.area(data["area"])), m_faction(data["faction"].get<FactionId>()),
 	m_location(data["location"].get<BlockIndex>()), m_haulRetries(data["haulRetries"].get<Quantity>()),
@@ -484,20 +491,9 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo) :
 	if(data.contains("toPickup"))
 		for(const Json& tuple : data["toPickup"])
 		{
-			ActorOrItemIndex actorOrItem;
-			if(tuple[0].contains("item"))
-			{
-				ItemIndex item = tuple[0]["item"].get<ItemIndex>();
-				actorOrItem = ActorOrItemIndex::createForItem(item);
-			}
-			else
-			{
-				ActorIndex actor = tuple[0]["actor"].get<ActorIndex>();
-				actorOrItem = ActorOrItemIndex::createForActor(actor);
-			}
+			ActorOrItemReference ref = tuple[0].get<ActorOrItemIndex>().toReference(m_area);
 			ProjectRequirementCounts& projectRequirementCounts = *deserializationMemo.m_projectRequirementCounts.at(tuple[1].get<uintptr_t>());
 			Quantity quantity = tuple[2].get<Quantity>();
-			ActorOrItemReference ref = actorOrItem.toReference(m_area);
 			m_toPickup.insert(ref, std::make_pair(&projectRequirementCounts, quantity));
 		}
 	if(data.contains("haulSubprojects"))
@@ -591,7 +587,7 @@ Json Project::toJson() const
 	{
 		data["toPickup"] = Json::array();
 		for(auto& [actorOrItem, pair] : m_toPickup)
-			data["toPickup"].push_back({actorOrItem, *pair.first, pair.second});
+			data["toPickup"].push_back({actorOrItem, (uintptr_t)pair.first, pair.second});
 	}
 	if(!m_haulSubprojects.empty())
 	{

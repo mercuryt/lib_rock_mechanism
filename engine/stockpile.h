@@ -175,7 +175,7 @@ struct StockPileHasShapeDishonorCallback final : public DishonorCallback
 class AreaHasStockPilesForFaction
 {
 	// Stockpiles may accept multiple item types and thus may appear here more then once.
-	ItemTypeMap<std::vector<StockPile*>> m_availableStockPilesByItemType;
+	ItemTypeMap<SmallSet<StockPile*>> m_availableStockPilesByItemType;
 	// These items are checked whenever a new stockpile is created to see if they should be move to items with destinations.
 	ItemTypeMap<ItemReferences> m_itemsWithoutDestinationsByItemType;
 	// Only when an item is added here does it get designated for stockpileing.

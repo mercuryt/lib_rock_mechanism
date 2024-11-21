@@ -7,7 +7,7 @@
 #include "actors/actors.h"
 #include "objectives/targetedHaul.h"
 TargetedHaulProject::TargetedHaulProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
-	Project(data, deserializationMemo)
+	Project(data, deserializationMemo, area)
 {
 	if(data.contains("item"))
 		m_item.load(data["item"], area);

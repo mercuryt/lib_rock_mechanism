@@ -26,3 +26,4 @@ public:
 	[[nodiscard]] bool operator==(const ItemQuery& itemQuery) const;
 	[[nodiscard]] Json toJson() const;
 };
+void to_json(Json& data, const ItemQuery& query);

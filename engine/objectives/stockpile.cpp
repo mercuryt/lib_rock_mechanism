@@ -22,7 +22,7 @@ StockPileObjective::StockPileObjective(const Json& data, DeserializationMemo& de
 	if(data.contains("item"))
 		m_item = data["item"].get<ItemIndex>().toReference(area);
 	if(data.contains("stockPileLocation"))
-		m_stockPileLocation = data["stockPlileLocation"].get<BlockIndex>();
+		m_stockPileLocation = data["stockPileLocation"].get<BlockIndex>();
 	if(data.contains("hasCheckedForDropOffLocation"))
 		m_hasCheckedForCloserDropOffLocation = true;
 	if(data.contains("pickUpFacing"))
