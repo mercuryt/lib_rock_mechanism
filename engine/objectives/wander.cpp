@@ -56,7 +56,7 @@ Json WanderPathRequest::toJson() const
 }
 // Objective.
 WanderObjective::WanderObjective() : Objective(Priority::create(0)) { }
-WanderObjective::WanderObjective(const Json& data) : Objective(data) { }
+WanderObjective::WanderObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo) { }
 Json WanderObjective::toJson() const
 { 
 	Json data = Objective::toJson();

@@ -117,8 +117,8 @@ std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Area& area, con
 // Objective
 GivePlantsFluidObjective::GivePlantsFluidObjective(Area& area) : 
 	Objective(Config::givePlantsFluidPriority), m_event(area.m_eventSchedule) { }
-GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, Area& area, const ActorIndex& actor) : 
-	Objective(data),
+GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) : 
+	Objective(data, deserializationMemo),
 	m_plantLocation(data.contains("plantLocation") ? data["plantLocation"].get<BlockIndex>() : BlockIndex::null()),
 	m_event(area.m_eventSchedule)
 {

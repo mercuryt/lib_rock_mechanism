@@ -7,8 +7,8 @@
 
 UnequipItemObjective::UnequipItemObjective(const ItemReference& item, const BlockIndex& block) : 
 	Objective(Config::equipPriority), m_item(item), m_block(block) { }
-UnequipItemObjective::UnequipItemObjective(const Json& data, Area& area) :
-	Objective(data), 
+UnequipItemObjective::UnequipItemObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
+	Objective(data, deserializationMemo), 
 	m_block(data["block"].get<BlockIndex>())
 {
 	m_item.load(data["item"], area);

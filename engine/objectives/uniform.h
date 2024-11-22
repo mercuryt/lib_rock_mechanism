@@ -12,7 +12,7 @@ class UniformObjective final : public Objective
 	ItemReference m_item;
 public:
 	UniformObjective(Area& area, const ActorIndex& actor);
-	UniformObjective(const Json& data, Area& area, const ActorIndex& actor);
+	UniformObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo);
 	void execute(Area&, const ActorIndex& actor);
 	void cancel(Area&, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }

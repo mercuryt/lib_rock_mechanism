@@ -27,7 +27,7 @@ class SowSeedsObjective final : public Objective
 	BlockIndex m_block;
 public:
 	SowSeedsObjective(Area& area);
-	SowSeedsObjective(const Json& data, Area& area, const ActorIndex& actor);
+	SowSeedsObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo);
 	void execute(Area& area, const ActorIndex& actor);
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }

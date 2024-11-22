@@ -336,7 +336,7 @@ TEST_CASE("json")
 				.location = blocks.getIndex_i(5, 5, 1),
 				.faction = faction}
 			);
-			ObjectiveTypeId woodWorkingObjectiveType = ObjectiveType::getIdByName("wood working");
+			ObjectiveTypeId woodWorkingObjectiveType = ObjectiveType::getIdByName("craft: wood working");
 			actors.objective_setPriority(dwarf1, woodWorkingObjectiveType, Priority::create(100));
 			items.create({.itemType = ItemType::byName("saw"), .materialType = bronze, .location = blocks.getIndex_i(3, 7, 1), .quality = Quality::create(25), .percentWear = Percent::create(0)});
 			items.create({.itemType = ItemType::byName("chisel"), .materialType = bronze, .location = blocks.getIndex_i(3, 6, 1), .quality = Quality::create(25), .percentWear = Percent::create(0)});
@@ -361,7 +361,7 @@ TEST_CASE("json")
 		REQUIRE(actors2.objective_getCurrent<CraftObjective>(dwarf2).getCraftJob() != nullptr);
 		CraftJob& job = *actors2.objective_getCurrent<CraftObjective>(dwarf2).getCraftJob();
 		REQUIRE(job.craftStepProject);
-		REQUIRE(&job.craftJobType == &jobTypeSawBoards);
+		REQUIRE(job.craftJobType == jobTypeSawBoards);
 		REQUIRE(job.materialType == wood);
 		CraftStepProject& project = *job.craftStepProject.get();
 		REQUIRE(actors2.project_get(dwarf2) == &project);
@@ -373,15 +373,14 @@ TEST_CASE("json")
 		{
 			ItemIndex bucket1 = items.create({.itemType = bucket, .materialType = bronze, .location = blocks.getIndex_i(3, 7, 1), .quality = Quality::create(25), .percentWear = Percent::create(0)});
 			items.cargo_addFluid(bucket1, water, CollisionVolume::create(2));
-			actors.create({
+			ActorIndex dwarf1 = actors.create({
 				.species = dwarf,
 				.percentGrown = Percent::create(90),
 				.location = blocks.getIndex_i(5, 5, 1),
 			});
-			simulation.fastForward(AnimalSpecies::getStepsFluidDrinkFrequency(dwarf));
+			actors.drink_setNeedsFluid(dwarf1);
 			// One step to find the bucket.
 			simulation.doStep();
-
 			areaData = area.toJson();
 			simulationData = simulation.toJson();
 		}
@@ -412,9 +411,7 @@ TEST_CASE("json")
 				.percentGrown = Percent::create(90),
 				.location = blocks.getIndex_i(5, 5, 1),
 			});
-			// Discard drink objective if exists.
-			if (actors.drink_getVolumeOfFluidRequested(dwarf1) != 0)
-				actors.drink_do(dwarf1, actors.drink_getVolumeOfFluidRequested(dwarf1));
+			actors.eat_setIsHungry(dwarf1);
 			// One step to find the meal.
 			simulation.doStep();
 			// Serialize
@@ -444,7 +441,7 @@ TEST_CASE("json")
 			});
 			area.m_hasSleepingSpots.designate(faction, blocks.getIndex_i(2, 2, 1));
 			area.m_hasSleepingSpots.designate(faction, blocks.getIndex_i(1, 1, 1));
-			simulation.fastForward(AnimalSpecies::getStepsSleepFrequency(dwarf));
+			actors.sleep_makeTired(dwarf1);
 			// Discard drink objective if exists.
 			if (actors.drink_getVolumeOfFluidRequested(dwarf1) != 0)
 				actors.drink_do(dwarf1, actors.drink_getVolumeOfFluidRequested(dwarf1));
@@ -468,13 +465,12 @@ TEST_CASE("json")
 		REQUIRE(actors2.sleep_getPercentDoneSleeping(dwarf2) == 0);
 		REQUIRE(area2.m_hasSleepingSpots.containsUnassigned(blocks2.getIndex_i(1,1,1)));
 		REQUIRE(actors2.move_getDestination(dwarf2).exists());
-		REQUIRE(blocks2.isAdjacentToIncludingCornersAndEdges(actors2.move_getDestination(dwarf2), blocks2.getIndex_i(2,2,1)));
+		REQUIRE(actors2.move_getDestination(dwarf2) == blocks2.getIndex_i(2,2,1));
 		REQUIRE(actors2.objective_getCurrent<Objective>(dwarf2).getTypeId() == ObjectiveType::getIdByName("sleep"));
-		REQUIRE(actors2.sleep_getSpot(dwarf2).empty());
+		REQUIRE(actors2.sleep_getSpot(dwarf2).exists());
 	}
 	SUBCASE("sow seed")
 	{
-
 		Json areaData;
 		Json simulationData;
 		ActorId dwarf1Id;
@@ -504,7 +500,7 @@ TEST_CASE("json")
 			simulationData = simulation.toJson();
 		}
 		Simulation simulation2(simulationData);
-		[[maybe_unused]] Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
+		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
 		Actors& actors2 = area2.getActors();
 		ActorIndex dwarf2 = simulation2.m_actors.getIndexForId(dwarf1Id);
@@ -546,7 +542,7 @@ TEST_CASE("json")
 			simulationData = simulation.toJson();
 		}
 		Simulation simulation2(simulationData);
-		[[maybe_unused]] Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
+		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
 		Actors& actors2 = area2.getActors();
 		ActorIndex dwarf2 = simulation2.m_actors.getIndexForId(dwarf1Id);
@@ -585,7 +581,7 @@ TEST_CASE("json")
 			simulationData = simulation.toJson();
 		}
 		Simulation simulation2(simulationData);
-		[[maybe_unused]] Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
+		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
 		Actors& actors2 = area2.getActors();
 		ActorIndex dwarf2 = simulation2.m_actors.getIndexForId(dwarf1Id);

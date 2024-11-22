@@ -88,7 +88,7 @@ void ObjectiveTypePrioritySet::setObjectiveFor(Area& area, const ActorIndex& act
 	if(!area.getActors().stamina_isFull(actor))
 		area.getActors().objective_addTaskToStart(actor, std::make_unique<RestObjective>(area));
 	else
-		area.getActors().objective_addTaskToStart(actor, std::make_unique<WanderObjective>(actor));
+		area.getActors().objective_addTaskToStart(actor, std::make_unique<WanderObjective>());
 }
 void ObjectiveTypePrioritySet::setDelay(Area& area, const ObjectiveTypeId& objectiveTypeId)
 {
@@ -194,10 +194,13 @@ ObjectiveTypeId ObjectiveType::getId() const
 }
 // Objective.
 Objective::Objective(const Priority& priority) : m_priority(priority) { }
-Objective::Objective(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) :
-	m_priority(data["priority"].get<Priority>()), m_detour(data["detour"].get<bool>()) 
+Objective::Objective(const Json& data, DeserializationMemo& deserializationMemo) :
+	m_priority(data["priority"].get<Priority>()),
+	m_detour(data["detour"].get<bool>()) 
 { 
-	deserializationMemo.m_objectives[data["address"].get<uintptr_t>()] = this;
+	uintptr_t address = data["address"].get<uintptr_t>();
+	assert(!deserializationMemo.m_objectives.contains(address));
+	deserializationMemo.m_objectives[address] = this;
 }
 Json Objective::toJson() const 
 { 

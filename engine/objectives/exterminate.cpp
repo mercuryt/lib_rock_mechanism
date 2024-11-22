@@ -7,8 +7,8 @@
 #include "types.h"
 ExterminateObjective::ExterminateObjective(Area& area, const BlockIndex& destination) :
 	Objective(Config::exterminatePriority), m_destination(destination), m_event(area.m_eventSchedule) { }
-ExterminateObjective::ExterminateObjective(const Json& data, Area& area, const ActorIndex& actor) : 
-	Objective(data),
+ExterminateObjective::ExterminateObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) : 
+	Objective(data, deserializationMemo),
 	m_destination(data["destination"].get<BlockIndex>()),
 	m_event(area.m_eventSchedule)
 {

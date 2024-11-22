@@ -79,8 +79,8 @@ UniformObjective::UniformObjective(Area& area, const ActorIndex& actor) :
 { 
 	assert(area.getActors().uniform_exists(actor)); 
 }
-UniformObjective::UniformObjective(const Json& data, Area& area, const ActorIndex& actor) :
-	Objective(data)
+UniformObjective::UniformObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) :
+	Objective(data, deserializationMemo)
 { 
 	area.getActors().m_hasUniform[actor]->recordObjective(*this);
 }

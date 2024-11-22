@@ -396,6 +396,7 @@ void Actors::load(const Json& data)
 	m_hasVisionFacade.resize(size);
 	for(ActorIndex index : getAll())
 	{
+		m_area.m_simulation.m_actors.registerActor(getId(index), m_area.getActors(), index);
 		m_hasVisionFacade[index].initalize(m_area, index);
 		Blocks &blocks = m_area.getBlocks();
 		if(m_location[index].exists())

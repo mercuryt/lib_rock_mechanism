@@ -395,6 +395,7 @@ void Items::load(const Json& data)
 	Blocks& blocks = m_area.getBlocks();
 	for(ItemIndex index : getAll())
 	{
+		m_area.m_simulation.m_items.registerItem(m_id[index], m_area.getItems(), index);
 		m_referenceTarget[index] = std::make_unique<ItemReferenceTarget>(index);
 		if(m_location[index].exists())
 			for (auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))

@@ -4,7 +4,7 @@
 #include "../deserializationMemo.h"
 #include "../area.h"
 EquipItemObjective::EquipItemObjective(const ItemReference& item) : Objective(Config::equipPriority), m_item(item) { }
-EquipItemObjective::EquipItemObjective(const Json& data, Area& area) : Objective(data)
+EquipItemObjective::EquipItemObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo)
 {
 	m_item.load(data["item"], area);
 }

@@ -24,7 +24,7 @@ class HarvestObjective final : public Objective
 public:
 	HasScheduledEvent<HarvestEvent> m_harvestEvent;
 	HarvestObjective(Area& area);
-	HarvestObjective(const Json& data, Area& area);
+	HarvestObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	void execute(Area& area, const ActorIndex& actor);
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }

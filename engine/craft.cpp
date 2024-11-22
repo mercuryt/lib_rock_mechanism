@@ -194,8 +194,8 @@ HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(con
 		for(const Json& blockQuery : pair[1])
 		{
 			BlockIndex block = blockQuery.get<BlockIndex>();
-			m_locationsByCategory[category].add(block);
-			m_stepTypeCategoriesByLocation[block].push_back(category);
+			m_locationsByCategory.getOrCreate(category).add(block);
+			m_stepTypeCategoriesByLocation.getOrCreate(block).push_back(category);
 		}
 	}
 	if(data.contains("jobs"))
@@ -207,14 +207,14 @@ HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(con
 		for(const Json& jobReference : pair[1])
 		{
 			CraftJob* job = deserializationMemo.m_craftJobs.at(jobReference.get<uintptr_t>());
-			m_unassignedProjectsByStepTypeCategory[category].push_back(job);
+			m_unassignedProjectsByStepTypeCategory.getOrCreate(category).push_back(job);
 		}
 	}
 	for(const Json& pair : data["unassignedProjectsBySkill"])
 	{
 		SkillTypeId skill = SkillType::byName(pair[0].get<std::string>());
 		for(const Json& jobReference : pair[1])
-			m_unassignedProjectsBySkill[skill].push_back(deserializationMemo.m_craftJobs.at(jobReference.get<uintptr_t>()));
+			m_unassignedProjectsBySkill.getOrCreate(skill).push_back(deserializationMemo.m_craftJobs.at(jobReference.get<uintptr_t>()));
 	}
 }
 void HasCraftingLocationsAndJobsForFaction::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)

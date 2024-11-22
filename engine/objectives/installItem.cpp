@@ -48,7 +48,7 @@ void InstallItemPathRequest::callback(Area& area, const FindPathResult& result)
 // Objective.
 InstallItemObjective::InstallItemObjective() : Objective(Config::installItemPriority) { }
 InstallItemObjective::InstallItemObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
-	Objective(data)
+	Objective(data, deserializationMemo)
 { 
 	if(data.contains("project"))
 		m_project = static_cast<InstallItemProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()));

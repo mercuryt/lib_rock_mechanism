@@ -14,7 +14,7 @@ class WaitObjective final : public Objective
 public:
 	// Priority of waiting is 0.
 	WaitObjective(Area& area, const Step& duration, const ActorIndex& actor);
-	WaitObjective(const Json& data, Area& area, const ActorIndex& actor);
+	WaitObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo);
 	void execute(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { reset(area, actor); }
 	void cancel(Area& area, const ActorIndex& actor) { reset(area, actor); }

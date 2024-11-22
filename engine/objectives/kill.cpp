@@ -19,7 +19,7 @@ void KillInputAction::execute()
 }
 */
 KillObjective::KillObjective(ActorReference t) : Objective(Config::killPriority), m_target(t) { }
-KillObjective::KillObjective(const Json& data, Area& area) : Objective(data)
+KillObjective::KillObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo)
 { 
 	m_target.load(data["target"], area);
 }

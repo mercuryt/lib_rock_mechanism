@@ -7,7 +7,9 @@
 #include "types.h"
 
 RestObjective::RestObjective(Area& area) : Objective(Priority::create(0)), m_restEvent(area.m_eventSchedule) { }
-RestObjective::RestObjective(const Json& data, Area& area, const ActorIndex& actor) : Objective(data), m_restEvent(area.m_eventSchedule) 
+RestObjective::RestObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) :
+	Objective(data, deserializationMemo),
+	m_restEvent(area.m_eventSchedule) 
 {
 	if(data.contains("eventStart"))
 		m_restEvent.schedule(area, *this, actor, data["eventStart"].get<Step>());
