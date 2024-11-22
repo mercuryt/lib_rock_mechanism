@@ -93,6 +93,8 @@ TEST_CASE("hasThreadedTask")
 		REQUIRE(!fired);
 	}
 }
+/*
+// Changed from implicit delete to explicit enforced with assert.
 TEST_CASE("holderFallsOutOfScope")
 {
 	bool fired = false;
@@ -106,3 +108,4 @@ TEST_CASE("holderFallsOutOfScope")
 	simulation.doStep();
 	REQUIRE(!fired);
 }
+*/
