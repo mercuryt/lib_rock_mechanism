@@ -14,7 +14,7 @@ class RestObjective final : public Objective
 	HasScheduledEvent<RestEvent> m_restEvent;
 public:
 	RestObjective(Area& area);
-	RestObjective(const Json& data, Area& area, const ActorIndex& actor);
+	RestObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo);
 	void execute(Area& area, const ActorIndex& actor);
 	void cancel(Area&, const ActorIndex&) { m_restEvent.maybeUnschedule(); }
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }

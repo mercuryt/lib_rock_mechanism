@@ -62,8 +62,7 @@ void SimulationHasAreas::destroyArea(Area& area)
 Area& SimulationHasAreas::loadAreaFromJson(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	const AreaId id = AreaId::create(data["id"].get<uint>());
-	auto area = std::make_unique<Area>(data, deserializationMemo, m_simulation);
-	return m_areas.insert(id, std::move(area));
+	return m_areas.insert(id, std::make_unique<Area>(data, deserializationMemo, m_simulation));
 }
 Area& SimulationHasAreas::loadAreaFromPath(const AreaId& id, DeserializationMemo& deserializationMemo)
 {

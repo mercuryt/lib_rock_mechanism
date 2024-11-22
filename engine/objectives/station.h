@@ -9,7 +9,7 @@ class StationObjective final : public Objective
 	BlockIndex m_location;
 public:
 	StationObjective(const BlockIndex& l, const Priority& priority = Config::stationPriority) : Objective(priority), m_location(l) { }
-	StationObjective(const Json& data);
+	StationObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	void execute(Area& area, const ActorIndex& actor);
 	void cancel(Area&, const ActorIndex&) { }
 	void delay(Area&, const ActorIndex&) { }

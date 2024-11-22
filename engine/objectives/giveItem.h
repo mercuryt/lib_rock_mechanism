@@ -10,7 +10,7 @@ class GiveItemObjective final : public Objective
 	HasOnDestroySubscriptions m_hasOnDestroySubscriptions;
 public:
 	GiveItemObjective(Area& area, const ItemIndex& item, const ActorIndex& receipent);
-	GiveItemObjective(const Json& data, Area& area);
+	GiveItemObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	void execute(Area& area, const ActorIndex& actor);
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }

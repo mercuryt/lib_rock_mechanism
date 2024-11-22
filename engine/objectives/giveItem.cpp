@@ -11,8 +11,8 @@ GiveItemObjective::GiveItemObjective(Area& area, const ItemIndex& item, const Ac
 	m_recipient.setTarget(area.getActors().getReferenceTarget(recipient));
 	createOnDestroyCallbacks(area, recipient);
 }
-GiveItemObjective::GiveItemObjective(const Json& data, Area& area) :
-	Objective(data)
+GiveItemObjective::GiveItemObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
+	Objective(data, deserializationMemo)
 {
 	m_item.load(data["item"], area);
 	m_recipient.load(data["recipent"], area);

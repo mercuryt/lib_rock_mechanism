@@ -60,7 +60,7 @@ Json WoodCuttingPathRequest::toJson() const
 }
 WoodCuttingObjective::WoodCuttingObjective() : Objective(Config::woodCuttingObjectivePriority) { }
 WoodCuttingObjective::WoodCuttingObjective(const Json& data, DeserializationMemo& deserializationMemo) :
-	Objective(data),
+	Objective(data, deserializationMemo),
 	m_project(data.contains("project") ? static_cast<WoodCuttingProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>())) : nullptr) { }
 Json WoodCuttingObjective::toJson() const
 {

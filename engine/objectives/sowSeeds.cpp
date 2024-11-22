@@ -46,18 +46,19 @@ std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Area& area, const Acto
 SowSeedsObjective::SowSeedsObjective(Area& area) : 
 	Objective(Config::sowSeedsPriority), 
 	m_event(area.m_eventSchedule) { }
-SowSeedsObjective::SowSeedsObjective(const Json& data, Area& area, const ActorIndex& actor) : 
-	Objective(data), 
-	m_event(area.m_eventSchedule), 
-	m_block(data.contains("block") ? data["block"].get<BlockIndex>() : BlockIndex::null())
+SowSeedsObjective::SowSeedsObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) : 
+	Objective(data, deserializationMemo), 
+	m_event(area.m_eventSchedule)
 {
 	if(data.contains("eventStart"))
 		m_event.schedule(Config::sowSeedsStepsDuration, area, *this, actor, data["eventStart"].get<Step>());
+	if(data.contains("block")) 
+		m_block = data["block"].get<BlockIndex>();
 }
 Json SowSeedsObjective::toJson() const
 {
 	Json data = Objective::toJson();
-	if(m_block.empty())
+	if(m_block.exists())
 		data["block"] = m_block;
 	if(m_event.exists())
 		data["eventStart"] = m_event.getStartStep();

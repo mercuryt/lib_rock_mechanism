@@ -15,7 +15,7 @@ protected:
 public:
 	HasScheduledEvent(EventSchedule& s) : m_schedule(&s) 
 	{ 
-		assert(&s);
+		assert(&s != nullptr);
 	}
 	template<typename ...Args>
 	void schedule(Args&& ...args)

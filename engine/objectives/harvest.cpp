@@ -55,9 +55,10 @@ std::unique_ptr<Objective> HarvestObjectiveType::makeFor(Area& area, const Actor
 }
 // Objective.
 HarvestObjective::HarvestObjective(Area& area) :
-       	Objective(Config::harvestPriority), m_harvestEvent(area.m_eventSchedule) { }
-HarvestObjective::HarvestObjective(const Json& data, Area& area) : 
-	Objective(data), m_harvestEvent(area.m_eventSchedule)
+	Objective(Config::harvestPriority), m_harvestEvent(area.m_eventSchedule) { }
+HarvestObjective::HarvestObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo) : 
+	Objective(data, deserializationMemo),
+	m_harvestEvent(area.m_eventSchedule)
 {
 	if(data.contains("eventStart"))
 		m_harvestEvent.schedule(Config::harvestEventDuration, area, *this, data["actor"].get<ActorIndex>(), data["eventStart"].get<Step>());
