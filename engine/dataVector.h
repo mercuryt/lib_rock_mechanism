@@ -38,6 +38,7 @@ public:
 	void add(Contained&& value) { data.emplace_back(std::move(value)); }
 	void add() { data.resize(data.size() + 1); }
 	void clear() { data.clear(); }
+	void popBack() { data.pop_back(); }
 	void remove(const Index& index)
 	{
 		assert(index < size());
@@ -47,7 +48,9 @@ public:
 			return;
 		}
 		Index last = Index::create(size() - 1);
-		data[index.get()] = std::move(data[last.get()]);
+		//TODO: benchmark this branch.
+		if(index != last)
+			data[index.get()] = std::move(data[last.get()]);
 		data.resize(data.size() - 1);
 	}
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(DataVector, data);

@@ -6,36 +6,10 @@
 #include "materialType.h"
 #include "types.h"
 #include "area.h"
-ItemQuery::ItemQuery(const ItemReference& item) : m_item(item) { }
-ItemQuery::ItemQuery(const ItemTypeId& itemType) : m_itemType(itemType) { }
-ItemQuery::ItemQuery(const ItemTypeId& itemType, const MaterialCategoryTypeId& mtc) : m_itemType(itemType), m_materialTypeCategory(mtc) { }
-ItemQuery::ItemQuery(const ItemTypeId& itemType, const MaterialTypeId& mt) : m_itemType(itemType), m_materialType(mt) { }
-ItemQuery::ItemQuery(const ItemTypeId& itemType, const MaterialCategoryTypeId& mtc, const MaterialTypeId& mt) : m_itemType(itemType), m_materialTypeCategory(mtc), m_materialType(mt) { }
-ItemQuery::ItemQuery(const Json& data, Area& area) :
-	m_itemType(data.contains("itemType") ? ItemType::byName(data["itemType"].get<std::string>()) : ItemTypeId::null()),
-	m_materialTypeCategory(data.contains("materialTypeCategory") ? MaterialTypeCategory::byName(data["materialTypeCategory"].get<std::string>()) : MaterialCategoryTypeId::null()),
-	m_materialType(data.contains("materialType") ? MaterialType::byName(data["materialType"].get<std::string>()) : MaterialTypeId::null()) 
-{ 
-	if(data.contains("item"))
-		m_item.load(data["item"], area);
-}
-Json ItemQuery::toJson() const
-{
-	Json output;
-	if(m_item.exists())
-		output["item"] = m_item;
-	if(m_itemType.exists())
-		output["itemType"] = m_itemType;
-	if(m_materialType.exists())
-		output["materialType"] = m_materialType;
-	if(m_materialTypeCategory.exists())
-		output["materialTypeCategory"] = m_materialTypeCategory;
-	return output;
-}
 bool ItemQuery::query(Area& area, const ItemIndex& item) const
 {
 	if(m_item.exists())
-		return item == m_item.getIndex();
+		return item == m_item.getIndex(area.getItems().m_referenceData);
 	Items& items = area.getItems();
 	if(m_itemType != items.getItemType(item))
 		return false;
@@ -53,7 +27,7 @@ bool ItemQuery::operator==(const ItemQuery& itemQuery) const
 void ItemQuery::specalize(Area& area, const ItemIndex& item)
 {
 	assert(m_itemType.exists() && m_item.empty() && area.getItems().getItemType(item) == m_itemType);
-	m_item.setTarget(area.getItems().getReferenceTarget(item));
+	m_item.setIndex(item, area.getItems().m_referenceData);
 	m_itemType.clear();
 	m_materialType.clear();
 	m_materialTypeCategory.clear();
@@ -92,4 +66,27 @@ void ItemQuery::validate() const
 		assert(m_itemType.exists());
 	}
 }
-void to_json(Json& data, const ItemQuery& query) { data = query.toJson(); }
+Json ItemQuery::toJson() const
+{
+	Json output;
+	if(m_item.exists())
+		output["item"] = m_item;
+	if(m_itemType.exists())
+		output["itemType"] = m_itemType;
+	if(m_materialType.exists())
+		output["materialType"] = m_materialType;
+	if(m_materialTypeCategory.exists())
+		output["materialTypeCategory"] = m_materialTypeCategory;
+	return output;
+}
+void ItemQuery::load(const Json& data)
+{
+	if(data.contains("item"))
+		data["item"].get_to(m_item);
+	if(data.contains("itemType"))
+		data["itemType"].get_to(m_itemType);
+	if(data.contains("materialType"))
+		data["materialType"].get_to(m_materialType);
+	if(data.contains("materialTypeCategory"))
+		data["materialTypeCategory"].get_to(m_materialTypeCategory);
+}

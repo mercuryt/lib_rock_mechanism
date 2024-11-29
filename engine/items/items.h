@@ -96,10 +96,10 @@ public:
 	[[nodiscard]] bool containsGeneric(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity) const;
 	[[nodiscard]] bool empty() const { return m_fluidType.empty() && m_actors.empty() && m_items.empty(); }
 	[[nodiscard]] Mass getMass() const { return m_mass; }
-	[[nodiscard]] Json toJson() const;;
+	[[nodiscard]] Json toJson() const;
 	friend class Items;
 };
-class Items final : public Portables<Items, ItemIndex>
+class Items final : public Portables<Items, ItemIndex, ItemReferenceIndex>
 {
 	//TODO: change to bitset or remove.
 	ItemIndexSet m_onSurface;
@@ -115,7 +115,6 @@ class Items final : public Portables<Items, ItemIndex>
 	DataVector<Percent, ItemIndex> m_percentWear; // Always set to 0 for generic types.
 	DataVector<Quality, ItemIndex> m_quality; // Always set to 0 for generic types.
 	DataVector<Quantity, ItemIndex> m_quantity; // Always set to 1 for nongeneric types.
-	DataVector<std::unique_ptr<ItemReferenceTarget>, ItemIndex> m_referenceTarget;
 	void resize(const ItemIndex& newSize);
 	void moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex);
 public:
@@ -146,9 +145,6 @@ public:
 	void setQuantity(const ItemIndex& index, const Quantity& quantity);
 	void unsetCraftJobForWorkPiece(const ItemIndex& index);
 	[[nodiscard]] ItemIndices getAll() const;
-	[[nodiscard]] ItemReference getReference(const ItemIndex& index) const { return *m_referenceTarget[index].get(); }
-	[[nodiscard]] const ItemReference getReferenceConst(const ItemIndex& index) const { return *m_referenceTarget[index].get(); }
-	[[nodiscard]] ItemReferenceTarget& getReferenceTarget(const ItemIndex& index) const { return *m_referenceTarget[index].get();}
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool isOnSurface(const ItemIndex& index);
 	[[nodiscard]] bool isInstalled(const ItemIndex& index) { return m_installed[index]; }

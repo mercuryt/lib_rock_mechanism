@@ -129,7 +129,7 @@ public:
 	[[nodiscard]] bool canRecruitHaulingWorkersOnly() const { return true; }
 	friend class AreaHasStockPilesForFaction;
 	// For testing.
-	[[nodiscard, maybe_unused]] ItemIndex getItem() { return m_item.getIndex(); }
+	[[nodiscard, maybe_unused]] ItemReference getItem() { return m_item; }
 	StockPileProject(const StockPileProject&) = delete;
 	StockPileProject(StockPileProject&&) noexcept = delete;
 	void operator=(const StockPileProject&) noexcept = delete;
@@ -177,12 +177,12 @@ class AreaHasStockPilesForFaction
 	// Stockpiles may accept multiple item types and thus may appear here more then once.
 	ItemTypeMap<SmallSet<StockPile*>> m_availableStockPilesByItemType;
 	// These items are checked whenever a new stockpile is created to see if they should be move to items with destinations.
-	ItemTypeMap<ItemReferences> m_itemsWithoutDestinationsByItemType;
+	ItemTypeMap<SmallSet<ItemReference>> m_itemsWithoutDestinationsByItemType;
 	// Only when an item is added here does it get designated for stockpileing.
-	ItemReferences m_itemsWithDestinationsWithoutProjects;
+	SmallSet<ItemReference> m_itemsWithDestinationsWithoutProjects;
 	//TODO: Replace these SmallMaps with medium maps?
 	// The stockpile used as index here is not neccesarily where the item will go, it is used to prove that there is somewhere the item could go.
-	SmallMap<StockPile*, ItemReferences> m_itemsWithDestinationsByStockPile;
+	SmallMap<StockPile*, SmallSet<ItemReference>> m_itemsWithDestinationsByStockPile;
 	// Multiple projects per item due to generic item stacking.
 	SmallMap<ItemReference, std::list<StockPileProject>> m_projectsByItem;
 	std::list<StockPile> m_stockPiles;

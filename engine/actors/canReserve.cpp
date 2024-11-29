@@ -13,19 +13,19 @@ void Actors::canReserve_setFaction(const ActorIndex& index, FactionId faction)
 void Actors::canReserve_reserveLocation(const ActorIndex& index, const BlockIndex& block, std::unique_ptr<DishonorCallback> callback)
 {
 	if(callback == nullptr)
-		callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_area, index.toReference(m_area));
+		callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_area, m_area.getActors().m_referenceData.getReference(index));
 	m_area.getBlocks().reserve(block, canReserve_get(index), std::move(callback));
 }
 void Actors::canReserve_reserveItem(const ActorIndex& index, const ItemIndex& item, const Quantity& quantity, std::unique_ptr<DishonorCallback> callback)
 {
 	if(callback == nullptr)
-		callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_area, index.toReference(m_area));
+		callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_area, m_area.getActors().m_referenceData.getReference(index));
 	m_area.getItems().reservable_reserve(item, canReserve_get(index), quantity, std::move(callback));
 }
 bool Actors::canReserve_tryToReserveLocation(const ActorIndex& index, const BlockIndex& block, std::unique_ptr<DishonorCallback> callback)
 {
 	if(callback == nullptr)
-		callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_area, index.toReference(m_area));
+		callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_area, m_area.getActors().m_referenceData.getReference(index));
 	if(m_area.getBlocks().isReserved(block, getFactionId(index)))
 		return false;
 	canReserve_reserveLocation(index, block, std::move(callback));
@@ -34,7 +34,7 @@ bool Actors::canReserve_tryToReserveLocation(const ActorIndex& index, const Bloc
 bool Actors::canReserve_tryToReserveItem(const ActorIndex& index, const ItemIndex& item, const Quantity& quantity, std::unique_ptr<DishonorCallback> callback)
 {
 	if(callback == nullptr)
-		callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_area, index.toReference(m_area));
+		callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_area, m_area.getActors().m_referenceData.getReference(index));
 	if(m_area.getItems().reservable_isFullyReserved(item, m_faction[index]))
 		return false;
 	canReserve_reserveItem(index, item, quantity, std::move(callback));

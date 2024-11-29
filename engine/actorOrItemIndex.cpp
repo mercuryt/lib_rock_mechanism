@@ -77,9 +77,9 @@ ActorOrItemReference ActorOrItemIndex::toReference(Area& area) const
 {
 	ActorOrItemReference output;
 	if(isActor())
-		output.setActor(area.getActors().getReferenceTarget(m_index.toActor()));
+		output.setActor(area.getActors().m_referenceData.getReference(m_index.toActor()));
 	else
-		output.setItem(area.getItems().getReferenceTarget(m_index.toItem()));
+		output.setItem(area.getItems().m_referenceData.getReference(m_index.toItem()));
 	return output;
 }
 bool ActorOrItemIndex::isFollowing(Area& area) const

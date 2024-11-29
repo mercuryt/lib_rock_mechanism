@@ -19,9 +19,9 @@ TEST_CASE("uniform")
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
-	UniformElement pantsElement(ItemType::byName("pants"));
-	UniformElement shirtElement(ItemType::byName("shirt"));
-	UniformElement twoBeltsElement(ItemType::byName("belt"), Quantity::create(2));
+	UniformElement pantsElement = UniformElement::create(ItemType::byName("pants"));
+	UniformElement shirtElement = UniformElement::create(ItemType::byName("shirt"));
+	UniformElement twoBeltsElement = UniformElement::create(ItemType::byName("belt"), Quantity::create(2));
 	Uniform basic = Uniform(L"basic", {pantsElement, shirtElement, twoBeltsElement});
 	ActorIndex actor = actors.create({
 		.species=AnimalSpecies::byName("dwarf"),
@@ -37,7 +37,7 @@ TEST_CASE("uniform")
 	simulation.doStep();
 	BlockIndex destination = actors.move_getDestination(actor);
 	REQUIRE(items.isAdjacentToLocation(shirt, destination));
-	REQUIRE(objective.getItem() == shirt);
+	REQUIRE(objective.getItem().getIndex(items.m_referenceData) == shirt);
 	simulation.fastForwardUntillActorHasEquipment(area, actor, shirt);
 	simulation.doStep();
 	REQUIRE(actors.equipment_containsItem(actor, shirt));

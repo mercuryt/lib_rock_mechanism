@@ -2,168 +2,171 @@
 #include "types.h"
 #include "json.h"
 #include "index.h"
+#include "dataVector.h"
 #include <cassert>
 #include <compare>
 #include <functional>
 #include <variant>
-class Area;
-// Each Item holds a reference target in a unique_ptr.
-// Code outside the engine must use an itemReference rather then storing ItemIndex.
-// ActorReferenceTarget is updated on index moved.
-// ActorReference will transperently propigate updated indices.
-struct ActorReferenceTarget final
+template<typename Index, typename ReferenceIndex>
+class ReferenceData;
+template<typename Index, typename ReferenceIndex>
+class Reference
 {
-	ActorIndex index;
-};
-class ActorReference final
-{
-	const ActorReferenceTarget* m_target;
+	using Data = ReferenceData<Index, ReferenceIndex>;
+	ReferenceIndex m_referenceIndex;
 public:
-	ActorReference(const ActorReferenceTarget& target) : m_target(&target) { }
-	ActorReference() : m_target(nullptr) { }
-	ActorReference(Area& area, ActorIndex index);
-	void setTarget(const ActorReferenceTarget& target) { m_target = &target; }
-	void clear() { m_target = nullptr; }
-	ActorIndex getIndex() const { assert(exists()); return m_target->index; }
-	bool exists() const { return m_target != nullptr; }
-	void load(const Json& data, Area& area);
-	bool operator==(const ActorReference& other) const { return other.m_target == m_target; } 
-	std::strong_ordering operator<=>(const ActorReference& other) const { return m_target <=> other.m_target; }
-	size_t hash() const { return reinterpret_cast<size_t>(m_target); }
-	struct Hash
+	Reference(const ReferenceIndex& index) : m_referenceIndex(index) { }
+	Reference(const Reference& other) : m_referenceIndex(other.m_referenceIndex) { }
+	Reference(Reference&& other) noexcept : m_referenceIndex(other.m_referenceIndex) { }
+	Reference() = default;
+	Reference(const Data& dataStore, Index index) { setIndex(index, dataStore); }
+	Reference& operator=(const Reference& other) { m_referenceIndex = other.m_referenceIndex; return *this; }
+	void setReferenceIndex(const ReferenceIndex& index) { m_referenceIndex = index; }
+	void setIndex(const Index& index, const Data& referenceData) { m_referenceIndex = referenceData.getReferenceIndex(index); }
+	void clear() { m_referenceIndex.clear(); }
+	void load(const Json& data) { m_referenceIndex = data.get<ReferenceIndex>(); }
+	void validate(const Data& dataStore) { dataStore.validateReference(m_referenceIndex); }
+	[[nodiscard]] Index getIndex(const Data& referenceData) const { assert(exists()); return referenceData.getIndex(m_referenceIndex); }
+	[[nodiscard]] ReferenceIndex getReferenceIndex() const { return m_referenceIndex; }
+	[[nodiscard]] bool exists() const { return m_referenceIndex.exists(); }
+	[[nodiscard]] bool empty() const { return m_referenceIndex.empty(); }
+	[[nodiscard]] bool operator==(const Reference& other) const { return other.m_referenceIndex == m_referenceIndex; } 
+	[[nodiscard]] std::strong_ordering operator<=>(const Reference& other) const { return m_referenceIndex <=> other.m_referenceIndex; }
+	[[nodiscard]] size_t hash() const { return m_referenceIndex.get(); }
+	struct Hash { [[nodiscard]] size_t operator()(const Reference<Index, ReferenceIndex>& reference) const { return reference.get(); } };
+};
+using ItemReference = Reference<ItemIndex, ItemReferenceIndex>;
+inline void to_json(Json& data, const ItemReference& ref) { data = ref.getReferenceIndex(); }
+inline void from_json(const Json& data, ItemReference& ref) { ref.setReferenceIndex(data.get<ItemReferenceIndex>()); }
+using ActorReference = Reference<ActorIndex, ActorReferenceIndex>;
+inline void to_json(Json& data, const ActorReference& ref) { data = ref.getReferenceIndex(); }
+inline void from_json(const Json& data, ActorReference& ref) { ref.setReferenceIndex(data.get<ActorReferenceIndex>()); }
+/*
+	ReferenceData correlates Indexes to ReferenceIndexes for Actors and Items.
+	ReferenceIndices are generated from the length of the m_indicesByReference vector.
+	ReferenceIndices area recycled via the m_unusedReferenceIndex set.
+*/
+template<typename Index, typename ReferenceIndex>
+class ReferenceData
+{
+	DataVector<Index, ReferenceIndex> m_indicesByReference;
+	DataVector<ReferenceIndex, Index> m_referencesByIndex;
+	SmallSet<ReferenceIndex> m_unusedReferenceIndices;
+	[[nodiscard]] ReferenceIndex getReferenceIndex(const Index &actor) const { return m_referencesByIndex[actor]; }
+	[[nodiscard]] Index getIndex(const ReferenceIndex& reference) const { return m_indicesByReference[reference]; }
+	friend class Reference<Index, ReferenceIndex>;
+public:
+	void load(const Json& data)
 	{
-		size_t operator()(const ActorReference& reference) const { return reference.hash(); }
-	};
-};
-inline void to_json(Json& data, const ActorReference& actor) { data = actor.getIndex(); }
-class ActorReferences
-{
-protected:
-	std::vector<ActorReference> data;
-public:
-	ActorReferences(const Json& data, Area& area) { for(const Json& irData : data) add(irData.get<ActorIndex>(), area); }
-	ActorReferences() = default;
-	[[nodiscard]] auto find(ActorReference ref) { return std::ranges::find(data, ref); }
-	[[nodiscard]] auto find(ActorIndex index) { return std::ranges::find(data, index, [](const auto& ref){return ref.getIndex();}); }
-	[[nodiscard]] auto find(ActorReference ref) const { return std::ranges::find(data, ref); }
-	[[nodiscard]] auto find(ActorIndex index) const { return std::ranges::find(data, index, [](const auto& ref){return ref.getIndex();}); }
-	[[nodiscard]] bool contains(ActorReference& ref) const { return find(ref) != data.end(); }
-	[[nodiscard]] bool contains(ActorIndex index) const { return find(index) != data.end(); }
-	template<typename Predicate>
-	[[nodiscard]] std::vector<ActorReference>::iterator find(const Predicate&& predicate) { return std::ranges::find_if(data, predicate); }
-	template<typename Predicate>
-	[[nodiscard]] std::vector<ActorReference>::const_iterator find(const Predicate&& predicate) const { return std::ranges::find_if(data, predicate); }
-	void add(ActorReference ref) { assert(!contains(ref)); data.push_back(ref); }
-	void remove(ActorReference ref) { assert(contains(ref)); auto found = find(ref); std::swap(*found, data.back()); data.resize(data.size() - 1); }
-	void add(ActorIndex index, Area& area) { data.emplace_back(area, index); }
-	void remove(ActorIndex index) { auto found = find(index); std::swap(*found, data.back()); data.resize(data.size() - 1); }
-	template<typename Predicate>
-	void removeIf(const Predicate&& predicate) { std::erase_if(data, predicate); }
-	void clear() { data.clear(); }
-	void maybeAdd(ActorIndex index, Area& area) { if(!contains(index)) data.emplace_back(area, index); }
-	void maybeRemove(ActorIndex index) { auto found = find(index); if(found != data.end()) { std::swap(*found, data.back()); data.resize(data.size() - 1); } }
-	void merge(ActorIndices indices, Area& area) { for(ActorIndex index : indices) maybeAdd(index, area); }
-	[[nodiscard]] auto begin() { return data.begin(); }
-	[[nodiscard]] auto end() { return data.end(); }
-	[[nodiscard]] auto begin() const { return data.begin(); }
-	[[nodiscard]] auto end() const { return data.end(); }
-	[[nodiscard]] size_t size() { return data.size(); }
-	[[nodiscard]] bool empty() const { return data.empty(); }
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(ActorReferences, data);
-};
-// Each Item holds a reference target in a unique_ptr.
-// Code outside the engine must use an itemReference rather then storing ItemIndex.
-// ItemReferenceTarget is updated on index moved.
-// ItemReference will transperently propigate updated indices.
-struct ItemReferenceTarget final
-{
-	ItemIndex index;
-};
-class ItemReference final
-{
-	const ItemReferenceTarget* m_target;
-public:
-	ItemReference(const ItemReferenceTarget& target) : m_target(&target) { }
-	ItemReference() : m_target(nullptr) { }
-	ItemReference(Area& area, const ItemIndex& index);
-	void setTarget(const ItemReferenceTarget& target) { m_target = &target; }
-	void clear() { m_target = nullptr; }
-	ItemIndex getIndex() const { assert(exists()); return m_target->index; }
-	bool exists() const { return m_target != nullptr; }
-	bool empty() const { return m_target == nullptr; }
-	void load(const Json& data, Area& area);
-	bool operator==(const ItemReference& other) const { return other.m_target == m_target; } 
-	std::strong_ordering operator<=>(const ItemReference& other) const { return m_target <=> other.m_target; }
-	size_t hash() const { return reinterpret_cast<size_t>(m_target); }
-	struct Hash
+		data["index"].get_to(m_indicesByReference);
+		data["reference"].get_to(m_referencesByIndex);
+		data["unused"].get_to(m_unusedReferenceIndices);
+	}
+	void add(const Index& index)
 	{
-		size_t operator()(const ItemReference& reference) const { return reference.hash(); }
-	};
+		assert(index == m_referencesByIndex.size());
+		assert(!m_indicesByReference.contains(index));
+		ReferenceIndex refIndex;
+		if(m_unusedReferenceIndices.empty())
+		{
+			refIndex = ReferenceIndex::create(m_indicesByReference.size());
+			m_indicesByReference.resize(refIndex + 1);
+		}
+		else
+		{
+			refIndex = m_unusedReferenceIndices.back();
+			m_unusedReferenceIndices.popBack();
+		}
+		assert(refIndex.exists());
+		assert(!m_referencesByIndex.contains(refIndex));
+		m_indicesByReference[refIndex] = index;
+		m_referencesByIndex.add(refIndex);
+	}
+	void remove(const Index& index)
+	{
+		assert(m_referencesByIndex[index].exists());
+		ReferenceIndex refIndex = m_referencesByIndex[index];
+		assert(m_indicesByReference[refIndex].exists());
+		assert(m_indicesByReference[refIndex] == index);
+		m_referencesByIndex.remove(index);
+		// Index was not the last item, a still valid item has been moved and it's reference must be updated.
+		if(m_referencesByIndex.size() > index)
+		{
+			ReferenceIndex refNowOccupiningOldSlot = m_referencesByIndex[index];
+			assert(m_indicesByReference[refNowOccupiningOldSlot] != index);
+			m_indicesByReference[refNowOccupiningOldSlot] = index;
+		}
+		// Reference indices must remain stable, remove only from the end, otherwise clear and record unused.
+		if(refIndex == m_indicesByReference.size() - 1)
+		{
+			m_indicesByReference.popBack();
+			// After removing from end, check if newly exposed end is unused, and remove it as well.
+			while(!m_indicesByReference.empty() && m_indicesByReference.back().empty())
+			{
+				m_unusedReferenceIndices.erase(ReferenceIndex::create(m_indicesByReference.size() - 1));
+				m_indicesByReference.popBack();
+			}
+		}
+		else
+		{
+			m_indicesByReference[refIndex].clear();
+			m_unusedReferenceIndices.insert(refIndex);
+		}
+	}
+	void reserve(uint size)
+	{
+		m_referencesByIndex.reserve(size);
+		// The current 'next reference' is determined by the length of indices by reference, which is why we reserve rather then resize here.
+		m_indicesByReference.reserve(size);
+	}
+	void reserve(const Index& size)
+	{
+		reserve(size.get());
+	}
+	void validateReference(const ReferenceIndex& ref) const
+	{
+		assert(ref < m_indicesByReference.size());
+		assert(m_indicesByReference[ref].exists());
+	}
+	[[nodiscard]] size_t size() const { return m_referencesByIndex.size(); }
+	[[nodiscard]] auto getReference(const Index& index) const -> Reference<Index, ReferenceIndex> const { return m_referencesByIndex[index]; }
+	[[nodiscard]] Json toJson() const
+	{
+		return {{"index", m_indicesByReference}, {"reference", m_referencesByIndex}, {"unused", m_unusedReferenceIndices}};
+	}
+	// For testing.
+	[[nodiscard]] const auto& getIndices() const { return m_indicesByReference; }
+	[[nodiscard]] const DataVector<ReferenceIndex, Index>& getReferenceIndices() const { return m_referencesByIndex; }
+	[[nodiscard]] const auto& getUnusedReferenceIndices() const { return m_unusedReferenceIndices; }
 };
-inline void to_json(Json& data, const ItemReference& item) { data = item.getIndex(); }
-class ItemReferences
-{
-protected:
-	std::vector<ItemReference> data;
-public:
-	ItemReferences(const Json& data, Area& area) { for(const Json& irData : data) add(irData.get<ItemIndex>(), area); }
-	ItemReferences() = default;
-	[[nodiscard]] auto find(const ItemReference& ref) { return std::ranges::find(data, ref); }
-	[[nodiscard]] auto find(const ItemIndex& index) { return std::ranges::find(data, index, [](const auto& ref){return ref.getIndex();}); }
-	[[nodiscard]] auto find(const ItemReference& ref) const { return std::ranges::find(data, ref); }
-	[[nodiscard]] auto find(const ItemIndex& index) const { return std::ranges::find(data, index, [](const auto& ref){return ref.getIndex();}); }
-	[[nodiscard]] bool contains(const ItemReference& ref) const { return find(ref) != data.end(); }
-	[[nodiscard]] bool contains(const ItemIndex& index) const { return find(index) != data.end(); }
-	template<typename Predicate>
-	[[nodiscard]] std::vector<ItemReference>::iterator find(const Predicate&& predicate) { return std::ranges::find_if(data, predicate); }
-	template<typename Predicate>
-	[[nodiscard]] std::vector<ItemReference>::const_iterator find(const Predicate&& predicate) const { return std::ranges::find_if(data, predicate); }
-	void add(const ItemReference& ref) { assert(!contains(ref)); data.push_back(ref); }
-	void remove(const ItemReference& ref) { assert(contains(ref)); auto found = find(ref); std::swap(*found, data.back()); data.resize(data.size() - 1); }
-	void add(const ItemIndex& index, Area& area) { data.emplace_back(area, index); }
-	void remove(const ItemIndex& index) { auto found = find(index); std::swap(*found, data.back()); data.resize(data.size() - 1); }
-	template<typename Predicate>
-	void removeIf(const Predicate&& predicate) { std::erase_if(data, predicate); }
-	void clear() { data.clear(); }
-	void addGeneric(Area& area, ItemTypeId itemType, const MaterialTypeId& materialType, const Quantity& quantity);
-	void removeGeneric(Area& area, ItemTypeId itemType, const MaterialTypeId& materialType, const Quantity& quantity);
-	void maybeAdd(const ItemIndex& index, Area& area) { if(!contains(index)) data.emplace_back(area, index); }
-	void maybeAdd(const ItemReference& ref) { if(!contains(ref)) data.emplace_back(ref); }
-	void maybeRemove(const ItemReference& ref) { auto found = find(ref); if(found != data.end()) { std::swap(*found, data.back()); data.resize(data.size() - 1); } }
-	void maybeRemove(const ItemIndex& index) { auto found = find(index); if(found != data.end()) { std::swap(*found, data.back()); data.resize(data.size() - 1); } }
-	void merge(const ItemIndices& indices, Area& area) { for(ItemIndex index : indices) maybeAdd(index, area); }
-	template<typename Predicate>
-	[[nodiscard]] bool contains(const Predicate&& predicate) const { return std::ranges::find_if(data, predicate) != data.end(); }
-	[[nodiscard]] auto begin() { return data.begin(); }
-	[[nodiscard]] auto end() { return data.end(); }
-	[[nodiscard]] auto begin() const { return data.begin(); }
-	[[nodiscard]] auto end() const { return data.end(); }
-	[[nodiscard]] size_t size() { return data.size(); }
-	[[nodiscard]] bool empty() const { return data.empty(); }
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(ItemReferences, data);
-};
-class ItemReferencesMaybeSorted : public ItemReferences
-{
-	bool sorted = false;
-public:
-	template<typename Sort>
-		void sort(Sort sort) { assert(!sorted); std::ranges::sort(data, sort); sorted = true; }
-	void add(const ItemReference& ref) { sorted = false; ItemReferences::add(ref); }
-	void remove(const ItemReference& ref) { sorted = false; ItemReferences::remove(ref); }
-	void add(const ItemIndex& index, Area& area) { sorted = false; ItemReferences::add(index, area); }
-	void remove(const ItemIndex& index) { sorted = false; ItemReferences::remove(index); }
-	[[nodiscard]] bool isSorted() const { return sorted; }
-};
+using ItemReferenceData = ReferenceData<ItemIndex, ItemReferenceIndex>;
+inline void to_json(Json& data, const ItemReferenceData& refData) { data = refData.toJson(); }
+inline void from_json(const Json& data, ItemReferenceData& refData) { refData.load(data); }
+using ActorReferenceData = ReferenceData<ActorIndex, ActorReferenceIndex>;
+inline void to_json(Json& data, const ActorReferenceData& refData) { data = refData.toJson(); }
+inline void from_json(const Json& data, ActorReferenceData& refData) { refData.load(data); }
 // Polymorphic reference wrapes either an actor or an item.
 #include "actorOrItemIndex.h"
 class ActorOrItemReference
 {
 	std::variant<std::monostate, ActorReference, ItemReference> m_reference;
 public:
-	void setActor(ActorReferenceTarget& target) { m_reference.emplace<1>(target); }
-	void setItem(ItemReferenceTarget& target) { m_reference.emplace<2>(target); }
+	void setActor(const ActorReference& target) { m_reference.emplace<1>(target); }
+	void setItem(const ItemReference& target) { m_reference.emplace<2>(target); }
 	void clear() { m_reference.emplace<0>(); }
-	void load(const Json& data, Area& area);
+	void load(const Json& data)
+	{
+		if(data[0])
+		{
+			ActorReference actor = data[1].get<ActorReference>();
+			setActor(actor);
+		}
+		else
+		{
+			ItemReference item = data[1].get<ItemReference>();
+			setItem(item);
+		}
+	}
 	[[nodiscard]] bool isActor() const 
 	{ 
 		assert(exists());
@@ -175,20 +178,29 @@ public:
 	}
 	[[nodiscard]] bool exists() const { return m_reference.index() != 0; }
 	[[nodiscard]] bool operator==(const ActorOrItemReference& ref) const { return ref.m_reference == m_reference; }
-	[[nodiscard]] HasShapeIndex getIndex() const 
+	[[nodiscard]] HasShapeIndex getIndex(const ActorReferenceData& actorData, const ItemReferenceData& itemData) const 
 	{
 		assert(exists());
-		return isActor() ? HasShapeIndex::cast(std::get<1>(m_reference).getIndex()) : HasShapeIndex::cast(std::get<2>(m_reference).getIndex());
+		return isActor() ?
+			HasShapeIndex::cast(std::get<1>(m_reference).getIndex(actorData)) :
+			HasShapeIndex::cast(std::get<2>(m_reference).getIndex(itemData));
 	}
-	[[nodiscard]] ActorOrItemIndex getIndexPolymorphic() const
+	[[nodiscard]] ActorOrItemIndex getIndexPolymorphic(const ActorReferenceData& actorData, const ItemReferenceData& itemData) const
 	{
 		if(isActor())
-			return ActorOrItemIndex::createForActor(ActorIndex::cast(getIndex()));
+			return ActorOrItemIndex::createForActor(ActorIndex::cast(getIndex(actorData, itemData)));
 		else
-			return ActorOrItemIndex::createForItem(ItemIndex::cast(getIndex()));
+			return ActorOrItemIndex::createForItem(ItemIndex::cast(getIndex(actorData, itemData)));
 	}
-	[[nodiscard]] static ActorOrItemReference createForActor(ActorReferenceTarget& target) {  ActorOrItemReference output; output.setActor(target); return output;}
-	[[nodiscard]] static ActorOrItemReference createForItem(ItemReferenceTarget& target) {  ActorOrItemReference output; output.setItem(target); return output;}
+	[[nodiscard]] static ActorOrItemReference createForActor(const ActorReference& target) {  ActorOrItemReference output; output.setActor(target); return output;}
+	[[nodiscard]] static ActorOrItemReference createForItem(const ItemReference& target) {  ActorOrItemReference output; output.setItem(target); return output;}
+	[[nodiscard]] Json toJson() const
+	{
+		if(isActor())
+			return Json{true, std::get<1>(m_reference)};
+		else
+			return Json{false, std::get<2>(m_reference)};
+	}
 	struct Hash
 	{
 		[[nodiscard]]size_t operator()(const ActorOrItemReference& reference) const 
@@ -207,4 +219,5 @@ public:
 		}
 	};
 };
-inline void to_json(Json& data, const ActorOrItemReference& ref) { data = ref.getIndexPolymorphic(); }
+inline void to_json(Json& data, const ActorOrItemReference& ref) { data = ref.toJson(); }
+inline void from_json(const Json& data, ActorOrItemReference& ref) { ref.load(data); }

@@ -20,7 +20,7 @@ BanditsArriveDramaArc::BanditsArriveDramaArc(const Json& data, DeserializationMe
 	m_quantity(data["quantity"].get<Quantity>()),
 	m_scheduledEvent(m_area->m_eventSchedule)
 {
-	m_leader.setTarget(m_area->getActors().getReferenceTarget(data["leader"].get<ActorIndex>()));
+	data["leader"].get_to(m_leader);
 	m_scheduledEvent.schedule(*this, m_area->m_simulation, data["start"].get<Step>(), data["duration"].get<Step>());
 }
 Json BanditsArriveDramaArc::toJson() const
@@ -59,18 +59,18 @@ void BanditsArriveDramaArc::callback()
 				.hasLightArmor=random.chance(0.9),
 				.hasHeavyArmor=random.chance(0.3),
 			};
-			m_leader = actors.create(params).toReference(*m_area);
+			ActorIndex leaderIndex = actors.create(params);
+			m_leader = actors.m_referenceData.getReference(leaderIndex);
 			--m_quantity;
-			ActorIndex leaderIndex = m_leader.getIndex();
 			FactionId faction = m_area->m_simulation.createFaction(actors.getName(leaderIndex) + L" bandits");
 			actors.setFaction(leaderIndex, faction);
 			actors.objective_addTaskToStart(leaderIndex, std::make_unique<ExterminateObjective>(*m_area, destination));
-			m_actors.add(m_leader);
+			m_actors.insert(m_leader);
 		}
 		// Spawn.
 		while(m_quantity-- != 0)
 		{
-			AnimalSpeciesId species = random.chance(0.5) ? actors.getSpecies(m_leader.getIndex()) : random.getInVector(sentientSpecies);
+			AnimalSpeciesId species = random.chance(0.5) ? actors.getSpecies(m_leader.getIndex(actors.m_referenceData)) : random.getInVector(sentientSpecies);
 			ShapeId shape = AnimalSpecies::getShapes(species).back();
 			MoveTypeId moveType = AnimalSpecies::getMoveType(species);
 			BlockIndex location = findLocationOnEdgeForNear(shape, moveType, m_entranceBlock, maxBlockDistance, exclude);
@@ -81,13 +81,13 @@ void BanditsArriveDramaArc::callback()
 					.species=species, 
 					.percentGrown=Percent::create(random.getInRange(70,100)),
 					.location=location,
-					.faction=actors.getFactionId(m_leader.getIndex()),
+					.faction=actors.getFactionId(m_leader.getIndex(actors.m_referenceData)),
 					.hasSidearm=true,
 					.hasLongarm=random.chance(0.6),
 					.hasLightArmor=random.chance(0.9),
 					.hasHeavyArmor=random.chance(0.3),
 				});
-				m_actors.add(actor.toReference(*m_area));
+				m_actors.insert(actors.m_referenceData.getReference(actor));
 				actors.objective_addTaskToStart(actor, std::make_unique<ExterminateObjective>(*m_area, destination));
 			}
 			else

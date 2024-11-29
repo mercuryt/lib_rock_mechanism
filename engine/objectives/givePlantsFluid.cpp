@@ -18,16 +18,16 @@
 GivePlantsFluidEvent::GivePlantsFluidEvent(const Step& delay, Area& area, GivePlantsFluidObjective& gpfo, const ActorIndex& actor, const Step start) : 
 	ScheduledEvent(area.m_simulation, delay, start), m_objective(gpfo) 
 { 
-	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
+	m_actor.setIndex(actor, area.getActors().m_referenceData);
 }
 void GivePlantsFluidEvent::execute(Simulation&, Area* area)
 {
 	Blocks& blocks = area->getBlocks();
-	ActorIndex actor = m_actor.getIndex();
-	if(!blocks.plant_exists(m_objective.m_plantLocation))
-			m_objective.cancel(*area, m_actor.getIndex());
-	PlantIndex plant = blocks.plant_get(m_objective.m_plantLocation);
 	Actors& actors = area->getActors();
+	PlantIndex plant = blocks.plant_get(m_objective.m_plantLocation);
+	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
+	if(!blocks.plant_exists(m_objective.m_plantLocation))
+			m_objective.cancel(*area, actor);
 	Plants& plants = area->getPlants();
 	assert(actors.canPickUp_isCarryingFluidType(actor, PlantSpecies::getFluidType(plants.getSpecies(plant))));
 	CollisionVolume quantity = std::min(plants.getVolumeFluidRequested(plant), actors.canPickUp_getFluidVolume(actor));
@@ -44,7 +44,7 @@ void GivePlantsFluidEvent::onCancel(Simulation&, Area* area)
 	if(location.exists() && blocks.plant_exists(location))
 	{
 		PlantIndex plant = blocks.plant_get(location);
-		area->m_hasFarmFields.getForFaction(actors.getFactionId(m_actor.getIndex())).addGivePlantFluidDesignation(plant);
+		area->m_hasFarmFields.getForFaction(actors.getFactionId(m_actor.getIndex(actors.m_referenceData))).addGivePlantFluidDesignation(plant);
 	}
 }
 // Path Request.
@@ -123,7 +123,7 @@ GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, Area& area,
 	m_event(area.m_eventSchedule)
 {
 	if(data.contains("fluidHaulingItem"))
-		m_fluidHaulingItem.setTarget(area.getItems().getReferenceTarget(data["fluidHaulingItem"].get<ItemIndex>()));
+		data["fluidHaulingItem"].get_to(m_fluidHaulingItem);
 	if(data.contains("eventStart"))
 		m_event.schedule(Config::givePlantsFluidDelaySteps, area, *this, actor, data["eventStart"].get<Step>());
 }
@@ -174,13 +174,13 @@ void GivePlantsFluidObjective::execute(Area& area, const ActorIndex& actor)
 			// Find fluid hauling item.
 			makePathRequest(area, actor);
 	}
-	else if(actors.canPickUp_isCarryingItem(actor, m_fluidHaulingItem.getIndex()))
+	else if(actors.canPickUp_isCarryingItem(actor, m_fluidHaulingItem.getIndex(items.m_referenceData)))
 	{
 		PlantIndex plant = blocks.plant_get(m_plantLocation);
 		// Has fluid item.
 		if(actors.canPickUp_getFluidVolume(actor) != 0)
 		{
-			assert(items.cargo_getFluidType(m_fluidHaulingItem.getIndex()) == PlantSpecies::getFluidType(plants.getSpecies(plant)));
+			assert(items.cargo_getFluidType(m_fluidHaulingItem.getIndex(items.m_referenceData)) == PlantSpecies::getFluidType(plants.getSpecies(plant)));
 			// Has fluid.
 			if(actors.isAdjacentToPlant(actor, plant))
 				// At plant, begin giving.
@@ -209,16 +209,17 @@ void GivePlantsFluidObjective::execute(Area& area, const ActorIndex& actor)
 	else
 	{
 		// Does not have fluid hauling item.
-		if(actors.isAdjacentToItem(actor, m_fluidHaulingItem.getIndex()))
+		ItemIndex fluidHaulingItem = m_fluidHaulingItem.getIndex(items.m_referenceData);
+		if(actors.isAdjacentToItem(actor, fluidHaulingItem))
 		{
 			// Pickup item.
-			actors.canPickUp_pickUpItem(actor, m_fluidHaulingItem.getIndex());
+			actors.canPickUp_pickUpItem(actor, fluidHaulingItem);
 			actors.canReserve_clearAll(actor);
 			m_detour = false;
 			execute(area, actor);
 		}
 		else
-			actors.move_setDestinationAdjacentToItem(actor, m_fluidHaulingItem.getIndex(), m_detour);
+			actors.move_setDestinationAdjacentToItem(actor, fluidHaulingItem, m_detour);
 	}
 }
 void GivePlantsFluidObjective::cancel(Area& area, const ActorIndex& actor)
@@ -248,8 +249,8 @@ void GivePlantsFluidObjective::selectPlantLocation(Area& area, const BlockIndex&
 void GivePlantsFluidObjective::selectItem(Area& area, const ItemIndex& item, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
-	m_fluidHaulingItem.setTarget(area.getItems().getReferenceTarget(item));
-	actors.canReserve_reserveItem(actor, m_fluidHaulingItem.getIndex(), Quantity::create(1));
+	m_fluidHaulingItem.setIndex(item, area.getItems().m_referenceData);
+	actors.canReserve_reserveItem(actor, item, Quantity::create(1));
 }
 void GivePlantsFluidObjective::reset(Area& area, const ActorIndex& actor)
 {

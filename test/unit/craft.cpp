@@ -46,7 +46,7 @@ TEST_CASE("craft")
 		.location=blocks.getIndex_i(1, 1, 1),
 		.faction=faction,
 	});
-	ActorReference dwarf1Ref = dwarf1.toReference(area);
+	ActorReference dwarf1Ref = actors.m_referenceData.getReference(dwarf1);
 	SmallSet<CraftJob*> emptyJobSet;
 	SUBCASE("infastructure")
 	{
@@ -134,7 +134,7 @@ TEST_CASE("craft")
 			REQUIRE(actors.getLocation(dwarf1) == sawingLocation);
 			REQUIRE(job->getStep() == 2);
 			REQUIRE(job->workPiece.exists());
-			ItemIndex bucket = job->workPiece.getIndex();
+			ItemIndex bucket = job->workPiece.getIndex(items.m_referenceData);
 			REQUIRE(items.getLocation(bucket) == sawingLocation);
 			REQUIRE(area.getTotalCountOfItemTypeOnSurface(ItemType::byName("board")) == 9);
 			// There is more wood working to be done.

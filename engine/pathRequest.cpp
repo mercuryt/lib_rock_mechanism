@@ -335,13 +335,13 @@ Json PathRequest::toJson() const
 		output["reserve"] = m_reserve;
 	return output;
 }
-std::unique_ptr<PathRequest> PathRequest::load(Area& area, const Json& data, DeserializationMemo& deserializationMemo)
+std::unique_ptr<PathRequest> PathRequest::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	std::string type = data["type"];
 	if(type == "basic")
 		return std::make_unique<PathRequest>(data);
 	if(type == "attack")
-		return std::make_unique<GetIntoAttackPositionPathRequest>(area, data);
+		return std::make_unique<GetIntoAttackPositionPathRequest>(data);
 	if(type == "dig")
 		return std::make_unique<DigPathRequest>(data, deserializationMemo);
 	if(type == "temperature")

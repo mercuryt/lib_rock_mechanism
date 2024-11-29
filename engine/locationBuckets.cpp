@@ -21,7 +21,6 @@ void LocationBucket::insert(Area& area, const ActorIndex& actor, const BlockIndi
 				blocksData.getCoordinates(block),
 				area.m_visionCuboids.getIdFor(block)
 			);
-
 	}
 	else
 	{
@@ -97,6 +96,16 @@ void LocationBucket::updateCuboid(Area& area, const ActorIndex& actor, const Blo
 		m_visionCuboidsSingleTileActors[index] = newCuboid;
 	}
 }
+void LocationBucket::prefetch() const
+{
+	// TODO: benchmark this, consider combining vectors.
+	__builtin_prefetch(&*m_positionsSingleTileActors.begin());
+	__builtin_prefetch(&*m_visionCuboidsSingleTileActors.begin());
+}
+void LocationBuckets::prefetch(uint index) const
+{
+	m_buckets[index].prefetch();
+}
 void LocationBuckets::initalize()
 {
 	m_maxX = DistanceInBuckets::create((((m_area.getBlocks().m_sizeX - 1) / Config::locationBucketSize) + 1).get());
@@ -104,14 +113,17 @@ void LocationBuckets::initalize()
 	m_maxZ = DistanceInBuckets::create((((m_area.getBlocks().m_sizeZ - 1) / Config::locationBucketSize) + 1).get());
 	m_buckets.resize(m_maxX.get() * m_maxY.get() * m_maxZ.get());
 }
-LocationBucket& LocationBuckets::get(const DistanceInBuckets& x, const DistanceInBuckets& y, const DistanceInBuckets& z)
+uint LocationBuckets::getIndex(const DistanceInBuckets& x, const DistanceInBuckets& y, const DistanceInBuckets& z) const
 {
-	DistanceInBuckets offset = x + (y * m_maxX.get()) + (z * m_maxX.get() * m_maxY.get());
-	return m_buckets[offset.get()];
+	return (x + (y * m_maxX) + (z * m_maxX * m_maxY)).get();
 }
-const LocationBucket& LocationBuckets::get(const DistanceInBuckets& x, const DistanceInBuckets& y, const DistanceInBuckets& z) const 
+LocationBucket& LocationBuckets::get(uint index)
 {
-	return const_cast<LocationBuckets&>(*this).get(x, y, z);
+	return m_buckets[index];
+}
+const LocationBucket& LocationBuckets::get(uint index) const 
+{
+	return const_cast<LocationBuckets&>(*this).get(index);
 }
 LocationBucket& LocationBuckets::getBucketFor(const BlockIndex& block)
 {
@@ -119,7 +131,7 @@ LocationBucket& LocationBuckets::getBucketFor(const BlockIndex& block)
 	DistanceInBuckets x = DistanceInBuckets::create((coordinates.x / Config::locationBucketSize).get());
 	DistanceInBuckets y = DistanceInBuckets::create((coordinates.y / Config::locationBucketSize).get());
 	DistanceInBuckets z = DistanceInBuckets::create((coordinates.z / Config::locationBucketSize).get());
-	return get(x, y, z);
+	return get(getIndex(x, y, z));
 }
 void LocationBuckets::add(const ActorIndex& actor)
 {

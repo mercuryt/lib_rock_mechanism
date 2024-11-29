@@ -156,7 +156,7 @@ std::pair<ItemQuery, Quantity> definitions::loadItemQuery(const Json& data)
 {
 	ItemTypeId itemType = ItemType::byName(data["itemType"].get<std::string>());
 	Quantity quantity = data["quantity"].get<Quantity>();
-	ItemQuery query(itemType);
+	ItemQuery query = ItemQuery::create(itemType);
 	if(data.contains("materialType"))
 		query.m_materialType = MaterialType::byName(data["materialType"].get<std::string>());
 	if(data.contains("materialTypeCategory"))

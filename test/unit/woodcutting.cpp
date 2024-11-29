@@ -38,6 +38,7 @@ TEST_CASE("woodcutting")
 		.location=blocks.getIndex_i(1,1,1), 
 		.hasSidearm=false,
 	});
+	ActorReference dwarfRef = actors.m_referenceData.getReference(dwarf);
 	actors.setFaction(dwarf, faction);
 	ItemIndex axe = items.create({.itemType=ItemType::byName("axe"), .materialType=MaterialType::byName("bronze"), .quality=Quality::create(25u), .percentWear=Percent::create(10u)});
 	area.m_hasWoodCuttingDesignations.designate(faction, treeLocation);
@@ -54,7 +55,7 @@ TEST_CASE("woodcutting")
 		project = actors.project_get(dwarf);
 		// One step to select haul type.
 		simulation.doStep();
-		REQUIRE(project->getProjectWorkerFor(dwarf.toReference(area)).haulSubproject);
+		REQUIRE(project->getProjectWorkerFor(dwarfRef).haulSubproject);
 		// Another step to path to the axe.
 		simulation.doStep();
 		REQUIRE(!actors.move_getPath(dwarf).empty());
@@ -76,7 +77,7 @@ TEST_CASE("woodcutting")
 		BlockIndex branchStockpileLocation = blocks.getIndex_i(8,8,1);
 		area.m_hasStockPiles.registerFaction(faction);
 		area.m_hasStocks.addFaction(faction);
-		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile({branch});
+		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile({ItemQuery::create(branch)});
 		stockpile.addBlock(branchStockpileLocation);
 		const StockPileObjectiveType& stockPileObjectiveType = static_cast<const StockPileObjectiveType&>(ObjectiveType::getByName("stockpile"));
 		actors.objective_setPriority(dwarf, stockPileObjectiveType.getId(), Priority::create(100));
@@ -102,7 +103,7 @@ TEST_CASE("woodcutting")
 		REQUIRE(actors.project_get(dwarf)->reservationsComplete());
 		// Select haul strategy.
 		simulation.doStep();
-		REQUIRE(actors.project_get(dwarf)->getProjectWorkerFor(dwarf.toReference(area)).haulSubproject);
+		REQUIRE(actors.project_get(dwarf)->getProjectWorkerFor(dwarfRef).haulSubproject);
 		// Pickup and path.
 		simulation.doStep();
 		REQUIRE(actors.move_getDestination(dwarf).exists());

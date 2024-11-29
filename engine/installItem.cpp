@@ -11,12 +11,13 @@ InstallItemProject::InstallItemProject(Area& area, const ItemReference& i, const
 	Project(faction, area, l, Quantity::create(1)), m_item(i), m_facing(facing) { }
 void InstallItemProject::onComplete()
 {
-	m_area.getItems().setLocationAndFacing(m_item.getIndex(), m_location, m_facing);
-	auto workers = m_workers;
 	Actors& actors = m_area.getActors();
-	m_area.m_hasInstallItemDesignations.getForFaction(m_faction).remove(m_area, m_item.getIndex());
+	Items& items = m_area.getItems();
+	items.setLocationAndFacing(m_item.getIndex(items.m_referenceData), m_location, m_facing);
+	auto workers = m_workers;
+	m_area.m_hasInstallItemDesignations.getForFaction(m_faction).remove(m_area, m_item.getIndex(items.m_referenceData));
 	for(auto& [actor, projectWorker] : workers)
-		actors.objective_complete(actor.getIndex(), *projectWorker.objective);
+		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);
 }
 // HasDesignations.
 void HasInstallItemDesignationsForFaction::add(Area& area, const BlockIndex& block, const ItemIndex& item, const Facing& facing, const FactionId& faction)

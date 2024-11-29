@@ -31,12 +31,12 @@ void RestObjective::reset(Area& area, const ActorIndex& actor)
 RestEvent::RestEvent(Area& area, RestObjective& ro, const ActorIndex& actor, Step start) :
 	ScheduledEvent(area.m_simulation, Config::restIntervalSteps, start), m_objective(ro)
 {
-	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
+	m_actor.setIndex(actor, area.getActors().m_referenceData);
 }
 void RestEvent::execute(Simulation&, Area* area)
 {
 	Actors& actors = area->getActors();
-	ActorIndex actor = m_actor.getIndex();
+	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
 	actors.stamina_recover(actor);
 	actors.objective_complete(actor, m_objective);
 }

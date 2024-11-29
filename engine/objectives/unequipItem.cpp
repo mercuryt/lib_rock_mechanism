@@ -7,11 +7,11 @@
 
 UnequipItemObjective::UnequipItemObjective(const ItemReference& item, const BlockIndex& block) : 
 	Objective(Config::equipPriority), m_item(item), m_block(block) { }
-UnequipItemObjective::UnequipItemObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
+UnequipItemObjective::UnequipItemObjective(const Json& data, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo), 
 	m_block(data["block"].get<BlockIndex>())
 {
-	m_item.load(data["item"], area);
+	data["item"].get_to(m_item);
 }
 void UnequipItemObjective::execute(Area& area, const ActorIndex& actor)
 {
@@ -24,7 +24,7 @@ void UnequipItemObjective::execute(Area& area, const ActorIndex& actor)
 	{
 		Blocks& blocks = area.getBlocks();
 		Items& items = area.getItems();
-		ItemIndex item = m_item.getIndex();
+		ItemIndex item = m_item.getIndex(items.m_referenceData);
 		ShapeId shape = items.getShape(item);
 		const BlockIndices& occupied = items.getBlocks(item);
 		if(blocks.shape_canEnterCurrentlyWithAnyFacing(m_block, shape, occupied))

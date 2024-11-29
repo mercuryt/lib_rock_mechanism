@@ -79,7 +79,6 @@ class CraftStepProject final : public Project
 	void offDelay() { assert(false); }
 	void onAddToMaking(const ActorIndex& actor);
 	[[nodiscard]] bool canReset() const { return false; }
-	void onActorOrItemReservationDishonored(const ActorOrItemIndex&, const Quantity&, const Quantity&) { cancel(); }
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;

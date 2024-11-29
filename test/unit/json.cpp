@@ -135,7 +135,7 @@ TEST_CASE("json")
 		REQUIRE(goToObjective.getLocation() == blocks2.getIndex_i(9,9,1));
 		// Equipment.
 		REQUIRE(!actors2.equipment_getAll(dwarf2).empty());
-		ItemIndex pants2 = actors2.equipment_getAll(dwarf2).begin()->getIndex();
+		ItemIndex pants2 = actors2.equipment_getAll(dwarf2).begin()->getIndex(items.m_referenceData);
 		REQUIRE(items2.getItemType(pants2) == pants);
 		REQUIRE(items2.getMaterialType(pants2) == cotton);
 		// canPickup.
@@ -224,15 +224,16 @@ TEST_CASE("json")
 		REQUIRE(!actors2.move_getPath(dwarf2).empty());
 		DigObjective& objective = actors2.objective_getCurrent<DigObjective>(dwarf2);
 		REQUIRE(objective.getProject() == actors2.project_get(dwarf2));
-		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf2.toReference(area2));
+		ActorReference dwarf2Ref = area2.getActors().m_referenceData.getReference(dwarf2);	
+		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf2Ref);
 		REQUIRE(projectWorker.haulSubproject);
 		REQUIRE(projectWorker.objective == &actors2.objective_getCurrent<Objective>(dwarf2));
 		HaulSubproject& haulSubproject = *projectWorker.haulSubproject;
-		REQUIRE(haulSubproject.getWorkers().contains(dwarf2));
+		REQUIRE(haulSubproject.getWorkers().contains(dwarf2Ref));
 		REQUIRE(haulSubproject.getHaulStrategy() == HaulStrategy::Individual);
 		ItemIndex pick2 = blocks2.item_getAll(blocks2.getIndex_i(1,2,1))[0];
 		REQUIRE(haulSubproject.getToHaul().isItem());
-		REQUIRE(haulSubproject.getToHaul().getIndex().toItem() == pick2);
+		REQUIRE(haulSubproject.getToHaul().getIndex(actors.m_referenceData, items.m_referenceData).toItem() == pick2);
 		REQUIRE(haulSubproject.getQuantity() == 1);
 		REQUIRE(!haulSubproject.getIsMoving());
 		REQUIRE(!project.hasTryToHaulEvent());
@@ -273,7 +274,7 @@ TEST_CASE("json")
 			BlockIndex pileLocation1 = blocks.getIndex_i(1, 4, 1);
 			area.m_hasStockPiles.registerFaction(faction);
 			std::vector<ItemQuery> queries;
-			queries.emplace_back(pile);
+			queries.emplace_back(ItemQuery::create(pile));
 			StockPile &stockPile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 			stockPile.addBlock(projectLocation1);
 			ItemIndex pile1 = items.create({.itemType = pile, .materialType = dirt, .location = pileLocation1, .quantity = Quantity::create(10)});
@@ -282,8 +283,8 @@ TEST_CASE("json")
 			ActorIndex dwarf1 = actors.create({.species = dwarf,
 				.percentGrown = Percent::create(90),
 				.location = blocks.getIndex_i(5, 5, 1),
-				.faction = faction}
-			);
+				.faction = faction
+			});
 			ObjectiveTypeId stockPileObjectiveType = ObjectiveType::getIdByName("stockpile");
 			actors.objective_setPriority(dwarf1, stockPileObjectiveType, Priority::create(100));
 			// One step to find the pile.
@@ -316,7 +317,7 @@ TEST_CASE("json")
 		REQUIRE(project.getWorkers().size() == 1);
 		REQUIRE(actors2.project_get(dwarf2) == static_cast<Project*>(&project));
 		REQUIRE(actors2.move_getPath(dwarf2).empty());
-		REQUIRE(project.getItem() == pile2);
+		REQUIRE(project.getItem().getIndex(items.m_referenceData) == pile2);
 		REQUIRE(project.getLocation() == projectLocation2);
 	}
 	SUBCASE("craft")

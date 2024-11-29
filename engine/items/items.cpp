@@ -95,7 +95,7 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	// TODO: This 'toItem' call should not be neccessary. Why does ItemIndex + int = HasShapeIndex?
 	resize(index + 1);
 	const MoveTypeId& moveType = ItemType::getMoveType(itemParamaters.itemType);
-	Portables<Items, ItemIndex>::create(index, moveType, ItemType::getShape(itemParamaters.itemType), itemParamaters.faction, itemParamaters.isStatic, itemParamaters.quantity);
+	Portables<Items, ItemIndex, ItemReferenceIndex>::create(index, moveType, ItemType::getShape(itemParamaters.itemType), itemParamaters.faction, itemParamaters.isStatic, itemParamaters.quantity);
 	assert(m_canBeStockPiled[index] == nullptr);
 	m_craftJobForWorkPiece[index] = itemParamaters.craftJob;
 	assert(m_hasCargo[index] == nullptr);
@@ -107,7 +107,6 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	m_percentWear[index] = itemParamaters.percentWear;
 	m_quality[index] = itemParamaters.quality;
 	m_quantity[index] = itemParamaters.quantity;
-	m_referenceTarget[index] = std::make_unique<ItemReferenceTarget>(index);
 	if(ItemType::getGeneric(itemType))
 	{
 		assert(m_quality[index].empty());
@@ -125,7 +124,7 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 }
 void Items::resize(const ItemIndex& newSize)
 {
-	Portables<Items, ItemIndex>::resize(newSize);
+	Portables<Items, ItemIndex, ItemReferenceIndex>::resize(newSize);
 	m_canBeStockPiled.resize(newSize);
 	m_craftJobForWorkPiece.resize(newSize);
 	m_hasCargo.resize(newSize);
@@ -137,11 +136,10 @@ void Items::resize(const ItemIndex& newSize)
 	m_percentWear.resize(newSize);
 	m_quality.resize(newSize);
 	m_quantity.resize(newSize);
-	m_referenceTarget.resize(newSize);
 }
 void Items::moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex)
 {
-	Portables<Items, ItemIndex>::moveIndex(oldIndex, newIndex);
+	Portables<Items, ItemIndex, ItemReferenceIndex>::moveIndex(oldIndex, newIndex);
 	m_canBeStockPiled[newIndex] = std::move(m_canBeStockPiled[oldIndex]);
 	m_craftJobForWorkPiece[newIndex] = m_craftJobForWorkPiece[oldIndex];
 	m_hasCargo[newIndex] = std::move(m_hasCargo[oldIndex]);
@@ -155,8 +153,6 @@ void Items::moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex)
 	m_percentWear[newIndex] = m_percentWear[oldIndex];
 	m_quality[newIndex] = m_quality[oldIndex];
 	m_quantity[newIndex] = m_quantity[oldIndex];
-	m_referenceTarget[newIndex] = std::move(m_referenceTarget[oldIndex]);
-	m_referenceTarget[newIndex]->index = newIndex;
 	if(m_onSurface.contains(oldIndex))
 	{
 		m_onSurface.remove(oldIndex);
@@ -179,10 +175,6 @@ ItemIndex Items::setLocationAndFacing(const ItemIndex& index, const BlockIndex& 
 	assert(index.exists());
 	assert(block.exists());
 	assert(m_location[index] != block);
-	if(m_location[index].exists())
-		exit(index);
-	m_location[index] = block;
-	m_facing[index] = facing;
 	Blocks& blocks = m_area.getBlocks();
 	if(isGeneric(index) && m_static[index])
 	{
@@ -192,6 +184,10 @@ ItemIndex Items::setLocationAndFacing(const ItemIndex& index, const BlockIndex& 
 			// Return the index of the found item, which may be different then it was before 'index' was destroyed by merge.
 			return merge(found, index);
 	}
+	if(m_location[index].exists())
+		exit(index);
+	m_location[index] = block;
+	m_facing[index] = facing;
 	const Quantity& quantity = m_quantity[index];
 	auto& occupiedBlocks = m_blocks[index];
 	for(auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
@@ -274,6 +270,7 @@ ItemIndex Items::merge(const ItemIndex& index, const ItemIndex& other)
 		reservable_merge(index, *m_reservables[other]);
 	BlockIndex location = m_location[index];
 	Facing facing = m_facing[index];
+	// Exit, add quantity, and then set location to update CollisionVolume with new quantity.
 	exit(index);
 	m_quantity[index] += m_quantity[other];
 	setLocationAndFacing(index, location, facing);
@@ -281,9 +278,9 @@ ItemIndex Items::merge(const ItemIndex& index, const ItemIndex& other)
 	if(m_destroy[other] != nullptr)
 		onDestroy_merge(index, *m_destroy[other]);
 	// Store a reference to index because it's ItemIndex may change when other is destroyed.
-	ItemReference ref = index.toReference(m_area);
+	ItemReference ref = m_area.getItems().m_referenceData.getReference(index);
 	destroy(other);
-	return ref.getIndex();
+	return ref.getIndex(m_referenceData);
 }
 void Items::setQuality(const ItemIndex& index, const Quality& quality)
 {
@@ -309,6 +306,8 @@ void Items::destroy(const ItemIndex& index)
 	static const MoveTypeId rolling = MoveType::byName("roll");
 	if(m_moveType[index] == rolling && ItemType::getInternalVolume(m_itemType[index]) != 0)
 		m_area.m_hasHaulTools.unregisterHaulTool(m_area, index);
+	// Will do the same move / resize logic internally, so stays in sync with moves from the DataVectors.
+	m_referenceData.remove(index);
 	const auto& s = ItemIndex::create(size() - 1);
 	if(index != s)
 		moveIndex(s, index);
@@ -351,7 +350,7 @@ void Items::log(const ItemIndex& index) const
 		std::cout << "(" << m_quantity[index].get() << ")";
 	if(m_craftJobForWorkPiece[index] != nullptr)
 		std::cout << "{" << m_craftJobForWorkPiece[index]->getStep().get() << "}";
-	Portables<Items, ItemIndex>::log(index);
+	Portables<Items, ItemIndex, ItemReferenceIndex>::log(index);
 	std::cout << std::endl;
 }
 // Wrapper methods.
@@ -381,7 +380,7 @@ bool Items::stockpile_canBeStockPiled(const ItemIndex& index, const FactionId& f
 }
 void Items::load(const Json& data)
 {
-	static_cast<Portables<Items, ItemIndex>*>(this)->load(data);
+	static_cast<Portables<Items, ItemIndex, ItemReferenceIndex>*>(this)->load(data);
 	data["onSurface"].get_to(m_onSurface);
 	data["name"].get_to(m_name);
 	data["itemType"].get_to(m_itemType);
@@ -390,13 +389,11 @@ void Items::load(const Json& data)
 	data["quality"].get_to(m_quality);
 	data["quantity"].get_to(m_quantity);
 	data["percentWear"].get_to(m_percentWear);
-	m_referenceTarget.resize(m_id.size());
 	m_hasCargo.resize(m_id.size());
 	Blocks& blocks = m_area.getBlocks();
 	for(ItemIndex index : getAll())
 	{
 		m_area.m_simulation.m_items.registerItem(m_id[index], m_area.getItems(), index);
-		m_referenceTarget[index] = std::make_unique<ItemReferenceTarget>(index);
 		if(m_location[index].exists())
 			for (auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
 			{
@@ -440,7 +437,7 @@ void to_json(Json& data, std::unique_ptr<ItemHasCargo> hasCargo) { data = hasCar
 void to_json(Json& data, std::unique_ptr<ItemCanBeStockPiled> canBeStockPiled) { data = canBeStockPiled == nullptr ? Json{false} : canBeStockPiled->toJson(); }
 Json Items::toJson() const
 {
-	Json data = Portables<Items, ItemIndex>::toJson();
+	Json data = Portables<Items, ItemIndex, ItemReferenceIndex>::toJson();
 	data["id"] = m_id;
 	data["name"] = m_name;
 	data["location"] = m_location;

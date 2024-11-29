@@ -43,7 +43,7 @@ TEST_CASE("construct")
 		.location=dwarf1Start,
 		.faction=faction,
 	});
-	ActorReference dwarf1Ref = dwarf1.toReference(area);
+	ActorReference dwarf1Ref = actors.m_referenceData.getReference(dwarf1);
 	area.m_hasConstructionDesignations.addFaction(faction);
 	ItemIndex boards = items.create({
 		.itemType=ItemType::byName("board"),
@@ -94,7 +94,7 @@ TEST_CASE("construct")
 		REQUIRE(project.getToPickup().size() == 3);
 		// Select a haul strategy and create a subproject.
 		simulation.doStep();
-		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1.toReference(area));
+		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
 		REQUIRE(projectWorker.haulSubproject != nullptr);
 		REQUIRE(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
 		// Find a path to the first item.
@@ -207,7 +207,7 @@ TEST_CASE("construct")
 			.location=blocks.getIndex_i(1, 8, 2),
 			.faction=faction,
 		});
-		ActorReference dwarf2Ref = dwarf2.toReference(area);
+		ActorReference dwarf2Ref = actors.m_referenceData.getReference(dwarf2);
 		BlockIndex wallLocation1 = blocks.getIndex_i(2, 4, 2);
 		BlockIndex wallLocation2 = blocks.getIndex_i(3, 8, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation1, nullptr, wood);

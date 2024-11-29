@@ -19,14 +19,14 @@ void KillInputAction::execute()
 }
 */
 KillObjective::KillObjective(ActorReference t) : Objective(Config::killPriority), m_target(t) { }
-KillObjective::KillObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo)
+KillObjective::KillObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo)
 { 
-	m_target.load(data["target"], area);
+	data["target"].get_to(m_target);
 }
 void KillObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
-	ActorIndex target = m_target.getIndex();
+	ActorIndex target = m_target.getIndex(actors.m_referenceData);
 	if(!actors.isAlive(target))
 	{
 		//TODO: Do we need to cancel the threaded task here?

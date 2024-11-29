@@ -25,7 +25,7 @@ public:
 	bool blockContainsItem(Area& area, const BlockIndex& block) const { return const_cast<UniformObjective*>(this)->getItemAtBlock(area, block).exists(); }
 	ItemIndex getItemAtBlock(Area& area, const BlockIndex& block);
 	// For testing.
-	[[nodiscard]] ItemIndex getItem() { return m_item.getIndex(); }
+	[[nodiscard]] ItemReference getItem() { return m_item; }
 	friend class UniformThreadedTask;
 	
 };

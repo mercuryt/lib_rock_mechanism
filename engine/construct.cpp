@@ -85,7 +85,7 @@ void ConstructProject::onComplete()
 	else
 		blocks.blockFeature_construct(location, *blockFeatureType, materialType);
 	for(auto& [actor, projectWorker] : workers)
-		actors.objective_complete(actor.getIndex(), *projectWorker.objective);
+		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);
 }
 void ConstructProject::onCancel()
 {
@@ -111,8 +111,9 @@ void ConstructProject::offDelay()
 Step ConstructProject::getDuration() const
 {
 	uint32_t totalScore = 0;
+	Actors& actors = m_area.getActors();
 	for(auto& pair : m_workers)
-		totalScore += getWorkerConstructScore(pair.first.getIndex());
+		totalScore += getWorkerConstructScore(pair.first.getIndex(actors.m_referenceData));
 	return MaterialType::construction_getDuration(m_materialType) / totalScore;
 }
 ConstructionLocationDishonorCallback::ConstructionLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) :

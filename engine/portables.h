@@ -22,7 +22,7 @@ class Actors;
 class Items;
 class Blocks;
 
-template<class Derived, class Index>
+template<class Derived, class Index, class ReferenceIndex>
 class Portables : public HasShapes<Derived, Index>
 {
 protected:
@@ -43,15 +43,16 @@ protected:
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] ActorOrItemIndex getActorOrItemIndex(const Index& index);
 public:
+	ReferenceData<Index, ReferenceIndex> m_referenceData;
 	void load(const Json& data);
 	void followActor(const Index& index, const ActorIndex& actor);
 	void followItem(const Index& index, const ItemIndex& item);
 	void followPolymorphic(const Index& index, const ActorOrItemIndex& ActorOrItem);
 	void unfollow(const Index& index);
 	void unfollowIfAny(const Index& index);
+	void maybeLeadAndFollowDisband(const Index& index);
 	void unfollowActor(const Index& index, const ActorIndex& actor);
 	void unfollowItem(const Index& index, const ItemIndex& item);
-	void maybeLeadAndFollowDisband(const Index& index);
 	void leadAndFollowDisband(const Index& index);
 	void setCarrier(const Index& index, const ActorOrItemIndex& carrier);
 	void maybeSetCarrier(const Index& index, const ActorOrItemIndex& carrier);
@@ -78,6 +79,7 @@ public:
 	[[nodiscard]] Area& getArea() { return HasShapes<Derived, Index>::getArea(); }
 	[[nodiscard]] const Area& getArea() const { return HasShapes<Derived, Index>::getArea(); }
 	[[nodiscard]] BlockIndex getLocation(const Index& index) const { return HasShapes<Derived, Index>::getLocation(index); }
+	[[nodiscard]] auto getReference(const Index& index) -> Reference<Index, ReferenceIndex> const { return m_referenceData.getReference(index); }
 	// For testing.
 	[[nodiscard]] Speed lead_getSpeed(const Index& index);
 	// Reservations.

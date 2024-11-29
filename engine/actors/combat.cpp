@@ -160,11 +160,13 @@ void Actors::combat_update(const ActorIndex& index)
 	       	m_equipmentSet[index]->getLongestMeleeWeaponCoolDown(m_area) : 
 		Config::attackCoolDownDurationBaseSteps;
 	m_onMissCoolDownMelee[index] = std::max(Step::create(1), Step::create((float)baseOnMissCoolDownDuration.get() * m_coolDownDurationModifier[index]));
+	Items& items = m_area.getItems();
 	//Find max range.
 	m_maxRange[index] = m_maxMeleeRange[index];
 	for(ItemReference item : m_equipmentSet[index]->getRangedWeapons())
 	{
-		AttackTypeId attackType = ItemType::getRangedAttackType(m_area.getItems().getItemType(item.getIndex()));
+		ItemIndex itemIndex = item.getIndex(items.m_referenceData);
+		AttackTypeId attackType = ItemType::getRangedAttackType(items.getItemType(itemIndex));
 		auto range = AttackType::getRange(attackType);
 		if(range > m_maxRange[index])
 			m_maxRange[index] = range;
@@ -325,7 +327,7 @@ AttackCoolDownEvent::AttackCoolDownEvent(Area& area, const ActorIndex& actor, co
 GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, const ActorIndex& a, const ActorIndex& t, const DistanceInBlocksFractional& ar) :
 	m_actor(a), m_attackRangeSquared(ar * ar)
 {
-	m_target.setTarget(area.getActors().getReferenceTarget(t));
+	m_target.setIndex(t, area.getActors().m_referenceData);
 	DestinationCondition destinationCondition = [&area, this](const BlockIndex& location, Facing)
 	{
 		if(area.getActors().combat_blockIsValidPosition(m_actor, location, m_attackRangeSquared))
@@ -338,11 +340,13 @@ GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, c
 	DistanceInBlocks maxRange = DistanceInBlocks::max();
 	createGoToCondition(area, m_actor, destinationCondition, detour, unreserved, maxRange, area.getActors().getLocation(t));
 }
-GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, const Json& data) :
+GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(const Json& data) :
 	PathRequest(data),
 	m_actor(data["actor"].get<ActorIndex>()),
-	m_target(area.getActors().getReferenceTarget(data["target"].get<ActorIndex>())),
-	m_attackRangeSquared(data["distance"].get<DistanceInBlocksFractional>()) { }
+	m_attackRangeSquared(data["distance"].get<DistanceInBlocksFractional>())
+	{
+		m_target.load(data["target"]);
+	}
 void GetIntoAttackPositionPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();
@@ -352,7 +356,7 @@ void GetIntoAttackPositionPathRequest::callback(Area& area, const FindPathResult
 		{
 			if(!actors.combat_isOnCoolDown(m_actor))
 			{
-				const ActorIndex& target = m_target.getIndex();
+				const ActorIndex& target = m_target.getIndex(actors.m_referenceData);
 				DistanceInBlocksFractional range = actors.distanceToActorFractional(m_actor, target);
 				if(range <= actors.combat_getMaxMeleeRange(m_actor))
 					// Melee range attack.

@@ -20,11 +20,3 @@ ActorOrItemIndex ItemIndex::toActorOrItemIndex() const
 {
 	return ActorOrItemIndex::createForItem(data);
 }
-ItemReference ItemIndex::toReference(Area& area) const
-{
-	return area.getItems().getReference(data);
-}
-ActorReference ActorIndex::toReference(Area& area) const
-{
-	return area.getActors().getReference(data);
-}

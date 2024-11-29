@@ -84,7 +84,6 @@ public:
 inline void to_json(Json& data, const PlantIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, PlantIndex& index) { index = PlantIndex::create(data.get<uint32_t>()); }
 
-class ItemReference;
 class Area;
 class ItemIndex final : public StrongInteger<ItemIndex, uint32_t>
 {
@@ -94,14 +93,12 @@ public:
 	[[nodiscard]] static ItemIndex null() { return ItemIndex(); }
 	[[nodiscard]] static ItemIndex create(uint32_t index) { return index; }
 	[[nodiscard]] ActorOrItemIndex toActorOrItemIndex() const;
-	[[nodiscard]] ItemReference toReference(Area& area) const;
 	[[nodiscard]] HasShapeIndex toHasShape() const { return HasShapeIndex::create(get()); }
 	ItemIndex() = default;
 };
 inline void to_json(Json& data, const ItemIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, ItemIndex& index) { index = ItemIndex::create(data.get<uint32_t>()); }
 
-class ActorReference;
 class ActorIndex final : public StrongInteger<ActorIndex, uint32_t>
 {
 	ActorIndex(uint32_t index) : StrongInteger<ActorIndex, uint32_t>(index) { }
@@ -110,10 +107,11 @@ public:
 	[[nodiscard]] static ActorIndex null() { return ActorIndex(); }
 	[[nodiscard]] static ActorIndex create(uint32_t index) { return index; }
 	[[nodiscard]] ActorOrItemIndex toActorOrItemIndex() const;
-	[[nodiscard]] ActorReference toReference(Area& area) const;
 	[[nodiscard]] HasShapeIndex toHasShape() const { return HasShapeIndex::create(get()); }
 	ActorIndex() = default;
 };
+inline void to_json(Json& data, const ActorIndex& index) { data = index.get(); }
+inline void from_json(const Json& data, ActorIndex& index) { index = ActorIndex::create(data.get<uint32_t>()); }
 
 // The offset required to lookup in one block's getAdjacentUnfiltered to find another block.
 using AdjacentIndexWidth = int8_t;
@@ -122,11 +120,31 @@ class AdjacentIndex : public StrongInteger<AdjacentIndex, AdjacentIndexWidth>
 public:
 	AdjacentIndex() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const AdjacentIndex& index) const { return index.get(); } };
+
 };
 inline void to_json(Json& data, const AdjacentIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, AdjacentIndex& index) { index = AdjacentIndex::create(data.get<AdjacentIndexWidth>()); }
-inline void to_json(Json& data, const ActorIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, ActorIndex& index) { index = ActorIndex::create(data.get<uint32_t>()); }
+
+using ActorReferenceIndexWidth = uint32_t;
+class ActorReferenceIndex : public StrongInteger<ActorReferenceIndex, ActorReferenceIndexWidth>
+{
+public:
+	ActorReferenceIndex() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const ActorReferenceIndex& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const ActorReferenceIndex& index) { data = index.get(); }
+inline void from_json(const Json& data, ActorReferenceIndex& index) { index = ActorReferenceIndex::create(data.get<ActorReferenceIndexWidth>()); }
+
+using ItemReferenceIndexWidth = uint32_t;
+class ItemReferenceIndex : public StrongInteger<ItemReferenceIndex, ItemReferenceIndexWidth>
+{
+public:
+	ItemReferenceIndex() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const ItemReferenceIndex& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const ItemReferenceIndex& index) { data = index.get(); }
+inline void from_json(const Json& data, ItemReferenceIndex& index) { index = ItemReferenceIndex::create(data.get<ItemReferenceIndexWidth>()); }
+
 inline HasShapeIndex HasShapeIndex::cast(const PlantIndex& o) { return HasShapeIndex(o.get()); }
 inline HasShapeIndex HasShapeIndex::cast(const ItemIndex& o) { return HasShapeIndex(o.get()); }
 inline HasShapeIndex HasShapeIndex::cast(const ActorIndex& o) { return HasShapeIndex(o.get()); }

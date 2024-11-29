@@ -57,5 +57,6 @@ ExterminateObjectiveScheduledEvent::ExterminateObjectiveScheduledEvent(Area& are
 	ScheduledEvent(area.m_simulation, Config::exterminateCheckFrequency, start),
 	m_objective(o)
 {
-	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
+	m_actor.setIndex(actor, area.getActors().m_referenceData);
 }
+void ExterminateObjectiveScheduledEvent::execute(Simulation&, Area* area) { m_objective.execute(*area, m_actor.getIndex(area->getActors().m_referenceData)); }

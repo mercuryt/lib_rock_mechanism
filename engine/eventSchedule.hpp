@@ -143,8 +143,9 @@ public:
 		m_events[newIndex] = m_events[oldIndex];
 		m_events[newIndex]->onMoveIndex(oldIndex, newIndex);
 	}
-	[[nodiscard]] ScheduledEvent* at(HasShapeIndex index) { return m_events[index]; }
-	[[nodiscard]] ScheduledEvent* operator[](HasShapeIndex index) { return at(index); }
+	[[nodiscard]] bool contains(HasShapeIndex index) { return m_events[index] != nullptr; }
+	[[nodiscard]] auto at(HasShapeIndex index) -> EventType& { return *m_events[index]; }
+	[[nodiscard]] auto operator[](HasShapeIndex index) -> EventType& { return at(index); }
 	[[nodiscard]] Percent percentComplete(HasShapeIndex index) const
 	{
 		assert(m_events[index] != nullptr);

@@ -49,10 +49,9 @@ struct ProjectRequirementCounts final
 struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
 {
 	Project& m_project;
-	ActorOrItemReference m_actorOrItem;
-	ProjectRequiredShapeDishonoredCallback(Project& p, ActorOrItemReference actorOrItem) : m_project(p), m_actorOrItem(actorOrItem) { }
-	ProjectRequiredShapeDishonoredCallback(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
-	void execute(const Quantity& oldCount, const Quantity& newCount);
+	ProjectRequiredShapeDishonoredCallback(Project& p) : m_project(p) { }
+	ProjectRequiredShapeDishonoredCallback(const Json& data, DeserializationMemo& deserializationMemo);
+	void execute(const Quantity&, const Quantity&);
 	[[nodiscard]] Json toJson() const;
 };
 // Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, and onComplete.
@@ -94,9 +93,9 @@ protected:
 	// To be used by StockpileProject::onComplete.
 	SmallMap<ActorOrItemReference, Quantity> m_alreadyAtSite;
 	// Workers present at the job site, waiting for haulers to deliver required materiels.
-	ActorReferences m_waiting;
+	SmallSet<ActorReference> m_waiting;
 	// Workers currently doing the 'actual' work.
-	ActorReferences m_making;
+	SmallSet<ActorReference> m_making;
 	// Worker candidates are evaluated in a read step task.
 	// For the first we need to reserve all items and actors, as wel as verify access.
 	// For subsequent candidates we just need to verify that they can path to the construction site.
@@ -105,7 +104,7 @@ protected:
 	// They have one or more workers plus optional haul tool and beast of burden.
 	std::list<HaulSubproject> m_haulSubprojects;
 	// Delivered items.
-	ItemReferences m_deliveredItems;
+	SmallSet<ItemReference> m_deliveredItems;
 	// Where the materials are delivered to and where the work gets done.
 	Area& m_area;
 	FactionId m_faction;
@@ -179,13 +178,14 @@ public:
 	[[nodiscard]] virtual Step getDuration() const = 0;
 	// True for stockpile because there is no 'work' to do after the hauling is done.
 	[[nodiscard]] virtual bool canRecruitHaulingWorkersOnly() const { return false; }
+	[[nodiscard]] Area& getArea() { return m_area; }
 	virtual void onComplete() = 0;
 	virtual void onReserve() { }
 	virtual void onCancel() { }
 	virtual void onAddToMaking(const ActorIndex&) { }
 	virtual void onDelivered(const ActorOrItemIndex&) { }
 	virtual void onSubprojectCreated(HaulSubproject& subproject) { (void)subproject; }
-	virtual void onActorOrItemReservationDishonored(const ActorOrItemIndex&, const Quantity&, const Quantity&) { if(canReset()) reset(); else cancel(); }
+	virtual void onActorOrItemReservationDishonored() { if(canReset()) reset(); else cancel(); }
 	// Projects which are initiated by the users, such as dig or construct, must be delayed when they cannot be completed. Projectes which are initiated automatically, such as Stockpile or Craft, can be canceled.
 	virtual void onDelay() = 0;
 	virtual void offDelay() = 0;
@@ -257,7 +257,7 @@ public:
 class ProjectTryToAddWorkersThreadedTask final : public ThreadedTask
 {
 	Project& m_project;
-	ActorReferences m_cannotPathToJobSite;
+	SmallSet<ActorReference> m_cannotPathToJobSite;
 	SmallMap<ActorOrItemReference, Quantity> m_alreadyAtSite;
 	SmallMap<ActorReference, SmallMap<ProjectRequirementCounts*, ItemReference>> m_reservedEquipment;
 	HasOnDestroySubscriptions m_hasOnDestroy;

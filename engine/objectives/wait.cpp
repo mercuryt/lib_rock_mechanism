@@ -34,5 +34,7 @@ void WaitObjective::reset(Area& area, const ActorIndex& actor)
 WaitScheduledEvent::WaitScheduledEvent(const Step& delay, Area& area, WaitObjective& wo, const ActorIndex& actor, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_objective(wo)
 {
-	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
+	m_actor.setIndex(actor, area.getActors().m_referenceData);
 }
+
+void WaitScheduledEvent::execute(Simulation&, Area* area) { m_objective.execute(*area, m_actor.getIndex(area->getActors().m_referenceData)); }

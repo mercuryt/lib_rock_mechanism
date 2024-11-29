@@ -1,5 +1,7 @@
 #include "actors.h"
-#include "types.h"
+#include "../types.h"
+#include "../area.h"
+#include "../items/items.h"
 void Actors::equipment_add(const ActorIndex& index, const ItemIndex& item)
 {
 	m_equipmentSet[index]->addEquipment(m_area, item);
@@ -23,7 +25,7 @@ bool Actors::equipment_canEquipCurrently(const ActorIndex& index, const ItemInde
 }
 bool Actors::equipment_containsItem(const ActorIndex& index, const ItemIndex& item) const
 {
-	return m_equipmentSet[index]->contains(item);
+	return m_equipmentSet[index]->contains(m_area.getItems().m_referenceData.getReference(item));
 }
 bool Actors::equipment_containsItemType(const ActorIndex& index, const ItemTypeId& type) const
 {

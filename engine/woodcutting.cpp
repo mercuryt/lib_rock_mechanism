@@ -36,7 +36,11 @@ void UndesignateWoodCuttingInputAction::execute()
 */
 WoodCuttingProject::WoodCuttingProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : Project(data, deserializationMemo, area) { }
 std::vector<std::pair<ItemQuery, Quantity>> WoodCuttingProject::getConsumed() const { return {}; }
-std::vector<std::pair<ItemQuery, Quantity>> WoodCuttingProject::getUnconsumed() const { return {{ItemType::byName("axe"), Quantity::create(1)}}; }
+std::vector<std::pair<ItemQuery, Quantity>> WoodCuttingProject::getUnconsumed() const
+{
+	static const ItemTypeId itemType = ItemType::byName("axe");
+	return {{ItemQuery::create(itemType), Quantity::create(1)}};
+}
 std::vector<std::pair<ActorQuery, Quantity>> WoodCuttingProject::getActors() const { return {}; }
 std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> WoodCuttingProject::getByproducts() const
 {
@@ -79,7 +83,7 @@ void WoodCuttingProject::onComplete()
 	Actors& actors = m_area.getActors();
 	m_area.m_hasWoodCuttingDesignations.clearAll(m_location);
 	for(auto& [actor, projectWorker] : workers)
-		actors.objective_complete(actor.getIndex(), *projectWorker.objective);
+		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);
 }
 void WoodCuttingProject::onCancel()
 {
@@ -104,9 +108,11 @@ void WoodCuttingProject::offDelay()
 // What would the total delay time be if we started from scratch now with current workers?
 Step WoodCuttingProject::getDuration() const
 {
+
 	uint32_t totalScore = 0u;
+	Actors& actors = m_area.getActors();
 	for(auto& pair : m_workers)
-		totalScore += getWorkerWoodCuttingScore(m_area, pair.first.getIndex());
+		totalScore += getWorkerWoodCuttingScore(m_area, pair.first.getIndex(actors.m_referenceData));
 	return std::max(Step::create(1u), Config::woodCuttingMaxSteps / totalScore);
 }
 WoodCuttingLocationDishonorCallback::WoodCuttingLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 

@@ -38,9 +38,10 @@ TEST_CASE("equip and unequip")
 	});
 	BlockIndex swordLocation = blocks.getIndex_i(8,8,1);
 	ItemIndex longsword = items.create({.itemType=ItemType::byName("long sword"), .materialType=MaterialType::byName("bronze"), .location=swordLocation, .quality=Quality::create(20), .percentWear=Percent::create(10)});
+	ItemReference longswordRef = items.m_referenceData.getReference(longsword);
 	REQUIRE(items.getBlocks(longsword).size() == 1);
 	REQUIRE(items.getBlocks(longsword).front() == swordLocation);
-	std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(longsword.toReference(area));
+	std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(longswordRef);
 	actors.objective_addTaskToStart(dwarf1, std::move(objective));
 	REQUIRE(actors.move_hasPathRequest(dwarf1));
 	simulation.doStep();
@@ -48,7 +49,7 @@ TEST_CASE("equip and unequip")
 	REQUIRE(blocks.item_empty(swordLocation));
 	REQUIRE(actors.equipment_containsItem(dwarf1, longsword));
 	REQUIRE(actors.getActionDescription(dwarf1) != L"equip");
-	std::unique_ptr<Objective> objective2 = std::make_unique<UnequipItemObjective>(longsword.toReference(area), destination);
+	std::unique_ptr<Objective> objective2 = std::make_unique<UnequipItemObjective>(longswordRef, destination);
 	actors.objective_addTaskToStart(dwarf1, std::move(objective2));
 	simulation.doStep();
 	simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, destination);

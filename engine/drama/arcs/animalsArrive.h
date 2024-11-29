@@ -12,7 +12,7 @@ struct DeserializationMemo;
 struct AnimalsArriveDramaArc final : public DramaArc
 {
 	BlockIndex m_entranceBlock;
-	ActorReferences m_actors;
+	SmallSet<ActorReference> m_actors;
 	bool m_isActive = false;
 	AnimalSpeciesId m_species;
 	Quantity m_quantity;

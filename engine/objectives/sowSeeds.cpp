@@ -14,14 +14,14 @@ struct DeserializationMemo;
 SowSeedsEvent::SowSeedsEvent(const Step& delay, Area& area, SowSeedsObjective& o, const ActorIndex& actor, const Step start) : 
 	ScheduledEvent(area.m_simulation, delay, start), m_objective(o)
 { 
-	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
+	m_actor.setIndex(actor, area.getActors().m_referenceData);
 }
 void SowSeedsEvent::execute(Simulation&, Area* area)
 {
 	Actors& actors = area->getActors();
 	Blocks& blocks = area->getBlocks();
 	BlockIndex block = m_objective.m_block;
-	ActorIndex actor = m_actor.getIndex();
+	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
 	FactionId faction = actors.getFactionId(actor);
 	if(!blocks.farm_contains(block, faction))
 	{
