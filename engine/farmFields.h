@@ -44,6 +44,7 @@ class FarmFieldUpdateInputAction final : public InputAction
 	void execute();
 };
 */
+// TODO: Make POD.
 struct FarmField
 {
 	BlockIndices blocks;

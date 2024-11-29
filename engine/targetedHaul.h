@@ -10,7 +10,7 @@ struct DeserializationMemo;
 class TargetedHaulProject final : public Project
 {
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const { return {}; }
-	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const { ItemQuery query(m_item); return {{query, Quantity::create(1u)}}; }
+	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const { return {{ItemQuery::create(m_item), Quantity::create(1u)}}; }
 	std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const { return {}; }
 	ItemReference m_item;

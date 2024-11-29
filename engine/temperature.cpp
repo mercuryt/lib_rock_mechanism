@@ -153,12 +153,12 @@ void UnsafeTemperatureEvent::clearReferences(Simulation&, Area*) { m_needsSafeTe
 ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Area& area, const ActorIndex& a) : 
 	m_event(area.m_eventSchedule)
 {
-	m_actor.setTarget(area.getActors().getReferenceTarget(a));
+	m_actor.setIndex(a, area.getActors().m_referenceData);
 }
 ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(const Json& data, const ActorIndex& actor, Area& area) : 
 	m_event(area.m_eventSchedule)
 {
-	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
+	m_actor.setIndex(actor, area.getActors().m_referenceData);
 	if(data.contains("eventStart"))
 		m_event.schedule(area, actor, data["eventStart"].get<Step>());
 }
@@ -172,7 +172,7 @@ Json ActorNeedsSafeTemperature::toJson() const
 void ActorNeedsSafeTemperature::onChange(Area& area)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actor = m_actor.getIndex();
+	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
 	actors.grow_updateGrowingStatus(actor);
 	if(!isSafeAtCurrentLocation(area))
 	{
@@ -190,7 +190,7 @@ void ActorNeedsSafeTemperature::onChange(Area& area)
 void ActorNeedsSafeTemperature::dieFromTemperature(Area& area)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actor = m_actor.getIndex();
+	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
 	actors.die(actor, CauseOfDeath::temperature);
 }
 void ActorNeedsSafeTemperature::unschedule()
@@ -199,14 +199,15 @@ void ActorNeedsSafeTemperature::unschedule()
 }
 bool ActorNeedsSafeTemperature::isSafe(Area& area, const Temperature& temperature) const
 {
-	ActorIndex actor = m_actor.getIndex();
-	AnimalSpeciesId species = area.getActors().getSpecies(actor);
+	Actors& actors = area.getActors();
+	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
+	AnimalSpeciesId species = actors.getSpecies(actor);
 	return temperature >= AnimalSpecies::getMinimumSafeTemperature(species) && temperature <= AnimalSpecies::getMaximumSafeTemperature(species);
 }
 bool ActorNeedsSafeTemperature::isSafeAtCurrentLocation(Area& area) const
 {
-	ActorIndex actor = m_actor.getIndex();
 	Actors& actors = area.getActors();
+	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
 	if(actors.getLocation(actor).empty())
 		return true;
 	return isSafe(area, area.getBlocks().temperature_get(actors.getLocation(actor)));

@@ -45,7 +45,7 @@ TEST_CASE("haul")
 		.hasCloths=false,
 		.hasSidearm=false
 	});
-	ActorReference dwarf1Ref = dwarf1.toReference(area);
+	ActorReference dwarf1Ref = actors.m_referenceData.getReference(dwarf1);
 	REQUIRE(!actors.canPickUp_exists(dwarf1));
 	SUBCASE("canPickup")
 	{
@@ -306,7 +306,7 @@ TEST_CASE("haul")
 			.location=origin2,
 			.faction=faction,
 		});
-		ActorReference dwarf2Ref = dwarf2.toReference(area);
+		ActorReference dwarf2Ref = actors.m_referenceData.getReference(dwarf2);
 		BlockIndex cartLocation = blocks.getIndex_i(7, 1, 2);
 		ItemIndex cart1 = items.create({.itemType=cart, .materialType=poplarWood, .location=cartLocation, .quality=Quality::create(3u), .percentWear=Percent::create(0)});
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(ActorIndices({dwarf1, dwarf2}), cargo1, destination);

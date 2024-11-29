@@ -56,7 +56,7 @@ void AnimalsArriveDramaArc::callback()
 					.percentThirst=m_thristPercent
 				});
 				actors.objective_maybeDoNext(actor);
-				m_actors.add(actor.toReference(*m_area));
+				m_actors.insert(actors.m_referenceData.getReference(actor));
 			}
 			else
 			{

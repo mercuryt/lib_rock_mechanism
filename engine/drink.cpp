@@ -14,17 +14,18 @@
 MustDrink::MustDrink(Area& area, const ActorIndex& a) :
 	m_thirstEvent(area.m_eventSchedule)
 {
-	m_actor.setTarget(area.getActors().getReferenceTarget(a));
+	m_actor.setIndex(a, area.getActors().m_referenceData);
 }
 MustDrink::MustDrink(Area& area, const Json& data, const ActorIndex& a, const AnimalSpeciesId& species) : 
 	m_thirstEvent(area.m_eventSchedule), m_fluidType(AnimalSpecies::getFluidType(species)),
        	m_volumeDrinkRequested(data["volumeDrinkRequested"].get<CollisionVolume>())
 {
-	m_actor.setTarget(area.getActors().getReferenceTarget(a));
+	const ActorReferenceData& referenceData = area.getActors().m_referenceData;
+	m_actor.setIndex(a, referenceData);
 	if(data.contains("thirstEventStart"))
 	{
 		Step start = data["thirstEventStart"].get<Step>();
-		m_thirstEvent.schedule(area, AnimalSpecies::getStepsFluidDrinkFrequency(species), m_actor.getIndex(), start);
+		m_thirstEvent.schedule(area, AnimalSpecies::getStepsFluidDrinkFrequency(species), m_actor.getIndex(referenceData), start);
 	}
 }
 Json MustDrink::toJson() const
@@ -44,7 +45,7 @@ void MustDrink::drink(Area& area, const CollisionVolume& volume)
 	m_thirstEvent.unschedule();
 	Step stepsToNextThirstEvent;
 	Actors& actors = area.getActors();
-	ActorIndex actor = m_actor.getIndex();
+	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
 	Step stepsTillDie = AnimalSpecies::getStepsTillDieWithoutFluid(actors.getSpecies(actor));
 	if(m_volumeDrinkRequested == 0)
 	{
@@ -71,7 +72,7 @@ void MustDrink::notThirsty(Area& area)
 void MustDrink::setNeedsFluid(Area& area)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actor = m_actor.getIndex();
+	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
 	if(m_volumeDrinkRequested == 0)
 	{
 		m_volumeDrinkRequested = drinkVolumeFor(area, actor);
@@ -92,7 +93,8 @@ void MustDrink::unschedule()
 }
 void MustDrink::scheduleDrinkEvent(Area& area)
 {
-	ActorIndex actor = m_actor.getIndex();
+	Actors& actors = area.getActors();
+	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
 	AnimalSpeciesId species = area.getActors().getSpecies(actor);
 	Step frequency = AnimalSpecies::getStepsFluidDrinkFrequency(species);
 	m_thirstEvent.schedule(area, frequency, actor);
@@ -113,18 +115,18 @@ CollisionVolume MustDrink::drinkVolumeFor(Area& area, const ActorIndex& actor) {
 DrinkEvent::DrinkEvent(Area& area, const Step& delay, DrinkObjective& drob, const ActorIndex& actor, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_drinkObjective(drob) 
 {
-	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
+	m_actor.setIndex(actor, area.getActors().m_referenceData);
 }
 DrinkEvent::DrinkEvent(Area& area, const Step& delay, DrinkObjective& drob, const ActorIndex& actor, const ItemIndex& item, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_drinkObjective(drob)
 {
-	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
-	m_item.setTarget(area.getItems().getReferenceTarget(item));
+	m_actor.setIndex(actor, area.getActors().m_referenceData);
+	m_item.setIndex(item, area.getItems().m_referenceData);
 }
 void DrinkEvent::execute(Simulation&, Area* area)
 {
-	ActorIndex actor = m_actor.getIndex();
 	Actors& actors = area->getActors();
+	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
 	CollisionVolume volume = actors.drink_getVolumeOfFluidRequested(actor);
 	BlockIndex drinkBlock = m_drinkObjective.getAdjacentBlockToDrinkAt(*area, actors.getLocation(actor), actors.getFacing(actor), actor);
 	if(drinkBlock.empty())

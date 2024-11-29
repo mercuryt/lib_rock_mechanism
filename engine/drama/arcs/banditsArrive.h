@@ -12,7 +12,7 @@ struct DeserializationMemo;
 struct BanditsArriveDramaArc final : public DramaArc
 {
 	BlockIndex m_entranceBlock;
-	ActorReferences m_actors;
+	SmallSet<ActorReference> m_actors;
 	bool m_isActive = false;
 	Quantity m_quantity = Quantity::create(0);
 	BanditsArriveDramaArc(DramaEngine& engine, Area& area);

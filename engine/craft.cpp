@@ -63,9 +63,10 @@ CraftStepProject::CraftStepProject(const Json& data, DeserializationMemo& deseri
 	m_craftJob(cj) { }
 Step CraftStepProject::getDuration() const
 {
+	Actors& actors = m_area.getActors();
 	uint32_t totalScore = 0;
 	for(auto& pair : m_workers)
-		totalScore += getWorkerCraftScore(pair.first.getIndex());
+		totalScore += getWorkerCraftScore(pair.first.getIndex(actors.m_referenceData));
 	return m_craftStepType.stepsDuration / totalScore;
 }
 // Static method.
@@ -78,7 +79,8 @@ void CraftStepProject::onComplete()
 	auto& [actor, projectWorker] = *m_workers.begin();
 	Objective& objective = *projectWorker.objective;
 	Area& area = m_area;
-	const ActorIndex actorIndex = actor.getIndex();
+	Actors& actors = m_area.getActors();
+	const ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	// This is destroyed here.
 	m_craftJob.hasCraftingLocationsAndJobs.stepComplete(m_craftJob, actorIndex);
 	area.getActors().objective_complete(actorIndex, objective);
@@ -141,7 +143,7 @@ CraftJob::CraftJob(const CraftJobTypeId& cjt, HasCraftingLocationsAndJobsForFact
 		stepIterator(CraftJobType::getStepTypes(craftJobType).begin()), minimumSkillLevel(msl),
 		totalSkillPoints(0), reservable(Quantity::create(1))
 {
-	workPiece.setTarget(hasCraftingLocationsAndJobs.m_area.getItems().getReferenceTarget(wp));
+	workPiece.setIndex(wp, hasCraftingLocationsAndJobs.m_area.getItems().m_referenceData);
 }
 CraftJob::CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj, Area& area) :
 	craftJobType(data["craftJobType"].get<CraftJobTypeId>()),
@@ -155,7 +157,7 @@ CraftJob::CraftJob(const Json& data, DeserializationMemo& deserializationMemo, H
 {
 	deserializationMemo.m_craftJobs[data["address"].get<uintptr_t>()] = this;
 	if(data.contains("workPiece"))
-		workPiece.load(data["workPiece"], hasCraftingLocationsAndJobs.m_area);
+		data["workPiece"].get_to(workPiece);
 }
 Json CraftJob::toJson() const
 {
@@ -392,7 +394,7 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, cons
 	{
 		product = blocks.item_addGeneric(location, productType, craftJob.materialType, CraftJobType::getProductQuantity(craftJob.craftJobType));
 		if(craftJob.workPiece.exists())
-			items.destroy(craftJob.workPiece.getIndex());
+			items.destroy(craftJob.workPiece.getIndex(items.m_referenceData));
 	}
 	else
 	{
@@ -400,7 +402,7 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, cons
 		if(craftJob.workPiece.exists())
 		{
 			// Not generic and workpiece exists, use it as product.
-			ItemIndex index = craftJob.workPiece.getIndex();
+			ItemIndex index = craftJob.workPiece.getIndex(items.m_referenceData);
 			items.setQuality(index, craftJob.getQuality());
 			items.unsetCraftJobForWorkPiece(index);
 			product = index;

@@ -93,14 +93,16 @@ Json UniformObjective::toJson() const
 void UniformObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
+	Items& items = area.getItems();
 	if(m_item.exists())
 	{
-		if(!actors.isAdjacentToItem(actor, m_item.getIndex()))
-			actors.move_setDestinationAdjacentToItem(actor, m_item.getIndex());
+		ItemIndex item = m_item.getIndex(items.m_referenceData);
+		if(!actors.isAdjacentToItem(actor, item))
+			actors.move_setDestinationAdjacentToItem(actor, item);
 		else
 		{
-			if(actors.equipment_canEquipCurrently(actor, m_item.getIndex()))
-				equip(area, m_item.getIndex(), actor);
+			if(actors.equipment_canEquipCurrently(actor, item))
+				equip(area, item, actor);
 			else
 			{
 				reset(area, actor);
@@ -138,7 +140,7 @@ ItemIndex UniformObjective::getItemAtBlock(Area& area, const BlockIndex& block)
 				return item;
 	return ItemIndex::null();
 }
-void UniformObjective::select(Area& area, const ItemIndex& item) { m_item.setTarget(area.getItems().getReferenceTarget(item)); }
+void UniformObjective::select(Area& area, const ItemIndex& item) { m_item.setIndex(item, area.getItems().m_referenceData); }
 void UniformObjective::equip(Area& area, const ItemIndex& item, const ActorIndex& actor)
 {
 	Items& items = area.getItems();

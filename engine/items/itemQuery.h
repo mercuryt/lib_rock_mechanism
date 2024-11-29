@@ -12,18 +12,18 @@ public:
 	MaterialCategoryTypeId m_materialTypeCategory;
 	MaterialTypeId m_materialType;
 	// To be used when inserting workpiece to project unconsumed items.
-	ItemQuery(const ItemReference& item);
-	ItemQuery(const ItemTypeId& m_itemType);
-	ItemQuery(const ItemTypeId& m_itemType, const MaterialCategoryTypeId& mtc);
-	ItemQuery(const ItemTypeId& m_itemType, const MaterialTypeId& mt);
-	ItemQuery(const ItemTypeId& m_itemType, const MaterialCategoryTypeId& mtc, const MaterialTypeId& mt);
-	ItemQuery(const Json& data, Area& area);
 	void specalize(Area& area, const ItemIndex& item);
 	void specalize(const MaterialTypeId& materialType);
 	void maybeSpecalize(const MaterialTypeId& materialType);
 	void validate() const;
+	void load(const Json& data);
 	[[nodiscard]] bool query(Area& area, const ItemIndex& item) const;
 	[[nodiscard]] bool operator==(const ItemQuery& itemQuery) const;
 	[[nodiscard]] Json toJson() const;
+	static ItemQuery create(const ItemReference& item){ ItemQuery output; output.m_item = item; return output;}
+	static ItemQuery create(const ItemTypeId& itemType){ ItemQuery output; output.m_itemType = itemType; return output;}
+	static ItemQuery create(const ItemTypeId& itemType, const MaterialCategoryTypeId& mtc){ ItemQuery output; output.m_itemType = itemType; output.m_materialTypeCategory = mtc; return output;}
+	static ItemQuery create(const ItemTypeId& itemType, const MaterialTypeId& mt){ ItemQuery output; output.m_itemType = itemType; output.m_materialType = mt; return output;}
 };
-void to_json(Json& data, const ItemQuery& query);
+inline void to_json(Json& data, const ItemQuery& query) { data = query.toJson(); }
+inline void from_json(const Json& data, ItemQuery& query) { query.load(data); }

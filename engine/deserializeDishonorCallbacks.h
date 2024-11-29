@@ -19,7 +19,7 @@ inline std::unique_ptr<DishonorCallback> deserializeDishonorCallback(const Json&
 	if(data["type"] == "StockPileHasShapeDishonorCallback")
 		return std::make_unique<StockPileHasShapeDishonorCallback>(data, deserializationMemo);
 	if(data["type"] == "ProjectRequiredShapeDishonorCallback")
-		return std::make_unique<ProjectRequiredShapeDishonoredCallback>(data, deserializationMemo, area);
+		return std::make_unique<ProjectRequiredShapeDishonoredCallback>(data, deserializationMemo);
 	if(data["type"] == "CraftStepProjectHasShapeDishonorCallback")
 		return std::make_unique<CraftStepProjectHasShapeDishonorCallback>(data, deserializationMemo);
 	if(data["type"] == "ConstructionLocationDishonorCallback")

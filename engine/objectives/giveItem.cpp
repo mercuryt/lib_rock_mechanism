@@ -7,16 +7,17 @@
 GiveItemObjective::GiveItemObjective(Area& area, const ItemIndex& item, const ActorIndex& recipient) :
 	Objective(Config::equipPriority)
 { 
-	m_item.setTarget(area.getItems().getReferenceTarget(item));
-	m_recipient.setTarget(area.getActors().getReferenceTarget(recipient));
+
+	m_item.setIndex(item, area.getItems().m_referenceData);
+	m_recipient.setIndex(recipient, area.getActors().m_referenceData);
 	createOnDestroyCallbacks(area, recipient);
 }
 GiveItemObjective::GiveItemObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo)
 {
-	m_item.load(data["item"], area);
-	m_recipient.load(data["recipent"], area);
-	createOnDestroyCallbacks(area, m_recipient.getIndex());
+	data["item"].get_to(m_item);
+	data["recipent"].get_to(m_recipient);
+	createOnDestroyCallbacks(area, m_recipient.getIndex(area.getActors().m_referenceData));
 }
 Json GiveItemObjective::toJson() const
 {
@@ -28,16 +29,19 @@ Json GiveItemObjective::toJson() const
 void GiveItemObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
-	if(!actors.isAdjacentToActor(actor, m_recipient.getIndex()))
+	Items& items = area.getItems();
+	ActorIndex recipient = m_recipient.getIndex(actors.m_referenceData);
+	ItemIndex item = m_item.getIndex(items.m_referenceData);
+	if(!actors.isAdjacentToActor(actor, recipient))
 		// detour, unresered, reserve.
 		// TODO: detour.
-		actors.move_setDestinationAdjacentToActor(actor, m_recipient.getIndex());
+		actors.move_setDestinationAdjacentToActor(actor, recipient);
 	else
 	{
-		if(actors.equipment_canEquipCurrently(m_recipient.getIndex(), m_item.getIndex()))
+		if(actors.equipment_canEquipCurrently(recipient, item))
 		{
-			actors.equipment_remove(actor, m_item.getIndex());
-			actors.equipment_add(m_recipient.getIndex(), m_item.getIndex());
+			actors.equipment_remove(actor, item);
+			actors.equipment_add(recipient, item);
 			actors.objective_complete(actor, *this);
 		}
 		else
@@ -48,9 +52,11 @@ void GiveItemObjective::cancel(Area& area, const ActorIndex& actor) { area.getAc
 void GiveItemObjective::reset(Area& area, const ActorIndex& actor) { cancel(area, actor); }
 void GiveItemObjective::createOnDestroyCallbacks(Area& area, const ActorIndex& actor) 
 { 
-	m_hasOnDestroySubscriptions.setCallback(std::make_unique<CancelObjectiveOnDestroyCallBack>(actor.toReference(area), *this, area));
+	Items& items = area.getItems();
+	ActorReference actorRef = area.getActors().m_referenceData.getReference(actor);
+	m_hasOnDestroySubscriptions.setCallback(std::make_unique<CancelObjectiveOnDestroyCallBack>(actorRef, *this, area));
 	// Item.
-	area.getItems().onDestroy_subscribe(m_item.getIndex(), m_hasOnDestroySubscriptions);
+	items.onDestroy_subscribe(m_item.getIndex(items.m_referenceData), m_hasOnDestroySubscriptions);
 	// Recipient.
 	area.getActors().onDestroy_subscribe(actor, m_hasOnDestroySubscriptions);
 }

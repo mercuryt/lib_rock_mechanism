@@ -16,11 +16,11 @@ std::unique_ptr<Objective> StockPileObjectiveType::makeFor(Area&, const ActorInd
 }
 // Objective.
 StockPileObjective::StockPileObjective() : Objective(Config::stockPilePriority) { }
-StockPileObjective::StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : Objective(data, deserializationMemo),
+StockPileObjective::StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo),
 	m_project(data.contains("project") ? static_cast<StockPileProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>())) : nullptr)
 { 
 	if(data.contains("item"))
-		m_item = data["item"].get<ItemIndex>().toReference(area);
+		data["item"].get_to(m_item);
 	if(data.contains("stockPileLocation"))
 		m_stockPileLocation = data["stockPileLocation"].get<BlockIndex>();
 	if(data.contains("hasCheckedForDropOffLocation"))
@@ -142,7 +142,7 @@ StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo, 
 						if (stockpile->accepts(item) && checkDestination(area, item, block))
 						{
 							// Success
-							m_objective.m_item = item.toReference(area);
+							m_objective.m_item = area.getItems().m_referenceData.getReference(item);
 							m_objective.m_stockPileLocation = block;
 							return true;
 						}
@@ -172,7 +172,7 @@ StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo, 
 				if(stockPile->accepts(item) && checkDestination(area, item, block))
 				{
 					// Success
-					m_objective.m_item = item.toReference(area);
+					m_objective.m_item = area.getItems().m_referenceData.getReference(item);
 					m_objective.m_stockPileLocation = block;
 					return true;
 				}
@@ -199,7 +199,7 @@ void StockPilePathRequest::callback(Area& area, const FindPathResult& result)
 	{
 		assert(m_objective.m_stockPileLocation.exists());
 		Items& items = area.getItems();
-		const ItemIndex& item = m_objective.m_item.getIndex();
+		const ItemIndex& item = m_objective.m_item.getIndex(items.m_referenceData);
 		if(
 			items.reservable_isFullyReserved(item, faction) ||
 			!m_objective.destinationCondition(area, m_objective.m_stockPileLocation, item, actor)
@@ -269,7 +269,7 @@ StockPileDestinationPathRequest::StockPileDestinationPathRequest(Area& area, Sto
 	const FactionId& faction = actors.getFactionId(actor);
 	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
 	std::function<bool(const BlockIndex&)> condition = [this, actor, faction, &hasStockPiles, &blocks, &items, &area](const BlockIndex& block){
-		return m_objective.destinationCondition(area, block, m_objective.m_item.getIndex(), actor);
+		return m_objective.destinationCondition(area, block, m_objective.m_item.getIndex(items.m_referenceData), actor);
 	};
 	const bool unreserved = false;
 	createGoAdjacentToConditionFrom(area, actor, m_objective.m_pickUpLocation, m_objective.m_pickUpFacing, condition, m_objective.m_detour, unreserved, DistanceInBlocks::max(), BlockIndex::null());
@@ -310,7 +310,8 @@ void StockPileDestinationPathRequest::callback(Area& area, const FindPathResult&
 				}
 		}
 		// No projects found, make one.
-		hasStockPiles.makeProject(m_objective.m_item.getIndex(), m_objective.m_stockPileLocation, m_objective, actor);
+		Items& items = area.getItems();
+		hasStockPiles.makeProject(m_objective.m_item.getIndex(items.m_referenceData), m_objective.m_stockPileLocation, m_objective, actor);
 	}
 }
 StockPileDestinationPathRequest::StockPileDestinationPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :

@@ -39,7 +39,7 @@ TEST_CASE("dig")
 		.location=blocks.getIndex_i(1, 1, 4),
 		.faction=faction,
 	});
-	ActorReference dwarf1Ref = dwarf1.toReference(area);
+	ActorReference dwarf1Ref = actors.m_referenceData.getReference(dwarf1);
 	BlockIndex pickLocation = blocks.getIndex_i(5, 5, 4);
 	ItemIndex pick = items.create({.itemType=ItemType::byName("pick"), .materialType=bronze, .location=pickLocation, .quality=Quality::create(50u), .percentWear=Percent::create(0)});
 	area.m_hasDigDesignations.addFaction(faction);
@@ -92,7 +92,7 @@ TEST_CASE("dig")
 		simulation.doStep();
 		DigProject& project = *static_cast<DigProject*>(blocks.project_get(stairsLocation1, faction));
 		REQUIRE(project.reservationsComplete());
-		REQUIRE(project.getWorkers().contains(dwarf1.toReference(area)));
+		REQUIRE(project.getWorkers().contains(dwarf1Ref));
 		// Select a haul type to take the pick to the project site.
 		simulation.doStep();
 		REQUIRE(actors.move_hasPathRequest(dwarf1));
@@ -441,7 +441,7 @@ TEST_CASE("dig")
 			.location=blocks.getIndex_i(1, 2, 4),
 			.faction=faction,
 		});
-		ActorReference dwarf2Ref = dwarf2.toReference(area);
+		ActorReference dwarf2Ref = actors.m_referenceData.getReference(dwarf2);
 		BlockIndex holeLocation = blocks.getIndex_i(8, 8, 3);
 		BlockIndex goToLocation = blocks.getIndex_i(1, 8, 4);
 		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);

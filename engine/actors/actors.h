@@ -66,10 +66,9 @@ struct ActorParamaters
 	Percent getPercentTired(Simulation& simulation);
 	void generateEquipment(Area& area, const ActorIndex& actor);
 };
-class Actors final : public Portables<Actors, ActorIndex>
+class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 {
 	ActorIndexSet m_onSurface;
-	DataVector<std::unique_ptr<ActorReferenceTarget>, ActorIndex> m_referenceTarget;
 	DataVector<ActorId, ActorIndex> m_id;
 	DataVector<std::wstring, ActorIndex> m_name;
 	DataVector<AnimalSpeciesId, ActorIndex> m_species;
@@ -162,9 +161,6 @@ public:
 	[[nodiscard]] ActorIndexSet getOnSurface() const { return m_onSurface; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] ActorId getId(const ActorIndex& index) const { return m_id[index]; }
-	[[nodiscard]] ActorReference getReference(const ActorIndex& index) const { return *m_referenceTarget[index].get();}
-	[[nodiscard]] const ActorReference getReferenceConst(const ActorIndex& index) const { return *m_referenceTarget[index].get();}
-	[[nodiscard]] ActorReferenceTarget& getReferenceTarget(const ActorIndex& index) const { return *m_referenceTarget[index].get();}
 	[[nodiscard]] std::wstring getName(const ActorIndex& index) const { return m_name[index]; }
 	[[nodiscard]] bool isAlive(const ActorIndex& index) const { return m_causeOfDeath[index] == CauseOfDeath::none; }
 	[[nodiscard]] Percent getPercentGrown(const ActorIndex& index) const;
@@ -528,6 +524,11 @@ public:
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 	void onMoveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex) { assert(m_actor == oldIndex.toActor()); m_actor = ActorIndex::cast(newIndex); }
+	void updateIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
+	{
+		assert(oldIndex == m_actor);
+		m_actor = newIndex;
+	}
 	[[nodiscard]] Json toJson() const;
 };
 class AttackCoolDownEvent final : public ScheduledEvent
@@ -548,7 +549,7 @@ class GetIntoAttackPositionPathRequest final : public PathRequest
 	DistanceInBlocksFractional m_attackRangeSquared = DistanceInBlocksFractional::null();
 public:
 	GetIntoAttackPositionPathRequest(Area& area, const ActorIndex& a, const ActorIndex& t, const DistanceInBlocksFractional& ar);
-	GetIntoAttackPositionPathRequest(Area& area, const Json& data);
+	GetIntoAttackPositionPathRequest(const Json& data);
 	void callback(Area& area, const FindPathResult&);
 	void onMoveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex) { assert(m_actor == oldIndex.toActor()); m_actor = ActorIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;

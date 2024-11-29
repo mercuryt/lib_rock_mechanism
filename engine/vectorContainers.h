@@ -18,7 +18,8 @@ public:
 	class const_iterator;
 	SmallSet() = default;
 	SmallSet(std::initializer_list<T> i) : m_data(i) { }
-	void insert(const T& value) { if(!contains(value)) m_data.push_back(value); }
+	void insert(const T& value) { assert(!contains(value)); m_data.push_back(value); }
+	void maybeInsert(const T& value) { if(!contains(value)) m_data.push_back(value); }
 	void insert(std::vector<T>::const_iterator&& begin, std::vector<T>::const_iterator&& end)
 	{
 		for(; begin != end; ++begin)
@@ -32,14 +33,28 @@ public:
 	void erase(const T& value)
 	{
 		auto found = std::ranges::find(m_data, value);
+		assert(found != m_data.end());
+		*found = m_data.back();
+		m_data.pop_back();
+	}
+	void maybeErase(const T& value)
+	{
+		auto found = std::ranges::find(m_data, value);
 		if(found != m_data.end())
 		{
 			*found = m_data.back();
 			m_data.pop_back();
 		}
 	}
+	void erase(This::iterator iter)
+	{
+		assert(iter != end());
+		assert(!m_data.empty());
+		*iter = m_data.back();
+		m_data.pop_back();
+	}
 	template<typename Predicate>
-	void erase_if(Predicate&& predicate) { std::erase_if(m_data, predicate); }
+	void eraseIf(Predicate&& predicate) { std::erase_if(m_data, predicate); }
 	void clear() { m_data.clear(); }
 	template<typename ...Args>
 	void emplace(Args&& ...args)
@@ -49,6 +64,9 @@ public:
 		assert(std::ranges::count(m_data, created) == 1);
 	}
 	void swap(This& other) { m_data.swap(other.m_data); }
+	void popBack() { m_data.pop_back(); }
+	template<typename Predicate>
+	void sort(Predicate&& predicate) { std::ranges::sort(m_data, predicate); }
 	[[nodiscard]] bool contains(const T& value) const { return std::ranges::find(m_data, value) != m_data.end(); }
 	[[nodiscard]] T& front() { return m_data.front(); }
 	[[nodiscard]] const T& front() const { return m_data.front(); }
@@ -61,6 +79,14 @@ public:
 	[[nodiscard]] This::const_iterator begin() const { return This::const_iterator(*this, 0); }
 	[[nodiscard]] This::const_iterator end() const { return This::const_iterator(*this, size()); }
 	[[nodiscard]] std::vector<T>& getVector() { return m_data; }
+	[[nodiscard]] This::iterator find(const T& value) { return std::ranges::find(m_data, value); }
+	[[nodiscard]] This::const_iterator find(const T& value) const { return std::ranges::find(m_data, value); }
+	template<typename Predicate>
+	[[nodiscard]] This::iterator findIf(Predicate&& predicate) { return std::ranges::find_if(m_data, predicate); }
+	template<typename Predicate>
+	[[nodiscard]] This::const_iterator findIf(Predicate&& predicate) const { return std::ranges::find_if(m_data, predicate); }
+	template<typename Predicate>
+	[[nodiscard]] bool anyOf(Predicate&& predicate) const { return findIf(predicate) != end(); }
 	class iterator
 	{
 	protected:
@@ -102,6 +128,120 @@ public:
 	};
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallSet, m_data);
 };
+template<typename T>
+class SmallSetStable
+{
+	using This = SmallSetStable<T>;
+	std::vector<std::unique_ptr<T>> m_data;
+public:
+	class iterator;
+	class const_iterator;
+	SmallSetStable() = default;
+	SmallSetStable(std::initializer_list<T> i) : m_data(i) { }
+	void insert(const std::unique_ptr<T> value) { assert(!contains(value)); m_data.push_back(std::move(value)); }
+	void maybeInsert(const std::unique_ptr<T>& value) { if(!contains(*value)) m_data.push_back(std::move(value)); }
+	void insert(This::iterator begin, This::iterator end)
+	{
+		for(; begin != end; ++begin)
+			insert(*begin);
+	}
+	void erase(const std::unique_ptr<T>& value)
+	{
+		auto found = std::ranges::find(m_data, value);
+		assert(found != m_data.end());
+		*found = std::move(m_data.back());
+		m_data.pop_back();
+	}
+	void maybeErase(const T& value)
+	{
+		auto found = std::ranges::find(m_data, value);
+		if(found != m_data.end())
+		{
+			*found = std::move(m_data.back());
+			m_data.pop_back();
+		}
+	}
+	void erase(This::iterator iter)
+	{
+		assert(iter != end());
+		assert(!m_data.empty());
+		*iter = std::move(m_data.back());
+		m_data.pop_back();
+	}
+	template<typename Predicate>
+	void eraseIf(Predicate&& predicate) { std::erase_if(m_data, predicate); }
+	void clear() { m_data.clear(); }
+	template<typename ...Args>
+	void emplace(Args&& ...args)
+	{
+		std::unique_ptr<T> ptr = std::make_unique<T>(std::forward<Args>(args)...);
+		assert(std::ranges::find(m_data, ptr) == m_data.end());
+		m_data.push_back(std::move(ptr));
+	}
+	void swap(This& other) { m_data.swap(other.m_data); }
+	void popBack() { m_data.pop_back(); }
+	template<typename Predicate>
+	void sort(Predicate&& predicate) { std::ranges::sort(m_data, predicate); }
+	[[nodiscard]] bool contains(const std::unique_ptr<T>& value) const { return std::ranges::find(m_data, value) != m_data.end(); }
+	[[nodiscard]] T& front() { return *m_data.front(); }
+	[[nodiscard]] const T& front() const { return *m_data.front(); }
+	[[nodiscard]] T& back() { return *m_data.back(); }
+	[[nodiscard]] const T& back() const { return *m_data.back(); }
+	[[nodiscard]] bool empty() const { return m_data.empty(); }
+	[[nodiscard]] uint size() const { return m_data.size(); }
+	[[nodiscard]] This::iterator begin() { return {*this, 0}; }
+	[[nodiscard]] This::iterator end() { return {*this, size()}; }
+	[[nodiscard]] This::const_iterator begin() const { return This::const_iterator(*this, 0); }
+	[[nodiscard]] This::const_iterator end() const { return This::const_iterator(*this, size()); }
+	[[nodiscard]] This::iterator find(const T& value) { return std::ranges::find_if(m_data, [&](std::unique_ptr<T>& d){ return *d == value; }); }
+	[[nodiscard]] This::const_iterator find(const T& value) const { return const_cast<SmallSetStable&>(*this).find(value); }
+	template<typename Predicate>
+	[[nodiscard]] This::iterator findIf(Predicate&& predicate) { return std::ranges::find_if(m_data, [&](std::unique_ptr<T>& d){ return predicate(*d); }); }
+	template<typename Predicate>
+	[[nodiscard]] This::const_iterator findIf(Predicate&& predicate) const { const_cast<SmallSetStable&>(*this).findIf(predicate); }
+	template<typename Predicate>
+	[[nodiscard]] bool anyOf(Predicate&& predicate) const { return findIf(predicate) != end(); }
+	class iterator
+	{
+	protected:
+		std::vector<T>::iterator m_iter;
+	public:
+		iterator(This& s, uint i) : m_iter(s.m_data.begin() + i) { }
+		iterator(std::vector<T>::iterator i) : m_iter(i) { }
+		iterator& operator++() { ++m_iter; return *this; }
+		iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
+		[[nodiscard]] T& operator*() { return *m_iter; }
+		[[nodiscard]] const T& operator*() const { return *m_iter; }
+		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
+		[[nodiscard]] T* operator->() { return &*m_iter; }
+		[[nodiscard]] iterator operator-(const iterator& other) { return m_iter - other.m_iter; }
+		[[nodiscard]] iterator operator+(const iterator& other) { return m_iter - other.m_iter; }
+		[[nodiscard]] iterator& operator+=(const iterator& other) { m_iter += other.m_iter; return *this; }
+		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) { return m_iter <=> other.m_iter; }
+		friend class const_iterator;
+	};
+	class const_iterator
+	{
+	protected:
+		std::vector<T>::const_iterator m_iter;
+	public:
+		const_iterator(const This& s, uint i) : m_iter(s.m_data.begin() + i) { }
+		const_iterator(std::vector<T>::const_iterator i) : m_iter(i) { }
+		const_iterator(const const_iterator& i) : m_iter(i.m_iter) { }
+		const_iterator& operator++() { ++m_iter; return *this; }
+		const_iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
+		iterator& operator+=(const const_iterator& other) { m_iter += other.m_iter; return *this; }
+		[[nodiscard]] const T& operator*() const { return *m_iter; }
+		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
+		[[nodiscard]] const T* operator->() const { return &*m_iter; }
+		[[nodiscard]] iterator operator-(const const_iterator& other) { return m_iter - other.m_iter; }
+		[[nodiscard]] iterator operator+(const const_iterator& other) const { return m_iter + other.m_iter; }
+		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
+	};
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallSetStable, m_data);
+};
 
 /*
  * A cache local map for small data sets made up of a vector of pairs.
@@ -120,6 +260,7 @@ public:
 	class const_iterator;
 	SmallMap() = default;
 	SmallMap(const std::initializer_list<std::pair<K, V>>& i) : m_data(i) { }
+	SmallMap(std::initializer_list<std::pair<K, V>>&& i) : m_data(i) { }
 	void insert(K key, V& value)
 	{
 		assert(!contains(key));

@@ -4,9 +4,9 @@
 #include "../deserializationMemo.h"
 #include "../area.h"
 EquipItemObjective::EquipItemObjective(const ItemReference& item) : Objective(Config::equipPriority), m_item(item) { }
-EquipItemObjective::EquipItemObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo)
+EquipItemObjective::EquipItemObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo)
 {
-	m_item.load(data["item"], area);
+	data["item"].get_to(m_item);
 }
 Json EquipItemObjective::toJson() const
 {
@@ -17,7 +17,7 @@ Json EquipItemObjective::toJson() const
 void EquipItemObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
-	ItemIndex item = m_item.getIndex();
+	ItemIndex item = m_item.getIndex(area.getItems().m_referenceData);
 	if(!actors.isAdjacentToItem(actor, item))
 		// detour, unresered, reserve.
 		// TODO: detour.

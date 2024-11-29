@@ -28,7 +28,7 @@ class StockPileObjective final : public Objective
 public:
 	StockPileProject* m_project = nullptr;
 	StockPileObjective();
-	StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
+	StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	void execute(Area& area, const ActorIndex& actor);
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
@@ -40,7 +40,7 @@ public:
 	[[nodiscard]] bool hasItem() const { return m_item.exists(); }
 	[[nodiscard]] bool hasDestination() const { return m_stockPileLocation.exists(); }
 	[[nodiscard]] const BlockIndex& getDestination() const { return m_stockPileLocation; }
-	[[nodiscard]] ItemIndex getItem() const { return m_item.getIndex(); }
+	[[nodiscard]] ItemReference getItem() const { return m_item; }
 	friend class StockPilePathRequest;
 	friend class StockPileDestinationPathRequest;
 };

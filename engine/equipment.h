@@ -20,12 +20,13 @@ class Items;
 class EquipmentSet
 {
 	SmallSet<BodyPartTypeId> m_bodyPartTypesWithRigidArmor;
-	ItemReferencesMaybeSorted m_wearable;
-	ItemReferences m_equipments;
-	ItemReferences m_meleeWeapons;
-	ItemReferences m_rangedWeapons;
-	ItemReferences m_rangedWeaponAmmo;
+	SmallSet<ItemReference> m_wearable;
+	SmallSet<ItemReference> m_equipments;
+	SmallSet<ItemReference> m_meleeWeapons;
+	SmallSet<ItemReference> m_rangedWeapons;
+	SmallSet<ItemReference> m_rangedWeaponAmmo;
 	Mass m_mass = Mass::create(0);
+	bool m_wearableIsSorted;
 public:
 	EquipmentSet(Area& area, const Json& data);
 	EquipmentSet() = default;
@@ -37,7 +38,7 @@ public:
 	void updateCarrierIndexForContents(Area& area, const ItemIndex& newIndex);
 	std::vector<Attack> getMeleeAttacks(Area& area);
 	auto& getRangedWeapons() { return m_rangedWeapons; }
-	[[nodiscard]] bool contains(const ItemIndex& item) const;
+	[[nodiscard]] bool contains(const ItemReference& item) const;
 	[[nodiscard]] bool containsItemType(const Area& area, const ItemTypeId& itemType) const;
 	[[nodiscard]] bool hasWeapons() const { return !m_meleeWeapons.empty() || !m_rangedWeapons.empty(); }
 	[[nodiscard]] Step getLongestMeleeWeaponCoolDown(Area& area) const;

@@ -124,7 +124,7 @@ SupressedNeed::SupressedNeed(Area& area, std::unique_ptr<Objective> o, const Act
 SupressedNeed::SupressedNeed(Area& area, const Json& data, DeserializationMemo& deserializationMemo, const ActorReference& ref) :
 	m_event(area.m_eventSchedule), m_actor(ref)
 {
-	m_objective = deserializationMemo.loadObjective(data["objective"], area, m_actor.getIndex());
+	m_objective = deserializationMemo.loadObjective(data["objective"], area, m_actor.getIndex(area.getActors().m_referenceData));
 	if(data.contains("eventStart"))
 		m_event.schedule(area, *this, data["eventStart"].get<Step>());
 }
@@ -137,7 +137,7 @@ Json SupressedNeed::toJson() const
 }
 void SupressedNeed::callback(Area& area) 
 {
-	ActorIndex actor = m_actor.getIndex();
+	ActorIndex actor = m_actor.getIndex(area.getActors().m_referenceData);
 	auto objective = std::move(m_objective);
 	HasObjectives& hasObjectives = *area.getActors().m_hasObjectives[actor];
 	hasObjectives.m_supressedNeeds.erase(objective->getNeedType());
@@ -208,12 +208,15 @@ Json Objective::toJson() const
 }
 CannotCompleteObjectiveDishonorCallback::CannotCompleteObjectiveDishonorCallback(Area& area, const Json& data) : 
 	m_area(area),
-	m_actor(area.getActors().getReference(data["actor"].get<ActorIndex>())) { }
+	m_actor(data["actor"].get<ActorReference>()) { }
 Json CannotCompleteObjectiveDishonorCallback::toJson() const
 {
-	return {{"actor", m_actor.getIndex()}};
+	return {{"actor", m_actor}};
 }
-void CannotCompleteObjectiveDishonorCallback::execute(const Quantity&, const Quantity&) { m_area.getActors().objective_canNotCompleteSubobjective(m_actor.getIndex()); }
+void CannotCompleteObjectiveDishonorCallback::execute(const Quantity&, const Quantity&)
+{
+	Actors& actors = m_area.getActors();
+	actors.objective_canNotCompleteSubobjective(m_actor.getIndex(actors.m_referenceData)); }
 // HasObjectives.
 void HasObjectives::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const ActorIndex& actor)
 {

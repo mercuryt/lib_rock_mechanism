@@ -70,5 +70,5 @@ public:
 	// For testing.
 	[[nodiscard]] BlockIndex getPlantLocation() const { return m_plantLocation; }
 	[[nodiscard]] bool itemExists() const { return m_fluidHaulingItem.exists(); }
-	[[nodiscard]] ItemIndex getItem() const { return m_fluidHaulingItem.getIndex(); }
+	[[nodiscard]] ItemReference getItem() const { return m_fluidHaulingItem; }
 };

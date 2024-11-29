@@ -14,12 +14,12 @@
 HarvestEvent::HarvestEvent(const Step& delay, Area& area, HarvestObjective& ho, const ActorIndex& actor, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_harvestObjective(ho)
 {
-	m_actor.setTarget(area.getActors().getReferenceTarget(actor));
+	m_actor.setIndex(actor, area.getActors().m_referenceData);
 }
 void HarvestEvent::execute(Simulation&, Area* area)
 {
 	Actors& actors = area->getActors();
-	ActorIndex actor = m_actor.getIndex();
+	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
 	assert(m_harvestObjective.m_block.exists());
 	assert(actors.isAdjacentToLocation(actor, m_harvestObjective.m_block));
 	Blocks& blocks = area->getBlocks();

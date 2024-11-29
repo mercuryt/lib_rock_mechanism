@@ -19,7 +19,7 @@ public:
 	InstallItemProject(Area& area, const ItemReference& i, const BlockIndex& l, const Facing& facing, const FactionId& faction);
 	void onComplete();
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const { return {}; }
-	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const { ItemQuery query(m_item); return {{m_item, Quantity::create(1)}}; }
+	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const { return {{ItemQuery::create(m_item), Quantity::create(1)}}; }
 	std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const { return {}; }
 	Step getDuration() const { return Config::installItemDuration; }

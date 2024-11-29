@@ -4,20 +4,12 @@
 #include "types.h"
 #include "area.h"
 #include "actors.h"
-ActorQuery::ActorQuery(const Json& data, Area& area) :
-	carryWeight(data.contains("carryWeight") ? data["carryWeight"].get<Mass>() : Mass::create(0)),
-	checkIfSentient(data.contains("checkIfSentient")),
-	sentient(data.contains("sentient")) 
-{ 
-	if(data.contains("actor"))
-		actor.setTarget(area.getActors().getReferenceTarget(data["actor"].get<ActorIndex>()));
-}
 // ActorQuery, to be used to search for actors.
 bool ActorQuery::query(Area& area, const ActorIndex& other) const
 {
-	if(actor.exists())
-		return actor.getIndex() == other;
 	Actors& actors = area.getActors();
+	if(actor.exists())
+		return actor.getIndex(actors.m_referenceData) == other;
 	if(carryWeight != 0 && actors.canPickUp_getMass(other) < carryWeight)
 		return false;
 	if(checkIfSentient && actors.isSentient(other) != sentient)
@@ -25,4 +17,4 @@ bool ActorQuery::query(Area& area, const ActorIndex& other) const
 	return true;
 }
 ActorQuery ActorQuery::makeFor(const ActorReference& a) { return ActorQuery(a); }
-ActorQuery ActorQuery::makeForCarryWeight(const Mass& cw) { return ActorQuery(cw, false, false); }
+ActorQuery ActorQuery::makeForCarryWeight(const Mass& cw) { ActorQuery output; output.carryWeight = cw; return output; }

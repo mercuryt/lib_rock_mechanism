@@ -24,7 +24,7 @@ void AreaHasFluidGroups::doStep(bool parallel)
 		for(FluidGroup* group : unstable)
 			group->readStep();
 	// Remove destroyed.
-	m_unstableFluidGroups.erase_if([](auto* fluidGroup){ return fluidGroup->m_destroy; });
+	m_unstableFluidGroups.eraseIf([](auto* fluidGroup){ return fluidGroup->m_destroy; });
 	std::erase_if(m_fluidGroups, [](const FluidGroup& fluidGroup){ return fluidGroup.m_destroy; });
 	// Apply flow.
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
@@ -39,13 +39,13 @@ void AreaHasFluidGroups::doStep(bool parallel)
 		fluidGroup->afterWriteStep();
 		fluidGroup->validate();
 	}
-	m_unstableFluidGroups.erase_if([](const FluidGroup* fluidGroup){ return fluidGroup->m_merged || fluidGroup->m_disolved; });
+	m_unstableFluidGroups.eraseIf([](const FluidGroup* fluidGroup){ return fluidGroup->m_merged || fluidGroup->m_disolved; });
 	// Merge.
 	// Reinitalize unstable with filtered set.
 	unstable = m_unstableFluidGroups;
 	for(FluidGroup* fluidGroup : unstable)
 		fluidGroup->mergeStep();
-	m_unstableFluidGroups.erase_if([](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
+	m_unstableFluidGroups.eraseIf([](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
 	// Split.
 	// Reinitalize unstable with filtered set again.
 	unstable = m_unstableFluidGroups;
@@ -63,9 +63,9 @@ void AreaHasFluidGroups::doStep(bool parallel)
 			assert(!fluidGroup.m_disolved);
 		}
 		if(fluidGroup.m_destroy || fluidGroup.m_merged || fluidGroup.m_disolved || fluidGroup.m_stable)
-			m_unstableFluidGroups.erase(&fluidGroup);
+			m_unstableFluidGroups.maybeErase(&fluidGroup);
 		else if(!fluidGroup.m_stable)
-			m_unstableFluidGroups.insert(&fluidGroup);
+			m_unstableFluidGroups.maybeInsert(&fluidGroup);
 		if(fluidGroup.m_destroy || fluidGroup.m_merged)
 		{
 			toErase.insert(&fluidGroup);
@@ -98,10 +98,11 @@ void AreaHasFluidGroups::doStep(bool parallel)
 }
 FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidTypeId& fluidType, BlockIndices& blocks, bool checkMerge)
 {
-	m_fluidGroups.emplace_back(fluidType, blocks, m_area, checkMerge);
-	m_unstableFluidGroups.insert(&m_fluidGroups.back());
-	//TODO:  If new group is outside register it with areaHasTemperature.
-	return &m_fluidGroups.back();
+	FluidGroup& fluidGroup = m_fluidGroups.emplace_back(fluidType, blocks, m_area, checkMerge);
+	// TODO: Under what circumstances is this assert not valid?
+	// assert(m_unstableFluidGroups.contains(&fluidGroup));
+	// TODO: If new group is outside register it with areaHasTemperature.
+	return &fluidGroup;
 }
 FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidTypeId& fluidType, BlockIndices&& blocks, bool checkMerge)
 {
@@ -113,7 +114,7 @@ void AreaHasFluidGroups::removeFluidGroup(FluidGroup& group)
 }
 void AreaHasFluidGroups::clearMergedFluidGroups()
 {
-	m_unstableFluidGroups.erase_if([](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
+	m_unstableFluidGroups.eraseIf([](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
 	std::erase_if(m_fluidGroups, [](FluidGroup& fluidGroup){ return fluidGroup.m_merged; });
 }
 void AreaHasFluidGroups::validateAllFluidGroups()
@@ -124,7 +125,7 @@ void AreaHasFluidGroups::validateAllFluidGroups()
 }
 void AreaHasFluidGroups::markUnstable(FluidGroup& fluidGroup)
 {
-	m_unstableFluidGroups.insert(&fluidGroup);
+	m_unstableFluidGroups.maybeInsert(&fluidGroup);
 }
 void AreaHasFluidGroups::markStable(FluidGroup& fluidGroup)
 {

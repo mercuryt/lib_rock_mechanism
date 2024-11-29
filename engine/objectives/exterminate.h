@@ -1,6 +1,7 @@
 #pragma once
 #include "../objective.h"
 #include "../config.h"
+#include "../area.h"
 #include "eventSchedule.hpp"
 struct DeserializationMemo;
 class ExterminateObjectiveScheduledEvent;
@@ -25,6 +26,6 @@ class ExterminateObjectiveScheduledEvent final : public ScheduledEvent
 	ExterminateObjective& m_objective;
 	public:
 	ExterminateObjectiveScheduledEvent(Area& area, ExterminateObjective& o, const ActorIndex& actor, const Step start = Step::null());
-	void execute(Simulation&, Area* area) { m_objective.execute(*area, m_actor.getIndex()); }
+	void execute(Simulation&, Area* area);
 	void clearReferences(Simulation&, Area*) { m_objective.m_event.clearPointer(); }
 };

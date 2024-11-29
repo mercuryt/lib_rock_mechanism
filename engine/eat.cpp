@@ -27,23 +27,24 @@ void HungerEvent::clearReferences(Simulation&, Area* area)
 MustEat::MustEat(Area& area, const ActorIndex& a) : 
 	m_hungerEvent(area.m_eventSchedule)
 {
-	m_actor.setTarget(area.getActors().getReferenceTarget(a));
+	m_actor.setIndex(a, area.getActors().m_referenceData);
 }
 void MustEat::scheduleHungerEvent(Area& area)
 {
-	Step eatFrequency = AnimalSpecies::getStepsEatFrequency(area.getActors().getSpecies(m_actor.getIndex()));
-	m_hungerEvent.schedule(area, eatFrequency, m_actor.getIndex());
+	const ActorReferenceData& referenceData = area.getActors().m_referenceData;
+	Step eatFrequency = AnimalSpecies::getStepsEatFrequency(area.getActors().getSpecies(m_actor.getIndex(referenceData)));
+	m_hungerEvent.schedule(area, eatFrequency, m_actor.getIndex(referenceData));
 }
-MustEat::MustEat(Area& area, const Json& data, const ActorIndex& a, AnimalSpeciesId species) : 
+MustEat::MustEat(Area& area, const Json& data, const ActorIndex& actor, AnimalSpeciesId species) : 
 	m_hungerEvent(area.m_eventSchedule), m_massFoodRequested(data["massFoodRequested"].get<Mass>())
 {
-	m_actor.setTarget(area.getActors().getReferenceTarget(a));
+	m_actor.setIndex(actor, area.getActors().m_referenceData);
 	if(data.contains("eatingLocation"))
 		m_eatingLocation = data["eatingLocation"].get<BlockIndex>();
 	if(data.contains("hungerEventStart"))
 	{
 		Step start = data["hungerEventStart"].get<Step>();
-		m_hungerEvent.schedule(area, AnimalSpecies::getStepsEatFrequency(species), m_actor.getIndex(), start);
+		m_hungerEvent.schedule(area, AnimalSpecies::getStepsEatFrequency(species), actor, start);
 	}
 }
 Json MustEat::toJson() const
@@ -60,7 +61,8 @@ bool MustEat::canEatActor(Area& area, const ActorIndex& actor) const
 	Actors& actors = area.getActors();
 	if(actors.isAlive(actor))
 		return false;
-	AnimalSpeciesId species = actors.getSpecies(m_actor.getIndex());
+	const ActorReferenceData &referenceData = area.getActors().m_referenceData;
+	AnimalSpeciesId species = actors.getSpecies(m_actor.getIndex(referenceData));
 	assert(AnimalSpecies::getEatsMeat(species));
 	if(AnimalSpecies::getFluidType(species) != AnimalSpecies::getFluidType(actors.getSpecies(actor)))
 		return false;
@@ -68,7 +70,8 @@ bool MustEat::canEatActor(Area& area, const ActorIndex& actor) const
 }
 bool MustEat::canEatPlant(Area& area, const PlantIndex& plant) const
 {
-	AnimalSpeciesId species = area.getActors().getSpecies(m_actor.getIndex());
+	const ActorReferenceData &referenceData = area.getActors().m_referenceData;
+	AnimalSpeciesId species = area.getActors().getSpecies(m_actor.getIndex(referenceData));
 	Plants& plants = area.getPlants();
 	if(AnimalSpecies::getEatsLeaves(species) && plants.getPercentFoliage(plant) != 0)
 		return true;
@@ -78,7 +81,8 @@ bool MustEat::canEatPlant(Area& area, const PlantIndex& plant) const
 }
 bool MustEat::canEatItem(Area& area, const ItemIndex& item) const
 {
-	return ItemType::getEdibleForDrinkersOf(area.getItems().getItemType(item)) == area.getActors().drink_getFluidType(m_actor.getIndex());
+	const ActorReferenceData &referenceData = area.getActors().m_referenceData;
+	return ItemType::getEdibleForDrinkersOf(area.getItems().getItemType(item)) == area.getActors().drink_getFluidType(m_actor.getIndex(referenceData));
 }
 void MustEat::eat(Area& area, Mass mass)
 {
@@ -89,7 +93,8 @@ void MustEat::eat(Area& area, Mass mass)
 	m_massFoodRequested -= mass;
 	m_hungerEvent.unschedule();
 	Step stepsToNextHungerEvent;
-	ActorIndex actor = m_actor.getIndex();
+	const ActorReferenceData &referenceData = area.getActors().m_referenceData;
+	ActorIndex actor = m_actor.getIndex(referenceData);
 	AnimalSpeciesId species = actors.getSpecies(actor);
 	if(m_massFoodRequested == 0)
 	{
@@ -115,7 +120,8 @@ void MustEat::notHungry(Area& area)
 void MustEat::setNeedsFood(Area& area)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actor = m_actor.getIndex();
+	const ActorReferenceData &referenceData = area.getActors().m_referenceData;
+	ActorIndex actor = m_actor.getIndex(referenceData);
 	AnimalSpeciesId species = actors.getSpecies(actor);
 	if(needsFood())
 		actors.die(actor, CauseOfDeath::hunger);
@@ -139,7 +145,8 @@ void MustEat::setObjective(EatObjective& objective) { assert(m_eatObjective == n
 bool MustEat::needsFood() const { return m_massFoodRequested != 0; }
 Mass MustEat::massFoodForBodyMass(Area& area) const
 {
-	return Mass::create(std::max(1u, (area.getActors().getMass(m_actor.getIndex()) / Config::unitsBodyMassPerUnitFoodConsumed).get()));
+	const ActorReferenceData &referenceData = area.getActors().m_referenceData;
+	return Mass::create(std::max(1u, (area.getActors().getMass(m_actor.getIndex(referenceData)) / Config::unitsBodyMassPerUnitFoodConsumed).get()));
 }
 Mass MustEat::getMassFoodRequested() const { return m_massFoodRequested; }
 Percent MustEat::getPercentStarved() const
@@ -153,7 +160,8 @@ uint32_t MustEat::getDesireToEatSomethingAt(Area& area, const BlockIndex& block)
 	Blocks& blocks = area.getBlocks();
 	Items& items = area.getItems();
 	Actors& actors = area.getActors();
-	AnimalSpeciesId species = actors.getSpecies(m_actor.getIndex());
+	const ActorReferenceData &referenceData = area.getActors().m_referenceData;
+	AnimalSpeciesId species = actors.getSpecies(m_actor.getIndex(referenceData));
 	for(ItemIndex item : blocks.item_getAll(block))
 	{
 		if(items.isPreparedMeal(item))
@@ -168,9 +176,12 @@ uint32_t MustEat::getDesireToEatSomethingAt(Area& area, const BlockIndex& block)
 			return 2;
 	}
 	if(AnimalSpecies::getEatsMeat(species))
+	{
+		const ActorReferenceData &referenceData = area.getActors().m_referenceData;
 		for(ActorIndex actor : blocks.actor_getAll(block))
-			if(m_actor.getIndex() != actor && !actors.isAlive(actor) && AnimalSpecies::getFluidType(actors.getSpecies(actor)) == AnimalSpecies::getFluidType(species))
+			if(m_actor.getIndex(referenceData) != actor && !actors.isAlive(actor) && AnimalSpecies::getFluidType(actors.getSpecies(actor)) == AnimalSpecies::getFluidType(species))
 				return 1;
+	}
 	if(AnimalSpecies::getEatsLeaves(species) && blocks.plant_exists(block))
 		if(area.getPlants().getPercentFoliage(blocks.plant_get(block)) != 0)
 			return 3;
@@ -182,12 +193,13 @@ uint32_t MustEat::getMinimumAcceptableDesire(Area& area) const
 	// Sentients demand max rank ( prepared meals) to start, but become less picky as they get more hungry.
 	// Non sentients still prefer prepared meals if they can get to them, but are willing to scavange by default.
 	Percent hunger = getPercentStarved();
+	const ActorReferenceData &referenceData = area.getActors().m_referenceData;
 	for(uint i = 0; i < Config::minimumHungerLevelThresholds.size(); ++i )
 	{
 		if(hunger < Config::minimumHungerLevelThresholds[i])
 		{
 			// max ranked desire is reserved for sentients eating prepared meals. Nonsentients will forage at any hunger level.
-			if(i == maxRankedEatDesire && !area.getActors().isSentient(m_actor.getIndex()) )
+			if(i == maxRankedEatDesire && !area.getActors().isSentient(m_actor.getIndex(referenceData)) )
 				return maxRankedEatDesire - 1;
 			return maxRankedEatDesire - i;
 		}	
@@ -198,7 +210,7 @@ BlockIndex MustEat::getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireabili
 {
 	std::array<BlockIndex, maxRankedEatDesire> candidates;
 	candidates.fill(BlockIndex::null());
-	ActorIndex actor = m_actor.getIndex();
+	ActorIndex actor = m_actor.getIndex(area.getActors().m_referenceData);
 	//TODO: abstract predicate generation from PathRequest constructor and use here as well.
 	std::function<bool(const BlockIndex&)> predicate;
 	if(area.getActors().isSentient(actor))
@@ -219,7 +231,7 @@ BlockIndex MustEat::getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireabili
 		{
 			return getDesireToEatSomethingAt(area, block) != 0;
 		};
-	BlockIndex output = area.getActors().getBlockWhichIsAdjacentWithPredicate(m_actor.getIndex(), predicate);
+	BlockIndex output = area.getActors().getBlockWhichIsAdjacentWithPredicate(actor, predicate);
 	if(output.exists())
 		return output;
 	for(size_t i = maxRankedEatDesire; i != 0; --i)

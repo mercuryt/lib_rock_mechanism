@@ -21,6 +21,7 @@ struct LocationBucket final
 	void erase(Area& area, const ActorIndex& actor);
 	void update(Area& area, const ActorIndex& actor, const BlockIndices& blocks);
 	void updateCuboid(Area& area, const ActorIndex& actor, const BlockIndex& block, const VisionCuboidId& oldCuboid, const VisionCuboidId& newCuboid);
+	void prefetch() const;
 	[[nodiscard]] size_t size() const { return m_actorsMultiTile.size() + m_actorsSingleTile.size(); }
 };
 class LocationBuckets
@@ -30,8 +31,9 @@ class LocationBuckets
 	DistanceInBuckets m_maxX;
 	DistanceInBuckets m_maxY;
 	DistanceInBuckets m_maxZ;
-	[[nodiscard]] LocationBucket& get(const DistanceInBuckets& x, const DistanceInBuckets& y, const DistanceInBuckets& z);
-	[[nodiscard]] const LocationBucket& get(const DistanceInBuckets& x, const DistanceInBuckets& y, const DistanceInBuckets& z) const;
+	[[nodiscard]] uint getIndex(const DistanceInBuckets& x, const DistanceInBuckets& y, const DistanceInBuckets& z) const;
+	[[nodiscard]] LocationBucket& get(uint);
+	[[nodiscard]] const LocationBucket& get(uint) const;
 public:
 	LocationBuckets(Area& area) : m_area(area) { }
 	void initalize();
@@ -39,6 +41,7 @@ public:
 	void remove(const ActorIndex& actor);
 	void update(const ActorIndex& actor, const BlockIndices& oldBlocks);
 	void updateCuboid(Area& area, const ActorIndex& actor, const BlockIndex& block, const VisionCuboidId& oldCuboid, const VisionCuboidId& newCuboid);
+	void prefetch(uint index) const;
 	[[nodiscard]] LocationBucket& getBucketFor(const BlockIndex& block);
 	friend class VisionFacade;
 };

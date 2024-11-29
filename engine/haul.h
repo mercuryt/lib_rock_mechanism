@@ -42,11 +42,11 @@ struct HaulSubprojectParamaters final
 class HaulSubproject final
 {
 	Project& m_project;
-	ActorReferences m_workers;
+	SmallSet<ActorReference> m_workers;
 	ActorOrItemReference m_toHaul;
 	Quantity m_quantity = Quantity::create(0);
 	HaulStrategy m_strategy = HaulStrategy::None;
-	ActorReferences m_nonsentients;
+	SmallSet<ActorReference> m_nonsentients;
 	ItemReference m_haulTool;
 	SmallMap<ActorReference, BlockIndex> m_liftPoints; // Used by Team strategy.
 	ActorReference m_leader;
@@ -98,8 +98,8 @@ inline void to_json(Json& data, const HaulSubproject* const& haulSubproject){ da
 class AreaHasHaulTools final
 {
 	//TODO: optimize with m_unreservedHaulToos and m_unreservedYolkableActors.
-	ItemReferences m_haulTools;
-	ActorReferences m_yolkableActors;
+	SmallSet<ItemReference> m_haulTools;
+	SmallSet<ActorReference> m_yolkableActors;
 public:
 	[[nodiscard]] bool hasToolToHaulFluid(const Area& area, const FactionId& faction) const;
 	[[nodiscard]] ItemIndex getToolToHaulFluid(const Area& area, const FactionId& faction) const;
@@ -113,8 +113,8 @@ public:
 	[[nodiscard]] ActorIndex getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Area& area, const FactionId& faction, const ItemIndex& haulTool, const Mass& cargoMass, const Speed& minimumHaulSpeed) const;
 	[[nodiscard]] ActorIndex getPannierBearerToHaulCargoWithMassWithMinimumSpeed(const Area& area, const FactionId& faction, const ActorOrItemIndex& hasShape, const Speed& minimumHaulSpeed) const;
 	[[nodiscard]] ItemIndex getPanniersForActorToHaul(const Area& area, const FactionId& faction, const ActorIndex& actor, const ActorOrItemIndex& toHaul) const;
-	void registerHaulTool(const Area& area, const ItemIndex& item);
-	void registerYokeableActor(const Area& area, const ActorIndex& actor);
-	void unregisterHaulTool(const Area& area, const ItemIndex& item);
-	void unregisterYokeableActor(const Area& area, const ActorIndex& actor);
+	void registerHaulTool(Area& area, const ItemIndex& item);
+	void registerYokeableActor(Area& area, const ActorIndex& actor);
+	void unregisterHaulTool(Area& area, const ItemIndex& item);
+	void unregisterYokeableActor(Area& area, const ActorIndex& actor);
 };

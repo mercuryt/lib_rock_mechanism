@@ -31,7 +31,7 @@ class KillObjective final : public Objective
 	ActorReference m_target;
 public:
 	KillObjective(ActorReference t);
-	KillObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
+	KillObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	void execute(Area& area, const ActorIndex& actor);
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }

@@ -250,7 +250,7 @@ void ActorParamaters::generateEquipment(Area& area, const ActorIndex& actor)
 template<class T>
 void to_json(const Json& data, std::unique_ptr<T>& t) { data = *t; }
 Actors::Actors(Area& area) :
-	Portables<Actors, ActorIndex>(area, true),
+	Portables<Actors, ActorIndex, ActorReferenceIndex>(area, true),
 	m_coolDownEvent(area.m_eventSchedule),
 	m_moveEvent(area.m_eventSchedule)
 { }
@@ -269,7 +269,7 @@ Actors::~Actors()
 }
 void Actors::load(const Json& data)
 {
-	Portables<Actors, ActorIndex>::load(data);
+	Portables<Actors, ActorIndex, ActorReferenceIndex>::load(data);
 	ActorIndex size = ActorIndex::create(m_location.size());
 	data["id"].get_to(m_id);
 	data["name"].get_to(m_name);
@@ -309,9 +309,6 @@ void Actors::load(const Json& data)
 	data["speedIndividual"].get_to(m_speedIndividual);
 	data["speedActual"].get_to(m_speedActual);
 	data["moveRetries"].get_to(m_moveRetries);
-	m_referenceTarget.resize(size);
-	for(ActorIndex index : getAll())
-		m_referenceTarget[index] = std::make_unique<ActorReferenceTarget>(index);
 	auto& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
 	m_skillSet.resize(size);
 	const auto& skillData = data["skillSet"];
@@ -434,7 +431,7 @@ void Actors::loadObjectivesAndReservations(const Json& data)
 	for(auto iter = pathRequestData.begin(); iter != pathRequestData.end(); ++iter)
 	{
 		ActorIndex index = ActorIndex::create(std::stoi(iter.key()));
-		m_pathRequest[index] = PathRequest::load(m_area, iter.value(), deserializationMemo);
+		m_pathRequest[index] = PathRequest::load(iter.value(), deserializationMemo);
 	}
 }
 void to_json(Json& data, const std::unique_ptr<CanReserve>& canReserve) { data = canReserve->toJson(); }
@@ -524,13 +521,12 @@ Json Actors::toJson() const
 		if(m_pathRequest[index] != nullptr)
 			output["pathRequest"][i] = m_pathRequest[index]->toJson();
 	}
-	output.update(Portables<Actors, ActorIndex>::toJson());
+	output.update(Portables<Actors, ActorIndex, ActorReferenceIndex>::toJson());
 	return output;
 }
 void Actors::resize(const ActorIndex& newSize)
 {
-	Portables<Actors, ActorIndex>::resize(newSize);
-	m_referenceTarget.resize(newSize);
+	Portables<Actors, ActorIndex, ActorReferenceIndex>::resize(newSize);
 	m_id.resize(newSize);
 	m_name.resize(newSize);
 	m_species.resize(newSize);
@@ -587,8 +583,7 @@ void Actors::resize(const ActorIndex& newSize)
 }
 void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
 {
-	Portables<Actors, ActorIndex>::moveIndex(oldIndex, newIndex);
-	m_referenceTarget[newIndex] = std::move(m_referenceTarget[oldIndex]);
+	Portables<Actors, ActorIndex, ActorReferenceIndex>::moveIndex(oldIndex, newIndex);
 	m_id[newIndex] = m_id[oldIndex];
 	m_name[newIndex] = m_name[oldIndex];
 	m_species[newIndex] = m_species[oldIndex];
@@ -644,7 +639,10 @@ void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
 	m_speedActual[newIndex] = m_speedActual[oldIndex];
 	m_moveRetries[newIndex] = m_moveRetries[oldIndex];
 	// Update references.
-	m_referenceTarget[newIndex]->index = newIndex;
+	// Move event contains a ActorIndex which must be updated if MoveEvent exists.
+	if(m_moveEvent.contains(newIndex))
+		m_moveEvent[newIndex].updateIndex(oldIndex, newIndex);
+	// If carrying anything update the carried thing's carrierIndex.
 	if(m_carrying[newIndex].exists())
 	{
 		ActorOrItemIndex carrying = m_carrying[newIndex];
@@ -653,13 +651,18 @@ void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
 		else
 			m_area.getItems().updateCarrierIndex(carrying.getItem(), newIndex);
 	}
+	// Update stored actor indices in objectives.
 	m_hasObjectives[newIndex]->updateActorIndex(newIndex);
+	// Update path request if it exists.
 	if(m_pathRequest[newIndex] != nullptr)
 		m_pathRequest[newIndex]->updateActorIndex(newIndex);
+	// Update stored index for all actors who are targeting this one.
 	for(ActorIndex actor : m_targetedBy[newIndex])
 		m_target[actor] = newIndex;
+	// Update Actor Index in VisionFacade.
 	if(!m_hasVisionFacade[newIndex].empty())
 		m_hasVisionFacade[newIndex].updateActorIndex(newIndex);
+	// Update ActorIndices stored in occupied block(s).
 	Blocks& blocks = m_area.getBlocks();
 	for(BlockIndex block : m_blocks[newIndex])
 		blocks.actor_updateIndex(block, oldIndex, newIndex);
@@ -673,6 +676,8 @@ void Actors::destroy(const ActorIndex& index)
 			m_hasVisionFacade[index].clear();
 		exit(index);
 	}
+	// Will do the same move / resize logic internally, so stays in sync with moves from the DataVectors.
+	m_referenceData.remove(index);
 	const auto& s = ActorIndex::create(size() - 1);
 	if(index != s)
 		moveIndex(s, index);
@@ -700,9 +705,8 @@ ActorIndex Actors::create(ActorParamaters params)
 	MoveTypeId moveType = AnimalSpecies::getMoveType(params.species);
 	m_area.m_hasTerrainFacades.maybeRegisterMoveType(moveType);
 	ShapeId shape = AnimalSpecies::shapeForPercentGrown(params.species, params.getPercentGrown(m_area.m_simulation));
-	Portables<Actors, ActorIndex>::create(index, moveType, shape, params.faction, isStatic, Quantity::create(1));
+	Portables<Actors, ActorIndex, ActorReferenceIndex>::create(index, moveType, shape, params.faction, isStatic, Quantity::create(1));
 	Simulation& simulation = m_area.m_simulation;
-	m_referenceTarget[index] = std::make_unique<ActorReferenceTarget>(index);
 	m_id[index] = params.getId(simulation);
 	m_name[index] = params.getName(simulation);
 	m_species[index] = params.species;
@@ -980,7 +984,7 @@ void Actors::log(const ActorIndex& index) const
 	Blocks& blocks = m_area.getBlocks();
 	std::wcout << m_name[index];
 	std::cout << "(" << AnimalSpecies::getName(m_species[index]) << ")";
-	Portables<Actors, ActorIndex>::log(index);
+	Portables<Actors, ActorIndex, ActorReferenceIndex>::log(index);
 	if(objective_exists(index))
 		std::cout << ", current objective: " << objective_getCurrentName(index);
 	if(m_destination[index].exists())

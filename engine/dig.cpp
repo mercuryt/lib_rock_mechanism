@@ -50,7 +50,7 @@ std::vector<std::pair<ItemQuery, Quantity>> DigProject::getConsumed() const { re
 std::vector<std::pair<ItemQuery, Quantity>> DigProject::getUnconsumed() const
 {
 	static ItemTypeId pick = ItemType::byName("pick");
-	return {{pick, Quantity::create(1)}}; 
+	return {{ItemQuery::create(pick), Quantity::create(1)}}; 
 }
 std::vector<std::pair<ActorQuery, Quantity>> DigProject::getActors() const { return {}; }
 std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> DigProject::getByproducts() const
@@ -101,7 +101,7 @@ void DigProject::onComplete()
 	Actors& actors = m_area.getActors();
 	m_area.m_hasDigDesignations.clearAll(m_location);
 	for(auto& [actor, projectWorker] : workers)
-		actors.objective_complete(actor.getIndex(), *projectWorker.objective);
+		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);
 }
 void DigProject::onCancel()
 {
@@ -129,8 +129,9 @@ void DigProject::offDelay()
 Step DigProject::getDuration() const
 {
 	uint32_t totalScore = 0u;
+	Actors& actors = m_area.getActors();
 	for(auto& pair : m_workers)
-		totalScore += getWorkerDigScore(m_area, pair.first.getIndex());
+		totalScore += getWorkerDigScore(m_area, pair.first.getIndex(actors.m_referenceData));
 	return std::max(Step::create(1), Config::digMaxSteps / totalScore);
 }
 DigLocationDishonorCallback::DigLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 

@@ -136,53 +136,60 @@ void VisionFacade::readStepSegment(const VisionFacadeIndex& begin,  const Vision
 		const DistanceInBuckets beginY = DistanceInBuckets::create(std::max(0, int32_t(fromCoords.y.get()) - int32_t(range.get()))) / Config::locationBucketSize.get();
 		const DistanceInBuckets endZ = DistanceInBuckets::create(std::min(((fromCoords.z + range).get() / Config::locationBucketSize.get() + 1), locationBuckets.m_maxZ.get()));
 		const DistanceInBuckets beginZ = DistanceInBuckets::create(std::max(0, int32_t(fromCoords.z.get()) - int32_t(range.get()))) / Config::locationBucketSize.get();
+		std::vector<uint> bucketIndices;
 		// Iterate defined cuboid of buckets.
 		for(DistanceInBuckets x = beginX; x != endX; ++x)
 			for(DistanceInBuckets y = beginY; y != endY; ++y)
 				for(DistanceInBuckets z = beginZ; z != endZ; ++z)
 				{
 					assert(x * y * z < locationBuckets.m_buckets.size());
-					// Iterate actors in the defined cuboid.
-					const LocationBucket& bucket = locationBuckets.get(x, y, z);
-					for(LocationBucketId i = LocationBucketId::create(0); i < bucket.m_actorsMultiTile.size(); ++i)
+					bucketIndices.push_back(locationBuckets.getIndex(x, y, z));
+				}
+		for(auto iter = bucketIndices.begin(); iter != bucketIndices.end(); ++iter)
+		{
+			if(iter + 1 != bucketIndices.end())
+				locationBuckets.prefetch(*(iter + 1));
+			// Iterate actors in the defined cuboid.
+			const LocationBucket& bucket = locationBuckets.get(*iter);
+			for(LocationBucketId i = LocationBucketId::create(0); i < bucket.m_actorsMultiTile.size(); ++i)
+			{
+				for(auto pair : bucket.m_positionsAndCuboidsMultiTileActors[i])
+				{
+					const Point3D& toCoords = pair.first;
+					const VisionCuboidId toVisionCuboidId = pair.second;
+					// Don't bother to filter by already being present in result, it would only catch multi tile shaps which straddle a bucket boundry.
+					// Refine bucket cuboid actors into sphere with radius == range.
+					if(taxiDistance(fromCoords, toCoords) <= range)
 					{
-						for(auto pair : bucket.m_positionsAndCuboidsMultiTileActors[i])
+						// Check sightlines.
+						if (
+							fromVisionCuboidId == toVisionCuboidId ||
+							m_area->m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toCoords)
+						)
 						{
-							const Point3D& toCoords = pair.first;
-							const VisionCuboidId toVisionCuboidId = pair.second;
-							// Don't bother to filter by already being present in result, it would only catch multi tile shaps which straddle a bucket boundry.
-							// Refine bucket cuboid actors into sphere with radius == range.
-							if(taxiDistance(fromCoords, toCoords) <= range)
-							{
-								// Check sightlines.
-								if (
-									fromVisionCuboidId == toVisionCuboidId ||
-									m_area->m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toCoords)
-								)
-								{
-									result.add(bucket.m_actorsMultiTile[i]);
-									break;
-								}
-							}
-						}
-					}
-					for(LocationBucketId i = LocationBucketId::create(0); i < bucket.m_actorsSingleTile.size(); ++i)
-					{
-						Point3D toCoords = bucket.m_positionsSingleTileActors[i];
-						// Refine bucket cuboid actors into sphere with radius == range.
-						if(taxiDistance(toCoords, fromCoords) <= range)
-						{
-							// Check sightlines.
-							VisionCuboidId toVisionCuboidId = bucket.m_visionCuboidsSingleTileActors[i];
-							assert(toVisionCuboidId != 0);
-							if(
-								fromVisionCuboidId == toVisionCuboidId ||
-								m_area->m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toCoords)
-							  )
-								result.add(bucket.m_actorsSingleTile[i]);
+							result.add(bucket.m_actorsMultiTile[i]);
+							break;
 						}
 					}
 				}
+			}
+			for(LocationBucketId i = LocationBucketId::create(0); i < bucket.m_actorsSingleTile.size(); ++i)
+			{
+				Point3D toCoords = bucket.m_positionsSingleTileActors[i];
+				// Refine bucket cuboid actors into sphere with radius == range.
+				if(taxiDistance(toCoords, fromCoords) <= range)
+				{
+					// Check sightlines.
+					VisionCuboidId toVisionCuboidId = bucket.m_visionCuboidsSingleTileActors[i];
+					assert(toVisionCuboidId != 0);
+					if(
+						fromVisionCuboidId == toVisionCuboidId ||
+						m_area->m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toCoords)
+						)
+						result.add(bucket.m_actorsSingleTile[i]);
+				}
+			}
+		}
 	}
 	// Finalize result.
 	// Do this in a seperate loop to avoid thrashing the CPU cache in the primary one.
