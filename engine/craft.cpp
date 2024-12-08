@@ -128,7 +128,7 @@ std::vector<std::pair<ItemQuery, Quantity>> CraftStepProject::getUnconsumed() co
 {
 	auto output = m_craftStepType.unconsumed;
 	if(m_craftJob.workPiece.exists())
-		output.emplace_back(m_craftJob.workPiece, Quantity::create(1));
+		output.emplace_back(ItemQuery::create(m_craftJob.workPiece), Quantity::create(1));
 	return output;
 }
 std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> CraftStepProject::getByproducts() const {
@@ -157,7 +157,7 @@ CraftJob::CraftJob(const Json& data, DeserializationMemo& deserializationMemo, H
 {
 	deserializationMemo.m_craftJobs[data["address"].get<uintptr_t>()] = this;
 	if(data.contains("workPiece"))
-		data["workPiece"].get_to(workPiece);
+		workPiece.load(data["workPiece"], area.getItems().m_referenceData);
 }
 Json CraftJob::toJson() const
 {

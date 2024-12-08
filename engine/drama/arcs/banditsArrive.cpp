@@ -4,11 +4,11 @@
 #include "../../config.h"
 #include "../../simulation.h"
 #include "../../objectives/exterminate.h"
-#include "actors/actors.h"
-#include "animalSpecies.h"
-#include "blocks/blocks.h"
-#include "moveType.h"
-#include "simulation/hasActors.h"
+#include "../../actors/actors.h"
+#include "../../animalSpecies.h"
+#include "../../blocks/blocks.h"
+#include "../../moveType.h"
+#include "../../simulation/hasActors.h"
 #include "../../types.h"
 #include <utility>
 BanditsArriveDramaArc::BanditsArriveDramaArc(DramaEngine& engine, Area& area) : 
@@ -18,9 +18,9 @@ BanditsArriveDramaArc::BanditsArriveDramaArc(const Json& data, DeserializationMe
 	DramaArc(data, deserializationMemo, engine),
 	m_isActive(data["isActive"].get<bool>()),
 	m_quantity(data["quantity"].get<Quantity>()),
-	m_scheduledEvent(m_area->m_eventSchedule)
+	m_scheduledEvent(m_area->m_eventSchedule),
+	m_leader(data["leader"], m_area->getActors().m_referenceData)
 {
-	data["leader"].get_to(m_leader);
 	m_scheduledEvent.schedule(*this, m_area->m_simulation, data["start"].get<Step>(), data["duration"].get<Step>());
 }
 Json BanditsArriveDramaArc::toJson() const

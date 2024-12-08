@@ -13,9 +13,12 @@ void InstallItemProject::onComplete()
 {
 	Actors& actors = m_area.getActors();
 	Items& items = m_area.getItems();
-	items.setLocationAndFacing(m_item.getIndex(items.m_referenceData), m_location, m_facing);
+	ItemIndex item = m_item.getIndex(items.m_referenceData);
+	assert(items.isGeneric(item));
+	// No need to worry about generic merge reference invalidation here: installed item cannot be generic.
+	items.setLocationAndFacing(item, m_location, m_facing);
 	auto workers = m_workers;
-	m_area.m_hasInstallItemDesignations.getForFaction(m_faction).remove(m_area, m_item.getIndex(items.m_referenceData));
+	m_area.m_hasInstallItemDesignations.getForFaction(m_faction).remove(m_area, item);
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);
 }

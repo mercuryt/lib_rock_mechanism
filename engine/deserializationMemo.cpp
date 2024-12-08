@@ -70,7 +70,7 @@ std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data, 
 	else if(name == "haul")
 		output =  std::make_unique<TargetedHaulObjective>(data, *this);
 	else if(name == "kill")
-		output =  std::make_unique<KillObjective>(data, *this);
+		output =  std::make_unique<KillObjective>(data, *this, area);
 	//else if(name == "medical")
 		//output =  std::make_unique<MedicalObjective>(data, *this);
 	else if(name == "rest")
@@ -82,7 +82,7 @@ std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data, 
 	else if(name == "sow seeds")
 		output =  std::make_unique<SowSeedsObjective>(data, area, actor, *this);
 	else if(name == "stockpile")
-		output =  std::make_unique<StockPileObjective>(data, *this);
+		output =  std::make_unique<StockPileObjective>(data, *this, area);
 	else if(name == "wait")
 		output =  std::make_unique<WaitObjective>(data, area, actor, *this);
 	else

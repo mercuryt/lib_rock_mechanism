@@ -106,14 +106,15 @@ class StockPileProject final : public Project
 	ItemTypeId m_itemType;
 	MaterialTypeId m_materialType;
 	StockPile& m_stockpile;
-	void onComplete();
-	void onReserve();
+	void onComplete() override;
+	void onReserve() override;
 	// Mark dispatched as true and dismiss any unassigned workers and candidates.
-	void onCancel();
+	void onCancel() override;
 	// TODO: geometric progresson of disable duration.
-	void onDelay();
-	void offDelay() { assert(false); }
-	void onHasShapeReservationDishonored(const ActorOrItemIndex& actorOrItem, const Quantity& oldCount, const Quantity& newCount);
+	void onDelay() override;
+	void offDelay() override { assert(false); }
+	void onPickUpRequired(const ActorOrItemIndex& required) override;
+	void updateRequiredGenericReference(const ItemReference& newRef) override;
 	[[nodiscard]] bool canReset() const { return false; }
 	[[nodiscard]] Step getDuration() const { return Config::addToStockPileDelaySteps; }
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
@@ -179,12 +180,13 @@ class AreaHasStockPilesForFaction
 	// These items are checked whenever a new stockpile is created to see if they should be move to items with destinations.
 	ItemTypeMap<SmallSet<ItemReference>> m_itemsWithoutDestinationsByItemType;
 	// Only when an item is added here does it get designated for stockpileing.
-	SmallSet<ItemReference> m_itemsWithDestinationsWithoutProjects;
+	SmallSet<ItemReference> m_itemsToBeStockPiled;
 	//TODO: Replace these SmallMaps with medium maps?
 	// The stockpile used as index here is not neccesarily where the item will go, it is used to prove that there is somewhere the item could go.
 	SmallMap<StockPile*, SmallSet<ItemReference>> m_itemsWithDestinationsByStockPile;
 	// Multiple projects per item due to generic item stacking.
-	SmallMap<ItemReference, std::list<StockPileProject>> m_projectsByItem;
+	SmallMap<ItemReference, SmallSet<StockPileProject*>> m_projectsByItem;
+	std::list<StockPileProject> m_projects;
 	std::list<StockPile> m_stockPiles;
 	Area& m_area;
 	FactionId m_faction;
@@ -207,9 +209,11 @@ public:
 	void makeProject(const ItemIndex& item, const BlockIndex& destination, StockPileObjective& objective, const ActorIndex& actor);
 	void cancelProject(StockPileProject& project);
 	void destroyProject(StockPileProject& project);
+	void removeFromProjectsByItem(StockPileProject& project);
 	void addQuery(StockPile& stockPile, const ItemQuery& query);
 	void removeQuery(StockPile& stockPile, const ItemQuery& query);
-	void removeFromItemsWithDestinationByStockPile(const StockPile& stockpile, const ItemIndex& item);
+	void maybeRemoveFromItemsWithDestinationByStockPile(const StockPile& stockpile, const ItemIndex& item);
+	void updateItemReferenceForProject(StockPileProject& project, const ItemReference& ref);
 	[[nodiscard]] bool isValidStockPileDestinationFor(const BlockIndex& block, const ItemIndex& item) const;
 	[[nodiscard]] bool isAnyHaulingAvailableFor(const ActorIndex& actor) const;
 	[[nodiscard]] ItemIndex getHaulableItemForAt(const ActorIndex& actor, const BlockIndex& block);
@@ -219,7 +223,7 @@ public:
 	friend class StockPile;
 	friend class AreaHasStockPiles;
 	// For testing.
-	[[maybe_unused, nodiscard]] auto& getItemsWithDestinations() { return m_itemsWithDestinationsWithoutProjects; }
+	[[maybe_unused, nodiscard]] auto& getItemsWithDestinations() { return m_itemsToBeStockPiled; }
 	[[maybe_unused, nodiscard]] auto& getItemsWithDestinationsByStockPile() { return m_itemsWithDestinationsByStockPile; }
 	[[maybe_unused, nodiscard]] Quantity getItemsWithProjectsCount() { return Quantity::create(m_projectsByItem.size()); }
 };

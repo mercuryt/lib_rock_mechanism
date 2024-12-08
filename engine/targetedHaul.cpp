@@ -10,7 +10,7 @@ TargetedHaulProject::TargetedHaulProject(const Json& data, DeserializationMemo& 
 	Project(data, deserializationMemo, area)
 {
 	if(data.contains("item"))
-		data["item"].get_to(m_item);
+		m_item.load(data["item"], area.getItems().m_referenceData);
 }
 Json TargetedHaulProject::toJson() const
 {
@@ -23,7 +23,9 @@ void TargetedHaulProject::onComplete()
 	auto workers = std::move(m_workers);
 	Actors& actors = m_area.getActors();
 	Items& items = m_area.getItems();
-	items.setLocationAndFacing(m_item.getIndex(items.m_referenceData), m_location, actors.getFacing(workers.begin()->first.getIndex(actors.m_referenceData)));
+	ItemIndex item = m_item.getIndex(items.m_referenceData);
+	m_item.clear();
+	items.setLocationAndFacing(item, m_location, actors.getFacing(workers.begin()->first.getIndex(actors.m_referenceData)));
 	m_area.m_hasTargetedHauling.complete(*this);
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);

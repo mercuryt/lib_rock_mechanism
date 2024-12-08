@@ -384,10 +384,10 @@ template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::load(const Json& data)
 {
 	nlohmann::from_json(data, static_cast<HasShapes<Derived, Index>&>(*this));
-	data["follower"].get_to(m_follower);
-	data["leader"].get_to(m_leader);
 	data["moveType"].get_to(m_moveType);
 	data["referenceData"].get_to(m_referenceData);
+	data["follower"].get_to(m_follower);
+	data["leader"].get_to(m_leader);
 	m_reservables.resize(m_moveType.size());
 	Area& area = getArea();
 	DeserializationMemo& deserializationMemo = area.m_simulation.getDeserializationMemo();

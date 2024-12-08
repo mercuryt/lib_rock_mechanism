@@ -16,5 +16,29 @@ bool ActorQuery::query(Area& area, const ActorIndex& other) const
 		return false;
 	return true;
 }
-ActorQuery ActorQuery::makeFor(const ActorReference& a) { return ActorQuery(a); }
+ActorQuery ActorQuery::makeFor(const ActorReference& a) { ActorQuery output; output.actor = a; return output;}
 ActorQuery ActorQuery::makeForCarryWeight(const Mass& cw) { ActorQuery output; output.carryWeight = cw; return output; }
+ActorQuery::ActorQuery(const Json& data, Area& area)
+{
+	if(data.contains("actor"))
+		actor.load(data["actor"], area.getActors().m_referenceData);
+	if(data.contains("carryWeight"))
+		data["carryWeight"].get_to(carryWeight);
+	if(data.contains("checkIfSentient"))
+		checkIfSentient = true;
+	if(data.contains("sentient"))
+		sentient = true;
+}
+Json ActorQuery::toJson() const
+{
+	Json output;
+	if(actor.exists())
+		output["actor"] = actor;
+	if(carryWeight.exists())
+		output["carryWeight"] = carryWeight;
+	if(checkIfSentient)
+		output["checkIfSentient"] = true;
+	if(checkIfSentient && sentient)
+		output["sentient"] = true;
+	return output;
+}

@@ -20,7 +20,7 @@ MustDrink::MustDrink(Area& area, const Json& data, const ActorIndex& a, const An
 	m_thirstEvent(area.m_eventSchedule), m_fluidType(AnimalSpecies::getFluidType(species)),
        	m_volumeDrinkRequested(data["volumeDrinkRequested"].get<CollisionVolume>())
 {
-	const ActorReferenceData& referenceData = area.getActors().m_referenceData;
+	ActorReferenceData& referenceData = area.getActors().m_referenceData;
 	m_actor.setIndex(a, referenceData);
 	if(data.contains("thirstEventStart"))
 	{

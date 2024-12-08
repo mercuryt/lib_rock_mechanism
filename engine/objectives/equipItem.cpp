@@ -4,15 +4,13 @@
 #include "../deserializationMemo.h"
 #include "../area.h"
 EquipItemObjective::EquipItemObjective(const ItemReference& item) : Objective(Config::equipPriority), m_item(item) { }
-EquipItemObjective::EquipItemObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo)
+EquipItemObjective::EquipItemObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : Objective(data, deserializationMemo)
 {
-	data["item"].get_to(m_item);
+	m_item.load(data["item"], area.getItems().m_referenceData);
 }
 Json EquipItemObjective::toJson() const
 {
-	Json data = Objective::toJson();
-	data["item"] = m_item;
-	return data;
+	return {"item", m_item};
 }
 void EquipItemObjective::execute(Area& area, const ActorIndex& actor)
 {

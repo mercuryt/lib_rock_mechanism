@@ -123,7 +123,7 @@ GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, Area& area,
 	m_event(area.m_eventSchedule)
 {
 	if(data.contains("fluidHaulingItem"))
-		data["fluidHaulingItem"].get_to(m_fluidHaulingItem);
+		m_fluidHaulingItem.load(data["fluidHaulingItem"], area.getItems().m_referenceData);
 	if(data.contains("eventStart"))
 		m_event.schedule(Config::givePlantsFluidDelaySteps, area, *this, actor, data["eventStart"].get<Step>());
 }

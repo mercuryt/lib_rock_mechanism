@@ -50,13 +50,19 @@ void Actors::canPickUp_pickUpActor(const ActorIndex& index, const ActorIndex& ot
 	setCarrier(other, ActorOrItemIndex::createForActor(index));
 	move_updateIndividualSpeed(index);
 }
-void Actors::canPickUp_pickUpPolymorphic(const ActorIndex& index, ActorOrItemIndex actorOrItemIndex, const Quantity& quantity)
+ActorOrItemIndex Actors::canPickUp_pickUpPolymorphic(const ActorIndex& index, ActorOrItemIndex actorOrItemIndex, const Quantity& quantity)
 {
 	assert(actorOrItemIndex.exists());
 	if(actorOrItemIndex.isActor())
+	{
 		canPickUp_pickUpActor(index, actorOrItemIndex.getActor());
+		return actorOrItemIndex;
+	}
 	else
+	{
 		canPickUp_pickUpItemQuantity(index, actorOrItemIndex.getItem(), quantity);
+		return canPickUp_getPolymorphic(index);
+	}
 }
 ActorIndex Actors::canPickUp_tryToPutDownActor(const ActorIndex& index, const BlockIndex& location, const DistanceInBlocks maxRange)
 {
@@ -174,6 +180,24 @@ void Actors::canPickUp_removeItem(const ActorIndex& index, const ItemIndex& item
 	m_area.getItems().unsetCarrier(m_carrying[index].getItem(), ActorOrItemIndex::createForActor(index));
 	m_carrying[index].clear();
 	move_updateIndividualSpeed(index);
+}
+void Actors::canPickUp_removeActor(const ActorIndex& index, const ActorIndex& actor)
+{
+	assert(m_carrying[index].exists());
+	assert(m_carrying[index].isActor());
+	assert(m_carrying[index].get().toActor() == actor);
+	m_area.getActors().unsetCarrier(m_carrying[index].getActor(), ActorOrItemIndex::createForActor(index));
+	m_carrying[index].clear();
+	move_updateIndividualSpeed(index);
+}
+void Actors::canPickUp_remove(const ActorIndex& index, const ActorOrItemIndex& actorOrItem)
+{
+	assert(m_carrying[index].exists());
+	assert(m_carrying[index] == actorOrItem);
+	if(m_carrying[index].isActor())
+		canPickUp_removeActor(index, m_carrying[index].getActor());
+	else
+		canPickUp_removeItem(index, m_carrying[index].getItem());
 }
 void Actors::canPickUp_destroyItem(const ActorIndex& index, const ItemIndex& item)
 {

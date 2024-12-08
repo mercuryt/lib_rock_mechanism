@@ -20,8 +20,8 @@ class Items;
 class EquipmentSet
 {
 	SmallSet<BodyPartTypeId> m_bodyPartTypesWithRigidArmor;
-	SmallSet<ItemReference> m_wearable;
 	SmallSet<ItemReference> m_equipments;
+	SmallSet<ItemReference> m_wearable;
 	SmallSet<ItemReference> m_meleeWeapons;
 	SmallSet<ItemReference> m_rangedWeapons;
 	SmallSet<ItemReference> m_rangedWeaponAmmo;
@@ -43,7 +43,8 @@ public:
 	[[nodiscard]] bool hasWeapons() const { return !m_meleeWeapons.empty() || !m_rangedWeapons.empty(); }
 	[[nodiscard]] Step getLongestMeleeWeaponCoolDown(Area& area) const;
 	[[nodiscard]] const Mass& getMass() const { return m_mass; }
-	[[nodiscard]] bool canEquipCurrently(const Area& area, const ActorIndex& actor, const ItemIndex& item) const;
+	// Area is not const here due to reference counting.
+	[[nodiscard]] bool canEquipCurrently(Area& area, const ActorIndex& actor, const ItemIndex& item) const;
 	[[nodiscard]] bool empty() const { return m_equipments.empty(); }
 	[[nodiscard]] ItemIndex getWeaponToAttackAtRange(Area& area, const DistanceInBlocksFractional& range);
 	[[nodiscard]] ItemIndex getAmmoForRangedWeapon(Area& area, const ItemIndex& weapon);

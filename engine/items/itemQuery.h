@@ -11,12 +11,14 @@ public:
 	ItemTypeId m_itemType;
 	MaterialCategoryTypeId m_materialTypeCategory;
 	MaterialTypeId m_materialType;
+	ItemQuery() = default;
+	ItemQuery(const Json& data, Area& area) { load(data, area); }
 	// To be used when inserting workpiece to project unconsumed items.
 	void specalize(Area& area, const ItemIndex& item);
 	void specalize(const MaterialTypeId& materialType);
 	void maybeSpecalize(const MaterialTypeId& materialType);
 	void validate() const;
-	void load(const Json& data);
+	void load(const Json& data, Area& area);
 	[[nodiscard]] bool query(Area& area, const ItemIndex& item) const;
 	[[nodiscard]] bool operator==(const ItemQuery& itemQuery) const;
 	[[nodiscard]] Json toJson() const;
@@ -26,4 +28,3 @@ public:
 	static ItemQuery create(const ItemTypeId& itemType, const MaterialTypeId& mt){ ItemQuery output; output.m_itemType = itemType; output.m_materialType = mt; return output;}
 };
 inline void to_json(Json& data, const ItemQuery& query) { data = query.toJson(); }
-inline void from_json(const Json& data, ItemQuery& query) { query.load(data); }

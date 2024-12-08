@@ -28,7 +28,7 @@ class StockPileObjective final : public Objective
 public:
 	StockPileProject* m_project = nullptr;
 	StockPileObjective();
-	StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo);
+	StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	void execute(Area& area, const ActorIndex& actor);
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }

@@ -64,7 +64,7 @@ class PathRequest
 		[[nodiscard]] bool exists() const { return m_index.exists(); }
 		[[nodiscard]] ActorIndex getActor() const { assert(m_actor.exists()); return m_actor; }
 		[[nodiscard]] std::string name() { return "basic"; }
-		[[nodiscard]] static std::unique_ptr<PathRequest> load(const Json& data, DeserializationMemo& deserializationMemo);
+		[[nodiscard]] static std::unique_ptr<PathRequest> load(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 		virtual ~PathRequest() = default;
 };
 inline void to_json(Json& data, const std::unique_ptr<PathRequest>& pathRequest) { data = pathRequest->toJson(); }

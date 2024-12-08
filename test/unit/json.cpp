@@ -135,7 +135,7 @@ TEST_CASE("json")
 		REQUIRE(goToObjective.getLocation() == blocks2.getIndex_i(9,9,1));
 		// Equipment.
 		REQUIRE(!actors2.equipment_getAll(dwarf2).empty());
-		ItemIndex pants2 = actors2.equipment_getAll(dwarf2).begin()->getIndex(items.m_referenceData);
+		ItemIndex pants2 = actors2.equipment_getAll(dwarf2).begin()->getIndex(items2.m_referenceData);
 		REQUIRE(items2.getItemType(pants2) == pants);
 		REQUIRE(items2.getMaterialType(pants2) == cotton);
 		// canPickup.
@@ -144,7 +144,7 @@ TEST_CASE("json")
 		ItemIndex saw2 = actors2.canPickUp_getItem(dwarf2);
 		REQUIRE(items2.getItemType(saw2) == saw);
 		REQUIRE(items2.getMaterialType(saw2) == bronze);
-		// items2
+		// items
 		REQUIRE(!blocks2.item_empty(blocks2.getIndex_i(1,2,1)));
 		ItemIndex axe2 = blocks2.item_getAll(blocks2.getIndex_i(1,2,1))[0];
 		REQUIRE(items2.getMaterialType(axe2) == bronze);
@@ -213,6 +213,7 @@ TEST_CASE("json")
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
 		Actors& actors2 = area2.getActors();
+		Items& items2 = area2.getItems();
 		FactionId faction2 = simulation2.m_hasFactions.byName(L"Tower of Power");
 		BlockIndex holeLocation2 = blocks2.getIndex_i(8,4,0);
 		REQUIRE(area2.m_hasDigDesignations.contains(faction2, holeLocation2));
@@ -233,7 +234,7 @@ TEST_CASE("json")
 		REQUIRE(haulSubproject.getHaulStrategy() == HaulStrategy::Individual);
 		ItemIndex pick2 = blocks2.item_getAll(blocks2.getIndex_i(1,2,1))[0];
 		REQUIRE(haulSubproject.getToHaul().isItem());
-		REQUIRE(haulSubproject.getToHaul().getIndex(actors.m_referenceData, items.m_referenceData).toItem() == pick2);
+		REQUIRE(haulSubproject.getToHaul().getIndex(actors2.m_referenceData, items2.m_referenceData).toItem() == pick2);
 		REQUIRE(haulSubproject.getQuantity() == 1);
 		REQUIRE(!haulSubproject.getIsMoving());
 		REQUIRE(!project.hasTryToHaulEvent());
@@ -301,6 +302,7 @@ TEST_CASE("json")
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
 		Actors& actors2 = area2.getActors();
+		Items& items2 = area2.getItems();
 		FactionId faction2 = simulation2.m_hasFactions.byName(L"Tower of Power");
 		BlockIndex projectLocation2 = blocks2.getIndex_i(8,4,1);
 		BlockIndex pileLocation2 = blocks2.getIndex_i(1, 4, 1);
@@ -317,7 +319,7 @@ TEST_CASE("json")
 		REQUIRE(project.getWorkers().size() == 1);
 		REQUIRE(actors2.project_get(dwarf2) == static_cast<Project*>(&project));
 		REQUIRE(actors2.move_getPath(dwarf2).empty());
-		REQUIRE(project.getItem().getIndex(items.m_referenceData) == pile2);
+		REQUIRE(project.getItem().getIndex(items2.m_referenceData) == pile2);
 		REQUIRE(project.getLocation() == projectLocation2);
 	}
 	SUBCASE("craft")

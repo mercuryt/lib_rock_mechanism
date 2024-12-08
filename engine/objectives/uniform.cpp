@@ -134,9 +134,10 @@ void UniformObjective::reset(Area& area, const ActorIndex& actor)
 }
 ItemIndex UniformObjective::getItemAtBlock(Area& area, const BlockIndex& block)
 {
+	Items& items = area.getItems();
 	for(ItemIndex item : area.getBlocks().item_getAll(block))
 		for(auto& element : m_elementsCopy)
-			if(element.itemQuery.query(area, item))
+			if(element.query(item, items))
 				return item;
 	return ItemIndex::null();
 }
@@ -145,12 +146,12 @@ void UniformObjective::equip(Area& area, const ItemIndex& item, const ActorIndex
 {
 	Items& items = area.getItems();
 	for(auto& element : m_elementsCopy)
-		if(element.itemQuery.query(area, item))
+		if(element.query(item, items))
 		{
-			if(items.getQuantity(item) >= element.quantity)
+			if(items.getQuantity(item) >= element.m_quantity)
 				std::erase(m_elementsCopy, element);
 			else
-				element.quantity -= items.getQuantity(item);
+				element.m_quantity -= items.getQuantity(item);
 			break;
 		}
 	items.exit(item);

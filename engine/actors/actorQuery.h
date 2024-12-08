@@ -12,8 +12,10 @@ struct ActorQuery
 	Mass carryWeight = Mass::create(0);
 	bool checkIfSentient = false;
 	bool sentient = false;
+	ActorQuery() = default;
+	ActorQuery(const Json& data, Area& area);
 	[[nodiscard]] bool query(Area& area, const ActorIndex& actor) const;
 	[[nodiscard]] static ActorQuery makeFor(const ActorReference& a);
 	[[nodiscard]] static ActorQuery makeForCarryWeight(const Mass& cw);
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ActorQuery, actor, carryWeight, checkIfSentient, sentient);
+	[[nodiscard]] Json toJson() const;
 };
