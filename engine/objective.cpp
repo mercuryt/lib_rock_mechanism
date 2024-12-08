@@ -208,7 +208,7 @@ Json Objective::toJson() const
 }
 CannotCompleteObjectiveDishonorCallback::CannotCompleteObjectiveDishonorCallback(Area& area, const Json& data) : 
 	m_area(area),
-	m_actor(data["actor"].get<ActorReference>()) { }
+	m_actor(data["actor"], area.getActors().m_referenceData) { }
 Json CannotCompleteObjectiveDishonorCallback::toJson() const
 {
 	return {{"actor", m_actor}};

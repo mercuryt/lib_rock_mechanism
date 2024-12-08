@@ -293,10 +293,12 @@ public:
 	void canPickUp_pickUpItem(const ActorIndex& index, const ItemIndex& item);
 	void canPickUp_pickUpItemQuantity(const ActorIndex& index, const ItemIndex& item, const Quantity& quantity);
 	void canPickUp_pickUpActor(const ActorIndex& index, const ActorIndex& actor);
-	void canPickUp_pickUpPolymorphic(const ActorIndex& index, ActorOrItemIndex actorOrItemIndex, const Quantity& quantity);
+	ActorOrItemIndex canPickUp_pickUpPolymorphic(const ActorIndex& index, ActorOrItemIndex actorOrItemIndex, const Quantity& quantity);
 	void canPickUp_removeFluidVolume(const ActorIndex& index, const CollisionVolume& volume);
 	void canPickUp_add(const ActorIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity);
 	void canPickUp_removeItem(const ActorIndex& index, const ItemIndex& item);
+	void canPickUp_removeActor(const ActorIndex &index, const ActorIndex &actor);
+	void canPickUp_remove(const ActorIndex &index, const ActorOrItemIndex& actorOrItem);
 	void canPickUp_destroyItem(const ActorIndex& index, const ItemIndex& item);
 	void canPickUp_updateActorIndex(const ActorIndex& index, const ActorIndex& oldIndex, const ActorIndex& newIndex);
 	void canPickUp_updateItemIndex(const ActorIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex);
@@ -549,7 +551,7 @@ class GetIntoAttackPositionPathRequest final : public PathRequest
 	DistanceInBlocksFractional m_attackRangeSquared = DistanceInBlocksFractional::null();
 public:
 	GetIntoAttackPositionPathRequest(Area& area, const ActorIndex& a, const ActorIndex& t, const DistanceInBlocksFractional& ar);
-	GetIntoAttackPositionPathRequest(const Json& data);
+	GetIntoAttackPositionPathRequest(const Json& data, Area& area);
 	void callback(Area& area, const FindPathResult&);
 	void onMoveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex) { assert(m_actor == oldIndex.toActor()); m_actor = ActorIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;

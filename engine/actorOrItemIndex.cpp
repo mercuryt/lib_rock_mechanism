@@ -9,30 +9,38 @@
 void ActorOrItemIndex::followActor(Area& area, const ActorIndex& actor) const
 {
 	if(isActor())
-		area.getActors().followActor(ActorIndex::cast(m_index), actor);
+		area.getActors().followActor(m_index.toActor(), actor);
 	else
-		area.getItems().followActor(ItemIndex::cast(m_index), actor);
+		area.getItems().followActor(m_index.toItem(), actor);
 }
 void ActorOrItemIndex::followItem(Area& area, const ItemIndex& item) const
 {
 	if(isActor())
-		area.getActors().followItem(ActorIndex::cast(m_index), item);
+		area.getActors().followItem(m_index.toActor(), item);
 	else
-		area.getItems().followItem(ItemIndex::cast(m_index), item);
+		area.getItems().followItem(m_index.toItem(), item);
 }
 void ActorOrItemIndex::followPolymorphic(Area& area, const ActorOrItemIndex& actorOrItem) const
 {
 	if(actorOrItem.isActor())
-		followActor(area, ActorIndex::cast(actorOrItem.get()));
+		followActor(area, actorOrItem.getActor());
 	else
-		followItem(area, ItemIndex::cast(actorOrItem.get()));
+		followItem(area, actorOrItem.getItem());
 }
-void ActorOrItemIndex::setLocationAndFacing(Area& area, const BlockIndex& location, const Facing& facing) const
+ActorOrItemIndex ActorOrItemIndex::setLocationAndFacing(Area& area, const BlockIndex& location, const Facing& facing) const
 {
 	if(isActor())
-		area.getActors().setLocationAndFacing(ActorIndex::cast(m_index), location, facing); 
+	{
+		area.getActors().setLocationAndFacing(m_index.toActor(), location, facing); 
+		return *this;
+	}
 	else
-		area.getItems().setLocationAndFacing(ItemIndex::cast(m_index), location, facing); 
+		return area.getItems().setLocationAndFacing(m_index.toItem(), location, facing).toActorOrItemIndex(); 
+}
+void ActorOrItemIndex::exit(Area& area)
+{
+	if(isActor())
+		area.getActors().exit(m_index.toActor());
 }
 void ActorOrItemIndex::reservable_reserve(Area& area, CanReserve& canReserve, const Quantity quantity , std::unique_ptr<DishonorCallback> callback) const
 { 
@@ -166,12 +174,13 @@ bool ActorOrItemIndex::isAdjacentToLocation(const Area& area, const BlockIndex& 
 	return isActor() ? area.getActors().isAdjacentToLocation(m_index.toActor(), location) : area.getItems().isAdjacentToLocation(m_index.toItem(), location);
 }
 ShapeId ActorOrItemIndex::getShape(const Area& area) const { return isActor() ? area.getActors().getShape(m_index.toActor()) : area.getItems().getShape(m_index.toItem()); }
-MoveTypeId ActorOrItemIndex::getMoveType(const Area& area) const{ return isActor() ? area.getActors().getMoveType(ActorIndex::cast(m_index)) : area.getItems().getMoveType(ItemIndex::cast(m_index)); }
+MoveTypeId ActorOrItemIndex::getMoveType(const Area& area) const{ return isActor() ? area.getActors().getMoveType(m_index.toActor()) : area.getItems().getMoveType(m_index.toItem()); }
 Facing ActorOrItemIndex::getFacing(const Area& area) const { return isActor() ? area.getActors().getFacing(m_index.toActor()) : area.getItems().getFacing(m_index.toItem()); }
-Mass ActorOrItemIndex::getMass(const Area& area) const { return isActor() ? area.getActors().getMass(ActorIndex::cast(m_index)) : area.getItems().getMass(ItemIndex::cast(m_index)); }
-Mass ActorOrItemIndex::getSingleUnitMass(const Area& area) const { return isActor() ? area.getActors().getMass(ActorIndex::cast(m_index)) : area.getItems().getSingleUnitMass(ItemIndex::cast(m_index)); }
-Volume ActorOrItemIndex::getVolume(const Area& area)  const { return isActor() ? area.getActors().getVolume(ActorIndex::cast(m_index)) : area.getItems().getVolume(ItemIndex::cast(m_index)); }
-bool ActorOrItemIndex::isGeneric(const Area& area) const {return isActor() ? false : area.getItems().isGeneric(ItemIndex::cast(m_index)); }
+Mass ActorOrItemIndex::getMass(const Area& area) const { return isActor() ? area.getActors().getMass(m_index.toActor()) : area.getItems().getMass(m_index.toItem()); }
+Quantity ActorOrItemIndex::getQuantity(const Area& area) const { return isActor() ? Quantity::create(1) : area.getItems().getQuantity(m_index.toItem()); }
+Mass ActorOrItemIndex::getSingleUnitMass(const Area& area) const { return isActor() ? area.getActors().getMass(m_index.toActor()) : area.getItems().getSingleUnitMass(m_index.toItem()); }
+Volume ActorOrItemIndex::getVolume(const Area& area)  const { return isActor() ? area.getActors().getVolume(m_index.toActor()) : area.getItems().getVolume(m_index.toItem()); }
+bool ActorOrItemIndex::isGeneric(const Area& area) const {return isActor() ? false : area.getItems().isGeneric(m_index.toItem()); }
 Quantity ActorOrItemIndex::reservable_getUnreservedCount(Area& area, const FactionId& faction) const
 {
 	if(isActor()) 
@@ -179,10 +188,24 @@ Quantity ActorOrItemIndex::reservable_getUnreservedCount(Area& area, const Facti
 	else
 		return area.getItems().reservable_getUnreservedCount(m_index.toItem(), faction);
 }
+bool ActorOrItemIndex::reservable_exists(Area& area, const FactionId& faction) const
+{
+	if(isActor())
+		return area.getActors().reservable_exists(m_index.toActor(), faction);
+	else
+		return area.getItems().reservable_exists(m_index.toItem(), faction);
+}
 //TODO: Try to use bitbashing instead of m_isActor
 void ActorOrItemIndex::setActorBit(HasShapeIndex& index) { index.getReference() |= (1u << 31); }
 void ActorOrItemIndex::unsetActorBit(HasShapeIndex& index) { index.getReference() &= ~(1u << 31); }
 bool ActorOrItemIndex::getActorBit(const HasShapeIndex& index) { return index.get() & (1u<< 31); }
+void ActorOrItemIndex::validate(Area& area) const
+{
+	if(isActor())
+		assert(area.getActors().size() > m_index);
+	else
+		assert(area.getItems().size() > m_index);
+}
 std::strong_ordering ActorOrItemIndex::operator<=>(const ActorOrItemIndex& other) const
 {
 	assert(isActor() == other.isActor());

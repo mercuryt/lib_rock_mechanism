@@ -7,11 +7,11 @@
 
 UnequipItemObjective::UnequipItemObjective(const ItemReference& item, const BlockIndex& block) : 
 	Objective(Config::equipPriority), m_item(item), m_block(block) { }
-UnequipItemObjective::UnequipItemObjective(const Json& data, DeserializationMemo& deserializationMemo) :
+UnequipItemObjective::UnequipItemObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
 	Objective(data, deserializationMemo), 
 	m_block(data["block"].get<BlockIndex>())
 {
-	data["item"].get_to(m_item);
+	m_item.load(data["item"], area.getItems().m_referenceData);
 }
 void UnequipItemObjective::execute(Area& area, const ActorIndex& actor)
 {
@@ -30,6 +30,8 @@ void UnequipItemObjective::execute(Area& area, const ActorIndex& actor)
 		if(blocks.shape_canEnterCurrentlyWithAnyFacing(m_block, shape, occupied))
 		{
 			actors.equipment_remove(actor, item);
+			// Generics cannot be equiped, no need to prevent reference invalidation due to merge.
+			assert(!items.isGeneric(item));
 			items.setLocationAndFacing(item, m_block, Facing::create(0));
 			actors.objective_complete(actor, *this);
 		}

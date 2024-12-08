@@ -44,6 +44,7 @@ Simulation::Simulation(const Json& data) :
 	data["step"].get_to(m_step);
 	//if(data["world"])
 	//m_world = std::make_unique<World>(data["world"], deserializationMemo);
+	data["uniforms"].get_to(m_hasUniforms);
 	data["factions"].get_to(m_hasFactions);
 	m_hourlyEvent.schedule(*this, data["hourEventStart"].get<Step>());
 	m_hasAreas = std::make_unique<SimulationHasAreas>(data["hasAreas"], m_deserializationMemo, *this);

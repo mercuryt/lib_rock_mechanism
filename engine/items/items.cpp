@@ -89,6 +89,7 @@ void Items::onChangeAmbiantSurfaceTemperature()
 		setTemperature(index, temperature);
 	}
 }
+Items::Items(Area& area) : Portables(area, false) { }
 ItemIndex Items::create(ItemParamaters itemParamaters)
 {
 	ItemIndex index = ItemIndex::create(size());
@@ -115,7 +116,8 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	else
 		assert(m_quantity[index] == 1);
 	if(itemParamaters.location.exists())
-		setLocationAndFacing(index, itemParamaters.location, itemParamaters.facing);
+		// A generic item type might merge with an existing stack on creation, in that case return the index of the existing stack.
+		index = setLocationAndFacing(index, itemParamaters.location, itemParamaters.facing);
 	static const MoveTypeId rolling = MoveType::byName("roll");
 	static const ItemTypeId panniers = ItemType::byName("panniers");
 	if(itemType == panniers  || (moveType == rolling && ItemType::getInternalVolume(itemType) != 0))
@@ -306,12 +308,13 @@ void Items::destroy(const ItemIndex& index)
 	static const MoveTypeId rolling = MoveType::byName("roll");
 	if(m_moveType[index] == rolling && ItemType::getInternalVolume(m_itemType[index]) != 0)
 		m_area.m_hasHaulTools.unregisterHaulTool(m_area, index);
-	// Will do the same move / resize logic internally, so stays in sync with moves from the DataVectors.
-	m_referenceData.remove(index);
 	const auto& s = ItemIndex::create(size() - 1);
 	if(index != s)
 		moveIndex(s, index);
+	m_area.m_hasStockPiles.removeItemFromAllFactions(index);
 	resize(s);
+	// Will do the same move / resize logic internally, so stays in sync with moves from the DataVectors.
+	m_referenceData.remove(index);
 }
 bool Items::isGeneric(const ItemIndex& index) const { return ItemType::getGeneric(m_itemType[index]); }
 bool Items::isPreparedMeal(const ItemIndex& index) const
@@ -368,9 +371,11 @@ void Items::stockpile_set(const ItemIndex& index, const FactionId& faction)
 void Items::stockpile_maybeUnset(const ItemIndex& index, const FactionId& faction)
 {
 	if(m_canBeStockPiled[index] != nullptr)
+	{
 		m_canBeStockPiled[index]->maybeUnset(faction);
-	if(m_canBeStockPiled[index]->empty())
-		m_canBeStockPiled[index] = nullptr;
+		if(m_canBeStockPiled[index]->empty())
+			m_canBeStockPiled[index] = nullptr;
+	}
 }
 bool Items::stockpile_canBeStockPiled(const ItemIndex& index, const FactionId& faction) const
 {

@@ -473,10 +473,11 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo, Are
 	m_requirementsLoaded(data["requirementsLoaded"].get<bool>()),
 	m_delay(data["delay"].get<bool>())
 {
+	Items& items = m_area.getItems();
 	if(data.contains("requiredItems"))
 		for(const Json& pair : data["requiredItems"])
 		{
-			ItemQuery itemQuery(pair[0]);
+			ItemQuery itemQuery(pair[0], area);
 			ProjectRequirementCounts requirementCounts(pair[1]);
 			m_requiredItems.emplace_back(std::make_pair(itemQuery, requirementCounts));
 			deserializationMemo.m_projectRequirementCounts[pair[1]["address"].get<uintptr_t>()] = &m_requiredItems.back().second;
@@ -484,17 +485,21 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo, Are
 	if(data.contains("requiredActors"))
 		for(const Json& pair : data["requiredActors"])
 		{
-			ActorQuery actorQuery(pair[0]);
+			ActorQuery actorQuery(pair[0], area);
 			ProjectRequirementCounts requirementCounts(pair[1]);
 			m_requiredActors.emplace_back(std::make_pair(actorQuery, requirementCounts));
 			deserializationMemo.m_projectRequirementCounts[pair[1]["address"].get<uintptr_t>()] = &m_requiredActors.back().second;
 		}
 	if(data.contains("toConsume"))
-		data["toConsume"].get_to(m_toConsume);
+		for(const Json& pair : data["toConsume"])
+		{
+			ItemReference ref(pair[0], items.m_referenceData);
+			m_toConsume.insert(ref, pair[1].get<Quantity>());
+		}
 	if(data.contains("toPickup"))
 		for(const Json& tuple : data["toPickup"])
 		{
-			ActorOrItemReference ref = tuple[0].get<ActorOrItemReference>();
+			ActorOrItemReference ref(tuple[0], area);
 			ProjectRequirementCounts& projectRequirementCounts = *deserializationMemo.m_projectRequirementCounts.at(tuple[1].get<uintptr_t>());
 			Quantity quantity = tuple[2].get<Quantity>();
 			m_toPickup.insert(ref, std::make_pair(&projectRequirementCounts, quantity));
@@ -522,18 +527,18 @@ void Project::loadWorkers(const Json& data, DeserializationMemo& deserialization
 	if(data.contains("workers"))
 		for(const Json& pair : data["workers"])
 		{
-			ActorIndex actor = pair[0].get<ActorIndex>();
-			m_workers.emplace(actors.getReference(actor), pair[1], deserializationMemo);
-			actors.project_set(actor, *this);
+			ActorReference ref(pair[0], actors.m_referenceData);
+			m_workers.emplace(ref, pair[1], deserializationMemo);
+			actors.project_set(ref.getIndex(actors.m_referenceData), *this);
 		}
 	if(data.contains("candidates"))
 		for(const Json& pair : data["candidates"])
 		{
-			ActorIndex actor = pair[0].get<ActorIndex>();
+			ActorReference ref(pair[0], actors.m_referenceData);
 			assert(deserializationMemo.m_objectives.contains(pair[1].get<uintptr_t>()));
 			Objective& objective = *deserializationMemo.m_objectives.at(pair[1].get<uintptr_t>());
-			m_workerCandidatesAndTheirObjectives.emplace_back(actors.getReference(actor), &objective);
-			actors.project_set(actor, *this);
+			m_workerCandidatesAndTheirObjectives.emplace_back(ref, &objective);
+			actors.project_set(ref.getIndex(actors.m_referenceData), *this);
 		}
 }
 Json Project::toJson() const
@@ -576,7 +581,7 @@ Json Project::toJson() const
 		data["requiredActors"] = Json::array();
 		for(auto& [actorQuery, requiredCounts] : m_requiredActors)
 		{
-			Json pair({actorQuery, requiredCounts});
+			Json pair({actorQuery.toJson(), requiredCounts});
 			data["requiredActors"].push_back(pair);
 		}
 	}
@@ -821,10 +826,14 @@ void Project::complete()
 	m_canReserve.deleteAllWithoutCallback();
 	auto& blocks = m_area.getBlocks();
 	blocks.project_remove(m_location, *this);
-	for(auto [item, quantity] : m_toConsume)
+	for(auto& [item, quantity] : m_toConsume)
 	{
 		item.validate(items.m_referenceData);
-		items.removeQuantity(item.getIndex(items.m_referenceData), quantity);
+		ItemIndex index = item.getIndex(items.m_referenceData);
+		// Consumed items are not delivered, destroy reference before item is destroyed.
+		m_deliveredItems.maybeErase(item);
+		item.clear();
+		items.removeQuantity(index, quantity);
 	}
 	if(!m_area.m_hasStockPiles.contains(m_faction))
 		m_area.m_hasStockPiles.registerFaction(m_faction);
@@ -837,6 +846,8 @@ void Project::complete()
 	}
 	for(auto& [actor, projectWorker] : m_workers)
 		actors.project_unset(actor.getIndex(actors.m_referenceData));
+	// If onComplete sets the location as impassible the unconsumed items delivered will be distributed around the block.
+	// Spawn contained updates it's item reference when generics combine.
 	onComplete();
 }
 void Project::cancel()
@@ -959,6 +970,7 @@ void Project::reset()
 	m_workers.clear();
 	m_workerCandidatesAndTheirObjectives.clear();
 	m_making.clear();
+	m_haulSubprojects.clear();
 	for(ActorIndex actor : workersAndCandidates)
 	{
 		actors.objective_reset(actor);
@@ -975,6 +987,10 @@ bool Project::canAddWorker(const ActorIndex& actor) const
 void Project::clearReservations()
 {
 	m_canReserve.deleteAllWithoutCallback();
+}
+void Project::clearReferenceFromRequiredItems(const ItemReference& ref)
+{
+	std::erase_if(m_requiredItems, [&](const auto& pair){ return pair.first.m_item.exists() && pair.first.m_item == ref; });
 }
 // For testing.
 bool Project::hasCandidate(const ActorIndex& actor) const

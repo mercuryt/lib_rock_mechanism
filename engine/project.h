@@ -104,10 +104,10 @@ protected:
 	// They have one or more workers plus optional haul tool and beast of burden.
 	std::list<HaulSubproject> m_haulSubprojects;
 	// Delivered items.
-	SmallSet<ItemReference> m_deliveredItems;
-	// Where the materials are delivered to and where the work gets done.
+	SmallMap<ItemReference, Quantity> m_deliveredItems;
 	Area& m_area;
 	FactionId m_faction;
+	// Where the materials are delivered to and where the work gets done.
 	BlockIndex m_location;
 	Project(const FactionId& f, Area& a, const BlockIndex& l, const Quantity& mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
 	Project(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
@@ -156,6 +156,8 @@ public:
 	void resetOrCancel();
 	// Before unload when shutting down or hibernating.
 	void clearReservations();
+	// In HaulSubproject::complete, before merging generics.
+	void clearReferenceFromRequiredItems(const ItemReference& ref);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] FactionId getFaction() { return m_faction; }
 	[[nodiscard]] CanReserve& getCanReserve() { return m_canReserve; }
@@ -186,9 +188,11 @@ public:
 	virtual void onDelivered(const ActorOrItemIndex&) { }
 	virtual void onSubprojectCreated(HaulSubproject& subproject) { (void)subproject; }
 	virtual void onActorOrItemReservationDishonored() { if(canReset()) reset(); else cancel(); }
+	virtual void onPickUpRequired(const ActorOrItemIndex&) { }
 	// Projects which are initiated by the users, such as dig or construct, must be delayed when they cannot be completed. Projectes which are initiated automatically, such as Stockpile or Craft, can be canceled.
 	virtual void onDelay() = 0;
 	virtual void offDelay() = 0;
+	virtual void updateRequiredGenericReference(const ItemReference&) { }
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
 	[[nodiscard]] virtual std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const = 0;
 	[[nodiscard]] virtual std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const = 0;

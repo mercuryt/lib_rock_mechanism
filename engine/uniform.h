@@ -1,37 +1,44 @@
 #pragma once
 #include "config.h"
-#include "items/itemQuery.h"
 #include "types.h"
 #include "vectorContainers.h"
 #include <string>
-class Actor;
-class Item;
-struct Faction;
+class Items;
 struct UniformElement final 
 {
-	ItemQuery itemQuery;
-	Quantity quantity;
+	ItemTypeId m_itemType;
+	MaterialCategoryTypeId m_materialCategoryType;
+	MaterialTypeId m_materialType;
+	Quantity m_quantity;
 	[[nodiscard]] bool operator==(const UniformElement& other) const { return &other == this; }
-	static UniformElement create(const ItemTypeId& itemType, const Quantity quantity = Quantity::create(1), const MaterialTypeId materialType = MaterialTypeId::null(), const Quality qualityMin = Quality::create(0));
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(UniformElement, itemQuery, quantity);
+	[[nodiscard]] bool query(const ItemIndex& item, const Items& items) const;
+	static UniformElement create(
+		const ItemTypeId& itemType, const Quantity& quantity = Quantity::create(1), const MaterialTypeId& materialType = MaterialTypeId::null(),
+		const MaterialCategoryTypeId& materialCageoryType = MaterialCategoryTypeId::null(), const Quality qualityMin = Quality::create(0)
+	);
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(UniformElement, m_itemType, m_materialCategoryType, m_materialType, m_quantity);
 };
 struct Uniform final
 {
-	std::wstring name;
+	//TODO: use wide string with WideCharToMultiByte for serialization.
+	std::string name;
 	std::vector<UniformElement> elements;
+	Uniform(std::string n, const std::vector<UniformElement>& e) : name(n), elements(e) { }
+	Uniform() = default;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Uniform, name, elements);
 };
 inline void to_json(Json& data, const Uniform* const& uniform){ data = uniform->name; }
 class SimulationHasUniformsForFaction final
 {
 	FactionId m_faction;
-	SmallMap<std::wstring, Uniform> m_data;
+	SmallMap<std::string, Uniform> m_data;
 public:
 	SimulationHasUniformsForFaction(FactionId faction) : m_faction(faction) { }
-	Uniform& createUniform(std::wstring& name, std::vector<UniformElement>& elements);
+	SimulationHasUniformsForFaction() = default;
+	Uniform& createUniform(std::string& name, std::vector<UniformElement>& elements);
 	void destroyUniform(Uniform& uniform);
-	Uniform& byName(std::wstring name){ assert(m_data.contains(name)); return m_data[name]; }
-	SmallMap<std::wstring, Uniform>& getAll();
+	Uniform& byName(std::string name){ assert(m_data.contains(name)); return m_data[name]; }
+	SmallMap<std::string, Uniform>& getAll();
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SimulationHasUniformsForFaction, m_faction, m_data);
 };
 class SimulationHasUniforms final
@@ -41,5 +48,5 @@ public:
 	void registerFaction(const FactionId& faction) { m_data.emplace(faction, faction); }
 	void unregisterFaction(const FactionId& faction) { m_data.erase(faction); }
 	SimulationHasUniformsForFaction& getForFaction(const FactionId& faction);
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(SimulationHasUniforms, m_data);
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SimulationHasUniforms, m_data);
 };

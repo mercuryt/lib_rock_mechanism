@@ -15,16 +15,13 @@ GiveItemObjective::GiveItemObjective(Area& area, const ItemIndex& item, const Ac
 GiveItemObjective::GiveItemObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo)
 {
-	data["item"].get_to(m_item);
-	data["recipent"].get_to(m_recipient);
+	m_item.load(data["item"], area.getItems().m_referenceData);
+	m_recipient.load(data["recipient"], area.getActors().m_referenceData);
 	createOnDestroyCallbacks(area, m_recipient.getIndex(area.getActors().m_referenceData));
 }
 Json GiveItemObjective::toJson() const
 {
-	Json data = Objective::toJson();
-	data["item"] = m_item;
-	data["recipient"] = m_recipient;
-	return data;
+	return {{"item", m_item}, {"recipient", m_recipient}};
 }
 void GiveItemObjective::execute(Area& area, const ActorIndex& actor)
 {

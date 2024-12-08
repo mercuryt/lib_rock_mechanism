@@ -16,8 +16,9 @@
 #include <cstddef>
 EquipmentSet::EquipmentSet(Area& area, const Json& data)
 {
-	for(const Json& itemIndex : data["m_equipments"]["m_data"])
-		addEquipment(area, itemIndex.get<ItemIndex>());
+	Items& items = area.getItems();
+	for(const Json& itemRefData : data["m_equipments"]["m_data"])
+		addEquipment(area, ItemReference(itemRefData, items.m_referenceData).getIndex(items.m_referenceData));
 }
 void EquipmentSet::addEquipment(Area& area, const ItemIndex& equipment)
 {
@@ -193,9 +194,9 @@ Step EquipmentSet::getLongestMeleeWeaponCoolDown(Area& area) const
 	assert(output != 0);
 	return output;
 }
-bool EquipmentSet::canEquipCurrently(const Area& area, const ActorIndex& actor, const ItemIndex& equipment) const
+bool EquipmentSet::canEquipCurrently(Area& area, const ActorIndex& actor, const ItemIndex& equipment) const
 {
-	const Items& items = area.getItems();
+	Items& items = area.getItems();
 	const ItemReference equipmentRef = items.m_referenceData.getReference(equipment);
 	assert(!m_equipments.contains(equipmentRef));
 	const ItemTypeId itemType = area.getItems().getItemType(equipment);

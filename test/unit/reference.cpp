@@ -14,6 +14,7 @@ TEST_CASE("reference")
 	assert(referenceData.getUnusedReferenceIndices().size() == 0);
 	SUBCASE("remove")
 	{
+		ref.clear();
 		referenceData.remove(index);
 		assert(referenceData.getIndices().size() == 0);
 		assert(referenceData.getReferenceIndices().size() == 0);
@@ -33,6 +34,7 @@ TEST_CASE("reference")
 		assert(referenceData.getIndices().contains(index2));
 		SUBCASE("remove second")
 		{
+			ref2.clear();
 			referenceData.remove(index2);
 			ref.validate(referenceData);
 			assert(referenceData.getIndices().size() == 1);
@@ -42,6 +44,7 @@ TEST_CASE("reference")
 		}
 		SUBCASE("remove first")
 		{
+			ref.clear();
 			referenceData.remove(index);
 			ref2.validate(referenceData);
 			assert(referenceData.getIndices().size() == 2);

@@ -16,11 +16,12 @@ std::unique_ptr<Objective> StockPileObjectiveType::makeFor(Area&, const ActorInd
 }
 // Objective.
 StockPileObjective::StockPileObjective() : Objective(Config::stockPilePriority) { }
-StockPileObjective::StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo),
+StockPileObjective::StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
+	Objective(data, deserializationMemo),
 	m_project(data.contains("project") ? static_cast<StockPileProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>())) : nullptr)
 { 
 	if(data.contains("item"))
-		data["item"].get_to(m_item);
+		m_item.load(data["item"], area.getItems().m_referenceData);
 	if(data.contains("stockPileLocation"))
 		m_stockPileLocation = data["stockPileLocation"].get<BlockIndex>();
 	if(data.contains("hasCheckedForDropOffLocation"))
@@ -301,17 +302,20 @@ void StockPileDestinationPathRequest::callback(Area& area, const FindPathResult&
 		if (hasStockPiles.m_projectsByItem.contains(m_objective.m_item))
 		{
 			// Projects found, select one to join.
-			for (StockPileProject& stockPileProject : hasStockPiles.m_projectsByItem[m_objective.m_item])
-				if (stockPileProject.canAddWorker(actor))
+			for (StockPileProject* stockPileProject : hasStockPiles.m_projectsByItem[m_objective.m_item])
+				if (stockPileProject->canAddWorker(actor))
 				{
-					m_objective.m_project = &stockPileProject;
-					stockPileProject.addWorkerCandidate(actor, m_objective);
+					m_objective.m_project = stockPileProject;
+					stockPileProject->addWorkerCandidate(actor, m_objective);
 					return;
 				}
 		}
 		// No projects found, make one.
 		Items& items = area.getItems();
-		hasStockPiles.makeProject(m_objective.m_item.getIndex(items.m_referenceData), m_objective.m_stockPileLocation, m_objective, actor);
+		ItemIndex item = m_objective.m_item.getIndex(items.m_referenceData);
+		// Pass responsability for tracking the item to the project.
+		m_objective.m_item.clear();
+		hasStockPiles.makeProject(item, m_objective.m_stockPileLocation, m_objective, actor);
 	}
 }
 StockPileDestinationPathRequest::StockPileDestinationPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :

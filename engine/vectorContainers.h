@@ -67,7 +67,8 @@ public:
 	void popBack() { m_data.pop_back(); }
 	template<typename Predicate>
 	void sort(Predicate&& predicate) { std::ranges::sort(m_data, predicate); }
-	[[nodiscard]] bool contains(const T& value) const { return std::ranges::find(m_data, value) != m_data.end(); }
+	void update(const T& oldValue, const T& newValue) { assert(contains(oldValue)); (*find(oldValue)) = newValue;} 
+	[[nodiscard]] bool contains(const T& value) const { return std::ranges::find(m_data, const_cast<T&>(value)) != m_data.end(); }
 	[[nodiscard]] T& front() { return m_data.front(); }
 	[[nodiscard]] const T& front() const { return m_data.front(); }
 	[[nodiscard]] T& back() { return m_data.back(); }
@@ -271,21 +272,27 @@ public:
 	void maybeInsert(K key, V&& value) { maybeInsert(key, value); }
 	void erase(const K& key)
 	{
-		auto iter = std::ranges::find(m_data, key, &Pair::first);
-		assert(iter != m_data.end());
-		iter->first = m_data.back().first;
-		iter->second = std::move(m_data.back().second);
-		m_data.pop_back();
+		erase(std::ranges::find(m_data, key, &Pair::first));
 	}
 	void erase(const K&& key) { erase(key); }
+	void erase(iterator& iter)
+	{
+		assert(iter != m_data.end());
+		if(iter != m_data.end() - 1)
+		{
+			iter->first = m_data.back().first;
+			iter->second = std::move(m_data.back().second);
+		}
+		m_data.pop_back();
+	}
+	void erase(iterator&& iter) { erase(iter); }
+	template<typename Predicate>
+	void eraseIf(Predicate&& predicate) { std::erase_if(m_data, predicate); }
 	void maybeErase(const K& key)
 	{
-		auto iter = std::ranges::find(m_data, key, &Pair::first);
-		if(iter == m_data.end())
-			return;
-		iter->first = m_data.back().first;
-		iter->second = std::move(m_data.back().second);
-		m_data.pop_back();
+		iterator iter = std::ranges::find(m_data, key, &Pair::first);
+		if(iter != m_data.end())
+			erase(iter);
 	}
 	void clear() { m_data.clear(); }
 	template<typename ...Args>

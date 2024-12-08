@@ -340,13 +340,11 @@ GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, c
 	DistanceInBlocks maxRange = DistanceInBlocks::max();
 	createGoToCondition(area, m_actor, destinationCondition, detour, unreserved, maxRange, area.getActors().getLocation(t));
 }
-GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(const Json& data) :
+GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(const Json& data, Area& area) :
 	PathRequest(data),
 	m_actor(data["actor"].get<ActorIndex>()),
-	m_attackRangeSquared(data["distance"].get<DistanceInBlocksFractional>())
-	{
-		m_target.load(data["target"]);
-	}
+	m_target(data["target"], area.getActors().m_referenceData),
+	m_attackRangeSquared(data["distance"].get<DistanceInBlocksFractional>()) { }
 void GetIntoAttackPositionPathRequest::callback(Area& area, const FindPathResult& result)
 {
 	Actors& actors = area.getActors();

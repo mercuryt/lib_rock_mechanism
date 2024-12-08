@@ -7,7 +7,7 @@ class UnequipItemObjective final : public Objective
 	BlockIndex m_block;
 public:
 	UnequipItemObjective(const ItemReference& item, const BlockIndex& block);
-	UnequipItemObjective(const Json& data, DeserializationMemo& deserializationMemo);
+	UnequipItemObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	//TODO: check if block can hold item.
 	void execute(Area&, const ActorIndex& actor);
 	void cancel(Area&, const ActorIndex& actor);

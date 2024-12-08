@@ -92,10 +92,8 @@ std::unique_ptr<OnDestroyCallBack> OnDestroyCallBack::fromJson(const Json& data,
 CancelObjectiveOnDestroyCallBack::CancelObjectiveOnDestroyCallBack(ActorReference actor, Objective& objective, Area& area) : m_objective(objective), m_area(area), m_actor(actor) { }
 CancelObjectiveOnDestroyCallBack::CancelObjectiveOnDestroyCallBack(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
 	m_objective(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())),
-	m_area(area)
-	{
-		data["actor"].get_to(m_actor);
-	}
+	m_area(area),
+	m_actor(data["actor"], area.getActors().m_referenceData) { }
 void CancelObjectiveOnDestroyCallBack::callback()
 {
 	m_area.getActors().objective_canNotCompleteObjective(m_actor.getIndex(m_area.getActors().m_referenceData), m_objective);

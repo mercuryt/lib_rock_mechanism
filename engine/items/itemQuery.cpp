@@ -79,10 +79,10 @@ Json ItemQuery::toJson() const
 		output["materialTypeCategory"] = m_materialTypeCategory;
 	return output;
 }
-void ItemQuery::load(const Json& data)
+void ItemQuery::load(const Json& data, Area& area)
 {
 	if(data.contains("item"))
-		data["item"].get_to(m_item);
+		m_item.load(data["item"], area.getItems().m_referenceData);
 	if(data.contains("itemType"))
 		data["itemType"].get_to(m_itemType);
 	if(data.contains("materialType"))

@@ -19,10 +19,9 @@ void KillInputAction::execute()
 }
 */
 KillObjective::KillObjective(ActorReference t) : Objective(Config::killPriority), m_target(t) { }
-KillObjective::KillObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo)
-{ 
-	data["target"].get_to(m_target);
-}
+KillObjective::KillObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
+	Objective(data, deserializationMemo),
+	m_target(data["target"], area.getActors().m_referenceData) { }
 void KillObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();

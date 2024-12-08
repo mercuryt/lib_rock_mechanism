@@ -22,7 +22,7 @@ TEST_CASE("uniform")
 	UniformElement pantsElement = UniformElement::create(ItemType::byName("pants"));
 	UniformElement shirtElement = UniformElement::create(ItemType::byName("shirt"));
 	UniformElement twoBeltsElement = UniformElement::create(ItemType::byName("belt"), Quantity::create(2));
-	Uniform basic = Uniform(L"basic", {pantsElement, shirtElement, twoBeltsElement});
+	Uniform basic = Uniform("basic", {pantsElement, shirtElement, twoBeltsElement});
 	ActorIndex actor = actors.create({
 		.species=AnimalSpecies::byName("dwarf"),
 		.location=blocks.getIndex_i(5,5,1),

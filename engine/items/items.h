@@ -118,7 +118,7 @@ class Items final : public Portables<Items, ItemIndex, ItemReferenceIndex>
 	void resize(const ItemIndex& newSize);
 	void moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex);
 public:
-	Items(Area& area) : Portables(area, false) { }
+	Items(Area& area);
 	void load(const Json& json);
 	void loadCargoAndCraftJobs(const Json& json);
 	void onChangeAmbiantSurfaceTemperature();
@@ -165,15 +165,16 @@ public:
 	[[nodiscard]] const auto& getOnSurface() const { return m_onSurface; }
 	// -Cargo.
 	void cargo_addActor(const ItemIndex& index, const ActorIndex& actor);
-	void cargo_addItem(const ItemIndex& index, const ItemIndex& item, const Quantity& quantity);
+	ItemIndex cargo_addItem(const ItemIndex& index, const ItemIndex& item, const Quantity& quantity);
 	void cargo_addItemGeneric(const ItemIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity);
 	void cargo_addPolymorphic(const ItemIndex& index, const ActorOrItemIndex& actorOrItemIndex, const Quantity& quantity);
 	void cargo_addFluid(const ItemIndex& index, const FluidTypeId& fluidType, const CollisionVolume& volume);
 	void cargo_loadActor(const ItemIndex& index, const ActorIndex& actor);
-	void cargo_loadItem(const ItemIndex& index, const ItemIndex& item, const Quantity& quantity);
-	void cargo_loadPolymorphic(const ItemIndex& index, const ActorOrItemIndex& actorOrItem, const Quantity& quantity);
+	ItemIndex cargo_loadItem(const ItemIndex& index, const ItemIndex& item, const Quantity& quantity);
+	ActorOrItemIndex cargo_loadPolymorphic(const ItemIndex& index, const ActorOrItemIndex& actorOrItem, const Quantity& quantity);
 	void cargo_loadFluidFromLocation(const ItemIndex& index, const FluidTypeId& fluidType, const CollisionVolume& volume, const BlockIndex& location);
 	void cargo_loadFluidFromItem(const ItemIndex& index, const FluidTypeId& fluidType, const CollisionVolume& volume, const ItemIndex& item);
+	void cargo_remove(const ItemIndex& index, const ActorOrItemIndex& actorOrItem);
 	void cargo_removeActor(const ItemIndex& index, const ActorIndex& actor);
 	void cargo_removeItem(const ItemIndex& index, const ItemIndex& item);
 	void cargo_removeItemGeneric(const ItemIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity);

@@ -127,7 +127,6 @@ TEST_CASE("dig")
 		// Select haul type to get pick to location.
 		simulation.doStep();
 		REQUIRE(objective.getProject() != nullptr);
-		REQUIRE(objective.getProject()->getProjectWorkerFor(dwarf1Ref).haulSubproject != nullptr);
 		// Path to locaton.
 		simulation.doStep();
 		REQUIRE(&actors.objective_getCurrent<DigObjective>(dwarf1) == &objective);

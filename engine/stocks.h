@@ -15,6 +15,7 @@ class AreaHasStocksForFaction final
 	ItemTypeMap<MaterialTypeMap<ItemIndices>> m_data;
 public:
 	void record(Area& area, ItemIndex item);
+	void maybeRecord(Area& area, ItemIndex item);
 	void unrecord(Area& area, ItemIndex item);
 	const ItemTypeMap<MaterialTypeMap<ItemIndices>>& get() const { return m_data; }
 };

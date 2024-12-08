@@ -14,33 +14,115 @@ class Reference
 {
 	using Data = ReferenceData<Index, ReferenceIndex>;
 	ReferenceIndex m_referenceIndex;
+	#ifndef NDEBUG
+		Data* m_data = nullptr;
+		std::shared_ptr<bool> m_destruct;
+	#endif
 public:
-	Reference(const ReferenceIndex& index) : m_referenceIndex(index) { }
-	Reference(const Reference& other) : m_referenceIndex(other.m_referenceIndex) { }
-	Reference(Reference&& other) noexcept : m_referenceIndex(other.m_referenceIndex) { }
 	Reference() = default;
-	Reference(const Data& dataStore, Index index) { setIndex(index, dataStore); }
-	Reference& operator=(const Reference& other) { m_referenceIndex = other.m_referenceIndex; return *this; }
-	void setReferenceIndex(const ReferenceIndex& index) { m_referenceIndex = index; }
-	void setIndex(const Index& index, const Data& referenceData) { m_referenceIndex = referenceData.getReferenceIndex(index); }
-	void clear() { m_referenceIndex.clear(); }
-	void load(const Json& data) { m_referenceIndex = data.get<ReferenceIndex>(); }
-	void validate(const Data& dataStore) { dataStore.validateReference(m_referenceIndex); }
-	[[nodiscard]] Index getIndex(const Data& referenceData) const { assert(exists()); return referenceData.getIndex(m_referenceIndex); }
+	Reference(const ReferenceIndex& index, Data& data) :
+		m_referenceIndex(index)
+	{
+		if constexpr(DEBUG) if(m_referenceIndex.exists())
+		{
+			setReferenceData(data);
+			m_data->recordReference(*this);
+		}
+	}
+	Reference(const Reference<Index, ReferenceIndex>& other)
+	{
+		m_referenceIndex = other.m_referenceIndex;
+		if constexpr(DEBUG) if(m_referenceIndex.exists())
+		{
+			// Discard const from other.m_data for reference counting.
+			setReferenceData(const_cast<ReferenceData<Index, ReferenceIndex>&>(*other.m_data));
+			m_data->recordReference(*this);
+		}
+	}
+	Reference(Reference<Index, ReferenceIndex>&& other) noexcept
+	{
+		m_referenceIndex = other.m_referenceIndex;
+		if constexpr(DEBUG) if(m_referenceIndex.exists())
+		{
+			setReferenceData(*other.m_data);
+			other.clear();
+			m_data->recordReference(*this);
+		}
+	}
+	Reference(const Json& data, Data& dataStore)
+	{
+		load(data, dataStore);
+	}
+	~Reference()
+	{
+		if(m_referenceIndex.exists() && !*m_destruct)
+			setReferenceIndex(ReferenceIndex::null()); 
+	}
+	Reference& operator=(const Reference& other)
+	{
+		// Discard const from other.m_data for reference counting.
+		maybeSetReferenceData(const_cast<ReferenceData<Index, ReferenceIndex>&>(*other.m_data));
+		setReferenceIndex(other.m_referenceIndex);
+		return *this;
+	}
+	Reference& operator=(Reference&& other) noexcept
+	{
+		if constexpr(DEBUG) if(m_referenceIndex.exists())
+			m_data->removeReference(*this);
+		m_referenceIndex = other.m_referenceIndex;
+		if constexpr(DEBUG) if(m_referenceIndex.exists())
+		{
+			maybeSetReferenceData(*other.m_data);
+			other.clear();
+			m_data->recordReference(*this);
+		}
+		return *this;
+	}
+	void setReferenceData(Data& data)
+	{
+		assert(m_data == nullptr);
+		assert(data.m_destruct != nullptr);
+		assert(m_destruct == nullptr);
+		m_data = &data;
+		m_destruct = m_data->m_destruct;
+	}
+	void maybeSetReferenceData(Data& data)
+	{
+		if constexpr(DEBUG)
+		{
+			if(m_data == nullptr) setReferenceData(data);
+			else assert(m_data == &data);
+		}
+	}
+	void setReferenceIndex(const ReferenceIndex& ref)
+	{
+		assert(m_data != nullptr);
+		if constexpr (DEBUG) if(m_referenceIndex.exists()) m_data->removeReference(*this);
+		m_referenceIndex = ref;
+		if constexpr (DEBUG) if(m_referenceIndex.exists()) m_data->recordReference(*this);
+	}
+	void setIndex(const Index& index, Data& dataStore)
+	{ 
+		maybeSetReferenceData(dataStore);
+		setReferenceIndex(dataStore.getReferenceIndex(index));
+	}
+	void clear() { setReferenceIndex(ReferenceIndex::null()); }
+	void load(const Json& data, Data& dataStore) { if constexpr(DEBUG) setReferenceData(dataStore); setReferenceIndex(data.get<ReferenceIndex>()); }
+	void validate(const Data& dataStore) const { assert(m_data == &dataStore); dataStore.validateReference(m_referenceIndex); }
+	[[nodiscard]] Index getIndex(const Data& dataStore) const { assert(exists()); assert(&dataStore == m_data); return dataStore.getIndex(m_referenceIndex); }
 	[[nodiscard]] ReferenceIndex getReferenceIndex() const { return m_referenceIndex; }
 	[[nodiscard]] bool exists() const { return m_referenceIndex.exists(); }
 	[[nodiscard]] bool empty() const { return m_referenceIndex.empty(); }
-	[[nodiscard]] bool operator==(const Reference& other) const { return other.m_referenceIndex == m_referenceIndex; } 
-	[[nodiscard]] std::strong_ordering operator<=>(const Reference& other) const { return m_referenceIndex <=> other.m_referenceIndex; }
+	[[nodiscard]] bool operator==(const Reference& other) const { assert(m_data == other.m_data); return other.m_referenceIndex == m_referenceIndex; } 
+	[[nodiscard]] std::strong_ordering operator<=>(const Reference& other) const { assert(m_data == other.m_data); return m_referenceIndex <=> other.m_referenceIndex; }
 	[[nodiscard]] size_t hash() const { return m_referenceIndex.get(); }
+	[[nodiscard]] Json toJson() const { return m_referenceIndex.get(); }
 	struct Hash { [[nodiscard]] size_t operator()(const Reference<Index, ReferenceIndex>& reference) const { return reference.get(); } };
 };
+template<typename Index, typename ReferenceIndex>
+void to_json(Json& data, const Reference<Index, ReferenceIndex>& ref) { data = ref.toJson(); } 
 using ItemReference = Reference<ItemIndex, ItemReferenceIndex>;
-inline void to_json(Json& data, const ItemReference& ref) { data = ref.getReferenceIndex(); }
-inline void from_json(const Json& data, ItemReference& ref) { ref.setReferenceIndex(data.get<ItemReferenceIndex>()); }
 using ActorReference = Reference<ActorIndex, ActorReferenceIndex>;
-inline void to_json(Json& data, const ActorReference& ref) { data = ref.getReferenceIndex(); }
-inline void from_json(const Json& data, ActorReference& ref) { ref.setReferenceIndex(data.get<ActorReferenceIndex>()); }
 /*
 	ReferenceData correlates Indexes to ReferenceIndexes for Actors and Items.
 	ReferenceIndices are generated from the length of the m_indicesByReference vector.
@@ -52,15 +134,37 @@ class ReferenceData
 	DataVector<Index, ReferenceIndex> m_indicesByReference;
 	DataVector<ReferenceIndex, Index> m_referencesByIndex;
 	SmallSet<ReferenceIndex> m_unusedReferenceIndices;
+	#ifndef NDEBUG
+		DataVector<SmallSet<Reference<Index, ReferenceIndex>*>, ReferenceIndex> m_references;
+		std::shared_ptr<bool> m_destruct;
+public: ~ReferenceData() { (*m_destruct) = true; }
+		ReferenceData() { m_destruct = std::make_shared<bool>(false); }
+		void recordReference(Reference<Index, ReferenceIndex>& ref)
+		{
+			for(auto& references : m_references)
+				assert(!references.contains(&ref));
+			m_references[ref.getReferenceIndex()].insert(&ref);
+		}
+		void removeReference(Reference<Index, ReferenceIndex>& ref)
+		{
+			for(auto& references : m_references)
+				if(&references != &m_references[ref.getReferenceIndex()])
+					assert(!references.contains(&ref));
+			m_references[ref.getReferenceIndex()].erase(&ref);
+		}
+	#endif
+private:
 	[[nodiscard]] ReferenceIndex getReferenceIndex(const Index &actor) const { return m_referencesByIndex[actor]; }
-	[[nodiscard]] Index getIndex(const ReferenceIndex& reference) const { return m_indicesByReference[reference]; }
+	[[nodiscard]] Index getIndex(const ReferenceIndex& reference) const { assert(m_indicesByReference[reference].exists()); return m_indicesByReference[reference]; }
 	friend class Reference<Index, ReferenceIndex>;
 public:
 	void load(const Json& data)
 	{
-		data["index"].get_to(m_indicesByReference);
-		data["reference"].get_to(m_referencesByIndex);
-		data["unused"].get_to(m_unusedReferenceIndices);
+		data["m_indicesByReference"].get_to(m_indicesByReference);
+		data["m_referencesByIndex"].get_to(m_referencesByIndex);
+		data["m_unusedReferenceIndices"].get_to(m_unusedReferenceIndices);
+		if constexpr(DEBUG)
+			m_references.resize(m_referencesByIndex.size());
 	}
 	void add(const Index& index)
 	{
@@ -81,6 +185,10 @@ public:
 		assert(!m_referencesByIndex.contains(refIndex));
 		m_indicesByReference[refIndex] = index;
 		m_referencesByIndex.add(refIndex);
+		if constexpr (DEBUG){
+			if(m_references.size() < m_indicesByReference.size())
+				m_references.resize(m_indicesByReference.size());
+		}
 	}
 	void remove(const Index& index)
 	{
@@ -88,6 +196,7 @@ public:
 		ReferenceIndex refIndex = m_referencesByIndex[index];
 		assert(m_indicesByReference[refIndex].exists());
 		assert(m_indicesByReference[refIndex] == index);
+		assert(m_references[refIndex].empty());
 		m_referencesByIndex.remove(index);
 		// Index was not the last item, a still valid item has been moved and it's reference must be updated.
 		if(m_referencesByIndex.size() > index)
@@ -118,6 +227,8 @@ public:
 		m_referencesByIndex.reserve(size);
 		// The current 'next reference' is determined by the length of indices by reference, which is why we reserve rather then resize here.
 		m_indicesByReference.reserve(size);
+		if constexpr(DEBUG)
+			m_references.reserve(size);
 	}
 	void reserve(const Index& size)
 	{
@@ -129,44 +240,30 @@ public:
 		assert(m_indicesByReference[ref].exists());
 	}
 	[[nodiscard]] size_t size() const { return m_referencesByIndex.size(); }
-	[[nodiscard]] auto getReference(const Index& index) const -> Reference<Index, ReferenceIndex> const { return m_referencesByIndex[index]; }
-	[[nodiscard]] Json toJson() const
-	{
-		return {{"index", m_indicesByReference}, {"reference", m_referencesByIndex}, {"unused", m_unusedReferenceIndices}};
-	}
+	[[nodiscard]] auto getReference(const Index& index) -> const Reference<Index, ReferenceIndex> { return Reference<Index, ReferenceIndex>(m_referencesByIndex[index], *this); }
 	// For testing.
 	[[nodiscard]] const auto& getIndices() const { return m_indicesByReference; }
 	[[nodiscard]] const DataVector<ReferenceIndex, Index>& getReferenceIndices() const { return m_referencesByIndex; }
 	[[nodiscard]] const auto& getUnusedReferenceIndices() const { return m_unusedReferenceIndices; }
+	[[nodiscard]] bool hasReferencesTo(const Index& index) const { return !m_references[m_referencesByIndex[index]].empty(); }
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(ReferenceData, m_indicesByReference, m_referencesByIndex, m_unusedReferenceIndices);
 };
+template<typename Index, typename ReferenceIndex>
+inline void from_json(const Json& data, ReferenceData<Index, ReferenceIndex>& ref) { ref.load(data); }
 using ItemReferenceData = ReferenceData<ItemIndex, ItemReferenceIndex>;
-inline void to_json(Json& data, const ItemReferenceData& refData) { data = refData.toJson(); }
-inline void from_json(const Json& data, ItemReferenceData& refData) { refData.load(data); }
 using ActorReferenceData = ReferenceData<ActorIndex, ActorReferenceIndex>;
-inline void to_json(Json& data, const ActorReferenceData& refData) { data = refData.toJson(); }
-inline void from_json(const Json& data, ActorReferenceData& refData) { refData.load(data); }
 // Polymorphic reference wrapes either an actor or an item.
 #include "actorOrItemIndex.h"
 class ActorOrItemReference
 {
 	std::variant<std::monostate, ActorReference, ItemReference> m_reference;
 public:
+	ActorOrItemReference() = default;
+	ActorOrItemReference(const Json& data, Area& area) { load(data, area); }
 	void setActor(const ActorReference& target) { m_reference.emplace<1>(target); }
 	void setItem(const ItemReference& target) { m_reference.emplace<2>(target); }
 	void clear() { m_reference.emplace<0>(); }
-	void load(const Json& data)
-	{
-		if(data[0])
-		{
-			ActorReference actor = data[1].get<ActorReference>();
-			setActor(actor);
-		}
-		else
-		{
-			ItemReference item = data[1].get<ItemReference>();
-			setItem(item);
-		}
-	}
+	void load(const Json& data, Area& area);
 	[[nodiscard]] bool isActor() const 
 	{ 
 		assert(exists());
@@ -182,24 +279,28 @@ public:
 	{
 		assert(exists());
 		return isActor() ?
-			HasShapeIndex::cast(std::get<1>(m_reference).getIndex(actorData)) :
-			HasShapeIndex::cast(std::get<2>(m_reference).getIndex(itemData));
+			std::get<1>(m_reference).getIndex(actorData).toHasShape() :
+			std::get<2>(m_reference).getIndex(itemData).toHasShape();
 	}
 	[[nodiscard]] ActorOrItemIndex getIndexPolymorphic(const ActorReferenceData& actorData, const ItemReferenceData& itemData) const
 	{
 		if(isActor())
-			return ActorOrItemIndex::createForActor(ActorIndex::cast(getIndex(actorData, itemData)));
+			return ActorOrItemIndex::createForActor(std::get<1>(m_reference).getIndex(actorData));
 		else
-			return ActorOrItemIndex::createForItem(ItemIndex::cast(getIndex(actorData, itemData)));
+			return ActorOrItemIndex::createForItem(std::get<2>(m_reference).getIndex(itemData));
 	}
+	[[nodiscard]] ActorReference toActorReference() const { return std::get<1>(m_reference); }
+	[[nodiscard]] ItemReference toItemReference() const { return std::get<2>(m_reference); }
+	[[nodiscard]] ActorIndex toActorIndex(ActorReferenceData& data) const { return std::get<1>(m_reference).getIndex(data); }
+	[[nodiscard]] ItemIndex toItemIndex(ItemReferenceData& data) const { return std::get<2>(m_reference).getIndex(data); }
 	[[nodiscard]] static ActorOrItemReference createForActor(const ActorReference& target) {  ActorOrItemReference output; output.setActor(target); return output;}
 	[[nodiscard]] static ActorOrItemReference createForItem(const ItemReference& target) {  ActorOrItemReference output; output.setItem(target); return output;}
 	[[nodiscard]] Json toJson() const
 	{
 		if(isActor())
-			return Json{true, std::get<1>(m_reference)};
+			return {true, std::get<1>(m_reference).toJson()};
 		else
-			return Json{false, std::get<2>(m_reference)};
+			return {false, std::get<2>(m_reference).toJson()};
 	}
 	struct Hash
 	{
@@ -219,5 +320,4 @@ public:
 		}
 	};
 };
-inline void to_json(Json& data, const ActorOrItemReference& ref) { data = ref.toJson(); }
-inline void from_json(const Json& data, ActorOrItemReference& ref) { ref.load(data); }
+inline void to_json(Json& data, const ActorOrItemReference& ref) { data = ref.toJson(); } 

@@ -252,8 +252,7 @@ void to_json(const Json& data, std::unique_ptr<T>& t) { data = *t; }
 Actors::Actors(Area& area) :
 	Portables<Actors, ActorIndex, ActorReferenceIndex>(area, true),
 	m_coolDownEvent(area.m_eventSchedule),
-	m_moveEvent(area.m_eventSchedule)
-{ }
+	m_moveEvent(area.m_eventSchedule) { }
 Actors::~Actors()
 {
 	/*
@@ -431,7 +430,7 @@ void Actors::loadObjectivesAndReservations(const Json& data)
 	for(auto iter = pathRequestData.begin(); iter != pathRequestData.end(); ++iter)
 	{
 		ActorIndex index = ActorIndex::create(std::stoi(iter.key()));
-		m_pathRequest[index] = PathRequest::load(iter.value(), deserializationMemo);
+		m_pathRequest[index] = PathRequest::load(iter.value(), deserializationMemo, m_area);
 	}
 }
 void to_json(Json& data, const std::unique_ptr<CanReserve>& canReserve) { data = canReserve->toJson(); }
@@ -442,7 +441,6 @@ void to_json(Json& data, const std::unique_ptr<ActorHasUniform>& hasUniform)
 	else
 		data = *hasUniform;
 }
-void to_json(Json& data, const std::unique_ptr<EquipmentSet>& equipmentSet) { data = *equipmentSet; }
 void to_json(Json& data, const std::unique_ptr<HasObjectives>& hasObjectives) { data = hasObjectives->toJson(); }
 void to_json(Json& data, const std::unique_ptr<Body>& body) { data = body->toJson(); }
 void to_json(Json& data, const std::unique_ptr<MustSleep>& mustSleep) { data = mustSleep->toJson(); }
@@ -676,12 +674,12 @@ void Actors::destroy(const ActorIndex& index)
 			m_hasVisionFacade[index].clear();
 		exit(index);
 	}
-	// Will do the same move / resize logic internally, so stays in sync with moves from the DataVectors.
-	m_referenceData.remove(index);
 	const auto& s = ActorIndex::create(size() - 1);
 	if(index != s)
 		moveIndex(s, index);
 	resize(s);
+	// Will do the same move / resize logic internally, so stays in sync with moves from the DataVectors.
+	m_referenceData.remove(index);
 }
 ActorIndices Actors::getAll() const
 {

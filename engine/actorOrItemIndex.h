@@ -31,7 +31,8 @@ public:
 	static ActorOrItemIndex createForItem(const ItemIndex& item) { return ActorOrItemIndex(item, false); }
 	void clear() { m_index.clear(); m_isActor = false; }
 	void updateIndex(const HasShapeIndex& index) { m_index = index; }
-	void setLocationAndFacing(Area& area, const BlockIndex& location, const Facing& facing) const;
+	ActorOrItemIndex setLocationAndFacing(Area& area, const BlockIndex& location, const Facing& facing) const;
+	void exit(Area& area);
 	void followActor(Area& area, const ActorIndex& actor) const;
 	void followItem(Area& area, const ItemIndex& item) const;
 	void followPolymorphic(Area& area, const ActorOrItemIndex& actorOrItem) const;
@@ -65,6 +66,7 @@ public:
 	[[nodiscard]] ShapeId getShape(const Area& area) const;
 	[[nodiscard]] MoveTypeId getMoveType(const Area& area) const;
 	[[nodiscard]] Mass getMass(const Area& area) const;
+	[[nodiscard]] Quantity getQuantity(const Area& area) const;
 	[[nodiscard]] Mass getSingleUnitMass(const Area& area) const;
 	[[nodiscard]] Volume getVolume(const Area& area) const;
 	[[nodiscard]] Facing getFacing(const Area& area) const;
@@ -75,10 +77,12 @@ public:
 	{
 		[[nodiscard]] size_t operator()(const ActorOrItemIndex& actorOrItem) const;
 	};
-	void reservable_reserve(Area& area, CanReserve& canReserve, const Quantity quantity = Quantity::create(0), std::unique_ptr<DishonorCallback> callback = nullptr) const;
-	void reservable_unreserve(Area& area, CanReserve& canReserve, const Quantity quantity = Quantity::create(0)) const;
-	void reservable_maybeUnreserve(Area& area, CanReserve& canReserve, const Quantity quantity = Quantity::create(0)) const;
+	void reservable_reserve(Area& area, CanReserve& canReserve, const Quantity quantity = Quantity::create(1), std::unique_ptr<DishonorCallback> callback = nullptr) const;
+	void reservable_unreserve(Area& area, CanReserve& canReserve, const Quantity quantity = Quantity::create(1)) const;
+	void reservable_maybeUnreserve(Area& area, CanReserve& canReserve, const Quantity quantity = Quantity::create(1)) const;
 	void reservable_unreserveFaction(Area& area, const FactionId& faction) const;
+	void validate(Area& area) const;
 	[[nodiscard]] Quantity reservable_getUnreservedCount(Area& area, const FactionId& faction) const;
+	[[nodiscard]] bool reservable_exists(Area& area, const FactionId& faction) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ActorOrItemIndex, m_index, m_isActor);
 };

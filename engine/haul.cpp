@@ -105,7 +105,7 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 	{
 		m_haulTool.setIndex(paramaters.haulTool, items.m_referenceData);
 		std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<HaulSubprojectDishonorCallback>(*this);
-		items.reservable_reserve(m_haulTool.getIndex(items.m_referenceData), m_project.m_canReserve, Quantity::create(1u), std::move(dishonorCallback));
+		items.reservable_reserve(paramaters.haulTool, m_project.m_canReserve, Quantity::create(1u), std::move(dishonorCallback));
 	}
 	if(paramaters.beastOfBurden.exists())
 	{
@@ -132,19 +132,20 @@ HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo
 	m_projectRequirementCounts(deserializationMemo.projectRequirementCountsReference(data["requirementCounts"]))
 {
 	Area& area = m_project.m_area;
+	Items& items = area.getItems();
+	Actors& actors = area.getActors();
 	if(data.contains("toHaul"))
-		data["toHaul"].get_to(m_toHaul);
+		m_toHaul.load(data["toHaul"], area);
 	if(data.contains("haulTool"))
-		data["haulTool"].get_to(m_haulTool);
+		m_haulTool.load(data["haulTool"], items.m_referenceData);
 	if(data.contains("leader"))
-		data["leader"].get_to(m_leader);
+		m_leader.load(data["leader"], actors.m_referenceData);
 	if(data.contains("beastOfBurden"))
-		data["beastOfBurden"].get_to(m_beastOfBurden);
+		m_beastOfBurden.load(data["beastOfBurden"], actors.m_referenceData);
 	if(data.contains("genericItemType"))
 		m_genericItemType = ItemType::byName(data["genericItemType"].get<std::string>());
 	if(data.contains("genericMaterialType"))
 		m_genericMaterialType = MaterialType::byName(data["genericMaterialType"].get<std::string>());
-	Actors& actors = area.getActors();
 	if(data.contains("workers"))
 		for(const Json& workerIndex : data["workers"])
 			m_workers.insert(actors.getReference(workerIndex.get<ActorIndex>()));
@@ -232,12 +233,8 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 				if(actors.isAdjacentToLocation(actor, m_project.m_location))
 				{
 					// Unload
-					ActorOrItemIndex cargo = actors.canPickUp_tryToPutDownPolymorphic(actor, actorLocation);
-					if(cargo.empty())
-					{
-						assert(false);
-						//TODO: Cargo cannot be put down here, try again
-					}
+					ActorOrItemIndex cargo = actors.canPickUp_getCarrying(actor);
+					actors.canPickUp_remove(actor, cargo);
 					complete(cargo);
 				}
 				else
@@ -249,7 +246,10 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 				{
 					actors.canReserve_clearAll(actor);
 					toHaul.reservable_unreserve(area, m_project.m_canReserve, m_quantity);
-					actors.canPickUp_pickUpPolymorphic(actor, toHaul, m_quantity);
+					// The actor may pick up a smaller stack of generic items from a bigger one, in whihc case we need to change all our ItemReferences to that smaller stack, so as to release the reservation on the remainder stack.
+					toHaul = actors.canPickUp_pickUpPolymorphic(actor, toHaul, m_quantity);
+					m_toHaul = toHaul.toReference(area);
+					m_project.onPickUpRequired(toHaul);
 					commandWorker(actor);
 				}
 				else
@@ -296,7 +296,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 				{
 					// At destination.
 					actors.leadAndFollowDisband(actor);
-					toHaul.setLocationAndFacing(area, actorLocation, Facing::create(0));
+					toHaul.exit(area);
 					complete(toHaul);
 				}
 				else
@@ -314,6 +314,9 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 						if(allWorkersAreAdjacentTo(toHaul))
 						{
 							// All actors are at lift points.
+							assert(m_quantity == 1);
+							assert(toHaul.getQuantity(area) == 1);
+							// TODO: make work for stacks.
 							toHaul.followActor(area, actor);
 							for(ActorReference follower : m_workers)
 							{
@@ -357,6 +360,8 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 		case HaulStrategy::Cart:
 			assert(m_haulTool.exists());
 			haulTool = m_haulTool.getIndex(items.m_referenceData);
+			if(m_toHaul.isItem())
+				assert(m_haulTool != m_toHaul.toItemReference());
 			if(actors.isLeadingItem(actor, haulTool))
 			{
 				// Has cart.
@@ -370,21 +375,9 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 					{
 						// At drop off point.
 						items.unfollow(haulTool);
-						ActorOrItemIndex delivered;
-						if(m_genericItemType.exists())
-						{
-							assert(toHaul.isItem());
-							ItemIndex item = items.cargo_unloadGenericItemToLocation(haulTool, m_genericItemType, m_genericMaterialType, actorLocation, m_quantity);
-							delivered = ActorOrItemIndex::createForItem(item);
-						}
-						else
-						{
-							items.cargo_unloadPolymorphicToLocation(haulTool, toHaul, actorLocation, m_quantity);
-							delivered = toHaul;
-						}
+						items.cargo_remove(haulTool, toHaul);
 						// TODO: set rotation?
-						assert(delivered.exists());
-						complete(delivered);
+						complete(toHaul);
 					}
 					else
 						// Go to drop off point.
@@ -399,7 +392,9 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 						//TODO: set delay for loading.
 						toHaul.reservable_unreserve(area, m_project.m_canReserve, m_quantity);
 						actors.canReserve_clearAll(actor);
-						items.cargo_loadPolymorphic(haulTool, toHaul, m_quantity);
+						toHaul = items.cargo_loadPolymorphic(haulTool, toHaul, m_quantity);
+						m_toHaul = toHaul.toReference(area);
+						m_project.onPickUpRequired(toHaul);
 						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
 					}
 					else
@@ -437,21 +432,10 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 					if(actors.isAdjacentToLocation(actor, m_project.m_location))
 					{
 						// Actor is at destination.
-						ActorOrItemIndex delivered;
 						//TODO: unloading delay.
-						if(m_genericItemType.empty())
-						{
-							items.cargo_unloadPolymorphicToLocation(haulTool, toHaul, actorLocation, m_quantity);
-							delivered = toHaul;
-						}
-						else
-						{
-							ItemIndex item = items.cargo_unloadGenericItemToLocation(haulTool, m_genericItemType, m_genericMaterialType, actorLocation, m_quantity);
-							delivered = ActorOrItemIndex::createForItem(item);
-						}
-						// TODO: set rotation?
+						items.cargo_remove(haulTool, toHaul);
 						actors.unfollow(beastOfBurden);
-						complete(delivered);
+						complete(toHaul);
 					}
 					else
 						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
@@ -464,8 +448,9 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 						// Actor is at pickup location.
 						// TODO: loading delay.
 						toHaul.reservable_maybeUnreserve(area, m_project.m_canReserve, m_quantity);
-						items.cargo_loadPolymorphic(haulTool, toHaul, m_quantity);
 						actors.canReserve_clearAll(actor);
+						toHaul = items.cargo_loadPolymorphic(haulTool, toHaul, m_quantity);
+						m_toHaul = toHaul.toReference(area);
 						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
 					}
 					else
@@ -520,26 +505,15 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 					items.cargo_containsPolymorphic(haulTool, toHaul);
 				if(hasCargo)
 				{
+					assert(!toHaul.reservable_exists(area, faction));
 					// Cart has cargo.
 					if(actors.isAdjacentToLocation(actor, m_project.m_location))
 					{
 						// Actor is at destination.
 						//TODO: unloading delay.
-						//TODO: unfollow cart?
-						ActorOrItemIndex delivered;
-						if(m_genericItemType.empty())
-						{
-							items.cargo_unloadPolymorphicToLocation(haulTool, toHaul, actorLocation, m_quantity);
-							delivered = toHaul;
-						}
-						else
-						{
-							ItemIndex item = items.cargo_unloadGenericItemToLocation(haulTool, m_genericItemType, m_genericMaterialType, actorLocation, m_quantity);
-							delivered = ActorOrItemIndex::createForItem(item);
-						}
-						// TODO: set rotation?
+						items.cargo_remove(haulTool, toHaul);
 						actors.leadAndFollowDisband(actor);
-						complete(delivered);
+						complete(toHaul);
 					}
 					else
 						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
@@ -551,9 +525,11 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 					{
 						// Actor is at pickup location.
 						// TODO: loading delay.
-						toHaul.reservable_maybeUnreserve(area, m_project.m_canReserve);
-						items.cargo_loadPolymorphic(haulTool, toHaul, m_quantity);
+						toHaul.reservable_unreserve(area, m_project.m_canReserve, m_quantity);
 						actors.canReserve_clearAll(actor);
+						toHaul = items.cargo_loadPolymorphic(haulTool, toHaul, m_quantity);
+						assert(!toHaul.reservable_exists(area, faction));
+						m_toHaul = toHaul.toReference(area);
 						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
 					}
 					else
@@ -612,20 +588,10 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 				{
 					if(actors.isAdjacentToLocation(actor, m_project.m_location))
 					{
-						ActorOrItemIndex delivered;
-						if(m_genericItemType.empty())
-						{
-							items.cargo_unloadPolymorphicToLocation(haulTool, toHaul, actorLocation, m_quantity);
-							delivered = toHaul;
-						}
-						else
-						{
-							ItemIndex item = items.cargo_unloadGenericItemToLocation(haulTool, m_genericItemType, m_genericMaterialType, actorLocation, m_quantity);
-							delivered = ActorOrItemIndex::createForItem(item);
-						}
+						items.cargo_remove(haulTool, toHaul);
 						// TODO: set rotation?
 						actors.leadAndFollowDisband(actor);
-						complete(delivered);
+						complete(toHaul);
 					}
 					else
 						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
@@ -636,7 +602,8 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 					{
 						//TODO: set delay for loading.
 						toHaul.reservable_maybeUnreserve(area, m_project.m_canReserve);
-						items.cargo_loadPolymorphic(haulTool, toHaul, m_quantity);
+						toHaul = items.cargo_loadPolymorphic(haulTool, toHaul, m_quantity);
+						m_toHaul = toHaul.toReference(area);
 						actors.canReserve_clearAll(actor);
 						actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
 					}
@@ -778,6 +745,8 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	// Cart
 	if(haulTool.exists())
 	{
+		if (toHaul.isItem())
+			assert(haulTool != toHaul.getItem());
 		// Cart
 		maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(project.m_area, worker, haulTool, toHaul, minimumSpeed);
 		if(maxQuantityCanCarry != 0)
@@ -839,31 +808,58 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 }
 void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 {
-	Actors& actors = m_project.m_area.getActors();
-	Items& items = m_project.m_area.getItems();
-	Project& project = m_project;
+	delivered.validate(m_project.m_area);
+	Area& area = m_project.m_area;
+	Actors& actors = area.getActors();
+	Blocks& blocks = area.getBlocks();
+	Items& items = area.getItems();
+	const BlockIndex& location = actors.getLocation(m_leader.exists() ? 
+		m_leader.getIndex(actors.m_referenceData) :
+		m_workers.front().getIndex(actors.m_referenceData)
+	);
 	m_projectRequirementCounts.delivered += m_quantity;
 	assert(m_projectRequirementCounts.delivered <= m_projectRequirementCounts.required);
+	for(ActorReference worker : m_workers)
+		actors.canReserve_clearAll(worker.getIndex(actors.m_referenceData));
 	if(delivered.isItem())
 	{
-		ItemIndex deliveredIndex = ItemIndex::cast(delivered.get());
+		ItemIndex deliveredIndex = delivered.getItem();
+		ItemReference ref = area.getItems().m_referenceData.getReference(deliveredIndex);
+		Quantity quantity = delivered.getQuantity(area);
+		if(delivered.isGeneric(area))
+		{ 
+			ItemIndex existing = blocks.item_getGeneric(location, items.getItemType(deliveredIndex), items.getMaterialType(deliveredIndex));
+			if(existing.exists())
+			{
+				// Delivery location already contains a stack of this type and material.
+				// Update all references prior to setting location.
+				ItemReference newRef = items.getReference(existing);
+				m_toHaul = ActorOrItemReference::createForItem(newRef);
+				m_project.updateRequiredGenericReference(newRef);
+				// RequiredItems may contain a copy of ref in an ItemQuery.
+				m_project.clearReferenceFromRequiredItems(ref);
+				ref = newRef;
+			}
+		}
+		deliveredIndex = items.setLocationAndFacing(deliveredIndex, location, Facing::create(0));
 		// Reserve dropped off item with project.
 		// Items are not reserved durring transit because reserved items don't move.
+		// If the item is already reserved due to combining with an existing one on drop-off the reserved quantity will be increased.
 		items.reservable_reserve(deliveredIndex, m_project.getCanReserve(), m_quantity);
 		if(m_projectRequirementCounts.consumed)
-			m_project.m_toConsume.getOrInsert(items.getReference(deliveredIndex), Quantity::create(0)) += m_quantity;
+			m_project.m_toConsume.getOrInsert(ref, Quantity::create(0)) += m_quantity;
+		//TODO: This belongs in CraftProject.
 		if(items.isWorkPiece(deliveredIndex))
-			delivered.setLocationAndFacing(m_project.m_area, m_project.m_location, Facing::create(0));
-		m_project.m_deliveredItems.maybeInsert(m_project.m_area.getItems().m_referenceData.getReference(deliveredIndex));
+			delivered.setLocationAndFacing(area, m_project.m_location, Facing::create(0));
+		m_project.m_deliveredItems.getOrInsert(ref, Quantity::create(0)) += quantity;
 	}
 	else
 		//TODO: deliver actors.
 		assert(false);
-	for(ActorReference worker : m_workers)
-		actors.canReserve_clearAll(worker.getIndex(actors.m_referenceData));
 	m_project.onDelivered(delivered);
+	Project& project = m_project;
 	auto workers = std::move(m_workers);
-	m_project.m_haulSubprojects.remove(*this);
+	project.m_haulSubprojects.remove(*this);
 	for(ActorReference worker : workers)
 	{
 		assert(!project.m_making.contains(worker));
