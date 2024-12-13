@@ -32,7 +32,7 @@ TEST_CASE("vision")
 			.species=dwarf, 
 			.location=block,
 		});
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		REQUIRE(actors.vision_getCanSee(actor).empty());
 	}
 	SUBCASE("See someone nearby")
@@ -48,10 +48,10 @@ TEST_CASE("vision")
 			.species=dwarf, 
 			.location=block2,
 		});
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
 		REQUIRE(result.size() == 1);
-		REQUIRE(result.contains(a2));
+		REQUIRE(result.contains(actors.getReference(a2)));
 	}
 	SUBCASE("Vision blocked by wall")
 	{
@@ -68,7 +68,7 @@ TEST_CASE("vision")
 			.species=dwarf, 
 			.location=block3,
 		});
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
 		REQUIRE(result.size() == 0);
 	}
@@ -87,7 +87,7 @@ TEST_CASE("vision")
 			.species=dwarf, 
 			.location=block3,
 		});
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
 		REQUIRE(result.size() == 1);
 	}
@@ -109,7 +109,7 @@ TEST_CASE("vision")
 		});
 		REQUIRE(actors.getBlocks(a2).contains(block4));
 		REQUIRE(area.m_opacityFacade.hasLineOfSight(block1, block4));
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
 		REQUIRE(result.size() == 1);
 	}
@@ -128,7 +128,7 @@ TEST_CASE("vision")
 			.species=dwarf, 
 			.location=block3,
 		});
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
 		REQUIRE(result.size() == 1);
 	}
@@ -150,12 +150,12 @@ TEST_CASE("vision")
 		blocks.blockFeature_close(block2, door);
 		bool canSeeThrough = blocks.canSeeThrough(block2);
 		REQUIRE(!canSeeThrough);
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
 		REQUIRE(result.size() == 0);
 		blocks.blockFeature_open(block2, door);
 		REQUIRE(blocks.canSeeThroughFrom(block2, block1));
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result2 = actors.vision_getCanSee(a1);
 		REQUIRE(result2.size() == 1);
 	}
@@ -178,16 +178,16 @@ TEST_CASE("vision")
 			.species=dwarf, 
 			.location=block3,
 		});
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
 		REQUIRE(result.size() == 0);
-		area.m_visionFacadeBuckets.getForStep(Step::create(2)).doStep();
+		area.m_visionRequests.doStep();
 		auto result2 = actors.vision_getCanSee(a2);
 		REQUIRE(result2.size() == 0);
 		blocks.blockFeature_open(block3, hatch);
 		bool canSee = area.m_opacityFacade.hasLineOfSight(block1, block3);
 		REQUIRE(canSee);
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result3 = actors.vision_getCanSee(a1);
 		REQUIRE(result3.size() == 1);
 	}
@@ -207,7 +207,7 @@ TEST_CASE("vision")
 			.species=dwarf, 
 			.location=block3,
 		});
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
 		REQUIRE(result.size() == 1);
 	}
@@ -229,14 +229,14 @@ TEST_CASE("vision")
 			.species=dwarf, 
 			.location=block3,
 		});
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
 		REQUIRE(result.size() == 1);
 		blocks.blockFeature_construct(block3, floor, marble);
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result2 = actors.vision_getCanSee(a1);
 		REQUIRE(result2.size() == 0);
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result3 = actors.vision_getCanSee(a2);
 		REQUIRE(result3.size() == 0);
 	}
@@ -258,11 +258,11 @@ TEST_CASE("vision")
 			.species=dwarf, 
 			.location=block3,
 		});
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
 		REQUIRE(result.size() == 1);
 		blocks.blockFeature_construct(block3, floor, glass);
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result2 = actors.vision_getCanSee(a1);
 		REQUIRE(result2.size() == 1);
 	}
@@ -281,7 +281,7 @@ TEST_CASE("vision")
 			.species=dwarf, 
 			.location=block3,
 		});
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
 		REQUIRE(result.size() == 1);
 	}
@@ -363,10 +363,10 @@ TEST_CASE("vision")
 			.species=dwarf, 
 			.location=block2,
 		});
-		area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
 		REQUIRE(result.size() == 1);
-		REQUIRE(result.contains(a2));
+		REQUIRE(result.contains(actors.getReference(a2)));
 	}
 }
 TEST_CASE("Too far to see")
@@ -388,7 +388,7 @@ TEST_CASE("Too far to see")
 		.species=dwarf, 
 		.location=block2,
 	});
-	area.m_visionFacadeBuckets.getForStep(Step::create(1)).doStep();
+	area.m_visionRequests.doStep();
 	auto result = actors.vision_getCanSee(a1);
 	REQUIRE(result.size() == 0);
 }

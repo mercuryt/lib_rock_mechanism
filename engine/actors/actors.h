@@ -3,7 +3,7 @@
 #include "../datetime.h"
 #include "../portables.h"
 #include "../types.h"
-#include "../visionFacade.h"
+#include "../visionRequests.h"
 #include "../body.h"
 #include "../objective.h"
 #include "../equipment.h"
@@ -106,9 +106,9 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	// Stamina.
 	DataVector<Stamina, ActorIndex> m_stamina;
 	// Vision.
-	DataVector<ActorIndices, ActorIndex> m_canSee;
+	DataVector<SmallSet<ActorReference>, ActorIndex> m_canSee;
+	DataVector<SmallSet<ActorReference>, ActorIndex> m_canBeSeenBy;
 	DataVector<DistanceInBlocks, ActorIndex> m_visionRange;
-	DataVector<HasVisionFacade, ActorIndex> m_hasVisionFacade;
 	// Combat.
 	HasScheduledEvents<AttackCoolDownEvent> m_coolDownEvent;
 	DataVector<std::vector<std::pair<CombatScore, Attack>>, ActorIndex> m_meleeAttackTable;
@@ -187,21 +187,22 @@ public:
 	[[nodiscard]] Stamina stamina_getMax(const ActorIndex& index) const;
 	[[nodiscard]] Stamina stamina_get(const ActorIndex& index) const { return m_stamina[index]; }
 	// -Vision.
-	void vision_do(const ActorIndex& index, ActorIndices& actors);
-	void vision_setRange(const ActorIndex& index, const DistanceInBlocks& range);
-	void vision_createFacadeIfCanSee(const ActorIndex& index);
-	void vision_clearFacade(const ActorIndex& index);
-	void vision_swap(const ActorIndex& index, ActorIndices& toSwap);
-	[[nodiscard]] ActorIndices& vision_getCanSee(const ActorIndex& index) { return m_canSee[index]; }
+	void vision_createRequestIfCanSee(const ActorIndex& index);
+	void vision_clearRequestIfExists(const ActorIndex& index);
+	void vision_setCanSee(const ActorIndex& index, SmallSet<ActorReference>&& canSee) { m_canSee[index] = std::move(canSee); }
+	void vision_setCanBeSeenBy(const ActorIndex& index, SmallSet<ActorReference>&& canBeSeenBy) { m_canBeSeenBy[index] = std::move(canBeSeenBy); }
+	void vision_maybeSetNoLongerCanSee(const ActorIndex& index, const ActorReference& other) { m_canSee[index].maybeErase(other); }
+	void vision_maybeSetNoLongerCanBeSeenBy(const ActorIndex& index, const ActorReference& other) { m_canBeSeenBy[index].maybeErase(other); }
+	void vision_clearCanSee(const ActorIndex& index);
+	void vision_maybeUpdateCuboid(const ActorIndex& index, const VisionCuboidId &oldCuboid, const VisionCuboidId &newCuboid);
+	void vision_maybeUpdateRange(const ActorIndex& index, const DistanceInBlocks& range);
+	void vision_maybeUpdateLocation(const ActorIndex& index, const BlockIndex& location);
+	[[nodiscard]] SmallSet<ActorReference>& vision_getCanSee(const ActorIndex &index) { return m_canSee[index]; }
+	[[nodiscard]] SmallSet<ActorReference>& vision_getCanBeSeenBy(const ActorIndex& index) { return m_canBeSeenBy[index]; }
 	[[nodiscard]] DistanceInBlocks vision_getRange(const ActorIndex& index) const { return m_visionRange[index]; }
+	[[nodiscard]] DistanceInBlocks vision_getRangeSquared(const ActorIndex& index) const { return DistanceInBlocks::create(pow(m_visionRange[index].get(), 2)); }
 	[[nodiscard]] bool vision_canSeeActor(const ActorIndex& index, const ActorIndex& other) const;
 	[[nodiscard]] bool vision_canSeeAnything(const ActorIndex& index) const;
-	[[nodiscard]] bool vision_hasFacade(const ActorIndex& actor) const;
-	[[nodiscard]] std::pair<VisionFacade*, VisionFacadeIndex> vision_getFacadeWithIndex(const ActorIndex& actor) const;
-	// To be used by VisionFacade only.
-	[[nodiscard]] HasVisionFacade& vision_getHasVisionFacade(const ActorIndex& index) { return m_hasVisionFacade[index]; }
-	// For testing.
-	[[nodiscard]] VisionFacade& vision_getFacadeBucket(const ActorIndex& index);
 	// -Combat.
 	void combat_attackMeleeRange(const ActorIndex& index, const ActorIndex& target);
 	void combat_attackLongRange(const ActorIndex& index, const ActorIndex& target, const ItemIndex& weapon, const ItemIndex& ammo);

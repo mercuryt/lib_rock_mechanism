@@ -138,6 +138,8 @@ namespace Config
 	inline float minimumRainIntensityModifier;
 	inline float minimumStepsBetweenRainPerPercentHumidity;
 	inline float minimumStepsRainPerPercentHumidity;
+	inline uint16_t minimumSizeForOctTreeToSplit;
+	inline uint32_t minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests;
 	inline CollisionVolume minimumVolumeOfFluidToBreath;
 	inline uint32_t minutesPerHour;
 	inline uint32_t moveTryAttemptsBeforeDetour;
@@ -217,7 +219,7 @@ namespace Config
 	inline float unitsOfMoveSpeedPerUnitOfAgility;
 	inline uint32_t unitsOfWoundAreaPerUnitItemScaleFactor;
 	inline float unitsOfVolumePerUnitOfCollisionVolume;
-	inline size_t visionFacadeReservationSize;
+	inline size_t visionRequestsReservationSize;
 	inline uint16_t visionThreadingBatchSize;
 	inline uint32_t wanderMaximumNumberOfBlocks;
 	inline uint32_t wanderMinimimNumberOfBlocks;

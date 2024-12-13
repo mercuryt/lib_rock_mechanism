@@ -2,6 +2,7 @@
 #include "area.h"
 #include "types.h"
 #include "blocks/blocks.h"
+#include "lineGenerator.h"
 
 OpacityFacade::OpacityFacade(Area& area) : m_area(area) { }
 void OpacityFacade::initalize()
@@ -42,7 +43,7 @@ bool OpacityFacade::floorIsOpaque(const BlockIndex& index) const
 	assert(m_floorOpacity[index] != m_area.getBlocks().canSeeThroughFloor(index));
 	return m_floorOpacity[index];
 }
-bool  OpacityFacade::hasLineOfSight(const BlockIndex& from, const BlockIndex& to) const
+bool OpacityFacade::hasLineOfSight(const BlockIndex& from, const BlockIndex& to) const
 {
 	if(from == to)
 		return true;
@@ -50,48 +51,38 @@ bool  OpacityFacade::hasLineOfSight(const BlockIndex& from, const BlockIndex& to
 	Point3D toCoords = m_area.getBlocks().getCoordinates(to);
 	return hasLineOfSight(from, fromCoords, toCoords);
 }
-bool  OpacityFacade::hasLineOfSight(const BlockIndex& fromIndex, Point3D fromCoords, Point3D toCoords) const
+bool OpacityFacade::hasLineOfSight(const BlockIndex& fromIndex, Point3D fromCoords, Point3D toCoords) const
 {
 	const BlockIndex& toIndex = m_area.getBlocks().getIndex(toCoords);
 	assert(!isOpaque(toIndex));
 	assert(!isOpaque(fromIndex));
 	assert(fromCoords != toCoords);
 	BlockIndex currentIndex = fromIndex;
-	//TODO: Would it be faster to use fixed percision number types?
-	float x = fromCoords.x.get();
-	float y = fromCoords.y.get();
-	float z = fromCoords.z.get();
-	// Use unsigned types here instead of DistanceInBlocks because delta could be negitive.
-	int32_t xDelta = int32_t(toCoords.x.get()) - int32_t(fromCoords.x.get());
-	int32_t yDelta = int32_t(toCoords.y.get()) - int32_t(fromCoords.y.get());
-	int32_t zDelta = int32_t(toCoords.z.get()) - int32_t(fromCoords.z.get());
-	float denominator = std::max({abs(xDelta), abs(yDelta), abs(zDelta)});
-	// Normalize delta to a unit vector.
-	float xDeltaNormalized = (float)xDelta / denominator;
-	float yDeltaNormalized = (float)yDelta / denominator;
-	float zDeltaNormalized = (float)zDelta / denominator;
-	// Iterate through the line of sight one block at a time untill we hit 'to' or an opaque block.
-	// Works by generating coordinates and turning those into vector indices which can be checked in the facade data.
-	DistanceInBlocks zInt = fromCoords.z;
-	while(true)
-	{
-		BlockIndex previousIndex = currentIndex;
-		DistanceInBlocks oldZ = zInt;
-		// Add deltas to coordinates to get next set.
-		x += xDeltaNormalized;
-		y += yDeltaNormalized;
-		z += zDeltaNormalized;
-		// Round to integer and store for use as oldZ next iteration.
-		zInt = DistanceInBlocks::create(std::round(z));
-		// Convert coordintates into index.
-		currentIndex = m_area.getBlocks().getIndex({DistanceInBlocks::create(std::round(x)), DistanceInBlocks::create(std::round(y)), zInt});
-		// Check for opaque blocks and block features.
-		if(!canSeeIntoFrom(previousIndex, currentIndex, oldZ, zInt))
+	BlockIndex previousIndex;
+	Blocks& blocks = m_area.getBlocks();
+	bool result = true;
+	DistanceInBlocks previousZ;
+	DistanceInBlocks currentZ = fromCoords.z;
+	forEachOnLine(fromCoords, toCoords, [&](int x, int y, int z){
+		previousIndex = currentIndex;
+		previousZ = currentZ;
+		currentIndex = blocks.getIndex_i(x, y, z);
+		currentZ = DistanceInBlocks::create(z);
+		if(!canSeeIntoFrom(previousIndex, currentIndex, previousZ, currentZ))
+		{
+			result = false;
 			return false;
+		}
 		// Check for success.
 		if(currentIndex == toIndex)
-			return true;
-	}
+		{
+			result = true;
+			return false;
+		}
+		// Not done and not blocked, continue.
+		return true;
+	});
+	return result;
 }
 bool OpacityFacade::canSeeIntoFrom(const BlockIndex& previousIndex, const BlockIndex& currentIndex, const DistanceInBlocks& oldZ, const DistanceInBlocks& z) const
 {

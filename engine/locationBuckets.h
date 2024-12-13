@@ -2,6 +2,7 @@
 #include "types.h"
 #include "index.h"
 #include "dataVector.h"
+#include "reference.h"
 #include <cstdint>
 #include <functional>
 class Area;
@@ -9,20 +10,40 @@ class Actor;
 class VisionRequest;
 class VisionFacade;
 
+struct LocationBucketSingleTileActorData
+{
+	Point3D position;
+	VisionCuboidId cuboidId;
+	ActorReference actor;
+	DistanceInBlocks rangeSquared;
+	struct hash{ [[nodiscard]] static size_t operator()(const LocationBucketSingleTileActorData& data) { return data.actor.getReferenceIndex().get(); }};
+	[[nodiscard]] bool operator==(const LocationBucketSingleTileActorData& other) const { return actor == other.actor; }
+	[[nodiscard]] bool operator!=(const LocationBucketSingleTileActorData& other) const { return actor != other.actor; }
+};
+struct LocationBucketMultiTileActorData
+{
+	SmallMap<Point3D, VisionCuboidId> positionsAndCuboidIds;
+	ActorReference actor;
+	DistanceInBlocks rangeSquared;
+	struct hash{ static size_t operator()(const LocationBucketMultiTileActorData& data) { return data.actor.getReferenceIndex().get(); }};
+	[[nodiscard]] bool operator==(const LocationBucketMultiTileActorData& other) const { return actor == other.actor; }
+	[[nodiscard]] bool operator!=(const LocationBucketMultiTileActorData& other) const { return actor != other.actor; }
+};
 struct LocationBucket final
 {
 	//TODO: Use HybridSequence.
-	DataVector<ActorIndex, LocationBucketId> m_actorsMultiTile;
-	DataVector<SmallMap<Point3D, VisionCuboidId>, LocationBucketId> m_positionsAndCuboidsMultiTileActors;
-	DataVector<ActorIndex, LocationBucketId> m_actorsSingleTile;
-	DataVector<Point3D, LocationBucketId> m_positionsSingleTileActors;
-	DataVector<VisionCuboidId, LocationBucketId> m_visionCuboidsSingleTileActors;
+	SmallSet<LocationBucketSingleTileActorData> m_actorsSingleTile;
+	SmallSet<LocationBucketMultiTileActorData> m_actorsMultiTile;
 	void insert(Area& area, const ActorIndex& actor, const BlockIndices& blocks);
 	void erase(Area& area, const ActorIndex& actor);
 	void update(Area& area, const ActorIndex& actor, const BlockIndices& blocks);
+	// When a block changes it's cuboid id and stored in the location bucket data must be updated
 	void updateCuboid(Area& area, const ActorIndex& actor, const BlockIndex& block, const VisionCuboidId& oldCuboid, const VisionCuboidId& newCuboid);
 	void prefetch() const;
 	[[nodiscard]] size_t size() const { return m_actorsMultiTile.size() + m_actorsSingleTile.size(); }
+	[[nodiscard]] LocationBucketSingleTileActorData& getSingleTileData(const ActorReference& ref);
+	[[nodiscard]] LocationBucketMultiTileActorData& getMultiTileData(const ActorReference& ref);
+	[[nodiscard]] bool empty() const { return m_actorsMultiTile.empty() && m_actorsSingleTile.empty(); }
 };
 class LocationBuckets
 {
@@ -42,6 +63,7 @@ public:
 	void update(const ActorIndex& actor, const BlockIndices& oldBlocks);
 	void updateCuboid(Area& area, const ActorIndex& actor, const BlockIndex& block, const VisionCuboidId& oldCuboid, const VisionCuboidId& newCuboid);
 	void prefetch(uint index) const;
-	[[nodiscard]] LocationBucket& getBucketFor(const BlockIndex& block);
-	friend class VisionFacade;
+	[[nodiscard]] uint getBucketIndexFor(const BlockIndex& block);
+	[[nodiscard]] LocationBucket& getBucketFor(const BlockIndex& block) { return m_buckets[getBucketIndexFor(block)]; }
+	friend class VisionRequests;
 };

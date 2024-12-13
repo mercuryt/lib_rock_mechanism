@@ -1,51 +1,55 @@
 #include "actors.h"
 #include "types.h"
 #include "index.h"
-#include "visionFacade.h"
-void Actors::vision_do(const ActorIndex& index, ActorIndices& actors)
-{
-	//TODO: Since we moved to a homogenious threading model we don't need to double buffer here.
-	m_canSee[index].swap(actors);
-	//TODO: psycology.
-	//TODO: fog of war?
-}
-void Actors::vision_createFacadeIfCanSee(const ActorIndex& index)
-{
-	if(vision_canSeeAnything(index))
-		m_hasVisionFacade[index].create(m_area, index);
-}
-void Actors::vision_setRange(const ActorIndex& index, const DistanceInBlocks& range) 
-{
-       	m_visionRange[index] = range; 
-	if(!m_hasVisionFacade.empty())
-		m_hasVisionFacade[index].updateRange(range);
-}
-void Actors::vision_clearFacade(const ActorIndex& index)
-{
-	m_hasVisionFacade[index].clear();
-}
-void Actors::vision_swap(const ActorIndex& index, ActorIndices& toSwap)
-{
-	m_canSee[index].swap(toSwap);
-}
+#include "../visionRequests.h"
+#include "../area.h"
 bool Actors::vision_canSeeAnything(const ActorIndex& index) const
 {
 	return isAlive(index) && sleep_isAwake(index);
 }
 bool Actors::vision_canSeeActor(const ActorIndex& index, const ActorIndex& actor) const 
 { 
-	return std::ranges::find(m_canSee[index], actor) != m_canSee[index].end(); 
+	ActorReference ref = m_area.getActors().getReference(actor);
+	return m_canSee[index].contains(ref);
 }
-VisionFacade& Actors::vision_getFacadeBucket(const ActorIndex& index)
+void Actors::vision_createRequestIfCanSee(const ActorIndex& index)
 {
-	return m_hasVisionFacade[index].getVisionFacade();
+	if(vision_canSeeAnything(index))
+		m_area.m_visionRequests.create(m_area.getActors().getReference(index));
 }
-std::pair<VisionFacade*, VisionFacadeIndex> Actors::vision_getFacadeWithIndex(const ActorIndex& index) const
+void Actors::vision_clearRequestIfExists(const ActorIndex& index)
 {
-	auto& hasVisionFacade = m_hasVisionFacade[index];
-	return std::make_pair(&hasVisionFacade.getVisionFacade(), hasVisionFacade.getIndex());
+	m_area.m_visionRequests.cancelIfExists(m_area.getActors().getReference(index));
 }
-bool Actors::vision_hasFacade(const ActorIndex& index) const
+void Actors::vision_clearCanSee(const ActorIndex& index)
 {
-	return !m_hasVisionFacade[index].empty();
+	ActorReference ref = m_area.getActors().getReference(index);
+	for(ActorReference other : m_canSee[index])
+		m_canBeSeenBy[other.getIndex(m_referenceData)].erase(ref);
+	m_canSee[index].clear();
+}
+void Actors::vision_maybeUpdateCuboid(const ActorIndex& index, const VisionCuboidId& oldCuboid, const VisionCuboidId& newCuboid)
+{
+	if(vision_canSeeAnything(index))
+		m_area.m_visionRequests.maybeUpdateCuboid(getReference(index), oldCuboid, newCuboid);
+}
+void Actors::vision_maybeUpdateRange(const ActorIndex& index, const DistanceInBlocks& range)
+{
+	if(vision_canSeeAnything(index))
+	{
+		ActorReference ref = m_area.getActors().getReference(index);
+		bool exists = m_area.m_visionRequests.maybeUpdateRange(ref, range);
+		if(!exists)
+			m_area.m_visionRequests.create(ref);
+	}
+}
+void Actors::vision_maybeUpdateLocation(const ActorIndex& index, const BlockIndex& location)
+{
+	if(vision_canSeeAnything(index))
+	{
+		ActorReference ref = m_area.getActors().getReference(index);
+		bool exists = m_area.m_visionRequests.maybeUpdateLocation(ref, location);
+		if(!exists)
+			m_area.m_visionRequests.create(ref);
+	}
 }

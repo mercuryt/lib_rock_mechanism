@@ -11,6 +11,7 @@
 
 Blocks::Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) : m_area(area), m_sizeX(x), m_sizeY(y), m_sizeZ(z)
 {
+	assert(!area.m_loaded);
 	BlockIndex count = BlockIndex::create((x * y * z).get());
 	resize(count);
 	for(BlockIndex i = BlockIndex::create(0); i < count; ++i)
@@ -501,6 +502,8 @@ void Blocks::solid_set(const BlockIndex& index, const MaterialTypeId& materialTy
 	if(materialType == m_materialType[index])
 		return;
 	bool wasEmpty = m_materialType[index].empty();
+	if(wasEmpty)
+		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(index);
 	m_materialType[index] = materialType;
 	m_constructed.set(index, constructed);
 	fluid_onBlockSetSolid(index);
@@ -540,6 +543,7 @@ void Blocks::solid_setNot(const BlockIndex& index)
 	// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid block.
 	m_reservables[index] = nullptr;
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
+	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(index);
 }
 MaterialTypeId Blocks::solid_get(const BlockIndex& index) const
 {

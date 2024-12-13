@@ -25,10 +25,6 @@
 #include <sys/types.h>
 
 Area::Area(AreaId id, std::wstring n, Simulation& s, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) :
-	m_blocks(std::make_unique<Blocks>(*this, x, y, z)),
-	m_actors(std::make_unique<Actors>(*this)),
-	m_plants(std::make_unique<Plants>(*this)),
-	m_items(std::make_unique<Items>(*this)),
 	m_eventSchedule(s, this),
 	m_hasTemperature(*this),
 	m_hasTerrainFacades(*this),
@@ -46,27 +42,35 @@ Area::Area(AreaId id, std::wstring n, Simulation& s, const DistanceInBlocks& x, 
 	m_hasRain(*this, s),
 	m_blockDesignations(*this),
 	m_locationBuckets(*this),
-	m_visionFacadeBuckets(*this),
+	m_visionRequests(*this),
 	m_opacityFacade(*this),
 	m_name(n),
 	m_simulation(s),
 	m_id(id)
 {
+	m_blocks = std::make_unique<Blocks>(*this, x, y, z);
+	m_actors = std::make_unique<Actors>(*this);
+	m_plants = std::make_unique<Plants>(*this);
+	m_items = std::make_unique<Items>(*this);
 	setup();
 	m_opacityFacade.initalize();
 	m_visionCuboids.initalize(*this);
 	m_hasRain.scheduleRestart();
+	if constexpr(DEBUG)
+		m_loaded = true;
 }
 Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation) :
-	m_blocks(std::make_unique<Blocks>(*this, data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>())),
-	m_actors(std::make_unique<Actors>(*this)), m_plants(std::make_unique<Plants>(*this)), m_items(std::make_unique<Items>(*this)), 
 	m_eventSchedule(simulation, this), m_hasTemperature(*this), m_hasTerrainFacades(*this),
 	m_fires(*this), m_hasFarmFields(*this), m_hasDigDesignations(*this), m_hasConstructionDesignations(*this),
 	m_hasStockPiles(*this), m_hasCraftingLocationsAndJobs(*this), m_hasTargetedHauling(*this), m_hasSleepingSpots(*this),
 	m_hasWoodCuttingDesignations(*this), m_fluidSources(*this), m_hasFluidGroups(*this), m_hasRain(*this, simulation), m_blockDesignations(*this),
-	m_locationBuckets(*this), m_visionFacadeBuckets(*this), m_opacityFacade(*this), 
+	m_locationBuckets(*this), m_visionRequests(*this), m_opacityFacade(*this), 
 	m_name(data["name"].get<std::wstring>()), m_simulation(simulation), m_id(data["id"].get<AreaId>())
 {
+	m_blocks = std::make_unique<Blocks>(*this, data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>());
+	m_actors = std::make_unique<Actors>(*this);
+	m_plants = std::make_unique<Plants>(*this);
+	m_items = std::make_unique<Items>(*this);
 	// Record id now so json block references will function later in this method.
 	m_simulation.m_hasAreas->recordId(*this);
 	setup();
@@ -116,6 +120,8 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load rain.
 	if(data.contains("rain"))
 		m_hasRain.load(data["rain"], deserializationMemo);
+	if constexpr(DEBUG)
+		m_loaded = true;
 }
 Area::~Area()
 {
@@ -162,7 +168,7 @@ void Area::doStep()
 	if(m_hasRain.isRaining() && m_simulation.m_step.modulusIsZero(Config::rainWriteStepFreqency))
 		m_hasRain.doStep();
 	m_fluidSources.doStep();
-	m_visionFacadeBuckets.doStep(m_simulation.m_step);
+	m_visionRequests.doStep();
 	m_hasTerrainFacades.doStep();
 	m_threadedTaskEngine.doStep(m_simulation, this);
 	m_eventSchedule.doStep(m_simulation.m_step);

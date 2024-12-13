@@ -89,7 +89,12 @@ void Items::onChangeAmbiantSurfaceTemperature()
 		setTemperature(index, temperature);
 	}
 }
-Items::Items(Area& area) : Portables(area, false) { }
+Items::Items(Area& area) :
+	Portables(area, false)
+{
+	assert(!area.m_loaded);
+}
+
 ItemIndex Items::create(ItemParamaters itemParamaters)
 {
 	ItemIndex index = ItemIndex::create(size());

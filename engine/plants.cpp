@@ -17,7 +17,10 @@ Plants::Plants(Area& area) :
 	m_fluidEvent(area.m_eventSchedule),
 	m_temperatureEvent(area.m_eventSchedule),
 	m_endOfHarvestEvent(area.m_eventSchedule),
-	m_foliageGrowthEvent(area.m_eventSchedule) { }
+	m_foliageGrowthEvent(area.m_eventSchedule)
+	{
+		assert(!area.m_loaded);
+	}
 void Plants::resize(const PlantIndex& newSize)
 {
 	HasShapes<Plants, PlantIndex>::resize(newSize);

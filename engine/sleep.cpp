@@ -112,7 +112,7 @@ void MustSleep::sleep(Area& area, const Step& duration, bool force)
 	m_sleepEvent.schedule(area.m_simulation, duration, *this);
 	if(m_objective != nullptr)
 		actors.move_pathRequestMaybeCancel(actor);
-	actors.vision_clearFacade(actor);
+	actors.vision_clearCanSee(actor);
 }
 void MustSleep::wakeUp(Area& area)
 {
@@ -130,7 +130,7 @@ void MustSleep::wakeUp(Area& area)
 		actors.objective_complete(actor, *m_objective);
 		m_objective = nullptr;
 	}
-	actors.vision_createFacadeIfCanSee(actor);
+	actors.vision_createRequestIfCanSee(actor);
 }
 void MustSleep::makeSleepObjective(Area& area)
 {
@@ -149,9 +149,10 @@ void MustSleep::wakeUpEarly(Area& area)
 	m_isAwake = true;
 	m_sleepEvent.pause();
 	Actors& actors = area.getActors();
-	Step overide = AnimalSpecies::getStepsTillSleepOveride(area.getActors().getSpecies(m_actor.getIndex(actors.m_referenceData)));
+	ActorIndex index = m_actor.getIndex(actors.m_referenceData);
+	Step overide = AnimalSpecies::getStepsTillSleepOveride(area.getActors().getSpecies(index));
 	m_tiredEvent.schedule(area.m_simulation, overide, *this);
-	area.getActors().vision_createFacadeIfCanSee(m_actor.getIndex(actors.m_referenceData));
+	actors.vision_createRequestIfCanSee(index);
 	//TODO: partial stamina recovery.
 }
 void MustSleep::setLocation(const BlockIndex& block)

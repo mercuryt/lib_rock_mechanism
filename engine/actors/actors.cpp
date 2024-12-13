@@ -252,7 +252,10 @@ void to_json(const Json& data, std::unique_ptr<T>& t) { data = *t; }
 Actors::Actors(Area& area) :
 	Portables<Actors, ActorIndex, ActorReferenceIndex>(area, true),
 	m_coolDownEvent(area.m_eventSchedule),
-	m_moveEvent(area.m_eventSchedule) { }
+	m_moveEvent(area.m_eventSchedule)
+	{
+		assert(!area.m_loaded);
+	}
 Actors::~Actors()
 {
 	/*
@@ -263,7 +266,6 @@ Actors::~Actors()
 	m_canGrow.clear();
 	m_canReserve.clear();
 	*/
-	m_hasVisionFacade.clear();
 	// TODO: Clear path request?
 }
 void Actors::load(const Json& data)
@@ -292,7 +294,6 @@ void Actors::load(const Json& data)
 	data["leadFollowPath"].get_to(m_leadFollowPath);
 	data["carrying"].get_to(m_carrying);
 	data["stamina"].get_to(m_stamina);
-	data["canSee"].get_to(m_canSee);
 	data["visionRange"].get_to(m_visionRange);
 	m_coolDownEvent.load(m_area.m_simulation, data["coolDownEvent"], size.toHasShape());
 	data["targetedBy"].get_to(m_targetedBy);
@@ -389,11 +390,24 @@ void Actors::load(const Json& data)
 			m_pathIter[i] = m_path[i].begin() + data.get<uint>();
 		++i;
 	}
-	m_hasVisionFacade.resize(size);
+	m_canSee.resize(size);
+	assert(data["canSee"].type() == Json::value_t::object);
+	const auto& canSeeData = data["canSee"];
+	for(auto iter = canSeeData.begin(); iter != canSeeData.end(); ++iter)
+	{
+		ActorIndex index = ActorIndex::create(std::stoi(iter.key()));
+		ActorReference ref = getReference(index);
+		for(const Json& data : iter.value()["m_data"])
+		{
+			ActorReference otherRef(data, m_referenceData);
+			m_canSee[index].insert(otherRef);
+			ActorIndex otherIndex = otherRef.getIndex(m_referenceData);
+			m_canBeSeenBy[otherIndex].insert(ref);
+		}
+	}
 	for(ActorIndex index : getAll())
 	{
 		m_area.m_simulation.m_actors.registerActor(getId(index), m_area.getActors(), index);
-		m_hasVisionFacade[index].initalize(m_area, index);
 		Blocks &blocks = m_area.getBlocks();
 		if(m_location[index].exists())
 			for (auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
@@ -457,6 +471,7 @@ Json Actors::toJson() const
 		{"species", m_species},
 		{"project", m_project},
 		{"birthStep", m_birthStep},
+		{"canSee", Json::object()},
 		{"causeOfDeath", m_causeOfDeath},
 		{"strength", m_strength},
 		{"strengthBonusOrPenalty", m_strengthBonusOrPenalty},
@@ -485,7 +500,6 @@ Json Actors::toJson() const
 		{"equipmentSet", Json::object()},
 		{"carrying", m_carrying},
 		{"stamina", m_stamina},
-		{"canSee", m_canSee},
 		{"visionRange", m_visionRange},
 		{"coolDownEvent", m_coolDownEvent},
 		// TODO: These don't need to be serialized
@@ -518,6 +532,8 @@ Json Actors::toJson() const
 		output["pathIter"].push_back(m_pathIter[index] - m_path[index].begin());
 		if(m_pathRequest[index] != nullptr)
 			output["pathRequest"][i] = m_pathRequest[index]->toJson();
+		if(!m_canSee[index].empty())
+			output["canSee"][i] = m_canSee[index];
 	}
 	output.update(Portables<Actors, ActorIndex, ActorReferenceIndex>::toJson());
 	return output;
@@ -559,8 +575,8 @@ void Actors::resize(const ActorIndex& newSize)
 	m_carrying.resize(newSize);
 	m_stamina.resize(newSize);
 	m_canSee.resize(newSize);
+	m_canBeSeenBy.resize(newSize);
 	m_visionRange.resize(newSize);
-	m_hasVisionFacade.resize(newSize);
 	m_coolDownEvent.resize(newSize);
 	m_meleeAttackTable.resize(newSize);
 	m_targetedBy.resize(newSize);
@@ -616,8 +632,8 @@ void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
 	m_carrying[newIndex] = m_carrying[oldIndex];
 	m_stamina[newIndex] = m_stamina[oldIndex];
 	m_canSee[newIndex] = m_canSee[oldIndex];
+	m_canBeSeenBy[newIndex] = m_canBeSeenBy[oldIndex];
 	m_visionRange[newIndex] = m_visionRange[oldIndex];
-	m_hasVisionFacade[newIndex] = m_hasVisionFacade[oldIndex];
 	m_coolDownEvent.moveIndex(oldIndex, newIndex);
 	m_meleeAttackTable[newIndex] = m_meleeAttackTable[oldIndex];
 	m_targetedBy[newIndex] = m_targetedBy[oldIndex];
@@ -657,9 +673,6 @@ void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
 	// Update stored index for all actors who are targeting this one.
 	for(ActorIndex actor : m_targetedBy[newIndex])
 		m_target[actor] = newIndex;
-	// Update Actor Index in VisionFacade.
-	if(!m_hasVisionFacade[newIndex].empty())
-		m_hasVisionFacade[newIndex].updateActorIndex(newIndex);
 	// Update ActorIndices stored in occupied block(s).
 	Blocks& blocks = m_area.getBlocks();
 	for(BlockIndex block : m_blocks[newIndex])
@@ -670,8 +683,7 @@ void Actors::destroy(const ActorIndex& index)
 	// No need to explicitly unschedule events here, destorying the event holder will do it.
 	if(hasLocation(index))
 	{
-		if(vision_canSeeAnything(index))
-			m_hasVisionFacade[index].clear();
+		vision_clearRequestIfExists(index);
 		exit(index);
 	}
 	const auto& s = ActorIndex::create(size() - 1);
@@ -740,8 +752,8 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_stamina[index] = Stamina::null();
 	// Vision.
 	assert(m_canSee[index].empty());
+	assert(m_canBeSeenBy[index].empty());
 	m_visionRange[index] = AnimalSpecies::getVisionRange(params.species);
-	assert(m_hasVisionFacade[index].empty());
 	// Combat.
 	assert(!m_coolDownEvent.exists(index));
 	assert(m_meleeAttackTable[index].empty());
@@ -760,7 +772,6 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_speedIndividual[index] = Speed::create(0);
 	m_speedActual[index] = Speed::create(0);
 	m_moveRetries[index] = 0;
-	m_hasVisionFacade[index].initalize(m_area, index);
 	simulation.m_actors.registerActor(m_id[index], *this, index);
 	attributes_onUpdateGrowthPercent(index);
 	stamina_setFull(index);
@@ -829,15 +840,8 @@ void Actors::setLocationAndFacing(const ActorIndex& index, const BlockIndex& blo
 		blocks.actor_record(occupied, index, CollisionVolume::create(v));
 		m_blocks[index].add(occupied);
 		// Record in vision facade if has location and can currently see.
-		if(vision_canSeeAnything(index))
-		{
-			if (m_hasVisionFacade[index].empty())
-				m_hasVisionFacade[index].create(m_area, index);
-			else
-				m_hasVisionFacade[index].updateLocation(block);
-			assert(!m_hasVisionFacade[index].empty());
-		}
 	}
+	vision_maybeUpdateLocation(index, block);
 	if(blocks.isOnSurface(block))
 		m_onSurface.add(index);
 	else
@@ -892,7 +896,7 @@ void Actors::die(const ActorIndex& index, CauseOfDeath causeOfDeath)
 		m_project[index]->removeWorker(index);
 	if(m_location[index].exists())
 		maybeSetStatic(index);
-	vision_clearFacade(index);
+	vision_clearRequestIfExists(index);
 	move_pathRequestMaybeCancel(index);
 	if(!isSentient(index) && hasFaction(index))
 		m_area.m_hasHaulTools.unregisterYokeableActor(m_area, index);

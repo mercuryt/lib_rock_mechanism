@@ -2,6 +2,7 @@
 #include "area.h"
 #include "types.h"
 #include "blocks/blocks.h"
+#include "actors/actors.h"
 void AreaHasVisionCuboids::initalize(Area& area)
 {
 	m_area = &area;
@@ -79,14 +80,14 @@ void AreaHasVisionCuboids::set(const BlockIndex& block, VisionCuboid& visionCubo
 	m_blockVisionCuboids[block] = &visionCuboid;
 	m_blockVisionCuboidIds[block] = visionCuboid.m_id;
 	// Update stored vision cuboids.
+	Actors& actors = m_area->getActors();
 	for(const ActorIndex& actor : m_area->getBlocks().actor_getAll(block))
 	{
-		// Update visionCuboidId stored in VisionFacade.
-		m_area->m_visionFacadeBuckets.updateCuboid(actor, visionCuboid.m_id);
 		// Update visionCuboidId stored in LocationBuckets.
 		m_area->m_locationBuckets.updateCuboid(*m_area, actor, block, oldCuboid, visionCuboid.m_id);
+		// Update visionCuboidId stored in VisionRequests, if any.
+		actors.vision_maybeUpdateCuboid(actor, oldCuboid, visionCuboid.m_id);
 	}
-	
 }
 void AreaHasVisionCuboids::unset(const BlockIndex& block)
 {
