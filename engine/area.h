@@ -20,7 +20,7 @@
 #include "terrainFacade.h"
 #include "locationBuckets.h"
 #include "opacityFacade.h"
-#include "visionFacade.h"
+#include "visionRequests.h"
 #include "sleep.h"
 #include "drink.h"
 #include "eat.h"
@@ -75,7 +75,7 @@ public:
 	AreaHasRain m_hasRain;
 	AreaHasBlockDesignations m_blockDesignations;
 	LocationBuckets m_locationBuckets;
-	VisionFacadeBuckets m_visionFacadeBuckets;
+	VisionRequests m_visionRequests;
 	OpacityFacade m_opacityFacade;
 	AreaHasVisionCuboids m_visionCuboids;
 	BlockIndices m_caveInCheck;
@@ -84,6 +84,11 @@ public:
 	std::wstring m_name;
 	Simulation& m_simulation;
 	AreaId m_id;
+	// Because Actors, Items, and Plants take Area& as a single constructor argument it is possible to implicitly convert Area into a new empty of any of them.
+	// To prevent this we include the bool m_loaded and assert that it is false in each constructor.
+	#ifndef NDEBUG
+		bool m_loaded = false;
+	#endif
 	//WorldLocation* m_worldLocation;
 
 	// Create blocks and store adjacent

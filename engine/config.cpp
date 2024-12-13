@@ -126,8 +126,10 @@ void Config::load()
 	data["minimumPercentGrowthForWoodCutting"].get_to(minimumPercentGrowthForWoodCutting);
 	data["minimumRainIntensityModifier"].get_to(minimumRainIntensityModifier);
 	data["minimumDaysBetweenRainPerPercentHumidity"].get_to(minimumStepsBetweenRainPerPercentHumidity);
+	data["minimumSizeForOctTreeToSplit"].get_to(minimumSizeForOctTreeToSplit);
 	data["minimumSecondsRainPerPercentHumidity"].get_to(minimumStepsRainPerPercentHumidity);
 	data["minimumVolumeOfFluidToBreath"].get_to(minimumVolumeOfFluidToBreath);
+	data["minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests"].get_to(minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests);
 	data["moveTryAttemptsBeforeDetour"].get_to(moveTryAttemptsBeforeDetour);
 	data["musclePierceForceCost"].get_to(musclePierceForceCost);
 	data["objectivePrioiorityKill"].get_to(objectivePrioiorityKill);
@@ -199,7 +201,7 @@ void Config::load()
 	data["unitsOfMoveSpeedPerUnitOfAgility"].get_to(unitsOfMoveSpeedPerUnitOfAgility);
 	data["unitsOfWoundAreaPerUnitItemScaleFactor"].get_to(unitsOfWoundAreaPerUnitItemScaleFactor);
 	data["unitsOfVolumePerUnitOfCollisionVolume"].get_to(unitsOfVolumePerUnitOfCollisionVolume);
-	data["visionFacadeReservationSize"].get_to(visionFacadeReservationSize);
+	data["visionRequestsReservationSize"].get_to(visionRequestsReservationSize);
 	data["visionThreadingBatchSize"].get_to(visionThreadingBatchSize);
 	data["wanderMaximumNumberOfBlocks"].get_to(wanderMaximumNumberOfBlocks);
 	data["wanderMinimumNumberOfBlocks"].get_to(wanderMinimimNumberOfBlocks);

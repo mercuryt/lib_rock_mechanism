@@ -18,6 +18,10 @@ public:
 	class const_iterator;
 	SmallSet() = default;
 	SmallSet(std::initializer_list<T> i) : m_data(i) { }
+	SmallSet(const This& other) { m_data = other.m_data; }
+	SmallSet(This&& other) { m_data = std::move(other.m_data); }
+	This& operator=(const This& other) { m_data = other.m_data; return *this; }
+	This& operator=(This&& other) { m_data = std::move(other.m_data); return *this; }
 	void insert(const T& value) { assert(!contains(value)); m_data.push_back(value); }
 	void maybeInsert(const T& value) { if(!contains(value)) m_data.push_back(value); }
 	void insert(std::vector<T>::const_iterator&& begin, std::vector<T>::const_iterator&& end)
@@ -55,20 +59,41 @@ public:
 	}
 	template<typename Predicate>
 	void eraseIf(Predicate&& predicate) { std::erase_if(m_data, predicate); }
+	void eraseAll(This& other)
+	{
+		other.sort();
+		std::erase_if(m_data, [&](const T& value){ return std::ranges::binary_search(other.m_data, value); });
+	}
 	void clear() { m_data.clear(); }
 	template<typename ...Args>
 	void emplace(Args&& ...args)
 	{
 		// Create first and then assert uniqueness.
-		const auto& created = m_data.emplace_back(T(std::forward<Args>(args)...));
-		assert(std::ranges::count(m_data, created) == 1);
+		m_data.emplace_back(T(std::forward<Args>(args)...));
+		assert(std::ranges::count(m_data, m_data.back()) == 1);
 	}
 	void swap(This& other) { m_data.swap(other.m_data); }
 	void popBack() { m_data.pop_back(); }
 	template<typename Predicate>
 	void sort(Predicate&& predicate) { std::ranges::sort(m_data, predicate); }
+	void sort() { std::ranges::sort(m_data); }
 	void update(const T& oldValue, const T& newValue) { assert(contains(oldValue)); (*find(oldValue)) = newValue;} 
-	[[nodiscard]] bool contains(const T& value) const { return std::ranges::find(m_data, const_cast<T&>(value)) != m_data.end(); }
+	void makeUnique() { std::ranges::sort(m_data); std::ranges::unique(m_data); }
+	void removeDuplicatesAndValue(const T& value)
+	{
+		std::vector<T> seen = {value};
+		m_data.erase(std::remove_if(m_data.begin(), m_data.end(), [&](const T& elem) 
+		{
+			if(std::ranges::contains(seen, elem))
+				return true;
+			seen.push_back(elem);
+			return false;
+		}), m_data.end());
+	}
+	void reserve(uint size) { m_data.reserve(size); }
+	[[nodiscard]] bool contains(const T& value) const { return std::ranges::find(m_data, value) != m_data.end(); }
+	template<typename Predicate>
+	[[nodiscard]] bool containsAny(Predicate&& predicate) const { return std::ranges::find_if(m_data, predicate) != m_data.end(); }
 	[[nodiscard]] T& front() { return m_data.front(); }
 	[[nodiscard]] const T& front() const { return m_data.front(); }
 	[[nodiscard]] T& back() { return m_data.back(); }
@@ -103,8 +128,13 @@ public:
 		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] T* operator->() { return &*m_iter; }
 		[[nodiscard]] iterator operator-(const iterator& other) { return m_iter - other.m_iter; }
-		[[nodiscard]] iterator operator+(const iterator& other) { return m_iter - other.m_iter; }
+		[[nodiscard]] iterator operator+(const iterator& other) { return m_iter + other.m_iter; }
 		[[nodiscard]] iterator& operator+=(const iterator& other) { m_iter += other.m_iter; return *this; }
+		[[nodiscard]] iterator& operator-=(const iterator& other) { m_iter -= other.m_iter; return *this; }
+		[[nodiscard]] iterator operator-(const uint& index) { return {m_iter - index}; }
+		[[nodiscard]] iterator operator+(const uint& index) { return {m_iter + index}; }
+		[[nodiscard]] iterator& operator+=(const uint& index) { m_iter += index; return *this; }
+		[[nodiscard]] iterator& operator-=(const uint& index) { m_iter -= index; return *this; }
 		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) { return m_iter <=> other.m_iter; }
 		friend class const_iterator;
 	};
@@ -123,8 +153,14 @@ public:
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const T* operator->() const { return &*m_iter; }
-		[[nodiscard]] iterator operator-(const const_iterator& other) { return m_iter - other.m_iter; }
-		[[nodiscard]] iterator operator+(const const_iterator& other) const { return m_iter + other.m_iter; }
+		[[nodiscard]] iterator operator-(const iterator& other) { return m_iter - other.m_iter; }
+		[[nodiscard]] iterator operator+(const iterator& other) { return m_iter + other.m_iter; }
+		[[nodiscard]] iterator& operator+=(const iterator& other) { m_iter += other.m_iter; return *this; }
+		[[nodiscard]] iterator& operator-=(const iterator& other) { m_iter -= other.m_iter; return *this; }
+		[[nodiscard]] iterator operator-(const uint& index) { return {m_iter - index}; }
+		[[nodiscard]] iterator operator+(const uint& index) { return {m_iter + index}; }
+		[[nodiscard]] iterator& operator+=(const uint& index) { m_iter += index; return *this; }
+		[[nodiscard]] iterator& operator-=(const uint& index) { m_iter -= index; return *this; }
 		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
 	};
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallSet, m_data);
@@ -183,6 +219,7 @@ public:
 	void popBack() { m_data.pop_back(); }
 	template<typename Predicate>
 	void sort(Predicate&& predicate) { std::ranges::sort(m_data, predicate); }
+	void makeUnique() { std::ranges::sort(m_data); std::ranges::unique(m_data); }
 	[[nodiscard]] bool contains(const std::unique_ptr<T>& value) const { return std::ranges::find(m_data, value) != m_data.end(); }
 	[[nodiscard]] T& front() { return *m_data.front(); }
 	[[nodiscard]] const T& front() const { return *m_data.front(); }

@@ -28,6 +28,7 @@ void Blocks::blockFeature_remove(const BlockIndex& block, const BlockFeatureType
 	assert(!solid_is(block));
 	std::erase_if(m_features[block], [&](BlockFeature& bf) { return bf.blockFeatureType == &blockFeatureType; });
 	m_area.m_opacityFacade.update(block);
+	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
 void Blocks::blockFeature_removeAll(const BlockIndex& block)
@@ -35,6 +36,7 @@ void Blocks::blockFeature_removeAll(const BlockIndex& block)
 	assert(!solid_is(block));
 	m_features[block].clear();
 	m_area.m_opacityFacade.update(block);
+	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
 void Blocks::blockFeature_construct(const BlockIndex& block, const BlockFeatureType& blockFeatureType, const MaterialTypeId& materialType)
@@ -46,6 +48,7 @@ void Blocks::blockFeature_construct(const BlockIndex& block, const BlockFeatureT
 		assert(!PlantSpecies::getIsTree(plants.getSpecies(plant_get(block))));
 		plant_erase(block);
 	}
+	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	m_features[block].emplace_back(&blockFeatureType, materialType, false);
 	if((blockFeatureType == BlockFeatureType::floor || blockFeatureType == BlockFeatureType::hatch) && !MaterialType::getTransparent(materialType))
 	{
@@ -66,6 +69,7 @@ void Blocks::blockFeature_hew(const BlockIndex& block, const BlockFeatureType& b
 	m_features[block].emplace_back(&blockFeatureType, solid_get(block), true);
 	solid_setNot(block);
 	m_area.m_opacityFacade.update(block);
+	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
 void Blocks::blockFeature_setTemperature(const BlockIndex& block, const Temperature& temperature)
@@ -95,6 +99,7 @@ void Blocks::blockFeature_unlock(const BlockIndex& block, const BlockFeatureType
 void Blocks::blockFeature_close(const BlockIndex& block, const BlockFeatureType& blockFeatueType)
 {
 	assert(blockFeature_contains(block, blockFeatueType));
+	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	BlockFeature& blockFeature = *blockFeature_at(block, blockFeatueType);
 	blockFeature.closed = true;
 	m_area.m_opacityFacade.update(block);
@@ -105,6 +110,7 @@ void Blocks::blockFeature_open(const BlockIndex& block, const BlockFeatureType& 
 	BlockFeature& blockFeature = *blockFeature_at(block, blockFeatueType);
 	blockFeature.closed = false;
 	m_area.m_opacityFacade.update(block);
+	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 }
 // Blocks entrance from all angles, does not include floor and hatch which only block from below.
 bool Blocks::blockFeature_blocksEntrance(const BlockIndex& block) const

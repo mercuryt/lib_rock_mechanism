@@ -330,6 +330,27 @@ struct Point3D
 			return z <=> other.z;
 	}
 	void operator+=(const Vector3D& other);
+	[[nodiscard]] DistanceInBlocks taxiDistanceTo(const Point3D& other) const
+	{
+		return DistanceInBlocks::create(
+			std::abs((int)x.get() - (int)other.x.get()) + 
+			std::abs((int)y.get() - (int)other.y.get()) +
+			std::abs((int)z.get() - (int)other.z.get())
+		);
+	}
+	[[nodiscard]] DistanceInBlocks distanceTo(const Point3D& other) const
+	{
+		DistanceInBlocks squared = distanceSquared(other);
+		return DistanceInBlocks::create(pow((double)squared.get(), 0.5));
+	}
+	[[nodiscard]] DistanceInBlocks distanceSquared(const Point3D& other) const
+	{
+		return DistanceInBlocks::create(
+			pow(std::abs((int)x.get() - (int)other.x.get()), 2) + 
+			pow(std::abs((int)y.get() - (int)other.y.get()), 2) +
+			pow(std::abs((int)z.get() - (int)other.z.get()), 2)
+		);
+	}
 	[[nodiscard]] std::string toString() const 
 	{
 		return "(" + std::to_string(x.get()) + "," + std::to_string(y.get()) + "," + std::to_string(z.get()) + ")";

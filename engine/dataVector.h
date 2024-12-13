@@ -17,6 +17,8 @@ public:
 	[[nodiscard]] const_iterator begin() const { return data.begin(); }
 	[[nodiscard]] const_iterator end() const { return data.end(); }
 	[[nodiscard]] bool empty() const { return data.empty(); }
+	template<typename Predicate>
+	[[nodiscard]] bool contains(const Predicate& predicate) const { return find_if(predicate) != end(); }
 	[[nodiscard]] bool contains(const Contained& value) const { return find(value) != end(); }
 	[[nodiscard]] bool allAreSetTo(const Contained& value) const { return !std::ranges::any_of(data, [&](Contained d){ return d != value; }); }
 	[[nodiscard]] iterator find(const Contained& value) { return std::ranges::find(data, value); }
@@ -37,6 +39,8 @@ public:
 	void add(const Contained& value) { data.emplace_back(value); }
 	void add(Contained&& value) { data.emplace_back(std::move(value)); }
 	void add() { data.resize(data.size() + 1); }
+	template<typename ...Args>
+	void emplaceBack(Args&& ...args) { data.emplace_back(std::forward<Args>(args)...); }
 	void clear() { data.clear(); }
 	void popBack() { data.pop_back(); }
 	void remove(const Index& index)

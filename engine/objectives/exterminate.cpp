@@ -30,17 +30,18 @@ void ExterminateObjective::execute(Area& area, const ActorIndex& actor)
 	Actors& actors = area.getActors();
 	BlockIndex thisActorLocation = actors.getLocation(actor);
 	BlockIndex closestActorLocation;
-	for(ActorIndex actor : actors.vision_getCanSee(actor))
+	for(const ActorReference& other : actors.vision_getCanSee(actor))
 	{
-		BlockIndex location = actors.getLocation(actor);
+		ActorIndex otherIndex = other.getIndex(actors.m_referenceData);
+		BlockIndex otherLocation = actors.getLocation(otherIndex);
 		if(
-			actors.hasFaction(actor) &&
-			!actors.isAlly(actor, actor) &&
-			(closest.empty() || blocks.taxiDistance(closestActorLocation, thisActorLocation) < blocks.taxiDistance(location, thisActorLocation))
+			actors.hasFaction(otherIndex) &&
+			!actors.isAlly(actor, otherIndex) &&
+			(closest.empty() || blocks.taxiDistance(closestActorLocation, thisActorLocation) < blocks.taxiDistance(otherLocation, thisActorLocation))
 		)
 		{
-			closest = actor;
-			closestActorLocation = location;
+			closest = otherIndex;
+			closestActorLocation = otherLocation;
 		}
 	}
 	if(closest.exists())

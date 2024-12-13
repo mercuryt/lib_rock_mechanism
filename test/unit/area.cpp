@@ -205,19 +205,14 @@ TEST_CASE("vision-threading")
 		.species=dwarf, 
 		.location=block1,
 	});
-	REQUIRE(area.m_visionFacadeBuckets.getForStep(Step::create(1)).size() == 1);
-	REQUIRE(&actors.vision_getFacadeBucket(a1) == &area.m_visionFacadeBuckets.getForStep(simulation.m_step));
+	REQUIRE(area.m_visionRequests.size() == 1);
 	ActorIndex a2 = actors.create(ActorParamaters{
 		.species=dwarf, 
 		.location=block2,
 	});
-	REQUIRE(area.m_visionFacadeBuckets.getForStep(simulation.m_step).size() == 1);
-	REQUIRE(actors.vision_hasFacade(a2));
-	REQUIRE(&actors.vision_getFacadeBucket(a2) != &area.m_visionFacadeBuckets.getForStep(simulation.m_step));
+	REQUIRE(area.m_visionRequests.size() == 2);
 	simulation.doStep();
-	REQUIRE(&actors.vision_getFacadeBucket(a2) == &area.m_visionFacadeBuckets.getForStep(simulation.m_step));
 	REQUIRE(actors.vision_canSeeActor(a1, a2));
-	simulation.doStep();
 	REQUIRE(actors.vision_canSeeActor(a2, a1));
 }
 TEST_CASE("multiMergeOnAdd")

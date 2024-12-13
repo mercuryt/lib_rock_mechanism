@@ -3,6 +3,7 @@
 #include "json.h"
 #include "util.h"
 #include "strongInteger.h"
+#include "dataVector.h"
 #include <array>
 #include <compare>
 #include <cstddef>
@@ -221,6 +222,78 @@ template<int count>
 using ActorIndicesArray = IndicesArrayBase<ActorIndex, uint32_t, count>;
 template<int count>
 using ItemIndicesArray = IndicesArrayBase<ItemIndex, uint32_t, count>;
-
 template<typename T>
 using BlockIndexMap = SmallMap<BlockIndex, T>;
+template<typename Index>
+class TrackedIndexData;
+template<typename Index>
+class TrackedIndex
+{
+	using This = TrackedIndex<Index>;
+	Index m_index;
+	TrackedIndexData<Index>* m_data;
+public:
+	TrackedIndex() = default;
+	TrackedIndex(Index index, TrackedIndexData<Index>& data) :
+		m_index(index),
+		m_data(&data)
+	{
+		m_data.record(index, *this);
+	}
+	TrackedIndex(const This& other) :
+		m_index(other.m_index),
+		m_data(other.m_data)
+	{
+		m_data.record(index, *this);
+	}
+	TrackedIndex(This&&  other) noexcept :
+		m_index(other.m_index),
+		m_data(other.m_data)
+	{
+		m_data.record(index, *this);
+	}
+	TrackedIndex operator=(const This& other)
+	{
+		if(m_data != nullptr)
+		{
+			assert(m_data == other.m_data);
+			m_data.erase(*this);
+		}
+		else
+			m_data = &other.m_data;
+		m_index = other.m_index;
+		m_data.record(m_index, *this);
+	}
+	TrackedIndex operator=(This&& other)
+	{
+		if(m_data != nullptr)
+		{
+			assert(m_data == other.m_data);
+			m_data.erase(*this);
+		}
+		else
+			m_data = &other.m_data;
+		m_index = other.m_index;
+		m_data.record(m_index, *this);
+	}
+	~TrackedIndex()
+	{
+		m_data.erase(m_index, *this);
+	}
+};
+template<typename Index>
+class TrackedIndexData
+{
+	DataVector<SmallSet<TrackedIndex<Index>*>, Index> m_data;
+public:
+	void record(TrackedIndex<Index>& trackedIndex)
+	{
+		m_data[trackedIndex.m_index].insert(&trackedIndex);
+	}
+	void erase(TrackedIndex<Index>& trackedIndex)
+	{
+		m_data[trackedIndex.m_index].erase(&trackedIndex);
+	}
+	[[nodiscard]] bool empty(const Index& index){ return m_data[index].empty(); }
+	[[nodiscard]] auto get(const Index& index) -> TrackedIndex<Index> { return {index, *this}; }
+};
