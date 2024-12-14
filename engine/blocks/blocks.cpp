@@ -3,7 +3,6 @@
 #include "../materialType.h"
 #include "../types.h"
 #include "../blockFeature.h"
-#include "../locationBuckets.h"
 #include "../fluidType.h"
 #include "../actors/actors.h"
 #include "../plants.h"
@@ -37,7 +36,6 @@ void Blocks::resize(const BlockIndex& count)
 	m_projects.resize(count);
 	m_fires.resize(count);
 	m_temperatureDelta.resize(count);
-	m_locationBucket.resize(count);
 	m_directlyAdjacent.resize(count);
 	m_exposedToSky.resize(count);
 	m_underground.resize(count);
@@ -208,11 +206,6 @@ Cuboid Blocks::getZLevel(const DistanceInBlocks& z)
 {
 	return Cuboid(*this, getIndex({m_sizeX - 1, m_sizeY - 1, z}), getIndex({DistanceInBlocks::create(0), DistanceInBlocks::create(0), z}));
 }
-LocationBucket& Blocks::getLocationBucket(const BlockIndex& index)
-{
-	assert(m_locationBucket[index] != nullptr);
-	return *m_locationBucket[index];
-}
 template<uint size, bool filter>
 auto getAdjacentWithOffsets(const Blocks& blocks, const BlockIndex& index, const std::array<int8_t, 3>* offsetList) -> std::array<BlockIndex, size>
 {
@@ -254,11 +247,6 @@ void Blocks::recordAdjacent(const BlockIndex& index)
 {
 	static constexpr std::array<std::array<int8_t, 3>, 6> offsetsList{{{0,0,-1}, {0,-1,0}, {-1,0,0}, {0,1,0}, {1,0,0}, {0,0,1}}};
 	m_directlyAdjacent[index] = getAdjacentWithOffsets<6, false>(*this, index, &offsetsList.front());
-}
-void Blocks::assignLocationBuckets()
-{
-	for(BlockIndex index : getAll())
-		m_locationBucket[index] = &m_area.m_locationBuckets.getBucketFor(index);
 }
 const std::array<BlockIndex, 6>& Blocks::getDirectlyAdjacent(const BlockIndex& index) const
 {

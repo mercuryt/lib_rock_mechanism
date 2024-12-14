@@ -18,7 +18,7 @@
 #include "stocks.h"
 #include "fluidSource.h"
 #include "terrainFacade.h"
-#include "locationBuckets.h"
+#include "octTree.h"
 #include "opacityFacade.h"
 #include "visionRequests.h"
 #include "sleep.h"
@@ -74,7 +74,7 @@ public:
 	AreaHasFluidGroups m_hasFluidGroups;
 	AreaHasRain m_hasRain;
 	AreaHasBlockDesignations m_blockDesignations;
-	LocationBuckets m_locationBuckets;
+	OctTreeRoot m_octTree;
 	VisionRequests m_visionRequests;
 	OpacityFacade m_opacityFacade;
 	AreaHasVisionCuboids m_visionCuboids;

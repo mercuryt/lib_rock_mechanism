@@ -782,11 +782,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	sharedConstructor(index);
 	scheduleNeeds(index);
 	if(params.location.exists())
-	{
 		setLocationAndFacing(index, params.location, (params.facing.exists() ? params.facing : Facing::create(0)));
-		//TODO: Move this into something like Actors::registerHasLocation, to be reused when exiting vehicles, etc.
-		m_area.m_locationBuckets.add(index);
-	}
 	return index;
 }
 void Actors::sharedConstructor(const ActorIndex& index)
@@ -842,6 +838,8 @@ void Actors::setLocationAndFacing(const ActorIndex& index, const BlockIndex& blo
 		// Record in vision facade if has location and can currently see.
 	}
 	vision_maybeUpdateLocation(index, block);
+	// TODO: reduntand with exit also calling getReference.
+	m_area.m_octTree.record(m_area, getReference(index));
 	if(blocks.isOnSurface(block))
 		m_onSurface.add(index);
 	else
@@ -851,6 +849,7 @@ void Actors::exit(const ActorIndex& index)
 {
 	assert(m_location[index].exists());
 	BlockIndex location = m_location[index];
+	m_area.m_octTree.erase(m_area, getReference(index));
 	auto& blocks = m_area.getBlocks();
 	for(BlockIndex occupied : m_blocks[index])
 		blocks.actor_erase(occupied, index);

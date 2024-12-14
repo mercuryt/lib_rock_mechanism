@@ -56,88 +56,33 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 		SmallSet<ActorReference>& canSee = request.canSee;
 		SmallSet<ActorReference>& canBeSeenBy = request.canBeSeenBy;
 		// Collect results in a vector rather then a set to prevent cache thrashing.
-		const LocationBuckets& locationBuckets = m_area.m_locationBuckets;
-		// Define a cuboid of locationBuckets around the watcher.
-		int fromX = fromCoords.x.get();
-		int fromY = fromCoords.y.get();
-		int fromZ = fromCoords.z.get();
-		int largestRange = m_largestRange.get();
-		int bucketSize = Config::locationBucketSize.get();
-		// Use largest range because we don't know the vision range of other actors which might be observing.
-		const DistanceInBuckets endX = DistanceInBuckets::create(std::min(((fromX + largestRange) / bucketSize) + 1, (int)locationBuckets.m_maxX.get()));
-		const DistanceInBuckets beginX = DistanceInBuckets::create(std::max(0, fromX - largestRange)) / bucketSize;
-		const DistanceInBuckets endY = DistanceInBuckets::create(std::min(((fromY + largestRange) / bucketSize) + 1, (int)locationBuckets.m_maxY.get()));
-		const DistanceInBuckets beginY = DistanceInBuckets::create(std::max(0, fromY - largestRange)) / bucketSize;
-		const DistanceInBuckets endZ = DistanceInBuckets::create(std::min(((fromZ + largestRange) / bucketSize) + 1, (int)locationBuckets.m_maxZ.get()));
-		const DistanceInBuckets beginZ = DistanceInBuckets::create(std::max(0, fromZ - largestRange)) / bucketSize;
-		std::vector<uint> bucketIndices;
-		// Iterate defined cuboid of buckets.
-		// TODO: use bitset to filter empty buckets.
-		for(DistanceInBuckets x = beginX; x != endX; ++x)
-			for(DistanceInBuckets y = beginY; y != endY; ++y)
-				for(DistanceInBuckets z = beginZ; z != endZ; ++z)
-				{
-					assert(x * y * z < locationBuckets.m_buckets.size());
-					uint bucketIndex = locationBuckets.getIndex(x, y, z);
-					bucketIndices.push_back(bucketIndex);
-				}
-		for(auto iter = bucketIndices.begin(); iter != bucketIndices.end(); ++iter)
-		{
-			if(iter + 1 != bucketIndices.end())
-				locationBuckets.prefetch(*(iter + 1));
-			// Iterate actors in the defined cuboid.
-			const LocationBucket& bucket = locationBuckets.get(*iter);
-			for(const LocationBucketMultiTileActorData& other : bucket.m_actorsMultiTile)
-			{
-				for(auto pair : other.positionsAndCuboidIds)
-				{
-					const Point3D& toCoords = pair.first;
-					const VisionCuboidId& toVisionCuboidId = pair.second;
-					// Don't bother to filter by already being present in result, it would only catch multi tile shapes which straddle a bucket boundry.
-					// Refine bucket cuboid actors into sphere with radius == m_largestRange.
-					DistanceInBlocks distanceSquared = fromCoords.distanceSquared(toCoords);
-					bool inRangeToSee = distanceSquared <= rangeSquared;
-					// A bit of logical asymetry here: If a multi tile object moves it's vision is counted only from it's location, but if another actor moves into a position where it can see a tile of the multi tile which is not it's location and the other actor is in the multi tile actors range it will be marked as seen, even though it would not be seen at the same position if it had not moved due to either distance or occulsion from the multi tile actor's primary location.
-					bool inRangeToBeSeen = distanceSquared <= other.rangeSquared;
-					if(inRangeToBeSeen || inRangeToSee)
-					{
-						// Check sightlines.
-						if (
-							fromVisionCuboidId == toVisionCuboidId ||
-							m_area.m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toCoords)
-						)
-						{
-							if(inRangeToSee)
-								canSee.insert(other.actor);
-							if(inRangeToBeSeen)
-								canBeSeenBy.insert(other.actor);
-							break;
-						}
-					}
-				}
-			}
-			for(const LocationBucketSingleTileActorData& other : bucket.m_actorsSingleTile)
-			{
-				const Point3D& toCoords = other.position;
-				DistanceInBlocks distanceSquared = fromCoords.distanceSquared(toCoords);
-				bool inRangeToSee = distanceSquared <= rangeSquared;
-				bool inRangeToBeSeen = distanceSquared <= other.rangeSquared;
-				if(inRangeToBeSeen || inRangeToSee)
-				{
+		ActorReference previousFoundActor;
+		m_area.m_octTree.query({fromCoords, m_largestRange}, [&](const LocationBucketData& data){
+			if(previousFoundActor.exists() && data.actor == previousFoundActor)
+				// Multi tile actor has already been found.
+				return;
+			const Point3D& toCoords = data.coordinates;
+			const VisionCuboidId& toVisionCuboidId = data.cuboid;
+			DistanceInBlocks distanceSquared = fromCoords.distanceSquared(toCoords);
+			bool inRangeToSee = distanceSquared <= rangeSquared;
+			// A bit of logical asymetry here: If a multi tile object moves it's vision is counted only from it's location, but if another actor moves into a position where it can see a tile of the multi tile which is not it's location and the other actor is in the multi tile actors range it will be marked as seen, even though it would not be seen at the same position if it had not moved due to either distance or occulsion from the multi tile actor's primary location.
+			bool inRangeToBeSeen = distanceSquared <= data.visionRangeSquared;
+			if(inRangeToBeSeen || inRangeToSee)
+				if (
+					fromVisionCuboidId == toVisionCuboidId ||
 					// Check sightlines.
-					if (
-						fromVisionCuboidId == other.cuboidId||
-						m_area.m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toCoords)
-					)
+					m_area.m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toCoords))
+				{
+					if(inRangeToSee)
 					{
-						if(inRangeToSee)
-							canSee.insert(other.actor);
 						if(inRangeToBeSeen)
-							canBeSeenBy.insert(other.actor);
+							previousFoundActor = data.actor;
+						canSee.insertNonunique(data.actor);
 					}
+					if(inRangeToBeSeen)
+						canBeSeenBy.insertNonunique(data.actor);
 				}
-			}
-		}
+		});
 	}
 	// Finalize result.
 	// Do this in a seperate loop to avoid thrashing the CPU cache in the primary one.
@@ -228,63 +173,38 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::
 	int maxY = std::ranges::max_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.y; })->coordinates.y.get();
 	int minZ = std::ranges::min_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.z; })->coordinates.z.get();
 	int maxZ = std::ranges::max_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.z; })->coordinates.z.get();
-	int largestRange = m_largestRange.get();
-	int bucketSize = Config::locationBucketSize.get();
-	const LocationBuckets& locationBuckets = m_area.m_locationBuckets;
-	// Define a cuboid of locationBuckets around the blockSet.
-	const DistanceInBuckets endX = DistanceInBuckets::create(std::min(((maxX + largestRange) / bucketSize) + 1, (int)locationBuckets.m_maxX.get()));
-	const DistanceInBuckets beginX = DistanceInBuckets::create(std::max(0, minX - largestRange)) / bucketSize;
-	const DistanceInBuckets endY = DistanceInBuckets::create(std::min(((maxY + largestRange) / bucketSize) + 1, (int)locationBuckets.m_maxY.get()));
-	const DistanceInBuckets beginY = DistanceInBuckets::create(std::max(0, minY - largestRange)) / bucketSize;
-	const DistanceInBuckets endZ = DistanceInBuckets::create(std::min(((maxZ + largestRange) / bucketSize) + 1, (int)locationBuckets.m_maxZ.get()));
-	const DistanceInBuckets beginZ = DistanceInBuckets::create(std::max(0, minZ - largestRange)) / bucketSize;
-	std::vector<uint> bucketIndices;
-	// Iterate defined cuboid of buckets.
-	// TODO: use bitset to filter empty buckets.
-	for(DistanceInBuckets x = beginX; x != endX; ++x)
-		for(DistanceInBuckets y = beginY; y != endY; ++y)
-			for(DistanceInBuckets z = beginZ; z != endZ; ++z)
-			{
-				assert(x * y * z < locationBuckets.m_buckets.size());
-				uint bucketIndex = locationBuckets.getIndex(x, y, z);
-				bucketIndices.push_back(bucketIndex);
-			}
-	for(auto iter = bucketIndices.begin(); iter != bucketIndices.end(); ++iter)
+	Cuboid cuboid(blocks, blocks.getIndex_i(maxX, maxY, maxZ), blocks.getIndex_i(minX, minY, minZ));
+	ActorReference lastSeen;
+	m_area.m_octTree.query(m_area, cuboid, [&](const LocationBucketData& data){ 
+		// Skip multi tile actor tiles after the first. The first is assumed to be the source of vision.
+		// The data is kept sorted by actor so multi tile records should always be contiguous.
+		if(lastSeen.exists() && lastSeen == data.actor)
+			return;
+		// Skip any already recorded.
+		auto found = std::ranges::find(candidates, data.actor, &CandidateData::actor);
+		if(found != candidates.end())
+			return;
+		BlockIndex location = blocks.getIndex(data.coordinates);
+		candidates.emplace_back(data.actor, data.visionRangeSquared, data.coordinates, data.cuboid, location);
+		lastSeen = data.actor;
+	});
+	for(const CandidateData& candidate : candidates)
 	{
-		// Prefetch next bucket, if any.
-		if(iter + 1 != bucketIndices.end())
-			locationBuckets.prefetch(*(iter + 1));
-		// Collect actors in bucket.
-		const LocationBucket& bucket = locationBuckets.get(*iter);
-		for(const LocationBucketMultiTileActorData& other : bucket.m_actorsMultiTile)
+		for(const BlockData& blockData : blockDataStore)
 		{
-			Point3D coordinates = other.positionsAndCuboidIds.front().first;
-			BlockIndex location = blocks.getIndex(coordinates);
-			candidates.emplace_back(other.actor, other.rangeSquared, coordinates, other.positionsAndCuboidIds.front().second, location);
-		}
-		for(const LocationBucketSingleTileActorData& other : bucket.m_actorsSingleTile)
-		{
-			BlockIndex location = blocks.getIndex(other.position);
-			candidates.emplace_back(other.actor, other.rangeSquared, other.position, other.cuboidId, location);
-		}
-		for(const CandidateData& candidate : candidates)
-		{
-			for(BlockData blockData : blockDataStore)
+			DistanceInBlocks distanceSquared = candidate.coordinates.distanceSquared(blockData.coordinates);
+			// Exclude actors too far away to see.
+			if(distanceSquared > candidate.rangeSquared)
+				continue;
+			if(
+				// At some threashold it is not worth it to check line of sight for so many changed blocks, better to just create the vision requests instead.
+				blockDataStore.size() >= Config::minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests ||
+				blockData.cuboid == candidate.cuboid ||
+				m_area.m_opacityFacade.hasLineOfSight(blockData.index, blockData.coordinates, candidate.coordinates)
+			)
 			{
-				DistanceInBlocks distanceSquared = candidate.coordinates.distanceSquared(blockData.coordinates);
-				// Exclude actors too far away to see.
-				if(distanceSquared > candidate.rangeSquared)
-					continue;
-				if(
-					// At some threashold it is not worth it to check line of sight for so many changed blocks, better to just create the vision requests instead.
-					blockDataStore.size() >= Config::minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests ||
-					blockData.cuboid == candidate.cuboid ||
-					m_area.m_opacityFacade.hasLineOfSight(blockData.index, blockData.coordinates, candidate.coordinates)
-				)
-				{
-					results.insert(candidate.actor);
-					break;
-				}
+				results.insert(candidate.actor);
+				break;
 			}
 		}
 	}

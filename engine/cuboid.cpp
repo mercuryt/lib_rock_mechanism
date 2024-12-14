@@ -184,6 +184,16 @@ bool Cuboid::operator==(const Cuboid& cuboid) const
 {
 	return m_lowest == cuboid.m_lowest && m_highest == cuboid.m_highest;
 }
+Point3D Cuboid::getCenter(const Blocks& blocks) const
+{
+	Point3D highPoint = blocks.getCoordinates(m_highest);
+	Point3D lowPoint = blocks.getCoordinates(m_lowest);
+	return {
+		lowPoint.x + (highPoint.x - lowPoint.x) / 2,
+		lowPoint.y + (highPoint.y - lowPoint.y) / 2,
+		lowPoint.z + (highPoint.z - lowPoint.z) / 2
+	};
+}
 Cuboid::iterator::iterator(Blocks& blocks, const BlockIndex& lowest, const BlockIndex& highest) : m_blocks(blocks) 
 {
 	if(!lowest.exists())

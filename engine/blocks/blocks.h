@@ -20,7 +20,6 @@
 #include <memory>
 
 class FluidGroup;
-class LocationBucket;
 
 struct FluidData
 {
@@ -67,7 +66,6 @@ class Blocks
 	DataVector<FactionIdMap<SmallSet<Project*>>, BlockIndex> m_projects;
 	DataVector<SmallMapStable<MaterialTypeId, Fire>*, BlockIndex> m_fires;
 	DataVector<TemperatureDelta, BlockIndex> m_temperatureDelta;
-	DataVector<LocationBucket*, BlockIndex> m_locationBucket;
 	DataVector<std::array<BlockIndex, 6>, BlockIndex> m_directlyAdjacent;
 	DataBitSet<BlockIndex> m_exposedToSky;
 	DataBitSet<BlockIndex> m_underground;
@@ -85,7 +83,6 @@ public:
 	void resize(const BlockIndex& count);
 	void initalize(const BlockIndex& index);
 	void recordAdjacent(const BlockIndex& index);
-	void assignLocationBuckets();
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Cuboid getAll();
 	[[nodiscard]] const Cuboid getAll() const;
@@ -154,7 +151,6 @@ public:
 	[[nodiscard]] BlockIndex getBlockWest(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndex getBlockSouth(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndex getBlockEast(const BlockIndex& index) const;
-	[[nodiscard]] LocationBucket& getLocationBucket(const BlockIndex& index);
 	[[nodiscard]] Cuboid getZLevel(const DistanceInBlocks& z);
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
 	void setExposedToSky(const BlockIndex& index, bool exposed);

@@ -1,5 +1,8 @@
 #include "types.h"
 #include "config.h"
+#include "cuboid.h"
+#include "area.h"
+#include "blocks/blocks.h"
 Volume Volume::operator*(Quantity other) const { return Volume::create(data * other.get()); }
 Mass Volume::operator*(Density density) const { return Mass::create(density.get() * data); }
 Mass Density::operator*(Volume volume) const { return Mass::create(volume.get() * data); }
@@ -12,3 +15,17 @@ Density Density::operator*(float other) const { return Density::create(other * d
 Mass Mass::operator*(uint32_t other) const { auto output = Mass::create(data * other); assert(output != 0); return output; }
 Mass Mass::operator*(float other) const { return Mass::create(data * other); }
 DistanceInBlocksFractional DistanceInBlocks::toFloat() const { return DistanceInBlocksFractional::create(data); }
+bool Cube::intersects(Area& area, const Cuboid& cuboid) const
+{
+	Blocks& blocks = area.getBlocks();
+	Point3D highest = blocks.getCoordinates(cuboid.m_highest);
+	Point3D lowest = blocks.getCoordinates(cuboid.m_lowest);
+	return intersects(highest, lowest);
+}
+[[nodiscard]] bool Cube::isContainedBy(Area& area, const Cuboid& cuboid) const
+{
+	Blocks& blocks = area.getBlocks();
+	Point3D highest = blocks.getCoordinates(cuboid.m_highest);
+	Point3D lowest = blocks.getCoordinates(cuboid.m_lowest);
+	return isContainedBy(highest, lowest);
+}
