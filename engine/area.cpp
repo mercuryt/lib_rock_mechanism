@@ -41,7 +41,7 @@ Area::Area(AreaId id, std::wstring n, Simulation& s, const DistanceInBlocks& x, 
 	m_hasFluidGroups(*this),
 	m_hasRain(*this, s),
 	m_blockDesignations(*this),
-	m_locationBuckets(*this),
+	m_octTree(x, y, z),
 	m_visionRequests(*this),
 	m_opacityFacade(*this),
 	m_name(n),
@@ -64,7 +64,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_fires(*this), m_hasFarmFields(*this), m_hasDigDesignations(*this), m_hasConstructionDesignations(*this),
 	m_hasStockPiles(*this), m_hasCraftingLocationsAndJobs(*this), m_hasTargetedHauling(*this), m_hasSleepingSpots(*this),
 	m_hasWoodCuttingDesignations(*this), m_fluidSources(*this), m_hasFluidGroups(*this), m_hasRain(*this, simulation), m_blockDesignations(*this),
-	m_locationBuckets(*this), m_visionRequests(*this), m_opacityFacade(*this), 
+	m_octTree(data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>()), m_visionRequests(*this), m_opacityFacade(*this), 
 	m_name(data["name"].get<std::wstring>()), m_simulation(simulation), m_id(data["id"].get<AreaId>())
 {
 	m_blocks = std::make_unique<Blocks>(*this, data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>());
@@ -155,8 +155,6 @@ Json Area::toJson() const
 }
 void Area::setup()
 {
-	m_locationBuckets.initalize();
-	getBlocks().assignLocationBuckets();
 	updateClimate();
 }
 void Area::doStep()

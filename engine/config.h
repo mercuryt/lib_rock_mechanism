@@ -100,7 +100,6 @@ namespace Config
 	inline uint32_t lakeDepthModifier;
 	inline uint32_t lakeRadiusModifier;
 	inline Step loadDelaySteps;
-	inline DistanceInBlocks locationBucketSize;
 	inline float massCarryMaximimMovementRatio;
 	inline uint32_t maxAnimalInsertLocationSearchRetries;
 	inline CollisionVolume maxBlockVolume;
@@ -139,6 +138,8 @@ namespace Config
 	inline float minimumStepsBetweenRainPerPercentHumidity;
 	inline float minimumStepsRainPerPercentHumidity;
 	inline uint16_t minimumSizeForOctTreeToSplit;
+	inline uint16_t minimumOccupantsForOctTreeToSplit;
+	inline uint16_t minimumOccupantsForOctTreeToUnsplit;
 	inline uint32_t minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests;
 	inline CollisionVolume minimumVolumeOfFluidToBreath;
 	inline uint32_t minutesPerHour;

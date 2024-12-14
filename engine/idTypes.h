@@ -244,12 +244,3 @@ public:
 	MaterialTypeConstructionDataId() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const MaterialTypeConstructionDataId& index) const { return index.get(); } };
 };
-
-using LocationBucketIdWidth = uint16_t;
-class LocationBucketId : public StrongInteger<LocationBucketId, LocationBucketIdWidth>
-{
-public:
-	LocationBucketId() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const LocationBucketId& index) const { return index.get(); } };
-};
-using LocationBucketIdSet = StrongIntegerSet<LocationBucketId>;

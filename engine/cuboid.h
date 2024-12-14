@@ -10,6 +10,7 @@
 class Blocks;
 class Cuboid
 {
+	// TODO: remove this!
 	Blocks* m_blocks;
 public:
 	BlockIndex m_highest;
@@ -30,6 +31,7 @@ public:
 	[[nodiscard]] size_t size() const;
 	[[nodiscard]] bool empty() const { return size() == 0; }
 	[[nodiscard]] bool operator==(const Cuboid& cuboid) const;
+	[[nodiscard]] Point3D getCenter(const Blocks& blocks) const;
 	[[nodiscard]] static Cuboid fromBlock(Blocks& blocks, const BlockIndex& block);
 	[[nodiscard]] static Cuboid fromBlockPair(Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
 	class iterator 

@@ -89,7 +89,6 @@ void Config::load()
 	data["lakeDepthModifier"].get_to(lakeDepthModifier);
 	data["lakeRadiusModifier"].get_to(lakeRadiusModifier);
 	loadDelaySteps = Step::create(data["loadDelaySeconds"].get<float>() * stepsPerSecond.get());
-	data["locationBucketSize"].get_to(locationBucketSize);
 	data["massCarryMaximimMovementRatio"].get_to(massCarryMaximimMovementRatio);
 	data["maxAnimalInsertLocationSearchRetries"].get_to(maxAnimalInsertLocationSearchRetries);
 	data["maxBlockVolume"].get_to(maxBlockVolume);
@@ -127,6 +126,8 @@ void Config::load()
 	data["minimumRainIntensityModifier"].get_to(minimumRainIntensityModifier);
 	data["minimumDaysBetweenRainPerPercentHumidity"].get_to(minimumStepsBetweenRainPerPercentHumidity);
 	data["minimumSizeForOctTreeToSplit"].get_to(minimumSizeForOctTreeToSplit);
+	data["minimumOccupantsForOctTreeToSplit"].get_to(minimumOccupantsForOctTreeToSplit);
+	data["minimumOccupantsForOctTreeToUnsplit"].get_to(minimumOccupantsForOctTreeToUnsplit);
 	data["minimumSecondsRainPerPercentHumidity"].get_to(minimumStepsRainPerPercentHumidity);
 	data["minimumVolumeOfFluidToBreath"].get_to(minimumVolumeOfFluidToBreath);
 	data["minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests"].get_to(minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests);

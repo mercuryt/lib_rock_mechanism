@@ -129,6 +129,14 @@ public:
 	[[nodiscard]] constexpr Derived operator/(const This& other) const { return (*this) / other.data; }
 	template<arithmetic Other>
 	[[nodiscard]] constexpr Derived operator/(const Other& other) const { assert(exists()); return Derived::create(data / other); }
+	[[nodiscard]] constexpr Derived subtractWithMinimum(const This& other) const { assert(other.exists()); return subtractWithMinimum(other.data); }
+	template<arithmetic Other>
+	[[nodiscard]] constexpr Derived subtractWithMinimum(const Other& other) const
+	{
+		assert(exists());
+		int result = (int)data - (int)other;
+		return Derived::create(result < (int)MIN_VALUE ? MIN_VALUE : result);
+	}
 	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const This& index) const { return index.get(); } };
 };
 template <class StrongInteger>

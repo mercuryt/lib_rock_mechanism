@@ -34,6 +34,7 @@ public:
 		for(; begin != end; ++begin)
 			insert(*begin);
 	}
+	void insertNonunique(const T& value) { m_data.push_back(value); }
 	void erase(const T& value)
 	{
 		auto found = std::ranges::find(m_data, value);

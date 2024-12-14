@@ -81,10 +81,11 @@ void AreaHasVisionCuboids::set(const BlockIndex& block, VisionCuboid& visionCubo
 	m_blockVisionCuboidIds[block] = visionCuboid.m_id;
 	// Update stored vision cuboids.
 	Actors& actors = m_area->getActors();
+	Blocks& blocks = m_area->getBlocks();
 	for(const ActorIndex& actor : m_area->getBlocks().actor_getAll(block))
 	{
 		// Update visionCuboidId stored in LocationBuckets.
-		m_area->m_locationBuckets.updateCuboid(*m_area, actor, block, oldCuboid, visionCuboid.m_id);
+		m_area->m_octTree.updateVisionCuboid(blocks.getCoordinates(block), visionCuboid.m_id);
 		// Update visionCuboidId stored in VisionRequests, if any.
 		actors.vision_maybeUpdateCuboid(actor, oldCuboid, visionCuboid.m_id);
 	}
