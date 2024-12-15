@@ -97,14 +97,16 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 void VisionRequests::readStep()
 {
 	uint index = 0;
-	uint actorsSize = m_data.size();
+	uint size = m_data.size();
 	std::vector<std::pair<uint, uint>> ranges;
-	while(index != actorsSize)
+	while(index != size)
 	{
-		uint end = std::min(actorsSize, index + Config::visionThreadingBatchSize);
+		uint end = std::min(size, index + Config::visionThreadingBatchSize);
 		ranges.emplace_back(index, end);
 		index = end;
 	}
+	m_data.sort([&](const VisionRequest& a, const VisionRequest& b){ return a.coordinates.hilbertNumber() < b.coordinates.hilbertNumber(); });
+	m_area.m_octTree.maybeSort();
 	//#pragma omp parallel for
 	for(auto [start, end] : ranges)
 		readStepSegment(start, end);

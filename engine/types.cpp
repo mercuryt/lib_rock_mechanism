@@ -15,16 +15,16 @@ Density Density::operator*(float other) const { return Density::create(other * d
 Mass Mass::operator*(uint32_t other) const { auto output = Mass::create(data * other); assert(output != 0); return output; }
 Mass Mass::operator*(float other) const { return Mass::create(data * other); }
 DistanceInBlocksFractional DistanceInBlocks::toFloat() const { return DistanceInBlocksFractional::create(data); }
-bool Cube::intersects(Area& area, const Cuboid& cuboid) const
+bool Cube::intersects(const Area& area, const Cuboid& cuboid) const
 {
-	Blocks& blocks = area.getBlocks();
+	const Blocks& blocks = area.getBlocks();
 	Point3D highest = blocks.getCoordinates(cuboid.m_highest);
 	Point3D lowest = blocks.getCoordinates(cuboid.m_lowest);
 	return intersects(highest, lowest);
 }
-[[nodiscard]] bool Cube::isContainedBy(Area& area, const Cuboid& cuboid) const
+[[nodiscard]] bool Cube::isContainedBy(const Area& area, const Cuboid& cuboid) const
 {
-	Blocks& blocks = area.getBlocks();
+	const Blocks& blocks = area.getBlocks();
 	Point3D highest = blocks.getCoordinates(cuboid.m_highest);
 	Point3D lowest = blocks.getCoordinates(cuboid.m_lowest);
 	return isContainedBy(highest, lowest);
