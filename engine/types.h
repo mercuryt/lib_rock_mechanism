@@ -306,6 +306,13 @@ public:
 inline void to_json(Json& data, const Stamina& index) { data = index.get(); }
 inline void from_json(const Json& data, Stamina& index) { index = Stamina::create(data.get<StaminaWidth>()); }
 
+class OctTreeNodeIndex : public StrongInteger<OctTreeNodeIndex, uint16_t>
+{
+public:
+	OctTreeNodeIndex() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const OctTreeNodeIndex& index) const { return index.get(); } };
+};
+
 struct Vector3D;
 struct Point3D
 {
@@ -356,7 +363,7 @@ struct Point3D
 		return "(" + std::to_string(x.get()) + "," + std::to_string(y.get()) + "," + std::to_string(z.get()) + ")";
 	}
 	static const int hilbertOrder = 1;
-	[[nodiscard]] uint32_t hilbertNumber()
+	[[nodiscard]] uint32_t hilbertNumber() const
 	{
 		int n = hilbertOrder;
 		int _x = x.get();
@@ -459,7 +466,7 @@ struct Cube
 			center.y - halfWidth <= other.center.y + other.halfWidth &&
 			center.z - halfWidth <= other.center.z + other.halfWidth;
 	}
-	[[nodiscard]] bool intersects(Area& area, const Cuboid& other) const;
+	[[nodiscard]] bool intersects(const Area& area, const Cuboid& other) const;
 	[[nodiscard]] bool intersects(const Point3D high, const Point3D low) const
 	{
 		return
@@ -490,7 +497,7 @@ struct Cube
 			center.y.subtractWithMinimum(halfWidth) <= coordinates.y &&
 			center.z.subtractWithMinimum(halfWidth) <= coordinates.z;
 	}
-	[[nodiscard]] bool isContainedBy(Area& area, const Cuboid& cuboid) const;
+	[[nodiscard]] bool isContainedBy(const Area& area, const Cuboid& cuboid) const;
 	[[nodiscard]] bool isContainedBy(const Cube& other) const { return other.contains(*this); }
 	[[nodiscard]] bool isContainedBy(const Point3D& highest, const Point3D& lowest) const
 	{

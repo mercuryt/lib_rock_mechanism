@@ -1,6 +1,7 @@
 #pragma once
 #include "types.h"
 #include "reference.h"
+#include <vector>
 
 // LocationBucket::m_data is kept sorted by actor reference, so if we see one tile of a multi tile actor we can skip ahead in the forEach callback.
 struct LocationBucketData
@@ -12,7 +13,6 @@ struct LocationBucketData
 	struct hash{ [[nodiscard]] static size_t operator()(const LocationBucketData& data) { return data.actor.getReferenceIndex().get(); }};
 	[[nodiscard]] std::strong_ordering operator<=>(const LocationBucketData& other) { return actor <=> other.actor; }
 };
-
 class LocationBucket
 {
 	std::vector<LocationBucketData> m_data;
