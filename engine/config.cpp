@@ -133,6 +133,7 @@ void Config::load()
 	data["minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests"].get_to(minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests);
 	data["moveTryAttemptsBeforeDetour"].get_to(moveTryAttemptsBeforeDetour);
 	data["musclePierceForceCost"].get_to(musclePierceForceCost);
+	data["octTreeSortEntropyThreshold"].get_to(octTreeSortEntropyThreshold);
 	data["objectivePrioiorityKill"].get_to(objectivePrioiorityKill);
 	data["objectivePrioritySleep"].get_to(objectivePrioritySleep);
 	data["pathHuristicConstant"].get_to(pathHuristicConstant);
