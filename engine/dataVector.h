@@ -57,6 +57,8 @@ public:
 			data[index.get()] = std::move(data[last.get()]);
 		data.resize(data.size() - 1);
 	}
+	template<typename Comparitor>
+	void sortBy(Comparitor&& comparitor) { std::sort(data.begin(), data.end(), comparitor); }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(DataVector, data);
 };
 template <class Index>

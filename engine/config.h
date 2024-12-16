@@ -145,6 +145,7 @@ namespace Config
 	inline uint32_t minutesPerHour;
 	inline uint32_t moveTryAttemptsBeforeDetour;
 	inline float musclePierceForceCost;
+	inline uint8_t octTreeSortEntropyThreshold;
 	//TODO: is this a duplicate?
 	inline Priority objectivePrioiorityKill;
 	inline Priority objectivePrioritySleep;

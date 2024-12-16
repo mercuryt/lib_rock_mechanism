@@ -2,7 +2,8 @@
 #include "area.h"
 #include "actors/actors.h"
 #include "blocks/blocks.h"
-OctTree::OctTree(const DistanceInBlocks& halfWidth) :
+OctTree::OctTree(const DistanceInBlocks& halfWidth, Allocator& allocator) :
+	m_data(allocator),
 	m_cube({{halfWidth, halfWidth, halfWidth}, halfWidth}) { }
 void OctTree::record(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates, const VisionCuboidId& cuboid, const DistanceInBlocks& visionRangeSquared)
 {
@@ -136,7 +137,8 @@ bool OctTree::contains(const ActorReference& actor, const Point3D& coordinates) 
 {
 	return m_data.contains(actor, coordinates);
 }
-OctTreeRoot::OctTreeRoot(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z)
+OctTreeRoot::OctTreeRoot(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) :
+	m_tree(m_allocator)
 {
 	DistanceInBlocks halfWidth = std::max({x, y, z}) / 2;
 	m_tree.m_cube = {{halfWidth, halfWidth, halfWidth}, halfWidth};
@@ -161,9 +163,9 @@ void OctTreeRoot::erase(Area& area, const ActorReference& actor)
 OctTreeNodeIndex OctTreeRoot::allocate(OctTree& parent)
 {
 	OctTreeNodeIndex output = OctTreeNodeIndex::create(m_data.size());
-	m_data.resize(m_data.size() + 1);
+	m_data.add({OctTree(m_allocator), OctTree(m_allocator), OctTree(m_allocator), OctTree(m_allocator), OctTree(m_allocator), OctTree(m_allocator), OctTree(m_allocator), OctTree(m_allocator)});
 	m_parents.add(&parent);
-	m_sorted = false;
+	++m_entropy;
 	return output;
 }
 void OctTreeRoot::deallocate(const OctTreeNodeIndex& index)
@@ -176,11 +178,11 @@ void OctTreeRoot::deallocate(const OctTreeNodeIndex& index)
 	}
 	m_data.popBack();
 	m_parents.popBack();
-	m_sorted = false;
+	++m_entropy;
 }
 void OctTreeRoot::maybeSort()
 {
-	if(m_sorted)
+	if(m_entropy > Config::octTreeSortEntropyThreshold)
 		return;
 	std::vector<std::pair<uint, OctTreeNodeIndex>> sortOrder;
 	
@@ -192,13 +194,20 @@ void OctTreeRoot::maybeSort()
 	}
 	std::ranges::sort(sortOrder, {}, &std::pair<uint, OctTreeNodeIndex>::first);
 	auto copyData = m_data;
-	auto copyParents = m_parents;
 	OctTreeNodeIndex index = OctTreeNodeIndex::create(0);
 	for(const auto& pair : sortOrder)
 	{
 		m_data[index] = copyData[pair.second];
-		m_parents[index] = copyParents[pair.second];
 		++index;
 	}
-	m_sorted = true;
+	copyData.clear();
+	auto copyParents = m_parents;
+	index = OctTreeNodeIndex::create(0);
+	for(const auto& pair : sortOrder)
+	{
+		m_parents[index] = copyParents[pair.second];
+		m_parents[index]->m_children = index;
+		++index;
+	}
+	m_entropy = 0;
 }

@@ -145,6 +145,7 @@ public:
 inline void to_json(Json& data, const Meters& index) { data = index.get(); }
 inline void from_json(const Json& data, Meters& index) { index = Meters::create(data.get<MetersWidth>()); }
 
+//TODO: DistanceInBlocksSquared, narrow DistanceInBlocks to 16.
 class DistanceInBlocksFractional;
 using DistanceInBlocksWidth = uint32_t;
 class DistanceInBlocks : public StrongInteger<DistanceInBlocks, DistanceInBlocksWidth>
@@ -496,6 +497,17 @@ struct Cube
 			center.x.subtractWithMinimum(halfWidth) <= coordinates.x &&
 			center.y.subtractWithMinimum(halfWidth) <= coordinates.y &&
 			center.z.subtractWithMinimum(halfWidth) <= coordinates.z;
+	}
+	[[nodiscard]] bool contains(const Area& area, const Cuboid& other) const;
+	[[nodiscard]] bool contains(const Point3D high, const Point3D low) const
+	{
+		return
+			center.x + halfWidth >= high.x &&
+			center.y + halfWidth >= high.y &&
+			center.z + halfWidth >= high.z &&
+			center.x.subtractWithMinimum(halfWidth) <= low.x &&
+			center.y.subtractWithMinimum(halfWidth) <= low.y &&
+			center.z.subtractWithMinimum(halfWidth) <= low.z;
 	}
 	[[nodiscard]] bool isContainedBy(const Area& area, const Cuboid& cuboid) const;
 	[[nodiscard]] bool isContainedBy(const Cube& other) const { return other.contains(*this); }

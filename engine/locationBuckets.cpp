@@ -36,3 +36,8 @@ bool LocationBucket::contains(const ActorReference& actor, const Point3D& coordi
 	auto found = std::ranges::find_if(m_data, [&](const LocationBucketData& data){ return data.actor == actor && data.coordinates == coordinates; });
 	return found != m_data.end();
 }
+void LocationBucket::prefetch() const
+{
+	//TODO: benchmark this.
+	__builtin_prefetch(&*m_data.begin());
+}

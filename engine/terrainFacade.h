@@ -34,61 +34,95 @@ struct FindPathResult
 {
 	BlockIndices path;
 	BlockIndex blockThatPassedPredicate;
-	bool useCurrentPosition;
+	bool useCurrentPosition = false;
+};
+struct PathRequestNoHuristic
+{
+	FindPathResult result;
+	AccessCondition accessCondition;
+	DestinationCondition destinationCondition;
+	BlockIndex startLocation;
+	ActorReference actor;
+	Facing startFacing;
+	PathRequestNoHuristic() = default;
+	PathRequestNoHuristic(AccessCondition& ac, DestinationCondition& dc, const BlockIndex& sl, const ActorReference& a, const Facing& sf) :
+		accessCondition(ac), destinationCondition(dc), startLocation(sl), actor(a), startFacing(sf) { }
+	PathRequestNoHuristic(const PathRequestNoHuristic& other) :
+		accessCondition(other.accessCondition), destinationCondition(other.destinationCondition), startLocation(other.startLocation), actor(other.actor), startFacing(other.startFacing) { }
+	PathRequestNoHuristic(PathRequestNoHuristic&& other) noexcept :
+		accessCondition(other.accessCondition), destinationCondition(other.destinationCondition), startLocation(other.startLocation), actor(other.actor), startFacing(other.startFacing) { }
+	void operator=(const PathRequestNoHuristic& other)
+	{
+		accessCondition = other.accessCondition; destinationCondition = other.destinationCondition; startLocation = other.startLocation;
+		actor = other.actor; startFacing = other.startFacing;
+	}
+	void operator=(PathRequestNoHuristic&& other) noexcept
+	{
+		accessCondition = other.accessCondition; destinationCondition = other.destinationCondition; startLocation = other.startLocation;
+		actor = other.actor; startFacing = other.startFacing;
+	}
+};
+struct PathRequestWithHuristic
+{
+	FindPathResult result;
+	AccessCondition accessCondition;
+	DestinationCondition destinationCondition;
+	BlockIndex startLocation;
+	BlockIndex huristicDestination;
+	ActorReference actor;
+	Facing startFacing;
+	PathRequestWithHuristic() = default;
+	PathRequestWithHuristic(AccessCondition& ac, DestinationCondition& dc, const BlockIndex& sl, const BlockIndex& hd, const ActorReference& a, const Facing& sf) :
+		accessCondition(ac), destinationCondition(dc), startLocation(sl), huristicDestination(hd), actor(a), startFacing(sf) { }
+	PathRequestWithHuristic(const PathRequestWithHuristic& other) :
+		accessCondition(other.accessCondition), destinationCondition(other.destinationCondition), startLocation(other.startLocation), huristicDestination(other.huristicDestination), actor(other.actor), startFacing(other.startFacing) { }
+	PathRequestWithHuristic(PathRequestWithHuristic&& other) noexcept :
+		accessCondition(other.accessCondition), destinationCondition(other.destinationCondition), startLocation(other.startLocation), huristicDestination(other.huristicDestination), actor(other.actor), startFacing(other.startFacing) { }
+	void operator=(const PathRequestWithHuristic& other)
+	{
+		accessCondition = other.accessCondition; destinationCondition = other.destinationCondition; startLocation = other.startLocation;
+		huristicDestination = other.huristicDestination; actor = other.actor; startFacing = other.startFacing;
+	}
+	void operator=(PathRequestWithHuristic&& other) noexcept
+	{
+		accessCondition = other.accessCondition; destinationCondition = other.destinationCondition; startLocation = other.startLocation;
+		huristicDestination = other.huristicDestination; actor = other.actor; startFacing = other.startFacing;
+	}
 };
 class TerrainFacade final
 {
-	// Without Huristic.
-	DataVector<BlockIndex, PathRequestIndex> m_pathRequestStartPositionNoHuristic;
-	DataVector<Facing, PathRequestIndex> m_pathRequestStartFacingNoHuristic;
-	DataVector<AccessCondition, PathRequestIndex> m_pathRequestAccessConditionsNoHuristic;
-	DataVector<DestinationCondition, PathRequestIndex> m_pathRequestDestinationConditionsNoHuristic;
-	// Result is stored instead of being immideatly dispatched to PathRequest to reduce cache thrashing.
-	// Stored as vector of structs rather then multiple vectors of primitives to prevent cache line false shareing.
-	// 	sizeof(FindPathResult) == 32, so 2 can fit on a cache line.
-	// 	So if Config::pathRequestsPerThread is a multiple of 2 there will never be a shared cache line being written to.
-	DataVector<FindPathResult, PathRequestIndex> m_pathRequestResultsNoHuristic;
-	DataVector<ActorReference, PathRequestIndex> m_pathRequestActorNoHuristic;
-	// With Huristic.
-	DataVector<BlockIndex, PathRequestIndex> m_pathRequestStartPositionWithHuristic;
-	DataVector<Facing, PathRequestIndex> m_pathRequestStartFacingWithHuristic;
-	DataVector<AccessCondition, PathRequestIndex> m_pathRequestAccessConditionsWithHuristic;
-	DataVector<DestinationCondition, PathRequestIndex> m_pathRequestDestinationConditionsWithHuristic;
-	DataVector<BlockIndex, PathRequestIndex> m_pathRequestHuristic;
-	DataVector<FindPathResult, PathRequestIndex> m_pathRequestResultsWithHuristic;
-	DataVector<ActorReference, PathRequestIndex> m_pathRequestActorWithHuristic;
+	DataVector<PathRequestNoHuristic, PathRequestIndex> m_pathRequestsNoHuristic;
+	DataVector<PathRequestWithHuristic, PathRequestIndex> m_pathRequestsWithHuristic;
 	// Not indexed by BlockIndex because size is mulipied by max adjacent.
 	std::vector<bool> m_enterable;
 	Area& m_area;
 	MoveTypeId m_moveType;
 	// DestinationCondition& could test against a set of destination indecies or load the actual block to do more complex checks.
-	// const AccessCondition& could test for larger shapes or just return true for 1x1x1 size.
+	// AccessCondition& could test for larger shapes or just return true for 1x1x1 size.
 	// TODO: huristic destination.
-	[[nodiscard]] FindPathResult findPath(const BlockIndex& from, const Facing& startFacing, const DestinationCondition& destinationCondition, const AccessCondition& accessCondition, const OpenListPush& openListPush, const OpenListPop& openListPop, const OpenListEmpty& openListEmpty, const ClosedListAdd& closedListAdd, const ClosedListContains& closedListContains, const ClosedListGetPath& closedListGetPath) const;
-	[[nodiscard]] FindPathResult findPathBreadthFirst(const BlockIndex& start, const Facing& startFacing, const DestinationCondition& destinationCondition, const AccessCondition& accessCondition, PathMemoBreadthFirst& memo) const;
-	[[nodiscard]] FindPathResult findPathDepthFirst(const BlockIndex& start, const Facing& startFacing, const DestinationCondition& destinationCondition, const AccessCondition& accessCondition, const BlockIndex& huristicDestination, PathMemoDepthFirst& memo) const;
+	[[nodiscard]] FindPathResult findPath(const BlockIndex& from, const Facing& startFacing, DestinationCondition& destinationCondition, AccessCondition& accessCondition, const OpenListPush& openListPush, const OpenListPop& openListPop, const OpenListEmpty& openListEmpty, const ClosedListAdd& closedListAdd, const ClosedListContains& closedListContains, const ClosedListGetPath& closedListGetPath) const;
+	[[nodiscard]] FindPathResult findPathBreadthFirst(const BlockIndex& start, const Facing& startFacing, DestinationCondition& destinationCondition, AccessCondition& accessCondition, PathMemoBreadthFirst& memo) const;
+	[[nodiscard]] FindPathResult findPathDepthFirst(const BlockIndex& start, const Facing& startFacing, DestinationCondition& destinationCondition, AccessCondition& accessCondition, const BlockIndex& huristicDestination, PathMemoDepthFirst& memo) const;
 	// Non batched pathing uses that WithoutMemo variants.
-	[[nodiscard]] FindPathResult findPathBreadthFirstWithoutMemo(const BlockIndex& start, const Facing& startFacing, const DestinationCondition& destinationCondition, const AccessCondition& accessCondition) const;
-	[[nodiscard]] FindPathResult findPathDepthFirstWithoutMemo(const BlockIndex& from, const Facing& startFacing, const DestinationCondition& destinationCondition, const AccessCondition& accessCondition, const BlockIndex& huristicDestination) const;
+	[[nodiscard]] FindPathResult findPathBreadthFirstWithoutMemo(const BlockIndex& start, const Facing& startFacing, DestinationCondition& destinationCondition, AccessCondition& accessCondition) const;
+	[[nodiscard]] FindPathResult findPathDepthFirstWithoutMemo(const BlockIndex& from, const Facing& startFacing, DestinationCondition& destinationCondition, AccessCondition& accessCondition, const BlockIndex& huristicDestination) const;
 	[[nodiscard]] FindPathResult findPathToForSingleBlockShape(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const BlockIndex& target, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathToForMultiBlockShape(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const BlockIndex& target, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathToAnyOfForSingleBlockShape(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, BlockIndices indecies, const BlockIndex& huristincDestination, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathToAnyOfForMultiBlockShape(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, BlockIndices indecies, const BlockIndex& huristincDestination, bool detour = false) const;
-	[[nodiscard]] FindPathResult findPathToConditionForSingleBlockShape(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const DestinationCondition& destinationCondition, const BlockIndex& huristincDestination, bool detour = false) const;
-	[[nodiscard]] FindPathResult findPathToConditionForMultiBlockShape(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const DestinationCondition& destinationCondition, const BlockIndex& huristincDestination, bool detour = false) const;
+	[[nodiscard]] FindPathResult findPathToConditionForSingleBlockShape(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, DestinationCondition& destinationCondition, const BlockIndex& huristincDestination, bool detour = false) const;
+	[[nodiscard]] FindPathResult findPathToConditionForMultiBlockShape(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, DestinationCondition& destinationCondition, const BlockIndex& huristincDestination, bool detour = false) const;
 	PathRequestIndex getPathRequestIndexNoHuristic();
 	PathRequestIndex getPathRequestIndexWithHuristic();
 	void movePathRequestNoHuristic(PathRequestIndex oldIndex, PathRequestIndex newIndex);
 	void movePathRequestWithHuristic(PathRequestIndex oldIndex, PathRequestIndex newIndex);
-	void resizePathRequestNoHuristic(PathRequestIndex size);
-	void resizePathRequestWithHuristic(PathRequestIndex size);
 public:
 	TerrainFacade(Area& area, const MoveTypeId& moveType);
 	void doStep();
 	void findPathForIndexWithHuristic(PathRequestIndex index, PathMemoDepthFirst& memo);
 	void findPathForIndexNoHuristic(PathRequestIndex index, PathMemoBreadthFirst& memo);
-	PathRequestIndex registerPathRequestNoHuristic(const BlockIndex& start, const Facing& startFacing, const AccessCondition& acces, const DestinationCondition& destination, PathRequest& pathRequest);
-	PathRequestIndex registerPathRequestWithHuristic(const BlockIndex& start, const Facing& startFacing, const AccessCondition& acces, const DestinationCondition& destination, const BlockIndex& huristic, PathRequest& pathRequest);
+	PathRequestIndex registerPathRequestNoHuristic(const BlockIndex& start, const Facing& startFacing, AccessCondition& acces, DestinationCondition& destination, PathRequest& pathRequest);
+	PathRequestIndex registerPathRequestWithHuristic(const BlockIndex& start, const Facing& startFacing, AccessCondition& acces, DestinationCondition& destination, const BlockIndex& huristic, PathRequest& pathRequest);
 	void unregisterNoHuristic(PathRequestIndex index);
 	void unregisterWithHuristic(PathRequestIndex index);
 	void update(const BlockIndex& block);
@@ -97,19 +131,19 @@ public:
 	[[nodiscard]] bool getValueForBit(const BlockIndex& from, const BlockIndex& to) const;
 	[[nodiscard]] FindPathResult findPathTo(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const BlockIndex& target, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathToAnyOf(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, BlockIndices indecies, const BlockIndex huristicDestination = BlockIndex::null(), bool detour = false) const;
-	[[nodiscard]] FindPathResult findPathToCondition(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const DestinationCondition& destinationCondition, BlockIndex huristicDestination = BlockIndex::null(), bool detour = false) const;
+	[[nodiscard]] FindPathResult findPathToCondition(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, DestinationCondition& destinationCondition, BlockIndex huristicDestination = BlockIndex::null(), bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathAdjacentTo(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const BlockIndex& target, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathAdjacentToPolymorphic(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const ActorOrItemIndex& actorOrItem, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathAdjacentToAndUnreserved(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const BlockIndex& target, const FactionId& faction, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathAdjacentToAndUnreservedPolymorphic(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const ActorOrItemIndex& actorOrItem, const FactionId& faction, bool detour = false) const;
-	[[nodiscard]] FindPathResult findPathAdjacentToCondition(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const DestinationCondition& destinationCondition, BlockIndex huristicDestination = BlockIndex::null(), bool detour = false) const;
-	[[nodiscard]] FindPathResult findPathAdjacentToConditionAndUnreserved(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const DestinationCondition& destinationCondition, const FactionId& faction, BlockIndex huristicDestination = BlockIndex::null(), bool detour = false) const;
-	[[nodiscard]] size_t getPathRequestCount() const { return m_pathRequestAccessConditionsNoHuristic.size() + m_pathRequestAccessConditionsWithHuristic.size(); }
+	[[nodiscard]] FindPathResult findPathAdjacentToCondition(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, DestinationCondition& destinationCondition, BlockIndex huristicDestination = BlockIndex::null(), bool detour = false) const;
+	[[nodiscard]] FindPathResult findPathAdjacentToConditionAndUnreserved(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, DestinationCondition& destinationCondition, const FactionId& faction, BlockIndex huristicDestination = BlockIndex::null(), bool detour = false) const;
+	[[nodiscard]] size_t getPathRequestCount() const { return m_pathRequestsNoHuristic.size() + m_pathRequestsWithHuristic.size(); }
 	[[nodiscard]] AccessCondition makeAccessConditionForActor(const ActorIndex& actor, const BlockIndex& start, bool detour, const DistanceInBlocks maxRange = DistanceInBlocks::max()) const;
 	[[nodiscard]] AccessCondition makeAccessCondition(const ShapeId& shape, const BlockIndex& start, const BlockIndices& initalBlocks, bool detour, const DistanceInBlocks maxRange = DistanceInBlocks::max()) const;
 	// For testing.
 	[[nodiscard]] bool accessable(const BlockIndex& from, const Facing& startFacing, const BlockIndex& to, const ActorIndex& actor) const;
-	[[nodiscard]] bool empty() const { return m_pathRequestStartFacingNoHuristic.empty() && m_pathRequestStartFacingWithHuristic.empty(); }
+	[[nodiscard]] bool empty() const { return m_pathRequestsNoHuristic.empty() && m_pathRequestsWithHuristic.empty(); }
 };
 class AreaHasTerrainFacades
 {

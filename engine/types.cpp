@@ -22,6 +22,13 @@ bool Cube::intersects(const Area& area, const Cuboid& cuboid) const
 	Point3D lowest = blocks.getCoordinates(cuboid.m_lowest);
 	return intersects(highest, lowest);
 }
+bool Cube::contains(const Area& area, const Cuboid& cuboid) const
+{
+	const Blocks& blocks = area.getBlocks();
+	Point3D highest = blocks.getCoordinates(cuboid.m_highest);
+	Point3D lowest = blocks.getCoordinates(cuboid.m_lowest);
+	return contains(highest, lowest);
+}
 [[nodiscard]] bool Cube::isContainedBy(const Area& area, const Cuboid& cuboid) const
 {
 	const Blocks& blocks = area.getBlocks();
