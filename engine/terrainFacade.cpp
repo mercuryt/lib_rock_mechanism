@@ -39,7 +39,6 @@ void TerrainFacade::doStep()
 		ranges.emplace_back(i, end);
 		i = end;
 	}
-	/*
 	Blocks& blocks = m_area.getBlocks();
 	m_pathRequestsNoHuristic.sortBy([&](const PathRequestNoHuristic& a, const PathRequestNoHuristic& b){
 		return blocks.getCoordinates(a.startLocation).hilbertNumber() < blocks.getCoordinates(b.startLocation).hilbertNumber();
@@ -47,7 +46,6 @@ void TerrainFacade::doStep()
 	m_pathRequestsWithHuristic.sortBy([&](const PathRequestWithHuristic& a, const PathRequestWithHuristic& b){
 		return blocks.getCoordinates(a.startLocation).hilbertNumber() < blocks.getCoordinates(b.startLocation).hilbertNumber();
 	});
-	*/
 	//#pragma omp parallel for
 	for(auto [begin, end] : ranges)
 	{
@@ -57,8 +55,10 @@ void TerrainFacade::doStep()
 		assert(memo.empty());
 		for(uint i = begin; i < end; ++i)
 		{
-			assert(actors.move_hasPathRequest(m_pathRequestsNoHuristic[PathRequestIndex::create(i)].actor.getIndex(actors.m_referenceData)));
-			findPathForIndexNoHuristic(PathRequestIndex::create(i), memo);
+			PathRequestIndex pathRequestIndex = PathRequestIndex::create(i);
+			ActorIndex actor = m_pathRequestsNoHuristic[pathRequestIndex].actor.getIndex(actors.m_referenceData);
+			assert(actors.move_hasPathRequest(actor));
+			findPathNoHuristic(m_pathRequestsNoHuristic[pathRequestIndex], memo);
 			assert(memo.empty());
 		}
 		m_area.m_simulation.m_hasPathMemos.releaseBreadthFirst(index);
@@ -82,7 +82,10 @@ void TerrainFacade::doStep()
 		assert(memo.empty());
 		for(uint i = begin; i < end; ++i)
 		{
-			findPathForIndexWithHuristic(PathRequestIndex::create(i), memo);
+			PathRequestIndex pathRequestIndex = PathRequestIndex::create(i);
+			ActorIndex actor = m_pathRequestsWithHuristic[pathRequestIndex].actor.getIndex(actors.m_referenceData);
+			assert(actors.move_hasPathRequest(actor));
+			findPathWithHuristic(m_pathRequestsWithHuristic[pathRequestIndex], memo);
 			assert(memo.empty());
 		}
 		m_area.m_simulation.m_hasPathMemos.releaseDepthFirst(index);
@@ -93,27 +96,26 @@ void TerrainFacade::doStep()
 	auto pathRequestsWithHuristic = std::move(m_pathRequestsWithHuristic);
 	clearPathRequests();
 	// Breadth First.
-	for(PathRequestIndex i = PathRequestIndex::create(0); i < pathRequestsNoHuristic.size(); ++i)
+	for(const PathRequestNoHuristic& pathRequestData : pathRequestsNoHuristic)
 	{
-		// Move path request here and nullify the moved from location so that the callback can create a new request.
-		ActorIndex actor = pathRequestsNoHuristic[i].actor.getIndex(actors.m_referenceData);
+		ActorIndex actor = pathRequestData.actor.getIndex(actors.m_referenceData);
 		assert(actors.move_hasPathRequest(actor));
+		// Move path request here and nullify the moved from location so that the callback can create a new request.
 		std::unique_ptr<PathRequest> pathRequest = actors.move_movePathRequestData(actor);
-		if constexpr(DEBUG)
-			pathRequestsNoHuristic[i].actor.clear();
-		pathRequest->callback(m_area, pathRequestsNoHuristic[i].result);
+		pathRequest->callback(m_area, pathRequestData.result);
 	}
 	// Depth First.
-	for(PathRequestIndex i = PathRequestIndex::create(0); i < pathRequestsWithHuristic.size(); ++i)
+	for(const PathRequestWithHuristic& pathRequestData : pathRequestsWithHuristic)
 	{
+		ActorIndex actor = pathRequestData.actor.getIndex(actors.m_referenceData);
+		assert(actors.move_hasPathRequest(actor));
 		// Move path request here and nullify the moved from location so that the callback can create a new request.
-		std::unique_ptr<PathRequest> pathRequest = actors.move_movePathRequestData(pathRequestsWithHuristic[i].actor.getIndex(actors.m_referenceData));
-		pathRequest->callback(m_area, pathRequestsWithHuristic[i].result);
+		std::unique_ptr<PathRequest> pathRequest = actors.move_movePathRequestData(actor);
+		pathRequest->callback(m_area, pathRequestData.result);
 	}
 }
-void TerrainFacade::findPathForIndexWithHuristic(PathRequestIndex index, PathMemoDepthFirst& memo)
+void TerrainFacade::findPathWithHuristic(PathRequestWithHuristic& request, PathMemoDepthFirst& memo)
 {
-	PathRequestWithHuristic& request = m_pathRequestsWithHuristic[index];
 	request.result = findPathDepthFirst(
 		request.startLocation,
 		request.startFacing,
@@ -123,9 +125,8 @@ void TerrainFacade::findPathForIndexWithHuristic(PathRequestIndex index, PathMem
 		memo);
 	memo.reset();
 }
-void TerrainFacade::findPathForIndexNoHuristic(PathRequestIndex index, PathMemoBreadthFirst& memo)
+void TerrainFacade::findPathNoHuristic(PathRequestNoHuristic& request, PathMemoBreadthFirst& memo)
 {
-	PathRequestNoHuristic& request = m_pathRequestsNoHuristic[index];
 	request.result = findPathBreadthFirst(
 		request.startLocation,
 		request.startFacing,

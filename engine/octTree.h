@@ -71,10 +71,14 @@ public:
 				results.push_back(&candidate);
 			else
 				for(const OctTree& child : m_data[candidate.m_children])
+				{
+					if(child.m_data.empty())
+						continue;
 					if(cube.contains(child.m_cube))
 						results.push_back(&child);
 					else if(cube.intersects(child.m_cube))
 						openList.push_back(&child);
+				}
 		}
 		for(auto iter = results.begin(); iter != results.end(); ++iter)
 		{
@@ -99,10 +103,14 @@ public:
 				results.push_back(&candidate);
 			else
 				for(const OctTree& child : m_data[candidate.m_children])
+				{
+					if(child.m_data.empty())
+						continue;
 					if(child.m_cube.isContainedBy(area, cuboid))
 						results.push_back(&child);
 					else if(child.m_cube.intersects(area, cuboid))
 						openList.push_back(&child);
+				}
 		}
 		for(auto iter = results.begin(); iter != results.end(); ++iter)
 		{

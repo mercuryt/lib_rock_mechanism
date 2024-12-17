@@ -316,8 +316,9 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 							// All actors are at lift points.
 							assert(m_quantity == 1);
 							assert(toHaul.getQuantity(area) == 1);
-							// TODO: make work for stacks.
-							toHaul.followActor(area, actor);
+							// TODO: make work for generic stacks.
+							ActorIndex leaderIndex = m_leader.getIndex(actors.m_referenceData);
+							toHaul.followActor(area, leaderIndex);
 							for(ActorReference follower : m_workers)
 							{
 								ActorIndex followerIndex = follower.getIndex(actors.m_referenceData);
@@ -325,8 +326,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 									actors.followPolymorphic(followerIndex, toHaul);
 								actors.canReserve_clearAll(followerIndex);
 							}
-							actors.canReserve_clearAll(actor);
-							actors.move_setDestinationAdjacentToLocation(actor, m_project.m_location, detour);
+							actors.move_setDestinationAdjacentToLocation(leaderIndex, m_project.m_location, detour);
 							m_itemIsMoving = true;
 							toHaul.reservable_unreserve(area, m_project.m_canReserve, m_quantity);
 						}
@@ -616,21 +616,20 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 				if(allWorkersAreAdjacentTo(haulTool))
 				{
 					// All actors are adjacent to the haul tool.
-					items.followActor(haulTool, actor);
+					ActorIndex leaderIndex = m_leader.getIndex(actors.m_referenceData);
+					items.followActor(haulTool, leaderIndex);
 					for(ActorReference follower : m_workers)
 					{
-						ActorIndex followerIndex = follower.getIndex(actors.m_referenceData);
+						ActorIndex workerIndex = follower.getIndex(actors.m_referenceData);
 						if(follower != m_leader)
-							actors.followItem(followerIndex, haulTool);
-						actors.canReserve_clearAll(followerIndex);
+							actors.followItem(workerIndex, haulTool);
+						actors.canReserve_clearAll(workerIndex);
 					}
-					actors.canReserve_clearAll(actor);
-					actors.move_setDestinationAdjacentToPolymorphic(actor, toHaul, detour);
+					actors.move_setDestinationAdjacentToPolymorphic(leaderIndex, toHaul, detour);
 				}
 			}
 			else
 			{
-				actors.canReserve_clearAll(actor);
 				actors.move_setDestinationAdjacentToItem(actor, haulTool, detour);
 			}
 			break;

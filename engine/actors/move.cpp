@@ -394,12 +394,14 @@ bool Actors::move_canMove(const ActorIndex& index) const
 Step Actors::move_delayToMoveInto(const ActorIndex& index, const BlockIndex& block) const
 {
 	Speed speed = m_speedActual[index];
-	CollisionVolume volumeAtLocationBlock = Shape::getCollisionVolumeAtLocationBlock(m_shape[index]);
 	assert(block != m_location[index]);
 	Blocks& blocks = m_area.getBlocks();
-	if(volumeAtLocationBlock + blocks.shape_getDynamicVolume(block) > Config::maxBlockVolume)
+	CollisionVolume staticVolume = blocks.shape_getStaticVolume(block);
+	if(staticVolume > Config::minBlockStaticVolumeToSlowMovement)
 	{
-		CollisionVolume excessVolume = (volumeAtLocationBlock + blocks.shape_getStaticVolume(block)) - Config::maxBlockVolume;
+		CollisionVolume excessVolume = staticVolume - Config::minBlockStaticVolumeToSlowMovement;
+		if(excessVolume > 50)
+			excessVolume = CollisionVolume::create(50);
 		speed = Speed::create(util::scaleByPercent(speed.get(), Percent::create(100 - excessVolume.get())));
 	}
 	assert(speed != 0);

@@ -35,6 +35,7 @@ public:
 			action(data);
 	}
 	[[nodiscard]] uint size() const { return m_data.size(); }
+	[[nodiscard]] bool empty() const { return m_data.empty(); }
 	[[nodiscard]] const std::pmr::vector<LocationBucketData>& get() const { return m_data; }
 	[[nodiscard]] bool contains(const ActorReference& actor, const Point3D& coordinates) const;
 };
