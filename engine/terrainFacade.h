@@ -3,6 +3,8 @@
  * Stores enterability data for a specific move type for pair of blocks in a binary format.
  * Also stores path requests in a series of vectors divided by presence or absence of destination huristic.
  * This divide is done for instruction cache locality.
+ * TODO: try replacing std::function accessCondition and destinationCondition with a single findPath std::function member which calls a static class method in the class derived from PathRequest which calls a findPath template function.
+ * 	
  */ 
 #pragma once
 
@@ -47,20 +49,10 @@ struct PathRequestNoHuristic
 	PathRequestNoHuristic() = default;
 	PathRequestNoHuristic(AccessCondition& ac, DestinationCondition& dc, const BlockIndex& sl, const ActorReference& a, const Facing& sf) :
 		accessCondition(ac), destinationCondition(dc), startLocation(sl), actor(a), startFacing(sf) { }
-	PathRequestNoHuristic(const PathRequestNoHuristic& other) :
-		accessCondition(other.accessCondition), destinationCondition(other.destinationCondition), startLocation(other.startLocation), actor(other.actor), startFacing(other.startFacing) { }
-	PathRequestNoHuristic(PathRequestNoHuristic&& other) noexcept :
-		accessCondition(other.accessCondition), destinationCondition(other.destinationCondition), startLocation(other.startLocation), actor(other.actor), startFacing(other.startFacing) { }
-	void operator=(const PathRequestNoHuristic& other)
-	{
-		accessCondition = other.accessCondition; destinationCondition = other.destinationCondition; startLocation = other.startLocation;
-		actor = other.actor; startFacing = other.startFacing;
-	}
-	void operator=(PathRequestNoHuristic&& other) noexcept
-	{
-		accessCondition = other.accessCondition; destinationCondition = other.destinationCondition; startLocation = other.startLocation;
-		actor = other.actor; startFacing = other.startFacing;
-	}
+	PathRequestNoHuristic(const PathRequestNoHuristic& other) = default;
+	PathRequestNoHuristic(PathRequestNoHuristic&& other) noexcept = default;
+	PathRequestNoHuristic& operator=(const PathRequestNoHuristic& other) = default;
+	PathRequestNoHuristic& operator=(PathRequestNoHuristic&& other) = default;
 };
 struct PathRequestWithHuristic
 {
@@ -74,20 +66,10 @@ struct PathRequestWithHuristic
 	PathRequestWithHuristic() = default;
 	PathRequestWithHuristic(AccessCondition& ac, DestinationCondition& dc, const BlockIndex& sl, const BlockIndex& hd, const ActorReference& a, const Facing& sf) :
 		accessCondition(ac), destinationCondition(dc), startLocation(sl), huristicDestination(hd), actor(a), startFacing(sf) { }
-	PathRequestWithHuristic(const PathRequestWithHuristic& other) :
-		accessCondition(other.accessCondition), destinationCondition(other.destinationCondition), startLocation(other.startLocation), huristicDestination(other.huristicDestination), actor(other.actor), startFacing(other.startFacing) { }
-	PathRequestWithHuristic(PathRequestWithHuristic&& other) noexcept :
-		accessCondition(other.accessCondition), destinationCondition(other.destinationCondition), startLocation(other.startLocation), huristicDestination(other.huristicDestination), actor(other.actor), startFacing(other.startFacing) { }
-	void operator=(const PathRequestWithHuristic& other)
-	{
-		accessCondition = other.accessCondition; destinationCondition = other.destinationCondition; startLocation = other.startLocation;
-		huristicDestination = other.huristicDestination; actor = other.actor; startFacing = other.startFacing;
-	}
-	void operator=(PathRequestWithHuristic&& other) noexcept
-	{
-		accessCondition = other.accessCondition; destinationCondition = other.destinationCondition; startLocation = other.startLocation;
-		huristicDestination = other.huristicDestination; actor = other.actor; startFacing = other.startFacing;
-	}
+	PathRequestWithHuristic(const PathRequestWithHuristic& other) = default;
+	PathRequestWithHuristic(PathRequestWithHuristic&& other) noexcept = default;
+	PathRequestWithHuristic& operator=(const PathRequestWithHuristic& other) = default;
+	PathRequestWithHuristic& operator=(PathRequestWithHuristic&& other) = default;
 };
 class TerrainFacade final
 {
@@ -119,8 +101,8 @@ class TerrainFacade final
 public:
 	TerrainFacade(Area& area, const MoveTypeId& moveType);
 	void doStep();
-	void findPathForIndexWithHuristic(PathRequestIndex index, PathMemoDepthFirst& memo);
-	void findPathForIndexNoHuristic(PathRequestIndex index, PathMemoBreadthFirst& memo);
+	void findPathWithHuristic(PathRequestWithHuristic& request, PathMemoDepthFirst& memo);
+	void findPathNoHuristic(PathRequestNoHuristic& request, PathMemoBreadthFirst& memo);
 	PathRequestIndex registerPathRequestNoHuristic(const BlockIndex& start, const Facing& startFacing, AccessCondition& acces, DestinationCondition& destination, PathRequest& pathRequest);
 	PathRequestIndex registerPathRequestWithHuristic(const BlockIndex& start, const Facing& startFacing, AccessCondition& acces, DestinationCondition& destination, const BlockIndex& huristic, PathRequest& pathRequest);
 	void unregisterNoHuristic(PathRequestIndex index);

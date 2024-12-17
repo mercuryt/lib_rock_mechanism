@@ -109,7 +109,9 @@ template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::followActor(const Index& index, const ActorIndex& actor)
 {
 	Actors& actors = getActors();
-	assert(!m_leader[index].exists());
+	assert(!isFollowing(index));
+	assert(!isLeading(index));
+	assert(!actors.isLeading(actor));
 	m_leader[index] = ActorOrItemIndex::createForActor(actor);
 	this->maybeUnsetStatic(index);
 	assert(!actors.getFollower(actor).exists());
@@ -122,11 +124,16 @@ template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::followItem(const Index& index, const ItemIndex& item)
 {
 	Actors& actors = getActors();
-	assert(!m_leader[index].exists());
+	Items& items = getItems();
+	assert(!isFollowing(index));
+	assert(!isLeading(index));
+	assert(!items.isLeading(item));
+	// Only follow items which already have leaders;
+	assert(items.isFollowing(item));
 	m_leader[index] = ActorOrItemIndex::createForItem(item);
 	this->maybeUnsetStatic(index);
-	assert(!getItems().getFollower(item).exists());
-	getItems().getFollower(item) = getActorOrItemIndex(index);
+	items.getFollower(item) = getActorOrItemIndex(index);
+	assert(items.isFollowing(item));
 	ActorIndex lineLeader = getLineLeader(index);
 	actors.move_updateActualSpeed(lineLeader);
 	actors.lineLead_appendToPath(lineLeader, this->m_location[index]);
@@ -271,12 +278,17 @@ ActorIndex Portables<Derived, Index, ReferenceIndex>::getLineLeader(const Index&
 {
 	// Recursively traverse to the front of the line and return the leader.
 	ActorOrItemIndex leader = m_leader[index];
-	if(!leader.exists())
+	assert(getActorOrItemIndex(index) != leader);
+	if(leader.empty())
 	{
 		assert(m_follower[index].exists());
 		assert(m_isActors);
 		return ActorIndex::cast(index);
 	}
+	if(leader.isFollowing(getArea()))
+		assert(leader.getLeader(getArea()) != getActorOrItemIndex(index));
+	assert(leader.isLeading(getArea()));
+	assert(leader.getFollower(getArea()) == getActorOrItemIndex(index));
 	if(leader.isActor())
 		return getActors().getLineLeader(leader.getActor());
 	else

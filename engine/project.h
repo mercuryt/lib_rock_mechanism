@@ -202,15 +202,15 @@ public:
 	[[nodiscard]] bool operator==(const Project& other) const { return &other == this; }
 	// For testing.
 	[[nodiscard]] ProjectWorker& getProjectWorkerFor(ActorReference actor) { return m_workers[actor]; }
-	[[nodiscard, maybe_unused]] auto& getWorkers() { return m_workers; }
-	[[nodiscard, maybe_unused]] Quantity getHaulRetries() const { return m_haulRetries; }
-	[[nodiscard, maybe_unused]] bool hasTryToHaulThreadedTask() const { return m_tryToHaulThreadedTask.exists(); }
-	[[nodiscard, maybe_unused]] bool hasTryToHaulEvent() const { return m_tryToHaulEvent.exists(); }
-	[[nodiscard, maybe_unused]] bool hasTryToAddWorkersThreadedTask() const { return m_tryToAddWorkersThreadedTask.exists(); }
-	[[nodiscard, maybe_unused]] bool hasTryToReserveEvent() const { return m_tryToReserveEvent.exists(); }
-	[[nodiscard, maybe_unused]] bool finishEventExists() const { return m_finishEvent.exists(); }
-	[[nodiscard, maybe_unused]] Step getFinishStep() const { return m_finishEvent.getStep(); }
-	[[nodiscard, maybe_unused]] auto getToPickup() const { return m_toPickup; }
+	[[nodiscard]] auto& getWorkers() { return m_workers; }
+	[[nodiscard]] Quantity getHaulRetries() const { return m_haulRetries; }
+	[[nodiscard]] bool hasTryToHaulThreadedTask() const { return m_tryToHaulThreadedTask.exists(); }
+	[[nodiscard]] bool hasTryToHaulEvent() const { return m_tryToHaulEvent.exists(); }
+	[[nodiscard]] bool hasTryToAddWorkersThreadedTask() const { return m_tryToAddWorkersThreadedTask.exists(); }
+	[[nodiscard]] bool hasTryToReserveEvent() const { return m_tryToReserveEvent.exists(); }
+	[[nodiscard]] bool finishEventExists() const { return m_finishEvent.exists(); }
+	[[nodiscard]] Step getFinishStep() const { return m_finishEvent.getStep(); }
+	[[nodiscard]] auto getToPickup() const { return m_toPickup; }
 	[[nodiscard]] Quantity getMaxWorkers() const { return m_maxWorkers; }
 	friend class ProjectFinishEvent;
 	friend class ProjectTryToHaulEvent;

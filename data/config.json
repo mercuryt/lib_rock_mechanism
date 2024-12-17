@@ -115,6 +115,7 @@
 	"minimumPercentFoliageForGrow": 90,
 	"minimumPercentGrowthForWoodCutting": 80,
 	"minimumRainIntensityModifier": 0.5,
+	"minBlockStaticVolumeToSlowMovement": 50,
 	"minimumSecondsRainPerPercentHumidity": 72,
 	"minimumSizeForOctTreeToSplit": 64,
 	"minimumOccupantsForOctTreeToSplit": 16,

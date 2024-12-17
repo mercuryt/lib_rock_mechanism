@@ -217,54 +217,62 @@ TEST_CASE("construct")
 		actors.objective_setPriority(dwarf2, constructObjectiveType.getId(), Priority::create(100));;
 		REQUIRE(actors.objective_getCurrentName(dwarf1) == "construct");
 		REQUIRE(actors.objective_getCurrentName(dwarf2) == "construct");
-		ConstructProject& project1 = area.m_hasConstructionDesignations.getProject(faction, wallLocation1);
-		ConstructProject& project2 = area.m_hasConstructionDesignations.getProject(faction, wallLocation2);
+		ConstructProject* project1 = &area.m_hasConstructionDesignations.getProject(faction, wallLocation1);
+		ConstructProject* project2 = &area.m_hasConstructionDesignations.getProject(faction, wallLocation2);
 		REQUIRE(actors.objective_getCurrent<ConstructObjective>(dwarf2).getProjectWhichActorCanJoinAt(area, wallLocation2, dwarf2));
 		REQUIRE(actors.move_hasPathRequest(dwarf2));
 		// Find projects to join.
-		// Activate project1 with dwarf1 and reserve all required, dwarf2 fails to validate project2 due to tools being reserved for project1.
-		// Project2 schedules another attempt next step.
+		// Activate a project with one dwarf and reserve all required, the other dwarf fails to validate their project due to tools being reserved.
+		// The project which was reserved becomes project1 (if not already) and the other becomes project2.
+		// The dwarf which reserved becosem dwarf1 and the other becomes dwarf2.
 		simulation.doStep();
+		if(project2->reservationsComplete())
+		{
+			std::swap(project1, project2);
+			std::swap(dwarf1, dwarf2);
+			std::swap(wallLocation1, wallLocation2);
+			std::swap(dwarf1Ref, dwarf2Ref);
+		}
 		REQUIRE(actors.objective_getCurrent<ConstructObjective>(dwarf2).getProjectWhichActorCanJoinAt(area, wallLocation2, dwarf2));
-		REQUIRE(actors.project_get(dwarf1) == &project1);
-		REQUIRE(actors.project_get(dwarf2) == &project2);
-		REQUIRE(project1.reservationsComplete());
-		REQUIRE(!project2.reservationsComplete());
-		REQUIRE(project1.getWorkers().size() == 1);
-		REQUIRE(project2.getWorkers().empty());
-		REQUIRE(!project1.hasCandidate(dwarf1));
-		REQUIRE(project2.hasCandidate(dwarf2));
+		REQUIRE(actors.project_get(dwarf1) == project1);
+		REQUIRE(actors.project_get(dwarf2) == project2);
+		REQUIRE(project1->reservationsComplete());
+		REQUIRE(!project2->reservationsComplete());
+		REQUIRE(project1->getWorkers().size() == 1);
+		REQUIRE(project2->getWorkers().empty());
+		REQUIRE(!project1->hasCandidate(dwarf1));
+		REQUIRE(project2->hasCandidate(dwarf2));
 		// Select a haul strategy and create a subproject for dwarf1, dwarf2 tries again to activate project2, this time failing to find required unreserved items and activating prohibition on the project at the objective instance.
 		simulation.doStep();
 		REQUIRE(!actors.objective_getCurrent<ConstructObjective>(dwarf2).getProjectWhichActorCanJoinAt(area, wallLocation2, dwarf2));
-		ProjectWorker& projectWorker1 = project1.getProjectWorkerFor(dwarf1Ref);
+		ProjectWorker& projectWorker1 = project1->getProjectWorkerFor(dwarf1Ref);
 		REQUIRE(projectWorker1.haulSubproject != nullptr);
-		REQUIRE(project1.getWorkers().size() == 1);
-		REQUIRE(!project2.hasCandidate(dwarf2));
+		REQUIRE(project1->getWorkers().size() == 1);
+		REQUIRE(!project2->hasCandidate(dwarf2));
 		REQUIRE(!actors.project_exists(dwarf2));
 		// Find a path for dwarf1, dwarf2 seeks project to join, and finds project1.
 		simulation.doStep();
 		REQUIRE(actors.move_getDestination(dwarf1) .exists());
-		REQUIRE(actors.project_get(dwarf1) == &project1);
+		REQUIRE(actors.project_get(dwarf1) == project1);
 		REQUIRE(area.m_hasConstructionDesignations.contains(faction, wallLocation1));
 		REQUIRE(area.m_hasConstructionDesignations.contains(faction, wallLocation2));
-		REQUIRE(project1.getWorkers().contains(dwarf2Ref));
+		REQUIRE(project1->getWorkers().contains(dwarf2Ref));
 		// Build first wall segment.
 		simulation.fastForwardUntillPredicate([&]()->bool { return blocks.solid_is(wallLocation1); }, 90);
 		REQUIRE(!area.m_hasConstructionDesignations.contains(faction, wallLocation1));
 		REQUIRE(area.m_hasConstructionDesignations.contains(faction, wallLocation2));
-		REQUIRE(!project2.isOnDelay());
-		REQUIRE(blocks.designation_has(project2.getLocation(), faction, BlockDesignation::Construct));
+		REQUIRE(!project2->isOnDelay());
+		REQUIRE(blocks.designation_has(project2->getLocation(), faction, BlockDesignation::Construct));
 		// Both dwarves seek a project to join and find project2. This does not require a step if they are already adjacent but does if they are not.
 		REQUIRE(actors.objective_getCurrentName(dwarf1) == "construct");
 		REQUIRE(actors.objective_getCurrentName(dwarf2) == "construct");
 		simulation.doStep();
 		// Project2 completes reservations and both dwarfs graduate from candidate to worker.
 		simulation.doStep();
-		REQUIRE(project2.getWorkers().contains(dwarf1Ref));
-		REQUIRE(project2.getWorkers().contains(dwarf2Ref));
-		REQUIRE(!project2.hasCandidate(dwarf1));
-		REQUIRE(!project2.hasCandidate(dwarf2));
+		REQUIRE(project2->getWorkers().contains(dwarf1Ref));
+		REQUIRE(project2->getWorkers().contains(dwarf2Ref));
+		REQUIRE(!project2->hasCandidate(dwarf1));
+		REQUIRE(!project2->hasCandidate(dwarf2));
 		// Try to set haul strategy, both dwarves try to generate a haul subproject.
 		simulation.doStep();
 		simulation.fastForwardUntillPredicate([&]()->bool { return blocks.solid_is(wallLocation2); }, 90);

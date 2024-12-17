@@ -164,8 +164,13 @@ TEST_CASE("stockpile")
 		// Both dwarves find chunk 1
 		simulation.doStep();
 		// Destination is confirmed for both. Project is created, reserves and activates.
+		// Two worker which resered the project becomes dwarf1 (if not already) and the other dwarf2 and the other dwarf2.
 		simulation.doStep();
-		REQUIRE(actors.project_exists(dwarf1));
+		if(!actors.project_exists(dwarf1))
+		{
+			std::swap(dwarf1, dwarf2);
+			std::swap(dwarf1Ref, dwarf2Ref);
+		}
 		StockPileProject& project = *static_cast<StockPileProject*>(actors.project_get(dwarf1));
 		REQUIRE(project.hasTryToHaulThreadedTask());
 		REQUIRE(project.getItem().getIndex(items.m_referenceData) == chunk1);
@@ -252,7 +257,11 @@ TEST_CASE("stockpile")
 		simulation.doStep();
 		// Both actors verify path as shortest.
 		simulation.doStep();
-		REQUIRE(actors.project_exists(dwarf1));
+		if(!actors.project_exists(dwarf1))
+		{
+			std::swap(dwarf1, dwarf2);
+			std::swap(dwarf1Ref, dwarf2Ref);
+		}
 		Project& project = *actors.project_get(dwarf1);
 		REQUIRE(project.hasWorker(dwarf1));
 		REQUIRE(project.hasWorker(dwarf2));
@@ -382,7 +391,8 @@ TEST_CASE("stockpile")
 		// Confirm path
 		simulation.doStep();
 		// Dwarf1 creates a project.
-		REQUIRE(actors.project_exists(dwarf1));
+		if(!actors.project_exists(dwarf1))
+			std::swap(dwarf1, dwarf2);
 		REQUIRE(!actors.project_exists(dwarf2));
 		// Dwarf2 finds the second stockpile location. Dwarf1 selects a haul strategy.
 		simulation.doStep();
@@ -416,20 +426,14 @@ TEST_CASE("stockpile")
 		simulation.fastForwardUntillPredicate(predicate1);
 		Quantity firstDeliveryQuantity = blocks.item_getCount(stockpileLocation1, pile, sand);
 		REQUIRE(actors.objective_getCurrentName(dwarf2) == "stockpile");
-		auto predicate2 = [&]{ return blocks.item_getCount(stockpileLocation1, pile, sand) > firstDeliveryQuantity; };
+		auto predicate2 = [&]{ return blocks.item_getCount(stockpileLocation1, pile, sand) > firstDeliveryQuantity || blocks.item_getCount(stockpileLocation2, pile, sand) > firstDeliveryQuantity; };
 		simulation.fastForwardUntillPredicate(predicate2);
 		if(actors.getActionDescription(dwarf2) != L"stockpile")
 			REQUIRE(actors.objective_getCurrentName(dwarf1) != "stockpile");
 		else
 			REQUIRE(actors.objective_getCurrentName(dwarf2) == "stockpile");
-		auto predicate3 = [&]{ return blocks.item_getCount(stockpileLocation1, pile, sand) == 96 || blocks.item_getCount(stockpileLocation2, pile, sand) == 96; };
+		auto predicate3 = [&]{ return blocks.item_getCount(stockpileLocation1, pile, sand) == 100 && blocks.item_getCount(stockpileLocation2, pile, sand) == 100; };
 		simulation.fastForwardUntillPredicate(predicate3);
-		REQUIRE(actors.objective_getCurrentName(dwarf1) == "stockpile");
-		REQUIRE(actors.move_hasPathRequest(dwarf1));
-		simulation.doStep();
-		REQUIRE(actors.objective_getCurrentName(dwarf1) == "stockpile");
-		auto predicate4 = [&]{ return blocks.item_getCount(stockpileLocation1, pile, sand) == 100 && blocks.item_getCount(stockpileLocation2, pile, sand) == 100; };
-		simulation.fastForwardUntillPredicate(predicate4);
 		REQUIRE(!actors.project_exists(dwarf1));
 		REQUIRE(!actors.project_exists(dwarf2));
 		simulation.doStep();

@@ -135,6 +135,7 @@ namespace Config
 	inline Percent minimumPercentFoliageForGrow;
 	inline Percent minimumPercentGrowthForWoodCutting;
 	inline float minimumRainIntensityModifier;
+	inline CollisionVolume minBlockStaticVolumeToSlowMovement;
 	inline float minimumStepsBetweenRainPerPercentHumidity;
 	inline float minimumStepsRainPerPercentHumidity;
 	inline uint16_t minimumSizeForOctTreeToSplit;

@@ -124,6 +124,7 @@ void Config::load()
 	data["minimumPercentFoliageForGrow"].get_to(minimumPercentFoliageForGrow);
 	data["minimumPercentGrowthForWoodCutting"].get_to(minimumPercentGrowthForWoodCutting);
 	data["minimumRainIntensityModifier"].get_to(minimumRainIntensityModifier);
+	data["minBlockStaticVolumeToSlowMovement"].get_to(minBlockStaticVolumeToSlowMovement);
 	data["minimumDaysBetweenRainPerPercentHumidity"].get_to(minimumStepsBetweenRainPerPercentHumidity);
 	data["minimumSizeForOctTreeToSplit"].get_to(minimumSizeForOctTreeToSplit);
 	data["minimumOccupantsForOctTreeToSplit"].get_to(minimumOccupantsForOctTreeToSplit);
