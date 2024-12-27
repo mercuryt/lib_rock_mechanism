@@ -8,8 +8,8 @@
 #include "../blocks/blocks.h"
 #include "../plants.h"
 #include "../hasShapes.hpp"
-#include "pathRequest.h"
-#include <memory>
+#include "../terrainFacade.hpp"
+#include "../pathRequest.h"
 // Event.
 HarvestEvent::HarvestEvent(const Step& delay, Area& area, HarvestObjective& ho, const ActorIndex& actor, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_harvestObjective(ho)
@@ -138,8 +138,7 @@ void HarvestObjective::reset(Area& area, const ActorIndex& actor)
 }
 void HarvestObjective::makePathRequest(Area& area, const ActorIndex& actor)
 {
-	std::unique_ptr<PathRequest> pathRequest = std::make_unique<HarvestPathRequest>(area, *this, actor);
-	area.getActors().move_pathRequestRecord(actor, std::move(pathRequest));
+	area.getActors().move_pathRequestRecord(actor, std::make_unique<HarvestPathRequest>(area, *this, actor));
 }
 BlockIndex HarvestObjective::getBlockContainingPlantToHarvestAtLocationAndFacing(Area& area, const BlockIndex& location, Facing facing, const ActorIndex& actor)
 {
@@ -154,19 +153,42 @@ bool HarvestObjective::blockContainsHarvestablePlant(Area& area, const BlockInde
 	Plants& plants = area.getPlants();
 	return blocks.plant_exists(block) && plants.readyToHarvest(blocks.plant_get(block)) && !blocks.isReserved(block, actors.getFactionId(actor));
 }
-HarvestPathRequest::HarvestPathRequest(Area& area, HarvestObjective& objective, const ActorIndex& actor) : ObjectivePathRequest(objective, true) // reserve block which passed predicate.
+HarvestPathRequest::HarvestPathRequest(Area& area, HarvestObjective& objective, const ActorIndex& actorIndex) :
+	m_objective(objective)
 {
-	const bool unreserved = true;
-	const bool reserve = true;
-	createGoAdjacentToDesignation(area, actor, BlockDesignation::Harvest, objective.m_detour, unreserved, Config::maxRangeToSearchForHorticultureDesignations, reserve);
+	Actors& actors = area.getActors();
+	start = actors.getLocation(actorIndex);
+	maxRange = Config::maxRangeToSearchForHorticultureDesignations;
+	actor = actors.getReference(actorIndex);
+	shape = actors.getShape(actorIndex);
+	faction = actors.getFaction(actorIndex);
+	moveType = actors.getMoveType(actorIndex);
+	facing = actors.getFacing(actorIndex);
+	detour = m_objective.m_detour;
+	adjacent = true;
+	reserveDestination = true;
 }
-void HarvestPathRequest::onSuccess(Area& area, const BlockIndex& blockWhichPassedPredicate)
+HarvestPathRequest::HarvestPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
+	PathRequestBreadthFirst(data, area),
+	m_objective(static_cast<HarvestObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
+{ }
+FindPathResult HarvestPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
-	static_cast<HarvestObjective&>(m_objective).select(area, blockWhichPassedPredicate, getActor());
+	return terrainFacade.findPathToBlockDesignation(memo, BlockDesignation::Harvest, faction, start, facing, shape, m_objective.m_detour, adjacent, Config::maxRangeToSearchForHorticultureDesignations);
+}
+void HarvestPathRequest::writeStep(Area& area, FindPathResult& result)
+{
+	Actors& actors = area.getActors();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	if(result.path.empty() && result.blockThatPassedPredicate.empty())
+		actors.objective_canNotCompleteObjective(actorIndex, m_objective);
+	else
+		m_objective.select(area, result.blockThatPassedPredicate, actorIndex);
 }
 Json HarvestPathRequest::toJson()
 {
-	Json output = PathRequest::toJson();
+	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
 	output["type"] = "harvest";
 	return output;
 }

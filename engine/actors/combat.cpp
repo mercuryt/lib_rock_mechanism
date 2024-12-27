@@ -13,7 +13,8 @@
 #include "../random.h"
 #include "../items/items.h"
 #include "../hasShapes.hpp"
-#include "reference.h"
+#include "../reference.h"
+#include "../terrainFacade.hpp"
 
 #include <cstdint>
 #include <sys/types.h>
@@ -324,64 +325,78 @@ AttackTypeId Actors::combat_getRangedAttackType(const ActorIndex&, const ItemInd
 AttackCoolDownEvent::AttackCoolDownEvent(Area& area, const ActorIndex& actor, const Step& duration, const Step start) :
 	ScheduledEvent(area.m_simulation, duration, start), m_actor(actor) { }
 
-GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, const ActorIndex& a, const ActorIndex& t, const DistanceInBlocksFractional& ar) :
-	m_actor(a), m_attackRangeSquared(ar * ar)
+GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, const ActorIndex& actorIndex, const ActorIndex& targetIndex, const DistanceInBlocksFractional& ar) :
+	attackRangeSquared(ar * ar)
+{ 
+	Actors& actors = area.getActors();
+	start = actors.getLocation(actorIndex);
+	maxRange = DistanceInBlocks::max();
+	actor = actors.getReference(actorIndex);
+	shape = actors.getShape(actorIndex);
+	faction = actors.getFaction(actorIndex);
+	moveType = actors.getMoveType(actorIndex);
+	facing = actors.getFacing(actorIndex);
+	detour = true;
+	adjacent = true;
+	reserveDestination = true;
+	target.setIndex(targetIndex, area.getActors().m_referenceData);
+}
+GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(const Json& data, Area& area) :
+	PathRequestDepthFirst(data, area),
+	target(data["target"], area.getActors().m_referenceData),
+	attackRangeSquared(data["attackRangeSquared"].get<DistanceInBlocksFractional>())
+{ }
+FindPathResult GetIntoAttackPositionPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo)
 {
-	m_target.setIndex(t, area.getActors().m_referenceData);
-	DestinationCondition destinationCondition = [&area, this](const BlockIndex& location, Facing)
+	Actors& actors = area.getActors();
+	auto destinationCondition = [&actors, this](const BlockIndex& location, const Facing&) ->std::pair<bool, BlockIndex>
 	{
-		if(area.getActors().combat_blockIsValidPosition(m_actor, location, m_attackRangeSquared))
+		if(actors.combat_blockIsValidPosition(actor.getIndex(actors.m_referenceData), location, attackRangeSquared))
 			return std::make_pair(true, location);
 		return std::make_pair(false, BlockIndex::null());
 	};
 	// TODO: Range attack actors should use a different path priority condition to avoid getting too close.
-	bool detour = true;
-	bool unreserved = false;
-	DistanceInBlocks maxRange = DistanceInBlocks::max();
-	createGoToCondition(area, m_actor, destinationCondition, detour, unreserved, maxRange, area.getActors().getLocation(t));
+	constexpr bool useAnyBlock = true;
+	const BlockIndex& targetLocation = actors.getLocation(target.getIndex(actors.m_referenceData));
+	return terrainFacade.findPathToConditionDepthFirst<useAnyBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, targetLocation, detour, adjacent, faction, maxRange);
 }
-GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(const Json& data, Area& area) :
-	PathRequest(data),
-	m_actor(data["actor"].get<ActorIndex>()),
-	m_target(data["target"], area.getActors().m_referenceData),
-	m_attackRangeSquared(data["distance"].get<DistanceInBlocksFractional>()) { }
-void GetIntoAttackPositionPathRequest::callback(Area& area, const FindPathResult& result)
+void GetIntoAttackPositionPathRequest::writeStep(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
+	const ActorIndex& actorIndex = actor.getIndex(actors.m_referenceData);
 	if(result.path.empty())
 	{
 		if(result.useCurrentPosition)
 		{
-			if(!actors.combat_isOnCoolDown(m_actor))
+			if(!actors.combat_isOnCoolDown(actorIndex))
 			{
-				const ActorIndex& target = m_target.getIndex(actors.m_referenceData);
-				DistanceInBlocksFractional range = actors.distanceToActorFractional(m_actor, target);
-				if(range <= actors.combat_getMaxMeleeRange(m_actor))
+				const ActorIndex& targetIndex = target.getIndex(actors.m_referenceData);
+				DistanceInBlocksFractional range = actors.distanceToActorFractional(actorIndex, targetIndex);
+				if(range <= actors.combat_getMaxMeleeRange(actorIndex))
 					// Melee range attack.
-					actors.combat_attackMeleeRange(m_actor, target);
+					actors.combat_attackMeleeRange(actorIndex, targetIndex);
 				else
 				{
 					// Long range attack.
 					// TODO: Unarmed long range attack, needs to prodive the material type somehow, maybe in body part?
-					ItemIndex weapon = actors.equipment_getWeaponToAttackAtRange(m_actor, range);
-					ItemIndex ammo = actors.equipment_getAmmoForRangedWeapon(m_actor, weapon);
-					actors.combat_attackLongRange(m_actor, target, weapon, ammo);
+					ItemIndex weapon = actors.equipment_getWeaponToAttackAtRange(actorIndex, range);
+					ItemIndex ammo = actors.equipment_getAmmoForRangedWeapon(actorIndex, weapon);
+					actors.combat_attackLongRange(actorIndex, targetIndex, weapon, ammo);
 				}
 			}
 		}
 		else
-			actors.objective_canNotCompleteSubobjective(m_actor);
+			actors.objective_canNotCompleteSubobjective(actorIndex);
 	}
 	else
-		actors.move_setPath(m_actor, result.path);
+		actors.move_setPath(actorIndex, result.path);
 }
 Json GetIntoAttackPositionPathRequest::toJson() const
 {
-	Json output = PathRequest::toJson();
+	Json output = static_cast<const PathRequestDepthFirst&>(*this);
 	output.update({
-		{"actor", m_actor},
-		{"target", m_target},
-		{"distance", m_attackRangeSquared},
+		{"target", target},
+		{"attackRangeSquared", attackRangeSquared},
 		{"type", "attack"}
 	});
 	return output;

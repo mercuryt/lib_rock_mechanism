@@ -121,7 +121,7 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	DataVector<CombatScore, ActorIndex> m_combatScore;
 	// Move.
 	HasScheduledEvents<MoveEvent> m_moveEvent;
-	DataVector<std::unique_ptr<PathRequest>, ActorIndex> m_pathRequest;
+	DataVector<PathRequest*, ActorIndex> m_pathRequest;
 	DataVector<BlockIndices, ActorIndex> m_path;
 	DataVector<BlockIndices::iterator, ActorIndex> m_pathIter;
 	DataVector<BlockIndex, ActorIndex> m_destination;
@@ -258,6 +258,7 @@ public:
 	void move_schedule(const ActorIndex& index);
 	void move_setDestination(const ActorIndex& index, const BlockIndex& destination, bool detour = false, bool adjacent = false, bool unreserved = false, bool reserve = false);
 	void move_setDestinationAdjacentToLocation(const ActorIndex& index, const BlockIndex& destination, bool detour = false, bool unreserved = false, bool reserve = false);
+	void move_setDestinationToAny(const ActorIndex& index, const BlockIndices& candidates, bool detour, bool unreserved, bool reserve, const BlockIndex& huristicDestination);
 	void move_setDestinationAdjacentToActor(const ActorIndex& index, const ActorIndex& other, bool detour = false, bool unreserved = false, bool reserve = false);
 	void move_setDestinationAdjacentToItem(const ActorIndex& index, const ItemIndex& item, bool detour = false, bool unreserved = false, bool reserve = false);
 	void move_setDestinationAdjacentToPolymorphic(const ActorIndex& index, ActorOrItemIndex actorOrItemIndex, bool detour = false, bool unreserved = false, bool reserve = false);
@@ -270,8 +271,9 @@ public:
 	void move_onLeaveArea(const ActorIndex& index);
 	void move_pathRequestCallback(const ActorIndex& index, BlockIndices path, bool useCurrentLocation, bool reserveDestination);
 	void move_pathRequestMaybeCancel(const ActorIndex& index);
-	void move_pathRequestRecord(const ActorIndex& index, std::unique_ptr<PathRequest> pathRequest);
-	void move_updatePathRequestTerrainFacadeIndex(const ActorIndex& index, const PathRequestIndex& newPathRequestIndex);
+	void move_pathRequestRecord(const ActorIndex& index, std::unique_ptr<PathRequestDepthFirst> pathRequest);
+	void move_pathRequestRecord(const ActorIndex& index, std::unique_ptr<PathRequestBreadthFirst> pathRequest);
+	void move_pathRequestClear(const ActorIndex& index);
 	[[nodiscard]] bool move_destinationIsAdjacentToLocation(const ActorIndex& index, const BlockIndex& location);
 	[[nodiscard]] bool move_tryToReserveProposedDestination(const ActorIndex& index, const BlockIndices& path);
 	[[nodiscard]] bool move_tryToReserveOccupied(const ActorIndex& index);
@@ -279,13 +281,12 @@ public:
 	[[nodiscard]] Speed move_getSpeed(const ActorIndex& index) const { return m_speedActual[index]; }
 	[[nodiscard]] bool move_canMove(const ActorIndex& index) const;
 	[[nodiscard]] Step move_delayToMoveInto(const ActorIndex& index, const BlockIndex& block) const;
-	[[nodiscard]] std::unique_ptr<PathRequest> move_movePathRequestData(const ActorIndex& index) { auto output = std::move(m_pathRequest[index]); m_pathRequest[index] = nullptr; return output; }
 	// For debugging move.
-	[[nodiscard]] PathRequest& move_getPathRequest(const ActorIndex& index) { return *m_pathRequest[index].get(); }
+	[[nodiscard]] PathRequest& move_getPathRequest(const ActorIndex& index) { return *m_pathRequest[index]; }
 	[[nodiscard]] BlockIndices& move_getPath(const ActorIndex& index) { return m_path[index]; }
 	[[nodiscard]] BlockIndex move_getDestination(const ActorIndex& index) { return m_destination[index]; }
 	[[nodiscard]] bool move_hasEvent(const ActorIndex& index) const { return m_moveEvent.exists(index); }
-	[[nodiscard]] bool move_hasPathRequest(const ActorIndex& index) const { return m_pathRequest[index].get() != nullptr; }
+	[[nodiscard]] bool move_hasPathRequest(const ActorIndex& index) const { return m_pathRequest[index] != nullptr; }
 	[[nodiscard]] Step move_stepsTillNextMoveEvent(const ActorIndex& index) const;
 	[[nodiscard]] uint8_t move_getRetries(const ActorIndex& index) const { return m_moveRetries[index]; }
 	[[nodiscard]] bool move_canPathTo(const ActorIndex& index, const BlockIndex& destination);
@@ -408,6 +409,7 @@ public:
 	void sleep_setSpot(const ActorIndex& index, const BlockIndex& location);
 	void sleep_makeTired(const ActorIndex& index);
 	void sleep_clearObjective(const ActorIndex& index);
+	void sleep_maybeClearSpot(const ActorIndex& index);
 	[[nodiscard]] BlockIndex sleep_getSpot(const ActorIndex& index) const;
 	[[nodiscard]] bool sleep_isAwake(const ActorIndex& index) const;
 	[[nodiscard]] Percent sleep_getPercentDoneSleeping(const ActorIndex& index) const;
@@ -545,16 +547,15 @@ public:
 	void onMoveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex) { assert(m_actor == oldIndex.toActor()); m_actor = ActorIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };
-class GetIntoAttackPositionPathRequest final : public PathRequest
+class GetIntoAttackPositionPathRequest final : public PathRequestDepthFirst
 {
-	ActorIndex m_actor;
-	ActorReference m_target;
-	DistanceInBlocksFractional m_attackRangeSquared = DistanceInBlocksFractional::null();
+	ActorReference target;
+	DistanceInBlocksFractional attackRangeSquared = DistanceInBlocksFractional::null();
 public:
 	GetIntoAttackPositionPathRequest(Area& area, const ActorIndex& a, const ActorIndex& t, const DistanceInBlocksFractional& ar);
 	GetIntoAttackPositionPathRequest(const Json& data, Area& area);
-	void callback(Area& area, const FindPathResult&);
-	void onMoveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex) { assert(m_actor == oldIndex.toActor()); m_actor = ActorIndex::cast(newIndex); }
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
+	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() { return "attack"; }
 };

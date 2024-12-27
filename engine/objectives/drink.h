@@ -37,13 +37,14 @@ public:
 	friend class DrinkEvent;
 	friend class DrinkPathRequest;
 };
-class DrinkPathRequest final : public PathRequest
+class DrinkPathRequest final : public PathRequestBreadthFirst
 {
 	DrinkObjective& m_drinkObjective;
 public:
 	DrinkPathRequest(Area& area, DrinkObjective& drob, const ActorIndex& actor);
-	DrinkPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, const FindPathResult& result);
+	DrinkPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
+	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() { return "drink"; }
 };

@@ -6,8 +6,9 @@
 #include "../plants.h"
 #include "../itemType.h"
 #include "../animalSpecies.h"
+#include "../terrainFacade.hpp"
+#include "../types.h"
 #include "kill.h"
-#include "types.h"
 
 EatEvent::EatEvent(Area &area, const Step &delay, EatObjective &eo, const ActorIndex &actor, const Step start) : ScheduledEvent(area.m_simulation, delay, start), m_eatObjective(eo)
 {
@@ -127,92 +128,112 @@ void EatEvent::eatFruitFromPlant(Area &area, const PlantIndex &plant)
 	plants.removeFruitQuantity(plant, quantityEaten);
 }
 // Path request.
-EatPathRequest::EatPathRequest(const Json &data, DeserializationMemo &deserializationMemo) :
-	PathRequest(data),
-	m_eatObjective(static_cast<EatObjective &>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))) { }
-EatPathRequest::EatPathRequest(Area &area, EatObjective &eo, const ActorIndex &actor) : m_eatObjective(eo)
+EatPathRequest::EatPathRequest(const Json &data, Area& area, DeserializationMemo &deserializationMemo) :
+	PathRequestBreadthFirst(data, area),
+	m_eatObjective(static_cast<EatObjective &>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
+{ }
+EatPathRequest::EatPathRequest(Area &area, EatObjective &eo, const ActorIndex &actorIndex) :
+	m_eatObjective(eo)
+{
+	Actors& actors = area.getActors();
+	start = actors.getLocation(actorIndex);
+	maxRange = DistanceInBlocks::max();
+	actor = actors.getReference(actorIndex);
+	shape = actors.getShape(actorIndex);
+	moveType = actors.getMoveType(actorIndex);
+	facing = actors.getFacing(actorIndex);
+	detour = m_eatObjective.m_detour;
+	adjacent = true;
+}
+FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	assert(m_eatObjective.m_location.empty());
-	Blocks &blocks = area.getBlocks();
-	MustEat &mustEat = *area.getActors().m_mustEat[actor].get();
-	std::function<bool(const BlockIndex &)> predicate = nullptr;
+	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	MustEat& mustEat = *area.getActors().m_mustEat[actorIndex].get();
 	if(m_eatObjective.m_tryToHunt)
 	{
-		predicate = [&](const BlockIndex &block)
+		auto destinationCondition = [&](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
 		{
 			for(ActorIndex prey : blocks.actor_getAll(block))
 				if(mustEat.canEatActor(area, prey))
 				{
 					m_huntResult.setIndex(prey, area.getActors().m_referenceData);
-					return true;
+					return {true, block};
 				}
-			return false;
+			return {false, block};
 		};
+		constexpr bool useAnyOccupiedBlock = true;
+		return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour);
 	}
 	else if(m_eatObjective.m_noFoodFound)
-		createGoToEdge(area, actor, m_eatObjective.m_detour);
+		return terrainFacade.findPathToEdge(memo, start, facing, shape, m_eatObjective.m_detour);
 	else
 	{
 		// initalize candidates with null values.
 		m_candidates.fill(BlockIndex::null());
-		if(area.getActors().isSentient(actor))
+		if(area.getActors().isSentient(actorIndex))
 		{
 			// Sentients will only return true if the come across a maxRankedDesire (prepared meal).
 			// Otherwise they will store candidates ranked by desire.
-			// EatPathRequest::callback may use one of those candidates, if the actor is hungry enough.
+			// EatPathRequest::callback may use one of those candidates, if the actorIndex is hungry enough.
 			auto minimum = mustEat.getMinimumAcceptableDesire(area);
-			predicate = [&mustEat, this, &area, minimum](const BlockIndex &block)
+			auto destinationCondition = [&mustEat, this, &area, minimum](const BlockIndex &block, const Facing&) -> std::pair<bool, BlockIndex>
 			{
 				uint32_t eatDesire = mustEat.getDesireToEatSomethingAt(area, block);
 				if(eatDesire < minimum)
-					return false;
+					return {false, block};
 				if(eatDesire == maxRankedEatDesire)
-					return true;
+					return {true, block};
 				if(eatDesire != 0 && m_candidates[eatDesire - 1u].empty())
 					m_candidates[eatDesire - 1u] = block;
-				return false;
+				return {false, block};
 			};
+			constexpr bool useAnyOccupiedBlock = true;
+			return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour);
 		}
 		else
+		{
 			// Nonsentients will eat whatever they come across first.
 			// Having preference would be nice but this is better for performance.
-			predicate = [&mustEat, &area](const BlockIndex &block)
+			auto destinationCondition = [&mustEat, &area](const BlockIndex &block, const Facing&) -> std::pair<bool, BlockIndex>
 			{
-				return mustEat.getDesireToEatSomethingAt(area, block) != 0;
+				return {mustEat.getDesireToEatSomethingAt(area, block) != 0, block};
 			};
-		// TODO: maxRange.
-		bool unreserved = false;
-		createGoAdjacentToCondition(area, actor, predicate, m_eatObjective.m_detour, unreserved, DistanceInBlocks::max(), BlockIndex::null());
+			constexpr bool useAnyOccupiedBlock = true;
+			return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour);
+		}
 	}
 }
-void EatPathRequest::callback(Area &area, const FindPathResult &result)
+void EatPathRequest::writeStep(Area& area, FindPathResult& result)
 {
 	Actors &actors = area.getActors();
-	ActorIndex actor = getActor();
-	AnimalSpeciesId species = actors.getSpecies(actor);
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	AnimalSpeciesId species = actors.getSpecies(actorIndex);
 	if(m_eatObjective.m_tryToHunt)
 	{
 		if(!m_huntResult.exists())
 		{
 			// Nothing found to hunt.
 			m_eatObjective.m_noFoodFound = true;
-			m_eatObjective.execute(area, actor);
+			m_eatObjective.execute(area, actorIndex);
 		}
 		else
 		{
 			// Hunt target found, create kill objective.
-			actors.m_hasObjectives[actor]->addNeed(area, std::make_unique<KillObjective>(m_huntResult));
+			actors.m_hasObjectives[actorIndex]->addNeed(area, std::make_unique<KillObjective>(m_huntResult));
 		}
 	}
 	else if(m_eatObjective.m_noFoodFound)
 	{
 		// Result of trying to leave area.
-		assert(actors.eat_getMinimumAcceptableDesire(actor) == 0);
-		if(actors.isOnEdge(actor))
+		assert(actors.eat_getMinimumAcceptableDesire(actorIndex) == 0);
+		if(actors.isOnEdge(actorIndex))
 		{
 			// Leave area.
 			assert(result.useCurrentPosition);
-			m_eatObjective.execute(area, actor);
+			m_eatObjective.execute(area, actorIndex);
 		}
 		else if(result.path.empty())
 		{
@@ -220,20 +241,20 @@ void EatPathRequest::callback(Area &area, const FindPathResult &result)
 			assert(!result.useCurrentPosition);
 			m_eatObjective.m_noFoodFound = m_eatObjective.m_tryToHunt = false;
 			m_eatObjective.m_location.clear();
-			actors.objective_canNotFulfillNeed(actor, m_eatObjective);
+			actors.objective_canNotFulfillNeed(actorIndex, m_eatObjective);
 		}
 		else
 			// Path to edge found.
-			actors.move_setPath(actor, result.path);
+			actors.move_setPath(actorIndex, result.path);
 	}
 	else
 	{
 		if(result.path.empty() && !result.useCurrentPosition)
 		{
-			if(AnimalSpecies::getEatsMeat(species) && (!actors.isSentient(actor) || actors.eat_getPercentStarved(actor) > Config::minimumHungerLevelThresholds[1]))
+			if(AnimalSpecies::getEatsMeat(species) && (!actors.isSentient(actorIndex) || actors.eat_getPercentStarved(actorIndex) > Config::minimumHungerLevelThresholds[1]))
 			{
 				m_eatObjective.m_tryToHunt = true;
-				m_eatObjective.execute(area, actor);
+				m_eatObjective.execute(area, actorIndex);
 			}
 			else
 			{
@@ -249,10 +270,10 @@ void EatPathRequest::callback(Area &area, const FindPathResult &result)
 				{
 					// No candidates found, either supress need or try to leave area.
 					m_eatObjective.m_noFoodFound = true;
-					m_eatObjective.execute(area, actor);
+					m_eatObjective.execute(area, actorIndex);
 					return;
 				}
-				m_eatObjective.execute(area, actor);
+				m_eatObjective.execute(area, actorIndex);
 			}
 		}
 		else
@@ -260,23 +281,26 @@ void EatPathRequest::callback(Area &area, const FindPathResult &result)
 			// Found max desirability target, use the result path.
 			m_eatObjective.m_location = result.blockThatPassedPredicate;
 			if(result.useCurrentPosition)
-				m_eatObjective.execute(area, actor);
+				m_eatObjective.execute(area, actorIndex);
 			else
 				// TODO: move rather then copy path.
-				actors.move_setPath(actor, result.path);
+				actors.move_setPath(actorIndex, result.path);
 		}
 	}
 }
 Json EatPathRequest::toJson() const
 {
-	Json output = PathRequest::toJson();
+	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
 	output["objective"] = &m_eatObjective;
 	output["huntTarget"] = m_huntResult;
 	output["type"] = "eat";
 	return output;
 }
 // Objective.
-EatObjective::EatObjective(Area &area) : Objective(Config::eatPriority), m_eatEvent(area.m_eventSchedule) {}
+EatObjective::EatObjective(Area &area) :
+	Objective(Config::eatPriority),
+	m_eatEvent(area.m_eventSchedule)
+{}
 EatObjective::EatObjective(const Json &data, DeserializationMemo &deserializationMemo, Area &area, const ActorIndex &actor) :
 	Objective(data, deserializationMemo),
 	m_eatEvent(deserializationMemo.m_simulation.m_eventSchedule),
@@ -387,8 +411,7 @@ void EatObjective::reset(Area &area, const ActorIndex &actor)
 }
 void EatObjective::makePathRequest(Area &area, const ActorIndex &actor)
 {
-	std::unique_ptr<PathRequest> request = std::make_unique<EatPathRequest>(area, *this, actor);
-	area.getActors().move_pathRequestRecord(actor, std::move(request));
+	area.getActors().move_pathRequestRecord(actor, std::make_unique<EatPathRequest>(area, *this, actor));
 }
 void EatObjective::noFoodFound()
 {

@@ -3,8 +3,8 @@
 #include "../actors/actors.h"
 #include "../items/items.h"
 #include "../blocks/blocks.h"
-#include "../terrainFacade.h"
-#include "types.h"
+#include "../terrainFacade.hpp"
+#include "../types.h"
 // Objective Type.
 bool StockPileObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
@@ -115,86 +115,111 @@ bool StockPileObjective::destinationCondition(Area& area, const BlockIndex& bloc
 };
 // Path Reqests
 // Searches for an Item and destination to make a hauling project for m_objective.m_actor.
-StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo, const ActorIndex& actor) : m_objective(spo)
+StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo, const ActorIndex& actorIndex) :
+	m_objective(spo)
 {
 	assert(m_objective.m_project == nullptr);
 	assert(!m_objective.hasDestination());
 	assert(!m_objective.m_hasCheckedForCloserDropOffLocation);
 	Actors& actors = area.getActors();
-	Blocks& blocks = area.getBlocks();
-	Items& items = area.getItems();
-	assert(!actors.project_exists(actor));
-	const FactionId& faction = actors.getFactionId(actor);
-	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
-	std::function<bool(const BlockIndex&)> condition = [this, actor, faction, &hasStockPiles, &blocks, &items, &area](const BlockIndex& block){
-		for(ItemIndex item : blocks.item_getAll(block))
-		{
-			// Multi block items could be encountered more then once.
-			if(m_items.contains(item))
-				continue;
-			if(items.reservable_isFullyReserved(item, faction))
-				// Cannot stockpile reserved items.
-				continue;
-			if(items.stockpile_canBeStockPiled(item, faction))
-			{
-				// Item can be stockpiled, check if any of the stockpiles we have seen so far will accept it.
-				for (const auto& [stockpile, blocks] : m_blocksByStockPile)
-					for(const BlockIndex& block : blocks)
-						if (stockpile->accepts(item) && checkDestination(area, item, block))
-						{
-							// Success
-							m_objective.m_item = area.getItems().m_referenceData.getReference(item);
-							m_objective.m_stockPileLocation = block;
-							return true;
-						}
-				// Item does not match any stockpile seen so far, store it to compare against future stockpiles.
-				m_items.insert(item);
-			}
-		}
-		StockPile *stockPile = blocks.stockpile_getForFaction(block, faction);
-		if(stockPile != nullptr && (!m_blocksByStockPile.contains(stockPile) || !m_blocksByStockPile[stockPile].contains(block)))
-		{
-			if(blocks.isReserved(block, faction))
-				return false;
-			if(!blocks.item_empty(block))
-			{
-				// Block static volume is full, don't stockpile here.
-				if(blocks.shape_getStaticVolume(block) == Config::maxBlockVolume)
-					return false;
-				// There is more then one item type in this block, don't stockpile anything here.
-				if(blocks.item_getAll(block).size() != 1)
-					return false;
-				// Non generics don't stack, don't stockpile anything here if there is a non generic present.
-				ItemTypeId itemType = items.getItemType(blocks.item_getAll(block).front());
-				if(!ItemType::getIsGeneric(itemType))
-					return false;
-			}
-			for(ItemIndex item : m_items)
-				if(stockPile->accepts(item) && checkDestination(area, item, block))
-				{
-					// Success
-					m_objective.m_item = area.getItems().m_referenceData.getReference(item);
-					m_objective.m_stockPileLocation = block;
-					return true;
-				}
-			// No item seen so far matches the found stockpile, store it to check against future items.
-			m_blocksByStockPile.getOrCreate(stockPile).add(block);
-		}
-		return false;
-	};
-	bool unreserved = false;
-	//TODO: Optimization oppurtunity: path is unused.
-	createGoAdjacentToCondition(area, actor, condition, m_objective.m_detour, unreserved, Config::maxRangeToSearchForStockPileItems, BlockIndex::null());
+	start = actors.getLocation(actorIndex);
+	maxRange = Config::maxRangeToSearchForStockPileItems;
+	actor = actors.getReference(actorIndex);
+	shape = actors.getShape(actorIndex);
+	faction = actors.getFaction(actorIndex);
+	moveType = actors.getMoveType(actorIndex);
+	facing = actors.getFacing(actorIndex);
+	detour = m_objective.m_detour;
+	adjacent = true;
+	reserveDestination = true;
 }
-void StockPilePathRequest::callback(Area& area, const FindPathResult& result)
+FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Actors& actors = area.getActors();
-	const ActorIndex& actor = getActor();
-	const FactionId& faction = actors.getFactionId(actor);
+	Blocks& blocks = area.getBlocks();
+	Items& items = area.getItems();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	assert(!actors.project_exists(actorIndex));
+	const FactionId& faction = actors.getFactionId(actorIndex);
+	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
+	AreaHasBlockDesignationsForFaction& designationsForFaction = area.m_blockDesignations.getForFaction(faction);
+	auto predicate = [this, actorIndex, faction, &hasStockPiles, &blocks, &items, &area, &designationsForFaction](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	{
+		if(designationsForFaction.check(block, BlockDesignation::StockPileHaulFrom))
+		{
+			for(ItemIndex item : blocks.item_getAll(block))
+			{
+				// Multi block items could be encountered more then once.
+				if(m_items.contains(item))
+					continue;
+				if(items.reservable_isFullyReserved(item, faction))
+					// Cannot stockpile reserved items.
+					continue;
+				if(items.stockpile_canBeStockPiled(item, faction))
+				{
+					// Item can be stockpiled, check if any of the stockpiles we have seen so far will accept it.
+					for (const auto& [stockpile, blocks] : m_blocksByStockPile)
+						for(const BlockIndex& block : blocks)
+							if (stockpile->accepts(item) && checkDestination(area, item, block))
+							{
+								// Success
+								m_objective.m_item = area.getItems().m_referenceData.getReference(item);
+								m_objective.m_stockPileLocation = block;
+								return {true, block};
+							}
+					// Item does not match any stockpile seen so far, store it to compare against future stockpiles.
+					m_items.insert(item);
+				}
+			}
+		}
+		if(designationsForFaction.check(block, BlockDesignation::StockPileHaulTo))
+		{
+			StockPile *stockPile = blocks.stockpile_getForFaction(block, faction);
+			if(stockPile != nullptr && (!m_blocksByStockPile.contains(stockPile) || !m_blocksByStockPile[stockPile].contains(block)))
+			{
+				if(blocks.isReserved(block, faction))
+					return {false, block};
+				if(!blocks.item_empty(block))
+				{
+					// Block static volume is full, don't stockpile here.
+					if(blocks.shape_getStaticVolume(block) == Config::maxBlockVolume)
+						return {false, block};
+					// There is more then one item type in this block, don't stockpile anything here.
+					if(blocks.item_getAll(block).size() != 1)
+						return {false, block};
+					// Non generics don't stack, don't stockpile anything here if there is a non generic present.
+					ItemTypeId itemType = items.getItemType(blocks.item_getAll(block).front());
+					if(!ItemType::getIsGeneric(itemType))
+						return {false, block};
+				}
+				for(ItemIndex item : m_items)
+					if(stockPile->accepts(item) && checkDestination(area, item, block))
+					{
+						// Success
+						m_objective.m_item = area.getItems().m_referenceData.getReference(item);
+						m_objective.m_stockPileLocation = block;
+						return {true, block};
+					}
+				// No item seen so far matches the found stockpile, store it to check against future items.
+				m_blocksByStockPile.getOrCreate(stockPile).add(block);
+			}
+		}
+		return {false, block};
+	};
+	//TODO: Optimization oppurtunity: path is unused.
+	constexpr bool anyOccupied = true;
+	// TODO: Add a BlockDesignation to the query?
+	return terrainFacade.findPathToConditionBreadthFirst<anyOccupied, decltype(predicate)>(predicate, memo, start, facing, shape, detour, adjacent, faction, maxRange);
+}
+void StockPilePathRequest::writeStep(Area& area, FindPathResult& result)
+{
+	Actors& actors = area.getActors();
+	const ActorIndex& actorIndex = actor.getIndex(actors.m_referenceData);
+	const FactionId& faction = actors.getFactionId(actorIndex);
 	if(!m_objective.m_item.exists())
 	{
 		// No haulable item found.
-		actors.objective_canNotCompleteObjective(actor, m_objective);
+		actors.objective_canNotCompleteObjective(actorIndex, m_objective);
 	}
 	else
 	{
@@ -203,13 +228,13 @@ void StockPilePathRequest::callback(Area& area, const FindPathResult& result)
 		const ItemIndex& item = m_objective.m_item.getIndex(items.m_referenceData);
 		if(
 			items.reservable_isFullyReserved(item, faction) ||
-			!m_objective.destinationCondition(area, m_objective.m_stockPileLocation, item, actor)
+			!m_objective.destinationCondition(area, m_objective.m_stockPileLocation, item, actorIndex)
 		)
 		{
 			// Found destination is no longer valid or item has been reserved
 			m_objective.m_item.clear();
 			m_objective.m_stockPileLocation.clear();
-			m_objective.execute(area, actor);
+			m_objective.execute(area, actorIndex);
 		}
 		else
 		{
@@ -217,13 +242,13 @@ void StockPilePathRequest::callback(Area& area, const FindPathResult& result)
 			Blocks& blocks = area.getBlocks();
 			m_objective.m_pickUpLocation = result.path.back();
 			if(result.useCurrentPosition)
-				m_objective.m_pickUpFacing = actors.getFacing(actor);
+				m_objective.m_pickUpFacing = actors.getFacing(actorIndex);
 			else
 			{
-				const BlockIndex &secondToLast = result.path.size() > 1 ? *(result.path.end() - 2) : actors.getLocation(actor);
+				const BlockIndex &secondToLast = result.path.size() > 1 ? *(result.path.end() - 2) : actors.getLocation(actorIndex);
 				m_objective.m_pickUpFacing = blocks.facingToSetWhenEnteringFrom(result.path.back(), secondToLast);
 			}
-			m_objective.execute(area, actor);
+			m_objective.execute(area, actorIndex);
 		}
 	}
 }
@@ -246,17 +271,18 @@ bool StockPilePathRequest::checkDestination(const Area& area, const ItemIndex& i
 		return false;
 	return true;
 }
-StockPilePathRequest::StockPilePathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	PathRequest(data),
+StockPilePathRequest::StockPilePathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
+	PathRequestBreadthFirst(data, area),
 	m_objective(static_cast<StockPileObjective&>(*deserializationMemo.m_objectives[data["objective"]])) { }
 Json StockPilePathRequest::toJson() const
 {
-	Json output = PathRequest::toJson();
+	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
 	output["type"] = "stockpile";
 	return output;
 }
-StockPileDestinationPathRequest::StockPileDestinationPathRequest(Area& area, StockPileObjective& spo, const ActorIndex& actor) : m_objective(spo)
+StockPileDestinationPathRequest::StockPileDestinationPathRequest(Area& area, StockPileObjective& spo, const ActorIndex& actorIndex) :
+	m_objective(spo)
 {
 	assert(m_objective.m_project == nullptr);
 	// A destination exists but we want to search for a better one.
@@ -264,24 +290,40 @@ StockPileDestinationPathRequest::StockPileDestinationPathRequest(Area& area, Sto
 	assert(m_objective.hasItem());
 	assert(!m_objective.m_hasCheckedForCloserDropOffLocation);
 	Actors& actors = area.getActors();
-	Blocks& blocks = area.getBlocks();
-	Items& items = area.getItems();
-	assert(!actors.project_exists(actor));
-	const FactionId& faction = actors.getFactionId(actor);
-	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
-	std::function<bool(const BlockIndex&)> condition = [this, actor, faction, &hasStockPiles, &blocks, &items, &area](const BlockIndex& block){
-		return m_objective.destinationCondition(area, block, m_objective.m_item.getIndex(items.m_referenceData), actor);
-	};
-	const bool unreserved = false;
-	createGoAdjacentToConditionFrom(area, actor, m_objective.m_pickUpLocation, m_objective.m_pickUpFacing, condition, m_objective.m_detour, unreserved, DistanceInBlocks::max(), BlockIndex::null());
+	start = actors.getLocation(actorIndex);
+	maxRange = Config::maxRangeToSearchForStockPiles;
+	actor = actors.getReference(actorIndex);
+	shape = actors.getShape(actorIndex);
+	faction = actors.getFaction(actorIndex);
+	moveType = actors.getMoveType(actorIndex);
+	facing = actors.getFacing(actorIndex);
+	detour = m_objective.m_detour;
+	adjacent = true;
+	reserveDestination = true;
 }
-void StockPileDestinationPathRequest::callback(Area& area, const FindPathResult& result)
+FindPathResult StockPileDestinationPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Actors& actors = area.getActors();
+	Blocks& blocks = area.getBlocks();
+	Items& items = area.getItems();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	assert(!actors.project_exists(actorIndex));
+	const FactionId& faction = actors.getFactionId(actorIndex);
+	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
+	auto predicate = [this, actorIndex, faction, &hasStockPiles, &blocks, &items, &area](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>{
+		return {m_objective.destinationCondition(area, block, m_objective.m_item.getIndex(items.m_referenceData), actorIndex), block};
+	};
+	constexpr bool anyOccupied = true;
+	return terrainFacade.findPathToConditionBreadthFirst<anyOccupied, decltype(predicate)>(predicate, memo, start, facing, shape, detour, adjacent, faction, maxRange);
+}
+void StockPileDestinationPathRequest::writeStep(Area& area, FindPathResult& result)
+{
+	Actors& actors = area.getActors();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	if(result.path.empty() && !result.useCurrentPosition)
 	{
 		// Previously found path is no longer avaliable.
-		actors.objective_canNotCompleteSubobjective(getActor());
+		actors.objective_canNotCompleteSubobjective(actorIndex);
 		return;
 	}
 	m_objective.m_stockPileLocation = result.blockThatPassedPredicate;
@@ -289,7 +331,7 @@ void StockPileDestinationPathRequest::callback(Area& area, const FindPathResult&
 	// Destination found, join or create a project.
 	assert(m_objective.m_stockPileLocation.exists());
 	Blocks &blocks = area.getBlocks();
-	const ActorIndex& actor = getActor();
+	const ActorIndex& actor = actorIndex;
 	actors.canReserve_clearAll(actor);
 	const FactionId& faction = actors.getFactionId(actor);
 	assert(blocks.stockpile_getForFaction(m_objective.m_stockPileLocation, faction));
@@ -318,12 +360,12 @@ void StockPileDestinationPathRequest::callback(Area& area, const FindPathResult&
 		hasStockPiles.makeProject(item, m_objective.m_stockPileLocation, m_objective, actor);
 	}
 }
-StockPileDestinationPathRequest::StockPileDestinationPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	PathRequest(data),
+StockPileDestinationPathRequest::StockPileDestinationPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
+	PathRequestBreadthFirst(data, area),
 	m_objective(static_cast<StockPileObjective&>(*deserializationMemo.m_objectives[data["objective"]])) { }
 Json StockPileDestinationPathRequest::toJson() const
 {
-	Json output = PathRequest::toJson();
+	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
 	return output;
 }

@@ -195,7 +195,7 @@ public:
 	[[nodiscard]] std::vector<CraftStepTypeCategoryId>& getStepTypeCategoriesForLocation(const BlockIndex& location);
 	[[nodiscard]] CraftStepTypeCategoryId getDisplayStepTypeCategoryForLocation(const BlockIndex& location);
 	// May return nullptr;
-	[[nodiscard]] CraftJob* getJobForAtLocation(const ActorIndex& actor, const SkillTypeId& skillType, const BlockIndex& block, SmallSet<CraftJob*>& excludeJobs);
+	[[nodiscard]] CraftJob* getJobForAtLocation(const ActorIndex& actor, const SkillTypeId& skillType, const BlockIndex& block, const SmallSet<CraftJob*>& excludeJobs);
 	friend class CraftObjectiveType;
 	friend class AreaHasCraftingLocationsAndJobs;
 	friend struct CraftJob;

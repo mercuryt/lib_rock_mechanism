@@ -1,47 +1,64 @@
 #include "construct.h"
 #include "../area.h"
 #include "../construct.h"
-#include "../terrainFacade.h"
+#include "../terrainFacade.hpp"
 #include "../hasShapes.hpp"
-#include "actors/actors.h"
-#include "blocks/blocks.h"
-#include "reference.h"
-#include "types.h"
+#include "../actors/actors.h"
+#include "../blocks/blocks.h"
+#include "../reference.h"
+#include "../types.h"
 // PathRequest.
-ConstructPathRequest::ConstructPathRequest(Area& area, ConstructObjective& co, const ActorIndex& actor) : m_constructObjective(co)
-{
-	std::function<bool(BlockIndex)> constructCondition = [&, actor](BlockIndex block)
-	{
-		return m_constructObjective.joinableProjectExistsAt(area, block, actor);
-	};
-	bool unreserved = true;
-	DistanceInBlocks maxRange = Config::maxRangeToSearchForConstructionDesignations;
-	createGoAdjacentToCondition(area, actor, constructCondition, m_constructObjective.m_detour, unreserved, maxRange, BlockIndex::null());
+ConstructPathRequest::ConstructPathRequest(Area& area, ConstructObjective& co, const ActorIndex& actorIndex) :
+	m_constructObjective(co)
+{ 
+	Actors& actors = area.getActors();
+	start = actors.getLocation(actorIndex);
+	maxRange = Config::maxRangeToSearchForDigDesignations;
+	actor = actors.getReference(actorIndex);
+	shape = actors.getShape(actorIndex);
+	faction = actors.getFaction(actorIndex);
+	moveType = actors.getMoveType(actorIndex);
+	facing = actors.getFacing(actorIndex);
+	detour = m_constructObjective.m_detour;
+	adjacent = true;
+	reserveDestination = true;
 }
-ConstructPathRequest::ConstructPathRequest(const Json& data, DeserializationMemo& deserializationMemo) : 
-	PathRequest(data),
-	m_constructObjective(static_cast<ConstructObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))) { }
-void ConstructPathRequest::callback(Area& area, const FindPathResult& result)
+ConstructPathRequest::ConstructPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) : 
+	PathRequestBreadthFirst(data, area),
+	m_constructObjective(static_cast<ConstructObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
+{ }
+FindPathResult ConstructPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+{
+	ActorIndex actorIndex = actor.getIndex(area.getActors().m_referenceData);
+
+	auto predicate = [&area, this, actorIndex](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	{
+		return {m_constructObjective.joinableProjectExistsAt(area, block, actorIndex), block};
+	};
+	constexpr bool useAnyBlock = true;
+	return terrainFacade.findPathToBlockDesignationAndCondition<useAnyBlock, decltype(predicate)>(predicate, memo, BlockDesignation::Construct, start, facing, shape, detour, adjacent, faction, maxRange);
+}
+void ConstructPathRequest::writeStep(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actor = getActor();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	if(result.path.empty() && !result.useCurrentPosition)
-		actors.objective_canNotCompleteObjective(actor, m_constructObjective);
+		actors.objective_canNotCompleteObjective(actorIndex, m_constructObjective);
 	else
 	{
 		// No need to reserve here, we are just checking for access.
 		BlockIndex target = result.blockThatPassedPredicate;
-		ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFactionId(actor), target);
-		if(project.canAddWorker(actor))
-			m_constructObjective.joinProject(project, actor);
+		ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFactionId(actorIndex), target);
+		if(project.canAddWorker(actorIndex))
+			m_constructObjective.joinProject(project, actorIndex);
 		else
 			// Project can no longer accept this worker, try again.
-			m_constructObjective.execute(area, actor);
+			m_constructObjective.execute(area, actorIndex);
 	}
 }
 Json ConstructPathRequest::toJson() const
 {
-	Json output = PathRequest::toJson();
+	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
 	output["objective"] = &m_constructObjective;
 	output["type"] = "construct";
 	return output;
@@ -81,8 +98,7 @@ void ConstructObjective::execute(Area& area, const ActorIndex& actor)
 			joinProject(*project, actor);
 			return;
 		}
-		std::unique_ptr<PathRequest> request = std::make_unique<ConstructPathRequest>(area, *this, actor);
-		actors.move_pathRequestRecord(actor, std::move(request));
+		actors.move_pathRequestRecord(actor, std::make_unique<ConstructPathRequest>(area, *this, actor));
 	}
 }
 void ConstructObjective::cancel(Area& area, const ActorIndex& actor)
@@ -149,7 +165,15 @@ ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(Area& area, 
 }
 bool ConstructObjective::joinableProjectExistsAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const
 {
-	return const_cast<ConstructObjective*>(this)->getProjectWhichActorCanJoinAt(area, block, actor) != nullptr;
+	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
+	assert(blocks.designation_has(block, actors.getFactionId(actor), BlockDesignation::Construct));
+	ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFactionId(actor), block);
+	if(!project.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&project))
+		return false;
+	if(project.canAddWorker(actor))
+		return true;
+	return false;
 }
 bool ConstructObjective::canJoinProjectAdjacentToLocationAndFacing(Area& area, const BlockIndex& location, const Facing& facing, const ActorIndex& actor) const
 {

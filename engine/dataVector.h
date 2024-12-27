@@ -46,15 +46,15 @@ public:
 	void remove(const Index& index)
 	{
 		assert(index < size());
-		if(size() == 1)
-		{
-			clear();
-			return;
-		}
-		Index last = Index::create(size() - 1);
+		auto iter = data.begin() + index.get();
+		remove(iter);
+	}
+	void remove(iterator iter)
+	{
+		assert(iter != end());
 		//TODO: benchmark this branch.
-		if(index != last)
-			data[index.get()] = std::move(data[last.get()]);
+		if(iter != end() - 1)
+			(*iter) = std::move(*(end() - 1));
 		data.resize(data.size() - 1);
 	}
 	template<typename Comparitor>

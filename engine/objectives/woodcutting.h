@@ -29,19 +29,21 @@ public:
 	void onProjectCannotReserve(Area& area, const ActorIndex& actor);
 	[[nodiscard]] std::string name() const { return "woodcutting"; }
 	void joinProject(WoodCuttingProject& project, const ActorIndex& index);
-	WoodCuttingProject* getJoinableProjectAt(Area& area, const BlockIndex& block, const ActorIndex& index);
+	[[nodiscard]] WoodCuttingProject* getJoinableProjectAt(Area& area, const BlockIndex& block, const ActorIndex& index);
+	[[nodiscard]] bool joinableProjectExistsAt(Area &area, const BlockIndex &block, const ActorIndex &actor) const;
 	friend class WoodCuttingPathRequest;
 	friend class WoodCuttingProject;
 };
 // Find a place to woodCutting.
-class WoodCuttingPathRequest final : public PathRequest
+class WoodCuttingPathRequest final : public PathRequestBreadthFirst
 {
 	WoodCuttingObjective& m_woodCuttingObjective;
 	// Result is the block which will be the actors location while doing the woodCuttingging.
 public:
 	WoodCuttingPathRequest(Area& area, WoodCuttingObjective& woodCuttingObjective, const ActorIndex& actor);
-	WoodCuttingPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, const FindPathResult& result);
+	WoodCuttingPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
+	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "woodcutting"; }
 };

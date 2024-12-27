@@ -456,7 +456,7 @@ CraftStepTypeCategoryId HasCraftingLocationsAndJobsForFaction::getDisplayStepTyp
 	return *m_stepTypeCategoriesByLocation[location].begin();
 }
 // May return nullptr;
-CraftJob* HasCraftingLocationsAndJobsForFaction::getJobForAtLocation(const ActorIndex& actor, const SkillTypeId& skillType, const BlockIndex& block, SmallSet<CraftJob*>& excludeJobs)
+CraftJob* HasCraftingLocationsAndJobsForFaction::getJobForAtLocation(const ActorIndex& actor, const SkillTypeId& skillType, const BlockIndex& block, const SmallSet<CraftJob*>& excludeJobs)
 {
 	Actors& actors = m_area.getActors();
 	assert(!m_area.getBlocks().isReserved(block, actors.getFactionId(actor)));

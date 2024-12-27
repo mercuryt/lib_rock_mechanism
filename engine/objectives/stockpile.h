@@ -45,7 +45,7 @@ public:
 	friend class StockPileDestinationPathRequest;
 };
 // Searches for an Item and destination to make or find a hauling project for m_objective.m_actor.
-class StockPilePathRequest final : public PathRequest
+class StockPilePathRequest final : public PathRequestBreadthFirst
 {
 	StockPileObjective& m_objective;
 	// One set of candidates for each type. When a new candidate is found compare it to all of the other type and if no match store it.
@@ -55,8 +55,9 @@ class StockPilePathRequest final : public PathRequest
 	SmallSet<ItemIndex> m_items;
 public:
 	StockPilePathRequest(Area& area, StockPileObjective& spo, const ActorIndex& actor);
-	StockPilePathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, const FindPathResult& result);
+	StockPilePathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] bool checkDestination(const Area& area, const ItemIndex& item, const BlockIndex& block) const;
 	[[nodiscard]] std::string name() const { return "stockpile"; }
 	[[nodiscard]] Json toJson() const;
@@ -64,13 +65,14 @@ public:
 // Attempts to find a closer stockpile destination for a selected item.
 // The first pass StockPilePathRequest is efficent for finding an item and a destination but it may not be the best destination.
 // With the knowledge that some destination exists we can select the item and then seek the best destination.
-class StockPileDestinationPathRequest final : public PathRequest
+class StockPileDestinationPathRequest final : public PathRequestBreadthFirst
 {
 	StockPileObjective& m_objective;
 public:
 	StockPileDestinationPathRequest(Area& area, StockPileObjective& spo, const ActorIndex& actor);
-	StockPileDestinationPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, const FindPathResult& result);
+	StockPileDestinationPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] std::string name() const { return "stockpile destination"; }
 	[[nodiscard]] Json toJson() const;
 };

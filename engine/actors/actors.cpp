@@ -444,7 +444,7 @@ void Actors::loadObjectivesAndReservations(const Json& data)
 	for(auto iter = pathRequestData.begin(); iter != pathRequestData.end(); ++iter)
 	{
 		ActorIndex index = ActorIndex::create(std::stoi(iter.key()));
-		m_pathRequest[index] = PathRequest::load(iter.value(), deserializationMemo, m_area);
+		m_pathRequest[index] = &PathRequest::load(iter.value(), deserializationMemo, m_area, m_moveType[index]);
 	}
 }
 void to_json(Json& data, const std::unique_ptr<CanReserve>& canReserve) { data = canReserve->toJson(); }
@@ -531,7 +531,7 @@ Json Actors::toJson() const
 			output["equipmentSet"][i] = *m_equipmentSet[index];
 		output["pathIter"].push_back(m_pathIter[index] - m_path[index].begin());
 		if(m_pathRequest[index] != nullptr)
-			output["pathRequest"][i] = m_pathRequest[index]->toJson();
+			output["pathRequest"][i] = *m_pathRequest[index];
 		if(!m_canSee[index].empty())
 			output["canSee"][i] = m_canSee[index];
 	}
@@ -667,9 +667,6 @@ void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
 	}
 	// Update stored actor indices in objectives.
 	m_hasObjectives[newIndex]->updateActorIndex(newIndex);
-	// Update path request if it exists.
-	if(m_pathRequest[newIndex] != nullptr)
-		m_pathRequest[newIndex]->updateActorIndex(newIndex);
 	// Update stored index for all actors who are targeting this one.
 	for(ActorIndex actor : m_targetedBy[newIndex])
 		m_target[actor] = newIndex;
@@ -1035,6 +1032,7 @@ void Actors::sleep_wakeUpEarly(const ActorIndex& index){ m_mustSleep[index]->wak
 void Actors::sleep_setSpot(const ActorIndex& index, const BlockIndex& location) { m_mustSleep[index]->setLocation(location); }
 void Actors::sleep_makeTired(const ActorIndex& index) { m_mustSleep[index]->tired(m_area); }
 void Actors::sleep_clearObjective(const ActorIndex& index) { m_mustSleep[index]->clearObjective(); }
+void Actors::sleep_maybeClearSpot(const ActorIndex& index) { return m_mustSleep[index]->clearSleepSpot(); }
 bool Actors::sleep_isAwake(const ActorIndex& index) const { return m_mustSleep[index]->isAwake(); }
 Percent Actors::sleep_getPercentDoneSleeping(const ActorIndex& index) const { return m_mustSleep[index]->getSleepPercent(); }
 Percent Actors::sleep_getPercentTired(const ActorIndex& index) const { return m_mustSleep[index]->getTiredPercent(); }

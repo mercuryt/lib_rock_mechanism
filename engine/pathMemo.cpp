@@ -2,7 +2,7 @@
 #include "area.h"
 #include "blocks/blocks.h"
 #include "index.h"
-void PathMemoClosed::add(BlockIndex index, BlockIndex parent)
+void PathMemoClosed::add(const BlockIndex& index, BlockIndex parent)
 {
 	assert(!contains(index));
 	assert(index.exists());
@@ -12,14 +12,15 @@ void PathMemoClosed::add(BlockIndex index, BlockIndex parent)
 	m_data[index] = parent;
 	m_dirty.add(index);
 }
-BlockIndices PathMemoClosed::getPath(BlockIndex block) const
+BlockIndices PathMemoClosed::getPath(const BlockIndex& block) const
 {
 	BlockIndices output;
+	BlockIndex current = block;
 	// Max is used to indicade the start of the path.
-	while(previous(block) != BlockIndex::max())
+	while(previous(current) != BlockIndex::max())
 	{
-		output.add(block);
-		block = previous(block);
+		output.add(current);
+		current = previous(current);
 	}
 	std::ranges::reverse(output);
 	return output;
@@ -34,17 +35,21 @@ void PathMemoBreadthFirst::reset()
 	m_closed.clear();
 	m_open.clear();
 }
-void PathMemoBreadthFirst::setClosed(BlockIndex block, BlockIndex previous)
+void PathMemoBreadthFirst::setClosed(const BlockIndex& block, const BlockIndex& previous)
 {
+	assert(block < m_closed.getSize());
+	if(previous != BlockIndex::max())
+		assert(previous < m_closed.getSize());
 	assert(!m_closed.contains(block));
 	m_closed.add(block, previous);
 }
-void PathMemoBreadthFirst::setOpen(BlockIndex block)
+void PathMemoBreadthFirst::setOpen(const BlockIndex& block, const Area&)
 {
+	assert(block < m_closed.getSize());
 	assert(!m_closed.contains(block));
 	m_open.push_back(block);
 }
-bool PathMemoBreadthFirst::isClosed(BlockIndex block) const
+bool PathMemoBreadthFirst::isClosed(const BlockIndex& block) const
 {
 	return m_closed.contains(block);
 }
@@ -54,11 +59,11 @@ bool PathMemoBreadthFirst::empty() const
 }
 BlockIndex PathMemoBreadthFirst::next()
 {
-	auto output = m_open.front();
+	BlockIndex output = m_open.front();
 	m_open.pop_front();
 	return output;
 }
-BlockIndices PathMemoBreadthFirst::getPath(BlockIndex block) const
+BlockIndices PathMemoBreadthFirst::getPath(const BlockIndex& block) const
 {
 	return m_closed.getPath(block);
 }
@@ -71,21 +76,26 @@ void PathMemoDepthFirst::reset()
 {
 	m_closed.clear();
 	m_open.clear();
+	m_huristicDestination.clear();
 }
-void PathMemoDepthFirst::setClosed(BlockIndex block, BlockIndex previous)
+void PathMemoDepthFirst::setClosed(const BlockIndex& block, const BlockIndex& previous)
 {
+	assert(block < m_closed.getSize());
+	if(previous != BlockIndex::max())
+		assert(previous < m_closed.getSize());
 	assert(!m_closed.contains(block));
 	m_closed.add(block, previous);
 }
-void PathMemoDepthFirst::setOpen(BlockIndex block, BlockIndex destinationHuristic, Area& area)
+void PathMemoDepthFirst::setOpen(const BlockIndex& block, const Area& area)
 {
+	assert(block < m_closed.getSize());
 	bool contains = m_closed.contains(block);
 	assert(!contains);
 	// Subtract from max rather then provide MediumMap with the ability to sort backwards.
-	DistanceInBlocks distance = DistanceInBlocks::max() - area.getBlocks().distanceSquared(block, destinationHuristic);
+	DistanceInBlocks distance = DistanceInBlocks::max() - area.getBlocks().distanceSquared(block, m_huristicDestination);
 	m_open.insertNonUnique(distance, block);
 }
-bool PathMemoDepthFirst::isClosed(BlockIndex block) const
+bool PathMemoDepthFirst::isClosed(const BlockIndex& block) const
 {
 	return m_closed.contains(block);
 }
@@ -95,11 +105,12 @@ bool PathMemoDepthFirst::empty() const
 }
 BlockIndex PathMemoDepthFirst::next()
 {
+	assert(!m_open.empty());
 	BlockIndex output = m_open.back().second;
 	m_open.pop_back();
 	return output;
 }
-BlockIndices PathMemoDepthFirst::getPath(BlockIndex block) const
+BlockIndices PathMemoDepthFirst::getPath(const BlockIndex& block) const
 {
 	return m_closed.getPath(block);
 }

@@ -33,15 +33,16 @@ public:
 	[[nodiscard]] std::string name() const { return "eat"; }
 };
 constexpr int maxRankedEatDesire = 3;
-class EatPathRequest final : public PathRequest
+class EatPathRequest final : public PathRequestBreadthFirst
 {
 	std::array<BlockIndex, maxRankedEatDesire> m_candidates;
 	EatObjective& m_eatObjective;
 	ActorReference m_huntResult;
 public:
 	EatPathRequest(Area& area, EatObjective& eo, const ActorIndex& actor);
-	EatPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, const FindPathResult& result);
+	EatPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
+	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() { return "eat"; }
 };

@@ -29,13 +29,14 @@ public:
 	friend class UniformThreadedTask;
 	
 };
-class UniformPathRequest final : public PathRequest
+class UniformPathRequest final : public PathRequestBreadthFirst
 {
 	UniformObjective& m_objective;
 public:
 	UniformPathRequest(Area& area, UniformObjective& objective, const ActorIndex& actor);
-	UniformPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, const FindPathResult& result);
+	UniformPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
+	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "uniform"; }
 };

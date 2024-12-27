@@ -38,15 +38,16 @@ public:
 	[[maybe_unused, nodiscard]] CraftJob* getCraftJob() { return m_craftJob; }
 
 };
-class CraftPathRequest final : public PathRequest
+class CraftPathRequest final : public PathRequestBreadthFirst
 {
 	CraftObjective& m_craftObjective;
 	CraftJob* m_craftJob = nullptr;
 	BlockIndex m_location;
 public:
 	CraftPathRequest(Area& area, CraftObjective& co, const ActorIndex& actor);
-	CraftPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, const FindPathResult& result);
+	CraftPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() { return m_craftObjective.name(); }
 };

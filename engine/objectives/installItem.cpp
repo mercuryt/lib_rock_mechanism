@@ -1,47 +1,67 @@
 #include "installItem.h"
-#include "area.h"
-#include "blocks/blocks.h"
-#include "actors/actors.h"
-#include "plants.h"
-#include "items/items.h"
-#include "types.h"
+#include "../area.h"
+#include "../blocks/blocks.h"
+#include "../actors/actors.h"
+#include "../plants.h"
+#include "../items/items.h"
+#include "../types.h"
+#include "../terrainFacade.hpp"
 // PathRequest.
-InstallItemPathRequest::InstallItemPathRequest(Area& area, InstallItemObjective& iio, const ActorIndex& actor) : m_installItemObjective(iio)
-{
+InstallItemPathRequest::InstallItemPathRequest(Area& area, InstallItemObjective& iio, const ActorIndex& actorIndex) :
+	m_installItemObjective(iio)
+{ 
 	Actors& actors = area.getActors();
-	std::function<bool(BlockIndex)> predicate = [&, actor](BlockIndex block)
-	{
-		FactionId faction = actors.getFactionId(actor);
-		return area.m_hasInstallItemDesignations.getForFaction(faction).contains(block);
-	};
-	bool unreserved = false;
-	createGoAdjacentToCondition(area, actor, predicate, m_installItemObjective.m_detour, unreserved, DistanceInBlocks::max(), BlockIndex::null());
+	start = actors.getLocation(actorIndex);
+	maxRange = Config::maxRangeToSearchForDigDesignations;
+	actor = actors.getReference(actorIndex);
+	shape = actors.getShape(actorIndex);
+	faction = actors.getFaction(actorIndex);
+	moveType = actors.getMoveType(actorIndex);
+	facing = actors.getFacing(actorIndex);
+	detour = m_installItemObjective.m_detour;
+	adjacent = true;
+	reserveDestination = true;
 }
-InstallItemPathRequest::InstallItemPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	PathRequest(data),
-	m_installItemObjective(static_cast<InstallItemObjective&>(*deserializationMemo.m_objectives[data["objective"]])) { }
+InstallItemPathRequest::InstallItemPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
+	PathRequestDepthFirst(data, area),
+	m_installItemObjective(static_cast<InstallItemObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
+{ }
 Json InstallItemPathRequest::toJson() const
 {
-	Json output = PathRequest::toJson();
+	Json output = static_cast<const PathRequestDepthFirst&>(*this);
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_installItemObjective);
 	output["type"] = "install item";
 	return output;
 }
-void InstallItemPathRequest::callback(Area& area, const FindPathResult& result)
+FindPathResult InstallItemPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo)
 {
-	ActorIndex actor = getActor();
 	Actors& actors = area.getActors();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	auto destinationCondition = [&, actorIndex](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	{
+		FactionId faction = actors.getFactionId(actorIndex);
+		return {area.m_hasInstallItemDesignations.getForFaction(faction).contains(block), block};
+	};
+	constexpr bool adjacent = true;
+	constexpr bool useAnyBlock = true;
+	const BlockIndex& huristicDestination = m_installItemObjective.m_project->getLocation();
+	return terrainFacade.findPathToConditionDepthFirst<useAnyBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, huristicDestination, m_installItemObjective.m_detour, adjacent);
+}
+void InstallItemPathRequest::writeStep(Area& area, FindPathResult& result)
+{
+	Actors& actors = area.getActors();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	if(result.path.empty() && !result.useCurrentPosition)
-		actors.objective_canNotCompleteObjective(actor, m_installItemObjective);
+		actors.objective_canNotCompleteObjective(actorIndex, m_installItemObjective);
 	else
 	{
 		BlockIndex block = result.blockThatPassedPredicate;
-		auto& hasInstallItemDesignations = area.m_hasInstallItemDesignations.getForFaction(actors.getFactionId(actor));
-		if(!hasInstallItemDesignations.contains(block) || !hasInstallItemDesignations.getForBlock(block).canAddWorker(actor))
+		auto& hasInstallItemDesignations = area.m_hasInstallItemDesignations.getForFaction(actors.getFactionId(actorIndex));
+		if(!hasInstallItemDesignations.contains(block) || !hasInstallItemDesignations.getForBlock(block).canAddWorker(actorIndex))
 			// Canceled or reserved, try again.
-			m_installItemObjective.execute(area, actor);
+			m_installItemObjective.execute(area, actorIndex);
 		else
-			hasInstallItemDesignations.getForBlock(block).addWorkerCandidate(actor, m_installItemObjective);
+			hasInstallItemDesignations.getForBlock(block).addWorkerCandidate(actorIndex, m_installItemObjective);
 	}
 
 }

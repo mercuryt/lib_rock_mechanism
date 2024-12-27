@@ -1,93 +1,96 @@
-/* 
- * PathRequest:
- * Used to submit and cancel requests. Holds a PathRequestIndex which may be updated when another request in canceled.
- * Responsible for serializing path request. May be subclassed.
- */
 #pragma once
-#include "types.h"
-#include "config.h"
-#include "index.h"
-#include "designations.h"
-#include "callbackTypes.h"
-class Area;
-class ActorOrItemIndex;
-class Objective;
-struct FluidType;
-struct FindPathResult;
-struct DeserializationMemo;
 
-class PathRequest
-	{
-		PathRequestIndex m_index;
-		BlockIndices m_destinations;
-		FluidTypeId m_fluidType;
-		ActorIndex m_actor;
-		BlockIndex m_start;
-		BlockIndex m_destination;
-		BlockIndex m_huristicDestination;
-		DistanceInBlocks m_maxRange = DistanceInBlocks::create(0);
-		BlockDesignation m_designation = BlockDesignation::BLOCK_DESIGNATION_MAX;
-	protected:
-		bool m_detour = false;
-		bool m_unreserved = false;
-		bool m_adjacent = false;
-		bool m_reserve = false;
-		bool m_reserveBlockThatPassesPredicate = false;
-		PathRequest() = default;
-	public:
-		static PathRequest create() { return PathRequest(); }
-		PathRequest(const Json& data);
-		void updateActorIndex(const ActorIndex& newIndex) { assert(newIndex.exists()); m_actor = newIndex; }
-		void create(Area& area, const ActorIndex& actor, const BlockIndex& start, const Facing& startFacing, DestinationCondition destination, bool detour, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination = BlockIndex::null(), bool reserve = false);
-		void createGoToAnyOf(Area& area, const ActorIndex& actor, BlockIndices destinations, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination = BlockIndex::null(), bool reserve = false);
-	public:
-		void createGoTo(Area& area, const ActorIndex& actor, const BlockIndex& destination, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve = false);
-		void createGoToFrom(Area& area, const ActorIndex& actor, const BlockIndex& start, const Facing& startFacing, const BlockIndex& destination, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve = false);
-		void createGoAdjacentToLocation(Area& area, const ActorIndex& actor, const BlockIndex& destination, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve = false);
-		void createGoAdjacentToActor(Area& area, const ActorIndex& actor, const ActorIndex& other, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve = false);
-		void createGoAdjacentToItem(Area& area, const ActorIndex& actor, const ItemIndex& item, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve = false);
-		void createGoAdjacentToPlant(Area& area, const ActorIndex& actor, const PlantIndex& item, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve = false);
-		void createGoAdjacentToPolymorphic(Area& area, const ActorIndex& actor, const ActorOrItemIndex& actorOrItem, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve = false);
-		void createGoAdjacentToDesignation(Area& area, const ActorIndex& actor, const BlockDesignation& designation, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve = false);
-		void createGoAdjacentToFluidType(Area& area, const ActorIndex& actor, const FluidTypeId& fluidType, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve = false);
-		void createGoToEdge(Area& area, const ActorIndex& actor, bool detour);
-		// Multi block actors go to a destination where any of the occupied blocks fulfill the condition. This is inconsistant with GoTo which sends multi block actors to an exact tile.
-		void createGoToCondition(Area& area, const ActorIndex& actor, DestinationCondition condition, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination = BlockIndex::null(), bool reserve = false);
-		void createGoAdjacentToCondition(Area& area, const ActorIndex& actor, std::function<bool(const BlockIndex&)> condition, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve = false);
-		void createGoAdjacentToConditionFrom(Area& area, const ActorIndex& actor, const BlockIndex& start, const Facing& startFacing, std::function<bool(const BlockIndex&)> condition, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve = false);
-		void maybeCancel(Area& area, const ActorIndex& actor);
-		void cancel(Area& area, const ActorIndex& actor);
-		void update(const PathRequestIndex& newIndex);
-		virtual void reset();
-		virtual void callback(Area& area, const FindPathResult& result);
-		[[nodiscard]] virtual Json toJson() const;
-		[[nodiscard]] bool exists() const { return m_index.exists(); }
-		[[nodiscard]] ActorIndex getActor() const { assert(m_actor.exists()); return m_actor; }
-		[[nodiscard]] std::string name() { return "basic"; }
-		[[nodiscard]] static std::unique_ptr<PathRequest> load(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
-		virtual ~PathRequest() = default;
-};
-inline void to_json(Json& data, const std::unique_ptr<PathRequest>& pathRequest) { data = pathRequest->toJson(); }
-// Defines a standard callback to be subclassed by many objectives.
-class ObjectivePathRequest : public PathRequest
+#include "types.h"
+#include "reference.h"
+#include "designations.h"
+
+class TerrainFacade;
+class FindPathResult;
+class PathMemoDepthFirst;
+class PathMemoBreadthFirst;
+class PathRequestBreadthFirst;
+class PathRequestDepthFirst;
+
+struct PathRequest
 {
-protected:
-	Objective& m_objective;
-	bool m_reserveBlockThatPassedPredicate = false;
-	ObjectivePathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	ObjectivePathRequest(Objective& objective, bool rbtpp) : m_objective(objective), m_reserveBlockThatPassedPredicate(rbtpp) { }
-	void callback(Area& area, const FindPathResult&);
-	virtual void onSuccess(Area& area, const BlockIndex& blockThatPassedPredicate) = 0;
-	[[nodiscard]] Json toJson() const;
+	BlockIndex start;
+	DistanceInBlocks maxRange;
+	ActorReference actor;
+	ShapeId shape;
+	FactionId faction;
+	MoveTypeId moveType;
+	Facing facing;
+	bool detour;
+	bool adjacent;
+	bool reserveDestination;
+	PathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination);
+	PathRequest() = default;
+	PathRequest(const Json& data, Area& area);
+	[[nodiscard]] static PathRequest& load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const MoveTypeId& moveType);
+	[[nodiscard]] static PathRequest& record(Area &area, const MoveTypeId& moveType, std::unique_ptr<PathRequestBreadthFirst> pathRequest);
+	[[nodiscard]] static PathRequest& record(Area &area, const MoveTypeId& moveType, std::unique_ptr<PathRequestDepthFirst> pathRequest);
+	virtual void writeStep(Area& area, FindPathResult& result);
+	virtual void cancel(Area& area) = 0;
+	virtual ~PathRequest() = default;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(PathRequest, start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination);
 };
-// Defines a standard callback to be subclassed by eat, sleep, drink and go to safe temperature.
-class NeedPathRequest : public PathRequest
+struct PathRequestDepthFirst : public PathRequest
 {
-protected:
-	Objective& m_objective;
-	NeedPathRequest(Objective& objective) : m_objective(objective) { }
-	NeedPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, const FindPathResult&);
-	virtual void onSuccess(Area& area, const BlockIndex& blockThatPassedPredicate) = 0;
-	[[nodiscard]] Json toJson() const;
+	BlockIndex huristicDestination;
+	PathRequestDepthFirst(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex huristicDestination);
+	PathRequestDepthFirst() = default;
+	PathRequestDepthFirst(const Json& data, Area& area);
+	void cancel(Area& area) override;
+	void record(Area& area, std::unique_ptr<PathRequestDepthFirst>& pointerToThis);
+	virtual FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) = 0;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(PathRequestDepthFirst, start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination, huristicDestination);
+};
+struct PathRequestBreadthFirst : public PathRequest
+{
+	PathRequestBreadthFirst(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination);
+	PathRequestBreadthFirst() = default;
+	PathRequestBreadthFirst(const Json& data, Area& area);
+	void cancel(Area& area) override;
+	void record(Area& area, std::unique_ptr<PathRequestBreadthFirst>& pointerToThis);
+	virtual FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) = 0;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(PathRequestBreadthFirst, start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination);
+};
+struct GoToPathRequest : public PathRequestDepthFirst
+{
+	BlockIndex destination;
+	GoToPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex destination);
+	GoToPathRequest(const Json& data, Area& area);
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(GoToPathRequest, start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination, huristicDestination, destination);
+};
+struct GoToAnyPathRequest : public PathRequestDepthFirst
+{
+	BlockIndices destinations;
+	GoToAnyPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex huristicDestination, BlockIndices destinations);
+	GoToAnyPathRequest(const Json& data, Area& area);
+	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(GoToAnyPathRequest, start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination, huristicDestination, destinations);
+};
+struct GoToFluidTypePathRequest : public PathRequestBreadthFirst
+{
+	FluidTypeId fluidType;
+	GoToFluidTypePathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination, FluidTypeId fluidType);
+	GoToFluidTypePathRequest(const Json& data, Area& area);
+	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(GoToFluidTypePathRequest, start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination, fluidType);
+};
+struct GoToBlockDesignationPathRequest : public PathRequestBreadthFirst
+{
+	BlockDesignation designation;
+	GoToBlockDesignationPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination, BlockDesignation designation); 
+	GoToBlockDesignationPathRequest(const Json& data, Area& area);
+	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(GoToBlockDesignationPathRequest, start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination, designation);
+};
+struct GoToEdgePathRequest : public PathRequestBreadthFirst
+{
+	GoToEdgePathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination); 
+	GoToEdgePathRequest(const Json& data, Area& area);
+	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(GoToEdgePathRequest, start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination);
 };

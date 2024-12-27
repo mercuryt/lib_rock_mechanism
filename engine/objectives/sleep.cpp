@@ -3,32 +3,40 @@
 #include "../types.h"
 #include "actors/actors.h"
 #include "blocks/blocks.h"
+#include "../terrainFacade.hpp"
 // Path Request.
-SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so, const ActorIndex& actor) : m_sleepObjective(so)
+SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so, const ActorIndex& actorIndex) :
+	m_sleepObjective(so)
 {
 	Actors& actors = area.getActors();
-	BlockIndex sleepSpot = actors.sleep_getSpot(actor);
-	if(sleepSpot.exists())
-	{
-		bool unreserved = actors.getFaction(actor).exists();
-		bool reserve = unreserved;
-		// TODO: Reserving the sleep spot means only one actor per spot.
-		createGoTo(area, actor, sleepSpot, m_sleepObjective.m_detour, unreserved, DistanceInBlocks::max(), reserve);
-		return;
-	}
-	assert(actors.sleep_getSpot(actor).empty());
-	uint32_t desireToSleepAtCurrentLocation = m_sleepObjective.desireToSleepAt(area, actors.getLocation(actor), actor);
+	start = actors.getLocation(actorIndex);
+	maxRange = Config::maxRangeToSearchForDigDesignations;
+	actor = actors.getReference(actorIndex);
+	shape = actors.getShape(actorIndex);
+	faction = actors.getFaction(actorIndex);
+	moveType = actors.getMoveType(actorIndex);
+	facing = actors.getFacing(actorIndex);
+	detour = m_sleepObjective.m_detour;
+	adjacent = false;
+	reserveDestination = true;
+}
+FindPathResult SleepPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+{
+	Actors& actors = area.getActors();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	assert(actors.sleep_getSpot(actorIndex).empty());
+	uint32_t desireToSleepAtCurrentLocation = m_sleepObjective.desireToSleepAt(area, actors.getLocation(actorIndex), actorIndex);
 	if(desireToSleepAtCurrentLocation == 1)
-		m_outdoorCandidate = area.getActors().getLocation(actor);
+		m_outdoorCandidate = area.getActors().getLocation(actorIndex);
 	else if(desireToSleepAtCurrentLocation == 2)
-		m_indoorCandidate = area.getActors().getLocation(actor);
+		m_indoorCandidate = area.getActors().getLocation(actorIndex);
 	else if(desireToSleepAtCurrentLocation == 3)
-		m_maxDesireCandidate = area.getActors().getLocation(actor);
+		m_maxDesireCandidate = area.getActors().getLocation(actorIndex);
 	if(m_maxDesireCandidate.empty())
 	{
-		std::function<bool(BlockIndex)> condition = [this, &area, actor](const BlockIndex& block)
+		std::function<bool(BlockIndex)> condition = [this, &area, actorIndex](const BlockIndex& block)
 		{
-			uint32_t desire = m_sleepObjective.desireToSleepAt(area, block, actor);
+			uint32_t desire = m_sleepObjective.desireToSleepAt(area, block, actorIndex);
 			if(desire == 3)
 			{
 				m_maxDesireCandidate = block;
@@ -40,52 +48,58 @@ SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so, const ActorIn
 				m_outdoorCandidate = block;	
 			return false;
 		};
-		bool unreserved = actors.getFaction(actor).exists();
-		createGoAdjacentToCondition(area, actor, condition, m_sleepObjective.m_detour, unreserved, DistanceInBlocks::max(), BlockIndex::null());
+		return terrainFacade.findPathToBlockDesignation(memo, BlockDesignation::Sleep, faction, start, facing, shape, m_sleepObjective.m_detour, adjacent, DistanceInBlocks::max());
+	}
+	else
+	{
+		m_sleepAtCurrentLocation = true;
+		return {{}, BlockIndex::null(), true};
 	}
 }
-void SleepPathRequest::callback(Area& area, const FindPathResult& result)
+void SleepPathRequest::writeStep(Area& area, FindPathResult& result)
 {
-	ActorIndex actor = getActor();
 	Actors& actors = area.getActors();
-	if(actors.sleep_getSpot(actor).exists())
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	if(actors.sleep_getSpot(actorIndex).exists())
 	{
 		if(result.useCurrentPosition)
 			// Already at sleep spot somehow.
-			m_sleepObjective.execute(area, actor);
+			m_sleepObjective.execute(area, actorIndex);
 		else if(result.path.empty())
 		{
 			// Cannot path to spot, clear it and search for another place to sleep.
-			actors.sleep_setSpot(actor, BlockIndex::null());
-			m_sleepObjective.execute(area, actor);
+			actors.sleep_setSpot(actorIndex, BlockIndex::null());
+			m_sleepObjective.execute(area, actorIndex);
 		}
 		else
 			// Path found.
-			actors.move_setPath(actor, result.path);
+			actors.move_setPath(actorIndex, result.path);
 		return;
 	}
 	// If the current location is the max desired then set sleep at current to true.
 	if(m_maxDesireCandidate.exists())
-		m_sleepObjective.selectLocation(area, m_maxDesireCandidate, actor);
+		m_sleepObjective.selectLocation(area, m_maxDesireCandidate, actorIndex);
 	else if(m_indoorCandidate.exists())
-		m_sleepObjective.selectLocation(area, m_indoorCandidate, actor);
+		m_sleepObjective.selectLocation(area, m_indoorCandidate, actorIndex);
 	else if(m_outdoorCandidate.exists())
-		m_sleepObjective.selectLocation(area, m_outdoorCandidate, actor);
+		m_sleepObjective.selectLocation(area, m_outdoorCandidate, actorIndex);
 	else if(m_sleepObjective.m_noWhereToSleepFound)
 		// Cannot leave area
-		actors.objective_canNotFulfillNeed(actor, m_sleepObjective);
+		actors.objective_canNotFulfillNeed(actorIndex, m_sleepObjective);
 	else
 	{
 		// No candidates, try to leave area
 		m_sleepObjective.m_noWhereToSleepFound = true;
-		createGoToEdge(area, actor, m_sleepObjective.m_detour);
+		actors.move_setDestinationToEdge(actorIndex, m_sleepObjective.m_detour);
 	}
 }
-SleepPathRequest::SleepPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	PathRequest(data), m_sleepObjective(static_cast<SleepObjective&>(*deserializationMemo.m_objectives[data["objective"]])) { }
+SleepPathRequest::SleepPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
+	PathRequestBreadthFirst(data, area),
+	m_sleepObjective(static_cast<SleepObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
+{ }
 Json SleepPathRequest::toJson() const
 {
-	Json output = PathRequest::toJson();
+	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_sleepObjective);
 	output["type"] = "sleep";
 	return output;
@@ -136,8 +150,12 @@ void SleepObjective::execute(Area& area, const ActorIndex& actor)
 	}
 	else
 		if(blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(sleepingSpot, actors.getShape(actor), actors.getMoveType(actor)))
-			// Make path request rather then set destination because we need SleepPathRequest to handle failure by clearing the sleep spot and making a new path request.
-			makePathRequest(area, actor);
+		{
+			constexpr bool adjacent = false;
+			constexpr bool unreserved = true;
+			constexpr bool reserve = true;
+			actors.move_setDestination(actor, sleepingSpot, m_detour, adjacent, unreserved, reserve);
+		}
 		else
 		{
 			// Location no longer can be entered.
@@ -150,12 +168,16 @@ uint32_t SleepObjective::desireToSleepAt(Area& area, const BlockIndex& block, co
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	if(blocks.isReserved(block, actors.getFactionId(actor)) || !actors.temperature_isSafe(actor, blocks.temperature_get(block)))
+		// Impossible to sleep here.
 		return 0;
 	if(area.m_hasSleepingSpots.containsUnassigned(block))
+		// Most desirable.
 		return 3;
-	if(blocks.isOutdoors(block))
+	if(blocks.isOutdoors(block) || !blocks.actor_empty(block))
+		// Least deserable.
 		return 1;
 	else
+		// Moderatly desirable.
 		return 2;
 }
 void SleepObjective::cancel(Area& area, const ActorIndex& actor)
@@ -185,12 +207,16 @@ void SleepObjective::makePathRequest(Area& area, const ActorIndex& actor)
 {
 	area.getActors().move_pathRequestRecord(actor, std::make_unique<SleepPathRequest>(area, *this, actor));
 }
-bool SleepObjective::onCanNotRepath(Area& area, const ActorIndex& actor)
+bool SleepObjective::onCanNotPath(Area& area, const ActorIndex& actor)
 {
-	BlockIndex sleepSpot = area.getActors().sleep_getSpot(actor);
-	if(sleepSpot.empty())
-		return false;
-	sleepSpot.clear();
-	execute(area, actor);
-	return true;
+	Actors& actors = area.getActors();
+	BlockIndex sleepSpot = actors.sleep_getSpot(actor);
+	if(sleepSpot.exists())
+	{
+		// Sleep spot exists but we can't get to it. Clear it and look for another.
+		actors.sleep_maybeClearSpot(actor);
+		execute(area, actor);
+		return true;
+	}
+	return false;
 }
