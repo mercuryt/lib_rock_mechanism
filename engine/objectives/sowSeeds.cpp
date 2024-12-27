@@ -4,10 +4,11 @@
 #include "../farmFields.h"
 #include "../simulation.h"
 #include "../hasShapes.hpp"
-#include "actors/actors.h"
-#include "blocks/blocks.h"
-#include "designations.h"
-#include "types.h"
+#include "../terrainFacade.hpp"
+#include "../actors/actors.h"
+#include "../blocks/blocks.h"
+#include "../designations.h"
+#include "../types.h"
 
 struct DeserializationMemo;
 
@@ -113,8 +114,7 @@ void SowSeedsObjective::execute(Area& area, const ActorIndex& actor)
 			}
 		}
 	}
-	std::unique_ptr<PathRequest> pathRequest = std::make_unique<SowSeedsPathRequest>(area, *this, actor);
-	actors.move_pathRequestRecord(actor, std::move(pathRequest));
+	actors.move_pathRequestRecord(actor, std::make_unique<SowSeedsPathRequest>(area, *this, actor));
 }
 void SowSeedsObjective::cancel(Area& area, const ActorIndex& actor)
 {
@@ -163,13 +163,44 @@ bool SowSeedsObjective::canSowAt(Area& area, const BlockIndex& block, const Acto
 	auto& blocks = area.getBlocks();
 	return blocks.designation_has(block, faction, BlockDesignation::SowSeeds) && !blocks.isReserved(block, faction);
 }
-SowSeedsPathRequest::SowSeedsPathRequest(Area& area, SowSeedsObjective& objective, const ActorIndex& actor) : ObjectivePathRequest(objective, true) // reserve block which passed predicate.
+SowSeedsPathRequest::SowSeedsPathRequest(Area& area, SowSeedsObjective& objective, const ActorIndex& actorIndex) :
+	m_objective(objective)
 {
-	bool unreserved = true;
-	bool reserve = true;
-	createGoAdjacentToDesignation(area, actor, BlockDesignation::SowSeeds, objective.m_detour, unreserved, Config::maxRangeToSearchForHorticultureDesignations, reserve);
+	Actors& actors = area.getActors();
+	start = actors.getLocation(actorIndex);
+	maxRange = Config::maxRangeToSearchForHorticultureDesignations;
+	actor = actors.getReference(actorIndex);
+	shape = actors.getShape(actorIndex);
+	faction = actors.getFaction(actorIndex);
+	moveType = actors.getMoveType(actorIndex);
+	facing = actors.getFacing(actorIndex);
+	detour = m_objective.m_detour;
+	adjacent = true;
+	reserveDestination = true;
 }
-void SowSeedsPathRequest::onSuccess(Area& area, const BlockIndex& blockWhichPassedPredicate)
+SowSeedsPathRequest::SowSeedsPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
+	PathRequestBreadthFirst(data, area),
+	m_objective(static_cast<SowSeedsObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
+{ }
+FindPathResult SowSeedsPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
-	static_cast<SowSeedsObjective&>(m_objective).select(area, blockWhichPassedPredicate, getActor());
+	Actors& actors = area.getActors();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	return terrainFacade.findPathToBlockDesignation(memo, BlockDesignation::SowSeeds, actors.getFaction(actorIndex), actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_objective.m_detour, adjacent, Config::maxRangeToSearchForHorticultureDesignations);
+}
+void SowSeedsPathRequest::writeStep(Area& area, FindPathResult& result)
+{
+	Actors& actors = area.getActors();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	if(result.path.empty() && result.blockThatPassedPredicate.empty())
+		actors.objective_canNotCompleteObjective(actorIndex, m_objective);
+	else
+		m_objective.select(area, result.blockThatPassedPredicate, actorIndex);
+}
+Json SowSeedsPathRequest::toJson() const
+{
+	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
+	output["type"] = name();
+	return output;
 }

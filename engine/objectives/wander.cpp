@@ -4,51 +4,64 @@
 #include "../random.h"
 #include "../config.h"
 #include "../simulation.h"
-#include "actors/actors.h"
-#include "types.h"
-#include <memory>
+#include "../terrainFacade.hpp"
+#include "../actors/actors.h"
+#include "../types.h"
 // PathRequest
-WanderPathRequest::WanderPathRequest(Area& area, WanderObjective& objective, const ActorIndex& actor) : m_objective(objective)
+WanderPathRequest::WanderPathRequest(Area& area, WanderObjective& objective, const ActorIndex& actorIndex) :
+	m_objective(objective)
+{
+	Actors& actors = area.getActors();
+	start = actors.getLocation(actorIndex);
+	maxRange = Config::maxRangeToSearchForHorticultureDesignations;
+	actor = actors.getReference(actorIndex);
+	shape = actors.getShape(actorIndex);
+	moveType = actors.getMoveType(actorIndex);
+}
+WanderPathRequest::WanderPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
+	PathRequestBreadthFirst(data, area),
+	m_objective(static_cast<WanderObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))),
+	m_lastBlock(data["lastBlock"].get<BlockIndex>())
+{ }
+FindPathResult WanderPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Random& random = area.m_simulation.m_random;
 	m_blockCounter = random.getInRange(Config::wanderMinimimNumberOfBlocks, Config::wanderMaximumNumberOfBlocks);
-	DestinationCondition condition = [this](BlockIndex index, Facing){
+	auto destinationCondition = [this](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	{
 		if(!m_blockCounter)
-			return std::pair(true, index);
-		m_lastBlock = index;
+			return std::pair(true, block);
+		m_lastBlock = block;
 		return std::pair(false, BlockIndex::null());
 	};
-	bool detour = false;
-	bool unreserved = false;
-	createGoToCondition(area, actor, condition, detour, unreserved, DistanceInBlocks::max());
+	Actors& actors = area.getActors();
+	const ActorIndex& actorIndex = actor.getIndex(actors.m_referenceData);
+	constexpr bool anyOccupiedBlock = false;
+	return terrainFacade.findPathToConditionBreadthFirst<anyOccupiedBlock>(destinationCondition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), detour, adjacent);
 }
-WanderPathRequest::WanderPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	PathRequest(data),
-	m_objective(static_cast<WanderObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))),
-	m_lastBlock(data["lastBlock"].get<BlockIndex>()) { }
-void WanderPathRequest::callback(Area& area, const FindPathResult& result)
+void WanderPathRequest::writeStep(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actor = getActor();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	if(result.path.empty())
 	{
 		if(m_lastBlock.empty())
-			actors.wait(actor, Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective);
+			actors.wait(actorIndex, Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective);
 		else
 		{
 			m_objective.m_destination = m_lastBlock;
-			actors.move_setDestination(actor, m_objective.m_destination);
+			actors.move_setDestination(actorIndex, m_objective.m_destination);
 		}
 	}
 	else
 	{
 		m_objective.m_destination = result.path.back();
-		actors.move_setPath(actor, result.path);
+		actors.move_setPath(actorIndex, result.path);
 	}
 }
 Json WanderPathRequest::toJson() const
 {
-	Json output = PathRequest::toJson();
+	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
 	output["objective"] = &m_objective;
 	output["lastBlock"] = m_lastBlock;
 	output["type"] = "wander";
@@ -75,10 +88,7 @@ void WanderObjective::execute(Area& area, const ActorIndex& actor)
 			actors.move_setDestination(actor, m_destination);
 	}
 	else
-	{
-		std::unique_ptr<PathRequest> pathRequest = std::make_unique<WanderPathRequest>(area, *this, actor);
-		area.getActors().move_pathRequestRecord(actor, std::move(pathRequest));
-	}
+		area.getActors().move_pathRequestRecord(actor, std::make_unique<WanderPathRequest>(area, *this, actor));
 }
 void WanderObjective::cancel(Area& area, const ActorIndex& actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
 bool WanderObjective::hasPathRequest(const Area& area, const ActorIndex& actor) const { return area.getActors().move_hasPathRequest(actor); }

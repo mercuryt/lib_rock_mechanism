@@ -7,12 +7,13 @@
 #include "../objective.h"
 #include "../reservable.h"
 #include "../simulation.h"
-#include "actors/actors.h"
-#include "designations.h"
-#include "index.h"
-#include "items/items.h"
-#include "types.h"
+#include "../actors/actors.h"
+#include "../designations.h"
+#include "../index.h"
+#include "../items/items.h"
+#include "../types.h"
 #include "../plants.h"
+#include "../terrainFacade.hpp"
 
 #include <memory>
 GivePlantsFluidEvent::GivePlantsFluidEvent(const Step& delay, Area& area, GivePlantsFluidObjective& gpfo, const ActorIndex& actor, const Step start) : 
@@ -48,58 +49,80 @@ void GivePlantsFluidEvent::onCancel(Simulation&, Area* area)
 	}
 }
 // Path Request.
-GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective, const ActorIndex& actor) : m_objective(objective)
+GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective, const ActorIndex& actorIndex) :
+	m_objective(objective)
 {
+	Actors& actors = area.getActors();
+	start = actors.getLocation(actorIndex);
+	maxRange = Config::maxRangeToSearchForDigDesignations;
+	actor = actors.getReference(actorIndex);
+	shape = actors.getShape(actorIndex);
+	faction = actors.getFaction(actorIndex);
+	moveType = actors.getMoveType(actorIndex);
+	facing = actors.getFacing(actorIndex);
+	detour = m_objective.m_detour;
+	adjacent = true;
+	reserveDestination = true;
+
+}
+GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
+	PathRequestBreadthFirst(data, area),
+	m_objective(static_cast<GivePlantsFluidObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
+{ }
+FindPathResult GivePlantsFluidPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+{
+	Actors &actors = area.getActors();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	DistanceInBlocks maxRange = Config::maxRangeToSearchForHorticultureDesignations;
-	const bool unreserved = false;
 	if(m_objective.m_plantLocation.empty())
-		createGoAdjacentToDesignation(area, actor, BlockDesignation::GivePlantFluid, m_objective.m_detour, unreserved, maxRange);
+	{
+		return terrainFacade.findPathToBlockDesignation(memo, BlockDesignation::Harvest, faction, start, facing, shape, m_objective.m_detour, adjacent, maxRange);
+	}
 	else
 	{
 		assert(!m_objective.m_fluidHaulingItem.exists());
-		std::function<bool(BlockIndex)> predicate = [this, &area, actor](const BlockIndex& block) {
-			return m_objective.canGetFluidHaulingItemAt(area, block, actor);
+		auto destinationCondition = [this, &area, actorIndex](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+		{
+			return {m_objective.canGetFluidHaulingItemAt(area, block, actorIndex), block};
 		};
-		createGoAdjacentToCondition(area, actor, predicate, m_objective.m_detour, unreserved, maxRange, BlockIndex::null());
+		constexpr bool useAny = true;
+		return terrainFacade.findPathToConditionBreadthFirst<useAny, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_objective.m_detour, adjacent, faction, maxRange);
 	}
 }
-GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	PathRequest(data),
-	m_objective(static_cast<GivePlantsFluidObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))) { }
-void GivePlantsFluidPathRequest::callback(Area& area, const FindPathResult& result)
+void GivePlantsFluidPathRequest::writeStep(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actor = getActor();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	if(result.path.empty() && !result.useCurrentPosition)
 	{
-		actors.objective_canNotCompleteObjective(actor, m_objective);
+		actors.objective_canNotCompleteObjective(actorIndex, m_objective);
 		return;
 	}
 	Blocks& blocks = area.getBlocks();
-	FactionId faction = actors.getFactionId(actor);
+	FactionId faction = actors.getFactionId(actorIndex);
 	if(m_objective.m_plantLocation.empty())
 	{
 		if(blocks.designation_has(result.blockThatPassedPredicate, faction, BlockDesignation::GivePlantFluid))
-			m_objective.selectPlantLocation(area, result.blockThatPassedPredicate, actor);
+			m_objective.selectPlantLocation(area, result.blockThatPassedPredicate, actorIndex);
 		// Either path to bucket or try again.
-		m_objective.makePathRequest(area, actor);
+		m_objective.makePathRequest(area, actorIndex);
 	}
 	else
 	{
 		assert(!m_objective.m_fluidHaulingItem.exists());
-		if(m_objective.canGetFluidHaulingItemAt(area, result.blockThatPassedPredicate, actor))
+		if(m_objective.canGetFluidHaulingItemAt(area, result.blockThatPassedPredicate, actorIndex))
 		{
-			m_objective.selectItem(area, m_objective.getFluidHaulingItemAt(area, result.blockThatPassedPredicate, actor), actor);
-			actors.move_setPath(actor, result.path);
+			m_objective.selectItem(area, m_objective.getFluidHaulingItemAt(area, result.blockThatPassedPredicate, actorIndex), actorIndex);
+			actors.move_setPath(actorIndex, result.path);
 		}
 		else
 			// Item which was to be selected is no longer avaliable, try again.
-			m_objective.makePathRequest(area, actor);
+			m_objective.makePathRequest(area, actorIndex);
 	}
 }
 Json GivePlantsFluidPathRequest::toJson() const
 {
-	Json output = PathRequest::toJson();
+	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
 	output["objective"] = &m_objective;
 	output["type"] = "give plants fluid";
 	return output;

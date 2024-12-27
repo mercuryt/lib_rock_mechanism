@@ -88,7 +88,7 @@ public:
 	virtual void reset(Area& area, const ActorIndex& actor) = 0;
 	// Returns true if the condition is resolved or false otherwise.
 	// If false is returned canNotCompleteObjective is called.
-	virtual bool onCanNotRepath(Area&, const ActorIndex&) { return false; }
+	virtual bool onCanNotPath(Area&, const ActorIndex&) { return false; }
 	// To be used by objectives with projects which cannot be auto destroyed.
 	// Records projects which have failed to reserve requirements so as not to retry them with this objective instance.
 	// Will be 'flushed' when this instance is destroyed and then another objective of this type is created later, after objectivePrioritySet delay ends.

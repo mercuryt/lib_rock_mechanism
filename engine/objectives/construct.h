@@ -41,13 +41,14 @@ public:
 	// For Testing.
 	[[nodiscard, maybe_unused]] Project* getProject() { return m_project; }
 };
-class ConstructPathRequest final : public PathRequest
+class ConstructPathRequest final : public PathRequestBreadthFirst
 {
 	ConstructObjective& m_constructObjective;
 public:
 	ConstructPathRequest(Area& area, ConstructObjective& co, const ActorIndex& actor);
-	ConstructPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, const FindPathResult& result);
+	ConstructPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() { return "construct"; }
 };

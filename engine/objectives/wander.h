@@ -9,15 +9,16 @@ struct DeserializationMemo;
 class Area;
 class WanderObjective;
 
-class WanderPathRequest final : public PathRequest
+class WanderPathRequest final : public PathRequestBreadthFirst
 {
 	WanderObjective& m_objective;
 	BlockIndex m_lastBlock;
 	uint16_t m_blockCounter = 0;
 public:
 	WanderPathRequest(Area& area, WanderObjective& objective, const ActorIndex& actor);
-	WanderPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, const FindPathResult& result);
+	WanderPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "wander"; }
 };

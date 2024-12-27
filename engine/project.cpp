@@ -11,7 +11,7 @@
 #include "actors/actors.h"
 #include "items/items.h"
 #include "blocks/blocks.h"
-#include "terrainFacade.h"
+#include "terrainFacade.hpp"
 #include "types.h"
 #include "objectives/wander.h"
 #include "portables.hpp"
@@ -74,13 +74,16 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep(Simulation&, Area*)
 		if(projectWorker.haulSubproject != nullptr)
 			continue;
 		ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-		DestinationCondition condition = [this, actorIndex](const BlockIndex& block, Facing) {
+		auto destinationConditon = [this, actorIndex](const BlockIndex& block, const Facing&) ->std::pair<bool, BlockIndex>
+		{
 			if(blockContainsDesiredItem(block, actorIndex))
 				return std::make_pair(true, block);
 			return std::make_pair(false, BlockIndex::null());
 		};
 		// Path result is unused, running only for condition side effect.
-		[[maybe_unused]] FindPathResult result = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actorIndex)).findPathAdjacentToCondition(actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), condition);
+		constexpr bool anyOccupiedBlock = true;
+		constexpr bool adjacent = true;
+		[[maybe_unused]] FindPathResult result = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actorIndex)).findPathToConditionBreadthFirstWithoutMemo<anyOccupiedBlock, decltype(destinationConditon)>(destinationConditon, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), projectWorker.objective->m_detour, adjacent, actors.getFaction(actorIndex));
 		// Only make at most one per step.
 		// TODO: Would it be better to do them all at once instead of one per step? Better temporal locality, higher risk of lag spike.
 		if(m_haulProjectParamaters.strategy != HaulStrategy::None)
@@ -197,7 +200,8 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 		{
 			// Verify the worker can path to the job site.
 			TerrainFacade& terrainFacade = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(candidateIndex));
-			FindPathResult result = terrainFacade.findPathAdjacentToAndUnreserved(actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), m_project.m_location, m_project.m_faction);
+			constexpr bool adjacent = true;
+			FindPathResult result = terrainFacade.findPathToWithoutMemo(actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), m_project.m_location, objective->m_detour, adjacent, m_project.m_faction);
 			if(result.path.empty() && !result.useCurrentPosition)
 			{
 				m_cannotPathToJobSite.insert(candidate);
@@ -248,7 +252,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 			};
 			// Verfy the worker can path to the required materials. Cumulative for all candidates in this step but reset if not satisfied.
 			// capture by reference is used here because the pathing is being done immideatly instead of batched.
-			DestinationCondition predicate = [&](const BlockIndex& block, Facing)
+			auto destinationCondition = [&](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
 			{
 				auto& blocks = m_project.m_area.getBlocks();
 				for(ItemIndex item : blocks.item_getAll(block))
@@ -292,7 +296,8 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 			};
 			// TODO: Path is not used, find path is run for side effects of predicate.
 			TerrainFacade& terrainFacade = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(candidateIndex));
-			[[maybe_unused]] FindPathResult result = terrainFacade.findPathAdjacentToCondition(actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), predicate);
+			constexpr bool anyOccupiedBlock = true;
+			[[maybe_unused]] FindPathResult result = terrainFacade.findPathToConditionBreadthFirstWithoutMemo<anyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex));
 		}
 	}
 	if(!m_project.reservationsComplete())

@@ -308,6 +308,10 @@ public:
 	void insert(K key, V&& value) { insert(key, value); }
 	void maybeInsert(K key, V& value) { if(!contains(key)) insert(key, value); }
 	void maybeInsert(K key, V&& value) { maybeInsert(key, value); }
+	void insertNonUnique(K key, V& value)
+	{
+		m_data.emplace_back(key, std::move(value));
+	}
 	void erase(const K& key)
 	{
 		erase(std::ranges::find(m_data, key, &Pair::first));

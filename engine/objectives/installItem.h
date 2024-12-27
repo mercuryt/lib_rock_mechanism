@@ -27,13 +27,14 @@ public:
 	friend class InstallItemPathRequest;
 };
 // Search for nearby item that needs installing.
-class InstallItemPathRequest final : public PathRequest
+class InstallItemPathRequest final : public PathRequestDepthFirst
 {
 	InstallItemObjective& m_installItemObjective;
 public:
 	InstallItemPathRequest(Area& area, InstallItemObjective& iio, const ActorIndex& actor);
-	InstallItemPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, const FindPathResult& result);
+	InstallItemPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
+	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] std::string name() const { return "install item"; }
 	[[nodiscard]] Json toJson() const;
 };

@@ -32,6 +32,8 @@ public:
 	void joinProject(DigProject& project, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] DigProject* getJoinableProjectAt(Area& area, BlockIndex block, const ActorIndex& actor);
+	// To be used for pathing.
+	[[nodiscard]] bool joinableProjectExistsAt(Area& area, BlockIndex block, const ActorIndex& actor) const;
 	[[nodiscard]] std::string name() const { return "dig"; }
 	friend class DigPathRequest;
 	friend class DigProject;
@@ -39,15 +41,14 @@ public:
 	[[nodiscard]] DigProject* getProject() { return m_project; }
 };
 // Find a place to dig.
-class DigPathRequest final : public PathRequest
+class DigPathRequest final : public PathRequestBreadthFirst
 {
 	DigObjective& m_digObjective;
-	// Result is the block which will be the actors location while doing the digging.
 public:
 	DigPathRequest(Area& area, DigObjective& digObjective, const ActorIndex& actor);
-	DigPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, const FindPathResult& result);
-	void clearReferences(Simulation&, Area* area);
+	DigPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() { return "dig"; }
 };

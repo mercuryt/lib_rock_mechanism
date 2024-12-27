@@ -75,7 +75,9 @@ TEST_CASE("sow")
 		REQUIRE(actors.objective_getCurrentName(actor) == "sow seeds");
 		REQUIRE(actors.move_hasPathRequest(actor));
 		REQUIRE(actors.objective_getCurrent<SowSeedsObjective>(actor).canSowAt(area, fieldLocation, actor));
-		REQUIRE(!area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor)).findPathAdjacentToAndUnreserved(actors.getLocation(actor), actors.getFacing(actor), actors.getShape(actor), fieldLocation, faction).path.empty());
+		constexpr bool detour = false;
+		constexpr bool adjacent = true;
+		REQUIRE(!area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor)).findPathToWithoutMemo(actors.getLocation(actor), actors.getFacing(actor), actors.getShape(actor), fieldLocation, detour, adjacent, faction).path.empty());
 		simulation.doStep();
 		REQUIRE(blocks.isReserved(fieldLocation, faction));
 		REQUIRE(!actors.move_getPath(actor).empty());

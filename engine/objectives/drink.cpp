@@ -5,56 +5,68 @@
 #include "../items/items.h"
 #include "../plants.h"
 #include "../hasShapes.hpp"
+#include "../terrainFacade.hpp"
 
 // Drink Threaded Task.
-DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, const ActorIndex& actor) : m_drinkObjective(drob)
-{
-	if(m_drinkObjective.m_noDrinkFound)
-	{
-		createGoToEdge(area, actor, m_drinkObjective.m_detour);
-		return;
-	}
-	std::function<bool(BlockIndex)> predicate = [this, &area, actor](BlockIndex block)
-	{
-		return m_drinkObjective.containsSomethingDrinkable(area, block, actor);
-	};
-	bool reserve = false;
-	bool unreserved = false;
-	createGoAdjacentToCondition(area, actor, predicate, drob.m_detour, unreserved, DistanceInBlocks::max(), BlockIndex::null(), reserve);
-}
-DrinkPathRequest::DrinkPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	PathRequest(data),
-	m_drinkObjective(static_cast<DrinkObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))) { }
-void DrinkPathRequest::callback(Area& area, const FindPathResult& result)
+DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, const ActorIndex& actorIndex) :
+	m_drinkObjective(drob)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actor = getActor();
+	start = actors.getLocation(actorIndex);
+	maxRange = DistanceInBlocks::max();
+	actor = actors.getReference(actorIndex);
+	shape = actors.getShape(actorIndex);
+	moveType = actors.getMoveType(actorIndex);
+	facing = actors.getFacing(actorIndex);
+	detour = m_drinkObjective.m_detour;
+	adjacent = true;
+}
+FindPathResult DrinkPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+{
+	Actors& actors = area.getActors();
+	const ActorIndex& actorIndex = actor.getIndex(actors.m_referenceData);
+	if(m_drinkObjective.m_noDrinkFound)
+		return terrainFacade.findPathToEdge(memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_drinkObjective.m_detour);
+	auto destinationCondition = [this, &area, actorIndex](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	{
+		return {m_drinkObjective.containsSomethingDrinkable(area, block, actorIndex), block};
+	};
+	constexpr bool useAnyBlock = true;
+	return terrainFacade.findPathToConditionBreadthFirst<useAnyBlock, decltype(destinationCondition)>(destinationCondition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_drinkObjective.m_detour, adjacent, actors.getFactionId(actorIndex), DistanceInBlocks::max());
+}
+DrinkPathRequest::DrinkPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
+	PathRequestBreadthFirst(data, area),
+	m_drinkObjective(static_cast<DrinkObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))) { }
+void DrinkPathRequest::writeStep(Area& area, FindPathResult& result)
+{
+	Actors& actors = area.getActors();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	if(result.path.empty())
 	{
 		if(!result.useCurrentPosition)
 		{
 			if(m_drinkObjective.m_noDrinkFound)
-				actors.objective_canNotFulfillNeed(actor, m_drinkObjective);
+				actors.objective_canNotFulfillNeed(actorIndex, m_drinkObjective);
 			else
 			{
 				// Nothing to drink here, try to leave.
 				m_drinkObjective.m_noDrinkFound = true;
-				m_drinkObjective.execute(area, actor);
+				m_drinkObjective.execute(area, actorIndex);
 			}
 		}
 		else
 		{
 			// There is something to drink at the current location.
 			m_drinkObjective.m_noDrinkFound = false;
-			m_drinkObjective.execute(area, actor);
+			m_drinkObjective.execute(area, actorIndex);
 		}
 	}
 	else
-		actors.move_setPath(getActor(), result.path);
+		actors.move_setPath(actorIndex, result.path);
 }
 Json DrinkPathRequest::toJson() const
 {
-	Json output = PathRequest::toJson();
+	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
 	output["objective"] = &m_drinkObjective;
 	output["type"] = "drink";
 	return output;

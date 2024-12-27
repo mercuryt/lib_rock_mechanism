@@ -16,13 +16,14 @@ public:
 	void reset(Area&, const ActorIndex&) { }
 	[[nodiscard]] std::string name() const { return "leave area"; }
 };
-class LeaveAreaPathRequest final : public PathRequest
+class LeaveAreaPathRequest final : public PathRequestBreadthFirst
 {
 	LeaveAreaObjective& m_objective;
 public:
-	LeaveAreaPathRequest(Area& area, LeaveAreaObjective& objective);
-	LeaveAreaPathRequest(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback(Area& area, const FindPathResult& result);
+	LeaveAreaPathRequest(Area& area, LeaveAreaObjective& objective, const ActorIndex& actorIndex);
+	LeaveAreaPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] std::string name() const { return "leave area"; }
 	[[nodiscard]] Json toJson() const;
 };

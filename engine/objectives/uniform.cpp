@@ -1,33 +1,50 @@
 #include "uniform.h"
-#include "actors/actors.h"
-#include "area.h"
-#include "blocks/blocks.h"
-#include "items/items.h"
-#include "terrainFacade.h"
-#include "types.h"
+#include "../actors/actors.h"
+#include "../area.h"
+#include "../blocks/blocks.h"
+#include "../items/items.h"
+#include "../terrainFacade.hpp"
+#include "../types.h"
 // Equip uniform.
-UniformPathRequest::UniformPathRequest(Area& area, UniformObjective& objective, const ActorIndex& actor) : m_objective(objective)
-{
-	std::function<bool(BlockIndex)> predicate = [&area, this](const BlockIndex& block){
-		return m_objective.blockContainsItem(area, block);
-	};
-	bool unreserved = false;
-	createGoAdjacentToCondition(area, actor, predicate, m_objective.m_detour, unreserved, Config::maxRangeToSearchForUniformEquipment, BlockIndex::null());
-}
-UniformPathRequest::UniformPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	PathRequest(data),
-	m_objective(static_cast<UniformObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))) { }
-void UniformPathRequest::callback(Area& area, const FindPathResult& result)
+UniformPathRequest::UniformPathRequest(Area& area, UniformObjective& objective, const ActorIndex& actorIndex) :
+	m_objective(objective)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actor = getActor();
+	start = actors.getLocation(actorIndex);
+	maxRange = Config::maxRangeToSearchForDigDesignations;
+	actor = actors.getReference(actorIndex);
+	shape = actors.getShape(actorIndex);
+	faction = actors.getFaction(actorIndex);
+	moveType = actors.getMoveType(actorIndex);
+	facing = actors.getFacing(actorIndex);
+	detour = m_objective.m_detour;
+	adjacent = true;
+	reserveDestination = true;
+}
+UniformPathRequest::UniformPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
+	PathRequestBreadthFirst(data, area),
+	m_objective(static_cast<UniformObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
+{ }
+FindPathResult UniformPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+{
+	auto destinationCondition = [&area, this](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	{
+		return {m_objective.blockContainsItem(area, block), block};
+	};
+	constexpr bool useAnyOccupiedBlock = true;
+	return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, detour, adjacent, faction, maxRange);
+}
+void UniformPathRequest::writeStep(Area& area, FindPathResult& result)
+{
+	Actors& actors = area.getActors();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	if(!result.path.empty())
 	{
-		if(!actors.move_tryToReserveProposedDestination(actor, result.path))
+		if(!actors.move_tryToReserveProposedDestination(actorIndex, result.path))
 		{
 			// Cannot reserve location, try again.
-			m_objective.reset(area, actor);
-			m_objective.execute(area, actor);
+			m_objective.reset(area, actorIndex);
+			m_objective.execute(area, actorIndex);
 		}
 		else
 		{
@@ -35,14 +52,14 @@ void UniformPathRequest::callback(Area& area, const FindPathResult& result)
 			if(!m_objective.blockContainsItem(area, block))
 			{
 				// Destination no longer suitable.
-				m_objective.reset(area, actor);
-				m_objective.execute(area, actor);
+				m_objective.reset(area, actorIndex);
+				m_objective.execute(area, actorIndex);
 			}
 			else
 			{
 				ItemIndex item = m_objective.getItemAtBlock(area, block);
 				m_objective.select(area, item);
-				actors.move_setPath(actor, result.path);
+				actors.move_setPath(actorIndex, result.path);
 			}
 		}
 	}
@@ -53,22 +70,22 @@ void UniformPathRequest::callback(Area& area, const FindPathResult& result)
 			ItemIndex item = m_objective.getItemAtBlock(area, result.blockThatPassedPredicate);
 			if(item.empty())
 			{
-				m_objective.reset(area, actor);
-				m_objective.execute(area, actor);
+				m_objective.reset(area, actorIndex);
+				m_objective.execute(area, actorIndex);
 			}
 			else
 			{
 				m_objective.select(area, item);
-				m_objective.execute(area, actor);
+				m_objective.execute(area, actorIndex);
 			}
 		}
 		else
-			actors.objective_canNotCompleteObjective(actor, m_objective);
+			actors.objective_canNotCompleteObjective(actorIndex, m_objective);
 	}
 }
 Json UniformPathRequest::toJson() const
 {
-	Json output = PathRequest::toJson();
+	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
 	output["objective"] = &m_objective;
 	output["type"] = "uniform";
 	return output;

@@ -199,40 +199,84 @@ void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& dest
 		reserve = unreserved = false;
 	if(unreserved && !adjacent)
 		assert(!blocks.isReserved(destination, m_faction[index]));
+	FactionId faction;
+	if(unreserved)
+		faction = m_faction[index];
 	assert(m_pathRequest[index] == nullptr);
-	m_pathRequest[index] = std::make_unique<PathRequest>(PathRequest::create());
-	if(adjacent)
-		m_pathRequest[index]->createGoAdjacentToLocation(m_area, index, destination, detour, unreserved, DistanceInBlocks::max(), reserve);
+	if(!adjacent)
+		move_pathRequestRecord(index, std::make_unique<GoToPathRequest>(m_location[index], DistanceInBlocks::max(), getReference(index), m_shape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, destination));
 	else
-		m_pathRequest[index]->createGoTo(m_area, index, destination, detour, unreserved, DistanceInBlocks::max(), reserve);
+	{
+		BlockIndices candidates;
+		for(const BlockIndex& adjacent : blocks.getAdjacentWithEdgeAndCornerAdjacent(destination))
+			if(
+				blocks.shape_anythingCanEnterEver(adjacent) &&
+				blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_shape[index], m_moveType[index])
+			)
+				candidates.add(adjacent);
+		move_pathRequestRecord(index, std::make_unique<GoToAnyPathRequest>(m_location[index], DistanceInBlocks::max(), getReference(index), m_shape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, destination, candidates));
+	}
 }
 void Actors::move_setDestinationAdjacentToLocation(const ActorIndex& index, const BlockIndex& destination, bool detour, bool unreserved, bool reserve)
 {
 	move_setDestination(index, destination, detour, true, unreserved, reserve);
 }
+void Actors::move_setDestinationToAny(const ActorIndex& index, const BlockIndices& candidates, bool detour, bool unreserved, bool reserve, const BlockIndex& huristicDestination)
+{
+	FactionId faction;
+	if(unreserved)
+		faction = m_faction[index];
+	constexpr bool adjacent = false;
+	move_pathRequestRecord(index, std::make_unique<GoToAnyPathRequest>(m_location[index], DistanceInBlocks::max(), getReference(index), m_shape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, huristicDestination, candidates));
+}
 void Actors::move_setDestinationAdjacentToActor(const ActorIndex& index, const ActorIndex& other, bool detour, bool unreserved, bool reserve)
 {
 	assert(!isAdjacentToActor(index, other));
-	assert(!isAdjacentToLocation(index, m_location[other]));
-	// Actor, predicate, destinationHuristic, detour, adjacent, unreserved.
+	const BlockIndex& otherLocation = m_location[other];
+	assert(!isAdjacentToLocation(index, otherLocation));
+	Blocks& blocks = m_area.getBlocks();
 	assert(m_pathRequest[index] == nullptr);
-	m_pathRequest[index] = std::make_unique<PathRequest>(PathRequest::create());
-	m_pathRequest[index]->createGoAdjacentToActor(m_area, index, other, detour, unreserved, DistanceInBlocks::max(), reserve);
+		BlockIndices candidates;
+	for(const BlockIndex& adjacent : getAdjacentBlocks(other))
+		if(
+			blocks.shape_anythingCanEnterEver(adjacent) &&
+			blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_shape[index], m_moveType[index])
+		)
+			candidates.add(adjacent);
+	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, otherLocation);
 }
 void Actors::move_setDestinationAdjacentToItem(const ActorIndex& index, const ItemIndex& item, bool detour, bool unreserved, bool reserve)
 {
 	assert(!isAdjacentToItem(index, item));
 	assert(!isAdjacentToLocation(index, m_area.getItems().getLocation(item)));
 	assert(m_pathRequest[index] == nullptr);
-	m_pathRequest[index] = std::make_unique<PathRequest>(PathRequest::create());
-	m_pathRequest[index]->createGoAdjacentToItem(m_area, index, item, detour, unreserved, DistanceInBlocks::max(), reserve);
+	Blocks& blocks = m_area.getBlocks();
+	Items& items = m_area.getItems();
+	assert(m_pathRequest[index] == nullptr);
+		BlockIndices candidates;
+		for(const BlockIndex& adjacent : items.getAdjacentBlocks(item))
+			if(
+				blocks.shape_anythingCanEnterEver(adjacent) &&
+				blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_shape[index], m_moveType[index])
+			)
+				candidates.add(adjacent);
+	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, items.getLocation(item));
 }
 void Actors::move_setDestinationAdjacentToPlant(const ActorIndex& index, const PlantIndex& plant, bool detour, bool unreserved, bool reserve)
 {
 	assert(!isAdjacentToPlant(index, plant));
 	assert(m_pathRequest[index] == nullptr);
-	m_pathRequest[index] = std::make_unique<PathRequest>(PathRequest::create());
-	m_pathRequest[index]->createGoAdjacentToPlant(m_area, index, plant, detour, unreserved, DistanceInBlocks::max(), reserve);
+	Blocks& blocks = m_area.getBlocks();
+	Plants& plants = m_area.getPlants();
+	assert(m_pathRequest[index] == nullptr);
+		BlockIndices candidates;
+		for(const BlockIndex& adjacent : plants.getAdjacentBlocks(plant))
+			if(
+				blocks.shape_anythingCanEnterEver(adjacent) &&
+				blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_shape[index], m_moveType[index])
+			)
+				candidates.add(adjacent);
+	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, plants.getLocation(plant));
 }
 void Actors::move_setDestinationAdjacentToPolymorphic(const ActorIndex& index, ActorOrItemIndex actorOrItemIndex, bool detour, bool unreserved, bool reserve)
 {
@@ -245,20 +289,27 @@ void Actors::move_setDestinationAdjacentToPolymorphic(const ActorIndex& index, A
 void Actors::move_setDestinationAdjacentToFluidType(const ActorIndex& index, const FluidTypeId& fluidType, bool detour, bool unreserved, bool reserve, DistanceInBlocks maxRange)
 {
 	assert(m_pathRequest[index] == nullptr);
-	m_pathRequest[index] = std::make_unique<PathRequest>(PathRequest::create());
-	m_pathRequest[index]->createGoAdjacentToFluidType(m_area, index, fluidType, detour, unreserved, maxRange, reserve);
+	constexpr bool adjacent = true;
+	FactionId faction;
+	if(unreserved)
+		faction = m_faction[index];
+	move_pathRequestRecord(index, std::make_unique<GoToFluidTypePathRequest>(m_location[index], maxRange, getReference(index), m_shape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, fluidType));
 }
 void Actors::move_setDestinationAdjacentToDesignation(const ActorIndex& index, const BlockDesignation& designation, bool detour, bool unreserved, bool reserve, DistanceInBlocks maxRange)
 {
 	assert(m_pathRequest[index] == nullptr);
-	m_pathRequest[index] = std::make_unique<PathRequest>(PathRequest::create());
-	m_pathRequest[index]->createGoAdjacentToDesignation(m_area, index, designation, detour, unreserved, maxRange, reserve);
+	FactionId faction;
+	if(unreserved)
+		faction = m_faction[index];
+	constexpr bool adjacent = true;
+	move_pathRequestRecord(index, std::make_unique<GoToBlockDesignationPathRequest>(m_location[index], maxRange, getReference(index), m_shape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, designation));
 }
 void Actors::move_setDestinationToEdge(const ActorIndex& index, bool detour)
 {
 	assert(m_pathRequest[index] == nullptr);
-	m_pathRequest[index] = std::make_unique<PathRequest>(PathRequest::create());
-	m_pathRequest[index]->createGoToEdge(m_area, index, detour);
+	constexpr bool adjacent = false;
+	constexpr bool reserveDestination = false;
+	move_pathRequestRecord(index, std::make_unique<GoToEdgePathRequest>(m_location[index], DistanceInBlocks::max(), getReference(index), m_shape[index], m_moveType[index], m_facing[index], detour, adjacent, reserveDestination));
 }
 void Actors::move_setType(const ActorIndex& index, const MoveTypeId& moveType)
 {
@@ -355,7 +406,7 @@ void Actors::move_pathRequestCallback(const ActorIndex& index, BlockIndices path
 		{
 			// Objectives can handle the path not found situation directly or default to cannotFulfill.
 			Objective& objective = hasObjectives.getCurrent();
-			if(!objective.onCanNotRepath(m_area, index))
+			if(!objective.onCanNotPath(m_area, index))
 			{
 				if(objective.isNeed())
 					hasObjectives.cannotFulfillNeed(m_area, objective);
@@ -367,23 +418,30 @@ void Actors::move_pathRequestCallback(const ActorIndex& index, BlockIndices path
 	else
 		move_setPath(index, path);
 }
-void Actors::move_pathRequestRecord(const ActorIndex& index, std::unique_ptr<PathRequest> pathRequest)
-{
-	assert(m_pathRequest[index] == nullptr);
-	assert(pathRequest->exists());
-	m_pathRequest[index] = std::move(pathRequest);
-}
-void Actors::move_updatePathRequestTerrainFacadeIndex(const ActorIndex& index, const PathRequestIndex& newPathRequestIndex)
-{
-	m_pathRequest[index]->update(newPathRequestIndex);
-}
 void Actors::move_pathRequestMaybeCancel(const ActorIndex& index)
 {
 	if(m_pathRequest[index] != nullptr)
 	{
-		m_pathRequest[index]->cancel(m_area, index);
+		m_pathRequest[index]->cancel(m_area);
 		m_pathRequest[index] = nullptr;
 	}
+}
+void Actors::move_pathRequestClear(const ActorIndex& index)
+{
+	assert(m_pathRequest[index]!= nullptr);
+	m_pathRequest[index] = nullptr;
+}
+void Actors::move_pathRequestRecord(const ActorIndex& index, std::unique_ptr<PathRequestDepthFirst> pathRequest)
+{
+	assert(m_pathRequest[index] == nullptr);
+	m_pathRequest[index] = pathRequest.get();
+	m_area.m_hasTerrainFacades.getForMoveType(m_moveType[index]).registerPathRequestWithHuristic(std::move(pathRequest));
+}
+void Actors::move_pathRequestRecord(const ActorIndex& index, std::unique_ptr<PathRequestBreadthFirst> pathRequest)
+{
+	assert(m_pathRequest[index] == nullptr);
+	m_pathRequest[index] = pathRequest.get();
+	m_area.m_hasTerrainFacades.getForMoveType(m_moveType[index]).registerPathRequestNoHuristic(std::move(pathRequest));
 }
 bool Actors::move_canMove(const ActorIndex& index) const
 {

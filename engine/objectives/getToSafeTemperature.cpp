@@ -3,50 +3,68 @@
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"
 #include "../pathRequest.h"
+#include "../terrainFacade.hpp"
 //TODO: Detour locked to true for emergency moves.
-GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& o, const ActorIndex& actor) : m_objective(o)
+GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& objective, const ActorIndex& actorIndex) :
+	m_objective(objective)
+{
+	Actors& actors = area.getActors();
+	start = actors.getLocation(actorIndex);
+	maxRange = Config::maxRangeToSearchForHorticultureDesignations;
+	actor = actors.getReference(actorIndex);
+	shape = actors.getShape(actorIndex);
+	moveType = actors.getMoveType(actorIndex);
+	facing = actors.getFacing(actorIndex);
+	detour = m_objective.m_detour;
+}
+GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
+	PathRequestBreadthFirst(data, area),
+	m_objective(static_cast<GetToSafeTemperatureObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
+{ }
+FindPathResult GetToSafeTemperaturePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Actors& actors = area.getActors();
 	Blocks& blocks = area.getBlocks();
-	DestinationCondition condition = [&actors, &blocks, actor](const BlockIndex& location, const Facing& facing)
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	auto condition = [&actors, &blocks, actorIndex](const BlockIndex& location, const Facing& facing) ->std::pair<bool, BlockIndex>
 	{
-		for(BlockIndex adjacent : actors.getBlocksWhichWouldBeOccupiedAtLocationAndFacing(actor, location, facing))
-			if(actors.temperature_isSafe(actor, blocks.temperature_get(adjacent)))
+		for(BlockIndex adjacent : actors.getBlocksWhichWouldBeOccupiedAtLocationAndFacing(actorIndex, location, facing))
+			if(actors.temperature_isSafe(actorIndex, blocks.temperature_get(adjacent)))
 			return std::make_pair(true, location);
 		return std::make_pair(false, BlockIndex::null());
 	};
-	bool unreserved = false;
-	createGoToCondition(area, actor, condition, m_objective.m_detour, unreserved, DistanceInBlocks::max());
+	constexpr FactionId faction;
+	constexpr bool adjacent = false;
+	// Multi tile creatures at at a safe temperature if their location block is. This could be improved.
+	constexpr bool useAnyOccupiedBlock = false;
+	return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedBlock, decltype(condition)>(condition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_objective.m_detour, adjacent, faction, maxRange);
 }
-GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	PathRequest(data),
-	m_objective(static_cast<GetToSafeTemperatureObjective&>(*deserializationMemo.m_objectives[data["objective"]])) { }
-void GetToSafeTemperaturePathRequest::callback(Area& area, const FindPathResult& result)
+void GetToSafeTemperaturePathRequest::writeStep(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actor = getActor();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	if(result.path.empty() && !result.useCurrentPosition)
 	{
 		if(m_objective.m_noWhereWithSafeTemperatureFound)
 			// Cannot leave area.
-			actors.objective_canNotFulfillNeed(actor, m_objective);
+			actors.objective_canNotFulfillNeed(actorIndex, m_objective);
 		else
 		{
 			// Try to leave area.
 			m_objective.m_noWhereWithSafeTemperatureFound = true;
-			m_objective.execute(area, actor);
+			m_objective.execute(area, actorIndex);
 		}
 	}
 	else if(result.useCurrentPosition)
 		// Current position is now safe.
-		actors.objective_complete(actor, m_objective);
+		actors.objective_complete(actorIndex, m_objective);
 	else
 		// Safe position found, go there.
-		actors.move_setPath(actor, result.path);
+		actors.move_setPath(actorIndex, result.path);
 }
 Json GetToSafeTemperaturePathRequest::toJson() const
 {
-	Json output = PathRequest::toJson();
+	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
 	output["type"] = "temperature";
 	return output;

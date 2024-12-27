@@ -3,58 +3,74 @@
 #include "../woodcutting.h"
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"
-#include "reference.h"
-#include "types.h"
-WoodCuttingPathRequest::WoodCuttingPathRequest(Area& area, WoodCuttingObjective& woodCuttingObjective, const ActorIndex& actor) :
+#include "../reference.h"
+#include "../types.h"
+#include "../terrainFacade.hpp"
+WoodCuttingPathRequest::WoodCuttingPathRequest(Area& area, WoodCuttingObjective& woodCuttingObjective, const ActorIndex& actorIndex) :
 	m_woodCuttingObjective(woodCuttingObjective)
 {
-	std::function<bool(const BlockIndex&)> predicate = [this, &area, actor](const BlockIndex& block)
-	{
-		return m_woodCuttingObjective.getJoinableProjectAt(area, block, actor) != nullptr;
-	};
-	DistanceInBlocks maxRange = Config::maxRangeToSearchForWoodCuttingDesignations;
-	bool unreserved = true;
-	createGoAdjacentToCondition(area, actor, predicate, m_woodCuttingObjective.m_detour, unreserved, maxRange, BlockIndex::null());
+	Actors& actors = area.getActors();
+	start = actors.getLocation(actorIndex);
+	maxRange = Config::maxRangeToSearchForWoodCuttingDesignations;
+	actor = actors.getReference(actorIndex);
+	shape = actors.getShape(actorIndex);
+	faction = actors.getFaction(actorIndex);
+	moveType = actors.getMoveType(actorIndex);
+	facing = actors.getFacing(actorIndex);
+	detour = m_woodCuttingObjective.m_detour;
+	adjacent = true;
+	reserveDestination = true;
 }
-WoodCuttingPathRequest::WoodCuttingPathRequest(const Json& data, DeserializationMemo& deserializationMemo) :
-	PathRequest(data),
-	m_woodCuttingObjective(static_cast<WoodCuttingObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))) { }
-void WoodCuttingPathRequest::callback(Area& area, const FindPathResult& result)
+WoodCuttingPathRequest::WoodCuttingPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
+	PathRequestBreadthFirst(data, area),
+	m_woodCuttingObjective(static_cast<WoodCuttingObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
+{ }
+FindPathResult WoodCuttingPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+{
+	ActorIndex actorIndex = actor.getIndex(area.getActors().m_referenceData);
+	auto predicate = [this, &area, actorIndex](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	{
+		return {m_woodCuttingObjective.joinableProjectExistsAt(area, block, actorIndex), block};
+	};
+	constexpr bool useAnyOccupiedBlock = true;
+	return terrainFacade.findPathToBlockDesignationAndCondition<useAnyOccupiedBlock, decltype(predicate)>(predicate, memo, BlockDesignation::WoodCutting, start, facing, shape, detour, adjacent, faction, maxRange);
+}
+void WoodCuttingPathRequest::writeStep(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actor = getActor();
+	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	if(result.path.empty() && !result.useCurrentPosition)
-		actors.objective_canNotCompleteObjective(actor, m_woodCuttingObjective);
+		actors.objective_canNotCompleteObjective(actorIndex, m_woodCuttingObjective);
 	else
 	{
 		if(result.useCurrentPosition)
 		{
-			if(!actors.move_tryToReserveOccupied(actor))
+			if(!actors.move_tryToReserveOccupied(actorIndex))
 			{
-				actors.objective_canNotCompleteSubobjective(actor);
+				actors.objective_canNotCompleteSubobjective(actorIndex);
 				return;
 			}
 		}
-		else if(!actors.move_tryToReserveProposedDestination(actor, result.path))
+		else if(!actors.move_tryToReserveProposedDestination(actorIndex, result.path))
 		{
-			actors.objective_canNotCompleteSubobjective(actor);
+			actors.objective_canNotCompleteSubobjective(actorIndex);
 			return;
 		}
 		BlockIndex target = result.blockThatPassedPredicate;
-		WoodCuttingProject& project = area.m_hasWoodCuttingDesignations.getForFactionAndBlock(actors.getFactionId(actor), target);
-		if(project.canAddWorker(actor))
-			m_woodCuttingObjective.joinProject(project, actor);
+		WoodCuttingProject& project = area.m_hasWoodCuttingDesignations.getForFactionAndBlock(actors.getFactionId(actorIndex), target);
+		if(project.canAddWorker(actorIndex))
+			m_woodCuttingObjective.joinProject(project, actorIndex);
 		else
 		{
 			// Project can no longer accept this worker, try again.
-			actors.objective_canNotCompleteSubobjective(actor);
+			actors.objective_canNotCompleteSubobjective(actorIndex);
 			return;
 		}
 	}
 }
 Json WoodCuttingPathRequest::toJson() const
 {
-	Json output = PathRequest::toJson();
+	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
 	output["objective"] = &m_woodCuttingObjective;
 	return output;
 }
@@ -146,6 +162,14 @@ WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(Area& area, const
 	if(!output.canAddWorker(actor))
 		return nullptr;
 	return &output;
+}
+bool WoodCuttingObjective::joinableProjectExistsAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const
+{
+	Actors& actors = area.getActors();
+	FactionId faction = actors.getFactionId(actor);
+	assert(area.getBlocks().designation_has(block, faction, BlockDesignation::WoodCutting));
+	WoodCuttingProject& project = area.m_hasWoodCuttingDesignations.getForFactionAndBlock(faction, block);
+	return !project.reservationsComplete() && !m_cannotJoinWhileReservationsAreNotComplete.contains(&project) && project.canAddWorker(actor);
 }
 bool WoodCuttingObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {

@@ -51,10 +51,14 @@ public:
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
-class SowSeedsPathRequest final : public ObjectivePathRequest
+class SowSeedsPathRequest final : public PathRequestBreadthFirst
 {
+	SowSeedsObjective& m_objective;
 public:
 	SowSeedsPathRequest(Area& area, SowSeedsObjective& objective, const ActorIndex& actor);
-	void onSuccess(Area& area, const BlockIndex& blockWhichPassedPredicate);
-	[[nodiscard]] std::string name() { return "sow seeds"; }
+	SowSeedsPathRequest(const Json& data, Area& area, DeserializationMemo& DeserializationMemo);
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	void writeStep(Area& area, FindPathResult& result) override;
+	[[nodiscard]] std::string name() const { return "sow seeds"; }
+	[[nodiscard]] Json toJson() const;
 };
