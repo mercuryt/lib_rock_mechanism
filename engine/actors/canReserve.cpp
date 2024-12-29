@@ -54,6 +54,17 @@ bool Actors::canReserve_canReserveLocation(const ActorIndex& index, const BlockI
 			return false;
 	return true;
 }
+bool Actors::canReserve_locationAtEndOfPathIsUnreserved(const ActorIndex& index, const BlockIndices& path) const
+{
+	assert(!path.empty());
+	Blocks& blocks = m_area.getBlocks();
+	Facing facing;
+	if(path.size() == 1)
+		facing = blocks.facingToSetWhenEnteringFrom(path.back(), m_location[index]);
+	else
+		facing = blocks.facingToSetWhenEnteringFrom(path.back(), *(path.end() - 2));
+	return canReserve_canReserveLocation(index, path.back(), facing);
+}
 CanReserve& Actors::canReserve_get(const ActorIndex& index)
 {
 	return *m_canReserve[index];

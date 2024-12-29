@@ -145,7 +145,7 @@ FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& t
 	AreaHasBlockDesignationsForFaction& designationsForFaction = area.m_blockDesignations.getForFaction(faction);
 	auto predicate = [this, actorIndex, faction, &hasStockPiles, &blocks, &items, &area, &designationsForFaction](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
 	{
-		if(designationsForFaction.check(block, BlockDesignation::StockPileHaulFrom))
+		if(designationsForFaction.check(block, BlockDesignation::StockPileHaulFrom)) [[unlikely]]
 		{
 			for(ItemIndex item : blocks.item_getAll(block))
 			{
@@ -172,7 +172,7 @@ FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& t
 				}
 			}
 		}
-		if(designationsForFaction.check(block, BlockDesignation::StockPileHaulTo))
+		if(designationsForFaction.check(block, BlockDesignation::StockPileHaulTo)) [[unlikely]]
 		{
 			StockPile *stockPile = blocks.stockpile_getForFaction(block, faction);
 			if(stockPile != nullptr && (!m_blocksByStockPile.contains(stockPile) || !m_blocksByStockPile[stockPile].contains(block)))
@@ -182,7 +182,7 @@ FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& t
 				if(!blocks.item_empty(block))
 				{
 					// Block static volume is full, don't stockpile here.
-					if(blocks.shape_getStaticVolume(block) == Config::maxBlockVolume)
+					if(blocks.shape_getStaticVolume(block) >= Config::maxBlockVolume)
 						return {false, block};
 					// There is more then one item type in this block, don't stockpile anything here.
 					if(blocks.item_getAll(block).size() != 1)
@@ -299,7 +299,7 @@ StockPileDestinationPathRequest::StockPileDestinationPathRequest(Area& area, Sto
 	facing = actors.getFacing(actorIndex);
 	detour = m_objective.m_detour;
 	adjacent = true;
-	reserveDestination = true;
+	reserveDestination = false;
 }
 FindPathResult StockPileDestinationPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
@@ -365,7 +365,7 @@ StockPileDestinationPathRequest::StockPileDestinationPathRequest(const Json& dat
 	m_objective(static_cast<StockPileObjective&>(*deserializationMemo.m_objectives[data["objective"]])) { }
 Json StockPileDestinationPathRequest::toJson() const
 {
-	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
 	return output;
 }

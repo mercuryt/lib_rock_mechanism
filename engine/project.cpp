@@ -201,7 +201,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 			// Verify the worker can path to the job site.
 			TerrainFacade& terrainFacade = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(candidateIndex));
 			constexpr bool adjacent = true;
-			FindPathResult result = terrainFacade.findPathToWithoutMemo(actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), m_project.m_location, objective->m_detour, adjacent, m_project.m_faction);
+			FindPathResult result = terrainFacade.findPathToWithoutMemo(actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), m_project.m_location, objective->m_detour, adjacent);
 			if(result.path.empty() && !result.useCurrentPosition)
 			{
 				m_cannotPathToJobSite.insert(candidate);
@@ -297,7 +297,9 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 			// TODO: Path is not used, find path is run for side effects of predicate.
 			TerrainFacade& terrainFacade = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(candidateIndex));
 			constexpr bool anyOccupiedBlock = true;
-			[[maybe_unused]] FindPathResult result = terrainFacade.findPathToConditionBreadthFirstWithoutMemo<anyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex));
+			constexpr bool detour = false;
+			constexpr bool adjacent = true;
+			[[maybe_unused]] FindPathResult result = terrainFacade.findPathToConditionBreadthFirstWithoutMemo<anyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), detour, adjacent);
 		}
 	}
 	if(!m_project.reservationsComplete())

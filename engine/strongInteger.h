@@ -179,7 +179,7 @@ public:
 	void concatAssertUnique(const StrongIntegerSet<StrongInteger>&& other) { for(const auto& item : other.data) add(item); }
 	void concatIgnoreUnique(const StrongIntegerSet<StrongInteger>&& other) { for(const auto& item : other.data) maybeAdd(item); }
 	void updateValue(const StrongInteger& oldValue, const StrongInteger& newValue) { assert(!contains(newValue)); auto found = find(oldValue); assert(found != data.end()); (*found) = newValue; }
-	void unique() { std::ranges::sort(data); std::ranges::unique(data); }
+	void unique() { std::ranges::sort(data); data.erase(std::ranges::unique(data).begin(), data.end()); }
 	[[nodiscard]] size_t size() const { return data.size(); }
 	[[nodiscard]] bool contains(const StrongInteger& index) const { return find(index) != data.end(); }
 	[[nodiscard]] bool empty() const { return data.empty(); }

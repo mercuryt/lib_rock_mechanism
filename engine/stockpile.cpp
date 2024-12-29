@@ -469,6 +469,10 @@ void AreaHasStockPilesForFaction::addItem(const ItemIndex& item)
 		m_itemsWithDestinationsByStockPile.getOrCreate(stockPile).insert(ref);
 		m_itemsToBeStockPiled.insert(ref);
 	}
+	AreaHasBlockDesignationsForFaction& hasDesignations = m_area.m_blockDesignations.getForFaction(m_faction);
+	for(const BlockIndex& block : items.getBlocks(item))
+		hasDesignations.maybeSet(block, BlockDesignation::StockPileHaulFrom);
+
 }
 void AreaHasStockPilesForFaction::maybeAddItem(const ItemIndex& item)
 {
@@ -507,6 +511,16 @@ void AreaHasStockPilesForFaction::removeItem(const ItemIndex& item)
 			stockPileProject->cancel();
 			m_projects.remove(*stockPileProject);
 		}
+	}
+	// Unset block designation for all occupied unless the block contains another item which is also set to be stockpiled by the same faction.
+	AreaHasBlockDesignationsForFaction& hasDesignations = m_area.m_blockDesignations.getForFaction(m_faction);
+	Blocks& blocks = m_area.getBlocks();
+	for(const BlockIndex& block : items.getBlocks(item))
+	{
+		for(const ItemIndex& item : blocks.item_getAll(block))
+			if(items.stockpile_canBeStockPiled(item, m_faction))
+				return;
+		hasDesignations.maybeUnset(block, BlockDesignation::StockPileHaulFrom);
 	}
 }
 void AreaHasStockPilesForFaction::maybeRemoveFromItemsWithDestinationByStockPile(const StockPile& stockPile, const ItemIndex& item)

@@ -12,13 +12,17 @@ void Blocks::stockpile_recordMembership(const BlockIndex& index, StockPile& stoc
 	{
 		m_stockPiles[index][stockPile.getFaction()].active = true;
 		stockPile.incrementOpenBlocks();
+		m_area.m_blockDesignations.getForFaction(stockPile.getFaction()).set(index, BlockDesignation::StockPileHaulTo);
 	}
 }
 void Blocks::stockpile_recordNoLongerMember(const BlockIndex& index, StockPile& stockPile)
 {
 	assert(stockpile_contains(index, stockPile.getFaction()));
 	if(stockpile_isAvalible(index, stockPile.getFaction()))
-		stockPile.decrementOpenBlocks();
+	{
+		stockPile.decrementOpenBlocks();	
+		m_area.m_blockDesignations.getForFaction(stockPile.getFaction()).unset(index, BlockDesignation::StockPileHaulTo);
+	}
 	if(m_stockPiles[index].size() == 1)
 		m_stockPiles.erase(index);
 	else

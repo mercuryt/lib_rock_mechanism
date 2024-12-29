@@ -40,6 +40,13 @@ struct FindPathResult
 	BlockIndices path;
 	BlockIndex blockThatPassedPredicate;
 	bool useCurrentPosition = false;
+	FindPathResult() = default;
+	FindPathResult(const BlockIndices& p, BlockIndex btpp, bool ucp);
+	void validate() const;
+	FindPathResult(const FindPathResult& other) noexcept = default;
+	FindPathResult(FindPathResult&& other) noexcept = default;
+	FindPathResult& operator=(FindPathResult&& other) noexcept = default;
+	FindPathResult& operator=(const FindPathResult& other) noexcept = default;
 };
 struct PathRequestNoHuristicData
 {
@@ -132,10 +139,11 @@ public:
 	template<bool anyOccupiedBlock, DestinationCondition DestinationConditionT>
 	[[nodiscard]] FindPathResult findPathToConditionBreadthFirstWithoutMemo(DestinationConditionT& destinationCondition, const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null(), const DistanceInBlocks& maxRange = DistanceInBlocks::max()) const;
 	
-	[[nodiscard]] FindPathResult findPathToBlockDesignation(PathMemoBreadthFirst &memo, const BlockDesignation designation, const FactionId &faction, const BlockIndex &start, const Facing &startFacing, const ShapeId &shape, bool detour, bool adjacent, const DistanceInBlocks &maxRange) const;
+	[[nodiscard]] FindPathResult findPathToBlockDesignation(PathMemoBreadthFirst &memo, const BlockDesignation designation, const FactionId &faction, const BlockIndex &start, const Facing &startFacing, const ShapeId &shape, bool detour, bool adjacent, bool unreserved, const DistanceInBlocks &maxRange) const;
 
+	// Faction is sent by value on pupose.
 	template<bool anyOccupiedBlock, DestinationCondition DestinationConditionT>
-	[[nodiscard]] FindPathResult findPathToBlockDesignationAndCondition(DestinationConditionT& destinationCondition, PathMemoBreadthFirst &memo, const BlockDesignation designation, const BlockIndex &start, const Facing &startFacing, const ShapeId &shape, bool detour, bool adjacent, const FactionId &faction, const DistanceInBlocks &maxRange) const;
+	[[nodiscard]] FindPathResult findPathToBlockDesignationAndCondition(DestinationConditionT& destinationCondition, PathMemoBreadthFirst &memo, const BlockDesignation designation, FactionId faction, const BlockIndex &start, const Facing &startFacing, const ShapeId &shape, bool detour, bool adjacent, bool unreserved, const DistanceInBlocks &maxRange) const;
 	
 	[[nodiscard]] FindPathResult findPathToEdge(PathMemoBreadthFirst& memo, const BlockIndex &start, const Facing &startFacing, const ShapeId &shape, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathAdjacentToPolymorphicWithoutMemo(const BlockIndex &start, const Facing &startFacing, const ShapeId &shape, const ActorOrItemIndex &actorOrItem, bool detour = false) const;

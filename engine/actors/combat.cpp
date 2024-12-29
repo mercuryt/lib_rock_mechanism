@@ -333,12 +333,10 @@ GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, c
 	maxRange = DistanceInBlocks::max();
 	actor = actors.getReference(actorIndex);
 	shape = actors.getShape(actorIndex);
-	faction = actors.getFaction(actorIndex);
 	moveType = actors.getMoveType(actorIndex);
 	facing = actors.getFacing(actorIndex);
 	detour = true;
-	adjacent = true;
-	reserveDestination = true;
+	adjacent = false;
 	target.setIndex(targetIndex, area.getActors().m_referenceData);
 }
 GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(const Json& data, Area& area) :

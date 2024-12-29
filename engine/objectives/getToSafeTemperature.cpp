@@ -64,7 +64,7 @@ void GetToSafeTemperaturePathRequest::writeStep(Area& area, FindPathResult& resu
 }
 Json GetToSafeTemperaturePathRequest::toJson() const
 {
-	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
 	output["type"] = "temperature";
 	return output;

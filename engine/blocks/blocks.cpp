@@ -626,9 +626,9 @@ std::array<int32_t, 3> Blocks::relativeOffsetTo(const BlockIndex& index, const B
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(otherIndex);
 	return {
-		(int)(otherCoordinates.x - coordinates.x).get(),
-		(int)(otherCoordinates.y - coordinates.y).get(),
-		(int)(otherCoordinates.z - coordinates.z).get()
+		(int)otherCoordinates.x.get() - (int)coordinates.x.get(),
+		(int)otherCoordinates.y.get() - (int)coordinates.y.get(),
+		(int)otherCoordinates.z.get() - (int)coordinates.z.get()
 	};
 }
 bool Blocks::canSeeThrough(const BlockIndex& index) const

@@ -165,7 +165,7 @@ FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrain
 			return {false, block};
 		};
 		constexpr bool useAnyOccupiedBlock = true;
-		return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour);
+		return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour, adjacent);
 	}
 	else if(m_eatObjective.m_noFoodFound)
 		return terrainFacade.findPathToEdge(memo, start, facing, shape, m_eatObjective.m_detour);
@@ -191,7 +191,7 @@ FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrain
 				return {false, block};
 			};
 			constexpr bool useAnyOccupiedBlock = true;
-			return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour);
+			return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour, adjacent);
 		}
 		else
 		{
@@ -202,7 +202,7 @@ FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrain
 				return {mustEat.getDesireToEatSomethingAt(area, block) != 0, block};
 			};
 			constexpr bool useAnyOccupiedBlock = true;
-			return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour);
+			return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour, adjacent);
 		}
 	}
 }
@@ -290,7 +290,7 @@ void EatPathRequest::writeStep(Area& area, FindPathResult& result)
 }
 Json EatPathRequest::toJson() const
 {
-	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = &m_eatObjective;
 	output["huntTarget"] = m_huntResult;
 	output["type"] = "eat";

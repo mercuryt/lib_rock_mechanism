@@ -61,7 +61,7 @@ void WanderPathRequest::writeStep(Area& area, FindPathResult& result)
 }
 Json WanderPathRequest::toJson() const
 {
-	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = &m_objective;
 	output["lastBlock"] = m_lastBlock;
 	output["type"] = "wander";

@@ -34,6 +34,8 @@ TEST_CASE("craft")
 	BlockIndex sawingLocation = blocks.getIndex_i(9, 9, 1);
 	FactionId faction = simulation.createFaction(L"Tower Of Power");
 	area.m_hasCraftingLocationsAndJobs.addFaction(faction);
+	area.m_hasStockPiles.registerFaction(faction);
+	area.m_blockDesignations.registerFaction(faction);
 	REQUIRE(!area.m_hasCraftingLocationsAndJobs.getForFaction(faction).hasLocationsFor(woodBucket));
 	area.m_hasCraftingLocationsAndJobs.getForFaction(faction).addLocation(CraftStepTypeCategory::byName("carve"), chiselLocation);
 	area.m_hasCraftingLocationsAndJobs.getForFaction(faction).addLocation(CraftStepTypeCategory::byName("assemble"), chiselLocation);

@@ -17,6 +17,18 @@
 #include <queue>
 #include <iterator>
 
+FindPathResult::FindPathResult(const BlockIndices& p, BlockIndex btpp, bool ucp) :
+	path(p), blockThatPassedPredicate(btpp), useCurrentPosition(ucp)
+{
+	validate();
+}
+void FindPathResult::validate() const
+{
+	if(blockThatPassedPredicate.exists())
+		assert(!path.empty() || useCurrentPosition);
+	if(path.empty() && !useCurrentPosition)
+		assert(blockThatPassedPredicate.empty());
+}
 TerrainFacade::TerrainFacade(Area& area, const MoveTypeId& moveType) : m_area(area), m_moveType(moveType)
 {
 	m_enterable.resize(m_area.getBlocks().size() * maxAdjacent);
@@ -58,6 +70,7 @@ void TerrainFacade::doStep()
 			if(actorIndex.exists())
 				actors.move_pathRequestClear(actorIndex);
 			pathRequestData.result = pathRequestData.pathRequest->readStep(m_area, *this, memo);
+			pathRequestData.result.validate();
 			memo.reset();
 		}
 		m_area.m_simulation.m_hasPathMemos.releaseBreadthFirst(index);
@@ -91,6 +104,7 @@ void TerrainFacade::doStep()
 			if(actorIndex.exists())
 				actors.move_pathRequestClear(actorIndex);
 			pathRequestData.result = pathRequestData.pathRequest->readStep(m_area, *this, memo);
+			pathRequestData.result.validate();
 			memo.reset();
 		}
 		m_area.m_simulation.m_hasPathMemos.releaseDepthFirst(index);
@@ -197,9 +211,10 @@ FindPathResult TerrainFacade::findPathToWithoutMemo(const BlockIndex& start, con
 FindPathResult TerrainFacade::findPathToAnyOf(PathMemoDepthFirst& memo, const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, BlockIndices blocks, const BlockIndex huristicDestination, bool detour, const FactionId& faction) const
 {
 
-	auto destinationCondition = [huristicDestination, blocks](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex> { return {blocks.contains(block), block}; };
+	auto destinationCondition = [blocks](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex> { return {blocks.contains(block), block}; };
 	constexpr bool anyOccupiedBlock = true;
 	constexpr bool adjacent = false;
+	memo.setDestination(huristicDestination);
 	return PathInnerLoops::findPath<PathMemoDepthFirst, anyOccupiedBlock>(destinationCondition, m_area, *this, memo, shape, m_moveType, start, startFacing, detour, adjacent, faction, DistanceInBlocks::max());
 }
 FindPathResult TerrainFacade::findPathToAnyOfWithoutMemo(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, BlockIndices blocks, const BlockIndex huristicDestination, bool detour, const FactionId& faction) const
@@ -209,11 +224,12 @@ FindPathResult TerrainFacade::findPathToAnyOfWithoutMemo(const BlockIndex& start
 	constexpr bool adjacent = false;
 	return findPathDepthFirstWithoutMemo<anyOccupiedBlock>(start, startFacing, destinationCondition, huristicDestination, shape, m_moveType, detour, adjacent, faction, DistanceInBlocks::max());
 }
-FindPathResult TerrainFacade::findPathToBlockDesignation(PathMemoBreadthFirst& memo, const BlockDesignation designation, const FactionId& faction, const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, bool detour, bool adjacent, const DistanceInBlocks& maxRange) const
+FindPathResult TerrainFacade::findPathToBlockDesignation(PathMemoBreadthFirst& memo, const BlockDesignation designation, const FactionId& faction, const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, bool detour, bool adjacent, bool unreserved, const DistanceInBlocks& maxRange) const
 {
+	assert(faction.exists());
 	auto destinationCondition = [](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex> { return {true, block}; };
 	constexpr bool anyOccupiedBlock = true;
-	return findPathToBlockDesignationAndCondition<anyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, memo, designation, start, startFacing, shape, detour, adjacent, faction, maxRange);
+	return findPathToBlockDesignationAndCondition<anyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, memo, designation, faction, start, startFacing, shape, detour, adjacent, unreserved, maxRange);
 }
 //TODO: this could dispatch to specific actor / item variants rather then checking actor or item twice.
 FindPathResult TerrainFacade::findPathAdjacentToPolymorphicWithoutMemo(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const ActorOrItemIndex& actorOrItem, bool detour) const

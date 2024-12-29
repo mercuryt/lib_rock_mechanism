@@ -28,7 +28,7 @@ InstallItemPathRequest::InstallItemPathRequest(const Json& data, Area& area, Des
 { }
 Json InstallItemPathRequest::toJson() const
 {
-	Json output = static_cast<const PathRequestDepthFirst&>(*this);
+	Json output = PathRequestDepthFirst::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_installItemObjective);
 	output["type"] = "install item";
 	return output;

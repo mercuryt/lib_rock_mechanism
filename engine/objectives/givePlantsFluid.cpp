@@ -76,7 +76,8 @@ FindPathResult GivePlantsFluidPathRequest::readStep(Area& area, const TerrainFac
 	DistanceInBlocks maxRange = Config::maxRangeToSearchForHorticultureDesignations;
 	if(m_objective.m_plantLocation.empty())
 	{
-		return terrainFacade.findPathToBlockDesignation(memo, BlockDesignation::Harvest, faction, start, facing, shape, m_objective.m_detour, adjacent, maxRange);
+		constexpr bool unreserved = false;
+		return terrainFacade.findPathToBlockDesignation(memo, BlockDesignation::GivePlantFluid, faction, start, facing, shape, m_objective.m_detour, adjacent, unreserved, maxRange);
 	}
 	else
 	{
@@ -122,7 +123,7 @@ void GivePlantsFluidPathRequest::writeStep(Area& area, FindPathResult& result)
 }
 Json GivePlantsFluidPathRequest::toJson() const
 {
-	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = &m_objective;
 	output["type"] = "give plants fluid";
 	return output;

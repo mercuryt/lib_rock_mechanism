@@ -574,11 +574,13 @@ TEST_CASE("json")
 				.location = blocks.getIndex_i(5, 5, 1),
 				.faction = faction
 			});
-			ObjectiveTypeId harvestObjectiveType = ObjectiveType::getIdByName("give plants fluid");
-			actors.objective_setPriority(dwarf1, harvestObjectiveType, Priority::create(10));
+			ObjectiveTypeId givePlantsFluidObjectiveType = ObjectiveType::getIdByName("give plants fluid");
+			actors.objective_setPriority(dwarf1, givePlantsFluidObjectiveType, Priority::create(10));
+			REQUIRE(actors.objective_getCurrentName(dwarf1) == "give plants fluid");
 			dwarf1Id = actors.getId(dwarf1);
 			// One step to find the plant needing water.
 			simulation.doStep();
+			REQUIRE(actors.objective_getCurrentName(dwarf1) == "give plants fluid");
 			// Serialize.
 			areaData = area.toJson();
 			simulationData = simulation.toJson();
@@ -589,8 +591,8 @@ TEST_CASE("json")
 		Actors& actors2 = area2.getActors();
 		ActorIndex dwarf2 = simulation2.m_actors.getIndexForId(dwarf1Id);
 		Objective& objective2 = actors2.objective_getCurrent<Objective>(dwarf2);
-		REQUIRE(objective2.getTypeId() == ObjectiveType::getIdByName("give plants fluid"));
-		GivePlantsFluidObjective& harvestObjective = static_cast<GivePlantsFluidObjective&>(objective2);
-		REQUIRE(harvestObjective.getPlantLocation() == blocks2.getIndex_i(1,7,1));
+		REQUIRE(objective2.name() == "give plants fluid");
+		GivePlantsFluidObjective& givePlantsFluidObjective = static_cast<GivePlantsFluidObjective&>(objective2);
+		REQUIRE(givePlantsFluidObjective.getPlantLocation() == blocks2.getIndex_i(1,7,1));
 	}
 }
