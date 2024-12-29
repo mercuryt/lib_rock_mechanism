@@ -66,7 +66,7 @@ void DrinkPathRequest::writeStep(Area& area, FindPathResult& result)
 }
 Json DrinkPathRequest::toJson() const
 {
-	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = &m_drinkObjective;
 	output["type"] = "drink";
 	return output;

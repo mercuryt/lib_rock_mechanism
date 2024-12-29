@@ -256,18 +256,6 @@ Actors::Actors(Area& area) :
 	{
 		assert(!area.m_loaded);
 	}
-Actors::~Actors()
-{
-	/*
-	m_mustSleep.clear();
-	m_mustEat.clear();
-	m_mustSleep.clear();
-	m_needsSafeTemperature.clear();
-	m_canGrow.clear();
-	m_canReserve.clear();
-	*/
-	// TODO: Clear path request?
-}
 void Actors::load(const Json& data)
 {
 	Portables<Actors, ActorIndex, ActorReferenceIndex>::load(data);
@@ -290,6 +278,7 @@ void Actors::load(const Json& data)
 	data["mass"].get_to(m_mass);
 	data["massBonusOrPenalty"].get_to(m_massBonusOrPenalty);
 	data["massModifier"].get_to(m_massModifier);
+	data["moveType"].get_to(m_moveType);
 	data["unencomberedCarryMass"].get_to(m_unencomberedCarryMass);
 	data["leadFollowPath"].get_to(m_leadFollowPath);
 	data["carrying"].get_to(m_carrying);
@@ -310,6 +299,10 @@ void Actors::load(const Json& data)
 	data["speedActual"].get_to(m_speedActual);
 	data["moveRetries"].get_to(m_moveRetries);
 	auto& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
+	m_moveType.resize(size);
+	ActorIndex i = ActorIndex::create(0);
+	for(const MoveTypeId& moveType : m_moveType)
+		m_area.m_hasTerrainFacades.maybeRegisterMoveType(moveType);
 	m_skillSet.resize(size);
 	const auto& skillData = data["skillSet"];
 	for(auto iter = skillData.begin(); iter != skillData.end(); ++iter)
@@ -319,8 +312,9 @@ void Actors::load(const Json& data)
 		m_skillSet[index]->load(iter.value());
 	}
 	m_body.resize(size);
+	assert(data.contains("body") && data["body"].contains("data"));
 	const auto& bodyData = data["body"]["data"];
-	ActorIndex i = ActorIndex::create(0);
+	i = ActorIndex::create(0);
 	for(const Json& data : bodyData)
 	{
 		m_body[i] = std::make_unique<Body>(data, deserializationMemo, i);
@@ -485,6 +479,7 @@ Json Actors::toJson() const
 		{"mass", m_mass},
 		{"massBonusOrPenalty", m_massBonusOrPenalty},
 		{"massModifier", m_massModifier},
+		{"moveType", m_moveType},
 		{"unencomberedCarryMass", m_unencomberedCarryMass},
 		{"leadFollowPath", m_leadFollowPath},
 		{"hasObjectives", m_hasObjectives},

@@ -28,7 +28,7 @@ FindPathResult TerrainFacade::findPathDepthFirstWithoutMemo(const BlockIndex& fr
 	memo.setDestination(huristicDestination);
 	auto output = PathInnerLoops::findPath<PathMemoDepthFirst, anyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, m_area, *this, memo, shape, moveType, from, startFacing, detour, adjacent, faction, maxRange);
 	memo.reset();
-	hasMemos.releaseBreadthFirst(index);
+	hasMemos.releaseDepthFirst(index);
 	return output;
 }
 template<bool anyOccupiedBlock, DestinationCondition DestinationConditionT>
@@ -53,13 +53,17 @@ FindPathResult TerrainFacade::findPathToConditionBreadthFirstWithoutMemo(Destina
 	return findPathBreadthFirstWithoutMemo<anyOccupiedBlock, decltype(destinationCondition)>(start, startFacing, destinationCondition, shape, m_moveType, detour, adjacent, faction, maxRange);
 }
 template<bool anyOccupiedBlock, DestinationCondition DestinationConditionT>
-FindPathResult TerrainFacade::findPathToBlockDesignationAndCondition(DestinationConditionT& destinationCondition, PathMemoBreadthFirst &memo, const BlockDesignation designation, const BlockIndex &start, const Facing &startFacing, const ShapeId &shape, bool detour, bool adjacent, const FactionId &faction, const DistanceInBlocks& maxRange) const
+FindPathResult TerrainFacade::findPathToBlockDesignationAndCondition(DestinationConditionT& destinationCondition, PathMemoBreadthFirst& memo, const BlockDesignation designation, FactionId faction, const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, bool detour, bool adjacent, bool unreserved, const DistanceInBlocks& maxRange) const
 {
 	AreaHasBlockDesignationsForFaction& hasBlockDesginationsForFaction = m_area.m_blockDesignations.getForFaction(faction);
 	auto designationCondition = [&hasBlockDesginationsForFaction, designation, destinationCondition](const BlockIndex& block, const Facing& facing) -> std::pair<bool, BlockIndex>
 	{
-		bool result = hasBlockDesginationsForFaction.check(block, designation) && destinationCondition(block, facing).first;
-		return {result, block};
+		if(!hasBlockDesginationsForFaction.check(block, designation))
+			return {false, block};
+		return destinationCondition(block, facing);
 	};
+	if(!unreserved)
+		// Clear faction to prevent checking destinaiton for reservation status.
+		faction.clear();
 	return findPathToConditionBreadthFirst<anyOccupiedBlock, decltype(designationCondition)>(designationCondition, memo, start, startFacing, shape, detour, adjacent, faction, maxRange);
 }

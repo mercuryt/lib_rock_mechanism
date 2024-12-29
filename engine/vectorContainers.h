@@ -79,7 +79,7 @@ public:
 	void sort(Predicate&& predicate) { std::ranges::sort(m_data, predicate); }
 	void sort() { std::ranges::sort(m_data); }
 	void update(const T& oldValue, const T& newValue) { assert(contains(oldValue)); (*find(oldValue)) = newValue;} 
-	void makeUnique() { std::ranges::sort(m_data); std::ranges::unique(m_data); }
+	void makeUnique() { std::ranges::sort(m_data); m_data.erase(std::ranges::unique(m_data).begin(), m_data.end()); }
 	void removeDuplicatesAndValue(const T& value)
 	{
 		std::vector<T> seen = {value};
@@ -220,7 +220,7 @@ public:
 	void popBack() { m_data.pop_back(); }
 	template<typename Predicate>
 	void sort(Predicate&& predicate) { std::ranges::sort(m_data, predicate); }
-	void makeUnique() { std::ranges::sort(m_data); std::ranges::unique(m_data); }
+	void makeUnique() { std::ranges::sort(m_data); m_data.erase(std::ranges::unique(m_data).begin(), m_data.end()); }
 	[[nodiscard]] bool contains(const std::unique_ptr<T>& value) const { return std::ranges::find(m_data, value) != m_data.end(); }
 	[[nodiscard]] T& front() { return *m_data.front(); }
 	[[nodiscard]] const T& front() const { return *m_data.front(); }

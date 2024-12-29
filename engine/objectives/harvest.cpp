@@ -174,20 +174,28 @@ HarvestPathRequest::HarvestPathRequest(const Json& data, Area& area, Deserializa
 { }
 FindPathResult HarvestPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
-	return terrainFacade.findPathToBlockDesignation(memo, BlockDesignation::Harvest, faction, start, facing, shape, m_objective.m_detour, adjacent, Config::maxRangeToSearchForHorticultureDesignations);
+	constexpr bool unreserved = false;
+	return terrainFacade.findPathToBlockDesignation(memo, BlockDesignation::Harvest, faction, start, facing, shape, m_objective.m_detour, adjacent, unreserved, Config::maxRangeToSearchForHorticultureDesignations);
 }
 void HarvestPathRequest::writeStep(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	const BlockIndex& harvestLocation = result.blockThatPassedPredicate;
 	if(result.path.empty() && result.blockThatPassedPredicate.empty())
 		actors.objective_canNotCompleteObjective(actorIndex, m_objective);
+	else if(!area.m_blockDesignations.getForFaction(faction).check(harvestLocation, BlockDesignation::Harvest))
+		// Retry.
+		actors.objective_canNotCompleteSubobjective(actorIndex);
 	else
+	{
 		m_objective.select(area, result.blockThatPassedPredicate, actorIndex);
+		actors.move_setPath(actorIndex, result.path);
+	}
 }
 Json HarvestPathRequest::toJson()
 {
-	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
 	output["type"] = "harvest";
 	return output;

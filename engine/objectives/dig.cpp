@@ -30,7 +30,8 @@ FindPathResult DigPathRequest::readStep(Area& area, const TerrainFacade& terrain
 		return {m_digObjective.joinableProjectExistsAt(area, block, actorIndex), block};
 	};
 	constexpr bool useAnyBlock = true;
-	return terrainFacade.findPathToBlockDesignationAndCondition<useAnyBlock, decltype(predicate)>(predicate, memo, BlockDesignation::Dig, start, facing, shape, detour, adjacent, faction, maxRange);
+	constexpr bool unreserved = false;
+	return terrainFacade.findPathToBlockDesignationAndCondition<useAnyBlock, decltype(predicate)>(predicate, memo, BlockDesignation::Dig, faction, start, facing, shape, detour, adjacent, unreserved, maxRange);
 
 }
 DigPathRequest::DigPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
@@ -59,7 +60,7 @@ void DigPathRequest::writeStep(Area& area, FindPathResult& result)
 }
 Json DigPathRequest::toJson() const
 {
-	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = &m_digObjective;
 	output["type"] = "dig";
 	return output;

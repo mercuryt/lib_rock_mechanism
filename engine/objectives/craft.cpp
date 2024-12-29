@@ -96,7 +96,7 @@ void CraftPathRequest::writeStep(Area& area, FindPathResult& result)
 }
 Json CraftPathRequest::toJson() const
 {
-	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = &m_craftObjective;
 	output["job"] = m_craftJob;
 	output["location"] = m_location;

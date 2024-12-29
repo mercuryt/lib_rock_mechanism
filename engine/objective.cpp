@@ -421,6 +421,7 @@ void HasObjectives::cannotCompleteSubobjective(Area& area)
 	Actors& actors = area.getActors();
 	actors.move_clearPath(m_actor);
 	actors.move_pathRequestMaybeCancel(m_actor);
+	actors.canReserve_clearAll(m_actor);
 	//TODO: generate cancelaton message?
 	//TODO: mandate existance of objective?
 	if(m_currentObjective == nullptr)

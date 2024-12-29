@@ -49,7 +49,7 @@ LeaveAreaPathRequest::LeaveAreaPathRequest(const Json& data, Area& area, Deseria
 	m_objective(static_cast<LeaveAreaObjective&>(*deserializationMemo.m_objectives[data["objective"]])) { }
 Json LeaveAreaPathRequest::toJson() const
 {
-	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
 	output["type"] = "leave area";
 	return output;

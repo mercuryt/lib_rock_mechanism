@@ -186,20 +186,28 @@ FindPathResult SowSeedsPathRequest::readStep(Area& area, const TerrainFacade& te
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	return terrainFacade.findPathToBlockDesignation(memo, BlockDesignation::SowSeeds, actors.getFaction(actorIndex), actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_objective.m_detour, adjacent, Config::maxRangeToSearchForHorticultureDesignations);
+	constexpr bool unreserved = false;
+	return terrainFacade.findPathToBlockDesignation(memo, BlockDesignation::SowSeeds, actors.getFaction(actorIndex), actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_objective.m_detour, adjacent, unreserved, Config::maxRangeToSearchForHorticultureDesignations);
 }
 void SowSeedsPathRequest::writeStep(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
-	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	if(result.path.empty() && result.blockThatPassedPredicate.empty())
+	const ActorIndex& actorIndex = actor.getIndex(actors.m_referenceData);
+	const BlockIndex& sowLocation = result.blockThatPassedPredicate;
+	if(result.path.empty() && sowLocation.empty())
 		actors.objective_canNotCompleteObjective(actorIndex, m_objective);
+	else if(!area.m_blockDesignations.getForFaction(faction).check(sowLocation, BlockDesignation::SowSeeds))
+		// Retry. The location is no longer designated.
+		actors.objective_canNotCompleteSubobjective(actorIndex);
 	else
+	{
 		m_objective.select(area, result.blockThatPassedPredicate, actorIndex);
+		actors.move_setPath(actorIndex, result.path);
+	}
 }
 Json SowSeedsPathRequest::toJson() const
 {
-	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
 	output["type"] = name();
 	return output;

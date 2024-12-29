@@ -49,6 +49,6 @@ public:
 	ConstructPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
-	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] Json toJson() const override;
 	[[nodiscard]] std::string name() { return "construct"; }
 };

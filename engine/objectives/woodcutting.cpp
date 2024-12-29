@@ -33,7 +33,8 @@ FindPathResult WoodCuttingPathRequest::readStep(Area& area, const TerrainFacade&
 		return {m_woodCuttingObjective.joinableProjectExistsAt(area, block, actorIndex), block};
 	};
 	constexpr bool useAnyOccupiedBlock = true;
-	return terrainFacade.findPathToBlockDesignationAndCondition<useAnyOccupiedBlock, decltype(predicate)>(predicate, memo, BlockDesignation::WoodCutting, start, facing, shape, detour, adjacent, faction, maxRange);
+	constexpr bool unreserved = false;
+	return terrainFacade.findPathToBlockDesignationAndCondition<useAnyOccupiedBlock, decltype(predicate)>(predicate, memo, BlockDesignation::WoodCutting, faction, start, facing, shape, detour, adjacent, unreserved, maxRange);
 }
 void WoodCuttingPathRequest::writeStep(Area& area, FindPathResult& result)
 {
@@ -70,7 +71,7 @@ void WoodCuttingPathRequest::writeStep(Area& area, FindPathResult& result)
 }
 Json WoodCuttingPathRequest::toJson() const
 {
-	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = &m_woodCuttingObjective;
 	return output;
 }

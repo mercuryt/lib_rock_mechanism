@@ -20,20 +20,21 @@ struct PathRequest
 	FactionId faction;
 	MoveTypeId moveType;
 	Facing facing;
-	bool detour;
-	bool adjacent;
-	bool reserveDestination;
+	bool detour = false;
+	bool adjacent = false;
+	bool reserveDestination = false;
 	PathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination);
 	PathRequest() = default;
 	PathRequest(const Json& data, Area& area);
+	[[nodiscard]] virtual Json toJson() const;
 	[[nodiscard]] static PathRequest& load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const MoveTypeId& moveType);
 	[[nodiscard]] static PathRequest& record(Area &area, const MoveTypeId& moveType, std::unique_ptr<PathRequestBreadthFirst> pathRequest);
 	[[nodiscard]] static PathRequest& record(Area &area, const MoveTypeId& moveType, std::unique_ptr<PathRequestDepthFirst> pathRequest);
 	virtual void writeStep(Area& area, FindPathResult& result);
 	virtual void cancel(Area& area) = 0;
 	virtual ~PathRequest() = default;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(PathRequest, start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination);
 };
+inline void to_json(Json& data, const PathRequest& pathRequest){ data = pathRequest.toJson(); }
 struct PathRequestDepthFirst : public PathRequest
 {
 	BlockIndex huristicDestination;
@@ -42,8 +43,8 @@ struct PathRequestDepthFirst : public PathRequest
 	PathRequestDepthFirst(const Json& data, Area& area);
 	void cancel(Area& area) override;
 	void record(Area& area, std::unique_ptr<PathRequestDepthFirst>& pointerToThis);
-	virtual FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) = 0;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(PathRequestDepthFirst, start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination, huristicDestination);
+	[[nodiscard]] virtual FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) = 0;
+	[[nodiscard]] virtual Json toJson() const override;
 };
 struct PathRequestBreadthFirst : public PathRequest
 {
@@ -52,16 +53,16 @@ struct PathRequestBreadthFirst : public PathRequest
 	PathRequestBreadthFirst(const Json& data, Area& area);
 	void cancel(Area& area) override;
 	void record(Area& area, std::unique_ptr<PathRequestBreadthFirst>& pointerToThis);
-	virtual FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) = 0;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(PathRequestBreadthFirst, start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination);
+	[[nodiscard]] virtual FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) = 0;
+	[[nodiscard]] virtual Json toJson() const override;
 };
 struct GoToPathRequest : public PathRequestDepthFirst
 {
 	BlockIndex destination;
 	GoToPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex destination);
 	GoToPathRequest(const Json& data, Area& area);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(GoToPathRequest, start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination, huristicDestination, destination);
+	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
+	[[nodiscard]] Json toJson() const override;
 };
 struct GoToAnyPathRequest : public PathRequestDepthFirst
 {
@@ -69,7 +70,7 @@ struct GoToAnyPathRequest : public PathRequestDepthFirst
 	GoToAnyPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex huristicDestination, BlockIndices destinations);
 	GoToAnyPathRequest(const Json& data, Area& area);
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(GoToAnyPathRequest, start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination, huristicDestination, destinations);
+	[[nodiscard]] Json toJson() const override;
 };
 struct GoToFluidTypePathRequest : public PathRequestBreadthFirst
 {
@@ -77,7 +78,7 @@ struct GoToFluidTypePathRequest : public PathRequestBreadthFirst
 	GoToFluidTypePathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination, FluidTypeId fluidType);
 	GoToFluidTypePathRequest(const Json& data, Area& area);
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(GoToFluidTypePathRequest, start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination, fluidType);
+	[[nodiscard]] Json toJson() const override;
 };
 struct GoToBlockDesignationPathRequest : public PathRequestBreadthFirst
 {
@@ -85,12 +86,12 @@ struct GoToBlockDesignationPathRequest : public PathRequestBreadthFirst
 	GoToBlockDesignationPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination, BlockDesignation designation); 
 	GoToBlockDesignationPathRequest(const Json& data, Area& area);
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(GoToBlockDesignationPathRequest, start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination, designation);
+	[[nodiscard]] Json toJson() const override;
 };
 struct GoToEdgePathRequest : public PathRequestBreadthFirst
 {
 	GoToEdgePathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination); 
 	GoToEdgePathRequest(const Json& data, Area& area);
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(GoToEdgePathRequest, start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination);
+	[[nodiscard]] Json toJson() const override;
 };

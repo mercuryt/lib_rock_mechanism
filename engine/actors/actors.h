@@ -134,7 +134,6 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	[[nodiscard]] bool indexCanBeMoved(const HasShapeIndex& index) const;
 public:
 	Actors(Area& area);
-	~Actors();
 	void load(const Json& data);
 	void loadObjectivesAndReservations(const Json& data);
 	void onChangeAmbiantSurfaceTemperature();
@@ -375,6 +374,7 @@ public:
 	[[nodiscard]] bool canReserve_tryToReserveItem(const ActorIndex& index, const ItemIndex& item, const Quantity& quantity, std::unique_ptr<DishonorCallback> callback = nullptr);
 	[[nodiscard]] bool canReserve_hasReservationWith(const ActorIndex& index, Reservable& reservable) const;
 	[[nodiscard]] bool canReserve_canReserveLocation(const ActorIndex& index, const BlockIndex& block, const Facing& facing) const;
+	[[nodiscard]] bool canReserve_locationAtEndOfPathIsUnreserved(const ActorIndex& index, const BlockIndices& path) const;
 private:
 	[[nodiscard]] CanReserve& canReserve_get(const ActorIndex& index);
 	// Project.

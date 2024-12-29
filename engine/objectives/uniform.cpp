@@ -85,7 +85,7 @@ void UniformPathRequest::writeStep(Area& area, FindPathResult& result)
 }
 Json UniformPathRequest::toJson() const
 {
-	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = &m_objective;
 	output["type"] = "uniform";
 	return output;

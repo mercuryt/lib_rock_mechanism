@@ -34,21 +34,28 @@ FindPathResult SleepPathRequest::readStep(Area& area, const TerrainFacade& terra
 		m_maxDesireCandidate = area.getActors().getLocation(actorIndex);
 	if(m_maxDesireCandidate.empty())
 	{
-		std::function<bool(BlockIndex)> condition = [this, &area, actorIndex](const BlockIndex& block)
+		auto condition = [this, &area, actorIndex](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
 		{
 			uint32_t desire = m_sleepObjective.desireToSleepAt(area, block, actorIndex);
 			if(desire == 3)
 			{
 				m_maxDesireCandidate = block;
-				return true;
+				return {true, block};
 			}
 			else if(m_indoorCandidate.empty() && desire == 2)
 				m_indoorCandidate = block;	
 			else if(m_outdoorCandidate.empty() && desire == 1)
 				m_outdoorCandidate = block;	
-			return false;
+			return {false, block};
 		};
-		return terrainFacade.findPathToBlockDesignation(memo, BlockDesignation::Sleep, faction, start, facing, shape, m_sleepObjective.m_detour, adjacent, DistanceInBlocks::max());
+		constexpr bool anyOccupiedBlock = false;
+		if(faction.exists())
+		{
+			constexpr bool unreserved = true;
+			return terrainFacade.findPathToBlockDesignationAndCondition<anyOccupiedBlock, decltype(condition)>(condition, memo, BlockDesignation::Sleep, faction, start, facing, shape, m_sleepObjective.m_detour, adjacent, unreserved, DistanceInBlocks::max());
+		}
+		else
+			return terrainFacade.findPathToConditionBreadthFirst<anyOccupiedBlock, decltype(condition)>(condition, memo, start, facing, shape, m_sleepObjective.m_detour, adjacent, faction, DistanceInBlocks::max());
 	}
 	else
 	{
@@ -99,7 +106,7 @@ SleepPathRequest::SleepPathRequest(const Json& data, Area& area, Deserialization
 { }
 Json SleepPathRequest::toJson() const
 {
-	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_sleepObjective);
 	output["type"] = "sleep";
 	return output;

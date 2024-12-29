@@ -79,7 +79,7 @@ TEST_CASE("sow")
 		constexpr bool adjacent = true;
 		REQUIRE(!area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor)).findPathToWithoutMemo(actors.getLocation(actor), actors.getFacing(actor), actors.getShape(actor), fieldLocation, detour, adjacent, faction).path.empty());
 		simulation.doStep();
-		REQUIRE(blocks.isReserved(fieldLocation, faction));
+		REQUIRE(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
 		REQUIRE(!actors.move_getPath(actor).empty());
 		BlockIndex destination = actors.move_getDestination(actor);
 		simulation.fastForwardUntillActorIsAtDestination(area, actor, destination);
@@ -216,7 +216,7 @@ TEST_CASE("harvest")
 		uint32_t offset = designations.getOffsetForDesignation(BlockDesignation::Harvest);
 		REQUIRE(designations.checkWithOffset(offset, block));
 		simulation.doStep();
-		REQUIRE(blocks.isReserved(block, faction));
+		REQUIRE(!blocks.designation_has(block, faction, BlockDesignation::Harvest));
 		REQUIRE(!actors.move_getPath(actor).empty());
 		BlockIndex destination = actors.move_getDestination(actor);
 		simulation.fastForwardUntillActorIsAtDestination(area, actor, destination);
@@ -314,6 +314,31 @@ TEST_CASE("harvest")
 		actors.objective_addTaskToStart(actor, std::move(goToObjective));
 		REQUIRE(blocks.designation_has(block, faction, BlockDesignation::Harvest));
 	}
+}
+TEST_CASE("givePlantFluid")
+{
+	static PlantSpeciesId wheatGrass = PlantSpecies::byName("wheat grass");
+	static MaterialTypeId dirt = MaterialType::byName("dirt");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	Simulation simulation(L"", DateTime(1, PlantSpecies::getDayOfYearToStartHarvest(wheatGrass) - 1, 1200).toSteps());
+	FactionId faction = simulation.createFaction(L"Tower Of Power");
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_hasRain.disable();
+	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
+	Plants& plants = area.getPlants();
+	Items& items = area.getItems();
+	area.m_blockDesignations.registerFaction(faction);
+	BlockIndex block = blocks.getIndex_i(4, 4, 2);
+	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
+	area.m_hasFarmFields.registerFaction(faction);
+	Cuboid cuboid(blocks, block, block);
+	FarmField& field = area.m_hasFarmFields.getForFaction(faction).create(cuboid);
+	ActorIndex actor = actors.create({
+		.species=dwarf, 
+		.location=blocks.getIndex_i(1, 1, 2),
+		.faction=faction,
+	});
 	SUBCASE("give plants fluid")
 	{
 		static FluidTypeId water = FluidType::byName("water");

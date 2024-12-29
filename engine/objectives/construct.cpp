@@ -36,7 +36,8 @@ FindPathResult ConstructPathRequest::readStep(Area& area, const TerrainFacade& t
 		return {m_constructObjective.joinableProjectExistsAt(area, block, actorIndex), block};
 	};
 	constexpr bool useAnyBlock = true;
-	return terrainFacade.findPathToBlockDesignationAndCondition<useAnyBlock, decltype(predicate)>(predicate, memo, BlockDesignation::Construct, start, facing, shape, detour, adjacent, faction, maxRange);
+	constexpr bool unreserved = false;
+	return terrainFacade.findPathToBlockDesignationAndCondition<useAnyBlock, decltype(predicate)>(predicate, memo, BlockDesignation::Construct, faction, start, facing, shape, detour, adjacent, unreserved, maxRange);
 }
 void ConstructPathRequest::writeStep(Area& area, FindPathResult& result)
 {
@@ -58,7 +59,7 @@ void ConstructPathRequest::writeStep(Area& area, FindPathResult& result)
 }
 Json ConstructPathRequest::toJson() const
 {
-	Json output = static_cast<const PathRequestBreadthFirst&>(*this);
+	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = &m_constructObjective;
 	output["type"] = "construct";
 	return output;
@@ -82,9 +83,10 @@ void ConstructObjective::execute(Area& area, const ActorIndex& actor)
 	else
 	{
 		ConstructProject* project = nullptr;
+		AreaHasBlockDesignationsForFaction& hasDesignations = area.m_blockDesignations.getForFaction(actors.getFaction(actor));
 		std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block)
 		{
-			if(joinableProjectExistsAt(area, block, actor))
+			if(hasDesignations.check(block, BlockDesignation::Construct) && joinableProjectExistsAt(area, block, actor))
 			{
 				project = &area.m_hasConstructionDesignations.getProject(actors.getFactionId(actor), block);
 				return project->canAddWorker(actor);

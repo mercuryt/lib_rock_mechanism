@@ -95,7 +95,7 @@ TEST_CASE("woodcutting")
 		REQUIRE(area.getTotalCountOfItemTypeOnSurface(log) == 10);
 		REQUIRE(area.getTotalCountOfItemTypeOnSurface(branch) == 20);
 		REQUIRE(!objectiveType.canBeAssigned(area, dwarf));
-		REQUIRE(actors.objective_getCurrent<Objective>(dwarf).getTypeId() != ObjectiveType::getIdByName("woodcutting"));
+		REQUIRE(actors.objective_getCurrentName(dwarf) != "woodcutting");
 		REQUIRE(!actors.project_exists(dwarf));
 		REQUIRE(actors.getActionDescription(dwarf) == L"stockpile");
 		// One step to create a stockpile project.

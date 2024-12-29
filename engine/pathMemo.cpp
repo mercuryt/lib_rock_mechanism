@@ -88,6 +88,7 @@ void PathMemoDepthFirst::setClosed(const BlockIndex& block, const BlockIndex& pr
 }
 void PathMemoDepthFirst::setOpen(const BlockIndex& block, const Area& area)
 {
+	assert(m_huristicDestination.exists());
 	assert(block < m_closed.getSize());
 	bool contains = m_closed.contains(block);
 	assert(!contains);

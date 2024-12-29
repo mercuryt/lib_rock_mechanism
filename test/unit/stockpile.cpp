@@ -41,6 +41,7 @@ TEST_CASE("stockpile")
 	FactionId faction = simulation.m_hasFactions.createFaction(L"Tower of Power");
 	area.m_hasStockPiles.registerFaction(faction);
 	area.m_hasStocks.addFaction(faction);
+	area.m_blockDesignations.registerFaction(faction);
 	ActorIndex dwarf1 = actors.create({
 		.species=AnimalSpecies::byName("dwarf"), 
 		.location=blocks.getIndex_i(1, 1, 1),
@@ -65,6 +66,9 @@ TEST_CASE("stockpile")
 		REQUIRE(area.m_hasStockPiles.getForFaction(faction).getHaulableItemForAt(dwarf1, chunkLocation).exists());
 		StockPileObjective& objective = actors.objective_getCurrent<StockPileObjective>(dwarf1);
 		REQUIRE(actors.move_hasPathRequest(dwarf1));
+		AreaHasBlockDesignationsForFaction& blockDesignations = area.m_blockDesignations.getForFaction(faction);
+		REQUIRE(blockDesignations.check(chunkLocation, BlockDesignation::StockPileHaulFrom));
+		REQUIRE(blockDesignations.check(stockpileLocation, BlockDesignation::StockPileHaulTo));
 		// Find item to stockpile
 		simulation.doStep();
 		REQUIRE(actors.objective_getCurrentName(dwarf1) == "stockpile");
@@ -296,6 +300,9 @@ TEST_CASE("stockpile")
 		REQUIRE(objectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		REQUIRE(area.m_hasStockPiles.getForFaction(faction).getHaulableItemForAt(dwarf1, cargoOrigin).exists());
+		AreaHasBlockDesignationsForFaction& blockDesignations = area.m_blockDesignations.getForFaction(faction);
+		REQUIRE(blockDesignations.check(cargoOrigin, BlockDesignation::StockPileHaulFrom));
+		REQUIRE(blockDesignations.check(stockpileLocation, BlockDesignation::StockPileHaulTo));
 		// Find item to stockpile and potential destination.
 		simulation.doStep();
 		// Confirm destination, create project, and reserve.
@@ -337,6 +344,8 @@ TEST_CASE("stockpile")
 		REQUIRE(objective.hasDestination());
 		REQUIRE(objective.getItem().getIndex(items.m_referenceData) == cargo);
 		REQUIRE(objective.getDestination() == stockpileLocation);
+		REQUIRE(blockDesignations.check(cargoOrigin, BlockDesignation::StockPileHaulFrom));
+		REQUIRE(blockDesignations.check(stockpileLocation, BlockDesignation::StockPileHaulTo));
 		// Confirm destination.
 		simulation.doStep();
 		StockPileProject& project2 = static_cast<StockPileProject&>(*actors.project_get(dwarf1));
