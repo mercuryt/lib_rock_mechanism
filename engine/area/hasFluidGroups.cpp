@@ -40,17 +40,17 @@ void AreaHasFluidGroups::doStep(bool parallel)
 		fluidGroup->validate();
 	}
 	m_unstableFluidGroups.eraseIf([](const FluidGroup* fluidGroup){ return fluidGroup->m_merged || fluidGroup->m_disolved; });
+	// Split.
+	// Reinitalize unstable with filtered set again.
+	unstable = m_unstableFluidGroups;
+	for(FluidGroup* fluidGroup : unstable)
+		fluidGroup->splitStep();
 	// Merge.
 	// Reinitalize unstable with filtered set.
 	unstable = m_unstableFluidGroups;
 	for(FluidGroup* fluidGroup : unstable)
 		fluidGroup->mergeStep();
 	m_unstableFluidGroups.eraseIf([](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
-	// Split.
-	// Reinitalize unstable with filtered set again.
-	unstable = m_unstableFluidGroups;
-	for(FluidGroup* fluidGroup : unstable)
-		fluidGroup->splitStep();
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate();
 	// Check for groups to remove from unstable, possibly gather them in toErase.
