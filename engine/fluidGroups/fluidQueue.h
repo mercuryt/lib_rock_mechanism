@@ -37,17 +37,12 @@ public:
 	FluidGroup& m_fluidGroup;
 
 	FluidQueue(FluidGroup& fluidGroup);
-	void buildFor(BlockIndices& members);
-	void initalizeForStep();
 	void setBlocks(BlockIndices& blocks);
 	void maybeAddBlock(const BlockIndex& block);
 	void maybeAddBlocks(BlockIndices& blocks);
 	void removeBlock(const BlockIndex& block);
 	void maybeRemoveBlock(const BlockIndex& block);
 	void removeBlocks(BlockIndices& blocks);
-	void findGroupEnd();
-	void recordDelta(const CollisionVolume& volume);
-	void applyDelta();
 	void merge(FluidQueue& fluidQueue);
 	void noChange();
 	[[nodiscard]] uint32_t groupSize() const;
