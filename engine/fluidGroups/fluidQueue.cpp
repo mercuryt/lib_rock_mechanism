@@ -4,7 +4,6 @@
 #include "../blocks/blocks.h"
 #include "types.h"
 #include <assert.h>
-FluidQueue::FluidQueue(FluidGroup& fluidGroup) : m_fluidGroup(fluidGroup) {}
 void FluidQueue::setBlocks(BlockIndices& blocks)
 {
 	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return !blocks.contains(futureFlowBlock.block); });
@@ -62,10 +61,10 @@ CollisionVolume FluidQueue::groupCapacityPerBlock() const
 	assert(m_groupStart != m_groupEnd);
 	return m_groupStart->capacity;
 }
-CollisionVolume FluidQueue::groupFlowTillNextStepPerBlock() const
+CollisionVolume FluidQueue::groupFlowTillNextStepPerBlock(Area& area) const
 {
 	assert(m_groupStart != m_groupEnd);
-	auto& blocks = m_fluidGroup.m_area.getBlocks();
+	auto& blocks = area.getBlocks();
 	if(m_groupEnd == m_queue.end() || blocks.getZ(m_groupEnd->block) != blocks.getZ(m_groupStart->block))
 		return CollisionVolume::null();
 	assert(m_groupEnd->capacity < m_groupStart->capacity);
