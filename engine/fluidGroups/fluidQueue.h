@@ -34,9 +34,7 @@ public:
 	// TODO: does maintaining m_set actually make any sense?
 	BlockIndices m_set;
 	std::vector<FutureFlowBlock>::iterator m_groupStart, m_groupEnd;
-	FluidGroup& m_fluidGroup;
 
-	FluidQueue(FluidGroup& fluidGroup);
 	void setBlocks(BlockIndices& blocks);
 	void maybeAddBlock(const BlockIndex& block);
 	void maybeAddBlocks(BlockIndices& blocks);
@@ -48,6 +46,6 @@ public:
 	[[nodiscard]] uint32_t groupSize() const;
 	[[nodiscard]] CollisionVolume groupLevel() const;
 	[[nodiscard]] CollisionVolume groupCapacityPerBlock() const;
-	[[nodiscard]] CollisionVolume groupFlowTillNextStepPerBlock() const;
+	[[nodiscard]] CollisionVolume groupFlowTillNextStepPerBlock(Area& area) const;
 	[[nodiscard]] bool groupContains(const BlockIndex& block) const;
 };

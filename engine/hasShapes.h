@@ -30,16 +30,12 @@ protected:
 	DataBitSet<Index> m_underground;
 	Area& m_area;
 	HasShapes(Area& area);
-	HasShapes(const Json& data, DeserializationMemo& deserializationMemo);
 	void create(const Index& index, const ShapeId& shape, const FactionId& faction, bool isStatic);
-	void create(const Index& index, const Json& data, DeserializationMemo& deserializationMemo);
 	void sortRange(const Index& begin, const Index& end);
 	void resize(const Index& newSize);
 	void moveIndex(const Index& oldIndex, const Index& newIndex);
-	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Index getNextIndex();
 public:
-	void setFaction(const Index& index, FactionId faction);
 	void setStatic(const Index& index);
 	void maybeSetStatic(const Index& index);
 	void unsetStatic(const Index& index);

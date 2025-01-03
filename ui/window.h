@@ -7,9 +7,7 @@
 #include <ratio>
 #include "../engine/simulation.h"
 #include "../engine/area.h"
-#include "../engine/block.h"
 #include "../engine/input.h"
-#include "../engine/atomicBool.h"
 #include "displayData.h"
 #include "draw.h"
 #include "editDramaPanel.h"

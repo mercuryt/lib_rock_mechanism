@@ -99,8 +99,7 @@ void AreaHasFluidGroups::doStep(bool parallel)
 FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidTypeId& fluidType, BlockIndices& blocks, bool checkMerge)
 {
 	FluidGroup& fluidGroup = m_fluidGroups.emplace_back(fluidType, blocks, m_area, checkMerge);
-	// TODO: Under what circumstances is this assert not valid?
-	// assert(m_unstableFluidGroups.contains(&fluidGroup));
+	assert(!fluidGroup.m_stable);
 	// TODO: If new group is outside register it with areaHasTemperature.
 	return &fluidGroup;
 }

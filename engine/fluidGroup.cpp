@@ -23,7 +23,7 @@
 
 //TODO: reuse blocks as m_fillQueue.m_set.
 FluidGroup::FluidGroup(const FluidTypeId& ft, BlockIndices& blocks, Area& area, bool checkMerge) :
-	m_fillQueue(*this), m_drainQueue(*this), m_area(area), m_fluidType(ft)
+	m_area(area), m_fluidType(ft)
 {
 	for(BlockIndex block : blocks)
 		if(m_area.getBlocks().fluid_contains(block, m_fluidType))
@@ -226,8 +226,8 @@ void FluidGroup::readStep()
 	m_futureGroups.clear();
 	m_futureNotifyPotentialUnfullAdjacent.clear();
 	m_viscosity = FluidType::getViscosity(m_fluidType);
-	m_drainQueue.initalizeForStep();
-	m_fillQueue.initalizeForStep();
+	m_drainQueue.initalizeForStep(*this);
+	m_fillQueue.initalizeForStep(*this);
 	validate();
 	// If there is no where to flow into there is nothing to do.
 	if(m_diagonalBlocks.empty() && (m_fillQueue.m_set.empty() ||
@@ -249,14 +249,14 @@ void FluidGroup::readStep()
 		// How much fluid is there space for total.
 		CollisionVolume flowCapacity = m_fillQueue.groupCapacityPerBlock();
 		// How much can be filled before the next low block(s).
-		CollisionVolume flowTillNextStep = m_fillQueue.groupFlowTillNextStepPerBlock();
+		CollisionVolume flowTillNextStep = m_fillQueue.groupFlowTillNextStepPerBlock(m_area);
 		if(flowTillNextStep.empty())
 			// If unset then set to max in order to exclude from std::min
 			flowTillNextStep = CollisionVolume::max();
 		CollisionVolume excessPerBlock = CollisionVolume::create(m_excessVolume / m_fillQueue.groupSize());
 		CollisionVolume flowPerBlock = std::min({flowTillNextStep, flowCapacity, excessPerBlock});
 		m_excessVolume -= flowPerBlock.get() * m_fillQueue.groupSize();
-		m_fillQueue.recordDelta(flowPerBlock, flowCapacity, flowTillNextStep);
+		m_fillQueue.recordDelta(*this, flowPerBlock, flowCapacity, flowTillNextStep);
 	}
 	while(m_excessVolume < 0 && m_drainQueue.groupSize() != 0 && m_drainQueue.m_groupStart != m_drainQueue.m_queue.end())
 	{
@@ -266,14 +266,14 @@ void FluidGroup::readStep()
 		// How much is avaliable to drain total.
 		CollisionVolume flowCapacity = m_drainQueue.groupCapacityPerBlock();
 		// How much can be drained before the next high block(s).
-		CollisionVolume flowTillNextStep = m_drainQueue.groupFlowTillNextStepPerBlock();
+		CollisionVolume flowTillNextStep = m_drainQueue.groupFlowTillNextStepPerBlock(m_area);
 		if(flowTillNextStep.empty())
 			// If unset then set to max in order to exclude from std::min
 			flowTillNextStep = CollisionVolume::max();
 		CollisionVolume excessPerBlock = CollisionVolume::create((-1 * m_excessVolume) / m_drainQueue.groupSize());
 		CollisionVolume flowPerBlock = std::min({flowCapacity, flowTillNextStep, excessPerBlock});
 		m_excessVolume += (flowPerBlock * m_drainQueue.groupSize()).get();
-		m_drainQueue.recordDelta(flowPerBlock, flowCapacity, flowTillNextStep);
+		m_drainQueue.recordDelta(*this, flowPerBlock, flowCapacity, flowTillNextStep);
 	}
 	// Do primary flow.
 	// If we have reached the end of either queue the loop ends.
@@ -282,9 +282,9 @@ void FluidGroup::readStep()
 		assert(m_fillQueue.m_groupEnd == m_fillQueue.m_queue.end() ||
 				blocks.getZ(m_fillQueue.m_groupStart->block) != blocks.getZ(m_fillQueue.m_groupEnd->block) ||
 				m_fillQueue.m_groupStart->capacity != m_fillQueue.m_groupEnd->capacity);
-		CollisionVolume drainVolume = m_drainQueue.groupLevel();
+		CollisionVolume drainVolume = m_drainQueue.groupLevel(*this);
 		assert(drainVolume != 0);
-		CollisionVolume fillVolume = m_fillQueue.groupLevel();
+		CollisionVolume fillVolume = m_fillQueue.groupLevel(*this);
 		assert(fillVolume < Config::maxBlockVolume);
 		//uint32_t fillInverseCapacity = Config::maxBlockVolume - m_fillQueue.m_groupStart->capacity;
 		//assert(m_drainQueue.m_groupStart->block->m_z > m_fillQueue.m_groupStart->block->m_z || drainVolume >= fillVolume);
@@ -318,14 +318,14 @@ void FluidGroup::readStep()
 		// How much fluid is there space for total.
 		CollisionVolume flowCapacityFill = m_fillQueue.groupCapacityPerBlock();
 		// How much can be filled before the next low block(s).
-		CollisionVolume flowTillNextStepFill = m_fillQueue.groupFlowTillNextStepPerBlock();
+		CollisionVolume flowTillNextStepFill = m_fillQueue.groupFlowTillNextStepPerBlock(m_area);
 		if(flowTillNextStepFill.empty())
 			// If the next step is on another z level then this value will be empty. Set it to max to exclude it from the std::min call later.
 			flowTillNextStepFill = CollisionVolume::max();
 		// How much is avaliable to drain total.
 		CollisionVolume flowCapacityDrain = m_drainQueue.groupCapacityPerBlock();
 		// How much can be drained before the next high block(s).
-		CollisionVolume flowTillNextStepDrain = m_drainQueue.groupFlowTillNextStepPerBlock();
+		CollisionVolume flowTillNextStepDrain = m_drainQueue.groupFlowTillNextStepPerBlock(m_area);
 		if(flowTillNextStepDrain.empty())
 			// If the next step is on another z level then this value will be empty. Set it to max to exclude it from the std::min call later.
 			flowTillNextStepDrain = CollisionVolume::max();
@@ -371,9 +371,9 @@ void FluidGroup::readStep()
 		// Viscosity is consumed by flow.
 		m_viscosity -= perBlockFill.get();
 		// Record changes.
-		m_drainQueue.recordDelta(perBlockDrain, flowCapacityDrain, flowTillNextStepDrain);
+		m_drainQueue.recordDelta(*this, perBlockDrain, flowCapacityDrain, flowTillNextStepDrain);
 		if(perBlockFill != 0)
-			m_fillQueue.recordDelta(perBlockFill, flowCapacityFill, flowTillNextStepFill);
+			m_fillQueue.recordDelta(*this, perBlockFill, flowCapacityFill, flowTillNextStepFill);
 		m_excessVolume += (int)totalDrain.get() - (int)totalFill.get();
 		// If we are at equilibrium then stop looping.
 		// Don't mark stable because there may be newly added adjacent to flow into next tick.
@@ -520,8 +520,8 @@ void FluidGroup::writeStep()
 	validate();
 	auto& blocks = m_area.getBlocks();
 	m_area.m_hasFluidGroups.validateAllFluidGroups();
-	m_drainQueue.applyDelta();
-	m_fillQueue.applyDelta();
+	m_drainQueue.applyDelta(*this);
+	m_fillQueue.applyDelta(*this);
 	// Update queues.
 	validate();
 	for([[maybe_unused]] BlockIndex block : m_futureAddToFillQueue)
