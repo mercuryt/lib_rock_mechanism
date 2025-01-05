@@ -49,7 +49,6 @@ class Plants final : public HasShapes<Plants, PlantIndex>
 	DataVector<Percent, PlantIndex> m_percentFoliage;
 	DataVector<uint8_t, PlantIndex> m_wildGrowth;
 	DataVector<CollisionVolume, PlantIndex> m_volumeFluidRequested;
-	void resize(const PlantIndex& newSize);
 	void moveIndex(const PlantIndex& oldIndex, const PlantIndex& newIndex);
 	void updateFluidVolumeRequested(const PlantIndex& index);
 public:
@@ -57,6 +56,8 @@ public:
 	Plants(Area& area);
 	void load(const Json& data);
 	void onChangeAmbiantSurfaceTemperature();
+	template<typename Action>
+	void forEachData(Action&& action);
 	PlantIndex create(PlantParamaters paramaters);
 	void destroy(const PlantIndex& index);
 	void die(const PlantIndex& index);
@@ -79,7 +80,6 @@ public:
 	void setShape(const PlantIndex& index, const ShapeId& shape);
 	void setLocation(const PlantIndex& index, const BlockIndex& location, const Facing& facing);
 	void exit(const PlantIndex& index);
-	void fromJson(Plants& plants, Area& area, const Json& data);
 	[[nodiscard]] PlantIndexSet& getOnSurface() { return m_onSurface; }
 	[[nodiscard]] bool isOnSurface(const PlantIndex& index) { return m_onSurface.contains(index); }
 	[[nodiscard]] bool blockIsFull(const BlockIndex& index);

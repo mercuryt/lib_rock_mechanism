@@ -14,6 +14,18 @@
 template<class Derived, class Index>
 HasShapes<Derived, Index>::HasShapes(Area& area) : m_area(area) { }
 template<class Derived, class Index>
+template<typename Action>
+void HasShapes<Derived, Index>::forEachDataHasShapes(Action&& action)
+{
+	action(m_shape);
+	action(m_location);
+	action(m_facing);
+	action(m_faction);
+	action(m_blocks);
+	action(m_static);
+	action(m_underground);
+}
+template<class Derived, class Index>
 void HasShapes<Derived, Index>::create(const Index& index, const ShapeId& shape, const FactionId& faction, bool isStatic)
 {
 	assert(m_shape.size() > index);
@@ -26,24 +38,7 @@ void HasShapes<Derived, Index>::create(const Index& index, const ShapeId& shape,
 template<class Derived, class Index>
 void HasShapes<Derived, Index>::resize(const Index& newSize)
 {
-	m_shape.resize(newSize);
-	m_location.resize(newSize);
-	m_facing.resize(newSize);
-	m_faction.resize(newSize);
-	m_blocks.resize(newSize);
-	m_static.resize(newSize);
-	m_underground.resize(newSize);
-}
-template<class Derived, class Index>
-void HasShapes<Derived, Index>::moveIndex(const Index& oldIndex, const Index& newIndex)
-{
-	m_shape[newIndex] = m_shape[oldIndex];
-	m_location[newIndex] = m_location[oldIndex];
-	m_facing[newIndex] = m_facing[oldIndex];
-	m_faction[newIndex] = m_faction[oldIndex];
-	m_blocks[newIndex] = m_blocks[oldIndex];
-	m_static.set(newIndex, m_static[oldIndex]);
-	m_underground.set(newIndex, m_underground[oldIndex]);
+	static_cast<Derived&>(*this).forEachData([&newSize](auto& data) { data.resize(newSize); });
 }
 template<class Derived, class Index>
 void HasShapes<Derived, Index>::setStatic(const Index& index)
@@ -86,15 +81,36 @@ void HasShapes<Derived, Index>::maybeUnsetStatic(const Index& index)
 		unsetStatic(index);
 }
 template<class Derived, class Index>
-void HasShapes<Derived, Index>::sortRange(const Index& begin, const Index& end)
+std::vector<std::pair<uint32_t, Index>> HasShapes<Derived, Index>::getSortOrder(const Index& begin, const Index& end)
 {
-	assert(false);
-	assert(end > begin);
-	//TODO: impliment sort with library rather then views::zip for clang / msvc support.
-	/*
-	auto zip = std::ranges::views::zip(m_shape, m_location, m_facing, m_faction, m_blocks, m_static, m_underground);
-	std::ranges::sort(zip.begin() + begin, zip.end() + end, SpatialSort);
-	*/
+	assert(end > begin + 1);
+	std::vector<std::pair<uint32_t, Index>> sortOrder;
+	sortOrder.reserve(end - begin);
+	const Blocks& blocks = m_area.getBlocks();
+	for(Index index = begin; index < end; ++index)
+		sortOrder.emplace_back(blocks.getCoordinates(m_location[index]).hilbertNumber, index);
+	std::ranges::sort(sortOrder, std::less{}, &std::pair<uint32_t, Index>::first);
+	return sortOrder;
+}
+template<class Derived, class Index>
+void HasShapes<Derived, Index>::sortRange(const Index& begin, const Index& end, std::vector<std::pair<uint32_t, Index>> sortOrder)
+{
+	sortRangeFor(begin, end, sortOrder, m_shape);
+	sortRangeFor(begin, end, sortOrder, m_location);
+	sortRangeFor(begin, end, sortOrder, m_facing);
+	sortRangeFor(begin, end, sortOrder, m_faction);
+	sortRangeFor(begin, end, sortOrder, m_blocks);
+	sortRangeFor(begin, end, sortOrder, m_static);
+	sortRangeFor(begin, end, sortOrder, m_underground);
+}
+template<class Derived, class Index>
+template<class Data>
+void HasShapes<Derived, Index>::sortRangeFor(const Index& begin, const Index& end, std::vector<std::pair<uint32_t, Index>> sortOrder, Data data)
+{
+	Data copy;
+	std::ranges::move(data.begin() + begin, data.begin() + end, std::back_inserter(copy));
+	for(Index index = begin; index < end; ++index)
+		data[index] = std::move(copy[sortOrder[index].second]);
 }
 template<class Derived, class Index>
 FactionId HasShapes<Derived, Index>::getFaction(const Index& index) const

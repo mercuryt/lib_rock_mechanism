@@ -533,121 +533,10 @@ Json Actors::toJson() const
 	output.update(Portables<Actors, ActorIndex, ActorReferenceIndex>::toJson());
 	return output;
 }
-void Actors::resize(const ActorIndex& newSize)
-{
-	Portables<Actors, ActorIndex, ActorReferenceIndex>::resize(newSize);
-	m_id.resize(newSize);
-	m_name.resize(newSize);
-	m_species.resize(newSize);
-	m_project.resize(newSize);
-	m_birthStep.resize(newSize);
-	m_causeOfDeath.resize(newSize);
-	m_strength.resize(newSize);
-	m_strengthBonusOrPenalty.resize(newSize);
-	m_strengthModifier.resize(newSize);
-	m_agility.resize(newSize);
-	m_agilityBonusOrPenalty.resize(newSize);
-	m_agilityModifier.resize(newSize);
-	m_dextarity.resize(newSize);
-	m_dextarityBonusOrPenalty.resize(newSize);
-	m_dextarityModifier.resize(newSize);
-	m_mass.resize(newSize);
-	m_massBonusOrPenalty.resize(newSize);
-	m_massModifier.resize(newSize);
-	m_unencomberedCarryMass.resize(newSize);
-	m_leadFollowPath.resize(newSize);
-	m_hasObjectives.resize(newSize);
-	m_body.resize(newSize);
-	m_mustSleep.resize(newSize);
-	m_mustDrink.resize(newSize);
-	m_mustEat.resize(newSize);
-	m_needsSafeTemperature.resize(newSize);
-	m_canGrow.resize(newSize);
-	m_skillSet.resize(newSize);
-	m_canReserve.resize(newSize);
-	m_hasUniform.resize(newSize);
-	m_equipmentSet.resize(newSize);
-	m_carrying.resize(newSize);
-	m_stamina.resize(newSize);
-	m_canSee.resize(newSize);
-	m_canBeSeenBy.resize(newSize);
-	m_visionRange.resize(newSize);
-	m_coolDownEvent.resize(newSize);
-	m_meleeAttackTable.resize(newSize);
-	m_targetedBy.resize(newSize);
-	m_target.resize(newSize);
-	m_onMissCoolDownMelee.resize(newSize);
-	m_maxMeleeRange.resize(newSize);
-	m_maxRange.resize(newSize);
-	m_coolDownDurationModifier.resize(newSize);
-	m_combatScore.resize(newSize);
-	m_moveEvent.resize(newSize);
-	m_pathRequest.resize(newSize);
-	m_path.resize(newSize);
-	m_pathIter.resize(newSize);
-	m_destination.resize(newSize);
-	m_speedIndividual.resize(newSize);
-	m_speedActual.resize(newSize);
-	m_moveRetries.resize(newSize);
-}
 void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
 {
-	Portables<Actors, ActorIndex, ActorReferenceIndex>::moveIndex(oldIndex, newIndex);
-	m_id[newIndex] = m_id[oldIndex];
-	m_name[newIndex] = m_name[oldIndex];
-	m_species[newIndex] = m_species[oldIndex];
-	m_project[newIndex] = m_project[oldIndex];
-	m_birthStep[newIndex] = m_birthStep[oldIndex];
-	m_causeOfDeath[newIndex] = m_causeOfDeath[oldIndex];
-	m_strength[newIndex] = m_strength[oldIndex];
-	m_strengthBonusOrPenalty[newIndex] = m_strengthBonusOrPenalty[oldIndex];
-	m_strengthModifier[newIndex] = m_strengthModifier[oldIndex];
-	m_agility[newIndex] = m_agility[oldIndex];
-	m_agilityBonusOrPenalty[newIndex] = m_agilityBonusOrPenalty[oldIndex];
-	m_agilityModifier[newIndex] = m_agilityModifier[oldIndex];
-	m_dextarity[newIndex] = m_dextarity[oldIndex];
-	m_dextarityBonusOrPenalty[newIndex] = m_dextarityBonusOrPenalty[oldIndex];
-	m_dextarityModifier[newIndex] = m_dextarityModifier[oldIndex];
-	m_mass[newIndex] = m_mass[oldIndex];
-	m_massBonusOrPenalty[newIndex] = m_massBonusOrPenalty[oldIndex];
-	m_massModifier[newIndex] = m_massModifier[oldIndex];
-	m_leadFollowPath[newIndex] = m_leadFollowPath[oldIndex];
-	m_unencomberedCarryMass[newIndex] = m_unencomberedCarryMass[oldIndex];
-	m_hasObjectives[newIndex] = std::move(m_hasObjectives[oldIndex]);
-	m_body[newIndex] = std::move(m_body[oldIndex]);
-	m_mustSleep[newIndex] = std::move(m_mustSleep[oldIndex]);
-	m_mustDrink[newIndex] = std::move(m_mustDrink[oldIndex]);
-	m_mustEat[newIndex] = std::move(m_mustEat[oldIndex]);
-	m_needsSafeTemperature[newIndex] = std::move(m_needsSafeTemperature[oldIndex]);
-	m_canGrow[newIndex] = std::move(m_canGrow[oldIndex]);
-	m_skillSet[newIndex] = std::move(m_skillSet[oldIndex]);
-	m_canReserve[newIndex] = std::move(m_canReserve[oldIndex]);
-	m_hasUniform[newIndex] = std::move(m_hasUniform[oldIndex]);
-	m_equipmentSet[newIndex] = std::move(m_equipmentSet[oldIndex]);
-	m_carrying[newIndex] = m_carrying[oldIndex];
-	m_stamina[newIndex] = m_stamina[oldIndex];
-	m_canSee[newIndex] = m_canSee[oldIndex];
-	m_canBeSeenBy[newIndex] = m_canBeSeenBy[oldIndex];
-	m_visionRange[newIndex] = m_visionRange[oldIndex];
-	m_coolDownEvent.moveIndex(oldIndex, newIndex);
-	m_meleeAttackTable[newIndex] = m_meleeAttackTable[oldIndex];
-	m_targetedBy[newIndex] = m_targetedBy[oldIndex];
-	m_target[newIndex] = m_target[oldIndex];
-	m_onMissCoolDownMelee[newIndex] = m_onMissCoolDownMelee[oldIndex];
-	m_maxMeleeRange[newIndex] = m_maxMeleeRange[oldIndex];
-	m_maxRange[newIndex] = m_maxRange[oldIndex];
-	m_coolDownDurationModifier[newIndex] = m_coolDownDurationModifier[oldIndex];
-	m_combatScore[newIndex] = m_combatScore[oldIndex];
-	m_moveEvent.moveIndex(oldIndex, newIndex);
-	move_pathRequestMaybeCancel(newIndex);
-	m_pathRequest[newIndex] = std::move(m_pathRequest[oldIndex]);
-	m_path[newIndex] = m_path[oldIndex];
-	m_pathIter[newIndex] = m_pathIter[oldIndex];
-	m_destination[newIndex] = m_destination[oldIndex];
-	m_speedIndividual[newIndex] = m_speedIndividual[oldIndex];
-	m_speedActual[newIndex] = m_speedActual[oldIndex];
-	m_moveRetries[newIndex] = m_moveRetries[oldIndex];
-	// Update references.
+	forEachData([&](auto& data){ data.moveIndex(oldIndex, newIndex); });
+	updateStoredIndicesPortables(oldIndex, newIndex);
 	// Move event contains a ActorIndex which must be updated if MoveEvent exists.
 	if(m_moveEvent.contains(newIndex))
 		m_moveEvent[newIndex].updateIndex(oldIndex, newIndex);
@@ -698,6 +587,64 @@ void Actors::onChangeAmbiantSurfaceTemperature()
 {
 	for(auto index : getOnSurface())
 		m_needsSafeTemperature[index]->onChange(m_area);
+}
+template<typename Action>
+void Actors::forEachData(Action&& action)
+{
+	forEachDataPortables(action);
+	action(m_id);
+	action(m_name);
+	action(m_species);
+	action(m_project);
+	action(m_birthStep);
+	action(m_causeOfDeath);
+	action(m_strength);
+	action(m_strengthBonusOrPenalty);
+	action(m_strengthModifier);
+	action(m_agility);
+	action(m_agilityBonusOrPenalty);
+	action(m_agilityModifier);
+	action(m_dextarity);
+	action(m_dextarityBonusOrPenalty);
+	action(m_dextarityModifier);
+	action(m_mass);
+	action(m_massBonusOrPenalty);
+	action(m_massModifier);
+	action(m_unencomberedCarryMass);
+	action(m_leadFollowPath);
+	action(m_hasObjectives);
+	action(m_body);
+	action(m_mustSleep);
+	action(m_mustDrink);
+	action(m_mustEat); 
+	action(m_needsSafeTemperature);
+	action(m_canGrow);
+	action(m_skillSet);
+	action(m_canReserve);
+	action(m_hasUniform);
+	action(m_equipmentSet);
+	action(m_carrying);
+	action(m_stamina);
+	action(m_canSee);
+	action(m_canBeSeenBy);
+	action(m_visionRange);
+	action(m_coolDownEvent);
+	action(m_meleeAttackTable);
+	action(m_targetedBy);
+	action(m_target);
+	action(m_onMissCoolDownMelee);
+	action(m_maxMeleeRange);
+	action(m_maxRange);
+	action(m_coolDownDurationModifier);
+	action(m_combatScore);
+	action(m_moveEvent);
+	action(m_pathRequest);
+	action(m_path);
+	action(m_pathIter);
+	action(m_destination);
+	action(m_speedIndividual);
+	action(m_speedActual);
+	action(m_moveRetries);
 }
 ActorIndex Actors::create(ActorParamaters params)
 {

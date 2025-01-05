@@ -38,12 +38,13 @@ protected:
 	void log(const Index& index) const;
 	void updateLeaderSpeedActual(const Index& index);
 	void updateIndexInCarrier(const Index& oldIndex, const Index& newIndex);
-	void resize(const Index& newSize);
-	void moveIndex(const Index& oldIndex, const Index& newIndex);
+	void updateStoredIndicesPortables(const Index& oldIndex, const Index& newIndex);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] ActorOrItemIndex getActorOrItemIndex(const Index& index);
 public:
 	ReferenceData<Index, ReferenceIndex> m_referenceData;
+	template<typename Action>
+	void forEachDataPortables(Action&& action);
 	void load(const Json& data);
 	void followActor(const Index& index, const ActorIndex& actor);
 	void followItem(const Index& index, const ItemIndex& item);

@@ -31,11 +31,14 @@ protected:
 	Area& m_area;
 	HasShapes(Area& area);
 	void create(const Index& index, const ShapeId& shape, const FactionId& faction, bool isStatic);
-	void sortRange(const Index& begin, const Index& end);
+	std::vector<std::pair<uint32_t, Index>> getSortOrder(const Index& begin, const Index& end);
+	void sortRange(const Index& begin, const Index& end, std::vector<std::pair<uint32_t, Index>> sortOrder);
+	template<typename Data>
+	void sortRangeFor(const Index& begin, const Index& end, std::vector<std::pair<uint32_t, Index>> sortOrder, Data data);
 	void resize(const Index& newSize);
-	void moveIndex(const Index& oldIndex, const Index& newIndex);
-	[[nodiscard]] Index getNextIndex();
 public:
+	template<typename Action>
+	void forEachDataHasShapes(Action&& action);
 	void setStatic(const Index& index);
 	void maybeSetStatic(const Index& index);
 	void unsetStatic(const Index& index);

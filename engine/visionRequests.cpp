@@ -105,6 +105,7 @@ void VisionRequests::readStep()
 		ranges.emplace_back(index, end);
 		index = end;
 	}
+	// TODO: store hilbert number in request?
 	m_data.sort([&](const VisionRequest& a, const VisionRequest& b){ return a.coordinates.hilbertNumber() < b.coordinates.hilbertNumber(); });
 	m_area.m_octTree.maybeSort();
 	//#pragma omp parallel for

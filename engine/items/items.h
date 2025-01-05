@@ -115,13 +115,14 @@ class Items final : public Portables<Items, ItemIndex, ItemReferenceIndex>
 	DataVector<Percent, ItemIndex> m_percentWear; // Always set to 0 for generic types.
 	DataVector<Quality, ItemIndex> m_quality; // Always set to 0 for generic types.
 	DataVector<Quantity, ItemIndex> m_quantity; // Always set to 1 for nongeneric types.
-	void resize(const ItemIndex& newSize);
 	void moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex);
 public:
 	Items(Area& area);
 	void load(const Json& json);
 	void loadCargoAndCraftJobs(const Json& json);
 	void onChangeAmbiantSurfaceTemperature();
+	template<typename Action>
+	void forEachData(Action&& action);
 	ItemIndex create(ItemParamaters paramaters);
 	void destroy(const ItemIndex& index);
 	void setName(const ItemIndex& index, std::wstring name);
