@@ -18,27 +18,8 @@
 template<class Derived, class Index, class ReferenceIndex>
 Portables<Derived, Index, ReferenceIndex>::Portables(Area& area, bool isActors) : HasShapes<Derived, Index>(area), m_isActors(isActors) { }
 template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::resize(const Index& newSize)
+void Portables<Derived, Index, ReferenceIndex>::updateStoredIndicesPortables(const Index& oldIndex, const Index& newIndex)
 {
-	HasShapes<Derived, Index>::resize(newSize);
-	m_moveType.resize(newSize);
-	m_destroy.resize(newSize);
-	m_reservables.resize(newSize);
-	m_follower.resize(newSize);
-	m_leader.resize(newSize);
-	m_carrier.resize(newSize);
-	m_referenceData.reserve(newSize);
-}
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::moveIndex(const Index& oldIndex, const Index& newIndex)
-{
-	HasShapes<Derived, Index>::moveIndex(oldIndex, newIndex);
-	m_moveType[newIndex] = m_moveType[oldIndex];
-	m_destroy[newIndex] = std::move(m_destroy[oldIndex]);
-	m_reservables[newIndex] = std::move(m_reservables[oldIndex]);
-	m_follower[newIndex] = m_follower[oldIndex];
-	m_leader[newIndex] = m_leader[oldIndex];
-	m_carrier[newIndex] = m_carrier[oldIndex];
 	if(m_carrier[newIndex].exists())
 		updateIndexInCarrier(oldIndex, newIndex);
 	if(m_follower[newIndex].exists())
@@ -69,6 +50,18 @@ void Portables<Derived, Index, ReferenceIndex>::moveIndex(const Index& oldIndex,
 			getItems().getFollower(leader.getItem()).updateIndex(newIndex);
 		}
 	}
+}
+template<class Derived, class Index, class ReferenceIndex>
+template<typename Action>
+void Portables<Derived, Index, ReferenceIndex>::forEachDataPortables(Action&& action)
+{
+	this->forEachDataHasShapes(action);
+	action(m_reservables);
+	action(m_destroy);
+	action(m_follower);
+	action(m_leader);
+	action(m_carrier);
+	action(m_moveType);
 }
 template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::create(const Index& index, const MoveTypeId& moveType, const ShapeId& shape, const FactionId& faction, bool isStatic, const Quantity& quantity)

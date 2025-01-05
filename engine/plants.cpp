@@ -21,39 +21,9 @@ Plants::Plants(Area& area) :
 	{
 		assert(!area.m_loaded);
 	}
-void Plants::resize(const PlantIndex& newSize)
-{
-	HasShapes<Plants, PlantIndex>::resize(newSize);
-	m_growthEvent.resize(newSize);
-	m_shapeGrowthEvent.resize(newSize);
-	m_fluidEvent.resize(newSize);
-	m_temperatureEvent.resize(newSize);
-	m_endOfHarvestEvent.resize(newSize);
-	m_foliageGrowthEvent.resize(newSize);
-	m_species.resize(newSize);
-	m_fluidSource.resize(newSize);
-	m_quantityToHarvest.resize(newSize);
-	m_percentGrown.resize(newSize);
-	m_percentFoliage.resize(newSize);
-	m_wildGrowth.resize(newSize);
-	m_volumeFluidRequested.resize(newSize);
-}
 void Plants::moveIndex(const PlantIndex& oldIndex, const PlantIndex& newIndex)
 {
-	HasShapes<Plants, PlantIndex>::moveIndex(oldIndex, newIndex);
-	m_growthEvent.moveIndex(oldIndex, newIndex);
-	m_shapeGrowthEvent.moveIndex(oldIndex, newIndex);
-	m_fluidEvent.moveIndex(oldIndex, newIndex);
-	m_temperatureEvent.moveIndex(oldIndex, newIndex);
-	m_endOfHarvestEvent.moveIndex(oldIndex, newIndex);
-	m_foliageGrowthEvent.moveIndex(oldIndex, newIndex);
-	m_species[newIndex] = m_species[oldIndex];
-	m_fluidSource[newIndex] = m_fluidSource[oldIndex];
-	m_quantityToHarvest[newIndex] = m_quantityToHarvest[oldIndex];
-	m_percentGrown[newIndex] = m_percentGrown[oldIndex];
-	m_percentFoliage[newIndex] = m_percentFoliage[oldIndex];
-	m_wildGrowth[newIndex] = m_wildGrowth[oldIndex];
-	m_volumeFluidRequested[newIndex] = m_volumeFluidRequested[oldIndex];
+	forEachData([&](auto& data){ data.moveIndex(oldIndex, newIndex);});
 	Blocks& blocks = m_area.getBlocks();
 	for(BlockIndex block : m_blocks[newIndex])
 	{
@@ -69,6 +39,24 @@ void Plants::onChangeAmbiantSurfaceTemperature()
 		Temperature temperature = blocks.temperature_get(m_location[index]);
 		setTemperature(PlantIndex::cast(index), temperature);
 	}
+}
+template<typename Action>
+void Plants::forEachData(Action&& action)
+{
+	forEachDataHasShapes(action);
+	action(m_growthEvent);
+	action(m_shapeGrowthEvent);
+	action(m_fluidEvent);
+	action(m_temperatureEvent);
+	action(m_endOfHarvestEvent);
+	action(m_foliageGrowthEvent);
+	action(m_species);
+	action(m_fluidSource);
+	action(m_quantityToHarvest);
+	action(m_percentGrown);
+	action(m_percentFoliage);
+	action(m_wildGrowth);
+	action(m_volumeFluidRequested);
 }
 PlantIndex Plants::create(PlantParamaters paramaters)
 {

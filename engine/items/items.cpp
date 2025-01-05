@@ -94,7 +94,22 @@ Items::Items(Area& area) :
 {
 	assert(!area.m_loaded);
 }
-
+template<typename Action>
+void Items::forEachData(Action&& action)
+{
+	forEachDataPortables(action);
+	action(m_canBeStockPiled);
+	action(m_craftJobForWorkPiece); 
+	action(m_hasCargo);
+	action(m_id);
+	action(m_installed);
+	action(m_itemType);
+	action(m_materialType);
+	action(m_name);
+	action(m_percentWear); 
+	action(m_quality); 
+	action(m_quantity); 
+}
 ItemIndex Items::create(ItemParamaters itemParamaters)
 {
 	ItemIndex index = ItemIndex::create(size());
@@ -129,37 +144,12 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 		m_area.m_hasHaulTools.registerHaulTool(m_area, index);
 	return index;
 }
-void Items::resize(const ItemIndex& newSize)
-{
-	Portables<Items, ItemIndex, ItemReferenceIndex>::resize(newSize);
-	m_canBeStockPiled.resize(newSize);
-	m_craftJobForWorkPiece.resize(newSize);
-	m_hasCargo.resize(newSize);
-	m_id.resize(newSize);
-	m_installed.resize(newSize);
-	m_itemType.resize(newSize);
-	m_materialType.resize(newSize);
-	m_name.resize(newSize);
-	m_percentWear.resize(newSize);
-	m_quality.resize(newSize);
-	m_quantity.resize(newSize);
-}
 void Items::moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex)
 {
-	Portables<Items, ItemIndex, ItemReferenceIndex>::moveIndex(oldIndex, newIndex);
-	m_canBeStockPiled[newIndex] = std::move(m_canBeStockPiled[oldIndex]);
-	m_craftJobForWorkPiece[newIndex] = m_craftJobForWorkPiece[oldIndex];
-	m_hasCargo[newIndex] = std::move(m_hasCargo[oldIndex]);
+	forEachData([&](auto& data){ data.moveIndex(oldIndex, newIndex); });
+	updateStoredIndicesPortables(oldIndex, newIndex);
 	if(m_hasCargo[newIndex] != nullptr)
 		m_hasCargo[newIndex]->updateCarrierIndexForAllCargo(m_area, newIndex);
-	m_id[newIndex] = m_id[oldIndex];
-	m_installed.set(newIndex, m_installed[oldIndex]);
-	m_itemType[newIndex] = m_itemType[oldIndex];
-	m_materialType[newIndex] = m_materialType[oldIndex];
-	m_name[newIndex] = m_name[oldIndex];
-	m_percentWear[newIndex] = m_percentWear[oldIndex];
-	m_quality[newIndex] = m_quality[oldIndex];
-	m_quantity[newIndex] = m_quantity[oldIndex];
 	if(m_onSurface.contains(oldIndex))
 	{
 		m_onSurface.remove(oldIndex);

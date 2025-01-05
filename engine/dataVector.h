@@ -59,6 +59,8 @@ public:
 	}
 	template<typename Comparitor>
 	void sortBy(Comparitor&& comparitor) { std::sort(data.begin(), data.end(), comparitor); }
+	// Provides symatry with more complex data stores like HasEvents and ReferenceData.
+	void moveIndex(const Index& oldIndex, const Index& newIndex) { data[newIndex.get()] = std::move(data[oldIndex.get()]); }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(DataVector, data);
 };
 template <class Index>
@@ -77,5 +79,6 @@ public:
 	void resize(const Index& index) { data.resize(index.get()); }
 	void clear() { data.clear(); }
 	void add(const bool& status) { data.resize(data.size() + 1); data[data.size() - 1] = status; }
+	void moveIndex(const Index& oldIndex, const Index& newIndex) { data[newIndex.get()] = data[oldIndex.get()]; }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(DataBitSet, data);
 };

@@ -128,7 +128,6 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	DataVector<Speed, ActorIndex> m_speedIndividual;
 	DataVector<Speed, ActorIndex> m_speedActual;
 	DataVector<uint8_t, ActorIndex> m_moveRetries;
-	void resize(const ActorIndex& newSize);
 	void moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex);
 	void destroy(const ActorIndex& index);
 	[[nodiscard]] bool indexCanBeMoved(const HasShapeIndex& index) const;
@@ -137,6 +136,8 @@ public:
 	void load(const Json& data);
 	void loadObjectivesAndReservations(const Json& data);
 	void onChangeAmbiantSurfaceTemperature();
+	template<typename Action>
+	void forEachData(Action&& action);
 	ActorIndex create(ActorParamaters params);
 	void sharedConstructor(const ActorIndex& index);
 	void scheduleNeeds(const ActorIndex& index);
