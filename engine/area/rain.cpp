@@ -71,7 +71,7 @@ void AreaHasRain::doStep()
 	DistanceInBlocks offset = DistanceInBlocks::create(random.getInRange(0u, Config::rainMaximumOffset.get()));
 	DistanceInBlocks i = DistanceInBlocks::create(0);
 	Blocks& blocks = m_area.getBlocks();
-	for(BlockIndex block : blocks.getZLevel(blocks.m_sizeZ - 1))
+	blocks.forEach([&](const BlockIndex& block){
 		if(offset != 0)
 			--offset;
 		else if(i != 0)
@@ -82,6 +82,7 @@ void AreaHasRain::doStep()
 				blocks.fluid_add(block, CollisionVolume::create(1), m_currentlyRainingFluidType);
 			i = spacing;
 		}
+	});
 }
 void AreaHasRain::scheduleRestart()
 {

@@ -4,27 +4,28 @@
 #include "blocks/blocks.h"
 
 #include <cassert>
-Cuboid::Cuboid(Blocks& b, const BlockIndex& h, const BlockIndex& l) : m_blocks(&b), m_highest(h), m_lowest(l)
+Cuboid::Cuboid(Blocks& blocks, const BlockIndex& h, const BlockIndex& l) : m_highest(h), m_lowest(l)
 {
 	if(!m_highest.exists())
 	{
 		assert(!m_lowest.exists());
 		return;
 	}
-	Point3D highestPosition = m_blocks->getCoordinates(m_highest);
-	Point3D lowestPosition = m_blocks->getCoordinates(m_lowest);
+	Point3D highestPosition = blocks.getCoordinates(m_highest);
+	Point3D lowestPosition = blocks.getCoordinates(m_lowest);
 	assert(highestPosition.x >= lowestPosition.x);
 	assert(highestPosition.y >= lowestPosition.y);
 	assert(highestPosition.z >= lowestPosition.z);
 }
-BlockIndices Cuboid::toSet()
+BlockIndices Cuboid::toSet(Blocks& blocks)
 {
 	BlockIndices output;
-	for(BlockIndex block : *this)
-		output.add(block);
+	auto endIter = end(blocks);
+	for(auto iter = begin(blocks); iter != endIter; ++iter)
+		output.add(*iter);
 	return output;
 }
-bool Cuboid::contains(const BlockIndex& block) const
+bool Cuboid::contains(Blocks& blocks, const BlockIndex& block) const
 {
 	if(!m_highest.exists())
 	{
@@ -32,22 +33,22 @@ bool Cuboid::contains(const BlockIndex& block) const
 		return  false;
 	}
 	assert(m_lowest.exists());
-	Point3D highestPosition = m_blocks->getCoordinates(m_highest);
-	Point3D lowestPosition = m_blocks->getCoordinates(m_lowest);
-	Point3D blockPosition = m_blocks->getCoordinates(block);
+	Point3D highestPosition = blocks.getCoordinates(m_highest);
+	Point3D lowestPosition = blocks.getCoordinates(m_lowest);
+	Point3D blockPosition = blocks.getCoordinates(block);
 	return (
 			blockPosition.x <= highestPosition.x && blockPosition.x >= lowestPosition.x &&
 			blockPosition.y <= highestPosition.y && blockPosition.y >= lowestPosition.y &&
 			blockPosition.z <= highestPosition.z && blockPosition.z >= lowestPosition.z
 	       );
 }
-bool Cuboid::canMerge(const Cuboid& other) const
+bool Cuboid::canMerge(Blocks& blocks, const Cuboid& other) const
 {
 	uint32_t count = 0;
-	Point3D highest = m_blocks->getCoordinates(m_highest);
-	Point3D lowest = m_blocks->getCoordinates(m_lowest);
-	Point3D otherHighest = m_blocks->getCoordinates(other.m_highest);
-	Point3D otherLowest = m_blocks->getCoordinates(other.m_lowest);
+	Point3D highest = blocks.getCoordinates(m_highest);
+	Point3D lowest = blocks.getCoordinates(m_lowest);
+	Point3D otherHighest = blocks.getCoordinates(other.m_highest);
+	Point3D otherLowest = blocks.getCoordinates(other.m_lowest);
 	if(otherHighest.x == highest.x && otherLowest.x == lowest.x)
 		count++;
 	if(otherHighest.y == highest.y && otherLowest.y == lowest.y)
@@ -57,28 +58,27 @@ bool Cuboid::canMerge(const Cuboid& other) const
 	assert(count != 3);
 	return count == 2;
 }
-Cuboid Cuboid::sum(const Cuboid& other) const
+Cuboid Cuboid::sum(Blocks& blocks, const Cuboid& other) const
 {
-	assert(canMerge(other));
-	Point3D highest = m_blocks->getCoordinates(m_highest);
-	Point3D lowest = m_blocks->getCoordinates(m_lowest);
-	Point3D otherHighest = m_blocks->getCoordinates(other.m_highest);
-	Point3D otherLowest = m_blocks->getCoordinates(other.m_lowest);
+	assert(canMerge(blocks, other));
+	Point3D highest = blocks.getCoordinates(m_highest);
+	Point3D lowest = blocks.getCoordinates(m_lowest);
+	Point3D otherHighest = blocks.getCoordinates(other.m_highest);
+	Point3D otherLowest = blocks.getCoordinates(other.m_lowest);
 	Cuboid output;
 	DistanceInBlocks maxX = std::max(highest.x, otherHighest.x);
 	DistanceInBlocks maxY = std::max(highest.y, otherHighest.y);
 	DistanceInBlocks maxZ = std::max(highest.z, otherHighest.z);
-	output.m_highest = m_blocks->getIndex({maxX, maxY, maxZ});
+	output.m_highest = blocks.getIndex({maxX, maxY, maxZ});
 	DistanceInBlocks minX = std::min(lowest.x, otherLowest.x);
 	DistanceInBlocks minY = std::min(lowest.y, otherLowest.y);
 	DistanceInBlocks minZ = std::min(lowest.z, otherLowest.z);
-	output.m_lowest = m_blocks->getIndex({minX, minY, minZ});
-	output.m_blocks = m_blocks;
+	output.m_lowest = blocks.getIndex({minX, minY, minZ});
 	return output;
 }
-void Cuboid::merge(const Cuboid& cuboid)
+void Cuboid::merge(Blocks& blocks, const Cuboid& cuboid)
 {
-	Cuboid sum = cuboid.sum(*this);
+	Cuboid sum = cuboid.sum(blocks, *this);
 	m_highest = sum.m_highest;
 	m_lowest = sum.m_lowest;
 }
@@ -91,40 +91,39 @@ void Cuboid::setFrom(Blocks& blocks, const BlockIndex& a, const BlockIndex& b)
 	Cuboid result = fromBlockPair(blocks, a, b);
 	m_highest = result.m_highest;
 	m_lowest = result.m_lowest;
-	m_blocks = &blocks;
 }
-void Cuboid::clear() { m_lowest.clear(); m_highest.clear(); m_blocks = nullptr;}
-Cuboid Cuboid::getFace(const Facing& facing) const
+void Cuboid::clear() { m_lowest.clear(); m_highest.clear(); }
+Cuboid Cuboid::getFace(Blocks& blocks, const Facing& facing) const
 {
 	assert(facing < 6);
-	Point3D highest = m_blocks->getCoordinates(m_highest);
-	Point3D lowest = m_blocks->getCoordinates(m_lowest);
+	Point3D highest = blocks.getCoordinates(m_highest);
+	Point3D lowest = blocks.getCoordinates(m_lowest);
 	// test area has x higher then this.
 	if(facing == 4)
-		return Cuboid(*m_blocks, m_highest, m_blocks->getIndex({highest.x, lowest.y, lowest.z}));
+		return Cuboid(blocks, m_highest, blocks.getIndex({highest.x, lowest.y, lowest.z}));
 	// test area has x lower then this.
 	else if(facing == 2)
-		return Cuboid(*m_blocks, m_blocks->getIndex({lowest.x, highest.y, highest.z}), m_lowest);
+		return Cuboid(blocks, blocks.getIndex({lowest.x, highest.y, highest.z}), m_lowest);
 	// test area has y higher then this.
 	else if(facing == 3)
-		return Cuboid(*m_blocks, m_highest, m_blocks->getIndex({lowest.x, highest.y, lowest.z}));
+		return Cuboid(blocks, m_highest, blocks.getIndex({lowest.x, highest.y, lowest.z}));
 	// test area has y lower then this.
 	else if(facing == 1)
-		return Cuboid(*m_blocks, m_blocks->getIndex({highest.x, lowest.y, highest.z}), m_lowest);
+		return Cuboid(blocks, blocks.getIndex({highest.x, lowest.y, highest.z}), m_lowest);
 			// test area has z higher then this.
 	else if(facing == 5)
-		return Cuboid(*m_blocks, m_highest, m_blocks->getIndex({lowest.x, lowest.y, highest.z}));
+		return Cuboid(blocks, m_highest, blocks.getIndex({lowest.x, lowest.y, highest.z}));
 	// test area has z lower then this.
 	else if(facing == 0)
-		return Cuboid(*m_blocks, m_blocks->getIndex({highest.x, highest.y, lowest.z}), m_lowest);
-	return Cuboid(*m_blocks, BlockIndex::null(), BlockIndex::null());
+		return Cuboid(blocks, blocks.getIndex({highest.x, highest.y, lowest.z}), m_lowest);
+	return Cuboid(blocks, BlockIndex::null(), BlockIndex::null());
 }
-bool Cuboid::overlapsWith(const Cuboid& other) const
+bool Cuboid::overlapsWith(Blocks& blocks, const Cuboid& other) const
 {
-	Point3D highest = m_blocks->getCoordinates(m_highest);
-	Point3D lowest = m_blocks->getCoordinates(m_lowest);
-	Point3D otherHighest = m_blocks->getCoordinates(other.m_highest);
-	Point3D otherLowest = m_blocks->getCoordinates(other.m_lowest);
+	Point3D highest = blocks.getCoordinates(m_highest);
+	Point3D lowest = blocks.getCoordinates(m_lowest);
+	Point3D otherHighest = blocks.getCoordinates(other.m_highest);
+	Point3D otherLowest = blocks.getCoordinates(other.m_lowest);
 	return
 		(
 		 highest.x >= otherLowest.x && highest.x <= otherHighest.x &&
@@ -147,7 +146,7 @@ bool Cuboid::overlapsWith(const Cuboid& other) const
 		 otherLowest.z >= lowest.z && otherLowest.z <= highest.z
 		);
 }
-size_t Cuboid::size() const
+size_t Cuboid::size(Blocks& blocks) const
 {
 	if(!m_highest.exists())
 	{
@@ -155,8 +154,8 @@ size_t Cuboid::size() const
 		return 0;
 	}
 	assert(m_lowest.exists());
-	Point3D highest = m_blocks->getCoordinates(m_highest);
-	Point3D lowest = m_blocks->getCoordinates(m_lowest);
+	Point3D highest = blocks.getCoordinates(m_highest);
+	Point3D lowest = blocks.getCoordinates(m_lowest);
 	return ((highest.x + 1) - lowest.x).get() * ((highest.y + 1) - lowest.y).get() * ((highest.z + 1) - lowest.z).get();
 }
 // static method
@@ -177,7 +176,6 @@ Cuboid Cuboid::fromBlockPair(Blocks& blocks, const BlockIndex& a, const BlockInd
 	DistanceInBlocks minY = std::min(aCoordinates.y, bCoordinates.y);
 	DistanceInBlocks minZ = std::min(aCoordinates.z, bCoordinates.z);
 	output.m_lowest = blocks.getIndex({minX, minY, minZ});
-	output.m_blocks = &blocks;
 	return output;
 }
 bool Cuboid::operator==(const Cuboid& cuboid) const
@@ -203,8 +201,8 @@ Cuboid::iterator::iterator(Blocks& blocks, const BlockIndex& lowest, const Block
 	}
 	else 
 	{
-		m_current = m_start = m_blocks.getCoordinates(lowest);
-		m_end = m_blocks.getCoordinates(highest);
+		m_current = m_start = blocks.getCoordinates(lowest);
+		m_end = blocks.getCoordinates(highest);
 	}
 }
 void Cuboid::iterator::setToEnd()

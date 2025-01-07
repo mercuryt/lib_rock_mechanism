@@ -7,11 +7,11 @@
 OpacityFacade::OpacityFacade(Area& area) : m_area(area) { }
 void OpacityFacade::initalize()
 {
-	assert(m_area.getBlocks().size());
-	m_fullOpacity.resize(m_area.getBlocks().size());
-	m_floorOpacity.resize(m_area.getBlocks().size());
-	for(BlockIndex block : m_area.getBlocks().getAll())
-		update(block);
+	Blocks& blocks = m_area.getBlocks();
+	assert(blocks.size());
+	m_fullOpacity.resize(blocks.size());
+	m_floorOpacity.resize(blocks.size());
+	blocks.forEach([&](const BlockIndex& block){ update(block); });
 }
 void OpacityFacade::update(const BlockIndex& index)
 {
@@ -24,11 +24,10 @@ void OpacityFacade::update(const BlockIndex& index)
 void OpacityFacade::validate() const
 {
 	Blocks& blocks = m_area.getBlocks();
-	for(BlockIndex block : m_area.getBlocks().getAll())
-	{
+	blocks.forEach([&](const BlockIndex& block){
 		assert(blocks.canSeeThrough(block) != m_fullOpacity[block]);
 		assert(blocks.canSeeThroughFloor(block) != m_floorOpacity[block]);
-	}
+	});
 }
 bool OpacityFacade::isOpaque(const BlockIndex& index) const
 {

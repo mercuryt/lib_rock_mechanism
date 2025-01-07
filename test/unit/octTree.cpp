@@ -29,7 +29,7 @@ TEST_CASE("octTree")
 		Blocks& blocks = area.getBlocks();
 		Actors& actors = area.getActors();
 		uint toSpawn = Config::minimumOccupantsForOctTreeToSplit;
-		for(const BlockIndex& block : blocks.getAll())
+		for(const BlockIndex& block : blocks.getAllIndices())
 		{
 			if(toSpawn == 0)
 				break;
@@ -40,7 +40,7 @@ TEST_CASE("octTree")
 		REQUIRE(area.m_octTree.getCount() == 9);
 		REQUIRE(!blocks.actor_empty(BlockIndex::create(0)));
 		uint toUnspawn = Config::minimumOccupantsForOctTreeToSplit - Config::minimumOccupantsForOctTreeToUnsplit;
-		for(const BlockIndex& block : blocks.getAll())
+		for(const BlockIndex& block : blocks.getAllIndices())
 		{
 			if(toUnspawn == 0)
 				break;

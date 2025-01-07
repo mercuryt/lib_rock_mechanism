@@ -523,8 +523,9 @@ TEST_CASE("construct")
 		MaterialTypeId dirt = MaterialType::byName("dirt");
 		BlockIndex wallLocation = blocks.getIndex_i(3, 3, 2);
 		Cuboid pileLocation(blocks, blocks.getIndex_i(9, 9, 2), blocks.getIndex_i(0, 9, 2));
-		for(BlockIndex block : pileLocation)
+		pileLocation.forEach(blocks, [&](const BlockIndex& block){
 			items.create({.itemType=pile, .materialType=dirt, .location=block, .quantity=Quantity::create(15)});
+		});
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, dirt);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation, activate the project and reserve the piles.

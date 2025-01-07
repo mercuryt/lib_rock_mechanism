@@ -85,8 +85,9 @@ TEST_CASE("dig")
 		Cuboid tunnel(blocks, tunnelEnd, tunnelStart);
 		area.m_hasDigDesignations.designate(faction, stairsLocation1, &BlockFeatureType::stairs);
 		area.m_hasDigDesignations.designate(faction, stairsLocation2, &BlockFeatureType::stairs);
-		for(BlockIndex block : tunnel)
+		tunnel.forEach(blocks, [&](const BlockIndex& block) {
 			area.m_hasDigDesignations.designate(faction, block, nullptr);
+		});
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		// Find project, reserve, and activate.
 		simulation.doStep();
@@ -160,8 +161,10 @@ TEST_CASE("dig")
 		BlockIndex tunnelStart = blocks.getIndex_i(7, 5, 4);
 		BlockIndex tunnelEnd = blocks.getIndex_i(9, 5, 4);
 		BlockIndex tunnelSecond = blocks.getIndex_i(8, 5, 4);
-		for(BlockIndex block : Cuboid(blocks, tunnelEnd, tunnelStart))
+		Cuboid tunnel(blocks, tunnelEnd, tunnelStart);
+		tunnel.forEach(blocks, [&](const BlockIndex& block) {
 			area.m_hasDigDesignations.designate(faction, block, nullptr);
+		});
 		items.exit(pick);
 		actors.equipment_add(dwarf1, pick);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
@@ -236,7 +239,7 @@ TEST_CASE("dig")
 		REQUIRE(project != nullptr);
 		REQUIRE(actors.objective_getCurrent<DigObjective>(dwarf2).getProject() == project);
 		REQUIRE(project->hasTryToHaulThreadedTask());
-		// Both path to the pick, dwarf1 reserves it and dwarf2 
+		// Both path to the pick, dwarf1 reserves it and dwarf2
 		simulation.doStep();
 		REQUIRE(actors.move_hasPathRequest(dwarf1));
 		REQUIRE(actors.move_hasPathRequest(dwarf2));

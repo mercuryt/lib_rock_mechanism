@@ -29,7 +29,7 @@ TEST_CASE("vision")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		BlockIndex block = blocks.getIndex_i(5, 5, 1);
 		ActorIndex actor = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block,
 		});
 		area.m_visionRequests.doStep();
@@ -41,11 +41,11 @@ TEST_CASE("vision")
 		BlockIndex block1 = blocks.getIndex_i(3, 3, 1);
 		BlockIndex block2 = blocks.getIndex_i(7, 7, 1);
 		ActorIndex a1 = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block1,
 		});
 		ActorIndex a2 = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block2,
 		});
 		area.m_visionRequests.doStep();
@@ -61,11 +61,11 @@ TEST_CASE("vision")
 		BlockIndex block3 = blocks.getIndex_i(5, 7, 1);
 		blocks.solid_set(block2, marble, false);
 		ActorIndex a1 = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block1,
 		});
 		actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block3,
 		});
 		area.m_visionRequests.doStep();
@@ -80,11 +80,11 @@ TEST_CASE("vision")
 		BlockIndex block3 = blocks.getIndex_i(6, 6, 1);
 		blocks.solid_set(block2, marble, false);
 		ActorIndex a1 = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block1,
 		});
 		actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block3,
 		});
 		area.m_visionRequests.doStep();
@@ -100,11 +100,11 @@ TEST_CASE("vision")
 		BlockIndex block4 = blocks.getIndex_i(4, 7, 1);
 		blocks.solid_set(block2, marble, false);
 		ActorIndex a1 = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block1,
 		});
 		ActorIndex a2 = actors.create({
-			.species=troll, 
+			.species=troll,
 			.location=block3,
 		});
 		REQUIRE(actors.getBlocks(a2).contains(block4));
@@ -121,11 +121,11 @@ TEST_CASE("vision")
 		BlockIndex block3 = blocks.getIndex_i(5, 7, 1);
 		blocks.solid_set(block2, glass, false);
 		ActorIndex a1 = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block1,
 		});
 		actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block3,
 		});
 		area.m_visionRequests.doStep();
@@ -139,11 +139,11 @@ TEST_CASE("vision")
 		BlockIndex block2 = blocks.getIndex_i(5, 5, 1);
 		BlockIndex block3 = blocks.getIndex_i(5, 7, 1);
 		ActorIndex a1 = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block1,
 		});
 		actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block3,
 		});
 		blocks.blockFeature_construct(block2, door, marble);
@@ -171,11 +171,11 @@ TEST_CASE("vision")
 		blocks.blockFeature_construct(block3, hatch, marble);
 		blocks.blockFeature_close(block3, hatch);
 		ActorIndex a1 = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block1,
 		});
 		ActorIndex a2 = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block3,
 		});
 		area.m_visionRequests.doStep();
@@ -200,11 +200,11 @@ TEST_CASE("vision")
 		blocks.blockFeature_construct(block2, hatch, marble);
 		blocks.blockFeature_close(block2, hatch);
 		ActorIndex a1 = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block1,
 		});
 		actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block3,
 		});
 		area.m_visionRequests.doStep();
@@ -222,11 +222,11 @@ TEST_CASE("vision")
 		blocks.solid_setNot(block3);
 		blocks.blockFeature_construct(block2, stairs, marble);
 		ActorIndex a1 = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block1,
 		});
 		ActorIndex a2 = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block3,
 		});
 		area.m_visionRequests.doStep();
@@ -251,11 +251,11 @@ TEST_CASE("vision")
 		blocks.solid_setNot(block3);
 		blocks.blockFeature_construct(block2, stairs, marble);
 		ActorIndex a1 = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block1,
 		});
 		actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block3,
 		});
 		area.m_visionRequests.doStep();
@@ -274,11 +274,11 @@ TEST_CASE("vision")
 		BlockIndex block3 = blocks.getIndex_i(5, 7, 1);
 		blocks.blockFeature_construct(block2, floor, marble);
 		ActorIndex a1 = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block1,
 		});
 		actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block3,
 		});
 		area.m_visionRequests.doStep();
@@ -315,7 +315,7 @@ TEST_CASE("vision")
 		BlockIndex block4 = blocks.getIndex_i(1, 1, 7);
 		BlockIndex block5 = blocks.getIndex_i(9, 9, 1);
 		REQUIRE(area.m_visionCuboids.size() == 1);
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1)->m_cuboid.size() == 900);
+		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1)->m_cuboid.size(blocks) == 900);
 		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) == area.m_visionCuboids.getVisionCuboidFor(block2));
 		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) == area.m_visionCuboids.getVisionCuboidFor(block3));
 		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) == area.m_visionCuboids.getVisionCuboidFor(block4));
@@ -323,8 +323,8 @@ TEST_CASE("vision")
 		blocks.blockFeature_construct(block3, floor, marble);
 		area.m_visionCuboids.clearDestroyed();
 		REQUIRE(area.m_visionCuboids.size() == 2);
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1)->m_cuboid.size() == 400);
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block4)->m_cuboid.size() == 500);
+		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1)->m_cuboid.size(blocks) == 400);
+		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block4)->m_cuboid.size(blocks) == 500);
 		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) == area.m_visionCuboids.getVisionCuboidFor(block2));
 		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) != area.m_visionCuboids.getVisionCuboidFor(block3));
 		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) != area.m_visionCuboids.getVisionCuboidFor(block4));
@@ -340,7 +340,7 @@ TEST_CASE("vision")
 		area.m_visionCuboids.clearDestroyed();
 		REQUIRE(area.m_visionCuboids.size() == 7);
 		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block3) == area.m_visionCuboids.getVisionCuboidFor(block4));
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block4)->m_cuboid.size() == 500);
+		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block4)->m_cuboid.size(blocks) == 500);
 		blocks.solid_setNot(block2);
 		area.m_visionCuboids.clearDestroyed();
 		REQUIRE(area.m_visionCuboids.size() == 1);
@@ -356,11 +356,11 @@ TEST_CASE("vision")
 		BlockIndex block1 = blocks.getIndex_i(3, 3, 1);
 		BlockIndex block2 = blocks.getIndex_i(7, 7, 1);
 		ActorIndex a1 = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block1,
 		});
 		ActorIndex a2 = actors.create({
-			.species=dwarf, 
+			.species=dwarf,
 			.location=block2,
 		});
 		area.m_visionRequests.doStep();
@@ -381,11 +381,11 @@ TEST_CASE("Too far to see")
 	BlockIndex block1 = blocks.getIndex_i(0, 0, 1);
 	BlockIndex block2 = blocks.getIndex_i(19, 19, 1);
 	ActorIndex a1 = actors.create({
-		.species=dwarf, 
+		.species=dwarf,
 		.location=block1,
 	});
 	actors.create({
-		.species=dwarf, 
+		.species=dwarf,
 		.location=block2,
 	});
 	area.m_visionRequests.doStep();

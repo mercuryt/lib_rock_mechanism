@@ -95,9 +95,11 @@ BlockIndex DramaArc::getEntranceToArea(const ShapeId& shape, const MoveTypeId& m
 {
 	BlockIndices candidates;
 	Blocks& blocks = m_area->getBlocks();
-	for(BlockIndex block : blocks.getAll())
+	// TODO: optimize this: only check faces of getAll() cuboid.
+	blocks.forEach([&](const BlockIndex& block) {
 		if(blocks.shape_moveTypeCanEnter(block, moveType) && blocks.isEdge(block) && !blocks.isUnderground(block))
 			candidates.add(block);
+	});
 	BlockIndex candidate;
 	static uint16_t minimumConnectedCount = 200;
 	do {
