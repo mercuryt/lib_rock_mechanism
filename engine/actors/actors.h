@@ -110,7 +110,7 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	DataVector<SmallSet<ActorReference>, ActorIndex> m_canBeSeenBy;
 	DataVector<DistanceInBlocks, ActorIndex> m_visionRange;
 	// Combat.
-	HasScheduledEvents<AttackCoolDownEvent> m_coolDownEvent;
+	HasScheduledEvents<AttackCoolDownEvent, ActorIndex> m_coolDownEvent;
 	DataVector<std::vector<std::pair<CombatScore, Attack>>, ActorIndex> m_meleeAttackTable;
 	DataVector<ActorIndices, ActorIndex> m_targetedBy;
 	DataVector<ActorIndex, ActorIndex> m_target;
@@ -120,7 +120,7 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	DataVector<float, ActorIndex> m_coolDownDurationModifier;
 	DataVector<CombatScore, ActorIndex> m_combatScore;
 	// Move.
-	HasScheduledEvents<MoveEvent> m_moveEvent;
+	HasScheduledEvents<MoveEvent, ActorIndex> m_moveEvent;
 	DataVector<PathRequest*, ActorIndex> m_pathRequest;
 	DataVector<BlockIndices, ActorIndex> m_path;
 	DataVector<BlockIndices::iterator, ActorIndex> m_pathIter;

@@ -90,31 +90,31 @@ public:
 	[[nodiscard]] bool isPaused() const { return !HasScheduledEvent<EventType>::exists(); }
 	[[nodiscard]] Step getStoredElapsedSteps() const { return m_elapsedSteps; }
 };
-template<class EventType>
+template<class EventType, class Index>
 class HasScheduledEvents
 {
 protected:
 	EventSchedule& m_schedule;
-	DataVector<EventType*, HasShapeIndex> m_events;
+	DataVector<EventType*, Index> m_events;
 public:
 	HasScheduledEvents(EventSchedule& s) : m_schedule(s) { assert(&s); }
-	void load(Simulation& simulation, const Json& data, const HasShapeIndex& size)
+	void load(Simulation& simulation, const Json& data, const Index& size)
 	{
 		m_events.resize(size);
 		for(auto iter = data.begin(); iter != data.end(); ++iter)
 		{
-			HasShapeIndex index = HasShapeIndex::create(std::stoi(iter.key()));
+			const Index& index = Index::create(std::stoi(iter.key()));
 			auto event = std::make_unique<EventType>(simulation, iter.value());
 			m_events[index] = event.get();
 			m_schedule.schedule(std::move(event));
 		}
 	}
-	void resize(HasShapeIndex size)
+	void resize(const Index& size)
 	{
 		m_events.resize(size);
 	}
 	template<typename ...Args>
-	void schedule(HasShapeIndex index, Args&& ...args)
+	void schedule(const Index& index, Args&& ...args)
 	{
 		assert(m_events.size() > index.get());
 		assert(m_events[index] == nullptr);
@@ -122,51 +122,55 @@ public:
 		m_events[index] = static_cast<EventType*>(event.get());
 		m_schedule.schedule(std::move(event));
 	}
-	void unschedule(HasShapeIndex index)
+	void unschedule(const Index& index)
 	{
 		assert(m_events[index] != nullptr);
 		m_events[index]->cancel(m_schedule.getSimulation(), m_schedule.getArea());
 		m_events[index] = nullptr;
 	}
-	void maybeUnschedule(HasShapeIndex index)
+	void maybeUnschedule(const Index& index)
 	{
 		if(m_events[index] != nullptr)
 			unschedule(index);
 	}
-	void clearPointer(HasShapeIndex index)
+	void clearPointer(const Index& index)
 	{
 		assert(m_events[index] != nullptr);
 		m_events[index] = nullptr;
 	}
-	void moveIndex(HasShapeIndex oldIndex, HasShapeIndex newIndex)
+	void moveIndex(const Index& oldIndex, const Index& newIndex)
 	{
 		m_events[newIndex] = m_events[oldIndex];
 		m_events[newIndex]->onMoveIndex(oldIndex, newIndex);
 	}
-	[[nodiscard]] bool contains(HasShapeIndex index) { return m_events[index] != nullptr; }
-	[[nodiscard]] auto at(HasShapeIndex index) -> EventType& { return *m_events[index]; }
-	[[nodiscard]] auto operator[](HasShapeIndex index) -> EventType& { return at(index); }
-	[[nodiscard]] Percent percentComplete(HasShapeIndex index) const
+	void sortRangeWithOrder(const Index& begin, const Index& end, std::vector<std::pair<uint32_t, Index>> sortOrder)
+	{
+		m_events.sortRangeWithOrder(begin, end, sortOrder);
+	}
+	[[nodiscard]] bool contains(const Index& index) { return m_events[index] != nullptr; }
+	[[nodiscard]] auto at(const Index& index) -> EventType& { return *m_events[index]; }
+	[[nodiscard]] auto operator[](const Index& index) -> EventType& { return at(index); }
+	[[nodiscard]] Percent percentComplete(const Index& index) const
 	{
 		assert(m_events[index] != nullptr);
 		return m_events[index]->percentComplete(m_schedule.getSimulation());
 	}
-	[[nodiscard]] float fractionComplete(HasShapeIndex index) const
+	[[nodiscard]] float fractionComplete(const Index& index) const
 	{
 		assert(m_events[index] != nullptr);
 		return m_events[index]->fractionComplete(m_schedule.getSimulation());
 	}
-	[[nodiscard]] bool exists(HasShapeIndex index) const { return m_events[index] != nullptr; }
-	[[nodiscard]] const Step& getStep(HasShapeIndex index) const
+	[[nodiscard]] bool exists(const Index& index) const { return m_events[index] != nullptr; }
+	[[nodiscard]] const Step& getStep(const Index& index) const
 	{
 		assert(m_events[index] != nullptr);
 		return m_events[index]->m_step;
 	}
-	[[nodiscard]] Step getStartStep(HasShapeIndex index) const { return m_events[index]->m_startStep; }
-	[[nodiscard]] Step remainingSteps(HasShapeIndex index) const { return m_events[index]->remaningSteps(m_schedule.getSimulation()); }
-	[[nodiscard]] Step elapsedSteps(HasShapeIndex index) const { return m_events[index]->elapsedSteps(m_schedule.getSimulation()); }
-	[[nodiscard]] Step duration(HasShapeIndex index) const { return m_events[index]->duration(); }
-	[[nodiscard]] ScheduledEvent* getEvent(HasShapeIndex index) { return m_events[index]; }
+	[[nodiscard]] Step getStartStep(const Index& index) const { return m_events[index]->m_startStep; }
+	[[nodiscard]] Step remainingSteps(const Index& index) const { return m_events[index]->remaningSteps(m_schedule.getSimulation()); }
+	[[nodiscard]] Step elapsedSteps(const Index& index) const { return m_events[index]->elapsedSteps(m_schedule.getSimulation()); }
+	[[nodiscard]] Step duration(const Index& index) const { return m_events[index]->duration(); }
+	[[nodiscard]] ScheduledEvent* getEvent(const Index& index) { return m_events[index]; }
 	[[nodiscard]] Json toJson() const
 	{
 		Json output = Json::object();
@@ -188,5 +192,5 @@ public:
 };
 template<class EventType>
 void to_json(Json& data, const HasScheduledEvent<EventType>& hasScheduledEvent) { data = hasScheduledEvent.toJson(); }
-template<class EventType>
-void to_json(Json& data, const HasScheduledEvents<EventType>& hasScheduledEvents) { data = hasScheduledEvents.toJson(); }
+template<class EventType, class Index>
+void to_json(Json& data, const HasScheduledEvents<EventType, Index>& hasScheduledEvents) { data = hasScheduledEvents.toJson(); }

@@ -143,15 +143,15 @@ public:
 	[[nodiscard]] bool isEdge(const BlockIndex& index) const;
 	[[nodiscard]] bool isOnSurface(const BlockIndex& index) const { return isOutdoors(index) && !isUnderground(index); }
 	[[nodiscard]] bool hasLineOfSightTo(const BlockIndex& index, const BlockIndex& other) const;
-	// Validate the nongeneric object can enter this block and also any other blocks required by it's Shape comparing to m_totalStaticVolume.
-	[[nodiscard]] bool shapeAndMoveTypeCanEnterEver(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType) const;
 	[[nodiscard]] BlockIndex getBlockBelow(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndex getBlockAbove(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndex getBlockNorth(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndex getBlockWest(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndex getBlockSouth(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndex getBlockEast(const BlockIndex& index) const;
+	//TODO: make this const after removing the area pointer from cuboid.
 	[[nodiscard]] Cuboid getZLevel(const DistanceInBlocks& z);
+	[[nodiscard]] BlockIndex getMiddleAtGroundLevel() const;
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
 	void setExposedToSky(const BlockIndex& index, bool exposed);
 	void setBelowExposedToSky(const BlockIndex& index);

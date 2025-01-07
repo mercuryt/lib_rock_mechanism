@@ -35,13 +35,13 @@ struct PlantParamaters
 };
 class Plants final : public HasShapes<Plants, PlantIndex>
 {
-	HasScheduledEvents<PlantGrowthEvent> m_growthEvent;
+	HasScheduledEvents<PlantGrowthEvent, PlantIndex> m_growthEvent;
 	//TODO: Why is this a seperate event from plant growth?
-	HasScheduledEvents<PlantShapeGrowthEvent> m_shapeGrowthEvent;
-	HasScheduledEvents<PlantFluidEvent> m_fluidEvent;
-	HasScheduledEvents<PlantTemperatureEvent> m_temperatureEvent;
-	HasScheduledEvents<PlantEndOfHarvestEvent> m_endOfHarvestEvent;
-	HasScheduledEvents<PlantFoliageGrowthEvent> m_foliageGrowthEvent;
+	HasScheduledEvents<PlantShapeGrowthEvent, PlantIndex> m_shapeGrowthEvent;
+	HasScheduledEvents<PlantFluidEvent, PlantIndex> m_fluidEvent;
+	HasScheduledEvents<PlantTemperatureEvent, PlantIndex> m_temperatureEvent;
+	HasScheduledEvents<PlantEndOfHarvestEvent, PlantIndex> m_endOfHarvestEvent;
+	HasScheduledEvents<PlantFoliageGrowthEvent, PlantIndex> m_foliageGrowthEvent;
 	DataVector<PlantSpeciesId, PlantIndex> m_species;
 	DataVector<BlockIndex, PlantIndex> m_fluidSource;
 	DataVector<Quantity, PlantIndex> m_quantityToHarvest;
@@ -49,6 +49,10 @@ class Plants final : public HasShapes<Plants, PlantIndex>
 	DataVector<Percent, PlantIndex> m_percentFoliage;
 	DataVector<uint8_t, PlantIndex> m_wildGrowth;
 	DataVector<CollisionVolume, PlantIndex> m_volumeFluidRequested;
+	PlantIndex m_incrementalSortPosition;
+	std::chrono::microseconds m_averageSortTimePerPlant = std::chrono::microseconds(10);
+	uint32_t m_averageSortTimeSampleSize = 0;
+	uint8_t m_sortEntropy = 0;
 	void moveIndex(const PlantIndex& oldIndex, const PlantIndex& newIndex);
 	void updateFluidVolumeRequested(const PlantIndex& index);
 public:
@@ -80,6 +84,10 @@ public:
 	void setShape(const PlantIndex& index, const ShapeId& shape);
 	void setLocation(const PlantIndex& index, const BlockIndex& location, const Facing& facing);
 	void exit(const PlantIndex& index);
+	// Plants are able to do a more efficient range based sort becasue no references to them are ever stored.
+	// Portables are required to swap one at a time.
+	void sortRange(const PlantIndex& begin, const PlantIndex& end);
+	void maybeIncrementalSort(const std::chrono::microseconds timeBugdget);
 	[[nodiscard]] PlantIndexSet& getOnSurface() { return m_onSurface; }
 	[[nodiscard]] bool isOnSurface(const PlantIndex& index) { return m_onSurface.contains(index); }
 	[[nodiscard]] bool blockIsFull(const BlockIndex& index);

@@ -25,6 +25,7 @@
 #include "actorPanel.h"
 #include "editFactionPanel.h"
 #include "dialogueBox.h"
+#include "atomicBool.h"
 //#include "worldParamatersPanel.h"
 struct GameView final 
 {
@@ -57,14 +58,14 @@ class Window final
 	std::unique_ptr<Simulation> m_simulation;
 	Area* m_area = nullptr;
 	uint32_t m_scale = displayData::defaultScale;
-	uint32_t m_z = 0;
+	DistanceInBlocks m_z;
 	std::atomic<uint16_t> m_speed = 1;
-	std::unordered_map<AreaId, GameView> m_lastViewedSpotInArea;
+	SmallMap<AreaId, GameView> m_lastViewedSpotInArea;
 	//TODO: multi select.
-	std::unordered_set<BlockIndex*> m_selectedBlocks;
-	std::unordered_set<Actor*> m_selectedActors;
-	std::unordered_set<Item*> m_selectedItems;
-	std::unordered_set<Plant*> m_selectedPlants;
+	SmallSet<BlockIndex*> m_selectedBlocks;
+	SmallSet<ActorIndex> m_selectedActors;
+	SmallSet<ItemIndex> m_selectedItems;
+	SmallSet<PlantIndex> m_selectedPlants;
 	Faction* m_faction = nullptr;
 	// AtomicBool used instead of std::atomic<bool> for atomic toggle.
 	AtomicBool m_paused = true;
@@ -124,10 +125,10 @@ public:
 	void selectItem(Item& item);
 	void selectPlant(Plant& plant);
 	void selectActor(Actor& actor);
-	std::unordered_set<BlockIndex*>& getSelectedBlocks() { return m_selectedBlocks; }
-	std::unordered_set<Item*>& getSelectedItems() { return m_selectedItems; }
-	std::unordered_set<Plant*>& getSelectedPlants() { return m_selectedPlants; }
-	std::unordered_set<Actor*>& getSelectedActors() { return m_selectedActors; }
+	SmallSet<BlockIndex*>& getSelectedBlocks() { return m_selectedBlocks; }
+	SmallSet<Item*>& getSelectedItems() { return m_selectedItems; }
+	SmallSet<Plant*>& getSelectedPlants() { return m_selectedPlants; }
+	SmallSet<Actor*>& getSelectedActors() { return m_selectedActors; }
 	[[nodiscard]] BlockIndex& getBlockUnderCursor();
 	[[nodiscard]] BlockIndex& getBlockAtPosition(sf::Vector2i pixelPos);
 	// Filesystem.

@@ -20,7 +20,6 @@ struct Faction;
 struct CraftJob;
 class Objective;
 struct ObjectiveType;
-class Plant;
 class Area;
 struct Uniform;
 class OnDestroy;

@@ -153,6 +153,7 @@ void Config::load()
 	data["piercePercentTemporaryImparmentModifier"].get_to(piercePercentTemporaryImparmentModifier);
 	data["pierceSkinModifier"].get_to(pierceSkinModifier);
 	data["pierceStepsTillHealedModifier"].get_to(pierceStepsTillHealedModifier);
+	data["plantSortEntropyThreashold"].get_to(plantSortEntropyThreashold);
 	data["pointsOfCombatScorePerUnitOfAgility"].get_to(pointsOfCombatScorePerUnitOfAgility);
 	data["pointsOfCombatScorePerUnitOfDextarity"].get_to(pointsOfCombatScorePerUnitOfDextarity);
 	data["pointsOfCombatScorePerUnitOfStrength"].get_to(pointsOfCombatScorePerUnitOfStrength);

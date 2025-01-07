@@ -1,12 +1,11 @@
 #pragma once
 #include <TGUI/TGUI.hpp>
 class Window;
-class Actor;
 class ActorView final
 {
 	Window& m_window;
 	tgui::ScrollablePanel::Ptr m_panel;
-	Actor* m_actor;
+	ActorIndex m_actor;
 public:
 	ActorView(Window& w);
 	void show() { m_panel->setVisible(true); }

@@ -145,6 +145,7 @@
 	"piercePercentTemporaryImparmentModifier": 10,
 	"pierceSkinModifier": 1,
 	"pierceStepsTillHealedModifier": 200,
+	"plantSortEntropyThreashold" : 20,
 	"pointsOfCombatScorePerUnitOfAgility": 0.1,
 	"pointsOfCombatScorePerUnitOfDextarity": 0.1,
 	"pointsOfCombatScorePerUnitOfStrength": 0.2,

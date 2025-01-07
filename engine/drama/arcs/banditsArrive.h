@@ -6,7 +6,6 @@
 #include "../../reference.h"
 #include <vector>
 class Area;
-class Actor;
 class BanditsLeaveScheduledEvent;
 struct DeserializationMemo;
 

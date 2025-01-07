@@ -2,10 +2,7 @@
 #include <TGUI/TGUI.hpp>
 #include <TGUI/Widgets/Panel.hpp>
 class BlockIndex;
-class Item;
-class Actor;
 class Window;
-class Plant;
 
 class InfoPopup final
 {

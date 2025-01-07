@@ -9,7 +9,6 @@
 
 class EatObjective;
 class HungerEvent;
-class Plant;
 struct DeserializationMemo;
 struct AnimalSpecies;
 

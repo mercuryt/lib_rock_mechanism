@@ -9,7 +9,6 @@
 #include <vector>
 class Simulation;
 class Area;
-class Actor;
 struct Shape;
 class HasShape;
 struct MoveType;

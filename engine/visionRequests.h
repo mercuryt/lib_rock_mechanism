@@ -8,7 +8,6 @@
 #include <cstdint>
 #include <vector>
 class Area;
-class Actor;
 struct VisionCuboid;
 struct VisionRequest
 {

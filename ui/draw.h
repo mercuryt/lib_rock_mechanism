@@ -7,9 +7,6 @@
 #include <unordered_set>
 class Window;
 class BlockIndex;
-class Item;
-class Actor;
-class Plant;
 class Draw final
 {
 	Window& m_window;

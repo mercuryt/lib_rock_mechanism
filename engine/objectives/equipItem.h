@@ -1,8 +1,6 @@
 #pragma once
 #include "../objective.h"
 
-class Actor;
-class Item;
 class EquipItemObjective final : public Objective
 {
 	ItemReference m_item;
