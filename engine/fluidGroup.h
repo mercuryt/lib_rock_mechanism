@@ -49,7 +49,6 @@ public:
 	BlockIndices m_futureAddToFillQueue;
 	BlockIndices m_futureRemoveFromFillQueue;
 	FluidTypeMap<FluidGroup*> m_disolvedInThisGroup;
-	Area& m_area;
 	FluidTypeId m_fluidType;
 	int32_t m_excessVolume = 0;
 	uint32_t m_viscosity = 0;
@@ -63,29 +62,28 @@ public:
 
 	FluidGroup(const FluidTypeId& ft, BlockIndices& blocks, Area& area, bool checkMerge = true);
 	FluidGroup(const FluidGroup&) = delete;
-	void addFluid(const CollisionVolume& fluidVolume);
-	void removeFluid(const CollisionVolume& fluidVolume);
-	void addBlock(const BlockIndex& block, bool checkMerge = true);
-	void removeBlock(const BlockIndex& block);
-	void removeBlocks(BlockIndices& blocks);
-	void addMistFor(const BlockIndex& block);
+	void addFluid(Area& area, const CollisionVolume& fluidVolume);
+	void removeFluid(Area& area, const CollisionVolume& fluidVolume);
+	void addBlock(Area& area, const BlockIndex& block, bool checkMerge = true);
+	void removeBlock(Area& area, const BlockIndex& block);
+	void addMistFor(Area& area, const BlockIndex& block);
 	// Takes a pointer to the other fluid group because we may switch them inorder to merge into the larger one.
 	// Return the larger.
-	FluidGroup* merge(FluidGroup* fluidGroup);
-	void readStep();
-	void writeStep();
-	void afterWriteStep();
-	void mergeStep();
-	void splitStep();
-	void setUnstable();
-	void addDiagonalsFor(const BlockIndex& block);
-	void validate() const;
-	void validate(SmallSet<FluidGroup*> toErase) const;
-	void log() const;
-	void logFill() const;
-	[[nodiscard]] CollisionVolume totalVolume() const;
+	FluidGroup* merge(Area& area, FluidGroup* fluidGroup);
+	void readStep(Area& area);
+	void writeStep(Area& area);
+	void afterWriteStep(Area& area);
+	void mergeStep(Area& area);
+	void splitStep(Area& area);
+	void setUnstable(Area& area);
+	void addDiagonalsFor(Area& area, const BlockIndex& block);
+	void validate(Area& area) const;
+	void validate(Area& area, SmallSet<FluidGroup*> toErase) const;
+	void log(Area& area) const;
+	void logFill(Area& area) const;
+	[[nodiscard]] CollisionVolume totalVolume(Area& area) const;
 	[[nodiscard]] BlockIndices& getBlocks() { return m_drainQueue.m_set; }
-	[[nodiscard]] bool dispositionIsStable(const CollisionVolume& fillVolume, const CollisionVolume& drainVolume) const;
+	[[nodiscard]] bool dispositionIsStable(Area& area, const CollisionVolume& fillVolume, const CollisionVolume& drainVolume) const;
 	[[nodiscard]] bool operator==(const FluidGroup& fluidGroup) const { return &fluidGroup == this; }
 	friend class Area;
 };

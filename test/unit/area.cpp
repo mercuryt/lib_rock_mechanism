@@ -280,7 +280,7 @@ inline void fourFluidsTestParallel(uint32_t scale, Step steps)
 	REQUIRE(!fgCO2->m_merged);
 	REQUIRE(!fgLava->m_merged);
 	REQUIRE(!fgMercury->m_merged);
-	CollisionVolume totalVolume = fgWater->totalVolume();
+	CollisionVolume totalVolume = fgWater->totalVolume(area);
 	simulation.m_step.set(1);
 	while(simulation.m_step < steps)
 	{
@@ -298,17 +298,17 @@ inline void fourFluidsTestParallel(uint32_t scale, Step steps)
 	REQUIRE(fgWater->m_stable);
 	if(scale != 3)
 		REQUIRE(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
-	REQUIRE(fgWater->totalVolume() == totalVolume);
+	REQUIRE(fgWater->totalVolume(area) == totalVolume);
 	REQUIRE(fgCO2->m_stable);
 	REQUIRE(fgCO2->m_drainQueue.m_set.size() == expectedBlocks);
-	REQUIRE(fgCO2->totalVolume() == totalVolume);
+	REQUIRE(fgCO2->totalVolume(area) == totalVolume);
 	REQUIRE(fgMercury->m_stable);
 	REQUIRE(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
-	REQUIRE(fgMercury->totalVolume() == totalVolume);
+	REQUIRE(fgMercury->totalVolume(area) == totalVolume);
 	REQUIRE(fgLava->m_stable);
 	if(scale != 3)
 		REQUIRE(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
-	REQUIRE(fgMercury->totalVolume() == totalVolume);
+	REQUIRE(fgMercury->totalVolume(area) == totalVolume);
 	REQUIRE(blocks.fluid_contains(blocks.getIndex_i(1, 1, 1), mercury));
 	REQUIRE(blocks.fluid_contains(blocks.getIndex_i(1, 1, maxZ - 1), CO2));
 }

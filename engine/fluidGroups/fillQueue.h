@@ -13,13 +13,13 @@ public:
 	BlockIndices m_futureNoLongerEmpty;
 	BlockIndices m_overfull;
 private:
-	[[nodiscard]] uint32_t getPriority(FluidGroup& fluidGroup, FutureFlowBlock& futureFlowBlock) const;
+	[[nodiscard]] uint32_t getPriority(Area& area, FutureFlowBlock& futureFlowBlock) const;
 public:
-	void buildFor(FluidGroup& fluidGroup, BlockIndices& members);
-	void initalizeForStep(FluidGroup& fluidGroup);
-	void recordDelta(FluidGroup& fluidGroup, const CollisionVolume& volume, const CollisionVolume& flowCapacity, const CollisionVolume& flowTillNextStep);
-	void applyDelta(FluidGroup& fluidGroup);
-	[[nodiscard]] CollisionVolume groupLevel(FluidGroup& fluidGroup) const;
-	void findGroupEnd(FluidGroup& fluidGroup);
-	void validate(FluidGroup& fluidGroup) const;
+	void buildFor(Area& area, FluidGroup& fluidGroup, BlockIndices& members);
+	void initalizeForStep(Area& area, FluidGroup& fluidGroup);
+	void recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionVolume& volume, const CollisionVolume& flowCapacity, const CollisionVolume& flowTillNextStep);
+	void applyDelta(Area& area, FluidGroup& fluidGroup);
+	[[nodiscard]] CollisionVolume groupLevel(Area& area, FluidGroup& fluidGroup) const;
+	void findGroupEnd(Area& area);
+	void validate(Area& area) const;
 };
