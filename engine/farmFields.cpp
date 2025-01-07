@@ -192,7 +192,7 @@ FarmField& HasFarmFieldsForFaction::create(BlockIndices blocks)
 }
 FarmField& HasFarmFieldsForFaction::create(Cuboid cuboid)
 {
-	auto set = cuboid.toSet();
+	auto set = cuboid.toSet(m_area.getBlocks());
 	return create(set);
 }
 void HasFarmFieldsForFaction::extend(FarmField& farmField, BlockIndices blocks)

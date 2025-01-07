@@ -32,8 +32,7 @@ void FindPathResult::validate() const
 TerrainFacade::TerrainFacade(Area& area, const MoveTypeId& moveType) : m_area(area), m_moveType(moveType)
 {
 	m_enterable.resize(m_area.getBlocks().size() * maxAdjacent);
-	for(BlockIndex block : m_area.getBlocks().getAll())
-		update(block);
+	area.getBlocks().forEach([&](const BlockIndex& block){ update(block); });
 	// Two results fit on a  cache line, by ensuring that the number of tasks per thread is a multiple of 2 we prevent false shareing.
 	assert(Config::pathRequestsPerThread % 2 == 0);
 }

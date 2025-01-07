@@ -25,8 +25,8 @@ TEST_CASE("vision cuboid basic")
 		VisionCuboid vc1(area, c1, VisionCuboidId::create(1));
 		Cuboid c2(blocks, blocks.getIndex_i(1, 1, 1), blocks.getIndex_i(1, 0, 0));
 		VisionCuboid vc2(area, c2, VisionCuboidId::create(2));
-		REQUIRE(vc1.m_cuboid.size() == 4);
-		REQUIRE(vc2.m_cuboid.size() == 4);
+		REQUIRE(vc1.m_cuboid.size(blocks) == 4);
+		REQUIRE(vc2.m_cuboid.size(blocks) == 4);
 		REQUIRE(vc2.canSeeInto(vc1.m_cuboid));
 		REQUIRE(vc1.canSeeInto(vc2.m_cuboid));
 	}
@@ -36,8 +36,8 @@ TEST_CASE("vision cuboid basic")
 		VisionCuboid vc1(area, c1, VisionCuboidId::create(1));
 		Cuboid c2(blocks, blocks.getIndex_i(1, 1, 1), blocks.getIndex_i(1, 0, 0));
 		VisionCuboid vc2(area, c2, VisionCuboidId::create(2));
-		REQUIRE(vc1.m_cuboid.size() == 4);
-		REQUIRE(vc2.m_cuboid.size() == 4);
+		REQUIRE(vc1.m_cuboid.size(blocks) == 4);
+		REQUIRE(vc2.m_cuboid.size(blocks) == 4);
 		REQUIRE(vc1.canCombineWith(vc2.m_cuboid));
 		Cuboid c3(blocks, blocks.getIndex_i(1, 1, 0), blocks.getIndex_i(1, 0, 0));
 		VisionCuboid vc3(area, c3, VisionCuboidId::create(3));
@@ -48,9 +48,10 @@ TEST_CASE("vision cuboid basic")
 	{
 		REQUIRE(area.m_visionCuboids.size() == 1);
 		VisionCuboid& visionCuboid = *area.m_visionCuboids.getVisionCuboidFor(blocks.getIndex_i(0, 0, 0));
-		REQUIRE(visionCuboid.m_cuboid.size() == 8);
-		for(BlockIndex block : visionCuboid.m_cuboid)
+		REQUIRE(visionCuboid.m_cuboid.size(blocks) == 8);
+		visionCuboid.m_cuboid.forEach(blocks, [&](const BlockIndex& block){
 			REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block) == &visionCuboid);
+		});
 	}
 }
 TEST_CASE("split at")
@@ -71,8 +72,8 @@ TEST_CASE("split at")
 	VisionCuboid& vc2 = *area.m_visionCuboids.getVisionCuboidFor(b2);
 	REQUIRE(&vc1 != &vc2);
 	REQUIRE(area.m_visionCuboids.getVisionCuboidFor(b3) == &vc1);
-	REQUIRE(vc1.m_cuboid.size() == 2);
-	REQUIRE(vc2.m_cuboid.size() == 1);
+	REQUIRE(vc1.m_cuboid.size(blocks) == 2);
+	REQUIRE(vc2.m_cuboid.size(blocks) == 1);
 	REQUIRE(!area.m_visionCuboids.getVisionCuboidFor(b4));
 }
 TEST_CASE("split below")
@@ -88,6 +89,6 @@ TEST_CASE("split below")
 	REQUIRE(area.m_visionCuboids.size() == 2);
 	REQUIRE(area.m_visionCuboids.getVisionCuboidFor(middle) == area.m_visionCuboids.getVisionCuboidFor(high));
 	REQUIRE(area.m_visionCuboids.getVisionCuboidFor(middle) != area.m_visionCuboids.getVisionCuboidFor(low));
-	REQUIRE(area.m_visionCuboids.getVisionCuboidFor(low)->m_cuboid.size() == 9);
-	REQUIRE(area.m_visionCuboids.getVisionCuboidFor(middle)->m_cuboid.size() == 18);
+	REQUIRE(area.m_visionCuboids.getVisionCuboidFor(low)->m_cuboid.size(blocks) == 9);
+	REQUIRE(area.m_visionCuboids.getVisionCuboidFor(middle)->m_cuboid.size(blocks) == 18);
 }

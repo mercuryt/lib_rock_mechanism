@@ -83,6 +83,10 @@ public:
 	void resize(const BlockIndex& count);
 	void initalize(const BlockIndex& index);
 	void recordAdjacent(const BlockIndex& index);
+	template<typename Action>
+	void forEach(Action&& action) { getAll().forEach(*this, action); }
+	// For testing.
+	[[nodiscard]] std::vector<BlockIndex> getAllIndices() const ;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Cuboid getAll();
 	[[nodiscard]] const Cuboid getAll() const;
@@ -129,7 +133,7 @@ public:
 	[[nodiscard]] BlockIndex offset(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const;
 	[[nodiscard]] BlockIndex offsetNotNull(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const;
 	[[nodiscard]] BlockIndex indexAdjacentToAtCount(const BlockIndex& index, const AdjacentIndex& adjacentCount) const;
-	[[nodiscard]] std::array<int32_t, 3> relativeOffsetTo(const BlockIndex& index, const BlockIndex& other) const; 
+	[[nodiscard]] std::array<int32_t, 3> relativeOffsetTo(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] std::array<int, 26> makeOffsetsForAdjacentCountTable() const;
 	[[nodiscard]] bool canSeeThrough(const BlockIndex& index) const;
 	[[nodiscard]] bool canSeeThroughFloor(const BlockIndex& index) const;

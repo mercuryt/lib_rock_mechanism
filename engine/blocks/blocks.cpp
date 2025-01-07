@@ -55,9 +55,9 @@ void Blocks::initalize(const BlockIndex& index)
 	m_staticVolume[index] = CollisionVolume::create(0);
 	m_temperatureDelta[index] = TemperatureDelta::create(0);
 	m_isEdge.set(index, (
-		point.x == 0 || point.x == (m_sizeX - 1) || 
-		point.y == 0 || point.y == (m_sizeY - 1) || 
-		point.z == 0 || point.z == (m_sizeZ - 1) 
+		point.x == 0 || point.x == (m_sizeX - 1) ||
+		point.y == 0 || point.y == (m_sizeY - 1) ||
+		point.z == 0 || point.z == (m_sizeZ - 1)
 	));
 	m_outdoors.set(index);
 	recordAdjacent(index);
@@ -90,6 +90,13 @@ void Blocks::load(const Json& data, DeserializationMemo& deserializationMemo)
 		auto& reservable = m_reservables[BlockIndex::create(std::stoi(key))] = std::make_unique<Reservable>(Quantity::create(1u));
 		deserializationMemo.m_reservables[value.get<uintptr_t>()] = reservable.get();
 	}
+}
+std::vector<BlockIndex> Blocks::getAllIndices() const
+{
+	std::vector<BlockIndex> output;
+	Blocks& blocks = const_cast<Blocks&>(*this);
+	getAll().forEach(blocks, [&output](const BlockIndex& block) mutable { output.push_back(block); });
+	return output;
 }
 Json Blocks::toJson() const
 {
@@ -181,7 +188,7 @@ Point3D Blocks::getCoordinates(BlockIndex index) const
 Point3D_fractional Blocks::getCoordinatesFractional(const BlockIndex& index) const
 {
 	Point3D coordinates = getCoordinates(index);
-	return {coordinates.x.toFloat(), coordinates.y.toFloat(), coordinates.z.toFloat()}; 
+	return {coordinates.x.toFloat(), coordinates.y.toFloat(), coordinates.z.toFloat()};
 }
 DistanceInBlocks Blocks::getZ(const BlockIndex& index) const
 {
@@ -261,7 +268,7 @@ const std::array<BlockIndex, 6>& Blocks::getDirectlyAdjacent(const BlockIndex& i
 	assert(m_directlyAdjacent.size() > index);
 	return m_directlyAdjacent[index];
 }
-BlockIndex Blocks::getBlockBelow(const BlockIndex& index) const 
+BlockIndex Blocks::getBlockBelow(const BlockIndex& index) const
 {
 	return m_directlyAdjacent[index][0];
 }
@@ -288,17 +295,17 @@ BlockIndex Blocks::getBlockEast(const BlockIndex& index) const
 BlockIndexArrayNotNull<18> Blocks::getAdjacentWithEdgeAdjacent(const BlockIndex& index) const
 {
 	static constexpr std::array<std::array<int8_t, 3>, 18>  offsetsList{{
-		{-1,0,-1}, 
+		{-1,0,-1},
 		{0,1,-1}, {0,0,-1}, {0,-1,-1},
-		{1,0,-1}, 
+		{1,0,-1},
 
 		{-1,-1,0}, {-1,0,0}, {0,-1,0},
 		{1,1,0}, {0,1,0},
 		{1,-1,0}, {1,0,0}, {0,-1,0},
 
-		{-1,0,1}, 
+		{-1,0,1},
 		{0,1,1}, {0,0,1}, {0,-1,1},
-		{1,0,1}, 
+		{1,0,1},
 	}};
 	return BlockIndexArrayNotNull<18>(getAdjacentWithOffsets<18, true>(*this, index, offsetsList.begin()));
 }
@@ -315,20 +322,20 @@ BlockIndexArrayNotNull<12> Blocks::getEdgeAdjacentOnly(const BlockIndex& index) 
 {
 	static constexpr std::array<std::array<int8_t, 3>, 12>  offsetsList{{
 		{-1,0,-1}, {0,-1,-1},
-		{1,0,-1}, {0,1,-1}, 
+		{1,0,-1}, {0,1,-1},
 
-		{-1,-1,0}, {1,1,0}, 
+		{-1,-1,0}, {1,1,0},
 		{1,-1,0}, {-1,1,0},
 
 		{-1,0,1}, {0,-1,1},
-		{0,1,1}, {1,0,1}, 
+		{0,1,1}, {1,0,1},
 	}};
 	return getAdjacentWithOffsets<12, true>(*this, index, offsetsList.begin());
 }
 BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const
 {
 	static constexpr std::array<std::array<int8_t, 3>, 4>  offsetsList{{
-		{-1,-1,0}, {1,1,0}, 
+		{-1,-1,0}, {1,1,0},
 		{1,-1,0}, {-1,1,0},
 	}};
 	return getAdjacentWithOffsets<4, true>(*this, index, offsetsList.begin());
@@ -337,7 +344,7 @@ BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnlyOnNextZLevelDown(const Bloc
 {
 	static constexpr std::array<std::array<int8_t, 3>, 4>  offsetsList{{
 		{-1,0,-1}, {0,-1,-1},
-		{1,0,-1}, {0,1,-1}, 
+		{1,0,-1}, {0,1,-1},
 	}};
 	return getAdjacentWithOffsets<4, true>(*this, index, offsetsList.begin());
 }
@@ -354,7 +361,7 @@ BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnlyOnNextZLevelUp(const BlockI
 {
 	static constexpr std::array<std::array<int8_t, 3>, 4>  offsetsList{{
 		{-1,0,1}, {0,-1,1},
-		{0,1,1}, {1,0,1}, 
+		{0,1,1}, {1,0,1},
 	}};
 	return getAdjacentWithOffsets<4, true>(*this, index, offsetsList.begin());
 }
@@ -387,7 +394,7 @@ BlockIndexArrayNotNull<20> Blocks::getEdgeAndCornerAdjacentOnly(const BlockIndex
 BlockIndexArrayNotNull<4> Blocks::getAdjacentOnSameZLevelOnly(const BlockIndex& index) const
 {
 	static constexpr std::array<std::array<int8_t, 3>, 4>  offsetsList{{
-		{-1,0,0}, {1,0,0}, 
+		{-1,0,0}, {1,0,0},
 		{0,-1,0}, {0,1,0}
 	}};
 	return getAdjacentWithOffsets<4, true>(*this, index, offsetsList.begin());
@@ -401,8 +408,8 @@ DistanceInBlocks Blocks::taxiDistance(const BlockIndex& index, const BlockIndex&
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(otherIndex);
 	return DistanceInBlocks::create(
-		abs((int)coordinates.x.get() - (int)otherCoordinates.x.get()) + 
-		abs((int)coordinates.y.get() - (int)otherCoordinates.y.get()) + 
+		abs((int)coordinates.x.get() - (int)otherCoordinates.x.get()) +
+		abs((int)coordinates.y.get() - (int)otherCoordinates.y.get()) +
 		abs((int)coordinates.z.get() - (int)otherCoordinates.z.get())
 	);
 }
