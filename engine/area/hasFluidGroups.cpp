@@ -18,41 +18,41 @@ void AreaHasFluidGroups::doStep(bool parallel)
 		std::vector<FluidGroup*>& groups = unstable.getVector();
 		//#pragma omp parallel for
 			for(FluidGroup* group : groups)
-				group->readStep();
+				group->readStep(m_area);
 	}
 	else
 		for(FluidGroup* group : unstable)
-			group->readStep();
+			group->readStep(m_area);
 	// Remove destroyed.
 	m_unstableFluidGroups.eraseIf([](auto* fluidGroup){ return fluidGroup->m_destroy; });
 	std::erase_if(m_fluidGroups, [](const FluidGroup& fluidGroup){ return fluidGroup.m_destroy; });
 	// Apply flow.
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
 	{
-		fluidGroup->writeStep();
+		fluidGroup->writeStep(m_area);
 		validateAllFluidGroups();
 	}
 	// Resolve overfull, diagonal seep, and mist.
 	unstable = m_unstableFluidGroups;
 	for(FluidGroup* fluidGroup : unstable)
 	{
-		fluidGroup->afterWriteStep();
-		fluidGroup->validate();
+		fluidGroup->afterWriteStep(m_area);
+		fluidGroup->validate(m_area);
 	}
 	m_unstableFluidGroups.eraseIf([](const FluidGroup* fluidGroup){ return fluidGroup->m_merged || fluidGroup->m_disolved; });
 	// Split.
 	// Reinitalize unstable with filtered set again.
 	unstable = m_unstableFluidGroups;
 	for(FluidGroup* fluidGroup : unstable)
-		fluidGroup->splitStep();
+		fluidGroup->splitStep(m_area);
 	// Merge.
 	// Reinitalize unstable with filtered set.
 	unstable = m_unstableFluidGroups;
 	for(FluidGroup* fluidGroup : unstable)
-		fluidGroup->mergeStep();
+		fluidGroup->mergeStep(m_area);
 	m_unstableFluidGroups.eraseIf([](FluidGroup* fluidGroup){ return fluidGroup->m_merged; });
 	for(FluidGroup& fluidGroup : m_fluidGroups)
-		fluidGroup.validate();
+		fluidGroup.validate(m_area);
 	// Check for groups to remove from unstable, possibly gather them in toErase.
 	SmallSet<FluidGroup*> toErase;
 	for(FluidGroup& fluidGroup : m_fluidGroups)
@@ -75,11 +75,11 @@ void AreaHasFluidGroups::doStep(bool parallel)
 	}
 	// Validate in the context of toErase.
 	for(FluidGroup& fluidGroup : m_fluidGroups)
-		fluidGroup.validate(toErase);
+		fluidGroup.validate(m_area, toErase);
 	// Destroy groups in toErase.
 	m_fluidGroups.remove_if([&](FluidGroup& fluidGroup){ return toErase.contains(&fluidGroup); });
 	for(FluidGroup& fluidGroup : m_fluidGroups)
-		fluidGroup.validate();
+		fluidGroup.validate(m_area);
 	// Validate that all groups in m_unstable are still in m_fluidGroups.
 	for(const FluidGroup* fluidGroup : m_unstableFluidGroups)
 	{
@@ -94,7 +94,7 @@ void AreaHasFluidGroups::doStep(bool parallel)
 		assert(found);
 	}
 	for(FluidGroup& fluidGroup : m_fluidGroups)
-		fluidGroup.validate();
+		fluidGroup.validate(m_area);
 }
 FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidTypeId& fluidType, BlockIndices& blocks, bool checkMerge)
 {
@@ -120,7 +120,7 @@ void AreaHasFluidGroups::validateAllFluidGroups()
 {
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		if(!fluidGroup.m_merged && !fluidGroup.m_destroy)
-			fluidGroup.validate();
+			fluidGroup.validate(m_area);
 }
 void AreaHasFluidGroups::markUnstable(FluidGroup& fluidGroup)
 {
@@ -136,7 +136,7 @@ std::string AreaHasFluidGroups::toS() const
 	for(const FluidGroup& fluidGroup : m_fluidGroups)
 	{
 		output += "type:" + FluidType::getName(fluidGroup.m_fluidType);
-		output += "-total:" + std::to_string(fluidGroup.totalVolume().get());
+		output += "-total:" + std::to_string(fluidGroup.totalVolume(m_area).get());
 		output += "-blocks:" + std::to_string(fluidGroup.m_drainQueue.m_set.size());
 		output += "-status:";
 		if(fluidGroup.m_merged)

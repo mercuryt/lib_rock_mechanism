@@ -77,7 +77,7 @@ void Blocks::fluid_add(const BlockIndex& index, const CollisionVolume& volume, c
 	if(found)
 	{
 		assert(found->type == fluidType);
-		found->group->addFluid(volume);
+		found->group->addFluid(m_area, volume);
 		return;
 	}
 	m_fluid[index].emplace_back(fluidType, nullptr, volume);
@@ -87,7 +87,7 @@ void Blocks::fluid_add(const BlockIndex& index, const CollisionVolume& volume, c
 		if(adjacent.exists() && fluid_canEnterEver(adjacent) && fluid_contains(adjacent, fluidType))
 		{
 			fluidGroup = fluid_getGroup(adjacent, fluidType);
-			fluidGroup->addBlock(index, true);
+			fluidGroup->addBlock(m_area, index, true);
 			break;
 		}
 	// Create fluid group.
@@ -161,7 +161,7 @@ bool Blocks::fluid_undisolveInternal(const BlockIndex& index, FluidGroup& fluidG
 		{
 			// Undisolve group.
 			m_fluid[index].emplace_back(fluidGroup.m_fluidType, &fluidGroup, flow);
-			fluidGroup.addBlock(index, false);
+			fluidGroup.addBlock(m_area, index, false);
 			fluidGroup.m_disolved = false;
 		}
 		fluid_setTotalVolume(index, m_totalFluidVolume[index] + flow);
@@ -174,7 +174,7 @@ bool Blocks::fluid_undisolveInternal(const BlockIndex& index, FluidGroup& fluidG
 void Blocks::fluid_remove(const BlockIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType)
 {
 	assert(volume <= fluid_volumeOfTypeContains(index, fluidType));
-	fluid_getGroup(index, fluidType)->removeFluid(volume);
+	fluid_getGroup(index, fluidType)->removeFluid(m_area, volume);
 }
 void Blocks::fluid_removeSyncronus(const BlockIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType)
 {
@@ -189,7 +189,7 @@ void Blocks::fluid_removeSyncronus(const BlockIndex& index, const CollisionVolum
 		if(group.getBlocks().size() == 1)
 			m_area.m_hasFluidGroups.removeFluidGroup(group);
 		else
-			group.removeBlock(index);
+			group.removeBlock(m_area, index);
 	}
 	fluid_setTotalVolume(index, m_totalFluidVolume[index] - volume);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
@@ -257,7 +257,7 @@ void Blocks::fluid_resolveOverfull(const BlockIndex& index)
 		assert(displaced.exists());
 		fluidData.volume -= displaced;
 		fluid_setTotalVolume(index, m_totalFluidVolume[index] - displaced);
-		fluidData.group->addFluid(displaced);
+		fluidData.group->addFluid(m_area, displaced);
 		if(fluidData.volume == 0)
 			toErase.push_back(fluidData.type);
 		if(fluidData.volume < Config::maxBlockVolume)
@@ -270,7 +270,7 @@ void Blocks::fluid_resolveOverfull(const BlockIndex& index)
 		// If the last block of a fluidGroup is displaced disolve it in the lowest density liquid which is more dense then it.
 		FluidGroup* fluidGroup = fluid_getGroup(index, fluidType);
 		assert(fluidGroup->m_fluidType == fluidType);
-		fluidGroup->removeBlock(index);
+		fluidGroup->removeBlock(m_area, index);
 		if(fluidGroup->m_drainQueue.m_set.empty())
 		{
 			for(FluidData& otherFluidData : m_fluid[index])
@@ -300,8 +300,8 @@ void Blocks::fluid_onBlockSetSolid(const BlockIndex& index)
 	// Displace fluids.
 	for(FluidData& fluidData : m_fluid[index])
 	{
-		fluidData.group->removeBlock(index);
-		fluidData.group->addFluid(fluidData.volume);
+		fluidData.group->removeBlock(m_area, index);
+		fluidData.group->addFluid(m_area, fluidData.volume);
 		// If there is no where to put the fluid.
 		if(fluidData.group->m_drainQueue.m_set.empty() && fluidData.group->m_fillQueue.m_set.empty())
 		{

@@ -11,9 +11,9 @@ void DrainQueue::buildFor(BlockIndices& members)
 	for(BlockIndex block : members)
 		m_queue.emplace_back(block);
 }
-void DrainQueue::initalizeForStep(FluidGroup& fluidGroup)
+void DrainQueue::initalizeForStep(Area& area, FluidGroup& fluidGroup)
 {
-	Blocks& blocks = fluidGroup.m_area.getBlocks();
+	Blocks& blocks = area.getBlocks();
 	for(FutureFlowBlock& futureFlowBlock : m_queue)
 	{
 		assert((blocks.fluid_contains(futureFlowBlock.block, fluidGroup.m_fluidType)));
@@ -22,22 +22,22 @@ void DrainQueue::initalizeForStep(FluidGroup& fluidGroup)
 		futureFlowBlock.capacity = blocks.fluid_volumeOfTypeContains(futureFlowBlock.block, fluidGroup.m_fluidType);
 	}
 	std::ranges::sort(m_queue.begin(), m_queue.end(), [&](FutureFlowBlock& a, FutureFlowBlock& b){
-		return getPriority(fluidGroup, a) > getPriority(fluidGroup, b);
+		return getPriority(area, a) > getPriority(area, b);
 	});
 	m_groupStart = m_queue.begin();
-	findGroupEnd(fluidGroup);
+	findGroupEnd(area);
 	m_futureEmpty.clear();
 	m_futureNoLongerFull.clear();
 	m_futurePotentialNoLongerAdjacent.clear();
 }
-void DrainQueue::recordDelta(FluidGroup& fluidGroup, const CollisionVolume& volume, const CollisionVolume& flowCapacity, const CollisionVolume& flowTillNextStep)
+void DrainQueue::recordDelta(Area& area, const CollisionVolume& volume, const CollisionVolume& flowCapacity, const CollisionVolume& flowTillNextStep)
 {
 	assert(volume != 0);
 	assert((m_groupStart != m_groupEnd));
 	assert((m_groupStart->capacity >= volume));
 	assert((m_groupStart >= m_queue.begin() && m_groupStart <= m_queue.end()));
 	assert((m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end()));
-	Blocks& blocks = fluidGroup.m_area.getBlocks();
+	Blocks& blocks = area.getBlocks();
 	// Record no longer full.
 	if(blocks.fluid_getTotalVolume(m_groupStart->block) == Config::maxBlockVolume && !m_futureNoLongerFull.contains((m_groupEnd-1)->block))
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
@@ -56,18 +56,18 @@ void DrainQueue::recordDelta(FluidGroup& fluidGroup, const CollisionVolume& volu
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 			m_futureEmpty.add(iter->block);
 		m_groupStart = m_groupEnd;
-		findGroupEnd(fluidGroup);
+		findGroupEnd(area);
 	} 
 	// Expand group for new higher level.
 	else if(volume == flowTillNextStep)
-		findGroupEnd(fluidGroup);
+		findGroupEnd(area);
 }
-void DrainQueue::applyDelta(FluidGroup& fluidGroup)
+void DrainQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 {
 	assert((m_groupStart >= m_queue.begin() && m_groupStart <= m_queue.end()));
 	assert((m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end()));
 	BlockIndices drainedFromAndAdjacent;
-	Blocks& blocks = fluidGroup.m_area.getBlocks();
+	Blocks& blocks = area.getBlocks();
 	for(auto iter = m_queue.begin(); iter != m_groupEnd; ++iter)
 	{
 		if(iter->delta == 0)
@@ -89,27 +89,27 @@ void DrainQueue::applyDelta(FluidGroup& fluidGroup)
 	for(BlockIndex block : drainedFromAndAdjacent)
 		blocks.fluid_setAllUnstableExcept(block, fluidGroup.m_fluidType);
 }
-CollisionVolume DrainQueue::groupLevel(FluidGroup& fluidGroup) const
+CollisionVolume DrainQueue::groupLevel(Area& area, FluidGroup& fluidGroup) const
 {
 	assert((m_groupStart != m_groupEnd));
-	Blocks& blocks = fluidGroup.m_area.getBlocks();
+	Blocks& blocks = area.getBlocks();
 	return blocks.fluid_volumeOfTypeContains(m_groupStart->block, fluidGroup.m_fluidType) - m_groupStart->delta;
 }
-uint32_t DrainQueue::getPriority(FluidGroup& fluidGroup, FutureFlowBlock& futureFlowBlock) const
+uint32_t DrainQueue::getPriority(Area& area, FutureFlowBlock& futureFlowBlock) const
 {
-	Blocks& blocks = fluidGroup.m_area.getBlocks();
+	Blocks& blocks = area.getBlocks();
 	//TODO: What is happening here?
 	return blocks.getZ(futureFlowBlock.block).get() * Config::maxBlockVolume.get() * 2 + futureFlowBlock.capacity.get();
 }
-void DrainQueue::findGroupEnd(FluidGroup& fluidGroup)
+void DrainQueue::findGroupEnd(Area& area)
 {
 	if(m_groupStart == m_queue.end())
 	{
 		m_groupEnd = m_groupStart;
 		return;
 	}
-	uint32_t priority = getPriority(fluidGroup, *m_groupStart);
+	uint32_t priority = getPriority(area, *m_groupStart);
 	for(m_groupEnd = m_groupStart + 1; m_groupEnd != m_queue.end(); ++m_groupEnd)
-		if(getPriority(fluidGroup, *m_groupEnd) != priority)
+		if(getPriority(area, *m_groupEnd) != priority)
 			break;
 }
