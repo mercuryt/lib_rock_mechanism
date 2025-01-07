@@ -1,15 +1,15 @@
 #pragma once
 #include "../fluidGroup.h"
+#include "../fluidGroups/fluidAllocator.h"
 #include "index.h"
 #include "vectorContainers.h"
 #include <list>
 #include <string>
-#include <memory_resource>
 class Area;
 class AreaHasFluidGroups final
 {
 	//TODO: Should be deque?
-	std::pmr::unsynchronized_pool_resource m_allocator;
+	FluidAllocator m_allocator;
 	std::pmr::list<FluidGroup> m_fluidGroups;
 	SmallSet<FluidGroup*> m_unstableFluidGroups;
 	SmallSet<FluidGroup*> m_setStable;

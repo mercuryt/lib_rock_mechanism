@@ -60,7 +60,7 @@ public:
 	bool m_merged = false;
 	bool m_disolved = false;
 
-	FluidGroup(const FluidTypeId& ft, BlockIndices& blocks, Area& area, bool checkMerge = true);
+	FluidGroup(FluidAllocator& allocator, const FluidTypeId& ft, BlockIndices& blocks, Area& area, bool checkMerge = true);
 	FluidGroup(const FluidGroup&) = delete;
 	void addFluid(Area& area, const CollisionVolume& fluidVolume);
 	void removeFluid(Area& area, const CollisionVolume& fluidVolume);
