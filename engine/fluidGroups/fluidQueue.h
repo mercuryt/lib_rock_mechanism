@@ -5,6 +5,7 @@
 
 #include "types.h"
 #include "index.h"
+#include "fluidAllocator.h"
 #include <vector>
 #include <cstdint>
 #include <cassert>
@@ -30,11 +31,12 @@ struct FutureFlowBlock
 class FluidQueue
 {
 public:
-	std::vector<FutureFlowBlock> m_queue;
+	std::pmr::vector<FutureFlowBlock> m_queue;
 	// TODO: does maintaining m_set actually make any sense?
 	BlockIndices m_set;
-	std::vector<FutureFlowBlock>::iterator m_groupStart, m_groupEnd;
+	std::pmr::vector<FutureFlowBlock>::iterator m_groupStart, m_groupEnd;
 
+	FluidQueue(FluidAllocator& allocator) : m_queue(&allocator) { }
 	void setBlocks(BlockIndices& blocks);
 	void maybeAddBlock(const BlockIndex& block);
 	void maybeAddBlocks(BlockIndices& blocks);

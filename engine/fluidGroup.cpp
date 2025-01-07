@@ -22,8 +22,8 @@
 #include <numeric>
 
 //TODO: reuse blocks as m_fillQueue.m_set.
-FluidGroup::FluidGroup(const FluidTypeId& ft, BlockIndices& blocks, Area& area, bool checkMerge) :
-	m_fluidType(ft)
+FluidGroup::FluidGroup(Allocator& allocator, const FluidTypeId& ft, BlockIndices& blocks, Area& area, bool checkMerge) :
+	m_fillQueue(allocator), m_drainQueue(allocator), m_fluidType(ft)
 {
 	for(BlockIndex block : blocks)
 		if(area.getBlocks().fluid_contains(block, m_fluidType))

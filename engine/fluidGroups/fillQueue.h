@@ -15,6 +15,7 @@ public:
 private:
 	[[nodiscard]] uint32_t getPriority(Area& area, FutureFlowBlock& futureFlowBlock) const;
 public:
+	FillQueue(FluidAllocator& allocator) : FluidQueue(allocator) { }
 	void buildFor(Area& area, FluidGroup& fluidGroup, BlockIndices& members);
 	void initalizeForStep(Area& area, FluidGroup& fluidGroup);
 	void recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionVolume& volume, const CollisionVolume& flowCapacity, const CollisionVolume& flowTillNextStep);
