@@ -4,7 +4,6 @@
 #include "reference.h"
 class Simulation;
 class AnimalGrowthEvent;
-class Actor;
 class CanGrow final
 {
 	HasScheduledEventPausable<AnimalGrowthEvent> m_event;

@@ -32,9 +32,6 @@ protected:
 	HasShapes(Area& area);
 	void create(const Index& index, const ShapeId& shape, const FactionId& faction, bool isStatic);
 	std::vector<std::pair<uint32_t, Index>> getSortOrder(const Index& begin, const Index& end);
-	void sortRange(const Index& begin, const Index& end, std::vector<std::pair<uint32_t, Index>> sortOrder);
-	template<typename Data>
-	void sortRangeFor(const Index& begin, const Index& end, std::vector<std::pair<uint32_t, Index>> sortOrder, Data data);
 	void resize(const Index& newSize);
 public:
 	template<typename Action>

@@ -206,6 +206,14 @@ Cuboid Blocks::getZLevel(const DistanceInBlocks& z)
 {
 	return Cuboid(*this, getIndex({m_sizeX - 1, m_sizeY - 1, z}), getIndex({DistanceInBlocks::create(0), DistanceInBlocks::create(0), z}));
 }
+BlockIndex Blocks::getMiddleAtGroundLevel() const
+{
+	DistanceInBlocks x = m_sizeX / 2;
+	DistanceInBlocks y = m_sizeY / 2;
+	const BlockIndex& middleAtTopLevel = getIndex(x, y, m_sizeZ - 1);
+	DistanceInBlocks z = getZ(middleAtTopLevel);
+	return getIndex(x, y, z);
+}
 template<uint size, bool filter>
 auto getAdjacentWithOffsets(const Blocks& blocks, const BlockIndex& index, const std::array<int8_t, 3>* offsetList) -> std::array<BlockIndex, size>
 {

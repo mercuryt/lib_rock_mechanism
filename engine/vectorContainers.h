@@ -35,6 +35,13 @@ public:
 			insert(*begin);
 	}
 	void insertNonunique(const T& value) { m_data.push_back(value); }
+	template<typename Iterator>
+	void maybeInsertAll(Iterator begin, Iterator end)
+	{
+		for(; begin != end; ++begin)
+			insertNonunique(*begin);
+		makeUnique();
+	}
 	void erase(const T& value)
 	{
 		auto found = std::ranges::find(m_data, value);

@@ -3,7 +3,6 @@
 #include <TGUI/TGUI.hpp>
 class Area;
 class Simulation;
-class Plant;
 class BlockIndex;
 struct BlockFeatureType;
 struct PlantSpecies;

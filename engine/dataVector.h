@@ -61,6 +61,18 @@ public:
 	void sortBy(Comparitor&& comparitor) { std::sort(data.begin(), data.end(), comparitor); }
 	// Provides symatry with more complex data stores like HasEvents and ReferenceData.
 	void moveIndex(const Index& oldIndex, const Index& newIndex) { data[newIndex.get()] = std::move(data[oldIndex.get()]); }
+	void sortRangeWithOrder(const Index& begin, const Index& end, std::vector<std::pair<uint32_t, Index>> sortOrder)
+	{
+		std::vector<Contained> copy;
+		copy.reserve((end - begin).get());
+		std::ranges::move(data.begin() + begin.get(), data.begin() + end.get(), std::back_inserter(copy));
+		for(Index index = begin; index < end; ++index)
+		{
+			auto offset = (index + begin).get();
+			Index from = sortOrder[offset].second;
+			data[offset] = std::move(copy[from.get()]);
+		}
+	}
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(DataVector, data);
 };
 template <class Index>
@@ -80,5 +92,17 @@ public:
 	void clear() { data.clear(); }
 	void add(const bool& status) { data.resize(data.size() + 1); data[data.size() - 1] = status; }
 	void moveIndex(const Index& oldIndex, const Index& newIndex) { data[newIndex.get()] = data[oldIndex.get()]; }
+	void sortRangeWithOrder(const Index& begin, const Index& end, std::vector<std::pair<uint32_t, Index>> sortOrder)
+	{
+		std::vector<bool> copy;
+		copy.reserve((end - begin).get());
+		std::ranges::move(data.begin() + begin.get(), data.begin() + end.get(), std::back_inserter(copy));
+		for(Index index = begin; index < end; ++index)
+		{
+			auto offset = (index + begin).get();
+			Index from = sortOrder[offset].second;
+			data[offset] = std::move(copy[from.get()]);
+		}
+	}
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(DataBitSet, data);
 };

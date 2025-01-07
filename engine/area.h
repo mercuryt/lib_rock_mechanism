@@ -122,9 +122,6 @@ public:
 	[[nodiscard]] const Plants& getPlants() const { return *m_plants.get(); }
 	[[nodiscard]] const Actors& getActors() const { return *m_actors.get(); }
 	[[nodiscard]] const Items& getItems() const { return *m_items.get(); }
-	//TODO: Move this somewhere else.
-	[[nodiscard]] Facing getFacingForAdjacentOffset(uint8_t adjacentOffset) const;
-
 	// Clear all destructor callbacks in preperation for quit or hibernate.
 	void clearReservations();
 

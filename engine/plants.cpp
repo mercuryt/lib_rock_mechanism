@@ -102,6 +102,7 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 	}
 	if(m_area.getBlocks().isOnSurface(paramaters.location))
 		m_onSurface.add(index);
+	++m_sortEntropy;
 	return index;
 }
 void Plants::destroy(const PlantIndex& index)
@@ -110,7 +111,10 @@ void Plants::destroy(const PlantIndex& index)
 	exit(index);
 	const auto& s = PlantIndex::create(size() - 1);
 	if(index != s)
+	{
 		moveIndex(s, index);
+		++m_sortEntropy;
+	}
 	resize(s);
 }
 void Plants::die(const PlantIndex& index)
@@ -430,6 +434,40 @@ void Plants::exit(const PlantIndex& index)
 	m_location[index].clear();
 	m_blocks[index].clear();
 }
+void Plants::sortRange(const PlantIndex& begin, const PlantIndex& end)
+{
+	auto sortOrder = getSortOrder(begin, end);
+	forEachData([&](auto& data){ data.sortRangeWithOrder(begin, end, sortOrder); });
+}
+void Plants::maybeIncrementalSort(const std::chrono::microseconds timeBudget)
+{
+	if(m_sortEntropy < Config::plantSortEntropyThreashold)
+		return;
+	auto startTime = util::getCurrentTimeInMicroSeconds();
+	auto endTime = startTime + timeBudget;
+	while(true)
+	{
+		auto iterationStartTime = util::getCurrentTimeInMicroSeconds();
+		if(iterationStartTime >= endTime)
+			break;
+		auto remainder = endTime - iterationStartTime;
+		auto numberOfPlantsToSort = remainder / m_averageSortTimePerPlant;
+		PlantIndex endIndex = std::min(m_incrementalSortPosition + numberOfPlantsToSort, PlantIndex::create(size()));
+		sortRange(m_incrementalSortPosition, endIndex);
+		m_incrementalSortPosition = endIndex;
+		auto iterationEndTime = util::getCurrentTimeInMicroSeconds();
+		auto iterationDuration = (iterationEndTime - iterationStartTime);
+		auto totalAccumulatedSortTime = m_averageSortTimePerPlant * m_averageSortTimeSampleSize;
+		m_averageSortTimeSampleSize += numberOfPlantsToSort;
+		m_averageSortTimePerPlant = (totalAccumulatedSortTime + iterationDuration) / m_averageSortTimeSampleSize;
+	}
+	if(m_incrementalSortPosition == size())
+	{
+		m_incrementalSortPosition = PlantIndex::create(0);
+		// Set m_sortEntropy to 0 even though we don't know that some previously sorted part may now be unsorted.
+		m_sortEntropy = 0;
+	}
+}
 void Plants::setShape(const PlantIndex& index, const ShapeId& shape)
 {
 	BlockIndex location = getLocation(index);
@@ -467,12 +505,12 @@ void Plants::load(const Json& data)
 {
 	nlohmann::from_json(data, static_cast<HasShapes&>(*this));
 	PlantIndex size = PlantIndex::create(m_shape.size());
-	m_growthEvent.load(m_area.m_simulation, data["m_growthEvent"], size.toHasShape());
-	m_shapeGrowthEvent.load(m_area.m_simulation, data["m_shapeGrowthEvent"], size.toHasShape());
-	m_fluidEvent.load(m_area.m_simulation, data["m_fluidEvent"], size.toHasShape());
-	m_temperatureEvent.load(m_area.m_simulation, data["m_temperatureEvent"], size.toHasShape());
-	m_endOfHarvestEvent.load(m_area.m_simulation, data["m_endOfHarvestEvent"], size.toHasShape());
-	m_foliageGrowthEvent.load(m_area.m_simulation, data["m_foliageGrowthEvent"], size.toHasShape());
+	m_growthEvent.load(m_area.m_simulation, data["m_growthEvent"], size);
+	m_shapeGrowthEvent.load(m_area.m_simulation, data["m_shapeGrowthEvent"], size);
+	m_fluidEvent.load(m_area.m_simulation, data["m_fluidEvent"], size);
+	m_temperatureEvent.load(m_area.m_simulation, data["m_temperatureEvent"], size);
+	m_endOfHarvestEvent.load(m_area.m_simulation, data["m_endOfHarvestEvent"], size);
+	m_foliageGrowthEvent.load(m_area.m_simulation, data["m_foliageGrowthEvent"], size);
 	m_species = data["m_species"].get<DataVector<PlantSpeciesId, PlantIndex>>();
 	m_fluidSource = data["m_fluidSource"].get<DataVector<BlockIndex, PlantIndex>>();
 	m_quantityToHarvest = data["m_quantityToHarvest"].get<DataVector<Quantity, PlantIndex>>();

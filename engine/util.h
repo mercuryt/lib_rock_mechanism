@@ -12,6 +12,7 @@
 #include <codecvt>
 #include <locale>
 #include <array>
+#include <chrono>
 
 namespace util
 {
@@ -186,5 +187,11 @@ namespace util
 				return Facing::create(0);
 
 		}
+	}
+	inline std::chrono::microseconds getCurrentTimeInMicroSeconds()
+	{
+		auto now = std::chrono::high_resolution_clock::now();
+		auto duration = now.time_since_epoch();
+		return std::chrono::duration_cast<std::chrono::microseconds>(duration);
 	}
 }

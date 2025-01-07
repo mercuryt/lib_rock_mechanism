@@ -284,7 +284,7 @@ void Actors::load(const Json& data)
 	data["carrying"].get_to(m_carrying);
 	data["stamina"].get_to(m_stamina);
 	data["visionRange"].get_to(m_visionRange);
-	m_coolDownEvent.load(m_area.m_simulation, data["coolDownEvent"], size.toHasShape());
+	m_coolDownEvent.load(m_area.m_simulation, data["coolDownEvent"], size);
 	data["targetedBy"].get_to(m_targetedBy);
 	data["target"].get_to(m_target);
 	data["onMissCoolDownMelee"].get_to(m_onMissCoolDownMelee);
@@ -292,7 +292,7 @@ void Actors::load(const Json& data)
 	data["maxRange"].get_to(m_maxRange);
 	data["coolDownDurationModifier"].get_to(m_coolDownDurationModifier);
 	data["combatScore"].get_to(m_combatScore);
-	m_moveEvent.load(m_area.m_simulation, data["moveEvent"], size.toHasShape());
+	m_moveEvent.load(m_area.m_simulation, data["moveEvent"], size);
 	data["path"].get_to(m_path);
 	data["destination"].get_to(m_destination);
 	data["speedIndividual"].get_to(m_speedIndividual);

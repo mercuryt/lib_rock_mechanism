@@ -166,6 +166,7 @@ namespace Config
 	inline uint32_t piercePercentTemporaryImparmentModifier;
 	inline float pierceSkinModifier;
 	inline uint32_t pierceStepsTillHealedModifier;
+	inline uint8_t plantSortEntropyThreashold;
 	inline float pointsOfCombatScorePerUnitOfAgility;
 	inline float pointsOfCombatScorePerUnitOfDextarity;
 	inline float pointsOfCombatScorePerUnitOfStrength;

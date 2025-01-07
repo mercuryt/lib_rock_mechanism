@@ -1,10 +1,10 @@
 #include "window.h"
-#include "config.h"
+#include "../engine/config.h"
 #include "craft.h"
 #include "displayData.h"
 #include "sprite.h"
-#include "item.h"
 #include "../engine/simulation/hasAreas.h"
+#include "../engine/blocks/blocks.h"
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <TGUI/Widgets/FileDialog.hpp>
@@ -20,7 +20,7 @@ Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::S
 	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this), //m_worldParamatersView(*this),
 	m_editRealityView(*this), m_editActorView(*this), m_editAreaView(*this), m_editFactionView(*this), m_editFactionsView(*this), 
 	m_editStockPileView(*this), m_editDramaView(*this), m_minimumTimePerFrame(200), 
-	m_minimumTimePerStep((int)(1000.f / (float)Config::stepsPerSecond)), m_draw(*this),
+	m_minimumTimePerStep((int)(1000.f / (float)Config::stepsPerSecond.get())), m_draw(*this),
 	m_simulationThread([&](){
 		while(true)
 		{
@@ -44,12 +44,10 @@ void Window::setArea(Area& area, GameView* gameView)
 	if(!gameView)
 	{
 		if(m_lastViewedSpotInArea.contains(area.m_id))
-			gameView = &m_lastViewedSpotInArea.at(area.m_id);
+			gameView = &m_lastViewedSpotInArea[area.m_id];
 		else
 		{
-			auto pair = m_lastViewedSpotInArea.try_emplace(area.m_id, &area.getMiddleAtGroundLevel(), displayData::defaultScale);
-			assert(pair.second);
-			gameView = &pair.first->second;
+			gameView = &m_lastViewedSpotInArea.emplace(area.m_id, &area.getBlocks().getMiddleAtGroundLevel(), displayData::defaultScale);
 		}
 	}
 	m_area = &area;
@@ -58,8 +56,10 @@ void Window::setArea(Area& area, GameView* gameView)
 }
 void Window::centerView(const BlockIndex& block)
 {
-	m_z = block.m_z;
-	sf::Vector2f globalPosition(block.m_x * m_scale, block.m_y * m_scale);
+	const Blocks& blocks = m_area->getBlocks();
+	const Point3D& point = blocks.getCoordinates(block);
+	m_z = point.z;
+	sf::Vector2f globalPosition(point.x.get() * m_scale, point.y.get() * m_scale);
 	sf::Vector2i pixelPosition = m_window.mapCoordsToPixel(globalPosition);
 	m_view.setCenter(pixelPosition.x, pixelPosition.y);
 }
@@ -112,7 +112,7 @@ void Window::startLoop()
 								save();
 							break;
 						case sf::Keyboard::PageUp:
-							if(m_gameOverlay.isVisible() && (m_z + 1) < m_area->m_sizeZ)
+							if(m_area != nullptr && m_gameOverlay.isVisible() && (m_z + 1) < m_area->getBlocks().m_sizeZ)
 								m_z += 1;
 							break;
 						case sf::Keyboard::PageDown:
@@ -124,7 +124,7 @@ void Window::startLoop()
 								m_view.move(0.f, scrollSteps * -20.f);
 							break;
 						case sf::Keyboard::Down:
-							if(m_gameOverlay.isVisible() && m_view.getCenter().y < m_area->m_sizeY * m_scale - (m_view.getSize().y / 2) + gameMarginSize)
+							if(m_area != nullptr && m_gameOverlay.isVisible() && m_view.getCenter().y < m_area->getBlocks().m_sizeY * m_scale - (m_view.getSize().y / 2) + gameMarginSize)
 								m_view.move(0.f, scrollSteps * 20.f);
 							break;
 						case sf::Keyboard::Left:
@@ -132,21 +132,21 @@ void Window::startLoop()
 								m_view.move(scrollSteps * -20.f, 0.f);
 							break;
 						case sf::Keyboard::Right:
-							if(m_gameOverlay.isVisible() && m_view.getCenter().x < m_area->m_sizeX * m_scale - (m_view.getSize().x / 2) + gameMarginSize)
+							if(m_area != nullptr && m_gameOverlay.isVisible() && m_view.getCenter().x < m_area->getBlocks().m_sizeX * m_scale - (m_view.getSize().x / 2) + gameMarginSize)
 								m_view.move(scrollSteps * 20.f, 0.f);
 							break;
 						case sf::Keyboard::Delete:
 							{
 								m_scale = std::max(1u, (int)m_scale - scrollSteps);
-								BlockIndex& center = *m_blockUnderCursor;
-								m_view.move(-1.f *center.m_x * scrollSteps, -1.f * center.m_y * scrollSteps);
+								Point3D center = m_area->getBlocks().getCoordinates(*m_blockUnderCursor);
+								m_view.move(-1.f * center.x.get() * scrollSteps, -1.f * center.y.get() * scrollSteps);
 							}
 							break;
 						case sf::Keyboard::Insert:
 							{
 								m_scale += 1 * scrollSteps;
-								BlockIndex& center = *m_blockUnderCursor;
-								m_view.move(center.m_x * scrollSteps, center.m_y * scrollSteps);
+								Point3D center = m_area->getBlocks().getCoordinates(*m_blockUnderCursor);
+								m_view.move(center.x.get() * scrollSteps, center.y.get() * scrollSteps);
 							}
 							break;
 						case sf::Keyboard::Period:
@@ -267,53 +267,50 @@ void Window::startLoop()
 					if(m_area)
 					{
 						BlockIndex& block = *m_blockUnderCursor;
+						Blocks& blocks = m_area->getBlocks();
 						if(event.mouseButton.button == displayData::selectMouseButton)
 						{
-							
-							Cuboid blocks;
+							Cuboid selectedBlocks;
 							// Find the selected area.
 							if(m_firstCornerOfSelection)
-								blocks.setFrom(*m_firstCornerOfSelection, block);
+								selectedBlocks.setFrom(*m_firstCornerOfSelection, block);
 							else
-								blocks.setFrom(block);
+								selectedBlocks.setFrom(block);
 							m_firstCornerOfSelection = nullptr;
 							bool selectActors = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && !sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
 							bool selectItems = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
 							bool selectBlocks = sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
 							bool selectPlants = false;
 							if(selectActors)
-								for(BlockIndex& block : blocks)
-									m_selectedActors.insert(block.m_hasActors.getAll().begin(), block.m_hasActors.getAll().end());
+								for(const BlockIndex& block : selectedBlocks)
+									m_selectedActors.maybeInsertAll(blocks.actor_getAll(block).begin(), blocks.actor_getAll(block).end());
 							else if(selectItems)
-								for(BlockIndex& block : blocks)
-									m_selectedItems.insert(block.m_hasItems.getAll().begin(), block.m_hasItems.getAll().end());
+								for(const BlockIndex& block : selectedBlocks)
+									m_selectedItems.maybeInsertAll(blocks.item_getAll(block).begin(), blocks.item_getAll(block).end());
 							else if(selectBlocks)
-							{
-								for(BlockIndex& block : blocks)
-									m_selectedBlocks.insert(&block);
-							}
+								m_selectedBlocks.maybeInsertAll(selectedBlocks.begin(), selectedBlocks.end());
 							else
 							{
 								// No modifier key to choose what type to select, check for everything.
 								std::unordered_set<Actor*> foundActors;
 								std::unordered_set<Item*> foundItems;
 								std::unordered_set<Plant*> foundPlants;
-								// Gather all candidates, then cull based on choosen category. actors > items > plants > blocks
-								for(BlockIndex& block : blocks)
+								// Gather all candidates, then cull based on choosen category. actors > items > plants > selectedBlocks
+								for(const BlockIndex& block : selectedBlocks)
 								{
-									if(!block.m_hasActors.empty())
+									if(!blocks.actor_empty(block))
 									{
-										m_selectedActors.insert(block.m_hasActors.getAll().begin(), block.m_hasActors.getAll().end());
+										m_selectedActors.maybeInsertAll(blocks.actor_getAll(block).begin(), blocks.actor_getAll(block).end());
 										selectActors = true;
 									}
-									if(!block.m_hasItems.empty())
+									if(!blocks.item_empty(block))
 									{
-										m_selectedItems.insert(block.m_hasItems.getAll().begin(), block.m_hasItems.getAll().end());
+										m_selectedItems.maybeInsertAll(blocks.item_getAll(block).begin(), blocks.item_getAll(block).end());
 										selectItems = selectActors ? false : true;
 									}
-									if(block.m_hasPlant.exists())
+									if(blocks.plant_exists(block))
 									{
-										m_selectedPlants.insert(&block.m_hasPlant.get());
+										m_selectedPlants.maybeInsert(blocks.plant_get(block));
 										selectPlants = selectItems ? false : (selectActors ? false : true);
 									}
 								}
@@ -340,7 +337,7 @@ void Window::startLoop()
 									m_selectedActors.clear();
 									m_selectedItems.clear();
 									m_selectedPlants.clear();
-									for(BlockIndex& block : blocks)
+									for(BlockIndex& block : selectedBlocks)
 										m_selectedBlocks.insert(&block);
 								}
 							}

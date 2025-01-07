@@ -85,32 +85,12 @@ std::vector<std::pair<uint32_t, Index>> HasShapes<Derived, Index>::getSortOrder(
 {
 	assert(end > begin + 1);
 	std::vector<std::pair<uint32_t, Index>> sortOrder;
-	sortOrder.reserve(end - begin);
+	sortOrder.reserve((end - begin).get());
 	const Blocks& blocks = m_area.getBlocks();
 	for(Index index = begin; index < end; ++index)
-		sortOrder.emplace_back(blocks.getCoordinates(m_location[index]).hilbertNumber, index);
+		sortOrder.emplace_back(blocks.getCoordinates(m_location[index]).hilbertNumber(), index);
 	std::ranges::sort(sortOrder, std::less{}, &std::pair<uint32_t, Index>::first);
 	return sortOrder;
-}
-template<class Derived, class Index>
-void HasShapes<Derived, Index>::sortRange(const Index& begin, const Index& end, std::vector<std::pair<uint32_t, Index>> sortOrder)
-{
-	sortRangeFor(begin, end, sortOrder, m_shape);
-	sortRangeFor(begin, end, sortOrder, m_location);
-	sortRangeFor(begin, end, sortOrder, m_facing);
-	sortRangeFor(begin, end, sortOrder, m_faction);
-	sortRangeFor(begin, end, sortOrder, m_blocks);
-	sortRangeFor(begin, end, sortOrder, m_static);
-	sortRangeFor(begin, end, sortOrder, m_underground);
-}
-template<class Derived, class Index>
-template<class Data>
-void HasShapes<Derived, Index>::sortRangeFor(const Index& begin, const Index& end, std::vector<std::pair<uint32_t, Index>> sortOrder, Data data)
-{
-	Data copy;
-	std::ranges::move(data.begin() + begin, data.begin() + end, std::back_inserter(copy));
-	for(Index index = begin; index < end; ++index)
-		data[index] = std::move(copy[sortOrder[index].second]);
 }
 template<class Derived, class Index>
 FactionId HasShapes<Derived, Index>::getFaction(const Index& index) const

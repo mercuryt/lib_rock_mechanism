@@ -2,7 +2,6 @@
 #include "objective.h"
 #include "config.h"
 #include "types.h"
-class Actor;
 struct DeserializationMemo;
 class StationObjective final : public Objective
 {
