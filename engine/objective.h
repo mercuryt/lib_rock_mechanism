@@ -55,13 +55,13 @@ class ObjectiveType
 public:
 	ObjectiveType() = default;
 	static void load();
-	static ObjectiveTypeId getIdByName(std::string name);
+	static ObjectiveTypeId getIdByName(std::wstring name);
 	static const ObjectiveType& getById(const ObjectiveTypeId& id);
-	static const ObjectiveType& getByName(std::string name);
+	static const ObjectiveType& getByName(std::wstring name);
 	ObjectiveTypeId getId() const;
 	[[nodiscard]] virtual bool canBeAssigned(Area& area, const ActorIndex& actor) const = 0;
 	[[nodiscard]] virtual std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const = 0;
-	[[nodiscard]] virtual std::string name() const = 0;
+	[[nodiscard]] virtual std::wstring name() const = 0;
 	ObjectiveType(const ObjectiveTypeId&) = delete;
 	ObjectiveType(ObjectiveType&&) = delete;
 	virtual ~ObjectiveType() = default;
@@ -94,7 +94,7 @@ public:
 	// Will be 'flushed' when this instance is destroyed and then another objective of this type is created later, after objectivePrioritySet delay ends.
 	virtual void onProjectCannotReserve(Area&, const ActorIndex&) { }
 	void detour(Area& area, const ActorIndex& actor) { m_detour = true; execute(area, actor); }
-	[[nodiscard]] virtual std::string name() const = 0;
+	[[nodiscard]] virtual std::wstring name() const = 0;
 	// TODO: This is silly.
 	[[nodiscard]] ObjectiveTypeId getTypeId() const { return ObjectiveType::getIdByName(name());}
 	// Needs are biological imperatives which overide tasks. Eat, sleep, etc.

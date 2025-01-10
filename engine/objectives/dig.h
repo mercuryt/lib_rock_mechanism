@@ -15,7 +15,7 @@ public:
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
 	DigObjectiveType() = default;
 	DigObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
-	[[nodiscard]] std::string name() const { return "dig"; }
+	[[nodiscard]] std::wstring name() const { return L"dig"; }
 };
 class DigObjective final : public Objective
 {
@@ -34,7 +34,7 @@ public:
 	[[nodiscard]] DigProject* getJoinableProjectAt(Area& area, BlockIndex block, const ActorIndex& actor);
 	// To be used for pathing.
 	[[nodiscard]] bool joinableProjectExistsAt(Area& area, BlockIndex block, const ActorIndex& actor) const;
-	[[nodiscard]] std::string name() const { return "dig"; }
+	[[nodiscard]] std::wstring name() const { return L"dig"; }
 	friend class DigPathRequest;
 	friend class DigProject;
 	//For testing.
@@ -50,5 +50,5 @@ public:
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::string name() { return "dig"; }
+	[[nodiscard]] std::wstring name() { return L"dig"; }
 };

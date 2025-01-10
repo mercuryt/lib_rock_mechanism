@@ -1,14 +1,16 @@
 #include "uiUtil.h"
-#include "../engine/item.h"
+#include "../engine/items/items.h"
+#include "../engine/area.h"
 #include "../engine/materialType.h"
 #include "../engine/util.h"
 
-std::wstring UIUtil::describeItem(const Item &item)
+std::wstring UIUtil::describeItem(Area& area, const ItemIndex &item)
 {
-	std::wstring output = util::stringToWideString(item.m_materialType.name + " " + item.m_itemType.name);
-	if(item.getQuantity() > 1)
-		output += L" ( " + std::to_wstring(item.getQuantity()) + L" ) ";
-	else if(!item.m_name.empty())
-		output += L" " + item.m_name;
+	Items& items = area.getItems();
+	std::wstring output = MaterialType::getName(items.getMaterialType(item)) + L" " + ItemType::getName(items.getItemType(item));
+	if(items.getQuantity(item) > 1)
+		output += L" ( " + std::to_wstring(items.getQuantity(item).get()) + L" ) ";
+	else if(!items.getName(item).empty())
+		output += L" " + items.getName(item);
 	return output;
 }

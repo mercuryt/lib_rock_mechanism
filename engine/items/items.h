@@ -152,6 +152,7 @@ public:
 	[[nodiscard]] Quantity getQuantity(const ItemIndex& index) const { return m_quantity[index]; }
 	[[nodiscard]] Quality getQuality(const ItemIndex& index) const { return m_quality[index]; }
 	[[nodiscard]] Percent getWear(const ItemIndex& index) const { return m_percentWear[index]; }
+	[[nodiscard]] std::wstring getName(const ItemIndex& index) const { return m_name[index]; }
 	[[nodiscard]] bool isGeneric(const ItemIndex& index) const;
 	[[nodiscard]] bool isPreparedMeal(const ItemIndex& index) const;
 	[[nodiscard]] bool isWorkPiece(const ItemIndex& index) const { return m_craftJobForWorkPiece[index] != nullptr; }
@@ -204,7 +205,7 @@ public:
 	[[nodiscard]] const ItemIndices& cargo_getItems(const ItemIndex& index) const;
 	[[nodiscard]] const ActorIndices& cargo_getActors(const ItemIndex& index) const;
 	// -Stockpile.
-	void stockpile_maybeUnsetAndScheduleReset(const ItemIndex& index, const FactionId& faction, const Step& duration); 
+	void stockpile_maybeUnsetAndScheduleReset(const ItemIndex& index, const FactionId& faction, const Step& duration);
 	void stockpile_set(const ItemIndex& index, const FactionId& faction);
 	void stockpile_maybeUnset(const ItemIndex& index, const FactionId& faction);
 	[[nodiscard]] bool stockpile_canBeStockPiled(const ItemIndex& index, const FactionId& faction) const;

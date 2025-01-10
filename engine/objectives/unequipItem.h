@@ -13,6 +13,6 @@ public:
 	void cancel(Area&, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
 	void reset(Area& area, const ActorIndex& actor);
-	[[nodiscard]] std::string name() const { return "equip"; }
+	[[nodiscard]] std::wstring name() const { return L"equip"; }
 	[[nodiscard]] Json toJson() const;
 };

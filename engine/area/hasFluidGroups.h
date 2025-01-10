@@ -25,7 +25,7 @@ public:
 	void validateAllFluidGroups();
 	void markUnstable(FluidGroup& group);
 	void markStable(FluidGroup& group);
-	[[nodiscard]] std::string toS() const;
+	[[nodiscard]] std::wstring toS() const;
 	[[nodiscard]] std::pmr::list<FluidGroup>& getAll() { return m_fluidGroups; }
 	[[nodiscard]] SmallSet<FluidGroup*>& getUnstable() { return m_unstableFluidGroups; }
 	[[nodiscard]] const SmallSet<FluidGroup*>& getUnstable() const { return m_unstableFluidGroups; }

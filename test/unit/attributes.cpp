@@ -14,13 +14,13 @@
 
 TEST_CASE("attributes")
 {
-	AnimalSpeciesId goblin = AnimalSpecies::byName("goblin");
-	AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	AnimalSpeciesId goblin = AnimalSpecies::byName(L"goblin");
+	AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
+	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName(L"marble"));
 
 	ActorIndex goblin1 = actors.create(ActorParamaters{
 		.species = goblin,

@@ -10,7 +10,7 @@
 #include <TGUI/Widgets/SpinControl.hpp>
 #include <TGUI/Widgets/VerticalLayout.hpp>
 
-LociiUI::LociiUI(std::string name) : m_container(tgui::VerticalLayout::create()),
+LociiUI::LociiUI(std::wstring name) : m_container(tgui::VerticalLayout::create()),
 	m_count(tgui::SpinControl::create()), m_intensityMax(tgui::SpinControl::create()), m_intensityMin(tgui::SpinControl::create()), m_sustainMax(tgui::SpinControl::create()), m_sustainMin(tgui::SpinControl::create()), m_decayMax(tgui::SpinControl::create()), m_decayMin(tgui::SpinControl::create()), m_exponentMax(tgui::SpinControl::create()), m_exponentMin(tgui::SpinControl::create()), m_epicentersMax(tgui::SpinControl::create()), m_epicentersMin(tgui::SpinControl::create())
 {
 	auto label = tgui::Label::create(name);

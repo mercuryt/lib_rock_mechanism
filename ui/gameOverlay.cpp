@@ -1,13 +1,11 @@
 #include "gameOverlay.h"
-#include "config.h"
-#include "util.h"
 #include "window.h"
+#include "../engine/config.h"
 #include <TGUI/Widgets/Panel.hpp>
-GameOverlay::GameOverlay(Window& w) : m_window(w), 
-	m_group(tgui::Group::create()), m_menu(tgui::Panel::create()), m_infoPopup(w), m_contextMenu(w, m_group), 
-	m_coordinateUI(tgui::Label::create()), m_timeUI(tgui::Label::create()), m_speedUI(tgui::Label::create()), m_weatherUI(tgui::Label::create()),
-	m_itemBeingInstalled(nullptr), m_facing(0) 
-{ 
+GameOverlay::GameOverlay(Window& w) : m_window(w),
+	m_group(tgui::Group::create()), m_menu(tgui::Panel::create()), m_infoPopup(w), m_contextMenu(w, m_group),
+	m_coordinateUI(tgui::Label::create()), m_timeUI(tgui::Label::create()), m_speedUI(tgui::Label::create()), m_weatherUI(tgui::Label::create())
+{
 	m_window.getGui().add(m_group);
 	m_group->setVisible(false);
 	// Game overlay menu.
@@ -44,26 +42,27 @@ GameOverlay::GameOverlay(Window& w) : m_window(w),
 	m_group->add(topBar);
 }
 void GameOverlay::drawMenu()
-{ 
-	m_window.setPaused(true); 
+{
+	m_window.setPaused(true);
 	m_menu->setVisible(true);
 }
-void GameOverlay::assignLocationToInstallItem(BlockIndex& block)
+void GameOverlay::assignLocationToInstallItem(const BlockIndex& block)
 {
-	assert(m_itemBeingInstalled);
-	m_window.getArea()->m_hasInstallItemDesignations.at(*m_window.getFaction()).add(block, *m_itemBeingInstalled, m_facing, *m_window.getFaction());
-	m_itemBeingInstalled = nullptr;
+	assert(m_itemBeingInstalled.exists());
+	Area& area = *m_window.getArea();
+	area.m_hasInstallItemDesignations.getForFaction(m_window.getFaction()).add(area, block, m_itemBeingInstalled, m_facing, m_window.getFaction());
+	m_itemBeingInstalled.clear();
 }
-void GameOverlay::assignLocationToMoveItemTo(BlockIndex& block)
+void GameOverlay::assignLocationToMoveItemTo(const BlockIndex& block)
 {
-	assert(m_itemBeingMoved);
+	assert(m_itemBeingMoved.exists());
 	assert(!m_window.getSelectedActors().empty());
 	m_window.getArea()->m_hasTargetedHauling.begin(
-		{ m_window.getSelectedActors().begin(), m_window.getSelectedActors().end() }, 
-		*m_itemBeingMoved, 
+		m_window.getSelectedActors(),
+		m_itemBeingMoved,
 		block
 	);
-	m_itemBeingMoved = nullptr;
+	m_itemBeingMoved.clear();
 }
 void GameOverlay::unfocusUI()
 {
@@ -81,10 +80,10 @@ void GameOverlay::drawTime()
 	uint16_t minutes = seconds / Config::secondsPerMinute;
 	seconds -= minutes * Config::secondsPerMinute;
 	m_timeUI->setText(
-			"seconds: " + std::to_string(seconds) + 
-			" minutes: " + std::to_string(minutes) + 
-			" hour: " + std::to_string(now.hour) + 
-			" day: " + std::to_string(now.day) + 
+			"seconds: " + std::to_string(seconds) +
+			" minutes: " + std::to_string(minutes) +
+			" hour: " + std::to_string(now.hour) +
+			" day: " + std::to_string(now.day) +
 			" year: " + std::to_string(now.year)
 	);
 }

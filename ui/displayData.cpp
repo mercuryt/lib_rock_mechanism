@@ -2,8 +2,8 @@
 #include "../engine/definitions.h"
 #include "../engine/materialType.h"
 #include "../engine/fluidType.h"
-#include "../engine/item.h"
-#include "../engine/plant.h"
+#include "../engine/items/items.h"
+#include "../engine/plants.h"
 #include "../engine/animalSpecies.h"
 #include "../engine/blockFeature.h"
 #include <SFML/Graphics/Color.hpp>
@@ -13,7 +13,7 @@ std::wstring loadWString(const Json& data)
 {
 	std::wstring output;
 	if(data.is_string())
-		for(auto codePoint : data.get<std::string>())
+		for(auto codePoint : data.get<std::wstring>())
 			output += codePoint;
 	else
 		for(const Json& codePoint : data)
@@ -29,10 +29,10 @@ sf::Color colorFromJson(const Json& data)
 	auto a = data[3].get<uint8_t>();
 	return sf::Color(r, g, b, a);
 }
-std::string displayData::localizeNumber(double number)
+std::wstring displayData::localizeNumber(double number)
 {
 	static std::locale cpploc{""};
-	std::stringstream ss;
+	std::wstringstream ss;
 	ss.imbue(cpploc);
 	ss << number;
 	return ss.str();
@@ -42,19 +42,19 @@ void displayData::load()
 	std::filesystem::path path = definitions::path/"display";
 	for(const Json& data : definitions::tryParse(path/"materialTypes.json"))
 	{
-		const MaterialType& materialType = MaterialType::byName(data["name"].get<std::string>());
+		const MaterialTypeId& materialType = MaterialType::byName(data["name"].get<std::wstring>());
 		materialColors[&materialType] = colorFromJson(data["color"]);
 	}
 	for(const Json& data : definitions::tryParse(path/"fluidTypes.json"))
 	{
-		const FluidType& fluidType = FluidType::byName(data["name"].get<std::string>());
+		const FluidTypeId& fluidType = FluidType::byName(data["name"].get<std::wstring>());
 		fluidColors[&fluidType] = colorFromJson(data["color"]);
 	}
 	for(const Json& data : definitions::tryParse(path/"itemTypes.json"))
 	{
-		const ItemType& itemType = ItemType::byName(data["name"].get<std::string>());
+		const ItemTypeId& itemType = ItemType::byName(data["name"].get<std::wstring>());
 		[[maybe_unused]] auto pair = itemData.try_emplace( &itemType,
-			data["image"].get<std::string>(),
+			data["image"].get<std::wstring>(),
 			data.contains("color") ? colorFromJson(data["color"]) : sf::Color::White,
 			data.contains("scale") ? data["scale"].get<float>() : 1.0f
 		);
@@ -62,9 +62,9 @@ void displayData::load()
 	}
 	for(const Json& data : definitions::tryParse(path/"plantSpecies.json"))
 	{
-		const PlantSpecies& plantSpecies = PlantSpecies::byName(data["name"].get<std::string>());
+		const PlantSpeciesId& plantSpecies = PlantSpecies::byName(data["name"].get<std::wstring>());
 		[[maybe_unused]] auto pair = plantData.try_emplace( &plantSpecies,
-			data["image"].get<std::string>(),
+			data["image"].get<std::wstring>(),
 			data.contains("color") ? colorFromJson(data["color"]) : sf::Color::White,
 			data.contains("scale") ? data["scale"].get<float>() : 1.0f,
 			data.contains("groundCover") && data["groundCover"].get<bool>()
@@ -73,9 +73,9 @@ void displayData::load()
 	}
 	for(const Json& data : definitions::tryParse(path/"animalSpecies.json"))
 	{
-		const AnimalSpecies& animalSpecies = AnimalSpecies::byName(data["name"].get<std::string>());
+		const AnimalSpeciesId& animalSpecies = AnimalSpecies::byName(data["name"].get<std::wstring>());
 		[[maybe_unused]] auto pair = actorData.try_emplace( &animalSpecies,
-			data["image"].get<std::string>(),
+			data["image"].get<std::wstring>(),
 			data.contains("color") ? colorFromJson(data["color"]) : sf::Color::White,
 			data.contains("scale") ? data["scale"].get<float>() : 1.0f
 		);

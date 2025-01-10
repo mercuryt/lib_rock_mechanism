@@ -21,7 +21,7 @@ CraftPathRequest::CraftPathRequest(Area& area, CraftObjective& co, const ActorIn
 	adjacent = true;
 	reserveDestination = true;
 }
-CraftPathRequest::CraftPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) : 
+CraftPathRequest::CraftPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
 	PathRequestBreadthFirst(data, area),
 	m_craftObjective(static_cast<CraftObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))),
 	m_craftJob(deserializationMemo.m_craftJobs.at(data["craftJob"].get<uintptr_t>())),
@@ -127,17 +127,17 @@ std::unique_ptr<Objective> CraftObjectiveType::makeFor(Area&, const ActorIndex&)
 {
 	return std::make_unique<CraftObjective>(m_skillType);
 }
-std::string CraftObjectiveType::name() const { return "craft: " + SkillType::getName(m_skillType); }
+std::wstring CraftObjectiveType::name() const { return L"craft: " + SkillType::getName(m_skillType); }
 // Objective.
 CraftObjective::CraftObjective(SkillTypeId st) : Objective(Config::craftObjectivePriority), m_skillType(st) { }
-CraftObjective::CraftObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
+CraftObjective::CraftObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo),
 	m_skillType(data["skillType"].get<SkillTypeId>()), m_craftJob(deserializationMemo.m_craftJobs.at(data["craftJob"].get<uintptr_t>()))
-{ 
+{
 	if(data.contains("failedJobs"))
 		for(const Json& job : data["failedJobs"])
 			m_failedJobs.insert(deserializationMemo.m_craftJobs.at(job.get<uintptr_t>()));
 }
-Json CraftObjective::toJson() const 
+Json CraftObjective::toJson() const
 {
 	Json data = Objective::toJson();
 	data["skillType"] = m_skillType;
@@ -150,7 +150,7 @@ Json CraftObjective::toJson() const
 	}
 	return data;
 }
-std::string CraftObjective::name() const { return "craft: " + SkillType::getName(m_skillType); }
+std::wstring CraftObjective::name() const { return L"craft: " + SkillType::getName(m_skillType); }
 void CraftObjective::execute(Area& area, const ActorIndex& actor)
 {
 	if(m_craftJob)

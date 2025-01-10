@@ -12,7 +12,8 @@ void AreaHasVisionCuboids::initalize(Area& area)
 	DistanceInBlocks sizeZ = blocks.m_sizeZ;
 	m_blockVisionCuboids.resize((sizeX * sizeY * sizeZ).get());
 	m_blockVisionCuboidIds.resize((sizeX * sizeY * sizeZ).get());
-	blocks.forEach([&](const BlockIndex& block)
+	Cuboid cuboid = blocks.getAll();
+	for(const BlockIndex& block : cuboid.getView(blocks))
 	{
 		assert(block.exists());
 		if(blocks.canSeeThrough(block))
@@ -24,7 +25,7 @@ void AreaHasVisionCuboids::initalize(Area& area)
 			else
 				emplace(cuboid);
 		}
-	});
+	}
 	clearDestroyed();
 }
 void AreaHasVisionCuboids::clearDestroyed()
@@ -121,7 +122,7 @@ VisionCuboid* AreaHasVisionCuboids::getTargetToCombineWith(const Cuboid& cuboid)
 	//return nullptr;
 	for(BlockIndex block : blocks.getDirectlyAdjacent(cuboid.m_lowest))
 		if(block.exists() && !cuboid.contains(blocks, block))
-		{	
+		{
 			VisionCuboid* visionCuboid = m_blockVisionCuboids[block];
 			if(visionCuboid && !visionCuboid->m_destroy && visionCuboid->canCombineWith(cuboid))
 			return visionCuboid;
@@ -138,7 +139,8 @@ VisionCuboid::VisionCuboid(Area& area, Cuboid& cuboid, VisionCuboidId id) : m_ar
 	Blocks& blocks = m_area.getBlocks();
 	assert(blocks.canSeeThrough(cuboid.m_highest));
 	assert(blocks.canSeeThrough(cuboid.m_lowest));
-	cuboid.forEach(blocks, [&](const BlockIndex& block){ m_area.m_visionCuboids.set(block, *this); });
+	for(const BlockIndex& block : cuboid.getView(blocks))
+		m_area.m_visionCuboids.set(block, *this);
 }
 bool VisionCuboid::canCombineWith(const Cuboid& cuboid) const
 {
@@ -240,7 +242,8 @@ void VisionCuboid::extend(Cuboid& cuboid)
 		toCombine->extend(newCuboid);
 		return;
 	}
-	cuboid.forEach(blocks, [&](const BlockIndex& block){ m_area.m_visionCuboids.set(block, *this); });
+	for(const BlockIndex& block : cuboid.getView(blocks))
+		m_area.m_visionCuboids.set(block, *this);
 	m_cuboid = newCuboid;
 }
 bool VisionCuboid::canSeeInto(const Cuboid& other) const
@@ -279,7 +282,8 @@ bool VisionCuboid::canSeeInto(const Cuboid& other) const
 	assert(facing != 6);
 	const Cuboid face = m_cuboid.getFace(blocks, facing);
 	std::vector<BlockIndex> faceBlocks;
-	face.forEach(blocks, [&](const BlockIndex& block){ faceBlocks.push_back(block); });
+	for(const BlockIndex& block : face.getView(blocks))
+		faceBlocks.push_back(block);
 	// Verify that the whole face can be seen through from the direction of m_cuboid.
 	for(BlockIndex block : faceBlocks)
 	{

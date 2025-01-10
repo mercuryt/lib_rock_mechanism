@@ -5,8 +5,8 @@
 #include "../engine/simulation/hasAreas.h"
 #include "../engine/area.h"
 #include "../engine/animalSpecies.h"
-#include "item.h"
-#include "plant.h"
+#include "../engine/items/items.h"
+#include "../engine/plants.h"
 #include <TGUI/Widgets/ComboBox.hpp>
 #include <TGUI/Widgets/SpinControl.hpp>
 #include <cstdint>
@@ -28,7 +28,7 @@ DateTimeUI::DateTimeUI(uint8_t hours,uint16_t days, uint16_t years) : m_hours(tg
 	m_widget->addWidget(tgui::Label::create("years"), 3, 1);
 	m_widget->addWidget(m_years, 3, 2);
 	m_years->setMinimum(0);
-	m_years->setMaximum(UINT64_MAX / Config::stepsPerYear);
+	m_years->setMaximum(UINT64_MAX / Config::stepsPerYear.get());
 	m_years->setValue(years);
 }
 DateTimeUI::DateTimeUI() : DateTimeUI(1,1,1) { }
@@ -51,8 +51,8 @@ Step DateTimeUI::get() const
 	return dateTime.toSteps();
 }
 // Area Selector.
-AreaSelectUI::AreaSelectUI() : m_widget(tgui::ComboBox::create()) 
-{ 
+AreaSelectUI::AreaSelectUI() : m_widget(tgui::ComboBox::create())
+{
 	m_widget->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	m_widget->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
 }
@@ -60,8 +60,9 @@ void AreaSelectUI::populate(Simulation& simulation)
 {
 	m_widget->removeAllItems();
 	std::wstring firstAreaName;
-	for(Area& area : simulation.m_hasAreas->getAll())
+	for(const auto& pair : simulation.m_hasAreas->getAll())
 	{
+		const Area& area = *pair.second;
 		if(firstAreaName.empty())
 			firstAreaName = area.m_name;
 		m_widget->addItem(area.m_name, area.m_name);
@@ -73,74 +74,77 @@ void AreaSelectUI::populate(Simulation& simulation)
 void AreaSelectUI::set(Area& area) { m_widget->setSelectedItem(area.m_name); }
 Area& AreaSelectUI::get() const
 {
-	auto found = std::ranges::find(m_simulation->m_hasAreas->getAll(), m_widget->getSelectedItemId().toWideString(), &Area::m_name);
+	std::wstring name = m_widget->getSelectedItem().toWideString();
+	auto found = m_simulation->m_hasAreas->getAll().find([&](const Area& area){ return area.m_name == name; });
 	assert(found != m_simulation->m_hasAreas->getAll().end());
-	return *found;
+	return found.second();
 }
 bool AreaSelectUI::hasSelection() const { return !m_widget->getSelectedItemId().empty(); }
 // Plant SpeciesSelector
-tgui::ComboBox::Ptr widgetUtil::makePlantSpeciesSelectUI(BlockIndex* block)
+tgui::ComboBox::Ptr widgetUtil::makePlantSpeciesSelectUI(Area& area, const BlockIndex& block)
 {
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	output->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	output->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
 	bool selected = false;
-	output->onItemSelect([&](const tgui::String name){ lastSelectedPlantSpecies = &PlantSpecies::byName(name.toStdString()); });
-
-	for(const PlantSpecies* plantSpecies : sortByName(plantSpeciesDataStore))
+	output->onItemSelect([&](const tgui::String name){ lastSelectedPlantSpecies = PlantSpecies::byName(name.toWideString()); });
+	Blocks& blocks = area.getBlocks();
+	for(PlantSpeciesId id = PlantSpeciesId::create(0); id < PlantSpecies::size(); ++id)
 	{
-		if(block.exists() && !block->m_hasPlant.canGrowHereEver(*plantSpecies))
+		if(block.exists() && !blocks.plant_canGrowHereEver(block, id))
 			continue;
-		output->addItem(plantSpecies->name, plantSpecies->name);
-		if(lastSelectedPlantSpecies && lastSelectedPlantSpecies == plantSpecies)
+		std::wstring name = PlantSpecies::getName(id);
+		output->addItem(name, name);
+		if(lastSelectedPlantSpecies.exists() && lastSelectedPlantSpecies == id)
 		{
-			output->setSelectedItemById(plantSpecies->name);
+			output->setSelectedItemById(name);
 			selected = true;
 		}
-		else if(!lastSelectedPlantSpecies && !selected)
+		else if(lastSelectedPlantSpecies.empty() && !selected)
 		{
-			output->setSelectedItemById(plantSpecies->name);
+			output->setSelectedItemById(name);
 			selected = true;
 		}
 	}
 	return output;
 }
 // MaterialTypeSelectUI
-tgui::ComboBox::Ptr widgetUtil::makeMaterialSelectUI(std::wstring nullLabel, std::function<bool(const MaterialType&)> predicate)
+tgui::ComboBox::Ptr widgetUtil::makeMaterialSelectUI(std::wstring nullLabel, std::function<bool(const MaterialTypeId&)> predicate)
 {
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	output->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	output->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
 	bool selected = false;
-	output->onItemSelect([nullLabel](const tgui::String name){ 
+	output->onItemSelect([nullLabel](const tgui::String name){
 		assert(!name.empty());
 		if(name == nullLabel)
-			lastSelectedMaterial = nullptr;
+			lastSelectedMaterial.clear();
 		else
-			lastSelectedMaterial = &MaterialType::byName(name.toStdString()); 
+			lastSelectedMaterial = MaterialType::byName(name.toWideString());
 	});
 	if(!nullLabel.empty())
 	{
 		output->addItem(nullLabel, nullLabel);
-		if(!lastSelectedMaterial)
+		if(lastSelectedMaterial.empty())
 		{
 			output->setSelectedItemById(nullLabel);
 			selected = true;
 		}
 	}
-	for(const MaterialType* materialType : sortByName(materialTypeDataStore))
+	for(MaterialTypeId id = MaterialTypeId::create(0); id < MaterialType::size(); ++id)
 	{
-		if(predicate && !predicate(*materialType))
+		if(predicate && !predicate(id))
 			continue;
-		output->addItem(materialType->name, materialType->name);
-		if(lastSelectedMaterial && lastSelectedMaterial == materialType)
+		std::wstring name = MaterialType::getName(id);
+		output->addItem(name, name);
+		if(lastSelectedMaterial.exists() && lastSelectedMaterial == id)
 		{
-			output->setSelectedItemById(materialType->name);
+			output->setSelectedItemById(name);
 			selected = true;
 		}
-		else if(!lastSelectedMaterial && !selected)
+		else if(lastSelectedMaterial.empty() && !selected)
 		{
-			output->setSelectedItemById(materialType->name);
+			output->setSelectedItemById(name);
 			selected = true;
 		}
 	}
@@ -153,33 +157,34 @@ tgui::ComboBox::Ptr widgetUtil::makeMaterialCategorySelectUI(std::wstring nullLa
 	output->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	output->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
 	bool selected = false;
-	output->onItemSelect([nullLabel](const tgui::String name){ 
+	output->onItemSelect([nullLabel](const tgui::String name){
 		assert(!name.empty());
 		if(name == nullLabel)
-			lastSelectedMaterialCategory = nullptr;
+			lastSelectedMaterialCategory.clear();
 		else
-			lastSelectedMaterialCategory = &MaterialTypeCategory::byName(name.toStdString()); 
+			lastSelectedMaterialCategory = MaterialTypeCategory::byName(name.toWideString());
 	});
 	if(!nullLabel.empty())
 	{
 		output->addItem(nullLabel, nullLabel);
-		if(!lastSelectedMaterialCategory)
+		if(lastSelectedMaterialCategory.empty())
 		{
 			output->setSelectedItemById(nullLabel);
 			selected = true;
 		}
 	}
-	for(const MaterialTypeCategory* materialTypeCategory : sortByName(materialTypeCategoryDataStore))
+	for(MaterialCategoryTypeId id = MaterialCategoryTypeId::create(0); id < MaterialTypeCategory::size(); ++id)
 	{
-		output->addItem(materialTypeCategory->name, materialTypeCategory->name);
-		if(lastSelectedMaterialCategory && lastSelectedMaterialCategory == materialTypeCategory)
+		std::wstring name = MaterialTypeCategory::getName(id);
+		output->addItem(name, name);
+		if(lastSelectedMaterialCategory.exists() && lastSelectedMaterialCategory == id)
 		{
-			output->setSelectedItemById(materialTypeCategory->name);
+			output->setSelectedItemById(name);
 			selected = true;
 		}
-		else if(!lastSelectedMaterialCategory && !selected)
+		else if(lastSelectedMaterialCategory.empty() && !selected)
 		{
-			output->setSelectedItemById(materialTypeCategory->name);
+			output->setSelectedItemById(name);
 			selected = true;
 		}
 	}
@@ -192,18 +197,19 @@ tgui::ComboBox::Ptr widgetUtil::makeAnimalSpeciesSelectUI()
 	output->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	output->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
 	bool selected = false;
-	output->onItemSelect([](const tgui::String name){ lastSelectedAnimalSpecies = &AnimalSpecies::byName(name.toStdString()); });
-	for(const AnimalSpecies* animalSpecies : sortByName(animalSpeciesDataStore))
+	output->onItemSelect([](const tgui::String name){ lastSelectedAnimalSpecies = AnimalSpecies::byName(name.toWideString()); });
+	for(AnimalSpeciesId id = AnimalSpeciesId::create(0); id < AnimalSpecies::size(); ++id)
 	{
-		output->addItem(animalSpecies->name, animalSpecies->name);
-		if(lastSelectedAnimalSpecies && lastSelectedAnimalSpecies == animalSpecies)
+		std::wstring name = AnimalSpecies::getName(id);
+		output->addItem(name, name);
+		if(lastSelectedAnimalSpecies.exists() && lastSelectedAnimalSpecies == id)
 		{
-			output->setSelectedItemById(animalSpecies->name);
+			output->setSelectedItemById(name);
 			selected = true;
 		}
-		else if(!lastSelectedAnimalSpecies && !selected)
+		else if(lastSelectedAnimalSpecies.empty() && !selected)
 		{
-			output->setSelectedItemById(animalSpecies->name);
+			output->setSelectedItemById(name);
 			selected = true;
 		}
 	}
@@ -216,18 +222,19 @@ tgui::ComboBox::Ptr widgetUtil::makeFluidTypeSelectUI()
 	output->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	output->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
 	bool selected = false;
-	output->onItemSelect([](const tgui::String name){ lastSelectedFluidType = &FluidType::byName(name.toStdString()); });
-	for(const FluidType* fluidType : sortByName(fluidTypeDataStore))
+	output->onItemSelect([](const tgui::String name){ lastSelectedFluidType = FluidType::byName(name.toWideString()); });
+	for(FluidTypeId id = FluidTypeId::create(0); id < FluidType::size(); ++id)
 	{
-		output->addItem(fluidType->name, fluidType->name);
-		if(lastSelectedFluidType && lastSelectedFluidType == fluidType)
+		std::wstring name = FluidType::getName(id);
+		output->addItem(name, name);
+		if(lastSelectedFluidType.exists() && lastSelectedFluidType == id)
 		{
-			output->setSelectedItemById(fluidType->name);
+			output->setSelectedItemById(name);
 			selected = true;
 		}
-		else if(!lastSelectedFluidType && !selected)
+		else if(lastSelectedFluidType.empty() && !selected)
 		{
-			output->setSelectedItemById(fluidType->name);
+			output->setSelectedItemById(name);
 			selected = true;
 		}
 	}
@@ -240,18 +247,19 @@ tgui::ComboBox::Ptr widgetUtil::makeItemTypeSelectUI()
 	output->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	output->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
 	bool selected = false;
-	output->onItemSelect([](const tgui::String name){ lastSelectedItemType = &ItemType::byName(name.toStdString()); });
-	for(const ItemType* itemType : sortByName(itemTypeDataStore))
+	output->onItemSelect([](const tgui::String name){ lastSelectedItemType = ItemType::byName(name.toWideString()); });
+	for(ItemTypeId id = ItemTypeId::create(0); id < ItemType::size(); ++id)
 	{
-		output->addItem(itemType->name, itemType->name);
-		if(lastSelectedItemType && lastSelectedItemType == itemType)
+		std::wstring name = ItemType::getName(id);
+		output->addItem(name, name);
+		if(lastSelectedItemType.exists() && lastSelectedItemType == id)
 		{
-			output->setSelectedItemById(itemType->name);
+			output->setSelectedItemById(name);
 			selected = true;
 		}
-		else if(!lastSelectedItemType && !selected)
+		else if(lastSelectedItemType.empty() && !selected)
 		{
-			output->setSelectedItemById(itemType->name);
+			output->setSelectedItemById(name);
 			selected = true;
 		}
 	}
@@ -262,16 +270,16 @@ std::tuple<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> widget
 {
 	// ItemType.
 	auto itemTypeSelectUI = tgui::ComboBox::create();
-	for(const ItemType* itemType : sortByName(itemTypeDataStore))
+	for(ItemTypeId id = ItemTypeId::create(0); id < ItemType::size(); ++id)
 	{
-		assert(!itemType->name.empty());
-		itemTypeSelectUI->addItem(itemType->name, itemType->name);
+		std::wstring name = ItemType::getName(id);
+		itemTypeSelectUI->addItem(name, name);
 	}
-	if(lastSelectedItemType)
-		itemTypeSelectUI->setSelectedItem(lastSelectedItemType->name);
+	if(lastSelectedItemType.exists())
+		itemTypeSelectUI->setSelectedItem(ItemType::getName(lastSelectedItemType));
 	else
 		itemTypeSelectUI->setSelectedItemByIndex(0);
-	lastSelectedItemType = &ItemType::byName(itemTypeSelectUI->getSelectedItem().toStdString());
+	lastSelectedItemType = ItemType::byName(itemTypeSelectUI->getSelectedItem().toWideString());
 	// MaterialType.
 	auto materialTypeSelectUI = tgui::ComboBox::create();
 	materialTypeSelectUI->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
@@ -280,73 +288,85 @@ std::tuple<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> widget
 	materialTypeCategorySelectUI->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	materialTypeCategorySelectUI->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
 	auto populateMaterialTypeAndMaterialTypeCategory = [materialTypeSelectUI, materialTypeCategorySelectUI] () {
-		const ItemType& itemType = *lastSelectedItemType;
+		const ItemTypeId& itemType = lastSelectedItemType;
 		// MaterialType.
 		materialTypeSelectUI->removeAllItems();
 		materialTypeSelectUI->addItem("any", "");
-		for(const MaterialType* materialType : sortByName(materialTypeDataStore))
+		for(MaterialTypeId id = MaterialTypeId::create(0); id < MaterialType::size(); ++id)
 		{
-			if(itemType.materialTypeCategories.empty())
+			std::wstring name = MaterialType::getName(id);
+			const auto& materialTypeCategories = ItemType::getMaterialTypeCategories(itemType);
+			if(materialTypeCategories.empty())
 			{
-				materialTypeSelectUI->addItem(materialType->name, materialType->name);
+				materialTypeSelectUI->addItem(name, name);
 				continue;
 			}
-			for(const MaterialTypeCategory* materialTypeCategory : itemType.materialTypeCategories)
-				if(materialTypeCategory  == materialType->materialTypeCategory)
+			const MaterialCategoryTypeId& categoryOfMaterialType = MaterialType::getMaterialTypeCategory(id);
+			for(const MaterialCategoryTypeId& materialTypeCategory : materialTypeCategories)
+				if(materialTypeCategory == categoryOfMaterialType)
 				{
-					materialTypeSelectUI->addItem(materialType->name, materialType->name);
+					materialTypeSelectUI->addItem(name, name);
 					break;
 				}
 		}
-		if(lastSelectedMaterial && materialTypeSelectUI->contains(lastSelectedMaterial->name))
-			materialTypeSelectUI->setSelectedItem(lastSelectedMaterial->name);
+		std::wstring lastMaterialName = MaterialType::getName(lastSelectedMaterial);
+		if(lastSelectedMaterial.exists() && materialTypeSelectUI->contains(lastMaterialName))
+			materialTypeSelectUI->setSelectedItem(lastMaterialName);
 		else
 		{
 			materialTypeSelectUI->setSelectedItemByIndex(0);
-			lastSelectedMaterial = nullptr;
+			lastSelectedMaterial.clear();
 		}
 		// Category.
 		materialTypeCategorySelectUI->removeAllItems();
 		materialTypeCategorySelectUI->addItem("any", "");
-		if(!itemType.materialTypeCategories.empty())
+		const auto& materialTypeCategoriesForItemType = ItemType::getMaterialTypeCategories(itemType);
+		if(!materialTypeCategoriesForItemType.empty())
 		{
-			for(const MaterialTypeCategory* materialTypeCategory : itemType.materialTypeCategories)
-				materialTypeCategorySelectUI->addItem(materialTypeCategory->name, materialTypeCategory->name);
-			if(lastSelectedMaterialCategory && materialTypeCategorySelectUI->contains(lastSelectedMaterialCategory->name))
-				materialTypeCategorySelectUI->setSelectedItem(lastSelectedMaterialCategory->name);
+			for(const MaterialCategoryTypeId& id : materialTypeCategoriesForItemType)
+			{
+				std::wstring name = MaterialTypeCategory::getName(id);
+				materialTypeCategorySelectUI->addItem(name, name);
+			}
+			if(lastSelectedMaterialCategory.exists())
+			{
+				std::wstring name = MaterialTypeCategory::getName(lastSelectedMaterialCategory);
+				if(materialTypeCategorySelectUI->contains(name))
+					materialTypeCategorySelectUI->setSelectedItem(name);
+			}
 			else
 			{
 				materialTypeCategorySelectUI->setSelectedItemByIndex(0);
-				lastSelectedMaterialCategory = nullptr;
+				lastSelectedMaterialCategory.clear();
 			}
 		}
 	};
 	populateMaterialTypeAndMaterialTypeCategory();
 	itemTypeSelectUI->onItemSelect([itemTypeSelectUI, populateMaterialTypeAndMaterialTypeCategory]{
-		const std::string selectedId = itemTypeSelectUI->getSelectedItemId().toStdString();
+		const std::wstring selectedId = itemTypeSelectUI->getSelectedItemId().toWideString();
 		if(selectedId.empty())
 			return;
-		const ItemType& itemType = ItemType::byName(selectedId);
-		lastSelectedItemType = &itemType;
+		const ItemTypeId& itemType = ItemType::byName(selectedId);
+		lastSelectedItemType = itemType;
 		populateMaterialTypeAndMaterialTypeCategory();
 	});
 	materialTypeSelectUI->onItemSelect([materialTypeCategorySelectUI](const tgui::String selected){
 		if(selected == "any")
-			lastSelectedMaterial = nullptr;
+			lastSelectedMaterial.clear();
 		else
 		{;
-			const MaterialType& materialType = MaterialType::byName(selected.toStdString());
-			lastSelectedMaterial = &materialType;
+			const MaterialTypeId& materialType = MaterialType::byName(selected.toWideString());
+			lastSelectedMaterial = materialType;
 			materialTypeCategorySelectUI->setSelectedItemByIndex(0);
 		}
 	});
 	materialTypeCategorySelectUI->onItemSelect([materialTypeSelectUI](const tgui::String selected){
 		if(selected == "any")
-			lastSelectedMaterialCategory = nullptr;
+			lastSelectedMaterialCategory.clear();
 		else
 		{;
-			const MaterialTypeCategory& materialTypeCategory = MaterialTypeCategory::byName(selected.toStdString());
-			lastSelectedMaterialCategory = &materialTypeCategory;
+			const MaterialCategoryTypeId& materialTypeCategory = MaterialTypeCategory::byName(selected.toWideString());
+			lastSelectedMaterialCategory = materialTypeCategory;
 			materialTypeSelectUI->setSelectedItemByIndex(0);
 		}
 	});
@@ -356,52 +376,53 @@ std::tuple<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> widget
 std::pair<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> widgetUtil::makeCraftJobTypeAndMaterialTypeUI()
 {
 	auto craftJobTypeSelectUI = tgui::ComboBox::create();
-	for(const CraftJobType* craftJobType : sortByName(craftJobTypeDataStore))
+	for(auto craftJobTypeId = CraftJobTypeId::create(0); craftJobTypeId < CraftJobType::size(); ++craftJobTypeId)
 	{
-		assert(!craftJobType->name.empty());
-		craftJobTypeSelectUI->addItem(craftJobType->name, craftJobType->name);
+		std::wstring name = CraftJobType::getName(craftJobTypeId);
+		craftJobTypeSelectUI->addItem(name, name);
 	}
-	if(lastSelectedCraftJobType)
-		craftJobTypeSelectUI->setSelectedItem(lastSelectedCraftJobType->name);
+	if(lastSelectedCraftJobType.exists())
+		craftJobTypeSelectUI->setSelectedItem(CraftJobType::getName(lastSelectedCraftJobType));
 	else
 		craftJobTypeSelectUI->setSelectedItemByIndex(0);
-	lastSelectedCraftJobType = &CraftJobType::byName(craftJobTypeSelectUI->getSelectedItem().toStdString());
+	lastSelectedCraftJobType = CraftJobType::byName(craftJobTypeSelectUI->getSelectedItem().toWideString());
 	auto materialTypeSelectUI = tgui::ComboBox::create();
 	materialTypeSelectUI->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	materialTypeSelectUI->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
 	auto populateMaterialType = [materialTypeSelectUI]{
 		materialTypeSelectUI->removeAllItems();
 		materialTypeSelectUI->addItem("any", "");
-		const CraftJobType& craftJobType = *lastSelectedCraftJobType;
-		for(const MaterialType* materialType : sortByName(materialTypeDataStore))
-		{
-			if(craftJobType.materialTypeCategory  == materialType->materialTypeCategory)
-				materialTypeSelectUI->addItem(materialType->name, materialType->name);
-		}
-		if(lastSelectedMaterial && materialTypeSelectUI->contains(lastSelectedMaterial->name))
-			materialTypeSelectUI->setSelectedItem(lastSelectedMaterial->name);
+		const CraftJobTypeId craftJobType = lastSelectedCraftJobType;
+		for(auto id = MaterialTypeId::create(0); id < MaterialType::size(); ++id)
+			if(CraftJobType::getMaterialTypeCategory(craftJobType) == MaterialType::getMaterialTypeCategory(id))
+			{
+				std::wstring name = MaterialType::getName(id);
+				materialTypeSelectUI->addItem(name, name);
+			}
+		if(lastSelectedMaterial.exists() && materialTypeSelectUI->contains(MaterialType::getName(lastSelectedMaterial)))
+			materialTypeSelectUI->setSelectedItem(MaterialType::getName(lastSelectedMaterial));
 		else
 		{
 			materialTypeSelectUI->setSelectedItemByIndex(0);
-			lastSelectedMaterial = nullptr;
+			lastSelectedMaterial.clear();
 		}
 	};
 	populateMaterialType();
 	craftJobTypeSelectUI->onItemSelect([craftJobTypeSelectUI, populateMaterialType]{
-		const std::string selectedId = craftJobTypeSelectUI->getSelectedItemId().toStdString();
-		if(selectedId.empty())
+		const std::wstring selectedName = craftJobTypeSelectUI->getSelectedItemId().toWideString();
+		if(selectedName.empty())
 			return;
-		const CraftJobType& craftJobType = CraftJobType::byName(selectedId);
-		lastSelectedCraftJobType = &craftJobType;
+		const CraftJobTypeId& craftJobType = CraftJobType::byName(selectedName);
+		lastSelectedCraftJobType = craftJobType;
 		populateMaterialType();
 	});
 	materialTypeSelectUI->onItemSelect([](const tgui::String selected){
 		if(selected == "any")
-			lastSelectedMaterial = nullptr;
+			lastSelectedMaterial.clear();
 		else
 		{;
-			const MaterialType& materialType = MaterialType::byName(selected.toStdString());
-			lastSelectedMaterial = &materialType;
+			const MaterialTypeId& materialType = MaterialType::byName(selected.toWideString());
+			lastSelectedMaterial = materialType;
 		}
 	});
 	return {craftJobTypeSelectUI, materialTypeSelectUI};
@@ -413,12 +434,12 @@ tgui::ComboBox::Ptr widgetUtil::makeFactionSelectUI(Simulation& simulation, std:
 	output->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	output->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
 	bool selected = false;
-	output->onItemSelect([output, &simulation, nullLabel]{ 
+	output->onItemSelect([output, &simulation, nullLabel]{
 		auto id = output->getSelectedItemId();
 		if(id == nullLabel)
-			lastSelectedFaction = nullptr;
+			lastSelectedFaction.clear();
 		else
-			lastSelectedFaction = &static_cast<Faction&>(simulation.m_hasFactions.byName(id.toWideString())); 
+			lastSelectedFaction = simulation.m_hasFactions.byName(id.toWideString());
 	});
 	if(!nullLabel.empty())
 	{
@@ -426,18 +447,17 @@ tgui::ComboBox::Ptr widgetUtil::makeFactionSelectUI(Simulation& simulation, std:
 		output->setSelectedItemById(nullLabel);
 		selected = true;
 	}
-	auto factions = sortByName(simulation.m_hasFactions.getAll());
-	for(Faction* faction : factions)
+	for(Faction& faction : simulation.m_hasFactions.getAll())
 	{
-		output->addItem(faction->name, faction->name);
-		if(lastSelectedFaction && lastSelectedFaction == faction)
+		output->addItem(faction.name, faction.name);
+		if(lastSelectedFaction.exists() && lastSelectedFaction == faction.id)
 		{
-			output->setSelectedItemById(faction->name);
+			output->setSelectedItemById(faction.name);
 			selected = true;
 		}
-		else if(!lastSelectedFaction && !selected)
+		else if(lastSelectedFaction.empty() && !selected)
 		{
-			output->setSelectedItemById(faction->name);
+			output->setSelectedItemById(faction.name);
 			selected = true;
 		}
 	}
@@ -449,7 +469,7 @@ tgui::ComboBox::Ptr widgetUtil::makeBlockFeatureTypeSelectUI()
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	output->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	output->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
-	output->onItemSelect([](const tgui::String name){ lastSelectedBlockFeatureType = &BlockFeatureType::byName(name.toStdString()); });
+	output->onItemSelect([](const tgui::String name){ lastSelectedBlockFeatureType = &BlockFeatureType::byName(name.toWideString()); });
 	bool selected = false;
 	std::vector<BlockFeatureType*> types = BlockFeatureType::getAll();
 	for(const BlockFeatureType* itemType : sortByName(types))
@@ -474,19 +494,20 @@ tgui::ComboBox::Ptr widgetUtil::makeCraftStepTypeCategorySelectUI()
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	output->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	output->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
-	output->onItemSelect([](const tgui::String name){ lastSelectedCraftStepTypeCategory = &CraftStepTypeCategory::byName(name.toStdString()); });
+	output->onItemSelect([](const tgui::String name){ lastSelectedCraftStepTypeCategory = CraftStepTypeCategory::byName(name.toWideString()); });
 	bool selected = false;
-	for(const CraftStepTypeCategory* craftStepTypeCategory : sortByName(craftStepTypeCategoryDataStore))
+	for(auto id = CraftStepTypeCategoryId::create(0); id < CraftStepTypeCategory::size(); ++id)
 	{
-		output->addItem(craftStepTypeCategory->name, craftStepTypeCategory->name);
-		if(lastSelectedCraftStepTypeCategory && lastSelectedCraftStepTypeCategory == craftStepTypeCategory)
+		std::wstring name = CraftStepTypeCategory::getName(id);
+		output->addItem(name, name);
+		if(lastSelectedCraftStepTypeCategory.exists() && lastSelectedCraftStepTypeCategory == id)
 		{
-			output->setSelectedItemById(craftStepTypeCategory->name);
+			output->setSelectedItemById(name);
 			selected = true;
 		}
-		else if(!lastSelectedCraftStepTypeCategory && !selected)
+		else if(lastSelectedCraftStepTypeCategory.empty() && !selected)
 		{
-			output->setSelectedItemById(craftStepTypeCategory->name);
+			output->setSelectedItemById(name);
 			selected = true;
 		}
 	}
@@ -498,23 +519,23 @@ tgui::ComboBox::Ptr widgetUtil::makeCraftJobTypeSelectUI()
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	output->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	output->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
-	output->onItemSelect([](const tgui::String name){ 
+	output->onItemSelect([](const tgui::String name){
 		if(!name.empty())
-			lastSelectedCraftJobType = &CraftJobType::byName(name.toStdString()); 
+			lastSelectedCraftJobType = CraftJobType::byName(name.toWideString());
 	});
 	bool selected = false;
-	for(const CraftJobType* craftJobType : sortByName(craftJobTypeDataStore))
+	for(auto id = CraftJobTypeId::create(0); id < CraftJobType::size(); ++ id)
 	{
-		assert(!craftJobType->name.empty());
-		output->addItem(craftJobType->name, craftJobType->name);
-		if(lastSelectedCraftJobType && lastSelectedCraftJobType == craftJobType)
+		std::wstring name = CraftJobType::getName(id);
+		output->addItem(name, name);
+		if(lastSelectedCraftJobType.exists() && lastSelectedCraftJobType == id)
 		{
-			output->setSelectedItemById(craftJobType->name);
+			output->setSelectedItemById(name);
 			selected = true;
 		}
-		else if(!lastSelectedCraftJobType && !selected)
+		else if(lastSelectedCraftJobType.empty() && !selected)
 		{
-			output->setSelectedItemById(craftJobType->name);
+			output->setSelectedItemById(name);
 			selected = true;
 		}
 	}

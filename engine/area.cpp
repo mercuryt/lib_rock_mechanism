@@ -64,7 +64,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_fires(*this), m_hasFarmFields(*this), m_hasDigDesignations(*this), m_hasConstructionDesignations(*this),
 	m_hasStockPiles(*this), m_hasCraftingLocationsAndJobs(*this), m_hasTargetedHauling(*this), m_hasSleepingSpots(*this),
 	m_hasWoodCuttingDesignations(*this), m_fluidSources(*this), m_hasFluidGroups(*this), m_hasRain(*this, simulation), m_blockDesignations(*this),
-	m_octTree(data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>()), m_visionRequests(*this), m_opacityFacade(*this), 
+	m_octTree(data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>()), m_visionRequests(*this), m_opacityFacade(*this),
 	m_name(data["name"].get<std::wstring>()), m_simulation(simulation), m_id(data["id"].get<AreaId>())
 {
 	m_blocks = std::make_unique<Blocks>(*this, data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>());
@@ -108,7 +108,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_hasDigDesignations.loadWorkers(data["hasDigDesignations"], deserializationMemo);
 	m_hasStockPiles.loadWorkers(data["hasStockPiles"], deserializationMemo);
 	m_hasCraftingLocationsAndJobs.loadWorkers(data["hasCraftingLocationsAndJobs"], deserializationMemo);
-	
+
 	//hasWoodCuttingDesignations.loadWorkers(data["hasWoodCuttingDesignations"], deserializationMemo);
 	//m_targetedHauling.loadWorkers(data["targetedHauling"], deserializationMemo);
 
@@ -220,7 +220,7 @@ void Area::updateClimate()
 		m_hasFarmFields.setDayOfYear(day);
 	}
 }
-std::string Area::toS() const
+std::wstring Area::toS() const
 {
 	return m_hasFluidGroups.toS();
 }

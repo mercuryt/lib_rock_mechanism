@@ -13,9 +13,9 @@
 TEST_CASE("leadAndFollow")
 {
 	Simulation simulation;
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
-	static AnimalSpeciesId troll = AnimalSpecies::byName("troll");
-	static MaterialTypeId marble = MaterialType::byName("marble");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
+	static AnimalSpeciesId troll = AnimalSpecies::byName(L"troll");
+	static MaterialTypeId marble = MaterialType::byName(L"marble");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
@@ -100,7 +100,7 @@ TEST_CASE("leadAndFollow")
 		blocks.solid_set(blocks.getIndex_i(5, 5, 1), marble, false);
 		blocks.solid_set(blocks.getIndex_i(5, 7, 1), marble, false);
 		ActorIndex dwarf1 = actors.create({
-			.species=AnimalSpecies::byName("dwarf"),
+			.species=AnimalSpecies::byName(L"dwarf"),
 			.location=origin1,
 		});
 		ActorIndex troll1 = actors.create({
@@ -132,7 +132,7 @@ TEST_CASE("leadAndFollow")
 			.location=origin3,
 		});
 		std::unique_ptr<Objective> stationObjective = std::make_unique<StationObjective>(origin3);
-		actors.objective_addTaskToStart(dwarf2,std::move(stationObjective)); 
+		actors.objective_addTaskToStart(dwarf2,std::move(stationObjective));
 		actors.followActor(troll1, dwarf1);
 		actors.move_setDestination(dwarf1, destination1);
 		simulation.doStep();

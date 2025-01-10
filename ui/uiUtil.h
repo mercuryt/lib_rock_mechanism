@@ -2,7 +2,9 @@
 
 #include <string>
 
+class Area;
+
 namespace UIUtil
 {
-	std::wstring describeItem(const Item& item);
+	std::wstring describeItem(Area& area, const ItemIndex& item);
 }

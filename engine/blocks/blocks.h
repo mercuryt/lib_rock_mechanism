@@ -83,8 +83,6 @@ public:
 	void resize(const BlockIndex& count);
 	void initalize(const BlockIndex& index);
 	void recordAdjacent(const BlockIndex& index);
-	template<typename Action>
-	void forEach(Action&& action) { getAll().forEach(*this, action); }
 	// For testing.
 	[[nodiscard]] std::vector<BlockIndex> getAllIndices() const ;
 	[[nodiscard]] Json toJson() const;
@@ -127,6 +125,7 @@ public:
 	[[nodiscard]] bool isAdjacentToItem(const BlockIndex& index, const ItemIndex& item) const;
 	[[nodiscard]] bool isConstructed(const BlockIndex& index) const;
 	[[nodiscard]] bool canSeeIntoFromAlways(const BlockIndex& index, const BlockIndex& other) const;
+	[[nodiscard]] bool isVisible(const BlockIndex& index) const { return m_visible[index]; }
 	void moveContentsTo(const BlockIndex& index, const BlockIndex& other);
 	[[nodiscard]] Mass getMass(const BlockIndex& index) const;
 	// Get block at offset coordinates. Can return nullptr.
@@ -250,6 +249,7 @@ public:
 	[[nodiscard]] bool blockFeature_canEnterFromAbove(const BlockIndex& index, const BlockIndex& from) const;
 	[[nodiscard]] MaterialTypeId blockFeature_getMaterialType(const BlockIndex& index) const;
 	[[nodiscard]] bool blockFeature_contains(const BlockIndex& index, const BlockFeatureType& blockFeatureType) const;
+	[[nodiscard]] auto& blockFeature_getAll(const BlockIndex& index) const { return m_features[index]; }
 	// -Fluids
 	void fluid_spawnMist(const BlockIndex& index, const FluidTypeId& fluidType, const DistanceInBlocks maxMistSpread = DistanceInBlocks::create(0));
 	void fluid_clearMist(const BlockIndex& index);

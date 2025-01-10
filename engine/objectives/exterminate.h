@@ -17,7 +17,7 @@ public:
 	void delay(Area&, const ActorIndex&) { }
 	void reset(Area&, const ActorIndex&) { }
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::string name() const { return "exterminate"; }
+	[[nodiscard]] std::wstring name() const { return L"exterminate"; }
 	friend class ExterminateObjectiveScheduledEvent;
 };
 class ExterminateObjectiveScheduledEvent final : public ScheduledEvent

@@ -10,7 +10,7 @@
 #include <cassert>
 struct AttackTypeParamaters final
 {
-	std::string name;
+	std::wstring name;
 	uint32_t area;
 	Force baseForce;
 	DistanceInBlocksFractional range;
@@ -24,7 +24,7 @@ struct AttackTypeParamaters final
 
 class AttackType final
 {
-	DataVector<std::string, AttackTypeId> m_name;
+	DataVector<std::wstring, AttackTypeId> m_name;
 	DataVector<uint32_t, AttackTypeId> m_area;
 	DataVector<Force, AttackTypeId> m_baseForce;
 	DataVector<DistanceInBlocksFractional, AttackTypeId> m_range;
@@ -36,8 +36,8 @@ class AttackType final
 	DataVector<ItemTypeId, AttackTypeId> m_projectileItemType;
 public:
 	static AttackTypeId create(const AttackTypeParamaters& p);
-	static AttackTypeId byName(std::string name);
-	[[nodiscard]] static std::string getName(const AttackTypeId& id);
+	static AttackTypeId byName(std::wstring name);
+	[[nodiscard]] static std::wstring getName(const AttackTypeId& id);
 	[[nodiscard]] static uint32_t getArea(const AttackTypeId& id);
 	[[nodiscard]] static Force getBaseForce(const AttackTypeId& id);
 	[[nodiscard]] static DistanceInBlocksFractional getRange(const AttackTypeId& id);

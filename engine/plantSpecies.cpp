@@ -41,8 +41,9 @@ const std::pair<ShapeId, uint8_t> PlantSpecies::shapeAndWildGrowthForPercentGrow
 	uint8_t wildGrowthSteps = plantSpeciesData.m_shapes[species].size() < growthStage ? growthStage - plantSpeciesData.m_shapes[species].size() : 0u;
 	return std::make_pair(plantSpeciesData.m_shapes[species][index], wildGrowthSteps);
 }
+PlantSpeciesId PlantSpecies::size() {return PlantSpeciesId::create(plantSpeciesData.m_name.size()); }
 std::vector<ShapeId> PlantSpecies::getShapes(const PlantSpeciesId& species) { return plantSpeciesData.m_shapes[species]; };
-std::string PlantSpecies::getName(const PlantSpeciesId& species) { return plantSpeciesData.m_name[species]; };
+std::wstring PlantSpecies::getName(const PlantSpeciesId& species) { return plantSpeciesData.m_name[species]; };
 FluidTypeId PlantSpecies::getFluidType(const PlantSpeciesId& species) { return plantSpeciesData.m_fluidType[species]; };
 MaterialTypeId PlantSpecies::getWoodType(const PlantSpeciesId& species) { return plantSpeciesData.m_woodType[species]; };
 Step PlantSpecies::getStepsNeedsFluidFrequency(const PlantSpeciesId& species) { return plantSpeciesData.m_stepsNeedsFluidFrequency[species]; };
@@ -68,7 +69,7 @@ bool PlantSpecies::getIsTree(const PlantSpeciesId& species) { return plantSpecie
 ShapeId PlantSpecies::shapeForPercentGrown(const PlantSpeciesId& species, const Percent& percentGrown) { return shapeAndWildGrowthForPercentGrown(species, percentGrown).first; }
 uint8_t PlantSpecies::wildGrowthForPercentGrown(const PlantSpeciesId& species, const Percent& percentGrown) { return shapeAndWildGrowthForPercentGrown(species, percentGrown).second; }
 // Static method.
-PlantSpeciesId PlantSpecies::byName(std::string name)
+PlantSpeciesId PlantSpecies::byName(std::wstring name)
 {
 	auto found = plantSpeciesData.m_name.find(name);
 	assert(found != plantSpeciesData.m_name.end());

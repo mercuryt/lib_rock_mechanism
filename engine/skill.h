@@ -16,10 +16,10 @@ public:
 	SkillExperiencePoints m_xpForNextLevel;
 	Skill(const SkillTypeId& st, SkillLevel l = SkillLevel::create(0), SkillExperiencePoints xp = SkillExperiencePoints::create(0)) :
 		m_skillType(st), m_level(l), m_xp(xp) { setup(); }
-	Skill(const Json& data) : 
-		m_skillType(SkillType::byName(data["skillType"].get<std::string>())),
+	Skill(const Json& data) :
+		m_skillType(SkillType::byName(data["skillType"].get<std::wstring>())),
 		m_level(data["level"].get<SkillLevel>()),
-		m_xp(data["xp"].get<SkillExperiencePoints>()) 
+		m_xp(data["xp"].get<SkillExperiencePoints>())
 	{ setup();}
 	void setup()
 	{
@@ -27,7 +27,7 @@ public:
 		for(SkillLevel i = SkillLevel::create(0); i < m_level; ++i)
 			m_xpForNextLevel *= SkillType::getXpPerLevelModifier(m_skillType);
 	}
-	Json toJson() const 
+	Json toJson() const
 	{
 		Json data;
 		data["skillType"] = SkillType::getName(m_skillType);
@@ -57,7 +57,7 @@ public:
 	{
 		for(const Json& skillData : data["skills"])
 		{
-			SkillTypeId skillType = SkillType::byName(skillData["skillType"].get<std::string>());
+			SkillTypeId skillType = SkillType::byName(skillData["skillType"].get<std::wstring>());
 			m_skills.emplace(skillType, skillData);
 		}
 	}
@@ -85,5 +85,6 @@ public:
 		else
 			return found.second().m_level;
 	}
+	SkillTypeMap<Skill>& getSkills() { return m_skills; }
 	const SkillTypeMap<Skill>& getSkills() const { return m_skills; }
 };

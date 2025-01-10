@@ -33,7 +33,7 @@ public:
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::string name() const { return "give plants fluid"; }
+	[[nodiscard]] std::wstring name() const { return L"give plants fluid"; }
 };
 class GivePlantsFluidObjectiveType final : public ObjectiveType
 {
@@ -42,7 +42,7 @@ public:
 	std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
 	GivePlantsFluidObjectiveType() = default;
 	GivePlantsFluidObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
-	[[nodiscard]] std::string name() const { return "give plants fluid"; }
+	[[nodiscard]] std::wstring name() const { return L"give plants fluid"; }
 };
 class GivePlantsFluidObjective final : public Objective
 {
@@ -61,7 +61,7 @@ public:
 	void selectItem(Area& area, const ItemIndex& item, const ActorIndex& actor);
 	void reset(Area& area, const ActorIndex& actor);
 	void makePathRequest(Area& area, const ActorIndex& actor);
-	[[nodiscard]] std::string name() const { return "give plants fluid"; }
+	[[nodiscard]] std::wstring name() const { return L"give plants fluid"; }
 	[[nodiscard]] bool canFillAt(Area& area, const BlockIndex& block) const;
 	[[nodiscard]] ItemIndex getItemToFillFromAt(Area& area, const BlockIndex& block) const;
 	[[nodiscard]] bool canGetFluidHaulingItemAt(Area& area, const BlockIndex& location, const ActorIndex& actor) const;

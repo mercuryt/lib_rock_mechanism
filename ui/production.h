@@ -15,7 +15,7 @@ class NewProductionView final
 	Window& m_window;
 	tgui::Panel::Ptr m_panel;
 	ProductionView& m_productionView;
-	Quantity m_quantity = 1;
+	Quantity m_quantity = Quantity::create(1);
 public:
 	NewProductionView(Window& w, ProductionView& pv);
 	void draw();
@@ -34,5 +34,5 @@ public:
 	void closeCreate() { m_newProductionView.hide(); }
 	[[nodiscard]] bool createIsVisible() const { return m_newProductionView.m_panel != nullptr; }
 	[[nodiscard]] bool isVisible() const { return m_panel != nullptr; }
-	[[nodiscard]] std::vector<std::tuple<const CraftJobType*, const MaterialType*, Quantity, CraftJob*>> collate();
+	[[nodiscard]] std::vector<std::tuple<CraftJobTypeId, MaterialTypeId, Quantity, CraftJob*>> collate();
 };

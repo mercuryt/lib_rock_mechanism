@@ -4,7 +4,6 @@
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <string>
-#include <unordered_set>
 class Window;
 class BlockIndex;
 class Draw final
@@ -24,7 +23,7 @@ public:
 	void colorOnBlock(const BlockIndex& block, const sf::Color color);
 	void designated(const BlockIndex& block);
 	void craftLocation(const BlockIndex& block);
-	sf::Sprite getCenteredSprite(std::string name);
+	sf::Sprite getCenteredSprite(std::wstring name);
 
 	void spriteAt(sf::Sprite& sprite, sf::Vector2f position, const sf::Color* color = nullptr);
 	void spriteAtWithScale(sf::Sprite& sprite, sf::Vector2f position, float scale, const sf::Color* color = nullptr);
@@ -32,13 +31,13 @@ public:
 	void spriteOnBlockWithScale(const BlockIndex& block, sf::Sprite& sprite, float scaleRatio, const sf::Color* = nullptr);
 	void spriteOnBlock(const BlockIndex& block, sf::Sprite& sprite, const sf::Color* = nullptr);
 	void spriteOnBlockCentered(const BlockIndex& block, sf::Sprite& sprite, const sf::Color* = nullptr);
-	void imageOnBlock(const BlockIndex& block, std::string name, const sf::Color* = nullptr);
-	void imageOnBlockWestAlign(const BlockIndex& block, std::string name, const sf::Color* = nullptr);
-	void imageOnBlockEastAlign(const BlockIndex& block, std::string name, const sf::Color* = nullptr);
-	void imageOnBlockSouthAlign(const BlockIndex& block, std::string name, const sf::Color* = nullptr);
+	void imageOnBlock(const BlockIndex& block, std::wstring name, const sf::Color* = nullptr);
+	void imageOnBlockWestAlign(const BlockIndex& block, std::wstring name, const sf::Color* = nullptr);
+	void imageOnBlockEastAlign(const BlockIndex& block, std::wstring name, const sf::Color* = nullptr);
+	void imageOnBlockSouthAlign(const BlockIndex& block, std::wstring name, const sf::Color* = nullptr);
 	void progressBarOnBlock(const BlockIndex& block, Percent progress);
 
-	void selected(BlockIndex& block);
+	void selected(const BlockIndex& block);
 	void outlineOnBlock(const BlockIndex& block, const sf::Color color, float thickness = 3.f);
 	void stringAtPosition(const std::wstring string, const sf::Vector2f position, const sf::Color color, float offsetX = 0.5, float offsetY = 0.0);
 	void stringOnBlock(const BlockIndex& block,const  std::wstring string, const sf::Color color, float offsetX = 0.5, float offsetY = 0.0);
@@ -46,13 +45,13 @@ public:
 	void nonGroundCoverPlant(const BlockIndex& block);
 	void item(const BlockIndex& block);
 	void itemOverlay(const BlockIndex& block);
-	void item(const Item& item, sf::Vector2f position);
-	void itemOverlay(const Item& item, sf::Vector2f position);
-	void singleTileActor(const Actor& actor);
-	void multiTileActor(const Actor& actor);
-	void actorOverlay(const Actor& block);
-	void multiTileBorder(std::unordered_set<BlockIndex*> blocks, sf::Color color, float thickness);
-	void borderSegmentOnBlock(const BlockIndex& block, Facing facing, sf::Color color, float thickness);
+	void item(const ItemIndex& item, sf::Vector2f position);
+	void itemOverlay(const ItemIndex& item, sf::Vector2f position);
+	void singleTileActor(const ActorIndex& actor);
+	void multiTileActor(const ActorIndex& actor);
+	void actorOverlay(const ActorIndex& actor);
+	void multiTileBorder(const OccupiedBlocksForHasShape& blocksOccpuied, sf::Color color, float thickness);
+	void borderSegmentOnBlock(const BlockIndex& block, const Facing& facing, sf::Color color, float thickness);
 	void accessableSymbol(const BlockIndex& block);
 	void inaccessableSymbol(const BlockIndex& block);
 

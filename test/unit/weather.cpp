@@ -13,8 +13,8 @@
 
 TEST_CASE("weather")
 {
-	static MaterialTypeId marble = MaterialType::byName("marble");
-	static FluidTypeId water = FluidType::byName("water");
+	static MaterialTypeId marble = MaterialType::byName(L"marble");
+	static FluidTypeId water = FluidType::byName(L"water");
 	Simulation simulation{L"", Step::create(1)};
 	Area& area = simulation.m_hasAreas->createArea(5, 5, 5);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);

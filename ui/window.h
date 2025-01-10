@@ -27,9 +27,9 @@
 #include "dialogueBox.h"
 #include "atomicBool.h"
 //#include "worldParamatersPanel.h"
-struct GameView final 
+struct GameView final
 {
-	BlockIndex* center;
+	BlockIndex center;
 	uint32_t scale;
 };
 class Window final
@@ -62,11 +62,11 @@ class Window final
 	std::atomic<uint16_t> m_speed = 1;
 	SmallMap<AreaId, GameView> m_lastViewedSpotInArea;
 	//TODO: multi select.
-	SmallSet<BlockIndex*> m_selectedBlocks;
+	SmallSet<BlockIndex> m_selectedBlocks;
 	SmallSet<ActorIndex> m_selectedActors;
 	SmallSet<ItemIndex> m_selectedItems;
 	SmallSet<PlantIndex> m_selectedPlants;
-	Faction* m_faction = nullptr;
+	FactionId m_faction;
 	// AtomicBool used instead of std::atomic<bool> for atomic toggle.
 	AtomicBool m_paused = true;
 	std::chrono::milliseconds m_minimumTimePerFrame;
@@ -74,10 +74,10 @@ class Window final
 	Draw m_draw;
 	std::thread m_simulationThread;
 	sf::Vector2i m_positionWhereMouseDragBegan = {0,0};
-	BlockIndex* m_firstCornerOfSelection = nullptr;
-	BlockIndex* m_blockUnderCursor = nullptr;
+	BlockIndex m_firstCornerOfSelection;
+	BlockIndex m_blockUnderCursor;
 	static constexpr int gameMarginSize = 400;
-	
+
 	void povFromJson(const Json& data);
 	void setZ(const uint32_t z);
 	void setSpeedDisplay();
@@ -95,8 +95,8 @@ public:
 	void startLoop();
 	void centerView(const BlockIndex& block);
 	void setFrameRate(uint32_t);
-	void setItemToInstall(Item& item) { m_gameOverlay.m_itemBeingInstalled = &item; }
-	void setItemToMove(Item& item) { m_gameOverlay.m_itemBeingMoved = &item; }
+	void setItemToInstall(const ItemIndex& item) { m_gameOverlay.m_itemBeingInstalled = item; }
+	void setItemToMove(const ItemIndex& item) { m_gameOverlay.m_itemBeingMoved = item; }
 	void close() { m_window.close(); }
 	[[nodiscard]] tgui::Gui& getGui() { return m_gui; }
 	[[nodiscard]] sf::RenderWindow& getRenderWindow() { return m_window; }
@@ -108,42 +108,42 @@ public:
 	void showLoad() { hideAllPanels(); m_loadView.draw(); }
 	void showProduction() { hideAllPanels(); m_productionView.draw(); }
 	void showUniforms() { hideAllPanels(); m_uniformView.show(); }
-	void showObjectivePriority(Actor& actor) { hideAllPanels(); m_objectivePriorityView.draw(actor); }
+	void showObjectivePriority(const ActorIndex& actor) { hideAllPanels(); m_objectivePriorityView.draw(actor); }
 	void showStocks() { hideAllPanels(); m_stocksView.show(); }
-	void showActorDetail(Actor& actor) { hideAllPanels(); m_actorView.draw(actor); }
+	void showActorDetail(const ActorIndex& actor) { hideAllPanels(); m_actorView.draw(actor); }
 	//void showCreateWorld() { hideAllPanels(); m_worldParamatersView.show(); }
 	void showEditReality() { hideAllPanels(); m_editRealityView.draw(); }
-	void showEditActor(Actor& actor) { hideAllPanels(); m_editActorView.draw(actor); }
+	void showEditActor(const ActorIndex& actor) { hideAllPanels(); m_editActorView.draw(actor); }
 	void showEditArea(Area* area = nullptr) { hideAllPanels(); m_editAreaView.draw(area); }
-	void showEditFaction(Faction* faction = nullptr) { hideAllPanels(); m_editFactionView.draw(faction); }
+	void showEditFaction(const FactionId& faction = FactionId::null()) { hideAllPanels(); m_editFactionView.draw(faction); }
 	void showEditFactions() { hideAllPanels(); m_editFactionsView.draw(); }
 	void showEditStockPile(StockPile* stockPile = nullptr) { hideAllPanels(); m_editStockPileView.draw(stockPile); }
 	void showEditDrama(Area* area = nullptr) { hideAllPanels(); m_editDramaView.draw(area); }
 	// Select.
 	void deselectAll();
 	void selectBlock(BlockIndex& block);
-	void selectItem(Item& item);
-	void selectPlant(Plant& plant);
-	void selectActor(Actor& actor);
-	SmallSet<BlockIndex*>& getSelectedBlocks() { return m_selectedBlocks; }
-	SmallSet<Item*>& getSelectedItems() { return m_selectedItems; }
-	SmallSet<Plant*>& getSelectedPlants() { return m_selectedPlants; }
-	SmallSet<Actor*>& getSelectedActors() { return m_selectedActors; }
-	[[nodiscard]] BlockIndex& getBlockUnderCursor();
-	[[nodiscard]] BlockIndex& getBlockAtPosition(sf::Vector2i pixelPos);
+	void selectItem(const ItemIndex& item);
+	void selectPlant(const PlantIndex& plant);
+	void selectActor(const ActorIndex& actor);
+	SmallSet<BlockIndex>& getSelectedBlocks() { return m_selectedBlocks; }
+	SmallSet<ItemIndex>& getSelectedItems() { return m_selectedItems; }
+	SmallSet<PlantIndex>& getSelectedPlants() { return m_selectedPlants; }
+	SmallSet<ActorIndex>& getSelectedActors() { return m_selectedActors; }
+	[[nodiscard]] BlockIndex getBlockUnderCursor();
+	[[nodiscard]] BlockIndex getBlockAtPosition(sf::Vector2i pixelPos);
 	// Filesystem.
 	void threadTask(std::function<void()> task);
 	void save();
 	void load(std::filesystem::path path);
 	// Accessors.
-	[[nodiscard]] Faction* getFaction() const { return m_faction;}
-	void setFaction(Faction& faction) { m_faction = &faction;}
+	[[nodiscard]] const FactionId& getFaction() const { return m_faction;}
+	void setFaction(const FactionId& faction) { m_faction = faction;}
 	[[nodiscard]] Simulation* getSimulation() { return m_simulation.get(); }
 	void setSimulation(std::unique_ptr<Simulation> simulation) { m_simulation = std::move(simulation); }
 	[[nodiscard]] Area* getArea() { return m_area; }
 	// String utilities.
-	static std::wstring displayNameForItem(const Item& item);
+	std::wstring displayNameForItem(const ItemIndex& item);
 	static std::wstring displayNameForCraftJob(CraftJob& craftJob);
-	std::string facingToString(Facing facing);
+	static std::wstring facingToString(Facing facing);
 	friend class Draw;
 };

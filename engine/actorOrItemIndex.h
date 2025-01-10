@@ -37,7 +37,7 @@ public:
 	void followItem(Area& area, const ItemIndex& item) const;
 	void followPolymorphic(Area& area, const ActorOrItemIndex& actorOrItem) const;
 	void unfollow(Area& area) const;
-	std::string toString() const;
+	std::wstring toString() const;
 	[[nodiscard]] ActorIndex getActor() const { return ActorIndex::create(m_index.get()); }
 	[[nodiscard]] ItemIndex getItem() const { return ItemIndex::create(m_index.get()); }
 	[[nodiscard]] ActorOrItemReference toReference(Area& area) const;

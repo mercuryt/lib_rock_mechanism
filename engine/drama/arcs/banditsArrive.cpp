@@ -11,10 +11,10 @@
 #include "../../simulation/hasActors.h"
 #include "../../types.h"
 #include <utility>
-BanditsArriveDramaArc::BanditsArriveDramaArc(DramaEngine& engine, Area& area) : 
+BanditsArriveDramaArc::BanditsArriveDramaArc(DramaEngine& engine, Area& area) :
 	DramaArc(engine, DramaArcType::BanditsArrive, &area), m_scheduledEvent(area.m_eventSchedule)
 { scheduleArrive(); }
-BanditsArriveDramaArc::BanditsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& engine) : 
+BanditsArriveDramaArc::BanditsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& engine) :
 	DramaArc(data, deserializationMemo, engine),
 	m_isActive(data["isActive"].get<bool>()),
 	m_quantity(data["quantity"].get<Quantity>()),
@@ -78,7 +78,7 @@ void BanditsArriveDramaArc::callback()
 			{
 				exclude.add(location);
 				ActorIndex actor = actors.create(ActorParamaters{
-					.species=species, 
+					.species=species,
 					.percentGrown=Percent::create(random.getInRange(70,100)),
 					.location=location,
 					.faction=actors.getFactionId(m_leader.getIndex(actors.m_referenceData)),
@@ -107,8 +107,8 @@ void BanditsArriveDramaArc::callback()
 	else
 	{
 		// Find entry point.
-		static ShapeId shape = Shape::byName("oneByOneFull");
-		static const MoveTypeId moveType = MoveType::byName("two legs and swim in water");
+		static ShapeId shape = Shape::byName(L"oneByOneFull");
+		static const MoveTypeId moveType = MoveType::byName(L"two legs and swim in water");
 		m_entranceBlock = getEntranceToArea(shape, moveType);
 		if(m_entranceBlock.empty())
 			scheduleArrive();

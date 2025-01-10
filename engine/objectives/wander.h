@@ -1,5 +1,4 @@
-
-
+#pragma once
 #include "../objective.h"
 #include "../terrainFacade.h"
 #include "../pathRequest.h"
@@ -20,7 +19,7 @@ public:
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::string name() const { return "wander"; }
+	[[nodiscard]] std::wstring name() const { return L"wander"; }
 };
 class WanderObjective final : public Objective
 {
@@ -32,7 +31,7 @@ public:
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
 	void reset(Area& area, const ActorIndex& actor);
-	std::string name() const { return "wander"; }
+	std::wstring name() const { return L"wander"; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool canResume() const { return false; }
 	// For testing.

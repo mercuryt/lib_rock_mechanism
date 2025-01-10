@@ -15,12 +15,12 @@
 TEST_CASE("route_10_10_10")
 {
 	Simulation simulation;
-	static MaterialTypeId marble = MaterialType::byName("marble");
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
-	static AnimalSpeciesId troll = AnimalSpecies::byName("troll");
-	static AnimalSpeciesId eagle = AnimalSpecies::byName("golden eagle");
-	static AnimalSpeciesId carp = AnimalSpecies::byName("carp");
-	static FluidTypeId water = FluidType::byName("water");
+	static MaterialTypeId marble = MaterialType::byName(L"marble");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
+	static AnimalSpeciesId troll = AnimalSpecies::byName(L"troll");
+	static AnimalSpeciesId eagle = AnimalSpecies::byName(L"golden eagle");
+	static AnimalSpeciesId carp = AnimalSpecies::byName(L"carp");
+	static FluidTypeId water = FluidType::byName(L"water");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
@@ -207,7 +207,7 @@ TEST_CASE("route_10_10_10")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, 9, marble);
 		BlockIndex origin = blocks.getIndex_i(1, 1, 1);
-		BlockIndex destination = blocks.getIndex_i(8, 8, 8);		
+		BlockIndex destination = blocks.getIndex_i(8, 8, 8);
 		BlockIndex ledge = blocks.getIndex_i(8, 8, 7);
 		blocks.solid_set(ledge, marble, false);
 		ActorIndex actor = actors.create({
@@ -223,7 +223,7 @@ TEST_CASE("route_10_10_10")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, 9, marble);
 		BlockIndex origin = blocks.getIndex_i(1, 1, 1);
-		BlockIndex destination = blocks.getIndex_i(8, 8, 8);		
+		BlockIndex destination = blocks.getIndex_i(8, 8, 8);
 		ActorIndex actor = actors.create({
 			.species=eagle,
 			.location=origin,
@@ -237,7 +237,7 @@ TEST_CASE("route_10_10_10")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, 9, marble);
 		BlockIndex water1 = blocks.getIndex_i(1, 1, 1);
-		BlockIndex water2 = blocks.getIndex_i(8, 8, 8);		
+		BlockIndex water2 = blocks.getIndex_i(8, 8, 8);
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
 		ActorIndex actor = actors.create({
 			.species=carp,
@@ -254,18 +254,18 @@ TEST_CASE("route_5_5_3")
 	Area& area = simulation.m_hasAreas->createArea(5,5,3);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	static MaterialTypeId marble = MaterialType::byName("marble");
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
-	static AnimalSpeciesId carp = AnimalSpecies::byName("carp");
-	static FluidTypeId water = FluidType::byName("water");
-	static MoveTypeId twoLegsAndSwimInWater = MoveType::byName("two legs and swim in water");
-	static MoveTypeId twoLegs = MoveType::byName("two legs");
+	static MaterialTypeId marble = MaterialType::byName(L"marble");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
+	static AnimalSpeciesId carp = AnimalSpecies::byName(L"carp");
+	static FluidTypeId water = FluidType::byName(L"water");
+	static MoveTypeId twoLegsAndSwimInWater = MoveType::byName(L"two legs and swim in water");
+	static MoveTypeId twoLegs = MoveType::byName(L"two legs");
 	SUBCASE("swimming path blocked")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, 1, marble);
 		BlockIndex origin = blocks.getIndex_i(2, 1, 1);
-		BlockIndex destination = blocks.getIndex_i(2, 3, 1);		
+		BlockIndex destination = blocks.getIndex_i(2, 3, 1);
 		blocks.solid_set(blocks.getIndex_i(1, 2, 1), marble, false);
 		blocks.solid_set(blocks.getIndex_i(2, 2, 1), marble, false);
 		blocks.solid_set(blocks.getIndex_i(3, 2, 1), marble, false);
@@ -288,7 +288,7 @@ TEST_CASE("route_5_5_3")
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
 		areaBuilderUtil::setSolidWalls(area, 2, marble);
 		BlockIndex origin = blocks.getIndex_i(2, 1, 2);
-		BlockIndex destination = blocks.getIndex_i(2, 3, 2);		
+		BlockIndex destination = blocks.getIndex_i(2, 3, 2);
 		BlockIndex midpoint = blocks.getIndex_i(2, 2, 1);
 		blocks.solid_setNot(blocks.getIndex_i(1, 2, 1));
 		blocks.solid_setNot(midpoint);
@@ -318,15 +318,15 @@ TEST_CASE("route_5_5_5")
 	Area& area = simulation.m_hasAreas->createArea(5,5,5);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	static MaterialTypeId marble = MaterialType::byName("marble");
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
-	static MoveTypeId twoLegsAndClimb1 = MoveType::byName("two legs and climb 1");
-	static MoveTypeId twoLegsAndClimb2 = MoveType::byName("two legs and climb 2");
+	static MaterialTypeId marble = MaterialType::byName(L"marble");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
+	static MoveTypeId twoLegsAndClimb1 = MoveType::byName(L"two legs and climb 1");
+	static MoveTypeId twoLegsAndClimb2 = MoveType::byName(L"two legs and climb 2");
 	static const BlockFeatureType& stairs = BlockFeatureType::stairs;
 	static const BlockFeatureType& ramp = BlockFeatureType::ramp;
 	static const BlockFeatureType& door = BlockFeatureType::door;
 	static const BlockFeatureType& fortification = BlockFeatureType::fortification;
-	static FluidTypeId water = FluidType::byName("water");
+	static FluidTypeId water = FluidType::byName(L"water");
 	SUBCASE("walking path blocked by one height cliff if not climbing")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);

@@ -1,35 +1,36 @@
 #include "contextMenu.h"
-#include "blockFeature.h"
-#include "config.h"
-#include "designations.h"
+#include "../engine/blockFeature.h"
+#include "../engine/config.h"
+#include "../engine/designations.h"
 #include "displayData.h"
-#include "plant.h"
+#include "../engine/plants.h"
+#include "../engine/blocks/blocks.h"
 #include "widgets.h"
 #include "window.h"
 #include <TGUI/Widgets/HorizontalLayout.hpp>
 // Menu segment
-ContextMenuSegment::ContextMenuSegment(tgui::Group::Ptr overlayGroup) : 
-	m_gameOverlayGroup(overlayGroup), m_panel(tgui::Panel::create()), m_grid(tgui::Grid::create()) 
-{ 
+ContextMenuSegment::ContextMenuSegment(tgui::Group::Ptr overlayGroup) :
+	m_gameOverlayGroup(overlayGroup), m_panel(tgui::Panel::create()), m_grid(tgui::Grid::create())
+{
 	m_panel->add(m_grid);
 	m_panel->setSize(tgui::bindWidth(m_grid) + 4, tgui::bindHeight(m_grid) + 4);
 	m_grid->setPosition(2,2);
 }
-void ContextMenuSegment::add(tgui::Widget::Ptr widget, std::string id) 
+void ContextMenuSegment::add(tgui::Widget::Ptr widget, std::wstring id)
 {
-	widget->setSize(width, height); 
-	m_grid->add(widget, id); 
+	widget->setSize(width, height);
+	m_grid->add(widget, id);
 	m_grid->setWidgetCell(widget, m_count++, 1, tgui::Grid::Alignment::Center, tgui::Padding{1, 5});
 }
 ContextMenuSegment::~ContextMenuSegment() { m_gameOverlayGroup->remove(m_panel); }
 // Menu
-ContextMenu::ContextMenu(Window& window, tgui::Group::Ptr gameOverlayGroup) : 
+ContextMenu::ContextMenu(Window& window, tgui::Group::Ptr gameOverlayGroup) :
 	m_window(window), m_root(gameOverlayGroup), m_gameOverlayGroup(gameOverlayGroup)
 {
 	gameOverlayGroup->add(m_root.m_panel);
 	m_root.m_panel->setVisible(false);
 }
-void ContextMenu::draw(BlockIndex& block)
+void ContextMenu::draw(const BlockIndex& block)
 {
 	m_root.m_panel->setVisible(true);
 	m_root.m_panel->setOrigin(1, getOriginYForMousePosition());
@@ -40,10 +41,11 @@ void ContextMenu::draw(BlockIndex& block)
 	auto blockInfoButton = tgui::Button::create("location info");
 	m_root.add(blockInfoButton);
 	blockInfoButton->onClick([this, &block]{ m_window.getGameOverlay().drawInfoPopup(block); });
+	Blocks& blocks = m_window.getArea()->getBlocks();
 	//TODO: shift to add to end of work queue.
-	if(block.isSolid() || !block.m_hasBlockFeatures.empty())
+	if(blocks.solid_is(block) || !blocks.blockFeature_empty(block))
 		drawDigControls(block);
-	if(!block.isSolid())
+	if(!blocks.solid_is(block))
 	{
 		drawConstructControls(block);
 		drawActorControls(block);
@@ -59,14 +61,14 @@ void ContextMenu::draw(BlockIndex& block)
 		drawFluidControls(block);
 		auto factionsButton = tgui::Button::create("factions");
 		m_root.add(factionsButton);
-		factionsButton->onClick([this]{ 
-			m_window.showEditFactions(); 
+		factionsButton->onClick([this]{
+			m_window.showEditFactions();
 			hide();
 		});
 		auto dramaButton = tgui::Button::create("drama");
 		m_root.add(dramaButton);
-		dramaButton->onClick([this, &block]{ 
-			m_window.showEditDrama(block.m_area); 
+		dramaButton->onClick([this, &block]{
+			m_window.showEditDrama();
 			hide();
 		});
 	}

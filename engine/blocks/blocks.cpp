@@ -82,7 +82,7 @@ void Blocks::load(const Json& data, DeserializationMemo& deserializationMemo)
 		for(const Json& fluidData : value)
 			fluid_add(BlockIndex::create(std::stoi(key)), fluidData["volume"].get<CollisionVolume>(), fluidData["type"].get<FluidTypeId>());
 	for(auto& [key, value] : data["mist"].items())
-		m_mist[BlockIndex::create(std::stoi(key))] = FluidType::byName(value.get<std::string>());
+		m_mist[BlockIndex::create(std::stoi(key))] = FluidType::byName(value.get<std::wstring>());
 	for(auto& [key, value] : data["mistInverseDistanceFromSource"].items())
 		m_mistInverseDistanceFromSource[BlockIndex::create(std::stoi(key))] = value.get<DistanceInBlocks>();
 	for(auto& [key, value] : data["reservables"].items())
@@ -95,7 +95,9 @@ std::vector<BlockIndex> Blocks::getAllIndices() const
 {
 	std::vector<BlockIndex> output;
 	Blocks& blocks = const_cast<Blocks&>(*this);
-	getAll().forEach(blocks, [&output](const BlockIndex& block) mutable { output.push_back(block); });
+	Cuboid cuboid = blocks.getAll();
+	for(const BlockIndex& block : cuboid.getView(blocks))
+		output.push_back(block);
 	return output;
 }
 Json Blocks::toJson() const

@@ -12,14 +12,14 @@
 #include <memory>
 #include <ranges>
 // RemarkItemForStockPilingEvent
-ReMarkItemForStockPilingEvent::ReMarkItemForStockPilingEvent(Area& area, ItemCanBeStockPiled& canBeStockPiled, const FactionId& faction, const Step& duration, const Step start) : 
+ReMarkItemForStockPilingEvent::ReMarkItemForStockPilingEvent(Area& area, ItemCanBeStockPiled& canBeStockPiled, const FactionId& faction, const Step& duration, const Step start) :
 	ScheduledEvent(area.m_simulation, duration, start),
 	m_faction(faction),
 	m_canBeStockPiled(canBeStockPiled) { }
-void ReMarkItemForStockPilingEvent::execute(Simulation&, Area*) 
-{ 
-	m_canBeStockPiled.maybeSet(m_faction); 
-	m_canBeStockPiled.m_scheduledEvents.erase(m_faction); 
+void ReMarkItemForStockPilingEvent::execute(Simulation&, Area*)
+{
+	m_canBeStockPiled.maybeSet(m_faction);
+	m_canBeStockPiled.m_scheduledEvents.erase(m_faction);
 }
 void ReMarkItemForStockPilingEvent::clearReferences(Simulation&, Area*) { }
 // ItemCanBeStockPiled
@@ -68,8 +68,8 @@ void ItemCanBeStockPiled::scheduleReset(Area& area, const FactionId& faction, co
 	HasScheduledEvent<ReMarkItemForStockPilingEvent>& eventHandle = pair;
 	eventHandle.schedule(area, *this, faction, duration, start);
 }
-void ItemCanBeStockPiled::unsetAndScheduleReset(Area& area, const FactionId& faction, const Step& duration) 
-{ 
+void ItemCanBeStockPiled::unsetAndScheduleReset(Area& area, const FactionId& faction, const Step& duration)
+{
 	unset(faction);
 	scheduleReset(area, faction, duration);
 }
@@ -99,16 +99,16 @@ void Items::forEachData(Action&& action)
 {
 	forEachDataPortables(action);
 	action(m_canBeStockPiled);
-	action(m_craftJobForWorkPiece); 
+	action(m_craftJobForWorkPiece);
 	action(m_hasCargo);
 	action(m_id);
 	action(m_installed);
 	action(m_itemType);
 	action(m_materialType);
 	action(m_name);
-	action(m_percentWear); 
-	action(m_quality); 
-	action(m_quantity); 
+	action(m_percentWear);
+	action(m_quality);
+	action(m_quantity);
 }
 ItemIndex Items::create(ItemParamaters itemParamaters)
 {
@@ -138,8 +138,8 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	if(itemParamaters.location.exists())
 		// A generic item type might merge with an existing stack on creation, in that case return the index of the existing stack.
 		index = setLocationAndFacing(index, itemParamaters.location, itemParamaters.facing);
-	static const MoveTypeId rolling = MoveType::byName("roll");
-	static const ItemTypeId panniers = ItemType::byName("panniers");
+	static const MoveTypeId rolling = MoveType::byName(L"roll");
+	static const ItemTypeId panniers = ItemType::byName(L"panniers");
 	if(itemType == panniers  || (moveType == rolling && ItemType::getInternalVolume(itemType) != 0))
 		m_area.m_hasHaulTools.registerHaulTool(m_area, index);
 	return index;
@@ -300,7 +300,7 @@ void Items::destroy(const ItemIndex& index)
 	// No need to explicitly unschedule events here, destorying the event holder will do it.
 	if(hasLocation(index))
 		exit(index);
-	static const MoveTypeId rolling = MoveType::byName("roll");
+	static const MoveTypeId rolling = MoveType::byName(L"roll");
 	if(m_moveType[index] == rolling && ItemType::getInternalVolume(m_itemType[index]) != 0)
 		m_area.m_hasHaulTools.unregisterHaulTool(m_area, index);
 	const auto& s = ItemIndex::create(size() - 1);
@@ -314,16 +314,16 @@ void Items::destroy(const ItemIndex& index)
 bool Items::isGeneric(const ItemIndex& index) const { return ItemType::getGeneric(m_itemType[index]); }
 bool Items::isPreparedMeal(const ItemIndex& index) const
 {
-	static ItemTypeId preparedMealType = ItemType::byName("prepared meal");
+	static ItemTypeId preparedMealType = ItemType::byName(L"prepared meal");
 	return m_itemType[index] == preparedMealType;
 }
-CraftJob& Items::getCraftJobForWorkPiece(const ItemIndex& index) const 
+CraftJob& Items::getCraftJobForWorkPiece(const ItemIndex& index) const
 {
 	assert(isWorkPiece(index));
-	return *m_craftJobForWorkPiece[index]; 
+	return *m_craftJobForWorkPiece[index];
 }
-Mass Items::getSingleUnitMass(const ItemIndex& index) const 
-{ 
+Mass Items::getSingleUnitMass(const ItemIndex& index) const
+{
 	return Mass::create(std::max(1u, (ItemType::getVolume(m_itemType[index]) * MaterialType::getDensity(m_materialType[index])).get()));
 }
 Mass Items::getMass(const ItemIndex& index) const
@@ -343,7 +343,7 @@ MoveTypeId Items::getMoveType(const ItemIndex& index) const
 }
 void Items::log(const ItemIndex& index) const
 {
-	std::cout << ItemType::getName(m_itemType[index]) << "[" << MaterialType::getName(m_materialType[index]) << "]";
+	std::wcout << ItemType::getName(m_itemType[index]) << "[" << MaterialType::getName(m_materialType[index]) << "]";
 	if(m_quantity[index] != 1)
 		std::cout << "(" << m_quantity[index].get() << ")";
 	if(m_craftJobForWorkPiece[index] != nullptr)
@@ -554,7 +554,7 @@ ItemIndex ItemHasCargo::addItemGeneric(Area& area, const ItemTypeId& itemType, c
 	ItemIndex newItem = items.create({
 		.itemType=itemType,
 		.materialType=materialType,
-		.quantity=quantity,	
+		.quantity=quantity,
 	});
 	addItem(area, newItem);
 	return newItem;

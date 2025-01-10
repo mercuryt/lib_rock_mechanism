@@ -8,11 +8,11 @@
 #include "../simulation.h"
 #include "../plants.h"
 #include "../blocks/blocks.h"
-AreaHasRain::AreaHasRain(Area& a, Simulation&) : 
+AreaHasRain::AreaHasRain(Area& a, Simulation&) :
 	m_humidityBySeason({Percent::create(30),Percent::create(15),Percent::create(10),Percent::create(20)}),
-	m_event(a.m_eventSchedule), 
-	m_area(a), 
-	m_defaultRainFluidType(FluidType::byName("water")) { }
+	m_event(a.m_eventSchedule),
+	m_area(a),
+	m_defaultRainFluidType(FluidType::byName(L"water")) { }
 void AreaHasRain::load(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo)
 {
 	if(data.contains("currentFluidType"))
@@ -71,7 +71,9 @@ void AreaHasRain::doStep()
 	DistanceInBlocks offset = DistanceInBlocks::create(random.getInRange(0u, Config::rainMaximumOffset.get()));
 	DistanceInBlocks i = DistanceInBlocks::create(0);
 	Blocks& blocks = m_area.getBlocks();
-	blocks.forEach([&](const BlockIndex& block){
+	Cuboid cuboid = blocks.getAll();
+	for(const BlockIndex& block : cuboid.getView(blocks))
+	{
 		if(offset != 0)
 			--offset;
 		else if(i != 0)
@@ -82,7 +84,7 @@ void AreaHasRain::doStep()
 				blocks.fluid_add(block, CollisionVolume::create(1), m_currentlyRainingFluidType);
 			i = spacing;
 		}
-	});
+	}
 }
 void AreaHasRain::scheduleRestart()
 {
@@ -97,11 +99,11 @@ void AreaHasRain::disable()
 }
 Percent AreaHasRain::humidityForSeason() { return m_humidityBySeason[DateTime::toSeason(m_area.m_simulation.m_step)]; }
 RainEvent::RainEvent(const Step& delay, Simulation& simulation, const Step start) : ScheduledEvent(simulation, delay, start) { }
-void RainEvent::execute(Simulation&, Area* area) 
+void RainEvent::execute(Simulation&, Area* area)
 {
 	if(area->m_hasRain.isRaining())
 	{
-		area->m_hasRain.stop(); 
+		area->m_hasRain.stop();
 		area->m_hasRain.scheduleRestart();
 	}
 	else
@@ -116,5 +118,5 @@ void RainEvent::execute(Simulation&, Area* area)
 		assert(duration < Config::stepsPerDay);
 		area->m_hasRain.start(intensity, duration);
 	}
-} 
+}
 void RainEvent::clearReferences(Simulation&, Area* area) { area->m_hasRain.m_event.clearPointer(); }

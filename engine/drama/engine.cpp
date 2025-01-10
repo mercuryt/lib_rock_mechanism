@@ -28,19 +28,19 @@ NLOHMANN_JSON_SERIALIZE_ENUM(DramaArcType, {
 	{DramaArcType::AnimalsArrive, "animals arrive"},
 	{DramaArcType::BanditsArrive, "bandits arrive"}
 });
-std::string DramaArc::typeToString(DramaArcType type)
+std::wstring DramaArc::typeToString(DramaArcType type)
 {
 	switch(type)
 	{
 		case DramaArcType::AnimalsArrive:
-			return "animals arrive";
+			return L"animals arrive";
 		case DramaArcType::BanditsArrive:
-			return "bandits arrive";
+			return L"bandits arrive";
 	}
 	assert(false);
-	return "";
+	return L"";
 }
-DramaArcType DramaArc::stringToType(std::string string)
+DramaArcType DramaArc::stringToType(std::wstring string)
 {
 	if(string == typeToString(DramaArcType::AnimalsArrive))
 		return DramaArcType::AnimalsArrive;
@@ -65,8 +65,8 @@ std::unique_ptr<DramaArc> DramaArc::load(const Json& data, DeserializationMemo& 
 	assert(false);
 	return std::make_unique<AnimalsArriveDramaArc>(data, deserializationMemo, dramaEngine);
 }
-DramaArc::DramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine) : 
-	m_engine(dramaEngine), m_type(DramaArc::stringToType(data["type"].get<std::string>()))
+DramaArc::DramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine) :
+	m_engine(dramaEngine), m_type(DramaArc::stringToType(data["type"].get<std::wstring>()))
 {
 	if(data.contains("area"))
 		m_area = &deserializationMemo.m_simulation.m_hasAreas->getById(data["area"].get<AreaId>());
@@ -96,10 +96,12 @@ BlockIndex DramaArc::getEntranceToArea(const ShapeId& shape, const MoveTypeId& m
 	BlockIndices candidates;
 	Blocks& blocks = m_area->getBlocks();
 	// TODO: optimize this: only check faces of getAll() cuboid.
-	blocks.forEach([&](const BlockIndex& block) {
+	Cuboid cuboid = blocks.getAll();
+	for(const BlockIndex& block : cuboid.getView(blocks))
+	{
 		if(blocks.shape_moveTypeCanEnter(block, moveType) && blocks.isEdge(block) && !blocks.isUnderground(block))
 			candidates.add(block);
-	});
+	}
 	BlockIndex candidate;
 	static uint16_t minimumConnectedCount = 200;
 	do {
@@ -243,8 +245,8 @@ void DramaEngine::removeArcTypeFromArea(DramaArcType type, Area& area)
 		}
 }
 std::vector<DramaArc*>& DramaEngine::getArcsForArea(Area& area)
-{ 
-	return m_arcsByArea[area.m_id]; 
+{
+	return m_arcsByArea[area.m_id];
 }
 DramaEngine::~DramaEngine()
 {

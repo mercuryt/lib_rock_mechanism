@@ -13,7 +13,7 @@ class Simulation;
 struct DeserializationMemo;
 struct AnimalSpecies;
 
-class MustSleep final 
+class MustSleep final
 {
 	HasScheduledEventPausable<SleepEvent> m_sleepEvent; // 2
 	HasScheduledEvent<TiredEvent> m_tiredEvent; // 2
@@ -41,6 +41,7 @@ public:
 	void clearObjective() { m_objective = nullptr; }
 	void clearSleepSpot() { m_location.clear(); }
 	[[nodiscard]] bool isAwake() const { return m_isAwake; }
+	[[nodiscard]] bool isTired() const { return m_needsSleep; }
 	[[nodiscard]] bool getNeedsSleep() const { return m_needsSleep; }
 	[[nodiscard]] BlockIndex getLocation() const { return m_location; }
 	friend class SleepEvent;

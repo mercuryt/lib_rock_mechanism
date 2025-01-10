@@ -33,3 +33,7 @@ Percent Actors::body_getImpairManipulationPercent(const ActorIndex& index)
 {
 	return m_body[index]->getImpairManipulationPercent();
 }
+const std::vector<Wound*> Actors::body_getWounds(const ActorIndex& index) const
+{
+	return m_body[index]->getAllWounds();
+}

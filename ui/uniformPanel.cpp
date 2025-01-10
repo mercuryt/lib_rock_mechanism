@@ -1,10 +1,10 @@
 #include "uniformPanel.h"
 #include "window.h"
-#include "../engine/item.h"
+#include "../engine/items/items.h"
 #include <TGUI/Widgets/ScrollablePanel.hpp>
 #include <TGUI/Widgets/SpinControl.hpp>
 #include <unordered_set>
-UniformCreateOrEditView::UniformCreateOrEditView(Window& window) : 
+UniformCreateOrEditView::UniformCreateOrEditView(Window& window) :
 	m_window(window), m_group(tgui::Group::create()), m_title(tgui::Label::create()), m_name(tgui::EditBox::create()), m_elements(tgui::Grid::create()), m_cancel(tgui::Button::create()), m_confirm(tgui::Button::create()), m_uniform(nullptr)
 {
 	m_window.getGui().add(m_group);
@@ -22,7 +22,7 @@ UniformCreateOrEditView::UniformCreateOrEditView(Window& window) :
 			m_uniform->elements.swap(m_copy.elements);
 		}
 		else
-			m_window.getSimulation()->m_hasUniforms.at(*m_window.getFaction()).createUniform(m_copy.name, m_copy.elements);
+			m_window.getSimulation()->m_hasUniforms.getForFaction(m_window.getFaction()).createUniform(m_copy.name, m_copy.elements);
 		m_window.showUniforms();
 	});
 }
@@ -57,7 +57,7 @@ void UniformCreateOrEditView::drawElements()
 		m_elements->addWidget(label, 1, column);
 		auto spinControl = tgui::SpinControl::create();
 		spinControl->setMinimum(0);
-		spinControl->setValue(element->quantity);
+		spinControl->setValue(element->m_quantity.get());
 		spinControl->onValueChange([&](float value){ setElementQuantity(*element, value); } );
 		m_elements->addWidget(spinControl, 2, column);
 		auto removeControl = tgui::Button::create("X");
@@ -66,26 +66,26 @@ void UniformCreateOrEditView::drawElements()
 		++column;
 	}
 }
-std::string UniformCreateOrEditView::displayNameForElement(UniformElement& uniformElement)
+std::wstring UniformCreateOrEditView::displayNameForElement(UniformElement& uniformElement)
 {
-	assert(uniformElement.itemQuery.m_itemType);
-	std::string output;
-	if(uniformElement.itemQuery.m_materialType)
-		output.append(uniformElement.itemQuery.m_materialType->name + " ");
-	else if(uniformElement.itemQuery.m_materialTypeCategory)
-		output.append(uniformElement.itemQuery.m_materialTypeCategory->name + " ");
-	output.append(uniformElement.itemQuery.m_itemType->name);
+	assert(uniformElement.m_itemType.exists());
+	std::wstring output;
+	if(uniformElement.m_materialType.exists())
+		output.append(MaterialType::getName(uniformElement.m_materialType) + L" ");
+	else if(uniformElement.m_materialCategoryType.exists())
+		output.append(MaterialTypeCategory::getName(uniformElement.m_materialCategoryType) + L" ");
+	output.append(ItemType::getName(uniformElement.m_itemType));
 	return output;
 }
 void UniformCreateOrEditView::setElementQuantity(UniformElement& uniformElement, uint32_t quantity)
 {
-	assert(quantity <= uniformElement.quantity);
-	if(quantity == uniformElement.quantity)
+	assert(quantity <= uniformElement.m_quantity);
+	if(quantity == uniformElement.m_quantity)
 	{
 		removeElement(uniformElement);
 		return;
 	}
-	uniformElement.quantity -= quantity;
+	uniformElement.m_quantity -= quantity;
 }
 void UniformCreateOrEditView::removeElement(UniformElement& uniformElement)
 {
@@ -116,7 +116,7 @@ void UniformListView::edit(Uniform& uniform)
 }
 void UniformListView::draw()
 {
-	for(auto& [name, uniform] : m_window.getSimulation()->m_hasUniforms.at(*m_window.getFaction()).getAll())
+	for(auto& [name, uniform] : m_window.getSimulation()->m_hasUniforms.getForFaction(m_window.getFaction()).getAll())
 	{
 		auto editButton = tgui::Button::create(name);
 		m_list->add(editButton);

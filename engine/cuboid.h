@@ -20,13 +20,6 @@ public:
 	void setFrom(const BlockIndex& block);
 	void setFrom(Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
 	void clear();
-	template<typename Action>
-	void forEach(Blocks& blocks, Action&& action) const
-	{
-		auto endIter = end(blocks);
-		for(auto iter = begin(blocks); iter != endIter; ++iter)
-			action(*iter);
-	}
 	[[nodiscard]] BlockIndices toSet(Blocks& blocks);
 	[[nodiscard]] bool contains(Blocks& blocks, const BlockIndex& block) const;
 	[[nodiscard]] bool canMerge(Blocks& blocks, const Cuboid& cuboid) const;
@@ -39,7 +32,7 @@ public:
 	[[nodiscard]] Point3D getCenter(const Blocks& blocks) const;
 	[[nodiscard]] static Cuboid fromBlock(Blocks& blocks, const BlockIndex& block);
 	[[nodiscard]] static Cuboid fromBlockPair(Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
-	class iterator 
+	class iterator
 	{
 	private:
 		Point3D m_start;
@@ -62,4 +55,17 @@ public:
 	const iterator end(Blocks& blocks) const { return iterator(blocks, BlockIndex::null(), BlockIndex::null()); }
 	//TODO:
 	//static_assert(std::forward_iterator<iterator>);
+	struct View : public std::ranges::view_interface<View>
+	{
+		const Cuboid& cuboid;
+		Blocks& blocks;
+		View() = default;
+		View(Blocks& b, const Cuboid& c) : cuboid(c), blocks(b) { }
+		iterator begin() const { return cuboid.begin(blocks); }
+		iterator end() const { return cuboid.end(blocks); }
+	};
+	View getView(Blocks& blocks) const
+	{
+		return View(blocks, *this);
+	}
 };

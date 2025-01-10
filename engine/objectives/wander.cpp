@@ -71,14 +71,14 @@ Json WanderPathRequest::toJson() const
 WanderObjective::WanderObjective() : Objective(Priority::create(0)) { }
 WanderObjective::WanderObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo) { }
 Json WanderObjective::toJson() const
-{ 
+{
 	Json data = Objective::toJson();
 	if(m_destination.exists())
 		data["destination"] = m_destination;
 	return data;
 }
-void WanderObjective::execute(Area& area, const ActorIndex& actor) 
-{ 
+void WanderObjective::execute(Area& area, const ActorIndex& actor)
+{
 	Actors& actors = area.getActors();
 	if(m_destination.exists())
 	{
@@ -92,8 +92,8 @@ void WanderObjective::execute(Area& area, const ActorIndex& actor)
 }
 void WanderObjective::cancel(Area& area, const ActorIndex& actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
 bool WanderObjective::hasPathRequest(const Area& area, const ActorIndex& actor) const { return area.getActors().move_hasPathRequest(actor); }
-void WanderObjective::reset(Area& area, const ActorIndex& actor) 
-{ 
-	cancel(area, actor); 
+void WanderObjective::reset(Area& area, const ActorIndex& actor)
+{
+	cancel(area, actor);
 	area.getActors().canReserve_clearAll(actor);
 }

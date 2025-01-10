@@ -50,7 +50,7 @@ Json PathRequest::toJson() const
 }
 PathRequest& PathRequest::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const MoveTypeId& moveType)
 {
-	std::string type = data["type"];
+	std::string type = data["type"].get<std::string>();
 	if(type == "goTo")
 		return record(area, moveType, std::make_unique<GoToPathRequest>(data, area));
 	if(type == "goToAny")

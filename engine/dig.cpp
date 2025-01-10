@@ -37,8 +37,8 @@ void UndesignateDigInputAction::execute()
 		digDesginations.undesignate(faction, block);
 }
 */
-DigProject::DigProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : Project(data, deserializationMemo, area), 
-	m_blockFeatureType(data.contains("blockFeatureType") ? &BlockFeatureType::byName(data["blockFeatureType"].get<std::string>()) : nullptr) { }
+DigProject::DigProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : Project(data, deserializationMemo, area),
+	m_blockFeatureType(data.contains("blockFeatureType") ? &BlockFeatureType::byName(data["blockFeatureType"].get<std::wstring>()) : nullptr) { }
 Json DigProject::toJson() const
 {
 	Json data = Project::toJson();
@@ -49,8 +49,8 @@ Json DigProject::toJson() const
 std::vector<std::pair<ItemQuery, Quantity>> DigProject::getConsumed() const { return {}; }
 std::vector<std::pair<ItemQuery, Quantity>> DigProject::getUnconsumed() const
 {
-	static ItemTypeId pick = ItemType::byName("pick");
-	return {{ItemQuery::create(pick), Quantity::create(1)}}; 
+	static ItemTypeId pick = ItemType::byName(L"pick");
+	return {{ItemQuery::create(pick), Quantity::create(1)}};
 }
 std::vector<std::pair<ActorQuery, Quantity>> DigProject::getActors() const { return {}; }
 std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> DigProject::getByproducts() const
@@ -75,7 +75,7 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> DigProject::getByp
 // Static.
 uint32_t DigProject::getWorkerDigScore(Area& area, ActorIndex actor)
 {
-	static SkillTypeId digType = SkillType::byName("dig");
+	static SkillTypeId digType = SkillType::byName(L"dig");
 	Actors& actors = area.getActors();
 	uint32_t strength = actors.getStrength(actor).get();
 	uint32_t skillLevel = actors.skill_getLevel(actor, digType).get();
@@ -134,7 +134,7 @@ Step DigProject::getDuration() const
 		totalScore += getWorkerDigScore(m_area, pair.first.getIndex(actors.m_referenceData));
 	return std::max(Step::create(1), Config::digMaxSteps / totalScore);
 }
-DigLocationDishonorCallback::DigLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
+DigLocationDishonorCallback::DigLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_faction(data["faction"].get<FactionId>()),
 	m_area(deserializationMemo.area(data["area"])),
 	m_location(data["location"].get<BlockIndex>()) { }
@@ -190,7 +190,7 @@ void HasDigDesignationsForFaction::remove(Area& area, const BlockIndex& block)
 {
 	assert(m_data.contains(block));
 	area.getBlocks().designation_unset(block, m_faction, BlockDesignation::Dig);
-	m_data.erase(block); 
+	m_data.erase(block);
 }
 void HasDigDesignationsForFaction::removeIfExists(Area& area, const BlockIndex& block)
 {
@@ -249,7 +249,7 @@ void AreaHasDigDesignations::designate(const FactionId& faction, const BlockInde
 void AreaHasDigDesignations::undesignate(const FactionId& faction, const BlockIndex& block)
 {
 	assert(m_data.contains(faction));
-	assert(m_data[faction].m_data.contains(block)); 
+	assert(m_data[faction].m_data.contains(block));
 	m_data[faction].undesignate(block);
 }
 void AreaHasDigDesignations::remove(const FactionId& faction, const BlockIndex& block)
@@ -274,9 +274,9 @@ bool AreaHasDigDesignations::areThereAnyForFaction(const FactionId& faction) con
 		return false;
 	return !m_data[faction].empty();
 }
-DigProject& AreaHasDigDesignations::getForFactionAndBlock(const FactionId& faction, const BlockIndex& block) 
-{ 
+DigProject& AreaHasDigDesignations::getForFactionAndBlock(const FactionId& faction, const BlockIndex& block)
+{
 	assert(m_data.contains(faction));
-	assert(m_data[faction].m_data.contains(block)); 
-	return m_data[faction].m_data[block]; 
+	assert(m_data[faction].m_data.contains(block));
+	return m_data[faction].m_data[block];
 }

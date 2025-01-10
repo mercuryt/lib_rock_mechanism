@@ -55,8 +55,8 @@ StockPileProject::StockPileProject(const Json& data, DeserializationMemo& deseri
 	Project(data, deserializationMemo, area),
 	m_item(data["item"], area.getItems().m_referenceData),
 	m_quantity(data["quantity"].get<Quantity>()),
-	m_itemType(ItemType::byName(data["itemType"].get<std::string>())),
-	m_materialType(MaterialType::byName(data["materialType"].get<std::string>())),
+	m_itemType(ItemType::byName(data["itemType"].get<std::wstring>())),
+	m_materialType(MaterialType::byName(data["materialType"].get<std::wstring>())),
 	m_stockpile(*deserializationMemo.m_stockpiles.at(data["stockpile"].get<uintptr_t>())) { }
 Json StockPileProject::toJson() const
 {
@@ -288,7 +288,7 @@ AreaHasStockPilesForFaction::AreaHasStockPilesForFaction(const Json& data, Deser
 	if(data.contains("availableStockPilesByItemType"))
 		for(const Json& pair : data["availableStockPilesByItemType"])
 		{
-			ItemTypeId itemType = ItemType::byName(pair[0].get<std::string>());
+			ItemTypeId itemType = ItemType::byName(pair[0].get<std::wstring>());
 			for(const Json& stockPileAddress : pair[1])
 			{
 				StockPile& stockPile = *deserializationMemo.m_stockpiles.at(stockPileAddress.get<uintptr_t>());
@@ -298,7 +298,7 @@ AreaHasStockPilesForFaction::AreaHasStockPilesForFaction(const Json& data, Deser
 	if(data.contains("itemsWithoutDestinationsByItemType"))
 		for(const Json& pair : data["itemsWithoutDestinationsByItemType"])
 		{
-			ItemTypeId itemType = ItemType::byName(pair[0].get<std::string>());
+			ItemTypeId itemType = ItemType::byName(pair[0].get<std::wstring>());
 			for(const Json& item : pair[1])
 			{
 				ItemReference ref(item, items.m_referenceData);
@@ -596,7 +596,7 @@ void AreaHasStockPilesForFaction::makeProject(const ItemIndex& item, const Block
 	// Quantity per project is the ammount that can be hauled by hand, if any, or one.
 	// TODO: Hauling a load of generics with tools.
 	Quantity quantity = std::min({
-		items.getQuantity(item), 
+		items.getQuantity(item),
 		actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(actor, items.getSingleUnitMass(item), Config::minimumHaulSpeedInital),
 		blocks.shape_getQuantityOfItemWhichCouldFit(destination, items.getItemType(item))
 	});

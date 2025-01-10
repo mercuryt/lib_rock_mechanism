@@ -11,7 +11,9 @@ void OpacityFacade::initalize()
 	assert(blocks.size());
 	m_fullOpacity.resize(blocks.size());
 	m_floorOpacity.resize(blocks.size());
-	blocks.forEach([&](const BlockIndex& block){ update(block); });
+	Cuboid cuboid = blocks.getAll();
+	for(const BlockIndex& block : cuboid.getView(blocks))
+		update(block);
 }
 void OpacityFacade::update(const BlockIndex& index)
 {
@@ -24,10 +26,12 @@ void OpacityFacade::update(const BlockIndex& index)
 void OpacityFacade::validate() const
 {
 	Blocks& blocks = m_area.getBlocks();
-	blocks.forEach([&](const BlockIndex& block){
+	Cuboid cuboid = blocks.getAll();
+	for(const BlockIndex& block : cuboid.getView(blocks))
+	{
 		assert(blocks.canSeeThrough(block) != m_fullOpacity[block]);
 		assert(blocks.canSeeThroughFloor(block) != m_floorOpacity[block]);
-	});
+	}
 }
 bool OpacityFacade::isOpaque(const BlockIndex& index) const
 {

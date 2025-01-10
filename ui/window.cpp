@@ -5,6 +5,7 @@
 #include "sprite.h"
 #include "../engine/simulation/hasAreas.h"
 #include "../engine/blocks/blocks.h"
+#include "../engine/items/items.h"
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <TGUI/Widgets/FileDialog.hpp>
@@ -15,11 +16,11 @@
 #include <mutex>
 #include <string>
 #include <unordered_set>
-Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::Style::Fullscreen), m_gui(m_window), m_view(m_window.getDefaultView()), 
-	m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_dialogueBoxUI(*this), m_objectivePriorityView(*this), 
+Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::Style::Fullscreen), m_gui(m_window), m_view(m_window.getDefaultView()),
+	m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_dialogueBoxUI(*this), m_objectivePriorityView(*this),
 	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this), //m_worldParamatersView(*this),
-	m_editRealityView(*this), m_editActorView(*this), m_editAreaView(*this), m_editFactionView(*this), m_editFactionsView(*this), 
-	m_editStockPileView(*this), m_editDramaView(*this), m_minimumTimePerFrame(200), 
+	m_editRealityView(*this), m_editActorView(*this), m_editAreaView(*this), m_editFactionView(*this), m_editFactionsView(*this),
+	m_editStockPileView(*this), m_editDramaView(*this), m_minimumTimePerFrame(200),
 	m_minimumTimePerStep((int)(1000.f / (float)Config::stepsPerSecond.get())), m_draw(*this),
 	m_simulationThread([&](){
 		while(true)
@@ -52,7 +53,7 @@ void Window::setArea(Area& area, GameView* gameView)
 	}
 	m_area = &area;
 	m_scale = gameView->scale;
-	centerView(*gameView->center);
+	centerView(gameView->center);
 }
 void Window::centerView(const BlockIndex& block)
 {
@@ -94,7 +95,7 @@ void Window::startLoop()
 			//TODO: check if modifiers were pressed at the time the event was generated, not now.
 			uint32_t scrollSteps = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ? 6 : 1;
 			if(m_area)
-				m_blockUnderCursor = &getBlockUnderCursor();
+				m_blockUnderCursor = getBlockUnderCursor();
 			switch(event.type)
 			{
 				case sf::Event::Closed:
@@ -102,7 +103,7 @@ void Window::startLoop()
 					break;
 				case sf::Event::KeyPressed:
 					switch(event.key.code)
-					{	
+					{
 						case sf::Keyboard::Q:
 							if(sf::Keyboard::isKeyPressed(sf::Keyboard::LControl))
 								m_window.close();
@@ -138,14 +139,14 @@ void Window::startLoop()
 						case sf::Keyboard::Delete:
 							{
 								m_scale = std::max(1u, (int)m_scale - scrollSteps);
-								Point3D center = m_area->getBlocks().getCoordinates(*m_blockUnderCursor);
+								Point3D center = m_area->getBlocks().getCoordinates(m_blockUnderCursor);
 								m_view.move(-1.f * center.x.get() * scrollSteps, -1.f * center.y.get() * scrollSteps);
 							}
 							break;
 						case sf::Keyboard::Insert:
 							{
 								m_scale += 1 * scrollSteps;
-								Point3D center = m_area->getBlocks().getCoordinates(*m_blockUnderCursor);
+								Point3D center = m_area->getBlocks().getCoordinates(m_blockUnderCursor);
 								m_view.move(center.x.get() * scrollSteps, center.y.get() * scrollSteps);
 							}
 							break;
@@ -166,10 +167,10 @@ void Window::startLoop()
 									m_gameOverlay.closeContextMenu();
 								else if(m_gameOverlay.infoPopupIsVisible())
 									m_gameOverlay.closeInfoPopup();
-								else if(m_gameOverlay.m_itemBeingInstalled)
-									m_gameOverlay.m_itemBeingInstalled = nullptr;
-								else if(m_gameOverlay.m_itemBeingMoved)
-									m_gameOverlay.m_itemBeingMoved = nullptr;
+								else if(m_gameOverlay.m_itemBeingInstalled.exists())
+									m_gameOverlay.m_itemBeingInstalled.clear();
+								else if(m_gameOverlay.m_itemBeingMoved.exists())
+									m_gameOverlay.m_itemBeingMoved.clear();
 								else
 									m_gameOverlay.drawMenu();
 							}
@@ -201,11 +202,11 @@ void Window::startLoop()
 							break;
 						case sf::Keyboard::Num5:
 							if(m_area && m_selectedActors.size() == 1)
-								showActorDetail(**m_selectedActors.begin());
+								showActorDetail(*m_selectedActors.begin());
 							break;
 						case sf::Keyboard::Num6:
 							if(m_area && m_selectedActors.size() == 1)
-								showObjectivePriority(**m_selectedActors.begin());
+								showObjectivePriority(*m_selectedActors.begin());
 							break;
 						case sf::Keyboard::F1:
 							if(m_area)
@@ -254,7 +255,7 @@ void Window::startLoop()
 						if(event.mouseButton.button == displayData::selectMouseButton)
 						{
 							m_gameOverlay.closeContextMenu();
-							m_firstCornerOfSelection = &getBlockAtPosition({event.mouseButton.x, event.mouseButton.y});
+							m_firstCornerOfSelection = getBlockAtPosition({event.mouseButton.x, event.mouseButton.y});
 							m_positionWhereMouseDragBegan = {event.mouseButton.x, event.mouseButton.y};
 							if(!sf::Keyboard::isKeyPressed(sf::Keyboard::LShift))
 								deselectAll();
@@ -266,37 +267,38 @@ void Window::startLoop()
 				{
 					if(m_area)
 					{
-						BlockIndex& block = *m_blockUnderCursor;
 						Blocks& blocks = m_area->getBlocks();
+						Items& items = m_area->getItems();
+						BlockIndex& block = m_blockUnderCursor;
 						if(event.mouseButton.button == displayData::selectMouseButton)
 						{
 							Cuboid selectedBlocks;
 							// Find the selected area.
-							if(m_firstCornerOfSelection)
-								selectedBlocks.setFrom(*m_firstCornerOfSelection, block);
+							if(m_firstCornerOfSelection.exists())
+								selectedBlocks.setFrom(blocks, m_firstCornerOfSelection, block);
 							else
 								selectedBlocks.setFrom(block);
-							m_firstCornerOfSelection = nullptr;
+							m_firstCornerOfSelection.clear();
 							bool selectActors = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && !sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
 							bool selectItems = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
 							bool selectBlocks = sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
 							bool selectPlants = false;
 							if(selectActors)
-								for(const BlockIndex& block : selectedBlocks)
+								for(const BlockIndex& block : selectedBlocks.getView(blocks))
 									m_selectedActors.maybeInsertAll(blocks.actor_getAll(block).begin(), blocks.actor_getAll(block).end());
 							else if(selectItems)
-								for(const BlockIndex& block : selectedBlocks)
+								for(const BlockIndex& block : selectedBlocks.getView(blocks))
 									m_selectedItems.maybeInsertAll(blocks.item_getAll(block).begin(), blocks.item_getAll(block).end());
 							else if(selectBlocks)
-								m_selectedBlocks.maybeInsertAll(selectedBlocks.begin(), selectedBlocks.end());
+								m_selectedBlocks.maybeInsertAll(selectedBlocks.begin(blocks), selectedBlocks.end(blocks));
 							else
 							{
 								// No modifier key to choose what type to select, check for everything.
-								std::unordered_set<Actor*> foundActors;
-								std::unordered_set<Item*> foundItems;
-								std::unordered_set<Plant*> foundPlants;
+								SmallSet<ActorIndex> foundActors;
+								SmallSet<ItemIndex> foundItems;
+								SmallSet<PlantIndex> foundPlants;
 								// Gather all candidates, then cull based on choosen category. actors > items > plants > selectedBlocks
-								for(const BlockIndex& block : selectedBlocks)
+								for(const BlockIndex& block : selectedBlocks.getView(blocks))
 								{
 									if(!blocks.actor_empty(block))
 									{
@@ -337,8 +339,8 @@ void Window::startLoop()
 									m_selectedActors.clear();
 									m_selectedItems.clear();
 									m_selectedPlants.clear();
-									for(BlockIndex& block : selectedBlocks)
-										m_selectedBlocks.insert(&block);
+									for(const BlockIndex& block : selectedBlocks.getView(blocks))
+										m_selectedBlocks.insert(block);
 								}
 							}
 						}
@@ -346,16 +348,17 @@ void Window::startLoop()
 						{
 							// Display context menu.
 							//TODO: Left click and drag shortcut for select and open context.
+							const ItemIndex& item = m_gameOverlay.m_itemBeingInstalled;
 							if(
-									m_gameOverlay.m_itemBeingInstalled &&
-									block.m_hasShapes.canEnterEverWithFacing(*m_gameOverlay.m_itemBeingInstalled, m_gameOverlay.m_facing)
+									item.exists() &&
+									blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(block, items.getShape(item), items.getMoveType(item), m_gameOverlay.m_facing)
 							)
 								m_gameOverlay.assignLocationToInstallItem(block);
-							else if(m_gameOverlay.m_itemBeingMoved)
+							else if(m_gameOverlay.m_itemBeingMoved.exists())
 							{
 								if(getSelectedActors().empty())
-									m_gameOverlay.m_itemBeingMoved = nullptr;
-								else if(block.m_hasShapes.canEnterEverWithFacing(*m_gameOverlay.m_itemBeingMoved, m_gameOverlay.m_facing))
+									m_gameOverlay.m_itemBeingMoved.clear();
+								else if(blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(block, items.getShape(item), items.getMoveType(item), m_gameOverlay.m_facing))
 									m_gameOverlay.assignLocationToMoveItemTo(block);
 							}
 							else
@@ -369,11 +372,12 @@ void Window::startLoop()
 				default:
 					if(m_area)
 					{
-						const BlockIndex& block = *m_blockUnderCursor;
+						Blocks& blocks = m_area->getBlocks();
+						const Point3D& coordinates = blocks.getCoordinates(m_blockUnderCursor);
 						m_gameOverlay.m_coordinateUI->setText(
-							std::to_string(block.m_x) + "," +
-							std::to_string(block.m_y) + "," +
-							std::to_string(block.m_z)
+							std::to_string(coordinates.x.get()) + "," +
+							std::to_string(coordinates.y.get()) + "," +
+							std::to_string(coordinates.z.get())
 						);
 					}
 					break;
@@ -416,7 +420,7 @@ void Window::threadTask(std::function<void()> task)
 	sf::Cursor cursor;
 	if (cursor.loadFromSystem(sf::Cursor::Wait))
 		m_window.setMouseCursor(cursor);
-	std::thread t([this, task]{ 
+	std::thread t([this, task]{
 		task();
 		m_lockInput = false;
 		sf::Cursor cursor;
@@ -466,17 +470,17 @@ void Window::setSpeed(uint16_t speed)
 }
 void Window::setSpeedDisplay()
 {
-	std::string display = m_paused ? "paused" : "speed: " + (m_speed ? std::to_string(m_speed) : "max");
+	std::wstring display = m_paused ? "paused" : "speed: " + (m_speed ? std::to_string(m_speed) : "max");
 	m_gameOverlay.m_speedUI->setText(display);
 }
 void Window::povFromJson(const Json& data)
 {
 	assert(m_simulation);
 	if(data.contains("faction"))
-		m_faction = &m_simulation->m_hasFactions.byName(data["faction"].get<std::wstring>());
+		m_faction = m_simulation->m_hasFactions.byName(data["faction"].get<std::wstring>());
 	m_area = &m_simulation->m_hasAreas->getById(data["area"].get<AreaId>());
 	m_scale = data["scale"].get<uint32_t>();
-	m_z = data["z"].get<uint32_t>();
+	m_z = DistanceInBlocks::create(data["z"].get<uint32_t>());
 	uint32_t x = data["x"].get<uint32_t>();
 	uint32_t y = data["y"].get<uint32_t>();
 	m_view.setCenter(x, y);
@@ -492,36 +496,37 @@ void Window::selectBlock(BlockIndex& block)
 {
 	//TODO: additive select.
 	deselectAll();
-	m_selectedBlocks.insert(&block);
+	m_selectedBlocks.insert(block);
 }
-void Window::selectItem(Item& item)
+void Window::selectItem(const ItemIndex& item)
 {
 	deselectAll();
-	m_selectedItems.insert(&item);
+	m_selectedItems.insert(item);
 }
-void Window::selectPlant(Plant& plant)
+void Window::selectPlant(const PlantIndex& plant)
 {
 	deselectAll();
-	m_selectedPlants.insert(&plant);
+	m_selectedPlants.insert(plant);
 }
-void Window::selectActor(Actor& actor)
+void Window::selectActor(const ActorIndex& actor)
 {
 	deselectAll();
-	m_selectedActors.insert(&actor);
+	m_selectedActors.insert(actor);
 }
-BlockIndex& Window::getBlockUnderCursor()
+BlockIndex Window::getBlockUnderCursor()
 {
 	sf::Vector2i pixelPos = sf::Mouse::getPosition(m_window);
 	return getBlockAtPosition(pixelPos);
 }
-BlockIndex& Window::getBlockAtPosition(sf::Vector2i pixelPos)
+BlockIndex Window::getBlockAtPosition(sf::Vector2i pixelPos)
 {
 	sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos);
 	uint32_t x = std::max(0.f, worldPos.x + m_view.getCenter().x - m_view.getSize().x / 2);
 	uint32_t y = std::max(0.f, worldPos.y + m_view.getCenter().y - m_view.getSize().y / 2);
-	x = std::min(m_area->m_sizeX - 1, x / m_scale);
-	y = std::min(m_area->m_sizeY - 1, y / m_scale);
-	return m_area->getBlock(x, y, m_z);
+	Blocks& blocks = m_area->getBlocks();
+	x = std::min(blocks.m_sizeX.get() - 1, x / m_scale);
+	y = std::min(blocks.m_sizeY.get() - 1, y / m_scale);
+	return blocks.getIndex_i(x, y, m_z.get());
 }
 [[nodiscard]] Json Window::povToJson() const
 {
@@ -532,7 +537,7 @@ BlockIndex& Window::getBlockAtPosition(sf::Vector2i pixelPos)
 		{"x", m_view.getCenter().x},
 		{"y", m_view.getCenter().y}
 	};
-	if(m_faction)
+	if(m_faction.exists())
 		data["faction"] = m_faction;
 	return data;
 }
@@ -542,31 +547,29 @@ std::chrono::milliseconds Window::msSinceEpoch()
 	auto duration = std::chrono::system_clock::now().time_since_epoch();
 	return std::chrono::duration_cast<std::chrono::milliseconds>(duration);
 }
-std::wstring Window::displayNameForItem(const Item& item)
+std::wstring Window::displayNameForItem(const ItemIndex& item)
 {
-	std::wstring output;
-	if(!item.m_name.empty())
-	{
-		output.append(item.m_name);
+	Items& items = m_area->getItems();
+	std::wstring output = items.getName(item);
+	if(!output.empty())
 		output.append(L" a ");
-	}
-	output.append(util::stringToWideString(item.m_materialType.name));
+	output.append(util::stringToWideString(MaterialType::getName(items.getMaterialType(item))));
 		output.append(L" ");
-	output.append(util::stringToWideString(item.m_itemType.name));
+	output.append(util::stringToWideString(ItemType::getName(items.getItemType(item))));
 	return output;
 }
 std::wstring Window::displayNameForCraftJob(CraftJob& craftJob)
 {
 	std::wstring output;
-	output.append(util::stringToWideString(craftJob.craftJobType.name));
-	if(craftJob.materialType)
+	output.append(util::stringToWideString(CraftJobType::getName(craftJob.craftJobType)));
+	if(craftJob.materialType.exists())
 	{
 		output.append(L" ");
-		output.append(util::stringToWideString(craftJob.materialType->name));
+		output.append(util::stringToWideString(MaterialType::getName(craftJob.materialType)));
 	}
 	return output;
 }
-std::string Window::facingToString(Facing facing)
+std::wstring Window::facingToString(Facing facing)
 {
 	if(facing == 0)
 		return "up";

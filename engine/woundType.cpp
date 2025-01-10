@@ -92,13 +92,13 @@ Percent WoundCalculations::getPercentPermanentImpairment(const Hit& hit, const B
 			return Percent::create(0);
 	}
 }
-WoundType WoundCalculations::byName(std::string name)
+WoundType WoundCalculations::byName(std::wstring name)
 {
-	if(name == "Pierce")
+	if(name == L"Pierce")
 		return WoundType::Pierce;
-	if(name == "Cut")
+	if(name == L"Cut")
 		return WoundType::Cut;
-	if(name == "Bludgeon")
+	if(name == L"Bludgeon")
 		return WoundType::Bludgeon;
 	else
 	{

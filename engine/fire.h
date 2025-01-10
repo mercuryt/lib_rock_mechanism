@@ -58,7 +58,7 @@ public:
 	[[nodiscard]] Json toJson() const;
 	// For testing.
 	[[maybe_unused, nodiscard]] bool containsFireAt(Fire& fire, const BlockIndex& block) const
-	{ 
+	{
 		return m_fires.at(block).contains(fire.m_materialType);
 	}
 };

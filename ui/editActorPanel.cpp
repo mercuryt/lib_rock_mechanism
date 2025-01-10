@@ -2,9 +2,11 @@
 #include "displayData.h"
 #include "widgets.h"
 #include "window.h"
-#include "../engine/actor.h"
-#include "../engine/item.h"
+#include "../engine/actors/actors.h"
+#include "../engine/items/items.h"
 #include "../engine/simulation/hasItems.h"
+#include "../engine/body.h"
+#include "../engine/bodyType.h"
 #include <TGUI/Widgets/ChildWindow.hpp>
 #include <TGUI/Widgets/ComboBox.hpp>
 #include <TGUI/Widgets/EditBox.hpp>
@@ -12,51 +14,60 @@
 #include <TGUI/Widgets/SpinControl.hpp>
 #include <regex>
 #include <string>
-EditActorView::EditActorView(Window& window) : m_window(window), m_panel(tgui::Panel::create()), m_actor(nullptr)
+EditActorView::EditActorView(Window& window) : m_window(window), m_panel(tgui::Panel::create())
 {
 	m_window.getGui().add(m_panel);
 	m_panel->setVisible(false);
 }
-void EditActorView::draw(Actor& actor)
+void EditActorView::draw(const ActorIndex& actor)
 {
+	Area& area = *m_window.getArea();
 	auto ageUI = tgui::Label::create();
 	auto strengthUI = tgui::Label::create();
 	auto dextarityUI = tgui::Label::create();
 	auto agilityUI = tgui::Label::create();
-	std::function<void()> update = [&actor, ageUI, strengthUI, dextarityUI, agilityUI]{
-		ageUI->setText(std::to_string(actor.getAgeInYears()));
-		strengthUI->setText(std::to_string(actor.m_attributes.getStrength()));
-		dextarityUI->setText(std::to_string(actor.m_attributes.getDextarity()));
-		agilityUI->setText(std::to_string(actor.m_attributes.getAgility()));
+	std::function<void()> update = [this, &area, actor, ageUI, strengthUI, dextarityUI, agilityUI]{
+		Actors& actors = area.getActors();
+		ageUI->setText(std::to_string(actors.getAgeInYears(actor).get()));
+		strengthUI->setText(std::to_string(actors.getStrength(actor).get()));
+		dextarityUI->setText(std::to_string(actors.getDextarity(actor).get()));
+		agilityUI->setText(std::to_string(actors.getAgility(actor).get()));
 	};
 	m_panel->removeAllWidgets();
-	m_actor = &actor;
+	m_actor = actor;
 	auto layoutGrid = tgui::Grid::create();
 	uint8_t gridCount = 0;
-	layoutGrid->addWidget(tgui::Label::create("Edit Actor"), ++gridCount, 1);
+	layoutGrid->addWidget(tgui::Label::create("Edit ActorIndex"), ++gridCount, 1);
 
 	auto basicInfoGrid = tgui::Grid::create();
 	layoutGrid->addWidget(basicInfoGrid, ++gridCount, 1);
 	basicInfoGrid->addWidget(tgui::Label::create("name"), 0, 0);
 	auto nameUI = tgui::EditBox::create();
-	nameUI->setText(actor.m_name);
-	nameUI->onTextChange([&actor](const tgui::String& value){ actor.m_name = value.toWideString(); });
+	Actors& actors = area.getActors();
+	nameUI->setText(actors.getName(actor));
+	nameUI->onTextChange([this, &area, actor](const tgui::String& value){
+		Actors& actors = area.getActors();
+		actors.setName(actor, value.toWideString());
+	});
 	basicInfoGrid->addWidget(nameUI, 0, 1);
 	basicInfoGrid->addWidget(tgui::Label::create("date of birth"), 0, 2);
-	DateTimeUI dateOfBirth(actor.getBirthStep());
-	dateOfBirth.m_hours->onValueChange([this, update](float value){ 
-		DateTime old(m_actor->getBirthStep());
-		m_actor->setBirthStep(DateTime::toSteps(value, old.day, old.year));
+	DateTimeUI dateOfBirth(actors.getBirthStep(actor));
+	dateOfBirth.m_hours->onValueChange([this, &area, update](float value){
+		Actors& actors = area.getActors();
+		DateTime old(actors.getBirthStep(m_actor));
+		actors.setBirthStep(m_actor, DateTime::toSteps(value, old.day, old.year));
 		update();
 	});
-	dateOfBirth.m_days->onValueChange([this, update](float value){ 
-		DateTime old(m_actor->getBirthStep());
-		m_actor->setBirthStep(DateTime::toSteps(old.hour, value, old.year));
+	dateOfBirth.m_days->onValueChange([this, &area, update](float value){
+		Actors& actors = area.getActors();
+		DateTime old(actors.getBirthStep(m_actor));
+		actors.setBirthStep(m_actor, DateTime::toSteps(old.hour, value, old.year));
 		update();
 	});
-	dateOfBirth.m_years->onValueChange([this, update](float value){ 
-		DateTime old(m_actor->getBirthStep());
-		m_actor->setBirthStep(DateTime::toSteps(old.hour, old.day, value));
+	dateOfBirth.m_years->onValueChange([this, &area, update](float value){
+		Actors& actors = area.getActors();
+		DateTime old(actors.getBirthStep(m_actor));
+		actors.setBirthStep(m_actor, DateTime::toSteps(old.hour, old.day, value));
 		update();
 	});
 	basicInfoGrid->addWidget(dateOfBirth.m_widget, 0, 3);
@@ -66,19 +77,26 @@ void EditActorView::draw(Actor& actor)
 	auto grownUI = tgui::SpinControl::create();
 	grownUI->setMaximum(100);
 	grownUI->setMinimum(1);
-	grownUI->setValue(m_actor->m_canGrow.growthPercent());
+	Actors& actors = area.getActors();
+	grownUI->setValue(actors.getPercentGrown(m_actor).get());
 	basicInfoGrid->addWidget(grownUI, 0, 7);
-	grownUI->onValueChange([this, update](float value){
-		m_actor->m_canGrow.setGrowthPercent(value);
+	grownUI->onValueChange([this, &area, update](float value){
+		Actors& actors = area.getActors();
+		actors.grow_setPercent(m_actor, Percent::create(value));
 		update();
 	});
 	basicInfoGrid->addWidget(tgui::Label::create("faction"), 0, 8);
 	auto factionUI = widgetUtil::makeFactionSelectUI(*m_window.getSimulation(), L"none");
-	if(m_actor->getFaction())
-		factionUI->setSelectedItem(m_actor->getFaction()->name);
-	factionUI->onItemSelect([this, update](const tgui::String factionName){
-		Faction& faction = m_window.getSimulation()->m_hasFactions.byName(factionName.toWideString());
-		m_actor->setFaction(&faction);
+	const FactionId& actorFactionId = actors.getFaction(m_actor);
+	if(actorFactionId.exists())
+	{
+		const Faction& faction = m_window.getSimulation()->m_hasFactions.getById(actorFactionId);
+		factionUI->setSelectedItem(faction.name);
+	}
+	factionUI->onItemSelect([this, &area, update](const tgui::String factionName){
+		Actors& actors = area.getActors();
+		const FactionId& faction = m_window.getSimulation()->m_hasFactions.byName(factionName.toWideString());
+		actors.setFaction(m_actor, faction);
 	});
 	basicInfoGrid->addWidget(factionUI, 0, 9);
 	// Attributes.
@@ -92,19 +110,21 @@ void EditActorView::draw(Actor& actor)
 	auto strengthBonusOrPenaltyUI = tgui::SpinControl::create();
 	strengthBonusOrPenaltyUI->setMaximum(1000);
 	strengthBonusOrPenaltyUI->setMinimum(-1000);
-	strengthBonusOrPenaltyUI->setValue(actor.m_attributes.getStrengthBonusOrPenalty());
+	strengthBonusOrPenaltyUI->setValue(actors.getStrengthBonusOrPenalty(actor).get());
 	attributeGrid->addWidget(strengthBonusOrPenaltyUI, 1, 1);
-	strengthBonusOrPenaltyUI->onValueChange([&actor, update](const float value){ 
-		actor.m_attributes.setStrengthBonusOrPenalty(value); 
+	strengthBonusOrPenaltyUI->onValueChange([this, &area, actor, update](const float value){
+		Actors& actors = area.getActors();
+		actors.setStrengthBonusOrPenalty(actor, AttributeLevelBonusOrPenalty::create(value));
 		update();
 	});
 	auto strengthMultiplierUI = tgui::SpinControl::create();
 	strengthMultiplierUI->setMaximum(1000);
 	strengthMultiplierUI->setMinimum(1);
-	strengthMultiplierUI->setValue(actor.m_attributes.getStrengthModifier());
+	strengthMultiplierUI->setValue(actors.getStrengthModifier(actor));
 	attributeGrid->addWidget(strengthMultiplierUI, 2, 1);
-	strengthMultiplierUI->onValueChange([&actor, update](const float value){ 
-		actor.m_attributes.setStrengthModifier(value); 
+	strengthMultiplierUI->onValueChange([this, &area, actor, update](const float value){
+		Actors& actors = area.getActors();
+		actors.setStrengthModifier(actor, value);
 		update();
 	});
 	attributeGrid->addWidget(strengthUI, 4, 1);
@@ -113,19 +133,21 @@ void EditActorView::draw(Actor& actor)
 	auto dextarityBonusOrPenaltyUI = tgui::SpinControl::create();
 	dextarityBonusOrPenaltyUI->setMaximum(1000);
 	dextarityBonusOrPenaltyUI->setMinimum(-1000);
-	dextarityBonusOrPenaltyUI->setValue(actor.m_attributes.getDextarityBonusOrPenalty());
+	strengthBonusOrPenaltyUI->setValue(actors.getDextarityBonusOrPenalty(actor).get());
 	attributeGrid->addWidget(dextarityBonusOrPenaltyUI, 1, 2);
-	dextarityBonusOrPenaltyUI->onValueChange([&actor, update](const float value){
-	       	actor.m_attributes.setDextarityBonusOrPenalty(value); 
+	dextarityBonusOrPenaltyUI->onValueChange([this, &area, actor, update](const float value){
+		Actors& actors = area.getActors();
+		actors.setDextarityBonusOrPenalty(actor, AttributeLevelBonusOrPenalty::create(value));
 		update();
 	});
 	auto dextarityMultiplierUI = tgui::SpinControl::create();
 	dextarityMultiplierUI->setMaximum(1000);
 	dextarityMultiplierUI->setMinimum(1);
-	dextarityMultiplierUI->setValue(actor.m_attributes.getDextarityModifier());
+	dextarityMultiplierUI->setValue(actors.getDextarityModifier(m_actor));
 	attributeGrid->addWidget(dextarityMultiplierUI, 2, 2);
-	dextarityMultiplierUI->onValueChange([&actor, update](const float value){ 
-		actor.m_attributes.setDextarityModifier(value); 
+	dextarityMultiplierUI->onValueChange([&area, actor, update](const float value){
+		Actors& actors = area.getActors();
+		actors.setDextarityModifier(actor, value);
 		update();
 	});
 	attributeGrid->addWidget(dextarityUI, 4, 2);
@@ -134,34 +156,36 @@ void EditActorView::draw(Actor& actor)
 	auto agilityBonusOrPenaltyUI = tgui::SpinControl::create();
 	agilityBonusOrPenaltyUI->setMaximum(1000);
 	agilityBonusOrPenaltyUI->setMinimum(-1000);
-	agilityBonusOrPenaltyUI->setValue(actor.m_attributes.getAgilityBonusOrPenalty());
+	agilityBonusOrPenaltyUI->setValue(actors.getAgilityBonusOrPenalty(actor).get());
 	attributeGrid->addWidget(agilityBonusOrPenaltyUI, 1, 3);
-	agilityBonusOrPenaltyUI->onValueChange([&actor, update](const float value){ 
-		actor.m_attributes.setAgilityBonusOrPenalty(value); 
+	agilityBonusOrPenaltyUI->onValueChange([&area, actor, update](const float value){
+		Actors& actors = area.getActors();
+		actors.setAgilityBonusOrPenalty(actor, AttributeLevelBonusOrPenalty::create(value));
 		update();
 	});
 	auto agilityMultiplierUI = tgui::SpinControl::create();
 	agilityMultiplierUI->setMaximum(1000);
 	agilityMultiplierUI->setMinimum(1);
-	agilityMultiplierUI->setValue(actor.m_attributes.getAgilityModifier());
+	agilityMultiplierUI->setValue(actors.getAgilityModifier(actor));
 	attributeGrid->addWidget(agilityMultiplierUI, 2, 3);
-	agilityMultiplierUI->onValueChange([&actor, update](const float value){ 
-		actor.m_attributes.setAgilityModifier(value); 
+	agilityMultiplierUI->onValueChange([&area, actor, update](const float value){
+		Actors& actors = area.getActors();
+		actors.setAgilityModifier(actor, value);
 		update();
 	});
 	attributeGrid->addWidget(agilityUI, 4, 3);
 	// Unencombered carry weight.
 	attributeGrid->addWidget(tgui::Label::create("unencombered carry weight"), 0, 4);
-	std::string localizedNumber = displayData::localizeNumber(actor.m_attributes.getUnencomberedCarryMass());
+	std::wstring localizedNumber = displayData::localizeNumber(actors.getUnencomberedCarryMass(actor).get());
 	auto unencomberedCarryWeightUI = tgui::Label::create(localizedNumber);
 	attributeGrid->addWidget(unencomberedCarryWeightUI, 1, 4);
 	// Move speed.
 	attributeGrid->addWidget(tgui::Label::create("move speed"), 0, 5);
-	auto moveSpeedUI = tgui::Label::create(std::to_string(actor.m_attributes.getMoveSpeed()));
+	auto moveSpeedUI = tgui::Label::create(std::to_string(actors.attributes_getMoveSpeed(actor).get()));
 	attributeGrid->addWidget(moveSpeedUI, 1, 5);
 	// Base combat score.
 	attributeGrid->addWidget(tgui::Label::create("base combat score"), 0, 6);
-	localizedNumber = displayData::localizeNumber(actor.m_attributes.getBaseCombatScore());
+	localizedNumber = displayData::localizeNumber(actors.attributes_getCombatScore(actor).get());
 	auto baseCombatScoreUI = tgui::Label::create(localizedNumber);
 	attributeGrid->addWidget(baseCombatScoreUI, 1, 6);
 	// Skills.
@@ -172,32 +196,33 @@ void EditActorView::draw(Actor& actor)
 	skillsGrid->addWidget(tgui::Label::create("name"), 1, 1);
 	skillsGrid->addWidget(tgui::Label::create("level"), 2, 1);
 	skillsGrid->addWidget(tgui::Label::create("xp"), 3, 1);
-	for(auto& [skillType, skill] : m_actor->m_skillSet.m_skills)
+	SkillSet& skillSet = actors.skill_getSet(actor);
+	for(auto& [skillType, skill] : skillSet.getSkills())
 	{
-		skillsGrid->addWidget(tgui::Label::create(skillType->name), 1, skillsCount);
+		skillsGrid->addWidget(tgui::Label::create(SkillType::getName(skillType)), 1, skillsCount);
 		auto levelUI = tgui::SpinControl::create();
-		levelUI->setValue(skill.m_level);
+		levelUI->setValue(skill.m_level.get());
 		levelUI->setMinimum(0);
 		levelUI->setMaximum(UINT32_MAX);
 		Skill* skillPointer = &skill;
-		levelUI->onValueChange([skillPointer](const float& value){ skillPointer->m_level = value; });
+		levelUI->onValueChange([skillPointer](const float& value){ skillPointer->m_level = SkillLevel::create(value); });
 		skillsGrid->addWidget(levelUI, 2, skillsCount);
-		auto xpText = std::to_string(skill.m_xp) + "/" + std::to_string(skill.m_xpForNextLevel);
+		auto xpText = std::to_string(skill.m_xp.get()) + "/" + std::to_string(skill.m_xpForNextLevel.get());
 		skillsGrid->addWidget(tgui::Label::create(xpText), 3, skillsCount);
 		auto remove = tgui::Button::create("remove");
-		remove->onClick([this, &actor, skillType]{ m_actor->m_skillSet.m_skills.erase(skillType); draw(actor); });
+		remove->onClick([this, skillSet, actor, skillType] mutable { skillSet.getSkills().erase(skillType); draw(actor); });
 		skillsGrid->addWidget(remove, 4, skillsCount);
 		++skillsCount;
 	}
 	auto createSkill = tgui::ComboBox::create();
 	createSkill->setDefaultText("select new skill");
-	for(const SkillType& skillType : skillTypeDataStore)
-		createSkill->addItem(skillType.name, skillType.name);
+	for(const std::wstring& name : SkillType::getNames())
+		createSkill->addItem(name, name);
 	layoutGrid->addWidget(createSkill, ++gridCount, 1);
-	createSkill->onItemSelect([this](const tgui::String& value){
-		const SkillType& skillType = SkillType::byName(value.toStdString());
-		m_actor->m_skillSet.addXp(skillType, 1u);
-		draw(*m_actor);
+	createSkill->onItemSelect([this, skillSet](const tgui::String& value) mutable {
+		const SkillTypeId& skillType = SkillType::byName(value.toStdString());
+		skillSet.addXp(skillType, SkillExperiencePoints::create(1));
+		draw(m_actor);
 	});
 	// Equipment.
 	layoutGrid->addWidget(tgui::Label::create("equipment"), ++gridCount, 1);
@@ -209,35 +234,41 @@ void EditActorView::draw(Actor& actor)
 	equipmentGrid->addWidget(tgui::Label::create("quality"), 4, 1);
 	equipmentGrid->addWidget(tgui::Label::create("mass"), 5, 1);
 	uint8_t count = 2;
-	for(Item* item : m_actor->m_equipmentSet.getAll())
+	EquipmentSet& equipmentSet = actors.equipment_getSet(m_actor);
+	Items& items = area.getItems();
+	for(const ItemReference& itemReference : equipmentSet.getAll())
 	{
-		equipmentGrid->addWidget(tgui::Label::create(item->m_itemType.name), 1, count);
-		equipmentGrid->addWidget(tgui::Label::create(item->m_materialType.name), 2, count);
+		const ItemIndex& item = itemReference.getIndex(items.m_referenceData);
+		equipmentGrid->addWidget(tgui::Label::create(MaterialType::getName(items.getMaterialType(item))), 2, count);
 		// Only one of these will be used but they should not share a count.
-		if(item->m_itemType.generic)
-			equipmentGrid->addWidget(tgui::Label::create(std::to_string(item->getQuantity())), 3, count);
+		if(items.isGeneric(item))
+			equipmentGrid->addWidget(tgui::Label::create(std::to_string(items.getQuantity(item).get())), 3, count);
 		else
-			equipmentGrid->addWidget(tgui::Label::create(std::to_string(item->m_quality)), 4, count);
-		equipmentGrid->addWidget(tgui::Label::create(std::to_string(item->getMass())), 5, count);
-		if(!item->m_name.empty())
-			equipmentGrid->addWidget(tgui::Label::create(item->m_name), 6, count);
+			equipmentGrid->addWidget(tgui::Label::create(std::to_string(items.getQuality(item).get())), 4, count);
+		equipmentGrid->addWidget(tgui::Label::create(std::to_string(items.getMass(item).get())), 5, count);
+		std::wstring name = items.getName(item);
+		if(!name.empty())
+			equipmentGrid->addWidget(tgui::Label::create(name), 6, count);
 		auto destroy = tgui::Button::create("destroy");
 		equipmentGrid->addWidget(destroy, 7, count);
-		destroy->onClick([this, item]{ m_actor->m_equipmentSet.removeEquipment(*item); draw(*m_actor); });
+		destroy->onClick([this, &area, item, &equipmentSet] mutable {
+			equipmentSet.removeEquipment(area, item);
+			draw(m_actor);
+		});
 		++count;
 	}
 	auto createEquipment = tgui::Button::create("create equipment");
 	layoutGrid->addWidget(createEquipment, ++gridCount, 1);
-	createEquipment->onClick([this]{
+	createEquipment->onClick([this, &area, &equipmentSet]{
 		auto childWindow = tgui::ChildWindow::create();
 		childWindow->setTitle("create equipment");
 		m_panel->add(childWindow);
 		auto childLayout = tgui::VerticalLayout::create();
 		childWindow->add(childLayout);
-		std::function<void(ItemParamaters params)> callback = [this](ItemParamaters params){
+		std::function<void(ItemParamaters params)> callback = [this, &area, &equipmentSet](ItemParamaters params){
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-			Item& newItem = m_window.getSimulation()->m_hasItems->createItem(params);
-			m_actor->m_equipmentSet.addEquipment(newItem);
+			const ItemIndex& newItem = area.getItems().create(params);
+			equipmentSet.addEquipment(area, newItem);
 			hide();
 		};
 		auto [itemTypeUI, materialTypeUI, quantityOrQualityLabel, quantityOrQualityUI, wearLabel, wearUI, confirmUI] = widgetUtil::makeCreateItemUI(callback);
@@ -267,42 +298,44 @@ void EditActorView::draw(Actor& actor)
 	woundsGrid->addWidget(tgui::Label::create("depth"), 3, 1);
 	woundsGrid->addWidget(tgui::Label::create("bleed"), 4, 1);
 	uint8_t woundCount = 2;
-	for(Wound* wound : m_actor->m_body.getAllWounds())
+	for(Wound* wound : actors.body_getWounds(m_actor))
 	{
-		woundsGrid->addWidget(tgui::Label::create(wound->bodyPart.bodyPartType.name), 1, woundCount);
+		woundsGrid->addWidget(tgui::Label::create(BodyPartType::getName(wound->bodyPart.bodyPartType)), 1, woundCount);
 		woundsGrid->addWidget(tgui::Label::create(std::to_string(wound->hit.area)), 2, woundCount);
 		woundsGrid->addWidget(tgui::Label::create(std::to_string(wound->hit.depth)), 3, woundCount);
 		woundsGrid->addWidget(tgui::Label::create(std::to_string(wound->bleedVolumeRate)), 4, woundCount);
 		++woundCount;
 	}
 	//TODO: create / remove wound. Amputations.
-	if(m_actor->isSentient())
+	if(actors.isSentient(m_actor))
 	{
 		// Objective priority button.
 		auto showObjectivePriority = tgui::Button::create("priorities");
 		layoutGrid->addWidget(showObjectivePriority, ++gridCount, 1);
-		showObjectivePriority->onClick([&]{ m_window.showObjectivePriority(*m_actor); });
-		if(m_actor->getFaction())
+		showObjectivePriority->onClick([&]{ m_window.showObjectivePriority(m_actor); });
+		Area& area = *m_window.getArea();
+		Actors& actors = area.getActors();
+		if(actorFactionId.exists())
 		{
 			// Uniform
 			auto uniformUI = tgui::ComboBox::create();
 			layoutGrid->addWidget(uniformUI, ++gridCount, 1);
 			uniformUI->onItemSelect([&](const tgui::String& uniformName){
-				if(!m_actor->getFaction())
+				if(!actorFactionId.exists())
 					return;
-				Uniform& uniform = m_window.getSimulation()->m_hasUniforms.at(*m_actor->getFaction()).at(uniformName.toWideString());
-				m_actor->m_hasUniform.set(uniform);
+				Uniform& uniform = m_window.getSimulation()->m_hasUniforms.getForFaction(actorFactionId).byName(uniformName.toWideString());
+				actors.uniform_set(m_actor, uniform);
 			});
-			for(auto& pair : m_window.getSimulation()->m_hasUniforms.at(*m_window.getFaction()).getAll())
+			for(auto& pair : m_window.getSimulation()->m_hasUniforms.getForFaction(actorFactionId).getAll())
 				uniformUI->addItem(pair.first);
-			if(actor.m_hasUniform.exists())
-				uniformUI->setSelectedItem(actor.m_hasUniform.get().name);
+			if(actors.uniform_exists(m_actor))
+				uniformUI->setSelectedItem(actors.uniform_get(m_actor).name);
 		}
 	}
 	// Reset needs button.
 	auto resetNeeds = tgui::Button::create("reset needs");
 	layoutGrid->addWidget(resetNeeds, ++gridCount, 1);
-	resetNeeds->onClick([this]{ m_actor->resetNeeds(); });
+	resetNeeds->onClick([this, &area]{ area.getActors().resetNeeds(m_actor); });
 	// Close button.
 	auto close = tgui::Button::create("close");
 	layoutGrid->addWidget(close, ++gridCount, 1);

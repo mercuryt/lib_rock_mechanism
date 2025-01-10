@@ -25,19 +25,20 @@ void CraftCancelInputAction::execute()
 	m_area.m_hasCraftingLocationsAndJobs.at(m_faction).removeJob(m_job);
 }
 */
-void CraftStepTypeCategory::create(std::string name) { craftStepTypeCategoryData.m_name.add(name); }
-CraftStepTypeCategoryId CraftStepTypeCategory::byName(const std::string name)
+void CraftStepTypeCategory::create(std::wstring name) { craftStepTypeCategoryData.m_name.add(name); }
+CraftStepTypeCategoryId CraftStepTypeCategory::size() { return CraftStepTypeCategoryId::create(craftStepTypeCategoryData.m_name.size());}
+CraftStepTypeCategoryId CraftStepTypeCategory::byName(const std::wstring name)
 {
 	auto found = craftStepTypeCategoryData.m_name.find(name);
 	assert(found != craftStepTypeCategoryData.m_name.end());
 	return CraftStepTypeCategoryId::create(found - craftStepTypeCategoryData.m_name.begin());
 }
-std::string CraftStepTypeCategory::getName(CraftStepTypeCategoryId id) { return craftStepTypeCategoryData.m_name[id]; }
+std::wstring CraftStepTypeCategory::getName(CraftStepTypeCategoryId id) { return craftStepTypeCategoryData.m_name[id]; }
 
 CraftStepProjectHasShapeDishonorCallback::CraftStepProjectHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_craftStepProject(*static_cast<CraftStepProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { }
 
-void CraftJobType::create(std::string name, ItemTypeId productType, const Quantity& productQuantity, MaterialCategoryTypeId category, std::vector<CraftStepType> stepTypes)
+void CraftJobType::create(std::wstring name, ItemTypeId productType, const Quantity& productQuantity, MaterialCategoryTypeId category, std::vector<CraftStepType> stepTypes)
 {
 	craftJobTypeData.m_name.add(name);
 	craftJobTypeData.m_productType.add(productType);
@@ -45,13 +46,14 @@ void CraftJobType::create(std::string name, ItemTypeId productType, const Quanti
 	craftJobTypeData.m_materialTypeCategory.add(category);
 	craftJobTypeData.m_stepTypes.add(stepTypes);
 }
-CraftJobTypeId CraftJobType::byName(const std::string name)
+CraftJobTypeId CraftJobType::size() { return CraftJobTypeId::create(craftJobTypeData.m_name.size());}
+CraftJobTypeId CraftJobType::byName(const std::wstring name)
 {
 	auto found = craftJobTypeData.m_name.find(name);
 	assert(found != craftJobTypeData.m_name.end());
 	return CraftJobTypeId::create(found - craftJobTypeData.m_name.begin());
 }
-std::string CraftJobType::getName(const CraftJobTypeId& id) { return craftJobTypeData.m_name[id]; }
+std::wstring CraftJobType::getName(const CraftJobTypeId& id) { return craftJobTypeData.m_name[id]; }
 ItemTypeId CraftJobType::getProductType(const CraftJobTypeId& id) { return craftJobTypeData.m_productType[id]; }
 Quantity CraftJobType::getProductQuantity(const CraftJobTypeId& id) { return craftJobTypeData.m_productQuantity[id]; }
 MaterialCategoryTypeId CraftJobType::getMaterialTypeCategory(const CraftJobTypeId& id) { return craftJobTypeData.m_materialTypeCategory[id]; }
@@ -148,7 +150,7 @@ CraftJob::CraftJob(const CraftJobTypeId& cjt, HasCraftingLocationsAndJobsForFact
 CraftJob::CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj, Area& area) :
 	craftJobType(data["craftJobType"].get<CraftJobTypeId>()),
 	hasCraftingLocationsAndJobs(hclaj),
-	materialType(data.contains("materialType") ? MaterialType::byName(data["materialType"].get<std::string>()) : MaterialTypeId::null()),
+	materialType(data.contains("materialType") ? MaterialType::byName(data["materialType"].get<std::wstring>()) : MaterialTypeId::null()),
 	stepIterator(CraftJobType::getStepTypes(craftJobType).begin() + data["stepIndex"].get<size_t>()),
 	craftStepProject(data.contains("craftStepProject") ? std::make_unique<CraftStepProject>(data["craftStepProject"], deserializationMemo, *this, area) : nullptr),
 	minimumSkillLevel(data["minimumSkillLevel"].get<uint32_t>()),
@@ -192,7 +194,7 @@ HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(con
 {
 	for(const Json& pair : data["locationsByCategory"])
 	{
-		CraftStepTypeCategoryId category = CraftStepTypeCategory::byName(pair[0].get<std::string>());
+		CraftStepTypeCategoryId category = CraftStepTypeCategory::byName(pair[0].get<std::wstring>());
 		for(const Json& blockQuery : pair[1])
 		{
 			BlockIndex block = blockQuery.get<BlockIndex>();
@@ -205,7 +207,7 @@ HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(con
 			m_jobs.emplace_back(jobData, deserializationMemo, *this, m_area);
 	for(const Json& pair : data["unassignedProjectsByStepTypeCategory"])
 	{
-		CraftStepTypeCategoryId category = CraftStepTypeCategory::byName(pair[0].get<std::string>());
+		CraftStepTypeCategoryId category = CraftStepTypeCategory::byName(pair[0].get<std::wstring>());
 		for(const Json& jobReference : pair[1])
 		{
 			CraftJob* job = deserializationMemo.m_craftJobs.at(jobReference.get<uintptr_t>());
@@ -214,7 +216,7 @@ HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(con
 	}
 	for(const Json& pair : data["unassignedProjectsBySkill"])
 	{
-		SkillTypeId skill = SkillType::byName(pair[0].get<std::string>());
+		SkillTypeId skill = SkillType::byName(pair[0].get<std::wstring>());
 		for(const Json& jobReference : pair[1])
 			m_unassignedProjectsBySkill.getOrCreate(skill).push_back(deserializationMemo.m_craftJobs.at(jobReference.get<uintptr_t>()));
 	}
@@ -470,7 +472,7 @@ CraftJob* HasCraftingLocationsAndJobsForFaction::getJobForAtLocation(const Actor
 					craftJob->stepIterator->skillType == skillType &&
 					actors.skill_getLevel(actor, skillType) >= craftJob->minimumSkillLevel
 				)
-					
+
 					return craftJob;
 	return nullptr;
 }

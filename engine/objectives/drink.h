@@ -11,7 +11,7 @@ public:
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, const ActorIndex&) const { assert(false); }
 	DrinkObjectiveType() = default;
 	DrinkObjectiveType(const Json&, DeserializationMemo&);
-	[[nodiscard]] std::string name() const { return "drink"; }
+	[[nodiscard]] std::wstring name() const override { return L"drink"; }
 };
 class DrinkObjective final : public Objective
 {
@@ -26,7 +26,7 @@ public:
 	void reset(Area& area, const ActorIndex& actor);
 	void makePathRequest(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::string name() const { return "drink"; }
+	[[nodiscard]] std::wstring name() const override { return L"drink"; }
 	[[nodiscard]] bool canDrinkAt(Area& area, const BlockIndex& block, const Facing& facing, const ActorIndex& actor) const;
 	[[nodiscard]] BlockIndex getAdjacentBlockToDrinkAt(Area& area, const BlockIndex& block, const Facing& facing, const ActorIndex& actor) const;
 	[[nodiscard]] bool canDrinkItemAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
@@ -46,5 +46,5 @@ public:
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::string name() { return "drink"; }
+	[[nodiscard]] std::wstring name() { return L"drink"; }
 };

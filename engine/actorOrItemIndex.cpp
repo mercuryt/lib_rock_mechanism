@@ -31,11 +31,11 @@ ActorOrItemIndex ActorOrItemIndex::setLocationAndFacing(Area& area, const BlockI
 {
 	if(isActor())
 	{
-		area.getActors().setLocationAndFacing(m_index.toActor(), location, facing); 
+		area.getActors().setLocationAndFacing(m_index.toActor(), location, facing);
 		return *this;
 	}
 	else
-		return area.getItems().setLocationAndFacing(m_index.toItem(), location, facing).toActorOrItemIndex(); 
+		return area.getItems().setLocationAndFacing(m_index.toItem(), location, facing).toActorOrItemIndex();
 }
 void ActorOrItemIndex::exit(Area& area)
 {
@@ -43,29 +43,29 @@ void ActorOrItemIndex::exit(Area& area)
 		area.getActors().exit(m_index.toActor());
 }
 void ActorOrItemIndex::reservable_reserve(Area& area, CanReserve& canReserve, const Quantity quantity , std::unique_ptr<DishonorCallback> callback) const
-{ 
-	if(isActor()) 
+{
+	if(isActor())
 		area.getActors().reservable_reserve(m_index.toActor(), canReserve, quantity, std::move(callback));
 	else
 		area.getItems().reservable_reserve(m_index.toItem(), canReserve, quantity, std::move(callback));
 }
 void ActorOrItemIndex::reservable_unreserve(Area& area, CanReserve& canReserve, const Quantity quantity) const
-{ 
-	if(isActor()) 
+{
+	if(isActor())
 		area.getActors().reservable_unreserve(m_index.toActor(), canReserve, quantity);
 	else
 		area.getItems().reservable_unreserve(m_index.toItem(), canReserve, quantity);
 }
 void ActorOrItemIndex::reservable_maybeUnreserve(Area& area, CanReserve& canReserve, const Quantity quantity) const
-{ 
-	if(isActor()) 
+{
+	if(isActor())
 		area.getActors().reservable_maybeUnreserve(m_index.toActor(), canReserve, quantity);
 	else
 		area.getItems().reservable_maybeUnreserve(m_index.toItem(), canReserve, quantity);
 }
 void ActorOrItemIndex::reservable_unreserveFaction(Area& area, const FactionId& faction) const
-{ 
-	if(isActor()) 
+{
+	if(isActor())
 		area.getActors().reservable_unreserveFaction(m_index.toActor(), faction);
 	else
 		area.getItems().reservable_unreserveFaction(m_index.toItem(), faction);
@@ -77,9 +77,9 @@ void ActorOrItemIndex::unfollow(Area& area) const
 	else
 		area.getItems().unfollow(m_index.toItem());
 }
-std::string ActorOrItemIndex::toString() const
+std::wstring ActorOrItemIndex::toString() const
 {
-	return (isActor() ? "actor#" : "item#") + m_index.get();
+	return (isActor() ? L"actor#" : L"item#") + m_index.get();
 }
 ActorOrItemReference ActorOrItemIndex::toReference(Area& area) const
 {
@@ -135,7 +135,7 @@ bool ActorOrItemIndex::canEnterCurrentlyFrom(Area& area, const BlockIndex& desti
 		return area.getBlocks().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
 	}
 }
-bool ActorOrItemIndex::canEnterCurrentlyFromWithOccupied(Area& area, const BlockIndex& destination, const BlockIndex& origin, const OccupiedBlocksForHasShape& occupied) const 
+bool ActorOrItemIndex::canEnterCurrentlyFromWithOccupied(Area& area, const BlockIndex& destination, const BlockIndex& origin, const OccupiedBlocksForHasShape& occupied) const
 {
 	if(isActor())
 	{
@@ -150,7 +150,7 @@ bool ActorOrItemIndex::canEnterCurrentlyFromWithOccupied(Area& area, const Block
 		return area.getBlocks().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
 	}
 }
-BlockIndex ActorOrItemIndex::getLocation(const Area& area) const 
+BlockIndex ActorOrItemIndex::getLocation(const Area& area) const
 { return isActor() ? area.getActors().getLocation(m_index.toActor()) : area.getItems().getLocation(m_index.toItem()); }
 const OccupiedBlocksForHasShape& ActorOrItemIndex::getBlocks(Area& area) const
 { return isActor() ? area.getActors().getBlocks(m_index.toActor()) : area.getItems().getBlocks(m_index.toItem()); }
@@ -183,7 +183,7 @@ Volume ActorOrItemIndex::getVolume(const Area& area)  const { return isActor() ?
 bool ActorOrItemIndex::isGeneric(const Area& area) const {return isActor() ? false : area.getItems().isGeneric(m_index.toItem()); }
 Quantity ActorOrItemIndex::reservable_getUnreservedCount(Area& area, const FactionId& faction) const
 {
-	if(isActor()) 
+	if(isActor())
 		return area.getActors().reservable_getUnreservedCount(m_index.toActor(), faction);
 	else
 		return area.getItems().reservable_getUnreservedCount(m_index.toItem(), faction);

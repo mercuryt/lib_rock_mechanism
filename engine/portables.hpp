@@ -80,15 +80,15 @@ void Portables<Derived, Index, ReferenceIndex>::create(const Index& index, const
 template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::log(const Index& index) const
 {
-	std::cout << ", moveType: " << MoveType::getName(m_moveType[index]);
+	std::wcout << ", moveType: " << MoveType::getName(m_moveType[index]);
 	if(m_follower[index].exists())
-		std::cout << ", leading: " << m_follower[index].toString();
+		std::wcout << ", leading: " << m_follower[index].toString();
 	if(m_leader[index].exists())
-		std::cout << ", following: " << m_follower[index].toString();
+		std::wcout << ", following: " << m_follower[index].toString();
 	if(m_carrier[index].exists())
-	       	std::cout << ", carrier: " << m_carrier[index].toString();
+	       	std::wcout << ", carrier: " << m_carrier[index].toString();
 	if(getLocation(index).exists())
-		std::cout << ", location: " << getArea().getBlocks().getCoordinates(getLocation(index)).toString();
+		std::wcout << ", location: " << getArea().getBlocks().getCoordinates(getLocation(index)).toString();
 }
 template<class Derived, class Index, class ReferenceIndex>
 ActorOrItemIndex Portables<Derived, Index, ReferenceIndex>::getActorOrItemIndex(const Index& index)
@@ -145,7 +145,7 @@ void Portables<Derived, Index, ReferenceIndex>::unfollowActor(const Index& index
 	assert(!isLeading(index));
 	assert(isFollowing(index));
 	assert(m_leader[index] == actor.toActorOrItemIndex());
-	static const MoveTypeId& moveTypeNone = MoveType::byName("none");
+	static const MoveTypeId& moveTypeNone = MoveType::byName(L"none");
 	if(!m_isActors || getMoveType(index) == moveTypeNone)
 		this->setStatic(index);
 	Actors& actors = getActors();
@@ -166,7 +166,7 @@ void Portables<Derived, Index, ReferenceIndex>::unfollowItem(const Index& index,
 	assert(!isLeading(index));
 	ActorIndex lineLeader = getLineLeader(index);
 	m_leader[index].clear();
-	static const MoveTypeId& moveTypeNone = MoveType::byName("none");
+	static const MoveTypeId& moveTypeNone = MoveType::byName(L"none");
 	if(!m_isActors || getMoveType(index) == moveTypeNone)
 		this->setStatic(index);
 	Items& items = getItems();
@@ -208,7 +208,7 @@ void Portables<Derived, Index, ReferenceIndex>::leadAndFollowDisband(const Index
 		follower = leader;
 	}
 	getActors().lineLead_clearPath(leader.getActor());
-		
+
 }
 template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::maybeLeadAndFollowDisband(const Index& index)

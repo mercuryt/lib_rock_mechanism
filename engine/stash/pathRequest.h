@@ -1,4 +1,4 @@
-/* 
+/*
  * PathRequest:
  * Used to submit and cancel requests. Holds a PathRequestIndex which may be updated when another request in canceled.
  * Responsible for serializing path request. May be subclassed.
@@ -64,7 +64,7 @@ class PathRequest
 		[[nodiscard]] virtual Json toJson() const;
 		[[nodiscard]] bool exists() const { return m_index.exists(); }
 		[[nodiscard]] ActorIndex getActor() const { assert(m_actor.exists()); return m_actor; }
-		[[nodiscard]] std::string name() { return "basic"; }
+		[[nodiscard]] std::wstring name() { return "basic"; }
 		[[nodiscard]] static std::unique_ptr<PathRequest> load(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 		[[nodiscard]] bool isDetour() const { return m_detour; }
 		virtual ~PathRequest() = default;

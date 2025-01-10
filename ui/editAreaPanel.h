@@ -12,7 +12,7 @@ class EditAreaView final
 	tgui::SpinControl::Ptr m_sizeX;
 	tgui::SpinControl::Ptr m_sizeY;
 	tgui::SpinControl::Ptr m_sizeZ;
-	Area* m_area;
+	Area* m_area = nullptr;
 public:
 	EditAreaView(Window& w);
 	void show() { m_panel->setVisible(true); }

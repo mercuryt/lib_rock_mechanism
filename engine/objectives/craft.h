@@ -14,7 +14,7 @@ public:
 	CraftObjectiveType(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] bool canBeAssigned(Area& area, const ActorIndex& actor) const;
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
-	[[nodiscard]] std::string name() const;
+	[[nodiscard]] std::wstring name() const override;
 };
 class CraftObjective final : public Objective
 {
@@ -24,14 +24,14 @@ class CraftObjective final : public Objective
 public:
 	CraftObjective(SkillTypeId st);
 	CraftObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, const ActorIndex& actor);
-	void cancel(Area& area, const ActorIndex& actor);
-	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
-	void reset(Area& area, const ActorIndex& actor);
+	void execute(Area& area, const ActorIndex& actor)override;
+	void cancel(Area& area, const ActorIndex& actor)override;
+	void delay(Area& area, const ActorIndex& actor) override{ cancel(area, actor); }
+	void reset(Area& area, const ActorIndex& actor) override;
 	void recordFailedJob(CraftJob& craftJob) { assert(!m_failedJobs.contains(&craftJob)); m_failedJobs.insert(&craftJob); }
-	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] Json toJson() const override;
 	[[nodiscard]] SmallSet<CraftJob*>& getFailedJobs() { return m_failedJobs; }
-	[[nodiscard]] std::string name() const;
+	[[nodiscard]] std::wstring name() const override;
 	friend class CraftPathRequest;
 	friend class HasCraftingLocationsAndJobsForFaction;
 	// For testing.
@@ -49,5 +49,5 @@ public:
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::string name() { return m_craftObjective.name(); }
+	[[nodiscard]] std::wstring name() { return m_craftObjective.name(); }
 };

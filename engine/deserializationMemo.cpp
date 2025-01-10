@@ -47,47 +47,47 @@ ProjectRequirementCounts& DeserializationMemo::projectRequirementCountsReference
 //WorldLocation& DeserializationMemo::getLocationByNormalizedLatLng(const Json& data) { return m_simulation.m_world->getLocationByNormalizedLatLng(data.get<LatLng>()); }
 std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data, Area& area, ActorIndex actor)
 {
-	auto name = data["type"].get<std::string>();
+	auto name = data["type"].get<std::wstring>();
 	std::unique_ptr<Objective> output;
-	if(name == "construct")
+	if(name == L"construct")
 		output = std::make_unique<ConstructObjective>(data, *this);
-	else if(name.substr(0, 5) == "craft")
+	else if(name.substr(0, 5) == L"craft")
 		output = std::make_unique<CraftObjective>(data, *this);
-	else if(name == "dig")
+	else if(name == L"dig")
 		output = std::make_unique<DigObjective>(data, *this);
-	else if(name == "drink")
+	else if(name == L"drink")
 		output =  std::make_unique<DrinkObjective>(data, *this, area, actor);
-	else if(name == "eat")
+	else if(name == L"eat")
 		output =  std::make_unique<EatObjective>(data, *this, area, actor);
-	else if(name == "get To safe temperature")
+	else if(name == L"get To safe temperature")
 		output =  std::make_unique<GetToSafeTemperatureObjective>(data, *this);
-	else if(name == "give plants fluid")
+	else if(name == L"give plants fluid")
 		output =  std::make_unique<GivePlantsFluidObjective>(data, area, actor, *this);
-	else if(name == "go to")
+	else if(name == L"go to")
 		output =  std::make_unique<GoToObjective>(data, *this);
-	else if(name == "harvest")
+	else if(name == L"harvest")
 		output =  std::make_unique<HarvestObjective>(data, area, *this);
-	else if(name == "haul")
+	else if(name == L"haul")
 		output =  std::make_unique<TargetedHaulObjective>(data, *this);
-	else if(name == "kill")
+	else if(name == L"kill")
 		output =  std::make_unique<KillObjective>(data, *this, area);
-	//else if(name == "medical")
+	//else if(name == L"medical")
 		//output =  std::make_unique<MedicalObjective>(data, *this);
-	else if(name == "rest")
+	else if(name == L"rest")
 		output =  std::make_unique<RestObjective>(data, area, actor, *this);
-	else if(name == "sleep")
+	else if(name == L"sleep")
 		output =  std::make_unique<SleepObjective>(data, *this);
-	else if(name == "station")
+	else if(name == L"station")
 		output =  std::make_unique<StationObjective>(data, *this);
-	else if(name == "sow seeds")
+	else if(name == L"sow seeds")
 		output =  std::make_unique<SowSeedsObjective>(data, area, actor, *this);
-	else if(name == "stockpile")
+	else if(name == L"stockpile")
 		output =  std::make_unique<StockPileObjective>(data, *this, area);
-	else if(name == "wait")
+	else if(name == L"wait")
 		output =  std::make_unique<WaitObjective>(data, area, actor, *this);
 	else
 	{
-		assert(name == "wander");
+		assert(name == L"wander");
 		output = std::make_unique<WanderObjective>(data, *this);
 	}
 	m_objectives[data["address"].get<uintptr_t>()] = output.get();

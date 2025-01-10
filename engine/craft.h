@@ -32,7 +32,7 @@ class CraftInputAction final : public InputAction
 	MaterialTypeId m_materialType;
 	Quantity m_quantity = 0;
 	Quality m_quality = 0;
-	CraftInputAction(Area& area, const FactionId& faction, InputQueue& inputQueue, const CraftJobTypeId& craftJobType, const MaterialTypeId& materialType, const Quantity& quantity) : 
+	CraftInputAction(Area& area, const FactionId& faction, InputQueue& inputQueue, const CraftJobTypeId& craftJobType, const MaterialTypeId& materialType, const Quantity& quantity) :
 		InputAction(inputQueue), m_area(area), m_faction(faction), m_craftJobType(craftJobType), m_materialType(materialType), m_quantity(quantity) { }
 	void execute();
 };
@@ -41,7 +41,7 @@ class CraftCancelInputAction final : public InputAction
 	Area& m_area;
 	CraftJob& m_job;
 	FactionId m_faction;
-	CraftCancelInputAction(Area& area, const FactionId& faction, InputQueue& inputQueue, CraftJob& job) : 
+	CraftCancelInputAction(Area& area, const FactionId& faction, InputQueue& inputQueue, CraftJob& job) :
 		InputAction(inputQueue), m_area(area), m_job(job), m_faction(faction) { }
 	void execute();
 };
@@ -49,17 +49,18 @@ class CraftCancelInputAction final : public InputAction
 // Drill, saw, forge, etc.
 class CraftStepTypeCategory final
 {
-	DataVector<std::string, CraftStepTypeCategoryId> m_name;
+	DataVector<std::wstring, CraftStepTypeCategoryId> m_name;
 public:
-	static void create(std::string name);
-	[[nodiscard]] static CraftStepTypeCategoryId byName(const std::string name);
-	[[nodiscard]] static std::string getName(CraftStepTypeCategoryId id);
+	static void create(std::wstring name);
+	[[nodiscard]] static CraftStepTypeCategoryId size();
+	[[nodiscard]] static CraftStepTypeCategoryId byName(const std::wstring name);
+	[[nodiscard]] static std::wstring getName(CraftStepTypeCategoryId id);
 };
 inline CraftStepTypeCategory craftStepTypeCategoryData;
 // Part of the definition of a particular CraftJobType which makes a specific Item.
 struct CraftStepType final
 {
-	std::string name;
+	std::wstring name;
 	CraftStepTypeCategoryId craftStepTypeCategory;
 	SkillTypeId skillType;
 	Step stepsDuration;
@@ -85,7 +86,7 @@ class CraftStepProject final : public Project
 	[[nodiscard]] std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
 	[[nodiscard]] std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
 public:
-	CraftStepProject(const FactionId& faction, Area& area, const BlockIndex& location, const CraftStepType& cst, CraftJob& cj) : 
+	CraftStepProject(const FactionId& faction, Area& area, const BlockIndex& location, const CraftStepType& cst, CraftJob& cj) :
 		Project(faction, area, location, Quantity::create(1)), m_craftStepType(cst), m_craftJob(cj) { }
 	CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj, Area& area);
 	// No toJson needed here, the base class one has everything.
@@ -94,7 +95,7 @@ public:
 struct CraftStepProjectHasShapeDishonorCallback final : public DishonorCallback
 {
 	CraftStepProject& m_craftStepProject;
-	CraftStepProjectHasShapeDishonorCallback(CraftStepProject& hs) : m_craftStepProject(hs) { } 
+	CraftStepProjectHasShapeDishonorCallback(CraftStepProject& hs) : m_craftStepProject(hs) { }
 	CraftStepProjectHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const { return Json({{"type", "CraftStepProjectHasShapeDishonorCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_craftStepProject)}}); }
 	// Craft step project cannot reset so cancel instead and allow to be recreated later.
@@ -103,15 +104,16 @@ struct CraftStepProjectHasShapeDishonorCallback final : public DishonorCallback
 // Data about making a specific product type.
 class CraftJobType final
 {
-	DataVector<std::string, CraftJobTypeId> m_name;
+	DataVector<std::wstring, CraftJobTypeId> m_name;
 	DataVector<ItemTypeId, CraftJobTypeId> m_productType;
 	DataVector<Quantity, CraftJobTypeId> m_productQuantity;
 	DataVector<MaterialCategoryTypeId, CraftJobTypeId> m_materialTypeCategory;
 	DataVector<std::vector<CraftStepType>, CraftJobTypeId> m_stepTypes;
 public:
-	static void create(std::string name, ItemTypeId productType, const Quantity& productQuantity, MaterialCategoryTypeId category, std::vector<CraftStepType> stepTypes);
-	[[nodiscard]] static CraftJobTypeId byName(const std::string name);
-	[[nodiscard]] static std::string getName(const CraftJobTypeId& id);
+	static void create(std::wstring name, ItemTypeId productType, const Quantity& productQuantity, MaterialCategoryTypeId category, std::vector<CraftStepType> stepTypes);
+	[[nodiscard]] static CraftJobTypeId size();
+	[[nodiscard]] static CraftJobTypeId byName(const std::wstring name);
+	[[nodiscard]] static std::wstring getName(const CraftJobTypeId& id);
 	[[nodiscard]] static ItemTypeId getProductType(const CraftJobTypeId& id);
 	[[nodiscard]] static Quantity getProductQuantity(const CraftJobTypeId& id);
 	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(const CraftJobTypeId& id);
@@ -139,8 +141,8 @@ struct CraftJob final
 		materialType(mt),
 		minimumSkillLevel(msl),
 		totalSkillPoints(0),
-		reservable(Quantity::create(1)) 
-	{ 
+		reservable(Quantity::create(1))
+	{
 		stepIterator = CraftJobType::getStepTypes(craftJobType).begin();
 	}
 	CraftJob(const Json& data, DeserializationMemo& deserializationMemo, HasCraftingLocationsAndJobsForFaction& hclaj, Area& area);

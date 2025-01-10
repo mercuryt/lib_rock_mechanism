@@ -26,5 +26,6 @@ public:
 	static ItemQuery create(const ItemTypeId& itemType){ ItemQuery output; output.m_itemType = itemType; return output;}
 	static ItemQuery create(const ItemTypeId& itemType, const MaterialCategoryTypeId& mtc){ ItemQuery output; output.m_itemType = itemType; output.m_materialTypeCategory = mtc; return output;}
 	static ItemQuery create(const ItemTypeId& itemType, const MaterialTypeId& mt){ ItemQuery output; output.m_itemType = itemType; output.m_materialType = mt; return output;}
+	static ItemQuery create(const ItemTypeId& itemType, const MaterialTypeId& mt, const MaterialCategoryTypeId& mtc){ ItemQuery output; output.m_itemType = itemType; output.m_materialType = mt; output.m_materialTypeCategory = mtc; assert(mt == MaterialTypeId::null() || mtc == MaterialCategoryTypeId::null());return output;}
 };
 inline void to_json(Json& data, const ItemQuery& query) { data = query.toJson(); }

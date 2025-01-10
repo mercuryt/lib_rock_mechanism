@@ -13,10 +13,10 @@
 #include "types.h"
 TEST_CASE("fluids smaller")
 {
-	static MaterialTypeId marble = MaterialType::byName("marble");
-	static FluidTypeId water = FluidType::byName("water");
-	static FluidTypeId CO2 = FluidType::byName("CO2");
-	static FluidTypeId mercury = FluidType::byName("mercury");
+	static MaterialTypeId marble = MaterialType::byName(L"marble");
+	static FluidTypeId water = FluidType::byName(L"water");
+	static FluidTypeId CO2 = FluidType::byName(L"CO2");
+	static FluidTypeId mercury = FluidType::byName(L"mercury");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
@@ -674,7 +674,7 @@ TEST_CASE("fluids smaller")
 		// One of the pits has depth one and is empty.
 		// The other has depth two and contains 100 water(fg1) at the bottom.
 		// The 3x1 area contains 60 water(fg2).
-		// Expect fg2 to split into two groups of 30, one of which merges with fg1. 
+		// Expect fg2 to split into two groups of 30, one of which merges with fg1.
 		areaBuilderUtil::setSolidLayers(area, 0, 4, marble);
 		BlockIndex origin1 = blocks.getIndex_i(5, 4, 1);
 		BlockIndex block1 = blocks.getIndex_i(5, 5, 1);
@@ -1267,8 +1267,8 @@ TEST_CASE("fluids smaller")
 }
 TEST_CASE("area larger")
 {
-	static MaterialTypeId marble = MaterialType::byName("marble");
-	static FluidTypeId water = FluidType::byName("water");
+	static MaterialTypeId marble = MaterialType::byName(L"marble");
+	static FluidTypeId water = FluidType::byName(L"water");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(20,20,20);
 	area.m_hasRain.disable();
@@ -1488,11 +1488,11 @@ TEST_CASE("area larger")
 }
 TEST_CASE("fluids multi scale")
 {
-	static MaterialTypeId marble = MaterialType::byName("marble");
-	static FluidTypeId water = FluidType::byName("water");
-	static FluidTypeId CO2 = FluidType::byName("CO2");
-	static FluidTypeId mercury = FluidType::byName("mercury");
-	static FluidTypeId lava = FluidType::byName("lava");
+	static MaterialTypeId marble = MaterialType::byName(L"marble");
+	static FluidTypeId water = FluidType::byName(L"water");
+	static FluidTypeId CO2 = FluidType::byName(L"CO2");
+	static FluidTypeId mercury = FluidType::byName(L"mercury");
+	static FluidTypeId lava = FluidType::byName(L"lava");
 	Simulation simulation;
 	auto trenchTest2Fluids = [&](uint32_t scaleL, uint32_t scaleW, Step steps)
 	{
@@ -1508,7 +1508,7 @@ TEST_CASE("fluids multi scale")
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
 		BlockIndex water1 = blocks.getIndex_i(1, 1, 1);
-		BlockIndex water2 = blocks.getIndex_i(halfMaxX - 1, maxY - 2, maxZ - 1);		
+		BlockIndex water2 = blocks.getIndex_i(halfMaxX - 1, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
 		// CO2
 		BlockIndex CO2_1 = blocks.getIndex_i(halfMaxX, 1, 1);
@@ -1638,7 +1638,7 @@ TEST_CASE("fluids multi scale")
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
 		BlockIndex water1 = blocks.getIndex_i(1, 1, 1);
-		BlockIndex water2 = blocks.getIndex_i(quarterMaxX, maxY - 2, maxZ - 1);		
+		BlockIndex water2 = blocks.getIndex_i(quarterMaxX, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
 		// CO2
 		BlockIndex CO2_1 = blocks.getIndex_i(quarterMaxX + 1, 1, 1);
@@ -1735,7 +1735,7 @@ TEST_CASE("fluids multi scale")
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
 		BlockIndex water1 = blocks.getIndex_i(1, 1, 1);
-		BlockIndex water2 = blocks.getIndex_i(quarterMaxX, maxY - 2, maxZ - 1);		
+		BlockIndex water2 = blocks.getIndex_i(quarterMaxX, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
 		// CO2
 		BlockIndex CO2_1 = blocks.getIndex_i(quarterMaxX + 1, 1, 1);
@@ -1800,7 +1800,7 @@ TEST_CASE("fluids multi scale")
 		areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 		// Water
 		BlockIndex water1 = blocks.getIndex_i(1, 1, 1);
-		BlockIndex water2 = blocks.getIndex_i(quarterMaxX, maxY - 2, maxZ - 1);		
+		BlockIndex water2 = blocks.getIndex_i(quarterMaxX, maxY - 2, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
 		// CO2
 		BlockIndex CO2_1 = blocks.getIndex_i(quarterMaxX + 1, 1, 1);
@@ -1878,7 +1878,7 @@ TEST_CASE("fluids multi scale")
 		std::vector<FluidGroup*> newlySplit;
 		// Water is at 0,0
 		BlockIndex water1 = blocks.getIndex_i(1, 1, 1);
-		BlockIndex water2 = blocks.getIndex_i(halfMaxX - 1, halfMaxY - 1, maxZ - 1);		
+		BlockIndex water2 = blocks.getIndex_i(halfMaxX - 1, halfMaxY - 1, maxZ - 1);
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
 		// CO2 is at 0,1
 		BlockIndex CO2_1 = blocks.getIndex_i(1, halfMaxY, 1);

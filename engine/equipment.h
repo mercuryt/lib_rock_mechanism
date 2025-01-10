@@ -49,6 +49,7 @@ public:
 	[[nodiscard]] ItemIndex getWeaponToAttackAtRange(Area& area, const DistanceInBlocksFractional& range);
 	[[nodiscard]] ItemIndex getAmmoForRangedWeapon(Area& area, const ItemIndex& weapon);
 	[[nodiscard]] auto& getAll() { return m_equipments; }
+	[[nodiscard]] auto& getAll() const { return m_equipments; }
 	[[nodiscard]] bool hasAnyEquipmentWithReservations(Area& area, const ActorIndex& actor) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(EquipmentSet, m_equipments);
 };

@@ -135,13 +135,13 @@ Json SupressedNeed::toJson() const
 		 data["eventStart"] = m_event.getStartStep();
 	 return data;
 }
-void SupressedNeed::callback(Area& area) 
+void SupressedNeed::callback(Area& area)
 {
 	ActorIndex actor = m_actor.getIndex(area.getActors().m_referenceData);
 	auto objective = std::move(m_objective);
 	HasObjectives& hasObjectives = *area.getActors().m_hasObjectives[actor];
 	hasObjectives.m_supressedNeeds.erase(objective->getNeedType());
-	hasObjectives.addNeed(area, std::move(objective)); 
+	hasObjectives.addNeed(area, std::move(objective));
 }
 SupressedNeedEvent::SupressedNeedEvent(Area& area, SupressedNeed& sn, const Step start) :
 	ScheduledEvent(area.m_simulation, Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective, start), m_supressedNeed(sn) { }
@@ -152,11 +152,11 @@ void ObjectiveType::load()
 {
 	objectiveTypeData.resize(16);
 	ObjectiveTypeId index = ObjectiveTypeId::create(0);
-	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("wood working"));
-	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("metal working"));
-	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("stone carving"));
-	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("bone carving"));
-	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("assembling"));
+	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName(L"wood working"));
+	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName(L"metal working"));
+	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName(L"stone carving"));
+	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName(L"bone carving"));
+	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName(L"assembling"));
 	objectiveTypeData[index++] = std::make_unique<DigObjectiveType>();
 	//  TODO: specalize construct into Earthworks, Masonry, Metal Construction, and Carpentry.
 	objectiveTypeData[index++] = std::make_unique<ConstructObjectiveType>();
@@ -171,13 +171,13 @@ void ObjectiveType::load()
 	objectiveTypeData[index++] = std::make_unique<GetToSafeTemperatureObjectiveType>();
 }
 // Static method.
-ObjectiveTypeId ObjectiveType::getIdByName(std::string name)
+ObjectiveTypeId ObjectiveType::getIdByName(std::wstring name)
 {
 	const ObjectiveType& objectiveType = getByName(name);
 	return objectiveType.getId();
 }
 // Static method.
-const ObjectiveType& ObjectiveType::getByName(std::string name)
+const ObjectiveType& ObjectiveType::getByName(std::wstring name)
 {
 	auto found = std::ranges::find_if(objectiveTypeData, [&name](const auto& type) { return type->name() == name; });
 	assert(found != objectiveTypeData.end());
@@ -185,7 +185,7 @@ const ObjectiveType& ObjectiveType::getByName(std::string name)
 }
 // Static method.
 const ObjectiveType& ObjectiveType::getById(const ObjectiveTypeId& id) { return *objectiveTypeData[id].get(); }
-ObjectiveTypeId ObjectiveType::getId() const 
+ObjectiveTypeId ObjectiveType::getId() const
 {
 	auto iter = objectiveTypeData.find_if([&](const std::unique_ptr<ObjectiveType>& type) { return type.get() == this; });
 	assert(iter != objectiveTypeData.end());
@@ -196,17 +196,17 @@ ObjectiveTypeId ObjectiveType::getId() const
 Objective::Objective(const Priority& priority) : m_priority(priority) { }
 Objective::Objective(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_priority(data["priority"].get<Priority>()),
-	m_detour(data["detour"].get<bool>()) 
-{ 
+	m_detour(data["detour"].get<bool>())
+{
 	uintptr_t address = data["address"].get<uintptr_t>();
 	assert(!deserializationMemo.m_objectives.contains(address));
 	deserializationMemo.m_objectives[address] = this;
 }
-Json Objective::toJson() const 
-{ 
-	return Json{{"priority", m_priority}, {"detour", m_detour}, {"address", reinterpret_cast<uintptr_t>(this)}, {"type", name()}}; 
+Json Objective::toJson() const
+{
+	return Json{{"priority", m_priority}, {"detour", m_detour}, {"address", reinterpret_cast<uintptr_t>(this)}, {"type", name()}};
 }
-CannotCompleteObjectiveDishonorCallback::CannotCompleteObjectiveDishonorCallback(Area& area, const Json& data) : 
+CannotCompleteObjectiveDishonorCallback::CannotCompleteObjectiveDishonorCallback(Area& area, const Json& data) :
 	m_area(area),
 	m_actor(data["actor"], area.getActors().m_referenceData) { }
 Json CannotCompleteObjectiveDishonorCallback::toJson() const
@@ -367,7 +367,7 @@ void HasObjectives::destroy(Area& area, Objective& objective)
 		ActorOrItemIndex wasCarrying = area.getActors().canPickUp_tryToPutDownPolymorphic(m_actor, actors.getLocation(m_actor));
 		if(wasCarrying.empty())
 		{
-			// Could not find a place to put down carrying. 
+			// Could not find a place to put down carrying.
 			// Wander somewhere else, hopefully we can put down there.
 			// This method will be called again when wander finishes.
 			actors.objective_addTaskToStart(m_actor, std::make_unique<WanderObjective>());
@@ -430,10 +430,10 @@ void HasObjectives::cannotCompleteSubobjective(Area& area)
 		//TODO: call reset here?
 		m_currentObjective->execute(area, m_actor);
 }
-Objective& HasObjectives::getCurrent() 
+Objective& HasObjectives::getCurrent()
 {
 	assert(m_currentObjective != nullptr);
-       	return *m_currentObjective; 
+       	return *m_currentObjective;
 }
 bool HasObjectives::queuesAreEmpty() const
 {

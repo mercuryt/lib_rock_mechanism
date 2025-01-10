@@ -17,25 +17,24 @@ public:
 	tgui::Label::Ptr m_timeUI;
 	tgui::Label::Ptr m_speedUI;
 	tgui::Label::Ptr m_weatherUI;
-	Item* m_itemBeingInstalled;
+	ItemIndex m_itemBeingInstalled;
 	// TODO: Change to shape being moved for targeted hauling of downed actors.
-	Item* m_itemBeingMoved;
+	ItemIndex m_itemBeingMoved;
 	Facing m_facing;
 	GameOverlay(Window& w);
 	void show() { m_group->setVisible(true); }
 	void hide() { m_group->setVisible(false); }
-	void drawContextMenu(BlockIndex& block) { m_contextMenu.draw(block); }
+	void drawContextMenu(const BlockIndex& block) { m_contextMenu.draw(block); }
 	void closeContextMenu() { m_contextMenu.hide(); }
 	void drawMenu();
 	void closeMenu() { m_menu->setVisible(false); }
-	void drawInfoPopup(BlockIndex& block) { m_infoPopup.display(block); }
-	void drawInfoPopup(Item& item) { m_infoPopup.display(item); }
-	void drawInfoPopup(Plant& plant) { m_infoPopup.display(plant); }
-	void drawInfoPopup(const Plant& plant) { drawInfoPopup(const_cast<Plant&>(plant)); }
-	void drawInfoPopup(Actor& actor) { m_infoPopup.display(actor); }
+	void drawInfoPopup(const BlockIndex& block) { m_infoPopup.display(block); }
+	void drawInfoPopup(const ItemIndex& item) { m_infoPopup.display(item); }
+	void drawInfoPopup(const PlantIndex& plant) { m_infoPopup.display(plant); }
+	void drawInfoPopup(const ActorIndex& actor) { m_infoPopup.display(actor); }
 	void closeInfoPopup() { m_infoPopup.hide(); };
-	void assignLocationToInstallItem(BlockIndex& block);
-	void assignLocationToMoveItemTo(BlockIndex& block);
+	void assignLocationToInstallItem(const BlockIndex& block);
+	void assignLocationToMoveItemTo(const BlockIndex& block);
 	void unfocusUI();
 	void drawTime();
 	void updateInfoPopup() { m_infoPopup.update(); }
