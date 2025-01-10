@@ -11,10 +11,10 @@
 #include "../../items/items.h"
 #include "../../actors/actors.h"
 #include <string>
-AnimalsArriveDramaArc::AnimalsArriveDramaArc(DramaEngine& engine, Area& area) : 
+AnimalsArriveDramaArc::AnimalsArriveDramaArc(DramaEngine& engine, Area& area) :
 	DramaArc(engine, DramaArcType::AnimalsArrive, &area), m_scheduledEvent(area.m_eventSchedule)
 { scheduleArrive(); }
-AnimalsArriveDramaArc::AnimalsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine) : 
+AnimalsArriveDramaArc::AnimalsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine) :
 	DramaArc(data, deserializationMemo, dramaEngine),
 	m_isActive(data["isActive"].get<bool>()),
 	m_scheduledEvent(m_area->m_eventSchedule)
@@ -48,7 +48,7 @@ void AnimalsArriveDramaArc::callback()
 				exclude.add(location);
 				Actors& actors = m_area->getActors();
 				ActorIndex actor = actors.create(ActorParamaters{
-					.species=m_species, 
+					.species=m_species,
 					.percentGrown=percentGrown,
 					.location=location,
 					.percentHunger=m_hungerPercent,
@@ -94,7 +94,7 @@ void AnimalsArriveDramaArc::callback()
 			m_tiredPercent = Percent::create(std::max(0, random.getInRange(-500, 90)));
 			m_isActive = true;
 			// Anounce.
-			std::wstring message = std::to_wstring(m_quantity.get()) + L" " + util::stringToWideString(AnimalSpecies::getName(m_species)) + L" spotted nearby.";
+			std::wstring message = std::to_wstring(m_quantity.get()) + L" " + AnimalSpecies::getName(m_species) + L" spotted nearby.";
 			m_engine.getSimulation().m_hasDialogues.createMessageBox(message, m_entranceBlock);
 			// Reenter.
 			callback();
@@ -149,14 +149,14 @@ std::pair<AnimalSpeciesId, Quantity> AnimalsArriveDramaArc::getSpeciesAndQuantit
 			species = random.getInVector(mediumCarnivors);
 			quantity = Quantity::create(random.getInRange(1,5));
 		}
-		else 
+		else
 		{
 			static std::vector<AnimalSpeciesId> smallCarnivors = getSmallCarnivors();
 			species = random.getInVector(smallCarnivors);
 			quantity = Quantity::create(random.getInRange(5,15));
 		}
 	}
-	else 
+	else
 	{
 		if(large)
 		{
@@ -170,7 +170,7 @@ std::pair<AnimalSpeciesId, Quantity> AnimalsArriveDramaArc::getSpeciesAndQuantit
 			species = random.getInVector(mediumHerbivors);
 			quantity = Quantity::create(random.getInRange(1,8));
 		}
-		else 
+		else
 		{
 			static std::vector<AnimalSpeciesId> smallHerbivors = getSmallHerbivors();
 			species = random.getInVector(smallHerbivors);

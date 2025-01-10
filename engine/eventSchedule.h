@@ -46,7 +46,7 @@ public:
 class EventSchedule
 {
 	Simulation& m_simulation;
-	Area* m_area;
+	Area* m_area = nullptr;
 public:
 	EventSchedule(Simulation& s, Area* area) : m_simulation(s), m_area(area) { }
 	std::map<Step, std::list<std::unique_ptr<ScheduledEvent>>> m_data;

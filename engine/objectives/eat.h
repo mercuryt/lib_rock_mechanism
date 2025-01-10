@@ -13,7 +13,7 @@ public:
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, const ActorIndex&) const { assert(false); }
 	EatObjectiveType() = default;
 	EatObjectiveType(const Json&, DeserializationMemo&);
-	[[nodiscard]] std::string name() const { return "eat"; }
+	[[nodiscard]] std::wstring name() const { return L"eat"; }
 };
 class EatEvent final : public ScheduledEvent
 {
@@ -30,7 +30,7 @@ public:
 	void eatFruitFromPlant(Area& area, const PlantIndex& plant);
 	[[nodiscard]] uint32_t getDesireToEatSomethingAt(Area& area, const BlockIndex& block) const;
 	[[nodiscard]] uint32_t getMinimumAcceptableDesire() const;
-	[[nodiscard]] std::string name() const { return "eat"; }
+	[[nodiscard]] std::wstring name() const { return L"eat"; }
 };
 constexpr int maxRankedEatDesire = 3;
 class EatPathRequest final : public PathRequestBreadthFirst
@@ -44,7 +44,7 @@ public:
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::string name() { return "eat"; }
+	[[nodiscard]] std::wstring name() { return L"eat"; }
 };
 class EatObjective final : public Objective
 {
@@ -63,7 +63,7 @@ public:
 	void noFoodFound();
 	void makePathRequest(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::string name() const { return "eat"; }
+	[[nodiscard]] std::wstring name() const { return L"eat"; }
 	[[nodiscard]] bool canEatAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
 	[[nodiscard]] bool isNeed() const { return true; }
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::eat; }

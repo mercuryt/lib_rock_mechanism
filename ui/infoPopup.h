@@ -16,9 +16,9 @@ public:
 	void makeWindow();
 	void add(tgui::Widget::Ptr widget);
 	void display(BlockIndex& block);
-	void display(Item& item);
-	void display(Plant& plant);
-	void display(Actor& actor);
+	void display(const ItemIndex& item);
+	void display(const PlantIndex& plant);
+	void display(const ActorIndex& actor);
 	void update() { assert(m_update); m_update(); }
 	void hide();
 	bool isVisible() const;

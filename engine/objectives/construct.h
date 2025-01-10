@@ -15,7 +15,7 @@ public:
 	ConstructObjectiveType(const Json&, DeserializationMemo&){ }
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
 	[[nodiscard]] bool canBeAssigned(Area& area, const ActorIndex& actor) const;
-	[[nodiscard]] std::string name() const { return "construct"; }
+	[[nodiscard]] std::wstring name() const { return L"construct"; }
 };
 class ConstructObjective final : public Objective
 {
@@ -31,7 +31,7 @@ public:
 	void joinProject(ConstructProject& project, const ActorIndex& actor);
 	void onProjectCannotReserve(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::string name() const { return "construct"; }
+	[[nodiscard]] std::wstring name() const { return L"construct"; }
 	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(Area& area, const BlockIndex& location, const Facing& facing, const ActorIndex& actor);
 	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(Area& area, const BlockIndex& block, const ActorIndex& actor);
 	[[nodiscard]] bool joinableProjectExistsAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
@@ -50,5 +50,5 @@ public:
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const override;
-	[[nodiscard]] std::string name() { return "construct"; }
+	[[nodiscard]] std::wstring name() { return L"construct"; }
 };

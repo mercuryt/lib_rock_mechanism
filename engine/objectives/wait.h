@@ -19,7 +19,7 @@ public:
 	void delay(Area& area, const ActorIndex& actor) { reset(area, actor); }
 	void cancel(Area& area, const ActorIndex& actor) { reset(area, actor); }
 	void reset(Area& area, const ActorIndex& actor);
-	[[nodiscard]] std::string name() const { return "wait"; }
+	[[nodiscard]] std::wstring name() const { return L"wait"; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool canResume() const { return false; }
 	friend class WaitScheduledEvent;

@@ -1,6 +1,6 @@
 #include "stocksPanel.h"
 #include "window.h"
-#include "../engine/item.h"
+#include "../engine/items/items.h"
 #include <string>
 struct MaterialType;
 StocksView::StocksView(Window& window) : m_window(window), m_group(tgui::Group::create()), m_list(tgui::ScrollablePanel::create())
@@ -18,12 +18,12 @@ StocksView::StocksView(Window& window) : m_window(window), m_group(tgui::Group::
 }
 void StocksView::draw()
 {
-	for(const auto& [itemType, map] : m_window.getArea()->m_hasStocks.at(*m_window.getFaction()).get())
+	for(const auto& [itemType, map] : m_window.getArea()->m_hasStocks.getForFaction(m_window.getFaction()).get())
 	{
 		for(const auto& [materialType, items] : map)
 		{
 			const uint32_t count = items.size();
-			std::string describe(materialType->name + " " + itemType->name + "(" + std::to_string(count) + ")");
+			std::wstring describe(MaterialType::getName(materialType) + L" " + ItemType::getName(itemType) + L"(" + std::to_wstring(count) + L")");
 			m_list->add(tgui::Label::create(describe));
 		}
 	}

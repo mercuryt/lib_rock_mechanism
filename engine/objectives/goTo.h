@@ -15,12 +15,11 @@ public:
 	GoToObjective(const BlockIndex& l) : Objective(Config::goToPriority), m_location(l) { }
 	GoToObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-	void execute(Area& area, const ActorIndex& actor);
-	void cancel(Area&, const ActorIndex&) { }
-	void delay(Area&, const ActorIndex&) { }
-	void reset(Area&, const ActorIndex&) { }
-	std::string name() const { return "go to"; }
-	static void create(const BlockIndex& block);
+	void execute(Area& area, const ActorIndex& actor) override;
+	void cancel(Area&, const ActorIndex&) override { }
+	void delay(Area&, const ActorIndex&) override { }
+	void reset(Area&, const ActorIndex&) override { }
+	std::wstring name() const override { return L"go to"; }
 	// For testing.
 	[[maybe_unused]] BlockIndex getLocation() { return m_location; }
 };

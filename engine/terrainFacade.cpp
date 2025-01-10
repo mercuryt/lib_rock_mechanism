@@ -31,8 +31,11 @@ void FindPathResult::validate() const
 }
 TerrainFacade::TerrainFacade(Area& area, const MoveTypeId& moveType) : m_area(area), m_moveType(moveType)
 {
-	m_enterable.resize(m_area.getBlocks().size() * maxAdjacent);
-	area.getBlocks().forEach([&](const BlockIndex& block){ update(block); });
+	Blocks& blocks = m_area.getBlocks();
+	m_enterable.resize(blocks.size() * maxAdjacent);
+	Cuboid cuboid = blocks.getAll();
+	for(const BlockIndex& block : cuboid.getView(blocks))
+		update(block);
 	// Two results fit on a  cache line, by ensuring that the number of tasks per thread is a multiple of 2 we prevent false shareing.
 	assert(Config::pathRequestsPerThread % 2 == 0);
 }
@@ -157,7 +160,7 @@ void TerrainFacade::update(const BlockIndex& index)
 {
 	Blocks& blocks = m_area.getBlocks();
 	uint i = 0;
-	uint base = index.get() * maxAdjacent; 
+	uint base = index.get() * maxAdjacent;
 	for(BlockIndex adjacent : blocks.getAdjacentWithEdgeAndCornerAdjacentUnfiltered(index))
 	{
 		m_enterable[base + i] = getValueForBit(index, adjacent);
@@ -237,8 +240,8 @@ FindPathResult TerrainFacade::findPathAdjacentToPolymorphicWithoutMemo(const Blo
 	Blocks& blocks = m_area.getBlocks();
 	auto source = actorOrItem.getAdjacentBlocks(m_area);
 	source.copy_if(targets.back_inserter(),
-		[&](const BlockIndex& block) { 
-			return blocks.shape_anythingCanEnterEver(block) && blocks.shape_moveTypeCanEnter(block, m_moveType) && blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, shape, m_moveType); 
+		[&](const BlockIndex& block) {
+			return blocks.shape_anythingCanEnterEver(block) && blocks.shape_moveTypeCanEnter(block, m_moveType) && blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, shape, m_moveType);
 	});
 	if(targets.empty())
 		return { };

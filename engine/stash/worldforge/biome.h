@@ -21,13 +21,13 @@ public:
 	virtual double getChanceOfAnimals(WorldLocation& location) const = 0;
 	virtual std::pair<uint32_t, uint32_t> getBaseAnimalCountRange(WorldLocation& location) const = 0;
 	virtual void createPlantsAndRocks(BlockIndex& block, Simulation& simulation, Random& random) const = 0;
-	virtual std::unordered_map<std::string, float> getAnimalProbabilities(WorldLocation& location) const = 0;
+	virtual std::unordered_map<std::wstring, float> getAnimalProbabilities(WorldLocation& location) const = 0;
 	virtual ~Biome() = default;
 	// Infastructure
 	inline static std::vector<Biome> data;
-	inline static const Biome& byType(BiomeId biomeId) 
-	{ 
-		return *std::find_if(data.begin(), data.end(), [&](Biome& biome){ return biome.getType() == biomeId; }); 
+	inline static const Biome& byType(BiomeId biomeId)
+	{
+		return *std::find_if(data.begin(), data.end(), [&](Biome& biome){ return biome.getType() == biomeId; });
 	}
 };
 inline void to_json(Json& data, const Biome* const& biomePointer){ data = biomePointer->getType(); }
@@ -38,7 +38,7 @@ public:
 	BiomeId getType() const { return BiomeId::Grassland; }
 	double getChanceOfAnimals([[maybe_unused]] WorldLocation& location) const { return 0.2; }
 	std::pair<uint32_t, uint32_t> getBaseAnimalCountRange([[maybe_unused]] WorldLocation& location) const { return {0,3}; }
-	std::unordered_map<std::string, float> getAnimalProbabilities([[maybe_unused]] WorldLocation& location) const 
+	std::unordered_map<std::wstring, float> getAnimalProbabilities([[maybe_unused]] WorldLocation& location) const
 	{
 		return {
 			{"dwarf rabbit", 0.01},
@@ -58,7 +58,7 @@ public:
 	BiomeId getType() const { return BiomeId::Forest; }
 	double getChanceOfAnimals([[maybe_unused]] WorldLocation& location) const { return 0.2; }
 	std::pair<uint32_t, uint32_t> getBaseAnimalCountRange([[maybe_unused]] WorldLocation& location) const { return {0,3}; }
-	std::unordered_map<std::string, float> getAnimalProbabilities([[maybe_unused]] WorldLocation& location) const 
+	std::unordered_map<std::wstring, float> getAnimalProbabilities([[maybe_unused]] WorldLocation& location) const
 	{
 		return {
 			{"dwarf rabbit", 0.01},
@@ -78,7 +78,7 @@ public:
 	BiomeId getType() const { return BiomeId::Desert; }
 	double getChanceOfAnimals([[maybe_unused]] WorldLocation& location) const { return 0.02; }
 	std::pair<uint32_t, uint32_t> getBaseAnimalCountRange([[maybe_unused]] WorldLocation& location) const { return {0,3}; }
-	std::unordered_map<std::string, float> getAnimalProbabilities([[maybe_unused]] WorldLocation& location) const 
+	std::unordered_map<std::wstring, float> getAnimalProbabilities([[maybe_unused]] WorldLocation& location) const
 	{
 		return {
 			{"dwarf rabbit", 0.01},
@@ -95,7 +95,7 @@ public:
 	BiomeId getType() const { return BiomeId::Swamp; }
 	double getChanceOfAnimals([[maybe_unused]] WorldLocation& location) const { return 0.15; }
 	std::pair<uint32_t, uint32_t> getBaseAnimalCountRange([[maybe_unused]] WorldLocation& location) const { return {0,3}; }
-	std::unordered_map<std::string, float> getAnimalProbabilities([[maybe_unused]] WorldLocation& location) const 
+	std::unordered_map<std::wstring, float> getAnimalProbabilities([[maybe_unused]] WorldLocation& location) const
 	{
 		return {
 			{"dwarf rabbit", 0.01},

@@ -14,7 +14,7 @@ public:
 	bool canBeAssigned(Area& area, const ActorIndex& actor) const;
 	std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
 	StockPileObjectiveType() = default;
-	[[nodiscard]] std::string name() const { return "stockpile"; }
+	[[nodiscard]] std::wstring name() const { return L"stockpile"; }
 };
 class StockPileObjective final : public Objective
 {
@@ -35,7 +35,7 @@ public:
 	void reset(Area& area, const ActorIndex& actor);
 	[[nodiscard]] bool destinationCondition(Area& area, const BlockIndex& block, const ItemIndex& item, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
-	std::string name() const { return "stockpile"; }
+	std::wstring name() const { return L"stockpile"; }
 	// For debug.
 	[[nodiscard]] bool hasItem() const { return m_item.exists(); }
 	[[nodiscard]] bool hasDestination() const { return m_stockPileLocation.exists(); }
@@ -59,7 +59,7 @@ public:
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] bool checkDestination(const Area& area, const ItemIndex& item, const BlockIndex& block) const;
-	[[nodiscard]] std::string name() const { return "stockpile"; }
+	[[nodiscard]] std::wstring name() const { return L"stockpile"; }
 	[[nodiscard]] Json toJson() const;
 };
 // Attempts to find a closer stockpile destination for a selected item.
@@ -73,6 +73,6 @@ public:
 	StockPileDestinationPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
-	[[nodiscard]] std::string name() const { return "stockpile destination"; }
+	[[nodiscard]] std::wstring name() const { return L"stockpile destination"; }
 	[[nodiscard]] Json toJson() const;
 };

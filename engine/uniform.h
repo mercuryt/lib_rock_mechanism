@@ -4,7 +4,7 @@
 #include "vectorContainers.h"
 #include <string>
 class Items;
-struct UniformElement final 
+struct UniformElement final
 {
 	ItemTypeId m_itemType;
 	MaterialCategoryTypeId m_materialCategoryType;
@@ -21,9 +21,9 @@ struct UniformElement final
 struct Uniform final
 {
 	//TODO: use wide string with WideCharToMultiByte for serialization.
-	std::string name;
+	std::wstring name;
 	std::vector<UniformElement> elements;
-	Uniform(std::string n, const std::vector<UniformElement>& e) : name(n), elements(e) { }
+	Uniform(std::wstring n, const std::vector<UniformElement>& e) : name(n), elements(e) { }
 	Uniform() = default;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Uniform, name, elements);
 };
@@ -31,14 +31,14 @@ inline void to_json(Json& data, const Uniform* const& uniform){ data = uniform->
 class SimulationHasUniformsForFaction final
 {
 	FactionId m_faction;
-	SmallMap<std::string, Uniform> m_data;
+	SmallMap<std::wstring, Uniform> m_data;
 public:
 	SimulationHasUniformsForFaction(FactionId faction) : m_faction(faction) { }
 	SimulationHasUniformsForFaction() = default;
-	Uniform& createUniform(std::string& name, std::vector<UniformElement>& elements);
+	Uniform& createUniform(std::wstring& name, std::vector<UniformElement>& elements);
 	void destroyUniform(Uniform& uniform);
-	Uniform& byName(std::string name){ assert(m_data.contains(name)); return m_data[name]; }
-	SmallMap<std::string, Uniform>& getAll();
+	Uniform& byName(std::wstring name){ assert(m_data.contains(name)); return m_data[name]; }
+	SmallMap<std::wstring, Uniform>& getAll();
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SimulationHasUniformsForFaction, m_faction, m_data);
 };
 class SimulationHasUniforms final

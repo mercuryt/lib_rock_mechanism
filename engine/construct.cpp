@@ -33,8 +33,8 @@ void UndesignateConstructInputAction::execute()
 */
 // Project.
 ConstructProject::ConstructProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : Project(data, deserializationMemo, area),
-	m_blockFeatureType(data.contains("blockFeatureType") ? &BlockFeatureType::byName(data["blockFeatureType"].get<std::string>()) : nullptr),
-	m_materialType(MaterialType::byName(data["materialType"].get<std::string>())) { }
+	m_blockFeatureType(data.contains("blockFeatureType") ? &BlockFeatureType::byName(data["blockFeatureType"].get<std::wstring>()) : nullptr),
+	m_materialType(MaterialType::byName(data["materialType"].get<std::wstring>())) { }
 Json ConstructProject::toJson() const
 {
 	Json data = Project::toJson();
@@ -60,7 +60,7 @@ uint32_t ConstructProject::getWorkerConstructScore(const ActorIndex& actor) cons
 {
 	Actors& actors = m_area.getActors();
 	SkillTypeId constructSkill = MaterialType::construction_getSkill(m_materialType);
-	return (actors.getStrength(actor).get() * Config::constructStrengthModifier) + 
+	return (actors.getStrength(actor).get() * Config::constructStrengthModifier) +
 		(actors.skill_getLevel(actor, constructSkill).get() * Config::constructSkillModifier);
 }
 void ConstructProject::onComplete()

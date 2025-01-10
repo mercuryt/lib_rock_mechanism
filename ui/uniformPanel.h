@@ -17,7 +17,8 @@ class UniformCreateOrEditView final
 	tgui::Button::Ptr m_confirm;
 	Uniform* m_uniform;
 	Uniform m_copy;
-	std::string displayNameForElement(UniformElement& uniformElement);
+	std::wstring displayNameForElement(UniformElement& uniformElement);
+	// What does this do?
 	void setElementQuantity(UniformElement& uniformElement, uint32_t quantity);
 	void removeElement(UniformElement& uniformElement);
 public:

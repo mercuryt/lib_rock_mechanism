@@ -36,14 +36,14 @@ class MedicalObjective final : public Objective
 	MedicalProject* m_project;
 	HasThreadedTask<MedicalThreadedTask> m_threadedTask;
 public:
-	MedicalObjective(Actor& a) : Objective(Config::medicalPriority), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()) { } 
+	MedicalObjective(Actor& a) : Objective(Config::medicalPriority), m_actor(a), m_threadedTask(a.getThreadedTaskEngine()) { }
 	void execute();
 	void cancel();
 	void delay() { cancel(); }
 	void reset() { cancel(); }
 	void setLocation(BlockIndex& block);
 	bool isNeed() const { return false; }
-	std::string name() const { return "medical"; }
+	std::wstring name() const { return "medical"; }
 	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveTypeId::Medical; }
 	bool blockContainsPatientForThisWorker(const BlockIndex& block) const;
 	MedicalProject* getProjectForActorAtLocation(BlockIndex& block);
@@ -51,7 +51,7 @@ public:
 };
 struct MedicalProjectType final
 {
-	std::string name;
+	std::wstring name;
 	uint32_t baseStepsDuration;
 	std::vector<std::pair<ItemQuery, uint32_t>> consumedItems;
 	std::vector<std::pair<ItemQuery, uint32_t>> unconsumedItems;
@@ -59,7 +59,7 @@ struct MedicalProjectType final
 	// Infastructure.
 	bool operator==(const MedicalProjectType& medicalProjectType) const { return this == &medicalProjectType; }
 	inline static std::vector<MedicalProjectType> data;
-	static const MedicalProjectType& byName(const std::string name)
+	static const MedicalProjectType& byName(const std::wstring name)
 	{
 		auto found = std::ranges::find(data, name, &MedicalProjectType::name);
 		assert(found != data.end());
@@ -93,10 +93,10 @@ struct SortPatientsByPriority
 };
 struct SortDoctorsBySkill
 {
-	bool operator()(Actor* const& a, Actor* const& b) 
-	{ 
+	bool operator()(Actor* const& a, Actor* const& b)
+	{
 		static const SkillType& medicalSkill = SkillType::byName("medical");
-		return a->m_skillSet.get(medicalSkill) < b->m_skillSet.get(medicalSkill); 
+		return a->m_skillSet.get(medicalSkill) < b->m_skillSet.get(medicalSkill);
 	}
 };
 class AreaHasMedicalPatientsForFaction final

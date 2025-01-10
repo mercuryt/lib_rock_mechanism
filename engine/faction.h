@@ -20,11 +20,13 @@ class SimulationHasFactions final
 {
 	// Factions are never destroyed so their id is their index.
 	std::vector<Faction> m_factions;
-	Faction& getById(const FactionId& id);
 public:
+	Faction& getById(const FactionId& id);
 	FactionId createFaction(std::wstring name);
 	FactionId byName(std::wstring name);
 	[[nodiscard]] bool isAlly(const FactionId& a, const FactionId& b);
 	[[nodiscard]] bool isEnemy(const FactionId& a, const FactionId& b);
+	[[nodiscard]] std::vector<Faction>& getAll() { return m_factions; }
+	[[nodiscard]] const std::vector<Faction>& getAll() const { return m_factions; }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SimulationHasFactions, m_factions);
 };

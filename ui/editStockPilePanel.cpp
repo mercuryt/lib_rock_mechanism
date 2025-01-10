@@ -3,7 +3,7 @@
 #include "widgets.h"
 #include "window.h"
 #include "../engine/stockpile.h"
-#include "../engine/item.h"
+#include "../engine/items/items.h"
 
 EditStockPileView::EditStockPileView(Window& window) : m_window(window), m_panel(tgui::Panel::create())
 {
@@ -13,7 +13,7 @@ EditStockPileView::EditStockPileView(Window& window) : m_window(window), m_panel
 
 void EditStockPileView::draw(StockPile* stockpile)
 {
-	std::string verb = m_stockPile ? "edit" : "create";
+	std::wstring verb = m_stockPile ? "edit" : "create";
 	m_stockPile = stockpile;
 	m_panel->removeAllWidgets();
 	auto label = tgui::Label::create(verb + " stockpile");
@@ -25,11 +25,11 @@ void EditStockPileView::draw(StockPile* stockpile)
 	if(m_stockPile)
 		for(ItemQuery& itemQuery : m_stockPile->getQueries())
 		{
-			list->addWidget(tgui::Label::create(itemQuery.m_itemType->name), index, 0);
-			if(itemQuery.m_materialType)
-				list->addWidget(tgui::Label::create(itemQuery.m_materialType->name), index, 1);
-			if(itemQuery.m_materialTypeCategory)
-				list->addWidget(tgui::Label::create(itemQuery.m_materialTypeCategory->name), index, 2);
+			list->addWidget(tgui::Label::create(ItemType::getName(itemQuery.m_itemType)), index, 0);
+			if(itemQuery.m_materialType.exists())
+				list->addWidget(tgui::Label::create(MaterialType::getName(itemQuery.m_materialType)), index, 1);
+			if(itemQuery.m_materialTypeCategory.exists())
+				list->addWidget(tgui::Label::create(MaterialTypeCategory::getName(itemQuery.m_materialTypeCategory)), index, 2);
 			auto destroy = tgui::Button::create("destory");
 			list->addWidget(destroy, index, 3);
 			destroy->onClick([this, &itemQuery]{
@@ -51,16 +51,16 @@ void EditStockPileView::draw(StockPile* stockpile)
 	create->onClick([this, itemTypeUI, materialTypeUI, materialTypeCategoryUI]{
 		if(!m_stockPile)
 		{
-			m_stockPile = &m_window.getArea()->m_hasStockPiles.at(*m_window.getFaction()).addStockPile({});
-			for(BlockIndex* block : m_window.getSelectedBlocks())
-				m_stockPile->addBlock(*block);
+			m_stockPile = &m_window.getArea()->m_hasStockPiles.getForFaction(m_window.getFaction()).addStockPile({});
+			for(const BlockIndex& block : m_window.getSelectedBlocks())
+				m_stockPile->addBlock(block);
 		}
-		const MaterialType* materialType = widgetUtil::lastSelectedMaterial;
-		const MaterialTypeCategory* materialTypeCategory = widgetUtil::lastSelectedMaterialCategory;
-		const ItemType& itemType = *widgetUtil::lastSelectedItemType;
-		ItemQuery query(itemType, materialTypeCategory, materialType);
+		const MaterialTypeId& materialType = widgetUtil::lastSelectedMaterial;
+		const MaterialCategoryTypeId& materialTypeCategory = widgetUtil::lastSelectedMaterialCategory;
+		const ItemTypeId& itemType = widgetUtil::lastSelectedItemType;
+		auto query = ItemQuery::create(itemType, materialType, materialTypeCategory);
 		if(!m_stockPile->contains(query))
-			m_window.getArea()->m_hasStockPiles.at(*m_window.getFaction()).addQuery(*m_stockPile, query);
+			m_window.getArea()->m_hasStockPiles.getForFaction(m_window.getFaction()).addQuery(*m_stockPile, query);
 		m_window.showEditStockPile(m_stockPile);
 	});
 	auto back = tgui::Button::create("back");

@@ -24,8 +24,8 @@ struct TestTaskObjective final : public Objective
 	void delay(Area&, const ActorIndex&) { }
 	void reset(Area&, const ActorIndex&) { }
 	void detour(Area&, const ActorIndex&) { }
-	std::string name() const { return "test task"; }
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveType::getIdByName("construct"); }
+	std::wstring name() const { return L"test task"; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveType::getIdByName(L"construct"); }
 };
 
 struct TestNeedObjective final : public Objective
@@ -37,16 +37,16 @@ struct TestNeedObjective final : public Objective
 	void delay(Area&, const ActorIndex&) { }
 	void reset(Area&, const ActorIndex&) { }
 	void detour(Area&, const ActorIndex&) { }
-	std::string name() const { return "test need"; }
-	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveType::getIdByName("dig"); }
+	std::wstring name() const { return L"test need"; }
+	ObjectiveTypeId getObjectiveTypeId() const { return ObjectiveType::getIdByName(L"dig"); }
 	[[nodiscard]] bool isNeed() const { return true; }
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::test; }
 };
 
 TEST_CASE("objective")
 {
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
-	static MaterialTypeId marble = MaterialType::byName("marble");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
+	static MaterialTypeId marble = MaterialType::byName(L"marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Actors& actors = area.getActors();

@@ -9,7 +9,7 @@ class EditFactionView
 	tgui::Panel::Ptr m_panel;
 public:
 	EditFactionView(Window& window);
-	void draw(Faction* faction);
+	void draw(const FactionId& faction);
 	void hide() { m_panel->setVisible(false); }
 };
 class EditFactionsView

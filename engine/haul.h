@@ -18,8 +18,8 @@ struct DeserializationMemo;
 
 enum class HaulStrategy { None, Individual, IndividualCargoIsCart, Team, Cart, TeamCart, Panniers, AnimalCart, StrongSentient };
 
-HaulStrategy haulStrategyFromName(std::string);
-std::string haulStrategyToName(HaulStrategy);
+HaulStrategy haulStrategyFromName(std::wstring);
+std::wstring haulStrategyToName(HaulStrategy);
 
 // Haul subproject paramaters are never stored between steps so it is safe to use Index here instead of Reference.
 struct HaulSubprojectParamaters final

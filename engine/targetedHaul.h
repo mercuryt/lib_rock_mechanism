@@ -15,8 +15,8 @@ class TargetedHaulProject final : public Project
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const { return {}; }
 	ItemReference m_item;
 	//TODO: facing.
-	void onComplete();
-	void onDelivered(ActorOrItemIndex delivered);
+	void onComplete() override;
+	void onDelivered(const ActorOrItemIndex& delivered) override;
 	// Most projects which are directly created by the user ( dig, construct ) wait a while and then retry if they fail.
 	// Despite being directly created it doesn't make sense to retry targeted hauling, so instead we cancel it with a log message.
 	// TODO: log message.
@@ -35,7 +35,7 @@ class AreaHasTargetedHauling
 	std::list<TargetedHaulProject> m_projects;
 public:
 	AreaHasTargetedHauling(Area& a) : m_area(a) { }
-	TargetedHaulProject& begin(const ActorIndices& actors, const ItemIndex& item, const BlockIndex& destination);
+	TargetedHaulProject& begin(const SmallSet<ActorIndex>& actors, const ItemIndex& item, const BlockIndex& destination);
 	void load(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	void cancel(TargetedHaulProject& project);
 	void complete(TargetedHaulProject& project);

@@ -130,29 +130,29 @@ void AreaHasFluidGroups::markStable(FluidGroup& fluidGroup)
 {
 	m_unstableFluidGroups.erase(&fluidGroup);
 }
-std::string AreaHasFluidGroups::toS() const
+std::wstring AreaHasFluidGroups::toS() const
 {
-	std::string output = std::to_string(m_fluidGroups.size()) + " fluid groups########";
+	std::wstring output = std::to_wstring(m_fluidGroups.size()) + L" fluid groups########";
 	for(const FluidGroup& fluidGroup : m_fluidGroups)
 	{
-		output += "type:" + FluidType::getName(fluidGroup.m_fluidType);
-		output += "-total:" + std::to_string(fluidGroup.totalVolume(m_area).get());
-		output += "-blocks:" + std::to_string(fluidGroup.m_drainQueue.m_set.size());
-		output += "-status:";
+		output += L"type:" + FluidType::getName(fluidGroup.m_fluidType);
+		output += L"-total:" + std::to_wstring(fluidGroup.totalVolume(m_area).get());
+		output += L"-blocks:" + std::to_wstring(fluidGroup.m_drainQueue.m_set.size());
+		output += L"-status:";
 		if(fluidGroup.m_merged)
-			output += "-merged";
+			output += L"-merged";
 		if(fluidGroup.m_stable)
-			output += "-stable";
+			output += L"-stable";
 		if(fluidGroup.m_disolved)
 		{
-			output += "-disolved";
+			output += L"-disolved";
 			for(const FluidGroup& fg : m_fluidGroups)
 				if(fg.m_disolvedInThisGroup.contains(fluidGroup.m_fluidType) && fg.m_disolvedInThisGroup[fluidGroup.m_fluidType] == &fluidGroup)
-					output += " in " + FluidType::getName(fg.m_fluidType);
+					output += L" in " + FluidType::getName(fg.m_fluidType);
 		}
 		if(fluidGroup.m_destroy)
-			output += "-destroy";
-		output += "###";
+			output += L"-destroy";
+		output += L"###";
 	}
 	return output;
 }

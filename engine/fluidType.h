@@ -12,7 +12,7 @@
 
 struct FluidTypeParamaters
 {
-	std::string name;
+	std::wstring name;
 	uint32_t viscosity;
 	Density density;
 	Step mistDuration;
@@ -22,17 +22,18 @@ struct FluidTypeParamaters
 
 class FluidType
 {
-	DataVector<std::string, FluidTypeId> m_name;
+	DataVector<std::wstring, FluidTypeId> m_name;
 	DataVector<uint32_t, FluidTypeId> m_viscosity;
 	DataVector<Density, FluidTypeId> m_density;
 	DataVector<Step, FluidTypeId> m_mistDuration;
 	DataVector<DistanceInBlocks, FluidTypeId> m_maxMistSpread;
 	DataVector<MaterialTypeId, FluidTypeId> m_freezesInto;
 public:
-	[[nodiscard]] static const FluidTypeId byName(const std::string name);
+	[[nodiscard]] static const FluidTypeId byName(const std::wstring name);
+	[[nodiscard]] static FluidTypeId size();
 	static FluidTypeId create(FluidTypeParamaters& p);
 	static void setFreezesInto(const FluidTypeId& fluid, const MaterialTypeId& material);
-	[[nodiscard]] static std::string getName(const FluidTypeId& id);
+	[[nodiscard]] static std::wstring getName(const FluidTypeId& id);
 	[[nodiscard]] static uint32_t getViscosity(const FluidTypeId& id);
 	[[nodiscard]] static Density getDensity(const FluidTypeId& id);
 	[[nodiscard]] static Step getMistDuration(const FluidTypeId& id);

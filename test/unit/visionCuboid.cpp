@@ -49,9 +49,8 @@ TEST_CASE("vision cuboid basic")
 		REQUIRE(area.m_visionCuboids.size() == 1);
 		VisionCuboid& visionCuboid = *area.m_visionCuboids.getVisionCuboidFor(blocks.getIndex_i(0, 0, 0));
 		REQUIRE(visionCuboid.m_cuboid.size(blocks) == 8);
-		visionCuboid.m_cuboid.forEach(blocks, [&](const BlockIndex& block){
+		for(const BlockIndex& block : visionCuboid.m_cuboid.getView(blocks))
 			REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block) == &visionCuboid);
-		});
 	}
 }
 TEST_CASE("split at")
@@ -84,7 +83,7 @@ TEST_CASE("split below")
 	BlockIndex middle = blocks.getIndex_i(1, 1, 1);
 	BlockIndex high = blocks.getIndex_i(2, 2, 2);
 	BlockIndex low = blocks.getIndex_i(0, 0, 0);
-	blocks.blockFeature_construct(middle, BlockFeatureType::floor, MaterialType::byName("marble"));
+	blocks.blockFeature_construct(middle, BlockFeatureType::floor, MaterialType::byName(L"marble"));
 	area.m_visionCuboids.clearDestroyed();
 	REQUIRE(area.m_visionCuboids.size() == 2);
 	REQUIRE(area.m_visionCuboids.getVisionCuboidFor(middle) == area.m_visionCuboids.getVisionCuboidFor(high));

@@ -12,7 +12,7 @@
 #include "dig.h"
 #include "construct.h"
 #include "craft.h"
-#include "targetedHaul.h"	
+#include "targetedHaul.h"
 #include "fire.h"
 #include "woodcutting.h"
 #include "stocks.h"
@@ -100,7 +100,7 @@ public:
 	void setup();
 
 	void doStep();
-	
+
 	//BlockIndex getBlockForAdjacentLocation(WorldLocation& location);
 
 	// Cavein read/write
@@ -111,7 +111,7 @@ public:
 	// To be called periodically by Simulation.
 	void updateClimate();
 
-	[[nodiscard]] std::string toS() const;
+	[[nodiscard]] std::wstring toS() const;
 
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Blocks& getBlocks() { return *m_blocks.get(); }

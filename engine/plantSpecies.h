@@ -11,7 +11,7 @@ struct MaterialType;
 struct PlantSpeciesParamaters final
 {
 	std::vector<ShapeId> shapes = {};
-	const std::string name;
+	const std::wstring name;
 	const FluidTypeId fluidType;
 	const MaterialTypeId woodType = MaterialTypeId::null();
 	const Step stepsNeedsFluidFrequency = Step::null();
@@ -41,7 +41,7 @@ struct PlantSpeciesParamaters final
 class PlantSpecies final
 {
 	DataVector<std::vector<ShapeId>, PlantSpeciesId> m_shapes;
-	DataVector<std::string, PlantSpeciesId> m_name;
+	DataVector<std::wstring, PlantSpeciesId> m_name;
 	DataVector<FluidTypeId, PlantSpeciesId> m_fluidType;
 	DataVector<MaterialTypeId, PlantSpeciesId> m_woodType;
 	DataVector<Step, PlantSpeciesId> m_stepsNeedsFluidFrequency;
@@ -70,8 +70,9 @@ class PlantSpecies final
 	DataVector<uint16_t, PlantSpeciesId> m_dayOfYearToStartHarvest;
 public:
 	static void create(PlantSpeciesParamaters& paramaters);
+	[[nodiscard]] static PlantSpeciesId size();
 	[[nodiscard]] static std::vector<ShapeId> getShapes(const PlantSpeciesId& species);
-	[[nodiscard]] static std::string getName(const PlantSpeciesId& species);
+	[[nodiscard]] static std::wstring getName(const PlantSpeciesId& species);
 	[[nodiscard]] static FluidTypeId getFluidType(const PlantSpeciesId& species);
 	[[nodiscard]] static MaterialTypeId getWoodType(const PlantSpeciesId& species);
 	[[nodiscard]] static Step getStepsNeedsFluidFrequency(const PlantSpeciesId& species);
@@ -97,7 +98,7 @@ public:
 	[[nodiscard]] static const std::pair<ShapeId, uint8_t> shapeAndWildGrowthForPercentGrown(const PlantSpeciesId& species, const Percent& percentGrown);
 	[[nodiscard]] static ShapeId shapeForPercentGrown(const PlantSpeciesId& species, const Percent& percentGrown);
 	[[nodiscard]] static uint8_t wildGrowthForPercentGrown(const PlantSpeciesId& species, const Percent& percentGrown);
-	[[nodiscard]] static PlantSpeciesId byName(std::string name);
+	[[nodiscard]] static PlantSpeciesId byName(std::wstring name);
 	// Harvest.
 	ItemTypeId static getFruitItemType(const PlantSpeciesId& species);
 	Step static getStepsDurationHarvest(const PlantSpeciesId& species);

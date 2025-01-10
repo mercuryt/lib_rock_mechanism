@@ -76,7 +76,7 @@ void Blocks::blockFeature_setTemperature(const BlockIndex& block, const Temperat
 {
 	for(BlockFeature& feature : m_features[block])
 	{
-		if(MaterialType::getIgnitionTemperature(m_materialType[block]).exists() && 
+		if(MaterialType::getIgnitionTemperature(m_materialType[block]).exists() &&
 			temperature > MaterialType::getIgnitionTemperature(feature.materialType)
 		)
 			m_area.m_fires.ignite(block, feature.materialType);

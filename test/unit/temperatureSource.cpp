@@ -24,8 +24,8 @@ TEST_CASE("temperature")
 		BlockIndex b3 = blocks.getIndex_i(9, 9, 9);
 		BlockIndex toBurn = blocks.getIndex_i(6, 5, 5);
 		BlockIndex toNotBurn = blocks.getIndex_i(4, 5, 5);
-		auto wood = MaterialType::byName("poplar wood");
-		auto marble = MaterialType::byName("marble");
+		auto wood = MaterialType::byName(L"poplar wood");
+		auto marble = MaterialType::byName(L"marble");
 		blocks.solid_set(toBurn, wood, false);
 		blocks.solid_set(toNotBurn, marble, false);
 		Temperature temperatureBeforeHeatSource = blocks.temperature_get(origin);
@@ -51,7 +51,7 @@ TEST_CASE("temperature")
 	{
 		BlockIndex origin = blocks.getIndex_i(5, 5, 5);
 		BlockIndex toBurn = blocks.getIndex_i(6, 5, 5);
-		auto wood = MaterialType::byName("poplar wood");
+		auto wood = MaterialType::byName(L"poplar wood");
 		blocks.solid_set(toBurn, wood, false);
 		area.m_hasTemperature.addTemperatureSource(origin, TemperatureDelta::create(1000));
 		simulation.doStep();

@@ -1,7 +1,6 @@
 #include "sprite.h"
 #include "../engine/definitions.h"
 #include "../img/spright.h"
-#include "definitions.h"
 #include <SFML/Graphics/Rect.hpp>
 void sprites::load()
 {
@@ -14,7 +13,7 @@ void sprites::load()
 	}
 }
 void sprites::flush() { sprites.clear(); }
-std::pair<sf::Sprite, sf::Vector2f> sprites::make(std::string name)
+std::pair<sf::Sprite, sf::Vector2f> sprites::make(std::wstring name)
 {
 	sprites.emplace_back();
 	sprites.back().setTexture(textures[name].first);

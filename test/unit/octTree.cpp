@@ -9,7 +9,7 @@
 #include "../../engine/actors/actors.h"
 TEST_CASE("octTree")
 {
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
 	Simulation simulation;
 	SUBCASE("basic")
 	{

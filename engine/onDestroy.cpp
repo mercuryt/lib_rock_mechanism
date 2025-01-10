@@ -31,13 +31,13 @@ HasOnDestroySubscriptions::HasOnDestroySubscriptions(const Json& data, Deseriali
 	for(const Json& onDestroy : data["onDestroys"])
 		m_onDestroys.insert(deserializationMemo.m_onDestroys.at(onDestroy.get<uintptr_t>()));
 }
-void HasOnDestroySubscriptions::subscribe(OnDestroy& onDestroy) 
+void HasOnDestroySubscriptions::subscribe(OnDestroy& onDestroy)
 {
 	assert(!m_onDestroys.contains(&onDestroy));
 	m_onDestroys.insert(&onDestroy);
 	onDestroy.subscribe(*this);
 }
-void HasOnDestroySubscriptions::subscribeThreadSafe(OnDestroy& onDestroy) 
+void HasOnDestroySubscriptions::subscribeThreadSafe(OnDestroy& onDestroy)
 {
 	std::lock_guard lock(m_mutex);
 	subscribe(onDestroy);
@@ -68,7 +68,7 @@ void HasOnDestroySubscriptions::callback()
 	m_callback = nullptr;
 	cb->callback();
 }
-Json HasOnDestroySubscriptions::toJson() const 
+Json HasOnDestroySubscriptions::toJson() const
 {
 	Json output;
 	if(m_callback != nullptr)

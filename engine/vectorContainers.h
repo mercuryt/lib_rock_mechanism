@@ -85,12 +85,12 @@ public:
 	template<typename Predicate>
 	void sort(Predicate&& predicate) { std::ranges::sort(m_data, predicate); }
 	void sort() { std::ranges::sort(m_data); }
-	void update(const T& oldValue, const T& newValue) { assert(contains(oldValue)); (*find(oldValue)) = newValue;} 
+	void update(const T& oldValue, const T& newValue) { assert(contains(oldValue)); (*find(oldValue)) = newValue;}
 	void makeUnique() { std::ranges::sort(m_data); m_data.erase(std::ranges::unique(m_data).begin(), m_data.end()); }
 	void removeDuplicatesAndValue(const T& value)
 	{
 		std::vector<T> seen = {value};
-		m_data.erase(std::remove_if(m_data.begin(), m_data.end(), [&](const T& elem) 
+		m_data.erase(std::remove_if(m_data.begin(), m_data.end(), [&](const T& elem)
 		{
 			if(std::ranges::contains(seen, elem))
 				return true;
@@ -361,7 +361,7 @@ public:
 	[[nodiscard]] const Pair& front() const { return m_data.front(); }
 	[[nodiscard]] Pair& back() { return m_data.back(); }
 	[[nodiscard]] const Pair& back() const { return m_data.back(); }
-	[[nodiscard]] V& operator[](const K& key) 
+	[[nodiscard]] V& operator[](const K& key)
 	{
 		auto iter = std::ranges::find(m_data, key, &Pair::first);
 		assert(iter != m_data.end());
@@ -390,6 +390,8 @@ public:
 			return m_data.emplace_back(key, V{}).second;
 		return iter->second;
 	}
+	template<typename Condition>
+	[[nodiscard]] iterator findIf(Condition&& condition) { return std::ranges::find_if(m_data, condition); }
 	[[nodiscard]] iterator find(const K& key) { return std::ranges::find(m_data, key, &Pair::first); }
 	[[nodiscard]] iterator find(const K&& key) { return find(key); }
 	[[nodiscard]] const_iterator find(const K& key) const { return std::ranges::find(m_data, key, &Pair::first); }
@@ -475,6 +477,8 @@ public:
 	[[nodiscard]] V& operator[](const K&& key) { return *(*this)[key].get(); }
 	[[nodiscard]] const V& operator[](const K& key) const { return const_cast<This&>(*this)[key]; }
 	[[nodiscard]] const V& operator[](const K&& key) const { return const_cast<This&>(*this)[key]; }
+	template<typename Condition>
+	[[nodiscard]] iterator find(Condition&& condition) { return m_data.find(condition); }
 	[[nodiscard]] iterator find(const K& key) { return m_data.find(key); }
 	[[nodiscard]] iterator find(const K&& key) { return find(key); }
 	[[nodiscard]] const_iterator find(const K& key) const { return findData(key); }

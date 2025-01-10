@@ -44,25 +44,25 @@ public:
 };
 namespace widgetUtil
 {
-	inline const PlantSpecies* lastSelectedPlantSpecies = nullptr;
-	tgui::ComboBox::Ptr makePlantSpeciesSelectUI(BlockIndex* block);
-	inline const MaterialType* lastSelectedMaterial = nullptr;
+	inline PlantSpeciesId lastSelectedPlantSpecies;
+	tgui::ComboBox::Ptr makePlantSpeciesSelectUI(const BlockIndex& block);
+	inline MaterialTypeId lastSelectedMaterial;
 	tgui::ComboBox::Ptr makeMaterialSelectUI(std::wstring nullLabel = L"", std::function<bool(const MaterialType&)> predicate = nullptr);
-	inline const MaterialTypeCategory* lastSelectedMaterialCategory = nullptr;
+	inline MaterialCategoryTypeId lastSelectedMaterialCategory;
 	tgui::ComboBox::Ptr makeMaterialCategorySelectUI(std::wstring nullLabel = L"");
-	inline const AnimalSpecies* lastSelectedAnimalSpecies = nullptr;
+	inline AnimalSpeciesId lastSelectedAnimalSpecies;
 	tgui::ComboBox::Ptr makeAnimalSpeciesSelectUI();
-	inline const FluidType* lastSelectedFluidType = nullptr;
+	inline FluidTypeId lastSelectedFluidType;
 	tgui::ComboBox::Ptr makeFluidTypeSelectUI();
-	inline const ItemType* lastSelectedItemType = nullptr;
+	inline ItemTypeId lastSelectedItemType;
 	tgui::ComboBox::Ptr makeItemTypeSelectUI();
-	inline Faction* lastSelectedFaction = nullptr;
+	inline FactionId lastSelectedFaction;
 	tgui::ComboBox::Ptr makeFactionSelectUI(Simulation& simulation, std::wstring nullLabel = L"");
 	inline const BlockFeatureType* lastSelectedBlockFeatureType = nullptr;
 	tgui::ComboBox::Ptr makeBlockFeatureTypeSelectUI();
-	inline const CraftStepTypeCategory* lastSelectedCraftStepTypeCategory = nullptr;
+	inline CraftStepTypeCategoryId lastSelectedCraftStepTypeCategory;
 	tgui::ComboBox::Ptr makeCraftStepTypeCategorySelectUI();
-	inline const CraftJobType* lastSelectedCraftJobType = nullptr;
+	inline CraftJobTypeId lastSelectedCraftJobType;
 	tgui::ComboBox::Ptr makeCraftJobTypeSelectUI();
 	std::pair<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> makeCraftJobTypeAndMaterialTypeUI();
 	std::tuple<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> makeItemTypeAndMaterialTypeOrMaterialTypeCategoryUI();

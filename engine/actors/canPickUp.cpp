@@ -29,8 +29,8 @@ void Actors::canPickUp_pickUpItemQuantity(const ActorIndex& index, const ItemInd
 	{
 		items.removeQuantity(item, quantity);
 		ItemIndex newItem = items.create({
-			.itemType=items.getItemType(item), 
-			.materialType=items.getMaterialType(item), 
+			.itemType=items.getItemType(item),
+			.materialType=items.getMaterialType(item),
 			.quantity=quantity
 		});
 		m_carrying[index] = ActorOrItemIndex::createForItem(newItem);
@@ -73,13 +73,13 @@ ActorIndex Actors::canPickUp_tryToPutDownActor(const ActorIndex& index, const Bl
 	Blocks& blocks = m_area.getBlocks();
 	ShapeId shape = m_shape[other];
 	auto predicate = [&](const BlockIndex& block) {
-		return blocks.shape_anythingCanEnterEver(block) && 
+		return blocks.shape_anythingCanEnterEver(block) &&
 			blocks.shape_staticShapeCanEnterWithAnyFacing(block, shape, {});
 	};
 	BlockIndex targetLocation = blocks.getBlockInRangeWithCondition(location, maxRange, predicate);
 	if(targetLocation.empty())
 	{
-		static const MoveTypeId moveTypeNone = MoveType::byName("none");
+		static const MoveTypeId moveTypeNone = MoveType::byName(L"none");
 		// No location found, try again without respecting Config::maxBlockVolume.
 		auto predicate2 = [&](const BlockIndex &block)
 		{
@@ -108,13 +108,13 @@ ItemIndex Actors::canPickUp_tryToPutDownItem(const ActorIndex& index, const Bloc
 	ShapeId shape = m_area.getItems().getShape(item);
 	// Find a location to put down the carried item.
 	auto predicate = [&](const BlockIndex& block) {
-		return blocks.shape_anythingCanEnterEver(block) && 
+		return blocks.shape_anythingCanEnterEver(block) &&
 			blocks.shape_staticShapeCanEnterWithAnyFacing(block, shape, {});
 	};
 	BlockIndex targetLocation = blocks.getBlockInRangeWithCondition(location, maxRange, predicate);
 	if(targetLocation.empty())
 	{
-		static const MoveTypeId moveTypeNone = MoveType::byName("none");
+		static const MoveTypeId moveTypeNone = MoveType::byName(L"none");
 		// No location found, try again without respecting Config::maxBlockVolume.
 		auto predicate2 = [&](const BlockIndex &block)
 		{
@@ -284,7 +284,7 @@ bool Actors::canPickUp_isCarryingItemGeneric(const ActorIndex& index, const Item
 		return false;
 	return items.getQuantity(item) >= quantity;
 }
-bool Actors::canPickUp_isCarryingFluidType(const ActorIndex& index, FluidTypeId fluidType) const 
+bool Actors::canPickUp_isCarryingFluidType(const ActorIndex& index, FluidTypeId fluidType) const
 {
 	if(!m_carrying[index].exists())
 		return false;
@@ -299,28 +299,28 @@ bool Actors::canPickUp_isCarryingPolymorphic(const ActorIndex& index, ActorOrIte
 	else
 		return canPickUp_isCarryingItem(index, actorOrItemIndex.getItem());
 }
-CollisionVolume Actors::canPickUp_getFluidVolume(const ActorIndex& index) const 
-{ 
+CollisionVolume Actors::canPickUp_getFluidVolume(const ActorIndex& index) const
+{
 	assert(m_carrying[index].exists());
 	assert(m_carrying[index].isItem());
 	return m_area.getItems().cargo_getFluidVolume(m_carrying[index].getItem());
 }
-FluidTypeId Actors::canPickUp_getFluidType(const ActorIndex& index) const 
-{ 
+FluidTypeId Actors::canPickUp_getFluidType(const ActorIndex& index) const
+{
 	assert(m_carrying[index].exists());
 	assert(m_carrying[index].isItem());
 	ItemIndex item = m_carrying[index].getItem();
 	Items& items = m_area.getItems();
 	assert(items.cargo_containsAnyFluid(item));
-	return items.cargo_getFluidType(item); 
+	return items.cargo_getFluidType(item);
 }
-bool Actors::canPickUp_isCarryingEmptyContainerWhichCanHoldFluid(const ActorIndex& index) const 
-{ 
+bool Actors::canPickUp_isCarryingEmptyContainerWhichCanHoldFluid(const ActorIndex& index) const
+{
 	if(!m_carrying[index].exists() || !m_carrying[index].isItem())
 		return false;
 	ItemIndex item = m_carrying[index].getItem();
 	Items& items = m_area.getItems();
-	return ItemType::getCanHoldFluids(items.getItemType(item)) && !items.cargo_exists(item); 
+	return ItemType::getCanHoldFluids(items.getItemType(item)) && !items.cargo_exists(item);
 }
 Mass Actors::canPickUp_getMass(const ActorIndex& index) const
 {
@@ -341,7 +341,7 @@ Quantity Actors::canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(const 
 	while(canPickUp_speedIfCarryingQuantity(index, mass, quantity + 1) >= minimumSpeed)
 		++quantity;
 	return quantity;
-}		
+}
 bool Actors::canPickUp_canPutDown(const ActorIndex& index, const BlockIndex& block)
 {
 	Blocks& blocks = m_area.getBlocks();

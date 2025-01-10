@@ -3,7 +3,7 @@
 #include "drama/engine.h"
 
 EditDramaView::EditDramaView(Window& window) : m_window(window), m_panel(tgui::Panel::create())
-{ 
+{
 	m_window.getGui().add(m_panel);
 	hide();
 }
@@ -11,7 +11,7 @@ void EditDramaView::draw(Area* area)
 {
 	assert(area);
 	DramaEngine* dramaEngine = m_window.getSimulation()->m_dramaEngine.get();
-	std::unordered_set<DramaArc*> arcsForArea = dramaEngine->getArcsForArea(*area);
+	std::vector<DramaArc*> arcsForArea = dramaEngine->getArcsForArea(*area);
 	auto listHolder = tgui::Grid::create();
 	m_panel->add(listHolder);
 	uint16_t i = 0;
@@ -22,7 +22,7 @@ void EditDramaView::draw(Area* area)
 		auto start = tgui::Button::create("start");
 		listHolder->addWidget(start, i, 1);
 		start->onClick([this, arc]{
-			arc->begin(); 
+			arc->begin();
 			m_window.showGame();
 		});
 		auto remove = tgui::Button::create("remove");
@@ -42,7 +42,7 @@ void EditDramaView::draw(Area* area)
 	{
 		if(!typesForArea.contains(type))
 		{
-			std::string string = DramaArc::typeToString(type);
+			std::wstring string = DramaArc::typeToString(type);
 			newTypeSelector->addItem(string, string);
 		}
 	}

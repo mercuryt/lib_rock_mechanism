@@ -28,7 +28,7 @@ void HarvestEvent::execute(Simulation&, Area* area)
 		m_harvestObjective.makePathRequest(*area, actor);
 	Plants& plants = area->getPlants();
 	PlantIndex plant = blocks.plant_get(m_harvestObjective.m_block);
-	static MaterialTypeId plantMatter = MaterialType::byName("plant matter");
+	static MaterialTypeId plantMatter = MaterialType::byName(L"plant matter");
 	ItemTypeId fruitItemType = PlantSpecies::getFruitItemType(plants.getSpecies(plant));
 	Quantity quantityToHarvest = plants.getQuantityToHarvest(plant);
 	if(quantityToHarvest == 0)
@@ -42,8 +42,8 @@ void HarvestEvent::execute(Simulation&, Area* area)
 		blocks.item_addGeneric(actors.getLocation(actor), fruitItemType, plantMatter, numberItemsHarvested);
 		actors.objective_complete(actor, m_harvestObjective);
 	}
-}	
-void HarvestEvent::clearReferences(Simulation&, Area*) { m_harvestObjective.m_harvestEvent.clearPointer(); } 
+}
+void HarvestEvent::clearReferences(Simulation&, Area*) { m_harvestObjective.m_harvestEvent.clearPointer(); }
 // Objective type.
 bool HarvestObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
@@ -56,7 +56,7 @@ std::unique_ptr<Objective> HarvestObjectiveType::makeFor(Area& area, const Actor
 // Objective.
 HarvestObjective::HarvestObjective(Area& area) :
 	Objective(Config::harvestPriority), m_harvestEvent(area.m_eventSchedule) { }
-HarvestObjective::HarvestObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo) : 
+HarvestObjective::HarvestObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo),
 	m_harvestEvent(area.m_eventSchedule)
 {
@@ -105,7 +105,7 @@ void HarvestObjective::execute(Area& area, const ActorIndex& actor)
 }
 void HarvestObjective::cancel(Area& area, const ActorIndex& actor)
 {
-	
+
 	Actors& actors = area.getActors();
 	Blocks& blocks = area.getBlocks();
 	Plants& plants = area.getPlants();
@@ -193,7 +193,7 @@ void HarvestPathRequest::writeStep(Area& area, FindPathResult& result)
 		actors.move_setPath(actorIndex, result.path);
 	}
 }
-Json HarvestPathRequest::toJson()
+Json HarvestPathRequest::toJson() const
 {
 	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);

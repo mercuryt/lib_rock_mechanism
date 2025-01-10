@@ -3,17 +3,16 @@
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Window/Event.hpp>
 #include <string>
-#include <unordered_map>
-struct MaterialType;
-struct ItemType;
-struct AnimalSpecies;
-struct PlantSpecies;
-struct FluidType;
+struct MaterialTypeId;
+struct ItemTypeId;
+struct AnimalSpeciesId;
+struct PlantSpeciesId;
+struct FluidTypeId;
 struct BlockFeatureType;
 
 struct PlantSpeciesDisplayData final
 {
-	std::string image;
+	std::wstring image;
 	sf::Color color;
 	float scale;
 	bool groundCover;
@@ -21,25 +20,25 @@ struct PlantSpeciesDisplayData final
 
 struct AnimalSpeciesDisplayData final
 {
-	std::string image;
+	std::wstring image;
 	sf::Color color;
 	float scale;
 };
 
 struct ItemTypeDisplayData final
 {
-	std::string image;
+	std::wstring image;
 	sf::Color color;
 	float scale;
 };
 
 namespace displayData
 {
-	inline std::unordered_map<const MaterialType*, sf::Color> materialColors;
-	inline std::unordered_map<const FluidType*, sf::Color> fluidColors;
-	inline std::unordered_map<const ItemType*, ItemTypeDisplayData> itemData;
-	inline std::unordered_map<const PlantSpecies*, PlantSpeciesDisplayData> plantData;
-	inline std::unordered_map<const AnimalSpecies*, AnimalSpeciesDisplayData> actorData;
+	inline SmallMap<MaterialTypeId, sf::Color> materialColors;
+	inline SmallMap<FluidTypeId, sf::Color> fluidColors;
+	inline SmallMap<ItemTypeId, ItemTypeDisplayData> itemData;
+	inline SmallMap<PlantSpeciesId, PlantSpeciesDisplayData> plantData;
+	inline SmallMap<AnimalSpeciesId, AnimalSpeciesDisplayData> actorData;
 	inline float ratioOfScaleToFontSize;
 	inline float wallOffset;
 	inline const sf::Color selectColor = sf::Color::Yellow;
@@ -58,6 +57,6 @@ namespace displayData
 	inline sf::Mouse::Button selectMouseButton = sf::Mouse::Button::Left;
 	inline sf::Mouse::Button actionMouseButton = sf::Mouse::Button::Right;
 
-	std::string localizeNumber(double number);
+	std::wstring localizeNumber(double number);
 	void load();
 }

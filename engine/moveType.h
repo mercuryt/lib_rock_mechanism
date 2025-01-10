@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "types.h"
 #include "dataVector.h"
@@ -7,7 +7,7 @@
 
 struct MoveTypeParamaters
 {
-	std::string name;
+	std::wstring name;
 	bool walk;
 	uint8_t climb;
 	bool jumpDown;
@@ -19,7 +19,7 @@ struct MoveTypeParamaters
 };
 class MoveType
 {
-	DataVector<std::string, MoveTypeId> m_name;
+	DataVector<std::wstring, MoveTypeId> m_name;
 	DataBitSet<MoveTypeId> m_walk;
 	DataVector<uint8_t, MoveTypeId> m_climb;
 	DataBitSet<MoveTypeId> m_jumpDown;
@@ -30,8 +30,8 @@ class MoveType
 	DataVector<FluidTypeSet, MoveTypeId> m_breathableFluids;
 public:
 	static void create(MoveTypeParamaters& paramaters);
-	[[nodiscard]] static MoveTypeId byName(std::string name);
-	[[nodiscard]] static std::string getName(MoveTypeId id);
+	[[nodiscard]] static MoveTypeId byName(std::wstring name);
+	[[nodiscard]] static std::wstring getName(MoveTypeId id);
 	[[nodiscard]] static bool getWalk(MoveTypeId id);
 	[[nodiscard]] static uint8_t getClimb(MoveTypeId id);
 	[[nodiscard]] static bool getJumpDown(MoveTypeId id);

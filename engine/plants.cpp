@@ -10,7 +10,7 @@
 #include "simulation.h"
 #include "types.h"
 
-Plants::Plants(Area& area) : 
+Plants::Plants(Area& area) :
 	HasShapes<Plants, PlantIndex>(area),
 	m_growthEvent(area.m_eventSchedule),
 	m_shapeGrowthEvent(area.m_eventSchedule),
@@ -246,9 +246,9 @@ void Plants::updateGrowingStatus(const PlantIndex& index)
 	PlantSpeciesId species = m_species[index];
 	auto& blocks = m_area.getBlocks();
 	if(
-			m_volumeFluidRequested[index] == 0 && 
-			blocks.isExposedToSky(m_location[index]) == PlantSpecies::getGrowsInSunLight(species) && 
-			!m_temperatureEvent.exists(index) && 
+			m_volumeFluidRequested[index] == 0 &&
+			blocks.isExposedToSky(m_location[index]) == PlantSpecies::getGrowsInSunLight(species) &&
+			!m_temperatureEvent.exists(index) &&
 			getPercentFoliage(index) >= Config::minimumPercentFoliageForGrow
 	)
 	{
@@ -379,7 +379,7 @@ void Plants::removeFruitQuantity(const PlantIndex& index, const Quantity& quanti
 }
 Mass Plants::getFruitMass(const PlantIndex& index) const
 {
-	static MaterialTypeId fruitType = MaterialType::byName("fruit");
+	static MaterialTypeId fruitType = MaterialType::byName(L"fruit");
 	return ItemType::getVolume(PlantSpecies::getFruitItemType(getSpecies(index))) * MaterialType::getDensity(fruitType) * m_quantityToHarvest[index];
 }
 void Plants::makeFoliageGrowthEvent(const PlantIndex& index)
@@ -527,7 +527,7 @@ void to_json(Json& data, const Plants& plants)
 {
 	data = plants.toJson();
 }
-void Plants::log(const PlantIndex& index) const { std::cout << PlantSpecies::getName(m_species[index]) << ":" << std::to_string(getPercentGrown(index).get()) << "%"; }
+void Plants::log(const PlantIndex& index) const { std::wcout << PlantSpecies::getName(m_species[index]) << ":" << std::to_wstring(getPercentGrown(index).get()) << "%"; }
 PlantIndices Plants::getAll() const
 {
 	// TODO: Replace with std::iota?
@@ -538,7 +538,7 @@ PlantIndices Plants::getAll() const
 	return output;
 }
 // Events.
-PlantGrowthEvent::PlantGrowthEvent(Area& area, const Step& delay, const PlantIndex& p, const Step start) : 
+PlantGrowthEvent::PlantGrowthEvent(Area& area, const Step& delay, const PlantIndex& p, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_plant(p) {}
 PlantGrowthEvent::PlantGrowthEvent(Simulation& simulation, const Json& data) :
 	ScheduledEvent(simulation, data["delay"].get<Step>(), data["start"].get<Step>()), m_plant(data["plant"].get<PlantIndex>()) { }
@@ -552,7 +552,7 @@ void PlantGrowthEvent::execute(Simulation&, Area* area)
 void PlantGrowthEvent::clearReferences(Simulation&, Area* area) { area->getPlants().m_growthEvent.clearPointer(m_plant); }
 Json PlantGrowthEvent::toJson() const { return {{"delay", duration()}, {"start", m_startStep}, {"plant", m_plant}}; }
 
-PlantShapeGrowthEvent::PlantShapeGrowthEvent(Area& area, const Step& delay, const PlantIndex& p, const Step start) : 
+PlantShapeGrowthEvent::PlantShapeGrowthEvent(Area& area, const Step& delay, const PlantIndex& p, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_plant(p) {}
 PlantShapeGrowthEvent::PlantShapeGrowthEvent(Simulation& simulation, const Json& data) :
 	ScheduledEvent(simulation, data["delay"].get<Step>(), data["start"].get<Step>()), m_plant(data["plant"].get<PlantIndex>()) { }
@@ -566,7 +566,7 @@ void PlantShapeGrowthEvent::execute(Simulation&, Area* area)
 void PlantShapeGrowthEvent::clearReferences(Simulation&, Area* area) { area->getPlants().m_shapeGrowthEvent.clearPointer(m_plant); }
 Json PlantShapeGrowthEvent::toJson() const { return {{"delay", duration()}, {"start", m_startStep}, {"plant", m_plant}}; }
 
-PlantFoliageGrowthEvent::PlantFoliageGrowthEvent(Area& area, const Step& delay, const PlantIndex& p, const Step start) : 
+PlantFoliageGrowthEvent::PlantFoliageGrowthEvent(Area& area, const Step& delay, const PlantIndex& p, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_plant(p) {}
 PlantFoliageGrowthEvent::PlantFoliageGrowthEvent(Simulation& simulation, const Json& data) :
 	ScheduledEvent(simulation, data["delay"].get<Step>(), data["start"].get<Step>()), m_plant(data["plant"].get<PlantIndex>()) { }

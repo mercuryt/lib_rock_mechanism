@@ -35,9 +35,8 @@ namespace areaBuilderUtil
 	{
 		Blocks& blocks = area.getBlocks();
 		Cuboid cuboid(blocks, end, start);
-		cuboid.forEach(blocks, [&](const BlockIndex& block){
+		for(const BlockIndex& block : cuboid.getView(blocks))
 			blocks.solid_set(block, materialType, false);
-		});
 	}
 	inline void setSolidWall(Area& area, uint start, uint end, const MaterialTypeId& materialType)
 	{
@@ -93,11 +92,12 @@ namespace areaBuilderUtil
 		assert(blocks.fluid_getTotalVolume(high) == 0);
 		assert(blocks.fluid_canEnterEver(high));
 		Cuboid cuboid(blocks, high, low);
-		cuboid.forEach(blocks, [&](const BlockIndex& block){
+		for(const BlockIndex& block : cuboid.getView(blocks))
+		{
 			assert(blocks.fluid_getTotalVolume(block) == 0);
 			assert(blocks.fluid_canEnterEver(block));
 			blocks.fluid_add(block, CollisionVolume::create(100), fluidType);
-		});
+		}
 	}
 	inline void setFullFluidCuboid(Area& area, uint low, uint high, FluidTypeId fluidType)
 	{

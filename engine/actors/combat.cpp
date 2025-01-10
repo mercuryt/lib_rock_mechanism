@@ -141,12 +141,8 @@ void Actors::combat_update(const ActorIndex& index)
 			m_maxMeleeRange[index] = range;
 	}
 	// Base stats give combat score.
-	m_combatScore[index] += CombatScore::create(
-		(m_strength[index].get() * Config::pointsOfCombatScorePerUnitOfStrength) +
-		(m_agility[index].get() * Config::pointsOfCombatScorePerUnitOfAgility) +
-		(m_dextarity[index].get() * Config::pointsOfCombatScorePerUnitOfDextarity)
-	);
-	// Reduce combat score if manipulation is impaired.
+	m_combatScore[index] += attributes_getCombatScore(index);
+	// Reduce for impairment.
 	m_combatScore[index] = CombatScore::create(util::scaleByInversePercent(m_combatScore[index].get(), body.getImpairManipulationPercent()));
 	// Update cool down duration.
 	// TODO: Manipulation impairment should apply to cooldown as well?
@@ -158,7 +154,7 @@ void Actors::combat_update(const ActorIndex& index)
 	}
 	// Find the on miss cool down.
 	Step baseOnMissCoolDownDuration = m_equipmentSet[index]->hasWeapons() ?
-	       	m_equipmentSet[index]->getLongestMeleeWeaponCoolDown(m_area) : 
+	       	m_equipmentSet[index]->getLongestMeleeWeaponCoolDown(m_area) :
 		Config::attackCoolDownDurationBaseSteps;
 	m_onMissCoolDownMelee[index] = std::max(Step::create(1), Step::create((float)baseOnMissCoolDownDuration.get() * m_coolDownDurationModifier[index]));
 	Items& items = m_area.getItems();
@@ -179,7 +175,7 @@ CombatScore Actors::combat_getCombatScoreForAttack(const ActorIndex& index, cons
 {
 	CombatScore output = AttackType::getCombatScore(attack.attackType);
 	SkillTypeId skill = attack.item == ItemIndex::null() ?
-		SkillType::byName("unarmed") :
+		SkillType::byName(L"unarmed") :
 		AttackType::getSkillType(attack.attackType);
 	SkillLevel skillValue = m_skillSet[index]->get(skill);
 	output += (skillValue * Config::attackSkillCombatModifier).get();
@@ -270,7 +266,7 @@ void Actors::combat_getIntoRangeAndLineOfSightOfActor(const ActorIndex& index, c
 	move_pathRequestRecord(index, std::make_unique<GetIntoAttackPositionPathRequest>(m_area, index, target, range));
 }
 bool Actors::combat_isOnCoolDown(const ActorIndex& index) const { return m_coolDownEvent.exists(index); }
-bool Actors::combat_inRange(const ActorIndex& index, const ActorIndex& target) const 
+bool Actors::combat_inRange(const ActorIndex& index, const ActorIndex& target) const
 {
 	Blocks& blocks = m_area.getBlocks();
        	return blocks.distanceFractional(m_location[index], m_location[target]) <= m_maxRange[index];
@@ -327,7 +323,7 @@ AttackCoolDownEvent::AttackCoolDownEvent(Area& area, const ActorIndex& actor, co
 
 GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, const ActorIndex& actorIndex, const ActorIndex& targetIndex, const DistanceInBlocksFractional& ar) :
 	attackRangeSquared(ar * ar)
-{ 
+{
 	Actors& actors = area.getActors();
 	start = actors.getLocation(actorIndex);
 	maxRange = DistanceInBlocks::max();

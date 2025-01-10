@@ -7,11 +7,11 @@
 #include "../terrainFacade.hpp"
 #include "../actors/actors.h"
 #include "../types.h"
-GoToObjective::GoToObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
+GoToObjective::GoToObjective(const Json& data, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo),
 	m_location(data["location"].get<BlockIndex>()) { }
-Json GoToObjective::toJson() const 
-{ 
+Json GoToObjective::toJson() const
+{
 	Json data = Objective::toJson();
 	data["location"] = m_location;
 	return data;
@@ -26,7 +26,7 @@ void GoToObjective::execute(Area& area, const ActorIndex& actor)
 		actors.objective_complete(actor, *this);
 }
 /*
-GoToInputAction::GoToInputAction(ActorIndices actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, BlockIndex& b) : 
+GoToInputAction::GoToInputAction(ActorIndices actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, BlockIndex& b) :
 	InputAction(actors, emplacementType, inputQueue), m_block(b) { }
 void GoToInputAction::execute()
 {

@@ -7,7 +7,7 @@
 #include <string>
 #include <sys/types.h>
 //TODO: radial symetry for 2x2 and 3x3, etc.
-ShapeId Shape::create(std::string name, std::vector<std::array<int32_t, 4>> positions, uint32_t displayScale)
+ShapeId Shape::create(std::wstring name, std::vector<std::array<int32_t, 4>> positions, uint32_t displayScale)
 {
 	shapeData.m_name.add(name);
 	shapeData.m_positions.add(positions);
@@ -143,7 +143,7 @@ BlockIndex Shape::getBlockWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id,
 	return BlockIndex::null();
 }
 CollisionVolume Shape::getCollisionVolumeAtLocationBlock(const ShapeId& id) { return CollisionVolume::create(shapeData.m_positions[id][0][3]); }
-ShapeId Shape::byName(const std::string& name)
+ShapeId Shape::byName(const std::wstring& name)
 {
 	auto found = shapeData.m_name.find(name);
 	if(found == shapeData.m_name.end())
@@ -151,17 +151,18 @@ ShapeId Shape::byName(const std::string& name)
 	return ShapeId::create(found - shapeData.m_name.begin());
 }
 std::vector<std::array<int32_t, 4>> Shape::getPositions(const ShapeId& id) { return shapeData.m_positions[id]; }
-std::string Shape::getName(const ShapeId& id) { return shapeData.m_name[id]; }
+std::wstring Shape::getName(const ShapeId& id) { return shapeData.m_name[id]; }
 uint32_t Shape::getDisplayScale(const ShapeId& id) { return shapeData.m_displayScale[id]; }
 bool Shape::getIsMultiTile(const ShapeId& id) { return shapeData.m_isMultiTile[id]; }
 bool Shape::getIsRadiallySymetrical(const ShapeId& id) { return shapeData.m_isRadiallySymetrical[id]; }
-bool Shape::hasShape(const std::string& name)
+bool Shape::hasShape(const std::wstring& name)
 {
 	auto found = shapeData.m_name.find(name);
 	return found != shapeData.m_name.end();
 }
-ShapeId Shape::loadFromName(std::string name)
+ShapeId Shape::loadFromName(std::wstring wname)
 {
+	std::string name = util::wideStringToString(wname);
 	std::vector<int> tokens;
 	std::stringstream ss(name);
 	std::string item;
@@ -179,7 +180,7 @@ ShapeId Shape::loadFromName(std::string name)
 		positions.push_back({x, y, z, v});
 	}
 	// Runtime shapes always have display scale = 1
-	return Shape::create(name, positions, 1);
+	return Shape::create(wname, positions, 1);
 }
 ShapeId Shape::mutateAdd(const ShapeId& id, std::array<int32_t, 4> position)
 {
@@ -187,22 +188,22 @@ ShapeId Shape::mutateAdd(const ShapeId& id, std::array<int32_t, 4> position)
 	assert(std::ranges::find(positions, position) == positions.end());
 	positions.push_back(position);
 	std::ranges::sort(positions);
-	std::string name = makeName(positions);
+	std::wstring name = makeName(positions);
 	ShapeId output = Shape::byName(name);
 	if(output.exists())
 		return output;
 	// Runtime shapes always have display scale = 1
 	return Shape::create(name, positions, 1);
 }
-std::string Shape::makeName(std::vector<std::array<int32_t, 4>>& positions)
+std::wstring Shape::makeName(std::vector<std::array<int32_t, 4>>& positions)
 {
-	std::string output;
+	std::wstring output;
 	for(auto [x, y, z, v] : positions)
 	{
-		output.append(std::to_string(x) + " ");
-		output.append(std::to_string(y) + " ");
-		output.append(std::to_string(z) + " ");
-		output.append(std::to_string(v) + " ");
+		output.append(std::to_wstring(x) + L" ");
+		output.append(std::to_wstring(y) + L" ");
+		output.append(std::to_wstring(z) + L" ");
+		output.append(std::to_wstring(v) + L" ");
 	}
 	return output;
 }

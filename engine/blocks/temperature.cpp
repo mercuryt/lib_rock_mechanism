@@ -28,7 +28,7 @@ void Blocks::temperature_updateDelta(const BlockIndex& index, const TemperatureD
 void Blocks::temperature_freeze(const BlockIndex& index, const FluidTypeId& fluidType)
 {
 	assert(FluidType::getFreezesInto(fluidType).exists());
-	static ItemTypeId chunk = ItemType::byName("chunk");
+	static ItemTypeId chunk = ItemType::byName(L"chunk");
 	Quantity chunkQuantity = item_getCount(index, chunk, FluidType::getFreezesInto(fluidType));
 	CollisionVolume chunkVolume = ItemType::getVolume(chunk).toCollisionVolume() * chunkQuantity;
 	CollisionVolume fluidVolume = fluid_volumeOfTypeContains(index, fluidType);
@@ -52,7 +52,7 @@ void Blocks::temperature_melt(const BlockIndex& index)
 	fluid_add(index, Config::maxBlockVolume, fluidType);
 	m_area.m_hasFluidGroups.clearMergedFluidGroups();
 }
-const Temperature& Blocks::temperature_getAmbient(const BlockIndex& index) const 
+const Temperature& Blocks::temperature_getAmbient(const BlockIndex& index) const
 {
 	if(m_underground[index])
 	{
@@ -63,7 +63,7 @@ const Temperature& Blocks::temperature_getAmbient(const BlockIndex& index) const
 	}
 	return m_area.m_hasTemperature.getAmbientSurfaceTemperature();
 }
-Temperature Blocks::temperature_getDailyAverageAmbient(const BlockIndex& index) const 
+Temperature Blocks::temperature_getDailyAverageAmbient(const BlockIndex& index) const
 {
 	if(m_underground[index])
 	{

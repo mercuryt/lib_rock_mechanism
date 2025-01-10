@@ -11,7 +11,7 @@ class Window;
 class LociiUI final
 {
 public:
-	LociiUI(std::string name);
+	LociiUI(std::wstring name);
 	LociiConfig get() const;
 	tgui::VerticalLayout::Ptr m_container;
 private:

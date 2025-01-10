@@ -16,7 +16,7 @@ struct ItemTypeParamaters final
 {
 	//TODO: remove craftLocationOffset?
 	std::vector<MaterialCategoryTypeId> materialTypeCategories = {};
-	std::string name;
+	std::wstring name;
 	std::array<int32_t, 3> craftLocationOffset = {};
 	ShapeId shape;
 	MoveTypeId moveType;
@@ -44,7 +44,7 @@ class ItemType final
 {
 	//TODO: remove craftLocationOffset?
 	DataVector<std::vector<MaterialCategoryTypeId>, ItemTypeId> m_materialTypeCategories;
-	DataVector<std::string, ItemTypeId> m_name;
+	DataVector<std::wstring, ItemTypeId> m_name;
 	DataVector<std::array<int32_t, 3>, ItemTypeId> m_craftLocationOffset;
 	DataVector<ShapeId, ItemTypeId> m_shape;
 	DataVector<MoveTypeId, ItemTypeId> m_moveType;
@@ -69,13 +69,14 @@ class ItemType final
 	DataVector<std::vector<BodyPartTypeId>, ItemTypeId> m_wearable_bodyPartsCovered;
 public:
 	static void create(ItemTypeParamaters& p);
-	static AttackTypeId getRangedAttackType(const ItemTypeId& id);
-	static BlockIndex getCraftLocation(const ItemTypeId& id, Blocks& blocks, const BlockIndex& location, const Facing& facing);
-	static bool hasRangedAttack(const ItemTypeId& id);
-	static bool hasMeleeAttack(const ItemTypeId& id);
-	static const ItemTypeId byName(std::string name);
+	[[nodiscard]] static ItemTypeId size();
+	[[nodiscard]] static AttackTypeId getRangedAttackType(const ItemTypeId& id);
+	[[nodiscard]] static BlockIndex getCraftLocation(const ItemTypeId& id, Blocks& blocks, const BlockIndex& location, const Facing& facing);
+	[[nodiscard]] static bool hasRangedAttack(const ItemTypeId& id);
+	[[nodiscard]] static bool hasMeleeAttack(const ItemTypeId& id);
+	[[nodiscard]] static const ItemTypeId byName(std::wstring name);
 	[[nodiscard]] static std::vector<MaterialCategoryTypeId>& getMaterialTypeCategories(const ItemTypeId& id);
-	[[nodiscard]] static std::string& getName(const ItemTypeId& id);
+	[[nodiscard]] static std::wstring& getName(const ItemTypeId& id);
 	[[nodiscard]] static std::array<int32_t, 3>& getCraftLocationOffset(const ItemTypeId& id);
 	[[nodiscard]] static ShapeId getShape(const ItemTypeId& id);
 	[[nodiscard]] static MoveTypeId getMoveType(const ItemTypeId& id);

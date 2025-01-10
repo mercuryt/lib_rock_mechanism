@@ -8,13 +8,13 @@ void BodyPartType::create(BodyPartTypeParamaters& p)
 	bodyPartTypeData.m_vital.add(p.vital);
 	bodyPartTypeData.m_attackTypesAndMaterials.add(p.attackTypesAndMaterials);
 }
-BodyPartTypeId BodyPartType::byName(std::string name)
+BodyPartTypeId BodyPartType::byName(std::wstring name)
 {
 	auto found = bodyPartTypeData.m_name.find(name);
 	assert(found != bodyPartTypeData.m_name.end());
 	return BodyPartTypeId::create(found - bodyPartTypeData.m_name.begin());
 }
-std::string& BodyPartType::getName(const BodyPartTypeId& id) { return bodyPartTypeData.m_name[id]; };
+std::wstring& BodyPartType::getName(const BodyPartTypeId& id) { return bodyPartTypeData.m_name[id]; };
 Volume BodyPartType::getVolume(const BodyPartTypeId& id) { return bodyPartTypeData.m_volume[id]; };
 bool BodyPartType::getDoesLocamotion(const BodyPartTypeId& id) { return bodyPartTypeData.m_doesLocamotion[id]; };
 bool BodyPartType::getDoesManipulation(const BodyPartTypeId& id) { return bodyPartTypeData.m_doesManipulation[id]; };
@@ -25,16 +25,16 @@ bool BodyType::hasBodyPart(const BodyTypeId& id, const BodyPartTypeId& bodyPartT
 {
 	return std::ranges::find(bodyTypeData.m_bodyPartTypes[id], bodyPartType) != bodyTypeData.m_bodyPartTypes[id].end();
 }
-void BodyType::create(std::string name, std::vector<BodyPartTypeId>& bodyPartTypes)
+void BodyType::create(std::wstring name, std::vector<BodyPartTypeId>& bodyPartTypes)
 {
 	bodyTypeData.m_name.add(name);
 	bodyTypeData.m_bodyPartTypes.add(bodyPartTypes);
 }
-BodyTypeId BodyType::byName(std::string name)
+BodyTypeId BodyType::byName(std::wstring name)
 {
 	auto found = bodyTypeData.m_name.find(name);
 	assert(found != bodyTypeData.m_name.end());
 	return BodyTypeId::create(found - bodyTypeData.m_name.begin());
 }
-std::string BodyType::getName(const BodyTypeId& id) { return bodyTypeData.m_name[id]; }
+std::wstring BodyType::getName(const BodyTypeId& id) { return bodyTypeData.m_name[id]; }
 std::vector<BodyPartTypeId>& BodyType::getBodyPartTypes(const BodyTypeId& id) { return bodyTypeData.m_bodyPartTypes[id]; }

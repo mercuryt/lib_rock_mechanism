@@ -4,7 +4,7 @@
 #include <string>
 struct AnimalSpeciesParamaters
 {
-	std::string name;
+	std::wstring name;
 	bool sentient;
 	// Min, max, newborn.
 	std::array<AttributeLevel, 3> strength;
@@ -37,7 +37,7 @@ struct AnimalSpeciesParamaters
 };
 class AnimalSpecies
 {
-	DataVector<std::string, AnimalSpeciesId> m_name;
+	DataVector<std::wstring, AnimalSpeciesId> m_name;
 	DataBitSet<AnimalSpeciesId> m_sentient;
 	// Min, max, newborn.
 	DataVector<std::array<AttributeLevel, 3>, AnimalSpeciesId> m_strength;
@@ -70,8 +70,8 @@ class AnimalSpecies
 public:
 	static AnimalSpeciesId create(AnimalSpeciesParamaters);
 	[[nodiscard]] static ShapeId shapeForPercentGrown(const AnimalSpeciesId& id, const Percent& percentGrown);
-	[[nodiscard]] static AnimalSpeciesId byName(std::string name);
-	[[nodiscard]] static std::string getName(const AnimalSpeciesId& id);
+	[[nodiscard]] static AnimalSpeciesId byName(std::wstring name);
+	[[nodiscard]] static std::wstring getName(const AnimalSpeciesId& id);
 	[[nodiscard]] static bool getSentient(const AnimalSpeciesId& id);
 	[[nodiscard]] static std::array<AttributeLevel, 3> getStrength(const AnimalSpeciesId& id);
 	[[nodiscard]] static std::array<AttributeLevel, 3> getDextarity(const AnimalSpeciesId& id);

@@ -192,14 +192,14 @@ Point3D Cuboid::getCenter(const Blocks& blocks) const
 		lowPoint.z + (highPoint.z - lowPoint.z) / 2
 	};
 }
-Cuboid::iterator::iterator(Blocks& blocks, const BlockIndex& lowest, const BlockIndex& highest) : m_blocks(blocks) 
+Cuboid::iterator::iterator(Blocks& blocks, const BlockIndex& lowest, const BlockIndex& highest) : m_blocks(blocks)
 {
 	if(!lowest.exists())
 	{
 		assert(!highest.exists());
 		setToEnd();
 	}
-	else 
+	else
 	{
 		m_current = m_start = blocks.getCoordinates(lowest);
 		m_end = blocks.getCoordinates(highest);
@@ -210,7 +210,7 @@ void Cuboid::iterator::setToEnd()
 	// TODO: All these assignments arn't needed, just one would be fine.
 	m_start.x = m_start.y = m_start.z = m_current.x = m_current.y = m_current.z = m_end.x = m_end.y = m_end.z = DistanceInBlocks::null();
 }
-Cuboid::iterator& Cuboid::iterator::iterator::operator++() 
+Cuboid::iterator& Cuboid::iterator::iterator::operator++()
 {
 	if (m_current.x < m_end.x) {
 		++m_current.x;
@@ -227,7 +227,7 @@ Cuboid::iterator& Cuboid::iterator::iterator::operator++()
 		setToEnd();
 	return *this;
 }
-Cuboid::iterator Cuboid::iterator::operator++(int) 
+Cuboid::iterator Cuboid::iterator::operator++(int)
 {
 	Cuboid::iterator tmp = *this;
 	++(*this);

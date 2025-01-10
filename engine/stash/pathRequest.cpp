@@ -83,7 +83,7 @@ void PathRequest::createGoToAnyOf(Area& area, const ActorIndex& actor, BlockIndi
 	//TODO: handle no destinations.
 	assert(!destinations.empty());
 	if(Shape::getIsMultiTile(shape))
-		destinationCondition = [shape, &area, &actors, destinations, actor, unreserved](const BlockIndex& location, const Facing& facing) 
+		destinationCondition = [shape, &area, &actors, destinations, actor, unreserved](const BlockIndex& location, const Facing& facing)
 		{
 			// Multi tile actors must be checked if any of the spots to be occupied are reserved.
 			// TODO: since we already have shape and faction calling into actors is probably not the best choice here.
@@ -97,7 +97,7 @@ void PathRequest::createGoToAnyOf(Area& area, const ActorIndex& actor, BlockIndi
 			return std::make_pair(false, BlockIndex::null());
 		};
 	else
-		destinationCondition = [destinations](const BlockIndex& index, const Facing&) { 
+		destinationCondition = [destinations](const BlockIndex& index, const Facing&) {
 				if(destinations.contains(index))
 					return std::make_pair(true, index);
 				return std::make_pair(false, BlockIndex::null());
@@ -240,7 +240,7 @@ void PathRequest::createGoAdjacentToConditionFrom(Area& area, const ActorIndex& 
 	else
 	{
 		destinationCondition = [&blocks, closed, condition, unreserved, faction](const BlockIndex& index, const Facing&) mutable -> std::pair<bool, BlockIndex>
-		{ 
+		{
 			if(!unreserved || !blocks.isReserved(index, faction))
 				for(BlockIndex block : blocks.getAdjacentWithEdgeAndCornerAdjacent(index))
 				{
@@ -347,7 +347,7 @@ Json PathRequest::toJson() const
 }
 std::unique_ptr<PathRequest> PathRequest::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area)
 {
-	std::string type = data["type"];
+	std::wstring type = data["type"];
 	if(type == "basic")
 		return std::make_unique<PathRequest>(data);
 	if(type == "attack")

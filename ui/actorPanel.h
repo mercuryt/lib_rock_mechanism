@@ -10,5 +10,5 @@ public:
 	ActorView(Window& w);
 	void show() { m_panel->setVisible(true); }
 	void hide() { m_panel->setVisible(false); }
-	void draw(Actor& actor);
+	void draw(const ActorIndex& actor);
 };

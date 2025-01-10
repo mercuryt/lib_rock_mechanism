@@ -19,7 +19,7 @@ class AreaHasVisionCuboids final
 	std::list<VisionCuboid> m_visionCuboids;
 	DataVector<VisionCuboid*, BlockIndex> m_blockVisionCuboids;
 	DataVector<VisionCuboidId, BlockIndex> m_blockVisionCuboidIds;
-	Area* m_area;
+	Area* m_area = nullptr;
 	VisionCuboidId m_nextId = VisionCuboidId::create(1);
 public:
 	void initalize(Area& area);

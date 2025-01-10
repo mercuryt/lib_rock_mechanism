@@ -48,7 +48,7 @@ FarmField::FarmField(const Json& data, FactionId faction, Area& a) :
 	plantSpecies = data["plantSpecies"].get<PlantSpeciesId>();
 	timeToSow = data["timeToSow"];
 }
-Json FarmField::toJson() const 
+Json FarmField::toJson() const
 {
 	Json data{{"blocks", Json::array()}, {"plantSpecies", plantSpecies}, {"timeToSow", timeToSow}};
 	for(BlockIndex block : blocks)
@@ -115,7 +115,7 @@ PlantSpeciesId HasFarmFieldsForFaction::getPlantSpeciesFor(BlockIndex block) con
 		if(farmField.blocks.contains(block))
 			return farmField.plantSpecies;
 	assert(false);
-	return PlantSpecies::byName("poplar tree");
+	return PlantSpecies::byName(L"");
 }
 void HasFarmFieldsForFaction::addGivePlantFluidDesignation(PlantIndex plant)
 {

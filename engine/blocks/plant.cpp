@@ -7,8 +7,8 @@ void Blocks::plant_create(const BlockIndex& index, const PlantSpeciesId& plantSp
 {
 	assert(m_plants[index].empty());
 	m_plants[index] = m_area.getPlants().create({
-		.location=index, 
-		.species=plantSpecies, 
+		.location=index,
+		.species=plantSpecies,
 		.percentGrown=growthPercent,
 	});
 }
@@ -41,7 +41,7 @@ bool Blocks::plant_canGrowHereCurrently(const BlockIndex& index, const PlantSpec
 		return false;
 	if(PlantSpecies::getGrowsInSunLight(plantSpecies) != m_outdoors[index])
 		return false;
-	static MaterialTypeId dirtType = MaterialType::byName("dirt");
+	static MaterialTypeId dirtType = MaterialType::byName(L"dirt");
 	BlockIndex below = getBlockBelow(index);
 	if(below.exists() || !solid_is(below) || m_materialType[below] != dirtType)
 		return false;
@@ -65,7 +65,7 @@ bool Blocks::plant_canGrowHereEver(const BlockIndex& index, const PlantSpeciesId
 }
 bool Blocks::plant_anythingCanGrowHereEver(const BlockIndex& index) const
 {
-	static MaterialTypeId dirtType = MaterialType::byName("dirt");
+	static MaterialTypeId dirtType = MaterialType::byName(L"dirt");
 	BlockIndex below = getBlockBelow(index);
 	if(below.empty() || !solid_is(below) || m_materialType[below] != dirtType)
 		return false;

@@ -42,7 +42,7 @@ struct ProjectRequirementCounts final
 	ProjectRequirementCounts(const Quantity& r, bool c) : required(r), consumed(c) { }
 	//TODO: Why isn't intrusive deserializer working here?
 	ProjectRequirementCounts(const Json& data) :
-		required(data["required"].get<Quantity>()), delivered(data["delivered"].get<Quantity>()), 
+		required(data["required"].get<Quantity>()), delivered(data["delivered"].get<Quantity>()),
 		reserved(data["reserved"].get<Quantity>()), consumed(data["consumed"].get<bool>()) { }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(ProjectRequirementCounts, required, delivered, reserved, consumed);
 };
@@ -54,7 +54,7 @@ struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
 	void execute(const Quantity&, const Quantity&);
 	[[nodiscard]] Json toJson() const;
 };
-// Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, and onComplete.
+// Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, and onComplete. onDelivered is optional.
 class Project
 {
 	// Tracks the progress of the 'actual' work of the project, after the hauling is done.

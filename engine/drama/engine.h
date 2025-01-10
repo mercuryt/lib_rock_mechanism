@@ -21,7 +21,7 @@ class DramaArc
 protected:
 	DramaEngine& m_engine;
 	// Optional
-	Area* m_area;
+	Area* m_area = nullptr;
 	DramaArc(DramaEngine& engine, DramaArcType type, Area* area = nullptr) : m_engine(engine), m_area(area), m_type(type) { }
 	DramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);
 	void actorsLeave(ActorIndices actors);
@@ -35,12 +35,12 @@ protected:
 	friend class DramaEngine;
 public:
 	DramaArcType m_type;
-	std::string name() const { return typeToString(m_type); }
+	std::wstring name() const { return typeToString(m_type); }
 	//For debug.
 	virtual void begin() = 0;
 	static std::vector<DramaArcType> getTypes();
-	static std::string typeToString(DramaArcType type);
-	static DramaArcType stringToType(std::string string);
+	static std::wstring typeToString(DramaArcType type);
+	static DramaArcType stringToType(std::wstring string);
 	virtual ~DramaArc() = default;
 };
 class DramaEngine final

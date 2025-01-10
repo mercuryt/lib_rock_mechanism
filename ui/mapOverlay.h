@@ -14,7 +14,7 @@ public:
 	[[nodiscard]] bool isVisible() const { return m_group->isVisible(); }
 	[[nodiscard]] bool menuIsVisible() const { return m_detailPanel->isVisible(); }
 private:
-	
+
 	Window& m_window;
 	tgui::Group::Ptr m_group;
 	MapDetailPanel m_detailPanel;

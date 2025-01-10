@@ -10,7 +10,7 @@ class InstallItemObjectiveType final : public ObjectiveType
 public:
 	bool canBeAssigned(Area& area, const ActorIndex& actor) const;
 	std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
-	std::string name() const { return "install Item"; }
+	std::wstring name() const override { return L"install Item"; }
 };
 class InstallItemObjective final : public Objective
 {
@@ -18,11 +18,11 @@ class InstallItemObjective final : public Objective
 public:
 	InstallItemObjective();
 	InstallItemObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, const ActorIndex& actor); 
+	void execute(Area& area, const ActorIndex& actor);
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area&, const ActorIndex&) { }
 	void reset(Area& area, const ActorIndex& actor);
-	[[nodiscard]] std::string name() const { return "install item"; }
+	[[nodiscard]] std::wstring name() const override { return L"install item"; }
 	[[nodiscard]] Json toJson() const;
 	friend class InstallItemPathRequest;
 };
@@ -35,6 +35,6 @@ public:
 	InstallItemPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
-	[[nodiscard]] std::string name() const { return "install item"; }
+	[[nodiscard]] std::wstring name() const { return L"install item"; }
 	[[nodiscard]] Json toJson() const;
 };

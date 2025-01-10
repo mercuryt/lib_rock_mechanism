@@ -8,5 +8,5 @@ public:
 	void cancel(Area&, const ActorIndex&) { assert(false); }
 	void delay(Area&, const ActorIndex&) { assert(false); }
 	void reset(Area&, const ActorIndex&) { assert(false); }
-	std::string name() const { return "dummy"; }
+	std::wstring name() const { return L"dummy"; }
 };

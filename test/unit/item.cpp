@@ -22,7 +22,7 @@
 #include <memory>
 TEST_CASE("equip and unequip")
 {
-	MaterialTypeId marble = MaterialType::byName("marble");
+	MaterialTypeId marble = MaterialType::byName(L"marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
@@ -31,13 +31,13 @@ TEST_CASE("equip and unequip")
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	ActorIndex dwarf1 = actors.create({
-		.species=AnimalSpecies::byName("dwarf"), 
+		.species=AnimalSpecies::byName(L"dwarf"),
 		.location=blocks.getIndex_i(1, 1, 1),
 		.hasCloths=false,
 		.hasSidearm=false
 	});
 	BlockIndex swordLocation = blocks.getIndex_i(8,8,1);
-	ItemIndex longsword = items.create({.itemType=ItemType::byName("long sword"), .materialType=MaterialType::byName("bronze"), .location=swordLocation, .quality=Quality::create(20), .percentWear=Percent::create(10)});
+	ItemIndex longsword = items.create({.itemType=ItemType::byName(L"long sword"), .materialType=MaterialType::byName(L"bronze"), .location=swordLocation, .quality=Quality::create(20), .percentWear=Percent::create(10)});
 	ItemReference longswordRef = items.m_referenceData.getReference(longsword);
 	REQUIRE(items.getBlocks(longsword).size() == 1);
 	REQUIRE(items.getBlocks(longsword).front() == swordLocation);
@@ -59,7 +59,7 @@ TEST_CASE("equip and unequip")
 }
 TEST_CASE("give item")
 {
-	MaterialTypeId marble = MaterialType::byName("marble");
+	MaterialTypeId marble = MaterialType::byName(L"marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
@@ -67,18 +67,18 @@ TEST_CASE("give item")
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	ActorIndex dwarf1 = actors.create({
-		.species=AnimalSpecies::byName("dwarf"), 
+		.species=AnimalSpecies::byName(L"dwarf"),
 		.location=blocks.getIndex_i(1, 1, 1),
 		.hasCloths=false,
 		.hasSidearm=false
 	});
 	ActorIndex dwarf2 = actors.create({
-		.species=AnimalSpecies::byName("dwarf"), 
+		.species=AnimalSpecies::byName(L"dwarf"),
 		.location=blocks.getIndex_i(6, 6, 1),
 		.hasCloths=false,
 		.hasSidearm=false
 	});
-	ItemIndex longsword = items.create({.itemType=ItemType::byName("long sword"), .materialType=MaterialType::byName("bronze"), .quality=Quality::create(20), .percentWear=Percent::create(10)});
+	ItemIndex longsword = items.create({.itemType=ItemType::byName(L"long sword"), .materialType=MaterialType::byName(L"bronze"), .quality=Quality::create(20), .percentWear=Percent::create(10)});
 	actors.equipment_add(dwarf1, longsword);
 	std::unique_ptr<Objective> objective = std::make_unique<GiveItemObjective>(area, longsword, dwarf2);
 	actors.objective_addTaskToStart(dwarf1, std::move(objective));

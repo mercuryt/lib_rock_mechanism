@@ -320,15 +320,15 @@ struct Point3D
 	DistanceInBlocks x;
 	DistanceInBlocks y;
 	DistanceInBlocks z;
-	[[nodiscard]] bool operator==(const Point3D& other) const 
+	[[nodiscard]] bool operator==(const Point3D& other) const
 	{
 		return x == other.x && y == other.y && z == other.z;
 	}
-	[[nodiscard]] bool operator!=(const Point3D& other) const 
+	[[nodiscard]] bool operator!=(const Point3D& other) const
 	{
 		return !(*this == other);
 	}
-	[[nodiscard]] auto operator<=>(const Point3D& other) const 
+	[[nodiscard]] auto operator<=>(const Point3D& other) const
 	{
 		if (x != other.x)
 			return x <=> other.x;
@@ -341,7 +341,7 @@ struct Point3D
 	[[nodiscard]] DistanceInBlocks taxiDistanceTo(const Point3D& other) const
 	{
 		return DistanceInBlocks::create(
-			std::abs((int)x.get() - (int)other.x.get()) + 
+			std::abs((int)x.get() - (int)other.x.get()) +
 			std::abs((int)y.get() - (int)other.y.get()) +
 			std::abs((int)z.get() - (int)other.z.get())
 		);
@@ -354,14 +354,14 @@ struct Point3D
 	[[nodiscard]] DistanceInBlocks distanceSquared(const Point3D& other) const
 	{
 		return DistanceInBlocks::create(
-			pow(std::abs((int)x.get() - (int)other.x.get()), 2) + 
+			pow(std::abs((int)x.get() - (int)other.x.get()), 2) +
 			pow(std::abs((int)y.get() - (int)other.y.get()), 2) +
 			pow(std::abs((int)z.get() - (int)other.z.get()), 2)
 		);
 	}
-	[[nodiscard]] std::string toString() const 
+	[[nodiscard]] std::wstring toString() const
 	{
-		return "(" + std::to_string(x.get()) + "," + std::to_string(y.get()) + "," + std::to_string(z.get()) + ")";
+		return L"(" + std::to_wstring(x.get()) + L"," + std::to_wstring(y.get()) + L"," + std::to_wstring(z.get()) + L")";
 	}
 	static const int hilbertOrder = 1;
 	[[nodiscard]] uint32_t hilbertNumber() const
@@ -426,9 +426,9 @@ struct Point3D
 		}
 		return index;
 	}
-	void log() const 
+	void log() const
 	{
-		std::cout << toString() << std::endl;
+		std::wcout << toString() << std::endl;
 	}
 };
 struct Point3D_fractional

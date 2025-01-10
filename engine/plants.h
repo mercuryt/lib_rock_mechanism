@@ -108,6 +108,7 @@ public:
 	[[nodiscard]] CollisionVolume getVolumeFluidRequested(const PlantIndex& index) const { return m_volumeFluidRequested[index]; }
 	[[nodiscard]] bool temperatureEventExists(const PlantIndex& index) const;
 	[[nodiscard]] bool fluidEventExists(const PlantIndex& index) const;
+	[[nodiscard]] Percent getFluidEventPercentComplete(const PlantIndex& index) const { return m_fluidEvent.percentComplete(index); }
 	[[nodiscard]] bool growthEventExists(const PlantIndex& index) const;
 	[[nodiscard]] Json toJson() const;
 	void log(const PlantIndex& index) const;

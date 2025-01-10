@@ -38,7 +38,7 @@ WoodCuttingProject::WoodCuttingProject(const Json& data, DeserializationMemo& de
 std::vector<std::pair<ItemQuery, Quantity>> WoodCuttingProject::getConsumed() const { return {}; }
 std::vector<std::pair<ItemQuery, Quantity>> WoodCuttingProject::getUnconsumed() const
 {
-	static const ItemTypeId itemType = ItemType::byName("axe");
+	static const ItemTypeId itemType = ItemType::byName(L"axe");
 	return {{ItemQuery::create(itemType), Quantity::create(1)}};
 }
 std::vector<std::pair<ActorQuery, Quantity>> WoodCuttingProject::getActors() const { return {}; }
@@ -56,16 +56,16 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> WoodCuttingProject
 	assert(unitsBranchesGenerated != 0);
 	auto woodType = PlantSpecies::getWoodType(species);
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> output{
-		
-		{ItemType::byName("branch"), woodType, unitsBranchesGenerated},
-		{ItemType::byName("log"), woodType, unitsLogsGenerated}
+
+		{ItemType::byName(L"branch"), woodType, unitsBranchesGenerated},
+		{ItemType::byName(L"log"), woodType, unitsLogsGenerated}
 	};
 	return output;
 }
 // Static.
 uint32_t WoodCuttingProject::getWorkerWoodCuttingScore(Area& area, ActorIndex actor)
 {
-	static SkillTypeId woodCuttingType = SkillType::byName("wood cutting");
+	static SkillTypeId woodCuttingType = SkillType::byName(L"wood cutting");
 	Actors& actors = area.getActors();
 	uint32_t strength = actors.getStrength(actor).get();
 	uint32_t skill = actors.skill_getLevel(actor, woodCuttingType).get();
@@ -115,7 +115,7 @@ Step WoodCuttingProject::getDuration() const
 		totalScore += getWorkerWoodCuttingScore(m_area, pair.first.getIndex(actors.m_referenceData));
 	return std::max(Step::create(1u), Config::woodCuttingMaxSteps / totalScore);
 }
-WoodCuttingLocationDishonorCallback::WoodCuttingLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) : 
+WoodCuttingLocationDishonorCallback::WoodCuttingLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_faction(data["faction"].get<FactionId>()),
 	m_area(deserializationMemo.area(data["area"])),
 	m_location(data["location"].get<BlockIndex>()) { }
@@ -124,7 +124,7 @@ void WoodCuttingLocationDishonorCallback::execute([[maybe_unused]] const Quantit
 {
 	m_area.m_hasWoodCuttingDesignations.undesignate(m_faction, m_location);
 }
-HasWoodCuttingDesignationsForFaction::HasWoodCuttingDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction) : 
+HasWoodCuttingDesignationsForFaction::HasWoodCuttingDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction) :
 	m_area(deserializationMemo.area(data["area"])),
 	m_faction(faction)
 {
@@ -167,7 +167,7 @@ void HasWoodCuttingDesignationsForFaction::remove(const BlockIndex& block)
 {
 	assert(m_data.contains(block));
 	m_area.getBlocks().designation_unset(block, m_faction, BlockDesignation::WoodCutting);
-	m_data.erase(block); 
+	m_data.erase(block);
 }
 void HasWoodCuttingDesignationsForFaction::removeIfExists(const BlockIndex& block)
 {
@@ -240,15 +240,15 @@ bool AreaHasWoodCuttingDesignations::areThereAnyForFaction(FactionId faction) co
 		return false;
 	return !m_data[faction].empty();
 }
-bool AreaHasWoodCuttingDesignations::contains(FactionId faction, const BlockIndex& block) const 
-{ 
+bool AreaHasWoodCuttingDesignations::contains(FactionId faction, const BlockIndex& block) const
+{
 	if(!m_data.contains(faction))
 		return false;
-	return m_data[faction].m_data.contains(block); 
+	return m_data[faction].m_data.contains(block);
 }
-WoodCuttingProject& AreaHasWoodCuttingDesignations::getForFactionAndBlock(FactionId faction, const BlockIndex& block) 
-{ 
+WoodCuttingProject& AreaHasWoodCuttingDesignations::getForFactionAndBlock(FactionId faction, const BlockIndex& block)
+{
 	assert(m_data.contains(faction));
-	assert(m_data[faction].m_data.contains(block)); 
-	return m_data[faction].m_data[block]; 
+	assert(m_data[faction].m_data.contains(block));
+	return m_data[faction].m_data[block];
 }

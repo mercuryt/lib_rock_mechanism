@@ -93,7 +93,7 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	DataVector<std::unique_ptr<Body>, ActorIndex> m_body;
 	DataVector<std::unique_ptr<MustSleep>, ActorIndex> m_mustSleep;
 	DataVector<std::unique_ptr<MustDrink>, ActorIndex> m_mustDrink;
-	DataVector<std::unique_ptr<MustEat>, ActorIndex> m_mustEat; 
+	DataVector<std::unique_ptr<MustEat>, ActorIndex> m_mustEat;
 	DataVector<std::unique_ptr<ActorNeedsSafeTemperature>, ActorIndex> m_needsSafeTemperature;
 	DataVector<std::unique_ptr<CanGrow>, ActorIndex> m_canGrow;
 	DataVector<std::unique_ptr<SkillSet>, ActorIndex> m_skillSet;
@@ -157,6 +157,7 @@ public:
 	void reserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing& facing);
 	void unreserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing& facing);
 	void setBirthStep(const ActorIndex& index, const Step& step);
+	void setName(const ActorIndex& index, std::wstring name){ m_name[index] = name; }
 	[[nodiscard]] ActorIndices getAll() const;
 	[[nodiscard]] ActorIndexSet getOnSurface() const { return m_onSurface; }
 	[[nodiscard]] Json toJson() const;
@@ -247,6 +248,7 @@ public:
 	[[nodiscard]] bool body_isInjured(const ActorIndex& index) const;
 	[[nodiscard]] BodyPart& body_pickABodyPartByVolume(const ActorIndex& index) const;
 	[[nodiscard]] BodyPart& body_pickABodyPartByType(const ActorIndex& index, const BodyPartTypeId& bodyPartType) const;
+	[[nodiscard]] const std::vector<Wound*> body_getWounds(const ActorIndex& index) const;
 	// -Move.
 	void move_updateIndividualSpeed(const ActorIndex& index);
 	void move_updateActualSpeed(const ActorIndex& index);
@@ -357,7 +359,7 @@ public:
 	[[nodiscard]] bool objective_hasNeed(const ActorIndex& index, NeedType needType) const;
 	[[nodiscard]] bool objective_hasSupressedNeed(const ActorIndex &index, NeedType needType) const;
 	[[nodiscard]] Priority objective_getPriorityFor(const ActorIndex& index, const ObjectiveTypeId& objectiveType) const;
-	[[nodiscard]] std::string objective_getCurrentName(const ActorIndex& index) const;
+	[[nodiscard]] std::wstring objective_getCurrentName(const ActorIndex& index) const;
 	template<typename T>
 	T& objective_getCurrent(const ActorIndex& index) { return static_cast<T&>(m_hasObjectives[index]->getCurrent()); }
 	// For testing.
@@ -397,6 +399,8 @@ public:
 	[[nodiscard]] ItemIndex equipment_getWeaponToAttackAtRange(const ActorIndex& index, const DistanceInBlocksFractional& range) const;
 	[[nodiscard]] ItemIndex equipment_getAmmoForRangedWeapon(const ActorIndex& index, const ItemIndex& weapon) const;
 	[[nodiscard]] const auto& equipment_getAll(const ActorIndex& index) const { return m_equipmentSet[index]->getAll(); }
+	[[nodiscard]] const EquipmentSet& equipment_getSet(const ActorIndex& index) const { return *m_equipmentSet[index]; }
+	[[nodiscard]] EquipmentSet& equipment_getSet(const ActorIndex& index) { return *m_equipmentSet[index]; }
 	// -Uniform.
 	void uniform_set(const ActorIndex& index, Uniform& uniform);
 	void uniform_unset(const ActorIndex& index);
@@ -413,6 +417,7 @@ public:
 	void sleep_maybeClearSpot(const ActorIndex& index);
 	[[nodiscard]] BlockIndex sleep_getSpot(const ActorIndex& index) const;
 	[[nodiscard]] bool sleep_isAwake(const ActorIndex& index) const;
+	[[nodiscard]] bool sleep_isTired(const ActorIndex& index) const;
 	[[nodiscard]] Percent sleep_getPercentDoneSleeping(const ActorIndex& index) const;
 	[[nodiscard]] Percent sleep_getPercentTired(const ActorIndex& index) const;
 	// For testing.
@@ -450,19 +455,27 @@ public:
 	// Attributes.
 	void attributes_onUpdateGrowthPercent(const ActorIndex& index);
 	void addStrengthBonusOrPenalty(const ActorIndex& index, const AttributeLevelBonusOrPenalty& bonusOrPenalty);
+	void setStrengthBonusOrPenalty(const ActorIndex& index, const AttributeLevelBonusOrPenalty& bonusOrPenalty);
 	void addStrengthModifier(const ActorIndex& index, float modifer);
+	void setStrengthModifier(const ActorIndex& index, float modifer);
 	void onStrengthChanged(const ActorIndex& index);
 	void updateStrength(const ActorIndex& index);
 	void addDextarityBonusOrPenalty(const ActorIndex& index, const AttributeLevelBonusOrPenalty& bonusOrPenalty);
+	void setDextarityBonusOrPenalty(const ActorIndex& index, const AttributeLevelBonusOrPenalty& bonusOrPenalty);
 	void addDextarityModifier(const ActorIndex& index, float modifer);
+	void setDextarityModifier(const ActorIndex& index, float modifer);
 	void onDextarityChanged(const ActorIndex& index);
 	void updateDextarity(const ActorIndex& index);
 	void addAgilityBonusOrPenalty(const ActorIndex& index, const AttributeLevelBonusOrPenalty& bonusOrPenalty);
+	void setAgilityBonusOrPenalty(const ActorIndex& index, const AttributeLevelBonusOrPenalty& bonusOrPenalty);
 	void addAgilityModifier(const ActorIndex& index, float modifer);
+	void setAgilityModifier(const ActorIndex& index, float modifer);
 	void onAgilityChanged(const ActorIndex& index);
 	void updateAgility(const ActorIndex& index);
 	void addIntrinsicMassBonusOrPenalty(const ActorIndex& index, uint32_t bonusOrPenalty);
+	void setIntrinsicMassBonusOrPenalty(const ActorIndex& index, uint32_t bonusOrPenalty);
 	void addIntrinsicMassModifier(const ActorIndex& index, float modifer);
+	void setIntrinsicMassModifier(const ActorIndex& index, float modifer);
 	void onIntrinsicMassChanged(const ActorIndex& index);
 	void updateIntrinsicMass(const ActorIndex& index);
 	[[nodiscard]] AttributeLevel getStrength(const ActorIndex& index) const;
@@ -477,8 +490,11 @@ public:
 	[[nodiscard]] Mass getIntrinsicMass(const ActorIndex& index) const;
 	[[nodiscard]] int32_t getIntrinsicMassBonusOrPenalty(const ActorIndex& index) const;
 	[[nodiscard]] float getIntrinsicMassModifier(const ActorIndex& index) const;
+	[[nodiscard]] CombatScore attributes_getCombatScore(const ActorIndex& index) const;
+	[[nodiscard]] Speed attributes_getMoveSpeed(const ActorIndex& index) const;
 	// Skills.
 	[[nodiscard]] SkillLevel skill_getLevel(const ActorIndex& index, const SkillTypeId& skillType) const;
+	[[nodiscard]] SkillSet& skill_getSet(const ActorIndex& index) const { return *m_skillSet[index]; }
 	// Growth.
 	void grow_maybeStart(const ActorIndex& index);
 	void grow_stop(const ActorIndex& index);
@@ -503,7 +519,7 @@ public:
 	[[nodiscard]] bool grow_eventIsPaused(const ActorIndex& index) const;
 	// For UI.
 	[[nodiscard]] ActorOrItemIndex canPickUp_getCarrying(const ActorIndex& index) const;
-	
+
 	// For debugging.
 	void log(const ActorIndex& index) const;
 	void satisfyNeeds(const ActorIndex& index);
@@ -558,7 +574,7 @@ public:
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::string name() { return "attack"; }
+	[[nodiscard]] std::wstring name() { return L"attack"; }
 };
 inline void to_json(Json& data, const std::unique_ptr<GetIntoAttackPositionPathRequest>& pathRequest) { data = pathRequest->toJson(); }
 struct Attack final

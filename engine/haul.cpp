@@ -22,43 +22,43 @@
 #include <sys/types.h>
 #include <algorithm>
 
-HaulStrategy haulStrategyFromName(std::string name)
+HaulStrategy haulStrategyFromName(std::wstring name)
 {
-	if(name == "Individual")
+	if(name == L"Individual")
 		return HaulStrategy::Individual;
-	if(name == "Team")
+	if(name == L"Team")
 		return HaulStrategy::Team;
-	if(name == "IndividualCargoIsCart")
+	if(name == L"IndividualCargoIsCart")
 		return HaulStrategy::IndividualCargoIsCart;
-	if(name == "Cart")
+	if(name == L"Cart")
 		return HaulStrategy::Cart;
-	if(name == "TeamCart")
+	if(name == L"TeamCart")
 		return HaulStrategy::TeamCart;
-	if(name == "Panniers")
+	if(name == L"Panniers")
 		return HaulStrategy::Panniers;
-	if(name == "AnimalCart")
+	if(name == L"AnimalCart")
 		return HaulStrategy::AnimalCart;
-	assert(name == "StrongSentient");
+	assert(name == L"StrongSentient");
 	return HaulStrategy::StrongSentient;
 }
-std::string haulStrategyToName(HaulStrategy strategy)
+std::wstring haulStrategyToName(HaulStrategy strategy)
 {
 	if(strategy == HaulStrategy::Individual)
-		return "Individual";
+		return L"Individual";
 	if(strategy == HaulStrategy::Team)
-		return "Team";
+		return L"Team";
 	if(strategy == HaulStrategy::IndividualCargoIsCart)
-		return "IndividualCargoIsCart";
+		return L"IndividualCargoIsCart";
 	if(strategy == HaulStrategy::Cart)
-		return "Cart";
+		return L"Cart";
 	if(strategy == HaulStrategy::TeamCart)
-		return "TeamCart";
+		return L"TeamCart";
 	if(strategy == HaulStrategy::Panniers)
-		return "Panniers";
+		return L"Panniers";
 	if(strategy == HaulStrategy::AnimalCart)
-		return "AnimalCart";
+		return L"AnimalCart";
 	assert(strategy == HaulStrategy::StrongSentient);
-	return "StrongSentient";
+	return L"StrongSentient";
 }
 void HaulSubprojectParamaters::reset()
 {
@@ -68,7 +68,7 @@ void HaulSubprojectParamaters::reset()
 	strategy = HaulStrategy::None;
 	haulTool.clear();
 	beastOfBurden.clear();
-	projectRequirementCounts = nullptr;	
+	projectRequirementCounts = nullptr;
 }
 // Check that the haul strategy selected in read step is still valid in write step.
 bool HaulSubprojectParamaters::validate(Area& area) const
@@ -127,7 +127,7 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo& deserializationMemo) :
 	m_project(p),
 	m_quantity(data["quantity"].get<Quantity>()),
-	m_strategy(haulStrategyFromName(data["haulStrategy"].get<std::string>())),
+	m_strategy(haulStrategyFromName(data["haulStrategy"].get<std::wstring>())),
 	m_itemIsMoving(data["itemIsMoving"].get<bool>()),
 	m_projectRequirementCounts(deserializationMemo.projectRequirementCountsReference(data["requirementCounts"]))
 {
@@ -143,9 +143,9 @@ HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo
 	if(data.contains("beastOfBurden"))
 		m_beastOfBurden.load(data["beastOfBurden"], actors.m_referenceData);
 	if(data.contains("genericItemType"))
-		m_genericItemType = ItemType::byName(data["genericItemType"].get<std::string>());
+		m_genericItemType = ItemType::byName(data["genericItemType"].get<std::wstring>());
 	if(data.contains("genericMaterialType"))
-		m_genericMaterialType = MaterialType::byName(data["genericMaterialType"].get<std::string>());
+		m_genericMaterialType = MaterialType::byName(data["genericMaterialType"].get<std::wstring>());
 	if(data.contains("workers"))
 		for(const Json& workerIndex : data["workers"])
 			m_workers.insert(actors.getReference(workerIndex.get<ActorIndex>()));
@@ -694,7 +694,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 		workers.add(pair.first.getIndex(actors.m_referenceData));
 	assert(maxQuantityRequested != 0);
 	// toHaul is wheeled.
-	static MoveTypeId wheeled = MoveType::byName("roll");
+	static MoveTypeId wheeled = MoveType::byName(L"roll");
 	if(toHaul.getMoveType(project.m_area) == wheeled)
 	{
 		assert(toHaul.isItem());
@@ -812,7 +812,7 @@ void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 	Actors& actors = area.getActors();
 	Blocks& blocks = area.getBlocks();
 	Items& items = area.getItems();
-	const BlockIndex& location = actors.getLocation(m_leader.exists() ? 
+	const BlockIndex& location = actors.getLocation(m_leader.exists() ?
 		m_leader.getIndex(actors.m_referenceData) :
 		m_workers.front().getIndex(actors.m_referenceData)
 	);
@@ -826,7 +826,7 @@ void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 		ItemReference ref = area.getItems().m_referenceData.getReference(deliveredIndex);
 		Quantity quantity = delivered.getQuantity(area);
 		if(delivered.isGeneric(area))
-		{ 
+		{
 			ItemIndex existing = blocks.item_getGeneric(location, items.getItemType(deliveredIndex), items.getMaterialType(deliveredIndex));
 			if(existing.exists())
 			{
@@ -1010,7 +1010,7 @@ ItemIndex AreaHasHaulTools::getToolToHaulPolymorphic(const Area& area, const Fac
 ItemIndex AreaHasHaulTools::getToolToHaulVolume(const Area& area, const FactionId& faction, const Volume& volume) const
 {
 	// Items like panniers with no move type also have internal volume but aren't relevent for this method.
-	static MoveTypeId none = MoveType::byName("none");
+	static MoveTypeId none = MoveType::byName(L"none");
 	const Items& items = area.getItems();
 	for(ItemReference item : m_haulTools)
 	{
@@ -1038,7 +1038,7 @@ ItemIndex AreaHasHaulTools::getToolToHaulFluid(const Area& area, const FactionId
 }
 ActorIndex AreaHasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Area& area, const FactionId& faction, const ItemIndex& haulTool, const Mass& cargoMass, const Speed& minimumHaulSpeed) const
 {
-	[[maybe_unused]] static MoveTypeId rollingType = MoveType::byName("roll");
+	[[maybe_unused]] static MoveTypeId rollingType = MoveType::byName(L"roll");
 	assert(area.getItems().getMoveType(haulTool) == rollingType);
 	const Actors& actors = area.getActors();
 	for(ActorReference actor : m_yolkableActors)

@@ -413,7 +413,6 @@ void FluidGroup::readStep(Area& area)
 	BlockIndices potentialNewGroups;
 	potentialNewGroups.swap(m_potentiallySplitFromSyncronusStep);
 	BlockIndices possiblyNoLongerAdjacent;
-	[[maybe_unused]] bool stopHere = area.m_simulation.m_step == 3 && m_fluidType == FluidType::byName("CO2");
 	possiblyNoLongerAdjacent.swap(m_potentiallyNoLongerAdjacentFromSyncronusStep);
 	// Collect all adjacent to futureEmpty which fluid can enter ever.
 	BlockIndices adjacentToFutureEmpty;

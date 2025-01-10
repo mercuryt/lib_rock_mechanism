@@ -25,12 +25,13 @@ void TargetedHaulProject::onComplete()
 	Items& items = m_area.getItems();
 	ItemIndex item = m_item.getIndex(items.m_referenceData);
 	m_item.clear();
-	items.setLocationAndFacing(item, m_location, actors.getFacing(workers.begin()->first.getIndex(actors.m_referenceData)));
+	if(items.getLocation(item) != m_location)
+		items.setLocationAndFacing(item, m_location, actors.getFacing(workers.begin()->first.getIndex(actors.m_referenceData)));
 	m_area.m_hasTargetedHauling.complete(*this);
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);
 }
-void TargetedHaulProject::onDelivered(ActorOrItemIndex delivered) { delivered.setLocationAndFacing(m_area, m_location, Facing::create(0)); }
+void TargetedHaulProject::onDelivered(const ActorOrItemIndex& delivered) { delivered.setLocationAndFacing(m_area, m_location, Facing::create(0)); }
 // Objective.
 // AreaHas.
 void AreaHasTargetedHauling::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area)
@@ -38,7 +39,7 @@ void AreaHasTargetedHauling::load(const Json& data, DeserializationMemo& deseria
 	for(const Json& project : data["projects"])
 		m_projects.emplace_back(project, deserializationMemo, area);
 }
-TargetedHaulProject& AreaHasTargetedHauling::begin(const ActorIndices& workers, const ItemIndex& item, const BlockIndex& destination)
+TargetedHaulProject& AreaHasTargetedHauling::begin(const SmallSet<ActorIndex>& workers, const ItemIndex& item, const BlockIndex& destination)
 {
 	Actors& actors = m_area.getActors();
 	ItemReference ref = m_area.getItems().getReference(item);
@@ -64,7 +65,7 @@ void AreaHasTargetedHauling::clearReservations()
 	for(Project& project : m_projects)
 		project.clearReservations();
 }
-Json AreaHasTargetedHauling::toJson() const 
+Json AreaHasTargetedHauling::toJson() const
 {
 	Json data{{"projects", Json::array()}};
 	for(const Project& project : m_projects)
