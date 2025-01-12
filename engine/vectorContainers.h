@@ -478,7 +478,7 @@ public:
 	[[nodiscard]] const V& operator[](const K& key) const { return const_cast<This&>(*this)[key]; }
 	[[nodiscard]] const V& operator[](const K&& key) const { return const_cast<This&>(*this)[key]; }
 	template<typename Condition>
-	[[nodiscard]] iterator find(Condition&& condition) { return m_data.find(condition); }
+	[[nodiscard]] iterator findIf(Condition&& condition) { return m_data.findIf([&](const std::pair<K, std::unique_ptr<V>>& pair){ return condition(*pair.second); }); }
 	[[nodiscard]] iterator find(const K& key) { return m_data.find(key); }
 	[[nodiscard]] iterator find(const K&& key) { return find(key); }
 	[[nodiscard]] const_iterator find(const K& key) const { return findData(key); }

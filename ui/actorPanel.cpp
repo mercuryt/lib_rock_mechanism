@@ -99,9 +99,8 @@ void ActorView::draw(const ActorIndex& actor)
 		layout->add(uniformUI);
 		for(auto& pair : m_window.getSimulation()->m_hasUniforms.getForFaction(m_window.getFaction()).getAll())
 			uniformUI->addItem(pair.first);
-		const Uniform* actorUniform;
-		if(actorUniform != nullptr)
-			uniformUI->setSelectedItem(actorUniform->name);
+		if(actors.uniform_exists(m_actor))
+			uniformUI->setSelectedItem(actors.uniform_get(actor).name);
 		uniformUI->onItemSelect([&](const tgui::String& uniformName){
 			const FactionId& actorFaction = actors.getFaction(m_actor);
 			if(actorFaction.empty())

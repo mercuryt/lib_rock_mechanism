@@ -1,11 +1,15 @@
 #pragma once
 #include "../engine/types.h"
+#include "../engine/hasShapeTypes.h"
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <string>
 class Window;
 class BlockIndex;
+class ItemIndex;
+class PlantIndex;
+class ActorIndex;
 class Draw final
 {
 	Window& m_window;
@@ -23,7 +27,7 @@ public:
 	void colorOnBlock(const BlockIndex& block, const sf::Color color);
 	void designated(const BlockIndex& block);
 	void craftLocation(const BlockIndex& block);
-	sf::Sprite getCenteredSprite(std::wstring name);
+	sf::Sprite getCenteredSprite(std::string name);
 
 	void spriteAt(sf::Sprite& sprite, sf::Vector2f position, const sf::Color* color = nullptr);
 	void spriteAtWithScale(sf::Sprite& sprite, sf::Vector2f position, float scale, const sf::Color* color = nullptr);
@@ -31,10 +35,10 @@ public:
 	void spriteOnBlockWithScale(const BlockIndex& block, sf::Sprite& sprite, float scaleRatio, const sf::Color* = nullptr);
 	void spriteOnBlock(const BlockIndex& block, sf::Sprite& sprite, const sf::Color* = nullptr);
 	void spriteOnBlockCentered(const BlockIndex& block, sf::Sprite& sprite, const sf::Color* = nullptr);
-	void imageOnBlock(const BlockIndex& block, std::wstring name, const sf::Color* = nullptr);
-	void imageOnBlockWestAlign(const BlockIndex& block, std::wstring name, const sf::Color* = nullptr);
-	void imageOnBlockEastAlign(const BlockIndex& block, std::wstring name, const sf::Color* = nullptr);
-	void imageOnBlockSouthAlign(const BlockIndex& block, std::wstring name, const sf::Color* = nullptr);
+	void imageOnBlock(const BlockIndex& block, std::string name, const sf::Color* = nullptr);
+	void imageOnBlockWestAlign(const BlockIndex& block, std::string name, const sf::Color* = nullptr);
+	void imageOnBlockEastAlign(const BlockIndex& block, std::string name, const sf::Color* = nullptr);
+	void imageOnBlockSouthAlign(const BlockIndex& block, std::string name, const sf::Color* = nullptr);
 	void progressBarOnBlock(const BlockIndex& block, Percent progress);
 
 	void selected(const BlockIndex& block);

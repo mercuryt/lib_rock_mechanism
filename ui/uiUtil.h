@@ -3,6 +3,7 @@
 #include <string>
 
 class Area;
+class ItemIndex;
 
 namespace UIUtil
 {

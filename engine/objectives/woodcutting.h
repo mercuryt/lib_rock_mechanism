@@ -30,7 +30,7 @@ public:
 	[[nodiscard]] std::wstring name() const { return L"woodcutting"; }
 	void joinProject(WoodCuttingProject& project, const ActorIndex& index);
 	[[nodiscard]] WoodCuttingProject* getJoinableProjectAt(Area& area, const BlockIndex& block, const ActorIndex& index);
-	[[nodiscard]] bool joinableProjectExistsAt(Area &area, const BlockIndex &block, const ActorIndex &actor) const;
+	[[nodiscard]] bool joinableProjectExistsAt(Area &area, const BlockIndex& block, const ActorIndex& actor) const;
 	friend class WoodCuttingPathRequest;
 	friend class WoodCuttingProject;
 };

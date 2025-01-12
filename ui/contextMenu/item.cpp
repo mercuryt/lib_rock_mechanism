@@ -2,45 +2,52 @@
 #include "../window.h"
 #include "../displayData.h"
 #include "../uiUtil.h"
-#include "../../engine/block.h"
-#include "../../engine/actor.h"
+#include "../../engine/blocks/blocks.h"
+#include "../../engine/actors/actors.h"
+#include "../../engine/items/items.h"
 #include "../../engine/objectives/equipItem.h"
 #include "../../engine/objectives/unequipItem.h"
 #include "../../engine/simulation/hasItems.h"
+#include "../../engine/moveType.h"
 #include <cmath>
 #include <regex>
-void ContextMenu::drawItemControls(BlockIndex& block)
+void ContextMenu::drawItemControls(const BlockIndex& block)
 {
+	Area& area = *m_window.getArea();
+	Blocks& blocks = area.getBlocks();
+	Items& items = area.getItems();
+	Actors& actors = area.getActors();
+	const FactionId& faction = m_window.getFaction();
 	// Item submenu.
-	if(!block.m_hasItems.empty())
-		for(Item* item : block.m_hasItems.getAll())
+	if(!blocks.item_empty(block))
+		for(const ItemIndex& item : blocks.item_getAll(block))
 		{
-			auto label = tgui::Label::create(m_window.displayNameForItem(*item));
+			auto label = tgui::Label::create(m_window.displayNameForItem(item));
 			m_root.add(label);
-			label->onMouseEnter([this, item]{
+			label->onMouseEnter([this, item, faction, &items, &actors]{
 				auto& submenu = makeSubmenu(0);
 				auto info = tgui::Button::create("info");
 				submenu.add(info);
-				info->onClick([this, item]{ m_window.getGameOverlay().drawInfoPopup(*item); });
-				if(m_window.getFaction())
+				info->onClick([this, item]{ m_window.getGameOverlay().drawInfoPopup(item); });
+				if(faction.exists())
 				{
-					bool itemAtClickedLocationMarked = item->m_canBeStockPiled.contains(*m_window.getFaction());
+					bool itemAtClickedLocationMarked = items.stockpile_canBeStockPiled(item, faction);
 					auto stockpileUI = tgui::Button::create(itemAtClickedLocationMarked ? "do not stockpile" : "stockpile");
 					submenu.add(stockpileUI);
-					stockpileUI->onClick([item, itemAtClickedLocationMarked, this]{ 
+					stockpileUI->onClick([item, itemAtClickedLocationMarked, this, faction, &items]{
 						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 						if(m_window.getSelectedItems().empty())
-							m_window.selectItem(*item);
-						for(Item* selectedItem : m_window.getSelectedItems())
+							m_window.selectItem(item);
+						for(const ItemIndex& selectedItem : m_window.getSelectedItems())
 						{
-							bool selectedItemMarked = selectedItem->m_canBeStockPiled.contains(*m_window.getFaction());
-							if(!itemAtClickedLocationMarked) 
+							bool selectedItemMarked = items.stockpile_canBeStockPiled(selectedItem, faction);
+							if(!itemAtClickedLocationMarked)
 							{
 								if(!selectedItemMarked)
-									m_window.getArea()->m_hasStockPiles.at(*m_window.getFaction()).addItem(*selectedItem);
+									m_window.getArea()->m_hasStockPiles.getForFaction(faction).addItem(selectedItem);
 							}
 							else if(selectedItemMarked)
-								m_window.getArea()->m_hasStockPiles.at(*m_window.getFaction()).removeItem(*selectedItem);
+								m_window.getArea()->m_hasStockPiles.getForFaction(faction).removeItem(selectedItem);
 						}
 						hide();
 					});
@@ -50,57 +57,57 @@ void ContextMenu::drawItemControls(BlockIndex& block)
 				{
 					auto destroy = tgui::Button::create("destroy");
 					submenu.add(destroy);
-					destroy->onClick([this, item]{ 
+					destroy->onClick([this, item, &items]{
 						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 						m_window.deselectAll();
-						item->destroy(); 
+						items.destroy(item);
 						hide();
 					});
 				}
-				auto& actors = m_window.getSelectedActors();
-				if(actors.size() == 1)
+				auto& selectedActors = m_window.getSelectedActors();
+				if(selectedActors.size() == 1)
 				{
-					Actor& actor = **actors.begin();
+					const ActorIndex& actor = *selectedActors.begin();
 					// Equip.
 					if(
-							(m_window.m_editMode || m_window.getFaction() == actor.getFaction()) && 
-							actor.m_equipmentSet.canEquipCurrently(*item)
+							(m_window.m_editMode || m_window.getFaction() == actors.getFaction(actor)) &&
+							actors.equipment_canEquipCurrently(actor, item)
 					  )
 					{
 						auto button = tgui::Button::create("equip");
 						button->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 						submenu.add(button);
-						button->onClick([this, &actor, item] () mutable {
+						button->onClick([this, &actors, &items, actor, item] () mutable {
 							std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-							std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(actor, *item);
-							actor.m_hasObjectives.replaceTasks(std::move(objective));
+							ItemReference itemRef = items.getReference(item);
+							std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(itemRef);
+							actors.objective_replaceTasks(actor, std::move(objective));
 							hide();
 						});
 					}
 				}
-				if(!actors.empty() && m_window.getFaction())
+				if(!selectedActors.empty() && faction.exists())
 				{
-					std::vector<const HasShape*> vector(actors.begin(), actors.end());
-					if(vector.front()->m_canLead.getMoveSpeedForGroupWithAddedMass(vector, item->singleUnitMass()))
+					if(actors.lineLead_getSpeedWithAddedMass(selectedActors, items.getSingleUnitMass(item)) != 0)
 					{
 						auto moveTo = tgui::Button::create("move to...");
 						moveTo->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 						submenu.add(moveTo);
-						moveTo->onClick([this, item]{ 
+						moveTo->onClick([this, item]{
 							m_window.getGameOverlay().m_itemBeingMoved = item;
-							hide(); 
+							hide();
 						});
 					}
 				}
-				if(item->m_itemType.internalVolume)
+				if(ItemType::getInternalVolume(items.getItemType(item)) != 0)
 				{
 					auto addCargo = tgui::Label::create("add cargo");
 					addCargo->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
 					submenu.add(addCargo);
-					std::function<void(ItemParamaters params)> callback = [this, &item](ItemParamaters params){
+					std::function<void(ItemParamaters params)> callback = [this, &items, item](ItemParamaters params){
 						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-						Item& newItem = m_window.getSimulation()->m_hasItems->createItem(params);
-						item->m_hasCargo.add(newItem);
+						const ItemIndex& newItem = items.create(params);
+						items.cargo_addItem(item, newItem, items.getQuantity(newItem));
 						hide();
 					};
 					auto [itemTypeUI, materialTypeUI, quantityOrQualityLabel, quantityOrQualityUI, wearLabel, wearUI, confirmUI] = widgetUtil::makeCreateItemUI(callback);
@@ -124,24 +131,26 @@ void ContextMenu::drawItemControls(BlockIndex& block)
 				}
 			});
 		}
-	auto& actors = m_window.getSelectedActors();
-	if(actors.size() == 1)
+	auto& selectedActors = m_window.getSelectedActors();
+	if(selectedActors.size() == 1)
 	{
-		Actor& actor = **actors.begin();
-		if(!actor.m_equipmentSet.empty())
+		const ActorIndex& actor = selectedActors.front();
+		auto& equipment = actors.equipment_getAll(actor);
+		if(!equipment.empty())
 		{
 			auto unequip = tgui::Label::create("unequip");
 			m_root.add(unequip);
-			unequip->onMouseEnter([this, &block, &actor]{
+			unequip->onMouseEnter([this, block, actor, &equipment, &items, &actors, &area]{
 				auto& submenu = makeSubmenu(0);
-				for(Item* item : actor.m_equipmentSet.getAll())
+				for(const ItemReference& itemRef : equipment)
 				{
-					auto button = tgui::Label::create(UIUtil::describeItem(*item));
+					const ItemIndex& item = itemRef.getIndex(items.m_referenceData);
+					auto button = tgui::Label::create(UIUtil::describeItem(area, item));
 					submenu.add(button);
-					button->onClick([this, &block, &actor, item]{
+					button->onClick([this, block, actor, item, itemRef, &actors]{
 						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-						std::unique_ptr<Objective> objective = std::make_unique<UnequipItemObjective>(actor, *item, block);
-						actor.m_hasObjectives.replaceTasks(std::move(objective));
+						std::unique_ptr<Objective> objective = std::make_unique<UnequipItemObjective>(itemRef, block);
+						actors.objective_replaceTasks(actor, std::move(objective));
 						hide();
 					});
 				}
@@ -150,17 +159,18 @@ void ContextMenu::drawItemControls(BlockIndex& block)
 	}
 	if(m_window.m_editMode)
 	{
-		std::function<void(ItemParamaters params)> callback = [this, &block](ItemParamaters params){
+		std::function<void(ItemParamaters params)> callback = [this, &blocks, &items, block](ItemParamaters params){
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 			if(m_window.getSelectedBlocks().empty())
 				m_window.selectBlock(block);
-			for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
+			for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
 			{
-				static const MoveType& none = MoveType::byName("none");
-				if(!selectedBlock->m_hasShapes.shapeAndMoveTypeCanEnterEverWithAnyFacing(params.itemType.shape, none))
+				static const MoveTypeId& none = MoveType::byName(L"none");
+				const ShapeId& shape = ItemType::getShape(params.itemType);
+				if(!blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(selectedBlock, shape, none))
 					continue;
 				params.location = selectedBlock;
-				m_window.getSimulation()->m_hasItems->createItem(params);
+				items.create(params);
 			}
 			hide();
 		};
@@ -189,27 +199,27 @@ void ContextMenu::drawItemControls(BlockIndex& block)
 		});
 	}
 	// Items.
-	auto items = m_window.getSelectedItems();
-	if(items.size() == 1)
+	auto selectedItems = m_window.getSelectedItems();
+	if(selectedItems.size() == 1)
 	{
-		Item& item = **items.begin();
-		if(item.m_itemType.installable)
+		const ItemIndex& item = selectedItems.front();
+		if(ItemType::getInstallable(items.getItemType(item)))
 		{
 			// Install item.
 			auto install = tgui::Label::create("install...");
 			install->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 			m_root.add(install);
-			install->onMouseEnter([this, &block, &item]{
+			install->onMouseEnter([this, block, item, faction, &area]{
 				auto& submenu = makeSubmenu(0);
-				for(Facing facing = 0; facing < 4; ++facing)
+				for(Facing facing = Facing::create(0); facing < 4; ++facing)
 				{
 					auto button = tgui::Button::create(m_window.facingToString(facing));
 					button->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 					submenu.add(button);
-					button->onClick([this, &block, &item, facing]{ 
+					button->onClick([this, block, item, facing, faction, &area]{
 						std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-						m_window.getArea()->m_hasInstallItemDesignations.at(*m_window.getFaction()).add(block, item, facing, *m_window.getFaction()); 
-						hide(); 
+						m_window.getArea()->m_hasInstallItemDesignations.getForFaction(faction).add(area, block, item, facing, faction);
+						hide();
 					});
 				}
 			});

@@ -1,6 +1,6 @@
 #pragma once
 #include <TGUI/TGUI.hpp>
-struct Faction;
+class FactionId;
 class Simulation;
 class Window;
 class EditFactionView

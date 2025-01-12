@@ -29,7 +29,7 @@ void InfoPopup::makeWindow()
 	m_childWindow->add(m_grid);
 }
 void InfoPopup::add(tgui::Widget::Ptr widget) { m_grid->addWidget(widget, ++m_count, 1); }
-void InfoPopup::display(BlockIndex& block)
+void InfoPopup::display(const BlockIndex& block)
 {
 	makeWindow();
 	Area& area = *m_window.getArea();
@@ -97,7 +97,7 @@ void InfoPopup::display(BlockIndex& block)
 			add(label);
 		}
 	}
-	m_update = [this, &block]{ display(block); };
+	m_update = [this, block]{ display(block); };
 }
 void InfoPopup::display(const ItemIndex& item)
 {
@@ -138,7 +138,7 @@ void InfoPopup::display(const ItemIndex& item)
 		button->onClick([=, this]{ display(actor); });
 		add(button);
 	}
-	m_update = [this, &item]{ display(item); };
+	m_update = [this, item]{ display(item); };
 }
 void InfoPopup::display(const ActorIndex& actor)
 {
@@ -160,12 +160,12 @@ void InfoPopup::display(const ActorIndex& actor)
 	}
 	auto more = tgui::Button::create("more");
 	add(more);
-	more->onClick([this, &actor]{ m_window.showActorDetail(actor); });
+	more->onClick([this, actor]{ m_window.showActorDetail(actor); });
 	if(actors.isSentient(actor) && (m_window.m_editMode || (m_window.getFaction().exists() && m_window.getFaction() == actors.getFaction(actor).exists())))
 	{
 		auto priorities = tgui::Button::create("priorities");
 		add(priorities);
-		priorities->onClick([this, &actor]{ m_window.showObjectivePriority(actor); });
+		priorities->onClick([this, actor]{ m_window.showObjectivePriority(actor); });
 	}
 	if(!actors.sleep_isAwake(actor))
 		add(tgui::Label::create("sleeping"));
@@ -184,7 +184,7 @@ void InfoPopup::display(const ActorIndex& actor)
 	if(actors.drink_isThirsty(actor))
 		thirstPercent += 100;
 	add(tgui::Label::create(std::to_wstring(thirstPercent.get()) + L" % thirst"));
-	m_update = [this, &actor]{ display(actor); };
+	m_update = [this, actor]{ display(actor); };
 	m_childWindow->setFocused(false);
 }
 void InfoPopup::display(const PlantIndex& plant)
@@ -200,7 +200,7 @@ void InfoPopup::display(const PlantIndex& plant)
 		Percent thirstPercent = plants.getFluidEventPercentComplete(plant);
 		add(tgui::Label::create(std::to_wstring(thirstPercent.get()) + L" % thirst"));
 	}
-	m_update = [this, &plant]{ display(plant); };
+	m_update = [this, plant]{ display(plant); };
 }
 void InfoPopup::hide() { m_childWindow->close(); m_childWindow = nullptr; }
 bool InfoPopup::isVisible() const { return m_childWindow && m_childWindow->isVisible(); }

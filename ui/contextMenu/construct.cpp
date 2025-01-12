@@ -1,36 +1,42 @@
 #include "../contextMenu.h"
 #include "../window.h"
 #include "../displayData.h"
-#include "../../engine/block.h"
-#include "blockFeature.h"
-#include "designations.h"
-#include "materialType.h"
-void ContextMenu::drawConstructControls(BlockIndex& block)
+#include "../../engine/blocks/blocks.h"
+#include "../../engine/blockFeature.h"
+#include "../../engine/designations.h"
+#include "../../engine/materialType.h"
+void ContextMenu::drawConstructControls(const BlockIndex& block)
 {
-	if(m_window.getFaction() && block.hasDesignation(*m_window.getFaction(), BlockDesignation::Construct))
+	const Area& area = *m_window.getArea();
+	const FactionId& faction = m_window.getFaction();
+	if(faction.exists())
 	{
-		auto cancelButton = tgui::Button::create("cancel");
-		cancelButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
-		m_root.add(cancelButton);
-		cancelButton->onClick([this]{
-			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-			for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
-				m_window.getArea()->m_hasConstructionDesignations.undesignate(*m_window.getFaction(), *selectedBlock);
-			hide();
-		});
+		const auto& designations = area.m_blockDesignations.getForFaction(faction);
+		if(designations.check(block, BlockDesignation::Construct))
+		{
+			auto cancelButton = tgui::Button::create("cancel");
+			cancelButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
+			m_root.add(cancelButton);
+			cancelButton->onClick([this, faction]{
+				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
+				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+					m_window.getArea()->m_hasConstructionDesignations.undesignate(faction, selectedBlock);
+				hide();
+			});
+		}
 	}
-	else 
+	else
 	{
 		auto constructButton = tgui::Button::create("construct");
 		constructButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(constructButton);
 		static bool constructed = false;
-		constructButton->onMouseEnter([this, &block]{
+		constructButton->onMouseEnter([this, block]{
 			auto& subMenu = makeSubmenu(0);
 			// Only list material types which have construction data, unless in edit mode.
-			std::function<bool(const MaterialType&)> predicate = nullptr; 
+			std::function<bool(const MaterialTypeId&)> predicate = nullptr;
 			if(!m_window.m_editMode)
-				predicate = [&](const MaterialType& materialType){ return materialType.constructionData; };
+				predicate = [&](const MaterialTypeId& materialType)->bool{ return MaterialType::construction_getConsumed(materialType).empty(); };
 			auto materialTypeSelector = widgetUtil::makeMaterialSelectUI(L"", predicate);
 			subMenu.add(materialTypeSelector);
 			if(m_window.m_editMode)
@@ -47,39 +53,40 @@ void ContextMenu::drawConstructControls(BlockIndex& block)
 			subMenu.add(blockFeatureTypeUI);
 			auto constructFeature = tgui::Button::create("construct feature");
 			subMenu.add(constructFeature);
-			constructFeature->onClick([this, &block]{
-				construct(block, constructed, *widgetUtil::lastSelectedMaterial, widgetUtil::lastSelectedBlockFeatureType);
+			constructFeature->onClick([this, block]{
+				construct(block, constructed, widgetUtil::lastSelectedMaterial, widgetUtil::lastSelectedBlockFeatureType);
 			});
 		});
-		constructButton->onClick([this, &block]{
-			construct(block, constructed, *widgetUtil::lastSelectedMaterial, nullptr);
+		constructButton->onClick([this, block]{
+			construct(block, constructed, widgetUtil::lastSelectedMaterial, nullptr);
 		});
 	}
 }
-void ContextMenu::construct(BlockIndex& block, bool constructed, const MaterialType& materialType, const BlockFeatureType* blockFeatureType)
+void ContextMenu::construct(const BlockIndex& block, bool constructed, const MaterialTypeId& materialType, const BlockFeatureType* blockFeatureType)
 {
 	std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 	if(m_window.getSelectedBlocks().empty())
 		m_window.selectBlock(block);
-	for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
-		if(!selectedBlock->isSolid())
+	Blocks& blocks = m_window.getArea()->getBlocks();
+	for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+		if(!blocks.solid_is(selectedBlock))
 		{
 			if (m_window.m_editMode)
 			{
 				if(blockFeatureType == nullptr)
-					selectedBlock->setSolid(materialType, constructed);
+					blocks.solid_set(selectedBlock, materialType, constructed);
 				else
 					if(!constructed)
 					{
-						if(!selectedBlock->isSolid())
-							selectedBlock->setSolid(materialType);
-						selectedBlock->m_hasBlockFeatures.hew(*blockFeatureType);
+						if(!blocks.solid_is(selectedBlock))
+							blocks.solid_set(selectedBlock, materialType, false);
+						blocks.blockFeature_hew(selectedBlock, *blockFeatureType);
 					}
 					else
-						selectedBlock->m_hasBlockFeatures.construct(*blockFeatureType, materialType);
+						blocks.blockFeature_construct(selectedBlock, *blockFeatureType, materialType);
 			}
 			else
-				m_window.getArea()->m_hasConstructionDesignations.designate(*m_window.getFaction(), *selectedBlock, blockFeatureType, materialType);
+				m_window.getArea()->m_hasConstructionDesignations.designate(m_window.getFaction(), selectedBlock, blockFeatureType, materialType);
 		}
 	hide();
 }

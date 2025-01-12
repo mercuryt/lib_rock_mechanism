@@ -2,6 +2,9 @@
 #include <TGUI/TGUI.hpp>
 #include <TGUI/Widgets/Panel.hpp>
 class BlockIndex;
+class ItemIndex;
+class ActorIndex;
+class PlantIndex;
 class Window;
 
 class InfoPopup final
@@ -15,7 +18,7 @@ public:
 	InfoPopup(Window& window);
 	void makeWindow();
 	void add(tgui::Widget::Ptr widget);
-	void display(BlockIndex& block);
+	void display(const BlockIndex& block);
 	void display(const ItemIndex& item);
 	void display(const PlantIndex& plant);
 	void display(const ActorIndex& actor);

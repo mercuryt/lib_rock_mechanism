@@ -2,6 +2,8 @@
 #include <TGUI/TGUI.hpp>
 class Window;
 class BlockIndex;
+class PlantIndex;
+class MaterialTypeId;
 struct MaterialType;
 struct BlockFeatureType;
 struct ContextMenuSegment final
@@ -14,7 +16,7 @@ public:
 	ContextMenuSegment(tgui::Group::Ptr overlayGroup);
 	tgui::Panel::Ptr m_panel;
 	tgui::Grid::Ptr m_grid;
-	void add(tgui::Widget::Ptr widget, std::wstring id = "");
+	void add(tgui::Widget::Ptr widget, std::wstring id = L"");
 	~ContextMenuSegment();
 };
 class ContextMenu final
@@ -23,12 +25,13 @@ class ContextMenu final
 	ContextMenuSegment m_root;
 	tgui::Group::Ptr m_gameOverlayGroup;
 	std::vector<ContextMenuSegment> m_submenus;
+	[[nodiscard]] bool plantIsValid(const PlantIndex& plant) const;
 public:
 	ContextMenu(Window& window, tgui::Group::Ptr gameOverlayGroup);
 	void draw(const BlockIndex& block);
 	void drawDigControls(const BlockIndex& block);
 	void drawConstructControls(const BlockIndex& block);
-	void construct(const BlockIndex& block, bool constructed, const MaterialType& materialType, const BlockFeatureType* blockFeatureType);
+	void construct(const BlockIndex& block, bool constructed, const MaterialTypeId& materialType, const BlockFeatureType* blockFeatureType);
 	void drawActorControls(const BlockIndex& block);
 	void drawPlantControls(const BlockIndex& block);
 	void drawItemControls(const BlockIndex& block);

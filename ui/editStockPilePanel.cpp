@@ -13,10 +13,10 @@ EditStockPileView::EditStockPileView(Window& window) : m_window(window), m_panel
 
 void EditStockPileView::draw(StockPile* stockpile)
 {
-	std::wstring verb = m_stockPile ? "edit" : "create";
+	std::wstring verb = m_stockPile ? L"edit" : L"create";
 	m_stockPile = stockpile;
 	m_panel->removeAllWidgets();
-	auto label = tgui::Label::create(verb + " stockpile");
+	auto label = tgui::Label::create(verb + L" stockpile");
 	m_panel->add(label);
 	uint index = 0;
 	auto list = tgui::Grid::create();

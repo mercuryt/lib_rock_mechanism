@@ -25,6 +25,30 @@ MoveTypeId Actors::lineLead_getMoveType(const ActorIndex& index) const
 	MoveTypeId output = m_moveType[index];
 	return output;
 }
+Speed Actors::lineLead_getSpeedWithAddedMass(const ActorIndex& index, const Mass& mass) const
+{
+	auto actorsAndItems = lineLead_getAll(index);
+	return PortablesHelpers::getMoveSpeedForGroupWithAddedMass(m_area, actorsAndItems, Mass::create(0), mass);
+}
+Speed Actors::lineLead_getSpeedWithAddedMass(const SmallSet<ActorIndex>& indices, const Mass& mass) const
+{
+	std::vector<ActorOrItemIndex> vector;
+	vector.resize(indices.size());
+	for(const ActorIndex& index : indices)
+		vector.push_back(ActorOrItemIndex::createForActor(index));
+	return PortablesHelpers::getMoveSpeedForGroupWithAddedMass(m_area, vector, Mass::create(0), mass);
+}
+std::vector<ActorOrItemIndex> Actors::lineLead_getAll(const ActorIndex& index) const
+{
+	std::vector<ActorOrItemIndex> output;
+	ActorOrItemIndex current = ActorOrItemIndex::createForActor(index);
+	while(current.exists())
+	{
+		output.push_back(current);
+		current = current.getFollower(m_area);
+	}
+	return output;
+}
 OccupiedBlocksForHasShape Actors::lineLead_getOccupiedBlocks(const ActorIndex& index) const
 {
 	OccupiedBlocksForHasShape output;

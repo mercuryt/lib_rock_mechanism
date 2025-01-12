@@ -123,7 +123,7 @@ public:
 	[[nodiscard]] bool isAdjacentToIncludingCornersAndEdges(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] bool isAdjacentToActor(const BlockIndex& index, const ActorIndex& actor) const;
 	[[nodiscard]] bool isAdjacentToItem(const BlockIndex& index, const ItemIndex& item) const;
-	[[nodiscard]] bool isConstructed(const BlockIndex& index) const;
+	[[nodiscard]] bool isConstructed(const BlockIndex& index) const { return m_constructed[index]; }
 	[[nodiscard]] bool canSeeIntoFromAlways(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] bool isVisible(const BlockIndex& index) const { return m_visible[index]; }
 	void moveContentsTo(const BlockIndex& index, const BlockIndex& other);

@@ -20,7 +20,7 @@ public:
 	void setFrom(const BlockIndex& block);
 	void setFrom(Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
 	void clear();
-	[[nodiscard]] BlockIndices toSet(Blocks& blocks);
+	[[nodiscard]] SmallSet<BlockIndex> toSet(Blocks& blocks);
 	[[nodiscard]] bool contains(Blocks& blocks, const BlockIndex& block) const;
 	[[nodiscard]] bool canMerge(Blocks& blocks, const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid sum(Blocks& blocks, const Cuboid& cuboid) const;

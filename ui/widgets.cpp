@@ -75,7 +75,7 @@ void AreaSelectUI::set(Area& area) { m_widget->setSelectedItem(area.m_name); }
 Area& AreaSelectUI::get() const
 {
 	std::wstring name = m_widget->getSelectedItem().toWideString();
-	auto found = m_simulation->m_hasAreas->getAll().find([&](const Area& area){ return area.m_name == name; });
+	auto found = m_simulation->m_hasAreas->getAll().findIf([&](const Area& area){ return area.m_name == name; });
 	assert(found != m_simulation->m_hasAreas->getAll().end());
 	return found.second();
 }

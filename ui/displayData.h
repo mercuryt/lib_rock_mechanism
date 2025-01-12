@@ -1,5 +1,5 @@
 #pragma once
-
+#include "../engine/vectorContainers.h"
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Window/Event.hpp>
 #include <string>
@@ -12,7 +12,7 @@ struct BlockFeatureType;
 
 struct PlantSpeciesDisplayData final
 {
-	std::wstring image;
+	std::string image;
 	sf::Color color;
 	float scale;
 	bool groundCover;
@@ -20,14 +20,14 @@ struct PlantSpeciesDisplayData final
 
 struct AnimalSpeciesDisplayData final
 {
-	std::wstring image;
+	std::string image;
 	sf::Color color;
 	float scale;
 };
 
 struct ItemTypeDisplayData final
 {
-	std::wstring image;
+	std::string image;
 	sf::Color color;
 	float scale;
 };

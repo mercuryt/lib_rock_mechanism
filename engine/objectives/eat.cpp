@@ -10,14 +10,14 @@
 #include "../types.h"
 #include "kill.h"
 
-EatEvent::EatEvent(Area &area, const Step &delay, EatObjective &eo, const ActorIndex &actor, const Step start) : ScheduledEvent(area.m_simulation, delay, start), m_eatObjective(eo)
+EatEvent::EatEvent(Area& area, const Step& delay, EatObjective& eo, const ActorIndex& actor, const Step start) : ScheduledEvent(area.m_simulation, delay, start), m_eatObjective(eo)
 {
 	assert(area.getActors().eat_hasObjective(actor));
 	m_actor.setIndex(actor, area.getActors().m_referenceData);
 }
-void EatEvent::execute(Simulation &, Area *area)
+void EatEvent::execute(Simulation&, Area *area)
 {
-	Actors &actors = area->getActors();
+	Actors& actors = area->getActors();
 	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
 	// TODO: use the version of this method on mustEat and delete this one.
 	BlockIndex blockContainingFood = actors.eat_getAdjacentBlockWithTheMostDesiredFood(actor);
@@ -26,8 +26,8 @@ void EatEvent::execute(Simulation &, Area *area)
 		actors.objective_canNotCompleteSubobjective(actor);
 		return;
 	}
-	Blocks &blocks = area->getBlocks();
-	Items &items = area->getItems();
+	Blocks& blocks = area->getBlocks();
+	Items& items = area->getItems();
 	for(ItemIndex item : blocks.item_getAll(blockContainingFood))
 	{
 		if(items.isPreparedMeal(item))
@@ -179,7 +179,7 @@ FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrain
 			// Otherwise they will store candidates ranked by desire.
 			// EatPathRequest::callback may use one of those candidates, if the actorIndex is hungry enough.
 			auto minimum = mustEat.getMinimumAcceptableDesire(area);
-			auto destinationCondition = [&mustEat, this, &area, minimum](const BlockIndex &block, const Facing&) -> std::pair<bool, BlockIndex>
+			auto destinationCondition = [&mustEat, this, &area, minimum](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
 			{
 				uint32_t eatDesire = mustEat.getDesireToEatSomethingAt(area, block);
 				if(eatDesire < minimum)
@@ -197,7 +197,7 @@ FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrain
 		{
 			// Nonsentients will eat whatever they come across first.
 			// Having preference would be nice but this is better for performance.
-			auto destinationCondition = [&mustEat, &area](const BlockIndex &block, const Facing&) -> std::pair<bool, BlockIndex>
+			auto destinationCondition = [&mustEat, &area](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
 			{
 				return {mustEat.getDesireToEatSomethingAt(area, block) != 0, block};
 			};
@@ -417,11 +417,11 @@ void EatObjective::noFoodFound()
 {
 	m_noFoodFound = true;
 }
-bool EatObjective::canEatAt(Area &area, const BlockIndex &block, const ActorIndex &actor) const
+bool EatObjective::canEatAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const
 {
-	Blocks &blocks = area.getBlocks();
-	Actors &actors = area.getActors();
-	Items &items = area.getItems();
+	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
+	Items& items = area.getItems();
 	for(ItemIndex item : blocks.item_getAll(block))
 	{
 		if(actors.eat_canEatItem(actor, item))

@@ -32,7 +32,7 @@ void NewProductionView::draw()
 	grid->addWidget(tgui::Label::create("quantity"), 2, 0);
 	auto quantityUI = tgui::SpinControl::create();
 	quantityUI->setValue(m_quantity.get());
-	quantityUI->onValueChange([this](const auto value){ m_quantity = value; });
+	quantityUI->onValueChange([this](const float& value){ m_quantity = Quantity::create(value); });
 	grid->addWidget(quantityUI, 2, 1);
 	// Confirm.
 	auto confirm = tgui::Button::create("confirm");
@@ -120,7 +120,7 @@ std::vector<std::tuple<CraftJobTypeId, MaterialTypeId, Quantity, CraftJob*>> Pro
 			return craftJobType == craftJob.craftJobType && materialType == craftJob.materialType;
 		});
 		if(iter == output.end())
-			output.emplace_back(&craftJob.craftJobType, craftJob.materialType, 1u, &craftJob);
+			output.emplace_back(craftJob.craftJobType, craftJob.materialType, Quantity::create(1u), &craftJob);
 		else
 			++std::get<2>(*iter);
 	}

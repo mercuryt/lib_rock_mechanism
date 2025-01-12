@@ -1,4 +1,5 @@
 #pragma once
+#include "../engine/index.h"
 #include <TGUI/TGUI.hpp>
 class Window;
 class ActorView final

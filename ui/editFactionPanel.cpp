@@ -101,7 +101,6 @@ void EditFactionView::draw(const FactionId& factionId)
 			if(id != "__null")
 			{
 				const FactionId& allyFactionId = m_window.getSimulation()->m_hasFactions.byName(id.toWideString());
-				Faction& ally = m_window.getSimulation()->m_hasFactions.getById(allyFactionId);
 				Faction& faction = m_window.getSimulation()->m_hasFactions.getById(factionId);
 				faction.allies.add(allyFactionId);
 				m_window.showEditFaction(factionId);
