@@ -17,12 +17,11 @@ Cuboid::Cuboid(Blocks& blocks, const BlockIndex& h, const BlockIndex& l) : m_hig
 	assert(highestPosition.y >= lowestPosition.y);
 	assert(highestPosition.z >= lowestPosition.z);
 }
-BlockIndices Cuboid::toSet(Blocks& blocks)
+SmallSet<BlockIndex> Cuboid::toSet(Blocks& blocks)
 {
-	BlockIndices output;
-	auto endIter = end(blocks);
-	for(auto iter = begin(blocks); iter != endIter; ++iter)
-		output.add(*iter);
+	SmallSet<BlockIndex> output;
+	for(const BlockIndex& block : getView(blocks))
+		output.insert(block);
 	return output;
 }
 bool Cuboid::contains(Blocks& blocks, const BlockIndex& block) const

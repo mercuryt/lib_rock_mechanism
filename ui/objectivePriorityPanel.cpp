@@ -4,7 +4,6 @@
 #include <TGUI/Layout.hpp>
 ObjectivePriorityView::ObjectivePriorityView(Window& w) : m_window(w), m_panel(tgui::Panel::create()), m_title(tgui::Label::create()), m_grid(tgui::Grid::create())
 {
-	Actors& actors = m_window.getArea()->getActors();
 	m_window.getGui().add(m_panel);
 	m_panel->setVisible(false);
 	m_panel->add(m_title);
@@ -18,7 +17,10 @@ ObjectivePriorityView::ObjectivePriorityView(Window& w) : m_window(w), m_panel(t
 		auto input = m_spinControls[objectiveType->getId()] = tgui::SpinControl::create();
 		input->setMinimum(0);
 		input->setMaximum(UINT8_MAX);
-		input->onValueChange([this, &objectiveType, &actors](float value){ actors.objective_setPriority(m_actor, objectiveType->getId(), Priority::create(value)); });
+		input->onValueChange([this, &objectiveType](float value){
+			Actors& actors = m_window.getArea()->getActors();
+			actors.objective_setPriority(m_actor, objectiveType->getId(), Priority::create(value));
+		});
 		m_grid->addWidget(input, row, 2);
 		++row;
 	}

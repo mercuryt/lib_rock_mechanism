@@ -1,42 +1,44 @@
 #include "../contextMenu.h"
 #include "../window.h"
 #include "../displayData.h"
-#include "../../engine/block.h"
+#include "../../engine/blocks/blocks.h"
 #include "../../engine/fluidType.h"
-void ContextMenu::drawFluidControls(BlockIndex& block)
+void ContextMenu::drawFluidControls(const BlockIndex& block)
 {
+	Area& area = *m_window.getArea();
+	Blocks& blocks = area.getBlocks();
 	// Fluids.
-	for(auto& [fluidType, pair] : block.m_hasFluids.getAll())
+	for(FluidData& fluidData : blocks.fluid_getAll(block))
 	{
-		auto label = tgui::Label::create(fluidType->name);
+		auto label = tgui::Label::create(FluidType::getName(fluidData.type));
 		label->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
 		m_root.add(label);
-		label->onMouseEnter([this, &block, fluidType]{
+		label->onMouseEnter([this, &blocks, block, fluidData]{
 			auto& submenu = makeSubmenu(0);
 			auto remove = tgui::Button::create("remove");
 			submenu.add(remove);
-			remove->onClick([this, fluidType]{ 
+			remove->onClick([this, fluidData, &blocks]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				for(auto* selectedBlock : m_window.getSelectedBlocks())
+				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
 				{
-					Volume contains = selectedBlock->m_hasFluids.volumeOfFluidTypeContains(*fluidType);
-					if(contains)
-						selectedBlock->m_hasFluids.removeFluidSyncronus(contains, *fluidType);
+					CollisionVolume contains = blocks.fluid_volumeOfTypeContains(selectedBlock, fluidData.type);
+					if(contains != 0)
+						blocks.fluid_removeSyncronus(selectedBlock, contains, fluidData.type);
 				}
 				hide();
 			});
-			FluidGroup& group = *block.m_hasFluids.getFluidGroup(*fluidType);
+			FluidGroup& group = *blocks.fluid_getGroup(block, fluidData.type);
 			if(group.getBlocks().size() > 1)
 			{
 				auto selectGroup = tgui::Button::create("select adjacent");
 				submenu.add(selectGroup);
-				selectGroup->onClick([this, fluidType, &block]{
+				selectGroup->onClick([this, fluidData, &blocks, block]{
 					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-					if(block.m_hasFluids.volumeOfFluidTypeContains(*fluidType))
+					if(blocks.fluid_volumeOfTypeContains(block, fluidData.type) != 0)
 					{
-						FluidGroup& group = *block.m_hasFluids.getFluidGroup(*fluidType);
+						FluidGroup& group = *blocks.fluid_getGroup(block, fluidData.type);
 						m_window.deselectAll();
-						for(BlockIndex* block : group.getBlocks())
+						for(const BlockIndex& block : group.getBlocks())
 							m_window.getSelectedBlocks().insert(block);
 					}
 					hide();
@@ -49,8 +51,8 @@ void ContextMenu::drawFluidControls(BlockIndex& block)
 		auto createFluidSource = tgui::Label::create("create fluid");
 		createFluidSource->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(createFluidSource);
-		static Volume fluidLevel = Config::maxBlockVolume;
-		createFluidSource->onMouseEnter([this, &block]{
+		static CollisionVolume fluidLevel = Config::maxBlockVolume;
+		createFluidSource->onMouseEnter([this, &blocks, block]{
 			auto& submenu = makeSubmenu(0);
 			auto fluidTypeLabel = tgui::Label::create("fluid type");
 			submenu.add(fluidTypeLabel);
@@ -62,20 +64,20 @@ void ContextMenu::drawFluidControls(BlockIndex& block)
 			submenu.add(levelLabel);
 			auto levelUI = tgui::SpinControl::create();
 			levelUI->setMinimum(1);
-			levelUI->setMaximum(Config::maxBlockVolumeHardLimit);
-			levelUI->onValueChange([](const float value){fluidLevel = value;});
-			levelUI->setValue(fluidLevel);
+			levelUI->setMaximum(Config::maxBlockVolume.get());
+			levelUI->onValueChange([](const float value){fluidLevel = CollisionVolume::create(value);});
+			levelUI->setValue(fluidLevel.get());
 			submenu.add(levelUI);
 			auto createFluid = tgui::Button::create("create fluid");
 			createFluid->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 			submenu.add(createFluid);
-			createFluid->onClick([this, &block, fluidTypeUI, levelUI]{
+			createFluid->onClick([this, &blocks, block, fluidTypeUI, levelUI]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				if(m_window.getSelectedBlocks().empty())
 					m_window.selectBlock(block);
-				for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
-					if(!selectedBlock->isSolid())
-						selectedBlock->m_hasFluids.addFluid(fluidLevel, FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()));
+				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+					if(!blocks.solid_is(selectedBlock))
+						blocks.fluid_add(selectedBlock, fluidLevel, FluidType::byName(fluidTypeUI->getSelectedItemId().toWideString()));
 				m_window.getArea()->m_hasFluidGroups.clearMergedFluidGroups();
 				hide();
 			});
@@ -84,14 +86,14 @@ void ContextMenu::drawFluidControls(BlockIndex& block)
 				auto createSource = tgui::Button::create("create source");
 				createSource->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 				submenu.add(createSource);
-				createSource->onClick([this, &block, fluidTypeUI, levelUI]{
+				createSource->onClick([this, block, fluidTypeUI, levelUI]{
 					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(block);
-					for(BlockIndex* selectedBlock: m_window.getSelectedBlocks())
+					for(const BlockIndex& selectedBlock: m_window.getSelectedBlocks())
 						m_window.getArea()->m_fluidSources.create(
-							*selectedBlock, 
-							FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()), 
+							selectedBlock,
+							FluidType::byName(fluidTypeUI->getSelectedItemId().toWideString()),
 							fluidLevel
 						);
 					hide();
@@ -104,7 +106,7 @@ void ContextMenu::drawFluidControls(BlockIndex& block)
 		auto removeFluidSourceButton = tgui::Label::create("remove fluid source");
 		removeFluidSourceButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(removeFluidSourceButton);
-		removeFluidSourceButton->onClick([this, &block]{
+		removeFluidSourceButton->onClick([this, block]{
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 			m_window.getArea()->m_fluidSources.destroy(block);
 			hide();

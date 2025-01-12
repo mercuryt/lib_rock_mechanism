@@ -211,7 +211,7 @@ BlockIndex Blocks::getCenterAtGroundLevel() const
 	}
 	return center;
 }
-Cuboid Blocks::getZLevel(const DistanceInBlocks& z)
+Cuboid Blocks::getZLevel(const DistanceInBlocks &z)
 {
 	return Cuboid(*this, getIndex({m_sizeX - 1, m_sizeY - 1, z}), getIndex({DistanceInBlocks::create(0), DistanceInBlocks::create(0), z}));
 }
@@ -280,7 +280,7 @@ BlockIndex Blocks::getBlockAbove(const BlockIndex& index) const
 }
 BlockIndex Blocks::getBlockNorth(const BlockIndex& index) const
 {
-	return m_directlyAdjacent[index][3];
+	return m_directlyAdjacent[index][1];
 }
 BlockIndex Blocks::getBlockWest(const BlockIndex& index) const
 {
@@ -288,7 +288,7 @@ BlockIndex Blocks::getBlockWest(const BlockIndex& index) const
 }
 BlockIndex Blocks::getBlockSouth(const BlockIndex& index) const
 {
-	return m_directlyAdjacent[index][1];
+	return m_directlyAdjacent[index][3];
 }
 BlockIndex Blocks::getBlockEast(const BlockIndex& index) const
 {

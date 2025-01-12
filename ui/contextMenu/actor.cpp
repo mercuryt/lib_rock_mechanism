@@ -9,15 +9,16 @@
 #include "../../engine/simulation/hasActors.h"
 void ContextMenu::drawActorControls(const BlockIndex& block)
 {
-	Blocks& blocks = m_window.getArea()->getBlocks();
-	Actors& actors = m_window.getArea()->getActors();
+	Area& area = *m_window.getArea();
+	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
 	// Actor submenu.
 	for(const ActorIndex& actor : blocks.actor_getAll(block))
 	{
 		auto label = tgui::Label::create(actors.getName(actor));
 		label->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(label);
-		label->onMouseEnter([this, actor, &actors]{
+		label->onMouseEnter([this, actor, &actors, &area]{
 			auto& submenu = makeSubmenu(0);
 			auto actorInfoButton = tgui::Button::create("info");
 			submenu.add(actorInfoButton);
@@ -45,10 +46,13 @@ void ContextMenu::drawActorControls(const BlockIndex& block)
 			{
 				auto destroy = tgui::Button::create("destroy");
 				destroy->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
-				destroy->onClick([this, actor, &actors]{
+				destroy->onClick([this, actor, &actors, &area]{
 					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					m_window.deselectAll();
+					actors.exit(actor);
 					actors.destroy(actor);
+					const ActorId& actorId = actors.getId(actor);
+					m_window.getSimulation()->m_actors.removeActor(actorId);
 					hide();
 				});
 				submenu.add(destroy);
@@ -60,9 +64,10 @@ void ContextMenu::drawActorControls(const BlockIndex& block)
 				submenu.add(kill);
 				kill->onClick([this, actor, &actors, &selectedActors]{
 					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
+					const ActorReference& ref = actors.getReference(actor);
 					for(const ActorIndex& selectedActor : selectedActors)
 					{
-						std::unique_ptr<Objective> objective = std::make_unique<KillObjective>(selectedActor, actor);
+						std::unique_ptr<Objective> objective = std::make_unique<KillObjective>(ref);
 						actors.objective_replaceTasks(selectedActor, std::move(objective));
 					}
 					hide();
@@ -70,8 +75,8 @@ void ContextMenu::drawActorControls(const BlockIndex& block)
 			}
 		});
 	}
-	auto& actors = m_window.getSelectedActors();
-	if(actors.size())
+	auto& selectedActors = m_window.getSelectedActors();
+	if(selectedActors.size())
 	{
 		// Go.
 		auto goTo = tgui::Button::create("go to");
@@ -105,7 +110,7 @@ void ContextMenu::drawActorControls(const BlockIndex& block)
 		auto createActor = tgui::Label::create("create actor");
 		createActor->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(createActor);
-		createActor->onMouseEnter([this, &block, &actors]{
+		createActor->onMouseEnter([this, block, &actors]{
 			auto& submenu = makeSubmenu(0);
 			auto nameLabel = tgui::Label::create("name");
 			nameLabel->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);

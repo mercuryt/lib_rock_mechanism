@@ -77,7 +77,6 @@ void EditActorView::draw(const ActorIndex& actor)
 	auto grownUI = tgui::SpinControl::create();
 	grownUI->setMaximum(100);
 	grownUI->setMinimum(1);
-	Actors& actors = area.getActors();
 	grownUI->setValue(actors.getPercentGrown(m_actor).get());
 	basicInfoGrid->addWidget(grownUI, 0, 7);
 	grownUI->onValueChange([this, &area, update](float value){
@@ -219,8 +218,9 @@ void EditActorView::draw(const ActorIndex& actor)
 	for(const std::wstring& name : SkillType::getNames())
 		createSkill->addItem(name, name);
 	layoutGrid->addWidget(createSkill, ++gridCount, 1);
-	createSkill->onItemSelect([this, skillSet](const tgui::String& value) mutable {
-		const SkillTypeId& skillType = SkillType::byName(value.toStdString());
+	createSkill->onItemSelect([this, &actors, actor](const tgui::String& value){
+		SkillSet& skillSet = actors.skill_getSet(actor);
+		const SkillTypeId& skillType = SkillType::byName(value.toWideString());
 		skillSet.addXp(skillType, SkillExperiencePoints::create(1));
 		draw(m_actor);
 	});

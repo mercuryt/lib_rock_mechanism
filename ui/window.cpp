@@ -48,7 +48,7 @@ void Window::setArea(Area& area, GameView* gameView)
 			gameView = &m_lastViewedSpotInArea[area.m_id];
 		else
 		{
-			gameView = &m_lastViewedSpotInArea.emplace(area.m_id, &area.getBlocks().getMiddleAtGroundLevel(), displayData::defaultScale);
+			gameView = &m_lastViewedSpotInArea.emplace(area.m_id, area.getBlocks().getMiddleAtGroundLevel(), displayData::defaultScale);
 		}
 	}
 	m_area = &area;
@@ -121,19 +121,19 @@ void Window::startLoop()
 								m_z -= 1;
 							break;
 						case sf::Keyboard::Up:
-							if(m_gameOverlay.isVisible() && m_view.getCenter().y > (m_view.getSize().y / 2) - gameMarginSize)
+							if(m_gameOverlay.isVisible() && m_view.getCenter().y > (m_view.getSize().y / 2.f) - gameMarginSize)
 								m_view.move(0.f, scrollSteps * -20.f);
 							break;
 						case sf::Keyboard::Down:
-							if(m_area != nullptr && m_gameOverlay.isVisible() && m_view.getCenter().y < m_area->getBlocks().m_sizeY * m_scale - (m_view.getSize().y / 2) + gameMarginSize)
+							if(m_area != nullptr && m_gameOverlay.isVisible() && m_view.getCenter().y < m_area->getBlocks().m_sizeY.get() * m_scale - (m_view.getSize().y / 2.f) + gameMarginSize)
 								m_view.move(0.f, scrollSteps * 20.f);
 							break;
 						case sf::Keyboard::Left:
-							if(m_gameOverlay.isVisible() && m_view.getCenter().x > (m_view.getSize().x / 2) - gameMarginSize)
+							if(m_gameOverlay.isVisible() && m_view.getCenter().x > (m_view.getSize().x / 2.f) - gameMarginSize)
 								m_view.move(scrollSteps * -20.f, 0.f);
 							break;
 						case sf::Keyboard::Right:
-							if(m_area != nullptr && m_gameOverlay.isVisible() && m_view.getCenter().x < m_area->getBlocks().m_sizeX * m_scale - (m_view.getSize().x / 2) + gameMarginSize)
+							if(m_area != nullptr && m_gameOverlay.isVisible() && m_view.getCenter().x < m_area->getBlocks().m_sizeX.get() * m_scale - (m_view.getSize().x / 2.f) + gameMarginSize)
 								m_view.move(scrollSteps * 20.f, 0.f);
 							break;
 						case sf::Keyboard::Delete:
@@ -470,7 +470,7 @@ void Window::setSpeed(uint16_t speed)
 }
 void Window::setSpeedDisplay()
 {
-	std::wstring display = m_paused ? "paused" : "speed: " + (m_speed ? std::to_string(m_speed) : "max");
+	std::string display = m_paused ? "paused" : "speed: " + (m_speed ? std::to_string(m_speed) : "max");
 	m_gameOverlay.m_speedUI->setText(display);
 }
 void Window::povFromJson(const Json& data)
@@ -492,7 +492,7 @@ void Window::deselectAll()
 	m_selectedActors.clear();
 	m_selectedPlants.clear();
 }
-void Window::selectBlock(BlockIndex& block)
+void Window::selectBlock(const BlockIndex& block)
 {
 	//TODO: additive select.
 	deselectAll();
@@ -553,30 +553,30 @@ std::wstring Window::displayNameForItem(const ItemIndex& item)
 	std::wstring output = items.getName(item);
 	if(!output.empty())
 		output.append(L" a ");
-	output.append(util::stringToWideString(MaterialType::getName(items.getMaterialType(item))));
+	output.append(MaterialType::getName(items.getMaterialType(item)));
 		output.append(L" ");
-	output.append(util::stringToWideString(ItemType::getName(items.getItemType(item))));
+	output.append(ItemType::getName(items.getItemType(item)));
 	return output;
 }
 std::wstring Window::displayNameForCraftJob(CraftJob& craftJob)
 {
 	std::wstring output;
-	output.append(util::stringToWideString(CraftJobType::getName(craftJob.craftJobType)));
+	output.append(CraftJobType::getName(craftJob.craftJobType));
 	if(craftJob.materialType.exists())
 	{
 		output.append(L" ");
-		output.append(util::stringToWideString(MaterialType::getName(craftJob.materialType)));
+		output.append(MaterialType::getName(craftJob.materialType));
 	}
 	return output;
 }
 std::wstring Window::facingToString(Facing facing)
 {
 	if(facing == 0)
-		return "up";
+		return L"up";
 	if(facing == 1)
-		return "right";
+		return L"right";
 	if(facing == 2)
-		return "down";
+		return L"down";
 	assert(facing == 3);
-	return "left";
+	return L"left";
 }

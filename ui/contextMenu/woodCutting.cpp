@@ -1,49 +1,51 @@
 #include "../contextMenu.h"
 #include "../window.h"
 #include "../displayData.h"
-#include "../../engine/block.h"
-bool plantIsValid(const Plant& plant)
+#include "../../engine/blocks/blocks.h"
+#include "../../engine/plants.h"
+bool ContextMenu::plantIsValid(const PlantIndex& plant) const
 {
-	return plant.m_plantSpecies.isTree && plant.getGrowthPercent() >= Config::minimumPercentGrowthForWoodCutting;
+	Plants& plants = m_window.getArea()->getPlants();
+	return PlantSpecies::getIsTree(plants.getSpecies(plant)) && plants.getPercentGrown(plant) >= Config::minimumPercentGrowthForWoodCutting;
 }
-void ContextMenu::drawWoodCuttingControls(BlockIndex& block)
+void ContextMenu::drawWoodCuttingControls(const BlockIndex& block)
 {
-	if(m_window.getFaction() && block.m_hasPlant.exists() && plantIsValid(block.m_hasPlant.get()))
+	Area& area = *m_window.getArea();
+	Blocks& blocks = area.getBlocks();
+	Plants& plants = area.getPlants();
+	const FactionId& faction = m_window.getFaction();
+	if(faction.exists() && blocks.plant_exists(block) && plantIsValid(blocks.plant_get(block)))
 	{
 		auto& hasWoodCutting = m_window.getArea()->m_hasWoodCuttingDesignations;
-		Faction& faction = *m_window.getFaction();
-		if(hasWoodCutting.contains(faction, block))
+		if(faction.exists() && hasWoodCutting.contains(faction, block))
 		{
 			auto button = tgui::Button::create("cancel fell trees");
 			m_root.add(button);
-			button->onClick([this, &block]{
+			button->onClick([this, &blocks, &plants, block, faction]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				auto& hasWoodCutting = m_window.getArea()->m_hasWoodCuttingDesignations;
-				Faction& faction = *m_window.getFaction();
-				if(m_window.getSelectedPlants().empty() && block.m_hasPlant.exists() && plantIsValid(block.m_hasPlant.get()))
-					m_window.selectPlant(block.m_hasPlant.get());
-				for(Plant* selctedPlant : m_window.getSelectedPlants())
-					if(hasWoodCutting.contains(faction, *selctedPlant->m_location))
-						hasWoodCutting.undesignate(faction, *selctedPlant->m_location);
+				if(m_window.getSelectedPlants().empty() && blocks.plant_exists(block) && plantIsValid(blocks.plant_get(block)))
+					m_window.selectPlant(blocks.plant_get(block));
+				for(const PlantIndex& selctedPlant : m_window.getSelectedPlants())
+					if(hasWoodCutting.contains(faction, plants.getLocation(selctedPlant)))
+						hasWoodCutting.undesignate(faction, plants.getLocation(selctedPlant));
 				hide();
 			});
 		}
-		else 
+		else
 		{
 			auto button = tgui::Button::create("fell trees");
 			m_root.add(button);
-			button->onClick([this, &block]{
+			button->onClick([this, &blocks, &plants, block, faction]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				auto& hasWoodCutting = m_window.getArea()->m_hasWoodCuttingDesignations;
-				Faction& faction = *m_window.getFaction();
-				if(m_window.getSelectedPlants().empty() && block.m_hasPlant.exists() && plantIsValid(block.m_hasPlant.get()))
-					m_window.selectPlant(block.m_hasPlant.get());
-				for(Plant* selctedPlant : m_window.getSelectedPlants())
-					if(plantIsValid(*selctedPlant))
-						hasWoodCutting.designate(faction, *selctedPlant->m_location);
+				if(m_window.getSelectedPlants().empty() && blocks.plant_exists(block) && plantIsValid(blocks.plant_get(block)))
+					m_window.selectPlant(blocks.plant_get(block));
+				for(const PlantIndex& selctedPlant : m_window.getSelectedPlants())
+					if(plantIsValid(selctedPlant))
+						hasWoodCutting.designate(faction, plants.getLocation(selctedPlant));
 				hide();
 			});
 		}
 	}
 }
-

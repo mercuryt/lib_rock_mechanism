@@ -50,7 +50,7 @@ void EditDramaView::draw(Area* area)
 		if(id == "none")
 			return;
 		auto& dramaEngine = m_window.getSimulation()->m_dramaEngine;
-		dramaEngine->createArcTypeForArea(DramaArc::stringToType(id.toStdString()), *area);
+		dramaEngine->createArcTypeForArea(DramaArc::stringToType(id.toWideString()), *area);
 		m_window.showEditDrama(area);
 	});
 	auto back = tgui::Button::create("close");

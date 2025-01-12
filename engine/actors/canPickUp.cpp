@@ -81,7 +81,7 @@ ActorIndex Actors::canPickUp_tryToPutDownActor(const ActorIndex& index, const Bl
 	{
 		static const MoveTypeId moveTypeNone = MoveType::byName(L"none");
 		// No location found, try again without respecting Config::maxBlockVolume.
-		auto predicate2 = [&](const BlockIndex &block)
+		auto predicate2 = [&](const BlockIndex& block)
 		{
 			return blocks.shape_anythingCanEnterEver(block) &&
 				   blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, shape, moveTypeNone);

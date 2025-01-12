@@ -121,7 +121,7 @@ public:
 	void showEditDrama(Area* area = nullptr) { hideAllPanels(); m_editDramaView.draw(area); }
 	// Select.
 	void deselectAll();
-	void selectBlock(BlockIndex& block);
+	void selectBlock(const BlockIndex& block);
 	void selectItem(const ItemIndex& item);
 	void selectPlant(const PlantIndex& plant);
 	void selectActor(const ActorIndex& actor);

@@ -14,10 +14,10 @@ TEST_CASE("block")
 	Blocks& blocks = area.getBlocks();
 	BlockIndex lowest = BlockIndex::create(0);
 	REQUIRE(blocks.getBlockBelow(lowest).empty());
-	REQUIRE(blocks.getBlockSouth(lowest).empty());
+	REQUIRE(blocks.getBlockNorth(lowest).empty());
 	REQUIRE(blocks.getBlockWest(lowest).empty());
 	REQUIRE(blocks.getBlockAbove(lowest) == 100);
-	REQUIRE(blocks.getBlockNorth(lowest) == 10);
+	REQUIRE(blocks.getBlockSouth(lowest) == 10);
 	REQUIRE(blocks.getBlockEast(lowest) == 1);
 	REQUIRE(area.m_visionCuboids.getVisionCuboidFor(lowest));
 }

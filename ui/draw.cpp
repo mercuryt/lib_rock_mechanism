@@ -23,7 +23,8 @@ void Draw::view()
 	// Render block floors, collect actors into single and multi tile groups.
 	SmallSet<BlockIndex> singleTileActorBlocks;
 	SmallSet<ActorIndex> multiTileActors;
-	for(const BlockIndex& block : blocks.getZLevel(m_window.m_z).getView(blocks))
+	Cuboid zLevel = blocks.getZLevel(m_window.m_z);
+	for(const BlockIndex& block : zLevel.getView(blocks))
 	{
 		blockFloor(block);
 		for(const ActorIndex& actor : blocks.actor_getAll(block))
@@ -35,7 +36,7 @@ void Draw::view()
 		}
 	}
 	// Render block wall corners.
-	auto zLevelBlocks = blocks.getZLevel(m_window.m_z).getView(blocks);
+	auto zLevelBlocks = zLevel.getView(blocks);
 	for(const BlockIndex& block : zLevelBlocks)
 		blockWallCorners(block);
 	// Render block walls.
@@ -79,7 +80,7 @@ void Draw::view()
 	}
 	// Designated and project progress.
 	if(m_window.m_faction.exists())
-		for(const BlockIndex& block : blocks.getZLevel(m_window.m_z).getView(blocks))
+		for(const BlockIndex& block : zLevel.getView(blocks))
 		{
 			if(m_window.m_area->m_blockDesignations.contains(m_window.m_faction))
 				designated(block);
@@ -89,7 +90,7 @@ void Draw::view()
 				progressBarOnBlock(block, projectProgress);
 		}
 	// Render item overlays.
-	for(const BlockIndex& block : blocks.getZLevel(m_window.m_z).getView(blocks))
+	for(const BlockIndex& block : zLevel.getView(blocks))
 		itemOverlay(block);
 	// Render actor overlays.
 	for(const BlockIndex& block : singleTileActorBlocks)
@@ -179,7 +180,7 @@ void Draw::blockFloor(const BlockIndex& block)
 				break;
 			}
 	}
-	else if(blocks.isVisible(block))
+	else if(m_window.m_editMode || blocks.isVisible(block))
 	{
 		const BlockIndex& below = blocks.getBlockBelow(block);
 		if(below.exists() && blocks.solid_is(below))
@@ -235,14 +236,20 @@ void Draw::blockWallCorners(const BlockIndex& block)
 	Blocks& blocks = m_window.m_area->getBlocks();
 	const BlockIndex& west = blocks.getBlockWest(block);
 	const BlockIndex& south = blocks.getBlockSouth(block);
-	if(blocks.solid_is(block) && west.exists() && !blocks.solid_is(west) && south.exists() && !blocks.solid_is(south))
+	const BlockIndex& below = blocks.getBlockBelow(block);
+	const BlockIndex& belowWest = blocks.getBlockWest(below);
+	const BlockIndex& belowSouth = blocks.getBlockSouth(below);
+	if(
+		(blocks.solid_is(block) && west.exists() && !blocks.solid_is(west) && south.exists() && !blocks.solid_is(south)) ||
+		(!blocks.solid_is(block) && below.exists() && blocks.solid_is(below) && belowWest.exists() && !blocks.solid_is(belowWest) && belowSouth.exists() && !blocks.solid_is(belowSouth))
+	)
 	{
-		const sf::Color color = displayData::materialColors[blocks.solid_get(block)];
+		const sf::Color color = displayData::materialColors[blocks.solid_get(below)];
 		float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 		auto pair = sprites::make(blocks.isConstructed(block) ? "blockWall" : "roughWall");
 		auto sprite = pair.first;
 		const Point3D coordinates = blocks.getCoordinates(block);
-		sprite.setPosition((float)coordinates.x.get() - 0.21f * (float)m_window.m_scale, (float)coordinates.y.get() + 0.48f * (float)m_window.m_scale);
+		sprite.setPosition(((float)coordinates.x.get() - 0.21f) * (float)m_window.m_scale, ((float)coordinates.y.get() + 0.48f) * (float)m_window.m_scale);
 		sprite.setScale(scaleRatio, scaleRatio);
 		sprite.setColor(color);
 		sprite.setRotation(45);
@@ -254,9 +261,12 @@ void Draw::blockWalls(const BlockIndex& block)
 	Blocks& blocks = m_window.m_area->getBlocks();
 	if(blocks.solid_is(block))
 	{
+		auto adjacentPredicate = [&](const BlockIndex& adjacent){
+			return adjacent.exists() && (m_window.m_editMode || blocks.isVisible(adjacent)) && !blocks.solid_is(adjacent) && !blocks.blockFeature_contains(adjacent, BlockFeatureType::stairs) && !blocks.blockFeature_contains(adjacent, BlockFeatureType::ramp);
+		};
 		const Point3D coordinates = blocks.getCoordinates(block);
-		const BlockIndex &south = blocks.getBlockSouth(block);
-		if(south.exists() && blocks.isVisible(south))
+		const BlockIndex& south = blocks.getBlockSouth(block);
+		if(adjacentPredicate(south))
 		{
 			const sf::Color color = displayData::materialColors[blocks.solid_get(block)];
 			float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
@@ -268,7 +278,7 @@ void Draw::blockWalls(const BlockIndex& block)
 			m_window.getRenderWindow().draw(sprite);
 		}
 		const BlockIndex &west = blocks.getBlockWest(block);
-		if(west.exists() && blocks.isVisible(west))
+		if(adjacentPredicate(west))
 		{
 			const sf::Color color = displayData::materialColors[blocks.solid_get(block)];
 			float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
@@ -288,7 +298,7 @@ void Draw::blockWallTops(const BlockIndex& block)
 	if(blocks.solid_is(block))
 	{
 		auto adjacentPredicate = [&](const BlockIndex& adjacent){
-			return adjacent.exists() && blocks.isVisible(adjacent) && !blocks.solid_is(adjacent) && !blocks.blockFeature_contains(adjacent, BlockFeatureType::stairs) && !blocks.blockFeature_contains(adjacent, BlockFeatureType::ramp);
+			return adjacent.exists() && (m_window.m_editMode || blocks.isVisible(adjacent)) && !blocks.solid_is(adjacent) && !blocks.blockFeature_contains(adjacent, BlockFeatureType::stairs) && !blocks.blockFeature_contains(adjacent, BlockFeatureType::ramp);
 		};
 		float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 		const sf::Color color = displayData::materialColors[blocks.solid_get(block)];
@@ -332,7 +342,7 @@ void Draw::blockWallTops(const BlockIndex& block)
 		{
 			auto pair = sprites::make(blocks.isConstructed(block) ? "blockWallTop" : "roughWallTop");
 			auto sprite = pair.first;
-			sprite.setPosition(((float)coordinates.x.get() * m_window.m_scale), ((float)coordinates.y.get() + 1 * m_window.m_scale) - offset);
+			sprite.setPosition(((float)coordinates.x.get() * m_window.m_scale), ((float)(coordinates.y.get() + 1) * m_window.m_scale) - offset);
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			m_window.getRenderWindow().draw(sprite);
@@ -422,7 +432,6 @@ void Draw::blockFeaturesAndFluids(const BlockIndex& block)
 	else
 	{
 		const BlockIndex& below = blocks.getBlockBelow(block);
-		const BlockIndex& south = blocks.getBlockSouth(block);
 		if(below.exists() && !blocks.solid_is(below))
 		{
 			// Show tops of stairs and ramps from next level down.
@@ -560,7 +569,7 @@ void Draw::craftLocation(const BlockIndex& block)
 		spriteOnBlockCentered(block, craftSpot, &displayData::selectColor);
 	}
 }
-sf::Sprite Draw::getCenteredSprite(std::wstring name)
+sf::Sprite Draw::getCenteredSprite(std::string name)
 {
 	auto pair = sprites::make(name);
 	pair.first.setOrigin(pair.second);
@@ -618,25 +627,25 @@ void Draw::spriteOnBlockCentered(const BlockIndex& block, sf::Sprite& sprite, co
 	sf::Vector2f position{(((float)coordinates.x.get()  + 0.5f) * (float)m_window.m_scale), (((float)coordinates.y.get()  + 0.5f) * (float)m_window.m_scale)};
 	spriteAt(sprite, position, color);
 }
-void Draw::imageOnBlock(const BlockIndex& block, std::wstring name, const sf::Color* color)
+void Draw::imageOnBlock(const BlockIndex& block, std::string name, const sf::Color* color)
 {
 	auto pair = sprites::make(name);
 	spriteOnBlock(block, pair.first, color);
 }
 // By default images are top aligned.
-void Draw::imageOnBlockWestAlign(const BlockIndex& block, std::wstring name, const sf::Color* color)
+void Draw::imageOnBlockWestAlign(const BlockIndex& block, std::string name, const sf::Color* color)
 {
 	auto pair = sprites::make(name);
 	pair.first.setRotation(270);
 	spriteOnBlock(block, pair.first, color);
 }
-void Draw::imageOnBlockEastAlign(const BlockIndex& block, std::wstring name, const sf::Color* color)
+void Draw::imageOnBlockEastAlign(const BlockIndex& block, std::string name, const sf::Color* color)
 {
 	auto pair = sprites::make(name);
 	pair.first.setRotation(90);
 	spriteOnBlock(block, pair.first, color);
 }
-void Draw::imageOnBlockSouthAlign(const BlockIndex& block, std::wstring name, const sf::Color* color)
+void Draw::imageOnBlockSouthAlign(const BlockIndex& block, std::string name, const sf::Color* color)
 {
 	auto pair = sprites::make(name);
 	pair.first.setRotation(180);
@@ -990,7 +999,7 @@ sf::Vector2f Draw::blockToPositionCentered(const BlockIndex& block) const
 {
 	Blocks& blocks = m_window.m_area->getBlocks();
 	const Point3D coordinates = blocks.getCoordinates(block);
-	return {((float)coordinates.x.get() + 0.5) * m_window.m_scale, ((float)coordinates.y.get() + 0.5) * m_window.m_scale};
+	return {((float)coordinates.x.get() + 0.5f) * m_window.m_scale, ((float)coordinates.y.get() + 0.5f) * m_window.m_scale};
 }
 void Draw::accessableSymbol(const BlockIndex& block)
 {

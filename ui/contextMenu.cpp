@@ -40,7 +40,7 @@ void ContextMenu::draw(const BlockIndex& block)
 	m_submenus.clear();
 	auto blockInfoButton = tgui::Button::create("location info");
 	m_root.add(blockInfoButton);
-	blockInfoButton->onClick([this, &block]{ m_window.getGameOverlay().drawInfoPopup(block); });
+	blockInfoButton->onClick([this, block]{ m_window.getGameOverlay().drawInfoPopup(block); });
 	Blocks& blocks = m_window.getArea()->getBlocks();
 	//TODO: shift to add to end of work queue.
 	if(blocks.solid_is(block) || !blocks.blockFeature_empty(block))
@@ -67,7 +67,7 @@ void ContextMenu::draw(const BlockIndex& block)
 		});
 		auto dramaButton = tgui::Button::create("drama");
 		m_root.add(dramaButton);
-		dramaButton->onClick([this, &block]{
+		dramaButton->onClick([this, block]{
 			m_window.showEditDrama();
 			hide();
 		});

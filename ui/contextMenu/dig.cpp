@@ -1,20 +1,27 @@
 #include "../contextMenu.h"
 #include "../window.h"
 #include "../displayData.h"
-#include "../../engine/block.h"
-void ContextMenu::drawDigControls(BlockIndex& block)
+#include "../../engine/blocks/blocks.h"
+void ContextMenu::drawDigControls(const BlockIndex& block)
 {
-	if(m_window.getFaction() && block.hasDesignation(*m_window.getFaction(), BlockDesignation::Dig))
+	const FactionId& faction = m_window.getFaction();
+	Area& area = *m_window.getArea();
+	Blocks& blocks = area.getBlocks();
+	if(faction.exists())
 	{
-		auto cancelButton = tgui::Button::create("cancel dig");
-		m_root.add(cancelButton);
-		cancelButton->onClick([this]{
-			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-			for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
-				if(selectedBlock->hasDesignation(*m_window.getFaction(), BlockDesignation::Dig))
-					m_window.getArea()->m_hasDigDesignations.undesignate(*m_window.getFaction(), *selectedBlock);
-			hide();
-		});
+		auto& designations = area.m_blockDesignations.getForFaction(faction);
+		if(designations.check(block, BlockDesignation::Dig))
+		{
+			auto cancelButton = tgui::Button::create("cancel dig");
+			m_root.add(cancelButton);
+			cancelButton->onClick([this, &designations]{
+				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
+				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+					if(designations.check(selectedBlock, BlockDesignation::Dig))
+						m_window.getArea()->m_hasDigDesignations.undesignate(m_window.getFaction(), selectedBlock);
+				hide();
+			});
+		}
 	}
 	else
 	{
@@ -22,39 +29,39 @@ void ContextMenu::drawDigControls(BlockIndex& block)
 		auto digButton = tgui::Button::create("dig");
 		digButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(digButton);
-		digButton->onClick([this]{
+		digButton->onClick([this, &blocks]{
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-			for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
+			for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
 			{
 				if(m_window.m_editMode)
 				{
-					if(selectedBlock->isSolid())
-						selectedBlock->setNotSolid();
-					else if(!selectedBlock->m_hasBlockFeatures.empty())
-						selectedBlock->m_hasBlockFeatures.removeAll();
+					if(blocks.solid_is(selectedBlock))
+						blocks.solid_setNot(selectedBlock);
+					else if(!blocks.blockFeature_empty(selectedBlock))
+						blocks.blockFeature_removeAll(selectedBlock);
 				}
-				else if(selectedBlock->isSolid() || !selectedBlock->m_hasBlockFeatures.empty())
-					m_window.getArea()->m_hasDigDesignations.designate(*m_window.getFaction(), *selectedBlock, nullptr);
+				else if(blocks.solid_is(selectedBlock) || !blocks.blockFeature_empty(selectedBlock))
+					m_window.getArea()->m_hasDigDesignations.designate(m_window.getFaction(), selectedBlock, nullptr);
 			}
 			hide();
 		});
-		digButton->onMouseEnter([this]{
+		digButton->onMouseEnter([this, &blocks]{
 			auto& subMenu = makeSubmenu(0);
 			auto blockFeatureTypeUI = widgetUtil::makeBlockFeatureTypeSelectUI();
 			subMenu.add(blockFeatureTypeUI);
 			auto button = tgui::Button::create("dig out feature");
 			subMenu.add(button);
-			button->onClick([this]{
+			button->onClick([this, &blocks]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				assert(widgetUtil::lastSelectedBlockFeatureType);
 				const BlockFeatureType& featureType = *widgetUtil::lastSelectedBlockFeatureType;
-				for(BlockIndex* selectedBlock : m_window.getSelectedBlocks())
-					if(selectedBlock->isSolid())
+				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+					if(blocks.solid_is(selectedBlock))
 					{
 						if(m_window.m_editMode)
-							selectedBlock->m_hasBlockFeatures.hew(featureType);
+							blocks.blockFeature_hew(selectedBlock, featureType);
 						else
-							m_window.getArea()->m_hasDigDesignations.designate(*m_window.getFaction(), *selectedBlock, &featureType);
+							m_window.getArea()->m_hasDigDesignations.designate(m_window.getFaction(), selectedBlock, &featureType);
 					}
 				hide();
 			});

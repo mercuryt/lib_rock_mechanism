@@ -129,8 +129,6 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	DataVector<Speed, ActorIndex> m_speedActual;
 	DataVector<uint8_t, ActorIndex> m_moveRetries;
 	void moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex);
-	void destroy(const ActorIndex& index);
-	[[nodiscard]] bool indexCanBeMoved(const HasShapeIndex& index) const;
 public:
 	Actors(Area& area);
 	void load(const Json& data);
@@ -139,6 +137,7 @@ public:
 	template<typename Action>
 	void forEachData(Action&& action);
 	ActorIndex create(ActorParamaters params);
+	void destroy(const ActorIndex& index);
 	void sharedConstructor(const ActorIndex& index);
 	void scheduleNeeds(const ActorIndex& index);
 	void resetNeeds(const ActorIndex& index);
@@ -508,6 +507,9 @@ public:
 	[[nodiscard]] bool lineLead_pathEmpty(const ActorIndex& index) const;
 	[[nodiscard]] ShapeId lineLead_getLargestShape(const ActorIndex& index) const;
 	[[nodiscard]] MoveTypeId lineLead_getMoveType(const ActorIndex& index) const;
+	[[nodiscard]] Speed lineLead_getSpeedWithAddedMass(const ActorIndex& index, const Mass& mass) const;
+	[[nodiscard]] Speed lineLead_getSpeedWithAddedMass(const SmallSet<ActorIndex>& indices, const Mass& mass) const;
+	[[nodiscard]] std::vector<ActorOrItemIndex> lineLead_getAll(const ActorIndex& index) const;
 	void lineLead_clearPath(const ActorIndex& index);
 	void lineLead_appendToPath(const ActorIndex& index, const BlockIndex& block);
 	void lineLead_pushFront(const ActorIndex& index, const BlockIndex& block);

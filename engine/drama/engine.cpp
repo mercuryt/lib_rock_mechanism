@@ -200,7 +200,7 @@ Json DramaEngine::toJson() const
 void DramaEngine::add(std::unique_ptr<DramaArc> dramaticArc)
 {
 	if(dramaticArc->m_area)
-		util::addUniqueToVectorAssert(m_arcsByArea[dramaticArc->m_area->m_id], dramaticArc.get());
+		util::addUniqueToVectorAssert(m_arcsByArea.getOrCreate(dramaticArc->m_area->m_id), dramaticArc.get());
 	m_arcs.push_back(std::move(dramaticArc));
 }
 void DramaEngine::remove(DramaArc& arc)

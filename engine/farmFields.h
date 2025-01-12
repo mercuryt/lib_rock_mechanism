@@ -47,11 +47,11 @@ class FarmFieldUpdateInputAction final : public InputAction
 // TODO: Make POD.
 struct FarmField
 {
-	BlockIndices blocks;
+	SmallSet<BlockIndex> blocks;
 	Area& area;
 	PlantSpeciesId plantSpecies;
 	bool timeToSow;
-	FarmField(Area& a, BlockIndices b) : blocks(b), area(a), timeToSow(false) { }
+	FarmField(Area& a, SmallSet<BlockIndex>& b) : blocks(b), area(a), timeToSow(false) { }
 	FarmField(const Json& data, FactionId faction, Area& area);
 	[[nodiscard]] Json toJson() const;
 };
@@ -61,9 +61,9 @@ class HasFarmFieldsForFaction
 	Area& m_area;
 	FactionId m_faction;
 	std::list<FarmField> m_farmFields;
-	BlockIndices m_blocksWithPlantsNeedingFluid;
-	BlockIndices m_blocksWithPlantsToHarvest;
-	BlockIndices m_blocksNeedingSeedsSewn;
+	SmallSet<BlockIndex> m_blocksWithPlantsNeedingFluid;
+	SmallSet<BlockIndex> m_blocksWithPlantsToHarvest;
+	SmallSet<BlockIndex> m_blocksNeedingSeedsSewn;
 	bool m_plantsNeedingFluidIsSorted = false;
 public:
 	HasFarmFieldsForFaction(Area& a, FactionId f) : m_area(a), m_faction(f) { }
@@ -76,15 +76,16 @@ public:
 	void addHarvestDesignation(PlantIndex plant);
 	void removeHarvestDesignation(PlantIndex plant);
 	void setDayOfYear(uint32_t dayOfYear);
-	[[nodiscard]] FarmField& create(BlockIndices blocks);
+	[[nodiscard]] FarmField& create(SmallSet<BlockIndex>& blocks);
+	[[nodiscard]] FarmField& create(const BlockIndices& blocks);
 	[[nodiscard]] FarmField& create(Cuboid cuboid);
-	void extend(FarmField& farmField, BlockIndices blocks);
+	void extend(FarmField& farmField, SmallSet<BlockIndex>& blocks);
 	void setSpecies(FarmField& farmField, PlantSpeciesId plantSpecies);
 	void clearSpecies(FarmField& farmField);
-	void designateBlocks(FarmField& farmField, BlockIndices blocks);
-	void shrink(FarmField& farmField, BlockIndices blocks);
+	void designateBlocks(FarmField& farmField, SmallSet<BlockIndex>& blocks);
+	void shrink(FarmField& farmField, SmallSet<BlockIndex>& blocks);
 	void remove(FarmField& farmField);
-	void undesignateBlocks(BlockIndices blocks);
+	void undesignateBlocks(SmallSet<BlockIndex>& blocks);
 	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid();
 	[[nodiscard]] bool hasHarvestDesignations() const;
 	[[nodiscard]] bool hasGivePlantsFluidDesignations() const;
@@ -97,7 +98,7 @@ class AreaHasFarmFields
 	std::unordered_map<FactionId, HasFarmFieldsForFaction, FactionId::Hash> m_data;
 	Area& m_area;
 public:
-	AreaHasFarmFields(Area& a) : m_area(a) { } 
+	AreaHasFarmFields(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] HasFarmFieldsForFaction& getForFaction(FactionId faction);

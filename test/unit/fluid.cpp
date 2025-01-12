@@ -54,10 +54,10 @@ TEST_CASE("fluids smaller")
 		blocks.solid_setNot(block);
 		blocks.fluid_add(block, CollisionVolume::create(1), water);
 		blocks.fluid_add(block2, CollisionVolume::create(1), water);
-		REQUIRE(blocks.fluid_getGroup(block, &water));
+		REQUIRE(blocks.fluid_getGroup(block,& water));
 		simulation.doStep();
 		simulation.doStep();
-		REQUIRE(blocks.fluid_getGroup(block, &water));
+		REQUIRE(blocks.fluid_getGroup(block,& water));
 		REQUIRE(area.m_hasFluidGroups.getUnstable().empty());
 		FluidGroup& fluidGroup = *block.m_fluids.at(&water).second;
 		REQUIRE(fluidGroup.getBlocks().size() == 1);
