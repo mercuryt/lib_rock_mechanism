@@ -28,19 +28,19 @@ NLOHMANN_JSON_SERIALIZE_ENUM(DramaArcType, {
 	{DramaArcType::AnimalsArrive, "animals arrive"},
 	{DramaArcType::BanditsArrive, "bandits arrive"}
 });
-std::wstring DramaArc::typeToString(DramaArcType type)
+std::string DramaArc::typeToString(DramaArcType type)
 {
 	switch(type)
 	{
 		case DramaArcType::AnimalsArrive:
-			return L"animals arrive";
+			return "animals arrive";
 		case DramaArcType::BanditsArrive:
-			return L"bandits arrive";
+			return "bandits arrive";
 	}
 	assert(false);
-	return L"";
+	return "";
 }
-DramaArcType DramaArc::stringToType(std::wstring string)
+DramaArcType DramaArc::stringToType(std::string string)
 {
 	if(string == typeToString(DramaArcType::AnimalsArrive))
 		return DramaArcType::AnimalsArrive;
@@ -66,10 +66,13 @@ std::unique_ptr<DramaArc> DramaArc::load(const Json& data, DeserializationMemo& 
 	return std::make_unique<AnimalsArriveDramaArc>(data, deserializationMemo, dramaEngine);
 }
 DramaArc::DramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine) :
-	m_engine(dramaEngine), m_type(DramaArc::stringToType(data["type"].get<std::wstring>()))
+	m_engine(dramaEngine), m_type(DramaArc::stringToType(data["type"].get<std::string>()))
 {
 	if(data.contains("area"))
+	{
 		m_area = &deserializationMemo.m_simulation.m_hasAreas->getById(data["area"].get<AreaId>());
+		assert(m_area != nullptr);
+	}
 }
 Json DramaArc::toJson() const
 {

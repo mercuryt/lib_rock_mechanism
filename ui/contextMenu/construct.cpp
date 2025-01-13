@@ -37,7 +37,7 @@ void ContextMenu::drawConstructControls(const BlockIndex& block)
 			std::function<bool(const MaterialTypeId&)> predicate = nullptr;
 			if(!m_window.m_editMode)
 				predicate = [&](const MaterialTypeId& materialType)->bool{ return MaterialType::construction_getConsumed(materialType).empty(); };
-			auto materialTypeSelector = widgetUtil::makeMaterialSelectUI(L"", predicate);
+			auto materialTypeSelector = widgetUtil::makeMaterialSelectUI(widgetUtil::lastSelectedConstructionMaterial, L"", predicate);
 			subMenu.add(materialTypeSelector);
 			if(m_window.m_editMode)
 			{
@@ -54,11 +54,11 @@ void ContextMenu::drawConstructControls(const BlockIndex& block)
 			auto constructFeature = tgui::Button::create("construct feature");
 			subMenu.add(constructFeature);
 			constructFeature->onClick([this, block]{
-				construct(block, constructed, widgetUtil::lastSelectedMaterial, widgetUtil::lastSelectedBlockFeatureType);
+				construct(block, constructed, widgetUtil::lastSelectedConstructionMaterial, widgetUtil::lastSelectedBlockFeatureType);
 			});
 		});
 		constructButton->onClick([this, block]{
-			construct(block, constructed, widgetUtil::lastSelectedMaterial, nullptr);
+			construct(block, constructed, widgetUtil::lastSelectedConstructionMaterial, nullptr);
 		});
 	}
 }

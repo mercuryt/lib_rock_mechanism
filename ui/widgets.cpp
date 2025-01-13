@@ -109,23 +109,23 @@ tgui::ComboBox::Ptr widgetUtil::makePlantSpeciesSelectUI(Area& area, const Block
 	return output;
 }
 // MaterialTypeSelectUI
-tgui::ComboBox::Ptr widgetUtil::makeMaterialSelectUI(std::wstring nullLabel, std::function<bool(const MaterialTypeId&)> predicate)
+tgui::ComboBox::Ptr widgetUtil::makeMaterialSelectUI(MaterialTypeId& lastSelected, std::wstring nullLabel, std::function<bool(const MaterialTypeId&)> predicate)
 {
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	output->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	output->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
 	bool selected = false;
-	output->onItemSelect([nullLabel](const tgui::String name){
+	output->onItemSelect([nullLabel, &lastSelected](const tgui::String name){
 		assert(!name.empty());
 		if(name == nullLabel)
-			lastSelectedMaterial.clear();
+			lastSelected.clear();
 		else
-			lastSelectedMaterial = MaterialType::byName(name.toWideString());
+			lastSelected = MaterialType::byName(name.toWideString());
 	});
 	if(!nullLabel.empty())
 	{
 		output->addItem(nullLabel, nullLabel);
-		if(lastSelectedMaterial.empty())
+		if(lastSelected.empty())
 		{
 			output->setSelectedItemById(nullLabel);
 			selected = true;
@@ -137,12 +137,12 @@ tgui::ComboBox::Ptr widgetUtil::makeMaterialSelectUI(std::wstring nullLabel, std
 			continue;
 		std::wstring name = MaterialType::getName(id);
 		output->addItem(name, name);
-		if(lastSelectedMaterial.exists() && lastSelectedMaterial == id)
+		if(lastSelected.exists() && lastSelected== id)
 		{
 			output->setSelectedItemById(name);
 			selected = true;
 		}
-		else if(lastSelectedMaterial.empty() && !selected)
+		else if(lastSelected.empty() && !selected)
 		{
 			output->setSelectedItemById(name);
 			selected = true;

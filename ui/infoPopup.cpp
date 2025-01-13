@@ -115,23 +115,24 @@ void InfoPopup::display(const ItemIndex& item)
 		add(tgui::Label::create(L"quality: " + std::to_wstring(items.getQuality(item).get())));
 		add(tgui::Label::create(L"wear: " + std::to_wstring(items.getWear(item).get()) + L"%"));
 	}
-	for(const ItemIndex& cargoItem : items.cargo_getItems(item))
-	{
-		auto button = tgui::Button::create(m_window.displayNameForItem(cargoItem));
-		button->onClick([=, this]{ display(cargoItem); });
-		add(button);
-		if(m_window.m_editMode)
+	if(items.cargo_exists(item))
+		for(const ItemIndex& cargoItem : items.cargo_getItems(item))
 		{
-			auto destroy = tgui::Button::create("destory");
-			add(destroy);
-			destroy->onClick([this, cargoItem, item, &items]{
-				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				items.cargo_removeItem(item, cargoItem);
-				items.destroy(cargoItem);
-				m_update();
-			});
+			auto button = tgui::Button::create(m_window.displayNameForItem(cargoItem));
+			button->onClick([=, this]{ display(cargoItem); });
+			add(button);
+			if(m_window.m_editMode)
+			{
+				auto destroy = tgui::Button::create("destory");
+				add(destroy);
+				destroy->onClick([this, cargoItem, item, &items]{
+					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
+					items.cargo_removeItem(item, cargoItem);
+					items.destroy(cargoItem);
+					m_update();
+				});
+			}
 		}
-	}
 	for(const ActorIndex& actor : items.cargo_getActors(item))
 	{
 		auto button = tgui::Button::create(actors.getName(actor));

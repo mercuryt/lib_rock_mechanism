@@ -1,5 +1,9 @@
 [
 	{
+		"name": "cotton",
+		"color": [180, 180, 180, 255]
+	},
+	{
 		"name": "marble",
 		"color": [180, 180, 180, 255]
 	},
@@ -38,6 +42,10 @@
 	{
 		"name": "lead",
 		"color": [85, 85, 85, 255]
+	},
+	{
+		"name": "leather",
+		"color": [222, 192, 140, 255]
 	},
 	{
 		"name": "poplar wood",
