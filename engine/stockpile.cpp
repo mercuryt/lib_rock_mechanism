@@ -252,16 +252,15 @@ void StockPile::destroy()
 }
 bool StockPile::contains(ItemQuery& query) const
 {
-	return std::find(m_queries.begin(), m_queries.end(), query) != m_queries.end();
+	return std::ranges::contains(m_queries, query);
 }
 bool StockPile::hasProjectNeedingMoreWorkers() const
 {
-	assert(this);
 	return m_projectNeedingMoreWorkers != nullptr;
 }
 void StockPile::addQuery(const ItemQuery& query)
 {
-	assert(contains(const_cast<ItemQuery&>(query)));
+	assert(!contains(const_cast<ItemQuery&>(query)));
 	m_queries.push_back(query);
 }
 void StockPile::removeQuery(const ItemQuery& query)

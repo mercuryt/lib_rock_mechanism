@@ -25,7 +25,7 @@ public:
 	void validOnBlock(const BlockIndex& block);
 	void invalidOnBlock(const BlockIndex& block);
 	void colorOnBlock(const BlockIndex& block, const sf::Color color);
-	void designated(const BlockIndex& block);
+	void maybeDesignated(const BlockIndex& block);
 	void craftLocation(const BlockIndex& block);
 	sf::Sprite getCenteredSprite(std::string name);
 

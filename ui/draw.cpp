@@ -36,12 +36,12 @@ void Draw::view()
 				singleTileActorBlocks.insert(block);
 		}
 	}
-	// Render block wall corners.
-	for(const BlockIndex& block : zLevelBlocks)
-		blockWallCorners(block);
 	// Renger Block floors.
 	for(const BlockIndex& block : zLevelBlocks)
 		blockFloor(block);
+	// Render block wall corners.
+	for(const BlockIndex& block : zLevelBlocks)
+		blockWallCorners(block);
 	// Render block walls.
 	for(const BlockIndex& block : zLevelBlocks)
 		blockWalls(block);
@@ -83,15 +83,20 @@ void Draw::view()
 	}
 	// Designated and project progress.
 	if(m_window.m_faction.exists())
+	{
+		if(m_window.m_area->m_blockDesignations.contains(m_window.m_faction))
+		{
+			for(const BlockIndex& block : zLevelBlocks)
+				maybeDesignated(block);
+		}
 		for(const BlockIndex& block : zLevelBlocks)
 		{
-			if(m_window.m_area->m_blockDesignations.contains(m_window.m_faction))
-				designated(block);
 			craftLocation(block);
 			Percent projectProgress = blocks.project_getPercentComplete(block, m_window.m_faction);
 			if(projectProgress != 0)
 				progressBarOnBlock(block, projectProgress);
 		}
+	}
 	// Render item overlays.
 	for(const BlockIndex& block : zLevelBlocks)
 		itemOverlay(block);
@@ -564,9 +569,11 @@ void Draw::colorOnBlock(const BlockIndex& block, const sf::Color color)
 	square.setPosition((float)coordinates.x.get() * m_window.m_scale, ((float)coordinates.y.get() * m_window.m_scale));
 	m_window.getRenderWindow().draw(square);
 }
-void Draw::designated(const BlockIndex& block)
+void Draw::maybeDesignated(const BlockIndex& block)
 {
 	BlockDesignation designation = m_window.m_area->m_blockDesignations.getForFaction(m_window.m_faction).getDisplayDesignation(block);
+	if(designation == BlockDesignation::BLOCK_DESIGNATION_MAX)
+		return;
 	static std::unordered_map<BlockDesignation, sf::Sprite> designationSprites{
 		{BlockDesignation::Dig, getCenteredSprite("pick")},
 		{BlockDesignation::Construct, getCenteredSprite("mallet")},

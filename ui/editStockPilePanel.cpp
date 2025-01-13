@@ -51,7 +51,9 @@ void EditStockPileView::draw(StockPile* stockpile)
 	create->onClick([this, itemTypeUI, materialTypeUI, materialTypeCategoryUI]{
 		if(!m_stockPile)
 		{
-			m_stockPile = &m_window.getArea()->m_hasStockPiles.getForFaction(m_window.getFaction()).addStockPile({});
+			const FactionId& faction = m_window.getFaction();
+			m_window.getArea()->m_blockDesignations.maybeRegisterFaction(faction);
+			m_stockPile = &m_window.getArea()->m_hasStockPiles.getForFaction(faction).addStockPile({});
 			for(const BlockIndex& block : m_window.getSelectedBlocks())
 				m_stockPile->addBlock(block);
 		}

@@ -9,7 +9,7 @@ void ContextMenu::drawConstructControls(const BlockIndex& block)
 {
 	const Area& area = *m_window.getArea();
 	const FactionId& faction = m_window.getFaction();
-	if(faction.exists())
+	if(faction.exists() && area.m_blockDesignations.contains(faction))
 	{
 		const auto& designations = area.m_blockDesignations.getForFaction(faction);
 		if(designations.check(block, BlockDesignation::Construct))
@@ -25,42 +25,39 @@ void ContextMenu::drawConstructControls(const BlockIndex& block)
 			});
 		}
 	}
-	else
-	{
-		auto constructButton = tgui::Button::create("construct");
-		constructButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
-		m_root.add(constructButton);
-		static bool constructed = false;
-		constructButton->onMouseEnter([this, block]{
-			auto& subMenu = makeSubmenu(0);
-			// Only list material types which have construction data, unless in edit mode.
-			std::function<bool(const MaterialTypeId&)> predicate = nullptr;
-			if(!m_window.m_editMode)
-				predicate = [&](const MaterialTypeId& materialType)->bool{ return MaterialType::construction_getConsumed(materialType).empty(); };
-			auto materialTypeSelector = widgetUtil::makeMaterialSelectUI(widgetUtil::lastSelectedConstructionMaterial, L"", predicate);
-			subMenu.add(materialTypeSelector);
-			if(m_window.m_editMode)
-			{
-				auto label = tgui::Label::create("constructed");
-				subMenu.add(label);
-				auto constructedUI = tgui::CheckBox::create();
-				subMenu.add(constructedUI);
-				constructedUI->setSize(10, 10);
-				constructedUI->setChecked(constructed);
-				constructedUI->onChange([](bool value){ constructed = value; });
-			}
-			auto blockFeatureTypeUI = widgetUtil::makeBlockFeatureTypeSelectUI();
-			subMenu.add(blockFeatureTypeUI);
-			auto constructFeature = tgui::Button::create("construct feature");
-			subMenu.add(constructFeature);
-			constructFeature->onClick([this, block]{
-				construct(block, constructed, widgetUtil::lastSelectedConstructionMaterial, widgetUtil::lastSelectedBlockFeatureType);
-			});
+	auto constructButton = tgui::Button::create("construct");
+	constructButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
+	m_root.add(constructButton);
+	static bool constructed = false;
+	constructButton->onMouseEnter([this, block]{
+		auto& subMenu = makeSubmenu(0);
+		// Only list material types which have construction data, unless in edit mode.
+		std::function<bool(const MaterialTypeId&)> predicate = nullptr;
+		if(!m_window.m_editMode)
+			predicate = [&](const MaterialTypeId& materialType)->bool{ return MaterialType::construction_getConsumed(materialType).empty(); };
+		auto materialTypeSelector = widgetUtil::makeMaterialSelectUI(widgetUtil::lastSelectedConstructionMaterial, L"", predicate);
+		subMenu.add(materialTypeSelector);
+		if(m_window.m_editMode)
+		{
+			auto label = tgui::Label::create("constructed");
+			subMenu.add(label);
+			auto constructedUI = tgui::CheckBox::create();
+			subMenu.add(constructedUI);
+			constructedUI->setSize(10, 10);
+			constructedUI->setChecked(constructed);
+			constructedUI->onChange([](bool value){ constructed = value; });
+		}
+		auto blockFeatureTypeUI = widgetUtil::makeBlockFeatureTypeSelectUI();
+		subMenu.add(blockFeatureTypeUI);
+		auto constructFeature = tgui::Button::create("construct feature");
+		subMenu.add(constructFeature);
+		constructFeature->onClick([this, block]{
+			construct(block, constructed, widgetUtil::lastSelectedConstructionMaterial, widgetUtil::lastSelectedBlockFeatureType);
 		});
-		constructButton->onClick([this, block]{
-			construct(block, constructed, widgetUtil::lastSelectedConstructionMaterial, nullptr);
-		});
-	}
+	});
+	constructButton->onClick([this, block]{
+		construct(block, constructed, widgetUtil::lastSelectedConstructionMaterial, nullptr);
+	});
 }
 void ContextMenu::construct(const BlockIndex& block, bool constructed, const MaterialTypeId& materialType, const BlockFeatureType* blockFeatureType)
 {

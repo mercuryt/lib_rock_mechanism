@@ -137,7 +137,7 @@ public:
 	void load(std::filesystem::path path);
 	// Accessors.
 	[[nodiscard]] const FactionId& getFaction() const { return m_faction;}
-	void setFaction(const FactionId& faction) { m_faction = faction;}
+	void setFaction(const FactionId& faction);
 	[[nodiscard]] Simulation* getSimulation() { return m_simulation.get(); }
 	void setSimulation(std::unique_ptr<Simulation> simulation) { m_simulation = std::move(simulation); }
 	[[nodiscard]] Area* getArea() { return m_area; }

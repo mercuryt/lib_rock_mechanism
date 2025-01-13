@@ -116,6 +116,7 @@ void InfoPopup::display(const ItemIndex& item)
 		add(tgui::Label::create(L"wear: " + std::to_wstring(items.getWear(item).get()) + L"%"));
 	}
 	if(items.cargo_exists(item))
+	{
 		for(const ItemIndex& cargoItem : items.cargo_getItems(item))
 		{
 			auto button = tgui::Button::create(m_window.displayNameForItem(cargoItem));
@@ -133,13 +134,14 @@ void InfoPopup::display(const ItemIndex& item)
 				});
 			}
 		}
-	for(const ActorIndex& actor : items.cargo_getActors(item))
-	{
-		auto button = tgui::Button::create(actors.getName(actor));
-		button->onClick([=, this]{ display(actor); });
-		add(button);
+		for(const ActorIndex& actor : items.cargo_getActors(item))
+		{
+			auto button = tgui::Button::create(actors.getName(actor));
+			button->onClick([=, this]{ display(actor); });
+			add(button);
+		}
+		m_update = [this, item]{ display(item); };
 	}
-	m_update = [this, item]{ display(item); };
 }
 void InfoPopup::display(const ActorIndex& actor)
 {

@@ -309,9 +309,12 @@ std::tuple<tgui::ComboBox::Ptr, tgui::ComboBox::Ptr, tgui::ComboBox::Ptr> widget
 					break;
 				}
 		}
-		std::wstring lastMaterialName = MaterialType::getName(lastSelectedMaterial);
-		if(lastSelectedMaterial.exists() && materialTypeSelectUI->contains(lastMaterialName))
-			materialTypeSelectUI->setSelectedItem(lastMaterialName);
+		if(lastSelectedMaterial.exists())
+		{
+			std::wstring lastMaterialName = MaterialType::getName(lastSelectedMaterial);
+			if(materialTypeSelectUI->contains(lastMaterialName))
+				materialTypeSelectUI->setSelectedItem(lastMaterialName);
+		}
 		else
 		{
 			materialTypeSelectUI->setSelectedItemByIndex(0);
