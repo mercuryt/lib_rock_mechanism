@@ -39,11 +39,9 @@ void EditFactionView::draw(const FactionId& factionId)
 	});
 	save->setEnabled(false);
 	nameUI->onTextChange([this, save, factionId](tgui::String text){
-		if(factionId.exists())
-		{
-			Faction& faction = m_window.getSimulation()->m_hasFactions.getById(factionId);
-			save->setEnabled(!text.empty() && (factionId.empty() || faction.name != text.toWideString()));
-		}
+		auto& hasFactions = m_window.getSimulation()->m_hasFactions;
+		std::wstring name = text.toWideString();
+		save->setEnabled(!(name.empty() || hasFactions.containsFactionWithName(name)));
 	});
 	save->setPosition(tgui::bindLeft(nameUI), tgui::bindBottom(nameUI) + 10);
 	auto setPlayerFaction = tgui::Button::create("set player faction");

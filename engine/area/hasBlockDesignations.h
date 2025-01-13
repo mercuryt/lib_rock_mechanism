@@ -11,6 +11,7 @@ class Area;
 struct DeserializationMemo;
 class AreaHasBlockDesignationsForFaction final
 {
+	// TODO: binary filter m_hasAnyDesignations?
 	std::vector<bool> m_designations;
 	BlockIndex m_areaSize;
 	uint32_t getIndex(const BlockIndex& index, const BlockDesignation designation) const;
@@ -39,11 +40,14 @@ class AreaHasBlockDesignations final
 public:
 	AreaHasBlockDesignations(Area& area) : m_area(area) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	void registerFaction(FactionId faction) { m_data.emplace(faction, m_area); }
-	void unregisterFaction(FactionId faction) { m_data.erase(faction); }
-	[[nodiscard]] bool contains(FactionId faction) { return m_data.contains(faction); }
-	[[nodiscard]] AreaHasBlockDesignationsForFaction& getForFaction(FactionId faction) { return m_data[faction]; }
-	[[nodiscard]] const AreaHasBlockDesignationsForFaction& getForFaction(FactionId faction) const { return m_data[faction]; }
+	void registerFaction(const FactionId& faction) { m_data.emplace(faction, m_area); }
+	void maybeRegisterFaction(const FactionId& faction) { if(!contains(faction)) m_data.emplace(faction, m_area); }
+	void unregisterFaction(const FactionId& faction) { m_data.erase(faction); }
+	[[nodiscard]] bool contains(const FactionId& faction) const { return m_data.contains(faction); }
+	[[nodiscard]] AreaHasBlockDesignationsForFaction& getForFaction(const FactionId& faction) { return m_data[faction]; }
+	[[nodiscard]] const AreaHasBlockDesignationsForFaction& getForFaction(const FactionId& faction) const { return m_data[faction]; }
+	[[nodiscard]] AreaHasBlockDesignationsForFaction& maybeRegisterAndGetForFaction(const FactionId& faction);
+	[[nodiscard]] const AreaHasBlockDesignationsForFaction& maybeRegisterAndGetForFaction(const FactionId& faction) const;
 	[[nodiscard]] Json toJson() const;
 	AreaHasBlockDesignations(AreaHasBlockDesignationsForFaction&) = delete;
 	AreaHasBlockDesignations(AreaHasBlockDesignationsForFaction&&) = delete;

@@ -8,7 +8,7 @@ AreaHasBlockDesignationsForFaction::AreaHasBlockDesignationsForFaction(Area& are
 {
 	m_designations.resize(m_areaSize.get() * (uint)BlockDesignation::BLOCK_DESIGNATION_MAX);
 }
-AreaHasBlockDesignationsForFaction::AreaHasBlockDesignationsForFaction(const Json& data, DeserializationMemo&) : 
+AreaHasBlockDesignationsForFaction::AreaHasBlockDesignationsForFaction(const Json& data, DeserializationMemo&) :
 	m_designations(data.get<std::vector<bool>>()) { }
 uint32_t AreaHasBlockDesignationsForFaction::getIndex(const BlockIndex& index, const BlockDesignation designation) const
 {
@@ -42,8 +42,7 @@ BlockDesignation AreaHasBlockDesignationsForFaction::getDisplayDesignation(const
 	for(int i = 0; i < (int)BlockDesignation::BLOCK_DESIGNATION_MAX; ++i)
 		if(check(index, (BlockDesignation)i))
 			return (BlockDesignation)i;
-	assert(false);
-	return BlockDesignation::Construct;
+	return BlockDesignation::BLOCK_DESIGNATION_MAX;
 }
 bool AreaHasBlockDesignationsForFaction::empty(const BlockIndex& index) const
 {
@@ -60,11 +59,24 @@ void AreaHasBlockDesignations::load(const Json& data, DeserializationMemo& deser
 {
 	for(const Json& pair : data)
 	{
-		FactionId faction = pair[0].get<FactionId>();
+		const FactionId faction = pair[0].get<FactionId>();
 		const Json& designationData = pair[1];
 		m_data.emplace(faction, designationData, deserializationMemo);
 	}
 }
+AreaHasBlockDesignationsForFaction& AreaHasBlockDesignations::maybeRegisterAndGetForFaction(const FactionId& faction)
+{
+	auto found = m_data.find(faction);
+	if(found != m_data.end())
+		return found.second();
+	registerFaction(faction);
+	return m_data[faction];
+}
+const AreaHasBlockDesignationsForFaction& AreaHasBlockDesignations::maybeRegisterAndGetForFaction(const FactionId& faction) const
+{
+	return const_cast<AreaHasBlockDesignations&>(*this).maybeRegisterAndGetForFaction(faction);
+}
+
 Json AreaHasBlockDesignations::toJson() const
 {
 	Json output;

@@ -486,7 +486,7 @@ void Window::povFromJson(const Json& data)
 {
 	assert(m_simulation);
 	if(data.contains("faction"))
-		m_faction = m_simulation->m_hasFactions.byName(data["faction"].get<std::wstring>());
+		m_faction = data["faction"].get<FactionId>();
 	m_area = &m_simulation->m_hasAreas->getById(data["area"].get<AreaId>());
 	m_scale = data["scale"].get<uint32_t>();
 	m_z = DistanceInBlocks::create(data["z"].get<uint32_t>());
@@ -536,6 +536,10 @@ BlockIndex Window::getBlockAtPosition(sf::Vector2i pixelPos)
 	x = std::min(blocks.m_sizeX.get() - 1, x / m_scale);
 	y = std::min(blocks.m_sizeY.get() - 1, y / m_scale);
 	return blocks.getIndex_i(x, y, m_z.get());
+}
+void Window::setFaction(const FactionId& faction)
+{
+	m_faction = faction;
 }
 [[nodiscard]] Json Window::povToJson() const
 {
