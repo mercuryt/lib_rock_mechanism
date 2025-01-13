@@ -23,6 +23,7 @@ class AreaHasVisionCuboids final
 	VisionCuboidId m_nextId = VisionCuboidId::create(1);
 public:
 	void initalize(Area& area);
+	void initalizeEmpty(Area& area);
 	void clearDestroyed();
 	void blockIsNeverOpaque(const BlockIndex& block);
 	void blockIsSometimesOpaque(const BlockIndex& block);

@@ -650,10 +650,11 @@ std::array<int32_t, 3> Blocks::relativeOffsetTo(const BlockIndex& index, const B
 }
 bool Blocks::canSeeThrough(const BlockIndex& index) const
 {
-	if(solid_is(index) && !MaterialType::getTransparent(solid_get(index)))
+	const MaterialTypeId& material = solid_get(index);
+	if(material.exists() && !MaterialType::getTransparent(material))
 		return false;
 	const BlockFeature* door = blockFeature_atConst(index, BlockFeatureType::door);
-	if(door != nullptr && !MaterialType::getTransparent(door->materialType) && door->closed)
+	if(door != nullptr && door->closed && !MaterialType::getTransparent(door->materialType) )
 		return false;
 	return true;
 }

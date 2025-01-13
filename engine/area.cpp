@@ -54,7 +54,7 @@ Area::Area(AreaId id, std::wstring n, Simulation& s, const DistanceInBlocks& x, 
 	m_items = std::make_unique<Items>(*this);
 	setup();
 	m_opacityFacade.initalize();
-	m_visionCuboids.initalize(*this);
+	m_visionCuboids.initalizeEmpty(*this);
 	m_hasRain.scheduleRestart();
 	if constexpr(DEBUG)
 		m_loaded = true;
