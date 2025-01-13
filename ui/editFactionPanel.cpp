@@ -14,7 +14,7 @@ EditFactionView::EditFactionView(Window& window) : m_window(window), m_panel(tgu
 void EditFactionView::draw(const FactionId& factionId)
 {
 	m_panel->removeAllWidgets();
-	auto label = tgui::Label::create(factionId.exists() ? "edit factionId" : "create factionId");
+	auto label = tgui::Label::create(factionId.exists() ? "edit faction" : "create faction");
 	m_panel->add(label);
 	auto nameUI = tgui::EditBox::create();
 	nameUI->setPosition(10, tgui::bindBottom(label) + 10);
@@ -39,11 +39,14 @@ void EditFactionView::draw(const FactionId& factionId)
 	});
 	save->setEnabled(false);
 	nameUI->onTextChange([this, save, factionId](tgui::String text){
-		Faction& faction = m_window.getSimulation()->m_hasFactions.getById(factionId);
-		save->setEnabled(!text.empty() && (factionId.empty() || faction.name != text.toWideString()));
+		if(factionId.exists())
+		{
+			Faction& faction = m_window.getSimulation()->m_hasFactions.getById(factionId);
+			save->setEnabled(!text.empty() && (factionId.empty() || faction.name != text.toWideString()));
+		}
 	});
 	save->setPosition(tgui::bindLeft(nameUI), tgui::bindBottom(nameUI) + 10);
-	auto setPlayerFaction = tgui::Button::create("set player factionId");
+	auto setPlayerFaction = tgui::Button::create("set player faction");
 	m_panel->add(setPlayerFaction);
 	setPlayerFaction->onClick([this, factionId]{ m_window.setFaction(factionId); });
 	setPlayerFaction->setPosition(tgui::bindLeft(save), tgui::bindBottom(save) + 10);
@@ -55,7 +58,7 @@ void EditFactionView::draw(const FactionId& factionId)
 	m_panel->add(back);
 	if(factionId.exists())
 	{
-		auto addEnemyLabel = tgui::Label::create("add enemy factionId");
+		auto addEnemyLabel = tgui::Label::create("add enemy faction");
 		m_panel->add(addEnemyLabel);
 		addEnemyLabel->setPosition(tgui::bindRight(nameUI) + 10, tgui::bindTop(nameUI));
 		auto addEnemyUI = widgetUtil::makeFactionSelectUI(*m_window.getSimulation(), L"select");
@@ -92,7 +95,7 @@ void EditFactionView::draw(const FactionId& factionId)
 			}
 		}
 
-		auto addAllyLabel = tgui::Label::create("add ally factionId");
+		auto addAllyLabel = tgui::Label::create("add ally faction");
 		m_panel->add(addAllyLabel);
 		addAllyLabel->setPosition(tgui::bindRight(addEnemyLabel) + 10, tgui::bindTop(nameUI));
 		auto addAllyUI = widgetUtil::makeFactionSelectUI(*m_window.getSimulation(), L"select");

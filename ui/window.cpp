@@ -418,13 +418,13 @@ void Window::threadTask(std::function<void()> task)
 {
 	m_lockInput = true;
 	sf::Cursor cursor;
-	if (cursor.loadFromSystem(sf::Cursor::Wait))
+	if(cursor.loadFromSystem(sf::Cursor::Wait))
 		m_window.setMouseCursor(cursor);
 	std::thread t([this, task]{
 		task();
 		m_lockInput = false;
 		sf::Cursor cursor;
-		if (cursor.loadFromSystem(sf::Cursor::Arrow))
+		if(cursor.loadFromSystem(sf::Cursor::Arrow))
 			m_window.setMouseCursor(cursor);
 	});
 	t.join();
@@ -434,9 +434,12 @@ void Window::save()
 	assert(m_simulation);
 	std::function<void()> task = [this]{
 		m_simulation->save();
-		const Json povData = povToJson();
-		std::ofstream file(m_simulation->getPath()/"pov.json" );
-		file << povData;
+		if(getArea() != nullptr)
+		{
+			const Json povData = povToJson();
+			std::ofstream file(m_simulation->getPath()/"pov.json" );
+			file << povData;
+		}
 	};
 	threadTask(task);
 }
@@ -445,10 +448,16 @@ void Window::load(std::filesystem::path path)
 	std::function<void()> task = [this, path]{
 		deselectAll();
 		m_simulation = std::make_unique<Simulation>(path);
-		std::ifstream af(m_simulation->getPath()/"pov.json");
-		Json povData = Json::parse(af);
-		povFromJson(povData);
-		showGame();
+		std::filesystem::path path = m_simulation->getPath()/"pov.json";
+		if(std::filesystem::exists(path))
+		{
+			std::ifstream af(path);
+			Json povData = Json::parse(af);
+			povFromJson(povData);
+			showGame();
+		}
+		else
+			showEditReality();
 	};
 	threadTask(task);
 }

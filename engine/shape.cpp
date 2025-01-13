@@ -95,7 +95,7 @@ BlockIndices Shape::getBlocksOccupiedAt(const ShapeId& id, const Blocks& blocks,
 BlockIndices Shape::getBlocksOccupiedAndAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing)
 {
 	auto output = getBlocksOccupiedAt(id, blocks, location, facing);
-	output.concatAssertUnique(getBlocksWhichWouldBeAdjacentAt(id, blocks, location, facing));
+	output.concatIgnoreUnique(getBlocksWhichWouldBeAdjacentAt(id, blocks, location, facing));
 	return output;
 }
 std::vector<std::pair<BlockIndex, CollisionVolume>> Shape::getBlocksOccupiedAtWithVolumes(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing)

@@ -242,7 +242,7 @@ void ActorParamaters::generateEquipment(Area& area, const ActorIndex& actor)
 		}
 		else
 		{
-			static ItemTypeId shortbowType = ItemType::byName(L"shortbow");
+			static ItemTypeId shortbowType = ItemType::byName(L"short bow");
 			generate(shortbowType, poplarWoodType);
 		}
 	}
