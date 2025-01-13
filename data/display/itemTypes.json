@@ -9,11 +9,17 @@
 		"name": "round bar",
 		"image": "bar"
 	},{
+		"name": "belt",
+		"image": "cloths"
+	},{
 		"name": "block",
 		"image": "block"
 	},{
 		"name": "branch",
 		"image": "branch"
+	},{
+		"name": "breast plate",
+		"image": "breast plate"
 	},{
 		"name": "board",
 		"image": "board"
@@ -29,6 +35,9 @@
 	},{
 		"name": "cart",
 		"image": "cart"
+	},{
+		"name": "chain mail shirt",
+		"image": "chain mail shirt"
 	},{
 		"name": "chisel",
 		"image": "tool"
@@ -52,14 +61,35 @@
 		"name": "draw shave",
 		"image": "tool"
 	},{
+		"name": "full helm",
+		"image": "full helm"
+	},{
+		"name": "glave",
+		"image": "glave"
+	},{
+		"name": "greaves",
+		"image": "tool"
+	},{
+		"name": "half helm",
+		"image": "half helm"
+	},{
 		"name": "hammer",
 		"image": "tool"
+	},{
+		"name": "hood",
+		"image": "cloths"
+	},{
+		"name": "jacket",
+		"image": "cloths"
 	},{
 		"name": "log",
 		"image": "log"
 	},{
 		"name": "long sword",
 		"image": "sword"
+	},{
+		"name": "mace",
+		"image": "mace"
 	},{
 		"name": "mallet",
 		"image": "tool"
@@ -74,7 +104,7 @@
 		"image": "peg"
 	},{
 		"name": "pick",
-		"image": "tool"
+		"image": "pick"
 	},{
 		"name": "prepared meal",
 		"image": "meal"
@@ -94,11 +124,33 @@
 		"name": "scrap",
 		"image": "pile"
 	},{
+		"name": "shield",
+		"image": "shield"
+	},{
+		"name": "shirt",
+		"image": "cloths"
+	},{
+		"name": "short sword",
+		"image": "sword"
+	},{
+		"name": "shoes",
+		"image": "cloths"
+	},{
+		"name": "spear",
+		"image": "spear"
+	},{
+		"name": "staff",
+		"image": "bar"
+	},{
 		"name": "sticks",
 		"image": "pile"
 	},{
 		"name": "trowel",
 		"image": "tool"
+	},{
+		"name": "vambraces",
+		"image": "greaves",
+		"scale": 0.6
 	},{
 		"name": "wheat seed",
 		"image": "seed"

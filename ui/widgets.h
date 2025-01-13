@@ -47,7 +47,8 @@ namespace widgetUtil
 	inline PlantSpeciesId lastSelectedPlantSpecies;
 	tgui::ComboBox::Ptr makePlantSpeciesSelectUI(Area& area, const BlockIndex& block);
 	inline MaterialTypeId lastSelectedMaterial;
-	tgui::ComboBox::Ptr makeMaterialSelectUI(std::wstring nullLabel = L"", std::function<bool(const MaterialTypeId&)> predicate = nullptr);
+	inline MaterialTypeId lastSelectedConstructionMaterial;
+	tgui::ComboBox::Ptr makeMaterialSelectUI(MaterialTypeId& lastSelected, std::wstring nullLabel = L"", std::function<bool(const MaterialTypeId&)> predicate = nullptr);
 	inline MaterialCategoryTypeId lastSelectedMaterialCategory;
 	tgui::ComboBox::Ptr makeMaterialCategorySelectUI(std::wstring nullLabel = L"");
 	inline AnimalSpeciesId lastSelectedAnimalSpecies;

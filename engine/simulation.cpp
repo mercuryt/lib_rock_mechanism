@@ -20,25 +20,26 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
-Simulation::Simulation(std::wstring name, Step s) : 
+Simulation::Simulation(std::wstring name, Step s) :
        	m_eventSchedule(*this, nullptr), m_hourlyEvent(m_eventSchedule), m_deserializationMemo(*this), m_name(name), m_step(s)
-{ 
+{
 	m_hourlyEvent.schedule(*this);
 	m_path.append(L"save/"+name);
 	m_dramaEngine = std::make_unique<DramaEngine>(*this);
 	m_hasAreas = std::make_unique<SimulationHasAreas>(*this);
 }
-Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std::ifstream{path/"simulation.json"})) 
-{ 
-	m_path = path; 
+Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std::ifstream{path/"simulation.json"}))
+{
+	m_path = path;
 	const Json& data = Json::parse(std::ifstream{m_path/"simulation.json"});
-	for(const Json& areaId : data["areaIds"])
-		m_hasAreas->loadAreaFromPath(areaId, m_deserializationMemo);
+	if(data.contains("areaIds"))
+		for(const Json& areaId : data["areaIds"])
+			m_hasAreas->loadAreaFromPath(areaId, m_deserializationMemo);
 	//TODO: DramaEngine should probably be able to load before hasAreas.
 	m_dramaEngine = std::make_unique<DramaEngine>(data["drama"], m_deserializationMemo, *this);
 }
-Simulation::Simulation(const Json& data) : 
-	m_eventSchedule(*this, nullptr), m_hourlyEvent(m_eventSchedule), m_deserializationMemo(*this) 
+Simulation::Simulation(const Json& data) :
+	m_eventSchedule(*this, nullptr), m_hourlyEvent(m_eventSchedule), m_deserializationMemo(*this)
 {
 	data["name"].get_to(m_name);
 	data["step"].get_to(m_step);
@@ -55,7 +56,7 @@ void Simulation::doStep(uint16_t count)
 	bool locked = false;
 	for(uint i = 0; i < count; ++i)
 	{
-		// Aquire UI read mutex on first iteration, 
+		// Aquire UI read mutex on first iteration,
 		if(!locked)
 		{
 			m_uiReadMutex.lock();

@@ -35,12 +35,12 @@ protected:
 	friend class DramaEngine;
 public:
 	DramaArcType m_type;
-	std::wstring name() const { return typeToString(m_type); }
+	std::string name() const { return typeToString(m_type); }
 	//For debug.
 	virtual void begin() = 0;
 	static std::vector<DramaArcType> getTypes();
-	static std::wstring typeToString(DramaArcType type);
-	static DramaArcType stringToType(std::wstring string);
+	static std::string typeToString(DramaArcType type);
+	static DramaArcType stringToType(std::string string);
 	virtual ~DramaArc() = default;
 };
 class DramaEngine final

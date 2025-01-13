@@ -6,9 +6,9 @@
 #include <TGUI/Widgets/SpinControl.hpp>
 #include <TGUI/Widgets/VerticalLayout.hpp>
 EditAreaView::EditAreaView(Window& w) : m_window(w), m_panel(tgui::Panel::create()),
-	m_title(tgui::Label::create()), 
-	m_name(tgui::EditBox::create()), 
-	m_dimensionsHolder(tgui::Grid::create()), 
+	m_title(tgui::Label::create()),
+	m_name(tgui::EditBox::create()),
+	m_dimensionsHolder(tgui::Grid::create()),
 	m_sizeX(tgui::SpinControl::create()), m_sizeY(tgui::SpinControl::create()), m_sizeZ(tgui::SpinControl::create())
 {
 	m_window.getGui().add(m_panel);
@@ -19,7 +19,7 @@ EditAreaView::EditAreaView(Window& w) : m_window(w), m_panel(tgui::Panel::create
 	auto layout = tgui::VerticalLayout::create();
 	widgetUtil::setPadding(layout);
 	m_panel->add(layout);
-	
+
 
 	layout->add(tgui::Label::create("name"));
 	layout->add(m_name);
@@ -32,13 +32,13 @@ EditAreaView::EditAreaView(Window& w) : m_window(w), m_panel(tgui::Panel::create
 	m_dimensionsHolder->addWidget(m_sizeX, 1, 2);
 	m_dimensionsHolder->addWidget(m_sizeY, 2, 2);
 	m_dimensionsHolder->addWidget(m_sizeZ, 3, 2);
-	m_sizeX->setMinimum(10);
+	m_sizeX->setMinimum(1);
 	m_sizeX->setMaximum(2000);
 	m_sizeX->setValue(100);
-	m_sizeY->setMinimum(10);
+	m_sizeY->setMinimum(1);
 	m_sizeY->setMaximum(2000);
 	m_sizeY->setValue(100);
-	m_sizeZ->setMinimum(10);
+	m_sizeZ->setMinimum(1);
 	m_sizeZ->setMaximum(2000);
 	m_sizeZ->setValue(50);
 

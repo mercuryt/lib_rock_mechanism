@@ -42,7 +42,7 @@ void EditDramaView::draw(Area* area)
 	{
 		if(!typesForArea.contains(type))
 		{
-			std::wstring string = DramaArc::typeToString(type);
+			std::string string = DramaArc::typeToString(type);
 			newTypeSelector->addItem(string, string);
 		}
 	}
@@ -50,7 +50,7 @@ void EditDramaView::draw(Area* area)
 		if(id == "none")
 			return;
 		auto& dramaEngine = m_window.getSimulation()->m_dramaEngine;
-		dramaEngine->createArcTypeForArea(DramaArc::stringToType(id.toWideString()), *area);
+		dramaEngine->createArcTypeForArea(DramaArc::stringToType(id.toStdString()), *area);
 		m_window.showEditDrama(area);
 	});
 	auto back = tgui::Button::create("close");

@@ -23,22 +23,25 @@ void Draw::view()
 	// Render block floors, collect actors into single and multi tile groups.
 	SmallSet<BlockIndex> singleTileActorBlocks;
 	SmallSet<ActorIndex> multiTileActors;
-	Cuboid zLevel = blocks.getZLevel(m_window.m_z);
-	for(const BlockIndex& block : zLevel.getView(blocks))
+	const Cuboid cuboid = blocks.getZLevel(m_window.m_z);
+	const auto zLevelBlocks = cuboid.getView(blocks);
+	for(const BlockIndex& block : zLevelBlocks)
 	{
 		blockFloor(block);
 		for(const ActorIndex& actor : blocks.actor_getAll(block))
 		{
 			if(Shape::getIsMultiTile(actors.getShape(actor)))
-				multiTileActors.insert(actor);
+				multiTileActors.maybeInsert(actor);
 			else
 				singleTileActorBlocks.insert(block);
 		}
 	}
 	// Render block wall corners.
-	auto zLevelBlocks = zLevel.getView(blocks);
 	for(const BlockIndex& block : zLevelBlocks)
 		blockWallCorners(block);
+	// Renger Block floors.
+	for(const BlockIndex& block : zLevelBlocks)
+		blockFloor(block);
 	// Render block walls.
 	for(const BlockIndex& block : zLevelBlocks)
 		blockWalls(block);
@@ -80,7 +83,7 @@ void Draw::view()
 	}
 	// Designated and project progress.
 	if(m_window.m_faction.exists())
-		for(const BlockIndex& block : zLevel.getView(blocks))
+		for(const BlockIndex& block : zLevelBlocks)
 		{
 			if(m_window.m_area->m_blockDesignations.contains(m_window.m_faction))
 				designated(block);
@@ -90,7 +93,7 @@ void Draw::view()
 				progressBarOnBlock(block, projectProgress);
 		}
 	// Render item overlays.
-	for(const BlockIndex& block : zLevel.getView(blocks))
+	for(const BlockIndex& block : zLevelBlocks)
 		itemOverlay(block);
 	// Render actor overlays.
 	for(const BlockIndex& block : singleTileActorBlocks)
@@ -237,14 +240,12 @@ void Draw::blockWallCorners(const BlockIndex& block)
 	const BlockIndex& west = blocks.getBlockWest(block);
 	const BlockIndex& south = blocks.getBlockSouth(block);
 	const BlockIndex& below = blocks.getBlockBelow(block);
-	const BlockIndex& belowWest = blocks.getBlockWest(below);
-	const BlockIndex& belowSouth = blocks.getBlockSouth(below);
 	if(
-		(blocks.solid_is(block) && west.exists() && !blocks.solid_is(west) && south.exists() && !blocks.solid_is(south)) ||
-		(!blocks.solid_is(block) && below.exists() && blocks.solid_is(below) && belowWest.exists() && !blocks.solid_is(belowWest) && belowSouth.exists() && !blocks.solid_is(belowSouth))
+		(m_window.m_editMode || blocks.isVisible(block)) &&
+		blocks.solid_is(block) && west.exists() && !blocks.solid_is(west) && south.exists() && !blocks.solid_is(south)
 	)
 	{
-		const sf::Color color = displayData::materialColors[blocks.solid_get(below)];
+		const sf::Color color = displayData::materialColors[blocks.solid_get(block)];
 		float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 		auto pair = sprites::make(blocks.isConstructed(block) ? "blockWall" : "roughWall");
 		auto sprite = pair.first;
@@ -254,6 +255,27 @@ void Draw::blockWallCorners(const BlockIndex& block)
 		sprite.setColor(color);
 		sprite.setRotation(45);
 		m_window.getRenderWindow().draw(sprite);
+	}
+	else if(below.exists())
+	{
+		const BlockIndex& belowWest = blocks.getBlockWest(below);
+		const BlockIndex& belowSouth = blocks.getBlockSouth(below);
+		if(
+			(m_window.m_editMode || blocks.isVisible(below)) &&
+			!blocks.solid_is(block) && blocks.solid_is(below) && belowWest.exists() && !blocks.solid_is(belowWest) && belowSouth.exists() && !blocks.solid_is(belowSouth)
+		)
+		{
+			const sf::Color color = displayData::materialColors[blocks.solid_get(below)];
+			float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
+			auto pair = sprites::make(blocks.isConstructed(block) ? "blockWall" : "roughWall");
+			auto sprite = pair.first;
+			const Point3D coordinates = blocks.getCoordinates(block);
+			sprite.setPosition(((float)coordinates.x.get() - 0.21f) * (float)m_window.m_scale, ((float)coordinates.y.get() + 0.48f) * (float)m_window.m_scale);
+			sprite.setScale(scaleRatio, scaleRatio);
+			sprite.setColor(color);
+			sprite.setRotation(45);
+			m_window.getRenderWindow().draw(sprite);
+		}
 	}
 }
 void Draw::blockWalls(const BlockIndex& block)

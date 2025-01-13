@@ -16,7 +16,7 @@ EditRealityView::EditRealityView(Window& w) : m_window(w), m_panel(tgui::Panel::
 	auto layout = tgui::VerticalLayout::create();
 	widgetUtil::setPadding(layout);
 	m_panel->add(layout);
-	
+
 	auto grid = tgui::Grid::create();
 	layout->add(grid);
 
@@ -37,20 +37,21 @@ EditRealityView::EditRealityView(Window& w) : m_window(w), m_panel(tgui::Panel::
 	areaButtonLayout->add(m_areaView);
 	create->onClick([&]{ m_window.showEditArea(); });
 	m_areaEdit->onClick([&]{ m_window.showEditArea(&m_areaSelect.get()); });
-	m_areaView->onClick([&]{ 
-		m_window.setArea(m_areaSelect.get()); 
-		m_window.showGame(); 
+	m_areaView->onClick([&]{
+		m_window.setArea(m_areaSelect.get());
+		m_window.showGame();
 	});
 	auto buttonLayout = tgui::HorizontalLayout::create();
 	layout->add(buttonLayout);
 
-	m_confirm->onClick([&]{ 
+	m_confirm->onClick([&]{
 		if(m_name->getText().empty())
 			return;
 		if(!m_window.getSimulation())
-			m_window.setSimulation(std::make_unique<Simulation>(m_name->getText().toWideString(), m_dateTime.get()));	       
+			m_window.setSimulation(std::make_unique<Simulation>(m_name->getText().toWideString(), m_dateTime.get()));
 		else
 			m_window.getSimulation()->m_name = m_name->getText().toWideString();
+		m_window.getSimulation()->save();
 		draw();
 	});
 	buttonLayout->add(m_confirm);
