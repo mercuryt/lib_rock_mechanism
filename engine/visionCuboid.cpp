@@ -28,6 +28,18 @@ void AreaHasVisionCuboids::initalize(Area& area)
 	}
 	clearDestroyed();
 }
+void AreaHasVisionCuboids::initalizeEmpty(Area& area)
+{
+	m_area = &area;
+	Blocks& blocks = area.getBlocks();
+	DistanceInBlocks sizeX = blocks.m_sizeX;
+	DistanceInBlocks sizeY = blocks.m_sizeY;
+	DistanceInBlocks sizeZ = blocks.m_sizeZ;
+	m_blockVisionCuboids.resize((sizeX * sizeY * sizeZ).get());
+	m_blockVisionCuboidIds.resize((sizeX * sizeY * sizeZ).get());
+	Cuboid cuboid = blocks.getAll();
+	emplace(cuboid);
+}
 void AreaHasVisionCuboids::clearDestroyed()
 {
 	std::erase_if(m_visionCuboids, [](VisionCuboid& visionCuboid){ return visionCuboid.m_destroy; });
