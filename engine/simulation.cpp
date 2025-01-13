@@ -32,9 +32,8 @@ Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std:
 {
 	m_path = path;
 	const Json& data = Json::parse(std::ifstream{m_path/"simulation.json"});
-	if(data.contains("areaIds"))
-		for(const Json& areaId : data["areaIds"])
-			m_hasAreas->loadAreaFromPath(areaId, m_deserializationMemo);
+	for(const Json& areaId : data["hasAreas"]["areaIds"])
+		m_hasAreas->loadAreaFromPath(areaId, m_deserializationMemo);
 	//TODO: DramaEngine should probably be able to load before hasAreas.
 	m_dramaEngine = std::make_unique<DramaEngine>(data["drama"], m_deserializationMemo, *this);
 }

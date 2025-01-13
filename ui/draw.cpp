@@ -226,7 +226,7 @@ void Draw::blockFloor(const BlockIndex& block)
 		}
 		else if(below.exists() && blocks.fluid_getTotalVolume(below) > Config::maxBlockVolume * displayData::minimumFluidVolumeToSeeFromAboveLevelRatio)
 		{
-			const FluidTypeId& fluidType = blocks.fluid_getTypeWithMostVolume(block);
+			const FluidTypeId& fluidType = blocks.fluid_getTypeWithMostVolume(below);
 			const sf::Color color = displayData::fluidColors[fluidType];
 			static sf::Sprite sprite = sprites::make("fluidSurface").first;
 			// TODO: Give the shore line some feeling of depth somehow.

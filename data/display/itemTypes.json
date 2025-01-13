@@ -68,7 +68,7 @@
 		"image": "glave"
 	},{
 		"name": "greaves",
-		"image": "tool"
+		"image": "greaves"
 	},{
 		"name": "half helm",
 		"image": "half helm"
@@ -129,6 +129,10 @@
 	},{
 		"name": "shirt",
 		"image": "cloths"
+	},{
+		"name": "short bow",
+		"image": "bow",
+		"scale": 0.5
 	},{
 		"name": "short sword",
 		"image": "sword"
