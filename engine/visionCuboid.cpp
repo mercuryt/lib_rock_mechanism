@@ -111,6 +111,46 @@ void AreaHasVisionCuboids::unset(const BlockIndex& block)
 	m_blockVisionCuboids[block] = nullptr;
 	m_blockVisionCuboidIds[block] = VisionCuboidId::create(0);
 }
+BlockIndex AreaHasVisionCuboids::findLowPointForCuboidStartingFromHighPoint(const BlockIndex& highest)
+{
+	Blocks& blocks = m_area->getBlocks();
+	assert(blocks.canSeeThrough(highest));
+	const Point3D highestCoordinates = blocks.getCoordinates(highest);
+	const Point3D lowestCoordinates = highestCoordinates;
+	for(auto z = highestCoordinates.z; true; --z)
+	{
+		for(auto y = highestCoordinates.y; true; --y)
+		{
+			for(auto x = highestCoordinates.x; true; --x)
+			{
+				const BlockIndex& index = blocks.getIndex(x, y, z);
+				if(!blocks.canSeeThrough(index))
+				{
+					if(z != highestCoordinates.z)
+					{
+						++z;
+						x = blocks.m_sizeX - 1;
+						y = blocks.m_sizeY - 1;
+					}
+					else if(y != highestCoordinates.y)
+					{
+						++y;
+						x = blocks.m_sizeX - 1;
+					}
+					else
+						++x;
+					return blocks.getIndex({x, y, z});
+				}
+				if(x == 0)
+					break;
+			}
+			if(y == 0)
+				break;
+		}
+		if(z == 0)
+			break;
+	}
+}
 VisionCuboid& AreaHasVisionCuboids::emplace(Cuboid& cuboid)
 {
 	assert(!m_blockVisionCuboids.empty());

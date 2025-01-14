@@ -32,6 +32,7 @@ public:
 	void set(const BlockIndex& block, VisionCuboid& visionCuboid);
 	void unset(const BlockIndex& block);
 	VisionCuboid& emplace(Cuboid& cuboid);
+	[[nodiscard]] BlockIndex findLowPointForCuboidStartingFromHighPoint(const BlockIndex& highest);
 	[[nodiscard]] VisionCuboid* getTargetToCombineWith(const Cuboid& cuboid);
 	[[nodiscard]] VisionCuboidId getIdFor(const BlockIndex& index) const { return m_blockVisionCuboidIds[index]; }
 	// For testing.

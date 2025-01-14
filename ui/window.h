@@ -25,6 +25,7 @@
 #include "actorPanel.h"
 #include "editFactionPanel.h"
 #include "dialogueBox.h"
+#include "progressBar.h"
 #include "atomicBool.h"
 //#include "worldParamatersPanel.h"
 struct GameView final
@@ -132,7 +133,7 @@ public:
 	[[nodiscard]] BlockIndex getBlockUnderCursor();
 	[[nodiscard]] BlockIndex getBlockAtPosition(sf::Vector2i pixelPos);
 	// Filesystem.
-	void threadTask(std::function<void()> task);
+	void threadTask(std::function<void()> task, const std::wstring& title);
 	void save();
 	void load(std::filesystem::path path);
 	// Accessors.
