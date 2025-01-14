@@ -414,7 +414,7 @@ void Window::startLoop()
 			std::this_thread::sleep_for(minimum - delta);
 	}
 }
-void Window::threadTask(std::function<void()> task)
+void Window::threadTask(std::function<void()> task, [[maybe_unused]] const std::wstring& title)
 {
 	m_lockInput = true;
 	sf::Cursor cursor;
@@ -441,7 +441,7 @@ void Window::save()
 			file << povData;
 		}
 	};
-	threadTask(task);
+	threadTask(task, L"save");
 }
 void Window::load(std::filesystem::path path)
 {
@@ -459,7 +459,7 @@ void Window::load(std::filesystem::path path)
 		else
 			showEditReality();
 	};
-	threadTask(task);
+	threadTask(task, L"load");
 }
 void Window::setPaused(const bool paused)
 {
