@@ -54,13 +54,14 @@ Area::Area(AreaId id, std::wstring n, Simulation& s, const DistanceInBlocks& x, 
 	m_items = std::make_unique<Items>(*this);
 	setup();
 	m_opacityFacade.initalize();
-	m_visionCuboids.initalizeEmpty(*this);
+	m_visionCuboids.initalize(*this);
 	m_hasRain.scheduleRestart();
 	if constexpr(DEBUG)
 		m_loaded = true;
 }
 Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation) :
-	m_eventSchedule(simulation, this), m_hasTemperature(*this), m_hasTerrainFacades(*this),
+	m_eventSchedule(simulation, this),
+	m_hasTemperature(*this), m_hasTerrainFacades(*this),
 	m_fires(*this), m_hasFarmFields(*this), m_hasDigDesignations(*this), m_hasConstructionDesignations(*this),
 	m_hasStockPiles(*this), m_hasCraftingLocationsAndJobs(*this), m_hasTargetedHauling(*this), m_hasSleepingSpots(*this),
 	m_hasWoodCuttingDesignations(*this), m_fluidSources(*this), m_hasFluidGroups(*this), m_hasRain(*this, simulation), m_blockDesignations(*this),
@@ -77,7 +78,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_blocks->load(data["blocks"], deserializationMemo);
 	m_opacityFacade.initalize();
 	m_hasFluidGroups.clearMergedFluidGroups();
-	m_visionCuboids.initalize(*this);
+	data["visionCuboids"].get_to(m_visionCuboids);
 	// Load fires.
 	m_fires.load(data["fires"], deserializationMemo);
 	// Load plants.
@@ -148,6 +149,7 @@ Json Area::toJson() const
 	data["hasCraftingLocationsAndJobs"] = m_hasCraftingLocationsAndJobs.toJson();
 	data["hasStockPiles"] = m_hasStockPiles.toJson();
 	data["targetedHauling"] = m_hasTargetedHauling.toJson();
+	data["visionCuboids"] = m_visionCuboids;
 	for(BlockIndex block : m_caveInCheck)
 		data["caveInCheck"].push_back(block);
 	m_opacityFacade.validate();
@@ -161,7 +163,7 @@ void Area::doStep()
 {
 	m_hasFluidGroups.doStep();
 	doStepCaveIn();
-	m_visionCuboids.clearDestroyed();
+	m_visionCuboids.clearDestroyed(*this);
 	m_hasTemperature.doStep();
 	if(m_hasRain.isRaining() && m_simulation.m_step.modulusIsZero(Config::rainWriteStepFreqency))
 		m_hasRain.doStep();

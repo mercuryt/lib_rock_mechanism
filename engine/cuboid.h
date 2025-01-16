@@ -8,6 +8,7 @@
 #include "types.h"
 #include "index.h"
 class Blocks;
+class CuboidView;
 class Cuboid
 {
 public:
@@ -55,17 +56,15 @@ public:
 	const iterator end(Blocks& blocks) const { return iterator(blocks, BlockIndex::null(), BlockIndex::null()); }
 	//TODO:
 	//static_assert(std::forward_iterator<iterator>);
-	struct View : public std::ranges::view_interface<View>
-	{
-		const Cuboid& cuboid;
-		Blocks& blocks;
-		View() = default;
-		View(Blocks& b, const Cuboid& c) : cuboid(c), blocks(b) { }
-		iterator begin() const { return cuboid.begin(blocks); }
-		iterator end() const { return cuboid.end(blocks); }
-	};
-	View getView(Blocks& blocks) const
-	{
-		return View(blocks, *this);
-	}
+	CuboidView getView(Blocks& blocks) const;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Cuboid, m_highest, m_lowest);
+};
+struct CuboidView : public std::ranges::view_interface<CuboidView>
+{
+	const Cuboid cuboid;
+	Blocks& blocks;
+	CuboidView() = default;
+	CuboidView(Blocks& b, const Cuboid c) : cuboid(c), blocks(b) { }
+	Cuboid::iterator begin() const { return cuboid.begin(blocks); }
+	Cuboid::iterator end() const { return cuboid.end(blocks); }
 };

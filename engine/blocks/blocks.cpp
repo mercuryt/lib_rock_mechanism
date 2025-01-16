@@ -515,7 +515,7 @@ void Blocks::solid_set(const BlockIndex& index, const MaterialTypeId& materialTy
 	m_visible.set(index);
 	// Opacity.
 	if(!MaterialType::getTransparent(materialType) && wasEmpty)
-		m_area.m_visionCuboids.blockIsSometimesOpaque(index);
+		m_area.m_visionCuboids.blockIsSometimesOpaque(m_area, index);
 	m_area.m_opacityFacade.update(index);
 	// Set blocks below as not exposed to sky.
 	setExposedToSky(index, false);
@@ -535,7 +535,7 @@ void Blocks::solid_setNot(const BlockIndex& index)
 	m_materialType[index].clear();
 	m_constructed.unset(index);
 	fluid_onBlockSetNotSolid(index);
-	m_area.m_visionCuboids.blockIsNeverOpaque(index);
+	m_area.m_visionCuboids.blockIsNeverOpaque(m_area, index);
 	m_area.m_opacityFacade.update(index);
 	if(getBlockAbove(index).empty() || m_exposedToSky[getBlockAbove(index)])
 	{

@@ -10,7 +10,7 @@ using Allocator = std::pmr::unsynchronized_pool_resource;
 struct LocationBucketData
 {
 	Point3D coordinates;
-	VisionCuboidId cuboid;
+	VisionCuboidIndex cuboid;
 	ActorReference actor;
 	DistanceInBlocks visionRangeSquared;
 	struct hash{ [[nodiscard]] static size_t operator()(const LocationBucketData& data) { return data.actor.getReferenceIndex().get(); }};
@@ -23,10 +23,10 @@ class LocationBucket
 public:
 	LocationBucket(Allocator& allocator) : m_data(&allocator) { }
 	void insert(const LocationBucketData& data);
-	LocationBucketData& insert(const ActorReference& actor, const Point3D& point, const VisionCuboidId& cuboid, const DistanceInBlocks& visionRangeSquered);
+	LocationBucketData& insert(const ActorReference& actor, const Point3D& point, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visionRangeSquered);
 	void remove(const ActorReference& actor);
 	void updateVisionRangeSquared(const ActorReference& actor, const Point3D& point, const DistanceInBlocks& visionRangeSquaed);
-	void updateVisionCuboidId(const Point3D& point, const VisionCuboidId& cuboid);
+	void updateVisionCuboidIndex(const Point3D& point, const VisionCuboidIndex& cuboid);
 	void prefetch() const;
 	template<typename Action>
 	void forEach(Action&& action) const

@@ -22,10 +22,10 @@ class OctTree
 public:
 	OctTree(Allocator& allocator) : m_data(allocator) {}
 	OctTree(const DistanceInBlocks& halfWidth, Allocator& allocator);
-	void record(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates, const VisionCuboidId& cuboid, const DistanceInBlocks& visonRangeSquared);
+	void record(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visonRangeSquared);
 	void erase(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates);
 	void updateRange(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates, const DistanceInBlocks& visionRangeSquared);
-	void updateVisionCuboid(OctTreeRoot& root, const Point3D& coordinates, const VisionCuboidId& cuboid);
+	void updateVisionCuboid(OctTreeRoot& root, const Point3D& coordinates, const VisionCuboidIndex& cuboid);
 	// TODO: update coordinates.
 	template<typename Action>
 	void query(const OctTreeRoot& root, const Cube& cube, Action&& action) const;
@@ -51,7 +51,7 @@ public:
 	OctTreeRoot(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z);
 	void record(Area& area, const ActorReference& actor);
 	void erase(Area& area, const ActorReference& actor);
-	void updateVisionCuboid(const Point3D& coordinates, const VisionCuboidId& cuboid) { m_tree.updateVisionCuboid(*this, coordinates, cuboid); }
+	void updateVisionCuboid(const Point3D& coordinates, const VisionCuboidIndex& cuboid) { m_tree.updateVisionCuboid(*this, coordinates, cuboid); }
 	void updateRange(const ActorReference& actor, const Point3D& coordinates, const DistanceInBlocks& visionRangeSquared) { m_tree.updateRange(*this, actor, coordinates, visionRangeSquared); }
 	void maybeSort();
 	// TODO: update coordinates.

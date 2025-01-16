@@ -294,16 +294,16 @@ TEST_CASE("vision")
 	{
 		REQUIRE(area.m_visionCuboids.size() == 1);
 		blocks.solid_set(blocks.getIndex_i(0,0,0), marble, false);
-		area.m_visionCuboids.clearDestroyed();
+		area.m_visionCuboids.clearDestroyed(area);
 		REQUIRE(area.m_visionCuboids.size() == 3);
 		blocks.solid_set(blocks.getIndex_i(1,0,0), marble, false);
-		area.m_visionCuboids.clearDestroyed();
+		area.m_visionCuboids.clearDestroyed(area);
 		REQUIRE(area.m_visionCuboids.size() == 3);
 		areaBuilderUtil::setSolidWall(area, blocks.getIndex_i(2, 0, 0), blocks.getIndex_i(9, 0, 0), marble);
-		area.m_visionCuboids.clearDestroyed();
+		area.m_visionCuboids.clearDestroyed(area);
 		REQUIRE(area.m_visionCuboids.size() == 2);
 		areaBuilderUtil::setSolidWall(area, blocks.getIndex_i(0, 1, 0), blocks.getIndex_i(9, 9, 0), marble);
-		area.m_visionCuboids.clearDestroyed();
+		area.m_visionCuboids.clearDestroyed(area);
 		REQUIRE(area.m_visionCuboids.size() == 1);
 	}
 	SUBCASE("VisionCuboid divide and join")
@@ -315,40 +315,40 @@ TEST_CASE("vision")
 		BlockIndex block4 = blocks.getIndex_i(1, 1, 7);
 		BlockIndex block5 = blocks.getIndex_i(9, 9, 1);
 		REQUIRE(area.m_visionCuboids.size() == 1);
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1)->m_cuboid.size(blocks) == 900);
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) == area.m_visionCuboids.getVisionCuboidFor(block2));
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) == area.m_visionCuboids.getVisionCuboidFor(block3));
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) == area.m_visionCuboids.getVisionCuboidFor(block4));
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) == area.m_visionCuboids.getVisionCuboidFor(block5));
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1)->m_cuboid.size(blocks) == 900);
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block2));
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block3));
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block4));
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block5));
 		blocks.blockFeature_construct(block3, floor, marble);
-		area.m_visionCuboids.clearDestroyed();
+		area.m_visionCuboids.clearDestroyed(area);
 		REQUIRE(area.m_visionCuboids.size() == 2);
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1)->m_cuboid.size(blocks) == 400);
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block4)->m_cuboid.size(blocks) == 500);
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) == area.m_visionCuboids.getVisionCuboidFor(block2));
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) != area.m_visionCuboids.getVisionCuboidFor(block3));
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) != area.m_visionCuboids.getVisionCuboidFor(block4));
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) == area.m_visionCuboids.getVisionCuboidFor(block5));
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1)->m_cuboid.size(blocks) == 400);
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block4)->m_cuboid.size(blocks) == 500);
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block2));
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) != area.m_visionCuboids.maybeGetForBlock(block3));
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) != area.m_visionCuboids.maybeGetForBlock(block4));
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block5));
 		blocks.solid_set(block2, marble, false);
-		area.m_visionCuboids.clearDestroyed();
+		area.m_visionCuboids.clearDestroyed(area);
 		REQUIRE(area.m_visionCuboids.size() == 7);
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block2) == nullptr);
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) != area.m_visionCuboids.getVisionCuboidFor(block3));
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) != area.m_visionCuboids.getVisionCuboidFor(block4));
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) != area.m_visionCuboids.getVisionCuboidFor(block5));
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block2) == nullptr);
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) != area.m_visionCuboids.maybeGetForBlock(block3));
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) != area.m_visionCuboids.maybeGetForBlock(block4));
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block5));
 		blocks.blockFeature_remove(block3, floor);
-		area.m_visionCuboids.clearDestroyed();
+		area.m_visionCuboids.clearDestroyed(area);
 		REQUIRE(area.m_visionCuboids.size() == 7);
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block3) == area.m_visionCuboids.getVisionCuboidFor(block4));
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block4)->m_cuboid.size(blocks) == 500);
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block3) == area.m_visionCuboids.maybeGetForBlock(block4));
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block4)->m_cuboid.size(blocks) == 500);
 		blocks.solid_setNot(block2);
-		area.m_visionCuboids.clearDestroyed();
+		area.m_visionCuboids.clearDestroyed(area);
 		REQUIRE(area.m_visionCuboids.size() == 1);
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block2) != nullptr);
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) == area.m_visionCuboids.getVisionCuboidFor(block2));
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) == area.m_visionCuboids.getVisionCuboidFor(block3));
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) == area.m_visionCuboids.getVisionCuboidFor(block4));
-		REQUIRE(area.m_visionCuboids.getVisionCuboidFor(block1) == area.m_visionCuboids.getVisionCuboidFor(block5));
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block2) != nullptr);
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block2));
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block3));
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block4));
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block5));
 	}
 	SUBCASE("VisionCuboid can see")
 	{
