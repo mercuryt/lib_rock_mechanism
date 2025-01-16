@@ -233,3 +233,4 @@ Cuboid::iterator Cuboid::iterator::operator++(int)
 	return tmp;
 }
 BlockIndex Cuboid::iterator::operator*() { return m_blocks.getIndex(m_current); }
+CuboidView Cuboid::getView(Blocks& blocks) const { return CuboidView(blocks, *this); }

@@ -22,7 +22,8 @@ void VisionRequests::create(const ActorReference& actor)
 	assert(actors.hasLocation(index));
 	assert(actors.vision_canSeeAnything(index));
 	const BlockIndex& location = actors.getLocation(index);
-	m_data.emplace(m_area.getBlocks().getCoordinates(location), location, m_area.m_visionCuboids.getIdFor(location), actor, actors.vision_getRange(index));
+	const VisionCuboidIndex& visionCuboidIndex = m_area.m_visionCuboids.getIndexForBlock(location);
+	m_data.emplace(m_area.getBlocks().getCoordinates(location), location, visionCuboidIndex, actor, actors.vision_getRange(index));
 	if(m_data.back().range > m_largestRange)
 		m_largestRange = m_data.back().range;
 }
@@ -50,9 +51,9 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 		VisionRequest& request = *iter;
 		const DistanceInBlocks& rangeSquared = request.range * request.range;
 		const BlockIndex& fromIndex = request.location;
-		const VisionCuboidId& fromVisionCuboidId = request.cuboid;
+		const VisionCuboidIndex& fromVisionCuboidIndex = request.cuboid;
 		const Point3D& fromCoords = request.coordinates;
-		assert(fromVisionCuboidId != 0);
+		assert(fromVisionCuboidIndex.exists());
 		SmallSet<ActorReference>& canSee = request.canSee;
 		SmallSet<ActorReference>& canBeSeenBy = request.canBeSeenBy;
 		// Collect results in a vector rather then a set to prevent cache thrashing.
@@ -62,14 +63,14 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 				// Multi tile actor has already been found.
 				return;
 			const Point3D& toCoords = data.coordinates;
-			const VisionCuboidId& toVisionCuboidId = data.cuboid;
+			const VisionCuboidIndex& toVisionCuboidIndex = data.cuboid;
 			DistanceInBlocks distanceSquared = fromCoords.distanceSquared(toCoords);
 			bool inRangeToSee = distanceSquared <= rangeSquared;
 			// A bit of logical asymetry here: If a multi tile object moves it's vision is counted only from it's location, but if another actor moves into a position where it can see a tile of the multi tile which is not it's location and the other actor is in the multi tile actors range it will be marked as seen, even though it would not be seen at the same position if it had not moved due to either distance or occulsion from the multi tile actor's primary location.
 			bool inRangeToBeSeen = distanceSquared <= data.visionRangeSquared;
 			if(inRangeToBeSeen || inRangeToSee)
 				if (
-					fromVisionCuboidId == toVisionCuboidId ||
+					fromVisionCuboidIndex == toVisionCuboidIndex ||
 					// Check sightlines.
 					m_area.m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toCoords))
 				{
@@ -152,23 +153,24 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::
 		ActorReference actor;
 		DistanceInBlocks rangeSquared;
 		Point3D coordinates;
-		VisionCuboidId cuboid;
+		VisionCuboidIndex cuboid;
 		BlockIndex location;
 	};
 	struct BlockData
 	{
 		BlockIndex index;
 		Point3D coordinates;
-		VisionCuboidId cuboid;
+		VisionCuboidIndex cuboid;
 	};
 	std::vector<CandidateData> candidates;
 	SmallSet<ActorReference> results;
 	SmallSet<uint> locationBucketIndices;
-	
+
 	std::vector<BlockData> blockDataStore;
 	std::ranges::transform(blockSet.begin(), blockSet.end(), std::back_inserter(blockDataStore),
 		[&](const BlockIndex& block) -> BlockData {
-			return {block, blocks.getCoordinates(block), m_area.m_visionCuboids.getIdFor(block)};
+			const VisionCuboidIndex& visionCuboidIndex = m_area.m_visionCuboids.getIndexForBlock(block);
+			return {block, blocks.getCoordinates(block), visionCuboidIndex};
 		});
 	int minX = std::ranges::min_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.x; })->coordinates.x.get();
 	int maxX = std::ranges::max_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.x; })->coordinates.x.get();
@@ -178,7 +180,7 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::
 	int maxZ = std::ranges::max_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.z; })->coordinates.z.get();
 	Cuboid cuboid(blocks, blocks.getIndex_i(maxX, maxY, maxZ), blocks.getIndex_i(minX, minY, minZ));
 	ActorReference lastSeen;
-	m_area.m_octTree.query(m_area, cuboid, [&](const LocationBucketData& data){ 
+	m_area.m_octTree.query(m_area, cuboid, [&](const LocationBucketData& data){
 		// Skip multi tile actor tiles after the first. The first is assumed to be the source of vision.
 		// The data is kept sorted by actor so multi tile records should always be contiguous.
 		if(lastSeen.exists() && lastSeen == data.actor)
@@ -214,12 +216,11 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::
 	for(ActorReference actor : results)
 		maybeCreate(actor);
 }
-void VisionRequests::maybeUpdateCuboid(const ActorReference& actor, const VisionCuboidId& oldCuboid, const VisionCuboidId& newCuboid)
+void VisionRequests::maybeUpdateCuboid(const ActorReference& actor, const VisionCuboidIndex& newCuboid)
 {
 	auto iter = m_data.findIf([&](const VisionRequest& request) { return request.actor == actor; });
 	if(iter != m_data.end())
 	{
-		assert(iter->cuboid == oldCuboid || iter->cuboid == newCuboid);
 		iter->cuboid = newCuboid;
 	}
 }
@@ -239,6 +240,6 @@ bool VisionRequests::maybeUpdateLocation(const ActorReference& actor, const Bloc
 		return false;
 	iter->coordinates = blocks.getCoordinates(location);
 	iter->location = location;
-	iter->cuboid = m_area.m_visionCuboids.getIdFor(location); 
+	iter->cuboid = m_area.m_visionCuboids.getIndexForBlock(location);
 	return true;
 }

@@ -19,6 +19,6 @@ TEST_CASE("block")
 	REQUIRE(blocks.getBlockAbove(lowest) == 100);
 	REQUIRE(blocks.getBlockSouth(lowest) == 10);
 	REQUIRE(blocks.getBlockEast(lowest) == 1);
-	REQUIRE(area.m_visionCuboids.getVisionCuboidFor(lowest));
+	REQUIRE(area.m_visionCuboids.maybeGetForBlock(lowest) != nullptr);
 }
 

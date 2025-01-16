@@ -194,10 +194,10 @@ public:
 	void vision_maybeSetNoLongerCanSee(const ActorIndex& index, const ActorReference& other) { m_canSee[index].maybeErase(other); }
 	void vision_maybeSetNoLongerCanBeSeenBy(const ActorIndex& index, const ActorReference& other) { m_canBeSeenBy[index].maybeErase(other); }
 	void vision_clearCanSee(const ActorIndex& index);
-	void vision_maybeUpdateCuboid(const ActorIndex& index, const VisionCuboidId &oldCuboid, const VisionCuboidId &newCuboid);
+	void vision_maybeUpdateCuboid(const ActorIndex& index, const VisionCuboidIndex& newCuboid);
 	void vision_maybeUpdateRange(const ActorIndex& index, const DistanceInBlocks& range);
 	void vision_maybeUpdateLocation(const ActorIndex& index, const BlockIndex& location);
-	[[nodiscard]] SmallSet<ActorReference>& vision_getCanSee(const ActorIndex &index) { return m_canSee[index]; }
+	[[nodiscard]] SmallSet<ActorReference>& vision_getCanSee(const ActorIndex& index) { return m_canSee[index]; }
 	[[nodiscard]] SmallSet<ActorReference>& vision_getCanBeSeenBy(const ActorIndex& index) { return m_canBeSeenBy[index]; }
 	[[nodiscard]] DistanceInBlocks vision_getRange(const ActorIndex& index) const { return m_visionRange[index]; }
 	[[nodiscard]] DistanceInBlocks vision_getRangeSquared(const ActorIndex& index) const { return DistanceInBlocks::create(pow(m_visionRange[index].get(), 2)); }
@@ -300,8 +300,8 @@ public:
 	void canPickUp_removeFluidVolume(const ActorIndex& index, const CollisionVolume& volume);
 	void canPickUp_add(const ActorIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity);
 	void canPickUp_removeItem(const ActorIndex& index, const ItemIndex& item);
-	void canPickUp_removeActor(const ActorIndex &index, const ActorIndex &actor);
-	void canPickUp_remove(const ActorIndex &index, const ActorOrItemIndex& actorOrItem);
+	void canPickUp_removeActor(const ActorIndex& index, const ActorIndex& actor);
+	void canPickUp_remove(const ActorIndex& index, const ActorOrItemIndex& actorOrItem);
 	void canPickUp_destroyItem(const ActorIndex& index, const ItemIndex& item);
 	void canPickUp_updateActorIndex(const ActorIndex& index, const ActorIndex& oldIndex, const ActorIndex& newIndex);
 	void canPickUp_updateItemIndex(const ActorIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex);
@@ -356,7 +356,7 @@ public:
 	[[nodiscard]] bool objective_exists(const ActorIndex& index) const;
 	[[nodiscard]] bool objective_hasTask(const ActorIndex& index, const ObjectiveTypeId& objectiveTypeId) const;
 	[[nodiscard]] bool objective_hasNeed(const ActorIndex& index, NeedType needType) const;
-	[[nodiscard]] bool objective_hasSupressedNeed(const ActorIndex &index, NeedType needType) const;
+	[[nodiscard]] bool objective_hasSupressedNeed(const ActorIndex& index, NeedType needType) const;
 	[[nodiscard]] Priority objective_getPriorityFor(const ActorIndex& index, const ObjectiveTypeId& objectiveType) const;
 	[[nodiscard]] std::wstring objective_getCurrentName(const ActorIndex& index) const;
 	template<typename T>

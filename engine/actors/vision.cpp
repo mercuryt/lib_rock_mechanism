@@ -8,8 +8,8 @@ bool Actors::vision_canSeeAnything(const ActorIndex& index) const
 {
 	return isAlive(index) && sleep_isAwake(index);
 }
-bool Actors::vision_canSeeActor(const ActorIndex& index, const ActorIndex& actor) const 
-{ 
+bool Actors::vision_canSeeActor(const ActorIndex& index, const ActorIndex& actor) const
+{
 	ActorReference ref = m_area.getActors().getReference(actor);
 	return m_canSee[index].contains(ref);
 }
@@ -29,10 +29,10 @@ void Actors::vision_clearCanSee(const ActorIndex& index)
 		m_canBeSeenBy[other.getIndex(m_referenceData)].erase(ref);
 	m_canSee[index].clear();
 }
-void Actors::vision_maybeUpdateCuboid(const ActorIndex& index, const VisionCuboidId& oldCuboid, const VisionCuboidId& newCuboid)
+void Actors::vision_maybeUpdateCuboid(const ActorIndex& index, const VisionCuboidIndex& newCuboid)
 {
 	if(vision_canSeeAnything(index))
-		m_area.m_visionRequests.maybeUpdateCuboid(getReference(index), oldCuboid, newCuboid);
+		m_area.m_visionRequests.maybeUpdateCuboid(getReference(index), newCuboid);
 }
 void Actors::vision_maybeUpdateRange(const ActorIndex& index, const DistanceInBlocks& range)
 {

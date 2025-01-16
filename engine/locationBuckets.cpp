@@ -6,7 +6,7 @@ void LocationBucket::insert(const LocationBucketData &data)
 	m_data.push_back(data);
 	sort();
 }
-LocationBucketData& LocationBucket::insert(const ActorReference& actor, const Point3D& coordinates, const VisionCuboidId& cuboid, const DistanceInBlocks& visionRangeSquered)
+LocationBucketData& LocationBucket::insert(const ActorReference& actor, const Point3D& coordinates, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visionRangeSquered)
 {
 	m_data.emplace_back(coordinates, cuboid, actor, visionRangeSquered);
 	sort();
@@ -27,7 +27,7 @@ void LocationBucket::updateVisionRangeSquared(const ActorReference& actor, const
 	assert(found != m_data.end());
 	found->visionRangeSquared = visionRangeSquared;
 }
-void LocationBucket::updateVisionCuboidId(const Point3D& coordinates, const VisionCuboidId& cuboid)
+void LocationBucket::updateVisionCuboidIndex(const Point3D& coordinates, const VisionCuboidIndex& cuboid)
 {
 	std::ranges::for_each(m_data, [&](LocationBucketData& data) { if(data.coordinates == coordinates) data.cuboid = cuboid; });
 }

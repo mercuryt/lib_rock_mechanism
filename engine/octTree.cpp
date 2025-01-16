@@ -5,7 +5,7 @@
 OctTree::OctTree(const DistanceInBlocks& halfWidth, Allocator& allocator) :
 	m_data(allocator),
 	m_cube({{halfWidth, halfWidth, halfWidth}, halfWidth}) { }
-void OctTree::record(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates, const VisionCuboidId& cuboid, const DistanceInBlocks& visionRangeSquared)
+void OctTree::record(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visionRangeSquared)
 {
 	auto& locationData = m_data.insert(actor, coordinates, cuboid, visionRangeSquared);
 	afterRecord(root, locationData);
@@ -78,9 +78,9 @@ void OctTree::updateRange(OctTreeRoot& root, const ActorReference& actor, const 
 			root.m_data[m_children][octant].updateRange(root, actor, coordinates, visionRangeSquared);
 	}
 }
-void OctTree::updateVisionCuboid(OctTreeRoot& root, const Point3D& coordinates, const VisionCuboidId& cuboid)
+void OctTree::updateVisionCuboid(OctTreeRoot& root, const Point3D& coordinates, const VisionCuboidIndex& cuboid)
 {
-	m_data.updateVisionCuboidId(coordinates, cuboid);
+	m_data.updateVisionCuboidIndex(coordinates, cuboid);
 	if(m_children.exists())
 	{
 			uint8_t octant = getOctant(coordinates);
@@ -150,7 +150,7 @@ void OctTreeRoot::record(Area& area, const ActorReference& actor)
 	ActorIndex index = actor.getIndex(actors.m_referenceData);
 	DistanceInBlocks visionRangeSquared = actors.vision_getRangeSquared(index);
 	for(const BlockIndex& block : actors.getBlocks(index))
-		m_tree.record(*this, actor, blocks.getCoordinates(block), area.m_visionCuboids.getIdFor(block), visionRangeSquared);
+		m_tree.record(*this, actor, blocks.getCoordinates(block), area.m_visionCuboids.getIndexForBlock(block), visionRangeSquared);
 }
 void OctTreeRoot::erase(Area& area, const ActorReference& actor)
 {
@@ -185,7 +185,7 @@ void OctTreeRoot::maybeSort()
 	if(m_entropy > Config::octTreeSortEntropyThreshold)
 		return;
 	std::vector<std::pair<uint, OctTreeNodeIndex>> sortOrder;
-	
+
 	for(OctTreeNodeIndex index = OctTreeNodeIndex::create(0); index < m_data.size(); ++index)
 	{
 		uint order = m_parents[index]->m_cube.center.hilbertNumber();

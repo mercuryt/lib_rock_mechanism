@@ -165,6 +165,7 @@
 	"rainWriteStepFreqencySeconds": 1.5,
 	"ratioOfHitAreaToBodyPartVolumeForSever": 0.5,
 	"ratioOfTotalBodyVolumeWhichIsBlood": 0.05,
+	"ratioOfVisionCuboidSlotsToReservePerBlock": 0.05,
 	"ratioWoundsCloseDelayToBleedVolumeSeconds": 500,
 	"restIntervalSeconds": 100,
 	"rollingMassModifier": 0.25,

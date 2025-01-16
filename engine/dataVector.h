@@ -57,6 +57,12 @@ public:
 			(*iter) = std::move(*(end() - 1));
 		data.resize(data.size() - 1);
 	}
+	template<typename Condition>
+	void removeIf(Condition&& condition)
+	{
+		iterator iter = std::remove_if(data.begin(), data.end(), condition);
+		data.erase(iter, data.end());
+	}
 	template<typename Comparitor>
 	void sortBy(Comparitor&& comparitor) { std::sort(data.begin(), data.end(), comparitor); }
 	// Provides symatry with more complex data stores like HasEvents and ReferenceData.
