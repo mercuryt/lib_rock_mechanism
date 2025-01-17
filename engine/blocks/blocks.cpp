@@ -262,8 +262,7 @@ auto getAdjacentWithOffsets(const Blocks& blocks, const BlockIndex& index, const
 }
 void Blocks::recordAdjacent(const BlockIndex& index)
 {
-	static constexpr std::array<std::array<int8_t, 3>, 6> offsetsList{{{0,0,-1}, {0,-1,0}, {-1,0,0}, {0,1,0}, {1,0,0}, {0,0,1}}};
-	m_directlyAdjacent[index] = getAdjacentWithOffsets<6, false>(*this, index, &offsetsList.front());
+	m_directlyAdjacent[index] = getAdjacentWithOffsets<6, false>(*this, index, &offsetsListDirectlyAdjacent.front());
 }
 const std::array<BlockIndex, 6>& Blocks::getDirectlyAdjacent(const BlockIndex& index) const
 {

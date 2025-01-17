@@ -17,6 +17,7 @@ public:
 
 	[[nodiscard]] bool canSeeInto(Area& area, const Cuboid& cuboid) const;
 	[[nodiscard]] bool canCombineWith(Area& area, const Cuboid& cuboid) const;
+	[[nodiscard]] Cuboid canStealFrom(Area& area, const Cuboid& cuboid) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(VisionCuboid, m_cuboid, m_index, m_destroy);
 };
 class AreaHasVisionCuboids final
@@ -26,20 +27,24 @@ class AreaHasVisionCuboids final
 public:
 	void initalize(Area& area);
 	void clearDestroyed(Area& area);
+	// TODO: replace sometimes and never with is / is not. Update with opening / closing of doors and hatches.
 	void blockIsNeverOpaque(Area& area, const BlockIndex& block);
 	void blockIsSometimesOpaque(Area& area, const BlockIndex& block);
 	void blockFloorIsNeverOpaque(Area& area, const BlockIndex& block);
 	void blockFloorIsSometimesOpaque(Area& area, const BlockIndex& block);
+	void cuboidIsNeverOpaque(Area& area, const Cuboid& cuboid);
+	void cuboidIsSometimesOpaque(Area& area, const Cuboid& cuboid);
 	void set(Area& area, const BlockIndex& block, VisionCuboid& visionCuboid);
 	void unset(const BlockIndex& block);
 	void updateBlocks(Area& area, const VisionCuboid& visionCuboid, const VisionCuboidIndex& newIndex);
 	void splitAt(Area& area, VisionCuboid& visionCuboid, const BlockIndex& split);
 	void splitBelow(Area& area, VisionCuboid& visionCuboid, const BlockIndex& split);
-	void extend(Area& area, VisionCuboid& visionCuboid, Cuboid& cuboid);
-	void setCuboid(Area& area, VisionCuboid& visionCuboid, Cuboid cuboid);
-	VisionCuboid& create(Area& area, Cuboid& cuboid);
+	void splitAtCuboid(Area& area, VisionCuboid& visionCuboid, const Cuboid& cuboid);
+	void maybeExtend(Area& area, VisionCuboid& visionCuboid);
+	void setCuboid(Area& area, VisionCuboid& visionCuboid, const Cuboid& cuboid);
+	void createOrExtend(Area& area, const Cuboid& cuboid);
 	[[nodiscard]] BlockIndex findLowPointForCuboidStartingFromHighPoint(Area& area, const BlockIndex& highest) const;
-	[[nodiscard]] VisionCuboid* maybeGetTargetToCombineWith(Area& area, const Cuboid& cuboid);
+	[[nodiscard]] std::pair<VisionCuboid*, Cuboid> maybeGetTargetToCombineWith(Area& area, const Cuboid& cuboid);
 	[[nodiscard]] VisionCuboid* maybeGetForBlock(const BlockIndex& block);
 	[[nodiscard]] VisionCuboidIndex getIndexForBlock(const BlockIndex& block) { return m_blockVisionCuboidIndices[block]; }
 	// For testing.

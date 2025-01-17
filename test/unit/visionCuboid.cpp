@@ -14,47 +14,27 @@ TEST_CASE("vision cuboid basic")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(2,2,2);
 	Blocks& blocks = area.getBlocks();
+	auto& cuboids = area.m_visionCuboids;
+	const BlockIndex& low = blocks.getIndex_i(0, 0, 0);
+	const BlockIndex& high = blocks.getIndex_i(1, 1, 1);
 	SUBCASE("create")
 	{
-		Cuboid cuboid(blocks, blocks.getIndex_i(1, 1, 1), blocks.getIndex_i(0, 0, 0));
-		VisionCuboid& visionCuboid = area.m_visionCuboids.create(area, cuboid);
-		REQUIRE(visionCuboid.m_index == 1);
+		REQUIRE(cuboids.size() == 1);
+		REQUIRE(cuboids.getIndexForBlock(low).exists());
+		REQUIRE(cuboids.getIndexForBlock(high) == cuboids.getIndexForBlock(low));
+		REQUIRE(cuboids.maybeGetForBlock(low)->m_cuboid.size(blocks) == 8);
 	}
-	SUBCASE("can see into")
+	SUBCASE("can merge")
 	{
-		Cuboid c1(blocks, blocks.getIndex_i(0, 1, 1), blocks.getIndex_i(0, 0, 0));
-		Cuboid c2(blocks, blocks.getIndex_i(1, 1, 1), blocks.getIndex_i(1, 0, 0));
-		REQUIRE(c1.size(blocks) == 4);
-		REQUIRE(c2.size(blocks) == 4);
-		VisionCuboid& vc1 = area.m_visionCuboids.create(area, c1);
-		REQUIRE(vc1.canSeeInto(area, c2));
-		VisionCuboid& vc2 = area.m_visionCuboids.create(area, c2);
-		REQUIRE(vc2.canSeeInto(area, c1));
-	}
-	SUBCASE("can combine with")
-	{
-		Cuboid c1(blocks, blocks.getIndex_i(0, 1, 1), blocks.getIndex_i(0, 0, 0));
-		area.m_visionCuboids.create(area, c1);
-		Cuboid c2(blocks, blocks.getIndex_i(1, 1, 1), blocks.getIndex_i(1, 0, 0));
-		area.m_visionCuboids.create(area, c2);
-		Cuboid c3(blocks, blocks.getIndex_i(1, 1, 0), blocks.getIndex_i(1, 0, 0));
-		area.m_visionCuboids.create(area, c3);
-		const VisionCuboid& vc1 = *area.m_visionCuboids.maybeGetForBlock(c1.m_highest);
-		const VisionCuboid& vc2 = *area.m_visionCuboids.maybeGetForBlock(c2.m_highest);
-		const VisionCuboid& vc3 = *area.m_visionCuboids.maybeGetForBlock(c3.m_highest);
-		REQUIRE(vc1.m_cuboid.size(blocks) == 4);
-		REQUIRE(vc2.m_cuboid.size(blocks) == 4);
-		REQUIRE(vc1.canCombineWith(area, vc2.m_cuboid));
-		REQUIRE(!vc3.canCombineWith(area, vc1.m_cuboid));
-		REQUIRE(!vc1.canCombineWith(area, vc3.m_cuboid));
-	}
-	SUBCASE("setup area")
-	{
-		REQUIRE(area.m_visionCuboids.size() == 1);
-		VisionCuboid& visionCuboid = *area.m_visionCuboids.maybeGetForBlock(blocks.getIndex_i(0, 0, 0));
-		REQUIRE(visionCuboid.m_cuboid.size(blocks) == 8);
-		for(const BlockIndex& block : visionCuboid.m_cuboid.getView(blocks))
-			REQUIRE(area.m_visionCuboids.maybeGetForBlock(block) == &visionCuboid);
+		const BlockIndex& low = blocks.getIndex_i(0, 0, 0);
+		cuboids.blockIsSometimesOpaque(area, low);
+		REQUIRE(cuboids.maybeGetForBlock(high)->m_cuboid.size(blocks) == 4);
+		REQUIRE(cuboids.size() == 3);
+		REQUIRE(cuboids.getIndexForBlock(low).empty());
+		cuboids.blockIsNeverOpaque(area, low);
+		REQUIRE(cuboids.size() == 1);
+		REQUIRE(cuboids.getIndexForBlock(low).exists());
+		REQUIRE(cuboids.maybeGetForBlock(low)->m_cuboid.size(blocks) == 8);
 	}
 }
 TEST_CASE("vision cuboid split")

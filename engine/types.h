@@ -232,6 +232,7 @@ class Facing : public StrongInteger<Facing, FacingWidth>
 {
 public:
 	Facing() = default;
+	const std::array<int, 3>& getOffset() const;
 	struct Hash { [[nodiscard]] size_t operator()(const Facing& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Facing& index) { data = index.get(); }
