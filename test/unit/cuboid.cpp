@@ -33,7 +33,7 @@ TEST_CASE("cuboid")
 	SUBCASE("get face")
 	{
 		Cuboid c1(blocks, blocks.getIndex_i(1, 1, 1), blocks.getIndex_i(0, 0, 0));
-		Cuboid face = c1.getFace(blocks, Facing::create(4));
+		Cuboid face = c1.getFace(blocks, Facing::create(4)); // x + 1, east.
 		REQUIRE(face.size(blocks) == 4);
 		REQUIRE(face.contains(blocks, blocks.getIndex_i(1, 0, 0)));
 		REQUIRE(!face.contains(blocks, blocks.getIndex_i(0, 0, 0)));

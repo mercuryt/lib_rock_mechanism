@@ -204,6 +204,10 @@ public:
 		return BlockIndex::null();
 	}
 	[[nodiscard]] BlockIndices collectAdjacentsInRange(const BlockIndex& index, const DistanceInBlocks& range);
+	static inline constexpr std::array<std::array<int8_t, 3>, 6> offsetsListDirectlyAdjacent{{
+	//	below		north		west		south		east		above
+		{0,0,-1},	{0,-1,0},	{-1,0,0},	{0,1,0},	{1,0,0},	{0,0,1}
+	}};
 	static inline constexpr std::array<std::array<int8_t, 3>, 26> offsetsListAllAdjacent{{
 		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
 		{0,1,-1}, {0,0,-1}, {0,-1,-1},

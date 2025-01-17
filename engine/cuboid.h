@@ -15,24 +15,29 @@ public:
 	BlockIndex m_highest;
 	BlockIndex m_lowest;
 
-	Cuboid(Blocks& blocks, const BlockIndex& h, const BlockIndex& l);
+	Cuboid(const Blocks& blocks, const BlockIndex& h, const BlockIndex& l);
 	Cuboid() = default;
-	void merge(Blocks& blocks, const Cuboid& cuboid);
+	void merge(const Blocks& blocks, const Cuboid& cuboid);
 	void setFrom(const BlockIndex& block);
-	void setFrom(Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
+	void setFrom(const Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
 	void clear();
+	void shift(const Blocks& blocks, const Facing& direction, const DistanceInBlocks& distance);
 	[[nodiscard]] SmallSet<BlockIndex> toSet(Blocks& blocks);
-	[[nodiscard]] bool contains(Blocks& blocks, const BlockIndex& block) const;
-	[[nodiscard]] bool canMerge(Blocks& blocks, const Cuboid& cuboid) const;
-	[[nodiscard]] Cuboid sum(Blocks& blocks, const Cuboid& cuboid) const;
-	[[nodiscard]] Cuboid getFace(Blocks& blocks, const Facing& faceing) const;
-	[[nodiscard]] bool overlapsWith(Blocks& blocks, const Cuboid& cuboid) const;
-	[[nodiscard]] size_t size(Blocks& blocks) const;
-	[[nodiscard]] bool empty(Blocks& blocks) const { return size(blocks) == 0; }
+	[[nodiscard]] bool contains(const Blocks& blocks, const BlockIndex& block) const;
+	[[nodiscard]] bool contains(const Blocks& blocks, const Cuboid& cuboid) const;
+	[[nodiscard]] bool canMerge(const Blocks& blocks, const Cuboid& cuboid) const;
+	[[nodiscard]] Cuboid canMergeSteal(const Blocks& blocks, const Cuboid& cuboid) const;
+	[[nodiscard]] Cuboid sum(const Blocks& blocks, const Cuboid& cuboid) const;
+	[[nodiscard]] Cuboid getFace(const Blocks& blocks, const Facing& faceing) const;
+	[[nodiscard]] bool overlapsWith(const Blocks& blocks, const Cuboid& cuboid) const;
+	[[nodiscard]] size_t size(const Blocks& blocks) const;
+	[[nodiscard]] bool empty(const Blocks& blocks) const { return size(blocks) == 0; }
 	[[nodiscard]] bool operator==(const Cuboid& cuboid) const;
 	[[nodiscard]] Point3D getCenter(const Blocks& blocks) const;
+	[[nodiscard]] DistanceInBlocks dimensionForFacing(const Blocks& blocks, const Facing& facing) const;
+	[[nodiscard]] Facing getFacingTwordsOtherCuboid(const Blocks& blocks, const Cuboid& cuboid) const;
 	[[nodiscard]] static Cuboid fromBlock(Blocks& blocks, const BlockIndex& block);
-	[[nodiscard]] static Cuboid fromBlockPair(Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
+	[[nodiscard]] static Cuboid fromBlockPair(const Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
 	class iterator
 	{
 	private:
@@ -57,6 +62,7 @@ public:
 	//TODO:
 	//static_assert(std::forward_iterator<iterator>);
 	CuboidView getView(Blocks& blocks) const;
+	std::wstring toString(const Blocks& blocks) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Cuboid, m_highest, m_lowest);
 };
 struct CuboidView : public std::ranges::view_interface<CuboidView>
