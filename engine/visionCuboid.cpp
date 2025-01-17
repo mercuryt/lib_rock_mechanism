@@ -146,7 +146,51 @@ void AreaHasVisionCuboids::createOrExtend(Area& area, const Cuboid& cuboid)
 	}
 	VisionCuboidIndex index = VisionCuboidIndex::create(m_visionCuboids.size());
 	m_visionCuboids.emplaceBack(currentCuboid, index);
-	updateBlocks(area, m_visionCuboids.back(), index);
+	VisionCuboid& created = m_visionCuboids.back();
+	updateBlocks(area, created, index);
+	if(currentCuboid.size(blocks) == 1)
+		return;
+	// Check if newly created cuboid can be stolen from.
+	// Collect adjacent cuboids.
+	// TODO: optimize by reducing redundant writing into m_blocksVisionCuboidIndices.
+	SmallSet<VisionCuboidIndex> adjacent;
+	for(auto [block, facing] : currentCuboid.getSurfaceView(blocks))
+	{
+		const BlockIndex& blockAboveSurface = blocks.getAtFacing(block, facing);
+		if(blockAboveSurface.exists())
+		{
+			const VisionCuboidIndex& cuboidIndex = getIndexForBlock(blockAboveSurface);
+			if(cuboidIndex.exists())
+				adjacent.maybeInsert(cuboidIndex);
+		}
+	}
+	Cuboid toSplit;
+	uint bestCandidateSize = 0;
+	uint currentSize = currentCuboid.size(blocks);
+	VisionCuboid* candidate = nullptr;
+	for(const VisionCuboidIndex& cuboidIndex : adjacent)
+	{
+		VisionCuboid& visionCuboid = m_visionCuboids[cuboidIndex];
+		uint candidateSize = visionCuboid.m_cuboid.size(blocks);
+		if(candidateSize > currentSize && candidateSize > bestCandidateSize)
+		{
+		 	Cuboid toSplitCandidate = created.canStealFrom(area, visionCuboid.m_cuboid);
+			if(!toSplitCandidate.empty(blocks))
+			{
+				bestCandidateSize = candidateSize;
+				candidate = &visionCuboid;
+				toSplit = toSplitCandidate;
+			}
+		}
+	}
+	if(candidate != nullptr)
+	{
+		splitAtCuboid(area, created, toSplit);
+		candidate->m_cuboid = candidate->m_cuboid.sum(blocks, toSplit);
+		updateBlocks(area, *candidate, candidate->m_index);
+		// TODO: This is a hack.
+		maybeExtend(area, *candidate);
+	}
 }
 std::pair<VisionCuboid*, Cuboid> AreaHasVisionCuboids::maybeGetTargetToCombineWith(Area& area, const Cuboid& cuboid)
 {

@@ -17,6 +17,7 @@ public:
 
 	[[nodiscard]] bool canSeeInto(Area& area, const Cuboid& cuboid) const;
 	[[nodiscard]] bool canCombineWith(Area& area, const Cuboid& cuboid) const;
+	// Select a cuboid to steal from this cuboid and merge with the cuboid argument provided.
 	[[nodiscard]] Cuboid canStealFrom(Area& area, const Cuboid& cuboid) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(VisionCuboid, m_cuboid, m_index, m_destroy);
 };

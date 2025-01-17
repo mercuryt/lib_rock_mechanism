@@ -9,6 +9,7 @@
 #include "index.h"
 class Blocks;
 class CuboidView;
+class CuboidSurfaceView;
 class Cuboid
 {
 public:
@@ -62,6 +63,7 @@ public:
 	//TODO:
 	//static_assert(std::forward_iterator<iterator>);
 	CuboidView getView(Blocks& blocks) const;
+	CuboidSurfaceView getSurfaceView(Blocks& blocks) const;
 	std::wstring toString(const Blocks& blocks) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Cuboid, m_highest, m_lowest);
 };
@@ -73,4 +75,29 @@ struct CuboidView : public std::ranges::view_interface<CuboidView>
 	CuboidView(Blocks& b, const Cuboid c) : cuboid(c), blocks(b) { }
 	Cuboid::iterator begin() const { return cuboid.begin(blocks); }
 	Cuboid::iterator end() const { return cuboid.end(blocks); }
+};
+struct CuboidSurfaceView : public std::ranges::view_interface<CuboidSurfaceView>
+{
+	const Cuboid cuboid;
+	Blocks& blocks;
+	CuboidSurfaceView() = default;
+	CuboidSurfaceView(Blocks& b, const Cuboid c) : cuboid(c), blocks(b) { }
+	struct Iterator
+	{
+		const CuboidSurfaceView& view;
+		Cuboid face;
+		Point3D current;
+		Facing facing = Facing::create(0);
+		void setFace();
+		void setToEnd();
+		Iterator(const CuboidSurfaceView& v) : view(v) { setFace(); }
+		Iterator& operator++();
+		Iterator operator++(int);
+		bool operator==(const Iterator& other) const { return current == other.current; }
+		bool operator!=(const Iterator& other) const { return !(*this == other); }
+		std::pair<BlockIndex, Facing> operator*();
+	};
+	Iterator begin() const { return {*this}; }
+	Iterator end() const { Iterator output(*this); output.setToEnd(); return output; }
+	//static_assert(std::forward_iterator<Iterator>);
 };

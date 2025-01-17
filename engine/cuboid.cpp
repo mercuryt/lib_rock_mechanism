@@ -337,4 +337,38 @@ Cuboid::iterator Cuboid::iterator::operator++(int)
 }
 BlockIndex Cuboid::iterator::operator*() { return m_blocks.getIndex(m_current); }
 CuboidView Cuboid::getView(Blocks& blocks) const { return CuboidView(blocks, *this); }
+CuboidSurfaceView Cuboid::getSurfaceView(Blocks& blocks) const { return CuboidSurfaceView(blocks, *this); }
 std::wstring Cuboid::toString(const Blocks& blocks) const { return blocks.getCoordinates(m_highest).toString() + L", " + blocks.getCoordinates(m_lowest).toString(); }
+void CuboidSurfaceView::Iterator::setFace()
+{
+	face = view.cuboid.getFace(view.blocks, facing);
+	current = view.blocks.getCoordinates(face.m_lowest);
+}
+CuboidSurfaceView::Iterator& CuboidSurfaceView::Iterator::operator++()
+{
+	Point3D end = view.blocks.getCoordinates(face.m_highest);
+	Point3D start = view.blocks.getCoordinates(face.m_lowest);
+	if (current.x < end.x) {
+		++current.x;
+	} else if (current.y < end.y) {
+		current.x = start.x;
+		++current.y;
+	} else if (current.z < end.z) {
+		current.x = start.x;
+		current.y = start.y;
+		++current.z;
+	} else if(facing < 5) {
+		++facing;
+	} else
+		// End iterator.
+		setToEnd();
+	return *this;
+}
+void CuboidSurfaceView::Iterator::setToEnd() { facing = Facing::null(); }
+CuboidSurfaceView::Iterator CuboidSurfaceView::Iterator::operator++(int)
+{
+	auto copy = *this;
+	++(*this);
+	return copy;
+}
+std::pair<BlockIndex, Facing> CuboidSurfaceView::Iterator::operator*() { return { view.blocks.getIndex(current), facing}; }
