@@ -59,7 +59,9 @@ TEST_CASE("vision")
 		BlockIndex block1 = blocks.getIndex_i(5, 3, 1);
 		BlockIndex block2 = blocks.getIndex_i(5, 5, 1);
 		BlockIndex block3 = blocks.getIndex_i(5, 7, 1);
+		REQUIRE(area.m_opacityFacade.hasLineOfSight(block1, block3));
 		blocks.solid_set(block2, marble, false);
+		REQUIRE(!area.m_opacityFacade.hasLineOfSight(block1, block3));
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,

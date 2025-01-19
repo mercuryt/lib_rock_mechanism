@@ -14,9 +14,11 @@ namespace areaBuilderUtil
 	inline void setSolidLayer(Area& area, const DistanceInBlocks& z, const MaterialTypeId& materialType)
 	{
 		Blocks& blocks = area.getBlocks();
-		for(DistanceInBlocks x = DistanceInBlocks::create(0); x != blocks.m_sizeX; ++x)
-			for(DistanceInBlocks y = DistanceInBlocks::create(0); y != blocks.m_sizeY; ++y)
-				blocks.solid_set(blocks.getIndex({x, y, z}), materialType, false);
+		Cuboid cuboid(blocks,
+			blocks.getIndex({blocks.m_sizeX - 1, blocks.m_sizeY - 1, z}),
+			blocks.getIndex({DistanceInBlocks::create(0), DistanceInBlocks::create(0), z})
+		);
+		blocks.solid_setCuboid(cuboid, materialType, false);
 	}
 	inline void setSolidLayer(Area& area, uint z, const MaterialTypeId& materialType)
 	{
@@ -35,8 +37,7 @@ namespace areaBuilderUtil
 	{
 		Blocks& blocks = area.getBlocks();
 		Cuboid cuboid(blocks, end, start);
-		for(const BlockIndex& block : cuboid.getView(blocks))
-			blocks.solid_set(block, materialType, false);
+		blocks.solid_setCuboid(cuboid, materialType, false);
 	}
 	inline void setSolidWall(Area& area, uint start, uint end, const MaterialTypeId& materialType)
 	{
@@ -45,19 +46,15 @@ namespace areaBuilderUtil
 	inline void setSolidWalls(Area& area, const DistanceInBlocks& height, const MaterialTypeId& materialType)
 	{
 		Blocks& blocks = area.getBlocks();
-		for(DistanceInBlocks z = DistanceInBlocks::create(0); z != height + 1; ++ z)
-		{
-			for(DistanceInBlocks x = DistanceInBlocks::create(0); x != blocks.m_sizeX; ++x)
-			{
-				blocks.solid_set(blocks.getIndex(x, DistanceInBlocks::create(0), z), materialType, false);
-				blocks.solid_set(blocks.getIndex(x, blocks.m_sizeY - 1, z), materialType, false);
-			}
-			for(DistanceInBlocks y = DistanceInBlocks::create(0); y != blocks.m_sizeY; ++y)
-			{
-				blocks.solid_set(blocks.getIndex(DistanceInBlocks::create(0), y, z), materialType, false);
-				blocks.solid_set(blocks.getIndex(blocks.m_sizeX - 1, y, z), materialType, false);
-			}
-		}
+		static constexpr DistanceInBlocks zero = DistanceInBlocks::create(0);
+		Cuboid cuboid(blocks, blocks.getIndex({blocks.m_sizeX - 1, zero, height}), blocks.getIndex({zero, zero, zero}));
+		blocks.solid_setCuboid(cuboid, materialType, false);
+		cuboid = {blocks, blocks.getIndex({blocks.m_sizeX - 1, blocks.m_sizeY - 1, height}), blocks.getIndex({zero, blocks.m_sizeY - 1, zero})};
+		blocks.solid_setCuboid(cuboid, materialType, false);
+		cuboid = {blocks, blocks.getIndex({zero, blocks.m_sizeY - 1, height}), blocks.getIndex({zero, zero, zero})};
+		blocks.solid_setCuboid(cuboid, materialType, false);
+		cuboid = {blocks, blocks.getIndex({blocks.m_sizeX - 1, blocks.m_sizeY - 1, height}), blocks.getIndex({blocks.m_sizeX - 1, zero, zero})};
+		blocks.solid_setCuboid(cuboid, materialType, false);
 	}
 	inline void setSolidWalls(Area& area, uint height, const MaterialTypeId& materialType)
 	{
@@ -106,11 +103,10 @@ namespace areaBuilderUtil
 	inline void validateAllBlockFluids(Area& area)
 	{
 		Blocks& blocks = area.getBlocks();
-		for(DistanceInBlocks x = DistanceInBlocks::create(0); x < blocks.m_sizeX; ++x)
-			for(DistanceInBlocks y = DistanceInBlocks::create(0); y < blocks.m_sizeY; ++y)
-				for(DistanceInBlocks z = DistanceInBlocks::create(0); z < blocks.m_sizeZ; ++z)
-					for([[maybe_unused]] auto& [fluidType, group, volume] : blocks.fluid_getAll(blocks.getIndex(x, y, z)))
-						assert(group->m_fluidType == fluidType);
+		Cuboid cuboid = blocks.getAll();
+		for(const BlockIndex& block : cuboid.getView(blocks))
+			for([[maybe_unused]] auto& [fluidType, group, volume] : blocks.fluid_getAll(block))
+				assert(group->m_fluidType == fluidType);
 	}
 	// Get one fluid group with the specified type. Return null if there is more then one.
 	inline FluidGroup* getFluidGroup(Area& area, FluidTypeId fluidType)

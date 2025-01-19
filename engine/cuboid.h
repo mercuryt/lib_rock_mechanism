@@ -23,6 +23,7 @@ public:
 	void setFrom(const Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
 	void clear();
 	void shift(const Blocks& blocks, const Facing& direction, const DistanceInBlocks& distance);
+	void setMaxZ(const Blocks& blocks, const DistanceInBlocks& distance);
 	[[nodiscard]] SmallSet<BlockIndex> toSet(Blocks& blocks);
 	[[nodiscard]] bool contains(const Blocks& blocks, const BlockIndex& block) const;
 	[[nodiscard]] bool contains(const Blocks& blocks, const Cuboid& cuboid) const;

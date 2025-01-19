@@ -493,7 +493,7 @@ void Blocks::setBelowNotExposedToSky(const BlockIndex& index)
 		block = getBlockBelow(block);
 	}
 }
-void Blocks::solid_set(const BlockIndex& index, const MaterialTypeId& materialType, bool constructed)
+void Blocks::solid_setShared(const BlockIndex& index, const MaterialTypeId& materialType, bool constructed)
 {
 	assert(m_itemVolume[index].empty());
 	Plants& plants = m_area.getPlants();
@@ -512,9 +512,6 @@ void Blocks::solid_set(const BlockIndex& index, const MaterialTypeId& materialTy
 	m_constructed.set(index, constructed);
 	fluid_onBlockSetSolid(index);
 	m_visible.set(index);
-	// Opacity.
-	if(!MaterialType::getTransparent(materialType) && wasEmpty)
-		m_area.m_visionCuboids.blockIsSometimesOpaque(m_area, index);
 	m_area.m_opacityFacade.update(index);
 	// Set blocks below as not exposed to sky.
 	setExposedToSky(index, false);
@@ -527,14 +524,13 @@ void Blocks::solid_set(const BlockIndex& index, const MaterialTypeId& materialTy
 		dishonorAllReservations(index);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 }
-void Blocks::solid_setNot(const BlockIndex& index)
+void Blocks::solid_setNotShared(const BlockIndex& index)
 {
 	if(!solid_is(index))
 		return;
 	m_materialType[index].clear();
 	m_constructed.unset(index);
 	fluid_onBlockSetNotSolid(index);
-	m_area.m_visionCuboids.blockIsNeverOpaque(m_area, index);
 	m_area.m_opacityFacade.update(index);
 	if(getBlockAbove(index).empty() || m_exposedToSky[getBlockAbove(index)])
 	{
@@ -548,6 +544,32 @@ void Blocks::solid_setNot(const BlockIndex& index)
 	m_reservables[index] = nullptr;
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(index);
+}
+void Blocks::solid_set(const BlockIndex& index, const MaterialTypeId& materialType, bool constructed)
+{
+	bool wasEmpty = m_materialType[index].empty();
+	solid_setShared(index, materialType, constructed);
+	// Opacity.
+	if(!MaterialType::getTransparent(materialType) && wasEmpty)
+		m_area.m_visionCuboids.blockIsSometimesOpaque(m_area, index);
+}
+void Blocks::solid_setNot(const BlockIndex& index)
+{
+	solid_setNotShared(index);
+	m_area.m_visionCuboids.blockIsNeverOpaque(m_area, index);
+}
+void Blocks::solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& materialType, bool constructed)
+{
+	for(const BlockIndex& index : cuboid.getView(*this))
+		solid_setShared(index, materialType, constructed);
+	if(!MaterialType::getTransparent(materialType))
+		m_area.m_visionCuboids.cuboidIsSometimesOpaque(m_area, cuboid);
+}
+void Blocks::solid_setNotCuboid(const Cuboid& cuboid)
+{
+	for(const BlockIndex& index : cuboid.getView(*this))
+		solid_setNotShared(index);
+	m_area.m_visionCuboids.cuboidIsNeverOpaque(m_area, cuboid);
 }
 MaterialTypeId Blocks::solid_get(const BlockIndex& index) const
 {

@@ -227,8 +227,14 @@ public:
 	void designation_unset(const BlockIndex& index, const FactionId& faction, const BlockDesignation& designation);
 	void designation_maybeUnset(const BlockIndex& index, const FactionId& faction, const BlockDesignation& designation);
 	// -Solid.
+private:
+	void solid_setShared(const BlockIndex& index, const MaterialTypeId& materialType, bool constructed);
+	void solid_setNotShared(const BlockIndex& index);
+public:
 	void solid_set(const BlockIndex& index, const MaterialTypeId& materialType, bool constructed);
 	void solid_setNot(const BlockIndex& index);
+	void solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& materialType, bool constructed);
+	void solid_setNotCuboid(const Cuboid& cuboid);
 	[[nodiscard]] bool solid_is(const BlockIndex& index) const;
 	[[nodiscard]] MaterialTypeId solid_get(const BlockIndex& index) const;
 	// -BlockFeature.

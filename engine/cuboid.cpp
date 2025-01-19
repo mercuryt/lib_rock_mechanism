@@ -149,6 +149,13 @@ void Cuboid::shift(const Blocks& blocks, const Facing& direction, const Distance
 	m_highest = blocks.getIndex(highest);
 	m_lowest = blocks.getIndex(lowest);
 }
+void Cuboid::setMaxZ(const Blocks& blocks, const DistanceInBlocks& distance)
+{
+	Point3D highest = blocks.getCoordinates(m_highest);
+	if(highest.z > distance)
+		highest.z = distance;
+	m_highest = blocks.getIndex(highest);
+}
 void Cuboid::clear() { m_lowest.clear(); m_highest.clear(); }
 Cuboid Cuboid::getFace(const Blocks& blocks, const Facing& facing) const
 {
