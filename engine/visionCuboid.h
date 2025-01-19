@@ -38,12 +38,14 @@ public:
 	void set(Area& area, const BlockIndex& block, VisionCuboid& visionCuboid);
 	void unset(const BlockIndex& block);
 	void updateBlocks(Area& area, const VisionCuboid& visionCuboid, const VisionCuboidIndex& newIndex);
+	void updateBlocks(Area& area, const Cuboid& cuboid, const VisionCuboidIndex& newIndex);
 	void splitAt(Area& area, VisionCuboid& visionCuboid, const BlockIndex& split);
 	void splitBelow(Area& area, VisionCuboid& visionCuboid, const BlockIndex& split);
 	void splitAtCuboid(Area& area, VisionCuboid& visionCuboid, const Cuboid& cuboid);
 	void maybeExtend(Area& area, VisionCuboid& visionCuboid);
 	void setCuboid(Area& area, VisionCuboid& visionCuboid, const Cuboid& cuboid);
 	void createOrExtend(Area& area, const Cuboid& cuboid);
+	void validate(const Area& area);
 	[[nodiscard]] BlockIndex findLowPointForCuboidStartingFromHighPoint(Area& area, const BlockIndex& highest) const;
 	[[nodiscard]] std::pair<VisionCuboid*, Cuboid> maybeGetTargetToCombineWith(Area& area, const Cuboid& cuboid);
 	[[nodiscard]] VisionCuboid* maybeGetForBlock(const BlockIndex& block);

@@ -40,6 +40,7 @@ void AreaHasVisionCuboids::blockIsNeverOpaque(Area& area, const BlockIndex& bloc
 	Cuboid cuboid(area.getBlocks(), block, block);
 	createOrExtend(area, cuboid);
 	clearDestroyed(area);
+	validate(area);
 }
 void AreaHasVisionCuboids::blockIsSometimesOpaque(Area& area, const BlockIndex& block)
 {
@@ -50,6 +51,7 @@ void AreaHasVisionCuboids::blockIsSometimesOpaque(Area& area, const BlockIndex& 
 	VisionCuboid& visionCuboid = m_visionCuboids[visionCuboidId];
 	splitAt(area, visionCuboid, block);
 	clearDestroyed(area);
+	validate(area);
 }
 void AreaHasVisionCuboids::blockFloorIsNeverOpaque(Area& area, const BlockIndex& block)
 {
@@ -60,6 +62,7 @@ void AreaHasVisionCuboids::blockFloorIsNeverOpaque(Area& area, const BlockIndex&
 	VisionCuboid& visionCuboid = m_visionCuboids[visionCuboidId];
 	maybeExtend(area, visionCuboid);
 	clearDestroyed(area);
+	validate(area);
 }
 void AreaHasVisionCuboids::blockFloorIsSometimesOpaque(Area& area, const BlockIndex& block)
 {
@@ -69,6 +72,7 @@ void AreaHasVisionCuboids::blockFloorIsSometimesOpaque(Area& area, const BlockIn
 	assert(visionCuboid);
 	splitBelow(area, *visionCuboid, block);
 	clearDestroyed(area);
+	validate(area);
 }
 void AreaHasVisionCuboids::cuboidIsNeverOpaque(Area& area, const Cuboid& cuboid)
 {
@@ -86,6 +90,7 @@ void AreaHasVisionCuboids::cuboidIsNeverOpaque(Area& area, const Cuboid& cuboid)
 		splitAtCuboid(area, m_visionCuboids[visionCuboidIndex], cuboid);
 	createOrExtend(area, cuboid);
 	clearDestroyed(area);
+	validate(area);
 }
 void AreaHasVisionCuboids::cuboidIsSometimesOpaque(Area& area, const Cuboid& cuboid)
 {
@@ -95,14 +100,23 @@ void AreaHasVisionCuboids::cuboidIsSometimesOpaque(Area& area, const Cuboid& cub
 	for(const BlockIndex& block : cuboid.getView(blocks))
 	{
 		VisionCuboidIndex& visionIndex = m_blockVisionCuboidIndices[block];
-		impactedVisionCuboids.maybeInsert(visionIndex);
+		if(visionIndex.exists())
+			impactedVisionCuboids.maybeInsert(visionIndex);
 		// Clear m_blockVisionCuboidIndices for all contained blocks in cuboid.
 		visionIndex.clear();
 	}
 	// Remove all blocks contanined by cuboid from the collected cuboids.
-	for(VisionCuboidIndex visionCuboidIndex : impactedVisionCuboids)
-		splitAtCuboid(area, m_visionCuboids[visionCuboidIndex], cuboid);
+	for(VisionCuboidIndex toSplitIndex : impactedVisionCuboids)
+	{
+		VisionCuboid& toSplit = m_visionCuboids[toSplitIndex];
+		// For assert.
+		Cuboid splitCuboid = toSplit.m_cuboid;
+		splitAtCuboid(area, toSplit, cuboid);
+		for(const BlockIndex& block : splitCuboid.getView(blocks))
+			assert(m_blockVisionCuboidIndices[block] != toSplitIndex);
+	}
 	clearDestroyed(area);
+	validate(area);
 }
 void AreaHasVisionCuboids::set(Area& area, const BlockIndex& block, VisionCuboid& visionCuboid)
 {
@@ -187,46 +201,63 @@ void AreaHasVisionCuboids::createOrExtend(Area& area, const Cuboid& cuboid)
 	{
 		splitAtCuboid(area, created, toSplit);
 		candidate->m_cuboid = candidate->m_cuboid.sum(blocks, toSplit);
-		updateBlocks(area, *candidate, candidate->m_index);
+		updateBlocks(area, toSplit, candidate->m_index);
 		// TODO: This is a hack.
 		maybeExtend(area, *candidate);
+	}
+}
+void AreaHasVisionCuboids::validate(const Area& area)
+{
+	const Blocks& blocks = area.getBlocks();
+	auto end = m_blockVisionCuboidIndices.end();
+	for(auto iter = m_blockVisionCuboidIndices.begin(); iter != end; ++iter)
+	{
+		VisionCuboidIndex index = *iter;
+		if(index.exists())
+		{
+			VisionCuboid& visionCuboid = m_visionCuboids[index];
+			assert(!visionCuboid.m_destroy);
+			assert(visionCuboid.m_cuboid.contains(blocks, BlockIndex::create(iter - m_blockVisionCuboidIndices.begin())));
+		}
 	}
 }
 std::pair<VisionCuboid*, Cuboid> AreaHasVisionCuboids::maybeGetTargetToCombineWith(Area& area, const Cuboid& cuboid)
 {
 	Blocks& blocks = area.getBlocks();
-	assert(blocks.canSeeThrough(cuboid.m_highest));
-	assert(blocks.canSeeThrough(cuboid.m_lowest));
 	Cuboid cuboidOutput;
 	VisionCuboid* visionCuboidOutput = nullptr;
 	uint largestSize = 0;
 	uint cuboidSize = cuboid.size(blocks);
 	auto testBlock = [&](const BlockIndex& block) mutable {
-		if(block.exists() && m_blockVisionCuboidIndices[block].exists())
+		if(block.exists())
 		{
-			assert(!cuboid.contains(blocks, block));
-			VisionCuboid& otherVisionCuboid = m_visionCuboids[m_blockVisionCuboidIndices[block]];
-			if(!otherVisionCuboid.m_destroy)
+			VisionCuboidIndex visionCuboidIndex = m_blockVisionCuboidIndices[block];
+			if(visionCuboidIndex.exists())
 			{
-				uint otherVisionCuboidSize = otherVisionCuboid.m_cuboid.size(blocks);
-				if(otherVisionCuboidSize <= largestSize)
-					return;
-				if(otherVisionCuboid.canCombineWith(area, cuboid))
+				assert(!cuboid.contains(blocks, block));
+				VisionCuboid& otherVisionCuboid = m_visionCuboids[visionCuboidIndex];
+				if(!otherVisionCuboid.m_destroy)
 				{
-					largestSize = otherVisionCuboidSize;
-					cuboidOutput = otherVisionCuboid.m_cuboid;
-					visionCuboidOutput = &otherVisionCuboid;
-				}
-				else if(cuboidSize >= otherVisionCuboidSize)
-				{
-					Cuboid potentialSteal = otherVisionCuboid.canStealFrom(area, cuboid);
-					uint potentialSize = potentialSteal.size(blocks);
-					if(potentialSize > largestSize)
+					uint otherVisionCuboidSize = otherVisionCuboid.m_cuboid.size(blocks);
+					if(otherVisionCuboidSize <= largestSize)
+						return;
+					if(otherVisionCuboid.canCombineWith(area, cuboid))
 					{
-						assert(potentialSteal.canMerge(blocks, cuboid));
-						largestSize = potentialSize;
-						cuboidOutput = potentialSteal;
+						largestSize = otherVisionCuboidSize;
+						cuboidOutput = otherVisionCuboid.m_cuboid;
 						visionCuboidOutput = &otherVisionCuboid;
+					}
+					else if(cuboidSize >= otherVisionCuboidSize)
+					{
+						Cuboid potentialSteal = otherVisionCuboid.canStealFrom(area, cuboid);
+						uint potentialSize = potentialSteal.size(blocks);
+						if(potentialSize > largestSize)
+						{
+							assert(potentialSteal.canMerge(blocks, cuboid));
+							largestSize = potentialSize;
+							cuboidOutput = potentialSteal;
+							visionCuboidOutput = &otherVisionCuboid;
+						}
 					}
 				}
 			}
@@ -257,9 +288,12 @@ VisionCuboid* AreaHasVisionCuboids::maybeGetForBlock(const BlockIndex& block)
 }
 void AreaHasVisionCuboids::updateBlocks(Area& area, const VisionCuboid& visionCuboid, const VisionCuboidIndex& newIndex)
 {
+	updateBlocks(area, visionCuboid.m_cuboid, newIndex);
+}
+void AreaHasVisionCuboids::updateBlocks(Area& area, const Cuboid& cuboid, const VisionCuboidIndex& newIndex)
+{
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	Cuboid cuboid = visionCuboid.m_cuboid;
 	for(const BlockIndex& block : cuboid.getView(blocks))
 	{
 		for(const ActorIndex& actor : blocks.actor_getAll(block))
@@ -343,7 +377,7 @@ void AreaHasVisionCuboids::splitAtCuboid(Area& area, VisionCuboid& visionCuboid,
 	std::vector<Cuboid> newCuboids;
 	// Split off group above.
 	if(highest.z > splitHighest.z)
-		newCuboids.emplace_back(blocks, cuboid.m_highest, blocks.getIndex({highest.x, highest.y, splitHighest.z + 1}));
+		newCuboids.emplace_back(blocks, cuboid.m_highest, blocks.getIndex({lowest.x, lowest.y, splitHighest.z + 1}));
 	// Split off group below.
 	if(lowest.z < splitLowest.z)
 		newCuboids.emplace_back(blocks, blocks.getIndex({highest.x, highest.y, splitLowest.z - 1}), cuboid.m_lowest);
@@ -377,7 +411,6 @@ void AreaHasVisionCuboids::setCuboid(Area& area, VisionCuboid& visionCuboid, con
 BlockIndex AreaHasVisionCuboids::findLowPointForCuboidStartingFromHighPoint(Area& area, const BlockIndex& highest) const
 {
 	Blocks& blocks = area.getBlocks();
-	assert(blocks.canSeeThrough(highest));
 	const Point3D highestCoordinates = blocks.getCoordinates(highest);
 	for(auto z = highestCoordinates.z; true; --z)
 	{
@@ -421,8 +454,6 @@ bool VisionCuboid::canSeeInto(Area& area, const Cuboid& other) const
 	assert(m_cuboid.m_lowest != other.m_lowest);
 	assert(!m_destroy);
 	Blocks& blocks = area.getBlocks();
-	assert(blocks.canSeeThrough(other.m_highest));
-	assert(blocks.canSeeThrough(other.m_lowest));
 	// Get a cuboid representing a face of m_cuboid.
 	Facing facing = m_cuboid.getFacingTwordsOtherCuboid(blocks, other);
 	const Cuboid face = m_cuboid.getFace(blocks, facing);
@@ -430,7 +461,6 @@ bool VisionCuboid::canSeeInto(Area& area, const Cuboid& other) const
 	for(const BlockIndex& block : face.getView(blocks))
 	{
 		assert(face.contains(blocks, block));
-		assert(blocks.canSeeThrough(block));
 		assert(blocks.getAtFacing(block, facing).exists());
 		if(!blocks.canSeeIntoFromAlways(blocks.getAtFacing(block, facing), block))
 			return false;
@@ -442,8 +472,6 @@ bool VisionCuboid::canCombineWith(Area& area, const Cuboid& cuboid) const
 	assert(m_cuboid != cuboid);
 	assert(!m_destroy);
 	Blocks& blocks = area.getBlocks();
-	assert(blocks.canSeeThrough(cuboid.m_highest));
-	assert(blocks.canSeeThrough(cuboid.m_lowest));
 	if(!m_cuboid.canMerge(blocks, cuboid))
 		return false;
 	if(!canSeeInto(area, cuboid))
@@ -455,8 +483,6 @@ Cuboid VisionCuboid::canStealFrom(Area& area, const Cuboid& cuboid) const
 	assert(m_cuboid != cuboid);
 	assert(!m_destroy);
 	Blocks& blocks = area.getBlocks();
-	assert(blocks.canSeeThrough(cuboid.m_highest));
-	assert(blocks.canSeeThrough(cuboid.m_lowest));
 	Cuboid output = cuboid.canMergeSteal(blocks, m_cuboid);
 	if(output.empty(blocks))
 		return output;
