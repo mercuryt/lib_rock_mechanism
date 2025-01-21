@@ -290,11 +290,11 @@ TEST_CASE("route_5_5_3")
 		BlockIndex origin = blocks.getIndex_i(2, 1, 2);
 		BlockIndex destination = blocks.getIndex_i(2, 3, 2);
 		BlockIndex midpoint = blocks.getIndex_i(2, 2, 1);
-		blocks.solid_setNot(blocks.getIndex_i(1, 2, 1));
-		blocks.solid_setNot(midpoint);
-		blocks.solid_setNot(blocks.getIndex_i(3, 2, 1));
 		BlockIndex water1 = blocks.getIndex_i(1, 2, 1);
 		BlockIndex water2 = blocks.getIndex_i(3, 2, 1);
+		blocks.solid_setNot(water1);
+		blocks.solid_setNot(midpoint);
+		blocks.solid_setNot(water2);
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
@@ -464,7 +464,7 @@ TEST_CASE("route_5_5_5")
 	}
 	SUBCASE("floor blocks vertical travel")
 	{
-		areaBuilderUtil::setSolidLayer(area, 0, marble);
+		areaBuilderUtil::setSolidLayers(area, 0, 4, marble);
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 1));
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 2));
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 3));
@@ -501,7 +501,7 @@ TEST_CASE("route_5_5_5")
 	}
 	SUBCASE("floor grate blocks vertical travel")
 	{
-		areaBuilderUtil::setSolidLayer(area, 0, marble);
+		areaBuilderUtil::setSolidLayers(area, 0, 3, marble);
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 1));
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 2));
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 3));
@@ -538,7 +538,7 @@ TEST_CASE("route_5_5_5")
 	}
 	SUBCASE("locked hatch blocks vertical travel")
 	{
-		areaBuilderUtil::setSolidLayer(area, 0, marble);
+		areaBuilderUtil::setSolidLayers(area, 0, 3, marble);
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 1));
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 2));
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 3));

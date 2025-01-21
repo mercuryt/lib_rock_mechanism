@@ -22,6 +22,7 @@ public:
 	constexpr Derived& operator=(const This& o) { data = o.data; return static_cast<Derived&>(*this); }
 	constexpr Derived& operator=(const T& d) { data = d; return static_cast<Derived&>(*this); }
 	constexpr void set(T d) { data = d; }
+	// TODO: add maybeClear.
 	constexpr void clear() { data = NULL_VALUE; }
 	constexpr Derived& operator+=(const This& other) { return (*this) += other.data; }
 	constexpr Derived& operator-=(const This& other) { return (*this) -= other.data; }

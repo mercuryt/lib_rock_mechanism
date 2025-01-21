@@ -10,6 +10,7 @@
 class Blocks;
 class CuboidView;
 class CuboidSurfaceView;
+class Sphere;
 class Cuboid
 {
 public:
@@ -32,6 +33,7 @@ public:
 	[[nodiscard]] Cuboid sum(const Blocks& blocks, const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid getFace(const Blocks& blocks, const Facing& faceing) const;
 	[[nodiscard]] bool overlapsWith(const Blocks& blocks, const Cuboid& cuboid) const;
+	[[nodiscard]] bool overlapsWithSphere(const Blocks& blocks, const Sphere& sphere) const;
 	[[nodiscard]] size_t size(const Blocks& blocks) const;
 	[[nodiscard]] bool empty(const Blocks& blocks) const { return size(blocks) == 0; }
 	[[nodiscard]] bool operator==(const Cuboid& cuboid) const;
@@ -94,7 +96,7 @@ struct CuboidSurfaceView : public std::ranges::view_interface<CuboidSurfaceView>
 		Iterator(const CuboidSurfaceView& v) : view(v) { setFace(); }
 		Iterator& operator++();
 		Iterator operator++(int);
-		bool operator==(const Iterator& other) const { return current == other.current; }
+		bool operator==(const Iterator& other) const;
 		bool operator!=(const Iterator& other) const { return !(*this == other); }
 		std::pair<BlockIndex, Facing> operator*();
 	};

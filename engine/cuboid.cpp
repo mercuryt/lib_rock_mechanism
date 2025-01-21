@@ -1,6 +1,7 @@
 #include "cuboid.h"
 #include "area.h"
 #include "types.h"
+#include "sphere.h"
 #include "blocks/blocks.h"
 
 #include <cassert>
@@ -210,6 +211,10 @@ bool Cuboid::overlapsWith(const Blocks& blocks, const Cuboid& other) const
 		 otherLowest.z >= lowest.z && otherLowest.z <= highest.z
 		);
 }
+bool Cuboid::overlapsWithSphere(const Blocks& blocks, const Sphere& sphere) const
+{
+	return sphere.overlapsWith(blocks, *this);
+}
 size_t Cuboid::size(const Blocks& blocks) const
 {
 	if(!m_highest.exists())
@@ -278,6 +283,7 @@ DistanceInBlocks Cuboid::dimensionForFacing(const Blocks& blocks, const Facing& 
 }
 Facing Cuboid::getFacingTwordsOtherCuboid(const Blocks& blocks, const Cuboid& other) const
 {
+	assert(!overlapsWith(blocks, other));
 	Point3D highest = blocks.getCoordinates(m_highest);
 	Point3D lowest = blocks.getCoordinates(m_lowest);
 	Point3D otherHighest = blocks.getCoordinates(other.m_highest);
@@ -353,6 +359,7 @@ void CuboidSurfaceView::Iterator::setFace()
 }
 CuboidSurfaceView::Iterator& CuboidSurfaceView::Iterator::operator++()
 {
+	assert(facing.exists());
 	Point3D end = view.blocks.getCoordinates(face.m_highest);
 	Point3D start = view.blocks.getCoordinates(face.m_lowest);
 	if (current.x < end.x) {
@@ -366,6 +373,7 @@ CuboidSurfaceView::Iterator& CuboidSurfaceView::Iterator::operator++()
 		++current.z;
 	} else if(facing < 5) {
 		++facing;
+		setFace();
 	} else
 		// End iterator.
 		setToEnd();
@@ -377,5 +385,13 @@ CuboidSurfaceView::Iterator CuboidSurfaceView::Iterator::operator++(int)
 	auto copy = *this;
 	++(*this);
 	return copy;
+}
+bool CuboidSurfaceView::Iterator::operator==(const Iterator& other) const
+{
+	if(facing != other.facing)
+		return false;
+	if(facing.empty())
+		return true;
+	return current == other.current;
 }
 std::pair<BlockIndex, Facing> CuboidSurfaceView::Iterator::operator*() { return { view.blocks.getIndex(current), facing}; }

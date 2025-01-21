@@ -1,8 +1,10 @@
 #include "visionCuboid.h"
 #include "area.h"
+#include "sphere.h"
 #include "types.h"
 #include "blocks/blocks.h"
 #include "actors/actors.h"
+#include "partitionNotify.h"
 void AreaHasVisionCuboids::initalize(Area& area)
 {
 	Blocks& blocks = area.getBlocks();
@@ -18,31 +20,35 @@ void AreaHasVisionCuboids::clearDestroyed(Area& area)
 {
 	Blocks& blocks = area.getBlocks();
 	for(const VisionCuboid& visionCuboid : m_visionCuboids)
-		if(visionCuboid.m_destroy)
+		if(visionCuboid.toDestory())
 			for(const BlockIndex& block : visionCuboid.m_cuboid.getView(blocks))
 				assert(m_blockVisionCuboidIndices[block] != visionCuboid.m_index);
-	m_visionCuboids.removeIf([](const VisionCuboid& visionCuboid){ return visionCuboid.m_destroy; });
-	uint end = m_visionCuboids.size();
-	for(auto visionCuboidIndex = VisionCuboidIndex::create(0); visionCuboidIndex < end; ++visionCuboidIndex)
-	{
-		VisionCuboid& visionCuboid = m_visionCuboids[visionCuboidIndex];
-		if(visionCuboid.m_index != visionCuboidIndex)
-		{
-			updateBlocks(area, visionCuboid, visionCuboidIndex);
-			visionCuboid.m_index = visionCuboidIndex;
+	// Destroy marked VisionCuboids.
+	removeNotify<VisionCuboid>(m_visionCuboids,
+		// Condition.
+		[&](const VisionCuboidIndex& index) -> bool { return m_visionCuboids[index].toDestory(); },
+		// Callback.
+		[&](const VisionCuboidIndex& oldIndex, const VisionCuboidIndex& newIndex) -> void {
+			VisionCuboid& oldValue = m_visionCuboids[oldIndex];
+			assert(!oldValue.m_adjacent.contains(oldIndex));
+			oldValue.m_index = newIndex;
+			for(const VisionCuboidIndex& adjacent : oldValue.m_adjacent)
+				m_visionCuboids[adjacent].m_adjacent.update(oldIndex, newIndex);
+			updateBlocks(area, oldValue, newIndex);
 		}
-	}
+	);
 }
-void AreaHasVisionCuboids::blockIsNeverOpaque(Area& area, const BlockIndex& block)
+void AreaHasVisionCuboids::blockIsTransparent(Area& area, const BlockIndex& block)
 {
 	if(m_blockVisionCuboidIndices.empty())
 		return;
+	assert(m_blockVisionCuboidIndices[block].empty());
 	Cuboid cuboid(area.getBlocks(), block, block);
 	createOrExtend(area, cuboid);
 	clearDestroyed(area);
 	validate(area);
 }
-void AreaHasVisionCuboids::blockIsSometimesOpaque(Area& area, const BlockIndex& block)
+void AreaHasVisionCuboids::blockIsOpaque(Area& area, const BlockIndex& block)
 {
 	if(m_blockVisionCuboidIndices.empty())
 		return;
@@ -53,7 +59,7 @@ void AreaHasVisionCuboids::blockIsSometimesOpaque(Area& area, const BlockIndex& 
 	clearDestroyed(area);
 	validate(area);
 }
-void AreaHasVisionCuboids::blockFloorIsNeverOpaque(Area& area, const BlockIndex& block)
+void AreaHasVisionCuboids::blockFloorIsTransparent(Area& area, const BlockIndex& block)
 {
 	if(m_blockVisionCuboidIndices.empty())
 		return;
@@ -64,7 +70,7 @@ void AreaHasVisionCuboids::blockFloorIsNeverOpaque(Area& area, const BlockIndex&
 	clearDestroyed(area);
 	validate(area);
 }
-void AreaHasVisionCuboids::blockFloorIsSometimesOpaque(Area& area, const BlockIndex& block)
+void AreaHasVisionCuboids::blockFloorIsOpaque(Area& area, const BlockIndex& block)
 {
 	if(m_blockVisionCuboidIndices.empty())
 		return;
@@ -74,7 +80,7 @@ void AreaHasVisionCuboids::blockFloorIsSometimesOpaque(Area& area, const BlockIn
 	clearDestroyed(area);
 	validate(area);
 }
-void AreaHasVisionCuboids::cuboidIsNeverOpaque(Area& area, const Cuboid& cuboid)
+void AreaHasVisionCuboids::cuboidIsTransparent(Area& area, const Cuboid& cuboid)
 {
 	Blocks& blocks = area.getBlocks();
 	// Some blocks may already be never opaque and thus are already part of a vision cuboid.
@@ -83,7 +89,8 @@ void AreaHasVisionCuboids::cuboidIsNeverOpaque(Area& area, const Cuboid& cuboid)
 	for(const BlockIndex& block : cuboid.getView(blocks))
 	{
 		VisionCuboidIndex& visionIndex = m_blockVisionCuboidIndices[block];
-		impactedVisionCuboids.maybeInsert(visionIndex);
+		if(visionIndex.exists())
+			impactedVisionCuboids.maybeInsert(visionIndex);
 		//TODO: we could be setting blockVisionCuboidIndices here, but would not be able to use createOrExtend as writen.
 	}
 	for(VisionCuboidIndex visionCuboidIndex : impactedVisionCuboids)
@@ -92,12 +99,24 @@ void AreaHasVisionCuboids::cuboidIsNeverOpaque(Area& area, const Cuboid& cuboid)
 	clearDestroyed(area);
 	validate(area);
 }
-void AreaHasVisionCuboids::cuboidIsSometimesOpaque(Area& area, const Cuboid& cuboid)
+void AreaHasVisionCuboids::cuboidIsOpaque(Area& area, const Cuboid& cuboid)
 {
 	Blocks& blocks = area.getBlocks();
+	auto view = cuboid.getView(blocks);
+	// Set the whole cuboid transparent if it contains any blocks which are opaque.
+	// This is easier then modifying this method to handle opaque blocks.
+	for(const BlockIndex& block : view)
+	{
+		if(m_blockVisionCuboidIndices[block].empty())
+		{
+			// Block is already opaque.
+			cuboidIsTransparent(area, cuboid);
+			break;
+		}
+	}
 	// Collect all vision cuboids which intersect with cuboid.
 	SmallSet<VisionCuboidIndex> impactedVisionCuboids;
-	for(const BlockIndex& block : cuboid.getView(blocks))
+	for(const BlockIndex& block : view)
 	{
 		VisionCuboidIndex& visionIndex = m_blockVisionCuboidIndices[block];
 		if(visionIndex.exists())
@@ -152,7 +171,7 @@ void AreaHasVisionCuboids::createOrExtend(Area& area, const Cuboid& cuboid)
 			break;
 		if(visionCuboid->m_cuboid == extensionCuboid)
 			// Whole cuboid is merged.
-			visionCuboid->m_destroy = true;
+			setDestroy(*visionCuboid);
 		else
 			// Part of cuboid is stolen.
 			splitAtCuboid(area, *visionCuboid, extensionCuboid);
@@ -162,20 +181,28 @@ void AreaHasVisionCuboids::createOrExtend(Area& area, const Cuboid& cuboid)
 	m_visionCuboids.emplaceBack(currentCuboid, index);
 	VisionCuboid& created = m_visionCuboids.back();
 	updateBlocks(area, created, index);
-	if(currentCuboid.size(blocks) == 1)
-		return;
 	// Check if newly created cuboid can be stolen from.
 	// Collect adjacent cuboids.
 	// TODO: optimize by reducing redundant writing into m_blocksVisionCuboidIndices.
 	SmallSet<VisionCuboidIndex> adjacent;
-	for(auto [block, facing] : currentCuboid.getSurfaceView(blocks))
+	CuboidSurfaceView surfaceView = currentCuboid.getSurfaceView(blocks);
+	auto end = surfaceView.end();
+	for(auto iter = surfaceView.begin(); iter != end; ++iter)
 	{
+		std::pair<BlockIndex, Facing> pair = *iter;
+		const BlockIndex& block = pair.first;
+		assert(block < blocks.size());
+		const Facing& facing = pair.second;
 		const BlockIndex& blockAboveSurface = blocks.getAtFacing(block, facing);
 		if(blockAboveSurface.exists())
 		{
 			const VisionCuboidIndex& cuboidIndex = getIndexForBlock(blockAboveSurface);
-			if(cuboidIndex.exists())
+			assert(cuboidIndex != created.m_index);
+			if(cuboidIndex.exists() && !m_visionCuboids[cuboidIndex].toDestory() && blocks.canSeeThroughFrom(block, blockAboveSurface))
+			{
+				assert(!m_visionCuboids[cuboidIndex].m_cuboid.overlapsWith(blocks, created.m_cuboid));
 				adjacent.maybeInsert(cuboidIndex);
+			}
 		}
 	}
 	Cuboid toSplit;
@@ -184,19 +211,30 @@ void AreaHasVisionCuboids::createOrExtend(Area& area, const Cuboid& cuboid)
 	VisionCuboid* candidate = nullptr;
 	for(const VisionCuboidIndex& cuboidIndex : adjacent)
 	{
+		assert(cuboidIndex != created.m_index);
 		VisionCuboid& visionCuboid = m_visionCuboids[cuboidIndex];
-		uint candidateSize = visionCuboid.m_cuboid.size(blocks);
-		if(candidateSize > currentSize && candidateSize > bestCandidateSize)
+		if(!visionCuboid.toDestory())
 		{
-		 	Cuboid toSplitCandidate = created.canStealFrom(area, visionCuboid.m_cuboid);
+			Cuboid toSplitCandidate = created.canStealFrom(area, visionCuboid.m_cuboid);
 			if(!toSplitCandidate.empty(blocks))
 			{
-				bestCandidateSize = candidateSize;
-				candidate = &visionCuboid;
-				toSplit = toSplitCandidate;
+				uint candidateSize = visionCuboid.m_cuboid.size(blocks);
+				if(candidateSize > currentSize && candidateSize > bestCandidateSize)
+				{
+					bestCandidateSize = candidateSize;
+					candidate = &visionCuboid;
+					toSplit = toSplitCandidate;
+				}
 			}
+			// Store index in adjacent cuboids.
+			assert(visionCuboid.m_index != created.m_index);
+			assert(!created.toDestory());
+			visionCuboid.m_adjacent.insert(created.m_index);
 		}
 	}
+	// Store adjacent cuboids.
+	assert(!adjacent.contains(created.m_index));
+	created.m_adjacent = adjacent;
 	if(candidate != nullptr)
 	{
 		splitAtCuboid(area, created, toSplit);
@@ -205,6 +243,14 @@ void AreaHasVisionCuboids::createOrExtend(Area& area, const Cuboid& cuboid)
 		// TODO: This is a hack.
 		maybeExtend(area, *candidate);
 	}
+}
+// Don't clear blocks here. It will be done elsewhere.
+void AreaHasVisionCuboids::setDestroy(VisionCuboid& visionCuboid)
+{
+	visionCuboid.setDestroy();
+	const VisionCuboidIndex& index = visionCuboid.m_index;
+	for(const VisionCuboidIndex& adjacent : visionCuboid.m_adjacent)
+		m_visionCuboids[adjacent].m_adjacent.erase(index);
 }
 void AreaHasVisionCuboids::validate(const Area& area)
 {
@@ -216,7 +262,7 @@ void AreaHasVisionCuboids::validate(const Area& area)
 		if(index.exists())
 		{
 			VisionCuboid& visionCuboid = m_visionCuboids[index];
-			assert(!visionCuboid.m_destroy);
+			assert(!visionCuboid.toDestory());
 			assert(visionCuboid.m_cuboid.contains(blocks, BlockIndex::create(iter - m_blockVisionCuboidIndices.begin())));
 		}
 	}
@@ -236,7 +282,7 @@ std::pair<VisionCuboid*, Cuboid> AreaHasVisionCuboids::maybeGetTargetToCombineWi
 			{
 				assert(!cuboid.contains(blocks, block));
 				VisionCuboid& otherVisionCuboid = m_visionCuboids[visionCuboidIndex];
-				if(!otherVisionCuboid.m_destroy)
+				if(!otherVisionCuboid.toDestory())
 				{
 					uint otherVisionCuboidSize = otherVisionCuboid.m_cuboid.size(blocks);
 					if(otherVisionCuboidSize <= largestSize)
@@ -286,6 +332,36 @@ VisionCuboid* AreaHasVisionCuboids::maybeGetForBlock(const BlockIndex& block)
 	VisionCuboid* output = &m_visionCuboids[index];
 	return output;
 }
+SmallSet<VisionCuboidIndex> AreaHasVisionCuboids::walkAndCollectAdjacentCuboidsInRangeOfPosition(const Area& area, const BlockIndex& startLocation, const DistanceInBlocks& range)
+{
+	//TODO: amortize allocations.
+	SmallSet<VisionCuboidIndex> output;
+	output.reserve(16);
+	const VisionCuboidIndex& start = getIndexForBlock(startLocation);
+	SmallSet<VisionCuboidIndex> openList;
+	openList.reserve(16);
+	openList.insert(start);
+	SmallSet<VisionCuboidIndex> closedList;
+	closedList.reserve(16);
+	closedList.insert(start);
+	const Blocks& blocks = area.getBlocks();
+	Sphere visionSphere(blocks.getCoordinates(startLocation), range.toFloat());
+	while(!openList.empty())
+	{
+		const VisionCuboidIndex& current = openList.back();
+		openList.popBack();
+		output.insert(current);
+		for(const VisionCuboidIndex& adjacent : m_visionCuboids[current].m_adjacent)
+		{
+			if(!closedList.contains(adjacent) && m_visionCuboids[adjacent].m_cuboid.overlapsWithSphere(blocks, visionSphere))
+			{
+				openList.insert(adjacent);
+				closedList.insert(adjacent);
+			}
+		}
+	}
+	return output;
+}
 void AreaHasVisionCuboids::updateBlocks(Area& area, const VisionCuboid& visionCuboid, const VisionCuboidIndex& newIndex)
 {
 	updateBlocks(area, visionCuboid.m_cuboid, newIndex);
@@ -305,13 +381,12 @@ void AreaHasVisionCuboids::updateBlocks(Area& area, const Cuboid& cuboid, const 
 // Used when a block is no longer always transparent.
 void AreaHasVisionCuboids::splitAt(Area& area, VisionCuboid& visionCuboid, const BlockIndex& split)
 {
-	assert(!visionCuboid.m_destroy);
+	assert(!visionCuboid.toDestory());
 	Blocks& blocks = area.getBlocks();
 	assert(visionCuboid.m_cuboid.contains(blocks, split));
 	//TODO: reuse
-	visionCuboid.m_destroy = true;
-	//TODO: what is this for?
-	area.m_visionCuboids.unset(split);
+	setDestroy(visionCuboid);
+	m_blockVisionCuboidIndices[split].clear();
 	// Store for assert at end.
 	Cuboid cuboid = visionCuboid.m_cuboid;
 	VisionCuboidIndex index = visionCuboid.m_index;
@@ -349,8 +424,8 @@ void AreaHasVisionCuboids::splitAt(Area& area, VisionCuboid& visionCuboid, const
 // Used when a floor is no longer always transparent.
 void AreaHasVisionCuboids::splitBelow(Area& area, VisionCuboid& visionCuboid, const BlockIndex& split)
 {
-	assert(!visionCuboid.m_destroy);
-	visionCuboid.m_destroy = true;
+	assert(!visionCuboid.toDestory());
+	setDestroy(visionCuboid);
 	//TODO: reuse
 	std::vector<Cuboid> newCuboids;
 	newCuboids.reserve(2);
@@ -372,8 +447,11 @@ void AreaHasVisionCuboids::splitAtCuboid(Area& area, VisionCuboid& visionCuboid,
 	Blocks& blocks = area.getBlocks();
 	const Point3D highest = blocks.getCoordinates(cuboid.m_highest);
 	const Point3D lowest = blocks.getCoordinates(cuboid.m_lowest);
-	const Point3D splitHighest = blocks.getCoordinates(splitCuboid.m_highest);
-	const Point3D splitLowest = blocks.getCoordinates(splitCuboid.m_lowest);
+	Point3D splitHighest = blocks.getCoordinates(splitCuboid.m_highest);
+	Point3D splitLowest = blocks.getCoordinates(splitCuboid.m_lowest);
+	// Clamp split high and low to cuboid.
+	splitHighest.clampHigh(highest);
+	splitLowest.clampLow(lowest);
 	std::vector<Cuboid> newCuboids;
 	// Split off group above.
 	if(highest.z > splitHighest.z)
@@ -393,14 +471,14 @@ void AreaHasVisionCuboids::splitAtCuboid(Area& area, VisionCuboid& visionCuboid,
 	// Split off group with lower X
 	if(lowest.x < splitLowest.x)
 		newCuboids.emplace_back(blocks, blocks.getIndex({splitLowest.x - 1, splitHighest.y, splitHighest.z}), blocks.getIndex({lowest.x, splitLowest.y, splitLowest.z}));
-	visionCuboid.m_destroy = true;
+	setDestroy(visionCuboid);
 	for(const Cuboid& cuboid : newCuboids)
 		createOrExtend(area, cuboid);
 }
 // Combine and recursively search for further combinations which form cuboids.
 void AreaHasVisionCuboids::maybeExtend(Area& area, VisionCuboid& visionCuboid)
 {
-	visionCuboid.m_destroy = true;
+	setDestroy(visionCuboid);
 	createOrExtend(area, visionCuboid.m_cuboid);
 }
 void AreaHasVisionCuboids::setCuboid(Area& area, VisionCuboid& visionCuboid, const Cuboid& cuboid)

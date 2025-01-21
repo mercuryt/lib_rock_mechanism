@@ -8,6 +8,7 @@
 #include "actors/actors.h"
 #include "blocks/blocks.h"
 #include "strongInteger.hpp"
+#include "sphere.h"
 #include <cstddef>
 
 VisionRequests::VisionRequests(Area& area) :
@@ -58,7 +59,9 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 		SmallSet<ActorReference>& canBeSeenBy = request.canBeSeenBy;
 		// Collect results in a vector rather then a set to prevent cache thrashing.
 		ActorReference previousFoundActor;
-		m_area.m_octTree.query({fromCoords, m_largestRange}, [&](const LocationBucketData& data){
+		Sphere visionSphere{fromCoords, m_largestRange.toFloat()};
+		auto visionCuboidIndices = m_area.m_visionCuboids.walkAndCollectAdjacentCuboidsInRangeOfPosition(m_area, request.location, m_largestRange);
+		m_area.m_octTree.query(visionSphere, [&](const LocationBucketData& data){
 			if(previousFoundActor.exists() && data.actor == previousFoundActor)
 				// Multi tile actor has already been found.
 				return;
@@ -69,10 +72,16 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 			// A bit of logical asymetry here: If a multi tile object moves it's vision is counted only from it's location, but if another actor moves into a position where it can see a tile of the multi tile which is not it's location and the other actor is in the multi tile actors range it will be marked as seen, even though it would not be seen at the same position if it had not moved due to either distance or occulsion from the multi tile actor's primary location.
 			bool inRangeToBeSeen = distanceSquared <= data.visionRangeSquared;
 			if(inRangeToBeSeen || inRangeToSee)
+			{
 				if (
 					fromVisionCuboidIndex == toVisionCuboidIndex ||
-					// Check sightlines.
-					m_area.m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toCoords))
+					(
+						// Filter actors based on collected vision cuboid incices which are adjacent to from cuboid index directly or transitively and which intersect the vision sphere.
+						visionCuboidIndices.contains(toVisionCuboidIndex) &&
+						// Check sightlines.
+						m_area.m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toCoords)
+					)
+				)
 				{
 					if(inRangeToSee)
 					{
@@ -83,6 +92,7 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 					if(inRangeToBeSeen)
 						canBeSeenBy.insertNonunique(data.actor);
 				}
+			}
 		});
 	}
 	// Finalize result.
