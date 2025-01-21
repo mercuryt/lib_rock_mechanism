@@ -3,6 +3,7 @@
 #include "types.h"
 #include "reference.h"
 #include "locationBuckets.h"
+#include "sphere.h"
 #include <memory>
 #include <array>
 
@@ -56,7 +57,7 @@ public:
 	void maybeSort();
 	// TODO: update coordinates.
 	template<typename Action>
-	void query(const Cube& cube, Action&& action) const
+	void query(const Sphere& sphere, Action&& action) const
 	{
 		std::vector<const OctTree*> openList;
 		std::vector<const OctTree*> results;
@@ -67,16 +68,16 @@ public:
 		{
 			const OctTree& candidate = *openList.back();
 			openList.pop_back();
-			if(!candidate.m_children.exists() || cube.contains(candidate.m_cube))
+			if(!candidate.m_children.exists() || sphere.contains(candidate.m_cube))
 				results.push_back(&candidate);
 			else
 				for(const OctTree& child : m_data[candidate.m_children])
 				{
 					if(child.m_data.empty())
 						continue;
-					if(cube.contains(child.m_cube))
+					if(sphere.contains(child.m_cube))
 						results.push_back(&child);
-					else if(cube.intersects(child.m_cube))
+					else if(sphere.overlapsWith(child.m_cube))
 						openList.push_back(&child);
 				}
 		}

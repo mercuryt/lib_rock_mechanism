@@ -52,12 +52,12 @@ void Blocks::blockFeature_construct(const BlockIndex& block, const BlockFeatureT
 	m_features[block].emplace_back(&blockFeatureType, materialType, false);
 	if((blockFeatureType == BlockFeatureType::floor || blockFeatureType == BlockFeatureType::hatch) && !MaterialType::getTransparent(materialType))
 	{
-		m_area.m_visionCuboids.blockFloorIsSometimesOpaque(m_area, block);
+		m_area.m_visionCuboids.blockFloorIsOpaque(m_area, block);
 		setBelowExposedToSky(block);
 	}
 	else if(blockFeatureType == BlockFeatureType::door && !MaterialType::getTransparent(materialType))
 	{
-		m_area.m_visionCuboids.blockIsSometimesOpaque(m_area, block);
+		m_area.m_visionCuboids.blockIsOpaque(m_area, block);
 		setBelowNotExposedToSky(block);
 	}
 	m_area.m_opacityFacade.update(block);

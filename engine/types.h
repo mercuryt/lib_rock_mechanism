@@ -321,6 +321,19 @@ struct Point3D
 	DistanceInBlocks x;
 	DistanceInBlocks y;
 	DistanceInBlocks z;
+	void operator+=(const Vector3D& other);
+	void clampHigh(const Point3D& other)
+	{
+		x = std::min(x, other.x);
+		y = std::min(y, other.y);
+		z = std::min(z, other.z);
+	}
+	void clampLow(const Point3D& other)
+	{
+		x = std::max(x, other.x);
+		y = std::max(y, other.y);
+		z = std::max(z, other.z);
+	}
 	[[nodiscard]] bool operator==(const Point3D& other) const
 	{
 		return x == other.x && y == other.y && z == other.z;
@@ -338,7 +351,6 @@ struct Point3D
 		else
 			return z <=> other.z;
 	}
-	void operator+=(const Vector3D& other);
 	[[nodiscard]] DistanceInBlocks taxiDistanceTo(const Point3D& other) const
 	{
 		return DistanceInBlocks::create(
@@ -427,6 +439,7 @@ struct Point3D
 		}
 		return index;
 	}
+	[[nodiscard]] Vector3D toVector3D() const;
 	void log() const
 	{
 		std::wcout << toString() << std::endl;
@@ -522,4 +535,6 @@ struct Cube
 			lowest.y <= center.y.subtractWithMinimum(halfWidth) &&
 			lowest.z <= center.z.subtractWithMinimum(halfWidth);
 	}
+	[[nodiscard]] Point3D getHighPoint() const { return {center.x + halfWidth, center.y + halfWidth, center.z + halfWidth}; }
+	[[nodiscard]] Point3D getLowPoint() const { return {center.x - halfWidth, center.y - halfWidth, center.z - halfWidth}; }
 };

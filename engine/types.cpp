@@ -15,6 +15,7 @@ Density Density::operator*(float other) const { return Density::create(other * d
 Mass Mass::operator*(uint32_t other) const { auto output = Mass::create(data * other); assert(output != 0); return output; }
 Mass Mass::operator*(float other) const { return Mass::create(data * other); }
 DistanceInBlocksFractional DistanceInBlocks::toFloat() const { return DistanceInBlocksFractional::create(data); }
+Vector3D Point3D::toVector3D() const { return {(int32_t)x.get(), (int32_t)y.get(), (int32_t)z.get()}; }
 bool Cube::intersects(const Area& area, const Cuboid& cuboid) const
 {
 	const Blocks& blocks = area.getBlocks();

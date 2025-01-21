@@ -85,7 +85,9 @@ public:
 	template<typename Predicate>
 	void sort(Predicate&& predicate) { std::ranges::sort(m_data, predicate); }
 	void sort() { std::ranges::sort(m_data); }
-	void update(const T& oldValue, const T& newValue) { assert(contains(oldValue)); (*find(oldValue)) = newValue;}
+	void update(const T& oldValue, const T& newValue) { assert(!contains(newValue)); assert(contains(oldValue)); (*find(oldValue)) = newValue;}
+	void updateIfExists(const T& oldValue, const T& newValue) { assert(!contains(newValue)); auto found = find(oldValue); if(found != m_data.end()) (*found) = newValue; }
+	void updateIfExistsAndNewValueDoesNot(const T& oldValue, const T& newValue) { auto found = find(oldValue); if(found != m_data.end() && !contains(newValue)) (*found) = newValue; }
 	void makeUnique() { std::ranges::sort(m_data); m_data.erase(std::ranges::unique(m_data).begin(), m_data.end()); }
 	void removeDuplicatesAndValue(const T& value)
 	{

@@ -8,7 +8,9 @@ class DataVector
 	std::vector<Contained> data;
 public:
 	using iterator = std::vector<Contained>::iterator;
+	using reverse_iterator = std::vector<Contained>::reverse_iterator;
 	using const_iterator = std::vector<Contained>::const_iterator;
+	using const_reverse_iterator = std::vector<Contained>::const_reverse_iterator;
 	[[nodiscard]] Contained& operator[](const Index& index) { assert(index < size()); return data[index.get()]; }
 	[[nodiscard]] const Contained& operator[](const Index& index) const { assert(index < size()); return data[index.get()]; }
 	[[nodiscard]] size_t size() const { return data.size(); }
@@ -16,6 +18,10 @@ public:
 	[[nodiscard]] iterator end() { return data.end(); }
 	[[nodiscard]] const_iterator begin() const { return data.begin(); }
 	[[nodiscard]] const_iterator end() const { return data.end(); }
+	[[nodiscard]] reverse_iterator rbegin() { return data.rbegin(); }
+	[[nodiscard]] reverse_iterator rend() { return data.rend(); }
+	[[nodiscard]] const_reverse_iterator rbegin() const { return data.rbegin(); }
+	[[nodiscard]] const_reverse_iterator rend() const { return data.rend(); }
 	[[nodiscard]] bool empty() const { return data.empty(); }
 	template<typename Predicate>
 	[[nodiscard]] bool contains(const Predicate& predicate) const { return find_if(predicate) != end(); }
@@ -57,6 +63,13 @@ public:
 			(*iter) = std::move(*(end() - 1));
 		data.resize(data.size() - 1);
 	}
+	void remove(iterator iterStart, iterator iterEnd)
+	{
+		assert(iterStart != end());
+		data.erase(iterStart, iterEnd);
+	}
+	// Erase is a synonm for remove for conformity with vector.
+	void erase(iterator iterStart, iterator iterEnd) { remove(iterStart, iterEnd); }
 	template<typename Condition>
 	void removeIf(Condition&& condition)
 	{

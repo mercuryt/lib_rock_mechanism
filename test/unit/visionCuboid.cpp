@@ -22,19 +22,38 @@ TEST_CASE("vision cuboid basic")
 		REQUIRE(cuboids.size() == 1);
 		REQUIRE(cuboids.getIndexForBlock(low).exists());
 		REQUIRE(cuboids.getIndexForBlock(high) == cuboids.getIndexForBlock(low));
-		REQUIRE(cuboids.maybeGetForBlock(low)->m_cuboid.size(blocks) == 8);
+		VisionCuboid& visionCuboid = *cuboids.maybeGetForBlock(low);
+		REQUIRE(visionCuboid.m_cuboid.size(blocks) == 8);
+		REQUIRE(!visionCuboid.toDestory());
+		REQUIRE(visionCuboid.m_adjacent.empty());
 	}
 	SUBCASE("can merge")
 	{
 		const BlockIndex& low = blocks.getIndex_i(0, 0, 0);
-		cuboids.blockIsSometimesOpaque(area, low);
-		REQUIRE(cuboids.maybeGetForBlock(high)->m_cuboid.size(blocks) == 4);
+		cuboids.blockIsOpaque(area, low);
 		REQUIRE(cuboids.size() == 3);
 		REQUIRE(cuboids.getIndexForBlock(low).empty());
-		cuboids.blockIsNeverOpaque(area, low);
+		VisionCuboid& highCuboid = *cuboids.maybeGetForBlock(high);
+		REQUIRE(highCuboid.m_cuboid.size(blocks) == 4);
+		REQUIRE(highCuboid.m_adjacent.size() == 2);
+		VisionCuboid& eastCuboid = *cuboids.maybeGetForBlock(blocks.getIndex_i(0, 1, 0));
+		REQUIRE(eastCuboid.m_cuboid.size(blocks) == 2);
+		REQUIRE(eastCuboid.m_adjacent.size() == 2);
+		VisionCuboid& southCuboid = *cuboids.maybeGetForBlock(blocks.getIndex_i(1, 0, 0));
+		REQUIRE(southCuboid.m_cuboid.size(blocks) == 1);
+		REQUIRE(southCuboid.m_adjacent.size() == 2);
+		REQUIRE(highCuboid.m_adjacent.contains(eastCuboid.m_index));
+		REQUIRE(highCuboid.m_adjacent.contains(southCuboid.m_index));
+		REQUIRE(eastCuboid.m_adjacent.contains(highCuboid.m_index));
+		REQUIRE(eastCuboid.m_adjacent.contains(southCuboid.m_index));
+		REQUIRE(southCuboid.m_adjacent.contains(highCuboid.m_index));
+		REQUIRE(southCuboid.m_adjacent.contains(eastCuboid.m_index));
+		cuboids.blockIsTransparent(area, low);
 		REQUIRE(cuboids.size() == 1);
 		REQUIRE(cuboids.getIndexForBlock(low).exists());
-		REQUIRE(cuboids.maybeGetForBlock(low)->m_cuboid.size(blocks) == 8);
+		VisionCuboid& cuboid = *cuboids.maybeGetForBlock(high);
+		REQUIRE(cuboid.m_cuboid.size(blocks) == 8);
+		REQUIRE(cuboid.m_adjacent.empty());
 	}
 }
 TEST_CASE("vision cuboid split")
