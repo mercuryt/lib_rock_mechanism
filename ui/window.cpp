@@ -582,7 +582,7 @@ std::wstring Window::displayNameForCraftJob(CraftJob& craftJob)
 	}
 	return output;
 }
-std::wstring Window::facingToString(Facing facing)
+std::wstring Window::facingToString(Facing4 facing)
 {
 	if(facing == 0)
 		return L"up";

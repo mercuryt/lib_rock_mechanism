@@ -124,7 +124,7 @@ BlockIndex DramaArc::getEntranceToArea(const ShapeId& shape, const MoveTypeId& m
 }
 BlockIndex DramaArc::findLocationOnEdgeForNear(const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& origin, const DistanceInBlocks& distance, const BlockIndices& exclude) const
 {
-	Facing facing = getFacingAwayFromEdge(origin);
+	Facing4 facing = getFacingAwayFromEdge(origin);
 	Blocks& blocks = m_area->getBlocks();
 	auto predicate = [&](const BlockIndex& thisBlock) -> bool {
 		if(exclude.contains(thisBlock))
@@ -163,19 +163,19 @@ bool DramaArc::blockIsConnectedToAtLeast(const BlockIndex& origin, [[maybe_unuse
 	}
 	return false;
 }
-Facing DramaArc::getFacingAwayFromEdge(const BlockIndex& block) const
+Facing4 DramaArc::getFacingAwayFromEdge(const BlockIndex& block) const
 {
 	Blocks& blocks = m_area->getBlocks();
 	assert(blocks.isEdge(block));
 	if(blocks.getBlockNorth(block).empty())
-		return Facing::create(2);
+		return Facing4::South;
 	if(blocks.getBlockSouth(block).empty())
-		return Facing::create(0);
+		return Facing4::North;
 	if(blocks.getBlockEast(block).empty())
-		return Facing::create(3);
+		return Facing4::West;
 	if(blocks.getBlockWest(block).empty())
-		return Facing::create(1);
-	return Facing::create(0);
+		return Facing4::East;
+	return Facing4::North;
 }
 std::vector<AnimalSpeciesId> DramaArc::getSentientSpecies() const
 {

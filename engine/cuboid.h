@@ -23,7 +23,7 @@ public:
 	void setFrom(const BlockIndex& block);
 	void setFrom(const Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
 	void clear();
-	void shift(const Blocks& blocks, const Facing& direction, const DistanceInBlocks& distance);
+	void shift(const Blocks& blocks, const Facing6& direction, const DistanceInBlocks& distance);
 	void setMaxZ(const Blocks& blocks, const DistanceInBlocks& distance);
 	[[nodiscard]] SmallSet<BlockIndex> toSet(Blocks& blocks);
 	[[nodiscard]] bool contains(const Blocks& blocks, const BlockIndex& block) const;
@@ -31,15 +31,16 @@ public:
 	[[nodiscard]] bool canMerge(const Blocks& blocks, const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid canMergeSteal(const Blocks& blocks, const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid sum(const Blocks& blocks, const Cuboid& cuboid) const;
-	[[nodiscard]] Cuboid getFace(const Blocks& blocks, const Facing& faceing) const;
+	[[nodiscard]] Cuboid getFace(const Blocks& blocks, const Facing6& faceing) const;
 	[[nodiscard]] bool overlapsWith(const Blocks& blocks, const Cuboid& cuboid) const;
 	[[nodiscard]] bool overlapsWithSphere(const Blocks& blocks, const Sphere& sphere) const;
 	[[nodiscard]] size_t size(const Blocks& blocks) const;
 	[[nodiscard]] bool empty(const Blocks& blocks) const { return size(blocks) == 0; }
 	[[nodiscard]] bool operator==(const Cuboid& cuboid) const;
 	[[nodiscard]] Point3D getCenter(const Blocks& blocks) const;
-	[[nodiscard]] DistanceInBlocks dimensionForFacing(const Blocks& blocks, const Facing& facing) const;
-	[[nodiscard]] Facing getFacingTwordsOtherCuboid(const Blocks& blocks, const Cuboid& cuboid) const;
+	[[nodiscard]] DistanceInBlocks dimensionForFacing(const Blocks& blocks, const Facing6& facing) const;
+	[[nodiscard]] Facing6 getFacingTwordsOtherCuboid(const Blocks& blocks, const Cuboid& cuboid) const;
+	[[nodiscard]] bool isSomeWhatInFrontOf(const Blocks& blocks, const Point3D& position, const Facing4& facing) const;
 	[[nodiscard]] static Cuboid fromBlock(Blocks& blocks, const BlockIndex& block);
 	[[nodiscard]] static Cuboid fromBlockPair(const Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
 	class iterator
@@ -90,7 +91,7 @@ struct CuboidSurfaceView : public std::ranges::view_interface<CuboidSurfaceView>
 		const CuboidSurfaceView& view;
 		Cuboid face;
 		Point3D current;
-		Facing facing = Facing::create(0);
+		Facing6 facing = Facing6::Below;
 		void setFace();
 		void setToEnd();
 		Iterator(const CuboidSurfaceView& v) : view(v) { setFace(); }
@@ -98,7 +99,7 @@ struct CuboidSurfaceView : public std::ranges::view_interface<CuboidSurfaceView>
 		Iterator operator++(int);
 		bool operator==(const Iterator& other) const;
 		bool operator!=(const Iterator& other) const { return !(*this == other); }
-		std::pair<BlockIndex, Facing> operator*();
+		std::pair<BlockIndex, Facing6> operator*();
 	};
 	Iterator begin() const { return {*this}; }
 	Iterator end() const { Iterator output(*this); output.setToEnd(); return output; }

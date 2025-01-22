@@ -27,11 +27,11 @@ class PathInnerLoops
 					continue;
 				if constexpr (adjacentSingleTile)
 				{
-					Facing facing;
+					Facing4 facing;
 					if constexpr(!symetric)
 						facing = blocks.facingToSetWhenEnteringFrom(adjacentIndex, current);
 					else
-						facing = Facing::create(0);
+						facing = Facing4::North;
 					if(memo.isClosed(adjacentIndex))
 						continue;
 					auto [result, blockWhichPassedPredicate] = destinationCondition(adjacentIndex, facing);
@@ -51,11 +51,11 @@ class PathInnerLoops
 					assert(adjacentIndex.exists());
 					if(memo.isClosed(adjacentIndex))
 						continue;
-					Facing facing;
+					Facing4 facing;
 					if constexpr(!symetric)
 						facing = blocks.facingToSetWhenEnteringFrom(adjacentIndex, current);
 					else
-						facing = Facing::create(0);
+						facing = Facing4::North;
 					if(!accessCondition(adjacentIndex, facing))
 						continue;
 					auto [result, blockWhichPassedPredicate] = destinationCondition(adjacentIndex, facing);
@@ -90,7 +90,7 @@ class PathInnerLoops
 			const Blocks& blocks = area.getBlocks();
 			if(isMultiTile)
 			{
-				auto unreservedCondition = [&](const BlockIndex& block, const Facing& facing) -> std::pair<bool, BlockIndex>
+				auto unreservedCondition = [&](const BlockIndex& block, const Facing4& facing) -> std::pair<bool, BlockIndex>
 				{
 					for(const BlockIndex& block : Shape::getBlocksOccupiedAt(shape, blocks, block, facing))
 						if(blocks.isReserved(block, faction))
@@ -101,7 +101,7 @@ class PathInnerLoops
 			}
 			else
 			{
-				auto unreservedCondition = [&](const BlockIndex& block, const Facing& facing) -> std::pair<bool, BlockIndex>
+				auto unreservedCondition = [&](const BlockIndex& block, const Facing4& facing) -> std::pair<bool, BlockIndex>
 				{
 					if(blocks.isReserved(block, faction))
 						return {false, block};
@@ -119,7 +119,7 @@ class PathInnerLoops
 		if(maxRange != DistanceInBlocks::max())
 		{
 			const Blocks& blocks = area.getBlocks();
-			auto maxRangeCondition = [&blocks, accessCondition, maxRange, start](const BlockIndex& block, const Facing& facing) -> bool
+			auto maxRangeCondition = [&blocks, accessCondition, maxRange, start](const BlockIndex& block, const Facing4& facing) -> bool
 			{
 				return blocks.taxiDistance(block, start) <= maxRange && accessCondition(block, facing);
 			};
@@ -129,7 +129,7 @@ class PathInnerLoops
 			return findPathSetUnreserved<AccessConditionT, DestinationConditionT, Memo, adjacentSingleTile, isMultiTile>(accessCondition, destinationCondition, area, terrainFacade, memo, start, faction, shape);
 	}
 	template<bool adjacentSingleTile, bool isMultiTile, DestinationCondition DestinationConditionT, typename Memo>
-	static FindPathResult findPathSetDetour(DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const BlockIndex& start, const Facing& startFacing, const FactionId& faction, const ShapeId& shape, const MoveTypeId& moveType, bool detour, const DistanceInBlocks& maxRange)
+	static FindPathResult findPathSetDetour(DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const BlockIndex& start, const Facing4& startFacing, const FactionId& faction, const ShapeId& shape, const MoveTypeId& moveType, bool detour, const DistanceInBlocks& maxRange)
 	{
 		const Blocks& blocks = area.getBlocks();
 		if(isMultiTile)
@@ -137,7 +137,7 @@ class PathInnerLoops
 			if(detour)
 			{
 				const BlockIndices initalBlocks = Shape::getBlocksOccupiedAt(shape, blocks, start, startFacing);
-				auto accessCondition = [&blocks, initalBlocks, shape, moveType](const BlockIndex& block, const Facing& facing) -> bool
+				auto accessCondition = [&blocks, initalBlocks, shape, moveType](const BlockIndex& block, const Facing4& facing) -> bool
 				{
 					return blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(block, shape, moveType, facing, initalBlocks);
 				};
@@ -145,7 +145,7 @@ class PathInnerLoops
 			}
 			else
 			{
-				auto accessCondition = [&blocks, shape, moveType](const BlockIndex& block, const Facing& facing) -> bool
+				auto accessCondition = [&blocks, shape, moveType](const BlockIndex& block, const Facing4& facing) -> bool
 				{
 					return blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(block, shape, moveType, facing);
 				};
@@ -157,7 +157,7 @@ class PathInnerLoops
 			if(detour)
 			{
 				CollisionVolume volume = Shape::getCollisionVolumeAtLocationBlock(shape);
-				auto accessCondition = [start, &blocks, maxRange, volume](const BlockIndex& block, const Facing&) -> bool
+				auto accessCondition = [start, &blocks, maxRange, volume](const BlockIndex& block, const Facing4&) -> bool
 				{
 					if (maxRange != DistanceInBlocks::max())
 						if(blocks.taxiDistance(start, block) > maxRange)
@@ -168,7 +168,7 @@ class PathInnerLoops
 			}
 			else
 			{
-				auto accessCondition = [](const BlockIndex&, const Facing&) -> bool { return true; };
+				auto accessCondition = [](const BlockIndex&, const Facing4&) -> bool { return true; };
 				return findPathSetMaxRange<decltype(accessCondition), DestinationConditionT, Memo, adjacentSingleTile, isMultiTile>(accessCondition, destinationCondition, area, terrainFacade, memo, start, faction, shape, maxRange);
 			}
 		}
@@ -176,7 +176,7 @@ class PathInnerLoops
 public:
 	// Consumes adjacent and anyOccupiedBlock, all other paramaters are passed on to findPathSetDetour and onward.
 	template<typename Memo, bool anyOccupiedBlock, DestinationCondition DestinationConditionT>
-	static FindPathResult findPath(DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& start, const Facing& facing, bool detour, bool adjacent, const FactionId& faction, const DistanceInBlocks maxRange)
+	static FindPathResult findPath(DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& start, const Facing4& facing, bool detour, bool adjacent, const FactionId& faction, const DistanceInBlocks maxRange)
 	{
 		auto [result, blockWhichPassedPredicate] = destinationCondition(start, facing);
 		if(result)
@@ -186,10 +186,10 @@ public:
 		{
 			if(adjacent)
 			{
-				auto adjacentCondition = [shape, &blocks, destinationCondition](const BlockIndex& block, const Facing& facing) ->std::pair<bool, BlockIndex>
+				auto adjacentCondition = [shape, &blocks, destinationCondition](const BlockIndex& block, const Facing4& facing) ->std::pair<bool, BlockIndex>
 				{
 					for(const BlockIndex& adjacent : Shape::getBlocksWhichWouldBeAdjacentAt(shape, blocks, block, facing))
-						if(destinationCondition(adjacent, Facing::null()).first)
+						if(destinationCondition(adjacent, Facing4::Null).first)
 							return {true, adjacent};
 					return {false, block};
 				};
@@ -199,10 +199,10 @@ public:
 			{
 				if constexpr (anyOccupiedBlock)
 				{
-					auto occupiedCondition = [shape, &blocks, destinationCondition](const BlockIndex& block, const Facing& facing) ->std::pair<bool, BlockIndex>
+					auto occupiedCondition = [shape, &blocks, destinationCondition](const BlockIndex& block, const Facing4& facing) ->std::pair<bool, BlockIndex>
 					{
 						for(const BlockIndex& occupied : Shape::getBlocksOccupiedAt(shape, blocks, block, facing))
-							if(destinationCondition(occupied, Facing::null()).first)
+							if(destinationCondition(occupied, Facing4::Null).first)
 								return {true, occupied};
 						return {false, block};
 					};

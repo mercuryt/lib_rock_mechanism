@@ -27,7 +27,7 @@ void ActorOrItemIndex::followPolymorphic(Area& area, const ActorOrItemIndex& act
 	else
 		followItem(area, actorOrItem.getItem());
 }
-ActorOrItemIndex ActorOrItemIndex::setLocationAndFacing(Area& area, const BlockIndex& location, const Facing& facing) const
+ActorOrItemIndex ActorOrItemIndex::setLocationAndFacing(Area& area, const BlockIndex& location, const Facing4& facing) const
 {
 	if(isActor())
 	{
@@ -175,7 +175,7 @@ bool ActorOrItemIndex::isAdjacentToLocation(const Area& area, const BlockIndex& 
 }
 ShapeId ActorOrItemIndex::getShape(const Area& area) const { return isActor() ? area.getActors().getShape(m_index.toActor()) : area.getItems().getShape(m_index.toItem()); }
 MoveTypeId ActorOrItemIndex::getMoveType(const Area& area) const{ return isActor() ? area.getActors().getMoveType(m_index.toActor()) : area.getItems().getMoveType(m_index.toItem()); }
-Facing ActorOrItemIndex::getFacing(const Area& area) const { return isActor() ? area.getActors().getFacing(m_index.toActor()) : area.getItems().getFacing(m_index.toItem()); }
+Facing4 ActorOrItemIndex::getFacing(const Area& area) const { return isActor() ? area.getActors().getFacing(m_index.toActor()) : area.getItems().getFacing(m_index.toItem()); }
 Mass ActorOrItemIndex::getMass(const Area& area) const { return isActor() ? area.getActors().getMass(m_index.toActor()) : area.getItems().getMass(m_index.toItem()); }
 Quantity ActorOrItemIndex::getQuantity(const Area& area) const { return isActor() ? Quantity::create(1) : area.getItems().getQuantity(m_index.toItem()); }
 Mass ActorOrItemIndex::getSingleUnitMass(const Area& area) const { return isActor() ? area.getActors().getMass(m_index.toActor()) : area.getItems().getSingleUnitMass(m_index.toItem()); }

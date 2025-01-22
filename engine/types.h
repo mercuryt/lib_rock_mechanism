@@ -19,6 +19,9 @@
     constexpr bool DEBUG = false;
 #endif
 
+enum class Facing4{North,East,South,West,Null};
+enum class Facing6{Below,North,East,South,West,Above,Null};
+enum class Facing8{North,NorthEast,East,SouthEast,South,SouthWest,West,NorthWest};
 using StepWidth = uint64_t;
 class Step : public StrongInteger<Step, StepWidth>
 {
@@ -227,17 +230,6 @@ public:
 inline void to_json(Json& data, const Percent& index) { data = index.get(); }
 inline void from_json(const Json& data, Percent& index) { index = Percent::create(data.get<PercentWidth>()); }
 
-using FacingWidth = uint8_t;
-class Facing : public StrongInteger<Facing, FacingWidth>
-{
-public:
-	Facing() = default;
-	const std::array<int, 3>& getOffset() const;
-	struct Hash { [[nodiscard]] size_t operator()(const Facing& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const Facing& index) { data = index.get(); }
-inline void from_json(const Json& data, Facing& index) { index = Facing::create(data.get<FacingWidth>()); }
-
 using CombatScoreWidth = uint16_t;
 class CombatScore : public StrongInteger<CombatScore, CombatScoreWidth>
 {
@@ -440,6 +432,8 @@ struct Point3D
 		return index;
 	}
 	[[nodiscard]] Vector3D toVector3D() const;
+	[[nodiscard]] bool isInFrontOf(const Point3D& coordinates, const Facing4& facing) const;
+	[[nodiscard]] Facing4 getFacingTwords(const Point3D& other) const;
 	void log() const
 	{
 		std::wcout << toString() << std::endl;
@@ -537,4 +531,5 @@ struct Cube
 	}
 	[[nodiscard]] Point3D getHighPoint() const { return {center.x + halfWidth, center.y + halfWidth, center.z + halfWidth}; }
 	[[nodiscard]] Point3D getLowPoint() const { return {center.x - halfWidth, center.y - halfWidth, center.z - halfWidth}; }
+	[[nodiscard]] bool isSomewhatInFrontOf(const Point3D& position, const Facing4& facing) const { return getHighPoint().isInFrontOf(position, facing) || getLowPoint().isInFrontOf(position, facing); }
 };

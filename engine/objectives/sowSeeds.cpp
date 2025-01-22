@@ -12,9 +12,9 @@
 
 struct DeserializationMemo;
 
-SowSeedsEvent::SowSeedsEvent(const Step& delay, Area& area, SowSeedsObjective& o, const ActorIndex& actor, const Step start) : 
+SowSeedsEvent::SowSeedsEvent(const Step& delay, Area& area, SowSeedsObjective& o, const ActorIndex& actor, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_objective(o)
-{ 
+{
 	m_actor.setIndex(actor, area.getActors().m_referenceData);
 }
 void SowSeedsEvent::execute(Simulation&, Area* area)
@@ -44,16 +44,16 @@ std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Area& area, const Acto
 {
 	return std::make_unique<SowSeedsObjective>(area);
 }
-SowSeedsObjective::SowSeedsObjective(Area& area) : 
-	Objective(Config::sowSeedsPriority), 
+SowSeedsObjective::SowSeedsObjective(Area& area) :
+	Objective(Config::sowSeedsPriority),
 	m_event(area.m_eventSchedule) { }
-SowSeedsObjective::SowSeedsObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) : 
-	Objective(data, deserializationMemo), 
+SowSeedsObjective::SowSeedsObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) :
+	Objective(data, deserializationMemo),
 	m_event(area.m_eventSchedule)
 {
 	if(data.contains("eventStart"))
 		m_event.schedule(Config::sowSeedsStepsDuration, area, *this, actor, data["eventStart"].get<Step>());
-	if(data.contains("block")) 
+	if(data.contains("block"))
 		m_block = data["block"].get<BlockIndex>();
 }
 Json SowSeedsObjective::toJson() const
@@ -65,7 +65,7 @@ Json SowSeedsObjective::toJson() const
 		data["eventStart"] = m_event.getStartStep();
 	return data;
 }
-BlockIndex SowSeedsObjective::getBlockToSowAt(Area& area, const BlockIndex& location, Facing facing, const ActorIndex& actor)
+BlockIndex SowSeedsObjective::getBlockToSowAt(Area& area, const BlockIndex& location, Facing4 facing, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFactionId(actor);

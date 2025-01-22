@@ -44,7 +44,7 @@ bool Actors::canReserve_hasReservationWith(const ActorIndex& index, Reservable& 
 {
 	return m_canReserve[index]->hasReservationWith(reservable);
 }
-bool Actors::canReserve_canReserveLocation(const ActorIndex& index, const BlockIndex& location, const Facing& facing) const
+bool Actors::canReserve_canReserveLocation(const ActorIndex& index, const BlockIndex& location, const Facing4& facing) const
 {
 	Blocks& blocks = m_area.getBlocks();
 	FactionId faction = m_faction[index];
@@ -58,7 +58,7 @@ bool Actors::canReserve_locationAtEndOfPathIsUnreserved(const ActorIndex& index,
 {
 	assert(!path.empty());
 	Blocks& blocks = m_area.getBlocks();
-	Facing facing;
+	Facing4 facing;
 	if(path.size() == 1)
 		facing = blocks.facingToSetWhenEnteringFrom(path.back(), m_location[index]);
 	else

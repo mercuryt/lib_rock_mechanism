@@ -28,7 +28,7 @@ WoodCuttingPathRequest::WoodCuttingPathRequest(const Json& data, Area& area, Des
 FindPathResult WoodCuttingPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	ActorIndex actorIndex = actor.getIndex(area.getActors().m_referenceData);
-	auto predicate = [this, &area, actorIndex](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	auto predicate = [this, &area, actorIndex](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
 	{
 		return {m_woodCuttingObjective.joinableProjectExistsAt(area, block, actorIndex), block};
 	};
@@ -94,8 +94,8 @@ void WoodCuttingObjective::execute(Area& area, const ActorIndex& actor)
 	{
 		Actors& actors = area.getActors();
 		WoodCuttingProject* project = nullptr;
-		std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block) 
-		{ 
+		std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block)
+		{
 			if(!getJoinableProjectAt(area, block, actor))
 				return false;
 			project = &area.m_hasWoodCuttingDesignations.getForFactionAndBlock(actors.getFactionId(actor), block);
@@ -125,17 +125,17 @@ void WoodCuttingObjective::delay(Area& area, const ActorIndex& actor)
 	m_project = nullptr;
 	area.getActors().project_unset(actor);
 }
-void WoodCuttingObjective::reset(Area& area, const ActorIndex& actor) 
-{ 
+void WoodCuttingObjective::reset(Area& area, const ActorIndex& actor)
+{
 	Actors& actors = area.getActors();
 	if(m_project)
 	{
 		ActorReference ref = area.getActors().getReference(actor);
 		assert(!m_project->getWorkers().contains(ref));
-		m_project = nullptr; 
+		m_project = nullptr;
 		area.getActors().project_unset(actor);
 	}
-	else 
+	else
 		assert(!actors.project_exists(actor));
 	actors.move_pathRequestMaybeCancel(actor);
 	actors.canReserve_clearAll(actor);

@@ -27,7 +27,7 @@ UniformPathRequest::UniformPathRequest(const Json& data, Area& area, Deserializa
 { }
 FindPathResult UniformPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
-	auto destinationCondition = [&area, this](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	auto destinationCondition = [&area, this](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
 	{
 		return {m_objective.blockContainsItem(area, block), block};
 	};
@@ -63,7 +63,7 @@ void UniformPathRequest::writeStep(Area& area, FindPathResult& result)
 			}
 		}
 	}
-	else 
+	else
 	{
 		if(result.useCurrentPosition)
 		{
@@ -93,12 +93,12 @@ Json UniformPathRequest::toJson() const
 // UniformObjective
 UniformObjective::UniformObjective(Area& area, const ActorIndex& actor) :
 	Objective(Config::equipPriority), m_elementsCopy(area.getActors().uniform_get(actor).elements)
-{ 
-	assert(area.getActors().uniform_exists(actor)); 
+{
+	assert(area.getActors().uniform_exists(actor));
 }
 UniformObjective::UniformObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo)
-{ 
+{
 	area.getActors().m_hasUniform[actor]->recordObjective(*this);
 }
 Json UniformObjective::toJson() const
@@ -126,7 +126,7 @@ void UniformObjective::execute(Area& area, const ActorIndex& actor)
 				execute(area, actor);
 			}
 		}
-	}		
+	}
 	else
 	{
 		std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block){ return blockContainsItem(area, block); };

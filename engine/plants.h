@@ -82,7 +82,7 @@ public:
 	void foliageGrowth(const PlantIndex& index);
 	void updateShape(const PlantIndex& index);
 	void setShape(const PlantIndex& index, const ShapeId& shape);
-	void setLocation(const PlantIndex& index, const BlockIndex& location, const Facing& facing);
+	void setLocation(const PlantIndex& index, const BlockIndex& location, const Facing4& facing);
 	void exit(const PlantIndex& index);
 	// Plants are able to do a more efficient range based sort becasue no references to them are ever stored.
 	// Portables are required to swap one at a time.

@@ -401,7 +401,7 @@ void Draw::blockFeaturesAndFluids(const BlockIndex& block)
 			else if(blockFeature.blockFeatureType == &BlockFeatureType::stairs)
 			{
 				static sf::Sprite stairs = getCenteredSprite("stairs");
-				Facing facing = rampOrStairsFacing(block);
+				Facing4 facing = rampOrStairsFacing(block);
 				stairs.setRotation(facing.get() * 90);
 				stairs.setOrigin(16,19);
 				spriteOnBlockCentered(block, stairs, color);
@@ -409,7 +409,7 @@ void Draw::blockFeaturesAndFluids(const BlockIndex& block)
 			else if(blockFeature.blockFeatureType == &BlockFeatureType::ramp)
 			{
 				static sf::Sprite ramp = getCenteredSprite("ramp");
-				Facing facing = rampOrStairsFacing(block);
+				Facing4 facing = rampOrStairsFacing(block);
 				ramp.setRotation(facing.get() * 90);
 				ramp.setOrigin(16,19);
 				spriteOnBlockCentered(block, ramp, color);
@@ -467,7 +467,7 @@ void Draw::blockFeaturesAndFluids(const BlockIndex& block)
 				const BlockFeature& blockFeature = *blocks.blockFeature_at(below, BlockFeatureType::stairs);
 				sf::Color* color = &displayData::materialColors[blockFeature.materialType];
 				static sf::Sprite stairs = getCenteredSprite("stairs");
-				Facing facing = rampOrStairsFacing(below);
+				Facing4 facing = rampOrStairsFacing(below);
 				stairs.setRotation(facing.get() * 90);
 				stairs.setOrigin(16,19);
 				stairs.setTextureRect({0,0,32,16});
@@ -478,7 +478,7 @@ void Draw::blockFeaturesAndFluids(const BlockIndex& block)
 				const BlockFeature& blockFeature = *blocks.blockFeature_at(below, BlockFeatureType::ramp);
 				sf::Color* color = &displayData::materialColors[blockFeature.materialType];
 				static sf::Sprite ramp = getCenteredSprite("ramp");
-				Facing facing = rampOrStairsFacing(below);
+				Facing4 facing = rampOrStairsFacing(below);
 				ramp.setRotation(facing.get() * 90);
 				ramp.setOrigin(16,19);
 				ramp.setTextureRect({0,0,32,16});
@@ -925,12 +925,12 @@ void Draw::multiTileBorder(const OccupiedBlocksForHasShape& blocksOccpuied, sf::
 		for(BlockIndex& adjacent : blocks.getAdjacentOnSameZLevelOnly(block))
 			if(!blocksOccpuied.contains(adjacent))
 			{
-				Facing facing = blocks.facingToSetWhenEnteringFrom(adjacent, block);
+				Facing4 facing = blocks.facingToSetWhenEnteringFrom(adjacent, block);
 				borderSegmentOnBlock(block, facing, color, thickness);
 			}
 	}
 }
-void Draw::borderSegmentOnBlock(const BlockIndex& block, const Facing& facing, sf::Color color, float thickness)
+void Draw::borderSegmentOnBlock(const BlockIndex& block, const Facing4& facing, sf::Color color, float thickness)
 {
 	sf::RectangleShape square(sf::Vector2f(m_window.m_scale, thickness));
 	square.setFillColor(color);
@@ -969,7 +969,7 @@ void Draw::borderSegmentOnBlock(const BlockIndex& block, const Facing& facing, s
 	}
 	m_window.getRenderWindow().draw(square);
 }
-Facing Draw::rampOrStairsFacing(const BlockIndex& block) const
+Facing4 Draw::rampOrStairsFacing(const BlockIndex& block) const
 {
 	Blocks& blocks = m_window.m_area->getBlocks();
 	static auto canConnectToAbove = [&](const BlockIndex& block) -> bool{
@@ -978,8 +978,8 @@ Facing Draw::rampOrStairsFacing(const BlockIndex& block) const
 	};
 	const BlockIndex& above = blocks.getBlockAbove(block);
 	if(above.empty())
-		return Facing::create(0);
-	Facing backup = Facing::create(0);
+		return Facing4::North;
+	Facing4 backup = Facing4::North;
 	const BlockIndex& north = blocks.getBlockNorth(block);
 	const BlockIndex& south = blocks.getBlockSouth(block);
 	if(north.exists() && canConnectToAbove(north))
@@ -988,16 +988,16 @@ Facing Draw::rampOrStairsFacing(const BlockIndex& block) const
 			!blocks.blockFeature_contains(south, BlockFeatureType::stairs) &&
 			!blocks.blockFeature_contains(south, BlockFeatureType::stairs)
 		)
-			return Facing::create(0);
+			return Facing4::North;
 	}
 	const BlockIndex& east = blocks.getBlockEast(block);
 	const BlockIndex& west = blocks.getBlockWest(block);
 	if(east.exists() && canConnectToAbove(east))
 	{
 		if(!blocks.solid_is(west) && blocks.shape_canStandIn(west))
-			return Facing::create(1);
+			return Facing4::create(1);
 		else
-			backup = Facing::create(1);
+			backup = Facing4::create(1);
 	}
 	if(south.exists() && canConnectToAbove(south))
 	{
@@ -1005,16 +1005,16 @@ Facing Draw::rampOrStairsFacing(const BlockIndex& block) const
 			!blocks.blockFeature_contains(north, BlockFeatureType::stairs) &&
 			!blocks.blockFeature_contains(north, BlockFeatureType::stairs)
 		)
-			return Facing::create(2);
+			return Facing4::create(2);
 		else
-			backup = Facing::create(2);
+			backup = Facing4::create(2);
 	}
 	if(west.exists() && canConnectToAbove(west))
 	{
 		if(!blocks.solid_is(east) && blocks.shape_canStandIn(block))
-			return Facing::create(3);
+			return Facing4::West;
 		else
-			backup = Facing::create(3);
+			backup = Facing4::West;
 	}
 	return backup;
 }

@@ -34,7 +34,7 @@ FindPathResult SleepPathRequest::readStep(Area& area, const TerrainFacade& terra
 		m_maxDesireCandidate = area.getActors().getLocation(actorIndex);
 	if(m_maxDesireCandidate.empty())
 	{
-		auto condition = [this, &area, actorIndex](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+		auto condition = [this, &area, actorIndex](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
 		{
 			uint32_t desire = m_sleepObjective.desireToSleepAt(area, block, actorIndex);
 			if(desire == 3)
@@ -43,9 +43,9 @@ FindPathResult SleepPathRequest::readStep(Area& area, const TerrainFacade& terra
 				return {true, block};
 			}
 			else if(m_indoorCandidate.empty() && desire == 2)
-				m_indoorCandidate = block;	
+				m_indoorCandidate = block;
 			else if(m_outdoorCandidate.empty() && desire == 1)
-				m_outdoorCandidate = block;	
+				m_outdoorCandidate = block;
 			return {false, block};
 		};
 		constexpr bool anyOccupiedBlock = false;

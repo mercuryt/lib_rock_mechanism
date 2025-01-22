@@ -7,7 +7,7 @@
 #include "terrainFacade.h"
 
 // Project.
-InstallItemProject::InstallItemProject(Area& area, const ItemReference& i, const BlockIndex& l, const Facing& facing, const FactionId& faction) :
+InstallItemProject::InstallItemProject(Area& area, const ItemReference& i, const BlockIndex& l, const Facing4& facing, const FactionId& faction) :
 	Project(faction, area, l, Quantity::create(1)), m_item(i), m_facing(facing) { }
 void InstallItemProject::onComplete()
 {
@@ -23,7 +23,7 @@ void InstallItemProject::onComplete()
 		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);
 }
 // HasDesignations.
-void HasInstallItemDesignationsForFaction::add(Area& area, const BlockIndex& block, const ItemIndex& item, const Facing& facing, const FactionId& faction)
+void HasInstallItemDesignationsForFaction::add(Area& area, const BlockIndex& block, const ItemIndex& item, const Facing4& facing, const FactionId& faction)
 {
 	assert(!m_designations.contains(block));
 	m_designations.try_emplace(block, area, area.getItems().getReference(item), block, facing, faction);

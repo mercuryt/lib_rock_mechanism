@@ -27,8 +27,8 @@ public:
 	void makePathRequest(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::wstring name() const override { return L"drink"; }
-	[[nodiscard]] bool canDrinkAt(Area& area, const BlockIndex& block, const Facing& facing, const ActorIndex& actor) const;
-	[[nodiscard]] BlockIndex getAdjacentBlockToDrinkAt(Area& area, const BlockIndex& block, const Facing& facing, const ActorIndex& actor) const;
+	[[nodiscard]] bool canDrinkAt(Area& area, const BlockIndex& block, const Facing4& facing, const ActorIndex& actor) const;
+	[[nodiscard]] BlockIndex getAdjacentBlockToDrinkAt(Area& area, const BlockIndex& block, const Facing4& facing, const ActorIndex& actor) const;
 	[[nodiscard]] bool canDrinkItemAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
 	[[nodiscard]] ItemIndex getItemToDrinkFromAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
 	[[nodiscard]] bool containsSomethingDrinkable(Area& area, const BlockIndex& block, const ActorIndex& actor) const;

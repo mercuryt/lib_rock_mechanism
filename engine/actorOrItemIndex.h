@@ -31,7 +31,7 @@ public:
 	static ActorOrItemIndex createForItem(const ItemIndex& item) { return ActorOrItemIndex(item, false); }
 	void clear() { m_index.clear(); m_isActor = false; }
 	void updateIndex(const HasShapeIndex& index) { m_index = index; }
-	ActorOrItemIndex setLocationAndFacing(Area& area, const BlockIndex& location, const Facing& facing) const;
+	ActorOrItemIndex setLocationAndFacing(Area& area, const BlockIndex& location, const Facing4& facing) const;
 	void exit(Area& area);
 	void followActor(Area& area, const ActorIndex& actor) const;
 	void followItem(Area& area, const ItemIndex& item) const;
@@ -69,7 +69,7 @@ public:
 	[[nodiscard]] Quantity getQuantity(const Area& area) const;
 	[[nodiscard]] Mass getSingleUnitMass(const Area& area) const;
 	[[nodiscard]] Volume getVolume(const Area& area) const;
-	[[nodiscard]] Facing getFacing(const Area& area) const;
+	[[nodiscard]] Facing4 getFacing(const Area& area) const;
 	[[nodiscard]] bool isGeneric(const Area& area) const;
 	[[nodiscard]] std::strong_ordering operator<=>(const ActorOrItemIndex& other) const;
 	[[nodiscard]] bool operator==(const ActorOrItemIndex& other) const = default;

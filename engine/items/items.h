@@ -24,7 +24,7 @@ struct ItemParamaters final
 	Quantity quantity = Quantity::create(1);
 	Quality quality = Quality::null();
 	Percent percentWear = Percent::null();
-	Facing facing = Facing::create(0);
+	Facing4 facing = Facing4::North;
 	bool isStatic = true;
 	bool installed = false;
 	std::wstring name = L"";
@@ -129,14 +129,14 @@ public:
 	// Returns index in case of nongeneric or generics with a type not present at the location.
 	// If a generic of the same type is found return it instead.
 	ItemIndex setLocation(const ItemIndex& index, const BlockIndex& block);
-	ItemIndex setLocationAndFacing(const ItemIndex& index, const BlockIndex& block, const Facing facing);
+	ItemIndex setLocationAndFacing(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
 	void exit(const ItemIndex& index);
 	void setShape(const ItemIndex& index, const ShapeId shape);
 	void pierced(const ItemIndex& index, const Volume volume);
 	void setTemperature(const ItemIndex& index, const Temperature& temperature);
 	void addQuantity(const ItemIndex& index, const Quantity& delta);
 	void removeQuantity(const ItemIndex& index, const Quantity& delta, CanReserve* canReserve = nullptr);
-	void install(const ItemIndex& index, const BlockIndex& block, const Facing& facing, const FactionId& faction);
+	void install(const ItemIndex& index, const BlockIndex& block, const Facing4& facing, const FactionId& faction);
 	// Returns the index of the item which was passed in as 'index', it may have changed with 'item' being destroyed
 	ItemIndex merge(const ItemIndex& index, const ItemIndex& item);
 	void setOnSurface(const ItemIndex& index);

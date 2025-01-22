@@ -1,6 +1,8 @@
 #include "actors.h"
+#include "area.h"
+#include "blocks/blocks.h"
 #include "index.h"
-BlockIndices Actors::lineLead_getPath(const ActorIndex& index) const
+const BlockIndices& Actors::lineLead_getPath(const ActorIndex& index) const
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
@@ -48,6 +50,50 @@ std::vector<ActorOrItemIndex> Actors::lineLead_getAll(const ActorIndex& index) c
 		current = current.getFollower(m_area);
 	}
 	return output;
+}
+bool Actors::lineLead_followersCanMoveEver(const ActorIndex& index) const
+{
+	assert(isLeading(index));
+	assert(!isFollowing(index));
+	const Blocks& blocks = m_area.getBlocks();
+	ActorOrItemIndex follower = getFollower(index);
+	auto& path = lineLead_getPath(index);
+	while(follower.exists())
+	{
+		const BlockIndex& location = follower.getLocation(m_area);
+		auto found = path.find(location);
+		assert(found != path.end());
+		assert(found != path.begin());
+		const BlockIndex& next = *(--found);
+		if(!blocks.shape_anythingCanEnterEver(next))
+			return false;
+		const Facing4& facing = blocks.facingToSetWhenEnteringFrom(next, location);
+		if(!blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(next, follower.getShape(m_area), follower.getMoveType(m_area), facing))
+			return false;
+		follower = follower.getFollower(m_area);
+	}
+	return true;
+}
+bool Actors::lineLead_followersCanMoveCurrently(const ActorIndex& index) const
+{
+	assert(isLeading(index));
+	assert(!isFollowing(index));
+	const Blocks& blocks = m_area.getBlocks();
+	ActorOrItemIndex follower = getFollower(index);
+	auto& path = lineLead_getPath(index);
+	const auto& occupied = lineLead_getOccupiedBlocks(index);
+	while(follower.exists())
+	{
+		const BlockIndex& location = follower.getLocation(m_area);
+		auto found = path.find(location);
+		assert(found != path.end());
+		assert(found != path.begin());
+		const BlockIndex& next = *(--found);
+		if(!blocks.shape_canEnterCurrentlyFrom(next, follower.getShape(m_area), location, occupied))
+			return false;
+		follower = follower.getFollower(m_area);
+	}
+	return true;
 }
 OccupiedBlocksForHasShape Actors::lineLead_getOccupiedBlocks(const ActorIndex& index) const
 {
@@ -100,4 +146,24 @@ void Actors::lineLead_appendToPath(const ActorIndex& index, const BlockIndex& bl
 	if(m_leadFollowPath[index].empty())
 		m_leadFollowPath[index].add(m_location[index]);
 	m_leadFollowPath[index].add(block);
+}
+void Actors::lineLead_moveFollowers(const ActorIndex& index)
+{
+	//TODO: This could be done better by walking the followers and path simultaniously.
+	assert(isLeading(index));
+	assert(!isFollowing(index));
+	const Blocks& blocks = m_area.getBlocks();
+	ActorOrItemIndex follower = getFollower(index);
+	auto& path = lineLead_getPath(index);
+	const auto& occupied = lineLead_getOccupiedBlocks(index);
+	while(follower.exists())
+	{
+		const BlockIndex& location = follower.getLocation(m_area);
+		auto found = path.find(location);
+		assert(found != path.end());
+		assert(found != path.begin());
+		const BlockIndex& next = *(--found);
+		follower.setLocationAndFacing(m_area, next, blocks.facingToSetWhenEnteringFrom(next, location));
+		follower = follower.getFollower(m_area);
+	}
 }

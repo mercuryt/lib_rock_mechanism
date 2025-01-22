@@ -27,7 +27,7 @@ FindPathResult DrinkPathRequest::readStep(Area& area, const TerrainFacade& terra
 	const ActorIndex& actorIndex = actor.getIndex(actors.m_referenceData);
 	if(m_drinkObjective.m_noDrinkFound)
 		return terrainFacade.findPathToEdge(memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_drinkObjective.m_detour);
-	auto destinationCondition = [this, &area, actorIndex](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	auto destinationCondition = [this, &area, actorIndex](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
 	{
 		return {m_drinkObjective.containsSomethingDrinkable(area, block, actorIndex), block};
 	};
@@ -76,7 +76,7 @@ DrinkObjective::DrinkObjective(Area& area) :
 	Objective(Config::drinkPriority), m_drinkEvent(area.m_eventSchedule) { }
 DrinkObjective::DrinkObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const ActorIndex& actor) :
 	Objective(data, deserializationMemo), m_drinkEvent(area.m_eventSchedule), m_noDrinkFound(data["noDrinkFound"].get<bool>())
-{ 
+{
 	if(data.contains("eventStart"))
 		m_drinkEvent.schedule(area, Config::stepsToDrink, *this, actor, data["eventStart"].get<Step>());
 }
@@ -111,15 +111,15 @@ void DrinkObjective::execute(Area& area, const ActorIndex& actor)
 	else
 		m_drinkEvent.schedule(area, Config::stepsToDrink, *this, actor);
 }
-void DrinkObjective::cancel(Area& area, const ActorIndex& actor) 
-{ 
+void DrinkObjective::cancel(Area& area, const ActorIndex& actor)
+{
 	Actors& actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
 	m_drinkEvent.maybeUnschedule();
 	actors.m_mustDrink[actor]->m_objective = nullptr;
 }
-void DrinkObjective::delay(Area& area, const ActorIndex& actor) 
-{ 
+void DrinkObjective::delay(Area& area, const ActorIndex& actor)
+{
 	area.getActors().move_pathRequestMaybeCancel(actor);
 	m_drinkEvent.maybeUnschedule();
 }
@@ -132,11 +132,11 @@ void DrinkObjective::makePathRequest(Area& area, const ActorIndex& actor)
 {
 	area.getActors().move_pathRequestRecord(actor, std::make_unique<DrinkPathRequest>(area, *this, actor));
 }
-bool DrinkObjective::canDrinkAt(Area& area, const BlockIndex& block, const Facing& facing, const ActorIndex& actor) const
+bool DrinkObjective::canDrinkAt(Area& area, const BlockIndex& block, const Facing4& facing, const ActorIndex& actor) const
 {
 	return getAdjacentBlockToDrinkAt(area, block, facing, actor).exists();
 }
-BlockIndex DrinkObjective::getAdjacentBlockToDrinkAt(Area& area, const BlockIndex& location, const Facing& facing, const ActorIndex& actor) const
+BlockIndex DrinkObjective::getAdjacentBlockToDrinkAt(Area& area, const BlockIndex& location, const Facing4& facing, const ActorIndex& actor) const
 {
 	std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block) { return containsSomethingDrinkable(area, block, actor); };
 	return area.getActors().getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(actor, location, facing, predicate);

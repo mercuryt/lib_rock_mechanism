@@ -164,10 +164,10 @@ ItemIndex Items::setLocation(const ItemIndex& index, const BlockIndex& block)
 	assert(index.exists());
 	assert(m_location[index].exists());
 	assert(block.exists());
-	Facing facing = m_area.getBlocks().facingToSetWhenEnteringFrom(block, m_location[index]);
+	Facing4 facing = m_area.getBlocks().facingToSetWhenEnteringFrom(block, m_location[index]);
 	return setLocationAndFacing(index, block, facing);
 }
-ItemIndex Items::setLocationAndFacing(const ItemIndex& index, const BlockIndex& block, Facing facing)
+ItemIndex Items::setLocationAndFacing(const ItemIndex& index, const BlockIndex& block, Facing4 facing)
 {
 	assert(index.exists());
 	assert(block.exists());
@@ -218,7 +218,7 @@ void Items::setTemperature(const ItemIndex&, const Temperature&)
 void Items::addQuantity(const ItemIndex& index, const Quantity& delta)
 {
 	BlockIndex location = m_location[index];
-	Facing facing = m_facing[index];
+	Facing4 facing = m_facing[index];
 	// TODO: Update in place rather then exit, update, enter.
 	exit(index);
 	m_quantity[index] += delta;
@@ -238,7 +238,7 @@ void Items::removeQuantity(const ItemIndex& index, const Quantity& delta, CanRes
 		assert(delta < m_quantity[index]);
 		// TODO: Update in place rather then exit, update, enter.
 		BlockIndex location = m_location[index];
-		Facing facing = m_facing[index];
+		Facing4 facing = m_facing[index];
 		exit(index);
 		m_quantity[index] -= delta;
 		setLocationAndFacing(index, location, facing);
@@ -246,7 +246,7 @@ void Items::removeQuantity(const ItemIndex& index, const Quantity& delta, CanRes
 			m_reservables[index]->setMaxReservations(m_quantity[index]);
 	}
 }
-void Items::install(const ItemIndex& index, const BlockIndex& block, const Facing& facing, const FactionId& faction)
+void Items::install(const ItemIndex& index, const BlockIndex& block, const Facing4& facing, const FactionId& faction)
 {
 	setLocationAndFacing(index, block, facing);
 	m_installed.set(index);
@@ -266,7 +266,7 @@ ItemIndex Items::merge(const ItemIndex& index, const ItemIndex& other)
 	if(m_reservables[other] != nullptr)
 		reservable_merge(index, *m_reservables[other]);
 	BlockIndex location = m_location[index];
-	Facing facing = m_facing[index];
+	Facing4 facing = m_facing[index];
 	// Exit, add quantity, and then set location to update CollisionVolume with new quantity.
 	exit(index);
 	m_quantity[index] += m_quantity[other];

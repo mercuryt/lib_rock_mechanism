@@ -48,7 +48,7 @@ TEST_CASE("woodcutting")
 	Project* project = nullptr;
 	SUBCASE("axe on ground")
 	{
-		items.setLocationAndFacing(axe, blocks.getIndex_i(3,8,1), Facing::create(0));
+		items.setLocationAndFacing(axe, blocks.getIndex_i(3,8,1), Facing4::North);
 		// One step to find the designation, activate the project, and reserve the axe.
 		simulation.doStep();
 		REQUIRE(actors.project_exists(dwarf));

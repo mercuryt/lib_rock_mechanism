@@ -16,9 +16,9 @@
 #include "../terrainFacade.hpp"
 
 #include <memory>
-GivePlantsFluidEvent::GivePlantsFluidEvent(const Step& delay, Area& area, GivePlantsFluidObjective& gpfo, const ActorIndex& actor, const Step start) : 
-	ScheduledEvent(area.m_simulation, delay, start), m_objective(gpfo) 
-{ 
+GivePlantsFluidEvent::GivePlantsFluidEvent(const Step& delay, Area& area, GivePlantsFluidObjective& gpfo, const ActorIndex& actor, const Step start) :
+	ScheduledEvent(area.m_simulation, delay, start), m_objective(gpfo)
+{
 	m_actor.setIndex(actor, area.getActors().m_referenceData);
 }
 void GivePlantsFluidEvent::execute(Simulation&, Area* area)
@@ -82,7 +82,7 @@ FindPathResult GivePlantsFluidPathRequest::readStep(Area& area, const TerrainFac
 	else
 	{
 		assert(!m_objective.m_fluidHaulingItem.exists());
-		auto destinationCondition = [this, &area, actorIndex](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+		auto destinationCondition = [this, &area, actorIndex](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
 		{
 			return {m_objective.canGetFluidHaulingItemAt(area, block, actorIndex), block};
 		};
@@ -139,9 +139,9 @@ std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Area& area, con
 	return std::make_unique<GivePlantsFluidObjective>(area);
 }
 // Objective
-GivePlantsFluidObjective::GivePlantsFluidObjective(Area& area) : 
+GivePlantsFluidObjective::GivePlantsFluidObjective(Area& area) :
 	Objective(Config::givePlantsFluidPriority), m_event(area.m_eventSchedule) { }
-GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) : 
+GivePlantsFluidObjective::GivePlantsFluidObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo),
 	m_plantLocation(data.contains("plantLocation") ? data["plantLocation"].get<BlockIndex>() : BlockIndex::null()),
 	m_event(area.m_eventSchedule)
@@ -320,7 +320,7 @@ bool GivePlantsFluidObjective::canFillAt(Area& area, const BlockIndex& block) co
 	Blocks& blocks = area.getBlocks();
 	Plants& plants = area.getPlants();
 	FluidTypeId fluidType = PlantSpecies::getFluidType(plants.getSpecies(blocks.plant_get(m_plantLocation)));
-	return blocks.fluid_volumeOfTypeContains(block, fluidType) != 0 || 
+	return blocks.fluid_volumeOfTypeContains(block, fluidType) != 0 ||
 		const_cast<GivePlantsFluidObjective*>(this)->getItemToFillFromAt(area, block).exists();
 }
 ItemIndex GivePlantsFluidObjective::getItemToFillFromAt(Area& area, const BlockIndex& block) const

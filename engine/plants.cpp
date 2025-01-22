@@ -77,7 +77,7 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 	m_volumeFluidRequested[index] = CollisionVolume::create(0);
 	auto& blocks = m_area.getBlocks();
 	assert(blocks.plant_canGrowHereEver(location, species));
-	setLocation(index, location, Facing::create(0));
+	setLocation(index, location, Facing4::North);
 	uint8_t wildGrowth = PlantSpecies::wildGrowthForPercentGrown(species, getPercentGrown(index));
 	if(wildGrowth)
 		doWildGrowth(index, wildGrowth);
@@ -412,18 +412,18 @@ void Plants::updateShape(const PlantIndex& index)
 		doWildGrowth(index);
 	}
 }
-void Plants::setLocation(const PlantIndex& index, const BlockIndex& location, const Facing&)
+void Plants::setLocation(const PlantIndex& index, const BlockIndex& location, const Facing4&)
 {
 	assert(m_location[index].empty());
 	Blocks& blocks = m_area.getBlocks();
 	auto& occupied = m_blocks[index];
-	for(BlockIndex block : Shape::getBlocksOccupiedAt(m_shape[index], blocks, location, Facing::create(0)))
+	for(BlockIndex block : Shape::getBlocksOccupiedAt(m_shape[index], blocks, location, Facing4::North))
 	{
 		blocks.plant_set(block, index);
 		occupied.add(block);
 	}
 	m_location[index] = location;
-	m_facing[index] = Facing::create(0);
+	m_facing[index] = Facing4::North;
 }
 void Plants::exit(const PlantIndex& index)
 {
@@ -473,7 +473,7 @@ void Plants::setShape(const PlantIndex& index, const ShapeId& shape)
 	BlockIndex location = getLocation(index);
 	exit(index);
 	m_shape[index] = shape;
-	setLocation(index, location, Facing::create(0));
+	setLocation(index, location, Facing4::North);
 }
 bool Plants::blockIsFull(const BlockIndex& block)
 {

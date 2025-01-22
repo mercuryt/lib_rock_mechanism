@@ -74,7 +74,7 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep(Simulation&, Area*)
 		if(projectWorker.haulSubproject != nullptr)
 			continue;
 		ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-		auto destinationConditon = [this, actorIndex](const BlockIndex& block, const Facing&) ->std::pair<bool, BlockIndex>
+		auto destinationConditon = [this, actorIndex](const BlockIndex& block, const Facing4&) ->std::pair<bool, BlockIndex>
 		{
 			if(blockContainsDesiredItem(block, actorIndex))
 				return std::make_pair(true, block);
@@ -252,7 +252,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 			};
 			// Verfy the worker can path to the required materials. Cumulative for all candidates in this step but reset if not satisfied.
 			// capture by reference is used here because the pathing is being done immideatly instead of batched.
-			auto destinationCondition = [&](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+			auto destinationCondition = [&](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
 			{
 				auto& blocks = m_project.m_area.getBlocks();
 				for(ItemIndex item : blocks.item_getAll(block))
@@ -263,7 +263,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 						if(projectRequirementCounts.required == projectRequirementCounts.reserved)
 							continue;
 						if(items.reservable_isFullyReserved(item, m_project.m_faction))
-							continue;	
+							continue;
 						if(!itemQuery.query(m_project.m_area, item))
 							continue;
 						if(recordedShapes.contains(polymorphicItem))
@@ -281,7 +281,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 						if(projectRequirementCounts.required == projectRequirementCounts.reserved)
 							continue;
 						if(actors.reservable_isFullyReserved(actor, m_project.m_faction))
-							continue;	
+							continue;
 						if(!actorQuery.query(m_project.m_area, actor))
 							continue;
 						if(recordedShapes.contains(polymorphicActor))
@@ -742,7 +742,7 @@ void Project::commandWorker(const ActorIndex& actor)
 					{
 						for(auto& pair : m_reservedEquipment[actorRef])
 						{
-							++pair.first->delivered;	
+							++pair.first->delivered;
 							assert(pair.first->delivered <= pair.first->reserved);
 						}
 						if(deliveriesComplete())

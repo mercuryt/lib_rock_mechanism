@@ -98,7 +98,7 @@ public:
 	[[nodiscard]] Point3D getCoordinates(BlockIndex index) const;
 	Point3D_fractional getCoordinatesFractional(const BlockIndex& index) const;
 	[[nodiscard]] DistanceInBlocks getZ(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndex getAtFacing(const BlockIndex& index, const Facing& facing) const;
+	[[nodiscard]] BlockIndex getAtFacing(const BlockIndex& index, const Facing6& facing) const;
 	[[nodiscard]] BlockIndex getCenterAtGroundLevel() const;
 	// TODO: Calculate on demand from offset vector?
 	[[nodiscard]] const std::array<BlockIndex, 6>& getDirectlyAdjacent(const BlockIndex& index) const;
@@ -137,8 +137,7 @@ public:
 	[[nodiscard]] bool canSeeThrough(const BlockIndex& index) const;
 	[[nodiscard]] bool canSeeThroughFloor(const BlockIndex& index) const;
 	[[nodiscard]] bool canSeeThroughFrom(const BlockIndex& index, const BlockIndex& other) const;
-	[[nodiscard]] Facing facingToSetWhenEnteringFrom(const BlockIndex& index, const BlockIndex& other) const;
-	[[nodiscard]] Facing facingToSetWhenEnteringFromIncludingDiagonal(const BlockIndex& index, const BlockIndex& other, const Facing inital = Facing::create(0)) const;
+	[[nodiscard]] Facing4 facingToSetWhenEnteringFrom(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] bool isSupport(const BlockIndex& index) const;
 	[[nodiscard]] bool isOutdoors(const BlockIndex& index) const;
 	[[nodiscard]] bool isExposedToSky(const BlockIndex& index) const;
@@ -205,8 +204,8 @@ public:
 	}
 	[[nodiscard]] BlockIndices collectAdjacentsInRange(const BlockIndex& index, const DistanceInBlocks& range);
 	static inline constexpr std::array<std::array<int8_t, 3>, 6> offsetsListDirectlyAdjacent{{
-	//	below		north		west		south		east		above
-		{0,0,-1},	{0,-1,0},	{-1,0,0},	{0,1,0},	{1,0,0},	{0,0,1}
+	//	below		north		east		south		west		above
+		{0,0,-1},	{0,-1,0},	{1,0,0},	{0,1,0},	{-1,0,0},	{0,0,1}
 	}};
 	static inline constexpr std::array<std::array<int8_t, 3>, 26> offsetsListAllAdjacent{{
 		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
@@ -367,24 +366,24 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	void shape_removeDynamicVolume(const BlockIndex& index, const CollisionVolume& volume);
 	[[nodiscard]] bool shape_anythingCanEnterEver(const BlockIndex& index) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverFrom(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& block) const;
-	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing& facing) const;
+	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing4& facing) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType) const;
 	// CanEnterCurrently methods which are not prefixed with static are to be used only for dynamic shapes.
-	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing& facing, const OccupiedBlocksForHasShape& occupied) const;
-	[[nodiscard]] Facing shape_canEnterCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing4& facing, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] Facing4 shape_canEnterCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] bool shape_canEnterCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] bool shape_canEnterCurrentlyFrom(const BlockIndex& index, const ShapeId& shape, const BlockIndex& other, const OccupiedBlocksForHasShape& occupied) const;
-	[[nodiscard]] bool shape_canEnterCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing& facing, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] bool shape_canEnterCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing4& facing, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] bool shape_moveTypeCanEnter(const BlockIndex& index, const MoveTypeId& moveType) const;
 	[[nodiscard]] bool shape_moveTypeCanEnterFrom(const BlockIndex& index, const MoveTypeId& moveType, const BlockIndex& from) const;
 	[[nodiscard]] bool shape_moveTypeCanBreath(const BlockIndex& index, const MoveTypeId& moveType) const;
 	// Static shapes are items or actors who are laying on the ground immobile.
 	// They do not collide with dynamic shapes and have their own volume data.
-	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithFacing(const BlockIndex& index, const ShapeId& Shape, const Facing& facing, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithFacing(const BlockIndex& index, const ShapeId& Shape, const Facing4& facing, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const;
-	[[nodiscard]] std::pair<bool, Facing> shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const;
-	[[nodiscard]] bool shape_staticShapeCanEnterWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing& facing, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] std::pair<bool, Facing4> shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] bool shape_staticShapeCanEnterWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing4& facing, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] bool shape_staticShapeCanEnterWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] MoveCost shape_moveCostFrom(const BlockIndex& index, const MoveTypeId& moveType, const BlockIndex& from) const;
 	[[nodiscard]] bool shape_canStandIn(const BlockIndex& index) const;
@@ -427,6 +426,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	const Temperature& temperature_getAmbient(const BlockIndex& index) const;
 	Temperature temperature_getDailyAverageAmbient(const BlockIndex& index) const;
 	Temperature temperature_get(const BlockIndex& index) const;
+	[[nodiscard]] std::wstring toString(const BlockIndex& index) const;
 	Blocks(Blocks&) = delete;
 	Blocks(Blocks&&) = delete;
 };

@@ -22,7 +22,7 @@ class HasShapes
 protected:
 	DataVector<ShapeId, Index> m_shape;
 	DataVector<BlockIndex, Index> m_location;
-	DataVector<Facing, Index> m_facing;
+	DataVector<Facing4, Index> m_facing;
 	DataVector<FactionId, Index> m_faction;
 	DataVector<OccupiedBlocksForHasShape, Index> m_blocks;
 	DataBitSet<Index> m_static;
@@ -45,7 +45,7 @@ public:
 	[[nodiscard]] ShapeId getShape(const Index& index) const { return m_shape[index]; }
 	[[nodiscard]] BlockIndex getLocation(const Index& index) const { return m_location[index]; }
 	[[nodiscard]] bool hasLocation(const Index& index) const { return getLocation(index).exists(); }
-	[[nodiscard]] Facing getFacing(const Index& index) const { return m_facing[index]; }
+	[[nodiscard]] Facing4 getFacing(const Index& index) const { return m_facing[index]; }
 	[[nodiscard]] const auto& getBlocks(const Index& index) const { return m_blocks[index]; }
 	[[nodiscard]] FactionId getFactionId(const Index& index) const { return m_faction[index]; }
 	[[nodiscard]] FactionId getFaction(const Index& index) const;
@@ -55,33 +55,33 @@ public:
 	[[nodiscard]] bool isAdjacentToAny(const Index& index, const BlockIndices& block) const;
 	[[nodiscard]] bool predicateForAnyOccupiedBlock(const Index& index, std::function<bool(const BlockIndex&)> predicate) const;
 	[[nodiscard]] bool predicateForAnyAdjacentBlock(const Index& index, std::function<bool(const BlockIndex&)> predicate) const;
-	[[nodiscard]] bool predicateForAnyOccupiedBlockAtLocationAndFacing(const Index& index, std::function<bool(const BlockIndex&)> predicate, const BlockIndex& location, const Facing& facing) const;
+	[[nodiscard]] bool predicateForAnyOccupiedBlockAtLocationAndFacing(const Index& index, std::function<bool(const BlockIndex&)> predicate, const BlockIndex& location, const Facing4& facing) const;
 	[[nodiscard]] BlockIndices getAdjacentBlocks(const Index& index) const;
 	[[nodiscard]] BlockIndices getOccupiedAndAdjacentBlocks(const Index& index) const;
 	[[nodiscard]] ItemIndices getAdjacentItems(const Index& index) const;
 	[[nodiscard]] ActorIndices getAdjacentActors(const Index& index) const;
-	[[nodiscard]] BlockIndices getAdjacentBlocksAtLocationWithFacing(const Index& index, const BlockIndex& block, const Facing& facing) const;
+	[[nodiscard]] BlockIndices getAdjacentBlocksAtLocationWithFacing(const Index& index, const BlockIndex& block, const Facing4& facing) const;
 	// TODO: return OccuipedBlocksForHasShape
-	[[nodiscard]] BlockIndices getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const Index& index, const BlockIndex& location, const Facing& facing) const;
-	[[nodiscard]] bool allBlocksAtLocationAndFacingAreReservable(const Index& index, const BlockIndex& location, const Facing& facing, const FactionId& faction) const;
+	[[nodiscard]] BlockIndices getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const Index& index, const BlockIndex& location, const Facing4& facing) const;
+	[[nodiscard]] bool allBlocksAtLocationAndFacingAreReservable(const Index& index, const BlockIndex& location, const Facing4& facing, const FactionId& faction) const;
 	[[nodiscard]] bool allOccupiedBlocksAreReservable(const Index& index, const FactionId& faction) const;
 	[[nodiscard]] bool isAdjacentToActor(const Index& index, const ActorIndex& actor) const;
 	[[nodiscard]] bool isAdjacentToItem(const Index& index, const ItemIndex& actor) const;
 	[[nodiscard]] bool isAdjacentToPlant(const Index& index, const PlantIndex& plant) const;
-	[[nodiscard]] bool isAdjacentToActorAt(const Index& index, const BlockIndex& location, const Facing& facing, const ActorIndex& actor) const;
-	[[nodiscard]] bool isAdjacentToItemAt(const Index& index, const BlockIndex& location, const Facing& facing, const ItemIndex& item) const;
-	[[nodiscard]] bool isAdjacentToPlantAt(const Index& index, const BlockIndex& location, const Facing& facing, const PlantIndex& plant) const;
-	[[nodiscard]] bool isOnEdgeAt(const Index& index, const BlockIndex& location, const Facing& facing) const;
+	[[nodiscard]] bool isAdjacentToActorAt(const Index& index, const BlockIndex& location, const Facing4& facing, const ActorIndex& actor) const;
+	[[nodiscard]] bool isAdjacentToItemAt(const Index& index, const BlockIndex& location, const Facing4& facing, const ItemIndex& item) const;
+	[[nodiscard]] bool isAdjacentToPlantAt(const Index& index, const BlockIndex& location, const Facing4& facing, const PlantIndex& plant) const;
+	[[nodiscard]] bool isOnEdgeAt(const Index& index, const BlockIndex& location, const Facing4& facing) const;
 	[[nodiscard]] bool isOnEdge(const Index& index) const;
 	[[nodiscard]] DistanceInBlocks distanceToActor(const Index& index, const ActorIndex& actor) const;
 	[[nodiscard]] DistanceInBlocks distanceToItem(const Index& index, const ItemIndex& item) const;
 	[[nodiscard]] DistanceInBlocksFractional distanceToActorFractional(const Index& index, const ActorIndex& actor) const;
 	[[nodiscard]] DistanceInBlocksFractional distanceToItemFractional(const Index& index, const ItemIndex& item) const;
-	[[nodiscard]] BlockIndex getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(const Index& index, const BlockIndex& location, const Facing& facing, std::function<bool(const BlockIndex&)>& predicate) const;
-	[[nodiscard]] BlockIndex getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(const Index& index, const BlockIndex& location, const Facing& facing, std::function<bool(const BlockIndex&)>& predicate) const;
+	[[nodiscard]] BlockIndex getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(const Index& index, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)>& predicate) const;
+	[[nodiscard]] BlockIndex getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(const Index& index, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)>& predicate) const;
 	[[nodiscard]] BlockIndex getBlockWhichIsAdjacentWithPredicate(const Index& index, std::function<bool(const BlockIndex&)>& predicate) const;
 	[[nodiscard]] BlockIndex getBlockWhichIsOccupiedWithPredicate(const Index& index, std::function<bool(const BlockIndex&)>& predicate) const;
-	[[nodiscard]] ItemIndex getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(const Index& index, const BlockIndex& location, const Facing& facing, std::function<bool(const ItemIndex&)>& predicate) const;
+	[[nodiscard]] ItemIndex getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(const Index& index, const BlockIndex& location, const Facing4& facing, std::function<bool(const ItemIndex&)>& predicate) const;
 	[[nodiscard]] ItemIndex getItemWhichIsAdjacentWithPredicate(const Index& index, std::function<bool(const ItemIndex&)>& predicate) const;
 	[[nodiscard]] Area& getArea() { return m_area; }
 	[[nodiscard]] const Area& getArea() const { return m_area; }

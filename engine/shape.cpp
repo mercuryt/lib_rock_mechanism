@@ -17,43 +17,45 @@ ShapeId Shape::create(std::wstring name, std::vector<std::array<int32_t, 4>> pos
 	shapeData.m_occupiedOffsetsCache.add({});
 	shapeData.m_adjacentOffsetsCache.add({});
 	ShapeId id = ShapeId::create(shapeData.m_name.size() - 1);
-	for(Facing i = Facing::create(0); i < 4; ++i)
+	for(Facing4 i = Facing4::North; i != Facing4::Null; i = Facing4((uint)i + 1))
 	{
-		shapeData.m_occupiedOffsetsCache[id][i.get()] = makeOccupiedPositionsWithFacing(id, i);
-		shapeData.m_adjacentOffsetsCache[id][i.get()] = makeAdjacentPositionsWithFacing(id, i);
+		shapeData.m_occupiedOffsetsCache[id][(uint)i] = makeOccupiedPositionsWithFacing(id, i);
+		shapeData.m_adjacentOffsetsCache[id][(uint)i] = makeAdjacentPositionsWithFacing(id, i);
 	}
 	return id;
 }
-std::vector<std::array<int32_t, 4>> Shape::positionsWithFacing(const ShapeId& id, const Facing& facing) { return shapeData.m_occupiedOffsetsCache[id].at(facing.get()); }
-std::vector<std::array<int32_t, 3>> Shape::adjacentPositionsWithFacing(const ShapeId& id, const Facing& facing) { return shapeData.m_adjacentOffsetsCache[id].at(facing.get()); }
-std::vector<std::array<int32_t, 4>> Shape::makeOccupiedPositionsWithFacing(const ShapeId& id, const Facing& facing)
+std::vector<std::array<int32_t, 4>> Shape::positionsWithFacing(const ShapeId& id, const Facing4& facing) { return shapeData.m_occupiedOffsetsCache[id][(uint)facing]; }
+std::vector<std::array<int32_t, 3>> Shape::adjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing) { return shapeData.m_adjacentOffsetsCache[id][(uint)facing]; }
+std::vector<std::array<int32_t, 4>> Shape::makeOccupiedPositionsWithFacing(const ShapeId& id, const Facing4& facing)
 {
 	//TODO: cache.
 	std::vector<std::array<int32_t, 4>> output;
-	switch(facing.get())
+	switch(facing)
 	{
-		case 0: // Facing up.
+		case Facing4::North:
 			return shapeData.m_positions[id];
-		case 1: // Facing right, swap x and y.
+		case Facing4::East:
 			for(auto [x, y, z, v] : shapeData.m_positions[id])
 				output.push_back({y, x, z, v});
 			return output;
-		case 2: // Facing down, invert y.
+		case Facing4::South:
 			for(auto [x, y, z, v] : shapeData.m_positions[id])
 				output.push_back({x, y * -1, z, v});
 			return output;
-		case 3: // Facing left, swap x and y and invert x.
+		case Facing4::West:
 			for(auto [x, y, z, v] : shapeData.m_positions[id])
 				output.push_back({y * -1, x, z, v});
 			return output;
+		default:
+			assert(false);
 	}
 	assert(false);
 	return output;
 }
-std::vector<std::array<int32_t, 3>> Shape::makeAdjacentPositionsWithFacing(const ShapeId& id, const Facing& facing)
+std::vector<std::array<int32_t, 3>> Shape::makeAdjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing)
 {
 	std::set<std::array<int32_t, 3>> collect;
-	for(auto& position : shapeData.m_occupiedOffsetsCache[id][facing.get()])
+	for(auto& position : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
 		for(auto& offset : positionOffsets(position))
 			collect.insert(offset);
 	std::vector<std::array<int32_t, 3>> output(collect.begin(), collect.end());
@@ -80,11 +82,11 @@ std::vector<std::array<int32_t, 3>> Shape::positionOffsets(std::array<int32_t, 4
 	return output;
 }
 
-BlockIndices Shape::getBlocksOccupiedAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing)
+BlockIndices Shape::getBlocksOccupiedAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
 {
 	BlockIndices output;
 	output.reserve(shapeData.m_positions[id].size());
-	for(auto [x, y, z, v] : shapeData.m_occupiedOffsetsCache[id][facing.get()])
+	for(auto [x, y, z, v] : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
 	{
 		BlockIndex block = blocks.offset(location, x, y, z);
 		assert(block.exists());
@@ -92,13 +94,13 @@ BlockIndices Shape::getBlocksOccupiedAt(const ShapeId& id, const Blocks& blocks,
 	}
 	return output;
 }
-BlockIndices Shape::getBlocksOccupiedAndAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing)
+BlockIndices Shape::getBlocksOccupiedAndAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
 {
 	auto output = getBlocksOccupiedAt(id, blocks, location, facing);
 	output.concatIgnoreUnique(getBlocksWhichWouldBeAdjacentAt(id, blocks, location, facing));
 	return output;
 }
-std::vector<std::pair<BlockIndex, CollisionVolume>> Shape::getBlocksOccupiedAtWithVolumes(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing)
+std::vector<std::pair<BlockIndex, CollisionVolume>> Shape::getBlocksOccupiedAtWithVolumes(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
 {
 	std::vector<std::pair<BlockIndex, CollisionVolume>> output;
 	output.reserve(shapeData.m_positions[id].size());
@@ -110,11 +112,11 @@ std::vector<std::pair<BlockIndex, CollisionVolume>> Shape::getBlocksOccupiedAtWi
 	}
 	return output;
 }
-BlockIndices Shape::getBlocksWhichWouldBeAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing)
+BlockIndices Shape::getBlocksWhichWouldBeAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
 {
 	BlockIndices output;
 	output.reserve(shapeData.m_positions[id].size());
-	for(auto [x, y, z] : shapeData.m_adjacentOffsetsCache[id].at(facing.get()))
+	for(auto [x, y, z] : shapeData.m_adjacentOffsetsCache[id][(uint)facing])
 	{
 		BlockIndex block = blocks.offset(location, x, y, z);
 		if(block.exists())
@@ -122,9 +124,9 @@ BlockIndices Shape::getBlocksWhichWouldBeAdjacentAt(const ShapeId& id, const Blo
 	}
 	return output;
 }
-BlockIndex Shape::getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing, std::function<bool(const BlockIndex&)> predicate)
+BlockIndex Shape::getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)> predicate)
 {
-	for(auto [x, y, z, v] : shapeData.m_occupiedOffsetsCache[id].at(facing.get()))
+	for(auto [x, y, z, v] : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
 	{
 		BlockIndex block = blocks.offset(location, x, y, z);
 		if(block.exists() && predicate(block))
@@ -132,9 +134,9 @@ BlockIndex Shape::getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id,
 	}
 	return BlockIndex::null();
 }
-BlockIndex Shape::getBlockWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing, std::function<bool(const BlockIndex&)> predicate)
+BlockIndex Shape::getBlockWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)> predicate)
 {
-	for(auto [x, y, z] : shapeData.m_adjacentOffsetsCache[id].at(facing.get()))
+	for(auto [x, y, z] : shapeData.m_adjacentOffsetsCache[id][(uint)facing])
 	{
 		BlockIndex block = blocks.offset(location, x, y, z);
 		if(block.exists() && predicate(block))

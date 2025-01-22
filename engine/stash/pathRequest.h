@@ -37,11 +37,11 @@ class PathRequest
 	public:
 		PathRequest(const Json& data);
 		void updateActorIndex(const ActorIndex& newIndex) { assert(newIndex.exists()); m_actor = newIndex; }
-		void create(Area& area, const ActorIndex& actor, const BlockIndex& start, const Facing& startFacing, DestinationCondition destination, bool detour, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination = BlockIndex::null(), bool reserve = false);
+		void create(Area& area, const ActorIndex& actor, const BlockIndex& start, const Facing4& startFacing, DestinationCondition destination, bool detour, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination = BlockIndex::null(), bool reserve = false);
 		void createGoToAnyOf(Area& area, const ActorIndex& actor, BlockIndices destinations, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination = BlockIndex::null(), bool reserve = false);
 	public:
 		void createGoTo(Area& area, const ActorIndex& actor, const BlockIndex& destination, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve = false);
-		void createGoToFrom(Area& area, const ActorIndex& actor, const BlockIndex& start, const Facing& startFacing, const BlockIndex& destination, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve = false);
+		void createGoToFrom(Area& area, const ActorIndex& actor, const BlockIndex& start, const Facing4& startFacing, const BlockIndex& destination, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve = false);
 		void createGoAdjacentToLocation(Area& area, const ActorIndex& actor, const BlockIndex& destination, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve = false);
 		void createGoAdjacentToActor(Area& area, const ActorIndex& actor, const ActorIndex& other, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve = false);
 		void createGoAdjacentToItem(Area& area, const ActorIndex& actor, const ItemIndex& item, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve = false);
@@ -53,13 +53,13 @@ class PathRequest
 		// Multi block actors go to a destination where any of the occupied blocks fulfill the condition. This is inconsistant with GoTo which sends multi block actors to an exact tile.
 		void createGoToCondition(Area& area, const ActorIndex& actor, DestinationCondition condition, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination = BlockIndex::null(), bool reserve = false);
 		void createGoAdjacentToCondition(Area& area, const ActorIndex& actor, std::function<bool(const BlockIndex&)> condition, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve = false);
-		void createGoAdjacentToConditionFrom(Area& area, const ActorIndex& actor, const BlockIndex& start, const Facing& startFacing, std::function<bool(const BlockIndex&)> condition, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve = false);
+		void createGoAdjacentToConditionFrom(Area& area, const ActorIndex& actor, const BlockIndex& start, const Facing4& startFacing, std::function<bool(const BlockIndex&)> condition, bool detour, bool unreserved, const DistanceInBlocks& maxRange, const BlockIndex& huristicDestination, bool reserve = false);
 		void maybeCancel(Area& area, const ActorIndex& actor);
 		void cancel(Area& area, const ActorIndex& actor);
 		void update(const PathRequestIndex& newIndex);
 		virtual void reset();
-		virtual FindPathResult findPathDepthFirst(const Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& start, const Facing& facing, const BlockIndex& huristicDestination) = 0;
-		virtual FindPathResult findPathBreadthFirst(const Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& start, const Facing& facing) = 0;
+		virtual FindPathResult findPathDepthFirst(const Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& start, const Facing4& facing, const BlockIndex& huristicDestination) = 0;
+		virtual FindPathResult findPathBreadthFirst(const Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& start, const Facing4& facing) = 0;
 		virtual void callback(Area& area, const FindPathResult& result);
 		[[nodiscard]] virtual Json toJson() const;
 		[[nodiscard]] bool exists() const { return m_index.exists(); }

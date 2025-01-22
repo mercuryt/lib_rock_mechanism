@@ -721,7 +721,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	sharedConstructor(index);
 	scheduleNeeds(index);
 	if(params.location.exists())
-		setLocationAndFacing(index, params.location, (params.facing.exists() ? params.facing : Facing::create(0)));
+		setLocationAndFacing(index, params.location, (params.facing != Facing4::Null ? params.facing : Facing4::North));
 	return index;
 }
 void Actors::sharedConstructor(const ActorIndex& index)
@@ -746,7 +746,7 @@ void Actors::scheduleNeeds(const ActorIndex& index)
 void Actors::setShape(const ActorIndex& index, const ShapeId& shape)
 {
 	BlockIndex location = m_location[index];
-	Facing facing = m_facing[index];
+	Facing4 facing = m_facing[index];
 	if(location.exists())
 		exit(index);
 	m_shape[index] = shape;
@@ -756,13 +756,13 @@ void Actors::setShape(const ActorIndex& index, const ShapeId& shape)
 void Actors::setLocation(const ActorIndex& index, const BlockIndex& block)
 {
 	assert(m_location[index].exists());
-	Facing facing = m_area.getBlocks().facingToSetWhenEnteringFrom(block, m_location[index]);
+	Facing4 facing = m_area.getBlocks().facingToSetWhenEnteringFrom(block, m_location[index]);
 	setLocationAndFacing(index, block, facing);
 }
-void Actors::setLocationAndFacing(const ActorIndex& index, const BlockIndex& block, const Facing& facing)
+void Actors::setLocationAndFacing(const ActorIndex& index, const BlockIndex& block, const Facing4& facing)
 {
 	assert(block.exists());
-	assert(facing.exists());
+	assert(facing != Facing4::Null);
 	if(m_location[index].exists())
 		exit(index);
 	m_location[index] = block;
@@ -899,14 +899,14 @@ std::wstring Actors::getActionDescription(const ActorIndex& index) const
 		return const_cast<HasObjectives&>(*m_hasObjectives[index].get()).getCurrent().name();
 	return L"no action";
 }
-void Actors::reserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing& facing)
+void Actors::reserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing4& facing)
 {
 	if(m_faction[index].empty())
 		return;
 	for(BlockIndex occupied : getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing))
 		m_area.getBlocks().reserve(occupied, *m_canReserve[index]);
 }
-void Actors::unreserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing& facing)
+void Actors::unreserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing4& facing)
 {
 	if(m_faction[index].empty())
 		return;

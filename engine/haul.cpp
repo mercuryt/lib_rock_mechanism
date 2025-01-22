@@ -342,7 +342,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 					// TODO: move this logic to tryToSetHaulStrategy?
 					for(BlockIndex block : toHaul.getAdjacentBlocks(area))
 					{
-						Facing facing = blocks.facingToSetWhenEnteringFrom(m_project.m_location, block);
+						Facing4 facing = blocks.facingToSetWhenEnteringFrom(m_project.m_location, block);
 						if(blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(block, actors.getShape(actor), actors.getMoveType(actor), facing) && !blocks.isReserved(block, faction))
 						{
 							m_liftPoints.insert(ref, block);
@@ -840,7 +840,7 @@ void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 				ref = newRef;
 			}
 		}
-		deliveredIndex = items.setLocationAndFacing(deliveredIndex, location, Facing::create(0));
+		deliveredIndex = items.setLocationAndFacing(deliveredIndex, location, Facing4::North);
 		// Reserve dropped off item with project.
 		// Items are not reserved durring transit because reserved items don't move.
 		// If the item is already reserved due to combining with an existing one on drop-off the reserved quantity will be increased.
@@ -849,7 +849,7 @@ void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 			m_project.m_toConsume.getOrInsert(ref, Quantity::create(0)) += m_quantity;
 		//TODO: This belongs in CraftProject.
 		if(items.isWorkPiece(deliveredIndex))
-			delivered.setLocationAndFacing(area, m_project.m_location, Facing::create(0));
+			delivered.setLocationAndFacing(area, m_project.m_location, Facing4::North);
 		m_project.m_deliveredItems.getOrInsert(ref, Quantity::create(0)) += quantity;
 	}
 	else

@@ -21,7 +21,7 @@ public:
 	ItemIndex m_itemBeingInstalled;
 	// TODO: Change to shape being moved for targeted hauling of downed actors.
 	ItemIndex m_itemBeingMoved;
-	Facing m_facing;
+	Facing4 m_facing;
 	GameOverlay(Window& w);
 	void show() { m_group->setVisible(true); }
 	void hide() { m_group->setVisible(false); }

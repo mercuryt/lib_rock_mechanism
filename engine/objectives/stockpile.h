@@ -23,7 +23,7 @@ class StockPileObjective final : public Objective
 	BlockIndex m_stockPileLocation;
 	// Store where the actor will stand when picking up the item, for use when calculating the best drop off.
 	BlockIndex m_pickUpLocation;
-	Facing m_pickUpFacing;
+	Facing4 m_pickUpFacing;
 	bool m_hasCheckedForCloserDropOffLocation = false;
 public:
 	StockPileProject* m_project = nullptr;

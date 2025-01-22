@@ -5,6 +5,7 @@
 #include "../blockFeature.h"
 #include "../fluidType.h"
 #include "../actors/actors.h"
+#include "../items/items.h"
 #include "../plants.h"
 #include <string>
 
@@ -196,10 +197,9 @@ DistanceInBlocks Blocks::getZ(const BlockIndex& index) const
 {
 	return DistanceInBlocks::create(index.get()) / (m_sizeX * m_sizeY);
 }
-BlockIndex Blocks::getAtFacing(const BlockIndex& index, const Facing& facing) const
+BlockIndex Blocks::getAtFacing(const BlockIndex& index, const Facing6& facing) const
 {
-	assert(facing.exists());
-	return m_directlyAdjacent[index][facing.get()];
+	return m_directlyAdjacent[index][(uint)facing];
 }
 BlockIndex Blocks::getCenterAtGroundLevel() const
 {
@@ -272,27 +272,27 @@ const std::array<BlockIndex, 6>& Blocks::getDirectlyAdjacent(const BlockIndex& i
 }
 BlockIndex Blocks::getBlockBelow(const BlockIndex& index) const
 {
-	return m_directlyAdjacent[index][0];
+	return m_directlyAdjacent[index][uint(Facing6::Below)];
 }
 BlockIndex Blocks::getBlockAbove(const BlockIndex& index) const
 {
-	return m_directlyAdjacent[index][5];
+	return m_directlyAdjacent[index][uint(Facing6::Above)];
 }
 BlockIndex Blocks::getBlockNorth(const BlockIndex& index) const
 {
-	return m_directlyAdjacent[index][1];
+	return m_directlyAdjacent[index][uint(Facing6::North)];
 }
 BlockIndex Blocks::getBlockWest(const BlockIndex& index) const
 {
-	return m_directlyAdjacent[index][2];
+	return m_directlyAdjacent[index][uint(Facing6::West)];
 }
 BlockIndex Blocks::getBlockSouth(const BlockIndex& index) const
 {
-	return m_directlyAdjacent[index][3];
+	return m_directlyAdjacent[index][uint(Facing6::South)];
 }
 BlockIndex Blocks::getBlockEast(const BlockIndex& index) const
 {
-	return m_directlyAdjacent[index][4];
+	return m_directlyAdjacent[index][uint(Facing6::East)];
 }
 BlockIndexArrayNotNull<18> Blocks::getAdjacentWithEdgeAdjacent(const BlockIndex& index) const
 {
@@ -459,6 +459,10 @@ bool Blocks::isAdjacentToIncludingCornersAndEdges(const BlockIndex& index, const
 bool Blocks::isAdjacentToActor(const BlockIndex& index, const ActorIndex& actor) const
 {
 	return m_area.getActors().isAdjacentToLocation(actor, index);
+}
+bool Blocks::isAdjacentToItem(const BlockIndex& index, const ItemIndex& item) const
+{
+	return m_area.getItems().isAdjacentToLocation(item, index);
 }
 void Blocks::setExposedToSky(const BlockIndex& index, bool exposed)
 {
@@ -713,49 +717,11 @@ bool Blocks::canSeeThroughFrom(const BlockIndex& index, const BlockIndex& otherI
 	}
 	return true;
 }
-Facing Blocks::facingToSetWhenEnteringFrom(const BlockIndex& index, const BlockIndex& otherIndex) const
+Facing4 Blocks::facingToSetWhenEnteringFrom(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(otherIndex);
-	if(otherCoordinates.x > coordinates.x)
-		return Facing::create(3);
-	if(otherCoordinates.x < coordinates.x)
-		return Facing::create(1);
-	if(otherCoordinates.y < coordinates.y)
-		return Facing::create(2);
-	return Facing::create(0);
-}
-Facing Blocks::facingToSetWhenEnteringFromIncludingDiagonal(const BlockIndex& index, const BlockIndex& otherIndex, const Facing inital) const
-{
-	Point3D coordinates = getCoordinates(index);
-	Point3D otherCoordinates = getCoordinates(otherIndex);
-	if(coordinates.x == otherCoordinates.x)
-	{
-		if(coordinates.y < otherCoordinates.y)
-			return Facing::create(0); // North
-		if(coordinates.y == otherCoordinates.y)
-			return inital; // Up or Down
-		if(coordinates.y > otherCoordinates.y)
-			return Facing::create(4); // South
-	}
-	else if(coordinates.x < otherCoordinates.x)
-	{
-		if(coordinates.y > otherCoordinates.y)
-			return Facing::create(7); // North West
-		if(coordinates.y == otherCoordinates.y)
-			return Facing::create(6); // West
-		if(coordinates.y < otherCoordinates.y)
-			return Facing::create(5);// South West
-	}
-	assert(coordinates.x > otherCoordinates.x);
-	if(coordinates.y > otherCoordinates.y)
-		return Facing::create(3); // South East
-	if(coordinates.y == otherCoordinates.y)
-		return Facing::create(2); // East
-	if(coordinates.y < otherCoordinates.y)
-		return Facing::create(1);// North East
-	assert(false);
-	return Facing::null();
+	return otherCoordinates.getFacingTwords(coordinates);
 }
 bool Blocks::isSupport(const BlockIndex& index) const
 {
@@ -785,4 +751,8 @@ BlockIndices Blocks::collectAdjacentsInRange(const BlockIndex& index, const Dist
 {
 	auto condition = [&](const BlockIndex& b){ return taxiDistance(b, index) <= range; };
 	return collectAdjacentsWithCondition(index, condition);
+}
+std::wstring Blocks::toString(const BlockIndex& index) const
+{
+	return getCoordinates(index).toString();
 }

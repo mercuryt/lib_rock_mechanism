@@ -211,7 +211,7 @@ void ContextMenu::drawItemControls(const BlockIndex& block)
 			m_root.add(install);
 			install->onMouseEnter([this, block, item, faction, &area]{
 				auto& submenu = makeSubmenu(0);
-				for(Facing facing = Facing::create(0); facing < 4; ++facing)
+				for(Facing4 facing = Facing4::North; facing < 4; ++facing)
 				{
 					auto button = tgui::Button::create(m_window.facingToString(facing));
 					button->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);

@@ -35,7 +35,7 @@ FindPathResult CraftPathRequest::readStep(Area& area, const TerrainFacade& terra
 	Blocks& blocks = area.getBlocks();
 	SkillTypeId skillType = m_craftObjective.m_skillType;
 	auto& excludeJobs = m_craftObjective.getFailedJobs();
-	auto predicate = [&blocks, faction, &hasCrafting, actorIndex, skillType, &excludeJobs](const BlockIndex& block, const Facing&)
+	auto predicate = [&blocks, faction, &hasCrafting, actorIndex, skillType, &excludeJobs](const BlockIndex& block, const Facing4&)
 	{
 		bool result = !blocks.isReserved(block, faction) && hasCrafting.getJobForAtLocation(actorIndex, skillType, block, excludeJobs) != nullptr;
 		if(result)

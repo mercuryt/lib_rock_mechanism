@@ -35,7 +35,7 @@ public:
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool canHarvestAt(Area& area, const BlockIndex& block) const;
 	[[nodiscard]] std::wstring name() const override { return L"harvest"; }
-	[[nodiscard]] BlockIndex getBlockContainingPlantToHarvestAtLocationAndFacing(Area& area, const BlockIndex& location, Facing facing, const ActorIndex& actor);
+	[[nodiscard]] BlockIndex getBlockContainingPlantToHarvestAtLocationAndFacing(Area& area, const BlockIndex& location, Facing4 facing, const ActorIndex& actor);
 	[[nodiscard]] bool blockContainsHarvestablePlant(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
 	friend class HarvestEvent;
 	// For testing.

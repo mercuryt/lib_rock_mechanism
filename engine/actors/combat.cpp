@@ -343,7 +343,7 @@ GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(const Json& d
 FindPathResult GetIntoAttackPositionPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo)
 {
 	Actors& actors = area.getActors();
-	auto destinationCondition = [&actors, this](const BlockIndex& location, const Facing&) ->std::pair<bool, BlockIndex>
+	auto destinationCondition = [&actors, this](const BlockIndex& location, const Facing4&) ->std::pair<bool, BlockIndex>
 	{
 		if(actors.combat_blockIsValidPosition(actor.getIndex(actors.m_referenceData), location, attackRangeSquared))
 			return std::make_pair(true, location);
