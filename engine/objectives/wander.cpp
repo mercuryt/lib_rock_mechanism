@@ -27,7 +27,7 @@ FindPathResult WanderPathRequest::readStep(Area& area, const TerrainFacade& terr
 {
 	Random& random = area.m_simulation.m_random;
 	m_blockCounter = random.getInRange(Config::wanderMinimimNumberOfBlocks, Config::wanderMaximumNumberOfBlocks);
-	auto destinationCondition = [this](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	auto destinationCondition = [this](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
 	{
 		if(!m_blockCounter)
 			return std::pair(true, block);

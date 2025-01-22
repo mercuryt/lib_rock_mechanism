@@ -116,16 +116,18 @@ TEST_CASE("leadAndFollow")
 	{
 		BlockIndex origin1 = blocks.getIndex_i(2, 2, 1);
 		BlockIndex origin2 = blocks.getIndex_i(1, 1, 1);
-		BlockIndex origin3 = blocks.getIndex_i(3, 2, 1);
+		BlockIndex origin3 = blocks.getIndex_i(1, 2, 1);
 		BlockIndex destination1 = blocks.getIndex_i(8, 8, 1);
 		BlockIndex destination2 = blocks.getIndex_i(7, 7, 1);
 		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.location=origin1,
+			.facing=Facing4::South,
 		});
 		ActorIndex troll1 = actors.create({
 			.species=troll,
 			.location=origin2,
+			.facing=Facing4::South,
 		});
 		ActorIndex dwarf2 = actors.create({
 			.species=dwarf,

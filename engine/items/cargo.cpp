@@ -162,7 +162,7 @@ void Items::cargo_unloadItemToLocation(const ItemIndex& index, const ItemIndex& 
 	assert(cargo_containsItem(index, item));
 	assert(getLocation(item).empty());
 	cargo_removeItem(index, item);
-	setLocationAndFacing(item, location, Facing::create(0));
+	setLocationAndFacing(item, location, Facing4::North);
 }
 void Items::cargo_updateItemIndex(const ItemIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex)
 {

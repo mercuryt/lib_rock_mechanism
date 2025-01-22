@@ -77,7 +77,7 @@ TEST_CASE("haul")
 			.location=cartLocation,
 			.quality=Quality::create(3u),
 			.percentWear=Percent::create(0),
-			.facing=Facing::create(0),
+			.facing=Facing4::North,
 		});
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .quantity=Quantity::create(1u)});
 		REQUIRE(area.m_hasHaulTools.hasToolToHaulItem(area, faction, chunk1));

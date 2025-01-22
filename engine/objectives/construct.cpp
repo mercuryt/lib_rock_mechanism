@@ -10,7 +10,7 @@
 // PathRequest.
 ConstructPathRequest::ConstructPathRequest(Area& area, ConstructObjective& co, const ActorIndex& actorIndex) :
 	m_constructObjective(co)
-{ 
+{
 	Actors& actors = area.getActors();
 	start = actors.getLocation(actorIndex);
 	maxRange = Config::maxRangeToSearchForDigDesignations;
@@ -23,7 +23,7 @@ ConstructPathRequest::ConstructPathRequest(Area& area, ConstructObjective& co, c
 	adjacent = true;
 	reserveDestination = true;
 }
-ConstructPathRequest::ConstructPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) : 
+ConstructPathRequest::ConstructPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
 	PathRequestBreadthFirst(data, area),
 	m_constructObjective(static_cast<ConstructObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
 { }
@@ -31,7 +31,7 @@ FindPathResult ConstructPathRequest::readStep(Area& area, const TerrainFacade& t
 {
 	ActorIndex actorIndex = actor.getIndex(area.getActors().m_referenceData);
 
-	auto predicate = [&area, this, actorIndex](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	auto predicate = [&area, this, actorIndex](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
 	{
 		return {m_constructObjective.joinableProjectExistsAt(area, block, actorIndex), block};
 	};
@@ -66,7 +66,7 @@ Json ConstructPathRequest::toJson() const
 }
 // Objective.
 ConstructObjective::ConstructObjective(const Json& data, DeserializationMemo& deserializationMemo) :
-	Objective(data, deserializationMemo), 
+	Objective(data, deserializationMemo),
 	m_project(data.contains("project") ? deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()) : nullptr) { }
 Json ConstructObjective::toJson() const
 {
@@ -141,7 +141,7 @@ void ConstructObjective::joinProject(ConstructProject& project, const ActorIndex
 	m_project = &project;
 	project.addWorkerCandidate(actor, *this);
 }
-ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(Area& area, const BlockIndex& location, const Facing& facing, const ActorIndex& actor)
+ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(Area& area, const BlockIndex& location, const Facing4& facing, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	for(BlockIndex adjacent : actors.getAdjacentBlocksAtLocationWithFacing(actor, location, facing))
@@ -177,7 +177,7 @@ bool ConstructObjective::joinableProjectExistsAt(Area& area, const BlockIndex& b
 		return true;
 	return false;
 }
-bool ConstructObjective::canJoinProjectAdjacentToLocationAndFacing(Area& area, const BlockIndex& location, const Facing& facing, const ActorIndex& actor) const
+bool ConstructObjective::canJoinProjectAdjacentToLocationAndFacing(Area& area, const BlockIndex& location, const Facing4& facing, const ActorIndex& actor) const
 {
 	return const_cast<ConstructObjective*>(this)->getProjectWhichActorCanJoinAdjacentTo(area, location, facing, actor) != nullptr;
 }

@@ -17,7 +17,7 @@
 #include "objectives/leaveArea.h"
 #include "objectives/uniform.h"
 
-PathRequest::PathRequest(BlockIndex st, DistanceInBlocks mr, ActorReference ac, ShapeId sh, FactionId ft, MoveTypeId mt, Facing fi, bool d, bool ad, bool rd) :
+PathRequest::PathRequest(BlockIndex st, DistanceInBlocks mr, ActorReference ac, ShapeId sh, FactionId ft, MoveTypeId mt, Facing4 fi, bool d, bool ad, bool rd) :
 	start(st), maxRange(mr), actor(ac), shape(sh), faction(ft), moveType(mt), facing(fi), detour(d), adjacent(ad), reserveDestination(rd)
 { }
 PathRequest::PathRequest(const Json& data, Area& area)
@@ -110,7 +110,7 @@ void PathRequest::writeStep(Area& area, FindPathResult& result)
 	ActorIndex index = actor.getIndex(actors.m_referenceData);
 	actors.move_pathRequestCallback(index, result.path, result.useCurrentPosition, reserveDestination);
 }
-PathRequestBreadthFirst::PathRequestBreadthFirst(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination) :
+PathRequestBreadthFirst::PathRequestBreadthFirst(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination) :
 	PathRequest(start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination)
 { }
 PathRequestBreadthFirst::PathRequestBreadthFirst(const Json& data, Area& area) :
@@ -129,7 +129,7 @@ Json PathRequestBreadthFirst::toJson() const
 {
 	return PathRequest::toJson();
 }
-PathRequestDepthFirst::PathRequestDepthFirst(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex hd) :
+PathRequestDepthFirst::PathRequestDepthFirst(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex hd) :
 	PathRequest(start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination),
 	huristicDestination(hd)
 { }
@@ -151,7 +151,7 @@ Json PathRequestDepthFirst::toJson() const
 	output["huristicDestination"] = huristicDestination;
 	return output;
 }
-GoToPathRequest::GoToPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex d) :
+GoToPathRequest::GoToPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex d) :
 	PathRequestDepthFirst(start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination, d),
 	destination(d)
 { }
@@ -170,7 +170,7 @@ Json GoToPathRequest::toJson() const
 	output["type"] = "goTo";
 	return output;
 }
-GoToAnyPathRequest::GoToAnyPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex huristicDestination, BlockIndices d) :
+GoToAnyPathRequest::GoToAnyPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex huristicDestination, BlockIndices d) :
 	PathRequestDepthFirst(start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination, huristicDestination),
 	destinations(d)
 { }
@@ -190,7 +190,7 @@ Json GoToAnyPathRequest::toJson() const
 	output["type"] = "goToAny";
 	return output;
 }
-GoToFluidTypePathRequest::GoToFluidTypePathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination, FluidTypeId ft) :
+GoToFluidTypePathRequest::GoToFluidTypePathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, FluidTypeId ft) :
 	PathRequestBreadthFirst(start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination),
 	fluidType(ft)
 { }
@@ -201,7 +201,7 @@ GoToFluidTypePathRequest::GoToFluidTypePathRequest(const Json& data, Area& area)
 FindPathResult GoToFluidTypePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Blocks& blocks = area.getBlocks();
-	auto destinationCondition = [&](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	auto destinationCondition = [&](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
 	{
 		return {blocks.fluid_contains(block, fluidType), block};
 	};
@@ -215,7 +215,7 @@ Json GoToFluidTypePathRequest::toJson() const
 	output["type"] = "goToFluidType";
 	return output;
 }
-GoToBlockDesignationPathRequest::GoToBlockDesignationPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination, BlockDesignation designation) :
+GoToBlockDesignationPathRequest::GoToBlockDesignationPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, BlockDesignation designation) :
 	PathRequestBreadthFirst(start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination),
 	designation(designation)
 {
@@ -224,7 +224,7 @@ GoToBlockDesignationPathRequest::GoToBlockDesignationPathRequest(BlockIndex star
 FindPathResult GoToBlockDesignationPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Blocks& blocks = area.getBlocks();
-	auto destinationCondition = [&](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	auto destinationCondition = [&](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
 	{
 		return {blocks.designation_has(block, faction, designation), block};
 	};
@@ -238,7 +238,7 @@ Json GoToBlockDesignationPathRequest::toJson() const
 	output["type"] = "goToBlockDesignation";
 	return output;
 }
-GoToEdgePathRequest::GoToEdgePathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, MoveTypeId moveType, Facing facing, bool detour, bool adjacent, bool reserveDestination) :
+GoToEdgePathRequest::GoToEdgePathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination) :
 	PathRequestBreadthFirst(start, maxRange, actor, shape, FactionId::null(), moveType, facing, detour, adjacent, reserveDestination)
 { }
 GoToEdgePathRequest::GoToEdgePathRequest(const Json& data, Area& area) : PathRequestBreadthFirst(data, area) { }
@@ -249,7 +249,7 @@ GoToBlockDesignationPathRequest::GoToBlockDesignationPathRequest(const Json& dat
 FindPathResult GoToEdgePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Blocks& blocks = area.getBlocks();
-	auto destinationCondition = [&](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	auto destinationCondition = [&](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
 	{
 		return {blocks.isEdge(block), block};
 	};

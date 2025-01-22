@@ -129,7 +129,7 @@ ItemIndex Actors::canPickUp_tryToPutDownItem(const ActorIndex& index, const Bloc
 	m_carrying[index].clear();
 	items.unsetCarrier(item, ActorOrItemIndex::createForActor(index));
 	move_updateIndividualSpeed(index);
-	return m_area.getItems().setLocationAndFacing(item, targetLocation, Facing::create(0));
+	return m_area.getItems().setLocationAndFacing(item, targetLocation, Facing4::North);
 }
 ActorOrItemIndex Actors::canPickUp_tryToPutDownIfAny(const ActorIndex& index, const BlockIndex& location, const DistanceInBlocks maxRange)
 {

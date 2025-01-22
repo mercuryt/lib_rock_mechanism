@@ -5,10 +5,10 @@
 #include "blocks/blocks.h"
 #include "items/items.h"
 
-UnequipItemObjective::UnequipItemObjective(const ItemReference& item, const BlockIndex& block) : 
+UnequipItemObjective::UnequipItemObjective(const ItemReference& item, const BlockIndex& block) :
 	Objective(Config::equipPriority), m_item(item), m_block(block) { }
 UnequipItemObjective::UnequipItemObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
-	Objective(data, deserializationMemo), 
+	Objective(data, deserializationMemo),
 	m_block(data["block"].get<BlockIndex>())
 {
 	m_item.load(data["item"], area.getItems().m_referenceData);
@@ -32,7 +32,7 @@ void UnequipItemObjective::execute(Area& area, const ActorIndex& actor)
 			actors.equipment_remove(actor, item);
 			// Generics cannot be equiped, no need to prevent reference invalidation due to merge.
 			assert(!items.isGeneric(item));
-			items.setLocationAndFacing(item, m_block, Facing::create(0));
+			items.setLocationAndFacing(item, m_block, Facing4::North);
 			actors.objective_complete(actor, *this);
 		}
 		else

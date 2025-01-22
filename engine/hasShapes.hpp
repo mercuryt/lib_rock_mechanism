@@ -94,7 +94,7 @@ std::vector<std::pair<uint32_t, Index>> HasShapes<Derived, Index>::getSortOrder(
 }
 template<class Derived, class Index>
 FactionId HasShapes<Derived, Index>::getFaction(const Index& index) const
-{ 
+{
 	return m_faction[index];
 }
 template<class Derived, class Index>
@@ -113,21 +113,21 @@ bool HasShapes<Derived, Index>::isAdjacentToPlant(const Index& index, const Plan
 	return isAdjacentToPlantAt(index, m_location[index], m_facing[index], plant);
 }
 template<class Derived, class Index>
-bool HasShapes<Derived, Index>::isAdjacentToActorAt(const Index& index, const BlockIndex& location, const Facing& facing, const ActorIndex& actor) const
+bool HasShapes<Derived, Index>::isAdjacentToActorAt(const Index& index, const BlockIndex& location, const Facing4& facing, const ActorIndex& actor) const
 {
 	auto occupied = getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing);
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return occupied.contains(block); };
 	return m_area.getActors().predicateForAnyAdjacentBlock(actor, predicate);
 }
 template<class Derived, class Index>
-bool HasShapes<Derived, Index>::isAdjacentToItemAt(const Index& index, const BlockIndex& location, const Facing& facing, const ItemIndex& item) const
+bool HasShapes<Derived, Index>::isAdjacentToItemAt(const Index& index, const BlockIndex& location, const Facing4& facing, const ItemIndex& item) const
 {
 	auto occupied = getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing);
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return occupied.contains(block); };
 	return m_area.getItems().predicateForAnyAdjacentBlock(item, predicate);
 }
 template<class Derived, class Index>
-bool HasShapes<Derived, Index>::isAdjacentToPlantAt(const Index& index, const BlockIndex& location, const Facing& facing, const PlantIndex& plant) const
+bool HasShapes<Derived, Index>::isAdjacentToPlantAt(const Index& index, const BlockIndex& location, const Facing4& facing, const PlantIndex& plant) const
 {
 	auto occupied = getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing);
 	std::function<bool(BlockIndex)> predicate = [&](BlockIndex block) { return occupied.contains(block); };
@@ -175,7 +175,7 @@ bool HasShapes<Derived, Index>::isAdjacentToAny(const Index& index, const BlockI
 	return predicateForAnyAdjacentBlock(index, predicate);
 }
 template<class Derived, class Index>
-bool HasShapes<Derived, Index>::isOnEdgeAt(const Index& index, const BlockIndex& location, const Facing& facing) const
+bool HasShapes<Derived, Index>::isOnEdgeAt(const Index& index, const BlockIndex& location, const Facing4& facing) const
 {
 	Blocks& blocks = m_area.getBlocks();
 	std::function<bool(const BlockIndex)> predicate = [&blocks](const BlockIndex block) { return blocks.isEdge(block); };
@@ -198,7 +198,7 @@ bool HasShapes<Derived, Index>::predicateForAnyOccupiedBlock(const Index& index,
 	return false;
 }
 template<class Derived, class Index>
-bool HasShapes<Derived, Index>::predicateForAnyOccupiedBlockAtLocationAndFacing(const Index& index, std::function<bool(const BlockIndex&)> predicate, const BlockIndex& location, const Facing& facing) const
+bool HasShapes<Derived, Index>::predicateForAnyOccupiedBlockAtLocationAndFacing(const Index& index, std::function<bool(const BlockIndex&)> predicate, const BlockIndex& location, const Facing4& facing) const
 {
 	for(BlockIndex occupied : const_cast<HasShapes&>(*this).getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing))
 		if(predicate(occupied))
@@ -253,22 +253,22 @@ BlockIndices HasShapes<Derived, Index>::getOccupiedAndAdjacentBlocks(const Index
 	return Shape::getBlocksOccupiedAndAdjacentAt(m_shape[index], m_area.getBlocks(), m_location[index], m_facing[index]);
 }
 template<class Derived, class Index>
-BlockIndices HasShapes<Derived, Index>::getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const Index& index, const BlockIndex& location, const Facing& facing) const
+BlockIndices HasShapes<Derived, Index>::getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const Index& index, const BlockIndex& location, const Facing4& facing) const
 {
 	return Shape::getBlocksOccupiedAt(m_shape[index], m_area.getBlocks(), location, facing);
 }
 template<class Derived, class Index>
-BlockIndices HasShapes<Derived, Index>::getAdjacentBlocksAtLocationWithFacing(const Index& index, const BlockIndex& location, const Facing& facing) const
+BlockIndices HasShapes<Derived, Index>::getAdjacentBlocksAtLocationWithFacing(const Index& index, const BlockIndex& location, const Facing4& facing) const
 {
 	return Shape::getBlocksWhichWouldBeAdjacentAt(m_shape[index], m_area.getBlocks(), location, facing);
 }
 template<class Derived, class Index>
-BlockIndex HasShapes<Derived, Index>::getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(const Index& index, const BlockIndex& location, const Facing& facing, std::function<bool(const BlockIndex&)>& predicate) const
+BlockIndex HasShapes<Derived, Index>::getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(const Index& index, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)>& predicate) const
 {
 	return Shape::getBlockWhichWouldBeAdjacentAtWithPredicate(m_shape[index], m_area.getBlocks(), location, facing, predicate);
 }
 template<class Derived, class Index>
-BlockIndex HasShapes<Derived, Index>::getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(const Index& index, const BlockIndex& location, const Facing& facing, std::function<bool(const BlockIndex&)>& predicate) const
+BlockIndex HasShapes<Derived, Index>::getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(const Index& index, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)>& predicate) const
 {
 	return Shape::getBlockWhichWouldBeOccupiedAtWithPredicate(m_shape[index], m_area.getBlocks(), location, facing, predicate);
 }
@@ -283,7 +283,7 @@ BlockIndex HasShapes<Derived, Index>::getBlockWhichIsOccupiedWithPredicate(const
 	return getBlockWhichIsOccupiedAtLocationWithFacingAndPredicate(index, m_location[index], m_facing[index], predicate);
 }
 template<class Derived, class Index>
-ItemIndex HasShapes<Derived, Index>::getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(const Index& index, const BlockIndex& location, const Facing& facing, std::function<bool(const ItemIndex&)>& predicate) const
+ItemIndex HasShapes<Derived, Index>::getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(const Index& index, const BlockIndex& location, const Facing4& facing, std::function<bool(const ItemIndex&)>& predicate) const
 {
 	for(auto [x, y, z] : Shape::adjacentPositionsWithFacing(m_shape[index], facing))
 	{
@@ -301,7 +301,7 @@ ItemIndex HasShapes<Derived, Index>::getItemWhichIsAdjacentWithPredicate(const I
 	return getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(index, m_location[index], m_facing[index], predicate);
 }
 template<class Derived, class Index>
-bool HasShapes<Derived, Index>::allBlocksAtLocationAndFacingAreReservable(const Index& index, const BlockIndex& location, const Facing& facing, const FactionId& faction) const
+bool HasShapes<Derived, Index>::allBlocksAtLocationAndFacingAreReservable(const Index& index, const BlockIndex& location, const Facing4& facing, const FactionId& faction) const
 {
 	Blocks& blocks = m_area.getBlocks();
 	std::function<bool(const BlockIndex&)> predicate = [&blocks, faction](const BlockIndex& occupied) { return blocks.isReserved(occupied, faction); };

@@ -189,10 +189,10 @@ void AreaHasVisionCuboids::createOrExtend(Area& area, const Cuboid& cuboid)
 	auto end = surfaceView.end();
 	for(auto iter = surfaceView.begin(); iter != end; ++iter)
 	{
-		std::pair<BlockIndex, Facing> pair = *iter;
+		std::pair<BlockIndex, Facing6> pair = *iter;
 		const BlockIndex& block = pair.first;
 		assert(block < blocks.size());
-		const Facing& facing = pair.second;
+		const Facing6& facing = pair.second;
 		const BlockIndex& blockAboveSurface = blocks.getAtFacing(block, facing);
 		if(blockAboveSurface.exists())
 		{
@@ -533,7 +533,7 @@ bool VisionCuboid::canSeeInto(Area& area, const Cuboid& other) const
 	assert(!m_destroy);
 	Blocks& blocks = area.getBlocks();
 	// Get a cuboid representing a face of m_cuboid.
-	Facing facing = m_cuboid.getFacingTwordsOtherCuboid(blocks, other);
+	Facing6 facing = m_cuboid.getFacingTwordsOtherCuboid(blocks, other);
 	const Cuboid face = m_cuboid.getFace(blocks, facing);
 	// Verify that the whole face can be seen through from the direction of m_cuboid.
 	for(const BlockIndex& block : face.getView(blocks))

@@ -4,8 +4,8 @@
  * Also stores path requests in a series of vectors divided by presence or absence of destination huristic.
  * This divide is done for instruction cache locality.
  * TODO: try replacing std::function accessCondition and destinationCondition with a single findPath std::function member which calls a static class method in the class derived from PathRequest which calls a findPath template function.
- * 	
- */ 
+ *
+ */
 #pragma once
 
 #include "config.h"
@@ -104,9 +104,9 @@ class TerrainFacade final
 	MoveTypeId m_moveType;
 	// Non batched pathing uses the WithoutMemo variants.
 	template<bool anyOccupiedBlock, DestinationCondition DestinationConditionT>
-	[[nodiscard]] FindPathResult findPathBreadthFirstWithoutMemo(const BlockIndex& start, const Facing& startFacing, DestinationConditionT& destinationCondition, const ShapeId& shape, const MoveTypeId& moveType, bool detour, bool adjacent, const FactionId& faction, const DistanceInBlocks& maxRange) const;
+	[[nodiscard]] FindPathResult findPathBreadthFirstWithoutMemo(const BlockIndex& start, const Facing4& startFacing, DestinationConditionT& destinationCondition, const ShapeId& shape, const MoveTypeId& moveType, bool detour, bool adjacent, const FactionId& faction, const DistanceInBlocks& maxRange) const;
 	template<bool anyOccupiedBlock, DestinationCondition DestinationConditionT>
-	[[nodiscard]] FindPathResult findPathDepthFirstWithoutMemo(const BlockIndex& from, const Facing& startFacing, DestinationConditionT& destinationCondition, const BlockIndex& huristicDestination, const ShapeId& shape, const MoveTypeId& moveType, bool detour, bool adjacent, const FactionId& faction, const DistanceInBlocks& maxRange) const;
+	[[nodiscard]] FindPathResult findPathDepthFirstWithoutMemo(const BlockIndex& from, const Facing4& startFacing, DestinationConditionT& destinationCondition, const BlockIndex& huristicDestination, const ShapeId& shape, const MoveTypeId& moveType, bool detour, bool adjacent, const FactionId& faction, const DistanceInBlocks& maxRange) const;
 	PathRequestIndex getPathRequestIndexNoHuristic();
 	PathRequestIndex getPathRequestIndexWithHuristic();
 	void movePathRequestNoHuristic(PathRequestIndex oldIndex, PathRequestIndex newIndex);
@@ -122,34 +122,34 @@ public:
 	void clearPathRequests();
 	[[nodiscard]] bool canEnterFrom(const BlockIndex& blockIndex, AdjacentIndex adjacentIndex) const;
 	[[nodiscard]] bool getValueForBit(const BlockIndex& from, const BlockIndex& to) const;
-	[[nodiscard]] FindPathResult findPathTo(PathMemoDepthFirst& memo, const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const BlockIndex& target, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null()) const;
-	[[nodiscard]] FindPathResult findPathToWithoutMemo(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const BlockIndex& target, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null()) const;
-	[[nodiscard]] FindPathResult findPathToAnyOf(PathMemoDepthFirst& memo, const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, BlockIndices indecies, const BlockIndex huristicDestination, bool detour = false, const FactionId& faction = FactionId::null()) const;
-	[[nodiscard]] FindPathResult findPathToAnyOfWithoutMemo(const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, BlockIndices indecies, const BlockIndex huristicDestination, bool detour = false, const FactionId& faction = FactionId::null()) const;
+	[[nodiscard]] FindPathResult findPathTo(PathMemoDepthFirst& memo, const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, const BlockIndex& target, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null()) const;
+	[[nodiscard]] FindPathResult findPathToWithoutMemo(const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, const BlockIndex& target, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null()) const;
+	[[nodiscard]] FindPathResult findPathToAnyOf(PathMemoDepthFirst& memo, const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, BlockIndices indecies, const BlockIndex huristicDestination, bool detour = false, const FactionId& faction = FactionId::null()) const;
+	[[nodiscard]] FindPathResult findPathToAnyOfWithoutMemo(const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, BlockIndices indecies, const BlockIndex huristicDestination, bool detour = false, const FactionId& faction = FactionId::null()) const;
 
 	template<bool anyOccupiedBlock, DestinationCondition DestinationConditionT>
-	[[nodiscard]] FindPathResult findPathToConditionDepthFirst(DestinationConditionT& destinationCondition, PathMemoDepthFirst& memo, const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const BlockIndex& huristicDestination, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null(), const DistanceInBlocks& maxRange = DistanceInBlocks::max()) const;
+	[[nodiscard]] FindPathResult findPathToConditionDepthFirst(DestinationConditionT& destinationCondition, PathMemoDepthFirst& memo, const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, const BlockIndex& huristicDestination, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null(), const DistanceInBlocks& maxRange = DistanceInBlocks::max()) const;
 
 	template<bool anyOccupiedBlock, DestinationCondition DestinationConditionT>
-	[[nodiscard]] FindPathResult findPathToConditionDepthFirstWithoutMemo(DestinationConditionT& destinationCondition, const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, const BlockIndex& huristicDestination, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null(), const DistanceInBlocks& maxRange = DistanceInBlocks::max()) const;
+	[[nodiscard]] FindPathResult findPathToConditionDepthFirstWithoutMemo(DestinationConditionT& destinationCondition, const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, const BlockIndex& huristicDestination, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null(), const DistanceInBlocks& maxRange = DistanceInBlocks::max()) const;
 
 	template<bool anyOccupiedBlock, DestinationCondition DestinationConditionT>
-	[[nodiscard]] FindPathResult findPathToConditionBreadthFirst(DestinationConditionT destinationCondition, PathMemoBreadthFirst& memo, const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null(), const DistanceInBlocks& maxRange = DistanceInBlocks::max()) const;
+	[[nodiscard]] FindPathResult findPathToConditionBreadthFirst(DestinationConditionT destinationCondition, PathMemoBreadthFirst& memo, const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null(), const DistanceInBlocks& maxRange = DistanceInBlocks::max()) const;
 
 	template<bool anyOccupiedBlock, DestinationCondition DestinationConditionT>
-	[[nodiscard]] FindPathResult findPathToConditionBreadthFirstWithoutMemo(DestinationConditionT& destinationCondition, const BlockIndex& start, const Facing& startFacing, const ShapeId& shape, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null(), const DistanceInBlocks& maxRange = DistanceInBlocks::max()) const;
-	
-	[[nodiscard]] FindPathResult findPathToBlockDesignation(PathMemoBreadthFirst &memo, const BlockDesignation designation, const FactionId &faction, const BlockIndex &start, const Facing &startFacing, const ShapeId &shape, bool detour, bool adjacent, bool unreserved, const DistanceInBlocks &maxRange) const;
+	[[nodiscard]] FindPathResult findPathToConditionBreadthFirstWithoutMemo(DestinationConditionT& destinationCondition, const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null(), const DistanceInBlocks& maxRange = DistanceInBlocks::max()) const;
+
+	[[nodiscard]] FindPathResult findPathToBlockDesignation(PathMemoBreadthFirst &memo, const BlockDesignation designation, const FactionId &faction, const BlockIndex &start, const Facing4 &startFacing, const ShapeId &shape, bool detour, bool adjacent, bool unreserved, const DistanceInBlocks &maxRange) const;
 
 	// Faction is sent by value on pupose.
 	template<bool anyOccupiedBlock, DestinationCondition DestinationConditionT>
-	[[nodiscard]] FindPathResult findPathToBlockDesignationAndCondition(DestinationConditionT& destinationCondition, PathMemoBreadthFirst &memo, const BlockDesignation designation, FactionId faction, const BlockIndex &start, const Facing &startFacing, const ShapeId &shape, bool detour, bool adjacent, bool unreserved, const DistanceInBlocks &maxRange) const;
-	
-	[[nodiscard]] FindPathResult findPathToEdge(PathMemoBreadthFirst& memo, const BlockIndex &start, const Facing &startFacing, const ShapeId &shape, bool detour = false) const;
-	[[nodiscard]] FindPathResult findPathAdjacentToPolymorphicWithoutMemo(const BlockIndex &start, const Facing &startFacing, const ShapeId &shape, const ActorOrItemIndex &actorOrItem, bool detour = false) const;
+	[[nodiscard]] FindPathResult findPathToBlockDesignationAndCondition(DestinationConditionT& destinationCondition, PathMemoBreadthFirst &memo, const BlockDesignation designation, FactionId faction, const BlockIndex &start, const Facing4 &startFacing, const ShapeId &shape, bool detour, bool adjacent, bool unreserved, const DistanceInBlocks &maxRange) const;
+
+	[[nodiscard]] FindPathResult findPathToEdge(PathMemoBreadthFirst& memo, const BlockIndex &start, const Facing4 &startFacing, const ShapeId &shape, bool detour = false) const;
+	[[nodiscard]] FindPathResult findPathAdjacentToPolymorphicWithoutMemo(const BlockIndex &start, const Facing4 &startFacing, const ShapeId &shape, const ActorOrItemIndex &actorOrItem, bool detour = false) const;
 	// For testing.
 	[[nodiscard]] size_t getPathRequestCount() const { return m_pathRequestsNoHuristic.size() + m_pathRequestsWithHuristic.size(); }
-	[[nodiscard]] bool accessable(const BlockIndex& from, const Facing& startFacing, const BlockIndex& to, const ActorIndex& actor) const;
+	[[nodiscard]] bool accessable(const BlockIndex& from, const Facing4& startFacing, const BlockIndex& to, const ActorIndex& actor) const;
 	[[nodiscard]] bool empty() const { return m_pathRequestsNoHuristic.empty() && m_pathRequestsWithHuristic.empty(); }
 };
 class AreaHasTerrainFacades

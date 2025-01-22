@@ -13,10 +13,10 @@ class InstallItemObjective;
 class InstallItemProject final : public Project
 {
 	const ItemReference m_item;
-	Facing m_facing;
+	Facing4 m_facing = Facing4::Null;
 public:
 	// Max one worker.
-	InstallItemProject(Area& area, const ItemReference& i, const BlockIndex& l, const Facing& facing, const FactionId& faction);
+	InstallItemProject(Area& area, const ItemReference& i, const BlockIndex& l, const Facing4& facing, const FactionId& faction);
 	void onComplete();
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const { return {}; }
 	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const { return {{ItemQuery::create(m_item), Quantity::create(1)}}; }
@@ -33,7 +33,7 @@ class HasInstallItemDesignationsForFaction final
 	FactionId m_faction;
 public:
 	HasInstallItemDesignationsForFaction(const FactionId& faction) : m_faction(faction) { }
-	void add(Area& area, const BlockIndex& block, const ItemIndex& item, const Facing& facing, const FactionId& faction);
+	void add(Area& area, const BlockIndex& block, const ItemIndex& item, const Facing4& facing, const FactionId& faction);
 	void remove(Area& area, const ItemIndex& item);
 	bool empty() const { return m_designations.empty(); }
 	bool contains(const BlockIndex& block) const { return m_designations.contains(block); }

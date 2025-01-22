@@ -32,10 +32,10 @@ public:
 	void onProjectCannotReserve(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::wstring name() const { return L"construct"; }
-	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(Area& area, const BlockIndex& location, const Facing& facing, const ActorIndex& actor);
+	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(Area& area, const BlockIndex& location, const Facing4& facing, const ActorIndex& actor);
 	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(Area& area, const BlockIndex& block, const ActorIndex& actor);
 	[[nodiscard]] bool joinableProjectExistsAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
-	[[nodiscard]] bool canJoinProjectAdjacentToLocationAndFacing(Area& area, const BlockIndex& block, const Facing& facing, const ActorIndex& actor) const;
+	[[nodiscard]] bool canJoinProjectAdjacentToLocationAndFacing(Area& area, const BlockIndex& block, const Facing4& facing, const ActorIndex& actor) const;
 	friend class ConstructPathRequest;
 	friend class ConstructProject;
 	// For Testing.

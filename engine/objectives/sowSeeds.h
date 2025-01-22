@@ -37,7 +37,7 @@ public:
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::wstring name() const { return L"sow seeds"; }
 	[[nodiscard]] bool canSowAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
-	[[nodiscard]] BlockIndex getBlockToSowAt(Area& area, const BlockIndex& location, Facing facing, const ActorIndex& actor);
+	[[nodiscard]] BlockIndex getBlockToSowAt(Area& area, const BlockIndex& location, Facing4 facing, const ActorIndex& actor);
 	friend class SowSeedsEvent;
 	// For testing.
 	[[nodiscard]] BlockIndex getBlock() { return m_block; }

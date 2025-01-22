@@ -27,7 +27,7 @@ bool ItemType::hasMeleeAttack(const ItemTypeId& id)
 			return true;
 	return false;
 }
-BlockIndex ItemType::getCraftLocation(const ItemTypeId& id, Blocks& blocks, const BlockIndex& location, const Facing& facing)
+BlockIndex ItemType::getCraftLocation(const ItemTypeId& id, Blocks& blocks, const BlockIndex& location, const Facing4& facing)
 {
 	assert(itemTypeData.m_craftLocationStepTypeCategory[id] != CraftStepTypeCategoryId::null());
 	auto [x, y, z] = util::rotateOffsetToFacing(itemTypeData.m_craftLocationOffset[id], facing);

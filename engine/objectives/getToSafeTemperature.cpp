@@ -26,7 +26,7 @@ FindPathResult GetToSafeTemperaturePathRequest::readStep(Area& area, const Terra
 	Actors& actors = area.getActors();
 	Blocks& blocks = area.getBlocks();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	auto condition = [&actors, &blocks, actorIndex](const BlockIndex& location, const Facing& facing) ->std::pair<bool, BlockIndex>
+	auto condition = [&actors, &blocks, actorIndex](const BlockIndex& location, const Facing4& facing) ->std::pair<bool, BlockIndex>
 	{
 		for(BlockIndex adjacent : actors.getBlocksWhichWouldBeOccupiedAtLocationAndFacing(actorIndex, location, facing))
 			if(actors.temperature_isSafe(actorIndex, blocks.temperature_get(adjacent)))
@@ -98,9 +98,9 @@ void GetToSafeTemperatureObjective::execute(Area& area, const ActorIndex& actor)
 		actors.move_pathRequestRecord(actor, std::make_unique<GetToSafeTemperaturePathRequest>(area, *this, actor));
 }
 void GetToSafeTemperatureObjective::cancel(Area& area, const ActorIndex& actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
-void GetToSafeTemperatureObjective::reset(Area& area, const ActorIndex& actor) 
-{ 
-	cancel(area, actor); 
-	m_noWhereWithSafeTemperatureFound = false; 
+void GetToSafeTemperatureObjective::reset(Area& area, const ActorIndex& actor)
+{
+	cancel(area, actor);
+	m_noWhereWithSafeTemperatureFound = false;
 	area.getActors().canReserve_clearAll(actor);
 }

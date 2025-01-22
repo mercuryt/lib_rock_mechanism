@@ -25,7 +25,7 @@ DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, const Act
 FindPathResult DigPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	ActorIndex actorIndex = actor.getIndex(area.getActors().m_referenceData);
-	auto predicate = [&area, this, actorIndex](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	auto predicate = [&area, this, actorIndex](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
 	{
 		return {m_digObjective.joinableProjectExistsAt(area, block, actorIndex), block};
 	};
@@ -84,7 +84,7 @@ void DigObjective::execute(Area& area, const ActorIndex& actor)
 		Actors& actors = area.getActors();
 		DigProject* project = nullptr;
 		std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block) mutable
-		{ 
+		{
 			if(!getJoinableProjectAt(area, block, actor))
 				return false;
 			project = &area.m_hasDigDesignations.getForFactionAndBlock(actors.getFactionId(actor), block);
@@ -108,20 +108,20 @@ void DigObjective::cancel(Area& area, const ActorIndex& actor)
 		m_project->removeWorker(actor);
 	area.getActors().move_pathRequestMaybeCancel(actor);
 }
-void DigObjective::delay(Area& area, const ActorIndex& actor) 
-{ 
-	cancel(area, actor); 
+void DigObjective::delay(Area& area, const ActorIndex& actor)
+{
+	cancel(area, actor);
 	m_project = nullptr;
 	area.getActors().project_maybeUnset(actor);
 }
-void DigObjective::reset(Area& area, const ActorIndex& actor) 
-{ 
+void DigObjective::reset(Area& area, const ActorIndex& actor)
+{
 	Actors& actors = area.getActors();
 	if(m_project)
 	{
 		ActorReference ref = area.getActors().getReference(actor);
 		assert(!m_project->getWorkers().contains(ref));
-		m_project = nullptr; 
+		m_project = nullptr;
 		actors.project_unset(actor);
 	}
 	else

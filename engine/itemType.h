@@ -71,7 +71,7 @@ public:
 	static void create(ItemTypeParamaters& p);
 	[[nodiscard]] static ItemTypeId size();
 	[[nodiscard]] static AttackTypeId getRangedAttackType(const ItemTypeId& id);
-	[[nodiscard]] static BlockIndex getCraftLocation(const ItemTypeId& id, Blocks& blocks, const BlockIndex& location, const Facing& facing);
+	[[nodiscard]] static BlockIndex getCraftLocation(const ItemTypeId& id, Blocks& blocks, const BlockIndex& location, const Facing4& facing);
 	[[nodiscard]] static bool hasRangedAttack(const ItemTypeId& id);
 	[[nodiscard]] static bool hasMeleeAttack(const ItemTypeId& id);
 	[[nodiscard]] static const ItemTypeId byName(std::wstring name);

@@ -28,7 +28,7 @@ protected:
 	[[nodiscard]] BlockIndex getEntranceToArea(const ShapeId& shape, const MoveTypeId& moveType) const;
 	[[nodiscard]] BlockIndex findLocationOnEdgeForNear(const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& origin, const DistanceInBlocks& distance, const BlockIndices& exclude) const;
 	[[nodiscard]] bool blockIsConnectedToAtLeast(const BlockIndex& block, const ShapeId& shape, const MoveTypeId& moveType, uint16_t count) const;
-	[[nodiscard]] Facing getFacingAwayFromEdge(const BlockIndex& block) const;
+	[[nodiscard]] Facing4 getFacingAwayFromEdge(const BlockIndex& block) const;
 	[[nodiscard]] std::vector<AnimalSpeciesId> getSentientSpecies() const;
 	[[nodiscard]] virtual Json toJson() const;
 	static std::unique_ptr<DramaArc> load(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);

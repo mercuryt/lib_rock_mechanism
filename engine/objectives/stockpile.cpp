@@ -19,7 +19,7 @@ StockPileObjective::StockPileObjective() : Objective(Config::stockPilePriority) 
 StockPileObjective::StockPileObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
 	Objective(data, deserializationMemo),
 	m_project(data.contains("project") ? static_cast<StockPileProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>())) : nullptr)
-{ 
+{
 	if(data.contains("item"))
 		m_item.load(data["item"], area.getItems().m_referenceData);
 	if(data.contains("stockPileLocation"))
@@ -28,7 +28,7 @@ StockPileObjective::StockPileObjective(const Json& data, DeserializationMemo& de
 		m_hasCheckedForCloserDropOffLocation = true;
 	if(data.contains("pickUpFacing"))
 	{
-		m_pickUpFacing = data["pickUpFacing"].get<Facing>();
+		m_pickUpFacing = data["pickUpFacing"].get<Facing4>();
 		m_pickUpLocation = data["pickUpLocation"].get<BlockIndex>();
 	}
 }
@@ -43,7 +43,7 @@ Json StockPileObjective::toJson() const
 		data["stockPileLocation"] = m_stockPileLocation;
 	if(m_hasCheckedForCloserDropOffLocation)
 		data["hasCheckedForDropOffLocation"] = true;
-	if(m_pickUpFacing.exists())
+	if(m_pickUpFacing != Facing4::Null)
 	{
 		assert(m_pickUpLocation.exists());
 		data["m_pickUpFacing"] = m_pickUpFacing;
@@ -51,8 +51,8 @@ Json StockPileObjective::toJson() const
 	}
 	return data;
 }
-void StockPileObjective::execute(Area& area, const ActorIndex& actor) 
-{ 
+void StockPileObjective::execute(Area& area, const ActorIndex& actor)
+{
 	// If there is no project to work on dispatch a threaded task to either find one or call cannotFulfillObjective.
 	if(m_project == nullptr)
 	{
@@ -86,7 +86,7 @@ void StockPileObjective::reset(Area& area, const ActorIndex& actor)
 	m_stockPileLocation.clear();
 	if constexpr(DEBUG)
 	{
-		m_pickUpFacing.clear();
+		m_pickUpFacing = Facing4::Null;
 		m_pickUpLocation.clear();
 	}
 	cancel(area, actor);
@@ -143,7 +143,7 @@ FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& t
 	const FactionId& faction = actors.getFactionId(actorIndex);
 	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
 	AreaHasBlockDesignationsForFaction& designationsForFaction = area.m_blockDesignations.getForFaction(faction);
-	auto predicate = [this, actorIndex, faction, &hasStockPiles, &blocks, &items, &area, &designationsForFaction](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	auto predicate = [this, actorIndex, faction, &hasStockPiles, &blocks, &items, &area, &designationsForFaction](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
 	{
 		if(designationsForFaction.check(block, BlockDesignation::StockPileHaulFrom)) [[unlikely]]
 		{
@@ -310,7 +310,7 @@ FindPathResult StockPileDestinationPathRequest::readStep(Area& area, const Terra
 	assert(!actors.project_exists(actorIndex));
 	const FactionId& faction = actors.getFactionId(actorIndex);
 	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
-	auto predicate = [this, actorIndex, faction, &hasStockPiles, &blocks, &items, &area](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>{
+	auto predicate = [this, actorIndex, faction, &hasStockPiles, &blocks, &items, &area](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>{
 		return {m_objective.destinationCondition(area, block, m_objective.m_item.getIndex(items.m_referenceData), actorIndex), block};
 	};
 	constexpr bool anyOccupied = true;

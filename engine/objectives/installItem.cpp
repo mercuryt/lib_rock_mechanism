@@ -9,7 +9,7 @@
 // PathRequest.
 InstallItemPathRequest::InstallItemPathRequest(Area& area, InstallItemObjective& iio, const ActorIndex& actorIndex) :
 	m_installItemObjective(iio)
-{ 
+{
 	Actors& actors = area.getActors();
 	start = actors.getLocation(actorIndex);
 	maxRange = Config::maxRangeToSearchForDigDesignations;
@@ -37,7 +37,7 @@ FindPathResult InstallItemPathRequest::readStep(Area& area, const TerrainFacade&
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	auto destinationCondition = [&, actorIndex](const BlockIndex& block, const Facing&) -> std::pair<bool, BlockIndex>
+	auto destinationCondition = [&, actorIndex](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
 	{
 		FactionId faction = actors.getFactionId(actorIndex);
 		return {area.m_hasInstallItemDesignations.getForFaction(faction).contains(block), block};
@@ -67,9 +67,9 @@ void InstallItemPathRequest::writeStep(Area& area, FindPathResult& result)
 }
 // Objective.
 InstallItemObjective::InstallItemObjective() : Objective(Config::installItemPriority) { }
-InstallItemObjective::InstallItemObjective(const Json& data, DeserializationMemo& deserializationMemo) : 
+InstallItemObjective::InstallItemObjective(const Json& data, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo)
-{ 
+{
 	if(data.contains("project"))
 		m_project = static_cast<InstallItemProject*>(deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()));
 }

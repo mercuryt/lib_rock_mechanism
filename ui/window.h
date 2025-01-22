@@ -145,6 +145,6 @@ public:
 	// String utilities.
 	std::wstring displayNameForItem(const ItemIndex& item);
 	static std::wstring displayNameForCraftJob(CraftJob& craftJob);
-	static std::wstring facingToString(Facing facing);
+	static std::wstring facingToString(Facing4 facing);
 	friend class Draw;
 };

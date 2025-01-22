@@ -62,14 +62,30 @@ void Actors::move_callback(const ActorIndex& index)
 	assert(m_pathIter[index] != m_path[index].end());
 	BlockIndex block = *m_pathIter[index];
 	Blocks& blocks = m_area.getBlocks();
-	BlockIndices occupiedBlocks = isLeading(index) ? lineLead_getOccupiedBlocks(index) : m_blocks[index];
+	bool permanantlyBlocked = false;
+	bool temperarilyBlocked = false;
+	if(
+		!blocks.shape_anythingCanEnterEver(block) ||
+		!blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, m_shape[index], m_moveType[index], m_location[index])
+	)
+		permanantlyBlocked = true;
+	else if(!blocks.shape_canEnterCurrentlyFrom(block, m_shape[index], m_location[index], m_blocks[index]))
+		temperarilyBlocked = true;
+	if(isLeading(index) && !permanantlyBlocked)
+	{
+		assert(!isFollowing(index));
+		if(!lineLead_followersCanMoveEver(index))
+			permanantlyBlocked = true;
+		else if(!temperarilyBlocked && !lineLead_followersCanMoveCurrently(index))
+			temperarilyBlocked = true;
+	}
 	// Path has become permanantly blocked since being generated, repath.
-	if(!blocks.shape_anythingCanEnterEver(block) || !blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, m_shape[index], m_moveType[index], m_location[index]))
+	if(permanantlyBlocked)
 	{
 		move_setDestination(index, m_destination[index]);
 		return;
 	}
-	if(!blocks.shape_canEnterCurrentlyFrom(block, m_shape[index], m_location[index], occupiedBlocks))
+	if(temperarilyBlocked)
 	{
 		// Path is temporarily blocked, wait a bit and then detour if still blocked.
 		if(m_moveRetries[index] == Config::moveTryAttemptsBeforeDetour)
@@ -87,71 +103,17 @@ void Actors::move_callback(const ActorIndex& index)
 	}
 	else
 	{
-		// Path is not blocked for actor. Check for followers, if any.
-		ActorOrItemIndex follower = getFollower(index);
-		if(follower.exists())
-		{
-			const auto& path = lineLead_getPath(index);
-			while (follower.exists())
-			{
-				BlockIndex currentFollowerLocation = follower.getLocation(m_area);
-				auto found = std::ranges::find(std::views::reverse(path), currentFollowerLocation);
-				assert(found != std::ranges::end(std::views::reverse(path)));
-				if(path.size() != 1)
-					assert(found != std::ranges::end(std::views::reverse(path)) - 1);
-				BlockIndex followerNextStep = *(found + 1);
-				if (!blocks.shape_anythingCanEnterEver(followerNextStep) || !blocks.shape_shapeAndMoveTypeCanEnterEverFrom(followerNextStep, follower.getShape(m_area), follower.getMoveType(m_area), follower.getLocation(m_area)))
-				{
-					// Path is permanantly blocked for follower, repath.
-					move_setDestination(index, m_destination[index]);
-					return;
-				}
-				if (!follower.canEnterCurrentlyFromWithOccupied(m_area, followerNextStep, follower.getLocation(m_area), occupiedBlocks))
-				{
-					// TODO: this repeats 12 lines from above starting at 68.
-					// Path is blocked temporarily, wait until retries are exhausted, then repath.
-					if (m_moveRetries[index] == Config::moveTryAttemptsBeforeDetour)
-					{
-						if (m_hasObjectives[index]->hasCurrent())
-							m_hasObjectives[index]->detour(m_area);
-						else
-							move_setDestination(index, m_destination[index], true);
-					}
-					else
-					{
-						++m_moveRetries[index];
-						move_schedule(index);
-						return;
-					}
-				}
-				follower = follower.getFollower(m_area);
-			}
-		}
-		// Path is not blocked for followers.
+		// Path is not blocked, move.
 		m_moveRetries[index] = 0;
-		Facing facing = blocks.facingToSetWhenEnteringFrom(block, m_location[index]);
+		Facing4 facing = blocks.facingToSetWhenEnteringFrom(block, m_location[index]);
 		setLocationAndFacing(index, block, facing);
 		// Move followers.
-		follower = getFollower(index);
-		if(follower.exists())
+		if(isLeading(index))
 		{
 			lineLead_pushFront(index, block);
-			auto& path = m_leadFollowPath[index];
-			while (follower.exists())
-			{
-				BlockIndex currentFollowerLocation = follower.getLocation(m_area);
-				auto found = std::ranges::find(std::views::reverse(path), currentFollowerLocation);
-				assert(found != std::ranges::end(std::views::reverse(path)));
-				if(path.size() != 1)
-					assert(found != std::ranges::end(std::views::reverse(path)) - 1);
-				BlockIndex followerNextStep = *(found + 1);
-				Facing facing = blocks.facingToSetWhenEnteringFrom(followerNextStep, currentFollowerLocation);
-				// TODO: check if follower can enter currently, it may be block by it's leader moving but not vacating, perhaps due to turning.
-				follower.setLocationAndFacing(m_area, followerNextStep, facing);
-				follower = follower.getFollower(m_area);
-			}
-			lineLead_popBackUnlessOccupiedByFollower(index);
+			lineLead_moveFollowers(index);
 		}
+		// Respond to reaching end of path or attempt to schedule another move step.
 		if(block == m_destination[index])
 		{
 			m_destination[index].clear();
@@ -160,12 +122,14 @@ void Actors::move_callback(const ActorIndex& index)
 		}
 		else
 		{
+			assert((*m_pathIter[index]) != *(m_pathIter[index] + 1));
 			++m_pathIter[index];
 			assert(m_pathIter[index] != m_path[index].end());
 			BlockIndex nextBlock = *m_pathIter[index];
-			if(blocks.shape_anythingCanEnterEver(nextBlock) && blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, m_shape[index], m_moveType[index], m_location[index]))
+			if(blocks.shape_anythingCanEnterEver(nextBlock) && blocks.shape_shapeAndMoveTypeCanEnterEverFrom(nextBlock, m_shape[index], m_moveType[index], m_location[index]))
 				move_schedule(index);
 			else
+				// Path is no longer valid.
 				m_hasObjectives[index]->cannotCompleteSubobjective(m_area);
 		}
 	}
@@ -337,7 +301,7 @@ bool Actors::move_tryToReserveProposedDestination(const ActorIndex& index, const
 	{
 		assert(!path.empty());
 		BlockIndex previous = path.size() == 1 ? getLocation(index) : path[path.size() - 2];
-		Facing facing = blocks.facingToSetWhenEnteringFrom(location, previous);
+		Facing4 facing = blocks.facingToSetWhenEnteringFrom(location, previous);
 		auto occupiedBlocks = Shape::getBlocksOccupiedAt(shape, blocks, location, facing);
 		for(BlockIndex block : occupiedBlocks)
 			if(blocks.isReserved(block, faction))
@@ -477,7 +441,7 @@ bool Actors::move_canPathTo(const ActorIndex& index, const BlockIndex& destinati
 {
 	return move_canPathFromTo(index, m_location[index], m_facing[index], destination);
 }
-bool Actors::move_canPathFromTo(const ActorIndex& index, const BlockIndex& start, const Facing& startFacing, const BlockIndex& destination)
+bool Actors::move_canPathFromTo(const ActorIndex& index, const BlockIndex& start, const Facing4& startFacing, const BlockIndex& destination)
 {
 	TerrainFacade& terrainFacade = m_area.m_hasTerrainFacades.getForMoveType(m_moveType[index]);
 	return terrainFacade.accessable(start, startFacing, destination, index);

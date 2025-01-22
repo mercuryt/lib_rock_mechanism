@@ -42,7 +42,7 @@ struct ActorParamaters
 	Step birthStep = Step::null();
 	Percent percentGrown = Percent::null();
 	BlockIndex location;
-	Facing facing = Facing::null();
+	Facing4 facing = Facing4::Null;
 	FactionId faction = FactionId::null();
 	Percent percentHunger = Percent::null();
 	bool needsEat = false;
@@ -143,7 +143,7 @@ public:
 	void resetNeeds(const ActorIndex& index);
 	void setShape(const ActorIndex& index, const ShapeId& shape);
 	void setLocation(const ActorIndex& index, const BlockIndex& block);
-	void setLocationAndFacing(const ActorIndex& index, const BlockIndex& block, const Facing& facing);
+	void setLocationAndFacing(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
 	void exit(const ActorIndex& index);
 	void removeMassFromCorpse(const ActorIndex& index, const Mass& mass);
 	void die(const ActorIndex& index, CauseOfDeath causeOfDeath);
@@ -153,8 +153,8 @@ public:
 	void takeHit(const ActorIndex& index, Hit& hit, BodyPart& bodyPart);
 	// May be null.
 	void setFaction(const ActorIndex& index, const FactionId& faction);
-	void reserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing& facing);
-	void unreserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing& facing);
+	void reserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing4& facing);
+	void unreserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing4& facing);
 	void setBirthStep(const ActorIndex& index, const Step& step);
 	void setName(const ActorIndex& index, std::wstring name){ m_name[index] = name; }
 	[[nodiscard]] ActorIndices getAll() const;
@@ -291,7 +291,7 @@ public:
 	[[nodiscard]] Step move_stepsTillNextMoveEvent(const ActorIndex& index) const;
 	[[nodiscard]] uint8_t move_getRetries(const ActorIndex& index) const { return m_moveRetries[index]; }
 	[[nodiscard]] bool move_canPathTo(const ActorIndex& index, const BlockIndex& destination);
-	[[nodiscard]] bool move_canPathFromTo(const ActorIndex& index, const BlockIndex& start, const Facing& startFacing, const BlockIndex& destination);
+	[[nodiscard]] bool move_canPathFromTo(const ActorIndex& index, const BlockIndex& start, const Facing4& startFacing, const BlockIndex& destination);
 	// -CanPickUp.
 	void canPickUp_pickUpItem(const ActorIndex& index, const ItemIndex& item);
 	void canPickUp_pickUpItemQuantity(const ActorIndex& index, const ItemIndex& item, const Quantity& quantity);
@@ -375,7 +375,7 @@ public:
 	[[nodiscard]] bool canReserve_tryToReserveLocation(const ActorIndex& index, const BlockIndex& block, std::unique_ptr<DishonorCallback> callback = nullptr);
 	[[nodiscard]] bool canReserve_tryToReserveItem(const ActorIndex& index, const ItemIndex& item, const Quantity& quantity, std::unique_ptr<DishonorCallback> callback = nullptr);
 	[[nodiscard]] bool canReserve_hasReservationWith(const ActorIndex& index, Reservable& reservable) const;
-	[[nodiscard]] bool canReserve_canReserveLocation(const ActorIndex& index, const BlockIndex& block, const Facing& facing) const;
+	[[nodiscard]] bool canReserve_canReserveLocation(const ActorIndex& index, const BlockIndex& block, const Facing4& facing) const;
 	[[nodiscard]] bool canReserve_locationAtEndOfPathIsUnreserved(const ActorIndex& index, const BlockIndices& path) const;
 private:
 	[[nodiscard]] CanReserve& canReserve_get(const ActorIndex& index);
@@ -502,7 +502,7 @@ public:
 	[[nodiscard]] bool grow_isGrowing(const ActorIndex& index) const;
 	[[nodiscard]] Percent grow_getPercent(const ActorIndex& index) const;
 	// For Line leader.
-	[[nodiscard]] BlockIndices lineLead_getPath(const ActorIndex& index) const;
+	[[nodiscard]] const BlockIndices& lineLead_getPath(const ActorIndex& index) const;
 	[[nodiscard]] OccupiedBlocksForHasShape lineLead_getOccupiedBlocks(const ActorIndex& index) const;
 	[[nodiscard]] bool lineLead_pathEmpty(const ActorIndex& index) const;
 	[[nodiscard]] ShapeId lineLead_getLargestShape(const ActorIndex& index) const;
@@ -510,10 +510,13 @@ public:
 	[[nodiscard]] Speed lineLead_getSpeedWithAddedMass(const ActorIndex& index, const Mass& mass) const;
 	[[nodiscard]] Speed lineLead_getSpeedWithAddedMass(const SmallSet<ActorIndex>& indices, const Mass& mass) const;
 	[[nodiscard]] std::vector<ActorOrItemIndex> lineLead_getAll(const ActorIndex& index) const;
+	[[nodiscard]] bool lineLead_followersCanMoveEver(const ActorIndex& index) const;
+	[[nodiscard]] bool lineLead_followersCanMoveCurrently(const ActorIndex& index) const;
 	void lineLead_clearPath(const ActorIndex& index);
 	void lineLead_appendToPath(const ActorIndex& index, const BlockIndex& block);
 	void lineLead_pushFront(const ActorIndex& index, const BlockIndex& block);
 	void lineLead_popBackUnlessOccupiedByFollower(const ActorIndex& index);
+	void lineLead_moveFollowers(const ActorIndex& index);
 	// For testing.
 	[[nodiscard]] bool grow_getEventExists(const ActorIndex& index) const;
 	[[nodiscard]] Percent grow_getEventPercent(const ActorIndex& index) const;

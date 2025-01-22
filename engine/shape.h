@@ -37,17 +37,17 @@ struct Shape
 public:
 	static ShapeId create(const std::wstring name, std::vector<std::array<int32_t, 4>> positions, uint32_t displayScale);
 	[[nodiscard]] static Json toJson(const ShapeId& id);
-	[[nodiscard]] static std::vector<std::array<int32_t, 4>> positionsWithFacing(const ShapeId& id, const Facing& facing);
-	[[nodiscard]] static std::vector<std::array<int32_t, 3>> adjacentPositionsWithFacing(const ShapeId& id, const Facing& facing);
-	[[nodiscard]] static std::vector<std::array<int32_t, 4>> makeOccupiedPositionsWithFacing(const ShapeId& id, const Facing& facing);
-	[[nodiscard]] static std::vector<std::array<int32_t, 3>> makeAdjacentPositionsWithFacing(const ShapeId& id, const Facing& facing);
+	[[nodiscard]] static std::vector<std::array<int32_t, 4>> positionsWithFacing(const ShapeId& id, const Facing4& facing);
+	[[nodiscard]] static std::vector<std::array<int32_t, 3>> adjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing);
+	[[nodiscard]] static std::vector<std::array<int32_t, 4>> makeOccupiedPositionsWithFacing(const ShapeId& id, const Facing4& facing);
+	[[nodiscard]] static std::vector<std::array<int32_t, 3>> makeAdjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing);
 	[[nodiscard]] static std::vector<std::array<int32_t, 3>> positionOffsets(std::array<int32_t, 4> position);
-	[[nodiscard]] static BlockIndices getBlocksOccupiedAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing);
-	[[nodiscard]] static BlockIndices getBlocksOccupiedAndAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing);
-	[[nodiscard]] static std::vector<std::pair<BlockIndex, CollisionVolume>> getBlocksOccupiedAtWithVolumes(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing);
-	[[nodiscard]] static BlockIndices getBlocksWhichWouldBeAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing);
-	[[nodiscard]] static BlockIndex getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing, std::function<bool(const BlockIndex&)> predicate);
-	[[nodiscard]] static BlockIndex getBlockWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing& facing, std::function<bool(const BlockIndex&)> predicate);
+	[[nodiscard]] static BlockIndices getBlocksOccupiedAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
+	[[nodiscard]] static BlockIndices getBlocksOccupiedAndAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
+	[[nodiscard]] static std::vector<std::pair<BlockIndex, CollisionVolume>> getBlocksOccupiedAtWithVolumes(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
+	[[nodiscard]] static BlockIndices getBlocksWhichWouldBeAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
+	[[nodiscard]] static BlockIndex getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)> predicate);
+	[[nodiscard]] static BlockIndex getBlockWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)> predicate);
 	[[nodiscard]] static CollisionVolume getCollisionVolumeAtLocationBlock(const ShapeId& id);
 	[[nodiscard]] static std::vector<std::array<int32_t, 4>> getPositions(const ShapeId& id);
 	[[nodiscard]] static std::wstring getName(const ShapeId& id);

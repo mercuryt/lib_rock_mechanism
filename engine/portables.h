@@ -70,7 +70,6 @@ public:
 	[[nodiscard]] bool isLeadingActor(const Index& index, const ActorIndex& actor) const;
 	[[nodiscard]] bool isLeadingItem(const Index& index, const ItemIndex& item) const;
 	[[nodiscard]] bool isLeadingPolymorphic(const Index& index, const ActorOrItemIndex& ActorOrItem) const;
-	[[nodiscard]] bool lead_allCanMove(const Index& index) const;
 	[[nodiscard]] ActorOrItemIndex& getFollower(const Index& index) { return m_follower[index]; }
 	[[nodiscard]] ActorOrItemIndex& getLeader(const Index& index) { return m_leader[index]; }
 	[[nodiscard]] const ActorOrItemIndex& getFollower(const Index& index) const { return m_follower[index]; }

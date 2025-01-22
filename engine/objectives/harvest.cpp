@@ -140,7 +140,7 @@ void HarvestObjective::makePathRequest(Area& area, const ActorIndex& actor)
 {
 	area.getActors().move_pathRequestRecord(actor, std::make_unique<HarvestPathRequest>(area, *this, actor));
 }
-BlockIndex HarvestObjective::getBlockContainingPlantToHarvestAtLocationAndFacing(Area& area, const BlockIndex& location, Facing facing, const ActorIndex& actor)
+BlockIndex HarvestObjective::getBlockContainingPlantToHarvestAtLocationAndFacing(Area& area, const BlockIndex& location, Facing4 facing, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block) { return blockContainsHarvestablePlant(area, block, actor); };

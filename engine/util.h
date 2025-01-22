@@ -75,17 +75,22 @@ namespace util
 	}
 	//template<typename T>
 	//struct AddressEquivalence{ bool operator()(T& other){ return &other == this; } };
-	inline std::array<int32_t, 3> rotateOffsetToFacing(const std::array<int32_t, 3>& position, Facing facing)
+	inline std::array<int32_t, 3> rotateOffsetToFacing(const std::array<int32_t, 3>& position, Facing4 facing)
 	{
 		auto [x, y, z] = position;
-		if(facing == 0)
-			return position;
-		if(facing == 1)
-			return {y, x, z};
-		if(facing == 2)
-			return {x, y*-1, z};
-		assert(facing ==  3);
-		return {y * -1, x, z};
+		switch(facing)
+		{
+			case Facing4::North:
+				return position;
+			case Facing4::East:
+				return {y, x, z};
+			case Facing4::South:
+				return {x, y*-1, z};
+			case Facing4::West:
+				return {y * -1, x, z};
+			default:
+				assert(false);
+		}
 	}
 	inline double radiansToDegrees(double radians)
 	{
@@ -157,7 +162,7 @@ namespace util
 		if(std::ranges::find(vector, value) == vector.end())
 			vector.push_back(value);
 	}
-	inline Facing getFacingForAdjacentOffset(uint8_t adjacentOffset)
+	inline Facing4 getFacingForAdjacentOffset(uint8_t adjacentOffset)
 	{
 		switch(adjacentOffset)
 		{
@@ -170,21 +175,21 @@ namespace util
 			case 23:
 			case 24:
 			case 25:
-				return Facing::create(3);
+				return Facing4::West;
 			case 0:
 			case 1:
 			case 2:
 			case 9:
 			case 10:
 			case 16:
-				return Facing::create(1);
+				return Facing4::East;
 			case 5:
 			case 11:
 			case 19:
 			case 22:
-				return Facing::create(2);
+				return Facing4::South;
 			default:
-				return Facing::create(0);
+				return Facing4::North;
 
 		}
 	}

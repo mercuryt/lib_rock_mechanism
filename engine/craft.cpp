@@ -107,8 +107,8 @@ void CraftStepProject::onCancel()
 void CraftStepProject::onAddToMaking(const ActorIndex& actor)
 {
 	Actors& actors = m_area.getActors();
-	Facing facing = m_area.getBlocks().shape_canEnterCurrentlyWithAnyFacingReturnFacing(m_location, actors.getShape(actor), actors.getBlocks(actor));
-	if(facing.exists())
+	Facing4 facing = m_area.getBlocks().shape_canEnterCurrentlyWithAnyFacingReturnFacing(m_location, actors.getShape(actor), actors.getBlocks(actor));
+	if(facing != Facing4::Null)
 		actors.setLocationAndFacing(actor, m_location, facing);
 	else
 		setDelayOn();

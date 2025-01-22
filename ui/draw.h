@@ -55,12 +55,12 @@ public:
 	void multiTileActor(const ActorIndex& actor);
 	void actorOverlay(const ActorIndex& actor);
 	void multiTileBorder(const OccupiedBlocksForHasShape& blocksOccpuied, sf::Color color, float thickness);
-	void borderSegmentOnBlock(const BlockIndex& block, const Facing& facing, sf::Color color, float thickness);
+	void borderSegmentOnBlock(const BlockIndex& block, const Facing4& facing, sf::Color color, float thickness);
 	void accessableSymbol(const BlockIndex& block);
 	void inaccessableSymbol(const BlockIndex& block);
 
 	// Connects to an open top block, tries to align with an open bottom block.
-	[[nodiscard]] Facing rampOrStairsFacing(const BlockIndex& block) const;
+	[[nodiscard]] Facing4 rampOrStairsFacing(const BlockIndex& block) const;
 	[[nodiscard]] sf::Vector2f blockToPosition(const BlockIndex& block) const;
 	[[nodiscard]] sf::Vector2f blockToPositionCentered(const BlockIndex& block) const;
 	[[nodiscard]] float getScaledUnit() const;
