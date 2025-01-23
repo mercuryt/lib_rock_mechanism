@@ -6,9 +6,9 @@ void LocationBucket::insert(const LocationBucketData &data)
 	m_data.push_back(data);
 	sort();
 }
-LocationBucketData& LocationBucket::insert(const ActorReference& actor, const Point3D& coordinates, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visionRangeSquered)
+LocationBucketData& LocationBucket::insert(const ActorReference& actor, const Point3D& coordinates, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visionRangeSquered, const Facing4& facing)
 {
-	m_data.emplace_back(coordinates, cuboid, actor, visionRangeSquered);
+	m_data.emplace_back(coordinates, cuboid, actor, visionRangeSquered, facing);
 	sort();
 	// TODO: this search could be avoided by a custom sort which tracks the location of the newly created data.
 	auto found = std::ranges::find_if(m_data, [&](const LocationBucketData& data){ return data.actor == actor && data.coordinates == coordinates; });

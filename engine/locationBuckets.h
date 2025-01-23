@@ -13,6 +13,7 @@ struct LocationBucketData
 	VisionCuboidIndex cuboid;
 	ActorReference actor;
 	DistanceInBlocks visionRangeSquared;
+	Facing4 facing;
 	struct hash{ [[nodiscard]] static size_t operator()(const LocationBucketData& data) { return data.actor.getReferenceIndex().get(); }};
 	[[nodiscard]] std::strong_ordering operator<=>(const LocationBucketData& other) { return actor <=> other.actor; }
 };
@@ -23,7 +24,7 @@ class LocationBucket
 public:
 	LocationBucket(Allocator& allocator) : m_data(&allocator) { }
 	void insert(const LocationBucketData& data);
-	LocationBucketData& insert(const ActorReference& actor, const Point3D& point, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visionRangeSquered);
+	LocationBucketData& insert(const ActorReference& actor, const Point3D& point, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visionRangeSquered, const Facing4& facing);
 	void remove(const ActorReference& actor);
 	void updateVisionRangeSquared(const ActorReference& actor, const Point3D& point, const DistanceInBlocks& visionRangeSquaed);
 	void updateVisionCuboidIndex(const Point3D& point, const VisionCuboidIndex& cuboid);

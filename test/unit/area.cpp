@@ -201,14 +201,20 @@ TEST_CASE("vision-threading")
 	Actors& actors = area.getActors();
 	BlockIndex block1 = blocks.getIndex_i(3, 3, 1);
 	BlockIndex block2 = blocks.getIndex_i(7, 7, 1);
+	Point3D point1 = blocks.getCoordinates(block1);
+	Point3D point2 = blocks.getCoordinates(block2);
+	REQUIRE(point2.isInFrontOf(point1, point1.getFacingTwords(point2)));
+	REQUIRE(point1.isInFrontOf(point2, point2.getFacingTwords(point1)));
 	ActorIndex a1 = actors.create(ActorParamaters{
 		.species=dwarf,
 		.location=block1,
+		.facing=point1.getFacingTwords(point2),
 	});
 	REQUIRE(area.m_visionRequests.size() == 1);
 	ActorIndex a2 = actors.create(ActorParamaters{
 		.species=dwarf,
 		.location=block2,
+		.facing=point2.getFacingTwords(point1),
 	});
 	REQUIRE(area.m_visionRequests.size() == 2);
 	simulation.doStep();

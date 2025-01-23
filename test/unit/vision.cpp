@@ -43,6 +43,7 @@ TEST_CASE("vision")
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
+			.facing=blocks.getCoordinates(block1).getFacingTwords(blocks.getCoordinates(block2)),
 		});
 		ActorIndex a2 = actors.create({
 			.species=dwarf,
@@ -65,6 +66,7 @@ TEST_CASE("vision")
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
+			.facing=blocks.getCoordinates(block1).getFacingTwords(blocks.getCoordinates(block3)),
 		});
 		actors.create({
 			.species=dwarf,
@@ -84,6 +86,7 @@ TEST_CASE("vision")
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
+			.facing=blocks.getCoordinates(block1).getFacingTwords(blocks.getCoordinates(block3)),
 		});
 		actors.create({
 			.species=dwarf,
@@ -104,6 +107,7 @@ TEST_CASE("vision")
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
+			.facing=blocks.getCoordinates(block1).getFacingTwords(blocks.getCoordinates(block3)),
 		});
 		ActorIndex a2 = actors.create({
 			.species=troll,
@@ -125,6 +129,7 @@ TEST_CASE("vision")
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
+			.facing=blocks.getCoordinates(block1).getFacingTwords(blocks.getCoordinates(block3)),
 		});
 		actors.create({
 			.species=dwarf,
@@ -143,6 +148,7 @@ TEST_CASE("vision")
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
+			.facing=blocks.getCoordinates(block1).getFacingTwords(blocks.getCoordinates(block3)),
 		});
 		actors.create({
 			.species=dwarf,
@@ -175,6 +181,7 @@ TEST_CASE("vision")
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
+			.facing=blocks.getCoordinates(block1).getFacingTwords(blocks.getCoordinates(block3)),
 		});
 		ActorIndex a2 = actors.create({
 			.species=dwarf,
@@ -204,6 +211,7 @@ TEST_CASE("vision")
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
+			.facing=blocks.getCoordinates(block1).getFacingTwords(blocks.getCoordinates(block3)),
 		});
 		actors.create({
 			.species=dwarf,
@@ -226,6 +234,7 @@ TEST_CASE("vision")
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
+			.facing=blocks.getCoordinates(block1).getFacingTwords(blocks.getCoordinates(block3)),
 		});
 		ActorIndex a2 = actors.create({
 			.species=dwarf,
@@ -255,6 +264,7 @@ TEST_CASE("vision")
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
+			.facing=blocks.getCoordinates(block1).getFacingTwords(blocks.getCoordinates(block3)),
 		});
 		actors.create({
 			.species=dwarf,
@@ -278,6 +288,7 @@ TEST_CASE("vision")
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
+			.facing=blocks.getCoordinates(block1).getFacingTwords(blocks.getCoordinates(block3)),
 		});
 		actors.create({
 			.species=dwarf,
@@ -360,6 +371,7 @@ TEST_CASE("vision")
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
+			.facing=blocks.getCoordinates(block1).getFacingTwords(blocks.getCoordinates(block2)),
 		});
 		ActorIndex a2 = actors.create({
 			.species=dwarf,
@@ -385,6 +397,7 @@ TEST_CASE("Too far to see")
 	ActorIndex a1 = actors.create({
 		.species=dwarf,
 		.location=block1,
+		.facing=blocks.getCoordinates(block1).getFacingTwords(blocks.getCoordinates(block2)),
 	});
 	actors.create({
 		.species=dwarf,

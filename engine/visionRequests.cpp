@@ -24,7 +24,7 @@ void VisionRequests::create(const ActorReference& actor)
 	assert(actors.vision_canSeeAnything(index));
 	const BlockIndex& location = actors.getLocation(index);
 	const VisionCuboidIndex& visionCuboidIndex = m_area.m_visionCuboids.getIndexForBlock(location);
-	m_data.emplace(m_area.getBlocks().getCoordinates(location), location, visionCuboidIndex, actor, actors.vision_getRange(index));
+	m_data.emplace(m_area.getBlocks().getCoordinates(location), location, visionCuboidIndex, actor, actors.vision_getRange(index), actors.getFacing(index));
 	if(m_data.back().range > m_largestRange)
 		m_largestRange = m_data.back().range;
 }
@@ -68,10 +68,14 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 			const Point3D& toCoords = data.coordinates;
 			const VisionCuboidIndex& toVisionCuboidIndex = data.cuboid;
 			DistanceInBlocks distanceSquared = fromCoords.distanceSquared(toCoords);
-			bool inRangeToSee = distanceSquared <= rangeSquared;
+			bool maybeCanSee =
+				toCoords.isInFrontOf(fromCoords, request.facing) &&
+				distanceSquared <= rangeSquared;
 			// A bit of logical asymetry here: If a multi tile object moves it's vision is counted only from it's location, but if another actor moves into a position where it can see a tile of the multi tile which is not it's location and the other actor is in the multi tile actors range it will be marked as seen, even though it would not be seen at the same position if it had not moved due to either distance or occulsion from the multi tile actor's primary location.
-			bool inRangeToBeSeen = distanceSquared <= data.visionRangeSquared;
-			if(inRangeToBeSeen || inRangeToSee)
+			bool maybeCanBeSeen =
+				fromCoords.isInFrontOf(toCoords, data.facing) &&
+				distanceSquared <= data.visionRangeSquared;
+			if(maybeCanBeSeen || maybeCanSee)
 			{
 				if (
 					fromVisionCuboidIndex == toVisionCuboidIndex ||
@@ -83,13 +87,13 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 					)
 				)
 				{
-					if(inRangeToSee)
+					if(maybeCanSee)
 					{
-						if(inRangeToBeSeen)
+						if(maybeCanBeSeen)
 							previousFoundActor = data.actor;
 						canSee.insertNonunique(data.actor);
 					}
-					if(inRangeToBeSeen)
+					if(maybeCanBeSeen)
 						canBeSeenBy.insertNonunique(data.actor);
 				}
 			}
@@ -165,6 +169,7 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::
 		Point3D coordinates;
 		VisionCuboidIndex cuboid;
 		BlockIndex location;
+		Facing4 facing;
 	};
 	struct BlockData
 	{
@@ -203,7 +208,7 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::
 		if(found != candidates.end())
 			return;
 		BlockIndex location = blocks.getIndex(data.coordinates);
-		candidates.emplace_back(data.actor, data.visionRangeSquared, data.coordinates, data.cuboid, location);
+		candidates.emplace_back(data.actor, data.visionRangeSquared, data.coordinates, data.cuboid, location, data.facing);
 		lastSeen = data.actor;
 	});
 	for(const CandidateData& candidate : candidates)

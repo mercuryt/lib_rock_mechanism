@@ -23,7 +23,7 @@ class OctTree
 public:
 	OctTree(Allocator& allocator) : m_data(allocator) {}
 	OctTree(const DistanceInBlocks& halfWidth, Allocator& allocator);
-	void record(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visonRangeSquared);
+	void record(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visonRangeSquared, const Facing4& facing);
 	void erase(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates);
 	void updateRange(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates, const DistanceInBlocks& visionRangeSquared);
 	void updateVisionCuboid(OctTreeRoot& root, const Point3D& coordinates, const VisionCuboidIndex& cuboid);
