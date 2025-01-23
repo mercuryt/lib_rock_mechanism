@@ -71,7 +71,7 @@ void AreaHasRain::doStep()
 	DistanceInBlocks offset = DistanceInBlocks::create(random.getInRange(0u, Config::rainMaximumOffset.get()));
 	DistanceInBlocks i = DistanceInBlocks::create(0);
 	Blocks& blocks = m_area.getBlocks();
-	Cuboid cuboid = blocks.getAll();
+	Cuboid cuboid = blocks.getAll().getFace(Facing6::Above);
 	for(const BlockIndex& block : cuboid.getView(blocks))
 	{
 		if(offset != 0)
@@ -80,8 +80,17 @@ void AreaHasRain::doStep()
 			--i;
 		else
 		{
-			if(!blocks.solid_is(block) && blocks.fluid_canEnterCurrently(block, m_currentlyRainingFluidType))
-				blocks.fluid_add(block, CollisionVolume::create(1), m_currentlyRainingFluidType);
+			Point3D coordinates = blocks.getCoordinates(block);
+			BlockIndex current = block;
+			while(!blocks.solid_is(current) && blocks.fluid_canEnterCurrently(current, m_currentlyRainingFluidType))
+			{
+				coordinates = coordinates.below();
+				current = blocks.getIndex(coordinates);
+				if(coordinates.z == 0)
+					break;
+			}
+			if(current != block)
+				blocks.fluid_add(blocks.getIndex(coordinates.above()), CollisionVolume::create(1), m_currentlyRainingFluidType);
 			i = spacing;
 		}
 	}
