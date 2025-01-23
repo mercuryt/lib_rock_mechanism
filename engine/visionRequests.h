@@ -18,8 +18,9 @@ struct VisionRequest
 	VisionCuboidIndex cuboid;
 	ActorReference actor;
 	DistanceInBlocks range;
-	VisionRequest(const Point3D& _coordinates, const BlockIndex& _location, const VisionCuboidIndex& _cuboid, const ActorReference& _actor, const DistanceInBlocks _range) :
-		coordinates(_coordinates), location(_location), cuboid(_cuboid), actor(_actor), range(_range) { }
+	Facing4 facing;
+	VisionRequest(const Point3D& _coordinates, const BlockIndex& _location, const VisionCuboidIndex& _cuboid, const ActorReference& _actor, const DistanceInBlocks _range, const Facing4& _facing):
+		coordinates(_coordinates), location(_location), cuboid(_cuboid), actor(_actor), range(_range), facing(_facing) { }
 	struct hash { [[nodiscard]] static bool operator()(const VisionRequest& request) { return request.actor.getReferenceIndex().get(); }};
 	[[nodiscard]] bool operator==(const VisionRequest& visionRequest) const { return visionRequest.actor == actor; }
 	[[nodiscard]] bool operator!=(const VisionRequest& visionRequest) const { return visionRequest.actor != actor; }

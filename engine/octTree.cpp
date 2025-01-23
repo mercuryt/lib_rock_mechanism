@@ -5,9 +5,9 @@
 OctTree::OctTree(const DistanceInBlocks& halfWidth, Allocator& allocator) :
 	m_data(allocator),
 	m_cube({{halfWidth, halfWidth, halfWidth}, halfWidth}) { }
-void OctTree::record(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visionRangeSquared)
+void OctTree::record(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visionRangeSquared, const Facing4& facing)
 {
-	auto& locationData = m_data.insert(actor, coordinates, cuboid, visionRangeSquared);
+	auto& locationData = m_data.insert(actor, coordinates, cuboid, visionRangeSquared, facing);
 	afterRecord(root, locationData);
 }
 void OctTree::record(OctTreeRoot& root, const LocationBucketData& locationData)
@@ -147,10 +147,11 @@ void OctTreeRoot::record(Area& area, const ActorReference& actor)
 {
 	Actors& actors = area.getActors();
 	Blocks& blocks = area.getBlocks();
-	ActorIndex index = actor.getIndex(actors.m_referenceData);
-	DistanceInBlocks visionRangeSquared = actors.vision_getRangeSquared(index);
+	const ActorIndex& index = actor.getIndex(actors.m_referenceData);
+	const DistanceInBlocks& visionRangeSquared = actors.vision_getRangeSquared(index);
+	const Facing4& facing = actors.getFacing(index);
 	for(const BlockIndex& block : actors.getBlocks(index))
-		m_tree.record(*this, actor, blocks.getCoordinates(block), area.m_visionCuboids.getIndexForBlock(block), visionRangeSquared);
+		m_tree.record(*this, actor, blocks.getCoordinates(block), area.m_visionCuboids.getIndexForBlock(block), visionRangeSquared, facing);
 }
 void OctTreeRoot::erase(Area& area, const ActorReference& actor)
 {

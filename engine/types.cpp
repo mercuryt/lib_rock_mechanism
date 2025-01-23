@@ -31,16 +31,16 @@ bool Point3D::isInFrontOf(const Point3D& coordinates, const Facing4& facing) con
 		switch(facing)
 		{
 			case Facing4::North:
-				return y < coordinates.y;
+				return y <= coordinates.y;
 				break;
 			case Facing4::East:
-				return x < coordinates.x;
+				return x >= coordinates.x;
 				break;
 			case Facing4::South:
-				return y > coordinates.y;
+				return y >= coordinates.y;
 				break;
 			case Facing4::West:
-				return x > coordinates.x;
+				return x <= coordinates.x;
 				break;
 			default:
 				assert(false);
