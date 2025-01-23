@@ -23,7 +23,7 @@ TEST_CASE("vision cuboid basic")
 		REQUIRE(cuboids.getIndexForBlock(low).exists());
 		REQUIRE(cuboids.getIndexForBlock(high) == cuboids.getIndexForBlock(low));
 		VisionCuboid& visionCuboid = *cuboids.maybeGetForBlock(low);
-		REQUIRE(visionCuboid.m_cuboid.size(blocks) == 8);
+		REQUIRE(visionCuboid.m_cuboid.size() == 8);
 		REQUIRE(!visionCuboid.toDestory());
 		REQUIRE(visionCuboid.m_adjacent.empty());
 	}
@@ -34,13 +34,13 @@ TEST_CASE("vision cuboid basic")
 		REQUIRE(cuboids.size() == 3);
 		REQUIRE(cuboids.getIndexForBlock(low).empty());
 		VisionCuboid& highCuboid = *cuboids.maybeGetForBlock(high);
-		REQUIRE(highCuboid.m_cuboid.size(blocks) == 4);
+		REQUIRE(highCuboid.m_cuboid.size() == 4);
 		REQUIRE(highCuboid.m_adjacent.size() == 2);
 		VisionCuboid& eastCuboid = *cuboids.maybeGetForBlock(blocks.getIndex_i(0, 1, 0));
-		REQUIRE(eastCuboid.m_cuboid.size(blocks) == 2);
+		REQUIRE(eastCuboid.m_cuboid.size() == 2);
 		REQUIRE(eastCuboid.m_adjacent.size() == 2);
 		VisionCuboid& southCuboid = *cuboids.maybeGetForBlock(blocks.getIndex_i(1, 0, 0));
-		REQUIRE(southCuboid.m_cuboid.size(blocks) == 1);
+		REQUIRE(southCuboid.m_cuboid.size() == 1);
 		REQUIRE(southCuboid.m_adjacent.size() == 2);
 		REQUIRE(highCuboid.m_adjacent.contains(eastCuboid.m_index));
 		REQUIRE(highCuboid.m_adjacent.contains(southCuboid.m_index));
@@ -52,7 +52,7 @@ TEST_CASE("vision cuboid basic")
 		REQUIRE(cuboids.size() == 1);
 		REQUIRE(cuboids.getIndexForBlock(low).exists());
 		VisionCuboid& cuboid = *cuboids.maybeGetForBlock(high);
-		REQUIRE(cuboid.m_cuboid.size(blocks) == 8);
+		REQUIRE(cuboid.m_cuboid.size() == 8);
 		REQUIRE(cuboid.m_adjacent.empty());
 	}
 }
@@ -79,15 +79,14 @@ TEST_CASE("vision cuboid split")
 		if(&vc1 == &vc2)
 		{
 			assert(&vc2 != &vc3);
-			REQUIRE(vc1.m_cuboid.size(blocks) == 2);
-			REQUIRE(vc3.m_cuboid.size(blocks) == 1);
+			REQUIRE(vc1.m_cuboid.size() == 2);
+			REQUIRE(vc3.m_cuboid.size() == 1);
 		}
 		else
 		{
-
 			assert(&vc1 == &vc3);
-			REQUIRE(vc1.m_cuboid.size(blocks) == 2);
-			REQUIRE(vc2.m_cuboid.size(blocks) == 1);
+			REQUIRE(vc1.m_cuboid.size() == 2);
+			REQUIRE(vc2.m_cuboid.size() == 1);
 		}
 		REQUIRE(area.m_visionCuboids.maybeGetForBlock(b4) == nullptr);
 	}
@@ -103,7 +102,7 @@ TEST_CASE("vision cuboid split")
 		REQUIRE(area.m_visionCuboids.size() == 2);
 		REQUIRE(area.m_visionCuboids.maybeGetForBlock(middle) == area.m_visionCuboids.maybeGetForBlock(high));
 		REQUIRE(area.m_visionCuboids.maybeGetForBlock(middle) != area.m_visionCuboids.maybeGetForBlock(low));
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(low)->m_cuboid.size(blocks) == 9);
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(middle)->m_cuboid.size(blocks) == 18);
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(low)->m_cuboid.size() == 9);
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(middle)->m_cuboid.size() == 18);
 	}
 }

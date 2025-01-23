@@ -90,6 +90,7 @@ public:
 	[[nodiscard]] const Cuboid getAll() const;
 	[[nodiscard]] size_t size() const;
 	[[nodiscard]] BlockIndex getIndex(Point3D coordinates) const;
+	[[nodiscard]] BlockIndex maybeGetIndex(Point3D coordinates) const;
 	BlockIndex maybeGetIndexFromOffset(Point3D coordinates, const std::array<int8_t, 3> offset) const;
 	BlockIndex maybeGetIndexFromOffsetOnEdge(Point3D coordinates, const std::array<int8_t, 3> offset) const;
 	[[nodiscard]] BlockIndex getIndex(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) const;

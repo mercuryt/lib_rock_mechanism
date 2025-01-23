@@ -14,33 +14,37 @@ class Sphere;
 class Cuboid
 {
 public:
-	BlockIndex m_highest;
-	BlockIndex m_lowest;
+	Point3D m_highest;
+	Point3D m_lowest;
 
 	Cuboid(const Blocks& blocks, const BlockIndex& h, const BlockIndex& l);
+	Cuboid(const Point3D& highest, const Point3D& lowest);
+
 	Cuboid() = default;
-	void merge(const Blocks& blocks, const Cuboid& cuboid);
-	void setFrom(const BlockIndex& block);
+	void merge(const Cuboid& cuboid);
+	void setFrom(const Point3D& block);
+	void setFrom(const Blocks& blocks, const BlockIndex& block);
 	void setFrom(const Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
 	void clear();
-	void shift(const Blocks& blocks, const Facing6& direction, const DistanceInBlocks& distance);
-	void setMaxZ(const Blocks& blocks, const DistanceInBlocks& distance);
+	void shift(const Facing6& direction, const DistanceInBlocks& distance);
+	void setMaxZ(const DistanceInBlocks& distance);
 	[[nodiscard]] SmallSet<BlockIndex> toSet(Blocks& blocks);
 	[[nodiscard]] bool contains(const Blocks& blocks, const BlockIndex& block) const;
-	[[nodiscard]] bool contains(const Blocks& blocks, const Cuboid& cuboid) const;
-	[[nodiscard]] bool canMerge(const Blocks& blocks, const Cuboid& cuboid) const;
-	[[nodiscard]] Cuboid canMergeSteal(const Blocks& blocks, const Cuboid& cuboid) const;
-	[[nodiscard]] Cuboid sum(const Blocks& blocks, const Cuboid& cuboid) const;
-	[[nodiscard]] Cuboid getFace(const Blocks& blocks, const Facing6& faceing) const;
-	[[nodiscard]] bool overlapsWith(const Blocks& blocks, const Cuboid& cuboid) const;
-	[[nodiscard]] bool overlapsWithSphere(const Blocks& blocks, const Sphere& sphere) const;
-	[[nodiscard]] size_t size(const Blocks& blocks) const;
-	[[nodiscard]] bool empty(const Blocks& blocks) const { return size(blocks) == 0; }
+	[[nodiscard]] bool contains(const Point3D& point) const;
+	[[nodiscard]] bool contains(const Cuboid& cuboid) const;
+	[[nodiscard]] bool canMerge(const Cuboid& cuboid) const;
+	[[nodiscard]] Cuboid canMergeSteal(const Cuboid& cuboid) const;
+	[[nodiscard]] Cuboid sum(const Cuboid& cuboid) const;
+	[[nodiscard]] Cuboid getFace(const Facing6& faceing) const;
+	[[nodiscard]] bool overlapsWith(const Cuboid& cuboid) const;
+	[[nodiscard]] bool overlapsWithSphere(const Sphere& sphere) const;
+	[[nodiscard]] size_t size() const;
+	[[nodiscard]] bool empty() const { return m_highest.empty(); }
 	[[nodiscard]] bool operator==(const Cuboid& cuboid) const;
-	[[nodiscard]] Point3D getCenter(const Blocks& blocks) const;
-	[[nodiscard]] DistanceInBlocks dimensionForFacing(const Blocks& blocks, const Facing6& facing) const;
-	[[nodiscard]] Facing6 getFacingTwordsOtherCuboid(const Blocks& blocks, const Cuboid& cuboid) const;
-	[[nodiscard]] bool isSomeWhatInFrontOf(const Blocks& blocks, const Point3D& position, const Facing4& facing) const;
+	[[nodiscard]] Point3D getCenter() const;
+	[[nodiscard]] DistanceInBlocks dimensionForFacing(const Facing6& facing) const;
+	[[nodiscard]] Facing6 getFacingTwordsOtherCuboid(const Cuboid& cuboid) const;
+	[[nodiscard]] bool isSomeWhatInFrontOf(const Point3D& position, const Facing4& facing) const;
 	[[nodiscard]] static Cuboid fromBlock(Blocks& blocks, const BlockIndex& block);
 	[[nodiscard]] static Cuboid fromBlockPair(const Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
 	class iterator
@@ -68,7 +72,7 @@ public:
 	//static_assert(std::forward_iterator<iterator>);
 	CuboidView getView(Blocks& blocks) const;
 	CuboidSurfaceView getSurfaceView(Blocks& blocks) const;
-	std::wstring toString(const Blocks& blocks) const;
+	std::wstring toString() const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Cuboid, m_highest, m_lowest);
 };
 struct CuboidView : public std::ranges::view_interface<CuboidView>

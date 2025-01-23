@@ -326,6 +326,15 @@ struct Point3D
 		y = std::max(y, other.y);
 		z = std::max(z, other.z);
 	}
+	void clear() { x.clear(); y.clear(); z.clear(); }
+	[[nodiscard]] bool exists() const { return z.exists();}
+	[[nodiscard]] bool empty() const { return z.empty();}
+	[[nodiscard]] Point3D below() const { auto output = *this; --output.z; return output; }
+	[[nodiscard]] Point3D north() const { auto output = *this; --output.y; return output; }
+	[[nodiscard]] Point3D east() const { auto output = *this; ++output.x; return output; }
+	[[nodiscard]] Point3D south() const { auto output = *this; ++output.y; return output; }
+	[[nodiscard]] Point3D west() const { auto output = *this; --output.x; return output; }
+	[[nodiscard]] Point3D above() const { auto output = *this; ++output.z; return output; }
 	[[nodiscard]] bool operator==(const Point3D& other) const
 	{
 		return x == other.x && y == other.y && z == other.z;
@@ -438,6 +447,11 @@ struct Point3D
 	{
 		std::wcout << toString() << std::endl;
 	}
+	static Point3D create(int x, int y, int z)
+	{
+		return Point3D(DistanceInBlocks::create(x), DistanceInBlocks::create(y), DistanceInBlocks::create(z));
+	}
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Point3D, x, y ,z);
 };
 struct Point3D_fractional
 {
@@ -458,7 +472,6 @@ inline void Point3D::operator+=(const Vector3D& other)
 	z += other.z;
 }
 using Point3DSet = SmallSet<Point3D>;
-class Area;
 class Cuboid;
 struct Cube
 {
@@ -475,7 +488,7 @@ struct Cube
 			center.y - halfWidth <= other.center.y + other.halfWidth &&
 			center.z - halfWidth <= other.center.z + other.halfWidth;
 	}
-	[[nodiscard]] bool intersects(const Area& area, const Cuboid& other) const;
+	[[nodiscard]] bool intersects(const Cuboid& other) const;
 	[[nodiscard]] bool intersects(const Point3D high, const Point3D low) const
 	{
 		return
@@ -506,7 +519,7 @@ struct Cube
 			center.y.subtractWithMinimum(halfWidth) <= coordinates.y &&
 			center.z.subtractWithMinimum(halfWidth) <= coordinates.z;
 	}
-	[[nodiscard]] bool contains(const Area& area, const Cuboid& other) const;
+	[[nodiscard]] bool contains(const Cuboid& other) const;
 	[[nodiscard]] bool contains(const Point3D high, const Point3D low) const
 	{
 		return
@@ -517,7 +530,7 @@ struct Cube
 			center.y.subtractWithMinimum(halfWidth) <= low.y &&
 			center.z.subtractWithMinimum(halfWidth) <= low.z;
 	}
-	[[nodiscard]] bool isContainedBy(const Area& area, const Cuboid& cuboid) const;
+	[[nodiscard]] bool isContainedBy(const Cuboid& cuboid) const;
 	[[nodiscard]] bool isContainedBy(const Cube& other) const { return other.contains(*this); }
 	[[nodiscard]] bool isContainedBy(const Point3D& highest, const Point3D& lowest) const
 	{
