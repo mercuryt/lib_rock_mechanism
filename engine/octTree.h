@@ -89,7 +89,7 @@ public:
 		}
 	}
 	template<typename Action>
-	void query(Area& area, const Cuboid& cuboid, Action&& action) const
+	void query(const Cuboid& cuboid, Action&& action) const
 	{
 		std::vector<const OctTree*> openList;
 		std::vector<const OctTree*> results;
@@ -100,16 +100,16 @@ public:
 		{
 			const OctTree& candidate = *openList.back();
 			openList.pop_back();
-			if(!candidate.m_children.exists() || candidate.m_cube.isContainedBy(area, cuboid))
+			if(!candidate.m_children.exists() || candidate.m_cube.isContainedBy(cuboid))
 				results.push_back(&candidate);
 			else
 				for(const OctTree& child : m_data[candidate.m_children])
 				{
 					if(child.m_data.empty())
 						continue;
-					if(child.m_cube.isContainedBy(area, cuboid))
+					if(child.m_cube.isContainedBy(cuboid))
 						results.push_back(&child);
-					else if(child.m_cube.intersects(area, cuboid))
+					else if(child.m_cube.intersects(cuboid))
 						openList.push_back(&child);
 				}
 		}

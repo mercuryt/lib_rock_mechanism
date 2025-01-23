@@ -1,8 +1,6 @@
 #include "types.h"
 #include "config.h"
 #include "cuboid.h"
-#include "area.h"
-#include "blocks/blocks.h"
 Volume Volume::operator*(Quantity other) const { return Volume::create(data * other.get()); }
 Mass Volume::operator*(Density density) const { return Mass::create(density.get() * data); }
 Mass Density::operator*(Volume volume) const { return Mass::create(volume.get() * data); }
@@ -48,24 +46,15 @@ bool Point3D::isInFrontOf(const Point3D& coordinates, const Facing4& facing) con
 				assert(false);
 		}
 }
-bool Cube::intersects(const Area& area, const Cuboid& cuboid) const
+bool Cube::intersects(const Cuboid& cuboid) const
 {
-	const Blocks& blocks = area.getBlocks();
-	Point3D highest = blocks.getCoordinates(cuboid.m_highest);
-	Point3D lowest = blocks.getCoordinates(cuboid.m_lowest);
-	return intersects(highest, lowest);
+	return intersects(cuboid.m_highest, cuboid.m_lowest);
 }
-bool Cube::contains(const Area& area, const Cuboid& cuboid) const
+bool Cube::contains(const Cuboid& cuboid) const
 {
-	const Blocks& blocks = area.getBlocks();
-	Point3D highest = blocks.getCoordinates(cuboid.m_highest);
-	Point3D lowest = blocks.getCoordinates(cuboid.m_lowest);
-	return contains(highest, lowest);
+	return contains(cuboid.m_highest, cuboid.m_lowest);
 }
-[[nodiscard]] bool Cube::isContainedBy(const Area& area, const Cuboid& cuboid) const
+bool Cube::isContainedBy(const Cuboid& cuboid) const
 {
-	const Blocks& blocks = area.getBlocks();
-	Point3D highest = blocks.getCoordinates(cuboid.m_highest);
-	Point3D lowest = blocks.getCoordinates(cuboid.m_lowest);
-	return isContainedBy(highest, lowest);
+	return isContainedBy(cuboid.m_highest, cuboid.m_lowest);
 }

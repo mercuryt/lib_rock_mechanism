@@ -14,9 +14,9 @@ namespace areaBuilderUtil
 	inline void setSolidLayer(Area& area, const DistanceInBlocks& z, const MaterialTypeId& materialType)
 	{
 		Blocks& blocks = area.getBlocks();
-		Cuboid cuboid(blocks,
-			blocks.getIndex({blocks.m_sizeX - 1, blocks.m_sizeY - 1, z}),
-			blocks.getIndex({DistanceInBlocks::create(0), DistanceInBlocks::create(0), z})
+		Cuboid cuboid(
+			{blocks.m_sizeX - 1, blocks.m_sizeY - 1, z},
+			{DistanceInBlocks::create(0), DistanceInBlocks::create(0), z}
 		);
 		blocks.solid_setCuboid(cuboid, materialType, false);
 	}
@@ -63,8 +63,8 @@ namespace areaBuilderUtil
 	inline void makeBuilding(Area& area, Cuboid cuboid, const MaterialTypeId& materialType)
 	{
 		Blocks& blocks = area.getBlocks();
-		Point3D highCoordinates = blocks.getCoordinates(cuboid.m_highest);
-		for(DistanceInBlocks z = DistanceInBlocks::create(0); z != area.getBlocks().getZ(cuboid.m_highest) + 2; ++ z)
+		Point3D highCoordinates = cuboid.m_highest;
+		for(DistanceInBlocks z = DistanceInBlocks::create(0); z != cuboid.m_highest.z + 2; ++ z)
 		{
 			for(DistanceInBlocks x = DistanceInBlocks::create(0); x != highCoordinates.x + 1; ++x)
 			{

@@ -14,13 +14,13 @@ bool Sphere::contains(const Blocks& blocks, const BlockIndex& block) const
 {
 	return contains(blocks.getCoordinates(block));
 }
-bool Sphere::contains(const Blocks& blocks, const Cuboid& cuboid) const
+bool Sphere::contains(const Cuboid& cuboid) const
 {
-	return contains(blocks, cuboid.m_highest) && contains(blocks, cuboid.m_lowest);
+	return contains(cuboid.m_highest) && contains(cuboid.m_lowest);
 }
-bool Sphere::overlapsWith(const Blocks& blocks, const Cuboid& cuboid) const
+bool Sphere::overlapsWith(const Cuboid& cuboid) const
 {
-	return doesCuboidIntersectSphere(blocks.getCoordinates(cuboid.m_highest), blocks.getCoordinates(cuboid.m_lowest), *this);
+	return doesCuboidIntersectSphere(cuboid.m_highest, cuboid.m_lowest, *this);
 }
 bool Sphere::overlapsWith(const Cube& cube) const
 {

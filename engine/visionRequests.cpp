@@ -188,9 +188,12 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::
 	int maxY = std::ranges::max_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.y; })->coordinates.y.get();
 	int minZ = std::ranges::min_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.z; })->coordinates.z.get();
 	int maxZ = std::ranges::max_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.z; })->coordinates.z.get();
-	Cuboid cuboid(blocks, blocks.getIndex_i(maxX, maxY, maxZ), blocks.getIndex_i(minX, minY, minZ));
+	Cuboid cuboid(
+		{DistanceInBlocks::create(maxX), DistanceInBlocks::create(maxY), DistanceInBlocks::create(maxZ)},
+		{DistanceInBlocks::create(minX), DistanceInBlocks::create(minY), DistanceInBlocks::create(minZ)}
+	);
 	ActorReference lastSeen;
-	m_area.m_octTree.query(m_area, cuboid, [&](const LocationBucketData& data){
+	m_area.m_octTree.query(cuboid, [&](const LocationBucketData& data){
 		// Skip multi tile actor tiles after the first. The first is assumed to be the source of vision.
 		// The data is kept sorted by actor so multi tile records should always be contiguous.
 		if(lastSeen.exists() && lastSeen == data.actor)

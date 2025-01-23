@@ -317,7 +317,7 @@ TEST_CASE("vision")
 		BlockIndex block4 = blocks.getIndex_i(1, 1, 7);
 		BlockIndex block5 = blocks.getIndex_i(9, 9, 1);
 		REQUIRE(area.m_visionCuboids.size() == 1);
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1)->m_cuboid.size(blocks) == 900);
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1)->m_cuboid.size() == 900);
 		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block2));
 		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block3));
 		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block4));
@@ -325,8 +325,8 @@ TEST_CASE("vision")
 		blocks.blockFeature_construct(block3, floor, marble);
 		area.m_visionCuboids.clearDestroyed(area);
 		REQUIRE(area.m_visionCuboids.size() == 2);
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1)->m_cuboid.size(blocks) == 400);
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block4)->m_cuboid.size(blocks) == 500);
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1)->m_cuboid.size() == 400);
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block4)->m_cuboid.size() == 500);
 		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block2));
 		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) != area.m_visionCuboids.maybeGetForBlock(block3));
 		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) != area.m_visionCuboids.maybeGetForBlock(block4));
@@ -342,7 +342,7 @@ TEST_CASE("vision")
 		area.m_visionCuboids.clearDestroyed(area);
 		REQUIRE(area.m_visionCuboids.size() == 7);
 		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block3) == area.m_visionCuboids.maybeGetForBlock(block4));
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block4)->m_cuboid.size(blocks) == 500);
+		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block4)->m_cuboid.size() == 500);
 		blocks.solid_setNot(block2);
 		area.m_visionCuboids.clearDestroyed(area);
 		REQUIRE(area.m_visionCuboids.size() == 1);

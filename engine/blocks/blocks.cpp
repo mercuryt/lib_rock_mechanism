@@ -151,6 +151,16 @@ BlockIndex Blocks::getIndex(Point3D coordinates) const
 	assert(coordinates.z < m_sizeZ);
 	return BlockIndex::create((coordinates.x + (coordinates.y * m_sizeX) + (coordinates.z * m_sizeY * m_sizeX)).get());
 }
+BlockIndex Blocks::maybeGetIndex(Point3D coordinates) const
+{
+	if(
+		coordinates.x >= m_sizeX ||
+		coordinates.y >= m_sizeY ||
+		coordinates.z >= m_sizeZ
+	)
+		return BlockIndex::null();
+	return BlockIndex::create((coordinates.x + (coordinates.y * m_sizeX) + (coordinates.z * m_sizeY * m_sizeX)).get());
+}
 BlockIndex Blocks::maybeGetIndexFromOffsetOnEdge(Point3D coordinates, const std::array<int8_t, 3> offset) const
 {
 	if(
@@ -214,7 +224,7 @@ BlockIndex Blocks::getCenterAtGroundLevel() const
 }
 Cuboid Blocks::getZLevel(const DistanceInBlocks &z)
 {
-	return Cuboid(*this, getIndex({m_sizeX - 1, m_sizeY - 1, z}), getIndex({DistanceInBlocks::create(0), DistanceInBlocks::create(0), z}));
+	return Cuboid({m_sizeX - 1, m_sizeY - 1, z}, {DistanceInBlocks::create(0), DistanceInBlocks::create(0), z});
 }
 BlockIndex Blocks::getMiddleAtGroundLevel() const
 {
