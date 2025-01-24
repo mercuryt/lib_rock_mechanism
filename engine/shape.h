@@ -26,14 +26,14 @@ struct ShapeParamaters
 
 struct Shape
 {
-	DataVector<std::array<std::vector<std::array<int32_t, 4>>,4>, ShapeId> m_occupiedOffsetsCache;
-	DataVector<std::array<std::vector<std::array<int32_t, 3>>,4>, ShapeId> m_adjacentOffsetsCache;
-	DataVector<std::vector<std::array<int32_t, 4>>, ShapeId> m_positions;
-	DataVector<std::wstring, ShapeId> m_name;
-	DataBitSet<ShapeId> m_isMultiTile;
-	DataBitSet<ShapeId> m_isRadiallySymetrical;
+	StrongVector<std::array<std::vector<std::array<int32_t, 4>>,4>, ShapeId> m_occupiedOffsetsCache;
+	StrongVector<std::array<std::vector<std::array<int32_t, 3>>,4>, ShapeId> m_adjacentOffsetsCache;
+	StrongVector<std::vector<std::array<int32_t, 4>>, ShapeId> m_positions;
+	StrongVector<std::wstring, ShapeId> m_name;
+	StrongBitSet<ShapeId> m_isMultiTile;
+	StrongBitSet<ShapeId> m_isRadiallySymetrical;
 	//TODO: This doesn't belong here. Move to UI.
-	DataVector<uint32_t, ShapeId> m_displayScale;
+	StrongVector<uint32_t, ShapeId> m_displayScale;
 public:
 	static ShapeId create(const std::wstring name, std::vector<std::array<int32_t, 4>> positions, uint32_t displayScale);
 	[[nodiscard]] static Json toJson(const ShapeId& id);

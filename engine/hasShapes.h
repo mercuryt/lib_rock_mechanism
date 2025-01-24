@@ -20,14 +20,14 @@ template<class Derived, class Index>
 class HasShapes
 {
 protected:
-	DataVector<ShapeId, Index> m_shape;
-	DataVector<BlockIndex, Index> m_location;
-	DataVector<Facing4, Index> m_facing;
-	DataVector<FactionId, Index> m_faction;
-	DataVector<OccupiedBlocksForHasShape, Index> m_blocks;
-	DataBitSet<Index> m_static;
+	StrongVector<ShapeId, Index> m_shape;
+	StrongVector<BlockIndex, Index> m_location;
+	StrongVector<Facing4, Index> m_facing;
+	StrongVector<FactionId, Index> m_faction;
+	StrongVector<OccupiedBlocksForHasShape, Index> m_blocks;
+	StrongBitSet<Index> m_static;
 	//TODO: Do we need m_underground?
-	DataBitSet<Index> m_underground;
+	StrongBitSet<Index> m_underground;
 	Area& m_area;
 	HasShapes(Area& area);
 	void create(const Index& index, const ShapeId& shape, const FactionId& faction, bool isStatic);

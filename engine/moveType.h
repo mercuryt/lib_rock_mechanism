@@ -19,15 +19,15 @@ struct MoveTypeParamaters
 };
 class MoveType
 {
-	DataVector<std::wstring, MoveTypeId> m_name;
-	DataBitSet<MoveTypeId> m_walk;
-	DataVector<uint8_t, MoveTypeId> m_climb;
-	DataBitSet<MoveTypeId> m_jumpDown;
-	DataBitSet<MoveTypeId> m_fly;
-	DataBitSet<MoveTypeId> m_breathless;
-	DataBitSet<MoveTypeId> m_onlyBreathsFluids;
-	DataVector<FluidTypeMap<CollisionVolume>, MoveTypeId> m_swim;
-	DataVector<FluidTypeSet, MoveTypeId> m_breathableFluids;
+	StrongVector<std::wstring, MoveTypeId> m_name;
+	StrongBitSet<MoveTypeId> m_walk;
+	StrongVector<uint8_t, MoveTypeId> m_climb;
+	StrongBitSet<MoveTypeId> m_jumpDown;
+	StrongBitSet<MoveTypeId> m_fly;
+	StrongBitSet<MoveTypeId> m_breathless;
+	StrongBitSet<MoveTypeId> m_onlyBreathsFluids;
+	StrongVector<FluidTypeMap<CollisionVolume>, MoveTypeId> m_swim;
+	StrongVector<FluidTypeSet, MoveTypeId> m_breathableFluids;
 public:
 	static void create(MoveTypeParamaters& paramaters);
 	[[nodiscard]] static MoveTypeId byName(std::wstring name);

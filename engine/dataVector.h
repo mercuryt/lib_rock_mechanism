@@ -3,7 +3,7 @@
 #include <vector>
 
 template <typename Contained, class Index>
-class DataVector
+class StrongVector
 {
 	std::vector<Contained> data;
 public:
@@ -92,10 +92,10 @@ public:
 			data[offset] = std::move(copy[from.get()]);
 		}
 	}
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(DataVector, data);
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(StrongVector, data);
 };
 template <class Index>
-class DataBitSet
+class StrongBitSet
 {
 	std::vector<bool> data;
 public:
@@ -123,5 +123,5 @@ public:
 			data[offset] = std::move(copy[from.get()]);
 		}
 	}
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(DataBitSet, data);
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(StrongBitSet, data);
 };

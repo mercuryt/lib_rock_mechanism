@@ -24,16 +24,16 @@ struct AttackTypeParamaters final
 
 class AttackType final
 {
-	DataVector<std::wstring, AttackTypeId> m_name;
-	DataVector<uint32_t, AttackTypeId> m_area;
-	DataVector<Force, AttackTypeId> m_baseForce;
-	DataVector<DistanceInBlocksFractional, AttackTypeId> m_range;
-	DataVector<CombatScore, AttackTypeId> m_combatScore;
-	DataVector<Step, AttackTypeId> m_coolDown;
-	DataBitSet<AttackTypeId> m_projectile;
-	DataVector<WoundType, AttackTypeId> m_woundType;
-	DataVector<SkillTypeId, AttackTypeId> m_skillType;
-	DataVector<ItemTypeId, AttackTypeId> m_projectileItemType;
+	StrongVector<std::wstring, AttackTypeId> m_name;
+	StrongVector<uint32_t, AttackTypeId> m_area;
+	StrongVector<Force, AttackTypeId> m_baseForce;
+	StrongVector<DistanceInBlocksFractional, AttackTypeId> m_range;
+	StrongVector<CombatScore, AttackTypeId> m_combatScore;
+	StrongVector<Step, AttackTypeId> m_coolDown;
+	StrongBitSet<AttackTypeId> m_projectile;
+	StrongVector<WoundType, AttackTypeId> m_woundType;
+	StrongVector<SkillTypeId, AttackTypeId> m_skillType;
+	StrongVector<ItemTypeId, AttackTypeId> m_projectileItemType;
 public:
 	static AttackTypeId create(const AttackTypeParamaters& p);
 	static AttackTypeId byName(std::wstring name);

@@ -511,13 +511,13 @@ void Plants::load(const Json& data)
 	m_temperatureEvent.load(m_area.m_simulation, data["m_temperatureEvent"], size);
 	m_endOfHarvestEvent.load(m_area.m_simulation, data["m_endOfHarvestEvent"], size);
 	m_foliageGrowthEvent.load(m_area.m_simulation, data["m_foliageGrowthEvent"], size);
-	m_species = data["m_species"].get<DataVector<PlantSpeciesId, PlantIndex>>();
-	m_fluidSource = data["m_fluidSource"].get<DataVector<BlockIndex, PlantIndex>>();
-	m_quantityToHarvest = data["m_quantityToHarvest"].get<DataVector<Quantity, PlantIndex>>();
-	m_percentGrown = data["m_percentGrown"].get<DataVector<Percent, PlantIndex>>();
-	m_percentFoliage = data["m_percentFoliage"].get<DataVector<Percent, PlantIndex>>();
-	m_wildGrowth = data["m_wildGrowth"].get<DataVector<uint8_t, PlantIndex>>();
-	m_volumeFluidRequested = data["m_volumeFluidRequested"].get<DataVector<CollisionVolume, PlantIndex>>();
+	m_species = data["m_species"].get<StrongVector<PlantSpeciesId, PlantIndex>>();
+	m_fluidSource = data["m_fluidSource"].get<StrongVector<BlockIndex, PlantIndex>>();
+	m_quantityToHarvest = data["m_quantityToHarvest"].get<StrongVector<Quantity, PlantIndex>>();
+	m_percentGrown = data["m_percentGrown"].get<StrongVector<Percent, PlantIndex>>();
+	m_percentFoliage = data["m_percentFoliage"].get<StrongVector<Percent, PlantIndex>>();
+	m_wildGrowth = data["m_wildGrowth"].get<StrongVector<uint8_t, PlantIndex>>();
+	m_volumeFluidRequested = data["m_volumeFluidRequested"].get<StrongVector<CollisionVolume, PlantIndex>>();
 	Blocks& blocks = m_area.getBlocks();
 	for(PlantIndex index : getAll())
 		for(BlockIndex block : m_blocks[index])

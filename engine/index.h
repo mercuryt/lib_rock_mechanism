@@ -193,7 +193,7 @@ public:
 		assert(found != data.end());
 		auto back = end() - 1;
 		(*found) = *back;
-		(*back) = StrongInteger::null(); 
+		(*back) = StrongInteger::null();
 	}
 	void update(StrongInteger oldIndex, StrongInteger newIndex) { assert(!contains(newIndex)); auto found = find(oldIndex); assert(found != data.end()); (*found) = newIndex;}
 	void clear() { assert(!empty()); data.fill(StrongInteger::null()); }
@@ -284,7 +284,7 @@ public:
 template<typename Index>
 class TrackedIndexData
 {
-	DataVector<SmallSet<TrackedIndex<Index>*>, Index> m_data;
+	StrongVector<SmallSet<TrackedIndex<Index>*>, Index> m_data;
 public:
 	void record(TrackedIndex<Index>& trackedIndex)
 	{

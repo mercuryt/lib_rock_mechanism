@@ -44,8 +44,8 @@ class OctTreeRoot
 {
 	Allocator m_allocator;
 	OctTree m_tree;
-	DataVector<std::array<OctTree, 8>, OctTreeNodeIndex> m_data;
-	DataVector<OctTree*, OctTreeNodeIndex> m_parents;
+	StrongVector<std::array<OctTree, 8>, OctTreeNodeIndex> m_data;
+	StrongVector<OctTree*, OctTreeNodeIndex> m_parents;
 	uint8_t m_entropy = 0;
 	OctTreeNodeIndex allocate(OctTree& parent);
 	void deallocate(const OctTreeNodeIndex& children);

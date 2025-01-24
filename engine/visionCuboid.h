@@ -32,8 +32,8 @@ public:
 };
 class AreaHasVisionCuboids final
 {
-	DataVector<VisionCuboid, VisionCuboidIndex> m_visionCuboids;
-	DataVector<VisionCuboidIndex, BlockIndex> m_blockVisionCuboidIndices;
+	StrongVector<VisionCuboid, VisionCuboidIndex> m_visionCuboids;
+	StrongVector<VisionCuboidIndex, BlockIndex> m_blockVisionCuboidIndices;
 public:
 	void initalize(Area& area);
 	void clearDestroyed(Area& area);
