@@ -1,6 +1,6 @@
 #include "shape.h"
 #include "blocks/blocks.h"
-#include "cuboid.h"
+#include "geometry/cuboid.h"
 #include "deserializationMemo.h"
 #include "types.h"
 #include "util.h"

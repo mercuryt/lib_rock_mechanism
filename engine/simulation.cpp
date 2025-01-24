@@ -92,6 +92,13 @@ Step Simulation::getNextEventStep() const
 		return m_eventSchedule.getNextEventStep();
 	return std::min(m_eventSchedule.getNextEventStep(), nextAreaStep);
 }
+Step Simulation::getDelayUntillNextTimeOfDay(const Step& timeOfDay) const
+{
+	Step timeNow = m_step % Config::stepsPerDay;
+	if(timeNow < timeOfDay)
+		return timeOfDay - timeNow;
+	return Config::stepsPerDay - (timeNow - timeOfDay);
+}
 Step Simulation::getNextStepToSimulate() const
 {
 	if(!m_threadedTaskEngine.empty())

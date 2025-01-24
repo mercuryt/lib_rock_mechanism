@@ -51,6 +51,7 @@ void definitions::loadFluidTypes()
 			//TODO: Initalize to null rather then 0.
 			.mistDuration=data.contains("mistDuration") ? data["mistDuration"].get<Step>() : Step::create(0),
 			.maxMistSpread=data.contains("mistDuration") ? data["maxMistSpread"].get<DistanceInBlocks>() : DistanceInBlocks::create(0),
+			.evaporationRate=data.contains("evaporationRate") ? data["evaporationRate"].get<float>() : 0.f,
 		};
 		FluidType::create(params);
 	}

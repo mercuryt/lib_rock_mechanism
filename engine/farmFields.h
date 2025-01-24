@@ -1,7 +1,7 @@
 #pragma once
 //#include "input.h"
 #include "plantSpecies.h"
-#include "cuboid.h"
+#include "geometry/cuboid.h"
 #include "config.h"
 
 #include <list>

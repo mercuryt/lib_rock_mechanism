@@ -32,6 +32,7 @@ public:
 class AreaHasTemperature final
 {
 	BlockIndexMap<TemperatureSource> m_sources;
+	// TODO: make these medium maps.
 	// To possibly thaw.
 	std::map<Temperature, BlockIndices> m_aboveGroundBlocksByMeltingPoint;
 	// To possibly freeze.
@@ -47,7 +48,6 @@ public:
 	void updateAmbientSurfaceTemperature();
 	void addTemperatureSource(const BlockIndex& block, const TemperatureDelta& temperature);
 	void removeTemperatureSource(TemperatureSource& temperatureSource);
-	TemperatureSource& getTemperatureSourceAt(const BlockIndex& block);
 	void addDelta(const BlockIndex& block, const TemperatureDelta& delta);
 	void applyDeltas();
 	void doStep() { applyDeltas(); }
@@ -55,8 +55,10 @@ public:
 	void removeMeltableSolidBlockAboveGround(const BlockIndex& block);
 	void addFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
 	void removeFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
-	const Temperature& getAmbientSurfaceTemperature() const { return m_ambiantSurfaceTemperature; }
-	Temperature getDailyAverageAmbientSurfaceTemperature() const;
+	[[nodiscard]] TemperatureSource& getTemperatureSourceAt(const BlockIndex& block);
+	[[nodiscard]] const Temperature& getAmbientSurfaceTemperature() const { return m_ambiantSurfaceTemperature; }
+	[[nodiscard]] Temperature getDailyAverageAmbientSurfaceTemperature() const;
+	[[nodiscard]] auto& getAboveGroundFluidGroupsByMeltingPoint() { return m_aboveGroundFluidGroupsByMeltingPoint; }
 };
 class UnsafeTemperatureEvent;
 class ActorNeedsSafeTemperature

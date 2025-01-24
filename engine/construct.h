@@ -1,7 +1,7 @@
 #pragma once
 
 #include "config.h"
-#include "cuboid.h"
+#include "geometry/cuboid.h"
 #include "index.h"
 #include "input.h"
 #include "reservable.h"
@@ -49,7 +49,7 @@ class ConstructProject final : public Project
 	void offDelay();
 public:
 	// BlockFeatureType can be null, meaning the block is to be filled with a constructed wall.
-	ConstructProject(const FactionId& faction, Area& a, const BlockIndex& b, const BlockFeatureType* bft, const MaterialTypeId& mt, std::unique_ptr<DishonorCallback> dishonorCallback) : 
+	ConstructProject(const FactionId& faction, Area& a, const BlockIndex& b, const BlockFeatureType* bft, const MaterialTypeId& mt, std::unique_ptr<DishonorCallback> dishonorCallback) :
 		Project(faction, a, b, Config::maxNumberOfWorkersForConstructionProject, std::move(dishonorCallback)), m_blockFeatureType(bft), m_materialType(mt) { }
 	ConstructProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	[[nodiscard]] Json toJson() const;

@@ -1,9 +1,10 @@
 #pragma once
-#include "cuboid.h"
 #include "types.h"
 #include "reference.h"
 #include "locationBuckets.h"
-#include "sphere.h"
+#include "geometry/sphere.h"
+#include "geometry/cuboid.h"
+#include "geometry/cube.h"
 #include <memory>
 #include <array>
 

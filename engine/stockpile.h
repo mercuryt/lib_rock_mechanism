@@ -1,6 +1,6 @@
 #pragma once
 //TODO: Move implimentations into cpp file and replace includes with forward declarations it imporove compile time.
-#include "cuboid.h"
+#include "geometry/cuboid.h"
 #include "eventSchedule.h"
 #include "input.h"
 #include "reference.h"
@@ -79,7 +79,7 @@ public:
 	void decrementOpenBlocks();
 	void disableIndefinately() { m_enabled = false; }
 	void disableTemporarily(Step duration) { m_reenableScheduledEvent.schedule(*this, duration); disableIndefinately(); }
-	void reenable() { m_enabled = true; } 
+	void reenable() { m_enabled = true; }
 	void addToProjectNeedingMoreWorkers(const ActorIndex& actor, StockPileObjective& objective);
 	void destroy();
 	void removeQuery(const ItemQuery& query);
@@ -166,7 +166,7 @@ public:
 struct StockPileHasShapeDishonorCallback final : public DishonorCallback
 {
 	StockPileProject& m_stockPileProject;
-	StockPileHasShapeDishonorCallback(StockPileProject& hs) : m_stockPileProject(hs) { } 
+	StockPileHasShapeDishonorCallback(StockPileProject& hs) : m_stockPileProject(hs) { }
 	StockPileHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const { return Json({{"type", "StockPileHasShapeDishonorCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_stockPileProject)}}); }
 	// Craft step project cannot reset so cancel instead and allow to be recreated later.
@@ -236,7 +236,7 @@ public:
 	void registerFaction(const FactionId& faction) { assert(!m_data.contains(faction)); m_data.emplace(faction, m_area, faction); }
 	void unregisterFaction(const FactionId& faction) { assert(m_data.contains(faction)); m_data.erase(faction); }
 	void removeItemFromAllFactions(const ItemIndex& item) { for(auto& pair : m_data) { pair.second->removeItem(item); } }
-	void removeBlockFromAllFactions(const BlockIndex& block) { for(auto& pair : m_data) { pair.second->removeBlock(block); }} 
+	void removeBlockFromAllFactions(const BlockIndex& block) { for(auto& pair : m_data) { pair.second->removeBlock(block); }}
 	void clearReservations();
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);

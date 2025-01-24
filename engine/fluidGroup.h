@@ -36,7 +36,7 @@ public:
 	std::vector<FluidGroupSplitData> m_futureGroups;
 	// For notifing groups with different fluids of unfull status. Groups with the same fluid are merged instead.
 	SmallMap<FluidGroup*, BlockIndices> m_futureNotifyPotentialUnfullAdjacent;
-	
+
 	BlockIndices m_diagonalBlocks;
 
 	BlockIndices m_potentiallyNoLongerAdjacentFromSyncronusStep;
@@ -85,5 +85,6 @@ public:
 	[[nodiscard]] BlockIndices& getBlocks() { return m_drainQueue.m_set; }
 	[[nodiscard]] bool dispositionIsStable(Area& area, const CollisionVolume& fillVolume, const CollisionVolume& drainVolume) const;
 	[[nodiscard]] bool operator==(const FluidGroup& fluidGroup) const { return &fluidGroup == this; }
+	[[nodiscard]] Quantity countBlocksOnSurface(const Area& area) const;
 	friend class Area;
 };

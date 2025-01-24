@@ -4,9 +4,9 @@
 #include <cstddef>
 #include <iterator>
 
-#include "designations.h"
-#include "types.h"
-#include "index.h"
+#include "../types.h"
+#include "../index.h"
+#include "point3D.h"
 class Blocks;
 class CuboidView;
 class CuboidSurfaceView;

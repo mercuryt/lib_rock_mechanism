@@ -163,6 +163,7 @@
 	"rainMaximumOffset": 10,
 	"rainMaximumSpacing": 200,
 	"rainWriteStepFreqencySeconds": 1.5,
+	"rateModifierForEvaporationPerDegreeTemperature": 0.0035,
 	"ratioOfHitAreaToBodyPartVolumeForSever": 0.5,
 	"ratioOfTotalBodyVolumeWhichIsBlood": 0.05,
 	"ratioOfVisionCuboidSlotsToReservePerBlock": 0.05,

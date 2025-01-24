@@ -172,6 +172,7 @@ void Config::load()
 	data["rainMaximumSpacing"].get_to(rainMaximumSpacing);
 	data["rainMaximumSpacing"].get_to(rainMaximumSpacing);
 	rainWriteStepFreqency = Step::create(data["rainWriteStepFreqencySeconds"].get<float>() * stepsPerSecond.get());
+	data["rateModifierForEvaporationPerDegreeTemperature"].get_to(rateModifierForEvaporationPerDegreeTemperature);
 	data["ratioOfHitAreaToBodyPartVolumeForSever"].get_to(ratioOfHitAreaToBodyPartVolumeForSever);
 	data["ratioOfTotalBodyVolumeWhichIsBlood"].get_to(ratioOfTotalBodyVolumeWhichIsBlood);
 	data["ratioOfVisionCuboidSlotsToReservePerBlock"].get_to(ratioOfVisionCuboidSlotsToReservePerBlock);

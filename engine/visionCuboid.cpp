@@ -1,6 +1,6 @@
 #include "visionCuboid.h"
 #include "area.h"
-#include "sphere.h"
+#include "geometry/sphere.h"
 #include "types.h"
 #include "blocks/blocks.h"
 #include "actors/actors.h"

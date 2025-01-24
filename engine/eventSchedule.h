@@ -38,7 +38,6 @@ public:
 	[[nodiscard]] Step duration() const;
 	[[nodiscard]] Step remaningSteps(Simulation& simulation) const;
 	[[nodiscard]] Step elapsedSteps(Simulation& simulation) const;
-	[[nodiscard]] Json toJson() const;
 	ScheduledEvent(const ScheduledEvent&) = delete;
 	ScheduledEvent(ScheduledEvent&&) = delete;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ScheduledEvent, m_startStep, m_step, m_cancel);

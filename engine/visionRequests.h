@@ -4,6 +4,7 @@
 #include "index.h"
 #include "dataVector.h"
 #include "reference.h"
+#include "geometry/point3D.h"
 #include <cassert>
 #include <cstdint>
 #include <vector>

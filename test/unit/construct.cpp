@@ -9,7 +9,7 @@
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/construct.h"
-#include "../../engine/cuboid.h"
+#include "../../engine/geometry/cuboid.h"
 #include "../../engine/objectives/goTo.h"
 #include "../../engine/config.h"
 #include "../../engine/materialType.h"

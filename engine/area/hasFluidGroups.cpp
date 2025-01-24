@@ -100,7 +100,6 @@ FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidTypeId& fluidType, B
 {
 	FluidGroup& fluidGroup = m_fluidGroups.emplace_back(m_allocator, fluidType, blocks, m_area, checkMerge);
 	assert(!fluidGroup.m_stable);
-	// TODO: If new group is outside register it with areaHasTemperature.
 	return &fluidGroup;
 }
 FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidTypeId& fluidType, BlockIndices&& blocks, bool checkMerge)

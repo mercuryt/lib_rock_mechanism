@@ -8,7 +8,7 @@
 #include "actors/actors.h"
 #include "blocks/blocks.h"
 #include "strongInteger.hpp"
-#include "sphere.h"
+#include "geometry/sphere.h"
 #include <cstddef>
 
 VisionRequests::VisionRequests(Area& area) :
