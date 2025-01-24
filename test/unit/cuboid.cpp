@@ -1,5 +1,5 @@
 #include "../../lib/doctest.h"
-#include "../../engine/cuboid.h"
+#include "../../engine/geometry/cuboid.h"
 #include "../../engine/area.h"
 #include "../../engine/blocks/blocks.h"
 #include "../../engine/items/items.h"

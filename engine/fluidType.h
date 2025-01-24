@@ -18,6 +18,7 @@ struct FluidTypeParamaters
 	Step mistDuration;
 	DistanceInBlocks maxMistSpread;
 	MaterialTypeId freezesInto = MaterialTypeId::null();
+	float evaporationRate = 0.f;
 };
 
 class FluidType
@@ -28,6 +29,7 @@ class FluidType
 	DataVector<Step, FluidTypeId> m_mistDuration;
 	DataVector<DistanceInBlocks, FluidTypeId> m_maxMistSpread;
 	DataVector<MaterialTypeId, FluidTypeId> m_freezesInto;
+	DataVector<float, FluidTypeId> m_evaporationRate;
 public:
 	[[nodiscard]] static const FluidTypeId byName(const std::wstring name);
 	[[nodiscard]] static FluidTypeId size();
@@ -39,5 +41,6 @@ public:
 	[[nodiscard]] static Step getMistDuration(const FluidTypeId& id);
 	[[nodiscard]] static DistanceInBlocks getMaxMistSpread(const FluidTypeId& id);
 	[[nodiscard]] static MaterialTypeId getFreezesInto(const FluidTypeId& id);
+	[[nodiscard]] static float getEvaporationRate(const FluidTypeId& id);
 };
 inline FluidType fluidTypeData;

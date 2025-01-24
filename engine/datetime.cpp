@@ -13,7 +13,7 @@ DateTime::DateTime(Step step)
 	assert(day <= Config::daysPerYear);
 	assert(hour <= Config::hoursPerDay);
 }
-DateTime::DateTime(uint8_t h, uint16_t d, uint16_t y) : hour(h), day(d), year(y) 
+DateTime::DateTime(uint8_t h, uint16_t d, uint16_t y) : hour(h), day(d), year(y)
 {
 	if(!hour)
 	{

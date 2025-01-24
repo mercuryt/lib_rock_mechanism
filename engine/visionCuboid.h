@@ -4,7 +4,7 @@
  * Stored in Area::m_visionCuboids. Deleted durring DerivedArea::writeStep if m_destroy is true.
  */
 #pragma once
-#include "cuboid.h"
+#include "geometry/cuboid.h"
 #include "dataVector.h"
 
 class Area;

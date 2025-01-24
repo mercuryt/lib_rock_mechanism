@@ -14,6 +14,7 @@ FluidTypeId FluidType::create(FluidTypeParamaters& p)
 	fluidTypeData.m_mistDuration.add(p.mistDuration);
 	fluidTypeData.m_maxMistSpread.add(p.maxMistSpread);
 	fluidTypeData.m_freezesInto.add(p.freezesInto);
+	fluidTypeData.m_evaporationRate.add(p.evaporationRate);
 	return FluidTypeId::create(fluidTypeData.m_name.size() - 1);
 }
 void FluidType::setFreezesInto(const FluidTypeId& fluid, const MaterialTypeId& material) { assert(fluid.exists()); assert(material.exists()); fluidTypeData.m_freezesInto[fluid] = material; }
@@ -23,3 +24,4 @@ Density FluidType::getDensity(const FluidTypeId& id) { assert(id.exists()); retu
 Step FluidType::getMistDuration(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_mistDuration[id]; };
 DistanceInBlocks FluidType::getMaxMistSpread(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_maxMistSpread[id]; };
 MaterialTypeId FluidType::getFreezesInto(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_freezesInto[id]; };
+float FluidType::getEvaporationRate(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_evaporationRate[id]; };

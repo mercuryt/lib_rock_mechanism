@@ -7,7 +7,7 @@
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/dig.h"
-#include "../../engine/cuboid.h"
+#include "../../engine/geometry/cuboid.h"
 #include "../../engine/objectives/goTo.h"
 #include "../../engine/objectives/wander.h"
 #include "../../engine/objectives/dig.h"

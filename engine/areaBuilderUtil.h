@@ -2,7 +2,7 @@
 #include "area.h"
 #include "materialType.h"
 #include "fluidType.h"
-#include "cuboid.h"
+#include "geometry/cuboid.h"
 #include "blocks/blocks.h"
 #include "types.h"
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "types.h"
 #include "reference.h"
+#include "geometry/point3D.h"
 #include <vector>
 #include <memory_resource>
 

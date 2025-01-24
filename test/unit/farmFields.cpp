@@ -9,7 +9,7 @@
 #include "../../engine/plants.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/farmFields.h"
-#include "../../engine/cuboid.h"
+#include "../../engine/geometry/cuboid.h"
 #include "../../engine/threadedTask.h"
 #include "../../engine/faction.h"
 #include "../../engine/objectives/sowSeeds.h"

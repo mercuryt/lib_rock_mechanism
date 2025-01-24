@@ -1,6 +1,8 @@
 #include "sphere.h"
-#include "blocks/blocks.h"
-#include "index.h"
+#include "cuboid.h"
+#include "cube.h"
+#include "../blocks/blocks.h"
+#include "../index.h"
 #include <cmath>
 bool Sphere::contains(const Point3D& point) const
 {

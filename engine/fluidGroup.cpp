@@ -743,6 +743,12 @@ bool FluidGroup::dispositionIsStable(Area& area, const CollisionVolume& fillVolu
 		return true;
 	return false;
 }
+Quantity FluidGroup::countBlocksOnSurface(const Area& area) const
+{
+	const Blocks& blocks = area.getBlocks();
+	// TODO: could be optimized by only looking at the topmost z level in DrainQueue::m_queue
+	return Quantity::create(std::ranges::count_if(m_drainQueue.m_set, [&](const BlockIndex& block){ return blocks.isOnSurface(block); }));
+}
 void FluidGroup::validate(Area& area) const
 {
 	assert(area.m_hasFluidGroups.contains(*this));

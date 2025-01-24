@@ -68,6 +68,7 @@ public:
 	[[nodiscard, maybe_unused]] DateTime getDateTime() const;
 	[[nodiscard]] Step getNextStepToSimulate() const;
 	[[nodiscard]] Step getNextEventStep() const;
+	[[nodiscard]] Step getDelayUntillNextTimeOfDay(const Step& timeOfDay) const;
 	[[nodiscard]] SimulationHasAreas& getAreas();
 	[[nodiscard]] const SimulationHasAreas& getAreas() const;
 	~Simulation();

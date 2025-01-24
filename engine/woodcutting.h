@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cuboid.h"
+#include "geometry/cuboid.h"
 #include "index.h"
 #include "input.h"
 #include "objective.h"
@@ -43,7 +43,7 @@ class WoodCuttingProject final : public Project
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.
-	WoodCuttingProject(FactionId faction, Area& area, const BlockIndex& block, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
+	WoodCuttingProject(FactionId faction, Area& area, const BlockIndex& block, std::unique_ptr<DishonorCallback> locationDishonorCallback) :
 		Project(faction, area, block, Config::maxNumberOfWorkersForWoodCuttingProject, std::move(locationDishonorCallback)) { }
 	WoodCuttingProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	// No toJson is needed here.

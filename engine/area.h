@@ -7,7 +7,7 @@
 #include "installItem.h"
 #include "types.h"
 #include "mistDisperseEvent.h"
-#include "cuboid.h"
+#include "geometry/cuboid.h"
 #include "visionCuboid.h"
 #include "dig.h"
 #include "construct.h"
@@ -28,6 +28,7 @@
 #include "area/hasFluidGroups.h"
 #include "area/hasSleepingSpots.h"
 #include "area/hasBlockDesignations.h"
+#include "area/evaporation.h"
 #include "farmFields.h"
 #include "stockpile.h"
 #include "actors/grow.h"
@@ -73,6 +74,7 @@ public:
 	AreaHasFluidSources m_fluidSources;
 	AreaHasFluidGroups m_hasFluidGroups;
 	AreaHasRain m_hasRain;
+	AreaHasEvaporation m_hasEvaporation;
 	AreaHasBlockDesignations m_blockDesignations;
 	OctTreeRoot m_octTree;
 	VisionRequests m_visionRequests;

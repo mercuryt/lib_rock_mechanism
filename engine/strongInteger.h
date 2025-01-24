@@ -128,8 +128,11 @@ public:
 		return Derived::create(data * other);
 	}
 	[[nodiscard]] constexpr Derived operator/(const This& other) const { return (*this) / other.data; }
+	[[nodiscard]] constexpr Derived operator%(const This& other) const { return (*this) % other.data; }
 	template<arithmetic Other>
 	[[nodiscard]] constexpr Derived operator/(const Other& other) const { assert(exists()); return Derived::create(data / other); }
+	template<arithmetic Other>
+	[[nodiscard]] constexpr Derived operator%(const Other& other) const { assert(exists()); return Derived::create(data % other); }
 	[[nodiscard]] constexpr Derived subtractWithMinimum(const This& other) const { assert(other.exists()); return subtractWithMinimum(other.data); }
 	template<arithmetic Other>
 	[[nodiscard]] constexpr Derived subtractWithMinimum(const Other& other) const

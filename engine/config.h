@@ -184,6 +184,7 @@ namespace Config
 	inline DistanceInBlocks rainMaximumOffset;
 	inline DistanceInBlocks rainMaximumSpacing;
 	inline Step rainWriteStepFreqency;
+	inline float rateModifierForEvaporationPerDegreeTemperature;
 	inline float ratioOfHitAreaToBodyPartVolumeForSever;
 	inline float ratioOfTotalBodyVolumeWhichIsBlood;
 	inline float ratioOfVisionCuboidSlotsToReservePerBlock;

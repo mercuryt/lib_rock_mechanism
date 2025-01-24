@@ -1,8 +1,8 @@
 #include "cuboid.h"
-#include "area.h"
-#include "types.h"
 #include "sphere.h"
-#include "blocks/blocks.h"
+#include "../area.h"
+#include "../types.h"
+#include "../blocks/blocks.h"
 
 #include <cassert>
 Cuboid::Cuboid(const Blocks& blocks, const BlockIndex& h, const BlockIndex& l) : Cuboid(blocks.getCoordinates(h), blocks.getCoordinates(l)) { }

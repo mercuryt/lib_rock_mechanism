@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cuboid.h"
+#include "geometry/cuboid.h"
 //#include "input.h"
 #include "reservable.h"
 #include "types.h"
@@ -47,7 +47,7 @@ class DigProject final : public Project
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
 	// BlockFeatureType can be null, meaning the block is to be fully excavated.
-	DigProject(const FactionId& faction, Area& area, const BlockIndex& block, const BlockFeatureType* bft, std::unique_ptr<DishonorCallback> locationDishonorCallback) : 
+	DigProject(const FactionId& faction, Area& area, const BlockIndex& block, const BlockFeatureType* bft, std::unique_ptr<DishonorCallback> locationDishonorCallback) :
 		Project(faction, area, block, Config::maxNumberOfWorkersForDigProject, std::move(locationDishonorCallback)), m_blockFeatureType(bft) { }
 	DigProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	[[nodiscard]] Step getDuration() const;
