@@ -23,13 +23,13 @@ struct FluidTypeParamaters
 
 class FluidType
 {
-	DataVector<std::wstring, FluidTypeId> m_name;
-	DataVector<uint32_t, FluidTypeId> m_viscosity;
-	DataVector<Density, FluidTypeId> m_density;
-	DataVector<Step, FluidTypeId> m_mistDuration;
-	DataVector<DistanceInBlocks, FluidTypeId> m_maxMistSpread;
-	DataVector<MaterialTypeId, FluidTypeId> m_freezesInto;
-	DataVector<float, FluidTypeId> m_evaporationRate;
+	StrongVector<std::wstring, FluidTypeId> m_name;
+	StrongVector<uint32_t, FluidTypeId> m_viscosity;
+	StrongVector<Density, FluidTypeId> m_density;
+	StrongVector<Step, FluidTypeId> m_mistDuration;
+	StrongVector<DistanceInBlocks, FluidTypeId> m_maxMistSpread;
+	StrongVector<MaterialTypeId, FluidTypeId> m_freezesInto;
+	StrongVector<float, FluidTypeId> m_evaporationRate;
 public:
 	[[nodiscard]] static const FluidTypeId byName(const std::wstring name);
 	[[nodiscard]] static FluidTypeId size();

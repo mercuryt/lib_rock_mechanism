@@ -19,7 +19,7 @@ concept IterableConcept = std::ranges::bidirectional_range<T>;
 // Collect values which fail condition at the start of the vector while calling callback for each move.
 // Return first index which passes condition.
 template<typename T, typename Index, ConditionConcept<Index> Condition, CallbackConcept<Index> Callback>
-Index partitionNotify(DataVector<T, Index>& target, Condition&& condition, Callback&& callback)
+Index partitionNotify(StrongVector<T, Index>& target, Condition&& condition, Callback&& callback)
 {
 	Index forward = Index::create(0);
 	Index backward = Index::create(target.size() - 1);
@@ -49,7 +49,7 @@ Index partitionNotify(DataVector<T, Index>& target, Condition&& condition, Callb
 }
 // Call partitionNotify and resize the target vector to discard all values which passed the condition.
 template<typename T, typename Index, ConditionConcept<Index> Condition, CallbackConcept<Index> Callback>
-void removeNotify(DataVector<T, Index>& target, Condition&& condition, Callback&& callback)
+void removeNotify(StrongVector<T, Index>& target, Condition&& condition, Callback&& callback)
 {
 	Index index = partitionNotify<T, Index>(target, condition, callback);
 	if(index.exists())

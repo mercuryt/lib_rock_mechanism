@@ -66,7 +66,7 @@ public:
 	ObjectiveType(ObjectiveType&&) = delete;
 	virtual ~ObjectiveType() = default;
 };
-inline DataVector<std::unique_ptr<ObjectiveType>, const ObjectiveTypeId&> objectiveTypeData;
+inline StrongVector<std::unique_ptr<ObjectiveType>, const ObjectiveTypeId&> objectiveTypeData;
 class Objective
 {
 public:

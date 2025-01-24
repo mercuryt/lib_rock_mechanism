@@ -103,18 +103,18 @@ class Items final : public Portables<Items, ItemIndex, ItemReferenceIndex>
 {
 	//TODO: change to bitset or remove.
 	ItemIndexSet m_onSurface;
-	DataVector<std::unique_ptr<ItemCanBeStockPiled>, ItemIndex> m_canBeStockPiled;
-	DataVector<CraftJob*, ItemIndex> m_craftJobForWorkPiece; // Used only for work in progress items.
-	DataVector<std::unique_ptr<ItemHasCargo>, ItemIndex> m_hasCargo;
-	DataVector<ItemId, ItemIndex> m_id;
-	DataBitSet<ItemIndex> m_installed;
-	DataVector<ItemTypeId, ItemIndex> m_itemType;
-	DataVector<MaterialTypeId, ItemIndex> m_materialType;
-	DataVector<std::wstring, ItemIndex> m_name;
+	StrongVector<std::unique_ptr<ItemCanBeStockPiled>, ItemIndex> m_canBeStockPiled;
+	StrongVector<CraftJob*, ItemIndex> m_craftJobForWorkPiece; // Used only for work in progress items.
+	StrongVector<std::unique_ptr<ItemHasCargo>, ItemIndex> m_hasCargo;
+	StrongVector<ItemId, ItemIndex> m_id;
+	StrongBitSet<ItemIndex> m_installed;
+	StrongVector<ItemTypeId, ItemIndex> m_itemType;
+	StrongVector<MaterialTypeId, ItemIndex> m_materialType;
+	StrongVector<std::wstring, ItemIndex> m_name;
 	//TODO: Percent doesn't allow fine enough detail for tools wearing out over time?
-	DataVector<Percent, ItemIndex> m_percentWear; // Always set to 0 for generic types.
-	DataVector<Quality, ItemIndex> m_quality; // Always set to 0 for generic types.
-	DataVector<Quantity, ItemIndex> m_quantity; // Always set to 1 for nongeneric types.
+	StrongVector<Percent, ItemIndex> m_percentWear; // Always set to 0 for generic types.
+	StrongVector<Quality, ItemIndex> m_quality; // Always set to 0 for generic types.
+	StrongVector<Quantity, ItemIndex> m_quantity; // Always set to 1 for nongeneric types.
 	void moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex);
 public:
 	Items(Area& area);

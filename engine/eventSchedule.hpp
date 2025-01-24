@@ -13,8 +13,8 @@ protected:
 	EventSchedule* m_schedule = nullptr;
 	ScheduledEvent* m_event = nullptr;
 public:
-	HasScheduledEvent(EventSchedule& s) : m_schedule(&s) 
-	{ 
+	HasScheduledEvent(EventSchedule& s) : m_schedule(&s)
+	{
 		assert(&s != nullptr);
 	}
 	template<typename ...Args>
@@ -46,8 +46,8 @@ public:
 	[[nodiscard]] Step elapsedSteps() const { assert(exists()); return m_event->elapsedSteps(m_schedule->getSimulation()); }
 	[[nodiscard]] Step duration() const { assert(exists()); return m_event->duration(); }
 	[[nodiscard]] ScheduledEvent* getEvent() { return m_event; }
-	~HasScheduledEvent() 
-	{ 
+	~HasScheduledEvent()
+	{
 		if(exists())
 			m_event->cancel(m_schedule->getSimulation(), m_schedule->getArea());
 	}
@@ -95,7 +95,7 @@ class HasScheduledEvents
 {
 protected:
 	EventSchedule& m_schedule;
-	DataVector<EventType*, Index> m_events;
+	StrongVector<EventType*, Index> m_events;
 public:
 	HasScheduledEvents(EventSchedule& s) : m_schedule(s) { assert(&s); }
 	void load(Simulation& simulation, const Json& data, const Index& size)
@@ -183,8 +183,8 @@ public:
 		}
 		return output;
 	}
-	~HasScheduledEvents() 
-	{ 
+	~HasScheduledEvents()
+	{
 		for(EventType* event : m_events)
 			if(event != nullptr)
 				event->cancel(m_schedule.getSimulation(), m_schedule.getArea());

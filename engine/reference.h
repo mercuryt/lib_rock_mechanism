@@ -56,7 +56,7 @@ public:
 	~Reference()
 	{
 		if(m_referenceIndex.exists() && !*m_destruct)
-			setReferenceIndex(ReferenceIndex::null()); 
+			setReferenceIndex(ReferenceIndex::null());
 	}
 	Reference& operator=(const Reference& other)
 	{
@@ -102,7 +102,7 @@ public:
 		if constexpr (DEBUG) if(m_referenceIndex.exists()) m_data->recordReference(*this);
 	}
 	void setIndex(const Index& index, Data& dataStore)
-	{ 
+	{
 		maybeSetReferenceData(dataStore);
 		setReferenceIndex(dataStore.getReferenceIndex(index));
 	}
@@ -113,14 +113,14 @@ public:
 	[[nodiscard]] ReferenceIndex getReferenceIndex() const { return m_referenceIndex; }
 	[[nodiscard]] bool exists() const { return m_referenceIndex.exists(); }
 	[[nodiscard]] bool empty() const { return m_referenceIndex.empty(); }
-	[[nodiscard]] bool operator==(const Reference& other) const { assert(m_data == other.m_data); return other.m_referenceIndex == m_referenceIndex; } 
+	[[nodiscard]] bool operator==(const Reference& other) const { assert(m_data == other.m_data); return other.m_referenceIndex == m_referenceIndex; }
 	[[nodiscard]] std::strong_ordering operator<=>(const Reference& other) const { assert(m_data == other.m_data); return m_referenceIndex <=> other.m_referenceIndex; }
 	[[nodiscard]] size_t hash() const { return m_referenceIndex.get(); }
 	[[nodiscard]] Json toJson() const { return m_referenceIndex.get(); }
 	struct Hash { [[nodiscard]] size_t operator()(const Reference<Index, ReferenceIndex>& reference) const { return reference.get(); } };
 };
 template<typename Index, typename ReferenceIndex>
-void to_json(Json& data, const Reference<Index, ReferenceIndex>& ref) { data = ref.toJson(); } 
+void to_json(Json& data, const Reference<Index, ReferenceIndex>& ref) { data = ref.toJson(); }
 using ItemReference = Reference<ItemIndex, ItemReferenceIndex>;
 using ActorReference = Reference<ActorIndex, ActorReferenceIndex>;
 /*
@@ -131,11 +131,11 @@ using ActorReference = Reference<ActorIndex, ActorReferenceIndex>;
 template<typename Index, typename ReferenceIndex>
 class ReferenceData
 {
-	DataVector<Index, ReferenceIndex> m_indicesByReference;
-	DataVector<ReferenceIndex, Index> m_referencesByIndex;
+	StrongVector<Index, ReferenceIndex> m_indicesByReference;
+	StrongVector<ReferenceIndex, Index> m_referencesByIndex;
 	SmallSet<ReferenceIndex> m_unusedReferenceIndices;
 	#ifndef NDEBUG
-		DataVector<SmallSet<Reference<Index, ReferenceIndex>*>, ReferenceIndex> m_references;
+		StrongVector<SmallSet<Reference<Index, ReferenceIndex>*>, ReferenceIndex> m_references;
 		std::shared_ptr<bool> m_destruct;
 public: ~ReferenceData() { (*m_destruct) = true; }
 		ReferenceData() { m_destruct = std::make_shared<bool>(false); }
@@ -243,7 +243,7 @@ public:
 	[[nodiscard]] auto getReference(const Index& index) -> const Reference<Index, ReferenceIndex> { return Reference<Index, ReferenceIndex>(m_referencesByIndex[index], *this); }
 	// For testing.
 	[[nodiscard]] const auto& getIndices() const { return m_indicesByReference; }
-	[[nodiscard]] const DataVector<ReferenceIndex, Index>& getReferenceIndices() const { return m_referencesByIndex; }
+	[[nodiscard]] const StrongVector<ReferenceIndex, Index>& getReferenceIndices() const { return m_referencesByIndex; }
 	[[nodiscard]] const auto& getUnusedReferenceIndices() const { return m_unusedReferenceIndices; }
 	[[nodiscard]] bool hasReferencesTo(const Index& index) const { return !m_references[m_referencesByIndex[index]].empty(); }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(ReferenceData, m_indicesByReference, m_referencesByIndex, m_unusedReferenceIndices);
@@ -264,18 +264,18 @@ public:
 	void setItem(const ItemReference& target) { m_reference.emplace<2>(target); }
 	void clear() { m_reference.emplace<0>(); }
 	void load(const Json& data, Area& area);
-	[[nodiscard]] bool isActor() const 
-	{ 
+	[[nodiscard]] bool isActor() const
+	{
 		assert(exists());
-		return m_reference.index() == 1; 
+		return m_reference.index() == 1;
 	}
-	[[nodiscard]] bool isItem() const 
+	[[nodiscard]] bool isItem() const
 	{
 		return !isActor();
 	}
 	[[nodiscard]] bool exists() const { return m_reference.index() != 0; }
 	[[nodiscard]] bool operator==(const ActorOrItemReference& ref) const { return ref.m_reference == m_reference; }
-	[[nodiscard]] HasShapeIndex getIndex(const ActorReferenceData& actorData, const ItemReferenceData& itemData) const 
+	[[nodiscard]] HasShapeIndex getIndex(const ActorReferenceData& actorData, const ItemReferenceData& itemData) const
 	{
 		assert(exists());
 		return isActor() ?
@@ -304,8 +304,8 @@ public:
 	}
 	struct Hash
 	{
-		[[nodiscard]]size_t operator()(const ActorOrItemReference& reference) const 
-		{ 
+		[[nodiscard]]size_t operator()(const ActorOrItemReference& reference) const
+		{
 			switch(reference.m_reference.index())
 			{
 				case 0:
@@ -320,4 +320,4 @@ public:
 		}
 	};
 };
-inline void to_json(Json& data, const ActorOrItemReference& ref) { data = ref.toJson(); } 
+inline void to_json(Json& data, const ActorOrItemReference& ref) { data = ref.toJson(); }

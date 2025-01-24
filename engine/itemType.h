@@ -43,30 +43,30 @@ struct ItemTypeParamaters final
 class ItemType final
 {
 	//TODO: remove craftLocationOffset?
-	DataVector<std::vector<MaterialCategoryTypeId>, ItemTypeId> m_materialTypeCategories;
-	DataVector<std::wstring, ItemTypeId> m_name;
-	DataVector<std::array<int32_t, 3>, ItemTypeId> m_craftLocationOffset;
-	DataVector<ShapeId, ItemTypeId> m_shape;
-	DataVector<MoveTypeId, ItemTypeId> m_moveType;
-	DataVector<FluidTypeId, ItemTypeId> m_edibleForDrinkersOf;
-	DataVector<CraftStepTypeCategoryId, ItemTypeId> m_craftLocationStepTypeCategory;
-	DataVector<Volume, ItemTypeId> m_volume;
-	DataVector<Volume, ItemTypeId> m_internalVolume;
-	DataVector<uint32_t, ItemTypeId> m_value;
-	DataBitSet<ItemTypeId> m_installable;
-	DataBitSet<ItemTypeId> m_generic;
-	DataBitSet<ItemTypeId> m_canHoldFluids;
-	DataVector<std::vector<AttackTypeId>, ItemTypeId> m_attackTypes;
-	DataVector<SkillTypeId, ItemTypeId> m_combatSkill;
-	DataVector<Step, ItemTypeId> m_attackCoolDownBase;
-	DataVector<uint32_t, ItemTypeId> m_wearable_defenseScore;
-	DataVector<uint32_t, ItemTypeId> m_wearable_layer;
-	DataVector<uint32_t, ItemTypeId> m_wearable_bodyTypeScale;
-	DataVector<uint32_t, ItemTypeId> m_wearable_forceAbsorbedUnpiercedModifier;
-	DataVector<uint32_t, ItemTypeId> m_wearable_forceAbsorbedPiercedModifier;
-	DataVector<Percent, ItemTypeId> m_wearable_percentCoverage;
-	DataBitSet<ItemTypeId> m_wearable_rigid;
-	DataVector<std::vector<BodyPartTypeId>, ItemTypeId> m_wearable_bodyPartsCovered;
+	StrongVector<std::vector<MaterialCategoryTypeId>, ItemTypeId> m_materialTypeCategories;
+	StrongVector<std::wstring, ItemTypeId> m_name;
+	StrongVector<std::array<int32_t, 3>, ItemTypeId> m_craftLocationOffset;
+	StrongVector<ShapeId, ItemTypeId> m_shape;
+	StrongVector<MoveTypeId, ItemTypeId> m_moveType;
+	StrongVector<FluidTypeId, ItemTypeId> m_edibleForDrinkersOf;
+	StrongVector<CraftStepTypeCategoryId, ItemTypeId> m_craftLocationStepTypeCategory;
+	StrongVector<Volume, ItemTypeId> m_volume;
+	StrongVector<Volume, ItemTypeId> m_internalVolume;
+	StrongVector<uint32_t, ItemTypeId> m_value;
+	StrongBitSet<ItemTypeId> m_installable;
+	StrongBitSet<ItemTypeId> m_generic;
+	StrongBitSet<ItemTypeId> m_canHoldFluids;
+	StrongVector<std::vector<AttackTypeId>, ItemTypeId> m_attackTypes;
+	StrongVector<SkillTypeId, ItemTypeId> m_combatSkill;
+	StrongVector<Step, ItemTypeId> m_attackCoolDownBase;
+	StrongVector<uint32_t, ItemTypeId> m_wearable_defenseScore;
+	StrongVector<uint32_t, ItemTypeId> m_wearable_layer;
+	StrongVector<uint32_t, ItemTypeId> m_wearable_bodyTypeScale;
+	StrongVector<uint32_t, ItemTypeId> m_wearable_forceAbsorbedUnpiercedModifier;
+	StrongVector<uint32_t, ItemTypeId> m_wearable_forceAbsorbedPiercedModifier;
+	StrongVector<Percent, ItemTypeId> m_wearable_percentCoverage;
+	StrongBitSet<ItemTypeId> m_wearable_rigid;
+	StrongVector<std::vector<BodyPartTypeId>, ItemTypeId> m_wearable_bodyPartsCovered;
 public:
 	static void create(ItemTypeParamaters& p);
 	[[nodiscard]] static ItemTypeId size();

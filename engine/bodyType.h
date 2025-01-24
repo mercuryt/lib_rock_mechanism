@@ -15,12 +15,12 @@ struct BodyPartTypeParamaters final
 // For example: 'left arm', 'head', etc.
 class BodyPartType final
 {
-	DataVector<std::wstring, BodyPartTypeId> m_name;
-	DataVector<Volume, BodyPartTypeId> m_volume;
-	DataBitSet<BodyPartTypeId> m_doesLocamotion;
-	DataBitSet<BodyPartTypeId> m_doesManipulation;
-	DataBitSet<BodyPartTypeId> m_vital;
-	DataVector<std::vector<std::pair<AttackTypeId, MaterialTypeId>>, BodyPartTypeId> m_attackTypesAndMaterials;
+	StrongVector<std::wstring, BodyPartTypeId> m_name;
+	StrongVector<Volume, BodyPartTypeId> m_volume;
+	StrongBitSet<BodyPartTypeId> m_doesLocamotion;
+	StrongBitSet<BodyPartTypeId> m_doesManipulation;
+	StrongBitSet<BodyPartTypeId> m_vital;
+	StrongVector<std::vector<std::pair<AttackTypeId, MaterialTypeId>>, BodyPartTypeId> m_attackTypesAndMaterials;
 public:
 	static void create(BodyPartTypeParamaters& p);
 	[[nodiscard]] static BodyPartTypeId byName(std::wstring name);
@@ -35,8 +35,8 @@ inline BodyPartType bodyPartTypeData;
 // For example biped, quadraped, bird, etc.
 class BodyType final
 {
-	DataVector<std::wstring, BodyTypeId> m_name;
-	DataVector<std::vector<BodyPartTypeId>, BodyTypeId> m_bodyPartTypes;
+	StrongVector<std::wstring, BodyTypeId> m_name;
+	StrongVector<std::vector<BodyPartTypeId>, BodyTypeId> m_bodyPartTypes;
 public:
 	static bool hasBodyPart(const BodyTypeId& id, const BodyPartTypeId& bodyPartType);
 	static void create(std::wstring name, std::vector<BodyPartTypeId>& bodyPartTypes);

@@ -10,8 +10,8 @@ class Area;
 class OpacityFacade final
 {
 	Area& m_area;
-	DataBitSet<BlockIndex> m_fullOpacity;
-	DataBitSet<BlockIndex> m_floorOpacity;
+	StrongBitSet<BlockIndex> m_fullOpacity;
+	StrongBitSet<BlockIndex> m_floorOpacity;
 public:
 	OpacityFacade(Area& area);
 	void initalize();

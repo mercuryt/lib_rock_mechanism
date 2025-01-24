@@ -5,7 +5,7 @@
 template<typename Index>
 class SortTable
 {
-	static std::vector<uint> getOrder(DataVector<BlockIndex, Index>::iterator begin, DataVector<BlockIndex, Index>::iterator end)
+	static std::vector<uint> getOrder(StrongVector<BlockIndex, Index>::iterator begin, StrongVector<BlockIndex, Index>::iterator end)
 	{
 		// Create output as a sequence from (0..(end - begin))o
 		std::vector<uint> output(std::distance(begin, end));
@@ -19,7 +19,7 @@ class SortTable
 		return output;
 	}
 	template<typename T>
-	static void applyOrder(DataVector<T, Index>::iterator begin, DataVector<T, Index>::iterator end, const std::vector<uint>& order)
+	static void applyOrder(StrongVector<T, Index>::iterator begin, StrongVector<T, Index>::iterator end, const std::vector<uint>& order)
 	{
 		std::vector<T> temp(end - begin);
 		for(uint i = 0; begin + i != end; ++i)

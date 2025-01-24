@@ -13,7 +13,7 @@
 
 class PathMemoClosed final
 {
-	DataVector<BlockIndex, BlockIndex> m_data;
+	StrongVector<BlockIndex, BlockIndex> m_data;
 	BlockIndices m_dirty;
 public:
 	[[nodiscard]] bool contains(const BlockIndex& index) const { return m_data[index].exists(); }

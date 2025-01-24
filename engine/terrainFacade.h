@@ -96,8 +96,8 @@ struct PathRequestWithHuristicData
 };
 class TerrainFacade final
 {
-	DataVector<PathRequestNoHuristicData, PathRequestIndex> m_pathRequestsNoHuristic;
-	DataVector<PathRequestWithHuristicData, PathRequestIndex> m_pathRequestsWithHuristic;
+	StrongVector<PathRequestNoHuristicData, PathRequestIndex> m_pathRequestsNoHuristic;
+	StrongVector<PathRequestWithHuristicData, PathRequestIndex> m_pathRequestsWithHuristic;
 	// Not indexed by BlockIndex because size is multipied by max adjacent.
 	std::vector<bool> m_enterable;
 	Area& m_area;

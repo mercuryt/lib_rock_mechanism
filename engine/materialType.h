@@ -14,7 +14,7 @@
 
 class MaterialTypeCategory
 {
-	DataVector<std::wstring, MaterialCategoryTypeId> m_name;
+	StrongVector<std::wstring, MaterialCategoryTypeId> m_name;
 public:
 	[[nodiscard]] static MaterialCategoryTypeId size();
 	[[nodiscard]] static const MaterialCategoryTypeId byName(const std::wstring&& name);
@@ -24,11 +24,11 @@ public:
 static MaterialTypeCategory materialTypeCategoryData;
 class SpoilData
 {
-	DataVector<MaterialTypeId, SpoilsDataTypeId> m_materialType;
-	DataVector<ItemTypeId, SpoilsDataTypeId> m_itemType;
-	DataVector<Percent, SpoilsDataTypeId> m_chance;
-	DataVector<Quantity, SpoilsDataTypeId> m_min;
-	DataVector<Quantity, SpoilsDataTypeId> m_max;
+	StrongVector<MaterialTypeId, SpoilsDataTypeId> m_materialType;
+	StrongVector<ItemTypeId, SpoilsDataTypeId> m_itemType;
+	StrongVector<Percent, SpoilsDataTypeId> m_chance;
+	StrongVector<Quantity, SpoilsDataTypeId> m_min;
+	StrongVector<Quantity, SpoilsDataTypeId> m_max;
 public:
 	static SpoilsDataTypeId create(const MaterialTypeId& mt, const ItemTypeId& it, const Percent& c, const Quantity& mi, const Quantity& ma);
 	[[nodiscard]] static MaterialTypeId getMaterialType(const SpoilsDataTypeId& id);
@@ -72,28 +72,28 @@ struct MaterialTypeParamaters final
 };
 class MaterialType final
 {
-	DataVector<std::wstring, MaterialTypeId> m_name;
-	DataVector<Density, MaterialTypeId> m_density;
-	DataVector<uint32_t, MaterialTypeId> m_hardness;
-	DataBitSet<MaterialTypeId> m_transparent;
-	DataVector<MaterialCategoryTypeId, MaterialTypeId> m_materialTypeCategory;
+	StrongVector<std::wstring, MaterialTypeId> m_name;
+	StrongVector<Density, MaterialTypeId> m_density;
+	StrongVector<uint32_t, MaterialTypeId> m_hardness;
+	StrongBitSet<MaterialTypeId> m_transparent;
+	StrongVector<MaterialCategoryTypeId, MaterialTypeId> m_materialTypeCategory;
 	// Construction.
-	DataVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId> m_construction_consumed;
-	DataVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId>  m_construction_unconsumed;
-	DataVector<std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>>, MaterialTypeId>  m_construction_byproducts;
-	DataVector<SkillTypeId, MaterialTypeId> m_construction_skill;
-	DataVector<Step, MaterialTypeId> m_construction_duration;
+	StrongVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId> m_construction_consumed;
+	StrongVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId>  m_construction_unconsumed;
+	StrongVector<std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>>, MaterialTypeId>  m_construction_byproducts;
+	StrongVector<SkillTypeId, MaterialTypeId> m_construction_skill;
+	StrongVector<Step, MaterialTypeId> m_construction_duration;
 	// How does this material dig?
 	// There is no reason why spoils data isn't stored inline in structs rather then in a seperate table.
-	DataVector<std::vector<SpoilsDataTypeId>, MaterialTypeId> m_spoilData;
+	StrongVector<std::vector<SpoilsDataTypeId>, MaterialTypeId> m_spoilData;
 	// What temperatures cause phase changes?
-	DataVector<Temperature, MaterialTypeId> m_meltingPoint;
-	DataVector<FluidTypeId, MaterialTypeId> m_meltsInto;
+	StrongVector<Temperature, MaterialTypeId> m_meltingPoint;
+	StrongVector<FluidTypeId, MaterialTypeId> m_meltsInto;
 	// Fire.
-	DataVector<Step, MaterialTypeId> m_burnStageDuration; // How many steps to go from smouldering to burning and from burning to flaming.
-	DataVector<Step, MaterialTypeId> m_flameStageDuration; // How many steps to spend flaming.
-	DataVector<Temperature, MaterialTypeId> m_ignitionTemperature; // Temperature at which this material catches fire.
-	DataVector<TemperatureDelta, MaterialTypeId> m_flameTemperature; // Temperature given off by flames from this material. The temperature given off by burn stage is a fraction of flame stage based on a config setting.
+	StrongVector<Step, MaterialTypeId> m_burnStageDuration; // How many steps to go from smouldering to burning and from burning to flaming.
+	StrongVector<Step, MaterialTypeId> m_flameStageDuration; // How many steps to spend flaming.
+	StrongVector<Temperature, MaterialTypeId> m_ignitionTemperature; // Temperature at which this material catches fire.
+	StrongVector<TemperatureDelta, MaterialTypeId> m_flameTemperature; // Temperature given off by flames from this material. The temperature given off by burn stage is a fraction of flame stage based on a config setting.
 public:
 	static MaterialTypeId create(const MaterialTypeParamaters& p);
 	static void setConstructionParamaters(const MaterialTypeId& materialType, const MaterialTypeConstructionDataParamaters& p);

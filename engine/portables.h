@@ -26,12 +26,12 @@ template<class Derived, class Index, class ReferenceIndex>
 class Portables : public HasShapes<Derived, Index>
 {
 protected:
-	DataVector<std::unique_ptr<Reservable>, Index> m_reservables;
-	DataVector<std::unique_ptr<OnDestroy>, Index> m_destroy;
-	DataVector<ActorOrItemIndex, Index> m_follower;
-	DataVector<ActorOrItemIndex, Index> m_leader;
-	DataVector<ActorOrItemIndex, Index> m_carrier;
-	DataVector<MoveTypeId, Index> m_moveType;
+	StrongVector<std::unique_ptr<Reservable>, Index> m_reservables;
+	StrongVector<std::unique_ptr<OnDestroy>, Index> m_destroy;
+	StrongVector<ActorOrItemIndex, Index> m_follower;
+	StrongVector<ActorOrItemIndex, Index> m_leader;
+	StrongVector<ActorOrItemIndex, Index> m_carrier;
+	StrongVector<MoveTypeId, Index> m_moveType;
 	bool m_isActors;
 	Portables(Area& area, bool isActors);
 	void create(const Index& index, const MoveTypeId& moveType, const ShapeId& shape, const FactionId& faction, bool isStatic, const Quantity& quantity);

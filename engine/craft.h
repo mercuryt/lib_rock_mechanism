@@ -49,7 +49,7 @@ class CraftCancelInputAction final : public InputAction
 // Drill, saw, forge, etc.
 class CraftStepTypeCategory final
 {
-	DataVector<std::wstring, CraftStepTypeCategoryId> m_name;
+	StrongVector<std::wstring, CraftStepTypeCategoryId> m_name;
 public:
 	static void create(std::wstring name);
 	[[nodiscard]] static CraftStepTypeCategoryId size();
@@ -104,11 +104,11 @@ struct CraftStepProjectHasShapeDishonorCallback final : public DishonorCallback
 // Data about making a specific product type.
 class CraftJobType final
 {
-	DataVector<std::wstring, CraftJobTypeId> m_name;
-	DataVector<ItemTypeId, CraftJobTypeId> m_productType;
-	DataVector<Quantity, CraftJobTypeId> m_productQuantity;
-	DataVector<MaterialCategoryTypeId, CraftJobTypeId> m_materialTypeCategory;
-	DataVector<std::vector<CraftStepType>, CraftJobTypeId> m_stepTypes;
+	StrongVector<std::wstring, CraftJobTypeId> m_name;
+	StrongVector<ItemTypeId, CraftJobTypeId> m_productType;
+	StrongVector<Quantity, CraftJobTypeId> m_productQuantity;
+	StrongVector<MaterialCategoryTypeId, CraftJobTypeId> m_materialTypeCategory;
+	StrongVector<std::vector<CraftStepType>, CraftJobTypeId> m_stepTypes;
 public:
 	static void create(std::wstring name, ItemTypeId productType, const Quantity& productQuantity, MaterialCategoryTypeId category, std::vector<CraftStepType> stepTypes);
 	[[nodiscard]] static CraftJobTypeId size();
