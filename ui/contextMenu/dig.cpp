@@ -14,9 +14,9 @@ void ContextMenu::drawDigControls(const BlockIndex& block)
 		{
 			auto cancelButton = tgui::Button::create("cancel dig");
 			m_root.add(cancelButton);
-			cancelButton->onClick([this, &designations]{
+			cancelButton->onClick([this, &designations, &blocks]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
 					if(designations.check(selectedBlock, BlockDesignation::Dig))
 						m_window.getArea()->m_hasDigDesignations.undesignate(m_window.getFaction(), selectedBlock);
 				hide();
@@ -29,17 +29,21 @@ void ContextMenu::drawDigControls(const BlockIndex& block)
 	m_root.add(digButton);
 	digButton->onClick([this, &blocks]{
 		std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-		for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+		for(const Cuboid& cuboid : m_window.getSelectedBlocks().getCuboids())
 		{
 			if(m_window.m_editMode)
 			{
-				if(blocks.solid_is(selectedBlock))
-					blocks.solid_setNot(selectedBlock);
-				else if(!blocks.blockFeature_empty(selectedBlock))
-					blocks.blockFeature_removeAll(selectedBlock);
+				blocks.solid_setNotCuboid(cuboid);
+				for(const BlockIndex& selectedBlock : cuboid.getView(blocks))
+				{
+					if(!blocks.blockFeature_empty(selectedBlock))
+						blocks.blockFeature_removeAll(selectedBlock);
+				}
 			}
-			else if(blocks.solid_is(selectedBlock) || !blocks.blockFeature_empty(selectedBlock))
-				m_window.getArea()->m_hasDigDesignations.designate(m_window.getFaction(), selectedBlock, nullptr);
+			else
+				for(const BlockIndex& selectedBlock : cuboid.getView(blocks))
+					if(blocks.solid_is(selectedBlock) || !blocks.blockFeature_empty(selectedBlock))
+						m_window.getArea()->m_hasDigDesignations.designate(m_window.getFaction(), selectedBlock, nullptr);
 		}
 		hide();
 	});
@@ -53,7 +57,7 @@ void ContextMenu::drawDigControls(const BlockIndex& block)
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 			assert(widgetUtil::lastSelectedBlockFeatureType);
 			const BlockFeatureType& featureType = *widgetUtil::lastSelectedBlockFeatureType;
-			for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+			for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
 				if(blocks.solid_is(selectedBlock))
 				{
 					if(m_window.m_editMode)

@@ -22,7 +22,7 @@ void ContextMenu::drawStockPileControls(const BlockIndex& block)
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				StockPile* stockpile = blocks.stockpile_getForFaction(block, faction);
 				if(stockpile)
-					for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+					for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
 						if(stockpile->contains(selectedBlock))
 							stockpile->removeBlock(selectedBlock);
 				hide();

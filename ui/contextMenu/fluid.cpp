@@ -19,7 +19,7 @@ void ContextMenu::drawFluidControls(const BlockIndex& block)
 			submenu.add(remove);
 			remove->onClick([this, fluidData, &blocks]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
 				{
 					CollisionVolume contains = blocks.fluid_volumeOfTypeContains(selectedBlock, fluidData.type);
 					if(contains != 0)
@@ -39,7 +39,7 @@ void ContextMenu::drawFluidControls(const BlockIndex& block)
 						FluidGroup& group = *blocks.fluid_getGroup(block, fluidData.type);
 						m_window.deselectAll();
 						for(const BlockIndex& block : group.getBlocks())
-							m_window.getSelectedBlocks().insert(block);
+							m_window.getSelectedBlocks().add(blocks, block);
 					}
 					hide();
 				});
@@ -75,7 +75,7 @@ void ContextMenu::drawFluidControls(const BlockIndex& block)
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				if(m_window.getSelectedBlocks().empty())
 					m_window.selectBlock(block);
-				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
 					if(!blocks.solid_is(selectedBlock))
 						blocks.fluid_add(selectedBlock, fluidLevel, FluidType::byName(fluidTypeUI->getSelectedItemId().toWideString()));
 				m_window.getArea()->m_hasFluidGroups.clearMergedFluidGroups();
@@ -86,11 +86,11 @@ void ContextMenu::drawFluidControls(const BlockIndex& block)
 				auto createSource = tgui::Button::create("create source");
 				createSource->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 				submenu.add(createSource);
-				createSource->onClick([this, block, fluidTypeUI, levelUI]{
+				createSource->onClick([this, block, fluidTypeUI, levelUI, &blocks]{
 					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(block);
-					for(const BlockIndex& selectedBlock: m_window.getSelectedBlocks())
+					for(const BlockIndex& selectedBlock: m_window.getSelectedBlocks().getView(blocks))
 						m_window.getArea()->m_fluidSources.create(
 							selectedBlock,
 							FluidType::byName(fluidTypeUI->getSelectedItemId().toWideString()),

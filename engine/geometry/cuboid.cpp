@@ -17,7 +17,7 @@ Cuboid::Cuboid(const Point3D& highest, const Point3D& lowest) : m_highest(highes
 	assert(highest.y >= lowest.y);
 	assert(highest.z >= lowest.z);
 }
-SmallSet<BlockIndex> Cuboid::toSet(Blocks& blocks)
+SmallSet<BlockIndex> Cuboid::toSet(const Blocks& blocks)
 {
 	SmallSet<BlockIndex> output;
 	for(const BlockIndex& block : getView(blocks))
@@ -152,6 +152,11 @@ void Cuboid::setMaxZ(const DistanceInBlocks& distance)
 	if(m_highest.z > distance)
 		m_highest.z = distance;
 }
+void Cuboid::maybeExpand(const Cuboid& other)
+{
+	m_highest.clampHigh(other.m_highest);
+	m_lowest.clampLow(other.m_lowest);
+}
 void Cuboid::clear() { m_lowest.clear(); m_highest.clear(); }
 Cuboid Cuboid::getFace(const Facing6& facing) const
 {
@@ -219,7 +224,7 @@ size_t Cuboid::size() const
 	return ((m_highest.x + 1) - m_lowest.x).get() * ((m_highest.y + 1) - m_lowest.y).get() * ((m_highest.z + 1) - m_lowest.z).get();
 }
 // static method
-Cuboid Cuboid::fromBlock(Blocks& blocks, const BlockIndex& block)
+Cuboid Cuboid::fromBlock(const Blocks& blocks, const BlockIndex& block)
 {
 	return Cuboid(blocks, block, block);
 }
@@ -288,7 +293,35 @@ bool Cuboid::isSomeWhatInFrontOf(const Point3D& point, const Facing4& facing) co
 {
 	return m_highest.isInFrontOf(point, facing) || m_lowest.isInFrontOf(point, facing);
 }
-Cuboid::iterator::iterator(Blocks& blocks, const BlockIndex& lowest, const BlockIndex& highest) : m_blocks(blocks)
+SmallSet<Cuboid> Cuboid::getChildrenWhenSplitByCuboid(const Cuboid& cuboid) const
+{
+	Point3D splitHighest = cuboid.m_highest;
+	Point3D splitLowest = cuboid.m_lowest;
+	// Clamp split high and low to cuboid.
+	splitHighest.clampHigh(cuboid.m_highest);
+	splitLowest.clampLow(cuboid.m_lowest);
+	SmallSet<Cuboid> output;
+	// Split off group above.
+	if(cuboid.m_highest.z > splitHighest.z)
+		output.emplace(cuboid.m_highest, Point3D(cuboid.m_lowest.x, cuboid.m_lowest.y, splitHighest.z + 1));
+	// Split off group below.
+	if(cuboid.m_lowest.z < splitLowest.z)
+		output.emplace(Point3D(cuboid.m_highest.x, cuboid.m_highest.y, splitLowest.z - 1), cuboid.m_lowest);
+	// Split off group with higher Y
+	if(cuboid.m_highest.y > splitHighest.y)
+		output.emplace(Point3D(cuboid.m_highest.x, cuboid.m_highest.y, splitHighest.z), Point3D(cuboid.m_lowest.x, splitHighest.y + 1, splitLowest.z));
+	// Split off group with lower Y
+	if(cuboid.m_lowest.y < splitLowest.y)
+		output.emplace(Point3D(cuboid.m_highest.x, splitLowest.y - 1, splitHighest.z), Point3D(cuboid.m_lowest.x, cuboid.m_lowest.y, splitLowest.z));
+	// Split off group with higher X
+	if(cuboid.m_highest.x > splitHighest.x)
+		output.emplace(Point3D(cuboid.m_highest.x, splitHighest.y, splitHighest.z), Point3D(splitHighest.x + 1, splitLowest.y, splitLowest.z));
+	// Split off group with lower X
+	if(cuboid.m_lowest.x < splitLowest.x)
+		output.emplace(Point3D(splitLowest.x - 1, splitHighest.y, splitHighest.z), Point3D(cuboid.m_lowest.x, splitLowest.y, splitLowest.z));
+	return output;
+}
+Cuboid::iterator::iterator(const Blocks& blocks, const BlockIndex& lowest, const BlockIndex& highest) : m_blocks(&blocks)
 {
 	if(!lowest.exists())
 	{
@@ -305,6 +338,14 @@ void Cuboid::iterator::setToEnd()
 {
 	// TODO: All these assignments arn't needed, just one would be fine.
 	m_start.x = m_start.y = m_start.z = m_current.x = m_current.y = m_current.z = m_end.x = m_end.y = m_end.z = DistanceInBlocks::null();
+}
+Cuboid::iterator& Cuboid::iterator::operator=(const iterator& other)
+{
+	m_start = other.m_start;
+	m_end = other.m_end;
+	m_current = other.m_current;
+	m_blocks = other.m_blocks;
+	return *this;
 }
 Cuboid::iterator& Cuboid::iterator::iterator::operator++()
 {
@@ -329,30 +370,52 @@ Cuboid::iterator Cuboid::iterator::operator++(int)
 	++(*this);
 	return tmp;
 }
-BlockIndex Cuboid::iterator::operator*() { return m_blocks.getIndex(m_current); }
-CuboidView Cuboid::getView(Blocks& blocks) const { return CuboidView(blocks, *this); }
-CuboidSurfaceView Cuboid::getSurfaceView(Blocks& blocks) const { return CuboidSurfaceView(blocks, *this); }
+BlockIndex Cuboid::iterator::operator*() { return m_blocks->getIndex(m_current); }
+CuboidView Cuboid::getView(const Blocks& blocks) const { return CuboidView(blocks, *this); }
+CuboidSurfaceView Cuboid::getSurfaceView(const Blocks& blocks) const { return CuboidSurfaceView(blocks, *this); }
 std::wstring Cuboid::toString() const { return m_highest.toString() + L", " + m_lowest.toString(); }
+CuboidSurfaceView::Iterator::Iterator(const CuboidSurfaceView& v) :
+	view(v)
+{
+	setFace();
+}
 void CuboidSurfaceView::Iterator::setFace()
 {
 	face = view.cuboid.getFace(facing);
+	while(facing != Facing6::Null)
+	{
+		const BlockIndex& aboveFace = view.blocks.getAtFacing(view.blocks.getIndex(face.m_highest), facing);
+		if(aboveFace.exists())
+			break;
+		facing = Facing6((uint)facing + 1);
+		if(facing != Facing6::Null)
+			face = view.cuboid.getFace(facing);
+	}
 	current = face.m_lowest;
 }
 CuboidSurfaceView::Iterator& CuboidSurfaceView::Iterator::operator++()
 {
-	if (current.x < face.m_highest.x) {
+	if(current.x < face.m_highest.x)
+	{
 		++current.x;
-	} else if (current.y < face.m_highest.y) {
+	}
+	else if(current.y < face.m_highest.y)
+	{
 		current.x = face.m_lowest.x;
 		++current.y;
-	} else if (current.z < face.m_highest.z) {
+	}
+	else if(current.z < face.m_highest.z)
+	{
 		current.x = face.m_lowest.x;
 		current.y = face.m_lowest.y;
 		++current.z;
-	} else if(facing != Facing6::Above) {
+	}
+	else if(facing != Facing6::Above)
+	{
 		facing = (Facing6)((uint)facing + 1);
 		setFace();
-	} else
+	}
+	else
 		// End iterator.
 		setToEnd();
 	return *this;

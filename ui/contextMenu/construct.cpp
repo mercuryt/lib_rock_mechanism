@@ -5,9 +5,11 @@
 #include "../../engine/blockFeature.h"
 #include "../../engine/designations.h"
 #include "../../engine/materialType.h"
+#include "../../engine/areaBuilderUtil.h"
 void ContextMenu::drawConstructControls(const BlockIndex& block)
 {
 	const Area& area = *m_window.getArea();
+	const Blocks& blocks = area.getBlocks();
 	const FactionId& faction = m_window.getFaction();
 	if(faction.exists() && area.m_blockDesignations.contains(faction))
 	{
@@ -17,9 +19,9 @@ void ContextMenu::drawConstructControls(const BlockIndex& block)
 			auto cancelButton = tgui::Button::create("cancel");
 			cancelButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 			m_root.add(cancelButton);
-			cancelButton->onClick([this, faction]{
+			cancelButton->onClick([this, faction, &blocks]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
 					m_window.getArea()->m_hasConstructionDesignations.undesignate(faction, selectedBlock);
 				hide();
 			});
@@ -65,14 +67,16 @@ void ContextMenu::construct(const BlockIndex& block, bool constructed, const Mat
 	if(m_window.getSelectedBlocks().empty())
 		m_window.selectBlock(block);
 	Blocks& blocks = m_window.getArea()->getBlocks();
-	for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
-		if(!blocks.solid_is(selectedBlock))
+	for(const Cuboid& cuboid : m_window.getSelectedBlocks().getCuboids())
+	{
+		if(m_window.m_editMode)
 		{
-			if (m_window.m_editMode)
-			{
-				if(blockFeatureType == nullptr)
-					blocks.solid_set(selectedBlock, materialType, constructed);
-				else
+			if(blockFeatureType == nullptr)
+				blocks.solid_setCuboid(cuboid, materialType, constructed);
+			else
+				// TODO: Create block features by cuboid batch.
+				for(const BlockIndex& selectedBlock : cuboid.getView(blocks))
+				{
 					if(!constructed)
 					{
 						if(!blocks.solid_is(selectedBlock))
@@ -81,9 +85,11 @@ void ContextMenu::construct(const BlockIndex& block, bool constructed, const Mat
 					}
 					else
 						blocks.blockFeature_construct(selectedBlock, *blockFeatureType, materialType);
-			}
-			else
-				m_window.getArea()->m_hasConstructionDesignations.designate(m_window.getFaction(), selectedBlock, blockFeatureType, materialType);
+				}
 		}
+		else
+			for(const BlockIndex& selectedBlock : cuboid.getView(blocks))
+				m_window.getArea()->m_hasConstructionDesignations.designate(m_window.getFaction(), selectedBlock, blockFeatureType, materialType);
+	}
 	hide();
 }

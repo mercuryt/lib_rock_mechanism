@@ -101,6 +101,7 @@
 	"maximumDaysBetweenRainPerPercentHumidity": 2,
 	"maximumDurationToWaitInsteadOfWanderMinutes": 2.5,
 	"maximumRainIntensityModifier": 1.5,
+	"maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom": 512,
 	"maximumSecondsRainPerPercentHumidity": 350,
 	"medicalPriority": 200,
 	"medicalProjectDelayMinutes": 10,

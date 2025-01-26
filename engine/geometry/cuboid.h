@@ -28,7 +28,8 @@ public:
 	void clear();
 	void shift(const Facing6& direction, const DistanceInBlocks& distance);
 	void setMaxZ(const DistanceInBlocks& distance);
-	[[nodiscard]] SmallSet<BlockIndex> toSet(Blocks& blocks);
+	void maybeExpand(const Cuboid& other);
+	[[nodiscard]] SmallSet<BlockIndex> toSet(const Blocks& blocks);
 	[[nodiscard]] bool contains(const Blocks& blocks, const BlockIndex& block) const;
 	[[nodiscard]] bool contains(const Point3D& point) const;
 	[[nodiscard]] bool contains(const Cuboid& cuboid) const;
@@ -45,7 +46,8 @@ public:
 	[[nodiscard]] DistanceInBlocks dimensionForFacing(const Facing6& facing) const;
 	[[nodiscard]] Facing6 getFacingTwordsOtherCuboid(const Cuboid& cuboid) const;
 	[[nodiscard]] bool isSomeWhatInFrontOf(const Point3D& position, const Facing4& facing) const;
-	[[nodiscard]] static Cuboid fromBlock(Blocks& blocks, const BlockIndex& block);
+	[[nodiscard]] SmallSet<Cuboid> getChildrenWhenSplitByCuboid(const Cuboid& cuboid) const;
+	[[nodiscard]] static Cuboid fromBlock(const Blocks& blocks, const BlockIndex& block);
 	[[nodiscard]] static Cuboid fromBlockPair(const Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
 	class iterator
 	{
@@ -53,43 +55,45 @@ public:
 		Point3D m_start;
 		Point3D m_end;
 		Point3D m_current;
-		Blocks& m_blocks;
+		const Blocks* m_blocks;
 		void setToEnd();
 	public:
-		iterator(Blocks& blocks, Point3D low, Point3D high) : m_start(low), m_end(high), m_current(low), m_blocks(blocks)  { }
-		iterator(Blocks& blocks, const BlockIndex& lowest, const BlockIndex& highest);
+		iterator(const Blocks& blocks, Point3D low, Point3D high) : m_start(low), m_end(high), m_current(low), m_blocks(&blocks)  { }
+		iterator(const Blocks& blocks, const BlockIndex& lowest, const BlockIndex& highest);
+		iterator(const iterator& other) = default;
+		iterator& operator=(const iterator& other);
 		iterator& operator++();
-		iterator operator++(int);
-		bool operator==(const iterator& other) const { return m_current == other.m_current; }
-		bool operator!=(const iterator& other) const { return !(*this == other); }
-		BlockIndex operator*();
+		[[nodiscard]] iterator operator++(int);
+		[[nodiscard]] bool operator==(const iterator& other) const { return m_current == other.m_current; }
+		[[nodiscard]] bool operator!=(const iterator& other) const { return !(*this == other); }
+		[[nodiscard]] BlockIndex operator*();
 	};
-	iterator begin(Blocks& blocks) { return iterator(blocks, m_lowest, m_highest); }
-	iterator end(Blocks& blocks) { return iterator(blocks, BlockIndex::null(), BlockIndex::null()); }
-	const iterator begin(Blocks& blocks) const { return iterator(blocks, m_lowest, m_highest); }
-	const iterator end(Blocks& blocks) const { return iterator(blocks, BlockIndex::null(), BlockIndex::null()); }
+	iterator begin(const Blocks& blocks) { return iterator(blocks, m_lowest, m_highest); }
+	iterator end(const Blocks& blocks) { return iterator(blocks, BlockIndex::null(), BlockIndex::null()); }
+	const iterator begin(const Blocks& blocks) const { return iterator(blocks, m_lowest, m_highest); }
+	const iterator end(const Blocks& blocks) const { return iterator(blocks, BlockIndex::null(), BlockIndex::null()); }
 	//TODO:
 	//static_assert(std::forward_iterator<iterator>);
-	CuboidView getView(Blocks& blocks) const;
-	CuboidSurfaceView getSurfaceView(Blocks& blocks) const;
+	CuboidView getView(const Blocks& blocks) const;
+	CuboidSurfaceView getSurfaceView(const Blocks& blocks) const;
 	std::wstring toString() const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Cuboid, m_highest, m_lowest);
 };
 struct CuboidView : public std::ranges::view_interface<CuboidView>
 {
 	const Cuboid cuboid;
-	Blocks& blocks;
+	const Blocks& blocks;
 	CuboidView() = default;
-	CuboidView(Blocks& b, const Cuboid c) : cuboid(c), blocks(b) { }
+	CuboidView(const Blocks& b, const Cuboid c) : cuboid(c), blocks(b) { }
 	Cuboid::iterator begin() const { return cuboid.begin(blocks); }
 	Cuboid::iterator end() const { return cuboid.end(blocks); }
 };
 struct CuboidSurfaceView : public std::ranges::view_interface<CuboidSurfaceView>
 {
 	const Cuboid cuboid;
-	Blocks& blocks;
+	const Blocks& blocks;
 	CuboidSurfaceView() = default;
-	CuboidSurfaceView(Blocks& b, const Cuboid c) : cuboid(c), blocks(b) { }
+	CuboidSurfaceView(const Blocks& b, const Cuboid c) : cuboid(c), blocks(b) { }
 	struct Iterator
 	{
 		const CuboidSurfaceView& view;
@@ -98,7 +102,7 @@ struct CuboidSurfaceView : public std::ranges::view_interface<CuboidSurfaceView>
 		Facing6 facing = Facing6::Below;
 		void setFace();
 		void setToEnd();
-		Iterator(const CuboidSurfaceView& v) : view(v) { setFace(); }
+		Iterator(const CuboidSurfaceView& v);
 		Iterator& operator++();
 		Iterator operator++(int);
 		bool operator==(const Iterator& other) const;

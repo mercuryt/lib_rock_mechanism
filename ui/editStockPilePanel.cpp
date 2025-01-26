@@ -52,9 +52,11 @@ void EditStockPileView::draw(StockPile* stockpile)
 		if(!m_stockPile)
 		{
 			const FactionId& faction = m_window.getFaction();
-			m_window.getArea()->m_blockDesignations.maybeRegisterFaction(faction);
-			m_stockPile = &m_window.getArea()->m_hasStockPiles.getForFaction(faction).addStockPile({});
-			for(const BlockIndex& block : m_window.getSelectedBlocks())
+			Area& area = *m_window.getArea();
+			Blocks& blocks = area.getBlocks();
+			area.m_blockDesignations.maybeRegisterFaction(faction);
+			m_stockPile = &area.m_hasStockPiles.getForFaction(faction).addStockPile({});
+			for(const BlockIndex& block : m_window.getSelectedBlocks().getView(blocks))
 				m_stockPile->addBlock(block);
 		}
 		const MaterialTypeId& materialType = widgetUtil::lastSelectedMaterial;

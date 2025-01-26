@@ -163,7 +163,7 @@ void ContextMenu::drawItemControls(const BlockIndex& block)
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 			if(m_window.getSelectedBlocks().empty())
 				m_window.selectBlock(block);
-			for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+			for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
 			{
 				static const MoveTypeId& none = MoveType::byName(L"none");
 				const ShapeId& shape = ItemType::getShape(params.itemType);
@@ -211,7 +211,7 @@ void ContextMenu::drawItemControls(const BlockIndex& block)
 			m_root.add(install);
 			install->onMouseEnter([this, block, item, faction, &area]{
 				auto& submenu = makeSubmenu(0);
-				for(Facing4 facing = Facing4::North; facing < 4; ++facing)
+				for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4(uint(facing) + 1))
 				{
 					auto button = tgui::Button::create(m_window.facingToString(facing));
 					button->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);

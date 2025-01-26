@@ -277,7 +277,7 @@ void Window::startLoop()
 							if(m_firstCornerOfSelection.exists())
 								selectedBlocks.setFrom(blocks, m_firstCornerOfSelection, block);
 							else
-								selectedBlocks.setFrom(block);
+								selectedBlocks.setFrom(blocks, block);
 							m_firstCornerOfSelection.clear();
 							bool selectActors = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && !sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
 							bool selectItems = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
@@ -290,7 +290,7 @@ void Window::startLoop()
 								for(const BlockIndex& block : selectedBlocks.getView(blocks))
 									m_selectedItems.maybeInsertAll(blocks.item_getAll(block).begin(), blocks.item_getAll(block).end());
 							else if(selectBlocks)
-								m_selectedBlocks.maybeInsertAll(selectedBlocks.begin(blocks), selectedBlocks.end(blocks));
+								m_selectedBlocks.add(selectedBlocks);
 							else
 							{
 								// No modifier key to choose what type to select, check for everything.
@@ -339,8 +339,7 @@ void Window::startLoop()
 									m_selectedActors.clear();
 									m_selectedItems.clear();
 									m_selectedPlants.clear();
-									for(const BlockIndex& block : selectedBlocks.getView(blocks))
-										m_selectedBlocks.insert(block);
+									m_selectedBlocks.add(selectedBlocks);
 								}
 							}
 						}
@@ -503,9 +502,9 @@ void Window::deselectAll()
 }
 void Window::selectBlock(const BlockIndex& block)
 {
-	//TODO: additive select.
+	assert(m_area != nullptr);
 	deselectAll();
-	m_selectedBlocks.insert(block);
+	m_selectedBlocks.add(m_area->getBlocks(), block);
 }
 void Window::selectItem(const ItemIndex& item)
 {
@@ -584,12 +583,12 @@ std::wstring Window::displayNameForCraftJob(CraftJob& craftJob)
 }
 std::wstring Window::facingToString(Facing4 facing)
 {
-	if(facing == 0)
+	if(facing == Facing4::North)
 		return L"up";
-	if(facing == 1)
+	if(facing == Facing4::East)
 		return L"right";
-	if(facing == 2)
+	if(facing == Facing4::South)
 		return L"down";
-	assert(facing == 3);
+	assert(facing == Facing4::West);
 	return L"left";
 }
