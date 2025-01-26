@@ -206,6 +206,15 @@ void AreaHasVisionCuboids::createOrExtend(Area& area, const Cuboid& cuboid)
 			}
 		}
 	}
+	// Store adjacent cuboids.
+	assert(!adjacent.contains(created.m_index));
+	created.m_adjacent = adjacent;
+	if(created.m_cuboid.size() > Config::maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom)
+	{
+		for(const VisionCuboidIndex& cuboidIndex : adjacent)
+			m_visionCuboids[cuboidIndex].m_adjacent.insert(created.m_index);
+		return;
+	}
 	Cuboid toSplit;
 	uint bestCandidateSize = 0;
 	uint currentSize = currentCuboid.size();
@@ -233,9 +242,6 @@ void AreaHasVisionCuboids::createOrExtend(Area& area, const Cuboid& cuboid)
 			visionCuboid.m_adjacent.insert(created.m_index);
 		}
 	}
-	// Store adjacent cuboids.
-	assert(!adjacent.contains(created.m_index));
-	created.m_adjacent = adjacent;
 	if(candidate != nullptr)
 	{
 		splitAtCuboid(area, created, toSplit);

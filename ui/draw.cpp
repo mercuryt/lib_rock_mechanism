@@ -5,6 +5,7 @@
 #include "../engine/actors/actors.h"
 #include "../engine/items/items.h"
 #include "../engine/plants.h"
+#include "../engine/geometry/cuboid.h"
 #include "displayData.h"
 #include "interpolate.h"
 #include <SFML/Graphics/Color.hpp>
@@ -107,9 +108,8 @@ void Draw::view()
 	// Selected.
 	if(!m_window.m_selectedBlocks.empty())
 	{
-		for(const BlockIndex& block : m_window.m_selectedBlocks)
-			if(blocks.getZ(block) == m_window.m_z)
-				selected(block);
+		for(const Cuboid& cuboid : m_window.m_selectedBlocks.getCuboids())
+			selected(cuboid);
 	}
 	else if(!m_window.m_selectedActors.empty())
 	{
@@ -402,7 +402,7 @@ void Draw::blockFeaturesAndFluids(const BlockIndex& block)
 			{
 				static sf::Sprite stairs = getCenteredSprite("stairs");
 				Facing4 facing = rampOrStairsFacing(block);
-				stairs.setRotation(facing.get() * 90);
+				stairs.setRotation((uint)facing * 90);
 				stairs.setOrigin(16,19);
 				spriteOnBlockCentered(block, stairs, color);
 			}
@@ -410,7 +410,7 @@ void Draw::blockFeaturesAndFluids(const BlockIndex& block)
 			{
 				static sf::Sprite ramp = getCenteredSprite("ramp");
 				Facing4 facing = rampOrStairsFacing(block);
-				ramp.setRotation(facing.get() * 90);
+				ramp.setRotation((uint)facing * 90);
 				ramp.setOrigin(16,19);
 				spriteOnBlockCentered(block, ramp, color);
 			}
@@ -468,7 +468,7 @@ void Draw::blockFeaturesAndFluids(const BlockIndex& block)
 				sf::Color* color = &displayData::materialColors[blockFeature.materialType];
 				static sf::Sprite stairs = getCenteredSprite("stairs");
 				Facing4 facing = rampOrStairsFacing(below);
-				stairs.setRotation(facing.get() * 90);
+				stairs.setRotation((uint)facing * 90);
 				stairs.setOrigin(16,19);
 				stairs.setTextureRect({0,0,32,16});
 				spriteOnBlockCentered(block, stairs, color);
@@ -479,7 +479,7 @@ void Draw::blockFeaturesAndFluids(const BlockIndex& block)
 				sf::Color* color = &displayData::materialColors[blockFeature.materialType];
 				static sf::Sprite ramp = getCenteredSprite("ramp");
 				Facing4 facing = rampOrStairsFacing(below);
-				ramp.setRotation(facing.get() * 90);
+				ramp.setRotation((uint)facing * 90);
 				ramp.setOrigin(16,19);
 				ramp.setTextureRect({0,0,32,16});
 				spriteOnBlockCentered(block, ramp, color);
@@ -509,13 +509,13 @@ void Draw::blockWallsFromNextLevelDown(const BlockIndex& block)
 		MaterialTypeId materialType;
 		if(blocks.isConstructed(block))
 		{
-			static sf::Sprite blockWall  = getCenteredSprite("blockWall");
+			static sf::Sprite blockWall = getCenteredSprite("blockWall");
 			sprite = &blockWall;
 			materialType = blocks.solid_get(below);
 		}
 		else
 		{
-			static sf::Sprite roughWall  = getCenteredSprite("roughWall");
+			static sf::Sprite roughWall = getCenteredSprite("roughWall");
 			sprite = &roughWall;
 			materialType = blocks.solid_get(below);
 		}
@@ -534,12 +534,12 @@ void Draw::blockWallsFromNextLevelDown(const BlockIndex& block)
 		MaterialTypeId materialType;
 		if(blocks.isConstructed(block))
 		{
-			static sf::Sprite blockWall  = getCenteredSprite("blockWall");
+			static sf::Sprite blockWall = getCenteredSprite("blockWall");
 			sprite = &blockWall;
 		}
 		else
 		{
-			static sf::Sprite roughWall  = getCenteredSprite("roughWall");
+			static sf::Sprite roughWall = getCenteredSprite("roughWall");
 			sprite = &roughWall;
 		}
 		materialType = blocks.solid_get(below);
@@ -624,7 +624,7 @@ void Draw::spriteOnBlockWithScale(const BlockIndex& block, sf::Sprite& sprite, f
 	sprite.setScale(scale, scale);
 	Blocks& blocks = m_window.m_area->getBlocks();
 	const Point3D coordinates = blocks.getCoordinates(block);
-	sprite.setPosition((float)coordinates.x.get() * windowScale, (float)coordinates.y.get()  * windowScale);
+	sprite.setPosition((float)coordinates.x.get() * windowScale, (float)coordinates.y.get() * windowScale);
 	if(color)
 		sprite.setColor(*color);
 	m_window.getRenderWindow().draw(sprite);
@@ -653,7 +653,7 @@ void Draw::spriteOnBlockCentered(const BlockIndex& block, sf::Sprite& sprite, co
 {
 	Blocks& blocks = m_window.m_area->getBlocks();
 	const Point3D coordinates = blocks.getCoordinates(block);
-	sf::Vector2f position{(((float)coordinates.x.get()  + 0.5f) * (float)m_window.m_scale), (((float)coordinates.y.get()  + 0.5f) * (float)m_window.m_scale)};
+	sf::Vector2f position{(((float)coordinates.x.get() + 0.5f) * (float)m_window.m_scale), (((float)coordinates.y.get() + 0.5f) * (float)m_window.m_scale)};
 	spriteAt(sprite, position, color);
 }
 void Draw::imageOnBlock(const BlockIndex& block, std::string name, const sf::Color* color)
@@ -696,6 +696,24 @@ void Draw::progressBarOnBlock(const BlockIndex& block, Percent progress)
 	m_window.getRenderWindow().draw(rectangle);
 }
 void Draw::selected(const BlockIndex& block) { outlineOnBlock(block, displayData::selectColor); }
+void Draw::selected(const Cuboid& cuboid)
+{
+	// Check if cuboid intersects with current z level
+	if(cuboid.m_lowest.z > m_window.m_z || cuboid.m_highest.z < m_window.m_z)
+		return;
+	static constexpr uint thickness = 3;
+	// Set Dimensions.
+	const uint xSize = (cuboid.m_highest.x - cuboid.m_lowest.x).get() + 1;
+	const uint ySize = (cuboid.m_highest.y - cuboid.m_lowest.y).get() + 1;
+	sf::RectangleShape square(sf::Vector2f(xSize * m_window.m_scale - (thickness*2), ySize * m_window.m_scale - (thickness*2)));
+	// Set Color.
+	square.setFillColor(sf::Color::Transparent);
+	square.setOutlineColor(displayData::selectColor);
+	square.setOutlineThickness(thickness);
+	// Set Position.
+	const Point3D coordinates = cuboid.getCenter();
+	square.setPosition(((float)coordinates.x.get() * m_window.m_scale) + thickness, ((float)coordinates.y.get() * m_window.m_scale) + thickness);
+}
 void Draw::outlineOnBlock(const BlockIndex& block, const sf::Color color, float thickness)
 {
 	sf::RectangleShape square(sf::Vector2f(m_window.m_scale - (thickness*2), m_window.m_scale - (thickness*2)));
@@ -704,7 +722,7 @@ void Draw::outlineOnBlock(const BlockIndex& block, const sf::Color color, float 
 	square.setOutlineThickness(thickness);
 	Blocks& blocks = m_window.m_area->getBlocks();
 	const Point3D coordinates = blocks.getCoordinates(block);
-	square.setPosition(((float)coordinates.x.get() * m_window.m_scale) + thickness, ((float)coordinates.y.get()  * m_window.m_scale) + thickness);
+	square.setPosition(((float)coordinates.x.get() * m_window.m_scale) + thickness, ((float)coordinates.y.get() * m_window.m_scale) + thickness);
 	m_window.getRenderWindow().draw(square);
 }
 void Draw::stringOnBlock(const BlockIndex& block, std::wstring string, const sf::Color color, float offsetX, float offsetY )
@@ -776,7 +794,7 @@ void Draw::nonGroundCoverPlant(const BlockIndex& block)
 			}
 			else
 			{
-				float angle = 45.f * blocks.facingToSetWhenEnteringFromIncludingDiagonal(block, plantLocation).get();
+				float angle = 45.f * (uint)blocks.facingToSetWhenEnteringFromIncludingDiagonal(block, plantLocation);
 				static sf::Sprite branch = getCenteredSprite("branch");
 				branch.setRotation(angle);
 				spriteOnBlockCentered(block, branch);
@@ -936,7 +954,7 @@ void Draw::borderSegmentOnBlock(const BlockIndex& block, const Facing4& facing, 
 	square.setFillColor(color);
 	Blocks& blocks = m_window.m_area->getBlocks();
 	const Point3D coordinates = blocks.getCoordinates(block);
-	switch(facing.get())
+	switch((uint)facing)
 	{
 		case 0:
 			// do nothing
@@ -995,9 +1013,9 @@ Facing4 Draw::rampOrStairsFacing(const BlockIndex& block) const
 	if(east.exists() && canConnectToAbove(east))
 	{
 		if(!blocks.solid_is(west) && blocks.shape_canStandIn(west))
-			return Facing4::create(1);
+			return Facing4::East;
 		else
-			backup = Facing4::create(1);
+			backup = Facing4::East;
 	}
 	if(south.exists() && canConnectToAbove(south))
 	{
@@ -1005,9 +1023,9 @@ Facing4 Draw::rampOrStairsFacing(const BlockIndex& block) const
 			!blocks.blockFeature_contains(north, BlockFeatureType::stairs) &&
 			!blocks.blockFeature_contains(north, BlockFeatureType::stairs)
 		)
-			return Facing4::create(2);
+			return Facing4::South;
 		else
-			backup = Facing4::create(2);
+			backup = Facing4::South;
 	}
 	if(west.exists() && canConnectToAbove(west))
 	{

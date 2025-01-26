@@ -123,6 +123,7 @@ namespace Config
 	inline DistanceInBlocks maxZLevelForDeepAmbiantTemperature;
 	inline Step maximumDurationToWaitInsteadOfWander;
 	inline float maximumRainIntensityModifier;
+	inline uint32_t maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom;
 	inline float maximumStepsBetweenRainPerPercentHumidity;
 	inline float maximumStepsRainPerPercentHumidity;
 	inline Meters metersHeightCarvedByRivers;

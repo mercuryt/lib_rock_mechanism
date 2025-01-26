@@ -112,6 +112,7 @@ void Config::load()
 	data["maxZLevelForDeepAmbiantTemperature"].get_to(maxZLevelForDeepAmbiantTemperature);
 	maximumDurationToWaitInsteadOfWander = Step::create(data["maximumDurationToWaitInsteadOfWanderMinutes"].get<float>() * stepsPerMinute.get());
 	data["maximumRainIntensityModifier"].get_to(maximumRainIntensityModifier);
+	data["maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom"].get_to(maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom);
 	data["maximumDaysBetweenRainPerPercentHumidity"].get_to(maximumStepsBetweenRainPerPercentHumidity);
 	data["maximumSecondsRainPerPercentHumidity"].get_to(maximumStepsRainPerPercentHumidity);
 	data["metersHeightCarvedByRivers"].get_to(metersHeightCarvedByRivers);

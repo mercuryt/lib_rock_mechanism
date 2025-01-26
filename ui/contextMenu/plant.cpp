@@ -29,7 +29,7 @@ void ContextMenu::drawPlantControls(const BlockIndex& block)
 					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(block);
-					for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+					for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
 						if(blocks.plant_exists(selectedBlock) && plants.getSpecies(blocks.plant_get(selectedBlock)) == species)
 							plants.remove(blocks.plant_get(selectedBlock));
 					for(const PlantIndex& plant : m_window.getSelectedPlants())
@@ -73,7 +73,7 @@ void ContextMenu::drawPlantControls(const BlockIndex& block)
 					const PlantSpeciesId& species = PlantSpecies::byName(speciesUI->getSelectedItemId().toWideString());
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(block);
-					for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+					for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
 						if(!blocks.plant_exists(selectedBlock) && !blocks.solid_is(selectedBlock) && blocks.plant_canGrowHereEver(block, species))
 							blocks.plant_create(selectedBlock, species, Percent::create(percentGrownUI->getValue()));
 				}

@@ -10,6 +10,7 @@ class BlockIndex;
 class ItemIndex;
 class PlantIndex;
 class ActorIndex;
+class Cuboid;
 class Draw final
 {
 	Window& m_window;
@@ -42,6 +43,7 @@ public:
 	void progressBarOnBlock(const BlockIndex& block, Percent progress);
 
 	void selected(const BlockIndex& block);
+	void selected(const Cuboid& cuboid);
 	void outlineOnBlock(const BlockIndex& block, const sf::Color color, float thickness = 3.f);
 	void stringAtPosition(const std::wstring string, const sf::Vector2f position, const sf::Color color, float offsetX = 0.5, float offsetY = 0.0);
 	void stringOnBlock(const BlockIndex& block,const  std::wstring string, const sf::Color color, float offsetX = 0.5, float offsetY = 0.0);

@@ -12,7 +12,7 @@ void ContextMenu::drawCraftControls(const BlockIndex& block)
 		return;
 	auto craftButton = tgui::Button::create("craft");
 	m_root.add(craftButton);
-	craftButton->onMouseEnter([this, block]{
+	craftButton->onMouseEnter([this, block, &blocks]{
 		auto& locationsAndJobsForFaction = m_window.getArea()->m_hasCraftingLocationsAndJobs.getForFaction(m_window.getFaction());
 		auto categories = locationsAndJobsForFaction.getStepTypeCategoriesForLocation(block);
 		auto& subMenu = makeSubmenu(0);
@@ -25,23 +25,23 @@ void ContextMenu::drawCraftControls(const BlockIndex& block)
 		{
 			auto button = tgui::Button::create(L"undesignate " + CraftStepTypeCategory::getName(category));
 			subMenu.add(button);
-			button->onClick([this, category, block]{
+			button->onClick([this, category, block, &blocks]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				auto& locationsAndJobsForFaction = m_window.getArea()->m_hasCraftingLocationsAndJobs.getForFaction(m_window.getFaction());
 				if(m_window.getSelectedBlocks().empty())
 					m_window.selectBlock(block);
-				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
 					locationsAndJobsForFaction.removeLocation(category, selectedBlock);
 				hide();
 			});
 		}
 	});
-	craftButton->onClick([this, block]{
+	craftButton->onClick([this, block, &blocks]{
 		std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 		auto& locationsAndJobsForFaction = m_window.getArea()->m_hasCraftingLocationsAndJobs.getForFaction(m_window.getFaction());
 		if(m_window.getSelectedBlocks().empty())
 			m_window.selectBlock(block);
-		for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+		for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
 			locationsAndJobsForFaction.addLocation(widgetUtil::lastSelectedCraftStepTypeCategory, selectedBlock);
 		hide();
 	});

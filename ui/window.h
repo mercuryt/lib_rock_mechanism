@@ -8,6 +8,7 @@
 #include "../engine/simulation.h"
 #include "../engine/area.h"
 #include "../engine/input.h"
+#include "../engine/geometry/cuboidSet.h"
 #include "displayData.h"
 #include "draw.h"
 #include "editDramaPanel.h"
@@ -62,8 +63,7 @@ class Window final
 	DistanceInBlocks m_z;
 	std::atomic<uint16_t> m_speed = 1;
 	SmallMap<AreaId, GameView> m_lastViewedSpotInArea;
-	//TODO: multi select.
-	SmallSet<BlockIndex> m_selectedBlocks;
+	CuboidSet m_selectedBlocks;
 	SmallSet<ActorIndex> m_selectedActors;
 	SmallSet<ItemIndex> m_selectedItems;
 	SmallSet<PlantIndex> m_selectedPlants;
@@ -126,7 +126,7 @@ public:
 	void selectItem(const ItemIndex& item);
 	void selectPlant(const PlantIndex& plant);
 	void selectActor(const ActorIndex& actor);
-	SmallSet<BlockIndex>& getSelectedBlocks() { return m_selectedBlocks; }
+	CuboidSet& getSelectedBlocks() { return m_selectedBlocks; }
 	SmallSet<ItemIndex>& getSelectedItems() { return m_selectedItems; }
 	SmallSet<PlantIndex>& getSelectedPlants() { return m_selectedPlants; }
 	SmallSet<ActorIndex>& getSelectedActors() { return m_selectedActors; }

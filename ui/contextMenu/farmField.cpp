@@ -21,7 +21,7 @@ void ContextMenu::drawFarmFieldControls(const BlockIndex& block)
 			submenu.add(shrinkButton);
 			shrinkButton->onClick([this, &blocks, faction]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks())
+				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
 					blocks.farm_remove(selectedBlock, faction);
 				hide();
 			});
