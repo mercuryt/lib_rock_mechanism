@@ -17,7 +17,7 @@ Cuboid::Cuboid(const Point3D& highest, const Point3D& lowest) : m_highest(highes
 	assert(highest.y >= lowest.y);
 	assert(highest.z >= lowest.z);
 }
-SmallSet<BlockIndex> Cuboid::toSet(const Blocks& blocks)
+SmallSet<BlockIndex> Cuboid::toSet(const Blocks& blocks) const
 {
 	SmallSet<BlockIndex> output;
 	for(const BlockIndex& block : getView(blocks))

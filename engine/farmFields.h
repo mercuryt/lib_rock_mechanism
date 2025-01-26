@@ -2,6 +2,7 @@
 //#include "input.h"
 #include "plantSpecies.h"
 #include "geometry/cuboid.h"
+#include "geometry/cuboidSet.h"
 #include "config.h"
 
 #include <list>
@@ -51,7 +52,7 @@ struct FarmField
 	Area& area;
 	PlantSpeciesId plantSpecies;
 	bool timeToSow;
-	FarmField(Area& a, SmallSet<BlockIndex>& b) : blocks(b), area(a), timeToSow(false) { }
+	FarmField(Area& a, SmallSet<BlockIndex>&& b) : blocks(std::move(b)), area(a), timeToSow(false) { }
 	FarmField(const Json& data, FactionId faction, Area& area);
 	[[nodiscard]] Json toJson() const;
 };
@@ -76,9 +77,10 @@ public:
 	void addHarvestDesignation(PlantIndex plant);
 	void removeHarvestDesignation(PlantIndex plant);
 	void setDayOfYear(uint32_t dayOfYear);
-	[[nodiscard]] FarmField& create(SmallSet<BlockIndex>& blocks);
+	[[nodiscard]] FarmField& create(SmallSet<BlockIndex>&& blocks);
 	[[nodiscard]] FarmField& create(const BlockIndices& blocks);
-	[[nodiscard]] FarmField& create(Cuboid cuboid);
+	[[nodiscard]] FarmField& create(const Cuboid& cuboid);
+	[[nodiscard]] FarmField& create(const CuboidSet& cuboid);
 	void extend(FarmField& farmField, SmallSet<BlockIndex>& blocks);
 	void setSpecies(FarmField& farmField, PlantSpeciesId plantSpecies);
 	void clearSpecies(FarmField& farmField);
