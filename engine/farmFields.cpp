@@ -183,10 +183,10 @@ void HasFarmFieldsForFaction::setDayOfYear(uint32_t dayOfYear)
 			}
 		}
 }
-FarmField& HasFarmFieldsForFaction::create(SmallSet<BlockIndex>& blocks)
+FarmField& HasFarmFieldsForFaction::create(SmallSet<BlockIndex>&& blocks)
 {
-	FarmField& field = m_farmFields.emplace_back(m_area, blocks);
-	for(const BlockIndex& block : blocks)
+	FarmField& field = m_farmFields.emplace_back(m_area, std::move(blocks));
+	for(const BlockIndex& block : field.blocks)
 		m_area.getBlocks().farm_insert(block, m_faction, field);
 	return field;
 }
@@ -194,12 +194,17 @@ FarmField& HasFarmFieldsForFaction::create(const BlockIndices& blocks)
 {
 	SmallSet<BlockIndex> adapter;
 	adapter.maybeInsertAll(blocks.begin(), blocks.end());
-	return create(adapter);
+	return create(std::move(adapter));
 }
-FarmField& HasFarmFieldsForFaction::create(Cuboid cuboid)
+FarmField& HasFarmFieldsForFaction::create(const Cuboid& cuboid)
 {
 	auto set = cuboid.toSet(m_area.getBlocks());
-	return create(set);
+	return create(std::move(set));
+}
+FarmField& HasFarmFieldsForFaction::create(const CuboidSet& cuboidSet)
+{
+	auto set = cuboidSet.toBlockSet(m_area.getBlocks());
+	return create(std::move(set));
 }
 void HasFarmFieldsForFaction::extend(FarmField& farmField, SmallSet<BlockIndex>& blocks)
 {
