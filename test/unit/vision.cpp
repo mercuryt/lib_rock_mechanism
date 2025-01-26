@@ -49,6 +49,10 @@ TEST_CASE("vision")
 			.species=dwarf,
 			.location=block2,
 		});
+		const Point3D block1Coordinates = blocks.getCoordinates(block1);
+		const Point3D block2Coordinates = blocks.getCoordinates(block2);
+		REQUIRE(block2Coordinates.isInFrontOf(block1Coordinates, actors.getFacing(a1)));
+		REQUIRE(area.m_opacityFacade.hasLineOfSight(block1, block2));
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
 		REQUIRE(result.size() == 1);
@@ -114,7 +118,13 @@ TEST_CASE("vision")
 			.location=block3,
 		});
 		REQUIRE(actors.getBlocks(a2).contains(block4));
+		const Point3D block1Coordinates = blocks.getCoordinates(block1);
+		const Point3D block3Coordinates = blocks.getCoordinates(block3);
+		const Point3D block4Coordinates = blocks.getCoordinates(block4);
+		REQUIRE(block3Coordinates.isInFrontOf(block1Coordinates, actors.getFacing(a1)));
+		REQUIRE(block4Coordinates.isInFrontOf(block1Coordinates, actors.getFacing(a1)));
 		REQUIRE(area.m_opacityFacade.hasLineOfSight(block1, block4));
+		REQUIRE(!area.m_opacityFacade.hasLineOfSight(block1, block3));
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
 		REQUIRE(result.size() == 1);

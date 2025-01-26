@@ -146,7 +146,10 @@ struct Point3D
 	}
 	[[nodiscard]] Vector3D toVector3D() const;
 	[[nodiscard]] bool isInFrontOf(const Point3D& coordinates, const Facing4& facing) const;
+	// Return value uses east rather then north as 0.
+	[[nodiscard]] double degreesFacingTwords(const Point3D& other) const;
 	[[nodiscard]] Facing4 getFacingTwords(const Point3D& other) const;
+	[[nodiscard]] Facing8 getFacingTwordsIncludingDiagonal(const Point3D& other) const;
 	void log() const
 	{
 		std::wcout << toString() << std::endl;
