@@ -72,6 +72,12 @@ public:
 		other.sort();
 		std::erase_if(m_data, [&](const T& value){ return std::ranges::binary_search(other.m_data, value); });
 	}
+	template<typename Iterator>
+	void maybeEraseAll(Iterator begin, Iterator end)
+	{
+		for(; begin != end; ++begin)
+			maybeErase(*begin);
+	}
 	void clear() { m_data.clear(); }
 	template<typename ...Args>
 	void emplace(Args&& ...args)
