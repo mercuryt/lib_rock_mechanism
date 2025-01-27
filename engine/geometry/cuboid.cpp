@@ -250,9 +250,9 @@ bool Cuboid::operator==(const Cuboid& cuboid) const
 Point3D Cuboid::getCenter() const
 {
 	return {
-		m_lowest.x + (m_highest.x - m_lowest.x) / 2,
-		m_lowest.y + (m_highest.y - m_lowest.y) / 2,
-		m_lowest.z + (m_highest.z - m_lowest.z) / 2
+		m_lowest.x + std::round(float(m_highest.x.get() - m_lowest.x.get()) / 2.f),
+		m_lowest.y + std::round(float(m_highest.y.get() - m_lowest.y.get()) / 2.f),
+		m_lowest.z + std::round(float(m_highest.z.get() - m_lowest.z.get()) / 2.f)
 	};
 }
 DistanceInBlocks Cuboid::dimensionForFacing(const Facing6& facing) const
@@ -297,28 +297,28 @@ SmallSet<Cuboid> Cuboid::getChildrenWhenSplitByCuboid(const Cuboid& cuboid) cons
 {
 	Point3D splitHighest = cuboid.m_highest;
 	Point3D splitLowest = cuboid.m_lowest;
-	// Clamp split high and low to cuboid.
-	splitHighest.clampHigh(cuboid.m_highest);
-	splitLowest.clampLow(cuboid.m_lowest);
+	// Clamp split high and low to this so split highest cannot be higher then m_highest and split lowest cannot be lower then m_lowest.
+	splitHighest.clampHigh(m_highest);
+	splitLowest.clampLow(m_lowest);
 	SmallSet<Cuboid> output;
 	// Split off group above.
-	if(cuboid.m_highest.z > splitHighest.z)
-		output.emplace(cuboid.m_highest, Point3D(cuboid.m_lowest.x, cuboid.m_lowest.y, splitHighest.z + 1));
+	if(m_highest.z > splitHighest.z)
+		output.emplace(m_highest, Point3D(m_lowest.x, m_lowest.y, splitHighest.z + 1));
 	// Split off group below.
-	if(cuboid.m_lowest.z < splitLowest.z)
-		output.emplace(Point3D(cuboid.m_highest.x, cuboid.m_highest.y, splitLowest.z - 1), cuboid.m_lowest);
+	if(m_lowest.z < splitLowest.z)
+		output.emplace(Point3D(m_highest.x, m_highest.y, splitLowest.z - 1), m_lowest);
 	// Split off group with higher Y
-	if(cuboid.m_highest.y > splitHighest.y)
-		output.emplace(Point3D(cuboid.m_highest.x, cuboid.m_highest.y, splitHighest.z), Point3D(cuboid.m_lowest.x, splitHighest.y + 1, splitLowest.z));
+	if(m_highest.y > splitHighest.y)
+		output.emplace(Point3D(m_highest.x, m_highest.y, splitHighest.z), Point3D(m_lowest.x, splitHighest.y + 1, splitLowest.z));
 	// Split off group with lower Y
-	if(cuboid.m_lowest.y < splitLowest.y)
-		output.emplace(Point3D(cuboid.m_highest.x, splitLowest.y - 1, splitHighest.z), Point3D(cuboid.m_lowest.x, cuboid.m_lowest.y, splitLowest.z));
+	if(m_lowest.y < splitLowest.y)
+		output.emplace(Point3D(m_highest.x, splitLowest.y - 1, splitHighest.z), Point3D(m_lowest.x, m_lowest.y, splitLowest.z));
 	// Split off group with higher X
-	if(cuboid.m_highest.x > splitHighest.x)
-		output.emplace(Point3D(cuboid.m_highest.x, splitHighest.y, splitHighest.z), Point3D(splitHighest.x + 1, splitLowest.y, splitLowest.z));
+	if(m_highest.x > splitHighest.x)
+		output.emplace(Point3D(m_highest.x, splitHighest.y, splitHighest.z), Point3D(splitHighest.x + 1, splitLowest.y, splitLowest.z));
 	// Split off group with lower X
-	if(cuboid.m_lowest.x < splitLowest.x)
-		output.emplace(Point3D(splitLowest.x - 1, splitHighest.y, splitHighest.z), Point3D(cuboid.m_lowest.x, splitLowest.y, splitLowest.z));
+	if(m_lowest.x < splitLowest.x)
+		output.emplace(Point3D(splitLowest.x - 1, splitHighest.y, splitHighest.z), Point3D(m_lowest.x, splitLowest.y, splitLowest.z));
 	return output;
 }
 Cuboid::iterator::iterator(const Blocks& blocks, const BlockIndex& lowest, const BlockIndex& highest) : m_blocks(&blocks)

@@ -2,7 +2,6 @@
 #include "../blocks/blocks.h"
 void CuboidSet::create(const Cuboid& cuboid)
 {
-	m_cuboids.insert(cuboid);
 	for(const Cuboid& existing : m_cuboids)
 	{
 		assert(!cuboid.overlapsWith(existing));
@@ -12,6 +11,7 @@ void CuboidSet::create(const Cuboid& cuboid)
 			return;
 		}
 	}
+	m_cuboids.insert(cuboid);
 }
 void CuboidSet::add(const Point3D& point)
 {
@@ -52,9 +52,7 @@ void CuboidSet::remove(const Cuboid& cuboid)
 void CuboidSet::merge(const Cuboid& absorbed, const Cuboid& absorber)
 {
 	for(const Cuboid& existing : m_cuboids)
-		assert(existing.overlapsWith(absorbed));
-	for(const Cuboid& existing : m_cuboids)
-		assert(existing.overlapsWith(absorber));
+		assert(!existing.overlapsWith(absorbed));
 	m_cuboids.maybeErase(absorbed);
 	m_cuboids.erase(absorber);
 	Cuboid newCuboid = absorber.sum(absorbed);

@@ -39,3 +39,4 @@ UI
 $XDG_DATA_HOME
 linkerErrors
 core.*
+save/.*

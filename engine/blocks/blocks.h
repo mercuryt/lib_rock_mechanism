@@ -139,6 +139,7 @@ public:
 	[[nodiscard]] bool canSeeThroughFloor(const BlockIndex& index) const;
 	[[nodiscard]] bool canSeeThroughFrom(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] Facing4 facingToSetWhenEnteringFrom(const BlockIndex& index, const BlockIndex& other) const;
+	[[nodiscard]] Facing8 facingToSetWhenEnteringFromIncludingDiagonal(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] bool isSupport(const BlockIndex& index) const;
 	[[nodiscard]] bool isOutdoors(const BlockIndex& index) const;
 	[[nodiscard]] bool isExposedToSky(const BlockIndex& index) const;
