@@ -34,6 +34,7 @@ struct GameView final
 	BlockIndex center;
 	uint32_t scale;
 };
+enum class SelectMode{Actors, Items, Plants, Blocks};
 class Window final
 {
 	sf::RenderWindow m_window;
@@ -77,6 +78,7 @@ class Window final
 	sf::Vector2i m_positionWhereMouseDragBegan = {0,0};
 	BlockIndex m_firstCornerOfSelection;
 	BlockIndex m_blockUnderCursor;
+	SelectMode m_selectMode = SelectMode::Actors;
 	static constexpr int gameMarginSize = 400;
 
 	void povFromJson(const Json& data);

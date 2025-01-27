@@ -42,6 +42,7 @@ namespace displayData
 	inline float ratioOfScaleToFontSize;
 	inline float wallOffset;
 	inline const sf::Color selectColor = sf::Color::Yellow;
+	inline const sf::Color cancelColor = sf::Color::Red;
 	inline constexpr uint32_t defaultScale = 32;
 	inline constexpr float wallTopOffsetRatio = 0.18;
 	inline constexpr float minimumFluidVolumeToSeeFromAboveLevelRatio = 0.75;

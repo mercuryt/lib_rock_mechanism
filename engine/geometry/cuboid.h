@@ -47,6 +47,7 @@ public:
 	[[nodiscard]] Facing6 getFacingTwordsOtherCuboid(const Cuboid& cuboid) const;
 	[[nodiscard]] bool isSomeWhatInFrontOf(const Point3D& position, const Facing4& facing) const;
 	[[nodiscard]] SmallSet<Cuboid> getChildrenWhenSplitByCuboid(const Cuboid& cuboid) const;
+	[[nodiscard]] bool isTouching(const Cuboid& cuboid) const;
 	[[nodiscard]] static Cuboid fromBlock(const Blocks& blocks, const BlockIndex& block);
 	[[nodiscard]] static Cuboid fromBlockPair(const Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
 	class iterator

@@ -5,7 +5,7 @@ void CuboidSet::create(const Cuboid& cuboid)
 	for(const Cuboid& existing : m_cuboids)
 	{
 		assert(!cuboid.overlapsWith(existing));
-		if(existing.canMerge(cuboid))
+		if(existing.isTouching(cuboid) && existing.canMerge(cuboid))
 		{
 			merge(cuboid, existing);
 			return;
@@ -51,11 +51,16 @@ void CuboidSet::remove(const Cuboid& cuboid)
 }
 void CuboidSet::merge(const Cuboid& absorbed, const Cuboid& absorber)
 {
+	assert(absorbed.canMerge(absorber));
+	assert(absorber.canMerge(absorbed));
 	for(const Cuboid& existing : m_cuboids)
-		assert(!existing.overlapsWith(absorbed));
+		if(existing != absorbed)
+			assert(!existing.overlapsWith(absorbed));
+	const Cuboid absorbedCopy = absorbed;
+	const Cuboid absorberCopy = absorber;
 	m_cuboids.maybeErase(absorbed);
-	m_cuboids.erase(absorber);
-	Cuboid newCuboid = absorber.sum(absorbed);
+	m_cuboids.erase(absorberCopy);
+	Cuboid newCuboid = absorberCopy.sum(absorbedCopy);
 	// Call create to potentailly trigger another merge.
 	create(newCuboid);
 }

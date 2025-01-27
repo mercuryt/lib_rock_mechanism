@@ -142,7 +142,7 @@ void Draw::view()
 		sf::Vector2f worldPos = m_window.m_window.mapPixelToCoords({left, top});
 		sf::RectangleShape square(sf::Vector2f(xSize, ySize));
 		square.setFillColor(sf::Color::Transparent);
-		square.setOutlineColor(displayData::selectColor);
+		square.setOutlineColor(sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) ? displayData::cancelColor : displayData::selectColor);
 		square.setOutlineThickness(3.f);
 		square.setPosition(worldPos);
 		m_window.m_window.draw(square);
@@ -702,7 +702,6 @@ void Draw::selected(const Cuboid& cuboid)
 	if(cuboid.m_lowest.z > m_window.m_z || cuboid.m_highest.z < m_window.m_z)
 		return;
 	static constexpr uint thickness = 3;
-
 	// Set Dimensions.
 	const uint xSize = (cuboid.m_highest.x - cuboid.m_lowest.x).get() + 1;
 	const uint ySize = (cuboid.m_highest.y - cuboid.m_lowest.y).get() + 1;
@@ -714,7 +713,6 @@ void Draw::selected(const Cuboid& cuboid)
 	// Set Position.
 	square.setPosition(((float)cuboid.m_lowest.x.get() * m_window.m_scale) + thickness, ((float)cuboid.m_lowest.y.get() * m_window.m_scale) + thickness);
 	m_window.getRenderWindow().draw(square);
-
 }
 void Draw::outlineOnBlock(const BlockIndex& block, const sf::Color color, float thickness)
 {

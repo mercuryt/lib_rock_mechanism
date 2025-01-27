@@ -55,6 +55,7 @@ bool Cuboid::contains(const Cuboid& cuboid) const
 bool Cuboid::canMerge(const Cuboid& other) const
 {
 	// Can merge requires that the two cuboids share 2 out of 3 axies of symetry.
+	assert(isTouching(other));
 	uint32_t count = 0;
 	if(other.m_highest.x == m_highest.x && other.m_lowest.x == m_lowest.x)
 		count++;
@@ -320,6 +321,19 @@ SmallSet<Cuboid> Cuboid::getChildrenWhenSplitByCuboid(const Cuboid& cuboid) cons
 	if(m_lowest.x < splitLowest.x)
 		output.emplace(Point3D(splitLowest.x - 1, splitHighest.y, splitHighest.z), Point3D(m_lowest.x, splitLowest.y, splitLowest.z));
 	return output;
+}
+bool Cuboid::isTouching(const Cuboid& cuboid) const
+{
+	if(
+		cuboid.m_lowest.x > m_highest.x + 1 ||
+		cuboid.m_lowest.y > m_highest.y + 1 ||
+		cuboid.m_lowest.z > m_highest.z + 1 ||
+		cuboid.m_highest.x + 1 < m_lowest.x ||
+		cuboid.m_highest.y + 1 < m_lowest.y ||
+		cuboid.m_highest.z + 1 < m_lowest.z
+	)
+		return false;
+	return true;
 }
 Cuboid::iterator::iterator(const Blocks& blocks, const BlockIndex& lowest, const BlockIndex& highest) : m_blocks(&blocks)
 {

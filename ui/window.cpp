@@ -112,6 +112,12 @@ void Window::startLoop()
 							if(sf::Keyboard::isKeyPressed(sf::Keyboard::LControl))
 								save();
 							break;
+						case sf::Keyboard::LAlt:
+							if(m_selectMode == SelectMode::Blocks)
+								m_selectMode = SelectMode::Actors;
+							else
+								m_selectMode = SelectMode((uint)m_selectMode + 1);
+							break;
 						case sf::Keyboard::PageUp:
 							if(m_area != nullptr && m_gameOverlay.isVisible() && (m_z + 1) < m_area->getBlocks().m_sizeZ)
 								m_z += 1;
@@ -257,7 +263,7 @@ void Window::startLoop()
 							m_gameOverlay.closeContextMenu();
 							m_firstCornerOfSelection = getBlockAtPosition({event.mouseButton.x, event.mouseButton.y});
 							m_positionWhereMouseDragBegan = {event.mouseButton.x, event.mouseButton.y};
-							if(!sf::Keyboard::isKeyPressed(sf::Keyboard::LShift))
+							if(!sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) && !sf::Keyboard::isKeyPressed(sf::Keyboard::LControl))
 								deselectAll();
 						}
 					}
@@ -279,68 +285,43 @@ void Window::startLoop()
 							else
 								selectedBlocks.setFrom(blocks, block);
 							m_firstCornerOfSelection.clear();
-							bool selectActors = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && !sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
-							bool selectItems = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) && sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
-							bool selectBlocks = sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt);
-							bool selectPlants = false;
-							if(selectActors)
-								for(const BlockIndex& block : selectedBlocks.getView(blocks))
-									m_selectedActors.maybeInsertAll(blocks.actor_getAll(block).begin(), blocks.actor_getAll(block).end());
-							else if(selectItems)
-								for(const BlockIndex& block : selectedBlocks.getView(blocks))
-									m_selectedItems.maybeInsertAll(blocks.item_getAll(block).begin(), blocks.item_getAll(block).end());
-							else if(selectBlocks)
-								m_selectedBlocks.add(selectedBlocks);
-							else
+							bool deselect = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl);
+							switch(m_selectMode)
 							{
-								// No modifier key to choose what type to select, check for everything.
-								SmallSet<ActorIndex> foundActors;
-								SmallSet<ItemIndex> foundItems;
-								SmallSet<PlantIndex> foundPlants;
-								// Gather all candidates, then cull based on choosen category. actors > items > plants > selectedBlocks
-								for(const BlockIndex& block : selectedBlocks.getView(blocks))
-								{
-									if(!blocks.actor_empty(block))
-									{
-										m_selectedActors.maybeInsertAll(blocks.actor_getAll(block).begin(), blocks.actor_getAll(block).end());
-										selectActors = true;
-									}
-									if(!blocks.item_empty(block))
-									{
-										m_selectedItems.maybeInsertAll(blocks.item_getAll(block).begin(), blocks.item_getAll(block).end());
-										selectItems = selectActors ? false : true;
-									}
-									if(blocks.plant_exists(block))
-									{
-										m_selectedPlants.maybeInsert(blocks.plant_get(block));
-										selectPlants = selectItems ? false : (selectActors ? false : true);
-									}
-								}
-								if(selectActors)
-								{
-									m_selectedItems.clear();
-									m_selectedPlants.clear();
-									m_selectedBlocks.clear();
-								}
-								else if(selectItems)
-								{
-									m_selectedActors.clear();
-									m_selectedPlants.clear();
-									m_selectedBlocks.clear();
-								}
-								else if(selectPlants)
-								{
-									m_selectedActors.clear();
-									m_selectedItems.clear();
-									m_selectedBlocks.clear();
-								}
-								else
-								{
-									m_selectedActors.clear();
-									m_selectedItems.clear();
-									m_selectedPlants.clear();
-									m_selectedBlocks.add(selectedBlocks);
-								}
+								case(SelectMode::Actors):
+									if(deselect)
+										for(const BlockIndex& block : selectedBlocks.getView(blocks))
+											m_selectedActors.maybeEraseAll(blocks.actor_getAll(block).begin(), blocks.actor_getAll(block).end());
+									else
+										for(const BlockIndex& block : selectedBlocks.getView(blocks))
+											m_selectedActors.maybeInsertAll(blocks.actor_getAll(block).begin(), blocks.actor_getAll(block).end());
+									break;
+								case(SelectMode::Items):
+									if(deselect)
+										for(const BlockIndex& block : selectedBlocks.getView(blocks))
+											m_selectedItems.maybeEraseAll(blocks.item_getAll(block).begin(), blocks.item_getAll(block).end());
+									else
+										for(const BlockIndex& block : selectedBlocks.getView(blocks))
+											m_selectedItems.maybeInsertAll(blocks.item_getAll(block).begin(), blocks.item_getAll(block).end());
+									break;
+								case(SelectMode::Plants):
+									if(deselect)
+										for(const BlockIndex& block : selectedBlocks.getView(blocks))
+											m_selectedPlants.maybeErase(blocks.plant_get(block));
+									else
+										for(const BlockIndex& block : selectedBlocks.getView(blocks))
+										{
+											const PlantIndex& plant = blocks.plant_get(block);
+											if(plant.exists())
+												m_selectedPlants.maybeInsert(plant);
+										}
+									break;
+								case(SelectMode::Blocks):
+									if(deselect)
+										m_selectedBlocks.remove(selectedBlocks);
+									else
+										m_selectedBlocks.add(selectedBlocks);
+									break;
 							}
 						}
 						else if(event.mouseButton.button == displayData::actionMouseButton)
