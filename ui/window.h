@@ -104,6 +104,7 @@ public:
 	[[nodiscard]] tgui::Gui& getGui() { return m_gui; }
 	[[nodiscard]] sf::RenderWindow& getRenderWindow() { return m_window; }
 	[[nodiscard]] GameOverlay& getGameOverlay() { return m_gameOverlay; }
+	[[nodiscard]] SelectMode getSelectMode() const { return m_selectMode; }
 	// Show panels.
 	void hideAllPanels();
 	void showMainMenu() { hideAllPanels(); m_mainMenuView.show(); }

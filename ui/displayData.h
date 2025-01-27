@@ -43,6 +43,8 @@ namespace displayData
 	inline float wallOffset;
 	inline const sf::Color selectColor = sf::Color::Yellow;
 	inline const sf::Color cancelColor = sf::Color::Red;
+	inline const sf::Color selectColorOverlay{255, 255, 0, 128};
+	inline const sf::Color cancelColorOverlay{255, 0, 0, 128};
 	inline constexpr uint32_t defaultScale = 32;
 	inline constexpr float wallTopOffsetRatio = 0.18;
 	inline constexpr float minimumFluidVolumeToSeeFromAboveLevelRatio = 0.75;
