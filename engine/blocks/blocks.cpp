@@ -727,6 +727,12 @@ bool Blocks::canSeeThroughFrom(const BlockIndex& index, const BlockIndex& otherI
 	}
 	return true;
 }
+Facing8 Blocks::facingToSetWhenEnteringFromIncludingDiagonal(const BlockIndex& index, const BlockIndex& otherIndex) const
+{
+	Point3D coordinates = getCoordinates(index);
+	Point3D otherCoordinates = getCoordinates(otherIndex);
+	return otherCoordinates.getFacingTwordsIncludingDiagonal(coordinates);
+}
 Facing4 Blocks::facingToSetWhenEnteringFrom(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
 	Point3D coordinates = getCoordinates(index);

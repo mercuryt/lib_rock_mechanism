@@ -38,4 +38,14 @@ TEST_CASE("cuboid")
 		REQUIRE(face.contains(Point3D::create(1, 0, 0)));
 		REQUIRE(!face.contains(Point3D::create(0, 0, 0)));
 	}
+	SUBCASE("get children when split at cuboid")
+	{
+		Cuboid c1(blocks, blocks.getIndex_i(1, 1, 1), blocks.getIndex_i(0, 0, 0));
+		Cuboid c2(blocks, blocks.getIndex_i(0, 0, 0), blocks.getIndex_i(0, 0, 0));
+		SmallSet<Cuboid> children = c1.getChildrenWhenSplitByCuboid(c2);
+		REQUIRE(children.size() == 3);
+		REQUIRE(children.containsAny([](const Cuboid& cuboid) { return cuboid.size() == 4; }));
+		REQUIRE(children.containsAny([](const Cuboid& cuboid) { return cuboid.size() == 2; }));
+		REQUIRE(children.containsAny([](const Cuboid& cuboid) { return cuboid.size() == 1; }));
+	}
 }
