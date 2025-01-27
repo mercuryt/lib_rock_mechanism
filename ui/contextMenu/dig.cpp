@@ -41,30 +41,41 @@ void ContextMenu::drawDigControls(const BlockIndex& block)
 				}
 			}
 			else
+			{
 				for(const BlockIndex& selectedBlock : cuboid.getView(blocks))
 					if(blocks.solid_is(selectedBlock) || !blocks.blockFeature_empty(selectedBlock))
 						m_window.getArea()->m_hasDigDesignations.designate(m_window.getFaction(), selectedBlock, nullptr);
+			}
 		}
 		hide();
 	});
-	digButton->onMouseEnter([this, &blocks]{
+	digButton->onMouseEnter([this, &blocks, &area, block]{
 		auto& subMenu = makeSubmenu(0);
 		auto blockFeatureTypeUI = widgetUtil::makeBlockFeatureTypeSelectUI();
 		subMenu.add(blockFeatureTypeUI);
 		auto button = tgui::Button::create("dig out feature");
 		subMenu.add(button);
-		button->onClick([this, &blocks]{
+		button->onClick([this, &blocks, &area, block]{
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 			assert(widgetUtil::lastSelectedBlockFeatureType);
 			const BlockFeatureType& featureType = *widgetUtil::lastSelectedBlockFeatureType;
-			for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
-				if(blocks.solid_is(selectedBlock))
-				{
-					if(m_window.m_editMode)
-						blocks.blockFeature_hew(selectedBlock, featureType);
-					else
-						m_window.getArea()->m_hasDigDesignations.designate(m_window.getFaction(), selectedBlock, &featureType);
-				}
+			auto& selectedBlocks = m_window.getSelectedBlocks();
+			if(selectedBlocks.empty())
+				selectedBlocks.add(blocks, block);
+			if(m_window.m_editMode)
+			{
+				for(const Cuboid& cuboid : selectedBlocks.getCuboids())
+					for(const BlockIndex& block : cuboid.getView(blocks))
+						if(blocks.solid_is(block))
+							blocks.blockFeature_hew(block, featureType);
+			}
+			else
+			{
+				for(const Cuboid& cuboid : selectedBlocks.getCuboids())
+					for(const BlockIndex& block : cuboid.getView(blocks))
+						if(blocks.solid_is(block))
+							m_window.getArea()->m_hasDigDesignations.designate(m_window.getFaction(), block, &featureType);
+			}
 			hide();
 		});
 	});

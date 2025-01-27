@@ -64,7 +64,8 @@ void ContextMenu::drawConstructControls(const BlockIndex& block)
 void ContextMenu::construct(const BlockIndex& block, bool constructed, const MaterialTypeId& materialType, const BlockFeatureType* blockFeatureType)
 {
 	std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-	if(m_window.getSelectedBlocks().empty())
+	CuboidSet& selectedBlocks = m_window.getSelectedBlocks();
+	if(selectedBlocks.empty())
 		m_window.selectBlock(block);
 	Blocks& blocks = m_window.getArea()->getBlocks();
 	for(const Cuboid& cuboid : m_window.getSelectedBlocks().getCuboids())

@@ -132,6 +132,7 @@ void Draw::view()
 				if(blocks.getZ(block) == m_window.m_z)
 					selected(block);
 	// Selection Box.
+	// TODO: Show which blocks would be added / removed.
 	if(m_window.m_firstCornerOfSelection.exists() && sf::Mouse::isButtonPressed(displayData::selectMouseButton))
 	{
 		auto end = sf::Mouse::getPosition();
