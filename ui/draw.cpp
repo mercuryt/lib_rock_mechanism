@@ -18,6 +18,7 @@ void Draw::view()
 	Items& items = m_window.m_area->getItems();
 	Plants& plants = m_window.m_area->getPlants();
 	m_window.m_gameOverlay.drawTime();
+	m_window.m_gameOverlay.drawSelectionDescription();
 	//m_gameOverlay.drawWeather();
 	// Aquire Area read mutex.
 	std::lock_guard lock(m_window.m_simulation->m_uiReadMutex);
@@ -140,12 +141,12 @@ void Draw::view()
 		int32_t left = std::min(start.x, end.x);
 		int32_t top = std::min(start.y, end.y);
 		sf::Vector2f worldPos = m_window.m_window.mapPixelToCoords({left, top});
-		sf::RectangleShape square(sf::Vector2f(xSize, ySize));
-		square.setFillColor(sf::Color::Transparent);
-		square.setOutlineColor(sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) ? displayData::cancelColor : displayData::selectColor);
-		square.setOutlineThickness(3.f);
-		square.setPosition(worldPos);
-		m_window.m_window.draw(square);
+		sf::RectangleShape rectangle(sf::Vector2f(xSize, ySize));
+		rectangle.setFillColor(sf::Color::Transparent);
+		rectangle.setOutlineColor(sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) ? displayData::cancelColor : displayData::selectColor);
+		rectangle.setOutlineThickness(3.f);
+		rectangle.setPosition(worldPos);
+		m_window.m_window.draw(rectangle);
 	}
 	// Install or move item.
 	if(m_window.m_gameOverlay.m_itemBeingInstalled.exists() || m_window.m_gameOverlay.m_itemBeingMoved.exists())
@@ -701,18 +702,15 @@ void Draw::selected(const Cuboid& cuboid)
 	// Check if cuboid intersects with current z level
 	if(cuboid.m_lowest.z > m_window.m_z || cuboid.m_highest.z < m_window.m_z)
 		return;
-	static constexpr uint thickness = 3;
 	// Set Dimensions.
 	const uint xSize = (cuboid.m_highest.x - cuboid.m_lowest.x).get() + 1;
 	const uint ySize = (cuboid.m_highest.y - cuboid.m_lowest.y).get() + 1;
-	sf::RectangleShape square(sf::Vector2f(xSize * m_window.m_scale - (thickness*2), ySize * m_window.m_scale - (thickness*2)));
+	sf::RectangleShape rectangle(sf::Vector2f(xSize * m_window.m_scale, ySize * m_window.m_scale));
 	// Set Color.
-	square.setFillColor(sf::Color::Transparent);
-	square.setOutlineColor(displayData::selectColor);
-	square.setOutlineThickness(thickness);
+	rectangle.setFillColor(displayData::selectColorOverlay);
 	// Set Position.
-	square.setPosition(((float)cuboid.m_lowest.x.get() * m_window.m_scale) + thickness, ((float)cuboid.m_lowest.y.get() * m_window.m_scale) + thickness);
-	m_window.getRenderWindow().draw(square);
+	rectangle.setPosition(((float)cuboid.m_lowest.x.get() * m_window.m_scale), ((float)cuboid.m_lowest.y.get() * m_window.m_scale));
+	m_window.getRenderWindow().draw(rectangle);
 }
 void Draw::outlineOnBlock(const BlockIndex& block, const sf::Color color, float thickness)
 {

@@ -4,7 +4,8 @@
 #include <TGUI/Widgets/Panel.hpp>
 GameOverlay::GameOverlay(Window& w) : m_window(w),
 	m_group(tgui::Group::create()), m_menu(tgui::Panel::create()), m_infoPopup(w), m_contextMenu(w, m_group),
-	m_coordinateUI(tgui::Label::create()), m_timeUI(tgui::Label::create()), m_speedUI(tgui::Label::create()), m_weatherUI(tgui::Label::create())
+	m_coordinateUI(tgui::Label::create()), m_timeUI(tgui::Label::create()), m_speedUI(tgui::Label::create()), m_weatherUI(tgui::Label::create()),
+	m_selectionStatusUI(tgui::Label::create())
 {
 	m_window.getGui().add(m_group);
 	m_group->setVisible(false);
@@ -40,6 +41,9 @@ GameOverlay::GameOverlay(Window& w) : m_window(w),
 	topBar->add(m_weatherUI);
 	m_weatherUI->setPosition("70%", 0);
 	m_group->add(topBar);
+	// Selection status.
+	m_selectionStatusUI->setPosition(0, 20);
+	m_group->add(m_selectionStatusUI);
 }
 void GameOverlay::drawMenu()
 {
@@ -86,4 +90,26 @@ void GameOverlay::drawTime()
 			" day: " + std::to_string(now.day) +
 			" year: " + std::to_string(now.year)
 	);
+}
+void GameOverlay::drawSelectionDescription()
+{
+	std::wstring description;
+	switch(m_window.getSelectMode())
+	{
+		case(SelectMode::Actors):
+			description = L"actors: " + std::to_wstring(m_window.getSelectedActors().size());
+			break;
+		case(SelectMode::Items):
+			description = L"items: " + std::to_wstring(m_window.getSelectedItems().size());
+			break;
+		case(SelectMode::Plants):
+			description = L"plants: " + std::to_wstring(m_window.getSelectedPlants().size());
+			break;
+		case(SelectMode::Blocks):
+			description = L"blocks: " + std::to_wstring(m_window.getSelectedBlocks().size());
+			break;
+		default:
+			assert(false);
+	}
+	m_selectionStatusUI->setText(description);
 }

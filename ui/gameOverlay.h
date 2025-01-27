@@ -18,6 +18,7 @@ public:
 	tgui::Label::Ptr m_timeUI;
 	tgui::Label::Ptr m_speedUI;
 	tgui::Label::Ptr m_weatherUI;
+	tgui::Label::Ptr m_selectionStatusUI;
 	ItemIndex m_itemBeingInstalled;
 	// TODO: Change to shape being moved for targeted hauling of downed actors.
 	ItemIndex m_itemBeingMoved;
@@ -39,6 +40,7 @@ public:
 	void unfocusUI();
 	void drawTime();
 	void updateInfoPopup() { m_infoPopup.update(); }
+	void drawSelectionDescription();
 	[[nodiscard]] bool isVisible() const { return m_group->isVisible(); }
 	[[nodiscard]] bool menuIsVisible() const { return m_menu->isVisible(); }
 	[[nodiscard]] bool contextMenuIsVisible() const { return m_contextMenu.isVisible(); }

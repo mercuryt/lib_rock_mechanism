@@ -113,10 +113,20 @@ void Window::startLoop()
 								save();
 							break;
 						case sf::Keyboard::LAlt:
-							if(m_selectMode == SelectMode::Blocks)
-								m_selectMode = SelectMode::Actors;
+							if(sf::Keyboard::isKeyPressed(sf::Keyboard::LShift))
+							{
+								if(m_selectMode == SelectMode::Blocks)
+									m_selectMode = SelectMode::Actors;
+								else
+									m_selectMode = SelectMode((uint)m_selectMode + 1);
+							}
 							else
-								m_selectMode = SelectMode((uint)m_selectMode + 1);
+							{
+								if(m_selectMode == SelectMode::Actors)
+									m_selectMode = SelectMode::Blocks;
+								else
+									m_selectMode = SelectMode((uint)m_selectMode - 1);
+							}
 							break;
 						case sf::Keyboard::PageUp:
 							if(m_area != nullptr && m_gameOverlay.isVisible() && (m_z + 1) < m_area->getBlocks().m_sizeZ)
