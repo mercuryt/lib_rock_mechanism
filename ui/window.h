@@ -105,6 +105,7 @@ public:
 	[[nodiscard]] sf::RenderWindow& getRenderWindow() { return m_window; }
 	[[nodiscard]] GameOverlay& getGameOverlay() { return m_gameOverlay; }
 	[[nodiscard]] SelectMode getSelectMode() const { return m_selectMode; }
+	[[nodiscard]] uint32_t getScale() const { return m_scale; }
 	// Show panels.
 	void hideAllPanels();
 	void showMainMenu() { hideAllPanels(); m_mainMenuView.show(); }

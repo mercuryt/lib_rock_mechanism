@@ -1,10 +1,12 @@
 #include "gameOverlay.h"
 #include "window.h"
+#include "uiUtil.h"
 #include "../engine/config.h"
 #include <TGUI/Widgets/Panel.hpp>
 GameOverlay::GameOverlay(Window& w) : m_window(w),
 	m_group(tgui::Group::create()), m_menu(tgui::Panel::create()), m_infoPopup(w), m_contextMenu(w, m_group),
-	m_coordinateUI(tgui::Label::create()), m_timeUI(tgui::Label::create()), m_speedUI(tgui::Label::create()), m_weatherUI(tgui::Label::create()),
+	m_coordinateUI(tgui::Label::create()), m_zoomUI(tgui::Label::create()), m_timeUI(tgui::Label::create()),
+	m_speedUI(tgui::Label::create()), m_weatherUI(tgui::Label::create()),
 	m_selectionStatusUI(tgui::Label::create())
 {
 	m_window.getGui().add(m_group);
@@ -34,6 +36,8 @@ GameOverlay::GameOverlay(Window& w) : m_window(w),
 	auto topBar = tgui::Panel::create();
 	topBar->setHeight(16);
 	topBar->add(m_coordinateUI);
+	topBar->add(m_zoomUI);
+	m_zoomUI->setPosition("5%", 0);
 	topBar->add(m_timeUI);
 	m_timeUI->setPosition("10%", 0);
 	topBar->add(m_speedUI);
@@ -74,6 +78,13 @@ void GameOverlay::unfocusUI()
 	tgui::Widget::Ptr focused = m_window.getGui().getFocusedChild();
 	if(focused)
 		focused->setFocused(false);
+}
+void GameOverlay::drawZoom()
+{
+	float ratio = (float)m_window.getScale() / 32.f;
+	std::wstringstream stream;
+	stream << std::fixed << std::setprecision(2) << ratio;
+	m_zoomUI->setText(L"zoom: " + UIUtil::floatToString(ratio));
 }
 void GameOverlay::drawTime()
 {
