@@ -15,6 +15,7 @@ class GameOverlay final
 	ContextMenu m_contextMenu;
 public:
 	tgui::Label::Ptr m_coordinateUI;
+	tgui::Label::Ptr m_zoomUI;
 	tgui::Label::Ptr m_timeUI;
 	tgui::Label::Ptr m_speedUI;
 	tgui::Label::Ptr m_weatherUI;
@@ -39,6 +40,7 @@ public:
 	void assignLocationToMoveItemTo(const BlockIndex& block);
 	void unfocusUI();
 	void drawTime();
+	void drawZoom();
 	void updateInfoPopup() { m_infoPopup.update(); }
 	void drawSelectionDescription();
 	[[nodiscard]] bool isVisible() const { return m_group->isVisible(); }

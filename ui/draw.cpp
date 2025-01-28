@@ -17,6 +17,7 @@ void Draw::view()
 	Actors& actors = m_window.m_area->getActors();
 	Items& items = m_window.m_area->getItems();
 	Plants& plants = m_window.m_area->getPlants();
+	m_window.m_gameOverlay.drawZoom();
 	m_window.m_gameOverlay.drawTime();
 	m_window.m_gameOverlay.drawSelectionDescription();
 	//m_gameOverlay.drawWeather();

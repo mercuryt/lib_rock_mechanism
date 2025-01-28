@@ -16,6 +16,18 @@
 		"color": [122, 82, 40, 255]
 	},
 	{
+		"name": "sandstone",
+		"color": [133, 105, 77, 255]
+	},
+	{
+		"name": "slate",
+		"color": [88, 73, 65, 255]
+	},
+	{
+		"name": "shale",
+		"color": [78, 83, 75, 255]
+	},
+	{
 		"name": "bronze",
 		"color": [132, 104, 89, 255]
 	},
@@ -32,6 +44,10 @@
 		"color": [130, 98, 0, 255]
 	},
 	{
+		"name": "granite",
+		"color": [77, 75, 75, 255]
+	},
+	{
 		"name": "peridotite",
 		"color": [114, 112, 60, 255]
 	},
@@ -46,6 +62,10 @@
 	{
 		"name": "leather",
 		"color": [222, 192, 140, 255]
+	},
+	{
+		"name": "limestone",
+		"color": [98, 83, 75, 255]
 	},
 	{
 		"name": "poplar wood",

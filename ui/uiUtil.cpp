@@ -4,6 +4,8 @@
 #include "../engine/materialType.h"
 #include "../engine/util.h"
 
+#include <format>
+
 std::wstring UIUtil::describeItem(Area& area, const ItemIndex &item)
 {
 	Items& items = area.getItems();
@@ -13,4 +15,8 @@ std::wstring UIUtil::describeItem(Area& area, const ItemIndex &item)
 	else if(!items.getName(item).empty())
 		output += L" " + items.getName(item);
 	return output;
+}
+std::wstring UIUtil::floatToString(const float& input)
+{
+	return std::format(L"{:.2f}", input);
 }
