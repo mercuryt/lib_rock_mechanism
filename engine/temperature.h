@@ -29,10 +29,12 @@ public:
 	void unapply(Area& a);
 	friend class AreaHasTemperature;
 };
+//TODO:  move to area directory.
 class AreaHasTemperature final
 {
 	BlockIndexMap<TemperatureSource> m_sources;
 	// TODO: make these medium maps.
+	// TODO: change BlockIndices to CuboidSet.
 	// To possibly thaw.
 	std::map<Temperature, BlockIndices> m_aboveGroundBlocksByMeltingPoint;
 	// To possibly freeze.
@@ -54,11 +56,12 @@ public:
 	void addMeltableSolidBlockAboveGround(const BlockIndex& block);
 	void removeMeltableSolidBlockAboveGround(const BlockIndex& block);
 	void addFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
-	void removeFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
+	void maybeRemoveFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
 	[[nodiscard]] TemperatureSource& getTemperatureSourceAt(const BlockIndex& block);
 	[[nodiscard]] const Temperature& getAmbientSurfaceTemperature() const { return m_ambiantSurfaceTemperature; }
 	[[nodiscard]] Temperature getDailyAverageAmbientSurfaceTemperature() const;
 	[[nodiscard]] auto& getAboveGroundFluidGroupsByMeltingPoint() { return m_aboveGroundFluidGroupsByMeltingPoint; }
+	[[nodiscard]] auto& getAboveGroundBlocksByMeltingPoint() { return m_aboveGroundBlocksByMeltingPoint; }
 };
 class UnsafeTemperatureEvent;
 class ActorNeedsSafeTemperature

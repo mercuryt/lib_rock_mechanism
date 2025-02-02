@@ -86,6 +86,13 @@ void GameOverlay::drawZoom()
 	stream << std::fixed << std::setprecision(2) << ratio;
 	m_zoomUI->setText(L"zoom: " + UIUtil::floatToString(ratio));
 }
+void GameOverlay::drawWeatherReport()
+{
+	Area& area = *m_window.getArea();
+	std::wstring text = UIUtil::temperatureToString(area.m_hasTemperature.getAmbientSurfaceTemperature());
+	if(area.m_hasRain.isRaining())
+		text += L"rain : " + std::to_wstring(area.m_hasRain.getIntensityPercent().get()) + L"%";
+}
 void GameOverlay::drawTime()
 {
 	DateTime now = m_window.getSimulation()->getDateTime();

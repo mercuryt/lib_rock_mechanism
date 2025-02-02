@@ -137,7 +137,7 @@ public:
 		iterator(This& s, uint i) : m_iter(s.m_data.begin() + i) { }
 		iterator(std::vector<T>::iterator i) : m_iter(i) { }
 		iterator& operator++() { ++m_iter; return *this; }
-		iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
+		[[nodiscard]] iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] T& operator*() { return *m_iter; }
 		[[nodiscard]] const T& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }

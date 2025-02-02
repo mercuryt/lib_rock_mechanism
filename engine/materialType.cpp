@@ -71,6 +71,7 @@ MaterialCategoryTypeId MaterialType::getMaterialTypeCategory(const MaterialTypeI
 std::vector<SpoilsDataTypeId>& MaterialType::getSpoilData(const MaterialTypeId& id) { return materialTypeData.m_spoilData[id]; };
 Temperature MaterialType::getMeltingPoint(const MaterialTypeId& id) { return materialTypeData.m_meltingPoint[id]; };
 FluidTypeId MaterialType::getMeltsInto(const MaterialTypeId& id) { return materialTypeData.m_meltsInto[id]; };
+bool MaterialType::canMelt(const MaterialTypeId& id) { return materialTypeData.m_meltsInto[id].exists(); }
 // Fire.
 bool MaterialType::canBurn(const MaterialTypeId& id) { return materialTypeData.m_burnStageDuration[id].exists(); }
 Step MaterialType::getBurnStageDuration(const MaterialTypeId& id) { return materialTypeData.m_burnStageDuration[id]; };

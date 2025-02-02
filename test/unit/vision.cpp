@@ -165,7 +165,6 @@ TEST_CASE("vision")
 			.location=block3,
 		});
 		blocks.blockFeature_construct(block2, door, marble);
-		blocks.blockFeature_close(block2, door);
 		bool canSeeThrough = blocks.canSeeThrough(block2);
 		REQUIRE(!canSeeThrough);
 		area.m_visionRequests.doStep();
@@ -186,8 +185,10 @@ TEST_CASE("vision")
 		blocks.solid_setNot(block1);
 		blocks.solid_setNot(block2);
 		blocks.solid_setNot(block3);
+		REQUIRE(area.m_opacityFacade.hasLineOfSight(block1, block3));
+		REQUIRE(blocks.getCoordinates(block3).isInFrontOf(blocks.getCoordinates(block1), Facing4::North));
 		blocks.blockFeature_construct(block3, hatch, marble);
-		blocks.blockFeature_close(block3, hatch);
+		REQUIRE(!area.m_opacityFacade.hasLineOfSight(block1, block3));
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
@@ -204,8 +205,8 @@ TEST_CASE("vision")
 		auto result2 = actors.vision_getCanSee(a2);
 		REQUIRE(result2.size() == 0);
 		blocks.blockFeature_open(block3, hatch);
-		bool canSee = area.m_opacityFacade.hasLineOfSight(block1, block3);
-		REQUIRE(canSee);
+		REQUIRE(area.m_opacityFacade.hasLineOfSight(block1, block3));
+		REQUIRE(area.m_visionRequests.size() == 2);
 		area.m_visionRequests.doStep();
 		auto result3 = actors.vision_getCanSee(a1);
 		REQUIRE(result3.size() == 1);
@@ -217,7 +218,6 @@ TEST_CASE("vision")
 		BlockIndex block2 = blocks.getIndex_i(5, 5, 1);
 		BlockIndex block3 = blocks.getIndex_i(5, 7, 1);
 		blocks.blockFeature_construct(block2, hatch, marble);
-		blocks.blockFeature_close(block2, hatch);
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,

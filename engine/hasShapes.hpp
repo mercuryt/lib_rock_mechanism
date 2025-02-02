@@ -24,6 +24,7 @@ void HasShapes<Derived, Index>::forEachDataHasShapes(Action&& action)
 	action(m_blocks);
 	action(m_static);
 	action(m_underground);
+	action(m_onSurface);
 }
 template<class Derived, class Index>
 void HasShapes<Derived, Index>::create(const Index& index, const ShapeId& shape, const FactionId& faction, bool isStatic)
@@ -34,6 +35,7 @@ void HasShapes<Derived, Index>::create(const Index& index, const ShapeId& shape,
 	m_faction[index] = faction;
 	assert(m_blocks[index].empty());
 	m_static.set(index, isStatic);
+	m_onSurface.unset(index);
 }
 template<class Derived, class Index>
 void HasShapes<Derived, Index>::resize(const Index& newSize)
@@ -188,6 +190,8 @@ bool HasShapes<Derived, Index>::isOnEdge(const Index& index) const
 	std::function<bool(const BlockIndex)> predicate = [&blocks](const BlockIndex block) { return blocks.isEdge(block); };
 	return predicateForAnyOccupiedBlock(index, predicate);
 }
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::isOnSurface(const Index& index) const { return m_onSurface[index]; }
 template<class Derived, class Index>
 bool HasShapes<Derived, Index>::predicateForAnyOccupiedBlock(const Index& index, std::function<bool(const BlockIndex&)> predicate) const
 {

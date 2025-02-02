@@ -113,8 +113,8 @@ void Config::load()
 	maximumDurationToWaitInsteadOfWander = Step::create(data["maximumDurationToWaitInsteadOfWanderMinutes"].get<float>() * stepsPerMinute.get());
 	data["maximumRainIntensityModifier"].get_to(maximumRainIntensityModifier);
 	data["maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom"].get_to(maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom);
-	data["maximumDaysBetweenRainPerPercentHumidity"].get_to(maximumStepsBetweenRainPerPercentHumidity);
-	data["maximumSecondsRainPerPercentHumidity"].get_to(maximumStepsRainPerPercentHumidity);
+	maximumStepsBetweenRainPerPercentHumidity = data["maximumDaysBetweenRainPerPercentHumidity"].get<Step>() * stepsPerDay;
+	maximumStepsRainPerPercentHumidity = Step::create(data["maximumSecondsRainPerPercentHumidity"].get<float>() * stepsPerSecond.get());
 	data["metersHeightCarvedByRivers"].get_to(metersHeightCarvedByRivers);
 	data["metersPerUnitElevationLociiIntensity"].get_to(metersPerUnitElevationLociiIntensity);
 	data["minimumAltitudeForHeadwaterFormation"].get_to(minimumAltitudeForHeadwaterFormation);
@@ -126,11 +126,11 @@ void Config::load()
 	data["minimumPercentGrowthForWoodCutting"].get_to(minimumPercentGrowthForWoodCutting);
 	data["minimumRainIntensityModifier"].get_to(minimumRainIntensityModifier);
 	data["minBlockStaticVolumeToSlowMovement"].get_to(minBlockStaticVolumeToSlowMovement);
-	data["minimumDaysBetweenRainPerPercentHumidity"].get_to(minimumStepsBetweenRainPerPercentHumidity);
+	minimumStepsBetweenRainPerPercentHumidity = Step::create(data["minimumDaysBetweenRainPerPercentHumidity"].get<float>() * stepsPerDay.get());
 	data["minimumSizeForOctTreeToSplit"].get_to(minimumSizeForOctTreeToSplit);
 	data["minimumOccupantsForOctTreeToSplit"].get_to(minimumOccupantsForOctTreeToSplit);
 	data["minimumOccupantsForOctTreeToUnsplit"].get_to(minimumOccupantsForOctTreeToUnsplit);
-	data["minimumSecondsRainPerPercentHumidity"].get_to(minimumStepsRainPerPercentHumidity);
+	minimumStepsRainPerPercentHumidity = Step::create(data["minimumSecondsRainPerPercentHumidity"].get<float>() * stepsPerSecond.get());
 	data["minimumVolumeOfFluidToBreath"].get_to(minimumVolumeOfFluidToBreath);
 	data["minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests"].get_to(minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests);
 	data["moveTryAttemptsBeforeDetour"].get_to(moveTryAttemptsBeforeDetour);

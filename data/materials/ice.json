@@ -1,0 +1,8 @@
+{
+  "name": "ice",
+  "density": 0.91,
+  "hardness": 2,
+  "transparent": false,
+  "meltingPoint": 273,
+  "meltsInto": "water"
+}

@@ -26,23 +26,30 @@ const BlockFeature* Blocks::blockFeature_atConst(const BlockIndex& block, const 
 void Blocks::blockFeature_remove(const BlockIndex& block, const BlockFeatureType& blockFeatureType)
 {
 	assert(!solid_is(block));
+	bool transmitedTemperaturePreviously = temperature_transmits(block);
 	std::erase_if(m_features[block], [&](BlockFeature& bf) { return bf.blockFeatureType == &blockFeatureType; });
 	m_area.m_opacityFacade.update(block);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
+	if(!transmitedTemperaturePreviously && temperature_transmits(block))
+		m_area.m_exteriorPortals.onBlockCanTransmitTemperature(m_area, block);
 }
 void Blocks::blockFeature_removeAll(const BlockIndex& block)
 {
 	assert(!solid_is(block));
+	bool transmitedTemperaturePreviously = temperature_transmits(block);
 	m_features[block].clear();
 	m_area.m_opacityFacade.update(block);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
+	if(!transmitedTemperaturePreviously && temperature_transmits(block))
+		m_area.m_exteriorPortals.onBlockCanTransmitTemperature(m_area, block);
 }
 void Blocks::blockFeature_construct(const BlockIndex& block, const BlockFeatureType& blockFeatureType, const MaterialTypeId& materialType)
 {
 	Plants& plants = m_area.getPlants();
 	assert(!solid_is(block));
+	bool transmitedTemperaturePreviously = temperature_transmits(block);
 	if(plant_exists(block))
 	{
 		assert(!PlantSpecies::getIsTree(plants.getSpecies(plant_get(block))));
@@ -53,20 +60,24 @@ void Blocks::blockFeature_construct(const BlockIndex& block, const BlockFeatureT
 	if((blockFeatureType == BlockFeatureType::floor || blockFeatureType == BlockFeatureType::hatch) && !MaterialType::getTransparent(materialType))
 	{
 		m_area.m_visionCuboids.blockFloorIsOpaque(m_area, block);
-		setBelowExposedToSky(block);
+		m_exposedToSky.unset(m_area, block);
 	}
 	else if(blockFeatureType == BlockFeatureType::door && !MaterialType::getTransparent(materialType))
 	{
 		m_area.m_visionCuboids.blockIsOpaque(m_area, block);
-		setBelowNotExposedToSky(block);
+		m_exposedToSky.unset(m_area, block);
 	}
 	m_area.m_opacityFacade.update(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
+	if(transmitedTemperaturePreviously && !temperature_transmits(block))
+		m_area.m_exteriorPortals.onBlockCanNotTransmitTemperature(m_area, block);
 }
 void Blocks::blockFeature_hew(const BlockIndex& block, const BlockFeatureType& blockFeatureType)
 {
 	assert(solid_is(block));
 	m_features[block].emplace_back(&blockFeatureType, solid_get(block), true);
+	// Solid_setNot will handle calling m_exteriorPortals.onBlockCanTransmitTemperature.
+	// TODO: There is no support for hewing doors, hatches or flaps. This is ok because those things can't be hewn. Could be fixed anyway?
 	solid_setNot(block);
 	m_area.m_opacityFacade.update(block);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
@@ -76,7 +87,7 @@ void Blocks::blockFeature_setTemperature(const BlockIndex& block, const Temperat
 {
 	for(BlockFeature& feature : m_features[block])
 	{
-		if(MaterialType::getIgnitionTemperature(m_materialType[block]).exists() &&
+		if(MaterialType::getIgnitionTemperature(feature.materialType).exists() &&
 			temperature > MaterialType::getIgnitionTemperature(feature.materialType)
 		)
 			m_area.m_fires.ignite(block, feature.materialType);
@@ -99,10 +110,19 @@ void Blocks::blockFeature_unlock(const BlockIndex& block, const BlockFeatureType
 void Blocks::blockFeature_close(const BlockIndex& block, const BlockFeatureType& blockFeatueType)
 {
 	assert(blockFeature_contains(block, blockFeatueType));
-	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	BlockFeature& blockFeature = *blockFeature_at(block, blockFeatueType);
+	assert(!blockFeature.closed);
+	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	blockFeature.closed = true;
 	m_area.m_opacityFacade.update(block);
+	m_area.m_exteriorPortals.onBlockCanNotTransmitTemperature(m_area, block);
+	if(!MaterialType::getTransparent(blockFeature.materialType))
+	{
+		if(blockFeatueType == BlockFeatureType::hatch)
+			m_area.m_visionCuboids.blockFloorIsOpaque(m_area, block);
+		else
+			m_area.m_visionCuboids.blockIsOpaque(m_area, block);
+	}
 }
 void Blocks::blockFeature_open(const BlockIndex& block, const BlockFeatureType& blockFeatueType)
 {
@@ -111,6 +131,14 @@ void Blocks::blockFeature_open(const BlockIndex& block, const BlockFeatureType& 
 	blockFeature.closed = false;
 	m_area.m_opacityFacade.update(block);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
+	m_area.m_exteriorPortals.onBlockCanTransmitTemperature(m_area, block);
+	if(!MaterialType::getTransparent(blockFeature.materialType))
+	{
+		if(blockFeatueType == BlockFeatureType::hatch)
+			m_area.m_visionCuboids.blockFloorIsTransparent(m_area, block);
+		else
+			m_area.m_visionCuboids.blockIsTransparent(m_area, block);
+	}
 }
 // Blocks entrance from all angles, does not include floor and hatch which only block from below.
 bool Blocks::blockFeature_blocksEntrance(const BlockIndex& block) const

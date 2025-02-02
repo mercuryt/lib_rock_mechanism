@@ -102,7 +102,7 @@ BlockIndex DramaArc::getEntranceToArea(const ShapeId& shape, const MoveTypeId& m
 	Cuboid cuboid = blocks.getAll();
 	for(const BlockIndex& block : cuboid.getView(blocks))
 	{
-		if(blocks.shape_moveTypeCanEnter(block, moveType) && blocks.isEdge(block) && !blocks.isUnderground(block))
+		if(blocks.shape_moveTypeCanEnter(block, moveType) && blocks.isEdge(block) && blocks.isExposedToSky(block))
 			candidates.add(block);
 	}
 	BlockIndex candidate;

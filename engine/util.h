@@ -36,7 +36,7 @@ namespace util
 	{
 		return scaleByPercent(base, Percent::create(100 - percent.get()));
 	}
-	inline int scaleByFractionRange(int min, int max, uint32_t numerator, uint32_t denominator)
+	inline int scaleByFractionRange(int min, int max, int32_t numerator, int32_t denominator)
 	{
 		return min + (((max - min) * numerator) / denominator);
 	}
@@ -44,11 +44,11 @@ namespace util
 	{
 		return scaleByFractionRange(min, max, percent.get(), 100u);
 	}
-	inline int scaleByFraction(int base, uint32_t numerator, uint32_t denominator)
+	inline int scaleByFraction(int base, int32_t numerator, int32_t denominator)
 	{
 		return (base * numerator) / denominator;
 	}
-	inline int scaleByInverseFraction(int base, uint32_t numerator, uint32_t denominator)
+	inline int scaleByInverseFraction(int base, int32_t numerator, int32_t denominator)
 	{
 		return scaleByFraction(base, denominator - numerator, denominator);
 	}

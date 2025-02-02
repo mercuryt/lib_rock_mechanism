@@ -26,6 +26,7 @@ protected:
 	StrongVector<FactionId, Index> m_faction;
 	StrongVector<OccupiedBlocksForHasShape, Index> m_blocks;
 	StrongBitSet<Index> m_static;
+	StrongBitSet<Index> m_onSurface;
 	//TODO: Do we need m_underground?
 	StrongBitSet<Index> m_underground;
 	Area& m_area;
@@ -73,6 +74,8 @@ public:
 	[[nodiscard]] bool isAdjacentToPlantAt(const Index& index, const BlockIndex& location, const Facing4& facing, const PlantIndex& plant) const;
 	[[nodiscard]] bool isOnEdgeAt(const Index& index, const BlockIndex& location, const Facing4& facing) const;
 	[[nodiscard]] bool isOnEdge(const Index& index) const;
+	[[nodiscard]] bool isOnSurface(const Index& index) const;
+	[[nodiscard]] const auto& getOnSurface() const { return m_onSurface; }
 	[[nodiscard]] DistanceInBlocks distanceToActor(const Index& index, const ActorIndex& actor) const;
 	[[nodiscard]] DistanceInBlocks distanceToItem(const Index& index, const ItemIndex& item) const;
 	[[nodiscard]] DistanceInBlocksFractional distanceToActorFractional(const Index& index, const ActorIndex& actor) const;

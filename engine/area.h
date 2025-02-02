@@ -29,6 +29,7 @@
 #include "area/hasSleepingSpots.h"
 #include "area/hasBlockDesignations.h"
 #include "area/evaporation.h"
+#include "area/exteriorPortals.h"
 #include "farmFields.h"
 #include "stockpile.h"
 #include "actors/grow.h"
@@ -80,6 +81,7 @@ public:
 	VisionRequests m_visionRequests;
 	OpacityFacade m_opacityFacade;
 	AreaHasVisionCuboids m_visionCuboids;
+	AreaHasExteriorPortals m_exteriorPortals;
 	BlockIndices m_caveInCheck;
 	// uint32_t is fall energy.
 	std::vector<std::tuple<BlockIndices, DistanceInBlocks, uint32_t>> m_caveInData;
@@ -116,10 +118,10 @@ public:
 	[[nodiscard]] std::wstring toS() const;
 
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] Blocks& getBlocks() { return *m_blocks.get(); }
-	[[nodiscard]] Plants& getPlants() { return *m_plants.get(); }
-	[[nodiscard]] Actors& getActors() { return *m_actors.get(); }
-	[[nodiscard]] Items& getItems() { return *m_items.get(); }
+	[[nodiscard]] Blocks& getBlocks() { assert(m_blocks != nullptr); return *m_blocks.get(); }
+	[[nodiscard]] Plants& getPlants() { assert(m_plants != nullptr); return *m_plants.get(); }
+	[[nodiscard]] Actors& getActors() { assert(m_actors != nullptr); return *m_actors.get(); }
+	[[nodiscard]] Items& getItems() { assert(m_items != nullptr); return *m_items.get(); }
 	[[nodiscard]] const Blocks& getBlocks() const { return *m_blocks.get(); }
 	[[nodiscard]] const Plants& getPlants() const { return *m_plants.get(); }
 	[[nodiscard]] const Actors& getActors() const { return *m_actors.get(); }

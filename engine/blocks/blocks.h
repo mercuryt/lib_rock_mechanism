@@ -15,6 +15,7 @@
 #include "blockIndexArray.h"
 #include "dataVector.h"
 #include "index.h"
+#include "exposedToSky.h"
 
 #include <vector>
 #include <memory>
@@ -67,10 +68,8 @@ class Blocks
 	StrongVector<SmallMapStable<MaterialTypeId, Fire>*, BlockIndex> m_fires;
 	StrongVector<TemperatureDelta, BlockIndex> m_temperatureDelta;
 	StrongVector<std::array<BlockIndex, 6>, BlockIndex> m_directlyAdjacent;
-	StrongBitSet<BlockIndex> m_exposedToSky;
-	StrongBitSet<BlockIndex> m_underground;
+	BlocksExposedToSky m_exposedToSky;
 	StrongBitSet<BlockIndex> m_isEdge;
-	StrongBitSet<BlockIndex> m_outdoors;
 	StrongBitSet<BlockIndex> m_visible;
 	StrongBitSet<BlockIndex> m_constructed;
 	Area& m_area;
@@ -105,6 +104,7 @@ public:
 	[[nodiscard]] const std::array<BlockIndex, 6>& getDirectlyAdjacent(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexArrayNotNull<18> getAdjacentWithEdgeAdjacent(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexArrayNotNull<26> getAdjacentWithEdgeAndCornerAdjacent(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArrayNotNull<24> getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const BlockIndex& index) const;
 	[[nodiscard]] std::array<BlockIndex, 26> getAdjacentWithEdgeAndCornerAdjacentUnfiltered(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexArrayNotNull<20> getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexArrayNotNull<12> getEdgeAdjacentOnly(const BlockIndex& index) const;
@@ -128,7 +128,6 @@ public:
 	[[nodiscard]] bool canSeeIntoFromAlways(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] bool isVisible(const BlockIndex& index) const { return m_visible[index]; }
 	void moveContentsTo(const BlockIndex& index, const BlockIndex& other);
-	[[nodiscard]] Mass getMass(const BlockIndex& index) const;
 	// Get block at offset coordinates. Can return nullptr.
 	[[nodiscard]] BlockIndex offset(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const;
 	[[nodiscard]] BlockIndex offsetNotNull(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const;
@@ -141,11 +140,8 @@ public:
 	[[nodiscard]] Facing4 facingToSetWhenEnteringFrom(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] Facing8 facingToSetWhenEnteringFromIncludingDiagonal(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] bool isSupport(const BlockIndex& index) const;
-	[[nodiscard]] bool isOutdoors(const BlockIndex& index) const;
 	[[nodiscard]] bool isExposedToSky(const BlockIndex& index) const;
-	[[nodiscard]] bool isUnderground(const BlockIndex& index) const;
 	[[nodiscard]] bool isEdge(const BlockIndex& index) const;
-	[[nodiscard]] bool isOnSurface(const BlockIndex& index) const { return isOutdoors(index) && !isUnderground(index); }
 	[[nodiscard]] bool hasLineOfSightTo(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] BlockIndex getBlockBelow(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndex getBlockAbove(const BlockIndex& index) const;
@@ -158,8 +154,6 @@ public:
 	[[nodiscard]] BlockIndex getMiddleAtGroundLevel() const;
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
 	void setExposedToSky(const BlockIndex& index, bool exposed);
-	void setBelowExposedToSky(const BlockIndex& index);
-	void setBelowNotExposedToSky(const BlockIndex& index);
 	void setBelowVisible(const BlockIndex& index);
 	//TODO: Use std::function instead of template.
 	template <typename F>
@@ -222,6 +216,19 @@ public:
 		{0,1,1}, {0,0,1}, {0,-1,1},
 		{1,1,1}, {1,0,1}, {1,-1,1}
 	}};
+	static inline constexpr std::array<std::array<int8_t, 3>, 24> offsetsListAllAdjacentExceptDirectlyAboveAndBelow{{
+		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
+		{0,1,-1}, {0,-1,-1},
+		{1,1,-1}, {1,0,-1}, {1,-1,-1},
+
+		{-1,-1,0}, {-1,0,0}, {0,-1,0},
+		{1,1,0}, {0,1,0},
+		{1,-1,0}, {1,0,0}, {-1,1,0},
+
+		{-1,1,1}, {-1,0,1}, {-1,-1,1},
+		{0,1,1}, {0,-1,1},
+		{1,1,1}, {1,0,1}, {1,-1,1}
+	}};
 	// -Designation
 	[[nodiscard]] bool designation_has(const BlockIndex& index, const FactionId& faction, const BlockDesignation& designation) const;
 	void designation_set(const BlockIndex& index, const FactionId& faction, const BlockDesignation& designation);
@@ -229,7 +236,9 @@ public:
 	void designation_maybeUnset(const BlockIndex& index, const FactionId& faction, const BlockDesignation& designation);
 	// -Solid.
 private:
+	// Private method to be used by both solid_set and solidSetCuboid.
 	void solid_setShared(const BlockIndex& index, const MaterialTypeId& materialType, bool constructed);
+	// Private method to be used by both solid_setNot and solidSetNotCuboid.
 	void solid_setNotShared(const BlockIndex& index);
 public:
 	void solid_set(const BlockIndex& index, const MaterialTypeId& materialType, bool constructed);
@@ -238,6 +247,7 @@ public:
 	void solid_setNotCuboid(const Cuboid& cuboid);
 	[[nodiscard]] bool solid_is(const BlockIndex& index) const;
 	[[nodiscard]] MaterialTypeId solid_get(const BlockIndex& index) const;
+	[[nodiscard]] Mass solid_getMass(const BlockIndex& index) const;
 	// -BlockFeature.
 	void blockFeature_construct(const BlockIndex& index, const BlockFeatureType& featureType, const MaterialTypeId& materialType);
 	void blockFeature_hew(const BlockIndex& index, const BlockFeatureType& featureType);
@@ -268,6 +278,7 @@ public:
 	FluidGroup* fluid_getGroup(const BlockIndex& index, const FluidTypeId& fluidType) const;
 	// Add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
 	void fluid_add(const BlockIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType);
+	void fluid_add(const Cuboid& cuboid, const CollisionVolume& volume, const FluidTypeId& fluidType);
 	// To be used durring read step.
 	void fluid_remove(const BlockIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType);
 	// To be used used durring write step.
@@ -428,6 +439,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	const Temperature& temperature_getAmbient(const BlockIndex& index) const;
 	Temperature temperature_getDailyAverageAmbient(const BlockIndex& index) const;
 	Temperature temperature_get(const BlockIndex& index) const;
+	bool temperature_transmits(const BlockIndex& block) const;
 	[[nodiscard]] std::wstring toString(const BlockIndex& index) const;
 	Blocks(Blocks&) = delete;
 	Blocks(Blocks&&) = delete;

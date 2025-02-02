@@ -156,7 +156,8 @@ class DistanceInBlocks : public StrongInteger<DistanceInBlocks, DistanceInBlocks
 public:
 	DistanceInBlocks() = default;
 	DistanceInBlocks operator+=(int32_t x) { data += x; return *this; }
-	[[nodiscard]] DistanceInBlocksFractional toFloat() const;
+	[[nodiscard]] constexpr DistanceInBlocksFractional toFloat() const;
+	[[nodiscard]] constexpr DistanceInBlocks squared() const { return DistanceInBlocks::create(data * data); }
 	struct Hash { [[nodiscard]] size_t operator()(const DistanceInBlocks& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const DistanceInBlocks& index) { data = index.get(); }
@@ -172,7 +173,7 @@ public:
 };
 inline void to_json(Json& data, const DistanceInBlocksFractional& index) { data = index.get(); }
 inline void from_json(const Json& data, DistanceInBlocksFractional& index) { index = DistanceInBlocksFractional::create(data.get<float>()); }
-
+constexpr DistanceInBlocksFractional DistanceInBlocks::toFloat() const { return DistanceInBlocksFractional::create(data); }
 // For use by location buckets.
 using DistanceInBucketsWidth = uint32_t;
 class DistanceInBuckets : public StrongInteger<DistanceInBuckets, DistanceInBucketsWidth>

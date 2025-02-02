@@ -70,8 +70,8 @@ public:
 	}
 	constexpr Derived& operator*=(const This& other) { return (*this) *= other.data; }
 	template<arithmetic Other>
-	constexpr Derived& operator/=(const Other& other) { assert(exists()); data /= other; return static_cast<Derived&>(*this); }
-	constexpr Derived& operator/=(const This& other) { (*this) /= other.data; }
+	constexpr Derived& operator/=(const Other& other) { assert(other != 0); assert(exists()); data /= other; return static_cast<Derived&>(*this); }
+	constexpr Derived& operator/=(const This& other) { assert(other.exists()); assert(other != 0); (*this) /= other.data; }
 	[[nodiscard]] constexpr Derived operator-() const { assert(exists()); return Derived::create(-data); }
 	[[nodiscard]] constexpr T get() const { return data; }
 	[[nodiscard]] T& getReference() { return data; }
@@ -102,9 +102,8 @@ public:
 	template<arithmetic Other>
 	[[nodiscard]] constexpr Derived operator-(const Other& other) const {
 		assert(exists());
-		assert(MIN_VALUE + other <= data);
 		if(other < 0)
-			assert(MAX_VALUE - other <= data);
+			assert(MAX_VALUE + other >= data);
 		else
 			assert(MIN_VALUE + other <= data);
 		return Derived::create(data - other);
@@ -113,18 +112,39 @@ public:
 	template<arithmetic Other>
 	[[nodiscard]] constexpr Derived operator*(const Other& other) const {
 		assert(exists());
-		if((other > 0 && data > 0) || (other < 0 && data < 0) )
-			assert(MAX_VALUE / other >= data);
-		else if(other < 0 ) // other is negitive and data is positive.
+		bool skipValidation = false;
+		if constexpr (std::signed_integral<T>)
 		{
-			if(data != 0)
-				assert(MIN_VALUE != 0);
-			// MIN_VALUE divided by -1 returns MIN_VALUE, strangely.
-			if constexpr(std::signed_integral<T>) if(other != -1)
-				assert(MIN_VALUE / other >= data);
+			if(std::abs(other) <= 1)
+				skipValidation = true;
 		}
-		else if(other > 0)// other is positive and data is negitive.
-			assert(MIN_VALUE / other <= data);
+		else
+			if(other <= 1)
+				skipValidation = true;
+		if(!skipValidation)
+		{
+			if((other > 0 && data > 0) || (other < 0 && data < 0) )
+			{
+				auto maxValue = MAX_VALUE;
+				assert(maxValue > 0);
+				T fraction;
+				if constexpr (std::is_signed_v<Other>)
+					fraction = maxValue / std::abs(other);
+				else
+					fraction = maxValue / other;
+				assert(fraction > data);
+			}
+			else if(other < 0 ) // other is negitive and data is positive.
+			{
+				if(data != 0)
+					assert(MIN_VALUE != 0);
+				// MIN_VALUE divided by -1 returns MIN_VALUE, strangely.
+				if constexpr(std::signed_integral<T>) if(other != -1)
+					assert(MIN_VALUE / other >= data);
+			}
+			else if(other > 0)// other is positive and data is negitive.
+				assert(MIN_VALUE / other <= data);
+		}
 		return Derived::create(data * other);
 	}
 	[[nodiscard]] constexpr Derived operator/(const This& other) const { return (*this) / other.data; }

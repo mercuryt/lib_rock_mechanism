@@ -108,6 +108,7 @@ public:
 	[[nodiscard]] static std::vector<SpoilsDataTypeId>& getSpoilData(const MaterialTypeId& id);
 	[[nodiscard]] static Temperature getMeltingPoint(const MaterialTypeId& id);
 	[[nodiscard]] static FluidTypeId getMeltsInto(const MaterialTypeId& id);
+	[[nodiscard]] static bool canMelt(const MaterialTypeId& id);
 	// Fire.
 	[[nodiscard]] static bool canBurn(const MaterialTypeId& id);
 	[[nodiscard]] static Step getBurnStageDuration(const MaterialTypeId& id);

@@ -76,7 +76,7 @@ void FluidGroup::addBlock(Area& area, const BlockIndex& block, bool checkMerge)
 				assert(!found->group->m_merged);
 				if(found->group == this)
 					continue;
-				toMerge.insert(found->group);
+				toMerge.maybeInsert(found->group);
 			}
 			if(!found || found->volume < Config::maxBlockVolume)
 				m_fillQueue.maybeAddBlock(adjacent);
@@ -747,7 +747,7 @@ Quantity FluidGroup::countBlocksOnSurface(const Area& area) const
 {
 	const Blocks& blocks = area.getBlocks();
 	// TODO: could be optimized by only looking at the topmost z level in DrainQueue::m_queue
-	return Quantity::create(std::ranges::count_if(m_drainQueue.m_set, [&](const BlockIndex& block){ return blocks.isOnSurface(block); }));
+	return Quantity::create(std::ranges::count_if(m_drainQueue.m_set, [&](const BlockIndex& block){ return blocks.isExposedToSky(block); }));
 }
 void FluidGroup::validate(Area& area) const
 {

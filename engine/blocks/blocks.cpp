@@ -14,6 +14,7 @@ Blocks::Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y,
 	assert(!area.m_loaded);
 	BlockIndex count = BlockIndex::create((x * y * z).get());
 	resize(count);
+	m_exposedToSky.initalizeEmpty();
 	for(BlockIndex i = BlockIndex::create(0); i < count; ++i)
 		initalize(i);
 	m_offsetsForAdjacentCountTable = makeOffsetsForAdjacentCountTable();
@@ -39,9 +40,7 @@ void Blocks::resize(const BlockIndex& count)
 	m_temperatureDelta.resize(count);
 	m_directlyAdjacent.resize(count);
 	m_exposedToSky.resize(count);
-	m_underground.resize(count);
 	m_isEdge.resize(count);
-	m_outdoors.resize(count);
 	m_visible.resize(count);
 	m_constructed.resize(count);
 }
@@ -49,7 +48,6 @@ void Blocks::resize(const BlockIndex& count)
 void Blocks::initalize(const BlockIndex& index)
 {
 	// Default initalization is fine for most things.
-	m_exposedToSky.set(index);
 	Point3D point = getCoordinates(index);
 	m_totalFluidVolume[index] = CollisionVolume::create(0);
 	m_dynamicVolume[index] = CollisionVolume::create(0);
@@ -60,7 +58,6 @@ void Blocks::initalize(const BlockIndex& index)
 		point.y == 0 || point.y == (m_sizeY - 1) ||
 		point.z == 0 || point.z == (m_sizeZ - 1)
 	));
-	m_outdoors.set(index);
 	recordAdjacent(index);
 }
 BlockIndex Blocks::offset(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const
@@ -326,6 +323,10 @@ BlockIndexArrayNotNull<26> Blocks::getAdjacentWithEdgeAndCornerAdjacent(const Bl
 {
 	return getAdjacentWithOffsets<26, true>(*this, index, offsetsListAllAdjacent.begin());
 }
+BlockIndexArrayNotNull<24> Blocks::getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const BlockIndex& index) const
+{
+	return getAdjacentWithOffsets<24, false>(*this, index, offsetsListAllAdjacentExceptDirectlyAboveAndBelow.begin());
+}
 std::array<BlockIndex, 26> Blocks::getAdjacentWithEdgeAndCornerAdjacentUnfiltered(const BlockIndex& index) const
 {
 	return getAdjacentWithOffsets<26, false>(*this, index, offsetsListAllAdjacent.begin());
@@ -476,18 +477,10 @@ bool Blocks::isAdjacentToItem(const BlockIndex& index, const ItemIndex& item) co
 }
 void Blocks::setExposedToSky(const BlockIndex& index, bool exposed)
 {
-	m_exposedToSky.set(index, exposed);
-	plant_updateGrowingStatus(index);
-}
-void Blocks::setBelowExposedToSky(const BlockIndex& index)
-{
-	BlockIndex block = getBlockBelow(index);
-	while(block.exists() && canSeeThroughFrom(block, getBlockAbove(block)) && !m_exposedToSky[block])
-	{
-		setExposedToSky(block, true);
-		plant_updateGrowingStatus(block);
-		block = getBlockBelow(block);
-	}
+	if(exposed)
+		m_exposedToSky.set(m_area, index);
+	else
+		m_exposedToSky.unset(m_area, index);
 }
 void Blocks::setBelowVisible(const BlockIndex& index)
 {
@@ -497,107 +490,6 @@ void Blocks::setBelowVisible(const BlockIndex& index)
 		m_visible.set(block);
 		block = getBlockBelow(block);
 	}
-}
-void Blocks::setBelowNotExposedToSky(const BlockIndex& index)
-{
-	BlockIndex block = getBlockBelow(index);
-	while(block.exists() && m_exposedToSky[block])
-	{
-		m_exposedToSky.unset(block);
-		plant_updateGrowingStatus(block);
-		block = getBlockBelow(block);
-	}
-}
-void Blocks::solid_setShared(const BlockIndex& index, const MaterialTypeId& materialType, bool constructed)
-{
-	assert(m_itemVolume[index].empty());
-	Plants& plants = m_area.getPlants();
-	if(m_plants[index].exists())
-	{
-		PlantIndex plant = m_plants[index];
-		assert(!PlantSpecies::getIsTree(plants.getSpecies(plant)));
-		plants.die(plant);
-	}
-	if(materialType == m_materialType[index])
-		return;
-	bool wasEmpty = m_materialType[index].empty();
-	if(wasEmpty)
-		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(index);
-	m_materialType[index] = materialType;
-	m_constructed.set(index, constructed);
-	fluid_onBlockSetSolid(index);
-	m_visible.set(index);
-	m_area.m_opacityFacade.update(index);
-	// Set blocks below as not exposed to sky.
-	setExposedToSky(index, false);
-	setBelowNotExposedToSky(index);
-	// Remove from stockpiles.
-	m_area.m_hasStockPiles.removeBlockFromAllFactions(index);
-	m_area.m_hasCraftingLocationsAndJobs.maybeRemoveLocation(index);
-	if(wasEmpty && m_reservables[index] != nullptr)
-		// There are no reservations which can exist on both a solid and not solid block.
-		dishonorAllReservations(index);
-	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
-}
-void Blocks::solid_setNotShared(const BlockIndex& index)
-{
-	if(!solid_is(index))
-		return;
-	m_materialType[index].clear();
-	m_constructed.unset(index);
-	fluid_onBlockSetNotSolid(index);
-	m_area.m_opacityFacade.update(index);
-	if(getBlockAbove(index).empty() || m_exposedToSky[getBlockAbove(index)])
-	{
-		setExposedToSky(index, true);
-		setBelowExposedToSky(index);
-	}
-	//TODO: Check if any adjacent are visible first?
-	m_visible.set(index);
-	setBelowVisible(index);
-	// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid block.
-	m_reservables[index] = nullptr;
-	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
-	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(index);
-}
-void Blocks::solid_set(const BlockIndex& index, const MaterialTypeId& materialType, bool constructed)
-{
-	bool wasEmpty = m_materialType[index].empty();
-	solid_setShared(index, materialType, constructed);
-	// Opacity.
-	if(!MaterialType::getTransparent(materialType) && wasEmpty)
-		m_area.m_visionCuboids.blockIsOpaque(m_area, index);
-}
-void Blocks::solid_setNot(const BlockIndex& index)
-{
-	solid_setNotShared(index);
-	m_area.m_visionCuboids.blockIsTransparent(m_area, index);
-}
-void Blocks::solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& materialType, bool constructed)
-{
-	for(const BlockIndex& index : cuboid.getView(*this))
-		solid_setShared(index, materialType, constructed);
-	if(!MaterialType::getTransparent(materialType))
-		m_area.m_visionCuboids.cuboidIsOpaque(m_area, cuboid);
-}
-void Blocks::solid_setNotCuboid(const Cuboid& cuboid)
-{
-	for(const BlockIndex& index : cuboid.getView(*this))
-		solid_setNotShared(index);
-	m_area.m_visionCuboids.cuboidIsTransparent(m_area, cuboid);
-}
-MaterialTypeId Blocks::solid_get(const BlockIndex& index) const
-{
-	return m_materialType[index];
-}
-bool Blocks::solid_is(const BlockIndex& index) const
-{
-	return m_materialType[index].exists();
-}
-Mass Blocks::getMass(const BlockIndex& index) const
-{
-	assert(solid_is(index));
-	return MaterialType::getDensity(m_materialType[index]) * Volume::create(Config::maxBlockVolume.get());
 }
 bool Blocks::canSeeIntoFromAlways(const BlockIndex& to, const BlockIndex& from) const
 {
@@ -743,17 +635,9 @@ bool Blocks::isSupport(const BlockIndex& index) const
 {
 	return solid_is(index) || blockFeature_isSupport(index);
 }
-bool Blocks::isOutdoors(const BlockIndex& index) const
-{
-	return m_outdoors[index];
-}
-bool Blocks::isUnderground(const BlockIndex& index) const
-{
-	return m_underground[index];
-}
 bool Blocks::isExposedToSky(const BlockIndex& index) const
 {
-	return m_exposedToSky[index];
+	return m_exposedToSky.check(index);
 }
 bool Blocks::isEdge(const BlockIndex& index) const
 {

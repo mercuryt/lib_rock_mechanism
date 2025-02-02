@@ -108,7 +108,10 @@ FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidTypeId& fluidType, B
 }
 void AreaHasFluidGroups::removeFluidGroup(FluidGroup& group)
 {
-	std::erase_if(m_fluidGroups, [&group](const FluidGroup& g) { return &g == &group; });
+	if(group.m_aboveGround)
+		// Use maybe remove because even if the group is marked as above ground it might be wrong: it is permitted to be incorrect becaues it will be checked when the group is about to freeze.
+		m_area.m_hasTemperature.maybeRemoveFreezeableFluidGroupAboveGround(group);
+	std::erase(m_fluidGroups, group);
 }
 void AreaHasFluidGroups::clearMergedFluidGroups()
 {

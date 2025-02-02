@@ -180,12 +180,13 @@ uint32_t SleepObjective::desireToSleepAt(Area& area, const BlockIndex& block, co
 	if(area.m_hasSleepingSpots.containsUnassigned(block))
 		// Most desirable.
 		return 3;
-	if(blocks.isOutdoors(block) || !blocks.actor_empty(block))
+	if(blocks.isExposedToSky(block) || !blocks.actor_empty(block))
 		// Least deserable.
 		return 1;
 	else
 		// Moderatly desirable.
 		return 2;
+	assert(false);
 }
 void SleepObjective::cancel(Area& area, const ActorIndex& actor)
 {

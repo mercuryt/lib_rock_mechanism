@@ -29,11 +29,16 @@ void Blocks::temperature_freeze(const BlockIndex& index, const FluidTypeId& flui
 {
 	assert(FluidType::getFreezesInto(fluidType).exists());
 	static ItemTypeId chunk = ItemType::byName(L"chunk");
+	static ItemTypeId pile = ItemType::byName(L"pile");
 	Quantity chunkQuantity = item_getCount(index, chunk, FluidType::getFreezesInto(fluidType));
-	CollisionVolume chunkVolume = ItemType::getVolume(chunk).toCollisionVolume() * chunkQuantity;
+	Quantity pileQuantity = item_getCount(index, chunk, FluidType::getFreezesInto(fluidType));
+	CollisionVolume chunkVolumeSingle = Shape::getCollisionVolumeAtLocationBlock(ItemType::getShape(chunk));
+	CollisionVolume pileVolumeSingle = Shape::getCollisionVolumeAtLocationBlock(ItemType::getShape(pile));
+	CollisionVolume chunkVolume = chunkVolumeSingle * chunkQuantity;
+	CollisionVolume pileVolume = pileVolumeSingle * pileQuantity;
 	CollisionVolume fluidVolume = fluid_volumeOfTypeContains(index, fluidType);
 	// If full freeze solid, otherwise generate frozen chunks.
-	if(chunkVolume + fluidVolume >= Config::maxBlockVolume)
+	if(chunkVolume + pileVolume + fluidVolume >= Config::maxBlockVolume)
 	{
 		solid_set(index, FluidType::getFreezesInto(fluidType), false);
 		CollisionVolume remainder = chunkVolume + fluidVolume - Config::maxBlockVolume;
@@ -41,7 +46,18 @@ void Blocks::temperature_freeze(const BlockIndex& index, const FluidTypeId& flui
 		//TODO: add remainder to fluid group or above block.
 	}
 	else
-		item_addGeneric(index, chunk, FluidType::getFreezesInto(fluidType),  chunkQuantity);
+	{
+		Quantity createChunkQuantity = Quantity::create((fluidVolume / chunkVolumeSingle).get());
+		if(createChunkQuantity != 0)
+		{
+			item_addGeneric(index, chunk, FluidType::getFreezesInto(fluidType), createChunkQuantity);
+			fluidVolume -= chunkVolumeSingle.get() * createChunkQuantity.get();
+		}
+		Quantity createPileQuantity = Quantity::create((fluidVolume / pileVolumeSingle).get());
+		if(createPileQuantity != 0)
+			item_addGeneric(index, pile, FluidType::getFreezesInto(fluidType), createPileQuantity);
+		assert(fluidVolume == createPileQuantity.get() * pileVolumeSingle.get());
+	}
 }
 void Blocks::temperature_melt(const BlockIndex& index)
 {
@@ -54,7 +70,7 @@ void Blocks::temperature_melt(const BlockIndex& index)
 }
 const Temperature& Blocks::temperature_getAmbient(const BlockIndex& index) const
 {
-	if(m_underground[index])
+	if(!m_exposedToSky.check(index))
 	{
 		if(getZ(index) <= Config::maxZLevelForDeepAmbiantTemperature)
 			return Config::deepAmbiantTemperature;
@@ -65,7 +81,7 @@ const Temperature& Blocks::temperature_getAmbient(const BlockIndex& index) const
 }
 Temperature Blocks::temperature_getDailyAverageAmbient(const BlockIndex& index) const
 {
-	if(m_underground[index])
+	if(!m_exposedToSky.check(index))
 	{
 		if(getZ(index) <= Config::maxZLevelForDeepAmbiantTemperature)
 			return Config::deepAmbiantTemperature;
@@ -81,4 +97,19 @@ Temperature Blocks::temperature_get(const BlockIndex& index) const
 	if(delta < 0 && (uint)delta.absoluteValue().get() > ambiant.get())
 		return Temperature::create(0);
 	return Temperature::create(ambiant.get() + delta.get());
+}
+bool Blocks::temperature_transmits(const BlockIndex& block) const
+{
+	if(solid_is(block))
+		return false;
+	const BlockFeature* door = blockFeature_atConst(block, BlockFeatureType::door);
+	if(door != nullptr && door->closed)
+		return false;
+	const BlockFeature* flap = blockFeature_atConst(block, BlockFeatureType::flap);
+	if(flap != nullptr && flap->closed)
+		return false;
+	const BlockFeature* hatch = blockFeature_atConst(block, BlockFeatureType::hatch);
+	if(hatch != nullptr && hatch->closed)
+		return false;
+	return true;
 }

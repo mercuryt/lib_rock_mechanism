@@ -41,6 +41,7 @@ public:
 	void unfocusUI();
 	void drawTime();
 	void drawZoom();
+	void drawWeatherReport();
 	void updateInfoPopup() { m_infoPopup.update(); }
 	void drawSelectionDescription();
 	[[nodiscard]] bool isVisible() const { return m_group->isVisible(); }

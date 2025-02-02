@@ -100,7 +100,7 @@ CuboidSetConstIterator::CuboidSetConstIterator(const Blocks& blocks, const Cuboi
 	m_blocks(blocks),
 	m_cuboidSet(cuboidSet),
 	m_outerIter(end ? m_cuboidSet.m_cuboids.end() : cuboidSet.m_cuboids.begin()),
-	m_innerIter(end ? m_cuboidSet.m_cuboids.begin()->begin(blocks) : m_outerIter->begin(m_blocks))
+	m_innerIter(end ? m_cuboidSet.m_cuboids.end()->end(blocks) : m_outerIter->begin(m_blocks))
 { }
 CuboidSetConstIterator& CuboidSetConstIterator::operator++()
 {
