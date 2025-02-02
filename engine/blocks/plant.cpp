@@ -39,7 +39,7 @@ bool Blocks::plant_canGrowHereCurrently(const BlockIndex& index, const PlantSpec
 	Temperature temperature = temperature_get(index);
 	if(PlantSpecies::getMaximumGrowingTemperature(plantSpecies) < temperature || PlantSpecies::getMinimumGrowingTemperature(plantSpecies) > temperature)
 		return false;
-	if(PlantSpecies::getGrowsInSunLight(plantSpecies) != m_outdoors[index])
+	if(PlantSpecies::getGrowsInSunLight(plantSpecies) != m_exposedToSky.check(index))
 		return false;
 	static MaterialTypeId dirtType = MaterialType::byName(L"dirt");
 	BlockIndex below = getBlockBelow(index);
@@ -59,7 +59,7 @@ bool Blocks::plant_canGrowHereAtSomePointToday(const BlockIndex& index, const Pl
 }
 bool Blocks::plant_canGrowHereEver(const BlockIndex& index, const PlantSpeciesId& plantSpecies) const
 {
-	if(PlantSpecies::getGrowsInSunLight(plantSpecies) != m_outdoors[index])
+	if(PlantSpecies::getGrowsInSunLight(plantSpecies) != m_exposedToSky.check(index))
 		return false;
 	return plant_anythingCanGrowHereEver(index);
 }

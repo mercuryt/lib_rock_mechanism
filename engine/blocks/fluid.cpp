@@ -69,6 +69,11 @@ FluidGroup* Blocks::fluid_getGroup(const BlockIndex& index, const FluidTypeId& f
 	assert(found->type == fluidType);
 	return found->group;
 }
+void Blocks::fluid_add(const Cuboid& cuboid, const CollisionVolume& volume, const FluidTypeId& fluidType)
+{
+	for(const BlockIndex& block : cuboid.getView(*this))
+		fluid_add(block, volume, fluidType);
+}
 void Blocks::fluid_add(const BlockIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType)
 {
 	assert(!solid_is(index));
@@ -93,13 +98,19 @@ void Blocks::fluid_add(const BlockIndex& index, const CollisionVolume& volume, c
 	// Create fluid group.
 	if(fluidGroup == nullptr)
 		fluidGroup = m_area.m_hasFluidGroups.createFluidGroup(fluidType, {index});
-	else
-		m_area.m_hasFluidGroups.clearMergedFluidGroups();
+	m_area.m_hasFluidGroups.clearMergedFluidGroups();
 	fluid_setTotalVolume(index, m_totalFluidVolume[index] + volume);
 	// Shift less dense fluids to excessVolume.
 	if(m_totalFluidVolume[index] > Config::maxBlockVolume)
 		fluid_resolveOverfull(index);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
+	assert(fluidGroup != nullptr);
+	if(!fluidGroup->m_aboveGround && isExposedToSky(index))
+	{
+		fluidGroup->m_aboveGround = true;
+		if(FluidType::getFreezesInto(fluidGroup->m_fluidType).exists())
+			m_area.m_hasTemperature.addFreezeableFluidGroupAboveGround(*fluidGroup);
+	}
 }
 void Blocks::fluid_setAllUnstableExcept(const BlockIndex& index, const FluidTypeId& fluidType)
 {

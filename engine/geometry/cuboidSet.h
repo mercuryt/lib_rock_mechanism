@@ -18,7 +18,7 @@ public:
 	[[nodiscard]] CuboidSetConstIterator operator++(int);
 	[[nodiscard]] bool operator==(const CuboidSetConstIterator& other) const { return m_outerIter == other.m_outerIter && m_innerIter == other.m_innerIter; }
 	[[nodiscard]] bool operator!=(const CuboidSetConstIterator& other) const { return !(*this == other); }
-	[[nodiscard]] BlockIndex operator*() { return *m_innerIter; }
+	[[nodiscard]] BlockIndex operator*() { assert(m_innerIter != m_outerIter->end(m_blocks)); return *m_innerIter; }
 };
 struct CuboidSetConstView
 {

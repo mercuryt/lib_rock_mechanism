@@ -395,10 +395,32 @@ TEST_CASE("construct")
 		REQUIRE(!items.reservable_isFullyReserved(saw, faction));
 		REQUIRE(area.m_hasConstructionDesignations.areThereAnyForFaction(faction));
 	}
+}
+TEST_CASE("constructDirtWall")
+{
+	static const MaterialTypeId& dirt = MaterialType::byName(L"dirt");
+	static const ItemTypeId& pile = ItemType::byName(L"pile");
+	static const AnimalSpeciesId& dwarf = AnimalSpecies::byName(L"dwarf");
+	Simulation simulation;
+	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	area.m_hasRain.disable();
+	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
+	Items& items = area.getItems();
+	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
+	FactionId faction = simulation.createFaction(L"Tower Of Power");
+	area.m_blockDesignations.registerFaction(faction);
+	const ConstructObjectiveType& constructObjectiveType = static_cast<const ConstructObjectiveType&>(ObjectiveType::getByName(L"construct"));
+	BlockIndex dwarf1Start = blocks.getIndex_i(1, 1, 2);
+	ActorIndex dwarf1 = actors.create(ActorParamaters{
+		.species=dwarf,
+		.location=dwarf1Start,
+		.faction=faction,
+	});
+	ActorReference dwarf1Ref = actors.m_referenceData.getReference(dwarf1);
+	area.m_hasConstructionDesignations.addFaction(faction);
 	SUBCASE("dirt wall")
 	{
-		ItemTypeId pile = ItemType::byName(L"pile");
-		MaterialTypeId dirt = MaterialType::byName(L"dirt");
 		ItemIndex dirtPile = items.create({.itemType=pile, .materialType=dirt, .location=blocks.getIndex_i(9, 9, 2), .quantity=Quantity::create(150u)});
 		BlockIndex wallLocation = blocks.getIndex_i(3, 3, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, dirt);
@@ -446,11 +468,9 @@ TEST_CASE("construct")
 	}
 	SUBCASE("dirt wall three piles")
 	{
-		ItemTypeId pile = ItemType::byName(L"pile");
-		MaterialTypeId dirt = MaterialType::byName(L"dirt");
 		BlockIndex pileLocation1 = blocks.getIndex_i(9, 9, 2);
-		BlockIndex pileLocation2 = blocks.getIndex_i(9, 8, 2);
-		BlockIndex pileLocation3 = blocks.getIndex_i(9, 7, 2);
+		BlockIndex pileLocation2 = blocks.getIndex_i(9, 7, 2);
+		BlockIndex pileLocation3 = blocks.getIndex_i(9, 5, 2);
 		ItemIndex dirtPile1 = items.create({.itemType=pile, .materialType=dirt, .location=pileLocation1, .quantity=Quantity::create(50u)});
 		ItemIndex dirtPile2 = items.create({.itemType=pile, .materialType=dirt, .location=pileLocation2, .quantity=Quantity::create(50u)});
 		ItemIndex dirtPile3 = items.create({.itemType=pile, .materialType=dirt, .location=pileLocation3, .quantity=Quantity::create(50u)});
@@ -470,22 +490,25 @@ TEST_CASE("construct")
 		simulation.doStep();
 		// Another step to path to a pile.
 		simulation.doStep();
+		// Move pile 1.
+		// Pile 1 is the closest to the worker's starting position.
+		auto pile1Moved = [&]{ return blocks.item_getCount(pileLocation1, pile, dirt) == 0; };
+		simulation.fastForwardUntillPredicate(pile1Moved);
+		REQUIRE(actors.canPickUp_isCarryingItem(dwarf1, dirtPile1));
+		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, wallLocation);
+		REQUIRE(!actors.canPickUp_exists(dwarf1));
+		// After Dropping off pile 1 the next closest is pile 3.
 		// Move pile 3.
-		auto pile3Moved = [&]{ return blocks.item_empty(pileLocation3); };
+		auto pile3Moved = [&]{ return blocks.item_getCount(pileLocation3, pile, dirt) == 0; };
 		simulation.fastForwardUntillPredicate(pile3Moved);
 		REQUIRE(actors.canPickUp_isCarryingItem(dwarf1, dirtPile3));
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, wallLocation);
 		REQUIRE(!actors.canPickUp_exists(dwarf1));
+		// The last Pile is pile 2.
 		// Move pile 2.
-		auto pile2Moved = [&]{ return blocks.item_empty(pileLocation2); };
+		auto pile2Moved = [&]{ return blocks.item_getCount(pileLocation2, pile, dirt) == 0; };
 		simulation.fastForwardUntillPredicate(pile2Moved);
 		REQUIRE(actors.canPickUp_isCarryingItem(dwarf1, dirtPile2));
-		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, wallLocation);
-		REQUIRE(!actors.canPickUp_exists(dwarf1));
-		// Move pile 1.
-		auto pile1Moved = [&]{ return blocks.item_empty(pileLocation1); };
-		simulation.fastForwardUntillPredicate(pile1Moved);
-		REQUIRE(actors.canPickUp_isCarryingItem(dwarf1, dirtPile1));
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, wallLocation);
 		REQUIRE(!actors.canPickUp_exists(dwarf1));
 		REQUIRE(project.deliveriesComplete());

@@ -1,12 +1,10 @@
 {
   "name": "dirt",
-  "density": 2.7,
-  "hardness": 30,
+  "density": 1.3,
+  "hardness": 1,
   "transparent": false,
-  "meltingPoint": 1612,
-  "meltsInto": "lava",
   "constructionData": "adobe",
-  "spoilData": 
+  "spoilData":
   [
 	  {
         "materialType": "dirt",

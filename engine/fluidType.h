@@ -42,5 +42,6 @@ public:
 	[[nodiscard]] static DistanceInBlocks getMaxMistSpread(const FluidTypeId& id);
 	[[nodiscard]] static MaterialTypeId getFreezesInto(const FluidTypeId& id);
 	[[nodiscard]] static float getEvaporationRate(const FluidTypeId& id);
+	[[nodiscard]] static Temperature getFreezingPoint(const FluidTypeId& id);
 };
 inline FluidType fluidTypeData;

@@ -98,7 +98,7 @@ void Area::stepCaveInRead()
 				chunkFound = true;
 			}
 			// If adjacent doesn't have a chunk then add it to the queue.
-			else 
+			else
 			{
 				// Put the below block (index 0) at the front of the queue until a first anchor is established.
 				// If the below block is not support then prioritize all adjacent to get around the void.
@@ -171,9 +171,9 @@ void Area::stepCaveInRead()
 			// Calculate energy of fall.
 			uint32_t fallEnergy = 0;
 			for(const BlockIndex& block : chunk)
-				fallEnergy += blocks.getMass(block).get();
+				fallEnergy += blocks.solid_getMass(block).get();
 			fallEnergy *= smallestFallDistance.get();
-			
+
 			// Store result to apply inside a write mutex after sorting.
 			fallingChunksWithDistanceAndEnergy.emplace_back(chunk, smallestFallDistance, fallEnergy);
 		}

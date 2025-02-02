@@ -3,5 +3,6 @@
   "viscosity": 100,
   "density": 1.0,
   "mistDuration": 10,
-  "maxMistSpread": 2
+  "maxMistSpread": 2,
+  "freezesInto": "ice"
 }

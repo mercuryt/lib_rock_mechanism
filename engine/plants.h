@@ -56,7 +56,6 @@ class Plants final : public HasShapes<Plants, PlantIndex>
 	void moveIndex(const PlantIndex& oldIndex, const PlantIndex& newIndex);
 	void updateFluidVolumeRequested(const PlantIndex& index);
 public:
-	PlantIndexSet m_onSurface;
 	Plants(Area& area);
 	void load(const Json& data);
 	void onChangeAmbiantSurfaceTemperature();
@@ -88,9 +87,7 @@ public:
 	// Portables are required to swap one at a time.
 	void sortRange(const PlantIndex& begin, const PlantIndex& end);
 	void maybeIncrementalSort(const std::chrono::microseconds timeBugdget);
-	[[nodiscard]] PlantIndexSet& getOnSurface() { return m_onSurface; }
-	[[nodiscard]] bool isOnSurface(const PlantIndex& index) { return m_onSurface.contains(index); }
-	[[nodiscard]] bool blockIsFull(const BlockIndex& index);
+	[[nodiscard]] bool blockIsFull(const BlockIndex& index) const;
 	[[nodiscard]] PlantIndices getAll() const;
 	[[nodiscard]] PlantSpeciesId getSpecies(const PlantIndex& index) const;
 	[[nodiscard]] Mass getFruitMass(const PlantIndex& index) const;

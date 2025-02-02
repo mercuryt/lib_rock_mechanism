@@ -1,4 +1,5 @@
 #include "fluidType.h"
+#include "materialType.h"
 const FluidTypeId FluidType::byName(const std::wstring name)
 {
 	auto found = fluidTypeData.m_name.find(name);
@@ -25,3 +26,9 @@ Step FluidType::getMistDuration(const FluidTypeId& id) { assert(id.exists()); re
 DistanceInBlocks FluidType::getMaxMistSpread(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_maxMistSpread[id]; };
 MaterialTypeId FluidType::getFreezesInto(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_freezesInto[id]; };
 float FluidType::getEvaporationRate(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_evaporationRate[id]; };
+Temperature FluidType::getFreezingPoint(const FluidTypeId& id)
+{
+	assert(id.exists());
+	const MaterialTypeId& solid = getFreezesInto(id);
+	return MaterialType::getMeltingPoint(solid);
+}

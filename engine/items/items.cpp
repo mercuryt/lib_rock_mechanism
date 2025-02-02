@@ -82,12 +82,11 @@ void ItemCanBeStockPiled::maybeUnsetAndScheduleReset(Area& area, const FactionId
 void Items::onChangeAmbiantSurfaceTemperature()
 {
 	Blocks& blocks = m_area.getBlocks();
-	for(ItemIndex index : m_onSurface)
-	{
+	m_onSurface.forEach([&](const ItemIndex& index){
 		assert(m_location[index].exists());
 		Temperature temperature = blocks.temperature_get(m_location[index]);
 		setTemperature(index, temperature);
-	}
+	});
 }
 Items::Items(Area& area) :
 	Portables(area, false)
@@ -109,6 +108,7 @@ void Items::forEachData(Action&& action)
 	action(m_percentWear);
 	action(m_quality);
 	action(m_quantity);
+	action(m_onSurface);
 }
 ItemIndex Items::create(ItemParamaters itemParamaters)
 {
@@ -150,10 +150,10 @@ void Items::moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex)
 	updateStoredIndicesPortables(oldIndex, newIndex);
 	if(m_hasCargo[newIndex] != nullptr)
 		m_hasCargo[newIndex]->updateCarrierIndexForAllCargo(m_area, newIndex);
-	if(m_onSurface.contains(oldIndex))
+	if(m_onSurface[oldIndex])
 	{
-		m_onSurface.remove(oldIndex);
-		m_onSurface.add(newIndex);
+		m_onSurface.unset(oldIndex);
+		m_onSurface.set(newIndex);
 	}
 	Blocks& blocks = m_area.getBlocks();
 	for(BlockIndex block : m_blocks[newIndex])
@@ -193,10 +193,10 @@ ItemIndex Items::setLocationAndFacing(const ItemIndex& index, const BlockIndex& 
 		blocks.item_record(occupied, index, CollisionVolume::create((quantity * v).get()));
 		occupiedBlocks.add(occupied);
 	}
-	if(blocks.isOnSurface(block))
-		m_onSurface.add(index);
+	if(blocks.isExposedToSky(block))
+		m_onSurface.set(index);
 	else
-		m_onSurface.remove(index);
+		m_onSurface.unset(index);
 	return index;
 }
 void Items::exit(const ItemIndex& index)
@@ -208,15 +208,29 @@ void Items::exit(const ItemIndex& index)
 		blocks.item_erase(occupied, index);
 	m_location[index].clear();
 	m_blocks[index].clear();
-	if(blocks.isOnSurface(location))
-		m_onSurface.remove(index);
+	if(blocks.isExposedToSky(location))
+		m_onSurface.unset(index);
 }
-void Items::setTemperature(const ItemIndex&, const Temperature&)
+void Items::setTemperature(const ItemIndex& index, const Temperature& temperature)
 {
-	//TODO
+	const MaterialTypeId& materialType = m_materialType[index];
+	if(MaterialType::canBurn(materialType) && MaterialType::getIgnitionTemperature(materialType) <= temperature)
+	{
+		// TODO: item is on fire.
+	}
+	else if(MaterialType::canMelt(materialType) && MaterialType::getMeltingPoint(materialType) <= temperature)
+	{
+		/*
+		const CollisionVolume volume = ItemType::getVolume(m_itemType[index]).toCollisionVolume();
+		const BlockIndex location = m_location[index];
+		destroy(index);
+		m_area.getBlocks().fluid_add(location, volume, MaterialType::getMeltsInto(materialType));
+		*/
+	}
 }
 void Items::addQuantity(const ItemIndex& index, const Quantity& delta)
 {
+	assert(delta != 0);
 	BlockIndex location = m_location[index];
 	Facing4 facing = m_facing[index];
 	// TODO: Update in place rather then exit, update, enter.

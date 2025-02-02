@@ -21,6 +21,7 @@ namespace Config
 	inline constexpr int maxActorsPerBlock = 4;
 	inline constexpr int maxItemsPerBlock = 4;
 	inline constexpr float goldenRatio = 1.61834f;
+	inline constexpr DistanceInBlocks maxDepthExteriorPortalPenetration = DistanceInBlocks::create(6);
 
 	// sort command for vim:
 	// 	sort /\t/w* /w* /
@@ -124,8 +125,8 @@ namespace Config
 	inline Step maximumDurationToWaitInsteadOfWander;
 	inline float maximumRainIntensityModifier;
 	inline uint32_t maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom;
-	inline float maximumStepsBetweenRainPerPercentHumidity;
-	inline float maximumStepsRainPerPercentHumidity;
+	inline Step maximumStepsBetweenRainPerPercentHumidity;
+	inline Step maximumStepsRainPerPercentHumidity;
 	inline Meters metersHeightCarvedByRivers;
 	inline Meters metersPerUnitElevationLociiIntensity;
 	inline Meters minimumAltitudeForHeadwaterFormation;
@@ -137,8 +138,8 @@ namespace Config
 	inline Percent minimumPercentGrowthForWoodCutting;
 	inline float minimumRainIntensityModifier;
 	inline CollisionVolume minBlockStaticVolumeToSlowMovement;
-	inline float minimumStepsBetweenRainPerPercentHumidity;
-	inline float minimumStepsRainPerPercentHumidity;
+	inline Step minimumStepsBetweenRainPerPercentHumidity;
+	inline Step minimumStepsRainPerPercentHumidity;
 	inline uint16_t minimumSizeForOctTreeToSplit;
 	inline uint16_t minimumOccupantsForOctTreeToSplit;
 	inline uint16_t minimumOccupantsForOctTreeToUnsplit;

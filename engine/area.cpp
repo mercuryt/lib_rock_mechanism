@@ -53,6 +53,7 @@ Area::Area(AreaId id, std::wstring n, Simulation& s, const DistanceInBlocks& x, 
 	m_actors = std::make_unique<Actors>(*this);
 	m_plants = std::make_unique<Plants>(*this);
 	m_items = std::make_unique<Items>(*this);
+	m_exteriorPortals.initalize(*this);
 	setup();
 	m_opacityFacade.initalize();
 	m_visionCuboids.initalize(*this);
@@ -96,6 +97,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_opacityFacade.initalize();
 	m_hasFluidGroups.clearMergedFluidGroups();
 	data["visionCuboids"].get_to(m_visionCuboids);
+	data["exteriorPortals"].get_to(m_exteriorPortals);
 	// Load fires.
 	m_fires.load(data["fires"], deserializationMemo);
 	// Load plants.
@@ -168,6 +170,7 @@ Json Area::toJson() const
 	data["hasStockPiles"] = m_hasStockPiles.toJson();
 	data["targetedHauling"] = m_hasTargetedHauling.toJson();
 	data["visionCuboids"] = m_visionCuboids;
+	data["exteriorPortals"] = m_exteriorPortals;
 	for(BlockIndex block : m_caveInCheck)
 		data["caveInCheck"].push_back(block);
 	m_opacityFacade.validate();
@@ -248,16 +251,16 @@ void Area::logActorsAndItems() const
 {
 	const Actors& actors = getActors();
 	const Items& items = getItems();
-	for(ActorIndex actor : actors.getAll())
+	for(const ActorIndex& actor : actors.getAll())
 		actors.log(actor);
-	for(ItemIndex item : items.getOnSurface())
+	for(const ItemIndex& item : items.getAll())
 		items.log(item);
 }
 Quantity Area::getTotalCountOfItemTypeOnSurface(const ItemTypeId& itemType) const
 {
 	const Items& items = getItems();
 	Quantity output = Quantity::create(0);
-	for(ItemIndex item : items.getOnSurface())
+	for(const ItemIndex& item : items.getOnSurface())
 		if(itemType == items.getItemType(item))
 			output += items.getQuantity(item);
 	return output;

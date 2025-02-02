@@ -102,7 +102,6 @@ public:
 class Items final : public Portables<Items, ItemIndex, ItemReferenceIndex>
 {
 	//TODO: change to bitset or remove.
-	ItemIndexSet m_onSurface;
 	StrongVector<std::unique_ptr<ItemCanBeStockPiled>, ItemIndex> m_canBeStockPiled;
 	StrongVector<CraftJob*, ItemIndex> m_craftJobForWorkPiece; // Used only for work in progress items.
 	StrongVector<std::unique_ptr<ItemHasCargo>, ItemIndex> m_hasCargo;
@@ -139,15 +138,12 @@ public:
 	void install(const ItemIndex& index, const BlockIndex& block, const Facing4& facing, const FactionId& faction);
 	// Returns the index of the item which was passed in as 'index', it may have changed with 'item' being destroyed
 	ItemIndex merge(const ItemIndex& index, const ItemIndex& item);
-	void setOnSurface(const ItemIndex& index);
-	void setNotOnSurface(const ItemIndex& index);
 	void setQuality(const ItemIndex& index, const Quality& quality);
 	void setWear(const ItemIndex& index, const Percent& wear);
 	void setQuantity(const ItemIndex& index, const Quantity& quantity);
 	void unsetCraftJobForWorkPiece(const ItemIndex& index);
 	[[nodiscard]] ItemIndices getAll() const;
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] bool isOnSurface(const ItemIndex& index);
 	[[nodiscard]] bool isInstalled(const ItemIndex& index) { return m_installed[index]; }
 	[[nodiscard]] Quantity getQuantity(const ItemIndex& index) const { return m_quantity[index]; }
 	[[nodiscard]] Quality getQuality(const ItemIndex& index) const { return m_quality[index]; }
@@ -163,8 +159,6 @@ public:
 	[[nodiscard]] MoveTypeId getMoveType(const ItemIndex& index) const;
 	[[nodiscard]] ItemTypeId getItemType(const ItemIndex& index) const { return m_itemType[index]; }
 	[[nodiscard]] MaterialTypeId getMaterialType(const ItemIndex& index) const { return m_materialType[index]; }
-	[[nodiscard]] auto& getOnSurface() { return m_onSurface; }
-	[[nodiscard]] const auto& getOnSurface() const { return m_onSurface; }
 	// -Cargo.
 	void cargo_addActor(const ItemIndex& index, const ActorIndex& actor);
 	ItemIndex cargo_addItem(const ItemIndex& index, const ItemIndex& item, const Quantity& quantity);

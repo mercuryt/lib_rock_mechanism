@@ -9,8 +9,11 @@ class MediumSet
 public:
 	class iterator;
 	class const_iterator;
-	void add(const T& value) { if(!contains(value)) data.push_back(value); std::ranges::sort(data); }
-	void remove(const T& value) { assert(contains(value)); auto iter = find(value); *iter = data.back(); data.pop_back(); std::ranges::sort(data); }
+	void add(const T& value) { data.push_back(value); std::ranges::sort(data); }
+	void maybeAdd(const T& value) { if(!contains(value)) add(value); }
+	void remove(const iterator& iter) { data.erase(iter); }
+	void remove(const T& value) { auto iter = find(value); assert(iter != data.end()); remove(iter); }
+	void maybeRemove(const T& value) { auto iter = find(value); if(iter != data.end()) remove(iter); }
 	template<typename ...Args>
 	void emplace(Args&& ...args) {
 		T value{std::forward(args)...};
@@ -21,9 +24,9 @@ public:
 	[[nodiscard]] uint size() const { return data.size(); }
 	[[nodiscard]] iterator find(const T& value)
 	{
-		auto iter = std::lower_bound(data.begin(), data.end(), value); 
+		auto iter = std::lower_bound(data.begin(), data.end(), value);
 		if(*iter == value)
-			return {*this, iter - data.begin()}; 
+			return {*this, (uint)std::distance(data.begin(), iter)};
 		return end();
 	}
 	[[nodiscard]] const_iterator find(const T& value) const { return const_cast<MediumSet<T>*>(this)->find(value); }
@@ -38,7 +41,7 @@ public:
 		iterator(MediumSet<T>& set, uint i) : m_iter(set.data.begin() + i) { }
 		iterator& operator++() { ++m_iter; return *this; }
 		iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
-		[[nodiscard]] T& operator*() { *m_iter; }
+		[[nodiscard]] T& operator*() { return *m_iter; }
 		[[nodiscard]] const T& operator*() const { *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
 	};
@@ -84,7 +87,7 @@ public:
 	{
 		auto iter = std::ranges::lower_bound(data, key, &Pair::first);
 		if(iter->first == key)
-			return {*this, iter - data.begin()}; 
+			return {*this, iter - data.begin()};
 		return end();
 	}
 	[[nodiscard]] const_iterator find(const K& key) const { return const_cast<This*>(this)->find(key); }

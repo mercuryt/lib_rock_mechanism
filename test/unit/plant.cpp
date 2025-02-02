@@ -6,6 +6,7 @@
 #include "../../engine/plants.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
+#include "../../engine/hasShapes.hpp"
 TEST_CASE("plant")
 {
 	static MaterialTypeId marble = MaterialType::byName(L"marble");
@@ -18,7 +19,7 @@ TEST_CASE("plant")
 	Blocks& blocks = area.getBlocks();
 	Plants& plants = area.getPlants();
 	BlockIndex location = blocks.getIndex_i(5, 5, 2);
-	REQUIRE(blocks.isOnSurface(location));
+	REQUIRE(blocks.isExposedToSky(location));
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	areaBuilderUtil::setSolidLayer(area, 1, dirt);
 	simulation.m_step = Step::create(0);

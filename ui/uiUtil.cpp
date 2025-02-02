@@ -20,3 +20,7 @@ std::wstring UIUtil::floatToString(const float& input)
 {
 	return std::format(L"{:.2f}", input);
 }
+std::wstring UIUtil::temperatureToString(const Temperature& temperature)
+{
+	return std::to_wstring(temperature.get()) + L"°";
+}

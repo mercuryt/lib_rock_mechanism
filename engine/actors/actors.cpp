@@ -585,8 +585,7 @@ ActorIndices Actors::getAll() const
 }
 void Actors::onChangeAmbiantSurfaceTemperature()
 {
-	for(auto index : getOnSurface())
-		m_needsSafeTemperature[index]->onChange(m_area);
+	m_onSurface.forEach([this](const ActorIndex& index) { m_needsSafeTemperature[index]->onChange(m_area); });
 }
 template<typename Action>
 void Actors::forEachData(Action&& action)
@@ -645,6 +644,7 @@ void Actors::forEachData(Action&& action)
 	action(m_speedIndividual);
 	action(m_speedActual);
 	action(m_moveRetries);
+	action(m_onSurface);
 }
 ActorIndex Actors::create(ActorParamaters params)
 {
@@ -711,6 +711,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_speedIndividual[index] = Speed::create(0);
 	m_speedActual[index] = Speed::create(0);
 	m_moveRetries[index] = 0;
+	m_onSurface.unset(index);
 	simulation.m_actors.registerActor(m_id[index], *this, index);
 	attributes_onUpdateGrowthPercent(index);
 	stamina_setFull(index);
@@ -779,10 +780,10 @@ void Actors::setLocationAndFacing(const ActorIndex& index, const BlockIndex& blo
 	vision_maybeUpdateLocation(index, block);
 	// TODO: reduntand with exit also calling getReference.
 	m_area.m_octTree.record(m_area, getReference(index));
-	if(blocks.isOnSurface(block))
-		m_onSurface.add(index);
+	if(blocks.isExposedToSky(block))
+		m_onSurface.set(index);
 	else
-		m_onSurface.remove(index);
+		m_onSurface.unset(index);
 }
 void Actors::exit(const ActorIndex& index)
 {
@@ -794,8 +795,8 @@ void Actors::exit(const ActorIndex& index)
 		blocks.actor_erase(occupied, index);
 	m_location[index].clear();
 	m_blocks[index].clear();
-	if(blocks.isOnSurface(location))
-		m_onSurface.remove(index);
+	if(blocks.isExposedToSky(location))
+		m_onSurface.unset(index);
 	move_pathRequestMaybeCancel(index);
 }
 void Actors::resetNeeds(const ActorIndex& index)

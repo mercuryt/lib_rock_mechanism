@@ -111,6 +111,7 @@ public:
 	void clear() { data.clear(); }
 	void add(const bool& status) { data.resize(data.size() + 1); data[data.size() - 1] = status; }
 	void moveIndex(const Index& oldIndex, const Index& newIndex) { data[newIndex.get()] = data[oldIndex.get()]; }
+	void fill(const bool& status) { std::fill(data.begin(), data.end(), status); }
 	void sortRangeWithOrder(const Index& begin, const Index& end, std::vector<std::pair<uint32_t, Index>> sortOrder)
 	{
 		std::vector<bool> copy;
@@ -123,5 +124,23 @@ public:
 			data[offset] = std::move(copy[from.get()]);
 		}
 	}
+	template<typename Action>
+	void forEach(Action&& action)
+	{
+		for(auto index = Index::create(0); index < data.size(); ++index)
+			if(data[index.get()])
+				action(index);
+	};
+	struct Iterator
+	{
+		const StrongBitSet* bitSet;
+		Index offset;
+		[[nodiscard]] Iterator operator++(int){ auto output = this; ++(*this); return output; }
+		Iterator operator++(){ auto size = bitSet->size(); assert(offset != size); do ++offset; while(offset != size && !(*bitSet)[offset]); return *this; }
+		[[nodiscard]] Index operator*() const { assert(offset != bitSet->size()); return offset; }
+		[[nodiscard]] bool operator==(const Iterator& other) const { assert(other.bitSet == bitSet); return other.offset == offset; }
+	};
+	[[nodiscard]] Iterator begin() const { return Iterator(this, Index::create(0)); }
+	[[nodiscard]] Iterator end() const { return Iterator(this, Index::create(size())); }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(StrongBitSet, data);
 };

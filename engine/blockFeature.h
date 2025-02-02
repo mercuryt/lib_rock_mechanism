@@ -55,7 +55,7 @@ struct BlockFeature
 	MaterialTypeId materialType;
 	// TODO: Replace hewn with ItemType* to differentiate between walls made of carved blocks from those made from uncut stone or between wood planks and logs.
 	bool hewn = false;
-	bool closed = false;
+	bool closed = true;
 	bool locked = false;
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(BlockFeature, blockFeatureType, materialType, hewn, closed, locked);

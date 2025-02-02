@@ -68,7 +68,6 @@ struct ActorParamaters
 };
 class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 {
-	ActorIndexSet m_onSurface;
 	StrongVector<ActorId, ActorIndex> m_id;
 	StrongVector<std::wstring, ActorIndex> m_name;
 	StrongVector<AnimalSpeciesId, ActorIndex> m_species;
@@ -158,7 +157,6 @@ public:
 	void setBirthStep(const ActorIndex& index, const Step& step);
 	void setName(const ActorIndex& index, std::wstring name){ m_name[index] = name; }
 	[[nodiscard]] ActorIndices getAll() const;
-	[[nodiscard]] ActorIndexSet getOnSurface() const { return m_onSurface; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] ActorId getId(const ActorIndex& index) const { return m_id[index]; }
 	[[nodiscard]] std::wstring getName(const ActorIndex& index) const { return m_name[index]; }

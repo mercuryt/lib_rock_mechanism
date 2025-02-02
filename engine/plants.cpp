@@ -34,7 +34,7 @@ void Plants::moveIndex(const PlantIndex& oldIndex, const PlantIndex& newIndex)
 void Plants::onChangeAmbiantSurfaceTemperature()
 {
 	Blocks& blocks = m_area.getBlocks();
-	for(auto index : m_onSurface)
+	for(const PlantIndex& index : m_onSurface)
 	{
 		Temperature temperature = blocks.temperature_get(m_location[index]);
 		setTemperature(PlantIndex::cast(index), temperature);
@@ -57,6 +57,7 @@ void Plants::forEachData(Action&& action)
 	action(m_percentFoliage);
 	action(m_wildGrowth);
 	action(m_volumeFluidRequested);
+	action(m_onSurface);
 }
 PlantIndex Plants::create(PlantParamaters paramaters)
 {
@@ -100,8 +101,8 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 				setQuantityToHarvest(index);
 		}
 	}
-	if(m_area.getBlocks().isOnSurface(paramaters.location))
-		m_onSurface.add(index);
+	if(m_area.getBlocks().isExposedToSky(paramaters.location))
+		m_onSurface.set(index);
 	++m_sortEntropy;
 	return index;
 }
@@ -424,6 +425,8 @@ void Plants::setLocation(const PlantIndex& index, const BlockIndex& location, co
 	}
 	m_location[index] = location;
 	m_facing[index] = Facing4::North;
+	if(blocks.isExposedToSky(location))
+		m_onSurface.set(index);
 }
 void Plants::exit(const PlantIndex& index)
 {
@@ -475,7 +478,7 @@ void Plants::setShape(const PlantIndex& index, const ShapeId& shape)
 	m_shape[index] = shape;
 	setLocation(index, location, Facing4::North);
 }
-bool Plants::blockIsFull(const BlockIndex& block)
+bool Plants::blockIsFull(const BlockIndex& block) const
 {
 	return m_area.getBlocks().plant_exists(block);
 }

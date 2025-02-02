@@ -96,19 +96,51 @@ void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature& tempera
 	m_area.getActors().onChangeAmbiantSurfaceTemperature();
 	m_area.getItems().onChangeAmbiantSurfaceTemperature();
 	Blocks& blocks = m_area.getBlocks();
-	for(auto& [meltingPoint, toMelt] : m_aboveGroundBlocksByMeltingPoint)
+	m_area.m_exteriorPortals.onChangeAmbiantSurfaceTemperature(blocks, temperature);
+	for(auto& [meltingPoint, toMeltOnSurface] : m_aboveGroundBlocksByMeltingPoint)
 		if(meltingPoint <= temperature)
-			for(BlockIndex block : toMelt)
+		{
+			SmallSet<BlockIndex> toMelt;
+			for(const BlockIndex& block : toMeltOnSurface)
+			{
+				// This block has been processed already as part of another block's group.
+				if(toMelt.contains(block))
+					continue;
+				const MaterialTypeId& materialType = blocks.solid_get(block);
+				for(const BlockIndex& groupBlock : blocks.collectAdjacentsWithCondition(block, [&](const BlockIndex& b){ return blocks.solid_get(b) == materialType; }))
+					toMelt.maybeInsert(groupBlock);
+			}
+			for(const BlockIndex& block : toMelt)
 				blocks.temperature_melt(block);
+			m_aboveGroundBlocksByMeltingPoint[meltingPoint].clear();
+		}
 		else
 			break;
+	SmallMap<FluidTypeId, SmallSet<BlockIndex>> toFreeze;
 	for(auto& [meltingPoint, fluidGroups] : m_aboveGroundFluidGroupsByMeltingPoint)
+	{
+		const FluidTypeId& fluidType = fluidGroups.front()->m_fluidType;
+		// TODO: replace getOrCreate with create.
+		auto& blockSet = toFreeze.getOrCreate(fluidType);
 		if(meltingPoint > temperature)
+		{
 			for(FluidGroup* fluidGroup : fluidGroups)
+			{
 				for(FutureFlowBlock& futureFlowBlock : fluidGroup->m_drainQueue.m_queue)
-					blocks.temperature_freeze(futureFlowBlock.block, fluidGroup->m_fluidType);
+					if(blocks.isExposedToSky(futureFlowBlock.block))
+						blockSet.insert(futureFlowBlock.block);
+				fluidGroup->m_aboveGround = false;
+			}
+			for(const auto& [fluidType, blockSet] : toFreeze)
+				for(const BlockIndex& block : blockSet)
+					blocks.temperature_freeze(block, fluidType);
+			// Any possible freezing at this temperature has happened so clear groupsByMeltingPoint for this temperature.
+			// Don't delete the empty set, it will be reused eventually.
+			fluidGroups.clear();
+		}
 		else
 			break;
+	}
 }
 void AreaHasTemperature::updateAmbientSurfaceTemperature()
 {
@@ -124,9 +156,9 @@ void AreaHasTemperature::updateAmbientSurfaceTemperature()
 void AreaHasTemperature::addMeltableSolidBlockAboveGround(const BlockIndex& block)
 {
 	Blocks& blocks = m_area.getBlocks();
-	assert(!blocks.isUnderground(block));
+	assert(blocks.isExposedToSky(block));
 	assert(blocks.solid_is(block));
-	m_aboveGroundBlocksByMeltingPoint.at(MaterialType::getMeltingPoint(blocks.solid_get(block))).add(block);
+	m_aboveGroundBlocksByMeltingPoint[MaterialType::getMeltingPoint(blocks.solid_get(block))].add(block);
 }
 // Must be run before block is set no longer solid if above ground.
 void AreaHasTemperature::removeMeltableSolidBlockAboveGround(const BlockIndex& block)
@@ -134,6 +166,20 @@ void AreaHasTemperature::removeMeltableSolidBlockAboveGround(const BlockIndex& b
 	Blocks& blocks = m_area.getBlocks();
 	assert(blocks.solid_is(block));
 	m_aboveGroundBlocksByMeltingPoint.at(MaterialType::getMeltingPoint(blocks.solid_get(block))).remove(block);
+}
+void AreaHasTemperature::addFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup)
+{
+	const Temperature& freezing = FluidType::getFreezingPoint(fluidGroup.m_fluidType);
+	m_aboveGroundFluidGroupsByMeltingPoint[freezing].insert(&fluidGroup);
+}
+void AreaHasTemperature::maybeRemoveFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup)
+{
+	const Temperature& freezing = FluidType::getFreezingPoint(fluidGroup.m_fluidType);
+	assert(m_aboveGroundFluidGroupsByMeltingPoint.contains(freezing));
+	auto& groups = m_aboveGroundFluidGroupsByMeltingPoint[freezing];
+	m_aboveGroundFluidGroupsByMeltingPoint[freezing].maybeErase(&fluidGroup);
+	if(groups.empty())
+		m_aboveGroundFluidGroupsByMeltingPoint.erase(freezing);
 }
 Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature() const
 {
@@ -150,12 +196,12 @@ UnsafeTemperatureEvent::UnsafeTemperatureEvent(Area& area, const ActorIndex& a, 
 	m_needsSafeTemperature(*area.getActors().m_needsSafeTemperature[a].get()) { }
 void UnsafeTemperatureEvent::execute(Simulation&, Area* area) { m_needsSafeTemperature.dieFromTemperature(*area); }
 void UnsafeTemperatureEvent::clearReferences(Simulation&, Area*) { m_needsSafeTemperature.m_event.clearPointer(); }
-ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Area& area, const ActorIndex& a) : 
+ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Area& area, const ActorIndex& a) :
 	m_event(area.m_eventSchedule)
 {
 	m_actor.setIndex(a, area.getActors().m_referenceData);
 }
-ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(const Json& data, const ActorIndex& actor, Area& area) : 
+ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(const Json& data, const ActorIndex& actor, Area& area) :
 	m_event(area.m_eventSchedule)
 {
 	m_actor.setIndex(actor, area.getActors().m_referenceData);

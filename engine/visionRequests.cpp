@@ -30,7 +30,8 @@ void VisionRequests::create(const ActorReference& actor)
 }
 void VisionRequests::maybeCreate(const ActorReference& actor)
 {
-	if(!m_data.containsAny([&](const auto& data){ return data.actor == actor; }))
+	Actors& actors = m_area.getActors();
+	if(actors.vision_canSeeAnything(actor.getIndex(actors.m_referenceData)) && !m_data.containsAny([&](const auto& data){ return data.actor == actor; }))
 		create(actor);
 }
 void VisionRequests::cancelIfExists(const ActorReference& actor)

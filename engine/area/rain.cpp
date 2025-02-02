@@ -99,7 +99,12 @@ void AreaHasRain::scheduleRestart()
 {
 	auto random = m_area.m_simulation.m_random;
 	Percent humidity = humidityForSeason();
-	Step restartAt = Step::create((100 - humidity.get()) * random.getInRange(Config::minimumStepsBetweenRainPerPercentHumidity, Config::maximumStepsBetweenRainPerPercentHumidity));
+	Step restartAt =
+		Step::create((100 - humidity.get()) *
+		random.getInRange(
+			Config::minimumStepsBetweenRainPerPercentHumidity.get(),
+			Config::maximumStepsBetweenRainPerPercentHumidity.get())
+		);
 	schedule(restartAt);
 }
 void AreaHasRain::disable()
@@ -123,7 +128,13 @@ void RainEvent::execute(Simulation&, Area* area)
 		assert(modifier != 0.0f);
 		Percent intensity = Percent::create((float)humidity.get() * modifier);
 		assert(intensity != 0);
-		Step duration = Step::create(humidity.get() * random.getInRange(Config::minimumStepsRainPerPercentHumidity, Config::maximumStepsRainPerPercentHumidity));
+		Step duration = Step::create(
+			humidity.get() *
+			random.getInRange(
+				Config::minimumStepsRainPerPercentHumidity.get(),
+				Config::maximumStepsRainPerPercentHumidity.get()
+			)
+		);
 		assert(duration < Config::stepsPerDay);
 		area->m_hasRain.start(intensity, duration);
 	}

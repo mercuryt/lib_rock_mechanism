@@ -59,6 +59,7 @@ public:
 	// Has been merged.
 	bool m_merged = false;
 	bool m_disolved = false;
+	bool m_aboveGround = false;
 
 	FluidGroup(FluidAllocator& allocator, const FluidTypeId& ft, BlockIndices& blocks, Area& area, bool checkMerge = true);
 	FluidGroup(const FluidGroup&) = delete;
