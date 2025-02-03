@@ -1,7 +1,7 @@
 #include "actors.h"
 #include "types.h"
 #include "index.h"
-#include "../visionRequests.h"
+#include "../vision/visionRequests.h"
 #include "../area.h"
 #include "../blocks/blocks.h"
 bool Actors::vision_canSeeAnything(const ActorIndex& index) const

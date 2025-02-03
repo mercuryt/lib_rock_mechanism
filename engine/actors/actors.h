@@ -3,7 +3,7 @@
 #include "../datetime.h"
 #include "../portables.h"
 #include "../types.h"
-#include "../visionRequests.h"
+#include "../vision/visionRequests.h"
 #include "../body.h"
 #include "../objective.h"
 #include "../equipment.h"

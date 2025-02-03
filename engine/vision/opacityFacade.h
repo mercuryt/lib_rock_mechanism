@@ -3,7 +3,7 @@
 #include "dataVector.h"
 #include "index.h"
 #include "types.h"
-#include "visionCuboid.h"
+#include "vision/visionCuboid.h"
 
 class Area;
 
