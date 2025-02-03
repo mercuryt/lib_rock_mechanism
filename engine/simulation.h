@@ -14,7 +14,7 @@
 #include "threadedTask.h"
 #include "types.h"
 #include "uniform.h"
-#include "pathMemo.h"
+#include "path/pathMemo.h"
 
 #include <future>
 #include <list>

@@ -2,7 +2,7 @@
 #include "deserializationMemo.h"
 #include "area.h"
 #include "reservable.h"
-#include "terrainFacade.h"
+#include "path/terrainFacade.h"
 #include "types.h"
 #include "util.h"
 #include "blockFeature.h"

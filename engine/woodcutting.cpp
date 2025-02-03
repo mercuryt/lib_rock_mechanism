@@ -7,7 +7,7 @@
 #include "deserializationMemo.h"
 #include "random.h"
 #include "reservable.h"
-#include "terrainFacade.h"
+#include "path/terrainFacade.h"
 #include "types.h"
 #include "util.h"
 #include "simulation.h"

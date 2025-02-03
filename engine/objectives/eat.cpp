@@ -6,7 +6,7 @@
 #include "../plants.h"
 #include "../itemType.h"
 #include "../animalSpecies.h"
-#include "../terrainFacade.hpp"
+#include "../path/terrainFacade.hpp"
 #include "../types.h"
 #include "kill.h"
 

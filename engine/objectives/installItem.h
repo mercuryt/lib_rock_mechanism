@@ -1,5 +1,5 @@
 #pragma once
-#include "../pathRequest.h"
+#include "../path/pathRequest.h"
 #include "../objective.h"
 #include "../types.h"
 class Area;

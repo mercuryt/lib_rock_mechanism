@@ -2,7 +2,7 @@
 #include "index.h"
 #include "project.h"
 #include "objective.h"
-#include "pathRequest.h"
+#include "path/pathRequest.h"
 #include "reference.h"
 #include "types.h"
 

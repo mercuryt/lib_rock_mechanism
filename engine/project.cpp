@@ -11,7 +11,7 @@
 #include "actors/actors.h"
 #include "items/items.h"
 #include "blocks/blocks.h"
-#include "terrainFacade.hpp"
+#include "path/terrainFacade.hpp"
 #include "types.h"
 #include "objectives/wander.h"
 #include "portables.hpp"

@@ -3,7 +3,7 @@
 #include "../actors/actors.h"
 #include "../items/items.h"
 #include "../blocks/blocks.h"
-#include "../terrainFacade.hpp"
+#include "../path/terrainFacade.hpp"
 #include "../types.h"
 // Objective Type.
 bool StockPileObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const

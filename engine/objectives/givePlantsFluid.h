@@ -2,9 +2,9 @@
 
 #include "../objective.h"
 #include "../eventSchedule.hpp"
-#include "../pathRequest.h"
+#include "../path/pathRequest.h"
 #include "../reservable.h"
-#include "../terrainFacade.h"
+#include "../path/terrainFacade.h"
 #include "../types.h"
 
 #include <memory>

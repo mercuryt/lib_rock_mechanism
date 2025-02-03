@@ -4,7 +4,7 @@
 #include "reference.h"
 #include "simulation.h"
 #include "eventSchedule.hpp"
-#include "terrainFacade.h"
+#include "path/terrainFacade.h"
 #include "types.h"
 
 class EatObjective;
@@ -30,7 +30,7 @@ public:
 	void notHungry(Area& area);
 	void setNeedsFood(Area& area);
 	void unschedule();
-	void setObjective(EatObjective& objective); 
+	void setObjective(EatObjective& objective);
 	[[nodiscard]] bool needsFood() const;
 	[[nodiscard]] Mass massFoodForBodyMass(Area& area) const;
 	[[nodiscard]] Mass getMassFoodRequested() const;

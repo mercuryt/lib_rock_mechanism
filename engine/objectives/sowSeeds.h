@@ -1,7 +1,7 @@
 #pragma once
 #include "../objective.h"
-#include "../pathRequest.h"
-#include "../terrainFacade.h"
+#include "../path/pathRequest.h"
+#include "../path/terrainFacade.h"
 #include "../eventSchedule.hpp"
 #include "../config.h"
 #include "../types.h"

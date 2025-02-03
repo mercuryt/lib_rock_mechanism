@@ -3,10 +3,10 @@
 #include "../area.h"
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"
-#include "../terrainFacade.hpp"
+#include "../path/terrainFacade.hpp"
 #include "../reference.h"
 #include "../types.h"
-#include "../pathRequest.h"
+#include "../path/pathRequest.h"
 DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, const ActorIndex& actorIndex) :
 	m_digObjective(digObjective)
 {

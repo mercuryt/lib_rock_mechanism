@@ -5,7 +5,7 @@
 #include "../items/items.h"
 #include "../plants.h"
 #include "../hasShapes.hpp"
-#include "../terrainFacade.hpp"
+#include "../path/terrainFacade.hpp"
 
 // Drink Threaded Task.
 DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, const ActorIndex& actorIndex) :

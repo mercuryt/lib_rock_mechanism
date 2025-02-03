@@ -1,7 +1,7 @@
 #pragma once
 #include "../objective.h"
-#include "../terrainFacade.h"
-#include "../pathRequest.h"
+#include "../path/terrainFacade.h"
+#include "../path/pathRequest.h"
 #include "../types.h"
 
 struct DeserializationMemo;

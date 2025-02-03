@@ -6,13 +6,13 @@
 #include "../types.h"
 #include "../simulation.h"
 #include "../util.h"
-#include "../pathRequest.h"
+#include "../path/pathRequest.h"
 #include "../blocks/blocks.h"
 #include "../portables.hpp"
 #include "config.h"
 #include "eventSchedule.h"
 #include "items/items.h"
-#include "terrainFacade.h"
+#include "path/terrainFacade.h"
 #include <ranges>
 Speed Actors::move_getIndividualSpeedWithAddedMass(const ActorIndex& index, const Mass& mass) const
 {

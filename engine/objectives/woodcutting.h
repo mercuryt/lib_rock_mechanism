@@ -1,6 +1,6 @@
 #pragma once
 #include "../objective.h"
-#include "../pathRequest.h"
+#include "../path/pathRequest.h"
 #include "../vectorContainers.h"
 #include "index.h"
 class Area;
