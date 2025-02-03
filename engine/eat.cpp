@@ -5,7 +5,7 @@
 #include "itemType.h"
 #include "objective.h"
 #include "area.h"
-#include "terrainFacade.h"
+#include "path/terrainFacade.h"
 #include "types.h"
 #include "util.h"
 #include "simulation.h"
@@ -20,11 +20,11 @@ void HungerEvent::execute(Simulation&, Area* area)
 {
 	area->getActors().m_mustEat[m_actor].get()->setNeedsFood(*area);
 }
-void HungerEvent::clearReferences(Simulation&, Area* area) 
-{ 
-	area->getActors().m_mustEat[m_actor].get()->m_hungerEvent.clearPointer(); 
+void HungerEvent::clearReferences(Simulation&, Area* area)
+{
+	area->getActors().m_mustEat[m_actor].get()->m_hungerEvent.clearPointer();
 }
-MustEat::MustEat(Area& area, const ActorIndex& a) : 
+MustEat::MustEat(Area& area, const ActorIndex& a) :
 	m_hungerEvent(area.m_eventSchedule)
 {
 	m_actor.setIndex(a, area.getActors().m_referenceData);
@@ -35,7 +35,7 @@ void MustEat::scheduleHungerEvent(Area& area)
 	Step eatFrequency = AnimalSpecies::getStepsEatFrequency(area.getActors().getSpecies(m_actor.getIndex(referenceData)));
 	m_hungerEvent.schedule(area, eatFrequency, m_actor.getIndex(referenceData));
 }
-MustEat::MustEat(Area& area, const Json& data, const ActorIndex& actor, AnimalSpeciesId species) : 
+MustEat::MustEat(Area& area, const Json& data, const ActorIndex& actor, AnimalSpeciesId species) :
 	m_hungerEvent(area.m_eventSchedule), m_massFoodRequested(data["massFoodRequested"].get<Mass>())
 {
 	m_actor.setIndex(actor, area.getActors().m_referenceData);
@@ -202,7 +202,7 @@ uint32_t MustEat::getMinimumAcceptableDesire(Area& area) const
 			if(i == maxRankedEatDesire && !area.getActors().isSentient(m_actor.getIndex(referenceData)) )
 				return maxRankedEatDesire - 1;
 			return maxRankedEatDesire - i;
-		}	
+		}
 	}
 	return 0;
 }

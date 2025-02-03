@@ -4,7 +4,7 @@
 #include "../random.h"
 #include "../config.h"
 #include "../simulation.h"
-#include "../terrainFacade.hpp"
+#include "../path/terrainFacade.hpp"
 #include "../actors/actors.h"
 #include "../types.h"
 // PathRequest

@@ -3,7 +3,7 @@
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"
 #include "../area.h"
-#include "../terrainFacade.hpp"
+#include "../path/terrainFacade.hpp"
 CraftPathRequest::CraftPathRequest(Area& area, CraftObjective& co, const ActorIndex& actorIndex) :
 	m_craftObjective(co)
 {

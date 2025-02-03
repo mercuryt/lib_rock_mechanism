@@ -2,7 +2,7 @@
 
 #include "../types.h"
 #include "../objective.h"
-#include "../pathRequest.h"
+#include "../path/pathRequest.h"
 #include "../config.h"
 
 class Area;

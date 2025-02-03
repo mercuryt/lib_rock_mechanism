@@ -11,7 +11,7 @@
 #include "reservable.h"
 #include "simulation.h"
 #include "stocks.h"
-#include "terrainFacade.h"
+#include "path/terrainFacade.h"
 #include "types.h"
 #include "itemType.h"
 #include "util.h"

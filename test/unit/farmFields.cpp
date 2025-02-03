@@ -21,9 +21,9 @@
 #include "../../engine/itemType.h"
 #include "../../engine/materialType.h"
 #include "../../engine/types.h"
-#include "designations.h"
-#include "objectives/wait.h"
-#include "terrainFacade.h"
+#include "../../engine/designations.h"
+#include "../../engine/objectives/wait.h"
+#include "../../engine/path/terrainFacade.h"
 #include <memory>
 TEST_CASE("sow")
 {

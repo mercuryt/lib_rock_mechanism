@@ -13,7 +13,7 @@
 #include "../items/items.h"
 #include "../types.h"
 #include "../plants.h"
-#include "../terrainFacade.hpp"
+#include "../path/terrainFacade.hpp"
 
 #include <memory>
 GivePlantsFluidEvent::GivePlantsFluidEvent(const Step& delay, Area& area, GivePlantsFluidObjective& gpfo, const ActorIndex& actor, const Step start) :

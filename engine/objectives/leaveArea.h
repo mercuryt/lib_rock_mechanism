@@ -1,7 +1,7 @@
 #pragma once
 #include "config.h"
 #include "objective.h"
-#include "pathRequest.h"
+#include "path/pathRequest.h"
 struct DeserializationMemo;
 class LeaveAreaPathRequest;
 struct FindPathResult;

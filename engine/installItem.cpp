@@ -4,7 +4,7 @@
 #include "deserializationMemo.h"
 #include "items/items.h"
 #include "reference.h"
-#include "terrainFacade.h"
+#include "path/terrainFacade.h"
 
 // Project.
 InstallItemProject::InstallItemProject(Area& area, const ItemReference& i, const BlockIndex& l, const Facing4& facing, const FactionId& faction) :

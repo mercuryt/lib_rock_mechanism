@@ -3,7 +3,7 @@
 #include "../simulation.h"
 #include "../actors/actors.h"
 #include "../hasShapes.hpp"
-#include "../terrainFacade.hpp"
+#include "../path/terrainFacade.hpp"
 
 LeaveAreaObjective::LeaveAreaObjective(Priority priority) :
 	Objective(priority) { }

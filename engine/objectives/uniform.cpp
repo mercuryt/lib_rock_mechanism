@@ -3,7 +3,7 @@
 #include "../area.h"
 #include "../blocks/blocks.h"
 #include "../items/items.h"
-#include "../terrainFacade.hpp"
+#include "../path/terrainFacade.hpp"
 #include "../types.h"
 // Equip uniform.
 UniformPathRequest::UniformPathRequest(Area& area, UniformObjective& objective, const ActorIndex& actorIndex) :

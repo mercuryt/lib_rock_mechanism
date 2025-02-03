@@ -3,7 +3,7 @@
 #include "../objective.h"
 #include "../config.h"
 #include "../eventSchedule.hpp"
-#include "../pathRequest.h"
+#include "../path/pathRequest.h"
 #include "../types.h"
 
 struct DeserializationMemo;

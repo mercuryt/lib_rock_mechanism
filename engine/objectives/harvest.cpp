@@ -8,8 +8,8 @@
 #include "../blocks/blocks.h"
 #include "../plants.h"
 #include "../hasShapes.hpp"
-#include "../terrainFacade.hpp"
-#include "../pathRequest.h"
+#include "../path/terrainFacade.hpp"
+#include "../path/pathRequest.h"
 // Event.
 HarvestEvent::HarvestEvent(const Step& delay, Area& area, HarvestObjective& ho, const ActorIndex& actor, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_harvestObjective(ho)

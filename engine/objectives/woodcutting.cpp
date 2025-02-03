@@ -5,7 +5,7 @@
 #include "../blocks/blocks.h"
 #include "../reference.h"
 #include "../types.h"
-#include "../terrainFacade.hpp"
+#include "../path/terrainFacade.hpp"
 WoodCuttingPathRequest::WoodCuttingPathRequest(Area& area, WoodCuttingObjective& woodCuttingObjective, const ActorIndex& actorIndex) :
 	m_woodCuttingObjective(woodCuttingObjective)
 {

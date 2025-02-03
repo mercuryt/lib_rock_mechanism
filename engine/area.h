@@ -17,7 +17,7 @@
 #include "woodcutting.h"
 #include "stocks.h"
 #include "fluidSource.h"
-#include "terrainFacade.h"
+#include "path/terrainFacade.h"
 #include "octTree.h"
 #include "opacityFacade.h"
 #include "visionRequests.h"

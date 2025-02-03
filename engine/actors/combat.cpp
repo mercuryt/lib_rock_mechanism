@@ -14,7 +14,7 @@
 #include "../items/items.h"
 #include "../hasShapes.hpp"
 #include "../reference.h"
-#include "../terrainFacade.hpp"
+#include "../path/terrainFacade.hpp"
 
 #include <cstdint>
 #include <sys/types.h>

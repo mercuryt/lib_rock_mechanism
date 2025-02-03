@@ -4,7 +4,7 @@
 #include "../objective.h"
 #include "../simulation.h"
 #include "../area.h"
-#include "../terrainFacade.hpp"
+#include "../path/terrainFacade.hpp"
 #include "../actors/actors.h"
 #include "../types.h"
 GoToObjective::GoToObjective(const Json& data, DeserializationMemo& deserializationMemo) :

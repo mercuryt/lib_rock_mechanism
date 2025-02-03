@@ -4,7 +4,7 @@
 #include "../farmFields.h"
 #include "../simulation.h"
 #include "../hasShapes.hpp"
-#include "../terrainFacade.hpp"
+#include "../path/terrainFacade.hpp"
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"
 #include "../designations.h"

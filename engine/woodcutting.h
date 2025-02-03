@@ -5,8 +5,8 @@
 #include "input.h"
 #include "objective.h"
 #include "project.h"
-#include "pathRequest.h"
-#include "terrainFacade.h"
+#include "path/pathRequest.h"
+#include "path/terrainFacade.h"
 #include "types.h"
 #include <memory>
 

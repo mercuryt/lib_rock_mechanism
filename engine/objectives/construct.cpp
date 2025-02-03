@@ -1,7 +1,7 @@
 #include "construct.h"
 #include "../area.h"
 #include "../construct.h"
-#include "../terrainFacade.hpp"
+#include "../path/terrainFacade.hpp"
 #include "../hasShapes.hpp"
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"

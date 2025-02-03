@@ -3,7 +3,7 @@
 #include "../types.h"
 #include "actors/actors.h"
 #include "blocks/blocks.h"
-#include "../terrainFacade.hpp"
+#include "../path/terrainFacade.hpp"
 // Path Request.
 SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so, const ActorIndex& actorIndex) :
 	m_sleepObjective(so)
