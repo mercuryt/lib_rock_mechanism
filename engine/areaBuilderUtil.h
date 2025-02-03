@@ -64,22 +64,22 @@ namespace areaBuilderUtil
 	{
 		Blocks& blocks = area.getBlocks();
 		Point3D highCoordinates = cuboid.m_highest;
-		for(DistanceInBlocks z = DistanceInBlocks::create(0); z != cuboid.m_highest.z + 2; ++ z)
+		for(DistanceInBlocks z = DistanceInBlocks::create(0); z != cuboid.m_highest.z() + 2; ++ z)
 		{
-			for(DistanceInBlocks x = DistanceInBlocks::create(0); x != highCoordinates.x + 1; ++x)
+			for(DistanceInBlocks x = DistanceInBlocks::create(0); x != highCoordinates.x() + 1; ++x)
 			{
 				blocks.solid_set(blocks.getIndex(x, DistanceInBlocks::create(0), z), materialType, false);
 				blocks.solid_set(blocks.getIndex(x, blocks.m_sizeY - 1, z), materialType, false);
 			}
-			for(DistanceInBlocks y = DistanceInBlocks::create(0); y != highCoordinates.y + 1; ++y)
+			for(DistanceInBlocks y = DistanceInBlocks::create(0); y != highCoordinates.y() + 1; ++y)
 			{
 				blocks.solid_set(blocks.getIndex(DistanceInBlocks::create(0), y, z), materialType, false);
 				blocks.solid_set(blocks.getIndex(blocks.m_sizeX - 1, y, z), materialType, false);
 			}
 		}
-		for(DistanceInBlocks x = DistanceInBlocks::create(0); x != highCoordinates.x + 1; ++x)
-			for(DistanceInBlocks y = DistanceInBlocks::create(0); y != highCoordinates.y + 1; ++y)
-				blocks.blockFeature_construct(blocks.getIndex(x, y, highCoordinates.z + 1), BlockFeatureType::floor, materialType);
+		for(DistanceInBlocks x = DistanceInBlocks::create(0); x != highCoordinates.x() + 1; ++x)
+			for(DistanceInBlocks y = DistanceInBlocks::create(0); y != highCoordinates.y() + 1; ++y)
+				blocks.blockFeature_construct(blocks.getIndex(x, y, highCoordinates.z() + 1), BlockFeatureType::floor, materialType);
 	}
 	inline void setFullFluidCuboid(Area& area, const BlockIndex& low, const BlockIndex& high, FluidTypeId fluidType)
 	{

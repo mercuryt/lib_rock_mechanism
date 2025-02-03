@@ -7,7 +7,7 @@ void CuboidSet::create(const Cuboid& cuboid)
 		assert(!cuboid.overlapsWith(existing));
 		if(existing.isTouching(cuboid) && existing.canMerge(cuboid))
 		{
-			merge(cuboid, existing);
+			mergeInternal(cuboid, existing);
 			return;
 		}
 	}
@@ -49,7 +49,12 @@ void CuboidSet::remove(const Cuboid& cuboid)
 		for(const Cuboid& splitResult : toSplitCuboid.getChildrenWhenSplitByCuboid(cuboid))
 			create(splitResult);
 }
-void CuboidSet::merge(const Cuboid& absorbed, const Cuboid& absorber)
+void CuboidSet::addSet(const CuboidSet& other)
+{
+	for(const Cuboid& cuboid : other.getCuboids())
+		add(cuboid);
+}
+void CuboidSet::mergeInternal(const Cuboid& absorbed, const Cuboid& absorber)
 {
 	assert(absorbed.canMerge(absorber));
 	assert(absorber.canMerge(absorbed));
@@ -96,6 +101,13 @@ SmallSet<BlockIndex> CuboidSet::toBlockSet(const Blocks& blocks) const
 	}
 	return output;
 }
+bool CuboidSet::isAdjacent(const Cuboid& cuboid) const
+{
+	for(const auto& c : m_cuboids)
+		if(c.isTouching(cuboid))
+			return true;
+	return false;
+}
 CuboidSetConstIterator::CuboidSetConstIterator(const Blocks& blocks, const CuboidSet& cuboidSet, bool end) :
 	m_blocks(blocks),
 	m_cuboidSet(cuboidSet),
@@ -119,19 +131,47 @@ CuboidSetConstIterator CuboidSetConstIterator::operator++(int)
 	++(*this);
 	return output;
 }
-void CuboidSetWithBoundingBox::remove(const Cuboid& cuboid)
+SmallSet<Cuboid> CuboidSetWithBoundingBoxAdjacent::removeAndReturnNoLongerAdjacentCuboids(const Blocks& blocks, const BlockIndex& block) { return removeAndReturnNoLongerAdjacentCuboids({blocks, block, block}); }
+SmallSet<Cuboid> CuboidSetWithBoundingBoxAdjacent::removeAndReturnNoLongerAdjacentCuboids(const Cuboid& cuboid)
 {
 	bool changesBoundingBox = cuboid.contains(m_boundingBox.m_highest) || cuboid.contains(m_boundingBox.m_lowest);
-	CuboidSet::remove(cuboid);
+	SmallSet<Cuboid> toSplit;
+	SmallSet<Cuboid> newlySplit;
+	for(const Cuboid& existing : m_cuboids)
+		if(existing.overlapsWith(cuboid))
+			toSplit.insert(existing);
+	for(const Cuboid& toSplitCuboid : toSplit)
+		m_cuboids.erase(toSplitCuboid);
+	for(const Cuboid& toSplitCuboid : toSplit)
+		for(const Cuboid& splitResult : toSplitCuboid.getChildrenWhenSplitByCuboid(cuboid))
+			if(CuboidSet::isAdjacent(splitResult))
+				create(splitResult);
+			else
+				newlySplit.insert(splitResult);
 	if(changesBoundingBox)
 	{
 		m_boundingBox.clear();
 		for(const Cuboid& otherCuboid : getCuboids())
 			m_boundingBox.maybeExpand(otherCuboid);
 	}
+	return newlySplit;
 }
-void CuboidSetWithBoundingBox::add(const Cuboid& cuboid)
+void CuboidSetWithBoundingBoxAdjacent::addAndExtend(const Blocks& blocks, const BlockIndex& block) { return addAndExtend({blocks, block, block}); }
+void CuboidSetWithBoundingBoxAdjacent::addAndExtend(const Cuboid& cuboid)
 {
+	assert(CuboidSet::isAdjacent(cuboid));
 	CuboidSet::add(cuboid);
 	m_boundingBox.maybeExpand(cuboid);
+}
+bool CuboidSetWithBoundingBoxAdjacent::isAdjacent(const CuboidSetWithBoundingBoxAdjacent& cuboidSet) const
+{
+	// If the bounding boxes don't touch then no need to check the actual cuboids.
+	if(!cuboidSet.getBoundingBox().overlapsWith(getBoundingBox()))
+		return false;
+	// Check each cubid in this set against each in the other set.
+	for(const auto& cuboid : m_cuboids)
+		for(const auto& otherCuboid : cuboidSet.m_cuboids)
+			if(cuboid.isTouching(otherCuboid))
+				return true;
+	return false;
 }

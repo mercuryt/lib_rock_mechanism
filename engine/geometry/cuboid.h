@@ -29,6 +29,7 @@ public:
 	void shift(const Facing6& direction, const DistanceInBlocks& distance);
 	void setMaxZ(const DistanceInBlocks& distance);
 	void maybeExpand(const Cuboid& other);
+	[[nodiscard]] Cuboid inflateAdd(const DistanceInBlocks& distance) const;
 	[[nodiscard]] SmallSet<BlockIndex> toSet(const Blocks& blocks) const;
 	[[nodiscard]] bool contains(const Blocks& blocks, const BlockIndex& block) const;
 	[[nodiscard]] bool contains(const Point3D& point) const;

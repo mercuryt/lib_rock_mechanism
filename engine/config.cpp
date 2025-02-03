@@ -106,6 +106,7 @@ void Config::load()
 	data["maxRangeToSearchForWoodCuttingDesignations"].get_to(maxRangeToSearchForWoodCuttingDesignations);
 	data["maxRangeToSearchForHorticultureDesignations"].get_to(maxRangeToSearchForHorticultureDesignations);
 	data["maxRangeToSearchForUniformEquipment"].get_to(maxRangeToSearchForUniformEquipment);
+	data["maxSizeOfLongRangePathNode"].get_to(maxSizeOfLongRangePathNode);
 	data["maxSkillLevel"].get_to(maxSkillLevel);
 	data["maxStaminaPointsBase"].get_to(maxStaminaPointsBase);
 	data["maxWorkersForStockPileProject"].get_to(maxWorkersForStockPileProject);

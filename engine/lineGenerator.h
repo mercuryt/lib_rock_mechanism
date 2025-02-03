@@ -5,7 +5,7 @@ void Bresenham3D(int x1, int y1, int z1, int x2, int y2, int z2, Action&& action
 template<typename Action>
 void forEachOnLine(Point3D current, Point3D end, Action&& action)
 {
-	Bresenham3D(current.x.get(), current.y.get(), current.z.get(), end.x.get(), end.y.get(), end.z.get(), action);
+	Bresenham3D(current.x().get(), current.y().get(), current.z().get(), end.x().get(), end.y().get(), end.z().get(), action);
 }
 template<typename Action>
 void Bresenham3D(int x1, int y1, int z1, int x2, int y2, int z2, Action&& action)
@@ -28,7 +28,7 @@ void Bresenham3D(int x1, int y1, int z1, int x2, int y2, int z2, Action&& action
 		zs = 1;
 	else
 		zs = -1;
- 
+
 	// Driving axis is X-axis"
 	if (dx >= dy && dx >= dz) {
 		int p1 = 2 * dy - dx;
@@ -48,7 +48,7 @@ void Bresenham3D(int x1, int y1, int z1, int x2, int y2, int z2, Action&& action
 			if(!action( x1, y1, z1 ))
 				return;
 		}
- 
+
 		// Driving axis is Y-axis"
 	}
 	else if (dy >= dx && dy >= dz) {
@@ -69,7 +69,7 @@ void Bresenham3D(int x1, int y1, int z1, int x2, int y2, int z2, Action&& action
 			if(!action( x1, y1, z1 ))
 				return;
 		}
- 
+
 		// Driving axis is Z-axis"
 	}
 	else {

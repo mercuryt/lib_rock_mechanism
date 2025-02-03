@@ -405,25 +405,25 @@ void AreaHasVisionCuboids::splitAt(Area& area, VisionCuboid& visionCuboid, const
 	const Point3D& highCoordinates = visionCuboid.m_cuboid.m_highest;
 	const Point3D& lowCoordinates = visionCuboid.m_cuboid.m_lowest;
 	// Blocks with a lower Z split
-	if(splitCoordinates.z != lowCoordinates.z)
-		newCuboids.emplace_back(Point3D(highCoordinates.x, highCoordinates.y, splitCoordinates.z - 1), visionCuboid.m_cuboid.m_lowest);
-	// Blocks with a higher Z.
-	if(splitCoordinates.z != highCoordinates.z)
-		newCuboids.emplace_back(visionCuboid.m_cuboid.m_highest, Point3D(lowCoordinates.x, lowCoordinates.y, splitCoordinates.z + 1));
-	// All blocks above and below are done, work only on splitCoordinate.z level.
-	// Block with a lower Y.
-	if(splitCoordinates.y != lowCoordinates.y)
-		newCuboids.emplace_back(Point3D(highCoordinates.x, splitCoordinates.y - 1, splitCoordinates.z), Point3D(lowCoordinates.x, lowCoordinates.y, splitCoordinates.z));
-	// Blocks with a higher Y.
-	if(splitCoordinates.y != highCoordinates.y)
-		newCuboids.emplace_back(Point3D(highCoordinates.x, highCoordinates.y, splitCoordinates.z), Point3D(lowCoordinates.x, splitCoordinates.y + 1, splitCoordinates.z));
-	// All blocks with higher or lower y are done, work only on splitCoordinate.y column.
-	// Blocks with a lower X splt.
-	if(splitCoordinates.x != lowCoordinates.x)
-		newCuboids.emplace_back(Point3D(splitCoordinates.x - 1, splitCoordinates.y, splitCoordinates.z), Point3D(lowCoordinates.x, splitCoordinates.y, splitCoordinates.z));
-	// Blocks with a higher X split.
-	if(splitCoordinates.x != highCoordinates.x)
-		newCuboids.emplace_back(Point3D(highCoordinates.x, splitCoordinates.y, splitCoordinates.z), Point3D(splitCoordinates.x + 1, splitCoordinates.y, splitCoordinates.z));
+	if(splitCoordinates.z() != lowCoordinates.z())
+		newCuboids.emplace_back(Point3D(highCoordinates.x(), highCoordinates.y(), splitCoordinates.z() - 1), visionCuboid.m_cuboid.m_lowest);
+	// Blocks with a higher Z().
+	if(splitCoordinates.z() != highCoordinates.z())
+		newCuboids.emplace_back(visionCuboid.m_cuboid.m_highest, Point3D(lowCoordinates.x(), lowCoordinates.y(), splitCoordinates.z() + 1));
+	// All blocks above and below are done, work only on splitCoordinate.z() level.
+	// Block with a lower Y().
+	if(splitCoordinates.y() != lowCoordinates.y())
+		newCuboids.emplace_back(Point3D(highCoordinates.x(), splitCoordinates.y() - 1, splitCoordinates.z()), Point3D(lowCoordinates.x(), lowCoordinates.y(), splitCoordinates.z()));
+	// Blocks with a higher Y().
+	if(splitCoordinates.y() != highCoordinates.y())
+		newCuboids.emplace_back(Point3D(highCoordinates.x(), highCoordinates.y(), splitCoordinates.z()), Point3D(lowCoordinates.x(), splitCoordinates.y() + 1, splitCoordinates.z()));
+	// All blocks with higher or lower y() are done, work only on splitCoordinate.y() column.
+	// Blocks with a lower X() splt.
+	if(splitCoordinates.x() != lowCoordinates.x())
+		newCuboids.emplace_back(Point3D(splitCoordinates.x() - 1, splitCoordinates.y(), splitCoordinates.z()), Point3D(lowCoordinates.x(), splitCoordinates.y(), splitCoordinates.z()));
+	// Blocks with a higher X() split.
+	if(splitCoordinates.x() != highCoordinates.x())
+		newCuboids.emplace_back(Point3D(highCoordinates.x(), splitCoordinates.y(), splitCoordinates.z()), Point3D(splitCoordinates.x() + 1, splitCoordinates.y(), splitCoordinates.z()));
 	for(Cuboid& cuboid : newCuboids)
 		createOrExtend(area, cuboid);
 	auto cuboids = area.m_visionCuboids;
@@ -443,10 +443,10 @@ void AreaHasVisionCuboids::splitBelow(Area& area, VisionCuboid& visionCuboid, co
 	const Point3D& lowCoordinates = visionCuboid.m_cuboid.m_lowest;
 	DistanceInBlocks splitZ = blocks.getZ(split);
 	// Blocks with a lower Z.
-	if(splitZ != visionCuboid.m_cuboid.m_lowest.z)
-		newCuboids.emplace_back(Point3D(highCoordinates.x, highCoordinates.y, splitZ - 1), visionCuboid.m_cuboid.m_lowest);
+	if(splitZ != visionCuboid.m_cuboid.m_lowest.z())
+		newCuboids.emplace_back(Point3D(highCoordinates.x(), highCoordinates.y(), splitZ - 1), visionCuboid.m_cuboid.m_lowest);
 	// Blocks with a higher Z or equal Z.
-	newCuboids.emplace_back(visionCuboid.m_cuboid.m_highest, Point3D(lowCoordinates.x, lowCoordinates.y, splitZ));
+	newCuboids.emplace_back(visionCuboid.m_cuboid.m_highest, Point3D(lowCoordinates.x(), lowCoordinates.y(), splitZ));
 	for(Cuboid& cuboid : newCuboids)
 		createOrExtend(area, cuboid);
 }
@@ -461,23 +461,23 @@ void AreaHasVisionCuboids::splitAtCuboid(Area& area, VisionCuboid& visionCuboid,
 	splitLowest.clampLow(cuboid.m_lowest);
 	std::vector<Cuboid> newCuboids;
 	// Split off group above.
-	if(cuboid.m_highest.z > splitHighest.z)
-		newCuboids.emplace_back(cuboid.m_highest, Point3D(cuboid.m_lowest.x, cuboid.m_lowest.y, splitHighest.z + 1));
+	if(cuboid.m_highest.z() > splitHighest.z())
+		newCuboids.emplace_back(cuboid.m_highest, Point3D(cuboid.m_lowest.x(), cuboid.m_lowest.y(), splitHighest.z() + 1));
 	// Split off group below.
-	if(cuboid.m_lowest.z < splitLowest.z)
-		newCuboids.emplace_back(Point3D(cuboid.m_highest.x, cuboid.m_highest.y, splitLowest.z - 1), cuboid.m_lowest);
-	// Split off group with higher Y
-	if(cuboid.m_highest.y > splitHighest.y)
-		newCuboids.emplace_back(Point3D(cuboid.m_highest.x, cuboid.m_highest.y, splitHighest.z), Point3D(cuboid.m_lowest.x, splitHighest.y + 1, splitLowest.z));
-	// Split off group with lower Y
-	if(cuboid.m_lowest.y < splitLowest.y)
-		newCuboids.emplace_back(Point3D(cuboid.m_highest.x, splitLowest.y - 1, splitHighest.z), Point3D(cuboid.m_lowest.x, cuboid.m_lowest.y, splitLowest.z));
-	// Split off group with higher X
-	if(cuboid.m_highest.x > splitHighest.x)
-		newCuboids.emplace_back(Point3D(cuboid.m_highest.x, splitHighest.y, splitHighest.z), Point3D(splitHighest.x + 1, splitLowest.y, splitLowest.z));
-	// Split off group with lower X
-	if(cuboid.m_lowest.x < splitLowest.x)
-		newCuboids.emplace_back(Point3D(splitLowest.x - 1, splitHighest.y, splitHighest.z), Point3D(cuboid.m_lowest.x, splitLowest.y, splitLowest.z));
+	if(cuboid.m_lowest.z() < splitLowest.z())
+		newCuboids.emplace_back(Point3D(cuboid.m_highest.x(), cuboid.m_highest.y(), splitLowest.z() - 1), cuboid.m_lowest);
+	// Split off group with higher Y()
+	if(cuboid.m_highest.y() > splitHighest.y())
+		newCuboids.emplace_back(Point3D(cuboid.m_highest.x(), cuboid.m_highest.y(), splitHighest.z()), Point3D(cuboid.m_lowest.x(), splitHighest.y() + 1, splitLowest.z()));
+	// Split off group with lower Y()
+	if(cuboid.m_lowest.y() < splitLowest.y())
+		newCuboids.emplace_back(Point3D(cuboid.m_highest.x(), splitLowest.y() - 1, splitHighest.z()), Point3D(cuboid.m_lowest.x(), cuboid.m_lowest.y(), splitLowest.z()));
+	// Split off group with higher X()
+	if(cuboid.m_highest.x() > splitHighest.x())
+		newCuboids.emplace_back(Point3D(cuboid.m_highest.x(), splitHighest.y(), splitHighest.z()), Point3D(splitHighest.x() + 1, splitLowest.y(), splitLowest.z()));
+	// Split off group with lower X()
+	if(cuboid.m_lowest.x() < splitLowest.x())
+		newCuboids.emplace_back(Point3D(splitLowest.x() - 1, splitHighest.y(), splitHighest.z()), Point3D(cuboid.m_lowest.x(), splitLowest.y(), splitLowest.z()));
 	setDestroy(visionCuboid);
 	for(const Cuboid& cuboid : newCuboids)
 		createOrExtend(area, cuboid);
@@ -497,22 +497,22 @@ BlockIndex AreaHasVisionCuboids::findLowPointForCuboidStartingFromHighPoint(Area
 {
 	Blocks& blocks = area.getBlocks();
 	const Point3D highestCoordinates = blocks.getCoordinates(highest);
-	for(auto z = highestCoordinates.z; true; --z)
+	for(auto z = highestCoordinates.z(); true; --z)
 	{
-		for(auto y = highestCoordinates.y; true; --y)
+		for(auto y = highestCoordinates.y(); true; --y)
 		{
-			for(auto x = highestCoordinates.x; true; --x)
+			for(auto x = highestCoordinates.x(); true; --x)
 			{
 				const BlockIndex& index = blocks.getIndex(x, y, z);
 				if(!blocks.canSeeThrough(index))
 				{
-					if(z != highestCoordinates.z)
+					if(z != highestCoordinates.z())
 					{
 						++z;
 						x = blocks.m_sizeX - 1;
 						y = blocks.m_sizeY - 1;
 					}
-					else if(y != highestCoordinates.y)
+					else if(y != highestCoordinates.y())
 					{
 						++y;
 						x = blocks.m_sizeX - 1;

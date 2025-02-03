@@ -1,5 +1,5 @@
 #pragma once
-#include "../geometry/cuboid.h"
+#include "cuboid.h"
 #include "../index.h"
 
 class Blocks;
@@ -29,10 +29,12 @@ struct CuboidSetConstView
 };
 class CuboidSet
 {
+protected:
 	SmallSet<Cuboid> m_cuboids;
 	//
 	void create(const Cuboid& cuboid);
-	void merge(const Cuboid& absorbed, const Cuboid& absorber);
+	// For merging contained cuboids.
+	void mergeInternal(const Cuboid& absorbed, const Cuboid& absorber);
 public:
 	void add(const Point3D& point);
 	void remove(const Point3D& point);
@@ -41,6 +43,8 @@ public:
 	void add(const Cuboid& cuboid);
 	void remove(const Cuboid& cuboid);
 	void clear() { m_cuboids.clear(); }
+	// For merging with other cuboid sets.
+	void addSet(const CuboidSet& other);
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] uint size() const;
 	[[nodiscard]] bool contains(const Blocks& blocks, const BlockIndex& block) const;
@@ -48,15 +52,23 @@ public:
 	[[nodiscard]] CuboidSetConstView getView(const Blocks& blocks) const { return {blocks, *this}; }
 	[[nodiscard]] const SmallSet<Cuboid>& getCuboids() const { return m_cuboids; }
 	[[nodiscard]] SmallSet<BlockIndex> toBlockSet(const Blocks& blocks) const;
+	[[nodiscard]] bool isAdjacent(const Cuboid& cuboid) const;
 	friend class CuboidSetConstIterator;
 	friend struct CuboidSetConstView;
 };
-class CuboidSetWithBoundingBox : public CuboidSet
+class CuboidSetWithBoundingBoxAdjacent : public CuboidSet
 {
 	Cuboid m_boundingBox;
 public:
-	void add(const Cuboid& cuboid);
-	void remove(const Cuboid& cuboid);
+	void add(const Cuboid& cuboid) = delete;
+	void add(const Blocks& blocks, const BlockIndex& block) = delete;
+	void remove(const Cuboid& cuboid) = delete;
+	void remove(const Blocks& blocks, const BlockIndex& block) = delete;
+	void addAndExtend(const Cuboid& cuboid);
+	void addAndExtend(const Blocks& blocks, const BlockIndex& block);
+	[[nodiscard]] SmallSet<Cuboid> removeAndReturnNoLongerAdjacentCuboids(const Cuboid& cuboid);
+	[[nodiscard]] SmallSet<Cuboid> removeAndReturnNoLongerAdjacentCuboids(const Blocks& blocks, const BlockIndex& block);
 	[[nodiscard]] bool contains(const Point3D& point) const { return m_boundingBox.contains(point) ? CuboidSet::contains(point) : false; }
 	[[nodiscard]] const Cuboid& getBoundingBox() const { return m_boundingBox; }
+	[[nodiscard]] bool isAdjacent(const CuboidSetWithBoundingBoxAdjacent& cuboid) const;
 };

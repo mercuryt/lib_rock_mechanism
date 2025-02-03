@@ -513,9 +513,9 @@ TEST_CASE("json")
 		REQUIRE(actors2.move_getDestination(dwarf2).exists());
 		BlockIndex block2 = static_cast<SowSeedsObjective&>(objective2).getBlock();
 		Point3D coordinates2 = blocks2.getCoordinates(block2);
-		REQUIRE(coordinates2.x == coordinates1.x);
-		REQUIRE(coordinates2.y == coordinates1.y);
-		REQUIRE(coordinates2.z == coordinates1.z);
+		REQUIRE(coordinates2.x() == coordinates1.x());
+		REQUIRE(coordinates2.y() == coordinates1.y());
+		REQUIRE(coordinates2.z() == coordinates1.z());
 	}
 	SUBCASE("harvest")
 	{

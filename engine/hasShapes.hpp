@@ -320,5 +320,5 @@ void HasShapes<Derived, Index>::log(const Index& index) const
 		return;
 	}
 	Point3D coordinates = m_area.getBlocks().getCoordinates(m_location[index]);
-	std::cout << "[" << coordinates.x.get() << "," << coordinates.y.get() << "," << coordinates.z.get() << "]";
+	std::cout << "[" << coordinates.x().get() << "," << coordinates.y().get() << "," << coordinates.z().get() << "]";
 }

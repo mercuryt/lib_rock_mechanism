@@ -1,6 +1,6 @@
 #include "../config.h"
 #include "cuboid.h"
-Vector3D Point3D::toVector3D() const { return {(int32_t)x.get(), (int32_t)y.get(), (int32_t)z.get()}; }
+Vector3D Point3D::toVector3D() const { return {(int32_t)x().get(), (int32_t)y().get(), (int32_t)z().get()}; }
 Facing4 Point3D::getFacingTwords(const Point3D& other) const
 {
 	double degrees = degreesFacingTwords(other);
@@ -37,27 +37,27 @@ Facing8 Point3D::getFacingTwordsIncludingDiagonal(const Point3D& other) const
 }
 bool Point3D::isInFrontOf(const Point3D& coordinates, const Facing4& facing) const
 {
-		switch(facing)
-		{
-			case Facing4::North:
-				return coordinates.y >= y;
-				break;
-			case Facing4::East:
-				return coordinates.x <= x;
-				break;
-			case Facing4::South:
-				return coordinates.y <= y;
-				break;
-			case Facing4::West:
-				return coordinates.x >= x;
-				break;
-			default:
-				assert(false);
-		}
+	switch(facing)
+	{
+		case Facing4::North:
+			return coordinates.y() >= y();
+			break;
+		case Facing4::East:
+			return coordinates.x() <= x();
+			break;
+		case Facing4::South:
+			return coordinates.y() <= y();
+			break;
+		case Facing4::West:
+			return coordinates.x() >= x();
+			break;
+		default:
+			assert(false);
+	}
 }
 double Point3D::degreesFacingTwords(const Point3D& other) const
 {
-	double x1 = x.get(), y1 = y.get(), x2 = other.x.get(), y2 = other.y.get();
+	double x1 = x().get(), y1 = y().get(), x2 = other.x().get(), y2 = other.y().get();
 	// Calculate the angle using atan2
 	double angleRadians = atan2(y2 - y1, x2 - x1);
 	// make negative angles positive by adding 6 radians.
@@ -68,7 +68,7 @@ double Point3D::degreesFacingTwords(const Point3D& other) const
 }
 void Point3D::operator+=(const Vector3D& other)
 {
-	x += other.x;
-	y += other.y;
-	z += other.z;
+	x() += other.x;
+	y() += other.y;
+	z() += other.z;
 }

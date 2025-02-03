@@ -94,6 +94,7 @@
 	"maxRangeToSearchForStockPiles": 40,
 	"maxRangeToSearchForWoodCuttingDesignations": 40,
 	"maxRangeToSearchForUniformEquipment": 40,
+	"maxSizeOfLongRangePathNode": 8,
 	"maxSkillLevel": 100,
 	"maxStaminaPointsBase": 100,
 	"maxWorkersForStockPileProject": 2,

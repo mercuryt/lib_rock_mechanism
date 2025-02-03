@@ -65,7 +65,7 @@ bool OpacityFacade::hasLineOfSight(const BlockIndex& fromIndex, Point3D fromCoor
 	Blocks& blocks = m_area.getBlocks();
 	bool result = true;
 	DistanceInBlocks previousZ;
-	DistanceInBlocks currentZ = fromCoords.z;
+	DistanceInBlocks currentZ = fromCoords.z();
 	forEachOnLine(fromCoords, toCoords, [&](int x, int y, int z){
 		previousIndex = currentIndex;
 		previousZ = currentZ;

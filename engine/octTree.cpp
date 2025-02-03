@@ -30,12 +30,12 @@ void OctTree::subdivide(OctTreeRoot& root)
 	assert(m_children.empty());
 	m_children = root.allocate(*this);
 	DistanceInBlocks quarterWidth = m_cube.halfWidth / 2;
-	DistanceInBlocks minX = m_cube.center.x - quarterWidth;
-	DistanceInBlocks maxX = m_cube.center.x + quarterWidth;
-	DistanceInBlocks minY = m_cube.center.y - quarterWidth;
-	DistanceInBlocks maxY = m_cube.center.y + quarterWidth;
-	DistanceInBlocks minZ = m_cube.center.z - quarterWidth;
-	DistanceInBlocks maxZ = m_cube.center.z + quarterWidth;
+	DistanceInBlocks minX = m_cube.center.x() - quarterWidth;
+	DistanceInBlocks maxX = m_cube.center.x() + quarterWidth;
+	DistanceInBlocks minY = m_cube.center.y() - quarterWidth;
+	DistanceInBlocks maxY = m_cube.center.y() + quarterWidth;
+	DistanceInBlocks minZ = m_cube.center.z() - quarterWidth;
+	DistanceInBlocks maxZ = m_cube.center.z() + quarterWidth;
 	root.m_data[m_children][0].m_cube = Cube({minX, minY, minZ}, quarterWidth);
 	root.m_data[m_children][1].m_cube = Cube({maxX, minY, minZ}, quarterWidth);
 	root.m_data[m_children][2].m_cube = Cube({minX, maxY, minZ}, quarterWidth);
@@ -89,18 +89,18 @@ void OctTree::updateVisionCuboid(OctTreeRoot& root, const Point3D& coordinates, 
 }
 uint8_t OctTree::getOctant(const Point3D& other)
 {
-	if(m_cube.center.z >= other.z)
+	if(m_cube.center.z() >= other.z())
 	{
-		if(m_cube.center.y >= other.y)
+		if(m_cube.center.y() >= other.y())
 		{
-			if(m_cube.center.x >= other.x)
+			if(m_cube.center.x() >= other.x())
 				return 0;
 			else
 				return 1;
 		}
 		else
 		{
-			if(m_cube.center.x >= other.x)
+			if(m_cube.center.x() >= other.x())
 				return 2;
 			else
 				return 3;
@@ -109,16 +109,16 @@ uint8_t OctTree::getOctant(const Point3D& other)
 	else
 	{
 
-		if(m_cube.center.y >= other.y)
+		if(m_cube.center.y() >= other.y())
 		{
-			if(m_cube.center.x >= other.x)
+			if(m_cube.center.x() >= other.x())
 				return 4;
 			else
 				return 5;
 		}
 		else
 		{
-			if(m_cube.center.x >= other.x)
+			if(m_cube.center.x() >= other.x())
 				return 6;
 			else
 				return 7;

@@ -35,12 +35,26 @@ public:
 			insert(*begin);
 	}
 	void insertNonunique(const T& value) { m_data.push_back(value); }
+	void maybeInsertAll(const This& other)
+	{
+		maybeInsertAll(other.begin(), other.end());
+	}
 	template<typename Iterator>
 	void maybeInsertAll(Iterator begin, Iterator end)
 	{
 		for(; begin != end; ++begin)
 			insertNonunique(*begin);
 		makeUnique();
+	}
+	void insertAll(const This& other)
+	{
+		insertAll(other.begin(), other.end());
+	}
+	template<typename Iterator>
+	void insertAll(Iterator begin, Iterator end)
+	{
+		for(; begin != end; ++begin)
+			insert(*begin);
 	}
 	void erase(const T& value)
 	{

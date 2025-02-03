@@ -188,12 +188,12 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::
 			const VisionCuboidIndex& visionCuboidIndex = m_area.m_visionCuboids.getIndexForBlock(block);
 			return {block, blocks.getCoordinates(block), visionCuboidIndex};
 		});
-	int minX = std::ranges::min_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.x; })->coordinates.x.get();
-	int maxX = std::ranges::max_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.x; })->coordinates.x.get();
-	int minY = std::ranges::min_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.y; })->coordinates.y.get();
-	int maxY = std::ranges::max_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.y; })->coordinates.y.get();
-	int minZ = std::ranges::min_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.z; })->coordinates.z.get();
-	int maxZ = std::ranges::max_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.z; })->coordinates.z.get();
+	int minX = std::ranges::min_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.x(); })->coordinates.x().get();
+	int maxX = std::ranges::max_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.x(); })->coordinates.x().get();
+	int minY = std::ranges::min_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.y(); })->coordinates.y().get();
+	int maxY = std::ranges::max_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.y(); })->coordinates.y().get();
+	int minZ = std::ranges::min_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.z(); })->coordinates.z().get();
+	int maxZ = std::ranges::max_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.z(); })->coordinates.z().get();
 	Cuboid cuboid(
 		{DistanceInBlocks::create(maxX), DistanceInBlocks::create(maxY), DistanceInBlocks::create(maxZ)},
 		{DistanceInBlocks::create(minX), DistanceInBlocks::create(minY), DistanceInBlocks::create(minZ)}

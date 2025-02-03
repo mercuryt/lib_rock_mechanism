@@ -118,6 +118,7 @@ namespace Config
 	inline DistanceInBlocks maxRangeToSearchForWoodCuttingDesignations;
 	inline DistanceInBlocks maxRangeToSearchForHorticultureDesignations;
 	inline DistanceInBlocks maxRangeToSearchForUniformEquipment;
+	inline uint8_t maxSizeOfLongRangePathNode;
 	inline uint32_t maxSkillLevel;
 	inline Stamina maxStaminaPointsBase;
 	inline Quantity maxWorkersForStockPileProject;
