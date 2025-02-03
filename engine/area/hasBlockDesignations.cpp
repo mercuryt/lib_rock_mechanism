@@ -51,6 +51,15 @@ bool AreaHasBlockDesignationsForFaction::empty(const BlockIndex& index) const
 			return true;
 	return false;
 }
+std::vector<BlockDesignation> AreaHasBlockDesignationsForFaction::getForBlock(const BlockIndex& index) const
+{
+	std::vector<BlockDesignation> output;
+	output.reserve(uint(BlockDesignation::BLOCK_DESIGNATION_MAX) / 2);
+	for(auto designation = BlockDesignation(0); designation != BlockDesignation::BLOCK_DESIGNATION_MAX; designation = BlockDesignation((uint)designation + 1))
+		if(check(index, designation))
+			output.push_back(designation);
+	return output;
+}
 Json AreaHasBlockDesignationsForFaction::toJson() const
 {
 	return m_designations;
@@ -76,7 +85,14 @@ const AreaHasBlockDesignationsForFaction& AreaHasBlockDesignations::maybeRegiste
 {
 	return const_cast<AreaHasBlockDesignations&>(*this).maybeRegisterAndGetForFaction(faction);
 }
-
+std::vector<std::pair<FactionId, BlockDesignation>> AreaHasBlockDesignations::getForBlock(const BlockIndex& block) const
+{
+	std::vector<std::pair<FactionId, BlockDesignation>> output;
+	for(const auto& [faction, forFaction] : m_data)
+		for(const auto& designation : forFaction->getForBlock(block))
+			output.emplace_back(faction, designation);
+	return output;
+}
 Json AreaHasBlockDesignations::toJson() const
 {
 	Json output;

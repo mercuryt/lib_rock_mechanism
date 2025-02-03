@@ -86,7 +86,7 @@ void AreaHasRain::doStep()
 			{
 				coordinates = coordinates.below();
 				current = blocks.getIndex(coordinates);
-				if(coordinates.z == 0)
+				if(coordinates.z() == 0)
 					break;
 			}
 			if(current != block)

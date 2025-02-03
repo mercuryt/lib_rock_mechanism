@@ -27,9 +27,10 @@ public:
 	[[nodiscard]] bool check(const BlockIndex& index, const BlockDesignation designation) const;
 	[[nodiscard]] BlockDesignation getDisplayDesignation(const BlockIndex& index) const;
 	[[nodiscard]] bool empty(const BlockIndex& index) const;
-	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] std::vector<BlockDesignation> getForBlock(const BlockIndex& index) const;
 	[[nodiscard]] uint32_t getOffsetForDesignation(const BlockDesignation designation) const { return (uint)designation * m_areaSize.get(); }
 	[[nodiscard]] bool checkWithOffset(uint32_t offset, const BlockIndex& index) const { return m_designations[offset + index.get()]; }
+	[[nodiscard]] Json toJson() const;
 	AreaHasBlockDesignationsForFaction(AreaHasBlockDesignationsForFaction&) = delete;
 };
 class AreaHasBlockDesignations final
@@ -48,6 +49,7 @@ public:
 	[[nodiscard]] const AreaHasBlockDesignationsForFaction& getForFaction(const FactionId& faction) const { return m_data[faction]; }
 	[[nodiscard]] AreaHasBlockDesignationsForFaction& maybeRegisterAndGetForFaction(const FactionId& faction);
 	[[nodiscard]] const AreaHasBlockDesignationsForFaction& maybeRegisterAndGetForFaction(const FactionId& faction) const;
+	[[nodiscard]] std::vector<std::pair<FactionId, BlockDesignation>> getForBlock(const BlockIndex& block) const;
 	[[nodiscard]] Json toJson() const;
 	AreaHasBlockDesignations(AreaHasBlockDesignationsForFaction&) = delete;
 	AreaHasBlockDesignations(AreaHasBlockDesignationsForFaction&&) = delete;

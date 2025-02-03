@@ -307,3 +307,14 @@ public:
 	OctTreeNodeIndex() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const OctTreeNodeIndex& index) const { return index.get(); } };
 };
+
+using LongRangePathNodeIndexWidth = uint32_t;
+class LongRangePathNodeIndex : public StrongInteger<LongRangePathNodeIndex, LongRangePathNodeIndexWidth>
+{
+public:
+	LongRangePathNodeIndex() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const LongRangePathNodeIndex& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const LongRangePathNodeIndex& index) { data = index.get(); }
+inline void from_json(const Json& data, LongRangePathNodeIndex& index) { index = LongRangePathNodeIndex::create(data.get<uint32_t>()); }
+using LongRangePathNodeIndexSet = StrongIntegerSet<LongRangePathNodeIndex>;

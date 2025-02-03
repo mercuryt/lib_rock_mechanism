@@ -13,9 +13,9 @@ Cuboid::Cuboid(const Point3D& highest, const Point3D& lowest) : m_highest(highes
 		assert(!m_lowest.exists());
 		return;
 	}
-	assert(highest.x >= lowest.x);
-	assert(highest.y >= lowest.y);
-	assert(highest.z >= lowest.z);
+	assert(highest.x() >= lowest.x());
+	assert(highest.y() >= lowest.y());
+	assert(highest.z() >= lowest.z());
 }
 SmallSet<BlockIndex> Cuboid::toSet(const Blocks& blocks) const
 {
@@ -34,17 +34,17 @@ bool Cuboid::contains(const Blocks& blocks, const BlockIndex& block) const
 	assert(m_lowest.exists());
 	Point3D blockPosition = blocks.getCoordinates(block);
 	return (
-			blockPosition.x <= m_highest.x && blockPosition.x >= m_lowest.x &&
-			blockPosition.y <= m_highest.y && blockPosition.y >= m_lowest.y &&
-			blockPosition.z <= m_highest.z && blockPosition.z >= m_lowest.z
+			blockPosition.x() <= m_highest.x() && blockPosition.x() >= m_lowest.x() &&
+			blockPosition.y() <= m_highest.y() && blockPosition.y() >= m_lowest.y() &&
+			blockPosition.z() <= m_highest.z() && blockPosition.z() >= m_lowest.z()
 	       );
 }
 bool Cuboid::contains(const Point3D& point) const
 {
 	return (
-			point.x <= m_highest.x && point.x >= m_lowest.x &&
-			point.y <= m_highest.y && point.y >= m_lowest.y &&
-			point.z <= m_highest.z && point.z >= m_lowest.z
+			point.x() <= m_highest.x() && point.x() >= m_lowest.x() &&
+			point.y() <= m_highest.y() && point.y() >= m_lowest.y() &&
+			point.z() <= m_highest.z() && point.z() >= m_lowest.z()
 	);
 }
 bool Cuboid::contains(const Cuboid& cuboid) const
@@ -57,11 +57,11 @@ bool Cuboid::canMerge(const Cuboid& other) const
 	// Can merge requires that the two cuboids share 2 out of 3 axies of symetry.
 	assert(isTouching(other));
 	uint32_t count = 0;
-	if(other.m_highest.x == m_highest.x && other.m_lowest.x == m_lowest.x)
+	if(other.m_highest.x() == m_highest.x() && other.m_lowest.x() == m_lowest.x())
 		count++;
-	if(other.m_highest.y == m_highest.y && other.m_lowest.y == m_lowest.y)
+	if(other.m_highest.y() == m_highest.y() && other.m_lowest.y() == m_lowest.y())
 		count++;
-	if(other.m_highest.z == m_highest.z && other.m_lowest.z == m_lowest.z)
+	if(other.m_highest.z() == m_highest.z() && other.m_lowest.z() == m_lowest.z())
 		count++;
 	assert(count != 3);
 	return count == 2;
@@ -105,13 +105,13 @@ Cuboid Cuboid::sum(const Cuboid& other) const
 {
 	assert(canMerge(other));
 	Cuboid output;
-	DistanceInBlocks maxX = std::max(m_highest.x, other.m_highest.x);
-	DistanceInBlocks maxY = std::max(m_highest.y, other.m_highest.y);
-	DistanceInBlocks maxZ = std::max(m_highest.z, other.m_highest.z);
+	DistanceInBlocks maxX = std::max(m_highest.x(), other.m_highest.x());
+	DistanceInBlocks maxY = std::max(m_highest.y(), other.m_highest.y());
+	DistanceInBlocks maxZ = std::max(m_highest.z(), other.m_highest.z());
 	output.m_highest = {maxX, maxY, maxZ};
-	DistanceInBlocks minX = std::min(m_lowest.x, other.m_lowest.x);
-	DistanceInBlocks minY = std::min(m_lowest.y, other.m_lowest.y);
-	DistanceInBlocks minZ = std::min(m_lowest.z, other.m_lowest.z);
+	DistanceInBlocks minX = std::min(m_lowest.x(), other.m_lowest.x());
+	DistanceInBlocks minY = std::min(m_lowest.y(), other.m_lowest.y());
+	DistanceInBlocks minZ = std::min(m_lowest.z(), other.m_lowest.z());
 	output.m_lowest = {minX, minY, minZ};
 	return output;
 }
@@ -141,46 +141,53 @@ void Cuboid::shift(const Facing6& direction, const DistanceInBlocks& distance)
 	offset[0] *= distance.get();
 	offset[1] *= distance.get();
 	offset[2] *= distance.get();
-	m_highest.x += offset[0];
-	m_lowest.x += offset[0];
-	m_highest.y += offset[1];
-	m_lowest.y += offset[1];
-	m_highest.z += offset[2];
-	m_lowest.z += offset[2];
+	m_highest.x() += offset[0];
+	m_lowest.x() += offset[0];
+	m_highest.y() += offset[1];
+	m_lowest.y() += offset[1];
+	m_highest.z() += offset[2];
+	m_lowest.z() += offset[2];
 }
 void Cuboid::setMaxZ(const DistanceInBlocks& distance)
 {
-	if(m_highest.z > distance)
-		m_highest.z = distance;
+	if(m_highest.z() > distance)
+		m_highest.z() = distance;
 }
 void Cuboid::maybeExpand(const Cuboid& other)
 {
 	m_highest.clampHigh(other.m_highest);
 	m_lowest.clampLow(other.m_lowest);
 }
+Cuboid Cuboid::inflateAdd(const DistanceInBlocks& distance) const
+{
+	return {
+		m_highest + distance,
+		m_lowest - distance
+	};
+}
 void Cuboid::clear() { m_lowest.clear(); m_highest.clear(); }
 Cuboid Cuboid::getFace(const Facing6& facing) const
 {
 	switch(facing)
 	{
-		// test area has x higher then this.
+		// test area has x() higher then this.
 		case(Facing6::East):
-			return Cuboid(m_highest, {m_highest.x, m_lowest.y, m_lowest.z});
-		// test area has x m_lower then this.
+			return Cuboid(m_highest, {m_highest.x(), m_lowest.y(), m_lowest.z()});
+		// test area has x() m_lower then this.
 		case(Facing6::West):
-			return Cuboid({m_lowest.x, m_highest.y, m_highest.z}, m_lowest);
-		// test area has y m_higher then this.
+			return Cuboid({m_lowest.x(), m_highest.y(), m_highest.z()}, m_lowest);
+		// test area has y() m_higher then this.
 		case(Facing6::South):
-			return Cuboid(m_highest, {m_lowest.x, m_highest.y, m_lowest.z});
-		// test area has y m_lower then this.
+			return Cuboid(m_highest, {m_lowest.x(), m_highest.y(), m_lowest.z()});
+		// test area has y() m_lower then this.
 		case(Facing6::North):
-			return Cuboid({m_highest.x, m_lowest.y, m_highest.z}, m_lowest);
-		// test area has z m_higher then this.
+			return Cuboid({m_highest.x(), m_lowest.y(), m_highest.z()}, m_lowest);
+		// test area has z() m_higher then this.
 		case(Facing6::Above):
-			return Cuboid(m_highest, {m_lowest.x, m_lowest.y, m_highest.z});
-		// test area has z m_lower then this.
+			return Cuboid(m_highest, {m_lowest.x(), m_lowest.y(), m_highest.z()});
+		// test area has z() m_lower then this.
 		case(Facing6::Below):
-			return Cuboid({m_highest.x, m_highest.y, m_lowest.z}, m_lowest);
+			return Cuboid({m_highest.x(), m_highest.y(), m_lowest.z()}, m_lowest);
 		default:
 			assert(false);
 		return Cuboid({});
@@ -190,24 +197,24 @@ bool Cuboid::overlapsWith(const Cuboid& other) const
 {
 	return
 		(
-		 m_highest.x >= other.m_lowest.x && m_highest.x <= other.m_highest.x &&
-		 m_highest.y >= other.m_lowest.y && m_highest.y <= other.m_highest.y &&
-		 m_highest.z >= other.m_lowest.z && m_highest.z <= other.m_highest.z
+		 m_highest.x() >= other.m_lowest.x() && m_highest.x() <= other.m_highest.x() &&
+		 m_highest.y() >= other.m_lowest.y() && m_highest.y() <= other.m_highest.y() &&
+		 m_highest.z() >= other.m_lowest.z() && m_highest.z() <= other.m_highest.z()
 		) ||
 		(
-		 other.m_highest.x >= m_lowest.x && other.m_highest.x <= m_highest.x &&
-		 other.m_highest.y >= m_lowest.y && other.m_highest.y <= m_highest.y &&
-		 other.m_highest.z >= m_lowest.z && other.m_highest.z <= m_highest.z
+		 other.m_highest.x() >= m_lowest.x() && other.m_highest.x() <= m_highest.x() &&
+		 other.m_highest.y() >= m_lowest.y() && other.m_highest.y() <= m_highest.y() &&
+		 other.m_highest.z() >= m_lowest.z() && other.m_highest.z() <= m_highest.z()
 		) ||
 		(
-		 m_lowest.x >= other.m_lowest.x && m_lowest.x <= other.m_highest.x &&
-		 m_lowest.y >= other.m_lowest.y && m_lowest.y <= other.m_highest.y &&
-		 m_lowest.z >= other.m_lowest.z && m_lowest.z <= other.m_highest.z
+		 m_lowest.x() >= other.m_lowest.x() && m_lowest.x() <= other.m_highest.x() &&
+		 m_lowest.y() >= other.m_lowest.y() && m_lowest.y() <= other.m_highest.y() &&
+		 m_lowest.z() >= other.m_lowest.z() && m_lowest.z() <= other.m_highest.z()
 		) ||
 		(
-		 other.m_lowest.x >= m_lowest.x && other.m_lowest.x <= m_highest.x &&
-		 other.m_lowest.y >= m_lowest.y && other.m_lowest.y <= m_highest.y &&
-		 other.m_lowest.z >= m_lowest.z && other.m_lowest.z <= m_highest.z
+		 other.m_lowest.x() >= m_lowest.x() && other.m_lowest.x() <= m_highest.x() &&
+		 other.m_lowest.y() >= m_lowest.y() && other.m_lowest.y() <= m_highest.y() &&
+		 other.m_lowest.z() >= m_lowest.z() && other.m_lowest.z() <= m_highest.z()
 		);
 }
 bool Cuboid::overlapsWithSphere(const Sphere& sphere) const
@@ -222,7 +229,7 @@ size_t Cuboid::size() const
 		return 0;
 	}
 	assert(m_lowest.exists());
-	return ((m_highest.x + 1) - m_lowest.x).get() * ((m_highest.y + 1) - m_lowest.y).get() * ((m_highest.z + 1) - m_lowest.z).get();
+	return ((m_highest.x() + 1) - m_lowest.x()).get() * ((m_highest.y() + 1) - m_lowest.y()).get() * ((m_highest.z() + 1) - m_lowest.z()).get();
 }
 // static method
 Cuboid Cuboid::fromBlock(const Blocks& blocks, const BlockIndex& block)
@@ -234,13 +241,13 @@ Cuboid Cuboid::fromBlockPair(const Blocks& blocks, const BlockIndex& a, const Bl
 	Point3D aCoordinates = blocks.getCoordinates(a);
 	Point3D bCoordinates = blocks.getCoordinates(b);
 	Cuboid output;
-	DistanceInBlocks maxX = std::max(aCoordinates.x, bCoordinates.x);
-	DistanceInBlocks maxY = std::max(aCoordinates.y, bCoordinates.y);
-	DistanceInBlocks maxZ = std::max(aCoordinates.z, bCoordinates.z);
+	DistanceInBlocks maxX = std::max(aCoordinates.x(), bCoordinates.x());
+	DistanceInBlocks maxY = std::max(aCoordinates.y(), bCoordinates.y());
+	DistanceInBlocks maxZ = std::max(aCoordinates.z(), bCoordinates.z());
 	output.m_highest = {maxX, maxY, maxZ};
-	DistanceInBlocks minX = std::min(aCoordinates.x, bCoordinates.x);
-	DistanceInBlocks minY = std::min(aCoordinates.y, bCoordinates.y);
-	DistanceInBlocks minZ = std::min(aCoordinates.z, bCoordinates.z);
+	DistanceInBlocks minX = std::min(aCoordinates.x(), bCoordinates.x());
+	DistanceInBlocks minY = std::min(aCoordinates.y(), bCoordinates.y());
+	DistanceInBlocks minZ = std::min(aCoordinates.z(), bCoordinates.z());
 	output.m_lowest = {minX, minY, minZ};
 	return output;
 }
@@ -251,9 +258,9 @@ bool Cuboid::operator==(const Cuboid& cuboid) const
 Point3D Cuboid::getCenter() const
 {
 	return {
-		m_lowest.x + std::round(float(m_highest.x.get() - m_lowest.x.get()) / 2.f),
-		m_lowest.y + std::round(float(m_highest.y.get() - m_lowest.y.get()) / 2.f),
-		m_lowest.z + std::round(float(m_highest.z.get() - m_lowest.z.get()) / 2.f)
+		m_lowest.x() + std::round(float(m_highest.x().get() - m_lowest.x().get()) / 2.f),
+		m_lowest.y() + std::round(float(m_highest.y().get() - m_lowest.y().get()) / 2.f),
+		m_lowest.z() + std::round(float(m_highest.z().get() - m_lowest.z().get()) / 2.f)
 	};
 }
 DistanceInBlocks Cuboid::dimensionForFacing(const Facing6& facing) const
@@ -263,13 +270,13 @@ DistanceInBlocks Cuboid::dimensionForFacing(const Facing6& facing) const
 	{
 		case Facing6::Below:
 		case Facing6::Above:
-			return (m_highest.z - m_lowest.z) + 1;
+			return (m_highest.z() - m_lowest.z()) + 1;
 		case Facing6::North:
 		case Facing6::South:
-			return (m_highest.y - m_lowest.y) + 1;
+			return (m_highest.y() - m_lowest.y()) + 1;
 		case Facing6::West:
 		case Facing6::East:
-			return (m_highest.x - m_lowest.x) + 1;
+			return (m_highest.x() - m_lowest.x()) + 1;
 		default:
 			assert(false);
 	}
@@ -277,17 +284,17 @@ DistanceInBlocks Cuboid::dimensionForFacing(const Facing6& facing) const
 Facing6 Cuboid::getFacingTwordsOtherCuboid(const Cuboid& other) const
 {
 	assert(!overlapsWith(other));
-	if(other.m_highest.z < m_lowest.z)
+	if(other.m_highest.z() < m_lowest.z())
 		return Facing6::Below;
-	if(other.m_lowest.z > m_highest.z)
+	if(other.m_lowest.z() > m_highest.z())
 		return Facing6::Above;
-	if(other.m_highest.y < m_lowest.y)
+	if(other.m_highest.y() < m_lowest.y())
 		return Facing6::North;
-	if(other.m_lowest.y > m_highest.y)
+	if(other.m_lowest.y() > m_highest.y())
 		return Facing6::South;
-	if(other.m_highest.x < m_lowest.x)
+	if(other.m_highest.x() < m_lowest.x())
 		return Facing6::West;
-	assert(other.m_lowest.x > m_highest.x);
+	assert(other.m_lowest.x() > m_highest.x());
 	return Facing6::East;
 }
 bool Cuboid::isSomeWhatInFrontOf(const Point3D& point, const Facing4& facing) const
@@ -303,34 +310,34 @@ SmallSet<Cuboid> Cuboid::getChildrenWhenSplitByCuboid(const Cuboid& cuboid) cons
 	splitLowest.clampLow(m_lowest);
 	SmallSet<Cuboid> output;
 	// Split off group above.
-	if(m_highest.z > splitHighest.z)
-		output.emplace(m_highest, Point3D(m_lowest.x, m_lowest.y, splitHighest.z + 1));
+	if(m_highest.z() > splitHighest.z())
+		output.emplace(m_highest, Point3D(m_lowest.x(), m_lowest.y(), splitHighest.z() + 1));
 	// Split off group below.
-	if(m_lowest.z < splitLowest.z)
-		output.emplace(Point3D(m_highest.x, m_highest.y, splitLowest.z - 1), m_lowest);
-	// Split off group with higher Y
-	if(m_highest.y > splitHighest.y)
-		output.emplace(Point3D(m_highest.x, m_highest.y, splitHighest.z), Point3D(m_lowest.x, splitHighest.y + 1, splitLowest.z));
-	// Split off group with lower Y
-	if(m_lowest.y < splitLowest.y)
-		output.emplace(Point3D(m_highest.x, splitLowest.y - 1, splitHighest.z), Point3D(m_lowest.x, m_lowest.y, splitLowest.z));
-	// Split off group with higher X
-	if(m_highest.x > splitHighest.x)
-		output.emplace(Point3D(m_highest.x, splitHighest.y, splitHighest.z), Point3D(splitHighest.x + 1, splitLowest.y, splitLowest.z));
-	// Split off group with lower X
-	if(m_lowest.x < splitLowest.x)
-		output.emplace(Point3D(splitLowest.x - 1, splitHighest.y, splitHighest.z), Point3D(m_lowest.x, splitLowest.y, splitLowest.z));
+	if(m_lowest.z() < splitLowest.z())
+		output.emplace(Point3D(m_highest.x(), m_highest.y(), splitLowest.z() - 1), m_lowest);
+	// Split off group with higher y()
+	if(m_highest.y() > splitHighest.y())
+		output.emplace(Point3D(m_highest.x(), m_highest.y(), splitHighest.z()), Point3D(m_lowest.x(), splitHighest.y() + 1, splitLowest.z()));
+	// Split off group with lower y()
+	if(m_lowest.y() < splitLowest.y())
+		output.emplace(Point3D(m_highest.x(), splitLowest.y() - 1, splitHighest.z()), Point3D(m_lowest.x(), m_lowest.y(), splitLowest.z()));
+	// Split off group with higher x()
+	if(m_highest.x() > splitHighest.x())
+		output.emplace(Point3D(m_highest.x(), splitHighest.y(), splitHighest.z()), Point3D(splitHighest.x() + 1, splitLowest.y(), splitLowest.z()));
+	// Split off group with lower x()
+	if(m_lowest.x() < splitLowest.x())
+		output.emplace(Point3D(splitLowest.x() - 1, splitHighest.y(), splitHighest.z()), Point3D(m_lowest.x(), splitLowest.y(), splitLowest.z()));
 	return output;
 }
 bool Cuboid::isTouching(const Cuboid& cuboid) const
 {
 	if(
-		cuboid.m_lowest.x > m_highest.x + 1 ||
-		cuboid.m_lowest.y > m_highest.y + 1 ||
-		cuboid.m_lowest.z > m_highest.z + 1 ||
-		cuboid.m_highest.x + 1 < m_lowest.x ||
-		cuboid.m_highest.y + 1 < m_lowest.y ||
-		cuboid.m_highest.z + 1 < m_lowest.z
+		cuboid.m_lowest.x() > m_highest.x() + 1 ||
+		cuboid.m_lowest.y() > m_highest.y() + 1 ||
+		cuboid.m_lowest.z() > m_highest.z() + 1 ||
+		cuboid.m_highest.x() + 1 < m_lowest.x() ||
+		cuboid.m_highest.y() + 1 < m_lowest.y() ||
+		cuboid.m_highest.z() + 1 < m_lowest.z()
 	)
 		return false;
 	return true;
@@ -351,7 +358,7 @@ Cuboid::iterator::iterator(const Blocks& blocks, const BlockIndex& lowest, const
 void Cuboid::iterator::setToEnd()
 {
 	// TODO: All these assignments arn't needed, just one would be fine.
-	m_start.x = m_start.y = m_start.z = m_current.x = m_current.y = m_current.z = m_end.x = m_end.y = m_end.z = DistanceInBlocks::null();
+	m_start.x() = m_start.y() = m_start.z() = m_current.x() = m_current.y() = m_current.z() = m_end.x() = m_end.y() = m_end.z() = DistanceInBlocks::null();
 }
 Cuboid::iterator& Cuboid::iterator::operator=(const iterator& other)
 {
@@ -363,15 +370,15 @@ Cuboid::iterator& Cuboid::iterator::operator=(const iterator& other)
 }
 Cuboid::iterator& Cuboid::iterator::iterator::operator++()
 {
-	if (m_current.x < m_end.x) {
-		++m_current.x;
-	} else if (m_current.y < m_end.y) {
-		m_current.x = m_start.x;
-		++m_current.y;
-	} else if (m_current.z < m_end.z) {
-		m_current.x = m_start.x;
-		m_current.y = m_start.y;
-		++m_current.z;
+	if (m_current.x() < m_end.x()) {
+		++m_current.x();
+	} else if (m_current.y() < m_end.y()) {
+		m_current.x() = m_start.x();
+		++m_current.y();
+	} else if (m_current.z() < m_end.z()) {
+		m_current.x() = m_start.x();
+		m_current.y() = m_start.y();
+		++m_current.z();
 	}
 	else
 		// End iterator.
@@ -409,20 +416,20 @@ void CuboidSurfaceView::Iterator::setFace()
 }
 CuboidSurfaceView::Iterator& CuboidSurfaceView::Iterator::operator++()
 {
-	if(current.x < face.m_highest.x)
+	if(current.x() < face.m_highest.x())
 	{
-		++current.x;
+		++current.x();
 	}
-	else if(current.y < face.m_highest.y)
+	else if(current.y() < face.m_highest.y())
 	{
-		current.x = face.m_lowest.x;
-		++current.y;
+		current.x() = face.m_lowest.x();
+		++current.y();
 	}
-	else if(current.z < face.m_highest.z)
+	else if(current.z() < face.m_highest.z())
 	{
-		current.x = face.m_lowest.x;
-		current.y = face.m_lowest.y;
-		++current.z;
+		current.x() = face.m_lowest.x();
+		current.y() = face.m_lowest.y();
+		++current.z();
 	}
 	else if(facing != Facing6::Above)
 	{

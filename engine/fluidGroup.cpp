@@ -140,8 +140,8 @@ void FluidGroup::addDiagonalsFor(Area& area, const BlockIndex& block)
 			Point3D blockCoordinates = blocks.getCoordinates(block);
 			Point3D diagonalCoordinates = blocks.getCoordinates(diagonal);
 			// Check if there is a 'pressure reducing diagonal' created by two solid blocks.
-			int diffX = diagonalCoordinates.x.get() - blockCoordinates.x.get();
-			int diffY = diagonalCoordinates.y.get() - blockCoordinates.y.get();
+			int diffX = diagonalCoordinates.x().get() - blockCoordinates.x().get();
+			int diffY = diagonalCoordinates.y().get() - blockCoordinates.y().get();
 			if(blocks.solid_is(blocks.offset(block,diffX, 0, 0)) && blocks.solid_is(blocks.offset(block, 0, diffY, 0)))
 				m_diagonalBlocks.add(diagonal);
 		}
