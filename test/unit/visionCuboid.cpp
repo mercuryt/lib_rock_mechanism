@@ -1,5 +1,5 @@
 #include "../../lib/doctest.h"
-#include "../../engine/visionCuboid.h"
+#include "../../engine/vision/visionCuboid.h"
 #include "../../engine/area.h"
 #include "../../engine/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
