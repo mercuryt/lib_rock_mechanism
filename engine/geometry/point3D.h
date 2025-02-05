@@ -6,202 +6,95 @@
 #pragma once
 #include "../json.h"
 #include "../types.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wduplicated-branches"
+#include "../../lib/Eigen/Dense"
+#pragma GCC diagnostic pop
 #include <compare>
 #include <cstdint>
 #include <iostream>
 #include <string>
 
-struct Vector3D;
-class Point3D
+using Coordinates = Eigen::Array<DistanceInBlocksWidth, 3, 1>;
+struct Offset3D;
+struct Point3D
 {
-	DistanceInBlocks _x;
-	DistanceInBlocks _y;
-	DistanceInBlocks _z;
-public:
-	Point3D() = default;
-	Point3D(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) : _x(x), _y(y), _z(z) { }
-	Point3D(const Point3D& other) : _x(other._x), _y(other._y), _z(other._z) { }
-	Point3D& operator=(const Point3D& other)
-	{
-		_x = other._x;
-		_y = other._y;
-		_z = other._z;
-		return *this;
-	}
-	DistanceInBlocks& x() { return _x; }
-	DistanceInBlocks& y() { return _y; }
-	DistanceInBlocks& z() { return _z; }
-	const DistanceInBlocks& x() const { return _x; }
-	const DistanceInBlocks& y() const { return _y; }
-	const DistanceInBlocks& z() const { return _z; }
-	Point3D operator-(const DistanceInBlocks& distance) const
-	{
-		return {
-			x() - distance,
-			y() - distance,
-			z() - distance
-		};
-	}
-	Point3D operator+(const DistanceInBlocks& distance) const
-	{
-		return {
-			x() + distance,
-			y() + distance,
-			z() + distance
-		};
-	}
-	void operator+=(const Vector3D& other);
-	void clampHigh(const Point3D& other)
-	{
-		x() = std::min(x(), other.x());
-		y() = std::min(y(), other.y());
-		z() = std::min(z(), other.z());
-	}
-	void clampLow(const Point3D& other)
-	{
-		x() = std::max(x(), other.x());
-		y() = std::max(y(), other.y());
-		z() = std::max(z(), other.z());
-	}
-	void clear() { x().clear(); y().clear(); z().clear(); }
-	[[nodiscard]] bool exists() const { return z().exists();}
-	[[nodiscard]] bool empty() const { return z().empty();}
-	[[nodiscard]] Point3D below() const { auto output = *this; --output.z(); return output; }
-	[[nodiscard]] Point3D north() const { auto output = *this; --output.y(); return output; }
-	[[nodiscard]] Point3D east() const { auto output = *this; ++output.x(); return output; }
-	[[nodiscard]] Point3D south() const { auto output = *this; ++output.y(); return output; }
-	[[nodiscard]] Point3D west() const { auto output = *this; --output.x(); return output; }
-	[[nodiscard]] Point3D above() const { auto output = *this; ++output.z(); return output; }
-	[[nodiscard]] bool operator==(const Point3D& other) const
-	{
-		return x() == other.x() && y() == other.y() && z() == other.z();
-	}
-	[[nodiscard]] bool operator!=(const Point3D& other) const
-	{
-		return !(*this == other);
-	}
-	[[nodiscard]] auto operator<=>(const Point3D& other) const
-	{
-		if (x() != other.x())
-			return x() <=> other.x();
-		else if (y() != other.y())
-			return y() <=> other.y();
-		else
-			return z() <=> other.z();
-	}
-	[[nodiscard]] DistanceInBlocks taxiDistanceTo(const Point3D& other) const
-	{
-		return DistanceInBlocks::create(
-			std::abs((int)x().get() - (int)other.x().get()) +
-			std::abs((int)y().get() - (int)other.y().get()) +
-			std::abs((int)z().get() - (int)other.z().get())
-		);
-	}
-	[[nodiscard]] DistanceInBlocks distanceTo(const Point3D& other) const
-	{
-		DistanceInBlocks squared = distanceSquared(other);
-		return DistanceInBlocks::create(pow((double)squared.get(), 0.5));
-	}
-	[[nodiscard]] DistanceInBlocks distanceSquared(const Point3D& other) const
-	{
-		return DistanceInBlocks::create(
-			pow(std::abs((int)x().get() - (int)other.x().get()), 2) +
-			pow(std::abs((int)y().get() - (int)other.y().get()), 2) +
-			pow(std::abs((int)z().get() - (int)other.z().get()), 2)
-		);
-	}
-	[[nodiscard]] std::wstring toString() const
-	{
-		return L"(" + std::to_wstring(x().get()) + L"," + std::to_wstring(y().get()) + L"," + std::to_wstring(z().get()) + L")";
-	}
+	Coordinates data;
+	Point3D() { data.fill(DistanceInBlocks::null().get()); }
+	Point3D(Coordinates v) : data(v) { }
+	Point3D(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) : data(x.get(), y.get(), z.get()) { }
+	Point3D(const Point3D& other) : data(other.data) { }
+	Point3D& operator=(const Point3D& other) { data = other.data; return *this; }
+	const DistanceInBlocks x() const { return DistanceInBlocks::create(data[0]); }
+	const DistanceInBlocks y() const { return DistanceInBlocks::create(data[1]); }
+	const DistanceInBlocks z() const { return DistanceInBlocks::create(data[2]); }
+	Point3D operator-(const DistanceInBlocks& distance) const;
+	Point3D operator+(const DistanceInBlocks& distance) const;
+	Point3D operator-(const DistanceInBlocksWidth& distance) const;
+	Point3D operator+(const DistanceInBlocksWidth& distance) const;
+	void operator+=(const Offset3D& other);
+	void operator-=(const Offset3D& other);
+	void clampHigh(const Point3D& other);
+	void clampLow(const Point3D& other);
+	void clear();
+	[[nodiscard]] bool exists() const;
+	[[nodiscard]] bool empty() const;
+	[[nodiscard]] Point3D below() const;
+	[[nodiscard]] Point3D north() const;
+	[[nodiscard]] Point3D east() const;
+	[[nodiscard]] Point3D south() const ;
+	[[nodiscard]] Point3D west() const;
+	[[nodiscard]] Point3D above() const;
+	[[nodiscard]] bool operator==(const Point3D& other) const;
+	[[nodiscard]] bool operator!=(const Point3D& other) const;
+	[[nodiscard]] std::strong_ordering operator<=>(const Point3D& other) const;
+	[[nodiscard]] DistanceInBlocks taxiDistanceTo(const Point3D& other) const;
+	[[nodiscard]] DistanceInBlocks distanceTo(const Point3D& other) const;
+	[[nodiscard]] DistanceInBlocks distanceSquared(const Point3D& other) const;
+	[[nodiscard]] std::wstring toString() const;
 	static const int hilbertOrder = 1;
-	[[nodiscard]] uint32_t hilbertNumber() const
-	{
-		int n = hilbertOrder;
-		int _x = x().get();
-		int _y = y().get();
-		int _z = z().get();
-		int index = 0;
-		int rx, ry, rz;
-
-		for (int i = n - 1; i >= 0; --i)
-		{
-			int mask = 1 << i;
-			rx = (_x & mask) > 0;
-			ry = (_y & mask) > 0;
-			rz = (_z & mask) > 0;
-
-			index <<= 3;
-
-			if (ry == 0)
-			{
-				if (rx == 1)
-				{
-					std::swap(_y, _z);
-					std::swap(ry, rz);
-				}
-				if (rz == 1)
-				{
-					index |= 1;
-					_x ^= mask;
-					_z ^= mask;
-				}
-				if (rx == 1)
-				{
-					index |= 2;
-					_y ^= mask;
-					_x ^= mask;
-				}
-			}
-			else
-			{
-				if (rz == 1)
-				{
-					index |= 4;
-					_x ^= mask;
-					_z ^= mask;
-				}
-				if (rx == 1)
-				{
-					index |= 5;
-					_y ^= mask;
-					_x ^= mask;
-				}
-				if (rz == 0)
-				{
-					index |= 6;
-					std::swap(_y, _z);
-					std::swap(ry, rz);
-				}
-			}
-		}
-		return index;
-	}
-	[[nodiscard]] Vector3D toVector3D() const;
+	[[nodiscard]] uint32_t hilbertNumber() const;
+	[[nodiscard]] Offset3D toOffset() const;
 	[[nodiscard]] bool isInFrontOf(const Point3D& coordinates, const Facing4& facing) const;
 	// Return value uses east rather then north as 0.
 	[[nodiscard]] double degreesFacingTwords(const Point3D& other) const;
 	[[nodiscard]] Facing4 getFacingTwords(const Point3D& other) const;
 	[[nodiscard]] Facing8 getFacingTwordsIncludingDiagonal(const Point3D& other) const;
-	void log() const
-	{
-		std::wcout << toString() << std::endl;
-	}
-	static Point3D create(int x, int y, int z)
-	{
-		return Point3D(DistanceInBlocks::create(x), DistanceInBlocks::create(y), DistanceInBlocks::create(z));
-	}
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Point3D, _x, _y, _z);
+	void log() const;
+	static Point3D create(int x, int y, int z);
 };
+inline void to_json(Json& data, const Point3D& point) { data = {point.x(), point.y(), point.z()}; }
+inline void from_json(const Json& data, Point3D& point)
+{
+	point.data[0] = data[0].get<int>();
+	point.data[1] = data[1].get<int>();
+	point.data[2] = data[2].get<int>();
+}
 struct Point3D_fractional
 {
 	DistanceInBlocksFractional x;
 	DistanceInBlocksFractional y;
 	DistanceInBlocksFractional z;
 };
-struct Vector3D
+using Offsets = Eigen::Array3i;
+struct Offset3D
 {
-	int32_t x = INT32_MAX;
-	int32_t y = INT32_MAX;
-	int32_t z = INT32_MAX;
+	Offsets data;
+	Offset3D() = default;
+	Offset3D(const int& x, const int& y, const int& z) : data(x, y, z) { }
+	Offset3D(const Offset3D& other);
+	Offset3D(const Point3D& point);
+	Offset3D& operator=(const Offset3D& other);
+	Offset3D& operator=(const Point3D& other);
+	void operator*=(const int& x);
+	void operator*=(const DistanceInBlocks& distance) { (*this) *= distance.get(); }
+	void operator/=(const int& x);
+	void operator/=(const DistanceInBlocks& distance) { (*this) /= distance.get(); }
+	void operator+=(const int& x);
+	void operator+=(const DistanceInBlocks& distance) { (*this) += distance.get(); }
+	void operator-=(const int& x);
+	void operator-=(const DistanceInBlocks& distance) { (*this) -= distance.get(); }
+	[[nodiscard]] int x() const { return data[0]; }
+	[[nodiscard]] int y() const { return data[1]; }
+	[[nodiscard]] int z() const { return data[2]; }
 };

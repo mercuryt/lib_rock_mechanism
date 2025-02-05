@@ -60,16 +60,6 @@ void Blocks::initalize(const BlockIndex& index)
 	));
 	recordAdjacent(index);
 }
-BlockIndex Blocks::offset(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const
-{
-	Point3D coordinates = getCoordinates(index);
-	ax += coordinates.x().get();
-	ay += coordinates.y().get();
-	az += coordinates.z().get();
-	if(ax < 0 || ax >= m_sizeX || ay < 0 || ay >= m_sizeY || az < 0 || az >= m_sizeZ)
-		return BlockIndex::null();
-	return getIndex(DistanceInBlocks::create(ax), DistanceInBlocks::create(ay), DistanceInBlocks::create(az));
-}
 void Blocks::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(auto& [key, value] : data["solid"].items())
@@ -189,10 +179,10 @@ BlockIndex Blocks::getIndex(const DistanceInBlocks& x, const DistanceInBlocks& y
 Point3D Blocks::getCoordinates(BlockIndex index) const
 {
 	Point3D output;
-	output.z() = DistanceInBlocks::create(index.get()) / (m_sizeX * m_sizeY);
+	output.data[2] = index.get() / (m_sizeX * m_sizeY).get();
 	index -= BlockIndex::create((output.z() * m_sizeX * m_sizeY).get());
-	output.y() = DistanceInBlocks::create(index.get()) / m_sizeX;
-	output.x() = DistanceInBlocks::create(index.get()) - (output.y() * m_sizeX);
+	output.data[1] = index.get() / m_sizeX.get();
+	output.data[0] = index.get() - (output.y() * m_sizeX).get();
 	return output;
 }
 Point3D_fractional Blocks::getCoordinatesFractional(const BlockIndex& index) const
@@ -528,15 +518,25 @@ void Blocks::moveContentsTo(const BlockIndex& from, const BlockIndex& to)
 	}
 	//TODO: other stuff falls?
 }
+BlockIndex Blocks::offset(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const
+{
+	Point3D coordinates = getCoordinates(index);
+	ax += coordinates.x().get();
+	ay += coordinates.y().get();
+	az += coordinates.z().get();
+	if(ax < 0 || ax >= m_sizeX || ay < 0 || ay >= m_sizeY || az < 0 || az >= m_sizeZ)
+		return BlockIndex::null();
+	return getIndex(DistanceInBlocks::create(ax), DistanceInBlocks::create(ay), DistanceInBlocks::create(az));
+}
 BlockIndex Blocks::offsetNotNull(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const
 {
 	Point3D coordinates = getCoordinates(index);
 	assert((int)coordinates.x().get() + ax >= 0);
 	assert((int)coordinates.y().get() + ay >= 0);
 	assert((int)coordinates.z().get() + az >= 0);
-	coordinates.x() += ax;
-	coordinates.y() += ay;
-	coordinates.z() += az;
+	coordinates.data[0] += ax;
+	coordinates.data[1] += ay;
+	coordinates.data[2] += az;
 	return getIndex(coordinates);
 }
 BlockIndex Blocks::indexAdjacentToAtCount(const BlockIndex& index, const AdjacentIndex& adjacentCount) const
@@ -546,12 +546,12 @@ BlockIndex Blocks::indexAdjacentToAtCount(const BlockIndex& index, const Adjacen
 	{
 		Point3D coordinates = getCoordinates(index);
 		auto [x, y, z] = Blocks::offsetsListAllAdjacent[adjacentCount.get()];
-		Vector3D vector(x, y, z);
-		if((vector.x == -1 && coordinates.x() == 0) || (vector.x == 1 && coordinates.x() == m_sizeX - 1))
+		Offset3D vector(x, y, z);
+		if((vector.x() == -1 && coordinates.x() == 0) || (vector.x() == 1 && coordinates.x() == m_sizeX - 1))
 			return BlockIndex::null();
-		if((vector.y == -1 && coordinates.y() == 0) || (vector.y == 1 && coordinates.y() == m_sizeY - 1))
+		if((vector.y() == -1 && coordinates.y() == 0) || (vector.y() == 1 && coordinates.y() == m_sizeY - 1))
 			return BlockIndex::null();
-		if((vector.z == -1 && coordinates.z() == 0) || (vector.z == 1 && coordinates.z() == m_sizeZ - 1))
+		if((vector.z() == -1 && coordinates.z() == 0) || (vector.z() == 1 && coordinates.z() == m_sizeZ - 1))
 			return BlockIndex::null();
 	}
 	return index + m_offsetsForAdjacentCountTable[adjacentCount.get()];
