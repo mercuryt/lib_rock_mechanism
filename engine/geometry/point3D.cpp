@@ -200,15 +200,11 @@ double Point3D::degreesFacingTwords(const Point3D& other) const
 }
 void Point3D::operator+=(const Offset3D& other)
 {
-	data[0] += other.data[0];
-	data[1] += other.data[1];
-	data[2] += other.data[2];
+	data += other.data.cast<DistanceInBlocksWidth>();
 }
 void Point3D::operator-=(const Offset3D& other)
 {
-	data[0] -= other.data[0];
-	data[1] -= other.data[1];
-	data[2] -= other.data[2];
+	data -= other.data.cast<DistanceInBlocksWidth>();
 }
 void Point3D::log() const
 {
