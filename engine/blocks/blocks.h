@@ -77,6 +77,8 @@ public:
 	const DistanceInBlocks m_sizeX;
 	const DistanceInBlocks m_sizeY;
 	const DistanceInBlocks m_sizeZ;
+	const DistanceInBlocksWidth m_zLevelSize;
+	const Coordinates m_pointToIndexConversionMultipliers;
 	Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void resize(const BlockIndex& count);
@@ -90,8 +92,8 @@ public:
 	[[nodiscard]] size_t size() const;
 	[[nodiscard]] BlockIndex getIndex(Point3D coordinates) const;
 	[[nodiscard]] BlockIndex maybeGetIndex(Point3D coordinates) const;
-	BlockIndex maybeGetIndexFromOffset(Point3D coordinates, const std::array<int8_t, 3> offset) const;
-	BlockIndex maybeGetIndexFromOffsetOnEdge(Point3D coordinates, const std::array<int8_t, 3> offset) const;
+	BlockIndex maybeGetIndexFromOffset(Point3D coordinates, const Offset3D offset) const;
+	BlockIndex maybeGetIndexFromOffsetOnEdge(Point3D coordinates, const Offset3D offset) const;
 	[[nodiscard]] BlockIndex getIndex(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) const;
 	[[nodiscard]] BlockIndex getIndex_i(uint x, uint y, uint z) const;
 	// Pass by value because it will be modified.
@@ -199,11 +201,11 @@ public:
 		return BlockIndex::null();
 	}
 	[[nodiscard]] BlockIndices collectAdjacentsInRange(const BlockIndex& index, const DistanceInBlocks& range);
-	static inline constexpr std::array<std::array<int8_t, 3>, 6> offsetsListDirectlyAdjacent{{
+	static inline std::array<Offset3D, 6> offsetsListDirectlyAdjacent{{
 	//	below		north		east		south		west		above
 		{0,0,-1},	{0,-1,0},	{1,0,0},	{0,1,0},	{-1,0,0},	{0,0,1}
 	}};
-	static inline constexpr std::array<std::array<int8_t, 3>, 26> offsetsListAllAdjacent{{
+	static inline std::array<Offset3D, 26> offsetsListAllAdjacent{{
 		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
 		{0,1,-1}, {0,0,-1}, {0,-1,-1},
 		{1,1,-1}, {1,0,-1}, {1,-1,-1},
@@ -216,7 +218,7 @@ public:
 		{0,1,1}, {0,0,1}, {0,-1,1},
 		{1,1,1}, {1,0,1}, {1,-1,1}
 	}};
-	static inline constexpr std::array<std::array<int8_t, 3>, 24> offsetsListAllAdjacentExceptDirectlyAboveAndBelow{{
+	static inline std::array<Offset3D, 24> offsetsListAllAdjacentExceptDirectlyAboveAndBelow{{
 		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
 		{0,1,-1}, {0,-1,-1},
 		{1,1,-1}, {1,0,-1}, {1,-1,-1},

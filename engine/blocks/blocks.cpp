@@ -9,7 +9,13 @@
 #include "../plants.h"
 #include <string>
 
-Blocks::Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) : m_area(area), m_sizeX(x), m_sizeY(y), m_sizeZ(z)
+Blocks::Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) :
+	m_area(area),
+	m_sizeX(x),
+	m_sizeY(y),
+	m_sizeZ(z),
+	m_zLevelSize(x.get() * y.get()),
+	m_pointToIndexConversionMultipliers(1, x.get(), x.get() * y.get())
 {
 	assert(!area.m_loaded);
 	BlockIndex count = BlockIndex::create((x * y * z).get());
@@ -133,10 +139,10 @@ size_t Blocks::size() const
 }
 BlockIndex Blocks::getIndex(Point3D coordinates) const
 {
-	assert(coordinates.x() < m_sizeX);
-	assert(coordinates.y() < m_sizeY);
-	assert(coordinates.z() < m_sizeZ);
-	return BlockIndex::create((coordinates.x() + (coordinates.y() * m_sizeX) + (coordinates.z() * m_sizeY * m_sizeX)).get());
+	assert(coordinates.x() < m_sizeX.get());
+	assert(coordinates.y() < m_sizeY.get());
+	assert(coordinates.z() < m_sizeZ.get());
+	return BlockIndex::create((coordinates.data * m_pointToIndexConversionMultipliers).sum());
 }
 BlockIndex Blocks::maybeGetIndex(Point3D coordinates) const
 {
@@ -148,23 +154,19 @@ BlockIndex Blocks::maybeGetIndex(Point3D coordinates) const
 		return BlockIndex::null();
 	return BlockIndex::create((coordinates.x() + (coordinates.y() * m_sizeX) + (coordinates.z() * m_sizeY * m_sizeX)).get());
 }
-BlockIndex Blocks::maybeGetIndexFromOffsetOnEdge(Point3D coordinates, const std::array<int8_t, 3> offset) const
+BlockIndex Blocks::maybeGetIndexFromOffsetOnEdge(Point3D coordinates, const Offset3D offset) const
 {
 	if(
 		!(// Invert condition to put the common path in the if rather then else, as a hint to branch predictor.
-			(coordinates.x() == 0 && offset[0] == -1) ||
-			(coordinates.y() == 0 && offset[1] == -1) ||
-			(coordinates.z() == 0 && offset[2] == -1) ||
-			(coordinates.x() == m_sizeX - 1 && offset[0] == 1) ||
-			(coordinates.y() == m_sizeY - 1 && offset[1] == 1) ||
-			(coordinates.z() == m_sizeZ - 1 && offset[2] == 1)
+			(coordinates.x() == 0 && offset.x() == -1) ||
+			(coordinates.y() == 0 && offset.y() == -1) ||
+			(coordinates.z() == 0 && offset.z() == -1) ||
+			(coordinates.x() == m_sizeX - 1 && offset.x() == 1) ||
+			(coordinates.y() == m_sizeY - 1 && offset.y() == 1) ||
+			(coordinates.z() == m_sizeZ - 1 && offset.z() == 1)
 		)
 	)
-		return BlockIndex::create((
-			coordinates.x() + offset[0]  +
-			((coordinates.y() + offset[1]) * m_sizeX) +
-			((coordinates.z() + offset[2]) * m_sizeY * m_sizeX)
-		).get());
+		return getIndex(coordinates + offset);
 	else
 		return BlockIndex::null();
 }
@@ -222,7 +224,7 @@ BlockIndex Blocks::getMiddleAtGroundLevel() const
 	return getIndex(x, y, z);
 }
 template<uint size, bool filter>
-auto getAdjacentWithOffsets(const Blocks& blocks, const BlockIndex& index, const std::array<int8_t, 3>* offsetList) -> std::array<BlockIndex, size>
+auto getAdjacentWithOffsets(const Blocks& blocks, const BlockIndex& index, const Offset3D* offsetList) -> std::array<BlockIndex, size>
 {
 	std::array<BlockIndex, size> output;
 	Point3D coordinates = blocks.getCoordinates(index);
@@ -230,7 +232,7 @@ auto getAdjacentWithOffsets(const Blocks& blocks, const BlockIndex& index, const
 		for(uint i = 0; i < size; i++)
 		{
 			const auto& offsets = *(offsetList + i);
-			output[i] = blocks.getIndex(coordinates.x() + offsets[0], coordinates.y() + offsets[1], coordinates.z() + offsets[2]);
+			output[i] = blocks.getIndex(coordinates + offsets);
 		}
 	else
 		if constexpr(filter)
@@ -293,7 +295,7 @@ BlockIndex Blocks::getBlockEast(const BlockIndex& index) const
 }
 BlockIndexArrayNotNull<18> Blocks::getAdjacentWithEdgeAdjacent(const BlockIndex& index) const
 {
-	static constexpr std::array<std::array<int8_t, 3>, 18>  offsetsList{{
+	static std::array<Offset3D, 18>  offsetsList{{
 		{-1,0,-1},
 		{0,1,-1}, {0,0,-1}, {0,-1,-1},
 		{1,0,-1},
@@ -323,7 +325,7 @@ std::array<BlockIndex, 26> Blocks::getAdjacentWithEdgeAndCornerAdjacentUnfiltere
 }
 BlockIndexArrayNotNull<12> Blocks::getEdgeAdjacentOnly(const BlockIndex& index) const
 {
-	static constexpr std::array<std::array<int8_t, 3>, 12>  offsetsList{{
+	static std::array<Offset3D, 12>  offsetsList{{
 		{-1,0,-1}, {0,-1,-1},
 		{1,0,-1}, {0,1,-1},
 
@@ -337,7 +339,7 @@ BlockIndexArrayNotNull<12> Blocks::getEdgeAdjacentOnly(const BlockIndex& index) 
 }
 BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const
 {
-	static constexpr std::array<std::array<int8_t, 3>, 4>  offsetsList{{
+	static std::array<Offset3D, 4>  offsetsList{{
 		{-1,-1,0}, {1,1,0},
 		{1,-1,0}, {-1,1,0},
 	}};
@@ -345,7 +347,7 @@ BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnSameZLevelOnly(const BlockInd
 }
 BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnlyOnNextZLevelDown(const BlockIndex& index) const
 {
-	static constexpr std::array<std::array<int8_t, 3>, 4>  offsetsList{{
+	static std::array<Offset3D, 4>  offsetsList{{
 		{-1,0,-1}, {0,-1,-1},
 		{1,0,-1}, {0,1,-1},
 	}};
@@ -353,7 +355,7 @@ BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnlyOnNextZLevelDown(const Bloc
 }
 BlockIndexArrayNotNull<8> Blocks::getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(const BlockIndex& index) const
 {
-	static constexpr std::array<std::array<int8_t, 3>, 8>  offsetsList{{
+	static std::array<Offset3D, 8>  offsetsList{{
 		{-1,-1,-1}, {-1,0,-1}, {-1, 1, -1},
 		{0,-1,-1}, {0,1,-1},
 		{1,-1,-1}, {1,0,-1}, {1,1,-1}
@@ -362,7 +364,7 @@ BlockIndexArrayNotNull<8> Blocks::getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(c
 }
 BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnlyOnNextZLevelUp(const BlockIndex& index) const
 {
-	static constexpr std::array<std::array<int8_t, 3>, 4>  offsetsList{{
+	static std::array<Offset3D, 4>  offsetsList{{
 		{-1,0,1}, {0,-1,1},
 		{0,1,1}, {1,0,1},
 	}};
@@ -370,7 +372,7 @@ BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnlyOnNextZLevelUp(const BlockI
 }
 BlockIndexArrayNotNull<20> Blocks::getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const
 {
-	static constexpr std::array<std::array<int8_t, 3>, 20>  offsetsList{{
+	static std::array<Offset3D, 20>  offsetsList{{
 		{-1,-1,-1},
 		{-1,-1,0},
 		{-1,-1,1},
@@ -396,7 +398,7 @@ BlockIndexArrayNotNull<20> Blocks::getEdgeAndCornerAdjacentOnly(const BlockIndex
 }
 BlockIndexArrayNotNull<4> Blocks::getAdjacentOnSameZLevelOnly(const BlockIndex& index) const
 {
-	static constexpr std::array<std::array<int8_t, 3>, 4>  offsetsList{{
+	static std::array<Offset3D, 4>  offsetsList{{
 		{-1,0,0}, {1,0,0},
 		{0,-1,0}, {0,1,0}
 	}};
@@ -545,8 +547,7 @@ BlockIndex Blocks::indexAdjacentToAtCount(const BlockIndex& index, const Adjacen
 	if(m_isEdge[index])
 	{
 		Point3D coordinates = getCoordinates(index);
-		auto [x, y, z] = Blocks::offsetsListAllAdjacent[adjacentCount.get()];
-		Offset3D vector(x, y, z);
+		Offset3D vector = Blocks::offsetsListAllAdjacent[adjacentCount.get()];
 		if((vector.x() == -1 && coordinates.x() == 0) || (vector.x() == 1 && coordinates.x() == m_sizeX - 1))
 			return BlockIndex::null();
 		if((vector.y() == -1 && coordinates.y() == 0) || (vector.y() == 1 && coordinates.y() == m_sizeY - 1))
@@ -562,8 +563,8 @@ std::array<int, 26> Blocks::makeOffsetsForAdjacentCountTable() const
 	uint i = 0;
 	int sy = m_sizeY.get();
 	int sx = m_sizeX.get();
-	for(auto [x, y, z] : offsetsListAllAdjacent)
-		output[i++] = (z * sy * sx) + (y * sx) + x;
+	for(const Offset3D& offset : offsetsListAllAdjacent)
+		output[i++] = (offset.z() * sy * sx) + (offset.y() * sx) + offset.x();
 	return output;
 }
 std::array<int32_t, 3> Blocks::relativeOffsetTo(const BlockIndex& index, const BlockIndex& otherIndex) const

@@ -24,19 +24,21 @@ struct Point3D
 	Point3D(Coordinates v) : data(v) { }
 	Point3D(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) : data(x.get(), y.get(), z.get()) { }
 	Point3D(const Point3D& other) : data(other.data) { }
-	Point3D& operator=(const Point3D& other) { data = other.data; return *this; }
-	const DistanceInBlocks x() const { return DistanceInBlocks::create(data[0]); }
-	const DistanceInBlocks y() const { return DistanceInBlocks::create(data[1]); }
-	const DistanceInBlocks z() const { return DistanceInBlocks::create(data[2]); }
-	Point3D operator-(const DistanceInBlocks& distance) const;
-	Point3D operator+(const DistanceInBlocks& distance) const;
-	Point3D operator-(const DistanceInBlocksWidth& distance) const;
-	Point3D operator+(const DistanceInBlocksWidth& distance) const;
-	void operator+=(const Offset3D& other);
-	void operator-=(const Offset3D& other);
 	void clampHigh(const Point3D& other);
 	void clampLow(const Point3D& other);
 	void clear();
+	Point3D& operator+=(const Offset3D& other);
+	Point3D& operator-=(const Offset3D& other);
+	Point3D& operator=(const Point3D& other) { data = other.data; return *this; }
+	[[nodiscard]] const DistanceInBlocks x() const { return DistanceInBlocks::create(data[0]); }
+	[[nodiscard]] const DistanceInBlocks y() const { return DistanceInBlocks::create(data[1]); }
+	[[nodiscard]] const DistanceInBlocks z() const { return DistanceInBlocks::create(data[2]); }
+	[[nodiscard]] Point3D operator-(const DistanceInBlocks& distance) const;
+	[[nodiscard]] Point3D operator+(const DistanceInBlocks& distance) const;
+	[[nodiscard]] Point3D operator-(const DistanceInBlocksWidth& distance) const;
+	[[nodiscard]] Point3D operator+(const DistanceInBlocksWidth& distance) const;
+	[[nodiscard]] Point3D operator+(const Offset3D& other) const;
+	[[nodiscard]] Point3D operator-(const Offset3D& other) const;
 	[[nodiscard]] bool exists() const;
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] Point3D below() const;

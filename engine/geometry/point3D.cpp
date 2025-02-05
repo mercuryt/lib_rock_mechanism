@@ -198,13 +198,23 @@ double Point3D::degreesFacingTwords(const Point3D& other) const
 	// Convert to degrees
 	return angleRadians * 180.0 / M_PI;
 }
-void Point3D::operator+=(const Offset3D& other)
+Point3D& Point3D::operator+=(const Offset3D& other)
 {
 	data += other.data.cast<DistanceInBlocksWidth>();
+	return *this;
 }
-void Point3D::operator-=(const Offset3D& other)
+Point3D& Point3D::operator-=(const Offset3D& other)
 {
 	data -= other.data.cast<DistanceInBlocksWidth>();
+	return *this;
+}
+Point3D Point3D::operator+(const Offset3D& other) const
+{
+	return Point3D(data + other.data.cast<DistanceInBlocksWidth>());
+}
+Point3D Point3D::operator-(const Offset3D& other) const
+{
+	return Point3D(data - other.data.cast<DistanceInBlocksWidth>());
 }
 void Point3D::log() const
 {
