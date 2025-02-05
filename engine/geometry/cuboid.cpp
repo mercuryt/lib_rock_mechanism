@@ -115,8 +115,7 @@ void Cuboid::setFrom(const Blocks& blocks, const BlockIndex& a, const BlockIndex
 void Cuboid::shift(const Facing6& direction, const DistanceInBlocks& distance)
 {
 	// TODO: make offsetsListDirectlyAdjacent return an Offset3D.
-	auto offsetCoordinates = Blocks::offsetsListDirectlyAdjacent[(uint)direction];
-	Offset3D offset(offsetCoordinates[0], offsetCoordinates[1], offsetCoordinates[2]);
+	Offset3D offset = Blocks::offsetsListDirectlyAdjacent[(uint)direction];
 	offset *= distance;
 	m_highest += offset;
 	m_lowest += offset;
