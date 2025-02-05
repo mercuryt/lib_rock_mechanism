@@ -30,16 +30,17 @@ bool Sphere::overlapsWith(const Cube& cube) const
 }
 bool Sphere::doesCuboidIntersectSphere(const Point3D& highest, const Point3D& lowest, const Sphere& sphere)
 {
+	//TODO: SIMD?
 	auto squared = [](const int32_t& i) -> int32_t { return i * i; };
 	float dist_squared = (float)std::pow(sphere.radius.get(), 2);
-	Vector3D S = sphere.center.toVector3D();
-	Vector3D C1 = highest.toVector3D();
-	Vector3D C2 = lowest.toVector3D();
-	if (S.x < C1.x) dist_squared -= squared(S.x - C1.x);
-	else if (S.x > C2.x) dist_squared -= squared(S.x - C2.x);
-	if (S.y < C1.y) dist_squared -= squared(S.y - C1.y);
-	else if (S.y > C2.y) dist_squared -= squared(S.y - C2.y);
-	if (S.z < C1.z) dist_squared -= squared(S.z - C1.z);
-	else if (S.z > C2.z) dist_squared -= squared(S.z - C2.z);
+	Offset3D S = sphere.center.toOffset();
+	Offset3D C1 = highest.toOffset();
+	Offset3D C2 = lowest.toOffset();
+	if (S.x() < C1.x()) dist_squared -= squared(S.x() - C1.x());
+	else if (S.x() > C2.x()) dist_squared -= squared(S.x() - C2.x());
+	if (S.y() < C1.y()) dist_squared -= squared(S.y() - C1.y());
+	else if (S.y() > C2.y()) dist_squared -= squared(S.y() - C2.y());
+	if (S.z() < C1.z()) dist_squared -= squared(S.z() - C1.z());
+	else if (S.z() > C2.z()) dist_squared -= squared(S.z() - C2.z());
 	return dist_squared > 0;
 }

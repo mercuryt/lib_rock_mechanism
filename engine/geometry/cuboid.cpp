@@ -13,9 +13,7 @@ Cuboid::Cuboid(const Point3D& highest, const Point3D& lowest) : m_highest(highes
 		assert(!m_lowest.exists());
 		return;
 	}
-	assert(highest.x() >= lowest.x());
-	assert(highest.y() >= lowest.y());
-	assert(highest.z() >= lowest.z());
+	assert((m_highest.data >= m_lowest.data).all());
 }
 SmallSet<BlockIndex> Cuboid::toSet(const Blocks& blocks) const
 {
@@ -29,40 +27,28 @@ bool Cuboid::contains(const Blocks& blocks, const BlockIndex& block) const
 	if(!m_highest.exists())
 	{
 		assert(!m_lowest.exists());
-		return  false;
+		return false;
 	}
 	assert(m_lowest.exists());
 	Point3D blockPosition = blocks.getCoordinates(block);
-	return (
-			blockPosition.x() <= m_highest.x() && blockPosition.x() >= m_lowest.x() &&
-			blockPosition.y() <= m_highest.y() && blockPosition.y() >= m_lowest.y() &&
-			blockPosition.z() <= m_highest.z() && blockPosition.z() >= m_lowest.z()
-	       );
+	return contains(blockPosition);
 }
 bool Cuboid::contains(const Point3D& point) const
 {
-	return (
-			point.x() <= m_highest.x() && point.x() >= m_lowest.x() &&
-			point.y() <= m_highest.y() && point.y() >= m_lowest.y() &&
-			point.z() <= m_highest.z() && point.z() >= m_lowest.z()
-	);
+	return (point.data <= m_highest.data).all() && (point.data >= m_lowest.data).all();
 }
 bool Cuboid::contains(const Cuboid& cuboid) const
 {
-	// TODO: opitimize this.
 	return contains(cuboid.m_highest) && contains(cuboid.m_lowest);
 }
 bool Cuboid::canMerge(const Cuboid& other) const
 {
 	// Can merge requires that the two cuboids share 2 out of 3 axies of symetry.
 	assert(isTouching(other));
-	uint32_t count = 0;
-	if(other.m_highest.x() == m_highest.x() && other.m_lowest.x() == m_lowest.x())
-		count++;
-	if(other.m_highest.y() == m_highest.y() && other.m_lowest.y() == m_lowest.y())
-		count++;
-	if(other.m_highest.z() == m_highest.z() && other.m_lowest.z() == m_lowest.z())
-		count++;
+	auto high = other.m_highest.data == m_highest.data;
+	auto low = other.m_lowest.data == m_lowest.data;
+	auto sum = high && low;
+	uint32_t count = sum.count();
 	assert(count != 3);
 	return count == 2;
 }
@@ -104,16 +90,7 @@ Cuboid Cuboid::canMergeSteal(const Cuboid& other) const
 Cuboid Cuboid::sum(const Cuboid& other) const
 {
 	assert(canMerge(other));
-	Cuboid output;
-	DistanceInBlocks maxX = std::max(m_highest.x(), other.m_highest.x());
-	DistanceInBlocks maxY = std::max(m_highest.y(), other.m_highest.y());
-	DistanceInBlocks maxZ = std::max(m_highest.z(), other.m_highest.z());
-	output.m_highest = {maxX, maxY, maxZ};
-	DistanceInBlocks minX = std::min(m_lowest.x(), other.m_lowest.x());
-	DistanceInBlocks minY = std::min(m_lowest.y(), other.m_lowest.y());
-	DistanceInBlocks minZ = std::min(m_lowest.z(), other.m_lowest.z());
-	output.m_lowest = {minX, minY, minZ};
-	return output;
+	return { {m_highest.data.max(other.m_highest.data)}, {m_lowest.data.min(other.m_lowest.data)} };
 }
 void Cuboid::merge(const Cuboid& cuboid)
 {
@@ -137,21 +114,17 @@ void Cuboid::setFrom(const Blocks& blocks, const BlockIndex& a, const BlockIndex
 }
 void Cuboid::shift(const Facing6& direction, const DistanceInBlocks& distance)
 {
-	auto offset = Blocks::offsetsListDirectlyAdjacent[(uint)direction];
-	offset[0] *= distance.get();
-	offset[1] *= distance.get();
-	offset[2] *= distance.get();
-	m_highest.x() += offset[0];
-	m_lowest.x() += offset[0];
-	m_highest.y() += offset[1];
-	m_lowest.y() += offset[1];
-	m_highest.z() += offset[2];
-	m_lowest.z() += offset[2];
+	// TODO: make offsetsListDirectlyAdjacent return an Offset3D.
+	auto offsetCoordinates = Blocks::offsetsListDirectlyAdjacent[(uint)direction];
+	Offset3D offset(offsetCoordinates[0], offsetCoordinates[1], offsetCoordinates[2]);
+	offset *= distance;
+	m_highest += offset;
+	m_lowest += offset;
 }
 void Cuboid::setMaxZ(const DistanceInBlocks& distance)
 {
 	if(m_highest.z() > distance)
-		m_highest.z() = distance;
+		m_highest.data[2] = distance.get();
 }
 void Cuboid::maybeExpand(const Cuboid& other)
 {
@@ -197,24 +170,16 @@ bool Cuboid::overlapsWith(const Cuboid& other) const
 {
 	return
 		(
-		 m_highest.x() >= other.m_lowest.x() && m_highest.x() <= other.m_highest.x() &&
-		 m_highest.y() >= other.m_lowest.y() && m_highest.y() <= other.m_highest.y() &&
-		 m_highest.z() >= other.m_lowest.z() && m_highest.z() <= other.m_highest.z()
+		 (m_highest.data >= other.m_lowest.data).all() && (m_highest.data <= other.m_highest.data).all()
 		) ||
 		(
-		 other.m_highest.x() >= m_lowest.x() && other.m_highest.x() <= m_highest.x() &&
-		 other.m_highest.y() >= m_lowest.y() && other.m_highest.y() <= m_highest.y() &&
-		 other.m_highest.z() >= m_lowest.z() && other.m_highest.z() <= m_highest.z()
+		 (other.m_highest.data >= m_lowest.data).all() && (other.m_highest.data <= m_highest.data).all()
 		) ||
 		(
-		 m_lowest.x() >= other.m_lowest.x() && m_lowest.x() <= other.m_highest.x() &&
-		 m_lowest.y() >= other.m_lowest.y() && m_lowest.y() <= other.m_highest.y() &&
-		 m_lowest.z() >= other.m_lowest.z() && m_lowest.z() <= other.m_highest.z()
+		 (m_lowest.data >= other.m_lowest.data).all() && (m_lowest.data <= other.m_highest.data).all()
 		) ||
 		(
-		 other.m_lowest.x() >= m_lowest.x() && other.m_lowest.x() <= m_highest.x() &&
-		 other.m_lowest.y() >= m_lowest.y() && other.m_lowest.y() <= m_highest.y() &&
-		 other.m_lowest.z() >= m_lowest.z() && other.m_lowest.z() <= m_highest.z()
+		 (other.m_lowest.data >= m_lowest.data).all() && (other.m_lowest.data <= m_highest.data).all()
 		);
 }
 bool Cuboid::overlapsWithSphere(const Sphere& sphere) const
@@ -229,27 +194,19 @@ size_t Cuboid::size() const
 		return 0;
 	}
 	assert(m_lowest.exists());
-	return ((m_highest.x() + 1) - m_lowest.x()).get() * ((m_highest.y() + 1) - m_lowest.y()).get() * ((m_highest.z() + 1) - m_lowest.z()).get();
+	return (m_highest.data + 1 - m_lowest.data).prod();
 }
 // static method
 Cuboid Cuboid::fromBlock(const Blocks& blocks, const BlockIndex& block)
 {
-	return Cuboid(blocks, block, block);
+	Point3D a = blocks.getCoordinates(block);
+	return {a, a};
 }
 Cuboid Cuboid::fromBlockPair(const Blocks& blocks, const BlockIndex& a, const BlockIndex& b)
 {
 	Point3D aCoordinates = blocks.getCoordinates(a);
 	Point3D bCoordinates = blocks.getCoordinates(b);
-	Cuboid output;
-	DistanceInBlocks maxX = std::max(aCoordinates.x(), bCoordinates.x());
-	DistanceInBlocks maxY = std::max(aCoordinates.y(), bCoordinates.y());
-	DistanceInBlocks maxZ = std::max(aCoordinates.z(), bCoordinates.z());
-	output.m_highest = {maxX, maxY, maxZ};
-	DistanceInBlocks minX = std::min(aCoordinates.x(), bCoordinates.x());
-	DistanceInBlocks minY = std::min(aCoordinates.y(), bCoordinates.y());
-	DistanceInBlocks minZ = std::min(aCoordinates.z(), bCoordinates.z());
-	output.m_lowest = {minX, minY, minZ};
-	return output;
+	return { {aCoordinates.data.max(bCoordinates.data)}, {aCoordinates.data.min(bCoordinates.data)} };
 }
 bool Cuboid::operator==(const Cuboid& cuboid) const
 {
@@ -257,11 +214,7 @@ bool Cuboid::operator==(const Cuboid& cuboid) const
 }
 Point3D Cuboid::getCenter() const
 {
-	return {
-		m_lowest.x() + std::round(float(m_highest.x().get() - m_lowest.x().get()) / 2.f),
-		m_lowest.y() + std::round(float(m_highest.y().get() - m_lowest.y().get()) / 2.f),
-		m_lowest.z() + std::round(float(m_highest.z().get() - m_lowest.z().get()) / 2.f)
-	};
+	return {(m_lowest.data + m_highest.data) / 2};
 }
 DistanceInBlocks Cuboid::dimensionForFacing(const Facing6& facing) const
 {
@@ -331,6 +284,7 @@ SmallSet<Cuboid> Cuboid::getChildrenWhenSplitByCuboid(const Cuboid& cuboid) cons
 }
 bool Cuboid::isTouching(const Cuboid& cuboid) const
 {
+	// TODO: SIMD.
 	if(
 		cuboid.m_lowest.x() > m_highest.x() + 1 ||
 		cuboid.m_lowest.y() > m_highest.y() + 1 ||
@@ -357,8 +311,9 @@ Cuboid::iterator::iterator(const Blocks& blocks, const BlockIndex& lowest, const
 }
 void Cuboid::iterator::setToEnd()
 {
-	// TODO: All these assignments arn't needed, just one would be fine.
-	m_start.x() = m_start.y() = m_start.z() = m_current.x() = m_current.y() = m_current.z() = m_end.x() = m_end.y() = m_end.z() = DistanceInBlocks::null();
+	m_start.data.fill(DistanceInBlocks::null().get());
+	// TODO: This line isn't needed.
+	m_end = m_current = m_start;
 }
 Cuboid::iterator& Cuboid::iterator::operator=(const iterator& other)
 {
@@ -371,14 +326,14 @@ Cuboid::iterator& Cuboid::iterator::operator=(const iterator& other)
 Cuboid::iterator& Cuboid::iterator::iterator::operator++()
 {
 	if (m_current.x() < m_end.x()) {
-		++m_current.x();
+		++m_current.data[0];
 	} else if (m_current.y() < m_end.y()) {
-		m_current.x() = m_start.x();
-		++m_current.y();
+		m_current.data[0] = m_start.data[0];
+		++m_current.data[1];
 	} else if (m_current.z() < m_end.z()) {
-		m_current.x() = m_start.x();
-		m_current.y() = m_start.y();
-		++m_current.z();
+		m_current.data[0] = m_start.data[0];
+		m_current.data[1] = m_start.data[1];
+		++m_current.data[2];
 	}
 	else
 		// End iterator.
@@ -418,18 +373,18 @@ CuboidSurfaceView::Iterator& CuboidSurfaceView::Iterator::operator++()
 {
 	if(current.x() < face.m_highest.x())
 	{
-		++current.x();
+		++current.data[0];
 	}
 	else if(current.y() < face.m_highest.y())
 	{
-		current.x() = face.m_lowest.x();
-		++current.y();
+		current.data[0] = face.m_lowest.data[0];
+		++current.data[1];
 	}
 	else if(current.z() < face.m_highest.z())
 	{
-		current.x() = face.m_lowest.x();
-		current.y() = face.m_lowest.y();
-		++current.z();
+		current.data[0] = face.m_lowest.data[0];
+		current.data[1] = face.m_lowest.data[1];
+		++current.data[2];
 	}
 	else if(facing != Facing6::Above)
 	{
