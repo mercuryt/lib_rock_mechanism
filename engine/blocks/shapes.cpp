@@ -24,9 +24,9 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithFacing(const BlockIndex& inde
 {
 	if(!shape_anythingCanEnterEver(index) || !shape_moveTypeCanEnter(index, moveType))
 		return false;
-	for(auto& [x, y, z, v] : Shape::positionsWithFacing(shape, facing))
+	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
-		BlockIndex otherIndex = offset(index, x, y, z);
+		BlockIndex otherIndex = offset(index, pair.offset);
 		if(otherIndex.empty() || !shape_anythingCanEnterEver(otherIndex) || !shape_moveTypeCanEnter(otherIndex, moveType))
 			return false;
 	}
@@ -35,14 +35,14 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithFacing(const BlockIndex& inde
 bool Blocks::shape_canEnterCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing4& facing, const OccupiedBlocksForHasShape& occupied) const
 {
 	assert(shape_anythingCanEnterEver(index));
-	for(auto& [x, y, z, v] : Shape::positionsWithFacing(shape, facing))
+	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
-		BlockIndex otherIndex = offset(index,x, y, z);
+		BlockIndex otherIndex = offset(index, pair.offset);
 		assert(otherIndex.exists());
 		assert(shape_anythingCanEnterEver(otherIndex));
 		if(occupied.contains(otherIndex))
 			continue;
-		if( m_dynamicVolume[otherIndex] + v > Config::maxBlockVolume)
+		if( m_dynamicVolume[otherIndex] + pair.volume > Config::maxBlockVolume)
 			return false;
 	}
 	return true;
@@ -50,13 +50,13 @@ bool Blocks::shape_canEnterCurrentlyWithFacing(const BlockIndex& index, const Sh
 bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing4& facing, const OccupiedBlocksForHasShape& occupied) const
 {
 	assert(shape_anythingCanEnterEver(index));
-	for(auto& [x, y, z, v] : Shape::positionsWithFacing(shape, facing))
+	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
-		BlockIndex otherIndex = offset(index,x, y, z);
+		BlockIndex otherIndex = offset(index, pair.offset);
 		if(occupied.contains(otherIndex))
 			continue;
 		if(otherIndex.empty() || !shape_anythingCanEnterEver(otherIndex) ||
-			m_dynamicVolume[otherIndex] + v > Config::maxBlockVolume ||
+			m_dynamicVolume[otherIndex] + pair.volume > Config::maxBlockVolume ||
 			!shape_moveTypeCanEnter(otherIndex, moveType)
 		)
 			return false;
@@ -227,13 +227,13 @@ std::pair<bool, Facing4> Blocks::shape_staticCanEnterCurrentlyWithAnyFacingRetur
 }
 bool Blocks::shape_staticShapeCanEnterWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing4& facing, const OccupiedBlocksForHasShape& occupied) const
 {
-	for(auto& [x, y, z, v] : Shape::positionsWithFacing(shape, facing))
+	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
-		BlockIndex otherIndex = offset(index, x, y, z);
+		BlockIndex otherIndex = offset(index, pair.offset);
 		assert(otherIndex.exists());
 		if(occupied.contains(otherIndex))
 			continue;
-		if(m_staticVolume[otherIndex] + v > Config::maxBlockVolume)
+		if(m_staticVolume[otherIndex] + pair.volume > Config::maxBlockVolume)
 			return false;
 	}
 	return true;

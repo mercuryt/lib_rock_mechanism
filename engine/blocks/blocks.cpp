@@ -15,7 +15,8 @@ Blocks::Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y,
 	m_sizeY(y),
 	m_sizeZ(z),
 	m_zLevelSize(x.get() * y.get()),
-	m_pointToIndexConversionMultipliers(1, x.get(), x.get() * y.get())
+	m_pointToIndexConversionMultipliers(1, x.get(), x.get() * y.get()),
+	m_dimensions(x.get(), y.get(), z.get())
 {
 	assert(!area.m_loaded);
 	BlockIndex count = BlockIndex::create((x * y * z).get());
@@ -139,31 +140,21 @@ size_t Blocks::size() const
 }
 BlockIndex Blocks::getIndex(Point3D coordinates) const
 {
-	assert(coordinates.x() < m_sizeX.get());
-	assert(coordinates.y() < m_sizeY.get());
-	assert(coordinates.z() < m_sizeZ.get());
+	assert((coordinates.data < m_dimensions).all());
 	return BlockIndex::create((coordinates.data * m_pointToIndexConversionMultipliers).sum());
 }
 BlockIndex Blocks::maybeGetIndex(Point3D coordinates) const
 {
-	if(
-		coordinates.x() >= m_sizeX ||
-		coordinates.y() >= m_sizeY ||
-		coordinates.z() >= m_sizeZ
-	)
-		return BlockIndex::null();
-	return BlockIndex::create((coordinates.x() + (coordinates.y() * m_sizeX) + (coordinates.z() * m_sizeY * m_sizeX)).get());
+	if((coordinates.data < m_dimensions).all())
+		return BlockIndex::create((coordinates.data * m_pointToIndexConversionMultipliers).sum());
+	return BlockIndex::null();
 }
 BlockIndex Blocks::maybeGetIndexFromOffsetOnEdge(Point3D coordinates, const Offset3D offset) const
 {
 	if(
 		!(// Invert condition to put the common path in the if rather then else, as a hint to branch predictor.
-			(coordinates.x() == 0 && offset.x() == -1) ||
-			(coordinates.y() == 0 && offset.y() == -1) ||
-			(coordinates.z() == 0 && offset.z() == -1) ||
-			(coordinates.x() == m_sizeX - 1 && offset.x() == 1) ||
-			(coordinates.y() == m_sizeY - 1 && offset.y() == 1) ||
-			(coordinates.z() == m_sizeZ - 1 && offset.z() == 1)
+			(coordinates.data == 0 && offset.data == -1).any() ||
+			(coordinates.data == m_dimensions - 1 && offset.data == 1).any()
 		)
 	)
 		return getIndex(coordinates + offset);
@@ -181,20 +172,19 @@ BlockIndex Blocks::getIndex(const DistanceInBlocks& x, const DistanceInBlocks& y
 Point3D Blocks::getCoordinates(BlockIndex index) const
 {
 	Point3D output;
-	output.data[2] = index.get() / (m_sizeX * m_sizeY).get();
-	index -= BlockIndex::create((output.z() * m_sizeX * m_sizeY).get());
+	output.data[2] = index.get() / m_zLevelSize;
+	index -= BlockIndex::create((output.z() * m_zLevelSize).get());
 	output.data[1] = index.get() / m_sizeX.get();
 	output.data[0] = index.get() - (output.y() * m_sizeX).get();
 	return output;
 }
 Point3D_fractional Blocks::getCoordinatesFractional(const BlockIndex& index) const
 {
-	Point3D coordinates = getCoordinates(index);
-	return {coordinates.x().toFloat(), coordinates.y().toFloat(), coordinates.z().toFloat()};
+	return Point3D_fractional::create(getCoordinates(index));
 }
 DistanceInBlocks Blocks::getZ(const BlockIndex& index) const
 {
-	return DistanceInBlocks::create(index.get()) / (m_sizeX * m_sizeY);
+	return DistanceInBlocks::create(index.get()) / (m_zLevelSize);
 }
 BlockIndex Blocks::getAtFacing(const BlockIndex& index, const Facing6& facing) const
 {
@@ -412,29 +402,17 @@ DistanceInBlocks Blocks::taxiDistance(const BlockIndex& index, const BlockIndex&
 {
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(otherIndex);
-	return DistanceInBlocks::create(
-		abs((int)coordinates.x().get() - (int)otherCoordinates.x().get()) +
-		abs((int)coordinates.y().get() - (int)otherCoordinates.y().get()) +
-		abs((int)coordinates.z().get() - (int)otherCoordinates.z().get())
-	);
+	return coordinates.taxiDistanceTo(otherCoordinates);
 }
 DistanceInBlocks Blocks::distanceSquared(const BlockIndex& index, const BlockIndex& other) const
 {
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(other);
-	DistanceInBlocks dx = DistanceInBlocks::create(abs((int)coordinates.x().get() - (int)otherCoordinates.x().get()));
-	DistanceInBlocks dy = DistanceInBlocks::create(abs((int)coordinates.y().get() - (int)otherCoordinates.y().get()));
-	DistanceInBlocks dz = DistanceInBlocks::create(abs((int)coordinates.z().get() - (int)otherCoordinates.z().get()));
-	return DistanceInBlocks::create(pow(dx.get(), 2) + pow(dy.get(), 2) + pow(dz.get(), 2));
+	return coordinates.distanceSquared(otherCoordinates);
 }
 DistanceInBlocksFractional Blocks::distanceFractional(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
-	Point3D_fractional coordinates = getCoordinatesFractional(index);
-	Point3D_fractional otherCoordinates = getCoordinatesFractional(otherIndex);
-	DistanceInBlocksFractional dx = DistanceInBlocksFractional::create(std::abs(coordinates.x.get() - otherCoordinates.x.get()));
-	DistanceInBlocksFractional dy = DistanceInBlocksFractional::create(std::abs(coordinates.y.get() - otherCoordinates.y.get()));
-	DistanceInBlocksFractional dz = DistanceInBlocksFractional::create(std::abs(coordinates.z.get() - otherCoordinates.z.get()));
-	return DistanceInBlocksFractional::create(std::pow((std::pow(dx.get(), 2) + std::pow(dy.get(), 2) + std::pow(dz.get(), 2)), 0.5));
+	return getCoordinates(index).distanceToFractional(getCoordinates(otherIndex));
 }
 bool Blocks::squareOfDistanceIsMoreThen(const BlockIndex& index, const BlockIndex& otherIndex, DistanceInBlocksFractional otherDistanceSquared) const
 {
@@ -522,40 +500,25 @@ void Blocks::moveContentsTo(const BlockIndex& from, const BlockIndex& to)
 }
 BlockIndex Blocks::offset(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const
 {
+	return offset(index, {ax, ay, az});
+}
+BlockIndex Blocks::offset(const BlockIndex& index, const Offset3D& offset) const
+{
 	Point3D coordinates = getCoordinates(index);
-	ax += coordinates.x().get();
-	ay += coordinates.y().get();
-	az += coordinates.z().get();
-	if(ax < 0 || ax >= m_sizeX || ay < 0 || ay >= m_sizeY || az < 0 || az >= m_sizeZ)
-		return BlockIndex::null();
-	return getIndex(DistanceInBlocks::create(ax), DistanceInBlocks::create(ay), DistanceInBlocks::create(az));
+	return maybeGetIndex(coordinates + offset);
 }
 BlockIndex Blocks::offsetNotNull(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const
 {
 	Point3D coordinates = getCoordinates(index);
-	assert((int)coordinates.x().get() + ax >= 0);
-	assert((int)coordinates.y().get() + ay >= 0);
-	assert((int)coordinates.z().get() + az >= 0);
-	coordinates.data[0] += ax;
-	coordinates.data[1] += ay;
-	coordinates.data[2] += az;
-	return getIndex(coordinates);
+	Offset3D offset(ax, ay, az);
+	return getIndex(coordinates + offset);
 }
 BlockIndex Blocks::indexAdjacentToAtCount(const BlockIndex& index, const AdjacentIndex& adjacentCount) const
 {
-	// If block is on edge check for the offset being beyond the area. If so return BlockIndex::null().
 	if(m_isEdge[index])
-	{
-		Point3D coordinates = getCoordinates(index);
-		Offset3D vector = Blocks::offsetsListAllAdjacent[adjacentCount.get()];
-		if((vector.x() == -1 && coordinates.x() == 0) || (vector.x() == 1 && coordinates.x() == m_sizeX - 1))
-			return BlockIndex::null();
-		if((vector.y() == -1 && coordinates.y() == 0) || (vector.y() == 1 && coordinates.y() == m_sizeY - 1))
-			return BlockIndex::null();
-		if((vector.z() == -1 && coordinates.z() == 0) || (vector.z() == 1 && coordinates.z() == m_sizeZ - 1))
-			return BlockIndex::null();
-	}
-	return index + m_offsetsForAdjacentCountTable[adjacentCount.get()];
+		return maybeGetIndexFromOffsetOnEdge(getCoordinates(index), Blocks::offsetsListAllAdjacent[adjacentCount.get()]);
+	else
+		return index + m_offsetsForAdjacentCountTable[adjacentCount.get()];
 }
 std::array<int, 26> Blocks::makeOffsetsForAdjacentCountTable() const
 {
@@ -567,15 +530,11 @@ std::array<int, 26> Blocks::makeOffsetsForAdjacentCountTable() const
 		output[i++] = (offset.z() * sy * sx) + (offset.y() * sx) + offset.x();
 	return output;
 }
-std::array<int32_t, 3> Blocks::relativeOffsetTo(const BlockIndex& index, const BlockIndex& otherIndex) const
+Offset3D Blocks::relativeOffsetTo(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(otherIndex);
-	return {
-		(int)otherCoordinates.x().get() - (int)coordinates.x().get(),
-		(int)otherCoordinates.y().get() - (int)coordinates.y().get(),
-		(int)otherCoordinates.z().get() - (int)coordinates.z().get()
-	};
+	return Offsets(otherCoordinates.data.cast<int>() - coordinates.data.cast<int>());
 }
 bool Blocks::canSeeThrough(const BlockIndex& index) const
 {

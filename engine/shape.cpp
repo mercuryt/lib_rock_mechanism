@@ -4,18 +4,19 @@
 #include "deserializationMemo.h"
 #include "types.h"
 #include "util.h"
+#include "geometry/point3D.h"
 #include <string>
 #include <sys/types.h>
 //TODO: radial symetry for 2x2 and 3x3, etc.
-ShapeId Shape::create(std::wstring name, std::vector<std::array<int32_t, 4>> positions, uint32_t displayScale)
+ShapeId Shape::create(std::wstring name, SmallSet<OffsetAndVolume> positions, uint32_t displayScale)
 {
 	shapeData.m_name.add(name);
 	shapeData.m_positions.add(positions);
 	shapeData.m_displayScale.add(displayScale);
 	shapeData.m_isMultiTile.add(positions.size() != 1);
 	shapeData.m_isRadiallySymetrical.add(positions.size() == 1);
-	shapeData.m_occupiedOffsetsCache.add({});
-	shapeData.m_adjacentOffsetsCache.add({});
+	shapeData.m_occupiedOffsetsCache.add();
+	shapeData.m_adjacentOffsetsCache.add();
 	ShapeId id = ShapeId::create(shapeData.m_name.size() - 1);
 	for(Facing4 i = Facing4::North; i != Facing4::Null; i = Facing4((uint)i + 1))
 	{
@@ -24,27 +25,37 @@ ShapeId Shape::create(std::wstring name, std::vector<std::array<int32_t, 4>> pos
 	}
 	return id;
 }
-std::vector<std::array<int32_t, 4>> Shape::positionsWithFacing(const ShapeId& id, const Facing4& facing) { return shapeData.m_occupiedOffsetsCache[id][(uint)facing]; }
-std::vector<std::array<int32_t, 3>> Shape::adjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing) { return shapeData.m_adjacentOffsetsCache[id][(uint)facing]; }
-std::vector<std::array<int32_t, 4>> Shape::makeOccupiedPositionsWithFacing(const ShapeId& id, const Facing4& facing)
+SmallSet<OffsetAndVolume> Shape::positionsWithFacing(const ShapeId& id, const Facing4& facing) { return shapeData.m_occupiedOffsetsCache[id][(uint)facing]; }
+SmallSet<Offset3D> Shape::adjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing) { return shapeData.m_adjacentOffsetsCache[id][(uint)facing]; }
+SmallSet<OffsetAndVolume> Shape::makeOccupiedPositionsWithFacing(const ShapeId& id, const Facing4& facing)
 {
 	//TODO: cache.
-	std::vector<std::array<int32_t, 4>> output;
+	SmallSet<OffsetAndVolume> output;
 	switch(facing)
 	{
 		case Facing4::North:
 			return shapeData.m_positions[id];
 		case Facing4::East:
-			for(auto [x, y, z, v] : shapeData.m_positions[id])
-				output.push_back({y, x, z, v});
+			for(auto pair : shapeData.m_positions[id])
+			{
+				std::swap(pair.offset.data[0], pair.offset.data[1]);
+				output.insert(pair);
+			}
 			return output;
 		case Facing4::South:
-			for(auto [x, y, z, v] : shapeData.m_positions[id])
-				output.push_back({x, y * -1, z, v});
+			for(auto pair : shapeData.m_positions[id])
+			{
+				pair.offset.data[1] *= -1;
+				output.insert(pair);
+			}
 			return output;
 		case Facing4::West:
-			for(auto [x, y, z, v] : shapeData.m_positions[id])
-				output.push_back({y * -1, x, z, v});
+			for(auto pair : shapeData.m_positions[id])
+			{
+				std::swap(pair.offset.data[0], pair.offset.data[1]);
+				pair.offset.data[0] *= -1;
+				output.insert(pair);
+			}
 			return output;
 		default:
 			assert(false);
@@ -52,18 +63,17 @@ std::vector<std::array<int32_t, 4>> Shape::makeOccupiedPositionsWithFacing(const
 	assert(false);
 	return output;
 }
-std::vector<std::array<int32_t, 3>> Shape::makeAdjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing)
+SmallSet<Offset3D> Shape::makeAdjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing)
 {
-	std::set<std::array<int32_t, 3>> collect;
-	for(auto& position : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
+	SmallSet<Offset3D> output;
+	for(const auto& position : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
 		for(auto& offset : positionOffsets(position))
-			collect.insert(offset);
-	std::vector<std::array<int32_t, 3>> output(collect.begin(), collect.end());
+			output.maybeInsert(offset);
 	return output;
 }
-std::vector<std::array<int32_t, 3>> Shape::positionOffsets(std::array<int32_t, 4> position)
+SmallSet<Offset3D> Shape::positionOffsets(const OffsetAndVolume& offsetAndVolume)
 {
-	static const int32_t offsetsList[26][3] = {
+	static const Offset3D offsetsList[26] = {
 		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
 		{0,1,-1}, {0,0,-1}, {0,-1,-1},
 		{1,1,-1}, {1,0,-1}, {1,-1,-1},
@@ -76,9 +86,9 @@ std::vector<std::array<int32_t, 3>> Shape::positionOffsets(std::array<int32_t, 4
 		{0,1,1}, {0,0,1}, {0,-1,1},
 		{1,1,1}, {1,0,1}, {1,-1,1}
 	};
-	std::vector<std::array<int32_t, 3>> output;
-	for(auto& offsets : offsetsList)
-		output.push_back({position[0] + offsets[0], position[1] + offsets[1], position[2] + offsets[2]});
+	SmallSet<Offset3D> output;
+	for(const auto& offsets : offsetsList)
+		output.insert(offsetAndVolume.offset + offsets);
 	return output;
 }
 
@@ -86,9 +96,9 @@ BlockIndices Shape::getBlocksOccupiedAt(const ShapeId& id, const Blocks& blocks,
 {
 	BlockIndices output;
 	output.reserve(shapeData.m_positions[id].size());
-	for(auto [x, y, z, v] : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
+	for(const auto& pair : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
 	{
-		BlockIndex block = blocks.offset(location, x, y, z);
+		BlockIndex block = blocks.offset(location, pair.offset);
 		assert(block.exists());
 		output.add(block);
 	}
@@ -100,15 +110,15 @@ BlockIndices Shape::getBlocksOccupiedAndAdjacentAt(const ShapeId& id, const Bloc
 	output.concatIgnoreUnique(getBlocksWhichWouldBeAdjacentAt(id, blocks, location, facing));
 	return output;
 }
-std::vector<std::pair<BlockIndex, CollisionVolume>> Shape::getBlocksOccupiedAtWithVolumes(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
+SmallSet<std::pair<BlockIndex, CollisionVolume>> Shape::getBlocksOccupiedAtWithVolumes(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
 {
-	std::vector<std::pair<BlockIndex, CollisionVolume>> output;
+	SmallSet<std::pair<BlockIndex, CollisionVolume>> output;
 	output.reserve(shapeData.m_positions[id].size());
-	for(auto& [x, y, z, v] : positionsWithFacing(id, facing))
+	for(const auto& pair : positionsWithFacing(id, facing))
 	{
-		BlockIndex block = blocks.offset(location, x, y, z);
+		BlockIndex block = blocks.offset(location, pair.offset);
 		if(block.exists())
-			output.emplace_back(block, CollisionVolume::create(v));
+			output.emplace(block, pair.volume);
 	}
 	return output;
 }
@@ -116,9 +126,9 @@ BlockIndices Shape::getBlocksWhichWouldBeAdjacentAt(const ShapeId& id, const Blo
 {
 	BlockIndices output;
 	output.reserve(shapeData.m_positions[id].size());
-	for(auto [x, y, z] : shapeData.m_adjacentOffsetsCache[id][(uint)facing])
+	for(const Offset3D& offset : shapeData.m_adjacentOffsetsCache[id][(uint)facing])
 	{
-		BlockIndex block = blocks.offset(location, x, y, z);
+		BlockIndex block = blocks.offset(location, offset);
 		if(block.exists())
 			output.add(block);
 	}
@@ -126,9 +136,9 @@ BlockIndices Shape::getBlocksWhichWouldBeAdjacentAt(const ShapeId& id, const Blo
 }
 BlockIndex Shape::getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)> predicate)
 {
-	for(auto [x, y, z, v] : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
+	for(const auto& pair : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
 	{
-		BlockIndex block = blocks.offset(location, x, y, z);
+		BlockIndex block = blocks.offset(location, pair.offset);
 		if(block.exists() && predicate(block))
 			return block;
 	}
@@ -136,15 +146,15 @@ BlockIndex Shape::getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id,
 }
 BlockIndex Shape::getBlockWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)> predicate)
 {
-	for(auto [x, y, z] : shapeData.m_adjacentOffsetsCache[id][(uint)facing])
+	for(const Offset3D& offset : shapeData.m_adjacentOffsetsCache[id][(uint)facing])
 	{
-		BlockIndex block = blocks.offset(location, x, y, z);
+		BlockIndex block = blocks.offset(location, offset);
 		if(block.exists() && predicate(block))
 			return block;
 	}
 	return BlockIndex::null();
 }
-CollisionVolume Shape::getCollisionVolumeAtLocationBlock(const ShapeId& id) { return CollisionVolume::create(shapeData.m_positions[id][0][3]); }
+CollisionVolume Shape::getCollisionVolumeAtLocationBlock(const ShapeId& id) { return shapeData.m_positions[id].front().volume; }
 ShapeId Shape::byName(const std::wstring& name)
 {
 	auto found = shapeData.m_name.find(name);
@@ -152,7 +162,7 @@ ShapeId Shape::byName(const std::wstring& name)
 		return loadFromName(name);
 	return ShapeId::create(found - shapeData.m_name.begin());
 }
-std::vector<std::array<int32_t, 4>> Shape::getPositions(const ShapeId& id) { return shapeData.m_positions[id]; }
+SmallSet<OffsetAndVolume> Shape::getPositions(const ShapeId& id) { return shapeData.m_positions[id]; }
 std::wstring Shape::getName(const ShapeId& id) { return shapeData.m_name[id]; }
 uint32_t Shape::getDisplayScale(const ShapeId& id) { return shapeData.m_displayScale[id]; }
 bool Shape::getIsMultiTile(const ShapeId& id) { return shapeData.m_isMultiTile[id]; }
@@ -172,24 +182,25 @@ ShapeId Shape::loadFromName(std::wstring wname)
 	while(getline(ss, item, ' '))
 		tokens.push_back(stoi(item));
 	assert(tokens.size() % 4 == 0);
-	std::vector<std::array<int, 4>> positions;
+	SmallSet<OffsetAndVolume> positions;
 	for(size_t i = 0; i < tokens.size(); i+=4)
 	{
 		int x = tokens[i];
 		int y = tokens[i+1];
 		int z = tokens[i+2];
 		int v = tokens[i+3];
-		positions.push_back({x, y, z, v});
+		positions.insert(OffsetAndVolume{Offset3D(x, y, z), CollisionVolume::create(v)});
 	}
 	// Runtime shapes always have display scale = 1
 	return Shape::create(wname, positions, 1);
 }
-ShapeId Shape::mutateAdd(const ShapeId& id, std::array<int32_t, 4> position)
+ShapeId Shape::mutateAdd(const ShapeId& id, const OffsetAndVolume& position)
 {
-	auto positions = shapeData.m_positions[id];
-	assert(std::ranges::find(positions, position) == positions.end());
-	positions.push_back(position);
-	std::ranges::sort(positions);
+	// Make a copy.
+	SmallSet<OffsetAndVolume> positions = shapeData.m_positions[id];
+	assert(!positions.contains(position));
+	positions.insert(position);
+	positions.sort();
 	std::wstring name = makeName(positions);
 	ShapeId output = Shape::byName(name);
 	if(output.exists())
@@ -197,15 +208,10 @@ ShapeId Shape::mutateAdd(const ShapeId& id, std::array<int32_t, 4> position)
 	// Runtime shapes always have display scale = 1
 	return Shape::create(name, positions, 1);
 }
-std::wstring Shape::makeName(std::vector<std::array<int32_t, 4>>& positions)
+std::wstring Shape::makeName(SmallSet<OffsetAndVolume>& positions)
 {
 	std::wstring output;
-	for(auto [x, y, z, v] : positions)
-	{
-		output.append(std::to_wstring(x) + L" ");
-		output.append(std::to_wstring(y) + L" ");
-		output.append(std::to_wstring(z) + L" ");
-		output.append(std::to_wstring(v) + L" ");
-	}
+	for(const auto& pair : positions)
+		output += std::to_wstring(pair.offset.x()) + L" " + std::to_wstring(pair.offset.y()) + L" " + std::to_wstring(pair.offset.z()) + L" " + std::to_wstring(pair.volume.get()) + L" ";
 	return output;
 }

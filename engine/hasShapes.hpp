@@ -47,12 +47,11 @@ void HasShapes<Derived, Index>::setStatic(const Index& index)
 {
 	assert(!m_static[index]);
 	Blocks& blocks = m_area.getBlocks();
-	for(auto& [x, y, z, v] : Shape::positionsWithFacing(m_shape[index], m_facing[index]))
+	for(const auto& pair : Shape::positionsWithFacing(m_shape[index], m_facing[index]))
 	{
-		BlockIndex block = blocks.offset(m_location[index], x, y, z);
-		CollisionVolume volume = CollisionVolume::create(v);
-		blocks.shape_addStaticVolume(block, volume);
-		blocks.shape_removeDynamicVolume(block, volume);
+		BlockIndex block = blocks.offset(m_location[index], pair.offset);
+		blocks.shape_addStaticVolume(block, pair.volume);
+		blocks.shape_removeDynamicVolume(block, pair.volume);
 	}
 	m_static.set(index, true);
 }
@@ -67,12 +66,11 @@ void HasShapes<Derived, Index>::unsetStatic(const Index& index)
 {
 	assert(m_static[index]);
 	Blocks& blocks = m_area.getBlocks();
-	for(auto& [x, y, z, v] : Shape::positionsWithFacing(m_shape[index], m_facing[index]))
+	for(const auto& pair : Shape::positionsWithFacing(m_shape[index], m_facing[index]))
 	{
-		BlockIndex block = blocks.offset(m_location[index], x, y, z);
-		CollisionVolume volume = CollisionVolume::create(v);
-		blocks.shape_removeStaticVolume(block, volume);
-		blocks.shape_addDynamicVolume(block, volume);
+		BlockIndex block = blocks.offset(m_location[index], pair.offset);
+		blocks.shape_removeStaticVolume(block, pair.volume);
+		blocks.shape_addDynamicVolume(block, pair.volume);
 	}
 	m_static.set(index, false);
 }
@@ -214,9 +212,9 @@ bool HasShapes<Derived, Index>::predicateForAnyAdjacentBlock(const Index& index,
 {
 	assert(m_location[index].exists());
 	//TODO: cache this.
-	for(auto [x, y, z] : Shape::adjacentPositionsWithFacing(m_shape[index], m_facing[index]))
+	for(const auto& offset : Shape::adjacentPositionsWithFacing(m_shape[index], m_facing[index]))
 	{
-		BlockIndex block = m_area.getBlocks().offset(m_location[index], x, y, z);
+		BlockIndex block = m_area.getBlocks().offset(m_location[index], offset);
 		if(block.exists() && predicate(block))
 			return true;
 	}
@@ -289,9 +287,9 @@ BlockIndex HasShapes<Derived, Index>::getBlockWhichIsOccupiedWithPredicate(const
 template<class Derived, class Index>
 ItemIndex HasShapes<Derived, Index>::getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(const Index& index, const BlockIndex& location, const Facing4& facing, std::function<bool(const ItemIndex&)>& predicate) const
 {
-	for(auto [x, y, z] : Shape::adjacentPositionsWithFacing(m_shape[index], facing))
+	for(const Offset3D& offset : Shape::adjacentPositionsWithFacing(m_shape[index], facing))
 	{
-		BlockIndex block = m_area.getBlocks().offset(location, x, y, z);
+		BlockIndex block = m_area.getBlocks().offset(location, offset);
 		if(block.exists())
 			for(ItemIndex item : m_area.getBlocks().item_getAll(block))
 				if(predicate(item))

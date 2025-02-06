@@ -8,6 +8,7 @@
 #include "dataVector.h"
 #include "types.h"
 #include "index.h"
+#include "geometry/point3D.h"
 
 #include <cassert>
 #include <vector>
@@ -17,39 +18,49 @@
 class Blocks;
 struct DeserializationMemo;
 
+struct OffsetAndVolume
+{
+	Offset3D offset;
+	CollisionVolume volume;
+	[[nodiscard]] bool operator==(const OffsetAndVolume& other) const { return offset == other.offset; }
+	[[nodiscard]] bool operator!=(const OffsetAndVolume& other) const { return offset != other.offset; }
+	[[nodiscard]] std::strong_ordering operator<=>(const OffsetAndVolume& other) const { return offset <=> other.offset; }
+};
+inline void to_json(Json& data, const OffsetAndVolume& x) { data[0] = x.offset; data[1] = x.volume; }
+inline void from_json(const Json& data, OffsetAndVolume& x) { data[0].get_to(x.offset); data[1].get_to(x.volume); }
 struct ShapeParamaters
 {
-	std::vector<std::array<int32_t, 4>> positions;
+	SmallSet<OffsetAndVolume> positions;
 	std::wstring name;
 	uint32_t displayScale;
 };
 
 struct Shape
 {
-	StrongVector<std::array<std::vector<std::array<int32_t, 4>>,4>, ShapeId> m_occupiedOffsetsCache;
-	StrongVector<std::array<std::vector<std::array<int32_t, 3>>,4>, ShapeId> m_adjacentOffsetsCache;
-	StrongVector<std::vector<std::array<int32_t, 4>>, ShapeId> m_positions;
+	StrongVector<std::array<SmallSet<OffsetAndVolume>,4>, ShapeId> m_occupiedOffsetsCache;
+	StrongVector<std::array<SmallSet<Offset3D>,4>, ShapeId> m_adjacentOffsetsCache;
+	StrongVector<SmallSet<OffsetAndVolume>, ShapeId> m_positions;
 	StrongVector<std::wstring, ShapeId> m_name;
 	StrongBitSet<ShapeId> m_isMultiTile;
 	StrongBitSet<ShapeId> m_isRadiallySymetrical;
 	//TODO: This doesn't belong here. Move to UI.
 	StrongVector<uint32_t, ShapeId> m_displayScale;
 public:
-	static ShapeId create(const std::wstring name, std::vector<std::array<int32_t, 4>> positions, uint32_t displayScale);
+	static ShapeId create(const std::wstring name, SmallSet<OffsetAndVolume> positions, uint32_t displayScale);
 	[[nodiscard]] static Json toJson(const ShapeId& id);
-	[[nodiscard]] static std::vector<std::array<int32_t, 4>> positionsWithFacing(const ShapeId& id, const Facing4& facing);
-	[[nodiscard]] static std::vector<std::array<int32_t, 3>> adjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing);
-	[[nodiscard]] static std::vector<std::array<int32_t, 4>> makeOccupiedPositionsWithFacing(const ShapeId& id, const Facing4& facing);
-	[[nodiscard]] static std::vector<std::array<int32_t, 3>> makeAdjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing);
-	[[nodiscard]] static std::vector<std::array<int32_t, 3>> positionOffsets(std::array<int32_t, 4> position);
+	[[nodiscard]] static SmallSet<OffsetAndVolume> positionsWithFacing(const ShapeId& id, const Facing4& facing);
+	[[nodiscard]] static SmallSet<Offset3D> adjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing);
+	[[nodiscard]] static SmallSet<OffsetAndVolume> makeOccupiedPositionsWithFacing(const ShapeId& id, const Facing4& facing);
+	[[nodiscard]] static SmallSet<Offset3D> makeAdjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing);
+	[[nodiscard]] static SmallSet<Offset3D> positionOffsets(const OffsetAndVolume& position);
 	[[nodiscard]] static BlockIndices getBlocksOccupiedAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
 	[[nodiscard]] static BlockIndices getBlocksOccupiedAndAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
-	[[nodiscard]] static std::vector<std::pair<BlockIndex, CollisionVolume>> getBlocksOccupiedAtWithVolumes(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
+	[[nodiscard]] static SmallSet<std::pair<BlockIndex, CollisionVolume>> getBlocksOccupiedAtWithVolumes(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
 	[[nodiscard]] static BlockIndices getBlocksWhichWouldBeAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
 	[[nodiscard]] static BlockIndex getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)> predicate);
 	[[nodiscard]] static BlockIndex getBlockWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)> predicate);
 	[[nodiscard]] static CollisionVolume getCollisionVolumeAtLocationBlock(const ShapeId& id);
-	[[nodiscard]] static std::vector<std::array<int32_t, 4>> getPositions(const ShapeId& id);
+	[[nodiscard]] static SmallSet<OffsetAndVolume> getPositions(const ShapeId& id);
 	[[nodiscard]] static std::wstring getName(const ShapeId& id);
 	[[nodiscard]] static uint32_t getDisplayScale(const ShapeId& id);
 	[[nodiscard]] static bool getIsMultiTile(const ShapeId& id);
@@ -58,8 +69,8 @@ public:
 	[[nodiscard]] static ShapeId byName(const std::wstring& name);
 	[[nodiscard]] static bool hasShape(const std::wstring& name);
 	// Creates a copy, adds a position to it and returns it.
-	[[nodiscard]] static ShapeId mutateAdd(const ShapeId& shape, std::array<int32_t, 4> position);
-	[[nodiscard]] static std::wstring makeName(std::vector<std::array<int32_t, 4>>& positions);
+	[[nodiscard]] static ShapeId mutateAdd(const ShapeId& shape, const OffsetAndVolume& position);
+	[[nodiscard]] static std::wstring makeName(SmallSet<OffsetAndVolume>& positions);
 	[[nodiscard]] static ShapeId loadFromName(std::wstring name);
 };
 inline Shape shapeData;

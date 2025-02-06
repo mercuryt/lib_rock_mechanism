@@ -391,7 +391,7 @@ void Actors::load(const Json& data)
 	{
 		ActorIndex index = ActorIndex::create(std::stoi(iter.key()));
 		ActorReference ref = getReference(index);
-		for(const Json& data : iter.value()["m_data"])
+		for(const Json& data : iter.value())
 		{
 			ActorReference otherRef(data, m_referenceData);
 			m_canSee[index].insert(otherRef);
@@ -404,10 +404,10 @@ void Actors::load(const Json& data)
 		m_area.m_simulation.m_actors.registerActor(getId(index), m_area.getActors(), index);
 		Blocks &blocks = m_area.getBlocks();
 		if(m_location[index].exists())
-			for (auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
+			for (const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
 			{
-				BlockIndex occupied = blocks.offset(m_location[index], x, y, z);
-				blocks.actor_record(occupied, index, CollisionVolume::create(v));
+				BlockIndex occupied = blocks.offset(m_location[index], pair.offset);
+				blocks.actor_record(occupied, index, pair.volume);
 			}
 	}
 	m_project.resize(size);
@@ -770,10 +770,10 @@ void Actors::setLocationAndFacing(const ActorIndex& index, const BlockIndex& blo
 	m_facing[index] = facing;
 	Blocks& blocks = m_area.getBlocks();
 	assert(m_blocks[index].empty());
-	for(const auto& [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
+	for(const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
 	{
-		BlockIndex occupied = blocks.offset(block, x, y, z);
-		blocks.actor_record(occupied, index, CollisionVolume::create(v));
+		BlockIndex occupied = blocks.offset(block, pair.offset);
+		blocks.actor_record(occupied, index, pair.volume);
 		m_blocks[index].add(occupied);
 		// Record in vision facade if has location and can currently see.
 	}

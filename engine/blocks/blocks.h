@@ -74,11 +74,13 @@ class Blocks
 	StrongBitSet<BlockIndex> m_constructed;
 	Area& m_area;
 public:
+	//TODO: replace these with functions accessing m_dimensions.
 	const DistanceInBlocks m_sizeX;
 	const DistanceInBlocks m_sizeY;
 	const DistanceInBlocks m_sizeZ;
 	const DistanceInBlocksWidth m_zLevelSize;
 	const Coordinates m_pointToIndexConversionMultipliers;
+	const Coordinates m_dimensions;
 	Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void resize(const BlockIndex& count);
@@ -132,9 +134,10 @@ public:
 	void moveContentsTo(const BlockIndex& index, const BlockIndex& other);
 	// Get block at offset coordinates. Can return nullptr.
 	[[nodiscard]] BlockIndex offset(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const;
+	[[nodiscard]] BlockIndex offset(const BlockIndex& index, const Offset3D& offset) const;
 	[[nodiscard]] BlockIndex offsetNotNull(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const;
 	[[nodiscard]] BlockIndex indexAdjacentToAtCount(const BlockIndex& index, const AdjacentIndex& adjacentCount) const;
-	[[nodiscard]] std::array<int32_t, 3> relativeOffsetTo(const BlockIndex& index, const BlockIndex& other) const;
+	[[nodiscard]] Offset3D relativeOffsetTo(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] std::array<int, 26> makeOffsetsForAdjacentCountTable() const;
 	[[nodiscard]] bool canSeeThrough(const BlockIndex& index) const;
 	[[nodiscard]] bool canSeeThroughFloor(const BlockIndex& index) const;
@@ -205,7 +208,7 @@ public:
 	//	below		north		east		south		west		above
 		{0,0,-1},	{0,-1,0},	{1,0,0},	{0,1,0},	{-1,0,0},	{0,0,1}
 	}};
-	static inline std::array<Offset3D, 26> offsetsListAllAdjacent{{
+	static inline const std::array<Offset3D, 26> offsetsListAllAdjacent{{
 		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
 		{0,1,-1}, {0,0,-1}, {0,-1,-1},
 		{1,1,-1}, {1,0,-1}, {1,-1,-1},
@@ -218,7 +221,7 @@ public:
 		{0,1,1}, {0,0,1}, {0,-1,1},
 		{1,1,1}, {1,0,1}, {1,-1,1}
 	}};
-	static inline std::array<Offset3D, 24> offsetsListAllAdjacentExceptDirectlyAboveAndBelow{{
+	static inline const std::array<Offset3D, 24> offsetsListAllAdjacentExceptDirectlyAboveAndBelow{{
 		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
 		{0,1,-1}, {0,-1,-1},
 		{1,1,-1}, {1,0,-1}, {1,-1,-1},
