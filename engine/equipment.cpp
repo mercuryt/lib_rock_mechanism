@@ -17,7 +17,7 @@
 EquipmentSet::EquipmentSet(Area& area, const Json& data)
 {
 	Items& items = area.getItems();
-	for(const Json& itemRefData : data["m_equipments"]["m_data"])
+	for(const Json& itemRefData : data["m_equipments"])
 		addEquipment(area, ItemReference(itemRefData, items.m_referenceData).getIndex(items.m_referenceData));
 }
 void EquipmentSet::addEquipment(Area& area, const ItemIndex& equipment)

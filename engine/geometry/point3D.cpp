@@ -116,12 +116,17 @@ std::strong_ordering Point3D::operator<=>(const Point3D& other) const
 }
 DistanceInBlocks Point3D::taxiDistanceTo(const Point3D& other) const
 {
-	return DistanceInBlocks::create((data - other.data).abs().sum());
+	return DistanceInBlocks::create((data.cast<int>() - other.data.cast<int>()).abs().sum());
 }
 DistanceInBlocks Point3D::distanceTo(const Point3D& other) const
 {
 	DistanceInBlocks squared = distanceSquared(other);
 	return DistanceInBlocks::create(pow((double)squared.get(), 0.5));
+}
+DistanceInBlocksFractional Point3D::distanceToFractional(const Point3D& other) const
+{
+	DistanceInBlocks squared = distanceSquared(other);
+	return DistanceInBlocksFractional::create(pow((double)squared.get(), 0.5));
 }
 DistanceInBlocks Point3D::distanceSquared(const Point3D& other) const
 {
@@ -227,7 +232,25 @@ Point3D Point3D::create(int x, int y, int z)
 Offset3D::Offset3D(const Offset3D& other) : data(other.data) { }
 Offset3D::Offset3D(const Point3D& point) { data = point.data.cast<int>(); }
 Offset3D& Offset3D::operator=(const Offset3D& other) { data = other.data; return *this; }
+Offset3D& Offset3D::operator=(const Point3D& other) { data = other.data.cast<int>(); return *this; }
 void Offset3D::operator*=(const int& x) { data *= x; }
 void Offset3D::operator/=(const int& x) { data /= x; }
 void Offset3D::operator+=(const int& x) { data += x; }
 void Offset3D::operator-=(const int& x) { data -= x; }
+std::strong_ordering Offset3D::operator<=>(const Offset3D& other) const
+{
+	if (x() != other.x())
+		return x() <=> other.x();
+	else if (y() != other.y())
+		return y() <=> other.y();
+	else
+		return z() <=> other.z();
+}
+Offset3D Offset3D::operator+(const Offset3D& other) const { return Offsets(data + other.data); }
+Offset3D Offset3D::operator-(const Offset3D& other) const { return Offsets(data - other.data); }
+Offset3D Offset3D::operator*(const Offset3D& other) const { return Offsets(data * other.data); }
+Offset3D Offset3D::operator/(const Offset3D& other) const { return Offsets(data / other.data); }
+std::wstring Offset3D::toString() const
+{
+	return L"(" + std::to_wstring(x()) + L"," + std::to_wstring(y()) + L"," + std::to_wstring(z()) + L")";
+}

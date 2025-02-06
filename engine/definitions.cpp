@@ -28,7 +28,7 @@ void definitions::loadShapes()
 	{
 		Shape::create(
 			util::stringToWideString(data["name"].get<std::string>()),
-			data["positions"].get<std::vector<std::array<int32_t, 4>>>(),
+			data["positions"].get<SmallSet<OffsetAndVolume>>(),
 			// TODO: move this to ui.
 			data.contains("displayScale") ? data["displayScale"].get<uint32_t>() : 1
 		);

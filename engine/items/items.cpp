@@ -187,10 +187,10 @@ ItemIndex Items::setLocationAndFacing(const ItemIndex& index, const BlockIndex& 
 	m_facing[index] = facing;
 	const Quantity& quantity = m_quantity[index];
 	auto& occupiedBlocks = m_blocks[index];
-	for(auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
+	for(const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
 	{
-		BlockIndex occupied = blocks.offset(block, x, y, z);
-		blocks.item_record(occupied, index, CollisionVolume::create((quantity * v).get()));
+		BlockIndex occupied = blocks.offset(block, pair.offset);
+		blocks.item_record(occupied, index, CollisionVolume::create((quantity * pair.volume.get()).get()));
 		occupiedBlocks.add(occupied);
 	}
 	if(blocks.isExposedToSky(block))
@@ -409,10 +409,10 @@ void Items::load(const Json& data)
 	{
 		m_area.m_simulation.m_items.registerItem(m_id[index], m_area.getItems(), index);
 		if(m_location[index].exists())
-			for (auto [x, y, z, v] : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
+			for (const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
 			{
-				BlockIndex occupied = blocks.offset(m_location[index], x, y, z);
-				blocks.item_record(occupied, index, CollisionVolume::create((m_quantity[index] * v).get()));
+				BlockIndex occupied = blocks.offset(m_location[index], pair.offset);
+				blocks.item_record(occupied, index, CollisionVolume::create((m_quantity[index] * pair.volume.get()).get()));
 			}
 	}
 	m_canBeStockPiled.resize(m_id.size());

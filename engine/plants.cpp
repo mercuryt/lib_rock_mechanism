@@ -354,22 +354,31 @@ void Plants::doWildGrowth(const PlantIndex& index, uint8_t count)
 	m_wildGrowth[index] += count;
 	assert(m_wildGrowth[index] <= PlantSpecies::getMaxWildGrowth(species));
 	Simulation& simulation = m_area.m_simulation;
+	const SmallSet<OffsetAndVolume>& positions = Shape::getPositions(m_shape[index]);
 	while(count)
 	{
 		count--;
 		std::vector<BlockIndex> candidates;
 		for(BlockIndex block : getAdjacentBlocks(index))
-			if(blocks.shape_anythingCanEnterEver(block) && blocks.shape_getDynamicVolume(block) == 0 && blocks.getZ(block) > blocks.getZ(m_location[index]))
-				candidates.push_back(block);
+			if(
+				blocks.shape_anythingCanEnterEver(block) &&
+				blocks.shape_getDynamicVolume(block) == 0 &&
+				blocks.getZ(block) > blocks.getZ(m_location[index])
+			)
+			{
+				Offset3D offset = blocks.relativeOffsetTo(m_location[index], block);
+				if(std::ranges::find(positions.getVector(), offset, &OffsetAndVolume::offset) == positions.getVector().end())
+					candidates.push_back(block);
+			}
 		if(candidates.empty())
 			m_wildGrowth[index] = PlantSpecies::getMaxWildGrowth(species);
 		else
 		{
 			BlockIndex toGrowInto = candidates[simulation.m_random.getInRange(0u, (uint)candidates.size() - 1u)];
-			std::array<int32_t, 3> offset = blocks.relativeOffsetTo(m_location[index], toGrowInto);
+			Offset3D offset = blocks.relativeOffsetTo(m_location[index], toGrowInto);
 			// Use the volume of the location position as the volume of the new growth position.
-			std::array<int32_t, 4> position = {offset[0], offset[1], offset[2], (int)Shape::getCollisionVolumeAtLocationBlock(m_shape[index]).get()};
-			setShape(index, Shape::mutateAdd(m_shape[index], position));
+			OffsetAndVolume offsetAndVolume = {offset, Shape::getCollisionVolumeAtLocationBlock(m_shape[index])};
+			setShape(index, Shape::mutateAdd(m_shape[index], offsetAndVolume));
 		}
 	}
 }

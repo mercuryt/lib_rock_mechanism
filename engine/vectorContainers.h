@@ -22,6 +22,8 @@ public:
 	SmallSet(This&& other) { m_data = std::move(other.m_data); }
 	This& operator=(const This& other) { m_data = other.m_data; return *this; }
 	This& operator=(This&& other) { m_data = std::move(other.m_data); return *this; }
+	void fromJson(const Json& data) { data.get_to(m_data); }
+	[[nodiscard]] Json toJson() const { return m_data; }
 	void insert(const T& value) { assert(!contains(value)); m_data.push_back(value); }
 	void maybeInsert(const T& value) { if(!contains(value)) m_data.push_back(value); }
 	void insert(std::vector<T>::const_iterator&& begin, std::vector<T>::const_iterator&& end)
@@ -135,6 +137,7 @@ public:
 	[[nodiscard]] This::const_iterator begin() const { return This::const_iterator(*this, 0); }
 	[[nodiscard]] This::const_iterator end() const { return This::const_iterator(*this, size()); }
 	[[nodiscard]] std::vector<T>& getVector() { return m_data; }
+	[[nodiscard]] const std::vector<T>& getVector() const { return m_data; }
 	[[nodiscard]] This::iterator find(const T& value) { return std::ranges::find(m_data, value); }
 	[[nodiscard]] This::const_iterator find(const T& value) const { return std::ranges::find(m_data, value); }
 	template<typename Predicate>
@@ -193,8 +196,12 @@ public:
 		[[nodiscard]] iterator& operator-=(const uint& index) { m_iter -= index; return *this; }
 		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
 	};
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallSet, m_data);
 };
+// Define custom serialization / deserialization instead of using intrusive because this type is used in raws and specifiying field name would be annoying.
+template<typename T>
+inline void to_json(Json& data, const SmallSet<T>& set) { data = set.toJson(); }
+template<typename T>
+inline void from_json(const Json& data, SmallSet<T>& set) { set.fromJson(data); }
 template<typename T>
 class SmallSetStable
 {
