@@ -14,7 +14,7 @@ TEST_CASE("cuboidSet")
 	{
 		Cuboid secondCuboid = {Point3D::create(2, 2, 3), Point3D::create(1, 1, 3)};
 		REQUIRE(firstCuboid.canMerge(secondCuboid));
-		REQUIRE(!firstCuboid.overlapsWith(secondCuboid));
+		REQUIRE(!firstCuboid.intersects(secondCuboid));
 		cuboidSet.add(secondCuboid);
 		REQUIRE(cuboidSet.size() == 12);
 		REQUIRE(cuboidSet.getCuboids().size() == 1);
@@ -23,7 +23,7 @@ TEST_CASE("cuboidSet")
 	{
 		Cuboid secondCuboid = {Point3D::create(2, 1, 3), Point3D::create(1, 1, 3)};
 		REQUIRE(!firstCuboid.canMerge(secondCuboid));
-		REQUIRE(!firstCuboid.overlapsWith(secondCuboid));
+		REQUIRE(!firstCuboid.intersects(secondCuboid));
 		cuboidSet.add(secondCuboid);
 		REQUIRE(cuboidSet.size() == 10);
 		REQUIRE(cuboidSet.getCuboids().size() == 2);
@@ -32,7 +32,7 @@ TEST_CASE("cuboidSet")
 	{
 		Cuboid secondCuboid = {Point3D::create(1, 1, 1), Point3D::create(1, 1, 0)};
 		REQUIRE(!firstCuboid.canMerge(secondCuboid));
-		REQUIRE(firstCuboid.overlapsWith(secondCuboid));
+		REQUIRE(firstCuboid.intersects(secondCuboid));
 		cuboidSet.add(secondCuboid);
 		REQUIRE(cuboidSet.size() == 9);
 		REQUIRE(cuboidSet.getCuboids().size() == 4);

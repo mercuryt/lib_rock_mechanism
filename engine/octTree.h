@@ -78,7 +78,7 @@ public:
 						continue;
 					if(sphere.contains(child.m_cube))
 						results.push_back(&child);
-					else if(sphere.overlapsWith(child.m_cube))
+					else if(sphere.intersects(child.m_cube))
 						openList.push_back(&child);
 				}
 		}

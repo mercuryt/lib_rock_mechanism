@@ -165,25 +165,13 @@ Cuboid Cuboid::getFace(const Facing6& facing) const
 		return Cuboid({});
 	}
 }
-bool Cuboid::overlapsWith(const Cuboid& other) const
+bool Cuboid::intersects(const Cuboid& other) const
 {
-	return
-		(
-		 (m_highest.data >= other.m_lowest.data).all() && (m_highest.data <= other.m_highest.data).all()
-		) ||
-		(
-		 (other.m_highest.data >= m_lowest.data).all() && (other.m_highest.data <= m_highest.data).all()
-		) ||
-		(
-		 (m_lowest.data >= other.m_lowest.data).all() && (m_lowest.data <= other.m_highest.data).all()
-		) ||
-		(
-		 (other.m_lowest.data >= m_lowest.data).all() && (other.m_lowest.data <= m_highest.data).all()
-		);
+	return !(m_highest.data < other.m_lowest.data || m_lowest.data > other.m_highest.data).any();
 }
 bool Cuboid::overlapsWithSphere(const Sphere& sphere) const
 {
-	return sphere.overlapsWith(*this);
+	return sphere.intersects(*this);
 }
 size_t Cuboid::size() const
 {
@@ -235,7 +223,7 @@ DistanceInBlocks Cuboid::dimensionForFacing(const Facing6& facing) const
 }
 Facing6 Cuboid::getFacingTwordsOtherCuboid(const Cuboid& other) const
 {
-	assert(!overlapsWith(other));
+	assert(!intersects(other));
 	if(other.m_highest.z() < m_lowest.z())
 		return Facing6::Below;
 	if(other.m_lowest.z() > m_highest.z())

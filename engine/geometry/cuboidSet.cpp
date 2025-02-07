@@ -4,7 +4,7 @@ void CuboidSet::create(const Cuboid& cuboid)
 {
 	for(const Cuboid& existing : m_cuboids)
 	{
-		assert(!cuboid.overlapsWith(existing));
+		assert(!cuboid.intersects(existing));
 		if(existing.isTouching(cuboid) && existing.canMerge(cuboid))
 		{
 			mergeInternal(cuboid, existing);
@@ -41,7 +41,7 @@ void CuboidSet::remove(const Cuboid& cuboid)
 	//TODO: partition instead of toSplit.
 	SmallSet<Cuboid> toSplit;
 	for(const Cuboid& existing : m_cuboids)
-		if(existing.overlapsWith(cuboid))
+		if(existing.intersects(cuboid))
 			toSplit.insert(existing);
 	for(const Cuboid& toSplitCuboid : toSplit)
 		m_cuboids.erase(toSplitCuboid);
@@ -60,7 +60,7 @@ void CuboidSet::mergeInternal(const Cuboid& absorbed, const Cuboid& absorber)
 	assert(absorber.canMerge(absorbed));
 	for(const Cuboid& existing : m_cuboids)
 		if(existing != absorbed)
-			assert(!existing.overlapsWith(absorbed));
+			assert(!existing.intersects(absorbed));
 	const Cuboid absorbedCopy = absorbed;
 	const Cuboid absorberCopy = absorber;
 	m_cuboids.maybeErase(absorbed);
@@ -138,7 +138,7 @@ SmallSet<Cuboid> CuboidSetWithBoundingBoxAdjacent::removeAndReturnNoLongerAdjace
 	SmallSet<Cuboid> toSplit;
 	SmallSet<Cuboid> newlySplit;
 	for(const Cuboid& existing : m_cuboids)
-		if(existing.overlapsWith(cuboid))
+		if(existing.intersects(cuboid))
 			toSplit.insert(existing);
 	for(const Cuboid& toSplitCuboid : toSplit)
 		m_cuboids.erase(toSplitCuboid);
@@ -166,7 +166,7 @@ void CuboidSetWithBoundingBoxAdjacent::addAndExtend(const Cuboid& cuboid)
 bool CuboidSetWithBoundingBoxAdjacent::isAdjacent(const CuboidSetWithBoundingBoxAdjacent& cuboidSet) const
 {
 	// If the bounding boxes don't touch then no need to check the actual cuboids.
-	if(!cuboidSet.getBoundingBox().overlapsWith(getBoundingBox()))
+	if(!cuboidSet.getBoundingBox().intersects(getBoundingBox()))
 		return false;
 	// Check each cubid in this set against each in the other set.
 	for(const auto& cuboid : m_cuboids)
