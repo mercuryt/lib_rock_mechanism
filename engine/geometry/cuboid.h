@@ -51,6 +51,7 @@ public:
 	[[nodiscard]] bool isTouching(const Cuboid& cuboid) const;
 	[[nodiscard]] static Cuboid fromBlock(const Blocks& blocks, const BlockIndex& block);
 	[[nodiscard]] static Cuboid fromBlockPair(const Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
+	[[nodiscard]] static Cuboid createCube(const Point3D& center, const DistanceInBlocks& width);
 	class iterator
 	{
 	private:

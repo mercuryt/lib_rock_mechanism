@@ -4,7 +4,7 @@
 #include "blocks/blocks.h"
 OctTree::OctTree(const DistanceInBlocks& halfWidth, Allocator& allocator) :
 	m_data(allocator),
-	m_cube({{halfWidth, halfWidth, halfWidth}, halfWidth}) { }
+	m_cuboid(Cuboid::createCube({halfWidth, halfWidth, halfWidth}, halfWidth)) { }
 void OctTree::record(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visionRangeSquared, const Facing4& facing)
 {
 	auto& locationData = m_data.insert(actor, coordinates, cuboid, visionRangeSquared, facing);
@@ -17,7 +17,7 @@ void OctTree::record(OctTreeRoot& root, const LocationBucketData& locationData)
 }
 void OctTree::afterRecord(OctTreeRoot& root, const LocationBucketData& locationData)
 {
-	if(!m_children.exists() && m_data.size() == Config::minimumOccupantsForOctTreeToSplit && m_cube.size() >= Config::minimumSizeForOctTreeToSplit)
+	if(!m_children.exists() && m_data.size() == Config::minimumOccupantsForOctTreeToSplit && m_cuboid.size() >= Config::minimumSizeForOctTreeToSplit)
 		subdivide(root);
 	if(m_children.exists())
 	{
@@ -29,21 +29,23 @@ void OctTree::subdivide(OctTreeRoot& root)
 {
 	assert(m_children.empty());
 	m_children = root.allocate(*this);
-	DistanceInBlocks quarterWidth = m_cube.halfWidth / 2;
-	DistanceInBlocks minX = m_cube.center.x() - quarterWidth;
-	DistanceInBlocks maxX = m_cube.center.x() + quarterWidth;
-	DistanceInBlocks minY = m_cube.center.y() - quarterWidth;
-	DistanceInBlocks maxY = m_cube.center.y() + quarterWidth;
-	DistanceInBlocks minZ = m_cube.center.z() - quarterWidth;
-	DistanceInBlocks maxZ = m_cube.center.z() + quarterWidth;
-	root.m_data[m_children][0].m_cube = Cube({minX, minY, minZ}, quarterWidth);
-	root.m_data[m_children][1].m_cube = Cube({maxX, minY, minZ}, quarterWidth);
-	root.m_data[m_children][2].m_cube = Cube({minX, maxY, minZ}, quarterWidth);
-	root.m_data[m_children][3].m_cube = Cube({maxX, maxY, minZ}, quarterWidth);
-	root.m_data[m_children][4].m_cube = Cube({minX, minY, maxZ}, quarterWidth);
-	root.m_data[m_children][5].m_cube = Cube({maxX, minY, maxZ}, quarterWidth);
-	root.m_data[m_children][6].m_cube = Cube({minX, maxY, maxZ}, quarterWidth);
-	root.m_data[m_children][7].m_cube = Cube({maxX, maxY, maxZ}, quarterWidth);
+	// Since these are cubes it doesn't matter which dimension is used.
+	DistanceInBlocks quarterWidth = m_cuboid.dimensionForFacing(Facing6::Above) / 4;
+	const Point3D center = m_cuboid.getCenter();
+	DistanceInBlocks minX = center.x() - quarterWidth;
+	DistanceInBlocks maxX = center.x() + quarterWidth;
+	DistanceInBlocks minY = center.y() - quarterWidth;
+	DistanceInBlocks maxY = center.y() + quarterWidth;
+	DistanceInBlocks minZ = center.z() - quarterWidth;
+	DistanceInBlocks maxZ = center.z() + quarterWidth;
+	root.m_data[m_children][0].m_cuboid = Cuboid::createCube({minX, minY, minZ}, quarterWidth);
+	root.m_data[m_children][1].m_cuboid = Cuboid::createCube({maxX, minY, minZ}, quarterWidth);
+	root.m_data[m_children][2].m_cuboid = Cuboid::createCube({minX, maxY, minZ}, quarterWidth);
+	root.m_data[m_children][3].m_cuboid = Cuboid::createCube({maxX, maxY, minZ}, quarterWidth);
+	root.m_data[m_children][4].m_cuboid = Cuboid::createCube({minX, minY, maxZ}, quarterWidth);
+	root.m_data[m_children][5].m_cuboid = Cuboid::createCube({maxX, minY, maxZ}, quarterWidth);
+	root.m_data[m_children][6].m_cuboid = Cuboid::createCube({minX, maxY, maxZ}, quarterWidth);
+	root.m_data[m_children][7].m_cuboid = Cuboid::createCube({maxX, maxY, maxZ}, quarterWidth);
 	for(const LocationBucketData& data : m_data.get())
 	{
 		uint8_t octant = getOctant(data.coordinates);
@@ -89,18 +91,19 @@ void OctTree::updateVisionCuboid(OctTreeRoot& root, const Point3D& coordinates, 
 }
 uint8_t OctTree::getOctant(const Point3D& other)
 {
-	if(m_cube.center.z() >= other.z())
+	const Point3D center = m_cuboid.getCenter();
+	if(center.z() >= other.z())
 	{
-		if(m_cube.center.y() >= other.y())
+		if(center.y() >= other.y())
 		{
-			if(m_cube.center.x() >= other.x())
+			if(center.x() >= other.x())
 				return 0;
 			else
 				return 1;
 		}
 		else
 		{
-			if(m_cube.center.x() >= other.x())
+			if(center.x() >= other.x())
 				return 2;
 			else
 				return 3;
@@ -109,16 +112,16 @@ uint8_t OctTree::getOctant(const Point3D& other)
 	else
 	{
 
-		if(m_cube.center.y() >= other.y())
+		if(center.y() >= other.y())
 		{
-			if(m_cube.center.x() >= other.x())
+			if(center.x() >= other.x())
 				return 4;
 			else
 				return 5;
 		}
 		else
 		{
-			if(m_cube.center.x() >= other.x())
+			if(center.x() >= other.x())
 				return 6;
 			else
 				return 7;
@@ -140,8 +143,7 @@ bool OctTree::contains(const ActorReference& actor, const Point3D& coordinates) 
 OctTreeRoot::OctTreeRoot(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) :
 	m_tree(m_allocator)
 {
-	DistanceInBlocks halfWidth = std::max({x, y, z}) / 2;
-	m_tree.m_cube = {{halfWidth, halfWidth, halfWidth}, halfWidth};
+	m_tree.m_cuboid = Cuboid(Point3D(x - 1, y - 1, z - 1), Point3D::create(0, 0, 0));
 }
 void OctTreeRoot::record(Area& area, const ActorReference& actor)
 {
@@ -189,7 +191,7 @@ void OctTreeRoot::maybeSort()
 
 	for(OctTreeNodeIndex index = OctTreeNodeIndex::create(0); index < m_data.size(); ++index)
 	{
-		uint order = m_parents[index]->m_cube.center.hilbertNumber();
+		uint order = m_parents[index]->m_cuboid.getCenter().hilbertNumber();
 		sortOrder.emplace_back(order, index);
 		++index;
 	}
