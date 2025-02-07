@@ -61,8 +61,8 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 		// Collect results in a vector rather then a set to prevent cache thrashing.
 		ActorReference previousFoundActor;
 		Sphere visionSphere{fromCoords, m_largestRange.toFloat()};
-		auto visionCuboidIndices = m_area.m_visionCuboids.walkAndCollectAdjacentCuboidsInRangeOfPosition(m_area, request.location, m_largestRange);
-		m_area.m_octTree.query(visionSphere, [&](const LocationBucketData& data){
+		VisionCuboidSetSIMD visionCuboids = m_area.m_visionCuboids.walkAndCollectAdjacentCuboidsInRangeOfPosition(m_area, request.location, m_largestRange);
+		m_area.m_octTree.query(visionSphere, visionCuboids, [&](const LocationBucketData& data){
 			if(previousFoundActor.exists() && data.actor == previousFoundActor)
 				// Multi tile actor has already been found.
 				return;
@@ -82,7 +82,7 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 					fromVisionCuboidIndex == toVisionCuboidIndex ||
 					(
 						// Filter actors based on collected vision cuboid incices which are adjacent to from cuboid index directly or transitively and which intersect the vision sphere.
-						visionCuboidIndices.contains(toVisionCuboidIndex) &&
+						visionCuboids.contains(toVisionCuboidIndex) &&
 						// Check sightlines.
 						m_area.m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toCoords)
 					)

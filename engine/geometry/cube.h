@@ -32,5 +32,6 @@ struct Cube
 	[[nodiscard]] Point3D getHighPoint() const;
 	[[nodiscard]] Point3D getLowPoint() const;
 	[[nodiscard]] bool isSomewhatInFrontOf(const Point3D& position, const Facing4& facing) const;
+	[[nodiscard]] Cuboid toCuboid() const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Cube, center, halfWidth);
 };

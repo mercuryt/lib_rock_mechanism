@@ -5,9 +5,25 @@
  */
 #pragma once
 #include "geometry/cuboid.h"
+#include "geometry/cuboidSetSIMD.h"
 #include "dataVector.h"
 
 class Area;
+class VisionCuboid;
+
+// To be returned from VisionCuboid::walkAndCollectAdjacentCuboidsInRangeOfPosition.
+// Used by VisionRequest.
+class VisionCuboidSetSIMD
+{
+	CuboidSetSIMD m_cuboidSet;
+	Eigen::ArrayX<VisionCuboidIndexWidth> m_indices;
+public:
+	VisionCuboidSetSIMD(uint capacity);
+	void insert(const VisionCuboid& visionCuboid);
+	void clear();
+	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
+	[[nodiscard]] bool contains(const VisionCuboidIndex& index) const;
+};
 class VisionCuboid final
 {
 	bool m_destroy = false;
@@ -60,7 +76,7 @@ public:
 	[[nodiscard]] std::pair<VisionCuboid*, Cuboid> maybeGetTargetToCombineWith(Area& area, const Cuboid& cuboid);
 	[[nodiscard]] VisionCuboid* maybeGetForBlock(const BlockIndex& block);
 	[[nodiscard]] VisionCuboidIndex getIndexForBlock(const BlockIndex& block) { return m_blockVisionCuboidIndices[block]; }
-	[[nodiscard]] SmallSet<VisionCuboidIndex> walkAndCollectAdjacentCuboidsInRangeOfPosition(const Area& area, const BlockIndex& location, const DistanceInBlocks& range);
+	[[nodiscard]] VisionCuboidSetSIMD walkAndCollectAdjacentCuboidsInRangeOfPosition(const Area& area, const BlockIndex& location, const DistanceInBlocks& range);
 	// For testing.
 	[[nodiscard]] size_t size() const { return m_visionCuboids.size(); }
 	// TODO: blockIndices could be infered.
