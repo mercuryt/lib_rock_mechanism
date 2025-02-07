@@ -4,7 +4,6 @@
 #include "locationBuckets.h"
 #include "geometry/sphere.h"
 #include "geometry/cuboid.h"
-#include "geometry/cube.h"
 #include "vision/visionCuboid.h"
 #include <memory>
 #include <array>
@@ -17,7 +16,7 @@ class Area;
 class OctTree
 {
 	LocationBucket m_data;
-	Cube m_cube;
+	Cuboid m_cuboid;
 	OctTreeNodeIndex m_children;
 	void afterRecord(OctTreeRoot& root, const LocationBucketData& locationData);
 	void subdivide(OctTreeRoot& root);
@@ -29,11 +28,6 @@ public:
 	void erase(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates);
 	void updateRange(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates, const DistanceInBlocks& visionRangeSquared);
 	void updateVisionCuboid(OctTreeRoot& root, const Point3D& coordinates, const VisionCuboidIndex& cuboid);
-	// TODO: update coordinates.
-	template<typename Action>
-	void query(const OctTreeRoot& root, const Cube& cube, Action&& action) const;
-	template<typename Action>
-	void query(const OctTreeRoot& root, const Area& area, const Cuboid& cuboid, Action&& action) const;
 	[[nodiscard]] uint8_t getOctant(const Point3D& other);
 	friend class OctTreeRoot;
 	// For testing.
@@ -58,6 +52,7 @@ public:
 	void updateRange(const ActorReference& actor, const Point3D& coordinates, const DistanceInBlocks& visionRangeSquared) { m_tree.updateRange(*this, actor, coordinates, visionRangeSquared); }
 	void maybeSort();
 	// TODO: update coordinates.
+	// TODO: move to .hpp.
 	// To be used by VisionRequest.
 	template<typename Action>
 	void query(const Sphere& sphere, const VisionCuboidSetSIMD& visionCuboids , Action&& action) const
@@ -71,16 +66,16 @@ public:
 		{
 			const OctTree& candidate = *openList.back();
 			openList.pop_back();
-			if(!candidate.m_children.exists() || sphere.contains(candidate.m_cube))
+			if(!candidate.m_children.exists() || sphere.contains(candidate.m_cuboid))
 				results.push_back(&candidate);
 			else
 				for(const OctTree& child : m_data[candidate.m_children])
 				{
-					if(child.m_data.empty() || !visionCuboids.intersects(child.m_cube.toCuboid()))
+					if(child.m_data.empty() || !visionCuboids.intersects(child.m_cuboid))
 						continue;
-					if(sphere.contains(child.m_cube))
+					if(sphere.contains(child.m_cuboid))
 						results.push_back(&child);
-					else if(sphere.intersects(child.m_cube))
+					else if(sphere.intersects(child.m_cuboid))
 						openList.push_back(&child);
 				}
 		}
@@ -104,16 +99,16 @@ public:
 		{
 			const OctTree& candidate = *openList.back();
 			openList.pop_back();
-			if(!candidate.m_children.exists() || candidate.m_cube.isContainedBy(cuboid))
+			if(!candidate.m_children.exists() || cuboid.contains(candidate.m_cuboid))
 				results.push_back(&candidate);
 			else
 				for(const OctTree& child : m_data[candidate.m_children])
 				{
 					if(child.m_data.empty())
 						continue;
-					if(child.m_cube.isContainedBy(cuboid))
+					if(cuboid.contains(child.m_cuboid))
 						results.push_back(&child);
-					else if(child.m_cube.intersects(cuboid))
+					else if(cuboid.intersects(child.m_cuboid))
 						openList.push_back(&child);
 				}
 		}

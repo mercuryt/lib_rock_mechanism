@@ -1,6 +1,5 @@
 #include "cuboidSetSIMD.h"
 #include "../config.h"
-#include "cube.h"
 void CuboidSetSIMD::reserve(uint capacity)
 {
 	if(capacity < m_capacity)
@@ -56,8 +55,4 @@ bool CuboidSetSIMD::intersects(const Cuboid& cuboid) const
 			highX <= cuboid.m_lowest.x().get() || highY <= cuboid.m_lowest.y().get() || highZ <= cuboid.m_lowest.z().get() ||
 			lowX >= cuboid.m_highest.x().get() || lowY >= cuboid.m_highest.y().get() || lowZ >= cuboid.m_highest.z().get()
 		).all();
-}
-bool CuboidSetSIMD::intersects(const Cube& cube) const
-{
-	return intersects({cube.getHighPoint(), cube.getLowPoint()});
 }

@@ -195,6 +195,10 @@ Cuboid Cuboid::fromBlockPair(const Blocks& blocks, const BlockIndex& a, const Bl
 	Point3D bCoordinates = blocks.getCoordinates(b);
 	return { {aCoordinates.data.max(bCoordinates.data)}, {aCoordinates.data.min(bCoordinates.data)} };
 }
+Cuboid Cuboid::createCube(const Point3D& center, const DistanceInBlocks& width)
+{
+	return {{center.data + width.get()}, {center.data - width.get()}};
+}
 bool Cuboid::operator==(const Cuboid& cuboid) const
 {
 	return m_lowest == cuboid.m_lowest && m_highest == cuboid.m_highest;

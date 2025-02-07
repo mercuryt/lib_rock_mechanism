@@ -6,8 +6,6 @@
 #include "../types.h"
 #include "cuboid.h"
 
-class Cube;
-
 class CuboidSetSIMD
 {
 	using Coordinates = Eigen::ArrayX<DistanceInBlocksWidth>;
@@ -26,7 +24,6 @@ public:
 	void insert(const Cuboid& cuboid);
 	void clear();
 	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
-	[[nodiscard]] bool intersects(const Cube& cube) const;
 	[[nodiscard]] uint size() const { return m_size; }
 	[[nodiscard]] uint capacity() const { return m_capacity; }
 };

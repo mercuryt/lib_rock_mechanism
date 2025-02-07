@@ -1,16 +1,11 @@
 #include "sphere.h"
 #include "cuboid.h"
-#include "cube.h"
 #include "../blocks/blocks.h"
 #include "../index.h"
 #include <cmath>
 bool Sphere::contains(const Point3D& point) const
 {
 	return point.distanceSquared(center).toFloat() < (radius * radius);
-}
-bool Sphere::contains(const Cube& cube) const
-{
-	return contains(cube.getHighPoint()) && contains(cube.getLowPoint());
 }
 bool Sphere::contains(const Blocks& blocks, const BlockIndex& block) const
 {
@@ -23,10 +18,6 @@ bool Sphere::contains(const Cuboid& cuboid) const
 bool Sphere::intersects(const Cuboid& cuboid) const
 {
 	return doesCuboidIntersectSphere(cuboid.m_highest, cuboid.m_lowest, *this);
-}
-bool Sphere::intersects(const Cube& cube) const
-{
-	return doesCuboidIntersectSphere(cube.getHighPoint(), cube.getLowPoint(), *this);
 }
 bool Sphere::doesCuboidIntersectSphere(const Point3D& highest, const Point3D& lowest, const Sphere& sphere)
 {
