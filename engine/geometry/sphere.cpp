@@ -20,11 +20,11 @@ bool Sphere::contains(const Cuboid& cuboid) const
 {
 	return contains(cuboid.m_highest) && contains(cuboid.m_lowest);
 }
-bool Sphere::overlapsWith(const Cuboid& cuboid) const
+bool Sphere::intersects(const Cuboid& cuboid) const
 {
 	return doesCuboidIntersectSphere(cuboid.m_highest, cuboid.m_lowest, *this);
 }
-bool Sphere::overlapsWith(const Cube& cube) const
+bool Sphere::intersects(const Cube& cube) const
 {
 	return doesCuboidIntersectSphere(cube.getHighPoint(), cube.getLowPoint(), *this);
 }

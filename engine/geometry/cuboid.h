@@ -38,7 +38,7 @@ public:
 	[[nodiscard]] Cuboid canMergeSteal(const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid sum(const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid getFace(const Facing6& faceing) const;
-	[[nodiscard]] bool overlapsWith(const Cuboid& cuboid) const;
+	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
 	[[nodiscard]] bool overlapsWithSphere(const Sphere& sphere) const;
 	[[nodiscard]] size_t size() const;
 	[[nodiscard]] bool empty() const { return m_highest.empty(); }

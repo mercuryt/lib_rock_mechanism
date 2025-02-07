@@ -201,7 +201,7 @@ void AreaHasVisionCuboids::createOrExtend(Area& area, const Cuboid& cuboid)
 			assert(cuboidIndex != created.m_index);
 			if(cuboidIndex.exists() && !m_visionCuboids[cuboidIndex].toDestory() && blocks.canSeeThroughFrom(block, blockAboveSurface))
 			{
-				assert(!m_visionCuboids[cuboidIndex].m_cuboid.overlapsWith(created.m_cuboid));
+				assert(!m_visionCuboids[cuboidIndex].m_cuboid.intersects(created.m_cuboid));
 				adjacent.maybeInsert(cuboidIndex);
 			}
 		}
