@@ -44,6 +44,7 @@ bool CuboidSetSIMD::intersects(const Cuboid& cuboid) const
 {
 	if(!cuboid.intersects(m_boundingBox))
 		return false;
+	// m_size is equal to the last used index. Ignore anything after it.
 	auto highX = m_highX.head(m_size);
 	auto highY = m_highY.head(m_size);
 	auto highZ = m_highZ.head(m_size);

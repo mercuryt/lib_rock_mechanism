@@ -5,6 +5,7 @@
 #include "geometry/sphere.h"
 #include "geometry/cuboid.h"
 #include "geometry/cube.h"
+#include "vision/visionCuboid.h"
 #include <memory>
 #include <array>
 
@@ -57,8 +58,9 @@ public:
 	void updateRange(const ActorReference& actor, const Point3D& coordinates, const DistanceInBlocks& visionRangeSquared) { m_tree.updateRange(*this, actor, coordinates, visionRangeSquared); }
 	void maybeSort();
 	// TODO: update coordinates.
+	// To be used by VisionRequest.
 	template<typename Action>
-	void query(const Sphere& sphere, Action&& action) const
+	void query(const Sphere& sphere, const VisionCuboidSetSIMD& visionCuboids , Action&& action) const
 	{
 		std::vector<const OctTree*> openList;
 		std::vector<const OctTree*> results;
@@ -74,7 +76,7 @@ public:
 			else
 				for(const OctTree& child : m_data[candidate.m_children])
 				{
-					if(child.m_data.empty())
+					if(child.m_data.empty() || !visionCuboids.intersects(child.m_cube.toCuboid()))
 						continue;
 					if(sphere.contains(child.m_cube))
 						results.push_back(&child);
@@ -89,6 +91,7 @@ public:
 			(*iter)->m_data.forEach(action);
 		}
 	}
+	// To be used for finding all viewers in range of a changing terrain.
 	template<typename Action>
 	void query(const Cuboid& cuboid, Action&& action) const
 	{

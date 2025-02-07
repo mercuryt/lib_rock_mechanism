@@ -28,4 +28,5 @@ public:
 	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
 	[[nodiscard]] bool intersects(const Cube& cube) const;
 	[[nodiscard]] uint size() const { return m_size; }
+	[[nodiscard]] uint capacity() const { return m_capacity; }
 };

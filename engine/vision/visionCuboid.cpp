@@ -5,6 +5,19 @@
 #include "blocks/blocks.h"
 #include "actors/actors.h"
 #include "partitionNotify.h"
+
+VisionCuboidSetSIMD::VisionCuboidSetSIMD(uint capacity) : m_cuboidSet(capacity) { m_indices.resize(capacity); }
+void VisionCuboidSetSIMD::insert(const VisionCuboid& visionCuboid)
+{
+	m_cuboidSet.insert(visionCuboid.m_cuboid);
+	if(m_cuboidSet.capacity() > m_indices.size())
+		m_indices.resize(m_cuboidSet.capacity());
+	m_indices[m_cuboidSet.size()] = visionCuboid.m_index.get();
+}
+void VisionCuboidSetSIMD::clear() { m_indices.fill(VisionCuboidIndex::null().get()); m_cuboidSet.clear(); }
+bool VisionCuboidSetSIMD::intersects(const Cuboid& cuboid) const { return m_cuboidSet.intersects(cuboid); }
+bool VisionCuboidSetSIMD::contains(const VisionCuboidIndex& index) const { return (m_indices == index.get()).any(); }
+
 void AreaHasVisionCuboids::initalize(Area& area)
 {
 	Blocks& blocks = area.getBlocks();
@@ -341,11 +354,10 @@ VisionCuboid* AreaHasVisionCuboids::maybeGetForBlock(const BlockIndex& block)
 	VisionCuboid* output = &m_visionCuboids[index];
 	return output;
 }
-SmallSet<VisionCuboidIndex> AreaHasVisionCuboids::walkAndCollectAdjacentCuboidsInRangeOfPosition(const Area& area, const BlockIndex& startLocation, const DistanceInBlocks& range)
+VisionCuboidSetSIMD AreaHasVisionCuboids::walkAndCollectAdjacentCuboidsInRangeOfPosition(const Area& area, const BlockIndex& startLocation, const DistanceInBlocks& range)
 {
 	//TODO: amortize allocations.
-	SmallSet<VisionCuboidIndex> output;
-	output.reserve(16);
+	VisionCuboidSetSIMD output(16);
 	const VisionCuboidIndex& start = getIndexForBlock(startLocation);
 	SmallSet<VisionCuboidIndex> openList;
 	openList.reserve(16);
@@ -357,11 +369,12 @@ SmallSet<VisionCuboidIndex> AreaHasVisionCuboids::walkAndCollectAdjacentCuboidsI
 	Sphere visionSphere(blocks.getCoordinates(startLocation), range.toFloat());
 	while(!openList.empty())
 	{
-		const VisionCuboidIndex& current = openList.back();
+		const VisionCuboidIndex& index = openList.back();
 		openList.popBack();
-		output.insert(current);
-		for(const VisionCuboidIndex& adjacent : m_visionCuboids[current].m_adjacent)
+		output.insert(m_visionCuboids[index]);
+		for(const VisionCuboidIndex& adjacent : m_visionCuboids[index].m_adjacent)
 		{
+			// TODO: check line of sight to doorways.
 			if(!closedList.contains(adjacent) && m_visionCuboids[adjacent].m_cuboid.overlapsWithSphere(visionSphere))
 			{
 				openList.insert(adjacent);

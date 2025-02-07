@@ -58,3 +58,7 @@ bool Cube::isContainedBy(const Point3D& highest, const Point3D& lowest) const
 Point3D Cube::getHighPoint() const { return {center + halfWidth}; }
 Point3D Cube::getLowPoint() const { return {center - halfWidth}; }
 bool Cube::isSomewhatInFrontOf(const Point3D& position, const Facing4& facing) const { return getHighPoint().isInFrontOf(position, facing) || getLowPoint().isInFrontOf(position, facing); }
+Cuboid Cube::toCuboid() const
+{
+	return {getHighPoint(), getLowPoint()};
+}
