@@ -59,8 +59,8 @@ void Window::centerView(const BlockIndex& block)
 {
 	const Blocks& blocks = m_area->getBlocks();
 	const Point3D& point = blocks.getCoordinates(block);
-	m_z = point.z;
-	sf::Vector2f globalPosition(point.x.get() * m_scale, point.y.get() * m_scale);
+	m_z = point.z();
+	sf::Vector2f globalPosition(point.x().get() * m_scale, point.y().get() * m_scale);
 	sf::Vector2i pixelPosition = m_window.mapCoordsToPixel(globalPosition);
 	m_view.setCenter(pixelPosition.x, pixelPosition.y);
 }
@@ -156,14 +156,14 @@ void Window::startLoop()
 							{
 								m_scale = std::max(1u, (int)m_scale - scrollSteps);
 								Point3D center = m_area->getBlocks().getCoordinates(m_blockUnderCursor);
-								m_view.move(-1.f * center.x.get() * scrollSteps, -1.f * center.y.get() * scrollSteps);
+								m_view.move(-1.f * center.x().get() * scrollSteps, -1.f * center.y().get() * scrollSteps);
 							}
 							break;
 						case sf::Keyboard::Insert:
 							{
 								m_scale += 1 * scrollSteps;
 								Point3D center = m_area->getBlocks().getCoordinates(m_blockUnderCursor);
-								m_view.move(center.x.get() * scrollSteps, center.y.get() * scrollSteps);
+								m_view.move(center.x().get() * scrollSteps, center.y().get() * scrollSteps);
 							}
 							break;
 						case sf::Keyboard::Period:
@@ -365,9 +365,9 @@ void Window::startLoop()
 						Blocks& blocks = m_area->getBlocks();
 						const Point3D& coordinates = blocks.getCoordinates(m_blockUnderCursor);
 						m_gameOverlay.m_coordinateUI->setText(
-							std::to_string(coordinates.x.get()) + "," +
-							std::to_string(coordinates.y.get()) + "," +
-							std::to_string(coordinates.z.get())
+							std::to_string(coordinates.x().get()) + "," +
+							std::to_string(coordinates.y().get()) + "," +
+							std::to_string(coordinates.z().get())
 						);
 					}
 					break;

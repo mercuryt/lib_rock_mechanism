@@ -258,7 +258,7 @@ void Draw::blockWallCorners(const BlockIndex& block)
 		auto pair = sprites::make(blocks.isConstructed(block) ? "blockWall" : "roughWall");
 		auto sprite = pair.first;
 		const Point3D coordinates = blocks.getCoordinates(block);
-		sprite.setPosition(((float)coordinates.x.get() - 0.21f) * (float)m_window.m_scale, ((float)coordinates.y.get() + 0.48f) * (float)m_window.m_scale);
+		sprite.setPosition(((float)coordinates.x().get() - 0.21f) * (float)m_window.m_scale, ((float)coordinates.y().get() + 0.48f) * (float)m_window.m_scale);
 		sprite.setScale(scaleRatio, scaleRatio);
 		sprite.setColor(color);
 		sprite.setRotation(45);
@@ -278,7 +278,7 @@ void Draw::blockWallCorners(const BlockIndex& block)
 			auto pair = sprites::make(blocks.isConstructed(block) ? "blockWall" : "roughWall");
 			auto sprite = pair.first;
 			const Point3D coordinates = blocks.getCoordinates(block);
-			sprite.setPosition(((float)coordinates.x.get() - 0.21f) * (float)m_window.m_scale, ((float)coordinates.y.get() + 0.48f) * (float)m_window.m_scale);
+			sprite.setPosition(((float)coordinates.x().get() - 0.21f) * (float)m_window.m_scale, ((float)coordinates.y().get() + 0.48f) * (float)m_window.m_scale);
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			sprite.setRotation(45);
@@ -302,7 +302,7 @@ void Draw::blockWalls(const BlockIndex& block)
 			float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 			auto pair = sprites::make(blocks.isConstructed(block) ? "blockWall" : "roughWall");
 			auto sprite = pair.first;
-			sprite.setPosition((float)coordinates.x.get() * m_window.m_scale, (float)(coordinates.y.get() + 1) * m_window.m_scale);
+			sprite.setPosition((float)coordinates.x().get() * m_window.m_scale, (float)(coordinates.y().get() + 1) * m_window.m_scale);
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			m_window.getRenderWindow().draw(sprite);
@@ -314,7 +314,7 @@ void Draw::blockWalls(const BlockIndex& block)
 			float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 			auto pair = sprites::make(blocks.isConstructed(block) ? "blockWall" : "roughWall");
 			auto sprite = pair.first;
-			sprite.setPosition((float)coordinates.x.get() * m_window.m_scale, (float)coordinates.y.get() * m_window.m_scale);
+			sprite.setPosition((float)coordinates.x().get() * m_window.m_scale, (float)coordinates.y().get() * m_window.m_scale);
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			sprite.setRotation(90);
@@ -340,7 +340,7 @@ void Draw::blockWallTops(const BlockIndex& block)
 			auto pair = sprites::make(blocks.isConstructed(block) ? "blockWallTop" : "roughWallTop");
 			auto sprite = pair.first;
 			sprite.setRotation(180);
-			sprite.setPosition((float)(coordinates.x.get() + 1) * m_window.m_scale, ((float)coordinates.y.get() * m_window.m_scale) + offset);
+			sprite.setPosition((float)(coordinates.x().get() + 1) * m_window.m_scale, ((float)coordinates.y().get() * m_window.m_scale) + offset);
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			m_window.getRenderWindow().draw(sprite);
@@ -351,7 +351,7 @@ void Draw::blockWallTops(const BlockIndex& block)
 			auto pair = sprites::make(blocks.isConstructed(block) ? "blockWallTop" : "roughWallTop");
 			auto sprite = pair.first;
 			sprite.setRotation(270);
-			sprite.setPosition((((float)coordinates.x.get() + 1) * m_window.m_scale) - offset, ((float)coordinates.y.get() + 1) * m_window.m_scale);
+			sprite.setPosition((((float)coordinates.x().get() + 1) * m_window.m_scale) - offset, ((float)coordinates.y().get() + 1) * m_window.m_scale);
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			m_window.getRenderWindow().draw(sprite);
@@ -362,7 +362,7 @@ void Draw::blockWallTops(const BlockIndex& block)
 			auto pair = sprites::make(blocks.isConstructed(block) ? "blockWallTop" : "roughWallTop");
 			auto sprite = pair.first;
 			sprite.setRotation(90);
-			sprite.setPosition(((float)coordinates.x.get() * m_window.m_scale) + offset, ((float)coordinates.y.get() * m_window.m_scale));
+			sprite.setPosition(((float)coordinates.x().get() * m_window.m_scale) + offset, ((float)coordinates.y().get() * m_window.m_scale));
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			m_window.getRenderWindow().draw(sprite);
@@ -372,7 +372,7 @@ void Draw::blockWallTops(const BlockIndex& block)
 		{
 			auto pair = sprites::make(blocks.isConstructed(block) ? "blockWallTop" : "roughWallTop");
 			auto sprite = pair.first;
-			sprite.setPosition(((float)coordinates.x.get() * m_window.m_scale), ((float)(coordinates.y.get() + 1) * m_window.m_scale) - offset);
+			sprite.setPosition(((float)coordinates.x().get() * m_window.m_scale), ((float)(coordinates.y().get() + 1) * m_window.m_scale) - offset);
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			m_window.getRenderWindow().draw(sprite);
@@ -527,7 +527,7 @@ void Draw::blockWallsFromNextLevelDown(const BlockIndex& block)
 		assert(displayData::materialColors.contains(materialType));
 		sf::Color color = displayData::materialColors[materialType];
 		const Point3D belowSouthPosition = blocks.getCoordinates(belowSouth);
-		sf::Vector2f position{(((float)belowSouthPosition.x.get() + 0.5f) * (float)m_window.m_scale), (((float)belowSouthPosition.y.get() + 0.5f - displayData::wallOffset) * (float)m_window.m_scale)};
+		sf::Vector2f position{(((float)belowSouthPosition.x().get() + 0.5f) * (float)m_window.m_scale), (((float)belowSouthPosition.y().get() + 0.5f - displayData::wallOffset) * (float)m_window.m_scale)};
 		spriteAt(*sprite, position, &color);
 	}
 	const BlockIndex& belowWest = blocks.getBlockWest(below);
@@ -551,7 +551,7 @@ void Draw::blockWallsFromNextLevelDown(const BlockIndex& block)
 		assert(displayData::materialColors.contains(materialType));
 		sf::Color color = displayData::materialColors[materialType];
 		const Point3D belowWestPosition = blocks.getCoordinates(belowWest);
-		sf::Vector2f position{(((float)belowWestPosition.x.get() + 0.5f + displayData::wallOffset) * (float)m_window.m_scale), (((float)belowWestPosition.y.get() + 0.5f) * (float)m_window.m_scale)};
+		sf::Vector2f position{(((float)belowWestPosition.x().get() + 0.5f + displayData::wallOffset) * (float)m_window.m_scale), (((float)belowWestPosition.y().get() + 0.5f) * (float)m_window.m_scale)};
 		spriteAt(*sprite, position, &color);
 	}
 }
@@ -569,7 +569,7 @@ void Draw::colorOnBlock(const BlockIndex& block, const sf::Color color)
 	square.setFillColor(color);
 	Blocks& blocks = m_window.m_area->getBlocks();
 	const Point3D coordinates = blocks.getCoordinates(block);
-	square.setPosition((float)coordinates.x.get() * m_window.m_scale, ((float)coordinates.y.get() * m_window.m_scale));
+	square.setPosition((float)coordinates.x().get() * m_window.m_scale, ((float)coordinates.y().get() * m_window.m_scale));
 	m_window.getRenderWindow().draw(square);
 }
 void Draw::maybeDesignated(const BlockIndex& block)
@@ -615,7 +615,7 @@ void Draw::spriteOnBlockWithScaleCentered(const BlockIndex& block, sf::Sprite& s
 	sprite.setScale(scale, scale);
 	Blocks& blocks = m_window.m_area->getBlocks();
 	const Point3D coordinates = blocks.getCoordinates(block);
-	sprite.setPosition(((float)coordinates.x.get() + 0.5f) * windowScale, ((float)coordinates.y.get() + 0.5f) * windowScale);
+	sprite.setPosition(((float)coordinates.x().get() + 0.5f) * windowScale, ((float)coordinates.y().get() + 0.5f) * windowScale);
 	if(color)
 		sprite.setColor(*color);
 	m_window.getRenderWindow().draw(sprite);
@@ -627,7 +627,7 @@ void Draw::spriteOnBlockWithScale(const BlockIndex& block, sf::Sprite& sprite, f
 	sprite.setScale(scale, scale);
 	Blocks& blocks = m_window.m_area->getBlocks();
 	const Point3D coordinates = blocks.getCoordinates(block);
-	sprite.setPosition((float)coordinates.x.get() * windowScale, (float)coordinates.y.get() * windowScale);
+	sprite.setPosition((float)coordinates.x().get() * windowScale, (float)coordinates.y().get() * windowScale);
 	if(color)
 		sprite.setColor(*color);
 	m_window.getRenderWindow().draw(sprite);
@@ -649,14 +649,14 @@ void Draw::spriteOnBlock(const BlockIndex& block, sf::Sprite& sprite, const sf::
 {
 	Blocks& blocks = m_window.m_area->getBlocks();
 	const Point3D coordinates = blocks.getCoordinates(block);
-	sf::Vector2f position{(float)(coordinates.x.get()* m_window.m_scale), (float)(coordinates.y.get()* m_window.m_scale)};
+	sf::Vector2f position{(float)(coordinates.x().get()* m_window.m_scale), (float)(coordinates.y().get()* m_window.m_scale)};
 	spriteAt(sprite, position, color);
 }
 void Draw::spriteOnBlockCentered(const BlockIndex& block, sf::Sprite& sprite, const sf::Color* color)
 {
 	Blocks& blocks = m_window.m_area->getBlocks();
 	const Point3D coordinates = blocks.getCoordinates(block);
-	sf::Vector2f position{(((float)coordinates.x.get() + 0.5f) * (float)m_window.m_scale), (((float)coordinates.y.get() + 0.5f) * (float)m_window.m_scale)};
+	sf::Vector2f position{(((float)coordinates.x().get() + 0.5f) * (float)m_window.m_scale), (((float)coordinates.y().get() + 0.5f) * (float)m_window.m_scale)};
 	spriteAt(sprite, position, color);
 }
 void Draw::imageOnBlock(const BlockIndex& block, std::string name, const sf::Color* color)
@@ -690,28 +690,28 @@ void Draw::progressBarOnBlock(const BlockIndex& block, Percent progress)
 	outline.setFillColor(displayData::progressBarOutlineColor);
 	Blocks& blocks = m_window.m_area->getBlocks();
 	const Point3D coordinates = blocks.getCoordinates(block);
-	outline.setPosition((float)coordinates.x.get() * m_window.m_scale, (float)coordinates.y.get() * m_window.m_scale);
+	outline.setPosition((float)coordinates.x().get() * m_window.m_scale, (float)coordinates.y().get() * m_window.m_scale);
 	m_window.getRenderWindow().draw(outline);
 	float progressWidth = util::scaleByPercent(m_window.m_scale, progress) - (scaledUnit * 2);
 	sf::RectangleShape rectangle(sf::Vector2f(progressWidth, scaledUnit * displayData::progressBarThickness));
 	rectangle.setFillColor(displayData::progressBarColor);
-	rectangle.setPosition(((float)coordinates.x.get() * m_window.m_scale) + scaledUnit, ((float)coordinates.y.get() * m_window.m_scale) + scaledUnit);
+	rectangle.setPosition(((float)coordinates.x().get() * m_window.m_scale) + scaledUnit, ((float)coordinates.y().get() * m_window.m_scale) + scaledUnit);
 	m_window.getRenderWindow().draw(rectangle);
 }
 void Draw::selected(const BlockIndex& block) { outlineOnBlock(block, displayData::selectColor); }
 void Draw::selected(const Cuboid& cuboid)
 {
 	// Check if cuboid intersects with current z level
-	if(cuboid.m_lowest.z > m_window.m_z || cuboid.m_highest.z < m_window.m_z)
+	if(cuboid.m_lowest.z() > m_window.m_z || cuboid.m_highest.z() < m_window.m_z)
 		return;
 	// Set Dimensions.
-	const uint xSize = (cuboid.m_highest.x - cuboid.m_lowest.x).get() + 1;
-	const uint ySize = (cuboid.m_highest.y - cuboid.m_lowest.y).get() + 1;
+	const uint xSize = (cuboid.m_highest.x() - cuboid.m_lowest.x()).get() + 1;
+	const uint ySize = (cuboid.m_highest.y() - cuboid.m_lowest.y()).get() + 1;
 	sf::RectangleShape rectangle(sf::Vector2f(xSize * m_window.m_scale, ySize * m_window.m_scale));
 	// Set Color.
 	rectangle.setFillColor(displayData::selectColorOverlay);
 	// Set Position.
-	rectangle.setPosition(((float)cuboid.m_lowest.x.get() * m_window.m_scale), ((float)cuboid.m_lowest.y.get() * m_window.m_scale));
+	rectangle.setPosition(((float)cuboid.m_lowest.x().get() * m_window.m_scale), ((float)cuboid.m_lowest.y().get() * m_window.m_scale));
 	m_window.getRenderWindow().draw(rectangle);
 }
 void Draw::outlineOnBlock(const BlockIndex& block, const sf::Color color, float thickness)
@@ -722,7 +722,7 @@ void Draw::outlineOnBlock(const BlockIndex& block, const sf::Color color, float 
 	square.setOutlineThickness(thickness);
 	Blocks& blocks = m_window.m_area->getBlocks();
 	const Point3D coordinates = blocks.getCoordinates(block);
-	square.setPosition(((float)coordinates.x.get() * m_window.m_scale) + thickness, ((float)coordinates.y.get() * m_window.m_scale) + thickness);
+	square.setPosition(((float)coordinates.x().get() * m_window.m_scale) + thickness, ((float)coordinates.y().get() * m_window.m_scale) + thickness);
 	m_window.getRenderWindow().draw(square);
 }
 void Draw::stringOnBlock(const BlockIndex& block, std::wstring string, const sf::Color color, float offsetX, float offsetY )
@@ -730,8 +730,8 @@ void Draw::stringOnBlock(const BlockIndex& block, std::wstring string, const sf:
 	Blocks& blocks = m_window.m_area->getBlocks();
 	const Point3D coordinates = blocks.getCoordinates(block);
 	return stringAtPosition(string, {
-		((float)coordinates.x.get() + offsetX) * m_window.m_scale,
-		((float)coordinates.y.get() + offsetY) * m_window.m_scale
+		((float)coordinates.x().get() + offsetX) * m_window.m_scale,
+		((float)coordinates.y().get() + offsetY) * m_window.m_scale
 	}, color);
 
 }
@@ -776,7 +776,7 @@ void Draw::nonGroundCoverPlant(const BlockIndex& block)
 			const Point3D coordinates = blocks.getCoordinates(block);
 			const BlockIndex& plantLocation = plants.getLocation(plant);
 			const Point3D plantLocationCoordinates = blocks.getCoordinates(plantLocation);
-			if(coordinates.x == plantLocationCoordinates.x && coordinates.y == plantLocationCoordinates.y)
+			if(coordinates.x() == plantLocationCoordinates.x() && coordinates.y() == plantLocationCoordinates.y())
 			{
 				const BlockIndex& above = blocks.getBlockAbove(block);
 				if(above.exists() && blocks.plant_exists(above) && blocks.plant_get(above) == plant)
@@ -910,7 +910,7 @@ void Draw::multiTileActor(const ActorIndex& actor)
 	if(Shape::getDisplayScale(actors.getShape(actor)) == 1)
 	{
 		const Point3D& actorLocationCoordinates = blocks.getCoordinates(actors.getLocation(actor));
-		const BlockIndex& location = m_window.m_area->getBlocks().getIndex(actorLocationCoordinates.x, actorLocationCoordinates.y, m_window.m_z);
+		const BlockIndex& location = m_window.m_area->getBlocks().getIndex(actorLocationCoordinates.x(), actorLocationCoordinates.y(), m_window.m_z);
 		spriteOnBlock(location, sprite, &display.color);
 		multiTileBorder(occupiedBlocks, displayData::actorOutlineColor, 1);
 	}
@@ -920,14 +920,14 @@ void Draw::multiTileActor(const ActorIndex& actor)
 		for(const BlockIndex& block : occupiedBlocks)
 		{
 			const Point3D blockCoordinates = blocks.getCoordinates(block);
-			if(blockCoordinates.z == m_window.m_z)
+			if(blockCoordinates.z() == m_window.m_z)
 			{
 				if(topLeft.empty())
 					topLeft = block;
 				else
 				{
 					const Point3D topLeftCoordinates = blocks.getCoordinates(topLeft);
-					if(blockCoordinates.x < topLeftCoordinates.x || blockCoordinates.y < topLeftCoordinates.y)
+					if(blockCoordinates.x() < topLeftCoordinates.x() || blockCoordinates.y() < topLeftCoordinates.y())
 						topLeft = block;
 				}
 			}
@@ -959,29 +959,29 @@ void Draw::borderSegmentOnBlock(const BlockIndex& block, const Facing4& facing, 
 		case 0:
 			// do nothing
 			square.setPosition(
-				(float)coordinates.x.get() * m_window.m_scale,
-				(float)coordinates.y.get() * m_window.m_scale
+				(float)coordinates.x().get() * m_window.m_scale,
+				(float)coordinates.y().get() * m_window.m_scale
 			);
 			break;
 		case 1:
 			square.setRotation(90);
 			square.setPosition(
-				(((float)coordinates.x.get() + 1.f) * m_window.m_scale) - thickness,
-				(float)(coordinates.y.get() * m_window.m_scale)
+				(((float)coordinates.x().get() + 1.f) * m_window.m_scale) - thickness,
+				(float)(coordinates.y().get() * m_window.m_scale)
 			);
 		break;
 		case 2:
 			square.setPosition(
-				(float)coordinates.x.get() * m_window.m_scale,
-				(((float)coordinates.y.get() + 1) * m_window.m_scale) - thickness
+				(float)coordinates.x().get() * m_window.m_scale,
+				(((float)coordinates.y().get() + 1) * m_window.m_scale) - thickness
 			);
 			break;
 
 		case 3:
 			square.setRotation(90);
 			square.setPosition(
-				(float)coordinates.x.get() * m_window.m_scale,
-				(float)coordinates.y.get() * m_window.m_scale
+				(float)coordinates.x().get() * m_window.m_scale,
+				(float)coordinates.y().get() * m_window.m_scale
 			);
 			break;
 	}
@@ -1040,13 +1040,13 @@ sf::Vector2f Draw::blockToPosition(const BlockIndex& block) const
 {
 	Blocks& blocks = m_window.m_area->getBlocks();
 	const Point3D coordinates = blocks.getCoordinates(block);
-	return {((float)coordinates.x.get() * m_window.m_scale), ((float)coordinates.y.get() * m_window.m_scale)};
+	return {((float)coordinates.x().get() * m_window.m_scale), ((float)coordinates.y().get() * m_window.m_scale)};
 }
 sf::Vector2f Draw::blockToPositionCentered(const BlockIndex& block) const
 {
 	Blocks& blocks = m_window.m_area->getBlocks();
 	const Point3D coordinates = blocks.getCoordinates(block);
-	return {((float)coordinates.x.get() + 0.5f) * m_window.m_scale, ((float)coordinates.y.get() + 0.5f) * m_window.m_scale};
+	return {((float)coordinates.x().get() + 0.5f) * m_window.m_scale, ((float)coordinates.y().get() + 0.5f) * m_window.m_scale};
 }
 void Draw::accessableSymbol(const BlockIndex& block)
 {
