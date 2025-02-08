@@ -25,7 +25,7 @@ Blocks::Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y,
 	m_exposedToSky.initalizeEmpty();
 	for(BlockIndex i = BlockIndex::create(0); i < count; ++i)
 		initalize(i);
-	m_offsetsForAdjacentCountTable = makeOffsetsForAdjacentCountTable();
+	makeOffsetsForAdjacentCountTable();
 }
 void Blocks::resize(const BlockIndex& count)
 {
@@ -439,15 +439,13 @@ BlockIndex Blocks::indexAdjacentToAtCount(const BlockIndex& index, const Adjacen
 	else
 		return index + m_offsetsForAdjacentCountTable[adjacentCount.get()];
 }
-std::array<int, 26> Blocks::makeOffsetsForAdjacentCountTable() const
+void Blocks::makeOffsetsForAdjacentCountTable()
 {
-	std::array<int, 26> output;
 	uint i = 0;
 	int sy = m_sizeY.get();
 	int sx = m_sizeX.get();
 	for(const Offset3D& offset : adjacentOffsets::all)
-		output[i++] = (offset.z() * sy * sx) + (offset.y() * sx) + offset.x();
-	return output;
+		m_offsetsForAdjacentCountTable[i++] = (offset.z() * sy * sx) + (offset.y() * sx) + offset.x();
 }
 Offset3D Blocks::relativeOffsetTo(const BlockIndex& index, const BlockIndex& otherIndex) const
 {

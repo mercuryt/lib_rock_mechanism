@@ -11,10 +11,10 @@
 #include "../blockFeature.h"
 #include "../index.h"
 #include "../verySmallSet.h"
+#include "../dataVector.h"
+#include "../index.h"
 
 #include "blockIndexArray.h"
-#include "dataVector.h"
-#include "index.h"
 #include "exposedToSky.h"
 
 #include <vector>
@@ -44,7 +44,7 @@ using ActorIndicesForBlock = VerySmallSet<ActorIndex, 5>;
 using ItemIndicesForBlock = VerySmallSet<ItemIndex, 5>;
 class Blocks
 {
-	std::array<int32_t, 26> m_offsetsForAdjacentCountTable;
+	Eigen::Array<int32_t, 1, 26> m_offsetsForAdjacentCountTable;
 	BlockIndexMap<FactionIdMap<FarmField*>> m_farmFields;
 	BlockIndexMap<FactionIdMap<BlockIsPartOfStockPile>> m_stockPiles;
 	StrongVector<std::unique_ptr<Reservable>, BlockIndex> m_reservables;
@@ -86,6 +86,8 @@ public:
 	void resize(const BlockIndex& count);
 	void initalize(const BlockIndex& index);
 	void recordAdjacent(const BlockIndex& index);
+	void makeOffsetsForAdjacentCountTable();
+	void moveContentsTo(const BlockIndex& index, const BlockIndex& other);
 	// For testing.
 	[[nodiscard]] std::vector<BlockIndex> getAllIndices() const ;
 	[[nodiscard]] Json toJson() const;
@@ -114,6 +116,7 @@ public:
 	[[nodiscard]] BlockIndexArrayNotNull<12> getEdgeAdjacentOnly(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexArrayNotNull<4> getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexArrayNotNull<4> getAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
+	[[nodiscard]] const auto& getOffsetsForAdjacentCountTable() const { return m_offsetsForAdjacentCountTable; }
 	//TODO: Under what circumstances is this integer distance preferable to taxiDistance or fractional distance?
 	[[nodiscard]] DistanceInBlocks distance(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] DistanceInBlocks taxiDistance(const BlockIndex& index, const BlockIndex& other) const;
@@ -128,14 +131,12 @@ public:
 	[[nodiscard]] bool isConstructed(const BlockIndex& index) const { return m_constructed[index]; }
 	[[nodiscard]] bool canSeeIntoFromAlways(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] bool isVisible(const BlockIndex& index) const { return m_visible[index]; }
-	void moveContentsTo(const BlockIndex& index, const BlockIndex& other);
 	// Get block at offset coordinates. Can return nullptr.
 	[[nodiscard]] BlockIndex offset(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const;
 	[[nodiscard]] BlockIndex offset(const BlockIndex& index, const Offset3D& offset) const;
 	[[nodiscard]] BlockIndex offsetNotNull(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const;
 	[[nodiscard]] BlockIndex indexAdjacentToAtCount(const BlockIndex& index, const AdjacentIndex& adjacentCount) const;
 	[[nodiscard]] Offset3D relativeOffsetTo(const BlockIndex& index, const BlockIndex& other) const;
-	[[nodiscard]] std::array<int, 26> makeOffsetsForAdjacentCountTable() const;
 	[[nodiscard]] bool canSeeThrough(const BlockIndex& index) const;
 	[[nodiscard]] bool canSeeThroughFloor(const BlockIndex& index) const;
 	[[nodiscard]] bool canSeeThroughFrom(const BlockIndex& index, const BlockIndex& other) const;
