@@ -114,9 +114,6 @@ public:
 	[[nodiscard]] BlockIndexArrayNotNull<12> getEdgeAdjacentOnly(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexArrayNotNull<4> getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexArrayNotNull<4> getAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<4> getEdgeAdjacentOnlyOnNextZLevelDown(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<8> getEdgeAndCornerAdjacentOnlyOnNextZLevelDown(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<4> getEdgeAdjacentOnlyOnNextZLevelUp(const BlockIndex& index) const;
 	//TODO: Under what circumstances is this integer distance preferable to taxiDistance or fractional distance?
 	[[nodiscard]] DistanceInBlocks distance(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] DistanceInBlocks taxiDistance(const BlockIndex& index, const BlockIndex& other) const;
@@ -204,36 +201,6 @@ public:
 		return BlockIndex::null();
 	}
 	[[nodiscard]] BlockIndices collectAdjacentsInRange(const BlockIndex& index, const DistanceInBlocks& range);
-	static inline std::array<Offset3D, 6> offsetsListDirectlyAdjacent{{
-	//	below		north		east		south		west		above
-		{0,0,-1},	{0,-1,0},	{1,0,0},	{0,1,0},	{-1,0,0},	{0,0,1}
-	}};
-	static inline const std::array<Offset3D, 26> offsetsListAllAdjacent{{
-		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
-		{0,1,-1}, {0,0,-1}, {0,-1,-1},
-		{1,1,-1}, {1,0,-1}, {1,-1,-1},
-
-		{-1,-1,0}, {-1,0,0}, {0,-1,0},
-		{1,1,0}, {0,1,0},
-		{1,-1,0}, {1,0,0}, {-1,1,0},
-
-		{-1,1,1}, {-1,0,1}, {-1,-1,1},
-		{0,1,1}, {0,0,1}, {0,-1,1},
-		{1,1,1}, {1,0,1}, {1,-1,1}
-	}};
-	static inline const std::array<Offset3D, 24> offsetsListAllAdjacentExceptDirectlyAboveAndBelow{{
-		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
-		{0,1,-1}, {0,-1,-1},
-		{1,1,-1}, {1,0,-1}, {1,-1,-1},
-
-		{-1,-1,0}, {-1,0,0}, {0,-1,0},
-		{1,1,0}, {0,1,0},
-		{1,-1,0}, {1,0,0}, {-1,1,0},
-
-		{-1,1,1}, {-1,0,1}, {-1,-1,1},
-		{0,1,1}, {0,-1,1},
-		{1,1,1}, {1,0,1}, {1,-1,1}
-	}};
 	// -Designation
 	[[nodiscard]] bool designation_has(const BlockIndex& index, const FactionId& faction, const BlockDesignation& designation) const;
 	void designation_set(const BlockIndex& index, const FactionId& faction, const BlockDesignation& designation);

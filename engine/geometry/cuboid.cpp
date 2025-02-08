@@ -3,6 +3,7 @@
 #include "../area.h"
 #include "../types.h"
 #include "../blocks/blocks.h"
+#include "../blocks/adjacentOffsets.h"
 
 #include <cassert>
 Cuboid::Cuboid(const Blocks& blocks, const BlockIndex& h, const BlockIndex& l) : Cuboid(blocks.getCoordinates(h), blocks.getCoordinates(l)) { }
@@ -115,7 +116,7 @@ void Cuboid::setFrom(const Blocks& blocks, const BlockIndex& a, const BlockIndex
 void Cuboid::shift(const Facing6& direction, const DistanceInBlocks& distance)
 {
 	// TODO: make offsetsListDirectlyAdjacent return an Offset3D.
-	Offset3D offset = Blocks::offsetsListDirectlyAdjacent[(uint)direction];
+	Offset3D offset = adjacentOffsets::direct[(uint)direction];
 	offset *= distance;
 	m_highest += offset;
 	m_lowest += offset;
