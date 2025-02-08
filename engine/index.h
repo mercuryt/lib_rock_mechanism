@@ -18,28 +18,44 @@ class ItemIndex;
 class ActorIndex;
 class Simulation;
 class ActorOrItemIndex;
-class BlockIndex : public StrongInteger<BlockIndex, uint32_t>
+using BlockIndexWidth = uint32_t;
+class BlockIndex : public StrongInteger<BlockIndex, BlockIndexWidth>
 {
-	BlockIndex(uint32_t index) : StrongInteger<BlockIndex, uint32_t>(index) { }
+	BlockIndex(BlockIndexWidth index) : StrongInteger<BlockIndex, BlockIndexWidth>(index) { }
 public:
-	static BlockIndex create(uint32_t index){ return BlockIndex(index); }
+	static BlockIndex create(BlockIndexWidth index){ return BlockIndex(index); }
 	[[nodiscard]] static BlockIndex null() { return BlockIndex(); }
 	BlockIndex() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const BlockIndex& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const BlockIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, BlockIndex& index) { index = BlockIndex::create(data.get<uint32_t>()); }
-//TODO: this could be narrowed to uint16_t.
-class VisionFacadeIndex : public StrongInteger<VisionFacadeIndex, uint32_t>
+inline void from_json(const Json& data, BlockIndex& index) { index = BlockIndex::create(data.get<BlockIndexWidth>()); }
+
+using BlockIndexChunkedWidth = uint32_t;
+class BlockIndexChunked : public StrongInteger<BlockIndexChunked, BlockIndexChunkedWidth>
 {
-	VisionFacadeIndex(uint32_t index) : StrongInteger<VisionFacadeIndex, uint32_t>(index) { }
+	BlockIndexChunked(BlockIndexChunkedWidth index) : StrongInteger<BlockIndexChunked, BlockIndexChunkedWidth>(index) { }
 public:
-	static VisionFacadeIndex create(uint32_t index){ return VisionFacadeIndex(index); }
+	static BlockIndexChunked create(BlockIndexChunkedWidth index){ return BlockIndexChunked(index); }
+	[[nodiscard]] static BlockIndexChunked null() { return BlockIndexChunked(); }
+	BlockIndexChunked() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const BlockIndexChunked& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const BlockIndexChunked& index) { data = index.get(); }
+inline void from_json(const Json& data, BlockIndexChunked& index) { index = BlockIndexChunked::create(data.get<BlockIndexChunkedWidth>()); }
+//TODO: this could be narrowed to uint16_t.
+
+using VisionFacadeIndexWidth = uint32_t;
+class VisionFacadeIndex : public StrongInteger<VisionFacadeIndex, VisionFacadeIndexWidth>
+{
+	VisionFacadeIndex(VisionFacadeIndexWidth index) : StrongInteger<VisionFacadeIndex, VisionFacadeIndexWidth>(index) { }
+public:
+	static VisionFacadeIndex create(VisionFacadeIndexWidth index){ return VisionFacadeIndex(index); }
 	[[nodiscard]] static VisionFacadeIndex null() { return VisionFacadeIndex(); }
 	VisionFacadeIndex() = default;
 };
 inline void to_json(Json& data, const VisionFacadeIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, VisionFacadeIndex& index) { index = VisionFacadeIndex::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, VisionFacadeIndex& index) { index = VisionFacadeIndex::create(data.get<VisionFacadeIndexWidth>()); }
 //TODO: this could be narrowed to uint16_t.
 class PathRequestIndex : public StrongInteger<PathRequestIndex, uint32_t>
 {

@@ -52,7 +52,6 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 	{
 		VisionRequest& request = *iter;
 		const DistanceInBlocks& rangeSquared = request.range * request.range;
-		const BlockIndex& fromIndex = request.location;
 		const VisionCuboidIndex& fromVisionCuboidIndex = request.cuboid;
 		const Point3D& fromCoords = request.coordinates;
 		assert(fromVisionCuboidIndex.exists());
@@ -84,7 +83,7 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 						// Filter actors based on collected vision cuboid incices which are adjacent to from cuboid index directly or transitively and which intersect the vision sphere.
 						visionCuboids.contains(toVisionCuboidIndex) &&
 						// Check sightlines.
-						m_area.m_opacityFacade.hasLineOfSight(fromIndex, fromCoords, toCoords)
+						m_area.m_opacityFacade.hasLineOfSight(fromCoords, toCoords)
 					)
 				)
 				{
@@ -224,7 +223,7 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::
 				// At some threashold it is not worth it to check line of sight for so many changed blocks, better to just create the vision requests instead.
 				blockDataStore.size() >= Config::minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests ||
 				blockData.cuboid == candidate.cuboid ||
-				m_area.m_opacityFacade.hasLineOfSight(blockData.index, blockData.coordinates, candidate.coordinates)
+				m_area.m_opacityFacade.hasLineOfSight(blockData.coordinates, candidate.coordinates)
 			)
 			{
 				results.insert(candidate.actor);

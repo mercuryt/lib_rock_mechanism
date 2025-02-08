@@ -12,12 +12,15 @@
 
 Blocks::Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) :
 	m_area(area),
+	m_pointToIndexConversionMultipliers(1, x.get(), x.get() * y.get()),
+	m_pointToIndexConversionMultipliersChunked(1, x.get() / 16, (x.get() / 16) * (y.get() / 16)),
+	m_sizeXInChunks(x.get() / 16),
+	m_sizeXTimesYInChunks((x.get() / 16) * ( y.get() / 16)),
+	m_dimensions(x.get(), y.get(), z.get()),
 	m_sizeX(x),
 	m_sizeY(y),
 	m_sizeZ(z),
-	m_zLevelSize(x.get() * y.get()),
-	m_pointToIndexConversionMultipliers(1, x.get(), x.get() * y.get()),
-	m_dimensions(x.get(), y.get(), z.get())
+	m_zLevelSize(x.get() * y.get())
 {
 	assert(!area.m_loaded);
 	BlockIndex count = BlockIndex::create((x * y * z).get());
@@ -135,18 +138,24 @@ size_t Blocks::size() const
 {
 	return m_materialType.size();
 }
-BlockIndex Blocks::getIndex(Point3D coordinates) const
+size_t Blocks::getChunkedSize() const
+{
+	auto dimensionsInChunks = m_dimensions / 16;
+	auto underSize = (m_dimensions - (dimensionsInChunks * 16)) != 0;
+	return ((dimensionsInChunks + underSize.cast<uint>()) * 16).prod();
+}
+BlockIndex Blocks::getIndex(const Point3D& coordinates) const
 {
 	assert((coordinates.data < m_dimensions).all());
 	return BlockIndex::create((coordinates.data * m_pointToIndexConversionMultipliers).sum());
 }
-BlockIndex Blocks::maybeGetIndex(Point3D coordinates) const
+BlockIndex Blocks::maybeGetIndex(const Point3D& coordinates) const
 {
 	if((coordinates.data < m_dimensions).all())
 		return BlockIndex::create((coordinates.data * m_pointToIndexConversionMultipliers).sum());
 	return BlockIndex::null();
 }
-BlockIndex Blocks::maybeGetIndexFromOffsetOnEdge(Point3D coordinates, const Offset3D offset) const
+BlockIndex Blocks::maybeGetIndexFromOffsetOnEdge(const Point3D& coordinates, const Offset3D& offset) const
 {
 	if(
 		!(// Invert condition to put the common path in the if rather then else, as a hint to branch predictor.
@@ -165,6 +174,16 @@ BlockIndex Blocks::getIndex_i(uint x, uint y, uint z) const
 BlockIndex Blocks::getIndex(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) const
 {
 	return getIndex({x,y,z});
+}
+static const Coordinates localSizeMultiples(1, 16, 16*16);
+BlockIndexChunked Blocks::getIndexChunked(Point3D coordinates)
+{
+	auto chunkOffsets = coordinates.data / 16u;
+	coordinates.data -= chunkOffsets * 16;
+	uint localComponent = (coordinates.data * localSizeMultiples).sum();
+	uint globalComponent = (chunkOffsets * m_pointToIndexConversionMultipliersChunked).sum();
+	globalComponent *= 16 * 16 * 16;
+	return BlockIndexChunked::create(localComponent + globalComponent);
 }
 Point3D Blocks::getCoordinates(BlockIndex index) const
 {
