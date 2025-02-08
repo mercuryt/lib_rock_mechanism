@@ -299,22 +299,27 @@ BlockIndex Blocks::getBlockEast(const BlockIndex& index) const
 {
 	return m_directlyAdjacent[index][uint(Facing6::East)];
 }
-BlockIndexArrayNotNull<18> Blocks::getAdjacentWithEdgeAdjacent(const BlockIndex& index) const
+std::array<BlockIndex, 26> Blocks::getAdjacentWithEdgeAndCornerAdjacentUnfiltered(const BlockIndex& index) const
 {
-	return BlockIndexArrayNotNull<18>(getAdjacentWithOffsets<18, true>(*this, index, adjacentOffsets::directAndEdge.begin()));
+	return getAdjacentWithOffsets<26, false>(*this, index, adjacentOffsets::all.begin());
 }
-// TODO: cache.
+// TODO: cache?
 BlockIndexArrayNotNull<26> Blocks::getAdjacentWithEdgeAndCornerAdjacent(const BlockIndex& index) const
 {
+	//TODO: calculate for non-edge blocks with adjacentCountTable.
 	return getAdjacentWithOffsets<26, true>(*this, index, adjacentOffsets::all.begin());
 }
 BlockIndexArrayNotNull<24> Blocks::getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const BlockIndex& index) const
 {
-	return getAdjacentWithOffsets<24, false>(*this, index, adjacentOffsets::allExceptDirectlyAboveAndBelow.begin());
+	return getAdjacentWithOffsets<24, true>(*this, index, adjacentOffsets::allExceptDirectlyAboveAndBelow.begin());
 }
-std::array<BlockIndex, 26> Blocks::getAdjacentWithEdgeAndCornerAdjacentUnfiltered(const BlockIndex& index) const
+BlockIndexArrayNotNull<20> Blocks::getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const
 {
-	return getAdjacentWithOffsets<26, false>(*this, index, adjacentOffsets::all.begin());
+	return getAdjacentWithOffsets<20, true>(*this, index, adjacentOffsets::edgeAndCorner.begin());
+}
+BlockIndexArrayNotNull<18> Blocks::getAdjacentWithEdgeAdjacent(const BlockIndex& index) const
+{
+	return BlockIndexArrayNotNull<18>(getAdjacentWithOffsets<18, true>(*this, index, adjacentOffsets::directAndEdge.begin()));
 }
 BlockIndexArrayNotNull<12> Blocks::getEdgeAdjacentOnly(const BlockIndex& index) const
 {
@@ -323,10 +328,6 @@ BlockIndexArrayNotNull<12> Blocks::getEdgeAdjacentOnly(const BlockIndex& index) 
 BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const
 {
 	return getAdjacentWithOffsets<4, true>(*this, index, adjacentOffsets::edgeWithSameZ.begin());
-}
-BlockIndexArrayNotNull<20> Blocks::getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const
-{
-	return getAdjacentWithOffsets<20, true>(*this, index, adjacentOffsets::edgeAndCorner.begin());
 }
 BlockIndexArrayNotNull<4> Blocks::getAdjacentOnSameZLevelOnly(const BlockIndex& index) const
 {
