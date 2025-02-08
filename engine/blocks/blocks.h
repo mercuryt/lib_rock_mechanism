@@ -73,14 +73,17 @@ class Blocks
 	StrongBitSet<BlockIndex> m_visible;
 	StrongBitSet<BlockIndex> m_constructed;
 	Area& m_area;
+	const Coordinates m_pointToIndexConversionMultipliers;
+	const Coordinates m_pointToIndexConversionMultipliersChunked;
+	uint m_sizeXInChunks;
+	uint m_sizeXTimesYInChunks;
 public:
+	const Coordinates m_dimensions;
 	//TODO: replace these with functions accessing m_dimensions.
 	const DistanceInBlocks m_sizeX;
 	const DistanceInBlocks m_sizeY;
 	const DistanceInBlocks m_sizeZ;
 	const DistanceInBlocksWidth m_zLevelSize;
-	const Coordinates m_pointToIndexConversionMultipliers;
-	const Coordinates m_dimensions;
 	Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void resize(const BlockIndex& count);
@@ -94,12 +97,15 @@ public:
 	[[nodiscard]] Cuboid getAll();
 	[[nodiscard]] const Cuboid getAll() const;
 	[[nodiscard]] size_t size() const;
-	[[nodiscard]] BlockIndex getIndex(Point3D coordinates) const;
-	[[nodiscard]] BlockIndex maybeGetIndex(Point3D coordinates) const;
-	BlockIndex maybeGetIndexFromOffset(Point3D coordinates, const Offset3D offset) const;
-	BlockIndex maybeGetIndexFromOffsetOnEdge(Point3D coordinates, const Offset3D offset) const;
+	[[nodiscard]] size_t getChunkedSize() const;
+	[[nodiscard]] BlockIndex getIndex(const Point3D& coordinates) const;
+	[[nodiscard]] BlockIndex maybeGetIndex(const Point3D& coordinates) const;
+	BlockIndex maybeGetIndexFromOffset(const Point3D& coordinates, const Offset3D& offset) const;
+	BlockIndex maybeGetIndexFromOffsetOnEdge(const Point3D& coordinates, const Offset3D& offset) const;
 	[[nodiscard]] BlockIndex getIndex(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) const;
 	[[nodiscard]] BlockIndex getIndex_i(uint x, uint y, uint z) const;
+	// Pass by value because it will be modified.
+	BlockIndexChunked getIndexChunked(Point3D coordinates);
 	// Pass by value because it will be modified.
 	[[nodiscard]] Point3D getCoordinates(BlockIndex index) const;
 	Point3D_fractional getCoordinatesFractional(const BlockIndex& index) const;
