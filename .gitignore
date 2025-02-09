@@ -11,7 +11,9 @@ a\.out
 */CMakeCache.txt
 *\.cmake
 */Makefile
-build/*
+buildDebug/*
+buildRelease/*
+buildReleaseWithDbgInfo/*
 */CMakeFiles/*
 *\.cpp.o.d
 *CMakeLists.txt.user
@@ -26,8 +28,8 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 tags
-/unit
-/unit_*
+unit
+unit_*
 test/benchmark/*
 test/inconsistantErrors/*
 *\.vscode
@@ -39,4 +41,4 @@ UI
 $XDG_DATA_HOME
 linkerErrors
 core.*
-/save/.*
+save/.*
