@@ -7,6 +7,10 @@
 #include <compare>
 #include <functional>
 #include <variant>
+#ifndef NDEBUG
+	//#define TRACK_REFERENCES;
+#endif
+
 template<typename Index, typename ReferenceIndex>
 class ReferenceData;
 template<typename Index, typename ReferenceIndex>
@@ -14,40 +18,46 @@ class Reference
 {
 	using Data = ReferenceData<Index, ReferenceIndex>;
 	ReferenceIndex m_referenceIndex;
-	#ifndef NDEBUG
+	#ifdef TRACK_REFERENCES
 		Data* m_data = nullptr;
 		std::shared_ptr<bool> m_destruct;
 	#endif
 public:
 	Reference() = default;
-	Reference(const ReferenceIndex& index, Data& data) :
+	Reference(const ReferenceIndex& index,[[maybe_unused]] Data& data) :
 		m_referenceIndex(index)
 	{
-		if constexpr(DEBUG) if(m_referenceIndex.exists())
-		{
-			setReferenceData(data);
-			m_data->recordReference(*this);
-		}
+		#ifdef TRACK_REFERENCES
+			if(m_referenceIndex.exists())
+			{
+				setReferenceData(data);
+				m_data->recordReference(*this);
+			}
+		#endif
 	}
 	Reference(const Reference<Index, ReferenceIndex>& other)
 	{
 		m_referenceIndex = other.m_referenceIndex;
-		if constexpr(DEBUG) if(m_referenceIndex.exists())
-		{
-			// Discard const from other.m_data for reference counting.
-			setReferenceData(const_cast<ReferenceData<Index, ReferenceIndex>&>(*other.m_data));
-			m_data->recordReference(*this);
-		}
+		#ifdef TRACK_REFERENCES
+			if(m_referenceIndex.exists())
+			{
+				// Discard const from other.m_data for reference counting.
+				setReferenceData(const_cast<ReferenceData<Index, ReferenceIndex>&>(*other.m_data));
+				m_data->recordReference(*this);
+			}
+		#endif
 	}
 	Reference(Reference<Index, ReferenceIndex>&& other) noexcept
 	{
 		m_referenceIndex = other.m_referenceIndex;
-		if constexpr(DEBUG) if(m_referenceIndex.exists())
-		{
-			setReferenceData(*other.m_data);
-			other.clear();
-			m_data->recordReference(*this);
-		}
+		#ifdef TRACK_REFERENCES
+			if(m_referenceIndex.exists())
+			{
+				setReferenceData(*other.m_data);
+				other.clear();
+				m_data->recordReference(*this);
+			}
+		#endif
 	}
 	Reference(const Json& data, Data& dataStore)
 	{
@@ -55,29 +65,38 @@ public:
 	}
 	~Reference()
 	{
-		if(m_referenceIndex.exists() && !*m_destruct)
-			setReferenceIndex(ReferenceIndex::null());
+		#ifdef TRACK_REFERENCES
+			if(m_referenceIndex.exists() && !*m_destruct)
+				setReferenceIndex(ReferenceIndex::null());
+		#endif
 	}
 	Reference& operator=(const Reference& other)
 	{
 		// Discard const from other.m_data for reference counting.
-		maybeSetReferenceData(const_cast<ReferenceData<Index, ReferenceIndex>&>(*other.m_data));
+		#ifdef TRACK_REFERENCES
+			maybeSetReferenceData(const_cast<ReferenceData<Index, ReferenceIndex>&>(*other.m_data));
+		#endif
 		setReferenceIndex(other.m_referenceIndex);
 		return *this;
 	}
 	Reference& operator=(Reference&& other) noexcept
 	{
-		if constexpr(DEBUG) if(m_referenceIndex.exists())
-			m_data->removeReference(*this);
+		#ifdef TRACK_REFERENCES
+			if(m_referenceIndex.exists())
+				m_data->removeReference(*this);
+		#endif
 		m_referenceIndex = other.m_referenceIndex;
-		if constexpr(DEBUG) if(m_referenceIndex.exists())
-		{
-			maybeSetReferenceData(*other.m_data);
-			other.clear();
-			m_data->recordReference(*this);
-		}
+		#ifdef TRACK_REFERENCES
+			if(m_referenceIndex.exists())
+			{
+				maybeSetReferenceData(*other.m_data);
+				other.clear();
+				m_data->recordReference(*this);
+			}
+		#endif
 		return *this;
 	}
+	#ifdef TRACK_REFERENCES
 	void setReferenceData(Data& data)
 	{
 		assert(m_data == nullptr);
@@ -88,33 +107,68 @@ public:
 	}
 	void maybeSetReferenceData(Data& data)
 	{
-		if constexpr(DEBUG)
-		{
 			if(m_data == nullptr) setReferenceData(data);
 			else assert(m_data == &data);
-		}
 	}
+	#endif
 	void setReferenceIndex(const ReferenceIndex& ref)
 	{
-		assert(m_data != nullptr);
-		if constexpr (DEBUG) if(m_referenceIndex.exists()) m_data->removeReference(*this);
+		#ifdef TRACK_REFERENCES
+			assert(m_data != nullptr);
+			if(m_referenceIndex.exists()) m_data->removeReference(*this);
+		#endif
 		m_referenceIndex = ref;
-		if constexpr (DEBUG) if(m_referenceIndex.exists()) m_data->recordReference(*this);
+		#ifdef TRACK_REFERENCES
+			if(m_referenceIndex.exists()) m_data->recordReference(*this);
+		#endif
 	}
 	void setIndex(const Index& index, Data& dataStore)
 	{
-		maybeSetReferenceData(dataStore);
+		#ifdef TRACK_REFERENCES
+			maybeSetReferenceData(dataStore);
+		#endif
 		setReferenceIndex(dataStore.getReferenceIndex(index));
 	}
 	void clear() { setReferenceIndex(ReferenceIndex::null()); }
-	void load(const Json& data, Data& dataStore) { if constexpr(DEBUG) setReferenceData(dataStore); setReferenceIndex(data.get<ReferenceIndex>()); }
-	void validate(const Data& dataStore) const { assert(m_data == &dataStore); dataStore.validateReference(m_referenceIndex); }
-	[[nodiscard]] Index getIndex(const Data& dataStore) const { assert(exists()); assert(&dataStore == m_data); return dataStore.getIndex(m_referenceIndex); }
+	void load(const Json& data, [[maybe_unused]] Data& dataStore)
+	{
+		#ifdef TRACK_REFERENCES
+			setReferenceData(dataStore);
+		#endif
+		setReferenceIndex(data.get<ReferenceIndex>());
+	}
+	void validate(const Data& dataStore) const
+	{
+		#ifdef TRACK_REFERENCES
+			assert(m_data == &dataStore);
+		#endif
+		dataStore.validateReference(m_referenceIndex);
+	}
+	[[nodiscard]] Index getIndex(const Data& dataStore) const
+	{
+		assert(exists());
+		#ifdef TRACK_REFERENCES
+			assert(&dataStore == m_data);
+		#endif
+		return dataStore.getIndex(m_referenceIndex);
+	}
 	[[nodiscard]] ReferenceIndex getReferenceIndex() const { return m_referenceIndex; }
 	[[nodiscard]] bool exists() const { return m_referenceIndex.exists(); }
 	[[nodiscard]] bool empty() const { return m_referenceIndex.empty(); }
-	[[nodiscard]] bool operator==(const Reference& other) const { assert(m_data == other.m_data); return other.m_referenceIndex == m_referenceIndex; }
-	[[nodiscard]] std::strong_ordering operator<=>(const Reference& other) const { assert(m_data == other.m_data); return m_referenceIndex <=> other.m_referenceIndex; }
+	[[nodiscard]] bool operator==(const Reference& other) const
+	{
+		#ifdef TRACK_REFERENCES
+			assert(m_data == other.m_data);
+		#endif
+		return other.m_referenceIndex == m_referenceIndex;
+	}
+	[[nodiscard]] std::strong_ordering operator<=>(const Reference& other) const
+	{
+		#ifdef TRACK_REFERENCES
+			assert(m_data == other.m_data);
+		#endif
+		return m_referenceIndex <=> other.m_referenceIndex;
+	}
 	[[nodiscard]] size_t hash() const { return m_referenceIndex.get(); }
 	[[nodiscard]] Json toJson() const { return m_referenceIndex.get(); }
 	struct Hash { [[nodiscard]] size_t operator()(const Reference<Index, ReferenceIndex>& reference) const { return reference.get(); } };
@@ -134,7 +188,7 @@ class ReferenceData
 	StrongVector<Index, ReferenceIndex> m_indicesByReference;
 	StrongVector<ReferenceIndex, Index> m_referencesByIndex;
 	SmallSet<ReferenceIndex> m_unusedReferenceIndices;
-	#ifndef NDEBUG
+	#ifdef TRACK_REFERENCES
 		StrongVector<SmallSet<Reference<Index, ReferenceIndex>*>, ReferenceIndex> m_references;
 		std::shared_ptr<bool> m_destruct;
 public: ~ReferenceData() { (*m_destruct) = true; }
@@ -163,8 +217,9 @@ public:
 		data["m_indicesByReference"].get_to(m_indicesByReference);
 		data["m_referencesByIndex"].get_to(m_referencesByIndex);
 		data["m_unusedReferenceIndices"].get_to(m_unusedReferenceIndices);
-		if constexpr(DEBUG)
+		#ifdef TRACK_REFERENCES
 			m_references.resize(m_referencesByIndex.size());
+		#endif
 	}
 	void add(const Index& index)
 	{
@@ -185,10 +240,10 @@ public:
 		assert(!m_referencesByIndex.contains(refIndex));
 		m_indicesByReference[refIndex] = index;
 		m_referencesByIndex.add(refIndex);
-		if constexpr (DEBUG){
+		#ifdef TRACK_REFERENCES
 			if(m_references.size() < m_indicesByReference.size())
 				m_references.resize(m_indicesByReference.size());
-		}
+		#endif
 	}
 	void remove(const Index& index)
 	{
@@ -196,7 +251,9 @@ public:
 		ReferenceIndex refIndex = m_referencesByIndex[index];
 		assert(m_indicesByReference[refIndex].exists());
 		assert(m_indicesByReference[refIndex] == index);
-		assert(m_references[refIndex].empty());
+		#ifdef TRACK_REFERENCES
+			assert(m_references[refIndex].empty());
+		#endif
 		m_referencesByIndex.remove(index);
 		// Index was not the last item, a still valid item has been moved and it's reference must be updated.
 		if(m_referencesByIndex.size() > index)
@@ -227,14 +284,15 @@ public:
 		m_referencesByIndex.reserve(size);
 		// The current 'next reference' is determined by the length of indices by reference, which is why we reserve rather then resize here.
 		m_indicesByReference.reserve(size);
-		if constexpr(DEBUG)
+		#ifdef TRACK_REFERENCES
 			m_references.reserve(size);
+		#endif
 	}
 	void reserve(const Index& size)
 	{
 		reserve(size.get());
 	}
-	void validateReference(const ReferenceIndex& ref) const
+	void validateReference([[maybe_unused]] const ReferenceIndex& ref) const
 	{
 		assert(ref < m_indicesByReference.size());
 		assert(m_indicesByReference[ref].exists());
@@ -245,7 +303,9 @@ public:
 	[[nodiscard]] const auto& getIndices() const { return m_indicesByReference; }
 	[[nodiscard]] const StrongVector<ReferenceIndex, Index>& getReferenceIndices() const { return m_referencesByIndex; }
 	[[nodiscard]] const auto& getUnusedReferenceIndices() const { return m_unusedReferenceIndices; }
+	#ifdef TRACK_REFERENCES
 	[[nodiscard]] bool hasReferencesTo(const Index& index) const { return !m_references[m_referencesByIndex[index]].empty(); }
+	#endif
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(ReferenceData, m_indicesByReference, m_referencesByIndex, m_unusedReferenceIndices);
 };
 template<typename Index, typename ReferenceIndex>
@@ -315,7 +375,7 @@ public:
 				case 2:
 					return std::get<2>(reference.m_reference).hash();
 				default:
-					assert(false);
+					std::unreachable();
 			}
 		}
 	};

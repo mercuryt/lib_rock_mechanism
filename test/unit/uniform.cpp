@@ -28,7 +28,7 @@ TEST_CASE("uniform")
 		.location=blocks.getIndex_i(5,5,1),
 	});
 	actors.uniform_set(actor, basic);
-	REQUIRE(actors.objective_getCurrentName(actor) == L"uniform");
+	CHECK(actors.objective_getCurrentName(actor) == L"uniform");
 	UniformObjective& objective = actors.objective_getCurrent<UniformObjective>(actor);
 	ItemIndex pants = items.create({.itemType=ItemType::byName(L"pants"), .materialType=MaterialType::byName(L"cotton"), .location=blocks.getIndex_i(8,1,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
 	ItemIndex shirt = items.create({.itemType=ItemType::byName(L"shirt"), .materialType=MaterialType::byName(L"cotton"), .location=blocks.getIndex_i(1,6,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
@@ -36,20 +36,20 @@ TEST_CASE("uniform")
 	ItemIndex belt2 = items.create({.itemType=ItemType::byName(L"belt"), .materialType=MaterialType::byName(L"leather"), .location=blocks.getIndex_i(9,3,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
 	simulation.doStep();
 	BlockIndex destination = actors.move_getDestination(actor);
-	REQUIRE(items.isAdjacentToLocation(shirt, destination));
-	REQUIRE(objective.getItem().getIndex(items.m_referenceData) == shirt);
+	CHECK(items.isAdjacentToLocation(shirt, destination));
+	CHECK(objective.getItem().getIndex(items.m_referenceData) == shirt);
 	simulation.fastForwardUntillActorHasEquipment(area, actor, shirt);
 	simulation.doStep();
-	REQUIRE(actors.equipment_containsItem(actor, shirt));
-	REQUIRE(items.getLocation(shirt).empty());
-	REQUIRE(items.isAdjacentToLocation(pants, actors.move_getDestination(actor)));
+	CHECK(actors.equipment_containsItem(actor, shirt));
+	CHECK(items.getLocation(shirt).empty());
+	CHECK(items.isAdjacentToLocation(pants, actors.move_getDestination(actor)));
 	simulation.fastForwardUntillActorHasEquipment(area, actor, pants);
 	simulation.doStep();
-	REQUIRE(actors.equipment_containsItem(actor, pants));
+	CHECK(actors.equipment_containsItem(actor, pants));
 	simulation.fastForwardUntillActorHasEquipment(area, actor, belt);
 	simulation.doStep();
-	REQUIRE(actors.equipment_containsItem(actor, belt));
+	CHECK(actors.equipment_containsItem(actor, belt));
 	if(!actors.equipment_containsItem(actor, belt2))
 		simulation.fastForwardUntillActorHasEquipment(area, actor, belt2);
-	REQUIRE(actors.objective_getCurrentName(actor) != L"uniform");
+	CHECK(actors.objective_getCurrentName(actor) != L"uniform");
 }

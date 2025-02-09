@@ -11,8 +11,8 @@ struct FindPathResult;
 class GetToSafeTemperatureObjectiveType final : public ObjectiveType
 {
 public:
-	[[nodiscard]] bool canBeAssigned(Area&, const ActorIndex&) const { assert(false); }
-	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, const ActorIndex&) const { assert(false); }
+	[[nodiscard]] bool canBeAssigned(Area&, const ActorIndex&) const { std::unreachable(); }
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, const ActorIndex&) const { std::unreachable(); }
 	GetToSafeTemperatureObjectiveType() = default;
 	GetToSafeTemperatureObjectiveType(const Json&, DeserializationMemo&);
 	[[nodiscard]] std::wstring name() const { return L"get to safe temperature"; }

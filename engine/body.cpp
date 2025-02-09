@@ -134,7 +134,7 @@ BodyPart& Body::pickABodyPartByVolume(Simulation& simulation)
 		else
 			roll -= volume.get();
 	}
-	assert(false);
+	std::unreachable();
 	return m_bodyParts.front();
 }
 BodyPart& Body::pickABodyPartByType(const BodyPartTypeId& bodyPartType)
@@ -142,7 +142,7 @@ BodyPart& Body::pickABodyPartByType(const BodyPartTypeId& bodyPartType)
 	for(BodyPart& bodyPart : m_bodyParts)
 		if(bodyPart.bodyPartType == bodyPartType)
 				return bodyPart;
-	assert(false);
+	std::unreachable();
 	return m_bodyParts.front();
 }
 // Armor has already been applied, calculate hit depth.

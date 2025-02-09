@@ -31,7 +31,7 @@ void OpacityFacade::validate() const
 	Cuboid cuboid = blocks.getAll();
 	for(const BlockIndex& block : cuboid.getView(blocks))
 	{
-		BlockIndexChunked chunkedIndex = blocks.getIndexChunked(blocks.getCoordinates(block));
+		[[maybe_unused]] BlockIndexChunked chunkedIndex = blocks.getIndexChunked(blocks.getCoordinates(block));
 		assert(blocks.canSeeThrough(block) != m_fullOpacity[chunkedIndex]);
 		assert(blocks.canSeeThroughFloor(block) != m_floorOpacity[chunkedIndex]);
 	}

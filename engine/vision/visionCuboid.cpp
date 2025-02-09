@@ -31,11 +31,13 @@ void AreaHasVisionCuboids::initalize(Area& area)
 }
 void AreaHasVisionCuboids::clearDestroyed(Area& area)
 {
-	Blocks& blocks = area.getBlocks();
-	for(const VisionCuboid& visionCuboid : m_visionCuboids)
-		if(visionCuboid.toDestory())
-			for(const BlockIndex& block : visionCuboid.m_cuboid.getView(blocks))
-				assert(m_blockVisionCuboidIndices[block] != visionCuboid.m_index);
+	#ifndef NDEBUG
+		Blocks& blocks = area.getBlocks();
+		for(const VisionCuboid& visionCuboid : m_visionCuboids)
+			if(visionCuboid.toDestory())
+				for(const BlockIndex& block : visionCuboid.m_cuboid.getView(blocks))
+					assert(m_blockVisionCuboidIndices[block] != visionCuboid.m_index);
+	#endif
 	// Destroy marked VisionCuboids.
 	removeNotify<VisionCuboid>(m_visionCuboids,
 		// Condition.
@@ -143,10 +145,12 @@ void AreaHasVisionCuboids::cuboidIsOpaque(Area& area, const Cuboid& cuboid)
 	{
 		VisionCuboid& toSplit = m_visionCuboids[toSplitIndex];
 		// For assert.
-		Cuboid splitCuboid = toSplit.m_cuboid;
+		[[maybe_unused]] Cuboid splitCuboid = toSplit.m_cuboid;
 		splitAtCuboid(area, toSplit, cuboid);
-		for(const BlockIndex& block : splitCuboid.getView(blocks))
-			assert(m_blockVisionCuboidIndices[block] != toSplitIndex);
+		#ifndef NDEBUG
+			for(const BlockIndex& block : splitCuboid.getView(blocks))
+				assert(m_blockVisionCuboidIndices[block] != toSplitIndex);
+		#endif
 	}
 	clearDestroyed(area);
 	validate(area);
@@ -272,20 +276,22 @@ void AreaHasVisionCuboids::setDestroy(VisionCuboid& visionCuboid)
 	for(const VisionCuboidIndex& adjacent : visionCuboid.m_adjacent)
 		m_visionCuboids[adjacent].m_adjacent.erase(index);
 }
-void AreaHasVisionCuboids::validate(const Area& area)
+void AreaHasVisionCuboids::validate([[maybe_unused]] const Area& area)
 {
-	const Blocks& blocks = area.getBlocks();
-	auto end = m_blockVisionCuboidIndices.end();
-	for(auto iter = m_blockVisionCuboidIndices.begin(); iter != end; ++iter)
-	{
-		VisionCuboidIndex index = *iter;
-		if(index.exists())
+	#ifndef NDEBUG
+		const Blocks& blocks = area.getBlocks();
+		auto end = m_blockVisionCuboidIndices.end();
+		for(auto iter = m_blockVisionCuboidIndices.begin(); iter != end; ++iter)
 		{
-			VisionCuboid& visionCuboid = m_visionCuboids[index];
-			assert(!visionCuboid.toDestory());
-			assert(visionCuboid.m_cuboid.contains(blocks, BlockIndex::create(iter - m_blockVisionCuboidIndices.begin())));
+			VisionCuboidIndex index = *iter;
+			if(index.exists())
+			{
+				VisionCuboid& visionCuboid = m_visionCuboids[index];
+				assert(!visionCuboid.toDestory());
+				assert(visionCuboid.m_cuboid.contains(blocks, BlockIndex::create(iter - m_blockVisionCuboidIndices.begin())));
+			}
 		}
-	}
+	#endif
 }
 std::pair<VisionCuboid*, Cuboid> AreaHasVisionCuboids::maybeGetTargetToCombineWith(Area& area, const Cuboid& cuboid)
 {
@@ -410,8 +416,8 @@ void AreaHasVisionCuboids::splitAt(Area& area, VisionCuboid& visionCuboid, const
 	setDestroy(visionCuboid);
 	m_blockVisionCuboidIndices[split].clear();
 	// Store for assert at end.
-	Cuboid cuboid = visionCuboid.m_cuboid;
-	VisionCuboidIndex index = visionCuboid.m_index;
+	[[maybe_unused]] Cuboid cuboid = visionCuboid.m_cuboid;
+	[[maybe_unused]] VisionCuboidIndex index = visionCuboid.m_index;
 	std::vector<Cuboid> newCuboids;
 	newCuboids.reserve(6);
 	const Point3D& splitCoordinates = blocks.getCoordinates(split);
@@ -439,9 +445,12 @@ void AreaHasVisionCuboids::splitAt(Area& area, VisionCuboid& visionCuboid, const
 		newCuboids.emplace_back(Point3D(highCoordinates.x(), splitCoordinates.y(), splitCoordinates.z()), Point3D(splitCoordinates.x() + 1, splitCoordinates.y(), splitCoordinates.z()));
 	for(Cuboid& cuboid : newCuboids)
 		createOrExtend(area, cuboid);
-	auto cuboids = area.m_visionCuboids;
-	for(const BlockIndex& block : cuboid.getView(blocks))
-		assert(cuboids.getIndexForBlock(block) != index);
+	#ifndef NDEBUG
+		auto cuboids = area.m_visionCuboids;
+		for(const BlockIndex& block : cuboid.getView(blocks))
+			assert(cuboids.getIndexForBlock(block) != index);
+	#endif
+
 }
 // Used when a floor is no longer always transparent.
 void AreaHasVisionCuboids::splitBelow(Area& area, VisionCuboid& visionCuboid, const BlockIndex& split)

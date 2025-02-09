@@ -77,7 +77,7 @@ class CraftStepProject final : public Project
 	void onComplete();
 	void onCancel();
 	void onDelay() { cancel(); }
-	void offDelay() { assert(false); }
+	void offDelay() { std::unreachable(); }
 	void onAddToMaking(const ActorIndex& actor);
 	[[nodiscard]] bool canReset() const { return false; }
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.

@@ -81,7 +81,7 @@ public:
 	void onCancel();
 	// TODO: geometric progresson of disable duration.
 	void onDelay();
-	void offDelay() { assert(false); }
+	void offDelay() { std::unreachable(); }
 	Step getDuration() const;
 	uint32_t getItemScaleFactor() const;
 	MedicalProject(Actor& p, BlockIndex& location, Actor& doctor, Wound& wound, MedicalProjectType& medicalProjectType) : Project(doctor.getFaction(), location, 0), m_patient(p), m_doctor(doctor), m_wound(wound), m_medicalProjectType(medicalProjectType) { }

@@ -60,45 +60,45 @@ TEST_CASE("sow")
 	const SowSeedsObjectiveType& objectiveType = static_cast<const SowSeedsObjectiveType&>(ObjectiveType::getByName(L"sow seeds"));
 	SUBCASE("success")
 	{
-		REQUIRE(field.plantSpecies.empty());
+		CHECK(field.plantSpecies.empty());
 		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
-		REQUIRE(field.plantSpecies == wheatGrass);
-		REQUIRE(blocks.farm_contains(fieldLocation, faction));
-		REQUIRE(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		REQUIRE(blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
-		REQUIRE(objectiveType.canBeAssigned(area, actor));
+		CHECK(field.plantSpecies == wheatGrass);
+		CHECK(blocks.farm_contains(fieldLocation, faction));
+		CHECK(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
+		CHECK(blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		CHECK(objectiveType.canBeAssigned(area, actor));
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
-		REQUIRE(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		REQUIRE(blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
-		REQUIRE(!blocks.isReserved(fieldLocation, faction));
-		REQUIRE(actors.objective_getCurrentName(actor) == L"sow seeds");
-		REQUIRE(actors.move_hasPathRequest(actor));
-		REQUIRE(actors.objective_getCurrent<SowSeedsObjective>(actor).canSowAt(area, fieldLocation, actor));
+		CHECK(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
+		CHECK(blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		CHECK(!blocks.isReserved(fieldLocation, faction));
+		CHECK(actors.objective_getCurrentName(actor) == L"sow seeds");
+		CHECK(actors.move_hasPathRequest(actor));
+		CHECK(actors.objective_getCurrent<SowSeedsObjective>(actor).canSowAt(area, fieldLocation, actor));
 		constexpr bool detour = false;
 		constexpr bool adjacent = true;
-		REQUIRE(!area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor)).findPathToWithoutMemo(actors.getLocation(actor), actors.getFacing(actor), actors.getShape(actor), fieldLocation, detour, adjacent, faction).path.empty());
+		CHECK(!area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor)).findPathToWithoutMemo(actors.getLocation(actor), actors.getFacing(actor), actors.getShape(actor), fieldLocation, detour, adjacent, faction).path.empty());
 		simulation.doStep();
-		REQUIRE(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		CHECK(!actors.move_getPath(actor).empty());
 		BlockIndex destination = actors.move_getDestination(actor);
 		simulation.fastForwardUntillActorIsAtDestination(area, actor, destination);
-		REQUIRE(actors.move_getPath(actor).empty());
-		REQUIRE(!actors.move_hasPathRequest(actor));
-		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		REQUIRE(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		CHECK(actors.move_getPath(actor).empty());
+		CHECK(!actors.move_hasPathRequest(actor));
+		CHECK(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
+		CHECK(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
 		simulation.fastForward(Config::sowSeedsStepsDuration);
-		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		REQUIRE(!area.getPlants().getAll().empty());
-		REQUIRE(!objectiveType.canBeAssigned(area, actor));
+		CHECK(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
+		CHECK(!area.getPlants().getAll().empty());
+		CHECK(!objectiveType.canBeAssigned(area, actor));
 		PlantIndex plant = plants.getAll().front();
-		REQUIRE(plants.getPercentGrown(plant) == 0);
-		REQUIRE(plants.getSpecies(plant) == wheatGrass);
-		REQUIRE(actors.objective_getCurrentName(actor) != L"sow seeds");
+		CHECK(plants.getPercentGrown(plant) == 0);
+		CHECK(plants.getSpecies(plant) == wheatGrass);
+		CHECK(actors.objective_getCurrentName(actor) != L"sow seeds");
 		plants.die(plant);
-		REQUIRE(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
+		CHECK(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		area.m_hasFarmFields.getForFaction(faction).remove(field);
-		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
+		CHECK(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 	}
 	SUBCASE("location no longer accessable to sow")
 	{
@@ -107,16 +107,16 @@ TEST_CASE("sow")
 		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
-		REQUIRE(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
+		CHECK(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		simulation.doStep();
-		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
+		CHECK(!actors.move_getPath(actor).empty());
 		blocks.solid_set(gateway, marble, false);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, actor, gateway);
 		// No alternative route or location found, cannot complete objective.
 		simulation.doStep();
-		REQUIRE(actors.objective_getCurrentName(actor) != L"sow seeds");
-		REQUIRE(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
+		CHECK(actors.objective_getCurrentName(actor) != L"sow seeds");
+		CHECK(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 	}
 	SUBCASE("location no longer viable to sow")
 	{
@@ -124,14 +124,14 @@ TEST_CASE("sow")
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 		blocks.solid_set(blocks.getBlockBelow(fieldLocation), marble, false);
-		REQUIRE(!blocks. plant_canGrowHereAtSomePointToday(fieldLocation, wheatGrass));
+		CHECK(!blocks. plant_canGrowHereAtSomePointToday(fieldLocation, wheatGrass));
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, actor, fieldLocation);
 		// No alternative route or location found, cannot complete objective.
-		REQUIRE(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
+		CHECK(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		simulation.doStep();
-		REQUIRE(actors.objective_getCurrentName(actor) != L"sow seeds");
+		CHECK(actors.objective_getCurrentName(actor) != L"sow seeds");
 	}
 	SUBCASE("location no longer selected to sow")
 	{
@@ -139,12 +139,12 @@ TEST_CASE("sow")
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 		area.m_hasFarmFields.getForFaction(faction).remove(field);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, actor, fieldLocation);
 		// BlockIndex is not select to grow anymore, cannot complete task, search for another route / another location to sow.
 		simulation.doStep();
-		REQUIRE(actors.objective_getCurrentName(actor) != L"sow seeds");
+		CHECK(actors.objective_getCurrentName(actor) != L"sow seeds");
 	}
 	SUBCASE("player cancels sowing objective")
 	{
@@ -152,23 +152,23 @@ TEST_CASE("sow")
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
-		REQUIRE(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		CHECK(!actors.move_getPath(actor).empty());
+		CHECK(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
 		actors.objective_cancel(actor, actors.objective_getCurrent<Objective>(actor));
-		REQUIRE(blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
-		REQUIRE(!blocks.isReserved(fieldLocation, faction));
+		CHECK(blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		CHECK(!blocks.isReserved(fieldLocation, faction));
 	}
 	SUBCASE("player delays sowing objective")
 	{
 		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
-		REQUIRE(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		CHECK(!actors.move_getPath(actor).empty());
+		CHECK(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
 		std::unique_ptr<GoToObjective> goToObjective = std::make_unique<GoToObjective>(fieldLocation);
 		actors.objective_addTaskToStart(actor, std::move(goToObjective));
-		REQUIRE(blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
-		REQUIRE(!blocks.isReserved(fieldLocation, faction));
+		CHECK(blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		CHECK(!blocks.isReserved(fieldLocation, faction));
 	}
 }
 TEST_CASE("harvest")
@@ -201,38 +201,38 @@ TEST_CASE("harvest")
 	{
 		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
-		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
-		REQUIRE(plants.getQuantityToHarvest(blocks.plant_get(block)) == PlantSpecies::getItemQuantityToHarvest(wheatGrass));
-		REQUIRE(blocks.designation_has(block, faction, BlockDesignation::Harvest));
-		REQUIRE(objectiveType.canBeAssigned(area, actor));
+		CHECK(area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(plants.getQuantityToHarvest(blocks.plant_get(block)) == PlantSpecies::getItemQuantityToHarvest(wheatGrass));
+		CHECK(blocks.designation_has(block, faction, BlockDesignation::Harvest));
+		CHECK(objectiveType.canBeAssigned(area, actor));
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
-		REQUIRE(actors.objective_getCurrentName(actor) == L"harvest");
+		CHECK(actors.objective_getCurrentName(actor) == L"harvest");
 		HarvestObjective& objective = actors.objective_getCurrent<HarvestObjective>(actor);
-		REQUIRE(objective.blockContainsHarvestablePlant(area, block, actor));
-		REQUIRE(actors.move_hasPathRequest(actor));
-		REQUIRE(actors.move_canPathTo(actor, block));
+		CHECK(objective.blockContainsHarvestablePlant(area, block, actor));
+		CHECK(actors.move_hasPathRequest(actor));
+		CHECK(actors.move_canPathTo(actor, block));
 		const AreaHasBlockDesignationsForFaction& designations = area.m_blockDesignations.getForFaction(faction);
 		uint32_t offset = designations.getOffsetForDesignation(BlockDesignation::Harvest);
-		REQUIRE(designations.checkWithOffset(offset, block));
+		CHECK(designations.checkWithOffset(offset, block));
 		simulation.doStep();
-		REQUIRE(!blocks.designation_has(block, faction, BlockDesignation::Harvest));
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!blocks.designation_has(block, faction, BlockDesignation::Harvest));
+		CHECK(!actors.move_getPath(actor).empty());
 		BlockIndex destination = actors.move_getDestination(actor);
 		simulation.fastForwardUntillActorIsAtDestination(area, actor, destination);
-		REQUIRE(actors.move_getPath(actor).empty());
-		REQUIRE(!actors.move_hasPathRequest(actor));
-		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
-		REQUIRE(!blocks.designation_has(block, faction, BlockDesignation::Harvest));
+		CHECK(actors.move_getPath(actor).empty());
+		CHECK(!actors.move_hasPathRequest(actor));
+		CHECK(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(!blocks.designation_has(block, faction, BlockDesignation::Harvest));
 		simulation.fastForward(Config::harvestEventDuration);
-		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
-		REQUIRE(!objectiveType.canBeAssigned(area, actor));
-		REQUIRE(actors.objective_getCurrentName(actor) != L"harvest");
-		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(!objectiveType.canBeAssigned(area, actor));
+		CHECK(actors.objective_getCurrentName(actor) != L"harvest");
+		CHECK(!area.m_hasFarmFields.hasHarvestDesignations(faction));
 		ItemIndex item = *blocks.item_getAll(actors.getLocation(actor)).begin();
-		REQUIRE(items.getMaterialType(item) == MaterialType::byName(L"plant matter"));
-		REQUIRE(items.getQuantity(item) + plants.getQuantityToHarvest(blocks.plant_get(block)) == PlantSpecies::getItemQuantityToHarvest(wheatGrass));
-		REQUIRE(items.getItemType(item) == ItemType::byName(L"wheat seed"));
+		CHECK(items.getMaterialType(item) == MaterialType::byName(L"plant matter"));
+		CHECK(items.getQuantity(item) + plants.getQuantityToHarvest(blocks.plant_get(block)) == PlantSpecies::getItemQuantityToHarvest(wheatGrass));
+		CHECK(items.getItemType(item) == ItemType::byName(L"wheat seed"));
 	}
 	SUBCASE("location no longer accessable to harvest")
 	{
@@ -240,79 +240,79 @@ TEST_CASE("harvest")
 		BlockIndex gateway = blocks.getIndex_i(9, 3, 2);
 		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
-		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
-		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(!actors.move_getPath(actor).empty());
 		blocks.solid_set(gateway, marble, false);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, actor, gateway);
 		// No alternative route or location found, cannot complete objective.
 		simulation.doStep();
-		REQUIRE(actors.objective_getCurrentName(actor) != L"harvest");
-		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(actors.objective_getCurrentName(actor) != L"harvest");
+		CHECK(area.m_hasFarmFields.hasHarvestDesignations(faction));
 	}
 	SUBCASE("location no longer contains plant")
 	{
 		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
-		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
-		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(!actors.move_getPath(actor).empty());
 		blocks.plant_erase(block);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, actor, block);
 		// No alternative route or location found, cannot complete objective.
 		simulation.doStep();
-		REQUIRE(actors.objective_getCurrentName(actor) != L"harvest");
-		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(actors.objective_getCurrentName(actor) != L"harvest");
+		CHECK(!area.m_hasFarmFields.hasHarvestDesignations(faction));
 	}
 	SUBCASE("plant no longer harvestable")
 	{
 		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
-		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
-		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(!actors.move_getPath(actor).empty());
 		plants.endOfHarvest(blocks.plant_get(block));
-		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(!area.m_hasFarmFields.hasHarvestDesignations(faction));
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, actor, block);
 		// No alternative route or location found, cannot complete objective.
 		simulation.doStep();
-		REQUIRE(actors.objective_getCurrentName(actor) != L"harvest");
+		CHECK(actors.objective_getCurrentName(actor) != L"harvest");
 	}
 	SUBCASE("player cancels harvest")
 	{
 		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
-		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
-		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
-		REQUIRE(!blocks.designation_has(block, faction, BlockDesignation::Harvest));
+		CHECK(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(!blocks.designation_has(block, faction, BlockDesignation::Harvest));
 		actors.objective_cancel(actor, actors.objective_getCurrent<Objective>(actor));
-		REQUIRE(blocks.designation_has(block, faction, BlockDesignation::Harvest));
+		CHECK(blocks.designation_has(block, faction, BlockDesignation::Harvest));
 	}
 	SUBCASE("player delays harvest")
 	{
 		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
-		REQUIRE(area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
-		REQUIRE(!area.m_hasFarmFields.hasHarvestDesignations(faction));
-		REQUIRE(!blocks.designation_has(block, faction, BlockDesignation::Harvest));
+		CHECK(!area.m_hasFarmFields.hasHarvestDesignations(faction));
+		CHECK(!blocks.designation_has(block, faction, BlockDesignation::Harvest));
 		std::unique_ptr<GoToObjective> goToObjective = std::make_unique<GoToObjective>(block);
 		actors.objective_addTaskToStart(actor, std::move(goToObjective));
-		REQUIRE(blocks.designation_has(block, faction, BlockDesignation::Harvest));
+		CHECK(blocks.designation_has(block, faction, BlockDesignation::Harvest));
 	}
 }
 TEST_CASE("givePlantFluid")
@@ -345,55 +345,55 @@ TEST_CASE("givePlantFluid")
 		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(50));
 		PlantIndex plant = blocks.plant_get(block);
-		REQUIRE(!area.m_hasFarmFields.hasGivePlantsFluidDesignations(faction));
-		REQUIRE(plants.isGrowing(plant));
+		CHECK(!area.m_hasFarmFields.hasGivePlantsFluidDesignations(faction));
+		CHECK(plants.isGrowing(plant));
 		BlockIndex bucketLocation = blocks.getIndex_i(7, 7, 2);
 		ItemIndex bucket = items.create({.itemType=ItemType::byName(L"bucket"),.materialType=MaterialType::byName(L"poplar wood"), .location=bucketLocation, .quality=Quality::create(50u), .percentWear=Percent::create(0)});
 		BlockIndex pondLocation = blocks.getIndex_i(3, 9, 1);
 		blocks.solid_setNot(pondLocation);
 		blocks.fluid_add(pondLocation, CollisionVolume::create(100), water);
-		REQUIRE(actors.canPickUp_quantityWhichCanBePickedUpUnencombered(actor, items.getItemType(bucket), items.getMaterialType(bucket)) != 0);
+		CHECK(actors.canPickUp_quantityWhichCanBePickedUpUnencombered(actor, items.getItemType(bucket), items.getMaterialType(bucket)) != 0);
 		plants.setMaybeNeedsFluid(plant);
 		blocks.plant_exists(block);
-		REQUIRE(plants.getVolumeFluidRequested(plant) != 0);
-		REQUIRE(!plants.isGrowing(plant));
-		REQUIRE(area.m_hasFarmFields.hasGivePlantsFluidDesignations(faction));
+		CHECK(plants.getVolumeFluidRequested(plant) != 0);
+		CHECK(!plants.isGrowing(plant));
+		CHECK(area.m_hasFarmFields.hasGivePlantsFluidDesignations(faction));
 		const GivePlantsFluidObjectiveType& objectiveType = static_cast<const GivePlantsFluidObjectiveType&>(ObjectiveType::getByName(L"give plants fluid"));
-		REQUIRE(objectiveType.canBeAssigned(area, actor));
+		CHECK(objectiveType.canBeAssigned(area, actor));
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		simulation.doStep();
 		actors.satisfyNeeds(actor);
-		REQUIRE(actors.objective_getCurrentName(actor) == L"give plants fluid");
+		CHECK(actors.objective_getCurrentName(actor) == L"give plants fluid");
 		[[maybe_unused]] const GivePlantsFluidObjective& objective = actors.objective_getCurrent<GivePlantsFluidObjective>(actor);
-		REQUIRE(objective.getPlantLocation().exists());
-		REQUIRE(!objective.itemExists());
-		REQUIRE(actors.move_hasPathRequest(actor));
-		REQUIRE(objective.canGetFluidHaulingItemAt(area, bucketLocation, actor));
+		CHECK(objective.getPlantLocation().exists());
+		CHECK(!objective.itemExists());
+		CHECK(actors.move_hasPathRequest(actor));
+		CHECK(objective.canGetFluidHaulingItemAt(area, bucketLocation, actor));
 		simulation.doStep();
-		REQUIRE(objective.itemExists());
-		REQUIRE(items.isAdjacentToLocation(bucket, actors.move_getDestination(actor)));
+		CHECK(objective.itemExists());
+		CHECK(items.isAdjacentToLocation(bucket, actors.move_getDestination(actor)));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, actor, bucketLocation);
-		REQUIRE(actors.move_hasPathRequest(actor));
-		REQUIRE(actors.canPickUp_isCarryingEmptyContainerWhichCanHoldFluid(actor));
-		REQUIRE(actors.move_getDestination(actor).empty());
+		CHECK(actors.move_hasPathRequest(actor));
+		CHECK(actors.canPickUp_isCarryingEmptyContainerWhichCanHoldFluid(actor));
+		CHECK(actors.move_getDestination(actor).empty());
 		simulation.doStep();
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 0);
-		REQUIRE(actors.move_getDestination(actor).exists());
-		REQUIRE(blocks.isAdjacentToIncludingCornersAndEdges(actors.move_getDestination(actor), pondLocation));
+		CHECK(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 0);
+		CHECK(actors.move_getDestination(actor).exists());
+		CHECK(blocks.isAdjacentToIncludingCornersAndEdges(actors.move_getDestination(actor), pondLocation));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, actor, pondLocation);
-		REQUIRE(items.cargo_containsAnyFluid(bucket));
-		REQUIRE(items.cargo_getFluidType(bucket) == water);
-		REQUIRE(actors.move_hasPathRequest(actor));
-		REQUIRE(actors.move_getDestination(actor).empty());
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(items.cargo_containsAnyFluid(bucket));
+		CHECK(items.cargo_getFluidType(bucket) == water);
+		CHECK(actors.move_hasPathRequest(actor));
+		CHECK(actors.move_getDestination(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 		simulation.doStep();
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 0);
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(simulation.m_threadedTaskEngine.m_tasksForNextStep.size() == 0);
+		CHECK(!actors.move_getPath(actor).empty());
 		BlockIndex destination = actors.move_getDestination(actor);
 		simulation.fastForwardUntillActorIsAtDestination(area, actor, destination);
 		simulation.fastForward(Config::givePlantsFluidDelaySteps);
-		REQUIRE(plants.getVolumeFluidRequested(plant) == 0);
-		REQUIRE(plants.isGrowing(plant));
-		REQUIRE(actors.objective_getCurrentName(actor) != L"give plants fluid");
+		CHECK(plants.getVolumeFluidRequested(plant) == 0);
+		CHECK(plants.isGrowing(plant));
+		CHECK(actors.objective_getCurrentName(actor) != L"give plants fluid");
 	}
 }

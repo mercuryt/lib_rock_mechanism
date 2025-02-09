@@ -332,8 +332,10 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 }
 void ProjectTryToAddWorkersThreadedTask::writeStep(Simulation&, Area*)
 {
-	for(auto& [actor, objective] : m_project.m_workerCandidatesAndTheirObjectives)
-		assert(!m_project.m_making.contains(actor));
+	#ifndef NDEBUG
+		for(auto& [actor, objective] : m_project.m_workerCandidatesAndTheirObjectives)
+			assert(!m_project.m_making.contains(actor));
+	#endif
 	m_hasOnDestroy.unsubscribeAll();
 	auto toReleaseWithProjectDelay = m_cannotPathToJobSite;
 	Items& items = m_project.m_area.getItems();

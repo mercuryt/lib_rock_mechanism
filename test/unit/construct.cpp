@@ -21,6 +21,7 @@
 #include "../../engine/blocks/blocks.h"
 #include "../../engine/plants.h"
 #include "../../engine/animalSpecies.h"
+#include "../../engine/portables.hpp"
 #include "reference.h"
 TEST_CASE("construct")
 {
@@ -76,87 +77,87 @@ TEST_CASE("construct")
 		BlockIndex wallLocation = blocks.getIndex_i(8, 4, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
-		REQUIRE(blocks.designation_has(wallLocation, faction, BlockDesignation::Construct));
-		REQUIRE(area.m_hasConstructionDesignations.contains(faction, wallLocation));
-		REQUIRE(constructObjectiveType.canBeAssigned(area, dwarf1));
+		CHECK(blocks.designation_has(wallLocation, faction, BlockDesignation::Construct));
+		CHECK(area.m_hasConstructionDesignations.contains(faction, wallLocation));
+		CHECK(constructObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));
-		REQUIRE(actors.objective_getCurrentName(dwarf1) == L"construct");
+		CHECK(actors.objective_getCurrentName(dwarf1) == L"construct");
 		ConstructObjective& objective = actors.objective_getCurrent<ConstructObjective>(dwarf1);
-		REQUIRE(objective.joinableProjectExistsAt(area, wallLocation, dwarf1));
+		CHECK(objective.joinableProjectExistsAt(area, wallLocation, dwarf1));
 		const auto& terrainFacade = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(dwarf1));
-		REQUIRE(terrainFacade.accessable(dwarf1Start, actors.getFacing(dwarf1), wallLocation, dwarf1));
+		CHECK(terrainFacade.accessable(dwarf1Start, actors.getFacing(dwarf1), wallLocation, dwarf1));
 		// Search for accessable project, activete project and reserve all required.
 		simulation.doStep();
-		REQUIRE(actors.project_get(dwarf1) == &project);
-		REQUIRE(project.reservationsComplete());
-		REQUIRE(project.hasTryToHaulThreadedTask());
+		CHECK(actors.project_get(dwarf1) == &project);
+		CHECK(project.reservationsComplete());
+		CHECK(project.hasTryToHaulThreadedTask());
 		// Four Item types are required but the mallet is already adjacent to the location.
-		REQUIRE(project.getToPickup().size() == 3);
+		CHECK(project.getToPickup().size() == 3);
 		// Select a haul strategy and create a subproject.
 		simulation.doStep();
 		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
-		REQUIRE(projectWorker.haulSubproject != nullptr);
-		REQUIRE(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
+		CHECK(projectWorker.haulSubproject != nullptr);
+		CHECK(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
 		// Find a path to the first item.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1).exists());
+		CHECK(actors.move_getDestination(dwarf1).exists());
 		simulation.fastForwardUntillActorIsAtDestination(area, dwarf1, actors.move_getDestination(dwarf1));
-		REQUIRE(actors.canPickUp_exists(dwarf1));
+		CHECK(actors.canPickUp_exists(dwarf1));
 		// Path to the project location.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1).exists());
+		CHECK(actors.move_getDestination(dwarf1).exists());
 		simulation.fastForwardUntillActorIsAtDestination(area, dwarf1, actors.move_getDestination(dwarf1));
-		REQUIRE(project.getToPickup().size() == 2);
-		REQUIRE(!actors.canPickUp_exists(dwarf1));
-		REQUIRE(project.hasTryToHaulThreadedTask());
-		REQUIRE(projectWorker.haulSubproject == nullptr);
+		CHECK(project.getToPickup().size() == 2);
+		CHECK(!actors.canPickUp_exists(dwarf1));
+		CHECK(project.hasTryToHaulThreadedTask());
+		CHECK(projectWorker.haulSubproject == nullptr);
 		// Create haulSubproject.
 		simulation.doStep();
-		REQUIRE(projectWorker.haulSubproject != nullptr);
-		REQUIRE(actors.move_hasPathRequest(dwarf1));
+		CHECK(projectWorker.haulSubproject != nullptr);
+		CHECK(actors.move_hasPathRequest(dwarf1));
 		// Path to the second item.
 		simulation.doStep();
-		REQUIRE(actors.objective_getCurrentName(dwarf1) == L"construct");
-		REQUIRE(!actors.move_hasPathRequest(dwarf1));
-		REQUIRE(actors.move_getDestination(dwarf1).exists());
+		CHECK(actors.objective_getCurrentName(dwarf1) == L"construct");
+		CHECK(!actors.move_hasPathRequest(dwarf1));
+		CHECK(actors.move_getDestination(dwarf1).exists());
 		simulation.fastForwardUntillActorIsAtDestination(area, dwarf1, actors.move_getDestination(dwarf1));
-		REQUIRE(actors.canPickUp_exists(dwarf1));
+		CHECK(actors.canPickUp_exists(dwarf1));
 		// Path to the project location.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1).exists());
+		CHECK(actors.move_getDestination(dwarf1).exists());
 		simulation.fastForwardUntillActorIsAtDestination(area, dwarf1, actors.move_getDestination(dwarf1));
-		REQUIRE(project.getToPickup().size() == 1);
-		REQUIRE(!actors.canPickUp_exists(dwarf1));
+		CHECK(project.getToPickup().size() == 1);
+		CHECK(!actors.canPickUp_exists(dwarf1));
 		// Create haulSubproject.
 		simulation.doStep();
-		REQUIRE(projectWorker.haulSubproject != nullptr);
-		REQUIRE(actors.move_hasPathRequest(dwarf1));
+		CHECK(projectWorker.haulSubproject != nullptr);
+		CHECK(actors.move_hasPathRequest(dwarf1));
 		// Path to the third item.
 		simulation.doStep();
-		REQUIRE(actors.objective_getCurrentName(dwarf1) == L"construct");
-		REQUIRE(!actors.move_hasPathRequest(dwarf1));
-		REQUIRE(actors.move_getDestination(dwarf1).exists());
+		CHECK(actors.objective_getCurrentName(dwarf1) == L"construct");
+		CHECK(!actors.move_hasPathRequest(dwarf1));
+		CHECK(actors.move_getDestination(dwarf1).exists());
 		simulation.fastForwardUntillActorIsAtDestination(area, dwarf1, actors.move_getDestination(dwarf1));
-		REQUIRE(actors.canPickUp_exists(dwarf1));
+		CHECK(actors.canPickUp_exists(dwarf1));
 		// Path to the project location.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1).exists());
+		CHECK(actors.move_getDestination(dwarf1).exists());
 		simulation.fastForwardUntillActorIsAtDestination(area, dwarf1, actors.move_getDestination(dwarf1));
-		REQUIRE(project.getToPickup().empty());
-		REQUIRE(!actors.canPickUp_exists(dwarf1));
-		REQUIRE(project.deliveriesComplete());
+		CHECK(project.getToPickup().empty());
+		CHECK(!actors.canPickUp_exists(dwarf1));
+		CHECK(project.deliveriesComplete());
 		// Deliveries complete, start construction.
-		REQUIRE(project.finishEventExists());
+		CHECK(project.finishEventExists());
 		simulation.fastForwardUntillPredicate([&]()->bool { return blocks.solid_is(wallLocation); }, 180);
-		REQUIRE(actors.objective_getCurrentName(dwarf1) != L"construct");
-		REQUIRE(!area.m_hasConstructionDesignations.contains(faction, wallLocation));
-		REQUIRE(!constructObjectiveType.canBeAssigned(area, dwarf1));
-		REQUIRE(!blocks.designation_has(wallLocation, faction, BlockDesignation::Construct));
-		REQUIRE(items.reservable_getUnreservedCount(boards, faction) == items.getQuantity(boards));
-		REQUIRE(items.reservable_getUnreservedCount(pegs, faction) == items.getQuantity(pegs));
-		REQUIRE(!items.reservable_isFullyReserved(saw, faction));
-		REQUIRE(!items.reservable_isFullyReserved(mallet, faction));
-		REQUIRE(!blocks.isReserved(wallLocation, faction));
+		CHECK(actors.objective_getCurrentName(dwarf1) != L"construct");
+		CHECK(!area.m_hasConstructionDesignations.contains(faction, wallLocation));
+		CHECK(!constructObjectiveType.canBeAssigned(area, dwarf1));
+		CHECK(!blocks.designation_has(wallLocation, faction, BlockDesignation::Construct));
+		CHECK(items.reservable_getUnreservedCount(boards, faction) == items.getQuantity(boards));
+		CHECK(items.reservable_getUnreservedCount(pegs, faction) == items.getQuantity(pegs));
+		CHECK(!items.reservable_isFullyReserved(saw, faction));
+		CHECK(!items.reservable_isFullyReserved(mallet, faction));
+		CHECK(!blocks.isReserved(wallLocation, faction));
 	}
 	SUBCASE("make two walls")
 	{
@@ -164,21 +165,21 @@ TEST_CASE("construct")
 		BlockIndex wallLocation2 = blocks.getIndex_i(8, 5, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation1, nullptr, wood);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation2, nullptr, wood);
-		REQUIRE(constructObjectiveType.canBeAssigned(area, dwarf1));
+		CHECK(constructObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
-		REQUIRE(actors.objective_getCurrentName(dwarf1) == L"construct");
+		CHECK(actors.objective_getCurrentName(dwarf1) == L"construct");
 		ConstructProject& project1 = area.m_hasConstructionDesignations.getProject(faction, wallLocation1);
 		ConstructProject& project2 = area.m_hasConstructionDesignations.getProject(faction, wallLocation2);
 		// Find project to join, activate and reserve.
 		simulation.doStep();
-		REQUIRE(project1.reservationsComplete());
+		CHECK(project1.reservationsComplete());
 		simulation.fastForwardUntillPredicate([&]()->bool { return project1.deliveriesComplete(); });
 		simulation.fastForwardUntillPredicate([&]()->bool { return blocks.solid_is(wallLocation1); }, 180);
 		simulation.doStep();
-		REQUIRE(project2.reservationsComplete());
+		CHECK(project2.reservationsComplete());
 		simulation.fastForwardUntillPredicate([&]()->bool { return project2.deliveriesComplete(); });
 		simulation.fastForwardUntillPredicate([&]()->bool { return blocks.solid_is(wallLocation2); }, 180);
-		REQUIRE(actors.objective_getCurrentName(dwarf1) != L"construct");
+		CHECK(actors.objective_getCurrentName(dwarf1) != L"construct");
 	}
 	SUBCASE("make wall with two workers")
 	{
@@ -189,16 +190,16 @@ TEST_CASE("construct")
 		});
 		BlockIndex wallLocation = blocks.getIndex_i(8, 4, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
-		REQUIRE(constructObjectiveType.canBeAssigned(area, dwarf1));
+		CHECK(constructObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		actors.objective_setPriority(dwarf2, constructObjectiveType.getId(), Priority::create(100));;
-		REQUIRE(actors.objective_getCurrentName(dwarf1) == L"construct");
-		REQUIRE(actors.objective_getCurrentName(dwarf2) == L"construct");
+		CHECK(actors.objective_getCurrentName(dwarf1) == L"construct");
+		CHECK(actors.objective_getCurrentName(dwarf2) == L"construct");
 		// Find project to join.
 		std::function<bool()> predicate = [&]() { return blocks.solid_is(wallLocation); };
 		simulation.fastForwardUntillPredicate(predicate, 90);
-		REQUIRE(actors.objective_getCurrentName(dwarf1) != L"construct");
-		REQUIRE(actors.objective_getCurrentName(dwarf2) != L"construct");
+		CHECK(actors.objective_getCurrentName(dwarf1) != L"construct");
+		CHECK(actors.objective_getCurrentName(dwarf2) != L"construct");
 	}
 	SUBCASE("make two walls with two workers")
 	{
@@ -212,15 +213,15 @@ TEST_CASE("construct")
 		BlockIndex wallLocation2 = blocks.getIndex_i(3, 8, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation1, nullptr, wood);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation2, nullptr, wood);
-		REQUIRE(constructObjectiveType.canBeAssigned(area, dwarf1));
+		CHECK(constructObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		actors.objective_setPriority(dwarf2, constructObjectiveType.getId(), Priority::create(100));;
-		REQUIRE(actors.objective_getCurrentName(dwarf1) == L"construct");
-		REQUIRE(actors.objective_getCurrentName(dwarf2) == L"construct");
+		CHECK(actors.objective_getCurrentName(dwarf1) == L"construct");
+		CHECK(actors.objective_getCurrentName(dwarf2) == L"construct");
 		ConstructProject* project1 = &area.m_hasConstructionDesignations.getProject(faction, wallLocation1);
 		ConstructProject* project2 = &area.m_hasConstructionDesignations.getProject(faction, wallLocation2);
-		REQUIRE(actors.objective_getCurrent<ConstructObjective>(dwarf2).getProjectWhichActorCanJoinAt(area, wallLocation2, dwarf2));
-		REQUIRE(actors.move_hasPathRequest(dwarf2));
+		CHECK(actors.objective_getCurrent<ConstructObjective>(dwarf2).getProjectWhichActorCanJoinAt(area, wallLocation2, dwarf2));
+		CHECK(actors.move_hasPathRequest(dwarf2));
 		// Find projects to join.
 		// Activate a project with one dwarf and reserve all required, the other dwarf fails to validate their project due to tools being reserved.
 		// The project which was reserved becomes project1 (if not already) and the other becomes project2.
@@ -233,74 +234,74 @@ TEST_CASE("construct")
 			std::swap(wallLocation1, wallLocation2);
 			std::swap(dwarf1Ref, dwarf2Ref);
 		}
-		REQUIRE(actors.objective_getCurrent<ConstructObjective>(dwarf2).getProjectWhichActorCanJoinAt(area, wallLocation2, dwarf2));
-		REQUIRE(actors.project_get(dwarf1) == project1);
-		REQUIRE(actors.project_get(dwarf2) == project2);
-		REQUIRE(project1->reservationsComplete());
-		REQUIRE(!project2->reservationsComplete());
-		REQUIRE(project1->getWorkers().size() == 1);
-		REQUIRE(project2->getWorkers().empty());
-		REQUIRE(!project1->hasCandidate(dwarf1));
-		REQUIRE(project2->hasCandidate(dwarf2));
+		CHECK(actors.objective_getCurrent<ConstructObjective>(dwarf2).getProjectWhichActorCanJoinAt(area, wallLocation2, dwarf2));
+		CHECK(actors.project_get(dwarf1) == project1);
+		CHECK(actors.project_get(dwarf2) == project2);
+		CHECK(project1->reservationsComplete());
+		CHECK(!project2->reservationsComplete());
+		CHECK(project1->getWorkers().size() == 1);
+		CHECK(project2->getWorkers().empty());
+		CHECK(!project1->hasCandidate(dwarf1));
+		CHECK(project2->hasCandidate(dwarf2));
 		// Select a haul strategy and create a subproject for dwarf1, dwarf2 tries again to activate project2, this time failing to find required unreserved items and activating prohibition on the project at the objective instance.
 		simulation.doStep();
-		REQUIRE(!actors.objective_getCurrent<ConstructObjective>(dwarf2).getProjectWhichActorCanJoinAt(area, wallLocation2, dwarf2));
+		CHECK(!actors.objective_getCurrent<ConstructObjective>(dwarf2).getProjectWhichActorCanJoinAt(area, wallLocation2, dwarf2));
 		ProjectWorker& projectWorker1 = project1->getProjectWorkerFor(dwarf1Ref);
-		REQUIRE(projectWorker1.haulSubproject != nullptr);
-		REQUIRE(project1->getWorkers().size() == 1);
-		REQUIRE(!project2->hasCandidate(dwarf2));
-		REQUIRE(!actors.project_exists(dwarf2));
+		CHECK(projectWorker1.haulSubproject != nullptr);
+		CHECK(project1->getWorkers().size() == 1);
+		CHECK(!project2->hasCandidate(dwarf2));
+		CHECK(!actors.project_exists(dwarf2));
 		// Find a path for dwarf1, dwarf2 seeks project to join, and finds project1.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1) .exists());
-		REQUIRE(actors.project_get(dwarf1) == project1);
-		REQUIRE(area.m_hasConstructionDesignations.contains(faction, wallLocation1));
-		REQUIRE(area.m_hasConstructionDesignations.contains(faction, wallLocation2));
-		REQUIRE(project1->getWorkers().contains(dwarf2Ref));
+		CHECK(actors.move_getDestination(dwarf1) .exists());
+		CHECK(actors.project_get(dwarf1) == project1);
+		CHECK(area.m_hasConstructionDesignations.contains(faction, wallLocation1));
+		CHECK(area.m_hasConstructionDesignations.contains(faction, wallLocation2));
+		CHECK(project1->getWorkers().contains(dwarf2Ref));
 		// Build first wall segment.
 		simulation.fastForwardUntillPredicate([&]()->bool { return blocks.solid_is(wallLocation1); }, 90);
-		REQUIRE(!area.m_hasConstructionDesignations.contains(faction, wallLocation1));
-		REQUIRE(area.m_hasConstructionDesignations.contains(faction, wallLocation2));
-		REQUIRE(!project2->isOnDelay());
-		REQUIRE(blocks.designation_has(project2->getLocation(), faction, BlockDesignation::Construct));
+		CHECK(!area.m_hasConstructionDesignations.contains(faction, wallLocation1));
+		CHECK(area.m_hasConstructionDesignations.contains(faction, wallLocation2));
+		CHECK(!project2->isOnDelay());
+		CHECK(blocks.designation_has(project2->getLocation(), faction, BlockDesignation::Construct));
 		// Both dwarves seek a project to join and find project2. This does not require a step if they are already adjacent but does if they are not.
-		REQUIRE(actors.objective_getCurrentName(dwarf1) == L"construct");
-		REQUIRE(actors.objective_getCurrentName(dwarf2) == L"construct");
+		CHECK(actors.objective_getCurrentName(dwarf1) == L"construct");
+		CHECK(actors.objective_getCurrentName(dwarf2) == L"construct");
 		simulation.doStep();
 		// Project2 completes reservations and both dwarfs graduate from candidate to worker.
 		simulation.doStep();
-		REQUIRE(project2->getWorkers().contains(dwarf1Ref));
-		REQUIRE(project2->getWorkers().contains(dwarf2Ref));
-		REQUIRE(!project2->hasCandidate(dwarf1));
-		REQUIRE(!project2->hasCandidate(dwarf2));
+		CHECK(project2->getWorkers().contains(dwarf1Ref));
+		CHECK(project2->getWorkers().contains(dwarf2Ref));
+		CHECK(!project2->hasCandidate(dwarf1));
+		CHECK(!project2->hasCandidate(dwarf2));
 		// Try to set haul strategy, both dwarves try to generate a haul subproject.
 		simulation.doStep();
 		simulation.fastForwardUntillPredicate([&]()->bool { return blocks.solid_is(wallLocation2); }, 90);
-		REQUIRE(actors.objective_getCurrentName(dwarf1) != L"construct");
-		REQUIRE(actors.objective_getCurrentName(dwarf2) != L"construct");
-		REQUIRE(!area.m_hasConstructionDesignations.areThereAnyForFaction(faction));
+		CHECK(actors.objective_getCurrentName(dwarf1) != L"construct");
+		CHECK(actors.objective_getCurrentName(dwarf2) != L"construct");
+		CHECK(!area.m_hasConstructionDesignations.areThereAnyForFaction(faction));
 	}
 	SUBCASE("make stairs")
 	{
 		BlockIndex stairsLocation = blocks.getIndex_i(8, 4, 2);
 		area.m_hasConstructionDesignations.designate(faction, stairsLocation, &BlockFeatureType::stairs, wood);
-		REQUIRE(blocks.designation_has(stairsLocation, faction, BlockDesignation::Construct));
-		REQUIRE(area.m_hasConstructionDesignations.contains(faction, stairsLocation));
-		REQUIRE(constructObjectiveType.canBeAssigned(area, dwarf1));
+		CHECK(blocks.designation_has(stairsLocation, faction, BlockDesignation::Construct));
+		CHECK(area.m_hasConstructionDesignations.contains(faction, stairsLocation));
+		CHECK(constructObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, stairsLocation);
 		// Search for project and find stairs and reserve all required items.
 		simulation.doStep();
-		REQUIRE(project.reservationsComplete());
+		CHECK(project.reservationsComplete());
 		// Select a haul strategy.
 		simulation.doStep();
-		REQUIRE(project.getProjectWorkerFor(dwarf1Ref).haulSubproject != nullptr);
+		CHECK(project.getProjectWorkerFor(dwarf1Ref).haulSubproject != nullptr);
 		// Find a path.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1) .exists());
+		CHECK(actors.move_getDestination(dwarf1) .exists());
 		std::function<bool()> predicate = [&]() { return blocks.blockFeature_contains(stairsLocation, BlockFeatureType::stairs); };
 		simulation.fastForwardUntillPredicate(predicate, 180);
-		REQUIRE(blocks.blockFeature_contains(stairsLocation, BlockFeatureType::stairs));
+		CHECK(blocks.blockFeature_contains(stairsLocation, BlockFeatureType::stairs));
 	}
 	SUBCASE("cannot path to spot")
 	{
@@ -320,9 +321,9 @@ TEST_CASE("construct")
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, gateway);
 		// Cannot detour or find alternative block.
 		simulation.doStep();
-		REQUIRE(actors.objective_getCurrentName(dwarf1) != L"construct");
-		REQUIRE(!items.reservable_isFullyReserved(saw, faction));
-		REQUIRE(project.getWorkers().empty());
+		CHECK(actors.objective_getCurrentName(dwarf1) != L"construct");
+		CHECK(!items.reservable_isFullyReserved(saw, faction));
+		CHECK(project.getWorkers().empty());
 	}
 	SUBCASE("spot has become solid")
 	{
@@ -337,9 +338,9 @@ TEST_CASE("construct")
 		simulation.doStep();
 		// Setting wallLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
 		blocks.solid_set(wallLocation, wood, false);
-		REQUIRE(!actors.project_exists(dwarf1));
-		REQUIRE(!items.reservable_isFullyReserved(saw, faction));
-		REQUIRE(!area.m_hasConstructionDesignations.areThereAnyForFaction(faction));
+		CHECK(!actors.project_exists(dwarf1));
+		CHECK(!items.reservable_isFullyReserved(saw, faction));
+		CHECK(!area.m_hasConstructionDesignations.areThereAnyForFaction(faction));
 	}
 	SUBCASE("saw destroyed")
 	{
@@ -355,9 +356,9 @@ TEST_CASE("construct")
 		simulation.doStep();
 		// Destroying the saw triggers a dishonor callback which resets the project.
 		items.destroy(saw);
-		REQUIRE(project.getWorkers().empty());
-		REQUIRE(!project.reservationsComplete());
-		REQUIRE(!project.hasCandidate(dwarf1));
+		CHECK(project.getWorkers().empty());
+		CHECK(!project.reservationsComplete());
+		CHECK(!project.hasCandidate(dwarf1));
 	}
 	SUBCASE("player cancels")
 	{
@@ -372,9 +373,9 @@ TEST_CASE("construct")
 		simulation.doStep();
 		// Setting wallLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
 		area.m_hasConstructionDesignations.undesignate(faction, wallLocation);
-		REQUIRE(!actors.project_exists(dwarf1));
-		REQUIRE(!items.reservable_isFullyReserved(saw, faction));
-		REQUIRE(!area.m_hasConstructionDesignations.areThereAnyForFaction(faction));
+		CHECK(!actors.project_exists(dwarf1));
+		CHECK(!items.reservable_isFullyReserved(saw, faction));
+		CHECK(!area.m_hasConstructionDesignations.areThereAnyForFaction(faction));
 	}
 	SUBCASE("player interrupts")
 	{
@@ -390,10 +391,10 @@ TEST_CASE("construct")
 		// Setting wallLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
 		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(blocks.getIndex_i(0, 8, 3));
 		actors.objective_addTaskToStart(dwarf1, std::move(objective));
-		REQUIRE(actors.objective_getCurrentName(dwarf1) != L"construct");
-		REQUIRE(!actors.project_exists(dwarf1));
-		REQUIRE(!items.reservable_isFullyReserved(saw, faction));
-		REQUIRE(area.m_hasConstructionDesignations.areThereAnyForFaction(faction));
+		CHECK(actors.objective_getCurrentName(dwarf1) != L"construct");
+		CHECK(!actors.project_exists(dwarf1));
+		CHECK(!items.reservable_isFullyReserved(saw, faction));
+		CHECK(area.m_hasConstructionDesignations.areThereAnyForFaction(faction));
 	}
 }
 TEST_CASE("constructDirtWall")
@@ -428,43 +429,43 @@ TEST_CASE("constructDirtWall")
 		Quantity dirtPerLoad = actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(dirtPile), Config::minimumHaulSpeedInital);
 		// One step to find the designation, activate the project and reserve the pile.
 		simulation.doStep();
-		REQUIRE(actors.project_exists(dwarf1));
-		REQUIRE(actors.getActionDescription(dwarf1) == L"construct");
+		CHECK(actors.project_exists(dwarf1));
+		CHECK(actors.getActionDescription(dwarf1) == L"construct");
 		ConstructProject& project = static_cast<ConstructProject&>(*actors.project_get(dwarf1));
-		REQUIRE(items.reservable_hasAnyReservations(dirtPile));
-		REQUIRE(project.reservationsComplete());
-		REQUIRE(project.getWorkers().contains(dwarf1Ref));
+		CHECK(items.reservable_hasAnyReservations(dirtPile));
+		CHECK(project.reservationsComplete());
+		CHECK(project.getWorkers().contains(dwarf1Ref));
 		// One step to select haul type.
 		simulation.doStep();
 		// Another step to path to the pile.
 		simulation.doStep();
 		auto& consumed = MaterialType::construction_getConsumed(dirt);
 		auto found = std::ranges::find_if(consumed, [dirtPile, &area](auto pair) { return pair.first.query(area, dirtPile); });
-		REQUIRE(found != consumed.end());
+		CHECK(found != consumed.end());
 		Quantity quantity = found->second;
-		REQUIRE(quantity <= items.getQuantity(dirtPile));
+		CHECK(quantity <= items.getQuantity(dirtPile));
 		Quantity trips = Quantity::create(std::ceil((float)quantity.get() / (float)dirtPerLoad.get()));
 		for(uint i = 0; i < trips; ++i)
 		{
 			simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, items.getLocation(dirtPile));
 			if(!actors.canPickUp_isCarryingItem(dwarf1, dirtPile))
-				REQUIRE(actors.canPickUp_isCarryingItemGeneric(dwarf1, pile, dirt, dirtPerLoad));
+				CHECK(actors.canPickUp_isCarryingItemGeneric(dwarf1, pile, dirt, dirtPerLoad));
 			simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, wallLocation);
-			REQUIRE(!actors.canPickUp_exists(dwarf1));
-			REQUIRE(actors.project_exists(dwarf1));
+			CHECK(!actors.canPickUp_exists(dwarf1));
+			CHECK(actors.project_exists(dwarf1));
 			if(!project.deliveriesComplete())
 			{
-				REQUIRE(project.hasTryToHaulThreadedTask());
+				CHECK(project.hasTryToHaulThreadedTask());
 				simulation.doStep();
-				REQUIRE(actors.move_hasPathRequest(dwarf1));
+				CHECK(actors.move_hasPathRequest(dwarf1));
 			}
 		}
-		REQUIRE(actors.project_get(dwarf1) == &project);
-		REQUIRE(actors.getActionDescription(dwarf1) == L"construct");
-		REQUIRE(project.deliveriesComplete());
-		REQUIRE(project.getFinishStep() != 0);
+		CHECK(actors.project_get(dwarf1) == &project);
+		CHECK(actors.getActionDescription(dwarf1) == L"construct");
+		CHECK(project.deliveriesComplete());
+		CHECK(project.getFinishStep() != 0);
 		simulation.fastForwardUntillPredicate([&]{ return blocks.solid_is(wallLocation); }, 130);
-		REQUIRE(area.getTotalCountOfItemTypeOnSurface(pile) == 0);
+		CHECK(area.getTotalCountOfItemTypeOnSurface(pile) == 0);
 	}
 	SUBCASE("dirt wall three piles")
 	{
@@ -479,13 +480,13 @@ TEST_CASE("constructDirtWall")
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation,activate the project and reserve the pile.
 		simulation.doStep();
-		REQUIRE(actors.project_exists(dwarf1));
-		REQUIRE(actors.getActionDescription(dwarf1) == L"construct");
+		CHECK(actors.project_exists(dwarf1));
+		CHECK(actors.getActionDescription(dwarf1) == L"construct");
 		ConstructProject& project = static_cast<ConstructProject&>(*actors.project_get(dwarf1));
-		REQUIRE(items.reservable_hasAnyReservations(dirtPile1));
-		REQUIRE(items.reservable_hasAnyReservations(dirtPile2));
-		REQUIRE(items.reservable_hasAnyReservations(dirtPile3));
-		REQUIRE(project.reservationsComplete());
+		CHECK(items.reservable_hasAnyReservations(dirtPile1));
+		CHECK(items.reservable_hasAnyReservations(dirtPile2));
+		CHECK(items.reservable_hasAnyReservations(dirtPile3));
+		CHECK(project.reservationsComplete());
 		// One step to select haul type.
 		simulation.doStep();
 		// Another step to path to a pile.
@@ -494,25 +495,25 @@ TEST_CASE("constructDirtWall")
 		// Pile 1 is the closest to the worker's starting position.
 		auto pile1Moved = [&]{ return blocks.item_getCount(pileLocation1, pile, dirt) == 0; };
 		simulation.fastForwardUntillPredicate(pile1Moved);
-		REQUIRE(actors.canPickUp_isCarryingItem(dwarf1, dirtPile1));
+		CHECK(actors.canPickUp_isCarryingItem(dwarf1, dirtPile1));
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, wallLocation);
-		REQUIRE(!actors.canPickUp_exists(dwarf1));
+		CHECK(!actors.canPickUp_exists(dwarf1));
 		// After Dropping off pile 1 the next closest is pile 3.
 		// Move pile 3.
 		auto pile3Moved = [&]{ return blocks.item_getCount(pileLocation3, pile, dirt) == 0; };
 		simulation.fastForwardUntillPredicate(pile3Moved);
-		REQUIRE(actors.canPickUp_isCarryingItem(dwarf1, dirtPile3));
+		CHECK(actors.canPickUp_isCarryingItem(dwarf1, dirtPile3));
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, wallLocation);
-		REQUIRE(!actors.canPickUp_exists(dwarf1));
+		CHECK(!actors.canPickUp_exists(dwarf1));
 		// The last Pile is pile 2.
 		// Move pile 2.
 		auto pile2Moved = [&]{ return blocks.item_getCount(pileLocation2, pile, dirt) == 0; };
 		simulation.fastForwardUntillPredicate(pile2Moved);
-		REQUIRE(actors.canPickUp_isCarryingItem(dwarf1, dirtPile2));
+		CHECK(actors.canPickUp_isCarryingItem(dwarf1, dirtPile2));
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, wallLocation);
-		REQUIRE(!actors.canPickUp_exists(dwarf1));
-		REQUIRE(project.deliveriesComplete());
-		REQUIRE(project.getFinishStep() != 0);
+		CHECK(!actors.canPickUp_exists(dwarf1));
+		CHECK(project.deliveriesComplete());
+		CHECK(project.getFinishStep() != 0);
 		auto predicate = [&]{ return blocks.solid_is(wallLocation); };
 		simulation.fastForwardUntillPredicate(predicate, 130);
 	}
@@ -527,18 +528,18 @@ TEST_CASE("constructDirtWall")
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
 		// One step to find the designation but fail to activate
 		simulation.doStep();
-		REQUIRE(!items.reservable_hasAnyReservations(dirtPile));
-		REQUIRE(!project.reservationsComplete());
-		REQUIRE(project.getWorkers().empty());
-		REQUIRE(!project.hasCandidate(dwarf1));
-		REQUIRE(!actors.project_exists(dwarf1));
+		CHECK(!items.reservable_hasAnyReservations(dirtPile));
+		CHECK(!project.reservationsComplete());
+		CHECK(project.getWorkers().empty());
+		CHECK(!project.hasCandidate(dwarf1));
+		CHECK(!actors.project_exists(dwarf1));
 		ConstructObjective& objective = actors.objective_getCurrent<ConstructObjective>(dwarf1);
-		REQUIRE(!objective.getProject());
-		REQUIRE(!objective.joinableProjectExistsAt(area, wallLocation, dwarf1));
+		CHECK(!objective.getProject());
+		CHECK(!objective.joinableProjectExistsAt(area, wallLocation, dwarf1));
 		// One step to fail to find another construction project.
 		simulation.doStep();
-		REQUIRE(!actors.project_exists(dwarf1));
-		REQUIRE(actors.getActionDescription(dwarf1) != L"construct");
+		CHECK(!actors.project_exists(dwarf1));
+		CHECK(actors.getActionDescription(dwarf1) != L"construct");
 	}
 	SUBCASE("dirt wall multiple small piles")
 	{
@@ -552,18 +553,18 @@ TEST_CASE("constructDirtWall")
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation, activate the project and reserve the piles.
 		simulation.doStep();
-		REQUIRE(actors.project_exists(dwarf1));
-		REQUIRE(actors.getActionDescription(dwarf1) == L"construct");
+		CHECK(actors.project_exists(dwarf1));
+		CHECK(actors.getActionDescription(dwarf1) == L"construct");
 		ConstructProject& project = static_cast<ConstructProject&>(*actors.project_get(dwarf1));
 		ItemIndex firstInBlock = blocks.item_getAll(blocks.getIndex_i(8,9,2)).front();
-		REQUIRE(items.reservable_hasAnyReservations(firstInBlock));
-		REQUIRE(project.reservationsComplete());
+		CHECK(items.reservable_hasAnyReservations(firstInBlock));
+		CHECK(project.reservationsComplete());
 		// One step to pick a haul strategy.
 		simulation.doStep();
-		REQUIRE(project.getProjectWorkerFor(dwarf1Ref).haulSubproject);
+		CHECK(project.getProjectWorkerFor(dwarf1Ref).haulSubproject);
 		// One step to path.
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1) .exists());
+		CHECK(actors.move_getDestination(dwarf1) .exists());
 		auto predicate = [&]{ return blocks.solid_is(wallLocation); };
 		simulation.fastForwardUntillPredicate(predicate, 130);
 	}

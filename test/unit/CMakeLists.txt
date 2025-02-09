@@ -4,7 +4,7 @@ target_link_libraries(unit LINK_PUBLIC Engine)
 add_custom_command(
 	TARGET unit POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E rename
-	${CMAKE_SOURCE_DIR}/build/test/unit/unit
+	${CMAKE_CURRENT_BINARY_DIR}/unit
 	${CMAKE_SOURCE_DIR}/unit
 	COMMAND notify-send done
 )

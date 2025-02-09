@@ -117,7 +117,7 @@ void HarvestObjective::cancel(Area& area, const ActorIndex& actor)
 void HarvestObjective::select(Area& area, const BlockIndex& block, const ActorIndex& actor)
 {
 	Blocks& blocks = area.getBlocks();
-	Plants& plants = area.getPlants();
+	[[maybe_unused]] Plants& plants = area.getPlants();
 	Actors& actors = area.getActors();
 	assert(blocks.plant_exists(block));
 	assert(plants.readyToHarvest(blocks.plant_get(block)));
@@ -126,7 +126,7 @@ void HarvestObjective::select(Area& area, const BlockIndex& block, const ActorIn
 }
 void HarvestObjective::begin(Area& area, const ActorIndex& actor)
 {
-	Plants& plants = area.getPlants();
+	[[maybe_unused]] Plants& plants = area.getPlants();
 	assert(m_block.exists());
 	assert(plants.readyToHarvest(area.getBlocks().plant_get(m_block)));
 	m_harvestEvent.schedule(Config::harvestEventDuration, area, *this, actor);

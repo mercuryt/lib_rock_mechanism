@@ -15,6 +15,7 @@
 #include "types.h"
 #include "itemType.h"
 #include "util.h"
+#include "portables.hpp"
 #include <cwchar>
 #include <functional>
 #include <memory>
@@ -654,7 +655,7 @@ void AreaHasStockPilesForFaction::removeQuery(StockPile& stockPile, const ItemQu
 	else
 		m_availableStockPilesByItemType[query.m_itemType].erase(&stockPile);
 }
-bool AreaHasStockPilesForFaction::isAnyHaulingAvailableFor(const ActorIndex& actor) const
+bool AreaHasStockPilesForFaction::isAnyHaulingAvailableFor([[maybe_unused]] const ActorIndex& actor) const
 {
 	assert(m_faction == m_area.getActors().getFactionId(actor));
 	return !m_itemsToBeStockPiled.empty();

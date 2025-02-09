@@ -5,6 +5,7 @@
 #include "../blocks/blocks.h"
 #include "../path/terrainFacade.hpp"
 #include "../types.h"
+#include "../hasShapes.hpp"
 // Objective Type.
 bool StockPileObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {

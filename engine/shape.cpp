@@ -58,9 +58,9 @@ SmallSet<OffsetAndVolume> Shape::makeOccupiedPositionsWithFacing(const ShapeId& 
 			}
 			return output;
 		default:
-			assert(false);
+			std::unreachable();
 	}
-	assert(false);
+	std::unreachable();
 	return output;
 }
 SmallSet<Offset3D> Shape::makeAdjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing)

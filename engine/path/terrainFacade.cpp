@@ -192,7 +192,7 @@ void TerrainFacade::unregisterWithHuristic(PathRequest& pathRequest)
 bool TerrainFacade::canEnterFrom(const BlockIndex& block, AdjacentIndex adjacentCount) const
 {
 	Blocks& blocks = m_area.getBlocks();
-	BlockIndex other = blocks.indexAdjacentToAtCount(block, adjacentCount);
+	[[maybe_unused]] BlockIndex other = blocks.indexAdjacentToAtCount(block, adjacentCount);
 	assert(m_enterable[(block.get() * maxAdjacent) + adjacentCount.get()] == getValueForBit(block, other));
 	return m_enterable[(block.get() * maxAdjacent) + adjacentCount.get()];
 }

@@ -16,6 +16,7 @@
 #include "simulation.h"
 #include "itemType.h"
 #include "objectives/dig.h"
+#include "hasShapes.hpp"
 #include <memory>
 #include <sys/types.h>
 /*
@@ -170,14 +171,14 @@ Json HasDigDesignationsForFaction::toJson() const
 	}
 	return {{"projects", projects}};
 }
-void HasDigDesignationsForFaction::designate(Area& area, const BlockIndex& block, const BlockFeatureType* blockFeatureType)
+void HasDigDesignationsForFaction::designate(Area& area, const BlockIndex& block, [[maybe_unused]] const BlockFeatureType* blockFeatureType)
 {
 	assert(!m_data.contains(block));
 	Blocks& blocks = area.getBlocks();
 	blocks.designation_set(block, m_faction, BlockDesignation::Dig);
 	// To be called when block is no longer a suitable location, for example if it got dug out already.
 	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<DigLocationDishonorCallback>(m_faction, area, block);
-	DigProject& project = m_data.emplace(block, m_faction, area, block, blockFeatureType, std::move(locationDishonorCallback));
+	[[maybe_unused]] DigProject& project = m_data.emplace(block, m_faction, area, block, blockFeatureType, std::move(locationDishonorCallback));
 	assert(static_cast<DigProject*>(blocks.project_get(block, m_faction)) == &project);
 }
 void HasDigDesignationsForFaction::undesignate(const BlockIndex& block)

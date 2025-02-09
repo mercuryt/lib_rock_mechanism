@@ -36,14 +36,14 @@ TEST_CASE("leadAndFollow")
 			.location=origin2,
 		});
 		actors.followActor(dwarf2, dwarf1);
-		REQUIRE(actors.lineLead_getPath(dwarf1).size() == 2);
-		REQUIRE(actors.lead_getSpeed(dwarf1) == actors.move_getSpeed(dwarf1));
+		CHECK(actors.lineLead_getPath(dwarf1).size() == 2);
+		CHECK(actors.lead_getSpeed(dwarf1) == actors.move_getSpeed(dwarf1));
 		actors.move_setDestination(dwarf1, destination1);
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(dwarf1).size() == 7);
-		REQUIRE(actors.move_getDestination(dwarf1) == destination1);
+		CHECK(actors.move_getPath(dwarf1).size() == 7);
+		CHECK(actors.move_getDestination(dwarf1) == destination1);
 		simulation.fastForwardUntillActorIsAtDestination(area, dwarf1, destination1);
-		REQUIRE(actors.getLocation(dwarf2) == destination2);
+		CHECK(actors.getLocation(dwarf2) == destination2);
 	}
 	SUBCASE("dwarf leads troll")
 	{
@@ -60,13 +60,13 @@ TEST_CASE("leadAndFollow")
 			.location=origin2,
 		});
 		actors.followActor(troll1, dwarf1);
-		REQUIRE(actors.lead_getSpeed(dwarf1) == actors.move_getSpeed(dwarf1));
+		CHECK(actors.lead_getSpeed(dwarf1) == actors.move_getSpeed(dwarf1));
 		actors.move_setDestination(dwarf1, destination1);
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(dwarf1).size() == 5);
-		REQUIRE(actors.move_getDestination(dwarf1) == destination1);
+		CHECK(actors.move_getPath(dwarf1).size() == 5);
+		CHECK(actors.move_getDestination(dwarf1) == destination1);
 		simulation.fastForwardUntillActorIsAtDestination(area, dwarf1, destination1);
-		REQUIRE(actors.getLocation(troll1) == destination2);
+		CHECK(actors.getLocation(troll1) == destination2);
 	}
 	SUBCASE("troll leads dwarf")
 	{
@@ -82,13 +82,13 @@ TEST_CASE("leadAndFollow")
 			.location=origin2,
 		});
 		actors.followActor(dwarf1, troll1);
-		REQUIRE(actors.lead_getSpeed(troll1) == actors.move_getSpeed(troll1));
+		CHECK(actors.lead_getSpeed(troll1) == actors.move_getSpeed(troll1));
 		actors.move_setDestination(troll1, destination1);
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(troll1).size() == 6);
-		REQUIRE(actors.move_getDestination(troll1) == destination1);
+		CHECK(actors.move_getPath(troll1).size() == 6);
+		CHECK(actors.move_getDestination(troll1) == destination1);
 		simulation.fastForwardUntillActorIsAtDestination(area, troll1, destination1);
-		REQUIRE(actors.isAdjacentToActor(dwarf1, troll1));
+		CHECK(actors.isAdjacentToActor(dwarf1, troll1));
 	}
 	SUBCASE("use largest shape for pathing")
 	{
@@ -110,7 +110,7 @@ TEST_CASE("leadAndFollow")
 		actors.followActor(troll1, dwarf1);
 		actors.move_setDestination(dwarf1, destination1);
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(dwarf1).size() > 6);
+		CHECK(actors.move_getPath(dwarf1).size() > 6);
 	}
 	SUBCASE("wait for follower to keep up if blocked temporarily")
 	{
@@ -138,24 +138,24 @@ TEST_CASE("leadAndFollow")
 		actors.followActor(troll1, dwarf1);
 		actors.move_setDestination(dwarf1, destination1);
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(dwarf1).size() == 6);
+		CHECK(actors.move_getPath(dwarf1).size() == 6);
 		Step stepsTillMoveEvent = actors.move_stepsTillNextMoveEvent(dwarf1);
 		simulation.fastForward(stepsTillMoveEvent);
 		//Because troll1 is blocked neither dwarf1 or troll1 have moved.
-		REQUIRE(actors.getLocation(dwarf1) == origin1);
-		REQUIRE(actors.getLocation(troll1) == origin2);
-		REQUIRE(actors.move_getRetries(dwarf1) == 1);
-		REQUIRE(actors.move_hasEvent(dwarf1));
-		REQUIRE(!blocks.shape_canEnterCurrentlyFrom(origin1, actors.getShape(troll1), actors.getLocation(troll1), actors.lineLead_getOccupiedBlocks(dwarf1)));
+		CHECK(actors.getLocation(dwarf1) == origin1);
+		CHECK(actors.getLocation(troll1) == origin2);
+		CHECK(actors.move_getRetries(dwarf1) == 1);
+		CHECK(actors.move_hasEvent(dwarf1));
+		CHECK(!blocks.shape_canEnterCurrentlyFrom(origin1, actors.getShape(troll1), actors.getLocation(troll1), actors.lineLead_getOccupiedBlocks(dwarf1)));
 		actors.setLocation(dwarf2, blocks.getIndex_i(9, 1, 1));
-		REQUIRE(blocks.shape_canEnterCurrentlyFrom(origin1, actors.getShape(troll1), actors.getLocation(troll1), actors.lineLead_getOccupiedBlocks(dwarf1)));
-		REQUIRE(actors.move_hasEvent(dwarf1));
+		CHECK(blocks.shape_canEnterCurrentlyFrom(origin1, actors.getShape(troll1), actors.getLocation(troll1), actors.lineLead_getOccupiedBlocks(dwarf1)));
+		CHECK(actors.move_hasEvent(dwarf1));
 		Step delay = actors.move_stepsTillNextMoveEvent(dwarf1);
 		simulation.fastForward(delay);
-		REQUIRE(actors.getLocation(troll1) != origin2);
-		REQUIRE(actors.isAdjacentToActor(troll1, dwarf1));
+		CHECK(actors.getLocation(troll1) != origin2);
+		CHECK(actors.isAdjacentToActor(troll1, dwarf1));
 		simulation.fastForwardUntillActorIsAtDestination(area, dwarf1, destination1);
-		REQUIRE(actors.getLocation(troll1) == destination2);
+		CHECK(actors.getLocation(troll1) == destination2);
 	}
 	SUBCASE("repath if follower blocked permanantly")
 	{
@@ -179,10 +179,10 @@ TEST_CASE("leadAndFollow")
 		//TODO: why minus 1? is steps till next move event wrong?
 		simulation.fastForward(stepsTillMoveEvent - 1);
 		//Because troll1 is blocked neither dwarf1 or troll1 have moved.
-		REQUIRE(actors.getLocation(dwarf1) == origin1);
-		REQUIRE(actors.getLocation(troll1) == origin2);
-		REQUIRE(actors.move_getRetries(dwarf1) == 0);
-		REQUIRE(!actors.move_hasEvent(dwarf1));
-		REQUIRE(actors.move_hasPathRequest(dwarf1));
+		CHECK(actors.getLocation(dwarf1) == origin1);
+		CHECK(actors.getLocation(troll1) == origin2);
+		CHECK(actors.move_getRetries(dwarf1) == 0);
+		CHECK(!actors.move_hasEvent(dwarf1));
+		CHECK(actors.move_hasPathRequest(dwarf1));
 	}
 }

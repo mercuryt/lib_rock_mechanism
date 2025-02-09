@@ -43,17 +43,17 @@ TEST_CASE("combat")
 	SUBCASE("attack table")
 	{
 		auto& attackTable = actors.combat_getAttackTable(dwarf1);
-		REQUIRE(attackTable.size() == actors.combat_getMeleeAttacks(dwarf1).size());
-		REQUIRE(attackTable.size() == 4);
-		REQUIRE(actors.combat_getCombatScore(dwarf1) == 26);
-		REQUIRE(actors.combat_getMaxRange(dwarf1) == 1.5f);
-		REQUIRE(actors.combat_getCoolDownDurationModifier(dwarf1) == 1.f);
+		CHECK(attackTable.size() == actors.combat_getMeleeAttacks(dwarf1).size());
+		CHECK(attackTable.size() == 4);
+		CHECK(actors.combat_getCombatScore(dwarf1) == 26);
+		CHECK(actors.combat_getMaxRange(dwarf1) == 1.5f);
+		CHECK(actors.combat_getCoolDownDurationModifier(dwarf1) == 1.f);
 	}
 	SUBCASE("strike rabbit")
 	{
-		REQUIRE(ItemType::getIsWeapon(ItemType::byName(L"long sword")));
+		CHECK(ItemType::getIsWeapon(ItemType::byName(L"long sword")));
 		CombatScore initalScore = actors.combat_getCombatScore(dwarf1);
-		REQUIRE(actors.combat_getAttackTable(dwarf1).size() == 4);
+		CHECK(actors.combat_getAttackTable(dwarf1).size() == 4);
 		ItemIndex longsword = items.create({
 			.itemType=ItemType::byName(L"long sword"),
 			.materialType=MaterialType::byName(L"bronze"),
@@ -61,7 +61,7 @@ TEST_CASE("combat")
 			.percentWear=Percent::create(10)
 		});
 		actors.equipment_add(dwarf1, longsword);
-		REQUIRE(actors.combat_getAttackTable(dwarf1).size() == 7);
+		CHECK(actors.combat_getAttackTable(dwarf1).size() == 7);
 		ItemIndex pants = items.create({
 			.itemType=ItemType::byName(L"pants"),
 			.materialType=MaterialType::byName(L"plant matter"),
@@ -69,17 +69,17 @@ TEST_CASE("combat")
 			.percentWear=Percent::create(10),
 		});
 		actors.equipment_add(dwarf1, pants);
-		REQUIRE(actors.combat_getCombatScore(dwarf1) > initalScore);
+		CHECK(actors.combat_getCombatScore(dwarf1) > initalScore);
 		ActorIndex rabbit = actors.create({
 			.species=AnimalSpecies::byName(L"dwarf rabbit"),
 			.location=blocks.getIndex_i(2, 2, 1),
 		});
-		REQUIRE(actors.combat_getCombatScore(rabbit) < actors.combat_getCombatScore(dwarf1));
+		CHECK(actors.combat_getCombatScore(rabbit) < actors.combat_getCombatScore(dwarf1));
 		actors.combat_setTarget(dwarf1, rabbit);
-		REQUIRE(actors.combat_inRange(dwarf1, rabbit));
-		REQUIRE(!actors.body_isInjured(rabbit));
+		CHECK(actors.combat_inRange(dwarf1, rabbit));
+		CHECK(!actors.body_isInjured(rabbit));
 		actors.combat_attackMeleeRange(dwarf1, rabbit);
-		REQUIRE(actors.body_isInjured(rabbit));
+		CHECK(actors.body_isInjured(rabbit));
 	}
 	SUBCASE("path to rabbit")
 	{
@@ -88,10 +88,10 @@ TEST_CASE("combat")
 			.location=blocks.getIndex_i(5, 5, 1),
 		});
 		actors.combat_setTarget(dwarf1, rabbit);
-		REQUIRE(actors.move_hasPathRequest(dwarf1));
+		CHECK(actors.move_hasPathRequest(dwarf1));
 		simulation.doStep();
-		REQUIRE(actors.move_getDestination(dwarf1).exists());
-		REQUIRE(actors.isAdjacentToLocation(rabbit, actors.move_getDestination(dwarf1)));
+		CHECK(actors.move_getDestination(dwarf1).exists());
+		CHECK(actors.isAdjacentToLocation(rabbit, actors.move_getDestination(dwarf1)));
 	}
 	SUBCASE("adjacent allies boost combat score")
 	{
@@ -101,7 +101,7 @@ TEST_CASE("combat")
 			.location=blocks.getIndex_i(2, 1, 1),
 			.faction=faction
 		});
-		REQUIRE(actors.combat_getCurrentMeleeCombatScore(dwarf1) > initalScore);
+		CHECK(actors.combat_getCurrentMeleeCombatScore(dwarf1) > initalScore);
 	}
 	SUBCASE("flanking enemies reduce combat score")
 	{
@@ -114,7 +114,7 @@ TEST_CASE("combat")
 			.species=AnimalSpecies::byName(L"dwarf rabbit"),
 			.location=blocks.getIndex_i(1, 2, 1),
 		});
-		REQUIRE(actors.combat_getCurrentMeleeCombatScore(dwarf1) < initalScore);
+		CHECK(actors.combat_getCurrentMeleeCombatScore(dwarf1) < initalScore);
 	}
 	SUBCASE("shoot rabbit")
 	{
@@ -136,12 +136,12 @@ TEST_CASE("combat")
 			.location=blocks.getIndex_i(3, 3, 1),
 		});
 		actors.combat_setTarget(dwarf1, rabbit);
-		REQUIRE(actors.combat_inRange(dwarf1, rabbit));
+		CHECK(actors.combat_inRange(dwarf1, rabbit));
 		AttackTypeId attackType = actors.combat_getRangedAttackType(dwarf1, crossbow);
 		Attack attack(attackType, items.getMaterialType(ammo), crossbow);
-		REQUIRE(actors.combat_projectileHitPercent(dwarf1, attack, rabbit) >= 100);
-		REQUIRE(!actors.body_isInjured(rabbit));
+		CHECK(actors.combat_projectileHitPercent(dwarf1, attack, rabbit) >= 100);
+		CHECK(!actors.body_isInjured(rabbit));
 		actors.combat_attackLongRange(dwarf1, rabbit, crossbow, ammo);
-		REQUIRE(actors.body_isInjured(rabbit));
+		CHECK(actors.body_isInjured(rabbit));
 	}
 }

@@ -13,6 +13,7 @@
 #include "itemType.h"
 #include "bodyType.h"
 #include "actors/actors.h"
+#include "hasShapes.hpp"
 #include <cstddef>
 EquipmentSet::EquipmentSet(Area& area, const Json& data)
 {

@@ -35,7 +35,7 @@ TEST_CASE("route_10_10_10")
 		});
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).size() == 4);
+		CHECK(actors.move_getPath(actor).size() == 4);
 	}
 	SUBCASE("Route around walls")
 	{
@@ -58,7 +58,7 @@ TEST_CASE("route_10_10_10")
 		});
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).size() == 7);
+		CHECK(actors.move_getPath(actor).size() == 7);
 	}
 	SUBCASE("No route found")
 	{
@@ -81,7 +81,7 @@ TEST_CASE("route_10_10_10")
 		});
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 	}
 	SUBCASE("Walk")
 	{
@@ -94,30 +94,30 @@ TEST_CASE("route_10_10_10")
 			.location=origin,
 		});
 		actors.move_setDestination(actor, destination);
-		REQUIRE(!actors.move_hasEvent(actor));
+		CHECK(!actors.move_hasEvent(actor));
 		simulation.doStep();
-		REQUIRE(actors.move_hasEvent(actor));
+		CHECK(actors.move_hasEvent(actor));
 		Step stepsUntillScheduledStep = actors.move_stepsTillNextMoveEvent(actor);
 		float seconds = (float)stepsUntillScheduledStep.get() / (float)Config::stepsPerSecond.get();
-		REQUIRE(seconds >= 0.6f);
-		REQUIRE(seconds <= 0.9f);
+		CHECK(seconds >= 0.6f);
+		CHECK(seconds <= 0.9f);
 		simulation.fastForward(stepsUntillScheduledStep - 2);
-		REQUIRE(actors.getLocation(actor) == origin);
-		REQUIRE(actors.move_hasEvent(actor));
+		CHECK(actors.getLocation(actor) == origin);
+		CHECK(actors.move_hasEvent(actor));
 		// step 1
 		simulation.doStep();
-		REQUIRE(actors.getLocation(actor) == block1);
-		REQUIRE(actors.move_hasEvent(actor));
-		REQUIRE(stepsUntillScheduledStep == actors.move_stepsTillNextMoveEvent(actor));
+		CHECK(actors.getLocation(actor) == block1);
+		CHECK(actors.move_hasEvent(actor));
+		CHECK(stepsUntillScheduledStep == actors.move_stepsTillNextMoveEvent(actor));
 		simulation.fastForward(stepsUntillScheduledStep - 2);
-		REQUIRE(actors.getLocation(actor) == block1);
-		REQUIRE(actors.move_hasEvent(actor));
+		CHECK(actors.getLocation(actor) == block1);
+		CHECK(actors.move_hasEvent(actor));
 		// step 2
 		simulation.doStep();
-		REQUIRE(actors.getLocation(actor) == destination);
-		REQUIRE(!actors.move_hasEvent(actor));
-		REQUIRE(actors.move_getPath(actor).empty());
-		REQUIRE(actors.move_getDestination(actor).empty());
+		CHECK(actors.getLocation(actor) == destination);
+		CHECK(!actors.move_hasEvent(actor));
+		CHECK(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getDestination(actor).empty());
 	}
 	SUBCASE("Repath when route is blocked")
 	{
@@ -135,34 +135,34 @@ TEST_CASE("route_10_10_10")
 		blocks.solid_set(blocks.getIndex_i(2,5,1), marble, false);
 		actors.objective_addTaskToEnd(actor, std::make_unique<GoToObjective>(destination));
 		simulation.doStep();
-		REQUIRE(actors.move_hasEvent(actor));
-		REQUIRE(actors.move_getPath(actor)[0] == block1);
-		REQUIRE(actors.move_getPath(actor)[1] == block2);
-		REQUIRE(actors.move_getPath(actor)[2] == destination);
+		CHECK(actors.move_hasEvent(actor));
+		CHECK(actors.move_getPath(actor)[0] == block1);
+		CHECK(actors.move_getPath(actor)[1] == block2);
+		CHECK(actors.move_getPath(actor)[2] == destination);
 		// Step 1.
 		//simulation.fastForwardUntillActorIsAt(area, actor, block1);
 		simulation.doStep();
 		simulation.doStep();
-		REQUIRE(actors.getLocation(actor) == origin);
+		CHECK(actors.getLocation(actor) == origin);
 		simulation.doStep();
-		REQUIRE(actors.getLocation(actor) == block1);
-		REQUIRE(actors.move_hasEvent(actor));
+		CHECK(actors.getLocation(actor) == block1);
+		CHECK(actors.move_hasEvent(actor));
 		blocks.solid_set(block2, marble, false);
 		// Step 2.
-		REQUIRE(actors.move_hasEvent(actor));
+		CHECK(actors.move_hasEvent(actor));
 		Step stepsTillNextMove = actors.move_stepsTillNextMoveEvent(actor);
 		simulation.fastForward(stepsTillNextMove - 1);
-		REQUIRE(actors.getLocation(actor) == block1);
-		REQUIRE(!actors.move_hasEvent(actor));
-		REQUIRE(actors.move_hasPathRequest(actor));
+		CHECK(actors.getLocation(actor) == block1);
+		CHECK(!actors.move_hasEvent(actor));
+		CHECK(actors.move_hasPathRequest(actor));
 		// Step 3.
 		simulation.doStep();
-		REQUIRE(!actors.move_hasPathRequest(actor));
-		REQUIRE(actors.move_hasEvent(actor));
-		REQUIRE(actors.move_getPath(actor)[0] == block3);
+		CHECK(!actors.move_hasPathRequest(actor));
+		CHECK(actors.move_hasEvent(actor));
+		CHECK(actors.move_getPath(actor)[0] == block3);
 		stepsTillNextMove = actors.move_stepsTillNextMoveEvent(actor);
 		simulation.fastForwardUntillActorIsAt(area, actor, block3);
-		REQUIRE(actors.move_hasEvent(actor));
+		CHECK(actors.move_hasEvent(actor));
 	}
 	SUBCASE("Unpathable route becomes pathable when blockage is removed.")
 	{
@@ -178,11 +178,11 @@ TEST_CASE("route_10_10_10")
 		});
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 		blocks.solid_setNot(wallStart);
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 	}
 	SUBCASE("two by two creature cannot path through one block gap")
 	{
@@ -200,7 +200,7 @@ TEST_CASE("route_10_10_10")
 		});
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 	}
 	SUBCASE("walking path blocked by elevation")
 	{
@@ -216,7 +216,7 @@ TEST_CASE("route_10_10_10")
 		});
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 	}
 	SUBCASE("flying path")
 	{
@@ -230,7 +230,7 @@ TEST_CASE("route_10_10_10")
 		});
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).size() == 7);
+		CHECK(actors.move_getPath(actor).size() == 7);
 	}
 	SUBCASE("swimming path")
 	{
@@ -245,7 +245,7 @@ TEST_CASE("route_10_10_10")
 		});
 		actors.move_setDestination(actor, water2);
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).size() == 7);
+		CHECK(actors.move_getPath(actor).size() == 7);
 	}
 }
 TEST_CASE("route_5_5_3")
@@ -281,7 +281,7 @@ TEST_CASE("route_5_5_3")
 		});
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 	}
 	SUBCASE("walking path blocked by water if not also swimming")
 	{
@@ -302,14 +302,14 @@ TEST_CASE("route_5_5_3")
 		});
 		actors.move_setType(actor, twoLegs);
 		actors.move_setDestination(actor, destination);
-		REQUIRE(!blocks.shape_moveTypeCanEnter(midpoint, actors.getMoveType(actor)));
+		CHECK(!blocks.shape_moveTypeCanEnter(midpoint, actors.getMoveType(actor)));
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 		actors.move_setType(actor, twoLegsAndSwimInWater);
 		actors.move_setDestination(actor, destination);
-		REQUIRE(blocks.shape_moveTypeCanEnter(midpoint, actors.getMoveType(actor)));
+		CHECK(blocks.shape_moveTypeCanEnter(midpoint, actors.getMoveType(actor)));
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 	}
 }
 TEST_CASE("route_5_5_5")
@@ -337,11 +337,11 @@ TEST_CASE("route_5_5_5")
 		blocks.solid_set(blocks.getIndex_i(4, 4, 1), marble, false);
 		actors.move_setDestination(actor, blocks.getIndex_i(4, 4, 2));
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 		actors.move_setType(actor, twoLegsAndClimb1);
 		actors.move_setDestination(actor, blocks.getIndex_i(4, 4, 2));
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 
 	}
 	SUBCASE("walking path blocked by two height cliff if not climbing 2")
@@ -356,11 +356,11 @@ TEST_CASE("route_5_5_5")
 		blocks.solid_set(blocks.getIndex_i(4, 4, 2), marble, false);
 		actors.move_setDestination(actor, blocks.getIndex_i(4, 4, 3));
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 		actors.move_setType(actor, twoLegsAndClimb2);
 		actors.move_setDestination(actor, blocks.getIndex_i(4, 4, 3));
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 
 	}
 	SUBCASE("stairs")
@@ -376,7 +376,7 @@ TEST_CASE("route_5_5_5")
 		});
 		actors.move_setDestination(actor, blocks.getIndex_i(2, 2, 4));
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 	}
 	SUBCASE("ramp")
 	{
@@ -391,17 +391,17 @@ TEST_CASE("route_5_5_5")
 		});
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 		blocks.blockFeature_construct(rampLocation, ramp, marble);
-		REQUIRE(blocks.shape_shapeAndMoveTypeCanEnterEverFrom(rampLocation, actors.getShape(actor), actors.getMoveType(actor), adjacentToRamp));
-		REQUIRE(blocks.getAdjacentWithEdgeAndCornerAdjacentUnfiltered(adjacentToRamp)[13] == rampLocation);
+		CHECK(blocks.shape_shapeAndMoveTypeCanEnterEverFrom(rampLocation, actors.getShape(actor), actors.getMoveType(actor), adjacentToRamp));
+		CHECK(blocks.getAdjacentWithEdgeAndCornerAdjacentUnfiltered(adjacentToRamp)[13] == rampLocation);
 		auto& facade = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor));
-		REQUIRE(facade.getValueForBit(adjacentToRamp, rampLocation));
+		CHECK(facade.getValueForBit(adjacentToRamp, rampLocation));
 		bool canEnterFrom = facade.canEnterFrom(adjacentToRamp, AdjacentIndex::create(13));
-		REQUIRE(canEnterFrom);
+		CHECK(canEnterFrom);
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 	}
 	SUBCASE("door")
 	{
@@ -416,15 +416,15 @@ TEST_CASE("route_5_5_5")
 		});
 		actors.move_setDestination(actor, blocks.getIndex_i(4, 3, 1));
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 		blocks.blockFeature_construct(blocks.getIndex_i(3, 2, 1), door, marble);
 		actors.move_setDestination(actor, blocks.getIndex_i(4, 3, 1));
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 		blocks.blockFeature_lock(blocks.getIndex_i(3, 2, 1), door);
 		actors.move_setDestination(actor, blocks.getIndex_i(4, 3, 1));
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 	}
 	SUBCASE("fortification")
 	{
@@ -439,11 +439,11 @@ TEST_CASE("route_5_5_5")
 		});
 		actors.move_setDestination(actor, blocks.getIndex_i(4, 3, 1));
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 		blocks.blockFeature_construct(blocks.getIndex_i(3, 2, 1), fortification, marble);
 		actors.move_setDestination(actor, blocks.getIndex_i(4, 3, 1));
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 	}
 	SUBCASE("can walk on floor")
 	{
@@ -456,11 +456,11 @@ TEST_CASE("route_5_5_5")
 		});
 		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 		blocks.blockFeature_construct(blocks.getIndex_i(1, 2, 2), BlockFeatureType::floor, marble);
 		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 	}
 	SUBCASE("floor blocks vertical travel")
 	{
@@ -476,11 +476,11 @@ TEST_CASE("route_5_5_5")
 		});
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 3), BlockFeatureType::floor, marble);
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 	}
 	SUBCASE("can walk on floor grate")
 	{
@@ -493,11 +493,11 @@ TEST_CASE("route_5_5_5")
 		});
 		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 		blocks.blockFeature_construct(blocks.getIndex_i(1, 2, 2), BlockFeatureType::floorGrate, marble);
 		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 	}
 	SUBCASE("floor grate blocks vertical travel")
 	{
@@ -513,11 +513,11 @@ TEST_CASE("route_5_5_5")
 		});
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 3), BlockFeatureType::floorGrate, marble);
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 	}
 	SUBCASE("can walk on hatch")
 	{
@@ -530,11 +530,11 @@ TEST_CASE("route_5_5_5")
 		});
 		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 		blocks.blockFeature_construct(blocks.getIndex_i(1, 2, 2), BlockFeatureType::hatch, marble);
 		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 	}
 	SUBCASE("locked hatch blocks vertical travel")
 	{
@@ -550,15 +550,15 @@ TEST_CASE("route_5_5_5")
 		});
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 3), BlockFeatureType::hatch, marble);
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 		blocks.blockFeature_lock(blocks.getIndex_i(3, 3, 3), BlockFeatureType::hatch);
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 	}
 	SUBCASE("multi-block actors can use ramps")
 	{
@@ -573,14 +573,14 @@ TEST_CASE("route_5_5_5")
 		});
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 2));
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 		blocks.blockFeature_construct(blocks.getIndex_i(3, 2, 1), BlockFeatureType::ramp, marble);
 		blocks.blockFeature_construct(blocks.getIndex_i(4, 2, 1), BlockFeatureType::ramp, marble);
 		blocks.blockFeature_construct(blocks.getIndex_i(3, 1, 1), BlockFeatureType::ramp, marble);
 		blocks.blockFeature_construct(blocks.getIndex_i(4, 1, 1), BlockFeatureType::ramp, marble);
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 2));
 		simulation.doStep();
-		REQUIRE(!actors.move_getPath(actor).empty());
+		CHECK(!actors.move_getPath(actor).empty());
 	}
 	SUBCASE("detour")
 	{
@@ -599,30 +599,30 @@ TEST_CASE("route_5_5_5")
 		});
 		actors.move_setDestination(actor, blocks.getIndex_i(4, 3, 1));
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).size() == 2);
+		CHECK(actors.move_getPath(actor).size() == 2);
 		//pathThreadedTask.clearReferences();
 		//simulation.m_threadedTaskEngine.remove(pathThreadedTask);
-		REQUIRE(blocks.shape_shapeAndMoveTypeCanEnterEverFrom(blocks.getIndex_i(3, 3, 1), actors.getShape(actor), actors.getMoveType(actor), actors.getLocation(actor)));
-		REQUIRE(!blocks.shape_canEnterCurrentlyFrom(blocks.getIndex_i(3, 3, 1), actors.getShape(actor), actors.getLocation(actor), actors.getBlocks(actor)));
-		REQUIRE(actors.move_hasEvent(actor));
+		CHECK(blocks.shape_shapeAndMoveTypeCanEnterEverFrom(blocks.getIndex_i(3, 3, 1), actors.getShape(actor), actors.getMoveType(actor), actors.getLocation(actor)));
+		CHECK(!blocks.shape_canEnterCurrentlyFrom(blocks.getIndex_i(3, 3, 1), actors.getShape(actor), actors.getLocation(actor), actors.getBlocks(actor)));
+		CHECK(actors.move_hasEvent(actor));
 		// Move attempt 1.
 		Step stepsUntillScheduledStep = actors.move_stepsTillNextMoveEvent(actor);
 		simulation.fastForward(stepsUntillScheduledStep - 1);
-		REQUIRE(actors.getLocation(actor) == origin);
-		REQUIRE(actors.move_hasEvent(actor));
-		REQUIRE(actors.move_getRetries(actor) == 1);
+		CHECK(actors.getLocation(actor) == origin);
+		CHECK(actors.move_hasEvent(actor));
+		CHECK(actors.move_getRetries(actor) == 1);
 		// Move attempt 2.
 		stepsUntillScheduledStep = actors.move_stepsTillNextMoveEvent(actor);
 		simulation.fastForward(stepsUntillScheduledStep - 1);
-		REQUIRE(actors.move_getRetries(actor) == 2);
+		CHECK(actors.move_getRetries(actor) == 2);
 		// Move attempt 3.
 		simulation.fastForward(stepsUntillScheduledStep - 1);
-		REQUIRE(actors.getLocation(actor) == origin);
-		REQUIRE(actors.move_hasPathRequest(actor));
-		REQUIRE(!actors.move_hasEvent(actor));
+		CHECK(actors.getLocation(actor) == origin);
+		CHECK(actors.move_hasPathRequest(actor));
+		CHECK(!actors.move_hasEvent(actor));
 		// Detour.
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).size() == 6);
+		CHECK(actors.move_getPath(actor).size() == 6);
 	}
 	SUBCASE("air breathers cannot dive")
 	{
@@ -639,6 +639,6 @@ TEST_CASE("route_5_5_5")
 		});
 		actors.move_setDestination(actor, deep);
 		simulation.doStep();
-		REQUIRE(actors.move_getPath(actor).empty());
+		CHECK(actors.move_getPath(actor).empty());
 	}
 }

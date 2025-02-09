@@ -42,12 +42,12 @@ TEST_CASE("Area")
 		FluidGroup* fluidGroup = blocks.fluid_getGroup(block2, water);
 		area.doStep();
 		++simulation.m_step;
-		REQUIRE(area.m_hasFluidGroups.getUnstable().size() == 1);
-		REQUIRE(blocks.fluid_getTotalVolume(block1) == 100);
-		REQUIRE(blocks.fluid_getTotalVolume(block2) == 0);
+		CHECK(area.m_hasFluidGroups.getUnstable().size() == 1);
+		CHECK(blocks.fluid_getTotalVolume(block1) == 100);
+		CHECK(blocks.fluid_getTotalVolume(block2) == 0);
 		area.doStep();
-		REQUIRE(fluidGroup->m_stable);
-		REQUIRE(!area.m_hasFluidGroups.getUnstable().contains(fluidGroup));
+		CHECK(fluidGroup->m_stable);
+		CHECK(!area.m_hasFluidGroups.getUnstable().contains(fluidGroup));
 	}
 	SUBCASE("Cave in falls in fluid and pistons it up with threading")
 	{
@@ -63,23 +63,23 @@ TEST_CASE("Area")
 		FluidGroup* fluidGroup = blocks.fluid_getGroup(block1, water);
 		area.doStep();
 		++simulation.m_step;
-		REQUIRE(area.m_hasFluidGroups.getUnstable().size() == 1);
-		REQUIRE(area.m_hasFluidGroups.getUnstable().contains(fluidGroup));
-		REQUIRE(!fluidGroup->m_stable);
-		REQUIRE(blocks.fluid_getTotalVolume(block1) == 0);
-		REQUIRE(blocks.solid_get(block1) == marble);
-		REQUIRE(!blocks.solid_is(block2));
-		REQUIRE(fluidGroup->m_excessVolume == 100);
-		REQUIRE(fluidGroup->m_drainQueue.m_set.size() == 0);
-		REQUIRE(fluidGroup->m_fillQueue.m_set.size() == 1);
-		REQUIRE(fluidGroup->m_fillQueue.m_set.contains(block2));
-		REQUIRE(blocks.fluid_canEnterEver(block2));
+		CHECK(area.m_hasFluidGroups.getUnstable().size() == 1);
+		CHECK(area.m_hasFluidGroups.getUnstable().contains(fluidGroup));
+		CHECK(!fluidGroup->m_stable);
+		CHECK(blocks.fluid_getTotalVolume(block1) == 0);
+		CHECK(blocks.solid_get(block1) == marble);
+		CHECK(!blocks.solid_is(block2));
+		CHECK(fluidGroup->m_excessVolume == 100);
+		CHECK(fluidGroup->m_drainQueue.m_set.size() == 0);
+		CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
+		CHECK(fluidGroup->m_fillQueue.m_set.contains(block2));
+		CHECK(blocks.fluid_canEnterEver(block2));
 		area.doStep();
 		++simulation.m_step;
-		REQUIRE(blocks.fluid_getTotalVolume(block2) == 100);
-		REQUIRE(fluidGroup->m_excessVolume == 0);
-		REQUIRE(!fluidGroup->m_stable);
-		REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
+		CHECK(blocks.fluid_getTotalVolume(block2) == 100);
+		CHECK(fluidGroup->m_excessVolume == 0);
+		CHECK(!fluidGroup->m_stable);
+		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
 	}
 	SUBCASE("Test move with threading")
 	{
@@ -93,31 +93,31 @@ TEST_CASE("Area")
 		actors.move_setDestination(actor, destination);
 		area.doStep();
 		++simulation.m_step;
-		REQUIRE(actors.move_getPath(actor).size() == 7);
-		REQUIRE(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
-		REQUIRE(actors.move_hasEvent(actor));
+		CHECK(actors.move_getPath(actor).size() == 7);
+		CHECK(simulation.m_threadedTaskEngine.m_tasksForNextStep.empty());
+		CHECK(actors.move_hasEvent(actor));
 		Step scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		float seconds = (float)scheduledStep.get() / (float)Config::stepsPerSecond.get();
-		REQUIRE(seconds > 0.6f);
-		REQUIRE(seconds < 0.9f);
+		CHECK(seconds > 0.6f);
+		CHECK(seconds < 0.9f);
 		while(simulation.m_step != scheduledStep)
 		{
 			area.doStep();
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		REQUIRE(actors.getLocation(actor) == origin);
+		CHECK(actors.getLocation(actor) == origin);
 		area.doStep();
 		simulation.m_eventSchedule.doStep(simulation.m_step);
-		REQUIRE(actors.getLocation(actor) != origin);
+		CHECK(actors.getLocation(actor) != origin);
 		while(actors.getLocation(actor) != destination)
 		{
 			area.doStep();
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		REQUIRE(actors.move_getDestination(actor).empty());
-		REQUIRE(!actors.move_hasEvent(actor));
+		CHECK(actors.move_getDestination(actor).empty());
+		CHECK(!actors.move_hasEvent(actor));
 	}
 	SUBCASE("Test mist spreads")
 	{
@@ -128,21 +128,21 @@ TEST_CASE("Area")
 		BlockIndex block3 = blocks.getIndex_i(5, 5, 2);
 		blocks.fluid_spawnMist(origin, water);
 		Step scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
-		REQUIRE(scheduledStep == 11);
+		CHECK(scheduledStep == 11);
 		while(simulation.m_step != scheduledStep)
 		{
 			area.doStep();
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		REQUIRE(blocks.fluid_getMist(block1).empty());
+		CHECK(blocks.fluid_getMist(block1).empty());
 		area.doStep();
 		simulation.m_eventSchedule.doStep(simulation.m_step);
 		++simulation.m_step;
-		REQUIRE(blocks.fluid_getMist(origin) == water);
-		REQUIRE(blocks.fluid_getMist(block1) == water);
-		REQUIRE(blocks.fluid_getMist(block2).empty());
-		REQUIRE(blocks.fluid_getMist(block3) == water);
+		CHECK(blocks.fluid_getMist(origin) == water);
+		CHECK(blocks.fluid_getMist(block1) == water);
+		CHECK(blocks.fluid_getMist(block2).empty());
+		CHECK(blocks.fluid_getMist(block3) == water);
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		while(simulation.m_step != scheduledStep + 1 )
 		{
@@ -150,10 +150,10 @@ TEST_CASE("Area")
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		REQUIRE(blocks.fluid_getMist(origin) == water);
-		REQUIRE(blocks.fluid_getMist(block1) == water);
-		REQUIRE(blocks.fluid_getMist(block2) == water);
-		REQUIRE(blocks.fluid_getMist(block3) == water);
+		CHECK(blocks.fluid_getMist(origin) == water);
+		CHECK(blocks.fluid_getMist(block1) == water);
+		CHECK(blocks.fluid_getMist(block2) == water);
+		CHECK(blocks.fluid_getMist(block3) == water);
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		while(simulation.m_step != scheduledStep + 1)
 		{
@@ -161,10 +161,10 @@ TEST_CASE("Area")
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		REQUIRE(blocks.fluid_getMist(origin).empty());
-		REQUIRE(blocks.fluid_getMist(block1) == water);
-		REQUIRE(blocks.fluid_getMist(block2) == water);
-		REQUIRE(blocks.fluid_getMist(block3) == water);
+		CHECK(blocks.fluid_getMist(origin).empty());
+		CHECK(blocks.fluid_getMist(block1) == water);
+		CHECK(blocks.fluid_getMist(block2) == water);
+		CHECK(blocks.fluid_getMist(block3) == water);
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		while(simulation.m_step != scheduledStep + 1)
 		{
@@ -172,10 +172,10 @@ TEST_CASE("Area")
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		REQUIRE(blocks.fluid_getMist(origin).empty());
-		REQUIRE(blocks.fluid_getMist(block1).empty());
-		REQUIRE(blocks.fluid_getMist(block2) == water);
-		REQUIRE(blocks.fluid_getMist(block3).empty());
+		CHECK(blocks.fluid_getMist(origin).empty());
+		CHECK(blocks.fluid_getMist(block1).empty());
+		CHECK(blocks.fluid_getMist(block2) == water);
+		CHECK(blocks.fluid_getMist(block3).empty());
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		while(simulation.m_step != scheduledStep + 1)
 		{
@@ -183,10 +183,10 @@ TEST_CASE("Area")
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		REQUIRE(blocks.fluid_getMist(origin).empty());
-		REQUIRE(blocks.fluid_getMist(block1).empty());
-		REQUIRE(blocks.fluid_getMist(block2).empty());
-		REQUIRE(blocks.fluid_getMist(block3).empty());
+		CHECK(blocks.fluid_getMist(origin).empty());
+		CHECK(blocks.fluid_getMist(block1).empty());
+		CHECK(blocks.fluid_getMist(block2).empty());
+		CHECK(blocks.fluid_getMist(block3).empty());
 	}
 }
 TEST_CASE("vision-threading")
@@ -203,23 +203,23 @@ TEST_CASE("vision-threading")
 	BlockIndex block2 = blocks.getIndex_i(7, 7, 1);
 	Point3D point1 = blocks.getCoordinates(block1);
 	Point3D point2 = blocks.getCoordinates(block2);
-	REQUIRE(point2.isInFrontOf(point1, point1.getFacingTwords(point2)));
-	REQUIRE(point1.isInFrontOf(point2, point2.getFacingTwords(point1)));
+	CHECK(point2.isInFrontOf(point1, point1.getFacingTwords(point2)));
+	CHECK(point1.isInFrontOf(point2, point2.getFacingTwords(point1)));
 	ActorIndex a1 = actors.create(ActorParamaters{
 		.species=dwarf,
 		.location=block1,
 		.facing=point1.getFacingTwords(point2),
 	});
-	REQUIRE(area.m_visionRequests.size() == 1);
+	CHECK(area.m_visionRequests.size() == 1);
 	ActorIndex a2 = actors.create(ActorParamaters{
 		.species=dwarf,
 		.location=block2,
 		.facing=point2.getFacingTwords(point1),
 	});
-	REQUIRE(area.m_visionRequests.size() == 2);
+	CHECK(area.m_visionRequests.size() == 2);
 	simulation.doStep();
-	REQUIRE(actors.vision_canSeeActor(a1, a2));
-	REQUIRE(actors.vision_canSeeActor(a2, a1));
+	CHECK(actors.vision_canSeeActor(a1, a2));
+	CHECK(actors.vision_canSeeActor(a2, a1));
 }
 TEST_CASE("multiMergeOnAdd")
 {
@@ -233,13 +233,13 @@ TEST_CASE("multiMergeOnAdd")
 	BlockIndex block3 = blocks.getIndex_i(1, 0, 0);
 	BlockIndex block4 = blocks.getIndex_i(1, 1, 0);
 	blocks.fluid_add(block1, Config::maxBlockVolume, water);
-	REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
+	CHECK(area.m_hasFluidGroups.getAll().size() == 1);
 	blocks.fluid_add(block4, Config::maxBlockVolume, water);
-	REQUIRE(area.m_hasFluidGroups.getAll().size() == 2);
+	CHECK(area.m_hasFluidGroups.getAll().size() == 2);
 	blocks.fluid_add(block2, Config::maxBlockVolume, water);
-	REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
+	CHECK(area.m_hasFluidGroups.getAll().size() == 1);
 	blocks.fluid_add(block3, Config::maxBlockVolume, water);
-	REQUIRE(area.m_hasFluidGroups.getAll().size() == 1);
+	CHECK(area.m_hasFluidGroups.getAll().size() == 1);
 	simulation.doStep();
 }
 inline void fourFluidsTestParallel(uint32_t scale, Step steps)
@@ -277,15 +277,15 @@ inline void fourFluidsTestParallel(uint32_t scale, Step steps)
 	BlockIndex mercury1 = blocks.getIndex_i(halfMaxX, halfMaxY, 1);
 	BlockIndex mercury2 = blocks.getIndex_i(maxX - 2, maxY - 2, maxZ - 1);
 	areaBuilderUtil::setFullFluidCuboid(area, mercury1, mercury2, mercury);
-	REQUIRE(area.m_hasFluidGroups.getAll().size() == 4);
+	CHECK(area.m_hasFluidGroups.getAll().size() == 4);
 	FluidGroup* fgWater = blocks.fluid_getGroup(water1, water);
 	FluidGroup* fgCO2 = blocks.fluid_getGroup(CO2_1, CO2);
 	FluidGroup* fgLava = blocks.fluid_getGroup(lava1, lava);
 	FluidGroup* fgMercury = blocks.fluid_getGroup(mercury1, mercury);
-	REQUIRE(!fgWater->m_merged);
-	REQUIRE(!fgCO2->m_merged);
-	REQUIRE(!fgLava->m_merged);
-	REQUIRE(!fgMercury->m_merged);
+	CHECK(!fgWater->m_merged);
+	CHECK(!fgCO2->m_merged);
+	CHECK(!fgLava->m_merged);
+	CHECK(!fgMercury->m_merged);
 	CollisionVolume totalVolume = fgWater->totalVolume(area);
 	simulation.m_step.set(1);
 	while(simulation.m_step < steps)
@@ -300,23 +300,23 @@ inline void fourFluidsTestParallel(uint32_t scale, Step steps)
 	fgWater = areaBuilderUtil::getFluidGroup(area, water);
 	fgLava = areaBuilderUtil::getFluidGroup(area, lava);
 	fgCO2 = areaBuilderUtil::getFluidGroup(area, CO2);
-	REQUIRE(area.m_hasFluidGroups.getAll().size() == 4);
-	REQUIRE(fgWater->m_stable);
+	CHECK(area.m_hasFluidGroups.getAll().size() == 4);
+	CHECK(fgWater->m_stable);
 	if(scale != 3)
-		REQUIRE(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
-	REQUIRE(fgWater->totalVolume(area) == totalVolume);
-	REQUIRE(fgCO2->m_stable);
-	REQUIRE(fgCO2->m_drainQueue.m_set.size() == expectedBlocks);
-	REQUIRE(fgCO2->totalVolume(area) == totalVolume);
-	REQUIRE(fgMercury->m_stable);
-	REQUIRE(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
-	REQUIRE(fgMercury->totalVolume(area) == totalVolume);
-	REQUIRE(fgLava->m_stable);
+		CHECK(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
+	CHECK(fgWater->totalVolume(area) == totalVolume);
+	CHECK(fgCO2->m_stable);
+	CHECK(fgCO2->m_drainQueue.m_set.size() == expectedBlocks);
+	CHECK(fgCO2->totalVolume(area) == totalVolume);
+	CHECK(fgMercury->m_stable);
+	CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
+	CHECK(fgMercury->totalVolume(area) == totalVolume);
+	CHECK(fgLava->m_stable);
 	if(scale != 3)
-		REQUIRE(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
-	REQUIRE(fgMercury->totalVolume(area) == totalVolume);
-	REQUIRE(blocks.fluid_contains(blocks.getIndex_i(1, 1, 1), mercury));
-	REQUIRE(blocks.fluid_contains(blocks.getIndex_i(1, 1, maxZ - 1), CO2));
+		CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
+	CHECK(fgMercury->totalVolume(area) == totalVolume);
+	CHECK(blocks.fluid_contains(blocks.getIndex_i(1, 1, 1), mercury));
+	CHECK(blocks.fluid_contains(blocks.getIndex_i(1, 1, maxZ - 1), CO2));
 }
 TEST_CASE("four fluids scale 2 parallel")
 {

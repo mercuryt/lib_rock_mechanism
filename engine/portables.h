@@ -61,7 +61,7 @@ public:
 	void updateCarrierIndex(const Index& index, const HasShapeIndex& newIndex) { m_carrier[index].updateIndex(newIndex); }
 	void setFollower(const Index& index, const ActorOrItemIndex& follower) { m_follower[index] = follower; }
 	void setLeader(const Index& index, const ActorOrItemIndex& leader) { return m_leader[index] = leader; }
-	void unsetFollower(const Index& index, const ActorOrItemIndex& follower) { assert(m_follower[index] == follower); m_follower[index].clear(); }
+	void unsetFollower(const Index& index, [[maybe_unused]] const ActorOrItemIndex& follower) { assert(m_follower[index] == follower); m_follower[index].clear(); }
 	void unsetLeader(const Index& index, const ActorOrItemIndex& leader) { assert(m_follower[index] == leader); m_leader[index].clear(); }
 	[[nodiscard]] ActorIndex getLineLeader(const Index& index);
 	[[nodiscard]] const MoveTypeId& getMoveType(const Index& index) const { return m_moveType[index]; }

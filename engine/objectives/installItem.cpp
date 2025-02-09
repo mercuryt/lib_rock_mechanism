@@ -6,6 +6,7 @@
 #include "../items/items.h"
 #include "../types.h"
 #include "../path/terrainFacade.hpp"
+#include "../hasShapes.hpp"
 // PathRequest.
 InstallItemPathRequest::InstallItemPathRequest(Area& area, InstallItemObjective& iio, const ActorIndex& actorIndex) :
 	m_installItemObjective(iio)

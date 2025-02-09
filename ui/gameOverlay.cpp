@@ -127,7 +127,7 @@ void GameOverlay::drawSelectionDescription()
 			description = L"blocks: " + std::to_wstring(m_window.getSelectedBlocks().size());
 			break;
 		default:
-			assert(false);
+			std::unreachable();
 	}
 	m_selectionStatusUI->setText(description);
 }

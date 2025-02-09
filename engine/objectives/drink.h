@@ -7,8 +7,8 @@ class DrinkEvent;
 class DrinkObjectiveType final : public ObjectiveType
 {
 public:
-	[[nodiscard]] bool canBeAssigned(Area&, const ActorIndex&) const { assert(false); }
-	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, const ActorIndex&) const { assert(false); }
+	[[nodiscard]] bool canBeAssigned(Area&, const ActorIndex&) const { std::unreachable(); std::unreachable(); }
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, const ActorIndex&) const { std::unreachable(); std::unreachable(); }
 	DrinkObjectiveType() = default;
 	DrinkObjectiveType(const Json&, DeserializationMemo&);
 	[[nodiscard]] std::wstring name() const override { return L"drink"; }

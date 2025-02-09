@@ -107,8 +107,7 @@ void SowSeedsObjective::execute(Area& area, const ActorIndex& actor)
 			if(block.exists())
 			{
 				select(area, block, actor);
-				bool result = actors.move_tryToReserveOccupied(actor);
-				assert(result);
+				assert(actors.move_tryToReserveOccupied(actor));
 				begin(area, actor);
 				return;
 			}
@@ -136,8 +135,8 @@ void SowSeedsObjective::cancel(Area& area, const ActorIndex& actor)
 }
 void SowSeedsObjective::select(Area& area, const BlockIndex& block, const ActorIndex& actor)
 {
-	Blocks& blocks = area.getBlocks();
-	Actors& actors = area.getActors();
+	[[maybe_unused]] Blocks& blocks = area.getBlocks();
+	[[maybe_unused]] Actors& actors = area.getActors();
 	assert(!blocks.plant_exists(block));
 	assert(blocks.farm_contains(block, actors.getFactionId(actor)));
 	assert(m_block.empty());
@@ -146,7 +145,7 @@ void SowSeedsObjective::select(Area& area, const BlockIndex& block, const ActorI
 }
 void SowSeedsObjective::begin(Area& area, const ActorIndex& actor)
 {
-	Actors& actors = area.getActors();
+	[[maybe_unused]] Actors& actors = area.getActors();
 	assert(m_block.exists());
 	assert(actors.isAdjacentToLocation(actor, m_block));
 	m_event.schedule(Config::sowSeedsStepsDuration, area, *this, actor);

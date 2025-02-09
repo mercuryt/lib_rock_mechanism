@@ -89,7 +89,7 @@ namespace util
 			case Facing4::West:
 				return {y * -1, x, z};
 			default:
-				assert(false);
+				std::unreachable();
 		}
 	}
 	inline double radiansToDegrees(double radians)

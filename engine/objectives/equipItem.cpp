@@ -3,6 +3,7 @@
 #include "../items/items.h"
 #include "../deserializationMemo.h"
 #include "../area.h"
+#include "../hasShapes.hpp"
 EquipItemObjective::EquipItemObjective(const ItemReference& item) : Objective(Config::equipPriority), m_item(item) { }
 EquipItemObjective::EquipItemObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : Objective(data, deserializationMemo)
 {

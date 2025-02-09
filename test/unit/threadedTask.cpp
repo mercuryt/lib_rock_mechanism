@@ -13,7 +13,7 @@ class TestThreadedTask final : public ThreadedTask
 public:
 	TestThreadedTask(bool& f, bool& pir) : fired(f), phaseIsRead(pir) { }
 	void readStep(Simulation&, Area*)
-	{ 
+	{
 		phaseIsRead = true;
 	}
 	void writeStep(Simulation&, Area*)
@@ -31,7 +31,7 @@ class TestThreadedTaskForHolder final : public ThreadedTask
 public:
 	TestThreadedTaskForHolder(bool& f, bool& pir, HasThreadedTask<TestThreadedTaskForHolder>& htt) : fired(f), phaseIsRead(pir), hasThreadedTask(htt) { }
 	void readStep(Simulation&, Area*)
-	{ 
+	{
 		phaseIsRead = true;
 	}
 	void writeStep(Simulation&, Area*)
@@ -49,21 +49,21 @@ TEST_CASE("threadedTask")
 	std::unique_ptr<ThreadedTask> taskPointer = std::make_unique<TestThreadedTask>(fired, phaseIsRead);
 	auto& task = *taskPointer.get();
 	simulation.m_threadedTaskEngine.insert(std::move(taskPointer));
-	REQUIRE(phaseIsRead);
-	REQUIRE(!fired);
+	CHECK(phaseIsRead);
+	CHECK(!fired);
 	SUBCASE("run")
 	{
 		simulation.doStep();
-		REQUIRE(!phaseIsRead);
-		REQUIRE(fired);
+		CHECK(!phaseIsRead);
+		CHECK(fired);
 	}
 	SUBCASE("cancel")
 	{
 		task.cancel(simulation, nullptr);
-		REQUIRE(simulation.m_threadedTaskEngine.count() == 0);
+		CHECK(simulation.m_threadedTaskEngine.count() == 0);
 		simulation.doStep();
-		REQUIRE(phaseIsRead);
-		REQUIRE(!fired);
+		CHECK(phaseIsRead);
+		CHECK(!fired);
 	}
 }
 TEST_CASE("hasThreadedTask")
@@ -74,23 +74,23 @@ TEST_CASE("hasThreadedTask")
 	HasThreadedTask<TestThreadedTaskForHolder> holder(simulation.m_threadedTaskEngine);
 	holder.create(fired, phaseIsRead, holder);
 	TestThreadedTaskForHolder& task = holder.get();
-	REQUIRE(phaseIsRead);
-	REQUIRE(!fired);
-	REQUIRE(holder.exists());
+	CHECK(phaseIsRead);
+	CHECK(!fired);
+	CHECK(holder.exists());
 	SUBCASE("run")
 	{
 		simulation.doStep();
-		REQUIRE(!phaseIsRead);
-		REQUIRE(fired);
-		REQUIRE(!holder.exists());
+		CHECK(!phaseIsRead);
+		CHECK(fired);
+		CHECK(!holder.exists());
 	}
 	SUBCASE("cancel")
 	{
 		task.cancel(simulation, nullptr);
-		REQUIRE(!holder.exists());
+		CHECK(!holder.exists());
 		simulation.doStep();
-		REQUIRE(phaseIsRead);
-		REQUIRE(!fired);
+		CHECK(phaseIsRead);
+		CHECK(!fired);
 	}
 }
 /*
@@ -104,8 +104,8 @@ TEST_CASE("holderFallsOutOfScope")
 		HasThreadedTask<TestThreadedTaskForHolder> holder(simulation.m_threadedTaskEngine);
 		holder.create(fired, phaseIsRead, holder);
 	}
-	REQUIRE(simulation.m_threadedTaskEngine.count() == 0);
+	CHECK(simulation.m_threadedTaskEngine.count() == 0);
 	simulation.doStep();
-	REQUIRE(!fired);
+	CHECK(!fired);
 }
 */

@@ -352,7 +352,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 							return;
 						}
 					}
-					assert(false); // team strategy should not be choosen if there is not enough space to reserve for lifting.
+					std::unreachable(); // team strategy should not be choosen if there is not enough space to reserve for lifting.
 				}
 			}
 			break;
@@ -637,7 +637,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 			//TODO
 			break;
 		case HaulStrategy::None:
-			assert(false); // this method should only be called after a strategy is choosen.
+			std::unreachable(); // this method should only be called after a strategy is choosen.
 	}
 }
 void HaulSubproject::addWorker(const ActorIndex& actor)
@@ -854,7 +854,7 @@ void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 	}
 	else
 		//TODO: deliver actors.
-		assert(false);
+		std::unreachable();
 	m_project.onDelivered(delivered);
 	Project& project = m_project;
 	auto workers = std::move(m_workers);

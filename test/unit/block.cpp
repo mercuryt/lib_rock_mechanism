@@ -13,12 +13,12 @@ TEST_CASE("block")
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	BlockIndex lowest = BlockIndex::create(0);
-	REQUIRE(blocks.getBlockBelow(lowest).empty());
-	REQUIRE(blocks.getBlockNorth(lowest).empty());
-	REQUIRE(blocks.getBlockWest(lowest).empty());
-	REQUIRE(blocks.getBlockAbove(lowest) == 100);
-	REQUIRE(blocks.getBlockSouth(lowest) == 10);
-	REQUIRE(blocks.getBlockEast(lowest) == 1);
-	REQUIRE(area.m_visionCuboids.maybeGetForBlock(lowest) != nullptr);
+	CHECK(blocks.getBlockBelow(lowest).empty());
+	CHECK(blocks.getBlockNorth(lowest).empty());
+	CHECK(blocks.getBlockWest(lowest).empty());
+	CHECK(blocks.getBlockAbove(lowest) == 100);
+	CHECK(blocks.getBlockSouth(lowest) == 10);
+	CHECK(blocks.getBlockEast(lowest) == 1);
+	CHECK(area.m_visionCuboids.maybeGetForBlock(lowest) != nullptr);
 }
 

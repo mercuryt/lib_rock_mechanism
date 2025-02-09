@@ -14,14 +14,14 @@ TEST_CASE("octTree")
 	SUBCASE("basic")
 	{
 		Area& area = simulation.m_hasAreas->createArea(10,10,10);
-		REQUIRE(area.m_octTree.getCount() == 1);
+		CHECK(area.m_octTree.getCount() == 1);
 		Blocks& blocks = area.getBlocks();
 		Actors& actors = area.getActors();
 		BlockIndex block = blocks.getIndex_i(5, 5, 5);
 		ActorIndex a1 = actors.create({.species=dwarf, .location=block});
-		REQUIRE(area.m_octTree.contains(actors.getReference(a1), blocks.getCoordinates(block)));
+		CHECK(area.m_octTree.contains(actors.getReference(a1), blocks.getCoordinates(block)));
 		actors.exit(a1);
-		REQUIRE(!area.m_octTree.contains(actors.getReference(a1), blocks.getCoordinates(block)));
+		CHECK(!area.m_octTree.contains(actors.getReference(a1), blocks.getCoordinates(block)));
 	}
 	SUBCASE("split and merge")
 	{
@@ -36,22 +36,22 @@ TEST_CASE("octTree")
 			--toSpawn;
 			actors.create({.species=dwarf, .location=block});
 		}
-		REQUIRE(area.m_octTree.getActorCount() == Config::minimumOccupantsForOctTreeToSplit);
-		REQUIRE(area.m_octTree.getCount() == 9);
-		REQUIRE(!blocks.actor_empty(BlockIndex::create(0)));
+		CHECK(area.m_octTree.getActorCount() == Config::minimumOccupantsForOctTreeToSplit);
+		CHECK(area.m_octTree.getCount() == 9);
+		CHECK(!blocks.actor_empty(BlockIndex::create(0)));
 		uint toUnspawn = Config::minimumOccupantsForOctTreeToSplit - Config::minimumOccupantsForOctTreeToUnsplit;
 		for(const BlockIndex& block : blocks.getAllIndices())
 		{
 			if(toUnspawn == 0)
 				break;
 			--toUnspawn;
-			REQUIRE(!blocks.actor_empty(block));
+			CHECK(!blocks.actor_empty(block));
 			ActorIndex actor = blocks.actor_getAll(block).front();
-			REQUIRE(actor.exists());
+			CHECK(actor.exists());
 			actors.exit(actor);
-			REQUIRE(!area.m_octTree.contains(actors.getReference(actor), blocks.getCoordinates(block)));
+			CHECK(!area.m_octTree.contains(actors.getReference(actor), blocks.getCoordinates(block)));
 		}
-		REQUIRE(area.m_octTree.getActorCount() == Config::minimumOccupantsForOctTreeToUnsplit);
-		REQUIRE(area.m_octTree.getCount() == 1);
+		CHECK(area.m_octTree.getActorCount() == Config::minimumOccupantsForOctTreeToUnsplit);
+		CHECK(area.m_octTree.getCount() == 1);
 	}
 }

@@ -112,7 +112,7 @@ void ResetProjectOnDestroyCallBack::callback()
 }
 Json ResetProjectOnDestroyCallBack::toJson()
 {
-	assert(false);
+	std::unreachable();
 	//return {{"project"}, m_project};
 }
 

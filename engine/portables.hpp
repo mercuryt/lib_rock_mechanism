@@ -251,7 +251,7 @@ template<class Derived, class Index, class ReferenceIndex>
 Speed Portables<Derived, Index, ReferenceIndex>::lead_getSpeed(const Index& index)
 {
 	assert(m_isActors);
-	const ActorIndex& actorIndex = ActorIndex::cast(index);
+	[[maybe_unused]] const ActorIndex& actorIndex = ActorIndex::cast(index);
 	assert(!getActors().isFollowing(actorIndex));
 	assert(getActors().isLeading(actorIndex));
 	ActorOrItemIndex wrapped = getActorOrItemIndex(index);
@@ -301,7 +301,7 @@ void Portables<Derived, Index, ReferenceIndex>::maybeSetCarrier(const Index& ind
 	setCarrier(index, carrier);
 }
 template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::unsetCarrier(const Index& index, const ActorOrItemIndex& carrier)
+void Portables<Derived, Index, ReferenceIndex>::unsetCarrier(const Index& index, [[maybe_unused]] const ActorOrItemIndex& carrier)
 {
 	assert(m_carrier[index] == carrier);
 	m_carrier[index].clear();

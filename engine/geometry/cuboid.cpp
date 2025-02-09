@@ -162,7 +162,7 @@ Cuboid Cuboid::getFace(const Facing6& facing) const
 		case(Facing6::Below):
 			return Cuboid({m_highest.x(), m_highest.y(), m_lowest.z()}, m_lowest);
 		default:
-			assert(false);
+			std::unreachable();
 		return Cuboid({});
 	}
 }
@@ -223,7 +223,7 @@ DistanceInBlocks Cuboid::dimensionForFacing(const Facing6& facing) const
 		case Facing6::East:
 			return (m_highest.x() - m_lowest.x()) + 1;
 		default:
-			assert(false);
+			std::unreachable();
 	}
 }
 Facing6 Cuboid::getFacingTwordsOtherCuboid(const Cuboid& other) const
