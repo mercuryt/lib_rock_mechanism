@@ -21,7 +21,7 @@ Step WoundCalculations::getStepsTillHealed(const Hit& hit, const BodyPartTypeId&
 		case WoundType::Bludgeon:
 			return baseDelay * Config::bludgeonStepsTillHealedModifier;
 		default:
-			assert(false);
+			std::unreachable();
 			return Step::create(0);
 	}
 }
@@ -42,7 +42,7 @@ uint32_t WoundCalculations::getBleedVolumeRate(const Hit& hit, const BodyPartTyp
 		case WoundType::Bludgeon:
 			return std::max(1u, (uint32_t)(ratio * Config::bludgeonBleedVoumeRateModifier));
 		default:
-			assert(false);
+			std::unreachable();
 			return 0;
 	}
 }
@@ -60,7 +60,7 @@ Percent WoundCalculations::getPercentTemporaryImpairment(const Hit& hit, const B
 		case WoundType::Bludgeon:
 			return Percent::create(Config::bludgeonPercentTemporaryImparmentModifier * ratio);
 		default:
-			assert(false);
+			std::unreachable();
 			return Percent::create(0);
 	}
 }
@@ -88,7 +88,7 @@ Percent WoundCalculations::getPercentPermanentImpairment(const Hit& hit, const B
 				return Percent::create(0);
 			return output - Config::percentPermanantImparmentMinimum;
 		default:
-			assert(false);
+			std::unreachable();
 			return Percent::create(0);
 	}
 }
@@ -102,7 +102,7 @@ WoundType WoundCalculations::byName(std::wstring name)
 		return WoundType::Bludgeon;
 	else
 	{
-		assert(false);
+		std::unreachable();
 		return WoundType::Pierce;
 	}
 }

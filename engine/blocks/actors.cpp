@@ -28,7 +28,7 @@ void Blocks::actor_erase(const BlockIndex& index, const ActorIndex& actor)
 	(*iter2) = blockActorVolume.back();
 	blockActorVolume.pop_back();
 }
-void Blocks::actor_setTemperature(const BlockIndex& index, const Temperature& temperature)
+void Blocks::actor_setTemperature(const BlockIndex& index, [[maybe_unused]] const Temperature& temperature)
 {
 	assert(temperature_get(index) == temperature);
 	Actors& actors = m_area.getActors();
@@ -39,10 +39,10 @@ void Blocks::actor_updateIndex(const BlockIndex& index, const ActorIndex& oldInd
 {
 	auto found = m_actors[index].find(oldIndex);
 	assert(found != m_actors[index].end());
-	(*found) = newIndex; 
+	(*found) = newIndex;
 	auto found2 = std::ranges::find(m_actorVolume[index], oldIndex, &std::pair<ActorIndex, CollisionVolume>::first);
 	assert(found2 != m_actorVolume[index].end());
-	found2->first = newIndex; 
+	found2->first = newIndex;
 }
 bool Blocks::actor_contains(const BlockIndex& index, const ActorIndex& actor) const
 {

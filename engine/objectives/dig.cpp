@@ -7,6 +7,7 @@
 #include "../reference.h"
 #include "../types.h"
 #include "../path/pathRequest.h"
+#include "../hasShapes.hpp"
 DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, const ActorIndex& actorIndex) :
 	m_digObjective(digObjective)
 {
@@ -156,7 +157,7 @@ DigProject* DigObjective::getJoinableProjectAt(Area& area, BlockIndex block, con
 }
 bool DigObjective::joinableProjectExistsAt(Area& area, BlockIndex block, const ActorIndex& actor) const
 {
-	Blocks& blocks = area.getBlocks();
+	[[maybe_unused]] Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFactionId(actor);
 	assert(blocks.designation_has(block, faction, BlockDesignation::Dig));

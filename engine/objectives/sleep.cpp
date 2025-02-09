@@ -4,6 +4,7 @@
 #include "actors/actors.h"
 #include "blocks/blocks.h"
 #include "../path/terrainFacade.hpp"
+#include "../hasShapes.hpp"
 // Path Request.
 SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so, const ActorIndex& actorIndex) :
 	m_sleepObjective(so)
@@ -186,7 +187,7 @@ uint32_t SleepObjective::desireToSleepAt(Area& area, const BlockIndex& block, co
 	else
 		// Moderatly desirable.
 		return 2;
-	assert(false);
+	std::unreachable();
 }
 void SleepObjective::cancel(Area& area, const ActorIndex& actor)
 {

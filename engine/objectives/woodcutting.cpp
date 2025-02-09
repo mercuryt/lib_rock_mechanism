@@ -6,6 +6,7 @@
 #include "../reference.h"
 #include "../types.h"
 #include "../path/terrainFacade.hpp"
+#include "../hasShapes.hpp"
 WoodCuttingPathRequest::WoodCuttingPathRequest(Area& area, WoodCuttingObjective& woodCuttingObjective, const ActorIndex& actorIndex) :
 	m_woodCuttingObjective(woodCuttingObjective)
 {
@@ -103,7 +104,7 @@ void WoodCuttingObjective::execute(Area& area, const ActorIndex& actor)
 				return true;
 			return false;
 		};
-		BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
+		[[maybe_unused]] BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
 		if(project != nullptr)
 		{
 			assert(adjacent.exists());

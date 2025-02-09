@@ -11,6 +11,7 @@
 #include "util.h"
 #include "simulation.h"
 #include "itemType.h"
+#include "hasShapes.hpp"
 
 #include <chrono>
 #include <cstdint>

@@ -19,37 +19,37 @@ TEST_CASE("plant")
 	Blocks& blocks = area.getBlocks();
 	Plants& plants = area.getPlants();
 	BlockIndex location = blocks.getIndex_i(5, 5, 2);
-	REQUIRE(blocks.isExposedToSky(location));
+	CHECK(blocks.isExposedToSky(location));
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	areaBuilderUtil::setSolidLayer(area, 1, dirt);
 	simulation.m_step = Step::create(0);
 	blocks.plant_create(location, wheatGrass, Percent::create(50));
 	PlantIndex plant = blocks.plant_get(location);
-	REQUIRE(plants.isGrowing(plant));
-	REQUIRE(area.m_eventSchedule.m_data.contains(PlantSpecies::getStepsTillFullyGrown(wheatGrass) / 2));
-	REQUIRE(area.m_eventSchedule.m_data.contains(PlantSpecies::getStepsNeedsFluidFrequency(wheatGrass)));
-	REQUIRE(blocks.isExposedToSky(plants.getLocation(plant)));
-	REQUIRE(!plants.temperatureEventExists(plant));
-	REQUIRE(plants.isOnSurface(plant));
+	CHECK(plants.isGrowing(plant));
+	CHECK(area.m_eventSchedule.m_data.contains(PlantSpecies::getStepsTillFullyGrown(wheatGrass) / 2));
+	CHECK(area.m_eventSchedule.m_data.contains(PlantSpecies::getStepsNeedsFluidFrequency(wheatGrass)));
+	CHECK(blocks.isExposedToSky(plants.getLocation(plant)));
+	CHECK(!plants.temperatureEventExists(plant));
+	CHECK(plants.isOnSurface(plant));
 	simulation.fastForward(PlantSpecies::getStepsNeedsFluidFrequency(wheatGrass));
-	REQUIRE(plants.getVolumeFluidRequested(plant) != 0);
-	REQUIRE(!plants.isGrowing(plant));
-	REQUIRE(plants.getPercentGrown(plant) == 50 + ((float)simulation.m_step.get() / (float)PlantSpecies::getStepsTillFullyGrown(wheatGrass).get()) * 100);
-	REQUIRE(area.m_eventSchedule.m_data.contains(simulation.m_step + PlantSpecies::getStepsTillDieWithoutFluid(wheatGrass) - 1));
+	CHECK(plants.getVolumeFluidRequested(plant) != 0);
+	CHECK(!plants.isGrowing(plant));
+	CHECK(plants.getPercentGrown(plant) == 50 + ((float)simulation.m_step.get() / (float)PlantSpecies::getStepsTillFullyGrown(wheatGrass).get()) * 100);
+	CHECK(area.m_eventSchedule.m_data.contains(simulation.m_step + PlantSpecies::getStepsTillDieWithoutFluid(wheatGrass) - 1));
 	area.m_hasRain.start(water, Percent::create(1), Step::create(100));
-	REQUIRE(plants.getVolumeFluidRequested(plant) == 0);
-	REQUIRE(plants.isGrowing(plant));
+	CHECK(plants.getVolumeFluidRequested(plant) == 0);
+	CHECK(plants.isGrowing(plant));
 	area.m_hasTemperature.setAmbientSurfaceTemperature(PlantSpecies::getMinimumGrowingTemperature(wheatGrass) - 1);
-	REQUIRE(!plants.isGrowing(plant));
-	REQUIRE(plants.temperatureEventExists(plant));
+	CHECK(!plants.isGrowing(plant));
+	CHECK(plants.temperatureEventExists(plant));
 	area.m_hasTemperature.setAmbientSurfaceTemperature(PlantSpecies::getMinimumGrowingTemperature(wheatGrass));
-	REQUIRE(plants.isGrowing(plant));
-	REQUIRE(!plants.temperatureEventExists(plant));
+	CHECK(plants.isGrowing(plant));
+	CHECK(!plants.temperatureEventExists(plant));
 	BlockIndex above = blocks.getBlockAbove(location);
 	blocks.solid_set(above, marble, false);
-	REQUIRE(!plants.isGrowing(plant));
+	CHECK(!plants.isGrowing(plant));
 	blocks.solid_setNot(above);
-	REQUIRE(plants.isGrowing(plant));
+	CHECK(plants.isGrowing(plant));
 	plants.die(plant);
 }
 TEST_CASE("plantFruits")
@@ -66,9 +66,9 @@ TEST_CASE("plantFruits")
 	areaBuilderUtil::setSolidLayer(area, 1, dirt);
 	blocks.plant_create(location, wheatGrass, Percent::create(50));
 	PlantIndex plant = blocks.plant_get(location);
-	REQUIRE(plants.getQuantityToHarvest(plant) == 0);
+	CHECK(plants.getQuantityToHarvest(plant) == 0);
 	simulation.fastForward(Config::stepsPerHour);
-	REQUIRE(plants.getQuantityToHarvest(plant) != 0);
+	CHECK(plants.getQuantityToHarvest(plant) != 0);
 }
 TEST_CASE("harvestSeasonEnds")
 {
@@ -85,7 +85,7 @@ TEST_CASE("harvestSeasonEnds")
 	areaBuilderUtil::setSolidLayer(area, 1, dirt);
 	blocks.plant_create(location, wheatGrass, Percent::create(50));
 	PlantIndex plant = blocks.plant_get(location);
-	REQUIRE(plants.getQuantityToHarvest(plant) != 0);
+	CHECK(plants.getQuantityToHarvest(plant) != 0);
 	simulation.fastForward(Config::stepsPerHour);
-	REQUIRE(plants.getQuantityToHarvest(plant) == 0);
+	CHECK(plants.getQuantityToHarvest(plant) == 0);
 }

@@ -174,11 +174,13 @@ void Simulation::fastForwardUntillActorIsAt(Area& area, const ActorIndex& actor,
 void Simulation::fastForwardUntillActorIsAdjacentToDestination(Area& area, const ActorIndex& actor, const BlockIndex& destination)
 {
 	Actors& actors = area.getActors();
-	assert(!actors.move_getPath(actor).empty());
-	BlockIndex adjacentDestination = actors.move_getPath(actor).back();
-	assert(adjacentDestination.exists());
-	if(actors.getBlocks(actor).size() == 1)
-		assert(area.getBlocks().isAdjacentToIncludingCornersAndEdges(adjacentDestination, destination));
+	#ifndef NDEBUG
+		assert(!actors.move_getPath(actor).empty());
+		const BlockIndex& adjacentDestination = actors.move_getPath(actor).back();
+		assert(adjacentDestination.exists());
+		if(actors.getBlocks(actor).size() == 1)
+			assert(area.getBlocks().isAdjacentToIncludingCornersAndEdges(adjacentDestination, destination));
+	#endif
 	std::function<bool()> predicate = [&](){ return actors.isAdjacentToLocation(actor, destination); };
 	fastForwardUntillPredicate(predicate);
 }
@@ -225,7 +227,7 @@ void Simulation::fastForwardUntillPredicate(std::function<bool()>& predicate, ui
 void Simulation::fasterForwardUntillPredicate(std::function<bool()>& predicate, uint32_t minutes)
 {
 	assert(!predicate());
-	Step lastStep = m_step + (Config::stepsPerMinute * minutes);
+	[[maybe_unused]] Step lastStep = m_step + (Config::stepsPerMinute * minutes);
 	while(!m_eventSchedule.m_data.empty())
 	{
 		m_step = getNextEventStep();

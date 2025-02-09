@@ -47,7 +47,7 @@ void Blocks::blockFeature_removeAll(const BlockIndex& block)
 }
 void Blocks::blockFeature_construct(const BlockIndex& block, const BlockFeatureType& blockFeatureType, const MaterialTypeId& materialType)
 {
-	Plants& plants = m_area.getPlants();
+	[[maybe_unused]] Plants& plants = m_area.getPlants();
 	assert(!solid_is(block));
 	bool transmitedTemperaturePreviously = temperature_transmits(block);
 	if(plant_exists(block))

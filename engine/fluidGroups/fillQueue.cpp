@@ -12,7 +12,7 @@ void FillQueue::buildFor(Area& area, FluidGroup& fluidGroup, BlockIndices& membe
 		assert(blocks.fluid_contains(block, fluidGroup.m_fluidType));
 		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(block))
 			if(
-				adjacent.exists() && blocks.fluid_canEnterEver(adjacent) && 
+				adjacent.exists() && blocks.fluid_canEnterEver(adjacent) &&
 				blocks.fluid_canEnterCurrently(adjacent, fluidGroup.m_fluidType) &&
 				blocks.fluid_volumeOfTypeContains(adjacent, fluidGroup.m_fluidType) != Config::maxBlockVolume
 			)
@@ -64,7 +64,7 @@ void FillQueue::recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionV
 				m_futureFull.add(iter->block);
 		m_groupStart = m_groupEnd;
 		findGroupEnd(area);
-	} 
+	}
 	// Expand group for new higher level.
 	// TODO: continue from current position rather then reseting to start + 1.
 	else if(flowTillNextStep == volume)
@@ -80,7 +80,7 @@ void FillQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 		if(iter->delta == 0)
 			continue;
 		assert(
-				!blocks.fluid_contains(iter->block, fluidGroup.m_fluidType) || 
+				!blocks.fluid_contains(iter->block, fluidGroup.m_fluidType) ||
 				blocks.fluid_getGroup(iter->block, fluidGroup.m_fluidType) != nullptr);
 		blocks.fluid_fillInternal(iter->block, iter->delta, fluidGroup);
 		/*assert(iter->block->m_hasFluids.m_fluids[m_fluidGroup.m_fluidType].second != &m_fluidGroup ||
@@ -132,7 +132,7 @@ void FillQueue::findGroupEnd(Area& area)
 }
 void FillQueue::validate(Area& area) const
 {
-	auto& blocks = area.getBlocks();
+	[[maybe_unused]] Blocks& blocks = area.getBlocks();
 	assert((m_groupStart >= m_queue.begin() && m_groupStart <= m_queue.end()));
 	assert((m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end()));
 	assert((m_groupEnd == m_queue.end() || m_groupEnd == m_groupStart || blocks.getZ(m_groupStart->block) != blocks.getZ(m_groupEnd->block) || m_groupStart->capacity > m_groupEnd->capacity));

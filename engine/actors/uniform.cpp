@@ -29,7 +29,7 @@ void ActorHasUniform::recordObjective(UniformObjective& objective)
 	assert(!m_objective);
 	m_objective = &objective;
 }
-void ActorHasUniform::clearObjective(UniformObjective& objective)
+void ActorHasUniform::clearObjective([[maybe_unused]] UniformObjective& objective)
 {
 	assert(m_objective);
 	assert(*m_objective == objective);

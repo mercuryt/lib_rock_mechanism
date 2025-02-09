@@ -573,7 +573,7 @@ ItemIndex ItemHasCargo::addItemGeneric(Area& area, const ItemTypeId& itemType, c
 	addItem(area, newItem);
 	return newItem;
 }
-void ItemHasCargo::removeFluidVolume(const FluidTypeId& fluidType, const CollisionVolume& volume)
+void ItemHasCargo::removeFluidVolume([[maybe_unused]] const FluidTypeId& fluidType, const CollisionVolume& volume)
 {
 	assert(m_fluidType == fluidType);
 	assert(m_fluidVolume >= volume);
@@ -615,7 +615,7 @@ void ItemHasCargo::removeItemGeneric(Area& area, const ItemTypeId& itemType, con
 			m_mass -= items.getMass(item);
 			return;
 		}
-	assert(false);
+	std::unreachable();
 }
 ItemIndex ItemHasCargo::unloadGenericTo(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity, const BlockIndex& location)
 {

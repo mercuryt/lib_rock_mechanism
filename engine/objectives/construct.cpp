@@ -167,7 +167,7 @@ ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(Area& area, 
 }
 bool ConstructObjective::joinableProjectExistsAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const
 {
-	Blocks& blocks = area.getBlocks();
+	[[maybe_unused]] Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	assert(blocks.designation_has(block, actors.getFactionId(actor), BlockDesignation::Construct));
 	ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFactionId(actor), block);

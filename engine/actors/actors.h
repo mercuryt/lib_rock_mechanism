@@ -548,8 +548,8 @@ public:
 	MoveEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
-	void onMoveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex) { assert(m_actor == oldIndex.toActor()); m_actor = ActorIndex::cast(newIndex); }
-	void updateIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
+	void onMoveIndex([[maybe_unused]] const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex) { assert(m_actor == oldIndex.toActor()); m_actor = ActorIndex::cast(newIndex); }
+	void updateIndex([[maybe_unused]] const ActorIndex& oldIndex, const ActorIndex& newIndex)
 	{
 		assert(oldIndex == m_actor);
 		m_actor = newIndex;
@@ -564,7 +564,7 @@ public:
 	AttackCoolDownEvent(Simulation& simulation, const Json& data);
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
-	void onMoveIndex(const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex) { assert(m_actor == oldIndex.toActor()); m_actor = ActorIndex::cast(newIndex); }
+	void onMoveIndex([[maybe_unused]] const HasShapeIndex& oldIndex, const HasShapeIndex& newIndex) { assert(m_actor == oldIndex.toActor()); m_actor = ActorIndex::cast(newIndex); }
 	[[nodiscard]] Json toJson() const;
 };
 class GetIntoAttackPositionPathRequest final : public PathRequestDepthFirst

@@ -188,7 +188,7 @@ bool Point3D::isInFrontOf(const Point3D& other, const Facing4& facing) const
 			return other.x() >= x();
 			break;
 		default:
-			assert(false);
+			std::unreachable();
 	}
 }
 double Point3D::degreesFacingTwords(const Point3D& other) const

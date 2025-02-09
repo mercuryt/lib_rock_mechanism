@@ -4,6 +4,7 @@
 #include "../blocks/blocks.h"
 #include "../area.h"
 #include "../path/terrainFacade.hpp"
+#include "../hasShapes.hpp"
 CraftPathRequest::CraftPathRequest(Area& area, CraftObjective& co, const ActorIndex& actorIndex) :
 	m_craftObjective(co)
 {

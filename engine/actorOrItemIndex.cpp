@@ -199,7 +199,7 @@ bool ActorOrItemIndex::reservable_exists(Area& area, const FactionId& faction) c
 void ActorOrItemIndex::setActorBit(HasShapeIndex& index) { index.getReference() |= (1u << 31); }
 void ActorOrItemIndex::unsetActorBit(HasShapeIndex& index) { index.getReference() &= ~(1u << 31); }
 bool ActorOrItemIndex::getActorBit(const HasShapeIndex& index) { return index.get() & (1u<< 31); }
-void ActorOrItemIndex::validate(Area& area) const
+void ActorOrItemIndex::validate([[maybe_unused]] Area& area) const
 {
 	if(isActor())
 		assert(area.getActors().size() > m_index);

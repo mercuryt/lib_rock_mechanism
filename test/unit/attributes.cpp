@@ -29,7 +29,7 @@ TEST_CASE("attributes")
 	});
 	SUBCASE("basic")
 	{
-		REQUIRE(actors.getStrength(goblin1) == AnimalSpecies::getStrength(goblin)[1]);
+		CHECK(actors.getStrength(goblin1) == AnimalSpecies::getStrength(goblin)[1]);
 	}
 	SUBCASE("move speed")
 	{
@@ -38,11 +38,11 @@ TEST_CASE("attributes")
 			.species = dwarf,
 			.location = blocks.getIndex_i(5,7,1),
 		});
-		REQUIRE(actors.getAgility(goblin1) > actors.getAgility(dwarf1));
-		REQUIRE(actors.move_getSpeed(goblin1) > actors.move_getSpeed(dwarf1));
+		CHECK(actors.getAgility(goblin1) > actors.getAgility(dwarf1));
+		CHECK(actors.move_getSpeed(goblin1) > actors.move_getSpeed(dwarf1));
 		BlockIndex adjacent = blocks.getIndex_i(5,6,1);
 		Step delayGoblin = actors.move_delayToMoveInto(goblin1, adjacent);
 		Step delayDwarf = actors.move_delayToMoveInto(dwarf1, adjacent);
-		REQUIRE(delayGoblin < delayDwarf);
+		CHECK(delayGoblin < delayDwarf);
 	}
 }

@@ -147,7 +147,7 @@ Json HasWoodCuttingDesignationsForFaction::toJson() const
 void HasWoodCuttingDesignationsForFaction::designate(const BlockIndex& block)
 {
 	Blocks& blocks = m_area.getBlocks();
-	Plants& plants = m_area.getPlants();
+	[[maybe_unused]] Plants& plants = m_area.getPlants();
 	assert(!m_data.contains(block));
 	assert(blocks.plant_exists(block));
 	assert(PlantSpecies::getIsTree(plants.getSpecies(blocks.plant_get(block))));

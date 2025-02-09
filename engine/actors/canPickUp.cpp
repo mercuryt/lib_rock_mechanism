@@ -3,6 +3,7 @@
 #include "../items/items.h"
 #include "../area.h"
 #include "../itemType.h"
+#include "../portables.hpp"
 #include "index.h"
 #include "moveType.h"
 #include "sleep.h"
@@ -172,7 +173,7 @@ void Actors::canPickUp_add(const ActorIndex& index, const ItemTypeId& itemType, 
 	}
 	move_updateIndividualSpeed(index);
 }
-void Actors::canPickUp_removeItem(const ActorIndex& index, const ItemIndex& item)
+void Actors::canPickUp_removeItem(const ActorIndex& index, [[maybe_unused]] const ItemIndex& item)
 {
 	assert(m_carrying[index].exists());
 	assert(m_carrying[index].isItem());
@@ -181,7 +182,7 @@ void Actors::canPickUp_removeItem(const ActorIndex& index, const ItemIndex& item
 	m_carrying[index].clear();
 	move_updateIndividualSpeed(index);
 }
-void Actors::canPickUp_removeActor(const ActorIndex& index, const ActorIndex& actor)
+void Actors::canPickUp_removeActor(const ActorIndex& index, [[maybe_unused]] const ActorIndex& actor)
 {
 	assert(m_carrying[index].exists());
 	assert(m_carrying[index].isActor());
@@ -190,7 +191,7 @@ void Actors::canPickUp_removeActor(const ActorIndex& index, const ActorIndex& ac
 	m_carrying[index].clear();
 	move_updateIndividualSpeed(index);
 }
-void Actors::canPickUp_remove(const ActorIndex& index, const ActorOrItemIndex& actorOrItem)
+void Actors::canPickUp_remove(const ActorIndex& index, [[maybe_unused]] const ActorOrItemIndex& actorOrItem)
 {
 	assert(m_carrying[index].exists());
 	assert(m_carrying[index] == actorOrItem);
@@ -348,14 +349,14 @@ bool Actors::canPickUp_canPutDown(const ActorIndex& index, const BlockIndex& blo
 	auto& carrying = m_carrying[index];
 	return blocks.shape_canEnterCurrentlyWithAnyFacing(block, carrying.getShape(m_area), {});
 }
-void Actors::canPickUp_updateActorIndex(const ActorIndex& index, const ActorIndex& oldIndex, const ActorIndex& newIndex)
+void Actors::canPickUp_updateActorIndex(const ActorIndex& index, [[maybe_unused]] const ActorIndex& oldIndex, const ActorIndex& newIndex)
 {
 	assert(oldIndex != newIndex);
 	assert(m_carrying[index].isActor());
 	assert(m_carrying[index].get().toActor() == oldIndex);
 	m_carrying[index].updateIndex(newIndex);
 }
-void Actors::canPickUp_updateItemIndex(const ActorIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex)
+void Actors::canPickUp_updateItemIndex(const ActorIndex& index, [[maybe_unused]] const ItemIndex& oldIndex, const ItemIndex& newIndex)
 {
 	assert(oldIndex != newIndex);
 	assert(m_carrying[index].isItem());

@@ -4,9 +4,9 @@ class DummyObjective final : public Objective
 {
 public:
 	DummyObjective() : Objective(Priority::create(1)) { }
-	void execute(Area&, const ActorIndex&) { assert(false); }
-	void cancel(Area&, const ActorIndex&) { assert(false); }
-	void delay(Area&, const ActorIndex&) { assert(false); }
-	void reset(Area&, const ActorIndex&) { assert(false); }
+	void execute(Area&, const ActorIndex&) { std::unreachable(); }
+	void cancel(Area&, const ActorIndex&) { std::unreachable(); }
+	void delay(Area&, const ActorIndex&) { std::unreachable(); }
+	void reset(Area&, const ActorIndex&) { std::unreachable(); }
 	std::wstring name() const { return L"dummy"; }
 };

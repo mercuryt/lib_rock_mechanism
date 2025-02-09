@@ -409,8 +409,10 @@ void HasObjectives::objectiveComplete(Area& area, Objective& objective)
 }
 void HasObjectives::subobjectiveComplete(Area& area)
 {
-	Actors& actors = area.getActors();
-	assert(actors.sleep_isAwake(m_actor));
+	#ifndef NDEBUG
+		Actors& actors = area.getActors();
+		assert(actors.sleep_isAwake(m_actor));
+	#endif
 	if(m_currentObjective == nullptr)
 		getNext(area);
 	else

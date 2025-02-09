@@ -33,7 +33,7 @@ TEST_CASE("vision")
 			.location=block,
 		});
 		area.m_visionRequests.doStep();
-		REQUIRE(actors.vision_getCanSee(actor).empty());
+		CHECK(actors.vision_getCanSee(actor).empty());
 	}
 	SUBCASE("See someone nearby")
 	{
@@ -51,12 +51,12 @@ TEST_CASE("vision")
 		});
 		const Point3D block1Coordinates = blocks.getCoordinates(block1);
 		const Point3D block2Coordinates = blocks.getCoordinates(block2);
-		REQUIRE(block2Coordinates.isInFrontOf(block1Coordinates, actors.getFacing(a1)));
-		REQUIRE(area.m_opacityFacade.hasLineOfSight(block1, block2));
+		CHECK(block2Coordinates.isInFrontOf(block1Coordinates, actors.getFacing(a1)));
+		CHECK(area.m_opacityFacade.hasLineOfSight(block1, block2));
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
-		REQUIRE(result.size() == 1);
-		REQUIRE(result.contains(actors.getReference(a2)));
+		CHECK(result.size() == 1);
+		CHECK(result.contains(actors.getReference(a2)));
 	}
 	SUBCASE("Vision blocked by wall")
 	{
@@ -64,9 +64,9 @@ TEST_CASE("vision")
 		BlockIndex block1 = blocks.getIndex_i(5, 3, 1);
 		BlockIndex block2 = blocks.getIndex_i(5, 5, 1);
 		BlockIndex block3 = blocks.getIndex_i(5, 7, 1);
-		REQUIRE(area.m_opacityFacade.hasLineOfSight(block1, block3));
+		CHECK(area.m_opacityFacade.hasLineOfSight(block1, block3));
 		blocks.solid_set(block2, marble, false);
-		REQUIRE(!area.m_opacityFacade.hasLineOfSight(block1, block3));
+		CHECK(!area.m_opacityFacade.hasLineOfSight(block1, block3));
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
@@ -78,7 +78,7 @@ TEST_CASE("vision")
 		});
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
-		REQUIRE(result.size() == 0);
+		CHECK(result.size() == 0);
 	}
 	SUBCASE("Vision not blocked by wall not directly in the line of sight")
 	{
@@ -98,7 +98,7 @@ TEST_CASE("vision")
 		});
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
-		REQUIRE(result.size() == 1);
+		CHECK(result.size() == 1);
 	}
 	SUBCASE("Vision not blocked by one by one wall for two by two shape")
 	{
@@ -117,17 +117,17 @@ TEST_CASE("vision")
 			.species=troll,
 			.location=block3,
 		});
-		REQUIRE(actors.getBlocks(a2).contains(block4));
+		CHECK(actors.getBlocks(a2).contains(block4));
 		const Point3D block1Coordinates = blocks.getCoordinates(block1);
 		const Point3D block3Coordinates = blocks.getCoordinates(block3);
 		const Point3D block4Coordinates = blocks.getCoordinates(block4);
-		REQUIRE(block3Coordinates.isInFrontOf(block1Coordinates, actors.getFacing(a1)));
-		REQUIRE(block4Coordinates.isInFrontOf(block1Coordinates, actors.getFacing(a1)));
-		REQUIRE(area.m_opacityFacade.hasLineOfSight(block1, block4));
-		REQUIRE(!area.m_opacityFacade.hasLineOfSight(block1, block3));
+		CHECK(block3Coordinates.isInFrontOf(block1Coordinates, actors.getFacing(a1)));
+		CHECK(block4Coordinates.isInFrontOf(block1Coordinates, actors.getFacing(a1)));
+		CHECK(area.m_opacityFacade.hasLineOfSight(block1, block4));
+		CHECK(!area.m_opacityFacade.hasLineOfSight(block1, block3));
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
-		REQUIRE(result.size() == 1);
+		CHECK(result.size() == 1);
 	}
 	SUBCASE("Vision not blocked by glass wall")
 	{
@@ -147,7 +147,7 @@ TEST_CASE("vision")
 		});
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
-		REQUIRE(result.size() == 1);
+		CHECK(result.size() == 1);
 	}
 	SUBCASE("Vision blocked by closed door")
 	{
@@ -166,15 +166,15 @@ TEST_CASE("vision")
 		});
 		blocks.blockFeature_construct(block2, door, marble);
 		bool canSeeThrough = blocks.canSeeThrough(block2);
-		REQUIRE(!canSeeThrough);
+		CHECK(!canSeeThrough);
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
-		REQUIRE(result.size() == 0);
+		CHECK(result.size() == 0);
 		blocks.blockFeature_open(block2, door);
-		REQUIRE(blocks.canSeeThroughFrom(block2, block1));
+		CHECK(blocks.canSeeThroughFrom(block2, block1));
 		area.m_visionRequests.doStep();
 		auto result2 = actors.vision_getCanSee(a1);
-		REQUIRE(result2.size() == 1);
+		CHECK(result2.size() == 1);
 	}
 	SUBCASE("Vision from above and below blocked by closed hatch")
 	{
@@ -185,10 +185,10 @@ TEST_CASE("vision")
 		blocks.solid_setNot(block1);
 		blocks.solid_setNot(block2);
 		blocks.solid_setNot(block3);
-		REQUIRE(area.m_opacityFacade.hasLineOfSight(block1, block3));
-		REQUIRE(blocks.getCoordinates(block3).isInFrontOf(blocks.getCoordinates(block1), Facing4::North));
+		CHECK(area.m_opacityFacade.hasLineOfSight(block1, block3));
+		CHECK(blocks.getCoordinates(block3).isInFrontOf(blocks.getCoordinates(block1), Facing4::North));
 		blocks.blockFeature_construct(block3, hatch, marble);
-		REQUIRE(!area.m_opacityFacade.hasLineOfSight(block1, block3));
+		CHECK(!area.m_opacityFacade.hasLineOfSight(block1, block3));
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
@@ -200,16 +200,16 @@ TEST_CASE("vision")
 		});
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
-		REQUIRE(result.size() == 0);
+		CHECK(result.size() == 0);
 		area.m_visionRequests.doStep();
 		auto result2 = actors.vision_getCanSee(a2);
-		REQUIRE(result2.size() == 0);
+		CHECK(result2.size() == 0);
 		blocks.blockFeature_open(block3, hatch);
-		REQUIRE(area.m_opacityFacade.hasLineOfSight(block1, block3));
-		REQUIRE(area.m_visionRequests.size() == 2);
+		CHECK(area.m_opacityFacade.hasLineOfSight(block1, block3));
+		CHECK(area.m_visionRequests.size() == 2);
 		area.m_visionRequests.doStep();
 		auto result3 = actors.vision_getCanSee(a1);
-		REQUIRE(result3.size() == 1);
+		CHECK(result3.size() == 1);
 	}
 	SUBCASE("Vision not blocked by closed hatch on the same z level")
 	{
@@ -229,7 +229,7 @@ TEST_CASE("vision")
 		});
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
-		REQUIRE(result.size() == 1);
+		CHECK(result.size() == 1);
 	}
 	SUBCASE("Vision from above and below blocked by floor")
 	{
@@ -252,14 +252,14 @@ TEST_CASE("vision")
 		});
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
-		REQUIRE(result.size() == 1);
+		CHECK(result.size() == 1);
 		blocks.blockFeature_construct(block3, floor, marble);
 		area.m_visionRequests.doStep();
 		auto result2 = actors.vision_getCanSee(a1);
-		REQUIRE(result2.size() == 0);
+		CHECK(result2.size() == 0);
 		area.m_visionRequests.doStep();
 		auto result3 = actors.vision_getCanSee(a2);
-		REQUIRE(result3.size() == 0);
+		CHECK(result3.size() == 0);
 	}
 	SUBCASE("Vision from below not blocked by glass floor")
 	{
@@ -282,11 +282,11 @@ TEST_CASE("vision")
 		});
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
-		REQUIRE(result.size() == 1);
+		CHECK(result.size() == 1);
 		blocks.blockFeature_construct(block3, floor, glass);
 		area.m_visionRequests.doStep();
 		auto result2 = actors.vision_getCanSee(a1);
-		REQUIRE(result2.size() == 1);
+		CHECK(result2.size() == 1);
 	}
 	SUBCASE("Vision not blocked by floor on the same z level")
 	{
@@ -306,28 +306,28 @@ TEST_CASE("vision")
 		});
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
-		REQUIRE(result.size() == 1);
+		CHECK(result.size() == 1);
 	}
 	SUBCASE("VisionCuboid setup")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		REQUIRE(area.m_visionCuboids.size() == 1);
+		CHECK(area.m_visionCuboids.size() == 1);
 	}
 	SUBCASE("build ground after activating")
 	{
-		REQUIRE(area.m_visionCuboids.size() == 1);
+		CHECK(area.m_visionCuboids.size() == 1);
 		blocks.solid_set(blocks.getIndex_i(0,0,0), marble, false);
 		area.m_visionCuboids.clearDestroyed(area);
-		REQUIRE(area.m_visionCuboids.size() == 3);
+		CHECK(area.m_visionCuboids.size() == 3);
 		blocks.solid_set(blocks.getIndex_i(1,0,0), marble, false);
 		area.m_visionCuboids.clearDestroyed(area);
-		REQUIRE(area.m_visionCuboids.size() == 3);
+		CHECK(area.m_visionCuboids.size() == 3);
 		areaBuilderUtil::setSolidWall(area, blocks.getIndex_i(2, 0, 0), blocks.getIndex_i(9, 0, 0), marble);
 		area.m_visionCuboids.clearDestroyed(area);
-		REQUIRE(area.m_visionCuboids.size() == 2);
+		CHECK(area.m_visionCuboids.size() == 2);
 		areaBuilderUtil::setSolidWall(area, blocks.getIndex_i(0, 1, 0), blocks.getIndex_i(9, 9, 0), marble);
 		area.m_visionCuboids.clearDestroyed(area);
-		REQUIRE(area.m_visionCuboids.size() == 1);
+		CHECK(area.m_visionCuboids.size() == 1);
 	}
 	SUBCASE("VisionCuboid divide and join")
 	{
@@ -337,41 +337,41 @@ TEST_CASE("vision")
 		BlockIndex block3 = blocks.getIndex_i(5, 5, 5);
 		BlockIndex block4 = blocks.getIndex_i(1, 1, 7);
 		BlockIndex block5 = blocks.getIndex_i(9, 9, 1);
-		REQUIRE(area.m_visionCuboids.size() == 1);
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1)->m_cuboid.size() == 900);
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block2));
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block3));
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block4));
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block5));
+		CHECK(area.m_visionCuboids.size() == 1);
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1)->m_cuboid.size() == 900);
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block2));
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block3));
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block4));
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block5));
 		blocks.blockFeature_construct(block3, floor, marble);
 		area.m_visionCuboids.clearDestroyed(area);
-		REQUIRE(area.m_visionCuboids.size() == 2);
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1)->m_cuboid.size() == 400);
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block4)->m_cuboid.size() == 500);
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block2));
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) != area.m_visionCuboids.maybeGetForBlock(block3));
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) != area.m_visionCuboids.maybeGetForBlock(block4));
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block5));
+		CHECK(area.m_visionCuboids.size() == 2);
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1)->m_cuboid.size() == 400);
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block4)->m_cuboid.size() == 500);
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block2));
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1) != area.m_visionCuboids.maybeGetForBlock(block3));
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1) != area.m_visionCuboids.maybeGetForBlock(block4));
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block5));
 		blocks.solid_set(block2, marble, false);
 		area.m_visionCuboids.clearDestroyed(area);
-		REQUIRE(area.m_visionCuboids.size() == 7);
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block2) == nullptr);
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) != area.m_visionCuboids.maybeGetForBlock(block3));
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) != area.m_visionCuboids.maybeGetForBlock(block4));
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block5));
+		CHECK(area.m_visionCuboids.size() == 7);
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block2) == nullptr);
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1) != area.m_visionCuboids.maybeGetForBlock(block3));
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1) != area.m_visionCuboids.maybeGetForBlock(block4));
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block5));
 		blocks.blockFeature_remove(block3, floor);
 		area.m_visionCuboids.clearDestroyed(area);
-		REQUIRE(area.m_visionCuboids.size() == 7);
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block3) == area.m_visionCuboids.maybeGetForBlock(block4));
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block4)->m_cuboid.size() == 500);
+		CHECK(area.m_visionCuboids.size() == 7);
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block3) == area.m_visionCuboids.maybeGetForBlock(block4));
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block4)->m_cuboid.size() == 500);
 		blocks.solid_setNot(block2);
 		area.m_visionCuboids.clearDestroyed(area);
-		REQUIRE(area.m_visionCuboids.size() == 1);
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block2) != nullptr);
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block2));
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block3));
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block4));
-		REQUIRE(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block5));
+		CHECK(area.m_visionCuboids.size() == 1);
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block2) != nullptr);
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block2));
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block3));
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block4));
+		CHECK(area.m_visionCuboids.maybeGetForBlock(block1) == area.m_visionCuboids.maybeGetForBlock(block5));
 	}
 	SUBCASE("VisionCuboid can see")
 	{
@@ -389,8 +389,8 @@ TEST_CASE("vision")
 		});
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
-		REQUIRE(result.size() == 1);
-		REQUIRE(result.contains(actors.getReference(a2)));
+		CHECK(result.size() == 1);
+		CHECK(result.contains(actors.getReference(a2)));
 	}
 }
 TEST_CASE("Too far to see")
@@ -415,5 +415,5 @@ TEST_CASE("Too far to see")
 	});
 	area.m_visionRequests.doStep();
 	auto result = actors.vision_getCanSee(a1);
-	REQUIRE(result.size() == 0);
+	CHECK(result.size() == 0);
 }

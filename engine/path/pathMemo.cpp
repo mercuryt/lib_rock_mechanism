@@ -90,7 +90,7 @@ void PathMemoDepthFirst::setOpen(const BlockIndex& block, const Area& area)
 {
 	assert(m_huristicDestination.exists());
 	assert(block < m_closed.getSize());
-	bool contains = m_closed.contains(block);
+	[[maybe_unused]] bool contains = m_closed.contains(block);
 	assert(!contains);
 	// Subtract from max rather then provide MediumMap with the ability to sort backwards.
 	DistanceInBlocks distance = DistanceInBlocks::max() - area.getBlocks().distanceSquared(block, m_huristicDestination);

@@ -59,8 +59,9 @@ Area::Area(AreaId id, std::wstring n, Simulation& s, const DistanceInBlocks& x, 
 	m_visionCuboids.initalize(*this);
 	m_hasRain.scheduleRestart();
 	m_hasEvaporation.schedule(*this);
-	if constexpr(DEBUG)
+	#ifndef NDEBUG
 		m_loaded = true;
+	#endif
 }
 Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation) :
 	m_eventSchedule(simulation, this),
@@ -141,8 +142,9 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	if(data.contains("rain"))
 		m_hasRain.load(data["rain"], deserializationMemo);
 	m_hasEvaporation.schedule(*this);
-	if constexpr(DEBUG)
+	#ifndef NDEBUG
 		m_loaded = true;
+	#endif
 }
 Area::~Area()
 {

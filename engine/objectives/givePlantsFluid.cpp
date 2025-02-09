@@ -14,6 +14,7 @@
 #include "../types.h"
 #include "../plants.h"
 #include "../path/terrainFacade.hpp"
+#include "../hasShapes.hpp"
 
 #include <memory>
 GivePlantsFluidEvent::GivePlantsFluidEvent(const Step& delay, Area& area, GivePlantsFluidObjective& gpfo, const ActorIndex& actor, const Step start) :

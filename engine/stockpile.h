@@ -112,7 +112,7 @@ class StockPileProject final : public Project
 	void onCancel() override;
 	// TODO: geometric progresson of disable duration.
 	void onDelay() override;
-	void offDelay() override { assert(false); }
+	void offDelay() override { std::unreachable(); }
 	void onPickUpRequired(const ActorOrItemIndex& required) override;
 	void updateRequiredGenericReference(const ItemReference& newRef) override;
 	[[nodiscard]] bool canReset() const { return false; }

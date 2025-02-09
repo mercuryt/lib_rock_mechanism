@@ -114,14 +114,13 @@ PlantSpeciesId HasFarmFieldsForFaction::getPlantSpeciesFor(BlockIndex block) con
 	for(const FarmField& farmField : m_farmFields)
 		if(farmField.blocks.contains(block))
 			return farmField.plantSpecies;
-	assert(false);
+	std::unreachable();
 	return PlantSpecies::byName(L"");
 }
 void HasFarmFieldsForFaction::addGivePlantFluidDesignation(PlantIndex plant)
 {
 	Plants& plants = m_area.getPlants();
-	BlockIndex location = plants.getLocation(plant);
-	assert(!m_blocksWithPlantsNeedingFluid.contains(location));
+	assert(!m_blocksWithPlantsNeedingFluid.contains(plants.getLocation(plant)));
 	m_plantsNeedingFluidIsSorted = false;
 	m_blocksWithPlantsNeedingFluid.insert(plants.getLocation(plant));
 	m_area.getBlocks().designation_set(plants.getLocation(plant), m_faction, BlockDesignation::GivePlantFluid);

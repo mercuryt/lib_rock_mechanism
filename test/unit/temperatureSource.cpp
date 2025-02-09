@@ -31,21 +31,21 @@ TEST_CASE("temperature")
 		Temperature temperatureBeforeHeatSource = blocks.temperature_get(origin);
 		area.m_hasTemperature.addTemperatureSource(origin, TemperatureDelta::create(1000));
 		area.m_hasTemperature.applyDeltas();
-		REQUIRE(blocks.temperature_get(origin) == temperatureBeforeHeatSource + 1000);
-		REQUIRE(blocks.temperature_get(b1) == temperatureBeforeHeatSource + 1000);
-		REQUIRE(blocks.temperature_get(b2) == 386);
-		REQUIRE(blocks.temperature_get(b3) == temperatureBeforeHeatSource);
-		REQUIRE(blocks.temperature_get(toBurn) == temperatureBeforeHeatSource + 1000);
-		REQUIRE(blocks.temperature_get(toNotBurn) == temperatureBeforeHeatSource + 1000);
-		REQUIRE(blocks.fire_exists(toBurn));
+		CHECK(blocks.temperature_get(origin) == temperatureBeforeHeatSource + 1000);
+		CHECK(blocks.temperature_get(b1) == temperatureBeforeHeatSource + 1000);
+		CHECK(blocks.temperature_get(b2) == 386);
+		CHECK(blocks.temperature_get(b3) == temperatureBeforeHeatSource);
+		CHECK(blocks.temperature_get(toBurn) == temperatureBeforeHeatSource + 1000);
+		CHECK(blocks.temperature_get(toNotBurn) == temperatureBeforeHeatSource + 1000);
+		CHECK(blocks.fire_exists(toBurn));
 		// Fire exists but the new deltas it has created have not been applied
-		REQUIRE(blocks.temperature_get(toBurn) == temperatureBeforeHeatSource + 1000);
-		REQUIRE(!blocks.fire_exists(toNotBurn));
-		REQUIRE(blocks.temperature_get(toNotBurn) == temperatureBeforeHeatSource + 1000);
-		REQUIRE(!simulation.m_eventSchedule.m_data.empty());
+		CHECK(blocks.temperature_get(toBurn) == temperatureBeforeHeatSource + 1000);
+		CHECK(!blocks.fire_exists(toNotBurn));
+		CHECK(blocks.temperature_get(toNotBurn) == temperatureBeforeHeatSource + 1000);
+		CHECK(!simulation.m_eventSchedule.m_data.empty());
 		area.m_hasTemperature.applyDeltas();
-		REQUIRE(blocks.temperature_get(toBurn) > temperatureBeforeHeatSource + 1000);
-		REQUIRE(blocks.temperature_get(toNotBurn) > temperatureBeforeHeatSource + 1000);
+		CHECK(blocks.temperature_get(toBurn) > temperatureBeforeHeatSource + 1000);
+		CHECK(blocks.temperature_get(toNotBurn) > temperatureBeforeHeatSource + 1000);
 	}
 	SUBCASE("burnt to ash")
 	{
@@ -55,21 +55,21 @@ TEST_CASE("temperature")
 		blocks.solid_set(toBurn, wood, false);
 		area.m_hasTemperature.addTemperatureSource(origin, TemperatureDelta::create(1000));
 		simulation.doStep();
-		REQUIRE(blocks.fire_exists(toBurn));
+		CHECK(blocks.fire_exists(toBurn));
 		Fire& fire = blocks.fire_get(toBurn, wood);
-		REQUIRE(area.m_fires.containsFireAt(fire, toBurn));
-		REQUIRE(fire.m_stage == FireStage::Smouldering);
+		CHECK(area.m_fires.containsFireAt(fire, toBurn));
+		CHECK(fire.m_stage == FireStage::Smouldering);
 		simulation.fastForward(MaterialType::getBurnStageDuration(wood) - 1);
-		REQUIRE(fire.m_stage == FireStage::Burning);
+		CHECK(fire.m_stage == FireStage::Burning);
 		simulation.fastForward(MaterialType::getBurnStageDuration(wood));
-		REQUIRE(fire.m_stage == FireStage::Flaming);
+		CHECK(fire.m_stage == FireStage::Flaming);
 		simulation.fastForward(MaterialType::getFlameStageDuration(wood));
-		REQUIRE(fire.m_stage == FireStage::Burning);
-		REQUIRE(fire.m_hasPeaked == true);
+		CHECK(fire.m_stage == FireStage::Burning);
+		CHECK(fire.m_hasPeaked == true);
 		simulation.fastForward(MaterialType::getBurnStageDuration(wood) * Config::fireRampDownPhaseDurationFraction);
-		REQUIRE(fire.m_stage == FireStage::Smouldering);
+		CHECK(fire.m_stage == FireStage::Smouldering);
 		simulation.fastForward(MaterialType::getBurnStageDuration(wood) * Config::fireRampDownPhaseDurationFraction);
-		REQUIRE(!blocks.fire_exists(toBurn));
-		REQUIRE(!blocks.solid_is(toBurn));
+		CHECK(!blocks.fire_exists(toBurn));
+		CHECK(!blocks.solid_is(toBurn));
 	}
 }

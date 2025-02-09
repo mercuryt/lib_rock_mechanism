@@ -21,7 +21,7 @@ class TargetedHaulProject final : public Project
 	// Despite being directly created it doesn't make sense to retry targeted hauling, so instead we cancel it with a log message.
 	// TODO: log message.
 	void onDelay() { cancel(); }
-	void offDelay() { assert(false); }
+	void offDelay() { std::unreachable(); }
 	Step getDuration() const { return Config::addToStockPileDelaySteps; }
 public:
 	TargetedHaulProject(const FactionId& f, Area& a, const BlockIndex& l, const ItemReference& i) : Project(f, a, l, Quantity::create(4)), m_item(i) { }

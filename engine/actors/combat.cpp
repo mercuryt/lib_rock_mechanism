@@ -315,7 +315,7 @@ AttackTypeId Actors::combat_getRangedAttackType(const ActorIndex&, const ItemInd
 	for(AttackTypeId attackType : ItemType::getAttackTypes(itemType))
 		if(AttackType::getProjectile(attackType))
 			return attackType;
-	assert(false);
+	std::unreachable();
 	return ItemType::getAttackTypes(itemType).front();
 }
 AttackCoolDownEvent::AttackCoolDownEvent(Area& area, const ActorIndex& actor, const Step& duration, const Step start) :

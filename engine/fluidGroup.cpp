@@ -766,7 +766,7 @@ void FluidGroup::validate(Area& area) const
 		}
 	}
 }
-void FluidGroup::validate(Area& area, SmallSet<FluidGroup*> toErase) const
+void FluidGroup::validate(Area& area, [[maybe_unused]] SmallSet<FluidGroup*> toErase) const
 {
 	if(m_merged || m_destroy || m_disolved)
 		return;

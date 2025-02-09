@@ -4,6 +4,7 @@
 #include "../blocks/blocks.h"
 #include "../path/pathRequest.h"
 #include "../path/terrainFacade.hpp"
+#include "../hasShapes.hpp"
 //TODO: Detour locked to true for emergency moves.
 GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& objective, const ActorIndex& actorIndex) :
 	m_objective(objective)

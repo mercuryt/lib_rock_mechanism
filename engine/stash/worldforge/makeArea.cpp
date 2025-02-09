@@ -126,7 +126,7 @@ void World::assignAreaBiome(WorldLocation& location, Area& area)
 					break;
 				}
 		}
-	location.primaryBiome->createAnimals(area.m_simulation, location, area, area.m_simulation.m_random); 
+	location.primaryBiome->createAnimals(area.m_simulation, location, area, area.m_simulation.m_random);
 }
 struct Candidate
 {
@@ -173,7 +173,7 @@ std::vector<BlockIndex*> getPathForRiver(BlockIndex& start, BlockIndex& end)
 				}
 		}
 		// No path found.
-		assert(false);
+		std::unreachable();
 }
 void World::makeAreaRiversAndLakes(WorldLocation& location, Area& area)
 {

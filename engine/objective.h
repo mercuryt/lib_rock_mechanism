@@ -102,7 +102,7 @@ public:
 	// When an objective is interrputed by a higher priority objective should it be kept in the task queue for later or discarded?
 	// Should be true only for objectives like Wander or Wait which are not meant to resume after interrupt because they are idle tasks.
 	[[nodiscard]] virtual bool canResume() const { return true; }
-	[[nodiscard]] virtual NeedType getNeedType() const { assert(false); return NeedType::none; }
+	[[nodiscard]] virtual NeedType getNeedType() const { std::unreachable(); return NeedType::none; }
 	Objective(const Priority& priority);
 	// Explicit delete of copy and move constructors to ensure pointer stability.
 	Objective(const Objective&) = delete;

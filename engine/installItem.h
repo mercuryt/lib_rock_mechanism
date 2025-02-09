@@ -25,7 +25,7 @@ public:
 	Step getDuration() const { return Config::installItemDuration; }
 	bool canReset() const { return false; }
 	void onDelay() { cancel(); }
-	void offDelay() { assert(false); }
+	void offDelay() { std::unreachable(); }
 };
 class HasInstallItemDesignationsForFaction final
 {

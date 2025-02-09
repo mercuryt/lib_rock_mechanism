@@ -36,14 +36,14 @@ TEST_CASE("actor")
 			.percentGrown=Percent::create(100),
 			.location=origin1,
 		});
-		REQUIRE(actors.getName(dwarf1) == L"dwarf1");
-		REQUIRE(actors.grow_getPercent(dwarf1) == 100);
-		REQUIRE(!actors.grow_isGrowing(dwarf1));
-		REQUIRE(Shape::getName(actors.getShape(dwarf1)) == L"oneByOneFull");
-		REQUIRE(area.m_eventSchedule.count() - previousEventCount == 3);
-		REQUIRE(actors.getLocation(dwarf1) == origin1);
-		REQUIRE(blocks.actor_contains(actors.getLocation(dwarf1), dwarf1));
-		REQUIRE(actors.combat_getCombatScore(dwarf1) != 0);
+		CHECK(actors.getName(dwarf1) == L"dwarf1");
+		CHECK(actors.grow_getPercent(dwarf1) == 100);
+		CHECK(!actors.grow_isGrowing(dwarf1));
+		CHECK(Shape::getName(actors.getShape(dwarf1)) == L"oneByOneFull");
+		CHECK(area.m_eventSchedule.count() - previousEventCount == 3);
+		CHECK(actors.getLocation(dwarf1) == origin1);
+		CHECK(blocks.actor_contains(actors.getLocation(dwarf1), dwarf1));
+		CHECK(actors.combat_getCombatScore(dwarf1) != 0);
 	}
 	SUBCASE("multi tile")
 	{
@@ -53,9 +53,9 @@ TEST_CASE("actor")
 			.percentGrown=Percent::create(100),
 			.location=origin2,
 		});
-		REQUIRE(blocks.actor_contains(origin2, troll1));
-		REQUIRE(blocks.actor_contains(block1, troll1));
-		REQUIRE(blocks.actor_contains(block2, troll1));
-		REQUIRE(blocks.actor_contains(block3, troll1));
+		CHECK(blocks.actor_contains(origin2, troll1));
+		CHECK(blocks.actor_contains(block1, troll1));
+		CHECK(blocks.actor_contains(block2, troll1));
+		CHECK(blocks.actor_contains(block3, troll1));
 	}
 }

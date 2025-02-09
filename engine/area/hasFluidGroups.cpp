@@ -10,8 +10,10 @@ void AreaHasFluidGroups::doStep(bool parallel)
 	// Calculate flow.
 	// unstable will be used to iterate the contents of m_unstableFluidGroups while altering it. It will be reinitalized with fresh copies several times.
 	SmallSet<FluidGroup*> unstable = m_unstableFluidGroups;
-	for(const FluidGroup* group : unstable)
-		assert(!group->m_stable);
+	#ifndef NDEBUG
+		for (const FluidGroup *group : unstable)
+			assert(!group->m_stable);
+	#endif
 	if(parallel)
 	{
 		// OpenMP doesn't work with SmallSet?
