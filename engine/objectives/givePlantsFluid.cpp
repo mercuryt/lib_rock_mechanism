@@ -46,7 +46,7 @@ void GivePlantsFluidEvent::onCancel(Simulation&, Area* area)
 	if(location.exists() && blocks.plant_exists(location))
 	{
 		PlantIndex plant = blocks.plant_get(location);
-		area->m_hasFarmFields.getForFaction(actors.getFactionId(m_actor.getIndex(actors.m_referenceData))).addGivePlantFluidDesignation(plant);
+		area->m_hasFarmFields.getForFaction(actors.getFaction(m_actor.getIndex(actors.m_referenceData))).addGivePlantFluidDesignation(plant);
 	}
 }
 // Path Request.
@@ -101,7 +101,7 @@ void GivePlantsFluidPathRequest::writeStep(Area& area, FindPathResult& result)
 		return;
 	}
 	Blocks& blocks = area.getBlocks();
-	FactionId faction = actors.getFactionId(actorIndex);
+	FactionId faction = actors.getFaction(actorIndex);
 	if(m_objective.m_plantLocation.empty())
 	{
 		if(blocks.designation_has(result.blockThatPassedPredicate, faction, BlockDesignation::GivePlantFluid))
@@ -133,7 +133,7 @@ bool GivePlantsFluidObjectiveType::canBeAssigned(Area& area, const ActorIndex& a
 {
 	Actors& actors = area.getActors();
 	assert(actors.getLocation(actor).exists());
-	return area.m_hasFarmFields.hasGivePlantsFluidDesignations(actors.getFactionId(actor));
+	return area.m_hasFarmFields.hasGivePlantsFluidDesignations(actors.getFaction(actor));
 }
 std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Area& area, const ActorIndex&) const
 {
@@ -176,7 +176,7 @@ void GivePlantsFluidObjective::execute(Area& area, const ActorIndex& actor)
 	{
 		m_plantLocation.clear();
 		// Get high priority job from area.
-		PlantIndex plant = area.m_hasFarmFields.getHighestPriorityPlantForGiveFluid(actors.getFactionId(actor));
+		PlantIndex plant = area.m_hasFarmFields.getHighestPriorityPlantForGiveFluid(actors.getFaction(actor));
 		if(plant.exists())
 		{
 			selectPlantLocation(area, plants.getLocation(plant), actor);
@@ -258,7 +258,7 @@ void GivePlantsFluidObjective::cancel(Area& area, const ActorIndex& actor)
 		if(blocks.plant_exists(m_plantLocation))
 		{
 			PlantIndex plant = blocks.plant_get(m_plantLocation);
-			area.m_hasFarmFields.getForFaction(actors.getFactionId(actor)).addGivePlantFluidDesignation(plant);
+			area.m_hasFarmFields.getForFaction(actors.getFaction(actor)).addGivePlantFluidDesignation(plant);
 		}
 	}
 }
@@ -269,7 +269,7 @@ void GivePlantsFluidObjective::selectPlantLocation(Area& area, const BlockIndex&
 	m_plantLocation = block;
 	actors.canReserve_reserveLocation(actor, m_plantLocation);
 	PlantIndex plant = blocks.plant_get(m_plantLocation);
-	area.m_hasFarmFields.getForFaction(actors.getFactionId(actor)).removeGivePlantFluidDesignation(plant);
+	area.m_hasFarmFields.getForFaction(actors.getFaction(actor)).removeGivePlantFluidDesignation(plant);
 }
 void GivePlantsFluidObjective::selectItem(Area& area, const ItemIndex& item, const ActorIndex& actor)
 {

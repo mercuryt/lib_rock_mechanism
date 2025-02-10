@@ -78,7 +78,7 @@ bool HaulSubprojectParamaters::validate(Area& area) const
 	assert(strategy != HaulStrategy::None);
 	assert(projectRequirementCounts != nullptr);
 	assert(!workers.empty());
-	FactionId faction = area.getActors().getFactionId(workers.front());
+	FactionId faction = area.getActors().getFaction(workers.front());
 	for(ActorIndex worker : workers)
 		if(area.getActors().reservable_isFullyReserved(worker, faction))
 			return false;
@@ -681,7 +681,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 {
 	// TODO: make exception for slow haul if very close.
 	Actors& actors = project.m_area.getActors();
-	FactionId faction = actors.getFactionId(worker);
+	FactionId faction = actors.getFaction(worker);
 	HaulSubprojectParamaters output;
 	ActorOrItemReference toHaulRef = toHaul.toReference(project.m_area);
 	output.toHaul = toHaul.toReference(project.m_area);
@@ -757,7 +757,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 			return output;
 		}
 		// Animal Cart
-		ActorIndex yoked = project.m_area.m_hasHaulTools.getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(project.m_area, actors.getFactionId(worker), haulTool, toHaul.getMass(project.m_area), minimumSpeed);
+		ActorIndex yoked = project.m_area.m_hasHaulTools.getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(project.m_area, actors.getFaction(worker), haulTool, toHaul.getMass(project.m_area), minimumSpeed);
 		if(yoked.exists())
 		{
 			maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(project.m_area, worker, yoked, haulTool, toHaul, minimumSpeed);

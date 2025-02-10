@@ -175,7 +175,7 @@ uint32_t SleepObjective::desireToSleepAt(Area& area, const BlockIndex& block, co
 {
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	if(blocks.isReserved(block, actors.getFactionId(actor)) || !actors.temperature_isSafe(actor, blocks.temperature_get(block)))
+	if(blocks.isReserved(block, actors.getFaction(actor)) || !actors.temperature_isSafe(actor, blocks.temperature_get(block)))
 		// Impossible to sleep here.
 		return 0;
 	if(area.m_hasSleepingSpots.containsUnassigned(block))

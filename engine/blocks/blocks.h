@@ -13,6 +13,8 @@
 #include "../verySmallSet.h"
 #include "../dataVector.h"
 #include "../index.h"
+#include "../geometry/offsetSetSIMD.h"
+#include "blockIndexSetSIMD.h"
 
 #include "blockIndexArray.h"
 #include "exposedToSky.h"
@@ -44,7 +46,10 @@ using ActorIndicesForBlock = VerySmallSet<ActorIndex, 5>;
 using ItemIndicesForBlock = VerySmallSet<ItemIndex, 5>;
 class Blocks
 {
-	Eigen::Array<int32_t, 1, 26> m_offsetsForAdjacentCountTable;
+	OffsetSetSIMD<26> m_indexOffsetsForAdjacentAll;
+	OffsetSetSIMD<24> m_indexOffsetsForAdjacentAllExceptDirectlyAboveAndBelow;
+	OffsetSetSIMD<20> m_indexOffsetsForAdjacentOnlyEdgesAndCorners;
+	OffsetSetSIMD<18> m_indexOffsetsForAdjacentDirectAndEdge;
 	BlockIndexMap<FactionIdMap<FarmField*>> m_farmFields;
 	BlockIndexMap<FactionIdMap<BlockIsPartOfStockPile>> m_stockPiles;
 	StrongVector<std::unique_ptr<Reservable>, BlockIndex> m_reservables;
@@ -73,12 +78,12 @@ class Blocks
 	StrongBitSet<BlockIndex> m_visible;
 	StrongBitSet<BlockIndex> m_constructed;
 	Area& m_area;
+public:
 	const Coordinates m_pointToIndexConversionMultipliers;
 	const Coordinates m_pointToIndexConversionMultipliersChunked;
+	const Coordinates m_dimensions;
 	uint m_sizeXInChunks;
 	uint m_sizeXTimesYInChunks;
-public:
-	const Coordinates m_dimensions;
 	//TODO: replace these with functions accessing m_dimensions.
 	const DistanceInBlocks m_sizeX;
 	const DistanceInBlocks m_sizeY;
@@ -89,7 +94,7 @@ public:
 	void resize(const BlockIndex& count);
 	void initalize(const BlockIndex& index);
 	void recordAdjacent(const BlockIndex& index);
-	void makeOffsetsForAdjacentCountTable();
+	void makeIndexOffsetsForAdjacent();
 	void moveContentsTo(const BlockIndex& index, const BlockIndex& other);
 	// For testing.
 	[[nodiscard]] std::vector<BlockIndex> getAllIndices() const ;
@@ -114,15 +119,14 @@ public:
 	[[nodiscard]] BlockIndex getCenterAtGroundLevel() const;
 	// TODO: Calculate on demand from offset vector?
 	[[nodiscard]] const std::array<BlockIndex, 6>& getDirectlyAdjacent(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<18> getAdjacentWithEdgeAdjacent(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<26> getAdjacentWithEdgeAndCornerAdjacent(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<24> getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const BlockIndex& index) const;
-	[[nodiscard]] std::array<BlockIndex, 26> getAdjacentWithEdgeAndCornerAdjacentUnfiltered(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<20> getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexSetSIMD<26> getAdjacentWithEdgeAndCornerAdjacent(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexSetSIMD<24> getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexSetSIMD<20> getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexSetSIMD<18> getAdjacentWithEdgeAdjacent(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexArrayNotNull<12> getEdgeAdjacentOnly(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexArrayNotNull<4> getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexArrayNotNull<4> getAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
-	[[nodiscard]] const auto& getOffsetsForAdjacentCountTable() const { return m_offsetsForAdjacentCountTable; }
+	[[nodiscard]] const auto& getOffsetsForAdjacentCountTable() const { return m_indexOffsetsForAdjacentAll; }
 	//TODO: Under what circumstances is this integer distance preferable to taxiDistance or fractional distance?
 	[[nodiscard]] DistanceInBlocks distance(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] DistanceInBlocks taxiDistance(const BlockIndex& index, const BlockIndex& other) const;

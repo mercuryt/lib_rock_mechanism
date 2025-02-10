@@ -9,7 +9,7 @@
 // Objective Type.
 bool StockPileObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
-	return area.m_hasStockPiles.getForFaction(area.getActors().getFactionId(actor)).isAnyHaulingAvailableFor(actor);
+	return area.m_hasStockPiles.getForFaction(area.getActors().getFaction(actor)).isAnyHaulingAvailableFor(actor);
 }
 std::unique_ptr<Objective> StockPileObjectiveType::makeFor(Area&, const ActorIndex&) const
 {
@@ -103,7 +103,7 @@ bool StockPileObjective::destinationCondition(Area& area, const BlockIndex& bloc
 		// Don't put multiple items in the same block unless they are generic and share item type and material type.
 		if(!items.isGeneric(item) || blocks.item_getAll(block).size() != 1 || blocks.item_getCount(block, items.getItemType(item), items.getMaterialType(item)) == 0)
 			return false;
-	FactionId faction = actors.getFactionId(actor);
+	FactionId faction = actors.getFaction(actor);
 	const StockPile* stockpile = blocks.stockpile_getForFaction(block, faction);
 	if(stockpile == nullptr || !stockpile->isEnabled() || !blocks.stockpile_isAvalible(block, faction))
 		return false;
@@ -141,7 +141,7 @@ FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& t
 	Items& items = area.getItems();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	assert(!actors.project_exists(actorIndex));
-	const FactionId& faction = actors.getFactionId(actorIndex);
+	const FactionId& faction = actors.getFaction(actorIndex);
 	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
 	AreaHasBlockDesignationsForFaction& designationsForFaction = area.m_blockDesignations.getForFaction(faction);
 	auto predicate = [this, actorIndex, faction, &hasStockPiles, &blocks, &items, &area, &designationsForFaction](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
@@ -216,7 +216,7 @@ void StockPilePathRequest::writeStep(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
 	const ActorIndex& actorIndex = actor.getIndex(actors.m_referenceData);
-	const FactionId& faction = actors.getFactionId(actorIndex);
+	const FactionId& faction = actors.getFaction(actorIndex);
 	if(!m_objective.m_item.exists())
 	{
 		// No haulable item found.
@@ -309,7 +309,7 @@ FindPathResult StockPileDestinationPathRequest::readStep(Area& area, const Terra
 	Items& items = area.getItems();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	assert(!actors.project_exists(actorIndex));
-	const FactionId& faction = actors.getFactionId(actorIndex);
+	const FactionId& faction = actors.getFaction(actorIndex);
 	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
 	auto predicate = [this, actorIndex, faction, &hasStockPiles, &blocks, &items, &area](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>{
 		return {m_objective.destinationCondition(area, block, m_objective.m_item.getIndex(items.m_referenceData), actorIndex), block};
@@ -334,7 +334,7 @@ void StockPileDestinationPathRequest::writeStep(Area& area, FindPathResult& resu
 	Blocks &blocks = area.getBlocks();
 	const ActorIndex& actor = actorIndex;
 	actors.canReserve_clearAll(actor);
-	const FactionId& faction = actors.getFactionId(actor);
+	const FactionId& faction = actors.getFaction(actor);
 	assert(blocks.stockpile_getForFaction(m_objective.m_stockPileLocation, faction));
 	StockPile &stockpile = *blocks.stockpile_getForFaction(m_objective.m_stockPileLocation, faction);
 	if (stockpile.hasProjectNeedingMoreWorkers())

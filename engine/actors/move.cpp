@@ -296,7 +296,7 @@ bool Actors::move_tryToReserveProposedDestination(const ActorIndex& index, const
 	CanReserve& canReserve = canReserve_get(index);
 	Blocks& blocks = m_area.getBlocks();
 	BlockIndex location = path.back();
-	FactionId faction = getFactionId(index);
+	FactionId faction = getFaction(index);
 	if(Shape::getIsMultiTile(shape))
 	{
 		assert(!path.empty());
@@ -323,7 +323,7 @@ bool Actors::move_tryToReserveOccupied(const ActorIndex& index)
 	CanReserve& canReserve = canReserve_get(index);
 	Blocks& blocks = m_area.getBlocks();
 	BlockIndex location = getLocation(index);
-	FactionId faction = getFactionId(index);
+	FactionId faction = getFaction(index);
 	if(Shape::getIsMultiTile(shape))
 	{
 		assert(!m_path[index].empty());

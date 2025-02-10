@@ -59,7 +59,7 @@ void WoodCuttingPathRequest::writeStep(Area& area, FindPathResult& result)
 			return;
 		}
 		BlockIndex target = result.blockThatPassedPredicate;
-		WoodCuttingProject& project = area.m_hasWoodCuttingDesignations.getForFactionAndBlock(actors.getFactionId(actorIndex), target);
+		WoodCuttingProject& project = area.m_hasWoodCuttingDesignations.getForFactionAndBlock(actors.getFaction(actorIndex), target);
 		if(project.canAddWorker(actorIndex))
 			m_woodCuttingObjective.joinProject(project, actorIndex);
 		else
@@ -99,7 +99,7 @@ void WoodCuttingObjective::execute(Area& area, const ActorIndex& actor)
 		{
 			if(!getJoinableProjectAt(area, block, actor))
 				return false;
-			project = &area.m_hasWoodCuttingDesignations.getForFactionAndBlock(actors.getFactionId(actor), block);
+			project = &area.m_hasWoodCuttingDesignations.getForFactionAndBlock(actors.getFaction(actor), block);
 			if(project->canAddWorker(actor))
 				return true;
 			return false;
@@ -155,7 +155,7 @@ void WoodCuttingObjective::joinProject(WoodCuttingProject& project, const ActorI
 WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(Area& area, const BlockIndex& block, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
-	FactionId faction = actors.getFactionId(actor);
+	FactionId faction = actors.getFaction(actor);
 	if(!area.getBlocks().designation_has(block, faction, BlockDesignation::WoodCutting))
 		return nullptr;
 	WoodCuttingProject& output = area.m_hasWoodCuttingDesignations.getForFactionAndBlock(faction, block);
@@ -168,7 +168,7 @@ WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(Area& area, const
 bool WoodCuttingObjective::joinableProjectExistsAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const
 {
 	Actors& actors = area.getActors();
-	FactionId faction = actors.getFactionId(actor);
+	FactionId faction = actors.getFaction(actor);
 	assert(area.getBlocks().designation_has(block, faction, BlockDesignation::WoodCutting));
 	WoodCuttingProject& project = area.m_hasWoodCuttingDesignations.getForFactionAndBlock(faction, block);
 	return !project.reservationsComplete() && !m_cannotJoinWhileReservationsAreNotComplete.contains(&project) && project.canAddWorker(actor);
@@ -176,7 +176,7 @@ bool WoodCuttingObjective::joinableProjectExistsAt(Area& area, const BlockIndex&
 bool WoodCuttingObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
 	//TODO: check for any axes?
-	return area.m_hasWoodCuttingDesignations.areThereAnyForFaction(area.getActors().getFactionId(actor));
+	return area.m_hasWoodCuttingDesignations.areThereAnyForFaction(area.getActors().getFaction(actor));
 }
 std::unique_ptr<Objective> WoodCuttingObjectiveType::makeFor(Area&, const ActorIndex&) const
 {

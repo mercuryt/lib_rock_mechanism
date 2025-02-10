@@ -161,7 +161,8 @@ void TerrainFacade::update(const BlockIndex& index)
 	Blocks& blocks = m_area.getBlocks();
 	uint i = 0;
 	uint base = index.get() * maxAdjacent;
-	for(BlockIndex adjacent : blocks.getAdjacentWithEdgeAndCornerAdjacentUnfiltered(index))
+	const auto adjacent = blocks.getAdjacentWithEdgeAndCornerAdjacent(index);
+	for(BlockIndex adjacent : adjacent.includeNull())
 	{
 		m_enterable[base + i] = getValueForBit(index, adjacent);
 		++i;

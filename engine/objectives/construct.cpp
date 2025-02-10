@@ -49,7 +49,7 @@ void ConstructPathRequest::writeStep(Area& area, FindPathResult& result)
 	{
 		// No need to reserve here, we are just checking for access.
 		BlockIndex target = result.blockThatPassedPredicate;
-		ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFactionId(actorIndex), target);
+		ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFaction(actorIndex), target);
 		if(project.canAddWorker(actorIndex))
 			m_constructObjective.joinProject(project, actorIndex);
 		else
@@ -88,7 +88,7 @@ void ConstructObjective::execute(Area& area, const ActorIndex& actor)
 		{
 			if(hasDesignations.check(block, BlockDesignation::Construct) && joinableProjectExistsAt(area, block, actor))
 			{
-				project = &area.m_hasConstructionDesignations.getProject(actors.getFactionId(actor), block);
+				project = &area.m_hasConstructionDesignations.getProject(actors.getFaction(actor), block);
 				return project->canAddWorker(actor);
 			}
 			return false;
@@ -156,9 +156,9 @@ ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(Area& area, 
 {
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	if(!blocks.designation_has(block, actors.getFactionId(actor), BlockDesignation::Construct))
+	if(!blocks.designation_has(block, actors.getFaction(actor), BlockDesignation::Construct))
 		return nullptr;
-	ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFactionId(actor), block);
+	ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFaction(actor), block);
 	if(!project.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&project))
 		return nullptr;
 	if(project.canAddWorker(actor))
@@ -169,8 +169,8 @@ bool ConstructObjective::joinableProjectExistsAt(Area& area, const BlockIndex& b
 {
 	[[maybe_unused]] Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	assert(blocks.designation_has(block, actors.getFactionId(actor), BlockDesignation::Construct));
-	ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFactionId(actor), block);
+	assert(blocks.designation_has(block, actors.getFaction(actor), BlockDesignation::Construct));
+	ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFaction(actor), block);
 	if(!project.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&project))
 		return false;
 	if(project.canAddWorker(actor))
@@ -184,6 +184,6 @@ bool ConstructObjective::canJoinProjectAdjacentToLocationAndFacing(Area& area, c
 // ObjectiveType.
 bool ConstructObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
-	return area.m_hasConstructionDesignations.areThereAnyForFaction(area.getActors().getFactionId(actor));
+	return area.m_hasConstructionDesignations.areThereAnyForFaction(area.getActors().getFaction(actor));
 }
 std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Area&, const ActorIndex&) const { return std::make_unique<ConstructObjective>(); }

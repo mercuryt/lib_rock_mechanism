@@ -71,7 +71,7 @@ void Actors::combat_attackLongRange(const ActorIndex& index, const ActorIndex& t
 }
 CombatScore Actors::combat_getCurrentMeleeCombatScore(const ActorIndex& index)
 {
-	FactionId faction = getFactionId(index);
+	FactionId faction = getFaction(index);
 	uint32_t blocksContainingNonAllies = 0;
 	// Apply bonuses and penalties based on relative locations.
 	CombatScore output = m_combatScore[index];
@@ -79,7 +79,7 @@ CombatScore Actors::combat_getCurrentMeleeCombatScore(const ActorIndex& index)
 	{
 		CombatScore highestAllyCombatScore = CombatScore::create(0);
 		bool nonAllyFound = false;
-		FactionId otherFaction = getFactionId(adjacent);
+		FactionId otherFaction = getFaction(adjacent);
 		if(otherFaction.exists() && (otherFaction == faction || m_area.m_simulation.m_hasFactions.isAlly(otherFaction, faction)))
 		{
 			if(m_combatScore[adjacent] > highestAllyCombatScore)

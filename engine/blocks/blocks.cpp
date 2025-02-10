@@ -14,9 +14,9 @@ Blocks::Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y,
 	m_area(area),
 	m_pointToIndexConversionMultipliers(1, x.get(), x.get() * y.get()),
 	m_pointToIndexConversionMultipliersChunked(1, x.get() / 16, (x.get() / 16) * (y.get() / 16)),
+	m_dimensions(x.get(), y.get(), z.get()),
 	m_sizeXInChunks(x.get() / 16),
 	m_sizeXTimesYInChunks((x.get() / 16) * ( y.get() / 16)),
-	m_dimensions(x.get(), y.get(), z.get()),
 	m_sizeX(x),
 	m_sizeY(y),
 	m_sizeZ(z),
@@ -28,7 +28,7 @@ Blocks::Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y,
 	m_exposedToSky.initalizeEmpty();
 	for(BlockIndex i = BlockIndex::create(0); i < count; ++i)
 		initalize(i);
-	makeOffsetsForAdjacentCountTable();
+	makeIndexOffsetsForAdjacent();
 }
 void Blocks::resize(const BlockIndex& count)
 {
@@ -299,27 +299,33 @@ BlockIndex Blocks::getBlockEast(const BlockIndex& index) const
 {
 	return m_directlyAdjacent[index][uint(Facing6::East)];
 }
-std::array<BlockIndex, 26> Blocks::getAdjacentWithEdgeAndCornerAdjacentUnfiltered(const BlockIndex& index) const
+BlockIndexSetSIMD<26> Blocks::getAdjacentWithEdgeAndCornerAdjacent(const BlockIndex& index) const
 {
-	return getAdjacentWithOffsets<26, false>(*this, index, adjacentOffsets::all.begin());
+	if(isEdge(index))
+		return m_indexOffsetsForAdjacentAll.getIndicesMaybeOutOfBounds(*this, index);
+	else
+		return m_indexOffsetsForAdjacentAll.getIndicesInBounds(*this, index);
 }
-// TODO: cache?
-BlockIndexArrayNotNull<26> Blocks::getAdjacentWithEdgeAndCornerAdjacent(const BlockIndex& index) const
+BlockIndexSetSIMD<24> Blocks::getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const BlockIndex& index) const
 {
-	//TODO: calculate for non-edge blocks with adjacentCountTable.
-	return getAdjacentWithOffsets<26, true>(*this, index, adjacentOffsets::all.begin());
+	if(isEdge(index))
+		return m_indexOffsetsForAdjacentAllExceptDirectlyAboveAndBelow.getIndicesMaybeOutOfBounds(*this, index);
+	else
+		return m_indexOffsetsForAdjacentAllExceptDirectlyAboveAndBelow.getIndicesInBounds(*this, index);
 }
-BlockIndexArrayNotNull<24> Blocks::getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const BlockIndex& index) const
+BlockIndexSetSIMD<20> Blocks::getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const
 {
-	return getAdjacentWithOffsets<24, true>(*this, index, adjacentOffsets::allExceptDirectlyAboveAndBelow.begin());
+	if(isEdge(index))
+		return m_indexOffsetsForAdjacentOnlyEdgesAndCorners.getIndicesMaybeOutOfBounds(*this, index);
+	else
+		return m_indexOffsetsForAdjacentOnlyEdgesAndCorners.getIndicesInBounds(*this, index);
 }
-BlockIndexArrayNotNull<20> Blocks::getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const
+BlockIndexSetSIMD<18> Blocks::getAdjacentWithEdgeAdjacent(const BlockIndex& index) const
 {
-	return getAdjacentWithOffsets<20, true>(*this, index, adjacentOffsets::edgeAndCorner.begin());
-}
-BlockIndexArrayNotNull<18> Blocks::getAdjacentWithEdgeAdjacent(const BlockIndex& index) const
-{
-	return BlockIndexArrayNotNull<18>(getAdjacentWithOffsets<18, true>(*this, index, adjacentOffsets::directAndEdge.begin()));
+	if(isEdge(index))
+		return m_indexOffsetsForAdjacentDirectAndEdge.getIndicesMaybeOutOfBounds(*this, index);
+	else
+		return m_indexOffsetsForAdjacentDirectAndEdge.getIndicesInBounds(*this, index);
 }
 BlockIndexArrayNotNull<12> Blocks::getEdgeAdjacentOnly(const BlockIndex& index) const
 {
@@ -359,13 +365,15 @@ bool Blocks::squareOfDistanceIsMoreThen(const BlockIndex& index, const BlockInde
 }
 bool Blocks::isAdjacentToAny(const BlockIndex& index, BlockIndices& blocks) const
 {
-	for(BlockIndex adjacent : getDirectlyAdjacent(index))
-		if(adjacent.exists() && blocks.contains(adjacent))
+	auto adjacents = getAdjacentWithEdgeAndCornerAdjacent(index);
+	for(const BlockIndex& candidate : blocks)
+		if(adjacents.contains(candidate))
 			return true;
 	return false;
 }
 bool Blocks::isAdjacentTo(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
+	// TODO: SIMD.
 	for(BlockIndex adjacent : getDirectlyAdjacent(index))
 		if(adjacent.exists() && otherIndex == adjacent)
 			return true;
@@ -373,16 +381,23 @@ bool Blocks::isAdjacentTo(const BlockIndex& index, const BlockIndex& otherIndex)
 }
 bool Blocks::isAdjacentToIncludingCornersAndEdges(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
-	const auto& adjacents = getAdjacentWithEdgeAndCornerAdjacent(index);
-	return std::ranges::find(adjacents, otherIndex) != adjacents.end();
+	return getAdjacentWithEdgeAndCornerAdjacent(index).contains(otherIndex);
 }
 bool Blocks::isAdjacentToActor(const BlockIndex& index, const ActorIndex& actor) const
 {
-	return m_area.getActors().isAdjacentToLocation(actor, index);
+	auto adjacents = getAdjacentWithEdgeAndCornerAdjacent(index);
+	for(const BlockIndex& candidate : m_area.getActors().getBlocks(actor))
+		if(adjacents.contains(candidate))
+			return true;
+	return false;
 }
 bool Blocks::isAdjacentToItem(const BlockIndex& index, const ItemIndex& item) const
 {
-	return m_area.getItems().isAdjacentToLocation(item, index);
+	auto adjacents = getAdjacentWithEdgeAndCornerAdjacent(index);
+	for(const BlockIndex& candidate : m_area.getItems().getBlocks(item))
+		if(adjacents.contains(candidate))
+			return true;
+	return false;
 }
 void Blocks::setExposedToSky(const BlockIndex& index, bool exposed)
 {
@@ -457,15 +472,18 @@ BlockIndex Blocks::indexAdjacentToAtCount(const BlockIndex& index, const Adjacen
 	if(m_isEdge[index])
 		return maybeGetIndexFromOffsetOnEdge(getCoordinates(index), adjacentOffsets::all[adjacentCount.get()]);
 	else
-		return index + m_offsetsForAdjacentCountTable[adjacentCount.get()];
+		return index + m_indexOffsetsForAdjacentAll.m_indexData[adjacentCount.get()];
 }
-void Blocks::makeOffsetsForAdjacentCountTable()
+void Blocks::makeIndexOffsetsForAdjacent()
 {
-	uint i = 0;
-	int sy = m_sizeY.get();
-	int sx = m_sizeX.get();
 	for(const Offset3D& offset : adjacentOffsets::all)
-		m_offsetsForAdjacentCountTable[i++] = (offset.z() * sy * sx) + (offset.y() * sx) + offset.x();
+		m_indexOffsetsForAdjacentAll.insert(*this, offset);
+	for(const Offset3D& offset : adjacentOffsets::allExceptDirectlyAboveAndBelow)
+		m_indexOffsetsForAdjacentAllExceptDirectlyAboveAndBelow.insert(*this, offset);
+	for(const Offset3D& offset : adjacentOffsets::edgeAndCorner)
+		m_indexOffsetsForAdjacentOnlyEdgesAndCorners.insert(*this, offset);
+	for(const Offset3D& offset : adjacentOffsets::directAndEdge)
+		m_indexOffsetsForAdjacentDirectAndEdge.insert(*this, offset);
 }
 Offset3D Blocks::relativeOffsetTo(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
