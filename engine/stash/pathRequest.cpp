@@ -53,7 +53,7 @@ void PathRequest::createGoToFrom(Area& area, const ActorIndex& actor, const Bloc
 	Blocks& blocks = area.getBlocks();
 	FactionId faction;
 	if(unreserved)
-		faction = area.getActors().getFactionId(actor);
+		faction = area.getActors().getFaction(actor);
 	// TODO: Pathing to a specific block that is reserved should do nothing but instead we iterate every block in range.
 	// 	fix by adding a predicate to path request which prevents the call to findPath.
 	DestinationCondition destinationCondition = [destination, &blocks, faction](const BlockIndex& index, const Facing4&) {
@@ -73,7 +73,7 @@ void PathRequest::createGoToAnyOf(Area& area, const ActorIndex& actor, BlockIndi
 	if(unreserved)
 	{
 		assert(area.getActors().getFaction(actor).exists());
-		FactionId faction = area.getActors().getFactionId(actor);
+		FactionId faction = area.getActors().getFaction(actor);
 		destinations.remove_if([&blocks, faction](const BlockIndex& index){ return !blocks.isReserved(index, faction); });
 	}
 	MoveTypeId moveType = actors.getMoveType(actor);
@@ -155,7 +155,7 @@ void PathRequest::createGoAdjacentToFluidType(Area& area, const ActorIndex& acto
 void PathRequest::createGoAdjacentToDesignation(Area& area, const ActorIndex& actor, const BlockDesignation& designation, bool detour, bool unreserved, const DistanceInBlocks& maxRange, bool reserve)
 {
 	m_designation = designation;
-	FactionId faction = area.getActors().getFactionId(actor);
+	FactionId faction = area.getActors().getFaction(actor);
 	AreaHasBlockDesignationsForFaction& designations = area.m_blockDesignations.getForFaction(faction);
 	auto offset = designations.getOffsetForDesignation(designation);
 	std::function<bool(BlockIndex)> predicate = [&, offset](const BlockIndex& block){
@@ -173,7 +173,7 @@ void PathRequest::createGoToCondition(Area& area, const ActorIndex& actor, Desti
 {
 	FactionId faction;
 	if(unreserved)
-		faction = area.getActors().getFactionId(actor);
+		faction = area.getActors().getFaction(actor);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	DestinationCondition destinationCondition;
@@ -210,7 +210,7 @@ void PathRequest::createGoAdjacentToConditionFrom(Area& area, const ActorIndex& 
 	FactionId faction;
 	if(unreserved)
 	{
-		faction = area.getActors().getFactionId(actor);
+		faction = area.getActors().getFaction(actor);
 		assert(faction.exists());
 		m_unreserved = true;
 	}

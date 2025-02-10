@@ -123,6 +123,7 @@ public:
 		}), m_data.end());
 	}
 	void reserve(uint size) { m_data.reserve(size); }
+	void resize(uint size) { m_data.resize(size); }
 	[[nodiscard]] bool contains(const T& value) const { return std::ranges::find(m_data, value) != m_data.end(); }
 	template<typename Predicate>
 	[[nodiscard]] bool containsAny(Predicate&& predicate) const { return std::ranges::find_if(m_data, predicate) != m_data.end(); }

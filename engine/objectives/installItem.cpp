@@ -40,7 +40,7 @@ FindPathResult InstallItemPathRequest::readStep(Area& area, const TerrainFacade&
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	auto destinationCondition = [&, actorIndex](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
 	{
-		FactionId faction = actors.getFactionId(actorIndex);
+		FactionId faction = actors.getFaction(actorIndex);
 		return {area.m_hasInstallItemDesignations.getForFaction(faction).contains(block), block};
 	};
 	constexpr bool adjacent = true;
@@ -57,7 +57,7 @@ void InstallItemPathRequest::writeStep(Area& area, FindPathResult& result)
 	else
 	{
 		BlockIndex block = result.blockThatPassedPredicate;
-		auto& hasInstallItemDesignations = area.m_hasInstallItemDesignations.getForFaction(actors.getFactionId(actorIndex));
+		auto& hasInstallItemDesignations = area.m_hasInstallItemDesignations.getForFaction(actors.getFaction(actorIndex));
 		if(!hasInstallItemDesignations.contains(block) || !hasInstallItemDesignations.getForBlock(block).canAddWorker(actorIndex))
 			// Canceled or reserved, try again.
 			m_installItemObjective.execute(area, actorIndex);
@@ -91,7 +91,7 @@ void InstallItemObjective::execute(Area& area, const ActorIndex& actor)
 void InstallItemObjective::cancel(Area& area, const ActorIndex& actor) { area.getActors().move_pathRequestMaybeCancel(actor); m_project->removeWorker(actor); }
 bool InstallItemObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
-	return !area.m_hasInstallItemDesignations.getForFaction(area.getActors().getFactionId(actor)).empty();
+	return !area.m_hasInstallItemDesignations.getForFaction(area.getActors().getFaction(actor)).empty();
 }
 std::unique_ptr<Objective> InstallItemObjectiveType::makeFor(Area&, const ActorIndex&) const
 {

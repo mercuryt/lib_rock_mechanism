@@ -81,7 +81,7 @@ void BanditsArriveDramaArc::callback()
 					.species=species,
 					.percentGrown=Percent::create(random.getInRange(70,100)),
 					.location=location,
-					.faction=actors.getFactionId(m_leader.getIndex(actors.m_referenceData)),
+					.faction=actors.getFaction(m_leader.getIndex(actors.m_referenceData)),
 					.hasSidearm=true,
 					.hasLongarm=random.chance(0.6),
 					.hasLightArmor=random.chance(0.9),

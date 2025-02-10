@@ -657,14 +657,14 @@ void AreaHasStockPilesForFaction::removeQuery(StockPile& stockPile, const ItemQu
 }
 bool AreaHasStockPilesForFaction::isAnyHaulingAvailableFor([[maybe_unused]] const ActorIndex& actor) const
 {
-	assert(m_faction == m_area.getActors().getFactionId(actor));
+	assert(m_faction == m_area.getActors().getFaction(actor));
 	return !m_itemsToBeStockPiled.empty();
 }
 ItemIndex AreaHasStockPilesForFaction::getHaulableItemForAt(const ActorIndex& actor, const BlockIndex& block)
 {
 	assert(m_area.getActors().getFaction(actor).exists());
 	Blocks& blocks = m_area.getBlocks();
-	FactionId faction = m_area.getActors().getFactionId(actor);
+	FactionId faction = m_area.getActors().getFaction(actor);
 	Items& items = m_area.getItems();
 	if(blocks.isReserved(block, faction))
 		return ItemIndex::null();

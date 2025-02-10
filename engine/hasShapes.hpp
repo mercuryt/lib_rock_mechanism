@@ -93,11 +93,6 @@ std::vector<std::pair<uint32_t, Index>> HasShapes<Derived, Index>::getSortOrder(
 	return sortOrder;
 }
 template<class Derived, class Index>
-FactionId HasShapes<Derived, Index>::getFaction(const Index& index) const
-{
-	return m_faction[index];
-}
-template<class Derived, class Index>
 bool HasShapes<Derived, Index>::isAdjacentToActor(const Index& index, const ActorIndex& actor) const
 {
 	return isAdjacentToActorAt(index, m_location[index], m_facing[index], actor);

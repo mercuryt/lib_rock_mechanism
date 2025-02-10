@@ -48,7 +48,7 @@ void DigPathRequest::writeStep(Area& area, FindPathResult& result)
 	{
 		// No need to reserve here, we are just checking for access.
 		BlockIndex target = result.blockThatPassedPredicate;
-		DigProject& project = area.m_hasDigDesignations.getForFactionAndBlock(actors.getFactionId(actorIndex), target);
+		DigProject& project = area.m_hasDigDesignations.getForFactionAndBlock(actors.getFaction(actorIndex), target);
 		if(project.canAddWorker(actorIndex))
 			m_digObjective.joinProject(project, actorIndex);
 		else
@@ -88,7 +88,7 @@ void DigObjective::execute(Area& area, const ActorIndex& actor)
 		{
 			if(!getJoinableProjectAt(area, block, actor))
 				return false;
-			project = &area.m_hasDigDesignations.getForFactionAndBlock(actors.getFactionId(actor), block);
+			project = &area.m_hasDigDesignations.getForFactionAndBlock(actors.getFaction(actor), block);
 			if(project->canAddWorker(actor))
 				return true;
 			return false;
@@ -145,7 +145,7 @@ DigProject* DigObjective::getJoinableProjectAt(Area& area, BlockIndex block, con
 {
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	FactionId faction = actors.getFactionId(actor);
+	FactionId faction = actors.getFaction(actor);
 	if(!blocks.designation_has(block, faction, BlockDesignation::Dig))
 		return nullptr;
 	DigProject& output = area.m_hasDigDesignations.getForFactionAndBlock(faction, block);
@@ -159,7 +159,7 @@ bool DigObjective::joinableProjectExistsAt(Area& area, BlockIndex block, const A
 {
 	[[maybe_unused]] Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	FactionId faction = actors.getFactionId(actor);
+	FactionId faction = actors.getFaction(actor);
 	assert(blocks.designation_has(block, faction, BlockDesignation::Dig));
 	DigProject& output = area.m_hasDigDesignations.getForFactionAndBlock(faction, block);
 	if(!output.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&output))
@@ -171,7 +171,7 @@ bool DigObjective::joinableProjectExistsAt(Area& area, BlockIndex block, const A
 bool DigObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
 	//TODO: check for any picks?
-	return area.m_hasDigDesignations.areThereAnyForFaction(area.getActors().getFactionId(actor));
+	return area.m_hasDigDesignations.areThereAnyForFaction(area.getActors().getFaction(actor));
 }
 std::unique_ptr<Objective> DigObjectiveType::makeFor(Area&, const ActorIndex&) const
 {

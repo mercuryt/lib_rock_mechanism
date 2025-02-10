@@ -47,7 +47,7 @@ void HarvestEvent::clearReferences(Simulation&, Area*) { m_harvestObjective.m_ha
 // Objective type.
 bool HarvestObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
-	return area.m_hasFarmFields.hasHarvestDesignations(area.getActors().getFactionId(actor));
+	return area.m_hasFarmFields.hasHarvestDesignations(area.getActors().getFaction(actor));
 }
 std::unique_ptr<Objective> HarvestObjectiveType::makeFor(Area& area, const ActorIndex&) const
 {
@@ -112,7 +112,7 @@ void HarvestObjective::cancel(Area& area, const ActorIndex& actor)
 	actors.move_pathRequestMaybeCancel(actor);
 	m_harvestEvent.maybeUnschedule();
 	if(m_block.exists() && blocks.plant_exists(m_block) && plants.readyToHarvest(blocks.plant_get(m_block)))
-		area.m_hasFarmFields.getForFaction(actors.getFactionId(actor)).addHarvestDesignation(blocks.plant_get(m_block));
+		area.m_hasFarmFields.getForFaction(actors.getFaction(actor)).addHarvestDesignation(blocks.plant_get(m_block));
 }
 void HarvestObjective::select(Area& area, const BlockIndex& block, const ActorIndex& actor)
 {
@@ -122,7 +122,7 @@ void HarvestObjective::select(Area& area, const BlockIndex& block, const ActorIn
 	assert(blocks.plant_exists(block));
 	assert(plants.readyToHarvest(blocks.plant_get(block)));
 	m_block = block;
-	area.m_hasFarmFields.getForFaction(actors.getFactionId(actor)).removeHarvestDesignation(blocks.plant_get(block));
+	area.m_hasFarmFields.getForFaction(actors.getFaction(actor)).removeHarvestDesignation(blocks.plant_get(block));
 }
 void HarvestObjective::begin(Area& area, const ActorIndex& actor)
 {
@@ -151,7 +151,7 @@ bool HarvestObjective::blockContainsHarvestablePlant(Area& area, const BlockInde
 	Actors& actors = area.getActors();
 	Blocks& blocks = area.getBlocks();
 	Plants& plants = area.getPlants();
-	return blocks.plant_exists(block) && plants.readyToHarvest(blocks.plant_get(block)) && !blocks.isReserved(block, actors.getFactionId(actor));
+	return blocks.plant_exists(block) && plants.readyToHarvest(blocks.plant_get(block)) && !blocks.isReserved(block, actors.getFaction(actor));
 }
 HarvestPathRequest::HarvestPathRequest(Area& area, HarvestObjective& objective, const ActorIndex& actorIndex) :
 	m_objective(objective)

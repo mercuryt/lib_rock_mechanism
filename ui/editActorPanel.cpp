@@ -7,6 +7,7 @@
 #include "../engine/simulation/hasItems.h"
 #include "../engine/body.h"
 #include "../engine/bodyType.h"
+#include "../engine/hasShapes.hpp"
 #include <TGUI/Widgets/ChildWindow.hpp>
 #include <TGUI/Widgets/ComboBox.hpp>
 #include <TGUI/Widgets/EditBox.hpp>

@@ -430,7 +430,7 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, cons
 void HasCraftingLocationsAndJobsForFaction::makeAndAssignStepProject(CraftJob& craftJob, const BlockIndex& location, CraftObjective& objective, const ActorIndex& actor)
 {
 	Actors& actors = m_area.getActors();
-	craftJob.craftStepProject = std::make_unique<CraftStepProject>(actors.getFactionId(actor), m_area, location, *craftJob.stepIterator, craftJob);
+	craftJob.craftStepProject = std::make_unique<CraftStepProject>(actors.getFaction(actor), m_area, location, *craftJob.stepIterator, craftJob);
 	std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<CraftStepProjectHasShapeDishonorCallback>(*craftJob.craftStepProject.get());
 	craftJob.craftStepProject->setLocationDishonorCallback(std::move(dishonorCallback));
 	craftJob.craftStepProject->addWorkerCandidate(actor, objective);
@@ -462,7 +462,7 @@ CraftStepTypeCategoryId HasCraftingLocationsAndJobsForFaction::getDisplayStepTyp
 CraftJob* HasCraftingLocationsAndJobsForFaction::getJobForAtLocation(const ActorIndex& actor, const SkillTypeId& skillType, const BlockIndex& block, const SmallSet<CraftJob*>& excludeJobs)
 {
 	Actors& actors = m_area.getActors();
-	assert(!m_area.getBlocks().isReserved(block, actors.getFactionId(actor)));
+	assert(!m_area.getBlocks().isReserved(block, actors.getFaction(actor)));
 	if(!m_stepTypeCategoriesByLocation.contains(block))
 		return nullptr;
 	for(CraftStepTypeCategoryId category : m_stepTypeCategoriesByLocation[block])

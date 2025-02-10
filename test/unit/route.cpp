@@ -394,7 +394,7 @@ TEST_CASE("route_5_5_5")
 		CHECK(actors.move_getPath(actor).empty());
 		blocks.blockFeature_construct(rampLocation, ramp, marble);
 		CHECK(blocks.shape_shapeAndMoveTypeCanEnterEverFrom(rampLocation, actors.getShape(actor), actors.getMoveType(actor), adjacentToRamp));
-		CHECK(blocks.getAdjacentWithEdgeAndCornerAdjacentUnfiltered(adjacentToRamp)[13] == rampLocation);
+		CHECK(blocks.getAdjacentWithEdgeAndCornerAdjacent(adjacentToRamp)[13] == rampLocation);
 		auto& facade = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor));
 		CHECK(facade.getValueForBit(adjacentToRamp, rampLocation));
 		bool canEnterFrom = facade.canEnterFrom(adjacentToRamp, AdjacentIndex::create(13));

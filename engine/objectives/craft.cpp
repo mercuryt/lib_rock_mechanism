@@ -31,7 +31,7 @@ FindPathResult CraftPathRequest::readStep(Area& area, const TerrainFacade& terra
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	FactionId faction = actors.getFactionId(actorIndex);
+	FactionId faction = actors.getFaction(actorIndex);
 	HasCraftingLocationsAndJobsForFaction& hasCrafting = area.m_hasCraftingLocationsAndJobs.getForFaction(faction);
 	Blocks& blocks = area.getBlocks();
 	SkillTypeId skillType = m_craftObjective.m_skillType;
@@ -71,7 +71,7 @@ void CraftPathRequest::writeStep(Area& area, FindPathResult& result)
 	}
 	BlockIndex block = result.blockThatPassedPredicate;
 	SkillTypeId skillType = m_craftObjective.m_skillType;
-	FactionId faction = actors.getFactionId(actorIndex);
+	FactionId faction = actors.getFaction(actorIndex);
 	auto pair = std::make_pair(area.m_hasCraftingLocationsAndJobs.getForFaction(faction).getJobForAtLocation(actorIndex, skillType, block, m_craftObjective.getFailedJobs()), block);
 	m_craftJob = pair.first;
 	m_location = pair.second;
@@ -81,7 +81,7 @@ void CraftPathRequest::writeStep(Area& area, FindPathResult& result)
 	else
 	{
 		// Selected work loctaion has been reserved, try again.
-		FactionId faction = actors.getFactionId(actorIndex);
+		FactionId faction = actors.getFaction(actorIndex);
 		if(area.getBlocks().isReserved(m_location, faction))
 		{
 			m_craftObjective.reset(area, actorIndex);
@@ -109,7 +109,7 @@ CraftObjectiveType::CraftObjectiveType(const Json& data, [[maybe_unused]] Deseri
 bool CraftObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
 	Actors& actors = area.getActors();
-	auto& hasCrafting = area.m_hasCraftingLocationsAndJobs.getForFaction(actors.getFactionId(actor));
+	auto& hasCrafting = area.m_hasCraftingLocationsAndJobs.getForFaction(actors.getFaction(actor));
 	if(!hasCrafting.m_unassignedProjectsBySkill.contains(m_skillType))
 	{
 		// No jobs needing this skill.

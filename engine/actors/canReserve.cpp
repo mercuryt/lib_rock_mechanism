@@ -26,7 +26,7 @@ bool Actors::canReserve_tryToReserveLocation(const ActorIndex& index, const Bloc
 {
 	if(callback == nullptr)
 		callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_area, m_area.getActors().m_referenceData.getReference(index));
-	if(m_area.getBlocks().isReserved(block, getFactionId(index)))
+	if(m_area.getBlocks().isReserved(block, getFaction(index)))
 		return false;
 	canReserve_reserveLocation(index, block, std::move(callback));
 	return true;

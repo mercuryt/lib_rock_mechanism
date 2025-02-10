@@ -377,7 +377,7 @@ void HasObjectives::destroy(Area& area, Objective& objective)
 			if(wasCarrying.isItem())
 			{
 				ItemIndex item = wasCarrying.getItem();
-				const FactionId faction = actors.getFactionId(m_actor);
+				const FactionId faction = actors.getFaction(m_actor);
 				if(area.m_hasStockPiles.contains(faction))
 					area.m_hasStockPiles.getForFaction(faction).addItem(item);
 			}

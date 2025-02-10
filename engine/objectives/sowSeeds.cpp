@@ -23,7 +23,7 @@ void SowSeedsEvent::execute(Simulation&, Area* area)
 	Blocks& blocks = area->getBlocks();
 	BlockIndex block = m_objective.m_block;
 	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
-	FactionId faction = actors.getFactionId(actor);
+	FactionId faction = actors.getFaction(actor);
 	if(!blocks.farm_contains(block, faction))
 	{
 		// BlockIndex is no longer part of a field. It may have been undesignated or it may no longer be a suitable place to grow the selected plant.
@@ -38,7 +38,7 @@ void SowSeedsEvent::execute(Simulation&, Area* area)
 void SowSeedsEvent::clearReferences(Simulation&, Area*){ m_objective.m_event.clearPointer(); }
 bool SowSeedsObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
-	return area.m_hasFarmFields.hasSowSeedsDesignations(area.getActors().getFactionId(actor));
+	return area.m_hasFarmFields.hasSowSeedsDesignations(area.getActors().getFaction(actor));
 }
 std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Area& area, const ActorIndex&) const
 {
@@ -68,7 +68,7 @@ Json SowSeedsObjective::toJson() const
 BlockIndex SowSeedsObjective::getBlockToSowAt(Area& area, const BlockIndex& location, Facing4 facing, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
-	FactionId faction = actors.getFactionId(actor);
+	FactionId faction = actors.getFaction(actor);
 	AreaHasBlockDesignationsForFaction& designations = area.m_blockDesignations.getForFaction(faction);
 	Blocks& blocks = area.getBlocks();
 	auto offset = designations.getOffsetForDesignation(BlockDesignation::SowSeeds);
@@ -86,7 +86,7 @@ void SowSeedsObjective::execute(Area& area, const ActorIndex& actor)
 	{
 		if(actors.isAdjacentToLocation(actor, m_block))
 		{
-			FarmField* field = blocks.farm_get(m_block, actors.getFactionId(actor));
+			FarmField* field = blocks.farm_get(m_block, actors.getFaction(actor));
 			if(field != nullptr && blocks.plant_canGrowHereAtSomePointToday(m_block, field->plantSpecies))
 			{
 				begin(area, actor);
@@ -101,7 +101,7 @@ void SowSeedsObjective::execute(Area& area, const ActorIndex& actor)
 	else
 	{
 		// Check if we can use an adjacent as m_block.
-		if(actors.allOccupiedBlocksAreReservable(actor, actors.getFactionId(actor)))
+		if(actors.allOccupiedBlocksAreReservable(actor, actors.getFaction(actor)))
 		{
 			BlockIndex block = getBlockToSowAt(area, actors.getLocation(actor), actors.getFacing(actor), actor);
 			if(block.exists())
@@ -122,7 +122,7 @@ void SowSeedsObjective::cancel(Area& area, const ActorIndex& actor)
 	actors.move_pathRequestMaybeCancel(actor);
 	m_event.maybeUnschedule();
 	auto& blocks = area.getBlocks();
-	FactionId faction = actors.getFactionId(actor);
+	FactionId faction = actors.getFaction(actor);
 	if(m_block.exists() && blocks.farm_contains(m_block, faction))
 	{
 		FarmField* field = blocks.farm_get(m_block, faction);
@@ -138,10 +138,10 @@ void SowSeedsObjective::select(Area& area, const BlockIndex& block, const ActorI
 	[[maybe_unused]] Blocks& blocks = area.getBlocks();
 	[[maybe_unused]] Actors& actors = area.getActors();
 	assert(!blocks.plant_exists(block));
-	assert(blocks.farm_contains(block, actors.getFactionId(actor)));
+	assert(blocks.farm_contains(block, actors.getFaction(actor)));
 	assert(m_block.empty());
 	m_block = block;
-	area.m_hasFarmFields.getForFaction(actors.getFactionId(actor)).removeSowSeedsDesignation(block);
+	area.m_hasFarmFields.getForFaction(actors.getFaction(actor)).removeSowSeedsDesignation(block);
 }
 void SowSeedsObjective::begin(Area& area, const ActorIndex& actor)
 {
@@ -158,7 +158,7 @@ void SowSeedsObjective::reset(Area& area, const ActorIndex& actor)
 bool SowSeedsObjective::canSowAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const
 {
 	Actors& actors = area.getActors();
-	FactionId faction = actors.getFactionId(actor);
+	FactionId faction = actors.getFaction(actor);
 	auto& blocks = area.getBlocks();
 	return blocks.designation_has(block, faction, BlockDesignation::SowSeeds) && !blocks.isReserved(block, faction);
 }

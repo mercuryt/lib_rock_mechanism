@@ -43,7 +43,7 @@ TargetedHaulProject& AreaHasTargetedHauling::begin(const SmallSet<ActorIndex>& w
 {
 	Actors& actors = m_area.getActors();
 	ItemReference ref = m_area.getItems().getReference(item);
-	TargetedHaulProject& project = m_projects.emplace_back(actors.getFactionId(workers.front()), m_area, destination, ref);
+	TargetedHaulProject& project = m_projects.emplace_back(actors.getFaction(workers.front()), m_area, destination, ref);
 	for(ActorIndex actor : workers)
 	{
 		std::unique_ptr<Objective> objective = std::make_unique<TargetedHaulObjective>(project);

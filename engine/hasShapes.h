@@ -48,8 +48,7 @@ public:
 	[[nodiscard]] bool hasLocation(const Index& index) const { return getLocation(index).exists(); }
 	[[nodiscard]] Facing4 getFacing(const Index& index) const { return m_facing[index]; }
 	[[nodiscard]] const auto& getBlocks(const Index& index) const { return m_blocks[index]; }
-	[[nodiscard]] FactionId getFactionId(const Index& index) const { return m_faction[index]; }
-	[[nodiscard]] FactionId getFaction(const Index& index) const;
+	[[nodiscard]] FactionId getFaction(const Index& index) const { return m_faction[index]; }
 	[[nodiscard]] bool hasFaction(const Index& index) const { return m_faction[index].exists(); }
 	[[nodiscard]] bool isStatic(const Index& index) const { return m_static[index]; }
 	[[nodiscard]] bool isAdjacentToLocation(const Index& index, const BlockIndex& block) const;

@@ -32,7 +32,7 @@ FindPathResult DrinkPathRequest::readStep(Area& area, const TerrainFacade& terra
 		return {m_drinkObjective.containsSomethingDrinkable(area, block, actorIndex), block};
 	};
 	constexpr bool useAnyBlock = true;
-	return terrainFacade.findPathToConditionBreadthFirst<useAnyBlock, decltype(destinationCondition)>(destinationCondition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_drinkObjective.m_detour, adjacent, actors.getFactionId(actorIndex), DistanceInBlocks::max());
+	return terrainFacade.findPathToConditionBreadthFirst<useAnyBlock, decltype(destinationCondition)>(destinationCondition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_drinkObjective.m_detour, adjacent, actors.getFaction(actorIndex), DistanceInBlocks::max());
 }
 DrinkPathRequest::DrinkPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
 	PathRequestBreadthFirst(data, area),
