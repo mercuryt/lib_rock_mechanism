@@ -50,6 +50,9 @@ class Blocks
 	OffsetSetSIMD<24> m_indexOffsetsForAdjacentAllExceptDirectlyAboveAndBelow;
 	OffsetSetSIMD<20> m_indexOffsetsForAdjacentOnlyEdgesAndCorners;
 	OffsetSetSIMD<18> m_indexOffsetsForAdjacentDirectAndEdge;
+	OffsetSetSIMD<12> m_indexOffsetsForAdjacentEdge;
+	OffsetSetSIMD<4> m_indexOffsetsForAdjacentEdgeSameZ;
+	OffsetSetSIMD<4> m_indexOffsetsForAdjacentDirectSameZ;
 	BlockIndexMap<FactionIdMap<FarmField*>> m_farmFields;
 	BlockIndexMap<FactionIdMap<BlockIsPartOfStockPile>> m_stockPiles;
 	StrongVector<std::unique_ptr<Reservable>, BlockIndex> m_reservables;
@@ -123,9 +126,9 @@ public:
 	[[nodiscard]] BlockIndexSetSIMD<24> getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexSetSIMD<20> getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexSetSIMD<18> getAdjacentWithEdgeAdjacent(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<12> getEdgeAdjacentOnly(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<4> getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndexArrayNotNull<4> getAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexSetSIMD<12> getEdgeAdjacentOnly(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexSetSIMD<4> getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexSetSIMD<4> getAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
 	[[nodiscard]] const auto& getOffsetsForAdjacentCountTable() const { return m_indexOffsetsForAdjacentAll; }
 	//TODO: Under what circumstances is this integer distance preferable to taxiDistance or fractional distance?
 	[[nodiscard]] DistanceInBlocks distance(const BlockIndex& index, const BlockIndex& other) const;

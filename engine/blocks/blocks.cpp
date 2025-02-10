@@ -327,17 +327,26 @@ BlockIndexSetSIMD<18> Blocks::getAdjacentWithEdgeAdjacent(const BlockIndex& inde
 	else
 		return m_indexOffsetsForAdjacentDirectAndEdge.getIndicesInBounds(*this, index);
 }
-BlockIndexArrayNotNull<12> Blocks::getEdgeAdjacentOnly(const BlockIndex& index) const
+BlockIndexSetSIMD<12> Blocks::getEdgeAdjacentOnly(const BlockIndex& index) const
 {
-	return getAdjacentWithOffsets<12, true>(*this, index, adjacentOffsets::edge.begin());
+	if(isEdge(index))
+		return m_indexOffsetsForAdjacentEdge.getIndicesMaybeOutOfBounds(*this, index);
+	else
+		return m_indexOffsetsForAdjacentEdge.getIndicesInBounds(*this, index);
 }
-BlockIndexArrayNotNull<4> Blocks::getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const
+BlockIndexSetSIMD<4> Blocks::getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const
 {
-	return getAdjacentWithOffsets<4, true>(*this, index, adjacentOffsets::edgeWithSameZ.begin());
+	if(isEdge(index))
+		return m_indexOffsetsForAdjacentEdgeSameZ.getIndicesMaybeOutOfBounds(*this, index);
+	else
+		return m_indexOffsetsForAdjacentEdgeSameZ.getIndicesInBounds(*this, index);
 }
-BlockIndexArrayNotNull<4> Blocks::getAdjacentOnSameZLevelOnly(const BlockIndex& index) const
+BlockIndexSetSIMD<4> Blocks::getAdjacentOnSameZLevelOnly(const BlockIndex& index) const
 {
-	return getAdjacentWithOffsets<4, true>(*this, index, adjacentOffsets::directWithSameZ.begin());
+	if(isEdge(index))
+		return m_indexOffsetsForAdjacentDirectSameZ.getIndicesMaybeOutOfBounds(*this, index);
+	else
+		return m_indexOffsetsForAdjacentDirectSameZ.getIndicesInBounds(*this, index);
 }
 DistanceInBlocks Blocks::distance(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
@@ -484,6 +493,12 @@ void Blocks::makeIndexOffsetsForAdjacent()
 		m_indexOffsetsForAdjacentOnlyEdgesAndCorners.insert(*this, offset);
 	for(const Offset3D& offset : adjacentOffsets::directAndEdge)
 		m_indexOffsetsForAdjacentDirectAndEdge.insert(*this, offset);
+	for(const Offset3D& offset : adjacentOffsets::edge)
+		m_indexOffsetsForAdjacentEdge.insert(*this, offset);
+	for(const Offset3D& offset : adjacentOffsets::edgeWithSameZ)
+		m_indexOffsetsForAdjacentEdgeSameZ.insert(*this, offset);
+	for(const Offset3D& offset : adjacentOffsets::directWithSameZ)
+		m_indexOffsetsForAdjacentDirectSameZ.insert(*this, offset);
 }
 Offset3D Blocks::relativeOffsetTo(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
