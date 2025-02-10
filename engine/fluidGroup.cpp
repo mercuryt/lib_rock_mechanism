@@ -25,7 +25,7 @@
 FluidGroup::FluidGroup(Allocator& allocator, const FluidTypeId& ft, BlockIndices& blocks, Area& area, bool checkMerge) :
 	m_fillQueue(allocator), m_drainQueue(allocator), m_fluidType(ft)
 {
-	for(BlockIndex block : blocks)
+	for(const BlockIndex& block : blocks)
 		if(area.getBlocks().fluid_contains(block, m_fluidType))
 			addBlock(area, block, checkMerge);
 }
@@ -64,7 +64,7 @@ void FluidGroup::addBlock(Area& area, const BlockIndex& block, bool checkMerge)
 		m_diagonalBlocks.maybeRemove(block);
 	// Add adjacent if fluid can enter.
 	SmallSet<FluidGroup*> toMerge;
-	for(BlockIndex adjacent : area.getBlocks().getDirectlyAdjacent(block))
+	for(const BlockIndex& adjacent : area.getBlocks().getDirectlyAdjacent(block))
 		if(adjacent.exists())
 		{
 			if(!area.getBlocks().fluid_canEnterEver(adjacent))
@@ -96,7 +96,7 @@ void FluidGroup::removeBlock(Area& area, const BlockIndex& block)
 	setUnstable(area);
 	m_drainQueue.removeBlock(block);
 	m_potentiallyNoLongerAdjacentFromSyncronusStep.add(block);
-	for(BlockIndex adjacent : area.getBlocks().getDirectlyAdjacent(block))
+	for(const BlockIndex& adjacent : area.getBlocks().getDirectlyAdjacent(block))
 		if(adjacent.exists() && area.getBlocks().fluid_canEnterEver(adjacent))
 		{
 			//Check for group split.
@@ -109,12 +109,12 @@ void FluidGroup::removeBlock(Area& area, const BlockIndex& block)
 		}
 	if constexpr (Config::fluidsSeepDiagonalModifier != 0)
 	{
-		for(BlockIndex diagonal : area.getBlocks().getEdgeAndCornerAdjacentOnly(block))
+		for(const BlockIndex& diagonal : area.getBlocks().getEdgeAndCornerAdjacentOnly(block))
 			if(area.getBlocks().fluid_canEnterEver(diagonal) && m_diagonalBlocks.contains(diagonal))
 			{
 				//TODO: m_potentiallyNoLongerDiagonalFromSyncronusCode
 				bool found = false;
-				for(BlockIndex doubleDiagonal : area.getBlocks().getEdgeAndCornerAdjacentOnly(diagonal))
+				for(const BlockIndex& doubleDiagonal : area.getBlocks().getEdgeAndCornerAdjacentOnly(diagonal))
 					if(m_drainQueue.m_set.contains(doubleDiagonal))
 					{
 						found = true;
@@ -133,7 +133,7 @@ void FluidGroup::setUnstable(Area& area)
 void FluidGroup::addDiagonalsFor(Area& area, const BlockIndex& block)
 {
 	auto& blocks = area.getBlocks();
-	for(BlockIndex diagonal : blocks.getEdgeAdjacentOnSameZLevelOnly(block))
+	for(const BlockIndex& diagonal : blocks.getEdgeAdjacentOnSameZLevelOnly(block))
 		if(blocks.fluid_canEnterEver(diagonal) && !m_fillQueue.m_set.contains(diagonal) &&
 				!m_drainQueue.m_set.contains(diagonal) && !m_diagonalBlocks.contains(diagonal))
 		{
@@ -155,7 +155,7 @@ void FluidGroup::addMistFor(Area& area, const BlockIndex& block)
 			!blocks.solid_is(blocks.getBlockBelow(block))
 		)
 	)
-		for(BlockIndex adjacent : blocks.getAdjacentOnSameZLevelOnly(block))
+		for(const BlockIndex& adjacent : blocks.getAdjacentOnSameZLevelOnly(block))
 			if(blocks.fluid_canEnterEver(adjacent))
 				blocks.fluid_spawnMist(adjacent, m_fluidType);
 }
@@ -183,7 +183,7 @@ FluidGroup* FluidGroup::merge(Area& area, FluidGroup* smaller)
 	larger->m_drainQueue.merge(smaller->m_drainQueue);
 	larger->m_fillQueue.merge(smaller->m_fillQueue);
 	// Set fluidGroup for merged blocks.
-	for(BlockIndex block : smaller->m_drainQueue.m_set)
+	for(const BlockIndex& block : smaller->m_drainQueue.m_set)
 	{
 		assert(blocks.fluid_contains(block, m_fluidType));
 		blocks.fluid_getData(block, m_fluidType)->group = larger;
@@ -201,7 +201,7 @@ FluidGroup* FluidGroup::merge(Area& area, FluidGroup* smaller)
 		larger->m_diagonalBlocks.merge(smaller->m_diagonalBlocks);
 	}
 	// Merge other fluid groups ment to merge with smaller with larger instead.
-	for(BlockIndex block : smaller->m_futureNewEmptyAdjacents)
+	for(const BlockIndex& block : smaller->m_futureNewEmptyAdjacents)
 	{
 		auto found = blocks.fluid_getData(block, m_fluidType);
 		if(!found)
@@ -383,7 +383,7 @@ void FluidGroup::readStep(Area& area)
 	// Flow loops completed, analyze results.
 	BlockIndices futureBlocks;
 	//futureBlocks.reserve(m_drainQueue.m_set.size() + m_fillQueue.m_futureNoLongerEmpty.size());
-	for(BlockIndex block : m_drainQueue.m_set)
+	for(const BlockIndex& block : m_drainQueue.m_set)
 		if(!m_drainQueue.m_futureEmpty.contains(block))
 			futureBlocks.add(block);
 	futureBlocks.merge(m_fillQueue.m_futureNoLongerEmpty);
@@ -394,9 +394,9 @@ void FluidGroup::readStep(Area& area)
 	}
 	// We can't return here because we need to convert descriptive future into proscriptive future.
 	// Find future blocks for futureEmptyAdjacent.
-	for(BlockIndex block : m_fillQueue.m_futureNoLongerEmpty)
+	for(const BlockIndex& block : m_fillQueue.m_futureNoLongerEmpty)
 	{
-		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(block))
+		for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(block))
 			if(adjacent.exists() && area.getBlocks().fluid_canEnterEver(adjacent) && !m_drainQueue.m_set.contains(adjacent) && !m_fillQueue.m_set.contains(adjacent)
 			  )
 			{
@@ -434,7 +434,7 @@ void FluidGroup::readStep(Area& area)
 	}
 	if constexpr (Config::fluidsSeepDiagonalModifier != 0)
 		for(const BlockIndex& block : possiblyNoLongerDiagonal)
-			for(BlockIndex& doubleDiagonal : area.getBlocks().getEdgeAdjacentOnSameZLevelOnly(block))
+			for(const BlockIndex& doubleDiagonal : area.getBlocks().getEdgeAdjacentOnSameZLevelOnly(block))
 				if(futureBlocks.contains(doubleDiagonal))
 					m_diagonalBlocks.maybeRemove(block);
 	for(const BlockIndex& block : adjacentToFutureEmpty)
@@ -672,7 +672,7 @@ void FluidGroup::splitStep(Area& area)
 	m_futureNewEmptyAdjacents = m_futureGroups.back().futureAdjacent;
 	if constexpr (Config::fluidsSeepDiagonalModifier != 0)
 		m_diagonalBlocks.erase_if([&](const BlockIndex& block){
-			for(BlockIndex diagonal : area.getBlocks().getEdgeAdjacentOnSameZLevelOnly(block))
+			for(const BlockIndex& diagonal : area.getBlocks().getEdgeAdjacentOnSameZLevelOnly(block))
 				if(m_futureGroups.back().members.contains(diagonal))
 					return false;
 			return true;
@@ -695,7 +695,7 @@ void FluidGroup::mergeStep(Area& area)
 	validate(area);
 	auto& blocks = area.getBlocks();
 	// Record merge. First group consumes subsequent groups.
-	for(BlockIndex block : m_futureNewEmptyAdjacents)
+	for(const BlockIndex& block : m_futureNewEmptyAdjacents)
 	{
 		// Fluid groups may be marked merged during merge iteration.
 		if(m_merged)
@@ -717,7 +717,7 @@ void FluidGroup::mergeStep(Area& area)
 CollisionVolume FluidGroup::totalVolume(Area& area) const
 {
 	CollisionVolume output = CollisionVolume::create(m_excessVolume);
-	for(BlockIndex block : m_drainQueue.m_set)
+	for(const BlockIndex& block : m_drainQueue.m_set)
 		output += area.getBlocks().fluid_volumeOfTypeContains(block, m_fluidType);
 	return output;
 }
@@ -754,7 +754,7 @@ void FluidGroup::validate(Area& area) const
 	assert(area.m_hasFluidGroups.contains(*this));
 	if(m_merged || m_destroy || m_disolved)
 		return;
-	for(BlockIndex block : m_drainQueue.m_set)
+	for(const BlockIndex& block : m_drainQueue.m_set)
 	{
 		assert(block.exists());
 		for(const FluidData& fluidData : area.getBlocks().fluid_getAll(block))
@@ -770,7 +770,7 @@ void FluidGroup::validate(Area& area, [[maybe_unused]] SmallSet<FluidGroup*> toE
 {
 	if(m_merged || m_destroy || m_disolved)
 		return;
-	for(BlockIndex block : m_drainQueue.m_set)
+	for(const BlockIndex& block : m_drainQueue.m_set)
 		for(const FluidData& fluidData : area.getBlocks().fluid_getAll(block))
 		{
 			if(fluidData.group == this)
