@@ -176,7 +176,7 @@ BlockIndex Blocks::getIndex(const DistanceInBlocks& x, const DistanceInBlocks& y
 	return getIndex({x,y,z});
 }
 static const Coordinates localSizeMultiples(1, 16, 16*16);
-BlockIndexChunked Blocks::getIndexChunked(Point3D coordinates)
+BlockIndexChunked Blocks::getIndexChunked(Point3D coordinates) const
 {
 	auto chunkOffsets = coordinates.data / 16u;
 	coordinates.data -= chunkOffsets * 16;

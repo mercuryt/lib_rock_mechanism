@@ -38,19 +38,6 @@ struct OffsetSetSIMD
 	template<class Blocks>
 	[[nodiscard]] BlockIndexSetSIMD<size> getIndicesMaybeOutOfBounds(const Blocks& blocks, const BlockIndex& location) const
 	{
-		/*
-		Eigen::Array<int, 1, size> output = m_indexData + (int)location.get();
-		Eigen::Array<int, 3, 1> locationOffsets = blocks.getCoordinates(location).data.template cast<int>();
-		Eigen::Array<int, 3, 1> areaDimensions = blocks.m_dimensions.template cast<int>();
-		for(uint i = 0; i < size; ++i)
-		{
-			Eigen::Array<int, 3, 1> offset = m_offsetData[i].data + locationOffsets;
-			if((offset < 0 || offset >= areaDimensions).any())
-				output[i] = BlockIndex::null().get();
-		}
-		return output;
-		// TODO: finish this non looping version:
-		*/
 		// Indices off the edge are represented by null.
 		Coordinates coordinates = blocks.getCoordinates(location).data;
 		Eigen::Array<int, 3, 1> areaDimensions = blocks.m_dimensions.template cast<int>();

@@ -114,7 +114,7 @@ public:
 	[[nodiscard]] BlockIndex getIndex(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) const;
 	[[nodiscard]] BlockIndex getIndex_i(uint x, uint y, uint z) const;
 	// Pass by value because it will be modified.
-	BlockIndexChunked getIndexChunked(Point3D coordinates);
+	BlockIndexChunked getIndexChunked(Point3D coordinates) const;
 	// Pass by value because it will be modified.
 	[[nodiscard]] Point3D getCoordinates(BlockIndex index) const;
 	Point3D_fractional getCoordinatesFractional(const BlockIndex& index) const;

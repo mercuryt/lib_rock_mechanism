@@ -1,27 +1,20 @@
 #include "cuboidSetSIMD.h"
+#include "sphere.h"
 #include "../config.h"
 void CuboidSetSIMD::reserve(uint capacity)
 {
 	if(capacity < m_capacity)
 		return;
-	m_highX.resize(capacity);
-	m_highY.resize(capacity);
-	m_highZ.resize(capacity);
-	m_lowX.resize(capacity);
-	m_lowY.resize(capacity);
-	m_lowZ.resize(capacity);
+	m_dataHigh.resize(3, capacity);
+	m_dataLow.resize(3, capacity);
 	m_capacity = capacity;
 }
 void CuboidSetSIMD::insert(const Cuboid& cuboid)
 {
 	if(m_size == m_capacity)
 		reserve(m_capacity * Config::goldenRatio);
-	m_highX[m_size] = cuboid.m_highest.x().get();
-	m_highY[m_size] = cuboid.m_highest.y().get();
-	m_highZ[m_size] = cuboid.m_highest.z().get();
-	m_lowX[m_size] = cuboid.m_lowest.x().get();
-	m_lowY[m_size] = cuboid.m_lowest.y().get();
-	m_lowZ[m_size] = cuboid.m_lowest.z().get();
+	m_dataHigh.col(m_size) = cuboid.m_highest.data;
+	m_dataLow.col(m_size) = cuboid.m_lowest.data;
 	++m_size;
 	if(m_boundingBox.empty())
 		m_boundingBox = cuboid;
@@ -30,12 +23,8 @@ void CuboidSetSIMD::insert(const Cuboid& cuboid)
 }
 void CuboidSetSIMD::clear()
 {
-	m_highX.fill(DistanceInBlocks::null().get());
-	m_highY.fill(DistanceInBlocks::null().get());
-	m_highZ.fill(DistanceInBlocks::null().get());
-	m_lowX.fill(DistanceInBlocks::null().get());
-	m_lowY.fill(DistanceInBlocks::null().get());
-	m_lowZ.fill(DistanceInBlocks::null().get());
+	m_dataHigh.fill(DistanceInBlocks::null().get());
+	m_dataLow.fill(DistanceInBlocks::null().get());
 	m_size = 0;
 	m_boundingBox.clear();
 }
@@ -44,15 +33,39 @@ bool CuboidSetSIMD::intersects(const Cuboid& cuboid) const
 	if(!cuboid.intersects(m_boundingBox))
 		return false;
 	// m_size is equal to the last used index. Ignore anything after it.
-	auto highX = m_highX.head(m_size);
-	auto highY = m_highY.head(m_size);
-	auto highZ = m_highZ.head(m_size);
-	auto lowX = m_lowX.head(m_size);
-	auto lowY = m_lowY.head(m_size);
-	auto lowZ = m_lowZ.head(m_size);
-	return
-		!(
-			highX <= cuboid.m_lowest.x().get() || highY <= cuboid.m_lowest.y().get() || highZ <= cuboid.m_lowest.z().get() ||
-			lowX >= cuboid.m_highest.x().get() || lowY >= cuboid.m_highest.y().get() || lowZ >= cuboid.m_highest.z().get()
-		).all();
+	auto truncatedHighView = m_dataHigh.block(0, 0, 3, m_size);
+	auto truncatedLowView = m_dataLow.block(0, 0, 3, m_size);
+	return !(
+		(truncatedHighView < cuboid.m_lowest.data.replicate(1, m_size)).any() ||
+		(truncatedLowView > cuboid.m_highest.data.replicate(1, m_size)).any()
+	);
+}
+Eigen::Array<bool, 1, Eigen::Dynamic> CuboidSetSIMD::indicesOfIntersectingCuboids(const Cuboid& cuboid)
+{
+	auto truncatedHighView = m_dataHigh.block(0, 0, 3, m_size);
+	auto truncatedLowView = m_dataLow.block(0, 0, 3, m_size);
+	return (
+		(truncatedHighView >= cuboid.m_lowest.data.replicate(1, m_size)).colwise().all() &&
+		(truncatedLowView <= cuboid.m_highest.data.replicate(1, m_size)).colwise().all()
+	);
+}
+Eigen::Array<bool, 1, Eigen::Dynamic> CuboidSetSIMD::indicesOfContainedCuboids(const Cuboid& cuboid)
+{
+	auto truncatedHighView = m_dataHigh.block(0, 0, 3, m_size);
+	auto truncatedLowView = m_dataLow.block(0, 0, 3, m_size);
+	return (
+		(truncatedHighView <= cuboid.m_highest.data.replicate(1, m_size)).colwise().all() &&
+		(truncatedLowView >= cuboid.m_lowest.data.replicate(1, m_size)).colwise().all()
+	);
+}
+Eigen::Array<bool, 1, Eigen::Dynamic> CuboidSetSIMD::indicesOfIntersectingCuboids(const Sphere& sphere)
+{
+	int radius = sphere.radius.get();
+	const Eigen::Array<int, 1, 3>& center = sphere.center.data.cast<int>();
+	auto truncatedHighView = m_dataHigh.block(0, 0, 3, m_size).cast<int>();
+	auto truncatedLowView = m_dataLow.block(0, 0, 3, m_size).cast<int>();
+	return !(
+		((truncatedHighView + radius) < center.replicate(1, m_size)).colwise().any() ||
+		((truncatedLowView - radius) > center.replicate(1, m_size)).colwise().any()
+	);
 }

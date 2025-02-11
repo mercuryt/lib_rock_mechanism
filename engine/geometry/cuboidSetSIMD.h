@@ -8,13 +8,9 @@
 
 class CuboidSetSIMD
 {
-	using Coordinates = Eigen::ArrayX<DistanceInBlocksWidth>;
-	Coordinates m_highX;
-	Coordinates m_highY;
-	Coordinates m_highZ;
-	Coordinates m_lowX;
-	Coordinates m_lowY;
-	Coordinates m_lowZ;
+	using Data = Eigen::Array<DistanceInBlocksWidth, 3, Eigen::Dynamic>;
+	Data m_dataHigh;
+	Data m_dataLow;
 	Cuboid m_boundingBox;
 	uint m_size = 0;
 	uint m_capacity = 0;
@@ -26,4 +22,8 @@ public:
 	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
 	[[nodiscard]] uint size() const { return m_size; }
 	[[nodiscard]] uint capacity() const { return m_capacity; }
+	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfIntersectingCuboids(const Cuboid& cuboid);
+	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfContainedCuboids(const Cuboid& cuboid);
+	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfIntersectingCuboids(const Sphere& sphere);
+	[[nodiscard]] const Cuboid& getBoundingBox() const { return m_boundingBox; }
 };
