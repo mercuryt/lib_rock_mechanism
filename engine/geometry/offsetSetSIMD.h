@@ -14,7 +14,8 @@ struct BlockIndexSetSIMD;
 template<uint size>
 struct OffsetSetSIMD
 {
-	using OffsetData = std::array<Offset3D, size>;
+	//using OffsetData = std::array<Offset3D, size>;
+	using OffsetData = Eigen::Array<int, 3, size>;
 	OffsetData m_offsetData;
 	using IndexData = Eigen::Array<int, 1, size>;
 	IndexData m_indexData;
@@ -25,7 +26,7 @@ struct OffsetSetSIMD
 		assert(m_nextIndex < size);
 		Eigen::Array<int, 3, 1> offsetConversionMulitpliers = blocks.m_pointToIndexConversionMultipliers.template cast<int>();
 		m_indexData[m_nextIndex] = (offset.data * offsetConversionMulitpliers).sum();
-		m_offsetData[m_nextIndex++] = offset.data;
+		m_offsetData.col(m_nextIndex++) = offset.data;
 	}
 	template<class Blocks>
 	[[nodiscard]] BlockIndexSetSIMD<size> getIndicesInBounds(const Blocks& blocks, const BlockIndex& location) const
@@ -37,6 +38,7 @@ struct OffsetSetSIMD
 	template<class Blocks>
 	[[nodiscard]] BlockIndexSetSIMD<size> getIndicesMaybeOutOfBounds(const Blocks& blocks, const BlockIndex& location) const
 	{
+		/*
 		Eigen::Array<int, 1, size> output = m_indexData + (int)location.get();
 		Eigen::Array<int, 3, 1> locationOffsets = blocks.getCoordinates(location).data.template cast<int>();
 		Eigen::Array<int, 3, 1> areaDimensions = blocks.m_dimensions.template cast<int>();
@@ -48,12 +50,15 @@ struct OffsetSetSIMD
 		}
 		return output;
 		// TODO: finish this non looping version:
-		/*
+		*/
 		// Indices off the edge are represented by null.
 		Coordinates coordinates = blocks.getCoordinates(location).data;
 		Eigen::Array<int, 3, 1> areaDimensions = blocks.m_dimensions.template cast<int>();
 		Eigen::Array<int, 3, size> offsetSum = m_offsetData.colwise() + coordinates.cast<int>();
-		Eigen::Array<bool, 1, size> inBounds = ((offsetSum.colwise() < areaDimensions).colwise().all() && (offsetSum >= 0).colwise().all());
+		Eigen::Array<bool, 1, size> inBounds = (
+			(offsetSum < areaDimensions.replicate(1, offsetSum.cols())).colwise().all() &&
+			(offsetSum >= 0).colwise().all()
+		);
 		Eigen::Array<int, 1, size> inBoundsInt = inBounds.template cast<int>();
 		Eigen::Array<int, 1, size> outOfBoundsInt = (!inBounds).template cast<int>();
 		// Out of bounds indices have an index equal to location.
@@ -62,6 +67,5 @@ struct OffsetSetSIMD
 		// Add difference to out of bounds indices to set them equal to null.
 		output += outOfBoundsInt * differenceBetweenLocationAndNull;
 		return output;
-		*/
 	}
 };
