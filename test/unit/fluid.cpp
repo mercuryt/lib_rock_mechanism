@@ -1397,7 +1397,7 @@ TEST_CASE("area larger")
 		CHECK(fluidGroup->m_drainQueue.m_set.size() == 5);
 		CHECK(blocks.fluid_volumeOfTypeContains(block, water) == 20);
 		CHECK(blocks.fluid_volumeOfTypeContains(block2, water) == 0);
-		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(block))
+		for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(block))
 			if(blocks.getZ(adjacent) == 1)
 				CHECK(blocks.fluid_volumeOfTypeContains(adjacent, water) == 20);
 		CHECK(!fluidGroup->m_stable);

@@ -218,7 +218,7 @@ void Actors::combat_onMoveFrom(const ActorIndex& index, const BlockIndex& previo
 	// Give all directly adjacent enemies a free hit against this actor.
 	Blocks& blocks = m_area.getBlocks();
 	FactionId faction = m_faction[index];
-	for(BlockIndex block : blocks.getDirectlyAdjacent(previous))
+	for(const BlockIndex& block : blocks.getDirectlyAdjacent(previous))
 		if(block.exists())
 			for(const ActorIndex& adjacent : blocks.actor_getAll(block))
 			{

@@ -62,7 +62,17 @@ struct BlockIndexSetSIMD
 	{
 		SmallSet<BlockIndex> output;
 		output.resize(size);
-		std::ranges::copy(m_data, output);
+		for(const BlockIndexWidth& value : m_data)
+			if(value != BlockIndex::null().get())
+				output.insert(value);
+		return output;
+	}
+	auto toArray() const -> std::array<BlockIndex, size>
+	{
+		std::array<BlockIndex, size> output;
+		uint i = 0;
+		for(const BlockIndexWidth& index : m_data)
+			output[i++] = BlockIndex::create(index);
 		return output;
 	}
 };

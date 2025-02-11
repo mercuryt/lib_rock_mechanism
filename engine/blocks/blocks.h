@@ -51,11 +51,13 @@ class Blocks
 	OffsetSetSIMD<20> m_indexOffsetsForAdjacentOnlyEdgesAndCorners;
 	OffsetSetSIMD<18> m_indexOffsetsForAdjacentDirectAndEdge;
 	OffsetSetSIMD<12> m_indexOffsetsForAdjacentEdge;
+	OffsetSetSIMD<6> m_indexOffsetsForAdjacentDirect;
 	OffsetSetSIMD<4> m_indexOffsetsForAdjacentEdgeSameZ;
 	OffsetSetSIMD<4> m_indexOffsetsForAdjacentDirectSameZ;
 	BlockIndexMap<FactionIdMap<FarmField*>> m_farmFields;
 	BlockIndexMap<FactionIdMap<BlockIsPartOfStockPile>> m_stockPiles;
 	StrongVector<std::unique_ptr<Reservable>, BlockIndex> m_reservables;
+	StrongVector<std::array<BlockIndex, 6>, BlockIndex> m_directlyAdjacent;
 	StrongVector<MaterialTypeId, BlockIndex> m_materialType;
 	StrongVector<std::vector<BlockFeature>, BlockIndex> m_features;
 	StrongVector<std::vector<FluidData>, BlockIndex> m_fluid;
@@ -75,7 +77,6 @@ class Blocks
 	StrongVector<FactionIdMap<SmallSet<Project*>>, BlockIndex> m_projects;
 	StrongVector<SmallMapStable<MaterialTypeId, Fire>*, BlockIndex> m_fires;
 	StrongVector<TemperatureDelta, BlockIndex> m_temperatureDelta;
-	StrongVector<std::array<BlockIndex, 6>, BlockIndex> m_directlyAdjacent;
 	BlocksExposedToSky m_exposedToSky;
 	StrongBitSet<BlockIndex> m_isEdge;
 	StrongBitSet<BlockIndex> m_visible;
@@ -96,9 +97,9 @@ public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void resize(const BlockIndex& count);
 	void initalize(const BlockIndex& index);
-	void recordAdjacent(const BlockIndex& index);
 	void makeIndexOffsetsForAdjacent();
 	void moveContentsTo(const BlockIndex& index, const BlockIndex& other);
+	void recordAdjacent(const BlockIndex& index);
 	// For testing.
 	[[nodiscard]] std::vector<BlockIndex> getAllIndices() const ;
 	[[nodiscard]] Json toJson() const;
@@ -121,12 +122,12 @@ public:
 	[[nodiscard]] BlockIndex getAtFacing(const BlockIndex& index, const Facing6& facing) const;
 	[[nodiscard]] BlockIndex getCenterAtGroundLevel() const;
 	// TODO: Calculate on demand from offset vector?
-	[[nodiscard]] const std::array<BlockIndex, 6>& getDirectlyAdjacent(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexSetSIMD<26> getAdjacentWithEdgeAndCornerAdjacent(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexSetSIMD<24> getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexSetSIMD<20> getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexSetSIMD<18> getAdjacentWithEdgeAdjacent(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexSetSIMD<12> getEdgeAdjacentOnly(const BlockIndex& index) const;
+	[[nodiscard]] const std::array<BlockIndex, 6> getDirectlyAdjacent(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexSetSIMD<4> getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexSetSIMD<4> getAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
 	[[nodiscard]] const auto& getOffsetsForAdjacentCountTable() const { return m_indexOffsetsForAdjacentAll; }
@@ -183,7 +184,7 @@ public:
 		{
 			BlockIndex block = openList.top();
 			openList.pop();
-			for(BlockIndex adjacent : getDirectlyAdjacent(block))
+			for(const BlockIndex& adjacent : getDirectlyAdjacent(block))
 				if(adjacent.exists() && condition(adjacent) && !output.contains(adjacent))
 				{
 					output.add(adjacent);
@@ -205,7 +206,7 @@ public:
 			if(condition(block))
 				return block;
 			open.pop();
-			for(BlockIndex adjacent : getDirectlyAdjacent(block))
+			for(const BlockIndex& adjacent : getDirectlyAdjacent(block))
 				if(adjacent.exists() && taxiDistance(index, adjacent) <= range && !closed.contains(adjacent))
 				{
 					closed.add(adjacent);
