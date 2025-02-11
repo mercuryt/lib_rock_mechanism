@@ -24,10 +24,10 @@ void MistDisperseEvent::execute(Simulation& simulation, Area* area)
 	{
 		// Possibly spread.
 		if(blocks.fluid_getMistInverseDistanceToSource(m_block) > 0)
-			for(BlockIndex adjacent : blocks.getDirectlyAdjacent(m_block))
-				if(adjacent.exists() && blocks.fluid_canEnterEver(adjacent) && 
+			for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(m_block))
+				if(adjacent.exists() && blocks.fluid_canEnterEver(adjacent) &&
 						(
-							blocks.fluid_getMist(adjacent).empty() || 
+							blocks.fluid_getMist(adjacent).empty() ||
 							FluidType::getDensity(blocks.fluid_getMist(adjacent)) < FluidType::getDensity(m_fluidType)
 						)
 				)
@@ -36,7 +36,7 @@ void MistDisperseEvent::execute(Simulation& simulation, Area* area)
 					area->m_eventSchedule.schedule(std::make_unique<MistDisperseEvent>(FluidType::getMistDuration(m_fluidType), simulation, m_fluidType, adjacent));
 				}
 		// Schedule next check.
-		area->m_eventSchedule.schedule(std::make_unique<MistDisperseEvent>(FluidType::getMistDuration(m_fluidType), simulation, m_fluidType, m_block));	
+		area->m_eventSchedule.schedule(std::make_unique<MistDisperseEvent>(FluidType::getMistDuration(m_fluidType), simulation, m_fluidType, m_block));
 		return;
 	}
 	// Mist does not continue to exist here.
@@ -51,16 +51,16 @@ bool MistDisperseEvent::continuesToExist(Area& area) const
 	for(BlockIndex adjacent : blocks.getAdjacentOnSameZLevelOnly(m_block))
 		// if adjacent to falling fluid.
 		if(blocks.fluid_contains(adjacent, m_fluidType))
-		{	
+		{
 			BlockIndex belowAdjacent = blocks.getBlockBelow(adjacent);
 			if(belowAdjacent.exists() && !blocks.solid_is(belowAdjacent))
 				return true;
 		}
-	for(BlockIndex adjacent : blocks.getDirectlyAdjacent(m_block))
+	for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(m_block))
 		// if adjacent to block with mist with lower distance to source.
-		if(adjacent.exists() && 
+		if(adjacent.exists() &&
 			blocks.fluid_getMist(adjacent).exists() &&
-			blocks.fluid_getMistInverseDistanceToSource(adjacent) > blocks.fluid_getMistInverseDistanceToSource(adjacent) 
+			blocks.fluid_getMistInverseDistanceToSource(adjacent) > blocks.fluid_getMistInverseDistanceToSource(adjacent)
 		)
 			return true;
 	return false;

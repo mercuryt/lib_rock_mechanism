@@ -26,9 +26,9 @@ Blocks::Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y,
 	BlockIndex count = BlockIndex::create((x * y * z).get());
 	resize(count);
 	m_exposedToSky.initalizeEmpty();
+	makeIndexOffsetsForAdjacent();
 	for(BlockIndex i = BlockIndex::create(0); i < count; ++i)
 		initalize(i);
-	makeIndexOffsetsForAdjacent();
 }
 void Blocks::resize(const BlockIndex& count)
 {
@@ -266,15 +266,6 @@ auto getAdjacentWithOffsets(const Blocks& blocks, const BlockIndex& index, const
 		}
 	return output;
 }
-void Blocks::recordAdjacent(const BlockIndex& index)
-{
-	m_directlyAdjacent[index] = getAdjacentWithOffsets<6, false>(*this, index, &adjacentOffsets::direct.front());
-}
-const std::array<BlockIndex, 6>& Blocks::getDirectlyAdjacent(const BlockIndex& index) const
-{
-	assert(m_directlyAdjacent.size() > index);
-	return m_directlyAdjacent[index];
-}
 BlockIndex Blocks::getBlockBelow(const BlockIndex& index) const
 {
 	return m_directlyAdjacent[index][uint(Facing6::Below)];
@@ -301,49 +292,53 @@ BlockIndex Blocks::getBlockEast(const BlockIndex& index) const
 }
 BlockIndexSetSIMD<26> Blocks::getAdjacentWithEdgeAndCornerAdjacent(const BlockIndex& index) const
 {
-	if(isEdge(index))
+	if(isEdge(index)) [[unlikely]]
 		return m_indexOffsetsForAdjacentAll.getIndicesMaybeOutOfBounds(*this, index);
 	else
 		return m_indexOffsetsForAdjacentAll.getIndicesInBounds(*this, index);
 }
 BlockIndexSetSIMD<24> Blocks::getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const BlockIndex& index) const
 {
-	if(isEdge(index))
+	if(isEdge(index)) [[unlikely]]
 		return m_indexOffsetsForAdjacentAllExceptDirectlyAboveAndBelow.getIndicesMaybeOutOfBounds(*this, index);
 	else
 		return m_indexOffsetsForAdjacentAllExceptDirectlyAboveAndBelow.getIndicesInBounds(*this, index);
 }
 BlockIndexSetSIMD<20> Blocks::getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const
 {
-	if(isEdge(index))
+	if(isEdge(index)) [[unlikely]]
 		return m_indexOffsetsForAdjacentOnlyEdgesAndCorners.getIndicesMaybeOutOfBounds(*this, index);
 	else
 		return m_indexOffsetsForAdjacentOnlyEdgesAndCorners.getIndicesInBounds(*this, index);
 }
 BlockIndexSetSIMD<18> Blocks::getAdjacentWithEdgeAdjacent(const BlockIndex& index) const
 {
-	if(isEdge(index))
+	if(isEdge(index)) [[unlikely]]
 		return m_indexOffsetsForAdjacentDirectAndEdge.getIndicesMaybeOutOfBounds(*this, index);
 	else
 		return m_indexOffsetsForAdjacentDirectAndEdge.getIndicesInBounds(*this, index);
 }
 BlockIndexSetSIMD<12> Blocks::getEdgeAdjacentOnly(const BlockIndex& index) const
 {
-	if(isEdge(index))
+	if(isEdge(index)) [[unlikely]]
 		return m_indexOffsetsForAdjacentEdge.getIndicesMaybeOutOfBounds(*this, index);
 	else
 		return m_indexOffsetsForAdjacentEdge.getIndicesInBounds(*this, index);
 }
+const std::array<BlockIndex, 6> Blocks::getDirectlyAdjacent(const BlockIndex& index) const
+{
+	return m_directlyAdjacent[index];
+}
 BlockIndexSetSIMD<4> Blocks::getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const
 {
-	if(isEdge(index))
+	if(isEdge(index)) [[unlikely]]
 		return m_indexOffsetsForAdjacentEdgeSameZ.getIndicesMaybeOutOfBounds(*this, index);
 	else
 		return m_indexOffsetsForAdjacentEdgeSameZ.getIndicesInBounds(*this, index);
 }
 BlockIndexSetSIMD<4> Blocks::getAdjacentOnSameZLevelOnly(const BlockIndex& index) const
 {
-	if(isEdge(index))
+	if(isEdge(index)) [[unlikely]]
 		return m_indexOffsetsForAdjacentDirectSameZ.getIndicesMaybeOutOfBounds(*this, index);
 	else
 		return m_indexOffsetsForAdjacentDirectSameZ.getIndicesInBounds(*this, index);
@@ -382,11 +377,7 @@ bool Blocks::isAdjacentToAny(const BlockIndex& index, BlockIndices& blocks) cons
 }
 bool Blocks::isAdjacentTo(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
-	// TODO: SIMD.
-	for(BlockIndex adjacent : getDirectlyAdjacent(index))
-		if(adjacent.exists() && otherIndex == adjacent)
-			return true;
-	return false;
+	return std::ranges::find(m_directlyAdjacent[otherIndex], index) != m_directlyAdjacent[otherIndex].end();
 }
 bool Blocks::isAdjacentToIncludingCornersAndEdges(const BlockIndex& index, const BlockIndex& otherIndex) const
 {
@@ -461,6 +452,13 @@ void Blocks::moveContentsTo(const BlockIndex& from, const BlockIndex& to)
 	}
 	//TODO: other stuff falls?
 }
+void Blocks::recordAdjacent(const BlockIndex& index)
+{
+	if(isEdge(index)) [[unlikely]]
+		m_directlyAdjacent[index] = m_indexOffsetsForAdjacentDirect.getIndicesMaybeOutOfBounds(*this, index).toArray();
+	else
+		m_directlyAdjacent[index] = m_indexOffsetsForAdjacentDirect.getIndicesInBounds(*this, index).toArray();
+}
 BlockIndex Blocks::offset(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const
 {
 	return offset(index, {ax, ay, az});
@@ -478,7 +476,7 @@ BlockIndex Blocks::offsetNotNull(const BlockIndex& index, int32_t ax, int32_t ay
 }
 BlockIndex Blocks::indexAdjacentToAtCount(const BlockIndex& index, const AdjacentIndex& adjacentCount) const
 {
-	if(m_isEdge[index])
+	if(m_isEdge[index]) [[unlikely]]
 		return maybeGetIndexFromOffsetOnEdge(getCoordinates(index), adjacentOffsets::all[adjacentCount.get()]);
 	else
 		return index + m_indexOffsetsForAdjacentAll.m_indexData[adjacentCount.get()];
@@ -495,6 +493,8 @@ void Blocks::makeIndexOffsetsForAdjacent()
 		m_indexOffsetsForAdjacentDirectAndEdge.insert(*this, offset);
 	for(const Offset3D& offset : adjacentOffsets::edge)
 		m_indexOffsetsForAdjacentEdge.insert(*this, offset);
+	for(const Offset3D& offset : adjacentOffsets::direct)
+		m_indexOffsetsForAdjacentDirect.insert(*this, offset);
 	for(const Offset3D& offset : adjacentOffsets::edgeWithSameZ)
 		m_indexOffsetsForAdjacentEdgeSameZ.insert(*this, offset);
 	for(const Offset3D& offset : adjacentOffsets::directWithSameZ)

@@ -57,7 +57,7 @@ void DrainQueue::recordDelta(Area& area, const CollisionVolume& volume, const Co
 			m_futureEmpty.add(iter->block);
 		m_groupStart = m_groupEnd;
 		findGroupEnd(area);
-	} 
+	}
 	// Expand group for new higher level.
 	else if(volume == flowTillNextStep)
 		findGroupEnd(area);
@@ -80,7 +80,7 @@ void DrainQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 		blocks.fluid_drainInternal(iter->block, iter->delta, fluidGroup.m_fluidType);
 		// Record blocks to set fluid groups unstable.
 		drainedFromAndAdjacent.maybeAdd(iter->block);
-		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(iter->block))
+		for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(iter->block))
 			if(adjacent.exists() && blocks.fluid_canEnterEver(adjacent))
 				drainedFromAndAdjacent.maybeAdd(adjacent);
 	}

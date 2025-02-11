@@ -88,7 +88,7 @@ void Blocks::fluid_add(const BlockIndex& index, const CollisionVolume& volume, c
 	m_fluid[index].emplace_back(fluidType, nullptr, volume);
 	// Find fluid group.
 	FluidGroup* fluidGroup = nullptr;
-	for(BlockIndex adjacent : getDirectlyAdjacent(index))
+	for(const BlockIndex& adjacent : getDirectlyAdjacent(index))
 		if(adjacent.exists() && fluid_canEnterEver(adjacent) && fluid_contains(adjacent, fluidType))
 		{
 			fluidGroup = fluid_getGroup(adjacent, fluidType);
@@ -220,7 +220,7 @@ bool Blocks::fluid_canEnterEver(const BlockIndex& index) const
 }
 bool Blocks::fluid_isAdjacentToGroup(const BlockIndex& index, const FluidGroup& fluidGroup) const
 {
-	for(BlockIndex adjacent : getDirectlyAdjacent(index))
+	for(const BlockIndex& adjacent : getDirectlyAdjacent(index))
 		if(adjacent.exists() && fluid_contains(adjacent, fluidGroup.m_fluidType) && fluid_getGroup(adjacent, fluidGroup.m_fluidType) == &fluidGroup)
 			return true;
 	return false;
@@ -341,14 +341,14 @@ void Blocks::fluid_onBlockSetSolid(const BlockIndex& index)
 	m_fluid[index].clear();
 	fluid_setTotalVolume(index, CollisionVolume::create(0));
 	// Remove from fluid fill queues of adjacent groups, if contained.
-	for(BlockIndex adjacent : getDirectlyAdjacent(index))
+	for(const BlockIndex& adjacent : getDirectlyAdjacent(index))
 		if(adjacent.exists() && fluid_canEnterEver(adjacent))
 			for(FluidData& fluidData : m_fluid[adjacent])
 				fluidData.group->m_fillQueue.maybeRemoveBlock(index);
 }
 void Blocks::fluid_onBlockSetNotSolid(const BlockIndex& index)
 {
-	for(BlockIndex adjacent : getDirectlyAdjacent(index))
+	for(const BlockIndex& adjacent : getDirectlyAdjacent(index))
 		if(adjacent.exists() && fluid_canEnterEver(adjacent))
 			for(FluidData& fluidData : m_fluid[adjacent])
 			{

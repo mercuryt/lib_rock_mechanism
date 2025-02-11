@@ -48,7 +48,7 @@ void Area::stepCaveInRead()
 		// We want to push_front the bottom block when no anchored chunks have been found.
 		// This lets the algorithum start by trying to go straight down to establish an anchor point asap.
 		// Once one point is anchored the chunks will expand in a spherical shape until they touch or anchor.
-		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(block))
+		for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(block))
 		{
 			// If this block is on the edge of the area then it is anchored.
 			if(!adjacent.exists())
