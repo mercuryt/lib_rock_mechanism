@@ -1,8 +1,9 @@
-#include "vision/opacityFacade.h"
-#include "area.h"
-#include "types.h"
-#include "blocks/blocks.h"
-#include "lineGenerator.h"
+#include "opacityFacade.h"
+#include "lineOfSight.h"
+
+#include "../area.h"
+#include "../types.h"
+#include "../blocks/blocks.h"
 
 OpacityFacade::OpacityFacade(Area& area) : m_area(area) { }
 void OpacityFacade::initalize()
@@ -57,36 +58,7 @@ bool OpacityFacade::hasLineOfSight(const BlockIndex& from, const BlockIndex& to)
 }
 bool OpacityFacade::hasLineOfSight(const Point3D& fromCoords, const Point3D& toCoords) const
 {
-	const BlockIndexChunked toIndex = m_area.getBlocks().getIndexChunked(toCoords);
-	assert(!isOpaque(toIndex));
-	assert(fromCoords != toCoords);
-	Blocks& blocks = m_area.getBlocks();
-	assert(!isOpaque(blocks.getIndexChunked(fromCoords)));
-	BlockIndexChunked currentIndex = blocks.getIndexChunked(fromCoords);
-	BlockIndexChunked previousIndex;
-	bool result = true;
-	DistanceInBlocks previousZ;
-	DistanceInBlocks currentZ = fromCoords.z();
-	forEachOnLine(fromCoords, toCoords, [&](int x, int y, int z){
-		previousIndex = currentIndex;
-		previousZ = currentZ;
-		currentIndex = blocks.getIndexChunked(Point3D::create(x, y, z));
-		currentZ = DistanceInBlocks::create(z);
-		if(!canSeeIntoFrom(previousIndex, currentIndex, previousZ, currentZ))
-		{
-			result = false;
-			return false;
-		}
-		// Check for success.
-		if(currentIndex == toIndex)
-		{
-			result = true;
-			return false;
-		}
-		// Not done and not blocked, continue.
-		return true;
-	});
-	return result;
+	return lineOfSight(m_area, fromCoords, toCoords);
 }
 bool OpacityFacade::canSeeIntoFrom(const BlockIndexChunked& previousIndex, const BlockIndexChunked& currentIndex, const DistanceInBlocks& oldZ, const DistanceInBlocks& z) const
 {

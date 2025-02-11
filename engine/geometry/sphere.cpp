@@ -21,17 +21,12 @@ bool Sphere::intersects(const Cuboid& cuboid) const
 }
 bool Sphere::doesCuboidIntersectSphere(const Point3D& highest, const Point3D& lowest, const Sphere& sphere)
 {
-	//TODO: SIMD?
-	auto squared = [](const int32_t& i) -> int32_t { return i * i; };
-	float dist_squared = (float)std::pow(sphere.radius.get(), 2);
-	Offset3D S = sphere.center.toOffset();
-	Offset3D C1 = highest.toOffset();
-	Offset3D C2 = lowest.toOffset();
-	if (S.x() < C1.x()) dist_squared -= squared(S.x() - C1.x());
-	else if (S.x() > C2.x()) dist_squared -= squared(S.x() - C2.x());
-	if (S.y() < C1.y()) dist_squared -= squared(S.y() - C1.y());
-	else if (S.y() > C2.y()) dist_squared -= squared(S.y() - C2.y());
-	if (S.z() < C1.z()) dist_squared -= squared(S.z() - C1.z());
-	else if (S.z() > C2.z()) dist_squared -= squared(S.z() - C2.z());
-	return dist_squared > 0;
+	int radius = sphere.radius.get();
+	const Eigen::Array<int, 1, 3>& high = highest.toOffset().data;
+	const Eigen::Array<int, 1, 3>& low = lowest.toOffset().data;
+	const Eigen::Array<int, 1, 3>& center = sphere.center.toOffset().data;
+	return !(
+		((high + radius) < center).any() ||
+		((low - radius) > center).any()
+	);
 }
