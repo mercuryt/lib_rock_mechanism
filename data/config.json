@@ -119,7 +119,7 @@
 	"minimumRainIntensityModifier": 0.5,
 	"minBlockStaticVolumeToSlowMovement": 50,
 	"minimumSecondsRainPerPercentHumidity": 72,
-	"minimumSizeForOctTreeToSplit": 64,
+	"minimumSizeForOctTreeToSplit": 8,
 	"minimumOccupantsForOctTreeToSplit": 16,
 	"minimumOccupantsForOctTreeToUnsplit": 8,
 	"minimumVolumeOfFluidToBreath": 20,

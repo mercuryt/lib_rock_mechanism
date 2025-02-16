@@ -1,0 +1,60 @@
+#pragma once
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wduplicated-branches"
+#include "../../lib/Eigen/Dense"
+#pragma GCC diagnostic pop
+#include "../types.h"
+#include "../index.h"
+
+class Point3D;
+class Cuboid;
+class Sphere;
+
+struct Point3DSet
+{
+	using Data = Eigen::Array<DistanceInBlocksWidth, 3, Eigen::Dynamic>;
+	Data data;
+private:
+	uint m_size = 0;
+public:
+	Point3DSet() = default;
+	Point3DSet(const uint& capacity) { assert(capacity != 0); reserve(capacity); }
+	void reserve(const uint& capacity) { data.resize(3, capacity); }
+	void resize(const uint& capacity) { if(m_size < capacity) reserve(capacity); m_size = capacity; }
+	void insert(const Point3D& point);
+	void clear() { m_size = 0; };
+	[[nodiscard]] Point3D operator[](const uint& index) const;
+	[[nodiscard]] uint size() const { return m_size; }
+	[[nodiscard]] uint capacity() const { return data.size(); }
+	[[nodiscard]] Cuboid boundry() const;
+	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfContainedPoints(const Cuboid& cuboid) const;
+	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfContainedPoints(const Sphere& sphere) const;
+	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfFacedTwordsPoints(const Point3D& location, const Facing4& facing) const;
+	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesFacingTwords(const Point3D& location, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& facings) const;
+	[[nodiscard]] Eigen::Array<int, 1, Eigen::Dynamic> distancesSquare(const Point3D& location) const;
+	[[nodiscard]] Eigen::Array<bool, 2, Eigen::Dynamic> canSeeAndCanBeSeenByDistanceAndFacingFilter(const Point3D& location, const Facing4& facing, const DistanceInBlocks& visionRangeSquared, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& facings, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& visionRangesSquared) const;
+	template<class Blocks, class BlockSet>
+	[[nodiscard]] static Point3DSet fromBlockSet(const Blocks& blocks, const BlockSet& blockSet)
+	{
+		Point3DSet output;
+		// TODO: SIMD this.
+		for(const BlockIndex& block : blockSet)
+			output.insert(blocks.getCoordinates(block));
+		return output;
+	}
+	class ConstIterator
+	{
+		const Point3DSet& m_set;
+		uint m_index;
+	public:
+		ConstIterator(const Point3DSet& set, const uint& index) : m_set(set), m_index(index) { }
+		void operator++() { ++m_index; }
+		[[nodiscard]] ConstIterator operator++(int) { auto copy = *this; ++(*this); return copy; }
+		[[nodiscard]] Point3D operator*() const;
+		[[nodiscard]] bool operator==(const ConstIterator& other) { assert(&m_set == &other.m_set); return m_index == other.m_index; }
+		[[nodiscard]] bool operator!=(const ConstIterator& other) { assert(&m_set == &other.m_set); return m_index != other.m_index; }
+		[[nodiscard]] std::strong_ordering operator<=>(const ConstIterator& other) { assert(&m_set == &other.m_set); return m_index <=> other.m_index; }
+	};
+	ConstIterator begin() const { return ConstIterator(*this, 0); }
+	ConstIterator end() const { return ConstIterator(*this, m_size); }
+};

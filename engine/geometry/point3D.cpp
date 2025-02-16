@@ -10,8 +10,10 @@ Point3D Point3D::operator+(const DistanceInBlocks& distance) const
 }
 Point3D Point3D::operator-(const DistanceInBlocksWidth& distance) const
 {
-	Coordinates result = data - distance;
-	return result;
+	Offsets result = data.cast<int>() - (int)distance;
+	auto greaterThenZero = result > 0;
+	result *= greaterThenZero.cast<int>();
+	return Coordinates(result.cast<DistanceInBlocksWidth>());
 }
 Point3D Point3D::operator+(const DistanceInBlocksWidth& distance) const
 {

@@ -301,13 +301,6 @@ public:
 inline void to_json(Json& data, const Stamina& index) { data = index.get(); }
 inline void from_json(const Json& data, Stamina& index) { index = Stamina::create(data.get<StaminaWidth>()); }
 
-class OctTreeNodeIndex : public StrongInteger<OctTreeNodeIndex, uint16_t>
-{
-public:
-	OctTreeNodeIndex() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const OctTreeNodeIndex& index) const { return index.get(); } };
-};
-
 using LongRangePathNodeIndexWidth = uint32_t;
 class LongRangePathNodeIndex : public StrongInteger<LongRangePathNodeIndex, LongRangePathNodeIndexWidth>
 {

@@ -112,7 +112,6 @@ void Blocks::blockFeature_close(const BlockIndex& block, const BlockFeatureType&
 	assert(blockFeature_contains(block, blockFeatueType));
 	BlockFeature& blockFeature = *blockFeature_at(block, blockFeatueType);
 	assert(!blockFeature.closed);
-	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	blockFeature.closed = true;
 	m_area.m_opacityFacade.update(block);
 	m_area.m_exteriorPortals.onBlockCanNotTransmitTemperature(m_area, block);
@@ -122,6 +121,7 @@ void Blocks::blockFeature_close(const BlockIndex& block, const BlockFeatureType&
 			m_area.m_visionCuboids.blockFloorIsOpaque(m_area, block);
 		else
 			m_area.m_visionCuboids.blockIsOpaque(m_area, block);
+		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	}
 }
 void Blocks::blockFeature_open(const BlockIndex& block, const BlockFeatureType& blockFeatueType)
@@ -130,7 +130,6 @@ void Blocks::blockFeature_open(const BlockIndex& block, const BlockFeatureType& 
 	BlockFeature& blockFeature = *blockFeature_at(block, blockFeatueType);
 	blockFeature.closed = false;
 	m_area.m_opacityFacade.update(block);
-	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	m_area.m_exteriorPortals.onBlockCanTransmitTemperature(m_area, block);
 	if(!MaterialType::getTransparent(blockFeature.materialType))
 	{
@@ -138,6 +137,7 @@ void Blocks::blockFeature_open(const BlockIndex& block, const BlockFeatureType& 
 			m_area.m_visionCuboids.blockFloorIsTransparent(m_area, block);
 		else
 			m_area.m_visionCuboids.blockIsTransparent(m_area, block);
+		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	}
 }
 // Blocks entrance from all angles, does not include floor and hatch which only block from below.

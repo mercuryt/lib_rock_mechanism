@@ -29,6 +29,7 @@ public:
 	void shift(const Facing6& direction, const DistanceInBlocks& distance);
 	void setMaxZ(const DistanceInBlocks& distance);
 	void maybeExpand(const Cuboid& other);
+	void maybeExpand(const Point3D& point);
 	[[nodiscard]] Cuboid inflateAdd(const DistanceInBlocks& distance) const;
 	[[nodiscard]] SmallSet<BlockIndex> toSet(const Blocks& blocks) const;
 	[[nodiscard]] bool contains(const Blocks& blocks, const BlockIndex& block) const;
@@ -51,6 +52,7 @@ public:
 	[[nodiscard]] bool isTouching(const Cuboid& cuboid) const;
 	[[nodiscard]] static Cuboid fromBlock(const Blocks& blocks, const BlockIndex& block);
 	[[nodiscard]] static Cuboid fromBlockPair(const Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
+	[[nodiscard]] static Cuboid fromBlockSet(const Blocks& blocks, const SmallSet<BlockIndex>& set);
 	[[nodiscard]] static Cuboid createCube(const Point3D& center, const DistanceInBlocks& width);
 	class iterator
 	{

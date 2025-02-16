@@ -11,9 +11,11 @@ public:
 	using reverse_iterator = std::vector<Contained>::reverse_iterator;
 	using const_iterator = std::vector<Contained>::const_iterator;
 	using const_reverse_iterator = std::vector<Contained>::const_reverse_iterator;
+	[[nodiscard]] const std::vector<Contained>& toVector() const { return data; }
 	[[nodiscard]] Contained& operator[](const Index& index) { assert(index < size()); return data[index.get()]; }
 	[[nodiscard]] const Contained& operator[](const Index& index) const { assert(index < size()); return data[index.get()]; }
-	[[nodiscard]] size_t size() const { return data.size(); }
+	[[nodiscard]] uint size() const { return data.size(); }
+	[[nodiscard]] uint capacity() const { return data.capacity(); }
 	[[nodiscard]] iterator begin() { return data.begin(); }
 	[[nodiscard]] iterator end() { return data.end(); }
 	[[nodiscard]] const_iterator begin() const { return data.begin(); }

@@ -1,109 +1,194 @@
 #include "octTree.h"
-#include "area.h"
 #include "actors/actors.h"
 #include "blocks/blocks.h"
-OctTree::OctTree(const DistanceInBlocks& halfWidth, Allocator& allocator) :
-	m_data(allocator),
-	m_cuboid(Cuboid::createCube({halfWidth, halfWidth, halfWidth}, halfWidth)) { }
-void OctTree::record(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visionRangeSquared, const Facing4& facing)
+#include "area.h"
+#include "reference.h"
+#include "partitionNotify.h"
+OctTree::OctTree(const Cuboid& cuboid)
 {
-	auto& locationData = m_data.insert(actor, coordinates, cuboid, visionRangeSquared, facing);
-	afterRecord(root, locationData);
+	// Initalize root node;
+	m_nodes.add({OctTreeIndex::null(), cuboid});
 }
-void OctTree::record(OctTreeRoot& root, const LocationBucketData& locationData)
+void OctTree::record(Area& area, const ActorReference& actor)
 {
-	m_data.insert(locationData);
-	afterRecord(root, locationData);
-}
-void OctTree::afterRecord(OctTreeRoot& root, const LocationBucketData& locationData)
-{
-	if(!m_children.exists() && m_data.size() == Config::minimumOccupantsForOctTreeToSplit && m_cuboid.size() >= Config::minimumSizeForOctTreeToSplit)
-		subdivide(root);
-	if(m_children.exists())
+	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
+	const ActorIndex& index = actor.getIndex(actors.m_referenceData);
+	const BlockIndex& location = actors.getLocation(index);
+	const DistanceInBlocks& visionRangeSquared = actors.vision_getRangeSquared(index);
+	const Facing4& facing = actors.getFacing(index);
+	const VisionCuboidIndex& visionCuboid = area.m_visionCuboids.getIndexForBlock(location);
+	for(const Point3D& coordinates : Point3DSet::fromBlockSet(blocks, actors.getBlocks(index)))
 	{
-		uint8_t octant = getOctant(locationData.coordinates);
-		root.m_data[m_children][octant].record(root, locationData);
+		OctTreeIndex nodeIndex = OctTreeIndex::create(0);
+		while(true)
+		{
+			OctTreeNode& node = m_nodes[nodeIndex];
+			node.contents.insert(actor, coordinates, visionCuboid, visionRangeSquared, facing);
+			if(node.shouldSplit())
+			{
+				split(nodeIndex);
+				break;
+			}
+			if(!node.hasChildren())
+				break;
+			// Select new parent node at next level down.
+			uint8_t octant = getOctant(node.center, coordinates);
+			nodeIndex = node.children[octant];
+		}
 	}
 }
-void OctTree::subdivide(OctTreeRoot& root)
+void OctTree::erase(Area& area, const ActorReference& actor)
 {
-	assert(m_children.empty());
-	m_children = root.allocate(*this);
-	// Since these are cubes it doesn't matter which dimension is used.
-	DistanceInBlocks quarterWidth = m_cuboid.dimensionForFacing(Facing6::Above) / 4;
-	const Point3D center = m_cuboid.getCenter();
+	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
+	const ActorIndex& index = actor.getIndex(actors.m_referenceData);
+	for(const Point3D& coordinates : Point3DSet::fromBlockSet(blocks, actors.getBlocks(index)))
+	{
+		OctTreeIndex nodeIndex = OctTreeIndex::create(0);
+		while(true)
+		{
+			OctTreeNode& node = m_nodes[nodeIndex];
+			node.contents.remove(actor);
+			if(node.shouldMerge())
+			{
+				collapse(nodeIndex);
+				break;
+			}
+			if(!node.hasChildren())
+				break;
+			// Select new parent node at next level down.
+			uint8_t octant = getOctant(node.center, coordinates);
+			nodeIndex = node.children[octant];
+		}
+	}
+}
+void OctTree::updateVisionCuboid(const Point3D& coordinates, const VisionCuboidIndex& cuboid)
+{
+	OctTreeIndex nodeIndex = OctTreeIndex::create(0);
+	while(true)
+	{
+		OctTreeNode& node = m_nodes[nodeIndex];
+		node.contents.updateVisionCuboidIndex(coordinates, cuboid);
+		if(!node.hasChildren())
+			break;
+		// Select new parent node at next level down.
+		uint8_t octant = getOctant(node.center, coordinates);
+		nodeIndex = node.children[octant];
+	}
+}
+void OctTree::updateRange(const ActorReference& actor, const Point3D& coordinates, const DistanceInBlocks& visionRangeSquared)
+{
+	OctTreeIndex nodeIndex = OctTreeIndex::create(0);
+	while(true)
+	{
+		OctTreeNode& node = m_nodes[nodeIndex];
+		node.contents.updateVisionRangeSquared(actor, coordinates, visionRangeSquared);
+		if(!node.hasChildren())
+			break;
+		// Select new parent node at next level down.
+		uint8_t octant = getOctant(node.center, coordinates);
+		nodeIndex = node.children[octant];
+	}
+}
+void OctTree::maybeSort()
+{
+
+}
+void OctTree::split(const OctTreeIndex& nodeIndex)
+{
+	OctTreeNode& node = m_nodes[nodeIndex];
+	assert(!node.hasChildren());
+	node.cuboids = subdivide(node.cuboid);
+	node.center = node.cuboid.getCenter();
+	// Record child indices.
+	OctTreeIndex childIndex = OctTreeIndex::create(m_nodes.size());
+	for(uint8_t octant = 0; octant < 8; ++octant)
+	{
+		node.children[octant] = childIndex;
+		++childIndex;
+	}
+	// Create children.
+	for(uint8_t octant = 0; octant < 8; ++octant)
+		m_nodes.emplaceBack(nodeIndex, m_nodes[nodeIndex].cuboids[octant]);
+	// Copy content into newly created child nodes.
+	auto locationBucketIndex = LocationBucketContentsIndex::create(0);
+	// Get a fresh reference to node as the previous was invalidated by emplaceBack.
+	OctTreeNode& node2 = m_nodes[nodeIndex];
+	for(const Point3D& position : node2.contents.getPoints())
+	{
+		uint8_t octant = getOctant(node2.center, position);
+		// Copy whole record.
+		// TODO: delay sorting till all are inserted.
+		m_nodes[node2.children[octant]].contents.copyIndex(node2.contents, locationBucketIndex);
+		++locationBucketIndex;
+	}
+}
+void OctTree::collapse(const OctTreeIndex& nodeIndex)
+{
+	OctTreeNode& node = m_nodes[nodeIndex];
+	node.children.fill(OctTreeIndex::null());
+	node.center.clear();
+	removeNotify(m_nodes,
+		[&](const OctTreeIndex& otherIndex){ return m_nodes[otherIndex].parent == nodeIndex; },
+		[&](const OctTreeIndex& oldIndex, const OctTreeIndex& newIndex){
+			OctTreeNode node = m_nodes[oldIndex];
+			// Update parent.
+			OctTreeNode parent = m_nodes[node.parent];
+			auto found = std::ranges::find(parent.children, oldIndex);
+			assert(found != parent.children.end());
+			(*found) = newIndex;
+			// Update children.
+			if(node.hasChildren())
+				for(const OctTreeIndex& childIndex : node.children)
+					m_nodes[childIndex].parent = newIndex;
+		}
+	);
+}
+[[nodiscard]] bool OctTree::contains(const ActorReference& actor, const Point3D& coordinates)
+{
+	return m_nodes[OctTreeIndex::create(0)].contents.contains(actor, coordinates);
+}
+uint OctTree::getActorCount() const
+{
+	return m_nodes[OctTreeIndex::create(0)].contents.size();
+}
+CuboidArray<8> OctTree::subdivide(const Cuboid& cuboid)
+{
+	// AnyFacing will do since it is a cube.
+	DistanceInBlocks quarterWidth = cuboid.dimensionForFacing(Facing6::Above) / 4;
+	Point3D center = cuboid.getCenter();
 	DistanceInBlocks minX = center.x() - quarterWidth;
 	DistanceInBlocks maxX = center.x() + quarterWidth;
 	DistanceInBlocks minY = center.y() - quarterWidth;
 	DistanceInBlocks maxY = center.y() + quarterWidth;
 	DistanceInBlocks minZ = center.z() - quarterWidth;
 	DistanceInBlocks maxZ = center.z() + quarterWidth;
-	root.m_data[m_children][0].m_cuboid = Cuboid::createCube({minX, minY, minZ}, quarterWidth);
-	root.m_data[m_children][1].m_cuboid = Cuboid::createCube({maxX, minY, minZ}, quarterWidth);
-	root.m_data[m_children][2].m_cuboid = Cuboid::createCube({minX, maxY, minZ}, quarterWidth);
-	root.m_data[m_children][3].m_cuboid = Cuboid::createCube({maxX, maxY, minZ}, quarterWidth);
-	root.m_data[m_children][4].m_cuboid = Cuboid::createCube({minX, minY, maxZ}, quarterWidth);
-	root.m_data[m_children][5].m_cuboid = Cuboid::createCube({maxX, minY, maxZ}, quarterWidth);
-	root.m_data[m_children][6].m_cuboid = Cuboid::createCube({minX, maxY, maxZ}, quarterWidth);
-	root.m_data[m_children][7].m_cuboid = Cuboid::createCube({maxX, maxY, maxZ}, quarterWidth);
-	for(const LocationBucketData& data : m_data.get())
-	{
-		uint8_t octant = getOctant(data.coordinates);
-		// Copy whole record.
-		// TODO: delay sorting till all are inserted.
-		root.m_data[m_children][octant].record(root, data);
-	}
+	CuboidArray<8> output;
+	output.insert(0, Cuboid::createCube({minX, minY, minZ}, quarterWidth));
+	output.insert(1, Cuboid::createCube({maxX, minY, minZ}, quarterWidth));
+	output.insert(2, Cuboid::createCube({minX, maxY, minZ}, quarterWidth));
+	output.insert(3, Cuboid::createCube({maxX, maxY, minZ}, quarterWidth));
+	output.insert(4, Cuboid::createCube({minX, minY, maxZ}, quarterWidth));
+	output.insert(5, Cuboid::createCube({maxX, minY, maxZ}, quarterWidth));
+	output.insert(6, Cuboid::createCube({minX, maxY, maxZ}, quarterWidth));
+	output.insert(7, Cuboid::createCube({maxX, maxY, maxZ}, quarterWidth));
+	return output;
 }
-void OctTree::erase(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates)
+int8_t OctTree::getOctant(const Point3D& center, const Point3D& coordinates)
 {
-	m_data.remove(actor);
-	if(m_children.exists())
+	if(center.z() >= coordinates.z())
 	{
-		if(m_data.size() == Config::minimumOccupantsForOctTreeToUnsplit)
+		if(center.y() >= coordinates.y())
 		{
-			root.deallocate(m_children);
-			m_children.clear();
-		}
-		else
-		{
-			uint8_t octant = getOctant(coordinates);
-			root.m_data[m_children][octant].erase(root, actor, coordinates);
-		}
-	}
-}
-void OctTree::updateRange(OctTreeRoot& root, const ActorReference& actor, const Point3D& coordinates, const DistanceInBlocks& visionRangeSquared)
-{
-	m_data.updateVisionRangeSquared(actor, coordinates, visionRangeSquared);
-	if(m_children.exists())
-	{
-			uint8_t octant = getOctant(coordinates);
-			root.m_data[m_children][octant].updateRange(root, actor, coordinates, visionRangeSquared);
-	}
-}
-void OctTree::updateVisionCuboid(OctTreeRoot& root, const Point3D& coordinates, const VisionCuboidIndex& cuboid)
-{
-	m_data.updateVisionCuboidIndex(coordinates, cuboid);
-	if(m_children.exists())
-	{
-			uint8_t octant = getOctant(coordinates);
-			root.m_data[m_children][octant].updateVisionCuboid(root, coordinates, cuboid);
-	}
-}
-uint8_t OctTree::getOctant(const Point3D& other)
-{
-	const Point3D center = m_cuboid.getCenter();
-	if(center.z() >= other.z())
-	{
-		if(center.y() >= other.y())
-		{
-			if(center.x() >= other.x())
+			if(center.x() >= coordinates.x())
 				return 0;
 			else
 				return 1;
 		}
 		else
 		{
-			if(center.x() >= other.x())
+			if(center.x() >= coordinates.x())
 				return 2;
 			else
 				return 3;
@@ -112,105 +197,19 @@ uint8_t OctTree::getOctant(const Point3D& other)
 	else
 	{
 
-		if(center.y() >= other.y())
+		if(center.y() >= coordinates.y())
 		{
-			if(center.x() >= other.x())
+			if(center.x() >= coordinates.x())
 				return 4;
 			else
 				return 5;
 		}
 		else
 		{
-			if(center.x() >= other.x())
+			if(center.x() >= coordinates.x())
 				return 6;
 			else
 				return 7;
 		}
 	}
-}
-uint OctTree::getCountIncludingChildren(const OctTreeRoot& root) const
-{
-	uint output = 1;
-	if(m_children.exists())
-		for(const OctTree& child : root.m_data[m_children])
-			output += child.getCountIncludingChildren(root);
-	return output;
-}
-bool OctTree::contains(const ActorReference& actor, const Point3D& coordinates) const
-{
-	return m_data.contains(actor, coordinates);
-}
-OctTreeRoot::OctTreeRoot(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) :
-	m_tree(m_allocator)
-{
-	m_tree.m_cuboid = Cuboid(Point3D(x - 1, y - 1, z - 1), Point3D::create(0, 0, 0));
-}
-void OctTreeRoot::record(Area& area, const ActorReference& actor)
-{
-	Actors& actors = area.getActors();
-	Blocks& blocks = area.getBlocks();
-	const ActorIndex& index = actor.getIndex(actors.m_referenceData);
-	const DistanceInBlocks& visionRangeSquared = actors.vision_getRangeSquared(index);
-	const Facing4& facing = actors.getFacing(index);
-	for(const BlockIndex& block : actors.getBlocks(index))
-		m_tree.record(*this, actor, blocks.getCoordinates(block), area.m_visionCuboids.getIndexForBlock(block), visionRangeSquared, facing);
-}
-void OctTreeRoot::erase(Area& area, const ActorReference& actor)
-{
-	Actors& actors = area.getActors();
-	Blocks& blocks = area.getBlocks();
-	ActorIndex index = actor.getIndex(actors.m_referenceData);
-	for(const BlockIndex& block : actors.getBlocks(index))
-		m_tree.erase(*this, actor, blocks.getCoordinates(block));
-}
-OctTreeNodeIndex OctTreeRoot::allocate(OctTree& parent)
-{
-	OctTreeNodeIndex output = OctTreeNodeIndex::create(m_data.size());
-	m_data.add({OctTree(m_allocator), OctTree(m_allocator), OctTree(m_allocator), OctTree(m_allocator), OctTree(m_allocator), OctTree(m_allocator), OctTree(m_allocator), OctTree(m_allocator)});
-	m_parents.add(&parent);
-	++m_entropy;
-	return output;
-}
-void OctTreeRoot::deallocate(const OctTreeNodeIndex& index)
-{
-	if(index != m_data.size() - 1)
-	{
-		m_data[index] = m_data.back();
-		m_parents[index] = m_parents.back();
-		m_parents[index]->m_children = index;
-	}
-	m_data.popBack();
-	m_parents.popBack();
-	++m_entropy;
-}
-void OctTreeRoot::maybeSort()
-{
-	if(m_entropy > Config::octTreeSortEntropyThreshold)
-		return;
-	std::vector<std::pair<uint, OctTreeNodeIndex>> sortOrder;
-
-	for(OctTreeNodeIndex index = OctTreeNodeIndex::create(0); index < m_data.size(); ++index)
-	{
-		uint order = m_parents[index]->m_cuboid.getCenter().hilbertNumber();
-		sortOrder.emplace_back(order, index);
-		++index;
-	}
-	std::ranges::sort(sortOrder, {}, &std::pair<uint, OctTreeNodeIndex>::first);
-	auto copyData = m_data;
-	OctTreeNodeIndex index = OctTreeNodeIndex::create(0);
-	for(const auto& pair : sortOrder)
-	{
-		m_data[index] = copyData[pair.second];
-		++index;
-	}
-	copyData.clear();
-	auto copyParents = m_parents;
-	index = OctTreeNodeIndex::create(0);
-	for(const auto& pair : sortOrder)
-	{
-		m_parents[index] = copyParents[pair.second];
-		m_parents[index]->m_children = index;
-		++index;
-	}
-	m_entropy = 0;
 }
