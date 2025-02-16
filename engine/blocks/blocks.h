@@ -58,7 +58,6 @@ class Blocks
 	BlockIndexMap<FactionIdMap<FarmField*>> m_farmFields;
 	BlockIndexMap<FactionIdMap<BlockIsPartOfStockPile>> m_stockPiles;
 	StrongVector<std::unique_ptr<Reservable>, BlockIndex> m_reservables;
-	StrongVector<std::array<BlockIndex, 6>, BlockIndex> m_directlyAdjacent;
 	StrongVector<MaterialTypeId, BlockIndex> m_materialType;
 	StrongVector<std::vector<BlockFeature>, BlockIndex> m_features;
 	StrongVector<std::vector<FluidData>, BlockIndex> m_fluid;
@@ -100,7 +99,6 @@ public:
 	void initalize(const BlockIndex& index);
 	void makeIndexOffsetsForAdjacent();
 	void moveContentsTo(const BlockIndex& index, const BlockIndex& other);
-	void recordAdjacent(const BlockIndex& index);
 	// For testing.
 	[[nodiscard]] std::vector<BlockIndex> getAllIndices() const ;
 	[[nodiscard]] Json toJson() const;
@@ -129,7 +127,8 @@ public:
 	[[nodiscard]] BlockIndexSetSIMD<20> getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexSetSIMD<18> getAdjacentWithEdgeAdjacent(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexSetSIMD<12> getEdgeAdjacentOnly(const BlockIndex& index) const;
-	[[nodiscard]] const std::array<BlockIndex, 6> getDirectlyAdjacent(const BlockIndex& index) const;
+	//TODO Why does making this a simd set break cave in?
+	[[nodiscard]] BlockIndexSetSIMD<6> getDirectlyAdjacent(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexSetSIMD<4> getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndexSetSIMD<4> getAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
 	[[nodiscard]] const auto& getOffsetsForAdjacentCountTable() const { return m_indexOffsetsForAdjacentAll; }
@@ -187,7 +186,7 @@ public:
 			BlockIndex block = openList.top();
 			openList.pop();
 			for(const BlockIndex& adjacent : getDirectlyAdjacent(block))
-				if(adjacent.exists() && condition(adjacent) && !output.contains(adjacent))
+				if(condition(adjacent) && !output.contains(adjacent))
 				{
 					output.add(adjacent);
 					openList.push(adjacent);
@@ -209,7 +208,7 @@ public:
 				return block;
 			open.pop();
 			for(const BlockIndex& adjacent : getDirectlyAdjacent(block))
-				if(adjacent.exists() && taxiDistance(index, adjacent) <= range && !closed.contains(adjacent))
+				if(taxiDistance(index, adjacent) <= range && !closed.contains(adjacent))
 				{
 					closed.add(adjacent);
 					open.push(adjacent);

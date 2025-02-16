@@ -219,13 +219,12 @@ void Actors::combat_onMoveFrom(const ActorIndex& index, const BlockIndex& previo
 	Blocks& blocks = m_area.getBlocks();
 	FactionId faction = m_faction[index];
 	for(const BlockIndex& block : blocks.getDirectlyAdjacent(previous))
-		if(block.exists())
-			for(const ActorIndex& adjacent : blocks.actor_getAll(block))
-			{
-				FactionId otherFaction = m_faction[adjacent];
-				if(m_area.m_simulation.m_hasFactions.isEnemy(faction, otherFaction))
-					combat_freeHit(adjacent, index);
-			}
+		for(const ActorIndex& adjacent : blocks.actor_getAll(block))
+		{
+			FactionId otherFaction = m_faction[adjacent];
+			if(m_area.m_simulation.m_hasFactions.isEnemy(faction, otherFaction))
+				combat_freeHit(adjacent, index);
+		}
 }
 void Actors::combat_noLongerTargetable(const ActorIndex& index)
 {

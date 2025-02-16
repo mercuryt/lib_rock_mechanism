@@ -12,7 +12,7 @@ void FillQueue::buildFor(Area& area, FluidGroup& fluidGroup, BlockIndices& membe
 		assert(blocks.fluid_contains(block, fluidGroup.m_fluidType));
 		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(block))
 			if(
-				adjacent.exists() && blocks.fluid_canEnterEver(adjacent) &&
+				blocks.fluid_canEnterEver(adjacent) &&
 				blocks.fluid_canEnterCurrently(adjacent, fluidGroup.m_fluidType) &&
 				blocks.fluid_volumeOfTypeContains(adjacent, fluidGroup.m_fluidType) != Config::maxBlockVolume
 			)

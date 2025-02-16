@@ -81,7 +81,7 @@ void DrainQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 		// Record blocks to set fluid groups unstable.
 		drainedFromAndAdjacent.maybeAdd(iter->block);
 		for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(iter->block))
-			if(adjacent.exists() && blocks.fluid_canEnterEver(adjacent))
+			if(blocks.fluid_canEnterEver(adjacent))
 				drainedFromAndAdjacent.maybeAdd(adjacent);
 	}
 	// Set fluidGroups unstable.

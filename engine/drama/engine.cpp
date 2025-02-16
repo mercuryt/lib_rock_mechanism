@@ -157,7 +157,7 @@ bool DramaArc::blockIsConnectedToAtLeast(const BlockIndex& origin, [[maybe_unuse
 				return true;
 			for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(candidate))
 				//TODO: check if shape can fit into block with any facing.
-				if(adjacent.exists() && !blocks.solid_is(adjacent) && blocks.shape_moveTypeCanEnter(adjacent, moveType))
+				if(!blocks.solid_is(adjacent) && blocks.shape_moveTypeCanEnter(adjacent, moveType))
 					open.push(adjacent);
 		}
 	}
