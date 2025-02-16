@@ -65,22 +65,21 @@ void FluidGroup::addBlock(Area& area, const BlockIndex& block, bool checkMerge)
 	// Add adjacent if fluid can enter.
 	SmallSet<FluidGroup*> toMerge;
 	for(const BlockIndex& adjacent : area.getBlocks().getDirectlyAdjacent(block))
-		if(adjacent.exists())
+	{
+		if(!area.getBlocks().fluid_canEnterEver(adjacent))
+			continue;
+		FluidData* found = area.getBlocks().fluid_getData(adjacent, m_fluidType);
+		// Merge groups if needed.
+		if(found && checkMerge)
 		{
-			if(!area.getBlocks().fluid_canEnterEver(adjacent))
+			assert(!found->group->m_merged);
+			if(found->group == this)
 				continue;
-			FluidData* found = area.getBlocks().fluid_getData(adjacent, m_fluidType);
-			// Merge groups if needed.
-			if(found && checkMerge)
-			{
-				assert(!found->group->m_merged);
-				if(found->group == this)
-					continue;
-				toMerge.maybeInsert(found->group);
-			}
-			if(!found || found->volume < Config::maxBlockVolume)
-				m_fillQueue.maybeAddBlock(adjacent);
+			toMerge.maybeInsert(found->group);
 		}
+		if(!found || found->volume < Config::maxBlockVolume)
+			m_fillQueue.maybeAddBlock(adjacent);
+	}
 	// TODO: (performance) collect all groups to merge recursively and then merge all into the largest.
 	FluidGroup* larger = this;
 	for(FluidGroup* oldGroup : toMerge)
@@ -97,7 +96,7 @@ void FluidGroup::removeBlock(Area& area, const BlockIndex& block)
 	m_drainQueue.removeBlock(block);
 	m_potentiallyNoLongerAdjacentFromSyncronusStep.add(block);
 	for(const BlockIndex& adjacent : area.getBlocks().getDirectlyAdjacent(block))
-		if(adjacent.exists() && area.getBlocks().fluid_canEnterEver(adjacent))
+		if(area.getBlocks().fluid_canEnterEver(adjacent))
 		{
 			//Check for group split.
 			auto found = area.getBlocks().fluid_getData(adjacent, m_fluidType);
@@ -397,7 +396,7 @@ void FluidGroup::readStep(Area& area)
 	for(const BlockIndex& block : m_fillQueue.m_futureNoLongerEmpty)
 	{
 		for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(block))
-			if(adjacent.exists() && area.getBlocks().fluid_canEnterEver(adjacent) && !m_drainQueue.m_set.contains(adjacent) && !m_fillQueue.m_set.contains(adjacent)
+			if(area.getBlocks().fluid_canEnterEver(adjacent) && !m_drainQueue.m_set.contains(adjacent) && !m_fillQueue.m_set.contains(adjacent)
 			  )
 			{
 				auto found = area.getBlocks().fluid_getData(adjacent, m_fluidType);
@@ -423,7 +422,7 @@ void FluidGroup::readStep(Area& area)
 	for(const BlockIndex& block : m_drainQueue.m_futureEmpty)
 	{
 		for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(block))
-			if(adjacent.exists() && area.getBlocks().fluid_canEnterEver(adjacent))
+			if(area.getBlocks().fluid_canEnterEver(adjacent))
 				adjacentToFutureEmpty.maybeAdd(adjacent);
 		if constexpr (Config::fluidsSeepDiagonalModifier != 0)
 		{
@@ -472,7 +471,7 @@ void FluidGroup::readStep(Area& area)
 		// Record each group's future new adjacent.
 		for(const BlockIndex& block : m_futureNewEmptyAdjacents)
 			for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(block))
-				if(adjacent.exists() && area.getBlocks().fluid_canEnterEver(adjacent))
+				if(area.getBlocks().fluid_canEnterEver(adjacent))
 				{
 					for(FluidGroupSplitData& fluidGroupSplitData : m_futureGroups)
 						if(fluidGroupSplitData.members.contains(adjacent))
@@ -488,7 +487,7 @@ void FluidGroup::readStep(Area& area)
 			continue;
 		bool stillAdjacent = false;
 		for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(block))
-			if(adjacent.exists() && area.getBlocks().fluid_canEnterEver(adjacent) && futureBlocks.contains(adjacent))
+			if(area.getBlocks().fluid_canEnterEver(adjacent) && futureBlocks.contains(adjacent))
 			{
 				stillAdjacent = true;
 				break;
