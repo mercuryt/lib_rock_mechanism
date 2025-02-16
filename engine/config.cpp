@@ -130,7 +130,7 @@ void Config::load()
 	minimumStepsBetweenRainPerPercentHumidity = Step::create(data["minimumDaysBetweenRainPerPercentHumidity"].get<float>() * stepsPerDay.get());
 	data["minimumSizeForOctTreeToSplit"].get_to(minimumSizeForOctTreeToSplit);
 	data["minimumOccupantsForOctTreeToSplit"].get_to(minimumOccupantsForOctTreeToSplit);
-	data["minimumOccupantsForOctTreeToUnsplit"].get_to(minimumOccupantsForOctTreeToUnsplit);
+	data["minimumOccupantsForOctTreeToUnsplit"].get_to(maximumOccupantsForOctTreeToMerge);
 	minimumStepsRainPerPercentHumidity = Step::create(data["minimumSecondsRainPerPercentHumidity"].get<float>() * stepsPerSecond.get());
 	data["minimumVolumeOfFluidToBreath"].get_to(minimumVolumeOfFluidToBreath);
 	data["minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests"].get_to(minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests);

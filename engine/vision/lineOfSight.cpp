@@ -4,10 +4,11 @@
 constexpr auto size = 16;
 bool lineOfSight(const Area& area, const Point3D& startPoint, const Point3D& endPoint)
 {
+	assert(startPoint != endPoint);
 	const Eigen::Array<int, 3, 1>& start = startPoint.data.cast<int>();
 	const Eigen::Array<int, 3, 1>& end = endPoint.data.cast<int>();
-	const Eigen::Array<int, 3, 1> difference = end - start;
-	const Eigen::Array<float, 3, 1> delta = difference.cast<float>() / (float)difference.abs().maxCoeff();
+	const Eigen::Array<float, 3, 1> difference = (end - start).cast<float>();
+	const Eigen::Array<float, 3, 1> delta = difference / difference.abs().maxCoeff();
 	// Start at one rather then zero because we don't need to check the starting position.
 	float i= 1;
 	const Blocks& blocks = area.getBlocks();

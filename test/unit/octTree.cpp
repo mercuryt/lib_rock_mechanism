@@ -13,7 +13,7 @@ TEST_CASE("octTree")
 	Simulation simulation;
 	SUBCASE("basic")
 	{
-		Area& area = simulation.m_hasAreas->createArea(10,10,10);
+		Area& area = simulation.m_hasAreas->createArea(20,20,20);
 		CHECK(area.m_octTree.getCount() == 1);
 		Blocks& blocks = area.getBlocks();
 		Actors& actors = area.getActors();
@@ -39,7 +39,7 @@ TEST_CASE("octTree")
 		CHECK(area.m_octTree.getActorCount() == Config::minimumOccupantsForOctTreeToSplit);
 		CHECK(area.m_octTree.getCount() == 9);
 		CHECK(!blocks.actor_empty(BlockIndex::create(0)));
-		uint toUnspawn = Config::minimumOccupantsForOctTreeToSplit - Config::minimumOccupantsForOctTreeToUnsplit;
+		uint toUnspawn = Config::minimumOccupantsForOctTreeToSplit - Config::maximumOccupantsForOctTreeToMerge;
 		for(const BlockIndex& block : blocks.getAllIndices())
 		{
 			if(toUnspawn == 0)
@@ -51,7 +51,7 @@ TEST_CASE("octTree")
 			actors.exit(actor);
 			CHECK(!area.m_octTree.contains(actors.getReference(actor), blocks.getCoordinates(block)));
 		}
-		CHECK(area.m_octTree.getActorCount() == Config::minimumOccupantsForOctTreeToUnsplit);
+		CHECK(area.m_octTree.getActorCount() == Config::maximumOccupantsForOctTreeToMerge);
 		CHECK(area.m_octTree.getCount() == 1);
 	}
 }

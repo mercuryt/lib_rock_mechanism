@@ -131,6 +131,11 @@ void Cuboid::maybeExpand(const Cuboid& other)
 	m_highest.clampHigh(other.m_highest);
 	m_lowest.clampLow(other.m_lowest);
 }
+void Cuboid::maybeExpand(const Point3D& other)
+{
+	m_highest.clampHigh(other);
+	m_lowest.clampLow(other);
+}
 Cuboid Cuboid::inflateAdd(const DistanceInBlocks& distance) const
 {
 	return {
@@ -195,6 +200,11 @@ Cuboid Cuboid::fromBlockPair(const Blocks& blocks, const BlockIndex& a, const Bl
 	Point3D aCoordinates = blocks.getCoordinates(a);
 	Point3D bCoordinates = blocks.getCoordinates(b);
 	return { {aCoordinates.data.max(bCoordinates.data)}, {aCoordinates.data.min(bCoordinates.data)} };
+}
+Cuboid fromBlockSet(const Blocks& blocks, const SmallSet<BlockIndex>& set)
+{
+	const Point3DSet points = Point3DSet::fromBlockSet(blocks, set);
+	return points.boundry();
 }
 Cuboid Cuboid::createCube(const Point3D& center, const DistanceInBlocks& width)
 {

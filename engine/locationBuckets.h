@@ -2,42 +2,52 @@
 #include "types.h"
 #include "reference.h"
 #include "geometry/point3D.h"
+#include "geometry/pointSet.h"
+#include "vision/visionCuboid.h"
 #include <vector>
 #include <memory_resource>
 
-using Allocator = std::pmr::unsynchronized_pool_resource;
-
-// LocationBucket::m_data is kept sorted by actor reference, so if we see one tile of a multi tile actor we can skip ahead in the forEach callback.
-struct LocationBucketData
+using LocationBucketContentsIndexWidth = uint32_t;
+class LocationBucketContentsIndex : public StrongInteger<LocationBucketContentsIndex, LocationBucketContentsIndexWidth>
 {
-	Point3D coordinates;
-	VisionCuboidIndex cuboid;
-	ActorReference actor;
-	DistanceInBlocks visionRangeSquared;
-	Facing4 facing;
-	struct hash{ [[nodiscard]] static size_t operator()(const LocationBucketData& data) { return data.actor.getReferenceIndex().get(); }};
-	[[nodiscard]] std::strong_ordering operator<=>(const LocationBucketData& other) { return actor <=> other.actor; }
+public:
+	LocationBucketContentsIndex() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const LocationBucketContentsIndex& index) const { return index.get(); } };
 };
+
 class LocationBucket
 {
-	std::pmr::vector<LocationBucketData> m_data;
-	void sort();
+	Point3DSet m_points;
+	Eigen::Array<VisionCuboidIndexWidth, 1, Eigen::Dynamic> m_visionCuboidIndices;
+	Eigen::Array<int, 1, Eigen::Dynamic> m_visionRangeSquared;
+	Eigen::Array<Facing4, 1, Eigen::Dynamic> m_facing;
+	StrongVector<ActorReference, LocationBucketContentsIndex> m_actors;
+	void sort() { /* todo. */}
+	void remove(const LocationBucketContentsIndex& index);
+	[[nodiscard]] Eigen::Array<bool, 2, Eigen::Dynamic> canSeeAndCanBeSeenByDistanceAndFacingFilter(const Point3D& location, const Facing4& facing, const DistanceInBlocks& visionRangeSquared) const;
+	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> canBeSeenByDistanceAndFacingFilter(const Point3D& location) const;
 public:
-	LocationBucket(Allocator& allocator) : m_data(&allocator) { }
-	void insert(const LocationBucketData& data);
-	LocationBucketData& insert(const ActorReference& actor, const Point3D& point, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visionRangeSquered, const Facing4& facing);
+	void insert(const ActorReference& actor, const Point3D& point, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visionRangeSquared, const Facing4& facing);
 	void remove(const ActorReference& actor);
+	void copyIndex(const LocationBucket& other, const LocationBucketContentsIndex& otherIndex);
 	void updateVisionRangeSquared(const ActorReference& actor, const Point3D& point, const DistanceInBlocks& visionRangeSquaed);
 	void updateVisionCuboidIndex(const Point3D& point, const VisionCuboidIndex& cuboid);
 	void prefetch() const;
-	template<typename Action>
-	void forEach(Action&& action) const
-	{
-		for (const LocationBucketData &data : m_data)
-			action(data);
-	}
-	[[nodiscard]] uint size() const { return m_data.size(); }
-	[[nodiscard]] bool empty() const { return m_data.empty(); }
-	[[nodiscard]] const std::pmr::vector<LocationBucketData>& get() const { return m_data; }
+	void reserve(int size);
+	// TODO: prevent checking line of sight to multi tile creaters straddling location bucket boundry.
+	[[nodiscard]] const std::pair<const std::vector<ActorReference>*, Eigen::Array<bool, 2, Eigen::Dynamic>>
+	visionRequestQuery(const Area& area, const Point3D& position, const Facing4& facing, const DistanceInBlocks& getVisionRangeSquared, const VisionCuboidIndex& visionCuboid, const VisionCuboidSetSIMD& visionCuboids, const OccupiedBlocksForHasShape& occupiedBlocks, const DistanceInBlocks& largestVisionRange) const;
+	[[nodiscard]] const std::pair<const StrongVector<ActorReference, LocationBucketContentsIndex>*, Eigen::Array<bool, 1, Eigen::Dynamic>>
+	anyCanBeSeenQuery(const Area& area, const Cuboid& cuboid, const Point3DSet& points) const;
+	[[nodiscard]] const std::pair<const StrongVector<ActorReference, LocationBucketContentsIndex>*, Eigen::Array<bool, 1, Eigen::Dynamic>>
+	anyCanBeSeenQuery(const Area& area, const Cuboid& cuboid, const Point3DSet& points, const Eigen::Array<bool, 1, Eigen::Dynamic>& alreadyConfirmed) const;
+	[[nodiscard]] const Point3DSet& getPoints() const { return m_points; }
+	[[nodiscard]] uint size() const { return m_actors.size(); }
+	[[nodiscard]] bool empty() const { return m_actors.empty(); }
 	[[nodiscard]] bool contains(const ActorReference& actor, const Point3D& coordinates) const;
+	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indiciesWhichIntersectShape(const auto& queryShape) const;
+	[[nodiscard]] Point3D getPosition(const LocationBucketContentsIndex& index) const { return m_points[index.get()]; }
+	[[nodiscard]] VisionCuboidIndex getCuboidIndex(const LocationBucketContentsIndex& index) const { return VisionCuboidIndex::create(m_visionCuboidIndices[index.get()]); }
+	[[nodiscard]] DistanceInBlocks getVisionRangeSquared(const LocationBucketContentsIndex& index) const { return DistanceInBlocks::create(m_visionRangeSquared[index.get()]); }
+	[[nodiscard]] Facing4 getFacing(const LocationBucketContentsIndex& index) const { return m_facing[index.get()]; }
 };

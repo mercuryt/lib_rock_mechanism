@@ -24,7 +24,7 @@ void VisionRequests::create(const ActorReference& actor)
 	assert(actors.vision_canSeeAnything(index));
 	const BlockIndex& location = actors.getLocation(index);
 	const VisionCuboidIndex& visionCuboidIndex = m_area.m_visionCuboids.getIndexForBlock(location);
-	m_data.emplace(m_area.getBlocks().getCoordinates(location), location, visionCuboidIndex, actor, actors.vision_getRange(index), actors.getFacing(index));
+	m_data.emplace(m_area.getBlocks().getCoordinates(location), location, visionCuboidIndex, actor, actors.vision_getRange(index), actors.getFacing(index), actors.getBlocks(index));
 	if(m_data.back().range > m_largestRange)
 		m_largestRange = m_data.back().range;
 }
@@ -61,45 +61,22 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 		ActorReference previousFoundActor;
 		Sphere visionSphere{fromCoords, m_largestRange.toFloat()};
 		VisionCuboidSetSIMD visionCuboids = m_area.m_visionCuboids.walkAndCollectAdjacentCuboidsInRangeOfPosition(m_area, request.location, m_largestRange);
-		m_area.m_octTree.query(visionSphere, visionCuboids, [&](const LocationBucketData& data){
-			if(previousFoundActor.exists() && data.actor == previousFoundActor)
-				// Multi tile actor has already been found.
-				return;
-			const Point3D& toCoords = data.coordinates;
-			const VisionCuboidIndex& toVisionCuboidIndex = data.cuboid;
-			DistanceInBlocks distanceSquared = fromCoords.distanceSquared(toCoords);
-			bool maybeCanSee =
-				toCoords.isInFrontOf(fromCoords, request.facing) &&
-				distanceSquared <= rangeSquared;
-			// A bit of logical asymetry here: If a multi tile object moves it's vision is counted only from it's location, but if another actor moves into a position where it can see a tile of the multi tile which is not it's location and the other actor is in the multi tile actors range it will be marked as seen, even though it would not be seen at the same position if it had not moved due to either distance or occulsion from the multi tile actor's primary location.
-			bool maybeCanBeSeen =
-				fromCoords.isInFrontOf(toCoords, data.facing) &&
-				distanceSquared <= data.visionRangeSquared;
-			if(maybeCanBeSeen || maybeCanSee)
+		const Facing4 facing = request.facing;
+		const OccupiedBlocksForHasShape occupied = request.occupied;
+		m_area.m_octTree.query(visionSphere, &visionCuboids, [&](const LocationBucket& bucket)
+		{
+			const auto& [actors, canSeeAndCanBeSeenBy] = bucket.visionRequestQuery(m_area, fromCoords, facing, rangeSquared, fromVisionCuboidIndex, visionCuboids, occupied, m_largestRange);
+			for(uint i = 0; i < actors->size(); ++i)
 			{
-				if (
-					fromVisionCuboidIndex == toVisionCuboidIndex ||
-					(
-						// Filter actors based on collected vision cuboid incices which are adjacent to from cuboid index directly or transitively and which intersect the vision sphere.
-						visionCuboids.contains(toVisionCuboidIndex) &&
-						// Check sightlines.
-						m_area.m_opacityFacade.hasLineOfSight(fromCoords, toCoords)
-					)
-				)
-				{
-					if(maybeCanSee)
-					{
-						if(maybeCanBeSeen)
-							previousFoundActor = data.actor;
-						canSee.insertNonunique(data.actor);
-					}
-					if(maybeCanBeSeen)
-						canBeSeenBy.insertNonunique(data.actor);
-				}
+				if(canSeeAndCanBeSeenBy.col(i)[0])
+					canSee.insertNonunique((*actors)[i]);
+				if(canSeeAndCanBeSeenBy.col(i)[1])
+					//TODO: change calls to insert rather then insertNonUnique by preventing duplicates.
+					canBeSeenBy.insertNonunique((*actors)[i]);
 			}
 		});
 	}
-	// Finalize result.
+	// Finalize result by deduplicating.
 	// Do this in a seperate loop to avoid thrashing the CPU cache in the primary one.
 	for(auto iter = m_data.begin() + begin; iter != m_data.begin() + end; ++iter)
 	{
@@ -168,7 +145,6 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::
 		DistanceInBlocks rangeSquared;
 		Point3D coordinates;
 		VisionCuboidIndex cuboid;
-		BlockIndex location;
 		Facing4 facing;
 	};
 	struct BlockData
@@ -197,40 +173,13 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::
 		{DistanceInBlocks::create(maxX), DistanceInBlocks::create(maxY), DistanceInBlocks::create(maxZ)},
 		{DistanceInBlocks::create(minX), DistanceInBlocks::create(minY), DistanceInBlocks::create(minZ)}
 	);
-	ActorReference lastSeen;
-	m_area.m_octTree.query(cuboid, [&](const LocationBucketData& data){
-		// Skip multi tile actor tiles after the first. The first is assumed to be the source of vision.
-		// The data is kept sorted by actor so multi tile records should always be contiguous.
-		if(lastSeen.exists() && lastSeen == data.actor)
-			return;
-		// Skip any already recorded.
-		auto found = std::ranges::find(candidates, data.actor, &CandidateData::actor);
-		if(found != candidates.end())
-			return;
-		BlockIndex location = blocks.getIndex(data.coordinates);
-		candidates.emplace_back(data.actor, data.visionRangeSquared, data.coordinates, data.cuboid, location, data.facing);
-		lastSeen = data.actor;
+	Point3DSet points = blocks.getCoordinateSet(blockSet);
+	m_area.m_octTree.query(cuboid, nullptr, [&](const LocationBucket& bucket){
+		const auto& [actorsResult, canBeSeenBy] = bucket.anyCanBeSeenQuery(m_area, cuboid, points);
+		for(auto i = LocationBucketContentsIndex::create(0); i < actorsResult->size(); ++i)
+			if(canBeSeenBy[i.get()])
+				results.insert((*actorsResult)[i]);
 	});
-	for(const CandidateData& candidate : candidates)
-	{
-		for(const BlockData& blockData : blockDataStore)
-		{
-			DistanceInBlocks distanceSquared = candidate.coordinates.distanceSquared(blockData.coordinates);
-			// Exclude actors too far away to see.
-			if(distanceSquared > candidate.rangeSquared)
-				continue;
-			if(
-				// At some threashold it is not worth it to check line of sight for so many changed blocks, better to just create the vision requests instead.
-				blockDataStore.size() >= Config::minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests ||
-				blockData.cuboid == candidate.cuboid ||
-				m_area.m_opacityFacade.hasLineOfSight(blockData.coordinates, candidate.coordinates)
-			)
-			{
-				results.insert(candidate.actor);
-				break;
-			}
-		}
-	}
 	for(ActorReference actor : results)
 		maybeCreate(actor);
 }

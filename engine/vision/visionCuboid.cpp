@@ -17,6 +17,7 @@ void VisionCuboidSetSIMD::insert(const VisionCuboid& visionCuboid)
 void VisionCuboidSetSIMD::clear() { m_indices.fill(VisionCuboidIndex::null().get()); m_cuboidSet.clear(); }
 bool VisionCuboidSetSIMD::intersects(const Cuboid& cuboid) const { return m_cuboidSet.intersects(cuboid); }
 bool VisionCuboidSetSIMD::contains(const VisionCuboidIndex& index) const { return (m_indices == index.get()).any(); }
+bool VisionCuboidSetSIMD::contains(const VisionCuboidIndexWidth& index) const { return (m_indices == index).any(); }
 
 void AreaHasVisionCuboids::initalize(Area& area)
 {

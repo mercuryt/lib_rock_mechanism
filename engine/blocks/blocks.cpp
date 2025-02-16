@@ -167,7 +167,7 @@ BlockIndex Blocks::maybeGetIndexFromOffsetOnEdge(const Point3D& coordinates, con
 	else
 		return BlockIndex::null();
 }
-BlockIndex Blocks::getIndex_i(uint x, uint y, uint z) const
+BlockIndex Blocks::getIndex_i(const uint& x, const uint& y, const uint& z) const
 {
 	return getIndex(DistanceInBlocks::create(x), DistanceInBlocks::create(y), DistanceInBlocks::create(z));
 }
@@ -176,22 +176,32 @@ BlockIndex Blocks::getIndex(const DistanceInBlocks& x, const DistanceInBlocks& y
 	return getIndex({x,y,z});
 }
 static const Coordinates localSizeMultiples(1, 16, 16*16);
-BlockIndexChunked Blocks::getIndexChunked(Point3D coordinates) const
+BlockIndexChunked Blocks::getIndexChunked(const Point3D& coordinates) const
 {
-	auto chunkOffsets = coordinates.data / 16u;
-	coordinates.data -= chunkOffsets * 16;
-	uint localComponent = (coordinates.data * localSizeMultiples).sum();
+	auto copy = coordinates;
+	auto chunkOffsets = copy.data / 16u;
+	copy.data -= chunkOffsets * 16;
+	uint localComponent = (copy.data * localSizeMultiples).sum();
 	uint globalComponent = (chunkOffsets * m_pointToIndexConversionMultipliersChunked).sum();
 	globalComponent *= 16 * 16 * 16;
 	return BlockIndexChunked::create(localComponent + globalComponent);
 }
-Point3D Blocks::getCoordinates(BlockIndex index) const
+Point3D Blocks::getCoordinates(const BlockIndex& index) const
 {
+	BlockIndex copy = index;
 	Point3D output;
-	output.data[2] = index.get() / m_zLevelSize;
-	index -= BlockIndex::create((output.z() * m_zLevelSize).get());
-	output.data[1] = index.get() / m_sizeX.get();
-	output.data[0] = index.get() - (output.y() * m_sizeX).get();
+	output.data[2] = copy.get() / m_zLevelSize;
+	copy -= BlockIndex::create((output.z() * m_zLevelSize).get());
+	output.data[1] = copy.get() / m_sizeX.get();
+	output.data[0] = copy.get() - (output.y() * m_sizeX).get();
+	return output;
+}
+Point3DSet Blocks::getCoordinateSet(const std::vector<BlockIndex>& blocks) const
+{
+	Point3DSet output;
+	output.reserve(blocks.size());
+	for(const BlockIndex& block : blocks)
+		output.insert(getCoordinates(block));
 	return output;
 }
 Point3D_fractional Blocks::getCoordinatesFractional(const BlockIndex& index) const

@@ -23,6 +23,7 @@ public:
 	void clear();
 	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
 	[[nodiscard]] bool contains(const VisionCuboidIndex& index) const;
+	[[nodiscard]] bool contains(const VisionCuboidIndexWidth& index) const;
 };
 class VisionCuboid final
 {

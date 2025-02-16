@@ -14,4 +14,4 @@ void ActorOrItemReference::load(const Json& data, Area& area)
 		ItemReference item(data[1], area.getItems().m_referenceData);
 		setItem(item);
 	}
-} 
+}

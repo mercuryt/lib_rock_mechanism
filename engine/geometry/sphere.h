@@ -14,6 +14,7 @@ struct Sphere
 	[[nodiscard]] bool contains(const Blocks& blocks, const BlockIndex& block) const;
 	[[nodiscard]] bool contains(const Cuboid& cuboid) const;
 	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
+	[[nodiscard]] auto radiusSquared() const { return radius * radius; }
 	[[nodiscard ]] static bool doesCuboidIntersectSphere(const Point3D& C1, const Point3D& C2, const Sphere& sphere);
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Sphere, center, radius)
 };

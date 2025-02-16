@@ -14,6 +14,7 @@
 #include "../dataVector.h"
 #include "../index.h"
 #include "../geometry/offsetSetSIMD.h"
+#include "../geometry/pointSet.h"
 #include "blockIndexSetSIMD.h"
 
 #include "blockIndexArray.h"
@@ -109,15 +110,16 @@ public:
 	[[nodiscard]] size_t getChunkedSize() const;
 	[[nodiscard]] BlockIndex getIndex(const Point3D& coordinates) const;
 	[[nodiscard]] BlockIndex maybeGetIndex(const Point3D& coordinates) const;
-	BlockIndex maybeGetIndexFromOffset(const Point3D& coordinates, const Offset3D& offset) const;
-	BlockIndex maybeGetIndexFromOffsetOnEdge(const Point3D& coordinates, const Offset3D& offset) const;
+	[[nodiscard]] BlockIndex maybeGetIndexFromOffset(const Point3D& coordinates, const Offset3D& offset) const;
+	[[nodiscard]] BlockIndex maybeGetIndexFromOffsetOnEdge(const Point3D& coordinates, const Offset3D& offset) const;
 	[[nodiscard]] BlockIndex getIndex(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) const;
-	[[nodiscard]] BlockIndex getIndex_i(uint x, uint y, uint z) const;
+	[[nodiscard]] BlockIndex getIndex_i(const uint& x, const uint& y, const uint& z) const;
 	// Pass by value because it will be modified.
-	BlockIndexChunked getIndexChunked(Point3D coordinates) const;
+	[[nodiscard]] BlockIndexChunked getIndexChunked(const Point3D& coordinates) const;
 	// Pass by value because it will be modified.
-	[[nodiscard]] Point3D getCoordinates(BlockIndex index) const;
-	Point3D_fractional getCoordinatesFractional(const BlockIndex& index) const;
+	[[nodiscard]] Point3D getCoordinates(const BlockIndex& index) const;
+	[[nodiscard]] Point3DSet getCoordinateSet(const std::vector<BlockIndex>& index) const;
+	[[nodiscard]] Point3D_fractional getCoordinatesFractional(const BlockIndex& index) const;
 	[[nodiscard]] DistanceInBlocks getZ(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndex getAtFacing(const BlockIndex& index, const Facing6& facing) const;
 	[[nodiscard]] BlockIndex getCenterAtGroundLevel() const;

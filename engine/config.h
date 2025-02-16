@@ -143,7 +143,7 @@ namespace Config
 	inline Step minimumStepsRainPerPercentHumidity;
 	inline uint16_t minimumSizeForOctTreeToSplit;
 	inline uint16_t minimumOccupantsForOctTreeToSplit;
-	inline uint16_t minimumOccupantsForOctTreeToUnsplit;
+	inline uint16_t maximumOccupantsForOctTreeToMerge;
 	inline uint32_t minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests;
 	inline CollisionVolume minimumVolumeOfFluidToBreath;
 	inline uint32_t minutesPerHour;
