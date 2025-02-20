@@ -192,7 +192,7 @@ public:
 	void vision_maybeSetNoLongerCanSee(const ActorIndex& index, const ActorReference& other) { m_canSee[index].maybeErase(other); }
 	void vision_maybeSetNoLongerCanBeSeenBy(const ActorIndex& index, const ActorReference& other) { m_canBeSeenBy[index].maybeErase(other); }
 	void vision_clearCanSee(const ActorIndex& index);
-	void vision_maybeUpdateCuboid(const ActorIndex& index, const VisionCuboidIndex& newCuboid);
+	void vision_maybeUpdateCuboid(const ActorIndex& index, const VisionCuboidId& newCuboid);
 	void vision_maybeUpdateRange(const ActorIndex& index, const DistanceInBlocks& range);
 	void vision_maybeUpdateLocation(const ActorIndex& index, const BlockIndex& location);
 	[[nodiscard]] SmallSet<ActorReference>& vision_getCanSee(const ActorIndex& index) { return m_canSee[index]; }

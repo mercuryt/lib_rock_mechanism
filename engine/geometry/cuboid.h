@@ -43,12 +43,14 @@ public:
 	[[nodiscard]] bool overlapsWithSphere(const Sphere& sphere) const;
 	[[nodiscard]] size_t size() const;
 	[[nodiscard]] bool empty() const { return m_highest.empty(); }
+	[[nodiscard]] bool exists() const { return m_highest.exists(); }
 	[[nodiscard]] bool operator==(const Cuboid& cuboid) const;
 	[[nodiscard]] Point3D getCenter() const;
 	[[nodiscard]] DistanceInBlocks dimensionForFacing(const Facing6& facing) const;
 	[[nodiscard]] Facing6 getFacingTwordsOtherCuboid(const Cuboid& cuboid) const;
 	[[nodiscard]] bool isSomeWhatInFrontOf(const Point3D& position, const Facing4& facing) const;
 	[[nodiscard]] SmallSet<Cuboid> getChildrenWhenSplitByCuboid(const Cuboid& cuboid) const;
+	[[nodiscard]] std::pair<Cuboid, Cuboid> getChildrenWhenSplitBelowCuboid(const Cuboid& cuboid) const;
 	[[nodiscard]] bool isTouching(const Cuboid& cuboid) const;
 	[[nodiscard]] static Cuboid fromBlock(const Blocks& blocks, const BlockIndex& block);
 	[[nodiscard]] static Cuboid fromBlockPair(const Blocks& blocks, const BlockIndex& a, const BlockIndex& b);

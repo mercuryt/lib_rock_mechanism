@@ -192,6 +192,7 @@ namespace Config
 	inline float ratioOfTotalBodyVolumeWhichIsBlood;
 	inline float ratioOfVisionCuboidSlotsToReservePerBlock;
 	inline float ratioWoundsCloseDelayToBleedVolume;
+	inline uint reserveSizeVisionCuboidAdjacent;
 	inline Step restIntervalSteps;
 	inline float rollingMassModifier;
 	inline uint32_t scaleOfHumanBody;

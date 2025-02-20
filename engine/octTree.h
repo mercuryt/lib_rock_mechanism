@@ -14,7 +14,7 @@
 using Allocator = std::pmr::unsynchronized_pool_resource;
 
 class Area;
-class VisionCuboidIndex;
+class VisionCuboidId;
 class DistanceInBlocks;
 
 class OctTreeIndex : public StrongInteger<OctTreeIndex, uint16_t>
@@ -54,7 +54,7 @@ public:
 	OctTree(const Cuboid& cuboid);
 	void record(Area& area, const ActorReference& actor);
 	void erase(Area& area, const ActorReference& actor);
-	void updateVisionCuboid(const Point3D& coordinates, const VisionCuboidIndex& cuboid);
+	void updateVisionCuboid(const Point3D& coordinates, const VisionCuboidId& cuboid);
 	void updateRange(const ActorReference& actor, const Point3D& coordinates, const DistanceInBlocks& visionRangeSquared);
 	void maybeSort();
 	void split(const OctTreeIndex& node);

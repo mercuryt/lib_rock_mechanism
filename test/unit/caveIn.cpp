@@ -33,11 +33,9 @@ TEST_CASE("Cave In")
 		// Set a floating block to be solid and add to caveInCheck, verify it falls.
 		BlockIndex block = blocks.getIndex_i(5, 5, 2);
 		blocks.solid_set(block, marble, false);
-		area.m_visionCuboids.validate(area);
 		area.m_caveInCheck.add(block);
 		area.stepCaveInRead();
 		CHECK(area.m_caveInData.size() == 1);
-		area.m_visionCuboids.validate(area);
 		area.stepCaveInWrite();
 		CHECK(!blocks.solid_is(blocks.getIndex_i(5, 5, 2)));
 		CHECK(blocks.solid_get(blocks.getIndex_i(5, 5, 1)) == marble);

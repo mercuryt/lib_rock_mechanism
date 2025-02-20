@@ -170,6 +170,7 @@
 	"ratioOfTotalBodyVolumeWhichIsBlood": 0.05,
 	"ratioOfVisionCuboidSlotsToReservePerBlock": 0.05,
 	"ratioWoundsCloseDelayToBleedVolumeSeconds": 500,
+	"reserveSizeVisionCuboidAdjacent": 8,
 	"restIntervalSeconds": 100,
 	"rollingMassModifier": 0.25,
 	"scaleOfHumanBody": 100,

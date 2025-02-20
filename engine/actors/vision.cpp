@@ -29,7 +29,7 @@ void Actors::vision_clearCanSee(const ActorIndex& index)
 		m_canBeSeenBy[other.getIndex(m_referenceData)].erase(ref);
 	m_canSee[index].clear();
 }
-void Actors::vision_maybeUpdateCuboid(const ActorIndex& index, const VisionCuboidIndex& newCuboid)
+void Actors::vision_maybeUpdateCuboid(const ActorIndex& index, const VisionCuboidId& newCuboid)
 {
 	if(vision_canSeeAnything(index))
 		m_area.m_visionRequests.maybeUpdateCuboid(getReference(index), newCuboid);

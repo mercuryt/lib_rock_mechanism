@@ -31,17 +31,18 @@ class CuboidSet
 {
 protected:
 	SmallSet<Cuboid> m_cuboids;
-	//
-	void create(const Cuboid& cuboid);
+	// Overriden by AreaHasVisionCuboids.
+	virtual void create(const Cuboid& cuboid);
+	virtual void destroy(const uint& cuboid);
 	// For merging contained cuboids.
-	void mergeInternal(const Cuboid& absorbed, const Cuboid& absorber);
+	void mergeInternal(const Cuboid& absorbed, const uint& absorber);
 public:
 	void add(const Point3D& point);
 	void remove(const Point3D& point);
 	void add(const Blocks& blocks, const BlockIndex& block);
 	void remove(const Blocks& blocks, const BlockIndex& block);
-	void add(const Cuboid& cuboid);
-	void remove(const Cuboid& cuboid);
+	virtual void add(const Cuboid& cuboid);
+	virtual void remove(const Cuboid& cuboid);
 	void clear() { m_cuboids.clear(); }
 	// For merging with other cuboid sets.
 	void addSet(const CuboidSet& other);
@@ -60,10 +61,6 @@ class CuboidSetWithBoundingBoxAdjacent : public CuboidSet
 {
 	Cuboid m_boundingBox;
 public:
-	void add(const Cuboid& cuboid) = delete;
-	void add(const Blocks& blocks, const BlockIndex& block) = delete;
-	void remove(const Cuboid& cuboid) = delete;
-	void remove(const Blocks& blocks, const BlockIndex& block) = delete;
 	void addAndExtend(const Cuboid& cuboid);
 	void addAndExtend(const Blocks& blocks, const BlockIndex& block);
 	[[nodiscard]] SmallSet<Cuboid> removeAndReturnNoLongerAdjacentCuboids(const Cuboid& cuboid);

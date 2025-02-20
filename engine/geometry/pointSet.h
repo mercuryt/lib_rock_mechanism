@@ -19,7 +19,7 @@ private:
 public:
 	Point3DSet() = default;
 	Point3DSet(const uint& capacity) { assert(capacity != 0); reserve(capacity); }
-	void reserve(const uint& capacity) { data.resize(3, capacity); }
+	void reserve(const uint& capacity) { data.conservativeResize(3, capacity); }
 	void resize(const uint& capacity) { if(m_size < capacity) reserve(capacity); m_size = capacity; }
 	void insert(const Point3D& point);
 	void clear() { m_size = 0; };

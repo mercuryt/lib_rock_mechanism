@@ -59,12 +59,12 @@ void Blocks::blockFeature_construct(const BlockIndex& block, const BlockFeatureT
 	m_features[block].emplace_back(&blockFeatureType, materialType, false);
 	if((blockFeatureType == BlockFeatureType::floor || blockFeatureType == BlockFeatureType::hatch) && !MaterialType::getTransparent(materialType))
 	{
-		m_area.m_visionCuboids.blockFloorIsOpaque(m_area, block);
+		m_area.m_visionCuboids.blockFloorIsOpaque(block);
 		m_exposedToSky.unset(m_area, block);
 	}
 	else if(blockFeatureType == BlockFeatureType::door && !MaterialType::getTransparent(materialType))
 	{
-		m_area.m_visionCuboids.blockIsOpaque(m_area, block);
+		m_area.m_visionCuboids.blockIsOpaque(block);
 		m_exposedToSky.unset(m_area, block);
 	}
 	m_area.m_opacityFacade.update(block);
@@ -118,9 +118,9 @@ void Blocks::blockFeature_close(const BlockIndex& block, const BlockFeatureType&
 	if(!MaterialType::getTransparent(blockFeature.materialType))
 	{
 		if(blockFeatueType == BlockFeatureType::hatch)
-			m_area.m_visionCuboids.blockFloorIsOpaque(m_area, block);
+			m_area.m_visionCuboids.blockFloorIsOpaque(block);
 		else
-			m_area.m_visionCuboids.blockIsOpaque(m_area, block);
+			m_area.m_visionCuboids.blockIsOpaque(block);
 		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	}
 }
@@ -134,9 +134,9 @@ void Blocks::blockFeature_open(const BlockIndex& block, const BlockFeatureType& 
 	if(!MaterialType::getTransparent(blockFeature.materialType))
 	{
 		if(blockFeatueType == BlockFeatureType::hatch)
-			m_area.m_visionCuboids.blockFloorIsTransparent(m_area, block);
+			m_area.m_visionCuboids.blockFloorIsTransparent(block);
 		else
-			m_area.m_visionCuboids.blockIsTransparent(m_area, block);
+			m_area.m_visionCuboids.blockIsTransparent(block);
 		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	}
 }

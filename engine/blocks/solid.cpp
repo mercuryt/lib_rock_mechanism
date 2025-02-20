@@ -77,25 +77,25 @@ void Blocks::solid_set(const BlockIndex& index, const MaterialTypeId& materialTy
 	solid_setShared(index, materialType, constructed);
 	// Opacity.
 	if(!MaterialType::getTransparent(materialType) && wasEmpty)
-		m_area.m_visionCuboids.blockIsOpaque(m_area, index);
+		m_area.m_visionCuboids.blockIsOpaque(index);
 }
 void Blocks::solid_setNot(const BlockIndex& index)
 {
 	solid_setNotShared(index);
-	m_area.m_visionCuboids.blockIsTransparent(m_area, index);
+	m_area.m_visionCuboids.blockIsTransparent(index);
 }
 void Blocks::solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& materialType, bool constructed)
 {
 	for(const BlockIndex& index : cuboid.getView(*this))
 		solid_setShared(index, materialType, constructed);
 	if(!MaterialType::getTransparent(materialType))
-		m_area.m_visionCuboids.cuboidIsOpaque(m_area, cuboid);
+		m_area.m_visionCuboids.cuboidIsOpaque(cuboid);
 }
 void Blocks::solid_setNotCuboid(const Cuboid& cuboid)
 {
 	for(const BlockIndex& index : cuboid.getView(*this))
 		solid_setNotShared(index);
-	m_area.m_visionCuboids.cuboidIsTransparent(m_area, cuboid);
+	m_area.m_visionCuboids.cuboidIsTransparent(cuboid);
 }
 MaterialTypeId Blocks::solid_get(const BlockIndex& index) const
 {

@@ -31,7 +31,7 @@ void LocationBucket::copyIndex(const LocationBucket& other, const LocationBucket
 	m_facing[index.get()] = other.m_facing[otherIndex.get()];
 	m_actors.add(other.m_actors[otherIndex]);
 }
-void LocationBucket::insert(const ActorReference& actor, const Point3D& coordinates, const VisionCuboidIndex& cuboid, const DistanceInBlocks& visionRangeSquared, const Facing4& facing)
+void LocationBucket::insert(const ActorReference& actor, const Point3D& coordinates, const VisionCuboidId& cuboid, const DistanceInBlocks& visionRangeSquared, const Facing4& facing)
 {
 	LocationBucketContentsIndex index = LocationBucketContentsIndex::create(m_actors.size());
 	if(m_actors.size() == m_actors.capacity())
@@ -59,7 +59,7 @@ void LocationBucket::updateVisionRangeSquared(const ActorReference& actor, const
 			break;
 		}
 }
-void LocationBucket::updateVisionCuboidIndex(const Point3D& coordinates, const VisionCuboidIndex& cuboid)
+void LocationBucket::updateVisionCuboidIndex(const Point3D& coordinates, const VisionCuboidId& cuboid)
 {
 	for(auto i = LocationBucketContentsIndex::create(0); i < m_actors.size(); ++i)
 		if(m_points[i.get()] == coordinates.data)
@@ -85,7 +85,7 @@ void LocationBucket::reserve(int size)
 	m_actors.reserve(size);
 }
 const std::pair<const std::vector<ActorReference>*, Eigen::Array<bool, 2, Eigen::Dynamic>>
-LocationBucket::visionRequestQuery(const Area& area, const Point3D& position, const Facing4& facing, const DistanceInBlocks& visionRangeSquared, const VisionCuboidIndex& visionCuboid, const VisionCuboidSetSIMD& visionCuboids, const OccupiedBlocksForHasShape& occupiedBlocks, const DistanceInBlocks& largestVisionRange) const
+LocationBucket::visionRequestQuery(const Area& area, const Point3D& position, const Facing4& facing, const DistanceInBlocks& visionRangeSquared, const VisionCuboidId& visionCuboid, const VisionCuboidSetSIMD& visionCuboids, const OccupiedBlocksForHasShape& occupiedBlocks, const DistanceInBlocks& largestVisionRange) const
 {
 	Sphere sphere(position, largestVisionRange.toFloat());
 	// Broad phase culling.

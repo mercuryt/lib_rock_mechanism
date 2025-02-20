@@ -19,6 +19,6 @@ TEST_CASE("block")
 	CHECK(blocks.getBlockAbove(lowest) == 100);
 	CHECK(blocks.getBlockSouth(lowest) == 10);
 	CHECK(blocks.getBlockEast(lowest) == 1);
-	CHECK(area.m_visionCuboids.maybeGetForBlock(lowest) != nullptr);
+	CHECK(area.m_visionCuboids.getVisionCuboidIndexForBlock(lowest).exists());
 }
 

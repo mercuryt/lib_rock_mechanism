@@ -20,40 +20,40 @@ TEST_CASE("vision cuboid basic")
 	SUBCASE("create")
 	{
 		CHECK(cuboids.size() == 1);
-		CHECK(cuboids.getIndexForBlock(low).exists());
-		CHECK(cuboids.getIndexForBlock(high) == cuboids.getIndexForBlock(low));
-		VisionCuboid& visionCuboid = *cuboids.maybeGetForBlock(low);
-		CHECK(visionCuboid.m_cuboid.size() == 8);
-		CHECK(!visionCuboid.toDestory());
-		CHECK(visionCuboid.m_adjacent.empty());
+		CHECK(cuboids.getVisionCuboidIndexForBlock(low).exists());
+		CHECK(cuboids.getVisionCuboidIndexForBlock(high) == cuboids.getVisionCuboidIndexForBlock(low));
+		VisionCuboidId visionCuboid = cuboids.getVisionCuboidIndexForBlock(low);
+		Cuboid cuboid = cuboids.getCuboidByVisionCuboidId(visionCuboid);
+		CHECK(cuboid.size() == 8);
+		CHECK(cuboids.getAdjacentsForVisionCuboid(visionCuboid).empty());
 	}
 	SUBCASE("can merge")
 	{
 		const BlockIndex& low = blocks.getIndex_i(0, 0, 0);
-		cuboids.blockIsOpaque(area, low);
+		cuboids.blockIsOpaque(low);
 		CHECK(cuboids.size() == 3);
-		CHECK(cuboids.getIndexForBlock(low).empty());
-		VisionCuboid& highCuboid = *cuboids.maybeGetForBlock(high);
-		CHECK(highCuboid.m_cuboid.size() == 4);
-		CHECK(highCuboid.m_adjacent.size() == 2);
-		VisionCuboid& eastCuboid = *cuboids.maybeGetForBlock(blocks.getIndex_i(0, 1, 0));
-		CHECK(eastCuboid.m_cuboid.size() == 2);
-		CHECK(eastCuboid.m_adjacent.size() == 2);
-		VisionCuboid& southCuboid = *cuboids.maybeGetForBlock(blocks.getIndex_i(1, 0, 0));
-		CHECK(southCuboid.m_cuboid.size() == 1);
-		CHECK(southCuboid.m_adjacent.size() == 2);
-		CHECK(highCuboid.m_adjacent.contains(eastCuboid.m_index));
-		CHECK(highCuboid.m_adjacent.contains(southCuboid.m_index));
-		CHECK(eastCuboid.m_adjacent.contains(highCuboid.m_index));
-		CHECK(eastCuboid.m_adjacent.contains(southCuboid.m_index));
-		CHECK(southCuboid.m_adjacent.contains(highCuboid.m_index));
-		CHECK(southCuboid.m_adjacent.contains(eastCuboid.m_index));
-		cuboids.blockIsTransparent(area, low);
+		CHECK(cuboids.maybeGetVisionCuboidIndexForBlock(low).empty());
+		VisionCuboidId highCuboid = cuboids.getVisionCuboidIndexForBlock(high);
+		CHECK(cuboids.getCuboidByVisionCuboidId(highCuboid).size() == 4);
+		CHECK(cuboids.getAdjacentsForVisionCuboid(highCuboid).size() == 2);
+		VisionCuboidId eastCuboid = cuboids.getVisionCuboidIndexForBlock(blocks.getIndex_i(0, 1, 0));
+		CHECK(cuboids.getCuboidByVisionCuboidId(eastCuboid).size() == 2);
+		CHECK(cuboids.getAdjacentsForVisionCuboid(eastCuboid).size() == 2);
+		VisionCuboidId southCuboid = cuboids.getVisionCuboidIndexForBlock(blocks.getIndex_i(1, 0, 0));
+		CHECK(cuboids.getCuboidByVisionCuboidId(southCuboid).size() == 1);
+		CHECK(cuboids.getAdjacentsForVisionCuboid(southCuboid).size() == 2);
+		CHECK(cuboids.getAdjacentsForVisionCuboid(highCuboid).contains(eastCuboid));
+		CHECK(cuboids.getAdjacentsForVisionCuboid(highCuboid).contains(southCuboid));
+		CHECK(cuboids.getAdjacentsForVisionCuboid(eastCuboid).contains(highCuboid));
+		CHECK(cuboids.getAdjacentsForVisionCuboid(eastCuboid).contains(southCuboid));
+		CHECK(cuboids.getAdjacentsForVisionCuboid(southCuboid).contains(highCuboid));
+		CHECK(cuboids.getAdjacentsForVisionCuboid(southCuboid).contains(eastCuboid));
+		cuboids.blockIsTransparent(low);
 		CHECK(cuboids.size() == 1);
-		CHECK(cuboids.getIndexForBlock(low).exists());
-		VisionCuboid& cuboid = *cuboids.maybeGetForBlock(high);
-		CHECK(cuboid.m_cuboid.size() == 8);
-		CHECK(cuboid.m_adjacent.empty());
+		CHECK(cuboids.getVisionCuboidIndexForBlock(low).exists());
+		VisionCuboidId cuboid = cuboids.getVisionCuboidIndexForBlock(high);
+		CHECK(cuboids.getCuboidByVisionCuboidId(cuboid).size() == 8);
+		CHECK(cuboids.getAdjacentsForVisionCuboid(cuboid).empty());
 	}
 }
 TEST_CASE("vision cuboid split")
@@ -68,27 +68,25 @@ TEST_CASE("vision cuboid split")
 		BlockIndex b3 = blocks.getIndex_i(0, 1, 0);
 		BlockIndex b4 = blocks.getIndex_i(1, 1, 0);
 		CHECK(area.m_visionCuboids.size() == 1);
-		area.m_visionCuboids.splitAt(area, *area.m_visionCuboids.maybeGetForBlock(b1), b4);
-		CHECK(area.m_visionCuboids.maybeGetForBlock(b4) == nullptr);
-		CHECK(area.m_visionCuboids.size() == 3);
-		area.m_visionCuboids.clearDestroyed(area);
+		area.m_visionCuboids.remove({blocks, b4, b4});
+		CHECK(area.m_visionCuboids.maybeGetVisionCuboidIndexForBlock(b4).empty());
 		CHECK(area.m_visionCuboids.size() == 2);
-		VisionCuboid& vc1 = *area.m_visionCuboids.maybeGetForBlock(b1);
-		VisionCuboid& vc2 = *area.m_visionCuboids.maybeGetForBlock(b2);
-		VisionCuboid& vc3 = *area.m_visionCuboids.maybeGetForBlock(b3);
-		if(&vc1 == &vc2)
+		VisionCuboidId vc1 = area.m_visionCuboids.getVisionCuboidIndexForBlock(b1);
+		VisionCuboidId vc2 = area.m_visionCuboids.getVisionCuboidIndexForBlock(b2);
+		VisionCuboidId vc3 = area.m_visionCuboids.getVisionCuboidIndexForBlock(b3);
+		if(vc1 == vc2)
 		{
-			assert(&vc2 != &vc3);
-			CHECK(vc1.m_cuboid.size() == 2);
-			CHECK(vc3.m_cuboid.size() == 1);
+			assert(vc2 != vc3);
+			CHECK(area.m_visionCuboids.getCuboidByVisionCuboidId(vc1).size() == 2);
+			CHECK(area.m_visionCuboids.getCuboidByVisionCuboidId(vc3).size() == 1);
 		}
 		else
 		{
-			assert(&vc1 == &vc3);
-			CHECK(vc1.m_cuboid.size() == 2);
-			CHECK(vc2.m_cuboid.size() == 1);
+			assert(vc1 == vc3);
+			CHECK(area.m_visionCuboids.getCuboidByVisionCuboidId(vc1).size() == 2);
+			CHECK(area.m_visionCuboids.getCuboidByVisionCuboidId(vc2).size() == 1);
 		}
-		CHECK(area.m_visionCuboids.maybeGetForBlock(b4) == nullptr);
+		CHECK(area.m_visionCuboids.maybeGetVisionCuboidIndexForBlock(b4).empty());
 	}
 	SUBCASE("split below")
 	{
@@ -98,11 +96,10 @@ TEST_CASE("vision cuboid split")
 		BlockIndex high = blocks.getIndex_i(2, 2, 2);
 		BlockIndex low = blocks.getIndex_i(0, 0, 0);
 		blocks.blockFeature_construct(middle, BlockFeatureType::floor, MaterialType::byName(L"marble"));
-		area.m_visionCuboids.clearDestroyed(area);
 		CHECK(area.m_visionCuboids.size() == 2);
-		CHECK(area.m_visionCuboids.maybeGetForBlock(middle) == area.m_visionCuboids.maybeGetForBlock(high));
-		CHECK(area.m_visionCuboids.maybeGetForBlock(middle) != area.m_visionCuboids.maybeGetForBlock(low));
-		CHECK(area.m_visionCuboids.maybeGetForBlock(low)->m_cuboid.size() == 9);
-		CHECK(area.m_visionCuboids.maybeGetForBlock(middle)->m_cuboid.size() == 18);
+		CHECK(area.m_visionCuboids.getVisionCuboidIndexForBlock(middle) == area.m_visionCuboids.getVisionCuboidIndexForBlock(high));
+		CHECK(area.m_visionCuboids.getVisionCuboidIndexForBlock(middle) != area.m_visionCuboids.getVisionCuboidIndexForBlock(low));
+		CHECK(area.m_visionCuboids.getCuboidForBlock(low).size() == 9);
+		CHECK(area.m_visionCuboids.getCuboidForBlock(middle).size() == 18);
 	}
 }

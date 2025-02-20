@@ -284,6 +284,22 @@ SmallSet<Cuboid> Cuboid::getChildrenWhenSplitByCuboid(const Cuboid& cuboid) cons
 		output.emplace(Point3D(splitLowest.x() - 1, splitHighest.y(), splitHighest.z()), Point3D(m_lowest.x(), splitLowest.y(), splitLowest.z()));
 	return output;
 }
+std::pair<Cuboid, Cuboid> Cuboid::getChildrenWhenSplitBelowCuboid(const Cuboid& cuboid) const
+{
+	Point3D splitHighest = cuboid.m_highest;
+	Point3D splitLowest = cuboid.m_lowest;
+	// Clamp split high and low to this so split highest cannot be higher then m_highest and split lowest cannot be lower then m_lowest.
+	splitHighest.clampHigh(m_highest);
+	splitLowest.clampLow(m_lowest);
+	std::pair<Cuboid, Cuboid> output;
+	// Split off group above.
+	if(m_highest.z() >= splitHighest.z())
+		output.first = Cuboid(m_highest, Point3D(m_lowest.x(), m_lowest.y(), splitHighest.z()));
+	// Split off group below.
+	if(m_lowest.z() < splitLowest.z())
+		output.second = Cuboid(Point3D(m_highest.x(), m_highest.y(), splitLowest.z() - 1), m_lowest);
+	return output;
+}
 bool Cuboid::isTouching(const Cuboid& cuboid) const
 {
 	// TODO: SIMD.
