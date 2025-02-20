@@ -69,6 +69,9 @@ public:
 	{
 		const OctTreeIndex topLevelIndex = OctTreeIndex::create(0);
 		const OctTreeNode topLevelNode = m_nodes[topLevelIndex];
+		Cuboid visionCuboidsBoundry;
+		if(visionCuboids != nullptr)
+			visionCuboidsBoundry = visionCuboids->boundry();
 		if(!topLevelNode.hasChildren())
 		{
 			if(!topLevelNode.contents.empty())
@@ -88,6 +91,12 @@ public:
 			const CuboidArray<8>& cuboids = node.cuboids;
 			Eigen::Array<bool, 1, 8> contained = cuboids.indicesOfContainedCuboids(queryShape);
 			Eigen::Array<bool, 1, 8> intersecting = cuboids.indicesOfIntersectingCuboids(queryShape);
+			if(visionCuboids != nullptr)
+			{
+				Eigen::Array<bool, 1, 8> notIntersectingWithVisionCuboidsBoundry = !cuboids.indicesOfIntersectingCuboids(visionCuboidsBoundry);
+				contained -= notIntersectingWithVisionCuboidsBoundry;
+				intersecting -= notIntersectingWithVisionCuboidsBoundry;
+			}
 			for(uint i = 0; i < 8; i++)
 			{
 				const OctTreeIndex& child = node.children[i];

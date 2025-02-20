@@ -54,6 +54,7 @@ public:
 	[[nodiscard]] const SmallSet<Cuboid>& getCuboids() const { return m_cuboids; }
 	[[nodiscard]] SmallSet<BlockIndex> toBlockSet(const Blocks& blocks) const;
 	[[nodiscard]] bool isAdjacent(const Cuboid& cuboid) const;
+	[[nodiscard]] Cuboid boundry(const BlockIndex& block) const;
 	friend class CuboidSetConstIterator;
 	friend struct CuboidSetConstView;
 };
