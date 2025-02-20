@@ -26,6 +26,7 @@ public:
 	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
 	[[nodiscard]] bool contains(const VisionCuboidId& index) const;
 	[[nodiscard]] bool contains(const VisionCuboidIndexWidth& index) const;
+	[[nodiscard]] Cuboid boundry() const { return m_cuboidSet.boundry(); }
 };
 class AreaHasVisionCuboids final : public CuboidSet
 {

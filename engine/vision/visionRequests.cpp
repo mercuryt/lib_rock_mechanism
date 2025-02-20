@@ -58,9 +58,8 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 		SmallSet<ActorReference>& canSee = request.canSee;
 		SmallSet<ActorReference>& canBeSeenBy = request.canBeSeenBy;
 		// Collect results in a vector rather then a set to prevent cache thrashing.
-		ActorReference previousFoundActor;
-		Sphere visionSphere{fromCoords, m_largestRange.toFloat()};
-		VisionCuboidSetSIMD visionCuboids = m_area.m_visionCuboids.query(visionSphere, m_area.getBlocks());
+		const Sphere visionSphere{fromCoords, m_largestRange.toFloat()};
+		const VisionCuboidSetSIMD visionCuboids = m_area.m_visionCuboids.query(visionSphere, m_area.getBlocks());
 		const Facing4 facing = request.facing;
 		const OccupiedBlocksForHasShape occupied = request.occupied;
 		m_area.m_octTree.query(visionSphere, &visionCuboids, [&](const LocationBucket& bucket)
