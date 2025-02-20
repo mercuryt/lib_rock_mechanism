@@ -4,14 +4,15 @@
  * Stored in Area::m_visionCuboids. Deleted durring DerivedArea::writeStep if m_destroy is true.
  */
 #pragma once
-#include "geometry/cuboid.h"
-#include "geometry/cuboidSetSIMD.h"
-#include "dataVector.h"
+#include "config.h"
+#include "../geometry/cuboidMap.h"
+#include "../geometry/cuboidSetSIMD.h"
+#include "../geometry/cuboidSet.h"
 
 class Area;
 class VisionCuboid;
 
-// To be returned from VisionCuboid::walkAndCollectAdjacentCuboidsInRangeOfPosition.
+// To be returned from AreaHasVisionCuboids::query.
 // Used by VisionRequest.
 class VisionCuboidSetSIMD
 {
@@ -19,67 +20,83 @@ class VisionCuboidSetSIMD
 	Eigen::ArrayX<VisionCuboidIndexWidth> m_indices;
 public:
 	VisionCuboidSetSIMD(uint capacity);
-	void insert(const VisionCuboid& visionCuboid);
+	void insert(const VisionCuboidId& index, const Cuboid& cuboid);
+	void maybeInsert(const VisionCuboidId& index, const Cuboid& cuboid);
 	void clear();
 	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
-	[[nodiscard]] bool contains(const VisionCuboidIndex& index) const;
+	[[nodiscard]] bool contains(const VisionCuboidId& index) const;
 	[[nodiscard]] bool contains(const VisionCuboidIndexWidth& index) const;
 };
-class VisionCuboid final
+class AreaHasVisionCuboids final : public CuboidSet
 {
-	bool m_destroy = false;
+	std::vector<VisionCuboidId> m_keys;
+	StrongVector<VisionCuboidId, BlockIndex> m_blockLookup;
+	std::vector<CuboidMap<VisionCuboidId>> m_adjacent;
+	Area& m_area;
+	VisionCuboidId m_nextKey = VisionCuboidId::create(0);
 public:
-	SmallSet<VisionCuboidIndex> m_adjacent;
-	Cuboid m_cuboid;
-	VisionCuboidIndex m_index;
-
-	VisionCuboid() = default;
-	VisionCuboid(const Cuboid& cuboid, const VisionCuboidIndex& index) : m_cuboid(cuboid), m_index(index) { }
-	VisionCuboid(const VisionCuboid&) = default;
-	VisionCuboid(VisionCuboid&&) noexcept = default;
-	VisionCuboid& operator=(const VisionCuboid& other) { m_adjacent = other.m_adjacent; m_cuboid = other.m_cuboid; m_index = other.m_index; m_destroy = other.m_destroy; return *this; }
-	VisionCuboid& operator=(VisionCuboid&& other) noexcept { m_adjacent = std::move(other.m_adjacent); m_cuboid = other.m_cuboid; m_index = other.m_index; m_destroy = other.m_destroy; return *this; }
-	void setDestroy() { m_destroy = true; }
-	[[nodiscard]] bool canSeeInto(Area& area, const Cuboid& cuboid) const;
-	[[nodiscard]] bool canCombineWith(Area& area, const Cuboid& cuboid) const;
-	// Select a cuboid to steal from this cuboid and merge with the cuboid argument provided.
-	[[nodiscard]] Cuboid canStealFrom(Area& area, const Cuboid& cuboid) const;
-	[[nodiscard]] bool toDestory() const { return m_destroy; }
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(VisionCuboid, m_adjacent, m_cuboid, m_index, m_destroy);
-};
-class AreaHasVisionCuboids final
-{
-	StrongVector<VisionCuboid, VisionCuboidIndex> m_visionCuboids;
-	StrongVector<VisionCuboidIndex, BlockIndex> m_blockVisionCuboidIndices;
-public:
-	void initalize(Area& area);
-	void clearDestroyed(Area& area);
-	// TODO: replace sometimes and never with is / is not. Update with opening / closing of doors and hatches.
-	void blockIsTransparent(Area& area, const BlockIndex& block);
-	void blockIsOpaque(Area& area, const BlockIndex& block);
-	void blockFloorIsTransparent(Area& area, const BlockIndex& block);
-	void blockFloorIsOpaque(Area& area, const BlockIndex& block);
-	void cuboidIsTransparent(Area& area, const Cuboid& cuboid);
-	void cuboidIsOpaque(Area& area, const Cuboid& cuboid);
-	void set(Area& area, const BlockIndex& block, VisionCuboid& visionCuboid);
-	void unset(const BlockIndex& block);
-	void updateBlocks(Area& area, const VisionCuboid& visionCuboid, const VisionCuboidIndex& newIndex);
-	void updateBlocks(Area& area, const Cuboid& cuboid, const VisionCuboidIndex& newIndex);
-	void splitAt(Area& area, VisionCuboid& visionCuboid, const BlockIndex& split);
-	void splitBelow(Area& area, VisionCuboid& visionCuboid, const BlockIndex& split);
-	void splitAtCuboid(Area& area, VisionCuboid& visionCuboid, const Cuboid& cuboid);
-	void maybeExtend(Area& area, VisionCuboid& visionCuboid);
-	void setCuboid(Area& area, VisionCuboid& visionCuboid, const Cuboid& cuboid);
-	void createOrExtend(Area& area, const Cuboid& cuboid);
-	void setDestroy(VisionCuboid& visionCuboid);
-	void validate(const Area& area);
-	[[nodiscard]] BlockIndex findLowPointForCuboidStartingFromHighPoint(Area& area, const BlockIndex& highest) const;
-	[[nodiscard]] std::pair<VisionCuboid*, Cuboid> maybeGetTargetToCombineWith(Area& area, const Cuboid& cuboid);
-	[[nodiscard]] VisionCuboid* maybeGetForBlock(const BlockIndex& block);
-	[[nodiscard]] VisionCuboidIndex getIndexForBlock(const BlockIndex& block) { return m_blockVisionCuboidIndices[block]; }
-	[[nodiscard]] VisionCuboidSetSIMD walkAndCollectAdjacentCuboidsInRangeOfPosition(const Area& area, const BlockIndex& location, const DistanceInBlocks& range);
+	void create(const Cuboid& cuboid) override;
+	void destroy(const uint& index) override;
+	// Override for more efficient lookup of cuboids to destroy.
+	void remove(const Cuboid& cuboid) override;
+	void onKeySetForBlock(const VisionCuboidId& key, const BlockIndex& block);
+	void sliceBelow(const Cuboid& cuboid);
+	void mergeBelow(const Cuboid& cuboid);
+	AreaHasVisionCuboids(Area& area);
+	void initalize();
+	void blockIsTransparent(const BlockIndex& block);
+	void blockIsOpaque(const BlockIndex& block);
+	void blockFloorIsTransparent(const BlockIndex& block);
+	void blockFloorIsOpaque(const BlockIndex& block);
+	void cuboidIsTransparent(const Cuboid& cuboid);
+	void cuboidIsOpaque(const Cuboid& cuboid);
+	[[nodiscard]] VisionCuboidId getVisionCuboidIndexForBlock(const BlockIndex& block) const { assert(m_blockLookup[block].exists()); return m_blockLookup[block]; }
+	[[nodiscard]] VisionCuboidId maybeGetVisionCuboidIndexForBlock(const BlockIndex& block) const { return m_blockLookup[block]; }
+	[[nodiscard]] uint getIndexForVisionCuboidId(const VisionCuboidId& index) const;
+	[[nodiscard]] Cuboid getCuboidByVisionCuboidId(const VisionCuboidId& index) const;
+	[[nodiscard]] Cuboid getCuboidByIndex(const uint& index) const { return m_cuboids[index]; }
+	[[nodiscard]] Cuboid getCuboidForBlock(const BlockIndex& block) const { return getCuboidByVisionCuboidId(getVisionCuboidIndexForBlock(block)); }
+	[[nodiscard]] CuboidMap<VisionCuboidId> getAdjacentsForIndex(const uint& index) const { return m_adjacent[index]; }
+	[[nodiscard]] CuboidMap<VisionCuboidId> getAdjacentsForVisionCuboid(const VisionCuboidId& index) const { return getAdjacentsForIndex(getIndexForVisionCuboidId(index)); }
+	[[nodiscard]] bool canSeeInto(const Cuboid& a, const Cuboid& b) const;
+	[[nodiscard]] SmallSet<uint> getMergeCandidates(const Cuboid& cuboid) const;
+	[[nodiscard]] VisionCuboidSetSIMD query(const auto& queryShape, const auto& blocks) const
+	{
+		VisionCuboidSetSIMD output(16);
+		auto eachCuboid = [&](const VisionCuboidId& index, const Cuboid& cuboid) { output.insert(index, cuboid); };
+		query(queryShape, eachCuboid, blocks);
+		return output;
+	}
+	void query(const auto& queryShape, const auto& action, const auto& blocks) const
+	{
+		const Point3D center = queryShape.getCenter();
+		VisionCuboidId key = m_blockLookup[blocks.getIndex(center)];
+		SmallSet<VisionCuboidId> openList;
+		SmallSet<VisionCuboidId> closedList;
+		openList.insert(key);
+		while(!openList.empty())
+		{
+			key = openList.back();
+			openList.popBack();
+			uint index = getIndexForVisionCuboidId(key);
+			const Cuboid& cuboid = CuboidSet::m_cuboids[index];
+			action(key, cuboid);
+			const auto& adjacent = m_adjacent[index];
+			// TODO: Profile removing this branch.
+			if(!adjacent.empty())
+				for(const VisionCuboidId& adjacentIndex : adjacent.query(queryShape))
+				{
+					if(!closedList.contains(adjacentIndex))
+					{
+						closedList.insert(adjacentIndex);
+						openList.insert(adjacentIndex);
+					}
+				}
+		}
+	}
 	// For testing.
-	[[nodiscard]] size_t size() const { return m_visionCuboids.size(); }
+	[[nodiscard]] size_t size() const { return m_keys.size(); }
 	// TODO: blockIndices could be infered.
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(AreaHasVisionCuboids, m_visionCuboids, m_blockVisionCuboidIndices);
+	void validate() const;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(AreaHasVisionCuboids, m_keys, m_blockLookup, m_adjacent, m_cuboids);
 };

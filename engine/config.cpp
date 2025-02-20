@@ -180,6 +180,7 @@ void Config::load()
 	data["ratioOfVisionCuboidSlotsToReservePerBlock"].get_to(ratioOfVisionCuboidSlotsToReservePerBlock);
 	ratioWoundsCloseDelayToBleedVolume = data["ratioWoundsCloseDelayToBleedVolumeSeconds"].get<float>() * stepsPerSecond.get();
 	restIntervalSteps = Step::create(data["restIntervalSeconds"].get<uint32_t>() * stepsPerSecond.get());
+	data["reserveSizeVisionCuboidAdjacent"].get_to(reserveSizeVisionCuboidAdjacent);
 	data["rollingMassModifier"].get_to(rollingMassModifier);
 	data["scaleOfHumanBody"].get_to(scaleOfHumanBody);
 	data["skinPierceForceCost"].get_to(skinPierceForceCost);

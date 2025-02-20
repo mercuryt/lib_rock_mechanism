@@ -88,6 +88,7 @@ public:
 	[[nodiscard]] constexpr Derived operator--(int) { assert(exists()); assert(data != MIN_VALUE); T d = data; --data; return Derived::create(d); }
 	[[nodiscard]] constexpr bool operator==(const This& o) const { /*assert(exists()); assert(o.exists());*/ return o.data == data; }
 	[[nodiscard]] constexpr std::strong_ordering operator<=>(const StrongInteger<Derived, T, NULL_VALUE>& o) const { assert(exists()); assert(o.exists()); return data <=> o.data; }
+	[[nodiscard]] constexpr std::string toString() const { return std::to_string(data); }
 	[[nodiscard]] constexpr Derived operator+(const This& other) const { return (*this) + other.data; }
 	template<arithmetic Other>
 	[[nodiscard]] constexpr Derived operator+(const Other& other) const {

@@ -45,6 +45,7 @@ Area::Area(AreaId id, std::wstring n, Simulation& s, const DistanceInBlocks& x, 
 	m_octTree(Cuboid(Point3D{x, y, z}, Point3D::create(0,0,0))),
 	m_visionRequests(*this),
 	m_opacityFacade(*this),
+	m_visionCuboids(*this),
 	m_name(n),
 	m_simulation(s),
 	m_id(id)
@@ -56,7 +57,7 @@ Area::Area(AreaId id, std::wstring n, Simulation& s, const DistanceInBlocks& x, 
 	m_exteriorPortals.initalize(*this);
 	setup();
 	m_opacityFacade.initalize();
-	m_visionCuboids.initalize(*this);
+	m_visionCuboids.initalize();
 	m_hasRain.scheduleRestart();
 	m_hasEvaporation.schedule(*this);
 	#ifndef NDEBUG
@@ -84,6 +85,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_octTree(Cuboid(Point3D{data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>()}, Point3D::create(0,0,0))),
 	m_visionRequests(*this),
 	m_opacityFacade(*this),
+	m_visionCuboids(*this),
 	m_name(data["name"].get<std::wstring>()),
 	m_simulation(simulation),
 	m_id(data["id"].get<AreaId>())
@@ -97,6 +99,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	setup();
 	m_blocks->load(data["blocks"], deserializationMemo);
 	m_opacityFacade.initalize();
+	m_visionCuboids.initalize();
 	m_hasFluidGroups.clearMergedFluidGroups();
 	data["visionCuboids"].get_to(m_visionCuboids);
 	data["exteriorPortals"].get_to(m_exteriorPortals);
@@ -187,7 +190,6 @@ void Area::doStep()
 {
 	m_hasFluidGroups.doStep();
 	doStepCaveIn();
-	m_visionCuboids.clearDestroyed(*this);
 	m_hasTemperature.doStep();
 	if(m_hasRain.isRaining() && m_simulation.m_step.modulusIsZero(Config::rainWriteStepFreqency))
 		m_hasRain.doStep();

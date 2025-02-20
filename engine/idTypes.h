@@ -39,15 +39,15 @@ template<typename T>
 using ActorIdMap = SmallMap<ActorId, T>;
 
 using VisionCuboidIndexWidth = uint32_t;
-class VisionCuboidIndex : public StrongInteger<VisionCuboidIndex, VisionCuboidIndexWidth>
+class VisionCuboidId : public StrongInteger<VisionCuboidId, VisionCuboidIndexWidth>
 {
 public:
-	VisionCuboidIndex() = default;
-	struct Hash { [[nodiscard]] size_t operator()(const VisionCuboidIndex& index) const { return index.get(); } };
+	VisionCuboidId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const VisionCuboidId& index) const { return index.get(); } };
 };
-inline void to_json(Json& data, const VisionCuboidIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, VisionCuboidIndex& index) { index = VisionCuboidIndex::create(data.get<uint32_t>()); }
-using VisionCuboidIndexSet = StrongIntegerSet<VisionCuboidIndex>;
+inline void to_json(Json& data, const VisionCuboidId& index) { data = index.get(); }
+inline void from_json(const Json& data, VisionCuboidId& index) { index = VisionCuboidId::create(data.get<uint32_t>()); }
+using VisionCuboidIndexSet = StrongIntegerSet<VisionCuboidId>;
 
 using FactionIdWidth = uint16_t;
 class FactionId : public StrongInteger<FactionId, FactionIdWidth>

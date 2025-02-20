@@ -6,7 +6,7 @@
 void Point3DSet::insert(const Point3D& point)
 {
 	if(m_size == data.size())
-		data.resize(3, std::max(8u, m_size * 2u));
+		data.conservativeResize(3, std::max(8u, m_size * 2u));
 	data.col(m_size) = point.data;
 	++m_size;
 }

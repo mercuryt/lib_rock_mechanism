@@ -17,11 +17,11 @@ struct VisionRequest
 	SmallSet<ActorReference> canBeSeenBy = {};
 	Point3D coordinates;
 	BlockIndex location;
-	VisionCuboidIndex cuboid;
+	VisionCuboidId cuboid;
 	ActorReference actor;
 	DistanceInBlocks range;
 	Facing4 facing;
-	VisionRequest(const Point3D& _coordinates, const BlockIndex& _location, const VisionCuboidIndex& _cuboid, const ActorReference& _actor, const DistanceInBlocks _range, const Facing4& _facing, const OccupiedBlocksForHasShape& _occupied) :
+	VisionRequest(const Point3D& _coordinates, const BlockIndex& _location, const VisionCuboidId& _cuboid, const ActorReference& _actor, const DistanceInBlocks _range, const Facing4& _facing, const OccupiedBlocksForHasShape& _occupied) :
 		occupied(_occupied), coordinates(_coordinates), location(_location), cuboid(_cuboid), actor(_actor), range(_range), facing(_facing) { }
 	struct hash { [[nodiscard]] static bool operator()(const VisionRequest& request) { return request.actor.getReferenceIndex().get(); }};
 	[[nodiscard]] bool operator==(const VisionRequest& visionRequest) const { return visionRequest.actor == actor; }
@@ -44,7 +44,7 @@ public:
 	void clear();
 	void maybeGenerateRequestsForAllWithLineOfSightTo(const BlockIndex& block);
 	void maybeGenerateRequestsForAllWithLineOfSightToAny(const std::vector<BlockIndex>& blocks);
-	void maybeUpdateCuboid(const ActorReference& actor, const VisionCuboidIndex& newCuboid);
+	void maybeUpdateCuboid(const ActorReference& actor, const VisionCuboidId& newCuboid);
 	[[nodiscard]] bool maybeUpdateRange(const ActorReference& actor, const DistanceInBlocks& range);
 	bool maybeUpdateLocation(const ActorReference& actor, const BlockIndex& location);
 	// These accessors get data from the internal DataVectors and assert they are still matching the cannonical data in Actors and AreaHasVisionCuboids.

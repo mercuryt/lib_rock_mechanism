@@ -2,16 +2,22 @@
 #include "../blocks/blocks.h"
 void CuboidSet::create(const Cuboid& cuboid)
 {
+	uint i = 0;
 	for(const Cuboid& existing : m_cuboids)
 	{
 		assert(!cuboid.intersects(existing));
 		if(existing.isTouching(cuboid) && existing.canMerge(cuboid))
 		{
-			mergeInternal(cuboid, existing);
+			mergeInternal(cuboid, i);
 			return;
 		}
+		++i;
 	}
 	m_cuboids.insert(cuboid);
+}
+void CuboidSet::destroy(const uint& index)
+{
+	m_cuboids.eraseIndex(index);
 }
 void CuboidSet::add(const Point3D& point)
 {
@@ -39,14 +45,18 @@ void CuboidSet::add(const Cuboid& cuboid)
 void CuboidSet::remove(const Cuboid& cuboid)
 {
 	//TODO: partition instead of toSplit.
-	SmallSet<Cuboid> toSplit;
+	SmallSet<std::pair<Cuboid, uint>> toSplit;
+	uint i = 0;
 	for(const Cuboid& existing : m_cuboids)
+	{
 		if(existing.intersects(cuboid))
-			toSplit.insert(existing);
-	for(const Cuboid& toSplitCuboid : toSplit)
-		m_cuboids.erase(toSplitCuboid);
-	for(const Cuboid& toSplitCuboid : toSplit)
-		for(const Cuboid& splitResult : toSplitCuboid.getChildrenWhenSplitByCuboid(cuboid))
+			toSplit.emplace(existing, i);
+		++i;
+	}
+	for(const auto& pair : toSplit)
+		destroy(pair.second);
+	for(const auto& pair : toSplit)
+		for(const Cuboid& splitResult : pair.first.getChildrenWhenSplitByCuboid(cuboid))
 			create(splitResult);
 }
 void CuboidSet::addSet(const CuboidSet& other)
@@ -54,19 +64,17 @@ void CuboidSet::addSet(const CuboidSet& other)
 	for(const Cuboid& cuboid : other.getCuboids())
 		add(cuboid);
 }
-void CuboidSet::mergeInternal(const Cuboid& absorbed, const Cuboid& absorber)
+void CuboidSet::mergeInternal(const Cuboid& absorbed, const uint& absorber)
 {
-	assert(absorbed.canMerge(absorber));
-	assert(absorber.canMerge(absorbed));
+	const Cuboid absorberCopy = m_cuboids[absorber];
+	assert(absorbed.canMerge(absorberCopy));
+	assert(absorberCopy.canMerge(absorbed));
 	for(const Cuboid& existing : m_cuboids)
 		if(existing != absorbed)
 			assert(!existing.intersects(absorbed));
-	const Cuboid absorbedCopy = absorbed;
-	const Cuboid absorberCopy = absorber;
-	m_cuboids.maybeErase(absorbed);
-	m_cuboids.erase(absorberCopy);
-	Cuboid newCuboid = absorberCopy.sum(absorbedCopy);
-	// Call create to potentailly trigger another merge.
+	Cuboid newCuboid = absorberCopy.sum(absorbed);
+	destroy(absorber);
+	// Call create may trigger another merge.
 	create(newCuboid);
 }
 bool CuboidSet::empty() const
@@ -135,15 +143,19 @@ SmallSet<Cuboid> CuboidSetWithBoundingBoxAdjacent::removeAndReturnNoLongerAdjace
 SmallSet<Cuboid> CuboidSetWithBoundingBoxAdjacent::removeAndReturnNoLongerAdjacentCuboids(const Cuboid& cuboid)
 {
 	bool changesBoundingBox = cuboid.contains(m_boundingBox.m_highest) || cuboid.contains(m_boundingBox.m_lowest);
-	SmallSet<Cuboid> toSplit;
+	SmallSet<std::pair<Cuboid, uint>> toSplit;
 	SmallSet<Cuboid> newlySplit;
+	uint i = 0;
 	for(const Cuboid& existing : m_cuboids)
+	{
 		if(existing.intersects(cuboid))
-			toSplit.insert(existing);
-	for(const Cuboid& toSplitCuboid : toSplit)
-		m_cuboids.erase(toSplitCuboid);
-	for(const Cuboid& toSplitCuboid : toSplit)
-		for(const Cuboid& splitResult : toSplitCuboid.getChildrenWhenSplitByCuboid(cuboid))
+			toSplit.emplace(existing, i);
+		++i;
+	}
+	for(const auto& pair : toSplit)
+		destroy(pair.second);
+	for(const auto& pair : toSplit)
+		for(const Cuboid& splitResult : pair.first.getChildrenWhenSplitByCuboid(cuboid))
 			if(CuboidSet::isAdjacent(splitResult))
 				create(splitResult);
 			else

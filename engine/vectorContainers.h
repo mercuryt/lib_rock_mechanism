@@ -17,6 +17,7 @@ public:
 	class iterator;
 	class const_iterator;
 	SmallSet() = default;
+	SmallSet(uint capacity) { reserve(capacity); };
 	SmallSet(std::initializer_list<T> i) : m_data(i) { }
 	SmallSet(const This& other) { m_data = other.m_data; }
 	SmallSet(This&& other) { m_data = std::move(other.m_data); }
@@ -94,6 +95,10 @@ public:
 		for(; begin != end; ++begin)
 			maybeErase(*begin);
 	}
+	void eraseIndex(const uint& index)
+	{
+		erase(m_data.begin() + index);
+	}
 	void clear() { m_data.clear(); }
 	template<typename ...Args>
 	void emplace(Args&& ...args)
@@ -124,9 +129,12 @@ public:
 	}
 	void reserve(uint size) { m_data.reserve(size); }
 	void resize(uint size) { m_data.resize(size); }
+	[[nodiscard]] const T& operator[](const uint& index) const { return m_data[index]; }
+	[[nodiscard]] T& operator[](const uint& index) { return m_data[index]; }
 	[[nodiscard]] bool contains(const T& value) const { return std::ranges::find(m_data, value) != m_data.end(); }
 	template<typename Predicate>
 	[[nodiscard]] bool containsAny(Predicate&& predicate) const { return std::ranges::find_if(m_data, predicate) != m_data.end(); }
+	[[nodiscard]] uint indexOf(const T& value) const { assert(contains(value)); return std::distance(m_data.begin(), find(value)); }
 	[[nodiscard]] T& front() { return m_data.front(); }
 	[[nodiscard]] const T& front() const { return m_data.front(); }
 	[[nodiscard]] T& back() { return m_data.back(); }
