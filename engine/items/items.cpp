@@ -90,9 +90,7 @@ void Items::onChangeAmbiantSurfaceTemperature()
 }
 Items::Items(Area& area) :
 	Portables(area, false)
-{
-	assert(!area.m_loaded);
-}
+{ }
 template<typename Action>
 void Items::forEachData(Action&& action)
 {

@@ -25,6 +25,17 @@
 #include <sys/types.h>
 
 Area::Area(AreaId id, std::wstring n, Simulation& s, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) :
+	#ifndef NDEBUG
+		m_blocks(std::make_unique<Blocks>(*this, x, y, z)),
+		m_actors(std::make_unique<Actors>(*this)),
+		m_plants(std::make_unique<Plants>(*this)),
+		m_items(std::make_unique<Items>(*this)),
+	#else
+		m_blocks(*this, x, y, z),
+		m_actors(*this),
+		m_plants(*this),
+		m_items(*this),
+	#endif
 	m_eventSchedule(s, this),
 	m_hasTemperature(*this),
 	m_hasTerrainFacades(*this),
@@ -50,21 +61,25 @@ Area::Area(AreaId id, std::wstring n, Simulation& s, const DistanceInBlocks& x, 
 	m_simulation(s),
 	m_id(id)
 {
-	m_blocks = std::make_unique<Blocks>(*this, x, y, z);
-	m_actors = std::make_unique<Actors>(*this);
-	m_plants = std::make_unique<Plants>(*this);
-	m_items = std::make_unique<Items>(*this);
 	m_exteriorPortals.initalize(*this);
 	setup();
 	m_opacityFacade.initalize();
 	m_visionCuboids.initalize();
 	m_hasRain.scheduleRestart();
 	m_hasEvaporation.schedule(*this);
-	#ifndef NDEBUG
-		m_loaded = true;
-	#endif
 }
 Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation) :
+	#ifndef NDEBUG
+		m_blocks(std::make_unique<Blocks>(*this, data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>())),
+		m_actors(std::make_unique<Actors>(*this)),
+		m_plants(std::make_unique<Plants>(*this)),
+		m_items(std::make_unique<Items>(*this)),
+	#else
+		m_blocks(*this, data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>()),
+		m_actors(*this),
+		m_plants(*this),
+		m_items(*this),
+	#endif
 	m_eventSchedule(simulation, this),
 	m_hasTemperature(*this),
 	m_hasTerrainFacades(*this),
@@ -90,14 +105,10 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_simulation(simulation),
 	m_id(data["id"].get<AreaId>())
 {
-	m_blocks = std::make_unique<Blocks>(*this, data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>());
-	m_actors = std::make_unique<Actors>(*this);
-	m_plants = std::make_unique<Plants>(*this);
-	m_items = std::make_unique<Items>(*this);
 	// Record id now so json block references will function later in this method.
 	m_simulation.m_hasAreas->recordId(*this);
 	setup();
-	m_blocks->load(data["blocks"], deserializationMemo);
+	getBlocks().load(data["blocks"], deserializationMemo);
 	m_opacityFacade.initalize();
 	m_visionCuboids.initalize();
 	m_hasFluidGroups.clearMergedFluidGroups();
@@ -106,13 +117,13 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load fires.
 	m_fires.load(data["fires"], deserializationMemo);
 	// Load plants.
-	m_plants->load(data["plants"]);
+	getPlants().load(data["plants"]);
 	// Load fields.
 	m_hasFarmFields.load(data["hasFarmFields"], deserializationMemo);
 	// Load Items.
-	m_items->load(data["items"]);
+	getItems().load(data["items"]);
 	// Load Actors.
-	m_actors->load(data["actors"]);
+	getActors().load(data["actors"]);
 	// Load designations.
 	m_blockDesignations.load(data["designations"], deserializationMemo);
 	// Load Projects
@@ -125,9 +136,9 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load sleeping spots.
 	m_hasSleepingSpots.load(data["sleepingSpots"], deserializationMemo);
 	// Load Item cargo and projects.
-	m_items->loadCargoAndCraftJobs(data["items"]);
+	getItems().loadCargoAndCraftJobs(data["items"]);
 	// Load Actor objectives, following and reservations.
-	m_actors->loadObjectivesAndReservations(data["actors"]);
+	getActors().loadObjectivesAndReservations(data["actors"]);
 	// Load project workers
 	m_hasConstructionDesignations.loadWorkers(data["hasConstructionDesignations"], deserializationMemo);
 	m_hasDigDesignations.loadWorkers(data["hasDigDesignations"], deserializationMemo);
@@ -146,9 +157,6 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	if(data.contains("rain"))
 		m_hasRain.load(data["rain"], deserializationMemo);
 	m_hasEvaporation.schedule(*this);
-	#ifndef NDEBUG
-		m_loaded = true;
-	#endif
 }
 Area::~Area()
 {
@@ -162,8 +170,8 @@ Json Area::toJson() const
 {
 	Json data{
 		{"id", m_id}, {"name", m_name},
-		{"actors", m_actors->toJson()}, {"items", m_items->toJson()}, {"blocks", m_blocks->toJson()},
-		{"plants", m_plants->toJson()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires.toJson()},
+		{"actors", getActors().toJson()}, {"items", getItems().toJson()}, {"blocks", getBlocks().toJson()},
+		{"plants", getPlants().toJson()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires.toJson()},
 		{"sleepingSpots", m_hasSleepingSpots.toJson()}, {"caveInCheck", Json::array()}, {"rain", m_hasRain.toJson()},
 		{"designations", m_blockDesignations.toJson()}
 	};

@@ -22,7 +22,6 @@ Blocks::Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y,
 	m_sizeZ(z),
 	m_zLevelSize(x.get() * y.get())
 {
-	assert(!area.m_loaded);
 	BlockIndex count = BlockIndex::create((x * y * z).get());
 	resize(count);
 	m_exposedToSky.initalizeEmpty();

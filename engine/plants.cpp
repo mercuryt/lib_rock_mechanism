@@ -18,9 +18,7 @@ Plants::Plants(Area& area) :
 	m_temperatureEvent(area.m_eventSchedule),
 	m_endOfHarvestEvent(area.m_eventSchedule),
 	m_foliageGrowthEvent(area.m_eventSchedule)
-	{
-		assert(!area.m_loaded);
-	}
+{ }
 void Plants::moveIndex(const PlantIndex& oldIndex, const PlantIndex& newIndex)
 {
 	forEachData([&](auto& data){ data.moveIndex(oldIndex, newIndex);});

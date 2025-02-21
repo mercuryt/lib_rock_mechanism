@@ -253,9 +253,7 @@ Actors::Actors(Area& area) :
 	Portables<Actors, ActorIndex, ActorReferenceIndex>(area, true),
 	m_coolDownEvent(area.m_eventSchedule),
 	m_moveEvent(area.m_eventSchedule)
-	{
-		assert(!area.m_loaded);
-	}
+{ }
 void Actors::load(const Json& data)
 {
 	Portables<Actors, ActorIndex, ActorReferenceIndex>::load(data);
