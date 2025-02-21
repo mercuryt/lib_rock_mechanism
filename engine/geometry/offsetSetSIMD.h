@@ -29,7 +29,7 @@ struct OffsetSetSIMD
 		m_offsetData.col(m_nextIndex++) = offset.data;
 	}
 	template<class Blocks>
-	[[nodiscard]] BlockIndexSetSIMD<size> getIndicesInBounds(const Blocks& blocks, const BlockIndex& location) const
+	[[nodiscard]] BlockIndexSetSIMD<size> getIndicesInBounds([[maybe_unused]] const Blocks& blocks, const BlockIndex& location) const
 	{
 		Eigen::Array<int, 1, size> output = (m_indexData + (int)location.get());
 		assert((output >= 0 && output < blocks.size()).all());

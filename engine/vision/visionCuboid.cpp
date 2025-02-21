@@ -257,8 +257,8 @@ void AreaHasVisionCuboids::validate() const
 {
 	for(uint i = 0; i < m_keys.size(); ++i)
 	{
-		const VisionCuboidId& key = m_keys[i];
-		const Cuboid& cuboid = m_cuboids[i];
+		[[maybe_unused]] const VisionCuboidId& key = m_keys[i];
+		[[maybe_unused]] const Cuboid& cuboid = m_cuboids[i];
 		for(const auto& [adjacentKey, adjacentCuboid] : m_adjacent[i])
 		{
 			uint adjacentI = getIndexForVisionCuboidId(adjacentKey);

@@ -44,16 +44,33 @@
 
 class Simulation;
 struct DeserializationMemo;
-class Plants;
+#ifdef NDEBUG
+	#include "blocks/blocks.h"
+	#include "actors/actors.h"
+	#include "items/items.h"
+	#include "plants.h"
+#else
+	class Blocks;
+	class Actors;
+	class Items;
+	class Plants;
+#endif
 
 class Area final
 {
 	// Dependency injection.
 	// TODO: Remove unique_ptr for release build.
-	std::unique_ptr<Blocks> m_blocks;
-	std::unique_ptr<Actors> m_actors;
-	std::unique_ptr<Plants> m_plants;
-	std::unique_ptr<Items> m_items;
+	#ifdef NDEBUG
+		Blocks m_blocks;
+		Actors m_actors;
+		Plants m_plants;
+		Items m_items;
+	#else
+		std::unique_ptr<Blocks> m_blocks;
+		std::unique_ptr<Actors> m_actors;
+		std::unique_ptr<Plants> m_plants;
+		std::unique_ptr<Items> m_items;
+	#endif
 public:
 	EventSchedule m_eventSchedule;
 	ThreadedTaskEngine m_threadedTaskEngine;
@@ -88,11 +105,6 @@ public:
 	std::wstring m_name;
 	Simulation& m_simulation;
 	AreaId m_id;
-	// Because Actors, Items, and Plants take Area& as a single constructor argument it is possible to implicitly convert Area into a new empty of any of them.
-	// To prevent this we include the bool m_loaded and assert that it is false in each constructor.
-	#ifndef NDEBUG
-		bool m_loaded = false;
-	#endif
 	//WorldLocation* m_worldLocation;
 
 	// Create blocks and store adjacent
@@ -116,16 +128,26 @@ public:
 	void updateClimate();
 
 	[[nodiscard]] std::wstring toS() const;
-
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] Blocks& getBlocks() { assert(m_blocks != nullptr); return *m_blocks.get(); }
-	[[nodiscard]] Plants& getPlants() { assert(m_plants != nullptr); return *m_plants.get(); }
-	[[nodiscard]] Actors& getActors() { assert(m_actors != nullptr); return *m_actors.get(); }
-	[[nodiscard]] Items& getItems() { assert(m_items != nullptr); return *m_items.get(); }
-	[[nodiscard]] const Blocks& getBlocks() const { return *m_blocks.get(); }
-	[[nodiscard]] const Plants& getPlants() const { return *m_plants.get(); }
-	[[nodiscard]] const Actors& getActors() const { return *m_actors.get(); }
-	[[nodiscard]] const Items& getItems() const { return *m_items.get(); }
+	#ifdef NDEBUG
+		[[nodiscard]] Blocks& getBlocks() { return m_blocks; }
+		[[nodiscard]] Plants& getPlants() { return m_plants; }
+		[[nodiscard]] Actors& getActors() { return m_actors; }
+		[[nodiscard]] Items& getItems() { return m_items; }
+		[[nodiscard]] const Blocks& getBlocks() const { return m_blocks; }
+		[[nodiscard]] const Plants& getPlants() const { return m_plants; }
+		[[nodiscard]] const Actors& getActors() const { return m_actors; }
+		[[nodiscard]] const Items& getItems() const { return m_items; }
+	#else
+		[[nodiscard]] Blocks& getBlocks() { assert(m_blocks != nullptr); return *m_blocks.get(); }
+		[[nodiscard]] Plants& getPlants() { assert(m_plants != nullptr); return *m_plants.get(); }
+		[[nodiscard]] Actors& getActors() { assert(m_actors != nullptr); return *m_actors.get(); }
+		[[nodiscard]] Items& getItems() { assert(m_items != nullptr); return *m_items.get(); }
+		[[nodiscard]] const Blocks& getBlocks() const { assert(m_blocks != nullptr); return *m_blocks.get(); }
+		[[nodiscard]] const Plants& getPlants() const { assert(m_plants != nullptr); return *m_plants.get(); }
+		[[nodiscard]] const Actors& getActors() const { assert(m_actors != nullptr); return *m_actors.get(); }
+		[[nodiscard]] const Items& getItems() const { assert(m_items != nullptr); return *m_items.get(); }
+	#endif
 	// Clear all destructor callbacks in preperation for quit or hibernate.
 	void clearReservations();
 

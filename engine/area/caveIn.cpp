@@ -200,10 +200,10 @@ void Area::stepCaveInWrite()
 			below = block;
 			while(zDiff != 0)
 			{
-				below = m_blocks->getBlockBelow(below);
+				below = getBlocks().getBlockBelow(below);
 				--zDiff;
 			}
-			m_blocks->moveContentsTo(block, below);
+			getBlocks().moveContentsTo(block, below);
 		}
 		// We don't know if the thing we landed on was it's self anchored so add a block to caveInCheck to be checked next step.
 		m_caveInCheck.add(below);
