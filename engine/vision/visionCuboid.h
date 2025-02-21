@@ -82,7 +82,7 @@ public:
 			uint index = getIndexForVisionCuboidId(key);
 			const Cuboid& cuboid = CuboidSet::m_cuboids[index];
 			action(key, cuboid);
-			const auto& adjacent = m_adjacent[index];
+			const CuboidMap<VisionCuboidId>& adjacent = m_adjacent[index];
 			// TODO: Profile removing this branch.
 			if(!adjacent.empty())
 				for(const VisionCuboidId& adjacentIndex : adjacent.query(queryShape))

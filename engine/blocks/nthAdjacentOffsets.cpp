@@ -2,7 +2,7 @@
 #include "area/area.h"
 #include "types.h"
 #include "blocks/blocks.h"
-std::vector<XYZ> getNthAdjacentOffsets(uint32_t n)
+std::vector<Offset3D> getNthAdjacentOffsets(uint32_t n)
 {
 	assert(n != 0);
 	if(cache.size() <= n)
@@ -16,11 +16,11 @@ std::vector<XYZ> getNthAdjacentOffsets(uint32_t n)
 				cache.resize(n);
 				cache[0].emplace_back(0,0,0);
 			}
-			std::vector<XYZ> next;
-			for(XYZ xyz : cache.back())
-				for(XYZ offset : offsets)
+			std::vector<Offset3D> next;
+			for(Offset3D xyz : cache.back())
+				for(Offset3D offset : offsets)
 				{
-					XYZ adjacent = xyz + offset;
+					Offset3D adjacent = xyz + offset;
 					if(!closedList.contains(adjacent))
 					{
 						closedList.insert(adjacent);
@@ -32,15 +32,4 @@ std::vector<XYZ> getNthAdjacentOffsets(uint32_t n)
 		}
 	}
 	return cache[n];
-}
-BlockIndices getNthAdjacentBlocks(Area& area, const BlockIndex& center, uint32_t i)
-{
-	BlockIndices output;
-	for(XYZ& offset : getNthAdjacentOffsets(i))
-	{
-		BlockIndex block = area.getBlocks().offset(center, offset.x, offset.y, offset.z);
-		if(block.exists())
-			output.add(block);
-	}
-	return output;
 }

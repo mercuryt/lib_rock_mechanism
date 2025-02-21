@@ -1,4 +1,6 @@
 #pragma once
+#include <array>
+#include "../geometry/point3D.h"
 
 namespace adjacentOffsets
 {

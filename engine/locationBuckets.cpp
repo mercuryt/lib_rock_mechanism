@@ -89,10 +89,10 @@ LocationBucket::visionRequestQuery(const Area& area, const Point3D& position, co
 {
 	Sphere sphere(position, largestVisionRange.toFloat());
 	// Broad phase culling.
-	auto intersectsShape = m_points.indicesOfContainedPoints(sphere);
-	auto canSeeAndCanBeSeenBy = canSeeAndCanBeSeenByDistanceAndFacingFilter(sphere.center, facing, visionRangeSquared);
-	auto candidates = intersectsShape && ( canSeeAndCanBeSeenBy.row(0) || canSeeAndCanBeSeenBy.row(1) );
-	auto isInViewerCuboid = m_visionCuboidIndices == visionCuboid.get();
+	Eigen::Array<bool, 1, Eigen::Dynamic> intersectsShape = m_points.indicesOfContainedPoints(sphere);
+	Eigen::Array<bool, 2, Eigen::Dynamic> canSeeAndCanBeSeenBy = canSeeAndCanBeSeenByDistanceAndFacingFilter(sphere.center, facing, visionRangeSquared);
+	Eigen::Array<bool, 1, Eigen::Dynamic> candidates = intersectsShape && ( canSeeAndCanBeSeenBy.row(0) || canSeeAndCanBeSeenBy.row(1) );
+	Eigen::Array<bool, 1, Eigen::Dynamic> isInViewerCuboid = m_visionCuboidIndices == visionCuboid.get();
 	// Line of sight checks.
 	Eigen::Array<bool, 2, Eigen::Dynamic> output;
 	output.resize(2, m_actors.size());
@@ -130,7 +130,7 @@ LocationBucket::anyCanBeSeenQuery(const Area& area, const Cuboid& cuboid, const 
 const std::pair<const StrongVector<ActorReference, LocationBucketContentsIndex>*, Eigen::Array<bool, 1, Eigen::Dynamic>>
 LocationBucket::anyCanBeSeenQuery(const Area& area, const Cuboid& cuboid, const Point3DSet& points, const Eigen::Array<bool, 1, Eigen::Dynamic>& alreadyEstablished) const
 {
-	auto intersectsShape = m_points.indicesOfContainedPoints(cuboid);
+	Eigen::Array<bool, 1, Eigen::Dynamic> intersectsShape = m_points.indicesOfContainedPoints(cuboid);
 	// TODO: if there are more points then viewers iterate the viewers instead.
 	Eigen::Array<bool, 1, Eigen::Dynamic> canBeSeenBy;
 	canBeSeenBy.resize(1, m_actors.size());
@@ -162,13 +162,13 @@ LocationBucket::anyCanBeSeenQuery(const Area& area, const Cuboid& cuboid, const 
 }
 Eigen::Array<bool, 2, Eigen::Dynamic> LocationBucket::canSeeAndCanBeSeenByDistanceAndFacingFilter(const Point3D& location, const Facing4& facing, const DistanceInBlocks& visionRangeSquared) const
 {
-	auto distances = m_points.distancesSquare(location);
-	auto truncatedFacings = m_facing.block(0, 0, 1, m_actors.size());
-	auto truncatedVisionRange = m_visionRangeSquared.block(0, 0, 1, m_actors.size());
-	auto facingTwordsLocation = m_points.indicesFacingTwords(location, truncatedFacings);
-	auto isFacedTwordsFrom = m_points.indicesOfFacedTwordsPoints(location, facing);
-	auto canSee = isFacedTwordsFrom && distances <= visionRangeSquared.get();
-	auto canBeSeenBy = facingTwordsLocation && distances <= truncatedVisionRange;
+	Eigen::ArrayX<int> distances = m_points.distancesSquare(location);
+	Eigen::ArrayX<Facing4> truncatedFacings = m_facing.block(0, 0, 1, m_actors.size());
+	Eigen::ArrayX<int> truncatedVisionRange = m_visionRangeSquared.block(0, 0, 1, m_actors.size());
+	Eigen::ArrayX<bool> facingTwordsLocation = m_points.indicesFacingTwords(location, truncatedFacings);
+	Eigen::ArrayX<bool> isFacedTwordsFrom = m_points.indicesOfFacedTwordsPoints(location, facing);
+	Eigen::ArrayX<bool> canSee = isFacedTwordsFrom && distances <= visionRangeSquared.get();
+	Eigen::ArrayX<bool> canBeSeenBy = facingTwordsLocation && distances <= truncatedVisionRange;
 	Eigen::Array<bool, 2, Eigen::Dynamic> output;
 	output.resize(2, m_actors.size());
 	output.row(0) = canSee;
@@ -177,10 +177,10 @@ Eigen::Array<bool, 2, Eigen::Dynamic> LocationBucket::canSeeAndCanBeSeenByDistan
 }
 Eigen::Array<bool, 1, Eigen::Dynamic> LocationBucket::canBeSeenByDistanceAndFacingFilter(const Point3D& location) const
 {
-	auto distances = m_points.distancesSquare(location);
-	auto truncatedFacings = m_facing.block(0, 0, 1, m_actors.size());
-	auto facingTwordsLocation = m_points.indicesFacingTwords(location, truncatedFacings);
-	auto truncatedVisionRange = m_visionRangeSquared.block(0, 0, 1, m_actors.size());
+	Eigen::ArrayX<int> distances = m_points.distancesSquare(location);
+	Eigen::ArrayX<Facing4> truncatedFacings = m_facing.block(0, 0, 1, m_actors.size());
+	Eigen::ArrayX<bool> facingTwordsLocation = m_points.indicesFacingTwords(location, truncatedFacings);
+	Eigen::ArrayX<int> truncatedVisionRange = m_visionRangeSquared.block(0, 0, 1, m_actors.size());
 	return facingTwordsLocation && distances <= truncatedVisionRange;
 }
 Eigen::Array<bool, 1, Eigen::Dynamic> LocationBucket::indiciesWhichIntersectShape(const auto& queryShape) const

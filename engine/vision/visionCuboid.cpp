@@ -146,7 +146,7 @@ void AreaHasVisionCuboids::create(const Cuboid& cuboid)
 	}
 	// Adjacent.
 	const Blocks& blocks = m_area.getBlocks();
-	auto& adjacent = m_adjacent.back();
+	CuboidMap<VisionCuboidId>& adjacent = m_adjacent.back();
 	for(const auto& [block, facing] : cuboid.getSurfaceView(blocks))
 	{
 		const BlockIndex& outside = blocks.getAtFacing(block, facing);

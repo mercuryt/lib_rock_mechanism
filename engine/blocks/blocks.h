@@ -47,14 +47,15 @@ using ActorIndicesForBlock = VerySmallSet<ActorIndex, 5>;
 using ItemIndicesForBlock = VerySmallSet<ItemIndex, 5>;
 class Blocks
 {
-	OffsetSetSIMD<26> m_indexOffsetsForAdjacentAll;
-	OffsetSetSIMD<24> m_indexOffsetsForAdjacentAllExceptDirectlyAboveAndBelow;
-	OffsetSetSIMD<20> m_indexOffsetsForAdjacentOnlyEdgesAndCorners;
-	OffsetSetSIMD<18> m_indexOffsetsForAdjacentDirectAndEdge;
-	OffsetSetSIMD<12> m_indexOffsetsForAdjacentEdge;
-	OffsetSetSIMD<6> m_indexOffsetsForAdjacentDirect;
-	OffsetSetSIMD<4> m_indexOffsetsForAdjacentEdgeSameZ;
-	OffsetSetSIMD<4> m_indexOffsetsForAdjacentDirectSameZ;
+	OffsetArraySIMD<26> m_indexOffsetsForAdjacentAll;
+	OffsetArraySIMD<24> m_indexOffsetsForAdjacentAllExceptDirectlyAboveAndBelow;
+	OffsetArraySIMD<20> m_indexOffsetsForAdjacentOnlyEdgesAndCorners;
+	OffsetArraySIMD<18> m_indexOffsetsForAdjacentDirectAndEdge;
+	OffsetArraySIMD<12> m_indexOffsetsForAdjacentEdge;
+	OffsetArraySIMD<6> m_indexOffsetsForAdjacentDirect;
+	OffsetArraySIMD<4> m_indexOffsetsForAdjacentEdgeSameZ;
+	OffsetArraySIMD<4> m_indexOffsetsForAdjacentDirectSameZ;
+	std::vector<OffsetSetSIMD> m_indexOffsetsForNthAdjacent;
 	BlockIndexMap<FactionIdMap<FarmField*>> m_farmFields;
 	BlockIndexMap<FactionIdMap<BlockIsPartOfStockPile>> m_stockPiles;
 	StrongVector<std::unique_ptr<Reservable>, BlockIndex> m_reservables;
@@ -122,16 +123,17 @@ public:
 	[[nodiscard]] BlockIndex getAtFacing(const BlockIndex& index, const Facing6& facing) const;
 	[[nodiscard]] BlockIndex getCenterAtGroundLevel() const;
 	// TODO: Calculate on demand from offset vector?
-	[[nodiscard]] BlockIndexSetSIMD<26> getAdjacentWithEdgeAndCornerAdjacent(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndexSetSIMD<24> getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndexSetSIMD<20> getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndexSetSIMD<18> getAdjacentWithEdgeAdjacent(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndexSetSIMD<12> getEdgeAdjacentOnly(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArraySIMD<26> getAdjacentWithEdgeAndCornerAdjacent(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArraySIMD<24> getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArraySIMD<20> getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArraySIMD<18> getAdjacentWithEdgeAdjacent(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArraySIMD<12> getEdgeAdjacentOnly(const BlockIndex& index) const;
 	//TODO Why does making this a simd set break cave in?
-	[[nodiscard]] BlockIndexSetSIMD<6> getDirectlyAdjacent(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndexSetSIMD<4> getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
-	[[nodiscard]] BlockIndexSetSIMD<4> getAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
-	[[nodiscard]] const auto& getOffsetsForAdjacentCountTable() const { return m_indexOffsetsForAdjacentAll; }
+	[[nodiscard]] BlockIndexArraySIMD<6> getDirectlyAdjacent(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArraySIMD<4> getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
+	[[nodiscard]] BlockIndexArraySIMD<4> getAdjacentOnSameZLevelOnly(const BlockIndex& index) const;
+	// getNthAdjacent is not const because the index offsets are created and cached.
+	[[nodiscard]] BlockIndexSetSIMD getNthAdjacent(const BlockIndex& index, const DistanceInBlocks& distance);
 	//TODO: Under what circumstances is this integer distance preferable to taxiDistance or fractional distance?
 	[[nodiscard]] DistanceInBlocks distance(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] DistanceInBlocks taxiDistance(const BlockIndex& index, const BlockIndex& other) const;

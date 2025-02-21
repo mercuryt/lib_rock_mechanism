@@ -1,5 +1,6 @@
 #include "blocks.h"
 #include "adjacentOffsets.h"
+#include "nthAdjacentOffsets.h"
 #include "../area/area.h"
 #include "../materialType.h"
 #include "../types.h"
@@ -325,61 +326,72 @@ BlockIndex Blocks::getBlockEast(const BlockIndex& index) const
 		return BlockIndex::null();
 	return index + m_indexOffsetsForAdjacentDirect.m_indexData[(uint)Facing6::East];
 }
-BlockIndexSetSIMD<26> Blocks::getAdjacentWithEdgeAndCornerAdjacent(const BlockIndex& index) const
+BlockIndexArraySIMD<26> Blocks::getAdjacentWithEdgeAndCornerAdjacent(const BlockIndex& index) const
 {
 	if(isEdge(index)) [[unlikely]]
 		return m_indexOffsetsForAdjacentAll.getIndicesMaybeOutOfBounds(*this, index);
 	else
 		return m_indexOffsetsForAdjacentAll.getIndicesInBounds(*this, index);
 }
-BlockIndexSetSIMD<24> Blocks::getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const BlockIndex& index) const
+BlockIndexArraySIMD<24> Blocks::getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const BlockIndex& index) const
 {
 	if(isEdge(index)) [[unlikely]]
 		return m_indexOffsetsForAdjacentAllExceptDirectlyAboveAndBelow.getIndicesMaybeOutOfBounds(*this, index);
 	else
 		return m_indexOffsetsForAdjacentAllExceptDirectlyAboveAndBelow.getIndicesInBounds(*this, index);
 }
-BlockIndexSetSIMD<20> Blocks::getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const
+BlockIndexArraySIMD<20> Blocks::getEdgeAndCornerAdjacentOnly(const BlockIndex& index) const
 {
 	if(isEdge(index)) [[unlikely]]
 		return m_indexOffsetsForAdjacentOnlyEdgesAndCorners.getIndicesMaybeOutOfBounds(*this, index);
 	else
 		return m_indexOffsetsForAdjacentOnlyEdgesAndCorners.getIndicesInBounds(*this, index);
 }
-BlockIndexSetSIMD<18> Blocks::getAdjacentWithEdgeAdjacent(const BlockIndex& index) const
+BlockIndexArraySIMD<18> Blocks::getAdjacentWithEdgeAdjacent(const BlockIndex& index) const
 {
 	if(isEdge(index)) [[unlikely]]
 		return m_indexOffsetsForAdjacentDirectAndEdge.getIndicesMaybeOutOfBounds(*this, index);
 	else
 		return m_indexOffsetsForAdjacentDirectAndEdge.getIndicesInBounds(*this, index);
 }
-BlockIndexSetSIMD<12> Blocks::getEdgeAdjacentOnly(const BlockIndex& index) const
+BlockIndexArraySIMD<12> Blocks::getEdgeAdjacentOnly(const BlockIndex& index) const
 {
 	if(isEdge(index)) [[unlikely]]
 		return m_indexOffsetsForAdjacentEdge.getIndicesMaybeOutOfBounds(*this, index);
 	else
 		return m_indexOffsetsForAdjacentEdge.getIndicesInBounds(*this, index);
 }
-BlockIndexSetSIMD<6> Blocks::getDirectlyAdjacent(const BlockIndex& index) const
+BlockIndexArraySIMD<6> Blocks::getDirectlyAdjacent(const BlockIndex& index) const
 {
 	if(isEdge(index)) [[unlikely]]
 		return m_indexOffsetsForAdjacentDirect.getIndicesMaybeOutOfBounds(*this, index);
 	else
 		return m_indexOffsetsForAdjacentDirect.getIndicesInBounds(*this, index);
 }
-BlockIndexSetSIMD<4> Blocks::getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const
+BlockIndexArraySIMD<4> Blocks::getEdgeAdjacentOnSameZLevelOnly(const BlockIndex& index) const
 {
 	if(isEdge(index)) [[unlikely]]
 		return m_indexOffsetsForAdjacentEdgeSameZ.getIndicesMaybeOutOfBounds(*this, index);
 	else
 		return m_indexOffsetsForAdjacentEdgeSameZ.getIndicesInBounds(*this, index);
 }
-BlockIndexSetSIMD<4> Blocks::getAdjacentOnSameZLevelOnly(const BlockIndex& index) const
+BlockIndexArraySIMD<4> Blocks::getAdjacentOnSameZLevelOnly(const BlockIndex& index) const
 {
 	if(isEdge(index)) [[unlikely]]
 		return m_indexOffsetsForAdjacentDirectSameZ.getIndicesMaybeOutOfBounds(*this, index);
 	else
 		return m_indexOffsetsForAdjacentDirectSameZ.getIndicesInBounds(*this, index);
+}
+BlockIndexSetSIMD Blocks::getNthAdjacent(const BlockIndex& index, const DistanceInBlocks& n)
+{
+	while(n + 1 > m_indexOffsetsForNthAdjacent.size())
+	{
+		OffsetSetSIMD offsetSet;
+		for(const Offset3D& offset : getNthAdjacentOffsets(m_indexOffsetsForNthAdjacent.size()))
+			offsetSet.insert(*this, offset);
+		m_indexOffsetsForNthAdjacent.push_back(offsetSet);
+	}
+	return m_indexOffsetsForNthAdjacent[n.get()].getIndicesMaybeOutOfBounds(*this, index);
 }
 DistanceInBlocks Blocks::distance(const BlockIndex& index, const BlockIndex& otherIndex) const
 {

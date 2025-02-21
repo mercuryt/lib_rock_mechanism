@@ -1,7 +1,7 @@
 #include "temperature.h"
 #include "area/area.h"
 #include "datetime.h"
-#include "nthAdjacentOffsets.h"
+#include "blocks/nthAdjacentOffsets.h"
 #include "config.h"
 #include "objective.h"
 #include "objectives/getToSafeTemperature.h"
@@ -26,6 +26,7 @@ TemperatureDelta TemperatureSource::getTemperatureDeltaForRange(const DistanceIn
 }
 void TemperatureSource::apply(Area& area)
 {
+	Blocks& blocks = area.getBlocks();
 	area.m_hasTemperature.addDelta(m_block, m_temperature);
 	DistanceInBlocks range = DistanceInBlocks::create(1);
 	while(true)
@@ -33,13 +34,14 @@ void TemperatureSource::apply(Area& area)
 		TemperatureDelta delta = getTemperatureDeltaForRange(range);
 		if(delta == 0)
 			break;
-		for(BlockIndex block : getNthAdjacentBlocks(area, m_block, range.get()))
+		for(const BlockIndex& block : blocks.getNthAdjacent(m_block, range))
 			area.m_hasTemperature.addDelta(block, delta);
 		++range;
 	}
 }
 void TemperatureSource::unapply(Area& area)
 {
+	Blocks& blocks = area.getBlocks();
 	area.m_hasTemperature.addDelta(m_block, m_temperature * -1);
 	DistanceInBlocks range = DistanceInBlocks::create(1);
 	while(true)
@@ -47,7 +49,7 @@ void TemperatureSource::unapply(Area& area)
 		TemperatureDelta delta = getTemperatureDeltaForRange(range);
 		if(delta == 0)
 			break;
-		for(BlockIndex block : getNthAdjacentBlocks(area, m_block, range.get()))
+		for(const BlockIndex& block : blocks.getNthAdjacent(m_block, range))
 			area.m_hasTemperature.addDelta(block, delta * -1);
 		++range;
 	}

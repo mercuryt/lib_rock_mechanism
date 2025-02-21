@@ -5,16 +5,15 @@
 #include "../../lib/Eigen/Dense"
 #pragma GCC diagnostic pop
 
-template<uint size>
 struct BlockIndexSetSIMD
 {
-	using Data = Eigen::Array<BlockIndexWidth, 1, size>;
+	using Data = Eigen::Array<BlockIndexWidth, 1, Eigen::Dynamic>;
 	Data m_data;
 	uint8_t m_nextIndex = 0;
 	BlockIndexSetSIMD(const Data& data) : m_data(data) { }
-	BlockIndexSetSIMD(const Eigen::Array<int, 1, size>& data) { m_data = data.template cast<BlockIndexWidth>(); }
+	BlockIndexSetSIMD(const Eigen::Array<int, 1, Eigen::Dynamic>& data) { m_data = data.template cast<BlockIndexWidth>(); }
 	[[nodiscard]] bool contains(const BlockIndex& block) const { assert(block.exists()); return (m_data == block.get()).any(); }
-	[[nodiscard]] BlockIndex operator[](const uint& index) const { assert(index < size); return BlockIndex::create(m_data[index]); }
+	[[nodiscard]] BlockIndex operator[](const uint& index) const { assert(index < m_nextIndex); return BlockIndex::create(m_data[index]); }
 	template<bool skipNull>
 	class ConstIterator
 	{
@@ -42,7 +41,7 @@ struct BlockIndexSetSIMD
 		void skipTillNext()
 		{
 			if constexpr (skipNull)
-				while(m_index < size && m_set[m_index] == BlockIndex::null().get())
+				while(m_index < m_set.m_nextIndex && m_set[m_index] == BlockIndex::null().get())
 					++m_index;
 		}
 		[[nodiscard]] BlockIndex operator*() const { return m_set[m_index]; }
@@ -50,12 +49,76 @@ struct BlockIndexSetSIMD
 		[[nodiscard]] bool operator!=(const ConstIterator<skipNull>& other) const { return !((*this) == other); }
 	};
 	auto begin() const { return ConstIterator<true>(*this, 0); }
-	auto end() const { return ConstIterator<true>(*this, size); }
+	auto end() const { return ConstIterator<true>(*this, m_nextIndex); }
 	struct WithNullView
 	{
 		const BlockIndexSetSIMD& m_set;
 		auto begin() const { return ConstIterator<false>(m_set, 0); }
-		auto end() const { return ConstIterator<false>(m_set, size); }
+		auto end() const { return ConstIterator<false>(m_set, m_set.m_nextIndex); }
+	};
+	WithNullView includeNull() const { return WithNullView(*this); }
+	SmallSet<BlockIndex> toSmallSet() const
+	{
+		SmallSet<BlockIndex> output;
+		output.resize(m_nextIndex);
+		for(const BlockIndexWidth& value : m_data)
+			if(value != BlockIndex::null().get())
+				output.insert(BlockIndex::create(value));
+		return output;
+	}
+};
+
+template<uint size>
+struct BlockIndexArraySIMD
+{
+	using Data = Eigen::Array<BlockIndexWidth, 1, size>;
+	Data m_data;
+	uint8_t m_nextIndex = 0;
+	BlockIndexArraySIMD(const Data& data) : m_data(data) { }
+	BlockIndexArraySIMD(const Eigen::Array<int, 1, size>& data) { m_data = data.template cast<BlockIndexWidth>(); }
+	[[nodiscard]] bool contains(const BlockIndex& block) const { assert(block.exists()); return (m_data == block.get()).any(); }
+	[[nodiscard]] BlockIndex operator[](const uint& index) const { assert(index < size); return BlockIndex::create(m_data[index]); }
+	template<bool skipNull>
+	class ConstIterator
+	{
+		const BlockIndexArraySIMD& m_array;
+		uint8_t m_index = 0;
+	public:
+		ConstIterator(const BlockIndexArraySIMD& set, uint8_t index) :
+			m_array(set),
+			m_index(index)
+		{
+			skipTillNext();
+		}
+		ConstIterator operator++()
+		{
+			++m_index;
+			skipTillNext();
+			return *this;
+		}
+		[[nodiscard]] ConstIterator operator++(int)
+		{
+			auto copy = this;
+			++(*this);
+			return copy;
+		}
+		void skipTillNext()
+		{
+			if constexpr (skipNull)
+				while(m_index < size && m_array[m_index] == BlockIndex::null().get())
+					++m_index;
+		}
+		[[nodiscard]] BlockIndex operator*() const { return m_array[m_index]; }
+		[[nodiscard]] bool operator==(const ConstIterator<skipNull>& other) const { assert(&m_array == &other.m_array); return m_index == other.m_index; }
+		[[nodiscard]] bool operator!=(const ConstIterator<skipNull>& other) const { return !((*this) == other); }
+	};
+	auto begin() const { return ConstIterator<true>(*this, 0); }
+	auto end() const { return ConstIterator<true>(*this, size); }
+	struct WithNullView
+	{
+		const BlockIndexArraySIMD& m_array;
+		auto begin() const { return ConstIterator<false>(m_array, 0); }
+		auto end() const { return ConstIterator<false>(m_array, size); }
 	};
 	WithNullView includeNull() const { return WithNullView(*this); }
 	SmallSet<BlockIndex> toSmallSet() const
