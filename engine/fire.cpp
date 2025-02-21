@@ -1,6 +1,6 @@
 #include "fire.h"
-#include "area.h"
-#include "simulation.h"
+#include "area/area.h"
+#include "simulation/simulation.h"
 #include "materialType.h"
 #include "blocks/blocks.h"
 #include "types.h"
@@ -56,8 +56,8 @@ void FireEvent::execute(Simulation&, Area* area)
 }
 void FireEvent::clearReferences(Simulation&, Area*) { m_fire.m_event.clearPointer(); }
 // Fire.
-Fire::Fire(Area& a, const BlockIndex& l, const MaterialTypeId& mt, bool hasPeaked, FireStage stage, const Step start) : 
-	m_temperatureSource(a, MaterialType::getFlameTemperature(mt) * Config::heatFractionForSmoulder, l), 
+Fire::Fire(Area& a, const BlockIndex& l, const MaterialTypeId& mt, bool hasPeaked, FireStage stage, const Step start) :
+	m_temperatureSource(a, MaterialType::getFlameTemperature(mt) * Config::heatFractionForSmoulder, l),
 	m_event(a.m_eventSchedule), m_location(l), m_materialType(mt), m_stage(stage), m_hasPeaked(hasPeaked)
 {
 	m_event.schedule(a, MaterialType::getBurnStageDuration(m_materialType), *this, start);
@@ -90,13 +90,13 @@ void AreaHasFires::load(const Json& data, DeserializationMemo&)
 			m_fires[block].emplace(materialType, m_area, block, materialType, fireData["hasPeaked"].get<bool>(), fireData["stage"].get<FireStage>(), fireData["start"].get<Step>());
 		}
 }
-Fire& AreaHasFires::at(const BlockIndex& block, const MaterialTypeId& materialType) 
+Fire& AreaHasFires::at(const BlockIndex& block, const MaterialTypeId& materialType)
 {
-	assert(m_fires.contains(block)); 
-	assert(m_fires.at(block).contains(materialType)); 
-	return m_fires.at(block)[materialType]; 
+	assert(m_fires.contains(block));
+	assert(m_fires.at(block).contains(materialType));
+	return m_fires.at(block)[materialType];
 }
-bool AreaHasFires::contains(const BlockIndex& block, const MaterialTypeId& materialType) 
+bool AreaHasFires::contains(const BlockIndex& block, const MaterialTypeId& materialType)
 {
 	if(!m_fires.contains(block))
 		return false;

@@ -1,8 +1,8 @@
 #include "blocks.h"
 #include "../fluidType.h"
 #include "../mistDisperseEvent.h"
-#include "../fluidGroup.h"
-#include "../area.h"
+#include "../fluidGroups/fluidGroup.h"
+#include "../area/area.h"
 #include "../deserializationMemo.h"
 #include "../types.h"
 std::vector<FluidData>::iterator Blocks::fluid_getDataIterator(const BlockIndex& index, const FluidTypeId& fluidType)

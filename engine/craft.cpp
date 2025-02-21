@@ -1,7 +1,7 @@
 #include "craft.h"
 #include "actors/actors.h"
 #include "items/items.h"
-#include "area.h"
+#include "area/area.h"
 #include "deserializationMemo.h"
 #include "materialType.h"
 #include "path/pathRequest.h"
@@ -9,7 +9,7 @@
 #include "objectives/dig.h"
 #include "types.h"
 #include "util.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "itemType.h"
 #include "hasShapes.hpp"
 

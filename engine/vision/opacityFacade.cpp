@@ -1,7 +1,7 @@
 #include "opacityFacade.h"
 #include "lineOfSight.h"
 
-#include "../area.h"
+#include "../area/area.h"
 #include "../types.h"
 #include "../blocks/blocks.h"
 

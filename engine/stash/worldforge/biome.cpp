@@ -1,7 +1,7 @@
 #include "biome.h"
 #include "../block.h"
 #include "../random.h"
-#include "../simulation.h"
+#include "../simulation/simulation.h"
 
 // May return nullptr if the ground level is the top of the area.
 BlockIndex* getAboveGroundLevel(BlockIndex& block)

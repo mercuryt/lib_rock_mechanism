@@ -1,7 +1,7 @@
 #include "editFactionPanel.h"
 #include "../engine/faction.h"
 #include "widgets.h"
-#include "../engine/simulation.h"
+#include "../engine/simulation/simulation.h"
 #include "window.h"
 #include <TGUI/Layout.hpp>
 #include <TGUI/Widget.hpp>

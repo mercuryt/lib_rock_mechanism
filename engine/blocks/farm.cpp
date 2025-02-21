@@ -1,7 +1,7 @@
 #include "blocks.h"
-#include "area.h"
+#include "area/area.h"
 #include "plantSpecies.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "../plants.h"
 void Blocks::farm_insert(const BlockIndex& index, const FactionId& faction, FarmField& farmField)
 {
@@ -51,7 +51,7 @@ void Blocks::farm_maybeDesignateForSowingIfPartOfFarmField(const BlockIndex& ind
 }
 void Blocks::farm_removeAllHarvestDesignations(const BlockIndex& index)
 {
-	PlantIndex plant = m_plants[index];	
+	PlantIndex plant = m_plants[index];
 	if(plant.empty())
 		return;
 	if(m_farmFields.contains(index))
@@ -61,7 +61,7 @@ void Blocks::farm_removeAllHarvestDesignations(const BlockIndex& index)
 }
 void Blocks::farm_removeAllGiveFluidDesignations(const BlockIndex& index)
 {
-	PlantIndex plant = m_plants[index];	
+	PlantIndex plant = m_plants[index];
 	if(plant.empty())
 		return;
 	if(m_farmFields.contains(index))
@@ -82,13 +82,13 @@ bool Blocks::farm_isSowingSeasonFor(const PlantSpeciesId& species) const
 	return day >= PlantSpecies::getDayOfYearForSowStart(species) && day <= PlantSpecies::getDayOfYearForSowEnd(species);
 }
 FarmField* Blocks::farm_get(const BlockIndex& index, const FactionId& faction)
-{ 
-	if(!m_farmFields.contains(index) || !m_farmFields[index].contains(faction)) 
-		return nullptr; 
-	return m_farmFields[index][faction]; 
+{
+	if(!m_farmFields.contains(index) || !m_farmFields[index].contains(faction))
+		return nullptr;
+	return m_farmFields[index][faction];
 }
 bool Blocks::farm_contains(const BlockIndex& index, const FactionId& faction) const
-{ 
+{
 	return const_cast<Blocks*>(this)->farm_get(index, faction) != nullptr;
 }
 

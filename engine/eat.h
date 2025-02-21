@@ -2,7 +2,7 @@
 
 #include "config.h"
 #include "reference.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "eventSchedule.hpp"
 #include "path/terrainFacade.h"
 #include "types.h"

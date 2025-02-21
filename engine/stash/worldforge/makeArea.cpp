@@ -1,4 +1,4 @@
-#include "../simulation.h"
+#include "../simulation/simulation.h"
 #include "../nthAdjacentOffsets.h"
 #include "worldLocation.h"
 #include "world.h"

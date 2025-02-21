@@ -1,8 +1,8 @@
 #include "grow.h"
 #include "actors.h"
-#include "../simulation.h"
+#include "../simulation/simulation.h"
 #include "../util.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../animalSpecies.h"
 #include "types.h"
 
@@ -90,8 +90,8 @@ bool CanGrow::canGrowCurrently(Area& area) const
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
-	return m_percentGrown != 100 && actors.getAge(actor) < AnimalSpecies::getStepsTillFullyGrown(actors.getSpecies(actor)) && 
-		!actors.eat_isHungry(actor) && !actors.drink_isThirsty(actor) && 
+	return m_percentGrown != 100 && actors.getAge(actor) < AnimalSpecies::getStepsTillFullyGrown(actors.getSpecies(actor)) &&
+		!actors.eat_isHungry(actor) && !actors.drink_isThirsty(actor) &&
 		actors.temperature_isSafeAtCurrentLocation(actor);
 }
 Percent CanGrow::growthPercent() const

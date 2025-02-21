@@ -1,6 +1,6 @@
 #include "drainQueue.h"
-#include "../fluidGroup.h"
-#include "../area.h"
+#include "fluidGroup.h"
+#include "../area/area.h"
 #include "../config.h"
 #include "../blocks/blocks.h"
 #include "types.h"

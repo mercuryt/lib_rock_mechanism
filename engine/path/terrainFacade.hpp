@@ -2,8 +2,8 @@
 
 #include "terrainFacade.h"
 // Needed for find path templates. Move to a hpp file?
-#include "area.h"
-#include "simulation.h"
+#include "area/area.h"
+#include "simulation/simulation.h"
 #include "findPathInnerLoops.h"
 
 template<bool anyOccupiedBlock, DestinationCondition DestinationConditionT>

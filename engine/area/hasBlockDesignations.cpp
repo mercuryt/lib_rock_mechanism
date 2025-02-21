@@ -1,5 +1,5 @@
 #include "hasBlockDesignations.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../designations.h"
 #include "../json.h"
 #include "../deserializationMemo.h"

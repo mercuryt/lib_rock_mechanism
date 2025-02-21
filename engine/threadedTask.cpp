@@ -1,12 +1,12 @@
 #include "threadedTask.h"
-#include "area.h"
-#include "simulation.h"
+#include "area/area.h"
+#include "simulation/simulation.h"
 #include <algorithm>
 #include <iterator>
 #include <memory>
 #include <cassert>
-void ThreadedTask::cancel(Simulation& simulation, Area* area) 
-{ 
+void ThreadedTask::cancel(Simulation& simulation, Area* area)
+{
 	clearReferences(simulation, area);
 	if(area == nullptr)
 		simulation.m_threadedTaskEngine.remove(*this);

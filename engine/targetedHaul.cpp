@@ -1,5 +1,5 @@
 #include "targetedHaul.h"
-#include "area.h"
+#include "area/area.h"
 #include "deserializationMemo.h"
 #include "items/items.h"
 #include "objective.h"

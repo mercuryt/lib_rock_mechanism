@@ -1,11 +1,11 @@
 #include "rain.h"
 #include "../fluidType.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../config.h"
 #include "../random.h"
 #include "../types.h"
 #include "../util.h"
-#include "../simulation.h"
+#include "../simulation/simulation.h"
 #include "../plants.h"
 #include "../blocks/blocks.h"
 AreaHasRain::AreaHasRain(Area& a, Simulation&) :

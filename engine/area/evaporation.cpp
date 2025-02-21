@@ -1,5 +1,5 @@
 #include "evaporation.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../fluidType.h"
 AreaHasEvaporation::AreaHasEvaporation(Area& area) :
 	m_event(area.m_eventSchedule)

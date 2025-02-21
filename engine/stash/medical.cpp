@@ -1,5 +1,5 @@
 #include "medical.h"
-#include "area.h"
+#include "area/area.h"
 #include "config.h"
 #include "item.h"
 #include "actor.h"
@@ -30,7 +30,7 @@ void MedicalThreadedTask::writeStep()
 		else
 			m_objective.setLocation(location);
 	}
-	else 
+	else
 		m_objective.m_actor.m_hasObjectives.cannotFulfillObjective(m_objective);
 }
 void MedicalThreadedTask::clearReferences() { m_objective.m_threadedTask.clearPointer(); }
@@ -229,8 +229,8 @@ const MedicalProjectType& AreaHasMedicalPatientsForFaction::getMedicalProjectTyp
 	return MedicalProjectType::byName("bandage");
 }
 void MedicalPatientRelistEvent::execute() { m_patient.m_location->m_area->m_hasMedicalPatients.at(*m_patient.getFaction()).addPatient(m_patient); }
-void MedicalPatientRelistEvent::clearReferences() 
-{ 
+void MedicalPatientRelistEvent::clearReferences()
+{
 	auto& hasProjectsForFaction = m_patient.m_location->m_area->m_hasMedicalPatients.at(*m_patient.getFaction());
 	hasProjectsForFaction.m_relistEvents.erase(&m_patient);
 }

@@ -1,7 +1,7 @@
 #include "pathRequest.h"
 #include "terrainFacade.hpp"
 #include "../actors/actors.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../blocks/blocks.h"
 #include "../objectives/dig.h"
 #include "../objectives/construct.h"

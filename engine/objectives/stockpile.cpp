@@ -1,5 +1,5 @@
 #include "stockpile.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../actors/actors.h"
 #include "../items/items.h"
 #include "../blocks/blocks.h"

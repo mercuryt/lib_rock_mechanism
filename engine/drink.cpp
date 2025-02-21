@@ -1,7 +1,7 @@
 #include "drink.h"
-#include "area.h"
+#include "area/area.h"
 #include "deserializationMemo.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "types.h"
 #include "util.h"
 #include "objectives/drink.h"
@@ -16,7 +16,7 @@ MustDrink::MustDrink(Area& area, const ActorIndex& a) :
 {
 	m_actor.setIndex(a, area.getActors().m_referenceData);
 }
-MustDrink::MustDrink(Area& area, const Json& data, const ActorIndex& a, const AnimalSpeciesId& species) : 
+MustDrink::MustDrink(Area& area, const Json& data, const ActorIndex& a, const AnimalSpeciesId& species) :
 	m_thirstEvent(area.m_eventSchedule), m_fluidType(AnimalSpecies::getFluidType(species)),
        	m_volumeDrinkRequested(data["volumeDrinkRequested"].get<CollisionVolume>())
 {
@@ -113,7 +113,7 @@ Step MustDrink::getStepsTillDead() const
 CollisionVolume MustDrink::drinkVolumeFor(Area& area, const ActorIndex& actor) { return CollisionVolume::create(std::max(1u, area.getActors().getMass(actor).get() / Config::unitsBodyMassPerUnitFluidConsumed)); }
 // Drink Event.
 DrinkEvent::DrinkEvent(Area& area, const Step& delay, DrinkObjective& drob, const ActorIndex& actor, const Step start) :
-	ScheduledEvent(area.m_simulation, delay, start), m_drinkObjective(drob) 
+	ScheduledEvent(area.m_simulation, delay, start), m_drinkObjective(drob)
 {
 	m_actor.setIndex(actor, area.getActors().m_referenceData);
 }

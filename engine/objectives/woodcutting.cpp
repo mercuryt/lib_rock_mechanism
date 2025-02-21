@@ -1,5 +1,5 @@
 #include "woodcutting.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../woodcutting.h"
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"

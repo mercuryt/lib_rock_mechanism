@@ -5,8 +5,8 @@
 #include <chrono>
 #include <memory>
 #include <ratio>
-#include "../engine/simulation.h"
-#include "../engine/area.h"
+#include "../engine/simulation/simulation.h"
+#include "../engine/area/area.h"
 #include "../engine/input.h"
 #include "../engine/geometry/cuboidSet.h"
 #include "displayData.h"

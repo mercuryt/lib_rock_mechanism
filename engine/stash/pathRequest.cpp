@@ -1,5 +1,5 @@
 #include "pathRequest.h"
-#include "area.h"
+#include "area/area.h"
 #include "deserializationMemo.h"
 #include "types.h"
 #include "actors/actors.h"

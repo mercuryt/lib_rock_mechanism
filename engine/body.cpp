@@ -8,9 +8,9 @@
 #include "reservable.h"
 #include "types.h"
 #include "util.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "woundType.h"
-#include "area.h"
+#include "area/area.h"
 // For Attack declaration.
 #include "actors/actors.h"
 #include <cstdint>

@@ -1,8 +1,8 @@
 #include "blocks.h"
 #include "../actors/actors.h"
 #include "../items/items.h"
-#include "../area.h"
-#include "../simulation.h"
+#include "../area/area.h"
+#include "../simulation/simulation.h"
 #include "../simulation/hasItems.h"
 #include "../types.h"
 #include "../itemType.h"
@@ -61,10 +61,10 @@ void Blocks::item_updateIndex(const BlockIndex& index, const ItemIndex& oldIndex
 {
 	auto found = m_items[index].find(oldIndex);
 	assert(found != m_items[index].end());
-	(*found) = newIndex; 
+	(*found) = newIndex;
 	auto found2 = std::ranges::find(m_itemVolume[index], oldIndex, [](const auto& pair) { return pair.first; });
 	assert(found2 != m_itemVolume[index].end());
-	(*found2).first = newIndex; 
+	(*found2).first = newIndex;
 }
 ItemIndex Blocks::item_addGeneric(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity)
 {
@@ -110,7 +110,7 @@ ItemIndex Blocks::item_getGeneric(const BlockIndex& index, const ItemTypeId& ite
 {
 	auto& itemsInBlock = m_items[index];
 	Items& items = m_area.getItems();
-	const auto found = itemsInBlock.find_if([&](const ItemIndex& item) { 
+	const auto found = itemsInBlock.find_if([&](const ItemIndex& item) {
 		return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType;
 	});
 	if(found == itemsInBlock.end())
@@ -122,7 +122,7 @@ bool Blocks::item_hasInstalledType(const BlockIndex& index, const ItemTypeId& it
 {
 	auto& itemsInBlock = m_itemVolume[index];
 	Items& items = m_area.getItems();
-	auto found = std::ranges::find_if(itemsInBlock, [&](auto pair) { 
+	auto found = std::ranges::find_if(itemsInBlock, [&](auto pair) {
 		ItemIndex item = pair.first;
 		return items.getItemType(item) == itemType;
 	});

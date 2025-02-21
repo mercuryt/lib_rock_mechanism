@@ -1,9 +1,9 @@
 #include "hasSleepingSpots.h"
 #include "../deserializationMemo.h"
 #include "../designations.h"
-#include "../simulation.h"
+#include "../simulation/simulation.h"
 #include "../blocks/blocks.h"
-#include "../area.h"
+#include "../area/area.h"
 void AreaHasSleepingSpots::load(const Json& data, DeserializationMemo&)
 {
 	for(const Json& block : data["unassigned"])

@@ -1,5 +1,5 @@
 #include "pathMemo.h"
-#include "area.h"
+#include "area/area.h"
 #include "blocks/blocks.h"
 #include "index.h"
 void PathMemoClosed::add(const BlockIndex& index, BlockIndex parent)

@@ -1,5 +1,5 @@
 #pragma once
-#include "area.h"
+#include "area/area.h"
 #include "materialType.h"
 #include "fluidType.h"
 #include "geometry/cuboid.h"

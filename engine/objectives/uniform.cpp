@@ -1,6 +1,6 @@
 #include "uniform.h"
 #include "../actors/actors.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../blocks/blocks.h"
 #include "../items/items.h"
 #include "../path/terrainFacade.hpp"

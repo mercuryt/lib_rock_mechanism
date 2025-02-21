@@ -1,5 +1,5 @@
 #include "blocks.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../materialType.h"
 #include "plants.h"
 #include "types.h"

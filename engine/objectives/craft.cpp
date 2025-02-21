@@ -2,7 +2,7 @@
 #include "../skillType.h"
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../path/terrainFacade.hpp"
 #include "../hasShapes.hpp"
 CraftPathRequest::CraftPathRequest(Area& area, CraftObjective& co, const ActorIndex& actorIndex) :

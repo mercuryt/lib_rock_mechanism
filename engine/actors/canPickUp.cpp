@@ -1,7 +1,7 @@
 #include "actorOrItemIndex.h"
 #include "actors.h"
 #include "../items/items.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../itemType.h"
 #include "../portables.hpp"
 #include "index.h"

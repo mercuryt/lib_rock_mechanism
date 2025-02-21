@@ -1,5 +1,5 @@
 #include "reference.h"
-#include "area.h"
+#include "area/area.h"
 #include "actors/actors.h"
 #include "items/items.h"
 void ActorOrItemReference::load(const Json& data, Area& area)

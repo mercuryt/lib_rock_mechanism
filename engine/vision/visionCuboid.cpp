@@ -1,5 +1,5 @@
 #include "vision/visionCuboid.h"
-#include "area.h"
+#include "area/area.h"
 #include "geometry/sphere.h"
 #include "types.h"
 #include "blocks/blocks.h"
@@ -14,7 +14,7 @@ void VisionCuboidSetSIMD::insert(const VisionCuboidId& index, const Cuboid& cubo
 {
 	m_cuboidSet.insert(cuboid);
 	if(m_cuboidSet.capacity() > m_indices.size())
-		m_indices.resize(m_cuboidSet.capacity());
+		m_indices.conservativeResize(m_cuboidSet.capacity());
 	m_indices[m_cuboidSet.size()] = index.get();
 }
 void VisionCuboidSetSIMD::maybeInsert(const VisionCuboidId& index, const Cuboid& cuboid)

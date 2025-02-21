@@ -1,5 +1,5 @@
 #include "actorOrItemIndex.h"
-#include "area.h"
+#include "area/area.h"
 #include "index.h"
 #include "types.h"
 #include "actors/actors.h"

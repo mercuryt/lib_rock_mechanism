@@ -1,6 +1,6 @@
 #include "longRange.h"
 #include "../blocks/blocks.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../config.h"
 #include "../partitionNotify.h"
 void LongRangePathFinderForMoveType::merge(Blocks& blocks, const LongRangePathNodeIndex& mergeInto, const LongRangePathNodeIndex& mergeFrom)

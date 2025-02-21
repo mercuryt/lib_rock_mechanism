@@ -2,7 +2,7 @@
 #include "../config.h"
 #include "../util.h"
 #include "../deserializationMemo.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../areaBuilderUtil.h"
 #include "biome.h"
 #include "worldLocation.h"
@@ -41,9 +41,9 @@ World::World(WorldConfig config, Simulation& simulation) : m_simulation(simulati
 				previousHorizontalSize = horizontalSizeAtVerticalBand(vertical - 1);
 				previousHorizontalStart = &location - horizontal - previousHorizontalSize - 1;
 			}
-			else 
+			else
 			{
-				previousHorizontalSize = 0; 
+				previousHorizontalSize = 0;
 				previousHorizontalStart = nullptr;
 			}
 			if(vertical != m_poleDistance - 1)
@@ -51,9 +51,9 @@ World::World(WorldConfig config, Simulation& simulation) : m_simulation(simulati
 				nextHorizontalSize = horizontalSizeAtVerticalBand(vertical + 1);
 				nextHorizontalStart = &location - horizontal + horizontalSize + 1;
 			}
-			else 
+			else
 			{
-				nextHorizontalSize = 0; 
+				nextHorizontalSize = 0;
 				nextHorizontalStart = nullptr;
 			}
 			setAdjacentFor(location, horizontal, horizontalSize, previousHorizontalSize, nextHorizontalSize, previousHorizontalStart, nextHorizontalStart);
@@ -64,7 +64,7 @@ World::World(WorldConfig config, Simulation& simulation) : m_simulation(simulati
 	assignBiomes();
 }
 World::World(const Json& data, DeserializationMemo& deserializationMemo) :
-       	m_simulation(deserializationMemo.m_simulation), m_config(data["config"]), m_equatorSize(data["equatorSize"].get<size_t>()), 
+       	m_simulation(deserializationMemo.m_simulation), m_config(data["config"]), m_equatorSize(data["equatorSize"].get<size_t>()),
 	m_poleSizeHorizontal(m_equatorSize / 2), m_poleDistance(((float)m_equatorSize * 3.f) / 4), m_kilometersPerDegreeLongitude(data["kilometersPerDegreeLongitude"])
 {
 	for(const Json& locationData : data["locations"])
@@ -119,13 +119,13 @@ void World::setAdjacentFor(WorldLocation& location, size_t horizontal, size_t ho
 	// West
 	if(location.longitude == -90)
 		location.adjacent.push_back(&location + horizontalSize);
-	else 
+	else
 		location.adjacent.push_back(&location + 1);
 	location.west = location.adjacent.back();
 	// East
 	if(location.longitude == 90)
 		location.adjacent.push_back(&location - horizontalSize);
-	else 
+	else
 		location.adjacent.push_back(&location - 1);
 	location.east = location.adjacent.back();
 	// South
@@ -178,7 +178,7 @@ void World::generateRivers()
 			}
 
 		}
-	
+
 	for(auto& set : sets)
 	{
 		// Reduce candidates.

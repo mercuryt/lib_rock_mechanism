@@ -1,5 +1,5 @@
 #include "installItem.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../blocks/blocks.h"
 #include "../actors/actors.h"
 #include "../plants.h"

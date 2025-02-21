@@ -1,13 +1,13 @@
 #include "exterminate.h"
-#include "../simulation.h"
+#include "../simulation/simulation.h"
 #include "../actors/actors.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../deserializationMemo.h"
 #include "blocks/blocks.h"
 #include "types.h"
 ExterminateObjective::ExterminateObjective(Area& area, const BlockIndex& destination) :
 	Objective(Config::exterminatePriority), m_destination(destination), m_event(area.m_eventSchedule) { }
-ExterminateObjective::ExterminateObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) : 
+ExterminateObjective::ExterminateObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo),
 	m_destination(data["destination"].get<BlockIndex>()),
 	m_event(area.m_eventSchedule)
@@ -54,7 +54,7 @@ void ExterminateObjective::execute(Area& area, const ActorIndex& actor)
 		m_event.schedule(area, *this, actor);
 	}
 }
-ExterminateObjectiveScheduledEvent::ExterminateObjectiveScheduledEvent(Area& area, ExterminateObjective& o, const ActorIndex& actor, const Step start) : 
+ExterminateObjectiveScheduledEvent::ExterminateObjectiveScheduledEvent(Area& area, ExterminateObjective& o, const ActorIndex& actor, const Step start) :
 	ScheduledEvent(area.m_simulation, Config::exterminateCheckFrequency, start),
 	m_objective(o)
 {

@@ -1,5 +1,5 @@
 #include "blocks.h"
-#include "../area.h"
+#include "../area/area.h"
 bool Blocks::designation_has(const BlockIndex& index, const FactionId& faction, const BlockDesignation& designation) const
 {
 	return m_area.m_blockDesignations.getForFaction(faction).check(index, designation);

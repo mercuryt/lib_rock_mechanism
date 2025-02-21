@@ -1,9 +1,9 @@
 //ObjectiveTypePrioritySet
 #include "objective.h"
 #include "actorOrItemIndex.h"
-#include "area.h"
+#include "area/area.h"
 #include "deserializationMemo.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "simulation/hasActors.h"
 #include "actors/actors.h"
 

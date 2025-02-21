@@ -13,8 +13,8 @@
 #include "types.h"
 #include "util.h"
 #include "config.h"
-#include "area.h"
-#include "simulation.h"
+#include "area/area.h"
+#include "simulation/simulation.h"
 #include "vectorContainers.h"
 
 #include <queue>

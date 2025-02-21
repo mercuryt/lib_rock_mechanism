@@ -1,7 +1,7 @@
 #include "production.h"
 #include "widgets.h"
 #include "window.h"
-#include "../engine/area.h"
+#include "../engine/area/area.h"
 #include "../engine/craft.h"
 #include <TGUI/Widgets/ComboBox.hpp>
 #include <TGUI/Widgets/ScrollablePanel.hpp>

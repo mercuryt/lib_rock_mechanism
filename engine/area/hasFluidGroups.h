@@ -1,5 +1,5 @@
 #pragma once
-#include "../fluidGroup.h"
+#include "../fluidGroups/fluidGroup.h"
 #include "../fluidGroups/fluidAllocator.h"
 #include "index.h"
 #include "vectorContainers.h"

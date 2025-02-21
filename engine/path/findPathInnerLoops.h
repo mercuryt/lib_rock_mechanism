@@ -1,5 +1,5 @@
 #pragma once
-#include "area.h"
+#include "area/area.h"
 #include "shape.h"
 #include "blocks/blocks.h"
 #include "index.h"

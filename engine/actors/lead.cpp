@@ -1,5 +1,5 @@
 #include "actors.h"
-#include "area.h"
+#include "area/area.h"
 #include "blocks/blocks.h"
 #include "index.h"
 const BlockIndices& Actors::lineLead_getPath(const ActorIndex& index) const

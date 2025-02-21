@@ -1,8 +1,8 @@
 #include "leadAndFollow.h"
-#include "area.h"
+#include "area/area.h"
 #include "config.h"
 #include "deserializationMemo.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "actorOrItemIndex.h"
 #include "blocks/blocks.h"
 #include "actors/actors.h"
@@ -10,7 +10,7 @@
 #include "types.h"
 void CanLead::load(const Json& data, Area& area, DeserializationMemo& deserializationMemo)
 {
-	m_canFollow = data.contains("isLeadingItem") ? 
+	m_canFollow = data.contains("isLeadingItem") ?
 		&area.getItems().m_canFollow.at(data["isLeadingItem"].get<ItemIndex>()):
 		&area.getActors().getCanFollow(data["isLeadingActor"].get<ActorIndex>());
 	if(data.contains("locationQueue"))
@@ -54,15 +54,15 @@ bool CanLead::canMove(Area& area)
 }
 bool CanLead::isLeading() const { return m_canFollow != nullptr; }
 bool CanLead::isLeadingActor(ActorIndex index) const
-{ 
+{
 	return m_canFollow != nullptr && m_canFollow->m_actorOrItemIndex.isActor() && m_canFollow->m_actorOrItemIndex.get() == index;
 }
 bool CanLead::isLeadingItem(ItemIndex index) const
-{ 
+{
 	return m_canFollow != nullptr && m_canFollow->m_actorOrItemIndex.isItem() && m_canFollow->m_actorOrItemIndex.get() == index;
 }
 bool CanLead::isLeadingPolymorphic(ActorOrItemIndex index) const
-{ 
+{
 	return m_canFollow != nullptr && m_canFollow->m_actorOrItemIndex == index;
 }
 ActorOrItemIndex CanLead::getFollower() { return m_canFollow->m_actorOrItemIndex; }

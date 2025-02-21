@@ -1,5 +1,5 @@
 #include "blockFeature.h"
-#include "area.h"
+#include "area/area.h"
 #include "config.h"
 // Name, hewn, blocks entrance, lockable, stand in, stand above
 BlockFeatureType BlockFeatureType::floor{L"floor", false, false, false, true, false, false};

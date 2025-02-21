@@ -2,7 +2,7 @@
 #include "actors/actors.h"
 #include "blocks/blocks.h"
 #include "plants.h"
-#include "area.h"
+#include "area/area.h"
 #include "blockFeature.h"
 #include "deserializationMemo.h"
 #include "random.h"
@@ -10,7 +10,7 @@
 #include "path/terrainFacade.h"
 #include "types.h"
 #include "util.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "itemType.h"
 #include "objectives/woodcutting.h"
 #include <memory>

@@ -307,7 +307,7 @@ void Draw::blockWalls(const BlockIndex& block)
 			sprite.setColor(color);
 			m_window.getRenderWindow().draw(sprite);
 		}
-		const BlockIndex &west = blocks.getBlockWest(block);
+		const BlockIndex& west = blocks.getBlockWest(block);
 		if(adjacentPredicate(west))
 		{
 			const sf::Color color = displayData::materialColors[blocks.solid_get(block)];
@@ -940,7 +940,7 @@ void Draw::multiTileBorder(const OccupiedBlocksForHasShape& blocksOccpuied, sf::
 	Blocks& blocks = m_window.m_area->getBlocks();
 	for(const BlockIndex& block : blocksOccpuied)
 	{
-		for(BlockIndex& adjacent : blocks.getAdjacentOnSameZLevelOnly(block))
+		for(const BlockIndex& adjacent : blocks.getAdjacentOnSameZLevelOnly(block))
 			if(!blocksOccpuied.contains(adjacent))
 			{
 				Facing4 facing = blocks.facingToSetWhenEnteringFrom(adjacent, block);

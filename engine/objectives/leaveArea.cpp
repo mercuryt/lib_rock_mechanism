@@ -1,6 +1,6 @@
 #include "leaveArea.h"
-#include "../area.h"
-#include "../simulation.h"
+#include "../area/area.h"
+#include "../simulation/simulation.h"
 #include "../actors/actors.h"
 #include "../hasShapes.hpp"
 #include "../path/terrainFacade.hpp"

@@ -1,4 +1,4 @@
-#include "area.h"
+#include "area/area.h"
 #include "blocks.h"
 #include "../stockpile.h"
 #include "items/items.h"
@@ -20,7 +20,7 @@ void Blocks::stockpile_recordNoLongerMember(const BlockIndex& index, StockPile& 
 	assert(stockpile_contains(index, stockPile.getFaction()));
 	if(stockpile_isAvalible(index, stockPile.getFaction()))
 	{
-		stockPile.decrementOpenBlocks();	
+		stockPile.decrementOpenBlocks();
 		m_area.m_blockDesignations.getForFaction(stockPile.getFaction()).unset(index, BlockDesignation::StockPileHaulTo);
 	}
 	if(m_stockPiles[index].size() == 1)
@@ -45,8 +45,8 @@ void Blocks::stockpile_updateActive(const BlockIndex& index)
 		}
 	}
 }
-bool Blocks::stockpile_isAvalible(const BlockIndex& index, const FactionId& faction) const 
-{ 
+bool Blocks::stockpile_isAvalible(const BlockIndex& index, const FactionId& faction) const
+{
 	assert(stockpile_contains(index, faction));
 	if(item_empty(index))
 		return true;

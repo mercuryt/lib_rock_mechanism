@@ -4,7 +4,7 @@
 #include "eventSchedule.hpp"
 #include "index.h"
 #include "reference.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "types.h"
 #include "vectorContainers.h"
 

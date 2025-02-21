@@ -1,5 +1,5 @@
 #include "worldParamatersPanel.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "window.h"
 #include "worldforge/biome.h"
 #include "worldforge/lociiConfig.h"

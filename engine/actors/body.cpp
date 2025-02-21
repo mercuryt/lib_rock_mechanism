@@ -1,6 +1,6 @@
 #include "actors.h"
 #include "../body.h"
-#include "../area.h"
+#include "../area/area.h"
 bool Actors::body_isInjured(const ActorIndex& index) const
 {
 	return m_body[index]->isInjured();

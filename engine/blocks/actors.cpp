@@ -1,6 +1,6 @@
 #include "blocks.h"
 #include "../actors/actors.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "types.h"
 void Blocks::actor_record(const BlockIndex& index, const ActorIndex& actor, const CollisionVolume& volume)
 {

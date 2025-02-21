@@ -1,5 +1,5 @@
 #include "unequipItem.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../deserializationMemo.h"
 #include "actors/actors.h"
 #include "blocks/blocks.h"

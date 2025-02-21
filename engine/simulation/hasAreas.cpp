@@ -1,9 +1,9 @@
 #include "hasAreas.h"
 
-#include "../simulation.h"
+#include "../simulation/simulation.h"
 #include "../deserializationMemo.h"
 #include "../drama/engine.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"
 #include "../items/items.h"

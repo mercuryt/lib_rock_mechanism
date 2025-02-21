@@ -1,8 +1,8 @@
 #include "index.h"
 #include "actors/actors.h"
-#include "area.h"
+#include "area/area.h"
 #include "items/items.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "reference.h"
 #include "actorOrItemIndex.h"
 template<> BlockIndex BlockIndices::random(Simulation& simulation) const

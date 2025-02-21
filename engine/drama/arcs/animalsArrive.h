@@ -2,7 +2,7 @@
 #include "../engine.h"
 #include "../../eventSchedule.hpp"
 #include "../../types.h"
-#include "../../simulation.h"
+#include "../../simulation/simulation.h"
 #include "../../reference.h"
 #include <vector>
 class Area;

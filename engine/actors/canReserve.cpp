@@ -1,5 +1,5 @@
 #include "actors.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../items/items.h"
 #include "../blocks/blocks.h"
 void Actors::canReserve_clearAll(const ActorIndex& index)

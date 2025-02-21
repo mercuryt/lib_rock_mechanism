@@ -1,8 +1,8 @@
 #include "uniform.h"
-#include "area.h"
+#include "area/area.h"
 #include "items/items.h"
 #include "deserializationMemo.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include <chrono>
 #include <cinttypes>
 #include <math.h>

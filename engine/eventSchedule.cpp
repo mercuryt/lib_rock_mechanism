@@ -1,8 +1,8 @@
 #include "eventSchedule.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "types.h"
 #include "util.h"
-#include "area.h"
+#include "area/area.h"
 #include <cassert>
 ScheduledEvent::ScheduledEvent(Simulation& simulation, const Step& delay, const Step start) :
 	m_startStep(start.empty() ? simulation.m_step : start), m_step(m_startStep + delay)
@@ -10,16 +10,16 @@ ScheduledEvent::ScheduledEvent(Simulation& simulation, const Step& delay, const 
 	assert(delay != 0);
 	assert(simulation.m_step <= m_step);
 }
-void ScheduledEvent::cancel(Simulation& simulation, Area* area) 
+void ScheduledEvent::cancel(Simulation& simulation, Area* area)
 {
 	onCancel(simulation, area);
 	if(area == nullptr)
-		simulation.m_eventSchedule.unschedule(*this); 
+		simulation.m_eventSchedule.unschedule(*this);
 	else
 		area->m_eventSchedule.unschedule(*this);
 }
-Step ScheduledEvent::remaningSteps(Simulation& simulation) const 
-{ 
+Step ScheduledEvent::remaningSteps(Simulation& simulation) const
+{
 	assert(m_step > simulation.m_step);
 	return Step::create(m_step.get() - simulation.m_step.get());
 }

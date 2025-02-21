@@ -1,11 +1,11 @@
 #include "itemType.h"
-#include "area.h"
+#include "area/area.h"
 #include "attackType.h"
 #include "craft.h"
 #include "deserializationMemo.h"
 #include "fluidType.h"
 #include "materialType.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "types.h"
 #include "util.h"
 

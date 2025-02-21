@@ -1,6 +1,6 @@
 #include "blocks.h"
 #include "adjacentOffsets.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../materialType.h"
 #include "../types.h"
 #include "../blockFeature.h"

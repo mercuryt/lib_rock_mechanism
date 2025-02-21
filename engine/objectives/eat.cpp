@@ -1,5 +1,5 @@
 #include "eat.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../blocks/blocks.h"
 #include "../items/items.h"
 #include "../actors/actors.h"

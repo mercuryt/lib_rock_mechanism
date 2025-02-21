@@ -1,6 +1,6 @@
 #include "targetedHaul.h"
 #include "../targetedHaul.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../actors/actors.h"
 
 TargetedHaulObjective::TargetedHaulObjective(TargetedHaulProject& p) :
@@ -13,7 +13,7 @@ Json TargetedHaulObjective::toJson() const
 void TargetedHaulObjective::execute(Area& area, const ActorIndex& actor)
 {
 	// Add worker here rather then constructor because set current objective clears the project.
-	if(!area.getActors().project_exists(actor)) 
+	if(!area.getActors().project_exists(actor))
 		m_project.addWorkerCandidate(actor, *this);
 	m_project.commandWorker(actor);
 }

@@ -1,6 +1,6 @@
 #include "exposedToSky.h"
 #include "../blocks/blocks.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../area/exteriorPortals.h"
 void BlocksExposedToSky::initalizeEmpty()
 {

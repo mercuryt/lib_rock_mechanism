@@ -1,7 +1,7 @@
 #include "fillQueue.h"
 #include "../blocks/blocks.h"
-#include "../fluidGroup.h"
-#include "../area.h"
+#include "fluidGroup.h"
+#include "../area/area.h"
 #include "../blocks/blocks.h"
 #include "types.h"
 void FillQueue::buildFor(Area& area, FluidGroup& fluidGroup, BlockIndices& members)

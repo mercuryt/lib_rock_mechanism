@@ -1,6 +1,6 @@
 #include "editRealityPanel.h"
 #include "datetime.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "widgets.h"
 #include "window.h"
 #include <TGUI/Vertex.hpp>

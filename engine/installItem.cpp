@@ -1,6 +1,6 @@
 #include "installItem.h"
 #include "actors/actors.h"
-#include "area.h"
+#include "area/area.h"
 #include "deserializationMemo.h"
 #include "items/items.h"
 #include "reference.h"

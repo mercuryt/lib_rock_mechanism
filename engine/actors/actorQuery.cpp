@@ -1,8 +1,8 @@
 #include "actorQuery.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "simulation/hasActors.h"
 #include "types.h"
-#include "area.h"
+#include "area/area.h"
 #include "actors.h"
 // ActorQuery, to be used to search for actors.
 bool ActorQuery::query(Area& area, const ActorIndex& other) const

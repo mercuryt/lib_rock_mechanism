@@ -1,6 +1,6 @@
 #include "actors.h"
 #include "../types.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../items/items.h"
 void Actors::equipment_add(const ActorIndex& index, const ItemIndex& item)
 {
@@ -42,4 +42,4 @@ ItemIndex Actors::equipment_getWeaponToAttackAtRange(const ActorIndex& index, co
 ItemIndex Actors::equipment_getAmmoForRangedWeapon(const ActorIndex& index, const ItemIndex& weapon) const
 {
 	return m_equipmentSet[index]->getAmmoForRangedWeapon(m_area, weapon);
-} 
+}

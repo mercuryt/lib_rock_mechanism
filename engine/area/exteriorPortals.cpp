@@ -1,6 +1,6 @@
 
 #include "exteriorPortals.h"
-#include "area.h"
+#include "area/area.h"
 
 #include "../blocks/blocks.h"
 #include "../moveType.h"

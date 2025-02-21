@@ -1,6 +1,6 @@
 #include "onDestroy.h"
 #include "actors/actors.h"
-#include "area.h"
+#include "area/area.h"
 #include "objective.h"
 #include "project.h"
 #include "deserializationMemo.h"

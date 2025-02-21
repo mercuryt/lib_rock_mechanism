@@ -1,5 +1,5 @@
 #include "blocks.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../blockFeature.h"
 #include "plants.h"
 #include "reference.h"

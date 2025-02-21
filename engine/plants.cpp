@@ -1,5 +1,5 @@
 #include "plants.h"
-#include "area.h"
+#include "area/area.h"
 #include "eventSchedule.h"
 #include "hasShapes.hpp"
 #include "index.h"
@@ -7,7 +7,7 @@
 #include "plantSpecies.h"
 #include "portables.h"
 #include "reference.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "types.h"
 
 Plants::Plants(Area& area) :

@@ -1,5 +1,5 @@
 #include "sleep.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../types.h"
 #include "actors/actors.h"
 #include "blocks/blocks.h"

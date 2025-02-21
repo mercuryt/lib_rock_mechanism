@@ -1,9 +1,9 @@
 #include "sleep.h"
 #include "actors/actors.h"
 #include "animalSpecies.h"
-#include "area.h"
+#include "area/area.h"
 #include "designations.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "types.h"
 #include "plants.h"
 #include "objectives/sleep.h"
@@ -21,7 +21,7 @@ void TiredEvent::clearReferences(Simulation&, Area*){ m_needsSleep.m_tiredEvent.
 // Needs Sleep.
 MustSleep::MustSleep(Area& area, const ActorIndex& a) :
 	m_sleepEvent(area.m_eventSchedule), m_tiredEvent(area.m_eventSchedule)
-{ 
+{
 	m_actor.setIndex(a, area.getActors().m_referenceData);
 }
 void MustSleep::scheduleTiredEvent(Area& area)

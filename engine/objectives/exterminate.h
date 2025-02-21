@@ -1,7 +1,7 @@
 #pragma once
 #include "../objective.h"
 #include "../config.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "eventSchedule.hpp"
 struct DeserializationMemo;
 class ExterminateObjectiveScheduledEvent;

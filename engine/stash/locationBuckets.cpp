@@ -1,5 +1,5 @@
 #include "locationBuckets.h"
-#include "area.h"
+#include "area/area.h"
 #include "config.h"
 #include "types.h"
 #include "actors/actors.h"
@@ -113,7 +113,7 @@ LocationBucket& LocationBuckets::get(uint index)
 {
 	return m_buckets[index];
 }
-const LocationBucket& LocationBuckets::get(uint index) const 
+const LocationBucket& LocationBuckets::get(uint index) const
 {
 	return const_cast<LocationBuckets&>(*this).get(index);
 }

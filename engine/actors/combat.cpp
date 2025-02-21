@@ -1,9 +1,9 @@
 #include "actors.h"
 
-#include "../area.h"
+#include "../area/area.h"
 #include "../attackType.h"
 #include "../itemType.h"
-#include "../simulation.h"
+#include "../simulation/simulation.h"
 #include "../simulation/hasActors.h"
 #include "../skill.h"
 #include "../types.h"

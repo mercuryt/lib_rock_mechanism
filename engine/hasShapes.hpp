@@ -1,11 +1,11 @@
 #include "hasShapes.h"
 #include "actors/actors.h"
-#include "area.h"
+#include "area/area.h"
 #include "blocks/blocks.h"
 #include "index.h"
 #include "items/items.h"
 #include "plants.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "types.h"
 #include <cassert>
 #include <cstdint>

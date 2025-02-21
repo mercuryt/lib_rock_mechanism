@@ -2,7 +2,7 @@
 #include "config.h"
 #include "geometry/sphere.h"
 #include "vision/lineOfSight.h"
-#include "area.h"
+#include "area/area.h"
 #include <algorithm>
 void sort()
 {

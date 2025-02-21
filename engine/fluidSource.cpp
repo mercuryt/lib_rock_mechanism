@@ -2,12 +2,12 @@
 #include "deserializationMemo.h"
 #include "fluidType.h"
 #include "stockpile.h"
-#include "area.h"
+#include "area/area.h"
 #include "blocks/blocks.h"
 #include "types.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_ONLY_SERIALIZE(FluidSource, block, fluidType, level);
-FluidSource::FluidSource(const Json& data, DeserializationMemo&) : 
+FluidSource::FluidSource(const Json& data, DeserializationMemo&) :
 	block(data["block"].get<BlockIndex>()), fluidType(data["fluidType"].get<FluidTypeId>()), level(data["level"].get<CollisionVolume>()) { }
 
 void AreaHasFluidSources::doStep()

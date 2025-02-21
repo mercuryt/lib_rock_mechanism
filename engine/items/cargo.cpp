@@ -1,6 +1,6 @@
 #include "items.h"
 #include "../itemType.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../materialType.h"
 #include "../types.h"
 #include "../portables.hpp"

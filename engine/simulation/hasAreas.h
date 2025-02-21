@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../area.h"
+#include "../area/area.h"
 #include "../types.h"
 #include "../config.h"
 

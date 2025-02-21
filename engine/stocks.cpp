@@ -1,7 +1,7 @@
 #include "stocks.h"
 #include "itemType.h"
 #include "materialType.h"
-#include "area.h"
+#include "area/area.h"
 #include "items/items.h"
 void AreaHasStocksForFaction::record(Area& area, ItemIndex item)
 {

@@ -1,6 +1,6 @@
 #include "dialogueBox.h"
 #include "window.h"
-#include "../engine/simulation.h"
+#include "../engine/simulation/simulation.h"
 #include "../engine/dialogueBox.h"
 #include <TGUI/Widgets/HorizontalLayout.hpp>
 bool DialogueBoxUI::empty() const

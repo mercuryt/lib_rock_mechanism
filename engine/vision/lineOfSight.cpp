@@ -1,6 +1,6 @@
 #include "lineOfSight.h"
 #include "../blocks/blocks.h"
-#include "../area.h"
+#include "../area/area.h"
 constexpr auto size = 16;
 bool lineOfSight(const Area& area, const Point3D& startPoint, const Point3D& endPoint)
 {

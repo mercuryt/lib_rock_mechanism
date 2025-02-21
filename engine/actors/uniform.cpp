@@ -3,8 +3,8 @@
 #include "../objective.h"
 #include "../uniform.h"
 #include "../objectives/uniform.h"
-#include "../area.h"
-#include "../simulation.h"
+#include "../area/area.h"
+#include "../simulation/simulation.h"
 void ActorHasUniform::load(Area& area, const Json& data, const FactionId& faction)
 {
 	if(data.contains("m_uniform"))

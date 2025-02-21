@@ -1,6 +1,6 @@
 #include "dig.h"
 #include "../dig.h"
-#include "../area.h"
+#include "../area/area.h"
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"
 #include "../path/terrainFacade.hpp"

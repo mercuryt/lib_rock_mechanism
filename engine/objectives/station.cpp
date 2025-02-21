@@ -1,10 +1,10 @@
 #include "station.h"
-#include "../simulation.h"
-#include "../area.h"
+#include "../simulation/simulation.h"
+#include "../area/area.h"
 #include "../actors/actors.h"
 // Input
 /*
-StationInputAction::StationInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, BlockIndex& b) : 
+StationInputAction::StationInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, BlockIndex& b) :
 	InputAction(actors, emplacementType, inputQueue), m_block(b) { }
 void StationInputAction::execute()
 {
@@ -16,7 +16,7 @@ void StationInputAction::execute()
 }
 */
 // Objective
-StationObjective::StationObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo), 
+StationObjective::StationObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo),
 	m_location(data["block"].get<BlockIndex>()) { }
 void StationObjective::execute(Area& area, const ActorIndex& actor)
 {

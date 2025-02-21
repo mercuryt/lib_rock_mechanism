@@ -1,11 +1,11 @@
 #include "itemQuery.h"
 #include "items/items.h"
 #include "reference.h"
-#include "simulation.h"
+#include "simulation/simulation.h"
 #include "simulation/hasItems.h"
 #include "materialType.h"
 #include "types.h"
-#include "area.h"
+#include "area/area.h"
 bool ItemQuery::query(Area& area, const ItemIndex& item) const
 {
 	if(m_item.exists())
@@ -21,7 +21,7 @@ bool ItemQuery::query(Area& area, const ItemIndex& item) const
 }
 bool ItemQuery::operator==(const ItemQuery& itemQuery) const
 {
-	return m_item == itemQuery.m_item && m_itemType == itemQuery.m_itemType && 
+	return m_item == itemQuery.m_item && m_itemType == itemQuery.m_itemType &&
 		m_materialTypeCategory == itemQuery.m_materialTypeCategory && m_materialType == itemQuery.m_materialType;
 }
 void ItemQuery::specalize(Area& area, const ItemIndex& item)

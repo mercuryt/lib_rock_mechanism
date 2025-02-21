@@ -1,6 +1,6 @@
 #include "hasFluidGroups.h"
-#include "../simulation.h"
-#include "../area.h"
+#include "../simulation/simulation.h"
+#include "../area/area.h"
 #include "../fluidType.h"
 void AreaHasFluidGroups::doStep(bool parallel)
 {
