@@ -24,37 +24,36 @@ std::wstring haulStrategyToName(HaulStrategy);
 // Haul subproject paramaters are never stored between steps so it is safe to use Index here instead of Reference.
 struct HaulSubprojectParamaters final
 {
+	ProjectRequirementCounts* projectRequirementCounts = nullptr;
 	ActorOrItemReference toHaul;
-	FluidType* fluidType = nullptr;
-	Quantity quantity = Quantity::create(0);
-	HaulStrategy strategy = HaulStrategy::None;
 	ActorIndices workers;
+	FluidTypeId fluidType;
 	ItemIndex haulTool;
 	ActorIndex beastOfBurden;
-	ProjectRequirementCounts* projectRequirementCounts = nullptr;
+	Quantity quantity = Quantity::create(0);
+	HaulStrategy strategy = HaulStrategy::None;
 	HaulSubprojectParamaters() { reset(); }
 	void reset();
 	[[nodiscard, maybe_unused]] bool validate(Area& area) const;
 };
 
 // Dispatch one or more actors from a project to haul an item or actor to the project location.
-// ToHaul is either an Item or an Actor.
 class HaulSubproject final
 {
-	Project& m_project;
 	SmallSet<ActorReference> m_workers;
-	ActorOrItemReference m_toHaul;
-	Quantity m_quantity = Quantity::create(0);
-	HaulStrategy m_strategy = HaulStrategy::None;
 	SmallSet<ActorReference> m_nonsentients;
-	ItemReference m_haulTool;
 	SmallMap<ActorReference, BlockIndex> m_liftPoints; // Used by Team strategy.
-	ActorReference m_leader;
-	bool m_itemIsMoving = false;
-	ActorReference m_beastOfBurden;
+	Project& m_project;
 	ProjectRequirementCounts& m_projectRequirementCounts;
+	ActorOrItemReference m_toHaul;
+	ItemReference m_haulTool;
+	ActorReference m_leader;
+	ActorReference m_beastOfBurden;
 	ItemTypeId m_genericItemType;
 	MaterialTypeId m_genericMaterialType;
+	Quantity m_quantity = Quantity::create(0);
+	HaulStrategy m_strategy = HaulStrategy::None;
+	bool m_itemIsMoving = false;
 	void complete(const ActorOrItemIndex& delivered);
 	[[nodiscard]] bool allWorkersAreAdjacentTo(const ItemIndex& item);
 	[[nodiscard]] bool allWorkersAreAdjacentTo(const ActorOrItemIndex& actorOrItem);

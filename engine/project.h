@@ -249,8 +249,8 @@ public:
 };
 class ProjectTryToMakeHaulSubprojectThreadedTask final : public ThreadedTask
 {
-	Project& m_project;
 	HaulSubprojectParamaters m_haulProjectParamaters;
+	Project& m_project;
 public:
 	ProjectTryToMakeHaulSubprojectThreadedTask(Project& p);
 	void readStep(Simulation& simulation, Area* area);
@@ -260,10 +260,10 @@ public:
 };
 class ProjectTryToAddWorkersThreadedTask final : public ThreadedTask
 {
-	Project& m_project;
 	SmallSet<ActorReference> m_cannotPathToJobSite;
 	SmallMap<ActorOrItemReference, Quantity> m_alreadyAtSite;
 	SmallMap<ActorReference, SmallMap<ProjectRequirementCounts*, ItemReference>> m_reservedEquipment;
+	Project& m_project;
 	HasOnDestroySubscriptions m_hasOnDestroy;
 	void resetProjectCounts();
 public:

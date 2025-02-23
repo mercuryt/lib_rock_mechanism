@@ -63,7 +63,7 @@ std::wstring haulStrategyToName(HaulStrategy strategy)
 void HaulSubprojectParamaters::reset()
 {
 	toHaul.clear();
-	fluidType = nullptr;
+	fluidType.clear();
 	quantity = Quantity::create(0);
 	strategy = HaulStrategy::None;
 	haulTool.clear();
@@ -91,9 +91,11 @@ bool HaulSubprojectParamaters::validate(Area& area) const
 HaulSubprojectDishonorCallback::HaulSubprojectDishonorCallback(const Json data, DeserializationMemo& deserializationMemo) :
 	m_haulSubproject(*deserializationMemo.m_haulSubprojects.at(data["haulSubproject"])) { }
 HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters) :
-	m_project(p), m_toHaul(paramaters.toHaul),
-	m_quantity(paramaters.quantity), m_strategy(paramaters.strategy),
-	m_projectRequirementCounts(*paramaters.projectRequirementCounts)
+	m_project(p),
+	m_projectRequirementCounts(*paramaters.projectRequirementCounts),
+	m_toHaul(paramaters.toHaul),
+	m_quantity(paramaters.quantity),
+	m_strategy(paramaters.strategy)
 {
 	Area& area = m_project.m_area;
 	Items& items = area.getItems();
@@ -126,10 +128,10 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 }
 HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo& deserializationMemo) :
 	m_project(p),
+	m_projectRequirementCounts(deserializationMemo.projectRequirementCountsReference(data["requirementCounts"])),
 	m_quantity(data["quantity"].get<Quantity>()),
 	m_strategy(haulStrategyFromName(data["haulStrategy"].get<std::wstring>())),
-	m_itemIsMoving(data["itemIsMoving"].get<bool>()),
-	m_projectRequirementCounts(deserializationMemo.projectRequirementCountsReference(data["requirementCounts"]))
+	m_itemIsMoving(data["itemIsMoving"].get<bool>())
 {
 	Area& area = m_project.m_area;
 	Items& items = area.getItems();
