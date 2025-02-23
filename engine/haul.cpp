@@ -21,45 +21,6 @@
 #include <memory>
 #include <sys/types.h>
 #include <algorithm>
-
-HaulStrategy haulStrategyFromName(std::wstring name)
-{
-	if(name == L"Individual")
-		return HaulStrategy::Individual;
-	if(name == L"Team")
-		return HaulStrategy::Team;
-	if(name == L"IndividualCargoIsCart")
-		return HaulStrategy::IndividualCargoIsCart;
-	if(name == L"Cart")
-		return HaulStrategy::Cart;
-	if(name == L"TeamCart")
-		return HaulStrategy::TeamCart;
-	if(name == L"Panniers")
-		return HaulStrategy::Panniers;
-	if(name == L"AnimalCart")
-		return HaulStrategy::AnimalCart;
-	assert(name == L"StrongSentient");
-	return HaulStrategy::StrongSentient;
-}
-std::wstring haulStrategyToName(HaulStrategy strategy)
-{
-	if(strategy == HaulStrategy::Individual)
-		return L"Individual";
-	if(strategy == HaulStrategy::Team)
-		return L"Team";
-	if(strategy == HaulStrategy::IndividualCargoIsCart)
-		return L"IndividualCargoIsCart";
-	if(strategy == HaulStrategy::Cart)
-		return L"Cart";
-	if(strategy == HaulStrategy::TeamCart)
-		return L"TeamCart";
-	if(strategy == HaulStrategy::Panniers)
-		return L"Panniers";
-	if(strategy == HaulStrategy::AnimalCart)
-		return L"AnimalCart";
-	assert(strategy == HaulStrategy::StrongSentient);
-	return L"StrongSentient";
-}
 void HaulSubprojectParamaters::reset()
 {
 	toHaul.clear();
@@ -94,6 +55,7 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 	m_project(p),
 	m_projectRequirementCounts(*paramaters.projectRequirementCounts),
 	m_toHaul(paramaters.toHaul),
+	m_fluidType(paramaters.fluidType),
 	m_quantity(paramaters.quantity),
 	m_strategy(paramaters.strategy)
 {
@@ -129,8 +91,9 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo& deserializationMemo) :
 	m_project(p),
 	m_projectRequirementCounts(deserializationMemo.projectRequirementCountsReference(data["requirementCounts"])),
+	m_fluidType(data["fluidtype"].get<FluidTypeId>()),
 	m_quantity(data["quantity"].get<Quantity>()),
-	m_strategy(haulStrategyFromName(data["haulStrategy"].get<std::wstring>())),
+	m_strategy(data["haulStrategy"].get<HaulStrategy>()),
 	m_itemIsMoving(data["itemIsMoving"].get<bool>())
 {
 	Area& area = m_project.m_area;
@@ -166,7 +129,7 @@ Json HaulSubproject::toJson() const
 {
 	Json data({
 		{"quantity", m_quantity},
-		{"haulStrategy", haulStrategyToName(m_strategy)},
+		{"haulStrategy", m_strategy},
 		{"itemIsMoving", m_itemIsMoving},
 		{"address", reinterpret_cast<uintptr_t>(this)},
 		{"requirementCounts", reinterpret_cast<uintptr_t>(&m_projectRequirementCounts)},

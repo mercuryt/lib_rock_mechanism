@@ -18,8 +18,17 @@ struct DeserializationMemo;
 
 enum class HaulStrategy { None, Individual, IndividualCargoIsCart, Team, Cart, TeamCart, Panniers, AnimalCart, StrongSentient };
 
-HaulStrategy haulStrategyFromName(std::wstring);
-std::wstring haulStrategyToName(HaulStrategy);
+NLOHMANN_JSON_SERIALIZE_ENUM(HaulStrategy, {
+	{HaulStrategy::None, "None"},
+	{HaulStrategy::Individual, "Individual"},
+	{HaulStrategy::IndividualCargoIsCart, "IndividualCargoIsCart"},
+	{HaulStrategy::Team, "Team"},
+	{HaulStrategy::Cart, "Cart"},
+	{HaulStrategy::TeamCart, "TeamCart"},
+	{HaulStrategy::Panniers, "Panniers"},
+	{HaulStrategy::AnimalCart, "AnimalCart"},
+	{HaulStrategy::StrongSentient, "StrongSentient"}
+});
 
 // Haul subproject paramaters are never stored between steps so it is safe to use Index here instead of Reference.
 struct HaulSubprojectParamaters final
@@ -51,6 +60,7 @@ class HaulSubproject final
 	ActorReference m_beastOfBurden;
 	ItemTypeId m_genericItemType;
 	MaterialTypeId m_genericMaterialType;
+	FluidTypeId m_fluidType;
 	Quantity m_quantity = Quantity::create(0);
 	HaulStrategy m_strategy = HaulStrategy::None;
 	bool m_itemIsMoving = false;
@@ -61,7 +71,6 @@ public:
 	HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters);
 	HaulSubproject(const Json& json, Project& m_project, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-	void setup();
 	void commandWorker(const ActorIndex& actor);
 	void addWorker(const ActorIndex& actor);
 	void removeWorker(const ActorIndex& actor);
