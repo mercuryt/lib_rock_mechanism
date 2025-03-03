@@ -398,6 +398,7 @@ public:
 	[[nodiscard]] const auto& equipment_getAll(const ActorIndex& index) const { return m_equipmentSet[index]->getAll(); }
 	[[nodiscard]] const EquipmentSet& equipment_getSet(const ActorIndex& index) const { return *m_equipmentSet[index]; }
 	[[nodiscard]] EquipmentSet& equipment_getSet(const ActorIndex& index) { return *m_equipmentSet[index]; }
+	[[nodiscard]] ItemIndex equipment_getFirstItemWithType(const ActorIndex& index, const ItemTypeId& itemType) { return m_equipmentSet[index]->getFirstItemWithType(m_area, itemType); }
 	// -Uniform.
 	void uniform_set(const ActorIndex& index, Uniform& uniform);
 	void uniform_unset(const ActorIndex& index);

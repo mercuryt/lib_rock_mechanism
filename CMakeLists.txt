@@ -36,6 +36,6 @@ if(NOT CMAKE_BUILD_TYPE EQUAL "Release")
 endif()
 
 add_subdirectory(engine)
-add_subdirectory(ui)
-#add_subdirectory(test)
+#add_subdirectory(ui)
+add_subdirectory(test)
 #add_subdirectory(python)

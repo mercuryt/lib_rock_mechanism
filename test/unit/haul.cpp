@@ -3,9 +3,9 @@
 #include "../../engine/items/items.h"
 #include "../../engine/blocks/blocks.h"
 #include "../../engine/plants.h"
-#include "../../engine/area.h"
+#include "../../engine/area/area.h"
 #include "../../engine/areaBuilderUtil.h"
-#include "../../engine/simulation.h"
+#include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
@@ -238,6 +238,51 @@ TEST_CASE("haul")
 		simulation.doStep();
 		CHECK(actors.canPickUp_isCarryingItem(dwarf1, panniers1));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, donkeyLocation);
+		// Find path.
+		simulation.doStep();
+		CHECK(!actors.canPickUp_exists(dwarf1));
+		CHECK(actors.equipment_containsItem(donkey1, panniers1));
+		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, chunkLocation);
+		// Find path.
+		simulation.doStep();
+		CHECK(items.cargo_containsItem(panniers1, chunk1));
+		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, destination);
+		simulation.fastForward(Config::addToStockPileDelaySteps);
+		CHECK(blocks.item_getCount(destination, chunk, gold) == 1);
+		CHECK(!actors.reservable_isFullyReserved(donkey1, faction));
+		CHECK(actors.objective_getCurrentName(dwarf1) != L"haul");
+	}
+	SUBCASE("panniers area already equiped haul strategy")
+	{
+		BlockIndex destination = blocks.getIndex_i(8, 8, 2);
+		BlockIndex chunkLocation = blocks.getIndex_i(1, 5, 2);
+		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .location=chunkLocation, .quantity=Quantity::create(1u)});
+		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInital) == 0);
+		BlockIndex donkeyLocation = blocks.getIndex_i(1, 3, 2);
+		ActorIndex donkey1 = actors.create({
+			.species=donkey,
+			.location=donkeyLocation,
+		});
+		area.m_hasHaulTools.registerYokeableActor(area, donkey1);
+		ItemIndex panniers1 = items.create({.itemType=panniers, .materialType=poplarWood, .quality=Quality::create(3u), .percentWear=Percent::create(0)});
+		actors.equipment_add(donkey1, panniers1);
+		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(SmallSet<ActorIndex>({dwarf1}), chunk1, destination);
+		// One step to activate the project and make reservations.
+		simulation.doStep();
+		ActorOrItemIndex polymorphicChunk1 = ActorOrItemIndex::createForItem(chunk1);
+		CHECK(HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(area, dwarf1, donkey1, panniers1, polymorphicChunk1, project.getMinimumHaulSpeed()) > 0);
+		auto haulParams = HaulSubproject::tryToSetHaulStrategy(project, chunk1.toActorOrItemIndex(), dwarf1);
+		CHECK(haulParams.strategy == HaulStrategy::Panniers);
+		// Another step to select the haul strategy and create the subproject.
+		simulation.doStep();
+		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
+		CHECK(projectWorker.haulSubproject != nullptr);
+		CHECK(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Panniers);
+		// Another step to find the paths.
+		simulation.doStep();
+		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, donkeyLocation);
+		CHECK(actors.isLeading(dwarf1));
+		CHECK(actors.isFollowing(donkey1));
 		// Find path.
 		simulation.doStep();
 		CHECK(!actors.canPickUp_exists(dwarf1));

@@ -1,7 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/reservable.h"
 #include "../../engine/faction.h"
-#include "../../engine/simulation.h"
+#include "../../engine/simulation/simulation.h"
 #include "types.h"
 #include <memory>
 

@@ -72,6 +72,7 @@ void Config::load()
 	data["heatDisipatesAtDistanceExponent"].get_to(heatDisipatesAtDistanceExponent);
 	data["heatFractionForBurn"].get_to(heatFractionForBurn);
 	data["heatFractionForSmoulder"].get_to(heatFractionForSmoulder);
+	data["heatDistanceMaximum"].get_to(heatDistanceMaximum);
 	data["heatRadianceMinimum"].get_to(heatRadianceMinimum);
 	data["hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea"].get_to(hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea);
 	data["hitScaleModifier"].get_to(hitScaleModifier);

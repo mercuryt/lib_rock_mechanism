@@ -1,11 +1,11 @@
 #include "../../lib/doctest.h"
 #include "../../engine/geometry/cuboid.h"
-#include "../../engine/area.h"
+#include "../../engine/area/area.h"
 #include "../../engine/blocks/blocks.h"
 #include "../../engine/items/items.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/plants.h"
-#include "../../engine/simulation.h"
+#include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
 TEST_CASE("cuboid")
 {

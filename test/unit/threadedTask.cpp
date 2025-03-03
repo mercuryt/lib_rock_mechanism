@@ -1,6 +1,6 @@
 #include "../../lib/doctest.h"
 #include "../../engine/threadedTask.hpp"
-#include "../../engine/simulation.h"
+#include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/blocks/blocks.h"
 #include "../../engine/actors/actors.h"

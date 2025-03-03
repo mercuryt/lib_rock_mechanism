@@ -62,6 +62,8 @@ public:
 	[[nodiscard]] Temperature getDailyAverageAmbientSurfaceTemperature() const;
 	[[nodiscard]] auto& getAboveGroundFluidGroupsByMeltingPoint() { return m_aboveGroundFluidGroupsByMeltingPoint; }
 	[[nodiscard]] auto& getAboveGroundBlocksByMeltingPoint() { return m_aboveGroundBlocksByMeltingPoint; }
+	// For testing.
+	[[nodiscard]] auto& getBlockDeltaDeltas() { return m_blockDeltaDeltas; }
 };
 class UnsafeTemperatureEvent;
 class ActorNeedsSafeTemperature

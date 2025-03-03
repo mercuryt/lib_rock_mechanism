@@ -36,6 +36,7 @@ public:
 	static FluidTypeId create(FluidTypeParamaters& p);
 	static void setFreezesInto(const FluidTypeId& fluid, const MaterialTypeId& material);
 	[[nodiscard]] static std::wstring getName(const FluidTypeId& id);
+	[[nodiscard]] static std::wstring maybeGetName(const FluidTypeId& id);
 	[[nodiscard]] static uint32_t getViscosity(const FluidTypeId& id);
 	[[nodiscard]] static Density getDensity(const FluidTypeId& id);
 	[[nodiscard]] static Step getMistDuration(const FluidTypeId& id);

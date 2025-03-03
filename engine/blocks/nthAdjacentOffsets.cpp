@@ -4,7 +4,6 @@
 #include "blocks/blocks.h"
 std::vector<Offset3D> getNthAdjacentOffsets(uint32_t n)
 {
-	assert(n != 0);
 	if(cache.size() <= n)
 	{
 		std::lock_guard lock(nthAdjacentMutex);
@@ -12,22 +11,31 @@ std::vector<Offset3D> getNthAdjacentOffsets(uint32_t n)
 		{
 			if(cache.empty())
 			{
-				closedList.emplace(0,0,0);
-				cache.resize(n);
+				cache.resize(1);
 				cache[0].emplace_back(0,0,0);
 			}
 			std::vector<Offset3D> next;
-			for(Offset3D xyz : cache.back())
-				for(Offset3D offset : offsets)
+			next.reserve(cache.back().size() * 2);
+			const auto& lastSet = cache.back();
+			for(Offset3D previous : lastSet)
+			{
+				for(Offset3D offset : adjacentOffsets::direct)
 				{
-					Offset3D adjacent = xyz + offset;
-					if(!closedList.contains(adjacent))
+					Offset3D adjacent = previous + offset;
+					// Add only if not in previous set or the one before it, if such exists.
+					if(
+						std::ranges::find(lastSet, adjacent) == lastSet.end() &&
+						(
+							cache.size() == 1 ||
+							std::ranges::find(cache[cache.size() - 2], adjacent) == cache[cache.size() - 2].end()
+						)
+					)
 					{
-						closedList.insert(adjacent);
-						if(std::ranges::find(next, adjacent) == next.end())
-							next.push_back(adjacent);
+						next.push_back(adjacent);
 					}
 				}
+			}
+			util::removeDuplicates(next);
 			cache.emplace_back(next.begin(), next.end());
 		}
 	}

@@ -1,5 +1,6 @@
 #pragma once
 #include "../types.h"
+#include "../index.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wduplicated-branches"
 #include "../../lib/Eigen/Dense"
@@ -8,12 +9,16 @@
 struct BlockIndexSetSIMD
 {
 	using Data = Eigen::Array<BlockIndexWidth, 1, Eigen::Dynamic>;
+	// Data may be padded with null values, as well as contain null values.
 	Data m_data;
-	uint8_t m_nextIndex = 0;
 	BlockIndexSetSIMD(const Data& data) : m_data(data) { }
-	BlockIndexSetSIMD(const Eigen::Array<int, 1, Eigen::Dynamic>& data) { m_data = data.template cast<BlockIndexWidth>(); }
-	[[nodiscard]] bool contains(const BlockIndex& block) const { assert(block.exists()); return (m_data == block.get()).any(); }
-	[[nodiscard]] BlockIndex operator[](const uint& index) const { assert(index < m_nextIndex); return BlockIndex::create(m_data[index]); }
+	BlockIndexSetSIMD(const Eigen::Array<int, 1, Eigen::Dynamic>& data);
+	[[nodiscard]] bool contains(const BlockIndex& block) const;
+	[[nodiscard]] BlockIndex operator[](const uint& index) const;
+	// For debugging.
+	[[nodiscard]] uint size() const;
+	[[nodiscard]] uint sizeWithNull() const;
+	[[nodiscard]] std::string toString() const;
 	template<bool skipNull>
 	class ConstIterator
 	{
@@ -41,31 +46,26 @@ struct BlockIndexSetSIMD
 		void skipTillNext()
 		{
 			if constexpr (skipNull)
-				while(m_index < m_set.m_nextIndex && m_set[m_index] == BlockIndex::null().get())
+			{
+				auto size = m_set.m_data.size();
+				while(m_index < size && m_set[m_index] == BlockIndex::null().get())
 					++m_index;
+			}
 		}
 		[[nodiscard]] BlockIndex operator*() const { return m_set[m_index]; }
 		[[nodiscard]] bool operator==(const ConstIterator<skipNull>& other) const { assert(&m_set == &other.m_set); return m_index == other.m_index; }
 		[[nodiscard]] bool operator!=(const ConstIterator<skipNull>& other) const { return !((*this) == other); }
 	};
 	auto begin() const { return ConstIterator<true>(*this, 0); }
-	auto end() const { return ConstIterator<true>(*this, m_nextIndex); }
+	auto end() const { return ConstIterator<true>(*this, m_data.size()); }
 	struct WithNullView
 	{
 		const BlockIndexSetSIMD& m_set;
 		auto begin() const { return ConstIterator<false>(m_set, 0); }
-		auto end() const { return ConstIterator<false>(m_set, m_set.m_nextIndex); }
+		auto end() const { return ConstIterator<false>(m_set, m_set.m_data.size()); }
 	};
-	WithNullView includeNull() const { return WithNullView(*this); }
-	SmallSet<BlockIndex> toSmallSet() const
-	{
-		SmallSet<BlockIndex> output;
-		output.resize(m_nextIndex);
-		for(const BlockIndexWidth& value : m_data)
-			if(value != BlockIndex::null().get())
-				output.insert(BlockIndex::create(value));
-		return output;
-	}
+	WithNullView includeNull() const;
+	SmallSet<BlockIndex> toSmallSet() const;
 };
 
 template<uint size>

@@ -29,7 +29,7 @@ void TemperatureSource::apply(Area& area)
 	Blocks& blocks = area.getBlocks();
 	area.m_hasTemperature.addDelta(m_block, m_temperature);
 	DistanceInBlocks range = DistanceInBlocks::create(1);
-	while(true)
+	while(range <= Config::heatDistanceMaximum)
 	{
 		TemperatureDelta delta = getTemperatureDeltaForRange(range);
 		if(delta == 0)

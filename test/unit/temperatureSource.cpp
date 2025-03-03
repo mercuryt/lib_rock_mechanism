@@ -1,11 +1,11 @@
 #include "../../lib/doctest.h"
 #include "../../engine/temperature.h"
-#include "../../engine/area.h"
+#include "../../engine/area/area.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
 #include "../../engine/materialType.h"
-#include "../../engine/simulation.h"
+#include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/definitions.h"
 #include "../../engine/blocks/blocks.h"
@@ -22,6 +22,7 @@ TEST_CASE("temperature")
 		BlockIndex b1 = blocks.getIndex_i(5, 5, 6);
 		BlockIndex b2 = blocks.getIndex_i(5, 7, 5);
 		BlockIndex b3 = blocks.getIndex_i(9, 9, 9);
+		BlockIndex b4 = blocks.getIndex_i(5, 5, 7);
 		BlockIndex toBurn = blocks.getIndex_i(6, 5, 5);
 		BlockIndex toNotBurn = blocks.getIndex_i(4, 5, 5);
 		auto wood = MaterialType::byName(L"poplar wood");
@@ -33,7 +34,9 @@ TEST_CASE("temperature")
 		area.m_hasTemperature.applyDeltas();
 		CHECK(blocks.temperature_get(origin) == temperatureBeforeHeatSource + 1000);
 		CHECK(blocks.temperature_get(b1) == temperatureBeforeHeatSource + 1000);
-		CHECK(blocks.temperature_get(b2) == 386);
+		CHECK(blocks.temperature_get(b2) == 462);
+		CHECK(blocks.temperature_get(b4) == blocks.temperature_get(b2));
+		CHECK(blocks.temperature_get(b4) < blocks.temperature_get(b1));
 		CHECK(blocks.temperature_get(b3) == temperatureBeforeHeatSource);
 		CHECK(blocks.temperature_get(toBurn) == temperatureBeforeHeatSource + 1000);
 		CHECK(blocks.temperature_get(toNotBurn) == temperatureBeforeHeatSource + 1000);

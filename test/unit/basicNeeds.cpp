@@ -1,10 +1,10 @@
 #include "../../lib/doctest.h"
-#include "../../engine/simulation.h"
+#include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/animalSpecies.h"
-#include "../../engine/area.h"
+#include "../../engine/area/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/plants.h"
 #include "../../engine/actors/actors.h"
@@ -465,11 +465,42 @@ TEST_CASE("death")
 		CHECK(!actors.isAlive(actor));
 		CHECK(actors.getCauseOfDeath(actor) == CauseOfDeath::hunger);
 	}
+}
+TEST_CASE("death-temperature")
+{
+	static MaterialTypeId dirt = MaterialType::byName(L"dirt");
+	static AnimalSpeciesId redDeer = AnimalSpecies::byName(L"red deer");
+	Step step  = DateTime(12,150,1000).toSteps();
+	Simulation simulation(L"", step);
+	Area& area = simulation.m_hasAreas->createArea(6,6,6);
+	area.m_hasRain.disable();
+	Blocks& blocks = area.getBlocks();
+	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
+	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName(L"marble"));
+	Actors& actors = area.getActors();
+	BlockIndex actorLocation = blocks.getIndex_i(1, 1, 2);
+	ActorIndex actor = actors.create(ActorParamaters{
+		.species=redDeer,
+		.percentGrown=Percent::create(45),
+		.location=actorLocation,
+	});
+	// Set low priority station to prevent wandering around while waiting for events.
+	Priority stationPriority = Priority::create(1);
+	actors.objective_addTaskToStart(actor, std::make_unique<StationObjective>(actorLocation, stationPriority));
 	SUBCASE("temperature")
 	{
-		BlockIndex temperatureSourceLocation = blocks.getIndex_i(5, 5, 2);
-		area.m_hasTemperature.addTemperatureSource(temperatureSourceLocation, TemperatureDelta::create(100000));
+		BlockIndex temperatureSourceLocation = blocks.getIndex_i(3, 4, 2);
+		BlockIndex b1 = blocks.getIndex_i(3, 3, 2);
+		BlockIndex b2 = blocks.getIndex_i(3, 2, 2);
+		BlockIndex b3 = blocks.getIndex_i(3, 1, 2);
+		BlockIndex b4 = blocks.getIndex_i(2, 1, 2);
+		area.m_hasTemperature.addTemperatureSource(temperatureSourceLocation, TemperatureDelta::create(6000));
 		simulation.doStep();
+		CHECK(blocks.temperature_get(b1) == blocks.temperature_get(temperatureSourceLocation));
+		CHECK(blocks.temperature_get(b2) < blocks.temperature_get(b1));
+		CHECK(blocks.temperature_get(b3) < blocks.temperature_get(b2));
+		CHECK(blocks.temperature_get(b4) < blocks.temperature_get(b3));
+		CHECK(blocks.temperature_get(actorLocation) < blocks.temperature_get(b4));
 		CHECK(!actors.temperature_isSafeAtCurrentLocation(actor));
 		simulation.fasterForward(AnimalSpecies::getStepsTillDieInUnsafeTemperature(actors.getSpecies(actor)) - 2);
 		CHECK(actors.isAlive(actor));

@@ -91,7 +91,7 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo& deserializationMemo) :
 	m_project(p),
 	m_projectRequirementCounts(deserializationMemo.projectRequirementCountsReference(data["requirementCounts"])),
-	m_fluidType(data["fluidtype"].get<FluidTypeId>()),
+	m_fluidType(data["fluidType"].get<FluidTypeId>()),
 	m_quantity(data["quantity"].get<Quantity>()),
 	m_strategy(data["haulStrategy"].get<HaulStrategy>()),
 	m_itemIsMoving(data["itemIsMoving"].get<bool>())
@@ -133,6 +133,7 @@ Json HaulSubproject::toJson() const
 		{"itemIsMoving", m_itemIsMoving},
 		{"address", reinterpret_cast<uintptr_t>(this)},
 		{"requirementCounts", reinterpret_cast<uintptr_t>(&m_projectRequirementCounts)},
+		{"fluidType", m_fluidType}
 	});
 	data["toHaul"] = m_toHaul.toJson();
 	if(m_haulTool.exists())
@@ -390,6 +391,23 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 			if(actors.equipment_containsItem(beastOfBurden, haulTool))
 			{
 				// Beast has panniers.
+				if(!actors.isFollowing(beastOfBurden))
+				{
+					// Special case where the beast already had the haul item before the task began.
+					// Different from when the actor must fetch the haul item first.
+					assert(!actors.isLeading(actor));
+					if(actors.isAdjacentToActor(actor, beastOfBurden))
+					{
+						actors.followActor(beastOfBurden, actor);
+						actors.canReserve_clearAll(actor);
+						actors.move_setDestinationAdjacentToPolymorphic(actor, toHaul, detour);
+					}
+					else
+						actors.move_setDestinationAdjacentToActor(actor, beastOfBurden, detour);
+					return;
+				}
+				else
+					assert(actors.getLeader(beastOfBurden).getActor() == actor);
 				hasCargo = items.cargo_containsPolymorphic(haulTool, toHaul, m_quantity);
 				if(hasCargo)
 				{
@@ -751,8 +769,12 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	ActorIndex pannierBearer = project.m_area.m_hasHaulTools.getPannierBearerToHaulCargoWithMassWithMinimumSpeed(project.m_area, faction, toHaul, minimumSpeed);
 	if(pannierBearer.exists())
 	{
-		//TODO: If pannierBearer already has panniers equiped then use those, otherwise find ones to use. Same for animalCart.
-		ItemIndex panniers = project.m_area.m_hasHaulTools.getPanniersForActorToHaul(project.m_area, faction, pannierBearer, toHaul);
+		ItemIndex panniers;
+		static const ItemTypeId& panniersItemType = ItemType::byName(L"panniers");
+		if(actors.equipment_containsItemType(pannierBearer, panniersItemType))
+			panniers = actors.equipment_getFirstItemWithType(pannierBearer, panniersItemType);
+		else
+			panniers = project.m_area.m_hasHaulTools.getPanniersForActorToHaul(project.m_area, faction, pannierBearer, toHaul);
 		if(panniers.exists())
 		{
 			maxQuantityCanCarry = maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(project.m_area, worker, pannierBearer, panniers, toHaul, minimumSpeed);

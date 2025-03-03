@@ -83,6 +83,7 @@ namespace Config
 	inline float heatDisipatesAtDistanceExponent;
 	inline float heatFractionForBurn;
 	inline float heatFractionForSmoulder;
+	inline DistanceInBlocks heatDistanceMaximum;
 	inline TemperatureDelta heatRadianceMinimum;
 	inline uint32_t hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea;
 	inline uint32_t hitScaleModifier;

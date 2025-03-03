@@ -2,6 +2,8 @@
 #include "materialType.h"
 const FluidTypeId FluidType::byName(const std::wstring name)
 {
+	if(name == L"none")
+		return FluidTypeId::null();
 	auto found = fluidTypeData.m_name.find(name);
 	assert(found != fluidTypeData.m_name.end());
 	return FluidTypeId::create(found - fluidTypeData.m_name.begin());
@@ -20,6 +22,7 @@ FluidTypeId FluidType::create(FluidTypeParamaters& p)
 }
 void FluidType::setFreezesInto(const FluidTypeId& fluid, const MaterialTypeId& material) { assert(fluid.exists()); assert(material.exists()); fluidTypeData.m_freezesInto[fluid] = material; }
 std::wstring FluidType::getName(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_name[id]; };
+std::wstring FluidType::maybeGetName(const FluidTypeId& id) { if(!id.exists()) return L"none"; return fluidTypeData.m_name[id]; };
 uint32_t FluidType::getViscosity(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_viscosity[id]; };
 Density FluidType::getDensity(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_density[id]; };
 Step FluidType::getMistDuration(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_mistDuration[id]; };

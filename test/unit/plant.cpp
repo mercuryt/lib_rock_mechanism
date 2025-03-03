@@ -1,5 +1,5 @@
 #include "../../lib/doctest.h"
-#include "../../engine/simulation.h"
+#include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/datetime.h"

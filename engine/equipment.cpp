@@ -263,3 +263,15 @@ void EquipmentSet::updateCarrierIndexForContents(Area& area, const ItemIndex& ne
 	for(ItemReference item : m_equipments)
 		items.updateCarrierIndex(item.getIndex(items.m_referenceData), newIndex);
 }
+ItemIndex EquipmentSet::getFirstItemWithType(const Area& area, const ItemTypeId& type) const
+{
+	const Items& items = area.getItems();
+	auto found = m_equipments.findIf([&](const ItemReference& ref) -> bool {
+		const ItemIndex& index = ref.getIndex(items.m_referenceData);
+		return items.getItemType(index) == type;
+	});
+	if(found == m_equipments.end())
+		return ItemIndex::null();
+	else
+		return found->getIndex(items.m_referenceData);
+}

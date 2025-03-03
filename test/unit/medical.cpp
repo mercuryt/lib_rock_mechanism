@@ -1,9 +1,9 @@
 #include "../../lib/doctest.h"
 #include "../../engine/actors/actors.h"
-#include "../../engine/area.h"
+#include "../../engine/area/area.h"
 #include "../../engine/item.h"
 #include "../../engine/areaBuilderUtil.h"
-#include "../../engine/simulation.h"
+#include "../../engine/simulation/simulation.h"
 #include "../../engine/medical.h"
 #include <functional>
 TEST_CASE("medical")

@@ -199,4 +199,10 @@ namespace util
 		auto duration = now.time_since_epoch();
 		return std::chrono::duration_cast<std::chrono::microseconds>(duration);
 	}
+	[[nodiscard]] inline std::string eigenToString(auto& eigenArrayOrMatrix)
+	{
+		std::stringstream ss;
+		ss << eigenArrayOrMatrix;
+		return ss.str();
+	}
 }

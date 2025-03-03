@@ -1,7 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/eventSchedule.h"
 #include "../../engine/mistDisperseEvent.h"
-#include "../../engine/simulation.h"
+#include "../../engine/simulation/simulation.h"
 #include "eventSchedule.hpp"
 #include "reservable.h"
 
