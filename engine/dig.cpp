@@ -53,7 +53,7 @@ std::vector<std::pair<ItemQuery, Quantity>> DigProject::getUnconsumed() const
 	static ItemTypeId pick = ItemType::byName(L"pick");
 	return {{ItemQuery::create(pick), Quantity::create(1)}};
 }
-std::vector<std::pair<ActorQuery, Quantity>> DigProject::getActors() const { return {}; }
+std::vector<ActorReference> DigProject::getActors() const { return {}; }
 std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> DigProject::getByproducts() const
 {
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> output;

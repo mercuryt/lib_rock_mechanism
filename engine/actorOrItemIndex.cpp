@@ -195,6 +195,13 @@ bool ActorOrItemIndex::reservable_exists(Area& area, const FactionId& faction) c
 	else
 		return area.getItems().reservable_exists(m_index.toItem(), faction);
 }
+bool ActorOrItemIndex::reservable_hasAny(Area& area) const
+{
+	if(isActor())
+		return area.getActors().reservable_hasAnyReservations(m_index.toActor());
+	else
+		return area.getItems().reservable_hasAnyReservations(m_index.toItem());
+}
 //TODO: Try to use bitbashing instead of m_isActor
 void ActorOrItemIndex::setActorBit(HasShapeIndex& index) { index.getReference() |= (1u << 31); }
 void ActorOrItemIndex::unsetActorBit(HasShapeIndex& index) { index.getReference() &= ~(1u << 31); }

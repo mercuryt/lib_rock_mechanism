@@ -41,9 +41,7 @@ void Actors::canPickUp_pickUpItemQuantity(const ActorIndex& index, const ItemInd
 }
 void Actors::canPickUp_pickUpActor(const ActorIndex& index, const ActorIndex& other)
 {
-	assert(!m_mustSleep[other]->isAwake() || !move_canMove(other));
-	assert(m_carrying[index].exists());
-	assert(m_static[index]);
+	assert(m_carrying[index].empty());
 	m_reservables[other]->maybeClearReservationFor(*m_canReserve[index]);
 	if(m_location[other].exists())
 		exit(other);

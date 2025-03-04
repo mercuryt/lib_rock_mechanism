@@ -19,6 +19,7 @@ AnimalSpeciesId AnimalSpecies::create(AnimalSpeciesParamaters p)
 	animalSpeciesData.m_dextarity.add(p.dextarity);
 	animalSpeciesData.m_agility.add(p.agility);
 	animalSpeciesData.m_mass.add(p.mass);
+	animalSpeciesData.m_height.add(p.height);
 	animalSpeciesData.m_deathAgeSteps.add(p.deathAgeSteps);
 	animalSpeciesData.m_stepsTillFullyGrown.add(p.stepsTillFullyGrown);
 	animalSpeciesData.m_stepsTillDieWithoutFood.add(p.stepsTillDieWithoutFood);
@@ -50,6 +51,7 @@ std::array<AttributeLevel, 3> AnimalSpecies::getStrength(const AnimalSpeciesId& 
 std::array<AttributeLevel, 3> AnimalSpecies::getDextarity(const AnimalSpeciesId& id) { return animalSpeciesData.m_dextarity[id]; };
 std::array<AttributeLevel, 3> AnimalSpecies::getAgility(const AnimalSpeciesId& id) { return animalSpeciesData.m_agility[id]; };
 std::array<Mass, 3> AnimalSpecies::getMass(const AnimalSpeciesId& id) { return animalSpeciesData.m_mass[id]; };
+std::array<uint32_t, 3> AnimalSpecies::getHeight(const AnimalSpeciesId& id) { return animalSpeciesData.m_height[id]; };
 std::array<Step, 2> AnimalSpecies::getDeathAgeSteps(const AnimalSpeciesId& id) { return animalSpeciesData.m_deathAgeSteps[id]; };
 Step AnimalSpecies::getStepsTillFullyGrown(const AnimalSpeciesId& id) { return animalSpeciesData.m_stepsTillFullyGrown[id]; };
 Step AnimalSpecies::getStepsTillDieWithoutFood(const AnimalSpeciesId& id) { return animalSpeciesData.m_stepsTillDieWithoutFood[id]; };

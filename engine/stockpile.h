@@ -120,7 +120,7 @@ class StockPileProject final : public Project
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
-	std::vector<std::pair<ActorQuery, Quantity>> getActors() const;
+	std::vector<ActorReference> getActors() const;
 public:
 	StockPileProject(const FactionId& faction, Area& area, const BlockIndex& block, const ItemIndex& item, const Quantity& quantity, const Quantity& maxWorkers);
 	StockPileProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);

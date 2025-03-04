@@ -194,6 +194,11 @@ void Simulation::fastForwardUntillActorIsAdjacentToActor(Area& area, const Actor
 	std::function<bool()> predicate = [&](){ return area.getActors().isAdjacentToActor(actor, other); };
 	fastForwardUntillPredicate(predicate);
 }
+void Simulation::fastForwardUntillActorIsAdjacentToPolymorphic(Area& area, const ActorIndex& actor, const ActorOrItemIndex& target)
+{
+	std::function<bool()> predicate = [&](){ return target.isAdjacentToActor(area, actor); };
+	fastForwardUntillPredicate(predicate);
+}
 void Simulation::fastForwardUntillActorIsAdjacentToItem(Area& area, const ActorIndex& actor, const ItemIndex& item)
 {
 	std::function<bool()> predicate = [&](){ return area.getActors().isAdjacentToItem(actor, item); };

@@ -351,8 +351,8 @@ public:
 	}
 	[[nodiscard]] ActorReference toActorReference() const { return std::get<1>(m_reference); }
 	[[nodiscard]] ItemReference toItemReference() const { return std::get<2>(m_reference); }
-	[[nodiscard]] ActorIndex toActorIndex(ActorReferenceData& data) const { return std::get<1>(m_reference).getIndex(data); }
-	[[nodiscard]] ItemIndex toItemIndex(ItemReferenceData& data) const { return std::get<2>(m_reference).getIndex(data); }
+	[[nodiscard]] ActorIndex toActorIndex(const ActorReferenceData& data) const { return std::get<1>(m_reference).getIndex(data); }
+	[[nodiscard]] ItemIndex toItemIndex(const ItemReferenceData& data) const { return std::get<2>(m_reference).getIndex(data); }
 	[[nodiscard]] static ActorOrItemReference createForActor(const ActorReference& target) {  ActorOrItemReference output; output.setActor(target); return output;}
 	[[nodiscard]] static ActorOrItemReference createForItem(const ItemReference& target) {  ActorOrItemReference output; output.setItem(target); return output;}
 	[[nodiscard]] Json toJson() const

@@ -20,7 +20,7 @@ public:
 	void onComplete();
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const { return {}; }
 	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const { return {{ItemQuery::create(m_item), Quantity::create(1)}}; }
-	std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
+	std::vector<ActorReference> getActors() const { return {}; }
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const { return {}; }
 	Step getDuration() const { return Config::installItemDuration; }
 	bool canReset() const { return false; }

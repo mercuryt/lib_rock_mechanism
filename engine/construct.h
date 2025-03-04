@@ -40,7 +40,7 @@ class ConstructProject final : public Project
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
-	std::vector<std::pair<ActorQuery, Quantity>> getActors() const;
+	std::vector<ActorReference> getActors() const;
 	uint32_t getWorkerConstructScore(const ActorIndex& actor) const;
 	Step getDuration() const;
 	void onComplete();

@@ -464,6 +464,7 @@ void definitions::loadAnimalSpecies()
 			.dextarity=data["dextarity"].get<std::array<AttributeLevel, 3>>(),
 			.agility=data["agility"].get<std::array<AttributeLevel, 3>>(),
 			.mass=data["mass"].get<std::array<Mass, 3>>(),
+			.height=data["height"].get<std::array<uint32_t, 3>>(),
 			.deathAgeSteps=deathAge,
 			.stepsTillFullyGrown=Config::stepsPerDay * data["daysTillFullyGrown"].get<uint16_t>(),
 			.stepsTillDieWithoutFood=Config::stepsPerDay * data["daysTillDieWithoutFood"].get<uint16_t>(),

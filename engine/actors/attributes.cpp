@@ -153,9 +153,11 @@ void Actors::updateIntrinsicMass(const ActorIndex& index)
 {
 	AnimalSpeciesId species = getSpecies(index);
 	Percent grown = getPercentGrown(index);
-	Mass max = AnimalSpecies::getMass(species)[0];
-	Mass min = AnimalSpecies::getMass(species)[1];
-	m_mass[index] = Mass::create(util::scaleByPercentRange(max.get(), min.get(), grown));
+	const auto& massData = AnimalSpecies::getMass(species);
+	Mass max = massData[1];
+	Mass min = massData[0];
+	uint adultMass = util::scaleByFractionRange(min.get(), max.get(), m_adultHeight[index], AnimalSpecies::getHeight(species)[1]);
+	m_mass[index] = Mass::create(util::scaleByPercentRange(massData[2].get(), adultMass, grown));
 }
 void Actors::onIntrinsicMassChanged(const ActorIndex& index)
 {

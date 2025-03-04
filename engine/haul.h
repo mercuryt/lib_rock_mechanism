@@ -54,7 +54,7 @@ class HaulSubproject final
 	SmallMap<ActorReference, BlockIndex> m_liftPoints; // Used by Team strategy.
 	//TODO: storing this reference and also passing in area / project to various methods is redundant. Do one or the other.
 	Project& m_project;
-	ProjectRequirementCounts& m_projectRequirementCounts;
+	ProjectRequirementCounts* m_projectRequirementCounts;
 	ActorOrItemReference m_toHaul;
 	ItemReference m_haulTool;
 	ActorReference m_leader;
@@ -76,7 +76,7 @@ public:
 	void addWorker(const ActorIndex& actor);
 	void removeWorker(const ActorIndex& actor);
 	void cancel();
-	static HaulSubprojectParamaters tryToSetHaulStrategy(const Project& project, const ActorOrItemIndex& hasShape, const ActorIndex& worker);
+	static HaulSubprojectParamaters tryToSetHaulStrategy(const Project& project, const ActorOrItemReference& hasShape, const ActorIndex& worker);
 	static ActorIndices actorsNeededToHaulAtMinimumSpeed(const Project& project, const ActorIndex& leader, const ActorOrItemIndex& toHaul);
 	[[nodiscard]] static Quantity maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const Area& area, const ActorIndex& leader, const ItemIndex& haulTool, const ActorOrItemIndex& toHaul, const Speed& minimumSpeed);
 	[[nodiscard]] static Speed getSpeedWithHaulToolAndCargo(const Area& area, const ActorIndex& leader, const ItemIndex& haulTool, const ActorOrItemIndex& toHaul, const Quantity& quantity);

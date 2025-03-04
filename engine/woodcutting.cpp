@@ -41,7 +41,7 @@ std::vector<std::pair<ItemQuery, Quantity>> WoodCuttingProject::getUnconsumed() 
 	static const ItemTypeId itemType = ItemType::byName(L"axe");
 	return {{ItemQuery::create(itemType), Quantity::create(1)}};
 }
-std::vector<std::pair<ActorQuery, Quantity>> WoodCuttingProject::getActors() const { return {}; }
+std::vector<ActorReference> WoodCuttingProject::getActors() const { return {}; }
 std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> WoodCuttingProject::getByproducts() const
 {
 	PlantIndex plant = m_area.getBlocks().plant_get(m_location);

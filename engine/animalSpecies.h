@@ -11,6 +11,7 @@ struct AnimalSpeciesParamaters
 	std::array<AttributeLevel, 3> dextarity;
 	std::array<AttributeLevel, 3> agility;
 	std::array<Mass, 3> mass;
+	std::array<uint32_t, 3> height;
 	std::array<Step, 2> deathAgeSteps;
 	Step stepsTillFullyGrown;
 	Step stepsTillDieWithoutFood;
@@ -44,6 +45,7 @@ class AnimalSpecies
 	StrongVector<std::array<AttributeLevel, 3>, AnimalSpeciesId> m_dextarity;
 	StrongVector<std::array<AttributeLevel, 3>, AnimalSpeciesId> m_agility;
 	StrongVector<std::array<Mass, 3>, AnimalSpeciesId> m_mass;
+	StrongVector<std::array<uint32_t, 3>, AnimalSpeciesId> m_height;
 	StrongVector<std::array<Step, 2>, AnimalSpeciesId> m_deathAgeSteps;
 	StrongVector<Step, AnimalSpeciesId> m_stepsTillFullyGrown;
 	StrongVector<Step, AnimalSpeciesId> m_stepsTillDieWithoutFood;
@@ -77,6 +79,7 @@ public:
 	[[nodiscard]] static std::array<AttributeLevel, 3> getDextarity(const AnimalSpeciesId& id);
 	[[nodiscard]] static std::array<AttributeLevel, 3> getAgility(const AnimalSpeciesId& id);
 	[[nodiscard]] static std::array<Mass, 3> getMass(const AnimalSpeciesId& id);
+	[[nodiscard]] static std::array<uint32_t, 3> getHeight(const AnimalSpeciesId& id);
 	[[nodiscard]] static std::array<Step, 2> getDeathAgeSteps(const AnimalSpeciesId& id);
 	[[nodiscard]] static Step getStepsTillFullyGrown(const AnimalSpeciesId& id);
 	[[nodiscard]] static Step getStepsTillDieWithoutFood(const AnimalSpeciesId& id);

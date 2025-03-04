@@ -7,13 +7,28 @@
 
 struct DeserializationMemo;
 
+static constexpr Quantity maxWorkersForTargetedHaul = Quantity::create(2);
+static constexpr Quantity haulQuantityForTargetedHaul = Quantity::create(1);
+
 class TargetedHaulProject final : public Project
 {
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const { return {}; }
-	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const { return {{ItemQuery::create(m_item), Quantity::create(1u)}}; }
-	std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
+	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const
+	{
+		if(m_target.isActor())
+			return {};
+		else
+			return {{ItemQuery::create(m_target.toItemReference()), haulQuantityForTargetedHaul}};
+	}
+	std::vector<ActorReference> getActors() const
+	{
+		if(m_target.isItem())
+			return {};
+		else
+			return {{m_target.toActorReference()}};
+	}
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const { return {}; }
-	ItemReference m_item;
+	ActorOrItemReference m_target;
 	//TODO: facing.
 	void onComplete() override;
 	void onDelivered(const ActorOrItemIndex& delivered) override;
@@ -24,7 +39,10 @@ class TargetedHaulProject final : public Project
 	void offDelay() { std::unreachable(); }
 	Step getDuration() const { return Config::addToStockPileDelaySteps; }
 public:
-	TargetedHaulProject(const FactionId& f, Area& a, const BlockIndex& l, const ItemReference& i) : Project(f, a, l, Quantity::create(4)), m_item(i) { }
+	TargetedHaulProject(const FactionId& f, Area& a, const BlockIndex& l, const ActorOrItemReference& t) :
+		Project(f, a, l, maxWorkersForTargetedHaul),
+		m_target(t)
+	{ }
 	TargetedHaulProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	Json toJson() const;
 };
@@ -35,7 +53,7 @@ class AreaHasTargetedHauling
 	std::list<TargetedHaulProject> m_projects;
 public:
 	AreaHasTargetedHauling(Area& a) : m_area(a) { }
-	TargetedHaulProject& begin(const SmallSet<ActorIndex>& actors, const ItemIndex& item, const BlockIndex& destination);
+	TargetedHaulProject& begin(const SmallSet<ActorIndex>& actors, const ActorOrItemIndex& target, const BlockIndex& destination);
 	void load(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	void cancel(TargetedHaulProject& project);
 	void complete(TargetedHaulProject& project);

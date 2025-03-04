@@ -37,7 +37,8 @@ bool HaulSubprojectParamaters::validate(Area& area) const
 	assert(toHaul.exists());
 	assert(quantity != 0);
 	assert(strategy != HaulStrategy::None);
-	assert(projectRequirementCounts != nullptr);
+	if(toHaul.isItem())
+		assert(projectRequirementCounts != nullptr);
 	assert(!workers.empty());
 	FactionId faction = area.getActors().getFaction(workers.front());
 	for(ActorIndex worker : workers)
@@ -53,7 +54,7 @@ HaulSubprojectDishonorCallback::HaulSubprojectDishonorCallback(const Json data, 
 	m_haulSubproject(*deserializationMemo.m_haulSubprojects.at(data["haulSubproject"])) { }
 HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters) :
 	m_project(p),
-	m_projectRequirementCounts(*paramaters.projectRequirementCounts),
+	m_projectRequirementCounts(paramaters.projectRequirementCounts),
 	m_toHaul(paramaters.toHaul),
 	m_fluidType(paramaters.fluidType),
 	m_quantity(paramaters.quantity),
@@ -90,7 +91,7 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 }
 HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo& deserializationMemo) :
 	m_project(p),
-	m_projectRequirementCounts(deserializationMemo.projectRequirementCountsReference(data["requirementCounts"])),
+	m_projectRequirementCounts(&deserializationMemo.projectRequirementCountsReference(data["requirementCounts"])),
 	m_fluidType(data["fluidType"].get<FluidTypeId>()),
 	m_quantity(data["quantity"].get<Quantity>()),
 	m_strategy(data["haulStrategy"].get<HaulStrategy>()),
@@ -660,16 +661,21 @@ bool HaulSubproject::allWorkersAreAdjacentTo(const ItemIndex& index)
 	return true;
 	//return std::all_of(m_workers.begin(), m_workers.end(), [&](const ActorReference& worker) { return m_project.m_area.getItems().isAdjacentToActor(index, worker.getIndex(referenceData)); });
 }
-HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& project, const ActorOrItemIndex& toHaul, const ActorIndex& worker)
+HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& project, const ActorOrItemReference& toHaulRef, const ActorIndex& worker)
 {
 	// TODO: make exception for slow haul if very close.
 	Actors& actors = project.m_area.getActors();
+	Items& items = project.m_area.getItems();
 	FactionId faction = actors.getFaction(worker);
 	HaulSubprojectParamaters output;
-	ActorOrItemReference toHaulRef = toHaul.toReference(project.m_area);
-	output.toHaul = toHaul.toReference(project.m_area);
-	output.projectRequirementCounts = project.m_toPickup[toHaulRef].first;
-	Quantity maxQuantityRequested = project.m_toPickup[toHaulRef].second;
+	output.toHaul = toHaulRef;
+	Quantity maxQuantityRequested = Quantity::create(1);
+	if(toHaulRef.isItem())
+	{
+		ItemReference item = toHaulRef.toItemReference();
+		output.projectRequirementCounts = project.m_itemsToPickup[item].first;
+		maxQuantityRequested = project.m_itemsToPickup[item].second;
+	}
 	Speed minimumSpeed = project.getMinimumHaulSpeed();
 	ActorIndices workers;
 	// TODO: shouldn't this be m_waiting?
@@ -678,10 +684,11 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	assert(maxQuantityRequested != 0);
 	// toHaul is wheeled.
 	static MoveTypeId wheeled = MoveType::byName(L"roll");
+	ActorOrItemIndex toHaul = toHaulRef.getIndexPolymorphic(actors.m_referenceData, items.m_referenceData);
 	if(toHaul.getMoveType(project.m_area) == wheeled)
 	{
-		assert(toHaul.isItem());
-		ItemIndex haulableItem = ItemIndex::cast(toHaul.get());
+		assert(toHaulRef.isItem());
+		ItemIndex haulableItem = toHaul.getItem();
 		ActorOrItemIndex workerPolymorphic = ActorOrItemIndex::createForActor(worker);
 		std::vector<ActorOrItemIndex> list{workerPolymorphic, toHaul};
 		if(PortablesHelpers::getMoveSpeedForGroup(project.m_area, list) >= minimumSpeed)
@@ -803,12 +810,12 @@ void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 		m_leader.getIndex(actors.m_referenceData) :
 		m_workers.front().getIndex(actors.m_referenceData)
 	);
-	m_projectRequirementCounts.delivered += m_quantity;
-	assert(m_projectRequirementCounts.delivered <= m_projectRequirementCounts.required);
 	for(ActorReference worker : m_workers)
 		actors.canReserve_clearAll(worker.getIndex(actors.m_referenceData));
 	if(delivered.isItem())
 	{
+		m_projectRequirementCounts->delivered += m_quantity;
+		assert(m_projectRequirementCounts->delivered <= m_projectRequirementCounts->required);
 		ItemIndex deliveredIndex = delivered.getItem();
 		ItemReference ref = area.getItems().m_referenceData.getReference(deliveredIndex);
 		Quantity quantity = delivered.getQuantity(area);
@@ -832,7 +839,7 @@ void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 		// Items are not reserved durring transit because reserved items don't move.
 		// If the item is already reserved due to combining with an existing one on drop-off the reserved quantity will be increased.
 		items.reservable_reserve(deliveredIndex, m_project.getCanReserve(), m_quantity);
-		if(m_projectRequirementCounts.consumed)
+		if(m_projectRequirementCounts->consumed)
 			m_project.m_toConsume.getOrInsert(ref, Quantity::create(0)) += m_quantity;
 		//TODO: This belongs in CraftProject.
 		if(items.isWorkPiece(deliveredIndex))
@@ -840,8 +847,13 @@ void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 		m_project.m_deliveredItems.getOrInsert(ref, Quantity::create(0)) += quantity;
 	}
 	else
-		//TODO: deliver actors.
-		std::unreachable();
+	{
+		ActorIndex deliveredIndex = delivered.getActor();
+		// Reserve dropped off actor with project.
+		actors.reservable_reserve(deliveredIndex, m_project.getCanReserve());
+		actors.setLocationAndFacing(deliveredIndex, location, Facing4::North);
+		m_project.m_deliveredActors.insert(actors.getReference(deliveredIndex));
+	}
 	m_project.onDelivered(delivered);
 	Project& project = m_project;
 	auto workers = std::move(m_workers);

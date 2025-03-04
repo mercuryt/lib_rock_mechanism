@@ -114,7 +114,7 @@
 	"minimumDaysBetweenRainPerPercentHumidity": 0.5,
 	"minimumDurationToWaitInsteadOfWanderMinutes": 0.5,
 	"minimumHaulSpeedInital": 60,
-	"minimumOverloadRatio": 0.33,
+	"minimumOverloadRatio": 0.25,
 	"minimumPercentFoliageForGrow": 90,
 	"minimumPercentGrowthForWoodCutting": 80,
 	"minimumRainIntensityModifier": 0.5,

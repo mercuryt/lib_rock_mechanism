@@ -9,13 +9,13 @@
 TargetedHaulProject::TargetedHaulProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
 	Project(data, deserializationMemo, area)
 {
-	if(data.contains("item"))
-		m_item.load(data["item"], area.getItems().m_referenceData);
+	if(data.contains("target"))
+		m_target.load(data["target"], area);
 }
 Json TargetedHaulProject::toJson() const
 {
 	Json data = Project::toJson();
-	data["item"] = m_item;
+	data["target"] = m_target;
 	return data;
 }
 void TargetedHaulProject::onComplete()
@@ -23,10 +23,10 @@ void TargetedHaulProject::onComplete()
 	auto workers = std::move(m_workers);
 	Actors& actors = m_area.getActors();
 	Items& items = m_area.getItems();
-	ItemIndex item = m_item.getIndex(items.m_referenceData);
-	m_item.clear();
-	if(items.getLocation(item) != m_location)
-		items.setLocationAndFacing(item, m_location, actors.getFacing(workers.begin()->first.getIndex(actors.m_referenceData)));
+	ActorOrItemIndex target = m_target.getIndexPolymorphic(actors.m_referenceData, items.m_referenceData);
+	m_target.clear();
+	if(target.getLocation(m_area) != m_location)
+		target.setLocationAndFacing(m_area, m_location, actors.getFacing(workers.begin()->first.getIndex(actors.m_referenceData)));
 	m_area.m_hasTargetedHauling.complete(*this);
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);
@@ -39,10 +39,10 @@ void AreaHasTargetedHauling::load(const Json& data, DeserializationMemo& deseria
 	for(const Json& project : data["projects"])
 		m_projects.emplace_back(project, deserializationMemo, area);
 }
-TargetedHaulProject& AreaHasTargetedHauling::begin(const SmallSet<ActorIndex>& workers, const ItemIndex& item, const BlockIndex& destination)
+TargetedHaulProject& AreaHasTargetedHauling::begin(const SmallSet<ActorIndex>& workers, const ActorOrItemIndex& target, const BlockIndex& destination)
 {
 	Actors& actors = m_area.getActors();
-	ItemReference ref = m_area.getItems().getReference(item);
+	ActorOrItemReference ref = target.toReference(m_area);
 	TargetedHaulProject& project = m_projects.emplace_back(actors.getFaction(workers.front()), m_area, destination, ref);
 	for(ActorIndex actor : workers)
 	{

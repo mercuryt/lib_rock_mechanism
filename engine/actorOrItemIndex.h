@@ -84,5 +84,6 @@ public:
 	void validate(Area& area) const;
 	[[nodiscard]] Quantity reservable_getUnreservedCount(Area& area, const FactionId& faction) const;
 	[[nodiscard]] bool reservable_exists(Area& area, const FactionId& faction) const;
+	[[nodiscard]] bool reservable_hasAny(Area& area) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ActorOrItemIndex, m_index, m_isActor);
 };

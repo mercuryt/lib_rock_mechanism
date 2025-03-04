@@ -84,7 +84,7 @@ class CraftStepProject final : public Project
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
 	[[nodiscard]] std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
-	[[nodiscard]] std::vector<std::pair<ActorQuery, Quantity>> getActors() const { return {}; }
+	[[nodiscard]] std::vector<ActorReference> getActors() const { return {}; }
 public:
 	CraftStepProject(const FactionId& faction, Area& area, const BlockIndex& location, const CraftStepType& cst, CraftJob& cj) :
 		Project(faction, area, location, Quantity::create(1)), m_craftStepType(cst), m_craftJob(cj) { }

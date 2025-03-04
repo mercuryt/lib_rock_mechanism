@@ -83,6 +83,7 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	StrongVector<AttributeLevel, ActorIndex> m_dextarity;
 	StrongVector<AttributeLevelBonusOrPenalty, ActorIndex> m_dextarityBonusOrPenalty;
 	StrongVector<float, ActorIndex> m_dextarityModifier;
+	StrongVector<uint32_t, ActorIndex> m_adultHeight;
 	StrongVector<Mass, ActorIndex> m_mass;
 	StrongVector<int32_t, ActorIndex> m_massBonusOrPenalty;
 	StrongVector<float, ActorIndex> m_massModifier;

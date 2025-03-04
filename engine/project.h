@@ -73,25 +73,25 @@ class Project
 	// Queries for items needed for the project, counts of required, reserved and delivered.
 	std::vector<std::pair<ItemQuery, ProjectRequirementCounts>> m_requiredItems;
 	//TODO: required actors are not suported in several places.
-	std::vector<std::pair<ActorQuery, ProjectRequirementCounts>> m_requiredActors;
+	std::vector<ActorReference> m_requiredActors;
 	// Required items which will be destroyed at the end of the project.
 	SmallMap<ItemReference, Quantity> m_toConsume;
 	// Required items which are equiped by workers (tools).
 	SmallMap<ActorReference, SmallMap<ProjectRequirementCounts*, ItemReference>> m_reservedEquipment;
 	// Targets for haul subprojects awaiting dispatch.
-	SmallMap<ActorOrItemReference, std::pair<ProjectRequirementCounts*, Quantity>> m_toPickup;
+	SmallMap<ItemReference, std::pair<ProjectRequirementCounts*, Quantity>> m_itemsToPickup;
+	SmallSet<ActorReference> m_actorsToPickup;
 	// To be called by addWorkerThreadedTask, after validating the worker has access to the project location.
 	void addWorker(const ActorIndex& actor, Objective& objective);
 	// Load requirements from child class.
 	void recordRequiredActorsAndItems();
-	// After create.
-	void setup();
 protected:
 	// Workers who have passed the candidate screening and ProjectWorker, which holds a reference to the worker's objective and a pointer to it's haul subproject.
 	SmallMap<ActorReference, ProjectWorker> m_workers;
 	// Required shapes which don't need to be hauled because they are already at or adjacent to m_location.
 	// To be used by StockpileProject::onComplete.
-	SmallMap<ActorOrItemReference, Quantity> m_alreadyAtSite;
+	SmallSet<ActorReference> m_actorAlreadyAtSite;
+	SmallMap<ItemReference, Quantity> m_itemAlreadyAtSite;
 	// Workers present at the job site, waiting for haulers to deliver required materiels.
 	SmallSet<ActorReference> m_waiting;
 	// Workers currently doing the 'actual' work.
@@ -105,6 +105,8 @@ protected:
 	std::list<HaulSubproject> m_haulSubprojects;
 	// Delivered items.
 	SmallMap<ItemReference, Quantity> m_deliveredItems;
+	// Delivered Actors.
+	SmallSet<ActorReference> m_deliveredActors;
 	Area& m_area;
 	FactionId m_faction;
 	// Where the materials are delivered to and where the work gets done.
@@ -148,8 +150,10 @@ public:
 	// Calls offDelay.
 	void setDelayOff();
 	// Record reserved shapes which need haul subprojects dispatched for them.
-	void addToPickup(const ActorOrItemIndex& actor, ProjectRequirementCounts& counts, const Quantity& quantity);
-	void removeToPickup(const ActorOrItemIndex& actor, const Quantity& quantity);
+	void addActorToPickup(const ActorIndex& actor);
+	void addItemToPickup(const ItemIndex& item, ProjectRequirementCounts& counts, const Quantity& quantity);
+	void removeActorToPickup(const ActorReference& actor);
+	void removeItemToPickup(const ItemReference& item, const Quantity& quantity);
 	// To be called when the last worker is removed, when a haul subproject repetidly fails, or when a required reservation is dishonored, resets to pre-reservations status.
 	void reset();
 	// TODO: Implimentation of this.
@@ -196,7 +200,7 @@ public:
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
 	[[nodiscard]] virtual std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const = 0;
 	[[nodiscard]] virtual std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const = 0;
-	[[nodiscard]] virtual std::vector<std::pair<ActorQuery, Quantity>> getActors() const = 0;
+	[[nodiscard]] virtual std::vector<ActorReference> getActors() const = 0;
 	[[nodiscard]] virtual std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const = 0;
 	virtual ~Project() = default;
 	[[nodiscard]] bool operator==(const Project& other) const { return &other == this; }
@@ -210,7 +214,7 @@ public:
 	[[nodiscard]] bool hasTryToReserveEvent() const { return m_tryToReserveEvent.exists(); }
 	[[nodiscard]] bool finishEventExists() const { return m_finishEvent.exists(); }
 	[[nodiscard]] Step getFinishStep() const { return m_finishEvent.getStep(); }
-	[[nodiscard]] auto getToPickup() const { return m_toPickup; }
+	[[nodiscard]] auto getToPickup() const { return m_itemsToPickup; }
 	[[nodiscard]] Quantity getMaxWorkers() const { return m_maxWorkers; }
 	friend class ProjectFinishEvent;
 	friend class ProjectTryToHaulEvent;
@@ -256,12 +260,13 @@ public:
 	void readStep(Simulation& simulation, Area* area);
 	void writeStep(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
-	[[nodiscard]] bool blockContainsDesiredItem(const BlockIndex& block, const ActorIndex& hauler);
+	[[nodiscard]] bool blockContainsDesiredItemOrActor(const BlockIndex& block, const ActorIndex& hauler);
 };
 class ProjectTryToAddWorkersThreadedTask final : public ThreadedTask
 {
 	SmallSet<ActorReference> m_cannotPathToJobSite;
-	SmallMap<ActorOrItemReference, Quantity> m_alreadyAtSite;
+	SmallMap<ItemReference, Quantity> m_itemAlreadyAtSite;
+	SmallSet<ActorReference> m_actorAlreadyAtSite;
 	SmallMap<ActorReference, SmallMap<ProjectRequirementCounts*, ItemReference>> m_reservedEquipment;
 	Project& m_project;
 	HasOnDestroySubscriptions m_hasOnDestroy;

@@ -273,6 +273,7 @@ void Actors::load(const Json& data)
 	data["dextarity"].get_to(m_dextarity);
 	data["dextarityBonusOrPenalty"].get_to(m_dextarityBonusOrPenalty);
 	data["dextarityModifier"].get_to(m_dextarityModifier);
+	data["adultHeight"].get_to(m_adultHeight);
 	data["mass"].get_to(m_mass);
 	data["massBonusOrPenalty"].get_to(m_massBonusOrPenalty);
 	data["massModifier"].get_to(m_massModifier);
@@ -474,6 +475,7 @@ Json Actors::toJson() const
 		{"dextarity", m_dextarity},
 		{"dextarityBonusOrPenalty", m_dextarityBonusOrPenalty},
 		{"dextarityModifier", m_dextarityModifier},
+		{"adultHeight", m_adultHeight},
 		{"mass", m_mass},
 		{"massBonusOrPenalty", m_massBonusOrPenalty},
 		{"massModifier", m_massModifier},
@@ -604,6 +606,7 @@ void Actors::forEachData(Action&& action)
 	action(m_dextarity);
 	action(m_dextarityBonusOrPenalty);
 	action(m_dextarityModifier);
+	action(m_adultHeight);
 	action(m_mass);
 	action(m_massBonusOrPenalty);
 	action(m_massModifier);
@@ -668,6 +671,8 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_dextarityModifier[index] = 0.f;
 	//TODO: Only allocate equipment set for actors which have equipment.
 	m_equipmentSet[index] = std::make_unique<EquipmentSet>();
+	const auto& heightData = AnimalSpecies::getHeight(params.species);
+	m_adultHeight[index] = m_area.m_simulation.m_random.getInRange(heightData[0], heightData[1]);
 	m_massBonusOrPenalty[index] = 0;
 	m_massModifier[index] = 0.f;
 	m_unencomberedCarryMass[index] = Mass::null();

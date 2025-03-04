@@ -73,7 +73,7 @@ void StockPileProject::onComplete()
 {
 	Actors& actors = m_area.getActors();
 	Items& items = m_area.getItems();
-	assert(m_deliveredItems.size() == 1 || m_alreadyAtSite.size() == 1);
+	assert(m_deliveredItems.size() == 1 || m_itemAlreadyAtSite.size() == 1);
 	ItemIndex index = m_item.getIndex(items.m_referenceData);
 	auto workers = std::move(m_workers);
 	FactionId faction = m_stockpile.m_faction;
@@ -138,7 +138,7 @@ bool StockPileProject::canAddWorker(const ActorIndex& actor) const
 std::vector<std::pair<ItemQuery, Quantity>> StockPileProject::getConsumed() const { return {}; }
 std::vector<std::pair<ItemQuery, Quantity>> StockPileProject::getUnconsumed() const { return {{ItemQuery::create(m_item), m_quantity}}; }
 std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> StockPileProject::getByproducts() const {return {}; }
-std::vector<std::pair<ActorQuery, Quantity>> StockPileProject::getActors() const { return {}; }
+std::vector<ActorReference> StockPileProject::getActors() const { return {}; }
 StockPile::StockPile(std::vector<ItemQuery>& q, Area& a, const FactionId& f) :
 	m_queries(q), m_area(a), m_faction(f), m_reenableScheduledEvent(m_area.m_eventSchedule) { }
 StockPile::StockPile(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :

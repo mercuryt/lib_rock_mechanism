@@ -51,7 +51,7 @@ std::vector<std::pair<ItemQuery, Quantity>> ConstructProject::getUnconsumed() co
 {
 	return MaterialType::construction_getUnconsumed(m_materialType);
 }
-std::vector<std::pair<ActorQuery, Quantity>> ConstructProject::getActors() const { return {}; }
+std::vector<ActorReference> ConstructProject::getActors() const { return {}; }
 std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> ConstructProject::getByproducts() const
 {
 	return MaterialType::construction_getByproducts(m_materialType);

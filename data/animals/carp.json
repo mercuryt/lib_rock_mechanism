@@ -5,6 +5,7 @@
   "agility": [21, 55, 1],
   "dextarity": [20, 55, 1],
   "mass": [2000, 3000, 1000],
+  "height": [20, 30, 1],
   "deathAgeDays": [1000, 1200],
   "daysTillFullyGrown": 200,
   "daysTillDieWithoutFood": 10,
