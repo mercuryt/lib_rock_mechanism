@@ -14,9 +14,9 @@
 TEST_CASE("fluids smaller")
 {
 	static MaterialTypeId marble = MaterialType::byName(L"marble");
-	static FluidTypeId water = FluidType::byName(L"water");
-	static FluidTypeId CO2 = FluidType::byName(L"CO2");
-	static FluidTypeId mercury = FluidType::byName(L"mercury");
+	static FluidTypeId water = FluidType::byName("water");
+	static FluidTypeId CO2 = FluidType::byName("CO2");
+	static FluidTypeId mercury = FluidType::byName("mercury");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
@@ -1268,7 +1268,7 @@ TEST_CASE("fluids smaller")
 TEST_CASE("area larger")
 {
 	static MaterialTypeId marble = MaterialType::byName(L"marble");
-	static FluidTypeId water = FluidType::byName(L"water");
+	static FluidTypeId water = FluidType::byName("water");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(20,20,20);
 	area.m_hasRain.disable();
@@ -1489,10 +1489,10 @@ TEST_CASE("area larger")
 TEST_CASE("fluids multi scale")
 {
 	static MaterialTypeId marble = MaterialType::byName(L"marble");
-	static FluidTypeId water = FluidType::byName(L"water");
-	static FluidTypeId CO2 = FluidType::byName(L"CO2");
-	static FluidTypeId mercury = FluidType::byName(L"mercury");
-	static FluidTypeId lava = FluidType::byName(L"lava");
+	static FluidTypeId water = FluidType::byName("water");
+	static FluidTypeId CO2 = FluidType::byName("CO2");
+	static FluidTypeId mercury = FluidType::byName("mercury");
+	static FluidTypeId lava = FluidType::byName("lava");
 	Simulation simulation;
 	auto trenchTest2Fluids = [&](uint32_t scaleL, uint32_t scaleW, Step steps)
 	{

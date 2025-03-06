@@ -15,7 +15,7 @@
 TEST_CASE("Area")
 {
 	static MaterialTypeId marble = MaterialType::byName(L"marble");
-	static FluidTypeId water = FluidType::byName(L"water");
+	static FluidTypeId water = FluidType::byName("water");
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
 	Simulation simulation(L"", Step::create(1));
 	Area& area = simulation.m_hasAreas->createArea(10, 10, 10);
@@ -28,7 +28,7 @@ TEST_CASE("Area")
 		CHECK(blocks.m_sizeY == 10);
 		CHECK(blocks.m_sizeZ == 10);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		CHECK(FluidType::getName(water) == L"water");
+		CHECK(FluidType::getName(water) == "water");
 		CHECK(blocks.solid_get(blocks.getIndex_i(5, 5, 0)) == marble);
 		area.doStep();
 	}
@@ -223,7 +223,7 @@ TEST_CASE("vision-threading")
 }
 TEST_CASE("multiMergeOnAdd")
 {
-	static FluidTypeId water = FluidType::byName(L"water");
+	static FluidTypeId water = FluidType::byName("water");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(2,2,1);
 	area.m_hasRain.disable();
@@ -250,10 +250,10 @@ inline void fourFluidsTestParallel(uint32_t scale, Step steps)
 	uint32_t halfMaxX = maxX / 2;
 	uint32_t halfMaxY = maxY / 2;
 	static MaterialTypeId marble = MaterialType::byName(L"marble");
-	static FluidTypeId water = FluidType::byName(L"water");
-	static FluidTypeId CO2 = FluidType::byName(L"CO2");
-	static FluidTypeId mercury = FluidType::byName(L"mercury");
-	static FluidTypeId lava = FluidType::byName(L"lava");
+	static FluidTypeId water = FluidType::byName("water");
+	static FluidTypeId CO2 = FluidType::byName("CO2");
+	static FluidTypeId mercury = FluidType::byName("mercury");
+	static FluidTypeId lava = FluidType::byName("lava");
 	Simulation simulation(L"", Step::create(0));
 	Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 	area.m_hasRain.disable();

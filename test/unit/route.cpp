@@ -20,7 +20,7 @@ TEST_CASE("route_10_10_10")
 	static AnimalSpeciesId troll = AnimalSpecies::byName(L"troll");
 	static AnimalSpeciesId eagle = AnimalSpecies::byName(L"golden eagle");
 	static AnimalSpeciesId carp = AnimalSpecies::byName(L"carp");
-	static FluidTypeId water = FluidType::byName(L"water");
+	static FluidTypeId water = FluidType::byName("water");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
@@ -257,7 +257,7 @@ TEST_CASE("route_5_5_3")
 	static MaterialTypeId marble = MaterialType::byName(L"marble");
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
 	static AnimalSpeciesId carp = AnimalSpecies::byName(L"carp");
-	static FluidTypeId water = FluidType::byName(L"water");
+	static FluidTypeId water = FluidType::byName("water");
 	static MoveTypeId twoLegsAndSwimInWater = MoveType::byName(L"two legs and swim in water");
 	static MoveTypeId twoLegs = MoveType::byName(L"two legs");
 	SUBCASE("swimming path blocked")
@@ -326,7 +326,7 @@ TEST_CASE("route_5_5_5")
 	static const BlockFeatureType& ramp = BlockFeatureType::ramp;
 	static const BlockFeatureType& door = BlockFeatureType::door;
 	static const BlockFeatureType& fortification = BlockFeatureType::fortification;
-	static FluidTypeId water = FluidType::byName(L"water");
+	static FluidTypeId water = FluidType::byName("water");
 	SUBCASE("walking path blocked by one height cliff if not climbing")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);

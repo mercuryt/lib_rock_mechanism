@@ -12,7 +12,7 @@
 
 struct FluidTypeParamaters
 {
-	std::wstring name;
+	std::string name;
 	uint32_t viscosity;
 	Density density;
 	Step mistDuration;
@@ -23,7 +23,7 @@ struct FluidTypeParamaters
 
 class FluidType
 {
-	StrongVector<std::wstring, FluidTypeId> m_name;
+	StrongVector<std::string, FluidTypeId> m_name;
 	StrongVector<uint32_t, FluidTypeId> m_viscosity;
 	StrongVector<Density, FluidTypeId> m_density;
 	StrongVector<Step, FluidTypeId> m_mistDuration;
@@ -31,12 +31,12 @@ class FluidType
 	StrongVector<MaterialTypeId, FluidTypeId> m_freezesInto;
 	StrongVector<float, FluidTypeId> m_evaporationRate;
 public:
-	[[nodiscard]] static const FluidTypeId byName(const std::wstring name);
+	[[nodiscard]] static const FluidTypeId byName(const std::string name);
 	[[nodiscard]] static FluidTypeId size();
 	static FluidTypeId create(FluidTypeParamaters& p);
 	static void setFreezesInto(const FluidTypeId& fluid, const MaterialTypeId& material);
-	[[nodiscard]] static std::wstring getName(const FluidTypeId& id);
-	[[nodiscard]] static std::wstring maybeGetName(const FluidTypeId& id);
+	[[nodiscard]] static std::string getName(const FluidTypeId& id);
+	[[nodiscard]] static std::string maybeGetName(const FluidTypeId& id);
 	[[nodiscard]] static uint32_t getViscosity(const FluidTypeId& id);
 	[[nodiscard]] static Density getDensity(const FluidTypeId& id);
 	[[nodiscard]] static Step getMistDuration(const FluidTypeId& id);

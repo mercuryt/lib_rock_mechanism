@@ -44,7 +44,7 @@ void definitions::loadFluidTypes()
 			continue;
 		Json data = tryParse(file.path());
 		FluidTypeParamaters params{
-			.name=util::stringToWideString(data["name"].get<std::string>()),
+			.name=data["name"].get<std::string>(),
 			.viscosity=data["viscosity"].get<uint32_t>(),
 			.density=data["density"].get<Density>(),
 			//TODO: Store as seconds rather then steps.
@@ -71,10 +71,10 @@ void definitions::loadMoveTypes()
 			.onlyBreathsFluids=data.contains("onlyBreathsFluids"),
 		};
 		for(auto& pair : data["swim"].items())
-			p.swim.insert(FluidType::byName(util::stringToWideString(pair.key())), pair.value().get<CollisionVolume>());
+			p.swim.insert(FluidType::byName(pair.key()), pair.value().get<CollisionVolume>());
 		if(data.contains("breathableFluids"))
 			for(const Json& name : data["breathableFluids"])
-				p.breathableFluids.add(FluidType::byName(util::stringToWideString(name)));
+				p.breathableFluids.add(FluidType::byName(name));
 		MoveType::create(p);
 	}
 }
@@ -99,7 +99,7 @@ void definitions::loadMaterialTypes()
 		{
 		       	p.meltingPoint = data["meltingPoint"].get<Temperature>();
 			assert(data.contains("meltsInto"));
-			p.meltsInto = FluidType::byName(util::stringToWideString(data["meltsInto"].get<std::string>()));
+			p.meltsInto = FluidType::byName(data["meltsInto"].get<std::string>());
 		}
 		if(data.contains("burnData"))
 		{
@@ -119,7 +119,7 @@ void definitions::loadMaterialTypes()
 		Json data = tryParse(file.path());
 		if(data.contains("freezesInto"))
 		{
-			FluidTypeId fluidType = FluidType::byName(util::stringToWideString(data["name"].get<std::string>()));
+			FluidTypeId fluidType = FluidType::byName(data["name"].get<std::string>());
 			MaterialTypeId materialType = MaterialType::byName(util::stringToWideString(data["freezesInto"].get<std::string>()));
 			FluidType::setFreezesInto(fluidType, materialType);
 		}
@@ -302,7 +302,7 @@ void definitions::loadItemTypes()
 			.canHoldFluids=data.contains("canHoldFluids"),
 		};
 		if(data.contains("edibleForDrinkersOf"))
-			p.edibleForDrinkersOf = FluidType::byName(util::stringToWideString(data["edibleForDrinkersOf"].get<std::string>()));
+			p.edibleForDrinkersOf = FluidType::byName(data["edibleForDrinkersOf"].get<std::string>());
 		if(data.contains("wearableData"))
 		{
 			Json& wearable = data["wearableData"];
@@ -376,7 +376,7 @@ void definitions::loadPlantSpecies()
 		Json data = tryParse(file.path());
 		PlantSpeciesParamaters plantSpeciesParamaters = PlantSpeciesParamaters{
 			.name=util::stringToWideString(data["name"].get<std::string>()),
-			.fluidType=FluidType::byName(util::stringToWideString(data["fluidType"].get<std::string>())),
+			.fluidType=FluidType::byName(data["fluidType"].get<std::string>()),
 			.woodType=data.contains("woodType") ? MaterialType::byName(util::stringToWideString(data["woodType"].get<std::string>())) : MaterialTypeId::null(),
 			.stepsNeedsFluidFrequency=Config::stepsPerDay * data["daysNeedsFluidFrequency"].get<uint16_t>(),
 			.stepsTillDieWithoutFluid=Config::stepsPerDay * data["daysTillDieWithoutFluid"].get<uint16_t>(),
@@ -485,7 +485,7 @@ void definitions::loadAnimalSpecies()
 			.bodyScale=data["bodyScale"].get<uint32_t>(),
 			.materialType=MaterialType::byName(util::stringToWideString(data["materialType"].get<std::string>())),
 			.moveType=MoveType::byName(util::stringToWideString(data["moveType"].get<std::string>())),
-			.fluidType=FluidType::byName(util::stringToWideString(data["fluidType"].get<std::string>())),
+			.fluidType=FluidType::byName(data["fluidType"].get<std::string>()),
 			.bodyType=BodyType::byName(util::stringToWideString(data["bodyType"].get<std::string>()))
 		};
 		assert(data.contains("shapes"));

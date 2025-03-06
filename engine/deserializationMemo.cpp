@@ -43,7 +43,12 @@
 //#include "worldforge/world.h"
 #include <cstdint>
 Area& DeserializationMemo::area(const Json& data) { return m_simulation.m_hasAreas->getById(data.get<AreaId>()); }
-ProjectRequirementCounts& DeserializationMemo::projectRequirementCountsReference(const Json& data) { return *m_projectRequirementCounts.at(data.get<uintptr_t>()); }
+ProjectRequirementCounts& DeserializationMemo::projectRequirementCountsReference(const Json& data)
+{
+	uintptr_t formerAddress = data.get<uintptr_t>();
+	assert(m_projectRequirementCounts.contains(formerAddress));
+	return *m_projectRequirementCounts[formerAddress];
+}
 //WorldLocation& DeserializationMemo::getLocationByNormalizedLatLng(const Json& data) { return m_simulation.m_world->getLocationByNormalizedLatLng(data.get<LatLng>()); }
 std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data, Area& area, ActorIndex actor)
 {

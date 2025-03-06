@@ -28,7 +28,7 @@ TEST_CASE("wound")
 	});
 	BlockIndex pondLocation = blocks.getIndex_i(3, 7, 1);
 	blocks.solid_setNot(pondLocation);
-	blocks.fluid_add(pondLocation, Config::maxBlockVolume, FluidType::byName(L"water"));
+	blocks.fluid_add(pondLocation, Config::maxBlockVolume, FluidType::byName("water"));
 	BlockIndex fruitLocation = blocks.getIndex_i(6, 5, 2);
 	items.create({.itemType=ItemType::byName(L"apple"), .materialType=MaterialType::byName(L"fruit"), .location=fruitLocation, .quantity=Quantity::create(50u)});
 	SUBCASE("bleed to death")

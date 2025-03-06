@@ -19,7 +19,7 @@ void to_json(Json& data, const ItemTypeId& id) { data = ItemType::getName(id); }
 void from_json(const Json& data, ItemTypeId& id) { id = ItemType::byName(data.get<std::wstring>()); }
 #include "fluidType.h"
 void to_json(Json& data, const FluidTypeId& id) { data = FluidType::maybeGetName(id); }
-void from_json(const Json& data, FluidTypeId& id) { id = FluidType::byName(data.get<std::wstring>()); }
+void from_json(const Json& data, FluidTypeId& id) { id = FluidType::byName(data.get<std::string>()); }
 #include "shape.h"
 void to_json(Json& data, const ShapeId& id) { data = Shape::getName(id); }
 void from_json(const Json& data, ShapeId& id) { id = Shape::byName(data.get<std::wstring>()); }

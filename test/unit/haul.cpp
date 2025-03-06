@@ -227,7 +227,7 @@ TEST_CASE("haul")
 		// One step to activate the project and make reservations.
 		simulation.doStep();
 		CHECK(HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(area, dwarf1, donkey1, panniers1, cargo, project.getMinimumHaulSpeed()) > 0);
-		auto haulParams = HaulSubproject::tryToSetHaulStrategy(project, cargoRef, dwarf1);
+		auto haulParams = HaulSubproject::tryToSetHaulStrategy(project, cargoRef, dwarf1, FluidTypeId::null(), CollisionVolume::null());
 		CHECK(haulParams.strategy == HaulStrategy::Panniers);
 		// Another step to select the haul strategy and create the subproject.
 		simulation.doStep();
@@ -276,7 +276,7 @@ TEST_CASE("haul")
 		// One step to activate the project and make reservations.
 		simulation.doStep();
 		CHECK(HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(area, dwarf1, donkey1, panniers1, cargo, project.getMinimumHaulSpeed()) > 0);
-		auto haulParams = HaulSubproject::tryToSetHaulStrategy(project, cargoRef, dwarf1);
+		auto haulParams = HaulSubproject::tryToSetHaulStrategy(project, cargoRef, dwarf1, FluidTypeId::null(), CollisionVolume::null());
 		CHECK(haulParams.strategy == HaulStrategy::Panniers);
 		// Another step to select the haul strategy and create the subproject.
 		simulation.doStep();

@@ -18,7 +18,7 @@ TEST_CASE("basicNeedsSentient")
 {
 	static MaterialTypeId dirt = MaterialType::byName(L"dirt");
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
-	static FluidTypeId water = FluidType::byName(L"water");
+	static FluidTypeId water = FluidType::byName("water");
 	Simulation simulation;
 	FactionId faction = simulation.createFaction(L"Tower Of Power");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
@@ -181,7 +181,7 @@ TEST_CASE("basicNeedsNonsentient")
 	static PlantSpeciesId wheatGrass = PlantSpecies::byName(L"wheat grass");
 	static MaterialTypeId dirt = MaterialType::byName(L"dirt");
 	static AnimalSpeciesId redDeer = AnimalSpecies::byName(L"red deer");
-	static FluidTypeId water = FluidType::byName(L"water");
+	static FluidTypeId water = FluidType::byName("water");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
@@ -350,7 +350,7 @@ TEST_CASE("actorGrowth")
 {
 	static MaterialTypeId dirt = MaterialType::byName(L"dirt");
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
-	static FluidTypeId water = FluidType::byName(L"water");
+	static FluidTypeId water = FluidType::byName("water");
 	Step step = DateTime(8, 60, 10000).toSteps();
 	Simulation simulation(L"", step);
 	FactionId faction = simulation.createFaction(L"Tower Of Power");
@@ -455,7 +455,7 @@ TEST_CASE("death")
 	{
 		BlockIndex pondLocation = blocks.getIndex_i(3, 3, 1);
 		blocks.solid_setNot(pondLocation);
-		blocks.fluid_add(pondLocation, CollisionVolume::create(100), FluidType::byName(L"water"));
+		blocks.fluid_add(pondLocation, CollisionVolume::create(100), FluidType::byName("water"));
 		// Generate objectives, discard drink if it exists.
 		CHECK(actors.eat_getHungerEventStep(actor) == AnimalSpecies::getStepsEatFrequency(redDeer) +  step);
 		actors.eat_setIsHungry(actor);

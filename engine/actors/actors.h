@@ -305,6 +305,7 @@ public:
 	void canPickUp_updateActorIndex(const ActorIndex& index, const ActorIndex& oldIndex, const ActorIndex& newIndex);
 	void canPickUp_updateItemIndex(const ActorIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex);
 	void canPickUp_updateUnencomberedCarryMass(const ActorIndex& index);
+	void canPickUp_addFluidToContainerFromAdjacentBlocksIncludingOtherContainersWithLimit(const ActorIndex& index, const FluidTypeId& fluidType, const CollisionVolume& limit);
 	[[nodiscard]] ActorIndex canPickUp_tryToPutDownActor(const ActorIndex& index, const BlockIndex& location, const DistanceInBlocks maxRange = DistanceInBlocks::create(1));
 	[[nodiscard]] ItemIndex canPickUp_tryToPutDownItem(const ActorIndex& index, const BlockIndex& location, const DistanceInBlocks maxRange = DistanceInBlocks::create(1));
 	[[nodiscard]] ActorOrItemIndex canPickUp_tryToPutDownIfAny(const ActorIndex& index, const BlockIndex& location, const DistanceInBlocks maxRange = DistanceInBlocks::create(1));

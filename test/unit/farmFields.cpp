@@ -44,7 +44,7 @@ TEST_CASE("sow")
 	BlockIndex pondLocation = blocks.getIndex_i(8, 8, 1);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	blocks.solid_setNot(pondLocation);
-	blocks.fluid_add(pondLocation, Config::maxBlockVolume, FluidType::byName(L"water"));
+	blocks.fluid_add(pondLocation, Config::maxBlockVolume, FluidType::byName("water"));
 	BlockIndex foodLocation = blocks.getIndex_i(8,9,2);
 	items.create({.itemType=ItemType::byName(L"apple"), .materialType=MaterialType::byName(L"plant matter"), .location=foodLocation, .quantity=Quantity::create(50)});
 	area.m_hasFarmFields.registerFaction(faction);
@@ -341,7 +341,7 @@ TEST_CASE("givePlantFluid")
 	});
 	SUBCASE("give plants fluid")
 	{
-		static FluidTypeId water = FluidType::byName(L"water");
+		static FluidTypeId water = FluidType::byName("water");
 		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(50));
 		PlantIndex plant = blocks.plant_get(block);

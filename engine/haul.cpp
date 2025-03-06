@@ -133,7 +133,7 @@ Json HaulSubproject::toJson() const
 		{"haulStrategy", m_strategy},
 		{"itemIsMoving", m_itemIsMoving},
 		{"address", reinterpret_cast<uintptr_t>(this)},
-		{"requirementCounts", reinterpret_cast<uintptr_t>(&m_projectRequirementCounts)},
+		{"requirementCounts", reinterpret_cast<uintptr_t>(m_projectRequirementCounts)},
 		{"fluidType", m_fluidType}
 	});
 	data["toHaul"] = m_toHaul.toJson();
@@ -197,6 +197,25 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 				actors.canPickUp_isCarryingPolymorphic(actor, m_toHaul.getIndexPolymorphic(actors.m_referenceData, items.m_referenceData));
 			if(hasCargo)
 			{
+				if(m_fluidType.exists())
+				{
+					// If a fluid type is specified then toHaul must be a contaner which can hold fluids.
+					assert(toHaul.isItem());
+					ItemIndex toHaulIndex = toHaul.getItem();
+					assert(ItemType::getCanHoldFluids(items.getItemType(toHaulIndex)));
+					if(items.cargo_getFluidVolume(toHaulIndex) != m_quantity.get())
+					{
+						// Actor attempts to fill toHaul with fluid from adjacent blocks.
+						// quantity does dual duty as volume when hauling fluids.
+						actors.canPickUp_addFluidToContainerFromAdjacentBlocksIncludingOtherContainersWithLimit(actor, m_fluidType, CollisionVolume::create(m_quantity.get()));
+						if(!items.cargo_containsFluidType(toHaulIndex, m_fluidType))
+						{
+							// No fluid found in adjacent blocks, set destination to create a path request.
+							actors.move_setDestinationAdjacentToFluidType(actor, m_fluidType);
+							return;
+						}
+					}
+				}
 				if(actors.isAdjacentToLocation(actor, m_project.m_location))
 				{
 					// Unload
@@ -661,7 +680,7 @@ bool HaulSubproject::allWorkersAreAdjacentTo(const ItemIndex& index)
 	return true;
 	//return std::all_of(m_workers.begin(), m_workers.end(), [&](const ActorReference& worker) { return m_project.m_area.getItems().isAdjacentToActor(index, worker.getIndex(referenceData)); });
 }
-HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& project, const ActorOrItemReference& toHaulRef, const ActorIndex& worker)
+HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& project, const ActorOrItemReference& toHaulRef, const ActorIndex& worker, const FluidTypeId& fluidType, const CollisionVolume& fluidVolume)
 {
 	// TODO: make exception for slow haul if very close.
 	Actors& actors = project.m_area.getActors();
@@ -682,7 +701,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	for(auto& pair : project.m_workers)
 		workers.add(pair.first.getIndex(actors.m_referenceData));
 	assert(maxQuantityRequested != 0);
-	// toHaul is wheeled.
+	// toHaul is wheeled. Either do IndividuaCargoIsCart or Team.
 	static MoveTypeId wheeled = MoveType::byName(L"roll");
 	ActorOrItemIndex toHaul = toHaulRef.getIndexPolymorphic(actors.m_referenceData, items.m_referenceData);
 	if(toHaul.getMoveType(project.m_area) == wheeled)
@@ -711,8 +730,20 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 		}
 	}
 	// Individual
-	// TODO:: Prioritize cart if a large number of items are requested.
+	// TODO: Prioritize cart if a large number of items are requested.
+	// TODO: Individual haul is both first priority, with full speed, and last priority, with minimum speed.
+	// TODO: Consider cargo mass in non-individual hauling cases.
 	Mass singleUnitMass = toHaul.getSingleUnitMass(project.m_area);
+	if(fluidType.exists())
+	{
+		assert(toHaul.isItem());
+		Mass fluidCargoMass = Mass::create(FluidType::getDensity(fluidType).get() * fluidVolume.get());
+		singleUnitMass += fluidCargoMass;
+		output.fluidType = fluidType;
+		output.quantity = Quantity::create(fluidVolume.get());
+	}
+	else if(toHaul.isItem() && items.cargo_exists(toHaul.getItem()))
+		singleUnitMass += items.cargo_getMass(toHaul.getItem());
 	Quantity maxQuantityCanCarry = actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(worker, singleUnitMass, minimumSpeed);
 	if(maxQuantityCanCarry != 0)
 	{
@@ -837,14 +868,24 @@ void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 		deliveredIndex = items.setLocationAndFacing(deliveredIndex, location, Facing4::North);
 		// Reserve dropped off item with project.
 		// Items are not reserved durring transit because reserved items don't move.
-		// If the item is already reserved due to combining with an existing one on drop-off the reserved quantity will be increased.
-		items.reservable_reserve(deliveredIndex, m_project.getCanReserve(), m_quantity);
-		if(m_projectRequirementCounts->consumed)
-			m_project.m_toConsume.getOrInsert(ref, Quantity::create(0)) += m_quantity;
-		//TODO: This belongs in CraftProject.
-		if(items.isWorkPiece(deliveredIndex))
-			delivered.setLocationAndFacing(area, m_project.m_location, Facing4::North);
-		m_project.m_deliveredItems.getOrInsert(ref, Quantity::create(0)) += quantity;
+		if(m_fluidType.exists())
+		{
+			// Reserve fluid container.
+			items.reservable_reserve(deliveredIndex, m_project.getCanReserve());
+			m_project.m_deliveredItems.insert(ref, Quantity::create(1));
+		}
+		else
+		{
+			// Not fluids.
+			// If the item is already reserved due to combining with an existing one on drop-off the reserved quantity will be increased.
+			items.reservable_reserve(deliveredIndex, m_project.getCanReserve(), m_quantity);
+			if(m_projectRequirementCounts->consumed)
+				m_project.m_toConsume.getOrInsert(ref, Quantity::create(0)) += m_quantity;
+			//TODO: This belongs in CraftProject.
+			if(items.isWorkPiece(deliveredIndex))
+				delivered.setLocationAndFacing(area, m_project.m_location, Facing4::North);
+			m_project.m_deliveredItems.getOrInsert(ref, Quantity::create(0)) += quantity;
+		}
 	}
 	else
 	{

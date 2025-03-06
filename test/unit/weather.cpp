@@ -15,7 +15,7 @@ TEST_CASE("weather")
 {
 	static MaterialTypeId marble = MaterialType::byName(L"marble");
 	static MaterialTypeId ice = MaterialType::byName(L"ice");
-	static FluidTypeId water = FluidType::byName(L"water");
+	static FluidTypeId water = FluidType::byName("water");
 	const Temperature& freezing = FluidType::getFreezingPoint(water);
 	Simulation simulation{L"", Step::create(1)};
 	SUBCASE("rain")

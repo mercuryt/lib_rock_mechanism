@@ -75,7 +75,7 @@ void Blocks::load(const Json& data, DeserializationMemo& deserializationMemo)
 		for(const Json& fluidData : value)
 			fluid_add(BlockIndex::create(std::stoi(key)), fluidData["volume"].get<CollisionVolume>(), fluidData["type"].get<FluidTypeId>());
 	for(auto& [key, value] : data["mist"].items())
-		m_mist[BlockIndex::create(std::stoi(key))] = FluidType::byName(value.get<std::wstring>());
+		m_mist[BlockIndex::create(std::stoi(key))] = FluidType::byName(value.get<std::string>());
 	for(auto& [key, value] : data["mistInverseDistanceFromSource"].items())
 		m_mistInverseDistanceFromSource[BlockIndex::create(std::stoi(key))] = value.get<DistanceInBlocks>();
 	for(auto& [key, value] : data["reservables"].items())

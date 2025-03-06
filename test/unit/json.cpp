@@ -31,7 +31,7 @@ TEST_CASE("json")
 	MaterialTypeId sand = MaterialType::byName(L"sand");
 	PlantSpeciesId sage = PlantSpecies::byName(L"sage brush");
 	PlantSpeciesId wheatGrass = PlantSpecies::byName(L"wheat grass");
-	FluidTypeId water = FluidType::byName(L"water");
+	FluidTypeId water = FluidType::byName("water");
 	ItemTypeId axe = ItemType::byName(L"axe");
 	ItemTypeId pick = ItemType::byName(L"pick");
 	ItemTypeId saw = ItemType::byName(L"saw");

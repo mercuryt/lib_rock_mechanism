@@ -40,11 +40,10 @@ struct ProjectRequirementCounts final
 	Quantity reserved = Quantity::create(0);
 	bool consumed;
 	ProjectRequirementCounts(const Quantity& r, bool c) : required(r), consumed(c) { }
-	//TODO: Why isn't intrusive deserializer working here?
-	ProjectRequirementCounts(const Json& data) :
-		required(data["required"].get<Quantity>()), delivered(data["delivered"].get<Quantity>()),
-		reserved(data["reserved"].get<Quantity>()), consumed(data["consumed"].get<bool>()) { }
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(ProjectRequirementCounts, required, delivered, reserved, consumed);
+	ProjectRequirementCounts() = default;
+	ProjectRequirementCounts(const ProjectRequirementCounts& other) = default;
+	ProjectRequirementCounts& operator=(const ProjectRequirementCounts& other) = default;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ProjectRequirementCounts, required, delivered, reserved, consumed);
 };
 struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
 {
@@ -74,17 +73,23 @@ class Project
 	std::vector<std::pair<ItemQuery, ProjectRequirementCounts>> m_requiredItems;
 	//TODO: required actors are not suported in several places.
 	std::vector<ActorReference> m_requiredActors;
+	// Required fluid types, containers, and volume per container.
+	SmallMap<FluidTypeId, SmallMap<ItemReference, CollisionVolume>> m_requiredFluidContainers;
+	// Required fluid volumes.
+	SmallMap<FluidTypeId, ProjectRequirementCounts> m_requiredFluids;
 	// Required items which will be destroyed at the end of the project.
 	SmallMap<ItemReference, Quantity> m_toConsume;
 	// Required items which are equiped by workers (tools).
 	SmallMap<ActorReference, SmallMap<ProjectRequirementCounts*, ItemReference>> m_reservedEquipment;
+	// Containers with fluid to consume at end of project.
+	SmallSet<ItemReference> m_containersWithFluidToConsume;
 	// Targets for haul subprojects awaiting dispatch.
 	SmallMap<ItemReference, std::pair<ProjectRequirementCounts*, Quantity>> m_itemsToPickup;
 	SmallSet<ActorReference> m_actorsToPickup;
 	// To be called by addWorkerThreadedTask, after validating the worker has access to the project location.
 	void addWorker(const ActorIndex& actor, Objective& objective);
 	// Load requirements from child class.
-	void recordRequiredActorsAndItems();
+	void recordRequiredActorsAndItemsAndFluids();
 protected:
 	// Workers who have passed the candidate screening and ProjectWorker, which holds a reference to the worker's objective and a pointer to it's haul subproject.
 	SmallMap<ActorReference, ProjectWorker> m_workers;
@@ -111,7 +116,7 @@ protected:
 	FactionId m_faction;
 	// Where the materials are delivered to and where the work gets done.
 	BlockIndex m_location;
-	Project(const FactionId& f, Area& a, const BlockIndex& l, const Quantity& mw, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
+	Project(const FactionId& faction, Area& area, const BlockIndex& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
 	Project(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 private:
 	// Count how many times we have attempted to create a haul subproject.
@@ -201,9 +206,13 @@ public:
 	[[nodiscard]] virtual std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const = 0;
 	[[nodiscard]] virtual std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const = 0;
 	[[nodiscard]] virtual std::vector<ActorReference> getActors() const = 0;
+	[[nodiscard]] virtual SmallMap<FluidTypeId, CollisionVolume> getFluids() const { return { }; };
 	[[nodiscard]] virtual std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const = 0;
 	virtual ~Project() = default;
 	[[nodiscard]] bool operator==(const Project& other) const { return &other == this; }
+	[[nodiscard]] bool itemIsFluidContainer(const ItemReference& item) const;
+	[[nodiscard]] FluidTypeId getFluidTypeForContainer(const ItemReference& item) const;
+	[[nodiscard]] CollisionVolume getFluidVolumeForContainer(const ItemReference& item) const;
 	// For testing.
 	[[nodiscard]] ProjectWorker& getProjectWorkerFor(ActorReference actor) { return m_workers[actor]; }
 	[[nodiscard]] auto& getWorkers() { return m_workers; }

@@ -365,6 +365,47 @@ void Actors::canPickUp_updateUnencomberedCarryMass(const ActorIndex& index)
 {
 	m_unencomberedCarryMass[index] = Mass::create(Config::unitsOfCarryMassPerUnitOfStrength * getStrength(index).get());
 }
+void Actors::canPickUp_addFluidToContainerFromAdjacentBlocksIncludingOtherContainersWithLimit(const ActorIndex& index, const FluidTypeId& fluidType, const CollisionVolume& volume)
+{
+	Blocks& blocks = m_area.getBlocks();
+	Items& items = m_area.getItems();
+	const ItemIndex container = m_carrying[index].getItem();
+	CollisionVolume capacity = volume;
+	if(items.cargo_containsFluidType(container, fluidType))
+		capacity -= items.cargo_getFluidVolume(container);
+	else
+		assert(!items.cargo_containsAnyFluid(container));
+	for(const BlockIndex& block : getAdjacentBlocks(index))
+	{
+		if(blocks.fluid_contains(block, fluidType))
+		{
+			const CollisionVolume avalible = blocks.fluid_volumeOfTypeContains(block, fluidType);
+			const CollisionVolume volumeToTransfer = std::min(capacity, avalible);
+			assert(volumeToTransfer != 0);
+			blocks.fluid_remove(block, volumeToTransfer, fluidType);
+			items.cargo_addFluid(container, fluidType, volumeToTransfer);
+			capacity -= volumeToTransfer;
+			if(capacity == 0)
+				break;
+		}
+		for(const ItemIndex& otherContainer : blocks.item_getAll(block))
+		{
+			if(items.cargo_containsFluidType(otherContainer, fluidType))
+			{
+				const CollisionVolume avalible = items.cargo_getFluidVolume(otherContainer);
+				const CollisionVolume volumeToTransfer = std::min(capacity, avalible);
+				assert(volumeToTransfer != 0);
+				items.cargo_removeFluid(otherContainer, volumeToTransfer);
+				items.cargo_addFluid(container, fluidType, volumeToTransfer);
+				capacity -= volumeToTransfer;
+				if(capacity == 0)
+					break;
+			}
+		}
+		if(capacity == 0)
+			break;
+	}
+}
 ActorOrItemIndex Actors::canPickUp_getCarrying(const ActorIndex& index) const
 {
 	return m_carrying[index];

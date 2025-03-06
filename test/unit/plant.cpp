@@ -12,7 +12,7 @@ TEST_CASE("plant")
 	static MaterialTypeId marble = MaterialType::byName(L"marble");
 	static MaterialTypeId dirt = MaterialType::byName(L"dirt");
 	static PlantSpeciesId wheatGrass = PlantSpecies::byName(L"wheat grass");
-	static FluidTypeId water = FluidType::byName(L"water");
+	static FluidTypeId water = FluidType::byName("water");
 	Simulation simulation(L"test", DateTime::toSteps(12, 100, 1200));
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
