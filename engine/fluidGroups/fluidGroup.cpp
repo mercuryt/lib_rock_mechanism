@@ -60,8 +60,6 @@ void FluidGroup::addBlock(Area& area, const BlockIndex& block, bool checkMerge)
 		oldGroup->removeBlock(area, block);
 	found->group = this;
 	m_drainQueue.maybeAddBlock(block);
-	if constexpr(Config::fluidsSeepDiagonalModifier != 0)
-		m_diagonalBlocks.maybeRemove(block);
 	// Add adjacent if fluid can enter.
 	SmallSet<FluidGroup*> toMerge;
 	for(const BlockIndex& adjacent : area.getBlocks().getDirectlyAdjacent(block))
@@ -86,8 +84,6 @@ void FluidGroup::addBlock(Area& area, const BlockIndex& block, bool checkMerge)
 		// oldGroup may have been merged by recursion in a previous iteration.
 		if(!oldGroup->m_merged)
 			larger = larger->merge(area, oldGroup);
-	if constexpr (Config::fluidsSeepDiagonalModifier != 0)
-		larger->addDiagonalsFor(area, block);
 	larger->addMistFor(area, block);
 }
 void FluidGroup::removeBlock(Area& area, const BlockIndex& block)
@@ -106,44 +102,11 @@ void FluidGroup::removeBlock(Area& area, const BlockIndex& block)
 				//Check for empty adjacent to remove.
 				m_potentiallyNoLongerAdjacentFromSyncronusStep.maybeAdd(adjacent);
 		}
-	if constexpr (Config::fluidsSeepDiagonalModifier != 0)
-	{
-		for(const BlockIndex& diagonal : area.getBlocks().getEdgeAndCornerAdjacentOnly(block))
-			if(area.getBlocks().fluid_canEnterEver(diagonal) && m_diagonalBlocks.contains(diagonal))
-			{
-				//TODO: m_potentiallyNoLongerDiagonalFromSyncronusCode
-				bool found = false;
-				for(const BlockIndex& doubleDiagonal : area.getBlocks().getEdgeAndCornerAdjacentOnly(diagonal))
-					if(m_drainQueue.m_set.contains(doubleDiagonal))
-					{
-						found = true;
-						continue;
-					}
-				if(!found)
-					m_diagonalBlocks.maybeRemove(diagonal);
-			}
-	}
 }
 void FluidGroup::setUnstable(Area& area)
 {
 	m_stable = false;
 	area.m_hasFluidGroups.markUnstable(*this);
-}
-void FluidGroup::addDiagonalsFor(Area& area, const BlockIndex& block)
-{
-	auto& blocks = area.getBlocks();
-	for(const BlockIndex& diagonal : blocks.getEdgeAdjacentOnSameZLevelOnly(block))
-		if(blocks.fluid_canEnterEver(diagonal) && !m_fillQueue.m_set.contains(diagonal) &&
-				!m_drainQueue.m_set.contains(diagonal) && !m_diagonalBlocks.contains(diagonal))
-		{
-			Point3D blockCoordinates = blocks.getCoordinates(block);
-			Point3D diagonalCoordinates = blocks.getCoordinates(diagonal);
-			// Check if there is a 'pressure reducing diagonal' created by two solid blocks.
-			int diffX = diagonalCoordinates.x().get() - blockCoordinates.x().get();
-			int diffY = diagonalCoordinates.y().get() - blockCoordinates.y().get();
-			if(blocks.solid_is(blocks.offset(block,diffX, 0, 0)) && blocks.solid_is(blocks.offset(block, 0, diffY, 0)))
-				m_diagonalBlocks.add(diagonal);
-		}
 }
 void FluidGroup::addMistFor(Area& area, const BlockIndex& block)
 {
@@ -188,17 +151,6 @@ FluidGroup* FluidGroup::merge(Area& area, FluidGroup* smaller)
 		blocks.fluid_getData(block, m_fluidType)->group = larger;
 		assert(larger->m_drainQueue.m_set.contains(block));
 	}
-	// Merge diagonal seep if enabled.
-	if constexpr (Config::fluidsSeepDiagonalModifier != 0)
-	{
-		smaller->m_diagonalBlocks.erase_if([&](const BlockIndex& block){
-			return !larger->m_drainQueue.m_set.contains(block) && !larger->m_fillQueue.m_set.contains(block);
-		});
-		larger->m_diagonalBlocks.erase_if([&](const BlockIndex& block){
-			return smaller->m_drainQueue.m_set.contains(block) || smaller->m_fillQueue.m_set.contains(block);
-		});
-		larger->m_diagonalBlocks.merge(smaller->m_diagonalBlocks);
-	}
 	// Merge other fluid groups ment to merge with smaller with larger instead.
 	for(const BlockIndex& block : smaller->m_futureNewEmptyAdjacents)
 	{
@@ -229,9 +181,9 @@ void FluidGroup::readStep(Area& area)
 	m_fillQueue.initalizeForStep(area, *this);
 	validate(area);
 	// If there is no where to flow into there is nothing to do.
-	if(m_diagonalBlocks.empty() && (m_fillQueue.m_set.empty() ||
+	if(m_fillQueue.m_set.empty() ||
 		((m_fillQueue.groupSize() == 0 || m_fillQueue.groupCapacityPerBlock() == 0) && m_excessVolume >= 0 ) ||
-		((m_drainQueue.groupSize() == 0 || m_drainQueue.groupCapacityPerBlock() == 0) && m_excessVolume <= 0))
+		((m_drainQueue.groupSize() == 0 || m_drainQueue.groupCapacityPerBlock() == 0) && m_excessVolume <= 0)
 	)
 	{
 		m_stable = true;
@@ -297,10 +249,7 @@ void FluidGroup::readStep(Area& area)
 			// if no new blocks have been added this step then set stable
 			if(m_fillQueue.m_futureNoLongerEmpty.empty() && m_disolvedInThisGroup.empty())
 			{
-				if constexpr (Config::fluidsSeepDiagonalModifier == 0)
-					m_stable = true;
-				else if(m_diagonalBlocks.empty())
-					m_stable = true;
+				m_stable = true;
 			}
 			break;
 		}
@@ -403,8 +352,6 @@ void FluidGroup::readStep(Area& area)
 				if(!found || found->volume < Config::maxBlockVolume || found->group != this)
 					m_futureNewEmptyAdjacents.maybeAdd(adjacent);
 			}
-		if(Config::fluidsSeepDiagonalModifier != 0)
-			addDiagonalsFor(area, block);
 	}
 	// -Find any potental newly created groups.
 	// Collect blocks adjacent to newly empty which are !empty.
@@ -416,26 +363,12 @@ void FluidGroup::readStep(Area& area)
 	// Collect all adjacent to futureEmpty which fluid can enter ever.
 	BlockIndices adjacentToFutureEmpty;
 	//adjacentToFutureEmpty.reserve(m_drainQueue.m_futureEmpty.size() * 6);
-	//TODO: Avoid this declaration if diagonal seep is disabled.
-	BlockIndices possiblyNoLongerDiagonal;
-	//possiblyNoLongerDiagonal.reserve(m_drainQueue.m_futureEmpty.size() * 4);
 	for(const BlockIndex& block : m_drainQueue.m_futureEmpty)
 	{
 		for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(block))
 			if(area.getBlocks().fluid_canEnterEver(adjacent))
 				adjacentToFutureEmpty.maybeAdd(adjacent);
-		if constexpr (Config::fluidsSeepDiagonalModifier != 0)
-		{
-			for(const BlockIndex& adjacent : area.getBlocks().getEdgeAndCornerAdjacentOnly(block))
-				if(area.getBlocks().fluid_canEnterEver(adjacent))
-					possiblyNoLongerDiagonal.maybeAdd(adjacent);
-		}
 	}
-	if constexpr (Config::fluidsSeepDiagonalModifier != 0)
-		for(const BlockIndex& block : possiblyNoLongerDiagonal)
-			for(const BlockIndex& doubleDiagonal : area.getBlocks().getEdgeAdjacentOnSameZLevelOnly(block))
-				if(futureBlocks.contains(doubleDiagonal))
-					m_diagonalBlocks.maybeRemove(block);
 	for(const BlockIndex& block : adjacentToFutureEmpty)
 		// If block won't be empty then check for forming a new group as it may be detached.
 		if(futureBlocks.contains(block))
@@ -586,35 +519,6 @@ void FluidGroup::afterWriteStep(Area& area)
 	assert(!m_merged);
 	auto& blocks = area.getBlocks();
 	// Do seeping through corners if enabled.
-	if constexpr(Config::fluidsSeepDiagonalModifier != 0)
-	{
-		if(m_viscosity != 0 && !m_drainQueue.m_set.empty() && !m_diagonalBlocks.empty())
-		{
-			for(const BlockIndex& diagonal : m_diagonalBlocks)
-			{
-				if(blocks.fluid_canEnterCurrently(diagonal, m_fluidType))
-				{
-					uint32_t diagonalPriority = (blocks.getZ(diagonal).get() * Config::maxBlockVolume.get() * 2) + blocks.fluid_volumeOfTypeContains(diagonal, m_fluidType).get();
-					BlockIndex topBlock = m_drainQueue.m_queue[0].block;
-					uint32_t topPriority = (blocks.getZ(topBlock).get() * Config::maxBlockVolume.get() * 2) + blocks.fluid_volumeOfTypeContains(topBlock, m_fluidType).get() + m_excessVolume;
-					if(topPriority > diagonalPriority)
-					{
-						CollisionVolume flow = CollisionVolume::create(std::min({
-							m_viscosity,
-							(topPriority - diagonalPriority)/2,
-							blocks.fluid_volumeOfTypeCanEnter(diagonal, m_fluidType).get(),
-							std::max(1u, FluidType::getViscosity(m_fluidType) / Config::fluidsSeepDiagonalModifier)
-						}));
-						m_excessVolume -= flow.get();
-						m_viscosity -= flow.get();
-						if(m_viscosity <= 0)
-							break;
-						blocks.fluid_add(diagonal, flow, m_fluidType);
-					}
-				}
-			}
-		}
-	}
 	// Resolve overfull blocks.
 	validate(area);
 	for(const BlockIndex& block : m_fillQueue.m_overfull)
@@ -669,13 +573,6 @@ void FluidGroup::splitStep(Area& area)
 			formerFill.add(block);
 	m_fillQueue.removeBlocks(formerFill);
 	m_futureNewEmptyAdjacents = m_futureGroups.back().futureAdjacent;
-	if constexpr (Config::fluidsSeepDiagonalModifier != 0)
-		m_diagonalBlocks.erase_if([&](const BlockIndex& block){
-			for(const BlockIndex& diagonal : area.getBlocks().getEdgeAdjacentOnSameZLevelOnly(block))
-				if(m_futureGroups.back().members.contains(diagonal))
-					return false;
-			return true;
-		});
 	// Remove largest group, it will remain as this instance.
 	m_futureGroups.pop_back();
 	// Create new groups.

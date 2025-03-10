@@ -1184,49 +1184,6 @@ TEST_CASE("fluids smaller")
 		CHECK(fluidGroup->m_stable == false);
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
 	}
-	SUBCASE("Test diagonal seep")
-	{
-		if constexpr(Config::fluidsSeepDiagonalModifier == 0)
-			return;
-		simulation.m_step = Step::create(1);
-		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		BlockIndex block1 = blocks.getIndex_i(5, 5, 1);
-		BlockIndex block2 = blocks.getIndex_i(6, 6, 1);
-		blocks.solid_setNot(block1);
-		blocks.solid_setNot(block2);
-		blocks.fluid_add(block1, CollisionVolume::create(10), water);
-		FluidGroup* fg1 = *area.m_hasFluidGroups.getUnstable().begin();
-		fg1->readStep(area);
-		fg1->writeStep(area);
-		CHECK(blocks.fluid_volumeOfTypeContains(block2, water) == 0);
-		fg1->afterWriteStep(area);
-		fg1->splitStep(area);
-		fg1->mergeStep(area);
-		++simulation.m_step;
-		CHECK(blocks.fluid_volumeOfTypeContains(block2, water) == 1);
-		FluidGroup* fg2 = blocks.fluid_getGroup(block2, water);
-		CHECK(fg1 != fg2);
-		CHECK(fg1->m_excessVolume == -1);
-		CHECK(!fg1->m_stable);
-		for(int i = 0; i < 5; ++i)
-		{
-			fg1->readStep(area);
-			fg2->readStep(area);
-			fg1->writeStep(area);
-			fg2->writeStep(area);
-			fg1->afterWriteStep(area);
-			fg2->afterWriteStep(area);
-			fg1->splitStep(area);
-			fg2->splitStep(area);
-			fg1->mergeStep(area);
-			fg2->mergeStep(area);
-			++simulation.m_step;
-		}
-		CHECK(blocks.fluid_volumeOfTypeContains(block1, water) == 5);
-		CHECK(blocks.fluid_volumeOfTypeContains(block2, water) == 5);
-		CHECK(fg1->m_excessVolume == 0);
-		CHECK(!fg1->m_stable);
-	}
 	SUBCASE("Test mist")
 	{
 		simulation.m_step = Step::create(1);

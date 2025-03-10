@@ -15,7 +15,6 @@ namespace Config
 	// TODO: interval should be type Step but I don't know how to make it work with constexpr.
 	inline constexpr uint actorDoVisionInterval = 3;
 	inline constexpr bool fluidPiston = false;
-	inline constexpr uint32_t fluidsSeepDiagonalModifier = 100;
 	inline constexpr float dataStoreVectorResizeFactor = 1.5;
 	inline constexpr float dataStoreVectorInitalSize = 10;
 	inline constexpr int maxActorsPerBlock = 4;

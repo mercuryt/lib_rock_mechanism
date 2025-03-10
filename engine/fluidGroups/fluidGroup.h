@@ -37,8 +37,6 @@ public:
 	// For notifing groups with different fluids of unfull status. Groups with the same fluid are merged instead.
 	SmallMap<FluidGroup*, BlockIndices> m_futureNotifyPotentialUnfullAdjacent;
 
-	BlockIndices m_diagonalBlocks;
-
 	BlockIndices m_potentiallyNoLongerAdjacentFromSyncronusStep;
 	BlockIndices m_potentiallySplitFromSyncronusStep;
 
@@ -77,7 +75,6 @@ public:
 	void mergeStep(Area& area);
 	void splitStep(Area& area);
 	void setUnstable(Area& area);
-	void addDiagonalsFor(Area& area, const BlockIndex& block);
 	void validate(Area& area) const;
 	void validate(Area& area, SmallSet<FluidGroup*> toErase) const;
 	void log(Area& area) const;
