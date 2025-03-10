@@ -26,7 +26,7 @@ void Blocks::farm_designateForHarvestIfPartOfFarmField(const BlockIndex& index, 
 		Plants& plants = m_area.getPlants();
 		for(auto& [faction, farmField] : m_farmFields[index])
 			if(farmField->plantSpecies == plants.getSpecies(plant))
-				m_area.m_hasFarmFields.getForFaction(faction).addHarvestDesignation(plant);
+				m_area.m_hasFarmFields.getForFaction(faction).addHarvestDesignation(m_area, plant);
 	}
 }
 void Blocks::farm_designateForGiveFluidIfPartOfFarmField(const BlockIndex& index, const PlantIndex& plant)
@@ -36,7 +36,7 @@ void Blocks::farm_designateForGiveFluidIfPartOfFarmField(const BlockIndex& index
 		Plants& plants = m_area.getPlants();
 		for(auto& [faction, farmField] : m_farmFields[index])
 			if(farmField->plantSpecies == plants.getSpecies(plant))
-				m_area.m_hasFarmFields.getForFaction(faction).addGivePlantFluidDesignation(plant);
+				m_area.m_hasFarmFields.getForFaction(faction).addGivePlantFluidDesignation(m_area, index);
 	}
 }
 void Blocks::farm_maybeDesignateForSowingIfPartOfFarmField(const BlockIndex& index)
@@ -46,7 +46,7 @@ void Blocks::farm_maybeDesignateForSowingIfPartOfFarmField(const BlockIndex& ind
 		assert(m_plants[index].empty());
 		for(auto& [faction, farmField] : m_farmFields[index])
 			if(farm_isSowingSeasonFor(farmField->plantSpecies))
-				m_area.m_hasFarmFields.getForFaction(faction).addSowSeedsDesignation(index);
+				m_area.m_hasFarmFields.getForFaction(faction).addSowSeedsDesignation(m_area, index);
 	}
 }
 void Blocks::farm_removeAllHarvestDesignations(const BlockIndex& index)
@@ -57,7 +57,7 @@ void Blocks::farm_removeAllHarvestDesignations(const BlockIndex& index)
 	if(m_farmFields.contains(index))
 		for(auto& [faction, farmField] : m_farmFields[index])
 			if(designation_has(index, faction, BlockDesignation::Harvest))
-				m_area.m_hasFarmFields.getForFaction(faction).removeHarvestDesignation(plant);
+				m_area.m_hasFarmFields.getForFaction(faction).removeHarvestDesignation(m_area, plant);
 }
 void Blocks::farm_removeAllGiveFluidDesignations(const BlockIndex& index)
 {
@@ -67,14 +67,14 @@ void Blocks::farm_removeAllGiveFluidDesignations(const BlockIndex& index)
 	if(m_farmFields.contains(index))
 		for(auto& [faction, farmField] : m_farmFields[index])
 			if(designation_has(index, faction, BlockDesignation::GivePlantFluid))
-				m_area.m_hasFarmFields.getForFaction(faction).removeGivePlantFluidDesignation(plant);
+				m_area.m_hasFarmFields.getForFaction(faction).removeGivePlantFluidDesignation(m_area, index);
 }
 void Blocks::farm_removeAllSowSeedsDesignations(const BlockIndex& index)
 {
 	if(m_farmFields.contains(index))
 		for(auto& [faction, farmField] : m_farmFields[index])
 			if(designation_has(index, faction, BlockDesignation::SowSeeds))
-				m_area.m_hasFarmFields.getForFaction(faction).removeSowSeedsDesignation(index);
+				m_area.m_hasFarmFields.getForFaction(faction).removeSowSeedsDesignation(m_area, index);
 }
 bool Blocks::farm_isSowingSeasonFor(const PlantSpeciesId& species) const
 {

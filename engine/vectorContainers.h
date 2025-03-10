@@ -23,8 +23,12 @@ public:
 	SmallSet(This&& other) { m_data = std::move(other.m_data); }
 	This& operator=(const This& other) { m_data = other.m_data; return *this; }
 	This& operator=(This&& other) { m_data = std::move(other.m_data); return *this; }
-	void fromJson(const Json& data) { data.get_to(m_data); }
 	[[nodiscard]] Json toJson() const { return m_data; }
+	void fromJson(const Json& data)
+	{
+		for(const Json& valueData : data)
+			m_data.emplace_back(valueData);
+	}
 	void insert(const T& value) { assert(!contains(value)); m_data.push_back(value); }
 	void maybeInsert(const T& value) { if(!contains(value)) m_data.push_back(value); }
 	void insert(std::vector<T>::const_iterator&& begin, std::vector<T>::const_iterator&& end)
@@ -221,6 +225,19 @@ public:
 	class const_iterator;
 	SmallSetStable() = default;
 	SmallSetStable(std::initializer_list<T> i) : m_data(i) { }
+	SmallSetStable(const Json& data) { fromJson(data); }
+	void fromJson(const Json& data)
+	{
+		for(const Json& valueData : data)
+			m_data.emplace_back(std::make_unique<T>(valueData));
+	}
+	[[nodiscard]] Json toJson() const
+	{
+		Json output = Json::array();
+		for(const std::unique_ptr<T>& value : m_data)
+			output.push_back(*value);
+		return output;
+	}
 	void insert(const std::unique_ptr<T> value) { assert(!contains(value)); m_data.push_back(std::move(value)); }
 	void maybeInsert(const std::unique_ptr<T>& value) { if(!contains(*value)) m_data.push_back(std::move(value)); }
 	void insert(This::iterator begin, This::iterator end)
@@ -248,11 +265,17 @@ public:
 	{
 		assert(iter != end());
 		assert(!m_data.empty());
-		*iter = std::move(m_data.back());
+		uint index = std::distance(m_data.begin(), iter.getIter());
+		m_data[index] = std::move(m_data.back());
 		m_data.pop_back();
 	}
+	void erase(T& value)
+	{
+		auto iter = find(value);
+		erase(iter);
+	}
 	template<typename Predicate>
-	void eraseIf(Predicate&& predicate) { std::erase_if(m_data, predicate); }
+	void eraseIf(Predicate&& predicate) { std::erase_if(m_data, [&](const std::unique_ptr<T>& value){ return predicate(*value); }); }
 	void clear() { m_data.clear(); }
 	template<typename ...Args>
 	void emplace(Args&& ...args)
@@ -288,14 +311,14 @@ public:
 	class iterator
 	{
 	protected:
-		std::vector<T>::iterator m_iter;
+		std::vector<std::unique_ptr<T>>::iterator m_iter;
 	public:
 		iterator(This& s, uint i) : m_iter(s.m_data.begin() + i) { }
-		iterator(std::vector<T>::iterator i) : m_iter(i) { }
+		iterator(std::vector<std::unique_ptr<T>>::iterator i) : m_iter(i) { }
 		iterator& operator++() { ++m_iter; return *this; }
 		iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
-		[[nodiscard]] T& operator*() { return *m_iter; }
-		[[nodiscard]] const T& operator*() const { return *m_iter; }
+		[[nodiscard]] T& operator*() { return **m_iter; }
+		[[nodiscard]] const T& operator*() const { return **m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] T* operator->() { return &*m_iter; }
@@ -303,29 +326,35 @@ public:
 		[[nodiscard]] iterator operator+(const iterator& other) { return m_iter - other.m_iter; }
 		[[nodiscard]] iterator& operator+=(const iterator& other) { m_iter += other.m_iter; return *this; }
 		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) { return m_iter <=> other.m_iter; }
+		[[nodiscard]] const auto& getIter() const { return m_iter; }
 		friend class const_iterator;
 	};
 	class const_iterator
 	{
 	protected:
-		std::vector<T>::const_iterator m_iter;
+		std::vector<std::unique_ptr<T>>::const_iterator m_iter;
 	public:
 		const_iterator(const This& s, uint i) : m_iter(s.m_data.begin() + i) { }
-		const_iterator(std::vector<T>::const_iterator i) : m_iter(i) { }
+		const_iterator(std::vector<std::unique_ptr<T>>::const_iterator i) : m_iter(i) { }
 		const_iterator(const const_iterator& i) : m_iter(i.m_iter) { }
 		const_iterator& operator++() { ++m_iter; return *this; }
 		const_iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		iterator& operator+=(const const_iterator& other) { m_iter += other.m_iter; return *this; }
-		[[nodiscard]] const T& operator*() const { return *m_iter; }
+		[[nodiscard]] const T& operator*() const { return **m_iter; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
-		[[nodiscard]] const T* operator->() const { return &*m_iter; }
+		[[nodiscard]] const T* operator->() const { return &**m_iter; }
 		[[nodiscard]] iterator operator-(const const_iterator& other) { return m_iter - other.m_iter; }
 		[[nodiscard]] iterator operator+(const const_iterator& other) const { return m_iter + other.m_iter; }
 		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
+		[[nodiscard]] const auto& getIter() const { return m_iter; }
 	};
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallSetStable, m_data);
 };
+// Define custom serialization / deserialization instead of using intrusive because nlohmann doesn't handle unique ptr.
+template<typename T>
+inline void to_json(Json& data, const SmallSetStable<T>& set) { data = set.toJson(); }
+template<typename T>
+inline void from_json(const Json& data, SmallSetStable<T>& set) { set.fromJson(data); }
 
 /*
  * A cache local map for small data sets made up of a vector of pairs.
@@ -494,6 +523,19 @@ public:
 	class const_iterator;
 	SmallMapStable() = default;
 	SmallMapStable(const std::initializer_list<std::pair<K, V>>& i) : m_data(i) { }
+	SmallMapStable(const Json& data) { fromJson(data); }
+	void fromJson(const Json& data)
+	{
+		for(const Json& pair : data)
+			m_data.emplace(pair[0], std::unique_ptr<V>(pair[1]));
+	}
+	[[nodiscard]] Json toJson() const
+	{
+		Json output = Json::array();
+		for(const auto& [key, value] : m_data)
+			output.push_back({key, *value});
+		return output;
+	}
 	auto insert(const K& key, std::unique_ptr<V>&& value) -> V& { m_data.insert(key, std::move(value)); return *m_data[key]; }
 	void erase(const K& key) { m_data.erase(key); }
 	void erase(const K&& key) { erase(key); }
@@ -572,5 +614,9 @@ public:
 		[[nodiscard]] iterator operator-(uint steps) { return m_iter - steps; }
 		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
 	};
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallMapStable, m_data);
 };
+// Define custom serialization / deserialization instead of using intrusive because nlohmann doesn't handle unique ptr.
+template<typename K, typename V>
+inline void to_json(Json& data, const SmallMapStable<K, V>& set) { data = set.toJson(); }
+template<typename K, typename V>
+inline void from_json(const Json& data, SmallMapStable<K, V>& set) { set.fromJson(data); }

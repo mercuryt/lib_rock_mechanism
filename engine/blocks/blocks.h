@@ -355,7 +355,6 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	void plant_setTemperature(const BlockIndex& index, const Temperature& temperature);
 	void plant_erase(const BlockIndex& index);
 	void plant_set(const BlockIndex& index, const PlantIndex& plant);
-	PlantIndex plant_get(const BlockIndex& index);
 	PlantIndex plant_get(const BlockIndex& index) const;
 	bool plant_canGrowHereCurrently(const BlockIndex& index, const PlantSpeciesId& plantSpecies) const;
 	bool plant_canGrowHereAtSomePointToday(const BlockIndex& index, const PlantSpeciesId& plantSpecies) const;

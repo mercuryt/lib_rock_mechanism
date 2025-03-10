@@ -94,7 +94,7 @@ TEST_CASE("haul")
 		simulation.doStep();
 		// One step to run the create subproject threaded task and set the strategy.
 		simulation.doStep();
-		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
+		const ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
 		CHECK(projectWorker.haulSubproject != nullptr);
 		CHECK(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
 		// Another step to find the path.
@@ -128,7 +128,7 @@ TEST_CASE("haul")
 		simulation.doStep();
 		CHECK(project.reservationsComplete());
 		CHECK(project.getWorkers().contains(dwarf1Ref));
-		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
+		const ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
 		CHECK(HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(area, dwarf1, cart, polymorphicChunk1, project.getMinimumHaulSpeed()) > 0);
 		// Another step to select the haul strategy and create the subproject.
 		simulation.doStep();
@@ -173,7 +173,7 @@ TEST_CASE("haul")
 		simulation.doStep();
 		// Another step to find the paths.
 		simulation.doStep();
-		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
+		const ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
 		CHECK(projectWorker.haulSubproject != nullptr);
 		CHECK(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Team);
 		CHECK(actors.objective_getCurrentName(dwarf1) == L"haul");
@@ -231,7 +231,7 @@ TEST_CASE("haul")
 		CHECK(haulParams.strategy == HaulStrategy::Panniers);
 		// Another step to select the haul strategy and create the subproject.
 		simulation.doStep();
-		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
+		const ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
 		CHECK(projectWorker.haulSubproject != nullptr);
 		CHECK(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Panniers);
 		// Another step to find the paths.
@@ -280,7 +280,7 @@ TEST_CASE("haul")
 		CHECK(haulParams.strategy == HaulStrategy::Panniers);
 		// Another step to select the haul strategy and create the subproject.
 		simulation.doStep();
-		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
+		const ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
 		CHECK(projectWorker.haulSubproject != nullptr);
 		CHECK(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Panniers);
 		// Another step to find the paths.
@@ -321,7 +321,7 @@ TEST_CASE("haul")
 		simulation.doStep();
 		// Another step to select the haul strategy and create the subproject.
 		simulation.doStep();
-		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
+		const ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
 		CHECK(projectWorker.haulSubproject != nullptr);
 		CHECK(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::AnimalCart);
 		// Another step to find the paths.
@@ -365,10 +365,10 @@ TEST_CASE("haul")
 		simulation.doStep();
 		// Another step to select the haul strategy and create the subproject.
 		simulation.doStep();
-		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
+		const ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
 		CHECK(projectWorker.haulSubproject != nullptr);
 		CHECK(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::TeamCart);
-		ProjectWorker& projectWorker2 = project.getProjectWorkerFor(dwarf2Ref);
+		const ProjectWorker& projectWorker2 = project.getProjectWorkerFor(dwarf2Ref);
 		CHECK(projectWorker2.haulSubproject != nullptr);
 		CHECK(projectWorker2.haulSubproject->getHaulStrategy() == HaulStrategy::TeamCart);
 		// Another step to find the paths.
@@ -430,7 +430,7 @@ TEST_CASE("haul")
 		CHECK(project.hasTryToHaulThreadedTask());
 		// One step to run the create subproject threaded task and set the strategy.
 		simulation.doStep();
-		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
+		const ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
 		CHECK(projectWorker.haulSubproject != nullptr);
 		CHECK(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
 		// Another step to find the path.

@@ -188,6 +188,7 @@
 	"staminaPointsPerRestPeriod": 10,
 	"stationPriority": 1500,
 	"stepsPerSecond": 5,
+	"secondsPerUnitFluidVolumeGivenToPlant": 2.5,
 	"stockPilePriority": 100,
 	"targetedHaulPriority": 500,
 	"threadedTaskBatchSize": 10,

@@ -55,8 +55,8 @@ TEST_CASE("json")
 		std::wstring name;
 		{
 			Cuboid farmBlocks{blocks, blocks.getIndex_i(1, 7, 1), blocks.getIndex_i(1, 6, 1)};
-			FarmField &farm = area.m_hasFarmFields.getForFaction(faction).create(farmBlocks);
-			area.m_hasFarmFields.getForFaction(faction).setSpecies(farm, sage);
+			FarmField &farm = area.m_hasFarmFields.getForFaction(faction).create(area, farmBlocks);
+			area.m_hasFarmFields.getForFaction(faction).setSpecies(area, farm, sage);
 			ActorIndex dwarf1 = actors.create({
 				.species = dwarf,
 				.percentGrown = Percent::create(90),
@@ -227,7 +227,7 @@ TEST_CASE("json")
 		DigObjective& objective = actors2.objective_getCurrent<DigObjective>(dwarf2);
 		CHECK(objective.getProject() == actors2.project_get(dwarf2));
 		ActorReference dwarf2Ref = area2.getActors().m_referenceData.getReference(dwarf2);
-		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf2Ref);
+		const ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf2Ref);
 		CHECK(projectWorker.haulSubproject);
 		CHECK(projectWorker.objective == &actors2.objective_getCurrent<Objective>(dwarf2));
 		HaulSubproject& haulSubproject = *projectWorker.haulSubproject;
@@ -481,8 +481,8 @@ TEST_CASE("json")
 		Point3D coordinates1;
 		{
 			Cuboid farmBlocks{blocks, blocks.getIndex_i(1, 7, 1), blocks.getIndex_i(1, 6, 1)};
-			FarmField &farm = area.m_hasFarmFields.getForFaction(faction).create(farmBlocks);
-			area.m_hasFarmFields.getForFaction(faction).setSpecies(farm, sage);
+			FarmField &farm = area.m_hasFarmFields.getForFaction(faction).create(area, farmBlocks);
+			area.m_hasFarmFields.getForFaction(faction).setSpecies(area, farm, sage);
 			ActorIndex dwarf1 = actors.create({
 				.species = dwarf,
 				.percentGrown = Percent::create(90),
@@ -529,8 +529,8 @@ TEST_CASE("json")
 			plants.setQuantityToHarvest(plant);
 			CHECK(plants.getQuantityToHarvest(plant) != 0);
 			Cuboid farmBlocks{blocks, blocks.getIndex_i(1, 7, 1), blocks.getIndex_i(1, 6, 1)};
-			FarmField &farm = area.m_hasFarmFields.getForFaction(faction).create(farmBlocks);
-			area.m_hasFarmFields.getForFaction(faction).setSpecies(farm, wheatGrass);
+			FarmField &farm = area.m_hasFarmFields.getForFaction(faction).create(area, farmBlocks);
+			area.m_hasFarmFields.getForFaction(faction).setSpecies(area, farm, wheatGrass);
 			ActorIndex dwarf1 = actors.create({.species = dwarf,
 				.percentGrown = Percent::create(90),
 				.location = blocks.getIndex_i(5, 5, 1),
@@ -568,8 +568,8 @@ TEST_CASE("json")
 			plants.setMaybeNeedsFluid(plant);
 			CHECK(plants.getVolumeFluidRequested(plant) != 0);
 			Cuboid farmBlocks{blocks, blocks.getIndex_i(1, 7, 1), blocks.getIndex_i(1, 6, 1)};
-			FarmField &farm = area.m_hasFarmFields.getForFaction(faction).create(farmBlocks);
-			area.m_hasFarmFields.getForFaction(faction).setSpecies(farm, wheatGrass);
+			FarmField &farm = area.m_hasFarmFields.getForFaction(faction).create(area, farmBlocks);
+			area.m_hasFarmFields.getForFaction(faction).setSpecies(area, farm, wheatGrass);
 			ActorIndex dwarf1 = actors.create({.species = dwarf,
 				.percentGrown = Percent::create(90),
 				.location = blocks.getIndex_i(5, 5, 1),
@@ -588,12 +588,9 @@ TEST_CASE("json")
 		}
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
-		Blocks& blocks2 = area2.getBlocks();
 		Actors& actors2 = area2.getActors();
 		ActorIndex dwarf2 = simulation2.m_actors.getIndexForId(dwarf1Id);
 		Objective& objective2 = actors2.objective_getCurrent<Objective>(dwarf2);
 		CHECK(objective2.name() == L"give plants fluid");
-		GivePlantsFluidObjective& givePlantsFluidObjective = static_cast<GivePlantsFluidObjective&>(objective2);
-		CHECK(givePlantsFluidObjective.getPlantLocation() == blocks2.getIndex_i(1,7,1));
 	}
 }

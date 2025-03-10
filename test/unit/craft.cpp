@@ -120,7 +120,7 @@ TEST_CASE("craft")
 		CHECK(actors.objective_getCurrentName(dwarf1) == L"craft: wood working");
 		CHECK(job->craftStepProject->reservationsComplete());
 		CHECK(job->craftStepProject->getWorkers().contains(dwarf1Ref));
-		ProjectWorker& projectWorker = job->craftStepProject->getProjectWorkerFor(dwarf1Ref);
+		const ProjectWorker& projectWorker = job->craftStepProject->getProjectWorkerFor(dwarf1Ref);
 		// Select a haul subproject.
 		simulation.doStep();
 		CHECK(projectWorker.haulSubproject != nullptr);
@@ -154,7 +154,7 @@ TEST_CASE("craft")
 			CHECK(actors.objective_getCurrentName(dwarf1) == L"craft: assembling");
 			CHECK(job->craftStepProject->reservationsComplete());
 			CHECK(job->craftStepProject->getWorkers().contains(dwarf1Ref));
-			ProjectWorker& projectWorker2 = job->craftStepProject->getProjectWorkerFor(dwarf1Ref);
+			const ProjectWorker& projectWorker2 = job->craftStepProject->getProjectWorkerFor(dwarf1Ref);
 			// Select a haul subproject.
 			simulation.doStep();
 			CHECK(projectWorker2.haulSubproject != nullptr);

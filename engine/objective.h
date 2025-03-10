@@ -93,6 +93,7 @@ public:
 	// Records projects which have failed to reserve requirements so as not to retry them with this objective instance.
 	// Will be 'flushed' when this instance is destroyed and then another objective of this type is created later, after objectivePrioritySet delay ends.
 	virtual void onProjectCannotReserve(Area&, const ActorIndex&) { }
+	virtual void onBeforeUnload(Area&, const ActorIndex&) { }
 	void detour(Area& area, const ActorIndex& actor) { m_detour = true; execute(area, actor); }
 	[[nodiscard]] virtual std::wstring name() const = 0;
 	// TODO: This is silly.

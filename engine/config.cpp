@@ -13,6 +13,7 @@ void Config::load()
 	stepsPerHour = Step::create(stepsPerMinute.get() * minutesPerHour);
 	stepsPerDay = Step::create(stepsPerHour.get() * hoursPerDay);
 	stepsPerYear = Step::create(stepsPerDay.get() * daysPerYear);
+	stepsPerUnitFluidVolumeGivenToPlant = Step::create(data["secondsPerUnitFluidVolumeGivenToPlant"].get<float>() * stepsPerSecond.get());
 	//data["medicalPriority"].get_to(medicalPriority);
 	//data["medicalProjectDelayMinutes"].get_to(medicalProjectDelaySteps);
 	addToStockPileDelaySteps = Step::create(data["addToStockPileDelaySeconds"].get<float>() * stepsPerSecond.get());

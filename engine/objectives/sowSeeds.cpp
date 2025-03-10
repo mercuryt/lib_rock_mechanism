@@ -130,7 +130,7 @@ void SowSeedsObjective::cancel(Area& area, const ActorIndex& actor)
 			return;
 		//TODO: check it is still planting season.
 		if(blocks.plant_canGrowHereAtSomePointToday(m_block, field->plantSpecies))
-			area.m_hasFarmFields.getForFaction(faction).addSowSeedsDesignation(m_block);
+			area.m_hasFarmFields.getForFaction(faction).addSowSeedsDesignation(area, m_block);
 	}
 }
 void SowSeedsObjective::select(Area& area, const BlockIndex& block, const ActorIndex& actor)
@@ -141,7 +141,7 @@ void SowSeedsObjective::select(Area& area, const BlockIndex& block, const ActorI
 	assert(blocks.farm_contains(block, actors.getFaction(actor)));
 	assert(m_block.empty());
 	m_block = block;
-	area.m_hasFarmFields.getForFaction(actors.getFaction(actor)).removeSowSeedsDesignation(block);
+	area.m_hasFarmFields.getForFaction(actors.getFaction(actor)).removeSowSeedsDesignation(area, block);
 }
 void SowSeedsObjective::begin(Area& area, const ActorIndex& actor)
 {

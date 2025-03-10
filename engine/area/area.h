@@ -105,6 +105,7 @@ public:
 	std::wstring m_name;
 	Simulation& m_simulation;
 	AreaId m_id;
+	bool m_destroy = false;
 	//WorldLocation* m_worldLocation;
 
 	// Create blocks and store adjacent

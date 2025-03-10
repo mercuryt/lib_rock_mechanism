@@ -6,6 +6,7 @@
 #include "../reservable.h"
 #include "../path/terrainFacade.h"
 #include "../types.h"
+#include "../projects/givePlantFluid.h"
 
 #include <memory>
 
@@ -13,16 +14,6 @@ class GivePlantsFluidObjective;
 struct DeserializationMemo;
 struct FindPathResult;
 
-class GivePlantsFluidEvent final : public ScheduledEvent
-{
-	ActorReference m_actor;
-	GivePlantsFluidObjective& m_objective;
-public:
-	GivePlantsFluidEvent(const Step& step, Area& area, GivePlantsFluidObjective& gpfo, const ActorIndex& actor, const Step start = Step::null());
-	void execute(Simulation& simulation, Area* area);
-	void clearReferences(Simulation& simulation, Area* area);
-	void onCancel(Simulation& simulation, Area* area);
-};
 // Path to an empty water proof container or somewhere to fill an empty container or a container with the correct type of fluid or a plant which needs fluid.
 class GivePlantsFluidPathRequest final : public PathRequestBreadthFirst
 {
@@ -46,30 +37,21 @@ public:
 };
 class GivePlantsFluidObjective final : public Objective
 {
-	BlockIndex m_plantLocation;
-	ItemReference m_fluidHaulingItem;
-	HasScheduledEvent<GivePlantsFluidEvent> m_event;
+	std::unique_ptr<GivePlantFluidProject> m_project;
 public:
-	GivePlantsFluidObjective(Area& area);
-	GivePlantsFluidObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo);
+	GivePlantsFluidObjective() : Objective(Config::givePlantsFluidPriority) { }
+	GivePlantsFluidObjective(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	void execute(Area& area, const ActorIndex& actor);
-	void cancel(Area& area, const ActorIndex& actor);
-	void fillContainer(Area& area, const BlockIndex& fillLocation, const ActorIndex& actor);
-	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
+	void execute(Area& area, const ActorIndex& actor) override;
+	void cancel(Area& area, const ActorIndex& actor) override;
+	void reset(Area& area, const ActorIndex& actor) override;
+	void delay(Area& area, const ActorIndex& actor) override;
 	void selectPlantLocation(Area& area, const BlockIndex& block, const ActorIndex& actor);
-	void selectItem(Area& area, const ItemIndex& item, const ActorIndex& actor);
-	void reset(Area& area, const ActorIndex& actor);
 	void makePathRequest(Area& area, const ActorIndex& actor);
-	[[nodiscard]] std::wstring name() const { return L"give plants fluid"; }
-	[[nodiscard]] bool canFillAt(Area& area, const BlockIndex& block) const;
-	[[nodiscard]] ItemIndex getItemToFillFromAt(Area& area, const BlockIndex& block) const;
-	[[nodiscard]] bool canGetFluidHaulingItemAt(Area& area, const BlockIndex& location, const ActorIndex& actor) const;
-	[[nodiscard]] ItemIndex getFluidHaulingItemAt(Area& area, const BlockIndex& location, const ActorIndex& actor) const;
-	friend class GivePlantsFluidEvent;
+	void onBeforeUnload(Area&, const ActorIndex&) override;
+	[[nodiscard]] std::wstring name() const override { return L"give plants fluid"; }
+	//For testing.
+	[[nodiscard]] bool hasProject() const { return m_project != nullptr; }
+	[[nodiscard]] const GivePlantFluidProject& getProject() const { return *m_project; }
 	friend class GivePlantsFluidPathRequest;
-	// For testing.
-	[[nodiscard]] BlockIndex getPlantLocation() const { return m_plantLocation; }
-	[[nodiscard]] bool itemExists() const { return m_fluidHaulingItem.exists(); }
-	[[nodiscard]] ItemReference getItem() const { return m_fluidHaulingItem; }
 };

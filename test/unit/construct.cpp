@@ -95,7 +95,7 @@ TEST_CASE("construct")
 		CHECK(project.getToPickup().size() == 3);
 		// Select a haul strategy and create a subproject.
 		simulation.doStep();
-		ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
+		const ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
 		CHECK(projectWorker.haulSubproject != nullptr);
 		CHECK(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
 		// Find a path to the first item.
@@ -246,7 +246,7 @@ TEST_CASE("construct")
 		// Select a haul strategy and create a subproject for dwarf1, dwarf2 tries again to activate project2, this time failing to find required unreserved items and activating prohibition on the project at the objective instance.
 		simulation.doStep();
 		CHECK(!actors.objective_getCurrent<ConstructObjective>(dwarf2).getProjectWhichActorCanJoinAt(area, wallLocation2, dwarf2));
-		ProjectWorker& projectWorker1 = project1->getProjectWorkerFor(dwarf1Ref);
+		const ProjectWorker& projectWorker1 = project1->getProjectWorkerFor(dwarf1Ref);
 		CHECK(projectWorker1.haulSubproject != nullptr);
 		CHECK(project1->getWorkers().size() == 1);
 		CHECK(!project2->hasCandidate(dwarf2));

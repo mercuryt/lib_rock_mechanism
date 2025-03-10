@@ -67,7 +67,7 @@ std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data, 
 	else if(name == L"get To safe temperature")
 		output =  std::make_unique<GetToSafeTemperatureObjective>(data, *this);
 	else if(name == L"give plants fluid")
-		output =  std::make_unique<GivePlantsFluidObjective>(data, area, actor, *this);
+		output =  std::make_unique<GivePlantsFluidObjective>(data, area, *this);
 	else if(name == L"go to")
 		output =  std::make_unique<GoToObjective>(data, *this);
 	else if(name == L"harvest")

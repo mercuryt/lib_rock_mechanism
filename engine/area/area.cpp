@@ -119,7 +119,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load plants.
 	getPlants().load(data["plants"]);
 	// Load fields.
-	m_hasFarmFields.load(data["hasFarmFields"], deserializationMemo);
+	m_hasFarmFields.load(data["hasFarmFields"]);
 	// Load Items.
 	getItems().load(data["items"]);
 	// Load Actors.
@@ -160,11 +160,17 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 }
 Area::~Area()
 {
+	m_destroy = true;
 	// Explicitly clear event schedule, threaded tasks, and path requests before destructing data tables because they have custom destructors which remove their references. These destructors must be called before the things they refer to are destroyed.
 	m_eventSchedule.clear();
 	// Threaded task engine needs to have simulation and area passed while event schedule does not because event schedule stores those references.
 	m_threadedTaskEngine.clear(m_simulation, this);
 	m_hasTerrainFacades.clearPathRequests();
+	// Call onBeforeUnload on all objectives. Currently only used to clear GivePlantFluid.
+	Actors& actors = getActors();
+	for(const ActorIndex& actor : actors.getAll())
+		if(actors.objective_exists(actor))
+			actors.objective_getCurrent<Objective>(actor).onBeforeUnload(*this, actor);
 }
 Json Area::toJson() const
 {

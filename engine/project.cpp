@@ -65,6 +65,21 @@ void ProjectTryToReserveEvent::execute(Simulation&, Area*)
 }
 void ProjectTryToReserveEvent::clearReferences(Simulation&, Area*) { m_project.m_tryToReserveEvent.clearPointer(); }
 
+FluidRequirementData::FluidRequirementData(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
+	counts(data["counts"].get<ProjectRequirementCounts>()),
+	volumeRequired(data["volumeRequired"].get<CollisionVolume>()),
+	volumeFound(data["volumeFound"].get<CollisionVolume>())
+{
+	Items& items = area.getItems();
+	deserializationMemo.m_projectRequirementCounts[data["counts"]["address"].get<uintptr_t>()] = &counts;
+	for(const Json& pair : data["containersAndVolumes"])
+	{
+		ItemReference ref(pair[0], items.m_referenceData);
+		containersAndVolumes.insert(ref, pair[1].get<CollisionVolume>());
+	}
+}
+
+
 ProjectTryToMakeHaulSubprojectThreadedTask::ProjectTryToMakeHaulSubprojectThreadedTask(Project& p) : m_project(p) { }
 void ProjectTryToMakeHaulSubprojectThreadedTask::readStep(Simulation&, Area*)
 {
@@ -125,7 +140,9 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep(Simulation&, Area* ar
 		ActorOrItemReference ref = m_haulProjectParamaters.toHaul;
 		if(
 			(
-				ref.isItem() && m_project.m_itemsToPickup[ref.toItemReference()].second < m_haulProjectParamaters.quantity
+				ref.isItem() &&
+				m_haulProjectParamaters.fluidType.empty() &&
+				m_project.m_itemsToPickup[ref.toItemReference()].second < m_haulProjectParamaters.quantity
 			) ||
 			!m_haulProjectParamaters.validate(m_project.m_area)
 		)
@@ -142,11 +159,16 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep(Simulation&, Area* ar
 			HaulSubproject& subproject = m_project.m_haulSubprojects.emplace_back(m_project, m_haulProjectParamaters);
 			// Remove the target of the new haulSubproject from m_toPickup.
 			if(m_haulProjectParamaters.toHaul.isItem())
-				m_project.removeItemToPickup(m_haulProjectParamaters.toHaul.toItemReference(), m_haulProjectParamaters.quantity);
+			{
+				if(m_haulProjectParamaters.fluidType.exists())
+					m_project.removeFluidContainerToPickup(m_haulProjectParamaters.toHaul.toItemReference());
+				else
+					m_project.removeItemToPickup(m_haulProjectParamaters.toHaul.toItemReference(), m_haulProjectParamaters.quantity);
+			}
 			else
 				m_project.removeActorToPickup(m_haulProjectParamaters.toHaul.toActorReference());
 			m_project.onSubprojectCreated(subproject);
-			if(m_project.m_itemsToPickup.empty())
+			if(m_project.m_itemsToPickup.empty() && m_project.m_actorsToPickup.empty() && m_project.m_fluidContainersToPickup.empty())
 			{
 				// All subprojects have been dispatched, any remaining workers are sent to the project site.
 				// TODO: could be optimized maybe.
@@ -189,7 +211,7 @@ bool ProjectTryToMakeHaulSubprojectThreadedTask::blockContainsDesiredItemOrActor
 			if(m_haulProjectParamaters.strategy != HaulStrategy::None)
 				return true;
 		}
-		if(m_project.itemIsFluidContainer(itemRef))
+		if(m_project.m_fluidContainersToPickup.contains(itemRef))
 		{
 			ActorOrItemReference ref = ActorOrItemReference::createForItem(itemRef);
 			FluidTypeId fluidType = m_project.getFluidTypeForContainer(itemRef);
@@ -224,6 +246,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 	SmallSet<ActorIndex> recordedActors;
 	Actors& actors = m_project.m_area.getActors();
 	Items& items = m_project.m_area.getItems();
+	Blocks& blocks = m_project.m_area.getBlocks();
 	for(auto& [candidate, objective] : m_project.m_workerCandidatesAndTheirObjectives)
 	{
 		assert(!m_project.m_making.contains(candidate));
@@ -305,14 +328,40 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 			{
 				// Remove volume from m_requiredFluids and tranfer it to m_requiredFluidContainers.
 				// Once m_requiredFluids is empty all containers needed will have been assigned and reserved.
-				auto& requirementCounts = m_project.m_requiredFluids[fluidType];
+				auto& fluidData = m_project.m_requiredFluids[fluidType];
+				auto& requirementCounts = fluidData.counts;
 				auto remaining = requirementCounts.required - requirementCounts.reserved;
 				CollisionVolume volume = std::min(ItemType::getInternalVolume(items.getItemType(item)).toCollisionVolume(), CollisionVolume::create(remaining.get()));
-				// copy fluidType becase it is a refence to m_requiredFluids which is about to be invalidated.
-				auto fluidTypeCopy = fluidType;
 				requirementCounts.reserved += volume.get();
 				ItemReference ref = items.getReference(item);
-				m_project.m_requiredFluidContainers.getOrCreate(fluidTypeCopy).insert(ref, volume);
+				fluidData.containersAndVolumes.insert(ref, volume);
+				const CollisionVolume& contains = items.cargo_getFluidVolume(item);
+				if(contains != 0)
+					fluidData.volumeFound += contains;
+				if(
+					items.getBlocks(item).contains(m_project.m_location) ||
+					items.isAdjacentToLocation(item, m_project.m_location)
+				)
+				{
+					// Required container is already at or next to project location.
+					// Requirements counts reserved refers only to capacity but delivered includes volume as well.
+					requirementCounts.delivered += contains.get();
+					assert(requirementCounts.delivered <= requirementCounts.reserved);
+					assert(!m_itemAlreadyAtSite.contains(ref));
+					m_itemAlreadyAtSite.insert(ref, Quantity::create(1));
+				}
+				else
+					m_project.m_fluidContainersToPickup.insert(ref);
+			};
+			auto recordFluidOnGround = [&](const FluidTypeId& fluidType, const BlockIndex& block)
+			{
+				auto& fluidData = m_project.m_requiredFluids[fluidType];
+				if(fluidData.foundBlocks.contains(block))
+					return;
+				fluidData.foundBlocks.insert(block);
+				CollisionVolume volumeFound = blocks.fluid_volumeOfTypeContains(block, fluidType);
+				CollisionVolume toRecord = std::min(volumeFound, fluidData.volumeRequired - fluidData.volumeFound);
+				fluidData.volumeFound += toRecord;
 			};
 			// Verfy the worker can path to the required materials. Cumulative for all candidates in this step but reset if not satisfied.
 			// capture by reference is used here because the pathing is being done immideatly instead of batched.
@@ -356,6 +405,19 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 							return std::make_pair(true, block);
 					}
 				}
+				for(const FluidData& fluidData : blocks.fluid_getAll(block))
+				{
+					if(m_project.m_requiredFluids.contains(fluidData.type))
+					{
+						auto& requiredData = m_project.m_requiredFluids[fluidData.type];
+						if(requiredData.volumeFound < requiredData.volumeRequired)
+						{
+							recordFluidOnGround(fluidData.type, block);
+							if(m_project.reservationsComplete())
+								return std::make_pair(true, block);
+						}
+					}
+				}
 				return std::make_pair(false, BlockIndex::null());
 			};
 			// TODO: Path is not used, find path is run for side effects of predicate.
@@ -389,8 +451,8 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 			items.onDestroy_subscribe(item.getIndex(items.m_referenceData), m_hasOnDestroy);
 		for(const ActorReference& actor : m_project.m_actorsToPickup)
 			actors.onDestroy_subscribe(actor.getIndex(actors.m_referenceData), m_hasOnDestroy);
-		for(const auto& [fluidType, containersAndVolumes] : m_project.m_requiredFluidContainers)
-			for(const auto& [container, volume] : containersAndVolumes)
+		for(const auto& [fluidType, fluidData] : m_project.m_requiredFluids)
+			for(const auto& [container, volume] : fluidData.containersAndVolumes)
 				items.onDestroy_subscribe(container.getIndex(items.m_referenceData), m_hasOnDestroy);
 	}
 }
@@ -445,8 +507,8 @@ void ProjectTryToAddWorkersThreadedTask::writeStep(Simulation&, Area*)
 			m_project.m_itemAlreadyAtSite = m_itemAlreadyAtSite;
 			m_project.m_actorAlreadyAtSite = m_actorAlreadyAtSite;
 			// Reserve fluid containers.
-			for(const auto& [fluidType, containersAndVolumes] : m_project.m_requiredFluidContainers)
-				for(const auto& [container, volume] : containersAndVolumes)
+			for(const auto& [fluidType, fluidData] : m_project.m_requiredFluids)
+				for(const auto& [container, volume] : fluidData.containersAndVolumes)
 				{
 					std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(m_project);
 					ItemIndex index = container.getIndex(items.m_referenceData);
@@ -534,8 +596,8 @@ bool ProjectTryToAddWorkersThreadedTask::validate()
 			return false;
 	}
 	// Ensure all fluid containers are still reservable.
-	for(const auto& [fluidType, itemsAndVolumes] : m_project.m_requiredFluidContainers)
-		for(const auto& [containerRef, volume] : itemsAndVolumes)
+	for(const auto& [fluidType, fluidData] : m_project.m_requiredFluids)
+		for(const auto& [containerRef, volume] : fluidData.containersAndVolumes)
 			if(items.reservable_exists(containerRef.getIndex(items.m_referenceData), m_project.m_faction))
 				return false;
 	for(auto& pair : m_reservedEquipment)
@@ -551,16 +613,19 @@ void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 		pair.second.reserved = Quantity::create(0);
 		pair.second.delivered = Quantity::create(0);
 	}
-	for(auto& pair : m_project.m_requiredFluids)
+	for(auto& [fluidType, fluidData] : m_project.m_requiredFluids)
 	{
-		pair.second.reserved = Quantity::create(0);
-		pair.second.delivered = Quantity::create(0);
+		fluidData.counts.reserved = Quantity::create(0);
+		fluidData.counts.delivered = Quantity::create(0);
+		fluidData.volumeFound = CollisionVolume::create(0);
+		fluidData.foundBlocks.clear();
 	}
 	m_project.m_itemsToPickup.clear();
 	m_project.m_actorsToPickup.clear();
+	m_project.m_fluidContainersToPickup.clear();
 	m_project.m_itemAlreadyAtSite.clear();
 	m_project.m_actorAlreadyAtSite.clear();
-	m_project.m_requiredFluidContainers.clear();
+	m_project.m_requiredFluids.clear();
 }
 // Derived classes are expected to provide getDuration, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete.
 Project::Project(const FactionId& f, Area& a, const BlockIndex& l, const Quantity& mw, std::unique_ptr<DishonorCallback> locationDishonorCallback) :
@@ -610,19 +675,7 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo, Are
 		for(const Json& pair : data["requiredFluids"])
 		{
 			FluidTypeId fluidType = pair[0].get<FluidTypeId>();
-			m_requiredFluids.insert(fluidType, pair[1]);
-			deserializationMemo.m_projectRequirementCounts[pair[1]["address"].get<uintptr_t>()] = &m_requiredFluids[fluidType];
-		}
-	if(data.contains("requiredFluidContainers"))
-		for(const Json& pair : data["requiredFluidContainers"])
-		{
-			FluidTypeId fluidType = pair[0].get<FluidTypeId>();
-			for(const Json& pair2 : pair[1])
-			{
-				ItemReference container(pair2[0], items.m_referenceData);
-				CollisionVolume volume = pair2[1].get<CollisionVolume>();
-				m_requiredFluidContainers.getOrCreate(fluidType).insert(container, volume);
-			}
+			m_requiredFluids.emplace(fluidType, pair[1], deserializationMemo, area);
 		}
 	if(data.contains("toConsume"))
 		for(const Json& pair : data["toConsume"])
@@ -643,6 +696,12 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo, Are
 		{
 			ActorReference ref(refData, actors.m_referenceData);
 			m_actorsToPickup.insert(ref);
+		}
+	if(data.contains("fluidContainersToPickup"))
+		for(const Json& itemRefData : data["fluidContainersToPickup"])
+		{
+			ItemReference ref(itemRefData, items.m_referenceData);
+			m_fluidContainersToPickup.insert(ref);
 		}
 	if(data.contains("itemAlreadyAtSite"))
 		for(const Json& pair : data["itemAlreadyAtSite"])
@@ -731,27 +790,13 @@ Json Project::toJson() const
 	}
 	if(!m_requiredActors.empty())
 		data["requiredActors"] = m_requiredActors;
-	if(!m_requiredFluidContainers.empty())
-	{
-		data["requiredFluidContainers"] = Json::object();
-		for(const auto& [fluidType, containersAndVolumes] : m_requiredFluidContainers)
-		{
-			data["requiredFluidContainers"][fluidType.get()] = Json::array();
-			for(const auto& [container, volume] : containersAndVolumes)
-			{
-				Json pair({container, volume});
-				data["requiredFluidContainers"][fluidType.get()].push_back(pair);
-			}
-		}
-	}
 	if(!m_requiredFluids.empty())
 	{
 		data["requiredFluids"] = Json::array();
-		for(const auto& [fluidType, counts] : m_requiredFluids)
+		for(const auto& [fluidType, fluidData] : m_requiredFluids)
 		{
-			Json pair({fluidType, counts});
+			Json pair({fluidType, fluidData.toJson()});
 			data["requiredFluids"].push_back(pair);
-			pair[1]["address"] = reinterpret_cast<uintptr_t>(&counts);
 		}
 	}
 	if(!m_toConsume.empty())
@@ -768,6 +813,8 @@ Json Project::toJson() const
 	}
 	if(!m_actorsToPickup.empty())
 		data["actorsToPickup"] = m_actorsToPickup;
+	if(!m_fluidContainersToPickup.empty())
+		data["fluidContainersToPickup"] = m_fluidContainersToPickup;
 	if(!m_itemAlreadyAtSite.empty())
 	{
 		data["itemAlreadyAtSite"] = Json::array();
@@ -811,8 +858,10 @@ bool Project::reservationsComplete() const
 			return false;
 	if(m_requiredActors.size() > m_actorAlreadyAtSite.size() + m_actorsToPickup.size())
 		return false;
-	for(const auto& pair : m_requiredFluids)
-		if(pair.second.required > pair.second.reserved)
+	for(const auto& [fluidType, fluidData] : m_requiredFluids)
+		// Check if we have reserved enough carrying capacity and have found enough fluid.
+		// The fluid cannot be reserved.
+		if(fluidData.counts.required > fluidData.counts.reserved || fluidData.volumeRequired > fluidData.volumeFound)
 			return false;
 	return true;
 }
@@ -823,8 +872,8 @@ bool Project::deliveriesComplete() const
 			return false;
 	if(m_requiredActors.size() > m_deliveredActors.size())
 		return false;
-	for(auto& pair : m_requiredFluids)
-		if(pair.second.required > pair.second.delivered)
+	for(const auto& [fluidType, fluidData] : m_requiredFluids)
+		if(fluidData.counts.required > fluidData.counts.delivered)
 			return false;
 	return true;
 }
@@ -844,7 +893,7 @@ void Project::recordRequiredActorsAndItemsAndFluids()
 	for(const ActorReference& actorRef : getActors())
 		m_requiredActors.push_back(actorRef);
 	for(const auto& [fluidType, volume] : getFluids())
-		m_requiredFluids.insert(fluidType, {Quantity::create(volume.get()), true});
+		m_requiredFluids.insert(fluidType, volume);
 }
 void Project::addWorker(const ActorIndex& actor, Objective& objective)
 {
@@ -904,7 +953,7 @@ void Project::commandWorker(const ActorIndex& actor)
 			else
 				actors.move_setDestinationAdjacentToLocation(actor, m_location, m_workers[actorRef].objective->m_detour);
 		}
-		else if(m_itemsToPickup.empty() && m_actorsToPickup.empty())
+		else if(m_itemsToPickup.empty() && m_actorsToPickup.empty() && m_fluidContainersToPickup.empty())
 		{
 			if(actors.isAdjacentToLocation(actor, m_location))
 			{
@@ -1021,20 +1070,10 @@ void Project::complete()
 		item.clear();
 		items.removeQuantity(index, quantity);
 	}
-	for(auto& [fluidType, volume] : getFluids())
+	for(auto& [fluidType, fluidData] : m_requiredFluids)
 	{
-		for(auto& [itemRef, quantity] : m_deliveredItems)
-		{
-			const ItemIndex& itemIndex = itemRef.getIndex(items.m_referenceData);
-			if(items.cargo_containsFluidType(itemIndex, fluidType))
-			{
-				CollisionVolume toRemoveVolume = std::min(items.cargo_getFluidVolume(itemIndex), volume);
-				items.cargo_removeFluid(itemIndex, toRemoveVolume);
-				volume -= toRemoveVolume;
-				if(volume == 0)
-					break;
-			}
-		}
+		for(auto& [container, volume] : fluidData.containersAndVolumes)
+			items.cargo_removeFluid(container.getIndex(items.m_referenceData), volume);
 	}
 	if(!m_area.m_hasStockPiles.contains(m_faction))
 		m_area.m_hasStockPiles.registerFaction(m_faction);
@@ -1163,6 +1202,10 @@ void Project::removeActorToPickup(const ActorReference& actor)
 {
 	m_actorsToPickup.erase(actor);
 }
+void Project::removeFluidContainerToPickup(const ItemReference& item)
+{
+	m_fluidContainersToPickup.erase(item);
+}
 void Project::reset()
 {
 	Actors& actors = m_area.getActors();
@@ -1177,6 +1220,7 @@ void Project::reset()
 	m_requiredItems.clear();
 	m_requiredActors.clear();
 	m_itemsToPickup.clear();
+	m_fluidContainersToPickup.clear();
 	// I guess we are doing this in case requirements change. Probably not needed.
 	m_requirementsLoaded = false;
 	ActorIndices workersAndCandidates = getWorkersAndCandidates();
@@ -1200,23 +1244,23 @@ bool Project::canAddWorker(const ActorIndex& actor) const
 }
 bool Project::itemIsFluidContainer(const ItemReference& item) const
 {
-	for(const auto& [fluidType, containersAndVolumes] : m_requiredFluidContainers)
-		if(containersAndVolumes.contains(item))
+	for(const auto& [fluidType, fluidData] : m_requiredFluids)
+		if(fluidData.containersAndVolumes.contains(item))
 			return true;
 	return false;
 }
 FluidTypeId Project::getFluidTypeForContainer(const ItemReference& item) const
 {
-	for(const auto& [fluidType, containersAndVolumes] : m_requiredFluidContainers)
-		if(containersAndVolumes.contains(item))
+	for(const auto& [fluidType, fluidData] : m_requiredFluids)
+		if(fluidData.containersAndVolumes.contains(item))
 			return fluidType;
 	std::unreachable();
 }
 CollisionVolume Project::getFluidVolumeForContainer(const ItemReference& item) const
 {
-	for(const auto& [fluidType, containersAndVolumes] : m_requiredFluidContainers)
-		if(containersAndVolumes.contains(item))
-			return containersAndVolumes[item];
+	for(const auto& [fluidType, fluidData] : m_requiredFluids)
+		if(fluidData.containersAndVolumes.contains(item))
+			return fluidData.containersAndVolumes[item];
 	std::unreachable();
 }
 void Project::clearReservations()

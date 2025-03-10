@@ -76,7 +76,7 @@ public:
 	void addWorker(const ActorIndex& actor);
 	void removeWorker(const ActorIndex& actor);
 	void cancel();
-	static HaulSubprojectParamaters tryToSetHaulStrategy(const Project& project, const ActorOrItemReference& hasShape, const ActorIndex& worker, const FluidTypeId& fluidType, const CollisionVolume& fluidVolume);
+	static HaulSubprojectParamaters tryToSetHaulStrategy(Project& project, const ActorOrItemReference& hasShape, const ActorIndex& worker, const FluidTypeId& fluidType, const CollisionVolume& fluidVolume);
 	static ActorIndices actorsNeededToHaulAtMinimumSpeed(const Project& project, const ActorIndex& leader, const ActorOrItemIndex& toHaul);
 	[[nodiscard]] static Quantity maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const Area& area, const ActorIndex& leader, const ItemIndex& haulTool, const ActorOrItemIndex& toHaul, const Speed& minimumSpeed);
 	[[nodiscard]] static Speed getSpeedWithHaulToolAndCargo(const Area& area, const ActorIndex& leader, const ItemIndex& haulTool, const ActorOrItemIndex& toHaul, const Quantity& quantity);

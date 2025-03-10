@@ -71,7 +71,7 @@ bool Blocks::plant_anythingCanGrowHereEver(const BlockIndex& index) const
 		return false;
 	return true;
 }
-PlantIndex Blocks::plant_get(const BlockIndex& index)
+PlantIndex Blocks::plant_get(const BlockIndex& index) const
 {
 	return m_plants[index];
 }

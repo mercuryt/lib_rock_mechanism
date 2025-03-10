@@ -45,6 +45,35 @@ struct ProjectRequirementCounts final
 	ProjectRequirementCounts& operator=(const ProjectRequirementCounts& other) = default;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ProjectRequirementCounts, required, delivered, reserved, consumed);
 };
+struct FluidRequirementData final
+{
+	ProjectRequirementCounts counts;
+	SmallMap<ItemReference, CollisionVolume> containersAndVolumes;
+	SmallSet<BlockIndex> foundBlocks;
+	CollisionVolume volumeRequired;
+	CollisionVolume volumeFound = CollisionVolume::create(0);
+	FluidRequirementData() = default;
+	FluidRequirementData(const CollisionVolume& v) :
+		counts(Quantity::create(v.get()), true),
+		volumeRequired(v)
+	{ }
+	FluidRequirementData(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
+	FluidRequirementData& operator=(const FluidRequirementData& other) = default;
+	[[nodiscard]] Json toJson() const
+	{
+		Json output
+		{
+			{"counts", counts},
+			{"containersAndVolumes", Json::array()},
+			{"volumeRequired", volumeRequired},
+			{"volumeFound", volumeFound}
+		};
+		for(const auto& [container, volume] : containersAndVolumes)
+			output["containersAndVolumes"].push_back({container, volume});
+		output["counts"]["address"] = reinterpret_cast<uintptr_t>(&counts);
+		return output;
+	}
+};
 struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
 {
 	Project& m_project;
@@ -73,10 +102,7 @@ class Project
 	std::vector<std::pair<ItemQuery, ProjectRequirementCounts>> m_requiredItems;
 	//TODO: required actors are not suported in several places.
 	std::vector<ActorReference> m_requiredActors;
-	// Required fluid types, containers, and volume per container.
-	SmallMap<FluidTypeId, SmallMap<ItemReference, CollisionVolume>> m_requiredFluidContainers;
-	// Required fluid volumes.
-	SmallMap<FluidTypeId, ProjectRequirementCounts> m_requiredFluids;
+	SmallMap<FluidTypeId, FluidRequirementData> m_requiredFluids;
 	// Required items which will be destroyed at the end of the project.
 	SmallMap<ItemReference, Quantity> m_toConsume;
 	// Required items which are equiped by workers (tools).
@@ -86,6 +112,7 @@ class Project
 	// Targets for haul subprojects awaiting dispatch.
 	SmallMap<ItemReference, std::pair<ProjectRequirementCounts*, Quantity>> m_itemsToPickup;
 	SmallSet<ActorReference> m_actorsToPickup;
+	SmallSet<ItemReference> m_fluidContainersToPickup;
 	// To be called by addWorkerThreadedTask, after validating the worker has access to the project location.
 	void addWorker(const ActorIndex& actor, Objective& objective);
 	// Load requirements from child class.
@@ -158,6 +185,7 @@ public:
 	void addActorToPickup(const ActorIndex& actor);
 	void addItemToPickup(const ItemIndex& item, ProjectRequirementCounts& counts, const Quantity& quantity);
 	void removeActorToPickup(const ActorReference& actor);
+	void removeFluidContainerToPickup(const ItemReference& item);
 	void removeItemToPickup(const ItemReference& item, const Quantity& quantity);
 	// To be called when the last worker is removed, when a haul subproject repetidly fails, or when a required reservation is dishonored, resets to pre-reservations status.
 	void reset();
@@ -214,7 +242,7 @@ public:
 	[[nodiscard]] FluidTypeId getFluidTypeForContainer(const ItemReference& item) const;
 	[[nodiscard]] CollisionVolume getFluidVolumeForContainer(const ItemReference& item) const;
 	// For testing.
-	[[nodiscard]] ProjectWorker& getProjectWorkerFor(ActorReference actor) { return m_workers[actor]; }
+	[[nodiscard]] const ProjectWorker& getProjectWorkerFor(ActorReference actor) const { return m_workers[actor]; }
 	[[nodiscard]] auto& getWorkers() { return m_workers; }
 	[[nodiscard]] Quantity getHaulRetries() const { return m_haulRetries; }
 	[[nodiscard]] bool hasTryToHaulThreadedTask() const { return m_tryToHaulThreadedTask.exists(); }

@@ -210,6 +210,7 @@ namespace Config
 	inline Step stepsPerMinute;
 	inline Step stepsPerSecond;
 	inline Step stepsPerYear;
+	inline Step stepsPerUnitFluidVolumeGivenToPlant;
 	inline Step stepsTillDiePlantPriorityOveride;
 	inline Step stepsToDelayBeforeTryingAgainToCompleteAnObjective;
 	inline Step stepsToDelayBeforeTryingAgainToFollowLeader;

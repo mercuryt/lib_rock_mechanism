@@ -49,7 +49,7 @@ TEST_CASE("sow")
 	items.create({.itemType=ItemType::byName(L"apple"), .materialType=MaterialType::byName(L"plant matter"), .location=foodLocation, .quantity=Quantity::create(50)});
 	area.m_hasFarmFields.registerFaction(faction);
 	Cuboid cuboid(blocks, fieldLocation, fieldLocation);
-	FarmField& field = area.m_hasFarmFields.getForFaction(faction).create(cuboid);
+	FarmField& field = area.m_hasFarmFields.getForFaction(faction).create(area, cuboid);
 	ActorIndex actor = actors.create({
 		.species=dwarf,
 		.location=blocks.getIndex_i(1, 1, 2),
@@ -61,7 +61,7 @@ TEST_CASE("sow")
 	SUBCASE("success")
 	{
 		CHECK(field.plantSpecies.empty());
-		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(area, field, wheatGrass);
 		CHECK(field.plantSpecies == wheatGrass);
 		CHECK(blocks.farm_contains(fieldLocation, faction));
 		CHECK(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
@@ -97,14 +97,14 @@ TEST_CASE("sow")
 		CHECK(actors.objective_getCurrentName(actor) != L"sow seeds");
 		plants.die(plant);
 		CHECK(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		area.m_hasFarmFields.getForFaction(faction).remove(field);
+		area.m_hasFarmFields.getForFaction(faction).remove(area, field);
 		CHECK(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 	}
 	SUBCASE("location no longer accessable to sow")
 	{
 		areaBuilderUtil::setSolidWall(area, blocks.getIndex_i(0, 3, 2), blocks.getIndex_i(8, 3, 2), marble);
 		BlockIndex gateway = blocks.getIndex_i(9, 3, 2);
-		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(area, field, wheatGrass);
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		CHECK(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
@@ -120,7 +120,7 @@ TEST_CASE("sow")
 	}
 	SUBCASE("location no longer viable to sow")
 	{
-		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(area, field, wheatGrass);
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
@@ -135,12 +135,12 @@ TEST_CASE("sow")
 	}
 	SUBCASE("location no longer selected to sow")
 	{
-		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(area, field, wheatGrass);
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
-		area.m_hasFarmFields.getForFaction(faction).remove(field);
+		area.m_hasFarmFields.getForFaction(faction).remove(area, field);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, actor, fieldLocation);
 		// BlockIndex is not select to grow anymore, cannot complete task, search for another route / another location to sow.
 		simulation.doStep();
@@ -148,7 +148,7 @@ TEST_CASE("sow")
 	}
 	SUBCASE("player cancels sowing objective")
 	{
-		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(area, field, wheatGrass);
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
@@ -160,7 +160,7 @@ TEST_CASE("sow")
 	}
 	SUBCASE("player delays sowing objective")
 	{
-		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(area, field, wheatGrass);
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
@@ -190,7 +190,7 @@ TEST_CASE("harvest")
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	area.m_hasFarmFields.registerFaction(faction);
 	Cuboid cuboid(blocks, block, block);
-	FarmField& field = area.m_hasFarmFields.getForFaction(faction).create(cuboid);
+	FarmField& field = area.m_hasFarmFields.getForFaction(faction).create(area, cuboid);
 	ActorIndex actor = actors.create({
 		.species=dwarf,
 		.location=blocks.getIndex_i(1, 1, 2),
@@ -199,7 +199,7 @@ TEST_CASE("harvest")
 	const HarvestObjectiveType& objectiveType = static_cast<const HarvestObjectiveType&>(ObjectiveType::getByName(L"harvest"));
 	SUBCASE("harvest")
 	{
-		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(area, field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
 		CHECK(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		CHECK(plants.getQuantityToHarvest(blocks.plant_get(block)) == PlantSpecies::getItemQuantityToHarvest(wheatGrass));
@@ -238,7 +238,7 @@ TEST_CASE("harvest")
 	{
 		areaBuilderUtil::setSolidWall(area, blocks.getIndex_i(0, 3, 2), blocks.getIndex_i(8, 3, 2), marble);
 		BlockIndex gateway = blocks.getIndex_i(9, 3, 2);
-		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(area, field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
 		CHECK(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
@@ -255,7 +255,7 @@ TEST_CASE("harvest")
 	}
 	SUBCASE("location no longer contains plant")
 	{
-		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(area, field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
 		CHECK(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
@@ -272,7 +272,7 @@ TEST_CASE("harvest")
 	}
 	SUBCASE("plant no longer harvestable")
 	{
-		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(area, field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
 		CHECK(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
@@ -289,7 +289,7 @@ TEST_CASE("harvest")
 	}
 	SUBCASE("player cancels harvest")
 	{
-		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(area, field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
 		CHECK(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
@@ -302,7 +302,7 @@ TEST_CASE("harvest")
 	}
 	SUBCASE("player delays harvest")
 	{
-		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(area, field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
 		CHECK(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
@@ -333,16 +333,17 @@ TEST_CASE("givePlantFluid")
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	area.m_hasFarmFields.registerFaction(faction);
 	Cuboid cuboid(blocks, block, block);
-	FarmField& field = area.m_hasFarmFields.getForFaction(faction).create(cuboid);
+	FarmField& field = area.m_hasFarmFields.getForFaction(faction).create(area, cuboid);
 	ActorIndex actor = actors.create({
 		.species=dwarf,
 		.location=blocks.getIndex_i(1, 1, 2),
 		.faction=faction,
 	});
+	ActorReference actorRef = actors.getReference(actor);
 	SUBCASE("give plants fluid")
 	{
 		static FluidTypeId water = FluidType::byName("water");
-		area.m_hasFarmFields.getForFaction(faction).setSpecies(field, wheatGrass);
+		area.m_hasFarmFields.getForFaction(faction).setSpecies(area, field, wheatGrass);
 		blocks.plant_create(block, wheatGrass, Percent::create(50));
 		PlantIndex plant = blocks.plant_get(block);
 		CHECK(!area.m_hasFarmFields.hasGivePlantsFluidDesignations(faction));
@@ -361,16 +362,24 @@ TEST_CASE("givePlantFluid")
 		const GivePlantsFluidObjectiveType& objectiveType = static_cast<const GivePlantsFluidObjectiveType&>(ObjectiveType::getByName(L"give plants fluid"));
 		CHECK(objectiveType.canBeAssigned(area, actor));
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
+		// Create project, verifiy access to bucket and pond.
 		simulation.doStep();
 		actors.satisfyNeeds(actor);
 		CHECK(actors.objective_getCurrentName(actor) == L"give plants fluid");
-		[[maybe_unused]] const GivePlantsFluidObjective& objective = actors.objective_getCurrent<GivePlantsFluidObjective>(actor);
-		CHECK(objective.getPlantLocation().exists());
-		CHECK(!objective.itemExists());
-		CHECK(actors.move_hasPathRequest(actor));
-		CHECK(objective.canGetFluidHaulingItemAt(area, bucketLocation, actor));
+		const GivePlantsFluidObjective& objective = actors.objective_getCurrent<GivePlantsFluidObjective>(actor);
+		CHECK(objective.hasProject());
+		const GivePlantFluidProject& project = objective.getProject();
+		CHECK(project.reservationsComplete());
+		CHECK(project.hasTryToHaulThreadedTask());
+		// Select haul strategy.
 		simulation.doStep();
-		CHECK(objective.itemExists());
+		const ProjectWorker& projectWorker = project.getProjectWorkerFor(actorRef);
+		CHECK(projectWorker.haulSubproject != nullptr);
+		CHECK(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
+		// Make Path.
+		simulation.doStep();
+		CHECK(actors.objective_getCurrentName(actor) == L"give plants fluid");
+		CHECK(actors.move_getDestination(actor).exists());
 		CHECK(items.isAdjacentToLocation(bucket, actors.move_getDestination(actor)));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, actor, bucketLocation);
 		CHECK(actors.move_hasPathRequest(actor));
@@ -391,7 +400,7 @@ TEST_CASE("givePlantFluid")
 		CHECK(!actors.move_getPath(actor).empty());
 		BlockIndex destination = actors.move_getDestination(actor);
 		simulation.fastForwardUntillActorIsAtDestination(area, actor, destination);
-		simulation.fastForward(Config::givePlantsFluidDelaySteps);
+		simulation.fastForward(project.getDuration());
 		CHECK(plants.getVolumeFluidRequested(plant) == 0);
 		CHECK(plants.isGrowing(plant));
 		CHECK(actors.objective_getCurrentName(actor) != L"give plants fluid");

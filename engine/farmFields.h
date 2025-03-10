@@ -45,68 +45,71 @@ class FarmFieldUpdateInputAction final : public InputAction
 	void execute();
 };
 */
-// TODO: Make POD.
 struct FarmField
 {
 	SmallSet<BlockIndex> blocks;
-	Area& area;
 	PlantSpeciesId plantSpecies;
-	bool timeToSow;
-	FarmField(Area& a, SmallSet<BlockIndex>&& b) : blocks(std::move(b)), area(a), timeToSow(false) { }
-	FarmField(const Json& data, const FactionId& faction, Area& area);
-	[[nodiscard]] Json toJson() const;
+	bool timeToSow = false;
+	FarmField() = default;
+	FarmField(FarmField&& other) noexcept = default;
+	FarmField(SmallSet<BlockIndex>&& b) : blocks(std::move(b)) { }
+	FarmField(const Json& data) { nlohmann::from_json(data, *this); }
+	FarmField& operator=(FarmField&& other) noexcept = default;
+	[[nodiscard]] bool operator==(const FarmField& other) const { return this == &other; }
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(FarmField, blocks, plantSpecies, timeToSow);
 };
 // To be used by HasFarmFields, which is used by Area.
 class HasFarmFieldsForFaction
 {
-	Area& m_area;
 	FactionId m_faction;
-	std::list<FarmField> m_farmFields;
+	SmallSetStable<FarmField> m_farmFields;
 	SmallSet<BlockIndex> m_blocksWithPlantsNeedingFluid;
 	SmallSet<BlockIndex> m_blocksWithPlantsToHarvest;
 	SmallSet<BlockIndex> m_blocksNeedingSeedsSewn;
 	bool m_plantsNeedingFluidIsSorted = false;
 public:
-	HasFarmFieldsForFaction(Area& a, const FactionId& f) : m_area(a), m_faction(f) { }
-	HasFarmFieldsForFaction(const Json& data, DeserializationMemo& deserializationMemo, Area& a, const FactionId& f);
-	[[nodiscard]] Json toJson() const;
-	void addGivePlantFluidDesignation(const PlantIndex& plant);
-	void removeGivePlantFluidDesignation(const PlantIndex& plant);
-	void addSowSeedsDesignation(const BlockIndex& block);
-	void removeSowSeedsDesignation(const BlockIndex& block);
-	void addHarvestDesignation(const PlantIndex& plant);
-	void removeHarvestDesignation(const PlantIndex& plant);
-	void setDayOfYear(uint32_t dayOfYear);
-	[[nodiscard]] FarmField& create(SmallSet<BlockIndex>&& blocks);
-	[[nodiscard]] FarmField& create(const BlockIndices& blocks);
-	[[nodiscard]] FarmField& create(const Cuboid& cuboid);
-	[[nodiscard]] FarmField& create(const CuboidSet& cuboid);
-	void extend(FarmField& farmField, SmallSet<BlockIndex>& blocks);
-	void setSpecies(FarmField& farmField, const PlantSpeciesId& plantSpecies);
-	void clearSpecies(FarmField& farmField);
-	void designateBlocks(FarmField& farmField, SmallSet<BlockIndex>& blocks);
-	void shrink(FarmField& farmField, SmallSet<BlockIndex>& blocks);
-	void remove(FarmField& farmField);
-	void undesignateBlocks(SmallSet<BlockIndex>& blocks);
-	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid();
+	HasFarmFieldsForFaction() = default;
+	HasFarmFieldsForFaction(const FactionId& f) : m_faction(f) { }
+	HasFarmFieldsForFaction(HasFarmFieldsForFaction&& other) noexcept = default;
+	HasFarmFieldsForFaction& operator=(HasFarmFieldsForFaction&& other) noexcept = default;
+	void addGivePlantFluidDesignation(Area& area, const BlockIndex& location);
+	void removeGivePlantFluidDesignation(Area& area, const BlockIndex& location);
+	void addSowSeedsDesignation(Area& area, const BlockIndex& block);
+	void removeSowSeedsDesignation(Area& area, const BlockIndex& block);
+	void addHarvestDesignation(Area& area, const PlantIndex& plant);
+	void removeHarvestDesignation(Area& area, const PlantIndex& plant);
+	void setDayOfYear(Area& area, uint32_t dayOfYear);
+	[[nodiscard]] FarmField& create(Area& area, SmallSet<BlockIndex>&& blocks);
+	[[nodiscard]] FarmField& create(Area& area, const BlockIndices& blocks);
+	[[nodiscard]] FarmField& create(Area& area, const Cuboid& cuboid);
+	[[nodiscard]] FarmField& create(Area& area, const CuboidSet& cuboid);
+	void extend(Area& area, FarmField& farmField, SmallSet<BlockIndex>& blocks);
+	void setSpecies(Area& area, FarmField& farmField, const PlantSpeciesId& plantSpecies);
+	void clearSpecies(Area& area, FarmField& farmField);
+	void designateBlocks(Area& area, FarmField& farmField, SmallSet<BlockIndex>& blocks);
+	void shrink(Area& area, FarmField& farmField, SmallSet<BlockIndex>& blocks);
+	void remove(Area& area, FarmField& farmField);
+	void undesignateBlocks(Area& area, SmallSet<BlockIndex>& blocks);
+	void setBlockData(Area& area);
+	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid(Area& area);
 	[[nodiscard]] bool hasHarvestDesignations() const;
 	[[nodiscard]] bool hasGivePlantsFluidDesignations() const;
 	[[nodiscard]] bool hasSowSeedsDesignations() const;
 	[[nodiscard]] PlantSpeciesId getPlantSpeciesFor(const BlockIndex& block) const;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(HasFarmFieldsForFaction, m_faction, m_farmFields, m_blocksWithPlantsNeedingFluid, m_blocksWithPlantsToHarvest, m_blocksNeedingSeedsSewn, m_plantsNeedingFluidIsSorted);
 };
-// To be used by Area.
 class AreaHasFarmFields
 {
-	std::unordered_map<FactionId, HasFarmFieldsForFaction, FactionId::Hash> m_data;
+	SmallMap<FactionId, HasFarmFieldsForFaction> m_data;
 	Area& m_area;
 public:
 	AreaHasFarmFields(Area& a) : m_area(a) { }
-	void load(const Json& data, DeserializationMemo& deserializationMemo);
+	void load(const Json& data);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] HasFarmFieldsForFaction& getForFaction(const FactionId& faction);
 	void registerFaction(const FactionId& faction);
 	void unregisterFaction(const FactionId& faction);
-	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid(const FactionId& faction);
+	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid(Area& area, const FactionId& faction);
 	void removeAllSowSeedsDesignations(const BlockIndex& block);
 	void setDayOfYear(uint32_t dayOfYear);
 	[[nodiscard]] bool hasGivePlantsFluidDesignations(const FactionId& faction) const;

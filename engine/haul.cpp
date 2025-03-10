@@ -680,7 +680,7 @@ bool HaulSubproject::allWorkersAreAdjacentTo(const ItemIndex& index)
 	return true;
 	//return std::all_of(m_workers.begin(), m_workers.end(), [&](const ActorReference& worker) { return m_project.m_area.getItems().isAdjacentToActor(index, worker.getIndex(referenceData)); });
 }
-HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& project, const ActorOrItemReference& toHaulRef, const ActorIndex& worker, const FluidTypeId& fluidType, const CollisionVolume& fluidVolume)
+HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(Project& project, const ActorOrItemReference& toHaulRef, const ActorIndex& worker, const FluidTypeId& fluidType, const CollisionVolume& fluidVolume)
 {
 	// TODO: make exception for slow haul if very close.
 	Actors& actors = project.m_area.getActors();
@@ -692,8 +692,15 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(const Project& pro
 	if(toHaulRef.isItem())
 	{
 		ItemReference item = toHaulRef.toItemReference();
-		output.projectRequirementCounts = project.m_itemsToPickup[item].first;
-		maxQuantityRequested = project.m_itemsToPickup[item].second;
+		if(fluidType.exists())
+		{
+			output.projectRequirementCounts = &project.m_requiredFluids[fluidType].counts;
+		}
+		else
+		{
+			output.projectRequirementCounts = project.m_itemsToPickup[item].first;
+			maxQuantityRequested = project.m_itemsToPickup[item].second;
+		}
 	}
 	Speed minimumSpeed = project.getMinimumHaulSpeed();
 	ActorIndices workers;
