@@ -14,7 +14,7 @@ public:
 	void cancel(Area&, const ActorIndex&) { }
 	void delay(Area&, const ActorIndex&) { }
 	void reset(Area&, const ActorIndex&) { }
-	[[nodiscard]] std::wstring name() const { return L"leave area"; }
+	[[nodiscard]] std::string name() const { return "leave area"; }
 };
 class LeaveAreaPathRequest final : public PathRequestBreadthFirst
 {
@@ -24,6 +24,6 @@ public:
 	LeaveAreaPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
-	[[nodiscard]] std::wstring name() const { return L"leave area"; }
+	[[nodiscard]] std::string name() const { return "leave area"; }
 	[[nodiscard]] Json toJson() const;
 };

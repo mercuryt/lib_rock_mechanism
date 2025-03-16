@@ -14,13 +14,13 @@ AttackTypeId AttackType::create(const AttackTypeParamaters& p)
 	attackTypeData.m_projectileItemType.add(p.projectileItemType);
 	return AttackTypeId::create(attackTypeData.m_name.size() - 1);
 }
-AttackTypeId AttackType::byName(std::wstring name)
+AttackTypeId AttackType::byName(std::string name)
 {
 	auto found = attackTypeData.m_name.find(name);
 	assert(found != attackTypeData.m_name.end());
 	return AttackTypeId::create(found - attackTypeData.m_name.begin());
 }
-std::wstring AttackType::getName(const AttackTypeId& id) { return attackTypeData.m_name[id]; };
+std::string AttackType::getName(const AttackTypeId& id) { return attackTypeData.m_name[id]; };
 uint32_t AttackType::getArea(const AttackTypeId& id) { return attackTypeData.m_area[id]; };
 Force AttackType::getBaseForce(const AttackTypeId& id) { return attackTypeData.m_baseForce[id]; };
 DistanceInBlocksFractional AttackType::getRange(const AttackTypeId& id) { return attackTypeData.m_range[id]; };

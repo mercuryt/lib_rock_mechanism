@@ -19,7 +19,7 @@ public:
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
 	SowSeedsObjectiveType() = default;
 	SowSeedsObjectiveType(const Json&, DeserializationMemo&);
-	[[nodiscard]] std::wstring name() const { return L"sow seeds"; }
+	[[nodiscard]] std::string name() const { return "sow seeds"; }
 };
 class SowSeedsObjective final : public Objective
 {
@@ -35,7 +35,7 @@ public:
 	void begin(Area& area, const ActorIndex& actor);
 	void reset(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::wstring name() const { return L"sow seeds"; }
+	[[nodiscard]] std::string name() const { return "sow seeds"; }
 	[[nodiscard]] bool canSowAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
 	[[nodiscard]] BlockIndex getBlockToSowAt(Area& area, const BlockIndex& location, Facing4 facing, const ActorIndex& actor);
 	friend class SowSeedsEvent;
@@ -59,6 +59,6 @@ public:
 	SowSeedsPathRequest(const Json& data, Area& area, DeserializationMemo& DeserializationMemo);
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
-	[[nodiscard]] std::wstring name() const { return L"sow seeds"; }
+	[[nodiscard]] std::string name() const { return "sow seeds"; }
 	[[nodiscard]] Json toJson() const;
 };

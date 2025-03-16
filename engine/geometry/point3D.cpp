@@ -134,9 +134,9 @@ DistanceInBlocks Point3D::distanceSquared(const Point3D& other) const
 {
 	return DistanceInBlocks::create((data - other.data).square().sum());
 }
-std::wstring Point3D::toString() const
+std::string Point3D::toString() const
 {
-	return L"(" + std::to_wstring(x().get()) + L"," + std::to_wstring(y().get()) + L"," + std::to_wstring(z().get()) + L")";
+	return "(" + std::to_string(x().get()) + "," + std::to_string(y().get()) + "," + std::to_string(z().get()) + ")";
 }
 Offset3D Point3D::toOffset() const { return *this; }
 Facing4 Point3D::getFacingTwords(const Point3D& other) const
@@ -225,7 +225,7 @@ Point3D Point3D::operator-(const Offset3D& other) const
 }
 void Point3D::log() const
 {
-	std::wcout << toString() << std::endl;
+	std::cout << toString() << std::endl;
 }
 Point3D Point3D::create(int x, int y, int z)
 {
@@ -252,7 +252,7 @@ Offset3D Offset3D::operator+(const Offset3D& other) const { return Offsets(data 
 Offset3D Offset3D::operator-(const Offset3D& other) const { return Offsets(data - other.data); }
 Offset3D Offset3D::operator*(const Offset3D& other) const { return Offsets(data * other.data); }
 Offset3D Offset3D::operator/(const Offset3D& other) const { return Offsets(data / other.data); }
-std::wstring Offset3D::toString() const
+std::string Offset3D::toString() const
 {
-	return L"(" + std::to_wstring(x()) + L"," + std::to_wstring(y()) + L"," + std::to_wstring(z()) + L")";
+	return "(" + std::to_string(x()) + "," + std::to_string(y()) + "," + std::to_string(z()) + ")";
 }

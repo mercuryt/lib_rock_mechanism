@@ -78,7 +78,7 @@ ActorIndex Actors::canPickUp_tryToPutDownActor(const ActorIndex& index, const Bl
 	BlockIndex targetLocation = blocks.getBlockInRangeWithCondition(location, maxRange, predicate);
 	if(targetLocation.empty())
 	{
-		static const MoveTypeId moveTypeNone = MoveType::byName(L"none");
+		static const MoveTypeId moveTypeNone = MoveType::byName("none");
 		// No location found, try again without respecting Config::maxBlockVolume.
 		auto predicate2 = [&](const BlockIndex& block)
 		{
@@ -113,7 +113,7 @@ ItemIndex Actors::canPickUp_tryToPutDownItem(const ActorIndex& index, const Bloc
 	BlockIndex targetLocation = blocks.getBlockInRangeWithCondition(location, maxRange, predicate);
 	if(targetLocation.empty())
 	{
-		static const MoveTypeId moveTypeNone = MoveType::byName(L"none");
+		static const MoveTypeId moveTypeNone = MoveType::byName("none");
 		// No location found, try again without respecting Config::maxBlockVolume.
 		auto predicate2 = [&](const BlockIndex &block)
 		{

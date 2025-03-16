@@ -1,5 +1,5 @@
 #include "moveType.h"
-MoveTypeId MoveType::byName(std::wstring name)
+MoveTypeId MoveType::byName(std::string name)
 {
 	auto found = moveTypeData.m_name.find(name);
 	assert(found != moveTypeData.m_name.end());
@@ -17,7 +17,7 @@ void MoveType::create(MoveTypeParamaters& p)
 	moveTypeData.m_swim.add(p.swim);
 	moveTypeData.m_breathableFluids.add(p.breathableFluids);
 }
-std::wstring MoveType::getName(MoveTypeId id) { return moveTypeData.m_name[id]; }
+std::string MoveType::getName(MoveTypeId id) { return moveTypeData.m_name[id]; }
 bool MoveType::getWalk(MoveTypeId id) { return moveTypeData.m_walk[id]; }
 uint8_t MoveType::getClimb(MoveTypeId id) { return moveTypeData.m_climb[id]; }
 bool MoveType::getJumpDown(MoveTypeId id) { return moveTypeData.m_jumpDown[id]; }

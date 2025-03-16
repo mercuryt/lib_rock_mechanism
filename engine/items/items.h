@@ -27,7 +27,7 @@ struct ItemParamaters final
 	Facing4 facing = Facing4::North;
 	bool isStatic = true;
 	bool installed = false;
-	std::wstring name = L"";
+	std::string name = "";
 };
 class ReMarkItemForStockPilingEvent final : public ScheduledEvent
 {
@@ -109,7 +109,7 @@ class Items final : public Portables<Items, ItemIndex, ItemReferenceIndex>
 	StrongBitSet<ItemIndex> m_installed;
 	StrongVector<ItemTypeId, ItemIndex> m_itemType;
 	StrongVector<MaterialTypeId, ItemIndex> m_materialType;
-	StrongVector<std::wstring, ItemIndex> m_name;
+	StrongVector<std::string, ItemIndex> m_name;
 	//TODO: Percent doesn't allow fine enough detail for tools wearing out over time?
 	StrongVector<Percent, ItemIndex> m_percentWear; // Always set to 0 for generic types.
 	StrongVector<Quality, ItemIndex> m_quality; // Always set to 0 for generic types.
@@ -124,7 +124,7 @@ public:
 	void forEachData(Action&& action);
 	ItemIndex create(ItemParamaters paramaters);
 	void destroy(const ItemIndex& index);
-	void setName(const ItemIndex& index, std::wstring name);
+	void setName(const ItemIndex& index, std::string name);
 	// Returns index in case of nongeneric or generics with a type not present at the location.
 	// If a generic of the same type is found return it instead.
 	ItemIndex setLocation(const ItemIndex& index, const BlockIndex& block);
@@ -142,13 +142,14 @@ public:
 	void setWear(const ItemIndex& index, const Percent& wear);
 	void setQuantity(const ItemIndex& index, const Quantity& quantity);
 	void unsetCraftJobForWorkPiece(const ItemIndex& index);
+	void takeFallDamage(const ItemIndex&, const DistanceInBlocks&, const MaterialTypeId&) { /* TODO */ }
 	[[nodiscard]] ItemIndices getAll() const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool isInstalled(const ItemIndex& index) { return m_installed[index]; }
 	[[nodiscard]] Quantity getQuantity(const ItemIndex& index) const { return m_quantity[index]; }
 	[[nodiscard]] Quality getQuality(const ItemIndex& index) const { return m_quality[index]; }
 	[[nodiscard]] Percent getWear(const ItemIndex& index) const { return m_percentWear[index]; }
-	[[nodiscard]] std::wstring getName(const ItemIndex& index) const { return m_name[index]; }
+	[[nodiscard]] std::string getName(const ItemIndex& index) const { return m_name[index]; }
 	[[nodiscard]] bool isGeneric(const ItemIndex& index) const;
 	[[nodiscard]] bool isPreparedMeal(const ItemIndex& index) const;
 	[[nodiscard]] bool isWorkPiece(const ItemIndex& index) const { return m_craftJobForWorkPiece[index] != nullptr; }
@@ -156,6 +157,7 @@ public:
 	[[nodiscard]] Mass getSingleUnitMass(const ItemIndex& index) const;
 	[[nodiscard]] Mass getMass(const ItemIndex& index) const;
 	[[nodiscard]] Volume getVolume(const ItemIndex& index) const;
+	[[nodiscard]] CollisionVolume getTotalCollisionVolume(const ItemIndex& index) const;
 	[[nodiscard]] MoveTypeId getMoveType(const ItemIndex& index) const;
 	[[nodiscard]] ItemTypeId getItemType(const ItemIndex& index) const { return m_itemType[index]; }
 	[[nodiscard]] MaterialTypeId getMaterialType(const ItemIndex& index) const { return m_materialType[index]; }

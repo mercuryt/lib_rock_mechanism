@@ -19,7 +19,7 @@ public:
 	void cancel(Area&, const ActorIndex&) override { }
 	void delay(Area&, const ActorIndex&) override { }
 	void reset(Area&, const ActorIndex&) override { }
-	std::wstring name() const override { return L"go to"; }
+	std::string name() const override { return "go to"; }
 	// For testing.
 	[[maybe_unused]] BlockIndex getLocation() { return m_location; }
 };

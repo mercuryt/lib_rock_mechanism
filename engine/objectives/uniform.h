@@ -18,7 +18,7 @@ public:
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
 	void reset(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::wstring name() const { return L"uniform"; }
+	[[nodiscard]] std::string name() const { return "uniform"; }
 	// non virtual.
 	void equip(Area& area, const ItemIndex& item, const ActorIndex& actor);
 	void select(Area& area, const ItemIndex& item);
@@ -38,5 +38,5 @@ public:
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::wstring name() const { return L"uniform"; }
+	[[nodiscard]] std::string name() const { return "uniform"; }
 };

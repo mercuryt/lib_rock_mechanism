@@ -28,8 +28,8 @@ void Blocks::temperature_updateDelta(const BlockIndex& index, const TemperatureD
 void Blocks::temperature_freeze(const BlockIndex& index, const FluidTypeId& fluidType)
 {
 	assert(FluidType::getFreezesInto(fluidType).exists());
-	static ItemTypeId chunk = ItemType::byName(L"chunk");
-	static ItemTypeId pile = ItemType::byName(L"pile");
+	static ItemTypeId chunk = ItemType::byName("chunk");
+	static ItemTypeId pile = ItemType::byName("pile");
 	Quantity chunkQuantity = item_getCount(index, chunk, FluidType::getFreezesInto(fluidType));
 	Quantity pileQuantity = item_getCount(index, chunk, FluidType::getFreezesInto(fluidType));
 	CollisionVolume chunkVolumeSingle = Shape::getCollisionVolumeAtLocationBlock(ItemType::getShape(chunk));
@@ -37,6 +37,7 @@ void Blocks::temperature_freeze(const BlockIndex& index, const FluidTypeId& flui
 	CollisionVolume chunkVolume = chunkVolumeSingle * chunkQuantity;
 	CollisionVolume pileVolume = pileVolumeSingle * pileQuantity;
 	CollisionVolume fluidVolume = fluid_volumeOfTypeContains(index, fluidType);
+	fluid_removeSyncronus(index, fluidVolume, fluidType);
 	// If full freeze solid, otherwise generate frozen chunks.
 	if(chunkVolume + pileVolume + fluidVolume >= Config::maxBlockVolume)
 	{

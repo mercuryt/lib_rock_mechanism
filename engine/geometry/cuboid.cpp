@@ -367,7 +367,7 @@ Cuboid::iterator Cuboid::iterator::operator++(int)
 BlockIndex Cuboid::iterator::operator*() { return m_blocks->getIndex(m_current); }
 CuboidView Cuboid::getView(const Blocks& blocks) const { assert(!empty()); return CuboidView(blocks, *this); }
 CuboidSurfaceView Cuboid::getSurfaceView(const Blocks& blocks) const { return CuboidSurfaceView(blocks, *this); }
-std::wstring Cuboid::toString() const { return m_highest.toString() + L", " + m_lowest.toString(); }
+std::string Cuboid::toString() const { return m_highest.toString() + ", " + m_lowest.toString(); }
 CuboidSurfaceView::Iterator::Iterator(const CuboidSurfaceView& v) :
 	view(v)
 {

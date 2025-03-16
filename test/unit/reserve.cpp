@@ -32,8 +32,8 @@ struct TestReservationDishonorCallback2 final : public DishonorCallback
 TEST_CASE("reservations")
 {
 	Simulation simulation;
-	FactionId faction1 = simulation.m_hasFactions.createFaction(L"test faction1");
-	FactionId faction2 = simulation.m_hasFactions.createFaction(L"test faction2");
+	FactionId faction1 = simulation.m_hasFactions.createFaction("test faction1");
+	FactionId faction2 = simulation.m_hasFactions.createFaction("test faction2");
 	SUBCASE("basic")
 	{
 		Reservable reservable(Quantity::create(1));

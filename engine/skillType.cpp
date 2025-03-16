@@ -1,5 +1,5 @@
 #include "skillType.h"
-SkillTypeId SkillType::byName(std::wstring name)
+SkillTypeId SkillType::byName(std::string name)
 {
 	auto found = skillTypeData.m_name.find(name);
 	assert(found != skillTypeData.m_name.end());
@@ -11,7 +11,7 @@ void SkillType::create(const SkillTypeParamaters& p)
 	skillTypeData.m_xpPerLevelModifier.add(p.xpPerLevelModifier);
 	skillTypeData.m_level1Xp.add(p.level1Xp);
 }
-std::wstring SkillType::getName(const SkillTypeId& id) { return skillTypeData.m_name[id]; }
+std::string SkillType::getName(const SkillTypeId& id) { return skillTypeData.m_name[id]; }
 float SkillType::getXpPerLevelModifier(const SkillTypeId& id) { return skillTypeData.m_xpPerLevelModifier[id]; }
 SkillExperiencePoints SkillType::getLevel1Xp(const SkillTypeId& id) { return skillTypeData.m_level1Xp[id]; }
-const StrongVector<std::wstring, SkillTypeId>& SkillType::getNames() { return skillTypeData.m_name; }
+const StrongVector<std::string, SkillTypeId>& SkillType::getNames() { return skillTypeData.m_name; }

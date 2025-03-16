@@ -28,7 +28,7 @@ void HarvestEvent::execute(Simulation&, Area* area)
 		m_harvestObjective.makePathRequest(*area, actor);
 	Plants& plants = area->getPlants();
 	PlantIndex plant = blocks.plant_get(m_harvestObjective.m_block);
-	static MaterialTypeId plantMatter = MaterialType::byName(L"plant matter");
+	static MaterialTypeId plantMatter = MaterialType::byName("plant matter");
 	ItemTypeId fruitItemType = PlantSpecies::getFruitItemType(plants.getSpecies(plant));
 	Quantity quantityToHarvest = plants.getQuantityToHarvest(plant);
 	if(quantityToHarvest == 0)

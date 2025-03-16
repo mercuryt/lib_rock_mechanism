@@ -4,35 +4,35 @@
 
 #pragma once
 
-#include "installItem.h"
-#include "types.h"
-#include "mistDisperseEvent.h"
-#include "geometry/cuboid.h"
-#include "vision/visionCuboid.h"
-#include "dig.h"
-#include "construct.h"
-#include "craft.h"
-#include "targetedHaul.h"
-#include "fire.h"
-#include "woodcutting.h"
-#include "stocks.h"
-#include "fluidSource.h"
-#include "path/terrainFacade.h"
-#include "octTree.h"
-#include "vision/opacityFacade.h"
-#include "vision/visionRequests.h"
-#include "sleep.h"
-#include "drink.h"
-#include "eat.h"
-#include "area/rain.h"
-#include "area/hasFluidGroups.h"
-#include "area/hasSleepingSpots.h"
-#include "area/hasBlockDesignations.h"
-#include "area/evaporation.h"
-#include "area/exteriorPortals.h"
-#include "farmFields.h"
-#include "stockpile.h"
-#include "actors/grow.h"
+#include "../installItem.h"
+#include "../types.h"
+#include "../mistDisperseEvent.h"
+#include "../geometry/cuboid.h"
+#include "../vision/visionCuboid.h"
+#include "../craft.h"
+#include "../fire.h"
+#include "../woodcutting.h"
+#include "../stocks.h"
+#include "../fluidSource.h"
+#include "../path/terrainFacade.h"
+#include "../octTree.h"
+#include "../vision/opacityFacade.h"
+#include "../vision/visionRequests.h"
+#include "../sleep.h"
+#include "../drink.h"
+#include "../eat.h"
+#include "../farmFields.h"
+#include "../stockpile.h"
+#include "../actors/grow.h"
+#include "rain.h"
+#include "hasFluidGroups.h"
+#include "hasSleepingSpots.h"
+#include "hasBlockDesignations.h"
+#include "evaporation.h"
+#include "exteriorPortals.h"
+#include "hasTargetedHauling.h"
+#include "hasDigDesignations.h"
+#include "hasConstructionDesignations.h"
 //#include "medical.h"
 
 #include <vector>
@@ -102,14 +102,14 @@ public:
 	BlockIndices m_caveInCheck;
 	// uint32_t is fall energy.
 	std::vector<std::tuple<BlockIndices, DistanceInBlocks, uint32_t>> m_caveInData;
-	std::wstring m_name;
+	std::string m_name;
 	Simulation& m_simulation;
 	AreaId m_id;
 	bool m_destroy = false;
 	//WorldLocation* m_worldLocation;
 
 	// Create blocks and store adjacent
-	Area(AreaId id, std::wstring n, Simulation& s, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z);
+	Area(AreaId id, std::string n, Simulation& s, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z);
 	Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s);
 	Area(const Area& area) = delete;
 	Area(const Area&& area) = delete;
@@ -128,7 +128,7 @@ public:
 	// To be called periodically by Simulation.
 	void updateClimate();
 
-	[[nodiscard]] std::wstring toS() const;
+	[[nodiscard]] std::string toS() const;
 	[[nodiscard]] Json toJson() const;
 	#ifdef NDEBUG
 		[[nodiscard]] Blocks& getBlocks() { return m_blocks; }

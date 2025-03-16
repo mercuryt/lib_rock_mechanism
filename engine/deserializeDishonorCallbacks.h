@@ -5,8 +5,8 @@
 #include "haul.h"
 #include "stockpile.h"
 #include "craft.h"
-#include "dig.h"
-#include "construct.h"
+#include "projects/dig.h"
+#include "projects/construct.h"
 #include "project.h"
 #include <memory>
 

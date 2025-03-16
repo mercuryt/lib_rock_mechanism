@@ -128,7 +128,7 @@ std::unique_ptr<Objective> CraftObjectiveType::makeFor(Area&, const ActorIndex&)
 {
 	return std::make_unique<CraftObjective>(m_skillType);
 }
-std::wstring CraftObjectiveType::name() const { return L"craft: " + SkillType::getName(m_skillType); }
+std::string CraftObjectiveType::name() const { return "craft: " + SkillType::getName(m_skillType); }
 // Objective.
 CraftObjective::CraftObjective(SkillTypeId st) : Objective(Config::craftObjectivePriority), m_skillType(st) { }
 CraftObjective::CraftObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo),
@@ -151,7 +151,7 @@ Json CraftObjective::toJson() const
 	}
 	return data;
 }
-std::wstring CraftObjective::name() const { return L"craft: " + SkillType::getName(m_skillType); }
+std::string CraftObjective::name() const { return "craft: " + SkillType::getName(m_skillType); }
 void CraftObjective::execute(Area& area, const ActorIndex& actor)
 {
 	if(m_craftJob)

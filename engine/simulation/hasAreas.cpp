@@ -35,7 +35,7 @@ void SimulationHasAreas::save()
 Area& SimulationHasAreas::createArea(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z, bool createDrama)
 {
 	AreaId id = ++m_nextId;
-	Area& output = loadArea(id, L"unnamed area " + std::to_wstring(id.get()), x, y, z);
+	Area& output = loadArea(id, "unnamed area " + std::to_string(id.get()), x, y, z);
 	if(createDrama)
 		m_simulation.m_dramaEngine->createArcsForArea(output);
 	return output;
@@ -44,7 +44,7 @@ Area& SimulationHasAreas::createArea(uint x, uint y, uint z, bool createDrama)
 {
 	return createArea(DistanceInBlocks::create(x), DistanceInBlocks::create(y), DistanceInBlocks::create(z), createDrama);
 }
-Area& SimulationHasAreas::loadArea(const AreaId& id, std::wstring name, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z)
+Area& SimulationHasAreas::loadArea(const AreaId& id, std::string name, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z)
 {
 	Area& area = m_areas.emplace(id, id, name, m_simulation, x, y, z);
 	m_areasById.insert(id, &area);

@@ -15,7 +15,7 @@ public:
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, const ActorIndex&) const { std::unreachable(); }
 	GetToSafeTemperatureObjectiveType() = default;
 	GetToSafeTemperatureObjectiveType(const Json&, DeserializationMemo&);
-	[[nodiscard]] std::wstring name() const { return L"get to safe temperature"; }
+	[[nodiscard]] std::string name() const { return "get to safe temperature"; }
 };
 class GetToSafeTemperatureObjective final : public Objective
 {
@@ -28,7 +28,7 @@ public:
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
 	void reset(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::wstring name() const { return L"get to safe temperature"; }
+	[[nodiscard]] std::string name() const { return "get to safe temperature"; }
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::temperature; }
 	friend class GetToSafeTemperaturePathRequest;
 };
@@ -40,6 +40,6 @@ public:
 	GetToSafeTemperaturePathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
-	[[nodiscard]] std::wstring name() const { return L"get to safe temperature"; }
+	[[nodiscard]] std::string name() const { return "get to safe temperature"; }
 	[[nodiscard]] Json toJson() const;
 };

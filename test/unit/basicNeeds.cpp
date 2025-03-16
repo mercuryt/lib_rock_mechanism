@@ -16,11 +16,11 @@
 #include "types.h"
 TEST_CASE("basicNeedsSentient")
 {
-	static MaterialTypeId dirt = MaterialType::byName(L"dirt");
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
+	static MaterialTypeId dirt = MaterialType::byName("dirt");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	static FluidTypeId water = FluidType::byName("water");
 	Simulation simulation;
-	FactionId faction = simulation.createFaction(L"Tower Of Power");
+	FactionId faction = simulation.createFaction("Tower Of Power");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
@@ -45,7 +45,7 @@ TEST_CASE("basicNeedsSentient")
 		actors.drink_setNeedsFluid(actor);
 		CHECK(!actors.grow_isGrowing(actor));
 		CHECK(actors.drink_isThirsty(actor));
-		CHECK(actors.objective_getCurrentName(actor) == L"drink");
+		CHECK(actors.objective_getCurrentName(actor) == "drink");
 		simulation.doStep();
 		BlockIndex destination = actors.move_getDestination(actor);
 		CHECK(destination.exists());
@@ -53,7 +53,7 @@ TEST_CASE("basicNeedsSentient")
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, actor, pondLocation);
 		simulation.fastForward(Config::stepsToDrink);
 		CHECK(!actors.drink_isThirsty(actor));
-		CHECK(actors.objective_getCurrentName(actor) != L"drink");
+		CHECK(actors.objective_getCurrentName(actor) != "drink");
 		CollisionVolume drinkVolume = MustDrink::drinkVolumeFor(area, actor);
 		simulation.doStep(); // Give a step for the fluid removal to take effect.
 		CHECK(blocks.fluid_volumeOfTypeContains(pondLocation, water) == Config::maxBlockVolume - drinkVolume);
@@ -62,8 +62,8 @@ TEST_CASE("basicNeedsSentient")
 	{
 		BlockIndex bucketLocation = blocks.getIndex_i(7, 7, 2);
 		ItemIndex bucket = items.create({
-			.itemType=ItemType::byName(L"bucket"),
-			.materialType=MaterialType::byName(L"poplar wood"),
+			.itemType=ItemType::byName("bucket"),
+			.materialType=MaterialType::byName("poplar wood"),
 			.location=bucketLocation,
 			.quality=Quality::create(50),
 			.percentWear=Percent::create(0),
@@ -72,7 +72,7 @@ TEST_CASE("basicNeedsSentient")
 		actors.drink_setNeedsFluid(actor);
 		CHECK(!actors.grow_isGrowing(actor));
 		CHECK(actors.drink_isThirsty(actor));
-		CHECK(actors.objective_getCurrentName(actor) == L"drink");
+		CHECK(actors.objective_getCurrentName(actor) == "drink");
 		simulation.doStep();
 		BlockIndex destination = actors.move_getDestination(actor);
 		CHECK(destination.exists());
@@ -80,7 +80,7 @@ TEST_CASE("basicNeedsSentient")
 		simulation.fastForwardUntillActorIsAdjacentToItem(area, actor, bucket);
 		simulation.fastForward(Config::stepsToDrink);
 		CHECK(!actors.drink_isThirsty(actor));
-		CHECK(actors.objective_getCurrentName(actor) != L"drink");
+		CHECK(actors.objective_getCurrentName(actor) != "drink");
 		CollisionVolume drinkVolume = MustDrink::drinkVolumeFor(area, actor);
 		CHECK(items.cargo_getFluidVolume(bucket) == CollisionVolume::create(2) - drinkVolume);
 	}
@@ -92,8 +92,8 @@ TEST_CASE("basicNeedsSentient")
 	{
 		BlockIndex mealLocation = blocks.getIndex_i(5, 5, 2);
 		ItemIndex meal = items.create({
-			.itemType=ItemType::byName(L"prepared meal"),
-			.materialType=MaterialType::byName(L"fruit"),
+			.itemType=ItemType::byName("prepared meal"),
+			.materialType=MaterialType::byName("fruit"),
 			.location=mealLocation,
 			.quality=Quality::create(50),
 			.percentWear=Percent::create(0),
@@ -105,7 +105,7 @@ TEST_CASE("basicNeedsSentient")
 		if(actors.drink_getVolumeOfFluidRequested(actor) != 0)
 			actors.drink_do(actor, actors.drink_getVolumeOfFluidRequested(actor));
 		CHECK(actors.move_hasPathRequest(actor));
-		CHECK(actors.objective_getCurrentName(actor) == L"eat");
+		CHECK(actors.objective_getCurrentName(actor) == "eat");
 		CHECK(actors.eat_isHungry(actor));
 		simulation.doStep();
 		CHECK(!actors.move_hasPathRequest(actor));
@@ -113,19 +113,19 @@ TEST_CASE("basicNeedsSentient")
 		CHECK(destination.exists());
 		CHECK(blocks.isAdjacentToIncludingCornersAndEdges(destination, mealLocation));
 		simulation.fastForwardUntillActorIsAdjacentToItem(area, actor, meal);
-		CHECK(actors.objective_getCurrentName(actor) == L"eat");
+		CHECK(actors.objective_getCurrentName(actor) == "eat");
 		CHECK(actors.objective_getCurrent<EatObjective>(actor).hasEvent());
 		simulation.fastForward(Config::stepsToEat);
 		CHECK(!actors.eat_isHungry(actor));
-		CHECK(actors.objective_getCurrentName(actor) != L"eat");
+		CHECK(actors.objective_getCurrentName(actor) != "eat");
 		CHECK(blocks.item_empty(mealLocation));
 	}
 	SUBCASE("eat fruit")
 	{
 		BlockIndex fruitLocation = blocks.getIndex_i(6, 5, 2);
 		ItemIndex fruit = items.create({
-			.itemType=ItemType::byName(L"apple"),
-			.materialType=MaterialType::byName(L"fruit"),
+			.itemType=ItemType::byName("apple"),
+			.materialType=MaterialType::byName("fruit"),
 			.location=fruitLocation,
 			.quantity=Quantity::create(50),
 		});
@@ -136,22 +136,22 @@ TEST_CASE("basicNeedsSentient")
 			actors.drink_do(actor, actors.drink_getVolumeOfFluidRequested(actor));
 		CHECK(actors.eat_getPercentStarved(actor) == 0);
 		CHECK(actors.eat_getMinimumAcceptableDesire(actor) == 3);
-		CHECK(actors.objective_getCurrentName(actor) == L"eat");
+		CHECK(actors.objective_getCurrentName(actor) == "eat");
 		NeedType eatNeedType = actors.objective_getCurrent<EatObjective>(actor).getNeedType();
 		// Search for acceptable food but fail to find.
 		// Supress need.
 		simulation.doStep();
-		CHECK(actors.objective_getCurrentName(actor) != L"eat");
+		CHECK(actors.objective_getCurrentName(actor) != "eat");
 		CHECK(actors.objective_hasSupressedNeed(actor, eatNeedType));
 		Step delayRemaning = actors.objective_getNeedDelayRemaining(actor, eatNeedType);
 		simulation.fasterForward(delayRemaning);
 		CHECK(!actors.objective_hasSupressedNeed(actor, eatNeedType));
-		CHECK(actors.objective_getCurrentName(actor) == L"eat");
+		CHECK(actors.objective_getCurrentName(actor) == "eat");
 		CHECK(actors.eat_getMinimumAcceptableDesire(actor) == 3);
 		simulation.doStep();
 		CHECK(actors.objective_hasSupressedNeed(actor, eatNeedType));
-		CHECK(actors.objective_getCurrentName(actor) == L"wander");
-		simulation.fasterForwardUntillPredicate([&](){ return actors.eat_getMinimumAcceptableDesire(actor) == 2 && actors.objective_getCurrentName(actor) == L"eat"; }, Config::minutesPerHour * 6);
+		CHECK(actors.objective_getCurrentName(actor) == "wander");
+		simulation.fasterForwardUntillPredicate([&](){ return actors.eat_getMinimumAcceptableDesire(actor) == 2 && actors.objective_getCurrentName(actor) == "eat"; }, Config::minutesPerHour * 6);
 		CHECK(actors.move_hasPathRequest(actor));
 		const EatObjective& objective = actors.objective_getCurrent<EatObjective>(actor);
 		CHECK(actors.eat_canEatItem(actor, fruit));
@@ -164,23 +164,23 @@ TEST_CASE("basicNeedsSentient")
 		simulation.doStep();
 		CHECK(!actors.move_hasPathRequest(actor));
 		CHECK(actors.eat_isHungry(actor));
-		CHECK(actors.objective_getCurrentName(actor) == L"eat");
+		CHECK(actors.objective_getCurrentName(actor) == "eat");
 		CHECK(actors.move_getDestination(actor).exists());
 		CHECK(items.isAdjacentToLocation(fruit, actors.move_getDestination(actor)));
 		simulation.fastForwardUntillActorIsAdjacentToItem(area, actor, fruit);
 		CHECK(actors.objective_getCurrent<EatObjective>(actor).hasEvent());
 		simulation.fastForward(Config::stepsToEat);
 		CHECK(!actors.eat_isHungry(actor));
-		CHECK(actors.objective_getCurrentName(actor) != L"eat");
+		CHECK(actors.objective_getCurrentName(actor) != "eat");
 		CHECK(!blocks.item_empty(fruitLocation));
 		CHECK(items.getQuantity(fruit) < 50u);
 	}
 }
 TEST_CASE("basicNeedsNonsentient")
 {
-	static PlantSpeciesId wheatGrass = PlantSpecies::byName(L"wheat grass");
-	static MaterialTypeId dirt = MaterialType::byName(L"dirt");
-	static AnimalSpeciesId redDeer = AnimalSpecies::byName(L"red deer");
+	static PlantSpeciesId wheatGrass = PlantSpecies::byName("wheat grass");
+	static MaterialTypeId dirt = MaterialType::byName("dirt");
+	static AnimalSpeciesId redDeer = AnimalSpecies::byName("red deer");
 	static FluidTypeId water = FluidType::byName("water");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
@@ -210,7 +210,7 @@ TEST_CASE("basicNeedsNonsentient")
 		CHECK(!actors.stamina_isFull(actor));
 		if(actors.eat_getMassFoodRequested(actor) != 0)
 			actors.eat_do(actor, actors.eat_getMassFoodRequested(actor));
-		CHECK(actors.objective_getCurrentName(actor) == L"sleep");
+		CHECK(actors.objective_getCurrentName(actor) == "sleep");
 		CHECK(actors.sleep_isAwake(actor));
 		// Look for sleeping spot.
 		simulation.doStep();
@@ -230,7 +230,7 @@ TEST_CASE("basicNeedsNonsentient")
 		PlantIndex grass = blocks.plant_get(grassLocation);
 		// Generate objectives.
 		actors.eat_setIsHungry(actor);
-		CHECK(actors.objective_getCurrentName(actor) == L"eat");
+		CHECK(actors.objective_getCurrentName(actor) == "eat");
 		CHECK(actors.eat_isHungry(actor));
 		CHECK(plants.getPercentFoliage(grass) == 100);
 		// The deer is wandering randomly while we fast forward until it is hungry, it might or might not already be next to the grass.
@@ -240,7 +240,7 @@ TEST_CASE("basicNeedsNonsentient")
 			CHECK(actors.move_hasPathRequest(actor));
 			simulation.doStep();
 			CHECK(!actors.move_hasPathRequest(actor));
-			CHECK(actors.objective_getCurrentName(actor) == L"eat");
+			CHECK(actors.objective_getCurrentName(actor) == "eat");
 			BlockIndex destination = actors.move_getDestination(actor);
 			CHECK(destination.exists());
 			CHECK(blocks.isAdjacentToIncludingCornersAndEdges(destination, grassLocation));
@@ -250,7 +250,7 @@ TEST_CASE("basicNeedsNonsentient")
 		// Eat grass.
 		simulation.fastForward(Config::stepsToEat);
 		CHECK(!actors.eat_isHungry(actor));
-		CHECK(actors.objective_getCurrentName(actor) != L"eat");
+		CHECK(actors.objective_getCurrentName(actor) != "eat");
 		CHECK(plants.getPercentFoliage(grass) != 100);
 	}
 	SUBCASE("sleep at assigned spot")
@@ -260,7 +260,7 @@ TEST_CASE("basicNeedsNonsentient")
 		BlockIndex spot = blocks.getIndex_i(5, 5, 2);
 		actors.sleep_setSpot(actor, spot);
 		actors.sleep_makeTired(actor);
-		CHECK(actors.objective_getCurrentName(actor) == L"sleep");
+		CHECK(actors.objective_getCurrentName(actor) == "sleep");
 		// Path to spot.
 		simulation.doStep();
 		CHECK(actors.move_getDestination(actor) == spot);
@@ -282,7 +282,7 @@ TEST_CASE("basicNeedsNonsentient")
 			// Actor chooses current location as new sleeping spot.
 			CHECK(!actors.move_hasPathRequest(actor));
 			CHECK(!actors.move_hasEvent(actor));
-			CHECK(actors.objective_getCurrentName(actor) == L"sleep");
+			CHECK(actors.objective_getCurrentName(actor) == "sleep");
 			CHECK(actors.sleep_getSpot(actor).exists());
 			CHECK(!actors.sleep_isAwake(actor));
 		}
@@ -294,7 +294,7 @@ TEST_CASE("basicNeedsNonsentient")
 			// Path to designated spot blocked, try to repath, no path found, clear designated spot.
 			simulation.doStep();
 			CHECK(actors.sleep_getSpot(actor).empty());
-			CHECK(actors.objective_getCurrentName(actor) == L"sleep");
+			CHECK(actors.objective_getCurrentName(actor) == "sleep");
 			CHECK(actors.move_hasPathRequest(actor));
 		}
 	}
@@ -304,7 +304,7 @@ TEST_CASE("basicNeedsNonsentient")
 	}
 	SUBCASE("scavenge corpse")
 	{
-		AnimalSpeciesId blackBear = AnimalSpecies::byName(L"black bear");
+		AnimalSpeciesId blackBear = AnimalSpecies::byName("black bear");
 		ActorIndex bear = actors.create(ActorParamaters{
 			.species=blackBear,
 			.location=blocks.getIndex_i(5, 1, 2),
@@ -317,7 +317,7 @@ TEST_CASE("basicNeedsNonsentient")
 		actors.eat_setIsHungry(bear);
 		// Bear is hungry.
 		CHECK(actors.eat_getMassFoodRequested(bear) != 0);
-		CHECK(actors.objective_getCurrentName(bear) == L"eat");
+		CHECK(actors.objective_getCurrentName(bear) == "eat");
 		CHECK(actors.move_hasPathRequest(bear));
 		FindPathResult result = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(bear)).findPathToWithoutMemo(actors.getLocation(bear), actors.getFacing(bear), actors.getShape(bear), actors.getLocation(deer));
 		CHECK(!result.path.empty());
@@ -331,7 +331,7 @@ TEST_CASE("basicNeedsNonsentient")
 		// Bear eats.
 		simulation.fastForward(Config::stepsToEat);
 		CHECK(!actors.eat_isHungry(bear));
-		CHECK(actors.objective_getCurrentName(bear) != L"eat");
+		CHECK(actors.objective_getCurrentName(bear) != "eat");
 		CHECK(actors.getMass(deer) != deerMass);
 	}
 	SUBCASE("leave location with unsafe temperature")
@@ -342,18 +342,18 @@ TEST_CASE("basicNeedsNonsentient")
 		simulation.doStep();
 		CHECK(!actors.temperature_isSafeAtCurrentLocation(actor));
 		CHECK(blocks.temperature_get(actors.getLocation(actor)) > AnimalSpecies::getMaximumSafeTemperature(actors.getSpecies(actor)));
-		CHECK(actors.objective_getCurrentName(actor) == L"get to safe temperature");
+		CHECK(actors.objective_getCurrentName(actor) == "get to safe temperature");
 		CHECK(!actors.grow_isGrowing(actor));
 	}
 }
 TEST_CASE("actorGrowth")
 {
-	static MaterialTypeId dirt = MaterialType::byName(L"dirt");
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
+	static MaterialTypeId dirt = MaterialType::byName("dirt");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	static FluidTypeId water = FluidType::byName("water");
 	Step step = DateTime(8, 60, 10000).toSteps();
-	Simulation simulation(L"", step);
-	FactionId faction = simulation.createFaction(L"Tower Of Power");
+	Simulation simulation("", step);
+	FactionId faction = simulation.createFaction("Tower Of Power");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
@@ -373,8 +373,8 @@ TEST_CASE("actorGrowth")
 	blocks.solid_setNot(blocks.getIndex_i(7, 7, 0));
 	blocks.fluid_add(blocks.getIndex_i(7, 7, 0), CollisionVolume::create(100), water);
 	items.create({
-		.itemType=ItemType::byName(L"apple"),
-		.materialType=MaterialType::byName(L"fruit"),
+		.itemType=ItemType::byName("apple"),
+		.materialType=MaterialType::byName("fruit"),
 		.location=blocks.getIndex_i(1, 5, 2),
 		.quantity=Quantity::create(1000),
 	});
@@ -404,15 +404,15 @@ TEST_CASE("actorGrowth")
 }
 TEST_CASE("death")
 {
-	static MaterialTypeId dirt = MaterialType::byName(L"dirt");
-	static AnimalSpeciesId redDeer = AnimalSpecies::byName(L"red deer");
+	static MaterialTypeId dirt = MaterialType::byName("dirt");
+	static AnimalSpeciesId redDeer = AnimalSpecies::byName("red deer");
 	Step step  = DateTime(12,150,1000).toSteps();
-	Simulation simulation(L"", step);
+	Simulation simulation("", step);
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName(L"marble"));
+	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName("marble"));
 	Actors& actors = area.getActors();
 	BlockIndex actorLocation = blocks.getIndex_i(1, 1, 2);
 	ActorIndex actor = actors.create(ActorParamaters{
@@ -427,15 +427,15 @@ TEST_CASE("death")
 	{
 		// Generate objectives, discard eat if it exists.
 		actors.drink_setNeedsFluid(actor);
-		CHECK(actors.objective_getCurrentName(actor) == L"drink");
+		CHECK(actors.objective_getCurrentName(actor) == "drink");
 		CHECK(actors.move_hasPathRequest(actor));
 		// Fail to find anything to drink, create path request to area edge.
 		simulation.doStep();
-		CHECK(actors.objective_getCurrentName(actor) == L"drink");
+		CHECK(actors.objective_getCurrentName(actor) == "drink");
 		CHECK(actors.move_hasPathRequest(actor));
 		// Fail to path to edge, supress need.
 		simulation.doStep();
-		CHECK(actors.objective_getCurrentName(actor) != L"drink");
+		CHECK(actors.objective_getCurrentName(actor) != "drink");
 		Step delayTillDeathByDehydration = AnimalSpecies::getStepsTillDieWithoutFluid(redDeer);
 		// Delay must be even number or divide by  2 will cause a rounding error.
 		float delayMod2 = delayTillDeathByDehydration.get() % 2;
@@ -468,15 +468,15 @@ TEST_CASE("death")
 }
 TEST_CASE("death-temperature")
 {
-	static MaterialTypeId dirt = MaterialType::byName(L"dirt");
-	static AnimalSpeciesId redDeer = AnimalSpecies::byName(L"red deer");
+	static MaterialTypeId dirt = MaterialType::byName("dirt");
+	static AnimalSpeciesId redDeer = AnimalSpecies::byName("red deer");
 	Step step  = DateTime(12,150,1000).toSteps();
-	Simulation simulation(L"", step);
+	Simulation simulation("", step);
 	Area& area = simulation.m_hasAreas->createArea(6,6,6);
 	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName(L"marble"));
+	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName("marble"));
 	Actors& actors = area.getActors();
 	BlockIndex actorLocation = blocks.getIndex_i(1, 1, 2);
 	ActorIndex actor = actors.create(ActorParamaters{

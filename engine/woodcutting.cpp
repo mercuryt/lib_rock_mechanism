@@ -38,7 +38,7 @@ WoodCuttingProject::WoodCuttingProject(const Json& data, DeserializationMemo& de
 std::vector<std::pair<ItemQuery, Quantity>> WoodCuttingProject::getConsumed() const { return {}; }
 std::vector<std::pair<ItemQuery, Quantity>> WoodCuttingProject::getUnconsumed() const
 {
-	static const ItemTypeId itemType = ItemType::byName(L"axe");
+	static const ItemTypeId itemType = ItemType::byName("axe");
 	return {{ItemQuery::create(itemType), Quantity::create(1)}};
 }
 std::vector<ActorReference> WoodCuttingProject::getActors() const { return {}; }
@@ -57,15 +57,15 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> WoodCuttingProject
 	auto woodType = PlantSpecies::getWoodType(species);
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> output{
 
-		{ItemType::byName(L"branch"), woodType, unitsBranchesGenerated},
-		{ItemType::byName(L"log"), woodType, unitsLogsGenerated}
+		{ItemType::byName("branch"), woodType, unitsBranchesGenerated},
+		{ItemType::byName("log"), woodType, unitsLogsGenerated}
 	};
 	return output;
 }
 // Static.
 uint32_t WoodCuttingProject::getWorkerWoodCuttingScore(Area& area, ActorIndex actor)
 {
-	static SkillTypeId woodCuttingType = SkillType::byName(L"wood cutting");
+	static SkillTypeId woodCuttingType = SkillType::byName("wood cutting");
 	Actors& actors = area.getActors();
 	uint32_t strength = actors.getStrength(actor).get();
 	uint32_t skill = actors.skill_getLevel(actor, woodCuttingType).get();

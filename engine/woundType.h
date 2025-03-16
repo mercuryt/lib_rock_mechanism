@@ -10,23 +10,23 @@ struct Hit;
 class BodyPartType;
 enum class WoundType { Pierce, Cut, Bludgeon };
 
-inline WoundType woundTypeByName(std::wstring name)
+inline WoundType woundTypeByName(std::string name)
 {
-	if(name == L"Pierce")
+	if(name == "Pierce")
 		return WoundType::Pierce;
-	if(name == L"Cut")
+	if(name == "Cut")
 		return WoundType::Cut;
-	assert(name == L"Bludgeon");
+	assert(name == "Bludgeon");
 	return WoundType::Bludgeon;
 }
-inline std::wstring getWoundTypeName(const WoundType& woundType)
+inline std::string getWoundTypeName(const WoundType& woundType)
 {
 	if(woundType == WoundType::Pierce)
-		return L"Pierce";
+		return "Pierce";
 	if(woundType == WoundType::Cut)
-		return L"Cut";
+		return "Cut";
 	assert(woundType == WoundType::Bludgeon);
-	return L"Bludgeon";
+	return "Bludgeon";
 }
 namespace WoundCalculations
 {
@@ -34,5 +34,5 @@ namespace WoundCalculations
 	uint32_t getBleedVolumeRate(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale);
 	Percent getPercentTemporaryImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale);
 	Percent getPercentPermanentImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale);
-	WoundType byName(std::wstring name);
+	WoundType byName(std::string name);
 }

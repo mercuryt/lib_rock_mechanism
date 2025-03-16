@@ -12,7 +12,8 @@ AreaHasRain::AreaHasRain(Area& a, Simulation&) :
 	m_humidityBySeason({Percent::create(30),Percent::create(15),Percent::create(10),Percent::create(20)}),
 	m_event(a.m_eventSchedule),
 	m_area(a),
-	m_defaultRainFluidType(FluidType::byName("water")) { }
+	m_defaultRainFluidType(FluidType::byName("water"))
+{ }
 void AreaHasRain::load(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo)
 {
 	if(data.contains("currentFluidType"))

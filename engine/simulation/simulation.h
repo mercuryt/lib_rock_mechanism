@@ -45,7 +45,7 @@ private:
 	//TODO: What is this for?
 	std::future<void> m_stepFuture;
 public:
-	std::wstring m_name;
+	std::string m_name;
 	std::filesystem::path m_path;
 	Step m_step;
 	//std::unique_ptr<World> m_world;
@@ -55,14 +55,14 @@ public:
 	std::unique_ptr<DramaEngine> m_dramaEngine;
 	std::mutex m_uiReadMutex;
 
-	Simulation(std::wstring name = L"", Step s = DateTime(12, 150, 10'000).toSteps());
+	Simulation(std::string name = "", Step s = DateTime(12, 150, 10'000).toSteps());
 	Simulation(std::filesystem::path path);
 	Simulation(const Json& data);
 	Json toJson() const;
 	void doStep(uint16_t count = 1);
 	void incrementHour();
 	void save();
-	FactionId createFaction(std::wstring name);
+	FactionId createFaction(std::string name);
 	//TODO: latitude, longitude, altitude.
 	[[nodiscard]] std::filesystem::path getPath() const  { return m_path; }
 	[[nodiscard, maybe_unused]] DateTime getDateTime() const;

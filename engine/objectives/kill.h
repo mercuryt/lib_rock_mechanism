@@ -36,5 +36,5 @@ public:
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
 	void reset(Area& area, const ActorIndex& actor);
-	std::wstring name() const { return L"kill"; }
+	std::string name() const { return "kill"; }
 };

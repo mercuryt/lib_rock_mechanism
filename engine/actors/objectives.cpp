@@ -71,7 +71,7 @@ bool Actors::objective_exists(const ActorIndex& index) const
 {
 	return m_hasObjectives[index]->hasCurrent();
 }
-std::wstring Actors::objective_getCurrentName(const ActorIndex& index) const
+std::string Actors::objective_getCurrentName(const ActorIndex& index) const
 {
 	return m_hasObjectives[index]->getCurrent().name();
 }

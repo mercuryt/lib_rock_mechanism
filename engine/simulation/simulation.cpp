@@ -20,11 +20,11 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
-Simulation::Simulation(std::wstring name, Step s) :
+Simulation::Simulation(std::string name, Step s) :
        	m_eventSchedule(*this, nullptr), m_hourlyEvent(m_eventSchedule), m_deserializationMemo(*this), m_name(name), m_step(s)
 {
 	m_hourlyEvent.schedule(*this);
-	m_path.append(L"save/"+name);
+	m_path.append("save/"+name);
 	m_dramaEngine = std::make_unique<DramaEngine>(*this);
 	m_hasAreas = std::make_unique<SimulationHasAreas>(*this);
 }
@@ -83,7 +83,7 @@ void Simulation::save()
 	std::filesystem::create_directory(m_path/"area");
 	m_hasAreas->save();
 }
-FactionId Simulation::createFaction(std::wstring name) { return m_hasFactions.createFaction(name); }
+FactionId Simulation::createFaction(std::string name) { return m_hasFactions.createFaction(name); }
 DateTime Simulation::getDateTime() const { return DateTime(m_step); }
 Step Simulation::getNextEventStep() const
 {

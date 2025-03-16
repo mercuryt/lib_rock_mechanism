@@ -5,7 +5,7 @@ ShapeId AnimalSpecies::shapeForPercentGrown(const AnimalSpeciesId& id, const Per
 	return animalSpeciesData.m_shapes[id][index];
 }
 // Static method.
-AnimalSpeciesId AnimalSpecies::byName(std::wstring name)
+AnimalSpeciesId AnimalSpecies::byName(std::string name)
 {
 	auto found = animalSpeciesData.m_name.find(name);
 	assert(found != animalSpeciesData.m_name.end());
@@ -45,7 +45,7 @@ AnimalSpeciesId AnimalSpecies::create(AnimalSpeciesParamaters p)
 	animalSpeciesData.m_shapes.add(p.shapes);
 	return AnimalSpeciesId::create(animalSpeciesData.m_name.size());
 }
-std::wstring AnimalSpecies::getName(const AnimalSpeciesId& id) { return animalSpeciesData.m_name[id]; };
+std::string AnimalSpecies::getName(const AnimalSpeciesId& id) { return animalSpeciesData.m_name[id]; };
 bool AnimalSpecies::getSentient(const AnimalSpeciesId& id) { return animalSpeciesData.m_sentient[id]; };
 std::array<AttributeLevel, 3> AnimalSpecies::getStrength(const AnimalSpeciesId& id) { return animalSpeciesData.m_strength[id]; };
 std::array<AttributeLevel, 3> AnimalSpecies::getDextarity(const AnimalSpeciesId& id) { return animalSpeciesData.m_dextarity[id]; };

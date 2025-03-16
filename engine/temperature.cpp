@@ -94,10 +94,10 @@ void AreaHasTemperature::applyDeltas()
 void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature& temperature)
 {
 	m_ambiantSurfaceTemperature = temperature;
+	Blocks& blocks = m_area.getBlocks();
 	m_area.getPlants().onChangeAmbiantSurfaceTemperature();
 	m_area.getActors().onChangeAmbiantSurfaceTemperature();
 	m_area.getItems().onChangeAmbiantSurfaceTemperature();
-	Blocks& blocks = m_area.getBlocks();
 	m_area.m_exteriorPortals.onChangeAmbiantSurfaceTemperature(blocks, temperature);
 	for(auto& [meltingPoint, toMeltOnSurface] : m_aboveGroundBlocksByMeltingPoint)
 		if(meltingPoint <= temperature)

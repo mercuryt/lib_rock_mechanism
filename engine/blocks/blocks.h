@@ -100,6 +100,7 @@ public:
 	void initalize(const BlockIndex& index);
 	void makeIndexOffsetsForAdjacent();
 	void moveContentsTo(const BlockIndex& index, const BlockIndex& other);
+	void maybeContentsFalls(const BlockIndex& index);
 	// For testing.
 	[[nodiscard]] std::vector<BlockIndex> getAllIndices() const ;
 	[[nodiscard]] Json toJson() const;
@@ -238,6 +239,7 @@ public:
 	[[nodiscard]] bool solid_is(const BlockIndex& index) const;
 	[[nodiscard]] MaterialTypeId solid_get(const BlockIndex& index) const;
 	[[nodiscard]] Mass solid_getMass(const BlockIndex& index) const;
+	[[nodiscard]] MaterialTypeId solid_getHardest(const SmallSet<BlockIndex>& blocks);
 	// -BlockFeature.
 	void blockFeature_construct(const BlockIndex& index, const BlockFeatureType& featureType, const MaterialTypeId& materialType);
 	void blockFeature_hew(const BlockIndex& index, const BlockFeatureType& featureType);
@@ -343,7 +345,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	[[nodiscard]] Quantity item_getCount(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType) const;
 	[[nodiscard]] ItemIndex item_getGeneric(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType) const;
 	[[nodiscard]] ItemIndicesForBlock& item_getAll(const BlockIndex& index);
-	const ItemIndicesForBlock& item_getAll(const BlockIndex& index) const;
+	[[nodiscard]] const ItemIndicesForBlock& item_getAll(const BlockIndex& index) const;
 	[[nodiscard]] bool item_hasInstalledType(const BlockIndex& index, const ItemTypeId& itemType) const;
 	[[nodiscard]] bool item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(const BlockIndex& index, const ActorIndex& actor) const;
 	[[nodiscard]] bool item_hasContainerContainingFluidTypeCarryableBy(const BlockIndex& index, const ActorIndex& actor, const FluidTypeId& fluidType) const;
@@ -367,6 +369,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	void shape_addDynamicVolume(const BlockIndex& index, const CollisionVolume& volume);
 	void shape_removeDynamicVolume(const BlockIndex& index, const CollisionVolume& volume);
 	[[nodiscard]] bool shape_anythingCanEnterEver(const BlockIndex& index) const;
+	[[nodiscard]] bool shape_canFit(const BlockIndex& index, const ShapeId& shape, const Facing4& facing) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverFrom(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& block) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing4& facing) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType) const;
@@ -392,6 +395,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	[[nodiscard]] CollisionVolume shape_getDynamicVolume(const BlockIndex& index) const;
 	[[nodiscard]] CollisionVolume shape_getStaticVolume(const BlockIndex& index) const;
 	[[nodiscard]] Quantity shape_getQuantityOfItemWhichCouldFit(const BlockIndex& index, const ItemTypeId& itemType) const;
+	[[nodiscard]] SmallSet<BlockIndex> shape_getBelowBlocksWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing4& facing) const;
 	// -FarmField
 	void farm_insert(const BlockIndex& index, const FactionId& faction, FarmField& farmField);
 	void farm_remove(const BlockIndex& index, const FactionId& faction);
@@ -429,7 +433,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	Temperature temperature_getDailyAverageAmbient(const BlockIndex& index) const;
 	Temperature temperature_get(const BlockIndex& index) const;
 	bool temperature_transmits(const BlockIndex& block) const;
-	[[nodiscard]] std::wstring toString(const BlockIndex& index) const;
+	[[nodiscard]] std::string toString(const BlockIndex& index) const;
 	Blocks(Blocks&) = delete;
 	Blocks(Blocks&&) = delete;
 };

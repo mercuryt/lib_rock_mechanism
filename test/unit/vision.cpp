@@ -16,14 +16,14 @@ TEST_CASE("vision")
 	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	auto marble = MaterialType::byName(L"marble");
-	auto glass = MaterialType::byName(L"glass");
+	auto marble = MaterialType::byName("marble");
+	auto glass = MaterialType::byName("glass");
 	auto& door = BlockFeatureType::door;
 	auto& hatch = BlockFeatureType::hatch;
 	auto& stairs = BlockFeatureType::stairs;
 	auto& floor = BlockFeatureType::floor;
-	auto dwarf = AnimalSpecies::byName(L"dwarf");
-	auto troll = AnimalSpecies::byName(L"troll");
+	auto dwarf = AnimalSpecies::byName("dwarf");
+	auto troll = AnimalSpecies::byName("troll");
 	SUBCASE("See no one when no one is present to be seen")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
@@ -387,8 +387,8 @@ TEST_CASE("vision")
 }
 TEST_CASE("Too far to see")
 {
-	auto marble = MaterialType::byName(L"marble");
-	auto dwarf = AnimalSpecies::byName(L"dwarf");
+	auto marble = MaterialType::byName("marble");
+	auto dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(20,20,20);
 	Blocks& blocks = area.getBlocks();

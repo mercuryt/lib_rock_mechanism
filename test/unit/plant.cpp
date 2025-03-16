@@ -9,11 +9,11 @@
 #include "../../engine/hasShapes.hpp"
 TEST_CASE("plant")
 {
-	static MaterialTypeId marble = MaterialType::byName(L"marble");
-	static MaterialTypeId dirt = MaterialType::byName(L"dirt");
-	static PlantSpeciesId wheatGrass = PlantSpecies::byName(L"wheat grass");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static MaterialTypeId dirt = MaterialType::byName("dirt");
+	static PlantSpeciesId wheatGrass = PlantSpecies::byName("wheat grass");
 	static FluidTypeId water = FluidType::byName("water");
-	Simulation simulation(L"test", DateTime::toSteps(12, 100, 1200));
+	Simulation simulation("test", DateTime::toSteps(12, 100, 1200));
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
@@ -54,10 +54,10 @@ TEST_CASE("plant")
 }
 TEST_CASE("plantFruits")
 {
-	static MaterialTypeId dirt = MaterialType::byName(L"dirt");
-	static PlantSpeciesId wheatGrass = PlantSpecies::byName(L"wheat grass");
+	static MaterialTypeId dirt = MaterialType::byName("dirt");
+	static PlantSpeciesId wheatGrass = PlantSpecies::byName("wheat grass");
 	uint16_t dayOfYear = PlantSpecies::getDayOfYearToStartHarvest(wheatGrass);
-	Simulation simulation(L"test", DateTime::toSteps(24, dayOfYear - 1, 1200));
+	Simulation simulation("test", DateTime::toSteps(24, dayOfYear - 1, 1200));
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
 	Plants& plants = area.getPlants();
@@ -72,11 +72,11 @@ TEST_CASE("plantFruits")
 }
 TEST_CASE("harvestSeasonEnds")
 {
-	static MaterialTypeId dirt = MaterialType::byName(L"dirt");
-	static PlantSpeciesId wheatGrass = PlantSpecies::byName(L"wheat grass");
+	static MaterialTypeId dirt = MaterialType::byName("dirt");
+	static PlantSpeciesId wheatGrass = PlantSpecies::byName("wheat grass");
 	uint16_t dayOfYear = PlantSpecies::getDayOfYearToStartHarvest(wheatGrass);
 	Step step = DateTime::toSteps(24, dayOfYear - 1, 1200) + PlantSpecies::getStepsDurationHarvest(wheatGrass);
-	Simulation simulation(L"test", step);
+	Simulation simulation("test", step);
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();

@@ -152,11 +152,11 @@ void ObjectiveType::load()
 {
 	objectiveTypeData.resize(16);
 	ObjectiveTypeId index = ObjectiveTypeId::create(0);
-	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName(L"wood working"));
-	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName(L"metal working"));
-	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName(L"stone carving"));
-	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName(L"bone carving"));
-	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName(L"assembling"));
+	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("wood working"));
+	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("metal working"));
+	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("stone carving"));
+	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("bone carving"));
+	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("assembling"));
 	objectiveTypeData[index++] = std::make_unique<DigObjectiveType>();
 	//  TODO: specalize construct into Earthworks, Masonry, Metal Construction, and Carpentry.
 	objectiveTypeData[index++] = std::make_unique<ConstructObjectiveType>();
@@ -171,13 +171,13 @@ void ObjectiveType::load()
 	objectiveTypeData[index++] = std::make_unique<GetToSafeTemperatureObjectiveType>();
 }
 // Static method.
-ObjectiveTypeId ObjectiveType::getIdByName(std::wstring name)
+ObjectiveTypeId ObjectiveType::getIdByName(std::string name)
 {
 	const ObjectiveType& objectiveType = getByName(name);
 	return objectiveType.getId();
 }
 // Static method.
-const ObjectiveType& ObjectiveType::getByName(std::wstring name)
+const ObjectiveType& ObjectiveType::getByName(std::string name)
 {
 	auto found = std::ranges::find_if(objectiveTypeData, [&name](const auto& type) { return type->name() == name; });
 	assert(found != objectiveTypeData.end());

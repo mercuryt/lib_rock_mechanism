@@ -1,5 +1,5 @@
 #include "dig.h"
-#include "../dig.h"
+#include "../projects/dig.h"
 #include "../area/area.h"
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"

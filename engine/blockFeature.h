@@ -5,7 +5,7 @@
 
 struct BlockFeatureType
 {
-	const std::wstring name;
+	const std::string name;
 	const bool canBeHewn;
 	const bool blocksEntrance;
 	const bool lockable;
@@ -24,30 +24,30 @@ struct BlockFeatureType
 	static BlockFeatureType fortification;
 	static void load();
 	static std::vector<BlockFeatureType*> getAll() { return std::vector{&floor, &door, &flap, &hatch, &stairs, &floodGate, &floorGrate, &ramp, &fortification};  }
-	static const BlockFeatureType& byName(std::wstring name)
+	static const BlockFeatureType& byName(std::string name)
 	{
-		if(name == L"floor")
+		if(name == "floor")
 			return floor;
-		if(name == L"door")
+		if(name == "door")
 			return door;
-		if(name == L"flap")
+		if(name == "flap")
 			return flap;
-		if(name == L"hatch")
+		if(name == "hatch")
 			return hatch;
-		if(name == L"stairs")
+		if(name == "stairs")
 			return stairs;
-		if(name == L"floodGate")
+		if(name == "floodGate")
 			return floodGate;
-		if(name == L"floorGrate")
+		if(name == "floorGrate")
 			return floorGrate;
-		if(name == L"ramp")
+		if(name == "ramp")
 			return ramp;
-		assert(name == L"fortification");
+		assert(name == "fortification");
 		return fortification;
 	}
 };
 inline void to_json(Json& data, const BlockFeatureType* const& blockFeatureType){ data = blockFeatureType->name; }
-inline void from_json(const Json& data, const BlockFeatureType*& blockFeatureType){ blockFeatureType = &BlockFeatureType::byName(data.get<std::wstring>()); }
+inline void from_json(const Json& data, const BlockFeatureType*& blockFeatureType){ blockFeatureType = &BlockFeatureType::byName(data.get<std::string>()); }
 struct BlockFeature
 {
 	// Use pointers rather then references so we can store in vector and be able to erase at arbirtary index.

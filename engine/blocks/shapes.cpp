@@ -10,6 +10,20 @@ bool Blocks::shape_anythingCanEnterEver(const BlockIndex& index) const
 		return false;
 	return !blockFeature_blocksEntrance(index);
 }
+bool Blocks::shape_canFit(const BlockIndex& index, const ShapeId& shape, const Facing4& facing) const
+{
+	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
+	{
+		BlockIndex otherIndex = offset(index, pair.offset);
+		if(
+			otherIndex.empty() ||
+			!shape_anythingCanEnterEver(otherIndex) ||
+			m_dynamicVolume[otherIndex] + pair.volume > Config::maxBlockVolume
+		)
+			return false;
+	}
+	return true;
+}
 bool Blocks::shape_shapeAndMoveTypeCanEnterEverFrom(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& from) const
 {
 	assert(shape_anythingCanEnterEver(from));
@@ -261,6 +275,20 @@ Quantity Blocks::shape_getQuantityOfItemWhichCouldFit(const BlockIndex& index, c
 		return Quantity::create(0);
 	CollisionVolume freeVolume = Config::maxBlockVolume - m_staticVolume[index];
 	return Quantity::create((freeVolume / Shape::getCollisionVolumeAtLocationBlock(ItemType::getShape(itemType))).get());
+}
+SmallSet<BlockIndex> Blocks::shape_getBelowBlocksWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing4& facing) const
+{
+	// TODO: SIMD.
+	SmallSet<BlockIndex> output;
+	assert(getZ(index) != 0);
+	auto occupiedAt = Shape::getBlocksOccupiedAt(shape, *this, index, facing);
+	for(const BlockIndex& block : occupiedAt)
+	{
+		const BlockIndex& below = getBlockBelow(block);
+		if(!occupiedAt.contains(below))
+			output.insert(below);
+	}
+	return output;
 }
 bool Blocks::shape_canStandIn(const BlockIndex& index) const
 {

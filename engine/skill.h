@@ -17,7 +17,7 @@ public:
 	Skill(const SkillTypeId& st, SkillLevel l = SkillLevel::create(0), SkillExperiencePoints xp = SkillExperiencePoints::create(0)) :
 		m_skillType(st), m_level(l), m_xp(xp) { setup(); }
 	Skill(const Json& data) :
-		m_skillType(SkillType::byName(data["skillType"].get<std::wstring>())),
+		m_skillType(SkillType::byName(data["skillType"].get<std::string>())),
 		m_level(data["level"].get<SkillLevel>()),
 		m_xp(data["xp"].get<SkillExperiencePoints>())
 	{ setup();}
@@ -57,7 +57,7 @@ public:
 	{
 		for(const Json& skillData : data["skills"])
 		{
-			SkillTypeId skillType = SkillType::byName(skillData["skillType"].get<std::wstring>());
+			SkillTypeId skillType = SkillType::byName(skillData["skillType"].get<std::string>());
 			m_skills.emplace(skillType, skillData);
 		}
 	}

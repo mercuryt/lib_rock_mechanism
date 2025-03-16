@@ -175,7 +175,7 @@ CombatScore Actors::combat_getCombatScoreForAttack(const ActorIndex& index, cons
 {
 	CombatScore output = AttackType::getCombatScore(attack.attackType);
 	SkillTypeId skill = attack.item == ItemIndex::null() ?
-		SkillType::byName(L"unarmed") :
+		SkillType::byName("unarmed") :
 		AttackType::getSkillType(attack.attackType);
 	SkillLevel skillValue = m_skillSet[index]->get(skill);
 	output += (skillValue * Config::attackSkillCombatModifier).get();
@@ -234,7 +234,7 @@ void Actors::combat_noLongerTargetable(const ActorIndex& index)
 		combat_targetNoLongerTargetable(index);
 		m_hasObjectives[actor]->subobjectiveComplete(m_area);
 	}
-	m_targetedBy.clear();
+	m_targetedBy[index].clear();
 }
 void Actors::combat_onDeath(const ActorIndex& index)
 {

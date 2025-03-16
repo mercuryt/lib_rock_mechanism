@@ -74,7 +74,7 @@ PlantSpeciesId HasFarmFieldsForFaction::getPlantSpeciesFor(const BlockIndex& blo
 		if(farmField.blocks.contains(block))
 			return farmField.plantSpecies;
 	std::unreachable();
-	return PlantSpecies::byName(L"");
+	return PlantSpecies::byName("");
 }
 void HasFarmFieldsForFaction::addGivePlantFluidDesignation(Area& area, const BlockIndex& location)
 {

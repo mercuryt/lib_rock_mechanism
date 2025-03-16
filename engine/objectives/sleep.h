@@ -13,7 +13,7 @@ public:
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, const ActorIndex&) const { std::unreachable(); }
 	SleepObjectiveType() = default;
 	SleepObjectiveType(const Json&, DeserializationMemo&);
-	[[nodiscard]] std::wstring name() const { return L"sleep"; }
+	[[nodiscard]] std::string name() const { return "sleep"; }
 };
 class SleepObjective final : public Objective
 {
@@ -29,7 +29,7 @@ public:
 	void makePathRequest(Area& area, const ActorIndex& actor);
 	[[nodiscard]] bool onCanNotPath(Area& area, const ActorIndex& actor);
 	[[nodiscard]] uint32_t desireToSleepAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
-	[[nodiscard]] std::wstring name() const { return L"sleep"; }
+	[[nodiscard]] std::string name() const { return "sleep"; }
 	[[nodiscard]] bool isNeed() const { return true; }
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::sleep; }
 	[[nodiscard]] Json toJson() const;
@@ -50,6 +50,6 @@ public:
 	SleepPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
-	std::wstring name() const { return L"sleep"; }
+	std::string name() const { return "sleep"; }
 	[[nodiscard]] Json toJson() const;
 };

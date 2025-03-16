@@ -24,7 +24,7 @@ public:
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::wstring name() const { return L"give plants fluid"; }
+	[[nodiscard]] std::string name() const { return "give plants fluid"; }
 };
 class GivePlantsFluidObjectiveType final : public ObjectiveType
 {
@@ -33,7 +33,7 @@ public:
 	std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
 	GivePlantsFluidObjectiveType() = default;
 	GivePlantsFluidObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
-	[[nodiscard]] std::wstring name() const { return L"give plants fluid"; }
+	[[nodiscard]] std::string name() const { return "give plants fluid"; }
 };
 class GivePlantsFluidObjective final : public Objective
 {
@@ -49,7 +49,7 @@ public:
 	void selectPlantLocation(Area& area, const BlockIndex& block, const ActorIndex& actor);
 	void makePathRequest(Area& area, const ActorIndex& actor);
 	void onBeforeUnload(Area&, const ActorIndex&) override;
-	[[nodiscard]] std::wstring name() const override { return L"give plants fluid"; }
+	[[nodiscard]] std::string name() const override { return "give plants fluid"; }
 	//For testing.
 	[[nodiscard]] bool hasProject() const { return m_project != nullptr; }
 	[[nodiscard]] const GivePlantFluidProject& getProject() const { return *m_project; }

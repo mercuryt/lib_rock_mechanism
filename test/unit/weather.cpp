@@ -6,6 +6,7 @@
 #include "../../engine/threadedTask.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
+#include "../../engine/hasShapes.hpp"
 #include "../../engine/plants.h"
 #include "config.h"
 #include <iterator>
@@ -13,11 +14,11 @@
 
 TEST_CASE("weather")
 {
-	static MaterialTypeId marble = MaterialType::byName(L"marble");
-	static MaterialTypeId ice = MaterialType::byName(L"ice");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static MaterialTypeId ice = MaterialType::byName("ice");
 	static FluidTypeId water = FluidType::byName("water");
 	const Temperature& freezing = FluidType::getFreezingPoint(water);
-	Simulation simulation{L"", Step::create(1)};
+	Simulation simulation{"", Step::create(1)};
 	SUBCASE("rain")
 	{
 		Area& area = simulation.m_hasAreas->createArea(5, 5, 5);
@@ -61,6 +62,7 @@ TEST_CASE("weather")
 	{
 		Area& area = simulation.m_hasAreas->createArea(5, 5, 5);
 		Blocks& blocks = area.getBlocks();
+		Items& items = area.getItems();
 		areaBuilderUtil::setSolidLayers(area, 0, 3, marble);
 		const BlockIndex& above = blocks.getIndex_i(2, 2, 4);
 		CHECK(blocks.isExposedToSky(above));
@@ -75,28 +77,42 @@ TEST_CASE("weather")
 		CHECK(blocks.isExposedToSky(pond1));
 		CHECK(blocks.isExposedToSky(pond2));
 		CHECK(blocks.isExposedToSky(pond3));
-		const Cuboid pond{blocks, pond3, pond1};
-		blocks.fluid_add(pond, CollisionVolume::create(100), water);
+		blocks.fluid_add(pond1, CollisionVolume::create(100), water);
+		blocks.fluid_add(pond2, CollisionVolume::create(100), water);
+		blocks.fluid_add(pond3, CollisionVolume::create(99), water);
 		auto& hasTemperature = area.m_hasTemperature;
 		CHECK(hasTemperature.getAboveGroundFluidGroupsByMeltingPoint().contains(freezing));
 		CHECK(!hasTemperature.getAboveGroundFluidGroupsByMeltingPoint()[freezing].empty());
 		CHECK(hasTemperature.getAboveGroundBlocksByMeltingPoint()[freezing].empty());
+		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
 		hasTemperature.setAmbientSurfaceTemperature(freezing - 1);
-		CHECK(blocks.solid_is(pond3));
-		CHECK(blocks.solid_get(pond3) == ice);
+		CHECK(area.m_hasFluidGroups.getAll().empty());
+		CHECK(!blocks.solid_is(pond3));
+		static const ItemTypeId& chunk = ItemType::byName("chunk");
+		CHECK(blocks.item_getCount(pond3, chunk, ice) == Quantity::create(33));
 		CHECK(blocks.solid_is(pond1));
 		CHECK(blocks.solid_is(pond2));
+		CHECK(blocks.item_empty(above));
 		CHECK(hasTemperature.getAboveGroundFluidGroupsByMeltingPoint()[freezing].empty());
 		CHECK(hasTemperature.getAboveGroundBlocksByMeltingPoint().contains(freezing));
 		auto& blocksByMeltingPoint = hasTemperature.getAboveGroundBlocksByMeltingPoint()[freezing];
-		CHECK(blocksByMeltingPoint.contains(pond3));
 		CHECK(blocksByMeltingPoint.size() == 1);
+		const ItemIndex& chunk1 = blocks.item_getGeneric(pond3, chunk, ice);
+		CHECK(items.getQuantity(chunk1) == Quantity::create(33));
+		CHECK(items.isOnSurface(chunk1));
 		hasTemperature.setAmbientSurfaceTemperature(freezing + 1);
+		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
 		CHECK(!blocks.solid_is(pond3));
+		CHECK(blocks.item_empty(pond3));
 		CHECK(!blocks.solid_is(pond2));
 		CHECK(!blocks.solid_is(pond1));
 		CHECK(!hasTemperature.getAboveGroundFluidGroupsByMeltingPoint()[freezing].empty());
 		CHECK(hasTemperature.getAboveGroundBlocksByMeltingPoint()[freezing].empty());
+		CHECK(blocks.fluid_volumeOfTypeContains(pond1, water) == 100);
+		CHECK(blocks.fluid_volumeOfTypeContains(pond2, water) == 100);
+		CHECK(blocks.fluid_volumeOfTypeContains(pond3, water) == 99);
+		CHECK(blocks.fluid_getGroup(pond1, water)->m_excessVolume == 0);
+		CHECK(blocks.fluid_getTotalVolume(above) == 0);
 	}
 	SUBCASE("ambient temperature and exterior portals")
 	{
@@ -145,7 +161,7 @@ TEST_CASE("weather")
 		CHECK(blocks.temperature_get(lastBlockInPortalEffectZone) < blocks.temperature_get(firstBlockAfterEffectZone));
 		CHECK(area.m_exteriorPortals.getDistanceFor(lastBlockInPortalEffectZone).exists());
 		CHECK(area.m_exteriorPortals.getDistanceFor(firstBlockAfterEffectZone).empty());
-		blocks.blockFeature_construct(block1, BlockFeatureType::door, MaterialType::byName(L"poplar wood"));
+		blocks.blockFeature_construct(block1, BlockFeatureType::door, MaterialType::byName("poplar wood"));
 		CHECK(!area.m_exteriorPortals.isRecordedAsPortal(block1));
 		CHECK(!area.m_exteriorPortals.isRecordedAsPortal(portal));
 		CHECK(blocks.temperature_get(block2) == blocks.temperature_get(block4));

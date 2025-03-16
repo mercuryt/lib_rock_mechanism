@@ -14,12 +14,12 @@
 
 class MaterialTypeCategory
 {
-	StrongVector<std::wstring, MaterialCategoryTypeId> m_name;
+	StrongVector<std::string, MaterialCategoryTypeId> m_name;
 public:
 	[[nodiscard]] static MaterialCategoryTypeId size();
-	[[nodiscard]] static const MaterialCategoryTypeId byName(const std::wstring&& name);
-	[[nodiscard]] static const std::wstring& getName(MaterialCategoryTypeId id);
-	static void create(std::wstring name);
+	[[nodiscard]] static const MaterialCategoryTypeId byName(const std::string&& name);
+	[[nodiscard]] static const std::string& getName(MaterialCategoryTypeId id);
+	static void create(std::string name);
 };
 static MaterialTypeCategory materialTypeCategoryData;
 class SpoilData
@@ -43,13 +43,13 @@ struct MaterialTypeConstructionDataParamaters final
 	std::vector<std::pair<ItemQuery, Quantity>> consumed = {};
 	std::vector<std::pair<ItemQuery, Quantity>> unconsumed = {};
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> byproducts = {};
-	std::wstring name;
+	std::string name;
 	SkillTypeId skill;
 	Step duration;
 };
 struct MaterialTypeParamaters final
 {
-	std::wstring name;
+	std::string name;
 	Density density;
 	uint32_t hardness;
 	bool transparent;
@@ -61,7 +61,7 @@ struct MaterialTypeParamaters final
 	std::vector<std::pair<ItemQuery, Quantity>> construction_consumed = {};
 	std::vector<std::pair<ItemQuery, Quantity>> construction_unconsumed = {};
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> construction_byproducts = {};
-	std::wstring construction_name = {};
+	std::string construction_name = {};
 	SkillTypeId construction_skill = SkillTypeId::null();
 	Step construction_duration = Step::null();
 	// Fire.
@@ -72,7 +72,7 @@ struct MaterialTypeParamaters final
 };
 class MaterialType final
 {
-	StrongVector<std::wstring, MaterialTypeId> m_name;
+	StrongVector<std::string, MaterialTypeId> m_name;
 	StrongVector<Density, MaterialTypeId> m_density;
 	StrongVector<uint32_t, MaterialTypeId> m_hardness;
 	StrongBitSet<MaterialTypeId> m_transparent;
@@ -99,8 +99,8 @@ public:
 	static void setConstructionParamaters(const MaterialTypeId& materialType, const MaterialTypeConstructionDataParamaters& p);
 	[[nodiscard]] static bool empty();
 	[[nodiscard]] static MaterialTypeId size();
-	[[nodiscard]] static MaterialTypeId byName(std::wstring name);
-	[[nodiscard]] static std::wstring& getName(const MaterialTypeId& id);
+	[[nodiscard]] static MaterialTypeId byName(std::string name);
+	[[nodiscard]] static std::string& getName(const MaterialTypeId& id);
 	[[nodiscard]] static Density getDensity(const MaterialTypeId& id);
 	[[nodiscard]] static uint32_t getHardness(const MaterialTypeId& id);
 	[[nodiscard]] static bool getTransparent(const MaterialTypeId& id);

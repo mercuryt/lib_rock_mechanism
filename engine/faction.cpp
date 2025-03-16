@@ -9,13 +9,13 @@ const Faction& SimulationHasFactions::getById(const FactionId& id) const
 {
 	return m_factions.at(id.get());
 }
-FactionId SimulationHasFactions::createFaction(std::wstring name)
+FactionId SimulationHasFactions::createFaction(std::string name)
 {
 	FactionId id = FactionId::create(m_factions.size());
 	m_factions.emplace_back(id, name);
 	return m_factions.back().id;
 }
-FactionId SimulationHasFactions::byName(std::wstring name)
+FactionId SimulationHasFactions::byName(std::string name)
 {
 	auto found =  std::ranges::find(m_factions, name, &Faction::name);
 	assert(found != m_factions.end());
@@ -29,7 +29,7 @@ bool SimulationHasFactions::isEnemy(const FactionId& a, const FactionId& b) cons
 {
 	return getById(a).enemies.contains(b);
 }
-bool SimulationHasFactions::containsFactionWithName(std::wstring name) const
+bool SimulationHasFactions::containsFactionWithName(std::string name) const
 {
 	return std::ranges::contains(m_factions, name, &Faction::name);
 }

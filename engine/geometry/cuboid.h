@@ -83,7 +83,7 @@ public:
 	//static_assert(std::forward_iterator<iterator>);
 	CuboidView getView(const Blocks& blocks) const;
 	CuboidSurfaceView getSurfaceView(const Blocks& blocks) const;
-	std::wstring toString() const;
+	std::string toString() const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Cuboid, m_highest, m_lowest);
 };
 struct CuboidView : public std::ranges::view_interface<CuboidView>

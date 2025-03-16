@@ -20,7 +20,7 @@ public:
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
 	void reset(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::wstring name() const { return L"rest"; }
+	[[nodiscard]] std::string name() const { return "rest"; }
 friend class RestEvent;
 };
 class RestEvent final : public ScheduledEvent

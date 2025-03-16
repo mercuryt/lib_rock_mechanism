@@ -24,7 +24,7 @@ Wound::Wound(Area& area, const ActorIndex& a, const WoundType wt, BodyPart& bp, 
 	maxPercentPermanantImpairment = WoundCalculations::getPercentPermanentImpairment(hit, bodyPart.bodyPartType, scale);
 }
 Wound::Wound(const Json& data, DeserializationMemo& deserializationMemo, BodyPart& bp) :
-	woundType(woundTypeByName(data["woundType"].get<std::wstring>())),
+	woundType(woundTypeByName(data["woundType"].get<std::string>())),
 	bodyPart(bp), hit(data["hit"]), bleedVolumeRate(data["bleedVolumeRate"].get<uint32_t>()),
 	percentHealed(data["percentHealed"].get<Percent>()), healEvent(deserializationMemo.m_simulation.m_eventSchedule) { }
 Json Wound::toJson() const
@@ -48,8 +48,8 @@ Percent Wound::impairPercent() const
 	return Percent::create(util::scaleByInversePercent(maxPercentTemporaryImpairment.get(), getPercentHealed())) + maxPercentPermanantImpairment;
 }
 BodyPart::BodyPart(const Json data, DeserializationMemo& deserializationMemo) :
-	bodyPartType(BodyPartType::byName(data["bodyPartType"].get<std::wstring>())),
-	materialType(MaterialType::byName(data["materialType"].get<std::wstring>())),
+	bodyPartType(BodyPartType::byName(data["bodyPartType"].get<std::string>())),
+	materialType(MaterialType::byName(data["materialType"].get<std::string>())),
 	severed(data["severed"].get<bool>())
 {
 	for(const Json& wound : data["wounds"])
@@ -82,7 +82,7 @@ Body::Body(const Json& data, DeserializationMemo& deserializationMemo, const Act
        	m_bleedEvent(deserializationMemo.m_simulation.m_eventSchedule),
 	m_woundsCloseEvent(deserializationMemo.m_simulation.m_eventSchedule),
 	m_actor(a),
-	m_materialType(MaterialType::byName(data["materialType"].get<std::wstring>())),
+	m_materialType(MaterialType::byName(data["materialType"].get<std::string>())),
 	m_totalVolume(data["totalVolume"].get<Volume>()),
 	m_impairMovePercent(data.contains("impairMovePercent") ? data["impairMovePercent"].get<Percent>() : Percent::create(0)),
 	m_impairManipulationPercent(data.contains("impairManipulationPercent") ? data["impairManipulationPercent"].get<Percent>() : Percent::create(0)),
@@ -173,6 +173,7 @@ void Body::getHitDepth(Hit& hit, const BodyPart& bodyPart)
 }
 Wound& Body::addWound(Area& area, BodyPart& bodyPart, Hit& hit)
 {
+	// Run Body::getHitDepth on hit before calling this method.
 	assert(hit.depth != 0);
 	Actors& actors = area.getActors();
 	uint32_t scale = AnimalSpecies::getBodyScale(actors.getSpecies(m_actor));

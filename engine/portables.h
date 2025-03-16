@@ -63,6 +63,7 @@ public:
 	void setLeader(const Index& index, const ActorOrItemIndex& leader) { return m_leader[index] = leader; }
 	void unsetFollower(const Index& index, [[maybe_unused]] const ActorOrItemIndex& follower) { assert(m_follower[index] == follower); m_follower[index].clear(); }
 	void unsetLeader(const Index& index, const ActorOrItemIndex& leader) { assert(m_follower[index] == leader); m_leader[index].clear(); }
+	void fall(const Index& index);
 	[[nodiscard]] ActorIndex getLineLeader(const Index& index);
 	[[nodiscard]] const MoveTypeId& getMoveType(const Index& index) const { return m_moveType[index]; }
 	[[nodiscard]] bool isFollowing(const Index& index) const;
@@ -79,6 +80,8 @@ public:
 	[[nodiscard]] Area& getArea() { return HasShapes<Derived, Index>::getArea(); }
 	[[nodiscard]] const Area& getArea() const { return HasShapes<Derived, Index>::getArea(); }
 	[[nodiscard]] BlockIndex getLocation(const Index& index) const { return HasShapes<Derived, Index>::getLocation(index); }
+	[[nodiscard]] ShapeId getShape(const Index& index) const { return HasShapes<Derived, Index>::getShape(index); }
+	[[nodiscard]] Facing4 getFacing(const Index& index) const { return HasShapes<Derived, Index>::getFacing(index); }
 	[[nodiscard]] auto getReference(const Index& index) -> Reference<Index, ReferenceIndex> const { return m_referenceData.getReference(index); }
 	// For testing.
 	[[nodiscard]] Speed lead_getSpeed(const Index& index);

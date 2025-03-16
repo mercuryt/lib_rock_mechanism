@@ -7,6 +7,7 @@
 #include "../actors/actors.h"
 #include "../items/items.h"
 #include "../plants.h"
+#include "../portables.hpp"
 
 void Blocks::solid_setShared(const BlockIndex& index, const MaterialTypeId& materialType, bool constructed)
 {
@@ -82,12 +83,18 @@ void Blocks::solid_set(const BlockIndex& index, const MaterialTypeId& materialTy
 void Blocks::solid_setNot(const BlockIndex& index)
 {
 	solid_setNotShared(index);
+	// Vision cuboid.
 	m_area.m_visionCuboids.blockIsTransparent(index);
+	// Gravity.
+	const BlockIndex& above = getBlockAbove(index);
+	if(above.exists() && shape_anythingCanEnterEver(above))
+		maybeContentsFalls(above);
 }
 void Blocks::solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& materialType, bool constructed)
 {
 	for(const BlockIndex& index : cuboid.getView(*this))
 		solid_setShared(index, materialType, constructed);
+	// Vision cuboid.
 	if(!MaterialType::getTransparent(materialType))
 		m_area.m_visionCuboids.cuboidIsOpaque(cuboid);
 }
@@ -95,7 +102,17 @@ void Blocks::solid_setNotCuboid(const Cuboid& cuboid)
 {
 	for(const BlockIndex& index : cuboid.getView(*this))
 		solid_setNotShared(index);
+	// Vision cuboid.
 	m_area.m_visionCuboids.cuboidIsTransparent(cuboid);
+	// Gravity.
+	const BlockIndex& aboveHighest = getBlockAbove(getIndex(cuboid.m_highest));
+	if(aboveHighest.exists())
+	{
+		Cuboid aboveCuboid = cuboid.getFace(Facing6::Above);
+		aboveCuboid.shift(Facing6::Above, DistanceInBlocks::create(1));
+		for(const BlockIndex& above : aboveCuboid.getView(*this))
+			maybeContentsFalls(above);
+	}
 }
 MaterialTypeId Blocks::solid_get(const BlockIndex& index) const
 {
@@ -109,4 +126,25 @@ Mass Blocks::solid_getMass(const BlockIndex& index) const
 {
 	assert(solid_is(index));
 	return MaterialType::getDensity(m_materialType[index]) * Volume::create(Config::maxBlockVolume.get());
+}
+MaterialTypeId Blocks::solid_getHardest(const SmallSet<BlockIndex>& blocks)
+{
+	MaterialTypeId output;
+	uint32_t hardness = 0;
+	for(const BlockIndex& block : blocks)
+	{
+		MaterialTypeId materialType = solid_get(block);
+		if(materialType.empty())
+			materialType = blockFeature_getMaterialType(block);
+		if(materialType.empty())
+			continue;
+		auto blockHardness = MaterialType::getHardness(materialType);
+		if(blockHardness > hardness)
+		{
+			hardness = blockHardness;
+			output = materialType;
+		}
+	}
+	assert(output.exists());
+	return output;
 }

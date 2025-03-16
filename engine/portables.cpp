@@ -17,7 +17,7 @@ Speed PortablesHelpers::getMoveSpeedForGroupWithAddedMass(const Area& area, std:
 		{
 			const ItemIndex& itemIndex = ItemIndex::cast(index.get());
 			Mass mass = area.getItems().getMass(itemIndex);
-			static MoveTypeId roll = MoveType::byName(L"roll");
+			static MoveTypeId roll = MoveType::byName("roll");
 			if(area.getItems().getMoveType(itemIndex) == roll)
 				rollingMass += mass;
 			else

@@ -42,17 +42,17 @@ void displayData::load()
 	std::filesystem::path path = definitions::path/"display";
 	for(const Json& data : definitions::tryParse(path/"materialTypes.json"))
 	{
-		const MaterialTypeId& materialType = MaterialType::byName(util::stringToWideString(data["name"].get<std::string>()));
+		const MaterialTypeId& materialType = MaterialType::byName(data["name"].get<std::string>());
 		materialColors.insert(materialType, colorFromJson(data["color"]));
 	}
 	for(const Json& data : definitions::tryParse(path/"fluidTypes.json"))
 	{
-		const FluidTypeId& fluidType = FluidType::byName(util::stringToWideString(data["name"].get<std::string>()));
+		const FluidTypeId& fluidType = FluidType::byName(data["name"].get<std::string>());
 		fluidColors.insert(fluidType, colorFromJson(data["color"]));
 	}
 	for(const Json& data : definitions::tryParse(path/"itemTypes.json"))
 	{
-		const ItemTypeId& itemType = ItemType::byName(util::stringToWideString(data["name"].get<std::string>()));
+		const ItemTypeId& itemType = ItemType::byName(data["name"].get<std::string>());
 		itemData.emplace(itemType,
 			data["image"].get<std::string>(),
 			data.contains("color") ? colorFromJson(data["color"]) : sf::Color::White,
@@ -61,7 +61,7 @@ void displayData::load()
 	}
 	for(const Json& data : definitions::tryParse(path/"plantSpecies.json"))
 	{
-		const PlantSpeciesId& plantSpecies = PlantSpecies::byName(util::stringToWideString(data["name"].get<std::string>()));
+		const PlantSpeciesId& plantSpecies = PlantSpecies::byName(data["name"].get<std::string>());
 		plantData.emplace(plantSpecies,
 			data["image"].get<std::string>(),
 			data.contains("color") ? colorFromJson(data["color"]) : sf::Color::White,
@@ -71,7 +71,7 @@ void displayData::load()
 	}
 	for(const Json& data : definitions::tryParse(path/"animalSpecies.json"))
 	{
-		const AnimalSpeciesId& animalSpecies = AnimalSpecies::byName(util::stringToWideString(data["name"].get<std::string>()));
+		const AnimalSpeciesId& animalSpecies = AnimalSpecies::byName(data["name"].get<std::string>());
 		actorData.emplace(animalSpecies,
 			data["image"].get<std::string>(),
 			data.contains("color") ? colorFromJson(data["color"]) : sf::Color::White,

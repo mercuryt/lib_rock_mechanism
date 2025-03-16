@@ -12,7 +12,7 @@ TEST_CASE("medical")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	Faction faction(L"tower of power");
+	Faction faction("tower of power");
 	area.m_hasStockPiles.addFaction(faction);
 	Actor& dwarf1 = simulation.m_hasActors->createActor(AnimalSpecies::byName("dwarf"), area.getBlock(1, 1, 1));
 	dwarf1.setFaction(&faction);

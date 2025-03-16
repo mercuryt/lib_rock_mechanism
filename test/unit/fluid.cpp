@@ -13,7 +13,7 @@
 #include "types.h"
 TEST_CASE("fluids smaller")
 {
-	static MaterialTypeId marble = MaterialType::byName(L"marble");
+	static MaterialTypeId marble = MaterialType::byName("marble");
 	static FluidTypeId water = FluidType::byName("water");
 	static FluidTypeId CO2 = FluidType::byName("CO2");
 	static FluidTypeId mercury = FluidType::byName("mercury");
@@ -1224,7 +1224,7 @@ TEST_CASE("fluids smaller")
 }
 TEST_CASE("area larger")
 {
-	static MaterialTypeId marble = MaterialType::byName(L"marble");
+	static MaterialTypeId marble = MaterialType::byName("marble");
 	static FluidTypeId water = FluidType::byName("water");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(20,20,20);
@@ -1445,7 +1445,7 @@ TEST_CASE("area larger")
 }
 TEST_CASE("fluids multi scale")
 {
-	static MaterialTypeId marble = MaterialType::byName(L"marble");
+	static MaterialTypeId marble = MaterialType::byName("marble");
 	static FluidTypeId water = FluidType::byName("water");
 	static FluidTypeId CO2 = FluidType::byName("CO2");
 	static FluidTypeId mercury = FluidType::byName("mercury");

@@ -16,6 +16,6 @@ public:
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
 	void reset(Area& area, const ActorIndex& actor);
 	void createOnDestroyCallbacks(Area& area, const ActorIndex& actor);
-	[[nodiscard]] std::wstring name() const { return L"give item"; }
+	[[nodiscard]] std::string name() const { return "give item"; }
 	[[nodiscard]] Json toJson() const;
 };

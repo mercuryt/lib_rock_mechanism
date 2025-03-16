@@ -34,7 +34,7 @@ BlockIndex ItemType::getCraftLocation(const ItemTypeId& id, Blocks& blocks, cons
 	return blocks.offset(location, x, y, z);
 }
 // Static methods.
-const ItemTypeId ItemType::byName(std::wstring name)
+const ItemTypeId ItemType::byName(std::string name)
 {
 	auto found = itemTypeData.m_name.find(name);
 	assert(found != itemTypeData.m_name.end());
@@ -68,7 +68,7 @@ void ItemType::create(ItemTypeParamaters& p)
 	itemTypeData.m_wearable_bodyPartsCovered.add(p.wearable_bodyPartsCovered);
 }
 std::vector<MaterialCategoryTypeId>& ItemType::getMaterialTypeCategories(const ItemTypeId& id) { return itemTypeData.m_materialTypeCategories[id]; }
-std::wstring& ItemType::getName(const ItemTypeId& id) { return itemTypeData.m_name[id]; }
+std::string& ItemType::getName(const ItemTypeId& id) { return itemTypeData.m_name[id]; }
 std::array<int32_t, 3>& ItemType::getCraftLocationOffset(const ItemTypeId& id) { return itemTypeData.m_craftLocationOffset[id]; }
 ShapeId ItemType::getShape(const ItemTypeId& id) { return itemTypeData.m_shape[id]; }
 MoveTypeId ItemType::getMoveType(const ItemTypeId& id) { return itemTypeData.m_moveType[id]; }

@@ -1,5 +1,5 @@
 #include "targetedHaul.h"
-#include "../targetedHaul.h"
+#include "../projects/targetedHaul.h"
 #include "../area/area.h"
 #include "../actors/actors.h"
 

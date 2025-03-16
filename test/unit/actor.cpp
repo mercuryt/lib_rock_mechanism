@@ -15,10 +15,10 @@
 TEST_CASE("actor")
 {
 	Step step = DateTime(10, 60, 10000).toSteps();
-	Simulation simulation(L"", step);
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
-	static AnimalSpeciesId troll = AnimalSpecies::byName(L"troll");
-	static MaterialTypeId marble = MaterialType::byName(L"marble");
+	Simulation simulation("", step);
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	static AnimalSpeciesId troll = AnimalSpecies::byName("troll");
+	static MaterialTypeId marble = MaterialType::byName("marble");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
@@ -36,10 +36,10 @@ TEST_CASE("actor")
 			.percentGrown=Percent::create(100),
 			.location=origin1,
 		});
-		CHECK(actors.getName(dwarf1) == L"dwarf1");
+		CHECK(actors.getName(dwarf1) == "dwarf1");
 		CHECK(actors.grow_getPercent(dwarf1) == 100);
 		CHECK(!actors.grow_isGrowing(dwarf1));
-		CHECK(Shape::getName(actors.getShape(dwarf1)) == L"oneByOneFull");
+		CHECK(Shape::getName(actors.getShape(dwarf1)) == "oneByOneFull");
 		CHECK(area.m_eventSchedule.count() - previousEventCount == 3);
 		CHECK(actors.getLocation(dwarf1) == origin1);
 		CHECK(blocks.actor_contains(actors.getLocation(dwarf1), dwarf1));

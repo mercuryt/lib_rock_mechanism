@@ -16,7 +16,7 @@ struct ItemTypeParamaters final
 {
 	//TODO: remove craftLocationOffset?
 	std::vector<MaterialCategoryTypeId> materialTypeCategories = {};
-	std::wstring name;
+	std::string name;
 	std::array<int32_t, 3> craftLocationOffset = {};
 	ShapeId shape;
 	MoveTypeId moveType;
@@ -44,7 +44,7 @@ class ItemType final
 {
 	//TODO: remove craftLocationOffset?
 	StrongVector<std::vector<MaterialCategoryTypeId>, ItemTypeId> m_materialTypeCategories;
-	StrongVector<std::wstring, ItemTypeId> m_name;
+	StrongVector<std::string, ItemTypeId> m_name;
 	StrongVector<std::array<int32_t, 3>, ItemTypeId> m_craftLocationOffset;
 	StrongVector<ShapeId, ItemTypeId> m_shape;
 	StrongVector<MoveTypeId, ItemTypeId> m_moveType;
@@ -74,9 +74,9 @@ public:
 	[[nodiscard]] static BlockIndex getCraftLocation(const ItemTypeId& id, Blocks& blocks, const BlockIndex& location, const Facing4& facing);
 	[[nodiscard]] static bool hasRangedAttack(const ItemTypeId& id);
 	[[nodiscard]] static bool hasMeleeAttack(const ItemTypeId& id);
-	[[nodiscard]] static const ItemTypeId byName(std::wstring name);
+	[[nodiscard]] static const ItemTypeId byName(std::string name);
 	[[nodiscard]] static std::vector<MaterialCategoryTypeId>& getMaterialTypeCategories(const ItemTypeId& id);
-	[[nodiscard]] static std::wstring& getName(const ItemTypeId& id);
+	[[nodiscard]] static std::string& getName(const ItemTypeId& id);
 	[[nodiscard]] static std::array<int32_t, 3>& getCraftLocationOffset(const ItemTypeId& id);
 	[[nodiscard]] static ShapeId getShape(const ItemTypeId& id);
 	[[nodiscard]] static MoveTypeId getMoveType(const ItemTypeId& id);

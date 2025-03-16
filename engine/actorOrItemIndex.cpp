@@ -77,9 +77,9 @@ void ActorOrItemIndex::unfollow(Area& area) const
 	else
 		area.getItems().unfollow(m_index.toItem());
 }
-std::wstring ActorOrItemIndex::toString() const
+std::string ActorOrItemIndex::toString() const
 {
-	return (isActor() ? L"actor#" : L"item#") + m_index.get();
+	return (isActor() ? "actor#" : "item#") + m_index.get();
 }
 ActorOrItemReference ActorOrItemIndex::toReference(Area& area) const
 {

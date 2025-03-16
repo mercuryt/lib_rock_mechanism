@@ -24,7 +24,7 @@
 #include <string>
 #include <sys/types.h>
 
-Area::Area(AreaId id, std::wstring n, Simulation& s, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) :
+Area::Area(AreaId id, std::string n, Simulation& s, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) :
 	#ifndef NDEBUG
 		m_blocks(std::make_unique<Blocks>(*this, x, y, z)),
 		m_actors(std::make_unique<Actors>(*this)),
@@ -101,7 +101,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_visionRequests(*this),
 	m_opacityFacade(*this),
 	m_visionCuboids(*this),
-	m_name(data["name"].get<std::wstring>()),
+	m_name(data["name"].get<std::string>()),
 	m_simulation(simulation),
 	m_id(data["id"].get<AreaId>())
 {
@@ -262,7 +262,7 @@ void Area::updateClimate()
 		m_hasFarmFields.setDayOfYear(day);
 	}
 }
-std::wstring Area::toS() const
+std::string Area::toS() const
 {
 	return m_hasFluidGroups.toS();
 }

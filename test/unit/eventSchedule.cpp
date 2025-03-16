@@ -16,7 +16,7 @@ public:
 };
 TEST_CASE("eventSchedule")
 {
-	Simulation simulation{L"", Step::create(1)};
+	Simulation simulation{"", Step::create(1)};
 	bool fired = false;
 	SUBCASE("normal")
 	{

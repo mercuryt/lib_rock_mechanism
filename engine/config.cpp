@@ -77,6 +77,7 @@ void Config::load()
 	data["heatRadianceMinimum"].get_to(heatRadianceMinimum);
 	data["hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea"].get_to(hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea);
 	data["hitScaleModifier"].get_to(hitScaleModifier);
+	data["hitsToDivideActorFallDamageInto"].get_to(hitsToDivideActorFallDamageInto);
 	data["impassibleItemVolume"].get_to(impassibleItemVolume);
 	installItemDuration = Step::create(data["installItemDurationSeconds"].get<float>() * stepsPerSecond.get());
 	data["installItemPriority"].get_to(installItemPriority);
@@ -137,6 +138,7 @@ void Config::load()
 	data["minimumVolumeOfFluidToBreath"].get_to(minimumVolumeOfFluidToBreath);
 	data["minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests"].get_to(minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests);
 	data["moveTryAttemptsBeforeDetour"].get_to(moveTryAttemptsBeforeDetour);
+	data["modifierToTurnMassTimesFallDistanceIntoForce"].get_to(modifierToTurnMassTimesFallDistanceIntoForce);
 	data["musclePierceForceCost"].get_to(musclePierceForceCost);
 	data["octTreeSortEntropyThreshold"].get_to(octTreeSortEntropyThreshold);
 	data["objectivePrioiorityKill"].get_to(objectivePrioiorityKill);

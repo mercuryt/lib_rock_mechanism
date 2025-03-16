@@ -16,7 +16,7 @@ public:
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
 	HarvestObjectiveType() = default;
 	HarvestObjectiveType(const Json&, DeserializationMemo&);
-	[[nodiscard]] std::wstring name() const override { return L"harvest"; }
+	[[nodiscard]] std::string name() const override { return "harvest"; }
 };
 class HarvestObjective final : public Objective
 {
@@ -34,7 +34,7 @@ public:
 	void makePathRequest(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool canHarvestAt(Area& area, const BlockIndex& block) const;
-	[[nodiscard]] std::wstring name() const override { return L"harvest"; }
+	[[nodiscard]] std::string name() const override { return "harvest"; }
 	[[nodiscard]] BlockIndex getBlockContainingPlantToHarvestAtLocationAndFacing(Area& area, const BlockIndex& location, Facing4 facing, const ActorIndex& actor);
 	[[nodiscard]] bool blockContainsHarvestablePlant(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
 	friend class HarvestEvent;
@@ -59,6 +59,6 @@ public:
 	HarvestPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
-	[[nodiscard]] std::wstring name() { return L"harvest"; }
+	[[nodiscard]] std::string name() { return "harvest"; }
 	[[nodiscard]] Json toJson() const override;
 };

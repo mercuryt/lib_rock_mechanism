@@ -11,7 +11,7 @@ class WoodCuttingObjectiveType final : public ObjectiveType
 public:
 	[[nodiscard]] bool canBeAssigned(Area& area, const ActorIndex& actor) const;
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
-	[[nodiscard]] std::wstring name() const { return L"woodcutting"; }
+	[[nodiscard]] std::string name() const { return "woodcutting"; }
 };
 // Objective
 class WoodCuttingObjective final : public Objective
@@ -27,7 +27,7 @@ public:
 	void reset(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor);
 	void onProjectCannotReserve(Area& area, const ActorIndex& actor);
-	[[nodiscard]] std::wstring name() const { return L"woodcutting"; }
+	[[nodiscard]] std::string name() const { return "woodcutting"; }
 	void joinProject(WoodCuttingProject& project, const ActorIndex& index);
 	[[nodiscard]] WoodCuttingProject* getJoinableProjectAt(Area& area, const BlockIndex& block, const ActorIndex& index);
 	[[nodiscard]] bool joinableProjectExistsAt(Area &area, const BlockIndex& block, const ActorIndex& actor) const;
@@ -45,5 +45,5 @@ public:
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::wstring name() const { return L"woodcutting"; }
+	[[nodiscard]] std::string name() const { return "woodcutting"; }
 };

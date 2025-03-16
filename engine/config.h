@@ -86,6 +86,7 @@ namespace Config
 	inline TemperatureDelta heatRadianceMinimum;
 	inline uint32_t hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea;
 	inline uint32_t hitScaleModifier;
+	inline uint8_t hitsToDivideActorFallDamageInto;
 	inline uint32_t hoursPerDay;
 	inline Volume impassibleItemVolume;
 	inline Step installItemDuration;
@@ -148,6 +149,7 @@ namespace Config
 	inline CollisionVolume minimumVolumeOfFluidToBreath;
 	inline uint32_t minutesPerHour;
 	inline uint32_t moveTryAttemptsBeforeDetour;
+	inline float modifierToTurnMassTimesFallDistanceIntoForce;
 	inline float musclePierceForceCost;
 	inline uint8_t octTreeSortEntropyThreshold;
 	//TODO: is this a duplicate?

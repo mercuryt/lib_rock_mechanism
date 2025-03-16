@@ -9,6 +9,7 @@
 #include "../actors/actors.h"
 #include "../items/items.h"
 #include "../plants.h"
+#include "../portables.hpp"
 #include <string>
 
 Blocks::Blocks(Area& area, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) :
@@ -505,6 +506,17 @@ void Blocks::moveContentsTo(const BlockIndex& from, const BlockIndex& to)
 	}
 	//TODO: other stuff falls?
 }
+void Blocks::maybeContentsFalls(const BlockIndex& index)
+{
+	Items& items = m_area.getItems();
+	auto itemsCopy = item_getAll(index);
+	for(const ItemIndex& item : itemsCopy)
+		items.fall(item);
+	Actors& actors = m_area.getActors();
+	auto actorsCopy = actor_getAll(index);
+	for(const ActorIndex& actor : actorsCopy)
+		actors.fall(actor);
+}
 BlockIndex Blocks::offset(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const
 {
 	return offset(index, {ax, ay, az});
@@ -628,7 +640,7 @@ BlockIndices Blocks::collectAdjacentsInRange(const BlockIndex& index, const Dist
 	auto condition = [&](const BlockIndex& b){ return taxiDistance(b, index) <= range; };
 	return collectAdjacentsWithCondition(index, condition);
 }
-std::wstring Blocks::toString(const BlockIndex& index) const
+std::string Blocks::toString(const BlockIndex& index) const
 {
 	return getCoordinates(index).toString();
 }

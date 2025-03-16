@@ -23,34 +23,34 @@
 #include <memory>
 TEST_CASE("stockpile")
 {
-	MaterialTypeId wood = MaterialType::byName(L"poplar wood");
-	MaterialTypeId marble = MaterialType::byName(L"marble");
-	MaterialTypeId gold = MaterialType::byName(L"gold");
-	MaterialTypeId peridotite = MaterialType::byName(L"peridotite");
-	MaterialTypeId sand = MaterialType::byName(L"sand");
-	ItemTypeId chunk = ItemType::byName(L"chunk");
-	ItemTypeId cart = ItemType::byName(L"cart");
-	ItemTypeId boulder = ItemType::byName(L"boulder");
-	ItemTypeId pile = ItemType::byName(L"pile");
+	MaterialTypeId wood = MaterialType::byName("poplar wood");
+	MaterialTypeId marble = MaterialType::byName("marble");
+	MaterialTypeId gold = MaterialType::byName("gold");
+	MaterialTypeId peridotite = MaterialType::byName("peridotite");
+	MaterialTypeId sand = MaterialType::byName("sand");
+	ItemTypeId chunk = ItemType::byName("chunk");
+	ItemTypeId cart = ItemType::byName("cart");
+	ItemTypeId boulder = ItemType::byName("boulder");
+	ItemTypeId pile = ItemType::byName("pile");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	FactionId faction = simulation.m_hasFactions.createFaction(L"Tower of Power");
+	FactionId faction = simulation.m_hasFactions.createFaction("Tower of Power");
 	area.m_hasStockPiles.registerFaction(faction);
 	area.m_hasStocks.addFaction(faction);
 	area.m_blockDesignations.registerFaction(faction);
 	ActorIndex dwarf1 = actors.create({
-		.species=AnimalSpecies::byName(L"dwarf"),
+		.species=AnimalSpecies::byName("dwarf"),
 		.location=blocks.getIndex_i(1, 1, 1),
 		.faction=faction,
 		.hasCloths=false,
 		.hasSidearm=false,
 	});
 	ActorReference dwarf1Ref = area.getActors().m_referenceData.getReference(dwarf1);
-	const StockPileObjectiveType& objectiveType = static_cast<const StockPileObjectiveType&>(ObjectiveType::getByName(L"stockpile"));
+	const StockPileObjectiveType& objectiveType = static_cast<const StockPileObjectiveType&>(ObjectiveType::getByName("stockpile"));
 	SUBCASE("basic")
 	{
 		std::vector<ItemQuery> queries;
@@ -71,13 +71,13 @@ TEST_CASE("stockpile")
 		CHECK(blockDesignations.check(stockpileLocation, BlockDesignation::StockPileHaulTo));
 		// Find item to stockpile
 		simulation.doStep();
-		CHECK(actors.objective_getCurrentName(dwarf1) == L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) == "stockpile");
 		CHECK(objective.hasItem());
 		CHECK(objective.hasDestination());
 		// Verify path to stockpile, reserve item and create project.
 		simulation.doStep();
 		CHECK(objective.hasDestination());
-		CHECK(actors.objective_getCurrentName(dwarf1) == L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) == "stockpile");
 		CHECK(actors.project_exists(dwarf1));
 		Project& project = *actors.project_get(dwarf1);
 		CHECK(project.hasWorker(dwarf1));
@@ -97,7 +97,7 @@ TEST_CASE("stockpile")
 		CHECK(blocks.shape_getStaticVolume(stockpileLocation) == volume);
 		CHECK(!actors.project_exists(dwarf1));
 		CHECK(!objectiveType.canBeAssigned(area, dwarf1));
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "stockpile");
 	}
 	SUBCASE("one worker hauls two items")
 	{
@@ -122,14 +122,14 @@ TEST_CASE("stockpile")
 		std::function<bool()> predicate = [&](){ return items.getLocation(chunk1) == stockpileLocation1; };
 		simulation.fastForwardUntillPredicate(predicate);
 		CHECK(objectiveType.canBeAssigned(area, dwarf1));
-		CHECK(actors.objective_getCurrentName(dwarf1) == L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) == "stockpile");
 		CHECK(area.m_hasStockPiles.getForFaction(faction).getItemsWithDestinations().size() == 1);
 		CHECK(area.m_hasStockPiles.getForFaction(faction).getItemsWithDestinationsByStockPile().size() == 1);
 		CHECK(!items.stockpile_canBeStockPiled(chunk1, faction));
 		CHECK(items.stockpile_canBeStockPiled(chunk2, faction));
 		// Find the second item and stockpile slot.
 		simulation.doStep();
-		CHECK(actors.objective_getCurrentName(dwarf1) == L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) == "stockpile");
 		StockPileObjective& objective = actors.objective_getCurrent<StockPileObjective>(dwarf1);
 		CHECK(objective.getDestination() == stockpileLocation2);
 		CHECK(objective.getItem() == area.getItems().m_referenceData.getReference(chunk2));
@@ -139,7 +139,7 @@ TEST_CASE("stockpile")
 		predicate = [&](){ return items.getLocation(chunk2) == stockpileLocation2 && !actors.project_exists(dwarf1); };
 		simulation.fastForwardUntillPredicate(predicate);
 		CHECK(!objectiveType.canBeAssigned(area, dwarf1));
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "stockpile");
 	}
 	SUBCASE("Two workers haul two items")
 	{
@@ -157,7 +157,7 @@ TEST_CASE("stockpile")
 		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
 		area.m_hasStockPiles.getForFaction(faction).addItem(chunk2);
 		ActorIndex dwarf2 = actors.create({
-			.species=AnimalSpecies::byName(L"dwarf"),
+			.species=AnimalSpecies::byName("dwarf"),
 			.location=blocks.getIndex_i(1, 2, 1),
 			.faction=faction,
 		});
@@ -207,7 +207,7 @@ TEST_CASE("stockpile")
 		CHECK(project.getProjectWorkerFor(project1WorkerRef).haulSubproject);
 		CHECK(actors.objective_getCurrent<StockPileObjective>(project1WorkerRef.getIndex(actors.m_referenceData)).m_project);
 		CHECK(!project.getWorkers().contains(project2WorkerRef));
-		CHECK(actors.objective_getCurrentName(project2WorkerRef.getIndex(actors.m_referenceData)) == L"stockpile");
+		CHECK(actors.objective_getCurrentName(project2WorkerRef.getIndex(actors.m_referenceData)) == "stockpile");
 		StockPileObjective& objective2 = actors.objective_getCurrent<StockPileObjective>(dwarf2);
 		CHECK(objective2.getDestination() == stockpileLocation2);
 		CHECK(actors.project_exists(project2WorkerRef.getIndex(actors.m_referenceData)));
@@ -233,8 +233,8 @@ TEST_CASE("stockpile")
 		simulation.fastForwardUntillPredicate(predicate);
 		predicate = [&](){ return items.getLocation(chunk2) == stockpileLocation2; };
 		simulation.fastForwardUntillPredicate(predicate);
-		CHECK(actors.objective_getCurrentName(project1WorkerRef.getIndex(actors.m_referenceData)) != L"stockpile");
-		CHECK(actors.objective_getCurrentName(project2WorkerRef.getIndex(actors.m_referenceData)) != L"stockpile");
+		CHECK(actors.objective_getCurrentName(project1WorkerRef.getIndex(actors.m_referenceData)) != "stockpile");
+		CHECK(actors.objective_getCurrentName(project2WorkerRef.getIndex(actors.m_referenceData)) != "stockpile");
 	}
 	SUBCASE("Team haul")
 	{
@@ -248,7 +248,7 @@ TEST_CASE("stockpile")
 		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInital) == 0);
 		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
 		ActorIndex dwarf2 = actors.create({
-			.species=AnimalSpecies::byName(L"dwarf"),
+			.species=AnimalSpecies::byName("dwarf"),
 			.location=blocks.getIndex_i(1, 2, 1),
 			.faction=faction,
 		});
@@ -281,8 +281,8 @@ TEST_CASE("stockpile")
 		CHECK(haulSubproject.getHaulStrategy() == HaulStrategy::Team);
 		std::function<bool()> predicate = [&](){ return items.getLocation(chunk1) == stockpileLocation1; };
 		simulation.fastForwardUntillPredicate(predicate);
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"stockpile");
-		CHECK(actors.objective_getCurrentName(dwarf2) != L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf2) != "stockpile");
 	}
 	SUBCASE("haul generic")
 	{
@@ -322,7 +322,7 @@ TEST_CASE("stockpile")
 		CHECK(blocks.item_contains(cargoOrigin, cargo));
 		CHECK(items.getQuantity(cargo) == 52);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, stockpileLocation);
-		CHECK(actors.objective_getCurrentName(dwarf1) == L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) == "stockpile");
 		auto predicate = [&]{ return !blocks.item_empty(stockpileLocation); };
 		simulation.fastForwardUntillPredicate(predicate);
 		bool shouldBeTrue = blocks.stockpile_isAvalible(stockpileLocation, faction);
@@ -332,14 +332,14 @@ TEST_CASE("stockpile")
 		CHECK(volume != 0);
 		CHECK(blocks.shape_getStaticVolume(stockpileLocation) == volume * 48u);
 		CHECK(!actors.canPickUp_exists(dwarf1));
-		CHECK(actors.objective_getCurrentName(dwarf1) == L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) == "stockpile");
 		CHECK(actors.move_hasPathRequest(dwarf1));
 		CHECK(objectiveType.canBeAssigned(area, dwarf1));
 		StockPileObjective& objective = actors.objective_getCurrent<StockPileObjective>(dwarf1);
 		// Find potential item and destination.
 		simulation.doStep();
 		cargo = cargoRef.getIndex(items.m_referenceData);
-		CHECK(actors.objective_getCurrentName(dwarf1) == L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) == "stockpile");
 		CHECK(objective.hasItem());
 		CHECK(objective.hasDestination());
 		CHECK(objective.getItem().getIndex(items.m_referenceData) == cargo);
@@ -356,7 +356,7 @@ TEST_CASE("stockpile")
 		ActorReference dwarf1Ref = area.getActors().m_referenceData.getReference(dwarf1);
 		CHECK(project2.getProjectWorkerFor(dwarf1Ref).haulSubproject != nullptr);
 		CHECK(project2.getProjectWorkerFor(dwarf1Ref).haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
-		CHECK(actors.objective_getCurrentName(dwarf1) == L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) == "stockpile");
 		// Path to pickup.
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, cargoOrigin);
@@ -374,7 +374,7 @@ TEST_CASE("stockpile")
 		simulation.fastForwardUntillPredicate(predicate4);
 		CHECK(!actors.canPickUp_exists(dwarf1));
 		simulation.doStep();
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "stockpile");
 	}
 	SUBCASE("haul generic two workers")
 	{
@@ -390,7 +390,7 @@ TEST_CASE("stockpile")
 		area.m_hasStockPiles.getForFaction(faction).addItem(cargo);
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		ActorIndex dwarf2 = actors.create({
-			.species=AnimalSpecies::byName(L"dwarf"),
+			.species=AnimalSpecies::byName("dwarf"),
 			.location=blocks.getIndex_i(1, 2, 1),
 			.faction=faction,
 		});
@@ -405,7 +405,7 @@ TEST_CASE("stockpile")
 		CHECK(!actors.project_exists(dwarf2));
 		// Dwarf2 finds the second stockpile location. Dwarf1 selects a haul strategy.
 		simulation.doStep();
-		CHECK(actors.objective_getCurrentName(dwarf2) == L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf2) == "stockpile");
 		StockPileObjective& objective = actors.objective_getCurrent<StockPileObjective>(dwarf2);
 		CHECK(objective.hasDestination());
 		CHECK(objective.hasItem());
@@ -413,7 +413,7 @@ TEST_CASE("stockpile")
 		CHECK(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
 		// The second worker verifys drop off, creates project, makes reservations; the first paths to cargoOrigin.
 		simulation.doStep();
-		CHECK(actors.objective_getCurrentName(dwarf2) == L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf2) == "stockpile");
 		CHECK(objective.getDestination() == stockpileLocation1);
 		CHECK(actors.project_exists(dwarf2));
 		StockPileProject& project = static_cast<StockPileProject&>(*actors.project_get(dwarf2));
@@ -431,23 +431,23 @@ TEST_CASE("stockpile")
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf2, cargoOrigin);
 		CHECK(actors.canPickUp_exists(dwarf2));
 		auto predicate1 = [&]{ return blocks.item_getCount(stockpileLocation1, pile, sand) != 0; };
-		CHECK(actors.objective_getCurrentName(dwarf2) == L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf2) == "stockpile");
 		simulation.fastForwardUntillPredicate(predicate1);
 		Quantity firstDeliveryQuantity = blocks.item_getCount(stockpileLocation1, pile, sand);
-		CHECK(actors.objective_getCurrentName(dwarf2) == L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf2) == "stockpile");
 		auto predicate2 = [&]{ return blocks.item_getCount(stockpileLocation1, pile, sand) > firstDeliveryQuantity || blocks.item_getCount(stockpileLocation2, pile, sand) > firstDeliveryQuantity; };
 		simulation.fastForwardUntillPredicate(predicate2);
-		if(actors.getActionDescription(dwarf2) != L"stockpile")
-			CHECK(actors.objective_getCurrentName(dwarf1) != L"stockpile");
+		if(actors.getActionDescription(dwarf2) != "stockpile")
+			CHECK(actors.objective_getCurrentName(dwarf1) != "stockpile");
 		else
-			CHECK(actors.objective_getCurrentName(dwarf2) == L"stockpile");
+			CHECK(actors.objective_getCurrentName(dwarf2) == "stockpile");
 		auto predicate3 = [&]{ return blocks.item_getCount(stockpileLocation1, pile, sand) == 100 && blocks.item_getCount(stockpileLocation2, pile, sand) == 100; };
 		simulation.fastForwardUntillPredicate(predicate3);
 		CHECK(!actors.project_exists(dwarf1));
 		CHECK(!actors.project_exists(dwarf2));
 		simulation.doStep();
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"stockpile");
-		CHECK(actors.objective_getCurrentName(dwarf2) != L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf2) != "stockpile");
 	}
 	SUBCASE("haul generic two stockpile blocks and two piles")
 	{
@@ -483,7 +483,7 @@ TEST_CASE("stockpile")
 		queries.emplace_back(ItemQuery::create(pile, sand));
 		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
 		stockpile.addBlock(stockpileLocation);
-		CHECK(ObjectiveType::getByName(L"stockpile").canBeAssigned(area, dwarf1));
+		CHECK(ObjectiveType::getByName("stockpile").canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		// One step to find item and potential destination.
 		simulation.doStep();
@@ -536,7 +536,7 @@ TEST_CASE("stockpile")
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
 		auto condition = [&]{ return blocks.item_getCount(stockpileLocation, pile, sand) == 30; };
 		simulation.fastForwardUntillPredicate(condition);
-		CHECK(actors.getActionDescription(dwarf1) == L"stockpile");
+		CHECK(actors.getActionDescription(dwarf1) == "stockpile");
 		CHECK(!actors.project_exists(dwarf1));
 		CHECK(actors.move_hasPathRequest(dwarf1));
 		// Step to find item and potential destination project.
@@ -599,7 +599,7 @@ TEST_CASE("stockpile")
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, gateway);
 		// Cannot detour or find alternative block.
 		simulation.doStep();
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "stockpile");
 		CHECK(!items.reservable_isFullyReserved(chunk1, faction));
 	}
 	SUBCASE("path to stockpile is blocked")
@@ -629,7 +629,7 @@ TEST_CASE("stockpile")
 		CHECK(actors.canPickUp_isCarryingItem(dwarf1, chunk1));
 		// Path to stockpile.
 		simulation.doStep();
-		CHECK(actors.objective_getCurrentName(dwarf1) == L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) == "stockpile");
 		CHECK(blocks.isAdjacentToIncludingCornersAndEdges(stockpileLocation, actors.move_getDestination(dwarf1)));
 		blocks.solid_set(gateway, wood, false);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, gateway);
@@ -638,7 +638,7 @@ TEST_CASE("stockpile")
 		simulation.doStep();
 		CHECK(!actors.canPickUp_isCarryingItem(dwarf1, chunk1));
 		CHECK(!items.reservable_isFullyReserved(chunk1, faction));
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "stockpile");
 	}
 	SUBCASE("path to haul tool is blocked")
 	{
@@ -678,7 +678,7 @@ TEST_CASE("stockpile")
 		// Cannot detour, cancel subproject.
 		simulation.doStep();
 		//TODO: Project should either reset or cancel subproject ranther then canceling the whole thing.
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "stockpile");
 	}
 	SUBCASE("haul tool destroyed")
 	{
@@ -728,7 +728,7 @@ TEST_CASE("stockpile")
 		CHECK(!items.stockpile_canBeStockPiled(cargo, faction));
 		// Dwarf1 tries to find another stockpile job but cannot.
 		simulation.doStep();
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "stockpile");
 	}
 	SUBCASE("item destroyed")
 	{
@@ -753,7 +753,7 @@ TEST_CASE("stockpile")
 		CHECK(!actors.project_exists(dwarf1));
 		// Cannot find alternative stockpile project.
 		simulation.doStep();
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "stockpile");
 	}
 	SUBCASE("stockpile undesignated by player")
 	{
@@ -782,7 +782,7 @@ TEST_CASE("stockpile")
 		CHECK(area.m_hasStockPiles.getForFaction(faction).getStockPileFor(chunk1) == nullptr);
 		// Cannot find alternative stockpile project.
 		simulation.doStep();
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "stockpile");
 	}
 	SUBCASE("destination set solid")
 	{
@@ -807,7 +807,7 @@ TEST_CASE("stockpile")
 		CHECK(!actors.project_exists(dwarf1));
 		// Cannot find alternative stockpile project.
 		simulation.doStep();
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "stockpile");
 	}
 	SUBCASE("delay by player")
 	{
@@ -831,7 +831,7 @@ TEST_CASE("stockpile")
 		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(blocks.getIndex_i(5, 9, 1));
 		actors.objective_addTaskToStart(dwarf1, std::move(objective));
 		CHECK(!actors.project_exists(dwarf1));
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "stockpile");
 		CHECK(area.m_hasStockPiles.getForFaction(faction).getItemsWithProjectsCount() == 0);
 	}
 	SUBCASE("actor dies")

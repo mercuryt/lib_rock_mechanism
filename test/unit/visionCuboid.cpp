@@ -95,7 +95,7 @@ TEST_CASE("vision cuboid split")
 		BlockIndex middle = blocks.getIndex_i(1, 1, 1);
 		BlockIndex high = blocks.getIndex_i(2, 2, 2);
 		BlockIndex low = blocks.getIndex_i(0, 0, 0);
-		blocks.blockFeature_construct(middle, BlockFeatureType::floor, MaterialType::byName(L"marble"));
+		blocks.blockFeature_construct(middle, BlockFeatureType::floor, MaterialType::byName("marble"));
 		CHECK(area.m_visionCuboids.size() == 2);
 		CHECK(area.m_visionCuboids.getVisionCuboidIndexForBlock(middle) == area.m_visionCuboids.getVisionCuboidIndexForBlock(high));
 		CHECK(area.m_visionCuboids.getVisionCuboidIndexForBlock(middle) != area.m_visionCuboids.getVisionCuboidIndexForBlock(low));

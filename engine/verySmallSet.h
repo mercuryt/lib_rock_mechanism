@@ -19,8 +19,8 @@ class VerySmallSet
 {
 	using This = VerySmallSet<Contained, threshold>;
 	union Data
-	{ 
-		std::array<Contained, threshold + 1> array; 
+	{
+		std::array<Contained, threshold + 1> array;
 		std::vector<Contained> vector;
 		Data(Data&& other) noexcept
 		{
@@ -70,7 +70,7 @@ class VerySmallSet
 	}
 public:
 	VerySmallSet() = default;
-	VerySmallSet(const This& other) { if(other.isArray()) data.array = other.array; else data.vector = other.vector; }
+	VerySmallSet(const This& other) { if(other.isArray()) data.array = other.data.array; else data.vector = other.data.vector; }
 	VerySmallSet(This&& other) noexcept { data = other.data; }
 	class iterator;
 	class const_iterator;
@@ -190,7 +190,7 @@ public:
 		else
 			return std::ranges::find(data.vector, value) != data.vector.end();
 	}
-	[[nodiscard]] bool empty() const 
+	[[nodiscard]] bool empty() const
 	{
 		if(!isArray())
 			return false;

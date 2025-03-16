@@ -62,7 +62,7 @@ void BanditsArriveDramaArc::callback()
 			ActorIndex leaderIndex = actors.create(params);
 			m_leader = actors.m_referenceData.getReference(leaderIndex);
 			--m_quantity;
-			FactionId faction = m_area->m_simulation.createFaction(actors.getName(leaderIndex) + L" bandits");
+			FactionId faction = m_area->m_simulation.createFaction(actors.getName(leaderIndex) + " bandits");
 			actors.setFaction(leaderIndex, faction);
 			actors.objective_addTaskToStart(leaderIndex, std::make_unique<ExterminateObjective>(*m_area, destination));
 			m_actors.insert(m_leader);
@@ -107,8 +107,8 @@ void BanditsArriveDramaArc::callback()
 	else
 	{
 		// Find entry point.
-		static ShapeId shape = Shape::byName(L"oneByOneFull");
-		static const MoveTypeId moveType = MoveType::byName(L"two legs and swim in water");
+		static ShapeId shape = Shape::byName("oneByOneFull");
+		static const MoveTypeId moveType = MoveType::byName("two legs and swim in water");
 		m_entranceBlock = getEntranceToArea(shape, moveType);
 		if(m_entranceBlock.empty())
 			scheduleArrive();
@@ -118,7 +118,7 @@ void BanditsArriveDramaArc::callback()
 			m_quantity = Quantity::create(random.getInRange(3, 10));
 			m_isActive = true;
 			// Anounce.
-			std::wstring message = std::to_wstring(m_quantity.get()) + L" bandits spotted nearby.";
+			std::string message = std::to_string(m_quantity.get()) + " bandits spotted nearby.";
 			m_engine.getSimulation().m_hasDialogues.createMessageBox(message, m_entranceBlock);
 			// Reenter.
 			callback();

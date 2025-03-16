@@ -12,32 +12,32 @@
 #include "../../engine/project.h"
 #include "../../engine/haul.h"
 #include "../../engine/itemType.h"
-#include "../../engine/targetedHaul.h"
+#include "../../engine/projects/targetedHaul.h"
 #include "../../engine/animalSpecies.h"
 #include "../../engine/portables.hpp"
 #include "reference.h"
 #include "types.h"
 TEST_CASE("haul")
 {
-	static MaterialTypeId dirt = MaterialType::byName(L"dirt");
-	static MaterialTypeId marble = MaterialType::byName(L"marble");
-	static MaterialTypeId gold = MaterialType::byName(L"gold");
-	static MaterialTypeId lead = MaterialType::byName(L"lead");
-	[[maybe_unused]] static MaterialTypeId iron = MaterialType::byName(L"iron");
-	static MaterialTypeId poplarWood = MaterialType::byName(L"poplar wood");
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
-	static AnimalSpeciesId donkey = AnimalSpecies::byName(L"jackstock donkey");
-	static ItemTypeId chunk = ItemType::byName(L"chunk");
-	static ItemTypeId boulder = ItemType::byName(L"boulder");
-	static ItemTypeId cart = ItemType::byName(L"cart");
-	static ItemTypeId panniers = ItemType::byName(L"panniers");
+	static MaterialTypeId dirt = MaterialType::byName("dirt");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static MaterialTypeId gold = MaterialType::byName("gold");
+	static MaterialTypeId lead = MaterialType::byName("lead");
+	[[maybe_unused]] static MaterialTypeId iron = MaterialType::byName("iron");
+	static MaterialTypeId poplarWood = MaterialType::byName("poplar wood");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	static AnimalSpeciesId donkey = AnimalSpecies::byName("jackstock donkey");
+	static ItemTypeId chunk = ItemType::byName("chunk");
+	static ItemTypeId boulder = ItemType::byName("boulder");
+	static ItemTypeId cart = ItemType::byName("cart");
+	static ItemTypeId panniers = ItemType::byName("panniers");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	FactionId faction = simulation.createFaction(L"Tower Of Power");
+	FactionId faction = simulation.createFaction("Tower Of Power");
 	ActorIndex dwarf1 = actors.create({
 		.species=dwarf,
 		.location=blocks.getIndex_i(1, 1, 2),
@@ -88,7 +88,7 @@ TEST_CASE("haul")
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=marble, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		ActorOrItemIndex cargo = ActorOrItemIndex::createForItem(chunk1);
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(SmallSet<ActorIndex>({dwarf1}), cargo, destination);
-		CHECK(actors.objective_getCurrentName(dwarf1) == L"haul");
+		CHECK(actors.objective_getCurrentName(dwarf1) == "haul");
 		CHECK(project.hasTryToAddWorkersThreadedTask());
 		// One step to activate the project and make reservations.
 		simulation.doStep();
@@ -109,7 +109,7 @@ TEST_CASE("haul")
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		CHECK(blocks.item_getCount(destination, chunk, marble) == 1);
 		CHECK(!actors.canPickUp_exists(dwarf1));
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"haul");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "haul");
 		CHECK(!cargo.reservable_hasAny(area));
 	}
 	SUBCASE("hand cart haul strategy")
@@ -119,7 +119,7 @@ TEST_CASE("haul")
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInital) == 0);
 		BlockIndex cartLocation = blocks.getIndex_i(7, 7, 2);
-		ItemIndex cart = items.create({.itemType=ItemType::byName(L"cart"), .materialType=MaterialType::byName(L"poplar wood"), .location=cartLocation, .quality=Quality::create(50u), .percentWear=Percent::create(0)});
+		ItemIndex cart = items.create({.itemType=ItemType::byName("cart"), .materialType=MaterialType::byName("poplar wood"), .location=cartLocation, .quality=Quality::create(50u), .percentWear=Percent::create(0)});
 		ActorOrItemIndex polymorphicChunk1 = ActorOrItemIndex::createForItem(chunk1);
 		CHECK(HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(area, dwarf1, cart, polymorphicChunk1, Config::minimumHaulSpeedInital) > 0);
 		ActorOrItemIndex cargo = ActorOrItemIndex::createForItem(chunk1);
@@ -152,7 +152,7 @@ TEST_CASE("haul")
 		CHECK(!actors.canPickUp_exists(dwarf1));
 		CHECK(!items.cargo_exists(cart));
 		CHECK(!items.reservable_isFullyReserved(cart, faction));
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"haul");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "haul");
 	}
 	SUBCASE("team haul strategy")
 	{
@@ -176,8 +176,8 @@ TEST_CASE("haul")
 		const ProjectWorker& projectWorker = project.getProjectWorkerFor(dwarf1Ref);
 		CHECK(projectWorker.haulSubproject != nullptr);
 		CHECK(projectWorker.haulSubproject->getHaulStrategy() == HaulStrategy::Team);
-		CHECK(actors.objective_getCurrentName(dwarf1) == L"haul");
-		CHECK(actors.objective_getCurrentName(dwarf2) == L"haul");
+		CHECK(actors.objective_getCurrentName(dwarf1) == "haul");
+		CHECK(actors.objective_getCurrentName(dwarf2) == "haul");
 		// Get into starting positions.
 		simulation.fastForwardUntillActorHasNoDestination(area, dwarf2);
 		if(!cargo.isAdjacentToActor(area, dwarf1))
@@ -204,8 +204,8 @@ TEST_CASE("haul")
 		CHECK(blocks.item_getCount(destination, chunk, gold) == 1);
 		CHECK(!actors.isFollowing(follower));
 		CHECK(!actors.isLeadingActor(leader, follower));
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"haul");
-		CHECK(actors.objective_getCurrentName(dwarf2) != L"haul");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "haul");
+		CHECK(actors.objective_getCurrentName(dwarf2) != "haul");
 	}
 	SUBCASE("panniers haul strategy")
 	{
@@ -254,7 +254,7 @@ TEST_CASE("haul")
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		CHECK(blocks.item_getCount(destination, chunk, gold) == 1);
 		CHECK(!actors.reservable_isFullyReserved(donkey1, faction));
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"haul");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "haul");
 	}
 	SUBCASE("panniers area already equiped haul strategy")
 	{
@@ -300,7 +300,7 @@ TEST_CASE("haul")
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		CHECK(blocks.item_getCount(destination, chunk, gold) == 1);
 		CHECK(!actors.reservable_isFullyReserved(donkey1, faction));
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"haul");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "haul");
 	}
 	SUBCASE("animal cart haul strategy")
 	{
@@ -343,7 +343,7 @@ TEST_CASE("haul")
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		CHECK(blocks.item_getCount(destination, boulder, lead) == 1);
 		CHECK(!actors.reservable_isFullyReserved(donkey1, faction));
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"haul");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "haul");
 	}
 	SUBCASE("team hand cart haul strategy")
 	{
@@ -402,7 +402,7 @@ TEST_CASE("haul")
 		CHECK(!items.reservable_isFullyReserved(cart1, faction));
 		CHECK(!actors.isLeadingItem(dwarf1, cart1));
 		CHECK(!actors.isFollowing(dwarf2));
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"haul");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "haul");
 	}
 	SUBCASE("individual haul actor")
 	{
@@ -422,7 +422,7 @@ TEST_CASE("haul")
 		CHECK(actors.move_getIndividualSpeedWithAddedMass(dwarf1, actors.getMass(dwarf2)) >= project.getMinimumHaulSpeed());
 		CHECK(actors.canPickUp_speedIfCarryingQuantity(dwarf1, actors.getMass(dwarf2), Quantity::create(1)) >= project.getMinimumHaulSpeed());
 		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, actors.getMass(dwarf2), project.getMinimumHaulSpeed()) > 0);
-		CHECK(actors.objective_getCurrentName(dwarf1) == L"haul");
+		CHECK(actors.objective_getCurrentName(dwarf1) == "haul");
 		CHECK(project.hasTryToAddWorkersThreadedTask());
 		// One step to activate the project and make reservations.
 		simulation.doStep();
@@ -445,7 +445,7 @@ TEST_CASE("haul")
 		simulation.fastForward(Config::addToStockPileDelaySteps);
 		CHECK(actors.getLocation(dwarf2) == destination);
 		CHECK(!actors.canPickUp_exists(dwarf1));
-		CHECK(actors.objective_getCurrentName(dwarf1) != L"haul");
+		CHECK(actors.objective_getCurrentName(dwarf1) != "haul");
 		CHECK(!cargo.reservable_hasAny(area));
 	}
 }

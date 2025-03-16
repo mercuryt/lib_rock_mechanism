@@ -8,7 +8,7 @@
 #include <string>
 #include <sys/types.h>
 //TODO: radial symetry for 2x2 and 3x3, etc.
-ShapeId Shape::create(std::wstring name, SmallSet<OffsetAndVolume> positions, uint32_t displayScale)
+ShapeId Shape::create(std::string name, SmallSet<OffsetAndVolume> positions, uint32_t displayScale)
 {
 	shapeData.m_name.add(name);
 	shapeData.m_positions.add(positions);
@@ -155,7 +155,21 @@ BlockIndex Shape::getBlockWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id,
 	return BlockIndex::null();
 }
 CollisionVolume Shape::getCollisionVolumeAtLocationBlock(const ShapeId& id) { return shapeData.m_positions[id].front().volume; }
-ShapeId Shape::byName(const std::wstring& name)
+CollisionVolume Shape::getTotalCollisionVolume(const ShapeId& id)
+{
+	if(!getIsMultiTile(id))
+		return getCollisionVolumeAtLocationBlock(id);
+	else
+	{
+		CollisionVolume output = CollisionVolume::create(0);
+		for(const auto& [offset, volume] : getPositions(id))
+		{
+			output += volume;
+		}
+		return output;
+	}
+}
+ShapeId Shape::byName(const std::string& name)
 {
 	auto found = shapeData.m_name.find(name);
 	if(found == shapeData.m_name.end())
@@ -163,18 +177,17 @@ ShapeId Shape::byName(const std::wstring& name)
 	return ShapeId::create(found - shapeData.m_name.begin());
 }
 SmallSet<OffsetAndVolume> Shape::getPositions(const ShapeId& id) { return shapeData.m_positions[id]; }
-std::wstring Shape::getName(const ShapeId& id) { return shapeData.m_name[id]; }
+std::string Shape::getName(const ShapeId& id) { return shapeData.m_name[id]; }
 uint32_t Shape::getDisplayScale(const ShapeId& id) { return shapeData.m_displayScale[id]; }
 bool Shape::getIsMultiTile(const ShapeId& id) { return shapeData.m_isMultiTile[id]; }
 bool Shape::getIsRadiallySymetrical(const ShapeId& id) { return shapeData.m_isRadiallySymetrical[id]; }
-bool Shape::hasShape(const std::wstring& name)
+bool Shape::hasShape(const std::string& name)
 {
 	auto found = shapeData.m_name.find(name);
 	return found != shapeData.m_name.end();
 }
-ShapeId Shape::loadFromName(std::wstring wname)
+ShapeId Shape::loadFromName(std::string name)
 {
-	std::string name = util::wideStringToString(wname);
 	std::vector<int> tokens;
 	std::stringstream ss(name);
 	std::string item;
@@ -192,7 +205,7 @@ ShapeId Shape::loadFromName(std::wstring wname)
 		positions.insert(OffsetAndVolume{Offset3D(x, y, z), CollisionVolume::create(v)});
 	}
 	// Runtime shapes always have display scale = 1
-	return Shape::create(wname, positions, 1);
+	return Shape::create(name, positions, 1);
 }
 ShapeId Shape::mutateAdd(const ShapeId& id, const OffsetAndVolume& position)
 {
@@ -201,17 +214,17 @@ ShapeId Shape::mutateAdd(const ShapeId& id, const OffsetAndVolume& position)
 	assert(!positions.contains(position));
 	positions.insert(position);
 	positions.sort();
-	std::wstring name = makeName(positions);
+	std::string name = makeName(positions);
 	ShapeId output = Shape::byName(name);
 	if(output.exists())
 		return output;
 	// Runtime shapes always have display scale = 1
 	return Shape::create(name, positions, 1);
 }
-std::wstring Shape::makeName(SmallSet<OffsetAndVolume>& positions)
+std::string Shape::makeName(SmallSet<OffsetAndVolume>& positions)
 {
-	std::wstring output;
+	std::string output;
 	for(const auto& pair : positions)
-		output += std::to_wstring(pair.offset.x()) + L" " + std::to_wstring(pair.offset.y()) + L" " + std::to_wstring(pair.offset.z()) + L" " + std::to_wstring(pair.volume.get()) + L" ";
+		output += std::to_string(pair.offset.x()) + " " + std::to_string(pair.offset.y()) + " " + std::to_string(pair.offset.z()) + " " + std::to_string(pair.volume.get()) + " ";
 	return output;
 }

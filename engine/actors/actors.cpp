@@ -16,6 +16,7 @@
 #include "../drink.h"
 #include "../eat.h"
 #include "../portables.hpp"
+#include "../bodyType.h"
 #include "grow.h"
 #include "equipment.h"
 #include "eventSchedule.h"
@@ -41,10 +42,10 @@ Percent ActorParamaters::getPercentGrown(Simulation& simulation)
 	}
 	return percentGrown;
 }
-std::wstring ActorParamaters::getName(Simulation& simulation)
+std::string ActorParamaters::getName(Simulation& simulation)
 {
 	if(name.empty())
-		name = AnimalSpecies::getName(species) + std::to_wstring(getId(simulation).get());
+		name = AnimalSpecies::getName(species) + std::to_string(getId(simulation).get());
 	return name;
 }
 Step ActorParamaters::getBirthStep(Simulation& simulation)
@@ -101,11 +102,11 @@ Percent ActorParamaters::getPercentTired(Simulation& simulation)
 }
 void ActorParamaters::generateEquipment(Area& area, const ActorIndex& actor)
 {
-	static MaterialTypeId leather = MaterialType::byName(L"leather");
-	static MaterialTypeId cotton = MaterialType::byName(L"cotton");
-	static MaterialTypeId iron = MaterialType::byName(L"iron");
-	static MaterialTypeId bronze = MaterialType::byName(L"bronze");
-	static MaterialTypeId poplarWoodType = MaterialType::byName(L"poplar wood");
+	static MaterialTypeId leather = MaterialType::byName("leather");
+	static MaterialTypeId cotton = MaterialType::byName("cotton");
+	static MaterialTypeId iron = MaterialType::byName("iron");
+	static MaterialTypeId bronze = MaterialType::byName("bronze");
+	static MaterialTypeId poplarWoodType = MaterialType::byName("poplar wood");
 	Actors& actors = area.getActors();
 	if(!actors.isSentient(actor))
 		return;
@@ -128,23 +129,23 @@ void ActorParamaters::generateEquipment(Area& area, const ActorIndex& actor)
 	if(hasCloths)
 	{
 		//TODO: Cultural differences.
-		static ItemTypeId pantsType = ItemType::byName(L"pants");
+		static ItemTypeId pantsType = ItemType::byName("pants");
 		generate(pantsType, cotton);
-		static ItemTypeId shirtType = ItemType::byName(L"shirt");
+		static ItemTypeId shirtType = ItemType::byName("shirt");
 		generate(shirtType, cotton);
-		static ItemTypeId jacketType = ItemType::byName(L"jacket");
+		static ItemTypeId jacketType = ItemType::byName("jacket");
 		generate(jacketType, cotton);
-		static ItemTypeId shoesType = ItemType::byName(L"shoes");
+		static ItemTypeId shoesType = ItemType::byName("shoes");
 		generate(shoesType, cotton);
 		bool hasBelt = random.chance(0.6);
 		if(hasBelt)
 		{
-			static ItemTypeId beltType = ItemType::byName(L"belt");
+			static ItemTypeId beltType = ItemType::byName("belt");
 			generate(beltType, leather);
 		}
 	}
-	static ItemTypeId halfHelmType = ItemType::byName(L"half helm");
-	static ItemTypeId breastPlateType = ItemType::byName(L"breast plate");
+	static ItemTypeId halfHelmType = ItemType::byName("half helm");
+	static ItemTypeId breastPlateType = ItemType::byName("breast plate");
 	if(hasLightArmor && !hasHeavyArmor)
 	{
 		if(random.chance(0.8))
@@ -153,7 +154,7 @@ void ActorParamaters::generateEquipment(Area& area, const ActorIndex& actor)
 		}
 		else if(random.chance(0.5))
 		{
-			static ItemTypeId hoodType = ItemType::byName(L"hood");
+			static ItemTypeId hoodType = ItemType::byName("hood");
 			generate(hoodType, leather);
 		}
 		if(random.chance(0.4))
@@ -162,7 +163,7 @@ void ActorParamaters::generateEquipment(Area& area, const ActorIndex& actor)
 		}
 		else if(random.chance(0.6))
 		{
-			static ItemTypeId chainMailShirtType = ItemType::byName(L"chain mail shirt");
+			static ItemTypeId chainMailShirtType = ItemType::byName("chain mail shirt");
 			generateMetal(chainMailShirtType);
 		}
 	}
@@ -170,7 +171,7 @@ void ActorParamaters::generateEquipment(Area& area, const ActorIndex& actor)
 	{
 		if(random.chance(0.75))
 		{
-			static ItemTypeId fullHelmType = ItemType::byName(L"full helm");
+			static ItemTypeId fullHelmType = ItemType::byName("full helm");
 			generateMetal(fullHelmType);
 		}
 		else if(random.chance(0.9))
@@ -178,12 +179,12 @@ void ActorParamaters::generateEquipment(Area& area, const ActorIndex& actor)
 			generateMetal(halfHelmType);
 		}
 		generateMetal(breastPlateType);
-		static ItemTypeId greavesType = ItemType::byName(L"greaves");
+		static ItemTypeId greavesType = ItemType::byName("greaves");
 		generateMetal(greavesType);
-		static ItemTypeId vambracesType = ItemType::byName(L"vambraces");
+		static ItemTypeId vambracesType = ItemType::byName("vambraces");
 		generateMetal(vambracesType);
 	}
-	static ItemTypeId longSwordType = ItemType::byName(L"long sword");
+	static ItemTypeId longSwordType = ItemType::byName("long sword");
 	if(hasSidearm)
 	{
 		auto roll = random.getInRange(0, 100);
@@ -193,12 +194,12 @@ void ActorParamaters::generateEquipment(Area& area, const ActorIndex& actor)
 		}
 		if(roll > 70)
 		{
-			static ItemTypeId shortSwordType = ItemType::byName(L"short sword");
+			static ItemTypeId shortSwordType = ItemType::byName("short sword");
 			generateMetal(shortSwordType);
 		}
 		else
 		{
-			static ItemTypeId daggerType = ItemType::byName(L"dagger");
+			static ItemTypeId daggerType = ItemType::byName("dagger");
 			generateMetal(daggerType);
 		}
 	}
@@ -207,28 +208,28 @@ void ActorParamaters::generateEquipment(Area& area, const ActorIndex& actor)
 		auto roll = random.getInRange(0, 100);
 		if(roll > 75)
 		{
-			static ItemTypeId spearType = ItemType::byName(L"spear");
+			static ItemTypeId spearType = ItemType::byName("spear");
 			generateMetal(spearType);
 		}
 		if(roll > 65)
 		{
-			static ItemTypeId maceType = ItemType::byName(L"mace");
+			static ItemTypeId maceType = ItemType::byName("mace");
 			generateMetal(maceType);
 		}
 		if(roll > 45)
 		{
-			static ItemTypeId glaveType = ItemType::byName(L"glave");
+			static ItemTypeId glaveType = ItemType::byName("glave");
 			generateMetal(glaveType);
 		}
 		if(roll > 25)
 		{
-			static ItemTypeId axeType = ItemType::byName(L"axe");
+			static ItemTypeId axeType = ItemType::byName("axe");
 			generateMetal(axeType);
 		}
 		else
 		{
 			generateMetal(longSwordType);
-			static ItemTypeId shieldType = ItemType::byName(L"shield");
+			static ItemTypeId shieldType = ItemType::byName("shield");
 			generate(shieldType, poplarWoodType);
 		}
 	}
@@ -237,12 +238,12 @@ void ActorParamaters::generateEquipment(Area& area, const ActorIndex& actor)
 		auto roll = random.getInRange(0, 100);
 		if(roll > 75)
 		{
-			static ItemTypeId crossbowType = ItemType::byName(L"crossbow");
+			static ItemTypeId crossbowType = ItemType::byName("crossbow");
 			generate(crossbowType, poplarWoodType);
 		}
 		else
 		{
-			static ItemTypeId shortbowType = ItemType::byName(L"short bow");
+			static ItemTypeId shortbowType = ItemType::byName("short bow");
 			generate(shortbowType, poplarWoodType);
 		}
 	}
@@ -767,11 +768,12 @@ void Actors::setLocationAndFacing(const ActorIndex& index, const BlockIndex& blo
 {
 	assert(block.exists());
 	assert(facing != Facing4::Null);
+	Blocks& blocks = m_area.getBlocks();
+	assert(blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, m_shape[index], m_moveType[index]));
 	if(m_location[index].exists())
 		exit(index);
 	m_location[index] = block;
 	m_facing[index] = facing;
-	Blocks& blocks = m_area.getBlocks();
 	assert(m_blocks[index].empty());
 	for(const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
 	{
@@ -897,11 +899,11 @@ Step Actors::getAge(const ActorIndex& index) const
 {
 	return m_area.m_simulation.m_step - m_birthStep[index];
 }
-std::wstring Actors::getActionDescription(const ActorIndex& index) const
+std::string Actors::getActionDescription(const ActorIndex& index) const
 {
 	if(m_hasObjectives[index]->hasCurrent())
 		return const_cast<HasObjectives&>(*m_hasObjectives[index].get()).getCurrent().name();
-	return L"no action";
+	return "no action";
 }
 void Actors::reserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing4& facing)
 {
@@ -922,34 +924,62 @@ void Actors::setBirthStep(const ActorIndex& index, const Step& step)
 	m_birthStep[index] = step;
 	m_canGrow[index]->updateGrowingStatus(m_area);
 }
+void Actors::takeFallDamage(const ActorIndex& index, const DistanceInBlocks& distance, const MaterialTypeId& materialType)
+{
+	const Force& force = Force::create(distance.get() * getMass(index).get() * Config::modifierToTurnMassTimesFallDistanceIntoForce) / Config::hitsToDivideActorFallDamageInto;
+	for(uint8_t i = 0; i < Config::hitsToDivideActorFallDamageInto; ++i)
+	{
+		auto& body = *m_body[index];
+		BodyPart& hitPart = body.pickABodyPartByVolume(m_area.m_simulation);
+		uint32_t area = Config::convertBodyPartVolumeToArea(BodyPartType::getVolume(hitPart.bodyPartType));
+		area = m_area.m_simulation.m_random.getInRange(uint(area * 0.25), area);
+		Hit hit(area, force, materialType, WoundType::Bludgeon);
+		takeHit(index, hit, hitPart);
+	}
+}
+bool Actors::tryToMoveSoAsNotOccuping(const ActorIndex& index, const BlockIndex& block)
+{
+	Blocks& blocks = m_area.getBlocks();
+	for(const BlockIndex& adjacent : blocks.getAdjacentWithEdgeAndCornerAdjacent(m_location[index]))
+		if(blocks.shape_anythingCanEnterEver(adjacent))
+		{
+			const Facing4& facing = blocks.facingToSetWhenEnteringFrom(adjacent, block);
+			if(blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(adjacent, m_shape[index], m_moveType[index], facing, m_blocks[index]))
+			{
+				setLocation(index, adjacent);
+				return true;
+			}
+		}
+	return false;
+}
 Percent Actors::getPercentGrown(const ActorIndex& index) const { return m_canGrow[index]->growthPercent(); }
 void Actors::log(const ActorIndex& index) const
 {
 	Blocks& blocks = m_area.getBlocks();
-	std::wcout << m_name[index];
-	std::wcout << L"(L" << AnimalSpecies::getName(m_species[index]) << L")";
+	std::cout << m_name[index];
+	std::cout << "(L" << AnimalSpecies::getName(m_species[index]) << ")";
 	Portables<Actors, ActorIndex, ActorReferenceIndex>::log(index);
 	if(objective_exists(index))
-		std::wcout << ", current objective: " << objective_getCurrentName(index);
+		std::cout << ", current objective: " << objective_getCurrentName(index);
 	if(m_destination[index].exists())
-		std::wcout << ", destination: " << blocks.getCoordinates(m_destination[index]).toString();
+		std::cout << ", destination: " << blocks.getCoordinates(m_destination[index]).toString();
 	if(!m_path[index].empty())
-		std::wcout << ", path length: " << m_path[index].size();
+		std::cout << ", path length: " << m_path[index].size();
 	if(m_pathRequest[index] != nullptr)
 		std::cout << ", path request exists";
 	if(m_project[index] != nullptr)
-		std::wcout << ", project location: " << blocks.getCoordinates(m_project[index]->getLocation()).toString();
+		std::cout << ", project location: " << blocks.getCoordinates(m_project[index]->getLocation()).toString();
 	if(m_carrying[index].exists())
 	{
 		std::cout << ", carrying: {";
 		if(m_carrying[index].isActor())
-			std::wcout << L"actor:" << getName(m_carrying[index].getActor());
+			std::cout << "actor:" << getName(m_carrying[index].getActor());
 		else
 		{
 			ItemIndex item = m_carrying[index].getItem();
 			Items& items = m_area.getItems();
 			ItemTypeId itemType = items.getItemType(item);
-			std::wcout << L"item:" << ItemType::getName(itemType);
+			std::cout << "item:" << ItemType::getName(itemType);
 			if(ItemType::getIsGeneric(itemType))
 				std::cout << ", quantity:" << std::to_string(items.getQuantity(item).get());
 		}

@@ -2,14 +2,14 @@
 #include <algorithm>
 #include <ranges>
 MaterialCategoryTypeId MaterialTypeCategory::size() { return MaterialCategoryTypeId::create(materialTypeCategoryData.m_name.size()); }
-const MaterialCategoryTypeId MaterialTypeCategory::byName(const std::wstring&& name)
+const MaterialCategoryTypeId MaterialTypeCategory::byName(const std::string&& name)
 {
 	auto found = materialTypeCategoryData.m_name.find(name);
 	assert(found != materialTypeCategoryData.m_name.end());
 	return MaterialCategoryTypeId::create(found - materialTypeCategoryData.m_name.begin());
 }
-void MaterialTypeCategory::create(std::wstring name) { materialTypeCategoryData.m_name.add(name); }
-const std::wstring& MaterialTypeCategory::getName(MaterialCategoryTypeId id){ return materialTypeCategoryData.m_name[id]; }
+void MaterialTypeCategory::create(std::string name) { materialTypeCategoryData.m_name.add(name); }
+const std::string& MaterialTypeCategory::getName(MaterialCategoryTypeId id){ return materialTypeCategoryData.m_name[id]; }
 SpoilsDataTypeId SpoilData::create(const MaterialTypeId& mt, const ItemTypeId& it, const Percent& c, const Quantity& mi, const Quantity& ma)
 {
 	spoilData.m_materialType.add(mt);
@@ -24,7 +24,7 @@ ItemTypeId SpoilData::getItemType(const SpoilsDataTypeId& id) { return spoilData
 Percent SpoilData::getChance(const SpoilsDataTypeId& id) { return spoilData.m_chance[id]; };
 Quantity SpoilData::getMin(const SpoilsDataTypeId& id) { return spoilData.m_min[id]; };
 Quantity SpoilData::getMax(const SpoilsDataTypeId& id) { return spoilData.m_max[id]; };
-MaterialTypeId MaterialType::byName(const std::wstring name)
+MaterialTypeId MaterialType::byName(const std::string name)
 {
 	auto found = materialTypeData.m_name.find(name);
 	assert(found != materialTypeData.m_name.end());
@@ -63,7 +63,7 @@ void MaterialType::setConstructionParamaters(const MaterialTypeId& materialType,
 }
 bool MaterialType::empty() { return materialTypeData.m_density.empty(); }
 MaterialTypeId MaterialType::size() { return MaterialTypeId::create(materialTypeData.m_name.size()); }
-std::wstring& MaterialType::getName(const MaterialTypeId& id) { return materialTypeData.m_name[id]; };
+std::string& MaterialType::getName(const MaterialTypeId& id) { return materialTypeData.m_name[id]; };
 Density MaterialType::getDensity(const MaterialTypeId& id) { return materialTypeData.m_density[id]; };
 uint32_t MaterialType::getHardness(const MaterialTypeId& id) { return materialTypeData.m_hardness[id]; };
 bool MaterialType::getTransparent(const MaterialTypeId& id) { return materialTypeData.m_transparent[id]; };

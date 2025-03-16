@@ -80,15 +80,15 @@ void Portables<Derived, Index, ReferenceIndex>::create(const Index& index, const
 template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::log(const Index& index) const
 {
-	std::wcout << ", moveType: " << MoveType::getName(m_moveType[index]);
+	std::cout << ", moveType: " << MoveType::getName(m_moveType[index]);
 	if(m_follower[index].exists())
-		std::wcout << ", leading: " << m_follower[index].toString();
+		std::cout << ", leading: " << m_follower[index].toString();
 	if(m_leader[index].exists())
-		std::wcout << ", following: " << m_follower[index].toString();
+		std::cout << ", following: " << m_follower[index].toString();
 	if(m_carrier[index].exists())
-	       	std::wcout << ", carrier: " << m_carrier[index].toString();
+	       	std::cout << ", carrier: " << m_carrier[index].toString();
 	if(getLocation(index).exists())
-		std::wcout << ", location: " << getArea().getBlocks().getCoordinates(getLocation(index)).toString();
+		std::cout << ", location: " << getArea().getBlocks().getCoordinates(getLocation(index)).toString();
 }
 template<class Derived, class Index, class ReferenceIndex>
 ActorOrItemIndex Portables<Derived, Index, ReferenceIndex>::getActorOrItemIndex(const Index& index)
@@ -145,7 +145,7 @@ void Portables<Derived, Index, ReferenceIndex>::unfollowActor(const Index& index
 	assert(!isLeading(index));
 	assert(isFollowing(index));
 	assert(m_leader[index] == actor.toActorOrItemIndex());
-	static const MoveTypeId& moveTypeNone = MoveType::byName(L"none");
+	static const MoveTypeId& moveTypeNone = MoveType::byName("none");
 	if(!m_isActors || getMoveType(index) == moveTypeNone)
 		this->setStatic(index);
 	Actors& actors = getActors();
@@ -166,7 +166,7 @@ void Portables<Derived, Index, ReferenceIndex>::unfollowItem(const Index& index,
 	assert(!isLeading(index));
 	ActorIndex lineLeader = getLineLeader(index);
 	m_leader[index].clear();
-	static const MoveTypeId& moveTypeNone = MoveType::byName(L"none");
+	static const MoveTypeId& moveTypeNone = MoveType::byName("none");
 	if(!m_isActors || getMoveType(index) == moveTypeNone)
 		this->setStatic(index);
 	Items& items = getItems();
@@ -305,6 +305,35 @@ void Portables<Derived, Index, ReferenceIndex>::unsetCarrier(const Index& index,
 {
 	assert(m_carrier[index] == carrier);
 	m_carrier[index].clear();
+}
+template<class Derived, class Index, class ReferenceIndex>
+void Portables<Derived, Index, ReferenceIndex>::fall(const Index& index)
+{
+	Blocks& blocks = getArea().getBlocks();
+	const ShapeId& shape = getShape(index);
+	const Facing4& facing = getFacing(index);
+	BlockIndex location = getLocation(index);
+	assert(location.exists());
+	assert(blocks.shape_anythingCanEnterEver(location));
+	DistanceInBlocks distance = DistanceInBlocks::create(0);
+	BlockIndex next;
+	while(true)
+	{
+		next = blocks.getBlockBelow(location);
+		if(blocks.shape_canFit(next, shape, facing))
+		{
+			location = next;
+			++distance;
+		}
+		else
+			break;
+	}
+	assert(distance != 0);
+	auto blocksBelowEndPosition = blocks.shape_getBelowBlocksWithFacing(location, shape, facing);
+	MaterialTypeId materialType = blocks.solid_getHardest(blocksBelowEndPosition);
+	static_cast<Derived*>(this)->setLocationAndFacing(index, location, facing);
+	static_cast<Derived*>(this)->takeFallDamage(index, distance, materialType);
+	//TODO: dig out / destruct below impact.
 }
 template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::updateIndexInCarrier(const Index& oldIndex, const Index& newIndex)

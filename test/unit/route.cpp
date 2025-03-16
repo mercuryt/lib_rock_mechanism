@@ -15,11 +15,11 @@
 TEST_CASE("route_10_10_10")
 {
 	Simulation simulation;
-	static MaterialTypeId marble = MaterialType::byName(L"marble");
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
-	static AnimalSpeciesId troll = AnimalSpecies::byName(L"troll");
-	static AnimalSpeciesId eagle = AnimalSpecies::byName(L"golden eagle");
-	static AnimalSpeciesId carp = AnimalSpecies::byName(L"carp");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	static AnimalSpeciesId troll = AnimalSpecies::byName("troll");
+	static AnimalSpeciesId eagle = AnimalSpecies::byName("golden eagle");
+	static AnimalSpeciesId carp = AnimalSpecies::byName("carp");
 	static FluidTypeId water = FluidType::byName("water");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
@@ -254,12 +254,12 @@ TEST_CASE("route_5_5_3")
 	Area& area = simulation.m_hasAreas->createArea(5,5,3);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	static MaterialTypeId marble = MaterialType::byName(L"marble");
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
-	static AnimalSpeciesId carp = AnimalSpecies::byName(L"carp");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	static AnimalSpeciesId carp = AnimalSpecies::byName("carp");
 	static FluidTypeId water = FluidType::byName("water");
-	static MoveTypeId twoLegsAndSwimInWater = MoveType::byName(L"two legs and swim in water");
-	static MoveTypeId twoLegs = MoveType::byName(L"two legs");
+	static MoveTypeId twoLegsAndSwimInWater = MoveType::byName("two legs and swim in water");
+	static MoveTypeId twoLegs = MoveType::byName("two legs");
 	SUBCASE("swimming path blocked")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
@@ -318,10 +318,10 @@ TEST_CASE("route_5_5_5")
 	Area& area = simulation.m_hasAreas->createArea(5,5,5);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	static MaterialTypeId marble = MaterialType::byName(L"marble");
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
-	static MoveTypeId twoLegsAndClimb1 = MoveType::byName(L"two legs and climb 1");
-	static MoveTypeId twoLegsAndClimb2 = MoveType::byName(L"two legs and climb 2");
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	static MoveTypeId twoLegsAndClimb1 = MoveType::byName("two legs and climb 1");
+	static MoveTypeId twoLegsAndClimb2 = MoveType::byName("two legs and climb 2");
 	static const BlockFeatureType& stairs = BlockFeatureType::stairs;
 	static const BlockFeatureType& ramp = BlockFeatureType::ramp;
 	static const BlockFeatureType& door = BlockFeatureType::door;

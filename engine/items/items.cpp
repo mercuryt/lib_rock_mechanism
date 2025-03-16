@@ -136,8 +136,8 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	if(itemParamaters.location.exists())
 		// A generic item type might merge with an existing stack on creation, in that case return the index of the existing stack.
 		index = setLocationAndFacing(index, itemParamaters.location, itemParamaters.facing);
-	static const MoveTypeId rolling = MoveType::byName(L"roll");
-	static const ItemTypeId panniers = ItemType::byName(L"panniers");
+	static const MoveTypeId rolling = MoveType::byName("roll");
+	static const ItemTypeId panniers = ItemType::byName("panniers");
 	if(itemType == panniers  || (moveType == rolling && ItemType::getInternalVolume(itemType) != 0))
 		m_area.m_hasHaulTools.registerHaulTool(m_area, index);
 	return index;
@@ -218,12 +218,10 @@ void Items::setTemperature(const ItemIndex& index, const Temperature& temperatur
 	}
 	else if(MaterialType::canMelt(materialType) && MaterialType::getMeltingPoint(materialType) <= temperature)
 	{
-		/*
-		const CollisionVolume volume = ItemType::getVolume(m_itemType[index]).toCollisionVolume();
+		const CollisionVolume volume = getTotalCollisionVolume(index);
 		const BlockIndex location = m_location[index];
 		destroy(index);
 		m_area.getBlocks().fluid_add(location, volume, MaterialType::getMeltsInto(materialType));
-		*/
 	}
 }
 void Items::addQuantity(const ItemIndex& index, const Quantity& delta)
@@ -312,7 +310,7 @@ void Items::destroy(const ItemIndex& index)
 	// No need to explicitly unschedule events here, destorying the event holder will do it.
 	if(hasLocation(index))
 		exit(index);
-	static const MoveTypeId rolling = MoveType::byName(L"roll");
+	static const MoveTypeId rolling = MoveType::byName("roll");
 	if(m_moveType[index] == rolling && ItemType::getInternalVolume(m_itemType[index]) != 0)
 		m_area.m_hasHaulTools.unregisterHaulTool(m_area, index);
 	const auto& s = ItemIndex::create(size() - 1);
@@ -326,7 +324,7 @@ void Items::destroy(const ItemIndex& index)
 bool Items::isGeneric(const ItemIndex& index) const { return ItemType::getGeneric(m_itemType[index]); }
 bool Items::isPreparedMeal(const ItemIndex& index) const
 {
-	static ItemTypeId preparedMealType = ItemType::byName(L"prepared meal");
+	static ItemTypeId preparedMealType = ItemType::byName("prepared meal");
 	return m_itemType[index] == preparedMealType;
 }
 CraftJob& Items::getCraftJobForWorkPiece(const ItemIndex& index) const
@@ -349,13 +347,17 @@ Volume Items::getVolume(const ItemIndex& index) const
 {
 	return ItemType::getVolume(m_itemType[index]) * m_quantity[index];
 }
+CollisionVolume Items::getTotalCollisionVolume(const ItemIndex& index) const
+{
+	return Shape::getTotalCollisionVolume(m_shape[index]) * m_quantity[index];
+}
 MoveTypeId Items::getMoveType(const ItemIndex& index) const
 {
 	return ItemType::getMoveType(m_itemType[index]);
 }
 void Items::log(const ItemIndex& index) const
 {
-	std::wcout << ItemType::getName(m_itemType[index]) << "[" << MaterialType::getName(m_materialType[index]) << "]";
+	std::cout << ItemType::getName(m_itemType[index]) << "[" << MaterialType::getName(m_materialType[index]) << "]";
 	if(m_quantity[index] != 1)
 		std::cout << "(" << m_quantity[index].get() << ")";
 	if(m_craftJobForWorkPiece[index] != nullptr)

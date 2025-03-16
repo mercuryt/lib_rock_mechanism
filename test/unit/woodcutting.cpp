@@ -16,8 +16,8 @@
 #include <new>
 TEST_CASE("woodcutting")
 {
-	ItemTypeId branch = ItemType::byName(L"branch");
-	ItemTypeId log = ItemType::byName(L"log");
+	ItemTypeId branch = ItemType::byName("branch");
+	ItemTypeId log = ItemType::byName("log");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
@@ -25,24 +25,24 @@ TEST_CASE("woodcutting")
 	Actors& actors = area.getActors();
 	Plants& plants = area.getPlants();
 	Items& items = area.getItems();
-	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName(L"dirt"));
+	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("dirt"));
 	BlockIndex treeLocation = blocks.getIndex_i(5, 5, 1);
-	PlantIndex tree = plants.create({.location=treeLocation, .species=PlantSpecies::byName(L"poplar tree")});
+	PlantIndex tree = plants.create({.location=treeLocation, .species=PlantSpecies::byName("poplar tree")});
 	CHECK(plants.getBlocks(tree).size() == 5);
-	FactionId faction = simulation.createFaction(L"Tower of Power");
+	FactionId faction = simulation.createFaction("Tower of Power");
 	area.m_blockDesignations.registerFaction(faction);
 	area.m_hasWoodCuttingDesignations.addFaction(faction);
 	ActorIndex dwarf = actors.create({
-		.species=AnimalSpecies::byName(L"dwarf"),
+		.species=AnimalSpecies::byName("dwarf"),
 		.percentGrown=Percent::create(100),
 		.location=blocks.getIndex_i(1,1,1),
 		.hasSidearm=false,
 	});
 	ActorReference dwarfRef = actors.m_referenceData.getReference(dwarf);
 	actors.setFaction(dwarf, faction);
-	ItemIndex axe = items.create({.itemType=ItemType::byName(L"axe"), .materialType=MaterialType::byName(L"bronze"), .quality=Quality::create(25u), .percentWear=Percent::create(10u)});
+	ItemIndex axe = items.create({.itemType=ItemType::byName("axe"), .materialType=MaterialType::byName("bronze"), .quality=Quality::create(25u), .percentWear=Percent::create(10u)});
 	area.m_hasWoodCuttingDesignations.designate(faction, treeLocation);
-	const WoodCuttingObjectiveType& objectiveType = static_cast<const WoodCuttingObjectiveType&>(ObjectiveType::getByName(L"woodcutting"));
+	const WoodCuttingObjectiveType& objectiveType = static_cast<const WoodCuttingObjectiveType&>(ObjectiveType::getByName("woodcutting"));
 	CHECK(objectiveType.canBeAssigned(area, dwarf));
 	actors.objective_setPriority(dwarf, objectiveType.getId(), Priority::create(10));
 	Project* project = nullptr;
@@ -67,7 +67,7 @@ TEST_CASE("woodcutting")
 		Step stepsDuration = project->getDuration();
 		simulation.fastForward(stepsDuration);
 		CHECK(!blocks.plant_exists(treeLocation));
-		CHECK(actors.objective_getCurrentName(dwarf) != L"woodcutting");
+		CHECK(actors.objective_getCurrentName(dwarf) != "woodcutting");
 		CHECK(!actors.canPickUp_isCarryingItem(dwarf, axe));
 		CHECK(area.getTotalCountOfItemTypeOnSurface(log) == 10);
 		CHECK(area.getTotalCountOfItemTypeOnSurface(branch) == 20);
@@ -79,7 +79,7 @@ TEST_CASE("woodcutting")
 		area.m_hasStocks.addFaction(faction);
 		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile({ItemQuery::create(branch)});
 		stockpile.addBlock(branchStockpileLocation);
-		const StockPileObjectiveType& stockPileObjectiveType = static_cast<const StockPileObjectiveType&>(ObjectiveType::getByName(L"stockpile"));
+		const StockPileObjectiveType& stockPileObjectiveType = static_cast<const StockPileObjectiveType&>(ObjectiveType::getByName("stockpile"));
 		actors.objective_setPriority(dwarf, stockPileObjectiveType.getId(), Priority::create(100));
 		actors.equipment_add(dwarf, axe);
 		// One step to find the designation, activate the project.
@@ -95,9 +95,9 @@ TEST_CASE("woodcutting")
 		CHECK(area.getTotalCountOfItemTypeOnSurface(log) == 10);
 		CHECK(area.getTotalCountOfItemTypeOnSurface(branch) == 20);
 		CHECK(!objectiveType.canBeAssigned(area, dwarf));
-		CHECK(actors.objective_getCurrentName(dwarf) != L"woodcutting");
+		CHECK(actors.objective_getCurrentName(dwarf) != "woodcutting");
 		CHECK(!actors.project_exists(dwarf));
-		CHECK(actors.getActionDescription(dwarf) == L"stockpile");
+		CHECK(actors.getActionDescription(dwarf) == "stockpile");
 		// One step to create a stockpile project.
 		simulation.doStep();
 		CHECK(actors.project_get(dwarf)->reservationsComplete());

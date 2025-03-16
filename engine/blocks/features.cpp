@@ -1,9 +1,10 @@
 #include "blocks.h"
 #include "../area/area.h"
 #include "../blockFeature.h"
-#include "plants.h"
-#include "reference.h"
-#include "types.h"
+#include "../actors/actors.h"
+#include "../plants.h"
+#include "../reference.h"
+#include "../types.h"
 bool Blocks::blockFeature_contains(const BlockIndex& block, const BlockFeatureType& blockFeatureType) const
 {
 	for(const BlockFeature& blockFeature : m_features[block])
@@ -78,6 +79,10 @@ void Blocks::blockFeature_hew(const BlockIndex& block, const BlockFeatureType& b
 	m_features[block].emplace_back(&blockFeatureType, solid_get(block), true);
 	// Solid_setNot will handle calling m_exteriorPortals.onBlockCanTransmitTemperature.
 	// TODO: There is no support for hewing doors, hatches or flaps. This is ok because those things can't be hewn. Could be fixed anyway?
+	const BlockIndex& above = getBlockAbove(block);
+	auto actorsCopy = actor_getAll(above);
+	for(const ActorIndex& actor : actorsCopy)
+		m_area.getActors().tryToMoveSoAsNotOccuping(actor, above);
 	solid_setNot(block);
 	m_area.m_opacityFacade.update(block);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);

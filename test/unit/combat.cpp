@@ -17,25 +17,25 @@
 #include <functional>
 TEST_CASE("combat")
 {
-	MaterialTypeId marble = MaterialType::byName(L"marble");
+	MaterialTypeId marble = MaterialType::byName("marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
-	FactionId faction = simulation.createFaction(L"Tower Of Power");
+	FactionId faction = simulation.createFaction("Tower Of Power");
 	area.m_hasStockPiles.registerFaction(faction);
 	ActorIndex dwarf1 = actors.create({
-		.species=AnimalSpecies::byName(L"dwarf"),
+		.species=AnimalSpecies::byName("dwarf"),
 		.location=blocks.getIndex_i(1, 1, 1),
 		.hasCloths=false,
 		.hasSidearm=false,
 	});
 	actors.setFaction(dwarf1, faction);
 	ItemIndex pants = items.create({
-		.itemType=ItemType::byName(L"pants"),
-		.materialType=MaterialType::byName(L"plant matter"),
+		.itemType=ItemType::byName("pants"),
+		.materialType=MaterialType::byName("plant matter"),
 		.quality=Quality::create(50u),
 		.percentWear=Percent::create(10)
 	});
@@ -51,27 +51,27 @@ TEST_CASE("combat")
 	}
 	SUBCASE("strike rabbit")
 	{
-		CHECK(ItemType::getIsWeapon(ItemType::byName(L"long sword")));
+		CHECK(ItemType::getIsWeapon(ItemType::byName("long sword")));
 		CombatScore initalScore = actors.combat_getCombatScore(dwarf1);
 		CHECK(actors.combat_getAttackTable(dwarf1).size() == 4);
 		ItemIndex longsword = items.create({
-			.itemType=ItemType::byName(L"long sword"),
-			.materialType=MaterialType::byName(L"bronze"),
+			.itemType=ItemType::byName("long sword"),
+			.materialType=MaterialType::byName("bronze"),
 			.quality=Quality::create(50u),
 			.percentWear=Percent::create(10)
 		});
 		actors.equipment_add(dwarf1, longsword);
 		CHECK(actors.combat_getAttackTable(dwarf1).size() == 7);
 		ItemIndex pants = items.create({
-			.itemType=ItemType::byName(L"pants"),
-			.materialType=MaterialType::byName(L"plant matter"),
+			.itemType=ItemType::byName("pants"),
+			.materialType=MaterialType::byName("plant matter"),
 			.quality=Quality::create(50u),
 			.percentWear=Percent::create(10),
 		});
 		actors.equipment_add(dwarf1, pants);
 		CHECK(actors.combat_getCombatScore(dwarf1) > initalScore);
 		ActorIndex rabbit = actors.create({
-			.species=AnimalSpecies::byName(L"dwarf rabbit"),
+			.species=AnimalSpecies::byName("dwarf rabbit"),
 			.location=blocks.getIndex_i(2, 2, 1),
 		});
 		CHECK(actors.combat_getCombatScore(rabbit) < actors.combat_getCombatScore(dwarf1));
@@ -84,7 +84,7 @@ TEST_CASE("combat")
 	SUBCASE("path to rabbit")
 	{
 		ActorIndex rabbit = actors.create({
-			.species=AnimalSpecies::byName(L"dwarf rabbit"),
+			.species=AnimalSpecies::byName("dwarf rabbit"),
 			.location=blocks.getIndex_i(5, 5, 1),
 		});
 		actors.combat_setTarget(dwarf1, rabbit);
@@ -97,7 +97,7 @@ TEST_CASE("combat")
 	{
 		CombatScore initalScore = actors.combat_getCurrentMeleeCombatScore(dwarf1);
 		actors.create({
-			.species=AnimalSpecies::byName(L"dwarf"),
+			.species=AnimalSpecies::byName("dwarf"),
 			.location=blocks.getIndex_i(2, 1, 1),
 			.faction=faction
 		});
@@ -107,11 +107,11 @@ TEST_CASE("combat")
 	{
 		CombatScore initalScore = actors.combat_getCurrentMeleeCombatScore(dwarf1);
 		actors.create({
-			.species=AnimalSpecies::byName(L"dwarf rabbit"),
+			.species=AnimalSpecies::byName("dwarf rabbit"),
 			.location=blocks.getIndex_i(2, 1, 1),
 		});
 		actors.create({
-			.species=AnimalSpecies::byName(L"dwarf rabbit"),
+			.species=AnimalSpecies::byName("dwarf rabbit"),
 			.location=blocks.getIndex_i(1, 2, 1),
 		});
 		CHECK(actors.combat_getCurrentMeleeCombatScore(dwarf1) < initalScore);
@@ -119,20 +119,20 @@ TEST_CASE("combat")
 	SUBCASE("shoot rabbit")
 	{
 		ItemIndex crossbow = items.create({
-			.itemType=ItemType::byName(L"crossbow"),
-			.materialType=MaterialType::byName(L"poplar wood"),
+			.itemType=ItemType::byName("crossbow"),
+			.materialType=MaterialType::byName("poplar wood"),
 			.quality=Quality::create(50u),
 			.percentWear=Percent::create(10u)
 		});
 		actors.equipment_add(dwarf1, crossbow);
 		ItemIndex ammo = items.create({
-			.itemType=ItemType::byName(L"crossbow bolt"),
-			.materialType=MaterialType::byName(L"bronze"),
+			.itemType=ItemType::byName("crossbow bolt"),
+			.materialType=MaterialType::byName("bronze"),
 			.quantity=Quantity::create(1u)
 		});
 		actors.equipment_add(dwarf1, ammo);
 		ActorIndex rabbit = actors.create({
-			.species=AnimalSpecies::byName(L"dwarf rabbit"),
+			.species=AnimalSpecies::byName("dwarf rabbit"),
 			.location=blocks.getIndex_i(3, 3, 1),
 		});
 		actors.combat_setTarget(dwarf1, rabbit);

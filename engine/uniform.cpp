@@ -29,7 +29,7 @@ bool UniformElement::query(const ItemIndex& item, const Items& items) const
 		return false;
 	return true;
 }
-Uniform& SimulationHasUniformsForFaction::createUniform(std::wstring& name, std::vector<UniformElement>& elements)
+Uniform& SimulationHasUniformsForFaction::createUniform(std::string& name, std::vector<UniformElement>& elements)
 {
 	return m_data.emplace(name, name, elements);
 }
@@ -37,7 +37,7 @@ void SimulationHasUniformsForFaction::destroyUniform(Uniform& uniform)
 {
 	m_data.erase(uniform.name);
 }
-SmallMap<std::wstring, Uniform>& SimulationHasUniformsForFaction::getAll(){ return m_data; }
+SmallMap<std::string, Uniform>& SimulationHasUniformsForFaction::getAll(){ return m_data; }
 SimulationHasUniformsForFaction& SimulationHasUniforms::getForFaction(const FactionId& faction)
 {
 	if(!m_data.contains(faction))

@@ -41,7 +41,7 @@ bool Blocks::plant_canGrowHereCurrently(const BlockIndex& index, const PlantSpec
 		return false;
 	if(PlantSpecies::getGrowsInSunLight(plantSpecies) != m_exposedToSky.check(index))
 		return false;
-	static MaterialTypeId dirtType = MaterialType::byName(L"dirt");
+	static MaterialTypeId dirtType = MaterialType::byName("dirt");
 	BlockIndex below = getBlockBelow(index);
 	if(below.exists() || !solid_is(below) || m_materialType[below] != dirtType)
 		return false;
@@ -65,7 +65,7 @@ bool Blocks::plant_canGrowHereEver(const BlockIndex& index, const PlantSpeciesId
 }
 bool Blocks::plant_anythingCanGrowHereEver(const BlockIndex& index) const
 {
-	static MaterialTypeId dirtType = MaterialType::byName(L"dirt");
+	static MaterialTypeId dirtType = MaterialType::byName("dirt");
 	BlockIndex below = getBlockBelow(index);
 	if(below.empty() || !solid_is(below) || m_materialType[below] != dirtType)
 		return false;

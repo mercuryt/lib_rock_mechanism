@@ -94,7 +94,7 @@ void AnimalsArriveDramaArc::callback()
 			m_tiredPercent = Percent::create(std::max(0, random.getInRange(-500, 90)));
 			m_isActive = true;
 			// Anounce.
-			std::wstring message = std::to_wstring(m_quantity.get()) + L" " + AnimalSpecies::getName(m_species) + L" spotted nearby.";
+			std::string message = std::to_string(m_quantity.get()) + " " + AnimalSpecies::getName(m_species) + " spotted nearby.";
 			m_engine.getSimulation().m_hasDialogues.createMessageBox(message, m_entranceBlock);
 			// Reenter.
 			callback();

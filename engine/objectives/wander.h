@@ -19,7 +19,7 @@ public:
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::wstring name() const { return L"wander"; }
+	[[nodiscard]] std::string name() const { return "wander"; }
 };
 class WanderObjective final : public Objective
 {
@@ -31,7 +31,7 @@ public:
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
 	void reset(Area& area, const ActorIndex& actor);
-	std::wstring name() const { return L"wander"; }
+	std::string name() const { return "wander"; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool canResume() const { return false; }
 	// For testing.

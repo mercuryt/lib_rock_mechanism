@@ -21,24 +21,24 @@
 #include "types.h"
 TEST_CASE("json")
 {
-	Simulation simulation{L"", DateTime(12, 50, 1000).toSteps()};
-	FactionId faction = simulation.createFaction(L"Tower of Power");
-	AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
-	MaterialTypeId dirt = MaterialType::byName(L"dirt");
-	MaterialTypeId wood = MaterialType::byName(L"poplar wood");
-	MaterialTypeId cotton = MaterialType::byName(L"cotton");
-	MaterialTypeId bronze = MaterialType::byName(L"bronze");
-	MaterialTypeId sand = MaterialType::byName(L"sand");
-	PlantSpeciesId sage = PlantSpecies::byName(L"sage brush");
-	PlantSpeciesId wheatGrass = PlantSpecies::byName(L"wheat grass");
+	Simulation simulation{"", DateTime(12, 50, 1000).toSteps()};
+	FactionId faction = simulation.createFaction("Tower of Power");
+	AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	MaterialTypeId dirt = MaterialType::byName("dirt");
+	MaterialTypeId wood = MaterialType::byName("poplar wood");
+	MaterialTypeId cotton = MaterialType::byName("cotton");
+	MaterialTypeId bronze = MaterialType::byName("bronze");
+	MaterialTypeId sand = MaterialType::byName("sand");
+	PlantSpeciesId sage = PlantSpecies::byName("sage brush");
+	PlantSpeciesId wheatGrass = PlantSpecies::byName("wheat grass");
 	FluidTypeId water = FluidType::byName("water");
-	ItemTypeId axe = ItemType::byName(L"axe");
-	ItemTypeId pick = ItemType::byName(L"pick");
-	ItemTypeId saw = ItemType::byName(L"saw");
-	ItemTypeId bucket = ItemType::byName(L"bucket");
-	ItemTypeId preparedMeal = ItemType::byName(L"prepared meal");
-	ItemTypeId pants = ItemType::byName(L"pants");
-	ItemTypeId pile = ItemType::byName(L"pile");
+	ItemTypeId axe = ItemType::byName("axe");
+	ItemTypeId pick = ItemType::byName("pick");
+	ItemTypeId saw = ItemType::byName("saw");
+	ItemTypeId bucket = ItemType::byName("bucket");
+	ItemTypeId preparedMeal = ItemType::byName("prepared meal");
+	ItemTypeId pants = ItemType::byName("pants");
+	ItemTypeId pile = ItemType::byName("pile");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
@@ -52,7 +52,7 @@ TEST_CASE("json")
 	{
 		Json areaData;
 		Json simulationData;
-		std::wstring name;
+		std::string name;
 		{
 			Cuboid farmBlocks{blocks, blocks.getIndex_i(1, 7, 1), blocks.getIndex_i(1, 6, 1)};
 			FarmField &farm = area.m_hasFarmFields.getForFaction(faction).create(area, farmBlocks);
@@ -66,7 +66,7 @@ TEST_CASE("json")
 				.hasSidearm = false,
 			});
 			name = actors.getName(dwarf1);
-			ObjectiveTypeId digObjectiveType = ObjectiveType::getIdByName(L"dig");
+			ObjectiveTypeId digObjectiveType = ObjectiveType::getIdByName("dig");
 			std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(blocks.getIndex_i(9, 9, 1));
 			actors.objective_setPriority(dwarf1, digObjectiveType, Priority::create(10));
 			actors.objective_replaceTasks(dwarf1, std::move(objective));
@@ -97,7 +97,7 @@ TEST_CASE("json")
 		Actors& actors2 = area2.getActors();
 		Items& items2 = area2.getItems();
 		Plants& plants2 = area2.getPlants();
-		FactionId faction2 = simulation2.m_hasFactions.byName(L"Tower of Power");
+		FactionId faction2 = simulation2.m_hasFactions.byName("Tower of Power");
 		// BlockIndex.
 		CHECK(blocks2.m_sizeX == blocks2.m_sizeY);
 		CHECK(blocks2.m_sizeX == blocks2.m_sizeZ);
@@ -130,8 +130,8 @@ TEST_CASE("json")
 		CHECK(actors2.drink_hasThristEvent(dwarf2));
 		CHECK(actors2.sleep_hasTiredEvent(dwarf2));
 		// Objective.
-		CHECK(actors2.objective_getPriorityFor(dwarf2, ObjectiveType::getIdByName(L"dig")) == 10);
-		CHECK(actors2.objective_getCurrentName(dwarf2) == L"go to");
+		CHECK(actors2.objective_getPriorityFor(dwarf2, ObjectiveType::getIdByName("dig")) == 10);
+		CHECK(actors2.objective_getCurrentName(dwarf2) == "go to");
 		GoToObjective& goToObjective = actors2.objective_getCurrent<GoToObjective>(dwarf2);
 		CHECK(goToObjective.getLocation() == blocks2.getIndex_i(9,9,1));
 		// Equipment.
@@ -196,7 +196,7 @@ TEST_CASE("json")
 				.location = blocks.getIndex_i(5, 5, 1),
 				.faction = faction,
 			});
-			ObjectiveTypeId digObjectiveType = ObjectiveType::getIdByName(L"dig");
+			ObjectiveTypeId digObjectiveType = ObjectiveType::getIdByName("dig");
 			actors.objective_setPriority(dwarf1, digObjectiveType, Priority::create(100));
 			// One step to find the designation.
 			simulation.doStep();
@@ -215,7 +215,7 @@ TEST_CASE("json")
 		Blocks& blocks2 = area2.getBlocks();
 		Actors& actors2 = area2.getActors();
 		Items& items2 = area2.getItems();
-		FactionId faction2 = simulation2.m_hasFactions.byName(L"Tower of Power");
+		FactionId faction2 = simulation2.m_hasFactions.byName("Tower of Power");
 		BlockIndex holeLocation2 = blocks2.getIndex_i(8,4,0);
 		CHECK(area2.m_hasDigDesignations.contains(faction2, holeLocation2));
 		DigProject& project = area2.m_hasDigDesignations.getForFactionAndBlock(faction2, holeLocation2);
@@ -257,7 +257,7 @@ TEST_CASE("json")
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
-		FactionId faction2 = simulation2.m_hasFactions.byName(L"Tower of Power");
+		FactionId faction2 = simulation2.m_hasFactions.byName("Tower of Power");
 		BlockIndex projectLocation2 = blocks2.getIndex_i(8,4,1);
 		CHECK(area2.m_hasConstructionDesignations.contains(faction2, projectLocation2));
 		ConstructProject& project = area2.m_hasConstructionDesignations.getProject(faction2, projectLocation2);
@@ -287,7 +287,7 @@ TEST_CASE("json")
 				.location = blocks.getIndex_i(5, 5, 1),
 				.faction = faction
 			});
-			ObjectiveTypeId stockPileObjectiveType = ObjectiveType::getIdByName(L"stockpile");
+			ObjectiveTypeId stockPileObjectiveType = ObjectiveType::getIdByName("stockpile");
 			actors.objective_setPriority(dwarf1, stockPileObjectiveType, Priority::create(100));
 			// One step to find the pile.
 			simulation.doStep();
@@ -304,7 +304,7 @@ TEST_CASE("json")
 		Blocks& blocks2 = area2.getBlocks();
 		Actors& actors2 = area2.getActors();
 		Items& items2 = area2.getItems();
-		FactionId faction2 = simulation2.m_hasFactions.byName(L"Tower of Power");
+		FactionId faction2 = simulation2.m_hasFactions.byName("Tower of Power");
 		BlockIndex projectLocation2 = blocks2.getIndex_i(8,4,1);
 		BlockIndex pileLocation2 = blocks2.getIndex_i(1, 4, 1);
 		ItemIndex pile2 = blocks2.item_getAll(pileLocation2)[0];
@@ -327,9 +327,9 @@ TEST_CASE("json")
 	{
 		Json areaData;
 		Json simulationData;
-		CraftStepTypeCategoryId craftStepTypeSaw = CraftStepTypeCategory::byName(L"saw");
-		CraftStepTypeCategoryId craftStepTypeScrape = CraftStepTypeCategory::byName(L"scrape");
-		CraftJobTypeId jobTypeSawBoards = CraftJobType::byName(L"saw boards");
+		CraftStepTypeCategoryId craftStepTypeSaw = CraftStepTypeCategory::byName("saw");
+		CraftStepTypeCategoryId craftStepTypeScrape = CraftStepTypeCategory::byName("scrape");
+		CraftJobTypeId jobTypeSawBoards = CraftJobType::byName("saw boards");
 		{
 			area.m_hasCraftingLocationsAndJobs.addFaction(faction);
 			area.m_hasCraftingLocationsAndJobs.getForFaction(faction).addLocation(craftStepTypeSaw, blocks.getIndex_i(3, 3, 1));
@@ -340,11 +340,11 @@ TEST_CASE("json")
 				.location = blocks.getIndex_i(5, 5, 1),
 				.faction = faction}
 			);
-			ObjectiveTypeId woodWorkingObjectiveType = ObjectiveType::getIdByName(L"craft: wood working");
+			ObjectiveTypeId woodWorkingObjectiveType = ObjectiveType::getIdByName("craft: wood working");
 			actors.objective_setPriority(dwarf1, woodWorkingObjectiveType, Priority::create(100));
-			items.create({.itemType = ItemType::byName(L"saw"), .materialType = bronze, .location = blocks.getIndex_i(3, 7, 1), .quality = Quality::create(25), .percentWear = Percent::create(0)});
-			items.create({.itemType = ItemType::byName(L"chisel"), .materialType = bronze, .location = blocks.getIndex_i(3, 6, 1), .quality = Quality::create(25), .percentWear = Percent::create(0)});
-			items.create({.itemType = ItemType::byName(L"log"), .materialType = wood, .location = blocks.getIndex_i(3, 8, 1), .quantity = Quantity::create(1)});
+			items.create({.itemType = ItemType::byName("saw"), .materialType = bronze, .location = blocks.getIndex_i(3, 7, 1), .quality = Quality::create(25), .percentWear = Percent::create(0)});
+			items.create({.itemType = ItemType::byName("chisel"), .materialType = bronze, .location = blocks.getIndex_i(3, 6, 1), .quality = Quality::create(25), .percentWear = Percent::create(0)});
+			items.create({.itemType = ItemType::byName("log"), .materialType = wood, .location = blocks.getIndex_i(3, 8, 1), .quantity = Quantity::create(1)});
 			// One step to find the designation.
 			simulation.doStep();
 
@@ -355,7 +355,7 @@ TEST_CASE("json")
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
 		Blocks& blocks2 = area2.getBlocks();
 		Actors& actors2 = area2.getActors();
-		FactionId faction2 = simulation2.m_hasFactions.byName(L"Tower of Power");
+		FactionId faction2 = simulation2.m_hasFactions.byName("Tower of Power");
 		ActorIndex dwarf2 = blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
 
 		CHECK(area2.m_hasCraftingLocationsAndJobs.getForFaction(faction2).hasLocationsForCategory(craftStepTypeSaw));
@@ -396,7 +396,7 @@ TEST_CASE("json")
 
 		CHECK(actors2.move_getDestination(dwarf2).exists());
 		CHECK(blocks2.isAdjacentToIncludingCornersAndEdges(actors2.move_getDestination(dwarf2), blocks2.getIndex_i(3,7,1)));
-		CHECK(actors2.objective_getCurrent<Objective>(dwarf2).getTypeId() == ObjectiveType::getIdByName(L"drink"));
+		CHECK(actors2.objective_getCurrent<Objective>(dwarf2).getTypeId() == ObjectiveType::getIdByName("drink"));
 	}
 	SUBCASE("eat")
 	{
@@ -405,7 +405,7 @@ TEST_CASE("json")
 		{
 			items.create({
 				.itemType = preparedMeal,
-				.materialType = MaterialType::byName(L"fruit"),
+				.materialType = MaterialType::byName("fruit"),
 				.location = blocks.getIndex_i(3, 7, 1),
 				.quality = Quality::create(25),
 				.percentWear = Percent::create(0),
@@ -430,7 +430,7 @@ TEST_CASE("json")
 
 		CHECK(actors2.move_getDestination(dwarf2).exists());
 		CHECK(blocks2.isAdjacentToIncludingCornersAndEdges(actors2.move_getDestination(dwarf2), blocks2.getIndex_i(3,7,1)));
-		CHECK(actors2.objective_getCurrent<Objective>(dwarf2).getTypeId() == ObjectiveType::getIdByName(L"eat"));
+		CHECK(actors2.objective_getCurrent<Objective>(dwarf2).getTypeId() == ObjectiveType::getIdByName("eat"));
 	}
 	SUBCASE("sleep")
 	{
@@ -470,7 +470,7 @@ TEST_CASE("json")
 		CHECK(area2.m_hasSleepingSpots.containsUnassigned(blocks2.getIndex_i(1,1,1)));
 		CHECK(actors2.move_getDestination(dwarf2).exists());
 		CHECK(actors2.move_getDestination(dwarf2) == blocks2.getIndex_i(2,2,1));
-		CHECK(actors2.objective_getCurrent<Objective>(dwarf2).getTypeId() == ObjectiveType::getIdByName(L"sleep"));
+		CHECK(actors2.objective_getCurrent<Objective>(dwarf2).getTypeId() == ObjectiveType::getIdByName("sleep"));
 		CHECK(actors2.sleep_getSpot(dwarf2).exists());
 	}
 	SUBCASE("sow seed")
@@ -489,7 +489,7 @@ TEST_CASE("json")
 				.location = blocks.getIndex_i(5, 5, 1),
 				.faction = faction,
 			});
-			ObjectiveTypeId sowObjectiveType = ObjectiveType::getIdByName(L"sow seeds");
+			ObjectiveTypeId sowObjectiveType = ObjectiveType::getIdByName("sow seeds");
 			actors.objective_setPriority(dwarf1, sowObjectiveType, Priority::create(10));
 			dwarf1Id = actors.getId(dwarf1);
 
@@ -510,7 +510,7 @@ TEST_CASE("json")
 		ActorIndex dwarf2 = simulation2.m_actors.getIndexForId(dwarf1Id);
 
 		Objective& objective2 = actors2.objective_getCurrent<Objective>(dwarf2);
-		CHECK(objective2.getTypeId() == ObjectiveType::getIdByName(L"sow seeds"));
+		CHECK(objective2.getTypeId() == ObjectiveType::getIdByName("sow seeds"));
 		CHECK(actors2.move_getDestination(dwarf2).exists());
 		BlockIndex block2 = static_cast<SowSeedsObjective&>(objective2).getBlock();
 		Point3D coordinates2 = blocks2.getCoordinates(block2);
@@ -536,7 +536,7 @@ TEST_CASE("json")
 				.location = blocks.getIndex_i(5, 5, 1),
 				.faction = faction}
 			);
-			ObjectiveTypeId harvestObjectiveType = ObjectiveType::getIdByName(L"harvest");
+			ObjectiveTypeId harvestObjectiveType = ObjectiveType::getIdByName("harvest");
 			actors.objective_setPriority(dwarf1, harvestObjectiveType, Priority::create(10));
 			dwarf1Id = actors.getId(dwarf1);
 			// One step to find the harvest location.
@@ -551,7 +551,7 @@ TEST_CASE("json")
 		Actors& actors2 = area2.getActors();
 		ActorIndex dwarf2 = simulation2.m_actors.getIndexForId(dwarf1Id);
 		Objective& objective2 = actors2.objective_getCurrent<Objective>(dwarf2);
-		CHECK(objective2.getTypeId() == ObjectiveType::getIdByName(L"harvest"));
+		CHECK(objective2.getTypeId() == ObjectiveType::getIdByName("harvest"));
 		HarvestObjective& harvestObjective = static_cast<HarvestObjective&>(objective2);
 		CHECK(harvestObjective.getBlock() == blocks2.getIndex_i(1,7,1));
 	}
@@ -575,13 +575,13 @@ TEST_CASE("json")
 				.location = blocks.getIndex_i(5, 5, 1),
 				.faction = faction
 			});
-			ObjectiveTypeId givePlantsFluidObjectiveType = ObjectiveType::getIdByName(L"give plants fluid");
+			ObjectiveTypeId givePlantsFluidObjectiveType = ObjectiveType::getIdByName("give plants fluid");
 			actors.objective_setPriority(dwarf1, givePlantsFluidObjectiveType, Priority::create(10));
-			CHECK(actors.objective_getCurrentName(dwarf1) == L"give plants fluid");
+			CHECK(actors.objective_getCurrentName(dwarf1) == "give plants fluid");
 			dwarf1Id = actors.getId(dwarf1);
 			// One step to find the plant needing water.
 			simulation.doStep();
-			CHECK(actors.objective_getCurrentName(dwarf1) == L"give plants fluid");
+			CHECK(actors.objective_getCurrentName(dwarf1) == "give plants fluid");
 			// Serialize.
 			areaData = area.toJson();
 			simulationData = simulation.toJson();
@@ -591,6 +591,6 @@ TEST_CASE("json")
 		Actors& actors2 = area2.getActors();
 		ActorIndex dwarf2 = simulation2.m_actors.getIndexForId(dwarf1Id);
 		Objective& objective2 = actors2.objective_getCurrent<Objective>(dwarf2);
-		CHECK(objective2.name() == L"give plants fluid");
+		CHECK(objective2.name() == "give plants fluid");
 	}
 }

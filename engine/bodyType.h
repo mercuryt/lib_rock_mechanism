@@ -5,7 +5,7 @@
 #include <string>
 struct BodyPartTypeParamaters final
 {
-	std::wstring name;
+	std::string name;
 	Volume volume;
 	bool doesLocamotion;
 	bool doesManipulation;
@@ -15,7 +15,7 @@ struct BodyPartTypeParamaters final
 // For example: 'left arm', 'head', etc.
 class BodyPartType final
 {
-	StrongVector<std::wstring, BodyPartTypeId> m_name;
+	StrongVector<std::string, BodyPartTypeId> m_name;
 	StrongVector<Volume, BodyPartTypeId> m_volume;
 	StrongBitSet<BodyPartTypeId> m_doesLocamotion;
 	StrongBitSet<BodyPartTypeId> m_doesManipulation;
@@ -23,8 +23,8 @@ class BodyPartType final
 	StrongVector<std::vector<std::pair<AttackTypeId, MaterialTypeId>>, BodyPartTypeId> m_attackTypesAndMaterials;
 public:
 	static void create(BodyPartTypeParamaters& p);
-	[[nodiscard]] static BodyPartTypeId byName(std::wstring name);
-	[[nodiscard]] static std::wstring& getName(const BodyPartTypeId& id);
+	[[nodiscard]] static BodyPartTypeId byName(std::string name);
+	[[nodiscard]] static std::string& getName(const BodyPartTypeId& id);
 	[[nodiscard]] static Volume getVolume(const BodyPartTypeId& id);
 	[[nodiscard]] static bool getDoesLocamotion(const BodyPartTypeId& id);
 	[[nodiscard]] static bool getDoesManipulation(const BodyPartTypeId& id);
@@ -35,13 +35,13 @@ inline BodyPartType bodyPartTypeData;
 // For example biped, quadraped, bird, etc.
 class BodyType final
 {
-	StrongVector<std::wstring, BodyTypeId> m_name;
+	StrongVector<std::string, BodyTypeId> m_name;
 	StrongVector<std::vector<BodyPartTypeId>, BodyTypeId> m_bodyPartTypes;
 public:
 	static bool hasBodyPart(const BodyTypeId& id, const BodyPartTypeId& bodyPartType);
-	static void create(std::wstring name, std::vector<BodyPartTypeId>& bodyPartTypes);
-	[[nodiscard]] static BodyTypeId byName(std::wstring name);
-	[[nodiscard]] static std::wstring getName(const BodyTypeId& id);
+	static void create(std::string name, std::vector<BodyPartTypeId>& bodyPartTypes);
+	[[nodiscard]] static BodyTypeId byName(std::string name);
+	[[nodiscard]] static std::string getName(const BodyTypeId& id);
 	[[nodiscard]] static std::vector<BodyPartTypeId>& getBodyPartTypes(const BodyTypeId& id);
 };
 inline BodyType bodyTypeData;

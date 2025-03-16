@@ -23,44 +23,21 @@ struct DeserializationMemo;
 struct MaterialType;
 struct SkillType;
 class ActorOrItemIndex;
-/*
-class CraftInputAction final : public InputAction
-{
-	Area& m_area;
-	FactionId m_faction;
-	CraftJobTypeId m_craftJobType;
-	MaterialTypeId m_materialType;
-	Quantity m_quantity = 0;
-	Quality m_quality = 0;
-	CraftInputAction(Area& area, const FactionId& faction, InputQueue& inputQueue, const CraftJobTypeId& craftJobType, const MaterialTypeId& materialType, const Quantity& quantity) :
-		InputAction(inputQueue), m_area(area), m_faction(faction), m_craftJobType(craftJobType), m_materialType(materialType), m_quantity(quantity) { }
-	void execute();
-};
-class CraftCancelInputAction final : public InputAction
-{
-	Area& m_area;
-	CraftJob& m_job;
-	FactionId m_faction;
-	CraftCancelInputAction(Area& area, const FactionId& faction, InputQueue& inputQueue, CraftJob& job) :
-		InputAction(inputQueue), m_area(area), m_job(job), m_faction(faction) { }
-	void execute();
-};
-*/
 // Drill, saw, forge, etc.
 class CraftStepTypeCategory final
 {
-	StrongVector<std::wstring, CraftStepTypeCategoryId> m_name;
+	StrongVector<std::string, CraftStepTypeCategoryId> m_name;
 public:
-	static void create(std::wstring name);
+	static void create(std::string name);
 	[[nodiscard]] static CraftStepTypeCategoryId size();
-	[[nodiscard]] static CraftStepTypeCategoryId byName(const std::wstring name);
-	[[nodiscard]] static std::wstring getName(CraftStepTypeCategoryId id);
+	[[nodiscard]] static CraftStepTypeCategoryId byName(const std::string name);
+	[[nodiscard]] static std::string getName(CraftStepTypeCategoryId id);
 };
 inline CraftStepTypeCategory craftStepTypeCategoryData;
 // Part of the definition of a particular CraftJobType which makes a specific Item.
 struct CraftStepType final
 {
-	std::wstring name;
+	std::string name;
 	CraftStepTypeCategoryId craftStepTypeCategory;
 	SkillTypeId skillType;
 	Step stepsDuration;
@@ -104,16 +81,16 @@ struct CraftStepProjectHasShapeDishonorCallback final : public DishonorCallback
 // Data about making a specific product type.
 class CraftJobType final
 {
-	StrongVector<std::wstring, CraftJobTypeId> m_name;
+	StrongVector<std::string, CraftJobTypeId> m_name;
 	StrongVector<ItemTypeId, CraftJobTypeId> m_productType;
 	StrongVector<Quantity, CraftJobTypeId> m_productQuantity;
 	StrongVector<MaterialCategoryTypeId, CraftJobTypeId> m_materialTypeCategory;
 	StrongVector<std::vector<CraftStepType>, CraftJobTypeId> m_stepTypes;
 public:
-	static void create(std::wstring name, ItemTypeId productType, const Quantity& productQuantity, MaterialCategoryTypeId category, std::vector<CraftStepType> stepTypes);
+	static void create(std::string name, ItemTypeId productType, const Quantity& productQuantity, MaterialCategoryTypeId category, std::vector<CraftStepType> stepTypes);
 	[[nodiscard]] static CraftJobTypeId size();
-	[[nodiscard]] static CraftJobTypeId byName(const std::wstring name);
-	[[nodiscard]] static std::wstring getName(const CraftJobTypeId& id);
+	[[nodiscard]] static CraftJobTypeId byName(const std::string name);
+	[[nodiscard]] static std::string getName(const CraftJobTypeId& id);
 	[[nodiscard]] static ItemTypeId getProductType(const CraftJobTypeId& id);
 	[[nodiscard]] static Quantity getProductQuantity(const CraftJobTypeId& id);
 	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(const CraftJobTypeId& id);

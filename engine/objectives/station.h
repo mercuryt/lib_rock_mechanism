@@ -13,7 +13,7 @@ public:
 	void cancel(Area&, const ActorIndex&) { }
 	void delay(Area&, const ActorIndex&) { }
 	void reset(Area& area, const ActorIndex& actor);
-	std::wstring name() const { return L"station"; }
+	std::string name() const { return "station"; }
 };
 /*
 class StationInputAction final : public InputAction

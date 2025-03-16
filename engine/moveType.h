@@ -7,7 +7,7 @@
 
 struct MoveTypeParamaters
 {
-	std::wstring name;
+	std::string name;
 	bool walk;
 	uint8_t climb;
 	bool jumpDown;
@@ -19,7 +19,7 @@ struct MoveTypeParamaters
 };
 class MoveType
 {
-	StrongVector<std::wstring, MoveTypeId> m_name;
+	StrongVector<std::string, MoveTypeId> m_name;
 	StrongBitSet<MoveTypeId> m_walk;
 	StrongVector<uint8_t, MoveTypeId> m_climb;
 	StrongBitSet<MoveTypeId> m_jumpDown;
@@ -30,8 +30,8 @@ class MoveType
 	StrongVector<FluidTypeSet, MoveTypeId> m_breathableFluids;
 public:
 	static void create(MoveTypeParamaters& paramaters);
-	[[nodiscard]] static MoveTypeId byName(std::wstring name);
-	[[nodiscard]] static std::wstring getName(MoveTypeId id);
+	[[nodiscard]] static MoveTypeId byName(std::string name);
+	[[nodiscard]] static std::string getName(MoveTypeId id);
 	[[nodiscard]] static bool getWalk(MoveTypeId id);
 	[[nodiscard]] static uint8_t getClimb(MoveTypeId id);
 	[[nodiscard]] static bool getJumpDown(MoveTypeId id);

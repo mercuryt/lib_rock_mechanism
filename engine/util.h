@@ -52,17 +52,6 @@ namespace util
 	{
 		return scaleByFraction(base, denominator - numerator, denominator);
 	}
-	inline std::string wideStringToString(const std::wstring& wstr)
-	{
-		using convert_typeX = std::codecvt_utf8<wchar_t>;
-		std::wstring_convert<convert_typeX, wchar_t> converterX;
-		return converterX.to_bytes(wstr);
-	}
-	inline std::wstring stringToWideString(const std::string& str)
-	{
-		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-		return converter.from_bytes(str);
-	}
 	inline Percent fractionToPercent(int numerator, int denominator)
 	{
 		return Percent::create(std::round(((float)numerator / (float)denominator) * 100.f));

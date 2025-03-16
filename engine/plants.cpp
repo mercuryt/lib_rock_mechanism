@@ -387,7 +387,7 @@ void Plants::removeFruitQuantity(const PlantIndex& index, const Quantity& quanti
 }
 Mass Plants::getFruitMass(const PlantIndex& index) const
 {
-	static MaterialTypeId fruitType = MaterialType::byName(L"fruit");
+	static MaterialTypeId fruitType = MaterialType::byName("fruit");
 	return ItemType::getVolume(PlantSpecies::getFruitItemType(getSpecies(index))) * MaterialType::getDensity(fruitType) * m_quantityToHarvest[index];
 }
 void Plants::makeFoliageGrowthEvent(const PlantIndex& index)
@@ -537,7 +537,7 @@ void to_json(Json& data, const Plants& plants)
 {
 	data = plants.toJson();
 }
-void Plants::log(const PlantIndex& index) const { std::wcout << PlantSpecies::getName(m_species[index]) << ":" << std::to_wstring(getPercentGrown(index).get()) << "%"; }
+void Plants::log(const PlantIndex& index) const { std::cout << PlantSpecies::getName(m_species[index]) << ":" << std::to_string(getPercentGrown(index).get()) << "%"; }
 PlantIndices Plants::getAll() const
 {
 	// TODO: Replace with std::iota?

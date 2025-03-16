@@ -14,10 +14,10 @@
 
 TEST_CASE("Area")
 {
-	static MaterialTypeId marble = MaterialType::byName(L"marble");
+	static MaterialTypeId marble = MaterialType::byName("marble");
 	static FluidTypeId water = FluidType::byName("water");
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
-	Simulation simulation(L"", Step::create(1));
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	Simulation simulation("", Step::create(1));
 	Area& area = simulation.m_hasAreas->createArea(10, 10, 10);
 	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
@@ -191,9 +191,9 @@ TEST_CASE("Area")
 }
 TEST_CASE("vision-threading")
 {
-	static MaterialTypeId marble = MaterialType::byName(L"marble");
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
-	Simulation simulation(L"", Step::create(100000000000));
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	Simulation simulation("", Step::create(100000000000));
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
@@ -249,12 +249,12 @@ inline void fourFluidsTestParallel(uint32_t scale, Step steps)
 	uint32_t maxZ = (scale * 1) + 1;
 	uint32_t halfMaxX = maxX / 2;
 	uint32_t halfMaxY = maxY / 2;
-	static MaterialTypeId marble = MaterialType::byName(L"marble");
+	static MaterialTypeId marble = MaterialType::byName("marble");
 	static FluidTypeId water = FluidType::byName("water");
 	static FluidTypeId CO2 = FluidType::byName("CO2");
 	static FluidTypeId mercury = FluidType::byName("mercury");
 	static FluidTypeId lava = FluidType::byName("lava");
-	Simulation simulation(L"", Step::create(0));
+	Simulation simulation("", Step::create(0));
 	Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();

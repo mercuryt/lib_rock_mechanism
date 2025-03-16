@@ -13,9 +13,9 @@
 TEST_CASE("leadAndFollow")
 {
 	Simulation simulation;
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
-	static AnimalSpeciesId troll = AnimalSpecies::byName(L"troll");
-	static MaterialTypeId marble = MaterialType::byName(L"marble");
+	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
+	static AnimalSpeciesId troll = AnimalSpecies::byName("troll");
+	static MaterialTypeId marble = MaterialType::byName("marble");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
 	Blocks& blocks = area.getBlocks();
@@ -100,7 +100,7 @@ TEST_CASE("leadAndFollow")
 		blocks.solid_set(blocks.getIndex_i(5, 5, 1), marble, false);
 		blocks.solid_set(blocks.getIndex_i(5, 7, 1), marble, false);
 		ActorIndex dwarf1 = actors.create({
-			.species=AnimalSpecies::byName(L"dwarf"),
+			.species=AnimalSpecies::byName("dwarf"),
 			.location=origin1,
 		});
 		ActorIndex troll1 = actors.create({

@@ -109,9 +109,9 @@ HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo
 	if(data.contains("beastOfBurden"))
 		m_beastOfBurden.load(data["beastOfBurden"], actors.m_referenceData);
 	if(data.contains("genericItemType"))
-		m_genericItemType = ItemType::byName(data["genericItemType"].get<std::wstring>());
+		m_genericItemType = ItemType::byName(data["genericItemType"].get<std::string>());
 	if(data.contains("genericMaterialType"))
-		m_genericMaterialType = MaterialType::byName(data["genericMaterialType"].get<std::wstring>());
+		m_genericMaterialType = MaterialType::byName(data["genericMaterialType"].get<std::string>());
 	if(data.contains("workers"))
 		for(const Json& workerIndex : data["workers"])
 			m_workers.insert(actors.getReference(workerIndex.get<ActorIndex>()));
@@ -709,7 +709,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(Project& project, 
 		workers.add(pair.first.getIndex(actors.m_referenceData));
 	assert(maxQuantityRequested != 0);
 	// toHaul is wheeled. Either do IndividuaCargoIsCart or Team.
-	static MoveTypeId wheeled = MoveType::byName(L"roll");
+	static MoveTypeId wheeled = MoveType::byName("roll");
 	ActorOrItemIndex toHaul = toHaulRef.getIndexPolymorphic(actors.m_referenceData, items.m_referenceData);
 	if(toHaul.getMoveType(project.m_area) == wheeled)
 	{
@@ -815,7 +815,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(Project& project, 
 	if(pannierBearer.exists())
 	{
 		ItemIndex panniers;
-		static const ItemTypeId& panniersItemType = ItemType::byName(L"panniers");
+		static const ItemTypeId& panniersItemType = ItemType::byName("panniers");
 		if(actors.equipment_containsItemType(pannierBearer, panniersItemType))
 			panniers = actors.equipment_getFirstItemWithType(pannierBearer, panniersItemType);
 		else
@@ -1057,7 +1057,7 @@ ItemIndex AreaHasHaulTools::getToolToHaulPolymorphic(const Area& area, const Fac
 ItemIndex AreaHasHaulTools::getToolToHaulVolume(const Area& area, const FactionId& faction, const Volume& volume) const
 {
 	// Items like panniers with no move type also have internal volume but aren't relevent for this method.
-	static MoveTypeId none = MoveType::byName(L"none");
+	static MoveTypeId none = MoveType::byName("none");
 	const Items& items = area.getItems();
 	for(ItemReference item : m_haulTools)
 	{
@@ -1085,7 +1085,7 @@ ItemIndex AreaHasHaulTools::getToolToHaulFluid(const Area& area, const FactionId
 }
 ActorIndex AreaHasHaulTools::getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Area& area, const FactionId& faction, const ItemIndex& haulTool, const Mass& cargoMass, const Speed& minimumHaulSpeed) const
 {
-	[[maybe_unused]] static MoveTypeId rollingType = MoveType::byName(L"roll");
+	[[maybe_unused]] static MoveTypeId rollingType = MoveType::byName("roll");
 	assert(area.getItems().getMoveType(haulTool) == rollingType);
 	const Actors& actors = area.getActors();
 	for(ActorReference actor : m_yolkableActors)

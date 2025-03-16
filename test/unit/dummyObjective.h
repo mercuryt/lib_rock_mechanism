@@ -8,5 +8,5 @@ public:
 	void cancel(Area&, const ActorIndex&) { std::unreachable(); }
 	void delay(Area&, const ActorIndex&) { std::unreachable(); }
 	void reset(Area&, const ActorIndex&) { std::unreachable(); }
-	std::wstring name() const { return L"dummy"; }
+	std::string name() const { return "dummy"; }
 };

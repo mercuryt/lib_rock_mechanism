@@ -7,17 +7,20 @@
 #include "../../engine/animalSpecies.h"
 #include "../../engine/blocks/blocks.h"
 #include "../../engine/actors/actors.h"
+#include "../../engine/areaBuilderUtil.h"
 TEST_CASE("octTree")
 {
-	static AnimalSpeciesId dwarf = AnimalSpecies::byName(L"dwarf");
+	const AnimalSpeciesId& dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation;
+	const MaterialTypeId& granite = MaterialType::byName("granite");
 	SUBCASE("basic")
 	{
-		Area& area = simulation.m_hasAreas->createArea(20,20,20);
+		Area& area = simulation.m_hasAreas->createArea(1,1,2);
 		CHECK(area.m_octTree.getCount() == 1);
 		Blocks& blocks = area.getBlocks();
 		Actors& actors = area.getActors();
-		BlockIndex block = blocks.getIndex_i(5, 5, 5);
+		BlockIndex block = blocks.getIndex_i(0, 0, 1);
+		blocks.solid_set(blocks.getBlockBelow(block), granite, false);
 		ActorIndex a1 = actors.create({.species=dwarf, .location=block});
 		CHECK(area.m_octTree.contains(actors.getReference(a1), blocks.getCoordinates(block)));
 		actors.exit(a1);
@@ -29,7 +32,9 @@ TEST_CASE("octTree")
 		Blocks& blocks = area.getBlocks();
 		Actors& actors = area.getActors();
 		uint toSpawn = Config::minimumOccupantsForOctTreeToSplit;
-		for(const BlockIndex& block : blocks.getAllIndices())
+		areaBuilderUtil::setSolidLayer(area, 0, granite);
+		Cuboid level = blocks.getZLevel(DistanceInBlocks::create(1));
+		for(const BlockIndex& block : level.getView(blocks))
 		{
 			if(toSpawn == 0)
 				break;
@@ -38,9 +43,9 @@ TEST_CASE("octTree")
 		}
 		CHECK(area.m_octTree.getActorCount() == Config::minimumOccupantsForOctTreeToSplit);
 		CHECK(area.m_octTree.getCount() == 9);
-		CHECK(!blocks.actor_empty(BlockIndex::create(0)));
+		CHECK(!blocks.actor_empty(blocks.getIndex_i(0, 0, 1)));
 		uint toUnspawn = Config::minimumOccupantsForOctTreeToSplit - Config::maximumOccupantsForOctTreeToMerge;
-		for(const BlockIndex& block : blocks.getAllIndices())
+		for(const BlockIndex& block : level.getView(blocks))
 		{
 			if(toUnspawn == 0)
 				break;

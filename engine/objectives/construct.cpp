@@ -1,6 +1,6 @@
 #include "construct.h"
 #include "../area/area.h"
-#include "../construct.h"
+#include "../projects/construct.h"
 #include "../path/terrainFacade.hpp"
 #include "../hasShapes.hpp"
 #include "../actors/actors.h"

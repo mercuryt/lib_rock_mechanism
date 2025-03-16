@@ -175,8 +175,7 @@ void Area::stepCaveInRead()
 	}
 
 	// Sort by z low to high so blocks don't overwrite eachother when moved down.
-	// TODO: why is it necessary to alias m_blocks like this? Clangd throws a compile error.
-	auto compare = [&blocks](const BlockIndex& a, const BlockIndex& b) { return blocks.getZ(a) < blocks.getZ(b); };
+	auto compare = [&](const BlockIndex& a, const BlockIndex& b) { return blocks.getZ(a) < blocks.getZ(b); };
 	for(auto& [chunk, fallDistance, fallEnergy] : fallingChunksWithDistanceAndEnergy)
 	{
 		chunk.sort(compare);

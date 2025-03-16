@@ -37,7 +37,7 @@ struct ActorParamaters
 {
 	ActorId id = ActorId::null();
 	AnimalSpeciesId species;
-	std::wstring name = L"";
+	std::string name = "";
 	DateTime birthDate = {0,0,0};
 	Step birthStep = Step::null();
 	Percent percentGrown = Percent::null();
@@ -58,7 +58,7 @@ struct ActorParamaters
 	bool hasHeavyArmor = false;
 
 	Percent getPercentGrown(Simulation& simulation);
-	std::wstring getName(Simulation& simulation);
+	std::string getName(Simulation& simulation);
 	Step getBirthStep(Simulation& simulation);
 	ActorId getId(Simulation& simulation);
 	Percent getPercentThirst(Simulation& simulation);
@@ -69,7 +69,7 @@ struct ActorParamaters
 class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 {
 	StrongVector<ActorId, ActorIndex> m_id;
-	StrongVector<std::wstring, ActorIndex> m_name;
+	StrongVector<std::string, ActorIndex> m_name;
 	StrongVector<AnimalSpeciesId, ActorIndex> m_species;
 	StrongVector<Project*, ActorIndex> m_project;
 	StrongVector<Step, ActorIndex> m_birthStep;
@@ -156,11 +156,13 @@ public:
 	void reserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing4& facing);
 	void unreserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing4& facing);
 	void setBirthStep(const ActorIndex& index, const Step& step);
-	void setName(const ActorIndex& index, std::wstring name){ m_name[index] = name; }
+	void setName(const ActorIndex& index, std::string name){ m_name[index] = name; }
+	void takeFallDamage(const ActorIndex& index, const DistanceInBlocks& distance, const MaterialTypeId& materialType);
+	bool tryToMoveSoAsNotOccuping(const ActorIndex& index, const BlockIndex& block);
 	[[nodiscard]] ActorIndices getAll() const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] ActorId getId(const ActorIndex& index) const { return m_id[index]; }
-	[[nodiscard]] std::wstring getName(const ActorIndex& index) const { return m_name[index]; }
+	[[nodiscard]] std::string getName(const ActorIndex& index) const { return m_name[index]; }
 	[[nodiscard]] bool isAlive(const ActorIndex& index) const { return m_causeOfDeath[index] == CauseOfDeath::none; }
 	[[nodiscard]] Percent getPercentGrown(const ActorIndex& index) const;
 	[[nodiscard]] CauseOfDeath getCauseOfDeath(const ActorIndex& index) const { assert(!isAlive(index)); return m_causeOfDeath[index]; }
@@ -174,7 +176,7 @@ public:
 	[[nodiscard]] Quantity getAgeInYears(const ActorIndex& index) const;
 	[[nodiscard]] Step getAge(const ActorIndex& index) const;
 	[[nodiscard]] Step getBirthStep(const ActorIndex& index) const { return m_birthStep[index]; }
-	[[nodiscard]] std::wstring getActionDescription(const ActorIndex& index) const;
+	[[nodiscard]] std::string getActionDescription(const ActorIndex& index) const;
 	[[nodiscard]] AnimalSpeciesId getSpecies(const ActorIndex& index) const { return m_species[index]; }
 	[[nodiscard]] Mass getUnencomberedCarryMass(const ActorIndex& index) const { return m_unencomberedCarryMass[index]; }
 	// -Stamina.
@@ -358,7 +360,7 @@ public:
 	[[nodiscard]] bool objective_hasNeed(const ActorIndex& index, NeedType needType) const;
 	[[nodiscard]] bool objective_hasSupressedNeed(const ActorIndex& index, NeedType needType) const;
 	[[nodiscard]] Priority objective_getPriorityFor(const ActorIndex& index, const ObjectiveTypeId& objectiveType) const;
-	[[nodiscard]] std::wstring objective_getCurrentName(const ActorIndex& index) const;
+	[[nodiscard]] std::string objective_getCurrentName(const ActorIndex& index) const;
 	template<typename T>
 	T& objective_getCurrent(const ActorIndex& index) { return static_cast<T&>(m_hasObjectives[index]->getCurrent()); }
 	// For testing.
@@ -580,7 +582,7 @@ public:
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] std::wstring name() { return L"attack"; }
+	[[nodiscard]] std::string name() { return "attack"; }
 };
 inline void to_json(Json& data, const std::unique_ptr<GetIntoAttackPositionPathRequest>& pathRequest) { data = pathRequest->toJson(); }
 struct Attack final

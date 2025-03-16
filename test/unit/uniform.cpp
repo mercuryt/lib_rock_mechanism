@@ -18,22 +18,22 @@ TEST_CASE("uniform")
 	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
-	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName(L"marble"));
-	UniformElement pantsElement = UniformElement::create(ItemType::byName(L"pants"));
-	UniformElement shirtElement = UniformElement::create(ItemType::byName(L"shirt"));
-	UniformElement twoBeltsElement = UniformElement::create(ItemType::byName(L"belt"), Quantity::create(2));
-	Uniform basic = Uniform(L"basic", {pantsElement, shirtElement, twoBeltsElement});
+	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
+	UniformElement pantsElement = UniformElement::create(ItemType::byName("pants"));
+	UniformElement shirtElement = UniformElement::create(ItemType::byName("shirt"));
+	UniformElement twoBeltsElement = UniformElement::create(ItemType::byName("belt"), Quantity::create(2));
+	Uniform basic = Uniform("basic", {pantsElement, shirtElement, twoBeltsElement});
 	ActorIndex actor = actors.create({
-		.species=AnimalSpecies::byName(L"dwarf"),
+		.species=AnimalSpecies::byName("dwarf"),
 		.location=blocks.getIndex_i(5,5,1),
 	});
 	actors.uniform_set(actor, basic);
-	CHECK(actors.objective_getCurrentName(actor) == L"uniform");
+	CHECK(actors.objective_getCurrentName(actor) == "uniform");
 	UniformObjective& objective = actors.objective_getCurrent<UniformObjective>(actor);
-	ItemIndex pants = items.create({.itemType=ItemType::byName(L"pants"), .materialType=MaterialType::byName(L"cotton"), .location=blocks.getIndex_i(8,1,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
-	ItemIndex shirt = items.create({.itemType=ItemType::byName(L"shirt"), .materialType=MaterialType::byName(L"cotton"), .location=blocks.getIndex_i(1,6,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
-	ItemIndex belt = items.create({.itemType=ItemType::byName(L"belt"), .materialType=MaterialType::byName(L"leather"), .location=blocks.getIndex_i(9,2,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
-	ItemIndex belt2 = items.create({.itemType=ItemType::byName(L"belt"), .materialType=MaterialType::byName(L"leather"), .location=blocks.getIndex_i(9,3,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
+	ItemIndex pants = items.create({.itemType=ItemType::byName("pants"), .materialType=MaterialType::byName("cotton"), .location=blocks.getIndex_i(8,1,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
+	ItemIndex shirt = items.create({.itemType=ItemType::byName("shirt"), .materialType=MaterialType::byName("cotton"), .location=blocks.getIndex_i(1,6,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
+	ItemIndex belt = items.create({.itemType=ItemType::byName("belt"), .materialType=MaterialType::byName("leather"), .location=blocks.getIndex_i(9,2,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
+	ItemIndex belt2 = items.create({.itemType=ItemType::byName("belt"), .materialType=MaterialType::byName("leather"), .location=blocks.getIndex_i(9,3,1), .quality=Quality::create(10), .percentWear=Percent::create(10)});
 	simulation.doStep();
 	BlockIndex destination = actors.move_getDestination(actor);
 	CHECK(items.isAdjacentToLocation(shirt, destination));
@@ -51,5 +51,5 @@ TEST_CASE("uniform")
 	CHECK(actors.equipment_containsItem(actor, belt));
 	if(!actors.equipment_containsItem(actor, belt2))
 		simulation.fastForwardUntillActorHasEquipment(area, actor, belt2);
-	CHECK(actors.objective_getCurrentName(actor) != L"uniform");
+	CHECK(actors.objective_getCurrentName(actor) != "uniform");
 }

@@ -54,7 +54,7 @@ struct Point3D
 	[[nodiscard]] DistanceInBlocks distanceTo(const Point3D& other) const;
 	[[nodiscard]] DistanceInBlocksFractional distanceToFractional(const Point3D& other) const;
 	[[nodiscard]] DistanceInBlocks distanceSquared(const Point3D& other) const;
-	[[nodiscard]] std::wstring toString() const;
+	[[nodiscard]] std::string toString() const;
 	static const int hilbertOrder = 1;
 	[[nodiscard]] uint32_t hilbertNumber() const;
 	[[nodiscard]] Offset3D toOffset() const;
@@ -111,7 +111,7 @@ struct Offset3D
 	[[nodiscard]] int x() const { return data[0]; }
 	[[nodiscard]] int y() const { return data[1]; }
 	[[nodiscard]] int z() const { return data[2]; }
-	[[nodiscard]] std::wstring toString() const;
+	[[nodiscard]] std::string toString() const;
 };
 inline void to_json(Json& data, const Offset3D& point) { data = {point.x(), point.y(), point.z()}; }
 inline void from_json(const Json& data, Offset3D& point)

@@ -31,7 +31,7 @@ inline void from_json(const Json& data, OffsetAndVolume& x) { data[0].get_to(x.o
 struct ShapeParamaters
 {
 	SmallSet<OffsetAndVolume> positions;
-	std::wstring name;
+	std::string name;
 	uint32_t displayScale;
 };
 
@@ -40,13 +40,13 @@ struct Shape
 	StrongVector<std::array<SmallSet<OffsetAndVolume>,4>, ShapeId> m_occupiedOffsetsCache;
 	StrongVector<std::array<SmallSet<Offset3D>,4>, ShapeId> m_adjacentOffsetsCache;
 	StrongVector<SmallSet<OffsetAndVolume>, ShapeId> m_positions;
-	StrongVector<std::wstring, ShapeId> m_name;
+	StrongVector<std::string, ShapeId> m_name;
 	StrongBitSet<ShapeId> m_isMultiTile;
 	StrongBitSet<ShapeId> m_isRadiallySymetrical;
 	//TODO: This doesn't belong here. Move to UI.
 	StrongVector<uint32_t, ShapeId> m_displayScale;
 public:
-	static ShapeId create(const std::wstring name, SmallSet<OffsetAndVolume> positions, uint32_t displayScale);
+	static ShapeId create(const std::string name, SmallSet<OffsetAndVolume> positions, uint32_t displayScale);
 	[[nodiscard]] static Json toJson(const ShapeId& id);
 	[[nodiscard]] static SmallSet<OffsetAndVolume> positionsWithFacing(const ShapeId& id, const Facing4& facing);
 	[[nodiscard]] static SmallSet<Offset3D> adjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing);
@@ -60,17 +60,18 @@ public:
 	[[nodiscard]] static BlockIndex getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)> predicate);
 	[[nodiscard]] static BlockIndex getBlockWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)> predicate);
 	[[nodiscard]] static CollisionVolume getCollisionVolumeAtLocationBlock(const ShapeId& id);
+	[[nodiscard]] static CollisionVolume getTotalCollisionVolume(const ShapeId& id);
 	[[nodiscard]] static SmallSet<OffsetAndVolume> getPositions(const ShapeId& id);
-	[[nodiscard]] static std::wstring getName(const ShapeId& id);
+	[[nodiscard]] static std::string getName(const ShapeId& id);
 	[[nodiscard]] static uint32_t getDisplayScale(const ShapeId& id);
 	[[nodiscard]] static bool getIsMultiTile(const ShapeId& id);
 	[[nodiscard]] static bool getIsRadiallySymetrical(const ShapeId& id);
 	// If provided name is not found it is decoded into a custom shape.
-	[[nodiscard]] static ShapeId byName(const std::wstring& name);
-	[[nodiscard]] static bool hasShape(const std::wstring& name);
+	[[nodiscard]] static ShapeId byName(const std::string& name);
+	[[nodiscard]] static bool hasShape(const std::string& name);
 	// Creates a copy, adds a position to it and returns it.
 	[[nodiscard]] static ShapeId mutateAdd(const ShapeId& shape, const OffsetAndVolume& position);
-	[[nodiscard]] static std::wstring makeName(SmallSet<OffsetAndVolume>& positions);
-	[[nodiscard]] static ShapeId loadFromName(std::wstring name);
+	[[nodiscard]] static std::string makeName(SmallSet<OffsetAndVolume>& positions);
+	[[nodiscard]] static ShapeId loadFromName(std::string name);
 };
 inline Shape shapeData;
