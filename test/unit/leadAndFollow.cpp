@@ -173,7 +173,7 @@ TEST_CASE("leadAndFollow")
 		actors.followActor(troll1, dwarf1);
 		actors.move_setDestination(dwarf1, destination1);
 		simulation.doStep();
-		BlockIndex firstStep = actors.move_getPath(dwarf1)[0];
+		BlockIndex firstStep = actors.move_getPath(dwarf1).back();
 		blocks.solid_set(firstStep, marble, false);
 		Step stepsTillMoveEvent = actors.move_stepsTillNextMoveEvent(dwarf1);
 		//TODO: why minus 1? is steps till next move event wrong?

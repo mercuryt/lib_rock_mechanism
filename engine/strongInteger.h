@@ -219,7 +219,7 @@ public:
 	[[nodiscard]] std::vector<StrongInteger>::const_iterator begin() const { return data.begin(); }
 	[[nodiscard]] std::vector<StrongInteger>::const_iterator end() const { return data.end(); }
 	[[nodiscard]] StrongInteger random(Simulation& simulation) const;
-	[[nodiscard]] StrongInteger front() const { return data.front(); }
+	[[nodiscard]] StrongInteger front() const { assert(!data.empty()); return data.front(); }
 	[[nodiscard]] StrongInteger back() const { return data.back(); }
 	[[nodiscard]] StrongInteger operator[](const uint& i) const { assert(i < size()); return data[i]; }
 	[[nodiscard]] auto back_inserter() { return std::back_inserter(data); }

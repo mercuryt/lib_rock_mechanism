@@ -176,8 +176,7 @@ void Simulation::fastForwardUntillActorIsAdjacentToDestination(Area& area, const
 	Actors& actors = area.getActors();
 	#ifndef NDEBUG
 		assert(!actors.move_getPath(actor).empty());
-		const BlockIndex& adjacentDestination = actors.move_getPath(actor).back();
-		assert(adjacentDestination.exists());
+		const BlockIndex& adjacentDestination = actors.move_getPath(actor).front();
 		if(actors.getBlocks(actor).size() == 1)
 			assert(area.getBlocks().isAdjacentToIncludingCornersAndEdges(adjacentDestination, destination));
 	#endif

@@ -136,9 +136,9 @@ TEST_CASE("route_10_10_10")
 		actors.objective_addTaskToEnd(actor, std::make_unique<GoToObjective>(destination));
 		simulation.doStep();
 		CHECK(actors.move_hasEvent(actor));
-		CHECK(actors.move_getPath(actor)[0] == block1);
+		CHECK(actors.move_getPath(actor)[2] == block1);
 		CHECK(actors.move_getPath(actor)[1] == block2);
-		CHECK(actors.move_getPath(actor)[2] == destination);
+		CHECK(actors.move_getPath(actor)[0] == destination);
 		// Step 1.
 		//simulation.fastForwardUntillActorIsAt(area, actor, block1);
 		simulation.doStep();
@@ -159,7 +159,7 @@ TEST_CASE("route_10_10_10")
 		simulation.doStep();
 		CHECK(!actors.move_hasPathRequest(actor));
 		CHECK(actors.move_hasEvent(actor));
-		CHECK(actors.move_getPath(actor)[0] == block3);
+		CHECK(actors.move_getPath(actor).back() == block3);
 		stepsTillNextMove = actors.move_stepsTillNextMoveEvent(actor);
 		simulation.fastForwardUntillActorIsAt(area, actor, block3);
 		CHECK(actors.move_hasEvent(actor));

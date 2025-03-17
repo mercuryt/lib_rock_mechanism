@@ -12,17 +12,19 @@ void PathMemoClosed::add(const BlockIndex& index, BlockIndex parent)
 	m_data[index] = parent;
 	m_dirty.add(index);
 }
-BlockIndices PathMemoClosed::getPath(const BlockIndex& block) const
+BlockIndices PathMemoClosed::getPath(const BlockIndex& secondToLast, const BlockIndex& last) const
 {
 	BlockIndices output;
-	BlockIndex current = block;
+	// Last may not exist if we are using the one block shape pathing adjacent to condition optimization.
+	if(last.exists())
+		output.add(last);
+	BlockIndex current = secondToLast;
 	// Max is used to indicade the start of the path.
 	while(previous(current) != BlockIndex::max())
 	{
 		output.add(current);
 		current = previous(current);
 	}
-	std::ranges::reverse(output);
 	return output;
 }
 // Breadth First.
@@ -63,9 +65,9 @@ BlockIndex PathMemoBreadthFirst::next()
 	m_open.pop_front();
 	return output;
 }
-BlockIndices PathMemoBreadthFirst::getPath(const BlockIndex& block) const
+BlockIndices PathMemoBreadthFirst::getPath(const BlockIndex& secondToLast, const BlockIndex& last) const
 {
-	return m_closed.getPath(block);
+	return m_closed.getPath(secondToLast, last);
 }
 // Depth First.
 PathMemoDepthFirst::PathMemoDepthFirst(Area& area)
@@ -111,9 +113,9 @@ BlockIndex PathMemoDepthFirst::next()
 	m_open.pop_back();
 	return output;
 }
-BlockIndices PathMemoDepthFirst::getPath(const BlockIndex& block) const
+BlockIndices PathMemoDepthFirst::getPath(const BlockIndex& secondToLast, const BlockIndex& last) const
 {
-	return m_closed.getPath(block);
+	return m_closed.getPath(secondToLast, last);
 }
 // SimulaitonHasPathMemos.
 std::pair<PathMemoBreadthFirst*, uint8_t> SimulationHasPathMemos::getBreadthFirst(Area& area)

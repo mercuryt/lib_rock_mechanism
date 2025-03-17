@@ -41,26 +41,22 @@ void Actors::move_updateActualSpeed(const ActorIndex& index)
 void Actors::move_setPath(const ActorIndex& index, const BlockIndices& path)
 {
 	assert(!path.empty());
-	assert(m_area.getBlocks().isAdjacentToIncludingCornersAndEdges(m_location[index], path[0]));
+	assert(m_area.getBlocks().isAdjacentToIncludingCornersAndEdges(m_location[index], path.back()));
 	m_path[index] = std::move(path);
-	m_destination[index] = m_path[index].back();
-	m_pathIter[index] = m_path[index].begin();
+	m_destination[index] = m_path[index].front();
 	move_clearAllEventsAndTasks(index);
 	move_schedule(index);
 }
 void Actors::move_clearPath(const ActorIndex& index)
 {
 	m_path[index].clear();
-	m_pathIter[index] = m_path[index].end();
 	move_clearAllEventsAndTasks(index);
 }
 void Actors::move_callback(const ActorIndex& index)
 {
 	assert(!m_path[index].empty());
 	assert(m_destination[index].exists());
-	assert(m_pathIter[index] >= m_path[index].begin());
-	assert(m_pathIter[index] != m_path[index].end());
-	BlockIndex block = *m_pathIter[index];
+	BlockIndex block = m_path[index].back();
 	Blocks& blocks = m_area.getBlocks();
 	bool permanantlyBlocked = false;
 	bool temperarilyBlocked = false;
@@ -122,10 +118,8 @@ void Actors::move_callback(const ActorIndex& index)
 		}
 		else
 		{
-			assert((*m_pathIter[index]) != *(m_pathIter[index] + 1));
-			++m_pathIter[index];
-			assert(m_pathIter[index] != m_path[index].end());
-			BlockIndex nextBlock = *m_pathIter[index];
+			m_path[index].popBack();
+			const BlockIndex& nextBlock = m_path[index].back();
 			if(blocks.shape_anythingCanEnterEver(nextBlock) && blocks.shape_shapeAndMoveTypeCanEnterEverFrom(nextBlock, m_shape[index], m_moveType[index], m_location[index]))
 				move_schedule(index);
 			else
@@ -137,9 +131,7 @@ void Actors::move_callback(const ActorIndex& index)
 void Actors::move_schedule(const ActorIndex& index)
 {
 	assert(m_location[index] != m_destination[index]);
-	assert(m_pathIter[index] >= m_path[index].begin());
-	assert(m_pathIter[index] != m_path[index].end());
-	BlockIndex moveTo = *m_pathIter[index];
+	const BlockIndex& moveTo = m_path[index].back();
 	m_moveEvent.schedule(index, move_delayToMoveInto(index, moveTo), m_area, index);
 }
 void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& destination, bool detour, bool adjacent, bool unreserved, bool reserve)

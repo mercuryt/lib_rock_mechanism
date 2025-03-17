@@ -375,15 +375,6 @@ void Actors::load(const Json& data)
 		m_hasUniform[index] = std::make_unique<ActorHasUniform>();
 		m_hasUniform[index]->load(m_area, iter.value(), m_faction[index]);
 	}
-	m_pathIter.resize(size);
-	const auto& pathIterData = data["pathIter"];
-	i = ActorIndex::create(0);
-	for(const Json& data : pathIterData)
-	{
-		if(!m_path[i].empty())
-			m_pathIter[i] = m_path[i].begin() + data.get<uint>();
-		++i;
-	}
 	m_canSee.resize(size);
 	assert(data["canSee"].type() == Json::value_t::object);
 	const auto& canSeeData = data["canSee"];
@@ -525,7 +516,6 @@ Json Actors::toJson() const
 			output["uniform"][i] = *m_hasUniform[index];
 		if(m_equipmentSet[index] != nullptr)
 			output["equipmentSet"][i] = *m_equipmentSet[index];
-		output["pathIter"].push_back(m_pathIter[index] - m_path[index].begin());
 		if(m_pathRequest[index] != nullptr)
 			output["pathRequest"][i] = *m_pathRequest[index];
 		if(!m_canSee[index].empty())
@@ -641,7 +631,6 @@ void Actors::forEachData(Action&& action)
 	action(m_moveEvent);
 	action(m_pathRequest);
 	action(m_path);
-	action(m_pathIter);
 	action(m_destination);
 	action(m_speedIndividual);
 	action(m_speedActual);

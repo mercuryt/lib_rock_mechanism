@@ -122,8 +122,8 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	// Move.
 	HasScheduledEvents<MoveEvent, ActorIndex> m_moveEvent;
 	StrongVector<PathRequest*, ActorIndex> m_pathRequest;
+	// Path is stored backwards, with the first block being the destination and the last being the next step.
 	StrongVector<BlockIndices, ActorIndex> m_path;
-	StrongVector<BlockIndices::iterator, ActorIndex> m_pathIter;
 	StrongVector<BlockIndex, ActorIndex> m_destination;
 	StrongVector<Speed, ActorIndex> m_speedIndividual;
 	StrongVector<Speed, ActorIndex> m_speedActual;

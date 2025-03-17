@@ -37,7 +37,7 @@ class PathInnerLoops
 					auto [result, blockWhichPassedPredicate] = destinationCondition(adjacentIndex, facing);
 					if(result)
 					{
-						const BlockIndices& path = memo.getPath(current);
+						const BlockIndices& path = memo.getPath(current, BlockIndex::null());
 						return {path, blockWhichPassedPredicate, path.empty()};
 					}
 					if(terrainFacade.canEnterFrom(current, adjacentCount) && accessCondition(adjacentIndex, facing))
@@ -61,10 +61,7 @@ class PathInnerLoops
 					auto [result, blockWhichPassedPredicate] = destinationCondition(adjacentIndex, facing);
 					if(result)
 					{
-						auto path = memo.getPath(current);
-						// No need to add the adjacent to the closed list and then extract it again for the path, just add to the end of the path directly.
-						path.add(adjacentIndex);
-						return {path, blockWhichPassedPredicate, false};
+						return {memo.getPath(current, adjacentIndex), blockWhichPassedPredicate, false};
 					}
 					memo.setOpen(adjacentIndex, area);
 					memo.setClosed(adjacentIndex, current);
