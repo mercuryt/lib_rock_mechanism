@@ -32,11 +32,12 @@ public:
 	void clear() { m_index.clear(); m_isActor = false; }
 	void updateIndex(const HasShapeIndex& index) { m_index = index; }
 	ActorOrItemIndex setLocationAndFacing(Area& area, const BlockIndex& location, const Facing4& facing) const;
-	void exit(Area& area);
+	void exit(Area& area) const;
 	void followActor(Area& area, const ActorIndex& actor) const;
 	void followItem(Area& area, const ItemIndex& item) const;
 	void followPolymorphic(Area& area, const ActorOrItemIndex& actorOrItem) const;
 	void unfollow(Area& area) const;
+	void move_updateIndividualSpeed(Area& area) const;
 	std::string toString() const;
 	[[nodiscard]] ActorIndex getActor() const { return ActorIndex::create(m_index.get()); }
 	[[nodiscard]] ItemIndex getItem() const { return ItemIndex::create(m_index.get()); }

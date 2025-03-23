@@ -71,6 +71,7 @@ public:
 	[[nodiscard]] static bool hasShape(const std::string& name);
 	// Creates a copy, adds a position to it and returns it.
 	[[nodiscard]] static ShapeId mutateAdd(const ShapeId& shape, const OffsetAndVolume& position);
+	[[nodiscard]] static ShapeId mutateRemove(const ShapeId& shape, const OffsetAndVolume& position);
 	[[nodiscard]] static std::string makeName(SmallSet<OffsetAndVolume>& positions);
 	[[nodiscard]] static ShapeId loadFromName(std::string name);
 };

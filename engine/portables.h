@@ -26,12 +26,24 @@ template<class Derived, class Index, class ReferenceIndex>
 class Portables : public HasShapes<Derived, Index>
 {
 protected:
+	// Reservations for this thing.
 	StrongVector<std::unique_ptr<Reservable>, Index> m_reservables;
+	// Destruction callbacks for this thing.
 	StrongVector<std::unique_ptr<OnDestroy>, Index> m_destroy;
+	// The thing currently following this thing.
 	StrongVector<ActorOrItemIndex, Index> m_follower;
+	// The thing this thing is following.
 	StrongVector<ActorOrItemIndex, Index> m_leader;
+	// The thing this thing is being carried by or is cargo within.
 	StrongVector<ActorOrItemIndex, Index> m_carrier;
+	// The move type of this thing.
 	StrongVector<MoveTypeId, Index> m_moveType;
+	// Things which are on top of this thing and will be carried along when it moves.
+	StrongVector<SmallSet<ActorOrItemIndex>, Index> m_onDeck;
+	// The thing this thing is on top of and which it will be carried along by.
+	StrongVector<ActorOrItemIndex, Index> m_isOnDeckOf;
+	StrongVector<ShapeId, Index> m_pathingShape;
+	// Is this thing an actor?
 	bool m_isActors;
 	Portables(Area& area, bool isActors);
 	void create(const Index& index, const MoveTypeId& moveType, const ShapeId& shape, const FactionId& faction, bool isStatic, const Quantity& quantity);
@@ -64,6 +76,7 @@ public:
 	void unsetFollower(const Index& index, [[maybe_unused]] const ActorOrItemIndex& follower) { assert(m_follower[index] == follower); m_follower[index].clear(); }
 	void unsetLeader(const Index& index, const ActorOrItemIndex& leader) { assert(m_follower[index] == leader); m_leader[index].clear(); }
 	void fall(const Index& index);
+	void onSetLocation(const Index& index, const Facing4& previousFacing, const SmallMap<ActorOrItemIndex, Offset3D>& onDeckWithOffsets);
 	[[nodiscard]] ActorIndex getLineLeader(const Index& index);
 	[[nodiscard]] const MoveTypeId& getMoveType(const Index& index) const { return m_moveType[index]; }
 	[[nodiscard]] bool isFollowing(const Index& index) const;
@@ -74,7 +87,7 @@ public:
 	[[nodiscard]] ActorOrItemIndex& getFollower(const Index& index) { return m_follower[index]; }
 	[[nodiscard]] ActorOrItemIndex& getLeader(const Index& index) { return m_leader[index]; }
 	[[nodiscard]] const ActorOrItemIndex& getFollower(const Index& index) const { return m_follower[index]; }
-	[[nodiscard]] const ActorOrItemIndex& getLeader(const Index& index) const { return m_leader[index]; }
+	[[nodiscard]] const ActorOrItemIndex& getLeader(const Index &index) const { return m_leader[index]; }
 	[[nodiscard]] Items& getItems() { return getArea().getItems(); }
 	[[nodiscard]] Actors& getActors() { return getArea().getActors(); }
 	[[nodiscard]] Area& getArea() { return HasShapes<Derived, Index>::getArea(); }
@@ -105,6 +118,12 @@ public:
 	void onDestroy_unsubscribe(const Index& index, HasOnDestroySubscriptions& onDestroy);
 	void onDestroy_unsubscribeAll(const Index& index);
 	void onDestroy_merge(const Index& index, OnDestroy& other);
+	// On deck.
+	void onDeck_updateIsOnDeckOf(const Index& index, const ActorOrItemIndex& value) { m_isOnDeckOf[index] = value; }
+	void onDeck_updateIndex(const Index& index, const ActorOrItemIndex& oldValue, const ActorOrItemIndex& newValue) { m_onDeck[index].update(oldValue, newValue); }
+	[[nodiscard]] const ActorOrItemIndex& onDeck_getIsOnDeckOf(const Index& index) const { return m_isOnDeckOf[index]; }
+	[[nodiscard]] const SmallSet<ActorOrItemIndex>& onDeck_get(const Index& index) const { return m_onDeck[index]; }
+	[[nodiscard]] Mass onDeck_getMass(const Index& index) const ;
 };
 class PortablesHelpers
 {

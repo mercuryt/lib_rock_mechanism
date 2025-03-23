@@ -72,11 +72,11 @@ namespace util
 			case Facing4::North:
 				return position;
 			case Facing4::East:
-				return {y, x, z};
+				return {y*-1, x, z};
 			case Facing4::South:
-				return {x, y*-1, z};
+				return {x*-1, y*-1, z};
 			case Facing4::West:
-				return {y * -1, x, z};
+				return {y, x*-1, z};
 			default:
 				std::unreachable();
 		}

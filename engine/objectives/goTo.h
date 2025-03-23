@@ -1,7 +1,6 @@
 #pragma once
 #include "objective.h"
 #include "config.h"
-#include "input.h"
 #include "types.h"
 #include "index.h"
 
@@ -14,7 +13,7 @@ class GoToObjective final : public Objective
 public:
 	GoToObjective(const BlockIndex& l) : Objective(Config::goToPriority), m_location(l) { }
 	GoToObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
+	Json toJson() const override;
 	void execute(Area& area, const ActorIndex& actor) override;
 	void cancel(Area&, const ActorIndex&) override { }
 	void delay(Area&, const ActorIndex&) override { }
@@ -22,11 +21,4 @@ public:
 	std::string name() const override { return "go to"; }
 	// For testing.
 	[[maybe_unused]] BlockIndex getLocation() { return m_location; }
-};
-class GoToInputAction final : public InputAction
-{
-public:
-	BlockIndex m_block;
-	GoToInputAction(ItemIndices actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, const BlockIndex& b);
-	void execute();
 };

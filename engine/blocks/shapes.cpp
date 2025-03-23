@@ -41,7 +41,7 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithFacing(const BlockIndex& inde
 	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
 		BlockIndex otherIndex = offset(index, pair.offset);
-		if(otherIndex.empty() || !shape_anythingCanEnterEver(otherIndex) || !shape_moveTypeCanEnter(otherIndex, moveType))
+		if(otherIndex.empty() || !shape_anythingCanEnterEver(otherIndex))
 			return false;
 	}
 	return true;

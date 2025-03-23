@@ -17,7 +17,7 @@
 Speed Actors::move_getIndividualSpeedWithAddedMass(const ActorIndex& index, const Mass& mass) const
 {
 	Speed output = Speed::create(m_agility[index].get() * Config::unitsOfMoveSpeedPerUnitOfAgility);
-	Mass carryMass = m_equipmentSet[index]->getMass() + canPickUp_getMass(index) + mass;
+	Mass carryMass = m_equipmentSet[index]->getMass() + canPickUp_getMass(index) + onDeck_getMass(index) + mass;
 	Mass unencomberedCarryMass = m_unencomberedCarryMass[index];
 	if(carryMass > unencomberedCarryMass)
 	{
@@ -33,6 +33,9 @@ void Actors::move_updateIndividualSpeed(const ActorIndex& index)
 {
 	m_speedIndividual[index] = move_getIndividualSpeedWithAddedMass(index, Mass::create(0));
 	move_updateActualSpeed(index);
+	// Ensure changes to mass are reflected in isOnDeckOf speed.
+	if(m_isOnDeckOf[index].exists())
+		m_isOnDeckOf[index].move_updateIndividualSpeed(m_area);
 }
 void Actors::move_updateActualSpeed(const ActorIndex& index)
 {
@@ -62,10 +65,10 @@ void Actors::move_callback(const ActorIndex& index)
 	bool temperarilyBlocked = false;
 	if(
 		!blocks.shape_anythingCanEnterEver(block) ||
-		!blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, m_shape[index], m_moveType[index], m_location[index])
+		!blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, m_compoundShape[index], m_moveType[index], m_location[index])
 	)
 		permanantlyBlocked = true;
-	else if(!blocks.shape_canEnterCurrentlyFrom(block, m_shape[index], m_location[index], m_blocks[index]))
+	else if(!blocks.shape_canEnterCurrentlyFrom(block, m_compoundShape[index], m_location[index], m_blocks[index]))
 		temperarilyBlocked = true;
 	if(isLeading(index) && !permanantlyBlocked)
 	{
@@ -112,19 +115,29 @@ void Actors::move_callback(const ActorIndex& index)
 		// Respond to reaching end of path or attempt to schedule another move step.
 		if(block == m_destination[index])
 		{
-			m_destination[index].clear();
 			m_path[index].clear();
-			m_hasObjectives[index]->subobjectiveComplete(m_area);
+			m_destination[index].clear();
+			const ActorIndex& pilot = mount_getPilot(index);
+			if(pilot.exists())
+				m_hasObjectives[pilot]->subobjectiveComplete(m_area);
+			else
+				m_hasObjectives[index]->subobjectiveComplete(m_area);
 		}
 		else
 		{
 			m_path[index].popBack();
 			const BlockIndex& nextBlock = m_path[index].back();
-			if(blocks.shape_anythingCanEnterEver(nextBlock) && blocks.shape_shapeAndMoveTypeCanEnterEverFrom(nextBlock, m_shape[index], m_moveType[index], m_location[index]))
+			if(blocks.shape_anythingCanEnterEver(nextBlock) && blocks.shape_shapeAndMoveTypeCanEnterEverFrom(nextBlock, m_compoundShape[index], m_moveType[index], m_location[index]))
 				move_schedule(index);
 			else
+			{
 				// Path is no longer valid.
-				m_hasObjectives[index]->cannotCompleteSubobjective(m_area);
+				const ActorIndex& pilot = mount_getPilot(index);
+				if(pilot.exists())
+					m_hasObjectives[pilot]->cannotCompleteSubobjective(m_area);
+				else
+					m_hasObjectives[index]->cannotCompleteSubobjective(m_area);
+			}
 		}
 	}
 }
@@ -136,6 +149,15 @@ void Actors::move_schedule(const ActorIndex& index)
 }
 void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& destination, bool detour, bool adjacent, bool unreserved, bool reserve)
 {
+	auto& isOnDeckOf = m_isOnDeckOf[index];
+	if(isOnDeckOf.exists() && mount_isPilot(index))
+	{
+		// When an actor is the pilot of their mount the move instructions get passed down to the mount.
+		assert(isOnDeckOf.isActor());
+		move_setDestination(isOnDeckOf.getActor(), destination, detour, adjacent, unreserved, reserve);
+		// TODO: piloting item
+		return;
+	}
 	assert(destination.exists());
 	if(reserve)
 		assert(unreserved);
@@ -160,17 +182,24 @@ void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& dest
 		faction = m_faction[index];
 	assert(m_pathRequest[index] == nullptr);
 	if(!adjacent)
-		move_pathRequestRecord(index, std::make_unique<GoToPathRequest>(m_location[index], DistanceInBlocks::max(), getReference(index), m_shape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, destination));
+		move_pathRequestRecord(index, std::make_unique<GoToPathRequest>(m_location[index], DistanceInBlocks::max(), getReference(index), m_compoundShape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, destination));
 	else
 	{
 		BlockIndices candidates;
 		for(const BlockIndex& adjacent : blocks.getAdjacentWithEdgeAndCornerAdjacent(destination))
 			if(
 				blocks.shape_anythingCanEnterEver(adjacent) &&
-				blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_shape[index], m_moveType[index])
+				blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
 			)
 				candidates.add(adjacent);
-		move_pathRequestRecord(index, std::make_unique<GoToAnyPathRequest>(m_location[index], DistanceInBlocks::max(), getReference(index), m_shape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, destination, candidates));
+		move_pathRequestRecord(
+			index,
+			std::make_unique<GoToAnyPathRequest>(
+				m_location[index], DistanceInBlocks::max(), getReference(index),
+				m_compoundShape[index], faction, m_moveType[index], m_facing[index],
+				detour, adjacent, reserve, destination, candidates
+			)
+		);
 	}
 }
 void Actors::move_setDestinationAdjacentToLocation(const ActorIndex& index, const BlockIndex& destination, bool detour, bool unreserved, bool reserve)
@@ -183,7 +212,7 @@ void Actors::move_setDestinationToAny(const ActorIndex& index, const BlockIndice
 	if(unreserved)
 		faction = m_faction[index];
 	constexpr bool adjacent = false;
-	move_pathRequestRecord(index, std::make_unique<GoToAnyPathRequest>(m_location[index], DistanceInBlocks::max(), getReference(index), m_shape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, huristicDestination, candidates));
+	move_pathRequestRecord(index, std::make_unique<GoToAnyPathRequest>(m_location[index], DistanceInBlocks::max(), getReference(index), m_compoundShape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, huristicDestination, candidates));
 }
 void Actors::move_setDestinationAdjacentToActor(const ActorIndex& index, const ActorIndex& other, bool detour, bool unreserved, bool reserve)
 {
@@ -196,7 +225,7 @@ void Actors::move_setDestinationAdjacentToActor(const ActorIndex& index, const A
 	for(const BlockIndex& adjacent : getAdjacentBlocks(other))
 		if(
 			blocks.shape_anythingCanEnterEver(adjacent) &&
-			blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_shape[index], m_moveType[index])
+			blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
 		)
 			candidates.add(adjacent);
 	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, otherLocation);
@@ -213,7 +242,7 @@ void Actors::move_setDestinationAdjacentToItem(const ActorIndex& index, const It
 		for(const BlockIndex& adjacent : items.getAdjacentBlocks(item))
 			if(
 				blocks.shape_anythingCanEnterEver(adjacent) &&
-				blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_shape[index], m_moveType[index])
+				blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
 			)
 				candidates.add(adjacent);
 	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, items.getLocation(item));
@@ -229,7 +258,7 @@ void Actors::move_setDestinationAdjacentToPlant(const ActorIndex& index, const P
 		for(const BlockIndex& adjacent : plants.getAdjacentBlocks(plant))
 			if(
 				blocks.shape_anythingCanEnterEver(adjacent) &&
-				blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_shape[index], m_moveType[index])
+				blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
 			)
 				candidates.add(adjacent);
 	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, plants.getLocation(plant));
@@ -249,7 +278,7 @@ void Actors::move_setDestinationAdjacentToFluidType(const ActorIndex& index, con
 	FactionId faction;
 	if(unreserved)
 		faction = m_faction[index];
-	move_pathRequestRecord(index, std::make_unique<GoToFluidTypePathRequest>(m_location[index], maxRange, getReference(index), m_shape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, fluidType));
+	move_pathRequestRecord(index, std::make_unique<GoToFluidTypePathRequest>(m_location[index], maxRange, getReference(index), m_compoundShape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, fluidType));
 }
 void Actors::move_setDestinationAdjacentToDesignation(const ActorIndex& index, const BlockDesignation& designation, bool detour, bool unreserved, bool reserve, DistanceInBlocks maxRange)
 {
@@ -258,14 +287,14 @@ void Actors::move_setDestinationAdjacentToDesignation(const ActorIndex& index, c
 	if(unreserved)
 		faction = m_faction[index];
 	constexpr bool adjacent = true;
-	move_pathRequestRecord(index, std::make_unique<GoToBlockDesignationPathRequest>(m_location[index], maxRange, getReference(index), m_shape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, designation));
+	move_pathRequestRecord(index, std::make_unique<GoToBlockDesignationPathRequest>(m_location[index], maxRange, getReference(index), m_compoundShape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, designation));
 }
 void Actors::move_setDestinationToEdge(const ActorIndex& index, bool detour)
 {
 	assert(m_pathRequest[index] == nullptr);
 	constexpr bool adjacent = false;
 	constexpr bool reserveDestination = false;
-	move_pathRequestRecord(index, std::make_unique<GoToEdgePathRequest>(m_location[index], DistanceInBlocks::max(), getReference(index), m_shape[index], m_moveType[index], m_facing[index], detour, adjacent, reserveDestination));
+	move_pathRequestRecord(index, std::make_unique<GoToEdgePathRequest>(m_location[index], DistanceInBlocks::max(), getReference(index), m_compoundShape[index], m_moveType[index], m_facing[index], detour, adjacent, reserveDestination));
 }
 void Actors::move_setType(const ActorIndex& index, const MoveTypeId& moveType)
 {

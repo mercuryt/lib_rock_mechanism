@@ -18,6 +18,7 @@ template<typename Action>
 void HasShapes<Derived, Index>::forEachDataHasShapes(Action&& action)
 {
 	action(m_shape);
+	action(m_compoundShape);
 	action(m_location);
 	action(m_facing);
 	action(m_faction);
@@ -32,6 +33,7 @@ void HasShapes<Derived, Index>::create(const Index& index, const ShapeId& shape,
 	assert(m_shape.size() > index);
 	// m_location, m_facing, and m_underground are to be set by calling the derived class setLocation method.
 	m_shape[index] = shape;
+	m_compoundShape[index] = shape;
 	m_faction[index] = faction;
 	assert(m_blocks[index].empty());
 	m_static.set(index, isStatic);
@@ -79,6 +81,31 @@ void HasShapes<Derived, Index>::maybeUnsetStatic(const Index& index)
 {
 	if(m_static[index])
 		unsetStatic(index);
+}
+template<class Derived, class Index>
+void HasShapes<Derived, Index>::addShapeToCompoundShape(const Index& index, const ShapeId& id, const BlockIndex& location, const Facing4& facing)
+{
+	auto offsetsAndVolumes = Shape::positionsWithFacing(id, facing);
+	Blocks& blocks = getArea().getBlocks();
+	Offset3D offsetToRiderFromMount = blocks.relativeOffsetTo(getLocation(index), location);
+	//TODO: This creates a new shape for each intermediate step of merging. This is not neccessary.
+	for(OffsetAndVolume offsetAndVolume : offsetsAndVolumes)
+	{
+		offsetAndVolume.offset += offsetToRiderFromMount;
+		m_compoundShape[index] = Shape::mutateAdd(m_compoundShape[index], offsetAndVolume);
+	}
+}
+template<class Derived, class Index>
+void HasShapes<Derived, Index>::removeShapeFromCompoundShape(const Index& index, const ShapeId& id, const BlockIndex& location, const Facing4& facing)
+{
+	auto offsetsAndVolumes = Shape::positionsWithFacing(id, facing);
+	Blocks& blocks = getArea().getBlocks();
+	Offset3D offsetToRiderFromMount = blocks.relativeOffsetTo(getLocation(index), location);
+	for(OffsetAndVolume offsetAndVolume : offsetsAndVolumes)
+	{
+		offsetAndVolume.offset += offsetToRiderFromMount;
+		m_compoundShape[index] = Shape::mutateRemove(m_compoundShape[index], offsetAndVolume);
+	}
 }
 template<class Derived, class Index>
 std::vector<std::pair<uint32_t, Index>> HasShapes<Derived, Index>::getSortOrder(const Index& begin, const Index& end)
@@ -314,4 +341,18 @@ void HasShapes<Derived, Index>::log(const Index& index) const
 	}
 	Point3D coordinates = m_area.getBlocks().getCoordinates(m_location[index]);
 	std::cout << "[" << coordinates.x().get() << "," << coordinates.y().get() << "," << coordinates.z().get() << "]";
+}
+template<class Derived, class Index>
+const SmallSet<BlockIndex> HasShapes<Derived, Index>::getBlocksAbove(const Index& index) const
+{
+	SmallSet<BlockIndex> output;
+	const auto& contained = getBlocks(index);
+	Blocks& blocks = m_area.getBlocks();
+	for(const BlockIndex& block : contained)
+	{
+		const BlockIndex& above = blocks.getBlockAbove(block);
+		if(!contained.contains(above))
+			output.insert(above);
+	}
+	return output;
 }

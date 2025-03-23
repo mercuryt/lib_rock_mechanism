@@ -153,6 +153,7 @@ public:
 	[[nodiscard]] BlockIndex offset(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const;
 	[[nodiscard]] BlockIndex offset(const BlockIndex& index, const Offset3D& offset) const;
 	[[nodiscard]] BlockIndex offsetNotNull(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const;
+	[[nodiscard]] BlockIndex offsetRotated(const BlockIndex& index, const Offset3D& offset, const Facing4 previousFacing, const Facing4 newFacing) const;
 	[[nodiscard]] BlockIndex indexAdjacentToAtCount(const BlockIndex& index, const AdjacentIndex& adjacentCount) const;
 	[[nodiscard]] Offset3D relativeOffsetTo(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] bool canSeeThrough(const BlockIndex& index) const;

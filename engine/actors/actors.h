@@ -42,6 +42,7 @@ struct ActorParamaters
 	Step birthStep = Step::null();
 	Percent percentGrown = Percent::null();
 	BlockIndex location;
+	ActorIndex mountedOn = ActorIndex::null();
 	Facing4 facing = Facing4::Null;
 	FactionId faction = FactionId::null();
 	Percent percentHunger = Percent::null();
@@ -56,6 +57,7 @@ struct ActorParamaters
 	bool hasRangedWeapon = false;
 	bool hasLightArmor = false;
 	bool hasHeavyArmor = false;
+	bool pilotingMount = false;
 
 	Percent getPercentGrown(Simulation& simulation);
 	std::string getName(Simulation& simulation);
@@ -128,6 +130,8 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	StrongVector<Speed, ActorIndex> m_speedIndividual;
 	StrongVector<Speed, ActorIndex> m_speedActual;
 	StrongVector<uint8_t, ActorIndex> m_moveRetries;
+	// Is piloting current m_isOnDeckOf
+	StrongBitSet<ActorIndex> m_isPilot;
 	void moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex);
 public:
 	Actors(Area& area);
@@ -144,6 +148,7 @@ public:
 	void setShape(const ActorIndex& index, const ShapeId& shape);
 	void setLocation(const ActorIndex& index, const BlockIndex& block);
 	void setLocationAndFacing(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
+	void setLocationAndFacingNoCheckMoveType(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
 	void exit(const ActorIndex& index);
 	void removeMassFromCorpse(const ActorIndex& index, const Mass& mass);
 	void die(const ActorIndex& index, CauseOfDeath causeOfDeath);
@@ -179,6 +184,7 @@ public:
 	[[nodiscard]] std::string getActionDescription(const ActorIndex& index) const;
 	[[nodiscard]] AnimalSpeciesId getSpecies(const ActorIndex& index) const { return m_species[index]; }
 	[[nodiscard]] Mass getUnencomberedCarryMass(const ActorIndex& index) const { return m_unencomberedCarryMass[index]; }
+	[[nodiscard]] BlockIndex getCombinedLocation(const ActorIndex& index) const;
 	// -Stamina.
 	void stamina_recover(const ActorIndex& index);
 	void stamina_spend(const ActorIndex& index, const Stamina& stamina);
@@ -520,6 +526,14 @@ public:
 	void lineLead_pushFront(const ActorIndex& index, const BlockIndex& block);
 	void lineLead_popBackUnlessOccupiedByFollower(const ActorIndex& index);
 	void lineLead_moveFollowers(const ActorIndex& index);
+	// Mount.
+	[[nodiscard]] BlockIndex mount_findLocationToMountOn(const ActorIndex& index, const ActorIndex& toMount) const;
+	[[nodiscard]] bool mount_isPilot(const ActorIndex& index) const { return m_isPilot[index]; }
+	[[nodiscard]] bool mount_hasPilot(const ActorIndex& index) const;
+	[[nodiscard]] bool mount_exists(const ActorIndex& index) const { return m_isOnDeckOf[index].exists(); }
+	[[nodiscard]] ActorIndex mount_getPilot(const ActorIndex& index) const;
+	void mount_do(const ActorIndex& index, const ActorIndex& toMount, const BlockIndex& location, const bool& pilot);
+	void mount_undo(const ActorIndex& index, const BlockIndex& location);
 	// For testing.
 	[[nodiscard]] bool grow_getEventExists(const ActorIndex& index) const;
 	[[nodiscard]] Percent grow_getEventPercent(const ActorIndex& index) const;

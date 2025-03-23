@@ -21,6 +21,8 @@ class HasShapes
 {
 protected:
 	StrongVector<ShapeId, Index> m_shape;
+	// To be used for pathing shapes with other shapes onDeck / mounted.
+	StrongVector<ShapeId, Index> m_compoundShape;
 	StrongVector<BlockIndex, Index> m_location;
 	StrongVector<Facing4, Index> m_facing;
 	StrongVector<FactionId, Index> m_faction;
@@ -41,13 +43,17 @@ public:
 	void maybeSetStatic(const Index& index);
 	void unsetStatic(const Index& index);
 	void maybeUnsetStatic(const Index& index);
+	void addShapeToCompoundShape(const Index& index, const ShapeId& id, const BlockIndex& location, const Facing4& facing);
+	void removeShapeFromCompoundShape(const Index& index, const ShapeId& id, const BlockIndex& location, const Facing4& facing);
 	void log(const Index& index) const;
 	[[nodiscard]] size_t size() const { return m_shape.size(); }
 	[[nodiscard]] ShapeId getShape(const Index& index) const { return m_shape[index]; }
+	[[nodiscard]] ShapeId getCompoundShape(const Index& index) const { return m_compoundShape[index]; }
 	[[nodiscard]] BlockIndex getLocation(const Index& index) const { return m_location[index]; }
 	[[nodiscard]] bool hasLocation(const Index& index) const { return getLocation(index).exists(); }
 	[[nodiscard]] Facing4 getFacing(const Index& index) const { return m_facing[index]; }
 	[[nodiscard]] const auto& getBlocks(const Index& index) const { return m_blocks[index]; }
+	[[nodiscard]] const SmallSet<BlockIndex> getBlocksAbove(const Index& index) const;
 	[[nodiscard]] FactionId getFaction(const Index& index) const { return m_faction[index]; }
 	[[nodiscard]] bool hasFaction(const Index& index) const { return m_faction[index].exists(); }
 	[[nodiscard]] bool isStatic(const Index& index) const { return m_static[index]; }

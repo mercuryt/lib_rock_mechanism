@@ -526,6 +526,15 @@ BlockIndex Blocks::offset(const BlockIndex& index, const Offset3D& offset) const
 	Point3D coordinates = getCoordinates(index);
 	return maybeGetIndex(coordinates + offset);
 }
+BlockIndex Blocks::offsetRotated(const BlockIndex& index, const Offset3D& initalOffset, const Facing4 previousFacing, const Facing4 newFacing) const
+{
+	int rotation = (int)newFacing - (int)previousFacing;
+	if(rotation < 0)
+		rotation += 3;
+	Offset3D rotatedOffset = initalOffset;
+	rotatedOffset.rotate2D((Facing4)rotation);
+	return offset(index, rotatedOffset);
+}
 BlockIndex Blocks::offsetNotNull(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const
 {
 	Point3D coordinates = getCoordinates(index);

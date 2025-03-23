@@ -37,7 +37,7 @@ ActorOrItemIndex ActorOrItemIndex::setLocationAndFacing(Area& area, const BlockI
 	else
 		return area.getItems().setLocationAndFacing(m_index.toItem(), location, facing).toActorOrItemIndex();
 }
-void ActorOrItemIndex::exit(Area& area)
+void ActorOrItemIndex::exit(Area& area) const
 {
 	if(isActor())
 		area.getActors().exit(m_index.toActor());
@@ -76,6 +76,11 @@ void ActorOrItemIndex::unfollow(Area& area) const
 		area.getActors().unfollow(m_index.toActor());
 	else
 		area.getItems().unfollow(m_index.toItem());
+}
+void ActorOrItemIndex::move_updateIndividualSpeed(Area& area) const
+{
+	assert(isActor());
+	area.getActors().move_updateIndividualSpeed(m_index.toActor());
 }
 std::string ActorOrItemIndex::toString() const
 {

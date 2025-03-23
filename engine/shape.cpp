@@ -211,8 +211,20 @@ ShapeId Shape::mutateAdd(const ShapeId& id, const OffsetAndVolume& position)
 {
 	// Make a copy.
 	SmallSet<OffsetAndVolume> positions = shapeData.m_positions[id];
-	assert(!positions.contains(position));
 	positions.insert(position);
+	positions.sort();
+	std::string name = makeName(positions);
+	ShapeId output = Shape::byName(name);
+	if(output.exists())
+		return output;
+	// Runtime shapes always have display scale = 1
+	return Shape::create(name, positions, 1);
+}
+ShapeId Shape::mutateRemove(const ShapeId& id, const OffsetAndVolume& position)
+{
+	// Make a copy.
+	SmallSet<OffsetAndVolume> positions = shapeData.m_positions[id];
+	positions.erase(position);
 	positions.sort();
 	std::string name = makeName(positions);
 	ShapeId output = Shape::byName(name);

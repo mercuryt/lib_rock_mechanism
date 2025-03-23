@@ -179,8 +179,18 @@ ItemIndex Items::setLocationAndFacing(const ItemIndex& index, const BlockIndex& 
 			// Return the index of the found item, which may be different then it was before 'index' was destroyed by merge.
 			return merge(found, index);
 	}
-	if(m_location[index].exists())
+	BlockIndex previousLocation = m_location[index];
+	Facing4 previousFacing = m_facing[index];
+	SmallMap<ActorOrItemIndex, Offset3D> onDeckWithOffsets;
+	if(previousLocation.exists())
+	{
+		for(const ActorOrItemIndex& onDeck : m_onDeck[index])
+		{
+			onDeckWithOffsets.insert(onDeck, blocks.relativeOffsetTo(previousLocation, onDeck.getLocation(m_area)));
+			onDeck.exit(m_area);
+		}
 		exit(index);
+	}
 	m_location[index] = block;
 	m_facing[index] = facing;
 	const Quantity& quantity = m_quantity[index];
@@ -195,6 +205,7 @@ ItemIndex Items::setLocationAndFacing(const ItemIndex& index, const BlockIndex& 
 		m_onSurface.set(index);
 	else
 		m_onSurface.unset(index);
+	onSetLocation(index, previousFacing, onDeckWithOffsets);
 	return index;
 }
 void Items::exit(const ItemIndex& index)

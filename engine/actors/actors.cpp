@@ -636,6 +636,7 @@ void Actors::forEachData(Action&& action)
 	action(m_speedActual);
 	action(m_moveRetries);
 	action(m_onSurface);
+	action(m_isPilot);
 }
 ActorIndex Actors::create(ActorParamaters params)
 {
@@ -705,6 +706,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_speedActual[index] = Speed::create(0);
 	m_moveRetries[index] = 0;
 	m_onSurface.unset(index);
+	assert(m_isPilot[index] == false);
 	simulation.m_actors.registerActor(m_id[index], *this, index);
 	attributes_onUpdateGrowthPercent(index);
 	stamina_setFull(index);
@@ -714,7 +716,9 @@ ActorIndex Actors::create(ActorParamaters params)
 		m_area.m_hasHaulTools.registerYokeableActor(m_area, index);
 	sharedConstructor(index);
 	scheduleNeeds(index);
-	if(params.location.exists())
+	if(params.mountedOn.exists())
+		mount_do(index, params.mountedOn, params.location, params.pilotingMount);
+	else if(params.location.exists())
 		setLocationAndFacing(index, params.location, (params.facing != Facing4::Null ? params.facing : Facing4::North));
 	return index;
 }
@@ -755,16 +759,31 @@ void Actors::setLocation(const ActorIndex& index, const BlockIndex& block)
 }
 void Actors::setLocationAndFacing(const ActorIndex& index, const BlockIndex& block, const Facing4& facing)
 {
+	Blocks& blocks = m_area.getBlocks();
+	assert(blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, m_shape[index], m_moveType[index]));
+	setLocationAndFacingNoCheckMoveType(index, block, facing);
+}
+void Actors::setLocationAndFacingNoCheckMoveType(const ActorIndex& index, const BlockIndex& block, const Facing4& facing)
+{
 	assert(block.exists());
 	assert(facing != Facing4::Null);
 	Blocks& blocks = m_area.getBlocks();
-	assert(blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, m_shape[index], m_moveType[index]));
-	if(m_location[index].exists())
+	BlockIndex previousLocation = m_location[index];
+	Facing4 previousFacing = m_facing[index];
+	SmallMap<ActorOrItemIndex, Offset3D> onDeckWithOffsets;
+	if(previousLocation.exists())
+	{
+		for(const ActorOrItemIndex& onDeck : m_onDeck[index])
+		{
+			onDeckWithOffsets.insert(onDeck, blocks.relativeOffsetTo(previousLocation, onDeck.getLocation(m_area)));
+			onDeck.exit(m_area);
+		}
 		exit(index);
+	}
 	m_location[index] = block;
 	m_facing[index] = facing;
 	assert(m_blocks[index].empty());
-	for(const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
+	for(const OffsetAndVolume& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
 	{
 		BlockIndex occupied = blocks.offset(block, pair.offset);
 		blocks.actor_record(occupied, index, pair.volume);
@@ -778,6 +797,7 @@ void Actors::setLocationAndFacing(const ActorIndex& index, const BlockIndex& blo
 		m_onSurface.set(index);
 	else
 		m_onSurface.unset(index);
+	onSetLocation(index, previousFacing, onDeckWithOffsets);
 }
 void Actors::exit(const ActorIndex& index)
 {
@@ -893,6 +913,13 @@ std::string Actors::getActionDescription(const ActorIndex& index) const
 	if(m_hasObjectives[index]->hasCurrent())
 		return const_cast<HasObjectives&>(*m_hasObjectives[index].get()).getCurrent().name();
 	return "no action";
+}
+BlockIndex Actors::getCombinedLocation(const ActorIndex& index) const
+{
+	if(!m_isPilot[index])
+		return getLocation(index);
+	else
+		return m_isOnDeckOf[index].getLocation(m_area);
 }
 void Actors::reserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing4& facing)
 {

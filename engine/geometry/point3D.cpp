@@ -256,3 +256,25 @@ std::string Offset3D::toString() const
 {
 	return "(" + std::to_string(x()) + "," + std::to_string(y()) + "," + std::to_string(z()) + ")";
 }
+void Offset3D::rotate2D(const Facing4& facing)
+{
+		switch(facing)
+		{
+			case Facing4::North:
+				break;
+			case Facing4::East:
+				data[1] *= -1;
+				std::swap(data[0], data[1]);
+				break;
+			case Facing4::South:
+				data[0] *= -1;
+				data[1] *= -1;
+				break;
+			case Facing4::West:
+				data[0] *= -1;
+				std::swap(data[0], data[1]);
+				break;
+			default:
+				std::unreachable();
+		}
+}

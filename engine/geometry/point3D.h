@@ -99,8 +99,10 @@ struct Offset3D
 	void operator/=(const DistanceInBlocks& distance) { (*this) /= distance.get(); }
 	void operator+=(const int& x);
 	void operator+=(const DistanceInBlocks& distance) { (*this) += distance.get(); }
+	void operator+=(const Offset3D& other) { data += other.data; }
 	void operator-=(const int& x);
 	void operator-=(const DistanceInBlocks& distance) { (*this) -= distance.get(); }
+	void rotate2D(const Facing4& facing);
 	[[nodiscard]] Offset3D operator+(const Offset3D& other) const;
 	[[nodiscard]] Offset3D operator-(const Offset3D& other) const;
 	[[nodiscard]] Offset3D operator*(const Offset3D& other) const;

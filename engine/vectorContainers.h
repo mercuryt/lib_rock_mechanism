@@ -209,6 +209,13 @@ public:
 		[[nodiscard]] iterator& operator-=(const uint& index) { m_iter -= index; return *this; }
 		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
 	};
+	[[nodiscard]] std::string toString() const
+	{
+		std::string output;
+		for(const T& value : m_data)
+			output += value.toString() + ", ";
+		return output;
+	}
 };
 // Define custom serialization / deserialization instead of using intrusive because this type is used in raws and specifiying field name would be annoying.
 template<typename T>
