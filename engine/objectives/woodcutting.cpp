@@ -175,8 +175,12 @@ bool WoodCuttingObjective::joinableProjectExistsAt(Area& area, const BlockIndex&
 }
 bool WoodCuttingObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
+	// Pilots and passengers onDeck cannot cut wood.
+	Actors& actors = area.getActors();
+	if(actors.onDeck_getIsOnDeckOf(actor).exists())
+		return false;
 	//TODO: check for any axes?
-	return area.m_hasWoodCuttingDesignations.areThereAnyForFaction(area.getActors().getFaction(actor));
+	return area.m_hasWoodCuttingDesignations.areThereAnyForFaction(actors.getFaction(actor));
 }
 std::unique_ptr<Objective> WoodCuttingObjectiveType::makeFor(Area&, const ActorIndex&) const
 {

@@ -9,7 +9,12 @@
 // Objective Type.
 bool StockPileObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
-	return area.m_hasStockPiles.getForFaction(area.getActors().getFaction(actor)).isAnyHaulingAvailableFor(actor);
+	Actors& actors = area.getActors();
+	// Pilots and passengers onDeck cannot stockpile.
+	// TODO: allow pilots?
+	if(actors.onDeck_getIsOnDeckOf(actor).exists())
+		return false;
+	return area.m_hasStockPiles.getForFaction(actors.getFaction(actor)).isAnyHaulingAvailableFor(actor);
 }
 std::unique_ptr<Objective> StockPileObjectiveType::makeFor(Area&, const ActorIndex&) const
 {

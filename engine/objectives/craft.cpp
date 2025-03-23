@@ -109,6 +109,10 @@ CraftObjectiveType::CraftObjectiveType(const Json& data, [[maybe_unused]] Deseri
 bool CraftObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
 	Actors& actors = area.getActors();
+	// Pilots and passengers onDeck cannot craft.
+	if(actors.onDeck_getIsOnDeckOf(actor).exists())
+		return false;
+	return area.m_hasStockPiles.getForFaction(actors.getFaction(actor)).isAnyHaulingAvailableFor(actor);
 	auto& hasCrafting = area.m_hasCraftingLocationsAndJobs.getForFaction(actors.getFaction(actor));
 	if(!hasCrafting.m_unassignedProjectsBySkill.contains(m_skillType))
 	{

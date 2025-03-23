@@ -289,6 +289,23 @@ bool Portables<Derived, Index, ReferenceIndex>::isLeadingPolymorphic(const Index
 	return m_follower[index] == actorOrItem;
 }
 template<class Derived, class Index, class ReferenceIndex>
+SmallSet<BlockIndex> Portables<Derived, Index, ReferenceIndex>::getBlocksCombined(const Index& index) const
+{
+	SmallSet<BlockIndex> output;
+	Area& area = getArea();
+	Blocks& blocks = area.getBlocks();
+	uint toReserve = blocks[index].size();
+	for(const ActorOrItemIndex& onDeck : m_onDeck[index])
+		toReserve += Shape::getPositions(onDeck.getShape(area)).size();
+	output.reserve(toReserve);
+	for(const BlockIndex& block : getBlocks(index))
+		output.insert(block);
+	for(const ActorOrItemIndex& onDeck : m_onDeck[index])
+		for(const BlockIndex& block : onDeck.getBlocks(area))
+			output.insert(block);
+	return output;
+}
+template<class Derived, class Index, class ReferenceIndex>
 Speed Portables<Derived, Index, ReferenceIndex>::lead_getSpeed(const Index& index)
 {
 	assert(m_isActors);

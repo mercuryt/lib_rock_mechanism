@@ -184,6 +184,10 @@ bool ConstructObjective::canJoinProjectAdjacentToLocationAndFacing(Area& area, c
 // ObjectiveType.
 bool ConstructObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
-	return area.m_hasConstructionDesignations.areThereAnyForFaction(area.getActors().getFaction(actor));
+	Actors& actors = area.getActors();
+	// Pilots and passengers onDeck cannot construct.
+	if(actors.onDeck_getIsOnDeckOf(actor).exists())
+		return false;
+	return area.m_hasConstructionDesignations.areThereAnyForFaction(actors.getFaction(actor));
 }
 std::unique_ptr<Objective> ConstructObjectiveType::makeFor(Area&, const ActorIndex&) const { return std::make_unique<ConstructObjective>(); }

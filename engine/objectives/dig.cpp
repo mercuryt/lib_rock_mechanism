@@ -170,8 +170,12 @@ bool DigObjective::joinableProjectExistsAt(Area& area, BlockIndex block, const A
 }
 bool DigObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
+	Actors& actors = area.getActors();
+	// Pilots and passengers onDeck cannot dig.
+	if(actors.onDeck_getIsOnDeckOf(actor).exists())
+		return false;
 	//TODO: check for any picks?
-	return area.m_hasDigDesignations.areThereAnyForFaction(area.getActors().getFaction(actor));
+	return area.m_hasDigDesignations.areThereAnyForFaction(actors.getFaction(actor));
 }
 std::unique_ptr<Objective> DigObjectiveType::makeFor(Area&, const ActorIndex&) const
 {

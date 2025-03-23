@@ -96,6 +96,7 @@ public:
 	[[nodiscard]] ShapeId getShape(const Index& index) const { return HasShapes<Derived, Index>::getShape(index); }
 	[[nodiscard]] Facing4 getFacing(const Index& index) const { return HasShapes<Derived, Index>::getFacing(index); }
 	[[nodiscard]] auto getReference(const Index& index) -> Reference<Index, ReferenceIndex> const { return m_referenceData.getReference(index); }
+	[[nodiscard]] SmallSet<BlockIndex> getBlocksCombined(const Index& index) const;
 	// For testing.
 	[[nodiscard]] Speed lead_getSpeed(const Index& index);
 	// Reservations.
