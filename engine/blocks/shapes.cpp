@@ -2,6 +2,7 @@
 #include "../shape.h"
 #include "../itemType.h"
 #include "../moveType.h"
+#include "../area/area.h"
 #include "types.h"
 bool Blocks::shape_anythingCanEnterEver(const BlockIndex& index) const
 {
@@ -99,6 +100,12 @@ bool Blocks::shape_moveTypeCanEnterFrom(const BlockIndex& index, const MoveTypeI
 {
 	assert(shape_anythingCanEnterEver(index));
 	assert(shape_moveTypeCanEnter(index, moveType));
+	const DistanceInBlocks fromZ = getZ(from);
+	const DistanceInBlocks toZ = getZ(index);
+	// Floating requires fluid on same Z level.
+	// TODO: Does not combine with other move types.
+	if(MoveType::getFloating(moveType))
+		return fluid_any(index) && toZ == fromZ;
 	for(auto& [fluidType, volume] : MoveType::getSwim(moveType))
 	{
 		// Can travel within and enter liquid from any angle.
@@ -109,22 +116,22 @@ bool Blocks::shape_moveTypeCanEnterFrom(const BlockIndex& index, const MoveTypeI
 			return true;
 	}
 	// Can always enter on same z level.
-	if(getZ(index) == getZ(from))
+	if(toZ == fromZ)
 		return true;
 	// Cannot go up if:
-	if(getZ(index) > getZ(from) && !blockFeature_canEnterFromBelow(index))
+	if(toZ > fromZ && !blockFeature_canEnterFromBelow(index))
 		return false;
 	// Cannot go down if:
-	if(getZ(index) < getZ(from) && !blockFeature_canEnterFromAbove(index, from))
+	if(toZ < fromZ && !blockFeature_canEnterFromAbove(index, from))
 		return false;
 	// Can enter from any angle if flying or climbing.
 	if(MoveType::getFly(moveType) || MoveType::getClimb(moveType) > 0)
 		return true;
 	// Can go up if from contains a ramp or stairs.
-	if(getZ(index) > getZ(from) && (blockFeature_contains(from, BlockFeatureType::ramp) || blockFeature_contains(from, BlockFeatureType::stairs)))
+	if(toZ > fromZ && (blockFeature_contains(from, BlockFeatureType::ramp) || blockFeature_contains(from, BlockFeatureType::stairs)))
 		return true;
 	// Can go down if this contains a ramp or stairs.
-	if(getZ(index) < getZ(from) && (blockFeature_contains(index, BlockFeatureType::ramp) ||
+	if(toZ < fromZ && (blockFeature_contains(index, BlockFeatureType::ramp) ||
 					blockFeature_contains(index, BlockFeatureType::stairs)
 	))
 		return true;
@@ -296,7 +303,8 @@ bool Blocks::shape_canStandIn(const BlockIndex& index) const
 	return (
 		otherIndex.exists() && (solid_is(otherIndex) ||
 		blockFeature_canStandAbove(otherIndex))) ||
-		blockFeature_canStandIn(index);
+		blockFeature_canStandIn(index) ||
+		m_area.m_decks.blockIsPartOfDeck(index);
 }
 void Blocks::shape_addStaticVolume(const BlockIndex& index, const CollisionVolume& volume)
 {

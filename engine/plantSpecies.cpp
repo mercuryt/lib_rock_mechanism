@@ -58,7 +58,7 @@ Quantity PlantSpecies::getBranchesGeneratedByFellingWhenFullGrown(const PlantSpe
 Mass PlantSpecies::getAdultMass(const PlantSpeciesId& species) { return plantSpeciesData.m_adultMass[species]; };
 Temperature PlantSpecies::getMaximumGrowingTemperature(const PlantSpeciesId& species) { return plantSpeciesData.m_maximumGrowingTemperature[species]; };
 Temperature PlantSpecies::getMinimumGrowingTemperature(const PlantSpeciesId& species) { return plantSpeciesData.m_minimumGrowingTemperature[species]; };
-Volume PlantSpecies::getVolumeFluidConsumed(const PlantSpeciesId& species) { return plantSpeciesData.m_volumeFluidConsumed[species]; };
+FullDisplacement PlantSpecies::getVolumeFluidConsumed(const PlantSpeciesId& species) { return plantSpeciesData.m_volumeFluidConsumed[species]; };
 uint16_t PlantSpecies::getDayOfYearForSowStart(const PlantSpeciesId& species) { return plantSpeciesData.m_dayOfYearForSowStart[species]; };
 uint16_t PlantSpecies::getDayOfYearForSowEnd(const PlantSpeciesId& species) { return plantSpeciesData.m_dayOfYearForSowEnd[species]; };
 uint8_t PlantSpecies::getMaxWildGrowth(const PlantSpeciesId& species) { return plantSpeciesData.m_maxWildGrowth[species]; };

@@ -1041,20 +1041,20 @@ bool AreaHasHaulTools::hasToolToHaulPolymorphic(const Area& area, const FactionI
 }
 ItemIndex AreaHasHaulTools::getToolToHaulItem(const Area& area, const FactionId& faction, const ItemIndex& item) const
 {
-	Volume volume = area.getItems().getVolume(item);
+	FullDisplacement volume = area.getItems().getVolume(item);
 	return getToolToHaulVolume(area, faction, volume);
 }
 ItemIndex AreaHasHaulTools::getToolToHaulActor(const Area& area, const FactionId& faction, const ActorIndex& actor) const
 {
-	Volume volume = area.getActors().getVolume(actor);
+	FullDisplacement volume = area.getActors().getVolume(actor);
 	return getToolToHaulVolume(area, faction, volume);
 }
 ItemIndex AreaHasHaulTools::getToolToHaulPolymorphic(const Area& area, const FactionId& faction, const ActorOrItemIndex& toHaul) const
 {
-	Volume volume = toHaul.getVolume(area);
+	FullDisplacement volume = toHaul.getVolume(area);
 	return getToolToHaulVolume(area, faction, volume);
 }
-ItemIndex AreaHasHaulTools::getToolToHaulVolume(const Area& area, const FactionId& faction, const Volume& volume) const
+ItemIndex AreaHasHaulTools::getToolToHaulVolume(const Area& area, const FactionId& faction, const FullDisplacement& volume) const
 {
 	// Items like panniers with no move type also have internal volume but aren't relevent for this method.
 	static MoveTypeId none = MoveType::byName("none");

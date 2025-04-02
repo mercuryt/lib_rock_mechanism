@@ -1,5 +1,17 @@
 #include "cuboidSet.h"
 #include "../blocks/blocks.h"
+CuboidSet::CuboidSet(const Blocks& blocks, const BlockIndex& location, const Facing4& rotation, const std::vector<std::pair<Offset3D, Offset3D>>& offsetPairs)
+{
+	const Point3D coordinates = blocks.getCoordinates(location);
+	for(auto [high, low] : offsetPairs)
+	{
+		high += coordinates;
+		low += coordinates;
+		high.rotate2D(rotation);
+		low.rotate2D(rotation);
+		add({Point3D::create(high), Point3D::create(low)});
+	}
+}
 void CuboidSet::create(const Cuboid& cuboid)
 {
 	uint i = 0;
@@ -59,10 +71,20 @@ void CuboidSet::remove(const Cuboid& cuboid)
 		for(const Cuboid& splitResult : pair.first.getChildrenWhenSplitByCuboid(cuboid))
 			create(splitResult);
 }
+void CuboidSet::shift(const Offset3D offset, const DistanceInBlocks& distance)
+{
+	for(Cuboid& cuboid : m_cuboids)
+		cuboid.shift(offset, distance);
+}
 void CuboidSet::addSet(const CuboidSet& other)
 {
 	for(const Cuboid& cuboid : other.getCuboids())
 		add(cuboid);
+}
+void CuboidSet::rotateAroundPoint(Blocks& blocks, const BlockIndex& point, const Facing4& rotation)
+{
+	for(Cuboid& cuboid : m_cuboids)
+		cuboid.rotateAroundPoint(blocks, point, rotation);
 }
 void CuboidSet::mergeInternal(const Cuboid& absorbed, const uint& absorber)
 {
@@ -115,6 +137,19 @@ bool CuboidSet::isAdjacent(const Cuboid& cuboid) const
 		if(c.isTouching(cuboid))
 			return true;
 	return false;
+}
+void to_json(Json& data, const CuboidSet& cuboidSet)
+{
+	for(const Cuboid& cuboid : cuboidSet.getCuboids())
+		data.push_back({cuboid.m_highest, cuboid.m_lowest});
+}
+void from_json(const Json& data, CuboidSet& cuboidSet)
+{
+	for(const Json& pair : data)
+	{
+		Cuboid cuboid(pair[0].get<Point3D>(), pair[1].get<Point3D>());
+		cuboidSet.add(cuboid);
+	}
 }
 CuboidSetConstIterator::CuboidSetConstIterator(const Blocks& blocks, const CuboidSet& cuboidSet, bool end) :
 	m_blocks(blocks),

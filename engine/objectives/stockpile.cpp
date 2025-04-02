@@ -12,7 +12,7 @@ bool StockPileObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) 
 	Actors& actors = area.getActors();
 	// Pilots and passengers onDeck cannot stockpile.
 	// TODO: allow pilots?
-	if(actors.onDeck_getIsOnDeckOf(actor).exists())
+	if(actors.mount_exists(actor))
 		return false;
 	return area.m_hasStockPiles.getForFaction(actors.getFaction(actor)).isAnyHaulingAvailableFor(actor);
 }

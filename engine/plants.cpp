@@ -388,7 +388,7 @@ void Plants::removeFruitQuantity(const PlantIndex& index, const Quantity& quanti
 Mass Plants::getFruitMass(const PlantIndex& index) const
 {
 	static MaterialTypeId fruitType = MaterialType::byName("fruit");
-	return ItemType::getVolume(PlantSpecies::getFruitItemType(getSpecies(index))) * MaterialType::getDensity(fruitType) * m_quantityToHarvest[index];
+	return ItemType::getFullDisplacement(PlantSpecies::getFruitItemType(getSpecies(index))) * MaterialType::getDensity(fruitType) * m_quantityToHarvest[index];
 }
 void Plants::makeFoliageGrowthEvent(const PlantIndex& index)
 {

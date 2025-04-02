@@ -149,14 +149,27 @@ void Actors::move_schedule(const ActorIndex& index)
 }
 void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& destination, bool detour, bool adjacent, bool unreserved, bool reserve)
 {
-	auto& isOnDeckOf = m_isOnDeckOf[index];
-	if(isOnDeckOf.exists() && mount_isPilot(index))
+	ShapeId shape;
+	MoveTypeId moveType;
+	if(m_isPilot[index])
 	{
-		// When an actor is the pilot of their mount the move instructions get passed down to the mount.
-		assert(isOnDeckOf.isActor());
-		move_setDestination(isOnDeckOf.getActor(), destination, detour, adjacent, unreserved, reserve);
-		// TODO: piloting item
-		return;
+		auto& isOnDeckOf = m_isOnDeckOf[index];
+		if(isOnDeckOf.isActor())
+		{
+			// When an actor is the pilot of their mount the move instructions get passed down to the mount.
+			move_setDestination(isOnDeckOf.getActor(), destination, detour, adjacent, unreserved, reserve);
+			return;
+		}
+		// Is piloting an item.
+		Items& items = m_area.getItems();
+		const ItemIndex& item = isOnDeckOf.getItem();
+		shape = items.getCompoundShape(item);
+		moveType = items.getMoveType(item);
+	}
+	else
+	{
+		shape = getCompoundShape(index);
+		moveType = getMoveType(index);
 	}
 	assert(destination.exists());
 	if(reserve)
@@ -182,7 +195,7 @@ void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& dest
 		faction = m_faction[index];
 	assert(m_pathRequest[index] == nullptr);
 	if(!adjacent)
-		move_pathRequestRecord(index, std::make_unique<GoToPathRequest>(m_location[index], DistanceInBlocks::max(), getReference(index), m_compoundShape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, destination));
+		move_pathRequestRecord(index, std::make_unique<GoToPathRequest>(m_location[index], DistanceInBlocks::max(), getReference(index), shape, faction, moveType, m_facing[index], detour, adjacent, reserve, destination));
 	else
 	{
 		BlockIndices candidates;
@@ -196,7 +209,7 @@ void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& dest
 			index,
 			std::make_unique<GoToAnyPathRequest>(
 				m_location[index], DistanceInBlocks::max(), getReference(index),
-				m_compoundShape[index], faction, m_moveType[index], m_facing[index],
+				shape, faction, moveType, m_facing[index],
 				detour, adjacent, reserve, destination, candidates
 			)
 		);

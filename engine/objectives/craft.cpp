@@ -110,9 +110,8 @@ bool CraftObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) cons
 {
 	Actors& actors = area.getActors();
 	// Pilots and passengers onDeck cannot craft.
-	if(actors.onDeck_getIsOnDeckOf(actor).exists())
+	if(actors.mount_exists(actor))
 		return false;
-	return area.m_hasStockPiles.getForFaction(actors.getFaction(actor)).isAnyHaulingAvailableFor(actor);
 	auto& hasCrafting = area.m_hasCraftingLocationsAndJobs.getForFaction(actors.getFaction(actor));
 	if(!hasCrafting.m_unassignedProjectsBySkill.contains(m_skillType))
 	{

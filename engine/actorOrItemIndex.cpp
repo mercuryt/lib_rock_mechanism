@@ -184,7 +184,7 @@ Facing4 ActorOrItemIndex::getFacing(const Area& area) const { return isActor() ?
 Mass ActorOrItemIndex::getMass(const Area& area) const { return isActor() ? area.getActors().getMass(m_index.toActor()) : area.getItems().getMass(m_index.toItem()); }
 Quantity ActorOrItemIndex::getQuantity(const Area& area) const { return isActor() ? Quantity::create(1) : area.getItems().getQuantity(m_index.toItem()); }
 Mass ActorOrItemIndex::getSingleUnitMass(const Area& area) const { return isActor() ? area.getActors().getMass(m_index.toActor()) : area.getItems().getSingleUnitMass(m_index.toItem()); }
-Volume ActorOrItemIndex::getVolume(const Area& area)  const { return isActor() ? area.getActors().getVolume(m_index.toActor()) : area.getItems().getVolume(m_index.toItem()); }
+FullDisplacement ActorOrItemIndex::getVolume(const Area& area)  const { return isActor() ? area.getActors().getVolume(m_index.toActor()) : area.getItems().getVolume(m_index.toItem()); }
 bool ActorOrItemIndex::isGeneric(const Area& area) const {return isActor() ? false : area.getItems().isGeneric(m_index.toItem()); }
 Quantity ActorOrItemIndex::reservable_getUnreservedCount(Area& area, const FactionId& faction) const
 {

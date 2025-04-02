@@ -68,6 +68,9 @@ bool GivePlantsFluidObjectiveType::canBeAssigned(Area& area, const ActorIndex& a
 {
 	Actors& actors = area.getActors();
 	assert(actors.getLocation(actor).exists());
+	// Pilots and passengers onDeck cannot give plants fluid.
+	if(actors.onDeck_getIsOnDeckOf(actor).exists())
+		return false;
 	return area.m_hasFarmFields.hasGivePlantsFluidDesignations(actors.getFaction(actor));
 }
 std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Area&, const ActorIndex&) const

@@ -186,7 +186,7 @@ bool ConstructObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) 
 {
 	Actors& actors = area.getActors();
 	// Pilots and passengers onDeck cannot construct.
-	if(actors.onDeck_getIsOnDeckOf(actor).exists())
+	if(actors.mount_exists(actor))
 		return false;
 	return area.m_hasConstructionDesignations.areThereAnyForFaction(actors.getFaction(actor));
 }

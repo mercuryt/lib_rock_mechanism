@@ -15,7 +15,7 @@ BodyPartTypeId BodyPartType::byName(std::string name)
 	return BodyPartTypeId::create(found - bodyPartTypeData.m_name.begin());
 }
 std::string& BodyPartType::getName(const BodyPartTypeId& id) { return bodyPartTypeData.m_name[id]; };
-Volume BodyPartType::getVolume(const BodyPartTypeId& id) { return bodyPartTypeData.m_volume[id]; };
+FullDisplacement BodyPartType::getVolume(const BodyPartTypeId& id) { return bodyPartTypeData.m_volume[id]; };
 bool BodyPartType::getDoesLocamotion(const BodyPartTypeId& id) { return bodyPartTypeData.m_doesLocamotion[id]; };
 bool BodyPartType::getDoesManipulation(const BodyPartTypeId& id) { return bodyPartTypeData.m_doesManipulation[id]; };
 bool BodyPartType::getVital(const BodyPartTypeId& id) { return bodyPartTypeData.m_vital[id]; };

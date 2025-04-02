@@ -88,7 +88,7 @@ namespace Config
 	inline uint32_t hitScaleModifier;
 	inline uint8_t hitsToDivideActorFallDamageInto;
 	inline uint32_t hoursPerDay;
-	inline Volume impassibleItemVolume;
+	inline FullDisplacement impassibleItemVolume;
 	inline Step installItemDuration;
 	inline Priority installItemPriority;
 	inline float itemQualityCombatModifier;
@@ -185,7 +185,7 @@ namespace Config
 	inline float projectileHitPercentPerPointWear;
 	inline float projectileHitPercentPerSkillPoint;
 	inline float projectileHitPercentPerUnitVolume;
-	inline Volume projectileMedianTargetVolume;
+	inline FullDisplacement projectileMedianTargetVolume;
 	inline DistanceInBlocks rainMaximumOffset;
 	inline DistanceInBlocks rainMaximumSpacing;
 	inline Step rainWriteStepFreqency;
@@ -242,6 +242,6 @@ namespace Config
 	inline float woodCuttingStrengthModifier;
 	inline Step yokeDelaySteps;
 
-	inline uint32_t convertBodyPartVolumeToArea(Volume volume){ return sqrt(volume.get()); }
+	inline uint32_t convertBodyPartVolumeToArea(FullDisplacement volume){ return sqrt(volume.get()); }
 	void load();
 }

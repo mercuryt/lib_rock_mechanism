@@ -22,9 +22,10 @@ struct ItemTypeParamaters final
 	MoveTypeId moveType;
 	FluidTypeId edibleForDrinkersOf = FluidTypeId::null();
 	CraftStepTypeCategoryId craftLocationStepTypeCategory = CraftStepTypeCategoryId::null();
-	Volume volume;
-	Volume internalVolume;
+	FullDisplacement volume;
+	FullDisplacement internalVolume;
 	uint32_t value;
+	std::vector<std::pair<Offset3D, Offset3D>> decks = {};
 	bool installable;
 	bool generic;
 	bool canHoldFluids;
@@ -50,8 +51,8 @@ class ItemType final
 	StrongVector<MoveTypeId, ItemTypeId> m_moveType;
 	StrongVector<FluidTypeId, ItemTypeId> m_edibleForDrinkersOf;
 	StrongVector<CraftStepTypeCategoryId, ItemTypeId> m_craftLocationStepTypeCategory;
-	StrongVector<Volume, ItemTypeId> m_volume;
-	StrongVector<Volume, ItemTypeId> m_internalVolume;
+	StrongVector<FullDisplacement, ItemTypeId> m_fullDisplacement;
+	StrongVector<FullDisplacement, ItemTypeId> m_internalVolume;
 	StrongVector<uint32_t, ItemTypeId> m_value;
 	StrongBitSet<ItemTypeId> m_installable;
 	StrongBitSet<ItemTypeId> m_generic;
@@ -59,6 +60,7 @@ class ItemType final
 	StrongVector<std::vector<AttackTypeId>, ItemTypeId> m_attackTypes;
 	StrongVector<SkillTypeId, ItemTypeId> m_combatSkill;
 	StrongVector<Step, ItemTypeId> m_attackCoolDownBase;
+	StrongVector<std::vector<std::pair<Offset3D, Offset3D>>, ItemTypeId> m_decks;
 	StrongVector<uint32_t, ItemTypeId> m_wearable_defenseScore;
 	StrongVector<uint32_t, ItemTypeId> m_wearable_layer;
 	StrongVector<uint32_t, ItemTypeId> m_wearable_bodyTypeScale;
@@ -82,8 +84,8 @@ public:
 	[[nodiscard]] static MoveTypeId getMoveType(const ItemTypeId& id);
 	[[nodiscard]] static FluidTypeId getEdibleForDrinkersOf(const ItemTypeId& id);
 	[[nodiscard]] static CraftStepTypeCategoryId getCraftLocationStepTypeCategory(const ItemTypeId& id);
-	[[nodiscard]] static Volume getVolume(const ItemTypeId& id);
-	[[nodiscard]] static Volume getInternalVolume(const ItemTypeId& id);
+	[[nodiscard]] static FullDisplacement getFullDisplacement(const ItemTypeId& id);
+	[[nodiscard]] static FullDisplacement getInternalVolume(const ItemTypeId& id);
 	[[nodiscard]] static uint32_t getValue(const ItemTypeId& id);
 	[[nodiscard]] static bool getInstallable(const ItemTypeId& id);
 	[[nodiscard]] static bool getGeneric(const ItemTypeId& id);
@@ -102,5 +104,6 @@ public:
 	[[nodiscard]] static bool getWearable_rigid(const ItemTypeId& id);
 	[[nodiscard]] static std::vector<BodyPartTypeId>& getWearable_bodyPartsCovered(const ItemTypeId& id);
 	[[nodiscard]] static bool getIsWearable(const ItemTypeId& id);
+	[[nodiscard]] static const std::vector<std::pair<Offset3D, Offset3D>>& getDecks(const ItemTypeId& id);
 };
 inline ItemType itemTypeData;

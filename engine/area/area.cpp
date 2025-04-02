@@ -57,6 +57,7 @@ Area::Area(AreaId id, std::string n, Simulation& s, const DistanceInBlocks& x, c
 	m_visionRequests(*this),
 	m_opacityFacade(*this),
 	m_visionCuboids(*this),
+	m_decks(*this),
 	m_name(n),
 	m_simulation(s),
 	m_id(id)
@@ -101,6 +102,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_visionRequests(*this),
 	m_opacityFacade(*this),
 	m_visionCuboids(*this),
+	m_decks(*this),
 	m_name(data["name"].get<std::string>()),
 	m_simulation(simulation),
 	m_id(data["id"].get<AreaId>())

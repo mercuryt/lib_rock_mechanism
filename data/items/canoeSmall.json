@@ -1,0 +1,9 @@
+{
+	"name": "small canoe",
+	"shape": "oneByThreeByOne",
+	"volume": 8000,
+	"generic": false,
+	"value": 500,
+	"materialTypeCategories": ["wood", "metal"],
+	"decks": [[[0,0,0], [0, -2, 0]]]
+}

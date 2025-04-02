@@ -181,6 +181,24 @@ std::string Shape::getName(const ShapeId& id) { return shapeData.m_name[id]; }
 uint32_t Shape::getDisplayScale(const ShapeId& id) { return shapeData.m_displayScale[id]; }
 bool Shape::getIsMultiTile(const ShapeId& id) { return shapeData.m_isMultiTile[id]; }
 bool Shape::getIsRadiallySymetrical(const ShapeId& id) { return shapeData.m_isRadiallySymetrical[id]; }
+// TODO: cache this.
+DistanceInBlocks Shape::getZSize(const ShapeId& id)
+{
+	DistanceInBlocks output = DistanceInBlocks::create(0);
+	for(const OffsetAndVolume& offsetAndVolume : getPositions(id))
+		if(output < offsetAndVolume.offset.z())
+			output = DistanceInBlocks::create(offsetAndVolume.offset.z());
+	return output;
+}
+// TODO: cache this.
+SmallSet<OffsetAndVolume> Shape::getPositionsByZLevel(const ShapeId& id, const DistanceInBlocks& zLevel)
+{
+	SmallSet<OffsetAndVolume> output;
+	for(const OffsetAndVolume& offsetAndVolume : getPositions(id))
+		if(offsetAndVolume.offset.z() == zLevel)
+			output.insert(offsetAndVolume);
+	return output;
+}
 bool Shape::hasShape(const std::string& name)
 {
 	auto found = shapeData.m_name.find(name);

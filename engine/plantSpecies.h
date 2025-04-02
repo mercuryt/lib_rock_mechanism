@@ -26,7 +26,7 @@ struct PlantSpeciesParamaters final
 	const Mass adultMass = Mass::null();
 	const Temperature maximumGrowingTemperature = Temperature::null();
 	const Temperature minimumGrowingTemperature = Temperature::null();
-	const Volume volumeFluidConsumed = Volume::null();
+	const FullDisplacement volumeFluidConsumed = FullDisplacement::null();
 	const uint16_t dayOfYearForSowStart = 0;
 	const uint16_t dayOfYearForSowEnd = 0;
 	const uint8_t maxWildGrowth = 0;
@@ -56,7 +56,7 @@ class PlantSpecies final
 	StrongVector<Mass, PlantSpeciesId> m_adultMass;
 	StrongVector<Temperature, PlantSpeciesId> m_maximumGrowingTemperature;
 	StrongVector<Temperature, PlantSpeciesId> m_minimumGrowingTemperature;
-	StrongVector<Volume, PlantSpeciesId> m_volumeFluidConsumed;
+	StrongVector<FullDisplacement, PlantSpeciesId> m_volumeFluidConsumed;
 	StrongVector<uint16_t, PlantSpeciesId> m_dayOfYearForSowStart;
 	StrongVector<uint16_t, PlantSpeciesId> m_dayOfYearForSowEnd;
 	StrongVector<uint8_t, PlantSpeciesId> m_maxWildGrowth;
@@ -87,7 +87,7 @@ public:
 	[[nodiscard]] static Mass getAdultMass(const PlantSpeciesId& species);
 	[[nodiscard]] static Temperature getMaximumGrowingTemperature(const PlantSpeciesId& species);
 	[[nodiscard]] static Temperature getMinimumGrowingTemperature(const PlantSpeciesId& species);
-	[[nodiscard]] static Volume getVolumeFluidConsumed(const PlantSpeciesId& species);
+	[[nodiscard]] static FullDisplacement getVolumeFluidConsumed(const PlantSpeciesId& species);
 	[[nodiscard]] static uint16_t getDayOfYearForSowStart(const PlantSpeciesId& species);
 	[[nodiscard]] static uint16_t getDayOfYearForSowEnd(const PlantSpeciesId& species);
 	[[nodiscard]] static uint8_t getMaxWildGrowth(const PlantSpeciesId& species);

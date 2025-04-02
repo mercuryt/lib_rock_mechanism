@@ -54,10 +54,10 @@ class Body final
 	HasScheduledEvent<WoundsCloseEvent> m_woundsCloseEvent;
 	ActorIndex m_actor;
 	MaterialTypeId m_materialType;
-	Volume m_totalVolume = Volume::create(0);
+	FullDisplacement m_totalVolume = FullDisplacement::create(0);
 	Percent m_impairMovePercent = Percent::create(0);
 	Percent m_impairManipulationPercent = Percent::create(0);
-	Volume m_volumeOfBlood = Volume::create(0);
+	FullDisplacement m_volumeOfBlood = FullDisplacement::create(0);
 	bool m_isBleeding = false;
 public:
 	std::list<BodyPart> m_bodyParts;
@@ -83,9 +83,9 @@ public:
 	[[nodiscard]] bool piercesFat(Hit hit, const BodyPart& bodyPart) const;
 	[[nodiscard]] bool piercesMuscle(Hit hit, const BodyPart& bodyPart) const;
 	[[nodiscard]] bool piercesBone(Hit hit, const BodyPart& bodyPart) const;
-	[[nodiscard]] Volume healthyBloodVolume() const;
+	[[nodiscard]] FullDisplacement healthyBloodVolume() const;
 	[[nodiscard]] std::vector<Attack> getMeleeAttacks() const;
-	[[nodiscard]] Volume getVolume(Area& area) const;
+	[[nodiscard]] FullDisplacement getVolume(Area& area) const;
 	[[nodiscard]] bool isInjured() const;
 	[[nodiscard]] Step getStepsTillBleedToDeath() const;
 	[[nodiscard]] bool hasBodyPart(const BodyPartTypeId& bodyPartType) const;

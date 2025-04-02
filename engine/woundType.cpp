@@ -8,8 +8,8 @@
 Step WoundCalculations::getStepsTillHealed(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale)
 {
 	assert(hit.depth !=0 );
-	Volume hitVolume = Volume::create(hit.depth * hit.area * Config::hitScaleModifier);
-	Volume bodyPartVolume = BodyPartType::getVolume(bodyPartType) * scale;
+	FullDisplacement hitVolume = FullDisplacement::create(hit.depth * hit.area * Config::hitScaleModifier);
+	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPartType) * scale;
 	float ratio = (float)hitVolume.get() / (float)bodyPartVolume.get();
 	Step baseDelay = Step::create(Config::baseHealDelaySteps.get() * ratio);
 	switch (hit.woundType)
@@ -29,8 +29,8 @@ uint32_t WoundCalculations::getBleedVolumeRate(const Hit& hit, const BodyPartTyp
 {
 	if(hit.depth == 0)
 		return 0;
-	Volume hitVolume = Volume::create(hit.depth * hit.area * Config::hitScaleModifier);
-	Volume bodyPartVolume = BodyPartType::getVolume(bodyPartType) * scale;
+	FullDisplacement hitVolume = FullDisplacement::create(hit.depth * hit.area * Config::hitScaleModifier);
+	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPartType) * scale;
 	float ratio = (float)hitVolume.get() / (float)bodyPartVolume.get();
 	WoundType woundType = hit.woundType;
 	switch (woundType)
@@ -48,8 +48,8 @@ uint32_t WoundCalculations::getBleedVolumeRate(const Hit& hit, const BodyPartTyp
 }
 Percent WoundCalculations::getPercentTemporaryImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale)
 {
-	Volume hitVolume = Volume::create(hit.depth * hit.area * Config::hitScaleModifier);
-	Volume bodyPartVolume = BodyPartType::getVolume(bodyPartType) * scale;
+	FullDisplacement hitVolume = FullDisplacement::create(hit.depth * hit.area * Config::hitScaleModifier);
+	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPartType) * scale;
 	float ratio = (float)hitVolume.get() / (float)bodyPartVolume.get();
 	switch (hit.woundType)
 	{
@@ -66,8 +66,8 @@ Percent WoundCalculations::getPercentTemporaryImpairment(const Hit& hit, const B
 }
 Percent WoundCalculations::getPercentPermanentImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale)
 {
-	Volume hitVolume = Volume::create(hit.depth * hit.area * Config::hitScaleModifier);
-	Volume bodyPartVolume = BodyPartType::getVolume(bodyPartType) * scale;
+	FullDisplacement hitVolume = FullDisplacement::create(hit.depth * hit.area * Config::hitScaleModifier);
+	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPartType) * scale;
 	float ratio = (float)hitVolume.get() / (float)bodyPartVolume.get();
 	Percent output;
 	switch (hit.woundType)

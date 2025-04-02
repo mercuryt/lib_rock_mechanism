@@ -73,7 +73,7 @@ void EquipmentSet::addGeneric(Area& area, const ItemTypeId& itemType, const Mate
 		ItemIndex item = items.create({.itemType=itemType, .materialType=materialType, .quantity=quantity});
 		m_equipments.insert(items.m_referenceData.getReference(item));
 	}
-	m_mass += ItemType::getVolume(itemType) * MaterialType::getDensity(materialType) * quantity;
+	m_mass += ItemType::getFullDisplacement(itemType) * MaterialType::getDensity(materialType) * quantity;
 }
 void EquipmentSet::removeGeneric(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity)
 {
@@ -100,7 +100,7 @@ void EquipmentSet::removeGeneric(Area& area, const ItemTypeId& itemType, const M
 	{
 		items.removeQuantity(item, quantity);
 	}
-	m_mass -= ItemType::getVolume(itemType) * MaterialType::getDensity(materialType) * quantity;
+	m_mass -= ItemType::getFullDisplacement(itemType) * MaterialType::getDensity(materialType) * quantity;
 }
 void EquipmentSet::removeEquipment(Area& area, const ItemIndex& equipment)
 {

@@ -62,13 +62,14 @@ public:
 inline void to_json(Json& data, const Quantity& index) { data = index.get(); }
 inline void from_json(const Json& data, Quantity& index) { index = Quantity::create(data.get<QuantityWidth>()); }
 
-class Volume;
+class FullDisplacement;
 using CollisionVolumeWidth = uint32_t;
 class CollisionVolume : public StrongInteger<CollisionVolume, CollisionVolumeWidth>
 {
 public:
 	CollisionVolume() = default;
-	[[nodiscard]] Volume toVolume() const;
+	// TODO: do we need this?
+	[[nodiscard]] FullDisplacement toVolume() const;
 	[[nodiscard]] CollisionVolume operator*(const Quantity& quantity) const { return CollisionVolume::create(data * quantity.get()); }
 	[[nodiscard]] CollisionVolume operator*(CollisionVolumeWidth other) const { return CollisionVolume::create(other * data); }
 	[[nodiscard]] CollisionVolume operator*(float other) const { return CollisionVolume::create(other * data); }
@@ -80,19 +81,19 @@ inline void from_json(const Json& data, CollisionVolume& index) { index = Collis
 class Mass;
 class Density;
 using VolumeWidth = uint32_t;
-class Volume : public StrongInteger<Volume, VolumeWidth>
+class FullDisplacement : public StrongInteger<FullDisplacement, VolumeWidth>
 {
 public:
-	Volume() = default;
-	[[nodiscard]] Volume operator*(Quantity other) const;
+	FullDisplacement() = default;
+	[[nodiscard]] FullDisplacement operator*(Quantity other) const;
 	[[nodiscard]] Mass operator*(Density density) const;
-	[[nodiscard]] Volume operator*(VolumeWidth other) const;
-	[[nodiscard]] Volume operator*(float other) const;
+	[[nodiscard]] FullDisplacement operator*(VolumeWidth other) const;
+	[[nodiscard]] FullDisplacement operator*(float other) const;
 	[[nodiscard]] CollisionVolume toCollisionVolume() const;
-	struct Hash { [[nodiscard]] size_t operator()(const Volume& index) const { return index.get(); } };
+	struct Hash { [[nodiscard]] size_t operator()(const FullDisplacement& index) const { return index.get(); } };
 };
-inline void to_json(Json& data, const Volume& index) { data = index.get(); }
-inline void from_json(const Json& data, Volume& index) { index = Volume::create(data.get<VolumeWidth>()); }
+inline void to_json(Json& data, const FullDisplacement& index) { data = index.get(); }
+inline void from_json(const Json& data, FullDisplacement& index) { index = FullDisplacement::create(data.get<VolumeWidth>()); }
 
 using MassWidth = uint32_t;
 class Mass : public StrongInteger<Mass, MassWidth>
@@ -102,6 +103,8 @@ public:
 	[[nodiscard]] Mass operator*(Quantity quantity) const;
 	[[nodiscard]] Mass operator*(MassWidth other) const;
 	[[nodiscard]] Mass operator*(float other) const;
+	[[nodiscard]] Density operator/(const FullDisplacement& displacement) const;
+	[[nodiscard]] Mass operator/(const Mass& other) const { return Mass::create(data / other.data); }
 	struct Hash { [[nodiscard]] size_t operator()(const Mass& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Mass& index) { data = index.get(); }
@@ -111,7 +114,7 @@ class Density : public StrongFloat<Density>
 {
 public:
 	Density() = default;
-	[[nodiscard]] Mass operator*(Volume volume) const;
+	[[nodiscard]] Mass operator*(FullDisplacement volume) const;
 	[[nodiscard]] Density operator*(float other) const;
 	struct Hash { [[nodiscard]] size_t operator()(const Density& index) const { return index.get(); } };
 };
@@ -311,3 +314,12 @@ public:
 inline void to_json(Json& data, const LongRangePathNodeIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, LongRangePathNodeIndex& index) { index = LongRangePathNodeIndex::create(data.get<uint32_t>()); }
 using LongRangePathNodeIndexSet = StrongIntegerSet<LongRangePathNodeIndex>;
+
+class DeckId final : public StrongInteger<DeckId, uint16_t>
+{
+public:
+	DeckId() = default;
+	struct Hash { [[nodiscard]] size_t operator()(const Step& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const DeckId& index) { data = index.get(); }
+inline void from_json(const Json& data, DeckId& index) { index = DeckId::create(data.get<uint16_t>()); }

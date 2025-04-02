@@ -65,6 +65,7 @@ struct Point3D
 	[[nodiscard]] Facing8 getFacingTwordsIncludingDiagonal(const Point3D& other) const;
 	void log() const;
 	static Point3D create(int x, int y, int z);
+	static Point3D create(const Offset3D& offset);
 };
 inline void to_json(Json& data, const Point3D& point) { data = {point.x(), point.y(), point.z()}; }
 inline void from_json(const Json& data, Point3D& point)
@@ -110,9 +111,12 @@ struct Offset3D
 	[[nodiscard]] bool operator==(const Offset3D& other) const { return (data == other.data).all();}
 	[[nodiscard]] bool operator!=(const Offset3D& other) const { return (*this) != other; }
 	[[nodiscard]] std::strong_ordering operator<=>(const Offset3D& other) const;
-	[[nodiscard]] int x() const { return data[0]; }
-	[[nodiscard]] int y() const { return data[1]; }
-	[[nodiscard]] int z() const { return data[2]; }
+	[[nodiscard]] const int& x() const { return data[0]; }
+	[[nodiscard]] const int& y() const { return data[1]; }
+	[[nodiscard]] const int& z() const { return data[2]; }
+	[[nodiscard]] int& x() { return data[0]; }
+	[[nodiscard]] int& y() { return data[1]; }
+	[[nodiscard]] int& z() { return data[2]; }
 	[[nodiscard]] std::string toString() const;
 };
 inline void to_json(Json& data, const Offset3D& point) { data = {point.x(), point.y(), point.z()}; }

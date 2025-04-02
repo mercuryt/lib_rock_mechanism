@@ -21,7 +21,7 @@ StationObjective::StationObjective(const Json& data, DeserializationMemo& deseri
 void StationObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
-	if(actors.getLocation(actor) != m_location)
+	if(actors.getCombinedLocation(actor) != m_location)
 		// BlockIndex, detour, adjacent, unreserved, reserve
 		actors.move_setDestination(actor, m_location, m_detour, false, false, false);
 }

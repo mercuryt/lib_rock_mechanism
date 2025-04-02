@@ -1,5 +1,6 @@
 #include "portables.hpp"
 
+
 // Class method.
 Speed PortablesHelpers::getMoveSpeedForGroup(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems)
 {

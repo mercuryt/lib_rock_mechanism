@@ -125,7 +125,7 @@ bool Blocks::solid_is(const BlockIndex& index) const
 Mass Blocks::solid_getMass(const BlockIndex& index) const
 {
 	assert(solid_is(index));
-	return MaterialType::getDensity(m_materialType[index]) * Volume::create(Config::maxBlockVolume.get());
+	return MaterialType::getDensity(m_materialType[index]) * FullDisplacement::create(Config::maxBlockVolume.get());
 }
 MaterialTypeId Blocks::solid_getHardest(const SmallSet<BlockIndex>& blocks)
 {

@@ -107,6 +107,7 @@ void Items::forEachData(Action&& action)
 	action(m_quality);
 	action(m_quantity);
 	action(m_onSurface);
+	action(m_pilot);
 }
 ItemIndex Items::create(ItemParamaters itemParamaters)
 {
@@ -205,7 +206,7 @@ ItemIndex Items::setLocationAndFacing(const ItemIndex& index, const BlockIndex& 
 		m_onSurface.set(index);
 	else
 		m_onSurface.unset(index);
-	onSetLocation(index, previousFacing, onDeckWithOffsets);
+	onSetLocation(index, previousLocation, previousFacing, onDeckWithOffsets);
 	return index;
 }
 void Items::exit(const ItemIndex& index)
@@ -316,6 +317,10 @@ void Items::unsetCraftJobForWorkPiece(const ItemIndex& index)
 {
 	m_craftJobForWorkPiece[index] = nullptr;
 }
+void Items::resetMoveType(const ItemIndex& index)
+{
+	m_moveType[index] = ItemType::getMoveType(m_itemType[index]);
+}
 void Items::destroy(const ItemIndex& index)
 {
 	// No need to explicitly unschedule events here, destorying the event holder will do it.
@@ -328,6 +333,7 @@ void Items::destroy(const ItemIndex& index)
 	if(index != s)
 		moveIndex(s, index);
 	m_area.m_hasStockPiles.removeItemFromAllFactions(index);
+	onRemove(index);
 	resize(s);
 	// Will do the same move / resize logic internally, so stays in sync with moves from the DataVectors.
 	m_referenceData.remove(index);
@@ -345,18 +351,19 @@ CraftJob& Items::getCraftJobForWorkPiece(const ItemIndex& index) const
 }
 Mass Items::getSingleUnitMass(const ItemIndex& index) const
 {
-	return Mass::create(std::max(1u, (ItemType::getVolume(m_itemType[index]) * MaterialType::getDensity(m_materialType[index])).get()));
+	return Mass::create(std::max(1u, (ItemType::getFullDisplacement(m_itemType[index]) * MaterialType::getDensity(m_materialType[index])).get()));
 }
 Mass Items::getMass(const ItemIndex& index) const
 {
-	Mass output = ItemType::getVolume(m_itemType[index]) * MaterialType::getDensity(m_materialType[index]) * m_quantity[index];
+	Mass output = ItemType::getFullDisplacement(m_itemType[index]) * MaterialType::getDensity(m_materialType[index]) * m_quantity[index];
 	if(m_hasCargo[index] != nullptr)
 		output += m_hasCargo[index]->getMass();
+	output += onDeck_getMass(index);
 	return output;
 }
-Volume Items::getVolume(const ItemIndex& index) const
+FullDisplacement Items::getVolume(const ItemIndex& index) const
 {
-	return ItemType::getVolume(m_itemType[index]) * m_quantity[index];
+	return ItemType::getFullDisplacement(m_itemType[index]) * m_quantity[index];
 }
 CollisionVolume Items::getTotalCollisionVolume(const ItemIndex& index) const
 {
@@ -414,6 +421,7 @@ void Items::load(const Json& data)
 	data["quality"].get_to(m_quality);
 	data["quantity"].get_to(m_quantity);
 	data["percentWear"].get_to(m_percentWear);
+	data["pilot"].get_to(m_pilot);
 	m_hasCargo.resize(m_id.size());
 	Blocks& blocks = m_area.getBlocks();
 	for(ItemIndex index : getAll())
@@ -474,6 +482,7 @@ Json Items::toJson() const
 	data["installed"] = m_installed;
 	data["onSurface"] = m_onSurface;
 	data["canBeStockPiled"] = Json::object();
+	data["pilot"] = m_pilot;
 	int i = 0;
 	for(const auto& canBeStockPiled : m_canBeStockPiled)
 	{
@@ -571,8 +580,8 @@ ItemIndex ItemHasCargo::addItemGeneric(Area& area, const ItemTypeId& itemType, c
 		{
 			// Add to existing stack.
 			items.addQuantity(item, quantity);
-			m_mass += ItemType::getVolume(itemType) * MaterialType::getDensity(materialType)  * quantity;
-			m_volume += ItemType::getVolume(itemType) * quantity;
+			m_mass += ItemType::getFullDisplacement(itemType) * MaterialType::getDensity(materialType)  * quantity;
+			m_volume += ItemType::getFullDisplacement(itemType) * quantity;
 			return item;
 		}
 	// Create new stack.

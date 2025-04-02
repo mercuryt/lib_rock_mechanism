@@ -172,7 +172,7 @@ bool DigObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
 	Actors& actors = area.getActors();
 	// Pilots and passengers onDeck cannot dig.
-	if(actors.onDeck_getIsOnDeckOf(actor).exists())
+	if(actors.mount_exists(actor))
 		return false;
 	//TODO: check for any picks?
 	return area.m_hasDigDesignations.areThereAnyForFaction(actors.getFaction(actor));

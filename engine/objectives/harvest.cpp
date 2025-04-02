@@ -47,6 +47,10 @@ void HarvestEvent::clearReferences(Simulation&, Area*) { m_harvestObjective.m_ha
 // Objective type.
 bool HarvestObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
+	Actors& actors = area.getActors();
+	// Pilots and passengers onDeck cannot harvest.
+	if(actors.onDeck_getIsOnDeckOf(actor).exists())
+		return false;
 	return area.m_hasFarmFields.hasHarvestDesignations(area.getActors().getFaction(actor));
 }
 std::unique_ptr<Objective> HarvestObjectiveType::makeFor(Area& area, const ActorIndex&) const

@@ -64,7 +64,7 @@ namespace util
 	}
 	//template<typename T>
 	//struct AddressEquivalence{ bool operator()(T& other){ return &other == this; } };
-	inline std::array<int32_t, 3> rotateOffsetToFacing(const std::array<int32_t, 3>& position, Facing4 facing)
+	inline std::array<int32_t, 3> rotateOffsetToFacing(const std::array<int32_t, 3>& position, const Facing4& facing)
 	{
 		auto [x, y, z] = position;
 		switch(facing)

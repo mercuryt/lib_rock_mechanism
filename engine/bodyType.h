@@ -6,7 +6,7 @@
 struct BodyPartTypeParamaters final
 {
 	std::string name;
-	Volume volume;
+	FullDisplacement volume;
 	bool doesLocamotion;
 	bool doesManipulation;
 	bool vital;
@@ -16,7 +16,7 @@ struct BodyPartTypeParamaters final
 class BodyPartType final
 {
 	StrongVector<std::string, BodyPartTypeId> m_name;
-	StrongVector<Volume, BodyPartTypeId> m_volume;
+	StrongVector<FullDisplacement, BodyPartTypeId> m_volume;
 	StrongBitSet<BodyPartTypeId> m_doesLocamotion;
 	StrongBitSet<BodyPartTypeId> m_doesManipulation;
 	StrongBitSet<BodyPartTypeId> m_vital;
@@ -25,7 +25,7 @@ public:
 	static void create(BodyPartTypeParamaters& p);
 	[[nodiscard]] static BodyPartTypeId byName(std::string name);
 	[[nodiscard]] static std::string& getName(const BodyPartTypeId& id);
-	[[nodiscard]] static Volume getVolume(const BodyPartTypeId& id);
+	[[nodiscard]] static FullDisplacement getVolume(const BodyPartTypeId& id);
 	[[nodiscard]] static bool getDoesLocamotion(const BodyPartTypeId& id);
 	[[nodiscard]] static bool getDoesManipulation(const BodyPartTypeId& id);
 	[[nodiscard]] static bool getVital(const BodyPartTypeId& id);

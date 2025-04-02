@@ -561,9 +561,11 @@ void Actors::destroy(const ActorIndex& index)
 	const auto& s = ActorIndex::create(size() - 1);
 	if(index != s)
 		moveIndex(s, index);
+	onRemove(index);
 	resize(s);
 	// Will do the same move / resize logic internally, so stays in sync with moves from the DataVectors.
 	m_referenceData.remove(index);
+
 }
 ActorIndices Actors::getAll() const
 {
@@ -797,7 +799,7 @@ void Actors::setLocationAndFacingNoCheckMoveType(const ActorIndex& index, const 
 		m_onSurface.set(index);
 	else
 		m_onSurface.unset(index);
-	onSetLocation(index, previousFacing, onDeckWithOffsets);
+	onSetLocation(index, previousLocation, previousFacing, onDeckWithOffsets);
 }
 void Actors::exit(const ActorIndex& index)
 {
@@ -853,6 +855,7 @@ void Actors::die(const ActorIndex& index, CauseOfDeath causeOfDeath)
 	move_pathRequestMaybeCancel(index);
 	if(!isSentient(index) && hasFaction(index))
 		m_area.m_hasHaulTools.unregisterYokeableActor(m_area, index);
+	onRemove(index);
 }
 void Actors::passout(const ActorIndex&, const Step&)
 {
@@ -864,6 +867,7 @@ void Actors::leaveArea(const ActorIndex& index)
 	move_onLeaveArea(index);
 	if(!isSentient(index) && hasFaction(index))
 		m_area.m_hasHaulTools.unregisterYokeableActor(m_area, index);
+	onRemove(index);
 	exit(index);
 }
 void Actors::wait(const ActorIndex& index, const Step& duration)
@@ -889,9 +893,9 @@ void Actors::setFaction(const ActorIndex& index, const FactionId& faction)
 }
 Mass Actors::getMass(const ActorIndex& index) const
 {
-	return getIntrinsicMass(index) + m_equipmentSet[index]->getMass() + canPickUp_getMass(index);
+	return getIntrinsicMass(index) + m_equipmentSet[index]->getMass() + canPickUp_getMass(index) + onDeck_getMass(index);
 }
-Volume Actors::getVolume(const ActorIndex& index) const
+FullDisplacement Actors::getVolume(const ActorIndex& index) const
 {
 	return m_body[index]->getVolume(m_area);
 }
@@ -952,6 +956,11 @@ void Actors::takeFallDamage(const ActorIndex& index, const DistanceInBlocks& dis
 		Hit hit(area, force, materialType, WoundType::Bludgeon);
 		takeHit(index, hit, hitPart);
 	}
+}
+void Actors::resetMoveType(const ActorIndex& index)
+{
+	m_moveType[index] = AnimalSpecies::getMoveType(getSpecies(index));
+	//TODO: add extra move types granted by skills and equipment.
 }
 bool Actors::tryToMoveSoAsNotOccuping(const ActorIndex& index, const BlockIndex& block)
 {

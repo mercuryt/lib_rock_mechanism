@@ -38,6 +38,10 @@ void SowSeedsEvent::execute(Simulation&, Area* area)
 void SowSeedsEvent::clearReferences(Simulation&, Area*){ m_objective.m_event.clearPointer(); }
 bool SowSeedsObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
+	Actors& actors = area.getActors();
+	// Pilots and passengers onDeck cannot sow.
+	if(actors.onDeck_getIsOnDeckOf(actor).exists())
+		return false;
 	return area.m_hasFarmFields.hasSowSeedsDesignations(area.getActors().getFaction(actor));
 }
 std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Area& area, const ActorIndex&) const

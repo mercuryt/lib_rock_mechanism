@@ -64,8 +64,8 @@ class ItemHasCargo final
 	ActorIndices m_actors;
 	ItemIndices m_items;
 	FluidTypeId m_fluidType;
-	Volume m_maxVolume;
-	Volume m_volume = Volume::create(0);
+	FullDisplacement m_maxVolume;
+	FullDisplacement m_volume = FullDisplacement::create(0);
 	Mass m_mass = Mass::create(0);
 	CollisionVolume m_fluidVolume = CollisionVolume::create(0);
 public:
@@ -114,6 +114,7 @@ class Items final : public Portables<Items, ItemIndex, ItemReferenceIndex>
 	StrongVector<Percent, ItemIndex> m_percentWear; // Always set to 0 for generic types.
 	StrongVector<Quality, ItemIndex> m_quality; // Always set to 0 for generic types.
 	StrongVector<Quantity, ItemIndex> m_quantity; // Always set to 1 for nongeneric types.
+	StrongVector<ActorIndex, ItemIndex> m_pilot;
 	void moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex);
 public:
 	Items(Area& area);
@@ -131,7 +132,7 @@ public:
 	ItemIndex setLocationAndFacing(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
 	void exit(const ItemIndex& index);
 	void setShape(const ItemIndex& index, const ShapeId shape);
-	void pierced(const ItemIndex& index, const Volume volume);
+	void pierced(const ItemIndex& index, const FullDisplacement volume);
 	void setTemperature(const ItemIndex& index, const Temperature& temperature);
 	void addQuantity(const ItemIndex& index, const Quantity& delta);
 	void removeQuantity(const ItemIndex& index, const Quantity& delta, CanReserve* canReserve = nullptr);
@@ -143,6 +144,7 @@ public:
 	void setQuantity(const ItemIndex& index, const Quantity& quantity);
 	void unsetCraftJobForWorkPiece(const ItemIndex& index);
 	void takeFallDamage(const ItemIndex&, const DistanceInBlocks&, const MaterialTypeId&) { /* TODO */ }
+	void resetMoveType(const ItemIndex& index);
 	[[nodiscard]] ItemIndices getAll() const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool isInstalled(const ItemIndex& index) { return m_installed[index]; }
@@ -156,7 +158,7 @@ public:
 	[[nodiscard]] CraftJob& getCraftJobForWorkPiece(const ItemIndex& index) const;
 	[[nodiscard]] Mass getSingleUnitMass(const ItemIndex& index) const;
 	[[nodiscard]] Mass getMass(const ItemIndex& index) const;
-	[[nodiscard]] Volume getVolume(const ItemIndex& index) const;
+	[[nodiscard]] FullDisplacement getVolume(const ItemIndex& index) const;
 	[[nodiscard]] CollisionVolume getTotalCollisionVolume(const ItemIndex& index) const;
 	[[nodiscard]] MoveTypeId getMoveType(const ItemIndex& index) const;
 	[[nodiscard]] ItemTypeId getItemType(const ItemIndex& index) const { return m_itemType[index]; }
@@ -200,11 +202,18 @@ public:
 	[[nodiscard]] Mass cargo_getMass(const ItemIndex& index) const;
 	[[nodiscard]] const ItemIndices& cargo_getItems(const ItemIndex& index) const;
 	[[nodiscard]] const ActorIndices& cargo_getActors(const ItemIndex& index) const;
-	// -Stockpile.
+	// Stockpile.
 	void stockpile_maybeUnsetAndScheduleReset(const ItemIndex& index, const FactionId& faction, const Step& duration);
 	void stockpile_set(const ItemIndex& index, const FactionId& faction);
 	void stockpile_maybeUnset(const ItemIndex& index, const FactionId& faction);
 	[[nodiscard]] bool stockpile_canBeStockPiled(const ItemIndex& index, const FactionId& faction) const;
+	// Pilot.
+	void pilot_set(const ItemIndex& item, const ActorIndex& pilot);
+	void pilot_clear(const ItemIndex& item);
+	[[nodiscard]] ActorIndex pilot_get(const ItemIndex& item);
+	[[nodiscard]] bool pilot_exists(const ItemIndex& item) { return pilot_get(item).exists(); }
+	// Deck.
+	[[nodiscard]] std::vector<std::pair<Offset3D, Offset3D>> getDeckOffsets(const ItemIndex& index) { return ItemType::getDecks(m_itemType[index]); }
 	//TODO: Items leave area.
 	// For debugging.
 	void log(const ItemIndex& index) const;

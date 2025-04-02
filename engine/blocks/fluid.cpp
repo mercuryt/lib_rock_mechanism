@@ -3,6 +3,7 @@
 #include "../mistDisperseEvent.h"
 #include "../fluidGroups/fluidGroup.h"
 #include "../area/area.h"
+#include "../items/items.h"
 #include "../deserializationMemo.h"
 #include "../types.h"
 std::vector<FluidData>::iterator Blocks::fluid_getDataIterator(const BlockIndex& index, const FluidTypeId& fluidType)
@@ -111,6 +112,24 @@ void Blocks::fluid_add(const BlockIndex& index, const CollisionVolume& volume, c
 		if(FluidType::getFreezesInto(fluidGroup->m_fluidType).exists())
 			m_area.m_hasTemperature.addFreezeableFluidGroupAboveGround(*fluidGroup);
 	}
+	floating_maybeFloatUp(index);
+	// Float.
+	Items& items = m_area.getItems();
+	for(const ItemIndex& item : item_getAll(index))
+	{
+		const BlockIndex& location = items.getLocation(item);
+		if(!items.isFloating(item))
+		{
+			if(items.canFloatAt(item, location))
+				items.setFloating(item);
+		}
+		else
+		{
+			const BlockIndex& above = getBlockAbove(location);
+			if(items.canFloatAt(item, above))
+				items.setLocation(item, above);
+		}
+	}
 }
 void Blocks::fluid_setAllUnstableExcept(const BlockIndex& index, const FluidTypeId& fluidType)
 {
@@ -131,6 +150,7 @@ void Blocks::fluid_drainInternal(const BlockIndex& index, const CollisionVolume&
 	m_totalFluidVolume[index] -= volume;
 	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
+	floating_maybeSink(index);
 }
 void Blocks::fluid_fillInternal(const BlockIndex& index, const CollisionVolume& volume, FluidGroup& fluidGroup)
 {
@@ -146,6 +166,7 @@ void Blocks::fluid_fillInternal(const BlockIndex& index, const CollisionVolume& 
 	fluid_setTotalVolume(index, m_totalFluidVolume[index] + volume);
 	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
+	floating_maybeFloatUp(index);
 }
 void Blocks::fluid_unsetGroupInternal(const BlockIndex& index, const FluidTypeId& fluidType)
 {
@@ -204,6 +225,7 @@ void Blocks::fluid_removeSyncronus(const BlockIndex& index, const CollisionVolum
 	}
 	fluid_setTotalVolume(index, m_totalFluidVolume[index] - volume);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
+	floating_maybeSink(index);
 }
 bool Blocks::fluid_canEnterCurrently(const BlockIndex& index, const FluidTypeId& fluidType) const
 {
@@ -369,7 +391,7 @@ CollisionVolume Blocks::fluid_getTotalVolume(const BlockIndex& index) const
 	assert(total == m_totalFluidVolume[index]);
 	return m_totalFluidVolume[index];
 }
-std::vector<FluidData>& Blocks::fluid_getAll(const BlockIndex& index)
+const std::vector<FluidData>& Blocks::fluid_getAll(const BlockIndex& index) const
 {
 	return m_fluid[index];
 }

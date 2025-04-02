@@ -163,6 +163,7 @@ public:
 	void setBirthStep(const ActorIndex& index, const Step& step);
 	void setName(const ActorIndex& index, std::string name){ m_name[index] = name; }
 	void takeFallDamage(const ActorIndex& index, const DistanceInBlocks& distance, const MaterialTypeId& materialType);
+	void resetMoveType(const ActorIndex& index);
 	bool tryToMoveSoAsNotOccuping(const ActorIndex& index, const BlockIndex& block);
 	[[nodiscard]] ActorIndices getAll() const;
 	[[nodiscard]] Json toJson() const;
@@ -176,7 +177,7 @@ public:
 	[[nodiscard]] bool isSentient(const ActorIndex& index) const;
 	[[nodiscard]] bool isInjured(const ActorIndex& index) const;
 	[[nodiscard]] bool canMove(const ActorIndex& index) const;
-	[[nodiscard]] Volume getVolume(const ActorIndex& index) const;
+	[[nodiscard]] FullDisplacement getVolume(const ActorIndex& index) const;
 	[[nodiscard]] Mass getMass(const ActorIndex& index) const;
 	[[nodiscard]] Quantity getAgeInYears(const ActorIndex& index) const;
 	[[nodiscard]] Step getAge(const ActorIndex& index) const;
@@ -274,6 +275,9 @@ public:
 	void move_setDestinationAdjacentToFluidType(const ActorIndex& index, const FluidTypeId& fluidType, bool detour = false, bool unreserved = false, bool reserve = false, const DistanceInBlocks maxRange = DistanceInBlocks::max());
 	void move_setDestinationAdjacentToDesignation(const ActorIndex& index, const BlockDesignation& designation, bool detour = false, bool unreserved = false, bool reserve = false, const DistanceInBlocks maxRange = DistanceInBlocks::max());
 	void move_setDestinationToEdge(const ActorIndex& index, bool detour = false);
+	// Used when destination changes in an absolute frame of refrence but not a local one.
+	// For example when on deck of an other object which is moving.
+	void move_updateDestination(const ActorIndex& index, const BlockIndex& block) { m_destination[index] = block; }
 	void move_clearAllEventsAndTasks(const ActorIndex& index);
 	void move_onDeath(const ActorIndex& index);
 	void move_onLeaveArea(const ActorIndex& index);
@@ -532,8 +536,12 @@ public:
 	[[nodiscard]] bool mount_hasPilot(const ActorIndex& index) const;
 	[[nodiscard]] bool mount_exists(const ActorIndex& index) const { return m_isOnDeckOf[index].exists(); }
 	[[nodiscard]] ActorIndex mount_getPilot(const ActorIndex& index) const;
+	[[nodiscard]] std::vector<std::pair<Offset3D, Offset3D>> getDeckOffsets(const ActorIndex&) { return {}; }
 	void mount_do(const ActorIndex& index, const ActorIndex& toMount, const BlockIndex& location, const bool& pilot);
 	void mount_undo(const ActorIndex& index, const BlockIndex& location);
+	// Pilot Item.
+	void pilotItem_set(const ActorIndex& index, const ItemIndex& item);
+	void pilotItem_unset(const ActorIndex& index);
 	// For testing.
 	[[nodiscard]] bool grow_getEventExists(const ActorIndex& index) const;
 	[[nodiscard]] Percent grow_getEventPercent(const ActorIndex& index) const;

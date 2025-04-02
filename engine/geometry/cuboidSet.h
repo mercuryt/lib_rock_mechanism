@@ -37,6 +37,12 @@ protected:
 	// For merging contained cuboids.
 	void mergeInternal(const Cuboid& absorbed, const uint& absorber);
 public:
+	CuboidSet() = default;
+	CuboidSet(const CuboidSet& other) = default;
+	CuboidSet(CuboidSet&& other) noexcept = default;
+	CuboidSet(const Blocks& blocks, const BlockIndex& location, const Facing4& rotation, const std::vector<std::pair<Offset3D, Offset3D>>& offsetPairs);
+	CuboidSet& operator=(CuboidSet&& other) noexcept = default;
+	CuboidSet& operator=(const CuboidSet& other) = default;
 	void add(const Point3D& point);
 	void remove(const Point3D& point);
 	void add(const Blocks& blocks, const BlockIndex& block);
@@ -44,8 +50,10 @@ public:
 	virtual void add(const Cuboid& cuboid);
 	virtual void remove(const Cuboid& cuboid);
 	void clear() { m_cuboids.clear(); }
+	void shift(const Offset3D offset, const DistanceInBlocks& distance);
 	// For merging with other cuboid sets.
 	void addSet(const CuboidSet& other);
+	void rotateAroundPoint(Blocks& blocks, const BlockIndex& point, const Facing4& rotation);
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] uint size() const;
 	[[nodiscard]] bool contains(const Blocks& blocks, const BlockIndex& block) const;
@@ -58,6 +66,8 @@ public:
 	friend class CuboidSetConstIterator;
 	friend struct CuboidSetConstView;
 };
+void to_json(Json& data, const CuboidSet& cuboidSet);
+void from_json(const Json& data, CuboidSet& cuboidSet);
 class CuboidSetWithBoundingBoxAdjacent : public CuboidSet
 {
 	Cuboid m_boundingBox;

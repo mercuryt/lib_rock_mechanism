@@ -69,7 +69,7 @@ public:
 	[[nodiscard]] Mass getMass(const Area& area) const;
 	[[nodiscard]] Quantity getQuantity(const Area& area) const;
 	[[nodiscard]] Mass getSingleUnitMass(const Area& area) const;
-	[[nodiscard]] Volume getVolume(const Area& area) const;
+	[[nodiscard]] FullDisplacement getVolume(const Area& area) const;
 	[[nodiscard]] Facing4 getFacing(const Area& area) const;
 	[[nodiscard]] bool isGeneric(const Area& area) const;
 	[[nodiscard]] std::strong_ordering operator<=>(const ActorOrItemIndex& other) const;

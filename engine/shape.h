@@ -66,6 +66,8 @@ public:
 	[[nodiscard]] static uint32_t getDisplayScale(const ShapeId& id);
 	[[nodiscard]] static bool getIsMultiTile(const ShapeId& id);
 	[[nodiscard]] static bool getIsRadiallySymetrical(const ShapeId& id);
+	[[nodiscard]] static DistanceInBlocks getZSize(const ShapeId& id);
+	[[nodiscard]] static SmallSet<OffsetAndVolume> getPositionsByZLevel(const ShapeId& id, const DistanceInBlocks& zLevel);
 	// If provided name is not found it is decoded into a custom shape.
 	[[nodiscard]] static ShapeId byName(const std::string& name);
 	[[nodiscard]] static bool hasShape(const std::string& name);

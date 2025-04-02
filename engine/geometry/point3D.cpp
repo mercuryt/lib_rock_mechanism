@@ -231,6 +231,13 @@ Point3D Point3D::create(int x, int y, int z)
 {
 	return Point3D(DistanceInBlocks::create(x), DistanceInBlocks::create(y), DistanceInBlocks::create(z));
 }
+Point3D Point3D::create(const Offset3D& offset)
+{
+	assert(offset.x() >= 0);
+	assert(offset.y() >= 0);
+	assert(offset.z() >= 0);
+	return create(offset.x(), offset.y(), offset.z());
+}
 Offset3D::Offset3D(const Offset3D& other) : data(other.data) { }
 Offset3D::Offset3D(const Point3D& point) { data = point.data.cast<int>(); }
 Offset3D& Offset3D::operator=(const Offset3D& other) { data = other.data; return *this; }

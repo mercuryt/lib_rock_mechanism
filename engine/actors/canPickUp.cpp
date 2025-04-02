@@ -221,7 +221,7 @@ ActorOrItemIndex Actors::canPickUp_getPolymorphic(const ActorIndex& index) const
 }
 Quantity Actors::canPickUp_quantityWhichCanBePickedUpUnencombered(const ActorIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType) const
 {
-	return canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(index, ItemType::getVolume(itemType) * MaterialType::getDensity(materialType), Config::minimumHaulSpeedInital);
+	return canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(index, ItemType::getFullDisplacement(itemType) * MaterialType::getDensity(materialType), Config::minimumHaulSpeedInital);
 }
 bool Actors::canPickUp_polymorphic(const ActorIndex& index, ActorOrItemIndex actorOrItemIndex) const
 {

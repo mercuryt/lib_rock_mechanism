@@ -177,7 +177,7 @@ bool WoodCuttingObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor
 {
 	// Pilots and passengers onDeck cannot cut wood.
 	Actors& actors = area.getActors();
-	if(actors.onDeck_getIsOnDeckOf(actor).exists())
+	if(actors.mount_exists(actor))
 		return false;
 	//TODO: check for any axes?
 	return area.m_hasWoodCuttingDesignations.areThereAnyForFaction(actors.getFaction(actor));

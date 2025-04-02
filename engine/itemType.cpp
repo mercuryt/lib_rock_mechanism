@@ -49,7 +49,7 @@ void ItemType::create(ItemTypeParamaters& p)
 	itemTypeData.m_moveType.add(p.moveType);
 	itemTypeData.m_edibleForDrinkersOf.add(p.edibleForDrinkersOf);
 	itemTypeData.m_craftLocationStepTypeCategory.add(p.craftLocationStepTypeCategory);
-	itemTypeData.m_volume.add(p.volume);
+	itemTypeData.m_fullDisplacement.add(p.volume);
 	itemTypeData.m_internalVolume.add(p.internalVolume);
 	itemTypeData.m_value.add(p.value);
 	itemTypeData.m_installable.add(p.installable);
@@ -66,6 +66,7 @@ void ItemType::create(ItemTypeParamaters& p)
 	itemTypeData.m_wearable_percentCoverage.add(p.wearable_percentCoverage);
 	itemTypeData.m_wearable_rigid.add(p.wearable_rigid);
 	itemTypeData.m_wearable_bodyPartsCovered.add(p.wearable_bodyPartsCovered);
+	itemTypeData.m_decks.add(p.decks);
 }
 std::vector<MaterialCategoryTypeId>& ItemType::getMaterialTypeCategories(const ItemTypeId& id) { return itemTypeData.m_materialTypeCategories[id]; }
 std::string& ItemType::getName(const ItemTypeId& id) { return itemTypeData.m_name[id]; }
@@ -74,8 +75,8 @@ ShapeId ItemType::getShape(const ItemTypeId& id) { return itemTypeData.m_shape[i
 MoveTypeId ItemType::getMoveType(const ItemTypeId& id) { return itemTypeData.m_moveType[id]; }
 FluidTypeId ItemType::getEdibleForDrinkersOf(const ItemTypeId& id) { return itemTypeData.m_edibleForDrinkersOf[id]; }
 CraftStepTypeCategoryId ItemType::getCraftLocationStepTypeCategory(const ItemTypeId& id) { return itemTypeData.m_craftLocationStepTypeCategory[id]; }
-Volume ItemType::getVolume(const ItemTypeId& id) { return itemTypeData.m_volume[id]; }
-Volume ItemType::getInternalVolume(const ItemTypeId& id) { return itemTypeData.m_internalVolume[id]; }
+FullDisplacement ItemType::getFullDisplacement(const ItemTypeId& id) { return itemTypeData.m_fullDisplacement[id]; }
+FullDisplacement ItemType::getInternalVolume(const ItemTypeId& id) { return itemTypeData.m_internalVolume[id]; }
 uint32_t ItemType::getValue(const ItemTypeId& id) { return itemTypeData.m_value[id]; }
 bool ItemType::getInstallable(const ItemTypeId& id) { return itemTypeData.m_installable[id]; }
 bool ItemType::getGeneric(const ItemTypeId& id) { return itemTypeData.m_generic[id]; }
@@ -94,3 +95,4 @@ Percent ItemType::getWearable_percentCoverage(const ItemTypeId& id) { return ite
 bool ItemType::getWearable_rigid(const ItemTypeId& id) { return itemTypeData.m_wearable_rigid[id]; }
 std::vector<BodyPartTypeId>& ItemType::getWearable_bodyPartsCovered(const ItemTypeId& id) { return itemTypeData.m_wearable_bodyPartsCovered[id]; }
 bool ItemType::getIsWearable(const ItemTypeId& id) { return !itemTypeData.m_wearable_bodyPartsCovered[id].empty(); }
+const std::vector<std::pair<Offset3D, Offset3D>>& ItemType::getDecks(const ItemTypeId& id) { return itemTypeData.m_decks[id]; }

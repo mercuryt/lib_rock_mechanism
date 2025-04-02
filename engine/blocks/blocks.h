@@ -153,7 +153,8 @@ public:
 	[[nodiscard]] BlockIndex offset(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const;
 	[[nodiscard]] BlockIndex offset(const BlockIndex& index, const Offset3D& offset) const;
 	[[nodiscard]] BlockIndex offsetNotNull(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const;
-	[[nodiscard]] BlockIndex offsetRotated(const BlockIndex& index, const Offset3D& offset, const Facing4 previousFacing, const Facing4 newFacing) const;
+	[[nodiscard]] BlockIndex offsetRotated(const BlockIndex& index, const Offset3D& offset, const Facing4& previousFacing, const Facing4& newFacing) const;
+	[[nodiscard]] BlockIndex offsetRotated(const BlockIndex& index, const Offset3D& offset, const Facing4& facing) const;
 	[[nodiscard]] BlockIndex indexAdjacentToAtCount(const BlockIndex& index, const AdjacentIndex& adjacentCount) const;
 	[[nodiscard]] Offset3D relativeOffsetTo(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] bool canSeeThrough(const BlockIndex& index) const;
@@ -305,13 +306,16 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	[[nodiscard]] bool fluid_typeCanEnterCurrently(const BlockIndex& index, const FluidTypeId& fluidType) const;
 	[[nodiscard]] bool fluid_any(const BlockIndex& index) const;
 	[[nodiscard]] bool fluid_contains(const BlockIndex& index, const FluidTypeId& fluidType) const;
-	[[nodiscard]] std::vector<FluidData>& fluid_getAll(const BlockIndex& index);
+	[[nodiscard]] const std::vector<FluidData>& fluid_getAll(const BlockIndex& index) const;
 	[[nodiscard]] std::vector<FluidData>& fluid_getAllSortedByDensityAscending(const BlockIndex& index);
 	[[nodiscard]] CollisionVolume fluid_getTotalVolume(const BlockIndex& index) const;
 	[[nodiscard]] FluidTypeId fluid_getMist(const BlockIndex& index) const;
 	[[nodiscard]] std::vector<FluidData>::iterator fluid_getDataIterator(const BlockIndex& index, const FluidTypeId& fluidType);
 	[[nodiscard]] const FluidData* fluid_getData(const BlockIndex& index, const FluidTypeId& fluidType) const;
 	[[nodiscard]] FluidData* fluid_getData(const BlockIndex& index, const FluidTypeId& fluidType);
+	// Floating
+	void floating_maybeSink(const BlockIndex& index);
+	void floating_maybeFloatUp(const BlockIndex& index);
 	// -Fire
 	void fire_setPointer(const BlockIndex& index, SmallMapStable<MaterialTypeId, Fire>* pointer);
 	void fire_clearPointer(const BlockIndex& index);
@@ -332,7 +336,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	[[nodiscard]] bool actor_canStandIn(const BlockIndex& index) const;
 	[[nodiscard]] bool actor_contains(const BlockIndex& index, const ActorIndex& actor) const;
 	[[nodiscard]] bool actor_empty(const BlockIndex& index) const;
-	[[nodiscard]] Volume actor_volumeOf(const BlockIndex& index, const ActorIndex& actor) const;
+	[[nodiscard]] FullDisplacement actor_volumeOf(const BlockIndex& index, const ActorIndex& actor) const;
 	[[nodiscard]] ActorIndicesForBlock& actor_getAll(const BlockIndex& index);
 	[[nodiscard]] const ActorIndicesForBlock& actor_getAll(const BlockIndex& index) const;
 	// -Items

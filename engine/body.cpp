@@ -83,10 +83,10 @@ Body::Body(const Json& data, DeserializationMemo& deserializationMemo, const Act
 	m_woundsCloseEvent(deserializationMemo.m_simulation.m_eventSchedule),
 	m_actor(a),
 	m_materialType(MaterialType::byName(data["materialType"].get<std::string>())),
-	m_totalVolume(data["totalVolume"].get<Volume>()),
+	m_totalVolume(data["totalVolume"].get<FullDisplacement>()),
 	m_impairMovePercent(data.contains("impairMovePercent") ? data["impairMovePercent"].get<Percent>() : Percent::create(0)),
 	m_impairManipulationPercent(data.contains("impairManipulationPercent") ? data["impairManipulationPercent"].get<Percent>() : Percent::create(0)),
-	m_volumeOfBlood(data["volumeOfBlood"].get<Volume>()), m_isBleeding(data["isBleeding"].get<bool>())
+	m_volumeOfBlood(data["volumeOfBlood"].get<FullDisplacement>()), m_isBleeding(data["isBleeding"].get<bool>())
 {
 	for(const Json& bodyPart : data["bodyParts"])
 		m_bodyParts.emplace_back(bodyPart, deserializationMemo);
@@ -128,7 +128,7 @@ BodyPart& Body::pickABodyPartByVolume(Simulation& simulation)
 	uint32_t roll = random.getInRange(0u, m_totalVolume.get());
 	for(BodyPart& bodyPart : m_bodyParts)
 	{
-		Volume volume = BodyPartType::getVolume(bodyPart.bodyPartType);
+		FullDisplacement volume = BodyPartType::getVolume(bodyPart.bodyPartType);
 		if(volume >= roll)
 			return bodyPart;
 		else
@@ -347,33 +347,33 @@ Step Body::getStepsTillBleedToDeath() const
 }
 bool Body::piercesSkin(Hit hit, const BodyPart& bodyPart) const
 {
-	Volume bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
+	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
 	uint32_t pierceScore = (uint32_t)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceSkinModifier;
 	uint32_t defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
 	return pierceScore > defenseScore;
 }
 bool Body::piercesFat(Hit hit, const BodyPart& bodyPart) const
 {
-	Volume bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
+	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
 	uint32_t pierceScore = (uint32_t)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceFatModifier;
 	uint32_t defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
 	return pierceScore > defenseScore;
 }
 bool Body::piercesMuscle(Hit hit, const BodyPart& bodyPart) const
 {
-	Volume bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
+	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
 	uint32_t pierceScore = (uint32_t)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceMuscelModifier;
 	uint32_t defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
 	return pierceScore > defenseScore;
 }
 bool Body::piercesBone(Hit hit, const BodyPart& bodyPart) const
 {
-	Volume bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
+	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
 	uint32_t pierceScore = (uint32_t)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceBoneModifier;
 	uint32_t defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
 	return pierceScore > defenseScore;
 }
-Volume Body::healthyBloodVolume() const
+FullDisplacement Body::healthyBloodVolume() const
 {
 	return m_totalVolume * Config::ratioOfTotalBodyVolumeWhichIsBlood;
 }
@@ -385,9 +385,9 @@ std::vector<Attack> Body::getMeleeAttacks() const
 			output.emplace_back(attackType, materialType, ItemIndex::null());
 	return output;
 }
-Volume Body::getVolume(Area& area) const
+FullDisplacement Body::getVolume(Area& area) const
 {
-	return Volume::create(util::scaleByPercent(m_totalVolume.get(), area.getActors().getPercentGrown(m_actor)));
+	return FullDisplacement::create(util::scaleByPercent(m_totalVolume.get(), area.getActors().getPercentGrown(m_actor)));
 }
 bool Body::isInjured() const
 {

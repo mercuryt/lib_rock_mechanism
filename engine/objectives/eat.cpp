@@ -121,7 +121,7 @@ void EatEvent::eatFruitFromPlant(Area &area, const PlantIndex &plant)
 	MustEat &mustEat = *actors.m_mustEat[m_actor.getIndex(actors.m_referenceData)].get();
 	Mass massEaten = std::min(mustEat.getMassFoodRequested(), plants.getFruitMass(plant));
 	static MaterialTypeId fruitType = MaterialType::byName("fruit");
-	Mass unitMass = ItemType::getVolume(PlantSpecies::getFruitItemType(plants.getSpecies(plant))) * MaterialType::getDensity(fruitType);
+	Mass unitMass = ItemType::getFullDisplacement(PlantSpecies::getFruitItemType(plants.getSpecies(plant))) * MaterialType::getDensity(fruitType);
 	Quantity quantityEaten = Quantity::create((massEaten / unitMass).get());
 	assert(quantityEaten != 0);
 	mustEat.eat(area, unitMass * quantityEaten);

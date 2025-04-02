@@ -118,7 +118,7 @@ public:
 	[[nodiscard]] ItemIndex getToolToHaulPolymorphic(const Area& area, const FactionId& faction, const ActorOrItemIndex& hasShape) const;
 	[[nodiscard]] ItemIndex getToolToHaulItem(const Area& area, const FactionId& faction, const ItemIndex& item) const;
 	[[nodiscard]] ItemIndex getToolToHaulActor(const Area& area, const FactionId& faction, const ActorIndex& actor) const;
-	[[nodiscard]] ItemIndex getToolToHaulVolume(const Area& area, const FactionId& faction, const Volume& volume) const;
+	[[nodiscard]] ItemIndex getToolToHaulVolume(const Area& area, const FactionId& faction, const FullDisplacement& volume) const;
 	[[nodiscard]] ActorIndex getActorToYokeForHaulToolToMoveCargoWithMassWithMinimumSpeed(const Area& area, const FactionId& faction, const ItemIndex& haulTool, const Mass& cargoMass, const Speed& minimumHaulSpeed) const;
 	[[nodiscard]] ActorIndex getPannierBearerToHaulCargoWithMassWithMinimumSpeed(const Area& area, const FactionId& faction, const ActorOrItemIndex& hasShape, const Speed& minimumHaulSpeed) const;
 	[[nodiscard]] ItemIndex getPanniersForActorToHaul(const Area& area, const FactionId& faction, const ActorIndex& actor, const ActorOrItemIndex& toHaul) const;

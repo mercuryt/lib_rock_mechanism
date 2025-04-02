@@ -97,6 +97,8 @@ void Portables<Derived, Index, ReferenceIndex>::forEachDataPortables(Action&& ac
 	action(m_moveType);
 	action(m_onDeck);
 	action(m_isOnDeckOf);
+	action(m_hasDecks);
+	action(m_floating);
 }
 template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::create(const Index& index, const MoveTypeId& moveType, const ShapeId& shape, const FactionId& faction, bool isStatic, const Quantity& quantity)
@@ -111,8 +113,40 @@ void Portables<Derived, Index, ReferenceIndex>::create(const Index& index, const
 	assert(m_carrier[index].empty());
 	assert(m_onDeck[index].empty());
 	assert(m_isOnDeckOf[index].empty());
+	assert(m_hasDecks[index].empty());
+	assert(!m_floating[index]);
 	// Corresponding remove in Actors::destroy and Items::destroy.
 	m_referenceData.add(index);
+}
+template<class Derived, class Index, class ReferenceIndex>
+void Portables<Derived, Index, ReferenceIndex>::onRemove(const Index& index)
+{
+	if(m_hasDecks[index].exists())
+	{
+		Area& area = getArea();
+		area.m_decks.unregisterDecks(area, m_hasDecks[index]);
+		m_hasDecks[index].clear();
+	}
+}
+template<class Derived, class Index, class ReferenceIndex>
+void Portables<Derived, Index, ReferenceIndex>::setFloating(const Index& index)
+{
+	m_floating.set(index);
+	static const MoveTypeId& floatingMoveType = MoveType::byName("floating");
+	setMoveType(index, floatingMoveType);
+}
+template<class Derived, class Index, class ReferenceIndex>
+void Portables<Derived, Index, ReferenceIndex>::unsetFloating(const Index& index)
+{
+	m_floating.unset(index);
+	Derived::resetMoveType(index);
+}
+template<class Derived, class Index, class ReferenceIndex>
+void Portables<Derived, Index, ReferenceIndex>::setMoveType(const Index& index, const MoveTypeId& moveType)
+{
+	assert(m_moveType[index] != moveType);
+	m_moveType[index] = moveType;
+	maybeFall(index);
 }
 template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::log(const Index& index) const
@@ -306,6 +340,74 @@ SmallSet<BlockIndex> Portables<Derived, Index, ReferenceIndex>::getBlocksCombine
 	return output;
 }
 template<class Derived, class Index, class ReferenceIndex>
+DistanceInBlocks Portables<Derived, Index, ReferenceIndex>::floatsInAtDepth(const Index& index, const FluidTypeId& fluidType) const
+{
+	const Mass mass = static_cast<const Derived*>(this)->getMass(index);
+	CollisionVolume displacement = CollisionVolume::create(0);
+	DistanceInBlocks output = DistanceInBlocks::create(0);
+	const Density& fluidDensity = FluidType::getDensity(fluidType);
+	const ShapeId& shape = HasShapes<Derived, Index>::getShape(index);
+	DistanceInBlocks shapeHeight = Shape::getZSize(shape);
+	SmallSet<Offset3D> previousLevel;
+	SmallSet<Offset3D> nextLevel;
+	while(fluidDensity < mass / displacement.toVolume())
+	{
+		auto thisLevel = Shape::getPositionsByZLevel(shape, output);
+		if(thisLevel.size() < previousLevel.size())
+		{
+			// Hull ends here.
+			return DistanceInBlocks::null();
+		}
+		// Anything directly above a recorded block is assumed to be eiter part of or contained within the hull.
+		displacement += Config::maxBlockVolume * nextLevel.size();
+		// Use previous level to ensure we don't record the same block twice.
+		previousLevel.swap(nextLevel);
+		nextLevel.clear();
+		for(const OffsetAndVolume& offsetAndVolume : thisLevel)
+		{
+			if(nextLevel.contains(offsetAndVolume.offset))
+				continue;
+			Offset3D above = offsetAndVolume.offset;
+			++above.z();
+			nextLevel.insert(above);
+			displacement += offsetAndVolume.volume;
+		}
+		++output;
+		if(shapeHeight < output)
+			return DistanceInBlocks::null();
+	}
+	return output;
+}
+template<class Derived, class Index, class ReferenceIndex>
+bool Portables<Derived, Index, ReferenceIndex>::canFloatAt(const Index& index, const BlockIndex& block) const
+{
+	const Blocks& blocks = getArea().getBlocks();
+	for(const FluidData& fluidData : blocks.fluid_getAll(block))
+	{
+		if(canFloatAtInFluidType(index, block, fluidData.type))
+			return true;
+	}
+	return false;
+}
+template<class Derived, class Index, class ReferenceIndex>
+bool Portables<Derived, Index, ReferenceIndex>::canFloatAtInFluidType(const Index& index, const BlockIndex& block, const FluidTypeId& fluidType) const
+{
+	const DistanceInBlocks& floatDepth = floatsInAtDepth(index, fluidType);
+	if(floatDepth.empty())
+		// Cannot float in this fluid at any depth.
+		return false;
+	BlockIndex current = block;
+	const Blocks& blocks = getArea().getBlocks();
+	auto& occupied = HasShapes<Derived, Index>::getBlocks(index);
+	for(uint i = 0; floatDepth > i; ++i)
+	{
+		if(!blocks.fluid_contains(current, fluidType) && !occupied.contains(current))
+			return false;
+		current = blocks.getBlockAbove(current);
+	}
+	return true;
+}
+template<class Derived, class Index, class ReferenceIndex>
 Speed Portables<Derived, Index, ReferenceIndex>::lead_getSpeed(const Index& index)
 {
 	assert(m_isActors);
@@ -365,6 +467,13 @@ void Portables<Derived, Index, ReferenceIndex>::unsetCarrier(const Index& index,
 	m_carrier[index].clear();
 }
 template<class Derived, class Index, class ReferenceIndex>
+void Portables<Derived, Index, ReferenceIndex>::maybeFall(const Index& index)
+{
+	Blocks& blocks = getArea().getBlocks();
+	if(!blocks.shape_moveTypeCanEnter(getLocation(index), getMoveType(index)))
+		fall(index);
+}
+template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::fall(const Index& index)
 {
 	Blocks& blocks = getArea().getBlocks();
@@ -378,7 +487,7 @@ void Portables<Derived, Index, ReferenceIndex>::fall(const Index& index)
 	while(true)
 	{
 		next = blocks.getBlockBelow(location);
-		if(blocks.shape_canFit(next, shape, facing))
+		if(blocks.shape_canFit(next, shape, facing) && !canFloatAt(index, location))
 		{
 			location = next;
 			++distance;
@@ -402,27 +511,78 @@ Mass Portables<Derived, Index, ReferenceIndex>::onDeck_getMass(const Index& inde
 	return output;
 }
 template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index, const Facing4& previousFacing, const SmallMap<ActorOrItemIndex, Offset3D>& onDeckWithOffsets)
+void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index, const BlockIndex& previousLocation, const Facing4& previousFacing, const SmallMap<ActorOrItemIndex, Offset3D>& onDeckWithOffsets)
 {
-	const Facing4& facing = getFacing(index);
 	Area& area = getArea();
 	Blocks& blocks = area.getBlocks();
-	for(const auto& [onDeck, offset] : onDeckWithOffsets)
+	const BlockIndex& newLocation = getLocation(index);
+	const Facing4& newFacing = getFacing(index);
+	// Move portables which are on decks of this portable.
+	for(const auto& [onDeck, onDeckOffset] : onDeckWithOffsets)
 	{
-			if(onDeck.isActor())
+		if(onDeck.isActor())
+		{
+			Actors& actors = getActors();
+			const ActorIndex& actor = onDeck.getActor();
+			const BlockIndex& actorLocation = blocks.offsetRotated(newLocation, onDeckOffset, previousFacing, newFacing);
+			auto& path = actors.move_getPath(actor);
+			if(!path.empty())
 			{
-				Actors& actors = getActors();
-				const ActorIndex& actor = onDeck.getActor();
-				const BlockIndex& location = blocks.offsetRotated(getLocation(index), offset, previousFacing, facing);
-				actors.setLocationAndFacingNoCheckMoveType(actor, location, facing);
+				uint i = 0;
+				for(const BlockIndex& block : path)
+				{
+					Offset3D pathOffset = blocks.relativeOffsetTo(block, previousLocation);
+					path[i] = blocks.offsetRotated(newLocation, pathOffset, previousFacing, newFacing);
+					++i;
+				}
 			}
-			else
+			const BlockIndex& destination = actors.move_getDestination(actor);
+			if(destination.exists())
 			{
-				Items& items = getItems();
-				const ItemIndex& item = onDeck.getItem();
-				const BlockIndex& location = blocks.offsetRotated(getLocation(index), offset, previousFacing, facing);
-				items.setLocationAndFacing(item, location, facing);
+				Offset3D destinationOffset = blocks.relativeOffsetTo(destination, previousLocation);
+				actors.move_updateDestination(actor, blocks.offsetRotated(newLocation, destinationOffset, previousFacing, newFacing));
 			}
+			actors.setLocationAndFacingNoCheckMoveType(actor, actorLocation, newFacing);
+		}
+		else
+		{
+			Items& items = getItems();
+			const ItemIndex& item = onDeck.getItem();
+			const BlockIndex& itemLocation = blocks.offsetRotated(newLocation, onDeckOffset, previousFacing, newFacing);
+			items.setLocationAndFacing(item, itemLocation, newFacing);
+		}
+	}
+	// TODO: move projects on decks.
+	// Move decks attached to this portable.
+	const DeckId& deckId = m_hasDecks[index];
+	if(deckId.exists())
+	{
+		assert(previousLocation.exists());
+		Offset3D offset = blocks.relativeOffsetTo(getLocation(index), previousLocation);
+		area.m_decks.shift(area, deckId, offset, DistanceInBlocks::create(1), previousLocation, previousFacing, newFacing);
+	}
+	else
+	{
+		const std::vector<std::pair<Offset3D, Offset3D>>& deckOffsets = static_cast<Derived*>(this)->getDeckOffsets(index);
+		if(!deckOffsets.empty())
+		{
+			// Create decks for newly added.
+			CuboidSet decks(blocks, newLocation, newFacing, deckOffsets);
+			m_hasDecks[index] = area.m_decks.registerDecks(area, decks);
+		}
+	}
+	// Update which deck this portable is on.
+	const DeckId& onDeckOf = area.m_decks.getForBlock(getLocation(index));
+	const DeckId onDeckOfPrevious = previousLocation.exists() ? area.m_decks.getForBlock(previousLocation) : DeckId::null();
+	if(onDeckOf != onDeckOfPrevious)
+	{
+		if(onDeckOf == DeckId::null())
+			onDeck_clear(index);
+		else
+		{
+			const ActorOrItemIndex& onDeckOfIndex = onDeck_getIsOnDeckOf(index);
+			onDeck_set(index, onDeckOfIndex);
+		}
 	}
 }
 template<class Derived, class Index, class ReferenceIndex>
@@ -628,4 +788,38 @@ void Portables<Derived, Index, ReferenceIndex>::onDestroy_merge(const Index& ind
 	if(m_destroy[index] == nullptr)
 		m_destroy[index] = std::make_unique<OnDestroy>();
 	m_destroy[index]->merge(other);
+}
+template<class Derived, class Index, class ReferenceIndex>
+DeckId Portables<Derived, Index, ReferenceIndex>::onDeck_createDecks(const Index& index, const CuboidSet& cuboidSet)
+{
+	DeckId output =  getArea().m_decks.registerDecks(cuboidSet);
+	m_hasDecks[index] = output;
+	return output;
+}
+template<class Derived, class Index, class ReferenceIndex>
+void Portables<Derived, Index, ReferenceIndex>::onDeck_destroyDecks(const Index& index)
+{
+	assert(m_hasDecks[index].exists());
+	getArea().m_decks.unregisterDeck(index);
+}
+template<class Derived, class Index, class ReferenceIndex>
+void Portables<Derived, Index, ReferenceIndex>::onDeck_clear(const Index& index)
+{
+	const ActorOrItemIndex& actorOrItemIndex = m_isOnDeckOf[index];
+	if(actorOrItemIndex.isActor())
+		getActors().onDeck_removeFromOnDeck(actorOrItemIndex.getActor(), getActorOrItemIndex(index));
+	else
+		getItems().onDeck_removeFromOnDeck(actorOrItemIndex.getItem(), getActorOrItemIndex(index));
+	m_isOnDeckOf[index].clear();
+}
+template<class Derived, class Index, class ReferenceIndex>
+void Portables<Derived, Index, ReferenceIndex>::onDeck_set(const Index& index, const ActorOrItemIndex& onDeckOf)
+{
+	if(m_isOnDeckOf[index].exists())
+		onDeck_clear(index);
+	m_isOnDeckOf[index] = onDeckOf;
+	if(onDeckOf.isActor())
+		getActors().onDeck_insertIntoOnDeck(onDeckOf.getActor(), getActorOrItemIndex(index));
+	else
+		getItems().onDeck_insertIntoOnDeck(onDeckOf.getItem(), getActorOrItemIndex(index));
 }

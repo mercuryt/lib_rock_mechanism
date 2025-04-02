@@ -27,6 +27,8 @@ public:
 	void setFrom(const Blocks& blocks, const BlockIndex& a, const BlockIndex& b);
 	void clear();
 	void shift(const Facing6& direction, const DistanceInBlocks& distance);
+	void shift(const Offset3D& offset, const DistanceInBlocks& distance);
+	void rotateAroundPoint(Blocks& blocks, const BlockIndex& point, const Facing4& rotation);
 	void setMaxZ(const DistanceInBlocks& distance);
 	void maybeExpand(const Cuboid& other);
 	void maybeExpand(const Point3D& point);

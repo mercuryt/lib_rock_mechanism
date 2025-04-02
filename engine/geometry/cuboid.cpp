@@ -117,9 +117,23 @@ void Cuboid::shift(const Facing6& direction, const DistanceInBlocks& distance)
 {
 	// TODO: make offsetsListDirectlyAdjacent return an Offset3D.
 	Offset3D offset = adjacentOffsets::direct[(uint)direction];
-	offset *= distance;
-	m_highest += offset;
-	m_lowest += offset;
+	shift(offset, distance);
+}
+void Cuboid::shift(const Offset3D& offset, const DistanceInBlocks& distance)
+{
+	auto offsetModified = offset;
+	offsetModified *= distance;
+	m_highest += offsetModified;
+	m_lowest += offsetModified;
+}
+void Cuboid::rotateAroundPoint(Blocks& blocks, const BlockIndex& point, const Facing4& facing)
+{
+	Point3D pointCoordinates = blocks.getCoordinates(point);
+	Offset3D lowOffset = pointCoordinates - m_lowest;
+	Offset3D highOffset = pointCoordinates - m_highest;
+	const BlockIndex& newLow = blocks.offsetRotated(point, lowOffset, facing);
+	const BlockIndex& newHigh = blocks.offsetRotated(point, highOffset, facing);
+	setFrom(blocks, newHigh, newLow);
 }
 void Cuboid::setMaxZ(const DistanceInBlocks& distance)
 {

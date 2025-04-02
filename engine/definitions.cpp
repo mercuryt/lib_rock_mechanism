@@ -69,6 +69,7 @@ void definitions::loadMoveTypes()
 			.fly=data["fly"].get<bool>(),
 			.breathless=data.contains("breathless"),
 			.onlyBreathsFluids=data.contains("onlyBreathsFluids"),
+			.floating=(data.contains("floating") && data["floating"])
 		};
 		for(auto& pair : data["swim"].items())
 			p.swim.insert(FluidType::byName(pair.key()), pair.value().get<CollisionVolume>());
@@ -294,13 +295,15 @@ void definitions::loadItemTypes()
 			.name=(data["name"].get<std::string>()),
 			.shape=Shape::byName((data["shape"].get<std::string>())),
 			.moveType=MoveType::byName(data.contains("moveType") ? (data["moveType"].get<std::string>()) : "none"),
-			.volume=data["volume"].get<Volume>(),
-			.internalVolume=data.contains("internalVolume") ? data["internalVolume"].get<Volume>() : Volume::create(0) ,
+			.volume=data["volume"].get<FullDisplacement>(),
+			.internalVolume=data.contains("internalVolume") ? data["internalVolume"].get<FullDisplacement>() : FullDisplacement::create(0) ,
 			.value=data["value"].get<uint32_t>(),
 			.installable=data.contains("installable"),
 			.generic=data.contains("generic") && data["generic"].get<bool>(),
 			.canHoldFluids=data.contains("canHoldFluids"),
 		};
+		if(data.contains("decks"))
+			data["decks"].get_to(p.decks);
 		if(data.contains("edibleForDrinkersOf"))
 			p.edibleForDrinkersOf = FluidType::byName(data["edibleForDrinkersOf"].get<std::string>());
 		if(data.contains("wearableData"))
@@ -390,7 +393,7 @@ void definitions::loadPlantSpecies()
 			.adultMass=data["adultMass"].get<Mass>(),
 			.maximumGrowingTemperature=data["maximumGrowingTemperature"].get<Temperature>(),
 			.minimumGrowingTemperature=data["minimumGrowingTemperature"].get<Temperature>(),
-			.volumeFluidConsumed=data["volumeFluidConsumed"].get<Volume>(),
+			.volumeFluidConsumed=data["volumeFluidConsumed"].get<FullDisplacement>(),
 			.dayOfYearForSowStart=data["dayOfYearForSowStart"].get<uint16_t>(),
 			.dayOfYearForSowEnd=data["dayOfYearForSowEnd"].get<uint16_t>(),
 			.maxWildGrowth=data.contains("maxWildGrowth") ? data["maxWildGrowth"].get<uint8_t>() : (uint8_t)0,
@@ -420,7 +423,7 @@ void definitions::loadBodyPartTypes()
 		Json data = tryParse(file.path());
 		BodyPartTypeParamaters p{
 			.name=(data["name"].get<std::string>()),
-			.volume=data["volume"].get<Volume>(),
+			.volume=data["volume"].get<FullDisplacement>(),
 			.doesLocamotion=data["doesLocamotion"].get<bool>(),
 			.doesManipulation=data["doesManipulation"].get<bool>(),
 			.vital=data.contains("vital")? data["vital"].get<bool>() : false,

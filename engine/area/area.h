@@ -24,6 +24,7 @@
 #include "../farmFields.h"
 #include "../stockpile.h"
 #include "../actors/grow.h"
+#include "../deck.h"
 #include "rain.h"
 #include "hasFluidGroups.h"
 #include "hasSleepingSpots.h"
@@ -100,6 +101,7 @@ public:
 	AreaHasVisionCuboids m_visionCuboids;
 	AreaHasExteriorPortals m_exteriorPortals;
 	BlockIndices m_caveInCheck;
+	AreaHasDecks m_decks;
 	// uint32_t is fall energy.
 	std::vector<std::tuple<BlockIndices, DistanceInBlocks, uint32_t>> m_caveInData;
 	std::string m_name;
