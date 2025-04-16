@@ -44,7 +44,7 @@ public:
 			{"dwarf rabbit", 0.01},
 			{"red fox", 0.01},
 			{"red deer", 0.1},
-			{"jackstock donkey", 0.1},
+			{"horse", 0.1},
 			{"black bear", 0.1},
 			{"golden eagle", 0.1},
 		};
@@ -64,7 +64,7 @@ public:
 			{"dwarf rabbit", 0.01},
 			{"red fox", 0.01},
 			{"red deer", 0.1},
-			{"jackstock donkey", 0.1},
+			{"horse", 0.1},
 			{"black bear", 0.1},
 			{"golden eagle", 0.1},
 		};

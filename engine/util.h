@@ -194,4 +194,15 @@ namespace util
 		ss << eigenArrayOrMatrix;
 		return ss.str();
 	}
+	inline Facing4 rotateFacingByDifference(const Facing4& facing, const Facing4& previousFacing, const Facing4& newFacing)
+	{
+		int difference = (int)newFacing - (int)previousFacing;
+		if(difference < 0)
+			difference += 4;
+		int output = (int)facing + difference;
+		if(output > 3)
+			output -= 4;
+		assert(output >= 0 && output < 4);
+		return (Facing4)output;
+	}
 }

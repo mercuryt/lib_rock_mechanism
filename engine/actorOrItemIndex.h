@@ -39,8 +39,8 @@ public:
 	void unfollow(Area& area) const;
 	void move_updateIndividualSpeed(Area& area) const;
 	std::string toString() const;
-	[[nodiscard]] ActorIndex getActor() const { return ActorIndex::create(m_index.get()); }
-	[[nodiscard]] ItemIndex getItem() const { return ItemIndex::create(m_index.get()); }
+	[[nodiscard]] ActorIndex getActor() const { assert(isActor()); return ActorIndex::create(m_index.get()); }
+	[[nodiscard]] ItemIndex getItem() const { assert(isItem()); return ItemIndex::create(m_index.get()); }
 	[[nodiscard]] ActorOrItemReference toReference(Area& area) const;
 	[[nodiscard]] bool exists() const { return m_index.exists(); }
 	[[nodiscard]] bool empty() const { return m_index.empty(); }
@@ -57,12 +57,13 @@ public:
 	[[nodiscard]] bool canEnterCurrentlyFromWithOccupied(Area& area, const BlockIndex& destination, const BlockIndex& origin, const OccupiedBlocksForHasShape& occupied) const;
 
 	[[nodiscard]] BlockIndex getLocation(const Area& area) const;
-	[[nodiscard]] const OccupiedBlocksForHasShape& getBlocks(Area& area) const;
+	[[nodiscard]] const OccupiedBlocksForHasShape& getBlocks(const Area& area) const;
 	[[nodiscard]] BlockIndices getAdjacentBlocks(Area& area) const;
 	[[nodiscard]] bool isAdjacent(const Area& area, const ActorOrItemIndex& other) const;
 	[[nodiscard]] bool isAdjacentToActor(const Area& area, const ActorIndex& other) const;
 	[[nodiscard]] bool isAdjacentToItem(const Area& area, const ItemIndex& item) const;
 	[[nodiscard]] bool isAdjacentToLocation(const Area& area, const BlockIndex& location) const;
+	[[nodiscard]] bool occupiesBlock(const Area& area, const BlockIndex& location) const;
 
 	[[nodiscard]] ShapeId getShape(const Area& area) const;
 	[[nodiscard]] MoveTypeId getMoveType(const Area& area) const;

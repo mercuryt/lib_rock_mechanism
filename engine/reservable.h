@@ -19,12 +19,16 @@
 struct Faction;
 class Reservable;
 class Area;
+class Blocks;
 struct DeserializationMemo;
 // Reservable holds all the data during runtime, but CanReserve is responsible for (de)serialization.
 class CanReserve final
 {
+	// TODO: Store reservables in two maps, one for blocks and one for ActorOrItem.
 	FactionId m_faction;
+	// TODO: make this a SmallSet
 	std::vector<Reservable*> m_reservables;
+	SmallMap<BlockIndex, Reservable*> m_blocks;
 	friend class Reservable;
 public:
 	CanReserve(FactionId f) : m_faction(f) { }
@@ -32,12 +36,19 @@ public:
 	Json toJson() const;
 	void deleteAllWithoutCallback();
 	void setFaction(FactionId faction);
+	// Returns true if all new positions could be reserved.
+	[[nodiscard]] bool translateAndReservePositions(Blocks& blocks, SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>>&& previouslyReserved, const BlockIndex& previousLocation, const BlockIndex& newLocation, const Facing4& previousFacing, const Facing4& newFacing);
+	void recordReservedBlock(const BlockIndex& block, Reservable* reservable);
+	void eraseReservedBlock(const BlockIndex& block);
+	void deleteAllBlockReservationsWithoutCallback();
+	template<typename Condition>
+	[[nodiscard]] SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>> unreserveAndReturnBlocksAndCallbacksWithCondition(Condition&& condition);
 	[[nodiscard]] bool hasReservationWith(Reservable& reservable) const;
 	[[nodiscard]] bool hasReservations() const;
 	~CanReserve();
 	CanReserve(CanReserve& reservable) = delete;
 };
-// TODO: A specalized reservable for block without count ( to save RAM ).
+// TODO: A specalized reservable for block without count.
 class Reservable final
 {
 	SmallMap<CanReserve*, Quantity> m_canReserves;
@@ -47,7 +58,7 @@ class Reservable final
 	void eraseReservationFor(CanReserve& canReserve);
 public:
 	Reservable(Quantity mr) : m_maxReservations(mr) {}
-	void reserveFor(CanReserve& canReserve, Quantity quantity = Quantity::create(1), std::unique_ptr<DishonorCallback> dishonorCallback = nullptr); 
+	void reserveFor(CanReserve& canReserve, Quantity quantity = Quantity::create(1), std::unique_ptr<DishonorCallback> dishonorCallback = nullptr);
 	void clearReservationFor(CanReserve& canReserve, Quantity quantity = Quantity::create(1));
 	void clearReservationsFor(const FactionId faction);
 	void maybeClearReservationFor(CanReserve& canReserve, Quantity quantity = Quantity::create(1));
@@ -57,6 +68,7 @@ public:
 	void clearAll();
 	void updateReservedCount(FactionId faction, Quantity count);
 	void merge(Reservable& reservable);
+	[[nodiscard]] std::unique_ptr<DishonorCallback> unreserveAndReturnCallback(CanReserve& canReserve);
 	[[nodiscard]] bool isFullyReserved(const FactionId faction) const;
 	[[nodiscard]] bool hasAnyReservations() const;
 	[[nodiscard]] bool hasAnyReservationsWith(const FactionId faction) const;

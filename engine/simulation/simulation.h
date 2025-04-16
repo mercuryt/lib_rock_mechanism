@@ -85,6 +85,7 @@ public:
 	[[maybe_unused]] void fastForwardUntillActorIsAdjacentToPolymorphic(Area& area, const ActorIndex& actor, const ActorOrItemIndex& target);
 	[[maybe_unused]] void fastForwardUntillActorHasNoDestination(Area& area, const ActorIndex& actor);
 	[[maybe_unused]] void fastForwardUntillActorHasEquipment(Area& area, const ActorIndex& actor, const ItemIndex& item);
+	[[maybe_unused]] void fastForwardUntillItemIsAt(Area& area, const ItemIndex& actor, const BlockIndex& destination);
 	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()>&& predicate, uint32_t minutes = 10);
 	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()>& predicate, uint32_t minutes = 10);
 	[[maybe_unused]] void fasterForwardUntillPredicate(std::function<bool()>& predicate, uint32_t minutes = 10);

@@ -133,7 +133,7 @@ class PathInnerLoops
 		{
 			if(detour)
 			{
-				const BlockIndices initalBlocks = Shape::getBlocksOccupiedAt(shape, blocks, start, startFacing);
+				const OccupiedBlocksForHasShape initalBlocks = OccupiedBlocksForHasShape::fromCollection(Shape::getBlocksOccupiedAt(shape, blocks, start, startFacing));
 				auto accessCondition = [&blocks, initalBlocks, shape, moveType](const BlockIndex& block, const Facing4& facing) -> bool
 				{
 					return blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(block, shape, moveType, facing, initalBlocks);

@@ -11,6 +11,7 @@ void Blocks::reserve(const BlockIndex& index, CanReserve& canReserve, std::uniqu
 	else
 		reservable = m_reservables[index].get();
 	reservable->reserveFor(canReserve, Quantity::create(1), std::move(callback));
+	canReserve.recordReservedBlock(index, reservable);
 }
 void Blocks::unreserve(const BlockIndex& index, CanReserve& canReserve)
 {
@@ -18,6 +19,7 @@ void Blocks::unreserve(const BlockIndex& index, CanReserve& canReserve)
 	m_reservables[index]->clearReservationFor(canReserve);
 	if(!m_reservables[index]->hasAnyReservations())
 		m_reservables[index] = nullptr;
+	canReserve.eraseReservedBlock(index);
 }
 void Blocks::dishonorAllReservations(const BlockIndex& index)
 {

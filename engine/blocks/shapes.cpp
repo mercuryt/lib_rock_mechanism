@@ -140,8 +140,13 @@ bool Blocks::shape_moveTypeCanEnterFrom(const BlockIndex& index, const MoveTypeI
 bool Blocks::shape_moveTypeCanEnter(const BlockIndex& index, const MoveTypeId& moveType) const
 {
 	assert(shape_anythingCanEnterEver(index));
+	const auto& fluidDataSet = m_fluid[index];
+	// Floating.
+	if(MoveType::getFloating(moveType) && !fluidDataSet.empty())
+		// Any floating move type can potentailly float in any amount of any type of fluid.
+		return true;
 	// Swiming.
-	for(const FluidData& fluidData : m_fluid[index])
+	for(const FluidData& fluidData : fluidDataSet)
 	{
 		auto found = MoveType::getSwim(moveType).find(fluidData.type);
 		if(found != MoveType::getSwim(moveType).end() && found.second() <= fluidData.volume)
@@ -156,7 +161,7 @@ bool Blocks::shape_moveTypeCanEnter(const BlockIndex& index, const MoveTypeId& m
 				return true;
 		}
 	}
-	// Not swimming and fluid level is too high.
+	// Not swimming or floating and fluid level is too high.
 	if(m_totalFluidVolume[index] > Config::maxBlockVolume / 2)
 		return false;
 	// Fly can always enter if fluid level isn't preventing it.

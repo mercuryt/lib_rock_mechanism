@@ -33,16 +33,16 @@ TEST_CASE("attributes")
 	}
 	SUBCASE("move speed")
 	{
-
+		const BlockIndex& location = blocks.getIndex_i(5,7,1);
 		ActorIndex dwarf1 = actors.create(ActorParamaters{
 			.species = dwarf,
-			.location = blocks.getIndex_i(5,7,1),
+			.location = location,
 		});
 		CHECK(actors.getAgility(goblin1) > actors.getAgility(dwarf1));
 		CHECK(actors.move_getSpeed(goblin1) > actors.move_getSpeed(dwarf1));
 		BlockIndex adjacent = blocks.getIndex_i(5,6,1);
-		Step delayGoblin = actors.move_delayToMoveInto(goblin1, adjacent);
-		Step delayDwarf = actors.move_delayToMoveInto(dwarf1, adjacent);
+		Step delayGoblin = actors.move_delayToMoveInto(goblin1, location, adjacent);
+		Step delayDwarf = actors.move_delayToMoveInto(dwarf1, location, adjacent);
 		CHECK(delayGoblin < delayDwarf);
 	}
 }

@@ -84,7 +84,9 @@ void ActorOrItemIndex::move_updateIndividualSpeed(Area& area) const
 }
 std::string ActorOrItemIndex::toString() const
 {
-	return (isActor() ? "actor#" : "item#") + m_index.get();
+	if(empty())
+		return "null";
+	return (isActor() ? "actor#" : "item#") + std::to_string(m_index.get());
 }
 ActorOrItemReference ActorOrItemIndex::toReference(Area& area) const
 {
@@ -157,7 +159,7 @@ bool ActorOrItemIndex::canEnterCurrentlyFromWithOccupied(Area& area, const Block
 }
 BlockIndex ActorOrItemIndex::getLocation(const Area& area) const
 { return isActor() ? area.getActors().getLocation(m_index.toActor()) : area.getItems().getLocation(m_index.toItem()); }
-const OccupiedBlocksForHasShape& ActorOrItemIndex::getBlocks(Area& area) const
+const OccupiedBlocksForHasShape& ActorOrItemIndex::getBlocks(const Area& area) const
 { return isActor() ? area.getActors().getBlocks(m_index.toActor()) : area.getItems().getBlocks(m_index.toItem()); }
 BlockIndices ActorOrItemIndex::getAdjacentBlocks(Area& area) const
 { return isActor() ? area.getActors().getAdjacentBlocks(m_index.toActor()) : area.getItems().getAdjacentBlocks(m_index.toItem()); }
@@ -177,6 +179,11 @@ bool ActorOrItemIndex::isAdjacentToItem(const Area& area, const ItemIndex& item)
 bool ActorOrItemIndex::isAdjacentToLocation(const Area& area, const BlockIndex& location) const
 {
 	return isActor() ? area.getActors().isAdjacentToLocation(m_index.toActor(), location) : area.getItems().isAdjacentToLocation(m_index.toItem(), location);
+}
+bool ActorOrItemIndex::occupiesBlock(const Area& area, const BlockIndex& location) const
+{
+	// TODO: check Blocks::m_items / Blocks::m_actors instead?
+	return isActor() ? area.getActors().getBlocks(m_index.toActor()).contains(location) : area.getItems().getBlocks(m_index.toItem()).contains(location);
 }
 ShapeId ActorOrItemIndex::getShape(const Area& area) const { return isActor() ? area.getActors().getShape(m_index.toActor()) : area.getItems().getShape(m_index.toItem()); }
 MoveTypeId ActorOrItemIndex::getMoveType(const Area& area) const{ return isActor() ? area.getActors().getMoveType(m_index.toActor()) : area.getItems().getMoveType(m_index.toItem()); }

@@ -214,6 +214,11 @@ void Simulation::fastForwardUntillActorHasEquipment(Area& area, const ActorIndex
 	std::function<bool()> predicate = [&](){ return actors.equipment_containsItem(actor, item); };
 	fastForwardUntillPredicate(predicate);
 }
+void Simulation::fastForwardUntillItemIsAt(Area& area, const ItemIndex& item, const BlockIndex& destination)
+{
+	std::function<bool()> predicate = [&](){ return area.getItems().getLocation(item) == destination; };
+	fastForwardUntillPredicate(predicate);
+}
 void Simulation::fastForwardUntillPredicate(std::function<bool()>& predicate, uint32_t minutes)
 {
 	assert(!predicate());

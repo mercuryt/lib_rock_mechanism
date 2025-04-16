@@ -199,6 +199,17 @@ SmallSet<OffsetAndVolume> Shape::getPositionsByZLevel(const ShapeId& id, const D
 			output.insert(offsetAndVolume);
 	return output;
 }
+Quantity Shape::getNumberOfBlocksOnLeadingFaceAtOrBelowLevel(const ShapeId& id, const DistanceInBlocks& zLevel)
+{
+	SmallSet<std::pair<int, int>> everyYAndZ;
+	for(const auto& offsetAndVolume : shapeData.m_positions[id])
+	{
+		const auto& offset = offsetAndVolume.offset;
+		if(zLevel <= offset.z())
+			everyYAndZ.maybeInsert({offset.y(), offset.z()});
+	}
+	return Quantity::create(everyYAndZ.size());
+}
 bool Shape::hasShape(const std::string& name)
 {
 	auto found = shapeData.m_name.find(name);

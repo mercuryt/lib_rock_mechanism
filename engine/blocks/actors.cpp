@@ -6,7 +6,7 @@ void Blocks::actor_record(const BlockIndex& index, const ActorIndex& actor, cons
 {
 	Actors& actors = m_area.getActors();
 	m_actorVolume[index].emplace_back(actor, volume);
-	m_actors[index].add(actor);
+	m_actors[index].insert(actor);
 	if(actors.isStatic(actor))
 		m_staticVolume[index] += volume;
 	else

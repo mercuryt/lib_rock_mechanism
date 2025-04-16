@@ -58,7 +58,8 @@ public:
 	[[nodiscard]] bool hasFaction(const Index& index) const { return m_faction[index].exists(); }
 	[[nodiscard]] bool isStatic(const Index& index) const { return m_static[index]; }
 	[[nodiscard]] bool isAdjacentToLocation(const Index& index, const BlockIndex& block) const;
-	[[nodiscard]] bool isAdjacentToAny(const Index& index, const BlockIndices& block) const;
+	template<class BlockCollection>
+	[[nodiscard]] bool isAdjacentToAny(const Index& index, const BlockCollection& block) const;
 	[[nodiscard]] bool predicateForAnyOccupiedBlock(const Index& index, std::function<bool(const BlockIndex&)> predicate) const;
 	[[nodiscard]] bool predicateForAnyAdjacentBlock(const Index& index, std::function<bool(const BlockIndex&)> predicate) const;
 	[[nodiscard]] bool predicateForAnyOccupiedBlockAtLocationAndFacing(const Index& index, std::function<bool(const BlockIndex&)> predicate, const BlockIndex& location, const Facing4& facing) const;

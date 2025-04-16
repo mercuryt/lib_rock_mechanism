@@ -209,7 +209,16 @@ public:
 	[[nodiscard]] bool contains(const StrongInteger& index) const { return find(index) != data.end(); }
 	[[nodiscard]] bool empty() const { return data.empty(); }
 	[[nodiscard]] std::vector<StrongInteger>::iterator find(StrongInteger index) { return std::ranges::find(data, index); }
-	[[nodiscard]] std::vector<StrongInteger>::const_iterator find(StrongInteger index) const { return std::ranges::find(data, index); }
+	[[nodiscard]] std::vector<StrongInteger>::const_iterator find(StrongInteger target) const { return std::ranges::find(data, target); }
+	[[nodiscard]] uint findLastIndex(StrongInteger target) const
+	{
+		uint output = 0;
+		const auto& size = data.size();
+		for(; output < size; ++output)
+			if(data[output] == target)
+				break;
+		return output;
+	}
 	template<typename Predicate>
 	[[nodiscard]] std::vector<StrongInteger>::iterator find_if(Predicate predicate) { return std::ranges::find_if(data, predicate); }
 	template<typename Predicate>

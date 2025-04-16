@@ -2,6 +2,7 @@
 #include "../area/area.h"
 #include "../items/items.h"
 #include "../blocks/blocks.h"
+#include "../reservable.hpp"
 void Actors::canReserve_clearAll(const ActorIndex& index)
 {
 	m_canReserve[index]->deleteAllWithoutCallback();
@@ -22,6 +23,10 @@ void Actors::canReserve_reserveItem(const ActorIndex& index, const ItemIndex& it
 		callback = std::make_unique<CannotCompleteObjectiveDishonorCallback>(m_area, m_area.getActors().m_referenceData.getReference(index));
 	m_area.getItems().reservable_reserve(item, canReserve_get(index), quantity, std::move(callback));
 }
+bool Actors::canReserve_translateAndReservePositions(const ActorIndex& index, SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>>&& blocksAndCallbacks, const BlockIndex& prevousPivot, const BlockIndex& newPivot, const Facing4& previousFacing, const Facing4& newFacing)
+{
+	return m_canReserve[index]->translateAndReservePositions(m_area.getBlocks(), std::move(blocksAndCallbacks), prevousPivot, newPivot, previousFacing, newFacing);
+}
 bool Actors::canReserve_tryToReserveLocation(const ActorIndex& index, const BlockIndex& block, std::unique_ptr<DishonorCallback> callback)
 {
 	if(callback == nullptr)
@@ -40,6 +45,15 @@ bool Actors::canReserve_tryToReserveItem(const ActorIndex& index, const ItemInde
 	canReserve_reserveItem(index, item, quantity, std::move(callback));
 	return true;
 }
+SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>> Actors::canReserve_unreserveAndReturnBlocksAndCallbacksOnSameDeck(const ActorIndex& index)
+{
+	DeckId deckId = m_area.m_decks.getForBlock(m_location[index]);
+	if(deckId.empty())
+		return {};
+	auto condition = [&](const BlockIndex& block) { return m_area.m_decks.getForBlock(block) == deckId; };
+	return m_canReserve[index]->unreserveAndReturnBlocksAndCallbacksWithCondition(condition);
+}
+
 bool Actors::canReserve_hasReservationWith(const ActorIndex& index, Reservable& reservable) const
 {
 	return m_canReserve[index]->hasReservationWith(reservable);

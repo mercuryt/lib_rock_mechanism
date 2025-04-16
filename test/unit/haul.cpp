@@ -26,7 +26,7 @@ TEST_CASE("haul")
 	[[maybe_unused]] static MaterialTypeId iron = MaterialType::byName("iron");
 	static MaterialTypeId poplarWood = MaterialType::byName("poplar wood");
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
-	static AnimalSpeciesId donkey = AnimalSpecies::byName("jackstock donkey");
+	static AnimalSpeciesId donkey = AnimalSpecies::byName("horse");
 	static ItemTypeId chunk = ItemType::byName("chunk");
 	static ItemTypeId boulder = ItemType::byName("boulder");
 	static ItemTypeId cart = ItemType::byName("cart");
@@ -241,7 +241,7 @@ TEST_CASE("haul")
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, panniersLocation);
 		simulation.doStep();
 		CHECK(actors.canPickUp_isCarryingItem(dwarf1, panniers1));
-		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, donkeyLocation);
+		simulation.fastForwardUntillActorIsAdjacentToActor(area, dwarf1, donkey1);
 		// Find path.
 		simulation.doStep();
 		CHECK(!actors.canPickUp_exists(dwarf1));

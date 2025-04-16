@@ -67,6 +67,7 @@ namespace Config
 	inline float fatPierceForceCost;
 	inline float fireRampDownPhaseDurationFraction;
 	inline float flankingModifier;
+	inline float fluidDragModifier;
 	inline uint16_t fluidGroupsPerThread;
 	inline float forceAbsorbedPiercedModifier;
 	inline float forceAbsorbedUnpiercedModifier;
@@ -197,6 +198,7 @@ namespace Config
 	inline uint reserveSizeVisionCuboidAdjacent;
 	inline Step restIntervalSteps;
 	inline float rollingMassModifier;
+	inline float rowForcePerUnitStrength;
 	inline uint32_t scaleOfHumanBody;
 	inline uint32_t secondsPerMinute;
 	inline float skinPierceForceCost;

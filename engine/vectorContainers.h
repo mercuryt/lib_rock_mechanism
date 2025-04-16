@@ -381,6 +381,10 @@ public:
 	SmallMap() = default;
 	SmallMap(const std::initializer_list<std::pair<K, V>>& i) : m_data(i) { }
 	SmallMap(std::initializer_list<std::pair<K, V>>&& i) : m_data(i) { }
+	SmallMap(const SmallMap& other) : m_data(other.m_data) { }
+	SmallMap(SmallMap&& other) noexcept : m_data(std::move(other.m_data)) { }
+	SmallMap& operator=(const SmallMap& other) { m_data = other.m_data; return *this; }
+	SmallMap& operator=(SmallMap&& other) noexcept { m_data = std::move(other.m_data); return *this; }
 	void insert(K key, V& value)
 	{
 		assert(!contains(key));

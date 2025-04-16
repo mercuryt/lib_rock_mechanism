@@ -64,12 +64,20 @@ void Actors::mount_undo(const ActorIndex& index, const BlockIndex& location)
 void Actors::pilotItem_set(const ActorIndex& index, const ItemIndex& item)
 {
 	Items& items = m_area.getItems();
+	assert(m_facing[index] == items.getFacing(item));
 	items.pilot_set(item, index);
 	m_isPilot.set(index);
+	move_setMoveSpeedActual(index, items.vehicle_getSpeed(item));
+	m_compoundShape[index] = items.getShape(item);
+	m_moveType[index] = items.getMoveType(item);
+	m_area.m_hasTerrainFacades.maybeRegisterMoveType(m_moveType[index]);
 }
 void Actors::pilotItem_unset(const ActorIndex& index)
 {
 	Items& items = m_area.getItems();
 	items.pilot_clear(m_isOnDeckOf[index].getItem());
 	m_isPilot.unset(index);
+	move_updateActualSpeed(index);
+	m_compoundShape[index] = m_shape[index];
+	resetMoveType(index);
 }

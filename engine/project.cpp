@@ -1271,6 +1271,16 @@ void Project::clearReferenceFromRequiredItems(const ItemReference& ref)
 {
 	std::erase_if(m_requiredItems, [&](const auto& pair){ return pair.first.m_item.exists() && pair.first.m_item == ref; });
 }
+void Project::clearLocation()
+{
+	m_area.getBlocks().project_remove(m_location, *this);
+	m_location.clear();
+}
+void Project::setLocation(const BlockIndex& block)
+{
+	m_area.getBlocks().project_add(block, *this);
+	m_location = block;
+}
 // For testing.
 bool Project::hasCandidate(const ActorIndex& actor) const
 {

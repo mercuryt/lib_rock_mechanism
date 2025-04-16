@@ -1,6 +1,7 @@
 #include "types.h"
 #include "config.h"
 #include "geometry/cuboid.h"
+Speed Force::operator/(const Mass& mass) const { return Speed::create((float)data / (float)mass.get()); }
 FullDisplacement FullDisplacement::operator*(Quantity other) const { return FullDisplacement::create(data * other.get()); }
 Mass FullDisplacement::operator*(Density density) const { return Mass::create(density.get() * data); }
 Mass Density::operator*(FullDisplacement volume) const { return Mass::create(volume.get() * data); }

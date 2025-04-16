@@ -212,6 +212,8 @@ public:
 	void pilot_clear(const ItemIndex& item);
 	[[nodiscard]] ActorIndex pilot_get(const ItemIndex& item);
 	[[nodiscard]] bool pilot_exists(const ItemIndex& item) { return pilot_get(item).exists(); }
+	[[nodiscard]] Speed vehicle_getSpeed(const ItemIndex& item) const;
+	[[nodiscard]] Force vehicle_getMotiveForce(const ItemIndex& item) const;
 	// Deck.
 	[[nodiscard]] std::vector<std::pair<Offset3D, Offset3D>> getDeckOffsets(const ItemIndex& index) { return ItemType::getDecks(m_itemType[index]); }
 	//TODO: Items leave area.

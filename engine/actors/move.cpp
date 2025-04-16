@@ -39,7 +39,7 @@ void Actors::move_updateIndividualSpeed(const ActorIndex& index)
 }
 void Actors::move_updateActualSpeed(const ActorIndex& index)
 {
-	m_speedActual[index] = isLeading(index) ? lead_getSpeed(index) : m_speedIndividual[index];
+	move_setMoveSpeedActual(index, isLeading(index) ? lead_getSpeed(index) : m_speedIndividual[index]);
 }
 void Actors::move_setPath(const ActorIndex& index, const BlockIndices& path)
 {
@@ -48,7 +48,19 @@ void Actors::move_setPath(const ActorIndex& index, const BlockIndices& path)
 	m_path[index] = std::move(path);
 	m_destination[index] = m_path[index].front();
 	move_clearAllEventsAndTasks(index);
-	move_schedule(index);
+	move_schedule(index, m_location[index]);
+}
+void Actors::move_setType(const ActorIndex& index, const MoveTypeId& moveType)
+{
+	setMoveType(index, moveType);
+	PathRequest* pathRequest = m_pathRequest[index];
+	if(pathRequest != nullptr)
+		pathRequest->moveType = moveType;
+}
+void Actors::move_setMoveSpeedActual(const ActorIndex& index, Speed speed)
+{
+	m_speedActual[index] = speed;
+	// TODO: if there is a move event then reschedule it?
 }
 void Actors::move_clearPath(const ActorIndex& index)
 {
@@ -60,16 +72,48 @@ void Actors::move_callback(const ActorIndex& index)
 	assert(!m_path[index].empty());
 	assert(m_destination[index].exists());
 	BlockIndex block = m_path[index].back();
+	BlockIndex previousLocation;
 	Blocks& blocks = m_area.getBlocks();
+	Items& items = getItems();
 	bool permanantlyBlocked = false;
 	bool temperarilyBlocked = false;
-	if(
-		!blocks.shape_anythingCanEnterEver(block) ||
-		!blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, m_compoundShape[index], m_moveType[index], m_location[index])
-	)
-		permanantlyBlocked = true;
-	else if(!blocks.shape_canEnterCurrentlyFrom(block, m_compoundShape[index], m_location[index], m_blocks[index]))
-		temperarilyBlocked = true;
+	if(m_isPilot[index])
+	{
+		const ItemIndex& isPiloting = m_isOnDeckOf[index].getItem();
+		previousLocation = items.getLocation(isPiloting);
+		if(
+			!blocks.shape_anythingCanEnterEver(block) ||
+			!blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, items.getCompoundShape(isPiloting), items.getMoveType(isPiloting), previousLocation)
+		)
+			permanantlyBlocked = true;
+		else
+		{
+			// Generate a shape for the vehicle and whatever is currently on deck.
+			const OccupiedBlocksForHasShape occupied = items.getBlocksCombined(isPiloting);
+			if(!blocks.shape_canEnterCurrentlyFrom(block, items.getCompoundShape(isPiloting), previousLocation, occupied))
+				temperarilyBlocked = true;
+		}
+	}
+	else
+	{
+		previousLocation = m_location[index];
+		if(
+			!blocks.shape_anythingCanEnterEver(block) ||
+			!blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, m_compoundShape[index], m_moveType[index], previousLocation)
+		)
+			permanantlyBlocked = true;
+		else
+		{
+			if(onDeck_hasAnyContent(index))
+			{
+				const OccupiedBlocksForHasShape occupied = getBlocksCombined(index);
+				if(!blocks.shape_canEnterCurrentlyFrom(block, m_compoundShape[index], previousLocation, occupied))
+					temperarilyBlocked = true;
+			}
+			else if(!blocks.shape_canEnterCurrentlyFrom(block, m_compoundShape[index], previousLocation, m_blocks[index]))
+				temperarilyBlocked = true;
+		}
+	}
 	if(isLeading(index) && !permanantlyBlocked)
 	{
 		assert(!isFollowing(index));
@@ -97,15 +141,23 @@ void Actors::move_callback(const ActorIndex& index)
 		else
 		{
 			++m_moveRetries[index];
-			move_schedule(index);
+			move_schedule(index, m_location[index]);
 		}
 	}
 	else
 	{
 		// Path is not blocked, move.
 		m_moveRetries[index] = 0;
-		Facing4 facing = blocks.facingToSetWhenEnteringFrom(block, m_location[index]);
-		setLocationAndFacing(index, block, facing);
+		Facing4 facing = blocks.facingToSetWhenEnteringFrom(block, previousLocation);
+		// If piloting then move the vehicle instead of the actor.
+		// When piloting a mounted actor the mount should recive the move_callback so we assume that we are piloting a vehicle.
+		if(m_isPilot[index])
+		{
+			assert(m_isOnDeckOf[index].isItem());
+			m_isOnDeckOf[index].setLocationAndFacing(m_area, block, facing);
+		}
+		else
+			setLocationAndFacing(index, block, facing);
 		// Move followers.
 		if(isLeading(index))
 		{
@@ -117,7 +169,14 @@ void Actors::move_callback(const ActorIndex& index)
 		{
 			m_path[index].clear();
 			m_destination[index].clear();
-			const ActorIndex& pilot = mount_getPilot(index);
+			ActorIndex pilot = mount_getPilot(index);
+			if(pilot.empty())
+			{
+				// If there is no rider piloting check if we are towing an item with a pilot.
+				const ActorOrItemIndex& follower = getFollower(index);
+				if(follower.exists() && follower.isItem())
+					pilot = items.pilot_get(follower.getItem());
+			}
 			if(pilot.exists())
 				m_hasObjectives[pilot]->subobjectiveComplete(m_area);
 			else
@@ -125,10 +184,12 @@ void Actors::move_callback(const ActorIndex& index)
 		}
 		else
 		{
+			assert(m_path[index].size() != 1);
 			m_path[index].popBack();
+			assert(!m_path[index].empty());
 			const BlockIndex& nextBlock = m_path[index].back();
-			if(blocks.shape_anythingCanEnterEver(nextBlock) && blocks.shape_shapeAndMoveTypeCanEnterEverFrom(nextBlock, m_compoundShape[index], m_moveType[index], m_location[index]))
-				move_schedule(index);
+			if(blocks.shape_anythingCanEnterEver(nextBlock) && blocks.shape_shapeAndMoveTypeCanEnterEverFrom(nextBlock, m_compoundShape[index], m_moveType[index], block))
+				move_schedule(index, m_location[index]);
 			else
 			{
 				// Path is no longer valid.
@@ -141,16 +202,16 @@ void Actors::move_callback(const ActorIndex& index)
 		}
 	}
 }
-void Actors::move_schedule(const ActorIndex& index)
+void Actors::move_schedule(const ActorIndex& index, const BlockIndex& moveFrom)
 {
-	assert(m_location[index] != m_destination[index]);
+	assert(moveFrom != m_destination[index]);
 	const BlockIndex& moveTo = m_path[index].back();
-	m_moveEvent.schedule(index, move_delayToMoveInto(index, moveTo), m_area, index);
+	m_moveEvent.schedule(index, move_delayToMoveInto(index, moveFrom, moveTo), m_area, index);
 }
 void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& destination, bool detour, bool adjacent, bool unreserved, bool reserve)
 {
-	ShapeId shape;
-	MoveTypeId moveType;
+	// These three values are either for the actor it's self or the vehicle it's piloting.
+	BlockIndex location;
 	if(m_isPilot[index])
 	{
 		auto& isOnDeckOf = m_isOnDeckOf[index];
@@ -163,17 +224,22 @@ void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& dest
 		// Is piloting an item.
 		Items& items = m_area.getItems();
 		const ItemIndex& item = isOnDeckOf.getItem();
-		shape = items.getCompoundShape(item);
-		moveType = items.getMoveType(item);
+		const ActorOrItemIndex& leader = items.getLeader(item);
+		if(leader.exists())
+		{
+			// Is piloting an item which is being towed by an animal, proxy setDestination to that animal.
+			move_setDestination(leader.getActor(), destination, detour, adjacent, unreserved, reserve);
+			return;
+		}
+		location = items.getLocation(item);
 	}
 	else
-	{
-		shape = getCompoundShape(index);
-		moveType = getMoveType(index);
-	}
+		location = getLocation(index);
 	assert(destination.exists());
 	if(reserve)
 		assert(unreserved);
+	const ShapeId& shape = getCompoundShape(index);
+	const MoveTypeId& moveType = getMoveType(index);
 	move_clearPath(index);
 	Blocks& blocks = m_area.getBlocks();
 	// If adjacent path then destination isn't known until it's completed.
@@ -181,7 +247,7 @@ void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& dest
 	{
 		m_destination[index] = destination;
 		assert(blocks.shape_anythingCanEnterEver(destination));
-		assert(m_location[index] != m_destination[index]);
+		assert(location != m_destination[index]);
 	}
 	else
 		assert(getLocation(index) != destination);
@@ -195,7 +261,7 @@ void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& dest
 		faction = m_faction[index];
 	assert(m_pathRequest[index] == nullptr);
 	if(!adjacent)
-		move_pathRequestRecord(index, std::make_unique<GoToPathRequest>(m_location[index], DistanceInBlocks::max(), getReference(index), shape, faction, moveType, m_facing[index], detour, adjacent, reserve, destination));
+		move_pathRequestRecord(index, std::make_unique<GoToPathRequest>(location, DistanceInBlocks::max(), getReference(index), shape, faction, moveType, m_facing[index], detour, adjacent, reserve, destination));
 	else
 	{
 		BlockIndices candidates;
@@ -208,7 +274,7 @@ void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& dest
 		move_pathRequestRecord(
 			index,
 			std::make_unique<GoToAnyPathRequest>(
-				m_location[index], DistanceInBlocks::max(), getReference(index),
+				location, DistanceInBlocks::max(), getReference(index),
 				shape, faction, moveType, m_facing[index],
 				detour, adjacent, reserve, destination, candidates
 			)
@@ -308,14 +374,6 @@ void Actors::move_setDestinationToEdge(const ActorIndex& index, bool detour)
 	constexpr bool adjacent = false;
 	constexpr bool reserveDestination = false;
 	move_pathRequestRecord(index, std::make_unique<GoToEdgePathRequest>(m_location[index], DistanceInBlocks::max(), getReference(index), m_compoundShape[index], m_moveType[index], m_facing[index], detour, adjacent, reserveDestination));
-}
-void Actors::move_setType(const ActorIndex& index, const MoveTypeId& moveType)
-{
-	assert(m_moveType[index] != moveType);
-	m_moveType[index] = moveType;
-	// TODO: unregister move type: decrement count of actors using a given facade and maybe clear when 0.
-	m_area.m_hasTerrainFacades.maybeRegisterMoveType(moveType);
-	//TODO: repath if destination, possibly do something with pathRequest?
 }
 void Actors::move_clearAllEventsAndTasks(const ActorIndex& index)
 {
@@ -433,7 +491,7 @@ void Actors::move_pathRequestRecord(const ActorIndex& index, std::unique_ptr<Pat
 {
 	assert(m_pathRequest[index] == nullptr);
 	m_pathRequest[index] = pathRequest.get();
-	m_area.m_hasTerrainFacades.getForMoveType(m_moveType[index]).registerPathRequestWithHuristic(std::move(pathRequest));
+	m_area.m_hasTerrainFacades.getForMoveType(pathRequest->moveType).registerPathRequestWithHuristic(std::move(pathRequest));
 }
 void Actors::move_pathRequestRecord(const ActorIndex& index, std::unique_ptr<PathRequestBreadthFirst> pathRequest)
 {
@@ -447,12 +505,13 @@ bool Actors::move_canMove(const ActorIndex& index) const
 		return false;
 	return true;
 }
-Step Actors::move_delayToMoveInto(const ActorIndex& index, const BlockIndex& block) const
+Step Actors::move_delayToMoveInto(const ActorIndex& index, const BlockIndex& from, const BlockIndex& to) const
 {
-	Speed speed = m_speedActual[index];
-	assert(block != m_location[index]);
+	assert(from != to);
 	Blocks& blocks = m_area.getBlocks();
-	CollisionVolume staticVolume = blocks.shape_getStaticVolume(block);
+	//assert(blocks.isAdjacentToIncludingCornersAndEdges(from, to));
+	Speed speed = m_speedActual[index];
+	CollisionVolume staticVolume = blocks.shape_getStaticVolume(to);
 	if(staticVolume > Config::minBlockStaticVolumeToSlowMovement)
 	{
 		CollisionVolume excessVolume = staticVolume - Config::minBlockStaticVolumeToSlowMovement;
@@ -462,9 +521,18 @@ Step Actors::move_delayToMoveInto(const ActorIndex& index, const BlockIndex& blo
 	}
 	assert(speed != 0);
 	static const Step stepsPerSecond = Config::stepsPerSecond;
-	MoveCost cost = blocks.shape_moveCostFrom(block, m_moveType[index], m_location[index]);
+	MoveCost cost = blocks.shape_moveCostFrom(to, m_moveType[index], from);
 	assert(cost != 0);
 	return Step::create(std::max(1u, uint(std::round(float(stepsPerSecond.get() * cost.get()) / float(speed.get())))));
+}
+BlockIndices Actors::move_makePathTo(const ActorIndex& index, const BlockIndex& destination) const
+{
+	assert(destination != m_location[index]);
+	const FindPathResult result = m_area.m_hasTerrainFacades.getForMoveType(
+		m_moveType[index]).findPathToWithoutMemo(m_location[index], m_facing[index], m_compoundShape[index], destination
+	);
+	assert(!result.useCurrentPosition);
+	return result.path;
 }
 Step Actors::move_stepsTillNextMoveEvent(const ActorIndex& index) const
 {

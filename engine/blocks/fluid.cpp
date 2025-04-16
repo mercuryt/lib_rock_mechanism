@@ -78,6 +78,7 @@ void Blocks::fluid_add(const Cuboid& cuboid, const CollisionVolume& volume, cons
 void Blocks::fluid_add(const BlockIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType)
 {
 	assert(!solid_is(index));
+	bool wasEmpty = m_totalFluidVolume[index] == 0;
 	// If a suitable fluid group exists already then just add to it's excessVolume.
 	auto found = fluid_getData(index, fluidType);
 	if(found)
@@ -121,7 +122,7 @@ void Blocks::fluid_add(const BlockIndex& index, const CollisionVolume& volume, c
 		if(!items.isFloating(item))
 		{
 			if(items.canFloatAt(item, location))
-				items.setFloating(item);
+				items.setFloating(item, fluidType);
 		}
 		else
 		{
@@ -130,6 +131,8 @@ void Blocks::fluid_add(const BlockIndex& index, const CollisionVolume& volume, c
 				items.setLocation(item, above);
 		}
 	}
+	if(wasEmpty)
+		fluid_maybeRecordFluidOnDeck(index);
 }
 void Blocks::fluid_setAllUnstableExcept(const BlockIndex& index, const FluidTypeId& fluidType)
 {
@@ -151,9 +154,11 @@ void Blocks::fluid_drainInternal(const BlockIndex& index, const CollisionVolume&
 	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 	floating_maybeSink(index);
+	fluid_maybeEraseFluidOnDeck(index);
 }
 void Blocks::fluid_fillInternal(const BlockIndex& index, const CollisionVolume& volume, FluidGroup& fluidGroup)
 {
+	bool wasEmpty = m_totalFluidVolume[index] == 0;
 	FluidData* found = fluid_getData(index, fluidGroup.m_fluidType);
 	if(!found)
 		m_fluid[index].emplace_back(fluidGroup.m_fluidType, &fluidGroup, volume);
@@ -167,6 +172,8 @@ void Blocks::fluid_fillInternal(const BlockIndex& index, const CollisionVolume& 
 	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 	floating_maybeFloatUp(index);
+	if(wasEmpty)
+		fluid_maybeRecordFluidOnDeck(index);
 }
 void Blocks::fluid_unsetGroupInternal(const BlockIndex& index, const FluidTypeId& fluidType)
 {
@@ -226,6 +233,14 @@ void Blocks::fluid_removeSyncronus(const BlockIndex& index, const CollisionVolum
 	fluid_setTotalVolume(index, m_totalFluidVolume[index] - volume);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 	floating_maybeSink(index);
+	fluid_maybeEraseFluidOnDeck(index);
+}
+void Blocks::fluid_removeAllSyncronus(const BlockIndex& index)
+{
+	auto copy = m_fluid[index];
+	for(FluidData& data : copy)
+		fluid_removeSyncronus(index, data.volume, data.type);
+	assert(m_totalFluidVolume[index] == 0);
 }
 bool Blocks::fluid_canEnterCurrently(const BlockIndex& index, const FluidTypeId& fluidType) const
 {
@@ -403,4 +418,30 @@ std::vector<FluidData>& Blocks::fluid_getAllSortedByDensityAscending(const Block
 bool Blocks::fluid_any(const BlockIndex& index) const
 {
 	return !m_fluid[index].empty();
+}
+void Blocks::fluid_maybeRecordFluidOnDeck(const BlockIndex& index)
+{
+	assert(m_totalFluidVolume[index] != 0);
+	const DeckId& deckId = m_area.m_decks.getForBlock(index);
+	if(deckId.exists())
+	{
+		const ActorOrItemIndex& isOnDeckOf = m_area.m_decks.getForId(deckId);
+		assert(isOnDeckOf.isItem());
+		const ItemIndex& item = isOnDeckOf.getItem();
+		m_area.getItems().onDeck_recordBlockContainingFluid(item, index);
+	}
+}
+void Blocks::fluid_maybeEraseFluidOnDeck(const BlockIndex& index)
+{
+	if(m_totalFluidVolume[index] == 0)
+	{
+		const DeckId& deckId = m_area.m_decks.getForBlock(index);
+		if(deckId.exists())
+		{
+			const ActorOrItemIndex& isOnDeckOf = m_area.m_decks.getForId(deckId);
+			assert(isOnDeckOf.isItem());
+			const ItemIndex& item = isOnDeckOf.getItem();
+			m_area.getItems().onDeck_eraseBlockContainingFluid(item, index);
+		}
+	}
 }

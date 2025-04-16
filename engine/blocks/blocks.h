@@ -157,6 +157,7 @@ public:
 	[[nodiscard]] BlockIndex offsetRotated(const BlockIndex& index, const Offset3D& offset, const Facing4& facing) const;
 	[[nodiscard]] BlockIndex indexAdjacentToAtCount(const BlockIndex& index, const AdjacentIndex& adjacentCount) const;
 	[[nodiscard]] Offset3D relativeOffsetTo(const BlockIndex& index, const BlockIndex& other) const;
+	[[nodiscard]] BlockIndex translatePosition(const BlockIndex& location, const BlockIndex& previousPivot, const BlockIndex& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const;
 	[[nodiscard]] bool canSeeThrough(const BlockIndex& index) const;
 	[[nodiscard]] bool canSeeThroughFloor(const BlockIndex& index) const;
 	[[nodiscard]] bool canSeeThroughFrom(const BlockIndex& index, const BlockIndex& other) const;
@@ -277,6 +278,7 @@ public:
 	void fluid_remove(const BlockIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType);
 	// To be used used durring write step.
 	void fluid_removeSyncronus(const BlockIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType);
+	void fluid_removeAllSyncronus(const BlockIndex& index);
 	// Move less dense fluids to their group's excessVolume until Config::maxBlockVolume is achieved.
 	void fluid_resolveOverfull(const BlockIndex& index);
 	void fluid_onBlockSetSolid(const BlockIndex& index);
@@ -293,6 +295,8 @@ public:
 	// This prevents a problem where addBlock attempts to remove a block from a group which it has already been removed from.
 	// TODO: Seems messy.
 	void fluid_unsetGroupInternal(const BlockIndex& index, const FluidTypeId& fluidType);
+	void fluid_maybeRecordFluidOnDeck(const BlockIndex& index);
+	void fluid_maybeEraseFluidOnDeck(const BlockIndex& index);
 	// To be called from FluidGroup::splitStep only.
 	[[nodiscard]] bool fluid_undisolveInternal(const BlockIndex& index, FluidGroup& fluidGroup);
 private:void fluid_destroyData(const BlockIndex& index, const FluidTypeId& fluidType);
@@ -328,6 +332,8 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	void dishonorAllReservations(const BlockIndex& index);
 	void setReservationDishonorCallback(const BlockIndex& index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback);
 	[[nodiscard]] bool isReserved(const BlockIndex& index, const FactionId& faction) const;
+	// To be used by CanReserve::translateAndReservePositions.
+	[[nodiscard]] Reservable& getReservable(const BlockIndex& index) { return *m_reservables[index]; }
 	// -Actors
 	void actor_record(const BlockIndex& index, const ActorIndex& actor, const CollisionVolume& volume);
 	void actor_erase(const BlockIndex& index, const ActorIndex& actor);

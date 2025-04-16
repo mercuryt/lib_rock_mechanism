@@ -57,7 +57,7 @@ struct ActorParamaters
 	bool hasRangedWeapon = false;
 	bool hasLightArmor = false;
 	bool hasHeavyArmor = false;
-	bool pilotingMount = false;
+	bool piloting = false;
 
 	Percent getPercentGrown(Simulation& simulation);
 	std::string getName(Simulation& simulation);
@@ -259,12 +259,12 @@ public:
 	// -Move.
 	void move_updateIndividualSpeed(const ActorIndex& index);
 	void move_updateActualSpeed(const ActorIndex& index);
-	void move_setType(const ActorIndex& index, const MoveTypeId& moveType);
 	void move_setPath(const ActorIndex& index, const BlockIndices& path);
-	void move_setMoveSpeedActualForLeading(const ActorIndex& index, Speed speed);
+	void move_setType(const ActorIndex& index, const MoveTypeId& moveType);
+	void move_setMoveSpeedActual(const ActorIndex& index, Speed speed);
 	void move_clearPath(const ActorIndex& index);
 	void move_callback(const ActorIndex& index);
-	void move_schedule(const ActorIndex& index);
+	void move_schedule(const ActorIndex& index, const BlockIndex& moveFrom);
 	void move_setDestination(const ActorIndex& index, const BlockIndex& destination, bool detour = false, bool adjacent = false, bool unreserved = false, bool reserve = false);
 	void move_setDestinationAdjacentToLocation(const ActorIndex& index, const BlockIndex& destination, bool detour = false, bool unreserved = false, bool reserve = false);
 	void move_setDestinationToAny(const ActorIndex& index, const BlockIndices& candidates, bool detour, bool unreserved, bool reserve, const BlockIndex& huristicDestination);
@@ -292,13 +292,15 @@ public:
 	[[nodiscard]] Speed move_getIndividualSpeedWithAddedMass(const ActorIndex& index, const Mass& mass) const;
 	[[nodiscard]] Speed move_getSpeed(const ActorIndex& index) const { return m_speedActual[index]; }
 	[[nodiscard]] bool move_canMove(const ActorIndex& index) const;
-	[[nodiscard]] Step move_delayToMoveInto(const ActorIndex& index, const BlockIndex& block) const;
+	[[nodiscard]] Step move_delayToMoveInto(const ActorIndex& index, const BlockIndex& moveFrom, const BlockIndex& moveTo) const;
+	[[nodiscard]] BlockIndices move_makePathTo(const ActorIndex& index, const BlockIndex& destination) const;
 	// For debugging move.
 	[[nodiscard]] PathRequest& move_getPathRequest(const ActorIndex& index) { return *m_pathRequest[index]; }
-	[[nodiscard]] BlockIndices& move_getPath(const ActorIndex& index) { return m_path[index]; }
+	[[nodiscard]] auto& move_getPath(const ActorIndex& index) { return m_path[index]; }
 	[[nodiscard]] BlockIndex move_getDestination(const ActorIndex& index) { return m_destination[index]; }
 	[[nodiscard]] bool move_hasEvent(const ActorIndex& index) const { return m_moveEvent.exists(index); }
 	[[nodiscard]] bool move_hasPathRequest(const ActorIndex& index) const { return m_pathRequest[index] != nullptr; }
+	[[nodiscard]] bool move_hasPath(const ActorIndex& index) const { return !m_path[index].empty(); }
 	[[nodiscard]] Step move_stepsTillNextMoveEvent(const ActorIndex& index) const;
 	[[nodiscard]] uint8_t move_getRetries(const ActorIndex& index) const { return m_moveRetries[index]; }
 	[[nodiscard]] bool move_canPathTo(const ActorIndex& index, const BlockIndex& destination);
@@ -384,8 +386,10 @@ public:
 	// Default dishonor callback is canNotCompleteCurrentObjective.
 	void canReserve_reserveLocation(const ActorIndex& index, const BlockIndex& block, std::unique_ptr<DishonorCallback> callback = nullptr);
 	void canReserve_reserveItem(const ActorIndex& index, const ItemIndex& item, const Quantity& quantity, std::unique_ptr<DishonorCallback> callback = nullptr);
+	[[nodiscard]] bool canReserve_translateAndReservePositions(const ActorIndex& index, SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>>&& blocksAndCallbacks, const BlockIndex& prevousPivot, const BlockIndex& newPivot, const Facing4& previousFacing, const Facing4& newFacing);
 	[[nodiscard]] bool canReserve_tryToReserveLocation(const ActorIndex& index, const BlockIndex& block, std::unique_ptr<DishonorCallback> callback = nullptr);
 	[[nodiscard]] bool canReserve_tryToReserveItem(const ActorIndex& index, const ItemIndex& item, const Quantity& quantity, std::unique_ptr<DishonorCallback> callback = nullptr);
+	[[nodiscard]] SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>> canReserve_unreserveAndReturnBlocksAndCallbacksOnSameDeck(const ActorIndex& index);
 	[[nodiscard]] bool canReserve_hasReservationWith(const ActorIndex& index, Reservable& reservable) const;
 	[[nodiscard]] bool canReserve_canReserveLocation(const ActorIndex& index, const BlockIndex& block, const Facing4& facing) const;
 	[[nodiscard]] bool canReserve_locationAtEndOfPathIsUnreserved(const ActorIndex& index, const BlockIndices& path) const;
@@ -526,7 +530,7 @@ public:
 	[[nodiscard]] bool lineLead_followersCanMoveEver(const ActorIndex& index) const;
 	[[nodiscard]] bool lineLead_followersCanMoveCurrently(const ActorIndex& index) const;
 	void lineLead_clearPath(const ActorIndex& index);
-	void lineLead_appendToPath(const ActorIndex& index, const BlockIndex& block);
+	void lineLead_appendToPath(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
 	void lineLead_pushFront(const ActorIndex& index, const BlockIndex& block);
 	void lineLead_popBackUnlessOccupiedByFollower(const ActorIndex& index);
 	void lineLead_moveFollowers(const ActorIndex& index);

@@ -719,9 +719,22 @@ ActorIndex Actors::create(ActorParamaters params)
 	sharedConstructor(index);
 	scheduleNeeds(index);
 	if(params.mountedOn.exists())
-		mount_do(index, params.mountedOn, params.location, params.pilotingMount);
+		mount_do(index, params.mountedOn, params.location, params.piloting);
+	else if(params.piloting)
+	{
+		auto& decks = m_area.m_decks;
+		ActorOrItemIndex isPiloting = decks.getForId(decks.getForBlock(params.location));
+		assert(isPiloting.isItem());
+		const ItemIndex& vehicle = isPiloting.getItem();
+		setLocationAndFacing(index, params.location, isPiloting.getFacing(m_area));
+		pilotItem_set(index, vehicle);
+	}
 	else if(params.location.exists())
-		setLocationAndFacing(index, params.location, (params.facing != Facing4::Null ? params.facing : Facing4::North));
+	{
+		if(params.facing == Facing4::Null)
+			params.facing = Facing4::North;
+		setLocationAndFacing(index, params.location, params.facing);
+	}
 	return index;
 }
 void Actors::sharedConstructor(const ActorIndex& index)
@@ -772,14 +785,11 @@ void Actors::setLocationAndFacingNoCheckMoveType(const ActorIndex& index, const 
 	Blocks& blocks = m_area.getBlocks();
 	BlockIndex previousLocation = m_location[index];
 	Facing4 previousFacing = m_facing[index];
-	SmallMap<ActorOrItemIndex, Offset3D> onDeckWithOffsets;
+	SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>> reservableData;
+	DeckRotationData deckRotationData;
 	if(previousLocation.exists())
 	{
-		for(const ActorOrItemIndex& onDeck : m_onDeck[index])
-		{
-			onDeckWithOffsets.insert(onDeck, blocks.relativeOffsetTo(previousLocation, onDeck.getLocation(m_area)));
-			onDeck.exit(m_area);
-		}
+		deckRotationData = DeckRotationData::recordAndClearDependentPositions(m_area, ActorOrItemIndex::createForActor(index));
 		exit(index);
 	}
 	m_location[index] = block;
@@ -789,17 +799,17 @@ void Actors::setLocationAndFacingNoCheckMoveType(const ActorIndex& index, const 
 	{
 		BlockIndex occupied = blocks.offset(block, pair.offset);
 		blocks.actor_record(occupied, index, pair.volume);
-		m_blocks[index].add(occupied);
+		m_blocks[index].insert(occupied);
 		// Record in vision facade if has location and can currently see.
 	}
 	vision_maybeUpdateLocation(index, block);
-	// TODO: reduntand with exit also calling getReference.
+	// TODO: redundant with exit also calling getReference.
 	m_area.m_octTree.record(m_area, getReference(index));
 	if(blocks.isExposedToSky(block))
 		m_onSurface.set(index);
 	else
 		m_onSurface.unset(index);
-	onSetLocation(index, previousLocation, previousFacing, onDeckWithOffsets);
+	onSetLocation(index, previousLocation, previousFacing, deckRotationData);
 }
 void Actors::exit(const ActorIndex& index)
 {
@@ -923,7 +933,17 @@ BlockIndex Actors::getCombinedLocation(const ActorIndex& index) const
 	if(!m_isPilot[index])
 		return getLocation(index);
 	else
-		return m_isOnDeckOf[index].getLocation(m_area);
+	{
+		const ItemIndex& vehicle = m_isOnDeckOf[index].getItem();
+		Items& items = m_area.getItems();
+		const ActorOrItemIndex& leader = items.getLeader(vehicle);
+		if(leader.exists())
+			// Horse drawn chariot or such.
+			return leader.getLocation(m_area);
+		else
+			// Self propelled.
+			return items.getLocation(vehicle);
+	}
 }
 void Actors::reserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing4& facing)
 {
@@ -946,7 +966,7 @@ void Actors::setBirthStep(const ActorIndex& index, const Step& step)
 }
 void Actors::takeFallDamage(const ActorIndex& index, const DistanceInBlocks& distance, const MaterialTypeId& materialType)
 {
-	const Force& force = Force::create(distance.get() * getMass(index).get() * Config::modifierToTurnMassTimesFallDistanceIntoForce) / Config::hitsToDivideActorFallDamageInto;
+	const Force& force = Force::create(distance.get() * getMass(index).get() * Config::modifierToTurnMassTimesFallDistanceIntoForce / Config::hitsToDivideActorFallDamageInto);
 	for(uint8_t i = 0; i < Config::hitsToDivideActorFallDamageInto; ++i)
 	{
 		auto& body = *m_body[index];

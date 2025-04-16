@@ -58,6 +58,7 @@ void Config::load()
 	data["fatPierceForceCost"].get_to(fatPierceForceCost);
 	data["fireRampDownPhaseDurationFraction"].get_to(fireRampDownPhaseDurationFraction);
 	data["flankingModifier"].get_to(flankingModifier);
+	data["fluidDragModifier"].get_to(fluidDragModifier);
 	data["fluidGroupsPerThread"].get_to(fluidGroupsPerThread);
 	data["forceAbsorbedPiercedModifier"].get_to(forceAbsorbedPiercedModifier);
 	data["forceAbsorbedUnpiercedModifier"].get_to(forceAbsorbedUnpiercedModifier);
@@ -186,6 +187,7 @@ void Config::load()
 	restIntervalSteps = Step::create(data["restIntervalSeconds"].get<uint32_t>() * stepsPerSecond.get());
 	data["reserveSizeVisionCuboidAdjacent"].get_to(reserveSizeVisionCuboidAdjacent);
 	data["rollingMassModifier"].get_to(rollingMassModifier);
+	data["rowForcePerUnitStrength"].get_to(rowForcePerUnitStrength);
 	data["scaleOfHumanBody"].get_to(scaleOfHumanBody);
 	data["skinPierceForceCost"].get_to(skinPierceForceCost);
 	data["sleepObjectivePriority"].get_to(sleepObjectivePriority);

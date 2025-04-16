@@ -109,7 +109,7 @@ struct Offset3D
 	[[nodiscard]] Offset3D operator*(const Offset3D& other) const;
 	[[nodiscard]] Offset3D operator/(const Offset3D& other) const;
 	[[nodiscard]] bool operator==(const Offset3D& other) const { return (data == other.data).all();}
-	[[nodiscard]] bool operator!=(const Offset3D& other) const { return (*this) != other; }
+	[[nodiscard]] bool operator!=(const Offset3D& other) const { return !((*this) == other); }
 	[[nodiscard]] std::strong_ordering operator<=>(const Offset3D& other) const;
 	[[nodiscard]] const int& x() const { return data[0]; }
 	[[nodiscard]] const int& y() const { return data[1]; }

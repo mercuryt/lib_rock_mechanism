@@ -22,11 +22,15 @@ void Blocks::floating_maybeSink(const BlockIndex& index)
 void Blocks::floating_maybeFloatUp(const BlockIndex& index)
 {
 	Items& items = m_area.getItems();
-	for(const ItemIndex& item : item_getAll(index))
+	auto copy = item_getAll(index);
+	for(const ItemIndex& item : copy)
 	{
 		const BlockIndex& location = items.getLocation(item);
-		if(!items.isFloating(item) && items.canFloatAt(item, location))
-			items.setFloating(item);
+		if(!items.isFloating(item))
+		{
+			const FluidTypeId& fluidType = items.getFluidTypeCanFloatInAt(item, location);
+			items.setFloating(item, fluidType);
+		}
 		if(items.isFloating(item))
 		{
 			BlockIndex above = location;

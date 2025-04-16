@@ -114,26 +114,26 @@ TEST_CASE("leadAndFollow")
 	}
 	SUBCASE("wait for follower to keep up if blocked temporarily")
 	{
-		BlockIndex origin1 = blocks.getIndex_i(2, 2, 1);
-		BlockIndex origin2 = blocks.getIndex_i(1, 1, 1);
-		BlockIndex origin3 = blocks.getIndex_i(1, 2, 1);
-		BlockIndex destination1 = blocks.getIndex_i(8, 8, 1);
-		BlockIndex destination2 = blocks.getIndex_i(7, 7, 1);
+		BlockIndex leaderOrigin = blocks.getIndex_i(1, 2, 1);
+		BlockIndex followerOrigin = blocks.getIndex_i(1, 1, 1);
+		BlockIndex blockerOrigin = blocks.getIndex_i(2, 2, 1);
+		BlockIndex destination1 = blocks.getIndex_i(1, 8, 1);
+		BlockIndex destination2 = blocks.getIndex_i(1, 7, 1);
 		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
-			.location=origin1,
+			.location=leaderOrigin,
 			.facing=Facing4::South,
 		});
 		ActorIndex troll1 = actors.create({
 			.species=troll,
-			.location=origin2,
+			.location=followerOrigin,
 			.facing=Facing4::South,
 		});
 		ActorIndex dwarf2 = actors.create({
 			.species=dwarf,
-			.location=origin3,
+			.location=blockerOrigin,
 		});
-		std::unique_ptr<Objective> stationObjective = std::make_unique<StationObjective>(origin3);
+		std::unique_ptr<Objective> stationObjective = std::make_unique<StationObjective>(blockerOrigin);
 		actors.objective_addTaskToStart(dwarf2,std::move(stationObjective));
 		actors.followActor(troll1, dwarf1);
 		actors.move_setDestination(dwarf1, destination1);
@@ -142,17 +142,17 @@ TEST_CASE("leadAndFollow")
 		Step stepsTillMoveEvent = actors.move_stepsTillNextMoveEvent(dwarf1);
 		simulation.fastForward(stepsTillMoveEvent);
 		//Because troll1 is blocked neither dwarf1 or troll1 have moved.
-		CHECK(actors.getLocation(dwarf1) == origin1);
-		CHECK(actors.getLocation(troll1) == origin2);
+		CHECK(actors.getLocation(dwarf1) == leaderOrigin);
+		CHECK(actors.getLocation(troll1) == followerOrigin);
 		CHECK(actors.move_getRetries(dwarf1) == 1);
 		CHECK(actors.move_hasEvent(dwarf1));
-		CHECK(!blocks.shape_canEnterCurrentlyFrom(origin1, actors.getShape(troll1), actors.getLocation(troll1), actors.lineLead_getOccupiedBlocks(dwarf1)));
+		CHECK(!blocks.shape_canEnterCurrentlyFrom(leaderOrigin, actors.getShape(troll1), actors.getLocation(troll1), actors.lineLead_getOccupiedBlocks(dwarf1)));
 		actors.setLocation(dwarf2, blocks.getIndex_i(9, 1, 1));
-		CHECK(blocks.shape_canEnterCurrentlyFrom(origin1, actors.getShape(troll1), actors.getLocation(troll1), actors.lineLead_getOccupiedBlocks(dwarf1)));
+		CHECK(blocks.shape_canEnterCurrentlyFrom(leaderOrigin, actors.getShape(troll1), actors.getLocation(troll1), actors.lineLead_getOccupiedBlocks(dwarf1)));
 		CHECK(actors.move_hasEvent(dwarf1));
 		Step delay = actors.move_stepsTillNextMoveEvent(dwarf1);
 		simulation.fastForward(delay);
-		CHECK(actors.getLocation(troll1) != origin2);
+		CHECK(actors.getLocation(troll1) != followerOrigin);
 		CHECK(actors.isAdjacentToActor(troll1, dwarf1));
 		simulation.fastForwardUntillActorIsAtDestination(area, dwarf1, destination1);
 		CHECK(actors.getLocation(troll1) == destination2);

@@ -49,6 +49,7 @@ class VerySmallSet
 		{
 			// If the front of the union data is T::null() when cast to array then the data is currently an array.
 			// We can be confident that this is not a vector because a vector is made up of two pointers and T::null() is all 1s and a pointer starting with a 1 would be pointing to an address above the 140th terrabyte.
+			// This is dependent on null being a large value, which is provied by StrongInteger.
 			// TODO: we only really need to read / write the first bit.
 			return array.front() == Contained::null();
 		}
@@ -76,17 +77,17 @@ public:
 	class const_iterator;
 	auto operator=(const This& other) -> This& { data = other.data; return *this; }
 	auto operator=(const This&& other) noexcept -> This& { data = std::move(other.data); return *this; }
-	void add(const Contained& value)
+	void insert(const Contained& value)
 	{
 		assert(!contains(value));
-		addNonunique(value);
+		insertNonunique(value);
 	}
-	void maybeAdd(const Contained& value)
+	void maybeInsert(const Contained& value)
 	{
 		if(!contains(value))
-			add(value);
+			insert(value);
 	}
-	void addNonunique(const Contained& value)
+	void insertNonunique(const Contained& value)
 	{
 		if(isArray())
 		{
@@ -131,56 +132,48 @@ public:
 			if(data.vector.size() == threshold)
 			{
 				// If the size has shrunk to the threshold then convert into an array.
-				std::array<Contained, threshold + 1> array;
+				auto vector = std::move(data.vector);
 				// Set the array flag.
-				array.front() = Contained::null();
+				data.array.front() = Contained::null();
 				// Skip index 0 because it is a flag.
-				std::ranges::copy(data.vector, array.begin() + 1);
-				data.array.swap(array);
+				std::ranges::copy(vector, data.array.begin() + 1);
 				assert(isArray());
 			}
 		}
 	}
-	void removeDuplicates()
+	void makeUnique()
 	{
 		if(isArray())
 		{
-			std::sort(data.array.begin() + 1, findFirstArrayNull());
-			auto iter = data.array.begin() + 1;
-			while(iter != data.array.end() && iter->exists())
-			{
-				auto iter2 = iter + 1;
-				while(*iter2 == *iter)
-				{
-					(*iter2) = Contained::null();
-					++iter2;
-				}
-				iter = iter2;
-			}
-			// Sort a second time to shift any newly created nulls to the end.
-			std::sort(data.array.begin() + 1, data.array.end());
+			auto arrayBegin = data.array.begin() + 1;
+			auto arrayEnd = findFirstArrayNull();
+			std::sort(arrayBegin, arrayEnd);
+			auto uniqueEnd = std::unique(arrayBegin, arrayEnd);
+			std::fill(uniqueEnd, arrayEnd, Contained::null());
 		}
 		else
 			util::removeDuplicates(data.vector);
 	}
-	void fromJson(const Json& json)
+	void reserve(uint size)
 	{
-		if(size() > threshold)
-			json.get_to(data.vector);
-		else
+		if(isArray())
 		{
-			data.array.fill(Contained::null());
-			auto iter = data.array.begin() ;
-			for(const Json& item : json)
-				item.get_to((*++iter));
+			if(size > threshold)
+			{
+				auto arrayEnd = findFirstArrayNull();
+				std::vector<Contained> vector(data.array.begin() + 1, arrayEnd);
+				data.vector.swap(vector);
+				assert(!isArray());
+			}
 		}
+		else
+			data.vector.reserve(size);
 	}
-	[[nodiscard]] Json toJson() const
+	void clear()
 	{
-		Json output;
-		for(const Contained& value : data.array)
-			output.push_back(value);
-		return output;
+		if(!isArray())
+			data.vector.clear();
+		data.array.fill(Contained::null());
 	}
 	[[nodiscard]] bool contains(const Contained& value) const
 	{
@@ -299,4 +292,33 @@ public:
 			return found - data.vector.begin();
 		}
 	}
+	[[nodiscard]] Json toJson() const
+	{
+		Json output;
+		if(isArray())
+			output["array"] = data.array;
+		else
+			output["vector"] = data.vector;
+		return output;
+	}
+	void fromJson(const Json& jsonData)
+	{
+		if(jsonData.contains("array"))
+			jsonData["array"].get_to(data.array);
+		else
+			jsonData["vector"].get_to(data.vector);
+	}
+	template<typename Collection>
+	static VerySmallSet fromCollection(const Collection& collection)
+	{
+		VerySmallSet output;
+		output.reserve(collection.size());
+		for(const Contained& value : collection)
+			output.insert(value);
+		return output;
+	}
 };
+template<typename Contained, int threashold>
+inline void to_json(Json& data, const VerySmallSet<Contained, threashold>& set) { data = set.toJson(); }
+template<typename Contained, int threashold>
+inline void from_json(const Json& data, VerySmallSet<Contained, threashold>& set) { set.fromJson(data); }

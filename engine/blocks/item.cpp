@@ -9,9 +9,10 @@
 #include <iterator>
 void Blocks::item_record(const BlockIndex& index, const ItemIndex& item, const CollisionVolume& volume)
 {
+	assert(index.exists());
 	m_itemVolume[index].emplace_back(item, volume);
 	Items& items = m_area.getItems();
-	m_items[index].add(item);
+	m_items[index].insert(item);
 	if(items.isStatic(item))
 		m_staticVolume[index] += volume;
 	else

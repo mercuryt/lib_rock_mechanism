@@ -98,15 +98,21 @@ LocationBucket::visionRequestQuery(const Area& area, const Point3D& position, co
 	output.resize(2, m_actors.size());
 	output.fill(false);
 	//TODO: multi tile actors have multiple entries in location bucket and might be checked for line of sight multiple times.
-	for(auto i = LocationBucketContentsIndex::create(0); i < m_actors.size(); ++i)
-		if(candidates[i.get()])
+	for(uint index = 0; index < m_actors.size(); ++index)
+	{
+		if(candidates[index])
 		{
-			if(isInViewerCuboid[i.get()] || (
-				visionCuboids.contains(m_visionCuboidIndices[i.get()]) &&
-				lineOfSight(area, sphere.center, m_points[i.get()])
-			))
-				output.col(i.get()) = canSeeAndCanBeSeenBy.col(i.get());
+			if(
+				isInViewerCuboid[index] ||
+				sphere.center == m_points[index] ||
+				(
+					visionCuboids.contains(m_visionCuboidIndices[index]) &&
+					lineOfSight(area, sphere.center, m_points[index])
+				)
+			)
+				output.col(index) = canSeeAndCanBeSeenBy.col(index);
 		}
+	}
 	// Multi tile actors must check if their non location blocks can be seen.
 	if(occupiedBlocks.size() != 1 && !output.row(1).all())
 	{

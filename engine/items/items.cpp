@@ -182,14 +182,10 @@ ItemIndex Items::setLocationAndFacing(const ItemIndex& index, const BlockIndex& 
 	}
 	BlockIndex previousLocation = m_location[index];
 	Facing4 previousFacing = m_facing[index];
-	SmallMap<ActorOrItemIndex, Offset3D> onDeckWithOffsets;
+	DeckRotationData deckRotationData;
 	if(previousLocation.exists())
 	{
-		for(const ActorOrItemIndex& onDeck : m_onDeck[index])
-		{
-			onDeckWithOffsets.insert(onDeck, blocks.relativeOffsetTo(previousLocation, onDeck.getLocation(m_area)));
-			onDeck.exit(m_area);
-		}
+		deckRotationData = DeckRotationData::recordAndClearDependentPositions(m_area, ActorOrItemIndex::createForItem(index));
 		exit(index);
 	}
 	m_location[index] = block;
@@ -200,13 +196,13 @@ ItemIndex Items::setLocationAndFacing(const ItemIndex& index, const BlockIndex& 
 	{
 		BlockIndex occupied = blocks.offset(block, pair.offset);
 		blocks.item_record(occupied, index, CollisionVolume::create((quantity * pair.volume.get()).get()));
-		occupiedBlocks.add(occupied);
+		occupiedBlocks.insert(occupied);
 	}
 	if(blocks.isExposedToSky(block))
 		m_onSurface.set(index);
 	else
 		m_onSurface.unset(index);
-	onSetLocation(index, previousLocation, previousFacing, onDeckWithOffsets);
+	onSetLocation(index, previousLocation, previousFacing, deckRotationData);
 	return index;
 }
 void Items::exit(const ItemIndex& index)
@@ -371,7 +367,7 @@ CollisionVolume Items::getTotalCollisionVolume(const ItemIndex& index) const
 }
 MoveTypeId Items::getMoveType(const ItemIndex& index) const
 {
-	return ItemType::getMoveType(m_itemType[index]);
+	return m_moveType[index];
 }
 void Items::log(const ItemIndex& index) const
 {

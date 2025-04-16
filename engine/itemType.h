@@ -38,6 +38,7 @@ struct ItemTypeParamaters final
 	uint32_t wearable_forceAbsorbedUnpiercedModifier = 0;
 	uint32_t wearable_forceAbsorbedPiercedModifier = 0;
 	Percent wearable_percentCoverage = Percent::null();
+	Force motiveForce = Force::create(0);
 	bool wearable_rigid = false;
 	std::vector<BodyPartTypeId> wearable_bodyPartsCovered = {};
 };
@@ -61,6 +62,7 @@ class ItemType final
 	StrongVector<SkillTypeId, ItemTypeId> m_combatSkill;
 	StrongVector<Step, ItemTypeId> m_attackCoolDownBase;
 	StrongVector<std::vector<std::pair<Offset3D, Offset3D>>, ItemTypeId> m_decks;
+	StrongVector<Force, ItemTypeId> m_motiveForce;
 	StrongVector<uint32_t, ItemTypeId> m_wearable_defenseScore;
 	StrongVector<uint32_t, ItemTypeId> m_wearable_layer;
 	StrongVector<uint32_t, ItemTypeId> m_wearable_bodyTypeScale;
@@ -105,5 +107,6 @@ public:
 	[[nodiscard]] static std::vector<BodyPartTypeId>& getWearable_bodyPartsCovered(const ItemTypeId& id);
 	[[nodiscard]] static bool getIsWearable(const ItemTypeId& id);
 	[[nodiscard]] static const std::vector<std::pair<Offset3D, Offset3D>>& getDecks(const ItemTypeId& id);
+	[[nodiscard]] static const Force getMotiveForce(const ItemTypeId& id);
 };
 inline ItemType itemTypeData;

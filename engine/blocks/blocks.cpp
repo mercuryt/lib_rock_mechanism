@@ -187,6 +187,7 @@ BlockIndexChunked Blocks::getIndexChunked(const Point3D& coordinates) const
 }
 Point3D Blocks::getCoordinates(const BlockIndex& index) const
 {
+	assert(index.exists());
 	BlockIndex copy = index;
 	Point3D output;
 	output.data[2] = copy.get() / m_zLevelSize;
@@ -530,7 +531,7 @@ BlockIndex Blocks::offsetRotated(const BlockIndex& index, const Offset3D& inital
 {
 	int rotation = (int)newFacing - (int)previousFacing;
 	if(rotation < 0)
-		rotation += 3;
+		rotation += 4;
 	return offsetRotated(index, initalOffset, (Facing4)rotation);
 }
 BlockIndex Blocks::offsetRotated(const BlockIndex& index, const Offset3D& initalOffset, const Facing4& facing) const
@@ -576,6 +577,11 @@ Offset3D Blocks::relativeOffsetTo(const BlockIndex& index, const BlockIndex& oth
 	Point3D coordinates = getCoordinates(index);
 	Point3D otherCoordinates = getCoordinates(otherIndex);
 	return Offsets(otherCoordinates.data.cast<int>() - coordinates.data.cast<int>());
+}
+BlockIndex Blocks::translatePosition(const BlockIndex& location, const BlockIndex& previousPivot, const BlockIndex& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const
+{
+	Offset3D destinationOffset = relativeOffsetTo(previousPivot, location);
+	return offsetRotated(nextPivot, destinationOffset, previousFacing, nextFacing);
 }
 bool Blocks::canSeeThrough(const BlockIndex& index) const
 {

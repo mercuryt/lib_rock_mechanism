@@ -67,6 +67,9 @@ void ItemType::create(ItemTypeParamaters& p)
 	itemTypeData.m_wearable_rigid.add(p.wearable_rigid);
 	itemTypeData.m_wearable_bodyPartsCovered.add(p.wearable_bodyPartsCovered);
 	itemTypeData.m_decks.add(p.decks);
+	itemTypeData.m_motiveForce.add(p.motiveForce);
+	for(const auto& [high, low] : p.decks)
+		assert(low != Offset3D(0,0,0));
 }
 std::vector<MaterialCategoryTypeId>& ItemType::getMaterialTypeCategories(const ItemTypeId& id) { return itemTypeData.m_materialTypeCategories[id]; }
 std::string& ItemType::getName(const ItemTypeId& id) { return itemTypeData.m_name[id]; }
@@ -96,3 +99,4 @@ bool ItemType::getWearable_rigid(const ItemTypeId& id) { return itemTypeData.m_w
 std::vector<BodyPartTypeId>& ItemType::getWearable_bodyPartsCovered(const ItemTypeId& id) { return itemTypeData.m_wearable_bodyPartsCovered[id]; }
 bool ItemType::getIsWearable(const ItemTypeId& id) { return !itemTypeData.m_wearable_bodyPartsCovered[id].empty(); }
 const std::vector<std::pair<Offset3D, Offset3D>>& ItemType::getDecks(const ItemTypeId& id) { return itemTypeData.m_decks[id]; }
+const Force ItemType::getMotiveForce(const ItemTypeId& id) { return itemTypeData.m_motiveForce[id]; }

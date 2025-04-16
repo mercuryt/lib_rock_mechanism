@@ -1,0 +1,10 @@
+{
+	"name": "small chariot",
+	"shape": "oneByOneFull",
+	"volume": 2000,
+	"generic": false,
+	"value": 300,
+	"moveType": "roll",
+	"materialTypeCategories": ["wood", "metal"],
+	"decks": [[[0,0,1], [0,0,1]]]
+}

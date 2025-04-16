@@ -428,7 +428,7 @@ void Plants::setLocation(const PlantIndex& index, const BlockIndex& location, co
 	for(BlockIndex block : Shape::getBlocksOccupiedAt(m_shape[index], blocks, location, Facing4::North))
 	{
 		blocks.plant_set(block, index);
-		occupied.add(block);
+		occupied.insert(block);
 	}
 	m_location[index] = location;
 	m_facing[index] = Facing4::North;

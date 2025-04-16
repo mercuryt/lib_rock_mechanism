@@ -106,7 +106,7 @@ TEST_CASE("vision")
 		BlockIndex block1 = blocks.getIndex_i(5, 2, 1);
 		BlockIndex block2 = blocks.getIndex_i(5, 5, 1);
 		BlockIndex block3 = blocks.getIndex_i(5, 7, 1);
-		BlockIndex block4 = blocks.getIndex_i(4, 7, 1);
+		BlockIndex block4 = blocks.getIndex_i(6, 7, 1);
 		blocks.solid_set(block2, marble, false);
 		ActorIndex a1 = actors.create({
 			.species=dwarf,

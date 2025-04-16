@@ -121,11 +121,13 @@ public:
 inline void to_json(Json& data, const Density& index) { data = index.get(); }
 inline void from_json(const Json& data, Density& index) { index = Density::create(data.get<float>()); }
 
+class Speed;
 using ForceWidth = uint32_t;
 class Force : public StrongInteger<Force, ForceWidth>
 {
 public:
 	Force() = default;
+	Speed operator/(const Mass& mass) const;
 	struct Hash { [[nodiscard]] size_t operator()(const Force& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Force& index) { data = index.get(); }

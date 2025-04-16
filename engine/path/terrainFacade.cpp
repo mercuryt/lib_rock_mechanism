@@ -302,3 +302,12 @@ TerrainFacade& AreaHasTerrainFacades::getForMoveType(const MoveTypeId& moveType)
 	assert(m_data.contains(moveType));
 	return m_data[moveType];
 }
+TerrainFacade& AreaHasTerrainFacades::getOrCreateForMoveType(const MoveTypeId& moveType)
+{
+	//TODO: generate terrain facade in thread.
+	auto found = m_data.find(moveType);
+	if(found == m_data.end())
+		return m_data.emplace(moveType, m_area, moveType);
+	else
+		return *found->second;
+}

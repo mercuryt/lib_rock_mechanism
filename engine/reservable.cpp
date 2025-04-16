@@ -2,6 +2,7 @@
 #include "simulation/simulation.h"
 #include "deserializeDishonorCallbacks.h"
 #include "types.h"
+#include "blocks/blocks.h"
 #include <bits/ranges_algo.h>
 void CanReserve::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area)
 {
@@ -37,6 +38,26 @@ void CanReserve::setFaction(FactionId faction)
 		reservable->updateFactionFor(*this, m_faction, faction);
 	m_faction = faction;
 }
+bool CanReserve::translateAndReservePositions(Blocks& blocks, SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>>&& previouslyReserved, const BlockIndex& previousPivot, const BlockIndex& newPivot, const Facing4& previousFacing, const Facing4& newFacing)
+{
+	for(auto& [block, dishonorCallback] : previouslyReserved)
+	{
+		block = blocks.translatePosition(block, previousPivot, newPivot, previousFacing, newFacing);
+		if(blocks.isReserved(block, m_faction))
+			return false;
+		blocks.reserve(block, *this, std::move(dishonorCallback));
+		m_blocks.insert(block, &blocks.getReservable(block));
+	}
+	return true;
+}
+void CanReserve::recordReservedBlock(const BlockIndex& block, Reservable* reservable)
+{
+	m_blocks.insert(block, reservable);
+}
+void CanReserve::eraseReservedBlock(const BlockIndex& block)
+{
+	m_blocks.erase(block);
+}
 bool CanReserve::hasReservationWith(Reservable& reservable) const { return std::ranges::find(m_reservables, &reservable) != m_reservables.end(); }
 bool CanReserve::hasReservations() const
 {
@@ -53,6 +74,12 @@ void Reservable::eraseReservationFor(CanReserve& canReserve)
 	else
 		m_reservedCounts[canReserve.m_faction] -= m_canReserves[&canReserve];
 	m_canReserves.erase(&canReserve);
+}
+std::unique_ptr<DishonorCallback> Reservable::unreserveAndReturnCallback(CanReserve& canReserve)
+{
+	auto output = std::move(m_dishonorCallbacks[&canReserve]);
+	eraseReservationFor(canReserve);
+	return output;
 }
 bool Reservable::isFullyReserved(const FactionId faction) const
 {

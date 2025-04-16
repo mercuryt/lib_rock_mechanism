@@ -164,5 +164,7 @@ public:
 	void maybeRegisterMoveType(const MoveTypeId& moveType);
 	void clearPathRequests();
 	[[nodiscard]] TerrainFacade& getForMoveType(const MoveTypeId& moveTypeId);
+	[[nodiscard]] TerrainFacade& getOrCreateForMoveType(const MoveTypeId& moveTypeId);
 	[[nodiscard]] bool empty() const { for(const auto& pair : m_data) { if(!pair.second->empty()) return false; } return true; }
+	[[nodiscard]] bool contains(const MoveTypeId& moveTypeId) const { return m_data.contains(moveTypeId); }
 };

@@ -302,6 +302,8 @@ void definitions::loadItemTypes()
 			.generic=data.contains("generic") && data["generic"].get<bool>(),
 			.canHoldFluids=data.contains("canHoldFluids"),
 		};
+		if(data.contains("motiveForce"))
+			data["motiveForce"].get_to(p.motiveForce);
 		if(data.contains("decks"))
 			data["decks"].get_to(p.decks);
 		if(data.contains("edibleForDrinkersOf"))

@@ -189,12 +189,14 @@ public:
 	void removeItemToPickup(const ItemReference& item, const Quantity& quantity);
 	// To be called when the last worker is removed, when a haul subproject repetidly fails, or when a required reservation is dishonored, resets to pre-reservations status.
 	void reset();
-	// TODO: Implimentation of this.
-	void resetOrCancel();
+	void resetOrCancel() { if(canReset()) reset(); else cancel(); }
 	// Before unload when shutting down or hibernating.
 	void clearReservations();
 	// In HaulSubproject::complete, before merging generics.
 	void clearReferenceFromRequiredItems(const ItemReference& ref);
+	// These two are to be used when a project is on a moving vehicle.
+	void clearLocation();
+	void setLocation(const BlockIndex& block);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] FactionId getFaction() { return m_faction; }
 	[[nodiscard]] CanReserve& getCanReserve() { return m_canReserve; }

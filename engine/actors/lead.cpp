@@ -61,15 +61,17 @@ bool Actors::lineLead_followersCanMoveEver(const ActorIndex& index) const
 	while(follower.exists())
 	{
 		const BlockIndex& location = follower.getLocation(m_area);
-		auto found = path.find(location);
-		assert(found != path.end());
-		assert(found != path.begin());
-		const BlockIndex& next = *(--found);
-		if(!blocks.shape_anythingCanEnterEver(next))
-			return false;
-		const Facing4& facing = blocks.facingToSetWhenEnteringFrom(next, location);
-		if(!blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(next, follower.getShape(m_area), follower.getMoveType(m_area), facing))
-			return false;
+		auto index = path.findLastIndex(location);
+		assert(index != path.size());
+		if(index != 0)
+		{
+			const BlockIndex& next = path[index - 1];
+			if(!blocks.shape_anythingCanEnterEver(next))
+				return false;
+			const Facing4& facing = blocks.facingToSetWhenEnteringFrom(next, location);
+			if(!blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(next, follower.getShape(m_area), follower.getMoveType(m_area), facing))
+				return false;
+		}
 		follower = follower.getFollower(m_area);
 	}
 	return true;
@@ -85,12 +87,14 @@ bool Actors::lineLead_followersCanMoveCurrently(const ActorIndex& index) const
 	while(follower.exists())
 	{
 		const BlockIndex& location = follower.getLocation(m_area);
-		auto found = path.find(location);
-		assert(found != path.end());
-		assert(found != path.begin());
-		const BlockIndex& next = *(--found);
-		if(!blocks.shape_canEnterCurrentlyFrom(next, follower.getShape(m_area), location, occupied))
-			return false;
+		auto index = path.findLastIndex(location);
+		assert(index != path.size());
+		if(index != 0)
+		{
+			const BlockIndex& next = path[index - 1];
+			if(!blocks.shape_canEnterCurrentlyFrom(next, follower.getShape(m_area), location, occupied))
+				return false;
+		}
 		follower = follower.getFollower(m_area);
 	}
 	return true;
@@ -104,10 +108,10 @@ OccupiedBlocksForHasShape Actors::lineLead_getOccupiedBlocks(const ActorIndex& i
 	while(follower.exists())
 	{
 		for(BlockIndex block : follower.getBlocks(m_area))
-			output.addNonunique(block);
+			output.insertNonunique(block);
 		follower = follower.getFollower(m_area);
 	}
-	output.removeDuplicates();
+	output.makeUnique();
 	return output;
 }
 bool Actors::lineLead_pathEmpty(const ActorIndex& index) const
@@ -139,13 +143,29 @@ void Actors::lineLead_clearPath(const ActorIndex& index)
 {
 	m_leadFollowPath[index].clear();
 }
-void Actors::lineLead_appendToPath(const ActorIndex& index, const BlockIndex& block)
+void Actors::lineLead_appendToPath(const ActorIndex& index, const BlockIndex& block, const Facing4& facing)
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
 	if(m_leadFollowPath[index].empty())
 		m_leadFollowPath[index].add(m_location[index]);
-	m_leadFollowPath[index].add(block);
+	const BlockIndex& back = m_leadFollowPath[index].back();
+	if(block == back)
+		return;
+	Blocks& blocks = m_area.getBlocks();
+	if(blocks.isAdjacentToIncludingCornersAndEdges(block, back))
+		m_leadFollowPath[index].add(block);
+	else
+	{
+		const MoveTypeId& moveType = lineLead_getMoveType(index);
+		const ShapeId& shape = lineLead_getLargestShape(index);
+		auto path = m_area.m_hasTerrainFacades.getForMoveType(moveType).findPathToWithoutMemo(block, facing, shape, back);
+		// TODO: Can this fail?
+		assert(!path.path.empty());
+		assert(!path.path.contains(block));
+		path.path.add(block);
+		m_leadFollowPath[index].add(path.path.begin(), path.path.end());
+	}
 }
 void Actors::lineLead_moveFollowers(const ActorIndex& index)
 {
@@ -163,6 +183,8 @@ void Actors::lineLead_moveFollowers(const ActorIndex& index)
 		assert(found != path.end());
 		assert(found != path.begin());
 		const BlockIndex& next = *(--found);
+		if(follower.getLeader(m_area).occupiesBlock(m_area, next))
+			return;
 		follower.setLocationAndFacing(m_area, next, blocks.facingToSetWhenEnteringFrom(next, location));
 		follower = follower.getFollower(m_area);
 	}

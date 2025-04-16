@@ -191,7 +191,8 @@ bool HasShapes<Derived, Index>::isAdjacentToLocation(const Index& index, const B
 	return predicateForAnyAdjacentBlock(index, predicate);
 }
 template<class Derived, class Index>
-bool HasShapes<Derived, Index>::isAdjacentToAny(const Index& index, const BlockIndices& locations) const
+template<class BlockCollection>
+bool HasShapes<Derived, Index>::isAdjacentToAny(const Index& index, const BlockCollection& locations) const
 {
 	std::function<bool(const BlockIndex)> predicate = [&](const BlockIndex block) { return locations.contains(block); };
 	return predicateForAnyAdjacentBlock(index, predicate);
