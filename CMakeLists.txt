@@ -27,7 +27,7 @@ else()
 endif()
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g2 -ggdb -fno-inline -fmax-errors=5")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -fno-exceptions -flto=auto")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -fno-exceptions -flto=auto -ltcmalloc -fno-rtti")
 if(NOT CMAKE_BUILD_TYPE EQUAL "Release")
 	add_compile_options(-fsanitize=address)
 	add_link_options(-fsanitize=address)

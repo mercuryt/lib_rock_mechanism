@@ -83,13 +83,13 @@ DeckRotationData DeckRotationData::recordAndClearDependentPositions(Area& area, 
 			// TODO: this fetches the DeckId seperately for each actor but they are all the same.
 			DeckRotationDataSingle data{actors.canReserve_unreserveAndReturnBlocksAndCallbacksOnSameDeck(actor), actors.getLocation(actor), actors.getFacing(actor)};
 			output.m_actorsOrItems.insert(onDeck, data);
-			actors.exit(actor);
+			actors.location_clear(actor);
 		}
 		else
 		{
 			const ItemIndex& item = onDeck.getItem();
 			output.m_actorsOrItems.insert(onDeck, DeckRotationDataSingle{{}, items.getLocation(item), items.getFacing(item)});
-			items.exit(item);
+			items.location_clear(item);
 		}
 	}
 	if(actorOrItem.isItem())
@@ -135,7 +135,7 @@ void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const BlockIndex&
 			// Update location.
 			const BlockIndex location = blocks.translatePosition(data.location, previousPivot, newPivot, previousFacing, newFacing);
 			const Facing4 facing = util::rotateFacingByDifference(data.facing, previousFacing, newFacing);
-			actors.setLocationAndFacingNoCheckMoveType(actor, location, facing);
+			actors.location_set(actor, location, facing);
 			if(actors.mount_isPilot(actor))
 				continue;
 			// Update path.
@@ -167,7 +167,7 @@ void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const BlockIndex&
 			const ItemIndex& item = onDeck.getItem();
 			const BlockIndex location = blocks.translatePosition(data.location, previousPivot, newPivot, previousFacing, newFacing);
 			const Facing4 facing = util::rotateFacingByDifference(data.facing, previousFacing, newFacing);
-			items.setLocationAndFacing(item, location, facing);
+			items.location_set(item, location, facing);
 		}
 	}
 	// Reinstance projects.

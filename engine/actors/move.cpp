@@ -71,72 +71,64 @@ void Actors::move_callback(const ActorIndex& index)
 {
 	assert(!m_path[index].empty());
 	assert(m_destination[index].exists());
-	BlockIndex block = m_path[index].back();
-	BlockIndex previousLocation;
-	Blocks& blocks = m_area.getBlocks();
+	const BlockIndex& newLocation = m_path[index].back();
+	const BlockIndex previousLocation = getCombinedLocation(index);
+	const Facing4 previousFacing = getFacing(index);
 	Items& items = getItems();
-	bool permanantlyBlocked = false;
-	bool temperarilyBlocked = false;
+	SetLocationAndFacingResult result;
+	const BlockIndex& destination = move_getDestination(index);
+	const Blocks& blocks = m_area.getBlocks();
+	const ShapeId& shape = getCompoundShape(index);
+	const MoveTypeId& moveType = getMoveType(index);
 	if(m_isPilot[index])
 	{
+		// If piloting then move the vehicle instead of the actor.
+		// When piloting a mounted actor the mount should recive the move_callback so we assume that we are piloting a vehicle.
 		const ItemIndex& isPiloting = m_isOnDeckOf[index].getItem();
-		previousLocation = items.getLocation(isPiloting);
-		if(
-			!blocks.shape_anythingCanEnterEver(block) ||
-			!blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, items.getCompoundShape(isPiloting), items.getMoveType(isPiloting), previousLocation)
-		)
-			permanantlyBlocked = true;
-		else
-		{
-			// Generate a shape for the vehicle and whatever is currently on deck.
-			const OccupiedBlocksForHasShape occupied = items.getBlocksCombined(isPiloting);
-			if(!blocks.shape_canEnterCurrentlyFrom(block, items.getCompoundShape(isPiloting), previousLocation, occupied))
-				temperarilyBlocked = true;
-		}
+		const auto itemAndResult = items.location_tryToMoveToDynamic(isPiloting, newLocation);
+		result = itemAndResult.second;
 	}
 	else
-	{
-		previousLocation = m_location[index];
-		if(
-			!blocks.shape_anythingCanEnterEver(block) ||
-			!blocks.shape_shapeAndMoveTypeCanEnterEverFrom(block, m_compoundShape[index], m_moveType[index], previousLocation)
-		)
-			permanantlyBlocked = true;
-		else
-		{
-			if(onDeck_hasAnyContent(index))
-			{
-				const OccupiedBlocksForHasShape occupied = getBlocksCombined(index);
-				if(!blocks.shape_canEnterCurrentlyFrom(block, m_compoundShape[index], previousLocation, occupied))
-					temperarilyBlocked = true;
-			}
-			else if(!blocks.shape_canEnterCurrentlyFrom(block, m_compoundShape[index], previousLocation, m_blocks[index]))
-				temperarilyBlocked = true;
-		}
-	}
-	if(isLeading(index) && !permanantlyBlocked)
+		result = location_tryToMoveToDynamic(index, newLocation);
+	if(isLeading(index) && result != SetLocationAndFacingResult::PermanantlyBlocked)
 	{
 		assert(!isFollowing(index));
 		if(!lineLead_followersCanMoveEver(index))
-			permanantlyBlocked = true;
-		else if(!temperarilyBlocked && !lineLead_followersCanMoveCurrently(index))
-			temperarilyBlocked = true;
+			result = SetLocationAndFacingResult::PermanantlyBlocked;
+		else if(result == SetLocationAndFacingResult::Success && !lineLead_followersCanMoveCurrently(index))
+			result = SetLocationAndFacingResult::TemporarilyBlocked;
+		// Roll back leader position if line cannot follow.
+		if(result != SetLocationAndFacingResult::Success)
+			location_set(index, previousLocation, previousFacing);
 	}
-	// Path has become permanantly blocked since being generated, repath.
-	if(permanantlyBlocked)
+	if(result == SetLocationAndFacingResult::PermanantlyBlocked)
 	{
-		move_setDestination(index, m_destination[index]);
+		// Path has become permanantly blocked since being generated.
+		if(blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(destination, shape, moveType))
+			// Destination is still valid.
+			move_setDestination(index, destination);
+		else
+			// Destination no longer valid
+			objective_canNotCompleteSubobjective(index);
 		return;
 	}
-	if(temperarilyBlocked)
+	if(result == SetLocationAndFacingResult::TemporarilyBlocked)
 	{
 		// Path is temporarily blocked, wait a bit and then detour if still blocked.
 		if(m_moveRetries[index] == Config::moveTryAttemptsBeforeDetour)
 		{
 			if(m_hasObjectives[index]->hasCurrent())
+				// Let the objective mediate the detor. Allows controll over reservations, finding a different adjacent to use as destination, etc.
 				m_hasObjectives[index]->detour(m_area);
+			else if(blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(destination, shape, moveType))
+			{
+				constexpr bool detour = true;
+				// Destination is still valid, detour.
+				move_setDestination(index, destination, detour);
+			}
 			else
-				move_setDestination(index, m_destination[index], true);
+				// Destination no longer valid
+				objective_canNotCompleteSubobjective(index);
 		}
 		else
 		{
@@ -146,26 +138,16 @@ void Actors::move_callback(const ActorIndex& index)
 	}
 	else
 	{
-		// Path is not blocked, move.
+		// Path is not blocked, move successful.
 		m_moveRetries[index] = 0;
-		Facing4 facing = blocks.facingToSetWhenEnteringFrom(block, previousLocation);
-		// If piloting then move the vehicle instead of the actor.
-		// When piloting a mounted actor the mount should recive the move_callback so we assume that we are piloting a vehicle.
-		if(m_isPilot[index])
-		{
-			assert(m_isOnDeckOf[index].isItem());
-			m_isOnDeckOf[index].setLocationAndFacing(m_area, block, facing);
-		}
-		else
-			setLocationAndFacing(index, block, facing);
 		// Move followers.
 		if(isLeading(index))
 		{
-			lineLead_pushFront(index, block);
+			lineLead_pushFront(index, newLocation);
 			lineLead_moveFollowers(index);
 		}
 		// Respond to reaching end of path or attempt to schedule another move step.
-		if(block == m_destination[index])
+		if(newLocation == destination)
 		{
 			m_path[index].clear();
 			m_destination[index].clear();
@@ -186,19 +168,16 @@ void Actors::move_callback(const ActorIndex& index)
 		{
 			assert(m_path[index].size() != 1);
 			m_path[index].popBack();
-			assert(!m_path[index].empty());
-			const BlockIndex& nextBlock = m_path[index].back();
-			if(blocks.shape_anythingCanEnterEver(nextBlock) && blocks.shape_shapeAndMoveTypeCanEnterEverFrom(nextBlock, m_compoundShape[index], m_moveType[index], block))
-				move_schedule(index, m_location[index]);
+			const BlockIndex& nextLocation = m_path[index].back();
+			if(blocks.shape_shapeAndMoveTypeCanEnterEverFrom(nextLocation, shape, moveType, newLocation))
+				// Can take next step.
+				move_schedule(index, newLocation);
+			else if(blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(destination, shape, moveType))
+				// Destination is still valid.
+				move_setDestination(index, destination);
 			else
-			{
-				// Path is no longer valid.
-				const ActorIndex& pilot = mount_getPilot(index);
-				if(pilot.exists())
-					m_hasObjectives[pilot]->cannotCompleteSubobjective(m_area);
-				else
-					m_hasObjectives[index]->cannotCompleteSubobjective(m_area);
-			}
+				// Destination no longer valid
+				objective_canNotCompleteSubobjective(index);
 		}
 	}
 }

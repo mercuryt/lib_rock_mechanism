@@ -164,7 +164,7 @@ TEST_CASE("dig")
 		Cuboid tunnel(blocks, tunnelEnd, tunnelStart);
 		for(const BlockIndex& block : tunnel.getView(blocks))
 			area.m_hasDigDesignations.designate(faction, block, nullptr);
-		items.exit(pick);
+		items.location_clear(pick);
 		actors.equipment_add(dwarf1, pick);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
@@ -435,7 +435,7 @@ TEST_CASE("dig")
 	}
 	SUBCASE("player interrupts worker, project may reset")
 	{
-		items.exit(pick);
+		items.location_clear(pick);
 		actors.equipment_add(dwarf1, pick);
 		ActorIndex dwarf2 = actors.create({
 			.species=dwarf,

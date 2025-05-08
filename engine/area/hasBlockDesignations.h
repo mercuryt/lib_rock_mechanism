@@ -5,7 +5,6 @@
 #include "../designations.h"
 #include "idTypes.h"
 #include "vectorContainers.h"
-#include <unordered_map>
 
 class Area;
 struct DeserializationMemo;

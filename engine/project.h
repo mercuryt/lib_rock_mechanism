@@ -143,7 +143,7 @@ protected:
 	FactionId m_faction;
 	// Where the materials are delivered to and where the work gets done.
 	BlockIndex m_location;
-	Project(const FactionId& faction, Area& area, const BlockIndex& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr);
+	Project(const FactionId& faction, Area& area, const BlockIndex& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr, const BlockIndices& additionalBlocksToReserve = {});
 	Project(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 private:
 	// Count how many times we have attempted to create a haul subproject.

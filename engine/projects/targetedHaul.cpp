@@ -26,9 +26,12 @@ void TargetedHaulProject::onComplete()
 	ActorOrItemIndex target = m_target.getIndexPolymorphic(actors.m_referenceData, items.m_referenceData);
 	m_target.clear();
 	if(target.getLocation(m_area) != m_location)
-		target.setLocationAndFacing(m_area, m_location, actors.getFacing(workers.begin()->first.getIndex(actors.m_referenceData)));
+		target.location_set(m_area, m_location, actors.getFacing(workers.begin()->first.getIndex(actors.m_referenceData)));
 	m_area.m_hasTargetedHauling.complete(*this);
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);
 }
-void TargetedHaulProject::onDelivered(const ActorOrItemIndex& delivered) { delivered.setLocationAndFacing(m_area, m_location, Facing4::North); }
+void TargetedHaulProject::onDelivered(const ActorOrItemIndex& delivered)
+{
+	delivered.location_set(m_area, m_location, Facing4::North);
+}

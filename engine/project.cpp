@@ -628,21 +628,25 @@ void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 	m_project.m_requiredFluids.clear();
 }
 // Derived classes are expected to provide getDuration, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete.
-Project::Project(const FactionId& f, Area& a, const BlockIndex& l, const Quantity& mw, std::unique_ptr<DishonorCallback> locationDishonorCallback) :
-	m_finishEvent(a.m_eventSchedule),
-	m_tryToHaulEvent(a.m_eventSchedule),
-	m_tryToReserveEvent(a.m_eventSchedule),
-	m_tryToHaulThreadedTask(a.m_threadedTaskEngine),
-	m_tryToAddWorkersThreadedTask(a.m_threadedTaskEngine),
-	m_canReserve(f),
-	m_area(a),
-	m_faction(f),
-	m_location(l),
+Project::Project(const FactionId& faction, Area& area, const BlockIndex& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback, const BlockIndices& additionalBlocksToReserve) :
+	m_finishEvent(area.m_eventSchedule),
+	m_tryToHaulEvent(area.m_eventSchedule),
+	m_tryToReserveEvent(area.m_eventSchedule),
+	m_tryToHaulThreadedTask(area.m_threadedTaskEngine),
+	m_tryToAddWorkersThreadedTask(area.m_threadedTaskEngine),
+	m_canReserve(faction),
+	m_area(area),
+	m_faction(faction),
+	m_location(location),
 	m_minimumMoveSpeed(Config::minimumHaulSpeedInital),
-	m_maxWorkers(mw)
+	m_maxWorkers(maxWorkers)
 {
-	m_area.getBlocks().reserve(m_location, m_canReserve, std::move(locationDishonorCallback));
-	m_area.getBlocks().project_add(m_location, *this);
+	Blocks& blocks = m_area.getBlocks();
+	blocks.reserve(m_location, m_canReserve, std::move(locationDishonorCallback));
+	for(const BlockIndex& block : additionalBlocksToReserve)
+		// This isn't what required shape callback was meant for but the code would be the same. Rename it maybe?
+		blocks.reserve(block, m_canReserve, std::make_unique<ProjectRequiredShapeDishonoredCallback>(*this));
+	blocks.project_add(m_location, *this);
 }
 Project::Project(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
 	m_finishEvent(area.m_eventSchedule),
@@ -1079,7 +1083,13 @@ void Project::complete()
 		m_area.m_hasStockPiles.registerFaction(m_faction);
 	for(auto& [itemType, materialType, quantity] : getByproducts())
 	{
-		ItemIndex item = blocks.item_addGeneric(m_location, itemType, materialType, quantity);
+		const MoveTypeId& moveType = ItemType::getMoveType(itemType);
+		ShapeId shape = ItemType::getShape(itemType);
+		if(quantity != 0)
+			shape = Shape::mutateMultiplyVolume(shape, quantity);
+		const auto [block, facing] = blocks.shape_getNearestEnterableEverBlockWithFacing(m_location, shape, moveType);
+		// TODO: send facing to addGeneric?
+		ItemIndex item = blocks.item_addGeneric(block, itemType, materialType, quantity);
 		// Item may be newly created or it may be prexisting, and thus already designated for stockpileing.
 		if(!items.stockpile_canBeStockPiled(item, m_faction))
 			m_area.m_hasStockPiles.getForFaction(m_faction).addItem(item);

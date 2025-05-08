@@ -172,7 +172,7 @@ void UniformObjective::equip(Area& area, const ItemIndex& item, const ActorIndex
 				element.m_quantity -= items.getQuantity(item);
 			break;
 		}
-	items.exit(item);
+	items.location_clear(item);
 	Actors& actors = area.getActors();
 	actors.equipment_add(actor, item);
 	if(m_elementsCopy.empty())

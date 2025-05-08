@@ -55,7 +55,7 @@ void SimulationHasAreas::destroyArea(Area& area)
 	m_simulation.m_dramaEngine->removeArcsForArea(area);
 	Actors& actors = area.getActors();
 	for(ActorIndex actor : actors.getAll())
-		actors.exit(actor);
+		actors.location_clear(actor);
 	m_areasById.erase(area.m_id);
 	m_areas.erase(area.m_id);
 }

@@ -2,28 +2,46 @@
 #include "../actors/actors.h"
 #include "../area/area.h"
 #include "types.h"
-void Blocks::actor_record(const BlockIndex& index, const ActorIndex& actor, const CollisionVolume& volume)
+void Blocks::actor_recordDynamic(const BlockIndex& index, const ActorIndex& actor, const CollisionVolume& volume)
 {
 	Actors& actors = m_area.getActors();
+	assert(!actors.isStatic(actor));
 	m_actorVolume[index].emplace_back(actor, volume);
 	m_actors[index].insert(actor);
-	if(actors.isStatic(actor))
-		m_staticVolume[index] += volume;
-	else
-		m_dynamicVolume[index] += volume;
+	m_dynamicVolume[index] += volume;
 }
-void Blocks::actor_erase(const BlockIndex& index, const ActorIndex& actor)
+void Blocks::actor_recordStatic(const BlockIndex& index, const ActorIndex& actor, const CollisionVolume& volume)
 {
 	Actors& actors = m_area.getActors();
+	assert(actors.isStatic(actor));
+	m_actorVolume[index].emplace_back(actor, volume);
+	m_actors[index].insert(actor);
+	m_staticVolume[index] += volume;
+}
+void Blocks::actor_eraseStatic(const BlockIndex& index, const ActorIndex& actor)
+{
+	Actors& actors = m_area.getActors();
+	assert(actors.isStatic(actor));
 	auto& blockActors = m_actors[index];
 	auto& blockActorVolume = m_actorVolume[index];
 	auto iter = blockActors.find(actor);
 	uint16_t offset = (iter - blockActors.begin()).getIndex();
 	auto iter2 = m_actorVolume[index].begin() + offset;
-	if(actors.isStatic(actor))
-		m_staticVolume[index] -= iter2->second;
-	else
-		m_dynamicVolume[index] -= iter2->second;
+	m_staticVolume[index] -= iter2->second;
+	blockActors.remove(iter);
+	(*iter2) = blockActorVolume.back();
+	blockActorVolume.pop_back();
+}
+void Blocks::actor_eraseDynamic(const BlockIndex& index, const ActorIndex& actor)
+{
+	Actors& actors = m_area.getActors();
+	assert(!actors.isStatic(actor));
+	auto& blockActors = m_actors[index];
+	auto& blockActorVolume = m_actorVolume[index];
+	auto iter = blockActors.find(actor);
+	uint16_t offset = (iter - blockActors.begin()).getIndex();
+	auto iter2 = m_actorVolume[index].begin() + offset;
+	m_dynamicVolume[index] -= iter2->second;
 	blockActors.remove(iter);
 	(*iter2) = blockActorVolume.back();
 	blockActorVolume.pop_back();

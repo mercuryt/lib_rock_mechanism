@@ -23,7 +23,7 @@ TEST_CASE("octTree")
 		blocks.solid_set(blocks.getBlockBelow(block), granite, false);
 		ActorIndex a1 = actors.create({.species=dwarf, .location=block});
 		CHECK(area.m_octTree.contains(actors.getReference(a1), blocks.getCoordinates(block)));
-		actors.exit(a1);
+		actors.location_clear(a1);
 		CHECK(!area.m_octTree.contains(actors.getReference(a1), blocks.getCoordinates(block)));
 	}
 	SUBCASE("split and merge")
@@ -53,7 +53,7 @@ TEST_CASE("octTree")
 			CHECK(!blocks.actor_empty(block));
 			ActorIndex actor = blocks.actor_getAll(block).front();
 			CHECK(actor.exists());
-			actors.exit(actor);
+			actors.location_clear(actor);
 			CHECK(!area.m_octTree.contains(actors.getReference(actor), blocks.getCoordinates(block)));
 		}
 		CHECK(area.m_octTree.getActorCount() == Config::maximumOccupantsForOctTreeToMerge);

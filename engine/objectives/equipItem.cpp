@@ -25,7 +25,7 @@ void EquipItemObjective::execute(Area& area, const ActorIndex& actor)
 	{
 		if(actors.equipment_canEquipCurrently(actor, item))
 		{
-			area.getItems().exit(item);
+			area.getItems().location_clear(item);
 			actors.equipment_add(actor, item);
 			actors.objective_complete(actor, *this);
 		}

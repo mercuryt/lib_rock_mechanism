@@ -55,6 +55,7 @@ struct MaterialTypeParamaters final
 	bool transparent;
 	MaterialCategoryTypeId materialTypeCategory = MaterialCategoryTypeId::null();
 	std::vector<SpoilsDataTypeId> spoilData = {};
+	float valuePerUnitFullDisplacement;
 	Temperature meltingPoint = Temperature::null();
 	FluidTypeId meltsInto = FluidTypeId::null();
 	// Construction.
@@ -77,6 +78,7 @@ class MaterialType final
 	StrongVector<uint32_t, MaterialTypeId> m_hardness;
 	StrongBitSet<MaterialTypeId> m_transparent;
 	StrongVector<MaterialCategoryTypeId, MaterialTypeId> m_materialTypeCategory;
+	StrongVector<uint, MaterialTypeId> m_valuePerUnitFullDisplacement;
 	// Construction.
 	StrongVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId> m_construction_consumed;
 	StrongVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId>  m_construction_unconsumed;
@@ -104,6 +106,7 @@ public:
 	[[nodiscard]] static Density getDensity(const MaterialTypeId& id);
 	[[nodiscard]] static uint32_t getHardness(const MaterialTypeId& id);
 	[[nodiscard]] static bool getTransparent(const MaterialTypeId& id);
+	[[nodiscard]] static uint getValuePerUnitFullDisplacement(const MaterialTypeId& id);
 	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(const MaterialTypeId& id);
 	[[nodiscard]] static std::vector<SpoilsDataTypeId>& getSpoilData(const MaterialTypeId& id);
 	[[nodiscard]] static Temperature getMeltingPoint(const MaterialTypeId& id);

@@ -187,6 +187,7 @@ void Config::load()
 	restIntervalSteps = Step::create(data["restIntervalSeconds"].get<uint32_t>() * stepsPerSecond.get());
 	data["reserveSizeVisionCuboidAdjacent"].get_to(reserveSizeVisionCuboidAdjacent);
 	data["rollingMassModifier"].get_to(rollingMassModifier);
+	data["floatingMassModifier"].get_to(floatingMassModifier);
 	data["rowForcePerUnitStrength"].get_to(rowForcePerUnitStrength);
 	data["scaleOfHumanBody"].get_to(scaleOfHumanBody);
 	data["skinPierceForceCost"].get_to(skinPierceForceCost);
@@ -216,6 +217,7 @@ void Config::load()
 	data["unitsOfMoveSpeedPerUnitOfAgility"].get_to(unitsOfMoveSpeedPerUnitOfAgility);
 	data["unitsOfWoundAreaPerUnitItemScaleFactor"].get_to(unitsOfWoundAreaPerUnitItemScaleFactor);
 	data["unitsOfVolumePerUnitOfCollisionVolume"].get_to(unitsOfVolumePerUnitOfCollisionVolume);
+	data["vehicleMassToCarryMassModifier"].get_to(vehicleMassToCarryMassModifier);
 	data["visionRequestsReservationSize"].get_to(visionRequestsReservationSize);
 	data["visionThreadingBatchSize"].get_to(visionThreadingBatchSize);
 	data["wanderMaximumNumberOfBlocks"].get_to(wanderMaximumNumberOfBlocks);

@@ -15,6 +15,7 @@
 #include "../index.h"
 #include "../attackType.h"
 #include "../uniform.h"
+#include "../geometry/offsetCuboidSet.h"
 #include "actors/uniform.h"
 #include <memory>
 
@@ -145,11 +146,18 @@ public:
 	void sharedConstructor(const ActorIndex& index);
 	void scheduleNeeds(const ActorIndex& index);
 	void resetNeeds(const ActorIndex& index);
-	void setShape(const ActorIndex& index, const ShapeId& shape);
-	void setLocation(const ActorIndex& index, const BlockIndex& block);
-	void setLocationAndFacing(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
-	void setLocationAndFacingNoCheckMoveType(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
-	void exit(const ActorIndex& index);
+	void location_set(const ActorIndex& index, const BlockIndex& block, const Facing4 facing);
+	void location_setStatic(const ActorIndex& index, const BlockIndex& block, const Facing4 facing);
+	void location_setDynamic(const ActorIndex& index, const BlockIndex& block, const Facing4 facing);
+	// Used when item already has a location, rolls back position on failure.
+	SetLocationAndFacingResult location_tryToMoveToStatic(const ActorIndex& index, const BlockIndex& block);
+	SetLocationAndFacingResult location_tryToMoveToDynamic(const ActorIndex& index, const BlockIndex& block);
+	// Used when item does not have a location.
+	SetLocationAndFacingResult location_tryToSetStatic(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
+	SetLocationAndFacingResult location_tryToSetDynamic(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
+	void location_clear(const ActorIndex& index);
+	void location_clearStatic(const ActorIndex& index);
+	void location_clearDynamic(const ActorIndex& index);
 	void removeMassFromCorpse(const ActorIndex& index, const Mass& mass);
 	void die(const ActorIndex& index, CauseOfDeath causeOfDeath);
 	void passout(const ActorIndex& index, const Step& duration);
@@ -186,6 +194,7 @@ public:
 	[[nodiscard]] AnimalSpeciesId getSpecies(const ActorIndex& index) const { return m_species[index]; }
 	[[nodiscard]] Mass getUnencomberedCarryMass(const ActorIndex& index) const { return m_unencomberedCarryMass[index]; }
 	[[nodiscard]] BlockIndex getCombinedLocation(const ActorIndex& index) const;
+	[[nodiscard]] ActorOrItemIndex getIsPiloting(const ActorIndex& index) const;
 	// -Stamina.
 	void stamina_recover(const ActorIndex& index);
 	void stamina_spend(const ActorIndex& index, const Stamina& stamina);
@@ -540,9 +549,9 @@ public:
 	[[nodiscard]] bool mount_hasPilot(const ActorIndex& index) const;
 	[[nodiscard]] bool mount_exists(const ActorIndex& index) const { return m_isOnDeckOf[index].exists(); }
 	[[nodiscard]] ActorIndex mount_getPilot(const ActorIndex& index) const;
-	[[nodiscard]] std::vector<std::pair<Offset3D, Offset3D>> getDeckOffsets(const ActorIndex&) { return {}; }
+	[[nodiscard]] OffsetCuboidSet getDeckOffsets(const ActorIndex&) { return {}; }
 	void mount_do(const ActorIndex& index, const ActorIndex& toMount, const BlockIndex& location, const bool& pilot);
-	void mount_undo(const ActorIndex& index, const BlockIndex& location);
+	void mount_undo(const ActorIndex& index, const BlockIndex& location, const Facing4& facing);
 	// Pilot Item.
 	void pilotItem_set(const ActorIndex& index, const ItemIndex& item);
 	void pilotItem_unset(const ActorIndex& index);

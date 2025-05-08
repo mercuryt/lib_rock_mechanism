@@ -395,11 +395,25 @@ void Actors::load(const Json& data)
 		m_area.m_simulation.m_actors.registerActor(getId(index), m_area.getActors(), index);
 		Blocks &blocks = m_area.getBlocks();
 		if(m_location[index].exists())
-			for (const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
+		{
+			if(isStatic(index))
 			{
-				BlockIndex occupied = blocks.offset(m_location[index], pair.offset);
-				blocks.actor_record(occupied, index, pair.volume);
+				for (const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
+				{
+					BlockIndex occupied = blocks.offset(m_location[index], pair.offset);
+					blocks.actor_recordStatic(occupied, index, pair.volume);
+				}
 			}
+			else
+			{
+				for (const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
+				{
+					BlockIndex occupied = blocks.offset(m_location[index], pair.offset);
+					blocks.actor_recordDynamic(occupied, index, pair.volume);
+				}
+			}
+		}
+
 	}
 	m_project.resize(size);
 }
@@ -556,7 +570,7 @@ void Actors::destroy(const ActorIndex& index)
 	if(hasLocation(index))
 	{
 		vision_clearRequestIfExists(index);
-		exit(index);
+		location_clear(index);
 	}
 	const auto& s = ActorIndex::create(size() - 1);
 	if(index != s)
@@ -726,14 +740,14 @@ ActorIndex Actors::create(ActorParamaters params)
 		ActorOrItemIndex isPiloting = decks.getForId(decks.getForBlock(params.location));
 		assert(isPiloting.isItem());
 		const ItemIndex& vehicle = isPiloting.getItem();
-		setLocationAndFacing(index, params.location, isPiloting.getFacing(m_area));
+		location_set(index, params.location, isPiloting.getFacing(m_area));
 		pilotItem_set(index, vehicle);
 	}
 	else if(params.location.exists())
 	{
 		if(params.facing == Facing4::Null)
 			params.facing = Facing4::North;
-		setLocationAndFacing(index, params.location, params.facing);
+		location_set(index, params.location, params.facing);
 	}
 	return index;
 }
@@ -755,75 +769,6 @@ void Actors::scheduleNeeds(const ActorIndex& index)
 	m_mustEat[index]->scheduleHungerEvent(m_area);
 	// TODO: check for safe temperature, create a get to safe temperature objective?
 	m_canGrow[index]->updateGrowingStatus(m_area);
-}
-void Actors::setShape(const ActorIndex& index, const ShapeId& shape)
-{
-	BlockIndex location = m_location[index];
-	Facing4 facing = m_facing[index];
-	if(location.exists())
-		exit(index);
-	m_shape[index] = shape;
-	if(location.exists())
-		setLocationAndFacing(index, location, facing);
-}
-void Actors::setLocation(const ActorIndex& index, const BlockIndex& block)
-{
-	assert(m_location[index].exists());
-	Facing4 facing = m_area.getBlocks().facingToSetWhenEnteringFrom(block, m_location[index]);
-	setLocationAndFacing(index, block, facing);
-}
-void Actors::setLocationAndFacing(const ActorIndex& index, const BlockIndex& block, const Facing4& facing)
-{
-	Blocks& blocks = m_area.getBlocks();
-	assert(blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, m_shape[index], m_moveType[index]));
-	setLocationAndFacingNoCheckMoveType(index, block, facing);
-}
-void Actors::setLocationAndFacingNoCheckMoveType(const ActorIndex& index, const BlockIndex& block, const Facing4& facing)
-{
-	assert(block.exists());
-	assert(facing != Facing4::Null);
-	Blocks& blocks = m_area.getBlocks();
-	BlockIndex previousLocation = m_location[index];
-	Facing4 previousFacing = m_facing[index];
-	SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>> reservableData;
-	DeckRotationData deckRotationData;
-	if(previousLocation.exists())
-	{
-		deckRotationData = DeckRotationData::recordAndClearDependentPositions(m_area, ActorOrItemIndex::createForActor(index));
-		exit(index);
-	}
-	m_location[index] = block;
-	m_facing[index] = facing;
-	assert(m_blocks[index].empty());
-	for(const OffsetAndVolume& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
-	{
-		BlockIndex occupied = blocks.offset(block, pair.offset);
-		blocks.actor_record(occupied, index, pair.volume);
-		m_blocks[index].insert(occupied);
-		// Record in vision facade if has location and can currently see.
-	}
-	vision_maybeUpdateLocation(index, block);
-	// TODO: redundant with exit also calling getReference.
-	m_area.m_octTree.record(m_area, getReference(index));
-	if(blocks.isExposedToSky(block))
-		m_onSurface.set(index);
-	else
-		m_onSurface.unset(index);
-	onSetLocation(index, previousLocation, previousFacing, deckRotationData);
-}
-void Actors::exit(const ActorIndex& index)
-{
-	assert(m_location[index].exists());
-	BlockIndex location = m_location[index];
-	m_area.m_octTree.erase(m_area, getReference(index));
-	auto& blocks = m_area.getBlocks();
-	for(BlockIndex occupied : m_blocks[index])
-		blocks.actor_erase(occupied, index);
-	m_location[index].clear();
-	m_blocks[index].clear();
-	if(blocks.isExposedToSky(location))
-		m_onSurface.unset(index);
-	move_pathRequestMaybeCancel(index);
 }
 void Actors::resetNeeds(const ActorIndex& index)
 {
@@ -849,6 +794,10 @@ bool Actors::isAlly(const ActorIndex& index, const ActorIndex& other) const
 }
 //TODO: Zombies are not sentient.
 bool Actors::isSentient(const ActorIndex& index) const { return AnimalSpecies::getSentient(m_species[index]); }
+bool Actors::canMove(const ActorIndex& index) const
+{
+	return isAlive(index) && sleep_isAwake(index) && move_getSpeed(index) != 0;
+}
 void Actors::die(const ActorIndex& index, CauseOfDeath causeOfDeath)
 {
 	m_causeOfDeath[index] = causeOfDeath;
@@ -878,7 +827,7 @@ void Actors::leaveArea(const ActorIndex& index)
 	if(!isSentient(index) && hasFaction(index))
 		m_area.m_hasHaulTools.unregisterYokeableActor(m_area, index);
 	onRemove(index);
-	exit(index);
+	location_clear(index);
 }
 void Actors::wait(const ActorIndex& index, const Step& duration)
 {
@@ -945,6 +894,13 @@ BlockIndex Actors::getCombinedLocation(const ActorIndex& index) const
 			return items.getLocation(vehicle);
 	}
 }
+ActorOrItemIndex Actors::getIsPiloting(const ActorIndex& index) const
+{
+	ActorOrItemIndex output;
+	if(!m_isPilot[index])
+		return ActorOrItemIndex::null();
+	return m_isOnDeckOf[index];
+}
 void Actors::reserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing4& facing)
 {
 	if(m_faction[index].empty())
@@ -985,13 +941,14 @@ void Actors::resetMoveType(const ActorIndex& index)
 bool Actors::tryToMoveSoAsNotOccuping(const ActorIndex& index, const BlockIndex& block)
 {
 	Blocks& blocks = m_area.getBlocks();
-	for(const BlockIndex& adjacent : blocks.getAdjacentWithEdgeAndCornerAdjacent(m_location[index]))
+	const BlockIndex& location = m_location[index];
+	for(const BlockIndex& adjacent : blocks.getAdjacentWithEdgeAndCornerAdjacent(location))
 		if(blocks.shape_anythingCanEnterEver(adjacent))
 		{
 			const Facing4& facing = blocks.facingToSetWhenEnteringFrom(adjacent, block);
 			if(blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(adjacent, m_shape[index], m_moveType[index], facing, m_blocks[index]))
 			{
-				setLocation(index, adjacent);
+				location_set(index, adjacent, blocks.facingToSetWhenEnteringFrom(adjacent, location));
 				return true;
 			}
 		}

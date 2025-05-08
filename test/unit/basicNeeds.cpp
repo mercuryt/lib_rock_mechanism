@@ -50,7 +50,7 @@ TEST_CASE("basicNeedsSentient")
 		BlockIndex destination = actors.move_getDestination(actor);
 		CHECK(destination.exists());
 		CHECK(blocks.isAdjacentToIncludingCornersAndEdges(destination, pondLocation));
-		simulation.fastForwardUntillActorIsAdjacentToDestination(area, actor, pondLocation);
+		simulation.fastForwardUntillActorIsAtDestination(area, actor, destination);
 		simulation.fastForward(Config::stepsToDrink);
 		CHECK(!actors.drink_isThirsty(actor));
 		CHECK(actors.objective_getCurrentName(actor) != "drink");

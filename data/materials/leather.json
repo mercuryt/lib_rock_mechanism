@@ -4,6 +4,7 @@
   "hardness": 30,
   "transparent": false,
   "category": "leather",
+  "value": 1,
   "burnData":
   {
 	  "ignitionTemperature": 1244,

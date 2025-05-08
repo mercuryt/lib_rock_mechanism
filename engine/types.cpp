@@ -9,6 +9,10 @@ Mass Mass::operator*(Quantity quantity) const { return Mass::create(data * quant
 FullDisplacement FullDisplacement::operator*(uint32_t other) const { return FullDisplacement::create(other * data); }
 FullDisplacement FullDisplacement::operator*(float other) const { return FullDisplacement::create(other * data); }
 CollisionVolume FullDisplacement::toCollisionVolume() const { return CollisionVolume::create(data / Config::unitsOfVolumePerUnitOfCollisionVolume); }
+FullDisplacement FullDisplacement::createFromCollisionVolume(const CollisionVolume& collisionVolume)
+{
+	return FullDisplacement::create(collisionVolume.get() * Config::unitsOfVolumePerUnitOfCollisionVolume);
+}
 FullDisplacement CollisionVolume::toVolume() const { return FullDisplacement::create(data * Config::unitsOfVolumePerUnitOfCollisionVolume); }
 Density Density::operator*(float other) const { return Density::create(other * data); }
 Mass Mass::operator*(uint32_t other) const { auto output = Mass::create(data * other); assert(output != 0); return output; }

@@ -367,8 +367,10 @@ TEST_CASE("stockpile")
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, stockpileLocation);
 		auto predicate3 = [&]{ return blocks.item_getCount(stockpileLocation, pile, sand) == 96; };
 		simulation.fastForwardUntillPredicate(predicate3);
-		simulation.fastForwardUntillPredicate([&](){ return actors.canPickUp_isCarryingItemGeneric(dwarf1, pile, sand, Quantity::create(4)); });
+		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, cargoOrigin);
+		CHECK(actors.canPickUp_isCarryingItemGeneric(dwarf1, pile, sand, Quantity::create(4)));
 		CHECK(blocks.item_getCount(cargoOrigin, pile, sand) == 0);
+		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, stockpileLocation);
 		auto predicate4 = [&]{ return blocks.item_getCount(stockpileLocation, pile, sand) == 100; };
 		simulation.fastForwardUntillPredicate(predicate4);

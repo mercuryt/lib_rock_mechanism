@@ -30,7 +30,7 @@ MoveTypeId Actors::lineLead_getMoveType(const ActorIndex& index) const
 Speed Actors::lineLead_getSpeedWithAddedMass(const ActorIndex& index, const Mass& mass) const
 {
 	auto actorsAndItems = lineLead_getAll(index);
-	return PortablesHelpers::getMoveSpeedForGroupWithAddedMass(m_area, actorsAndItems, Mass::create(0), mass);
+	return PortablesHelpers::getMoveSpeedForGroupWithAddedMass(m_area, actorsAndItems, Mass::create(0), Mass::create(0), mass);
 }
 Speed Actors::lineLead_getSpeedWithAddedMass(const SmallSet<ActorIndex>& indices, const Mass& mass) const
 {
@@ -38,7 +38,7 @@ Speed Actors::lineLead_getSpeedWithAddedMass(const SmallSet<ActorIndex>& indices
 	vector.resize(indices.size());
 	for(const ActorIndex& index : indices)
 		vector.push_back(ActorOrItemIndex::createForActor(index));
-	return PortablesHelpers::getMoveSpeedForGroupWithAddedMass(m_area, vector, Mass::create(0), mass);
+	return PortablesHelpers::getMoveSpeedForGroupWithAddedMass(m_area, vector, Mass::create(0), Mass::create(0), mass);
 }
 std::vector<ActorOrItemIndex> Actors::lineLead_getAll(const ActorIndex& index) const
 {
@@ -185,7 +185,7 @@ void Actors::lineLead_moveFollowers(const ActorIndex& index)
 		const BlockIndex& next = *(--found);
 		if(follower.getLeader(m_area).occupiesBlock(m_area, next))
 			return;
-		follower.setLocationAndFacing(m_area, next, blocks.facingToSetWhenEnteringFrom(next, location));
+		follower.location_set(m_area, next, blocks.facingToSetWhenEnteringFrom(next, location));
 		follower = follower.getFollower(m_area);
 	}
 }

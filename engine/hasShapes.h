@@ -43,6 +43,7 @@ public:
 	void maybeSetStatic(const Index& index);
 	void unsetStatic(const Index& index);
 	void maybeUnsetStatic(const Index& index);
+	void setShape(const Index& index, const ShapeId& shape);
 	void addShapeToCompoundShape(const Index& index, const ShapeId& id, const BlockIndex& location, const Facing4& facing);
 	void removeShapeFromCompoundShape(const Index& index, const ShapeId& id, const BlockIndex& location, const Facing4& facing);
 	void log(const Index& index) const;

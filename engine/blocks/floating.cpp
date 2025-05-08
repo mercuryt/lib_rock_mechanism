@@ -37,7 +37,8 @@ void Blocks::floating_maybeFloatUp(const BlockIndex& index)
 			while(above.exists() && shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(above, items.getShape(item), items.getMoveType(item), items.getFacing(item), items.getBlocks(item)) && items.canFloatAt(item, above))
 				above = getBlockAbove(above);
 			if(above != location)
-				items.setLocation(item, above);
+				items.location_set(item, above, items.getFacing(item));
 		}
 	}
+	// TODO: Dead actors also float up.
 }

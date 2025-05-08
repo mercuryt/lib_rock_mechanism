@@ -101,7 +101,7 @@ class StrongBitSet
 {
 	std::vector<bool> data;
 public:
-	[[nodiscard]] bool operator[](const Index& index) const { return data[index.get()]; }
+	[[nodiscard]] bool operator[](const Index& index) const { assert((uint)index.get() < data.size()); return data[index.get()]; }
 	[[nodiscard]] size_t size() const { return data.size(); }
 	void set(const Index& index) { assert(index < size()); data[index.get()] = true; }
 	void set(const Index& index, bool status) { assert(index < size()); data[index.get()] = status; }

@@ -27,20 +27,29 @@ void ActorOrItemIndex::followPolymorphic(Area& area, const ActorOrItemIndex& act
 	else
 		followItem(area, actorOrItem.getItem());
 }
-ActorOrItemIndex ActorOrItemIndex::setLocationAndFacing(Area& area, const BlockIndex& location, const Facing4& facing) const
+ActorOrItemIndex ActorOrItemIndex::location_set(Area& area, const BlockIndex& location, const Facing4& facing) const
 {
 	if(isActor())
 	{
-		area.getActors().setLocationAndFacing(m_index.toActor(), location, facing);
+		area.getActors().location_set(m_index.toActor(), location, facing);
 		return *this;
 	}
 	else
-		return area.getItems().setLocationAndFacing(m_index.toItem(), location, facing).toActorOrItemIndex();
+		return area.getItems().location_set(m_index.toItem(), location, facing).toActorOrItemIndex();
 }
-void ActorOrItemIndex::exit(Area& area) const
+void ActorOrItemIndex::location_clear(Area& area) const
 {
 	if(isActor())
-		area.getActors().exit(m_index.toActor());
+		area.getActors().location_clear(m_index.toActor());
+	else
+		area.getItems().location_clear(m_index.toItem());
+}
+void ActorOrItemIndex::location_clearStatic(Area& area) const
+{
+	if(isActor())
+		area.getActors().location_clearStatic(m_index.toActor());
+	else
+		area.getItems().location_clearStatic(m_index.toItem());
 }
 void ActorOrItemIndex::reservable_reserve(Area& area, CanReserve& canReserve, const Quantity quantity , std::unique_ptr<DishonorCallback> callback) const
 {
@@ -82,6 +91,30 @@ void ActorOrItemIndex::move_updateIndividualSpeed(Area& area) const
 	assert(isActor());
 	area.getActors().move_updateIndividualSpeed(m_index.toActor());
 }
+void ActorOrItemIndex::maybeSetStatic(Area& area) const
+{
+	if(isActor())
+	{
+		const ActorIndex& index = m_index.toActor();
+		Actors& actors = area.getActors();
+		if(!actors.isStatic(index))
+			actors.setStatic(index);
+	}
+	else
+	{
+		const ItemIndex& index = m_index.toItem();
+		Items& items = area.getItems();
+		if(!items.isStatic(index))
+			items.setStatic(index);
+	}
+}
+void ActorOrItemIndex::setStatic(Area& area) const
+{
+	if(isActor())
+		area.getActors().setStatic(m_index.toActor());
+	else
+		area.getItems().setStatic(m_index.toItem());
+}
 std::string ActorOrItemIndex::toString() const
 {
 	if(empty())
@@ -96,6 +129,13 @@ ActorOrItemReference ActorOrItemIndex::toReference(Area& area) const
 	else
 		output.setItem(area.getItems().m_referenceData.getReference(m_index.toItem()));
 	return output;
+}
+bool ActorOrItemIndex::isStatic(Area& area) const
+{
+	if(isActor())
+		return area.getActors().isStatic(m_index.toActor());
+	else
+		return area.getItems().isStatic(m_index.toItem());
 }
 bool ActorOrItemIndex::isFollowing(Area& area) const
 {
@@ -186,6 +226,7 @@ bool ActorOrItemIndex::occupiesBlock(const Area& area, const BlockIndex& locatio
 	return isActor() ? area.getActors().getBlocks(m_index.toActor()).contains(location) : area.getItems().getBlocks(m_index.toItem()).contains(location);
 }
 ShapeId ActorOrItemIndex::getShape(const Area& area) const { return isActor() ? area.getActors().getShape(m_index.toActor()) : area.getItems().getShape(m_index.toItem()); }
+ShapeId ActorOrItemIndex::getCompoundShape(const Area& area) const { return isActor() ? area.getActors().getCompoundShape(m_index.toActor()) : area.getItems().getCompoundShape(m_index.toItem()); }
 MoveTypeId ActorOrItemIndex::getMoveType(const Area& area) const{ return isActor() ? area.getActors().getMoveType(m_index.toActor()) : area.getItems().getMoveType(m_index.toItem()); }
 Facing4 ActorOrItemIndex::getFacing(const Area& area) const { return isActor() ? area.getActors().getFacing(m_index.toActor()) : area.getItems().getFacing(m_index.toItem()); }
 Mass ActorOrItemIndex::getMass(const Area& area) const { return isActor() ? area.getActors().getMass(m_index.toActor()) : area.getItems().getMass(m_index.toItem()); }

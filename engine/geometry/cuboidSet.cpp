@@ -1,10 +1,13 @@
 #include "cuboidSet.h"
 #include "../blocks/blocks.h"
-CuboidSet::CuboidSet(const Blocks& blocks, const BlockIndex& location, const Facing4& rotation, const std::vector<std::pair<Offset3D, Offset3D>>& offsetPairs)
+#include "offsetCuboidSet.h"
+CuboidSet::CuboidSet(const Blocks& blocks, const BlockIndex& location, const Facing4& rotation, const OffsetCuboidSet& offsetPairs)
 {
 	const Point3D coordinates = blocks.getCoordinates(location);
-	for(auto [high, low] : offsetPairs)
+	auto end = offsetPairs.cuboidsEnd();
+	for(auto iter = offsetPairs.cuboidsBegin(); iter < end; ++iter)
 	{
+		auto [high, low] = iter->toOffsetPair();
 		high += coordinates;
 		low += coordinates;
 		high.rotate2D(rotation);

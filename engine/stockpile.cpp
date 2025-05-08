@@ -82,7 +82,9 @@ void StockPileProject::onComplete()
 	BlockIndex location = m_location;
 	hasStockPiles.maybeRemoveFromItemsWithDestinationByStockPile(m_stockpile, index);
 	hasStockPiles.destroyProject(*this);
-	index = items.setLocationAndFacing(index, location, Facing4::North);
+	items.location_clearStatic(index);
+	// TODO: ensure shape can fit here, provide correct facing.
+	index = items.location_set(index, location, Facing4::North);
 	area.m_hasStocks.getForFaction(faction).maybeRecord(area, index);
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);

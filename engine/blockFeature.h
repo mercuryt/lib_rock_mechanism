@@ -12,6 +12,9 @@ struct BlockFeatureType
 	const bool canStandIn;
 	const bool canStandAbove;
 	const bool isSupportAgainstCaveIn;
+	const bool blocksMultiTileShapesIfNotAtZeroZOffset;
+	const Force motiveForce;
+	const uint value;
 	bool operator==(const BlockFeatureType& x) const { return this == &x; }
 	static BlockFeatureType floor;
 	static BlockFeatureType door;
@@ -51,6 +54,7 @@ inline void from_json(const Json& data, const BlockFeatureType*& blockFeatureTyp
 struct BlockFeature
 {
 	// Use pointers rather then references so we can store in vector and be able to erase at arbirtary index.
+	// TODO: Use an enum.
 	const BlockFeatureType* blockFeatureType;
 	MaterialTypeId materialType;
 	// TODO: Replace hewn with ItemType* to differentiate between walls made of carved blocks from those made from uncut stone or between wood planks and logs.

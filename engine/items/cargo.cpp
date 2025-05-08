@@ -66,14 +66,14 @@ void Items::cargo_loadActor(const ItemIndex& index, const ActorIndex& actor)
 {
 	Actors& actors = m_area.getActors();
 	assert(actors.hasLocation(actor));
-	actors.exit(actor);
+	actors.location_clear(actor);
 	cargo_addActor(index, actor);
 }
 ItemIndex Items::cargo_loadItem(const ItemIndex& index, const ItemIndex& item, const Quantity& quantity)
 {
 	Items& items = m_area.getItems();
 	assert(items.hasLocation(item));
-	items.exit(item);
+	items.location_clear(item);
 	return cargo_addItem(index, item, quantity);
 }
 ActorOrItemIndex Items::cargo_loadPolymorphic(const ItemIndex& index, const ActorOrItemIndex& actorOrItem, const Quantity& quantity)
@@ -155,14 +155,18 @@ void Items::cargo_unloadActorToLocation(const ItemIndex& index, const ActorIndex
 	Actors& actors = m_area.getActors();
 	assert(actors.getLocation(actor).empty());
 	cargo_removeActor(index, actor);
-	actors.setLocation(actor, location);
+	Blocks& blocks = m_area.getBlocks();
+	const Facing4& facing = blocks.facingToSetWhenEnteringFrom(location, m_location[index]);
+	actors.location_set(actor, location, facing);
 }
 void Items::cargo_unloadItemToLocation(const ItemIndex& index, const ItemIndex& item, const BlockIndex& location)
 {
 	assert(cargo_containsItem(index, item));
 	assert(getLocation(item).empty());
 	cargo_removeItem(index, item);
-	setLocationAndFacing(item, location, Facing4::North);
+	Blocks& blocks = m_area.getBlocks();
+	const Facing4& facing = blocks.facingToSetWhenEnteringFrom(location, m_location[index]);
+	location_set(item, location, facing);
 }
 void Items::cargo_updateItemIndex(const ItemIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex)
 {

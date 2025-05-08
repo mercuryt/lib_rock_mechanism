@@ -12,6 +12,8 @@ class Area;
 class Simulation;
 class EventSchedule;
 class CanReserve;
+class OffsetCuboidSet;
+class ConstructedShape;
 
 struct ItemParamaters final
 {
@@ -69,7 +71,7 @@ class ItemHasCargo final
 	Mass m_mass = Mass::create(0);
 	CollisionVolume m_fluidVolume = CollisionVolume::create(0);
 public:
-	ItemHasCargo(const ItemTypeId& itemType) : m_maxVolume(ItemType::getInternalVolume(itemType)) { }
+	ItemHasCargo(const ItemTypeId& itemType);
 	ItemHasCargo(const Json& data);
 	void addItem(Area& area, const ItemIndex& itemIndex);
 	void addActor(Area& area, const ActorIndex& actorIndex);
@@ -115,6 +117,7 @@ class Items final : public Portables<Items, ItemIndex, ItemReferenceIndex>
 	StrongVector<Quality, ItemIndex> m_quality; // Always set to 0 for generic types.
 	StrongVector<Quantity, ItemIndex> m_quantity; // Always set to 1 for nongeneric types.
 	StrongVector<ActorIndex, ItemIndex> m_pilot;
+	StrongVector<ConstructedShape, ItemIndex> m_constructedShape;
 	void moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex);
 public:
 	Items(Area& area);
@@ -123,21 +126,17 @@ public:
 	void onChangeAmbiantSurfaceTemperature();
 	template<typename Action>
 	void forEachData(Action&& action);
+	// Returns index in case of nongeneric or generics with a type not present at the location.
+	// If a generic of the same type is found return it instead.
 	ItemIndex create(ItemParamaters paramaters);
 	void destroy(const ItemIndex& index);
 	void setName(const ItemIndex& index, std::string name);
-	// Returns index in case of nongeneric or generics with a type not present at the location.
-	// If a generic of the same type is found return it instead.
-	ItemIndex setLocation(const ItemIndex& index, const BlockIndex& block);
-	ItemIndex setLocationAndFacing(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
-	void exit(const ItemIndex& index);
-	void setShape(const ItemIndex& index, const ShapeId shape);
 	void pierced(const ItemIndex& index, const FullDisplacement volume);
 	void setTemperature(const ItemIndex& index, const Temperature& temperature);
 	void addQuantity(const ItemIndex& index, const Quantity& delta);
 	void removeQuantity(const ItemIndex& index, const Quantity& delta, CanReserve* canReserve = nullptr);
 	void install(const ItemIndex& index, const BlockIndex& block, const Facing4& facing, const FactionId& faction);
-	// Returns the index of the item which was passed in as 'index', it may have changed with 'item' being destroyed
+	// Returns the index of the item which was passed in as 'index', it may have changed with 'item' being destroyed due to generic merge.
 	ItemIndex merge(const ItemIndex& index, const ItemIndex& item);
 	void setQuality(const ItemIndex& index, const Quality& quality);
 	void setWear(const ItemIndex& index, const Percent& wear);
@@ -155,14 +154,32 @@ public:
 	[[nodiscard]] bool isGeneric(const ItemIndex& index) const;
 	[[nodiscard]] bool isPreparedMeal(const ItemIndex& index) const;
 	[[nodiscard]] bool isWorkPiece(const ItemIndex& index) const { return m_craftJobForWorkPiece[index] != nullptr; }
+	[[nodiscard]] bool canMove(const ItemIndex& index) const { return pilot_exists(index) && vehicle_getSpeed(index) != 0; }
 	[[nodiscard]] CraftJob& getCraftJobForWorkPiece(const ItemIndex& index) const;
 	[[nodiscard]] Mass getSingleUnitMass(const ItemIndex& index) const;
 	[[nodiscard]] Mass getMass(const ItemIndex& index) const;
 	[[nodiscard]] FullDisplacement getVolume(const ItemIndex& index) const;
-	[[nodiscard]] CollisionVolume getTotalCollisionVolume(const ItemIndex& index) const;
 	[[nodiscard]] MoveTypeId getMoveType(const ItemIndex& index) const;
 	[[nodiscard]] ItemTypeId getItemType(const ItemIndex& index) const { return m_itemType[index]; }
 	[[nodiscard]] MaterialTypeId getMaterialType(const ItemIndex& index) const { return m_materialType[index]; }
+	// - Location.
+	// Return an item index here because a static generic may combine.
+private:
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetGenericStatic(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
+	SetLocationAndFacingResult location_tryToSetNongenericStatic(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
+public:
+	ItemIndex location_set(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
+	ItemIndex location_setStatic(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
+	ItemIndex location_setDynamic(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
+	// Used when item already has a location, rolls back position on failure.
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToStatic(const ItemIndex& index, const BlockIndex& block);
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToDynamic(const ItemIndex& index, const BlockIndex& block);
+	// Used when item does not have a location.
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetStatic(const ItemIndex& index, const BlockIndex& block, const Facing4& facing);
+	SetLocationAndFacingResult location_tryToSetDynamic(const ItemIndex& index, const BlockIndex& block, const Facing4& facing);
+	void location_clear(const ItemIndex& index);
+	void location_clearStatic(const ItemIndex& index);
+	void location_clearDynamic(const ItemIndex& index);
 	// -Cargo.
 	void cargo_addActor(const ItemIndex& index, const ActorIndex& actor);
 	ItemIndex cargo_addItem(const ItemIndex& index, const ItemIndex& item, const Quantity& quantity);
@@ -210,12 +227,12 @@ public:
 	// Pilot.
 	void pilot_set(const ItemIndex& item, const ActorIndex& pilot);
 	void pilot_clear(const ItemIndex& item);
-	[[nodiscard]] ActorIndex pilot_get(const ItemIndex& item);
-	[[nodiscard]] bool pilot_exists(const ItemIndex& item) { return pilot_get(item).exists(); }
+	[[nodiscard]] ActorIndex pilot_get(const ItemIndex& item) const;
+	[[nodiscard]] bool pilot_exists(const ItemIndex& item) const { return pilot_get(item).exists(); }
 	[[nodiscard]] Speed vehicle_getSpeed(const ItemIndex& item) const;
 	[[nodiscard]] Force vehicle_getMotiveForce(const ItemIndex& item) const;
 	// Deck.
-	[[nodiscard]] std::vector<std::pair<Offset3D, Offset3D>> getDeckOffsets(const ItemIndex& index) { return ItemType::getDecks(m_itemType[index]); }
+	[[nodiscard]] const OffsetCuboidSet& getDeckOffsets(const ItemIndex& index) const;
 	//TODO: Items leave area.
 	// For debugging.
 	void log(const ItemIndex& index) const;

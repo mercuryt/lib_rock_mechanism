@@ -21,7 +21,8 @@
 
 enum class Facing4{North,East,South,West,Null};
 enum class Facing6{Below,North,East,South,West,Above,Null};
-enum class Facing8{North,NorthEast,East,SouthEast,South,SouthWest,West,NorthWest};
+enum class Facing8{North,NorthEast,East,SouthEast,South,SouthWest,West,NorthWest,Null};
+enum class SetLocationAndFacingResult{PermanantlyBlocked,TemporarilyBlocked,Success,Null};
 using StepWidth = uint64_t;
 class Step : public StrongInteger<Step, StepWidth>
 {
@@ -90,6 +91,7 @@ public:
 	[[nodiscard]] FullDisplacement operator*(VolumeWidth other) const;
 	[[nodiscard]] FullDisplacement operator*(float other) const;
 	[[nodiscard]] CollisionVolume toCollisionVolume() const;
+	[[nodiscard]] static FullDisplacement createFromCollisionVolume(const CollisionVolume& collisionvolume);
 	struct Hash { [[nodiscard]] size_t operator()(const FullDisplacement& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const FullDisplacement& index) { data = index.get(); }
@@ -190,6 +192,17 @@ public:
 };
 inline void to_json(Json& data, const DistanceInBuckets& index) { data = index.get(); }
 inline void from_json(const Json& data, DistanceInBuckets& index) { index = DistanceInBuckets::create(data.get<DistanceInBucketsWidth>()); }
+
+using OffsetWidth = int32_t;
+class Offset : public StrongInteger<Offset, OffsetWidth>
+{
+public:
+	Offset() = default;
+	Offset operator+=(int32_t x) { data += x; return *this; }
+	struct Hash { [[nodiscard]] size_t operator()(const Offset& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const Offset& index) { data = index.get(); }
+inline void from_json(const Json& data, Offset& index) { index = Offset::create(data.get<OffsetWidth>()); }
 
 //using Latitude = double;
 //using Longitude = double;

@@ -37,6 +37,7 @@ MaterialTypeId MaterialType::create(const MaterialTypeParamaters& p)
 	materialTypeData.m_hardness.add(p.hardness);
 	materialTypeData.m_transparent.add(p.transparent);
 	materialTypeData.m_materialTypeCategory.add(p.materialTypeCategory);
+	materialTypeData.m_valuePerUnitFullDisplacement.add(p.valuePerUnitFullDisplacement);
 	materialTypeData.m_spoilData.add(p.spoilData);
 	materialTypeData.m_meltingPoint.add(p.meltingPoint);
 	materialTypeData.m_meltsInto.add(p.meltsInto);
@@ -63,24 +64,25 @@ void MaterialType::setConstructionParamaters(const MaterialTypeId& materialType,
 }
 bool MaterialType::empty() { return materialTypeData.m_density.empty(); }
 MaterialTypeId MaterialType::size() { return MaterialTypeId::create(materialTypeData.m_name.size()); }
-std::string& MaterialType::getName(const MaterialTypeId& id) { return materialTypeData.m_name[id]; };
-Density MaterialType::getDensity(const MaterialTypeId& id) { return materialTypeData.m_density[id]; };
-uint32_t MaterialType::getHardness(const MaterialTypeId& id) { return materialTypeData.m_hardness[id]; };
-bool MaterialType::getTransparent(const MaterialTypeId& id) { return materialTypeData.m_transparent[id]; };
-MaterialCategoryTypeId MaterialType::getMaterialTypeCategory(const MaterialTypeId& id) { return materialTypeData.m_materialTypeCategory[id]; };
-std::vector<SpoilsDataTypeId>& MaterialType::getSpoilData(const MaterialTypeId& id) { return materialTypeData.m_spoilData[id]; };
-Temperature MaterialType::getMeltingPoint(const MaterialTypeId& id) { return materialTypeData.m_meltingPoint[id]; };
-FluidTypeId MaterialType::getMeltsInto(const MaterialTypeId& id) { return materialTypeData.m_meltsInto[id]; };
+std::string& MaterialType::getName(const MaterialTypeId& id) { return materialTypeData.m_name[id]; }
+Density MaterialType::getDensity(const MaterialTypeId& id) { return materialTypeData.m_density[id]; }
+uint32_t MaterialType::getHardness(const MaterialTypeId& id) { return materialTypeData.m_hardness[id]; }
+bool MaterialType::getTransparent(const MaterialTypeId& id) { return materialTypeData.m_transparent[id]; }
+uint MaterialType::getValuePerUnitFullDisplacement(const MaterialTypeId& id) { return materialTypeData.m_valuePerUnitFullDisplacement[id]; }
+MaterialCategoryTypeId MaterialType::getMaterialTypeCategory(const MaterialTypeId& id) { return materialTypeData.m_materialTypeCategory[id]; }
+std::vector<SpoilsDataTypeId>& MaterialType::getSpoilData(const MaterialTypeId& id) { return materialTypeData.m_spoilData[id]; }
+Temperature MaterialType::getMeltingPoint(const MaterialTypeId& id) { return materialTypeData.m_meltingPoint[id]; }
+FluidTypeId MaterialType::getMeltsInto(const MaterialTypeId& id) { return materialTypeData.m_meltsInto[id]; }
 bool MaterialType::canMelt(const MaterialTypeId& id) { return materialTypeData.m_meltsInto[id].exists(); }
 // Fire.
 bool MaterialType::canBurn(const MaterialTypeId& id) { return materialTypeData.m_burnStageDuration[id].exists(); }
-Step MaterialType::getBurnStageDuration(const MaterialTypeId& id) { return materialTypeData.m_burnStageDuration[id]; };
-Step MaterialType::getFlameStageDuration(const MaterialTypeId& id) { return materialTypeData.m_flameStageDuration[id]; };
-Temperature MaterialType::getIgnitionTemperature(const MaterialTypeId& id) { return materialTypeData.m_ignitionTemperature[id]; };
-TemperatureDelta MaterialType::getFlameTemperature(const MaterialTypeId& id) { return materialTypeData.m_flameTemperature[id]; };
+Step MaterialType::getBurnStageDuration(const MaterialTypeId& id) { return materialTypeData.m_burnStageDuration[id]; }
+Step MaterialType::getFlameStageDuration(const MaterialTypeId& id) { return materialTypeData.m_flameStageDuration[id]; }
+Temperature MaterialType::getIgnitionTemperature(const MaterialTypeId& id) { return materialTypeData.m_ignitionTemperature[id]; }
+TemperatureDelta MaterialType::getFlameTemperature(const MaterialTypeId& id) { return materialTypeData.m_flameTemperature[id]; }
 // Construct.
-std::vector<std::pair<ItemQuery, Quantity>>& MaterialType::construction_getConsumed(const MaterialTypeId& id) { return materialTypeData.m_construction_consumed[id]; };
-std::vector<std::pair<ItemQuery, Quantity>>& MaterialType::construction_getUnconsumed(const MaterialTypeId& id) { return materialTypeData.m_construction_unconsumed[id]; };
-std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>>& MaterialType::construction_getByproducts(const MaterialTypeId& id) { return materialTypeData.m_construction_byproducts[id]; };
-SkillTypeId MaterialType::construction_getSkill(const MaterialTypeId& id) { return materialTypeData.m_construction_skill[id]; };
-Step MaterialType::construction_getDuration(const MaterialTypeId& id) { return materialTypeData.m_construction_duration[id]; };
+std::vector<std::pair<ItemQuery, Quantity>>& MaterialType::construction_getConsumed(const MaterialTypeId& id) { return materialTypeData.m_construction_consumed[id]; }
+std::vector<std::pair<ItemQuery, Quantity>>& MaterialType::construction_getUnconsumed(const MaterialTypeId& id) { return materialTypeData.m_construction_unconsumed[id]; }
+std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>>& MaterialType::construction_getByproducts(const MaterialTypeId& id) { return materialTypeData.m_construction_byproducts[id]; }
+SkillTypeId MaterialType::construction_getSkill(const MaterialTypeId& id) { return materialTypeData.m_construction_skill[id]; }
+Step MaterialType::construction_getDuration(const MaterialTypeId& id) { return materialTypeData.m_construction_duration[id]; }

@@ -98,6 +98,13 @@ void Blocks::blockFeature_setTemperature(const BlockIndex& block, const Temperat
 			m_area.m_fires.ignite(block, feature.materialType);
 	}
 }
+void Blocks::blockFeature_setAll(const BlockIndex& index, std::vector<BlockFeature>& features)
+{
+	m_features[index] = features;
+	m_area.m_opacityFacade.update(index);
+	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
+	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(index);
+}
 void Blocks::blockFeature_lock(const BlockIndex& block, const BlockFeatureType& blockFeatueType)
 {
 	assert(blockFeature_contains(block, blockFeatueType));
@@ -206,4 +213,11 @@ MaterialTypeId Blocks::blockFeature_getMaterialType(const BlockIndex& block) con
 bool Blocks::blockFeature_empty(const BlockIndex& index) const
 {
 	return m_features[index].empty();
+}
+bool Blocks::blockFeature_multiTileCanEnterAtNonZeroZOffset(const BlockIndex& index) const
+{
+	for(const BlockFeature& blockFeature : m_features[index])
+		if(blockFeature.blockFeatureType->blocksMultiTileShapesIfNotAtZeroZOffset)
+			return false;
+	return true;
 }

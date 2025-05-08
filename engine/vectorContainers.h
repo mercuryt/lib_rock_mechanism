@@ -173,15 +173,15 @@ public:
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] T* operator->() { return &*m_iter; }
-		[[nodiscard]] iterator operator-(const iterator& other) { return m_iter - other.m_iter; }
-		[[nodiscard]] iterator operator+(const iterator& other) { return m_iter + other.m_iter; }
+		[[nodiscard]] iterator operator-(const iterator& other) const { return m_iter - other.m_iter; }
+		[[nodiscard]] iterator operator+(const iterator& other) const { return m_iter + other.m_iter; }
 		[[nodiscard]] iterator& operator+=(const iterator& other) { m_iter += other.m_iter; return *this; }
 		[[nodiscard]] iterator& operator-=(const iterator& other) { m_iter -= other.m_iter; return *this; }
-		[[nodiscard]] iterator operator-(const uint& index) { return {m_iter - index}; }
-		[[nodiscard]] iterator operator+(const uint& index) { return {m_iter + index}; }
+		[[nodiscard]] iterator operator-(const uint& index) const { return {m_iter - index}; }
+		[[nodiscard]] iterator operator+(const uint& index) const { return {m_iter + index}; }
 		[[nodiscard]] iterator& operator+=(const uint& index) { m_iter += index; return *this; }
 		[[nodiscard]] iterator& operator-=(const uint& index) { m_iter -= index; return *this; }
-		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) { return m_iter <=> other.m_iter; }
+		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) const { return m_iter <=> other.m_iter; }
 		friend class const_iterator;
 	};
 	class const_iterator
@@ -197,7 +197,9 @@ public:
 		iterator& operator+=(const const_iterator& other) { m_iter += other.m_iter; return *this; }
 		[[nodiscard]] const T& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
+		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const T* operator->() const { return &*m_iter; }
 		[[nodiscard]] iterator operator-(const iterator& other) { return m_iter - other.m_iter; }
 		[[nodiscard]] iterator operator+(const iterator& other) { return m_iter + other.m_iter; }
@@ -420,6 +422,16 @@ public:
 		iterator iter = std::ranges::find(m_data, key, &Pair::first);
 		if(iter != m_data.end())
 			erase(iter);
+	}
+	bool maybeEraseNotify(const K& key)
+	{
+		iterator iter = std::ranges::find(m_data, key, &Pair::first);
+		if(iter != m_data.end())
+		{
+			erase(iter);
+			return true;
+		}
+		return false;
 	}
 	void clear() { m_data.clear(); }
 	template<typename ...Args>

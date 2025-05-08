@@ -29,15 +29,19 @@ public:
 	ActorOrItemIndex() = default;
 	static ActorOrItemIndex createForActor(const ActorIndex& actor) { return ActorOrItemIndex(actor, true); }
 	static ActorOrItemIndex createForItem(const ItemIndex& item) { return ActorOrItemIndex(item, false); }
+	static ActorOrItemIndex null() { return ActorOrItemIndex(); }
 	void clear() { m_index.clear(); m_isActor = false; }
 	void updateIndex(const HasShapeIndex& index) { m_index = index; }
-	ActorOrItemIndex setLocationAndFacing(Area& area, const BlockIndex& location, const Facing4& facing) const;
-	void exit(Area& area) const;
+	ActorOrItemIndex location_set(Area& area, const BlockIndex& location, const Facing4& facing) const;
+	void location_clear(Area& area) const;
+	void location_clearStatic(Area& area) const;
 	void followActor(Area& area, const ActorIndex& actor) const;
 	void followItem(Area& area, const ItemIndex& item) const;
 	void followPolymorphic(Area& area, const ActorOrItemIndex& actorOrItem) const;
 	void unfollow(Area& area) const;
 	void move_updateIndividualSpeed(Area& area) const;
+	void maybeSetStatic(Area& area) const;
+	void setStatic(Area& area) const;
 	std::string toString() const;
 	[[nodiscard]] ActorIndex getActor() const { assert(isActor()); return ActorIndex::create(m_index.get()); }
 	[[nodiscard]] ItemIndex getItem() const { assert(isItem()); return ItemIndex::create(m_index.get()); }
@@ -47,7 +51,7 @@ public:
 	[[nodiscard]] HasShapeIndex get() const { return m_index; }
 	[[nodiscard]] bool isActor() const { return m_isActor; }
 	[[nodiscard]] bool isItem() const { return !m_isActor; }
-
+	[[nodiscard]] bool isStatic(Area& area) const;
 	[[nodiscard]] bool isFollowing(Area& area) const;
 	[[nodiscard]] bool isLeading(Area& area) const;
 	[[nodiscard]] ActorOrItemIndex getFollower(Area& area) const;
@@ -66,6 +70,7 @@ public:
 	[[nodiscard]] bool occupiesBlock(const Area& area, const BlockIndex& location) const;
 
 	[[nodiscard]] ShapeId getShape(const Area& area) const;
+	[[nodiscard]] ShapeId getCompoundShape(const Area& area) const;
 	[[nodiscard]] MoveTypeId getMoveType(const Area& area) const;
 	[[nodiscard]] Mass getMass(const Area& area) const;
 	[[nodiscard]] Quantity getQuantity(const Area& area) const;

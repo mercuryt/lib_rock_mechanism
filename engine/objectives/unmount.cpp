@@ -18,21 +18,30 @@ void UnmountObjective::execute(Area& area, const ActorIndex& actor)
 	Actors& actors = area.getActors();
 	assert(actors.onDeck_getIsOnDeckOf(actor).isActor());
 	const ActorIndex& mount = actors.onDeck_getIsOnDeckOf(actor).getActor();
+	const ShapeId& shape = actors.getCompoundShape(actor);
+	const BlockIndex& startingLocation = actors.getLocation(actor);
 	if(m_location.empty())
 	{
 		for(const BlockIndex& block : actors.getAdjacentBlocks(mount))
-			if(blocks.shape_canEnterCurrentlyFrom(block, actors.getShape(actor), actors.getLocation(actor), actors.getBlocks(actor)))
-				actors.mount_undo(actor, block);
+		{
+			if(blocks.shape_canEnterCurrentlyFrom(m_location, shape, startingLocation, actors.getBlocks(actor)))
+			{
+				actors.mount_undo(actor, block, blocks.facingToSetWhenEnteringFrom(block, actors.getLocation(actor)));
+				actors.objective_complete(actor, *this);
+				return;
+			}
+		}
+		actors.objective_canNotCompleteObjective(actor, *this);
 	}
 	else
 	{
 		const ShapeId& compoundShape = actors.getCompoundShape(mount);
-		auto currentlyAdjacent = Shape::getBlocksWhichWouldBeAdjacentAt(compoundShape, blocks, actors.getLocation(mount), actors.getFacing(actor));
+		auto currentlyAdjacent = Shape::getBlocksWhichWouldBeAdjacentAt(compoundShape, blocks, actors.getLocation(mount), actors.getFacing(mount));
 		if(currentlyAdjacent.contains(m_location))
 		{
 			if(blocks.shape_canEnterCurrentlyFrom(m_location, actors.getShape(actor), actors.getLocation(actor), actors.getBlocks(actor)))
 			{
-				actors.mount_undo(actor, m_location);
+				actors.mount_undo(actor, m_location, blocks.facingToSetWhenEnteringFrom(m_location, actors.getLocation(actor)));
 				actors.objective_complete(actor, *this);
 			}
 			else

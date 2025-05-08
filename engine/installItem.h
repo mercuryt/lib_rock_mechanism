@@ -16,7 +16,7 @@ class InstallItemProject final : public Project
 	Facing4 m_facing = Facing4::Null;
 public:
 	// Max one worker.
-	InstallItemProject(Area& area, const ItemReference& i, const BlockIndex& l, const Facing4& facing, const FactionId& faction);
+	InstallItemProject(Area& area, const ItemReference& i, const BlockIndex& l, const Facing4& facing, const FactionId& faction, const BlockIndices& occupied);
 	void onComplete();
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const { return {}; }
 	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const { return {{ItemQuery::create(m_item), Quantity::create(1)}}; }
@@ -29,7 +29,7 @@ public:
 };
 class HasInstallItemDesignationsForFaction final
 {
-	std::unordered_map<BlockIndex, InstallItemProject, BlockIndex::Hash> m_designations;
+	SmallMapStable<BlockIndex, InstallItemProject> m_designations;
 	FactionId m_faction;
 public:
 	HasInstallItemDesignationsForFaction(const FactionId& faction) : m_faction(faction) { }
@@ -37,11 +37,12 @@ public:
 	void remove(Area& area, const ItemIndex& item);
 	bool empty() const { return m_designations.empty(); }
 	bool contains(const BlockIndex& block) const { return m_designations.contains(block); }
-	InstallItemProject& getForBlock(const BlockIndex& block) { return m_designations.at(block); }
+	InstallItemProject& getForBlock(const BlockIndex& block) { return m_designations[block]; }
 	friend class AreaHasInstallItemDesignations;
 };
 class AreaHasInstallItemDesignations final
 {
+	// TODO: change to small map.
 	std::unordered_map<FactionId, HasInstallItemDesignationsForFaction, FactionId::Hash> m_data;
 public:
 	void registerFaction(const FactionId& faction) { m_data.emplace(faction, faction); }

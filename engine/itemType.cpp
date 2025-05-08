@@ -40,8 +40,9 @@ const ItemTypeId ItemType::byName(std::string name)
 	assert(found != itemTypeData.m_name.end());
 	return ItemTypeId::create(found - itemTypeData.m_name.begin());
 }
-void ItemType::create(ItemTypeParamaters& p)
+ItemTypeId ItemType::create(ItemTypeParamaters& p)
 {
+	itemTypeData.m_constructedShape.add(p.constructedShape);
 	itemTypeData.m_materialTypeCategories.add(p.materialTypeCategories);
 	itemTypeData.m_name.add(p.name);
 	itemTypeData.m_craftLocationOffset.add(p.craftLocationOffset);
@@ -68,9 +69,11 @@ void ItemType::create(ItemTypeParamaters& p)
 	itemTypeData.m_wearable_bodyPartsCovered.add(p.wearable_bodyPartsCovered);
 	itemTypeData.m_decks.add(p.decks);
 	itemTypeData.m_motiveForce.add(p.motiveForce);
-	for(const auto& [high, low] : p.decks)
-		assert(low != Offset3D(0,0,0));
+	for(const Offset3D& offset : p.decks)
+		assert(offset != Offset3D::create(0,0,0));
+	return ItemTypeId::create(itemTypeData.m_materialTypeCategories.size() - 1);
 }
+const ConstructedShape& ItemType::getConstructedShape(const ItemTypeId& id) { return itemTypeData.m_constructedShape[id]; }
 std::vector<MaterialCategoryTypeId>& ItemType::getMaterialTypeCategories(const ItemTypeId& id) { return itemTypeData.m_materialTypeCategories[id]; }
 std::string& ItemType::getName(const ItemTypeId& id) { return itemTypeData.m_name[id]; }
 std::array<int32_t, 3>& ItemType::getCraftLocationOffset(const ItemTypeId& id) { return itemTypeData.m_craftLocationOffset[id]; }
@@ -98,5 +101,5 @@ Percent ItemType::getWearable_percentCoverage(const ItemTypeId& id) { return ite
 bool ItemType::getWearable_rigid(const ItemTypeId& id) { return itemTypeData.m_wearable_rigid[id]; }
 std::vector<BodyPartTypeId>& ItemType::getWearable_bodyPartsCovered(const ItemTypeId& id) { return itemTypeData.m_wearable_bodyPartsCovered[id]; }
 bool ItemType::getIsWearable(const ItemTypeId& id) { return !itemTypeData.m_wearable_bodyPartsCovered[id].empty(); }
-const std::vector<std::pair<Offset3D, Offset3D>>& ItemType::getDecks(const ItemTypeId& id) { return itemTypeData.m_decks[id]; }
+const OffsetCuboidSet& ItemType::getDecks(const ItemTypeId& id) { return itemTypeData.m_decks[id]; }
 const Force ItemType::getMotiveForce(const ItemTypeId& id) { return itemTypeData.m_motiveForce[id]; }

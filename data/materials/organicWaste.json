@@ -3,6 +3,7 @@
 	"density": 2.0,
 	"hardness": 5,
 	"transparent": false,
+  	"value": 0.1,
 	"burnData":
 	{
 		"ignitionTemperature": 1144,

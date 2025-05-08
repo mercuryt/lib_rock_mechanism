@@ -11,7 +11,7 @@ bool Blocks::shape_anythingCanEnterEver(const BlockIndex& index) const
 		return false;
 	return !blockFeature_blocksEntrance(index);
 }
-bool Blocks::shape_canFit(const BlockIndex& index, const ShapeId& shape, const Facing4& facing) const
+bool Blocks::shape_canFitEverOrCurrentlyDynamic(const BlockIndex& index, const ShapeId& shape, const Facing4& facing) const
 {
 	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
@@ -21,6 +21,16 @@ bool Blocks::shape_canFit(const BlockIndex& index, const ShapeId& shape, const F
 			!shape_anythingCanEnterEver(otherIndex) ||
 			m_dynamicVolume[otherIndex] + pair.volume > Config::maxBlockVolume
 		)
+			return false;
+	}
+	return true;
+}
+bool Blocks::shape_canFitEver(const BlockIndex& index, const ShapeId& shape, const Facing4& facing) const
+{
+	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
+	{
+		BlockIndex otherIndex = offset(index, pair.offset);
+		if( otherIndex.empty() || !shape_anythingCanEnterEver(otherIndex))
 			return false;
 	}
 	return true;
@@ -72,7 +82,8 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const Block
 			continue;
 		if(otherIndex.empty() || !shape_anythingCanEnterEver(otherIndex) ||
 			m_dynamicVolume[otherIndex] + pair.volume > Config::maxBlockVolume ||
-			!shape_moveTypeCanEnter(otherIndex, moveType)
+			!shape_moveTypeCanEnter(otherIndex, moveType) ||
+			(pair.offset.z() != 0 && !blockFeature_multiTileCanEnterAtNonZeroZOffset(otherIndex))
 		)
 			return false;
 	}
@@ -95,6 +106,22 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(const BlockIndex& i
 		if(shape_shapeAndMoveTypeCanEnterEverWithFacing(index, shape, moveType, facing))
 			return true;
 	return false;
+}
+Facing4 Blocks::shape_canEnterEverWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType) const
+{
+	if(shape_moveTypeCanEnter(index, moveType))
+		for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((uint)facing + 1))
+			if(shape_canFitEver(index, shape, facing))
+				return facing;
+	return Facing4::Null;
+}
+Facing4 Blocks::shape_canEnterEverOrCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const OccupiedBlocksForHasShape& occupied) const
+{
+	if(shape_moveTypeCanEnter(index, moveType))
+		for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((uint)facing + 1))
+			if(shape_canFitEverOrCurrentlyDynamic(index, shape, facing) && shape_canEnterCurrentlyWithFacing(index, shape, facing, occupied))
+				return facing;
+	return Facing4::Null;
 }
 bool Blocks::shape_moveTypeCanEnterFrom(const BlockIndex& index, const MoveTypeId& moveType, const BlockIndex& from) const
 {
@@ -301,6 +328,40 @@ SmallSet<BlockIndex> Blocks::shape_getBelowBlocksWithFacing(const BlockIndex& in
 			output.insert(below);
 	}
 	return output;
+}
+std::pair<BlockIndex, Facing4> Blocks::shape_getNearestEnterableEverBlockWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType)
+{
+	std::deque<BlockIndex> openList;
+	SmallSet<BlockIndex> closedList;
+	closedList.insert(index);
+	if(shape_anythingCanEnterEver(index))
+		openList.push_back(index);
+	else
+	{
+		for(const BlockIndex& adjacent : getAdjacentWithEdgeAndCornerAdjacent(index))
+			if(shape_anythingCanEnterEver(adjacent))
+			{
+				openList.push_back(adjacent);
+				closedList.insert(adjacent);
+			}
+		if(openList.empty())
+			return {BlockIndex::null(), Facing4::Null};
+	}
+	while(!openList.empty())
+	{
+		const BlockIndex candidate = openList.front();
+		openList.pop_front();
+		const Facing4 facing = shape_canEnterEverWithAnyFacingReturnFacing(candidate, shape, moveType);
+		if(facing != Facing4::Null)
+			return {candidate, facing};
+		for(const BlockIndex& adjacent : getAdjacentWithEdgeAndCornerAdjacent(candidate))
+			if(shape_anythingCanEnterEver(adjacent) && !closedList.contains(adjacent))
+			{
+				openList.push_back(adjacent);
+				closedList.insert(adjacent);
+			}
+	}
+	return {BlockIndex::null(), Facing4::Null};
 }
 bool Blocks::shape_canStandIn(const BlockIndex& index) const
 {

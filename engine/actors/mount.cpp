@@ -8,7 +8,8 @@ BlockIndex Actors::mount_findLocationToMountOn(const ActorIndex& index, const Ac
 	const ShapeId& shape = getShape(index);
 	const Facing4& facing = getFacing(toMount);
 	for(const BlockIndex& block : getBlocksAbove(toMount))
-		if(blocks.shape_canFit(block, shape, facing))
+		// Should riders be dynamic or static?
+		if(blocks.shape_canFitEverOrCurrentlyDynamic(block, shape, facing))
 			return block;
 	return BlockIndex::null();
 }
@@ -30,7 +31,7 @@ ActorIndex Actors::mount_getPilot(const ActorIndex& actor) const
 void Actors::mount_do(const ActorIndex& index, const ActorIndex& toMount, const BlockIndex& location, const bool& pilot)
 {
 	const Facing4& mountFacing = getFacing(toMount);
-	setLocationAndFacingNoCheckMoveType(index, location, mountFacing);
+	location_set(index, location, mountFacing);
 	m_isOnDeckOf[index] = ActorOrItemIndex::createForActor(toMount);
 	m_onDeck[toMount].insert(ActorOrItemIndex::createForActor(index));
 	// Update speed will modify mount speed using the mass of onDeck.
@@ -44,12 +45,15 @@ void Actors::mount_do(const ActorIndex& index, const ActorIndex& toMount, const 
 		m_isPilot.set(index);
 	}
 }
-void Actors::mount_undo(const ActorIndex& index, const BlockIndex& location)
+void Actors::mount_undo(const ActorIndex& index, const BlockIndex& location, const Facing4& facing)
 {
 	const ActorIndex& mount = m_isOnDeckOf[index].getActor();
 	assert(mount.exists());
-	removeShapeFromCompoundShape(mount, getShape(index), m_location[index], m_facing[index]);
-	setLocation(index, location);
+	const BlockIndex& previousLocation = m_location[index];
+	removeShapeFromCompoundShape(mount, getShape(index), previousLocation, m_facing[index]);
+	Blocks& blocks = m_area.getBlocks();
+	assert(blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(location, getShape(index), getMoveType(index), facing));
+	location_set(index, location, facing);
 	m_isOnDeckOf[index].clear();
 	m_onDeck[mount].erase(ActorOrItemIndex::createForActor(index));
 	// Update speed will modify mount speed using the mass of onDeck.

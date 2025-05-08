@@ -200,9 +200,25 @@ void Portables<Derived, Index, ReferenceIndex>::followActor(const Index& index, 
 	assert(!isFollowing(index));
 	assert(!isLeading(index));
 	assert(!actors.isLeading(actor));
+	// If following a pilot, follow the mount or vehicle instead.
+	const ActorOrItemIndex& leaderPiloting = actors.getIsPiloting(actor);
+	if(leaderPiloting.exists())
+	{
+		followPolymorphic(index, leaderPiloting);
+		return;
+	}
+	// if piloting something then set that thing to follow rather then the pilot.
+	if(m_isActors)
+	{
+		const ActorOrItemIndex& followerPiloting =  actors.getIsPiloting(ActorIndex::create(index.get()));
+		if(followerPiloting.exists())
+		{
+			followerPiloting.followActor(getArea(), actor);
+			return;
+		}
+	}
 	m_leader[index] = ActorOrItemIndex::createForActor(actor);
 	this->maybeUnsetStatic(index);
-	assert(!actors.getFollower(actor).exists());
 	actors.setFollower(actor, getActorOrItemIndex(index));
 	ActorIndex lineLeader = getLineLeader(index);
 	actors.lineLead_appendToPath(lineLeader, this->m_location[index], this->m_facing[index]);
@@ -218,10 +234,19 @@ void Portables<Derived, Index, ReferenceIndex>::followItem(const Index& index, c
 	assert(!items.isLeading(item));
 	// Only follow items which already have leaders;
 	assert(items.isFollowing(item));
+	// if piloting something then set that thing to follow rather then the pilot.
+	if(m_isActors)
+	{
+		const ActorOrItemIndex& followerPiloting = actors.getIsPiloting(ActorIndex::create(index.get()));
+		if(followerPiloting.exists())
+		{
+			followerPiloting.followItem(getArea(), item);
+			return;
+		}
+	}
 	m_leader[index] = ActorOrItemIndex::createForItem(item);
 	this->maybeUnsetStatic(index);
 	items.getFollower(item) = getActorOrItemIndex(index);
-	assert(items.isFollowing(item));
 	ActorIndex lineLeader = getLineLeader(index);
 	actors.move_updateActualSpeed(lineLeader);
 	actors.lineLead_appendToPath(lineLeader, this->m_location[index], this->m_facing[index]);
@@ -240,8 +265,7 @@ void Portables<Derived, Index, ReferenceIndex>::unfollowActor(const Index& index
 	assert(!isLeading(index));
 	assert(isFollowing(index));
 	assert(m_leader[index] == actor.toActorOrItemIndex());
-	static const MoveTypeId& moveTypeNone = MoveType::byName("none");
-	if(!m_isActors || getMoveType(index) == moveTypeNone)
+	if(!static_cast<Derived*>(this)->canMove(index))
 		this->setStatic(index);
 	Actors& actors = getActors();
 	if(!actors.isFollowing(actor))
@@ -261,8 +285,7 @@ void Portables<Derived, Index, ReferenceIndex>::unfollowItem(const Index& index,
 	assert(!isLeading(index));
 	ActorIndex lineLeader = getLineLeader(index);
 	m_leader[index].clear();
-	static const MoveTypeId& moveTypeNone = MoveType::byName("none");
-	if(!m_isActors || getMoveType(index) == moveTypeNone)
+	if(!static_cast<Derived*>(this)->canMove(index))
 		this->setStatic(index);
 	Items& items = getItems();
 	items.unsetFollower(item, getActorOrItemIndex(index));
@@ -433,13 +456,18 @@ bool Portables<Derived, Index, ReferenceIndex>::canFloatAtInFluidType(const Inde
 template<class Derived, class Index, class ReferenceIndex>
 Speed Portables<Derived, Index, ReferenceIndex>::lead_getSpeed(const Index& index)
 {
-	assert(m_isActors);
-	[[maybe_unused]] const ActorIndex& actorIndex = ActorIndex::cast(index);
-	assert(!getActors().isFollowing(actorIndex));
-	assert(getActors().isLeading(actorIndex));
-	ActorOrItemIndex wrapped = getActorOrItemIndex(index);
-	std::vector<ActorOrItemIndex> actorsAndItems;
+	assert(!isFollowing(index));
+	assert(isLeading(index));
 	Area& area = getArea();
+	Actors& actors = area.getActors();
+	ActorOrItemIndex wrapped = getActorOrItemIndex(index);
+	if(m_isActors)
+	{
+ 		const ActorOrItemIndex& isPiloting = actors.getIsPiloting(static_cast<const ActorIndex&>(index));
+		if(isPiloting.exists())
+			wrapped = isPiloting;
+	}
+	std::vector<ActorOrItemIndex> actorsAndItems;
 	while(wrapped.exists())
 	{
 		actorsAndItems.push_back(wrapped);
@@ -447,18 +475,25 @@ Speed Portables<Derived, Index, ReferenceIndex>::lead_getSpeed(const Index& inde
 			break;
 		wrapped = wrapped.getFollower(area);
 	}
-	return PortablesHelpers::getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, Mass::create(0), Mass::create(0));
+	return PortablesHelpers::getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, Mass::create(0), Mass::create(0), Mass::create(0));
 }
 template<class Derived, class Index, class ReferenceIndex>
 ActorIndex Portables<Derived, Index, ReferenceIndex>::getLineLeader(const Index& index)
 {
 	// Recursively traverse to the front of the line and return the leader.
+	Items& items = getArea().getItems();
 	ActorOrItemIndex leader = m_leader[index];
 	assert(getActorOrItemIndex(index) != leader);
 	if(leader.empty())
 	{
 		assert(m_follower[index].exists());
-		assert(m_isActors);
+		if(!m_isActors)
+		{
+			// If the leader is an item then return it's pilot.
+			const ActorIndex& pilot = items.pilot_get(leader.getItem());
+			assert(pilot.exists());
+			return pilot;
+		}
 		return ActorIndex::cast(index);
 	}
 	if(leader.isFollowing(getArea()))
@@ -512,7 +547,7 @@ void Portables<Derived, Index, ReferenceIndex>::fall(const Index& index)
 	while(true)
 	{
 		next = blocks.getBlockBelow(location);
-		if(blocks.shape_canFit(next, shape, facing) && !canFloatAt(index, location))
+		if(blocks.shape_canFitEverOrCurrentlyDynamic(next, shape, facing) && !canFloatAt(index, location))
 		{
 			location = next;
 			++distance;
@@ -523,7 +558,7 @@ void Portables<Derived, Index, ReferenceIndex>::fall(const Index& index)
 	assert(distance != 0);
 	auto blocksBelowEndPosition = blocks.shape_getBelowBlocksWithFacing(location, shape, facing);
 	MaterialTypeId materialType = blocks.solid_getHardest(blocksBelowEndPosition);
-	static_cast<Derived*>(this)->setLocationAndFacing(index, location, facing);
+	static_cast<Derived*>(this)->location_set(index, location, facing);
 	static_cast<Derived*>(this)->takeFallDamage(index, distance, materialType);
 	//TODO: dig out / destruct below impact.
 }
@@ -543,6 +578,10 @@ void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index
 	Blocks& blocks = area.getBlocks();
 	const BlockIndex& newLocation = getLocation(index);
 	const Facing4& newFacing = getFacing(index);
+	if(blocks.isExposedToSky(newLocation))
+		this->m_onSurface.set(index);
+	else
+		this->m_onSurface.unset(index);
 	// Translate Actors, Items, Fluids and Projects on deck into new positions. Also translate their reservations, paths, etc.
 	onDeckRotationData.reinstanceAtRotatedPosition(area, previousLocation, newLocation, previousFacing, newFacing);
 	// Move decks attached to this portable.
@@ -556,7 +595,7 @@ void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index
 	else
 	{
 		// TODO: move this to onInsertIntoBlocks method.
-		const std::vector<std::pair<Offset3D, Offset3D>>& deckOffsets = static_cast<Derived*>(this)->getDeckOffsets(index);
+		const OffsetCuboidSet& deckOffsets = static_cast<Derived*>(this)->getDeckOffsets(index);
 		if(!deckOffsets.empty())
 		{
 			// Create decks for newly added.

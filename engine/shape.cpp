@@ -5,6 +5,7 @@
 #include "types.h"
 #include "util.h"
 #include "geometry/point3D.h"
+#include "blocks/adjacentOffsets.h"
 #include <string>
 #include <sys/types.h>
 //TODO: radial symetry for 2x2 and 3x3, etc.
@@ -73,21 +74,8 @@ SmallSet<Offset3D> Shape::makeAdjacentPositionsWithFacing(const ShapeId& id, con
 }
 SmallSet<Offset3D> Shape::positionOffsets(const OffsetAndVolume& offsetAndVolume)
 {
-	static const Offset3D offsetsList[26] = {
-		{-1,1,-1}, {-1,0,-1}, {-1,-1,-1},
-		{0,1,-1}, {0,0,-1}, {0,-1,-1},
-		{1,1,-1}, {1,0,-1}, {1,-1,-1},
-
-		{-1,-1,0}, {-1,0,0}, {0,-1,0},
-		{1,1,0}, {0,1,0},
-		{1,-1,0}, {1,0,0}, {-1,1,0},
-
-		{-1,1,1}, {-1,0,1}, {-1,-1,1},
-		{0,1,1}, {0,0,1}, {0,-1,1},
-		{1,1,1}, {1,0,1}, {1,-1,1}
-	};
 	SmallSet<Offset3D> output;
-	for(const auto& offsets : offsetsList)
+	for(const auto& offsets : adjacentOffsets::all)
 		output.insert(offsetAndVolume.offset + offsets);
 	return output;
 }
@@ -231,36 +219,42 @@ ShapeId Shape::loadFromName(std::string name)
 		int y = tokens[i+1];
 		int z = tokens[i+2];
 		int v = tokens[i+3];
-		positions.insert(OffsetAndVolume{Offset3D(x, y, z), CollisionVolume::create(v)});
+		positions.insert(OffsetAndVolume{Offset3D::create(x, y, z), CollisionVolume::create(v)});
 	}
 	// Runtime shapes always have display scale = 1
 	return Shape::create(name, positions, 1);
 }
 ShapeId Shape::mutateAdd(const ShapeId& id, const OffsetAndVolume& position)
 {
+	return mutateAddMultiple(id, {position});
+}
+ShapeId Shape::mutateAddMultiple(const ShapeId& shape, const SmallSet<OffsetAndVolume>& positions)
+{
 	// Make a copy.
-	SmallSet<OffsetAndVolume> positions = shapeData.m_positions[id];
-	positions.insert(position);
-	positions.sort();
-	std::string name = makeName(positions);
-	ShapeId output = Shape::byName(name);
-	if(output.exists())
-		return output;
-	// Runtime shapes always have display scale = 1
-	return Shape::create(name, positions, 1);
+	SmallSet<OffsetAndVolume> merged = shapeData.m_positions[shape];
+	merged.insertAll(positions);
+	return createCustom(merged);
 }
 ShapeId Shape::mutateRemove(const ShapeId& id, const OffsetAndVolume& position)
 {
+	SmallSet<OffsetAndVolume> positions = {position};
+	return mutateRemoveMultiple(id, positions);
+}
+ShapeId Shape::mutateRemoveMultiple(const ShapeId& id, SmallSet<OffsetAndVolume>& positions)
+{
 	// Make a copy.
-	SmallSet<OffsetAndVolume> positions = shapeData.m_positions[id];
-	positions.erase(position);
-	positions.sort();
-	std::string name = makeName(positions);
-	ShapeId output = Shape::byName(name);
-	if(output.exists())
-		return output;
-	// Runtime shapes always have display scale = 1
-	return Shape::create(name, positions, 1);
+	SmallSet<OffsetAndVolume> purged = shapeData.m_positions[id];
+	purged.eraseAll(positions);
+	purged.sort();
+	return createCustom(purged);
+}
+ShapeId Shape::mutateMultiplyVolume(const ShapeId& id, const Quantity& quantity)
+{
+	// Make a copy.
+	SmallSet<OffsetAndVolume> copy = shapeData.m_positions[id];
+	for(OffsetAndVolume& offsetAndVolume : copy)
+		offsetAndVolume.volume *= quantity.get();
+	return createCustom(copy);
 }
 std::string Shape::makeName(SmallSet<OffsetAndVolume>& positions)
 {
@@ -268,4 +262,14 @@ std::string Shape::makeName(SmallSet<OffsetAndVolume>& positions)
 	for(const auto& pair : positions)
 		output += std::to_string(pair.offset.x()) + " " + std::to_string(pair.offset.y()) + " " + std::to_string(pair.offset.z()) + " " + std::to_string(pair.volume.get()) + " ";
 	return output;
+}
+ShapeId Shape::createCustom(SmallSet<OffsetAndVolume>& positions)
+{
+	positions.sort();
+	std::string name = makeName(positions);
+	ShapeId output = Shape::byName(name);
+	if(output.exists())
+		return output;
+	// Runtime shapes always have display scale = 1
+	return Shape::create(name, positions, 1);
 }

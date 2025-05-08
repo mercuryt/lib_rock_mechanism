@@ -108,6 +108,7 @@ void Items::forEachData(Action&& action)
 	action(m_quantity);
 	action(m_onSurface);
 	action(m_pilot);
+	action(m_constructedShape);
 }
 ItemIndex Items::create(ItemParamaters itemParamaters)
 {
@@ -115,7 +116,10 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	// TODO: This 'toItem' call should not be neccessary. Why does ItemIndex + int = HasShapeIndex?
 	resize(index + 1);
 	const MoveTypeId& moveType = ItemType::getMoveType(itemParamaters.itemType);
-	Portables<Items, ItemIndex, ItemReferenceIndex>::create(index, moveType, ItemType::getShape(itemParamaters.itemType), itemParamaters.faction, itemParamaters.isStatic, itemParamaters.quantity);
+	ShapeId shape = ItemType::getShape(itemParamaters.itemType);
+	if(itemParamaters.quantity > 1)
+		shape = Shape::mutateMultiplyVolume(shape, itemParamaters.quantity);
+	Portables<Items, ItemIndex, ItemReferenceIndex>::create(index, moveType, shape, itemParamaters.faction, itemParamaters.isStatic, itemParamaters.quantity);
 	assert(m_canBeStockPiled[index] == nullptr);
 	m_craftJobForWorkPiece[index] = itemParamaters.craftJob;
 	assert(m_hasCargo[index] == nullptr);
@@ -127,6 +131,8 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	m_percentWear[index] = itemParamaters.percentWear;
 	m_quality[index] = itemParamaters.quality;
 	m_quantity[index] = itemParamaters.quantity;
+	//TODO: copying the whole constructed shape but only really need the offsets and block contents.
+	m_constructedShape[index] = ItemType::getConstructedShape(itemParamaters.itemType);
 	if(ItemType::getGeneric(itemType))
 	{
 		assert(m_quality[index].empty());
@@ -136,7 +142,7 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 		assert(m_quantity[index] == 1);
 	if(itemParamaters.location.exists())
 		// A generic item type might merge with an existing stack on creation, in that case return the index of the existing stack.
-		index = setLocationAndFacing(index, itemParamaters.location, itemParamaters.facing);
+		index = location_set(index, itemParamaters.location, itemParamaters.facing);
 	static const MoveTypeId rolling = MoveType::byName("roll");
 	static const ItemTypeId panniers = ItemType::byName("panniers");
 	if(itemType == panniers  || (moveType == rolling && ItemType::getInternalVolume(itemType) != 0))
@@ -158,65 +164,6 @@ void Items::moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex)
 	for(BlockIndex block : m_blocks[newIndex])
 		blocks.item_updateIndex(block, oldIndex, newIndex);
 }
-ItemIndex Items::setLocation(const ItemIndex& index, const BlockIndex& block)
-{
-	assert(index.exists());
-	assert(m_location[index].exists());
-	assert(block.exists());
-	Facing4 facing = m_area.getBlocks().facingToSetWhenEnteringFrom(block, m_location[index]);
-	return setLocationAndFacing(index, block, facing);
-}
-ItemIndex Items::setLocationAndFacing(const ItemIndex& index, const BlockIndex& block, Facing4 facing)
-{
-	assert(index.exists());
-	assert(block.exists());
-	assert(m_location[index] != block);
-	Blocks& blocks = m_area.getBlocks();
-	if(isGeneric(index) && m_static[index])
-	{
-		// Check for existing generic item to combine with.
-		ItemIndex found = blocks.item_getGeneric(block, getItemType(index), getMaterialType(index));
-		if(found.exists())
-			// Return the index of the found item, which may be different then it was before 'index' was destroyed by merge.
-			return merge(found, index);
-	}
-	BlockIndex previousLocation = m_location[index];
-	Facing4 previousFacing = m_facing[index];
-	DeckRotationData deckRotationData;
-	if(previousLocation.exists())
-	{
-		deckRotationData = DeckRotationData::recordAndClearDependentPositions(m_area, ActorOrItemIndex::createForItem(index));
-		exit(index);
-	}
-	m_location[index] = block;
-	m_facing[index] = facing;
-	const Quantity& quantity = m_quantity[index];
-	auto& occupiedBlocks = m_blocks[index];
-	for(const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
-	{
-		BlockIndex occupied = blocks.offset(block, pair.offset);
-		blocks.item_record(occupied, index, CollisionVolume::create((quantity * pair.volume.get()).get()));
-		occupiedBlocks.insert(occupied);
-	}
-	if(blocks.isExposedToSky(block))
-		m_onSurface.set(index);
-	else
-		m_onSurface.unset(index);
-	onSetLocation(index, previousLocation, previousFacing, deckRotationData);
-	return index;
-}
-void Items::exit(const ItemIndex& index)
-{
-	assert(m_location[index].exists());
-	BlockIndex location = m_location[index];
-	auto& blocks = m_area.getBlocks();
-	for(BlockIndex occupied : m_blocks[index])
-		blocks.item_erase(occupied, index);
-	m_location[index].clear();
-	m_blocks[index].clear();
-	if(blocks.isExposedToSky(location))
-		m_onSurface.unset(index);
-}
 void Items::setTemperature(const ItemIndex& index, const Temperature& temperature)
 {
 	const MaterialTypeId& materialType = m_materialType[index];
@@ -226,7 +173,7 @@ void Items::setTemperature(const ItemIndex& index, const Temperature& temperatur
 	}
 	else if(MaterialType::canMelt(materialType) && MaterialType::getMeltingPoint(materialType) <= temperature)
 	{
-		const CollisionVolume volume = getTotalCollisionVolume(index);
+		const CollisionVolume volume = Shape::getTotalCollisionVolume(m_shape[index]);
 		const BlockIndex location = m_location[index];
 		destroy(index);
 		m_area.getBlocks().fluid_add(location, volume, MaterialType::getMeltsInto(materialType));
@@ -234,19 +181,25 @@ void Items::setTemperature(const ItemIndex& index, const Temperature& temperatur
 }
 void Items::addQuantity(const ItemIndex& index, const Quantity& delta)
 {
+	assert(isStatic(index));
 	assert(delta != 0);
 	BlockIndex location = m_location[index];
 	Facing4 facing = m_facing[index];
+	Quantity newQuantity = getQuantity(index) + delta;
 	// TODO: Update in place rather then exit, update, enter.
-	exit(index);
-	m_quantity[index] += delta;
-	setLocationAndFacing(index, location, facing);
-	if(m_reservables[index] != nullptr)
-		m_reservables[index]->setMaxReservations(m_quantity[index]);
+	if(location.exists())
+	{
+		location_clearStatic(index);
+		setQuantity(index, newQuantity);
+		location_setStatic(index, location, facing);
+	}
+	else
+		setQuantity(index, newQuantity);
 }
 // May destroy.
 void Items::removeQuantity(const ItemIndex& index, const Quantity& delta, CanReserve* canReserve)
 {
+	assert(isStatic(index));
 	if(canReserve != nullptr)
 		reservable_maybeUnreserve(index, *canReserve, delta);
 	if(m_quantity[index] == delta)
@@ -257,16 +210,17 @@ void Items::removeQuantity(const ItemIndex& index, const Quantity& delta, CanRes
 		// TODO: Update in place rather then exit, update, enter.
 		BlockIndex location = m_location[index];
 		Facing4 facing = m_facing[index];
-		exit(index);
-		m_quantity[index] -= delta;
-		setLocationAndFacing(index, location, facing);
+		location_clear(index);
+		setQuantity(index, getQuantity(index) - delta);
+		location_set(index, location, facing);
 		if(m_reservables[index] != nullptr)
 			m_reservables[index]->setMaxReservations(m_quantity[index]);
 	}
 }
 void Items::install(const ItemIndex& index, const BlockIndex& block, const Facing4& facing, const FactionId& faction)
 {
-	setLocationAndFacing(index, block, facing);
+	maybeSetStatic(index);
+	location_setStatic(index, block, facing);
 	m_installed.set(index);
 	if(ItemType::getCraftLocationStepTypeCategory(m_itemType[index]).exists())
 	{
@@ -278,17 +232,15 @@ void Items::install(const ItemIndex& index, const BlockIndex& block, const Facin
 }
 ItemIndex Items::merge(const ItemIndex& index, const ItemIndex& other)
 {
+	assert(isStatic(index));
+	assert(isStatic(other));
 	assert(index != other);
 	assert(m_itemType[index] == m_itemType[other]);
 	assert(m_materialType[index] == m_materialType[other]);
+	assert(m_location[other].empty());
 	if(m_reservables[other] != nullptr)
 		reservable_merge(index, *m_reservables[other]);
-	BlockIndex location = m_location[index];
-	Facing4 facing = m_facing[index];
-	// Exit, add quantity, and then set location to update CollisionVolume with new quantity.
-	exit(index);
-	m_quantity[index] += m_quantity[other];
-	setLocationAndFacing(index, location, facing);
+	addQuantity(index, getQuantity(other));
 	assert(m_quantity[index] == m_reservables[index]->getMaxReservations());
 	if(m_destroy[other] != nullptr)
 		onDestroy_merge(index, *m_destroy[other]);
@@ -307,6 +259,7 @@ void Items::setWear(const ItemIndex& index, const Percent& wear)
 }
 void Items::setQuantity(const ItemIndex& index, const Quantity& quantity)
 {
+	setShape(index, Shape::mutateMultiplyVolume(ItemType::getShape(m_itemType[index]), quantity));
 	m_quantity[index] = quantity;
 }
 void Items::unsetCraftJobForWorkPiece(const ItemIndex& index)
@@ -321,7 +274,7 @@ void Items::destroy(const ItemIndex& index)
 {
 	// No need to explicitly unschedule events here, destorying the event holder will do it.
 	if(hasLocation(index))
-		exit(index);
+		location_clear(index);
 	static const MoveTypeId rolling = MoveType::byName("roll");
 	if(m_moveType[index] == rolling && ItemType::getInternalVolume(m_itemType[index]) != 0)
 		m_area.m_hasHaulTools.unregisterHaulTool(m_area, index);
@@ -360,10 +313,6 @@ Mass Items::getMass(const ItemIndex& index) const
 FullDisplacement Items::getVolume(const ItemIndex& index) const
 {
 	return ItemType::getFullDisplacement(m_itemType[index]) * m_quantity[index];
-}
-CollisionVolume Items::getTotalCollisionVolume(const ItemIndex& index) const
-{
-	return Shape::getTotalCollisionVolume(m_shape[index]) * m_quantity[index];
 }
 MoveTypeId Items::getMoveType(const ItemIndex& index) const
 {
@@ -427,7 +376,10 @@ void Items::load(const Json& data)
 			for (const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
 			{
 				BlockIndex occupied = blocks.offset(m_location[index], pair.offset);
-				blocks.item_record(occupied, index, CollisionVolume::create((m_quantity[index] * pair.volume.get()).get()));
+				if(m_static[index])
+					blocks.item_recordStatic(occupied, index, CollisionVolume::create((m_quantity[index] * pair.volume.get()).get()));
+				else
+					blocks.item_recordDynamic(occupied, index, CollisionVolume::create((m_quantity[index] * pair.volume.get()).get()));
 			}
 	}
 	m_canBeStockPiled.resize(m_id.size());
@@ -504,6 +456,7 @@ Json Items::toJson() const
 	return data;
 }
 // HasCargo.
+ItemHasCargo::ItemHasCargo(const ItemTypeId& itemType) : m_maxVolume(ItemType::getInternalVolume(itemType)) { }
 ItemHasCargo::ItemHasCargo(const Json& data)
 {
 	data["maxVolume"].get_to(m_maxVolume);

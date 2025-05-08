@@ -73,9 +73,13 @@ public:
 	[[nodiscard]] static ShapeId byName(const std::string& name);
 	[[nodiscard]] static bool hasShape(const std::string& name);
 	// Creates a copy, adds a position to it and returns it.
-	[[nodiscard]] static ShapeId mutateAdd(const ShapeId& shape, const OffsetAndVolume& position);
-	[[nodiscard]] static ShapeId mutateRemove(const ShapeId& shape, const OffsetAndVolume& position);
+	[[nodiscard]] static ShapeId mutateAdd(const ShapeId& id, const OffsetAndVolume& position);
+	[[nodiscard]] static ShapeId mutateAddMultiple(const ShapeId& id, const SmallSet<OffsetAndVolume>& positions);
+	[[nodiscard]] static ShapeId mutateRemove(const ShapeId& id, const OffsetAndVolume& position);
+	[[nodiscard]] static ShapeId mutateRemoveMultiple(const ShapeId& id, SmallSet<OffsetAndVolume>& positions);
+	[[nodiscard]] static ShapeId mutateMultiplyVolume(const ShapeId& id, const Quantity& quantity);
 	[[nodiscard]] static std::string makeName(SmallSet<OffsetAndVolume>& positions);
 	[[nodiscard]] static ShapeId loadFromName(std::string name);
+	[[nodiscard]] static ShapeId createCustom(SmallSet<OffsetAndVolume>& positions);
 };
 inline Shape shapeData;

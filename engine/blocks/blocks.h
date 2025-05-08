@@ -253,6 +253,7 @@ public:
 	void blockFeature_close(const BlockIndex& index, const BlockFeatureType& type);
 	void blockFeature_open(const BlockIndex& index, const BlockFeatureType& type);
 	void blockFeature_setTemperature(const BlockIndex& index, const Temperature& temperature);
+	void blockFeature_setAll(const BlockIndex& index, std::vector<BlockFeature>& features);
 	[[nodiscard]] const BlockFeature* blockFeature_atConst(const BlockIndex& index, const BlockFeatureType& blockFeatueType) const;
 	[[nodiscard]] BlockFeature* blockFeature_at(const BlockIndex& index, const BlockFeatureType& blockFeatueType);
 	[[nodiscard]] const BlockIndices& blockFeature_get(const BlockIndex& index) const;
@@ -266,6 +267,7 @@ public:
 	[[nodiscard]] MaterialTypeId blockFeature_getMaterialType(const BlockIndex& index) const;
 	[[nodiscard]] bool blockFeature_contains(const BlockIndex& index, const BlockFeatureType& blockFeatureType) const;
 	[[nodiscard]] auto& blockFeature_getAll(const BlockIndex& index) const { return m_features[index]; }
+	[[nodiscard]] bool blockFeature_multiTileCanEnterAtNonZeroZOffset(const BlockIndex& index) const;
 	// -Fluids
 	void fluid_spawnMist(const BlockIndex& index, const FluidTypeId& fluidType, const DistanceInBlocks maxMistSpread = DistanceInBlocks::create(0));
 	void fluid_clearMist(const BlockIndex& index);
@@ -335,8 +337,10 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	// To be used by CanReserve::translateAndReservePositions.
 	[[nodiscard]] Reservable& getReservable(const BlockIndex& index) { return *m_reservables[index]; }
 	// -Actors
-	void actor_record(const BlockIndex& index, const ActorIndex& actor, const CollisionVolume& volume);
-	void actor_erase(const BlockIndex& index, const ActorIndex& actor);
+	void actor_recordStatic(const BlockIndex& index, const ActorIndex& actor, const CollisionVolume& volume);
+	void actor_recordDynamic(const BlockIndex& index, const ActorIndex& actor, const CollisionVolume& volume);
+	void actor_eraseStatic(const BlockIndex& index, const ActorIndex& actor);
+	void actor_eraseDynamic(const BlockIndex& index, const ActorIndex& actor);
 	void actor_setTemperature(const BlockIndex& index, const Temperature& temperature);
 	void actor_updateIndex(const BlockIndex& index, const ActorIndex& oldIndex, const ActorIndex& newIndex);
 	[[nodiscard]] bool actor_canStandIn(const BlockIndex& index) const;
@@ -347,7 +351,11 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	[[nodiscard]] const ActorIndicesForBlock& actor_getAll(const BlockIndex& index) const;
 	// -Items
 	void item_record(const BlockIndex& index, const ItemIndex& item, const CollisionVolume& volume);
+	void item_recordStatic(const BlockIndex& index, const ItemIndex& item, const CollisionVolume& volume);
+	void item_recordDynamic(const BlockIndex& index, const ItemIndex& item, const CollisionVolume& volume);
 	void item_erase(const BlockIndex& index, const ItemIndex& item);
+	void item_eraseDynamic(const BlockIndex& index, const ItemIndex& item);
+	void item_eraseStatic(const BlockIndex& index, const ItemIndex& item);
 	void item_setTemperature(const BlockIndex& index, const Temperature& temperature);
 	void item_disperseAll(const BlockIndex& index);
 	void item_updateIndex(const BlockIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex);
@@ -380,12 +388,15 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	void shape_addDynamicVolume(const BlockIndex& index, const CollisionVolume& volume);
 	void shape_removeDynamicVolume(const BlockIndex& index, const CollisionVolume& volume);
 	[[nodiscard]] bool shape_anythingCanEnterEver(const BlockIndex& index) const;
-	[[nodiscard]] bool shape_canFit(const BlockIndex& index, const ShapeId& shape, const Facing4& facing) const;
+	[[nodiscard]] bool shape_canFitEverOrCurrentlyDynamic(const BlockIndex& index, const ShapeId& shape, const Facing4& facing) const;
+	[[nodiscard]] bool shape_canFitEver(const BlockIndex& index, const ShapeId& shape, const Facing4& facing) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverFrom(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& block) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing4& facing) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType) const;
+	[[nodiscard]] Facing4 shape_canEnterEverWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType) const;
 	// CanEnterCurrently methods which are not prefixed with static are to be used only for dynamic shapes.
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing4& facing, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] Facing4 shape_canEnterEverOrCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] Facing4 shape_canEnterCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] bool shape_canEnterCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const;
@@ -407,6 +418,8 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	[[nodiscard]] CollisionVolume shape_getStaticVolume(const BlockIndex& index) const;
 	[[nodiscard]] Quantity shape_getQuantityOfItemWhichCouldFit(const BlockIndex& index, const ItemTypeId& itemType) const;
 	[[nodiscard]] SmallSet<BlockIndex> shape_getBelowBlocksWithFacing(const BlockIndex& index, const ShapeId& shape, const Facing4& facing) const;
+	[[nodiscard]] std::pair<BlockIndex, Facing4> shape_getNearestEnterableEverBlockWithFacing(const BlockIndex& block, const ShapeId& shape, const MoveTypeId& moveType);
+	[[nodiscard]] std::pair<BlockIndex, Facing4> shape_getNearestEnterableEverOrCurrentlyBlockWithFacing(const BlockIndex& block, const ShapeId& shape, const MoveTypeId& moveType);
 	// -FarmField
 	void farm_insert(const BlockIndex& index, const FactionId& faction, FarmField& farmField);
 	void farm_remove(const BlockIndex& index, const FactionId& faction);

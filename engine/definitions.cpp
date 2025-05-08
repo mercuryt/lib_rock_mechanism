@@ -93,6 +93,7 @@ void definitions::loadMaterialTypes()
 			.density=data["density"].get<Density>(),
 			.hardness=data["hardness"].get<uint32_t>(),
 			.transparent=data["transparent"].get<bool>(),
+			.valuePerUnitFullDisplacement=data["value"].get<float>(),
 		};
 		if(data.contains("category"))
 			p.materialTypeCategory = MaterialTypeCategory::byName((data["category"].get<std::string>()));

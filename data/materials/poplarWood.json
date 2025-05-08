@@ -5,6 +5,7 @@
   "hardness": 30,
   "transparent": false,
   "constructionData": "wood",
+  "value": 1,
   "burnData":
   {
 	  "ignitionTemperature": 533,
@@ -12,7 +13,7 @@
 	  "burnStageDuration": 10000,
 	  "flameStageDuration": 40000
   },
-  "spoilData": 
+  "spoilData":
     [
       {
         "materialType": "poplar wood",

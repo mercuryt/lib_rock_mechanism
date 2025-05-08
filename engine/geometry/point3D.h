@@ -27,12 +27,15 @@ struct Point3D
 	void clampHigh(const Point3D& other);
 	void clampLow(const Point3D& other);
 	void clear();
+	void setX(const DistanceInBlocks& x) { data[0] = x.get(); }
+	void setY(const DistanceInBlocks& y) { data[1] = y.get(); }
+	void setZ(const DistanceInBlocks& z) { data[2] = z.get(); }
 	Point3D& operator+=(const Offset3D& other);
 	Point3D& operator-=(const Offset3D& other);
 	Point3D& operator=(const Point3D& other) { data = other.data; return *this; }
-	[[nodiscard]] const DistanceInBlocks x() const { return DistanceInBlocks::create(data[0]); }
-	[[nodiscard]] const DistanceInBlocks y() const { return DistanceInBlocks::create(data[1]); }
-	[[nodiscard]] const DistanceInBlocks z() const { return DistanceInBlocks::create(data[2]); }
+	[[nodiscard]] DistanceInBlocks x() const { return DistanceInBlocks::create(data[0]); }
+	[[nodiscard]] DistanceInBlocks y() const { return DistanceInBlocks::create(data[1]); }
+	[[nodiscard]] DistanceInBlocks z() const { return DistanceInBlocks::create(data[2]); }
 	[[nodiscard]] Point3D operator-(const DistanceInBlocks& distance) const;
 	[[nodiscard]] Point3D operator+(const DistanceInBlocks& distance) const;
 	[[nodiscard]] Point3D operator-(const DistanceInBlocksWidth& distance) const;
@@ -83,31 +86,39 @@ struct Point3D_fractional
 	[[nodiscard]] int y() const { return data[1]; }
 	[[nodiscard]] int z() const { return data[2]; }
 };
-using Offsets = Eigen::Array3i;
+using Offsets = Eigen::Array<OffsetWidth, 3, 1>;
 struct Offset3D
 {
 	Offsets data;
 	Offset3D() = default;
+	Offset3D(const Offset& x, const Offset& y, const Offset& z) : data(x.get(), y.get(), z.get()) { }
 	Offset3D(const int& x, const int& y, const int& z) : data(x, y, z) { }
 	Offset3D(const Offsets& offsets) : data(offsets) { }
 	Offset3D(const Offset3D& other);
 	Offset3D(const Point3D& point);
 	Offset3D& operator=(const Offset3D& other);
 	Offset3D& operator=(const Point3D& other);
-	void operator*=(const int& x);
-	void operator*=(const DistanceInBlocks& distance) { (*this) *= distance.get(); }
-	void operator/=(const int& x);
-	void operator/=(const DistanceInBlocks& distance) { (*this) /= distance.get(); }
-	void operator+=(const int& x);
-	void operator+=(const DistanceInBlocks& distance) { (*this) += distance.get(); }
+	void operator*=(const Offset other) { data *= other.get(); }
+	void operator*=(const DistanceInBlocks& distance) { data *= distance.get(); }
+	void operator/=(const Offset other) { data /= other.get(); }
+	void operator/=(const DistanceInBlocks& distance) { data /= distance.get(); }
+	void operator+=(const Offset other) { data += other.get(); }
+	void operator+=(const DistanceInBlocks& distance) { data += distance.get(); }
 	void operator+=(const Offset3D& other) { data += other.data; }
-	void operator-=(const int& x);
-	void operator-=(const DistanceInBlocks& distance) { (*this) -= distance.get(); }
+	void operator-=(const Offset other) { data -= other.get(); }
+	void operator-=(const DistanceInBlocks& distance) { data -= distance.get(); }
 	void rotate2D(const Facing4& facing);
+	void rotate2DInvert(const Facing4& facing);
+	void clampHigh(const Offset3D& other);
+	void clampLow(const Offset3D& other);
 	[[nodiscard]] Offset3D operator+(const Offset3D& other) const;
 	[[nodiscard]] Offset3D operator-(const Offset3D& other) const;
 	[[nodiscard]] Offset3D operator*(const Offset3D& other) const;
 	[[nodiscard]] Offset3D operator/(const Offset3D& other) const;
+	[[nodiscard]] Offset3D operator+(const int& other) const;
+	[[nodiscard]] Offset3D operator-(const int& other) const;
+	[[nodiscard]] Offset3D operator*(const int& other) const;
+	[[nodiscard]] Offset3D operator/(const int& other) const;
 	[[nodiscard]] bool operator==(const Offset3D& other) const { return (data == other.data).all();}
 	[[nodiscard]] bool operator!=(const Offset3D& other) const { return !((*this) == other); }
 	[[nodiscard]] std::strong_ordering operator<=>(const Offset3D& other) const;
@@ -118,6 +129,7 @@ struct Offset3D
 	[[nodiscard]] int& y() { return data[1]; }
 	[[nodiscard]] int& z() { return data[2]; }
 	[[nodiscard]] std::string toString() const;
+	static Offset3D create(const OffsetWidth& x, const OffsetWidth& y, const OffsetWidth& z) { return {Offset::create(x), Offset::create(y), Offset::create(z)}; }
 };
 inline void to_json(Json& data, const Offset3D& point) { data = {point.x(), point.y(), point.z()}; }
 inline void from_json(const Json& data, Offset3D& point)

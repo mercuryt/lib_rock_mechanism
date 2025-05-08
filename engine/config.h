@@ -198,6 +198,7 @@ namespace Config
 	inline uint reserveSizeVisionCuboidAdjacent;
 	inline Step restIntervalSteps;
 	inline float rollingMassModifier;
+	inline float floatingMassModifier;
 	inline float rowForcePerUnitStrength;
 	inline uint32_t scaleOfHumanBody;
 	inline uint32_t secondsPerMinute;
@@ -234,6 +235,7 @@ namespace Config
 	inline float unitsOfMoveSpeedPerUnitOfAgility;
 	inline uint32_t unitsOfWoundAreaPerUnitItemScaleFactor;
 	inline float unitsOfVolumePerUnitOfCollisionVolume;
+	inline float vehicleMassToCarryMassModifier;
 	inline size_t visionRequestsReservationSize;
 	inline uint16_t visionThreadingBatchSize;
 	inline uint32_t wanderMaximumNumberOfBlocks;

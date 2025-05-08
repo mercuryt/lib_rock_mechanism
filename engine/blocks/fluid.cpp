@@ -128,7 +128,7 @@ void Blocks::fluid_add(const BlockIndex& index, const CollisionVolume& volume, c
 		{
 			const BlockIndex& above = getBlockAbove(location);
 			if(items.canFloatAt(item, above))
-				items.setLocation(item, above);
+				items.location_set(item, above, items.getFacing(item));
 		}
 	}
 	if(wasEmpty)

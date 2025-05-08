@@ -3,6 +3,7 @@
   "density": 0.91,
   "hardness": 2,
   "transparent": false,
+  "value": 1,
   "meltingPoint": 273,
   "meltsInto": "water"
 }

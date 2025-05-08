@@ -242,10 +242,6 @@ Offset3D::Offset3D(const Offset3D& other) : data(other.data) { }
 Offset3D::Offset3D(const Point3D& point) { data = point.data.cast<int>(); }
 Offset3D& Offset3D::operator=(const Offset3D& other) { data = other.data; return *this; }
 Offset3D& Offset3D::operator=(const Point3D& other) { data = other.data.cast<int>(); return *this; }
-void Offset3D::operator*=(const int& x) { data *= x; }
-void Offset3D::operator/=(const int& x) { data /= x; }
-void Offset3D::operator+=(const int& x) { data += x; }
-void Offset3D::operator-=(const int& x) { data -= x; }
 std::strong_ordering Offset3D::operator<=>(const Offset3D& other) const
 {
 	if (x() != other.x())
@@ -259,9 +255,32 @@ Offset3D Offset3D::operator+(const Offset3D& other) const { return Offsets(data 
 Offset3D Offset3D::operator-(const Offset3D& other) const { return Offsets(data - other.data); }
 Offset3D Offset3D::operator*(const Offset3D& other) const { return Offsets(data * other.data); }
 Offset3D Offset3D::operator/(const Offset3D& other) const { return Offsets(data / other.data); }
+Offset3D Offset3D::operator+(const int& other) const { return Offsets(data + other); }
+Offset3D Offset3D::operator-(const int& other) const { return Offsets(data - other); }
+Offset3D Offset3D::operator*(const int& other) const { return Offsets(data * other); }
+Offset3D Offset3D::operator/(const int& other) const { return Offsets(data / other); }
 std::string Offset3D::toString() const
 {
 	return "(" + std::to_string(x()) + "," + std::to_string(y()) + "," + std::to_string(z()) + ")";
+}
+void Offset3D::rotate2DInvert(const Facing4& facing)
+{
+		switch(facing)
+		{
+			case Facing4::North:
+				break;
+			case Facing4::East:
+				rotate2D(Facing4::West);
+				break;
+			case Facing4::South:
+				rotate2D(Facing4::South);
+				break;
+			case Facing4::West:
+				rotate2D(Facing4::East);
+				break;
+			default:
+				std::unreachable();
+		}
 }
 void Offset3D::rotate2D(const Facing4& facing)
 {
@@ -284,4 +303,12 @@ void Offset3D::rotate2D(const Facing4& facing)
 			default:
 				std::unreachable();
 		}
+}
+void Offset3D::clampHigh(const Offset3D& other)
+{
+	data = data.min(other.data);
+}
+void Offset3D::clampLow(const Offset3D& other)
+{
+	data = data.max(other.data);
 }

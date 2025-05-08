@@ -77,8 +77,8 @@ public:
 	void maybeSetCarrier(const Index& index, const ActorOrItemIndex& carrier);
 	void unsetCarrier(const Index& index, const ActorOrItemIndex& carrier);
 	void updateCarrierIndex(const Index& index, const HasShapeIndex& newIndex) { m_carrier[index].updateIndex(newIndex); }
-	void setFollower(const Index& index, const ActorOrItemIndex& follower) { m_follower[index] = follower; }
-	void setLeader(const Index& index, const ActorOrItemIndex& leader) { return m_leader[index] = leader; }
+	void setFollower(const Index& index, const ActorOrItemIndex& follower) { assert(!follower.isStatic(getArea())); m_follower[index] = follower; }
+	void setLeader(const Index& index, const ActorOrItemIndex& leader) { assert(!leader.isStatic(getArea())); return m_leader[index] = leader; }
 	void unsetFollower(const Index& index, [[maybe_unused]] const ActorOrItemIndex& follower) { assert(m_follower[index] == follower); m_follower[index].clear(); }
 	void unsetLeader(const Index& index, const ActorOrItemIndex& leader) { assert(m_follower[index] == leader); m_leader[index].clear(); }
 	void fall(const Index& index);
@@ -162,6 +162,6 @@ class PortablesHelpers
 {
 public:
 	// Static methods.
-	[[nodiscard]] static Speed getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, const Mass& addedRollingMass, const Mass& addedDeadMass);
+	[[nodiscard]] static Speed getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, const Mass& addedRollingMass, const Mass& addedFloatingMass, const Mass& addedDeadMass);
 	[[nodiscard]] static Speed getMoveSpeedForGroup(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems);
 };

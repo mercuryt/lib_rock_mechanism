@@ -7,6 +7,7 @@
   "meltsInto": "moltenGold",
   "constructionData": "metal",
   "category": "metal",
+  "value": 100,
   "spoilData": [
     {
       "materialType": "gold",

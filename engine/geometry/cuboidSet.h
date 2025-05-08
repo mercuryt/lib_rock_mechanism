@@ -6,6 +6,7 @@ class Blocks;
 
 class CuboidSet;
 struct CuboidSetConstView;
+class OffsetCuboidSet;
 class CuboidSetConstIterator
 {
 	const Blocks& m_blocks;
@@ -40,7 +41,7 @@ public:
 	CuboidSet() = default;
 	CuboidSet(const CuboidSet& other) = default;
 	CuboidSet(CuboidSet&& other) noexcept = default;
-	CuboidSet(const Blocks& blocks, const BlockIndex& location, const Facing4& rotation, const std::vector<std::pair<Offset3D, Offset3D>>& offsetPairs);
+	CuboidSet(const Blocks& blocks, const BlockIndex& location, const Facing4& rotation, const OffsetCuboidSet& offsetPairs);
 	CuboidSet& operator=(CuboidSet&& other) noexcept = default;
 	CuboidSet& operator=(const CuboidSet& other) = default;
 	void add(const Point3D& point);

@@ -9,27 +9,54 @@
 #include <iterator>
 void Blocks::item_record(const BlockIndex& index, const ItemIndex& item, const CollisionVolume& volume)
 {
+	Items& items = m_area.getItems();
+	if(items.isStatic(item))
+		item_recordStatic(index, item, volume);
+	else
+		item_recordDynamic(index, item, volume);
+}
+void Blocks::item_recordStatic(const BlockIndex& index, const ItemIndex& item, const CollisionVolume& volume)
+{
 	assert(index.exists());
 	m_itemVolume[index].emplace_back(item, volume);
-	Items& items = m_area.getItems();
 	m_items[index].insert(item);
-	if(items.isStatic(item))
-		m_staticVolume[index] += volume;
-	else
-		m_dynamicVolume[index] += volume;
+	m_staticVolume[index] += volume;
+}
+void Blocks::item_recordDynamic(const BlockIndex& index, const ItemIndex& item, const CollisionVolume& volume)
+{
+	assert(index.exists());
+	m_itemVolume[index].emplace_back(item, volume);
+	m_items[index].insert(item);
+	m_dynamicVolume[index] += volume;
 }
 void Blocks::item_erase(const BlockIndex& index, const ItemIndex& item)
 {
 	Items& items = m_area.getItems();
+	if(items.isStatic(item))
+		item_eraseStatic(index, item);
+	else
+		item_eraseDynamic(index, item);
+}
+void Blocks::item_eraseDynamic(const BlockIndex& index, const ItemIndex& item)
+{
 	auto& blockItems = m_items[index];
 	auto& blockItemVolume = m_itemVolume[index];
 	auto iter = blockItems.find(item);
 	uint16_t offset = (iter - blockItems.begin()).getIndex();
 	auto iter2 = m_itemVolume[index].begin() + offset;
-	if(items.isStatic(item))
-		m_staticVolume[index] -= iter2->second;
-	else
-		m_dynamicVolume[index] -= iter2->second;
+	m_dynamicVolume[index] -= iter2->second;
+	blockItems.remove(iter);
+	(*iter2) = blockItemVolume.back();
+	blockItemVolume.pop_back();
+}
+void Blocks::item_eraseStatic(const BlockIndex& index, const ItemIndex& item)
+{
+	auto& blockItems = m_items[index];
+	auto& blockItemVolume = m_itemVolume[index];
+	auto iter = blockItems.find(item);
+	uint16_t offset = (iter - blockItems.begin()).getIndex();
+	auto iter2 = m_itemVolume[index].begin() + offset;
+	m_staticVolume[index] -= iter2->second;
 	blockItems.remove(iter);
 	(*iter2) = blockItemVolume.back();
 	blockItemVolume.pop_back();
@@ -54,8 +81,10 @@ void Blocks::item_disperseAll(const BlockIndex& index)
 	for(auto [item, volume] : copy)
 	{
 		//TODO: split up stacks of generics, prefer blocks with more empty space.
-		BlockIndex block = blocks.random(m_area.m_simulation);
-		items.setLocation(item, block);
+		const BlockIndex block = blocks.random(m_area.m_simulation);
+		const Facing4 facing = (Facing4)(m_area.m_simulation.m_random.getInRange(0, 3));
+		// TODO: use location_tryToSetStatic and find another location on fail.
+		items.location_setStatic(item, block, facing);
 	}
 }
 void Blocks::item_updateIndex(const BlockIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex)
@@ -69,6 +98,7 @@ void Blocks::item_updateIndex(const BlockIndex& index, const ItemIndex& oldIndex
 }
 ItemIndex Blocks::item_addGeneric(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity)
 {
+	assert(shape_anythingCanEnterEver(index));
 	Items& items = m_area.getItems();
 	CollisionVolume volume = Shape::getCollisionVolumeAtLocationBlock(ItemType::getShape(itemType)) * quantity;
 	// Assume that generics added through this method are static.

@@ -520,7 +520,7 @@ void Blocks::maybeContentsFalls(const BlockIndex& index)
 }
 BlockIndex Blocks::offset(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const
 {
-	return offset(index, {ax, ay, az});
+	return offset(index, Offset3D::create(ax, ay, az));
 }
 BlockIndex Blocks::offset(const BlockIndex& index, const Offset3D& offset) const
 {
@@ -543,7 +543,7 @@ BlockIndex Blocks::offsetRotated(const BlockIndex& index, const Offset3D& inital
 BlockIndex Blocks::offsetNotNull(const BlockIndex& index, int32_t ax, int32_t ay, int32_t az) const
 {
 	Point3D coordinates = getCoordinates(index);
-	Offset3D offset(ax, ay, az);
+	Offset3D offset = Offset3D::create(ax, ay, az);
 	return getIndex(coordinates + offset);
 }
 BlockIndex Blocks::indexAdjacentToAtCount(const BlockIndex& index, const AdjacentIndex& adjacentCount) const

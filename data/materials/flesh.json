@@ -3,6 +3,7 @@
   "density": 1.05,
   "hardness": 20,
   "transparent": false,
+  "value": 1,
   "burnData":
   {
 	  "ignitionTemperature": 1144,
@@ -10,7 +11,7 @@
 	  "burnStageDuration": 5000,
 	  "flameStageDuration": 10000
   },
-  "spoilData": 
+  "spoilData":
     [
       {
         "materialType": "flesh",
