@@ -4,7 +4,8 @@
 #include "../util.h"
 #include "../area/area.h"
 #include "../animalSpecies.h"
-#include "types.h"
+#include "../types.h"
+#include "../hasShapes.hpp"
 
 void Actors::grow_maybeStart(const ActorIndex& index)
 {

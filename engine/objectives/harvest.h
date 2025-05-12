@@ -37,6 +37,7 @@ public:
 	[[nodiscard]] std::string name() const override { return "harvest"; }
 	[[nodiscard]] BlockIndex getBlockContainingPlantToHarvestAtLocationAndFacing(Area& area, const BlockIndex& location, Facing4 facing, const ActorIndex& actor);
 	[[nodiscard]] bool blockContainsHarvestablePlant(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
+	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	friend class HarvestEvent;
 	// For testing.
 	BlockIndex getBlock() { return m_block; }

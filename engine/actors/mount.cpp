@@ -7,9 +7,10 @@ BlockIndex Actors::mount_findLocationToMountOn(const ActorIndex& index, const Ac
 	const Blocks& blocks = m_area.getBlocks();
 	const ShapeId& shape = getShape(index);
 	const Facing4& facing = getFacing(toMount);
+	const auto& occupied = getBlocks(index);
 	for(const BlockIndex& block : getBlocksAbove(toMount))
 		// Should riders be dynamic or static?
-		if(blocks.shape_canFitEverOrCurrentlyDynamic(block, shape, facing))
+		if(blocks.shape_canFitEverOrCurrentlyDynamic(block, shape, facing, occupied))
 			return block;
 	return BlockIndex::null();
 }

@@ -31,6 +31,7 @@ public:
 	void joinProject(WoodCuttingProject& project, const ActorIndex& index);
 	[[nodiscard]] WoodCuttingProject* getJoinableProjectAt(Area& area, const BlockIndex& block, const ActorIndex& index);
 	[[nodiscard]] bool joinableProjectExistsAt(Area &area, const BlockIndex& block, const ActorIndex& actor) const;
+	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	friend class WoodCuttingPathRequest;
 	friend class WoodCuttingProject;
 };

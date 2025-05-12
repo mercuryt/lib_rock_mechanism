@@ -18,9 +18,6 @@ ItemIndex Items::location_setStatic(const ItemIndex& index, const BlockIndex& bl
 		assert(isStatic(index));
 		assert(block.exists());
 		assert(m_location[index] != block);
-		const ShapeId& shape = getCompoundShape(index);
-		static const MoveTypeId& moveTypeNone = MoveType::byName("none");
-		assert(blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(block, shape, moveTypeNone, facing));
 	#endif
 	if(isGeneric(index))
 	{
@@ -80,8 +77,8 @@ ItemIndex Items::location_setDynamic(const ItemIndex& index, const BlockIndex& b
 SetLocationAndFacingResult Items::location_tryToSetNongenericStatic(const ItemIndex& index, const BlockIndex& block, const Facing4 facing)
 {
 	assert(m_location[index].empty());
-	assert(ItemType::getIsGeneric(m_itemType[index]));
-	assert(!isStatic(index));
+	assert(!ItemType::getIsGeneric(m_itemType[index]));
+	assert(isStatic(index));
 	Blocks& blocks = m_area.getBlocks();
 	auto& occupiedBlocks = m_blocks[index];
 	assert(occupiedBlocks.empty());
@@ -121,6 +118,11 @@ SetLocationAndFacingResult Items::location_tryToSetNongenericStatic(const ItemIn
 			blocks.item_eraseStatic(notOccupied, index);
 		}
 		m_blocks[index].clear();
+	}
+	else
+	{
+		m_location[index] = block;
+		m_facing[index] = facing;
 	}
 	return output;
 }
@@ -171,6 +173,11 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetGeneric
 		}
 		m_blocks[index].clear();
 	}
+	else
+	{
+		m_location[index] = block;
+		m_facing[index] = facing;
+	}
 	const ItemIndex& toCombine = blocks.item_getGeneric(block, itemType, m_materialType[index]);
 	if(toCombine.exists() && isStatic(toCombine) && (!Shape::getIsMultiTile(shape) || m_facing[toCombine] == m_facing[index]))
 	{
@@ -179,7 +186,7 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetGeneric
 	}
 	return {index, output};
 }
-SetLocationAndFacingResult Items::location_tryToSetDynamic(const ItemIndex& index, const BlockIndex& block, const Facing4& facing)
+SetLocationAndFacingResult Items::location_tryToSetDynamicInternal(const ItemIndex& index, const BlockIndex& location, const Facing4& facing)
 {
 	assert(m_location[index].empty());
 	assert(!isStatic(index));
@@ -191,7 +198,7 @@ SetLocationAndFacingResult Items::location_tryToSetDynamic(const ItemIndex& inde
 	auto offsetsAndVolumes = Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing);
 	for(const OffsetAndVolume& pair : offsetsAndVolumes)
 	{
-		const BlockIndex& occupied = blocks.offset(block, pair.offset);
+		const BlockIndex& occupied = blocks.offset(location, pair.offset);
 		if(blocks.solid_is(occupied) || blocks.blockFeature_blocksEntrance(occupied))
 		{
 			rollBackFrom = pair.offset;
@@ -218,12 +225,40 @@ SetLocationAndFacingResult Items::location_tryToSetDynamic(const ItemIndex& inde
 		{
 			if(offsetAndVolume.offset == rollBackFrom)
 				break;
-			const BlockIndex& notOccupied = blocks.offset(block, offsetAndVolume.offset);
+			const BlockIndex& notOccupied = blocks.offset(location, offsetAndVolume.offset);
 			blocks.item_eraseDynamic(notOccupied, index);
 		}
 		m_blocks[index].clear();
 	}
 	else
+	{
+		m_location[index] = location;
+		m_facing[index] = facing;
+	}
+	return output;
+}
+std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetStaticInternal(const ItemIndex& index, const BlockIndex& location, const Facing4& facing)
+{
+	std::pair<ItemIndex, SetLocationAndFacingResult> output;
+	if(isGeneric(index))
+		// Static generic.
+		output = location_tryToSetGenericStatic(index, location, facing);
+	else
+		// Static nongeneric.
+		output = {index, location_tryToSetNongenericStatic(index, location, facing)};
+	if(output.second == SetLocationAndFacingResult::Success)
+	{
+		m_location[index] = location;
+		m_facing[index] = facing;
+	}
+	return output;
+}
+SetLocationAndFacingResult Items::location_tryToSetDynamic(const ItemIndex& index, const BlockIndex& location, const Facing4& facing)
+{
+	assert(!hasLocation(index));
+	assert(isStatic(index));
+	SetLocationAndFacingResult output = location_tryToSetDynamicInternal(index, location, facing);
+	if(output == SetLocationAndFacingResult::Success)
 	{
 		static DeckRotationData deckRotationData;
 		onSetLocation(index, BlockIndex::null(), Facing4::Null, deckRotationData);
@@ -234,13 +269,7 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetStatic(
 {
 	assert(!hasLocation(index));
 	assert(isStatic(index));
-	std::pair<ItemIndex, SetLocationAndFacingResult> output;
-	if(isGeneric(index))
-		// Static generic.
-		output = location_tryToSetGenericStatic(index, location, facing);
-	else
-		// Static nongeneric.
-		output = {index, location_tryToSetNongenericStatic(index, location, facing)};
+	std::pair<ItemIndex, SetLocationAndFacingResult> output = location_tryToSetStaticInternal(index, location, facing);
 	if(output.second == SetLocationAndFacingResult::Success)
 	{
 		static DeckRotationData deckRotationData;
@@ -288,17 +317,18 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToMoveToStat
 }
 std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToMoveToDynamic(const ItemIndex& index, const BlockIndex& location)
 {
+	assert(!isStatic(index));
 	const BlockIndex previousLocation = getLocation(index);
 	const Facing4 previousFacing = getFacing(index);
 	Blocks& blocks = m_area.getBlocks();
 	const Facing4 facing = blocks.facingToSetWhenEnteringFrom(location, previousLocation);
 	DeckRotationData deckRotationData = DeckRotationData::recordAndClearDependentPositions(m_area, ActorOrItemIndex::createForItem(index));
 	location_clear(index);
-	std::pair<ItemIndex, SetLocationAndFacingResult> output = {index, location_tryToSetDynamic(index, location, facing)};
+	std::pair<ItemIndex, SetLocationAndFacingResult> output = {index, location_tryToSetDynamicInternal(index, location, facing)};
 	if(output.second != SetLocationAndFacingResult::Success)
 	{
 		// Rollback.
-		[[maybe_unused]] const SetLocationAndFacingResult status = location_tryToSetDynamic(index, previousLocation, previousFacing);
+		[[maybe_unused]] const SetLocationAndFacingResult status = location_tryToSetDynamicInternal(index, previousLocation, previousFacing);
 		assert(status == SetLocationAndFacingResult::Success);
 	}
 	else

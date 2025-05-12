@@ -53,5 +53,6 @@ public:
 	//For testing.
 	[[nodiscard]] bool hasProject() const { return m_project != nullptr; }
 	[[nodiscard]] const GivePlantFluidProject& getProject() const { return *m_project; }
+	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	friend class GivePlantsFluidPathRequest;
 };

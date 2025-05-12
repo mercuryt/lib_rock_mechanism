@@ -34,6 +34,8 @@ class PathInnerLoops
 						facing = Facing4::North;
 					if(memo.isClosed(adjacentIndex))
 						continue;
+					//[[maybe_unused]] Point3D coordinates = blocks.getCoordinates(adjacentIndex);
+					//[[maybe_unused]] bool stopHere = coordinates.y() == 7 && coordinates.x() == 2 && coordinates.z() == 1;
 					auto [result, blockWhichPassedPredicate] = destinationCondition(adjacentIndex, facing);
 					if(result)
 					{

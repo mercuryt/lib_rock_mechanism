@@ -189,7 +189,7 @@ void Actors::move_schedule(const ActorIndex& index, const BlockIndex& moveFrom)
 }
 void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& destination, bool detour, bool adjacent, bool unreserved, bool reserve)
 {
-	// These three values are either for the actor it's self or the vehicle it's piloting.
+	// location is either for the actor it's self or the vehicle it's piloting.
 	BlockIndex location;
 	if(m_isPilot[index])
 	{
@@ -217,8 +217,6 @@ void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& dest
 	assert(destination.exists());
 	if(reserve)
 		assert(unreserved);
-	const ShapeId& shape = getCompoundShape(index);
-	const MoveTypeId& moveType = getMoveType(index);
 	move_clearPath(index);
 	Blocks& blocks = m_area.getBlocks();
 	// If adjacent path then destination isn't known until it's completed.
@@ -239,6 +237,8 @@ void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& dest
 	if(unreserved)
 		faction = m_faction[index];
 	assert(m_pathRequest[index] == nullptr);
+	const ShapeId& shape = getCompoundShape(index);
+	const MoveTypeId& moveType = getMoveType(index);
 	if(!adjacent)
 		move_pathRequestRecord(index, std::make_unique<GoToPathRequest>(location, DistanceInBlocks::max(), getReference(index), shape, faction, moveType, m_facing[index], detour, adjacent, reserve, destination));
 	else
@@ -247,7 +247,7 @@ void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& dest
 		for(const BlockIndex& adjacent : blocks.getAdjacentWithEdgeAndCornerAdjacent(destination))
 			if(
 				blocks.shape_anythingCanEnterEver(adjacent) &&
-				blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
+				blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, shape, moveType)
 			)
 				candidates.add(adjacent);
 		move_pathRequestRecord(

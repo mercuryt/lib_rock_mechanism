@@ -15,31 +15,39 @@ Speed PortablesHelpers::getMoveSpeedForGroupWithAddedMass(const Area& area, std:
 	Speed lowestMoveSpeed = Speed::create(0);
 	const Items& items = area.getItems();
 	const Actors& actors = area.getActors();
+	static MoveTypeId roll = MoveType::byName("roll");
+	static MoveTypeId floating = MoveType::byName("floating");
+	auto recordMass = [&](const MoveTypeId& moveType, const Mass& mass) {
+
+				if(moveType == floating)
+					floatingMass += mass;
+				else if(moveType == roll)
+					rollingMass += mass;
+				else
+					deadMass += mass;
+	};
 	for(ActorOrItemIndex index : actorsAndItems)
 	{
 		if(index.isItem())
 		{
 			const ItemIndex& itemIndex = ItemIndex::cast(index.get());
+			const MoveTypeId& moveType = items.getMoveType(itemIndex);
 			const ActorIndex& pilot = items.pilot_get(itemIndex);
 			Mass mass = items.getMass(itemIndex);
 			if(pilot.exists())
 			{
 				Speed moveSpeed = actors.move_getSpeed(pilot);
-				lowestMoveSpeed = lowestMoveSpeed == 0 ? moveSpeed : std::min(lowestMoveSpeed, moveSpeed);
-				carryMass += mass * Config::vehicleMassToCarryMassModifier;
+				// A vehicle which is pulled by actors has no intrinsic move speed and thus doesn't contribute to calculating lowestMoveSpeed.
+				if(moveSpeed != 0)
+				{
+					lowestMoveSpeed = lowestMoveSpeed == 0 ? moveSpeed : std::min(lowestMoveSpeed, moveSpeed);
+					carryMass += mass * Config::vehicleMassToCarryMassModifier;
+				}
+				else
+					recordMass(moveType, mass);
 			}
 			else
-			{
-				static MoveTypeId roll = MoveType::byName("roll");
-				static MoveTypeId floating = MoveType::byName("floating");
-				const MoveTypeId& moveType = items.getMoveType(itemIndex);
-				if(moveType == floating)
-					floatingMass += mass;
-				else if(items.getMoveType(itemIndex) == roll)
-					rollingMass += mass;
-				else
-					deadMass += mass;
-			}
+				recordMass(moveType, mass);
 		}
 		else
 		{
@@ -52,7 +60,10 @@ Speed PortablesHelpers::getMoveSpeedForGroupWithAddedMass(const Area& area, std:
 				lowestMoveSpeed = lowestMoveSpeed == 0 ? moveSpeed : std::min(lowestMoveSpeed, moveSpeed);
 			}
 			else
-				deadMass += actors.getMass(actorIndex);
+			{
+				const MoveTypeId& moveType = actors.getMoveType(actorIndex);
+				recordMass(moveType, actors.getMass(actorIndex));
+			}
 		}
 	}
 	assert(lowestMoveSpeed != 0);

@@ -367,11 +367,6 @@ TEST_CASE("stockpile")
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, stockpileLocation);
 		auto predicate3 = [&]{ return blocks.item_getCount(stockpileLocation, pile, sand) == 96; };
 		simulation.fastForwardUntillPredicate(predicate3);
-		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, cargoOrigin);
-		CHECK(actors.canPickUp_isCarryingItemGeneric(dwarf1, pile, sand, Quantity::create(4)));
-		CHECK(blocks.item_getCount(cargoOrigin, pile, sand) == 0);
-		simulation.doStep();
-		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, stockpileLocation);
 		auto predicate4 = [&]{ return blocks.item_getCount(stockpileLocation, pile, sand) == 100; };
 		simulation.fastForwardUntillPredicate(predicate4);
 		CHECK(!actors.canPickUp_exists(dwarf1));
@@ -399,11 +394,14 @@ TEST_CASE("stockpile")
 		actors.objective_setPriority(dwarf2, objectiveType.getId(), Priority::create(100));
 		// Both workers find hauling task.
 		simulation.doStep();
+		CHECK(actors.objective_getCurrentName(dwarf1) == "stockpile");
+		CHECK(actors.objective_getCurrentName(dwarf2) == "stockpile");
 		// Confirm path
 		simulation.doStep();
 		// Dwarf1 creates a project.
 		if(!actors.project_exists(dwarf1))
 			std::swap(dwarf1, dwarf2);
+		CHECK(actors.project_exists(dwarf1));
 		CHECK(!actors.project_exists(dwarf2));
 		// Dwarf2 finds the second stockpile location. Dwarf1 selects a haul strategy.
 		simulation.doStep();

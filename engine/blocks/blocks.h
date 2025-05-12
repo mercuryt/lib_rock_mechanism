@@ -388,9 +388,11 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	void shape_addDynamicVolume(const BlockIndex& index, const CollisionVolume& volume);
 	void shape_removeDynamicVolume(const BlockIndex& index, const CollisionVolume& volume);
 	[[nodiscard]] bool shape_anythingCanEnterEver(const BlockIndex& index) const;
-	[[nodiscard]] bool shape_canFitEverOrCurrentlyDynamic(const BlockIndex& index, const ShapeId& shape, const Facing4& facing) const;
+	[[nodiscard]] bool shape_canFitEverOrCurrentlyDynamic(const BlockIndex& index, const ShapeId& shape, const Facing4& facing, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] bool shape_canFitEverOrCurrentlyStatic(const BlockIndex& index, const ShapeId& shape, const Facing4& facing, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] bool shape_canFitEver(const BlockIndex& index, const ShapeId& shape, const Facing4& facing) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverFrom(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& block) const;
+	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverAndCurrentlyFrom(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& block, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing4& facing) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType) const;
 	[[nodiscard]] Facing4 shape_canEnterEverWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType) const;
@@ -407,6 +409,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	[[nodiscard]] bool shape_moveTypeCanBreath(const BlockIndex& index, const MoveTypeId& moveType) const;
 	// Static shapes are items or actors who are laying on the ground immobile.
 	// They do not collide with dynamic shapes and have their own volume data.
+	[[nodiscard]] Facing4 shape_canEnterEverOrCurrentlyWithAnyFacingReturnFacingStatic(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithFacing(const BlockIndex& index, const ShapeId& Shape, const Facing4& facing, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] bool shape_staticCanEnterCurrentlyWithAnyFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] std::pair<bool, Facing4> shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(const BlockIndex& index, const ShapeId& shape, const OccupiedBlocksForHasShape& occupied) const;

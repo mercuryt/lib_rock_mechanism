@@ -30,6 +30,7 @@ public:
 	void reset(Area& area, const ActorIndex& actor);
 	void joinProject(ConstructProject& project, const ActorIndex& actor);
 	void onProjectCannotReserve(Area& area, const ActorIndex& actor);
+	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "construct"; }
 	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(Area& area, const BlockIndex& location, const Facing4& facing, const ActorIndex& actor);

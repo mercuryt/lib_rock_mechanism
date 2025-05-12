@@ -38,6 +38,7 @@ public:
 	[[nodiscard]] std::string name() const { return "sow seeds"; }
 	[[nodiscard]] bool canSowAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
 	[[nodiscard]] BlockIndex getBlockToSowAt(Area& area, const BlockIndex& location, Facing4 facing, const ActorIndex& actor);
+	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	friend class SowSeedsEvent;
 	// For testing.
 	[[nodiscard]] BlockIndex getBlock() { return m_block; }

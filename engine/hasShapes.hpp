@@ -102,9 +102,9 @@ void HasShapes<Derived, Index>::addShapeToCompoundShape(const Index& index, cons
 	auto offsetsAndVolumes = Shape::positionsWithFacing(id, facing);
 	Blocks& blocks = getArea().getBlocks();
 	Offset3D offsetToRiderFromMount = blocks.relativeOffsetTo(getLocation(index), location);
-	for(OffsetAndVolume offsetAndVolume : offsetsAndVolumes)
+	for(OffsetAndVolume& offsetAndVolume : offsetsAndVolumes)
 		offsetAndVolume.offset += offsetToRiderFromMount;
-	setShape(index, Shape::mutateAddMultiple(m_compoundShape[index], offsetsAndVolumes));
+	m_compoundShape[index] = Shape::mutateAddMultiple(m_compoundShape[index], offsetsAndVolumes);
 }
 template<class Derived, class Index>
 void HasShapes<Derived, Index>::removeShapeFromCompoundShape(const Index& index, const ShapeId& id, const BlockIndex& location, const Facing4& facing)
@@ -114,7 +114,7 @@ void HasShapes<Derived, Index>::removeShapeFromCompoundShape(const Index& index,
 	Offset3D offsetToRiderFromMount = blocks.relativeOffsetTo(getLocation(index), location);
 	for(OffsetAndVolume offsetAndVolume : offsetsAndVolumes)
 		offsetAndVolume.offset += offsetToRiderFromMount;
-	setShape(index, Shape::mutateRemoveMultiple(m_compoundShape[index], offsetsAndVolumes));
+	m_compoundShape[index] = Shape::mutateRemoveMultiple(m_compoundShape[index], offsetsAndVolumes);
 }
 template<class Derived, class Index>
 std::vector<std::pair<uint32_t, Index>> HasShapes<Derived, Index>::getSortOrder(const Index& begin, const Index& end)

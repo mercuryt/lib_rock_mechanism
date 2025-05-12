@@ -48,19 +48,22 @@ void Blocks::stockpile_updateActive(const BlockIndex& index)
 bool Blocks::stockpile_isAvalible(const BlockIndex& index, const FactionId& faction) const
 {
 	assert(stockpile_contains(index, faction));
-	if(item_empty(index))
+	const auto& allItems = item_getAll(index);
+	if(allItems.empty())
 		return true;
-	if(item_getAll(index).size() > 1)
+	if(allItems.size() > 1)
 		return false;
-	ItemIndex item = item_getAll(index).front();
+	ItemIndex toCombineWith = allItems.front();
 	Items& items = m_area.getItems();
-	if(!items.isGeneric(item))
+	if(!items.isGeneric(toCombineWith))
 		return false;
 	StockPile& stockPile = *m_stockPiles[index][faction].stockPile;
-	if(!stockPile.accepts(item))
+	if(!stockPile.accepts(toCombineWith))
 		return false;
-	CollisionVolume volume = Shape::getCollisionVolumeAtLocationBlock(items.getShape(item));
-	return shape_getStaticVolume(index) + volume <= Config::maxBlockVolume;
+	const ItemTypeId& itemType = items.getItemType(toCombineWith);
+	const ShapeId& shape = ItemType::getShape(itemType);
+	const Facing4& facing = items.getFacing(toCombineWith);
+	return shape_staticCanEnterCurrentlyWithFacing(index, shape, facing, {});
 }
 bool Blocks::stockpile_contains(const BlockIndex& index, const FactionId& faction) const
 {

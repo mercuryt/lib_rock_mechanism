@@ -210,9 +210,9 @@ void Items::removeQuantity(const ItemIndex& index, const Quantity& delta, CanRes
 		// TODO: Update in place rather then exit, update, enter.
 		BlockIndex location = m_location[index];
 		Facing4 facing = m_facing[index];
-		location_clear(index);
+		location_clearStatic(index);
 		setQuantity(index, getQuantity(index) - delta);
-		location_set(index, location, facing);
+		location_setStatic(index, location, facing);
 		if(m_reservables[index] != nullptr)
 			m_reservables[index]->setMaxReservations(m_quantity[index]);
 	}

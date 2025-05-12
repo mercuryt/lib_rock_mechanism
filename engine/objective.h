@@ -20,26 +20,6 @@ class SupressedNeedEvent;
 class Area;
 struct DeserializationMemo;
 
-//Action.
-/*
-class ObjectiveTypeSetPriorityInputAction final : public InputAction
-{
-	ActorIndex m_actor;
-	const ObjectiveTypeId& m_objectiveType;
-	Priority m_priority;
-public:
-	ObjectiveTypeSetPriorityInputAction(InputQueue& inputQueue, const ActorIndex& actor, const ObjectiveTypeId& objectiveType, const Priority& priority) : InputAction(inputQueue), m_actor(actor), m_objectiveType(objectiveType), m_priority(priority) { }
-	void execute();
-};
-class ObjectiveTypeRemoveInputAction final : public InputAction
-{
-	ActorIndex m_actor;
-	const ObjectiveTypeId& m_objectiveType;
-public:
-	ObjectiveTypeRemoveInputAction(InputQueue& inputQueue, const ActorIndex& actor, const ObjectiveTypeId& objectiveType) : InputAction(inputQueue), m_actor(actor), m_objectiveType(objectiveType) { }
-	void execute();
-};
-*/
 // Used by needs subsystem within hasObjectives.
 enum class NeedType
 {
@@ -86,15 +66,15 @@ public:
 	// Return to inital state and try again.
 	// Called on cannotCompleteSubobjective
 	virtual void reset(Area& area, const ActorIndex& actor) = 0;
-	// Returns true if the condition is resolved or false otherwise.
-	// If false is returned canNotCompleteObjective is called.
-	virtual bool onCanNotPath(Area&, const ActorIndex&) { return false; }
 	// To be used by objectives with projects which cannot be auto destroyed.
 	// Records projects which have failed to reserve requirements so as not to retry them with this objective instance.
 	// Will be 'flushed' when this instance is destroyed and then another objective of this type is created later, after objectivePrioritySet delay ends.
 	virtual void onProjectCannotReserve(Area&, const ActorIndex&) { }
 	virtual void onBeforeUnload(Area&, const ActorIndex&) { }
-	void detour(Area& area, const ActorIndex& actor) { m_detour = true; execute(area, actor); }
+	// Returns true if the problem is resolved or false otherwise.
+	// If false is returned canNotCompleteObjective is called.
+	[[nodiscard]] virtual bool onCanNotPath(Area&, const ActorIndex&) { return false; }
+	[[nodiscard]] virtual bool canBeAddedToPrioritySet() { return false; }
 	[[nodiscard]] virtual std::string name() const = 0;
 	// TODO: This is silly.
 	[[nodiscard]] ObjectiveTypeId getTypeId() const { return ObjectiveType::getIdByName(name());}
@@ -111,6 +91,7 @@ public:
 	Objective(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] virtual Json toJson() const;
 	bool operator==(const Objective& other) const { return &other == this; }
+	void detour(Area& area, const ActorIndex& actor) { m_detour = true; execute(area, actor); }
 	virtual ~Objective() = default;
 };
 inline void to_json(Json& data, const Objective* const& objective){ data = reinterpret_cast<uintptr_t>(objective); }

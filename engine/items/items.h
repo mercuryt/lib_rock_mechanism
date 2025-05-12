@@ -163,11 +163,14 @@ public:
 	[[nodiscard]] ItemTypeId getItemType(const ItemIndex& index) const { return m_itemType[index]; }
 	[[nodiscard]] MaterialTypeId getMaterialType(const ItemIndex& index) const { return m_materialType[index]; }
 	// - Location.
-	// Return an item index here because a static generic may combine.
 private:
+	// private methods do most of the work, public ones are mostly responsible for calling Portables::onSetLocation.
 	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetGenericStatic(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
 	SetLocationAndFacingResult location_tryToSetNongenericStatic(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetStaticInternal(const ItemIndex& index, const BlockIndex& block, const Facing4& facing);
+	SetLocationAndFacingResult location_tryToSetDynamicInternal(const ItemIndex& index, const BlockIndex& block, const Facing4& facing);
 public:
+	// Return an item index here because a static generic may combine and invalidat the passed in index.
 	ItemIndex location_set(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
 	ItemIndex location_setStatic(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
 	ItemIndex location_setDynamic(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);

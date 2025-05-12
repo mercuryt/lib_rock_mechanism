@@ -41,6 +41,7 @@ public:
 	[[nodiscard]] bool hasDestination() const { return m_stockPileLocation.exists(); }
 	[[nodiscard]] const BlockIndex& getDestination() const { return m_stockPileLocation; }
 	[[nodiscard]] ItemReference getItem() const { return m_item; }
+	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	friend class StockPilePathRequest;
 	friend class StockPileDestinationPathRequest;
 };

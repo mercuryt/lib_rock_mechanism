@@ -11,7 +11,7 @@ bool Blocks::shape_anythingCanEnterEver(const BlockIndex& index) const
 		return false;
 	return !blockFeature_blocksEntrance(index);
 }
-bool Blocks::shape_canFitEverOrCurrentlyDynamic(const BlockIndex& index, const ShapeId& shape, const Facing4& facing) const
+bool Blocks::shape_canFitEverOrCurrentlyDynamic(const BlockIndex& index, const ShapeId& shape, const Facing4& facing, const OccupiedBlocksForHasShape& occupied) const
 {
 	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
@@ -19,7 +19,27 @@ bool Blocks::shape_canFitEverOrCurrentlyDynamic(const BlockIndex& index, const S
 		if(
 			otherIndex.empty() ||
 			!shape_anythingCanEnterEver(otherIndex) ||
-			m_dynamicVolume[otherIndex] + pair.volume > Config::maxBlockVolume
+			(
+				(m_dynamicVolume[otherIndex] + pair.volume > Config::maxBlockVolume) &&
+				!occupied.contains(otherIndex)
+			)
+		)
+			return false;
+	}
+	return true;
+}
+bool Blocks::shape_canFitEverOrCurrentlyStatic(const BlockIndex& index, const ShapeId& shape, const Facing4& facing, const OccupiedBlocksForHasShape& occupied) const
+{
+	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
+	{
+		BlockIndex otherIndex = offset(index, pair.offset);
+		if(
+			otherIndex.empty() ||
+			!shape_anythingCanEnterEver(otherIndex) ||
+			(
+				(m_staticVolume[otherIndex] + pair.volume > Config::maxBlockVolume ) &&
+				!occupied.contains(otherIndex)
+			)
 		)
 			return false;
 	}
@@ -44,6 +64,13 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverFrom(const BlockIndex& index, con
 		return false;
 	const Facing4 facing = facingToSetWhenEnteringFrom(index, from);
 	return shape_shapeAndMoveTypeCanEnterEverWithFacing(index, shape, moveType, facing);
+}
+bool Blocks::shape_shapeAndMoveTypeCanEnterEverAndCurrentlyFrom(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& from, const OccupiedBlocksForHasShape& occupied) const
+{
+	assert(shape_anythingCanEnterEver(from));
+	if(!shape_shapeAndMoveTypeCanEnterEverFrom(index, shape, moveType, from))
+		return false;
+	return shape_canEnterCurrentlyFrom(index, shape, from, occupied);
 }
 bool Blocks::shape_shapeAndMoveTypeCanEnterEverWithFacing(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const Facing4& facing) const
 {
@@ -119,7 +146,15 @@ Facing4 Blocks::shape_canEnterEverOrCurrentlyWithAnyFacingReturnFacing(const Blo
 {
 	if(shape_moveTypeCanEnter(index, moveType))
 		for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((uint)facing + 1))
-			if(shape_canFitEverOrCurrentlyDynamic(index, shape, facing) && shape_canEnterCurrentlyWithFacing(index, shape, facing, occupied))
+			if(shape_canFitEverOrCurrentlyDynamic(index, shape, facing, occupied))
+				return facing;
+	return Facing4::Null;
+}
+Facing4 Blocks::shape_canEnterEverOrCurrentlyWithAnyFacingReturnFacingStatic(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const OccupiedBlocksForHasShape& occupied) const
+{
+	if(shape_moveTypeCanEnter(index, moveType))
+		for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((uint)facing + 1))
+			if(shape_canFitEverOrCurrentlyStatic(index, shape, facing, occupied))
 				return facing;
 	return Facing4::Null;
 }

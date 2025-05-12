@@ -102,8 +102,6 @@ bool StockPileObjective::destinationCondition(Area& area, const BlockIndex& bloc
 	Blocks& blocks = area.getBlocks();
 	Items& items = area.getItems();
 	Actors& actors = area.getActors();
-	if(!blocks.shape_staticCanEnterCurrentlyWithAnyFacing(block, items.getShape(item), items.getBlocks(item)))
-		return false;
 	if(!blocks.item_empty(block))
 		// Don't put multiple items in the same block unless they are generic and share item type and material type.
 		if(!items.isGeneric(item) || blocks.item_getAll(block).size() != 1 || blocks.item_getCount(block, items.getItemType(item), items.getMaterialType(item)) == 0)
@@ -272,10 +270,10 @@ bool StockPilePathRequest::checkDestination(const Area& area, const ItemIndex& i
 		if(blocks.item_getCount(block, itemType, items.getMaterialType(item)) == 0)
 			return false;
 	}
-	if(!blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(block, items.getShape(item), items.getMoveType(item), {}))
-		// This item can't fit here.
-		return false;
-	return true;
+	const ShapeId& singleQuantityShape = ItemType::getShape(items.getItemType(item));
+	return
+		blocks.shape_canEnterEverOrCurrentlyWithAnyFacingReturnFacingStatic(block, singleQuantityShape, items.getMoveType(item), items.getBlocks(item)) !=
+		Facing4::Null;
 }
 StockPilePathRequest::StockPilePathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
 	PathRequestBreadthFirst(data, area),

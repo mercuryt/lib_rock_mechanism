@@ -79,14 +79,14 @@ SetLocationAndFacingResult Actors::location_tryToMoveToStatic(const ActorIndex& 
 	const Facing4 facing = blocks.facingToSetWhenEnteringFrom(location, previousLocation);
 	DeckRotationData deckRotationData = DeckRotationData::recordAndClearDependentPositions(m_area, ActorOrItemIndex::createForActor(index));
 	location_clear(index);
-	SetLocationAndFacingResult output = location_tryToSetDynamic(index, location, facing);
+	SetLocationAndFacingResult output = location_tryToSetDynamicInternal(index, location, facing);
 	if(output != SetLocationAndFacingResult::Success)
-	{
 		// Rollback.
 		location_setStatic(index, previousLocation, previousFacing);
-	}
 	else
+	{
 		onSetLocation(index, previousLocation, previousFacing, deckRotationData);
+	}
 	return output;
 }
 SetLocationAndFacingResult Actors::location_tryToMoveToDynamic(const ActorIndex& index, const BlockIndex& location)
@@ -97,7 +97,7 @@ SetLocationAndFacingResult Actors::location_tryToMoveToDynamic(const ActorIndex&
 	const Facing4 facing = blocks.facingToSetWhenEnteringFrom(location, previousLocation);
 	DeckRotationData deckRotationData = DeckRotationData::recordAndClearDependentPositions(m_area, ActorOrItemIndex::createForActor(index));
 	location_clear(index);
-	SetLocationAndFacingResult output = location_tryToSetDynamic(index, location, facing);
+	SetLocationAndFacingResult output = location_tryToSetDynamicInternal(index, location, facing);
 	if(output != SetLocationAndFacingResult::Success)
 		// Rollback.
 		location_setDynamic(index, previousLocation, previousFacing);
@@ -107,6 +107,28 @@ SetLocationAndFacingResult Actors::location_tryToMoveToDynamic(const ActorIndex&
 }
 // Used when item does not have a location.
 SetLocationAndFacingResult Actors::location_tryToSetStatic(const ActorIndex& index, const BlockIndex& location, const Facing4& facing)
+{
+	assert(m_location[index].empty());
+	SetLocationAndFacingResult output = location_tryToSetStaticInternal(index, location, facing);
+	if(output == SetLocationAndFacingResult::Success)
+	{
+		static DeckRotationData deckRotationData;
+		onSetLocation(index, BlockIndex::null(), Facing4::Null, deckRotationData);
+	}
+	return output;
+}
+SetLocationAndFacingResult Actors::location_tryToSetDynamic(const ActorIndex& index, const BlockIndex& location, const Facing4& facing)
+{
+	assert(m_location[index].empty());
+	SetLocationAndFacingResult output = location_tryToSetDynamicInternal(index, location, facing);
+	if(output == SetLocationAndFacingResult::Success)
+	{
+		static DeckRotationData deckRotationData;
+		onSetLocation(index, BlockIndex::null(), Facing4::Null, deckRotationData);
+	}
+	return output;
+}
+SetLocationAndFacingResult Actors::location_tryToSetStaticInternal(const ActorIndex& index, const BlockIndex& location, const Facing4& facing)
 {
 	assert(m_location[index].empty());
 	assert(isStatic(index));
@@ -152,16 +174,12 @@ SetLocationAndFacingResult Actors::location_tryToSetStatic(const ActorIndex& ind
 	}
 	else
 	{
-		const BlockIndex previousLocation = m_location[index];
-		const Facing4 previousFacing = m_facing[index];
 		m_location[index] = location;
 		m_facing[index] = facing;
-		static DeckRotationData deckRotationData;
-		onSetLocation(index, previousLocation, previousFacing, deckRotationData);
 	}
 	return output;
 }
-SetLocationAndFacingResult Actors::location_tryToSetDynamic(const ActorIndex& index, const BlockIndex& location, const Facing4& facing)
+SetLocationAndFacingResult Actors::location_tryToSetDynamicInternal(const ActorIndex& index, const BlockIndex& location, const Facing4& facing)
 {
 	assert(m_location[index].empty());
 	assert(!isStatic(index));
@@ -208,12 +226,8 @@ SetLocationAndFacingResult Actors::location_tryToSetDynamic(const ActorIndex& in
 	}
 	else
 	{
-		const BlockIndex previousLocation = m_location[index];
-		const Facing4 previousFacing = m_facing[index];
 		m_location[index] = location;
 		m_facing[index] = facing;
-		static DeckRotationData deckRotationData;
-		onSetLocation(index, previousLocation, previousFacing, deckRotationData);
 	}
 	return output;
 

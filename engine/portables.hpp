@@ -544,10 +544,11 @@ void Portables<Derived, Index, ReferenceIndex>::fall(const Index& index)
 	assert(blocks.shape_anythingCanEnterEver(location));
 	DistanceInBlocks distance = DistanceInBlocks::create(0);
 	BlockIndex next;
+	const auto& occupied = this->getBlocks(index);
 	while(true)
 	{
 		next = blocks.getBlockBelow(location);
-		if(blocks.shape_canFitEverOrCurrentlyDynamic(next, shape, facing) && !canFloatAt(index, location))
+		if(blocks.shape_canFitEverOrCurrentlyDynamic(next, shape, facing, occupied) && !canFloatAt(index, location))
 		{
 			location = next;
 			++distance;
@@ -577,6 +578,7 @@ void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index
 	Area& area = getArea();
 	Blocks& blocks = area.getBlocks();
 	const BlockIndex& newLocation = getLocation(index);
+	assert(newLocation.exists());
 	const Facing4& newFacing = getFacing(index);
 	if(blocks.isExposedToSky(newLocation))
 		this->m_onSurface.set(index);

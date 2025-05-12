@@ -883,15 +883,21 @@ BlockIndex Actors::getCombinedLocation(const ActorIndex& index) const
 		return getLocation(index);
 	else
 	{
-		const ItemIndex& vehicle = m_isOnDeckOf[index].getItem();
-		Items& items = m_area.getItems();
-		const ActorOrItemIndex& leader = items.getLeader(vehicle);
-		if(leader.exists())
-			// Horse drawn chariot or such.
-			return leader.getLocation(m_area);
+		const ActorOrItemIndex& isOnDeckOf = m_isOnDeckOf[index];
+		if(isOnDeckOf.isActor())
+			return getCombinedLocation(isOnDeckOf.getActor());
 		else
-			// Self propelled.
-			return items.getLocation(vehicle);
+		{
+			const ItemIndex& vehicle = isOnDeckOf.getItem();
+			Items& items = m_area.getItems();
+			const ActorOrItemIndex& leader = items.getLeader(vehicle);
+			if(leader.exists())
+				// Horse drawn chariot or such.
+				return leader.getLocation(m_area);
+			else
+				// Self propelled.
+				return items.getLocation(vehicle);
+		}
 	}
 }
 ActorOrItemIndex Actors::getIsPiloting(const ActorIndex& index) const

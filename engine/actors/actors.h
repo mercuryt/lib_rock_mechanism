@@ -149,6 +149,11 @@ public:
 	void location_set(const ActorIndex& index, const BlockIndex& block, const Facing4 facing);
 	void location_setStatic(const ActorIndex& index, const BlockIndex& block, const Facing4 facing);
 	void location_setDynamic(const ActorIndex& index, const BlockIndex& block, const Facing4 facing);
+private:
+	// These methods to the 'real' work, the public methods handle calling them and then possibly calling Portables::onSetLocation.
+	SetLocationAndFacingResult location_tryToSetStaticInternal(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
+	SetLocationAndFacingResult location_tryToSetDynamicInternal(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
+public:
 	// Used when item already has a location, rolls back position on failure.
 	SetLocationAndFacingResult location_tryToMoveToStatic(const ActorIndex& index, const BlockIndex& block);
 	SetLocationAndFacingResult location_tryToMoveToDynamic(const ActorIndex& index, const BlockIndex& block);

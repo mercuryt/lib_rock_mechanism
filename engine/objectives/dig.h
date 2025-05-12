@@ -30,6 +30,7 @@ public:
 	void reset(Area& area, const ActorIndex& actor);
 	void onProjectCannotReserve(Area& area, const ActorIndex& actor);
 	void joinProject(DigProject& project, const ActorIndex& actor);
+	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] DigProject* getJoinableProjectAt(Area& area, BlockIndex block, const ActorIndex& actor);
 	// To be used for pathing.

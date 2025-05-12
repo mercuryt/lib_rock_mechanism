@@ -32,6 +32,7 @@ public:
 	[[nodiscard]] Json toJson() const override;
 	[[nodiscard]] SmallSet<CraftJob*>& getFailedJobs() { return m_failedJobs; }
 	[[nodiscard]] std::string name() const override;
+	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	friend class CraftPathRequest;
 	friend class HasCraftingLocationsAndJobsForFaction;
 	// For testing.

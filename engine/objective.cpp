@@ -22,6 +22,8 @@
 #include "objectives/eat.h"
 #include "objectives/drink.h"
 #include "objectives/getToSafeTemperature.h"
+#include "objectives/mount.h"
+#include "objectives/unmount.h"
 #include "types.h"
 #include "portables.hpp"
 
@@ -150,7 +152,7 @@ void SupressedNeedEvent::clearReferences(Simulation&, Area*) { m_supressedNeed.m
 // Static method.
 void ObjectiveType::load()
 {
-	objectiveTypeData.resize(16);
+	objectiveTypeData.resize(18);
 	ObjectiveTypeId index = ObjectiveTypeId::create(0);
 	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("wood working"));
 	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("metal working"));
@@ -478,7 +480,8 @@ void HasObjectives::cannotFulfillObjective(Area& area, Objective& objective)
 	actors.canReserve_clearAll(m_actor);
 	actors.maybeLeadAndFollowDisband(m_actor);
 	// Store delay to wait before trying again.
-	m_prioritySet.setDelay(area, objective.getTypeId());
+	if(objective.canBeAddedToPrioritySet())
+		m_prioritySet.setDelay(area, objective.getTypeId());
 	cancel(area, objective);
 	//TODO: generate cancelation message?
 }
