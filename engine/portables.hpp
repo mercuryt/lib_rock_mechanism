@@ -573,7 +573,7 @@ Mass Portables<Derived, Index, ReferenceIndex>::onDeck_getMass(const Index& inde
 	return output;
 }
 template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index, const BlockIndex& previousLocation, const Facing4& previousFacing, DeckRotationData& onDeckRotationData)
+void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index, const BlockIndex& previousLocation, const Facing4& previousFacing)
 {
 	Area& area = getArea();
 	Blocks& blocks = area.getBlocks();
@@ -584,8 +584,6 @@ void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index
 		this->m_onSurface.set(index);
 	else
 		this->m_onSurface.unset(index);
-	// Translate Actors, Items, Fluids and Projects on deck into new positions. Also translate their reservations, paths, etc.
-	onDeckRotationData.reinstanceAtRotatedPosition(area, previousLocation, newLocation, previousFacing, newFacing);
 	// Move decks attached to this portable.
 	const DeckId& deckId = m_hasDecks[index];
 	if(deckId.exists())

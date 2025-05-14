@@ -3,6 +3,7 @@
 #include "../blocks/blocks.h"
 #include "../blockFeature.h"
 #include "../types.h"
+ConstructedShape::ConstructedShape(const Json& data) { nlohmann::from_json(data, *this); }
 void ConstructedShape::addBlock(Area& area, const BlockIndex& origin, const Facing4& facing, const BlockIndex& newBlock)
 {
 	Blocks& blocks = area.getBlocks();
@@ -243,4 +244,8 @@ ConstructedShape ConstructedShape::makeForKeelBlock(Area& area, const BlockIndex
 	output.m_decks = decks;
 	output.m_location = center;
 	return output;
+}
+Json ConstructedShape::toJson() const
+{
+	return *this;
 }

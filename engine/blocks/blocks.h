@@ -3,7 +3,7 @@
 #include "../fire.h"
 #include "../fluidType.h"
 #include "../reservable.h"
-#include "../stockpile.h"
+#include "../area/stockpile.h"
 #include "../farmFields.h"
 #include "../types.h"
 #include "../hasShapeTypes.h"

@@ -44,7 +44,8 @@ ItemIndex Items::location_setStatic(const ItemIndex& index, const BlockIndex& bl
 		blocks.item_recordStatic(occupied, index, pair.volume);
 		occupiedBlocks.insert(occupied);
 	}
-	onSetLocation(index, previousLocation, previousFacing, deckRotationData);
+	deckRotationData.reinstanceAtRotatedPosition(m_area, previousLocation, block, previousFacing, facing);
+	onSetLocation(index, previousLocation, previousFacing);
 	return index;
 }
 ItemIndex Items::location_setDynamic(const ItemIndex& index, const BlockIndex& block, Facing4 facing)
@@ -71,7 +72,8 @@ ItemIndex Items::location_setDynamic(const ItemIndex& index, const BlockIndex& b
 		blocks.item_recordDynamic(occupied, index, pair.volume);
 		occupiedBlocks.insert(occupied);
 	}
-	onSetLocation(index, previousLocation, previousFacing, deckRotationData);
+	deckRotationData.reinstanceAtRotatedPosition(m_area, previousLocation, block, previousFacing, facing);
+	onSetLocation(index, previousLocation, previousFacing);
 	return index;
 }
 SetLocationAndFacingResult Items::location_tryToSetNongenericStatic(const ItemIndex& index, const BlockIndex& block, const Facing4 facing)
@@ -94,12 +96,11 @@ SetLocationAndFacingResult Items::location_tryToSetNongenericStatic(const ItemIn
 			output =  SetLocationAndFacingResult::PermanantlyBlocked;
 			break;
 		}
-		if(output != SetLocationAndFacingResult::Success)
-			continue;
 		if(blocks.shape_getDynamicVolume(occupied) + pair.volume > Config::maxBlockVolume)
 		{
 			output = SetLocationAndFacingResult::TemporarilyBlocked;
 			rollBackFrom = pair.offset;
+			break;
 		}
 		else
 		{
@@ -138,6 +139,12 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetGeneric
 	Offset3D rollBackFrom;
 	SetLocationAndFacingResult output = SetLocationAndFacingResult::Success;
 	const ShapeId& shape = m_shape[index];
+	ItemIndex toCombine = blocks.item_getGeneric(block, itemType, m_materialType[index]);
+	if(toCombine.exists() && canCombine(toCombine, index))
+	{
+		toCombine = merge(toCombine, index);
+		return {toCombine, output};
+	}
 	auto offsetsAndVolumes = Shape::makeOccupiedPositionsWithFacing(shape, facing);
 	for(const OffsetAndVolume& pair : offsetsAndVolumes)
 	{
@@ -145,15 +152,14 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetGeneric
 		if(blocks.solid_is(occupied) || blocks.blockFeature_blocksEntrance(occupied))
 		{
 			rollBackFrom = pair.offset;
-			output =  SetLocationAndFacingResult::PermanantlyBlocked;
+			output = SetLocationAndFacingResult::PermanantlyBlocked;
 			break;
 		}
-		if(output != SetLocationAndFacingResult::Success)
-			continue;
 		if(blocks.shape_getStaticVolume(occupied) != 0)
 		{
 			output = SetLocationAndFacingResult::TemporarilyBlocked;
 			rollBackFrom = pair.offset;
+			break;
 		}
 		else
 		{
@@ -178,12 +184,6 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetGeneric
 		m_location[index] = block;
 		m_facing[index] = facing;
 	}
-	const ItemIndex& toCombine = blocks.item_getGeneric(block, itemType, m_materialType[index]);
-	if(toCombine.exists() && isStatic(toCombine) && (!Shape::getIsMultiTile(shape) || m_facing[toCombine] == m_facing[index]))
-	{
-		merge(toCombine, index);
-		return {toCombine, output};
-	}
 	return {index, output};
 }
 SetLocationAndFacingResult Items::location_tryToSetDynamicInternal(const ItemIndex& index, const BlockIndex& location, const Facing4& facing)
@@ -205,12 +205,11 @@ SetLocationAndFacingResult Items::location_tryToSetDynamicInternal(const ItemInd
 			output =  SetLocationAndFacingResult::PermanantlyBlocked;
 			break;
 		}
-		if(output != SetLocationAndFacingResult::Success)
-			continue;
 		if(blocks.shape_getDynamicVolume(occupied) + pair.volume > Config::maxBlockVolume)
 		{
 			output = SetLocationAndFacingResult::TemporarilyBlocked;
 			rollBackFrom = pair.offset;
+			break;
 		}
 		else
 		{
@@ -253,16 +252,20 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetStaticI
 	}
 	return output;
 }
+std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSet(const ItemIndex& index, const BlockIndex& location, const Facing4& facing)
+{
+	if(isStatic(index))
+		return location_tryToSetStatic(index, location, facing);
+	else
+		return {index, location_tryToSetDynamic(index, location, facing)};
+}
 SetLocationAndFacingResult Items::location_tryToSetDynamic(const ItemIndex& index, const BlockIndex& location, const Facing4& facing)
 {
 	assert(!hasLocation(index));
 	assert(isStatic(index));
 	SetLocationAndFacingResult output = location_tryToSetDynamicInternal(index, location, facing);
 	if(output == SetLocationAndFacingResult::Success)
-	{
-		static DeckRotationData deckRotationData;
-		onSetLocation(index, BlockIndex::null(), Facing4::Null, deckRotationData);
-	}
+		onSetLocation(index, BlockIndex::null(), Facing4::Null);
 	return output;
 }
 std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetStatic(const ItemIndex& index, const BlockIndex& location, const Facing4& facing)
@@ -271,10 +274,7 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetStatic(
 	assert(isStatic(index));
 	std::pair<ItemIndex, SetLocationAndFacingResult> output = location_tryToSetStaticInternal(index, location, facing);
 	if(output.second == SetLocationAndFacingResult::Success)
-	{
-		static DeckRotationData deckRotationData;
-		onSetLocation(index, BlockIndex::null(), Facing4::Null, deckRotationData);
-	}
+		onSetLocation(index, BlockIndex::null(), Facing4::Null);
 	return output;
 }
 std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToMoveToStatic(const ItemIndex& index, const BlockIndex& location)
@@ -289,30 +289,28 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToMoveToStat
 	location_clear(index);
 	std::pair<ItemIndex, SetLocationAndFacingResult> output;
 	if(isGeneric(index))
-	{
 		// Static generic.
 		output = location_tryToSetGenericStatic(index, location, facing);
-		if(output.second != SetLocationAndFacingResult::Success)
-		{
-			// Rollback.
-			[[maybe_unused]] const auto pair = location_tryToSetGenericStatic(index, previousLocation, previousFacing);
-			assert(pair.second == SetLocationAndFacingResult::Success);
-		}
-	}
 	else
 	{
 		// Static nongeneric.
 		output.first = index;
 		output.second = location_tryToSetNongenericStatic(index, location, facing);
-		if(output.second != SetLocationAndFacingResult::Success)
-		{
-			// Rollback.
-			[[maybe_unused]] const SetLocationAndFacingResult status = location_tryToSetNongenericStatic(index, previousLocation, previousFacing);
-			assert(status == SetLocationAndFacingResult::Success);
-		}
 	}
 	if(output.second == SetLocationAndFacingResult::Success)
-		onSetLocation(index, previousLocation, previousFacing, deckRotationData);
+	{
+		SetLocationAndFacingResult deckSetLocationResult = deckRotationData.tryToReinstanceAtRotatedPosition(m_area, previousLocation, location, previousFacing, facing);
+		if(deckSetLocationResult == SetLocationAndFacingResult::Success)
+			onSetLocation(index, previousLocation, previousFacing);
+		else
+			output.second = deckSetLocationResult;
+	}
+	if(output.second != SetLocationAndFacingResult::Success)
+	{
+		// Rollback.
+		[[maybe_unused]] const SetLocationAndFacingResult status = location_tryToSetNongenericStatic(index, previousLocation, previousFacing);
+		assert(status == SetLocationAndFacingResult::Success);
+	}
 	return output;
 }
 std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToMoveToDynamic(const ItemIndex& index, const BlockIndex& location)
@@ -325,14 +323,21 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToMoveToDyna
 	DeckRotationData deckRotationData = DeckRotationData::recordAndClearDependentPositions(m_area, ActorOrItemIndex::createForItem(index));
 	location_clear(index);
 	std::pair<ItemIndex, SetLocationAndFacingResult> output = {index, location_tryToSetDynamicInternal(index, location, facing)};
+	if(output.second == SetLocationAndFacingResult::Success)
+	{
+		SetLocationAndFacingResult deckSetLocationResult = deckRotationData.tryToReinstanceAtRotatedPosition(m_area, previousLocation, location, previousFacing, facing);
+		if(deckSetLocationResult == SetLocationAndFacingResult::Success)
+			onSetLocation(index, previousLocation, previousFacing);
+		else
+			output.second = deckSetLocationResult;
+	}
+	// Not using else here: output.second may have changed due to deck occupants reinstance failing.
 	if(output.second != SetLocationAndFacingResult::Success)
 	{
 		// Rollback.
 		[[maybe_unused]] const SetLocationAndFacingResult status = location_tryToSetDynamicInternal(index, previousLocation, previousFacing);
 		assert(status == SetLocationAndFacingResult::Success);
 	}
-	else
-		onSetLocation(index, previousLocation, previousFacing, deckRotationData);
 	return output;
 }
 void Items::location_clear(const ItemIndex& index)

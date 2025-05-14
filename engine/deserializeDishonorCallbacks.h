@@ -3,7 +3,7 @@
 #include "objective.h"
 #include "reservable.h"
 #include "haul.h"
-#include "stockpile.h"
+#include "area/stockpile.h"
 #include "craft.h"
 #include "projects/dig.h"
 #include "projects/construct.h"

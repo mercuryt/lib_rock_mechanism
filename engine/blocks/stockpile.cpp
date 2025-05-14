@@ -1,6 +1,6 @@
 #include "area/area.h"
 #include "blocks.h"
-#include "../stockpile.h"
+#include "../area/stockpile.h"
 #include "items/items.h"
 #include "shape.h"
 #include "types.h"

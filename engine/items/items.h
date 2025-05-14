@@ -117,7 +117,7 @@ class Items final : public Portables<Items, ItemIndex, ItemReferenceIndex>
 	StrongVector<Quality, ItemIndex> m_quality; // Always set to 0 for generic types.
 	StrongVector<Quantity, ItemIndex> m_quantity; // Always set to 1 for nongeneric types.
 	StrongVector<ActorIndex, ItemIndex> m_pilot;
-	StrongVector<ConstructedShape, ItemIndex> m_constructedShape;
+	StrongVector<std::unique_ptr<ConstructedShape>, ItemIndex> m_constructedShape;
 	void moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex);
 public:
 	Items(Area& area);
@@ -162,6 +162,7 @@ public:
 	[[nodiscard]] MoveTypeId getMoveType(const ItemIndex& index) const;
 	[[nodiscard]] ItemTypeId getItemType(const ItemIndex& index) const { return m_itemType[index]; }
 	[[nodiscard]] MaterialTypeId getMaterialType(const ItemIndex& index) const { return m_materialType[index]; }
+	[[nodiscard]] bool canCombine(const ItemIndex& index, const ItemIndex& toMerge);
 	// - Location.
 private:
 	// private methods do most of the work, public ones are mostly responsible for calling Portables::onSetLocation.
@@ -178,6 +179,7 @@ public:
 	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToStatic(const ItemIndex& index, const BlockIndex& block);
 	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToDynamic(const ItemIndex& index, const BlockIndex& block);
 	// Used when item does not have a location.
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSet(const ItemIndex& index, const BlockIndex& location, const Facing4& facing);
 	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetStatic(const ItemIndex& index, const BlockIndex& block, const Facing4& facing);
 	SetLocationAndFacingResult location_tryToSetDynamic(const ItemIndex& index, const BlockIndex& block, const Facing4& facing);
 	void location_clear(const ItemIndex& index);

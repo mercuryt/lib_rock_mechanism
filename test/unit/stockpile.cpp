@@ -8,7 +8,7 @@
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
-#include "../../engine/stockpile.h"
+#include "../../engine/area/stockpile.h"
 #include "../../engine/materialType.h"
 #include "../../engine/itemType.h"
 #include "../../engine/animalSpecies.h"

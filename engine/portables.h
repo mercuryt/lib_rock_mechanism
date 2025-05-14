@@ -83,7 +83,7 @@ public:
 	void unsetLeader(const Index& index, const ActorOrItemIndex& leader) { assert(m_follower[index] == leader); m_leader[index].clear(); }
 	void fall(const Index& index);
 	void maybeFall(const Index& index);
-	void onSetLocation(const Index& index, const BlockIndex& previousLocation, const Facing4& previousFacing, DeckRotationData& onDeckRotationData);
+	void onSetLocation(const Index& index, const BlockIndex& previousLocation, const Facing4& previousFacing);
 	void onRemove(const Index& index);
 	void setFloating(const Index& index, const FluidTypeId& fluidType);
 	void unsetFloating(const Index& index);

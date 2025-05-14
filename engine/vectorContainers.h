@@ -192,6 +192,7 @@ public:
 		const_iterator(const This& s, uint i) : m_iter(s.m_data.begin() + i) { }
 		const_iterator(std::vector<T>::const_iterator i) : m_iter(i) { }
 		const_iterator(const const_iterator& i) : m_iter(i.m_iter) { }
+		const_iterator(const iterator& i) : m_iter(i.m_iter) { }
 		const_iterator& operator++() { ++m_iter; return *this; }
 		const_iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		iterator& operator+=(const const_iterator& other) { m_iter += other.m_iter; return *this; }
@@ -346,6 +347,7 @@ public:
 		const_iterator(const This& s, uint i) : m_iter(s.m_data.begin() + i) { }
 		const_iterator(std::vector<std::unique_ptr<T>>::const_iterator i) : m_iter(i) { }
 		const_iterator(const const_iterator& i) : m_iter(i.m_iter) { }
+		const_iterator(const iterator& i) : m_iter(i.m_iter) { }
 		const_iterator& operator++() { ++m_iter; return *this; }
 		const_iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		iterator& operator+=(const const_iterator& other) { m_iter += other.m_iter; return *this; }

@@ -61,7 +61,9 @@ class DeckRotationData
 	SmallMap<Project*, DeckRotationDataSingle> m_projects;
 	SmallMap<ActorOrItemIndex, DeckRotationDataSingle> m_actorsOrItems;
 	SmallMap<BlockIndex, SmallMap<FluidTypeId, CollisionVolume>> m_fluids;
+	void rollback(Area& area, SmallMap<ActorOrItemIndex, DeckRotationDataSingle>::iterator begin, SmallMap<ActorOrItemIndex, DeckRotationDataSingle>::iterator end);
 public:
 	static DeckRotationData recordAndClearDependentPositions(Area& area, const ActorOrItemIndex& actorOrItem);
 	void reinstanceAtRotatedPosition(Area& area, const BlockIndex& previousPivot, const BlockIndex& newPivot, const Facing4& previousFacing, const Facing4& newFacing);
+	SetLocationAndFacingResult tryToReinstanceAtRotatedPosition(Area& area, const BlockIndex& previousPivot, const BlockIndex& newPivot, const Facing4& previousFacing, const Facing4& newFacing);
 };

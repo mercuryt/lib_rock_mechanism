@@ -21,8 +21,8 @@ void from_json(const Json& data, ItemTypeId& id) { id = ItemType::byName(data.ge
 void to_json(Json& data, const FluidTypeId& id) { data = FluidType::maybeGetName(id); }
 void from_json(const Json& data, FluidTypeId& id) { id = FluidType::byName(data.get<std::string>()); }
 #include "shape.h"
-void to_json(Json& data, const ShapeId& id) { data = Shape::getName(id); }
-void from_json(const Json& data, ShapeId& id) { id = Shape::byName(data.get<std::string>()); }
+void to_json(Json& data, const ShapeId& id) { data = id.exists() ? Shape::getName(id) : "Null"; }
+void from_json(const Json& data, ShapeId& id) { const auto& string = data.get<std::string>(); id = (string == "Null") ? ShapeId::null() : Shape::byName(string); }
 #include "skill.h"
 void to_json(Json& data, const SkillTypeId& id) { data = SkillType::getName(id); }
 void from_json(const Json& data, SkillTypeId& id) { id = SkillType::byName(data.get<std::string>()); }

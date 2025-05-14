@@ -54,6 +54,11 @@ void AreaHasDecks::shift(Area& area, const DeckId& id, const Offset3D& offset, c
 	m_data[id].cuboidSet.shift(offset, distance);
 	updateBlocks(area, id);
 }
+void DeckRotationData::rollback(Area& area, SmallMap<ActorOrItemIndex, DeckRotationDataSingle>::iterator begin, SmallMap<ActorOrItemIndex, DeckRotationDataSingle>::iterator end)
+{
+	for(auto& iter = begin; iter != end; ++iter)
+		iter->first.location_clear(area);
+}
 DeckRotationData DeckRotationData::recordAndClearDependentPositions(Area& area, const ActorOrItemIndex& actorOrItem)
 {
 	DeckRotationData output;
@@ -192,4 +197,97 @@ void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const BlockIndex&
 	// Resetable projects are typically those created directly by the player, so they should not be cancled.
 	for(Project* project : projectsWhichCannotReserveRotatedPosition)
 		project->resetOrCancel();
+}
+SetLocationAndFacingResult DeckRotationData::tryToReinstanceAtRotatedPosition(Area& area, const BlockIndex& previousPivot, const BlockIndex& newPivot, const Facing4& previousFacing, const Facing4& newFacing)
+{
+	Blocks& blocks = area.getBlocks();
+	Actors& actors = area.getActors();
+	Items& items = area.getItems();
+	SmallSet<ActorIndex> actorsWhichCannotReserveRotatedPosition;
+	SmallSet<Project*> projectsWhichCannotReserveRotatedPosition;
+	// Reinstance actors and item
+	auto& actorsOrItems = m_actorsOrItems;
+	const auto& end = actorsOrItems.end();
+	for(decltype(m_actorsOrItems)::iterator iter = actorsOrItems.begin(); iter != end; ++iter)
+	{
+		const ActorOrItemIndex& onDeck = iter->first;
+		const DeckRotationDataSingle& data = iter->second;
+		if(onDeck.isActor())
+		{
+			const ActorIndex& actor = onDeck.getActor();
+			// Update location.
+			// If setting location fails then we rollback all locations set thus far and return the failing status.
+			const BlockIndex location = blocks.translatePosition(data.location, previousPivot, newPivot, previousFacing, newFacing);
+			const Facing4 facing = util::rotateFacingByDifference(data.facing, previousFacing, newFacing);
+			SetLocationAndFacingResult result = actors.location_tryToSet(actor, location, facing);
+			if(result != SetLocationAndFacingResult::Success)
+			{
+				rollback(area, actorsOrItems.begin(), iter);
+				return result;
+			}
+			// Pilot's paths and reservations are not relative to the deck.
+			if(actors.mount_isPilot(actor))
+				continue;
+			// Update path.
+			auto& path = actors.move_getPath(actor);
+			if(!path.empty())
+			{
+				uint i = 0;
+				for(const BlockIndex& block : path)
+				{
+					path[i] = blocks.translatePosition(block, previousPivot, newPivot, previousFacing, newFacing);
+					++i;
+				}
+			}
+			// Update destination.
+			const BlockIndex& destination = actors.move_getDestination(actor);
+			if(destination.exists())
+			{
+				const BlockIndex newDestination = blocks.translatePosition(destination, previousPivot, newPivot, previousFacing, newFacing);
+				actors.move_updateDestination(actor, newDestination);
+			}
+			// Update reservations.
+			bool reservationsSuccessful = actors.canReserve_translateAndReservePositions(actor, std::move(iter->second.reservedBlocksAndCallbacks), previousPivot, newPivot, previousFacing, newFacing);
+			if(!reservationsSuccessful)
+				actorsWhichCannotReserveRotatedPosition.insert(actor);
+		}
+		else
+		{
+			// Item.
+			const ItemIndex& item = onDeck.getItem();
+			const BlockIndex location = blocks.translatePosition(data.location, previousPivot, newPivot, previousFacing, newFacing);
+			const Facing4 facing = util::rotateFacingByDifference(data.facing, previousFacing, newFacing);
+			// If setting location fails then we rollback all locations set thus far and return the failing status.
+			std::pair<ItemIndex, SetLocationAndFacingResult> result = items.location_tryToSet(item, location, facing);
+			// TODO: check if combine?
+			if(result.second != SetLocationAndFacingResult::Success)
+			{
+				rollback(area, actorsOrItems.begin(), iter);
+				return result.second;
+			}
+		}
+	}
+	// Reinstance projects.
+	for(auto& [project, data] : m_projects)
+	{
+		bool reservationsSuccessful = project->getCanReserve().translateAndReservePositions(blocks, std::move(data.reservedBlocksAndCallbacks), previousPivot, newPivot, previousFacing, newFacing);
+		if(!reservationsSuccessful)
+			projectsWhichCannotReserveRotatedPosition.insert(project);
+		project->setLocation(data.location);
+	}
+	// Reinstance fluids.
+	for(const auto& [block, fluidData] : m_fluids)
+	{
+		const BlockIndex location = blocks.translatePosition(block, previousPivot, newPivot, previousFacing, newFacing);
+		for(const auto& [fluidType, volume] : fluidData)
+			blocks.fluid_add(location, volume, fluidType);
+	}
+	// If an actor cannot reserve the rotated positions they must reset their objective.
+	for(const ActorIndex& actor : actorsWhichCannotReserveRotatedPosition)
+		actors.objective_canNotCompleteSubobjective(actor);
+	// If a project cannot reserve the rotated positions it must reset if it can or otherwise cancel.
+	// Resetable projects are typically those created directly by the player, so they should not be cancled.
+	for(Project* project : projectsWhichCannotReserveRotatedPosition)
+		project->resetOrCancel();
+	return SetLocationAndFacingResult::Success;
 }

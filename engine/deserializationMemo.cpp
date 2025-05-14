@@ -7,7 +7,7 @@
 #include "projects/construct.h"
 #include "projects/dig.h"
 #include "craft.h"
-#include "stockpile.h"
+#include "area/stockpile.h"
 #include "eat.h"
 #include "drink.h"
 #include "blocks/blocks.h"

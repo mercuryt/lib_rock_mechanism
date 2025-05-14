@@ -1,7 +1,7 @@
 #include "fluidSource.h"
 #include "deserializationMemo.h"
 #include "fluidType.h"
-#include "stockpile.h"
+#include "area/stockpile.h"
 #include "area/area.h"
 #include "blocks/blocks.h"
 #include "types.h"

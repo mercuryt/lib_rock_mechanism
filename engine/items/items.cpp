@@ -132,7 +132,7 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	m_quality[index] = itemParamaters.quality;
 	m_quantity[index] = itemParamaters.quantity;
 	//TODO: copying the whole constructed shape but only really need the offsets and block contents.
-	m_constructedShape[index] = ItemType::getConstructedShape(itemParamaters.itemType);
+	m_constructedShape[index] = std::make_unique<ConstructedShape>(ItemType::getConstructedShape(itemParamaters.itemType));
 	if(ItemType::getGeneric(itemType))
 	{
 		assert(m_quality[index].empty());
@@ -318,6 +318,12 @@ MoveTypeId Items::getMoveType(const ItemIndex& index) const
 {
 	return m_moveType[index];
 }
+bool Items::canCombine(const ItemIndex& index, const ItemIndex& toMerge)
+{
+	if(!isStatic(toMerge))
+		return false;
+	return m_area.getBlocks().shape_staticCanEnterCurrentlyWithFacing(getLocation(index), getShape(toMerge), getFacing(index), {});
+}
 void Items::log(const ItemIndex& index) const
 {
 	std::cout << ItemType::getName(m_itemType[index]) << "[" << MaterialType::getName(m_materialType[index]) << "]";
@@ -389,6 +395,12 @@ void Items::load(const Json& data)
 		auto& canBeStockPiled = m_canBeStockPiled[index] = std::make_unique<ItemCanBeStockPiled>();
 		canBeStockPiled->load(iter.value(), m_area);
 	}
+	m_constructedShape.resize(m_id.size());
+	for(auto iter = data["constructedShape"].begin(); iter != data["constructedShape"].end(); ++iter)
+	{
+		const ItemIndex index = ItemIndex::create(std::stoi(iter.key()));
+		m_constructedShape[index] = std::make_unique<ConstructedShape>(iter.value());
+	}
 }
 void Items::loadCargoAndCraftJobs(const Json& data)
 {
@@ -430,12 +442,20 @@ Json Items::toJson() const
 	data["installed"] = m_installed;
 	data["onSurface"] = m_onSurface;
 	data["canBeStockPiled"] = Json::object();
-	data["pilot"] = m_pilot;
 	int i = 0;
 	for(const auto& canBeStockPiled : m_canBeStockPiled)
 	{
 		if(canBeStockPiled != nullptr)
 			data["canBeStockPiled"][std::to_string(i)] = canBeStockPiled->toJson();
+		++i;
+	}
+	data["pilot"] = m_pilot;
+	data["constructedShape"] = Json::object();
+	i = 0;
+	for(const auto& constructedShape : m_constructedShape)
+	{
+		if(constructedShape != nullptr)
+			data["constructedShape"][std::to_string(i)] = constructedShape->toJson();
 		++i;
 	}
 	data["hasCargo"] = Json::object();

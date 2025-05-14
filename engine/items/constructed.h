@@ -2,6 +2,7 @@
 #include "../geometry/offsetCuboidSet.h"
 #include "../types.h"
 #include "../index.h"
+#include "../json.h"
 
 class BlockFeature;
 
@@ -19,6 +20,7 @@ class ConstructedShape
 public:
 	ConstructedShape() = default;
 	ConstructedShape(const ConstructedShape&) = default;
+	ConstructedShape(const Json& data);
 	ConstructedShape& operator=(ConstructedShape&&) = default;
 	ConstructedShape& operator=(const ConstructedShape&) = default;
 	void addBlock(Area& area, const BlockIndex& origin, const Facing4& facing, const BlockIndex& newBlock);
@@ -34,4 +36,6 @@ public:
 	[[nodiscard]] uint getValue() const { return m_value; }
 	[[nodiscard]] BlockIndex getLocation() const { return m_location; }
 	[[nodiscard]] static ConstructedShape makeForKeelBlock(Area& area, const BlockIndex& block, const Facing4& facing);
+	[[nodiscard]] Json toJson() const;
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ConstructedShape, m_solidBlocks, m_features, m_occupationShape, m_pathShape, m_decks, m_motiveForce, m_fullDisplacement, m_value, m_location);
 };

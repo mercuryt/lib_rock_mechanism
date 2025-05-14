@@ -158,6 +158,7 @@ public:
 	SetLocationAndFacingResult location_tryToMoveToStatic(const ActorIndex& index, const BlockIndex& block);
 	SetLocationAndFacingResult location_tryToMoveToDynamic(const ActorIndex& index, const BlockIndex& block);
 	// Used when item does not have a location.
+	SetLocationAndFacingResult location_tryToSet(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
 	SetLocationAndFacingResult location_tryToSetStatic(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
 	SetLocationAndFacingResult location_tryToSetDynamic(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
 	void location_clear(const ActorIndex& index);
