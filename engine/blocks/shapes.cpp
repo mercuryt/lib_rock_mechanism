@@ -7,9 +7,16 @@
 bool Blocks::shape_anythingCanEnterEver(const BlockIndex& index) const
 {
 	// TODO: cache this in a bitset.
+	if(m_dynamic[index])
+		return true;
 	if(solid_is(index))
 		return false;
 	return !blockFeature_blocksEntrance(index);
+}
+bool Blocks::shape_anythingCanEnterCurrently(const BlockIndex& index) const
+{
+	// TODO: cache this in a bitset.
+	return !(m_dynamic[index] && (solid_is(index) || blockFeature_blocksEntrance(index)));
 }
 bool Blocks::shape_canFitEverOrCurrentlyDynamic(const BlockIndex& index, const ShapeId& shape, const Facing4& facing, const OccupiedBlocksForHasShape& occupied) const
 {
@@ -19,6 +26,7 @@ bool Blocks::shape_canFitEverOrCurrentlyDynamic(const BlockIndex& index, const S
 		if(
 			otherIndex.empty() ||
 			!shape_anythingCanEnterEver(otherIndex) ||
+			!shape_anythingCanEnterCurrently(otherIndex) ||
 			(
 				(m_dynamicVolume[otherIndex] + pair.volume > Config::maxBlockVolume) &&
 				!occupied.contains(otherIndex)
@@ -36,6 +44,7 @@ bool Blocks::shape_canFitEverOrCurrentlyStatic(const BlockIndex& index, const Sh
 		if(
 			otherIndex.empty() ||
 			!shape_anythingCanEnterEver(otherIndex) ||
+			!shape_anythingCanEnterCurrently(otherIndex) ||
 			(
 				(m_staticVolume[otherIndex] + pair.volume > Config::maxBlockVolume ) &&
 				!occupied.contains(otherIndex)
@@ -94,7 +103,7 @@ bool Blocks::shape_canEnterCurrentlyWithFacing(const BlockIndex& index, const Sh
 		assert(shape_anythingCanEnterEver(otherIndex));
 		if(occupied.contains(otherIndex))
 			continue;
-		if( m_dynamicVolume[otherIndex] + pair.volume > Config::maxBlockVolume)
+		if(!shape_anythingCanEnterCurrently(otherIndex) || m_dynamicVolume[otherIndex] + pair.volume > Config::maxBlockVolume)
 			return false;
 	}
 	return true;
@@ -107,7 +116,9 @@ bool Blocks::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const Block
 		BlockIndex otherIndex = offset(index, pair.offset);
 		if(occupied.contains(otherIndex))
 			continue;
-		if(otherIndex.empty() || !shape_anythingCanEnterEver(otherIndex) ||
+		if(otherIndex.empty() ||
+			!shape_anythingCanEnterEver(otherIndex) ||
+			!shape_anythingCanEnterCurrently(otherIndex) ||
 			m_dynamicVolume[otherIndex] + pair.volume > Config::maxBlockVolume ||
 			!shape_moveTypeCanEnter(otherIndex, moveType) ||
 			(pair.offset.z() != 0 && !blockFeature_multiTileCanEnterAtNonZeroZOffset(otherIndex))
@@ -187,14 +198,15 @@ bool Blocks::shape_moveTypeCanEnterFrom(const BlockIndex& index, const MoveTypeI
 	if(toZ < fromZ && !blockFeature_canEnterFromAbove(index, from))
 		return false;
 	// Can enter from any angle if flying or climbing.
-	if(MoveType::getFly(moveType) || MoveType::getClimb(moveType) > 0)
+	const auto& climb = MoveType::getClimb(moveType);
+	if(MoveType::getFly(moveType) || climb == 2 || (climb == 1 && shape_canStandIn(index)))
 		return true;
 	// Can go up if from contains a ramp or stairs.
-	if(toZ > fromZ && (blockFeature_contains(from, BlockFeatureType::ramp) || blockFeature_contains(from, BlockFeatureType::stairs)))
+	if(toZ > fromZ && (blockFeature_contains(from, BlockFeatureTypeId::Ramp) || blockFeature_contains(from, BlockFeatureTypeId::Stairs)))
 		return true;
 	// Can go down if this contains a ramp or stairs.
-	if(toZ < fromZ && (blockFeature_contains(index, BlockFeatureType::ramp) ||
-					blockFeature_contains(index, BlockFeatureType::stairs)
+	if(toZ < fromZ && (blockFeature_contains(index, BlockFeatureTypeId::Ramp) ||
+					blockFeature_contains(index, BlockFeatureTypeId::Stairs)
 	))
 		return true;
 	return false;
@@ -270,7 +282,7 @@ MoveCost Blocks::shape_moveCostFrom(const BlockIndex& index, const MoveTypeId& m
 		if(fluid_volumeOfTypeContains(index, fluidType) >= volume)
 			return Config::baseMoveCost;
 	// Double cost to go up if not fly, swim, or ramp (if climb).
-	if(getZ(index) > getZ(from) && !blockFeature_contains(from, BlockFeatureType::ramp))
+	if(getZ(index) > getZ(from) && !blockFeature_contains(from, BlockFeatureTypeId::Ramp))
 		return Config::goUpMoveCost;
 	return Config::baseMoveCost;
 }
@@ -321,7 +333,7 @@ bool Blocks::shape_staticShapeCanEnterWithFacing(const BlockIndex& index, const 
 		assert(otherIndex.exists());
 		if(occupied.contains(otherIndex))
 			continue;
-		if(m_staticVolume[otherIndex] + pair.volume > Config::maxBlockVolume)
+		if(!shape_anythingCanEnterCurrently(otherIndex) || (m_staticVolume[otherIndex] + pair.volume > Config::maxBlockVolume))
 			return false;
 	}
 	return true;

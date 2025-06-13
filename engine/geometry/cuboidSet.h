@@ -64,6 +64,11 @@ public:
 	[[nodiscard]] SmallSet<BlockIndex> toBlockSet(const Blocks& blocks) const;
 	[[nodiscard]] bool isAdjacent(const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid boundry(const BlockIndex& block) const;
+	[[nodiscard]] auto begin() { return m_cuboids.begin(); }
+	[[nodiscard]] auto end() { return m_cuboids.end(); }
+	[[nodiscard]] auto begin() const { return m_cuboids.begin(); }
+	[[nodiscard]] auto end() const { return m_cuboids.end(); }
+	static CuboidSet create(const SmallSet<Point3D>& blocks);
 	friend class CuboidSetConstIterator;
 	friend struct CuboidSetConstView;
 };

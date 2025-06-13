@@ -31,7 +31,7 @@ Json HasConstructionDesignationsForFaction::toJson() const
 	return {{"projects", projects}};
 }
 // If blockFeatureType is null then construct a wall rather then a feature.
-void HasConstructionDesignationsForFaction::designate(Area& area, const BlockIndex& block, const BlockFeatureType* blockFeatureType, const MaterialTypeId& materialType)
+void HasConstructionDesignationsForFaction::designate(Area& area, const BlockIndex& block, const BlockFeatureTypeId blockFeatureType, const MaterialTypeId& materialType)
 {
 	assert(!contains(block));
 	Blocks& blocks = area.getBlocks();
@@ -63,7 +63,7 @@ void HasConstructionDesignationsForFaction::removeIfExists(Area& area, const Blo
 		remove(area, block);
 }
 bool HasConstructionDesignationsForFaction::contains(const BlockIndex& block) const { return m_data.contains(block); }
-const BlockFeatureType* HasConstructionDesignationsForFaction::getForBlock(const BlockIndex& block) const { return m_data[block].m_blockFeatureType; }
+BlockFeatureTypeId HasConstructionDesignationsForFaction::getForBlock(const BlockIndex& block) const { return m_data[block].m_blockFeatureType; }
 bool HasConstructionDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
 void AreaHasConstructionDesignations::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area)
@@ -105,7 +105,7 @@ void AreaHasConstructionDesignations::removeFaction(const FactionId& faction)
 	assert(m_data.contains(faction));
 	m_data.erase(faction);
 }
-void AreaHasConstructionDesignations::designate(const FactionId& faction, const BlockIndex& block, const BlockFeatureType* blockFeatureType, const MaterialTypeId& materialType)
+void AreaHasConstructionDesignations::designate(const FactionId& faction, const BlockIndex& block, const BlockFeatureTypeId blockFeatureType, const MaterialTypeId& materialType)
 {
 	if(!m_data.contains(faction))
 		addFaction(faction);

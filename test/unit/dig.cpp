@@ -47,7 +47,7 @@ TEST_CASE("dig")
 	SUBCASE("dig hole")
 	{
 		BlockIndex holeLocation = blocks.getIndex_i(8, 4, 3);
-		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
+		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
 		DigProject& project = area.m_hasDigDesignations.getForFactionAndBlock(faction, holeLocation);
 		CHECK(blocks.designation_has(holeLocation, faction, BlockDesignation::Dig));
 		CHECK(area.m_hasDigDesignations.contains(faction, holeLocation));
@@ -84,10 +84,10 @@ TEST_CASE("dig")
 		BlockIndex tunnelStart = blocks.getIndex_i(8, 5, 2);
 		BlockIndex tunnelEnd = blocks.getIndex_i(8, 6, 2);
 		Cuboid tunnel(blocks, tunnelEnd, tunnelStart);
-		area.m_hasDigDesignations.designate(faction, stairsLocation1, &BlockFeatureType::stairs);
-		area.m_hasDigDesignations.designate(faction, stairsLocation2, &BlockFeatureType::stairs);
+		area.m_hasDigDesignations.designate(faction, stairsLocation1, BlockFeatureTypeId::Stairs);
+		area.m_hasDigDesignations.designate(faction, stairsLocation2, BlockFeatureTypeId::Stairs);
 		for(const BlockIndex& block : tunnel.getView(blocks))
-			area.m_hasDigDesignations.designate(faction, block, nullptr);
+			area.m_hasDigDesignations.designate(faction, block, BlockFeatureTypeId::Null);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		// Find project, reserve, and activate.
 		simulation.doStep();
@@ -113,7 +113,7 @@ TEST_CASE("dig")
 		DigObjective& objective = actors.objective_getCurrent<DigObjective>(dwarf1);
 		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
 		CHECK(objective.getProject() == nullptr);
-		CHECK(blocks.blockFeature_contains(stairsLocation1, BlockFeatureType::stairs));
+		CHECK(blocks.blockFeature_contains(stairsLocation1, BlockFeatureTypeId::Stairs));
 		CHECK(blocks.shape_shapeAndMoveTypeCanEnterEverFrom(stairsLocation1, actors.getShape(dwarf1), actors.getMoveType(dwarf1), aboveStairs));
 		const auto& terrainFacade = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(dwarf1));
 		CHECK(terrainFacade.accessable(aboveStairs, actors.getFacing(dwarf1), stairsLocation1, dwarf1));
@@ -163,7 +163,7 @@ TEST_CASE("dig")
 		BlockIndex tunnelSecond = blocks.getIndex_i(8, 5, 4);
 		Cuboid tunnel(blocks, tunnelEnd, tunnelStart);
 		for(const BlockIndex& block : tunnel.getView(blocks))
-			area.m_hasDigDesignations.designate(faction, block, nullptr);
+			area.m_hasDigDesignations.designate(faction, block, BlockFeatureTypeId::Null);
 		items.location_clear(pick);
 		actors.equipment_add(dwarf1, pick);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
@@ -226,7 +226,7 @@ TEST_CASE("dig")
 			.faction=faction,
 		});
 		BlockIndex holeLocation = blocks.getIndex_i(8, 4, 3);
-		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
+		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
 		actors.objective_setPriority(dwarf2, digObjectiveType.getId(), Priority::create(100));
@@ -262,8 +262,8 @@ TEST_CASE("dig")
 		});
 		BlockIndex holeLocation1 = blocks.getIndex_i(6, 2, 3);
 		BlockIndex holeLocation2 = blocks.getIndex_i(9, 8, 3);
-		area.m_hasDigDesignations.designate(faction, holeLocation1, nullptr);
-		area.m_hasDigDesignations.designate(faction, holeLocation2, nullptr);
+		area.m_hasDigDesignations.designate(faction, holeLocation1, BlockFeatureTypeId::Null);
+		area.m_hasDigDesignations.designate(faction, holeLocation2, BlockFeatureTypeId::Null);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
 		actors.objective_setPriority(dwarf2, digObjectiveType.getId(), Priority::create(100));
@@ -306,7 +306,7 @@ TEST_CASE("dig")
 		areaBuilderUtil::setSolidWall(area, blocks.getIndex_i(0, 3, 4), blocks.getIndex_i(8, 3, 4), dirt);
 		BlockIndex gateway = blocks.getIndex_i(9, 3, 4);
 		BlockIndex holeLocation = blocks.getIndex_i(8, 4, 3);
-		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
+		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
 		DigProject& project = area.m_hasDigDesignations.getForFactionAndBlock(faction, holeLocation);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		// One step to find the designation.
@@ -329,7 +329,7 @@ TEST_CASE("dig")
 	SUBCASE("spot already dug")
 	{
 		BlockIndex holeLocation = blocks.getIndex_i(8, 8, 3);
-		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
+		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		// One step to find the designation.
 		simulation.doStep();
@@ -350,7 +350,7 @@ TEST_CASE("dig")
 	SUBCASE("pick destroyed")
 	{
 		BlockIndex holeLocation = blocks.getIndex_i(8, 4, 3);
-		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
+		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
 		DigProject& project = area.m_hasDigDesignations.getForFactionAndBlock(faction, holeLocation);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		// One step to find the designation.
@@ -371,7 +371,7 @@ TEST_CASE("dig")
 	SUBCASE("player cancels")
 	{
 		BlockIndex holeLocation = blocks.getIndex_i(8, 8, 3);
-		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
+		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		// One step to find the designation.
 		simulation.doStep();
@@ -392,7 +392,7 @@ TEST_CASE("dig")
 	{
 		BlockIndex holeLocation = blocks.getIndex_i(8, 8, 3);
 		BlockIndex goToLocation = blocks.getIndex_i(1, 8, 4);
-		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
+		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		// One step to find the designation.
 		simulation.doStep();
@@ -445,7 +445,7 @@ TEST_CASE("dig")
 		ActorReference dwarf2Ref = actors.m_referenceData.getReference(dwarf2);
 		BlockIndex holeLocation = blocks.getIndex_i(8, 8, 3);
 		BlockIndex goToLocation = blocks.getIndex_i(1, 8, 4);
-		area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
+		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		actors.objective_setPriority(dwarf2, digObjectiveType.getId(), Priority::create(100));
 		// One step to find the designation,  activate the project, and reserve the pick.

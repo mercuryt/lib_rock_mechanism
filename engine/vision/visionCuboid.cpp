@@ -204,6 +204,22 @@ void AreaHasVisionCuboids::remove(const Cuboid& cuboid)
 		for(const Cuboid& splitResult : pair.second.getChildrenWhenSplitByCuboid(cuboid))
 			create(splitResult);
 }
+void AreaHasVisionCuboids::remove(const SmallSet<BlockIndex>& toRemove)
+{
+	Blocks& blocks = m_area.getBlocks();
+	SmallSet<Point3D> points;
+	for(const BlockIndex& block : toRemove)
+		points.insert(blocks.getCoordinates(block));
+	auto cuboids = CuboidSet::create(points);
+	for(const Cuboid& cuboid : cuboids)
+		remove(cuboid);
+}
+void AreaHasVisionCuboids::remove(const SmallSet<Point3D>& points)
+{
+	auto cuboids = CuboidSet::create(points);
+	for(const Cuboid& cuboid : cuboids)
+		remove(cuboid);
+}
 void AreaHasVisionCuboids::sliceBelow(const Cuboid& cuboid)
 {
 	assert(cuboid.dimensionForFacing(Facing6::Above) == 1);

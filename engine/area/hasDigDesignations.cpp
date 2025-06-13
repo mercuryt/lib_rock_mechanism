@@ -28,7 +28,7 @@ Json HasDigDesignationsForFaction::toJson() const
 	}
 	return {{"projects", projects}};
 }
-void HasDigDesignationsForFaction::designate(Area& area, const BlockIndex& block, [[maybe_unused]] const BlockFeatureType* blockFeatureType)
+void HasDigDesignationsForFaction::designate(Area& area, const BlockIndex& block, [[maybe_unused]] const BlockFeatureTypeId blockFeatureType)
 {
 	assert(!m_data.contains(block));
 	Blocks& blocks = area.getBlocks();
@@ -55,7 +55,7 @@ void HasDigDesignationsForFaction::removeIfExists(Area& area, const BlockIndex& 
 	if(m_data.contains(block))
 		remove(area, block);
 }
-const BlockFeatureType* HasDigDesignationsForFaction::getForBlock(const BlockIndex& block) const { return m_data[block].m_blockFeatureType; }
+BlockFeatureTypeId HasDigDesignationsForFaction::getForBlock(const BlockIndex& block) const { return m_data[block].m_blockFeatureType; }
 bool HasDigDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
 void AreaHasDigDesignations::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area)
@@ -98,7 +98,7 @@ void AreaHasDigDesignations::removeFaction(const FactionId& faction)
 	m_data.erase(faction);
 }
 // If blockFeatureType is null then dig out fully rather then digging out a feature.
-void AreaHasDigDesignations::designate(const FactionId& faction, const BlockIndex& block, const BlockFeatureType* blockFeatureType)
+void AreaHasDigDesignations::designate(const FactionId& faction, const BlockIndex& block, const BlockFeatureTypeId blockFeatureType)
 {
 	if(!m_data.contains(faction))
 		addFaction(faction);

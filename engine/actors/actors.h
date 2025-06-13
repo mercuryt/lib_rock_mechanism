@@ -164,6 +164,9 @@ public:
 	void location_clear(const ActorIndex& index);
 	void location_clearStatic(const ActorIndex& index);
 	void location_clearDynamic(const ActorIndex& index);
+	[[nodiscard]] bool location_canEnterEverWithFacing(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
+	[[nodiscard]] bool location_canEnterEverWithAnyFacing(const ActorIndex& index, const BlockIndex& block);
+	[[nodiscard]] Facing4 location_canEnterEverWithAnyFacingReturnFacing(const ActorIndex& index, const BlockIndex& block);
 	void removeMassFromCorpse(const ActorIndex& index, const Mass& mass);
 	void die(const ActorIndex& index, CauseOfDeath causeOfDeath);
 	void passout(const ActorIndex& index, const Step& duration);
@@ -561,6 +564,7 @@ public:
 	// Pilot Item.
 	void pilotItem_set(const ActorIndex& index, const ItemIndex& item);
 	void pilotItem_unset(const ActorIndex& index);
+	[[nodiscard]] bool pilotItem_isPilotingConstructedItem(const ActorIndex& index);
 	// For testing.
 	[[nodiscard]] bool grow_getEventExists(const ActorIndex& index) const;
 	[[nodiscard]] Percent grow_getEventPercent(const ActorIndex& index) const;

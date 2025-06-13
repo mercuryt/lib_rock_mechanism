@@ -14,13 +14,13 @@
 #include <memory>
 // Project.
 ConstructProject::ConstructProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : Project(data, deserializationMemo, area),
-	m_blockFeatureType(data.contains("blockFeatureType") ? &BlockFeatureType::byName(data["blockFeatureType"].get<std::string>()) : nullptr),
+	m_blockFeatureType(data.contains("blockFeatureType") ? data["blockFeatureType"].get<BlockFeatureTypeId>() : BlockFeatureTypeId::Null),
 	m_materialType(MaterialType::byName(data["materialType"].get<std::string>())) { }
 Json ConstructProject::toJson() const
 {
 	Json data = Project::toJson();
-	if(m_blockFeatureType)
-		data["blockFeatureType"] = m_blockFeatureType->name;
+	if(m_blockFeatureType != BlockFeatureTypeId::Null)
+		data["blockFeatureType"] = BlockFeatureType::byId(m_blockFeatureType).name;
 	data["materialType"] = m_materialType;
 	return data;
 }
@@ -49,14 +49,14 @@ void ConstructProject::onComplete()
 	Blocks& blocks = m_area.getBlocks();
 	Actors& actors = m_area.getActors();
 	assert(!blocks.solid_is(m_location));
-	// Store values we will need to complete before destroying construction project.
+	// Store values we will need to copy before destroying construction project.
 	const auto blockFeatureType = m_blockFeatureType;
 	const auto location = m_location;
 	const auto materialType = m_materialType;
 	auto workers = std::move(m_workers);
 	// Destroy project.
 	m_area.m_hasConstructionDesignations.remove(m_faction, m_location);
-	if(blockFeatureType == nullptr)
+	if(blockFeatureType == BlockFeatureTypeId::Null)
 	{
 		blocks.item_disperseAll(location);
 		//TODO: disperse actors.
@@ -64,7 +64,7 @@ void ConstructProject::onComplete()
 		blocks.solid_set(location, materialType, true);
 	}
 	else
-		blocks.blockFeature_construct(location, *blockFeatureType, materialType);
+		blocks.blockFeature_construct(location, blockFeatureType, materialType);
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);
 }

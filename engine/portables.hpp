@@ -583,7 +583,7 @@ void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index
 	if(blocks.isExposedToSky(newLocation))
 		this->m_onSurface.set(index);
 	else
-		this->m_onSurface.unset(index);
+		this->m_onSurface.maybeUnset(index);
 	// Move decks attached to this portable.
 	const DeckId& deckId = m_hasDecks[index];
 	if(deckId.exists())

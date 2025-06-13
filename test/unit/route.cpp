@@ -322,10 +322,10 @@ TEST_CASE("route_5_5_5")
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	static MoveTypeId twoLegsAndClimb1 = MoveType::byName("two legs and climb 1");
 	static MoveTypeId twoLegsAndClimb2 = MoveType::byName("two legs and climb 2");
-	static const BlockFeatureType& stairs = BlockFeatureType::stairs;
-	static const BlockFeatureType& ramp = BlockFeatureType::ramp;
-	static const BlockFeatureType& door = BlockFeatureType::door;
-	static const BlockFeatureType& fortification = BlockFeatureType::fortification;
+	static const BlockFeatureTypeId stairs = BlockFeatureTypeId::Stairs;
+	static const BlockFeatureTypeId ramp = BlockFeatureTypeId::Ramp;
+	static const BlockFeatureTypeId door = BlockFeatureTypeId::Door;
+	static const BlockFeatureTypeId fortification = BlockFeatureTypeId::Fortification;
 	static FluidTypeId water = FluidType::byName("water");
 	SUBCASE("walking path blocked by one height cliff if not climbing")
 	{
@@ -354,11 +354,15 @@ TEST_CASE("route_5_5_5")
 		actors.move_setType(actor, twoLegsAndClimb1);
 		blocks.solid_set(blocks.getIndex_i(4, 4, 1), marble, false);
 		blocks.solid_set(blocks.getIndex_i(4, 4, 2), marble, false);
-		actors.move_setDestination(actor, blocks.getIndex_i(4, 4, 3));
+		const BlockIndex& destination = blocks.getIndex_i(4, 4, 3);
+		const BlockIndex& belowDestination = blocks.getIndex_i(4, 3, 2);
+		bool test = !blocks.shape_moveTypeCanEnter(belowDestination, twoLegsAndClimb1);
+		CHECK(test);
+		actors.move_setDestination(actor, destination);
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
 		actors.move_setType(actor, twoLegsAndClimb2);
-		actors.move_setDestination(actor, blocks.getIndex_i(4, 4, 3));
+		actors.move_setDestination(actor, destination);
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
 
@@ -366,10 +370,18 @@ TEST_CASE("route_5_5_5")
 	SUBCASE("stairs")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		BlockIndex origin = blocks.getIndex_i(1, 1, 1);
-		blocks.blockFeature_construct(blocks.getIndex_i(2, 2, 1), stairs, marble);
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 2), stairs, marble);
-		blocks.blockFeature_construct(blocks.getIndex_i(2, 2, 3), stairs, marble);
+		const BlockIndex origin = blocks.getIndex_i(1, 1, 1);
+		const BlockIndex lowest = blocks.getIndex_i(2, 2, 1);
+		const BlockIndex middle = blocks.getIndex_i(3, 3, 2);
+		const BlockIndex highest = blocks.getIndex_i(2, 2, 3);
+		blocks.blockFeature_construct(lowest, stairs, marble);
+		blocks.blockFeature_construct(middle, stairs, marble);
+		blocks.blockFeature_construct(highest, stairs, marble);
+		CHECK(blocks.shape_canStandIn(middle));
+		bool test = blocks.shape_moveTypeCanEnter(middle, twoLegsAndClimb1);
+		CHECK(test);
+		test = blocks.shape_moveTypeCanEnterFrom(middle, twoLegsAndClimb1, lowest);
+		CHECK(test);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
 			.location=origin,
@@ -457,7 +469,7 @@ TEST_CASE("route_5_5_5")
 		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(1, 2, 2), BlockFeatureType::floor, marble);
+		blocks.blockFeature_construct(blocks.getIndex_i(1, 2, 2), BlockFeatureTypeId::Floor, marble);
 		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
@@ -468,8 +480,8 @@ TEST_CASE("route_5_5_5")
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 1));
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 2));
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 3));
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 1), BlockFeatureType::stairs, marble);
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 2), BlockFeatureType::stairs, marble);
+		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 1), BlockFeatureTypeId::Stairs, marble);
+		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 2), BlockFeatureTypeId::Stairs, marble);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
 			.location=blocks.getIndex_i(3,3,1),
@@ -477,7 +489,7 @@ TEST_CASE("route_5_5_5")
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 3), BlockFeatureType::floor, marble);
+		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 3), BlockFeatureTypeId::Floor, marble);
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
@@ -494,7 +506,7 @@ TEST_CASE("route_5_5_5")
 		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(1, 2, 2), BlockFeatureType::floorGrate, marble);
+		blocks.blockFeature_construct(blocks.getIndex_i(1, 2, 2), BlockFeatureTypeId::FloorGrate, marble);
 		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
@@ -505,8 +517,8 @@ TEST_CASE("route_5_5_5")
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 1));
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 2));
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 3));
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 1), BlockFeatureType::stairs, marble);
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 2), BlockFeatureType::stairs, marble);
+		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 1), BlockFeatureTypeId::Stairs, marble);
+		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 2), BlockFeatureTypeId::Stairs, marble);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
 			.location=blocks.getIndex_i(3,3,1),
@@ -514,7 +526,7 @@ TEST_CASE("route_5_5_5")
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 3), BlockFeatureType::floorGrate, marble);
+		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 3), BlockFeatureTypeId::FloorGrate, marble);
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
@@ -531,7 +543,7 @@ TEST_CASE("route_5_5_5")
 		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(1, 2, 2), BlockFeatureType::hatch, marble);
+		blocks.blockFeature_construct(blocks.getIndex_i(1, 2, 2), BlockFeatureTypeId::Hatch, marble);
 		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
@@ -542,8 +554,8 @@ TEST_CASE("route_5_5_5")
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 1));
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 2));
 		blocks.solid_setNot(blocks.getIndex_i(3, 3, 3));
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 1), BlockFeatureType::stairs, marble);
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 2), BlockFeatureType::stairs, marble);
+		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 1), BlockFeatureTypeId::Stairs, marble);
+		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 2), BlockFeatureTypeId::Stairs, marble);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
 			.location=blocks.getIndex_i(3,3,1),
@@ -551,11 +563,11 @@ TEST_CASE("route_5_5_5")
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 3), BlockFeatureType::hatch, marble);
+		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 3), BlockFeatureTypeId::Hatch, marble);
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
-		blocks.blockFeature_lock(blocks.getIndex_i(3, 3, 3), BlockFeatureType::hatch);
+		blocks.blockFeature_lock(blocks.getIndex_i(3, 3, 3), BlockFeatureTypeId::Hatch);
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
@@ -574,10 +586,10 @@ TEST_CASE("route_5_5_5")
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 2));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 2, 1), BlockFeatureType::ramp, marble);
-		blocks.blockFeature_construct(blocks.getIndex_i(4, 2, 1), BlockFeatureType::ramp, marble);
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 1, 1), BlockFeatureType::ramp, marble);
-		blocks.blockFeature_construct(blocks.getIndex_i(4, 1, 1), BlockFeatureType::ramp, marble);
+		blocks.blockFeature_construct(blocks.getIndex_i(3, 2, 1), BlockFeatureTypeId::Ramp, marble);
+		blocks.blockFeature_construct(blocks.getIndex_i(4, 2, 1), BlockFeatureTypeId::Ramp, marble);
+		blocks.blockFeature_construct(blocks.getIndex_i(3, 1, 1), BlockFeatureTypeId::Ramp, marble);
+		blocks.blockFeature_construct(blocks.getIndex_i(4, 1, 1), BlockFeatureTypeId::Ramp, marble);
 		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 2));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
@@ -637,8 +649,6 @@ TEST_CASE("route_5_5_5")
 			.species=dwarf,
 			.location=blocks.getIndex_i(1,1,4),
 		});
-		actors.move_setDestination(actor, deep);
-		simulation.doStep();
-		CHECK(actors.move_getPath(actor).empty());
+		CHECK(!actors.move_canPathTo(actor, deep));
 	}
 }

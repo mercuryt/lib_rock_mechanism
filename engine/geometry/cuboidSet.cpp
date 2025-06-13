@@ -141,6 +141,13 @@ bool CuboidSet::isAdjacent(const Cuboid& cuboid) const
 			return true;
 	return false;
 }
+CuboidSet CuboidSet::create(const SmallSet<Point3D>& points)
+{
+	CuboidSet output;
+	for(const Point3D& point : points)
+		output.add({point, point});
+	return output;
+}
 void to_json(Json& data, const CuboidSet& cuboidSet)
 {
 	for(const Cuboid& cuboid : cuboidSet.getCuboids())

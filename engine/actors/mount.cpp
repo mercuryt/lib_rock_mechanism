@@ -61,7 +61,7 @@ void Actors::mount_undo(const ActorIndex& index, const BlockIndex& location, con
 	move_updateIndividualSpeed(mount);
 	if(m_isPilot[index])
 	{
-		m_isPilot.unset(index);
+		m_isPilot.maybeUnset(index);
 		// Mount checks for next objective now that it is independent.
 		objective_maybeDoNext(mount);
 	}
@@ -81,8 +81,19 @@ void Actors::pilotItem_unset(const ActorIndex& index)
 {
 	Items& items = m_area.getItems();
 	items.pilot_clear(m_isOnDeckOf[index].getItem());
-	m_isPilot.unset(index);
+	m_isPilot.maybeUnset(index);
 	move_updateActualSpeed(index);
 	m_compoundShape[index] = m_shape[index];
 	resetMoveType(index);
+}
+bool Actors::pilotItem_isPilotingConstructedItem(const ActorIndex& index)
+{
+	Items& items = m_area.getItems();
+	if(!m_isPilot[index])
+		return false;
+	const ActorOrItemIndex& isPiloting = getIsPiloting(index);
+	if(isPiloting.isActor())
+		return false;
+	const ItemIndex& item = isPiloting.getItem();
+	return items.hasConstructedShape(item);
 }

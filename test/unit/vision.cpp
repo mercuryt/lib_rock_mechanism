@@ -18,10 +18,10 @@ TEST_CASE("vision")
 	Actors& actors = area.getActors();
 	auto marble = MaterialType::byName("marble");
 	auto glass = MaterialType::byName("glass");
-	auto& door = BlockFeatureType::door;
-	auto& hatch = BlockFeatureType::hatch;
-	auto& stairs = BlockFeatureType::stairs;
-	auto& floor = BlockFeatureType::floor;
+	auto door = BlockFeatureTypeId::Door;
+	auto hatch = BlockFeatureTypeId::Hatch;
+	auto stairs = BlockFeatureTypeId::Stairs;
+	auto floor = BlockFeatureTypeId::Floor;
 	auto dwarf = AnimalSpecies::byName("dwarf");
 	auto troll = AnimalSpecies::byName("troll");
 	SUBCASE("See no one when no one is present to be seen")

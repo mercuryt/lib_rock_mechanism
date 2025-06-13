@@ -54,7 +54,7 @@ void Blocks::solid_setNotShared(const BlockIndex& index)
 	if(m_exposedToSky.check(index) && MaterialType::canMelt(m_materialType[index]))
 		m_area.m_hasTemperature.removeMeltableSolidBlockAboveGround(index);
 	m_materialType[index].clear();
-	m_constructed.unset(index);
+	m_constructed.maybeUnset(index);
 	fluid_onBlockSetNotSolid(index);
 	m_area.m_opacityFacade.update(index);
 	//TODO: Check if any adjacent are visible first?
@@ -147,4 +147,36 @@ MaterialTypeId Blocks::solid_getHardest(const SmallSet<BlockIndex>& blocks)
 	}
 	assert(output.exists());
 	return output;
+}
+void Blocks::solid_setDynamic(const BlockIndex& index, const MaterialTypeId& materialType, bool constructed)
+{
+	assert(m_materialType[index].empty());
+	assert(!m_dynamic[index]);
+	assert(m_plants[index].empty());
+	assert(m_items[index].empty());
+	assert(m_actors[index].empty());
+	m_materialType[index] = materialType;
+	m_dynamic.set(index);
+	m_constructed.set(index, constructed);
+	if(!MaterialType::getTransparent(materialType))
+	{
+		m_area.m_opacityFacade.update(index);
+		// TODO: add a multiple blocks at a time version which does this update more efficiently.
+		m_area.m_visionCuboids.blockIsOpaque(index);
+	}
+}
+void Blocks::solid_setNotDynamic(const BlockIndex& index)
+{
+	assert(m_materialType[index].exists());
+	assert(m_dynamic[index]);
+	bool wasTransparent = MaterialType::getTransparent(m_materialType[index]);
+	m_materialType[index].clear();
+	m_dynamic.unset(index);
+	m_constructed.maybeUnset(index);
+	if(!wasTransparent)
+	{
+		m_area.m_opacityFacade.update(index);
+		// TODO: add a multiple blocks at a time version which does this update more efficiently.
+		m_area.m_visionCuboids.blockIsTransparent(index);
+	}
 }

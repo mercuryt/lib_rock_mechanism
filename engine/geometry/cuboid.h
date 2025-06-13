@@ -43,7 +43,8 @@ public:
 	[[nodiscard]] Cuboid getFace(const Facing6& faceing) const;
 	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
 	[[nodiscard]] bool overlapsWithSphere(const Sphere& sphere) const;
-	[[nodiscard]] size_t size() const;
+	//TODO: rename size to volume.
+	[[nodiscard]] uint size() const;
 	[[nodiscard]] bool empty() const { return m_highest.empty(); }
 	[[nodiscard]] bool exists() const { return m_highest.exists(); }
 	[[nodiscard]] bool operator==(const Cuboid& cuboid) const;
@@ -51,6 +52,7 @@ public:
 	[[nodiscard]] DistanceInBlocks dimensionForFacing(const Facing6& facing) const;
 	[[nodiscard]] Facing6 getFacingTwordsOtherCuboid(const Cuboid& cuboid) const;
 	[[nodiscard]] bool isSomeWhatInFrontOf(const Point3D& position, const Facing4& facing) const;
+	// TODO: Should this return a CuboidArray<6>?
 	[[nodiscard]] SmallSet<Cuboid> getChildrenWhenSplitByCuboid(const Cuboid& cuboid) const;
 	[[nodiscard]] std::pair<Cuboid, Cuboid> getChildrenWhenSplitBelowCuboid(const Cuboid& cuboid) const;
 	[[nodiscard]] bool isTouching(const Cuboid& cuboid) const;
@@ -86,6 +88,8 @@ public:
 	CuboidView getView(const Blocks& blocks) const;
 	CuboidSurfaceView getSurfaceView(const Blocks& blocks) const;
 	std::string toString() const;
+	// Compares each pair of cuboids to find the combination where combined.size() - (pair1.size() + pair2.size()) is lowest.
+	[[nodiscard]] static std::tuple<Cuboid, uint, uint> findPairWithLeastNewVolumeWhenExtended(auto& cuboids);
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Cuboid, m_highest, m_lowest);
 };
 struct CuboidView : public std::ranges::view_interface<CuboidView>

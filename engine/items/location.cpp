@@ -58,6 +58,11 @@ ItemIndex Items::location_setDynamic(const ItemIndex& index, const BlockIndex& b
 	BlockIndex previousLocation = m_location[index];
 	Facing4 previousFacing = m_facing[index];
 	DeckRotationData deckRotationData;
+	if(m_constructedShape[index] != nullptr)
+	{
+		m_constructedShape[index]->setLocationAndFacing(m_area, previousFacing, block, facing, m_blocks[index]);
+		return index;
+	}
 	if(previousLocation.exists())
 	{
 		deckRotationData = DeckRotationData::recordAndClearDependentPositions(m_area, ActorOrItemIndex::createForItem(index));
@@ -191,6 +196,17 @@ SetLocationAndFacingResult Items::location_tryToSetDynamicInternal(const ItemInd
 	assert(m_location[index].empty());
 	assert(!isStatic(index));
 	Blocks& blocks = m_area.getBlocks();
+	if(m_constructedShape[index] != nullptr)
+	{
+		// constructed shapes always have a facing assigned. It indicates the layout of the constructed shape data.
+		SetLocationAndFacingResult result = m_constructedShape[index]->tryToSetLocationAndFacing(m_area, m_facing[index], location, facing, m_blocks[index]);
+		if(result == SetLocationAndFacingResult::Success)
+		{
+			m_location[index] = location;
+			m_facing[index] = facing;
+		}
+		return result;
+	}
 	auto& occupiedBlocks = m_blocks[index];
 	assert(occupiedBlocks.empty());
 	Offset3D rollBackFrom;
@@ -202,7 +218,7 @@ SetLocationAndFacingResult Items::location_tryToSetDynamicInternal(const ItemInd
 		if(blocks.solid_is(occupied) || blocks.blockFeature_blocksEntrance(occupied))
 		{
 			rollBackFrom = pair.offset;
-			output =  SetLocationAndFacingResult::PermanantlyBlocked;
+			output = SetLocationAndFacingResult::PermanantlyBlocked;
 			break;
 		}
 		if(blocks.shape_getDynamicVolume(occupied) + pair.volume > Config::maxBlockVolume)
@@ -352,24 +368,32 @@ void Items::location_clearStatic(const ItemIndex& index)
 	assert(isStatic(index));
 	assert(m_location[index].exists());
 	BlockIndex location = m_location[index];
-	auto& blocks = m_area.getBlocks();
-	for(BlockIndex occupied : m_blocks[index])
-		blocks.item_eraseStatic(occupied, index);
+	Blocks& blocks = m_area.getBlocks();
+	std::unique_ptr<ConstructedShape>& shapePtr = m_constructedShape[index];
+	if(shapePtr != nullptr)
+		shapePtr->recordAndClear(m_area, location);
+	else
+		for(BlockIndex occupied : m_blocks[index])
+			blocks.item_eraseStatic(occupied, index);
 	m_location[index].clear();
 	m_blocks[index].clear();
 	if(blocks.isExposedToSky(location))
-		m_onSurface.unset(index);
+		m_onSurface.maybeUnset(index);
 }
 void Items::location_clearDynamic(const ItemIndex& index)
 {
 	assert(!isStatic(index));
 	assert(m_location[index].exists());
 	BlockIndex location = m_location[index];
-	auto& blocks = m_area.getBlocks();
-	for(BlockIndex occupied : m_blocks[index])
-		blocks.item_eraseDynamic(occupied, index);
+	Blocks& blocks = m_area.getBlocks();
+	std::unique_ptr<ConstructedShape>& shapePtr = m_constructedShape[index];
+	if(shapePtr != nullptr)
+		shapePtr->recordAndClear(m_area, location);
+	else
+		for(BlockIndex occupied : m_blocks[index])
+			blocks.item_eraseDynamic(occupied, index);
 	m_location[index].clear();
 	m_blocks[index].clear();
 	if(blocks.isExposedToSky(location))
-		m_onSurface.unset(index);
+		m_onSurface.maybeUnset(index);
 }

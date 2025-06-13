@@ -24,13 +24,13 @@ public:
 	HasDigDesignationsForFaction(const FactionId& p) : m_faction(p) { }
 	HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const FactionId& faction, Area& area);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
-	void designate(Area& area, const BlockIndex& block, const BlockFeatureType* blockFeatureType);
+	void designate(Area& area, const BlockIndex& block, const BlockFeatureTypeId blockFeatureType);
 	void undesignate(const BlockIndex& block);
 	// To be called by undesignate as well as by DigProject::onCancel.
 	void remove(Area& area, const BlockIndex& block);
 	void removeIfExists(Area& area, const BlockIndex& block);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] const BlockFeatureType* getForBlock(const BlockIndex& block) const;
+	[[nodiscard]] BlockFeatureTypeId getForBlock(const BlockIndex& block) const;
 	[[nodiscard]] bool empty() const;
 	friend class AreaHasDigDesignations;
 };
@@ -47,7 +47,7 @@ public:
 	void addFaction(const FactionId& faction);
 	void removeFaction(const FactionId& faction);
 	// If blockFeatureType is null then dig out fully rather then digging out a feature.
-	void designate(const FactionId& faction, const BlockIndex& block, const BlockFeatureType* blockFeatureType);
+	void designate(const FactionId& faction, const BlockIndex& block, const BlockFeatureTypeId blockFeatureType);
 	void undesignate(const FactionId& faction, const BlockIndex& block);
 	void remove(const FactionId& faction, const BlockIndex& block);
 	void clearAll(const BlockIndex& block);

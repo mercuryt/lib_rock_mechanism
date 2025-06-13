@@ -265,50 +265,57 @@ std::string Offset3D::toString() const
 }
 void Offset3D::rotate2DInvert(const Facing4& facing)
 {
-		switch(facing)
-		{
-			case Facing4::North:
-				break;
-			case Facing4::East:
-				rotate2D(Facing4::West);
-				break;
-			case Facing4::South:
-				rotate2D(Facing4::South);
-				break;
-			case Facing4::West:
-				rotate2D(Facing4::East);
-				break;
-			default:
-				std::unreachable();
-		}
+	switch(facing)
+	{
+		case Facing4::North:
+			break;
+		case Facing4::East:
+			rotate2D(Facing4::West);
+			break;
+		case Facing4::South:
+			rotate2D(Facing4::South);
+			break;
+		case Facing4::West:
+			rotate2D(Facing4::East);
+			break;
+		default:
+			std::unreachable();
+	}
 }
 void Offset3D::rotate2D(const Facing4& facing)
 {
-		switch(facing)
-		{
-			case Facing4::North:
-				break;
-			case Facing4::East:
-				data[1] *= -1;
-				std::swap(data[0], data[1]);
-				break;
-			case Facing4::South:
-				data[0] *= -1;
-				data[1] *= -1;
-				break;
-			case Facing4::West:
-				data[0] *= -1;
-				std::swap(data[0], data[1]);
-				break;
-			default:
-				std::unreachable();
-		}
+	switch(facing)
+	{
+		case Facing4::North:
+			break;
+		case Facing4::East:
+			data[1] *= -1;
+			std::swap(data[0], data[1]);
+			break;
+		case Facing4::South:
+			data[0] *= -1;
+			data[1] *= -1;
+			break;
+		case Facing4::West:
+			data[0] *= -1;
+			std::swap(data[0], data[1]);
+			break;
+		default:
+			std::unreachable();
+	}
+}
+void Offset3D::rotate2D(const Facing4& oldFacing, const Facing4& newFacing)
+{
+	int rotation = (int)newFacing - (int)oldFacing;
+	if(rotation < 0)
+		rotation += 4;
+	rotate2D((Facing4)rotation);
 }
 void Offset3D::clampHigh(const Offset3D& other)
 {
-	data = data.min(other.data);
+	data = data.max(other.data);
 }
 void Offset3D::clampLow(const Offset3D& other)
 {
-	data = data.max(other.data);
+	data = data.min(other.data);
 }

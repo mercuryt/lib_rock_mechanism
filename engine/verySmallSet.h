@@ -33,7 +33,11 @@ class VerySmallSet
 		{
 			if(other.isArray())
 				array = other.array;
+			else if(isArray())
+				// Use placement new to prevent any junk data from when then union was storing an array from being interpreted as vector stack component data.
+				new(&vector) std::vector<Contained>(other.vector);
 			else
+				// If this is already storing a vector use regular assignment, as placement new would cause a memory leak.
 				vector = other.vector;
 			return *this;
 		}
@@ -41,16 +45,20 @@ class VerySmallSet
 		{
 			if(other.isArray())
 				array = other.array;
+			else if(isArray())
+				// Use placement new to prevent any junk data from when then union was storing an array from being interpreted as vector stack component data.
+				new(&vector) std::vector<Contained>(std::move(other.vector));
 			else
+				// If this is already storing a vector use regular assignment, as placement new would cause a memory leak.
 				vector = std::move(other.vector);
 			return *this;
 		}
 		[[nodiscard]] bool isArray() const
 		{
 			// If the front of the union data is T::null() when cast to array then the data is currently an array.
-			// We can be confident that this is not a vector because a vector is made up of two pointers and T::null() is all 1s and a pointer starting with a 1 would be pointing to an address above the 140th terrabyte.
+			// We can be confident that this is not a vector because a vector is made up of three pointers and T::null() is all 1s and a pointer starting with a 1 would be pointing to an address above the 140th terrabyte.
 			// This is dependent on null being a large value, which is provied by StrongInteger.
-			// TODO: we only really need to read / write the first bit.
+			// TODO: This is technically undefined behaviour, as we ought not make assumpitions about the internal structure of std::vector, or the ammount of RAM the system has avaliable.
 			return array.front() == Contained::null();
 		}
 		Data() { array.fill(Contained::null()); }
@@ -85,7 +93,7 @@ public:
 	void maybeInsert(const Contained& value)
 	{
 		if(!contains(value))
-			insert(value);
+			insertNonunique(value);
 	}
 	void insertNonunique(const Contained& value)
 	{
@@ -95,10 +103,12 @@ public:
 			// Cannot fit another value in the array, convert to vector.
 			if(iter == data.array.end())
 			{
+				auto copy = data.array;
+				// Use placement new to prevent any junk data from when then union was storing an array from being interpreted as vector stack component data.
 				// Skip index 0 because it is a flag.
-				std::vector<Contained> vector(data.array.begin() + 1, data.array.end());
-				data.vector.swap(vector);
+				new(&data.vector) std::vector<Contained>(copy.begin() + 1, copy.end());
 				assert(!isArray());
+				data.vector.push_back(value);
 			}
 			else
 				(*iter) = value;

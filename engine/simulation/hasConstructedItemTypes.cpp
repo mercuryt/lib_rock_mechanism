@@ -1,32 +1,39 @@
 #include "hasConstructedItemTypes.h"
 #include "../items/constructed.h"
+#include "../items/items.h"
 #include "../moveType.h"
 #include "../area/area.h"
+void SimulationHasConstructedItemTypes::load()
+{
+	for(const auto& [itemTypeId, itemTypeParamaters] : m_data)
+		ItemType::create(itemTypeId, itemTypeParamaters);
+}
 ItemIndex SimulationHasConstructedItemTypes::createShip(Area& area, const BlockIndex& block, const Facing4& facing, const std::string& name, const FactionId& faction)
 {
 	static const MoveTypeId moveTypeNone = MoveType::byName("none");
-	ConstructedShape constructedShape = ConstructedShape::makeForKeelBlock(area, block, facing);
+	auto [constructedShape, location] = ConstructedShape::makeForKeelBlock(area, block, facing);
 	ItemTypeParamaters itemTypeParams{
 		.name="ship" + std::to_string(++m_nextNameNumber),
-		.shape=constructedShape.getOccupiedShape(),
+		.shape=constructedShape.getShape(),
 		.moveType=moveTypeNone,
 		.motiveForce=constructedShape.getMotiveForce(),
 		.volume=constructedShape.getFullDisplacement(),
 		// TODO: create block feature type 'cargo hold'.
 		.internalVolume=FullDisplacement::create(0),
 		.value=constructedShape.getValue(),
+		.decks=constructedShape.getDecks(),
 		.installable=false,
 		.generic=false,
 		.canHoldFluids=false,
 	};
-	itemTypeParams.constructedShape = std::move(constructedShape);
+	itemTypeParams.constructedShape = std::make_unique<ConstructedShape>(std::move(constructedShape));
 	ItemTypeId itemType = ItemType::create(itemTypeParams);
 	m_data.insert(itemType, itemTypeParams);
 	ItemParamaters itemParams{
 		.itemType=itemType,
 		.materialType=MaterialTypeId::null(),
 		.faction=faction,
-		.location=constructedShape.getLocation(),
+		.location=location,
 		.percentWear=Percent::create(0),
 		.facing=facing,
 		.name=name

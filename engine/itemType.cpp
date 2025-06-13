@@ -1,5 +1,6 @@
 #include "itemType.h"
 #include "area/area.h"
+#include "blocks/blocks.h"
 #include "attackType.h"
 #include "craft.h"
 #include "deserializationMemo.h"
@@ -40,9 +41,52 @@ const ItemTypeId ItemType::byName(std::string name)
 	assert(found != itemTypeData.m_name.end());
 	return ItemTypeId::create(found - itemTypeData.m_name.begin());
 }
-ItemTypeId ItemType::create(ItemTypeParamaters& p)
+const std::unique_ptr<ConstructedShape>& ItemType::getConstructedShape(const ItemTypeId& id) { return itemTypeData.m_constructedShape[id]; }
+void ItemType::create(const ItemTypeId& id, const ItemTypeParamaters& p)
 {
-	itemTypeData.m_constructedShape.add(p.constructedShape);
+	if(id >= itemTypeData.size())
+	{
+		auto action = [&](auto& vector){ vector.resize(id); };
+		itemTypeData.forEachVector(action);
+	}
+	if(p.constructedShape != nullptr)
+		itemTypeData.m_constructedShape[id] = std::make_unique<ConstructedShape>(*p.constructedShape);
+	itemTypeData.m_materialTypeCategories[id] = p.materialTypeCategories;
+	itemTypeData.m_name[id] = p.name;
+	itemTypeData.m_craftLocationOffset[id] = p.craftLocationOffset;
+	itemTypeData.m_shape[id] = p.shape;
+	itemTypeData.m_moveType[id] = p.moveType;
+	itemTypeData.m_edibleForDrinkersOf[id] = p.edibleForDrinkersOf;
+	itemTypeData.m_craftLocationStepTypeCategory[id] = p.craftLocationStepTypeCategory;
+	itemTypeData.m_fullDisplacement[id] = p.volume;
+	itemTypeData.m_internalVolume[id] = p.internalVolume;
+	itemTypeData.m_value[id] = p.value;
+	itemTypeData.m_installable.set(id, p.installable);
+	itemTypeData.m_generic.set(id, p.generic);
+	itemTypeData.m_canHoldFluids.set(id, p.canHoldFluids);
+	itemTypeData.m_attackTypes[id] = p.attackTypes;
+	itemTypeData.m_combatSkill[id] = p.combatSkill;
+	itemTypeData.m_attackCoolDownBase[id] = p.attackCoolDownBase;
+	itemTypeData.m_wearable_defenseScore[id] = p.wearable_defenseScore;
+	itemTypeData.m_wearable_layer[id] = p.wearable_layer;
+	itemTypeData.m_wearable_bodyTypeScale[id] = p.wearable_bodyTypeScale;
+	itemTypeData.m_wearable_forceAbsorbedUnpiercedModifier[id] = p.wearable_forceAbsorbedUnpiercedModifier;
+	itemTypeData.m_wearable_forceAbsorbedPiercedModifier[id] = p.wearable_forceAbsorbedPiercedModifier;
+	itemTypeData.m_wearable_percentCoverage[id] = p.wearable_percentCoverage;
+	itemTypeData.m_wearable_rigid.set(id, p.wearable_rigid);
+	itemTypeData.m_wearable_bodyPartsCovered[id] = p.wearable_bodyPartsCovered;
+	itemTypeData.m_decks[id] = p.decks;
+	itemTypeData.m_motiveForce[id] = p.motiveForce;
+	for(const Offset3D& offset : p.decks)
+		assert(offset != Offset3D::create(0,0,0));
+}
+ItemTypeId ItemType::create(const ItemTypeParamaters& p)
+{
+	const ConstructedShape* constructedShape = p.constructedShape.get();
+	if(constructedShape == nullptr)
+		itemTypeData.m_constructedShape.resize(itemTypeData.m_name.size() + 1);
+	else
+		itemTypeData.m_constructedShape.add(std::make_unique<ConstructedShape>(*constructedShape));
 	itemTypeData.m_materialTypeCategories.add(p.materialTypeCategories);
 	itemTypeData.m_name.add(p.name);
 	itemTypeData.m_craftLocationOffset.add(p.craftLocationOffset);
@@ -73,7 +117,6 @@ ItemTypeId ItemType::create(ItemTypeParamaters& p)
 		assert(offset != Offset3D::create(0,0,0));
 	return ItemTypeId::create(itemTypeData.m_materialTypeCategories.size() - 1);
 }
-const ConstructedShape& ItemType::getConstructedShape(const ItemTypeId& id) { return itemTypeData.m_constructedShape[id]; }
 std::vector<MaterialCategoryTypeId>& ItemType::getMaterialTypeCategories(const ItemTypeId& id) { return itemTypeData.m_materialTypeCategories[id]; }
 std::string& ItemType::getName(const ItemTypeId& id) { return itemTypeData.m_name[id]; }
 std::array<int32_t, 3>& ItemType::getCraftLocationOffset(const ItemTypeId& id) { return itemTypeData.m_craftLocationOffset[id]; }

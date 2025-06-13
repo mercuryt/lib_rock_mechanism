@@ -2,8 +2,14 @@
 #include "blocks.h"
 #include "../materialType.h"
 #include "../fire.h"
+#include "../area/area.h"
 #include "types.h"
 #include <algorithm>
+void Blocks::fire_maybeIgnite(const BlockIndex& index, const MaterialTypeId& materialType)
+{
+	if(!fire_existsForMaterialType(index, materialType))
+		m_area.m_fires.ignite(index, materialType);
+}
 void Blocks::fire_setPointer(const BlockIndex& index, SmallMapStable<MaterialTypeId, Fire>* pointer)
 {
 	assert(!m_fires[index]);
@@ -17,6 +23,10 @@ void Blocks::fire_clearPointer(const BlockIndex& index)
 bool Blocks::fire_exists(const BlockIndex& index) const
 {
 	return m_fires[index];
+}
+bool Blocks::fire_existsForMaterialType(const BlockIndex& index, const MaterialTypeId& materialType) const
+{
+	return m_fires[index]->contains(materialType);
 }
 FireStage Blocks::fire_getStage(const BlockIndex& index) const
 {

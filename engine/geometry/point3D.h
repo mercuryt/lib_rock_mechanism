@@ -30,6 +30,7 @@ struct Point3D
 	void setX(const DistanceInBlocks& x) { data[0] = x.get(); }
 	void setY(const DistanceInBlocks& y) { data[1] = y.get(); }
 	void setZ(const DistanceInBlocks& z) { data[2] = z.get(); }
+	void swap(Point3D& other) { std::swap(data, other.data); }
 	Point3D& operator+=(const Offset3D& other);
 	Point3D& operator-=(const Offset3D& other);
 	Point3D& operator=(const Point3D& other) { data = other.data; return *this; }
@@ -90,7 +91,7 @@ using Offsets = Eigen::Array<OffsetWidth, 3, 1>;
 struct Offset3D
 {
 	Offsets data;
-	Offset3D() = default;
+	Offset3D() : data(Offset::null().get()) { }
 	Offset3D(const Offset& x, const Offset& y, const Offset& z) : data(x.get(), y.get(), z.get()) { }
 	Offset3D(const int& x, const int& y, const int& z) : data(x, y, z) { }
 	Offset3D(const Offsets& offsets) : data(offsets) { }
@@ -108,6 +109,7 @@ struct Offset3D
 	void operator-=(const Offset other) { data -= other.get(); }
 	void operator-=(const DistanceInBlocks& distance) { data -= distance.get(); }
 	void rotate2D(const Facing4& facing);
+	void rotate2D(const Facing4& oldFacing, const Facing4& newFacing);
 	void rotate2DInvert(const Facing4& facing);
 	void clampHigh(const Offset3D& other);
 	void clampLow(const Offset3D& other);
@@ -128,6 +130,7 @@ struct Offset3D
 	[[nodiscard]] int& x() { return data[0]; }
 	[[nodiscard]] int& y() { return data[1]; }
 	[[nodiscard]] int& z() { return data[2]; }
+	[[nodiscard]] bool empty() { return data[0] == Offset::null().get(); }
 	[[nodiscard]] std::string toString() const;
 	static Offset3D create(const OffsetWidth& x, const OffsetWidth& y, const OffsetWidth& z) { return {Offset::create(x), Offset::create(y), Offset::create(z)}; }
 };

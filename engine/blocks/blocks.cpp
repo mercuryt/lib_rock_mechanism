@@ -54,6 +54,7 @@ void Blocks::resize(const BlockIndex& count)
 	m_isEdge.resize(count);
 	m_visible.resize(count);
 	m_constructed.resize(count);
+	m_dynamic.resize(count);
 }
 // Create from scratch, not load from json.
 void Blocks::initalize(const BlockIndex& index)
@@ -71,7 +72,7 @@ void Blocks::load(const Json& data, DeserializationMemo& deserializationMemo)
 	for(auto& [key, value] : data["solid"].items())
 		m_materialType[BlockIndex::create(std::stoi(key))] = value.get<MaterialTypeId>();
 	for(auto& [key, value] : data["features"].items())
-		m_features[BlockIndex::create(std::stoi(key))] = value.get<std::vector<BlockFeature>>();
+		m_features[BlockIndex::create(std::stoi(key))] = value.get<BlockFeatureSet>();
 	for(auto& [key, value] : data["fluid"].items())
 		for(const Json& fluidData : value)
 			fluid_add(BlockIndex::create(std::stoi(key)), fluidData["volume"].get<CollisionVolume>(), fluidData["type"].get<FluidTypeId>());
@@ -474,25 +475,25 @@ bool Blocks::canSeeIntoFromAlways(const BlockIndex& to, const BlockIndex& from) 
 {
 	if(solid_is(to) && !MaterialType::getTransparent(m_materialType[to]))
 		return false;
-	if(blockFeature_contains(to, BlockFeatureType::door))
+	if(blockFeature_contains(to, BlockFeatureTypeId::Door))
 		return false;
 	// looking up.
 	if(getZ(to) > getZ(from))
 	{
-		const BlockFeature* floor = blockFeature_atConst(to, BlockFeatureType::floor);
+		const BlockFeature* floor = blockFeature_atConst(to, BlockFeatureTypeId::Floor);
 		if(floor != nullptr && !MaterialType::getTransparent(floor->materialType))
 			return false;
-		const BlockFeature* hatch = blockFeature_atConst(to, BlockFeatureType::hatch);
+		const BlockFeature* hatch = blockFeature_atConst(to, BlockFeatureTypeId::Hatch);
 		if(hatch != nullptr && !MaterialType::getTransparent(hatch->materialType))
 			return false;
 	}
 	// looking down.
 	if(getZ(to) < getZ(from))
 	{
-		const BlockFeature* floor = blockFeature_atConst(from, BlockFeatureType::floor);
+		const BlockFeature* floor = blockFeature_atConst(from, BlockFeatureTypeId::Floor);
 		if(floor != nullptr && !MaterialType::getTransparent(floor->materialType))
 			return false;
-		const BlockFeature* hatch = blockFeature_atConst(from, BlockFeatureType::hatch);
+		const BlockFeature* hatch = blockFeature_atConst(from, BlockFeatureTypeId::Hatch);
 		if(hatch != nullptr && !MaterialType::getTransparent(hatch->materialType))
 			return false;
 	}
@@ -588,17 +589,17 @@ bool Blocks::canSeeThrough(const BlockIndex& index) const
 	const MaterialTypeId& material = solid_get(index);
 	if(material.exists() && !MaterialType::getTransparent(material))
 		return false;
-	const BlockFeature* door = blockFeature_atConst(index, BlockFeatureType::door);
+	const BlockFeature* door = blockFeature_atConst(index, BlockFeatureTypeId::Door);
 	if(door != nullptr && door->closed && !MaterialType::getTransparent(door->materialType) )
 		return false;
 	return true;
 }
 bool Blocks::canSeeThroughFloor(const BlockIndex& index) const
 {
-	const BlockFeature* floor = blockFeature_atConst(index, BlockFeatureType::floor);
+	const BlockFeature* floor = blockFeature_atConst(index, BlockFeatureTypeId::Floor);
 	if(floor != nullptr && !MaterialType::getTransparent(floor->materialType))
 		return false;
-	const BlockFeature* hatch = blockFeature_atConst(index, BlockFeatureType::hatch);
+	const BlockFeature* hatch = blockFeature_atConst(index, BlockFeatureTypeId::Hatch);
 	if(hatch != nullptr && !MaterialType::getTransparent(hatch->materialType) && hatch->closed)
 		return false;
 	return true;

@@ -18,6 +18,7 @@ public:
 	[[nodiscard]] bool canMerge(const OffsetCuboid& other) const;
 	[[nodiscard]] bool isTouching(const OffsetCuboid& other) const;
 	[[nodiscard]] std::pair<Offset3D, Offset3D> toOffsetPair() const { return {m_high, m_low}; }
+	[[nodiscard]] SmallSet<OffsetCuboid> getChildrenWhenSplitByCuboid(const OffsetCuboid& cuboid) const;
 	void extend(const OffsetCuboid& other);
 	class ConstIterator
 	{
@@ -27,13 +28,13 @@ public:
 		ConstIterator() = default;
 		ConstIterator(const OffsetCuboid& cuboid, const Offset3D& current);
 		ConstIterator& operator=(const ConstIterator& other) = default;
-		[[nodiscard]] bool operator==(const ConstIterator& other) const = default;
+		[[nodiscard]] bool operator==(const ConstIterator& other) const;
 		[[nodiscard]] Offset3D operator*() const;
 		ConstIterator operator++();
 		[[nodiscard]] ConstIterator operator++(int);
 	};
 	ConstIterator begin() const { return {*this, m_low}; }
-	ConstIterator end() const { auto current = m_high; ++current.z(); return {*this, current}; }
+	ConstIterator end() const { auto current = m_low; current.z() = m_high.z() + 1; return {*this, current}; }
 	[[nodiscard]] Json toJson() const;
 	void load(const Json& data);
 };

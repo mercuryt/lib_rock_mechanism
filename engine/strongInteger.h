@@ -162,8 +162,11 @@ public:
 		int result = (int)data - (int)other;
 		return Derived::create(result < (int)MIN_VALUE ? MIN_VALUE : result);
 	}
+	// A no inline version of create for use in debug console.
+	[[nodiscard]] static __attribute__((noinline)) Derived dbg(const T& value) { return create(value); }
 	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const This& index) const { return index.get(); } };
 };
+// TODO: Phase out in favor of SmallSet.
 template <class StrongInteger>
 class StrongIntegerSet
 {

@@ -44,6 +44,7 @@ public:
 	void unsetStatic(const Index& index);
 	void maybeUnsetStatic(const Index& index);
 	void setShape(const Index& index, const ShapeId& shape);
+	void setCompoundShape(const Index& index, const ShapeId& shape) { m_compoundShape[index] = shape; }
 	void addShapeToCompoundShape(const Index& index, const ShapeId& id, const BlockIndex& location, const Facing4& facing);
 	void removeShapeFromCompoundShape(const Index& index, const ShapeId& id, const BlockIndex& location, const Facing4& facing);
 	void log(const Index& index) const;
@@ -54,6 +55,7 @@ public:
 	[[nodiscard]] bool hasLocation(const Index& index) const { return getLocation(index).exists(); }
 	[[nodiscard]] Facing4 getFacing(const Index& index) const { return m_facing[index]; }
 	[[nodiscard]] const auto& getBlocks(const Index& index) const { return m_blocks[index]; }
+	[[nodiscard]] auto& getBlocks(const Index& index) { return m_blocks[index]; }
 	[[nodiscard]] const SmallSet<BlockIndex> getBlocksAbove(const Index& index) const;
 	[[nodiscard]] FactionId getFaction(const Index& index) const { return m_faction[index]; }
 	[[nodiscard]] bool hasFaction(const Index& index) const { return m_faction[index].exists(); }

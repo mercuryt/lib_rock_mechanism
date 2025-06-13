@@ -75,8 +75,8 @@ TEST_CASE("json")
 			plants.setMaybeNeedsFluid(sage1);
 			blocks.fluid_add(blocks.getIndex_i(3, 8, 1), CollisionVolume::create(10), water);
 			items.create(ItemParamaters{.itemType = axe, .materialType = bronze, .location = blocks.getIndex_i(1, 2, 1), .quality = Quality::create(10), .percentWear = Percent::create(10)});
-			blocks.blockFeature_construct(blocks.getIndex_i(1, 8, 1), BlockFeatureType::stairs, wood);
-			blocks.blockFeature_construct(blocks.getIndex_i(9, 1, 1), BlockFeatureType::door, wood);
+			blocks.blockFeature_construct(blocks.getIndex_i(1, 8, 1), BlockFeatureTypeId::Stairs, wood);
+			blocks.blockFeature_construct(blocks.getIndex_i(9, 1, 1), BlockFeatureTypeId::Door, wood);
 			area.m_fires.ignite(blocks.getIndex_i(9, 1, 1), wood);
 			ItemIndex pants1 = items.create(ItemParamaters{.itemType = pants, .materialType = cotton, .quality = Quality::create(50), .percentWear = Percent::create(30)});
 			actors.equipment_add(dwarf1, pants1);
@@ -152,9 +152,9 @@ TEST_CASE("json")
 		CHECK(items2.getQuality(axe2) == 10);
 		CHECK(items2.getWear(axe2) == 10);
 		// BlockIndex features.
-		CHECK(blocks2.blockFeature_contains(blocks2.getIndex_i(1,8,1), BlockFeatureType::stairs));
-		CHECK(blocks2.blockFeature_atConst(blocks2.getIndex_i(1,8,1), BlockFeatureType::stairs)->materialType == wood);
-		CHECK(blocks2.blockFeature_contains(blocks2.getIndex_i(9,1,1), BlockFeatureType::door));
+		CHECK(blocks2.blockFeature_contains(blocks2.getIndex_i(1,8,1), BlockFeatureTypeId::Stairs));
+		CHECK(blocks2.blockFeature_atConst(blocks2.getIndex_i(1,8,1), BlockFeatureTypeId::Stairs)->materialType == wood);
+		CHECK(blocks2.blockFeature_contains(blocks2.getIndex_i(9,1,1), BlockFeatureTypeId::Door));
 		// Item cargo.
 		CHECK(!blocks2.item_empty(blocks2.getIndex_i(0,0,1)));
 		CHECK(blocks2.item_getAll(blocks2.getIndex_i(0,0,1)).size() == 1);
@@ -188,7 +188,7 @@ TEST_CASE("json")
 		{
 			BlockIndex holeLocation = blocks.getIndex_i(8, 4, 0);
 			area.m_hasDigDesignations.addFaction(faction);
-			area.m_hasDigDesignations.designate(faction, holeLocation, nullptr);
+			area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
 			items.create({.itemType = pick, .materialType = bronze, .location = blocks.getIndex_i(1, 2, 1), .quality = Quality::create(10), .percentWear = Percent::create(10)});
 			ActorIndex dwarf1 = actors.create({
 				.species = dwarf,
@@ -250,7 +250,7 @@ TEST_CASE("json")
 		{
 			BlockIndex projectLocation = blocks.getIndex_i(8, 4, 1);
 			area.m_hasConstructionDesignations.addFaction(faction);
-			area.m_hasConstructionDesignations.designate(faction, projectLocation, nullptr, wood);
+			area.m_hasConstructionDesignations.designate(faction, projectLocation, BlockFeatureTypeId::Null, wood);
 			areaData = area.toJson();
 			simulationData = simulation.toJson();
 		}

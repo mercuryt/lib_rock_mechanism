@@ -22,7 +22,7 @@ struct FindPathResult;
 
 class ConstructProject final : public Project
 {
-	const BlockFeatureType* m_blockFeatureType;
+	BlockFeatureTypeId m_blockFeatureType;
 	MaterialTypeId m_materialType;
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
@@ -36,7 +36,7 @@ class ConstructProject final : public Project
 	void offDelay();
 public:
 	// BlockFeatureType can be null, meaning the block is to be filled with a constructed wall.
-	ConstructProject(const FactionId& faction, Area& a, const BlockIndex& b, const BlockFeatureType* bft, const MaterialTypeId& mt, std::unique_ptr<DishonorCallback> dishonorCallback) :
+	ConstructProject(const FactionId& faction, Area& a, const BlockIndex& b, const BlockFeatureTypeId bft, const MaterialTypeId& mt, std::unique_ptr<DishonorCallback> dishonorCallback) :
 		Project(faction, a, b, Config::maxNumberOfWorkersForConstructionProject, std::move(dishonorCallback)), m_blockFeatureType(bft), m_materialType(mt) { }
 	ConstructProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	[[nodiscard]] Json toJson() const;

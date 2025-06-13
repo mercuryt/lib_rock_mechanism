@@ -37,7 +37,7 @@ void HasShapes<Derived, Index>::create(const Index& index, const ShapeId& shape,
 	m_faction[index] = faction;
 	assert(m_blocks[index].empty());
 	m_static.set(index, isStatic);
-	m_onSurface.unset(index);
+	m_onSurface.maybeUnset(index);
 }
 template<class Derived, class Index>
 void HasShapes<Derived, Index>::resize(const Index& newSize)

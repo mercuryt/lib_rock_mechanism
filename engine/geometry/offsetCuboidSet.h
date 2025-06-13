@@ -11,7 +11,15 @@ class OffsetCuboidSet
 public:
 	void addOrMerge(const OffsetCuboid& cuboid);
 	void addOrMerge(const Offset3D& offset);
+	void maybeRemove(const Offset3D& offset);
 	[[nodiscard]] bool empty() const { return m_data.empty(); }
+	[[nodiscard]] uint size() const
+	{
+		uint output = 0;
+		for(const OffsetCuboid& cuboid : m_data)
+			output += cuboid.size();
+		return output;
+	}
 	class ConstIterator
 	{
 		OffsetCuboidSet* m_cuboidSet;

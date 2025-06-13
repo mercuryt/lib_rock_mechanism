@@ -161,7 +161,7 @@ TEST_CASE("weather")
 		CHECK(blocks.temperature_get(lastBlockInPortalEffectZone) < blocks.temperature_get(firstBlockAfterEffectZone));
 		CHECK(area.m_exteriorPortals.getDistanceFor(lastBlockInPortalEffectZone).exists());
 		CHECK(area.m_exteriorPortals.getDistanceFor(firstBlockAfterEffectZone).empty());
-		blocks.blockFeature_construct(block1, BlockFeatureType::door, MaterialType::byName("poplar wood"));
+		blocks.blockFeature_construct(block1, BlockFeatureTypeId::Door, MaterialType::byName("poplar wood"));
 		CHECK(!area.m_exteriorPortals.isRecordedAsPortal(block1));
 		CHECK(!area.m_exteriorPortals.isRecordedAsPortal(portal));
 		CHECK(blocks.temperature_get(block2) == blocks.temperature_get(block4));

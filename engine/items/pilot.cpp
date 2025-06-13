@@ -3,6 +3,7 @@
 #include "../shape.h"
 #include "../area/area.h"
 #include "../actors/actors.h"
+#include "../fluidType.h"
 void Items::pilot_set(const ItemIndex& item, const ActorIndex& pilot)
 {
 	assert(m_pilot[item].empty());

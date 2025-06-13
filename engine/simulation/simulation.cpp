@@ -46,6 +46,8 @@ Simulation::Simulation(const Json& data) :
 	//m_world = std::make_unique<World>(data["world"], deserializationMemo);
 	data["uniforms"].get_to(m_hasUniforms);
 	data["factions"].get_to(m_hasFactions);
+	data["constructedItemTypes"].get_to(m_constructedItemTypes);
+	m_constructedItemTypes.load();
 	m_hourlyEvent.schedule(*this, data["hourEventStart"].get<Step>());
 	m_hasAreas = std::make_unique<SimulationHasAreas>(data["hasAreas"], m_deserializationMemo, *this);
 }
@@ -273,5 +275,6 @@ Json Simulation::toJson() const
 	output["drama"] = m_dramaEngine->toJson();
 	output["factions"] = m_hasFactions;
 	output["uniforms"] = m_hasUniforms;
+	output["constructedItemTypes"] = m_constructedItemTypes;
 	return output;
 }

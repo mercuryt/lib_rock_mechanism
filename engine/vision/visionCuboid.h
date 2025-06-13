@@ -40,6 +40,9 @@ public:
 	void destroy(const uint& index) override;
 	// Override for more efficient lookup of cuboids to destroy.
 	void remove(const Cuboid& cuboid) override;
+	// TODO: Upgrade with SIMD.
+	void remove(const SmallSet<BlockIndex>& blocks);
+	void remove(const SmallSet<Point3D>& points);
 	void onKeySetForBlock(const VisionCuboidId& key, const BlockIndex& block);
 	void sliceBelow(const Cuboid& cuboid);
 	void mergeBelow(const Cuboid& cuboid);

@@ -75,7 +75,7 @@ TEST_CASE("construct")
 	SUBCASE("make wall")
 	{
 		BlockIndex wallLocation = blocks.getIndex_i(8, 4, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, wood);
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
 		CHECK(blocks.designation_has(wallLocation, faction, BlockDesignation::Construct));
 		CHECK(area.m_hasConstructionDesignations.contains(faction, wallLocation));
@@ -163,8 +163,8 @@ TEST_CASE("construct")
 	{
 		BlockIndex wallLocation1 = blocks.getIndex_i(8, 4, 2);
 		BlockIndex wallLocation2 = blocks.getIndex_i(8, 5, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation1, nullptr, wood);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation2, nullptr, wood);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation1, BlockFeatureTypeId::Null, wood);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation2, BlockFeatureTypeId::Null, wood);
 		CHECK(constructObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		CHECK(actors.objective_getCurrentName(dwarf1) == "construct");
@@ -189,7 +189,7 @@ TEST_CASE("construct")
 			.faction=faction
 		});
 		BlockIndex wallLocation = blocks.getIndex_i(8, 4, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, wood);
 		CHECK(constructObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		actors.objective_setPriority(dwarf2, constructObjectiveType.getId(), Priority::create(100));;
@@ -211,8 +211,8 @@ TEST_CASE("construct")
 		ActorReference dwarf2Ref = actors.m_referenceData.getReference(dwarf2);
 		BlockIndex wallLocation1 = blocks.getIndex_i(2, 4, 2);
 		BlockIndex wallLocation2 = blocks.getIndex_i(3, 8, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation1, nullptr, wood);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation2, nullptr, wood);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation1, BlockFeatureTypeId::Null, wood);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation2, BlockFeatureTypeId::Null, wood);
 		CHECK(constructObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		actors.objective_setPriority(dwarf2, constructObjectiveType.getId(), Priority::create(100));;
@@ -284,7 +284,7 @@ TEST_CASE("construct")
 	SUBCASE("make stairs")
 	{
 		BlockIndex stairsLocation = blocks.getIndex_i(8, 4, 2);
-		area.m_hasConstructionDesignations.designate(faction, stairsLocation, &BlockFeatureType::stairs, wood);
+		area.m_hasConstructionDesignations.designate(faction, stairsLocation, BlockFeatureTypeId::Stairs, wood);
 		CHECK(blocks.designation_has(stairsLocation, faction, BlockDesignation::Construct));
 		CHECK(area.m_hasConstructionDesignations.contains(faction, stairsLocation));
 		CHECK(constructObjectiveType.canBeAssigned(area, dwarf1));
@@ -299,16 +299,16 @@ TEST_CASE("construct")
 		// Find a path.
 		simulation.doStep();
 		CHECK(actors.move_getDestination(dwarf1) .exists());
-		std::function<bool()> predicate = [&]() { return blocks.blockFeature_contains(stairsLocation, BlockFeatureType::stairs); };
+		std::function<bool()> predicate = [&]() { return blocks.blockFeature_contains(stairsLocation, BlockFeatureTypeId::Stairs); };
 		simulation.fastForwardUntillPredicate(predicate, 180);
-		CHECK(blocks.blockFeature_contains(stairsLocation, BlockFeatureType::stairs));
+		CHECK(blocks.blockFeature_contains(stairsLocation, BlockFeatureTypeId::Stairs));
 	}
 	SUBCASE("cannot path to spot")
 	{
 		areaBuilderUtil::setSolidWall(area, blocks.getIndex_i(0, 3, 2), blocks.getIndex_i(8, 3, 2), wood);
 		BlockIndex gateway = blocks.getIndex_i(9, 3, 2);
 		BlockIndex wallLocation = blocks.getIndex_i(8, 4, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, wood);
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation, activate the project, and reserve the pick.
@@ -328,7 +328,7 @@ TEST_CASE("construct")
 	SUBCASE("spot has become solid")
 	{
 		BlockIndex wallLocation = blocks.getIndex_i(8, 8, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, wood);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation, activate the project and reserve the pick.
 		simulation.doStep();
@@ -345,7 +345,7 @@ TEST_CASE("construct")
 	SUBCASE("saw destroyed")
 	{
 		BlockIndex wallLocation = blocks.getIndex_i(8, 4, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, wood);
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation, activate the project and reserve the pick.
@@ -363,7 +363,7 @@ TEST_CASE("construct")
 	SUBCASE("player cancels")
 	{
 		BlockIndex wallLocation = blocks.getIndex_i(8, 8, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, wood);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation, activate the project and reserve the pick.
 		simulation.doStep();
@@ -380,7 +380,7 @@ TEST_CASE("construct")
 	SUBCASE("player interrupts")
 	{
 		BlockIndex wallLocation = blocks.getIndex_i(8, 8, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, wood);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, wood);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation, activate the project and reserve the tools and materials.
 		simulation.doStep();
@@ -389,7 +389,7 @@ TEST_CASE("construct")
 		// Another step to path to the pick.
 		simulation.doStep();
 		// Setting wallLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
-		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(blocks.getIndex_i(0, 8, 3));
+		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(blocks.getIndex_i(0, 8, 2));
 		actors.objective_addTaskToStart(dwarf1, std::move(objective));
 		CHECK(actors.objective_getCurrentName(dwarf1) != "construct");
 		CHECK(!actors.project_exists(dwarf1));
@@ -424,7 +424,7 @@ TEST_CASE("constructDirtWall")
 	{
 		ItemIndex dirtPile = items.create({.itemType=pile, .materialType=dirt, .location=blocks.getIndex_i(9, 9, 2), .quantity=Quantity::create(150u)});
 		BlockIndex wallLocation = blocks.getIndex_i(3, 3, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, dirt);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, dirt);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		Quantity dirtPerLoad = actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(dirtPile), Config::minimumHaulSpeedInital);
 		// One step to find the designation, activate the project and reserve the pile.
@@ -476,7 +476,7 @@ TEST_CASE("constructDirtWall")
 		ItemIndex dirtPile2 = items.create({.itemType=pile, .materialType=dirt, .location=pileLocation2, .quantity=Quantity::create(50u)});
 		ItemIndex dirtPile3 = items.create({.itemType=pile, .materialType=dirt, .location=pileLocation3, .quantity=Quantity::create(50u)});
 		BlockIndex wallLocation = blocks.getIndex_i(9, 0, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, dirt);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, dirt);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation,activate the project and reserve the pile.
 		simulation.doStep();
@@ -523,7 +523,7 @@ TEST_CASE("constructDirtWall")
 		MaterialTypeId dirt = MaterialType::byName("dirt");
 		ItemIndex dirtPile = items.create({.itemType=pile, .materialType=dirt, .location=blocks.getIndex_i(9, 9, 2), .quantity=Quantity::create(140u)});
 		BlockIndex wallLocation = blocks.getIndex_i(3, 3, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, dirt);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, dirt);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
 		// One step to find the designation but fail to activate
@@ -549,7 +549,7 @@ TEST_CASE("constructDirtWall")
 		Cuboid pileLocation(blocks, blocks.getIndex_i(9, 9, 2), blocks.getIndex_i(0, 9, 2));
 		for(const BlockIndex& block : pileLocation.getView(blocks))
 			items.create({.itemType=pile, .materialType=dirt, .location=block, .quantity=Quantity::create(15)});
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, nullptr, dirt);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, dirt);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation, activate the project and reserve the piles.
 		simulation.doStep();

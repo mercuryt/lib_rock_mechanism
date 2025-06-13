@@ -1,4 +1,5 @@
 #include "constructed.h"
+#include "items.h"
 #include "../area/area.h"
 #include "../blocks/blocks.h"
 #include "../blockFeature.h"
@@ -11,211 +12,204 @@ void ConstructedShape::addBlock(Area& area, const BlockIndex& origin, const Faci
 	const BlockIndex& rotatedBlock = blocks.offsetRotated(origin, offset, facing, Facing4::North);
 	Offset3D rotatedOffset = blocks.relativeOffsetTo(origin, rotatedBlock);
 	MaterialTypeId solid = blocks.solid_get(newBlock);
+	bool canEnter = true;
 	if(solid.exists())
 	{
 		m_solidBlocks.insert(rotatedOffset, solid);
-		m_fullDisplacement += FullDisplacement::createFromCollisionVolume(Config::maxBlockVolume);
 		m_value += MaterialType::getValuePerUnitFullDisplacement(solid);
+		m_mass += blocks.solid_getMass(newBlock);
+		canEnter = false;
+		blocks.solid_setNot(newBlock);
 	}
 	else
 	{
-		std::vector<BlockFeature> copy = blocks.blockFeature_getAll(newBlock);
-		bool canEnter = true;
-		for(const BlockFeature& blockFeature : copy)
+		m_features.insert(rotatedOffset, blocks.blockFeature_getAllMove(newBlock));
+		blocks.blockFeature_removeAll(newBlock);
+		const auto& features = m_features.back().second;
+		// If the block is not solid then it must contain at least one feature.
+		assert(!features.empty());
+		for(const BlockFeature& blockFeature : features)
 		{
-			if(blockFeature.blockFeatureType->blocksEntrance)
+			const auto& featureType = BlockFeatureType::byId(blockFeature.blockFeatureTypeId);
+			if(featureType.blocksEntrance)
 				canEnter = false;
-			m_value += blockFeature.blockFeatureType->value * MaterialType::getValuePerUnitFullDisplacement(blockFeature.materialType);
-			m_motiveForce += blockFeature.blockFeatureType->motiveForce;
+			m_value += featureType.value * MaterialType::getValuePerUnitFullDisplacement(blockFeature.materialType);
+			m_motiveForce += featureType.motiveForce;
+			// TODO: add mass for block features.
 		}
-		if(!canEnter)
-			m_fullDisplacement += FullDisplacement::createFromCollisionVolume(Config::maxBlockVolume);
-		m_features.insert(rotatedOffset, std::move(copy));
+	}
+	if(!canEnter)
+		m_fullDisplacement += FullDisplacement::createFromCollisionVolume(Config::maxBlockVolume);
+}
+void ConstructedShape::constructShape()
+{
+	// Collect all blocks making up the shape, including enterable features.
+	SmallSet<OffsetAndVolume> blocks;
+	for(const auto& pair : m_solidBlocks)
+		blocks.maybeInsert({pair.first, Config::maxBlockVolume});
+	for(const auto& pair : m_features)
+		blocks.maybeInsert({pair.first, Config::maxBlockVolume});
+	m_shape = Shape::createCustom(blocks);
+	for(const Offset3D& offset : m_decks)
+		blocks.maybeEmplace(offset, Config::maxBlockVolume);
+	m_shapeIncludingDecks = Shape::createCustom(blocks);
+}
+void ConstructedShape::constructDecks()
+{
+	for(const auto& pair : m_solidBlocks)
+	{
+		Offset3D above = pair.first;
+		++above.z();
+		m_decks.addOrMerge(above);
+		m_decks.maybeRemove(pair.first);
+	}
+	for(const auto& pair : m_features)
+	{
+		if(pair.second.blocksEntrance())
+			m_decks.maybeRemove(pair.first);
+		if(pair.second.canStandAbove())
+		{
+			Offset3D above = pair.first;
+			++above.z();
+			m_decks.addOrMerge(above);
+		}
 	}
 }
-void ConstructedShape::removeBlock(Area& area, const BlockIndex& origin, const Facing4& facing, const BlockIndex& block)
-{
-	Blocks& blocks = area.getBlocks();
-	const Offset3D offset = blocks.relativeOffsetTo(origin, block);
-	const BlockIndex& rotatedBlock = blocks.offsetRotated(origin, offset, facing, Facing4::North);
-	Offset3D rotatedOffset = blocks.relativeOffsetTo(origin, rotatedBlock);
-	if(!m_features.maybeEraseNotify(rotatedOffset))
-		m_solidBlocks.maybeErase(rotatedOffset);
-}
-void ConstructedShape::recordAndErase(Area& area, const BlockIndex& origin, const Facing4& facing)
+void ConstructedShape::recordAndClear(Area& area, const BlockIndex& origin)
 {
 	Blocks& blocks = area.getBlocks();
 	for(const auto& [offset, materialType] : m_solidBlocks)
 	{
-		Offset3D rotatedOffset = offset;
-		rotatedOffset.rotate2D(facing);
-		const BlockIndex& block = blocks.offset(origin, rotatedOffset);
+		const BlockIndex& block = blocks.offset(origin, offset);
 		assert(blocks.solid_get(block) == materialType);
-		blocks.solid_setNot(block);
+		blocks.solid_setNotDynamic(block);
 	}
-	for(auto& pair : m_features)
+	for(auto& [offset, features] : m_features)
 	{
-		Offset3D rotatedOffset = pair.first;
-		rotatedOffset.rotate2D(facing);
-		const BlockIndex& block = blocks.offset(origin, rotatedOffset);
-		for(const BlockFeature& feature : pair.second)
-			assert(blocks.blockFeature_contains(block, *feature.blockFeatureType));
-		pair.second = blocks.blockFeature_getAll(block);
+		const BlockIndex& block = blocks.offset(origin, offset);
+		// Update the stored feature data with moved feature data from block.
+		features = blocks.blockFeature_getAllMove(block);
 		blocks.blockFeature_removeAll(block);
 	}
 }
-SetLocationAndFacingResult ConstructedShape::tryToSetLocationAndFacing(Area& area, const BlockIndex& previousLocation, const Facing4& previousFacing, const BlockIndex& location, const Facing4& facing)
+SetLocationAndFacingResult ConstructedShape::tryToSetLocationAndFacing(Area& area, const Facing4& currentFacing, const BlockIndex& newLocation, const Facing4& newFacing, OccupiedBlocksForHasShape& occupied)
 {
 	Blocks& blocks = area.getBlocks();
-	if(previousLocation.exists())
-		recordAndErase(area, previousLocation, previousFacing);
-	Offset3D rollBackFrom;
 	SetLocationAndFacingResult output = SetLocationAndFacingResult::Success;
+	if(newFacing != currentFacing)
+	{
+		for(auto& [offset, materialType] : m_solidBlocks)
+			offset.rotate2D(currentFacing, newFacing);
+		for(auto& [offset, features] : m_features)
+			offset.rotate2D(currentFacing, newFacing);
+	}
+	Offset3D rollback;
 	for(const auto& [offset, materialType] : m_solidBlocks)
 	{
-		Offset3D rotatedOffset = offset;
-		rotatedOffset.rotate2D(facing);
-		const BlockIndex& block = blocks.offset(location, rotatedOffset);
-		if(blocks.solid_is(block) || !blocks.blockFeature_empty(block))
+		const BlockIndex block = blocks.offset(newLocation, offset);
+		if(!blocks.shape_anythingCanEnterEver(block))
 		{
-			rollBackFrom = offset;
-			output =  SetLocationAndFacingResult::PermanantlyBlocked;
+			rollback = offset;
+			output = SetLocationAndFacingResult::PermanantlyBlocked;
 			break;
 		}
-		if(output != SetLocationAndFacingResult::Success)
-			continue;
-		if(blocks.shape_getDynamicVolume(block) != 0)
+		if(!blocks.item_empty(block) || !blocks.actor_empty(block))
 		{
+			rollback = offset;
 			output = SetLocationAndFacingResult::TemporarilyBlocked;
-			rollBackFrom = offset;
+			break;
 		}
-		else
-			blocks.solid_set(block, materialType, true);
+		blocks.solid_setDynamic(block, materialType, true);
+		occupied.insert(block);
 	}
-	if(output != SetLocationAndFacingResult::Success)
+	if(!rollback.empty())
 	{
 		for(const auto& [offset, materialType] : m_solidBlocks)
 		{
-			if(offset == rollBackFrom)
+			if(offset == rollback)
 				break;
-			Offset3D rotatedOffset = offset;
-			rotatedOffset.rotate2D(facing);
-			const BlockIndex& block = blocks.offset(location, rotatedOffset);
-			blocks.solid_setNot(block);
+			const BlockIndex block = blocks.offset(newLocation, offset);
+			blocks.solid_setNotDynamic(block);
 		}
-		SetLocationAndFacingResult result = tryToSetLocationAndFacing(area, BlockIndex::null(), Facing4::Null, previousLocation, previousFacing);
-		assert(result == SetLocationAndFacingResult::Success);
+		assert(output != SetLocationAndFacingResult::Success);
+		occupied.clear();
 		return output;
 	}
 	for(auto& [offset, features] : m_features)
 	{
-		Offset3D rotatedOffset = offset;
-		rotatedOffset.rotate2D(facing);
-		const BlockIndex& block = blocks.offset(location, rotatedOffset);
-		if(blocks.solid_is(block) || !blocks.blockFeature_empty(block))
-		{
-			rollBackFrom = offset;
-			output =  SetLocationAndFacingResult::PermanantlyBlocked;
+		if(offset == rollback)
 			break;
-		}
-		if(blocks.shape_getDynamicVolume(block) != 0)
-		{
-			output = SetLocationAndFacingResult::TemporarilyBlocked;
-			rollBackFrom = offset;
-		}
-		else
-			blocks.blockFeature_setAll(block, features);
+		const BlockIndex block = blocks.offset(newLocation, offset);
+		blocks.blockFeature_setAllMoveDynamic(block, std::move(features));
+		occupied.insert(block);
 	}
-	if(output != SetLocationAndFacingResult::Success)
+	if(!rollback.empty())
 	{
-		for(const auto& [offset, materialType] : m_solidBlocks)
+		for(auto& [offset, features] : m_features)
 		{
-			Offset3D rotatedOffset = offset;
-			rotatedOffset.rotate2D(facing);
-			const BlockIndex& block = blocks.offset(location, rotatedOffset);
-			blocks.solid_setNot(block);
-		}
-		for(const auto& [offset, materialType] : m_features)
-		{
-			if(offset == rollBackFrom)
+			if(offset == rollback)
 				break;
-			Offset3D rotatedOffset = offset;
-			rotatedOffset.rotate2D(facing);
-			const BlockIndex& block = blocks.offset(location, rotatedOffset);
+			const BlockIndex block = blocks.offset(newLocation, offset);
+			// Update stored block features with data moved from blocks.
+			features = blocks.blockFeature_getAllMove(block);
 			blocks.blockFeature_removeAll(block);
 		}
-		SetLocationAndFacingResult result = tryToSetLocationAndFacing(area, BlockIndex::null(), Facing4::Null, previousLocation, previousFacing);
-		assert(result == SetLocationAndFacingResult::Success);
+		assert(output != SetLocationAndFacingResult::Success);
+		occupied.clear();
+		return output;
+	}
+	assert(output == SetLocationAndFacingResult::Success);
+	return output;
+}
+void ConstructedShape::setLocationAndFacing(Area& area, const Facing4& currentFacing, const BlockIndex& newLocation, const Facing4& newFacing, OccupiedBlocksForHasShape& occupied)
+{
+	Blocks& blocks = area.getBlocks();
+	if(newFacing != currentFacing)
+	{
+		for(auto& [offset, materialType] : m_solidBlocks)
+			offset.rotate2D(currentFacing, newFacing);
+		for(auto& [offset, features] : m_features)
+			offset.rotate2D(currentFacing, newFacing);
+	}
+	for(const auto& [offset, materialType] : m_solidBlocks)
+	{
+		const BlockIndex block = blocks.offset(newLocation, offset);
+		assert(blocks.shape_anythingCanEnterEver(block));
+		assert(blocks.item_empty(block) && blocks.actor_empty(block));
+		blocks.solid_setDynamic(block, materialType, true);
+		occupied.insert(block);
+	}
+	for(auto& [offset, features] : m_features)
+	{
+		const BlockIndex block = blocks.offset(newLocation, offset);
+		blocks.blockFeature_setAllMoveDynamic(block, std::move(features));
+		occupied.insert(block);
+	}
+}
+SmallSet<MaterialTypeId> ConstructedShape::getMaterialTypesAt(const Area& area, const BlockIndex& location, const Facing4& facing, const BlockIndex& block) const
+{
+	const Blocks& blocks = area.getBlocks();
+	SmallSet<MaterialTypeId> output;
+	Offset3D offset = blocks.relativeOffsetTo(location, block);
+	// All m_solid and m_features are both stored with north facing, subtract the current facing from it's self to convert the offset to north.
+	offset.rotate2DInvert(facing);
+	auto found = m_solidBlocks.find(offset);
+	if(found != m_solidBlocks.end())
+		output.insert(found->second);
+	else
+	{
+		auto found2 = m_features.find(offset);
+		assert(found2 != m_features.end());
+		for(const BlockFeature& feature : found2->second)
+			output.insert(feature.materialType);
 	}
 	return output;
 }
-std::tuple<ShapeId, ShapeId, OffsetCuboidSet> ConstructedShape::getShapeAndPathingShapeAndDecks() const
-{
-	SmallSet<OffsetAndVolume> shapeData;
-	SmallSet<OffsetAndVolume> pathingShapeData;
-	SmallSet<Offset3D> deckCandidates;
-	OffsetCuboidSet decks;
-	for(const auto& pair : m_solidBlocks)
-	{
-		shapeData.emplace(pair.first, Config::maxBlockVolume);
-		pathingShapeData.emplace(pair.first, Config::maxBlockVolume);
-		Offset3D above = pair.first;
-		++above.z();
-		deckCandidates.maybeInsert(above);
-	}
-	for(const auto& pair : m_features)
-	{
-		for(const BlockFeature& feature : pair.second)
-		{
-			if(feature.blockFeatureType->blocksEntrance)
-			{
-				shapeData.emplace(pair.first, Config::maxBlockVolume);
-				break;
-			}
-			if(feature.blockFeatureType->canStandIn)
-				deckCandidates.maybeInsert(pair.first);
-			if(feature.blockFeatureType->canStandAbove)
-			{
-				Offset3D above = pair.first;
-				++above.z();
-				deckCandidates.maybeInsert(above);
-			}
-		}
-		pathingShapeData.emplace(pair.first, Config::maxBlockVolume);
-	}
-	for(const Offset3D& offset : deckCandidates)
-	{
-		if(m_solidBlocks.contains(offset))
-			continue;
-		auto found = m_features.find(offset);
-		if(found != m_features.end())
-			for(const BlockFeature& feature : found->second)
-				if(feature.blockFeatureType->blocksEntrance)
-					continue;
-		decks.addOrMerge(offset);
-	}
-	return {Shape::createCustom(shapeData), Shape::createCustom(pathingShapeData), decks};
-}
-ShapeId ConstructedShape::extendPathingShapeWithDecks(const DistanceInBlocks& height)
-{
-	SmallSet<OffsetAndVolume> onDeck;
-	// Copy not reference.
-	for(Offset3D offset : m_decks)
-	{
-		for(auto z = DistanceInBlocks::create(0); z < height; ++z)
-		{
-			onDeck.emplace(offset, Config::maxBlockVolume);
-			++offset.z();
-		}
-	}
-	return Shape::mutateAddMultiple(m_pathShape, onDeck);
-}
-ConstructedShape ConstructedShape::makeForKeelBlock(Area& area, const BlockIndex& block, const Facing4& facing)
+std::pair<ConstructedShape, BlockIndex> ConstructedShape::makeForKeelBlock(Area& area, const BlockIndex& block, const Facing4& facing)
 {
 	ConstructedShape output;
 	Blocks& blocks = area.getBlocks();
-	static const BlockFeatureType& keel = BlockFeatureType::byName("keel");
-	auto keelCondition = [&](const BlockIndex& block) { return blocks.blockFeature_contains(block, keel); };
+	auto keelCondition = [&](const BlockIndex& block) { return blocks.blockFeature_contains(block, BlockFeatureTypeId::Keel); };
 	auto keelBlocks = blocks.collectAdjacentsWithCondition(block, keelCondition);
 	Offset3D sum = Offset3D::create(0,0,0);
 	for(const BlockIndex& block : keelBlocks)
@@ -231,19 +225,16 @@ ConstructedShape ConstructedShape::makeForKeelBlock(Area& area, const BlockIndex
 	auto occupiedCondition = [&](const BlockIndex& block) {
 		return ( blocks.solid_is(block) || !blocks.blockFeature_empty(block)) && blocks.getZ(block) > lowestZ;
 	};
-	auto connectedBlocks = blocks.collectAdjacentsWithCondition(block, occupiedCondition);
+	auto connectedBlocks = blocks.collectAdjacentsWithCondition(center, occupiedCondition);
 	for(const BlockIndex& block : connectedBlocks)
 		if(block != center)
 			output.addBlock(area, center, facing, block);
 	for(const BlockIndex& block : keelBlocks)
 		if(block != center)
 			output.addBlock(area, center, facing, block);
-	auto [occupiedShape, pathShape, decks] = output.getShapeAndPathingShapeAndDecks();
-	output.m_occupationShape = occupiedShape;
-	output.m_pathShape = pathShape;
-	output.m_decks = decks;
-	output.m_location = center;
-	return output;
+	output.constructShape();
+	output.constructDecks();
+	return {output, center};
 }
 Json ConstructedShape::toJson() const
 {

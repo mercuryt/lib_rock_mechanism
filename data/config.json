@@ -42,7 +42,7 @@
 	"fatPierceForceCost": 10.0,
 	"fireRampDownPhaseDurationFraction": 0.2,
 	"flankingModifier": 0.35,
-	"fluidDragModifier": 1.0,
+	"fluidDragModifier": 0.1,
 	"fluidGroupsPerThread": 2,
 	"forceAbsorbedPiercedModifier": 1,
 	"forceAbsorbedUnpiercedModifier": 1,

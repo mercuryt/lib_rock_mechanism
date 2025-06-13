@@ -1,6 +1,6 @@
 #pragma once
 #include "dataVector.h"
-#include "geometry/cuboidSetSIMD.h"
+#include "geometry/cuboidArray.h"
 #include "geometry/point3D.h"
 #include "locationBuckets.h"
 
@@ -46,12 +46,12 @@ struct OctTreeNode
 	[[nodiscard]] uint size() const { return contents.size(); }
 };
 
-class OctTree
+class ActorOctTree
 {
 	Allocator m_allocator;
 	StrongVector<OctTreeNode, OctTreeIndex> m_nodes;
 public:
-	OctTree(const Cuboid& cuboid);
+	ActorOctTree(const Cuboid& cuboid);
 	void record(Area& area, const ActorReference& actor);
 	void erase(Area& area, const ActorReference& actor);
 	void updateVisionCuboid(const Point3D& coordinates, const VisionCuboidId& cuboid);

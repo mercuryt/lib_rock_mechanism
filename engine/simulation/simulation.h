@@ -9,8 +9,9 @@
 //#include "input.h"
 #include "random.h"
 #include "shape.h"
-#include "simulation/hasActors.h"
-#include "simulation/hasItems.h"
+#include "hasActors.h"
+#include "hasItems.h"
+#include "hasConstructedItemTypes.h"
 #include "threadedTask.h"
 #include "types.h"
 #include "uniform.h"
@@ -38,6 +39,7 @@ public:
 	SimulationHasFactions m_hasFactions;
 	SimulationHasActors m_actors;
 	SimulationHasItems m_items;
+	SimulationHasConstructedItemTypes m_constructedItemTypes;
 	SimulationHasPathMemos m_hasPathMemos;
 	DialogueBoxQueue m_hasDialogues;
 private:

@@ -41,7 +41,7 @@ void BlocksExposedToSky::unset(Area& area, const BlockIndex& block)
 	Blocks& blocks = area.getBlocks();
 	while(current.exists() && check(current))
 	{
-		m_data.unset(current);
+		m_data.maybeUnset(current);
 		// Check for adjacent which are no longer portals because they are no longer adjacent to a block exposed to sky.
 		for(const BlockIndex& adjacent : blocks.getAdjacentWithEdgeAndCornerAdjacent(current))
 			if(area.m_exteriorPortals.isRecordedAsPortal(adjacent) && (!blocks.temperature_transmits(adjacent) || !AreaHasExteriorPortals::isPortal(blocks, adjacent)))

@@ -39,12 +39,11 @@ void UndesignateDigInputAction::execute()
 }
 */
 DigProject::DigProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : Project(data, deserializationMemo, area),
-	m_blockFeatureType(data.contains("blockFeatureType") ? &BlockFeatureType::byName(data["blockFeatureType"].get<std::string>()) : nullptr) { }
+	m_blockFeatureType(data["blockFeatureType"].get<BlockFeatureTypeId>()) { }
 Json DigProject::toJson() const
 {
 	Json data = Project::toJson();
-	if(m_blockFeatureType)
-		data["blockFeatureType"] = m_blockFeatureType->name;
+	data["blockFeatureType"] = m_blockFeatureType;
 	return data;
 }
 std::vector<std::pair<ItemQuery, Quantity>> DigProject::getConsumed() const { return {}; }
@@ -87,15 +86,15 @@ void DigProject::onComplete()
 	auto& blocks = m_area.getBlocks();
 	if(!blocks.solid_is(m_location))
 	{
-		assert(!m_blockFeatureType);
+		assert(m_blockFeatureType == BlockFeatureTypeId::Null);
 		blocks.blockFeature_removeAll(m_location);
 	}
 	else
 	{
-		if(m_blockFeatureType == nullptr)
+		if(m_blockFeatureType == BlockFeatureTypeId::Null)
 			blocks.solid_setNot(m_location);
 		else
-			blocks.blockFeature_hew(m_location, *m_blockFeatureType);
+			blocks.blockFeature_hew(m_location, m_blockFeatureType);
 	}
 	// Remove designations for other factions as well as owning faction.
 	auto workers = std::move(m_workers);

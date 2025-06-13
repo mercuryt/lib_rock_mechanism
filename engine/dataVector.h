@@ -105,7 +105,8 @@ public:
 	[[nodiscard]] size_t size() const { return data.size(); }
 	void set(const Index& index) { assert(index < size()); data[index.get()] = true; }
 	void set(const Index& index, bool status) { assert(index < size()); data[index.get()] = status; }
-	void unset(const Index& index) { assert(index < size()); data[index.get()] = false; }
+	void maybeUnset(const Index& index) { assert(index < size()); data[index.get()] = false; }
+	void unset(const Index& index) { assert(index < size()); assert(data[index.get()]); data[index.get()] = false; }
 	void reserve(const size_t& size) { data.reserve(size); }
 	void reserve(const Index& index) { data.reserve(index.get()); }
 	void resize(const size_t& size) { data.resize(size); }

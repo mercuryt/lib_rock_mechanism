@@ -60,7 +60,7 @@ class Blocks
 	BlockIndexMap<FactionIdMap<BlockIsPartOfStockPile>> m_stockPiles;
 	StrongVector<std::unique_ptr<Reservable>, BlockIndex> m_reservables;
 	StrongVector<MaterialTypeId, BlockIndex> m_materialType;
-	StrongVector<std::vector<BlockFeature>, BlockIndex> m_features;
+	StrongVector<BlockFeatureSet, BlockIndex> m_features;
 	StrongVector<std::vector<FluidData>, BlockIndex> m_fluid;
 	StrongVector<FluidTypeId, BlockIndex> m_mist;
 	StrongVector<CollisionVolume, BlockIndex> m_totalFluidVolume;
@@ -82,6 +82,7 @@ class Blocks
 	StrongBitSet<BlockIndex> m_isEdge;
 	StrongBitSet<BlockIndex> m_visible;
 	StrongBitSet<BlockIndex> m_constructed;
+	StrongBitSet<BlockIndex> m_dynamic;
 	Area& m_area;
 public:
 	const Coordinates m_pointToIndexConversionMultipliers;
@@ -101,6 +102,8 @@ public:
 	void makeIndexOffsetsForAdjacent();
 	void moveContentsTo(const BlockIndex& index, const BlockIndex& other);
 	void maybeContentsFalls(const BlockIndex& index);
+	void setDynamic(const BlockIndex& index) { m_dynamic.set(index); }
+	void unsetDynamic(const BlockIndex& index) { m_dynamic.unset(index); }
 	// For testing.
 	[[nodiscard]] std::vector<BlockIndex> getAllIndices() const ;
 	[[nodiscard]] Json toJson() const;
@@ -147,6 +150,7 @@ public:
 	[[nodiscard]] bool isAdjacentToActor(const BlockIndex& index, const ActorIndex& actor) const;
 	[[nodiscard]] bool isAdjacentToItem(const BlockIndex& index, const ItemIndex& item) const;
 	[[nodiscard]] bool isConstructed(const BlockIndex& index) const { return m_constructed[index]; }
+	[[nodiscard]] bool isDynamic(const BlockIndex& index) const { return m_dynamic[index]; }
 	[[nodiscard]] bool canSeeIntoFromAlways(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] bool isVisible(const BlockIndex& index) const { return m_visible[index]; }
 	// Get block at offset coordinates. Can return nullptr.
@@ -239,24 +243,26 @@ public:
 	void solid_setNot(const BlockIndex& index);
 	void solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& materialType, bool constructed);
 	void solid_setNotCuboid(const Cuboid& cuboid);
+	void solid_setDynamic(const BlockIndex& index, const MaterialTypeId& materialType, bool constructed);
+	void solid_setNotDynamic(const BlockIndex& index);
 	[[nodiscard]] bool solid_is(const BlockIndex& index) const;
 	[[nodiscard]] MaterialTypeId solid_get(const BlockIndex& index) const;
 	[[nodiscard]] Mass solid_getMass(const BlockIndex& index) const;
 	[[nodiscard]] MaterialTypeId solid_getHardest(const SmallSet<BlockIndex>& blocks);
 	// -BlockFeature.
-	void blockFeature_construct(const BlockIndex& index, const BlockFeatureType& featureType, const MaterialTypeId& materialType);
-	void blockFeature_hew(const BlockIndex& index, const BlockFeatureType& featureType);
-	void blockFeature_remove(const BlockIndex& index, const BlockFeatureType& type);
+	void blockFeature_construct(const BlockIndex& index, const BlockFeatureTypeId& featureType, const MaterialTypeId& materialType);
+	void blockFeature_hew(const BlockIndex& index, const BlockFeatureTypeId& featureType);
+	void blockFeature_remove(const BlockIndex& index, const BlockFeatureTypeId& type);
 	void blockFeature_removeAll(const BlockIndex& index);
-	void blockFeature_lock(const BlockIndex& index, const BlockFeatureType& type);
-	void blockFeature_unlock(const BlockIndex& index, const BlockFeatureType& type);
-	void blockFeature_close(const BlockIndex& index, const BlockFeatureType& type);
-	void blockFeature_open(const BlockIndex& index, const BlockFeatureType& type);
+	void blockFeature_lock(const BlockIndex& index, const BlockFeatureTypeId& type);
+	void blockFeature_unlock(const BlockIndex& index, const BlockFeatureTypeId& type);
+	void blockFeature_close(const BlockIndex& index, const BlockFeatureTypeId& type);
+	void blockFeature_open(const BlockIndex& index, const BlockFeatureTypeId& type);
 	void blockFeature_setTemperature(const BlockIndex& index, const Temperature& temperature);
-	void blockFeature_setAll(const BlockIndex& index, std::vector<BlockFeature>& features);
-	[[nodiscard]] const BlockFeature* blockFeature_atConst(const BlockIndex& index, const BlockFeatureType& blockFeatueType) const;
-	[[nodiscard]] BlockFeature* blockFeature_at(const BlockIndex& index, const BlockFeatureType& blockFeatueType);
-	[[nodiscard]] const BlockIndices& blockFeature_get(const BlockIndex& index) const;
+	void blockFeature_setAll(const BlockIndex& index, BlockFeatureSet& features);
+	void blockFeature_setAllMoveDynamic(const BlockIndex& index, BlockFeatureSet&& features);
+	[[nodiscard]] const BlockFeature* blockFeature_atConst(const BlockIndex& index, const BlockFeatureTypeId& blockFeatueType) const;
+	[[nodiscard]] BlockFeature* blockFeature_at(const BlockIndex& index, const BlockFeatureTypeId& blockFeatueType);
 	[[nodiscard]] bool blockFeature_empty(const BlockIndex& index) const;
 	[[nodiscard]] bool blockFeature_blocksEntrance(const BlockIndex& index) const;
 	[[nodiscard]] bool blockFeature_canStandAbove(const BlockIndex& index) const;
@@ -265,8 +271,10 @@ public:
 	[[nodiscard]] bool blockFeature_canEnterFromBelow(const BlockIndex& index) const;
 	[[nodiscard]] bool blockFeature_canEnterFromAbove(const BlockIndex& index, const BlockIndex& from) const;
 	[[nodiscard]] MaterialTypeId blockFeature_getMaterialType(const BlockIndex& index) const;
-	[[nodiscard]] bool blockFeature_contains(const BlockIndex& index, const BlockFeatureType& blockFeatureType) const;
+	[[nodiscard]] bool blockFeature_contains(const BlockIndex& index, const BlockFeatureTypeId& blockFeatureType) const;
 	[[nodiscard]] auto& blockFeature_getAll(const BlockIndex& index) const { return m_features[index]; }
+	// Should probably be followed by call to removeAll.
+	[[nodiscard]] auto&& blockFeature_getAllMove(const BlockIndex& index) { return std::move(m_features[index]); }
 	[[nodiscard]] bool blockFeature_multiTileCanEnterAtNonZeroZOffset(const BlockIndex& index) const;
 	// -Fluids
 	void fluid_spawnMist(const BlockIndex& index, const FluidTypeId& fluidType, const DistanceInBlocks maxMistSpread = DistanceInBlocks::create(0));
@@ -323,9 +331,11 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	void floating_maybeSink(const BlockIndex& index);
 	void floating_maybeFloatUp(const BlockIndex& index);
 	// -Fire
+	void fire_maybeIgnite(const BlockIndex& index, const MaterialTypeId& materialType);
 	void fire_setPointer(const BlockIndex& index, SmallMapStable<MaterialTypeId, Fire>* pointer);
 	void fire_clearPointer(const BlockIndex& index);
 	[[nodiscard]] bool fire_exists(const BlockIndex& index) const;
+	[[nodiscard]] bool fire_existsForMaterialType(const BlockIndex& index, const MaterialTypeId& materialType) const;
 	[[nodiscard]] FireStage fire_getStage(const BlockIndex& index) const;
 	[[nodiscard]] Fire& fire_get(const BlockIndex& index, const MaterialTypeId& materialType);
 	// -Reservations
@@ -388,6 +398,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	void shape_addDynamicVolume(const BlockIndex& index, const CollisionVolume& volume);
 	void shape_removeDynamicVolume(const BlockIndex& index, const CollisionVolume& volume);
 	[[nodiscard]] bool shape_anythingCanEnterEver(const BlockIndex& index) const;
+	[[nodiscard]] bool shape_anythingCanEnterCurrently(const BlockIndex& index) const;
 	[[nodiscard]] bool shape_canFitEverOrCurrentlyDynamic(const BlockIndex& index, const ShapeId& shape, const Facing4& facing, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] bool shape_canFitEverOrCurrentlyStatic(const BlockIndex& index, const ShapeId& shape, const Facing4& facing, const OccupiedBlocksForHasShape& occupied) const;
 	[[nodiscard]] bool shape_canFitEver(const BlockIndex& index, const ShapeId& shape, const Facing4& facing) const;

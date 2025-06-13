@@ -37,6 +37,24 @@ void OffsetCuboidSet::addOrMerge(const Offset3D& offset)
 {
 	addOrMerge({offset, offset});
 }
+void OffsetCuboidSet::maybeRemove(const Offset3D& offset)
+{
+	auto end = m_data.end();
+	for(auto iter = m_data.begin(); iter < end; ++iter)
+		if(iter->contains(offset))
+		{
+			if(iter->size() == 1)
+				m_data.erase(iter);
+			else
+			{
+				auto newCuboids = iter->getChildrenWhenSplitByCuboid({offset, offset});
+				m_data.erase(iter);
+				for(const OffsetCuboid& cuboid : newCuboids)
+					addOrMerge(cuboid);
+			}
+			return;
+		}
+}
 OffsetCuboidSet::ConstIterator::ConstIterator(const OffsetCuboidSet& cuboidSet, bool end) :
 	m_cuboidSet(const_cast<OffsetCuboidSet*>(&cuboidSet)),
 	m_outerIter(end ? cuboidSet.m_data.end() : cuboidSet.m_data.begin())

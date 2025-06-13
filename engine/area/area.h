@@ -95,7 +95,7 @@ public:
 	AreaHasRain m_hasRain;
 	AreaHasEvaporation m_hasEvaporation;
 	AreaHasBlockDesignations m_blockDesignations;
-	OctTree m_octTree;
+	ActorOctTree m_octTree;
 	VisionRequests m_visionRequests;
 	OpacityFacade m_opacityFacade;
 	AreaHasVisionCuboids m_visionCuboids;

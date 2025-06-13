@@ -263,7 +263,7 @@ void Actors::location_clearStatic(const ActorIndex& index)
 	m_facing[index] = Facing4::Null;
 	m_blocks[index].clear();
 	if(blocks.isExposedToSky(location))
-		m_onSurface.unset(index);
+		m_onSurface.maybeUnset(index);
 	move_pathRequestMaybeCancel(index);
 }
 void Actors::location_clearDynamic(const ActorIndex& index)
@@ -278,6 +278,21 @@ void Actors::location_clearDynamic(const ActorIndex& index)
 	m_facing[index] = Facing4::Null;
 	m_blocks[index].clear();
 	if(blocks.isExposedToSky(location))
-		m_onSurface.unset(index);
+		m_onSurface.maybeUnset(index);
 	move_pathRequestMaybeCancel(index);
+}
+bool Actors::location_canEnterEverWithFacing(const ActorIndex& index, const BlockIndex& block, const Facing4& facing)
+{
+	return m_area.getBlocks().shape_shapeAndMoveTypeCanEnterEverWithFacing(block, m_compoundShape[index], m_moveType[index], facing);
+}
+bool Actors::location_canEnterEverWithAnyFacing(const ActorIndex& index, const BlockIndex& block)
+{
+	return location_canEnterEverWithAnyFacingReturnFacing(index, block) != Facing4::Null;
+}
+Facing4 Actors::location_canEnterEverWithAnyFacingReturnFacing(const ActorIndex& index, const BlockIndex& block)
+{
+	for(auto facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int)facing + 1))
+		if(location_canEnterEverWithFacing(index, block, facing))
+			return facing;
+	return Facing4::Null;
 }

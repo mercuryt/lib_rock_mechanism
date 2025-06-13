@@ -65,7 +65,7 @@ void Blocks::item_setTemperature(const BlockIndex& index, const Temperature& tem
 {
 	Items& items = m_area.getItems();
 	for(const ItemIndex& item : m_items[index])
-		items.setTemperature(item, temperature);
+		items.setTemperature(item, temperature, index);
 }
 void Blocks::item_disperseAll(const BlockIndex& index)
 {

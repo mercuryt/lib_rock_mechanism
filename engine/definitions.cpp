@@ -11,6 +11,8 @@
 #include "craft.h"
 #include "types.h"
 #include "itemType.h"
+#include "shape.h"
+#include "plantSpecies.h"
 
 #include <fstream>
 #include <algorithm>
@@ -301,7 +303,7 @@ void definitions::loadItemTypes()
 			.value=data["value"].get<uint32_t>(),
 			.installable=data.contains("installable"),
 			.generic=data.contains("generic") && data["generic"].get<bool>(),
-			.canHoldFluids=data.contains("canHoldFluids"),
+			.canHoldFluids=data.contains("canHoldFluids")
 		};
 		if(data.contains("motiveForce"))
 			data["motiveForce"].get_to(p.motiveForce);

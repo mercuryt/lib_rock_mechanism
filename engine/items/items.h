@@ -132,7 +132,7 @@ public:
 	void destroy(const ItemIndex& index);
 	void setName(const ItemIndex& index, std::string name);
 	void pierced(const ItemIndex& index, const FullDisplacement volume);
-	void setTemperature(const ItemIndex& index, const Temperature& temperature);
+	void setTemperature(const ItemIndex& index, const Temperature& temperature, const BlockIndex& block);
 	void addQuantity(const ItemIndex& index, const Quantity& delta);
 	void removeQuantity(const ItemIndex& index, const Quantity& delta, CanReserve* canReserve = nullptr);
 	void install(const ItemIndex& index, const BlockIndex& block, const Facing4& facing, const FactionId& faction);
@@ -144,6 +144,9 @@ public:
 	void unsetCraftJobForWorkPiece(const ItemIndex& index);
 	void takeFallDamage(const ItemIndex&, const DistanceInBlocks&, const MaterialTypeId&) { /* TODO */ }
 	void resetMoveType(const ItemIndex& index);
+	// Wrap HasShapes::SetStatic and unset to support constrcuted shapes setting or unsetting Blocks::m_dynamic instead.
+	void setStatic(const ItemIndex& index);
+	void unsetStatic(const ItemIndex& index);
 	[[nodiscard]] ItemIndices getAll() const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool isInstalled(const ItemIndex& index) { return m_installed[index]; }
@@ -155,6 +158,8 @@ public:
 	[[nodiscard]] bool isPreparedMeal(const ItemIndex& index) const;
 	[[nodiscard]] bool isWorkPiece(const ItemIndex& index) const { return m_craftJobForWorkPiece[index] != nullptr; }
 	[[nodiscard]] bool canMove(const ItemIndex& index) const { return pilot_exists(index) && vehicle_getSpeed(index) != 0; }
+	[[nodiscard]] ConstructedShape& getConstructedShape(const ItemIndex& index) { return *m_constructedShape[index]; }
+	[[nodiscard]] bool hasConstructedShape(const ItemIndex& index) { return m_constructedShape[index] != nullptr; }
 	[[nodiscard]] CraftJob& getCraftJobForWorkPiece(const ItemIndex& index) const;
 	[[nodiscard]] Mass getSingleUnitMass(const ItemIndex& index) const;
 	[[nodiscard]] Mass getMass(const ItemIndex& index) const;
@@ -174,6 +179,7 @@ public:
 	// Return an item index here because a static generic may combine and invalidat the passed in index.
 	ItemIndex location_set(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
 	ItemIndex location_setStatic(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
+	// TODO: this shouldn't need to return anything.
 	ItemIndex location_setDynamic(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
 	// Used when item already has a location, rolls back position on failure.
 	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToStatic(const ItemIndex& index, const BlockIndex& block);

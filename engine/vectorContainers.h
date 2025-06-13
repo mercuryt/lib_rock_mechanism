@@ -111,6 +111,14 @@ public:
 		m_data.emplace_back(T(std::forward<Args>(args)...));
 		assert(std::ranges::count(m_data, m_data.back()) == 1);
 	}
+	template<typename ...Args>
+	void maybeEmplace(Args&& ...args)
+	{
+		// Create first and then maybe remove.
+		m_data.emplace_back(T(std::forward<Args>(args)...));
+		if(std::ranges::count(m_data, m_data.back()) != 1)
+			m_data.pop_back();
+	}
 	void swap(This& other) { m_data.swap(other.m_data); }
 	void popBack() { m_data.pop_back(); }
 	template<typename Predicate>

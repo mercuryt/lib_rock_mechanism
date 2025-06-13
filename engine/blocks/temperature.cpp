@@ -103,13 +103,13 @@ bool Blocks::temperature_transmits(const BlockIndex& block) const
 {
 	if(solid_is(block))
 		return false;
-	const BlockFeature* door = blockFeature_atConst(block, BlockFeatureType::door);
+	const BlockFeature* door = blockFeature_atConst(block, BlockFeatureTypeId::Door);
 	if(door != nullptr && door->closed)
 		return false;
-	const BlockFeature* flap = blockFeature_atConst(block, BlockFeatureType::flap);
+	const BlockFeature* flap = blockFeature_atConst(block, BlockFeatureTypeId::Flap);
 	if(flap != nullptr && flap->closed)
 		return false;
-	const BlockFeature* hatch = blockFeature_atConst(block, BlockFeatureType::hatch);
+	const BlockFeature* hatch = blockFeature_atConst(block, BlockFeatureTypeId::Hatch);
 	if(hatch != nullptr && hatch->closed)
 		return false;
 	return true;

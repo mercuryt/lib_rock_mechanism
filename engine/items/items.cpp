@@ -1,6 +1,7 @@
 #include "items.h"
 #include "../itemType.h"
 #include "../area/area.h"
+#include "../blocks/blocks.h"
 #include "../simulation/simulation.h"
 #include "../simulation/hasItems.h"
 #include "../util.h"
@@ -85,7 +86,8 @@ void Items::onChangeAmbiantSurfaceTemperature()
 	m_onSurface.forEach([&](const ItemIndex& index){
 		assert(m_location[index].exists());
 		Temperature temperature = blocks.temperature_get(m_location[index]);
-		setTemperature(index, temperature);
+		for(const BlockIndex& block : getBlocks(index))
+			setTemperature(index, temperature, block);
 	});
 }
 Items::Items(Area& area) :
@@ -125,14 +127,20 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	assert(m_hasCargo[index] == nullptr);
 	m_id[index] = itemParamaters.id.exists() ? itemParamaters.id : m_area.m_simulation.m_items.getNextId();
 	m_installed.set(index, itemParamaters.installed);
-	ItemTypeId itemType = m_itemType[index] = itemParamaters.itemType;
+	const ItemTypeId& itemType = m_itemType[index] = itemParamaters.itemType;
 	m_materialType[index] = itemParamaters.materialType;
 	m_name[index] = itemParamaters.name;
 	m_percentWear[index] = itemParamaters.percentWear;
 	m_quality[index] = itemParamaters.quality;
 	m_quantity[index] = itemParamaters.quantity;
-	//TODO: copying the whole constructed shape but only really need the offsets and block contents.
-	m_constructedShape[index] = std::make_unique<ConstructedShape>(ItemType::getConstructedShape(itemParamaters.itemType));
+	const auto& constructedShape = ItemType::getConstructedShape(itemType);
+	if(constructedShape != nullptr)
+	{
+		// Make a copy so we can rotate m_solidBlocks and m_features.
+		m_constructedShape[index] = std::make_unique<ConstructedShape>(*constructedShape);
+		// Include decks for pathing purposes.
+		m_compoundShape[index] = m_constructedShape[index]->getShapeIncludingDecks();
+	}
 	if(ItemType::getGeneric(itemType))
 	{
 		assert(m_quality[index].empty());
@@ -157,26 +165,38 @@ void Items::moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex)
 		m_hasCargo[newIndex]->updateCarrierIndexForAllCargo(m_area, newIndex);
 	if(m_onSurface[oldIndex])
 	{
-		m_onSurface.unset(oldIndex);
+		m_onSurface.maybeUnset(oldIndex);
 		m_onSurface.set(newIndex);
 	}
 	Blocks& blocks = m_area.getBlocks();
 	for(BlockIndex block : m_blocks[newIndex])
 		blocks.item_updateIndex(block, oldIndex, newIndex);
 }
-void Items::setTemperature(const ItemIndex& index, const Temperature& temperature)
+void Items::setTemperature(const ItemIndex& index, const Temperature& temperature, const BlockIndex& block)
 {
+	Blocks& blocks = m_area.getBlocks();
+	const auto setTemperatureMaterialType = [&](const MaterialTypeId& materialType)
+	{
+		if(MaterialType::canBurn(materialType) && MaterialType::getIgnitionTemperature(materialType) <= temperature)
+			blocks.fire_maybeIgnite(block, materialType);
+		else if(MaterialType::canMelt(materialType) && MaterialType::getMeltingPoint(materialType) <= temperature)
+		{
+			// TODO: Would it be better to destroy the item and create rubble and then liquify the rubble in this block?
+			const CollisionVolume volume = Shape::getTotalCollisionVolume(m_shape[index]);
+			const BlockIndex location = m_location[index];
+			destroy(index);
+			blocks.fluid_add(location, volume, MaterialType::getMeltsInto(materialType));
+		}
+	};
 	const MaterialTypeId& materialType = m_materialType[index];
-	if(MaterialType::canBurn(materialType) && MaterialType::getIgnitionTemperature(materialType) <= temperature)
+	if(materialType.exists())
+		setTemperatureMaterialType(materialType);
+	else
 	{
-		// TODO: item is on fire.
-	}
-	else if(MaterialType::canMelt(materialType) && MaterialType::getMeltingPoint(materialType) <= temperature)
-	{
-		const CollisionVolume volume = Shape::getTotalCollisionVolume(m_shape[index]);
-		const BlockIndex location = m_location[index];
-		destroy(index);
-		m_area.getBlocks().fluid_add(location, volume, MaterialType::getMeltsInto(materialType));
+		assert(m_constructedShape[index] != nullptr);
+		auto materialTypes = m_constructedShape[index]->getMaterialTypesAt(m_area, m_location[index], m_facing[index], block);
+		for(const MaterialTypeId& materialType : materialTypes)
+			setTemperatureMaterialType(materialType);
 	}
 }
 void Items::addQuantity(const ItemIndex& index, const Quantity& delta)
@@ -270,6 +290,30 @@ void Items::resetMoveType(const ItemIndex& index)
 {
 	m_moveType[index] = ItemType::getMoveType(m_itemType[index]);
 }
+void Items::setStatic(const ItemIndex& index)
+{
+	const auto& constructed = m_constructedShape[index];
+	if(constructed != nullptr)
+	{
+		Blocks& blocks = m_area.getBlocks();
+		for(const BlockIndex& block : m_blocks[index])
+			blocks.unsetDynamic(block);
+	}
+	else
+		HasShapes<Items, ItemIndex>::setStatic(index);
+}
+void Items::unsetStatic(const ItemIndex& index)
+{
+	const auto& constructed = m_constructedShape[index];
+	if(constructed != nullptr)
+	{
+		Blocks& blocks = m_area.getBlocks();
+		for(const BlockIndex& block : m_blocks[index])
+			blocks.setDynamic(block);
+	}
+	else
+		HasShapes<Items, ItemIndex>::unsetStatic(index);
+}
 void Items::destroy(const ItemIndex& index)
 {
 	// No need to explicitly unschedule events here, destorying the event holder will do it.
@@ -304,7 +348,12 @@ Mass Items::getSingleUnitMass(const ItemIndex& index) const
 }
 Mass Items::getMass(const ItemIndex& index) const
 {
-	Mass output = ItemType::getFullDisplacement(m_itemType[index]) * MaterialType::getDensity(m_materialType[index]) * m_quantity[index];
+	const MaterialTypeId& materialType = m_materialType[index];
+	Mass output;
+	if(materialType.exists())
+		output = ItemType::getFullDisplacement(m_itemType[index]) * MaterialType::getDensity(materialType) * m_quantity[index];
+	else
+		output = m_constructedShape[index]->getMass();
 	if(m_hasCargo[index] != nullptr)
 		output += m_hasCargo[index]->getMass();
 	output += onDeck_getMass(index);

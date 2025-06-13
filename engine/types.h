@@ -338,3 +338,32 @@ public:
 };
 inline void to_json(Json& data, const DeckId& index) { data = index.get(); }
 inline void from_json(const Json& data, DeckId& index) { index = DeckId::create(data.get<uint16_t>()); }
+
+enum class BlockFeatureTypeId
+{
+	Door,
+	Flap,
+	FloodGate,
+	Floor,
+	FloorGrate,
+	Fortification,
+	Hatch,
+	Keel,
+	Ramp,
+	Stairs,
+	Null
+};
+NLOHMANN_JSON_SERIALIZE_ENUM(BlockFeatureTypeId,
+{
+	{BlockFeatureTypeId::Door, "Door"},
+	{BlockFeatureTypeId::Flap, "Flap"},
+	{BlockFeatureTypeId::FloodGate, "FloodGate"},
+	{BlockFeatureTypeId::Floor, "Floor"},
+	{BlockFeatureTypeId::FloorGrate, "FloorGrate"},
+	{BlockFeatureTypeId::Fortification, "Fortification"},
+	{BlockFeatureTypeId::Hatch, "Hatch"},
+	{BlockFeatureTypeId::Keel, "Keel"},
+	{BlockFeatureTypeId::Ramp, "Ramp"},
+	{BlockFeatureTypeId::Stairs, "Stairs"},
+	{BlockFeatureTypeId::Null, "Null"}
+});

@@ -223,8 +223,9 @@ void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& dest
 	if(!adjacent)
 	{
 		m_destination[index] = destination;
-		assert(blocks.shape_anythingCanEnterEver(destination));
 		assert(location != m_destination[index]);
+		if(!pilotItem_isPilotingConstructedItem(index))
+			assert(location_canEnterEverWithAnyFacing(index, destination));
 	}
 	else
 		assert(getLocation(index) != destination);

@@ -721,7 +721,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_speedIndividual[index] = Speed::create(0);
 	m_speedActual[index] = Speed::create(0);
 	m_moveRetries[index] = 0;
-	m_onSurface.unset(index);
+	m_onSurface.maybeUnset(index);
 	assert(m_isPilot[index] == false);
 	simulation.m_actors.registerActor(m_id[index], *this, index);
 	attributes_onUpdateGrowthPercent(index);

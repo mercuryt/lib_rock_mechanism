@@ -16,12 +16,12 @@ public:
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	// If blockFeatureType is null then construct a wall rather then a feature.
-	void designate(Area& area, const BlockIndex& block, const BlockFeatureType* blockFeatureType, const MaterialTypeId& materialType);
+	void designate(Area& area, const BlockIndex& block, const BlockFeatureTypeId blockFeatureType, const MaterialTypeId& materialType);
 	void undesignate(const BlockIndex& block);
 	void remove(Area& area, const BlockIndex& block);
 	void removeIfExists(Area& area, const BlockIndex& block);
 	bool contains(const BlockIndex& block) const;
-	const BlockFeatureType* getForBlock(const BlockIndex& block) const;
+	BlockFeatureTypeId getForBlock(const BlockIndex& block) const;
 	bool empty() const;
 	friend class AreaHasConstructionDesignations;
 };
@@ -39,7 +39,7 @@ public:
 	void addFaction(const FactionId& faction);
 	void removeFaction(const FactionId& faction);
 	// If blockFeatureType is null then dig out fully rather then digging out a feature.
-	void designate(const FactionId& faction, const BlockIndex& block, const BlockFeatureType* blockFeatureType, const MaterialTypeId& materialType);
+	void designate(const FactionId& faction, const BlockIndex& block, const BlockFeatureTypeId blockFeatureType, const MaterialTypeId& materialType);
 	void undesignate(const FactionId& faction, const BlockIndex& block);
 	void remove(const FactionId& faction, const BlockIndex& block);
 	void clearAll(const BlockIndex& block);

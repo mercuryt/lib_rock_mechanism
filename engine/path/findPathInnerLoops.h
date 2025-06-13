@@ -131,12 +131,12 @@ class PathInnerLoops
 	static FindPathResult findPathSetDetour(DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const BlockIndex& start, const Facing4& startFacing, const FactionId& faction, const ShapeId& shape, const MoveTypeId& moveType, bool detour, const DistanceInBlocks& maxRange)
 	{
 		const Blocks& blocks = area.getBlocks();
-		if(isMultiTile)
+		if constexpr(isMultiTile)
 		{
 			if(detour)
 			{
 				const OccupiedBlocksForHasShape initalBlocks = OccupiedBlocksForHasShape::fromCollection(Shape::getBlocksOccupiedAt(shape, blocks, start, startFacing));
-				auto accessCondition = [&blocks, initalBlocks, shape, moveType](const BlockIndex& block, const Facing4& facing) -> bool
+				auto accessCondition = [&blocks, &initalBlocks, shape, moveType](const BlockIndex& block, const Facing4& facing) -> bool
 				{
 					return blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(block, shape, moveType, facing, initalBlocks);
 				};

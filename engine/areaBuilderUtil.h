@@ -79,7 +79,7 @@ namespace areaBuilderUtil
 		}
 		for(DistanceInBlocks x = DistanceInBlocks::create(0); x != highCoordinates.x() + 1; ++x)
 			for(DistanceInBlocks y = DistanceInBlocks::create(0); y != highCoordinates.y() + 1; ++y)
-				blocks.blockFeature_construct(blocks.getIndex(x, y, highCoordinates.z() + 1), BlockFeatureType::floor, materialType);
+				blocks.blockFeature_construct(blocks.getIndex(x, y, highCoordinates.z() + 1), BlockFeatureTypeId::Floor, materialType);
 	}
 	// TODO: low and high should be inverted.
 	inline void setFullFluidCuboid(Area& area, const BlockIndex& low, const BlockIndex& high, FluidTypeId fluidType)

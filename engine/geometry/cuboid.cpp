@@ -133,7 +133,11 @@ void Cuboid::rotateAroundPoint(Blocks& blocks, const BlockIndex& point, const Fa
 	Offset3D highOffset = pointCoordinates - m_highest;
 	const BlockIndex& newLow = blocks.offsetRotated(point, lowOffset, facing);
 	const BlockIndex& newHigh = blocks.offsetRotated(point, highOffset, facing);
-	setFrom(blocks, newHigh, newLow);
+	//TODO: offset rotated already had the coordinates we are recaclulating here.
+	if(blocks.getCoordinates(newLow) > blocks.getCoordinates(newHigh))
+		setFrom(blocks, newLow, newHigh);
+	else
+		setFrom(blocks, newHigh, newLow);
 }
 void Cuboid::setMaxZ(const DistanceInBlocks& distance)
 {
@@ -142,13 +146,13 @@ void Cuboid::setMaxZ(const DistanceInBlocks& distance)
 }
 void Cuboid::maybeExpand(const Cuboid& other)
 {
-	m_highest.clampHigh(other.m_highest);
-	m_lowest.clampLow(other.m_lowest);
+	m_highest.data = m_highest.data.max(other.m_highest.data);
+	m_lowest.data = m_lowest.data.min(other.m_lowest.data);
 }
 void Cuboid::maybeExpand(const Point3D& other)
 {
-	m_highest.clampHigh(other);
-	m_lowest.clampLow(other);
+	m_highest.data = m_highest.data.max(other.data);
+	m_lowest.data = m_lowest.data.min(other.data);
 }
 Cuboid Cuboid::inflateAdd(const DistanceInBlocks& distance) const
 {
@@ -193,7 +197,7 @@ bool Cuboid::overlapsWithSphere(const Sphere& sphere) const
 {
 	return sphere.intersects(*this);
 }
-size_t Cuboid::size() const
+uint Cuboid::size() const
 {
 	if(!m_highest.exists())
 	{
