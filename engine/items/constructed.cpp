@@ -71,11 +71,12 @@ void ConstructedShape::constructDecks()
 		{
 			Offset3D above = pair.first;
 			++above.z();
-			m_decks.addOrMerge(above);
+			if(!m_solidBlocks.contains(above))
+				m_decks.addOrMerge(above);
 		}
 	}
 }
-void ConstructedShape::recordAndClear(Area& area, const BlockIndex& origin)
+void ConstructedShape::recordAndClearDynamic(Area& area, const BlockIndex& origin)
 {
 	Blocks& blocks = area.getBlocks();
 	for(const auto& [offset, materialType] : m_solidBlocks)
@@ -90,9 +91,27 @@ void ConstructedShape::recordAndClear(Area& area, const BlockIndex& origin)
 		// Update the stored feature data with moved feature data from block.
 		features = blocks.blockFeature_getAllMove(block);
 		blocks.blockFeature_removeAll(block);
+		blocks.unsetDynamic(block);
 	}
 }
-SetLocationAndFacingResult ConstructedShape::tryToSetLocationAndFacing(Area& area, const Facing4& currentFacing, const BlockIndex& newLocation, const Facing4& newFacing, OccupiedBlocksForHasShape& occupied)
+void ConstructedShape::recordAndClearStatic(Area& area, const BlockIndex& origin)
+{
+	Blocks& blocks = area.getBlocks();
+	for(const auto& [offset, materialType] : m_solidBlocks)
+	{
+		const BlockIndex& block = blocks.offset(origin, offset);
+		assert(blocks.solid_get(block) == materialType);
+		blocks.solid_setNot(block);
+	}
+	for(auto& [offset, features] : m_features)
+	{
+		const BlockIndex& block = blocks.offset(origin, offset);
+		// Update the stored feature data with moved feature data from block.
+		features = blocks.blockFeature_getAllMove(block);
+		blocks.blockFeature_removeAll(block);
+	}
+}
+SetLocationAndFacingResult ConstructedShape::tryToSetLocationAndFacingDynamic(Area& area, const Facing4& currentFacing, const BlockIndex& newLocation, const Facing4& newFacing, OccupiedBlocksForHasShape& occupied)
 {
 	Blocks& blocks = area.getBlocks();
 	SetLocationAndFacingResult output = SetLocationAndFacingResult::Success;
@@ -111,19 +130,30 @@ SetLocationAndFacingResult ConstructedShape::tryToSetLocationAndFacing(Area& are
 		{
 			rollback = offset;
 			output = SetLocationAndFacingResult::PermanantlyBlocked;
-			break;
 		}
-		if(!blocks.item_empty(block) || !blocks.actor_empty(block))
+		else if(!blocks.item_empty(block) || !blocks.actor_empty(block))
 		{
 			rollback = offset;
 			output = SetLocationAndFacingResult::TemporarilyBlocked;
-			break;
+		}
+		if(output != SetLocationAndFacingResult::Success)
+		{
+			// Contains is more expensive then permanant or temporary block test so check it last.
+			if(occupied.contains(block))
+			{
+				output = SetLocationAndFacingResult::Success;
+				rollback.clear();
+			}
+			else
+				break;
 		}
 		blocks.solid_setDynamic(block, materialType, true);
 		occupied.insert(block);
 	}
 	if(!rollback.empty())
 	{
+		// Remove all solid blocks placed so far.
+		assert(output != SetLocationAndFacingResult::Success);
 		for(const auto& [offset, materialType] : m_solidBlocks)
 		{
 			if(offset == rollback)
@@ -131,37 +161,63 @@ SetLocationAndFacingResult ConstructedShape::tryToSetLocationAndFacing(Area& are
 			const BlockIndex block = blocks.offset(newLocation, offset);
 			blocks.solid_setNotDynamic(block);
 		}
-		assert(output != SetLocationAndFacingResult::Success);
 		occupied.clear();
 		return output;
 	}
+	// Solid blocks placed successfully, try to place block features.
 	for(auto& [offset, features] : m_features)
 	{
-		if(offset == rollback)
-			break;
 		const BlockIndex block = blocks.offset(newLocation, offset);
+		if(!blocks.shape_anythingCanEnterEver(block))
+		{
+			rollback = offset;
+			output = SetLocationAndFacingResult::PermanantlyBlocked;
+		}
+		else if(!blocks.item_empty(block) || !blocks.actor_empty(block))
+		{
+			rollback = offset;
+			output = SetLocationAndFacingResult::TemporarilyBlocked;
+		}
+		if(output != SetLocationAndFacingResult::Success)
+		{
+			// Contains is more expensive then permanant or temporary block test so check it last.
+			if(occupied.contains(block))
+			{
+				output = SetLocationAndFacingResult::Success;
+				rollback.clear();
+			}
+			else
+				break;
+		}
 		blocks.blockFeature_setAllMoveDynamic(block, std::move(features));
 		occupied.insert(block);
 	}
 	if(!rollback.empty())
 	{
+		// Remove all block features placed so far. Move them back into this object.
+		assert(output != SetLocationAndFacingResult::Success);
 		for(auto& [offset, features] : m_features)
 		{
 			if(offset == rollback)
 				break;
 			const BlockIndex block = blocks.offset(newLocation, offset);
-			// Update stored block features with data moved from blocks.
 			features = blocks.blockFeature_getAllMove(block);
 			blocks.blockFeature_removeAll(block);
 		}
+		// Remove all solid blocks.
 		assert(output != SetLocationAndFacingResult::Success);
+		for(const auto& [offset, materialType] : m_solidBlocks)
+		{
+			const BlockIndex block = blocks.offset(newLocation, offset);
+			blocks.solid_setNotDynamic(block);
+		}
 		occupied.clear();
 		return output;
 	}
 	assert(output == SetLocationAndFacingResult::Success);
 	return output;
 }
-void ConstructedShape::setLocationAndFacing(Area& area, const Facing4& currentFacing, const BlockIndex& newLocation, const Facing4& newFacing, OccupiedBlocksForHasShape& occupied)
+void ConstructedShape::setLocationAndFacingDynamic(Area& area, const Facing4& currentFacing, const BlockIndex& newLocation, const Facing4& newFacing, OccupiedBlocksForHasShape& occupied)
 {
 	Blocks& blocks = area.getBlocks();
 	if(newFacing != currentFacing)
@@ -183,6 +239,32 @@ void ConstructedShape::setLocationAndFacing(Area& area, const Facing4& currentFa
 	{
 		const BlockIndex block = blocks.offset(newLocation, offset);
 		blocks.blockFeature_setAllMoveDynamic(block, std::move(features));
+		occupied.insert(block);
+	}
+}
+void ConstructedShape::setLocationAndFacingStatic(Area& area, const Facing4& currentFacing, const BlockIndex& newLocation, const Facing4& newFacing, OccupiedBlocksForHasShape& occupied)
+{
+	Blocks& blocks = area.getBlocks();
+	if(newFacing != currentFacing)
+	{
+		for(auto& [offset, materialType] : m_solidBlocks)
+			offset.rotate2D(currentFacing, newFacing);
+		for(auto& [offset, features] : m_features)
+			offset.rotate2D(currentFacing, newFacing);
+	}
+	for(const auto& [offset, materialType] : m_solidBlocks)
+	{
+		const BlockIndex block = blocks.offset(newLocation, offset);
+		assert(blocks.shape_anythingCanEnterEver(block));
+		assert(blocks.item_empty(block) && blocks.actor_empty(block));
+		blocks.solid_set(block, materialType, true);
+		occupied.insert(block);
+	}
+	for(auto& [offset, features] : m_features)
+	{
+		const BlockIndex block = blocks.offset(newLocation, offset);
+		// Not bothering with move here because this method shouldn't be very hot.
+		blocks.blockFeature_setAll(block, features);
 		occupied.insert(block);
 	}
 }

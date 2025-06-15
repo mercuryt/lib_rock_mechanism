@@ -298,6 +298,7 @@ void Items::setStatic(const ItemIndex& index)
 		Blocks& blocks = m_area.getBlocks();
 		for(const BlockIndex& block : m_blocks[index])
 			blocks.unsetDynamic(block);
+		m_static.set(index);
 	}
 	else
 		HasShapes<Items, ItemIndex>::setStatic(index);
@@ -310,6 +311,7 @@ void Items::unsetStatic(const ItemIndex& index)
 		Blocks& blocks = m_area.getBlocks();
 		for(const BlockIndex& block : m_blocks[index])
 			blocks.setDynamic(block);
+		m_static.unset(index);
 	}
 	else
 		HasShapes<Items, ItemIndex>::unsetStatic(index);

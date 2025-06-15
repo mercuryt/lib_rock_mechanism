@@ -64,7 +64,7 @@ template<class Derived, class Index>
 void HasShapes<Derived, Index>::maybeSetStatic(const Index& index)
 {
 	if(!m_static[index])
-		setStatic(index);
+		static_cast<Derived*>(this)->setStatic(index);
 }
 template<class Derived, class Index>
 void HasShapes<Derived, Index>::unsetStatic(const Index& index)
@@ -83,7 +83,7 @@ template<class Derived, class Index>
 void HasShapes<Derived, Index>::maybeUnsetStatic(const Index& index)
 {
 	if(m_static[index])
-		unsetStatic(index);
+		static_cast<Derived*>(this)->unsetStatic(index);
 }
 template<class Derived, class Index>
 void HasShapes<Derived, Index>::setShape(const Index& index, const ShapeId& shape)

@@ -191,6 +191,10 @@ public:
 	void location_clear(const ItemIndex& index);
 	void location_clearStatic(const ItemIndex& index);
 	void location_clearDynamic(const ItemIndex& index);
+	[[nodiscard]] bool location_canEnterEverWithFacing(const ItemIndex& index, const BlockIndex& block, const Facing4& facing) const;
+	[[nodiscard]] bool location_canEnterCurrentlyWithFacing(const ItemIndex& index, const BlockIndex& block, const Facing4& facing) const;
+	[[nodiscard]] bool location_canEnterEverFrom(const ItemIndex& index, const BlockIndex& block, const BlockIndex& previous) const;
+	[[nodiscard]] bool location_canEnterCurrentlyFrom(const ItemIndex& index, const BlockIndex& block, const BlockIndex& previous) const;
 	// -Cargo.
 	void cargo_addActor(const ItemIndex& index, const ActorIndex& actor);
 	ItemIndex cargo_addItem(const ItemIndex& index, const ItemIndex& item, const Quantity& quantity);

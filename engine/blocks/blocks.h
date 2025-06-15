@@ -116,7 +116,8 @@ public:
 	[[nodiscard]] BlockIndex maybeGetIndexFromOffset(const Point3D& coordinates, const Offset3D& offset) const;
 	[[nodiscard]] BlockIndex maybeGetIndexFromOffsetOnEdge(const Point3D& coordinates, const Offset3D& offset) const;
 	[[nodiscard]] BlockIndex getIndex(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) const;
-	[[nodiscard]] BlockIndex getIndex_i(const uint& x, const uint& y, const uint& z) const;
+	// For testing and debug.
+	[[nodiscard]] __attribute__((noinline)) BlockIndex getIndex_i(const uint& x, const uint& y, const uint& z) const;
 	// Pass by value because it will be modified.
 	[[nodiscard]] BlockIndexChunked getIndexChunked(const Point3D& coordinates) const;
 	// Pass by value because it will be modified.

@@ -44,7 +44,8 @@ void Actors::move_updateActualSpeed(const ActorIndex& index)
 void Actors::move_setPath(const ActorIndex& index, const BlockIndices& path)
 {
 	assert(!path.empty());
-	assert(m_area.getBlocks().isAdjacentToIncludingCornersAndEdges(m_location[index], path.back()));
+	if(!m_isPilot[index])
+		assert(m_area.getBlocks().isAdjacentToIncludingCornersAndEdges(m_location[index], path.back()));
 	m_path[index] = std::move(path);
 	m_destination[index] = m_path[index].front();
 	move_clearAllEventsAndTasks(index);

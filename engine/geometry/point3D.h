@@ -113,6 +113,7 @@ struct Offset3D
 	void rotate2DInvert(const Facing4& facing);
 	void clampHigh(const Offset3D& other);
 	void clampLow(const Offset3D& other);
+	void clear() { data.fill(Offset::null().get()); }
 	[[nodiscard]] Offset3D operator+(const Offset3D& other) const;
 	[[nodiscard]] Offset3D operator-(const Offset3D& other) const;
 	[[nodiscard]] Offset3D operator*(const Offset3D& other) const;

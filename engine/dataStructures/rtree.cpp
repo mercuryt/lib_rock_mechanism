@@ -1,24 +1,24 @@
-#include "aabb.h"
-AABBTree::ArrayIndex AABBTree::Node::offsetFor(const Index& index) const
+#include "rtree.h"
+RTree::ArrayIndex RTree::Node::offsetFor(const Index& index) const
 {
 	auto found = std::ranges::find(m_childIndices, index);
 	assert(found != m_childIndices.end());
 	return ArrayIndex::create(std::distance(m_childIndices.begin(), found));
 }
-void AABBTree::Node::updateChildIndex(const Index& oldIndex, const Index& newIndex)
+void RTree::Node::updateChildIndex(const Index& oldIndex, const Index& newIndex)
 {
 	const auto found = std::ranges::find(m_childIndices, oldIndex);
 	assert(found != m_childIndices.end());
 	uint offset = std::distance(m_childIndices.begin(), found);
 	m_childIndices[offset] = newIndex;
 }
-void AABBTree::Node::insertLeaf(const Cuboid& cuboid)
+void RTree::Node::insertLeaf(const Cuboid& cuboid)
 {
 	assert(m_leafEnd != m_childBegin);
 	m_cuboids.insert(m_leafEnd.get(), cuboid);
 	++m_leafEnd;
 }
-void AABBTree::Node::insertBranch(const Cuboid& cuboid, const Index& index)
+void RTree::Node::insertBranch(const Cuboid& cuboid, const Index& index)
 {
 	assert(m_leafEnd != m_childBegin);
 	uint toInsertAt = m_childBegin.get() - 1;
@@ -26,7 +26,7 @@ void AABBTree::Node::insertBranch(const Cuboid& cuboid, const Index& index)
 	m_cuboids.insert(toInsertAt, cuboid);
 	--m_childBegin;
 }
-void AABBTree::Node::eraseBranch(const ArrayIndex& offset)
+void RTree::Node::eraseBranch(const ArrayIndex& offset)
 {
 	assert(offset < nodeSize);
 	assert(offset >= m_childBegin);
@@ -39,7 +39,7 @@ void AABBTree::Node::eraseBranch(const ArrayIndex& offset)
 	m_childIndices[m_childBegin.get()].clear();
 	++m_childBegin;
 }
-void AABBTree::Node::eraseLeaf(const ArrayIndex& offset)
+void RTree::Node::eraseLeaf(const ArrayIndex& offset)
 {
 	assert(offset < m_leafEnd);
 	ArrayIndex lastLeaf = m_leafEnd - 1;
@@ -52,7 +52,7 @@ void AABBTree::Node::eraseLeaf(const ArrayIndex& offset)
 	assert(m_childIndices[lastLeaf.get()].empty());
 	--m_leafEnd;
 }
-void AABBTree::Node::eraseByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask)
+void RTree::Node::eraseByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask)
 {
 	ArrayIndex leafEnd = m_leafEnd;
 	ArrayIndex childBegin = m_childBegin;
@@ -66,26 +66,26 @@ void AABBTree::Node::eraseByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& ma
 		if(!mask[i.get()])
 			insertBranch(copyCuboids[i.get()], copyChildren[i.get()]);
 }
-void AABBTree::Node::clear()
+void RTree::Node::clear()
 {
 	m_cuboids.clear();
 	m_childIndices.fill(Index::null());
 	m_leafEnd = ArrayIndex::create(0);
 	m_childBegin = ArrayIndex::create(nodeSize);
 }
-void AABBTree::Node::updateLeaf(const ArrayIndex offset, const Cuboid& cuboid)
+void RTree::Node::updateLeaf(const ArrayIndex offset, const Cuboid& cuboid)
 {
 	assert(offset < m_leafEnd);
 	assert(!m_cuboids[offset.get()].empty());
 	m_cuboids.insert(offset.get(), cuboid);
 }
-void AABBTree::Node::updateBranchBoundry(const ArrayIndex offset, const Cuboid& cuboid)
+void RTree::Node::updateBranchBoundry(const ArrayIndex offset, const Cuboid& cuboid)
 {
 	assert(offset >= m_childBegin);
 	assert(!m_cuboids[offset.get()].empty());
 	m_cuboids.insert(offset.get(), cuboid);
 }
-std::string AABBTree::Node::toString()
+std::string RTree::Node::toString()
 {
 	std::string output = "parent: " + m_parent.toString() + "; ";
 	if(m_leafEnd != 0)
@@ -104,7 +104,7 @@ std::string AABBTree::Node::toString()
 	}
 	return output;
 }
-std::tuple<Cuboid, AABBTree::ArrayIndex, AABBTree::ArrayIndex> AABBTree::findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids)
+std::tuple<Cuboid, RTree::ArrayIndex, RTree::ArrayIndex> RTree::findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids)
 {
 	// May be negitive because resulting cuboids may intersect.
 	int resultEmptySpace = INT32_MAX;
@@ -130,7 +130,7 @@ std::tuple<Cuboid, AABBTree::ArrayIndex, AABBTree::ArrayIndex> AABBTree::findPai
 	}
 	return output;
 }
-SmallSet<Cuboid> AABBTree::gatherLeavesRecursive(const Index& parent)
+SmallSet<Cuboid> RTree::gatherLeavesRecursive(const Index& parent)
 {
 	SmallSet<Cuboid> output;
 	SmallSet<Index> openList;
@@ -149,7 +149,7 @@ SmallSet<Cuboid> AABBTree::gatherLeavesRecursive(const Index& parent)
 	}
 	return output;
 }
-void AABBTree::destroyWithChildren(const Index& index)
+void RTree::destroyWithChildren(const Index& index)
 {
 	SmallSet<Index> openList;
 	openList.insert(index);
@@ -167,7 +167,7 @@ void AABBTree::destroyWithChildren(const Index& index)
 		}
 	}
 }
-void AABBTree::tryToMergeLeaves(Node& parent)
+void RTree::tryToMergeLeaves(Node& parent)
 {
 	// Iterate through leaves
 	ArrayIndex offset = ArrayIndex::create(0);
@@ -203,7 +203,7 @@ void AABBTree::tryToMergeLeaves(Node& parent)
 			++offset;
 	}
 }
-void AABBTree::clearAllContained(Node& parent, const Cuboid& cuboid)
+void RTree::clearAllContained(Node& parent, const Cuboid& cuboid)
 {
 	const auto& parentCuboids = parent.getCuboids();
 	const auto& parentChildIndices = parent.getChildIndices();
@@ -214,7 +214,7 @@ void AABBTree::clearAllContained(Node& parent, const Cuboid& cuboid)
 		destroyWithChildren(parentChildIndices[i.get()]);
 	parent.eraseByMask(containsMask);
 }
-void AABBTree::addToNodeRecursive(const Index& index, const Cuboid& cuboid)
+void RTree::addToNodeRecursive(const Index& index, const Cuboid& cuboid)
 {
 	m_toComb.maybeInsert(index);
 	Node& parent = m_nodes[index];
@@ -307,7 +307,7 @@ void AABBTree::addToNodeRecursive(const Index& index, const Cuboid& cuboid)
 	else
 		parent.insertLeaf(cuboid);
 }
-void AABBTree::removeFromNode(const Index& index, const Cuboid& cuboid, SmallSet<Index>& openList)
+void RTree::removeFromNode(const Index& index, const Cuboid& cuboid, SmallSet<Index>& openList)
 {
 	Node& parent = m_nodes[index];
 	const auto& parentCuboids = parent.getCuboids();
@@ -341,14 +341,14 @@ void AABBTree::removeFromNode(const Index& index, const Cuboid& cuboid, SmallSet
 	}
 	m_toComb.maybeInsert(index);
 }
-void AABBTree::merge(const Index& destination, const Index& source)
+void RTree::merge(const Index& destination, const Index& source)
 {
 	// TODO: maybe leave source nodes intact instead of striping out leaves?
 	const auto leaves = gatherLeavesRecursive(source);
 	for(const Cuboid& leaf : leaves)
 		addToNodeRecursive(destination, leaf);
 }
-void AABBTree::comb()
+void RTree::comb()
 {
 	// Attempt to merge leaves and child nodes.
 	// Repeat untill there are no more mergers found, then repeat with parent if it has space to merge child.
@@ -399,7 +399,7 @@ void AABBTree::comb()
 		}
 	}
 }
-void AABBTree::defragment()
+void RTree::defragment()
 {
 	// Copy nodes from then end of m_nodes over empty slots.
 	// Update parent and child indices.
@@ -438,7 +438,7 @@ void AABBTree::defragment()
 		}
 	}
 }
-void AABBTree::sort()
+void RTree::sort()
 {
 	assert(m_emptySlots.empty());
 	assert(m_toComb.empty());
@@ -476,12 +476,12 @@ void AABBTree::sort()
 	}
 	m_nodes = std::move(sortedNodes);
 }
-void AABBTree::maybeInsert(const Cuboid& cuboid)
+void RTree::maybeInsert(const Cuboid& cuboid)
 {
 	constexpr Index zeroIndex = Index::create(0);
 	addToNodeRecursive(zeroIndex, cuboid);
 }
-void AABBTree::maybeRemove(const Cuboid& cuboid)
+void RTree::maybeRemove(const Cuboid& cuboid)
 {
 	// Erase all contained branches and leaves.
 	constexpr Index rootIndex = Index::create(0);
@@ -505,7 +505,7 @@ void AABBTree::maybeRemove(const Cuboid& cuboid)
 		parent.updateBranchBoundry(offset, node.getCuboids().boundry());
 	}
 }
-void AABBTree::prepare()
+void RTree::prepare()
 {
 	bool toSort = false;
 	if(!m_toComb.empty())
@@ -521,7 +521,7 @@ void AABBTree::prepare()
 	if(toSort)
 		sort();
 }
-bool AABBTree::queryPoint(const Point3D& point) const
+bool RTree::queryPoint(const Point3D& point) const
 {
 	SmallSet<Index> openList;
 	openList.insert(Index::create(0));
@@ -543,7 +543,7 @@ bool AABBTree::queryPoint(const Point3D& point) const
 	}
 	return false;
 }
-bool AABBTree::queryCuboid(const Cuboid& cuboid) const
+bool RTree::queryCuboid(const Cuboid& cuboid) const
 {
 	SmallSet<Index> openList;
 	openList.insert(Index::create(0));
@@ -565,7 +565,7 @@ bool AABBTree::queryCuboid(const Cuboid& cuboid) const
 	}
 	return false;
 }
-bool AABBTree::querySphere(const Sphere& sphere) const
+bool RTree::querySphere(const Sphere& sphere) const
 {
 	SmallSet<Index> openList;
 	openList.insert(Index::create(0));
@@ -587,7 +587,7 @@ bool AABBTree::querySphere(const Sphere& sphere) const
 	}
 	return false;
 }
-bool AABBTree::queryLine(const Point3D& point1, const Point3D& point2) const
+bool RTree::queryLine(const Point3D& point1, const Point3D& point2) const
 {
 	if(point1 < point2)
 		return queryLine(point2, point1);
@@ -615,7 +615,7 @@ bool AABBTree::queryLine(const Point3D& point1, const Point3D& point2) const
 	}
 	return false;
 }
-uint AABBTree::leafCount() const
+uint RTree::leafCount() const
 {
 	uint output = 0;
 	for(Index i = Index::create(0); i < m_nodes.size(); ++i)
@@ -627,8 +627,8 @@ uint AABBTree::leafCount() const
 	}
 	return output;
 }
-const AABBTree::Node& AABBTree::getNode(uint i) const { return m_nodes[Index::create(i)]; }
-const Cuboid AABBTree::getNodeCuboid(uint i, uint o) const { return m_nodes[Index::create(i)].getCuboids()[o]; }
-const AABBTree::Index& AABBTree::getNodeChild(uint i, uint o) const { return m_nodes[Index::create(i)].getChildIndices()[o]; }
-bool AABBTree::queryPoint(uint x, uint y, uint z) const { return queryPoint(Point3D::create(x,y,z)); }
-uint AABBTree::getNodeSize() { return nodeSize; }
+const RTree::Node& RTree::getNode(uint i) const { return m_nodes[Index::create(i)]; }
+const Cuboid RTree::getNodeCuboid(uint i, uint o) const { return m_nodes[Index::create(i)].getCuboids()[o]; }
+const RTree::Index& RTree::getNodeChild(uint i, uint o) const { return m_nodes[Index::create(i)].getChildIndices()[o]; }
+bool RTree::queryPoint(uint x, uint y, uint z) const { return queryPoint(Point3D::create(x,y,z)); }
+uint RTree::getNodeSize() { return nodeSize; }

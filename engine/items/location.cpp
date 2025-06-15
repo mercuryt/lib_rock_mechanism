@@ -19,6 +19,7 @@ ItemIndex Items::location_setStatic(const ItemIndex& index, const BlockIndex& bl
 		assert(block.exists());
 		assert(m_location[index] != block);
 	#endif
+	Facing4 previousFacing = m_facing[index];
 	if(isGeneric(index))
 	{
 		// Check for existing generic item to combine with.
@@ -28,7 +29,6 @@ ItemIndex Items::location_setStatic(const ItemIndex& index, const BlockIndex& bl
 			return merge(found, index);
 	}
 	BlockIndex previousLocation = m_location[index];
-	Facing4 previousFacing = m_facing[index];
 	DeckRotationData deckRotationData;
 	if(previousLocation.exists())
 	{
@@ -38,12 +38,15 @@ ItemIndex Items::location_setStatic(const ItemIndex& index, const BlockIndex& bl
 	m_location[index] = block;
 	m_facing[index] = facing;
 	auto& occupiedBlocks = m_blocks[index];
-	for(const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
-	{
-		BlockIndex occupied = blocks.offset(block, pair.offset);
-		blocks.item_recordStatic(occupied, index, pair.volume);
-		occupiedBlocks.insert(occupied);
-	}
+	if(m_constructedShape[index] != nullptr)
+		m_constructedShape[index]->setLocationAndFacingStatic(m_area, previousFacing, block, facing, occupiedBlocks);
+	else
+		for(const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
+		{
+			BlockIndex occupied = blocks.offset(block, pair.offset);
+			blocks.item_recordStatic(occupied, index, pair.volume);
+			occupiedBlocks.insert(occupied);
+		}
 	deckRotationData.reinstanceAtRotatedPosition(m_area, previousLocation, block, previousFacing, facing);
 	onSetLocation(index, previousLocation, previousFacing);
 	return index;
@@ -58,11 +61,6 @@ ItemIndex Items::location_setDynamic(const ItemIndex& index, const BlockIndex& b
 	BlockIndex previousLocation = m_location[index];
 	Facing4 previousFacing = m_facing[index];
 	DeckRotationData deckRotationData;
-	if(m_constructedShape[index] != nullptr)
-	{
-		m_constructedShape[index]->setLocationAndFacing(m_area, previousFacing, block, facing, m_blocks[index]);
-		return index;
-	}
 	if(previousLocation.exists())
 	{
 		deckRotationData = DeckRotationData::recordAndClearDependentPositions(m_area, ActorOrItemIndex::createForItem(index));
@@ -71,12 +69,15 @@ ItemIndex Items::location_setDynamic(const ItemIndex& index, const BlockIndex& b
 	m_location[index] = block;
 	m_facing[index] = facing;
 	auto& occupiedBlocks = m_blocks[index];
-	for(const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
-	{
-		BlockIndex occupied = blocks.offset(block, pair.offset);
-		blocks.item_recordDynamic(occupied, index, pair.volume);
-		occupiedBlocks.insert(occupied);
-	}
+	if(m_constructedShape[index] != nullptr)
+		m_constructedShape[index]->setLocationAndFacingDynamic(m_area, previousFacing, block, facing, occupiedBlocks);
+	else
+		for(const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
+		{
+			BlockIndex occupied = blocks.offset(block, pair.offset);
+			blocks.item_recordDynamic(occupied, index, pair.volume);
+			occupiedBlocks.insert(occupied);
+		}
 	deckRotationData.reinstanceAtRotatedPosition(m_area, previousLocation, block, previousFacing, facing);
 	onSetLocation(index, previousLocation, previousFacing);
 	return index;
@@ -199,7 +200,7 @@ SetLocationAndFacingResult Items::location_tryToSetDynamicInternal(const ItemInd
 	if(m_constructedShape[index] != nullptr)
 	{
 		// constructed shapes always have a facing assigned. It indicates the layout of the constructed shape data.
-		SetLocationAndFacingResult result = m_constructedShape[index]->tryToSetLocationAndFacing(m_area, m_facing[index], location, facing, m_blocks[index]);
+		SetLocationAndFacingResult result = m_constructedShape[index]->tryToSetLocationAndFacingDynamic(m_area, m_facing[index], location, facing, m_blocks[index]);
 		if(result == SetLocationAndFacingResult::Success)
 		{
 			m_location[index] = location;
@@ -371,7 +372,7 @@ void Items::location_clearStatic(const ItemIndex& index)
 	Blocks& blocks = m_area.getBlocks();
 	std::unique_ptr<ConstructedShape>& shapePtr = m_constructedShape[index];
 	if(shapePtr != nullptr)
-		shapePtr->recordAndClear(m_area, location);
+		shapePtr->recordAndClearStatic(m_area, location);
 	else
 		for(BlockIndex occupied : m_blocks[index])
 			blocks.item_eraseStatic(occupied, index);
@@ -388,7 +389,7 @@ void Items::location_clearDynamic(const ItemIndex& index)
 	Blocks& blocks = m_area.getBlocks();
 	std::unique_ptr<ConstructedShape>& shapePtr = m_constructedShape[index];
 	if(shapePtr != nullptr)
-		shapePtr->recordAndClear(m_area, location);
+		shapePtr->recordAndClearDynamic(m_area, location);
 	else
 		for(BlockIndex occupied : m_blocks[index])
 			blocks.item_eraseDynamic(occupied, index);
@@ -396,4 +397,20 @@ void Items::location_clearDynamic(const ItemIndex& index)
 	m_blocks[index].clear();
 	if(blocks.isExposedToSky(location))
 		m_onSurface.maybeUnset(index);
+}
+bool Items::location_canEnterEverWithFacing(const ItemIndex& index, const BlockIndex& block, const Facing4& facing) const
+{
+	return m_area.getBlocks().shape_shapeAndMoveTypeCanEnterEverWithFacing(block, m_compoundShape[index], m_moveType[index], facing);
+}
+bool Items::location_canEnterCurrentlyWithFacing(const ItemIndex& index, const BlockIndex& block, const Facing4& facing) const
+{
+	return m_area.getBlocks().shape_canEnterCurrentlyWithFacing(block, m_compoundShape[index], facing, m_blocks[index]);
+}
+bool Items::location_canEnterEverFrom(const ItemIndex& index, const BlockIndex& block, const BlockIndex& previous) const
+{
+	return m_area.getBlocks().shape_shapeAndMoveTypeCanEnterEverFrom(block, m_compoundShape[index], m_moveType[index], previous);
+}
+bool Items::location_canEnterCurrentlyFrom(const ItemIndex& index, const BlockIndex& block, const BlockIndex& previous) const
+{
+	return m_area.getBlocks().shape_canEnterCurrentlyFrom(block, m_compoundShape[index], previous, m_blocks[index]);
 }

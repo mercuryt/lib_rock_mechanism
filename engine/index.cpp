@@ -9,6 +9,7 @@ template<> BlockIndex BlockIndices::random(Simulation& simulation) const
 {
 	return simulation.m_random.getInVector(data);
 }
+BlockIndex BlockIndex::dbg(const BlockIndexWidth& value) { return create(value); }
 HasShapeIndex::HasShapeIndex(const PlantIndex& index) { data = index.get(); }
 HasShapeIndex::HasShapeIndex(const ItemIndex& index) { data = index.get(); }
 HasShapeIndex::HasShapeIndex(const ActorIndex& index) { data = index.get(); }

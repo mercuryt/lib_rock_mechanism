@@ -32,9 +32,11 @@ public:
 	ConstructedShape& operator=(ConstructedShape&&) = default;
 	ConstructedShape& operator=(const ConstructedShape&) = default;
 	// Remove this shape from blocks and update the status of the features.
-	void recordAndClear(Area& area, const BlockIndex& origin);
-	void setLocationAndFacing(Area& area, const Facing4& currentFacing, const BlockIndex& newLocation, const Facing4& newFacing, OccupiedBlocksForHasShape& occupied);
-	[[nodiscard]] SetLocationAndFacingResult tryToSetLocationAndFacing(Area& area, const Facing4& currentFacing, const BlockIndex& newLocation, const Facing4& newFacing, OccupiedBlocksForHasShape& occupied);
+	void recordAndClearDynamic(Area& area, const BlockIndex& origin);
+	void recordAndClearStatic(Area& area, const BlockIndex& origin);
+	void setLocationAndFacingDynamic(Area& area, const Facing4& currentFacing, const BlockIndex& newLocation, const Facing4& newFacing, OccupiedBlocksForHasShape& occupied);
+	void setLocationAndFacingStatic(Area& area, const Facing4& currentFacing, const BlockIndex& newLocation, const Facing4& newFacing, OccupiedBlocksForHasShape& occupied);
+	[[nodiscard]] SetLocationAndFacingResult tryToSetLocationAndFacingDynamic(Area& area, const Facing4& currentFacing, const BlockIndex& newLocation, const Facing4& newFacing, OccupiedBlocksForHasShape& occupied);
 	[[nodiscard]] ShapeId getShape() const { return m_shape; }
 	[[nodiscard]] ShapeId getShapeIncludingDecks() const { return m_shapeIncludingDecks; }
 	[[nodiscard]] const OffsetCuboidSet& getDecks() const { return m_decks; }

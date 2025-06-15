@@ -14,19 +14,19 @@ uint OffsetCuboid::size() const
 }
 bool OffsetCuboid::contains(const Offset3D& offset) const
 {
-	return m_high >= offset && m_low <= offset;
+	return (m_high.data >= offset.data).all() && (m_low.data <= offset.data).all();
 }
 bool OffsetCuboid::contains(const OffsetCuboid& other) const
 {
 	return
-		m_high >= other.m_high && m_low <= other.m_high &&
-		m_high >= other.m_low && m_low <= other.m_low;
+		(m_high.data >= other.m_high.data).all() && (m_low.data <= other.m_high.data).all() &&
+		(m_high.data >= other.m_low.data).all() && (m_low.data <= other.m_low.data).all();
 }
 bool OffsetCuboid::intersects(const OffsetCuboid& other) const
 {
 	return
-		(m_high >= other.m_high && m_low <= other.m_high) ||
-		(m_high >= other.m_low && m_low <= other.m_low);
+		((m_high.data >= other.m_high.data).all() && (m_low.data <= other.m_high.data).all()) ||
+		((m_high.data >= other.m_low.data).all() && (m_low.data <= other.m_low.data).all());
 }
 bool OffsetCuboid::canMerge(const OffsetCuboid& other) const
 {
@@ -85,7 +85,7 @@ void OffsetCuboid::extend(const OffsetCuboid& other)
 {
 	m_high.clampHigh(other.m_high);
 	m_low.clampLow(other.m_low);
-	assert(m_high > m_low);
+	assert((m_high.data >= m_low.data).all());
 }
 OffsetCuboid::ConstIterator::ConstIterator(const OffsetCuboid& cuboid, const Offset3D& position) :
 	m_cuboid(const_cast<OffsetCuboid*>(&cuboid)),

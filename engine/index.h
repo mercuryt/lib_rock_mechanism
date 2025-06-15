@@ -27,6 +27,8 @@ public:
 	[[nodiscard]] static BlockIndex null() { return BlockIndex(); }
 	BlockIndex() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const BlockIndex& index) const { return index.get(); } };
+	// A no inline version of create for use in debug console.
+	[[nodiscard]] static __attribute__((noinline)) BlockIndex dbg(const BlockIndexWidth& value);
 };
 inline void to_json(Json& data, const BlockIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, BlockIndex& index) { index = BlockIndex::create(data.get<BlockIndexWidth>()); }

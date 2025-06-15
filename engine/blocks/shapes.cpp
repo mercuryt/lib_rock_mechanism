@@ -67,8 +67,6 @@ bool Blocks::shape_canFitEver(const BlockIndex& index, const ShapeId& shape, con
 bool Blocks::shape_shapeAndMoveTypeCanEnterEverFrom(const BlockIndex& index, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& from) const
 {
 	assert(shape_anythingCanEnterEver(from));
-	if(!shape_anythingCanEnterEver(index))
-		return false;
 	if(!shape_moveTypeCanEnterFrom(index, moveType, from))
 		return false;
 	const Facing4 facing = facingToSetWhenEnteringFrom(index, from);

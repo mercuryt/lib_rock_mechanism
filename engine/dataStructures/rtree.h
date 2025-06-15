@@ -4,7 +4,7 @@
 #include "../strongInteger.h"
 #include "../dataVector.h"
 
-class AABBTree
+class RTree
 {
 	static constexpr uint nodeSize = 4;
 	using IndexWidth = uint16_t;
@@ -72,7 +72,7 @@ class AABBTree
 	// Sort m_nodes by hilbert order of center. The node in position 0 is the top level and never moves.
 	void sort();
 public:
-	AABBTree() { m_nodes.add(); m_nodes.back().setParent(Index::null()); }
+	RTree() { m_nodes.add(); m_nodes.back().setParent(Index::null()); }
 	void maybeInsert(const Cuboid& cuboid);
 	void maybeRemove(const Cuboid& cuboid);
 	void maybeInsert(Cuboid&& cuboid) { const Cuboid copy = cuboid; maybeInsert(copy); }

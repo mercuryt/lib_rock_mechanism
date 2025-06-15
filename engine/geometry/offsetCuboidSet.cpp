@@ -39,8 +39,8 @@ void OffsetCuboidSet::addOrMerge(const Offset3D& offset)
 }
 void OffsetCuboidSet::maybeRemove(const Offset3D& offset)
 {
-	auto end = m_data.end();
-	for(auto iter = m_data.begin(); iter < end; ++iter)
+	// Don't cache data end, check it every iteration, it may change.
+	for(auto iter = m_data.begin(); iter < m_data.end(); ++iter)
 		if(iter->contains(offset))
 		{
 			if(iter->size() == 1)
