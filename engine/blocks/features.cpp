@@ -21,29 +21,42 @@ const BlockFeature* Blocks::blockFeature_atConst(const BlockIndex& block, const 
 void Blocks::blockFeature_remove(const BlockIndex& block, const BlockFeatureTypeId& blockFeatureType)
 {
 	assert(!solid_is(block));
-	bool transmitedTemperaturePreviously = temperature_transmits(block);
+	const bool transmitedTemperaturePreviously = temperature_transmits(block);
+	const bool wasOpaque = blockFeature_isOpaque(block);
+	const bool floorWasOpaque = blockFeature_floorIsOpaque(block);
 	m_features[block].remove(blockFeatureType);
 	m_area.m_opacityFacade.update(block);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 	if(!transmitedTemperaturePreviously && temperature_transmits(block))
 		m_area.m_exteriorPortals.onBlockCanTransmitTemperature(m_area, block);
+	if(wasOpaque && !blockFeature_isOpaque(block))
+		m_area.m_visionCuboids.blockIsTransparent(block);
+	if(floorWasOpaque && !blockFeature_floorIsOpaque(block))
+		m_area.m_visionCuboids.blockFloorIsTransparent(block);
 }
 void Blocks::blockFeature_removeAll(const BlockIndex& block)
 {
 	assert(!solid_is(block));
-	bool transmitedTemperaturePreviously = temperature_transmits(block);
+	const bool transmitedTemperaturePreviously = temperature_transmits(block);
+	const bool wasOpaque = blockFeature_isOpaque(block);
+	const bool floorWasOpaque = blockFeature_floorIsOpaque(block);
 	m_features[block].clear();
 	m_area.m_opacityFacade.update(block);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 	if(!transmitedTemperaturePreviously && temperature_transmits(block))
 		m_area.m_exteriorPortals.onBlockCanTransmitTemperature(m_area, block);
+	if(wasOpaque)
+		m_area.m_visionCuboids.blockIsTransparent(block);
+	if(floorWasOpaque)
+		m_area.m_visionCuboids.blockFloorIsTransparent(block);
 }
 void Blocks::blockFeature_construct(const BlockIndex& block, const BlockFeatureTypeId& blockFeatureType, const MaterialTypeId& materialType)
 {
 	assert(!solid_is(block));
-	bool transmitedTemperaturePreviously = temperature_transmits(block);
+	const bool transmitedTemperaturePreviously = temperature_transmits(block);
+	const bool materialTypeIsTransparent = MaterialType::getTransparent(materialType);
 	Plants& plants = m_area.getPlants();
 	if(plant_exists(block))
 	{
@@ -51,13 +64,15 @@ void Blocks::blockFeature_construct(const BlockIndex& block, const BlockFeatureT
 		plant_erase(block);
 	}
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
+	// Hewn, closed, locked.
 	m_features[block].insert(blockFeatureType, materialType, false, true, false);
-	if((blockFeatureType == BlockFeatureTypeId::Floor || blockFeatureType == BlockFeatureTypeId::Hatch) && !MaterialType::getTransparent(materialType))
+	const bool isFloorOrHatch = (blockFeatureType == BlockFeatureTypeId::Floor || blockFeatureType == BlockFeatureTypeId::Hatch);
+	if(isFloorOrHatch && !MaterialType::getTransparent(materialType))
 	{
 		m_area.m_visionCuboids.blockFloorIsOpaque(block);
 		m_exposedToSky.unset(m_area, block);
 	}
-	else if(blockFeatureType == BlockFeatureTypeId::Door && !MaterialType::getTransparent(materialType))
+	else if(BlockFeatureType::byId(blockFeatureType).blockIsOpaque && !materialTypeIsTransparent)
 	{
 		m_area.m_visionCuboids.blockIsOpaque(block);
 		m_exposedToSky.unset(m_area, block);
@@ -70,15 +85,20 @@ void Blocks::blockFeature_construct(const BlockIndex& block, const BlockFeatureT
 void Blocks::blockFeature_hew(const BlockIndex& block, const BlockFeatureTypeId& blockFeatureType)
 {
 	assert(solid_is(block));
-	m_features[block].insert(blockFeatureType, solid_get(block), true, true, false);
+	const MaterialTypeId& materialType = solid_get(block);
+	const bool materialTypeIsTransparent = MaterialType::getTransparent(materialType);
+	m_features[block].insert(blockFeatureType, materialType, true, true, false);
 	// Solid_setNot will handle calling m_exteriorPortals.onBlockCanTransmitTemperature.
-	// TODO: There is no support for hewing doors, hatches or flaps. This is ok because those things can't be hewn. Could be fixed anyway?
+	// TODO: There is no support for hewing hatches or flaps. This is ok because those things can't be hewn. Could be fixed anyway?
 	const BlockIndex& above = getBlockAbove(block);
 	auto actorsCopy = actor_getAll(above);
 	for(const ActorIndex& actor : actorsCopy)
 		m_area.getActors().tryToMoveSoAsNotOccuping(actor, above);
 	solid_setNot(block);
 	m_area.m_opacityFacade.update(block);
+	if(!BlockFeatureType::byId(blockFeatureType).blockIsOpaque && !materialTypeIsTransparent)
+		// Neighter floor nor hatch can be hewn so we don't need to check if this is block opaque or floor opaque.
+		m_area.m_visionCuboids.blockIsOpaque(block);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 }
@@ -100,6 +120,10 @@ void Blocks::blockFeature_setAll(const BlockIndex& index, BlockFeatureSet& featu
 	m_area.m_opacityFacade.update(index);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(index);
+	if(blockFeature_isOpaque(index))
+		m_area.m_visionCuboids.blockIsOpaque(index);
+	if(blockFeature_floorIsOpaque(index))
+		m_area.m_visionCuboids.blockFloorIsOpaque(index);
 }
 void Blocks::blockFeature_setAllMoveDynamic(const BlockIndex& index, BlockFeatureSet&& features)
 {
@@ -110,6 +134,10 @@ void Blocks::blockFeature_setAllMoveDynamic(const BlockIndex& index, BlockFeatur
 		m_area.m_visionCuboids.blockIsOpaque(index);
 	else if(movedFeatures.floorIsOpaque())
 		m_area.m_visionCuboids.blockFloorIsOpaque(index);
+	if(!blockFeature_isOpaque(index))
+		m_area.m_visionCuboids.blockIsTransparent(index);
+	if(!blockFeature_floorIsOpaque(index))
+		m_area.m_visionCuboids.blockFloorIsTransparent(index);
 }
 void Blocks::blockFeature_lock(const BlockIndex& block, const BlockFeatureTypeId& blockFeatueType)
 {
@@ -163,8 +191,10 @@ bool Blocks::blockFeature_blocksEntrance(const BlockIndex& block) const
 {
 	for(const BlockFeature& blockFeature : m_features[block])
 	{
-		if(blockFeature.blockFeatureTypeId == BlockFeatureTypeId::Fortification || blockFeature.blockFeatureTypeId == BlockFeatureTypeId::FloodGate ||
-				(blockFeature.blockFeatureTypeId == BlockFeatureTypeId::Door && blockFeature.locked)
+		if(
+			blockFeature.blockFeatureTypeId == BlockFeatureTypeId::Fortification ||
+			blockFeature.blockFeatureTypeId == BlockFeatureTypeId::FloodGate ||
+			(blockFeature.blockFeatureTypeId == BlockFeatureTypeId::Door && blockFeature.locked)
 		  )
 			return true;
 	}
@@ -191,8 +221,10 @@ bool Blocks::blockFeature_isSupport(const BlockIndex& block) const
 bool Blocks::blockFeature_canEnterFromBelow(const BlockIndex& block) const
 {
 	for(const BlockFeature& blockFeature : m_features[block])
-		if(blockFeature.blockFeatureTypeId == BlockFeatureTypeId::Floor || blockFeature.blockFeatureTypeId == BlockFeatureTypeId::FloorGrate ||
-				(blockFeature.blockFeatureTypeId == BlockFeatureTypeId::Hatch && blockFeature.locked)
+		if(
+			blockFeature.blockFeatureTypeId == BlockFeatureTypeId::Floor ||
+			blockFeature.blockFeatureTypeId == BlockFeatureTypeId::FloorGrate ||
+			(blockFeature.blockFeatureTypeId == BlockFeatureTypeId::Hatch && blockFeature.locked)
 		  )
 			return false;
 	return true;
@@ -201,8 +233,10 @@ bool Blocks::blockFeature_canEnterFromAbove([[maybe_unused]] const BlockIndex& b
 {
 	assert(shape_anythingCanEnterEver(block));
 	for(const BlockFeature& blockFeature : m_features[from])
-		if(blockFeature.blockFeatureTypeId == BlockFeatureTypeId::Floor || blockFeature.blockFeatureTypeId == BlockFeatureTypeId::FloorGrate ||
-				(blockFeature.blockFeatureTypeId == BlockFeatureTypeId::Hatch && blockFeature.locked)
+		if(
+			blockFeature.blockFeatureTypeId == BlockFeatureTypeId::Floor ||
+			blockFeature.blockFeatureTypeId == BlockFeatureTypeId::FloorGrate ||
+			(blockFeature.blockFeatureTypeId == BlockFeatureTypeId::Hatch && blockFeature.locked)
 		  )
 			return false;
 	return true;
@@ -223,4 +257,12 @@ bool Blocks::blockFeature_multiTileCanEnterAtNonZeroZOffset(const BlockIndex& in
 		if(BlockFeatureType::byId(blockFeature.blockFeatureTypeId).blocksMultiTileShapesIfNotAtZeroZOffset)
 			return false;
 	return true;
+}
+bool Blocks::blockFeature_isOpaque(const BlockIndex& index) const
+{
+	return m_features[index].isOpaque();
+}
+bool Blocks::blockFeature_floorIsOpaque(const BlockIndex& index) const
+{
+	return m_features[index].floorIsOpaque();
 }

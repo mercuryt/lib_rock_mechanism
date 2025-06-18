@@ -135,7 +135,7 @@ class HasCraftingLocationsAndJobsForFaction final
 	CraftStepTypeCategoryMap<BlockIndices> m_locationsByCategory;
 	BlockIndexMap<std::vector<CraftStepTypeCategoryId>> m_stepTypeCategoriesByLocation;
 	CraftStepTypeCategoryMap<std::vector<CraftJob*>> m_unassignedProjectsByStepTypeCategory;
-	SkillTypeMap<std::vector<CraftJob*>> m_unassignedProjectsBySkill;
+	SmallMap<SkillTypeId, std::vector<CraftJob*>> m_unassignedProjectsBySkill;
 	std::list<CraftJob> m_jobs;
 	Area& m_area;
 	FactionId m_faction;

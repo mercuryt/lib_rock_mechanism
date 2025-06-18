@@ -135,7 +135,8 @@ class PathInnerLoops
 		{
 			if(detour)
 			{
-				const OccupiedBlocksForHasShape initalBlocks = OccupiedBlocksForHasShape::fromCollection(Shape::getBlocksOccupiedAt(shape, blocks, start, startFacing));
+				// TODO: This is converting a BlockIndices into a SmallSet<BlockIndex>, remove it when BlockIndices is removed.
+				const OccupiedBlocksForHasShape initalBlocks = OccupiedBlocksForHasShape::create(Shape::getBlocksOccupiedAt(shape, blocks, start, startFacing));
 				auto accessCondition = [&blocks, &initalBlocks, shape, moveType](const BlockIndex& block, const Facing4& facing) -> bool
 				{
 					return blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(block, shape, moveType, facing, initalBlocks);

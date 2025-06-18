@@ -170,14 +170,17 @@ void Actors::move_callback(const ActorIndex& index)
 			assert(m_path[index].size() != 1);
 			m_path[index].popBack();
 			const BlockIndex& nextLocation = m_path[index].back();
-			if(blocks.shape_shapeAndMoveTypeCanEnterEverFrom(nextLocation, shape, moveType, newLocation))
+			if(
+				blocks.shape_anythingCanEnterEver(nextLocation) &&
+				blocks.shape_shapeAndMoveTypeCanEnterEverFrom(nextLocation, shape, moveType, newLocation)
+			)
 				// Can take next step.
 				move_schedule(index, newLocation);
 			else if(blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(destination, shape, moveType))
-				// Destination is still valid.
+				// Destination is still valid, repath.
 				move_setDestination(index, destination);
 			else
-				// Destination no longer valid
+				// Destination no longer valid.
 				objective_canNotCompleteSubobjective(index);
 		}
 	}

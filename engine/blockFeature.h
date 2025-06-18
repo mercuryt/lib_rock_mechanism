@@ -26,6 +26,7 @@ struct BlockFeatureType
 	const bool canStandAbove;
 	const bool isSupportAgainstCaveIn;
 	const bool blocksMultiTileShapesIfNotAtZeroZOffset;
+	const bool blockIsOpaque;
 	const Force motiveForce;
 	const uint value;
 	bool operator==(const BlockFeatureType& x) const { return this == &x; }
@@ -34,16 +35,16 @@ struct BlockFeatureType
 };
 // These must appear in the same order as in the enum.
 static std::array<BlockFeatureType, 10> blockFeatureTypeData = {{
-	{"door", false, false, true, false, false, false, true, Force::create(0), 1},
-	{"flap", false, false, false, false, false, false, true, Force::create(0), 1},
-	{"floodGate", true, true, false, false, true, false, true, Force::create(0), 1},
-	{"floor", false, false, false, true, false, false, true, Force::create(0), 1},
-	{"floorGrate", false, false, false, true, false, false, true, Force::create(0), 1},
-	{"fortification", true, true, false, false, true, true, true, Force::create(0), 1},
-	{"hatch", false, false, true, true, false, false, true, Force::create(0), 1},
-	{"keel", false, true, false, false, true, true, true, Force::create(0), 1},
-	{"ramp", true, false, false, true, true, false, true, Force::create(0), 1},
-	{"stairs", true, false, false, true, true, false, true, Force::create(0), 1},
+	{"door", false, false, true, false, false, false, true, true, Force::create(0), 1},
+	{"flap", false, false, false, false, false, false, true, true, Force::create(0), 1},
+	{"floodGate", true, true, false, false, true, false, true, false, Force::create(0), 1},
+	{"floor", false, false, false, true, false, false, true, false, Force::create(0), 1},
+	{"floorGrate", false, false, false, true, false, false, true, false, Force::create(0), 1},
+	{"fortification", true, true, false, false, true, true, true, false, Force::create(0), 1},
+	{"hatch", false, false, true, true, false, false, true, false, Force::create(0), 1},
+	{"keel", false, true, false, false, true, true, true, true, Force::create(0), 1},
+	{"ramp", true, false, false, true, true, false, true, false, Force::create(0), 1},
+	{"stairs", true, false, false, true, true, false, true, false, Force::create(0), 1},
 }};
 class BlockFeatureSet
 {

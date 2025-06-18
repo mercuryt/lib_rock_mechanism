@@ -227,6 +227,8 @@ public:
 			output += value.toString() + ", ";
 		return output;
 	}
+	template<typename Source>
+	static SmallSet<T> create(const Source& source) { SmallSet<T> output; for(const T& value : source) output.insert(value); return output; }
 };
 // Define custom serialization / deserialization instead of using intrusive because this type is used in raws and specifiying field name would be annoying.
 template<typename T>

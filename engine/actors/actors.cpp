@@ -298,19 +298,12 @@ void Actors::load(const Json& data)
 	data["speedIndividual"].get_to(m_speedIndividual);
 	data["speedActual"].get_to(m_speedActual);
 	data["moveRetries"].get_to(m_moveRetries);
+	data["skillSet"].get_to(m_skillSet);
 	auto& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
 	m_moveType.resize(size);
 	ActorIndex i = ActorIndex::create(0);
 	for(const MoveTypeId& moveType : m_moveType)
 		m_area.m_hasTerrainFacades.maybeRegisterMoveType(moveType);
-	m_skillSet.resize(size);
-	const auto& skillData = data["skillSet"];
-	for(auto iter = skillData.begin(); iter != skillData.end(); ++iter)
-	{
-		ActorIndex index = ActorIndex::create(std::stoi(iter.key()));
-		m_skillSet[index] = std::make_unique<SkillSet>();
-		m_skillSet[index]->load(iter.value());
-	}
 	m_body.resize(size);
 	assert(data.contains("body") && data["body"].contains("data"));
 	const auto& bodyData = data["body"]["data"];
@@ -461,7 +454,6 @@ void to_json(Json& data, const std::unique_ptr<MustEat>& mustEat) { data = mustE
 void to_json(Json& data, const std::unique_ptr<MustDrink>& mustDrink) { data = mustDrink->toJson(); }
 void to_json(Json& data, const std::unique_ptr<ActorNeedsSafeTemperature>& actorNeedsSafeTemperature) { data = actorNeedsSafeTemperature->toJson(); }
 void to_json(Json& data, const std::unique_ptr<CanGrow>& canGrow) { data = canGrow->toJson(); }
-void to_json(Json& data, const std::unique_ptr<SkillSet>& skillSet) { data = skillSet->toJson(); }
 Json Actors::toJson() const
 {
 	Json output{
@@ -495,7 +487,7 @@ Json Actors::toJson() const
 		{"mustEat", m_mustEat},
 		{"needsSafeTemperature", m_needsSafeTemperature},
 		{"canGrow", m_canGrow},
-		{"skillSet", Json::object()},
+		{"skillSet", m_skillSet},
 		{"canReserve", m_canReserve},
 		{"hasUniform", Json::object()},
 		{"equipmentSet", Json::object()},
@@ -524,8 +516,6 @@ Json Actors::toJson() const
 	for(auto index : getAll())
 	{
 		std::string i = std::to_string(index.get());
-		if(m_skillSet[index] != nullptr)
-			output["skillSet"][i] = m_skillSet[index]->toJson();
 		if(m_hasUniform[index] != nullptr)
 			output["uniform"][i] = *m_hasUniform[index];
 		if(m_equipmentSet[index] != nullptr)
@@ -691,7 +681,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_mustEat[index] = std::make_unique<MustEat>(m_area, index);
 	m_needsSafeTemperature[index] = std::make_unique<ActorNeedsSafeTemperature>(m_area, index);
 	m_canGrow[index] = std::make_unique<CanGrow>(m_area, index, params.getPercentGrown(simulation));
-	m_skillSet[index] = std::make_unique<SkillSet>();
+	assert(m_skillSet[index].empty());
 	// TODO: can reserve is not needed for non sentients or actors without factions.
 	m_canReserve[index] = std::make_unique<CanReserve>(params.faction);
 	assert(m_hasUniform[index] == nullptr);
@@ -1024,7 +1014,8 @@ Percent Actors::sleep_getPercentTired(const ActorIndex& index) const { return m_
 BlockIndex Actors::sleep_getSpot(const ActorIndex& index) const { return m_mustSleep[index]->getLocation(); }
 bool Actors::sleep_hasTiredEvent(const ActorIndex& index) const { return m_mustSleep[index]->hasTiredEvent(); }
 // Skills.
-SkillLevel Actors::skill_getLevel(const ActorIndex& index, const SkillTypeId& skillType) const { return m_skillSet[index]->get(skillType); }
+[[nodiscard]] SkillLevel Actors::skill_getLevel(const ActorIndex& index, const SkillTypeId& skillType) const { return m_skillSet[index].get(skillType); }
+void Actors::skill_addXp(const ActorIndex& index, const SkillTypeId& skillType, const SkillExperiencePoints& xp) { m_skillSet[index].addXp(skillType, xp); }
 // CoolDownEvent.
 AttackCoolDownEvent::AttackCoolDownEvent(Simulation& simulation, const Json& data) :
 	ScheduledEvent(simulation, data["delay"].get<Step>(), data["start"].get<Step>())

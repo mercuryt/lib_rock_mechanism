@@ -32,19 +32,8 @@ struct FluidData
 	CollisionVolume volume;
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(FluidData, type, volume);
-/*
-struct BlockIsPartOfStockPile
-{
-	StockPile& stockPile;
-	bool active;
-};
-*/
-// The staticly allocated component of a vector takes up 24 bytes.
-// ActorIndex and ItemIndex are each 4 bytes.
-// One slot is reserved as a flag.
-// (24 / 4) - 1 = 5
-using ActorIndicesForBlock = VerySmallSet<ActorIndex, 5>;
-using ItemIndicesForBlock = VerySmallSet<ItemIndex, 5>;
+using ActorIndicesForBlock = SmallSet<ActorIndex>;
+using ItemIndicesForBlock = SmallSet<ItemIndex>;
 class Blocks
 {
 	OffsetArraySIMD<26> m_indexOffsetsForAdjacentAll;
@@ -271,12 +260,14 @@ public:
 	[[nodiscard]] bool blockFeature_isSupport(const BlockIndex& index) const;
 	[[nodiscard]] bool blockFeature_canEnterFromBelow(const BlockIndex& index) const;
 	[[nodiscard]] bool blockFeature_canEnterFromAbove(const BlockIndex& index, const BlockIndex& from) const;
+	[[nodiscard]] bool blockFeature_multiTileCanEnterAtNonZeroZOffset(const BlockIndex& index) const;
+	[[nodiscard]] bool blockFeature_isOpaque(const BlockIndex& index) const;
+	[[nodiscard]] bool blockFeature_floorIsOpaque(const BlockIndex& index) const;
 	[[nodiscard]] MaterialTypeId blockFeature_getMaterialType(const BlockIndex& index) const;
 	[[nodiscard]] bool blockFeature_contains(const BlockIndex& index, const BlockFeatureTypeId& blockFeatureType) const;
 	[[nodiscard]] auto& blockFeature_getAll(const BlockIndex& index) const { return m_features[index]; }
 	// Should probably be followed by call to removeAll.
 	[[nodiscard]] auto&& blockFeature_getAllMove(const BlockIndex& index) { return std::move(m_features[index]); }
-	[[nodiscard]] bool blockFeature_multiTileCanEnterAtNonZeroZOffset(const BlockIndex& index) const;
 	// -Fluids
 	void fluid_spawnMist(const BlockIndex& index, const FluidTypeId& fluidType, const DistanceInBlocks maxMistSpread = DistanceInBlocks::create(0));
 	void fluid_clearMist(const BlockIndex& index);

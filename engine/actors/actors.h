@@ -99,7 +99,7 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	StrongVector<std::unique_ptr<MustEat>, ActorIndex> m_mustEat;
 	StrongVector<std::unique_ptr<ActorNeedsSafeTemperature>, ActorIndex> m_needsSafeTemperature;
 	StrongVector<std::unique_ptr<CanGrow>, ActorIndex> m_canGrow;
-	StrongVector<std::unique_ptr<SkillSet>, ActorIndex> m_skillSet;
+	StrongVector<SkillSet, ActorIndex> m_skillSet;
 	StrongVector<std::unique_ptr<CanReserve>, ActorIndex> m_canReserve;
 	StrongVector<std::unique_ptr<ActorHasUniform>, ActorIndex> m_hasUniform;
 	StrongVector<std::unique_ptr<EquipmentSet>, ActorIndex> m_equipmentSet;
@@ -528,7 +528,8 @@ public:
 	[[nodiscard]] Speed attributes_getMoveSpeed(const ActorIndex& index) const;
 	// Skills.
 	[[nodiscard]] SkillLevel skill_getLevel(const ActorIndex& index, const SkillTypeId& skillType) const;
-	[[nodiscard]] SkillSet& skill_getSet(const ActorIndex& index) const { return *m_skillSet[index]; }
+	[[nodiscard]] const SkillSet& skill_getSet(const ActorIndex& index) const { return m_skillSet[index]; }
+	void skill_addXp(const ActorIndex& index, const SkillTypeId& skillType, const SkillExperiencePoints& xp);
 	// Growth.
 	void grow_maybeStart(const ActorIndex& index);
 	void grow_stop(const ActorIndex& index);

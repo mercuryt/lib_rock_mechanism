@@ -23,6 +23,7 @@ void BlockFeatureSet::remove(const BlockFeatureTypeId& typeId)
 	auto found = std::ranges::find(m_data, typeId, &BlockFeature::blockFeatureTypeId);
 	assert(found != m_data.end());
 	std::swap(m_data.back(), *found);
+	m_data.pop_back();
 }
 bool BlockFeatureSet::contains(const BlockFeatureTypeId& typeId) const
 {
@@ -66,7 +67,7 @@ bool BlockFeatureSet::blocksEntrance() const
 bool BlockFeatureSet::isOpaque() const
 {
 	for(const BlockFeature& feature : m_data)
-		if(BlockFeatureType::byId(feature.blockFeatureTypeId).blocksEntrance && !MaterialType::getTransparent(feature.materialType))
+		if(BlockFeatureType::byId(feature.blockFeatureTypeId).blockIsOpaque && !MaterialType::getTransparent(feature.materialType))
 			return true;
 	return false;
 }

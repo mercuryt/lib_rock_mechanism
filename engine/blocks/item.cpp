@@ -42,10 +42,10 @@ void Blocks::item_eraseDynamic(const BlockIndex& index, const ItemIndex& item)
 	auto& blockItems = m_items[index];
 	auto& blockItemVolume = m_itemVolume[index];
 	auto iter = blockItems.find(item);
-	uint16_t offset = (iter - blockItems.begin()).getIndex();
+	uint16_t offset = &*iter - &*blockItems.begin();
 	auto iter2 = m_itemVolume[index].begin() + offset;
 	m_dynamicVolume[index] -= iter2->second;
-	blockItems.remove(iter);
+	blockItems.erase(iter);
 	(*iter2) = blockItemVolume.back();
 	blockItemVolume.pop_back();
 }
@@ -54,10 +54,10 @@ void Blocks::item_eraseStatic(const BlockIndex& index, const ItemIndex& item)
 	auto& blockItems = m_items[index];
 	auto& blockItemVolume = m_itemVolume[index];
 	auto iter = blockItems.find(item);
-	uint16_t offset = (iter - blockItems.begin()).getIndex();
+	uint16_t offset = &*iter - &*blockItems.begin();
 	auto iter2 = m_itemVolume[index].begin() + offset;
 	m_staticVolume[index] -= iter2->second;
-	blockItems.remove(iter);
+	blockItems.erase(iter);
 	(*iter2) = blockItemVolume.back();
 	blockItemVolume.pop_back();
 }
@@ -105,7 +105,7 @@ ItemIndex Blocks::item_addGeneric(const BlockIndex& index, const ItemTypeId& ite
 	// Generics in transit ( being hauled by multiple workers ) should not use this method and should use setLocationAndFacing instead.
 	m_staticVolume[index] += volume;
 	auto& blockItems = m_items[index];
-	auto found = blockItems.find_if([itemType, &items](const auto& item) { return items.getItemType(item) == itemType; });
+	auto found = blockItems.findIf([itemType, &items](const auto& item) { return items.getItemType(item) == itemType; });
 	if(found == blockItems.end())
 	{
 		ItemIndex item = items.create(ItemParamaters{
@@ -128,7 +128,7 @@ Quantity Blocks::item_getCount(const BlockIndex& index, const ItemTypeId& itemTy
 {
 	auto& itemsInBlock = m_items[index];
 	Items& items = m_area.getItems();
-	const auto found = itemsInBlock.find_if([&](const ItemIndex& item)
+	const auto found = itemsInBlock.findIf([&](const ItemIndex& item)
 	{
 		return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType;
 	});
@@ -141,7 +141,7 @@ ItemIndex Blocks::item_getGeneric(const BlockIndex& index, const ItemTypeId& ite
 {
 	auto& itemsInBlock = m_items[index];
 	Items& items = m_area.getItems();
-	const auto found = itemsInBlock.find_if([&](const ItemIndex& item) {
+	const auto found = itemsInBlock.findIf([&](const ItemIndex& item) {
 		return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType;
 	});
 	if(found == itemsInBlock.end())

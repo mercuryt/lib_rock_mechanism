@@ -25,10 +25,10 @@ void Blocks::actor_eraseStatic(const BlockIndex& index, const ActorIndex& actor)
 	auto& blockActors = m_actors[index];
 	auto& blockActorVolume = m_actorVolume[index];
 	auto iter = blockActors.find(actor);
-	uint16_t offset = (iter - blockActors.begin()).getIndex();
+	uint16_t offset = &*iter - &*blockActors.begin();
 	auto iter2 = m_actorVolume[index].begin() + offset;
 	m_staticVolume[index] -= iter2->second;
-	blockActors.remove(iter);
+	blockActors.erase(iter);
 	(*iter2) = blockActorVolume.back();
 	blockActorVolume.pop_back();
 }
@@ -39,10 +39,10 @@ void Blocks::actor_eraseDynamic(const BlockIndex& index, const ActorIndex& actor
 	auto& blockActors = m_actors[index];
 	auto& blockActorVolume = m_actorVolume[index];
 	auto iter = blockActors.find(actor);
-	uint16_t offset = (iter - blockActors.begin()).getIndex();
+	uint16_t offset = &*iter - &*blockActors.begin();
 	auto iter2 = m_actorVolume[index].begin() + offset;
 	m_dynamicVolume[index] -= iter2->second;
-	blockActors.remove(iter);
+	blockActors.erase(iter);
 	(*iter2) = blockActorVolume.back();
 	blockActorVolume.pop_back();
 }

@@ -82,9 +82,11 @@ void Blocks::solid_set(const BlockIndex& index, const MaterialTypeId& materialTy
 }
 void Blocks::solid_setNot(const BlockIndex& index)
 {
+	bool wasTransparent = MaterialType::getTransparent(solid_get(index));
 	solid_setNotShared(index);
 	// Vision cuboid.
-	m_area.m_visionCuboids.blockIsTransparent(index);
+	if(!wasTransparent)
+		m_area.m_visionCuboids.blockIsTransparent(index);
 	// Gravity.
 	const BlockIndex& above = getBlockAbove(index);
 	if(above.exists() && shape_anythingCanEnterEver(above))
@@ -163,6 +165,9 @@ void Blocks::solid_setDynamic(const BlockIndex& index, const MaterialTypeId& mat
 		m_area.m_opacityFacade.update(index);
 		// TODO: add a multiple blocks at a time version which does this update more efficiently.
 		m_area.m_visionCuboids.blockIsOpaque(index);
+		// Opacity.
+		if(!MaterialType::getTransparent(materialType))
+			m_area.m_visionCuboids.blockIsOpaque(index);
 	}
 }
 void Blocks::solid_setNotDynamic(const BlockIndex& index)

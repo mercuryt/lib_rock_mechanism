@@ -177,7 +177,7 @@ CombatScore Actors::combat_getCombatScoreForAttack(const ActorIndex& index, cons
 	SkillTypeId skill = attack.item == ItemIndex::null() ?
 		SkillType::byName("unarmed") :
 		AttackType::getSkillType(attack.attackType);
-	SkillLevel skillValue = m_skillSet[index]->get(skill);
+	SkillLevel skillValue = m_skillSet[index].get(skill);
 	output += (skillValue * Config::attackSkillCombatModifier).get();
 	Items& items = m_area.getItems();
 	Quality quality = attack.item == ItemIndex::null() ? Config::averageItemQuality : items.getQuality(attack.item);
@@ -273,7 +273,7 @@ bool Actors::combat_inRange(const ActorIndex& index, const ActorIndex& target) c
 Percent Actors::combat_projectileHitPercent(const ActorIndex& index, const Attack& attack, const ActorIndex& target) const
 {
 	Percent chance = Percent::create(100 - std::pow(distanceToActorFractional(index, target).get(), Config::projectileHitChanceFallsOffWithRangeExponent));
-	chance += m_skillSet[index]->get(AttackType::getSkillType(attack.attackType)).get() * Config::projectileHitPercentPerSkillPoint;
+	chance += m_skillSet[index].get(AttackType::getSkillType(attack.attackType)).get() * Config::projectileHitPercentPerSkillPoint;
 	chance += (getVolume(target) * Config::projectileHitPercentPerUnitVolume).get();
 	chance += m_dextarity[index].get() * Config::projectileHitPercentPerPointDextarity;
 	if(attack.item.exists())

@@ -354,9 +354,9 @@ TEST_CASE("vision")
 		CHECK(area.m_visionCuboids.getVisionCuboidIndexForBlock(block1) != area.m_visionCuboids.getVisionCuboidIndexForBlock(block4));
 		CHECK(area.m_visionCuboids.getVisionCuboidIndexForBlock(block1) == area.m_visionCuboids.getVisionCuboidIndexForBlock(block5));
 		blocks.blockFeature_remove(block3, floor);
-		CHECK(area.m_visionCuboids.size() == 7);
+		CHECK(area.m_visionCuboids.size() == 6);
 		CHECK(area.m_visionCuboids.getVisionCuboidIndexForBlock(block3) == area.m_visionCuboids.getVisionCuboidIndexForBlock(block4));
-		CHECK(area.m_visionCuboids.getCuboidForBlock(block4).size() == 500);
+		CHECK(area.m_visionCuboids.getCuboidForBlock(block4).size() == 700);
 		blocks.solid_setNot(block2);
 		CHECK(area.m_visionCuboids.size() == 1);
 		CHECK(area.m_visionCuboids.getCuboidForBlock(block2).exists());
