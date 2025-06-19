@@ -80,7 +80,7 @@ public:
 	void removeHarvestDesignation(Area& area, const PlantIndex& plant);
 	void setDayOfYear(Area& area, uint32_t dayOfYear);
 	[[nodiscard]] FarmField& create(Area& area, SmallSet<BlockIndex>&& blocks);
-	[[nodiscard]] FarmField& create(Area& area, const BlockIndices& blocks);
+	[[nodiscard]] FarmField& create(Area& area, const SmallSet<BlockIndex>& blocks);
 	[[nodiscard]] FarmField& create(Area& area, const Cuboid& cuboid);
 	[[nodiscard]] FarmField& create(Area& area, const CuboidSet& cuboid);
 	void extend(Area& area, FarmField& farmField, SmallSet<BlockIndex>& blocks);

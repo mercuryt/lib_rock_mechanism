@@ -279,5 +279,5 @@ Mass Items::cargo_getMass(const ItemIndex& index) const
 {
 	return m_hasCargo[index]->getMass();
 }
-const ItemIndices& Items::cargo_getItems(const ItemIndex& index) const { return m_hasCargo[index]->getItems(); }
-const ActorIndices& Items::cargo_getActors(const ItemIndex& index) const { return const_cast<ItemHasCargo&>(*m_hasCargo[index]).getActors(); }
+const SmallSet<ItemIndex>& Items::cargo_getItems(const ItemIndex& index) const { return m_hasCargo[index]->getItems(); }
+const SmallSet<ActorIndex>& Items::cargo_getActors(const ItemIndex& index) const { return const_cast<ItemHasCargo&>(*m_hasCargo[index]).getActors(); }

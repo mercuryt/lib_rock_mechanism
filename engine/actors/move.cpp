@@ -41,7 +41,7 @@ void Actors::move_updateActualSpeed(const ActorIndex& index)
 {
 	move_setMoveSpeedActual(index, isLeading(index) ? lead_getSpeed(index) : m_speedIndividual[index]);
 }
-void Actors::move_setPath(const ActorIndex& index, const BlockIndices& path)
+void Actors::move_setPath(const ActorIndex& index, const SmallSet<BlockIndex>& path)
 {
 	assert(!path.empty());
 	if(!m_isPilot[index])
@@ -248,13 +248,13 @@ void Actors::move_setDestination(const ActorIndex& index, const BlockIndex& dest
 		move_pathRequestRecord(index, std::make_unique<GoToPathRequest>(location, DistanceInBlocks::max(), getReference(index), shape, faction, moveType, m_facing[index], detour, adjacent, reserve, destination));
 	else
 	{
-		BlockIndices candidates;
+		SmallSet<BlockIndex> candidates;
 		for(const BlockIndex& adjacent : blocks.getAdjacentWithEdgeAndCornerAdjacent(destination))
 			if(
 				blocks.shape_anythingCanEnterEver(adjacent) &&
 				blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, shape, moveType)
 			)
-				candidates.add(adjacent);
+				candidates.insert(adjacent);
 		move_pathRequestRecord(
 			index,
 			std::make_unique<GoToAnyPathRequest>(
@@ -269,7 +269,7 @@ void Actors::move_setDestinationAdjacentToLocation(const ActorIndex& index, cons
 {
 	move_setDestination(index, destination, detour, true, unreserved, reserve);
 }
-void Actors::move_setDestinationToAny(const ActorIndex& index, const BlockIndices& candidates, bool detour, bool unreserved, bool reserve, const BlockIndex& huristicDestination)
+void Actors::move_setDestinationToAny(const ActorIndex& index, const SmallSet<BlockIndex>& candidates, bool detour, bool unreserved, bool reserve, const BlockIndex& huristicDestination)
 {
 	FactionId faction;
 	if(unreserved)
@@ -284,13 +284,13 @@ void Actors::move_setDestinationAdjacentToActor(const ActorIndex& index, const A
 	assert(!isAdjacentToLocation(index, otherLocation));
 	Blocks& blocks = m_area.getBlocks();
 	assert(m_pathRequest[index] == nullptr);
-		BlockIndices candidates;
+		SmallSet<BlockIndex> candidates;
 	for(const BlockIndex& adjacent : getAdjacentBlocks(other))
 		if(
 			blocks.shape_anythingCanEnterEver(adjacent) &&
 			blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
 		)
-			candidates.add(adjacent);
+			candidates.insert(adjacent);
 	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, otherLocation);
 }
 void Actors::move_setDestinationAdjacentToItem(const ActorIndex& index, const ItemIndex& item, bool detour, bool unreserved, bool reserve)
@@ -301,13 +301,13 @@ void Actors::move_setDestinationAdjacentToItem(const ActorIndex& index, const It
 	Blocks& blocks = m_area.getBlocks();
 	Items& items = m_area.getItems();
 	assert(m_pathRequest[index] == nullptr);
-		BlockIndices candidates;
+		SmallSet<BlockIndex> candidates;
 		for(const BlockIndex& adjacent : items.getAdjacentBlocks(item))
 			if(
 				blocks.shape_anythingCanEnterEver(adjacent) &&
 				blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
 			)
-				candidates.add(adjacent);
+				candidates.insert(adjacent);
 	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, items.getLocation(item));
 }
 void Actors::move_setDestinationAdjacentToPlant(const ActorIndex& index, const PlantIndex& plant, bool detour, bool unreserved, bool reserve)
@@ -317,13 +317,13 @@ void Actors::move_setDestinationAdjacentToPlant(const ActorIndex& index, const P
 	Blocks& blocks = m_area.getBlocks();
 	Plants& plants = m_area.getPlants();
 	assert(m_pathRequest[index] == nullptr);
-		BlockIndices candidates;
+		SmallSet<BlockIndex> candidates;
 		for(const BlockIndex& adjacent : plants.getAdjacentBlocks(plant))
 			if(
 				blocks.shape_anythingCanEnterEver(adjacent) &&
 				blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
 			)
-				candidates.add(adjacent);
+				candidates.insert(adjacent);
 	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, plants.getLocation(plant));
 }
 void Actors::move_setDestinationAdjacentToPolymorphic(const ActorIndex& index, ActorOrItemIndex actorOrItemIndex, bool detour, bool unreserved, bool reserve)
@@ -366,7 +366,7 @@ void Actors::move_clearAllEventsAndTasks(const ActorIndex& index)
 }
 void Actors::move_onLeaveArea(const ActorIndex& index) { move_clearAllEventsAndTasks(index); }
 void Actors::move_onDeath(const ActorIndex& index) { move_clearAllEventsAndTasks(index); }
-bool Actors::move_tryToReserveProposedDestination(const ActorIndex& index, const BlockIndices& path)
+bool Actors::move_tryToReserveProposedDestination(const ActorIndex& index, const SmallSet<BlockIndex>& path)
 {
 	ShapeId shape = getShape(index);
 	CanReserve& canReserve = canReserve_get(index);
@@ -423,7 +423,7 @@ bool Actors::move_destinationIsAdjacentToLocation(const ActorIndex& index, const
 	assert(m_destination[index].exists());
 	return m_area.getBlocks().isAdjacentToIncludingCornersAndEdges(location, m_destination[index]);
 }
-void Actors::move_pathRequestCallback(const ActorIndex& index, BlockIndices path, bool useCurrentLocation, bool reserveDestination)
+void Actors::move_pathRequestCallback(const ActorIndex& index, SmallSet<BlockIndex> path, bool useCurrentLocation, bool reserveDestination)
 {
 	if(path.empty() || (reserveDestination && !move_tryToReserveProposedDestination(index, path)))
 	{
@@ -509,7 +509,7 @@ Step Actors::move_delayToMoveInto(const ActorIndex& index, const BlockIndex& fro
 	assert(cost != 0);
 	return Step::create(std::max(1u, uint(std::round(float(stepsPerSecond.get() * cost.get()) / float(speed.get())))));
 }
-BlockIndices Actors::move_makePathTo(const ActorIndex& index, const BlockIndex& destination) const
+SmallSet<BlockIndex> Actors::move_makePathTo(const ActorIndex& index, const BlockIndex& destination) const
 {
 	assert(destination != m_location[index]);
 	const FindPathResult result = m_area.m_hasTerrainFacades.getForMoveType(

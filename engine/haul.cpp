@@ -705,10 +705,10 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(Project& project, 
 		}
 	}
 	Speed minimumSpeed = project.getMinimumHaulSpeed();
-	ActorIndices workers;
+	SmallSet<ActorIndex> workers;
 	// TODO: shouldn't this be m_waiting?
 	for(auto& pair : project.m_workers)
-		workers.add(pair.first.getIndex(actors.m_referenceData));
+		workers.insert(pair.first.getIndex(actors.m_referenceData));
 	assert(maxQuantityRequested != 0);
 	// toHaul is wheeled. Either do IndividuaCargoIsCart or Team.
 	static MoveTypeId wheeled = MoveType::byName("roll");
@@ -723,7 +723,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(Project& project, 
 		{
 			output.strategy = HaulStrategy::IndividualCargoIsCart;
 			output.quantity = Quantity::create(1);
-			output.workers.add(worker);
+			output.workers.insert(worker);
 			return output;
 		}
 		else
@@ -758,7 +758,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(Project& project, 
 	{
 		output.strategy = HaulStrategy::Individual;
 		output.quantity = std::min(maxQuantityRequested, maxQuantityCanCarry);
-		output.workers.add(worker);
+		output.workers.insert(worker);
 		return output;
 	}
 	// Team
@@ -783,7 +783,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(Project& project, 
 			output.strategy = HaulStrategy::Cart;
 			output.haulTool = haulTool;
 			output.quantity = std::min(maxQuantityRequested, maxQuantityCanCarry);
-			output.workers.add(worker);
+			output.workers.insert(worker);
 			return output;
 		}
 		// Animal Cart
@@ -797,7 +797,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(Project& project, 
 				output.haulTool = haulTool;
 				output.beastOfBurden = yoked;
 				output.quantity = std::min(maxQuantityRequested, maxQuantityCanCarry);
-				output.workers.add(worker);
+				output.workers.insert(worker);
 				return output;
 			}
 		}
@@ -831,7 +831,7 @@ HaulSubprojectParamaters HaulSubproject::tryToSetHaulStrategy(Project& project, 
 				output.beastOfBurden = pannierBearer;
 				output.haulTool = panniers;
 				output.quantity = std::min(maxQuantityRequested, maxQuantityCanCarry);
-				output.workers.add(worker);
+				output.workers.insert(worker);
 				return output;
 			}
 		}
@@ -930,11 +930,11 @@ void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 	}
 }
 // Class method.
-ActorIndices HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Project& project, const ActorIndex& leader, const ActorOrItemIndex& toHaul)
+SmallSet<ActorIndex> HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Project& project, const ActorIndex& leader, const ActorOrItemIndex& toHaul)
 {
 	std::vector<ActorOrItemIndex> actorsAndItems;
-	ActorIndices output;
-	output.add(leader);
+	SmallSet<ActorIndex> output;
+	output.insert(leader);
 	actorsAndItems.push_back(ActorOrItemIndex::createForActor(leader));
 	actorsAndItems.push_back(toHaul);
 	Actors& actors = project.m_area.getActors();
@@ -944,8 +944,8 @@ ActorIndices HaulSubproject::actorsNeededToHaulAtMinimumSpeed(const Project& pro
 		ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 		if(actorIndex == leader || projectWorker.haulSubproject != nullptr || !actors.isSentient(actorIndex))
 			continue;
-		assert(std::ranges::find(output, actorIndex) == output.end());
-		output.add(actorIndex);
+		assert(!output.contains(actorIndex));
+		output.insert(actorIndex);
 		if(output.size() > 2) //TODO: More then two requires multiple followers for one leader.
 			break;
 		actorsAndItems.push_back(ActorOrItemIndex::createForActor(actorIndex));
@@ -995,11 +995,11 @@ Quantity HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndA
 	return quantity;
 }
 // Class method.
-ActorIndices HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, const ActorIndex& leader, const ActorOrItemIndex& toHaul, const ItemIndex& haulTool)
+SmallSet<ActorIndex> HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, const ActorIndex& leader, const ActorOrItemIndex& toHaul, const ItemIndex& haulTool)
 {
 	std::vector<ActorOrItemIndex> actorsAndItems;
-	ActorIndices output;
-	output.add(leader);
+	SmallSet<ActorIndex> output;
+	output.insert(leader);
 	actorsAndItems.push_back(ActorOrItemIndex::createForActor(leader));
 	actorsAndItems.push_back(ActorOrItemIndex::createForItem(haulTool));
 	const Actors& actors = project.m_area.getActors();
@@ -1009,8 +1009,8 @@ ActorIndices HaulSubproject::actorsNeededToHaulAtMinimumSpeedWithTool(const Proj
 		ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 		if(actorIndex == leader || projectWorker.haulSubproject != nullptr || !actors.isSentient(actorIndex))
 			continue;
-		assert(std::ranges::find(output, actorIndex) == output.end());
-		output.add(actorIndex);
+		assert(!output.contains(actorIndex));
+		output.insert(actorIndex);
 		if(output.size() > 2) //TODO: More then two requires multiple followers for one leader.
 			break;
 		actorsAndItems.push_back(ActorOrItemIndex::createForActor(actorIndex));

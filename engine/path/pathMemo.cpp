@@ -10,19 +10,19 @@ void PathMemoClosed::add(const BlockIndex& index, BlockIndex parent)
 	if(parent != BlockIndex::max())
 		assert(contains(parent));
 	m_data[index] = parent;
-	m_dirty.add(index);
+	m_dirty.insert(index);
 }
-BlockIndices PathMemoClosed::getPath(const BlockIndex& secondToLast, const BlockIndex& last) const
+SmallSet<BlockIndex> PathMemoClosed::getPath(const BlockIndex& secondToLast, const BlockIndex& last) const
 {
-	BlockIndices output;
+	SmallSet<BlockIndex> output;
 	// Last may not exist if we are using the one block shape pathing adjacent to condition optimization.
 	if(last.exists())
-		output.add(last);
+		output.insert(last);
 	BlockIndex current = secondToLast;
 	// Max is used to indicade the start of the path.
 	while(previous(current) != BlockIndex::max())
 	{
-		output.add(current);
+		output.insert(current);
 		current = previous(current);
 	}
 	return output;
@@ -65,7 +65,7 @@ BlockIndex PathMemoBreadthFirst::next()
 	m_open.pop_front();
 	return output;
 }
-BlockIndices PathMemoBreadthFirst::getPath(const BlockIndex& secondToLast, const BlockIndex& last) const
+SmallSet<BlockIndex> PathMemoBreadthFirst::getPath(const BlockIndex& secondToLast, const BlockIndex& last) const
 {
 	return m_closed.getPath(secondToLast, last);
 }
@@ -113,7 +113,7 @@ BlockIndex PathMemoDepthFirst::next()
 	m_open.pop_back();
 	return output;
 }
-BlockIndices PathMemoDepthFirst::getPath(const BlockIndex& secondToLast, const BlockIndex& last) const
+SmallSet<BlockIndex> PathMemoDepthFirst::getPath(const BlockIndex& secondToLast, const BlockIndex& last) const
 {
 	return m_closed.getPath(secondToLast, last);
 }

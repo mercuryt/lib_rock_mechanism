@@ -538,13 +538,13 @@ void to_json(Json& data, const Plants& plants)
 	data = plants.toJson();
 }
 void Plants::log(const PlantIndex& index) const { std::cout << PlantSpecies::getName(m_species[index]) << ":" << std::to_string(getPercentGrown(index).get()) << "%"; }
-PlantIndices Plants::getAll() const
+SmallSet<PlantIndex> Plants::getAll() const
 {
 	// TODO: Replace with std::iota?
-	PlantIndices output;
+	SmallSet<PlantIndex> output;
 	output.reserve(m_shape.size());
 	for(auto i = PlantIndex::create(0); i < size(); ++i)
-		output.add(i);
+		output.insert(i);
 	return output;
 }
 // Events.

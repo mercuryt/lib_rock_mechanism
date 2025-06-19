@@ -24,9 +24,9 @@ protected:
 	Area* m_area = nullptr;
 	DramaArc(DramaEngine& engine, DramaArcType type, Area* area = nullptr) : m_engine(engine), m_area(area), m_type(type) { }
 	DramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);
-	void actorsLeave(ActorIndices actors);
+	void actorsLeave(SmallSet<ActorIndex> actors);
 	[[nodiscard]] BlockIndex getEntranceToArea(const ShapeId& shape, const MoveTypeId& moveType) const;
-	[[nodiscard]] BlockIndex findLocationOnEdgeForNear(const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& origin, const DistanceInBlocks& distance, const BlockIndices& exclude) const;
+	[[nodiscard]] BlockIndex findLocationOnEdgeForNear(const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& origin, const DistanceInBlocks& distance, const SmallSet<BlockIndex>& exclude) const;
 	[[nodiscard]] bool blockIsConnectedToAtLeast(const BlockIndex& block, const ShapeId& shape, const MoveTypeId& moveType, uint16_t count) const;
 	[[nodiscard]] Facing4 getFacingAwayFromEdge(const BlockIndex& block) const;
 	[[nodiscard]] std::vector<AnimalSpeciesId> getSentientSpecies() const;
@@ -61,5 +61,5 @@ public:
 private:
 	Simulation& m_simulation;
 	std::vector<std::unique_ptr<DramaArc>> m_arcs;
-	AreaIdMap<std::vector<DramaArc*>> m_arcsByArea;
+	SmallMap<AreaId, std::vector<DramaArc*>> m_arcsByArea;
 };

@@ -35,7 +35,7 @@ struct HaulSubprojectParamaters final
 {
 	ProjectRequirementCounts* projectRequirementCounts = nullptr;
 	ActorOrItemReference toHaul;
-	ActorIndices workers;
+	SmallSet<ActorIndex> workers;
 	FluidTypeId fluidType;
 	ItemIndex haulTool;
 	ActorIndex beastOfBurden;
@@ -77,13 +77,13 @@ public:
 	void removeWorker(const ActorIndex& actor);
 	void cancel();
 	static HaulSubprojectParamaters tryToSetHaulStrategy(Project& project, const ActorOrItemReference& hasShape, const ActorIndex& worker, const FluidTypeId& fluidType, const CollisionVolume& fluidVolume);
-	static ActorIndices actorsNeededToHaulAtMinimumSpeed(const Project& project, const ActorIndex& leader, const ActorOrItemIndex& toHaul);
+	static SmallSet<ActorIndex> actorsNeededToHaulAtMinimumSpeed(const Project& project, const ActorIndex& leader, const ActorOrItemIndex& toHaul);
 	[[nodiscard]] static Quantity maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(const Area& area, const ActorIndex& leader, const ItemIndex& haulTool, const ActorOrItemIndex& toHaul, const Speed& minimumSpeed);
 	[[nodiscard]] static Speed getSpeedWithHaulToolAndCargo(const Area& area, const ActorIndex& leader, const ItemIndex& haulTool, const ActorOrItemIndex& toHaul, const Quantity& quantity);
 	[[nodiscard]] static Quantity maximumNumberWhichCanBeHauledAtMinimumSpeedWithToolAndAnimal(const Area& area, const ActorIndex& leader, const ActorIndex& yoked, const ItemIndex& haulTool, const ActorOrItemIndex& toHaul, const Speed& minimumSpeed);
 	[[nodiscard]] static Quantity maximumNumberWhichCanBeHauledAtMinimumSpeedWithPanniersAndAnimal(const Area& area, const ActorIndex& leader, const ActorIndex& pannierBearer, const ItemIndex& panniers, const ActorOrItemIndex& toHaul, const Speed& minimumSpeed);
 	[[nodiscard]] static Speed getSpeedWithHaulToolAndAnimal(const Area& area, const ActorIndex& leader, const ActorIndex& yoked, const ItemIndex& haulTool, const ActorOrItemIndex& toHaul, const Quantity& quantity);
-	[[nodiscard]] static ActorIndices actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, const ActorIndex& leader, const ActorOrItemIndex& toHaul, const ItemIndex& haulTool);
+	[[nodiscard]] static SmallSet<ActorIndex> actorsNeededToHaulAtMinimumSpeedWithTool(const Project& project, const ActorIndex& leader, const ActorOrItemIndex& toHaul, const ItemIndex& haulTool);
 	[[nodiscard]] static Speed getSpeedWithPannierBearerAndPanniers(const Area& area, const ActorIndex& leader, const ActorIndex& yoked, const ItemIndex& haulTool, const ActorOrItemIndex& toHaul, const Quantity& quantity);
 	[[nodiscard]] auto& getWorkers() { return m_workers; }
 	// For testing.

@@ -62,7 +62,7 @@ public:
 
 	[[nodiscard]] BlockIndex getLocation(const Area& area) const;
 	[[nodiscard]] const OccupiedBlocksForHasShape& getBlocks(const Area& area) const;
-	[[nodiscard]] BlockIndices getAdjacentBlocks(Area& area) const;
+	[[nodiscard]] SmallSet<BlockIndex> getAdjacentBlocks(Area& area) const;
 	[[nodiscard]] bool isAdjacent(const Area& area, const ActorOrItemIndex& other) const;
 	[[nodiscard]] bool isAdjacentToActor(const Area& area, const ActorIndex& other) const;
 	[[nodiscard]] bool isAdjacentToItem(const Area& area, const ItemIndex& item) const;

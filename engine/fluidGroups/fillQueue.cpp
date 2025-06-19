@@ -4,7 +4,7 @@
 #include "../area/area.h"
 #include "../blocks/blocks.h"
 #include "types.h"
-void FillQueue::buildFor(Area& area, FluidGroup& fluidGroup, BlockIndices& members)
+void FillQueue::buildFor(Area& area, FluidGroup& fluidGroup, SmallSet<BlockIndex>& members)
 {
 	auto& blocks = area.getBlocks();
 	for(BlockIndex block : members)
@@ -49,7 +49,7 @@ void FillQueue::recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionV
 	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 	{
 		if(iter->delta == 0 && !blocks.fluid_contains(iter->block, fluidGroup.m_fluidType))
-			m_futureNoLongerEmpty.maybeAdd(iter->block);
+			m_futureNoLongerEmpty.maybeInsert(iter->block);
 		iter->delta += volume;
 		assert(iter->delta <= Config::maxBlockVolume);
 		assert(iter->capacity >= volume);
@@ -61,7 +61,7 @@ void FillQueue::recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionV
 		assert((blocks.fluid_volumeOfTypeContains(m_groupStart->block, fluidGroup.m_fluidType) + m_groupStart->delta) <= Config::maxBlockVolume);
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 			if((blocks.fluid_volumeOfTypeContains(iter->block, fluidGroup.m_fluidType) + iter->delta) == Config::maxBlockVolume)
-				m_futureFull.add(iter->block);
+				m_futureFull.insert(iter->block);
 		m_groupStart = m_groupEnd;
 		findGroupEnd(area);
 	}
@@ -88,7 +88,7 @@ void FillQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 			(iter->block->m_hasFluids.m_fluids[m_fluidGroup.m_fluidType].first == Config::maxBlockVolume && m_futureFull.contains(iter->block)));
 		*/
 		if(blocks.fluid_getTotalVolume(iter->block) > Config::maxBlockVolume)
-			m_overfull.add(iter->block);
+			m_overfull.insert(iter->block);
 	}
 	validate(area);
 }

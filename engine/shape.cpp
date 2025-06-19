@@ -80,22 +80,22 @@ SmallSet<Offset3D> Shape::positionOffsets(const OffsetAndVolume& offsetAndVolume
 	return output;
 }
 
-BlockIndices Shape::getBlocksOccupiedAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
+SmallSet<BlockIndex> Shape::getBlocksOccupiedAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
 {
-	BlockIndices output;
+	SmallSet<BlockIndex> output;
 	output.reserve(shapeData.m_positions[id].size());
 	for(const auto& pair : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
 	{
 		BlockIndex block = blocks.offset(location, pair.offset);
 		assert(block.exists());
-		output.add(block);
+		output.insert(block);
 	}
 	return output;
 }
-BlockIndices Shape::getBlocksOccupiedAndAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
+SmallSet<BlockIndex> Shape::getBlocksOccupiedAndAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
 {
 	auto output = getBlocksOccupiedAt(id, blocks, location, facing);
-	output.concatIgnoreUnique(getBlocksWhichWouldBeAdjacentAt(id, blocks, location, facing));
+	output.maybeInsertAll(getBlocksWhichWouldBeAdjacentAt(id, blocks, location, facing));
 	return output;
 }
 SmallSet<std::pair<BlockIndex, CollisionVolume>> Shape::getBlocksOccupiedAtWithVolumes(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
@@ -110,15 +110,15 @@ SmallSet<std::pair<BlockIndex, CollisionVolume>> Shape::getBlocksOccupiedAtWithV
 	}
 	return output;
 }
-BlockIndices Shape::getBlocksWhichWouldBeAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
+SmallSet<BlockIndex> Shape::getBlocksWhichWouldBeAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
 {
-	BlockIndices output;
+	SmallSet<BlockIndex> output;
 	output.reserve(shapeData.m_positions[id].size());
 	for(const Offset3D& offset : shapeData.m_adjacentOffsetsCache[id][(uint)facing])
 	{
 		BlockIndex block = blocks.offset(location, offset);
 		if(block.exists())
-			output.add(block);
+			output.insert(block);
 	}
 	return output;
 }

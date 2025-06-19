@@ -15,8 +15,8 @@ struct MoveTypeParamaters
 	bool breathless;
 	bool onlyBreathsFluids;
 	bool floating;
-	FluidTypeMap<CollisionVolume> swim = {};
-	FluidTypeSet breathableFluids = {};
+	SmallMap<FluidTypeId, CollisionVolume> swim = {};
+	SmallSet<FluidTypeId> breathableFluids = {};
 };
 class MoveType
 {
@@ -29,8 +29,8 @@ class MoveType
 	StrongBitSet<MoveTypeId> m_onlyBreathsFluids;
 	// For use by items and boats floating in fluids.
 	StrongBitSet<MoveTypeId> m_floating;
-	StrongVector<FluidTypeMap<CollisionVolume>, MoveTypeId> m_swim;
-	StrongVector<FluidTypeSet, MoveTypeId> m_breathableFluids;
+	StrongVector<SmallMap<FluidTypeId, CollisionVolume>, MoveTypeId> m_swim;
+	StrongVector<SmallSet<FluidTypeId>, MoveTypeId> m_breathableFluids;
 	// Save for mutating.
 	StrongVector<MoveTypeParamaters, MoveTypeId> m_paramaters;
 public:
@@ -44,7 +44,7 @@ public:
 	[[nodiscard]] static bool getBreathless(const MoveTypeId& id);
 	[[nodiscard]] static bool getOnlyBreathsFluids(const MoveTypeId& id);
 	[[nodiscard]] static bool getFloating(const MoveTypeId& id);
-	[[nodiscard]] static FluidTypeMap<CollisionVolume>& getSwim(const MoveTypeId& id);
-	[[nodiscard]] static FluidTypeSet& getBreathableFluids(const MoveTypeId& id);
+	[[nodiscard]] static SmallMap<FluidTypeId, CollisionVolume>& getSwim(const MoveTypeId& id);
+	[[nodiscard]] static SmallSet<FluidTypeId>& getBreathableFluids(const MoveTypeId& id);
 };
 inline MoveType moveTypeData;

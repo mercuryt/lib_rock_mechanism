@@ -27,5 +27,5 @@ bool MoveType::getFly(const MoveTypeId& id) { return moveTypeData.m_fly[id]; }
 bool MoveType::getBreathless(const MoveTypeId& id) { return moveTypeData.m_breathless[id]; }
 bool MoveType::getOnlyBreathsFluids(const MoveTypeId& id) { return moveTypeData.m_onlyBreathsFluids[id]; }
 bool MoveType::getFloating(const MoveTypeId& id) { return moveTypeData.m_floating[id]; }
-FluidTypeMap<CollisionVolume>& MoveType::getSwim(const MoveTypeId& id) { return moveTypeData.m_swim[id]; }
-FluidTypeSet& MoveType::getBreathableFluids(const MoveTypeId& id) { return moveTypeData.m_breathableFluids[id]; }
+SmallMap<FluidTypeId, CollisionVolume>& MoveType::getSwim(const MoveTypeId& id) { return moveTypeData.m_swim[id]; }
+SmallSet<FluidTypeId>& MoveType::getBreathableFluids(const MoveTypeId& id) { return moveTypeData.m_breathableFluids[id]; }

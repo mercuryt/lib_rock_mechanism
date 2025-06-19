@@ -70,7 +70,7 @@ void ConstructProject::onComplete()
 }
 void ConstructProject::onCancel()
 {
-	ActorIndices copy = getWorkersAndCandidates();
+	SmallSet<ActorIndex> copy = getWorkersAndCandidates();
 	Actors& actors = m_area.getActors();
 	m_area.m_hasConstructionDesignations.remove(m_faction, m_location);
 	for(ActorIndex actor : copy)

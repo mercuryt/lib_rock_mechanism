@@ -11,8 +11,6 @@ public:
 };
 inline void to_json(Json& data, const AreaId& index) { data = index.get(); }
 inline void from_json(const Json& data, AreaId& index) { index = AreaId::create(data.get<AreaIdWidth>()); }
-template<typename T>
-using AreaIdMap = SmallMap<AreaId, T>;
 
 using ItemIdWidth = uint32_t;
 class ItemId : public StrongInteger<ItemId, ItemIdWidth>
@@ -23,8 +21,6 @@ public:
 };
 inline void to_json(Json& data, const ItemId& index) { data = index.get(); }
 inline void from_json(const Json& data, ItemId& index) { index = ItemId::create(data.get<ItemIdWidth>()); }
-template<typename T>
-using ItemIdMap = SmallMap<ItemId, T>;
 
 using ActorIdWidth = uint32_t;
 class ActorId : public StrongInteger<ActorId, ActorIdWidth>
@@ -35,8 +31,6 @@ public:
 };
 inline void to_json(Json& data, const ActorId& index) { data = index.get(); }
 inline void from_json(const Json& data, ActorId& index) { index = ActorId::create(data.get<ActorIdWidth>()); }
-template<typename T>
-using ActorIdMap = SmallMap<ActorId, T>;
 
 using VisionCuboidIndexWidth = uint32_t;
 class VisionCuboidId : public StrongInteger<VisionCuboidId, VisionCuboidIndexWidth>
@@ -47,7 +41,6 @@ public:
 };
 inline void to_json(Json& data, const VisionCuboidId& index) { data = index.get(); }
 inline void from_json(const Json& data, VisionCuboidId& index) { index = VisionCuboidId::create(data.get<uint32_t>()); }
-using VisionCuboidIndexSet = StrongIntegerSet<VisionCuboidId>;
 
 using FactionIdWidth = uint16_t;
 class FactionId : public StrongInteger<FactionId, FactionIdWidth>
@@ -58,9 +51,6 @@ public:
 };
 inline void to_json(Json& data, const FactionId& index) { data = index.get(); }
 inline void from_json(const Json& data, FactionId& index) { index = FactionId::create(data.get<FactionIdWidth>()); }
-template<typename T>
-using FactionIdMap = SmallMap<FactionId, T>;
-using FactionIdSet = StrongIntegerSet<FactionId>;
 
 using ObjectiveTypeIdWidth = uint8_t;
 class ObjectiveTypeId : public StrongInteger<ObjectiveTypeId, ObjectiveTypeIdWidth>
@@ -71,9 +61,6 @@ public:
 };
 void to_json(Json& data, const ObjectiveTypeId& index);
 void from_json(const Json& data, ObjectiveTypeId& index);
-template<typename T>
-using ObjectiveTypeIdMap = SmallMap<ObjectiveTypeId, T>;
-using ObjectiveTypeIdSet = StrongIntegerSet<ObjectiveTypeId>;
 
 using PlantSpeciesIdWidth = int16_t;
 class PlantSpeciesId : public StrongInteger<PlantSpeciesId, PlantSpeciesIdWidth>
@@ -104,8 +91,6 @@ public:
 };
 void to_json(Json& data, const MaterialTypeId& index);
 void from_json(const Json& data, MaterialTypeId& index);
-template<typename T>
-using MaterialTypeMap = SmallMap<MaterialTypeId, T>;
 
 using MaterialCategoryTypeIdWidth = uint16_t;
 class MaterialCategoryTypeId : public StrongInteger<MaterialCategoryTypeId, MaterialCategoryTypeIdWidth>
@@ -134,8 +119,6 @@ public:
 };
 void to_json(Json& data, const ItemTypeId& index);
 void from_json(const Json& data, ItemTypeId& index);
-template<typename T>
-using ItemTypeMap = SmallMap<ItemTypeId, T>;
 
 using FluidTypeIdWidth = uint16_t;
 class FluidTypeId : public StrongInteger<FluidTypeId, FluidTypeIdWidth>
@@ -146,9 +129,6 @@ public:
 };
 void to_json(Json& data, const FluidTypeId& index);
 void from_json(const Json& data, FluidTypeId& index);
-template<typename T>
-using FluidTypeMap = SmallMap<FluidTypeId, T>;
-using FluidTypeSet = StrongIntegerSet<FluidTypeId>;
 
 using ShapeIdWidth = uint16_t;
 class ShapeId : public StrongInteger<ShapeId, ShapeIdWidth>
@@ -170,8 +150,6 @@ public:
 };
 void to_json(Json& data, const SkillTypeId& index);
 void from_json(const Json& data, SkillTypeId& index);
-template<typename T>
-using SkillTypeMap = SmallMap<SkillTypeId, T>;
 
 using MoveTypeIdWidth = uint16_t;
 class MoveTypeId : public StrongInteger<MoveTypeId, MoveTypeIdWidth>
@@ -182,8 +160,6 @@ public:
 };
 void to_json(Json& data, const MoveTypeId& index);
 void from_json(const Json& data, MoveTypeId& index);
-template<typename T>
-using MoveTypeMap = SmallMap<MoveTypeId, T>;
 
 using BodyTypeIdWidth = uint8_t;
 class BodyTypeId : public StrongInteger<BodyTypeId, BodyTypeIdWidth>
@@ -214,8 +190,6 @@ public:
 };
 void to_json(Json& data, const CraftStepTypeCategoryId& index);
 void from_json(const Json& data, CraftStepTypeCategoryId& index);
-template<typename T>
-using CraftStepTypeCategoryMap = SmallMap<CraftStepTypeCategoryId, T>;
 
 using CraftJobTypeIdWidth = uint16_t;
 class CraftJobTypeId : public StrongInteger<CraftJobTypeId, CraftJobTypeIdWidth>

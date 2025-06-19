@@ -7,8 +7,8 @@
 struct DeserializationMemo;
 struct Faction
 {
-	FactionIdSet allies;
-	FactionIdSet enemies;
+	SmallSet<FactionId> allies;
+	SmallSet<FactionId> enemies;
 	std::string name;
 	FactionId id;
 	Faction(const FactionId& _id, std::string _name) : name(_name), id(_id) { }

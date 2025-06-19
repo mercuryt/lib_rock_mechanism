@@ -44,15 +44,15 @@ public:
 //TODO: Change from linear to geometric delay duration.
 class ItemCanBeStockPiled
 {
-	FactionIdMap<HasScheduledEvent<ReMarkItemForStockPilingEvent>> m_scheduledEvents;
-	FactionIdSet m_data;
+	SmallMap<FactionId, HasScheduledEvent<ReMarkItemForStockPilingEvent>> m_scheduledEvents;
+	SmallSet<FactionId> m_data;
 	void scheduleReset(Area& area, const FactionId& faction, const Step& duration, Step start = Step::null());
 public:
 	void load(const Json& data, Area& area);
-	void set(const FactionId& faction) { assert(!m_data.contains(faction)); m_data.add(faction); }
-	void maybeSet(const FactionId& faction) { m_data.add(faction); }
-	void unset(const FactionId& faction) { assert(m_data.contains(faction)); m_data.remove(faction); }
-	void maybeUnset(const FactionId& faction) { m_data.remove(faction); }
+	void set(const FactionId& faction) { assert(!m_data.contains(faction)); m_data.insert(faction); }
+	void maybeSet(const FactionId& faction) { m_data.insert(faction); }
+	void unset(const FactionId& faction) { assert(m_data.contains(faction)); m_data.erase(faction); }
+	void maybeUnset(const FactionId& faction) { m_data.erase(faction); }
 	void unsetAndScheduleReset(Area& area, const FactionId& faction, const Step& duration);
 	void maybeUnsetAndScheduleReset(Area& area, const FactionId& faction, const Step& duration);
 	[[nodiscard]] Json toJson() const;
@@ -63,8 +63,8 @@ public:
 class ItemHasCargo final
 {
 	// Indices rather then references for speed when searching for contained items in boxes, etc.
-	ActorIndices m_actors;
-	ItemIndices m_items;
+	SmallSet<ActorIndex> m_actors;
+	SmallSet<ItemIndex> m_items;
 	FluidTypeId m_fluidType;
 	FullDisplacement m_maxVolume;
 	FullDisplacement m_volume = FullDisplacement::create(0);
@@ -84,8 +84,8 @@ public:
 	// When an item changes index and it has cargo update the m_carrier data of the cargo.
 	void updateCarrierIndexForAllCargo(Area& area, const ItemIndex& newIndex);
 	ItemIndex unloadGenericTo(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity, const BlockIndex& location);
-	[[nodiscard]] const ActorIndices& getActors() const { return m_actors; }
-	[[nodiscard]] const ItemIndices& getItems() const { return m_items; }
+	[[nodiscard]] const SmallSet<ActorIndex>& getActors() const { return m_actors; }
+	[[nodiscard]] const SmallSet<ItemIndex>& getItems() const { return m_items; }
 	[[nodiscard]] bool canAddActor(Area& area, const ActorIndex& index) const;
 	[[nodiscard]] bool canAddItem(Area& area, const ItemIndex& item) const;
 	[[nodiscard]] bool canAddFluid(const FluidTypeId& fluidType) const;
@@ -93,8 +93,8 @@ public:
 	[[nodiscard]] FluidTypeId getFluidType() const { assert(m_fluidType.exists()); return m_fluidType; }
 	[[nodiscard]] bool containsAnyFluid() const { return m_fluidType.exists(); }
 	[[nodiscard]] bool containsFluidType(const FluidTypeId& fluidType) const { return m_fluidType == fluidType; }
-	[[nodiscard]] bool containsActor(const ActorIndex& index) const { return std::ranges::find(m_actors, index) != m_actors.end(); }
-	[[nodiscard]] bool containsItem(const ItemIndex& index) const { return std::ranges::find(m_items, index) != m_items.end(); }
+	[[nodiscard]] bool containsActor(const ActorIndex& index) const { return m_actors.contains(index); }
+	[[nodiscard]] bool containsItem(const ItemIndex& index) const { return m_items.contains(index); }
 	[[nodiscard]] bool containsGeneric(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity) const;
 	[[nodiscard]] bool empty() const { return m_fluidType.empty() && m_actors.empty() && m_items.empty(); }
 	[[nodiscard]] Mass getMass() const { return m_mass; }
@@ -147,7 +147,7 @@ public:
 	// Wrap HasShapes::SetStatic and unset to support constrcuted shapes setting or unsetting Blocks::m_dynamic instead.
 	void setStatic(const ItemIndex& index);
 	void unsetStatic(const ItemIndex& index);
-	[[nodiscard]] ItemIndices getAll() const;
+	[[nodiscard]] SmallSet<ItemIndex> getAll() const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool isInstalled(const ItemIndex& index) { return m_installed[index]; }
 	[[nodiscard]] Quantity getQuantity(const ItemIndex& index) const { return m_quantity[index]; }
@@ -232,8 +232,8 @@ public:
 	[[nodiscard]] bool cargo_canAddActor(const ItemIndex& index, const ActorIndex& actor) const;
 	[[nodiscard]] bool cargo_canAddItem(const ItemIndex& index, const ItemIndex& item) const;
 	[[nodiscard]] Mass cargo_getMass(const ItemIndex& index) const;
-	[[nodiscard]] const ItemIndices& cargo_getItems(const ItemIndex& index) const;
-	[[nodiscard]] const ActorIndices& cargo_getActors(const ItemIndex& index) const;
+	[[nodiscard]] const SmallSet<ItemIndex>& cargo_getItems(const ItemIndex& index) const;
+	[[nodiscard]] const SmallSet<ActorIndex>& cargo_getActors(const ItemIndex& index) const;
 	// Stockpile.
 	void stockpile_maybeUnsetAndScheduleReset(const ItemIndex& index, const FactionId& faction, const Step& duration);
 	void stockpile_set(const ItemIndex& index, const FactionId& faction);

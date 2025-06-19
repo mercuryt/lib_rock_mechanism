@@ -143,7 +143,7 @@ protected:
 	FactionId m_faction;
 	// Where the materials are delivered to and where the work gets done.
 	BlockIndex m_location;
-	Project(const FactionId& faction, Area& area, const BlockIndex& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr, const BlockIndices& additionalBlocksToReserve = {});
+	Project(const FactionId& faction, Area& area, const BlockIndex& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr, const SmallSet<BlockIndex>& additionalBlocksToReserve = {});
 	Project(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 private:
 	// Count how many times we have attempted to create a haul subproject.
@@ -211,7 +211,7 @@ public:
 	// When cannotCompleteSubobjective is called do we reset and try again or do we call cannotCompleteObjective?
 	// Should be false for objectives like targeted hauling, where if the specific target is inaccessable there is no fallback possible.
 	[[nodiscard]] virtual bool canReset() const { return true; }
-	[[nodiscard]] ActorIndices getWorkersAndCandidates();
+	[[nodiscard]] SmallSet<ActorIndex> getWorkersAndCandidates();
 	[[nodiscard]] std::vector<std::pair<ActorIndex, Objective*>> getWorkersAndCandidatesWithObjectives();
 	[[nodiscard]] Percent getPercentComplete() const { return m_finishEvent.exists() ? m_finishEvent.percentComplete() : Percent::create(0); }
 	[[nodiscard]] virtual bool canAddWorker(const ActorIndex& actor) const;
@@ -319,7 +319,7 @@ public:
 };
 class BlockHasProjects
 {
-	FactionIdMap<SmallSet<Project*>> m_data;
+	SmallMap<FactionId, SmallSet<Project*>> m_data;
 public:
 	void add(Project& project);
 	void remove(Project& project);

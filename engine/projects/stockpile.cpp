@@ -73,7 +73,7 @@ void StockPileProject::onReserve()
 }
 void StockPileProject::onCancel()
 {
-	ActorIndices workersAndCandidates = getWorkersAndCandidates();
+	SmallSet<ActorIndex> workersAndCandidates = getWorkersAndCandidates();
 	Actors& actors = m_area.getActors();
 	Area& area = m_area;
 	// This is destroyed here.

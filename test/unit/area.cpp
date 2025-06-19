@@ -59,7 +59,7 @@ TEST_CASE("Area")
 		blocks.solid_setNot(block1);
 		blocks.fluid_add(block1, CollisionVolume::create(100), water);
 		blocks.solid_set(block2, marble, false);
-		area.m_caveInCheck.add(block2);
+		area.m_caveInCheck.insert(block2);
 		FluidGroup* fluidGroup = blocks.fluid_getGroup(block1, water);
 		area.doStep();
 		++simulation.m_step;

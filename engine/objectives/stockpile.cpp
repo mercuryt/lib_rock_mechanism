@@ -205,7 +205,7 @@ FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& t
 						return {true, block};
 					}
 				// No item seen so far matches the found stockpile, store it to check against future items.
-				m_blocksByStockPile.getOrCreate(stockPile).add(block);
+				m_blocksByStockPile.getOrCreate(stockPile).insert(block);
 			}
 		}
 		return {false, block};

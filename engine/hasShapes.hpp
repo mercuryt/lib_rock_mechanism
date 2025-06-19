@@ -253,46 +253,46 @@ bool HasShapes<Derived, Index>::predicateForAnyAdjacentBlock(const Index& index,
 	return false;
 }
 template<class Derived, class Index>
-BlockIndices HasShapes<Derived, Index>::getAdjacentBlocks(const Index& index) const
+SmallSet<BlockIndex> HasShapes<Derived, Index>::getAdjacentBlocks(const Index& index) const
 {
-	BlockIndices output;
+	SmallSet<BlockIndex> output;
 	for(BlockIndex block : m_blocks[index])
 		for(BlockIndex adjacent : m_area.getBlocks().getAdjacentWithEdgeAndCornerAdjacent(block))
 			if(!m_blocks[index].contains(adjacent))
-				output.addNonunique(adjacent);
-	output.unique();
+				output.insertNonunique(adjacent);
+	output.makeUnique();
 	return output;
 }
 template<class Derived, class Index>
-ActorIndices HasShapes<Derived, Index>::getAdjacentActors(const Index& index) const
+SmallSet<ActorIndex> HasShapes<Derived, Index>::getAdjacentActors(const Index& index) const
 {
-	ActorIndices output;
+	SmallSet<ActorIndex> output;
 	for(BlockIndex block : getOccupiedAndAdjacentBlocks(index))
 		for(const ActorIndex& actor : m_area.getBlocks().actor_getAll(block))
-			output.maybeAdd(actor);
+			output.maybeInsert(actor);
 	return output;
 }
 template<class Derived, class Index>
-ItemIndices HasShapes<Derived, Index>::getAdjacentItems(const Index& index) const
+SmallSet<ItemIndex> HasShapes<Derived, Index>::getAdjacentItems(const Index& index) const
 {
-	ItemIndices output;
+	SmallSet<ItemIndex> output;
 	for(BlockIndex block : getOccupiedAndAdjacentBlocks(index))
 		for(const ItemIndex& item : m_area.getBlocks().item_getAll(block))
-			output.maybeAdd(item);
+			output.maybeInsert(item);
 	return output;
 }
 template<class Derived, class Index>
-BlockIndices HasShapes<Derived, Index>::getOccupiedAndAdjacentBlocks(const Index& index) const
+SmallSet<BlockIndex> HasShapes<Derived, Index>::getOccupiedAndAdjacentBlocks(const Index& index) const
 {
 	return Shape::getBlocksOccupiedAndAdjacentAt(m_shape[index], m_area.getBlocks(), m_location[index], m_facing[index]);
 }
 template<class Derived, class Index>
-BlockIndices HasShapes<Derived, Index>::getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const Index& index, const BlockIndex& location, const Facing4& facing) const
+SmallSet<BlockIndex> HasShapes<Derived, Index>::getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const Index& index, const BlockIndex& location, const Facing4& facing) const
 {
 	return Shape::getBlocksOccupiedAt(m_shape[index], m_area.getBlocks(), location, facing);
 }
 template<class Derived, class Index>
-BlockIndices HasShapes<Derived, Index>::getAdjacentBlocksAtLocationWithFacing(const Index& index, const BlockIndex& location, const Facing4& facing) const
+SmallSet<BlockIndex> HasShapes<Derived, Index>::getAdjacentBlocksAtLocationWithFacing(const Index& index, const BlockIndex& location, const Facing4& facing) const
 {
 	return Shape::getBlocksWhichWouldBeAdjacentAt(m_shape[index], m_area.getBlocks(), location, facing);
 }

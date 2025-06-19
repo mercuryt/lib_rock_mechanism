@@ -22,7 +22,7 @@
 #include <numeric>
 
 //TODO: reuse blocks as m_fillQueue.m_set.
-FluidGroup::FluidGroup(Allocator& allocator, const FluidTypeId& ft, BlockIndices& blocks, Area& area, bool checkMerge) :
+FluidGroup::FluidGroup(Allocator& allocator, const FluidTypeId& ft, SmallSet<BlockIndex>& blocks, Area& area, bool checkMerge) :
 	m_fillQueue(allocator), m_drainQueue(allocator), m_fluidType(ft)
 {
 	for(const BlockIndex& block : blocks)
@@ -90,17 +90,17 @@ void FluidGroup::removeBlock(Area& area, const BlockIndex& block)
 {
 	setUnstable(area);
 	m_drainQueue.removeBlock(block);
-	m_potentiallyNoLongerAdjacentFromSyncronusStep.add(block);
+	m_potentiallyNoLongerAdjacentFromSyncronusStep.insert(block);
 	for(const BlockIndex& adjacent : area.getBlocks().getDirectlyAdjacent(block))
 		if(area.getBlocks().fluid_canEnterEver(adjacent))
 		{
 			//Check for group split.
 			auto found = area.getBlocks().fluid_getData(adjacent, m_fluidType);
 			if(found && found->group == this)
-				m_potentiallySplitFromSyncronusStep.maybeAdd(adjacent);
+				m_potentiallySplitFromSyncronusStep.maybeInsert(adjacent);
 			else
 				//Check for empty adjacent to remove.
-				m_potentiallyNoLongerAdjacentFromSyncronusStep.maybeAdd(adjacent);
+				m_potentiallyNoLongerAdjacentFromSyncronusStep.maybeInsert(adjacent);
 		}
 }
 void FluidGroup::setUnstable(Area& area)
@@ -329,12 +329,12 @@ void FluidGroup::readStep(Area& area)
 			break;
 	}
 	// Flow loops completed, analyze results.
-	BlockIndices futureBlocks;
+	SmallSet<BlockIndex> futureBlocks;
 	//futureBlocks.reserve(m_drainQueue.m_set.size() + m_fillQueue.m_futureNoLongerEmpty.size());
 	for(const BlockIndex& block : m_drainQueue.m_set)
 		if(!m_drainQueue.m_futureEmpty.contains(block))
-			futureBlocks.add(block);
-	futureBlocks.merge(m_fillQueue.m_futureNoLongerEmpty);
+			futureBlocks.insert(block);
+	futureBlocks.maybeInsertAll(m_fillQueue.m_futureNoLongerEmpty);
 	if(futureBlocks.empty())
 	{
 		assert(m_excessVolume < 1);
@@ -350,47 +350,47 @@ void FluidGroup::readStep(Area& area)
 			{
 				auto found = area.getBlocks().fluid_getData(adjacent, m_fluidType);
 				if(!found || found->volume < Config::maxBlockVolume || found->group != this)
-					m_futureNewEmptyAdjacents.maybeAdd(adjacent);
+					m_futureNewEmptyAdjacents.maybeInsert(adjacent);
 			}
 	}
 	// -Find any potental newly created groups.
 	// Collect blocks adjacent to newly empty which are !empty.
 	// Also collect possiblyNoLongerAdjacent.
-	BlockIndices potentialNewGroups;
+	SmallSet<BlockIndex> potentialNewGroups;
 	potentialNewGroups.swap(m_potentiallySplitFromSyncronusStep);
-	BlockIndices possiblyNoLongerAdjacent;
+	SmallSet<BlockIndex> possiblyNoLongerAdjacent;
 	possiblyNoLongerAdjacent.swap(m_potentiallyNoLongerAdjacentFromSyncronusStep);
 	// Collect all adjacent to futureEmpty which fluid can enter ever.
-	BlockIndices adjacentToFutureEmpty;
+	SmallSet<BlockIndex> adjacentToFutureEmpty;
 	//adjacentToFutureEmpty.reserve(m_drainQueue.m_futureEmpty.size() * 6);
 	for(const BlockIndex& block : m_drainQueue.m_futureEmpty)
 	{
 		for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(block))
 			if(area.getBlocks().fluid_canEnterEver(adjacent))
-				adjacentToFutureEmpty.maybeAdd(adjacent);
+				adjacentToFutureEmpty.maybeInsert(adjacent);
 	}
 	for(const BlockIndex& block : adjacentToFutureEmpty)
 		// If block won't be empty then check for forming a new group as it may be detached.
 		if(futureBlocks.contains(block))
-			potentialNewGroups.maybeAdd(block);
+			potentialNewGroups.maybeInsert(block);
 		// Else check for removal from empty adjacent queue.
 		else
-			possiblyNoLongerAdjacent.maybeAdd(block);
+			possiblyNoLongerAdjacent.maybeInsert(block);
 	// Seperate into contiguous groups. Each block in potentialNewGroups might be in a seperate group.
 	// If there is only one potential new group there can not be a split: there needs to be another group to split from.
-	potentialNewGroups.erase_if([&](const BlockIndex& block){ return !futureBlocks.contains(block); });
+	potentialNewGroups.eraseIf([&](const BlockIndex& block){ return !futureBlocks.contains(block); });
 	if(potentialNewGroups.size() > 1)
 	{
-		BlockIndices closed;
+		SmallSet<BlockIndex> closed;
 		//closed.reserve(futureBlocks.size());
 		for(const BlockIndex& block : potentialNewGroups)
 		{
 			if(closed.contains(block))
 				continue;
 			auto condition = [&](const BlockIndex& block){ return futureBlocks.contains(block); };
-			BlockIndices adjacents = blocks.collectAdjacentsWithCondition(block, condition);
+			SmallSet<BlockIndex> adjacents = blocks.collectAdjacentsWithCondition(block, condition);
 			// Add whole group to closed. There is only one iteration per group as others will be rejected by the closed guard.
-			closed.merge(adjacents);
+			closed.maybeInsertAll(adjacents);
 			m_futureGroups.emplace_back(adjacents);
 		}
 	}
@@ -408,11 +408,11 @@ void FluidGroup::readStep(Area& area)
 				{
 					for(FluidGroupSplitData& fluidGroupSplitData : m_futureGroups)
 						if(fluidGroupSplitData.members.contains(adjacent))
-							fluidGroupSplitData.futureAdjacent.maybeAdd(block);
+							fluidGroupSplitData.futureAdjacent.maybeInsert(block);
 				}
 	}
 	// -Find no longer adjacent empty to remove from fill queue and newEmptyAdjacent.
-	BlockIndices futureRemoveFromEmptyAdjacents;
+	SmallSet<BlockIndex> futureRemoveFromEmptyAdjacents;
 	//futureRemoveFromEmptyAdjacents.reserve(possiblyNoLongerAdjacent.size());
 	for(const BlockIndex& block : possiblyNoLongerAdjacent)
 	{
@@ -426,7 +426,7 @@ void FluidGroup::readStep(Area& area)
 				break;
 			}
 		if(!stillAdjacent)
-			futureRemoveFromEmptyAdjacents.add(block);
+			futureRemoveFromEmptyAdjacents.insert(block);
 	}
 	// Convert descriptive future to proscriptive future.
 	m_futureAddToDrainQueue = m_fillQueue.m_futureNoLongerEmpty;
@@ -436,11 +436,11 @@ void FluidGroup::readStep(Area& area)
 	m_futureAddToFillQueue = m_futureNewEmptyAdjacents;
 	for(const BlockIndex& block : m_drainQueue.m_futureNoLongerFull)
 		if(!futureRemoveFromEmptyAdjacents.contains(block))
-			m_futureAddToFillQueue.add(block);
+			m_futureAddToFillQueue.insert(block);
 	//m_futureRemoveFromFillQueue = futureRemoveFromEmptyAdjacents + m_futureFull;
 	//m_futureRemoveFromFillQueue.reserve(futureRemoveFromEmptyAdjacents.size() + m_fillQueue.m_futureFull.size());
 	m_futureRemoveFromFillQueue = futureRemoveFromEmptyAdjacents;
-	m_futureRemoveFromFillQueue.merge(m_fillQueue.m_futureFull);
+	m_futureRemoveFromFillQueue.maybeInsertAll(m_fillQueue.m_futureFull);
 	validate(area);
 }
 void FluidGroup::writeStep(Area& area)
@@ -458,7 +458,7 @@ void FluidGroup::writeStep(Area& area)
 	for([[maybe_unused]] const BlockIndex& block : m_futureAddToFillQueue)
 		assert(!m_futureRemoveFromFillQueue.contains(block));
 	// Don't add to drain queue if taken by another fluid group already.
-	m_futureAddToDrainQueue.erase_if([&](const BlockIndex& block){
+	m_futureAddToDrainQueue.eraseIf([&](const BlockIndex& block){
 		auto found = blocks.fluid_getData(block, m_fluidType);
 		return found && found->group != this;
 	});
@@ -558,19 +558,19 @@ void FluidGroup::splitStep(Area& area)
 	// Split off future groups of this fluidType.
 	if(m_futureGroups.empty() || m_futureGroups.size() == 1)
 		return;
-	BlockIndices formerMembers;
+	SmallSet<BlockIndex> formerMembers;
 	for(const BlockIndex& block : m_drainQueue.m_set)
 		if(!m_futureGroups.back().members.contains(block))
 		{
-			formerMembers.add(block);
+			formerMembers.insert(block);
 			// Unset recorded group from blocks which are about to be split off so the fluidGroup constructor does not try to remove them again.
 			blocks.fluid_unsetGroupInternal(block, m_fluidType);
 		}
 	m_drainQueue.removeBlocks(formerMembers);
-	BlockIndices formerFill;
+	SmallSet<BlockIndex> formerFill;
 	for(const BlockIndex& block : m_fillQueue.m_set)
 		if(!m_drainQueue.m_set.contains(block) && !blocks.isAdjacentToAny(block, m_drainQueue.m_set))
-			formerFill.add(block);
+			formerFill.insert(block);
 	m_fillQueue.removeBlocks(formerFill);
 	m_futureNewEmptyAdjacents = m_futureGroups.back().futureAdjacent;
 	// Remove largest group, it will remain as this instance.
@@ -643,7 +643,7 @@ Quantity FluidGroup::countBlocksOnSurface(const Area& area) const
 {
 	const Blocks& blocks = area.getBlocks();
 	// TODO: could be optimized by only looking at the topmost z level in DrainQueue::m_queue
-	return Quantity::create(std::ranges::count_if(m_drainQueue.m_set, [&](const BlockIndex& block){ return blocks.isExposedToSky(block); }));
+	return Quantity::create(m_drainQueue.m_set.countIf([&](const BlockIndex& block){ return blocks.isExposedToSky(block); }));
 }
 void FluidGroup::validate(Area& area) const
 {

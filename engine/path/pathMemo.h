@@ -14,12 +14,12 @@
 class PathMemoClosed final
 {
 	StrongVector<BlockIndex, BlockIndex> m_data;
-	BlockIndices m_dirty;
+	SmallSet<BlockIndex> m_dirty;
 public:
 	[[nodiscard]] bool contains(const BlockIndex& index) const { return m_data[index].exists(); }
 	[[nodiscard]] bool empty() const { return m_dirty.empty(); }
 	[[nodiscard]] BlockIndex previous(const BlockIndex& index) const { assert(contains(index)); return m_data[index]; }
-	[[nodiscard]] BlockIndices getPath(const BlockIndex& secondToLast, const BlockIndex& last) const;
+	[[nodiscard]] SmallSet<BlockIndex> getPath(const BlockIndex& secondToLast, const BlockIndex& last) const;
 	[[nodiscard]] uint getSize() const { return m_data.size(); }
 	void add(const BlockIndex& index, BlockIndex parent);
 	void clear() { for(const BlockIndex& index : m_dirty) { m_data[index].clear(); } m_dirty.clear(); }
@@ -41,7 +41,7 @@ public:
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] bool openEmpty() const { return m_open.empty(); }
 	[[nodiscard]] BlockIndex next();
-	[[nodiscard]] BlockIndices getPath(const BlockIndex& secondToLast, const BlockIndex& last) const;
+	[[nodiscard]] SmallSet<BlockIndex> getPath(const BlockIndex& secondToLast, const BlockIndex& last) const;
 };
 class PathMemoDepthFirst final
 {
@@ -58,7 +58,7 @@ public:
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] bool openEmpty() const { return m_open.empty(); }
 	[[nodiscard]] BlockIndex next();
-	[[nodiscard]] BlockIndices getPath(const BlockIndex& secondToLast, const BlockIndex& last) const;
+	[[nodiscard]] SmallSet<BlockIndex> getPath(const BlockIndex& secondToLast, const BlockIndex& last) const;
 };
 class SimulationHasPathMemos final
 {

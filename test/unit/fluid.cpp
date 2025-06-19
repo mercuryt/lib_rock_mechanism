@@ -1158,7 +1158,7 @@ TEST_CASE("fluids smaller")
 		blocks.solid_setNot(block1);
 		blocks.fluid_add(block1, CollisionVolume::create(100), water);
 		blocks.solid_set(block2, marble, false);
-		area.m_caveInCheck.add(block2);
+		area.m_caveInCheck.insert(block2);
 		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		area.stepCaveInRead();
 		fluidGroup->readStep(area);

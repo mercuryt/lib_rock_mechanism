@@ -16,9 +16,9 @@ void Area::doStepCaveIn()
 }
 void Area::stepCaveInRead()
 {
-	std::list<BlockIndices> chunks;
-	SmallSet<BlockIndices*> anchoredChunks;
-	BlockIndexMap<BlockIndices*> chunksByBlock;
+	std::list<SmallSet<BlockIndex>> chunks;
+	SmallSet<SmallSet<BlockIndex>*> anchoredChunks;
+	SmallMap<BlockIndex, SmallSet<BlockIndex>*> chunksByBlock;
 	std::deque<BlockIndex> blockQueue;
 
 	//TODO: blockQueue.insert?
@@ -27,7 +27,7 @@ void Area::stepCaveInRead()
 	for(const BlockIndex& block : m_caveInCheck)
 		blockQueue.push_back(block);
 	std::stack<BlockIndex> toAddToBlockQueue;
-	BlockIndices checklist(m_caveInCheck);
+	SmallSet<BlockIndex> checklist(m_caveInCheck);
 	m_caveInCheck.clear();
 	m_caveInData.clear();
 	bool chunkFound;
@@ -66,24 +66,24 @@ void Area::stepCaveInRead()
 				// If adjacent to multiple different chunks merge them.
 				if(chunksByBlock.contains(block))
 				{
-					BlockIndices* oldChunk = chunksByBlock[block];
-					BlockIndices* newChunk = chunksByBlock[adjacent];
+					SmallSet<BlockIndex>* oldChunk = chunksByBlock[block];
+					SmallSet<BlockIndex>* newChunk = chunksByBlock[adjacent];
 					for(const BlockIndex& b : *oldChunk)
 					{
 						chunksByBlock.insert(b, newChunk);
-						newChunk->add(b);
+						newChunk->insert(b);
 					}
 					// If old chunk was anchored then new chunk is as well.
 					if(anchoredChunks.contains(oldChunk))
 					{
 						anchoredChunks.insert(newChunk);
 						for(const BlockIndex& b : *oldChunk)
-							checklist.remove(b);
+							checklist.erase(b);
 					}
-					std::erase(chunks, *oldChunk);
+					chunks.remove(*oldChunk);
 				}
 				// Record block membership in chunk.
-				chunksByBlock[adjacent]->add(block);
+				chunksByBlock[adjacent]->insert(block);
 				chunksByBlock.insert(block, chunksByBlock[adjacent]);
 				/*
 				// If the chunk is anchored then no need to do anything else.
@@ -116,7 +116,7 @@ void Area::stepCaveInRead()
 			anchoredChunks.insert(chunksByBlock[block]);
 			for(const BlockIndex& b : *chunksByBlock[block])
 				//TODO: Why is this 'maybe'?
-				checklist.maybeRemove(b);
+				checklist.maybeErase(b);
 		}
 		// Append adjacent without chunks to end of blockQueue if block isn't anchored, if it is anchored then adjacent are as well.
 		else if(!anchoredChunks.contains(chunksByBlock[block]))
@@ -128,12 +128,12 @@ void Area::stepCaveInRead()
 
 	} // End for each blockQueue.
 	// Record unanchored chunks, fall distance and energy.
-	std::vector<std::tuple<BlockIndices, DistanceInBlocks, uint32_t>> fallingChunksWithDistanceAndEnergy;
-	for(BlockIndices& chunk : chunks)
+	std::vector<std::tuple<SmallSet<BlockIndex>, DistanceInBlocks, uint32_t>> fallingChunksWithDistanceAndEnergy;
+	for(SmallSet<BlockIndex>& chunk : chunks)
 	{
 		if(!anchoredChunks.contains(&chunk))
 		{
-			BlockIndices blocksAbsorbingImpact;
+			SmallSet<BlockIndex> blocksAbsorbingImpact;
 			DistanceInBlocks smallestFallDistance = DistanceInBlocks::create(UINT16_MAX);
 			for(const BlockIndex& block : chunk)
 			{
@@ -152,13 +152,13 @@ void Area::stepCaveInRead()
 					{
 						smallestFallDistance = verticalFallDistance;
 						blocksAbsorbingImpact.clear();
-						blocksAbsorbingImpact.add(below);
-						blocksAbsorbingImpact.add(block);
+						blocksAbsorbingImpact.insert(below);
+						blocksAbsorbingImpact.insert(block);
 					}
 					else if(verticalFallDistance == smallestFallDistance)
 					{
-						blocksAbsorbingImpact.add(below);
-						blocksAbsorbingImpact.add(block);
+						blocksAbsorbingImpact.insert(below);
+						blocksAbsorbingImpact.insert(block);
 					}
 				}
 			}
@@ -205,11 +205,11 @@ void Area::stepCaveInWrite()
 			getBlocks().moveContentsTo(block, below);
 		}
 		// We don't know if the thing we landed on was it's self anchored so add a block to caveInCheck to be checked next step.
-		m_caveInCheck.add(below);
+		m_caveInCheck.insert(below);
 		//TODO: disperse energy of fall by 'mining' out blocks absorbing impact
 	}
 }
 void Area::registerPotentialCaveIn(const BlockIndex& block)
 {
-	m_caveInCheck.add(block);
+	m_caveInCheck.insert(block);
 }

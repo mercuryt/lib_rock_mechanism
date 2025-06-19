@@ -41,7 +41,7 @@ void BanditsArriveDramaArc::callback()
 	Actors& actors = m_area->getActors();
 	if(m_isActive)
 	{
-		BlockIndices exclude;
+		SmallSet<BlockIndex> exclude;
 		BlockIndex destination = m_area->getBlocks().getCenterAtGroundLevel();
 		if(!m_leader.exists())
 		{
@@ -49,7 +49,7 @@ void BanditsArriveDramaArc::callback()
 			ShapeId shape = AnimalSpecies::getShapes(species).back();
 			MoveTypeId moveType = AnimalSpecies::getMoveType(species);
 			BlockIndex location = findLocationOnEdgeForNear(shape, moveType, m_entranceBlock, maxBlockDistance, exclude);
-			exclude.add(location);
+			exclude.insert(location);
 			ActorParamaters params{
 				.species=species,
 				.percentGrown=Percent::create(random.getInRange(90,100)),
@@ -76,7 +76,7 @@ void BanditsArriveDramaArc::callback()
 			BlockIndex location = findLocationOnEdgeForNear(shape, moveType, m_entranceBlock, maxBlockDistance, exclude);
 			if(location.exists())
 			{
-				exclude.add(location);
+				exclude.insert(location);
 				ActorIndex actor = actors.create(ActorParamaters{
 					.species=species,
 					.percentGrown=Percent::create(random.getInRange(70,100)),

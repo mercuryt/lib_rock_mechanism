@@ -420,7 +420,7 @@ bool Blocks::squareOfDistanceIsMoreThen(const BlockIndex& index, const BlockInde
 {
 	return distanceSquared(index, otherIndex)> otherDistanceSquared.get();
 }
-bool Blocks::isAdjacentToAny(const BlockIndex& index, BlockIndices& blocks) const
+bool Blocks::isAdjacentToAny(const BlockIndex& index, SmallSet<BlockIndex>& blocks) const
 {
 	auto adjacents = getAdjacentWithEdgeAndCornerAdjacent(index);
 	for(const BlockIndex& candidate : blocks)
@@ -655,7 +655,7 @@ bool Blocks::hasLineOfSightTo(const BlockIndex& index, const BlockIndex& other) 
 {
 	return m_area.m_opacityFacade.hasLineOfSight(index, other);
 }
-BlockIndices Blocks::collectAdjacentsInRange(const BlockIndex& index, const DistanceInBlocks& range)
+SmallSet<BlockIndex> Blocks::collectAdjacentsInRange(const BlockIndex& index, const DistanceInBlocks& range)
 {
 	auto condition = [&](const BlockIndex& b){ return taxiDistance(b, index) <= range; };
 	return collectAdjacentsWithCondition(index, condition);

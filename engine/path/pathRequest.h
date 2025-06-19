@@ -66,8 +66,8 @@ struct GoToPathRequest : public PathRequestDepthFirst
 };
 struct GoToAnyPathRequest : public PathRequestDepthFirst
 {
-	BlockIndices destinations;
-	GoToAnyPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex huristicDestination, BlockIndices destinations);
+	SmallSet<BlockIndex> destinations;
+	GoToAnyPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex huristicDestination, SmallSet<BlockIndex> destinations);
 	GoToAnyPathRequest(const Json& data, Area& area);
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
 	[[nodiscard]] Json toJson() const override;

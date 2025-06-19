@@ -594,7 +594,7 @@ TEST_CASE("stockpile")
 		CHECK(actors.move_getDestination(dwarf1).exists());
 		CHECK(items.isAdjacentToLocation(chunk1, actors.move_getDestination(dwarf1)));
 		auto path = actors.move_getPath(dwarf1);
-		CHECK(std::ranges::find(path, gateway) != path.end());
+		CHECK(path.contains(gateway));
 		blocks.solid_set(gateway, wood, false);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, gateway);
 		// Cannot detour or find alternative block.

@@ -32,15 +32,15 @@ public:
 //TODO:  move to area directory.
 class AreaHasTemperature final
 {
-	BlockIndexMap<TemperatureSource> m_sources;
+	SmallMap<BlockIndex, TemperatureSource> m_sources;
 	// TODO: make these medium maps.
-	// TODO: change BlockIndices to CuboidSet.
+	// TODO: change SmallSet<BlockIndex> to CuboidSet.
 	// To possibly thaw.
-	std::map<Temperature, BlockIndices> m_aboveGroundBlocksByMeltingPoint;
+	std::map<Temperature, SmallSet<BlockIndex>> m_aboveGroundBlocksByMeltingPoint;
 	// To possibly freeze.
 	std::map<Temperature, SmallSet<FluidGroup*>> m_aboveGroundFluidGroupsByMeltingPoint;
 	// Collect deltas to apply sum.
-	BlockIndexMap<TemperatureDelta> m_blockDeltaDeltas;
+	SmallMap<BlockIndex, TemperatureDelta> m_blockDeltaDeltas;
 	Area& m_area;
 	Temperature m_ambiantSurfaceTemperature;
 

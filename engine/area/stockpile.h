@@ -31,7 +31,7 @@ class StockPileObjective;
 class StockPile
 {
 	std::vector<ItemQuery> m_queries;
-	BlockIndices m_blocks;
+	SmallSet<BlockIndex> m_blocks;
 	Quantity m_openBlocks = Quantity::create(0);
 	Area& m_area;
 	FactionId m_faction;
@@ -82,7 +82,7 @@ struct BlockIsPartOfStockPile
 };
 class BlockIsPartOfStockPiles
 {
-	FactionIdMap<BlockIsPartOfStockPile> m_stockPiles;
+	SmallMap<FactionId, BlockIsPartOfStockPile> m_stockPiles;
 	BlockIndex m_block;
 public:
 	BlockIsPartOfStockPiles(const BlockIndex& b): m_block(b) { }
@@ -106,9 +106,9 @@ struct StockPileHasShapeDishonorCallback final : public DishonorCallback
 class AreaHasStockPilesForFaction
 {
 	// Stockpiles may accept multiple item types and thus may appear here more then once.
-	ItemTypeMap<SmallSet<StockPile*>> m_availableStockPilesByItemType;
+	SmallMap<ItemTypeId, SmallSet<StockPile*>> m_availableStockPilesByItemType;
 	// These items are checked whenever a new stockpile is created to see if they should be move to items with destinations.
-	ItemTypeMap<SmallSet<ItemReference>> m_itemsWithoutDestinationsByItemType;
+	SmallMap<ItemTypeId, SmallSet<ItemReference>> m_itemsWithoutDestinationsByItemType;
 	// Only when an item is added here does it get designated for stockpileing.
 	SmallSet<ItemReference> m_itemsToBeStockPiled;
 	//TODO: Replace these SmallMaps with medium maps?

@@ -70,11 +70,11 @@ bool Blocks::actor_empty(const BlockIndex& index) const
 {
 	return m_actors[index].empty();
 }
-ActorIndicesForBlock& Blocks::actor_getAll(const BlockIndex& index)
+SmallSet<ActorIndex>& Blocks::actor_getAll(const BlockIndex& index)
 {
 	return m_actors[index];
 }
-const ActorIndicesForBlock& Blocks::actor_getAll(const BlockIndex& index) const
+const SmallSet<ActorIndex>& Blocks::actor_getAll(const BlockIndex& index) const
 {
 	return m_actors[index];
 }

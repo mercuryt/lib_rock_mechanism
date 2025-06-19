@@ -33,16 +33,16 @@ class FluidQueue
 public:
 	std::pmr::vector<FutureFlowBlock> m_queue;
 	// TODO: does maintaining m_set actually make any sense?
-	BlockIndices m_set;
+	SmallSet<BlockIndex> m_set;
 	std::pmr::vector<FutureFlowBlock>::iterator m_groupStart, m_groupEnd;
 
 	FluidQueue(FluidAllocator& allocator) : m_queue(&allocator) { }
-	void setBlocks(BlockIndices& blocks);
+	void setBlocks(SmallSet<BlockIndex>& blocks);
 	void maybeAddBlock(const BlockIndex& block);
-	void maybeAddBlocks(BlockIndices& blocks);
+	void maybeAddBlocks(SmallSet<BlockIndex>& blocks);
 	void removeBlock(const BlockIndex& block);
 	void maybeRemoveBlock(const BlockIndex& block);
-	void removeBlocks(BlockIndices& blocks);
+	void removeBlocks(SmallSet<BlockIndex>& blocks);
 	void merge(FluidQueue& fluidQueue);
 	void noChange();
 	[[nodiscard]] uint32_t groupSize() const;

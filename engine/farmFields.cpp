@@ -23,13 +23,13 @@ void FarmFieldCreateInputAction::execute()
 void FarmFieldRemoveInputAction::execute()
 {
 	auto& hasFarmFields = (*m_cuboid.begin()).m_area->m_hasFarmFields.at(m_faction);
-	BlockIndices blocks = m_cuboid.toSet();
+	SmallSet<BlockIndex> blocks = m_cuboid.toSet();
 	hasFarmFields.undesignateBlocks(blocks);
 }
 void FarmFieldExpandInputAction::execute()
 {
 	auto& hasFarmFields = (*m_cuboid.begin()).m_area->m_hasFarmFields.at(m_faction);
-	BlockIndices blocks = m_cuboid.toSet();
+	SmallSet<BlockIndex> blocks = m_cuboid.toSet();
 	hasFarmFields.designateBlocks(m_farmField, blocks);
 }
 void FarmFieldUpdateInputAction::execute()
@@ -147,7 +147,7 @@ FarmField& HasFarmFieldsForFaction::create(Area& area, SmallSet<BlockIndex>&& bl
 		area.getBlocks().farm_insert(block, m_faction, field);
 	return field;
 }
-FarmField& HasFarmFieldsForFaction::create(Area& area, const BlockIndices& blocks)
+FarmField& HasFarmFieldsForFaction::create(Area& area, const SmallSet<BlockIndex>& blocks)
 {
 	SmallSet<BlockIndex> adapter;
 	adapter.maybeInsertAll(blocks.begin(), blocks.end());

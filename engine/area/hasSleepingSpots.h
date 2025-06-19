@@ -7,7 +7,7 @@ class Area;
 class AreaHasSleepingSpots final
 {
 	Area& m_area;
-	BlockIndices m_unassigned;
+	SmallSet<BlockIndex> m_unassigned;
 public:
 	AreaHasSleepingSpots(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);

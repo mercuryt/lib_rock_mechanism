@@ -12,16 +12,16 @@ class Area;
 
 class AreaHasStocksForFaction final
 {
-	ItemTypeMap<MaterialTypeMap<ItemIndices>> m_data;
+	SmallMap<ItemTypeId, SmallMap<MaterialTypeId, SmallSet<ItemIndex>>> m_data;
 public:
 	void record(Area& area, ItemIndex item);
 	void maybeRecord(Area& area, ItemIndex item);
 	void unrecord(Area& area, ItemIndex item);
-	const ItemTypeMap<MaterialTypeMap<ItemIndices>>& get() const { return m_data; }
+	const auto& get() const { return m_data; }
 };
 class AreaHasStocks final
 {
-	FactionIdMap<AreaHasStocksForFaction> m_data;
+	SmallMap<FactionId, AreaHasStocksForFaction> m_data;
 public:
 	AreaHasStocksForFaction& getForFaction(FactionId faction) { assert(m_data.contains(faction)); return m_data[faction]; }
 	void addFaction(FactionId faction) { m_data.emplace(faction); }

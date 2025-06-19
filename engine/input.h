@@ -23,8 +23,8 @@ class InputAction
 	Queue::iterator m_iterator;
 protected:
 	HasOnDestroySubscriptions m_onDestroySubscriptions;
-	ActorIndices m_actors;
-	InputAction(ActorIndices& m_actors, NewObjectiveEmplacementType m_emplacementType, InputQueue& inputQueue);
+	SmallSet<ActorIndex> m_actors;
+	InputAction(SmallSet<ActorIndex>& m_actors, NewObjectiveEmplacementType m_emplacementType, InputQueue& inputQueue);
 	InputAction(InputQueue& inputQueue);
 	void insertObjective(std::unique_ptr<Objective> objective, ActorIndex actor);
 public:

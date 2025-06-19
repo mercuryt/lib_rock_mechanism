@@ -328,7 +328,6 @@ public:
 };
 inline void to_json(Json& data, const LongRangePathNodeIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, LongRangePathNodeIndex& index) { index = LongRangePathNodeIndex::create(data.get<uint32_t>()); }
-using LongRangePathNodeIndexSet = StrongIntegerSet<LongRangePathNodeIndex>;
 
 class DeckId final : public StrongInteger<DeckId, uint16_t>
 {

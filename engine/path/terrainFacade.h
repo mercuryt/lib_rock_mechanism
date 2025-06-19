@@ -37,11 +37,11 @@ constexpr int maxAdjacent = 26;
 
 struct FindPathResult
 {
-	BlockIndices path;
+	SmallSet<BlockIndex> path;
 	BlockIndex blockThatPassedPredicate;
 	bool useCurrentPosition = false;
 	FindPathResult() = default;
-	FindPathResult(const BlockIndices& p, BlockIndex btpp, bool ucp);
+	FindPathResult(const SmallSet<BlockIndex>& p, BlockIndex btpp, bool ucp);
 	void validate() const;
 	FindPathResult(const FindPathResult& other) noexcept = default;
 	FindPathResult(FindPathResult&& other) noexcept = default;
@@ -124,8 +124,8 @@ public:
 	[[nodiscard]] bool getValueForBit(const BlockIndex& from, const BlockIndex& to) const;
 	[[nodiscard]] FindPathResult findPathTo(PathMemoDepthFirst& memo, const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, const BlockIndex& target, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null()) const;
 	[[nodiscard]] FindPathResult findPathToWithoutMemo(const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, const BlockIndex& target, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null()) const;
-	[[nodiscard]] FindPathResult findPathToAnyOf(PathMemoDepthFirst& memo, const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, BlockIndices indecies, const BlockIndex huristicDestination, bool detour = false, const FactionId& faction = FactionId::null()) const;
-	[[nodiscard]] FindPathResult findPathToAnyOfWithoutMemo(const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, BlockIndices indecies, const BlockIndex huristicDestination, bool detour = false, const FactionId& faction = FactionId::null()) const;
+	[[nodiscard]] FindPathResult findPathToAnyOf(PathMemoDepthFirst& memo, const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, SmallSet<BlockIndex> indecies, const BlockIndex huristicDestination, bool detour = false, const FactionId& faction = FactionId::null()) const;
+	[[nodiscard]] FindPathResult findPathToAnyOfWithoutMemo(const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, SmallSet<BlockIndex> indecies, const BlockIndex huristicDestination, bool detour = false, const FactionId& faction = FactionId::null()) const;
 
 	template<bool anyOccupiedBlock, DestinationCondition DestinationConditionT>
 	[[nodiscard]] FindPathResult findPathToConditionDepthFirst(DestinationConditionT& destinationCondition, PathMemoDepthFirst& memo, const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, const BlockIndex& huristicDestination, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null(), const DistanceInBlocks& maxRange = DistanceInBlocks::max()) const;

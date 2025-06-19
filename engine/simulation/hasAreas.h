@@ -13,7 +13,7 @@ class SimulationHasAreas final
 {
 	Simulation& m_simulation;
 	AreaId m_nextId = AreaId::create(0);
-	AreaIdMap<Area*> m_areasById;
+	SmallMap<AreaId, Area*> m_areasById;
 	SmallMapStable<AreaId, Area> m_areas;
 public:
 	SimulationHasAreas(Simulation& simulation) : m_simulation(simulation) { }

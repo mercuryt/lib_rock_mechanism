@@ -22,9 +22,9 @@ struct FluidType;
 
 struct FluidGroupSplitData final
 {
-	BlockIndices members;
-	BlockIndices futureAdjacent;
-	FluidGroupSplitData(BlockIndices& m) : members(m) {}
+	SmallSet<BlockIndex> members;
+	SmallSet<BlockIndex> futureAdjacent;
+	FluidGroupSplitData(SmallSet<BlockIndex>& m) : members(m) {}
 };
 
 class FluidGroup final
@@ -35,18 +35,18 @@ public:
 	// For spitting into multiple fluidGroups.
 	std::vector<FluidGroupSplitData> m_futureGroups;
 	// For notifing groups with different fluids of unfull status. Groups with the same fluid are merged instead.
-	SmallMap<FluidGroup*, BlockIndices> m_futureNotifyPotentialUnfullAdjacent;
+	SmallMap<FluidGroup*, SmallSet<BlockIndex>> m_futureNotifyPotentialUnfullAdjacent;
 
-	BlockIndices m_potentiallyNoLongerAdjacentFromSyncronusStep;
-	BlockIndices m_potentiallySplitFromSyncronusStep;
+	SmallSet<BlockIndex> m_potentiallyNoLongerAdjacentFromSyncronusStep;
+	SmallSet<BlockIndex> m_potentiallySplitFromSyncronusStep;
 
-	BlockIndices m_futureNewEmptyAdjacents;
+	SmallSet<BlockIndex> m_futureNewEmptyAdjacents;
 
-	BlockIndices m_futureAddToDrainQueue;
-	BlockIndices m_futureRemoveFromDrainQueue;
-	BlockIndices m_futureAddToFillQueue;
-	BlockIndices m_futureRemoveFromFillQueue;
-	FluidTypeMap<FluidGroup*> m_disolvedInThisGroup;
+	SmallSet<BlockIndex> m_futureAddToDrainQueue;
+	SmallSet<BlockIndex> m_futureRemoveFromDrainQueue;
+	SmallSet<BlockIndex> m_futureAddToFillQueue;
+	SmallSet<BlockIndex> m_futureRemoveFromFillQueue;
+	SmallMap<FluidTypeId, FluidGroup*> m_disolvedInThisGroup;
 	FluidTypeId m_fluidType;
 	int32_t m_excessVolume = 0;
 	uint32_t m_viscosity = 0;
@@ -59,7 +59,7 @@ public:
 	bool m_disolved = false;
 	bool m_aboveGround = false;
 
-	FluidGroup(FluidAllocator& allocator, const FluidTypeId& ft, BlockIndices& blocks, Area& area, bool checkMerge = true);
+	FluidGroup(FluidAllocator& allocator, const FluidTypeId& ft, SmallSet<BlockIndex>& blocks, Area& area, bool checkMerge = true);
 	FluidGroup(const FluidGroup&) = delete;
 	void addFluid(Area& area, const CollisionVolume& fluidVolume);
 	void removeFluid(Area& area, const CollisionVolume& fluidVolume);
@@ -80,7 +80,7 @@ public:
 	void log(Area& area) const;
 	void logFill(Area& area) const;
 	[[nodiscard]] CollisionVolume totalVolume(Area& area) const;
-	[[nodiscard]] BlockIndices& getBlocks() { return m_drainQueue.m_set; }
+	[[nodiscard]] SmallSet<BlockIndex>& getBlocks() { return m_drainQueue.m_set; }
 	[[nodiscard]] bool dispositionIsStable(Area& area, const CollisionVolume& fillVolume, const CollisionVolume& drainVolume) const;
 	[[nodiscard]] bool operator==(const FluidGroup& fluidGroup) const { return &fluidGroup == this; }
 	[[nodiscard]] Quantity countBlocksOnSurface(const Area& area) const;

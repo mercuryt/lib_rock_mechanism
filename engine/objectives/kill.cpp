@@ -8,7 +8,7 @@
 #include "reference.h"
 #include <memory>
 /*
-KillInputAction::KillInputAction(ActorIndices actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, const ActorIndex& killer, const ActorIndex& target) : InputAction(actors, emplacementType, inputQueue), m_killer(killer), m_target(target)
+KillInputAction::KillInputAction(SmallSet<ActorIndex> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, const ActorIndex& killer, const ActorIndex& target) : InputAction(actors, emplacementType, inputQueue), m_killer(killer), m_target(target)
 {
        	m_onDestroySubscriptions.subscribe(m_target.m_onDestroy);
 }

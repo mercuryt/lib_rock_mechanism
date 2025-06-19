@@ -5,7 +5,7 @@
 #include "../blocks/blocks.h"
 #include "types.h"
 #include <algorithm>
-void DrainQueue::buildFor(BlockIndices& members)
+void DrainQueue::buildFor(SmallSet<BlockIndex>& members)
 {
 	m_set = members;
 	for(BlockIndex block : members)
@@ -42,7 +42,7 @@ void DrainQueue::recordDelta(Area& area, const CollisionVolume& volume, const Co
 	if(blocks.fluid_getTotalVolume(m_groupStart->block) == Config::maxBlockVolume && !m_futureNoLongerFull.contains((m_groupEnd-1)->block))
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 			//TODO: is this maybe correct? Why would they already be added?
-			m_futureNoLongerFull.maybeAdd(iter->block);
+			m_futureNoLongerFull.maybeInsert(iter->block);
 	// Record fluid level changes.
 	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 	{
@@ -54,7 +54,7 @@ void DrainQueue::recordDelta(Area& area, const CollisionVolume& volume, const Co
 	if(volume == flowCapacity)
 	{
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
-			m_futureEmpty.add(iter->block);
+			m_futureEmpty.insert(iter->block);
 		m_groupStart = m_groupEnd;
 		findGroupEnd(area);
 	}
@@ -66,7 +66,7 @@ void DrainQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 {
 	assert((m_groupStart >= m_queue.begin() && m_groupStart <= m_queue.end()));
 	assert((m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end()));
-	BlockIndices drainedFromAndAdjacent;
+	SmallSet<BlockIndex> drainedFromAndAdjacent;
 	Blocks& blocks = area.getBlocks();
 	for(auto iter = m_queue.begin(); iter != m_groupEnd; ++iter)
 	{
@@ -79,10 +79,10 @@ void DrainQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 		assert(blocks.fluid_getTotalVolume(iter->block) >= iter->delta);
 		blocks.fluid_drainInternal(iter->block, iter->delta, fluidGroup.m_fluidType);
 		// Record blocks to set fluid groups unstable.
-		drainedFromAndAdjacent.maybeAdd(iter->block);
+		drainedFromAndAdjacent.maybeInsert(iter->block);
 		for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(iter->block))
 			if(blocks.fluid_canEnterEver(adjacent))
-				drainedFromAndAdjacent.maybeAdd(adjacent);
+				drainedFromAndAdjacent.maybeInsert(adjacent);
 	}
 	// Set fluidGroups unstable.
 	// TODO: Would it be better to prevent fluid groups from becoming stable while in contact with another group? Either option seems bad.

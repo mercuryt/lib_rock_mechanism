@@ -77,7 +77,7 @@ void definitions::loadMoveTypes()
 			p.swim.insert(FluidType::byName(pair.key()), pair.value().get<CollisionVolume>());
 		if(data.contains("breathableFluids"))
 			for(const Json& name : data["breathableFluids"])
-				p.breathableFluids.add(FluidType::byName(name));
+				p.breathableFluids.insert(FluidType::byName(name));
 		MoveType::create(p);
 	}
 }

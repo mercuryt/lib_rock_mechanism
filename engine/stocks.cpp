@@ -9,7 +9,7 @@ void AreaHasStocksForFaction::record(Area& area, ItemIndex item)
 	const ItemTypeId& itemType = items.getItemType(item);
 	const MaterialTypeId& materialType = items.getMaterialType(item);
 	assert(!m_data.contains(itemType) || !m_data[itemType].contains(materialType) || !m_data[itemType][materialType].contains(item));
-	m_data.getOrCreate(itemType).getOrCreate(materialType).add(item);
+	m_data.getOrCreate(itemType).getOrCreate(materialType).insert(item);
 }
 void AreaHasStocksForFaction::maybeRecord(Area& area, ItemIndex item)
 {
@@ -17,7 +17,7 @@ void AreaHasStocksForFaction::maybeRecord(Area& area, ItemIndex item)
 	const ItemTypeId& itemType = items.getItemType(item);
 	const MaterialTypeId& materialType = items.getMaterialType(item);
 	if(!m_data.contains(itemType) || !m_data[itemType].contains(materialType) || !m_data[itemType][materialType].contains(item))
-		m_data.getOrCreate(itemType).getOrCreate(materialType).add(item);
+		m_data.getOrCreate(itemType).getOrCreate(materialType).insert(item);
 
 }
 void AreaHasStocksForFaction::unrecord(Area& area, ItemIndex item)
@@ -25,7 +25,7 @@ void AreaHasStocksForFaction::unrecord(Area& area, ItemIndex item)
 	Items& items = area.getItems();
 	if(m_data[items.getItemType(item)][items.getMaterialType(item)].size() > 1)
 		// There are more then one item for this combination of item type and material type.
-		m_data[items.getItemType(item)][items.getMaterialType(item)].remove(item);
+		m_data[items.getItemType(item)][items.getMaterialType(item)].erase(item);
 	else
 	{
 		if(m_data[items.getItemType(item)].size() > 1)

@@ -34,7 +34,7 @@ void AnimalsArriveDramaArc::callback()
 	auto& random = m_area->m_simulation.m_random;
 	if(m_isActive)
 	{
-		BlockIndices exclude;
+		SmallSet<BlockIndex> exclude;
 		// Spawn.
 		while(m_quantity-- != 0)
 		{
@@ -45,7 +45,7 @@ void AnimalsArriveDramaArc::callback()
 			BlockIndex location = findLocationOnEdgeForNear(shape, moveType, m_entranceBlock, maxBlockDistance, exclude);
 			if(location.exists())
 			{
-				exclude.add(location);
+				exclude.insert(location);
 				Actors& actors = m_area->getActors();
 				ActorIndex actor = actors.create(ActorParamaters{
 					.species=m_species,

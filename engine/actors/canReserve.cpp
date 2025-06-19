@@ -68,7 +68,7 @@ bool Actors::canReserve_canReserveLocation(const ActorIndex& index, const BlockI
 			return false;
 	return true;
 }
-bool Actors::canReserve_locationAtEndOfPathIsUnreserved(const ActorIndex& index, const BlockIndices& path) const
+bool Actors::canReserve_locationAtEndOfPathIsUnreserved(const ActorIndex& index, const SmallSet<BlockIndex>& path) const
 {
 	assert(!path.empty());
 	Blocks& blocks = m_area.getBlocks();

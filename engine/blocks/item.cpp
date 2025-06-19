@@ -72,16 +72,16 @@ void Blocks::item_disperseAll(const BlockIndex& index)
 	auto& itemsInBlock = m_itemVolume[index];
 	if(itemsInBlock.empty())
 		return;
-	BlockIndices blocks;
+	SmallSet<BlockIndex> blocks;
 	for(BlockIndex otherIndex : getAdjacentOnSameZLevelOnly(index))
 		if(!solid_is(otherIndex))
-			blocks.add(otherIndex);
+			blocks.insert(otherIndex);
 	auto copy = itemsInBlock;
 	Items& items = m_area.getItems();
 	for(auto [item, volume] : copy)
 	{
 		//TODO: split up stacks of generics, prefer blocks with more empty space.
-		const BlockIndex block = blocks.random(m_area.m_simulation);
+		const BlockIndex block = blocks[m_area.m_simulation.m_random.getInRange(0u, blocks.size() - 1u)];
 		const Facing4 facing = (Facing4)(m_area.m_simulation.m_random.getInRange(0, 3));
 		// TODO: use location_tryToSetStatic and find another location on fail.
 		items.location_setStatic(item, block, facing);
@@ -195,11 +195,11 @@ bool Blocks::item_contains(const BlockIndex& index, const ItemIndex& item) const
 {
 	return m_items[index].contains(item);
 }
-ItemIndicesForBlock& Blocks::item_getAll(const BlockIndex& index)
+SmallSet<ItemIndex>& Blocks::item_getAll(const BlockIndex& index)
 {
 	return m_items[index];
 }
-const ItemIndicesForBlock& Blocks::item_getAll(const BlockIndex& index) const
+const SmallSet<ItemIndex>& Blocks::item_getAll(const BlockIndex& index) const
 {
 	return const_cast<Blocks*>(this)->item_getAll(index);
 }

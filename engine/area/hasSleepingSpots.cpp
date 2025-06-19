@@ -7,7 +7,7 @@
 void AreaHasSleepingSpots::load(const Json& data, DeserializationMemo&)
 {
 	for(const Json& block : data["unassigned"])
-		m_unassigned.add(block.get<BlockIndex>());
+		m_unassigned.insert(block.get<BlockIndex>());
 }
 Json AreaHasSleepingSpots::toJson() const
 {
@@ -18,11 +18,11 @@ Json AreaHasSleepingSpots::toJson() const
 }
 void AreaHasSleepingSpots::designate(const FactionId& faction, const BlockIndex& block)
 {
-	m_unassigned.add(block);
+	m_unassigned.insert(block);
 	m_area.getBlocks().designation_set(block, faction, BlockDesignation::Sleep);
 }
 void AreaHasSleepingSpots::undesignate(const FactionId& faction, const BlockIndex& block)
 {
-	m_unassigned.remove(block);
+	m_unassigned.erase(block);
 	m_area.getBlocks().designation_unset(block, faction, BlockDesignation::Sleep);
 }

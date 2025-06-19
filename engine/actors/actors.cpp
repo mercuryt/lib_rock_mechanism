@@ -549,7 +549,7 @@ void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
 	// Update stored index for all actors who are targeting this one.
 	for(ActorIndex actor : m_targetedBy[newIndex])
 		m_target[actor] = newIndex;
-	// Update ActorIndices stored in occupied block(s).
+	// Update SmallSet<ActorIndex> stored in occupied block(s).
 	Blocks& blocks = m_area.getBlocks();
 	for(BlockIndex block : m_blocks[newIndex])
 		blocks.actor_updateIndex(block, oldIndex, newIndex);
@@ -571,13 +571,13 @@ void Actors::destroy(const ActorIndex& index)
 	m_referenceData.remove(index);
 
 }
-ActorIndices Actors::getAll() const
+SmallSet<ActorIndex> Actors::getAll() const
 {
 	// TODO: Replace with std::iota?
-	ActorIndices output;
+	SmallSet<ActorIndex> output;
 	output.reserve(m_shape.size());
 	for(auto i = ActorIndex::create(0); i < size(); ++i)
-		output.add(i);
+		output.insert(i);
 	return output;
 }
 void Actors::onChangeAmbiantSurfaceTemperature()

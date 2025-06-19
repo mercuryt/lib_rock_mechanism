@@ -22,7 +22,7 @@ class KillInputAction final : public InputAction
 {
 	ActorIndex m_killer;
 	ActorIndex m_target;
-	KillInputAction(ActorIndices actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, const ActorIndex& killer, const ActorIndex& target);
+	KillInputAction(SmallSet<ActorIndex> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, const ActorIndex& killer, const ActorIndex& target);
 	void execute();
 };
 */

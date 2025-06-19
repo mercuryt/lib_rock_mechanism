@@ -100,10 +100,10 @@ public:
 	OpacityFacade m_opacityFacade;
 	AreaHasVisionCuboids m_visionCuboids;
 	AreaHasExteriorPortals m_exteriorPortals;
-	BlockIndices m_caveInCheck;
+	SmallSet<BlockIndex> m_caveInCheck;
 	AreaHasDecks m_decks;
 	// uint32_t is fall energy.
-	std::vector<std::tuple<BlockIndices, DistanceInBlocks, uint32_t>> m_caveInData;
+	std::vector<std::tuple<SmallSet<BlockIndex>, DistanceInBlocks, uint32_t>> m_caveInData;
 	std::string m_name;
 	Simulation& m_simulation;
 	AreaId m_id;

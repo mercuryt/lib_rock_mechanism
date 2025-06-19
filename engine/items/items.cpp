@@ -28,7 +28,7 @@ void ItemCanBeStockPiled::load(const Json& data, Area& area)
 {
 	if(data.contains("data"))
 		for(const Json& faction : data["data"])
-			m_data.add(faction.get<FactionId>());
+			m_data.insert(faction.get<FactionId>());
 	if(data.contains("scheduledEvents"))
 		for(const Json& pair : data["scheduledEvents"])
 		{
@@ -468,13 +468,13 @@ void Items::loadCargoAndCraftJobs(const Json& data)
 		m_hasCargo[index] = std::make_unique<ItemHasCargo>(iter.value());
 	}
 }
-ItemIndices Items::getAll() const
+SmallSet<ItemIndex> Items::getAll() const
 {
 	// TODO: Replace with std::iota?
-	ItemIndices output;
+	SmallSet<ItemIndex> output;
 	output.reserve(m_shape.size());
 	for(auto i = ItemIndex::create(0); i < size(); ++i)
-		output.add(i);
+		output.insert(i);
 	return output;
 }
 void to_json(Json& data, std::unique_ptr<ItemHasCargo> hasCargo) { data = hasCargo->toJson(); }
@@ -561,7 +561,7 @@ void ItemHasCargo::addActor(Area& area, const ActorIndex& actor)
 	assert(m_volume + actors.getVolume(actor) <= m_maxVolume);
 	assert(!containsActor(actor));
 	assert(m_fluidVolume == 0 && m_fluidType.empty());
-	m_actors.add(actor);
+	m_actors.insert(actor);
 	m_volume += actors.getVolume(actor);
 	m_mass += actors.getMass(actor);
 }
@@ -572,7 +572,7 @@ void ItemHasCargo::addItem(Area& area, const ItemIndex& item)
 	assert(m_volume + items.getVolume(item) <= m_maxVolume);
 	assert(!containsItem(item));
 	assert(m_fluidVolume == 0 && m_fluidType.empty());
-	m_items.add(item);
+	m_items.insert(item);
 	m_volume += items.getVolume(item);
 	m_mass += items.getMass(item);
 }
@@ -627,7 +627,7 @@ void ItemHasCargo::removeActor(Area& area, const ActorIndex& actor)
 	Actors& actors = area.getActors();
 	m_volume -= actors.getVolume(actor);
 	m_mass -= actors.getMass(actor);
-	m_actors.remove(actor);
+	m_actors.erase(actor);
 }
 void ItemHasCargo::removeItem(Area& area, const ItemIndex& item)
 {
@@ -635,7 +635,7 @@ void ItemHasCargo::removeItem(Area& area, const ItemIndex& item)
 	Items& items = area.getItems();
 	m_volume -= items.getVolume(item);
 	m_mass -= items.getMass(item);
-	m_items.remove(item);
+	m_items.erase(item);
 }
 void ItemHasCargo::removeItemGeneric(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity)
 {
@@ -645,7 +645,7 @@ void ItemHasCargo::removeItemGeneric(Area& area, const ItemTypeId& itemType, con
 		{
 			if(items.getQuantity(item) == quantity)
 				// TODO: should be reusing an iterator here.
-				m_items.remove(item);
+				m_items.erase(item);
 			else
 			{
 				assert(quantity < items.getQuantity(item));

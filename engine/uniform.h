@@ -43,7 +43,7 @@ public:
 };
 class SimulationHasUniforms final
 {
-	FactionIdMap<SimulationHasUniformsForFaction> m_data;
+	SmallMap<FactionId, SimulationHasUniformsForFaction> m_data;
 public:
 	void registerFaction(const FactionId& faction) { m_data.emplace(faction, faction); }
 	void unregisterFaction(const FactionId& faction) { m_data.erase(faction); }

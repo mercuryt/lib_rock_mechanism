@@ -66,13 +66,13 @@ public:
 	[[nodiscard]] bool predicateForAnyOccupiedBlock(const Index& index, std::function<bool(const BlockIndex&)> predicate) const;
 	[[nodiscard]] bool predicateForAnyAdjacentBlock(const Index& index, std::function<bool(const BlockIndex&)> predicate) const;
 	[[nodiscard]] bool predicateForAnyOccupiedBlockAtLocationAndFacing(const Index& index, std::function<bool(const BlockIndex&)> predicate, const BlockIndex& location, const Facing4& facing) const;
-	[[nodiscard]] BlockIndices getAdjacentBlocks(const Index& index) const;
-	[[nodiscard]] BlockIndices getOccupiedAndAdjacentBlocks(const Index& index) const;
-	[[nodiscard]] ItemIndices getAdjacentItems(const Index& index) const;
-	[[nodiscard]] ActorIndices getAdjacentActors(const Index& index) const;
-	[[nodiscard]] BlockIndices getAdjacentBlocksAtLocationWithFacing(const Index& index, const BlockIndex& block, const Facing4& facing) const;
+	[[nodiscard]] SmallSet<BlockIndex> getAdjacentBlocks(const Index& index) const;
+	[[nodiscard]] SmallSet<BlockIndex> getOccupiedAndAdjacentBlocks(const Index& index) const;
+	[[nodiscard]] SmallSet<ItemIndex> getAdjacentItems(const Index& index) const;
+	[[nodiscard]] SmallSet<ActorIndex> getAdjacentActors(const Index& index) const;
+	[[nodiscard]] SmallSet<BlockIndex> getAdjacentBlocksAtLocationWithFacing(const Index& index, const BlockIndex& block, const Facing4& facing) const;
 	// TODO: return OccuipedBlocksForHasShape
-	[[nodiscard]] BlockIndices getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const Index& index, const BlockIndex& location, const Facing4& facing) const;
+	[[nodiscard]] SmallSet<BlockIndex> getBlocksWhichWouldBeOccupiedAtLocationAndFacing(const Index& index, const BlockIndex& location, const Facing4& facing) const;
 	[[nodiscard]] bool allBlocksAtLocationAndFacingAreReservable(const Index& index, const BlockIndex& location, const Facing4& facing, const FactionId& faction) const;
 	[[nodiscard]] bool allOccupiedBlocksAreReservable(const Index& index, const FactionId& faction) const;
 	[[nodiscard]] bool isAdjacentToActor(const Index& index, const ActorIndex& actor) const;

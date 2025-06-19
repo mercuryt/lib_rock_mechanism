@@ -91,7 +91,7 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	StrongVector<int32_t, ActorIndex> m_massBonusOrPenalty;
 	StrongVector<float, ActorIndex> m_massModifier;
 	StrongVector<Mass, ActorIndex> m_unencomberedCarryMass;
-	StrongVector<BlockIndices, HasShapeIndex> m_leadFollowPath;
+	StrongVector<SmallSet<BlockIndex>, HasShapeIndex> m_leadFollowPath;
 	StrongVector<std::unique_ptr<HasObjectives>, ActorIndex> m_hasObjectives;
 	StrongVector<std::unique_ptr<Body>, ActorIndex> m_body;
 	StrongVector<std::unique_ptr<MustSleep>, ActorIndex> m_mustSleep;
@@ -115,7 +115,7 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	// Combat.
 	HasScheduledEvents<AttackCoolDownEvent, ActorIndex> m_coolDownEvent;
 	StrongVector<std::vector<std::pair<CombatScore, Attack>>, ActorIndex> m_meleeAttackTable;
-	StrongVector<ActorIndices, ActorIndex> m_targetedBy;
+	StrongVector<SmallSet<ActorIndex>, ActorIndex> m_targetedBy;
 	StrongVector<ActorIndex, ActorIndex> m_target;
 	StrongVector<Step, ActorIndex> m_onMissCoolDownMelee;
 	StrongVector<DistanceInBlocksFractional, ActorIndex> m_maxMeleeRange;
@@ -126,7 +126,7 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	HasScheduledEvents<MoveEvent, ActorIndex> m_moveEvent;
 	StrongVector<PathRequest*, ActorIndex> m_pathRequest;
 	// Path is stored backwards, with the first block being the destination and the last being the next step.
-	StrongVector<BlockIndices, ActorIndex> m_path;
+	StrongVector<SmallSet<BlockIndex>, ActorIndex> m_path;
 	StrongVector<BlockIndex, ActorIndex> m_destination;
 	StrongVector<Speed, ActorIndex> m_speedIndividual;
 	StrongVector<Speed, ActorIndex> m_speedActual;
@@ -182,7 +182,7 @@ public:
 	void takeFallDamage(const ActorIndex& index, const DistanceInBlocks& distance, const MaterialTypeId& materialType);
 	void resetMoveType(const ActorIndex& index);
 	bool tryToMoveSoAsNotOccuping(const ActorIndex& index, const BlockIndex& block);
-	[[nodiscard]] ActorIndices getAll() const;
+	[[nodiscard]] SmallSet<ActorIndex> getAll() const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] ActorId getId(const ActorIndex& index) const { return m_id[index]; }
 	[[nodiscard]] std::string getName(const ActorIndex& index) const { return m_name[index]; }
@@ -277,7 +277,7 @@ public:
 	// -Move.
 	void move_updateIndividualSpeed(const ActorIndex& index);
 	void move_updateActualSpeed(const ActorIndex& index);
-	void move_setPath(const ActorIndex& index, const BlockIndices& path);
+	void move_setPath(const ActorIndex& index, const SmallSet<BlockIndex>& path);
 	void move_setType(const ActorIndex& index, const MoveTypeId& moveType);
 	void move_setMoveSpeedActual(const ActorIndex& index, Speed speed);
 	void move_clearPath(const ActorIndex& index);
@@ -285,7 +285,7 @@ public:
 	void move_schedule(const ActorIndex& index, const BlockIndex& moveFrom);
 	void move_setDestination(const ActorIndex& index, const BlockIndex& destination, bool detour = false, bool adjacent = false, bool unreserved = false, bool reserve = false);
 	void move_setDestinationAdjacentToLocation(const ActorIndex& index, const BlockIndex& destination, bool detour = false, bool unreserved = false, bool reserve = false);
-	void move_setDestinationToAny(const ActorIndex& index, const BlockIndices& candidates, bool detour, bool unreserved, bool reserve, const BlockIndex& huristicDestination);
+	void move_setDestinationToAny(const ActorIndex& index, const SmallSet<BlockIndex>& candidates, bool detour, bool unreserved, bool reserve, const BlockIndex& huristicDestination);
 	void move_setDestinationAdjacentToActor(const ActorIndex& index, const ActorIndex& other, bool detour = false, bool unreserved = false, bool reserve = false);
 	void move_setDestinationAdjacentToItem(const ActorIndex& index, const ItemIndex& item, bool detour = false, bool unreserved = false, bool reserve = false);
 	void move_setDestinationAdjacentToPolymorphic(const ActorIndex& index, ActorOrItemIndex actorOrItemIndex, bool detour = false, bool unreserved = false, bool reserve = false);
@@ -299,19 +299,19 @@ public:
 	void move_clearAllEventsAndTasks(const ActorIndex& index);
 	void move_onDeath(const ActorIndex& index);
 	void move_onLeaveArea(const ActorIndex& index);
-	void move_pathRequestCallback(const ActorIndex& index, BlockIndices path, bool useCurrentLocation, bool reserveDestination);
+	void move_pathRequestCallback(const ActorIndex& index, SmallSet<BlockIndex> path, bool useCurrentLocation, bool reserveDestination);
 	void move_pathRequestMaybeCancel(const ActorIndex& index);
 	void move_pathRequestRecord(const ActorIndex& index, std::unique_ptr<PathRequestDepthFirst> pathRequest);
 	void move_pathRequestRecord(const ActorIndex& index, std::unique_ptr<PathRequestBreadthFirst> pathRequest);
 	void move_pathRequestClear(const ActorIndex& index);
 	[[nodiscard]] bool move_destinationIsAdjacentToLocation(const ActorIndex& index, const BlockIndex& location);
-	[[nodiscard]] bool move_tryToReserveProposedDestination(const ActorIndex& index, const BlockIndices& path);
+	[[nodiscard]] bool move_tryToReserveProposedDestination(const ActorIndex& index, const SmallSet<BlockIndex>& path);
 	[[nodiscard]] bool move_tryToReserveOccupied(const ActorIndex& index);
 	[[nodiscard]] Speed move_getIndividualSpeedWithAddedMass(const ActorIndex& index, const Mass& mass) const;
 	[[nodiscard]] Speed move_getSpeed(const ActorIndex& index) const { return m_speedActual[index]; }
 	[[nodiscard]] bool move_canMove(const ActorIndex& index) const;
 	[[nodiscard]] Step move_delayToMoveInto(const ActorIndex& index, const BlockIndex& moveFrom, const BlockIndex& moveTo) const;
-	[[nodiscard]] BlockIndices move_makePathTo(const ActorIndex& index, const BlockIndex& destination) const;
+	[[nodiscard]] SmallSet<BlockIndex> move_makePathTo(const ActorIndex& index, const BlockIndex& destination) const;
 	// For debugging move.
 	[[nodiscard]] PathRequest& move_getPathRequest(const ActorIndex& index) { return *m_pathRequest[index]; }
 	[[nodiscard]] auto& move_getPath(const ActorIndex& index) { return m_path[index]; }
@@ -410,7 +410,7 @@ public:
 	[[nodiscard]] SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>> canReserve_unreserveAndReturnBlocksAndCallbacksOnSameDeck(const ActorIndex& index);
 	[[nodiscard]] bool canReserve_hasReservationWith(const ActorIndex& index, Reservable& reservable) const;
 	[[nodiscard]] bool canReserve_canReserveLocation(const ActorIndex& index, const BlockIndex& block, const Facing4& facing) const;
-	[[nodiscard]] bool canReserve_locationAtEndOfPathIsUnreserved(const ActorIndex& index, const BlockIndices& path) const;
+	[[nodiscard]] bool canReserve_locationAtEndOfPathIsUnreserved(const ActorIndex& index, const SmallSet<BlockIndex>& path) const;
 private:
 	[[nodiscard]] CanReserve& canReserve_get(const ActorIndex& index);
 	// Project.
@@ -538,7 +538,7 @@ public:
 	[[nodiscard]] bool grow_isGrowing(const ActorIndex& index) const;
 	[[nodiscard]] Percent grow_getPercent(const ActorIndex& index) const;
 	// For Line leader.
-	[[nodiscard]] const BlockIndices& lineLead_getPath(const ActorIndex& index) const;
+	[[nodiscard]] const SmallSet<BlockIndex>& lineLead_getPath(const ActorIndex& index) const;
 	[[nodiscard]] OccupiedBlocksForHasShape lineLead_getOccupiedBlocks(const ActorIndex& index) const;
 	[[nodiscard]] bool lineLead_pathEmpty(const ActorIndex& index) const;
 	[[nodiscard]] ShapeId lineLead_getLargestShape(const ActorIndex& index) const;

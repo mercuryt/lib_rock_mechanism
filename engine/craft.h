@@ -132,9 +132,9 @@ inline void to_json(Json& data, const CraftJob* const& craftJob){ data = reinter
 // To be used by Area.
 class HasCraftingLocationsAndJobsForFaction final
 {
-	CraftStepTypeCategoryMap<BlockIndices> m_locationsByCategory;
-	BlockIndexMap<std::vector<CraftStepTypeCategoryId>> m_stepTypeCategoriesByLocation;
-	CraftStepTypeCategoryMap<std::vector<CraftJob*>> m_unassignedProjectsByStepTypeCategory;
+	SmallMap<CraftStepTypeCategoryId, SmallSet<BlockIndex>> m_locationsByCategory;
+	SmallMap<BlockIndex, std::vector<CraftStepTypeCategoryId>> m_stepTypeCategoriesByLocation;
+	SmallMap<CraftStepTypeCategoryId, std::vector<CraftJob*>> m_unassignedProjectsByStepTypeCategory;
 	SmallMap<SkillTypeId, std::vector<CraftJob*>> m_unassignedProjectsBySkill;
 	std::list<CraftJob> m_jobs;
 	Area& m_area;

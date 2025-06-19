@@ -88,7 +88,7 @@ public:
 	void sortRange(const PlantIndex& begin, const PlantIndex& end);
 	void maybeIncrementalSort(const std::chrono::microseconds timeBugdget);
 	[[nodiscard]] bool blockIsFull(const BlockIndex& index) const;
-	[[nodiscard]] PlantIndices getAll() const;
+	[[nodiscard]] SmallSet<PlantIndex> getAll() const;
 	[[nodiscard]] PlantSpeciesId getSpecies(const PlantIndex& index) const;
 	[[nodiscard]] Mass getFruitMass(const PlantIndex& index) const;
 	// Not const: updates cache.

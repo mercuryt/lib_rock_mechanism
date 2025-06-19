@@ -53,10 +53,10 @@ public:
 	[[nodiscard]] static SmallSet<OffsetAndVolume> makeOccupiedPositionsWithFacing(const ShapeId& id, const Facing4& facing);
 	[[nodiscard]] static SmallSet<Offset3D> makeAdjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing);
 	[[nodiscard]] static SmallSet<Offset3D> positionOffsets(const OffsetAndVolume& position);
-	[[nodiscard]] static BlockIndices getBlocksOccupiedAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
-	[[nodiscard]] static BlockIndices getBlocksOccupiedAndAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
+	[[nodiscard]] static SmallSet<BlockIndex> getBlocksOccupiedAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
+	[[nodiscard]] static SmallSet<BlockIndex> getBlocksOccupiedAndAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
 	[[nodiscard]] static SmallSet<std::pair<BlockIndex, CollisionVolume>> getBlocksOccupiedAtWithVolumes(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
-	[[nodiscard]] static BlockIndices getBlocksWhichWouldBeAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
+	[[nodiscard]] static SmallSet<BlockIndex> getBlocksWhichWouldBeAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
 	[[nodiscard]] static BlockIndex getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)> predicate);
 	[[nodiscard]] static BlockIndex getBlockWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)> predicate);
 	[[nodiscard]] static CollisionVolume getCollisionVolumeAtLocationBlock(const ShapeId& id);

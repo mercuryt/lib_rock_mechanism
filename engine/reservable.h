@@ -52,7 +52,7 @@ public:
 class Reservable final
 {
 	SmallMap<CanReserve*, Quantity> m_canReserves;
-	FactionIdMap<Quantity> m_reservedCounts;
+	SmallMap<FactionId, Quantity> m_reservedCounts;
 	SmallMap<CanReserve*, std::unique_ptr<DishonorCallback>> m_dishonorCallbacks;
 	Quantity m_maxReservations = Quantity::create(0);
 	void eraseReservationFor(CanReserve& canReserve);

@@ -154,7 +154,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_fluidSources.load(data["fluidSources"], deserializationMemo);
 	// Load caveInCheck
 	for(const Json& blockReference : data["caveInCheck"])
-		m_caveInCheck.add(blockReference.get<BlockIndex>());
+		m_caveInCheck.insert(blockReference.get<BlockIndex>());
 	// Load rain.
 	if(data.contains("rain"))
 		m_hasRain.load(data["rain"], deserializationMemo);

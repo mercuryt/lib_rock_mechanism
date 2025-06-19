@@ -171,7 +171,7 @@ Json GoToPathRequest::toJson() const
 	output["type"] = "goTo";
 	return output;
 }
-GoToAnyPathRequest::GoToAnyPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex huristicDestination, BlockIndices d) :
+GoToAnyPathRequest::GoToAnyPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex huristicDestination, SmallSet<BlockIndex> d) :
 	PathRequestDepthFirst(start, maxRange, actor, shape, faction, moveType, facing, detour, adjacent, reserveDestination, huristicDestination),
 	destinations(d)
 { }

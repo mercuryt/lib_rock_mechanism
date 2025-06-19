@@ -8,7 +8,7 @@
 #include "moveType.h"
 
 // Project.
-InstallItemProject::InstallItemProject(Area& area, const ItemReference& i, const BlockIndex& l, const Facing4& facing, const FactionId& faction, const BlockIndices& occupied) :
+InstallItemProject::InstallItemProject(Area& area, const ItemReference& i, const BlockIndex& l, const Facing4& facing, const FactionId& faction, const SmallSet<BlockIndex>& occupied) :
 	Project(faction, area, l, Quantity::create(1), nullptr, occupied), m_item(i), m_facing(facing) { }
 void InstallItemProject::onComplete()
 {
@@ -29,7 +29,7 @@ void HasInstallItemDesignationsForFaction::add(Area& area, const BlockIndex& blo
 {
 	assert(!m_designations.contains(block));
 	Items& items = area.getItems();
-	const BlockIndices& occupied = Shape::getBlocksOccupiedAt(items.getCompoundShape(item), area.getBlocks(), block, facing);
+	const SmallSet<BlockIndex>& occupied = Shape::getBlocksOccupiedAt(items.getCompoundShape(item), area.getBlocks(), block, facing);
 	m_designations.emplace(block, area, items.getReference(item), block, facing, faction, occupied);
 }
 void AreaHasInstallItemDesignations::clearReservations()

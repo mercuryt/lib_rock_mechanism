@@ -42,6 +42,7 @@ public:
 			insert(*begin);
 	}
 	void insertNonunique(const T& value) { m_data.push_back(value); }
+	void insertFrontNonunique(const T& value) { const auto copy = m_data; m_data.resize(m_data.size() + 1); std::ranges::copy(copy, m_data.begin() + 1); m_data[0] = value;}
 	void maybeInsertAll(const This& other)
 	{
 		maybeInsertAll(other.begin(), other.end());
@@ -56,6 +57,11 @@ public:
 	void insertAll(const This& other)
 	{
 		insertAll(other.begin(), other.end());
+	}
+	void insertAllNonunique(const This& other)
+	{
+		for(const T& value : other)
+			insertNonunique(value);
 	}
 	template<typename Iterator>
 	void insertAll(Iterator begin, Iterator end)
@@ -141,6 +147,9 @@ public:
 	}
 	void reserve(uint size) { m_data.reserve(size); }
 	void resize(uint size) { m_data.resize(size); }
+	[[nodiscard]] bool operator==(const This& other) { return &other == this; }
+	template<typename Predicate>
+	[[nodiscard]] uint countIf(Predicate&& predicate) const { return std::ranges::count_if(m_data, predicate); }
 	[[nodiscard]] const T& operator[](const uint& index) const { return m_data[index]; }
 	[[nodiscard]] T& operator[](const uint& index) { return m_data[index]; }
 	[[nodiscard]] bool contains(const T& value) const { return std::ranges::find(m_data, value) != m_data.end(); }
@@ -161,6 +170,12 @@ public:
 	[[nodiscard]] const std::vector<T>& getVector() const { return m_data; }
 	[[nodiscard]] This::iterator find(const T& value) { return std::ranges::find(m_data, value); }
 	[[nodiscard]] This::const_iterator find(const T& value) const { return std::ranges::find(m_data, value); }
+	[[nodiscard]] uint findLastIndex(const T& value) const
+	{
+		const auto it = std::ranges::find(m_data.rbegin(), m_data.rend(), value);
+		assert(it != m_data.rend());
+		return std::distance(m_data.begin(), it.base()) - 1;
+	}
 	template<typename Predicate>
 	[[nodiscard]] This::iterator findIf(Predicate&& predicate) { return std::ranges::find_if(m_data, predicate); }
 	template<typename Predicate>
@@ -175,7 +190,9 @@ public:
 		iterator(This& s, uint i) : m_iter(s.m_data.begin() + i) { }
 		iterator(std::vector<T>::iterator i) : m_iter(i) { }
 		iterator& operator++() { ++m_iter; return *this; }
+		iterator& operator--() { --m_iter; return *this; }
 		[[nodiscard]] iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
+		[[nodiscard]] iterator& operator--(int) { auto copy = *this; --m_iter; return copy; }
 		[[nodiscard]] T& operator*() { return *m_iter; }
 		[[nodiscard]] const T& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
@@ -185,8 +202,8 @@ public:
 		[[nodiscard]] iterator operator+(const iterator& other) const { return m_iter + other.m_iter; }
 		[[nodiscard]] iterator& operator+=(const iterator& other) { m_iter += other.m_iter; return *this; }
 		[[nodiscard]] iterator& operator-=(const iterator& other) { m_iter -= other.m_iter; return *this; }
-		[[nodiscard]] iterator operator-(const uint& index) const { return {m_iter - index}; }
-		[[nodiscard]] iterator operator+(const uint& index) const { return {m_iter + index}; }
+		[[nodiscard]] iterator operator-(const uint& index) const { return m_iter - index; }
+		[[nodiscard]] iterator operator+(const uint& index) const { return m_iter + index; }
 		[[nodiscard]] iterator& operator+=(const uint& index) { m_iter += index; return *this; }
 		[[nodiscard]] iterator& operator-=(const uint& index) { m_iter -= index; return *this; }
 		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) const { return m_iter <=> other.m_iter; }
@@ -202,7 +219,9 @@ public:
 		const_iterator(const const_iterator& i) : m_iter(i.m_iter) { }
 		const_iterator(const iterator& i) : m_iter(i.m_iter) { }
 		const_iterator& operator++() { ++m_iter; return *this; }
+		const_iterator& operator--() { --m_iter; return *this; }
 		const_iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
+		const_iterator& operator--(int) { auto copy = *this; --m_iter; return copy; }
 		iterator& operator+=(const const_iterator& other) { m_iter += other.m_iter; return *this; }
 		[[nodiscard]] const T& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
@@ -210,12 +229,12 @@ public:
 		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const T* operator->() const { return &*m_iter; }
-		[[nodiscard]] iterator operator-(const iterator& other) { return m_iter - other.m_iter; }
-		[[nodiscard]] iterator operator+(const iterator& other) { return m_iter + other.m_iter; }
+		[[nodiscard]] const_iterator operator-(const iterator& other) { return m_iter - other.m_iter; }
+		[[nodiscard]] const_iterator operator+(const iterator& other) { return m_iter + other.m_iter; }
 		[[nodiscard]] iterator& operator+=(const iterator& other) { m_iter += other.m_iter; return *this; }
 		[[nodiscard]] iterator& operator-=(const iterator& other) { m_iter -= other.m_iter; return *this; }
-		[[nodiscard]] iterator operator-(const uint& index) { return {m_iter - index}; }
-		[[nodiscard]] iterator operator+(const uint& index) { return {m_iter + index}; }
+		[[nodiscard]] const_iterator operator-(const uint& index) { return m_iter - index; }
+		[[nodiscard]] const_iterator operator+(const uint& index) { return m_iter + index; }
 		[[nodiscard]] iterator& operator+=(const uint& index) { m_iter += index; return *this; }
 		[[nodiscard]] iterator& operator-=(const uint& index) { m_iter -= index; return *this; }
 		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }

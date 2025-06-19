@@ -201,7 +201,7 @@ BlockIndex ActorOrItemIndex::getLocation(const Area& area) const
 { return isActor() ? area.getActors().getLocation(m_index.toActor()) : area.getItems().getLocation(m_index.toItem()); }
 const OccupiedBlocksForHasShape& ActorOrItemIndex::getBlocks(const Area& area) const
 { return isActor() ? area.getActors().getBlocks(m_index.toActor()) : area.getItems().getBlocks(m_index.toItem()); }
-BlockIndices ActorOrItemIndex::getAdjacentBlocks(Area& area) const
+SmallSet<BlockIndex> ActorOrItemIndex::getAdjacentBlocks(Area& area) const
 { return isActor() ? area.getActors().getAdjacentBlocks(m_index.toActor()) : area.getItems().getAdjacentBlocks(m_index.toItem()); }
 bool ActorOrItemIndex::isAdjacent(const Area& area, const ActorOrItemIndex& other) const
 {

@@ -32,8 +32,6 @@ struct FluidData
 	CollisionVolume volume;
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(FluidData, type, volume);
-using ActorIndicesForBlock = SmallSet<ActorIndex>;
-using ItemIndicesForBlock = SmallSet<ItemIndex>;
 class Blocks
 {
 	OffsetArraySIMD<26> m_indexOffsetsForAdjacentAll;
@@ -45,8 +43,8 @@ class Blocks
 	OffsetArraySIMD<4> m_indexOffsetsForAdjacentEdgeSameZ;
 	OffsetArraySIMD<4> m_indexOffsetsForAdjacentDirectSameZ;
 	std::vector<OffsetSetSIMD> m_indexOffsetsForNthAdjacent;
-	BlockIndexMap<FactionIdMap<FarmField*>> m_farmFields;
-	BlockIndexMap<FactionIdMap<BlockIsPartOfStockPile>> m_stockPiles;
+	SmallMap<BlockIndex, SmallMap<FactionId, FarmField*>> m_farmFields;
+	SmallMap<BlockIndex, SmallMap<FactionId, BlockIsPartOfStockPile>> m_stockPiles;
 	StrongVector<std::unique_ptr<Reservable>, BlockIndex> m_reservables;
 	StrongVector<MaterialTypeId, BlockIndex> m_materialType;
 	StrongVector<BlockFeatureSet, BlockIndex> m_features;
@@ -57,14 +55,14 @@ class Blocks
 	//TODO: make these SmallMaps.
 	StrongVector<std::vector<std::pair<ActorIndex, CollisionVolume>>, BlockIndex> m_actorVolume;
 	StrongVector<std::vector<std::pair<ItemIndex, CollisionVolume>>, BlockIndex> m_itemVolume;
-	StrongVector<ActorIndicesForBlock, BlockIndex> m_actors;
-	StrongVector<ItemIndicesForBlock, BlockIndex> m_items;
+	StrongVector<SmallSet<ActorIndex>, BlockIndex> m_actors;
+	StrongVector<SmallSet<ItemIndex>, BlockIndex> m_items;
 	StrongBitSet<BlockIndex> m_hasActors;
 	StrongBitSet<BlockIndex> m_hasItems;
 	StrongVector<PlantIndex, BlockIndex> m_plants;
 	StrongVector<CollisionVolume, BlockIndex> m_dynamicVolume;
 	StrongVector<CollisionVolume, BlockIndex> m_staticVolume;
-	StrongVector<FactionIdMap<SmallSet<Project*>>, BlockIndex> m_projects;
+	StrongVector<SmallMap<FactionId, SmallSet<Project*>>, BlockIndex> m_projects;
 	StrongVector<SmallMapStable<MaterialTypeId, Fire>*, BlockIndex> m_fires;
 	StrongVector<TemperatureDelta, BlockIndex> m_temperatureDelta;
 	BlocksExposedToSky m_exposedToSky;
@@ -134,7 +132,7 @@ public:
 	[[nodiscard]] DistanceInBlocks distanceSquared(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] DistanceInBlocksFractional distanceFractional(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] bool squareOfDistanceIsMoreThen(const BlockIndex& index, const BlockIndex& other, DistanceInBlocksFractional distanceSquared) const;
-	[[nodiscard]] bool isAdjacentToAny(const BlockIndex& index, BlockIndices& blocks) const;
+	[[nodiscard]] bool isAdjacentToAny(const BlockIndex& index, SmallSet<BlockIndex>& blocks) const;
 	[[nodiscard]] bool isAdjacentTo(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] bool isAdjacentToIncludingCornersAndEdges(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] bool isAdjacentToActor(const BlockIndex& index, const ActorIndex& actor) const;
@@ -175,12 +173,12 @@ public:
 	void setBelowVisible(const BlockIndex& index);
 	//TODO: Use std::function instead of template.
 	template <typename F>
-	[[nodiscard]] BlockIndices collectAdjacentsWithCondition(const BlockIndex& index, F&& condition)
+	[[nodiscard]] SmallSet<BlockIndex> collectAdjacentsWithCondition(const BlockIndex& index, F&& condition)
 	{
-		BlockIndices output;
+		SmallSet<BlockIndex> output;
 		std::stack<BlockIndex> openList;
 		openList.push(index);
-		output.add(index);
+		output.insert(index);
 		while(!openList.empty())
 		{
 			BlockIndex block = openList.top();
@@ -188,7 +186,7 @@ public:
 			for(const BlockIndex& adjacent : getDirectlyAdjacent(block))
 				if(condition(adjacent) && !output.contains(adjacent))
 				{
-					output.add(adjacent);
+					output.insert(adjacent);
 					openList.push(adjacent);
 				}
 		}
@@ -199,7 +197,7 @@ public:
 	{
 		std::stack<BlockIndex> open;
 		open.push(index);
-		BlockIndices closed;
+		SmallSet<BlockIndex> closed;
 		while(!open.empty())
 		{
 			BlockIndex block = open.top();
@@ -210,13 +208,13 @@ public:
 			for(const BlockIndex& adjacent : getDirectlyAdjacent(block))
 				if(taxiDistance(index, adjacent) <= range && !closed.contains(adjacent))
 				{
-					closed.add(adjacent);
+					closed.insert(adjacent);
 					open.push(adjacent);
 				}
 		}
 		return BlockIndex::null();
 	}
-	[[nodiscard]] BlockIndices collectAdjacentsInRange(const BlockIndex& index, const DistanceInBlocks& range);
+	[[nodiscard]] SmallSet<BlockIndex> collectAdjacentsInRange(const BlockIndex& index, const DistanceInBlocks& range);
 	// -Designation
 	[[nodiscard]] bool designation_has(const BlockIndex& index, const FactionId& faction, const BlockDesignation& designation) const;
 	void designation_set(const BlockIndex& index, const FactionId& faction, const BlockDesignation& designation);
@@ -349,8 +347,8 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	[[nodiscard]] bool actor_contains(const BlockIndex& index, const ActorIndex& actor) const;
 	[[nodiscard]] bool actor_empty(const BlockIndex& index) const;
 	[[nodiscard]] FullDisplacement actor_volumeOf(const BlockIndex& index, const ActorIndex& actor) const;
-	[[nodiscard]] ActorIndicesForBlock& actor_getAll(const BlockIndex& index);
-	[[nodiscard]] const ActorIndicesForBlock& actor_getAll(const BlockIndex& index) const;
+	[[nodiscard]] SmallSet<ActorIndex>& actor_getAll(const BlockIndex& index);
+	[[nodiscard]] const SmallSet<ActorIndex>& actor_getAll(const BlockIndex& index) const;
 	// -Items
 	void item_record(const BlockIndex& index, const ItemIndex& item, const CollisionVolume& volume);
 	void item_recordStatic(const BlockIndex& index, const ItemIndex& item, const CollisionVolume& volume);
@@ -365,8 +363,8 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const BlockIndex& index, cons
 	//ItemIndex get(const BlockIndex& index, ItemType& itemType) const;
 	[[nodiscard]] Quantity item_getCount(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType) const;
 	[[nodiscard]] ItemIndex item_getGeneric(const BlockIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType) const;
-	[[nodiscard]] ItemIndicesForBlock& item_getAll(const BlockIndex& index);
-	[[nodiscard]] const ItemIndicesForBlock& item_getAll(const BlockIndex& index) const;
+	[[nodiscard]] SmallSet<ItemIndex>& item_getAll(const BlockIndex& index);
+	[[nodiscard]] const SmallSet<ItemIndex>& item_getAll(const BlockIndex& index) const;
 	[[nodiscard]] bool item_hasInstalledType(const BlockIndex& index, const ItemTypeId& itemType) const;
 	[[nodiscard]] bool item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(const BlockIndex& index, const ActorIndex& actor) const;
 	[[nodiscard]] bool item_hasContainerContainingFluidTypeCarryableBy(const BlockIndex& index, const ActorIndex& actor, const FluidTypeId& fluidType) const;

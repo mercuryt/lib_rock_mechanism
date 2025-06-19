@@ -203,12 +203,12 @@ void Actors::combat_recordTargetedBy(const ActorIndex& index, const ActorIndex& 
 {
 	assert(m_target[actor] == index);
 	assert(!m_targetedBy[index].contains(actor));
-	m_targetedBy[index].add(actor);
+	m_targetedBy[index].insert(actor);
 }
 void Actors::combat_removeTargetedBy(const ActorIndex& index, const ActorIndex& actor)
 {
 	assert(m_targetedBy[index].contains(actor));
-	m_targetedBy[index].remove(actor);
+	m_targetedBy[index].erase(actor);
 }
 void Actors::combat_onMoveFrom(const ActorIndex& index, const BlockIndex& previous)
 {

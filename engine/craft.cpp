@@ -90,7 +90,7 @@ void CraftStepProject::onComplete()
 }
 void CraftStepProject::onCancel()
 {
-	ActorIndices workersAndCandidates = getWorkersAndCandidates();
+	SmallSet<ActorIndex> workersAndCandidates = getWorkersAndCandidates();
 	CraftJob& craftJob = m_craftJob;
 	Area& area = m_area;
 	// This is destroyed here.
@@ -199,7 +199,7 @@ HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(con
 		for(const Json& blockQuery : pair[1])
 		{
 			BlockIndex block = blockQuery.get<BlockIndex>();
-			m_locationsByCategory.getOrCreate(category).add(block);
+			m_locationsByCategory.getOrCreate(category).insert(block);
 			m_stepTypeCategoriesByLocation.getOrCreate(block).push_back(category);
 		}
 	}
@@ -278,7 +278,7 @@ Json HasCraftingLocationsAndJobsForFaction::toJson() const
 }
 void HasCraftingLocationsAndJobsForFaction::addLocation(CraftStepTypeCategoryId category, const BlockIndex& block)
 {
-	m_locationsByCategory.getOrCreate(category).add(block);
+	m_locationsByCategory.getOrCreate(category).insert(block);
 	util::addUniqueToVectorAssert(m_stepTypeCategoriesByLocation.getOrCreate(block), category);
 }
 void HasCraftingLocationsAndJobsForFaction::removeLocation(CraftStepTypeCategoryId category, const BlockIndex& block)
@@ -291,7 +291,7 @@ void HasCraftingLocationsAndJobsForFaction::removeLocation(CraftStepTypeCategory
 	if(m_locationsByCategory[category].size() == 1)
 		m_locationsByCategory.erase(category);
 	else
-		m_locationsByCategory[category].remove(block);
+		m_locationsByCategory[category].erase(block);
 	if(m_stepTypeCategoriesByLocation[block].size() == 1)
 		m_stepTypeCategoriesByLocation.erase(block);
 	else

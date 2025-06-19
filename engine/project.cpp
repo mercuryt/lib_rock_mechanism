@@ -628,7 +628,7 @@ void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 	m_project.m_requiredFluids.clear();
 }
 // Derived classes are expected to provide getDuration, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete.
-Project::Project(const FactionId& faction, Area& area, const BlockIndex& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback, const BlockIndices& additionalBlocksToReserve) :
+Project::Project(const FactionId& faction, Area& area, const BlockIndex& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback, const SmallSet<BlockIndex>& additionalBlocksToReserve) :
 	m_finishEvent(area.m_eventSchedule),
 	m_tryToHaulEvent(area.m_eventSchedule),
 	m_tryToReserveEvent(area.m_eventSchedule),
@@ -1233,7 +1233,7 @@ void Project::reset()
 	m_fluidContainersToPickup.clear();
 	// I guess we are doing this in case requirements change. Probably not needed.
 	m_requirementsLoaded = false;
-	ActorIndices workersAndCandidates = getWorkersAndCandidates();
+	SmallSet<ActorIndex> workersAndCandidates = getWorkersAndCandidates();
 	m_canReserve.deleteAllWithoutCallback();
 	m_workers.clear();
 	m_workerCandidatesAndTheirObjectives.clear();
@@ -1302,15 +1302,15 @@ bool Project::hasWorker(const ActorIndex& actor) const
 	ActorReference ref = m_area.getActors().getReference(actor);
 	return m_workers.contains(ref);
 }
-ActorIndices Project::getWorkersAndCandidates()
+SmallSet<ActorIndex> Project::getWorkersAndCandidates()
 {
-	ActorIndices output;
+	SmallSet<ActorIndex> output;
 	output.reserve(m_workers.size() + m_workerCandidatesAndTheirObjectives.size());
 	Actors& actors = m_area.getActors();
 	for(auto& pair : m_workers)
-		output.add(pair.first.getIndex(actors.m_referenceData));
+		output.insert(pair.first.getIndex(actors.m_referenceData));
 	for(auto& pair : m_workerCandidatesAndTheirObjectives)
-		output.add(pair.first.getIndex(actors.m_referenceData));
+		output.insert(pair.first.getIndex(actors.m_referenceData));
 	return output;
 }
 std::vector<std::pair<ActorIndex, Objective*>> Project::getWorkersAndCandidatesWithObjectives()

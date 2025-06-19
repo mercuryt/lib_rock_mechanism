@@ -11,14 +11,14 @@ struct FutureFlowBlock;
 class DrainQueue final : public FluidQueue
 {
 public:
-	BlockIndices m_futureEmpty;
-	BlockIndices m_futureNoLongerFull;
-	BlockIndices m_futurePotentialNoLongerAdjacent;
+	SmallSet<BlockIndex> m_futureEmpty;
+	SmallSet<BlockIndex> m_futureNoLongerFull;
+	SmallSet<BlockIndex> m_futurePotentialNoLongerAdjacent;
 private:
 	[[nodiscard]] uint32_t getPriority(Area& area, FutureFlowBlock& futureFlowBlock) const;
 public:
 	DrainQueue(FluidAllocator& allocator) : FluidQueue(allocator) { }
-	void buildFor(BlockIndices& members);
+	void buildFor(SmallSet<BlockIndex>& members);
 	void initalizeForStep(Area& area, FluidGroup& fluidGroup);
 	void recordDelta(Area& area, const CollisionVolume& volume, const CollisionVolume& flowCapacity, const CollisionVolume& flowTillNextStep);
 	void applyDelta(Area& area, FluidGroup& fluidGroup);

@@ -39,7 +39,7 @@ class PathInnerLoops
 					auto [result, blockWhichPassedPredicate] = destinationCondition(adjacentIndex, facing);
 					if(result)
 					{
-						const BlockIndices& path = memo.getPath(current, BlockIndex::null());
+						const SmallSet<BlockIndex>& path = memo.getPath(current, BlockIndex::null());
 						return {path, blockWhichPassedPredicate, path.empty()};
 					}
 					if(terrainFacade.canEnterFrom(current, adjacentCount) && accessCondition(adjacentIndex, facing))
@@ -135,7 +135,7 @@ class PathInnerLoops
 		{
 			if(detour)
 			{
-				// TODO: This is converting a BlockIndices into a SmallSet<BlockIndex>, remove it when BlockIndices is removed.
+				// TODO: This is converting a SmallSet<BlockIndex> into a SmallSet<BlockIndex>, remove it when SmallSet<BlockIndex> is removed.
 				const OccupiedBlocksForHasShape initalBlocks = OccupiedBlocksForHasShape::create(Shape::getBlocksOccupiedAt(shape, blocks, start, startFacing));
 				auto accessCondition = [&blocks, &initalBlocks, shape, moveType](const BlockIndex& block, const Facing4& facing) -> bool
 				{

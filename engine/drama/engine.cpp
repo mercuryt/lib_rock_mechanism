@@ -81,7 +81,7 @@ Json DramaArc::toJson() const
 		data["area"] = m_area->m_id;
 	return data;
 }
-void DramaArc::actorsLeave(ActorIndices actorsLeaving)
+void DramaArc::actorsLeave(SmallSet<ActorIndex> actorsLeaving)
 {
 	constexpr Priority priority = Priority::create(100);
 	Actors& actors = m_area->getActors();
@@ -96,33 +96,33 @@ void DramaArc::actorsLeave(ActorIndices actorsLeaving)
 }
 BlockIndex DramaArc::getEntranceToArea(const ShapeId& shape, const MoveTypeId& moveType) const
 {
-	BlockIndices candidates;
+	SmallSet<BlockIndex> candidates;
 	Blocks& blocks = m_area->getBlocks();
 	// TODO: optimize this: only check faces of getAll() cuboid.
 	Cuboid cuboid = blocks.getAll();
 	for(const BlockIndex& block : cuboid.getView(blocks))
 	{
 		if(blocks.shape_moveTypeCanEnter(block, moveType) && blocks.isEdge(block) && blocks.isExposedToSky(block))
-			candidates.add(block);
+			candidates.insert(block);
 	}
 	BlockIndex candidate;
 	static uint16_t minimumConnectedCount = 200;
 	do {
 		if(candidate.exists())
 		{
-			auto iterator = std::ranges::find(candidates, candidate);
+			auto iterator = candidates.find(candidate);
 			assert(iterator != candidates.end());
-			candidates.remove(*iterator);
+			candidates.erase(*iterator);
 		}
 		if(candidates.empty())
 			return BlockIndex::null();
-		candidate = candidates.random(m_area->m_simulation);
+		candidate = candidates[m_area->m_simulation.m_random.getInRange(0u, candidates.size() - 1u)];
 	}
 	while (!blockIsConnectedToAtLeast(candidate, shape, moveType, minimumConnectedCount));
 	assert(candidate.exists());
 	return candidate;
 }
-BlockIndex DramaArc::findLocationOnEdgeForNear(const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& origin, const DistanceInBlocks& distance, const BlockIndices& exclude) const
+BlockIndex DramaArc::findLocationOnEdgeForNear(const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& origin, const DistanceInBlocks& distance, const SmallSet<BlockIndex>& exclude) const
 {
 	Facing4 facing = getFacingAwayFromEdge(origin);
 	Blocks& blocks = m_area->getBlocks();
@@ -142,7 +142,7 @@ BlockIndex DramaArc::findLocationOnEdgeForNear(const ShapeId& shape, const MoveT
 }
 bool DramaArc::blockIsConnectedToAtLeast(const BlockIndex& origin, [[maybe_unused]] const ShapeId& shape, const MoveTypeId& moveType, uint16_t count) const
 {
-	BlockIndices accumulated;
+	SmallSet<BlockIndex> accumulated;
 	std::stack<BlockIndex> open;
 	open.push(origin);
 	Blocks& blocks = m_area->getBlocks();
@@ -152,7 +152,7 @@ bool DramaArc::blockIsConnectedToAtLeast(const BlockIndex& origin, [[maybe_unuse
 		open.pop();
 		if(!accumulated.contains(candidate))
 		{
-			accumulated.add(candidate);
+			accumulated.insert(candidate);
 			if(accumulated.size() == count)
 				return true;
 			for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(candidate))

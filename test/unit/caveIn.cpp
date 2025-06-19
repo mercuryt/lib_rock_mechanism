@@ -20,7 +20,7 @@ TEST_CASE("Cave In")
 		// Set a supported block to be solid, verify nothing happens.
 		BlockIndex block = blocks.getIndex_i(5, 5, 1);
 		blocks.solid_set(block, marble, false);
-		area.m_caveInCheck.add(block);
+		area.m_caveInCheck.insert(block);
 		area.stepCaveInRead();
 		CHECK(area.m_caveInCheck.empty());
 		CHECK(area.m_caveInData.empty());
@@ -33,7 +33,7 @@ TEST_CASE("Cave In")
 		// Set a floating block to be solid and add to caveInCheck, verify it falls.
 		BlockIndex block = blocks.getIndex_i(5, 5, 2);
 		blocks.solid_set(block, marble, false);
-		area.m_caveInCheck.add(block);
+		area.m_caveInCheck.insert(block);
 		area.stepCaveInRead();
 		CHECK(area.m_caveInData.size() == 1);
 		area.stepCaveInWrite();
@@ -53,8 +53,8 @@ TEST_CASE("Cave In")
 		blocks.solid_set(block, marble, false);
 		BlockIndex block2 = blocks.getIndex_i(4, 4, 2);
 		blocks.solid_set(block2, marble, false);
-		area.m_caveInCheck.add(block);
-		area.m_caveInCheck.add(block2);
+		area.m_caveInCheck.insert(block);
+		area.m_caveInCheck.insert(block2);
 		area.stepCaveInRead();
 		CHECK(area.m_caveInData.size() == 2);
 		area.stepCaveInWrite();
@@ -72,8 +72,8 @@ TEST_CASE("Cave In")
 		blocks.solid_set(block, marble, false);
 		BlockIndex block2 = blocks.getIndex_i(5, 6, 2);
 		blocks.solid_set(block2, marble, false);
-		area.m_caveInCheck.add(block);
-		area.m_caveInCheck.add(block2);
+		area.m_caveInCheck.insert(block);
+		area.m_caveInCheck.insert(block2);
 		area.stepCaveInRead();
 		CHECK(area.m_caveInData.size() == 1);
 		area.stepCaveInWrite();
@@ -91,8 +91,8 @@ TEST_CASE("Cave In")
 		BlockIndex block2 = blocks.getIndex_i(1, 5, 2);
 		blocks.solid_set(block, marble, false);
 		blocks.solid_set(block2, marble, false);
-		area.m_caveInCheck.add(block);
-		area.m_caveInCheck.add(block2);
+		area.m_caveInCheck.insert(block);
+		area.m_caveInCheck.insert(block2);
 		area.stepCaveInRead();
 		CHECK(area.m_caveInData.empty());
 		area.stepCaveInWrite();
@@ -112,9 +112,9 @@ TEST_CASE("Cave In")
 		blocks.solid_set(block, marble, false);
 		blocks.solid_set(block2, marble, false);
 		blocks.solid_set(block3, marble, false);
-		area.m_caveInCheck.add(block);
-		area.m_caveInCheck.add(block2);
-		area.m_caveInCheck.add(block3);
+		area.m_caveInCheck.insert(block);
+		area.m_caveInCheck.insert(block2);
+		area.m_caveInCheck.insert(block3);
 		area.stepCaveInRead();
 		CHECK(area.m_caveInData.size() == 1);
 		CHECK(std::get<0>(*area.m_caveInData.begin()).size() == 3);
@@ -135,8 +135,8 @@ TEST_CASE("Cave In")
 		BlockIndex block2 = blocks.getIndex_i(5, 5, 4);
 		blocks.solid_set(block, marble, false);
 		blocks.solid_set(block2, marble, false);
-		area.m_caveInCheck.add(block);
-		area.m_caveInCheck.add(block2);
+		area.m_caveInCheck.insert(block);
+		area.m_caveInCheck.insert(block2);
 		area.stepCaveInRead();
 		CHECK(area.m_caveInData.size() == 2);
 		area.stepCaveInWrite();

@@ -17,7 +17,7 @@
 #include <queue>
 #include <iterator>
 
-FindPathResult::FindPathResult(const BlockIndices& p, BlockIndex btpp, bool ucp) :
+FindPathResult::FindPathResult(const SmallSet<BlockIndex>& p, BlockIndex btpp, bool ucp) :
 	path(p), blockThatPassedPredicate(btpp), useCurrentPosition(ucp)
 {
 	validate();
@@ -211,7 +211,7 @@ FindPathResult TerrainFacade::findPathToWithoutMemo(const BlockIndex& start, con
 	return findPathDepthFirstWithoutMemo<anyOccupiedBlock, decltype(destinationCondition)>(start, startFacing, destinationCondition, target, shape, m_moveType, detour, adjacent, faction, DistanceInBlocks::max());
 }
 
-FindPathResult TerrainFacade::findPathToAnyOf(PathMemoDepthFirst& memo, const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, BlockIndices blocks, const BlockIndex huristicDestination, bool detour, const FactionId& faction) const
+FindPathResult TerrainFacade::findPathToAnyOf(PathMemoDepthFirst& memo, const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, SmallSet<BlockIndex> blocks, const BlockIndex huristicDestination, bool detour, const FactionId& faction) const
 {
 
 	auto destinationCondition = [blocks](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex> { return {blocks.contains(block), block}; };
@@ -220,7 +220,7 @@ FindPathResult TerrainFacade::findPathToAnyOf(PathMemoDepthFirst& memo, const Bl
 	memo.setDestination(huristicDestination);
 	return PathInnerLoops::findPath<PathMemoDepthFirst, anyOccupiedBlock>(destinationCondition, m_area, *this, memo, shape, m_moveType, start, startFacing, detour, adjacent, faction, DistanceInBlocks::max());
 }
-FindPathResult TerrainFacade::findPathToAnyOfWithoutMemo(const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, BlockIndices blocks, const BlockIndex huristicDestination, bool detour, const FactionId& faction) const
+FindPathResult TerrainFacade::findPathToAnyOfWithoutMemo(const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, SmallSet<BlockIndex> blocks, const BlockIndex huristicDestination, bool detour, const FactionId& faction) const
 {
 	auto destinationCondition = [huristicDestination, blocks](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex> { return {blocks.contains(block), block}; };
 	constexpr bool anyOccupiedBlock = true;
@@ -237,13 +237,16 @@ FindPathResult TerrainFacade::findPathToBlockDesignation(PathMemoBreadthFirst& m
 //TODO: this could dispatch to specific actor / item variants rather then checking actor or item twice.
 FindPathResult TerrainFacade::findPathAdjacentToPolymorphicWithoutMemo(const BlockIndex& start, const Facing4& startFacing, const ShapeId& shape, const ActorOrItemIndex& actorOrItem, bool detour) const
 {
-	BlockIndices targets;
+	SmallSet<BlockIndex> targets;
 	Blocks& blocks = m_area.getBlocks();
 	auto source = actorOrItem.getAdjacentBlocks(m_area);
-	source.copy_if(targets.back_inserter(),
-		[&](const BlockIndex& block) {
-			return blocks.shape_anythingCanEnterEver(block) && blocks.shape_moveTypeCanEnter(block, m_moveType) && blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, shape, m_moveType);
-	});
+	for(const BlockIndex& block : source)
+		if(
+			blocks.shape_anythingCanEnterEver(block) &&
+			blocks.shape_moveTypeCanEnter(block, m_moveType) &&
+			blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, shape, m_moveType)
+		)
+			targets.insert(block);
 	if(targets.empty())
 		return { };
 	return findPathToAnyOfWithoutMemo(start, startFacing, shape, targets, actorOrItem.getLocation(m_area), detour);

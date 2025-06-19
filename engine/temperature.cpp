@@ -86,7 +86,7 @@ void AreaHasTemperature::addDelta(const BlockIndex& block, const TemperatureDelt
 // TODO: optimize by splitting block deltas into different structures for different temperature zones, to avoid having to rerun getAmbientTemperature?
 void AreaHasTemperature::applyDeltas()
 {
-	BlockIndexMap<TemperatureDelta> oldDeltaDeltas;
+	SmallMap<BlockIndex, TemperatureDelta> oldDeltaDeltas;
 	oldDeltaDeltas.swap(m_blockDeltaDeltas);
 	for(auto& [block, deltaDelta] : oldDeltaDeltas)
 		m_area.getBlocks().temperature_updateDelta(block, deltaDelta);
@@ -160,14 +160,14 @@ void AreaHasTemperature::addMeltableSolidBlockAboveGround(const BlockIndex& bloc
 	Blocks& blocks = m_area.getBlocks();
 	assert(blocks.isExposedToSky(block));
 	assert(blocks.solid_is(block));
-	m_aboveGroundBlocksByMeltingPoint[MaterialType::getMeltingPoint(blocks.solid_get(block))].add(block);
+	m_aboveGroundBlocksByMeltingPoint[MaterialType::getMeltingPoint(blocks.solid_get(block))].insert(block);
 }
 // Must be run before block is set no longer solid if above ground.
 void AreaHasTemperature::removeMeltableSolidBlockAboveGround(const BlockIndex& block)
 {
 	Blocks& blocks = m_area.getBlocks();
 	assert(blocks.solid_is(block));
-	m_aboveGroundBlocksByMeltingPoint.at(MaterialType::getMeltingPoint(blocks.solid_get(block))).remove(block);
+	m_aboveGroundBlocksByMeltingPoint.at(MaterialType::getMeltingPoint(blocks.solid_get(block))).erase(block);
 }
 void AreaHasTemperature::addFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup)
 {

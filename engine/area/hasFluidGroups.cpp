@@ -98,13 +98,13 @@ void AreaHasFluidGroups::doStep(bool parallel)
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate(m_area);
 }
-FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidTypeId& fluidType, BlockIndices& blocks, bool checkMerge)
+FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidTypeId& fluidType, SmallSet<BlockIndex>& blocks, bool checkMerge)
 {
 	FluidGroup& fluidGroup = m_fluidGroups.emplace_back(m_allocator, fluidType, blocks, m_area, checkMerge);
 	assert(!fluidGroup.m_stable);
 	return &fluidGroup;
 }
-FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidTypeId& fluidType, BlockIndices&& blocks, bool checkMerge)
+FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidTypeId& fluidType, SmallSet<BlockIndex>&& blocks, bool checkMerge)
 {
 	return createFluidGroup(fluidType, blocks, checkMerge);
 }

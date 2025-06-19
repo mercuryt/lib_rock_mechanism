@@ -31,8 +31,8 @@ StockPile::StockPile(const Json& data, DeserializationMemo& deserializationMemo,
 	deserializationMemo.m_stockpiles[data["address"].get<uintptr_t>()] = this;
 	for(const Json& queryData : data["queries"])
 		m_queries.emplace_back(queryData, area);
-	for(const Json& blockData : data["blocks"]["data"])
-		addBlock(blockData.get<BlockIndex>());
+	for(const BlockIndex& block : data["blocks"].get<SmallSet<BlockIndex>>())
+		addBlock(block);
 }
 Json StockPile::toJson() const
 {
@@ -63,7 +63,7 @@ void StockPile::addBlock(const BlockIndex& block)
 	blocks.stockpile_recordMembership(block, *this);
 	if(blocks.stockpile_contains(block, m_faction))
 		incrementOpenBlocks();
-	m_blocks.add(block);
+	m_blocks.insert(block);
 	Items& items = m_area.getItems();
 	for(ItemIndex item : blocks.item_getAll(block))
 		if(accepts(item))
@@ -89,7 +89,7 @@ void StockPile::removeBlock(const BlockIndex& block)
 	if(blocks.stockpile_isAvalible(block, m_faction))
 		decrementOpenBlocks();
 	blocks.stockpile_recordNoLongerMember(block, *this);
-	m_blocks.remove(block);
+	m_blocks.erase(block);
 	if(m_blocks.empty())
 		m_area.m_hasStockPiles.getForFaction(m_faction).destroyStockPile(*this);
 	// Cancel collected projects.
@@ -128,8 +128,8 @@ void StockPile::addToProjectNeedingMoreWorkers(const ActorIndex& actor, StockPil
 }
 void StockPile::destroy()
 {
-	std::vector<BlockIndex> blocks(m_blocks.begin(), m_blocks.end());
-	for(BlockIndex block : blocks)
+	auto copy = m_blocks;
+	for(BlockIndex block : copy)
 		removeBlock(block);
 }
 bool StockPile::contains(ItemQuery& query) const

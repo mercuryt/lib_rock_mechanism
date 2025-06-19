@@ -2,7 +2,7 @@
 #include "area/area.h"
 #include "blocks/blocks.h"
 #include "index.h"
-const BlockIndices& Actors::lineLead_getPath(const ActorIndex& index) const
+const SmallSet<BlockIndex>& Actors::lineLead_getPath(const ActorIndex& index) const
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
@@ -125,7 +125,7 @@ void Actors::lineLead_pushFront(const ActorIndex& index, const BlockIndex& block
 	assert(!isFollowing(index));
 	assert(isLeading(index));
 	assert(m_location[index] == block);
-	m_leadFollowPath[index].pushFrontNonunique(block);
+	m_leadFollowPath[index].insertFrontNonunique(block);
 }
 void Actors::lineLead_popBackUnlessOccupiedByFollower(const ActorIndex& index)
 {
@@ -148,13 +148,13 @@ void Actors::lineLead_appendToPath(const ActorIndex& index, const BlockIndex& bl
 	assert(!isFollowing(index));
 	assert(isLeading(index));
 	if(m_leadFollowPath[index].empty())
-		m_leadFollowPath[index].add(m_location[index]);
+		m_leadFollowPath[index].insert(m_location[index]);
 	const BlockIndex& back = m_leadFollowPath[index].back();
 	if(block == back)
 		return;
 	Blocks& blocks = m_area.getBlocks();
 	if(blocks.isAdjacentToIncludingCornersAndEdges(block, back))
-		m_leadFollowPath[index].add(block);
+		m_leadFollowPath[index].insert(block);
 	else
 	{
 		const MoveTypeId& moveType = lineLead_getMoveType(index);
@@ -163,8 +163,8 @@ void Actors::lineLead_appendToPath(const ActorIndex& index, const BlockIndex& bl
 		// TODO: Can this fail?
 		assert(!path.path.empty());
 		assert(!path.path.contains(block));
-		path.path.add(block);
-		m_leadFollowPath[index].add(path.path.begin(), path.path.end());
+		path.path.insert(block);
+		m_leadFollowPath[index].insertAllNonunique(path.path);
 	}
 }
 void Actors::lineLead_moveFollowers(const ActorIndex& index)
