@@ -1,8 +1,9 @@
 #pragma once
 #include "../geometry/cuboidSet.h"
-#include "../vectorContainers.h"
+#include "../dataStructures/smallSet.h"
+#include "../dataStructures/smallMap.h"
 #include "../types.h"
-#include "../dataVector.h"
+#include "../dataStructures/strongVector.h"
 #include "../callbackTypes.h"
 #include "../designations.h"
 struct LongRangePathNode

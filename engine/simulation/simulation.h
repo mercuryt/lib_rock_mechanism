@@ -8,7 +8,7 @@
 #include "faction.h"
 //#include "input.h"
 #include "random.h"
-#include "shape.h"
+#include "definitions/shape.h"
 #include "hasActors.h"
 #include "hasItems.h"
 #include "hasConstructedItemTypes.h"

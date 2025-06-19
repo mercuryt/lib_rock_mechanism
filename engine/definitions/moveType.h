@@ -1,7 +1,8 @@
 #pragma once
 
 #include "types.h"
-#include "dataVector.h"
+#include "dataStructures/strongVector.h"
+#include "dataStructures/smallMap.h"
 
 #include <string>
 

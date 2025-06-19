@@ -1,12 +1,12 @@
 #include "attributes.h"
-#include "animalSpecies.h"
+#include "definitions/animalSpecies.h"
 #include "types.h"
 #include "util.h"
 void Attribute::setPercentGrown(Percent percentGrown, const AnimalSpecies& species)
 {
 	value = AttributeLevel::create(util::scaleByPercentRange(speciesNewbornValue.get(), speciesAdultValue.get(), percentGrown) + bonusOrPenalty);
 }
-Json Attribute::toJson() const 
+Json Attribute::toJson() const
 {
 	Json data;
 	data["value"] = value;

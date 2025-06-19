@@ -1,7 +1,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT
 #include "../../lib/doctest.h"
 #include "../../engine/config.h"
-#include "../../engine/definitions.h"
+#include "../../engine/definitions/definitions.h"
 #include "../../engine/objective.h"
 
 int main(int argc, char** argv) {

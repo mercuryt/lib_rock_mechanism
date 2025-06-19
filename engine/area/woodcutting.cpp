@@ -11,7 +11,7 @@
 #include "types.h"
 #include "util.h"
 #include "simulation/simulation.h"
-#include "itemType.h"
+#include "definitions/itemType.h"
 #include "objectives/woodcutting.h"
 #include "projects/woodcutting.h"
 #include <memory>

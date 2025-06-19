@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../engine/vectorContainers.h"
+#include "../engine/dataStructures/smallSet.h"
 
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>

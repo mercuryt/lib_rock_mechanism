@@ -5,7 +5,7 @@
 #include "../engine/actors/actors.h"
 #include "../engine/plants.h"
 #include "../engine/util.h"
-#include "../engine/animalSpecies.h"
+#include "../engine/definitions/animalSpecies.h"
 #include <TGUI/Event.hpp>
 #include <TGUI/Layout.hpp>
 #include <TGUI/Widget.hpp>

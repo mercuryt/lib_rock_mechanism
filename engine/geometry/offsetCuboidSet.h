@@ -1,6 +1,6 @@
 #pragma once
 #include "offsetCuboid.h"
-#include "../vectorContainers.h"
+#include "../dataStructures/smallSet.h"
 
 class OffsetCuboidSet
 {

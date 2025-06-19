@@ -1,4 +1,4 @@
-#include "shape.h"
+#include "definitions/shape.h"
 #include "blocks/blocks.h"
 #include "geometry/cuboid.h"
 #include "deserializationMemo.h"

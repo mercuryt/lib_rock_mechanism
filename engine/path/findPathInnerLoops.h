@@ -1,6 +1,6 @@
 #pragma once
 #include "area/area.h"
-#include "shape.h"
+#include "definitions/shape.h"
 #include "blocks/blocks.h"
 #include "index.h"
 #include "callbackTypes.h"

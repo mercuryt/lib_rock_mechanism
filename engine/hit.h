@@ -5,8 +5,8 @@
  */
 
 #include "config.h"
-#include "materialType.h"
-#include "woundType.h"
+#include "definitions/materialType.h"
+#include "definitions/woundType.h"
 
 // TODO: HitParamaters.
 struct Hit

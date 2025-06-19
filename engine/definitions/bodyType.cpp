@@ -1,4 +1,4 @@
-#include "bodyType.h"
+#include "definitions/bodyType.h"
 void BodyPartType::create(BodyPartTypeParamaters& p)
 {
 	bodyPartTypeData.m_name.add(p.name);

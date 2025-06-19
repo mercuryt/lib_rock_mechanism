@@ -2,7 +2,7 @@
 #include "../geometry/cuboid.h"
 #include "../geometry/cuboidArray.h"
 #include "../strongInteger.h"
-#include "../dataVector.h"
+#include "../dataStructures/strongVector.h"
 
 class RTree
 {

@@ -1,7 +1,7 @@
 #pragma once
-#include "dataVector.h"
-#include "geometry/cuboidArray.h"
-#include "geometry/point3D.h"
+#include "strongVector.h"
+#include "../geometry/cuboidArray.h"
+#include "../geometry/point3D.h"
 #include "locationBuckets.h"
 
 #pragma GCC diagnostic push

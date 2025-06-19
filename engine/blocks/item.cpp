@@ -5,7 +5,7 @@
 #include "../simulation/simulation.h"
 #include "../simulation/hasItems.h"
 #include "../types.h"
-#include "../itemType.h"
+#include "../definitions/itemType.h"
 #include <iterator>
 void Blocks::item_record(const BlockIndex& index, const ItemIndex& item, const CollisionVolume& volume)
 {

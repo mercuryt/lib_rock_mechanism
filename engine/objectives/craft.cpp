@@ -1,5 +1,5 @@
 #include "craft.h"
-#include "../skillType.h"
+#include "../definitions/skillType.h"
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"
 #include "../area/area.h"

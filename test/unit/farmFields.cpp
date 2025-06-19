@@ -3,7 +3,6 @@
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
-#include "../../engine/animalSpecies.h"
 #include "../../engine/area/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/plants.h"
@@ -16,14 +15,15 @@
 #include "../../engine/objectives/harvest.h"
 #include "../../engine/objectives/givePlantsFluid.h"
 #include "../../engine/objectives/goTo.h"
-#include "../../engine/itemType.h"
 #include "../../engine/items/items.h"
-#include "../../engine/itemType.h"
-#include "../../engine/materialType.h"
 #include "../../engine/types.h"
 #include "../../engine/designations.h"
 #include "../../engine/objectives/wait.h"
 #include "../../engine/path/terrainFacade.h"
+#include "../../engine/definitions/itemType.h"
+#include "../../engine/definitions/animalSpecies.h"
+#include "../../engine/definitions/itemType.h"
+#include "../../engine/definitions/materialType.h"
 #include <memory>
 TEST_CASE("sow")
 {

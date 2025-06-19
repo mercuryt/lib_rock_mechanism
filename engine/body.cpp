@@ -1,6 +1,6 @@
 #include "body.h"
-#include "bodyType.h"
-#include "animalSpecies.h"
+#include "definitions/bodyType.h"
+#include "definitions/animalSpecies.h"
 #include "config.h"
 #include "deserializationMemo.h"
 #include "random.h"
@@ -9,7 +9,7 @@
 #include "types.h"
 #include "util.h"
 #include "simulation/simulation.h"
-#include "woundType.h"
+#include "definitions/woundType.h"
 #include "area/area.h"
 // For Attack declaration.
 #include "actors/actors.h"

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "animalSpecies.h"
+#include "definitions/animalSpecies.h"
 #include "config.h"
 #include "types.h"
 
@@ -28,7 +28,7 @@ class Attributes
 	Attribute agility;  // 3.5
 	// Hacking attribute to handle mass is a bit akward.
 	Attribute mass; // 3.5
-	Mass unencomberedCarryMass; 
+	Mass unencomberedCarryMass;
 	Speed moveSpeed;
 	Stamina maxStamina;
 	CombatScore baseCombatScore;

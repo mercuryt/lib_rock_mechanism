@@ -2,7 +2,7 @@
 #include "config.h"
 #include "types.h"
 #include "index.h"
-#include "dataVector.h"
+#include "dataStructures/strongVector.h"
 #include "reference.h"
 #include "geometry/point3D.h"
 #include <cassert>

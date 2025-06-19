@@ -4,7 +4,7 @@
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/area/area.h"
 #include "../../engine/areaBuilderUtil.h"
-#include "../../engine/animalSpecies.h"
+#include "../../engine/definitions/animalSpecies.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/blocks/blocks.h"
 #include "../../engine/items/items.h"

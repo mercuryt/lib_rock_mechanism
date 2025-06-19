@@ -2,7 +2,7 @@
 #include "../objective.h"
 #include "../path/pathRequest.h"
 #include "../types.h"
-#include "../vectorContainers.h"
+#include "../dataStructures/smallSet.h"
 #include "deserializationMemo.h"
 struct CraftJob;
 struct SkillType;

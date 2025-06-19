@@ -1,4 +1,4 @@
-#include "moveType.h"
+#include "definitions/moveType.h"
 MoveTypeId MoveType::byName(const std::string& name)
 {
 	auto found = moveTypeData.m_name.find(name);

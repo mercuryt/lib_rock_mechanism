@@ -1,7 +1,7 @@
 #pragma once
 
-#include "attackType.h"
-#include "dataVector.h"
+#include "definitions/attackType.h"
+#include "dataStructures/strongVector.h"
 #include "eventSchedule.hpp"
 #include "types.h"
 #include "items/constructed.h"

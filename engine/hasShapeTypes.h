@@ -1,5 +1,5 @@
 #pragma once
-#include "vectorContainers.h"
+#include "dataStructures/smallSet.h"
 #include "index.h"
 using OccupiedBlocksForHasShape = SmallSet<BlockIndex>;
 //inline void to_json(Json& data, OccupiedBlocksForHasShape* const& set) { data = set->toJson(); }

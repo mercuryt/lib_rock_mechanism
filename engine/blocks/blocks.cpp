@@ -2,7 +2,7 @@
 #include "adjacentOffsets.h"
 #include "nthAdjacentOffsets.h"
 #include "../area/area.h"
-#include "../materialType.h"
+#include "../definitions/materialType.h"
 #include "../types.h"
 #include "../blockFeature.h"
 #include "../fluidType.h"

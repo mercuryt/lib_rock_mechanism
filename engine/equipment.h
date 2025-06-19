@@ -3,7 +3,7 @@
 #include "config.h"
 #include "reference.h"
 #include "types.h"
-#include "vectorContainers.h"
+#include "dataStructures/smallSet.h"
 
 struct Attack;
 struct Hit;

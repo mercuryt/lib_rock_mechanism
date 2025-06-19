@@ -10,7 +10,7 @@
 #include "reservable.h"
 #include "simulation/simulation.h"
 #include "types.h"
-#include "moveType.h"
+#include "definitions/moveType.h"
 #include "hasShapes.hpp"
 #include "reservable.hpp"
 #include <cstdint>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "cuboidSet.h"
-#include "../dataVector.h"
+#include "../dataStructures/strongVector.h"
 
 template<typename Key>
 class CuboidSetAutoMergeMap : public CuboidSet

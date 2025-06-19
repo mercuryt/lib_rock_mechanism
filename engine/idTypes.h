@@ -1,6 +1,6 @@
 #pragma once
 #include "strongInteger.h"
-#include "vectorContainers.h"
+#include "dataStructures/smallSet.h"
 #include <cstdint>
 using AreaIdWidth = uint32_t;
 class AreaId : public StrongInteger<AreaId, AreaIdWidth>

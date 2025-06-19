@@ -1,9 +1,9 @@
 #include "octTree.h"
-#include "actors/actors.h"
-#include "blocks/blocks.h"
-#include "area/area.h"
-#include "reference.h"
-#include "partitionNotify.h"
+#include "../actors/actors.h"
+#include "../blocks/blocks.h"
+#include "../area/area.h"
+#include "../reference.h"
+#include "../partitionNotify.h"
 ActorOctTree::ActorOctTree(const Cuboid& cuboid)
 {
 	// Initalize root node;

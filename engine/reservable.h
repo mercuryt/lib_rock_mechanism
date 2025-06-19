@@ -7,7 +7,8 @@
 #include "config.h"
 #include "types.h"
 #include "dishonorCallback.h"
-#include "vectorContainers.h"
+#include "dataStructures/smallSet.h"
+#include "dataStructures/smallMap.h"
 #include <algorithm>
 #include <sys/types.h>
 #include <cassert>

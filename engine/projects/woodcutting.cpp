@@ -1,5 +1,5 @@
-#include "woodcutting.h"
-#include "../itemType.h"
+#include "../area/woodcutting.h"
+#include "../definitions/itemType.h"
 #include "../plants.h"
 #include "../area/area.h"
 #include "../blocks/blocks.h"

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "items/itemQuery.h"
-#include "materialType.h"
+#include "definitions/materialType.h"
 
 #include <filesystem>
 #include <string>

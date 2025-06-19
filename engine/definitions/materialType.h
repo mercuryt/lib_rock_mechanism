@@ -1,7 +1,7 @@
 #pragma once
 
 #include "config.h"
-#include "dataVector.h"
+#include "dataStructures/strongVector.h"
 #include "idTypes.h"
 #include "items/itemQuery.h"
 #include "types.h"

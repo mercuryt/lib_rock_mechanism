@@ -1,7 +1,7 @@
 #include "fire.h"
 #include "area/area.h"
 #include "simulation/simulation.h"
-#include "materialType.h"
+#include "definitions/materialType.h"
 #include "blocks/blocks.h"
 #include "types.h"
 FireEvent::FireEvent(Area& area, const Step& delay, Fire& f, const Step start) :

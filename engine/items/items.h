@@ -2,7 +2,7 @@
 
 #include "portables.h"
 #include "types.h"
-#include "itemType.h"
+#include "definitions/itemType.h"
 #include "reference.h"
 
 class ItemHasCargo;

@@ -2,6 +2,7 @@
 
 #include "types.h"
 #include "index.h"
+#include "dataStructures/smallMap.h"
 
 #include <cassert>
 

@@ -3,14 +3,14 @@
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
 #include "../../engine/area/area.h"
-#include "../../engine/bodyType.h"
-#include "../../engine/animalSpecies.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
-#include "../../engine/itemType.h"
+#include "../../engine/definitions/bodyType.h"
+#include "../../engine/definitions/animalSpecies.h"
+#include "../../engine/definitions/itemType.h"
 TEST_CASE("wound")
 {
 	static MaterialTypeId dirt = MaterialType::byName("dirt");

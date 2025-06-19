@@ -10,9 +10,9 @@
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/craft.h"
-#include "../../engine/materialType.h"
-#include "../../engine/itemType.h"
-#include "../../engine/animalSpecies.h"
+#include "../../engine/definitions/materialType.h"
+#include "../../engine/definitions/itemType.h"
+#include "../../engine/definitions/animalSpecies.h"
 #include "reference.h"
 #include "types.h"
 #include <functional>

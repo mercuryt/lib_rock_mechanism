@@ -3,6 +3,7 @@
 #include "strongInteger.h"
 #include "types.h"
 #include "actorOrItemIndex.h"
+#include "dataStructures/smallMap.h"
 #include "../lib/json.hpp"
 
 class Project;

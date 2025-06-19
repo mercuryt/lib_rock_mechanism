@@ -1,6 +1,6 @@
 #include "sleep.h"
 #include "actors/actors.h"
-#include "animalSpecies.h"
+#include "definitions/animalSpecies.h"
 #include "area/area.h"
 #include "designations.h"
 #include "simulation/simulation.h"

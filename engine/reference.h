@@ -2,7 +2,7 @@
 #include "types.h"
 #include "json.h"
 #include "index.h"
-#include "dataVector.h"
+#include "dataStructures/strongVector.h"
 #include <cassert>
 #include <compare>
 #include <functional>

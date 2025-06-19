@@ -1,5 +1,5 @@
 #pragma once
-#include "dataVector.h"
+#include "dataStructures/strongVector.h"
 
 template<typename Func, typename T>
 concept ConditionConcept = requires(Func f, const T& value)

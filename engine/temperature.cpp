@@ -12,7 +12,7 @@
 #include "actors/actors.h"
 #include "items/items.h"
 #include "blocks/blocks.h"
-#include "animalSpecies.h"
+#include "definitions/animalSpecies.h"
 #include <cmath>
 enum class TemperatureZone { Surface, Underground, LavaSea };
 TemperatureDelta TemperatureSource::getTemperatureDeltaForRange(const DistanceInBlocks& range)

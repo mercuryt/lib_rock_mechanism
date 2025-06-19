@@ -1,16 +1,16 @@
 #include "../engine/simulation/simulation.h"
-#include "../engine/definitions.h"
+#include "../engine/definitions/definitions.h"
 #include "../engine/config.h"
 #include "../engine/datetime.h"
 #include "../engine/types.h"
 #include "../engine/actor.h"
-#include "../engine/animalSpecies.h"
+#include "../engine/definitions/animalSpecies.h"
 #include "../engine/attributes.h"
 #include "../engine/body.h"
 #include "../engine/equipment.h"
 #include "../engine/objective.h"
 #include "../engine/plant.h"
-#include "../engine/woundType.h"
+#include "../engine/definitions/woundType.h"
 
 #include <nanobind/nanobind.h>
 #include <cstdint>

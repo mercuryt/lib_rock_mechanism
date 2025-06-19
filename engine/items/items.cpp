@@ -1,5 +1,5 @@
 #include "items.h"
-#include "../itemType.h"
+#include "../definitions/itemType.h"
 #include "../area/area.h"
 #include "../blocks/blocks.h"
 #include "../simulation/simulation.h"
@@ -7,7 +7,7 @@
 #include "../util.h"
 #include "../actors/actors.h"
 #include "../index.h"
-#include "../moveType.h"
+#include "../definitions/moveType.h"
 #include "../types.h"
 #include "../portables.hpp"
 #include <memory>

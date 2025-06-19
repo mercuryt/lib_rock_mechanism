@@ -11,12 +11,12 @@
 #include "../../engine/objectives/goTo.h"
 #include "../../engine/objectives/wander.h"
 #include "../../engine/objectives/dig.h"
-#include "../../engine/itemType.h"
+#include "../../engine/definitions/itemType.h"
 #include "../../engine/items/items.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/plants.h"
 #include "../../engine/types.h"
-#include "../../engine/animalSpecies.h"
+#include "../../engine/definitions/animalSpecies.h"
 #include "../../engine/portables.hpp"
 TEST_CASE("dig")
 {

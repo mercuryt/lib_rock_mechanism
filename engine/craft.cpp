@@ -3,14 +3,14 @@
 #include "items/items.h"
 #include "area/area.h"
 #include "deserializationMemo.h"
-#include "materialType.h"
+#include "definitions/materialType.h"
 #include "path/pathRequest.h"
 #include "path/terrainFacade.h"
 #include "objectives/dig.h"
 #include "types.h"
 #include "util.h"
 #include "simulation/simulation.h"
-#include "itemType.h"
+#include "definitions/itemType.h"
 #include "hasShapes.hpp"
 
 #include <chrono>

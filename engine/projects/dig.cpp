@@ -9,35 +9,16 @@
 #include "random.h"
 #include "reference.h"
 #include "reservable.h"
-#include "skill.h"
+#include "../actors/skill.h"
 #include "path/terrainFacade.h"
 #include "types.h"
 #include "util.h"
 #include "simulation/simulation.h"
-#include "itemType.h"
+#include "definitions/itemType.h"
 #include "objectives/dig.h"
 #include "hasShapes.hpp"
 #include <memory>
 #include <sys/types.h>
-/*
-// Input.
-void DesignateDigInputAction::execute()
-{
-	BlockIndex block = *m_cuboid.begin();
-	auto& digDesginations = block.m_area->m_hasDigDesignations;
-	FactionId faction = *(**m_actors.begin()).getFaction();
-	for(BlockIndex block : m_cuboid)
-		digDesginations.designate(faction, block, m_blockFeatureType);
-};
-void UndesignateDigInputAction::execute()
-{
-	BlockIndex block = *m_cuboid.begin();
-	auto& digDesginations = block.m_area->m_hasDigDesignations;
-	FactionId faction = *(**m_actors.begin()).getFaction();
-	for(BlockIndex block : m_cuboid)
-		digDesginations.undesignate(faction, block);
-}
-*/
 DigProject::DigProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : Project(data, deserializationMemo, area),
 	m_blockFeatureType(data["blockFeatureType"].get<BlockFeatureTypeId>()) { }
 Json DigProject::toJson() const

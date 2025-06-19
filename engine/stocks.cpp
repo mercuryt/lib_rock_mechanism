@@ -1,6 +1,6 @@
 #include "stocks.h"
-#include "itemType.h"
-#include "materialType.h"
+#include "definitions/itemType.h"
+#include "definitions/materialType.h"
 #include "area/area.h"
 #include "items/items.h"
 void AreaHasStocksForFaction::record(Area& area, ItemIndex item)

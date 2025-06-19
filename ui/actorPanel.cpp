@@ -3,7 +3,7 @@
 #include "window.h"
 #include "../engine/actors/actors.h"
 #include "../engine/items/items.h"
-#include "../engine/bodyType.h"
+#include "../engine/definitions/bodyType.h"
 #include "../engine/hasShapes.hpp"
 #include <TGUI/Widgets/ScrollablePanel.hpp>
 #include <TGUI/Widgets/VerticalLayout.hpp>

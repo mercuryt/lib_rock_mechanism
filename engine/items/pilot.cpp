@@ -1,6 +1,6 @@
 #include "items.h"
-#include "../moveType.h"
-#include "../shape.h"
+#include "../definitions/moveType.h"
+#include "../definitions/shape.h"
 #include "../area/area.h"
 #include "../actors/actors.h"
 #include "../fluidType.h"

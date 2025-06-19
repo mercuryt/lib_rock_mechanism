@@ -1,6 +1,6 @@
 #include "items.h"
 #include "../area/area.h"
-#include "../moveType.h"
+#include "../definitions/moveType.h"
 #include "../portables.hpp"
 
 ItemIndex Items::location_set(const ItemIndex& index, const BlockIndex& block, Facing4 facing)

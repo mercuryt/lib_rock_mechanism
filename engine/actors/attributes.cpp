@@ -1,5 +1,5 @@
 #include "actors.h"
-#include "animalSpecies.h"
+#include "definitions/animalSpecies.h"
 #include "config.h"
 #include "types.h"
 

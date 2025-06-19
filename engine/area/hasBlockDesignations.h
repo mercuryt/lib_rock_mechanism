@@ -4,7 +4,8 @@
 #include "../config.h"
 #include "../designations.h"
 #include "idTypes.h"
-#include "vectorContainers.h"
+#include "dataStructures/smallSet.h"
+#include "dataStructures/smallMap.h"
 
 class Area;
 struct DeserializationMemo;

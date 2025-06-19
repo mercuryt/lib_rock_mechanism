@@ -4,10 +4,10 @@
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
-#include "../../engine/materialType.h"
 #include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
-#include "../../engine/definitions.h"
+#include "../../engine/definitions/materialType.h"
+#include "../../engine/definitions/definitions.h"
 #include "../../engine/blocks/blocks.h"
 TEST_CASE("temperature")
 {

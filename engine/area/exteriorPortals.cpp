@@ -3,7 +3,7 @@
 #include "area/area.h"
 
 #include "../blocks/blocks.h"
-#include "../moveType.h"
+#include "../definitions/moveType.h"
 void AreaHasExteriorPortals::initalize(Area& area)
 {
 	Blocks& blocks = area.getBlocks();

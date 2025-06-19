@@ -2,7 +2,7 @@
 #include "../area/area.h"
 #include "../deserializationMemo.h"
 #include "../fluidType.h"
-#include "../moveType.h"
+#include "../definitions/moveType.h"
 #include "../types.h"
 #include "../simulation/simulation.h"
 #include "../util.h"

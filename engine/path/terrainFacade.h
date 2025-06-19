@@ -15,7 +15,8 @@
 #include "reference.h"
 #include "types.h"
 #include "callbackTypes.h"
-#include "dataVector.h"
+#include "dataStructures/strongVector.h"
+#include "dataStructures/smallMap.h"
 
 #include <pthread.h>
 

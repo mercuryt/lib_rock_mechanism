@@ -8,7 +8,7 @@
 #include "../../engine/objectives/equipItem.h"
 #include "../../engine/objectives/unequipItem.h"
 #include "../../engine/simulation/hasItems.h"
-#include "../../engine/moveType.h"
+#include "../../engine/definitions/moveType.h"
 #include "../../engine/hasShapes.hpp"
 #include <cmath>
 #include <regex>

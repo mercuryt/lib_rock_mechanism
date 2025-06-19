@@ -1,5 +1,5 @@
 #pragma once
-#include "attackType.h"
+#include "definitions/attackType.h"
 #include "types.h"
 #include <vector>
 // To be used by BodyPartType and ItemType.

@@ -10,7 +10,7 @@
 #include "haul.h"
 #include "reference.h"
 #include "actors/actorQuery.h"
-#include "vectorContainers.h"
+#include "dataStructures/smallSet.h"
 
 #include <vector>
 #include <utility>

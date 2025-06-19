@@ -1,6 +1,6 @@
 #include "../../lib/doctest.h"
 #include "../../engine/objective.h"
-#include "../../engine/animalSpecies.h"
+#include "../../engine/definitions/animalSpecies.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"

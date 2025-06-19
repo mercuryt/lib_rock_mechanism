@@ -1,7 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/area/area.h"
 #include "../../engine/areaBuilderUtil.h"
-#include "../../engine/definitions.h"
+#include "../../engine/definitions/definitions.h"
 #include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/blocks/blocks.h"

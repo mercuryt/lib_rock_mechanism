@@ -1,7 +1,7 @@
 #pragma once
 #include "../types.h"
-#include "../itemType.h"
-#include "../vectorContainers.h"
+#include "../definitions/itemType.h"
+#include "../dataStructures/smallSet.h"
 #include "../json.h"
 class ConstructedShape;
 class SimulationHasConstructedItemTypes

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "materialType.h"
+#include "definitions/materialType.h"
 #include "types.h"
 
 

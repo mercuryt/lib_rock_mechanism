@@ -1,7 +1,7 @@
 #pragma once
 #include "types.h"
-#include "dataVector.h"
-#include "attackType.h"
+#include "dataStructures/strongVector.h"
+#include "definitions/attackType.h"
 #include <string>
 struct BodyPartTypeParamaters final
 {

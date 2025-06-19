@@ -1,8 +1,8 @@
 #include "blocks.h"
 #include "../area/area.h"
 #include "../fluidType.h"
-#include "../itemType.h"
-#include "materialType.h"
+#include "../definitions/itemType.h"
+#include "definitions/materialType.h"
 #include "types.h"
 void Blocks::temperature_updateDelta(const BlockIndex& index, const TemperatureDelta& deltaDelta)
 {

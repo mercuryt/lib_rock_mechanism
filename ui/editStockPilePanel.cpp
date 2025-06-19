@@ -1,5 +1,5 @@
 #include "editStockPilePanel.h"
-#include "materialType.h"
+#include "definitions/materialType.h"
 #include "widgets.h"
 #include "window.h"
 #include "../engine/stockpile.h"

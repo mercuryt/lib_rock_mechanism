@@ -5,9 +5,9 @@
 #include "../../simulation/simulation.h"
 #include "../../objectives/exterminate.h"
 #include "../../actors/actors.h"
-#include "../../animalSpecies.h"
+#include "../../definitions/animalSpecies.h"
 #include "../../blocks/blocks.h"
-#include "../../moveType.h"
+#include "../../definitions/moveType.h"
 #include "../../simulation/hasActors.h"
 #include "../../types.h"
 #include <utility>

@@ -6,7 +6,7 @@
 #include "reference.h"
 #include "simulation/simulation.h"
 #include "types.h"
-#include "vectorContainers.h"
+#include "dataStructures/smallSet.h"
 
 #include <vector>
 #include <map>

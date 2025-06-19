@@ -1,7 +1,8 @@
 #pragma once
 #include "config.h"
 #include "types.h"
-#include "vectorContainers.h"
+#include "dataStructures/smallSet.h"
+#include "dataStructures/smallMap.h"
 #include <string>
 class Items;
 struct UniformElement final

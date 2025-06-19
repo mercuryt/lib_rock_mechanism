@@ -2,7 +2,7 @@
 #include "../objective.h"
 #include "../types.h"
 #include "../path/pathRequest.h"
-#include "../vectorContainers.h"
+#include "../dataStructures/smallSet.h"
 class Project;
 class Area;
 class ConstructProject;

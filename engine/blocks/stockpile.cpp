@@ -2,7 +2,7 @@
 #include "blocks.h"
 #include "../area/stockpile.h"
 #include "items/items.h"
-#include "shape.h"
+#include "definitions/shape.h"
 #include "types.h"
 void Blocks::stockpile_recordMembership(const BlockIndex& index, StockPile& stockPile)
 {

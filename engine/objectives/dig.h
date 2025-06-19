@@ -5,7 +5,7 @@
 #include "../config.h"
 #include "callbackTypes.h"
 #include "deserializationMemo.h"
-#include "vectorContainers.h"
+#include "dataStructures/smallSet.h"
 class Area;
 class DigProject;
 class DigObjectiveType final : public ObjectiveType

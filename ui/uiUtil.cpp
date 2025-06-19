@@ -1,7 +1,7 @@
 #include "uiUtil.h"
 #include "../engine/items/items.h"
 #include "../engine/area/area.h"
-#include "../engine/materialType.h"
+#include "../engine/definitions/materialType.h"
 #include "../engine/util.h"
 
 #include <format>

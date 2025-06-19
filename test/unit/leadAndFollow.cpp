@@ -7,7 +7,7 @@
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
-#include "../../engine/animalSpecies.h"
+#include "../../engine/definitions/animalSpecies.h"
 #include "../../engine/objectives/station.h"
 #include "../../engine/portables.h"
 TEST_CASE("leadAndFollow")

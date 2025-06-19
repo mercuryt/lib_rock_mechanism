@@ -15,7 +15,7 @@
 #include "config.h"
 #include "area/area.h"
 #include "simulation/simulation.h"
-#include "vectorContainers.h"
+#include "dataStructures/smallSet.h"
 
 #include <queue>
 #include <cassert>

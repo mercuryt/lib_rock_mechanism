@@ -1,4 +1,4 @@
-#include "animalSpecies.h"
+#include "definitions/animalSpecies.h"
 ShapeId AnimalSpecies::shapeForPercentGrown(const AnimalSpeciesId& id, const Percent& percentGrown)
 {
 	uint index = util::scaleByPercentRange(0, animalSpeciesData.m_shapes[id].size() - 1, percentGrown);

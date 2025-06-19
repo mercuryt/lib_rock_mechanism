@@ -1,7 +1,7 @@
 #include "givePlantsFluid.h"
 #include "../area/area.h"
 #include "../config.h"
-#include "../itemType.h"
+#include "../definitions/itemType.h"
 #include "../deserializationMemo.h"
 #include "../eventSchedule.h"
 #include "../objective.h"

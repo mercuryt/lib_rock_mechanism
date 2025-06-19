@@ -9,10 +9,10 @@
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
-#include "../../engine/materialType.h"
-#include "../../engine/animalSpecies.h"
+#include "../../engine/definitions/materialType.h"
+#include "../../engine/definitions/animalSpecies.h"
 #include "../../engine/types.h"
-#include "../../engine/itemType.h"
+#include "../../engine/definitions/itemType.h"
 #include "../../engine/hasShapes.hpp"
 #include <functional>
 TEST_CASE("combat")

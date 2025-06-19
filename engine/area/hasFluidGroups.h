@@ -2,7 +2,7 @@
 #include "../fluidGroups/fluidGroup.h"
 #include "../fluidGroups/fluidAllocator.h"
 #include "index.h"
-#include "vectorContainers.h"
+#include "dataStructures/smallSet.h"
 #include <list>
 #include <string>
 class Area;

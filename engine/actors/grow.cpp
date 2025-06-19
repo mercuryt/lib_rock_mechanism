@@ -3,7 +3,7 @@
 #include "../simulation/simulation.h"
 #include "../util.h"
 #include "../area/area.h"
-#include "../animalSpecies.h"
+#include "../definitions/animalSpecies.h"
 #include "../types.h"
 #include "../hasShapes.hpp"
 

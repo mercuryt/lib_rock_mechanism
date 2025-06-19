@@ -1,7 +1,7 @@
 #pragma once
 #include "types.h"
 #include "index.h"
-#include "dataVector.h"
+#include "dataStructures/strongVector.h"
 #include "reference.h"
 #include <cstdint>
 #include <functional>

@@ -1,7 +1,7 @@
 #pragma once
 #include "../objective.h"
 #include "../path/pathRequest.h"
-#include "../vectorContainers.h"
+#include "../dataStructures/smallSet.h"
 #include "index.h"
 class Area;
 class WoodCuttingProject;

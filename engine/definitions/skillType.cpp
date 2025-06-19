@@ -1,4 +1,4 @@
-#include "skillType.h"
+#include "definitions/skillType.h"
 SkillTypeId SkillType::byName(std::string name)
 {
 	auto found = skillTypeData.m_name.find(name);

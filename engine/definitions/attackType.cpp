@@ -1,4 +1,4 @@
-#include "attackType.h"
+#include "definitions/attackType.h"
 
 AttackTypeId AttackType::create(const AttackTypeParamaters& p)
 {

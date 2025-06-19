@@ -4,7 +4,7 @@
 #include "deserializeDishonorCallbacks.h"
 #include "designations.h"
 #include "index.h"
-#include "plantSpecies.h"
+#include "definitions/plantSpecies.h"
 #include "simulation/simulation.h"
 #include "plants.h"
 #include "blocks/blocks.h"

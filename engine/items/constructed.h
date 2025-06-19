@@ -10,6 +10,7 @@
 #include "../index.h"
 #include "../json.h"
 #include "../blockFeature.h"
+#include "../dataStructures/smallMap.h"
 
 class ConstructedShape
 {

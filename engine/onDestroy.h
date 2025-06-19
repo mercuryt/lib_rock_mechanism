@@ -1,7 +1,7 @@
 #pragma once
 #include "json.h"
 #include "reference.h"
-#include "vectorContainers.h"
+#include "dataStructures/smallSet.h"
 #include <list>
 #include <functional>
 #include <cassert>

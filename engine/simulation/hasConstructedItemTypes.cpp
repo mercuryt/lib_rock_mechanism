@@ -1,7 +1,7 @@
 #include "hasConstructedItemTypes.h"
 #include "../items/constructed.h"
 #include "../items/items.h"
-#include "../moveType.h"
+#include "../definitions/moveType.h"
 #include "../area/area.h"
 void SimulationHasConstructedItemTypes::load()
 {

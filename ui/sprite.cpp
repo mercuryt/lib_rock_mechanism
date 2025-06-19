@@ -1,5 +1,5 @@
 #include "sprite.h"
-#include "../engine/definitions.h"
+#include "../engine/definitions/definitions.h"
 #include "../img/spright.h"
 #include <SFML/Graphics/Rect.hpp>
 void sprites::load()

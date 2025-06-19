@@ -1,5 +1,5 @@
 #include "fluidType.h"
-#include "materialType.h"
+#include "definitions/materialType.h"
 const FluidTypeId FluidType::byName(const std::string name)
 {
 	if(name == "none")

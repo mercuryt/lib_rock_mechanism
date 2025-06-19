@@ -3,7 +3,7 @@
 #include "json.h"
 #include "util.h"
 #include "strongInteger.h"
-#include "dataVector.h"
+#include "dataStructures/strongVector.h"
 #include <array>
 #include <compare>
 #include <cstddef>

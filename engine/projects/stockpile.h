@@ -6,7 +6,7 @@
 #include "../reservable.h"
 #include "../project.h"
 #include "../types.h"
-#include "../vectorContainers.h"
+#include "../dataStructures/smallSet.h"
 
 #include <memory>
 #include <sys/types.h>

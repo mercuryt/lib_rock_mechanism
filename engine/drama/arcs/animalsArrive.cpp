@@ -1,7 +1,7 @@
 #include "animalsArrive.h"
 #include "../engine.h"
 #include "../../area/area.h"
-#include "../../animalSpecies.h"
+#include "../../definitions/animalSpecies.h"
 #include "../../config.h"
 #include "../../simulation/simulation.h"
 #include "../../simulation/hasActors.h"

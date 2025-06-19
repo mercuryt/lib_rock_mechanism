@@ -2,10 +2,10 @@
 #include "actors.h"
 #include "../items/items.h"
 #include "../area/area.h"
-#include "../itemType.h"
+#include "../definitions/itemType.h"
 #include "../portables.hpp"
 #include "index.h"
-#include "moveType.h"
+#include "definitions/moveType.h"
 #include "sleep.h"
 #include "types.h"
 void Actors::canPickUp_pickUpItem(const ActorIndex& index, const ItemIndex& item)

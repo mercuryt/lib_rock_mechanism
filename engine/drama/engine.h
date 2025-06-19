@@ -3,6 +3,7 @@
 #include "../config.h"
 #include "../deserializationMemo.h"
 #include "../index.h"
+#include "../dataStructures/smallMap.h"
 #include <cstddef>
 #include <cstdint>
 #include <memory>

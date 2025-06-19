@@ -7,6 +7,7 @@
 #include "objectives/craft.h"
 #include "items/itemQuery.h"
 #include "types.h"
+#include "dataStructures/smallMap.h"
 
 #include <vector>
 #include <utility>

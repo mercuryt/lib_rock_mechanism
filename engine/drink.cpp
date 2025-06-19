@@ -8,7 +8,7 @@
 #include "actors/actors.h"
 #include "items/items.h"
 #include "blocks/blocks.h"
-#include "animalSpecies.h"
+#include "definitions/animalSpecies.h"
 #include <algorithm>
 // Must Drink.
 MustDrink::MustDrink(Area& area, const ActorIndex& a) :

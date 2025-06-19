@@ -1,10 +1,10 @@
 #include "displayData.h"
-#include "../engine/definitions.h"
-#include "../engine/materialType.h"
+#include "../engine/definitions/definitions.h"
+#include "../engine/definitions/materialType.h"
 #include "../engine/fluidType.h"
 #include "../engine/items/items.h"
 #include "../engine/plants.h"
-#include "../engine/animalSpecies.h"
+#include "../engine/definitions/animalSpecies.h"
 #include "../engine/blockFeature.h"
 #include <SFML/Graphics/Color.hpp>
 #include <string>

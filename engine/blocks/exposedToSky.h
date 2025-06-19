@@ -1,5 +1,5 @@
 #pragma once
-#include "../dataVector.h"
+#include "../dataStructures/strongVector.h"
 #include "../index.h"
 
 class BlocksExposedToSky

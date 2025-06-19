@@ -5,7 +5,7 @@
 #pragma once
 
 #include "config.h"
-#include "dataVector.h"
+#include "dataStructures/strongVector.h"
 #include "types.h"
 #include "index.h"
 #include "geometry/point3D.h"

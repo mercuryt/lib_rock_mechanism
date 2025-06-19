@@ -2,7 +2,7 @@
 
 #include "../geometry/point3D.h"
 #include "../geometry/cuboidSetSIMD.h"
-#include "../dataVector.h"
+#include "../dataStructures/strongVector.h"
 #include "../strongInteger.h"
 #include <array>
 

@@ -2,7 +2,7 @@
 #include "sprite.h"
 #include "window.h"
 #include "../engine/config.h"
-#include "../engine/definitions.h"
+#include "../engine/definitions/definitions.h"
 int main()
 {
 	Config::load();

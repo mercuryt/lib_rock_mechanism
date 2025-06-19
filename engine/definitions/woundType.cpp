@@ -1,6 +1,6 @@
-#include "woundType.h"
+#include "definitions/woundType.h"
 #include "body.h"
-#include "bodyType.h"
+#include "definitions/bodyType.h"
 #include "hit.h"
 #include "config.h"
 #include "types.h"

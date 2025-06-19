@@ -1,7 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/area/area.h"
 #include "../../engine/fluidGroups/fluidGroup.h"
-#include "../../engine/materialType.h"
+#include "../../engine/definitions/materialType.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasActors.h"
@@ -10,7 +10,7 @@
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
-#include "types.h"
+#include "../../engine/types.h"
 TEST_CASE("fluids smaller")
 {
 	static MaterialTypeId marble = MaterialType::byName("marble");

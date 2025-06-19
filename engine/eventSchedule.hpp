@@ -3,7 +3,7 @@
 #include "types.h"
 #include "util.h"
 #include "index.h"
-#include "dataVector.h"
+#include "dataStructures/strongVector.h"
 class Simulation;
 template<class EventType>
 class HasScheduledEvent

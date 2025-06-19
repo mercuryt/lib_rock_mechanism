@@ -6,7 +6,7 @@
 #include "blocks/blocks.h"
 #include "config.h"
 #include "area/area.h"
-#include "materialType.h"
+#include "definitions/materialType.h"
 #include "project.h"
 #include "reference.h"
 #include "reservable.h"
@@ -14,8 +14,8 @@
 #include "simulation/hasActors.h"
 #include "types.h"
 #include "simulation/simulation.h"
-#include "itemType.h"
-#include "moveType.h"
+#include "definitions/itemType.h"
+#include "definitions/moveType.h"
 #include "portables.hpp"
 
 #include <memory>

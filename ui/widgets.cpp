@@ -4,7 +4,7 @@
 #include "../engine/simulation/simulation.h"
 #include "../engine/simulation/hasAreas.h"
 #include "../engine/area/area.h"
-#include "../engine/animalSpecies.h"
+#include "../engine/definitions/animalSpecies.h"
 #include "../engine/items/items.h"
 #include "../engine/plants.h"
 #include <TGUI/Widgets/ComboBox.hpp>

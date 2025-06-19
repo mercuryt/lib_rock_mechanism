@@ -7,7 +7,7 @@
 #include "util.h"
 #include "blockFeature.h"
 #include "simulation/simulation.h"
-#include "materialType.h"
+#include "definitions/materialType.h"
 #include "actors/actors.h"
 #include "blocks/blocks.h"
 #include "objectives/construct.h"

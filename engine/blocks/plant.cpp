@@ -1,6 +1,6 @@
 #include "blocks.h"
 #include "../area/area.h"
-#include "../materialType.h"
+#include "../definitions/materialType.h"
 #include "plants.h"
 #include "types.h"
 void Blocks::plant_create(const BlockIndex& index, const PlantSpeciesId& plantSpecies, const Percent growthPercent)

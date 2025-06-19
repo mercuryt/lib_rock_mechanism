@@ -1,7 +1,7 @@
 #include "blocks.h"
-#include "../shape.h"
-#include "../itemType.h"
-#include "../moveType.h"
+#include "../definitions/shape.h"
+#include "../definitions/itemType.h"
+#include "../definitions/moveType.h"
 #include "../area/area.h"
 #include "types.h"
 bool Blocks::shape_anythingCanEnterEver(const BlockIndex& index) const

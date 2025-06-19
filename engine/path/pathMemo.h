@@ -3,13 +3,12 @@
  * Pather is required to call reset before returning.
  */
 #pragma once
-#include "dataVector.h"
+#include "dataStructures/strongVector.h"
+#include "dataStructures/sortedVectorContainers.h"
 #include "index.h"
-#include "onePassVector.h"
 #include "types.h"
 #include <cstdint>
 #include <set>
-#include "sortedVectorContainers.h"
 
 class PathMemoClosed final
 {

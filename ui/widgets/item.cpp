@@ -1,6 +1,6 @@
 #include "../widgets.h"
 #include "../engine/items/items.h"
-#include "../engine/materialType.h"
+#include "../engine/definitions/materialType.h"
 #include "../displayData.h"
 
 std::array<tgui::Widget::Ptr, 7> widgetUtil::makeCreateItemUI(std::function<void(ItemParamaters)> callback)

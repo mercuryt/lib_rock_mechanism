@@ -1,6 +1,6 @@
 #pragma once
 #include "area/area.h"
-#include "materialType.h"
+#include "definitions/materialType.h"
 #include "fluidType.h"
 #include "geometry/cuboid.h"
 #include "blocks/blocks.h"

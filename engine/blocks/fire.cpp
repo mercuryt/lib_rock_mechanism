@@ -1,6 +1,6 @@
 // Record ponters to fire data for use by UI.
 #include "blocks.h"
-#include "../materialType.h"
+#include "../definitions/materialType.h"
 #include "../fire.h"
 #include "../area/area.h"
 #include "types.h"

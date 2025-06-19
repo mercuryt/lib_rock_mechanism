@@ -1,7 +1,8 @@
 #pragma once
 #include "config.h"
-#include "skillType.h"
+#include "definitions/skillType.h"
 #include "types.h"
+#include "dataStructures/smallMap.h"
 #include <string>
 #include <vector>
 #include <algorithm>

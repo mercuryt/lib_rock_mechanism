@@ -15,7 +15,8 @@
 #include "fluidGroups/fillQueue.h"
 #include "types.h"
 #include "index.h"
-#include "vectorContainers.h"
+#include "dataStructures/smallSet.h"
+#include "dataStructures/smallMap.h"
 
 class Area;
 struct FluidType;

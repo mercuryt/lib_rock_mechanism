@@ -1,9 +1,10 @@
 #pragma once
 //#include "input.h"
-#include "plantSpecies.h"
+#include "definitions/plantSpecies.h"
 #include "geometry/cuboid.h"
 #include "geometry/cuboidSet.h"
 #include "config.h"
+#include "dataStructures/smallMap.h"
 
 #include <list>
 
@@ -12,39 +13,6 @@ struct FarmField;
 struct DeserializationMemo;
 struct Faction;
 
-/*
-class FarmFieldCreateInputAction final : public InputAction
-{
-	Cuboid m_cuboid;
-	FactionId m_faction;
-	PlantSpeciesId m_species;
-	FarmFieldCreateInputAction(InputQueue& inputQueue, Cuboid& cuboid, const FactionId& faction, PlantSpeciesId species) : InputAction(inputQueue), m_cuboid(cuboid), m_faction(faction), m_species(species) { }
-	void execute();
-};
-class FarmFieldRemoveInputAction final : public InputAction
-{
-	Cuboid m_cuboid;
-	FactionId m_faction;
-	FarmFieldRemoveInputAction(InputQueue& inputQueue, Cuboid& cuboid, const FactionId& faction ) : InputAction(inputQueue), m_cuboid(cuboid), m_faction(faction) { }
-	void execute();
-};
-class FarmFieldExpandInputAction final : public InputAction
-{
-	Cuboid m_cuboid;
-	FactionId m_faction;
-	FarmField& m_farmField;
-	FarmFieldExpandInputAction(InputQueue& inputQueue, const FactionId& faction, Cuboid& cuboid, FarmField& farmField) : InputAction(inputQueue), m_cuboid(cuboid), m_faction(faction), m_farmField(farmField) { }
-	void execute();
-};
-class FarmFieldUpdateInputAction final : public InputAction
-{
-	FarmField& m_farmField;
-	PlantSpeciesId m_species;
-	FactionId m_faction;
-	FarmFieldUpdateInputAction(InputQueue& inputQueue, const FactionId& faction, FarmField& farmField, PlantSpeciesId species) : InputAction(inputQueue), m_farmField(farmField), m_species(species), m_faction(faction) { }
-	void execute();
-};
-*/
 struct FarmField
 {
 	SmallSet<BlockIndex> blocks;

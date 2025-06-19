@@ -1,4 +1,4 @@
-#include "materialType.h"
+#include "definitions/materialType.h"
 #include <algorithm>
 #include <ranges>
 MaterialCategoryTypeId MaterialTypeCategory::size() { return MaterialCategoryTypeId::create(materialTypeCategoryData.m_name.size()); }

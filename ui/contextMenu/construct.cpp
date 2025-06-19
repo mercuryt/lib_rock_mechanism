@@ -4,7 +4,7 @@
 #include "../../engine/blocks/blocks.h"
 #include "../../engine/blockFeature.h"
 #include "../../engine/designations.h"
-#include "../../engine/materialType.h"
+#include "../../engine/definitions/materialType.h"
 #include "../../engine/areaBuilderUtil.h"
 void ContextMenu::drawConstructControls(const BlockIndex& block)
 {

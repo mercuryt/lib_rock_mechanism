@@ -13,7 +13,7 @@
 #include "../stocks.h"
 #include "../path/terrainFacade.h"
 #include "../types.h"
-#include "../itemType.h"
+#include "../definitions/itemType.h"
 #include "../util.h"
 #include "../portables.hpp"
 #include <cwchar>

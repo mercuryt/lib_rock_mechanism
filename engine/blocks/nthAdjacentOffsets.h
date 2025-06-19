@@ -1,7 +1,7 @@
 #pragma once
 
 #include "index.h"
-#include "vectorContainers.h"
+#include "dataStructures/smallSet.h"
 #include "geometry/point3D.h"
 #include "blocks/adjacentOffsets.h"
 

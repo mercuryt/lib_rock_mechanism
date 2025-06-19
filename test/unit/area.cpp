@@ -8,7 +8,7 @@
 #include "../../engine/blocks/blocks.h"
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
-#include "../../engine/animalSpecies.h"
+#include "../../engine/definitions/animalSpecies.h"
 #include "config.h"
 #include "types.h"
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "dataVector.h"
+#include "dataStructures/strongVector.h"
 #include "types.h"
 #include "config.h"
 

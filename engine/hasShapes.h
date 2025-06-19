@@ -5,8 +5,8 @@
 #pragma once
 
 #include "config.h"
-#include "dataVector.h"
-#include "shape.h"
+#include "dataStructures/strongVector.h"
+#include "definitions/shape.h"
 #include "types.h"
 #include "hasShapeTypes.h"
 
