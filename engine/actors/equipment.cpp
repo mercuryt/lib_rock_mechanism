@@ -1,5 +1,5 @@
 #include "actors.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../area/area.h"
 #include "../items/items.h"
 void Actors::equipment_add(const ActorIndex& index, const ItemIndex& item)

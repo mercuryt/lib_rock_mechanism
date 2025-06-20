@@ -2,9 +2,9 @@
 
 #include "config.h"
 #include "dataStructures/strongVector.h"
-#include "idTypes.h"
+#include "numericTypes/idTypes.h"
 #include "items/itemQuery.h"
-#include "types.h"
+#include "numericTypes/types.h"
 
 #include <string>
 #include <sys/types.h>

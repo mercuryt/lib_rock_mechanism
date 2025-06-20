@@ -2,10 +2,10 @@
 
 #include "config.h"
 #include "eventSchedule.hpp"
-#include "index.h"
+#include "numericTypes/index.h"
 #include "reference.h"
 #include "simulation/simulation.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "dataStructures/smallSet.h"
 
 #include <vector>

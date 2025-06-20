@@ -1,8 +1,8 @@
 #pragma once
 
 #include "fluidQueue.h"
-#include "types.h"
-#include "index.h"
+#include "numericTypes/types.h"
+#include "numericTypes/index.h"
 
 class FluidGroup;
 

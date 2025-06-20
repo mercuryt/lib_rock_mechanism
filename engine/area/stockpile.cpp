@@ -12,7 +12,7 @@
 #include "../simulation/simulation.h"
 #include "../stocks.h"
 #include "../path/terrainFacade.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../definitions/itemType.h"
 #include "../util.h"
 #include "../portables.hpp"

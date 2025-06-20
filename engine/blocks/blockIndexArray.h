@@ -1,6 +1,6 @@
 #pragma once
 
-#include "index.h"
+#include "numericTypes/index.h"
 #include <array>
 #include <cstdint>
 template<uint8_t size>

@@ -4,7 +4,7 @@
 #include "../actors/actors.h"
 #include "../plants.h"
 #include "../items/items.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../path/terrainFacade.hpp"
 #include "../hasShapes.hpp"
 // PathRequest.

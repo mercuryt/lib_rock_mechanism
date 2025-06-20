@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.h"
+#include "numericTypes/types.h"
 #include "dataStructures/strongVector.h"
 #include "dataStructures/smallMap.h"
 

@@ -2,7 +2,7 @@
 #include "area/area.h"
 #include "deserializationMemo.h"
 #include "simulation/simulation.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "util.h"
 #include "objectives/drink.h"
 #include "actors/actors.h"

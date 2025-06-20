@@ -4,7 +4,7 @@
 #include "../actors/actors.h"
 #include "../plants.h"
 #include "../reference.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 bool Blocks::blockFeature_contains(const BlockIndex& block, const BlockFeatureTypeId& blockFeatureType) const
 {
 	return m_features[block].contains(blockFeatureType);

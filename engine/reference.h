@@ -1,7 +1,7 @@
 #pragma once
-#include "types.h"
+#include "numericTypes/types.h"
 #include "json.h"
-#include "index.h"
+#include "numericTypes/index.h"
 #include "dataStructures/strongVector.h"
 #include <cassert>
 #include <compare>

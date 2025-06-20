@@ -3,7 +3,7 @@
 #include "../fluidType.h"
 #include "../definitions/itemType.h"
 #include "definitions/materialType.h"
-#include "types.h"
+#include "numericTypes/types.h"
 void Blocks::temperature_updateDelta(const BlockIndex& index, const TemperatureDelta& deltaDelta)
 {
 	m_temperatureDelta[index] += deltaDelta;

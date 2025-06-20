@@ -2,7 +2,7 @@
 #include "blocks/blocks.h"
 #include "geometry/cuboid.h"
 #include "deserializationMemo.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "util.h"
 #include "geometry/point3D.h"
 #include "blocks/adjacentOffsets.h"

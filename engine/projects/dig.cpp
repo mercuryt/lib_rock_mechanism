@@ -11,7 +11,7 @@
 #include "reservable.h"
 #include "../actors/skill.h"
 #include "path/terrainFacade.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "util.h"
 #include "simulation/simulation.h"
 #include "definitions/itemType.h"

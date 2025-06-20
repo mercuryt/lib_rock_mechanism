@@ -1,4 +1,4 @@
-#include "types.h"
+#include "numericTypes/types.h"
 #include "config.h"
 #include "geometry/cuboid.h"
 Speed Force::operator/(const Mass& mass) const { return Speed::create((float)data / (float)mass.get()); }

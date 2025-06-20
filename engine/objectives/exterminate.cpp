@@ -4,7 +4,7 @@
 #include "../area/area.h"
 #include "../deserializationMemo.h"
 #include "blocks/blocks.h"
-#include "types.h"
+#include "numericTypes/types.h"
 ExterminateObjective::ExterminateObjective(Area& area, const BlockIndex& destination) :
 	Objective(Config::exterminatePriority), m_destination(destination), m_event(area.m_eventSchedule) { }
 ExterminateObjective::ExterminateObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) :

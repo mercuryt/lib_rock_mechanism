@@ -2,7 +2,7 @@
 #include "../geometry/cuboidSet.h"
 #include "../dataStructures/smallSet.h"
 #include "../dataStructures/smallMap.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../dataStructures/strongVector.h"
 #include "../callbackTypes.h"
 #include "../designations.h"

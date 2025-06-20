@@ -18,7 +18,7 @@
 #include "../../engine/objectives/construct.h"
 #include "../../engine/objectives/stockpile.h"
 #include "../../engine/portables.hpp"
-#include "types.h"
+#include "../../engine/numericTypes/types.h"
 TEST_CASE("json")
 {
 	Simulation simulation{"", DateTime(12, 50, 1000).toSteps()};

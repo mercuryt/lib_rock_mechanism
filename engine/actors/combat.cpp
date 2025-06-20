@@ -6,7 +6,7 @@
 #include "../simulation/simulation.h"
 #include "../simulation/hasActors.h"
 #include "skill.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../util.h"
 #include "../definitions/weaponType.h"
 #include "../config.h"

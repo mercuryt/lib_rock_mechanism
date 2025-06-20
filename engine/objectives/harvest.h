@@ -4,7 +4,7 @@
 #include "../config.h"
 #include "../eventSchedule.hpp"
 #include "../path/pathRequest.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 
 struct DeserializationMemo;
 class HarvestEvent;

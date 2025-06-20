@@ -10,7 +10,7 @@
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/portables.hpp"
-#include "types.h"
+#include "numericTypes/types.h"
 
 #include <memory>
 #include "objective.h"

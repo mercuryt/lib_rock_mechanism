@@ -2,7 +2,7 @@
 
 #include "eventSchedule.hpp"
 #include "config.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "actorOrItemIndex.h"
 
 #include <queue>
@@ -50,7 +50,7 @@ public:
 	[[nodiscard]] const ActorOrItemIndex& getFollower() const;
 	[[nodiscard]] Speed getMoveSpeed(Area& area) const;
 	[[nodiscard]] std::deque<BlockIndex>& getLocationQueue(Area& area);
-	[[nodiscard]] std::unordered_set<BlockIndex> getOccuiped(Area& area); 
+	[[nodiscard]] std::unordered_set<BlockIndex> getOccuiped(Area& area);
 	friend class CanFollow;
 	[[nodiscard]] static Speed getMoveSpeedForGroupWithAddedMass(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems, Mass addedRollingMass = 0, Mass addedDeadMass = 0);
 	[[nodiscard]] static Speed getMoveSpeedForGroup(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems) { return getMoveSpeedForGroupWithAddedMass(area, actorsAndItems); }

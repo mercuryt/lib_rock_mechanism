@@ -6,7 +6,7 @@
 #include "../simulation/simulation.h"
 #include "../path/terrainFacade.hpp"
 #include "../actors/actors.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 // PathRequest
 WanderPathRequest::WanderPathRequest(Area& area, WanderObjective& objective, const ActorIndex& actorIndex) :
 	m_objective(objective)

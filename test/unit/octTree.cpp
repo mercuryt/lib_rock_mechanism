@@ -2,7 +2,7 @@
 #include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
-#include "../../engine/locationBuckets.h"
+#include "../../engine/dataStructures/locationBuckets.h"
 #include "../../engine/area/area.h"
 #include "../../engine/definitions/animalSpecies.h"
 #include "../../engine/blocks/blocks.h"

@@ -5,7 +5,7 @@
 #include "../../config.h"
 #include "../../simulation/simulation.h"
 #include "../../simulation/hasActors.h"
-#include "../../types.h"
+#include "../../numericTypes/types.h"
 #include "../../util.h"
 #include "../../plants.h"
 #include "../../items/items.h"

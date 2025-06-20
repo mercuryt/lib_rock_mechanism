@@ -2,8 +2,8 @@
  * intented to be returned by various get adjacent blocks methods, is it more efficiente then array due to short circut or is it encomberance to paralelization? need to profile.
  */
 #pragma once
-#include "index.h"
-#include "types.h"
+#include "numericTypes/index.h"
+#include "numericTypes/types.h"
 #include "blocks/blocks.h"
 #include <array>
 #include <cstdint>

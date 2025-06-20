@@ -3,8 +3,8 @@
 #include <TGUI/Widgets/Label.hpp>
 #include "contextMenu.h"
 #include "infoPopup.h"
-#include "../engine/types.h"
-#include "../engine/index.h"
+#include "../engine/numericTypes/types.h"
+#include "../engine/numericTypes/index.h"
 class Window;
 class GameOverlay final
 {

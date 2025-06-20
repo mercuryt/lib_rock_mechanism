@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../config.h"
 #include "../designations.h"
-#include "idTypes.h"
+#include "numericTypes/idTypes.h"
 #include "dataStructures/smallSet.h"
 #include "dataStructures/smallMap.h"
 

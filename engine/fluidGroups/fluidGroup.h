@@ -13,8 +13,8 @@
 
 #include "fluidGroups/drainQueue.h"
 #include "fluidGroups/fillQueue.h"
-#include "types.h"
-#include "index.h"
+#include "numericTypes/types.h"
+#include "numericTypes/index.h"
 #include "dataStructures/smallSet.h"
 #include "dataStructures/smallMap.h"
 

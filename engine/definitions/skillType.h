@@ -1,6 +1,6 @@
 #pragma once
 #include "dataStructures/strongVector.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "json.h"
 struct SkillTypeParamaters final
 {

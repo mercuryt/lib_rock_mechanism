@@ -6,7 +6,7 @@
 #include "../reference.h"
 #include "../reservable.h"
 #include "../project.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../dataStructures/smallSet.h"
 #include "../projects/stockpile.h"
 

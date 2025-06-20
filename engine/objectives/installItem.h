@@ -1,7 +1,7 @@
 #pragma once
 #include "../path/pathRequest.h"
 #include "../objective.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 class Area;
 class InstallItemObjective;
 class InstallItemProject;

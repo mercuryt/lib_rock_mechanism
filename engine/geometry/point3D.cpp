@@ -28,6 +28,14 @@ void Point3D::clampLow(const Point3D& other)
 {
 	data = data.max(other.data);
 }
+Point3D Point3D::min(const Point3D& other) const
+{
+	return Point3D(data.min(other.data));
+}
+Point3D Point3D::max(const Point3D& other) const
+{
+	return Point3D(data.max(other.data));
+}
 void Point3D::clear() { data.fill(DistanceInBlocks::null().get()); }
 bool Point3D::exists() const { return z().exists();}
 bool Point3D::empty() const { return z().empty();}

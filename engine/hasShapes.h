@@ -7,7 +7,7 @@
 #include "config.h"
 #include "dataStructures/strongVector.h"
 #include "definitions/shape.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "hasShapeTypes.h"
 
 struct Shape;

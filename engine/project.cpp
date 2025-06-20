@@ -12,7 +12,7 @@
 #include "items/items.h"
 #include "blocks/blocks.h"
 #include "path/terrainFacade.hpp"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "objectives/wander.h"
 #include "portables.hpp"
 #include <algorithm>

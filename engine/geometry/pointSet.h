@@ -3,8 +3,8 @@
 #pragma GCC diagnostic ignored "-Wduplicated-branches"
 #include "../../lib/Eigen/Dense"
 #pragma GCC diagnostic pop
-#include "../types.h"
-#include "../index.h"
+#include "../numericTypes/types.h"
+#include "../numericTypes/index.h"
 
 class Point3D;
 class Cuboid;

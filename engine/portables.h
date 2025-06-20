@@ -5,10 +5,10 @@
 #pragma once
 #include "dataStructures/strongVector.h"
 #include "eventSchedule.hpp"
-#include "index.h"
+#include "numericTypes/index.h"
 #include "threadedTask.hpp"
 #include "hasShapes.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "reservable.h"
 #include "onDestroy.h"
 #include "actorOrItemIndex.h"

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../area/area.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../config.h"
 
 #include <string>

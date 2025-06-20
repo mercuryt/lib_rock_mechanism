@@ -2,7 +2,7 @@
 #include "lineOfSight.h"
 
 #include "../area/area.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../blocks/blocks.h"
 
 OpacityFacade::OpacityFacade(Area& area) : m_area(area) { }

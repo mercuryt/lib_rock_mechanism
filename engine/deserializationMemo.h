@@ -1,7 +1,7 @@
 #pragma once
 
 #include "config.h"
-#include "index.h"
+#include "numericTypes/index.h"
 //#include "worldforge/worldLocation.h"
 //
 #include <cstdint>

@@ -8,7 +8,7 @@
 #include "../definitions/materialType.h"
 #include "../simulation/simulation.h"
 #include "../simulation/hasActors.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../util.h"
 #include "../objectives/wait.h"
 #include "../definitions/itemType.h"
@@ -21,7 +21,7 @@
 #include "equipment.h"
 #include "eventSchedule.h"
 #include "hasShapes.h"
-#include "index.h"
+#include "numericTypes/index.h"
 #include "objective.h"
 #include "temperature.h"
 

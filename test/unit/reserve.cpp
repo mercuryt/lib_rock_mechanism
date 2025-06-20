@@ -2,7 +2,7 @@
 #include "../../engine/reservable.h"
 #include "../../engine/faction.h"
 #include "../../engine/simulation/simulation.h"
-#include "types.h"
+#include "../../engine/numericTypes/types.h"
 #include <memory>
 
 struct TestReservationDishonorCallback1 final : public DishonorCallback

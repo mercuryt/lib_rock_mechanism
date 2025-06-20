@@ -1,8 +1,8 @@
 #pragma once
 #include "../project.h"
 #include "../items/itemQuery.h"
-#include "../types.h"
-#include "../index.h"
+#include "../numericTypes/types.h"
+#include "../numericTypes/index.h"
 #include <vector>
 class Area;
 class WoodCuttingProject final : public Project

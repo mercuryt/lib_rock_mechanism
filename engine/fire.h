@@ -1,7 +1,7 @@
 #pragma once
 #include "temperature.h"
 #include "eventSchedule.hpp"
-#include "types.h"
+#include "numericTypes/types.h"
 
 #include <list>
 #include <algorithm>

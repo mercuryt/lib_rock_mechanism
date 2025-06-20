@@ -2,7 +2,7 @@
 #include "../engine/definitions/definitions.h"
 #include "../engine/config.h"
 #include "../engine/datetime.h"
-#include "../engine/types.h"
+#include "../engine/numericTypes/types.h"
 #include "../engine/actor.h"
 #include "../engine/definitions/animalSpecies.h"
 #include "../engine/attributes.h"

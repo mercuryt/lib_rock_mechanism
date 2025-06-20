@@ -1,7 +1,7 @@
 #pragma once
 
 #include "dataStructures/strongVector.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "config.h"
 
 struct ItemType;

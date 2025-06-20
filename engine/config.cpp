@@ -1,5 +1,5 @@
 #include "config.h"
-#include "types.h"
+#include "numericTypes/types.h"
 void Config::load()
 {
 	std::ifstream f("data/config.json");

@@ -3,7 +3,7 @@
 #include "../area/stockpile.h"
 #include "items/items.h"
 #include "definitions/shape.h"
-#include "types.h"
+#include "numericTypes/types.h"
 void Blocks::stockpile_recordMembership(const BlockIndex& index, StockPile& stockPile)
 {
 	assert(!stockpile_contains(index, stockPile.getFaction()));

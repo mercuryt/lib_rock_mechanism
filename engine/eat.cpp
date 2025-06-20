@@ -6,7 +6,7 @@
 #include "objective.h"
 #include "area/area.h"
 #include "path/terrainFacade.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "util.h"
 #include "simulation/simulation.h"
 #include "objectives/kill.h"

@@ -3,7 +3,7 @@
 #include "../area/area.h"
 #include "../config.h"
 #include "../blocks/blocks.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include <algorithm>
 void DrainQueue::buildFor(SmallSet<BlockIndex>& members)
 {

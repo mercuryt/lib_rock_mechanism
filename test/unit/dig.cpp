@@ -15,7 +15,7 @@
 #include "../../engine/items/items.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/plants.h"
-#include "../../engine/types.h"
+#include "../../engine/numericTypes/types.h"
 #include "../../engine/definitions/animalSpecies.h"
 #include "../../engine/portables.hpp"
 TEST_CASE("dig")

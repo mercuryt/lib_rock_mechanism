@@ -1,7 +1,7 @@
 #pragma once
 #include "../objective.h"
 #include "../path/pathRequest.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../reference.h"
 
 class Area;

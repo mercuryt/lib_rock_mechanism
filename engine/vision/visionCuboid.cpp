@@ -1,7 +1,7 @@
 #include "vision/visionCuboid.h"
 #include "area/area.h"
 #include "geometry/sphere.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "blocks/blocks.h"
 #include "actors/actors.h"
 #include "partitionNotify.h"

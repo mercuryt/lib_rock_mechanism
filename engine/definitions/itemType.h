@@ -3,7 +3,7 @@
 #include "definitions/attackType.h"
 #include "dataStructures/strongVector.h"
 #include "eventSchedule.hpp"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "items/constructed.h"
 #include "geometry/offsetCuboidSet.h"
 

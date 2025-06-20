@@ -1,5 +1,5 @@
 #pragma once
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../definitions/itemType.h"
 #include "../dataStructures/smallSet.h"
 #include "../json.h"

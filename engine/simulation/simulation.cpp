@@ -13,7 +13,7 @@
 #include "simulation/hasAreas.h"
 #include "simulation/hasItems.h"
 #include "threadedTask.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "util.h"
 //#include "worldforge/world.h"
 //

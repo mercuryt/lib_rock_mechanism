@@ -7,7 +7,7 @@
 #include "hit.h"
 #include "definitions/materialType.h"
 #include "reference.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "definitions/weaponType.h"
 #include "simulation/simulation.h"
 #include "definitions/itemType.h"

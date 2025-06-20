@@ -1,5 +1,5 @@
 #pragma once
-#include "types.h"
+#include "numericTypes/types.h"
 #include "dataStructures/strongVector.h"
 #include "definitions/attackType.h"
 #include <string>

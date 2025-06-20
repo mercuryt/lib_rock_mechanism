@@ -11,7 +11,7 @@
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/definitions/materialType.h"
 #include "../../engine/definitions/animalSpecies.h"
-#include "../../engine/types.h"
+#include "../../engine/numericTypes/types.h"
 #include "../../engine/definitions/itemType.h"
 #include "../../engine/hasShapes.hpp"
 #include <functional>

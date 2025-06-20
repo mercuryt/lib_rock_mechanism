@@ -6,8 +6,8 @@
 */
 #pragma once
 #include "../geometry/offsetCuboidSet.h"
-#include "../types.h"
-#include "../index.h"
+#include "../numericTypes/types.h"
+#include "../numericTypes/index.h"
 #include "../json.h"
 #include "../blockFeature.h"
 #include "../dataStructures/smallMap.h"

@@ -14,7 +14,7 @@
 #include "objective.h"
 #include "eventSchedule.h"
 #include "threadedTask.h"
-#include "index.h"
+#include "numericTypes/index.h"
 
 struct DeserializationMemo;
 /*

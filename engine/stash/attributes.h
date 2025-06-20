@@ -2,7 +2,7 @@
 
 #include "definitions/animalSpecies.h"
 #include "config.h"
-#include "types.h"
+#include "numericTypes/types.h"
 
 #include <sys/types.h>
 #include <vector>

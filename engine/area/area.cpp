@@ -14,7 +14,7 @@
 #include "reference.h"
 #include "simulation/simulation.h"
 #include "simulation/hasAreas.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "portables.hpp"
 //#include "worldforge/worldLocation.h"
 #include <algorithm>

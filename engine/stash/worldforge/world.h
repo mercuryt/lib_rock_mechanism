@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../random.h"
 #include "locii.h"
 #include "worldLocation.h"
@@ -42,7 +42,7 @@ class World final
 	std::vector<River> m_rivers;
 	std::vector<Lake> m_lakes;
 	std::unordered_map<LatLng, WorldLocation> m_locations;
-	
+
 	void setElevationForLocation(WorldLocation& location);
 	void setAdjacentFor(WorldLocation& location, size_t horizontal, size_t horizontalSize, size_t previousHorizontalSize, size_t nextHorizontalSize, WorldLocation* previousHorizontalStart, WorldLocation* nextHorizontalStart);
 	size_t horizontalSizeAtVerticalBand(size_t vertical);

@@ -1,6 +1,6 @@
 #include "nthAdjacentOffsets.h"
 #include "area/area.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "blocks/blocks.h"
 std::vector<Offset3D> getNthAdjacentOffsets(uint32_t n)
 {

@@ -1,7 +1,7 @@
 #pragma once
 #include "config.h"
-#include "types.h"
-#include "index.h"
+#include "numericTypes/types.h"
+#include "numericTypes/index.h"
 #include "dataStructures/strongVector.h"
 #include "reference.h"
 #include "geometry/point3D.h"

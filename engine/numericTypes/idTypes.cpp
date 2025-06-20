@@ -1,5 +1,5 @@
 // Store type ids by name so adding new ones doesn't break old saves.
-#include "idTypes.h"
+#include "numericTypes/idTypes.h"
 #include "objective.h"
 void to_json(Json& data, const ObjectiveTypeId& id) { data = ObjectiveType::getById(id).name(); }
 void from_json(const Json& data, ObjectiveTypeId& id) { id = ObjectiveType::getIdByName(data.get<std::string>()); }

@@ -6,7 +6,7 @@
 #include "reservable.h"
 #include "objectives/craft.h"
 #include "items/itemQuery.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "dataStructures/smallMap.h"
 
 #include <vector>

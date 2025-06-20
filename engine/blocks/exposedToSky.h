@@ -1,6 +1,6 @@
 #pragma once
 #include "../dataStructures/strongVector.h"
-#include "../index.h"
+#include "../numericTypes/index.h"
 
 class BlocksExposedToSky
 {

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "dataStructures/strongVector.h"
-#include "definitions/woundType.h"
-#include "types.h"
+#include "../dataStructures/strongVector.h"
+#include "woundType.h"
+#include "../numericTypes/types.h"
 
 #include <string>
 #include <vector>

@@ -2,7 +2,7 @@
 #include "../area/area.h"
 #include "../definitions/materialType.h"
 #include "plants.h"
-#include "types.h"
+#include "numericTypes/types.h"
 void Blocks::plant_create(const BlockIndex& index, const PlantSpeciesId& plantSpecies, const Percent growthPercent)
 {
 	assert(m_plants[index].empty());

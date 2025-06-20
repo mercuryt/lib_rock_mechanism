@@ -4,7 +4,7 @@
 #include "area/area.h"
 #include "designations.h"
 #include "simulation/simulation.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "plants.h"
 #include "objectives/sleep.h"
 #include <cassert>

@@ -5,7 +5,7 @@
 #include "../area/area.h"
 #include "../items/items.h"
 #include "../deserializationMemo.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 std::vector<FluidData>::iterator Blocks::fluid_getDataIterator(const BlockIndex& index, const FluidTypeId& fluidType)
 {
 	auto& fluid = m_fluid[index];

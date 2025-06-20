@@ -3,11 +3,11 @@
  *  TODO: bitbash
  */
 #pragma once
-#include "types.h"
+#include "numericTypes/types.h"
 #include "hasShapeTypes.h"
 #include "config.h"
 #include "dishonorCallback.h"
-#include "index.h"
+#include "numericTypes/index.h"
 #include <compare>
 #include <functional>
 #include <iterator>

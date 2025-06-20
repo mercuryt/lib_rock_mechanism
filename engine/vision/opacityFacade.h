@@ -1,8 +1,8 @@
 #pragma once
 
 #include "dataStructures/strongVector.h"
-#include "index.h"
-#include "types.h"
+#include "numericTypes/index.h"
+#include "numericTypes/types.h"
 #include "vision/visionCuboid.h"
 
 class Area;

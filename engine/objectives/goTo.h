@@ -1,8 +1,8 @@
 #pragma once
 #include "objective.h"
 #include "config.h"
-#include "types.h"
-#include "index.h"
+#include "numericTypes/types.h"
+#include "numericTypes/index.h"
 
 struct DeserializationMemo;
 class Area;

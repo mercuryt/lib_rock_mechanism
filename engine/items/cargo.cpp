@@ -2,7 +2,7 @@
 #include "../definitions/itemType.h"
 #include "../area/area.h"
 #include "../definitions/materialType.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../portables.hpp"
 #include "../actors/actors.h"
 #include <regex>

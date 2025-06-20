@@ -1,7 +1,7 @@
 #include "blocks.h"
 #include "../area/area.h"
 #include "../definitions/materialType.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../blockFeature.h"
 #include "../fluidType.h"
 #include "../actors/actors.h"

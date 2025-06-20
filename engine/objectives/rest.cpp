@@ -4,7 +4,7 @@
 #include "../area/area.h"
 #include "../config.h"
 #include "actors/actors.h"
-#include "types.h"
+#include "numericTypes/types.h"
 
 RestObjective::RestObjective(Area& area) : Objective(Priority::create(0)), m_restEvent(area.m_eventSchedule) { }
 RestObjective::RestObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) :

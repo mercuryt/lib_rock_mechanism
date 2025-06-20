@@ -3,7 +3,7 @@
 #include "fluidGroup.h"
 #include "../area/area.h"
 #include "../blocks/blocks.h"
-#include "types.h"
+#include "numericTypes/types.h"
 void FillQueue::buildFor(Area& area, FluidGroup& fluidGroup, SmallSet<BlockIndex>& members)
 {
 	auto& blocks = area.getBlocks();

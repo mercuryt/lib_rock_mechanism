@@ -1,7 +1,7 @@
 #pragma once
 #include "objective.h"
 #include "config.h"
-#include "types.h"
+#include "numericTypes/types.h"
 struct DeserializationMemo;
 class StationObjective final : public Objective
 {

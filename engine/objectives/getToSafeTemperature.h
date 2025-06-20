@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../objective.h"
 #include "../path/pathRequest.h"
 #include "../config.h"

@@ -1,6 +1,6 @@
 #pragma once
-#include "../types.h"
-#include "../index.h"
+#include "../numericTypes/types.h"
+#include "../numericTypes/index.h"
 #include "../dataStructures/strongVector.h"
 #include "../config.h"
 

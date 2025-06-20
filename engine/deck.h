@@ -1,7 +1,7 @@
 #pragma once
 #include "geometry/cuboidSet.h"
 #include "strongInteger.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "actorOrItemIndex.h"
 #include "dataStructures/smallMap.h"
 #include "../lib/json.hpp"

@@ -13,7 +13,7 @@
 #include "../../engine/definitions/itemType.h"
 #include "../../engine/objectives/eat.h"
 #include "../../engine/objectives/station.h"
-#include "types.h"
+#include "numericTypes/types.h"
 TEST_CASE("basicNeedsSentient")
 {
 	static MaterialTypeId dirt = MaterialType::byName("dirt");

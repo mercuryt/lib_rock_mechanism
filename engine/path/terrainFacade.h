@@ -10,10 +10,10 @@
 
 #include "config.h"
 #include "designations.h"
-#include "index.h"
+#include "numericTypes/index.h"
 #include "pathMemo.h"
 #include "reference.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "callbackTypes.h"
 #include "dataStructures/strongVector.h"
 #include "dataStructures/smallMap.h"

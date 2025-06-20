@@ -3,7 +3,7 @@
 #include "actorOrItemIndex.h"
 #include "reference.h"
 #include "reservable.h"
-#include "types.h"
+#include "numericTypes/types.h"
 
 class Simulation;
 class ActorOrItemIndex;

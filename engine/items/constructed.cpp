@@ -3,7 +3,7 @@
 #include "../area/area.h"
 #include "../blocks/blocks.h"
 #include "../blockFeature.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 ConstructedShape::ConstructedShape(const Json& data) { nlohmann::from_json(data, *this); }
 void ConstructedShape::addBlock(Area& area, const BlockIndex& origin, const Facing4& facing, const BlockIndex& newBlock)
 {

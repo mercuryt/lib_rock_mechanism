@@ -8,7 +8,7 @@
 #include "random.h"
 #include "reservable.h"
 #include "path/terrainFacade.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "util.h"
 #include "simulation/simulation.h"
 #include "definitions/itemType.h"

@@ -6,7 +6,7 @@
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"
 #include "../reference.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 // PathRequest.
 ConstructPathRequest::ConstructPathRequest(Area& area, ConstructObjective& co, const ActorIndex& actorIndex) :
 	m_constructObjective(co)

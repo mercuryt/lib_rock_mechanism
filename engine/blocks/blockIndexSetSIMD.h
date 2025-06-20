@@ -1,6 +1,6 @@
 #pragma once
-#include "../types.h"
-#include "../index.h"
+#include "../numericTypes/types.h"
+#include "../numericTypes/index.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wduplicated-branches"
 #include "../../lib/Eigen/Dense"

@@ -1,7 +1,7 @@
 #include "actors.h"
 #include "definitions/animalSpecies.h"
 #include "config.h"
-#include "types.h"
+#include "numericTypes/types.h"
 
 void Actors::attributes_onUpdateGrowthPercent(const ActorIndex& index)
 {

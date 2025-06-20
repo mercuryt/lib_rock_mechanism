@@ -14,7 +14,7 @@
 #include "../../engine/definitions/itemType.h"
 #include "../../engine/definitions/animalSpecies.h"
 #include "reference.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include <functional>
 TEST_CASE("craft")
 {

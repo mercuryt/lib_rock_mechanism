@@ -17,8 +17,8 @@
 #include "../../engine/haul.h"
 #include "../../engine/objectives/goTo.h"
 #include "../../engine/objectives/stockpile.h"
-#include "reference.h"
-#include "types.h"
+#include "../../engine/reference.h"
+#include "../../engine/numericTypes/types.h"
 #include <functional>
 #include <memory>
 TEST_CASE("stockpile")

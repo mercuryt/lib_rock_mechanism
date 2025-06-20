@@ -1,7 +1,7 @@
 #include "cuboid.h"
 #include "sphere.h"
 #include "../area/area.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../blocks/blocks.h"
 #include "../blocks/adjacentOffsets.h"
 

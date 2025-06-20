@@ -521,100 +521,6 @@ void RTree::prepare()
 	if(toSort)
 		sort();
 }
-bool RTree::queryPoint(const Point3D& point) const
-{
-	SmallSet<Index> openList;
-	openList.insert(Index::create(0));
-	while(!openList.empty())
-	{
-		auto index = openList.back();
-		openList.popBack();
-		const Node& node = m_nodes[index];
-		const auto& nodeCuboids = node.getCuboids();
-		const auto& nodeChildren = node.getChildIndices();
-		const auto interceptMask = nodeCuboids.indicesOfIntersectingCuboids(point);
-		const auto leafCount = node.getLeafCount();
-		if(interceptMask.segment(0, leafCount).any())
-			return true;
-		for(ArrayIndex i = node.offsetOfFirstChild(); i < nodeSize; ++i)
-			if(interceptMask[i.get()])
-				// Cuboid intercepts existing branch, add it to open list for a future iteration.
-				openList.insert(nodeChildren[i.get()]);
-	}
-	return false;
-}
-bool RTree::queryCuboid(const Cuboid& cuboid) const
-{
-	SmallSet<Index> openList;
-	openList.insert(Index::create(0));
-	while(!openList.empty())
-	{
-		auto index = openList.back();
-		openList.popBack();
-		const Node& node = m_nodes[index];
-		const auto& nodeCuboids = node.getCuboids();
-		const auto& nodeChildren = node.getChildIndices();
-		const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(cuboid);
-		const auto leafCount = node.getLeafCount();
-		if(interceptMask.segment(0, leafCount).any())
-			return true;
-		for(ArrayIndex i = node.offsetOfFirstChild(); i < nodeSize; ++i)
-			if(interceptMask[i.get()])
-				// Cuboid intercepts existing branch, add it to open list for a future iteration.
-				openList.insert(nodeChildren[i.get()]);
-	}
-	return false;
-}
-bool RTree::querySphere(const Sphere& sphere) const
-{
-	SmallSet<Index> openList;
-	openList.insert(Index::create(0));
-	while(!openList.empty())
-	{
-		auto index = openList.back();
-		openList.popBack();
-		const Node& node = m_nodes[index];
-		const auto& nodeCuboids = node.getCuboids();
-		const auto& nodeChildren = node.getChildIndices();
-		const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(sphere);
-		const auto leafCount = node.getLeafCount();
-		if(interceptMask.segment(0, leafCount).any())
-			return true;
-		for(ArrayIndex i = node.offsetOfFirstChild(); i < nodeSize; ++i)
-			if(interceptMask[i.get()])
-				// Cuboid intercepts existing branch, add it to open list for a future iteration.
-				openList.insert(nodeChildren[i.get()]);
-	}
-	return false;
-}
-bool RTree::queryLine(const Point3D& point1, const Point3D& point2) const
-{
-	if(point1 < point2)
-		return queryLine(point2, point1);
-	Point3D difference = point1 - point2;
-	DistanceInBlocksFractional distance = point1.distanceToFractional(point2);
-	Eigen::Array<float, 1, 3> sloap = difference.data.cast<float>();
-	sloap /= distance.get();
-	SmallSet<Index> openList;
-	openList.insert(Index::create(0));
-	while(!openList.empty())
-	{
-		Index index = openList.back();
-		openList.popBack();
-		const Node& node = m_nodes[index];
-		const auto& nodeCuboids = node.getCuboids();
-		const auto& nodeChildren = node.getChildIndices();
-		const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboidsForLine(point1, point2, sloap);
-		const auto leafCount = node.getLeafCount();
-		if(interceptMask.segment(0, leafCount).any())
-			return true;
-		for(ArrayIndex i = node.offsetOfFirstChild(); i < nodeSize; ++i)
-			if(interceptMask[i.get()])
-				// Cuboid intercepts existing branch, add it to open list for a future iteration.
-				openList.insert(nodeChildren[i.get()]);
-	}
-	return false;
-}
 uint RTree::leafCount() const
 {
 	uint output = 0;
@@ -630,5 +536,5 @@ uint RTree::leafCount() const
 const RTree::Node& RTree::getNode(uint i) const { return m_nodes[Index::create(i)]; }
 const Cuboid RTree::getNodeCuboid(uint i, uint o) const { return m_nodes[Index::create(i)].getCuboids()[o]; }
 const RTree::Index& RTree::getNodeChild(uint i, uint o) const { return m_nodes[Index::create(i)].getChildIndices()[o]; }
-bool RTree::queryPoint(uint x, uint y, uint z) const { return queryPoint(Point3D::create(x,y,z)); }
+bool RTree::queryPoint(uint x, uint y, uint z) const { return query(Point3D::create(x,y,z)); }
 uint RTree::getNodeSize() { return nodeSize; }

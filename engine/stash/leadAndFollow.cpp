@@ -7,7 +7,7 @@
 #include "blocks/blocks.h"
 #include "actors/actors.h"
 #include "items/items.h"
-#include "types.h"
+#include "numericTypes/types.h"
 void CanLead::load(const Json& data, Area& area, DeserializationMemo& deserializationMemo)
 {
 	m_canFollow = data.contains("isLeadingItem") ?

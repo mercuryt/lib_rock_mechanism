@@ -2,11 +2,11 @@
 #include "actors/actors.h"
 #include "area/area.h"
 #include "blocks/blocks.h"
-#include "index.h"
+#include "numericTypes/index.h"
 #include "items/items.h"
 #include "plants.h"
 #include "simulation/simulation.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include <cassert>
 #include <cstdint>
 #include <iostream>

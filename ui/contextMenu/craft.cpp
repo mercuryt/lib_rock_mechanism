@@ -1,7 +1,7 @@
 #include "../contextMenu.h"
 #include "../window.h"
 #include "../../engine/blocks/blocks.h"
-#include "../engine/types.h"
+#include "../engine/numericTypes/types.h"
 #include "craft.h"
 #include "../displayData.h"
 void ContextMenu::drawCraftControls(const BlockIndex& block)

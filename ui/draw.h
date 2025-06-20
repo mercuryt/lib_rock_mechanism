@@ -1,5 +1,5 @@
 #pragma once
-#include "../engine/types.h"
+#include "../engine/numericTypes/types.h"
 #include "../engine/hasShapeTypes.h"
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Sprite.hpp>

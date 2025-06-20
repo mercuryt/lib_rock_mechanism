@@ -1,6 +1,6 @@
 #include "actors.h"
-#include "types.h"
-#include "index.h"
+#include "numericTypes/types.h"
+#include "numericTypes/index.h"
 #include "../vision/visionRequests.h"
 #include "../area/area.h"
 #include "../blocks/blocks.h"

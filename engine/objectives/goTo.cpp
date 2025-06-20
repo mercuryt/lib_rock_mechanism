@@ -5,7 +5,7 @@
 #include "../area/area.h"
 #include "../path/terrainFacade.hpp"
 #include "../actors/actors.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 GoToObjective::GoToObjective(const Json& data, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo),
 	m_location(data["location"].get<BlockIndex>()) { }

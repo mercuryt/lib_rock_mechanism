@@ -5,7 +5,7 @@
 #include "../blocks/blocks.h"
 #include "../path/terrainFacade.hpp"
 #include "../reference.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../path/pathRequest.h"
 #include "../hasShapes.hpp"
 DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, const ActorIndex& actorIndex) :

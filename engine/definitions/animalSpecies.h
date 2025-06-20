@@ -1,5 +1,5 @@
 #pragma once
-#include "types.h"
+#include "numericTypes/types.h"
 #include "body.h"
 #include <string>
 struct AnimalSpeciesParamaters

@@ -1,6 +1,6 @@
 #pragma once
 #include "eventSchedule.hpp"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "config.h"
 #include <array>
 class Area;

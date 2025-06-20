@@ -2,7 +2,7 @@
 #include "../objective.h"
 #include "../path/pathRequest.h"
 #include "../dataStructures/smallSet.h"
-#include "index.h"
+#include "numericTypes/index.h"
 class Area;
 class WoodCuttingProject;
 // ObjectiveType

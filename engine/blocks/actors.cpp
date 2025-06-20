@@ -1,7 +1,7 @@
 #include "blocks.h"
 #include "../actors/actors.h"
 #include "../area/area.h"
-#include "types.h"
+#include "numericTypes/types.h"
 void Blocks::actor_recordDynamic(const BlockIndex& index, const ActorIndex& actor, const CollisionVolume& volume)
 {
 	Actors& actors = m_area.getActors();

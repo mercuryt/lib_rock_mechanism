@@ -6,9 +6,9 @@
 #include "../simulation/hasItems.h"
 #include "../util.h"
 #include "../actors/actors.h"
-#include "../index.h"
+#include "../numericTypes/index.h"
 #include "../definitions/moveType.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../portables.hpp"
 #include <memory>
 #include <ranges>

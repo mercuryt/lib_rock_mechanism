@@ -1,6 +1,6 @@
 #include "locii.h"
 #include "gps.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "world.h"
 #include "worldLocation.h"
 #include <cmath>

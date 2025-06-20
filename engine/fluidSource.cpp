@@ -4,7 +4,7 @@
 #include "area/stockpile.h"
 #include "area/area.h"
 #include "blocks/blocks.h"
-#include "types.h"
+#include "numericTypes/types.h"
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_ONLY_SERIALIZE(FluidSource, block, fluidType, level);
 FluidSource::FluidSource(const Json& data, DeserializationMemo&) :

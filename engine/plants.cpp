@@ -2,13 +2,13 @@
 #include "area/area.h"
 #include "eventSchedule.h"
 #include "hasShapes.hpp"
-#include "index.h"
+#include "numericTypes/index.h"
 #include "definitions/itemType.h"
 #include "definitions/plantSpecies.h"
 #include "portables.h"
 #include "reference.h"
 #include "simulation/simulation.h"
-#include "types.h"
+#include "numericTypes/types.h"
 
 Plants::Plants(Area& area) :
 	HasShapes<Plants, PlantIndex>(area),

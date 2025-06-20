@@ -1,6 +1,6 @@
 #include "attributes.h"
 #include "definitions/animalSpecies.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "util.h"
 void Attribute::setPercentGrown(Percent percentGrown, const AnimalSpecies& species)
 {

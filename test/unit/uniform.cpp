@@ -8,7 +8,7 @@
 #include "../../engine/plants.h"
 #include "../../engine/definitions/itemType.h"
 #include "../../engine/definitions/animalSpecies.h"
-#include "../../engine/types.h"
+#include "../../engine/numericTypes/types.h"
 #include "../../engine/objectives/uniform.h"
 #include "../../engine/items/items.h"
 TEST_CASE("uniform")

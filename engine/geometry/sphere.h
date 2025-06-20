@@ -1,7 +1,7 @@
 #pragma once
 #include "../json.h"
 #include "point3D.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 class Blocks;
 class BlockIndex;
 class Cuboid;

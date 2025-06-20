@@ -2,7 +2,7 @@
 
 #include "../datetime.h"
 #include "../portables.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../vision/visionRequests.h"
 #include "../body.h"
 #include "../objective.h"
@@ -12,7 +12,7 @@
 #include "../path/terrainFacade.h"
 #include "../path/pathRequest.h"
 #include "../reference.h"
-#include "../index.h"
+#include "../numericTypes/index.h"
 #include "../definitions/attackType.h"
 #include "../uniform.h"
 #include "../geometry/offsetCuboidSet.h"

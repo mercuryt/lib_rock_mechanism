@@ -6,8 +6,8 @@
 
 #include "config.h"
 #include "dataStructures/strongVector.h"
-#include "types.h"
-#include "index.h"
+#include "numericTypes/types.h"
+#include "numericTypes/index.h"
 #include "geometry/point3D.h"
 
 #include <cassert>

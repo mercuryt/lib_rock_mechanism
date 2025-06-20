@@ -3,7 +3,7 @@
 #include "../definitions/itemType.h"
 #include "../definitions/moveType.h"
 #include "../area/area.h"
-#include "types.h"
+#include "numericTypes/types.h"
 bool Blocks::shape_anythingCanEnterEver(const BlockIndex& index) const
 {
 	// TODO: cache this in a bitset.

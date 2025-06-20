@@ -1,6 +1,6 @@
 #pragma once
-#include "index.h"
-#include "types.h"
+#include "numericTypes/index.h"
+#include "numericTypes/types.h"
 
 template<typename Func>
 concept DestinationCondition = requires(Func f, const BlockIndex& b, const Facing4& fa)

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "definitions/materialType.h"
-#include "types.h"
+#include "numericTypes/types.h"
 
 
 struct BlockFeature

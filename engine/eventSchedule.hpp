@@ -1,8 +1,8 @@
 #pragma once
 #include "eventSchedule.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "util.h"
-#include "index.h"
+#include "numericTypes/index.h"
 #include "dataStructures/strongVector.h"
 class Simulation;
 template<class EventType>

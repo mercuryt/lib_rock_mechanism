@@ -1,32 +1,13 @@
 #pragma once
-#include "index.h"
 #include "project.h"
 #include "objective.h"
-#include "path/pathRequest.h"
 #include "reference.h"
-#include "types.h"
+#include "path/pathRequest.h"
+#include "projects/installItem.h"
+#include "numericTypes/types.h"
+#include "numericTypes/index.h"
 
 #include <cstdio>
-struct DeserializationMemo;
-struct FindPathResult;
-class InstallItemObjective;
-class InstallItemProject final : public Project
-{
-	const ItemReference m_item;
-	Facing4 m_facing = Facing4::Null;
-public:
-	// Max one worker.
-	InstallItemProject(Area& area, const ItemReference& i, const BlockIndex& l, const Facing4& facing, const FactionId& faction, const SmallSet<BlockIndex>& occupied);
-	void onComplete();
-	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const { return {}; }
-	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const { return {{ItemQuery::create(m_item), Quantity::create(1)}}; }
-	std::vector<ActorReference> getActors() const { return {}; }
-	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const { return {}; }
-	Step getDuration() const { return Config::installItemDuration; }
-	bool canReset() const { return false; }
-	void onDelay() { cancel(); }
-	void offDelay() { std::unreachable(); }
-};
 class HasInstallItemDesignationsForFaction final
 {
 	SmallMapStable<BlockIndex, InstallItemProject> m_designations;

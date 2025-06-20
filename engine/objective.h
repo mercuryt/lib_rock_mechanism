@@ -5,7 +5,7 @@
 #include "config.h"
 #include "eventSchedule.hpp"
 #include "reservable.h"
-#include "types.h"
+#include "numericTypes/types.h"
 //#include "input.h"
 
 #include <map>

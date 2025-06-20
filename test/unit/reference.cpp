@@ -1,6 +1,6 @@
 #include "../../lib/doctest.h"
 #include "../../engine/reference.h"
-#include "../../engine/types.h"
+#include "../../engine/numericTypes/types.h"
 
 TEST_CASE("reference")
 {

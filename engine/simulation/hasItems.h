@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../config.h"
 #include <unordered_map>
 

@@ -1,6 +1,6 @@
 #include "sleep.h"
 #include "../area/area.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "actors/actors.h"
 #include "blocks/blocks.h"
 #include "../path/terrainFacade.hpp"

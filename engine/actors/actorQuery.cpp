@@ -1,7 +1,7 @@
 #include "actorQuery.h"
 #include "simulation/simulation.h"
 #include "simulation/hasActors.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "area/area.h"
 #include "actors.h"
 // ActorQuery, to be used to search for actors.

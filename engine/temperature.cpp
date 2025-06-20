@@ -7,7 +7,7 @@
 #include "objectives/getToSafeTemperature.h"
 #include "simulation/simulation.h"
 #include "path/terrainFacade.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "plants.h"
 #include "actors/actors.h"
 #include "items/items.h"

@@ -1,13 +1,13 @@
 #pragma once
 
 #include "geometry/cuboid.h"
-#include "index.h"
+#include "numericTypes/index.h"
 #include "input.h"
 #include "objective.h"
 #include "project.h"
 #include "path/pathRequest.h"
 #include "path/terrainFacade.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "projects/woodcutting.h"
 #include <memory>
 

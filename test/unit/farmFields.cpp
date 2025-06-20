@@ -16,7 +16,7 @@
 #include "../../engine/objectives/givePlantsFluid.h"
 #include "../../engine/objectives/goTo.h"
 #include "../../engine/items/items.h"
-#include "../../engine/types.h"
+#include "../../engine/numericTypes/types.h"
 #include "../../engine/designations.h"
 #include "../../engine/objectives/wait.h"
 #include "../../engine/path/terrainFacade.h"

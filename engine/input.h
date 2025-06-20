@@ -3,9 +3,9 @@
  */
 #pragma once
 
-#include "types.h"
+#include "numericTypes/types.h"
 #include "onDestroy.h"
-#include "index.h"
+#include "numericTypes/index.h"
 #include <memory>
 #include <queue>
 #include <mutex>

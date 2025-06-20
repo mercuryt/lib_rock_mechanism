@@ -1,6 +1,6 @@
 #pragma once
 #include "cuboid.h"
-#include "../index.h"
+#include "../numericTypes/index.h"
 
 class Blocks;
 

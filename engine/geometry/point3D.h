@@ -1,11 +1,11 @@
 // One BlockIndex has xyz dimensions of 1 meter by 1 meter by 2 meters.
 // This File defines physical types.
-// idTypes.h defines id types, which don't ever change.
-// index.h defines index types, which do change and must be updated.
+// numericTypes/idTypes.h defines id types, which don't ever change.
+// numericTypes/index.h defines index types, which do change and must be updated.
 
 #pragma once
 #include "../json.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wduplicated-branches"
 #include "../../lib/Eigen/Dense"
@@ -26,6 +26,8 @@ struct Point3D
 	Point3D(const Point3D& other) : data(other.data) { }
 	void clampHigh(const Point3D& other);
 	void clampLow(const Point3D& other);
+	Point3D min(const Point3D& other) const;
+	Point3D max(const Point3D& other) const;
 	void clear();
 	void setX(const DistanceInBlocks& x) { data[0] = x.get(); }
 	void setY(const DistanceInBlocks& y) { data[1] = y.get(); }

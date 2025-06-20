@@ -1,7 +1,7 @@
 #pragma once
 
 #include "actorOrItemIndex.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "reservable.h"
 #include "items/itemQuery.h"
 #include "eventSchedule.hpp"

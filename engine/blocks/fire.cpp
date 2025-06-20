@@ -3,7 +3,7 @@
 #include "../definitions/materialType.h"
 #include "../fire.h"
 #include "../area/area.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include <algorithm>
 void Blocks::fire_maybeIgnite(const BlockIndex& index, const MaterialTypeId& materialType)
 {

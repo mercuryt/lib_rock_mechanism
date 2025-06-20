@@ -3,7 +3,7 @@
 #include "config.h"
 #include "eventSchedule.hpp"
 #include "reference.h"
-#include "types.h"
+#include "numericTypes/types.h"
 
 #include <vector>
 

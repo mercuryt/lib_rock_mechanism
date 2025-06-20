@@ -1,7 +1,7 @@
 #pragma once
 
 #include "definitions/attackType.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "definitions/woundType.h"
 #include "hit.h"
 #include "eventSchedule.hpp"

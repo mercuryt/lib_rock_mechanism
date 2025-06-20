@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "lociiConfig.h"
 #include "gps.h"
 #include <algorithm>

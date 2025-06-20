@@ -1,5 +1,5 @@
 #pragma once
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../geometry/point3D.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wduplicated-branches"

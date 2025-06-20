@@ -3,7 +3,7 @@
 #include "definitions/bodyType.h"
 #include "hit.h"
 #include "config.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include <algorithm>
 Step WoundCalculations::getStepsTillHealed(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale)
 {

@@ -4,10 +4,10 @@
 #include "../area/area.h"
 #include "../definitions/itemType.h"
 #include "../portables.hpp"
-#include "index.h"
+#include "numericTypes/index.h"
 #include "definitions/moveType.h"
 #include "sleep.h"
-#include "types.h"
+#include "numericTypes/types.h"
 void Actors::canPickUp_pickUpItem(const ActorIndex& index, const ItemIndex& item)
 {
 	canPickUp_pickUpItemQuantity(index, item, Quantity::create(1));

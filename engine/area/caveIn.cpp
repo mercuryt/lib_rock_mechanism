@@ -1,7 +1,7 @@
 #include "area/area.h"
 #include "../blocks/blocks.h"
-#include "index.h"
-#include "types.h"
+#include "numericTypes/index.h"
+#include "numericTypes/types.h"
 #include <vector>
 #include <tuple>
 #include <deque>

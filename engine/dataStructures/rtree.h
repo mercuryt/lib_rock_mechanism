@@ -80,10 +80,35 @@ public:
 	void maybeInsert(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeInsert(cuboid); }
 	void maybeRemove(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid); }
 	void prepare();
-	[[nodiscard]] bool queryPoint(const Point3D& point) const;
-	[[nodiscard]] bool queryCuboid(const Cuboid& cuboid) const;
-	[[nodiscard]] bool querySphere(const Sphere& sphere) const;
-	[[nodiscard]] bool queryLine(const Point3D& point1, const Point3D& point2) const;
+	[[nodiscard]] bool query(const Point3D& begin, const Point3D& end) const { return query(ParamaterizedLine(begin, end)); }
+	[[nodiscard]] bool query(const auto& shape) const
+	{
+		SmallSet<Index> openList;
+		openList.insert(Index::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			const auto leafCount = node.getLeafCount();
+			if(leafCount != 0 && interceptMask.head(leafCount).any())
+				return true;
+			// TODO: Would it be better to check the whole intercept mask and continue if all are empty before checking leafs?
+			const auto childCount = node.getChildCount();
+			if(childCount == 0 || !interceptMask.tail(childCount).any())
+				continue;
+			const auto& nodeChildren = node.getChildIndices();
+			const auto offsetOfFirstChild = node.offsetOfFirstChild();
+			auto begin = interceptMask.begin();
+			auto end = begin + nodeSize;
+			for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+				if(*iter)
+					openList.insert(nodeChildren[iter - begin]);
+		}
+		return false;
+	}
 	// For test and debug.
 	[[nodiscard]] __attribute__((noinline)) uint nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
 	[[nodiscard]] __attribute__((noinline)) uint leafCount() const;

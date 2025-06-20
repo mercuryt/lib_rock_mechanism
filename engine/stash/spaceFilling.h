@@ -1,5 +1,5 @@
 #pragma once
-#include "types.h"
+#include "numericTypes/types.h"
 #include "area/area.h"
 
 BlockIndex getIndexForPosition(Area& area, Point3D position);

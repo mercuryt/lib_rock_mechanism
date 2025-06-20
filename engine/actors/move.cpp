@@ -3,7 +3,7 @@
 #include "../deserializationMemo.h"
 #include "../fluidType.h"
 #include "../definitions/moveType.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../simulation/simulation.h"
 #include "../util.h"
 #include "../path/pathRequest.h"

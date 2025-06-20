@@ -1,6 +1,7 @@
 #pragma once
 #include "cuboid.h"
 #include "cuboidSetSIMD.h"
+#include "paramaterizedLine.h"
 
 template<int capacity>
 class CuboidArray
@@ -103,23 +104,22 @@ public:
 			((m_low.template cast<int>() + radius) <= center.replicate(1, capacity)).colwise().any()
 		);
 	}
-	[[nodiscard]] BoolArray indicesOfIntersectingCuboidsForLine(const Point3D& high, const Point3D& low, const Eigen::Array<float, 3, 1>& sloap) const
+	[[nodiscard]] BoolArray indicesOfIntersectingCuboids(const ParamaterizedLine& line) const
 	{
-		const PointArray replicatedStart = low.data.replicate(1, capacity);
-		const Float3DArray replicatedSloap = sloap.replicate(1, capacity);
-		// High is end and low is start because that is how the slope was calculated.
-		const PointArray replicatedHighBoundry = high.data.replicate(1, capacity);
-		const PointArray replicatedLowBoundry = low.data.replicate(1, capacity);
+		const PointArray replicatedStart = line.begin.data.replicate(1, capacity);
+		const Float3DArray replicatedSloap = line.sloap.replicate(1, capacity);
+		const PointArray replicatedHighBoundry = line.boundry.m_highest.data.replicate(1, capacity);
+		const PointArray replicatedLowBoundry = line.boundry.m_lowest.data.replicate(1, capacity);
 		// Check for intersection with high faces.
-		const OffsetArray distanceFromStartToHigh = m_high.template cast<OffsetWidth>() - replicatedStart.template cast<OffsetWidth>();
-		const Float3DArray stepsFromStartToHigh = distanceFromStartToHigh.abs().template cast<float>() / replicatedSloap;
+		const OffsetArray distanceFromStartToHighFace = m_high.template cast<OffsetWidth>() - replicatedStart.template cast<OffsetWidth>();
+		const Float3DArray stepsFromStartToHighFace = distanceFromStartToHighFace.template cast<float>() / replicatedSloap;
 		// High x.
 		Bool3DArray highResults;
-		if(sloap[0] == 0.0f)
+		if(line.sloap[0] == 0.0f)
 			highResults.row(0) = false;
 		else
 		{
-			const PointArray coordinatesAtHighX = replicatedStart + (replicatedSloap * stepsFromStartToHigh.row(0).replicate(3, 1)).template cast<DistanceInBlocksWidth>();
+			const PointArray coordinatesAtHighX = replicatedStart + (replicatedSloap * stepsFromStartToHighFace.row(0).replicate(3, 1)).template cast<DistanceInBlocksWidth>();
 			highResults.row(0) =
 				// Check Y.
 				coordinatesAtHighX.row(1) <= m_high.row(1) &&
@@ -132,11 +132,11 @@ public:
 				(coordinatesAtHighX >= replicatedLowBoundry).colwise().all();
 		}
 		// High y.
-		if(sloap[1] == 0.0f)
+		if(line.sloap[1] == 0.0f)
 			highResults.row(1) = false;
 		else
 		{
-			const PointArray coordinatesAtHighY = replicatedStart + (replicatedSloap * stepsFromStartToHigh.row(1).replicate(3, 1)).template cast<DistanceInBlocksWidth>();
+			const PointArray coordinatesAtHighY = replicatedStart + (replicatedSloap * stepsFromStartToHighFace.row(1).replicate(3, 1)).template cast<DistanceInBlocksWidth>();
 			highResults.row(1) =
 				// Check X.
 				coordinatesAtHighY.row(0) <= m_high.row(0) &&
@@ -148,12 +148,12 @@ public:
 				(coordinatesAtHighY <= replicatedHighBoundry).colwise().all() &&
 				(coordinatesAtHighY >= replicatedLowBoundry).colwise().all();
 		}
-		if(sloap[2] == 0.0f)
+		if(line.sloap[2] == 0.0f)
 		// High z.
 			highResults.row(2) = false;
 		else
 		{
-			const PointArray coordinatesAtHighZ = replicatedStart + (replicatedSloap * stepsFromStartToHigh.row(2).replicate(3, 1)).template cast<DistanceInBlocksWidth>();
+			const PointArray coordinatesAtHighZ = replicatedStart + (replicatedSloap * stepsFromStartToHighFace.row(2).replicate(3, 1)).template cast<DistanceInBlocksWidth>();
 			highResults.row(2) =
 				// Check X.
 				coordinatesAtHighZ.row(0) <= m_high.row(0) &&
@@ -166,15 +166,15 @@ public:
 				(coordinatesAtHighZ >= replicatedLowBoundry).colwise().all();
 		}
 		// Check for intersection with low faces.
-		const OffsetArray distanceFromStartToLow = m_low.template cast<OffsetWidth>() - replicatedStart.template cast<OffsetWidth>();
-		const Float3DArray stepsFromStartToLow = distanceFromStartToLow.abs().template cast<float>() / replicatedSloap;
+		const OffsetArray distanceFromStartToLowFace = m_low.template cast<OffsetWidth>() - replicatedStart.template cast<OffsetWidth>();
+		const Float3DArray stepsFromStartToLowFace = distanceFromStartToLowFace.abs().template cast<float>() / replicatedSloap;
 		Bool3DArray lowResults;
 		// Low x.
-		if(sloap[0] == 0.0f)
+		if(line.sloap[0] == 0.0f)
 			highResults.row(0) = false;
 		else
 		{
-			const PointArray coordinatesAtLowX = replicatedStart + (replicatedSloap * stepsFromStartToLow.row(0).replicate(3, 1)).template cast<DistanceInBlocksWidth>();
+			const PointArray coordinatesAtLowX = replicatedStart + (replicatedSloap * stepsFromStartToLowFace.row(0).replicate(3, 1)).template cast<DistanceInBlocksWidth>();
 			lowResults.row(0) =
 				// Check Y.
 				coordinatesAtLowX.row(1) <= m_high.row(1) &&
@@ -187,11 +187,11 @@ public:
 				(coordinatesAtLowX >= replicatedLowBoundry).colwise().all();
 		}
 		// Low y.
-		if(sloap[1] == 0.0f)
+		if(line.sloap[1] == 0.0f)
 			highResults.row(1) = false;
 		else
 		{
-			const PointArray coordinatesAtLowY = replicatedStart + (replicatedSloap * stepsFromStartToLow.row(1).replicate(3, 1)).template cast<DistanceInBlocksWidth>();
+			const PointArray coordinatesAtLowY = replicatedStart + (replicatedSloap * stepsFromStartToLowFace.row(1).replicate(3, 1)).template cast<DistanceInBlocksWidth>();
 			lowResults.row(1) =
 				// Check X.
 				coordinatesAtLowY.row(0) <= m_high.row(0) &&
@@ -204,11 +204,12 @@ public:
 				(coordinatesAtLowY >= replicatedLowBoundry).colwise().all();
 		}
 		// Low z.
-		if(sloap[2] == 0.0f)
+		// TODO: Unnessesary?
+		if(line.sloap[2] == 0.0f)
 			highResults.row(2) = false;
 		else
 		{
-			const PointArray coordinatesAtLowZ = replicatedStart + (replicatedSloap * stepsFromStartToLow.row(2).replicate(3, 1)).template cast<DistanceInBlocksWidth>();
+			const PointArray coordinatesAtLowZ = replicatedStart + (replicatedSloap * stepsFromStartToLowFace.row(2).replicate(3, 1)).template cast<DistanceInBlocksWidth>();
 			lowResults.row(2) =
 				// Check X.
 				coordinatesAtLowZ.row(0) <= m_high.row(0) &&

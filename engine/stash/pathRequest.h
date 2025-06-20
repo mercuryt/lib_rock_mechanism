@@ -4,9 +4,9 @@
  * Responsible for serializing path request. May be subclassed.
  */
 #pragma once
-#include "types.h"
+#include "numericTypes/types.h"
 #include "config.h"
-#include "index.h"
+#include "numericTypes/index.h"
 #include "designations.h"
 #include "callbackTypes.h"
 class Area;

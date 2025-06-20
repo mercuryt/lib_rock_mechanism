@@ -2,7 +2,7 @@
 
 #include "config.h"
 #include "dataStructures/strongVector.h"
-#include "types.h"
+#include "numericTypes/types.h"
 
 #include <string>
 #include <cassert>

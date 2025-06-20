@@ -1,7 +1,7 @@
 #include "locationBuckets.h"
 #include "area/area.h"
 #include "config.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "actors/actors.h"
 #include "blocks/blocks.h"
 #include "util.h"

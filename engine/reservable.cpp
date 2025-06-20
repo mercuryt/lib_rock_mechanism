@@ -1,7 +1,7 @@
 #include "reservable.h"
 #include "simulation/simulation.h"
 #include "deserializeDishonorCallbacks.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "blocks/blocks.h"
 #include <bits/ranges_algo.h>
 void CanReserve::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area)

@@ -9,7 +9,7 @@
 #include "../../blocks/blocks.h"
 #include "../../definitions/moveType.h"
 #include "../../simulation/hasActors.h"
-#include "../../types.h"
+#include "../../numericTypes/types.h"
 #include <utility>
 BanditsArriveDramaArc::BanditsArriveDramaArc(DramaEngine& engine, Area& area) :
 	DramaArc(engine, DramaArcType::BanditsArrive, &area), m_scheduledEvent(area.m_eventSchedule)

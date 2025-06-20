@@ -8,7 +8,7 @@
 #include "../blocks/blocks.h"
 #include "../items/items.h"
 #include "../plants.h"
-#include "types.h"
+#include "numericTypes/types.h"
 
 SimulationHasAreas::SimulationHasAreas(const Json& data, DeserializationMemo&, Simulation& simulation) : m_simulation(simulation)
 {

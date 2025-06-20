@@ -3,7 +3,7 @@
 #include "../area/area.h"
 #include "../config.h"
 #include "../random.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../util.h"
 #include "../simulation/simulation.h"
 #include "../plants.h"

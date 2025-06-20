@@ -1,6 +1,6 @@
 #include "eventSchedule.h"
 #include "simulation/simulation.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "util.h"
 #include "area/area.h"
 #include <cassert>

@@ -4,7 +4,7 @@
 #include "../path/terrainFacade.h"
 #include "../eventSchedule.hpp"
 #include "../config.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 
 #include <memory>
 #include <vector>

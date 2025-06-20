@@ -1,7 +1,7 @@
 #include "actors.h"
 #include "area/area.h"
 #include "blocks/blocks.h"
-#include "index.h"
+#include "numericTypes/index.h"
 const SmallSet<BlockIndex>& Actors::lineLead_getPath(const ActorIndex& index) const
 {
 	assert(!isFollowing(index));

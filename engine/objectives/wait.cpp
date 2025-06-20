@@ -1,6 +1,6 @@
 #include "actors/actors.h"
 #include "simulation/simulation.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "wait.h"
 #include "objective.h"
 #include "area/area.h"

@@ -1,13 +1,13 @@
 // One BlockIndex has xyz dimensions of 1 meter by 1 meter by 2 meters.
 // This File defines physical types.
-// idTypes.h defines id types, which don't ever change.
-// index.h defines index types, which do change and must be updated.
+// numericTypes/idTypes.h defines id types, which don't ever change.
+// numericTypes/index.h defines index types, which do change and must be updated.
 
 #pragma once
 #include "strongFloat.h"
 #include "strongInteger.h"
 #include "json.h"
-#include "idTypes.h"
+#include "numericTypes/idTypes.h"
 #include <compare>
 #include <cstdint>
 #include <iostream>

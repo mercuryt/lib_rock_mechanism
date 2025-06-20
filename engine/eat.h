@@ -5,7 +5,7 @@
 #include "simulation/simulation.h"
 #include "eventSchedule.hpp"
 #include "path/terrainFacade.h"
-#include "types.h"
+#include "numericTypes/types.h"
 
 class EatObjective;
 class HungerEvent;

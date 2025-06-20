@@ -4,14 +4,12 @@
 
 #pragma once
 
-#include "../installItem.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../mistDisperseEvent.h"
 #include "../geometry/cuboid.h"
 #include "../vision/visionCuboid.h"
 #include "../craft.h"
 #include "../fire.h"
-#include "woodcutting.h"
 #include "../stocks.h"
 #include "../fluidSource.h"
 #include "../path/terrainFacade.h"
@@ -24,6 +22,8 @@
 #include "../farmFields.h"
 #include "../actors/grow.h"
 #include "../deck.h"
+#include "installItem.h"
+#include "woodcutting.h"
 #include "stockpile.h"
 #include "rain.h"
 #include "hasFluidGroups.h"

@@ -4,8 +4,8 @@
 #include <cstddef>
 #include <iterator>
 
-#include "../types.h"
-#include "../index.h"
+#include "../numericTypes/types.h"
+#include "../numericTypes/index.h"
 #include "point3D.h"
 class Blocks;
 class CuboidView;
@@ -14,6 +14,7 @@ class Sphere;
 class Cuboid
 {
 public:
+	// TODO: remove the m_ prefix and make this a struct.
 	Point3D m_highest;
 	Point3D m_lowest;
 

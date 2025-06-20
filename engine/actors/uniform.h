@@ -1,6 +1,6 @@
 #pragma once
 #include "../uniform.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../config.h"
 class UniformObjective;
 class Area;

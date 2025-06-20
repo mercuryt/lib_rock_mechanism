@@ -7,7 +7,7 @@
 #include "../definitions/itemType.h"
 #include "../definitions/animalSpecies.h"
 #include "../path/terrainFacade.hpp"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "kill.h"
 
 EatEvent::EatEvent(Area& area, const Step& delay, EatObjective& eo, const ActorIndex& actor, const Step start) : ScheduledEvent(area.m_simulation, delay, start), m_eatObjective(eo)

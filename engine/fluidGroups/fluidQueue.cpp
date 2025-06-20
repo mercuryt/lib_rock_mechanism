@@ -2,7 +2,7 @@
 #include "fluidGroup.h"
 #include "../area/area.h"
 #include "../blocks/blocks.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include <assert.h>
 void FluidQueue::setBlocks(SmallSet<BlockIndex>& blocks)
 {

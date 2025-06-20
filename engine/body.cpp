@@ -6,7 +6,7 @@
 #include "random.h"
 #include "reference.h"
 #include "reservable.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "util.h"
 #include "simulation/simulation.h"
 #include "definitions/woundType.h"

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "index.h"
-#include "types.h"
+#include "numericTypes/index.h"
+#include "numericTypes/types.h"
 
 #include <string>
 #include <functional>

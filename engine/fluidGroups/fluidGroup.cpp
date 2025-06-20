@@ -10,7 +10,7 @@
 #include "fluidGroup.h"
 #include "blocks/blocks.h"
 #include "fluidType.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "util.h"
 #include "config.h"
 #include "area/area.h"

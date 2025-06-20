@@ -8,7 +8,7 @@
 #include "../actors/actors.h"
 #include "../blocks/blocks.h"
 #include "../designations.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 
 struct DeserializationMemo;
 

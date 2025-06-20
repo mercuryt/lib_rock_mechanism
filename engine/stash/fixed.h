@@ -1,16 +1,16 @@
 #pragma once
 #include <cassert>
 #include <cstdint>
-#include "types.h"
+#include "numericTypes/types.h"
 class u16FixedDistanceInBlocksAccumulator
 {
 	uint16_t m_data;
 public:
 	u16FixedDistanceInBlocksAccumulator(DistanceInBlocks data) : m_data(data * 10) { }
-	void operator+=(u16FixedDistanceInBlocksAccumulator other) 
-	{ 
+	void operator+=(u16FixedDistanceInBlocksAccumulator other)
+	{
 		assert((uint32_t)m_data + (uint32_t)other.m_data <= UINT16_MAX);
-		m_data += other.m_data; 
+		m_data += other.m_data;
 	}
 	DistanceInBlocks round()
 	{

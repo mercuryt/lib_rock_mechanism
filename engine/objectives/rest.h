@@ -3,7 +3,7 @@
 #include "objective.h"
 #include "eventSchedule.h"
 #include "config.h"
-#include "types.h"
+#include "numericTypes/types.h"
 
 class Simulation;
 class RestEvent;

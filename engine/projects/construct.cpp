@@ -3,7 +3,7 @@
 #include "area/area.h"
 #include "reservable.h"
 #include "path/terrainFacade.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "util.h"
 #include "blockFeature.h"
 #include "simulation/simulation.h"

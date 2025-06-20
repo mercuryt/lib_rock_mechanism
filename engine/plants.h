@@ -1,8 +1,8 @@
 #pragma once
 
-#include "idTypes.h"
-#include "index.h"
-#include "types.h"
+#include "numericTypes/idTypes.h"
+#include "numericTypes/index.h"
+#include "numericTypes/types.h"
 #include "eventSchedule.hpp"
 #include "hasShapes.h"
 

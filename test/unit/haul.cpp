@@ -16,7 +16,7 @@
 #include "../../engine/definitions/animalSpecies.h"
 #include "../../engine/portables.hpp"
 #include "reference.h"
-#include "types.h"
+#include "numericTypes/types.h"
 TEST_CASE("haul")
 {
 	static MaterialTypeId dirt = MaterialType::byName("dirt");

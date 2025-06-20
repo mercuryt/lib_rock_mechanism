@@ -9,7 +9,7 @@
 #include "definitions/attackType.h"
 #include "actors/skill.h"
 #include "craft.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "definitions/itemType.h"
 #include "definitions/shape.h"
 #include "definitions/plantSpecies.h"

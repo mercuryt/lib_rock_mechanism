@@ -7,7 +7,7 @@
 #include "fluidType.h"
 #include "definitions/materialType.h"
 #include "simulation/simulation.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "util.h"
 
 #include <iostream>

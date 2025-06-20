@@ -1,6 +1,6 @@
 #include "actors.h"
 #include "../objective.h"
-#include "types.h"
+#include "numericTypes/types.h"
 
 void Actors::objective_addNeed(const ActorIndex& index, std::unique_ptr<Objective> objective)
 {

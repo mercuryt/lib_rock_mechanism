@@ -4,7 +4,7 @@
 #include "simulation/simulation.h"
 #include "simulation/hasItems.h"
 #include "definitions/materialType.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "area/area.h"
 bool ItemQuery::query(Area& area, const ItemIndex& item) const
 {

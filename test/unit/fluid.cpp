@@ -10,7 +10,7 @@
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
-#include "../../engine/types.h"
+#include "../../engine/numericTypes/types.h"
 TEST_CASE("fluids smaller")
 {
 	static MaterialTypeId marble = MaterialType::byName("marble");

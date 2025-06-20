@@ -2,7 +2,7 @@
 #include "eventSchedule.hpp"
 #include "objective.h"
 #include "reference.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include <string>
 
 class WaitScheduledEvent;

@@ -1,5 +1,5 @@
 #include "blockIndexSetSIMD.h"
-#include "../index.h"
+#include "../numericTypes/index.h"
 
 BlockIndexSetSIMD::BlockIndexSetSIMD(const Eigen::Array<int, 1, Eigen::Dynamic>& data)
 {

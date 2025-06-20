@@ -10,7 +10,7 @@
 #include "../../engine/plants.h"
 #include "../../engine/definitions/animalSpecies.h"
 #include "config.h"
-#include "types.h"
+#include "numericTypes/types.h"
 
 TEST_CASE("Area")
 {

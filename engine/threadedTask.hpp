@@ -1,7 +1,7 @@
 #pragma once
-#include "index.h"
+#include "numericTypes/index.h"
 #include "threadedTask.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include <vector>
 template<class TaskType>
 class HasThreadedTask final

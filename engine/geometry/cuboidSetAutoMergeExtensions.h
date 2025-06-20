@@ -83,7 +83,7 @@ public:
 	[[nodistance]] uint getIndexForKey(const Key& key) { std::distance(&*m_keys.begin(), &key); }
 };
 
-#include "../index.h"
+#include "../numericTypes/index.h"
 
 template<typename Key, typename Area>
 class CuboidSetAutoMergeMapWithBlockLookup : public CuboidSetAutoMergeMap<Key>

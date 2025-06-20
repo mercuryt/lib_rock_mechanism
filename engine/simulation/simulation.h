@@ -13,7 +13,7 @@
 #include "hasItems.h"
 #include "hasConstructedItemTypes.h"
 #include "threadedTask.h"
-#include "types.h"
+#include "numericTypes/types.h"
 #include "uniform.h"
 #include "path/pathMemo.h"
 

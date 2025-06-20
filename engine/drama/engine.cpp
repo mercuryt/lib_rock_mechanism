@@ -10,7 +10,7 @@
 #include "../blocks/blocks.h"
 #include "../deserializationMemo.h"
 #include "../simulation/hasAreas.h"
-#include "../types.h"
+#include "../numericTypes/types.h"
 #include "../plants.h"
 #include "../items/items.h"
 #include "../util.h"

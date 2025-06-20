@@ -1,13 +1,13 @@
-#include "vision/visionRequests.h"
-#include "area/area.h"
-#include "config.h"
-#include "locationBuckets.h"
-#include "simulation/simulation.h"
-#include "types.h"
-#include "util.h"
-#include "actors/actors.h"
-#include "blocks/blocks.h"
-#include "geometry/sphere.h"
+#include "visionRequests.h"
+#include "../area/area.h"
+#include "../config.h"
+#include "../dataStructures/locationBuckets.h"
+#include "../simulation/simulation.h"
+#include "../numericTypes/types.h"
+#include "../util.h"
+#include "../actors/actors.h"
+#include "../blocks/blocks.h"
+#include "../geometry/sphere.h"
 #include <cstddef>
 
 VisionRequests::VisionRequests(Area& area) :

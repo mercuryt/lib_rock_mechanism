@@ -3,7 +3,7 @@
 #include "simulation/simulation.h"
 #include "definitions/materialType.h"
 #include "blocks/blocks.h"
-#include "types.h"
+#include "numericTypes/types.h"
 FireEvent::FireEvent(Area& area, const Step& delay, Fire& f, const Step start) :
        	ScheduledEvent(area.m_simulation, delay, start), m_fire(f) { }
 void FireEvent::execute(Simulation&, Area* area)
