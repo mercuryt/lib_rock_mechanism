@@ -1,0 +1,223 @@
+#pragma once
+#include "../geometry/cuboid.h"
+#include "../geometry/cuboidArray.h"
+#include "../strongInteger.h"
+#include "../dataStructures/strongVector.h"
+#include "../dataStructures/smallMap.h"
+
+template<typename T>
+class RTreeData
+{
+	static constexpr uint nodeSize = 4;
+	using IndexWidth = uint16_t;
+	class Index final : public StrongInteger<Index, IndexWidth>
+	{
+	public:
+		struct Hash { [[nodiscard]] size_t operator()(const Index& index) const { return index.get(); } };
+	};
+	using ArrayIndexWidth = uint8_t;
+	class ArrayIndex final : public StrongInteger<ArrayIndex, ArrayIndexWidth>
+	{
+	public:
+		ArrayIndex() = default;
+		struct Hash { [[nodiscard]] size_t operator()(const ArrayIndex& index) const { return index.get(); } };
+	};
+	union DataOrChild { T data; Index child; };
+	class Node
+	{
+		CuboidArray<nodeSize> m_cuboids;
+		std::array<DataOrChild, nodeSize> m_dataAndChildIndices;
+		Index m_parent;
+		ArrayIndex m_leafEnd = ArrayIndex::create(0);
+		ArrayIndex m_childBegin = ArrayIndex::create(nodeSize);
+		// TODO: store sort order?
+	public:
+		[[nodiscard]] const auto& getCuboids() const { return m_cuboids; }
+		[[nodiscard]] const auto& getDataAndChildIndices() const { return m_dataAndChildIndices; }
+		[[nodiscard]] const auto& getParent() const { return m_parent; }
+		[[nodiscard]] int getLeafCount() const { return m_leafEnd.get(); }
+		[[nodiscard]] int getChildCount() const { return nodeSize - m_childBegin.get(); }
+		[[nodiscard]] int unusedCapacity() const { return (m_childBegin - m_leafEnd).get(); }
+		[[nodiscard]] int sortOrder() const { return m_cuboids.boundry().getCenter().hilbertNumber(); };
+		[[nodiscard]] ArrayIndex offsetFor(const Index& index) const;
+		[[nodiscard]] ArrayIndex offsetOfFirstChild() const { return m_childBegin; }
+		[[nodiscard]] bool empty() const { return unusedCapacity() == nodeSize; }
+		void updateChildIndex(const Index& oldIndex, const Index& newIndex);
+		void insertLeaf(const Cuboid& cuboid, const T& value);
+		void insertBranch(const Cuboid& cuboid, const Index& index);
+		void eraseBranch(const ArrayIndex& offset);
+		void eraseLeaf(const ArrayIndex& offset);
+		void eraseByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
+		void clear();
+		void setParent(const Index& index) { m_parent = index; }
+		void updateLeaf(const ArrayIndex offset, const Cuboid& cuboid);
+		void updateLeafWithValue(const ArrayIndex offset, const Cuboid& cuboid, const T& value);
+		void updateBranchBoundry(const ArrayIndex offset, const Cuboid& cuboid);
+		[[nodiscard]] __attribute__((noinline)) std::string toString();
+	};
+	StrongVector<Node, Index> m_nodes;
+	SmallSet<Index> m_emptySlots;
+	SmallSet<Index> m_toComb;
+	[[nodiscard]] std::tuple<Cuboid, ArrayIndex, ArrayIndex> findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids);
+	[[nodiscard]] SmallMap<Cuboid, T> gatherLeavesRecursive(const Index& parent);
+	void destroyWithChildren(const Index& index);
+	void tryToMergeLeaves(Node& parent);
+	void clearAllContained(Node& parent, const Cuboid& cuboid);
+	void clearAllContainedWithValueRecursive(Node& parent, const Cuboid& cuboid, const T& value);
+	void addToNodeRecursive(const Index& index, const Cuboid& cuboid, const T& value);
+	// Removes intercepting leaves and contained branches. Intercepting branches are added to openList.
+	void removeFromNode(const Index& index, const Cuboid& cuboid, SmallSet<Index>& openList);
+	void removeFromNodeWithValue(const Index& index, const Cuboid& cuboid, SmallSet<Index>& openList, const T& value);
+	void merge(const Index& destination, const Index& source);
+	// Iterate m_toComb and try to recursively merge leaves.
+	// Then check for single child nodes and splice them out. If the child is a leaf re-add the parent to m_toComb.
+	// Finally check for child branches that can be merged upwards. If any are merged re-add parent to m_toComb.
+	void comb();
+	// Copy over empty slots, while updating stored childIndices in parents of nodes moved. Then truncate m_nodes.
+	void defragment();
+	// Sort m_nodes by hilbert order of center. The node in position 0 is the top level and never moves.
+	void sort();
+public:
+	RTreeData() { m_nodes.add(); m_nodes.back().setParent(Index::null()); }
+	void maybeInsert(const Cuboid& cuboid, const T& value);
+	void maybeRemove(const Cuboid& cuboid, const T& value);
+	void maybeInsert(Cuboid&& cuboid, const T& value) { const Cuboid copy = cuboid; maybeInsert(copy, value); }
+	void maybeRemove(Cuboid&& cuboid, const T& value) { const Cuboid copy = cuboid; maybeRemove(copy, value); }
+	void maybeInsert(const Point3D& point, const T& value) { const Cuboid cuboid = Cuboid(point, point); maybeInsert(cuboid, value); }
+	void maybeRemove(const Point3D& point, const T& value) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid, value); }
+	void prepare();
+	[[nodiscard]] bool queryAny(const Point3D& begin, const Point3D& end) const { return queryAny(ParamaterizedLine(begin, end)); }
+	[[nodiscard]] bool queryAny(const auto& shape) const
+	{
+		SmallSet<Index> openList;
+		openList.insert(Index::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			const auto leafCount = node.getLeafCount();
+			if(leafCount != 0 && interceptMask.head(leafCount).any())
+				return true;
+			// TODO: Would it be better to check the whole intercept mask and continue if all are empty before checking leafs?
+			const auto childCount = node.getChildCount();
+			if(childCount == 0 || !interceptMask.tail(childCount).any())
+				continue;
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			const auto offsetOfFirstChild = node.offsetOfFirstChild();
+			auto begin = interceptMask.begin();
+			auto end = begin + nodeSize;
+			if(offsetOfFirstChild == 0)
+			{
+				// Unrollable version for nodes where every slot is a child.
+				for(auto iter = begin; iter != end; ++iter)
+					if(*iter)
+						openList.insert(nodeDataAndChildIndices[iter - begin].child);
+			}
+			else
+			{
+				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+					if(*iter)
+						openList.insert(nodeDataAndChildIndices[iter - begin].child);
+			}
+		}
+		return false;
+	}
+	[[nodiscard]] T queryGetAny(const auto& shape) const
+	{
+		SmallSet<Index> openList;
+		openList.insert(Index::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			const auto leafCount = node.getLeafCount();
+			if(!interceptMask.any())
+				continue;
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			const auto offsetOfFirstChild = node.offsetOfFirstChild();
+			if(leafCount != 0 && interceptMask.head(leafCount).any())
+			{
+				auto begin = interceptMask.begin();
+				auto end = begin + nodeSize;
+				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+					if(*iter)
+						return nodeDataAndChildIndices[iter - begin].data;
+				std::unreachable();
+			}
+			auto begin = interceptMask.begin();
+			auto end = begin + nodeSize;
+			if(offsetOfFirstChild == 0)
+			{
+				// Unrollable version for nodes where every slot is a child.
+				for(auto iter = begin; iter != end; ++iter)
+					if(*iter)
+						openList.insert(nodeDataAndChildIndices[iter - begin].child);
+			}
+			else
+			{
+				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+					if(*iter)
+						openList.insert(nodeDataAndChildIndices[iter - begin].child);
+			}
+		}
+		return T::null();
+	}
+	[[nodiscard]] SmallSet<T> queryGetAll(const auto& shape) const
+	{
+		SmallSet<Index> openList;
+		SmallSet<T> output;
+		openList.insert(Index::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			const auto leafCount = node.getLeafCount();
+			if(!interceptMask.any())
+				continue;
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			const auto offsetOfFirstChild = node.offsetOfFirstChild();
+			if(leafCount != 0 && interceptMask.head(leafCount).any())
+			{
+				auto begin = interceptMask.begin();
+				auto end = begin + nodeSize;
+				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+					if(*iter)
+						output.insertNonunique(nodeDataAndChildIndices[iter - begin].data);
+			}
+			const auto begin = interceptMask.begin();
+			const auto end = begin + nodeSize;
+			if(offsetOfFirstChild == 0)
+			{
+				// Unrollable version for nodes where every slot is a child.
+				for(auto iter = begin; iter != end; ++iter)
+					if(*iter)
+						openList.insert(nodeDataAndChildIndices[iter - begin].child);
+			}
+			else
+			{
+				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+					if(*iter)
+						openList.insert(nodeDataAndChildIndices[iter - begin].child);
+			}
+		}
+		output.makeUnique();
+		return output;
+	}
+	// For test and debug.
+	[[nodiscard]] __attribute__((noinline)) uint nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
+	[[nodiscard]] __attribute__((noinline)) uint leafCount() const;
+	[[nodiscard]] __attribute__((noinline)) const Node& getNode(uint i) const;
+	[[nodiscard]] __attribute__((noinline)) const Cuboid getNodeCuboid(uint i, uint o) const;
+	[[nodiscard]] __attribute__((noinline)) const Index& getNodeChild(uint i, uint o) const;
+	[[nodiscard]] __attribute__((noinline)) bool queryPoint(uint x, uint y, uint z) const;
+	[[nodiscard]] static __attribute__((noinline)) uint getNodeSize();
+};

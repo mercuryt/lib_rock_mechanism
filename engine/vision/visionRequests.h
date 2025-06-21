@@ -2,14 +2,13 @@
 #include "config.h"
 #include "numericTypes/types.h"
 #include "numericTypes/index.h"
-#include "dataStructures/strongVector.h"
+#include "dataStructures/smallSet.h"
 #include "reference.h"
 #include "geometry/point3D.h"
 #include <cassert>
 #include <cstdint>
 #include <vector>
 class Area;
-struct VisionCuboid;
 struct VisionRequest
 {
 	OccupiedBlocksForHasShape occupied;

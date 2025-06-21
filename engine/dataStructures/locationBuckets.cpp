@@ -189,7 +189,7 @@ Eigen::Array<bool, 1, Eigen::Dynamic> LocationBucket::canBeSeenByDistanceAndFaci
 	Eigen::Array<int, 1, Eigen::Dynamic> truncatedVisionRange = m_visionRangeSquared.block(0, 0, 1, m_actors.size());
 	return facingTwordsLocation && distances <= truncatedVisionRange;
 }
-Eigen::Array<bool, 1, Eigen::Dynamic> LocationBucket::indiciesWhichIntersectShape(const auto& queryShape) const
+Eigen::Array<bool, 1, Eigen::Dynamic> LocationBucket::indicesWhichIntersectShape(const auto& queryShape) const
 {
 	return m_points.indicesOfContainedPoints(queryShape);
 }

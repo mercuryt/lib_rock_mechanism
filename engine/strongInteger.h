@@ -11,7 +11,7 @@ template <class Derived, typename T, T NULL_VALUE = std::numeric_limits<T>::max(
 class StrongInteger
 {
 protected:
-	T data;
+	T data = NULL_VALUE;
 public:
 	using This = StrongInteger<Derived, T, NULL_VALUE>;
 	constexpr static T MAX_VALUE = NULL_VALUE - 1;
@@ -88,6 +88,8 @@ public:
 	[[nodiscard]] constexpr Derived operator--(int) { assert(exists()); assert(data != MIN_VALUE); T d = data; --data; return Derived::create(d); }
 	[[nodiscard]] constexpr bool operator==(const This& o) const { /*assert(exists()); assert(o.exists());*/ return o.data == data; }
 	[[nodiscard]] constexpr std::strong_ordering operator<=>(const StrongInteger<Derived, T, NULL_VALUE>& o) const { assert(exists()); assert(o.exists()); return data <=> o.data; }
+	template<arithmetic Other>
+	[[nodiscard]] constexpr std::strong_ordering operator<=>(const Other& o) const { assert(exists()); return data <=> o; }
 	[[nodiscard]] constexpr std::string toString() const { return std::to_string(data); }
 	[[nodiscard]] constexpr Derived operator+(const This& other) const { return (*this) + other.data; }
 	template<arithmetic Other>

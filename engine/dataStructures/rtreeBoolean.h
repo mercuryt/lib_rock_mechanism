@@ -4,9 +4,9 @@
 #include "../strongInteger.h"
 #include "../dataStructures/strongVector.h"
 
-class RTree
+class RTreeBoolean
 {
-	static constexpr uint nodeSize = 4;
+	static constexpr uint nodeSize = 32;
 	using IndexWidth = uint16_t;
 	class Index : public StrongInteger<Index, IndexWidth>
 	{
@@ -72,7 +72,7 @@ class RTree
 	// Sort m_nodes by hilbert order of center. The node in position 0 is the top level and never moves.
 	void sort();
 public:
-	RTree() { m_nodes.add(); m_nodes.back().setParent(Index::null()); }
+	RTreeBoolean() { m_nodes.add(); m_nodes.back().setParent(Index::null()); }
 	void maybeInsert(const Cuboid& cuboid);
 	void maybeRemove(const Cuboid& cuboid);
 	void maybeInsert(Cuboid&& cuboid) { const Cuboid copy = cuboid; maybeInsert(copy); }
@@ -103,9 +103,19 @@ public:
 			const auto offsetOfFirstChild = node.offsetOfFirstChild();
 			auto begin = interceptMask.begin();
 			auto end = begin + nodeSize;
-			for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-				if(*iter)
-					openList.insert(nodeChildren[iter - begin]);
+			if(offsetOfFirstChild == 0)
+			{
+				// Unrollable version for nodes where every slot is a child.
+				for(auto iter = begin; iter != end; ++iter)
+					if(*iter)
+						openList.insert(nodeDataAndChildIndices[iter - begin].child);
+			}
+			else
+			{
+				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+					if(*iter)
+						openList.insert(nodeChildren[iter - begin]);
+			}
 		}
 		return false;
 	}

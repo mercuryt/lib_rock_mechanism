@@ -45,7 +45,7 @@ public:
 	[[nodiscard]] uint size() const { return m_actors.size(); }
 	[[nodiscard]] bool empty() const { return m_actors.empty(); }
 	[[nodiscard]] bool contains(const ActorReference& actor, const Point3D& coordinates) const;
-	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indiciesWhichIntersectShape(const auto& queryShape) const;
+	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesWhichIntersectShape(const auto& queryShape) const;
 	[[nodiscard]] Point3D getPosition(const LocationBucketContentsIndex& index) const { return m_points[index.get()]; }
 	[[nodiscard]] VisionCuboidId getCuboidIndex(const LocationBucketContentsIndex& index) const { return VisionCuboidId::create(m_visionCuboidIndices[index.get()]); }
 	[[nodiscard]] DistanceInBlocks getVisionRangeSquared(const LocationBucketContentsIndex& index) const { return DistanceInBlocks::create(m_visionRangeSquared[index.get()]); }
