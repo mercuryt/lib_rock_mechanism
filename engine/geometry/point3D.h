@@ -70,7 +70,7 @@ struct Point3D
 	[[nodiscard]] Facing4 getFacingTwords(const Point3D& other) const;
 	[[nodiscard]] Facing8 getFacingTwordsIncludingDiagonal(const Point3D& other) const;
 	void log() const;
-	static Point3D create(int x, int y, int z);
+	static Point3D create(const DistanceInBlocksWidth& x, const DistanceInBlocksWidth& y, const DistanceInBlocksWidth& z);
 	static Point3D create(const Offset3D& offset);
 };
 inline void to_json(Json& data, const Point3D& point) { data = {point.x(), point.y(), point.z()}; }

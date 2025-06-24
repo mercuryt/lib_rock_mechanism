@@ -189,9 +189,9 @@ template<class Derived, class Index, class ReferenceIndex>
 ActorOrItemIndex Portables<Derived, Index, ReferenceIndex>::getActorOrItemIndex(const Index& index)
 {
 	if(m_isActors)
-		return ActorOrItemIndex::createForActor(ActorIndex::cast(index));
+		return ActorOrItemIndex::createForActor(ActorIndex::create(index.get()));
 	else
-		return ActorOrItemIndex::createForItem(ItemIndex::cast(index));
+		return ActorOrItemIndex::createForItem(ItemIndex::create(index.get()));
 }
 template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::followActor(const Index& index, const ActorIndex& actor)
@@ -255,9 +255,9 @@ template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::followPolymorphic(const Index& index, const ActorOrItemIndex& actorOrItem)
 {
 	if(actorOrItem.isActor())
-		followActor(index, ActorIndex::cast(actorOrItem.get()));
+		followActor(index, ActorIndex::create(actorOrItem.get().get()));
 	else
-		followItem(index, ItemIndex::cast(actorOrItem.get()));
+		followItem(index, ItemIndex::create(actorOrItem.get().get()));
 }
 template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::unfollowActor(const Index& index, const ActorIndex& actor)
@@ -494,7 +494,7 @@ ActorIndex Portables<Derived, Index, ReferenceIndex>::getLineLeader(const Index&
 			assert(pilot.exists());
 			return pilot;
 		}
-		return ActorIndex::cast(index);
+		return ActorIndex::create(index.get());
 	}
 	if(leader.isFollowing(getArea()))
 		assert(leader.getLeader(getArea()) != getActorOrItemIndex(index));

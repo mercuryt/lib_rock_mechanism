@@ -87,7 +87,7 @@ DeckRotationData DeckRotationData::recordAndClearDependentPositions(Area& area, 
 			ActorIndex actor = onDeck.getActor();
 			// TODO: this fetches the DeckId seperately for each actor but they are all the same.
 			DeckRotationDataSingle data{actors.canReserve_unreserveAndReturnBlocksAndCallbacksOnSameDeck(actor), actors.getLocation(actor), actors.getFacing(actor)};
-			output.m_actorsOrItems.insert(onDeck, data);
+			output.m_actorsOrItems.insert(onDeck, std::move(data));
 			actors.location_clear(actor);
 		}
 		else

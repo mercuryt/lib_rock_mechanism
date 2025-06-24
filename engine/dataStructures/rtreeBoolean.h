@@ -3,6 +3,7 @@
 #include "../geometry/cuboidArray.h"
 #include "../strongInteger.h"
 #include "../dataStructures/strongVector.h"
+#include "../dataStructures/smallMap.h"
 
 class RTreeBoolean
 {
@@ -11,14 +12,12 @@ class RTreeBoolean
 	class Index : public StrongInteger<Index, IndexWidth>
 	{
 	public:
-		Index() = default;
 		struct Hash { [[nodiscard]] size_t operator()(const Index& index) const { return index.get(); } };
 	};
 	using ArrayIndexWidth = uint8_t;
 	class ArrayIndex : public StrongInteger<ArrayIndex, ArrayIndexWidth>
 	{
 	public:
-		ArrayIndex() = default;
 		struct Hash { [[nodiscard]] size_t operator()(const ArrayIndex& index) const { return index.get(); } };
 	};
 	class Node
@@ -39,23 +38,27 @@ class RTreeBoolean
 		[[nodiscard]] int sortOrder() const { return m_cuboids.boundry().getCenter().hilbertNumber(); };
 		[[nodiscard]] ArrayIndex offsetFor(const Index& index) const;
 		[[nodiscard]] ArrayIndex offsetOfFirstChild() const { return m_childBegin; }
+		[[nodiscard]] bool empty() const { return unusedCapacity() == nodeSize; }
+		[[nodiscard]] uint getLeafVolume() const;
+		[[nodiscard]] uint getNodeVolume() const;
 		void updateChildIndex(const Index& oldIndex, const Index& newIndex);
 		void insertLeaf(const Cuboid& cuboid);
 		void insertBranch(const Cuboid& cuboid, const Index& index);
 		void eraseBranch(const ArrayIndex& offset);
 		void eraseLeaf(const ArrayIndex& offset);
 		void eraseByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
+		void eraseLeavesByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
 		void clear();
 		void setParent(const Index& index) { m_parent = index; }
-		void updateLeaf(const ArrayIndex offset, const Cuboid& cuboid);
-		void updateBranchBoundry(const ArrayIndex offset, const Cuboid& cuboid);
+		void updateLeaf(const ArrayIndex& offset, const Cuboid& cuboid);
+		void updateBranchBoundry(const ArrayIndex& offset, const Cuboid& cuboid);
 		[[nodiscard]] __attribute__((noinline)) std::string toString();
 	};
 	StrongVector<Node, Index> m_nodes;
 	SmallSet<Index> m_emptySlots;
 	SmallSet<Index> m_toComb;
-	[[nodiscard]] std::tuple<Cuboid, ArrayIndex, ArrayIndex> findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids);
-	[[nodiscard]] SmallSet<Cuboid> gatherLeavesRecursive(const Index& parent);
+	[[nodiscard]] std::tuple<Cuboid, ArrayIndex, ArrayIndex> findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids) const;
+	[[nodiscard]] SmallSet<Cuboid> gatherLeavesRecursive(const Index& parent) const;
 	void destroyWithChildren(const Index& index);
 	void tryToMergeLeaves(Node& parent);
 	void clearAllContained(Node& parent, const Cuboid& cuboid);
@@ -106,9 +109,9 @@ public:
 			if(offsetOfFirstChild == 0)
 			{
 				// Unrollable version for nodes where every slot is a child.
-				for(auto iter = begin; iter != end; ++iter)
+				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
 					if(*iter)
-						openList.insert(nodeDataAndChildIndices[iter - begin].child);
+						openList.insert(nodeChildren[iter - begin]);
 			}
 			else
 			{
@@ -119,6 +122,62 @@ public:
 		}
 		return false;
 	}
+	// Shapes should be an iterable collection supported by CuboidArray's intersection check.
+	// Returns a bitset with 1 set for each shape which intersects something.
+	[[nodiscard]] std::vector<bool> batchQuery(const auto& shapes) const
+	{
+		std::vector<bool> output;
+		output.resize(shapes.size());
+		SmallMap<Index, SmallSet<uint>> openList;
+		openList.insert(Index::create(0), {});
+		auto& rootNodeCandidateList = openList.back().second;
+		rootNodeCandidateList.resize(shapes.size());
+		std::ranges::iota(rootNodeCandidateList.getVector(), 0);
+		while(!openList.empty())
+		{
+			auto& [index, candidates] = openList.back();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& nodeChildren = node.getChildIndices();
+			const auto offsetOfFirstChild = node.offsetOfFirstChild();
+			for(const uint& shapeIndex : candidates)
+			{
+				if(output[shapeIndex])
+					// This shape has already intersected with a leaf, no need to check further.
+					continue;
+				const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shapes[shapeIndex]);
+				// Record a leaf intersection.
+				const auto leafCount = node.getLeafCount();
+				if(leafCount != 0 && interceptMask.head(leafCount).any())
+				{
+					output[shapeIndex] = true;
+					continue;
+				}
+				// Record all node intersections.
+				const auto childCount = node.getChildCount();
+				if(childCount == 0 || !interceptMask.tail(childCount).any())
+					continue;
+				auto begin = interceptMask.begin();
+				const auto end = begin + nodeSize;
+				if(offsetOfFirstChild == 0)
+				{
+					// Unrollable version for nodes where every slot is a child.
+					for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+						if(*iter)
+							openList.getOrCreate(nodeChildren[iter - begin]).insert(shapeIndex);
+				}
+				else
+				{
+					for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+						if(*iter)
+							openList.getOrCreate(nodeChildren[iter - begin]).insert(shapeIndex);
+				}
+			}
+			// Pop back at the end so we can use candidates as a reference and not have to make a move-copy.
+			openList.popBack();
+		}
+		return output;
+	}
 	// For test and debug.
 	[[nodiscard]] __attribute__((noinline)) uint nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
 	[[nodiscard]] __attribute__((noinline)) uint leafCount() const;
@@ -126,5 +185,8 @@ public:
 	[[nodiscard]] __attribute__((noinline)) const Cuboid getNodeCuboid(uint i, uint o) const;
 	[[nodiscard]] __attribute__((noinline)) const Index& getNodeChild(uint i, uint o) const;
 	[[nodiscard]] __attribute__((noinline)) bool queryPoint(uint x, uint y, uint z) const;
+	[[nodiscard]] __attribute__((noinline)) uint totalLeafVolume() const;
+	[[nodiscard]] __attribute__((noinline)) uint totalNodeVolume() const;
+	__attribute__((noinline)) void assertAllLeafsAreUnique() const;
 	[[nodiscard]] static __attribute__((noinline)) uint getNodeSize();
 };

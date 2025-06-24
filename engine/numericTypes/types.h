@@ -27,7 +27,6 @@ using StepWidth = uint64_t;
 class Step : public StrongInteger<Step, StepWidth>
 {
 public:
-	Step() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Step& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Step& index) { data = index.get(); }
@@ -37,7 +36,6 @@ using TemperatureWidth = uint32_t;
 class Temperature : public StrongInteger<Temperature, TemperatureWidth>
 {
 public:
-	Temperature() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Temperature& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Temperature& index) { data = index.get(); }
@@ -47,7 +45,6 @@ using TemperatureDeltaWidth = int32_t;
 class TemperatureDelta : public StrongInteger<TemperatureDelta, TemperatureDeltaWidth>
 {
 public:
-	TemperatureDelta() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const TemperatureDelta& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const TemperatureDelta& index) { data = index.get(); }
@@ -57,7 +54,6 @@ using QuantityWidth = uint16_t;
 class Quantity : public StrongInteger<Quantity, QuantityWidth>
 {
 public:
-	Quantity() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Quantity& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Quantity& index) { data = index.get(); }
@@ -68,7 +64,6 @@ using CollisionVolumeWidth = uint32_t;
 class CollisionVolume : public StrongInteger<CollisionVolume, CollisionVolumeWidth>
 {
 public:
-	CollisionVolume() = default;
 	// TODO: do we need this?
 	[[nodiscard]] FullDisplacement toVolume() const;
 	[[nodiscard]] CollisionVolume operator*(const Quantity& quantity) const { return CollisionVolume::create(data * quantity.get()); }
@@ -85,7 +80,6 @@ using VolumeWidth = uint32_t;
 class FullDisplacement : public StrongInteger<FullDisplacement, VolumeWidth>
 {
 public:
-	FullDisplacement() = default;
 	[[nodiscard]] FullDisplacement operator*(Quantity other) const;
 	[[nodiscard]] Mass operator*(Density density) const;
 	[[nodiscard]] FullDisplacement operator*(VolumeWidth other) const;
@@ -101,7 +95,6 @@ using MassWidth = uint32_t;
 class Mass : public StrongInteger<Mass, MassWidth>
 {
 public:
-	Mass() = default;
 	[[nodiscard]] Mass operator*(Quantity quantity) const;
 	[[nodiscard]] Mass operator*(MassWidth other) const;
 	[[nodiscard]] Mass operator*(float other) const;
@@ -115,7 +108,6 @@ inline void from_json(const Json& data, Mass& index) { index = Mass::create(data
 class Density : public StrongFloat<Density>
 {
 public:
-	Density() = default;
 	[[nodiscard]] Mass operator*(FullDisplacement volume) const;
 	[[nodiscard]] Density operator*(float other) const;
 	struct Hash { [[nodiscard]] size_t operator()(const Density& index) const { return index.get(); } };
@@ -128,7 +120,6 @@ using ForceWidth = uint32_t;
 class Force : public StrongInteger<Force, ForceWidth>
 {
 public:
-	Force() = default;
 	Speed operator/(const Mass& mass) const;
 	struct Hash { [[nodiscard]] size_t operator()(const Force& index) const { return index.get(); } };
 };
@@ -139,7 +130,6 @@ using KilometersWidth = uint32_t;
 class Kilometers : public StrongInteger<Kilometers, KilometersWidth>
 {
 public:
-	Kilometers() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Kilometers& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Kilometers& index) { data = index.get(); }
@@ -149,7 +139,6 @@ using MetersWidth = uint32_t;
 class Meters : public StrongInteger<Meters, MetersWidth>
 {
 public:
-	Meters() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Meters& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Meters& index) { data = index.get(); }
@@ -161,7 +150,6 @@ using DistanceInBlocksWidth = uint32_t;
 class DistanceInBlocks : public StrongInteger<DistanceInBlocks, DistanceInBlocksWidth>
 {
 public:
-	DistanceInBlocks() = default;
 	DistanceInBlocks operator+=(int32_t x) { data += x; return *this; }
 	[[nodiscard]] constexpr DistanceInBlocksFractional toFloat() const;
 	[[nodiscard]] constexpr DistanceInBlocks squared() const { return DistanceInBlocks::create(data * data); }
@@ -173,7 +161,6 @@ inline void from_json(const Json& data, DistanceInBlocks& index) { index = Dista
 class DistanceInBlocksFractional : public StrongFloat<DistanceInBlocksFractional>
 {
 public:
-	DistanceInBlocksFractional() = default;
 	DistanceInBlocksFractional operator+=(float x) { data += x; return *this; }
 	[[nodiscard]] DistanceInBlocks toInt() const { return DistanceInBlocks::create(std::round(data)); }
 	struct Hash { [[nodiscard]] size_t operator()(const DistanceInBlocksFractional& index) const { return index.get(); } };
@@ -186,7 +173,6 @@ using DistanceInBucketsWidth = uint32_t;
 class DistanceInBuckets : public StrongInteger<DistanceInBuckets, DistanceInBucketsWidth>
 {
 public:
-	DistanceInBuckets() = default;
 	DistanceInBuckets operator+=(int32_t x) { data += x; return *this; }
 	struct Hash { [[nodiscard]] size_t operator()(const DistanceInBuckets& index) const { return index.get(); } };
 };
@@ -197,7 +183,6 @@ using OffsetWidth = int32_t;
 class Offset : public StrongInteger<Offset, OffsetWidth>
 {
 public:
-	Offset() = default;
 	Offset operator+=(int32_t x) { data += x; return *this; }
 	struct Hash { [[nodiscard]] size_t operator()(const Offset& index) const { return index.get(); } };
 };
@@ -212,7 +197,6 @@ using SpeedWidth = uint32_t;
 class Speed : public StrongInteger<Speed, SpeedWidth>
 {
 public:
-	Speed() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Speed& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Speed& index) { data = index.get(); }
@@ -222,7 +206,6 @@ using MoveCostWidth = uint32_t;
 class MoveCost : public StrongInteger<MoveCost, MoveCostWidth>
 {
 public:
-	MoveCost() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const MoveCost& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const MoveCost& index) { data = index.get(); }
@@ -232,7 +215,6 @@ using QualityWidth = uint32_t;
 class Quality : public StrongInteger<Quality, QualityWidth>
 {
 public:
-	Quality() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Quality& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Quality& index) { data = index.get(); }
@@ -242,7 +224,6 @@ using PercentWidth = uint32_t;
 class Percent : public StrongInteger<Percent, PercentWidth>
 {
 public:
-	Percent() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Percent& index) const { return index.get(); } };
 	[[nodiscard]] float ratio() const { return (float)data /100.f; }
 };
@@ -253,7 +234,6 @@ using CombatScoreWidth = uint16_t;
 class CombatScore : public StrongInteger<CombatScore, CombatScoreWidth>
 {
 public:
-	CombatScore() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const CombatScore& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const CombatScore& index) { data = index.get(); }
@@ -263,7 +243,6 @@ using SkillLevelWidth = uint16_t;
 class SkillLevel : public StrongInteger<SkillLevel, SkillLevelWidth>
 {
 public:
-	SkillLevel() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const SkillLevel& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const SkillLevel& index) { data = index.get(); }
@@ -273,7 +252,6 @@ using SkillExperiencePointsWidth = uint16_t;
 class SkillExperiencePoints : public StrongInteger<SkillExperiencePoints, SkillExperiencePointsWidth>
 {
 public:
-	SkillExperiencePoints() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const SkillExperiencePoints& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const SkillExperiencePoints& index) { data = index.get(); }
@@ -283,7 +261,6 @@ using AttributeLevelWidth = uint16_t;
 class AttributeLevel : public StrongInteger<AttributeLevel, AttributeLevelWidth>
 {
 public:
-	AttributeLevel() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const AttributeLevel& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const AttributeLevel& index) { data = index.get(); }
@@ -293,7 +270,6 @@ using AttributeLevelBonusOrPenaltyWidth = uint16_t;
 class AttributeLevelBonusOrPenalty : public StrongInteger<AttributeLevelBonusOrPenalty, AttributeLevelBonusOrPenaltyWidth>
 {
 public:
-	AttributeLevelBonusOrPenalty() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const AttributeLevelBonusOrPenalty& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const AttributeLevelBonusOrPenalty& index) { data = index.get(); }
@@ -303,7 +279,6 @@ using PriorityWidth = uint16_t;
 class Priority : public StrongInteger<Priority, PriorityWidth>
 {
 public:
-	Priority() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Priority& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Priority& index) { data = index.get(); }
@@ -313,7 +288,6 @@ using StaminaWidth = uint16_t;
 class Stamina : public StrongInteger<Stamina, StaminaWidth>
 {
 public:
-	Stamina() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Stamina& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Stamina& index) { data = index.get(); }
@@ -323,7 +297,6 @@ using LongRangePathNodeIndexWidth = uint32_t;
 class LongRangePathNodeIndex : public StrongInteger<LongRangePathNodeIndex, LongRangePathNodeIndexWidth>
 {
 public:
-	LongRangePathNodeIndex() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const LongRangePathNodeIndex& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const LongRangePathNodeIndex& index) { data = index.get(); }
@@ -332,7 +305,6 @@ inline void from_json(const Json& data, LongRangePathNodeIndex& index) { index =
 class DeckId final : public StrongInteger<DeckId, uint16_t>
 {
 public:
-	DeckId() = default;
 	struct Hash { [[nodiscard]] size_t operator()(const Step& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const DeckId& index) { data = index.get(); }

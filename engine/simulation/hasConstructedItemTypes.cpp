@@ -28,7 +28,7 @@ ItemIndex SimulationHasConstructedItemTypes::createShip(Area& area, const BlockI
 	};
 	itemTypeParams.constructedShape = std::make_unique<ConstructedShape>(std::move(constructedShape));
 	ItemTypeId itemType = ItemType::create(itemTypeParams);
-	m_data.insert(itemType, itemTypeParams);
+	m_data.insert(itemType, std::move(itemTypeParams));
 	ItemParamaters itemParams{
 		.itemType=itemType,
 		.materialType=MaterialTypeId::null(),

@@ -183,7 +183,7 @@ SmallSet<OffsetAndVolume> Shape::getPositionsByZLevel(const ShapeId& id, const D
 {
 	SmallSet<OffsetAndVolume> output;
 	for(const OffsetAndVolume& offsetAndVolume : getPositions(id))
-		if(offsetAndVolume.offset.z() == zLevel)
+		if(zLevel == offsetAndVolume.offset.z())
 			output.insert(offsetAndVolume);
 	return output;
 }

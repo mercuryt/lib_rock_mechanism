@@ -6,6 +6,9 @@
 #include <algorithm>
 #include <cassert>
 
+class Cuboid;
+struct Point3D;
+
 class Random
 {
 	std::mt19937 rng;
@@ -20,6 +23,7 @@ public:
 	bool percentChance(Percent percent);
 	bool chance(double chance);
 	bool chance(float chance);
+	Point3D getInCuboid(const Cuboid& cuboid);
 	template<typename T>
 		T* getInVector(const std::vector<T*>& vector)
 		{
@@ -49,5 +53,4 @@ public:
 			}
 			return output;
 		}
-	uint32_t deterministicScramble(uint32_t seed);
 };

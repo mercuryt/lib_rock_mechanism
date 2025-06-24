@@ -235,7 +235,7 @@ void Point3D::log() const
 {
 	std::cout << toString() << std::endl;
 }
-Point3D Point3D::create(int x, int y, int z)
+Point3D Point3D::create(const DistanceInBlocksWidth& x, const DistanceInBlocksWidth& y, const DistanceInBlocksWidth& z)
 {
 	return Point3D(DistanceInBlocks::create(x), DistanceInBlocks::create(y), DistanceInBlocks::create(z));
 }

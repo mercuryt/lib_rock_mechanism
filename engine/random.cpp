@@ -1,4 +1,5 @@
 #include "random.h"
+#include "geometry/cuboid.h"
 int Random::getInRange(int lowest, int highest)
 {
 	assert(lowest <= highest);
@@ -64,9 +65,14 @@ bool Random::chance(float chance)
 	std::uniform_real_distribution<float> dist(0.0, 1.0);
 	return dist(rng) <= chance;
 }
-uint32_t Random::deterministicScramble(uint32_t seed)
+Point3D Random::getInCuboid(const Cuboid& cuboid)
 {
-	std::mt19937 rng(seed);
-	std::uniform_int_distribution<uint32_t> dist(0, UINT32_MAX);
-	return dist(rng);
+	std::uniform_int_distribution<DistanceInBlocksWidth> rangeX(cuboid.m_lowest.x().get(), cuboid.m_highest.x().get());
+	std::uniform_int_distribution<DistanceInBlocksWidth> rangeY(cuboid.m_lowest.y().get(), cuboid.m_highest.y().get());
+	std::uniform_int_distribution<DistanceInBlocksWidth> rangeZ(cuboid.m_lowest.z().get(), cuboid.m_highest.z().get());
+	return Point3D::create(
+		rangeX(rng),
+		rangeY(rng),
+		rangeZ(rng)
+	);
 }

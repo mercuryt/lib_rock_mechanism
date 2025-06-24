@@ -127,7 +127,7 @@ struct BlockIndexArraySIMD
 		output.resize(size);
 		for(const BlockIndexWidth& value : m_data)
 			if(value != BlockIndex::null().get())
-				output.insert(value);
+				output.insert(BlockIndex::create(value));
 		return output;
 	}
 	auto toArray() const -> std::array<BlockIndex, size>

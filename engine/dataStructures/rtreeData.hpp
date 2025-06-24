@@ -2,23 +2,38 @@
 template<typename T>
 RTreeData<T>::ArrayIndex RTreeData<T>::Node::offsetFor(const Index& index) const
 {
-	auto found = std::ranges::find(m_dataAndChildIndices.begin() + m_childBegin.get(), m_dataAndChildIndices.end(), index, &DataOrChild::child);
+	auto found = std::ranges::find_if(m_dataAndChildIndices.begin() + m_childBegin.get(), m_dataAndChildIndices.end(), [&](const DataOrChild& dataOrChild) { return dataOrChild.child == index.get(); });
 	assert(found != m_dataAndChildIndices.end());
 	return ArrayIndex::create(std::distance(m_dataAndChildIndices.begin(), found));
+}
+template<typename T>
+uint RTreeData<T>::Node::getLeafVolume() const
+{
+	uint output = 0;
+	for(auto i = ArrayIndex::create(0); i < m_leafEnd; ++i)
+		output += m_cuboids[i.get()].size();
+	return output;
+}
+template<typename T>
+uint RTreeData<T>::Node::getNodeVolume() const
+{
+	uint output = 0;
+	for(auto i = m_childBegin; i < nodeSize; ++i)
+		output += m_cuboids[i.get()].size();
+	return output;
 }
 template<typename T>
 void RTreeData<T>::Node::updateChildIndex(const Index& oldIndex, const Index& newIndex)
 {
 	ArrayIndex offset = offsetFor(oldIndex);
-	m_dataAndChildIndices[offset.get()].child = newIndex;
+	m_dataAndChildIndices[offset.get()].child = newIndex.get();
 }
 template<typename T>
 void RTreeData<T>::Node::insertLeaf(const Cuboid& cuboid, const T& value)
 {
 	assert(m_leafEnd != m_childBegin);
 	m_cuboids.insert(m_leafEnd.get(), cuboid);
-	assert(m_dataAndChildIndices[m_leafEnd.get()].data.empty());
-	m_dataAndChildIndices[m_leafEnd.get()].data = value;
+	m_dataAndChildIndices[m_leafEnd.get()].data = value.get();
 	++m_leafEnd;
 }
 template<typename T>
@@ -26,7 +41,7 @@ void RTreeData<T>::Node::insertBranch(const Cuboid& cuboid, const Index& index)
 {
 	assert(m_leafEnd != m_childBegin);
 	uint toInsertAt = m_childBegin.get() - 1;
-	m_dataAndChildIndices[toInsertAt].child = index;
+	m_dataAndChildIndices[toInsertAt].child = index.get();
 	m_cuboids.insert(toInsertAt, cuboid);
 	--m_childBegin;
 }
@@ -41,7 +56,7 @@ void RTreeData<T>::Node::eraseBranch(const ArrayIndex& offset)
 		m_dataAndChildIndices[offset.get()].child = m_dataAndChildIndices[m_childBegin.get()].child;
 	}
 	m_cuboids.erase(m_childBegin.get());
-	m_dataAndChildIndices[m_childBegin.get()].child.clear();
+	m_dataAndChildIndices[m_childBegin.get()].child = Index::null().get();
 	++m_childBegin;
 }
 template<typename T>
@@ -55,7 +70,7 @@ void RTreeData<T>::Node::eraseLeaf(const ArrayIndex& offset)
 		m_dataAndChildIndices[offset.get()].data = m_dataAndChildIndices[lastLeaf.get()].data;
 	}
 	m_cuboids.erase(lastLeaf.get());
-	m_dataAndChildIndices[lastLeaf.get()].data.clear();
+	m_dataAndChildIndices[lastLeaf.get()].data = T::null().get();
 	--m_leafEnd;
 }
 template<typename T>
@@ -68,16 +83,19 @@ void RTreeData<T>::Node::eraseByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>
 	clear();
 	for(ArrayIndex i = ArrayIndex::create(0); i < leafEnd; ++i)
 		if(!mask[i.get()])
-			insertLeaf(copyCuboids[i.get()], copyChildren[i.get()]);
+			insertLeaf(copyCuboids[i.get()], T::create(copyChildren[i.get()].data));
 	for(ArrayIndex i = childBegin; i < nodeSize; ++i)
 		if(!mask[i.get()])
-			insertBranch(copyCuboids[i.get()], copyChildren[i.get()]);
+			insertBranch(copyCuboids[i.get()], Index::create(copyChildren[i.get()].child));
 }
 template<typename T>
 void RTreeData<T>::Node::clear()
 {
 	m_cuboids.clear();
-	m_dataAndChildIndices.fill(Index::null());
+	for(ArrayIndex i = ArrayIndex::create(0); i < m_leafEnd; ++i)
+		m_dataAndChildIndices[i.get()].data = T::null().get();
+	for(ArrayIndex i = m_childBegin; i < nodeSize; ++i)
+		m_dataAndChildIndices[i.get()].child = Index::null().get();
 	m_leafEnd = ArrayIndex::create(0);
 	m_childBegin = ArrayIndex::create(nodeSize);
 }
@@ -86,7 +104,6 @@ void RTreeData<T>::Node::updateLeaf(const ArrayIndex offset, const Cuboid& cuboi
 {
 	assert(offset < m_leafEnd);
 	assert(!m_cuboids[offset.get()].empty());
-	assert(!m_dataAndChildIndices[offset.get()].data.empty());
 	m_cuboids.insert(offset.get(), cuboid);
 }
 template<typename T>
@@ -94,16 +111,14 @@ void RTreeData<T>::Node::updateLeafWithValue(const ArrayIndex offset, const Cubo
 {
 	assert(offset < m_leafEnd);
 	assert(!m_cuboids[offset.get()].empty());
-	assert(!m_dataAndChildIndices[offset.get()].data.empty());
 	m_cuboids.insert(offset.get(), cuboid);
-	m_dataAndChildIndices[offset.get()].data = value;
+	m_dataAndChildIndices[offset.get()].data = value.get();
 }
 template<typename T>
 void RTreeData<T>::Node::updateBranchBoundry(const ArrayIndex offset, const Cuboid& cuboid)
 {
 	assert(offset >= m_childBegin);
 	assert(!m_cuboids[offset.get()].empty());
-	assert(!m_dataAndChildIndices[offset.get()].child.empty());
 	m_cuboids.insert(offset.get(), cuboid);
 }
 template<typename T>
@@ -114,28 +129,28 @@ std::string RTreeData<T>::Node::toString()
 	{
 		output += "leaves: {";
 		for(ArrayIndex i = ArrayIndex::create(0); i < m_leafEnd; ++i)
-			output += "(" + m_cuboids[i.get()].toString()  + ":" + m_dataAndChildIndices[i.get()].data.toString() + "), ";
+			output += "(" + m_cuboids[i.get()].toString()  + ":" + std::to_string(m_dataAndChildIndices[i.get()].data) + "), ";
 		output += "}; ";
 	}
 	if(m_childBegin != nodeSize)
 	{
 		output += "children: {";
 		for(ArrayIndex i = m_childBegin; i < nodeSize; ++i)
-			output += "(" + m_cuboids[i.get()].toString() + ":" + m_dataAndChildIndices[i.get()].child.toString() + "), ";
+			output += "(" + m_cuboids[i.get()].toString() + ":" + std::to_string(m_dataAndChildIndices[i.get()].child) + "), ";
 		output += "}; ";
 	}
 	return output;
 }
 template<typename T>
-std::tuple<Cuboid, typename RTreeData<T>::ArrayIndex, typename RTreeData<T>::ArrayIndex> RTreeData<T>::findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids)
+std::tuple<Cuboid, typename RTreeData<T>::ArrayIndex, typename RTreeData<T>::ArrayIndex> RTreeData<T>::findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids) const
 {
 	// May be negitive because resulting cuboids may intersect.
 	int resultEmptySpace = INT32_MAX;
 	uint resultSize = UINT32_MAX;
 	std::tuple<Cuboid, ArrayIndex, ArrayIndex> output;
-	const auto endInner = cuboids.size();
+	const auto endInner = nodeSize + 1;
 	// Skip the final iteration of the outer loop, it would be redundant.
-	const auto endOuter = endInner - 1;
+	const auto endOuter = nodeSize;
 	for(ArrayIndex firstResultIndex = ArrayIndex::create(0); firstResultIndex < endOuter; ++firstResultIndex)
 	{
 		for(ArrayIndex secondResultIndex = firstResultIndex + 1; secondResultIndex < endInner; ++secondResultIndex)
@@ -147,6 +162,7 @@ std::tuple<Cuboid, typename RTreeData<T>::ArrayIndex, typename RTreeData<T>::Arr
 			const uint size = sum.size();
 			int emptySpace = size - (firstCuboid.size() + secondCuboid.size());
 			// If empty space is equal then prefer the smaller result.
+			// TODO: This may be counter productive.
 			if(resultEmptySpace > emptySpace || (resultEmptySpace == emptySpace && resultSize > size))
 			{
 				resultEmptySpace = emptySpace;
@@ -158,22 +174,22 @@ std::tuple<Cuboid, typename RTreeData<T>::ArrayIndex, typename RTreeData<T>::Arr
 	return output;
 }
 template<typename T>
-SmallMap<Cuboid, T> RTreeData<T>::gatherLeavesRecursive(const Index& parent)
+SmallMap<Cuboid, T> RTreeData<T>::gatherLeavesRecursive(const Index& parent) const
 {
 	SmallMap<Cuboid, T> output;
 	SmallSet<Index> openList;
 	openList.insert(parent);
 	while(!openList.empty())
 	{
-		Node& node = m_nodes[openList.back()];
+		const Node& node = m_nodes[openList.back()];
 		openList.popBack();
 		const auto endLeaf = node.getLeafCount();
 		const auto& nodeCuboids = node.getCuboids();
 		const auto& dataAndChildren = node.getDataAndChildIndices();
 		for(int i = 0; i != endLeaf; ++i)
-			output.insert(nodeCuboids[i], dataAndChildren[i].data);
+			output.insert(nodeCuboids[i], T::create(dataAndChildren[i].data));
 		for(ArrayIndex i = node.offsetOfFirstChild(); i != nodeSize; ++i)
-			openList.insert(dataAndChildren[i.get()].child);
+			openList.insert(Index::create(dataAndChildren[i.get()].child));
 	}
 	return output;
 }
@@ -187,12 +203,13 @@ void RTreeData<T>::destroyWithChildren(const Index& index)
 		Index index = openList.back();
 		m_emptySlots.insert(index);
 		Node& node = m_nodes[index];
+		const auto& dataAndChildren = node.getDataAndChildIndices();
 		openList.popBack();
 		for(auto i = node.offsetOfFirstChild(); i < nodeSize; ++i)
 		{
-			const auto& childIndex = node.getDataAndChildIndices()[i.get()].child;
-			if(childIndex.exists())
-				openList.insert(childIndex);
+			const auto& childIndex = Index::create(dataAndChildren[i.get()].child);
+			assert(childIndex.exists());
+			openList.insert(childIndex);
 		}
 	}
 }
@@ -202,9 +219,9 @@ void RTreeData<T>::tryToMergeLeaves(Node& parent)
 	// Iterate through leaves
 	ArrayIndex offset = ArrayIndex::create(0);
 	const auto& parentDataAndChildIndices = parent.getDataAndChildIndices();
+	const auto& parentCuboids = parent.getCuboids();
 	while(offset != parent.getLeafCount())
 	{
-		const auto& parentCuboids = parent.getCuboids();
 		const auto& mergeMask = parentCuboids.indicesOfMergeableCuboids(parentCuboids[offset.get()]);
 		if(!mergeMask.any())
 		{
@@ -243,7 +260,7 @@ void RTreeData<T>::clearAllContained(Node& parent, const Cuboid& cuboid)
 		return;
 	for(ArrayIndex i = parent.offsetOfFirstChild(); i < nodeSize; ++i)
 		if(containsMask[i.get()])
-			destroyWithChildren(parentDataAndChildIndices[i.get()].child);
+			destroyWithChildren(Index::create(parentDataAndChildIndices[i.get()].child));
 	parent.eraseByMask(containsMask);
 }
 template<typename T>
@@ -256,11 +273,11 @@ void RTreeData<T>::clearAllContainedWithValueRecursive(Node& parent, const Cuboi
 	if(!containsMask.any())
 		return;
 	for(ArrayIndex i = ArrayIndex::create(0); i < leafCount; ++i)
-		if(parentDataAndChildIndices[i.get()].data != value)
+		if(parentDataAndChildIndices[i.get()].data != value.get())
 			containsMask[i.get()] = false;
 	for(ArrayIndex i = parent.offsetOfFirstChild(); i < nodeSize; ++i)
 	{
-		const Index childIndex = parentDataAndChildIndices[i.get()].child;
+		const Index childIndex = Index::create(parentDataAndChildIndices[i.get()].child);
 		Node& child = m_nodes[childIndex];
 		clearAllContainedWithValueRecursive(child, cuboid, value);
 		m_toComb.maybeInsert(childIndex);
@@ -302,7 +319,7 @@ void RTreeData<T>::addToNodeRecursive(const Index& index, const Cuboid& cuboid, 
 					(mergedCuboid.size() == extended[firstArrayIndex.get()].size() + extended[secondArrayIndex.get()].size()) &&
 					(
 						// Can merge if second index is the newly added cuboid and first index has the same value.
-						(parentDataAndChildIndices[firstArrayIndex.get()].data == value && secondArrayIndexIsNewCuboid) ||
+						(parentDataAndChildIndices[firstArrayIndex.get()].data == value.get() && secondArrayIndexIsNewCuboid) ||
 						// Can merge if first and second array indices have the same value.
 						(!secondArrayIndexIsNewCuboid && parentDataAndChildIndices[firstArrayIndex.get()].data == parentDataAndChildIndices[secondArrayIndex.get()].data)
 					)
@@ -316,57 +333,73 @@ void RTreeData<T>::addToNodeRecursive(const Index& index, const Cuboid& cuboid, 
 				}
 				else
 				{
-					// create a new node to hold first and second. Invalidates parent so we create parent2.
+					const Index indexCopy = index;
+					// create a new node to hold first and second. Invalidates parent and index.
 					m_nodes.add();
-					Node& parent2 = m_nodes[index];
 					Node& newNode = m_nodes.back();
-					newNode.setParent(index);
+					newNode.setParent(indexCopy);
 					const Index newIndex = Index::create(m_nodes.size() - 1);
-					newNode.insertLeaf(extended[firstArrayIndex.get()], parentDataAndChildIndices[firstArrayIndex.get()].data);
-					const T& valueToInsertForSecondIndex = secondArrayIndexIsNewCuboid ? value : parentDataAndChildIndices[secondArrayIndex.get()].data;
+					newNode.insertLeaf(extended[firstArrayIndex.get()], T::create(parentDataAndChildIndices[firstArrayIndex.get()].data));
+					const T& valueToInsertForSecondIndex = secondArrayIndexIsNewCuboid ? value : T::create(parentDataAndChildIndices[secondArrayIndex.get()].data);
 					newNode.insertLeaf(extended[secondArrayIndex.get()], valueToInsertForSecondIndex);
-					parent2.eraseLeaf(firstArrayIndex);
-					parent2.eraseLeaf(secondArrayIndex);
-					parent2.insertBranch(mergedCuboid, newIndex);
+					Node& parent2 = m_nodes[indexCopy];
 					if(!secondArrayIndexIsNewCuboid)
 						// The newly inserted cuboid was not merged into newNode. Store it in parent.
-						parent2.insertLeaf(cuboid, value);
+						parent2.updateLeafWithValue(secondArrayIndex, cuboid, value);
+					parent2.eraseLeaf(firstArrayIndex);
+					parent2.insertBranch(mergedCuboid, newIndex);
 
 				}
 			}
 			else
 			{
-				// Merge leaf at first offset location with branch at second.
-				addToNodeRecursive(parentDataAndChildIndices[secondArrayIndex.get()].child, extended[firstArrayIndex.get()], parentDataAndChildIndices[firstArrayIndex.get()].data);
 				// Update the boundry for the branch.
 				parent.updateBranchBoundry(secondArrayIndex, mergedCuboid);
 				// Store the new cuboid in the now avalible first offset, overwriting the leaf which was merged.
 				parent.updateLeafWithValue(firstArrayIndex, cuboid, value);
+				// Merge leaf at first offset location with branch at second.
+				// Invalidates parent and array indices.
+				addToNodeRecursive(
+					Index::create(parentDataAndChildIndices[secondArrayIndex.get()].child),
+					extended[firstArrayIndex.get()],
+					T::create(parentDataAndChildIndices[firstArrayIndex.get()].data)
+				);
 			}
 		}
 		else
 		{
 			if(secondArrayIndex == nodeSize || secondArrayIndex < leafCount)
 			{
-				// Merge leaf at second offset with branch at first.
-				addToNodeRecursive(parentDataAndChildIndices[firstArrayIndex.get()].child, extended[secondArrayIndex.get()], parentDataAndChildIndices[secondArrayIndex.get()].data);
 				// Update the boundry for the branch.
 				parent.updateBranchBoundry(firstArrayIndex, mergedCuboid);
 				if(secondArrayIndex != nodeSize)
 					// The newly inserted cuboid was not merged. Store it in now avalible second offset, overwriting the leaf which was merged.
 					parent.updateLeafWithValue(secondArrayIndex, cuboid, value);
+				// Merge leaf at second offset with branch at first.
+				// Invalidates parent and array indices.
+				addToNodeRecursive(
+					Index::create(parentDataAndChildIndices[firstArrayIndex.get()].child),
+					extended[secondArrayIndex.get()],
+					T::create(parentDataAndChildIndices[secondArrayIndex.get()].data)
+				);
 			}
 			else
 			{
 				// Both first and second offsets are branches, merge second into first.
-				const Index firstIndex = parentDataAndChildIndices[firstArrayIndex.get()].child;
-				const Index secondIndex = parentDataAndChildIndices[secondArrayIndex.get()].child;
+				const Index firstIndex = Index::create(parentDataAndChildIndices[firstArrayIndex.get()].child);
+				const Index secondIndex = Index::create(parentDataAndChildIndices[secondArrayIndex.get()].child);
+				const Index indexCopy = index;
+				// Invalidates parent and index.
 				merge(firstIndex, secondIndex);
+				Node& parent2 = m_nodes[indexCopy];
 				// Update the boundry for the first branch.
-				parent.updateBranchBoundry(firstArrayIndex, mergedCuboid);
+				parent2.updateBranchBoundry(firstArrayIndex, mergedCuboid);
 				// Erase the second branch and insert the leaf.
-				parent.eraseBranch(secondArrayIndex);
-				parent.insertLeaf(cuboid, value);
+				parent2.eraseBranch(secondArrayIndex);
+				// Mark second branch node and all children for removal.
+				destroyWithChildren(secondIndex);
+				// Use now open slot to store new leaf.
+				parent2.insertLeaf(cuboid, value);
 			}
 		}
 	}
@@ -378,7 +411,6 @@ void RTreeData<T>::removeFromNode(const Index& index, const Cuboid& cuboid, Smal
 {
 	Node& parent = m_nodes[index];
 	const auto& parentCuboids = parent.getCuboids();
-	const auto& parentDataAndChildIndices = parent.getDataAndChildIndices();
 	auto interceptMask = parentCuboids.indicesOfIntersectingCuboids(cuboid);
 	// Fragment all intercepted leaves.
 	SmallSet<Cuboid> fragments;
@@ -392,16 +424,19 @@ void RTreeData<T>::removeFromNode(const Index& index, const Cuboid& cuboid, Smal
 		leafInterceptMask[i.get()] = 0;
 	// erase all intercepted leaves.
 	parent.eraseByMask(leafInterceptMask);
-	// insert fragments.
+	const Index index2 = index;
+	// insert fragments. Invalidates parent and cuboids, as well as index.
 	const auto end = fragments.end();
 	for(auto i = fragments.begin(); i < end; ++i)
 		addToNodeRecursive(index, *i);
+	Node& parent2 = m_nodes[index2];
+	const auto& parentDataAndChildIndices = parent2.getDataAndChildIndices();
 	// Erasing and adding leaves has not invalidated intercept mask for branches.
 	for(ArrayIndex i = parent.offsetOfFirstChild(); i < nodeSize; ++i)
 	{
 		if(interceptMask[i.get()])
 		{
-			const Index& childIndex = parentDataAndChildIndices[i.get()].child;
+			const Index& childIndex = Index::create(parentDataAndChildIndices[i.get()].child);
 			assert(childIndex.exists());
 			openList.insert(childIndex);
 		}
@@ -413,7 +448,6 @@ void RTreeData<T>::removeFromNodeWithValue(const Index& index, const Cuboid& cub
 {
 	Node& parent = m_nodes[index];
 	const auto& parentCuboids = parent.getCuboids();
-	const auto& parentDataAndChildIndices = parent.getDataAndChildIndices();
 	auto interceptMask = parentCuboids.indicesOfIntersectingCuboids(cuboid);
 	// Fragment all intercepted leaves.
 	SmallSet<Cuboid> fragments;
@@ -427,21 +461,25 @@ void RTreeData<T>::removeFromNodeWithValue(const Index& index, const Cuboid& cub
 		leafInterceptMask[i.get()] = 0;
 	const auto leafCount = parent.getLeafCount();
 	// Exclude leafs with different value.
+	const auto& parentDataAndChildIndices = parent.getDataAndChildIndices();
 	for(ArrayIndex i = ArrayIndex::create(0); i < leafCount; ++i)
-		if(parentDataAndChildIndices[i.get()].data != value)
+		if(parentDataAndChildIndices[i.get()].data != value.get())
 			leafInterceptMask[i.get()] = 0;
 	// erase all intercepted leaves.
 	parent.eraseByMask(leafInterceptMask);
-	// insert fragments.
+	const Index index2 = index;
+	// insert fragments. Invalidates parent and cuboids, as well as index.
 	const auto end = fragments.end();
 	for(auto i = fragments.begin(); i < end; ++i)
 		addToNodeRecursive(index, *i, value);
+	Node& parent2 = m_nodes[index2];
+	const auto& parentDataAndChildIndices2 = parent2.getDataAndChildIndices();
 	// Erasing and adding leaves has not invalidated intercept mask for branches.
-	for(ArrayIndex i = parent.offsetOfFirstChild(); i < nodeSize; ++i)
+	for(ArrayIndex i = parent2.offsetOfFirstChild(); i < nodeSize; ++i)
 	{
 		if(interceptMask[i.get()])
 		{
-			const Index& childIndex = parentDataAndChildIndices[i.get()].child;
+			const Index& childIndex = Index::create(parentDataAndChildIndices2[i.get()].child);
 			assert(childIndex.exists());
 			openList.insert(childIndex);
 		}
@@ -456,6 +494,7 @@ void RTreeData<T>::merge(const Index& destination, const Index& source)
 	for(const auto& [leaf, value] : leaves)
 		addToNodeRecursive(destination, leaf, value);
 }
+// This method is identical to the one in rTreeBoolean, other then calling a different tryToMergeLeaves
 template<typename T>
 void RTreeData<T>::comb()
 {
@@ -473,11 +512,11 @@ void RTreeData<T>::comb()
 			bool merged = false;
 			// plus one because we are removing one as well as adding.
 			uint capacity = node.unusedCapacity() + 1;
-			const auto& nodeChildIndices = node.getDataAndChildIndices();
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
 			for(ArrayIndex i = node.offsetOfFirstChild(); i < nodeSize; ++i)
 			{
 				// Take copy rather then reference because the original may be erased.
-				const Index childIndex = nodeChildIndices[i.get()];
+				const Index childIndex = Index::create(nodeDataAndChildIndices[i.get()].child);
 				Node& childNode = m_nodes[childIndex];
 				uint childSize = childNode.getChildCount() + childNode.getLeafCount();
 				if(childSize <= capacity)
@@ -508,6 +547,7 @@ void RTreeData<T>::comb()
 		}
 	}
 }
+// This method is identical to the one in rTreeBoolean.
 template<typename T>
 void RTreeData<T>::defragment()
 {
@@ -539,7 +579,7 @@ void RTreeData<T>::defragment()
 		const auto& newNodeChildren = newNode.getDataAndChildIndices();
 		for(auto i = newNode.offsetOfFirstChild(); i < nodeSize; ++i)
 		{
-			const Index& childIndex = newNodeChildren[i.get()];
+			const Index& childIndex = Index::create(newNodeChildren[i.get()].child);
 			if(childIndex.exists())
 			{
 				assert(m_nodes[childIndex].getParent() == last);
@@ -548,6 +588,7 @@ void RTreeData<T>::defragment()
 		}
 	}
 }
+// This method is identical to the one in rTreeBoolean.
 template<typename T>
 void RTreeData<T>::sort()
 {
@@ -580,7 +621,7 @@ void RTreeData<T>::sort()
 		const auto& newNodeChildren = newNode.getDataAndChildIndices();
 		for(ArrayIndex i = newNode.offsetOfFirstChild(); i < nodeSize; ++i)
 		{
-			const Index& childIndex = newNodeChildren[i.get()];
+			const Index& childIndex = Index::create(newNodeChildren[i.get()].child);
 			assert(sortedNodes[childIndex].getParent() == oldIndex);
 			sortedNodes[childIndex].setParent(newIndex);
 		}
@@ -613,9 +654,17 @@ void RTreeData<T>::maybeRemove(const Cuboid& cuboid, const T& value)
 	for(const Index& index : toUpdateBoundryMaybe)
 	{
 		Node& node = m_nodes[index];
-		Node& parent = m_nodes[node.getParent()];
+		const Index parentIndex = node.getParent();
+		Node& parent = m_nodes[parentIndex];
 		const ArrayIndex offset = parent.offsetFor(index);
-		parent.updateBranchBoundry(offset, node.getCuboids().boundry());
+		if(node.empty())
+		{
+			parent.eraseBranch(offset);
+			m_toComb.maybeInsert(parentIndex);
+			m_emptySlots.insert(index);
+		}
+		else
+			parent.updateBranchBoundry(offset, node.getCuboids().boundry());
 	}
 }
 template<typename T>
@@ -653,8 +702,28 @@ const RTreeData<T>::Node& RTreeData<T>::getNode(uint i) const { return m_nodes[I
 template<typename T>
 const Cuboid RTreeData<T>::getNodeCuboid(uint i, uint o) const { return m_nodes[Index::create(i)].getCuboids()[o]; }
 template<typename T>
-const RTreeData<T>::Index& RTreeData<T>::getNodeChild(uint i, uint o) const { return m_nodes[Index::create(i)].getDataAndChildIndices()[o].child; }
+const RTreeData<T>::Index& RTreeData<T>::getNodeChild(uint i, uint o) const { return Index::create(m_nodes[Index::create(i)].getDataAndChildIndices()[o].child); }
 template<typename T>
 bool RTreeData<T>::queryPoint(uint x, uint y, uint z) const { return queryAny(Point3D::create(x,y,z)); }
+template<typename T>
+uint RTreeData<T>::totalNodeVolume() const
+{
+	uint output = 0;
+	const auto end = m_nodes.size();
+	for(Index index = Index::create(0); index < end; ++index)
+		if(!m_emptySlots.contains(index))
+			output += m_nodes[index].getNodeVolume();
+	return output;
+}
+template<typename T>
+uint RTreeData<T>::totalLeafVolume() const
+{
+	uint output = 0;
+	const auto end = m_nodes.size();
+	for(Index index = Index::create(0); index < end; ++index)
+		if(!m_emptySlots.contains(index))
+			output += m_nodes[index].getLeafVolume();
+	return output;
+}
 template<typename T>
 uint RTreeData<T>::getNodeSize() { return nodeSize; }

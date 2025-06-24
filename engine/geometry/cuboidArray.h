@@ -27,37 +27,33 @@ public:
 	}
 	void erase(const uint16_t& index)
 	{
-		uint last = size() - 1;
-		if(index != last)
-			insert(index, (*this)[last]);
-		insert(index, {});
-		assert(last == (uint)size());
-	}
-	void eraseByMask(const BoolArray& mask)
-	{
-		auto copy = *this;
-		uint end = size();
-		clear();
-		for(uint i = 0; i < end; ++i)
-			if(!mask[i])
-				pushBack(copy[i]);
+		m_high.col(index) = DistanceInBlocks::null().get();
+		m_low.col(index) = DistanceInBlocks::null().get();
 	}
 	void clear()
 	{
 		m_high = DistanceInBlocks::null().get();
 		m_low = DistanceInBlocks::null().get();
 	}
-	void pushBack(const Cuboid& cuboid)
-	{
-		uint index = size();
-		insert(index, cuboid);
-	}
 	[[nodiscard]] const Cuboid operator[](const uint& index) const { return {Coordinates(m_high.col(index)), Coordinates(m_low.col(index)) }; }
-	[[nodiscard]] int size() const
+	[[nodiscard]] Cuboid boundry() const
 	{
-		return (m_high.row(0) != DistanceInBlocks::null().get()).template cast<uint8_t>().sum();
+		// Null cuboids need to be filtered from the max side of the boundry because we use a large number for null.
+		PointArray copyMax;
+		uint j = 0;
+		for(uint i = 0; i < capacity; ++i)
+		{
+			if(m_high(0, i) != DistanceInBlocks::null().get())
+			{
+				copyMax.col(j) = m_high.col(i);
+				++j;
+			}
+		}
+		return {
+			Point3D(copyMax.block(0,0,3,j).rowwise().maxCoeff()),
+			Point3D(m_low.rowwise().minCoeff())
+		};
 	}
-	[[nodiscard]] Cuboid boundry() const { return {Point3D(m_high.rowwise().maxCoeff()), Point3D(m_low.rowwise().minCoeff())}; }
 	[[nodiscard]] BoolArray indicesOfIntersectingCuboids(const Point3D& point) const
 	{
 		return (
@@ -254,5 +250,5 @@ public:
 		[[nodiscard]] std::strong_ordering operator<=>(const ConstIterator& other) { assert(&m_set == &other.m_set); return m_index <=> other.m_index; }
 	};
 	ConstIterator begin() const { return ConstIterator(*this, 0); }
-	ConstIterator end() const { return ConstIterator(*this, size()); }
+	ConstIterator end() const { return ConstIterator(*this, capacity); }
 };
