@@ -29,16 +29,7 @@ public:
 inline void to_json(Json& data, const BlockIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, BlockIndex& index) { index = BlockIndex::create(data.get<BlockIndexWidth>()); }
 
-using BlockIndexChunkedWidth = uint32_t;
-class BlockIndexChunked : public StrongInteger<BlockIndexChunked, BlockIndexChunkedWidth>
-{
-public:
-	struct Hash { [[nodiscard]] size_t operator()(const BlockIndexChunked& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const BlockIndexChunked& index) { data = index.get(); }
-inline void from_json(const Json& data, BlockIndexChunked& index) { index = BlockIndexChunked::create(data.get<BlockIndexChunkedWidth>()); }
 //TODO: this could be narrowed to uint16_t.
-
 using VisionFacadeIndexWidth = uint32_t;
 class VisionFacadeIndex : public StrongInteger<VisionFacadeIndex, VisionFacadeIndexWidth> { };
 inline void to_json(Json& data, const VisionFacadeIndex& index) { data = index.get(); }

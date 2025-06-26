@@ -29,4 +29,5 @@ struct ParamaterizedLine
 		sloap /= distance.get();
 		boundry = {begin.max(end), begin.min(end)};
 	}
+	ParamaterizedLine(const std::pair<Point3D, Point3D>& pair) : ParamaterizedLine(pair.first, pair.second) { }
 };

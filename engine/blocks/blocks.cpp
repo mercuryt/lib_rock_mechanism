@@ -85,6 +85,9 @@ void Blocks::load(const Json& data, DeserializationMemo& deserializationMemo)
 		auto& reservable = m_reservables[BlockIndex::create(std::stoi(key))] = std::make_unique<Reservable>(Quantity::create(1u));
 		deserializationMemo.m_reservables[value.get<uintptr_t>()] = reservable.get();
 	}
+	Cuboid cuboid = getAll();
+	for(const BlockIndex& block : cuboid.getView(*this))
+		m_area.m_opacityFacade.update(m_area, block);
 }
 std::vector<BlockIndex> Blocks::getAllIndices() const
 {
@@ -174,17 +177,6 @@ BlockIndex Blocks::getIndex_i(const uint& x, const uint& y, const uint& z) const
 BlockIndex Blocks::getIndex(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) const
 {
 	return getIndex({x,y,z});
-}
-static const Coordinates localSizeMultiples(1, 16, 16*16);
-BlockIndexChunked Blocks::getIndexChunked(const Point3D& coordinates) const
-{
-	auto copy = coordinates;
-	auto chunkOffsets = copy.data / 16u;
-	copy.data -= chunkOffsets * 16;
-	uint localComponent = (copy.data * localSizeMultiples).sum();
-	uint globalComponent = (chunkOffsets * m_pointToIndexConversionMultipliersChunked).sum();
-	globalComponent *= 16 * 16 * 16;
-	return BlockIndexChunked::create(localComponent + globalComponent);
 }
 Point3D Blocks::getCoordinates(const BlockIndex& index) const
 {
@@ -297,7 +289,8 @@ BlockIndex Blocks::getBlockBelow(const BlockIndex& index) const
 {
 	if(isEdge(index) && index < m_pointToIndexConversionMultipliers[2])
 		return BlockIndex::null();
-	return index + m_indexOffsetsForAdjacentDirect.m_indexData[(uint)Facing6::Below];
+	const int offset = m_indexOffsetsForAdjacentDirect.m_indexData[(uint)Facing6::Below];
+	return index + offset;
 }
 BlockIndex Blocks::getBlockAbove(const BlockIndex& index) const
 {
@@ -653,7 +646,7 @@ bool Blocks::isEdge(const BlockIndex& index) const
 }
 bool Blocks::hasLineOfSightTo(const BlockIndex& index, const BlockIndex& other) const
 {
-	return m_area.m_opacityFacade.hasLineOfSight(index, other);
+	return m_area.m_opacityFacade.hasLineOfSight(getCoordinates(index), getCoordinates(other));
 }
 SmallSet<BlockIndex> Blocks::collectAdjacentsInRange(const BlockIndex& index, const DistanceInBlocks& range)
 {

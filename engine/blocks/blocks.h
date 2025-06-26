@@ -34,6 +34,7 @@ struct FluidData
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(FluidData, type, volume);
 class Blocks
 {
+	// Shape data.
 	OffsetArraySIMD<26> m_indexOffsetsForAdjacentAll;
 	OffsetArraySIMD<24> m_indexOffsetsForAdjacentAllExceptDirectlyAboveAndBelow;
 	OffsetArraySIMD<20> m_indexOffsetsForAdjacentOnlyEdgesAndCorners;
@@ -43,6 +44,7 @@ class Blocks
 	OffsetArraySIMD<4> m_indexOffsetsForAdjacentEdgeSameZ;
 	OffsetArraySIMD<4> m_indexOffsetsForAdjacentDirectSameZ;
 	std::vector<OffsetSetSIMD> m_indexOffsetsForNthAdjacent;
+	// Block data.
 	SmallMap<BlockIndex, SmallMap<FactionId, FarmField*>> m_farmFields;
 	SmallMap<BlockIndex, SmallMap<FactionId, BlockIsPartOfStockPile>> m_stockPiles;
 	StrongVector<std::unique_ptr<Reservable>, BlockIndex> m_reservables;
@@ -105,9 +107,6 @@ public:
 	[[nodiscard]] BlockIndex getIndex(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) const;
 	// For testing and debug.
 	[[nodiscard]] __attribute__((noinline)) BlockIndex getIndex_i(const uint& x, const uint& y, const uint& z) const;
-	// Pass by value because it will be modified.
-	[[nodiscard]] BlockIndexChunked getIndexChunked(const Point3D& coordinates) const;
-	// Pass by value because it will be modified.
 	[[nodiscard]] Point3D getCoordinates(const BlockIndex& index) const;
 	[[nodiscard]] Point3DSet getCoordinateSet(const std::vector<BlockIndex>& index) const;
 	[[nodiscard]] Point3D_fractional getCoordinatesFractional(const BlockIndex& index) const;
@@ -158,6 +157,7 @@ public:
 	[[nodiscard]] bool isSupport(const BlockIndex& index) const;
 	[[nodiscard]] bool isExposedToSky(const BlockIndex& index) const;
 	[[nodiscard]] bool isEdge(const BlockIndex& index) const;
+	//TODO: remove this once we replace BlockIndex with Point3D.
 	[[nodiscard]] bool hasLineOfSightTo(const BlockIndex& index, const BlockIndex& other) const;
 	[[nodiscard]] BlockIndex getBlockBelow(const BlockIndex& index) const;
 	[[nodiscard]] BlockIndex getBlockAbove(const BlockIndex& index) const;

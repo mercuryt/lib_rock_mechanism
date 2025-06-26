@@ -1,74 +1,70 @@
 #include "opacityFacade.h"
-#include "lineOfSight.h"
 
 #include "../area/area.h"
 #include "../numericTypes/types.h"
 #include "../blocks/blocks.h"
+#include "../geometry/paramaterizedLine.h"
 
-OpacityFacade::OpacityFacade(Area& area) : m_area(area) { }
-void OpacityFacade::initalize()
+void OpacityFacade::update(const Area& area, const BlockIndex& index)
 {
-	Blocks& blocks = m_area.getBlocks();
-	assert(blocks.size() != 0);
-	uint size = blocks.getChunkedSize();
-	m_fullOpacity.resize(size);
-	m_floorOpacity.resize(size);
-	Cuboid cuboid = blocks.getAll();
-	for(const BlockIndex& block : cuboid.getView(blocks))
-		update(block);
+	const Blocks& blocks = area.getBlocks();
+	const Point3D point = blocks.getCoordinates(index);
+	if(blocks.canSeeThrough(index))
+		m_fullOpacity.maybeRemove(point);
+	else
+		m_fullOpacity.maybeInsert(point);
+	if(blocks.canSeeThroughFloor(index))
+		m_floorOpacity.maybeRemove(point);
+	else
+		m_floorOpacity.maybeInsert(point);
 }
-void OpacityFacade::update(const BlockIndex& index)
+void OpacityFacade::maybeInsertFull(const Cuboid& cuboid) { m_fullOpacity.maybeInsert(cuboid); }
+void OpacityFacade::maybeRemoveFull(const Cuboid& cuboid) { m_fullOpacity.maybeRemove(cuboid); }
+bool OpacityFacade::hasLineOfSight(const Point3D& fromCoords, const Point3D& toCoords) const
 {
-	Blocks& blocks = m_area.getBlocks();
-	assert(index < m_fullOpacity.size());
-	assert(m_floorOpacity.size() == m_fullOpacity.size());
-	const BlockIndexChunked chunkedIndex = blocks.getIndexChunked(blocks.getCoordinates(index));
-	m_fullOpacity.set(chunkedIndex, !blocks.canSeeThrough(index));
-	m_floorOpacity.set(chunkedIndex, !blocks.canSeeThroughFloor(index));
+	ParamaterizedLine line(fromCoords, toCoords);
+	if(m_fullOpacity.query(line))
+		return false;
+	if(fromCoords.z() != toCoords.z())
+		return !m_floorOpacity.query(line);
+	return true;
 }
-void OpacityFacade::validate() const
+std::vector<bool> OpacityFacade::hasLineOfSightBatched(const std::vector<std::pair<Point3D, Point3D>>& coords) const
 {
-	Blocks& blocks = m_area.getBlocks();
+	const std::vector<ParamaterizedLine> lines(coords.begin(), coords.end());
+	std::vector<bool> blocked = m_fullOpacity.batchQuery(lines);
+	std::vector<ParamaterizedLine> linesNotBlockedByFullOpacity;
+	SmallMap<uint, uint> offsetInLinesByOffsetInLinesNotBlocked;
+	const auto& begin = blocked.begin();
+	const auto& end = blocked.end();
+	for(auto iter = begin; iter != end; ++iter)
+		if(!*iter)
+		{
+			uint offset = std::distance(begin, iter);
+			linesNotBlockedByFullOpacity.push_back(lines[offset]);
+			offsetInLinesByOffsetInLinesNotBlocked.insert(linesNotBlockedByFullOpacity.size(), offset);
+		}
+	const std::vector<bool> blockedByFloor = m_floorOpacity.batchQuery(linesNotBlockedByFullOpacity);
+	const auto& begin2 = blockedByFloor.begin();
+	const auto& end2 = blockedByFloor.end();
+	for(auto iter = begin2; iter != end2; ++iter)
+		if(!*iter)
+		{
+			uint offset = std::distance(begin2, iter);
+			blocked[offsetInLinesByOffsetInLinesNotBlocked[offset]] = true;
+		}
+	// Return true for not blocked.
+	blocked.flip();
+	return blocked;
+}
+void OpacityFacade::validate(const Area& area) const
+{
+	const Blocks& blocks = area.getBlocks();
 	Cuboid cuboid = blocks.getAll();
 	for(const BlockIndex& block : cuboid.getView(blocks))
 	{
-		[[maybe_unused]] BlockIndexChunked chunkedIndex = blocks.getIndexChunked(blocks.getCoordinates(block));
-		assert(blocks.canSeeThrough(block) != m_fullOpacity[chunkedIndex]);
-		assert(blocks.canSeeThroughFloor(block) != m_floorOpacity[chunkedIndex]);
+		[[maybe_unused]] Point3D point = blocks.getCoordinates(block);
+		assert(blocks.canSeeThrough(block) != m_fullOpacity.query(point));
+		assert(blocks.canSeeThroughFloor(block) != m_floorOpacity.query(point));
 	}
-}
-bool OpacityFacade::isOpaque(const BlockIndexChunked& index) const
-{
-	assert(index < m_fullOpacity.size());
-	return m_fullOpacity[index];
-}
-bool OpacityFacade::floorIsOpaque(const BlockIndexChunked& index) const
-{
-	assert(index < m_fullOpacity.size());
-	assert(m_floorOpacity.size() == m_fullOpacity.size());
-	return m_floorOpacity[index];
-}
-bool OpacityFacade::hasLineOfSight(const BlockIndex& from, const BlockIndex& to) const
-{
-	if(from == to)
-		return true;
-	Point3D fromCoords = m_area.getBlocks().getCoordinates(from);
-	Point3D toCoords = m_area.getBlocks().getCoordinates(to);
-	return hasLineOfSight(fromCoords, toCoords);
-}
-bool OpacityFacade::hasLineOfSight(const Point3D& fromCoords, const Point3D& toCoords) const
-{
-	return lineOfSight(m_area, fromCoords, toCoords);
-}
-bool OpacityFacade::canSeeIntoFrom(const BlockIndexChunked& previousIndex, const BlockIndexChunked& currentIndex, const DistanceInBlocks& oldZ, const DistanceInBlocks& z) const
-{
-	assert(!isOpaque(previousIndex));
-	if(isOpaque(currentIndex))
-		return false;
-	if(oldZ == z)
-		return true;
-	if(oldZ > z)
-		return !floorIsOpaque(previousIndex);
-	else
-		return !floorIsOpaque(currentIndex);
 }

@@ -15,6 +15,6 @@ FullDisplacement FullDisplacement::createFromCollisionVolume(const CollisionVolu
 }
 FullDisplacement CollisionVolume::toVolume() const { return FullDisplacement::create(data * Config::unitsOfVolumePerUnitOfCollisionVolume); }
 Density Density::operator*(float other) const { return Density::create(other * data); }
-Mass Mass::operator*(uint32_t other) const { auto output = Mass::create(data * other); assert(output != 0); return output; }
+Mass Mass::operator*(uint32_t other) const { auto output = Mass::create(data * other); return output; }
 Mass Mass::operator*(float other) const { return Mass::create(data * other); }
 Density Mass::operator/(const FullDisplacement& displacement) const { return Density::create((float)data / (float)displacement.get()); }

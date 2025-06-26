@@ -179,7 +179,7 @@ TEST_CASE("json")
 		CHECK(blocks2.farm_get(blocks2.getIndex_i(1,6,1), faction2)->plantSpecies == sage);
 		CHECK(blocks2.farm_contains(blocks2.getIndex_i(1,7,1), faction2));
 		// OpacityFacade.
-		area2.m_opacityFacade.validate();
+		area2.m_opacityFacade.validate(area);
 	}
 	SUBCASE("dig project")
 	{

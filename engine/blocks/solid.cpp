@@ -30,7 +30,6 @@ void Blocks::solid_setShared(const BlockIndex& index, const MaterialTypeId& mate
 	m_constructed.set(index, constructed);
 	fluid_onBlockSetSolid(index);
 	m_visible.set(index);
-	m_area.m_opacityFacade.update(index);
 	// Blocks below are no longer exposed to sky.
 	const BlockIndex& below = getBlockBelow(index);
 	if(below.exists() && m_exposedToSky.check(below))
@@ -56,7 +55,6 @@ void Blocks::solid_setNotShared(const BlockIndex& index)
 	m_materialType[index].clear();
 	m_constructed.maybeUnset(index);
 	fluid_onBlockSetNotSolid(index);
-	m_area.m_opacityFacade.update(index);
 	//TODO: Check if any adjacent are visible first?
 	m_visible.set(index);
 	setBelowVisible(index);
@@ -78,7 +76,10 @@ void Blocks::solid_set(const BlockIndex& index, const MaterialTypeId& materialTy
 	solid_setShared(index, materialType, constructed);
 	// Opacity.
 	if(!MaterialType::getTransparent(materialType) && wasEmpty)
+	{
 		m_area.m_visionCuboids.blockIsOpaque(index);
+		m_area.m_opacityFacade.update(m_area, index);
+	}
 }
 void Blocks::solid_setNot(const BlockIndex& index)
 {
@@ -86,7 +87,10 @@ void Blocks::solid_setNot(const BlockIndex& index)
 	solid_setNotShared(index);
 	// Vision cuboid.
 	if(!wasTransparent)
+	{
 		m_area.m_visionCuboids.blockIsTransparent(index);
+		m_area.m_opacityFacade.update(m_area, index);
+	}
 	// Gravity.
 	const BlockIndex& above = getBlockAbove(index);
 	if(above.exists() && shape_anythingCanEnterEver(above))
@@ -98,7 +102,10 @@ void Blocks::solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& materia
 		solid_setShared(index, materialType, constructed);
 	// Vision cuboid.
 	if(!MaterialType::getTransparent(materialType))
+	{
 		m_area.m_visionCuboids.cuboidIsOpaque(cuboid);
+		m_area.m_opacityFacade.maybeInsertFull(cuboid);
+	}
 }
 void Blocks::solid_setNotCuboid(const Cuboid& cuboid)
 {
@@ -106,6 +113,7 @@ void Blocks::solid_setNotCuboid(const Cuboid& cuboid)
 		solid_setNotShared(index);
 	// Vision cuboid.
 	m_area.m_visionCuboids.cuboidIsTransparent(cuboid);
+	m_area.m_opacityFacade.maybeRemoveFull(cuboid);
 	// Gravity.
 	const BlockIndex& aboveHighest = getBlockAbove(getIndex(cuboid.m_highest));
 	if(aboveHighest.exists())
@@ -162,7 +170,7 @@ void Blocks::solid_setDynamic(const BlockIndex& index, const MaterialTypeId& mat
 	m_constructed.set(index, constructed);
 	if(!MaterialType::getTransparent(materialType))
 	{
-		m_area.m_opacityFacade.update(index);
+		m_area.m_opacityFacade.update(m_area, index);
 		// TODO: add a multiple blocks at a time version which does this update more efficiently.
 		m_area.m_visionCuboids.blockIsOpaque(index);
 		// Opacity.
@@ -180,7 +188,7 @@ void Blocks::solid_setNotDynamic(const BlockIndex& index)
 	m_constructed.maybeUnset(index);
 	if(!wasTransparent)
 	{
-		m_area.m_opacityFacade.update(index);
+		m_area.m_opacityFacade.update(m_area, index);
 		// TODO: add a multiple blocks at a time version which does this update more efficiently.
 		m_area.m_visionCuboids.blockIsTransparent(index);
 	}

@@ -25,7 +25,7 @@ void Blocks::blockFeature_remove(const BlockIndex& block, const BlockFeatureType
 	const bool wasOpaque = blockFeature_isOpaque(block);
 	const bool floorWasOpaque = blockFeature_floorIsOpaque(block);
 	m_features[block].remove(blockFeatureType);
-	m_area.m_opacityFacade.update(block);
+	m_area.m_opacityFacade.update(m_area, block);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 	if(!transmitedTemperaturePreviously && temperature_transmits(block))
@@ -42,7 +42,7 @@ void Blocks::blockFeature_removeAll(const BlockIndex& block)
 	const bool wasOpaque = blockFeature_isOpaque(block);
 	const bool floorWasOpaque = blockFeature_floorIsOpaque(block);
 	m_features[block].clear();
-	m_area.m_opacityFacade.update(block);
+	m_area.m_opacityFacade.update(m_area, block);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 	if(!transmitedTemperaturePreviously && temperature_transmits(block))
@@ -77,7 +77,7 @@ void Blocks::blockFeature_construct(const BlockIndex& block, const BlockFeatureT
 		m_area.m_visionCuboids.blockIsOpaque(block);
 		m_exposedToSky.unset(m_area, block);
 	}
-	m_area.m_opacityFacade.update(block);
+	m_area.m_opacityFacade.update(m_area, block);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
 	if(transmitedTemperaturePreviously && !temperature_transmits(block))
 		m_area.m_exteriorPortals.onBlockCanNotTransmitTemperature(m_area, block);
@@ -95,7 +95,7 @@ void Blocks::blockFeature_hew(const BlockIndex& block, const BlockFeatureTypeId&
 	for(const ActorIndex& actor : actorsCopy)
 		m_area.getActors().tryToMoveSoAsNotOccuping(actor, above);
 	solid_setNot(block);
-	m_area.m_opacityFacade.update(block);
+	m_area.m_opacityFacade.update(m_area, block);
 	if(!BlockFeatureType::byId(blockFeatureType).blockIsOpaque && !materialTypeIsTransparent)
 		// Neighter floor nor hatch can be hewn so we don't need to check if this is block opaque or floor opaque.
 		m_area.m_visionCuboids.blockIsOpaque(block);
@@ -117,7 +117,7 @@ void Blocks::blockFeature_setAll(const BlockIndex& index, BlockFeatureSet& featu
 	// Unused.
 	assert(m_features[index].empty());
 	m_features[index] = features;
-	m_area.m_opacityFacade.update(index);
+	m_area.m_opacityFacade.update(m_area, index);
 	m_area.m_hasTerrainFacades.updateBlockAndAdjacent(index);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(index);
 	if(blockFeature_isOpaque(index))
@@ -129,7 +129,7 @@ void Blocks::blockFeature_setAllMoveDynamic(const BlockIndex& index, BlockFeatur
 {
 	assert(m_features[index].empty());
 	auto& movedFeatures = m_features[index] = std::move(features);
-	m_area.m_opacityFacade.update(index);
+	m_area.m_opacityFacade.update(m_area, index);
 	if(movedFeatures.isOpaque())
 		m_area.m_visionCuboids.blockIsOpaque(index);
 	else if(movedFeatures.floorIsOpaque())
@@ -159,7 +159,7 @@ void Blocks::blockFeature_close(const BlockIndex& block, const BlockFeatureTypeI
 	BlockFeature& blockFeature = *blockFeature_at(block, blockFeatueType);
 	assert(!blockFeature.closed);
 	blockFeature.closed = true;
-	m_area.m_opacityFacade.update(block);
+	m_area.m_opacityFacade.update(m_area, block);
 	m_area.m_exteriorPortals.onBlockCanNotTransmitTemperature(m_area, block);
 	if(!MaterialType::getTransparent(blockFeature.materialType))
 	{
@@ -175,7 +175,7 @@ void Blocks::blockFeature_open(const BlockIndex& block, const BlockFeatureTypeId
 	assert(blockFeature_contains(block, blockFeatueType));
 	BlockFeature& blockFeature = *blockFeature_at(block, blockFeatueType);
 	blockFeature.closed = false;
-	m_area.m_opacityFacade.update(block);
+	m_area.m_opacityFacade.update(m_area, block);
 	m_area.m_exteriorPortals.onBlockCanTransmitTemperature(m_area, block);
 	if(!MaterialType::getTransparent(blockFeature.materialType))
 	{

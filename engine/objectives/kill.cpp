@@ -7,17 +7,6 @@
 #include "blocks/blocks.h"
 #include "reference.h"
 #include <memory>
-/*
-KillInputAction::KillInputAction(SmallSet<ActorIndex> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, const ActorIndex& killer, const ActorIndex& target) : InputAction(actors, emplacementType, inputQueue), m_killer(killer), m_target(target)
-{
-       	m_onDestroySubscriptions.subscribe(m_target.m_onDestroy);
-}
-void KillInputAction::execute()
-{
-	std::unique_ptr<Objective> objective = std::make_unique<KillObjective>(m_killer, m_target);
-	insertObjective(std::move(objective), m_killer);
-}
-*/
 KillObjective::KillObjective(ActorReference t) : Objective(Config::killPriority), m_target(t) { }
 KillObjective::KillObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
 	Objective(data, deserializationMemo),
@@ -35,10 +24,11 @@ void KillObjective::execute(Area& area, const ActorIndex& actor)
 	actors.combat_setTarget(actor, target);
 	// If not in range create GetIntoRangeThreadedTask.
 	Blocks& blocks = area.getBlocks();
-	if(!actors.move_hasPathRequest(actor) &&
+	if(
+		!actors.move_hasPathRequest(actor) &&
 			(blocks.distanceFractional(actors.getLocation(actor), actors.getLocation(target)) > actors.combat_getMaxRange(actor) ||
-			 // TODO: hasLineOfSightIncludingActors
-			 area.m_opacityFacade.hasLineOfSight(actors.getLocation(actor), actors.getLocation(target)))
+			// TODO: hasLineOfSightIncludingActors
+			!area.m_opacityFacade.hasLineOfSight(blocks.getCoordinates(actors.getLocation(actor)), blocks.getCoordinates(actors.getLocation(target))))
 	)
 		actors.combat_getIntoRangeAndLineOfSightOfActor(actor, target, actors.combat_getMaxRange(actor));
 	else

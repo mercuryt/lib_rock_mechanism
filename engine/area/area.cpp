@@ -55,7 +55,6 @@ Area::Area(AreaId id, std::string n, Simulation& s, const DistanceInBlocks& x, c
 	m_blockDesignations(*this),
 	m_octTree(Cuboid(Point3D{x, y, z}, Point3D::create(0,0,0))),
 	m_visionRequests(*this),
-	m_opacityFacade(*this),
 	m_visionCuboids(*this),
 	m_decks(*this),
 	m_name(n),
@@ -64,7 +63,6 @@ Area::Area(AreaId id, std::string n, Simulation& s, const DistanceInBlocks& x, c
 {
 	m_exteriorPortals.initalize(*this);
 	setup();
-	m_opacityFacade.initalize();
 	m_visionCuboids.initalize();
 	m_hasRain.scheduleRestart();
 	m_hasEvaporation.schedule(*this);
@@ -100,7 +98,6 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_blockDesignations(*this),
 	m_octTree(Cuboid(Point3D{data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>()}, Point3D::create(0,0,0))),
 	m_visionRequests(*this),
-	m_opacityFacade(*this),
 	m_visionCuboids(*this),
 	m_decks(*this),
 	m_name(data["name"].get<std::string>()),
@@ -111,7 +108,6 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_simulation.m_hasAreas->recordId(*this);
 	setup();
 	getBlocks().load(data["blocks"], deserializationMemo);
-	m_opacityFacade.initalize();
 	m_visionCuboids.initalize();
 	m_hasFluidGroups.clearMergedFluidGroups();
 	data["visionCuboids"].get_to(m_visionCuboids);
@@ -195,7 +191,7 @@ Json Area::toJson() const
 	data["exteriorPortals"] = m_exteriorPortals;
 	for(BlockIndex block : m_caveInCheck)
 		data["caveInCheck"].push_back(block);
-	m_opacityFacade.validate();
+	m_opacityFacade.validate(*this);
 	return data;
 }
 void Area::setup()

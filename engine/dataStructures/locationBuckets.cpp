@@ -1,8 +1,8 @@
 #include "locationBuckets.h"
 #include "config.h"
 #include "geometry/sphere.h"
-#include "vision/lineOfSight.h"
 #include "area/area.h"
+#include "blocks/blocks.h"
 #include <algorithm>
 void sort()
 {
@@ -107,7 +107,7 @@ LocationBucket::visionRequestQuery(const Area& area, const Point3D& position, co
 				sphere.center == m_points[index] ||
 				(
 					visionCuboids.contains(m_visionCuboidIndices[index]) &&
-					lineOfSight(area, sphere.center, m_points[index])
+					area.m_opacityFacade.hasLineOfSight(sphere.center, m_points[index])
 				)
 			)
 				output.col(index) = canSeeAndCanBeSeenBy.col(index);
@@ -156,7 +156,7 @@ LocationBucket::anyCanBeSeenQuery(const Area& area, const Cuboid& cuboid, const 
 			bool lineOfSightFound = false;
 			for(uint j = 0; j < points.size(); ++j)
 				// We need to check for equality here but not in visionRequestQuery because we aren't using vision cuboids here.
-				if(m_points[i] == points[j] || lineOfSight(area, m_points[i], points[j]))
+				if(m_points[i] == points[j] || area.m_opacityFacade.hasLineOfSight(m_points[i], points[j]))
 				{
 					lineOfSightFound = true;
 					break;

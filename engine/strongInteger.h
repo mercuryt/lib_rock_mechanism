@@ -3,7 +3,8 @@
 #include <compare>
 #include <limits>
 #include <concepts>
-
+template <typename T>
+concept Numeric = std::integral<T> || std::floating_point<T>;
 class Simulation;
 template <class Derived, typename T, T NULL_VALUE = std::numeric_limits<T>::max(), T MIN_VALUE = std::numeric_limits<T>::min()>
 class StrongInteger
@@ -21,7 +22,8 @@ public:
 	constexpr void clear() { data = NULL_VALUE; }
 	constexpr Derived& operator+=(const This& other) { return (*this) += other.data; }
 	constexpr Derived& operator-=(const This& other) { return (*this) -= other.data; }
-	constexpr Derived& operator+=(const T& other)
+	template<Numeric Other>
+	constexpr Derived& operator+=(const Other& other)
 	{
 		assert(exists());
 		if(other < 0)
@@ -31,7 +33,8 @@ public:
 		data += other;
 		return static_cast<Derived&>(*this);
 	}
-	constexpr Derived& operator-=(const T& other)
+	template<Numeric Other>
+	constexpr Derived& operator-=(const Other& other)
 	{
 		assert(exists());
 		if(other < 0)
@@ -43,7 +46,8 @@ public:
 	}
 	constexpr Derived& operator++() { assert(exists()); assert(data != NULL_VALUE - 1); ++data; return static_cast<Derived&>(*this); }
 	constexpr Derived& operator--() { assert(exists()); assert(data != MIN_VALUE); --data; return static_cast<Derived&>(*this); }
-	constexpr Derived& operator*=(const T& other)
+	template<Numeric Other>
+	constexpr Derived& operator*=(const Other& other)
 	{
 		assert(exists());
 		if((other > 0 && data > 0) || (other < 0 && data < 0) )
@@ -61,7 +65,8 @@ public:
 		return static_cast<Derived&>(*this);
 	}
 	constexpr Derived& operator*=(const This& other) { return (*this) *= other.data; }
-	constexpr Derived& operator/=(const T& other) { assert(other != 0); assert(exists()); data /= other; return static_cast<Derived&>(*this); }
+	template<Numeric Other>
+	constexpr Derived& operator/=(const Other& other) { assert(other != 0); assert(exists()); data /= other; return static_cast<Derived&>(*this); }
 	constexpr Derived& operator/=(const This& other) { assert(other.exists()); assert(other != 0); (*this) /= other.data; }
 	[[nodiscard]] constexpr Derived operator-() const { assert(exists()); return Derived::create(-data); }
 	[[nodiscard]] constexpr T get() const { return data; }
@@ -76,24 +81,29 @@ public:
 	[[nodiscard]] constexpr bool modulusIsZero(const This& other) const { assert(exists()); return data % other.data == 0;  }
 	[[nodiscard]] constexpr Derived operator++(int) { assert(exists()); assert(data != NULL_VALUE); T d = data; ++data; return Derived::create(d); }
 	[[nodiscard]] constexpr Derived operator--(int) { assert(exists()); assert(data != MIN_VALUE); T d = data; --data; return Derived::create(d); }
-	[[nodiscard]] constexpr bool operator==(const This& other) const { /*assert(exists()); assert(o.exists());*/ return other.data == data; }
-	[[nodiscard]] constexpr bool operator!=(const This& other) const { /*assert(exists()); assert(o.exists());*/ return other.data != data; }
-	[[nodiscard]] constexpr bool operator==(const T& other) const { return other == data; }
-	[[nodiscard]] constexpr bool operator!=(const T& other) const { return other != data; }
-	[[nodiscard]] constexpr std::strong_ordering operator<=>(const StrongInteger<Derived, T, NULL_VALUE>& o) const { assert(exists()); assert(o.exists()); return data <=> o.data; }
-	[[nodiscard]] constexpr std::strong_ordering operator<=>(const T& o) const { assert(exists()); return data <=> o; }
+	[[nodiscard]] constexpr bool operator==(const This& other) const { return other.data == data; }
+	[[nodiscard]] constexpr bool operator!=(const This& other) const { return other.data != data; }
+	template<Numeric Other>
+	[[nodiscard]] constexpr bool operator==(const Other& other) const { return (T)other == data; }
+	template<Numeric Other>
+	[[nodiscard]] constexpr bool operator!=(const Other& other) const { return (T)other != data; }
+	[[nodiscard]] constexpr std::strong_ordering operator<=>(const This& o) const { assert(exists()); assert(o.exists()); return data <=> o.data; }
+	template<Numeric Other>
+	[[nodiscard]] constexpr std::strong_ordering operator<=>(const Other& other) const { return data <=> (T)other; }
 	[[nodiscard]] constexpr std::string toString() const { return std::to_string(data); }
 	[[nodiscard]] constexpr Derived operator+(const This& other) const { return (*this) + other.data; }
-	[[nodiscard]] constexpr Derived operator+(const T& other) const {
+	template<Numeric Other>
+	[[nodiscard]] constexpr Derived operator+(const Other& other) const {
 		assert(exists());
 		if(other < 0)
-			assert(MIN_VALUE + other >= data);
+			assert(MIN_VALUE - other <= data);
 		else
 			assert(MAX_VALUE - other >= data);
 		return Derived::create(data + other);
 	}
 	[[nodiscard]] constexpr Derived operator-(const This& other) const { return (*this) - other.data; }
-	[[nodiscard]] constexpr Derived operator-(const T& other) const {
+	template<Numeric Other>
+	[[nodiscard]] constexpr Derived operator-(const Other& other) const {
 		assert(exists());
 		if(other < 0)
 			assert(MAX_VALUE + other >= data);
@@ -102,7 +112,8 @@ public:
 		return Derived::create(data - other);
 	}
 	[[nodiscard]] constexpr Derived operator*(const This& other) const { return (*this) * other.data; }
-	[[nodiscard]] constexpr Derived operator*(const T& other) const {
+	template<Numeric Other>
+	[[nodiscard]] constexpr Derived operator*(const Other& other) const {
 		assert(exists());
 		bool skipValidation = false;
 		if constexpr (std::signed_integral<T>)
@@ -141,10 +152,13 @@ public:
 	}
 	[[nodiscard]] constexpr Derived operator/(const This& other) const { return (*this) / other.data; }
 	[[nodiscard]] constexpr Derived operator%(const This& other) const { return (*this) % other.data; }
-	[[nodiscard]] constexpr Derived operator/(const T& other) const { assert(exists()); return Derived::create(data / other); }
-	[[nodiscard]] constexpr Derived operator%(const T& other) const { assert(exists()); return Derived::create(data % other); }
+	template<Numeric Other>
+	[[nodiscard]] constexpr Derived operator/(const Other& other) const { assert(exists()); return Derived::create(data / other); }
+	template<Numeric Other>
+	[[nodiscard]] constexpr Derived operator%(const Other& other) const { assert(exists()); return Derived::create(data % other); }
 	[[nodiscard]] constexpr Derived subtractWithMinimum(const This& other) const { assert(other.exists()); return subtractWithMinimum(other.data); }
-	[[nodiscard]] constexpr Derived subtractWithMinimum(const T& other) const
+	template<Numeric Other>
+	[[nodiscard]] constexpr Derived subtractWithMinimum(const Other& other) const
 	{
 		assert(exists());
 		int result = (int)data - (int)other;

@@ -1,25 +1,24 @@
 #pragma once
 
-#include "dataStructures/strongVector.h"
-#include "numericTypes/index.h"
-#include "numericTypes/types.h"
-#include "vision/visionCuboid.h"
+#include "visionCuboid.h"
+#include "../numericTypes/index.h"
+#include "../numericTypes/types.h"
+#include "../dataStructures/rtreeBoolean.h"
+#include "../dataStructures/rtreeBooleanLowZOnly.h"
 
 class Area;
 
 class OpacityFacade final
 {
-	Area& m_area;
-	StrongBitSet<BlockIndexChunked> m_fullOpacity;
-	StrongBitSet<BlockIndexChunked> m_floorOpacity;
+	RTreeBoolean m_fullOpacity;
+	RTreeBooleanLowZOnly m_floorOpacity;
 public:
-	OpacityFacade(Area& area);
-	void initalize();
-	void update(const BlockIndex& block);
-	void validate() const;
-	[[nodiscard]] bool isOpaque(const BlockIndexChunked& index) const;
-	[[nodiscard]] bool floorIsOpaque(const BlockIndexChunked& index) const;
-	[[nodiscard]] bool hasLineOfSight(const BlockIndex& from, const BlockIndex& to) const;
+	void update(const Area& area, const BlockIndex& block);
+	void maybeInsertFull(const Cuboid& cuboid);
+	void maybeRemoveFull(const Cuboid& cuboid);
+	void maybeInsertFull(const Point3D& point) { maybeInsertFull({point, point}); }
+	void maybeRemoveFull(const Point3D& point) { maybeRemoveFull({point, point}); }
 	[[nodiscard]] bool hasLineOfSight(const Point3D& fromCoords, const Point3D& toCoords) const;
-	[[nodiscard]] bool canSeeIntoFrom(const BlockIndexChunked& previousIndex, const BlockIndexChunked& currentIndex, const DistanceInBlocks& oldZ, const DistanceInBlocks& z) const;
+	[[nodiscard]] std::vector<bool> hasLineOfSightBatched(const std::vector<std::pair<Point3D, Point3D>>& coords) const;
+	__attribute__((noinline)) void validate(const Area& area) const;
 };

@@ -33,8 +33,8 @@ public:
 	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesFacingTwords(const Point3D& location, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& facings) const;
 	[[nodiscard]] Eigen::Array<int, 1, Eigen::Dynamic> distancesSquare(const Point3D& location) const;
 	[[nodiscard]] Eigen::Array<bool, 2, Eigen::Dynamic> canSeeAndCanBeSeenByDistanceAndFacingFilter(const Point3D& location, const Facing4& facing, const DistanceInBlocks& visionRangeSquared, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& facings, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& visionRangesSquared) const;
-	template<class Blocks, class BlockSet>
-	[[nodiscard]] static Point3DSet fromBlockSet(const Blocks& blocks, const BlockSet& blockSet)
+	template<class BlocksT, class BlockSet>
+	[[nodiscard]] static Point3DSet fromBlockSet(const BlocksT& blocks, const BlockSet& blockSet)
 	{
 		Point3DSet output;
 		// TODO: SIMD this.

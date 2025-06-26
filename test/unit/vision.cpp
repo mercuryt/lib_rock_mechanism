@@ -52,7 +52,7 @@ TEST_CASE("vision")
 		const Point3D block1Coordinates = blocks.getCoordinates(block1);
 		const Point3D block2Coordinates = blocks.getCoordinates(block2);
 		CHECK(block2Coordinates.isInFrontOf(block1Coordinates, actors.getFacing(a1)));
-		CHECK(area.m_opacityFacade.hasLineOfSight(block1, block2));
+		CHECK(area.m_opacityFacade.hasLineOfSight(blocks.getCoordinates(block1), blocks.getCoordinates(block2)));
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
 		CHECK(result.size() == 1);
@@ -64,9 +64,9 @@ TEST_CASE("vision")
 		BlockIndex block1 = blocks.getIndex_i(5, 3, 1);
 		BlockIndex block2 = blocks.getIndex_i(5, 5, 1);
 		BlockIndex block3 = blocks.getIndex_i(5, 7, 1);
-		CHECK(area.m_opacityFacade.hasLineOfSight(block1, block3));
+		CHECK(area.m_opacityFacade.hasLineOfSight(blocks.getCoordinates(block1), blocks.getCoordinates(block3)));
 		blocks.solid_set(block2, marble, false);
-		CHECK(!area.m_opacityFacade.hasLineOfSight(block1, block3));
+		CHECK(!area.m_opacityFacade.hasLineOfSight(blocks.getCoordinates(block1), blocks.getCoordinates(block3)));
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
@@ -123,8 +123,8 @@ TEST_CASE("vision")
 		const Point3D block4Coordinates = blocks.getCoordinates(block4);
 		CHECK(block3Coordinates.isInFrontOf(block1Coordinates, actors.getFacing(a1)));
 		CHECK(block4Coordinates.isInFrontOf(block1Coordinates, actors.getFacing(a1)));
-		CHECK(area.m_opacityFacade.hasLineOfSight(block1, block4));
-		CHECK(!area.m_opacityFacade.hasLineOfSight(block1, block3));
+		CHECK(area.m_opacityFacade.hasLineOfSight(blocks.getCoordinates(block1), blocks.getCoordinates(block4)));
+		CHECK(!area.m_opacityFacade.hasLineOfSight(blocks.getCoordinates(block1), blocks.getCoordinates(block3)));
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);
 		CHECK(result.size() == 1);
@@ -185,10 +185,10 @@ TEST_CASE("vision")
 		blocks.solid_setNot(block1);
 		blocks.solid_setNot(block2);
 		blocks.solid_setNot(block3);
-		CHECK(area.m_opacityFacade.hasLineOfSight(block1, block3));
+		CHECK(area.m_opacityFacade.hasLineOfSight(blocks.getCoordinates(block1), blocks.getCoordinates(block3)));
 		CHECK(blocks.getCoordinates(block3).isInFrontOf(blocks.getCoordinates(block1), Facing4::North));
 		blocks.blockFeature_construct(block3, hatch, marble);
-		CHECK(!area.m_opacityFacade.hasLineOfSight(block1, block3));
+		CHECK(!area.m_opacityFacade.hasLineOfSight(blocks.getCoordinates(block1), blocks.getCoordinates(block3)));
 		ActorIndex a1 = actors.create({
 			.species=dwarf,
 			.location=block1,
@@ -205,11 +205,31 @@ TEST_CASE("vision")
 		auto result2 = actors.vision_getCanSee(a2);
 		CHECK(result2.size() == 0);
 		blocks.blockFeature_open(block3, hatch);
-		CHECK(area.m_opacityFacade.hasLineOfSight(block1, block3));
+		CHECK(area.m_opacityFacade.hasLineOfSight(blocks.getCoordinates(block1), blocks.getCoordinates(block3)));
 		CHECK(area.m_visionRequests.size() == 2);
 		area.m_visionRequests.doStep();
 		auto result3 = actors.vision_getCanSee(a1);
 		CHECK(result3.size() == 1);
+	}
+	SUBCASE("Vision not blocked by closed hatch on low z face of vision line boundry")
+	{
+		areaBuilderUtil::setSolidLayer(area, 0, marble);
+		BlockIndex block1 = blocks.getIndex_i(5, 3, 1);
+		BlockIndex block3 = blocks.getIndex_i(5, 7, 2);
+		blocks.blockFeature_construct(block1, hatch, marble);
+		ActorIndex a1 = actors.create({
+			.species=dwarf,
+			.location=block1,
+			.facing=blocks.getCoordinates(block1).getFacingTwords(blocks.getCoordinates(block3)),
+		});
+		ActorIndex a2 = actors.create({
+			.species=dwarf,
+			.location=block3,
+		});
+		area.m_visionRequests.doStep();
+		auto result = actors.vision_getCanSee(a1);
+		CHECK(result.size() == 1);
+		CHECK(actors.vision_getCanSee(a2).size() == 1);
 	}
 	SUBCASE("Vision not blocked by closed hatch on the same z level")
 	{
