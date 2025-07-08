@@ -43,7 +43,7 @@ class CraftPathRequest final : public PathRequestBreadthFirst
 {
 	CraftObjective& m_craftObjective;
 	CraftJob* m_craftJob = nullptr;
-	BlockIndex m_location;
+	Point3D m_location;
 public:
 	CraftPathRequest(Area& area, CraftObjective& co, const ActorIndex& actor);
 	CraftPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);

@@ -1,27 +1,27 @@
 #include "../contextMenu.h"
 #include "../window.h"
 #include "../displayData.h"
-#include "../../engine/blocks/blocks.h"
-#include "../../engine/blockFeature.h"
+#include "../../engine/space/space.h"
+#include "../../engine/pointFeature.h"
 #include "../../engine/designations.h"
 #include "../../engine/definitions/materialType.h"
 #include "../../engine/areaBuilderUtil.h"
-void ContextMenu::drawConstructControls(const BlockIndex& block)
+void ContextMenu::drawConstructControls(const Point3D& point)
 {
 	const Area& area = *m_window.getArea();
-	const Blocks& blocks = area.getBlocks();
+	const Space& space =  area.getSpace();
 	const FactionId& faction = m_window.getFaction();
-	if(faction.exists() && area.m_blockDesignations.contains(faction))
+	if(faction.exists() && area.m_spaceDesignations.contains(faction))
 	{
-		const auto& designations = area.m_blockDesignations.getForFaction(faction);
-		if(designations.check(block, BlockDesignation::Construct))
+		const auto& designations = area.m_spaceDesignations.getForFaction(faction);
+		if(designations.check(point, SpaceDesignation::Construct))
 		{
 			auto cancelButton = tgui::Button::create("cancel");
 			cancelButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 			m_root.add(cancelButton);
-			cancelButton->onClick([this, faction, &blocks]{
+			cancelButton->onClick([this, faction, &space]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
+				for(const Point3D& selectedBlock : m_window.getSelectedBlocks().getView(space))
 					m_window.getArea()->m_hasConstructionDesignations.undesignate(faction, selectedBlock);
 				hide();
 			});
@@ -31,7 +31,7 @@ void ContextMenu::drawConstructControls(const BlockIndex& block)
 	constructButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 	m_root.add(constructButton);
 	static bool constructed = false;
-	constructButton->onMouseEnter([this, block]{
+	constructButton->onMouseEnter([this, point]{
 		auto& subMenu = makeSubmenu(0);
 		// Only list material types which have construction data, unless in edit mode.
 		std::function<bool(const MaterialTypeId&)> predicate = nullptr;
@@ -49,48 +49,48 @@ void ContextMenu::drawConstructControls(const BlockIndex& block)
 			constructedUI->setChecked(constructed);
 			constructedUI->onChange([](bool value){ constructed = value; });
 		}
-		auto blockFeatureTypeUI = widgetUtil::makeBlockFeatureTypeSelectUI();
-		subMenu.add(blockFeatureTypeUI);
+		auto pointFeatureTypeUI = widgetUtil::makePointFeatureTypeSelectUI();
+		subMenu.add(pointFeatureTypeUI);
 		auto constructFeature = tgui::Button::create("construct feature");
 		subMenu.add(constructFeature);
-		constructFeature->onClick([this, block]{
-			construct(block, constructed, widgetUtil::lastSelectedConstructionMaterial, widgetUtil::lastSelectedBlockFeatureType);
+		constructFeature->onClick([this, point]{
+			construct(point, constructed, widgetUtil::lastSelectedConstructionMaterial, widgetUtil::lastSelectedPointFeatureType);
 		});
 	});
-	constructButton->onClick([this, block]{
-		construct(block, constructed, widgetUtil::lastSelectedConstructionMaterial, nullptr);
+	constructButton->onClick([this, point]{
+		construct(point, constructed, widgetUtil::lastSelectedConstructionMaterial, nullptr);
 	});
 }
-void ContextMenu::construct(const BlockIndex& block, bool constructed, const MaterialTypeId& materialType, const BlockFeatureType* blockFeatureType)
+void ContextMenu::construct(const Point3D& point, bool constructed, const MaterialTypeId& materialType, const PointFeatureType* pointFeatureType)
 {
 	std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 	CuboidSet& selectedBlocks = m_window.getSelectedBlocks();
 	if(selectedBlocks.empty())
-		m_window.selectBlock(block);
-	Blocks& blocks = m_window.getArea()->getBlocks();
+		m_window.selectBlock(point);
+	Space& space = m_window.getArea()->getSpace();
 	for(const Cuboid& cuboid : m_window.getSelectedBlocks().getCuboids())
 	{
 		if(m_window.m_editMode)
 		{
-			if(blockFeatureType == nullptr)
-				blocks.solid_setCuboid(cuboid, materialType, constructed);
+			if(pointFeatureType == nullptr)
+				space.solid_setCuboid(cuboid, materialType, constructed);
 			else
-				// TODO: Create block features by cuboid batch.
-				for(const BlockIndex& selectedBlock : cuboid.getView(blocks))
+				// TODO: Create point features by cuboid batch.
+				for(const Point3D& selectedBlock : cuboid.getView(space))
 				{
 					if(!constructed)
 					{
-						if(!blocks.solid_is(selectedBlock))
-							blocks.solid_set(selectedBlock, materialType, false);
-						blocks.blockFeature_hew(selectedBlock, *blockFeatureType);
+						if(!space.solid_is(selectedBlock))
+							space.solid_set(selectedBlock, materialType, false);
+						space.pointFeature_hew(selectedBlock, *pointFeatureType);
 					}
 					else
-						blocks.blockFeature_construct(selectedBlock, *blockFeatureType, materialType);
+						space.pointFeature_construct(selectedBlock, *pointFeatureType, materialType);
 				}
 		}
 		else
-			for(const BlockIndex& selectedBlock : cuboid.getView(blocks))
-				m_window.getArea()->m_hasConstructionDesignations.designate(m_window.getFaction(), selectedBlock, blockFeatureType, materialType);
+			for(const Point3D& selectedBlock : cuboid.getView(space))
+				m_window.getArea()->m_hasConstructionDesignations.designate(m_window.getFaction(), selectedBlock, pointFeatureType, materialType);
 	}
 	hide();
 }

@@ -32,9 +32,9 @@ public:
 	void joinProject(DigProject& project, const ActorIndex& actor);
 	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] DigProject* getJoinableProjectAt(Area& area, BlockIndex block, const ActorIndex& actor);
+	[[nodiscard]] DigProject* getJoinableProjectAt(Area& area, Point3D point, const ActorIndex& actor);
 	// To be used for pathing.
-	[[nodiscard]] bool joinableProjectExistsAt(Area& area, BlockIndex block, const ActorIndex& actor) const;
+	[[nodiscard]] bool joinableProjectExistsAt(Area& area, Point3D point, const ActorIndex& actor) const;
 	[[nodiscard]] std::string name() const { return "dig"; }
 	friend class DigPathRequest;
 	friend class DigProject;

@@ -4,7 +4,7 @@
 #include "displayData.h"
 #include "sprite.h"
 #include "../engine/simulation/hasAreas.h"
-#include "../engine/blocks/blocks.h"
+#include "../engine/space/space.h"
 #include "../engine/items/items.h"
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
@@ -48,17 +48,17 @@ void Window::setArea(Area& area, GameView* gameView)
 			gameView = &m_lastViewedSpotInArea[area.m_id];
 		else
 		{
-			gameView = &m_lastViewedSpotInArea.emplace(area.m_id, area.getBlocks().getMiddleAtGroundLevel(), displayData::defaultScale);
+			gameView = &m_lastViewedSpotInArea.emplace(area.m_id,  area.getSpace().getMiddleAtGroundLevel(), displayData::defaultScale);
 		}
 	}
 	m_area = &area;
 	m_scale = gameView->scale;
 	centerView(gameView->center);
 }
-void Window::centerView(const BlockIndex& block)
+void Window::centerView(const Point3D& point)
 {
-	const Blocks& blocks = m_area->getBlocks();
-	const Point3D& point = blocks.getCoordinates(block);
+	const Space& space = m_area->getSpace();
+	const Point3D& point = space.getCoordinates(point);
 	m_z = point.z();
 	sf::Vector2f globalPosition(point.x().get() * m_scale, point.y().get() * m_scale);
 	sf::Vector2i pixelPosition = m_window.mapCoordsToPixel(globalPosition);
@@ -115,7 +115,7 @@ void Window::startLoop()
 						case sf::Keyboard::LAlt:
 							if(sf::Keyboard::isKeyPressed(sf::Keyboard::LShift))
 							{
-								if(m_selectMode == SelectMode::Blocks)
+								if(m_selectMode == SelectMode::Space)
 									m_selectMode = SelectMode::Actors;
 								else
 									m_selectMode = SelectMode((uint)m_selectMode + 1);
@@ -123,13 +123,13 @@ void Window::startLoop()
 							else
 							{
 								if(m_selectMode == SelectMode::Actors)
-									m_selectMode = SelectMode::Blocks;
+									m_selectMode = SelectMode::Space;
 								else
 									m_selectMode = SelectMode((uint)m_selectMode - 1);
 							}
 							break;
 						case sf::Keyboard::PageUp:
-							if(m_area != nullptr && m_gameOverlay.isVisible() && (m_z + 1) < m_area->getBlocks().m_sizeZ)
+							if(m_area != nullptr && m_gameOverlay.isVisible() && (m_z + 1) < m_area->getSpace().m_sizeZ)
 								m_z += 1;
 							break;
 						case sf::Keyboard::PageDown:
@@ -141,7 +141,7 @@ void Window::startLoop()
 								m_view.move(0.f, scrollSteps * -20.f);
 							break;
 						case sf::Keyboard::Down:
-							if(m_area != nullptr && m_gameOverlay.isVisible() && m_view.getCenter().y < m_area->getBlocks().m_sizeY.get() * m_scale - (m_view.getSize().y / 2.f) + gameMarginSize)
+							if(m_area != nullptr && m_gameOverlay.isVisible() && m_view.getCenter().y < m_area->getSpace().m_sizeY.get() * m_scale - (m_view.getSize().y / 2.f) + gameMarginSize)
 								m_view.move(0.f, scrollSteps * 20.f);
 							break;
 						case sf::Keyboard::Left:
@@ -149,20 +149,20 @@ void Window::startLoop()
 								m_view.move(scrollSteps * -20.f, 0.f);
 							break;
 						case sf::Keyboard::Right:
-							if(m_area != nullptr && m_gameOverlay.isVisible() && m_view.getCenter().x < m_area->getBlocks().m_sizeX.get() * m_scale - (m_view.getSize().x / 2.f) + gameMarginSize)
+							if(m_area != nullptr && m_gameOverlay.isVisible() && m_view.getCenter().x < m_area->getSpace().m_sizeX.get() * m_scale - (m_view.getSize().x / 2.f) + gameMarginSize)
 								m_view.move(scrollSteps * 20.f, 0.f);
 							break;
 						case sf::Keyboard::Delete:
 							{
 								m_scale = std::max(1u, (int)m_scale - scrollSteps);
-								Point3D center = m_area->getBlocks().getCoordinates(m_blockUnderCursor);
+								Point3D center = m_area->getSpace().getCoordinates(m_blockUnderCursor);
 								m_view.move(-1.f * center.x().get() * scrollSteps, -1.f * center.y().get() * scrollSteps);
 							}
 							break;
 						case sf::Keyboard::Insert:
 							{
 								m_scale += 1 * scrollSteps;
-								Point3D center = m_area->getBlocks().getCoordinates(m_blockUnderCursor);
+								Point3D center = m_area->getSpace().getCoordinates(m_blockUnderCursor);
 								m_view.move(center.x().get() * scrollSteps, center.y().get() * scrollSteps);
 							}
 							break;
@@ -283,50 +283,50 @@ void Window::startLoop()
 				{
 					if(m_area)
 					{
-						Blocks& blocks = m_area->getBlocks();
+						Space& space = m_area->getSpace();
 						Items& items = m_area->getItems();
-						BlockIndex& block = m_blockUnderCursor;
+						Point3D& point = m_blockUnderCursor;
 						if(event.mouseButton.button == displayData::selectMouseButton)
 						{
 							Cuboid selectedBlocks;
 							// Find the selected area.
 							if(m_firstCornerOfSelection.exists())
-								selectedBlocks.setFrom(blocks, m_firstCornerOfSelection, block);
+								selectedBlocks.setFrom(space, m_firstCornerOfSelection, point);
 							else
-								selectedBlocks.setFrom(blocks, block);
+								selectedBlocks.setFrom(space, point);
 							m_firstCornerOfSelection.clear();
 							bool deselect = sf::Keyboard::isKeyPressed(sf::Keyboard::LControl);
 							switch(m_selectMode)
 							{
 								case(SelectMode::Actors):
 									if(deselect)
-										for(const BlockIndex& block : selectedBlocks.getView(blocks))
-											m_selectedActors.maybeEraseAll(blocks.actor_getAll(block).begin(), blocks.actor_getAll(block).end());
+										for(const Point3D& point : selectedBlocks.getView(space))
+											m_selectedActors.maybeEraseAll(space.actor_getAll(point).begin(), space.actor_getAll(point).end());
 									else
-										for(const BlockIndex& block : selectedBlocks.getView(blocks))
-											m_selectedActors.maybeInsertAll(blocks.actor_getAll(block).begin(), blocks.actor_getAll(block).end());
+										for(const Point3D& point : selectedBlocks.getView(space))
+											m_selectedActors.maybeInsertAll(space.actor_getAll(point).begin(), space.actor_getAll(point).end());
 									break;
 								case(SelectMode::Items):
 									if(deselect)
-										for(const BlockIndex& block : selectedBlocks.getView(blocks))
-											m_selectedItems.maybeEraseAll(blocks.item_getAll(block).begin(), blocks.item_getAll(block).end());
+										for(const Point3D& point : selectedBlocks.getView(space))
+											m_selectedItems.maybeEraseAll(space.item_getAll(point).begin(), space.item_getAll(point).end());
 									else
-										for(const BlockIndex& block : selectedBlocks.getView(blocks))
-											m_selectedItems.maybeInsertAll(blocks.item_getAll(block).begin(), blocks.item_getAll(block).end());
+										for(const Point3D& point : selectedBlocks.getView(space))
+											m_selectedItems.maybeInsertAll(space.item_getAll(point).begin(), space.item_getAll(point).end());
 									break;
 								case(SelectMode::Plants):
 									if(deselect)
-										for(const BlockIndex& block : selectedBlocks.getView(blocks))
-											m_selectedPlants.maybeErase(blocks.plant_get(block));
+										for(const Point3D& point : selectedBlocks.getView(space))
+											m_selectedPlants.maybeErase(space.plant_get(point));
 									else
-										for(const BlockIndex& block : selectedBlocks.getView(blocks))
+										for(const Point3D& point : selectedBlocks.getView(space))
 										{
-											const PlantIndex& plant = blocks.plant_get(block);
+											const PlantIndex& plant = space.plant_get(point);
 											if(plant.exists())
 												m_selectedPlants.maybeInsert(plant);
 										}
 									break;
-								case(SelectMode::Blocks):
+								case(SelectMode::Space):
 									if(deselect)
 										m_selectedBlocks.remove(selectedBlocks);
 									else
@@ -341,18 +341,18 @@ void Window::startLoop()
 							const ItemIndex& item = m_gameOverlay.m_itemBeingInstalled;
 							if(
 									item.exists() &&
-									blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(block, items.getShape(item), items.getMoveType(item), m_gameOverlay.m_facing)
+									space.shape_shapeAndMoveTypeCanEnterEverWithFacing(point, items.getShape(item), items.getMoveType(item), m_gameOverlay.m_facing)
 							)
-								m_gameOverlay.assignLocationToInstallItem(block);
+								m_gameOverlay.assignLocationToInstallItem(point);
 							else if(m_gameOverlay.m_itemBeingMoved.exists())
 							{
 								if(getSelectedActors().empty())
 									m_gameOverlay.m_itemBeingMoved.clear();
-								else if(blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(block, items.getShape(item), items.getMoveType(item), m_gameOverlay.m_facing))
-									m_gameOverlay.assignLocationToMoveItemTo(block);
+								else if(space.shape_shapeAndMoveTypeCanEnterEverWithFacing(point, items.getShape(item), items.getMoveType(item), m_gameOverlay.m_facing))
+									m_gameOverlay.assignLocationToMoveItemTo(point);
 							}
 							else
-								m_gameOverlay.drawContextMenu(block);
+								m_gameOverlay.drawContextMenu(point);
 						}
 						else
 							m_gameOverlay.closeContextMenu();
@@ -362,8 +362,8 @@ void Window::startLoop()
 				default:
 					if(m_area)
 					{
-						Blocks& blocks = m_area->getBlocks();
-						const Point3D& coordinates = blocks.getCoordinates(m_blockUnderCursor);
+						Space& space = m_area->getSpace();
+						const Point3D& coordinates = space.getCoordinates(m_blockUnderCursor);
 						m_gameOverlay.m_coordinateUI->setText(
 							std::to_string(coordinates.x().get()) + "," +
 							std::to_string(coordinates.y().get()) + "," +
@@ -479,7 +479,7 @@ void Window::povFromJson(const Json& data)
 		m_faction = data["faction"].get<FactionId>();
 	m_area = &m_simulation->m_hasAreas->getById(data["area"].get<AreaId>());
 	m_scale = data["scale"].get<uint32_t>();
-	m_z = DistanceInBlocks::create(data["z"].get<uint32_t>());
+	m_z = Distance::create(data["z"].get<uint32_t>());
 	uint32_t x = data["x"].get<uint32_t>();
 	uint32_t y = data["y"].get<uint32_t>();
 	m_view.setCenter(x, y);
@@ -491,11 +491,11 @@ void Window::deselectAll()
 	m_selectedActors.clear();
 	m_selectedPlants.clear();
 }
-void Window::selectBlock(const BlockIndex& block)
+void Window::selectBlock(const Point3D& point)
 {
 	assert(m_area != nullptr);
 	deselectAll();
-	m_selectedBlocks.add(m_area->getBlocks(), block);
+	m_selectedBlocks.add(m_area->getSpace(), point);
 }
 void Window::selectItem(const ItemIndex& item)
 {
@@ -512,20 +512,20 @@ void Window::selectActor(const ActorIndex& actor)
 	deselectAll();
 	m_selectedActors.insert(actor);
 }
-BlockIndex Window::getBlockUnderCursor()
+Point3D Window::getBlockUnderCursor()
 {
 	sf::Vector2i pixelPos = sf::Mouse::getPosition(m_window);
 	return getBlockAtPosition(pixelPos);
 }
-BlockIndex Window::getBlockAtPosition(sf::Vector2i pixelPos)
+Point3D Window::getBlockAtPosition(sf::Vector2i pixelPos)
 {
 	sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos);
 	uint32_t x = std::max(0.f, worldPos.x + m_view.getCenter().x - m_view.getSize().x / 2);
 	uint32_t y = std::max(0.f, worldPos.y + m_view.getCenter().y - m_view.getSize().y / 2);
-	Blocks& blocks = m_area->getBlocks();
-	x = std::min(blocks.m_sizeX.get() - 1, x / m_scale);
-	y = std::min(blocks.m_sizeY.get() - 1, y / m_scale);
-	return blocks.getIndex_i(x, y, m_z.get());
+	Space& space = m_area->getSpace();
+	x = std::min(space.m_sizeX.get() - 1, x / m_scale);
+	y = std::min(space.m_sizeY.get() - 1, y / m_scale);
+	return space.getIndex_i(x, y, m_z.get());
 }
 void Window::setFaction(const FactionId& faction)
 {

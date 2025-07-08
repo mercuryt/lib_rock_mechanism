@@ -1,58 +1,54 @@
 #include "deck.h"
 #include "area/area.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "actors/actors.h"
 #include "items/items.h"
 #include "reservable.hpp"
-AreaHasDecks::AreaHasDecks(Area& area)
+void AreaHasDecks::updatePoints(Area& area, const DeckId& id)
 {
-	m_blockData.resize(area.getBlocks().size());
-}
-void AreaHasDecks::updateBlocks(Area& area, const DeckId& id)
-{
-	auto view = m_data[id].cuboidSet.getView(area.getBlocks());
-	for(const BlockIndex& block : view)
+	auto view = m_data[id].cuboidSet.getView();
+	for(const Point3D& point : view)
 	{
-		assert(m_blockData[block].empty());
-		m_blockData[block] = id;
+		assert(!m_pointData.queryAny(point));
+		m_pointData.maybeInsert(point, id);
 		// TODO: bulk update.
-		area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
+		area.m_hasTerrainFacades.updatePointAndAdjacent(point);
 	}
 }
-void AreaHasDecks::clearBlocks(Area& area, const DeckId& id)
+void AreaHasDecks::clearPoints(Area& area, const DeckId& id)
 {
-	for(const BlockIndex& block : m_data[id].cuboidSet.getView(area.getBlocks()))
+	for(const Point3D& point : m_data[id].cuboidSet.getView())
 	{
-		m_blockData[block].clear();
+		m_pointData.maybeRemove(point);
 		// TODO: bulk update.
-		area.m_hasTerrainFacades.updateBlockAndAdjacent(block);
+		area.m_hasTerrainFacades.updatePointAndAdjacent(point);
 	}
 }
 [[nodiscard]] DeckId AreaHasDecks::registerDecks(Area& area, CuboidSet& decks, const ActorOrItemIndex& actorOrItemIndex)
 {
 	m_data.emplace(m_nextId, CuboidSetAndActorOrItemIndex{decks, actorOrItemIndex});
-	updateBlocks(area, m_nextId);
+	updatePoints(area, m_nextId);
 	auto output = m_nextId;
 	++m_nextId;
 	return output;
 }
 void AreaHasDecks::unregisterDecks(Area& area, const DeckId& id)
 {
-	clearBlocks(area, id);
+	clearPoints(area, id);
 	m_data.erase(id);
 }
-void AreaHasDecks::shift(Area& area, const DeckId& id, const Offset3D& offset, const DistanceInBlocks& distance, const BlockIndex& origin, const Facing4& oldFacing, const Facing4& newFacing)
+void AreaHasDecks::shift(Area& area, const DeckId& id, const Offset3D& offset, const Distance& distance, const Point3D& origin, const Facing4& oldFacing, const Facing4& newFacing)
 {
-	clearBlocks(area, id);
+	clearPoints(area, id);
 	if(oldFacing != newFacing)
 	{
 		int facingChange = (int)oldFacing - (int)newFacing;
 		if(facingChange < 0)
 			facingChange += 4;
-		m_data[id].cuboidSet.rotateAroundPoint(area.getBlocks(), origin, (Facing4)facingChange);
+		m_data[id].cuboidSet.rotateAroundPoint(origin, (Facing4)facingChange);
 	}
 	m_data[id].cuboidSet.shift(offset, distance);
-	updateBlocks(area, id);
+	updatePoints(area, id);
 }
 void DeckRotationData::rollback(Area& area, SmallMap<ActorOrItemIndex, DeckRotationDataSingle>::iterator begin, SmallMap<ActorOrItemIndex, DeckRotationDataSingle>::iterator end)
 {
@@ -64,10 +60,10 @@ DeckRotationData DeckRotationData::recordAndClearDependentPositions(Area& area, 
 	DeckRotationData output;
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	SmallSet<ActorOrItemIndex> actorsOrItemsOnDeck;
 	SmallSet<Project*> projectsOnDeck;
-	SmallSet<BlockIndex> blocksContainingFluid;
+	SmallSet<Point3D> pointsContainingFluid;
 	if(actorOrItem.isActor())
 	{
 		const ActorIndex& actor = actorOrItem.getActor();
@@ -78,7 +74,7 @@ DeckRotationData DeckRotationData::recordAndClearDependentPositions(Area& area, 
 		const ItemIndex& item = actorOrItem.getItem();
 		actorsOrItemsOnDeck = items.onDeck_get(item);
 		projectsOnDeck = items.onDeck_getProjects(item);
-		blocksContainingFluid = items.onDeck_getBlocksContainingFluid(item);
+		pointsContainingFluid = items.onDeck_getPointsContainingFluid(item);
 	}
 	for(const ActorOrItemIndex& onDeck : actorsOrItemsOnDeck)
 	{
@@ -86,7 +82,7 @@ DeckRotationData DeckRotationData::recordAndClearDependentPositions(Area& area, 
 		{
 			ActorIndex actor = onDeck.getActor();
 			// TODO: this fetches the DeckId seperately for each actor but they are all the same.
-			DeckRotationDataSingle data{actors.canReserve_unreserveAndReturnBlocksAndCallbacksOnSameDeck(actor), actors.getLocation(actor), actors.getFacing(actor)};
+			DeckRotationDataSingle data{actors.canReserve_unreserveAndReturnPointsAndCallbacksOnSameDeck(actor), actors.getLocation(actor), actors.getFacing(actor)};
 			output.m_actorsOrItems.insert(onDeck, std::move(data));
 			actors.location_clear(actor);
 		}
@@ -102,31 +98,31 @@ DeckRotationData DeckRotationData::recordAndClearDependentPositions(Area& area, 
 		const ItemIndex& item = actorOrItem.getItem();
 		if(items.onDeck_hasDecks(item))
 		{
-			const DeckId& deckId = area.m_decks.getForBlock(items.getLocation(item));
+			const DeckId& deckId = area.m_decks.getForPoint(items.getLocation(item));
 			if(deckId.exists())
 			{
 				for(Project* project : projectsOnDeck)
 				{
-					auto condition = [&](const BlockIndex& block) { return area.m_decks.getForBlock(block) == deckId; };
-					output.m_projects.insert(project, {project->getCanReserve().unreserveAndReturnBlocksAndCallbacksWithCondition(condition), project->getLocation(), Facing4::Null});
+					auto condition = [&](const Point3D& point) { return area.m_decks.getForPoint(point) == deckId; };
+					output.m_projects.insert(project, {project->getCanReserve().unreserveAndReturnPointsAndCallbacksWithCondition(condition), project->getLocation(), Facing4::Null});
 					project->clearLocation();
 				}
-				for(const BlockIndex& block : blocksContainingFluid)
+				for(const Point3D& point : pointsContainingFluid)
 				{
-					output.m_fluids.insert(block, {});
+					output.m_fluids.insert(point, {});
 					auto& storedData = output.m_fluids.back().second;
-					for(const FluidData& fluidData : blocks.fluid_getAll(block))
+					for(const FluidData& fluidData : space.fluid_getAll(point))
 						storedData.insert(const_cast<FluidTypeId&>(fluidData.type), const_cast<CollisionVolume&>(fluidData.volume));
-					blocks.fluid_removeAllSyncronus(block);
+					space.fluid_removeAllSyncronus(point);
 				}
 			}
 		}
 	}
 	return output;
 }
-void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const BlockIndex& previousPivot, const BlockIndex& newPivot, const Facing4& previousFacing, const Facing4& newFacing)
+void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const Point3D& previousPivot, const Point3D& newPivot, const Facing4& previousFacing, const Facing4& newFacing)
 {
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	SmallSet<ActorIndex> actorsWhichCannotReserveRotatedPosition;
@@ -138,7 +134,7 @@ void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const BlockIndex&
 		{
 			const ActorIndex& actor = onDeck.getActor();
 			// Update location.
-			const BlockIndex location = blocks.translatePosition(data.location, previousPivot, newPivot, previousFacing, newFacing);
+			const Point3D location = data.location.translate(previousPivot, newPivot, previousFacing, newFacing);
 			const Facing4 facing = util::rotateFacingByDifference(data.facing, previousFacing, newFacing);
 			actors.location_set(actor, location, facing);
 			if(actors.mount_isPilot(actor))
@@ -148,21 +144,21 @@ void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const BlockIndex&
 			if(!path.empty())
 			{
 				uint i = 0;
-				for(const BlockIndex& block : path)
+				for(const Point3D& point : path)
 				{
-					path[i] = blocks.translatePosition(block, previousPivot, newPivot, previousFacing, newFacing);
+					path[i] = point.translate(previousPivot, newPivot, previousFacing, newFacing);
 					++i;
 				}
 			}
 			// Update destination.
-			const BlockIndex& destination = actors.move_getDestination(actor);
+			const Point3D& destination = actors.move_getDestination(actor);
 			if(destination.exists())
 			{
-				const BlockIndex newDestination = blocks.translatePosition(destination, previousPivot, newPivot, previousFacing, newFacing);
+				const Point3D newDestination = destination.translate(previousPivot, newPivot, previousFacing, newFacing);
 				actors.move_updateDestination(actor, newDestination);
 			}
 			// Update reservations.
-			bool reservationsSuccessful = actors.canReserve_translateAndReservePositions(actor, std::move(data.reservedBlocksAndCallbacks), previousPivot, newPivot, previousFacing, newFacing);
+			bool reservationsSuccessful = actors.canReserve_translateAndReservePositions(actor, std::move(data.reservedPointsAndCallbacks), previousPivot, newPivot, previousFacing, newFacing);
 			if(!reservationsSuccessful)
 				actorsWhichCannotReserveRotatedPosition.insert(actor);
 		}
@@ -170,7 +166,7 @@ void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const BlockIndex&
 		{
 			// Item.
 			const ItemIndex& item = onDeck.getItem();
-			const BlockIndex location = blocks.translatePosition(data.location, previousPivot, newPivot, previousFacing, newFacing);
+			const Point3D location = data.location.translate(previousPivot, newPivot, previousFacing, newFacing);
 			const Facing4 facing = util::rotateFacingByDifference(data.facing, previousFacing, newFacing);
 			items.location_set(item, location, facing);
 		}
@@ -178,17 +174,17 @@ void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const BlockIndex&
 	// Reinstance projects.
 	for(auto& [project, data] : m_projects)
 	{
-		bool reservationsSuccessful = project->getCanReserve().translateAndReservePositions(blocks, std::move(data.reservedBlocksAndCallbacks), previousPivot, newPivot, previousFacing, newFacing);
+		bool reservationsSuccessful = project->getCanReserve().translateAndReservePositions(space, std::move(data.reservedPointsAndCallbacks), previousPivot, newPivot, previousFacing, newFacing);
 		if(!reservationsSuccessful)
 			projectsWhichCannotReserveRotatedPosition.insert(project);
 		project->setLocation(data.location);
 	}
 	// Reinstance fluids.
-	for(const auto& [block, fluidData] : m_fluids)
+	for(const auto& [point, fluidData] : m_fluids)
 	{
-		const BlockIndex location = blocks.translatePosition(block, previousPivot, newPivot, previousFacing, newFacing);
+		const Point3D location = point.translate(previousPivot, newPivot, previousFacing, newFacing);
 		for(const auto& [fluidType, volume] : fluidData)
-			blocks.fluid_add(location, volume, fluidType);
+			space.fluid_add(location, volume, fluidType);
 	}
 	// If an actor cannot reserve the rotated positions they must reset their objective.
 	for(const ActorIndex& actor : actorsWhichCannotReserveRotatedPosition)
@@ -198,9 +194,9 @@ void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const BlockIndex&
 	for(Project* project : projectsWhichCannotReserveRotatedPosition)
 		project->resetOrCancel();
 }
-SetLocationAndFacingResult DeckRotationData::tryToReinstanceAtRotatedPosition(Area& area, const BlockIndex& previousPivot, const BlockIndex& newPivot, const Facing4& previousFacing, const Facing4& newFacing)
+SetLocationAndFacingResult DeckRotationData::tryToReinstanceAtRotatedPosition(Area& area, const Point3D& previousPivot, const Point3D& newPivot, const Facing4& previousFacing, const Facing4& newFacing)
 {
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	SmallSet<ActorIndex> actorsWhichCannotReserveRotatedPosition;
@@ -217,7 +213,7 @@ SetLocationAndFacingResult DeckRotationData::tryToReinstanceAtRotatedPosition(Ar
 			const ActorIndex& actor = onDeck.getActor();
 			// Update location.
 			// If setting location fails then we rollback all locations set thus far and return the failing status.
-			const BlockIndex location = blocks.translatePosition(data.location, previousPivot, newPivot, previousFacing, newFacing);
+			const Point3D location = data.location.translate(previousPivot, newPivot, previousFacing, newFacing);
 			const Facing4 facing = util::rotateFacingByDifference(data.facing, previousFacing, newFacing);
 			SetLocationAndFacingResult result = actors.location_tryToSet(actor, location, facing);
 			if(result != SetLocationAndFacingResult::Success)
@@ -233,21 +229,21 @@ SetLocationAndFacingResult DeckRotationData::tryToReinstanceAtRotatedPosition(Ar
 			if(!path.empty())
 			{
 				uint i = 0;
-				for(const BlockIndex& block : path)
+				for(const Point3D& point : path)
 				{
-					path[i] = blocks.translatePosition(block, previousPivot, newPivot, previousFacing, newFacing);
+					path[i] = point.translate(previousPivot, newPivot, previousFacing, newFacing);
 					++i;
 				}
 			}
 			// Update destination.
-			const BlockIndex& destination = actors.move_getDestination(actor);
+			const Point3D& destination = actors.move_getDestination(actor);
 			if(destination.exists())
 			{
-				const BlockIndex newDestination = blocks.translatePosition(destination, previousPivot, newPivot, previousFacing, newFacing);
+				const Point3D newDestination = destination.translate(previousPivot, newPivot, previousFacing, newFacing);
 				actors.move_updateDestination(actor, newDestination);
 			}
 			// Update reservations.
-			bool reservationsSuccessful = actors.canReserve_translateAndReservePositions(actor, std::move(iter->second.reservedBlocksAndCallbacks), previousPivot, newPivot, previousFacing, newFacing);
+			bool reservationsSuccessful = actors.canReserve_translateAndReservePositions(actor, std::move(iter->second.reservedPointsAndCallbacks), previousPivot, newPivot, previousFacing, newFacing);
 			if(!reservationsSuccessful)
 				actorsWhichCannotReserveRotatedPosition.insert(actor);
 		}
@@ -255,7 +251,7 @@ SetLocationAndFacingResult DeckRotationData::tryToReinstanceAtRotatedPosition(Ar
 		{
 			// Item.
 			const ItemIndex& item = onDeck.getItem();
-			const BlockIndex location = blocks.translatePosition(data.location, previousPivot, newPivot, previousFacing, newFacing);
+			const Point3D location = data.location.translate(previousPivot, newPivot, previousFacing, newFacing);
 			const Facing4 facing = util::rotateFacingByDifference(data.facing, previousFacing, newFacing);
 			// If setting location fails then we rollback all locations set thus far and return the failing status.
 			std::pair<ItemIndex, SetLocationAndFacingResult> result = items.location_tryToSet(item, location, facing);
@@ -270,17 +266,17 @@ SetLocationAndFacingResult DeckRotationData::tryToReinstanceAtRotatedPosition(Ar
 	// Reinstance projects.
 	for(auto& [project, data] : m_projects)
 	{
-		bool reservationsSuccessful = project->getCanReserve().translateAndReservePositions(blocks, std::move(data.reservedBlocksAndCallbacks), previousPivot, newPivot, previousFacing, newFacing);
+		bool reservationsSuccessful = project->getCanReserve().translateAndReservePositions(space, std::move(data.reservedPointsAndCallbacks), previousPivot, newPivot, previousFacing, newFacing);
 		if(!reservationsSuccessful)
 			projectsWhichCannotReserveRotatedPosition.insert(project);
 		project->setLocation(data.location);
 	}
 	// Reinstance fluids.
-	for(const auto& [block, fluidData] : m_fluids)
+	for(const auto& [point, fluidData] : m_fluids)
 	{
-		const BlockIndex location = blocks.translatePosition(block, previousPivot, newPivot, previousFacing, newFacing);
+		const Point3D location = point.translate(previousPivot, newPivot, previousFacing, newFacing);
 		for(const auto& [fluidType, volume] : fluidData)
-			blocks.fluid_add(location, volume, fluidType);
+			space.fluid_add(location, volume, fluidType);
 	}
 	// If an actor cannot reserve the rotated positions they must reset their objective.
 	for(const ActorIndex& actor : actorsWhichCannotReserveRotatedPosition)

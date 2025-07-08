@@ -27,13 +27,13 @@ TEST_CASE("dig")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Items& items = area.getItems();
 	Actors& actors = area.getActors();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
 	areaBuilderUtil::setSolidLayers(area, 2, 3, dirt);
 	FactionId faction = simulation.createFaction("Tower of Power");
-	area.m_blockDesignations.registerFaction(faction);
+	area.m_spaceDesignations.registerFaction(faction);
 	const DigObjectiveType& digObjectiveType = static_cast<const DigObjectiveType&>(ObjectiveType::getByName("dig"));
 	ActorIndex dwarf1 = actors.create({
 		.species=dwarf,
@@ -49,7 +49,7 @@ TEST_CASE("dig")
 		BlockIndex holeLocation = blocks.getIndex_i(8, 4, 3);
 		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
 		DigProject& project = area.m_hasDigDesignations.getForFactionAndBlock(faction, holeLocation);
-		CHECK(blocks.designation_has(holeLocation, faction, BlockDesignation::Dig));
+		CHECK(blocks.designation_has(holeLocation, faction, SpaceDesignation::Dig));
 		CHECK(area.m_hasDigDesignations.contains(faction, holeLocation));
 		CHECK(digObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));

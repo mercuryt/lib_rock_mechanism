@@ -16,7 +16,7 @@ struct FluidTypeParamaters
 	uint32_t viscosity;
 	Density density;
 	Step mistDuration;
-	DistanceInBlocks maxMistSpread;
+	Distance maxMistSpread;
 	MaterialTypeId freezesInto = MaterialTypeId::null();
 	float evaporationRate = 0.f;
 };
@@ -27,7 +27,7 @@ class FluidType
 	StrongVector<uint32_t, FluidTypeId> m_viscosity;
 	StrongVector<Density, FluidTypeId> m_density;
 	StrongVector<Step, FluidTypeId> m_mistDuration;
-	StrongVector<DistanceInBlocks, FluidTypeId> m_maxMistSpread;
+	StrongVector<Distance, FluidTypeId> m_maxMistSpread;
 	StrongVector<MaterialTypeId, FluidTypeId> m_freezesInto;
 	StrongVector<float, FluidTypeId> m_evaporationRate;
 public:
@@ -40,7 +40,7 @@ public:
 	[[nodiscard]] static uint32_t getViscosity(const FluidTypeId& id);
 	[[nodiscard]] static Density getDensity(const FluidTypeId& id);
 	[[nodiscard]] static Step getMistDuration(const FluidTypeId& id);
-	[[nodiscard]] static DistanceInBlocks getMaxMistSpread(const FluidTypeId& id);
+	[[nodiscard]] static Distance getMaxMistSpread(const FluidTypeId& id);
 	[[nodiscard]] static MaterialTypeId getFreezesInto(const FluidTypeId& id);
 	[[nodiscard]] static float getEvaporationRate(const FluidTypeId& id);
 	[[nodiscard]] static Temperature getFreezingPoint(const FluidTypeId& id);

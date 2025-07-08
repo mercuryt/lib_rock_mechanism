@@ -9,9 +9,9 @@ class Area;
 
 class UnmountObjective final : public Objective
 {
-	BlockIndex m_location;
+	Point3D m_location;
 public:
-	UnmountObjective(const BlockIndex& location) : Objective(Config::goToPriority), m_location(location) { }
+	UnmountObjective(const Point3D& location) : Objective(Config::goToPriority), m_location(location) { }
 	UnmountObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const override;
 	void execute(Area& area, const ActorIndex& actor) override;

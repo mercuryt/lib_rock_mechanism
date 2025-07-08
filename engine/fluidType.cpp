@@ -26,7 +26,7 @@ std::string FluidType::maybeGetName(const FluidTypeId& id) { if(!id.exists()) re
 uint32_t FluidType::getViscosity(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_viscosity[id]; };
 Density FluidType::getDensity(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_density[id]; };
 Step FluidType::getMistDuration(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_mistDuration[id]; };
-DistanceInBlocks FluidType::getMaxMistSpread(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_maxMistSpread[id]; };
+Distance FluidType::getMaxMistSpread(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_maxMistSpread[id]; };
 MaterialTypeId FluidType::getFreezesInto(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_freezesInto[id]; };
 float FluidType::getEvaporationRate(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_evaporationRate[id]; };
 Temperature FluidType::getFreezingPoint(const FluidTypeId& id)

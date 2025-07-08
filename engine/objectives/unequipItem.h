@@ -4,11 +4,11 @@
 class UnequipItemObjective final : public Objective
 {
 	ItemReference m_item;
-	BlockIndex m_block;
+	Point3D m_point;
 public:
-	UnequipItemObjective(const ItemReference& item, const BlockIndex& block);
+	UnequipItemObjective(const ItemReference& item, const Point3D& point);
 	UnequipItemObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
-	//TODO: check if block can hold item.
+	//TODO: check if point can hold item.
 	void execute(Area&, const ActorIndex& actor);
 	void cancel(Area&, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }

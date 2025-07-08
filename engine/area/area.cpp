@@ -1,9 +1,9 @@
 /*
-* A game map made up of Blocks arranged in a cuboid with dimensions x, y, z.
+* A game map made up of Space arranged in a cuboid with dimensions x, y, z.
 */
 
 #include "area/area.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "actors/actors.h"
 #include "items/items.h"
 #include "plants.h"
@@ -24,14 +24,14 @@
 #include <string>
 #include <sys/types.h>
 
-Area::Area(AreaId id, std::string n, Simulation& s, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) :
+Area::Area(AreaId id, std::string n, Simulation& s, const Distance& x, const Distance& y, const Distance& z) :
 	#ifndef NDEBUG
-		m_blocks(std::make_unique<Blocks>(*this, x, y, z)),
+		m_points(std::make_unique<Space>(*this, x, y, z)),
 		m_actors(std::make_unique<Actors>(*this)),
 		m_plants(std::make_unique<Plants>(*this)),
 		m_items(std::make_unique<Items>(*this)),
 	#else
-		m_blocks(*this, x, y, z),
+		m_points(*this, x, y, z),
 		m_actors(*this),
 		m_plants(*this),
 		m_items(*this),
@@ -52,16 +52,13 @@ Area::Area(AreaId id, std::string n, Simulation& s, const DistanceInBlocks& x, c
 	m_hasFluidGroups(*this),
 	m_hasRain(*this, s),
 	m_hasEvaporation(*this),
-	m_blockDesignations(*this),
 	m_octTree(Cuboid(Point3D{x, y, z}, Point3D::create(0,0,0))),
 	m_visionRequests(*this),
 	m_visionCuboids(*this),
-	m_decks(*this),
 	m_name(n),
 	m_simulation(s),
 	m_id(id)
 {
-	m_exteriorPortals.initalize(*this);
 	setup();
 	m_visionCuboids.initalize();
 	m_hasRain.scheduleRestart();
@@ -69,12 +66,12 @@ Area::Area(AreaId id, std::string n, Simulation& s, const DistanceInBlocks& x, c
 }
 Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation) :
 	#ifndef NDEBUG
-		m_blocks(std::make_unique<Blocks>(*this, data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>())),
+		m_points(std::make_unique<Space>(*this, data["space"]["x"].get<Distance>(), data["space"]["y"].get<Distance>(), data["space"]["z"].get<Distance>())),
 		m_actors(std::make_unique<Actors>(*this)),
 		m_plants(std::make_unique<Plants>(*this)),
 		m_items(std::make_unique<Items>(*this)),
 	#else
-		m_blocks(*this, data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>()),
+		m_points(*this, data["space"]["x"].get<Distance>(), data["space"]["y"].get<Distance>(), data["space"]["z"].get<Distance>()),
 		m_actors(*this),
 		m_plants(*this),
 		m_items(*this),
@@ -95,19 +92,17 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_hasFluidGroups(*this),
 	m_hasRain(*this, simulation),
 	m_hasEvaporation(*this),
-	m_blockDesignations(*this),
-	m_octTree(Cuboid(Point3D{data["blocks"]["x"].get<DistanceInBlocks>(), data["blocks"]["y"].get<DistanceInBlocks>(), data["blocks"]["z"].get<DistanceInBlocks>()}, Point3D::create(0,0,0))),
+	m_octTree(Cuboid(Point3D{data["space"]["x"].get<Distance>(), data["space"]["y"].get<Distance>(), data["space"]["z"].get<Distance>()}, Point3D::create(0,0,0))),
 	m_visionRequests(*this),
 	m_visionCuboids(*this),
-	m_decks(*this),
 	m_name(data["name"].get<std::string>()),
 	m_simulation(simulation),
 	m_id(data["id"].get<AreaId>())
 {
-	// Record id now so json block references will function later in this method.
+	// Record id now so json point references will function later in this method.
 	m_simulation.m_hasAreas->recordId(*this);
 	setup();
-	getBlocks().load(data["blocks"], deserializationMemo);
+	getSpace().load(data["space"], deserializationMemo);
 	m_visionCuboids.initalize();
 	m_hasFluidGroups.clearMergedFluidGroups();
 	data["visionCuboids"].get_to(m_visionCuboids);
@@ -123,7 +118,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load Actors.
 	getActors().load(data["actors"]);
 	// Load designations.
-	m_blockDesignations.load(data["designations"], deserializationMemo);
+	data["designations"].get_to(m_spaceDesignations);
 	// Load Projects
 	m_hasConstructionDesignations.load(data["hasConstructionDesignations"], deserializationMemo, *this);
 	m_hasDigDesignations.load(data["hasDigDesignations"], deserializationMemo, *this);
@@ -149,8 +144,8 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	// Load fluid sources.
 	m_fluidSources.load(data["fluidSources"], deserializationMemo);
 	// Load caveInCheck
-	for(const Json& blockReference : data["caveInCheck"])
-		m_caveInCheck.insert(blockReference.get<BlockIndex>());
+	for(const Json& point : data["caveInCheck"])
+		m_caveInCheck.insert(point.get<Point3D>());
 	// Load rain.
 	if(data.contains("rain"))
 		m_hasRain.load(data["rain"], deserializationMemo);
@@ -174,10 +169,10 @@ Json Area::toJson() const
 {
 	Json data{
 		{"id", m_id}, {"name", m_name},
-		{"actors", getActors().toJson()}, {"items", getItems().toJson()}, {"blocks", getBlocks().toJson()},
+		{"actors", getActors().toJson()}, {"items", getItems().toJson()}, {"space", getSpace().toJson()},
 		{"plants", getPlants().toJson()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires.toJson()},
 		{"sleepingSpots", m_hasSleepingSpots.toJson()}, {"caveInCheck", Json::array()}, {"rain", m_hasRain.toJson()},
-		{"designations", m_blockDesignations.toJson()}
+		{"designations", m_spaceDesignations.toJson()}
 	};
 	data["hasFarmFields"] = m_hasFarmFields.toJson();
 	data["hasSleepingSpots"] = m_hasSleepingSpots.toJson();
@@ -189,8 +184,8 @@ Json Area::toJson() const
 	data["targetedHauling"] = m_hasTargetedHauling.toJson();
 	data["visionCuboids"] = m_visionCuboids;
 	data["exteriorPortals"] = m_exteriorPortals;
-	for(BlockIndex block : m_caveInCheck)
-		data["caveInCheck"].push_back(block);
+	for(Point3D point : m_caveInCheck)
+		data["caveInCheck"].push_back(point);
 	m_opacityFacade.validate(*this);
 	return data;
 }
@@ -212,39 +207,6 @@ void Area::doStep()
 	m_eventSchedule.doStep(m_simulation.m_step);
 }
 /*
-BlockIndex Area::getBlockForAdjacentLocation(WorldLocation& location)
-{
-	if(&location == m_worldLocation->west)
-		// West
-		return getGroundLevel(m_sizeX - 2, (m_sizeY - 1) / 2);
-	if(std::ranges::find(m_worldLocation->north, &location) != m_worldLocation->north.end())
-	{
-		if(*m_worldLocation->north.begin() == &location)
-			// northeast
-			return getGroundLevel(0,0);
-		else if(*m_worldLocation->north.end() - 1 == &location)
-			// northwest
-			return getGroundLevel(m_sizeX - 1, 0);
-		else
-			// center north
-			return getGroundLevel((m_sizeX - 1) / 2, 0);
-	}
-	if(std::ranges::find(m_worldLocation->south, &location) != m_worldLocation->south.end())
-	{
-		if(*m_worldLocation->south.begin() == &location)
-			// southeast
-			return getGroundLevel(0, m_sizeY - 1);
-		else if(*m_worldLocation->south.end() - 1 == &location)
-			// southwest
-			return getGroundLevel(m_sizeX - 1,  m_sizeY - 1);
-		else
-			// center south
-			return getGroundLevel((m_sizeX - 1) / 2,  m_sizeY - 1);
-	}
-	// East
-	assert(&location == m_worldLocation->east);
-	return getGroundLevel(0, (m_sizeY - 1) / 2);
-}
 */
 void Area::updateClimate()
 {

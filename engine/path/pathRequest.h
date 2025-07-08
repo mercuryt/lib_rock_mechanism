@@ -13,8 +13,8 @@ class PathRequestDepthFirst;
 
 struct PathRequest
 {
-	BlockIndex start;
-	DistanceInBlocks maxRange;
+	Point3D start;
+	Distance maxRange;
 	ActorReference actor;
 	ShapeId shape;
 	FactionId faction;
@@ -23,7 +23,7 @@ struct PathRequest
 	bool detour = false;
 	bool adjacent = false;
 	bool reserveDestination = false;
-	PathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination);
+	PathRequest(Point3D start, Distance maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination);
 	PathRequest() = default;
 	PathRequest(const Json& data, Area& area);
 	[[nodiscard]] virtual Json toJson() const;
@@ -37,8 +37,8 @@ struct PathRequest
 inline void to_json(Json& data, const PathRequest& pathRequest){ data = pathRequest.toJson(); }
 struct PathRequestDepthFirst : public PathRequest
 {
-	BlockIndex huristicDestination;
-	PathRequestDepthFirst(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex huristicDestination);
+	Point3D huristicDestination;
+	PathRequestDepthFirst(Point3D start, Distance maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, Point3D huristicDestination);
 	PathRequestDepthFirst() = default;
 	PathRequestDepthFirst(const Json& data, Area& area);
 	void cancel(Area& area) override;
@@ -48,7 +48,7 @@ struct PathRequestDepthFirst : public PathRequest
 };
 struct PathRequestBreadthFirst : public PathRequest
 {
-	PathRequestBreadthFirst(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination);
+	PathRequestBreadthFirst(Point3D start, Distance maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination);
 	PathRequestBreadthFirst() = default;
 	PathRequestBreadthFirst(const Json& data, Area& area);
 	void cancel(Area& area) override;
@@ -58,16 +58,16 @@ struct PathRequestBreadthFirst : public PathRequest
 };
 struct GoToPathRequest : public PathRequestDepthFirst
 {
-	BlockIndex destination;
-	GoToPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex destination);
+	Point3D destination;
+	GoToPathRequest(Point3D start, Distance maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, Point3D destination);
 	GoToPathRequest(const Json& data, Area& area);
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
 	[[nodiscard]] Json toJson() const override;
 };
 struct GoToAnyPathRequest : public PathRequestDepthFirst
 {
-	SmallSet<BlockIndex> destinations;
-	GoToAnyPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, BlockIndex huristicDestination, SmallSet<BlockIndex> destinations);
+	SmallSet<Point3D> destinations;
+	GoToAnyPathRequest(Point3D start, Distance maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, Point3D huristicDestination, SmallSet<Point3D> destinations);
 	GoToAnyPathRequest(const Json& data, Area& area);
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
 	[[nodiscard]] Json toJson() const override;
@@ -75,22 +75,22 @@ struct GoToAnyPathRequest : public PathRequestDepthFirst
 struct GoToFluidTypePathRequest : public PathRequestBreadthFirst
 {
 	FluidTypeId fluidType;
-	GoToFluidTypePathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, FluidTypeId fluidType);
+	GoToFluidTypePathRequest(Point3D start, Distance maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, FluidTypeId fluidType);
 	GoToFluidTypePathRequest(const Json& data, Area& area);
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	[[nodiscard]] Json toJson() const override;
 };
-struct GoToBlockDesignationPathRequest : public PathRequestBreadthFirst
+struct GoToSpaceDesignationPathRequest : public PathRequestBreadthFirst
 {
-	BlockDesignation designation;
-	GoToBlockDesignationPathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, BlockDesignation designation);
-	GoToBlockDesignationPathRequest(const Json& data, Area& area);
+	SpaceDesignation designation;
+	GoToSpaceDesignationPathRequest(Point3D start, Distance maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, SpaceDesignation designation);
+	GoToSpaceDesignationPathRequest(const Json& data, Area& area);
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	[[nodiscard]] Json toJson() const override;
 };
 struct GoToEdgePathRequest : public PathRequestBreadthFirst
 {
-	GoToEdgePathRequest(BlockIndex start, DistanceInBlocks maxRange, ActorReference actor, ShapeId shape, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination);
+	GoToEdgePathRequest(Point3D start, Distance maxRange, ActorReference actor, ShapeId shape, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination);
 	GoToEdgePathRequest(const Json& data, Area& area);
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	[[nodiscard]] Json toJson() const override;

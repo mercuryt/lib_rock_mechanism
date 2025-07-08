@@ -10,7 +10,7 @@
 #include "simulation/hasItems.h"
 #include "actors/actors.h"
 #include "items/items.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "path/terrainFacade.hpp"
 #include "numericTypes/types.h"
 #include "objectives/wander.h"
@@ -89,17 +89,17 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep(Simulation&, Area*)
 		if(projectWorker.haulSubproject != nullptr)
 			continue;
 		ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-		auto destinationConditon = [this, actorIndex](const BlockIndex& block, const Facing4&) ->std::pair<bool, BlockIndex>
+		auto destinationConditon = [this, actorIndex](const Point3D& point, const Facing4&) ->std::pair<bool, Point3D>
 		{
-			if(blockContainsDesiredItemOrActor(block, actorIndex))
-				return std::make_pair(true, block);
-			return std::make_pair(false, BlockIndex::null());
+			if(pointContainsDesiredItemOrActor(point, actorIndex))
+				return std::make_pair(true, point);
+			return std::make_pair(false, Point3D::null());
 		};
 		// Path result is unused, running only for condition side effect.
-		constexpr bool anyOccupiedBlock = true;
+		constexpr bool anyOccupiedPoint = true;
 		constexpr bool adjacent = true;
 		[[maybe_unused]] FindPathResult result = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actorIndex)).
-			findPathToConditionBreadthFirstWithoutMemo<anyOccupiedBlock, decltype(destinationConditon)>(
+			findPathToConditionBreadthFirstWithoutMemo<anyOccupiedPoint, decltype(destinationConditon)>(
 				destinationConditon,
 				actors.getLocation(actorIndex),
 				actors.getFacing(actorIndex),
@@ -196,12 +196,12 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep(Simulation&, Area* ar
 	}
 }
 void ProjectTryToMakeHaulSubprojectThreadedTask::clearReferences(Simulation&, Area*) { m_project.m_tryToHaulThreadedTask.clearPointer(); }
-bool ProjectTryToMakeHaulSubprojectThreadedTask::blockContainsDesiredItemOrActor(const BlockIndex& block, const ActorIndex& actor)
+bool ProjectTryToMakeHaulSubprojectThreadedTask::pointContainsDesiredItemOrActor(const Point3D& point, const ActorIndex& actor)
 {
-	auto& blocks = m_project.m_area.getBlocks();
+	auto& space = m_project.m_area.getSpace();
 	Actors& actors = m_project.m_area.getActors();
 	Items& items = m_project.m_area.getItems();
-	for(const ItemIndex& item : blocks.item_getAll(block))
+	for(const ItemIndex& item : space.item_getAll(point))
 	{
 		ItemReference itemRef = items.m_referenceData.getReference(item);
 		if(m_project.m_itemsToPickup.contains(itemRef))
@@ -221,7 +221,7 @@ bool ProjectTryToMakeHaulSubprojectThreadedTask::blockContainsDesiredItemOrActor
 				return true;
 		}
 	}
-	for(const ActorIndex& targetActor : blocks.actor_getAll(block))
+	for(const ActorIndex& targetActor : space.actor_getAll(point))
 	{
 		ActorReference actorRef = actors.getReference(targetActor);
 		if(m_project.m_actorsToPickup.contains(actorRef))
@@ -246,7 +246,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 	SmallSet<ActorIndex> recordedActors;
 	Actors& actors = m_project.m_area.getActors();
 	Items& items = m_project.m_area.getItems();
-	Blocks& blocks = m_project.m_area.getBlocks();
+	Space& space = m_project.m_area.getSpace();
 	for(auto& [candidate, objective] : m_project.m_workerCandidatesAndTheirObjectives)
 	{
 		assert(!m_project.m_making.contains(candidate));
@@ -296,7 +296,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 				assert(counts.reserved <= counts.required);
 				ItemReference itemRef = items.getReference(item);
 				if(
-					items.getBlocks(item).contains(m_project.m_location) ||
+					items.getOccupied(item).contains(m_project.m_location) ||
 					items.isAdjacentToLocation(item, m_project.m_location)
 				)
 				{
@@ -316,7 +316,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 				ActorReference actorRef = actors.getReference(actor);
 				ActorOrItemReference ref = ActorOrItemReference::createForActor(actorRef);
 				if(
-					actors.getBlocks(actor).contains(m_project.m_location) ||
+					actors.getOccupied(actor).contains(m_project.m_location) ||
 					actors.isAdjacentToLocation(actor, m_project.m_location)
 				)
 					m_actorAlreadyAtSite.insert(actorRef);
@@ -339,7 +339,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 				if(contains != 0)
 					fluidData.volumeFound += contains;
 				if(
-					items.getBlocks(item).contains(m_project.m_location) ||
+					items.getOccupied(item).contains(m_project.m_location) ||
 					items.isAdjacentToLocation(item, m_project.m_location)
 				)
 				{
@@ -353,22 +353,22 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 				else
 					m_project.m_fluidContainersToPickup.insert(ref);
 			};
-			auto recordFluidOnGround = [&](const FluidTypeId& fluidType, const BlockIndex& block)
+			auto recordFluidOnGround = [&](const FluidTypeId& fluidType, const Point3D& point)
 			{
 				auto& fluidData = m_project.m_requiredFluids[fluidType];
-				if(fluidData.foundBlocks.contains(block))
+				if(fluidData.foundPoints.contains(point))
 					return;
-				fluidData.foundBlocks.insert(block);
-				CollisionVolume volumeFound = blocks.fluid_volumeOfTypeContains(block, fluidType);
+				fluidData.foundPoints.insert(point);
+				CollisionVolume volumeFound = space.fluid_volumeOfTypeContains(point, fluidType);
 				CollisionVolume toRecord = std::min(volumeFound, fluidData.volumeRequired - fluidData.volumeFound);
 				fluidData.volumeFound += toRecord;
 			};
 			// Verfy the worker can path to the required materials. Cumulative for all candidates in this step but reset if not satisfied.
 			// capture by reference is used here because the pathing is being done immideatly instead of batched.
-			auto destinationCondition = [&](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
+			auto destinationCondition = [&](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
 			{
-				auto& blocks = m_project.m_area.getBlocks();
-				for(ItemIndex item : blocks.item_getAll(block))
+				auto& space = m_project.m_area.getSpace();
+				for(ItemIndex item : space.item_getAll(point))
 				{
 					if(items.reservable_isFullyReserved(item, m_project.m_faction))
 						continue;
@@ -382,14 +382,14 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 							continue;
 						recordItemOnGround(item, projectRequirementCounts);
 						if(m_project.reservationsComplete())
-							return std::make_pair(true, block);
+							return std::make_pair(true, point);
 					}
 					if(ItemType::getCanHoldFluids(items.getItemType(item)) && !m_project.m_requiredFluids.empty())
 					{
 						recordContainerOnGround(item, m_project.m_requiredFluids.back().first);
 					}
 				}
-				for(ActorIndex actor : blocks.actor_getAll(block))
+				for(ActorIndex actor : space.actor_getAll(point))
 				{
 					ActorReference actorRef = actors.getReference(actor);
 					for(const ActorReference& otherRef : m_project.m_requiredActors)
@@ -402,30 +402,30 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 							continue;
 						recordActorOnGround(actor);
 						if(m_project.reservationsComplete())
-							return std::make_pair(true, block);
+							return std::make_pair(true, point);
 					}
 				}
-				for(const FluidData& fluidData : blocks.fluid_getAll(block))
+				for(const FluidData& fluidData : space.fluid_getAll(point))
 				{
 					if(m_project.m_requiredFluids.contains(fluidData.type))
 					{
 						auto& requiredData = m_project.m_requiredFluids[fluidData.type];
 						if(requiredData.volumeFound < requiredData.volumeRequired)
 						{
-							recordFluidOnGround(fluidData.type, block);
+							recordFluidOnGround(fluidData.type, point);
 							if(m_project.reservationsComplete())
-								return std::make_pair(true, block);
+								return std::make_pair(true, point);
 						}
 					}
 				}
-				return std::make_pair(false, BlockIndex::null());
+				return std::make_pair(false, Point3D::null());
 			};
 			// TODO: Path is not used, find path is run for side effects of predicate.
 			TerrainFacade& terrainFacade = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(candidateIndex));
-			constexpr bool anyOccupiedBlock = true;
+			constexpr bool anyOccupiedPoint = true;
 			constexpr bool detour = false;
 			constexpr bool adjacent = true;
-			[[maybe_unused]] FindPathResult result = terrainFacade.findPathToConditionBreadthFirstWithoutMemo<anyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), detour, adjacent);
+			[[maybe_unused]] FindPathResult result = terrainFacade.findPathToConditionBreadthFirstWithoutMemo<anyOccupiedPoint, decltype(destinationCondition)>(destinationCondition, actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), detour, adjacent);
 		}
 	}
 	if(!m_project.reservationsComplete())
@@ -618,7 +618,7 @@ void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 		fluidData.counts.reserved = Quantity::create(0);
 		fluidData.counts.delivered = Quantity::create(0);
 		fluidData.volumeFound = CollisionVolume::create(0);
-		fluidData.foundBlocks.clear();
+		fluidData.foundPoints.clear();
 	}
 	m_project.m_itemsToPickup.clear();
 	m_project.m_actorsToPickup.clear();
@@ -628,7 +628,7 @@ void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 	m_project.m_requiredFluids.clear();
 }
 // Derived classes are expected to provide getDuration, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete.
-Project::Project(const FactionId& faction, Area& area, const BlockIndex& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback, const SmallSet<BlockIndex>& additionalBlocksToReserve) :
+Project::Project(const FactionId& faction, Area& area, const Point3D& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback, const SmallSet<Point3D>& additionalPointsToReserve) :
 	m_finishEvent(area.m_eventSchedule),
 	m_tryToHaulEvent(area.m_eventSchedule),
 	m_tryToReserveEvent(area.m_eventSchedule),
@@ -641,12 +641,12 @@ Project::Project(const FactionId& faction, Area& area, const BlockIndex& locatio
 	m_minimumMoveSpeed(Config::minimumHaulSpeedInital),
 	m_maxWorkers(maxWorkers)
 {
-	Blocks& blocks = m_area.getBlocks();
-	blocks.reserve(m_location, m_canReserve, std::move(locationDishonorCallback));
-	for(const BlockIndex& block : additionalBlocksToReserve)
+	Space& space = m_area.getSpace();
+	space.reserve(m_location, m_canReserve, std::move(locationDishonorCallback));
+	for(const Point3D& point : additionalPointsToReserve)
 		// This isn't what required shape callback was meant for but the code would be the same. Rename it maybe?
-		blocks.reserve(block, m_canReserve, std::make_unique<ProjectRequiredShapeDishonoredCallback>(*this));
-	blocks.project_add(m_location, *this);
+		space.reserve(point, m_canReserve, std::make_unique<ProjectRequiredShapeDishonoredCallback>(*this));
+	space.project_add(m_location, *this);
 }
 Project::Project(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
 	m_finishEvent(area.m_eventSchedule),
@@ -656,7 +656,7 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo, Are
 	m_tryToAddWorkersThreadedTask(area.m_threadedTaskEngine),
 	m_canReserve(data["faction"].get<FactionId>()),
 	m_area(deserializationMemo.area(data["area"])), m_faction(data["faction"].get<FactionId>()),
-	m_location(data["location"].get<BlockIndex>()), m_haulRetries(data["haulRetries"].get<Quantity>()),
+	m_location(data["location"].get<Point3D>()), m_haulRetries(data["haulRetries"].get<Quantity>()),
 	m_minimumMoveSpeed(data["minimumMoveSpeed"].get<Speed>()),
 	m_maxWorkers(data["maxWorkers"].get<Quantity>()),
 	m_requirementsLoaded(data["requirementsLoaded"].get<bool>()),
@@ -735,7 +735,7 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo, Are
 	if(data.contains("tryToAddWorkersThreadedTask"))
 		m_tryToAddWorkersThreadedTask.create(*this);
 	deserializationMemo.m_projects[data["address"].get<uintptr_t>()] = this;
-	m_area.getBlocks().project_add(m_location, *this);
+	m_area.getSpace().project_add(m_location, *this);
 }
 void Project::loadWorkers(const Json& data, DeserializationMemo& deserializationMemo)
 {
@@ -1063,8 +1063,8 @@ void Project::complete()
 	Items& items = m_area.getItems();
 	Actors& actors = m_area.getActors();
 	m_canReserve.deleteAllWithoutCallback();
-	auto& blocks = m_area.getBlocks();
-	blocks.project_remove(m_location, *this);
+	auto& space = m_area.getSpace();
+	space.project_remove(m_location, *this);
 	for(auto& [item, quantity] : m_toConsume)
 	{
 		item.validate(items.m_referenceData);
@@ -1087,23 +1087,23 @@ void Project::complete()
 		ShapeId shape = ItemType::getShape(itemType);
 		if(quantity != 0)
 			shape = Shape::mutateMultiplyVolume(shape, quantity);
-		const auto [block, facing] = blocks.shape_getNearestEnterableEverBlockWithFacing(m_location, shape, moveType);
+		const auto [point, facing] = space.shape_getNearestEnterableEverPointWithFacing(m_location, shape, moveType);
 		// TODO: send facing to addGeneric?
-		ItemIndex item = blocks.item_addGeneric(block, itemType, materialType, quantity);
+		ItemIndex item = space.item_addGeneric(point, itemType, materialType, quantity);
 		// Item may be newly created or it may be prexisting, and thus already designated for stockpileing.
 		if(!items.stockpile_canBeStockPiled(item, m_faction))
 			m_area.m_hasStockPiles.getForFaction(m_faction).addItem(item);
 	}
 	for(auto& [actor, projectWorker] : m_workers)
 		actors.project_unset(actor.getIndex(actors.m_referenceData));
-	// If onComplete sets the location as impassible the unconsumed items delivered will be distributed around the block.
+	// If onComplete sets the location as impassible the unconsumed items delivered will be distributed around the point.
 	// Spawn contained updates it's item reference when generics combine.
 	onComplete();
 }
 void Project::cancel()
 {
 	m_canReserve.deleteAllWithoutCallback();
-	m_area.getBlocks().project_remove(m_location, *this);
+	m_area.getSpace().project_remove(m_location, *this);
 	Actors& actors = m_area.getActors();
 	for(auto& [actor, projectWorker] : m_workers)
 		actors.project_unset(actor.getIndex(actors.m_referenceData));
@@ -1173,7 +1173,7 @@ void Project::haulSubprojectCancel(HaulSubproject& haulSubproject)
 }
 void Project::setLocationDishonorCallback(std::unique_ptr<DishonorCallback> dishonorCallback)
 {
-	m_area.getBlocks().setReservationDishonorCallback(m_location, m_canReserve, std::move(dishonorCallback));
+	m_area.getSpace().setReservationDishonorCallback(m_location, m_canReserve, std::move(dishonorCallback));
 }
 void Project::setDelayOn()
 {
@@ -1283,13 +1283,13 @@ void Project::clearReferenceFromRequiredItems(const ItemReference& ref)
 }
 void Project::clearLocation()
 {
-	m_area.getBlocks().project_remove(m_location, *this);
+	m_area.getSpace().project_remove(m_location, *this);
 	m_location.clear();
 }
-void Project::setLocation(const BlockIndex& block)
+void Project::setLocation(const Point3D& point)
 {
-	m_area.getBlocks().project_add(block, *this);
-	m_location = block;
+	m_area.getSpace().project_add(point, *this);
+	m_location = point;
 }
 // For testing.
 bool Project::hasCandidate(const ActorIndex& actor) const
@@ -1323,37 +1323,4 @@ std::vector<std::pair<ActorIndex, Objective*>> Project::getWorkersAndCandidatesW
 	for(auto& pair : m_workerCandidatesAndTheirObjectives)
 		output.emplace_back(pair.first.getIndex(actors.m_referenceData), pair.second);
 	return output;
-}
-void BlockHasProjects::add(Project& project)
-{
-	FactionId faction = project.getFaction();
-	assert(!m_data.contains(faction) || !m_data[faction].contains(&project));
-	m_data[faction].insert(&project);
-}
-void BlockHasProjects::remove(Project& project)
-{
-	FactionId faction = project.getFaction();
-	assert(m_data.contains(faction) && m_data[faction].contains(&project));
-	if(m_data[faction].size() == 1)
-		m_data.erase(faction);
-	else
-		m_data[faction].erase(&project);
-}
-Percent BlockHasProjects::getProjectPercentComplete(const FactionId& faction) const
-{
-	if(!m_data.contains(faction))
-		return Percent::create(0);
-	for(Project* project : m_data[faction])
-		if(project->getPercentComplete() != 0)
-			return project->getPercentComplete();
-	return Percent::create(0);
-}
-Project* BlockHasProjects::get(const FactionId& faction) const
-{
-	if(!m_data.contains(faction))
-		return nullptr;
-	for(Project* project : m_data[faction])
-		if(project->finishEventExists())
-			return project;
-	return nullptr;
 }

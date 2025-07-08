@@ -34,15 +34,15 @@ void AnimalsArriveDramaArc::callback()
 	auto& random = m_area->m_simulation.m_random;
 	if(m_isActive)
 	{
-		SmallSet<BlockIndex> exclude;
+		SmallSet<Point3D> exclude;
 		// Spawn.
 		while(m_quantity-- != 0)
 		{
 			Percent percentGrown = Percent::create(std::min(100, random.getInRange(15, 500)));
-			DistanceInBlocks maxBlockDistance = DistanceInBlocks::create(10);
+			Distance maxDistance = Distance::create(10);
 			ShapeId shape = AnimalSpecies::shapeForPercentGrown(m_species, percentGrown);
 			MoveTypeId moveType = AnimalSpecies::getMoveType(m_species);
-			BlockIndex location = findLocationOnEdgeForNear(shape, moveType, m_entranceBlock, maxBlockDistance, exclude);
+			Point3D location = findLocationOnEdgeForNear(shape, moveType, m_entrancePoint, maxDistance, exclude);
 			if(location.exists())
 			{
 				exclude.insert(location);
@@ -68,7 +68,7 @@ void AnimalsArriveDramaArc::callback()
 		{
 			scheduleDepart();
 			m_isActive = false;
-			m_entranceBlock.clear();
+			m_entrancePoint.clear();
 			m_species.clear();
 			m_hungerPercent = Percent::create(0);
 			m_thristPercent = Percent::create(0);
@@ -84,8 +84,8 @@ void AnimalsArriveDramaArc::callback()
 		m_quantity = quantity;
 		// Find entry point.
 		ShapeId shape = AnimalSpecies::shapeForPercentGrown(m_species, Percent::create(100));
-		m_entranceBlock = getEntranceToArea(shape, AnimalSpecies::getMoveType(species));
-		if(m_entranceBlock.empty())
+		m_entrancePoint = getEntranceToArea(shape, AnimalSpecies::getMoveType(species));
+		if(m_entrancePoint.empty())
 			scheduleArrive();
 		else
 		{
@@ -95,7 +95,7 @@ void AnimalsArriveDramaArc::callback()
 			m_isActive = true;
 			// Anounce.
 			std::string message = std::to_string(m_quantity.get()) + " " + AnimalSpecies::getName(m_species) + " spotted nearby.";
-			m_engine.getSimulation().m_hasDialogues.createMessageBox(message, m_entranceBlock);
+			m_engine.getSimulation().m_hasDialogues.createMessageBox(message, m_entrancePoint);
 			// Reenter.
 			callback();
 		}
@@ -181,7 +181,7 @@ std::pair<AnimalSpeciesId, Quantity> AnimalsArriveDramaArc::getSpeciesAndQuantit
 }
 bool AnimalsArriveDramaArc::isSmall(const ShapeId& shape)
 {
-	return CollisionVolume::create(Shape::getPositions(shape).front().offset.z()) < Config::maxBlockVolume / 4 && Shape::getPositions(shape).size() == 1;
+	return CollisionVolume::create(Shape::getPositions(shape).front().offset.z()) < Config::maxPointVolume / 4 && Shape::getPositions(shape).size() == 1;
 }
 bool AnimalsArriveDramaArc::isLarge(const ShapeId& shape)
 {

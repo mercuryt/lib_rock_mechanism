@@ -8,7 +8,7 @@ struct ItemTypeId;
 struct AnimalSpeciesId;
 struct PlantSpeciesId;
 struct FluidTypeId;
-struct BlockFeatureType;
+struct PointFeatureType;
 
 struct PlantSpeciesDisplayData final
 {

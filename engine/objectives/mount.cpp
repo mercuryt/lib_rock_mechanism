@@ -21,7 +21,7 @@ void MountObjective::execute(Area& area, const ActorIndex& actor)
 	const ActorIndex& toMount = m_toMount.getIndex(actors.m_referenceData);
 	if(actors.isAdjacentToActor(actor, toMount))
 	{
-		const BlockIndex& location = actors.mount_findLocationToMountOn(actor, toMount);
+		const Point3D& location = actors.mount_findLocationToMountOn(actor, toMount);
 		if(location.empty())
 		{
 			// Cannot mount.

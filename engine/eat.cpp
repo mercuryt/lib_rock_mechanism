@@ -13,7 +13,7 @@
 #include "objectives/eat.h"
 #include "plants.h"
 #include "items/items.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 HungerEvent::HungerEvent(Area& area, const Step& delay, const ActorIndex& a, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_actor(a) { }
 void HungerEvent::execute(Simulation&, Area* area)
@@ -40,7 +40,7 @@ MustEat::MustEat(Area& area, const Json& data, const ActorIndex& actor, AnimalSp
 {
 	m_actor.setIndex(actor, area.getActors().m_referenceData);
 	if(data.contains("eatingLocation"))
-		m_eatingLocation = data["eatingLocation"].get<BlockIndex>();
+		m_eatingLocation = data["eatingLocation"].get<Point3D>();
 	if(data.contains("hungerEventStart"))
 	{
 		Step start = data["hungerEventStart"].get<Step>();
@@ -155,35 +155,35 @@ Percent MustEat::getPercentStarved() const
 		return Percent::create(0);
 	return m_hungerEvent.percentComplete();
 }
-uint32_t MustEat::getDesireToEatSomethingAt(Area& area, const BlockIndex& block) const
+uint32_t MustEat::getDesireToEatSomethingAt(Area& area, const Point3D& point) const
 {
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	Items& items = area.getItems();
 	Actors& actors = area.getActors();
 	const ActorReferenceData &referenceData = area.getActors().m_referenceData;
 	AnimalSpeciesId species = actors.getSpecies(m_actor.getIndex(referenceData));
-	for(ItemIndex item : blocks.item_getAll(block))
+	for(ItemIndex item : space.item_getAll(point))
 	{
 		if(items.isPreparedMeal(item))
 			return maxRankedEatDesire;
 		if(ItemType::getEdibleForDrinkersOf(items.getItemType(item)) == AnimalSpecies::getFluidType(species))
 			return 2;
 	}
-	if(AnimalSpecies::getEatsFruit(species) && blocks.plant_exists(block))
+	if(AnimalSpecies::getEatsFruit(species) && space.plant_exists(point))
 	{
-		const PlantIndex plant = blocks.plant_get(block);
+		const PlantIndex plant = space.plant_get(point);
 		if(area.getPlants().getFruitMass(plant) != 0)
 			return 2;
 	}
 	if(AnimalSpecies::getEatsMeat(species))
 	{
 		const ActorReferenceData &referenceData = area.getActors().m_referenceData;
-		for(ActorIndex actor : blocks.actor_getAll(block))
+		for(ActorIndex actor : space.actor_getAll(point))
 			if(m_actor.getIndex(referenceData) != actor && !actors.isAlive(actor) && AnimalSpecies::getFluidType(actors.getSpecies(actor)) == AnimalSpecies::getFluidType(species))
 				return 1;
 	}
-	if(AnimalSpecies::getEatsLeaves(species) && blocks.plant_exists(block))
-		if(area.getPlants().getPercentFoliage(blocks.plant_get(block)) != 0)
+	if(AnimalSpecies::getEatsLeaves(species) && space.plant_exists(point))
+		if(area.getPlants().getPercentFoliage(space.plant_get(point)) != 0)
 			return 3;
 	return 0;
 }
@@ -206,36 +206,36 @@ uint32_t MustEat::getMinimumAcceptableDesire(Area& area) const
 	}
 	return 0;
 }
-BlockIndex MustEat::getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability(Area& area)
+Point3D MustEat::getAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(Area& area)
 {
-	std::array<BlockIndex, maxRankedEatDesire> candidates;
-	candidates.fill(BlockIndex::null());
+	std::array<Point3D, maxRankedEatDesire> candidates;
+	candidates.fill(Point3D::null());
 	ActorIndex actor = m_actor.getIndex(area.getActors().m_referenceData);
 	//TODO: abstract predicate generation from PathRequest constructor and use here as well.
-	std::function<bool(const BlockIndex&)> predicate;
+	std::function<bool(const Point3D&)> predicate;
 	if(area.getActors().isSentient(actor))
-		predicate = [&](const BlockIndex& block)
+		predicate = [&](const Point3D& point)
 		{
-			uint32_t eatDesire = getDesireToEatSomethingAt(area, block);
+			uint32_t eatDesire = getDesireToEatSomethingAt(area, point);
 			if(eatDesire < getMinimumAcceptableDesire(area))
 				return false;
 			if(eatDesire == maxRankedEatDesire)
 				return true;
 			if(eatDesire != 0 && candidates[eatDesire - 1u].empty())
-				candidates[eatDesire - 1u] = block;
+				candidates[eatDesire - 1u] = point;
 			return false;
 		};
 	else
 		// Nonsentients aren't picky.
-		predicate = [&](const BlockIndex& block)
+		predicate = [&](const Point3D& point)
 		{
-			return getDesireToEatSomethingAt(area, block) != 0;
+			return getDesireToEatSomethingAt(area, point) != 0;
 		};
-	BlockIndex output = area.getActors().getBlockWhichIsAdjacentWithPredicate(actor, predicate);
+	Point3D output = area.getActors().getPointWhichIsAdjacentWithPredicate(actor, predicate);
 	if(output.exists())
 		return output;
 	for(size_t i = maxRankedEatDesire; i != 0; --i)
 		if(candidates[i - 1].exists())
 			return candidates[i - 1];
-	return BlockIndex::null();
+	return Point3D::null();
 }

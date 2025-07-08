@@ -26,10 +26,10 @@ void EditStockPileView::draw(StockPile* stockpile)
 		for(ItemQuery& itemQuery : m_stockPile->getQueries())
 		{
 			list->addWidget(tgui::Label::create(ItemType::getName(itemQuery.m_itemType)), index, 0);
-			if(itemQuery.m_materialType.exists())
-				list->addWidget(tgui::Label::create(MaterialType::getName(itemQuery.m_materialType)), index, 1);
-			if(itemQuery.m_materialTypeCategory.exists())
-				list->addWidget(tgui::Label::create(MaterialTypeCategory::getName(itemQuery.m_materialTypeCategory)), index, 2);
+			if(itemQuery.m_solid.exists())
+				list->addWidget(tgui::Label::create(MaterialType::getName(itemQuery.m_solid)), index, 1);
+			if(itemQuery.m_solidCategory.exists())
+				list->addWidget(tgui::Label::create(MaterialTypeCategory::getName(itemQuery.m_solidCategory)), index, 2);
 			auto destroy = tgui::Button::create("destory");
 			list->addWidget(destroy, index, 3);
 			destroy->onClick([this, &itemQuery]{
@@ -53,11 +53,11 @@ void EditStockPileView::draw(StockPile* stockpile)
 		{
 			const FactionId& faction = m_window.getFaction();
 			Area& area = *m_window.getArea();
-			Blocks& blocks = area.getBlocks();
-			area.m_blockDesignations.maybeRegisterFaction(faction);
+			Space& space =  area.getSpace();
+			area.m_spaceDesignations.maybeRegisterFaction(faction);
 			m_stockPile = &area.m_hasStockPiles.getForFaction(faction).addStockPile({});
-			for(const BlockIndex& block : m_window.getSelectedBlocks().getView(blocks))
-				m_stockPile->addBlock(block);
+			for(const Point3D& point : m_window.getSelectedBlocks().getView(space))
+				m_stockPile->addPoint(point);
 		}
 		const MaterialTypeId& materialType = widgetUtil::lastSelectedMaterial;
 		const MaterialCategoryTypeId& materialTypeCategory = widgetUtil::lastSelectedMaterialCategory;

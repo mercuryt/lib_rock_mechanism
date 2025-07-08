@@ -39,7 +39,7 @@ class TargetedHaulProject final : public Project
 	void offDelay() { std::unreachable(); }
 	Step getDuration() const { return Config::addToStockPileDelaySteps; }
 public:
-	TargetedHaulProject(const FactionId& f, Area& a, const BlockIndex& l, const ActorOrItemReference& t) :
+	TargetedHaulProject(const FactionId& f, Area& a, const Point3D& l, const ActorOrItemReference& t) :
 		Project(f, a, l, maxWorkersForTargetedHaul),
 		m_target(t)
 	{ }

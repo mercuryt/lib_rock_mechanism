@@ -2,7 +2,7 @@
 #include "../projects/dig.h"
 #include "../area/area.h"
 #include "../actors/actors.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../path/terrainFacade.hpp"
 #include "../reference.h"
 #include "../numericTypes/types.h"
@@ -26,13 +26,13 @@ DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, const Act
 FindPathResult DigPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	ActorIndex actorIndex = actor.getIndex(area.getActors().m_referenceData);
-	auto predicate = [&area, this, actorIndex](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
+	auto predicate = [&area, this, actorIndex](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
 	{
-		return {m_digObjective.joinableProjectExistsAt(area, block, actorIndex), block};
+		return {m_digObjective.joinableProjectExistsAt(area, point, actorIndex), point};
 	};
-	constexpr bool useAnyBlock = true;
+	constexpr bool useAnyPoint = true;
 	constexpr bool unreserved = false;
-	return terrainFacade.findPathToBlockDesignationAndCondition<useAnyBlock, decltype(predicate)>(predicate, memo, BlockDesignation::Dig, faction, start, facing, shape, detour, adjacent, unreserved, maxRange);
+	return terrainFacade.findPathToSpaceDesignationAndCondition<useAnyPoint, decltype(predicate)>(predicate, memo, SpaceDesignation::Dig, faction, start, facing, shape, detour, adjacent, unreserved, maxRange);
 
 }
 DigPathRequest::DigPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
@@ -47,8 +47,8 @@ void DigPathRequest::writeStep(Area& area, FindPathResult& result)
 	else
 	{
 		// No need to reserve here, we are just checking for access.
-		BlockIndex target = result.blockThatPassedPredicate;
-		DigProject& project = area.m_hasDigDesignations.getForFactionAndBlock(actors.getFaction(actorIndex), target);
+		Point3D target = result.pointThatPassedPredicate;
+		DigProject& project = area.m_hasDigDesignations.getForFactionAndPoint(actors.getFaction(actorIndex), target);
 		if(project.canAddWorker(actorIndex))
 			m_digObjective.joinProject(project, actorIndex);
 		else
@@ -84,16 +84,16 @@ void DigObjective::execute(Area& area, const ActorIndex& actor)
 	{
 		Actors& actors = area.getActors();
 		DigProject* project = nullptr;
-		std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block) mutable
+		std::function<bool(const Point3D&)> predicate = [&](const Point3D& point) mutable
 		{
-			if(!getJoinableProjectAt(area, block, actor))
+			if(!getJoinableProjectAt(area, point, actor))
 				return false;
-			project = &area.m_hasDigDesignations.getForFactionAndBlock(actors.getFaction(actor), block);
+			project = &area.m_hasDigDesignations.getForFactionAndPoint(actors.getFaction(actor), point);
 			if(project->canAddWorker(actor))
 				return true;
 			return false;
 		};
-		BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
+		Point3D adjacent = actors.getPointWhichIsAdjacentWithPredicate(actor, predicate);
 		if(adjacent.exists())
 		{
 			assert(project != nullptr);
@@ -141,27 +141,27 @@ void DigObjective::joinProject(DigProject& project, const ActorIndex& actor)
 	m_project = &project;
 	project.addWorkerCandidate(actor, *this);
 }
-DigProject* DigObjective::getJoinableProjectAt(Area& area, BlockIndex block, const ActorIndex& actor)
+DigProject* DigObjective::getJoinableProjectAt(Area& area, Point3D point, const ActorIndex& actor)
 {
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFaction(actor);
-	if(!blocks.designation_has(block, faction, BlockDesignation::Dig))
+	if(!space.designation_has(point, faction, SpaceDesignation::Dig))
 		return nullptr;
-	DigProject& output = area.m_hasDigDesignations.getForFactionAndBlock(faction, block);
+	DigProject& output = area.m_hasDigDesignations.getForFactionAndPoint(faction, point);
 	if(!output.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&output))
 		return nullptr;
 	if(!output.canAddWorker(actor))
 		return nullptr;
 	return &output;
 }
-bool DigObjective::joinableProjectExistsAt(Area& area, BlockIndex block, const ActorIndex& actor) const
+bool DigObjective::joinableProjectExistsAt(Area& area, Point3D point, const ActorIndex& actor) const
 {
-	[[maybe_unused]] Blocks& blocks = area.getBlocks();
+	[[maybe_unused]] Space& space =  area.getSpace();
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFaction(actor);
-	assert(blocks.designation_has(block, faction, BlockDesignation::Dig));
-	DigProject& output = area.m_hasDigDesignations.getForFactionAndBlock(faction, block);
+	assert(space.designation_has(point, faction, SpaceDesignation::Dig));
+	DigProject& output = area.m_hasDigDesignations.getForFactionAndPoint(faction, point);
 	if(!output.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&output))
 		return false;
 	if(!output.canAddWorker(actor))

@@ -52,7 +52,7 @@ void definitions::loadFluidTypes()
 			//TODO: Store as seconds rather then steps.
 			//TODO: Initalize to null rather then 0.
 			.mistDuration=data.contains("mistDuration") ? data["mistDuration"].get<Step>() : Step::create(0),
-			.maxMistSpread=data.contains("mistDuration") ? data["maxMistSpread"].get<DistanceInBlocks>() : DistanceInBlocks::create(0),
+			.maxMistSpread=data.contains("mistDuration") ? data["maxMistSpread"].get<Distance>() : Distance::create(0),
 			.evaporationRate=data.contains("evaporationRate") ? data["evaporationRate"].get<float>() : 0.f,
 		};
 		FluidType::create(params);
@@ -147,7 +147,7 @@ AttackTypeId definitions::loadAttackType(const Json& data, const SkillTypeId& de
 		.name=(data["name"].get<std::string>()),
 		.area=data["area"].get<uint32_t>(),
 		.baseForce=data["baseForce"].get<Force>(),
-		.range=data["range"].get<DistanceInBlocksFractional>(),
+		.range=data["range"].get<DistanceFractional>(),
 		.combatScore=data["combatScore"].get<CombatScore>(),
 		.coolDown=data.contains("coolDownSeconds") ? Config::stepsPerSecond * data["coolDownSeconds"].get<uint32_t>() * Config::stepsPerSecond : Step::create(0),
 		.projectile=data.contains("projectile") ? data["projectile"].get<bool>() : false,
@@ -163,9 +163,9 @@ std::pair<ItemQuery, Quantity> definitions::loadItemQuery(const Json& data)
 	Quantity quantity = data["quantity"].get<Quantity>();
 	ItemQuery query = ItemQuery::create(itemType);
 	if(data.contains("materialType"))
-		query.m_materialType = MaterialType::byName((data["materialType"].get<std::string>()));
+		query.m_solid = MaterialType::byName((data["materialType"].get<std::string>()));
 	if(data.contains("materialTypeCategory"))
-		query.m_materialTypeCategory = MaterialTypeCategory::byName((data["materialTypeCategory"].get<std::string>()));
+		query.m_solidCategory = MaterialTypeCategory::byName((data["materialTypeCategory"].get<std::string>()));
 	return std::make_pair(query, quantity);
 }
 std::unordered_map<std::string, MaterialTypeConstructionDataParamaters> definitions::loadMaterialTypeConstuctionData()
@@ -365,8 +365,8 @@ void definitions::loadItemTypes()
 			// Make a copy of Query so it can be specialized.
 			auto consumed = constructionP.consumed;
 			for(auto& [itemQuery, quantity] : consumed)
-				if(itemQuery.m_materialType.empty())
-					itemQuery.m_materialType = materialType;
+				if(itemQuery.m_solid.empty())
+					itemQuery.m_solid = materialType;
 			auto byproducts = constructionP.byproducts;
 			for(auto& tuple : byproducts)
 				if(std::get<1>(tuple).empty())
@@ -391,8 +391,8 @@ void definitions::loadPlantSpecies()
 			.stepsTillFullyGrown=Config::stepsPerDay * data["daysTillFullyGrown"].get<uint16_t>(),
 			.stepsTillFoliageGrowsFromZero=Config::stepsPerDay * data["daysTillFoliageGrowsFromZero"].get<uint16_t>(),
 			.stepsTillDieFromTemperature=Config::stepsPerDay * data["daysTillDieFromTemperature"].get<uint16_t>(),
-			.rootRangeMax=data["rootRangeMax"].get<DistanceInBlocks>(),
-			.rootRangeMin=data["rootRangeMin"].get<DistanceInBlocks>(),
+			.rootRangeMax=data["rootRangeMax"].get<Distance>(),
+			.rootRangeMin=data["rootRangeMin"].get<Distance>(),
 			.logsGeneratedByFellingWhenFullGrown=data.contains("logsGeneratedByFellingWhenFullGrown") ? data["logsGeneratedByFellingWhenFullGrown"].get<Quantity>() : Quantity::create(0),
 			.branchesGeneratedByFellingWhenFullGrown=data.contains("branchesGeneratedByFellingWhenFullGrown") ? data["branchesGeneratedByFellingWhenFullGrown"].get<Quantity>() : Quantity::create(0),
 			.adultMass=data["adultMass"].get<Mass>(),
@@ -489,7 +489,7 @@ void definitions::loadAnimalSpecies()
 			.eatsMeat=data["eatsMeat"].get<bool>(),
 			.eatsLeaves=data["eatsLeaves"].get<bool>(),
 			.eatsFruit=data["eatsFruit"].get<bool>(),
-			.visionRange=data["visionRange"].get<DistanceInBlocks>(),
+			.visionRange=data["visionRange"].get<Distance>(),
 			.bodyScale=data["bodyScale"].get<uint32_t>(),
 			.materialType=MaterialType::byName((data["materialType"].get<std::string>())),
 			.moveType=MoveType::byName((data["moveType"].get<std::string>())),

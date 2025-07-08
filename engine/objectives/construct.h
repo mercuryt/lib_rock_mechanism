@@ -33,10 +33,10 @@ public:
 	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "construct"; }
-	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(Area& area, const BlockIndex& location, const Facing4& facing, const ActorIndex& actor);
-	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(Area& area, const BlockIndex& block, const ActorIndex& actor);
-	[[nodiscard]] bool joinableProjectExistsAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
-	[[nodiscard]] bool canJoinProjectAdjacentToLocationAndFacing(Area& area, const BlockIndex& block, const Facing4& facing, const ActorIndex& actor) const;
+	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(Area& area, const Point3D& location, const Facing4& facing, const ActorIndex& actor);
+	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(Area& area, const Point3D& point, const ActorIndex& actor);
+	[[nodiscard]] bool joinableProjectExistsAt(Area& area, const Point3D& point, const ActorIndex& actor) const;
+	[[nodiscard]] bool canJoinProjectAdjacentToLocationAndFacing(Area& area, const Point3D& point, const Facing4& facing, const ActorIndex& actor) const;
 	friend class ConstructPathRequest;
 	friend class ConstructProject;
 	// For Testing.

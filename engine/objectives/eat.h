@@ -28,14 +28,14 @@ public:
 	void eatActor(Area& area, const ActorIndex& actor);
 	void eatPlantLeaves(Area& area, const PlantIndex& plant);
 	void eatFruitFromPlant(Area& area, const PlantIndex& plant);
-	[[nodiscard]] uint32_t getDesireToEatSomethingAt(Area& area, const BlockIndex& block) const;
+	[[nodiscard]] uint32_t getDesireToEatSomethingAt(Area& area, const Point3D& point) const;
 	[[nodiscard]] uint32_t getMinimumAcceptableDesire() const;
 	[[nodiscard]] std::string name() const { return "eat"; }
 };
 constexpr int maxRankedEatDesire = 3;
 class EatPathRequest final : public PathRequestBreadthFirst
 {
-	std::array<BlockIndex, maxRankedEatDesire> m_candidates;
+	std::array<Point3D, maxRankedEatDesire> m_candidates;
 	EatObjective& m_eatObjective;
 	ActorReference m_huntResult;
 public:
@@ -50,7 +50,7 @@ class EatObjective final : public Objective
 {
 	HasScheduledEvent<EatEvent> m_eatEvent;
 	// Where found food item is currently.
-	BlockIndex m_location;
+	Point3D m_location;
 	bool m_noFoodFound = false;
 	bool m_tryToHunt = false;
 public:
@@ -64,7 +64,7 @@ public:
 	void makePathRequest(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "eat"; }
-	[[nodiscard]] bool canEatAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
+	[[nodiscard]] bool canEatAt(Area& area, const Point3D& point, const ActorIndex& actor) const;
 	[[nodiscard]] bool isNeed() const { return true; }
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::eat; }
 	friend class EatEvent;

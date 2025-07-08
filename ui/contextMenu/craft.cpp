@@ -1,20 +1,20 @@
 #include "../contextMenu.h"
 #include "../window.h"
-#include "../../engine/blocks/blocks.h"
+#include "../../engine/space/space.h"
 #include "../engine/numericTypes/types.h"
 #include "craft.h"
 #include "../displayData.h"
-void ContextMenu::drawCraftControls(const BlockIndex& block)
+void ContextMenu::drawCraftControls(const Point3D& point)
 {
 	Area& area = *m_window.getArea();
-	Blocks& blocks = area.getBlocks();
-	if(m_window.getFaction().empty() || blocks.solid_is(block) || !blocks.shape_canStandIn(block))
+	Space& space =  area.getSpace();
+	if(m_window.getFaction().empty() || space.solid_is(point) || !space.shape_canStandIn(point))
 		return;
 	auto craftButton = tgui::Button::create("craft");
 	m_root.add(craftButton);
-	craftButton->onMouseEnter([this, block, &blocks]{
+	craftButton->onMouseEnter([this, point, &space]{
 		auto& locationsAndJobsForFaction = m_window.getArea()->m_hasCraftingLocationsAndJobs.getForFaction(m_window.getFaction());
-		auto categories = locationsAndJobsForFaction.getStepTypeCategoriesForLocation(block);
+		auto categories = locationsAndJobsForFaction.getStepTypeCategoriesForLocation(point);
 		auto& subMenu = makeSubmenu(0);
 		auto speciesLabel = tgui::Label::create("craft job");
 		speciesLabel->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
@@ -25,23 +25,23 @@ void ContextMenu::drawCraftControls(const BlockIndex& block)
 		{
 			auto button = tgui::Button::create(L"undesignate " + CraftStepTypeCategory::getName(category));
 			subMenu.add(button);
-			button->onClick([this, category, block, &blocks]{
+			button->onClick([this, category, point, &space]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				auto& locationsAndJobsForFaction = m_window.getArea()->m_hasCraftingLocationsAndJobs.getForFaction(m_window.getFaction());
 				if(m_window.getSelectedBlocks().empty())
-					m_window.selectBlock(block);
-				for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
+					m_window.selectBlock(point);
+				for(const Point3D& selectedBlock : m_window.getSelectedBlocks().getView(space))
 					locationsAndJobsForFaction.removeLocation(category, selectedBlock);
 				hide();
 			});
 		}
 	});
-	craftButton->onClick([this, block, &blocks]{
+	craftButton->onClick([this, point, &space]{
 		std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 		auto& locationsAndJobsForFaction = m_window.getArea()->m_hasCraftingLocationsAndJobs.getForFaction(m_window.getFaction());
 		if(m_window.getSelectedBlocks().empty())
-			m_window.selectBlock(block);
-		for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
+			m_window.selectBlock(point);
+		for(const Point3D& selectedBlock : m_window.getSelectedBlocks().getView(space))
 			locationsAndJobsForFaction.addLocation(widgetUtil::lastSelectedCraftStepTypeCategory, selectedBlock);
 		hide();
 	});

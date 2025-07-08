@@ -4,7 +4,7 @@
 #include "../path/terrainFacade.hpp"
 #include "../hasShapes.hpp"
 #include "../actors/actors.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../reference.h"
 #include "../numericTypes/types.h"
 // PathRequest.
@@ -31,13 +31,13 @@ FindPathResult ConstructPathRequest::readStep(Area& area, const TerrainFacade& t
 {
 	ActorIndex actorIndex = actor.getIndex(area.getActors().m_referenceData);
 
-	auto predicate = [&area, this, actorIndex](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
+	auto predicate = [&area, this, actorIndex](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
 	{
-		return {m_constructObjective.joinableProjectExistsAt(area, block, actorIndex), block};
+		return {m_constructObjective.joinableProjectExistsAt(area, point, actorIndex), point};
 	};
-	constexpr bool useAnyBlock = true;
+	constexpr bool useAnyPoint = true;
 	constexpr bool unreserved = false;
-	return terrainFacade.findPathToBlockDesignationAndCondition<useAnyBlock, decltype(predicate)>(predicate, memo, BlockDesignation::Construct, faction, start, facing, shape, detour, adjacent, unreserved, maxRange);
+	return terrainFacade.findPathToSpaceDesignationAndCondition<useAnyPoint, decltype(predicate)>(predicate, memo, SpaceDesignation::Construct, faction, start, facing, shape, detour, adjacent, unreserved, maxRange);
 }
 void ConstructPathRequest::writeStep(Area& area, FindPathResult& result)
 {
@@ -48,7 +48,7 @@ void ConstructPathRequest::writeStep(Area& area, FindPathResult& result)
 	else
 	{
 		// No need to reserve here, we are just checking for access.
-		BlockIndex target = result.blockThatPassedPredicate;
+		Point3D target = result.pointThatPassedPredicate;
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFaction(actorIndex), target);
 		if(project.canAddWorker(actorIndex))
 			m_constructObjective.joinProject(project, actorIndex);
@@ -83,17 +83,17 @@ void ConstructObjective::execute(Area& area, const ActorIndex& actor)
 	else
 	{
 		ConstructProject* project = nullptr;
-		AreaHasBlockDesignationsForFaction& hasDesignations = area.m_blockDesignations.getForFaction(actors.getFaction(actor));
-		std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block)
+		AreaHasSpaceDesignationsForFaction& hasDesignations = area.m_spaceDesignations.getForFaction(actors.getFaction(actor));
+		std::function<bool(const Point3D&)> predicate = [&](const Point3D& point)
 		{
-			if(hasDesignations.check(block, BlockDesignation::Construct) && joinableProjectExistsAt(area, block, actor))
+			if(hasDesignations.check(point, SpaceDesignation::Construct) && joinableProjectExistsAt(area, point, actor))
 			{
-				project = &area.m_hasConstructionDesignations.getProject(actors.getFaction(actor), block);
+				project = &area.m_hasConstructionDesignations.getProject(actors.getFaction(actor), point);
 				return project->canAddWorker(actor);
 			}
 			return false;
 		};
-		[[maybe_unused]] BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
+		[[maybe_unused]] Point3D adjacent = actors.getPointWhichIsAdjacentWithPredicate(actor, predicate);
 		if(project != nullptr)
 		{
 			assert(adjacent.exists());
@@ -141,10 +141,10 @@ void ConstructObjective::joinProject(ConstructProject& project, const ActorIndex
 	m_project = &project;
 	project.addWorkerCandidate(actor, *this);
 }
-ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(Area& area, const BlockIndex& location, const Facing4& facing, const ActorIndex& actor)
+ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(Area& area, const Point3D& location, const Facing4& facing, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
-	for(BlockIndex adjacent : actors.getAdjacentBlocksAtLocationWithFacing(actor, location, facing))
+	for(Point3D adjacent : actors.getAdjacentPointsAtLocationWithFacing(actor, location, facing))
 	{
 		ConstructProject* project = getProjectWhichActorCanJoinAt(area, adjacent, actor);
 		if(project != nullptr)
@@ -152,32 +152,32 @@ ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(Area
 	}
 	return nullptr;
 }
-ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(Area& area, const BlockIndex& block, const ActorIndex& actor)
+ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(Area& area, const Point3D& point, const ActorIndex& actor)
 {
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	Actors& actors = area.getActors();
-	if(!blocks.designation_has(block, actors.getFaction(actor), BlockDesignation::Construct))
+	if(!space.designation_has(point, actors.getFaction(actor), SpaceDesignation::Construct))
 		return nullptr;
-	ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFaction(actor), block);
+	ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFaction(actor), point);
 	if(!project.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&project))
 		return nullptr;
 	if(project.canAddWorker(actor))
 		return &project;
 	return nullptr;
 }
-bool ConstructObjective::joinableProjectExistsAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const
+bool ConstructObjective::joinableProjectExistsAt(Area& area, const Point3D& point, const ActorIndex& actor) const
 {
-	[[maybe_unused]] Blocks& blocks = area.getBlocks();
+	[[maybe_unused]] Space& space =  area.getSpace();
 	Actors& actors = area.getActors();
-	assert(blocks.designation_has(block, actors.getFaction(actor), BlockDesignation::Construct));
-	ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFaction(actor), block);
+	assert(space.designation_has(point, actors.getFaction(actor), SpaceDesignation::Construct));
+	ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFaction(actor), point);
 	if(!project.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&project))
 		return false;
 	if(project.canAddWorker(actor))
 		return true;
 	return false;
 }
-bool ConstructObjective::canJoinProjectAdjacentToLocationAndFacing(Area& area, const BlockIndex& location, const Facing4& facing, const ActorIndex& actor) const
+bool ConstructObjective::canJoinProjectAdjacentToLocationAndFacing(Area& area, const Point3D& location, const Facing4& facing, const ActorIndex& actor) const
 {
 	return const_cast<ConstructObjective*>(this)->getProjectWhichActorCanJoinAdjacentTo(area, location, facing, actor) != nullptr;
 }

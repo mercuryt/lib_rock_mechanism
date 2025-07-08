@@ -2,7 +2,7 @@
 #include "area/area.h"
 #include "geometry/sphere.h"
 #include "numericTypes/types.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "actors/actors.h"
 #include "partitionNotify.h"
 
@@ -25,39 +25,31 @@ void VisionCuboidSetSIMD::maybeInsert(const VisionCuboidId& index, const Cuboid&
 void VisionCuboidSetSIMD::clear() { m_indices.fill(VisionCuboidId::null().get()); m_cuboidSet.clear(); }
 bool VisionCuboidSetSIMD::intersects(const Cuboid& cuboid) const { return m_cuboidSet.intersects(cuboid); }
 bool VisionCuboidSetSIMD::contains(const VisionCuboidId& index) const { return (m_indices == index.get()).any(); }
-bool VisionCuboidSetSIMD::contains(const VisionCuboidIndexWidth& index) const { return (m_indices == index).any(); }
+bool VisionCuboidSetSIMD::contains(const VisionCuboidIdWidth& index) const { return (m_indices == index).any(); }
 
 AreaHasVisionCuboids::AreaHasVisionCuboids(Area& area) : m_area(area) { }
 void AreaHasVisionCuboids::initalize()
 {
-	const Blocks& blocks = m_area.getBlocks();
-	m_blockLookup.resize(m_area.getBlocks().size());
-	create(blocks.getAll());
+	const Space& space = m_area.getSpace();
+	create(space.getAll());
 }
-void AreaHasVisionCuboids::blockIsTransparent(const BlockIndex& block)
+void AreaHasVisionCuboids::pointIsTransparent(const Point3D& point)
 {
-	assert(maybeGetVisionCuboidIndexForBlock(block).empty());
-	Point3D position = m_area.getBlocks().getCoordinates(block);
-	Cuboid cuboid(position, position);
-	add(cuboid);
+	assert(maybeGetVisionCuboidIndexForPoint(point).empty());
+	add({point, point});
 }
-void AreaHasVisionCuboids::blockIsOpaque(const BlockIndex& block)
+void AreaHasVisionCuboids::pointIsOpaque(const Point3D& point)
 {
-	Point3D position = m_area.getBlocks().getCoordinates(block);
-	Cuboid cuboid(position, position);
+	Cuboid cuboid(point, point);
 	remove(cuboid);
 }
-void AreaHasVisionCuboids::blockFloorIsTransparent(const BlockIndex& block)
+void AreaHasVisionCuboids::pointFloorIsTransparent(const Point3D& point)
 {
-	Point3D position = m_area.getBlocks().getCoordinates(block);
-	Cuboid cuboid(position, position);
-	mergeBelow(cuboid);
+	mergeBelow({point, point});
 }
-void AreaHasVisionCuboids::blockFloorIsOpaque(const BlockIndex& block)
+void AreaHasVisionCuboids::pointFloorIsOpaque(const Point3D& point)
 {
-	Point3D position = m_area.getBlocks().getCoordinates(block);
-	Cuboid cuboid(position, position);
-	sliceBelow(cuboid);
+	sliceBelow({point, point});
 }
 void AreaHasVisionCuboids::cuboidIsTransparent(const Cuboid& cuboid)
 {
@@ -72,45 +64,45 @@ bool AreaHasVisionCuboids::canSeeInto(const Cuboid& a, const Cuboid& b) const
 	assert(a != b);
 	assert(a.m_highest != b.m_highest);
 	assert(a.m_lowest != b.m_lowest);
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	// Get a cuboid representing a face of m_cuboid.
 	Facing6 facing = a.getFacingTwordsOtherCuboid(b);
 
 	const Cuboid face = a.getFace(facing);
 	// Verify that the whole face can be seen through from the direction of m_cuboid.
-	for(const BlockIndex& block : face.getView(blocks))
+	for(const Point3D& point : face)
 	{
-		assert(face.contains(blocks, block));
-		assert(blocks.getAtFacing(block, facing).exists());
-		if(!blocks.canSeeIntoFromAlways(blocks.getAtFacing(block, facing), block))
+		assert(face.contains(point));
+		assert(space.getAll().contains(point.moveInDirection(facing, Distance::create(1))));
+		if(!space.canSeeIntoFromAlways(point.moveInDirection(facing, Distance::create(1)), point))
 			return false;
 	};
 	return true;
 }
-void AreaHasVisionCuboids::onKeySetForBlock(const VisionCuboidId& newIndex, const BlockIndex& block)
+void AreaHasVisionCuboids::onKeySetForPoint(const VisionCuboidId& newIndex, const Point3D& point)
 {
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	Actors& actors = m_area.getActors();
-	for(const ActorIndex& actor : blocks.actor_getAll(block))
+	for(const ActorIndex& actor : space.actor_getAll(point))
 		m_area.m_visionRequests.maybeUpdateCuboid(actors.getReference(actor), newIndex);
-	m_area.m_octTree.updateVisionCuboid(blocks.getCoordinates(block), newIndex);
+	m_area.m_octTree.updateVisionCuboid(point, newIndex);
 }
 SmallSet<uint> AreaHasVisionCuboids::getMergeCandidates(const Cuboid& cuboid) const
 {
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	SmallSet<uint> output;
-	std::array<BlockIndex, 6> candidateBlocks = {
-		blocks.getBlockAbove(blocks.getIndex(cuboid.m_highest)),
-		blocks.getBlockSouth(blocks.getIndex(cuboid.m_highest)),
-		blocks.getBlockEast(blocks.getIndex(cuboid.m_highest)),
-		blocks.getBlockBelow(blocks.getIndex(cuboid.m_lowest)),
-		blocks.getBlockNorth(blocks.getIndex(cuboid.m_lowest)),
-		blocks.getBlockWest(blocks.getIndex(cuboid.m_lowest)),
+	std::array<Point3D, 6> candidatePoints = {
+		cuboid.m_highest.above(),
+		cuboid.m_highest.south(),
+		cuboid.m_highest.east(),
+		cuboid.m_lowest.below(),
+		cuboid.m_lowest.north(),
+		cuboid.m_lowest.west(),
 	};
-	for(const BlockIndex& block : candidateBlocks)
-		if(block.exists())
+	for(const Point3D& point : candidatePoints)
+		if(point.exists())
 		{
-			VisionCuboidId visionCuboidIndex = m_blockLookup[block];
+			VisionCuboidId visionCuboidIndex = m_pointLookup.queryGetOne(point);
 			if(visionCuboidIndex.exists())
 			{
 				uint index = getIndexForVisionCuboidId(visionCuboidIndex);
@@ -138,19 +130,18 @@ void AreaHasVisionCuboids::create(const Cuboid& cuboid)
 	m_cuboids.insert(cuboid);
 	m_keys.push_back(key);
 	m_adjacent.emplace_back();
-	// Block Index.
-	for(const BlockIndex& block : cuboid.getView(m_area.getBlocks()))
+	for(const Point3D& point : cuboid)
 	{
-		onKeySetForBlock(key, block);
-		m_blockLookup[block] = key;
+		onKeySetForPoint(key, point);
+		m_pointLookup.queryGetOne(point) = key;
 	}
 	// Adjacent.
-	const Blocks& blocks = m_area.getBlocks();
+	const Space& space = m_area.getSpace();
 	CuboidMap<VisionCuboidId>& adjacent = m_adjacent.back();
-	for(const auto& [block, facing] : cuboid.getSurfaceView(blocks))
+	for(const auto& [point, facing] : cuboid.getSurfaceView())
 	{
-		const BlockIndex& outside = blocks.getAtFacing(block, facing);
-		VisionCuboidId outsideKey = m_blockLookup[outside];
+		const Point3D& outside = point.moveInDirection(facing, Distance::create(1));
+		VisionCuboidId outsideKey = m_pointLookup.queryGetOne(outside);
 		if(outsideKey.exists() && !adjacent.contains(outsideKey))
 		{
 			adjacent.insert(outsideKey, getCuboidByVisionCuboidId(outsideKey));
@@ -166,9 +157,8 @@ void AreaHasVisionCuboids::destroy(const uint& index)
 	validate();
 	const Cuboid cuboid = m_cuboids[index];
 	const VisionCuboidId& key = m_keys[index];
-	// Block Index.
-	for(const BlockIndex& block : cuboid.getView(m_area.getBlocks()))
-		m_blockLookup[block].clear();
+	for(const Point3D& point : cuboid)
+		m_pointLookup.queryGetOne(point).clear();
 	// Adjacent.
 	for(const auto& [otherKey, otherCuboid] : m_adjacent[index])
 	{
@@ -192,9 +182,9 @@ void AreaHasVisionCuboids::remove(const Cuboid& cuboid)
 {
 	//TODO: partition instead of toSplit.
 	SmallMap<VisionCuboidId, Cuboid> toSplit;
-	for(const BlockIndex& block : cuboid.getView(m_area.getBlocks()))
+	for(const Point3D& point : cuboid)
 	{
-		VisionCuboidId existing = m_blockLookup[block];
+		VisionCuboidId existing = m_pointLookup.queryGetOne(point);
 		if(existing.exists())
 			toSplit.maybeInsert(existing, getCuboidByVisionCuboidId(existing));
 	}
@@ -204,12 +194,12 @@ void AreaHasVisionCuboids::remove(const Cuboid& cuboid)
 		for(const Cuboid& splitResult : pair.second.getChildrenWhenSplitByCuboid(cuboid))
 			create(splitResult);
 }
-void AreaHasVisionCuboids::remove(const SmallSet<BlockIndex>& toRemove)
+void AreaHasVisionCuboids::remove(const SmallSet<Point3D>& toRemove)
 {
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	SmallSet<Point3D> points;
-	for(const BlockIndex& block : toRemove)
-		points.insert(blocks.getCoordinates(block));
+	for(const Point3D& point : toRemove)
+		points.insert(point);
 	auto cuboids = CuboidSet::create(points);
 	for(const Cuboid& cuboid : cuboids)
 		remove(cuboid);

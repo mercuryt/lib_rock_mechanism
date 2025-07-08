@@ -1,5 +1,5 @@
 /*
- * BlockIndex designations indicate what action a block is suposed to be involved in.
+ * Point3D designations indicate what action a point is suposed to be involved in.
  */
 #pragma once
 
@@ -8,17 +8,17 @@
 #include "faction.h"
 #include <cassert>
 
-enum class BlockDesignation { Dig, Construct, SowSeeds, GivePlantFluid, Harvest, StockPileHaulFrom, StockPileHaulTo, Sleep, Rescue, FluidSource, WoodCutting, BLOCK_DESIGNATION_MAX };
-NLOHMANN_JSON_SERIALIZE_ENUM(BlockDesignation, {
-		{BlockDesignation::Dig, "Dig"},
-		{BlockDesignation::Construct, "Construct"},
-		{BlockDesignation::SowSeeds, "SowSeeds"},
-		{BlockDesignation::GivePlantFluid, "GivePlantFluid"},
-		{BlockDesignation::Harvest, "Harvest"},
-		{BlockDesignation::StockPileHaulFrom, "StockPileHaulFrom"},
-		{BlockDesignation::StockPileHaulTo, "StockPileHaulTo"},
-		{BlockDesignation::Sleep, "Sleep"},
-		{BlockDesignation::Rescue, "Rescue"},
-		{BlockDesignation::FluidSource, "FluidSource"},
-		{BlockDesignation::WoodCutting, "WoodCutting"},
+enum class SpaceDesignation { Dig, Construct, SowSeeds, GivePlantFluid, Harvest, StockPileHaulFrom, StockPileHaulTo, Sleep, Rescue, FluidSource, WoodCutting, SPACE_DESIGNATION_MAX };
+NLOHMANN_JSON_SERIALIZE_ENUM(SpaceDesignation, {
+		{SpaceDesignation::Dig, "Dig"},
+		{SpaceDesignation::Construct, "Construct"},
+		{SpaceDesignation::SowSeeds, "SowSeeds"},
+		{SpaceDesignation::GivePlantFluid, "GivePlantFluid"},
+		{SpaceDesignation::Harvest, "Harvest"},
+		{SpaceDesignation::StockPileHaulFrom, "StockPileHaulFrom"},
+		{SpaceDesignation::StockPileHaulTo, "StockPileHaulTo"},
+		{SpaceDesignation::Sleep, "Sleep"},
+		{SpaceDesignation::Rescue, "Rescue"},
+		{SpaceDesignation::FluidSource, "FluidSource"},
+		{SpaceDesignation::WoodCutting, "WoodCutting"},
 });

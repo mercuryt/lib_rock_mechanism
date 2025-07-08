@@ -19,8 +19,8 @@ struct PlantSpeciesParamaters final
 	const Step stepsTillFullyGrown = Step::null();
 	const Step stepsTillFoliageGrowsFromZero = Step::null();
 	const Step stepsTillDieFromTemperature = Step::null();
-	const DistanceInBlocks rootRangeMax = DistanceInBlocks::null();
-	const DistanceInBlocks rootRangeMin = DistanceInBlocks::null();
+	const Distance rootRangeMax = Distance::null();
+	const Distance rootRangeMin = Distance::null();
 	const Quantity logsGeneratedByFellingWhenFullGrown = Quantity::null();
 	const Quantity branchesGeneratedByFellingWhenFullGrown = Quantity::null();
 	const Mass adultMass = Mass::null();
@@ -49,8 +49,8 @@ class PlantSpecies final
 	StrongVector<Step, PlantSpeciesId> m_stepsTillFullyGrown;
 	StrongVector<Step, PlantSpeciesId> m_stepsTillFoliageGrowsFromZero;
 	StrongVector<Step, PlantSpeciesId> m_stepsTillDieFromTemperature;
-	StrongVector<DistanceInBlocks, PlantSpeciesId> m_rootRangeMax;
-	StrongVector<DistanceInBlocks, PlantSpeciesId> m_rootRangeMin;
+	StrongVector<Distance, PlantSpeciesId> m_rootRangeMax;
+	StrongVector<Distance, PlantSpeciesId> m_rootRangeMin;
 	StrongVector<Quantity, PlantSpeciesId> m_logsGeneratedByFellingWhenFullGrown;
 	StrongVector<Quantity, PlantSpeciesId> m_branchesGeneratedByFellingWhenFullGrown;
 	StrongVector<Mass, PlantSpeciesId> m_adultMass;
@@ -80,8 +80,8 @@ public:
 	[[nodiscard]] static Step getStepsTillFullyGrown(const PlantSpeciesId& species);
 	[[nodiscard]] static Step getStepsTillFoliageGrowsFromZero(const PlantSpeciesId& species);
 	[[nodiscard]] static Step getStepsTillDieFromTemperature(const PlantSpeciesId& species);
-	[[nodiscard]] static DistanceInBlocks getRootRangeMax(const PlantSpeciesId& species);
-	[[nodiscard]] static DistanceInBlocks getRootRangeMin(const PlantSpeciesId& species);
+	[[nodiscard]] static Distance getRootRangeMax(const PlantSpeciesId& species);
+	[[nodiscard]] static Distance getRootRangeMin(const PlantSpeciesId& species);
 	[[nodiscard]] static Quantity getLogsGeneratedByFellingWhenFullGrown(const PlantSpeciesId& species);
 	[[nodiscard]] static Quantity getBranchesGeneratedByFellingWhenFullGrown(const PlantSpeciesId& species);
 	[[nodiscard]] static Mass getAdultMass(const PlantSpeciesId& species);

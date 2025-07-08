@@ -18,9 +18,9 @@ class WoodCuttingProject final : public Project
 	static uint32_t getWorkerWoodCuttingScore(Area& area, const ActorIndex& actor);
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
-	// BlockFeatureType can be null, meaning the block is to be fully excavated.
-	WoodCuttingProject(FactionId faction, Area& area, const BlockIndex& block, std::unique_ptr<DishonorCallback> locationDishonorCallback) :
-		Project(faction, area, block, Config::maxNumberOfWorkersForWoodCuttingProject, std::move(locationDishonorCallback)) { }
+	// PointFeatureType can be null, meaning the point is to be fully excavated.
+	WoodCuttingProject(FactionId faction, Area& area, const Point3D& point, std::unique_ptr<DishonorCallback> locationDishonorCallback) :
+		Project(faction, area, point, Config::maxNumberOfWorkersForWoodCuttingProject, std::move(locationDishonorCallback)) { }
 	WoodCuttingProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	// No toJson is needed here.
 	Step getDuration() const;

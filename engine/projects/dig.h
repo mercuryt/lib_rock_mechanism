@@ -11,13 +11,13 @@
 #include <vector>
 
 struct Faction;
-struct BlockFeatureType;
+struct PointFeatureType;
 class HasDigDesignationsForFaction;
 struct DeserializationMemo;
 
 class DigProject final : public Project
 {
-	BlockFeatureTypeId m_blockFeatureType;
+	PointFeatureTypeId m_pointFeatureType;
 	void onDelay();
 	void offDelay();
 	void onComplete();
@@ -29,9 +29,9 @@ class DigProject final : public Project
 	[[nodiscard]] static uint32_t getWorkerDigScore(Area& area, ActorIndex actor);
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
-	// BlockFeatureType can be null, meaning the block is to be fully excavated.
-	DigProject(const FactionId& faction, Area& area, const BlockIndex& block, const BlockFeatureTypeId bft, std::unique_ptr<DishonorCallback> locationDishonorCallback) :
-		Project(faction, area, block, Config::maxNumberOfWorkersForDigProject, std::move(locationDishonorCallback)), m_blockFeatureType(bft) { }
+	// PointFeatureType can be null, meaning the point is to be fully excavated.
+	DigProject(const FactionId& faction, Area& area, const Point3D& point, const PointFeatureTypeId bft, std::unique_ptr<DishonorCallback> locationDishonorCallback) :
+		Project(faction, area, point, Config::maxNumberOfWorkersForDigProject, std::move(locationDishonorCallback)), m_pointFeatureType(bft) { }
 	DigProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	[[nodiscard]] Step getDuration() const;
 	[[nodiscard]] Json toJson() const;
@@ -41,8 +41,8 @@ struct DigLocationDishonorCallback final : public DishonorCallback
 {
 	FactionId m_faction;
 	Area& m_area;
-	BlockIndex m_location;
-	DigLocationDishonorCallback(const FactionId& f, Area& a, const BlockIndex& l) : m_faction(f), m_area(a), m_location(l) { }
+	Point3D m_location;
+	DigLocationDishonorCallback(const FactionId& f, Area& a, const Point3D& l) : m_faction(f), m_area(a), m_location(l) { }
 	DigLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
 	void execute(const Quantity& oldCount, const Quantity& newCount);
 	[[nodiscard]] Json toJson() const;

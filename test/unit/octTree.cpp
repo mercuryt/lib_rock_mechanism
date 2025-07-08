@@ -17,7 +17,7 @@ TEST_CASE("octTree")
 	{
 		Area& area = simulation.m_hasAreas->createArea(1,1,2);
 		CHECK(area.m_octTree.getCount() == 1);
-		Blocks& blocks = area.getBlocks();
+		Blocks& blocks = area.getSpace();
 		Actors& actors = area.getActors();
 		BlockIndex block = blocks.getIndex_i(0, 0, 1);
 		blocks.solid_set(blocks.getBlockBelow(block), granite, false);
@@ -29,7 +29,7 @@ TEST_CASE("octTree")
 	SUBCASE("split and merge")
 	{
 		Area& area = simulation.m_hasAreas->createArea(10,10,10);
-		Blocks& blocks = area.getBlocks();
+		Blocks& blocks = area.getSpace();
 		Actors& actors = area.getActors();
 		uint toSpawn = Config::minimumOccupantsForOctTreeToSplit;
 		areaBuilderUtil::setSolidLayer(area, 0, granite);

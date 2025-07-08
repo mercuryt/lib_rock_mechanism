@@ -1,41 +1,41 @@
 #include "fillQueue.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "fluidGroup.h"
 #include "../area/area.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "numericTypes/types.h"
-void FillQueue::buildFor(Area& area, FluidGroup& fluidGroup, SmallSet<BlockIndex>& members)
+void FillQueue::buildFor(Area& area, FluidGroup& fluidGroup, SmallSet<Point3D>& members)
 {
-	auto& blocks = area.getBlocks();
-	for(BlockIndex block : members)
+	auto& space =  area.getSpace();
+	for(Point3D point : members)
 	{
-		assert(blocks.fluid_contains(block, fluidGroup.m_fluidType));
-		for(BlockIndex adjacent : blocks.getDirectlyAdjacent(block))
+		assert(space.fluid_contains(point, fluidGroup.m_fluidType));
+		for(Point3D adjacent : space.getDirectlyAdjacent(point))
 			if(
-				blocks.fluid_canEnterEver(adjacent) &&
-				blocks.fluid_canEnterCurrently(adjacent, fluidGroup.m_fluidType) &&
-				blocks.fluid_volumeOfTypeContains(adjacent, fluidGroup.m_fluidType) != Config::maxBlockVolume
+				space.fluid_canEnterEver(adjacent) &&
+				space.fluid_canEnterCurrently(adjacent, fluidGroup.m_fluidType) &&
+				space.fluid_volumeOfTypeContains(adjacent, fluidGroup.m_fluidType) != Config::maxPointVolume
 			)
-				maybeAddBlock(adjacent);
+				maybeAddPoint(adjacent);
 	}
 }
 void FillQueue::initalizeForStep(Area& area, FluidGroup& fluidGroup)
 {
-	auto& blocks = area.getBlocks();
-	for(FutureFlowBlock& futureFlowBlock : m_queue)
+	auto& space =  area.getSpace();
+	for(FutureFlowPoint& futureFlowPoint : m_queue)
 	{
-		futureFlowBlock.delta = CollisionVolume::create(0);
-		futureFlowBlock.capacity = blocks.fluid_volumeOfTypeCanEnter(futureFlowBlock.block, fluidGroup.m_fluidType);
+		futureFlowPoint.delta = CollisionVolume::create(0);
+		futureFlowPoint.capacity = space.fluid_volumeOfTypeCanEnter(futureFlowPoint.point, fluidGroup.m_fluidType);
 	}
-	std::ranges::sort(m_queue.begin(), m_queue.end(), [&](FutureFlowBlock& a, FutureFlowBlock& b){
-		return getPriority(area, a) < getPriority(area, b);
+	std::ranges::sort(m_queue.begin(), m_queue.end(), [&](FutureFlowPoint& a, FutureFlowPoint& b){
+		return getPriority(a) < getPriority(b);
 	});
 	m_groupStart = m_queue.begin();
-	findGroupEnd(area);
+	findGroupEnd();
 	m_futureFull.clear();
 	m_futureNoLongerEmpty.clear();
 	m_overfull.clear();
-	validate(area);
+	validate();
 }
 void FillQueue::recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionVolume& volume, const CollisionVolume& flowCapacity, const CollisionVolume& flowTillNextStep)
 {
@@ -43,54 +43,54 @@ void FillQueue::recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionV
 	assert(volume != 0);
 	assert((m_groupStart != m_groupEnd));
 	assert(flowTillNextStep.exists());
-	validate(area);
-	auto& blocks = area.getBlocks();
+	validate();
+	auto& space =  area.getSpace();
 	// Record fluid level changes.
 	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 	{
-		if(iter->delta == 0 && !blocks.fluid_contains(iter->block, fluidGroup.m_fluidType))
-			m_futureNoLongerEmpty.maybeInsert(iter->block);
+		if(iter->delta == 0 && !space.fluid_contains(iter->point, fluidGroup.m_fluidType))
+			m_futureNoLongerEmpty.maybeInsert(iter->point);
 		iter->delta += volume;
-		assert(iter->delta <= Config::maxBlockVolume);
+		assert(iter->delta <= Config::maxPointVolume);
 		assert(iter->capacity >= volume);
 		iter->capacity -= volume;
 	}
-	// Record full blocks and get next group.
+	// Record full space and get next group.
 	if(flowCapacity == volume)
 	{
-		assert((blocks.fluid_volumeOfTypeContains(m_groupStart->block, fluidGroup.m_fluidType) + m_groupStart->delta) <= Config::maxBlockVolume);
+		assert((space.fluid_volumeOfTypeContains(m_groupStart->point, fluidGroup.m_fluidType) + m_groupStart->delta) <= Config::maxPointVolume);
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
-			if((blocks.fluid_volumeOfTypeContains(iter->block, fluidGroup.m_fluidType) + iter->delta) == Config::maxBlockVolume)
-				m_futureFull.insert(iter->block);
+			if((space.fluid_volumeOfTypeContains(iter->point, fluidGroup.m_fluidType) + iter->delta) == Config::maxPointVolume)
+				m_futureFull.insert(iter->point);
 		m_groupStart = m_groupEnd;
-		findGroupEnd(area);
+		findGroupEnd();
 	}
 	// Expand group for new higher level.
 	// TODO: continue from current position rather then reseting to start + 1.
 	else if(flowTillNextStep == volume)
-		findGroupEnd(area);
-	validate(area);
+		findGroupEnd();
+	validate();
 }
 void FillQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 {
-	validate(area);
-	auto& blocks = area.getBlocks();
+	validate();
+	auto& space = area.getSpace();
 	for(auto iter = m_queue.begin(); iter != m_groupEnd; ++iter)
 	{
 		if(iter->delta == 0)
 			continue;
 		assert(
-				!blocks.fluid_contains(iter->block, fluidGroup.m_fluidType) ||
-				blocks.fluid_getGroup(iter->block, fluidGroup.m_fluidType) != nullptr);
-		blocks.fluid_fillInternal(iter->block, iter->delta, fluidGroup);
-		/*assert(iter->block->m_hasFluids.m_fluids[m_fluidGroup.m_fluidType].second != &m_fluidGroup ||
-			(iter->block->m_hasFluids.m_fluids[m_fluidGroup.m_fluidType].first < Config::maxBlockVolume && !m_futureFull.contains(iter->block)) ||
-			(iter->block->m_hasFluids.m_fluids[m_fluidGroup.m_fluidType].first == Config::maxBlockVolume && m_futureFull.contains(iter->block)));
+				!space.fluid_contains(iter->point, fluidGroup.m_fluidType) ||
+				space.fluid_getGroup(iter->point, fluidGroup.m_fluidType) != nullptr);
+		space.fluid_fillInternal(iter->point, iter->delta, fluidGroup);
+		/*assert(iter->point->m_hasFluids.m_fluids[m_fluidGroup.m_fluidType].second != &m_fluidGroup ||
+			(iter->point->m_hasFluids.m_fluids[m_fluidGroup.m_fluidType].first < Config::maxPointVolume && !m_futureFull.contains(iter->point)) ||
+			(iter->point->m_hasFluids.m_fluids[m_fluidGroup.m_fluidType].first == Config::maxPointVolume && m_futureFull.contains(iter->point)));
 		*/
-		if(blocks.fluid_getTotalVolume(iter->block) > Config::maxBlockVolume)
-			m_overfull.insert(iter->block);
+		if(space.fluid_getTotalVolume(iter->point) > Config::maxPointVolume)
+			m_overfull.insert(iter->point);
 	}
-	validate(area);
+	validate();
 }
 CollisionVolume FillQueue::groupLevel(Area& area, FluidGroup& fluidGroup) const
 {
@@ -99,41 +99,40 @@ CollisionVolume FillQueue::groupLevel(Area& area, FluidGroup& fluidGroup) const
 	CollisionVolume highestLevel = CollisionVolume::create(0);
 	for(auto it = m_groupStart; it != m_groupEnd; ++it)
 	{
-		CollisionVolume level = it->delta + area.getBlocks().fluid_volumeOfTypeContains(it->block, fluidGroup.m_fluidType);
+		CollisionVolume level = it->delta +  area.getSpace().fluid_volumeOfTypeContains(it->point, fluidGroup.m_fluidType);
 		if(level > highestLevel)
 			highestLevel = level;
 
 	}
 	return highestLevel;
 }
-uint32_t FillQueue::getPriority(Area& area, FutureFlowBlock& futureFlowBlock) const
+uint32_t FillQueue::getPriority(FutureFlowPoint& futureFlowPoint) const
 {
-	if(futureFlowBlock.capacity == 0)
+	if(futureFlowPoint.capacity == 0)
 		return UINT32_MAX;
 	//TODO: What is happening here?
-	return ((area.getBlocks().getZ(futureFlowBlock.block).get() + 1) * Config::maxBlockVolume.get() * 2) - futureFlowBlock.capacity.get();
+	return (( futureFlowPoint.point.z().get() + 1) * Config::maxPointVolume.get() * 2) - futureFlowPoint.capacity.get();
 }
-void FillQueue::findGroupEnd(Area& area)
+void FillQueue::findGroupEnd()
 {
 	if(m_groupStart == m_queue.end() || m_groupStart->capacity == 0)
 	{
 		m_groupEnd = m_groupStart;
 		return;
 	}
-	uint32_t priority = getPriority(area, *m_groupStart);
+	uint32_t priority = getPriority(*m_groupStart);
 	for(m_groupEnd = m_groupStart + 1; m_groupEnd != m_queue.end(); ++m_groupEnd)
 	{
-		uint32_t otherPriority = getPriority(area, *m_groupEnd);
+		uint32_t otherPriority = getPriority(*m_groupEnd);
 		assert(priority <= otherPriority);
 		if(otherPriority != priority)
 			break;
 	}
-	validate(area);
+	validate();
 }
-void FillQueue::validate(Area& area) const
+void FillQueue::validate() const
 {
-	[[maybe_unused]] Blocks& blocks = area.getBlocks();
 	assert((m_groupStart >= m_queue.begin() && m_groupStart <= m_queue.end()));
 	assert((m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end()));
-	assert((m_groupEnd == m_queue.end() || m_groupEnd == m_groupStart || blocks.getZ(m_groupStart->block) != blocks.getZ(m_groupEnd->block) || m_groupStart->capacity > m_groupEnd->capacity));
+	assert((m_groupEnd == m_queue.end() || m_groupEnd == m_groupStart || m_groupStart->point.z() != m_groupEnd->point.z() || m_groupStart->capacity > m_groupEnd->capacity));
 }

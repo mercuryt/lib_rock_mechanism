@@ -100,7 +100,7 @@ void Portables<Derived, Index, ReferenceIndex>::forEachDataPortables(Action&& ac
 	action(m_isOnDeckOf);
 	action(m_hasDecks);
 	action(m_projectsOnDeck);
-	action(m_blocksContainingFluidOnDeck);
+	action(m_pointsContainingFluidOnDeck);
 	action(m_floating);
 }
 template<class Derived, class Index, class ReferenceIndex>
@@ -171,14 +171,13 @@ void Portables<Derived, Index, ReferenceIndex>::log(const Index& index) const
 		std::cout << ", following: " << m_leader[index].toString();
 	if(m_carrier[index].exists())
 		std::cout << ", carrier: " << m_carrier[index].toString();
-	const BlockIndex& location = getLocation(index);
+	const Point3D& location = getLocation(index);
 	if(location.exists())
 	{
-		const Blocks& blocks = getArea().getBlocks();
-		std::cout << ", location: " << blocks.getCoordinates(location).toString();
-		for(const BlockIndex& occupied : this->m_blocks[index])
+		std::cout << ", location: " << location.toString();
+		for(const Point3D& occupied : this->m_occupied[index])
 			if(occupied != location)
-				std::cout << "-" << blocks.getCoordinates(occupied).toString();
+				std::cout << "-" << occupied.toString();
 	}
 	//if(!m_onDeck[index].empty())
 		//std::cout << ", on deck " << m_onDeck[index].toString();
@@ -366,31 +365,31 @@ bool Portables<Derived, Index, ReferenceIndex>::isLeadingPolymorphic(const Index
 	return m_follower[index] == actorOrItem;
 }
 template<class Derived, class Index, class ReferenceIndex>
-OccupiedBlocksForHasShape Portables<Derived, Index, ReferenceIndex>::getBlocksCombined(const Index& index) const
+OccupiedSpaceForHasShape Portables<Derived, Index, ReferenceIndex>::getOccupiedCombined(const Index& index) const
 {
-	const OccupiedBlocksForHasShape& occupied = HasShapes<Derived, Index>::getBlocks(index);
-	OccupiedBlocksForHasShape output;
+	const OccupiedSpaceForHasShape& occupied = HasShapes<Derived, Index>::getOccupied(index);
+	OccupiedSpaceForHasShape output;
 	const Area& area = getArea();
 	uint toReserve = occupied.size();
 	for(const ActorOrItemIndex& onDeck : m_onDeck[index])
 		toReserve += Shape::getPositions(onDeck.getShape(area)).size();
 	output.reserve(toReserve);
-	for(const BlockIndex& block : occupied)
-		output.insert(block);
+	for(const Point3D& point : occupied)
+		output.insert(point);
 	for(const ActorOrItemIndex& onDeck : m_onDeck[index])
-		for(const BlockIndex& block : onDeck.getBlocks(area))
-			output.insert(block);
+		for(const Point3D& point : onDeck.getOccupied(area))
+			output.insert(point);
 	return output;
 }
 template<class Derived, class Index, class ReferenceIndex>
-DistanceInBlocks Portables<Derived, Index, ReferenceIndex>::floatsInAtDepth(const Index& index, const FluidTypeId& fluidType) const
+Distance Portables<Derived, Index, ReferenceIndex>::floatsInAtDepth(const Index& index, const FluidTypeId& fluidType) const
 {
 	const Mass mass = static_cast<const Derived*>(this)->getMass(index);
 	CollisionVolume displacement = CollisionVolume::create(0);
-	DistanceInBlocks output = DistanceInBlocks::create(0);
+	Distance output = Distance::create(0);
 	const Density& fluidDensity = FluidType::getDensity(fluidType);
 	const ShapeId& shape = HasShapes<Derived, Index>::getShape(index);
-	DistanceInBlocks shapeHeight = Shape::getZSize(shape);
+	Distance shapeHeight = Shape::getZSize(shape);
 	SmallSet<Offset3D> previousLevel;
 	SmallSet<Offset3D> nextLevel;
 	while(fluidDensity < mass / displacement.toVolume())
@@ -399,11 +398,11 @@ DistanceInBlocks Portables<Derived, Index, ReferenceIndex>::floatsInAtDepth(cons
 		if(thisLevel.size() < previousLevel.size() || shapeHeight < output)
 		{
 			// Hull ends here.
-			return DistanceInBlocks::null();
+			return Distance::null();
 		}
-		// Anything directly above a recorded block is assumed to be eiter part of or contained within the hull.
-		displacement += Config::maxBlockVolume * nextLevel.size();
-		// Use previous level to ensure we don't record the same block twice.
+		// Anything directly above a recorded point is assumed to be eiter part of or contained within the hull.
+		displacement += Config::maxPointVolume * nextLevel.size();
+		// Use previous level to ensure we don't record the same point twice.
 		previousLevel.swap(nextLevel);
 		nextLevel.clear();
 		for(const OffsetAndVolume& offsetAndVolume : thisLevel)
@@ -420,36 +419,36 @@ DistanceInBlocks Portables<Derived, Index, ReferenceIndex>::floatsInAtDepth(cons
 	return output;
 }
 template<class Derived, class Index, class ReferenceIndex>
-bool Portables<Derived, Index, ReferenceIndex>::canFloatAt(const Index& index, const BlockIndex& block) const
+bool Portables<Derived, Index, ReferenceIndex>::canFloatAt(const Index& index, const Point3D& point) const
 {
-	return getFluidTypeCanFloatInAt(index, block).exists();
+	return getFluidTypeCanFloatInAt(index, point).exists();
 }
 template<class Derived, class Index, class ReferenceIndex>
-FluidTypeId Portables<Derived, Index, ReferenceIndex>::getFluidTypeCanFloatInAt(const Index& index, const BlockIndex& block) const
+FluidTypeId Portables<Derived, Index, ReferenceIndex>::getFluidTypeCanFloatInAt(const Index& index, const Point3D& point) const
 {
-	const Blocks& blocks = getArea().getBlocks();
-	for(const FluidData& fluidData : blocks.fluid_getAll(block))
+	const Space& space = getArea().getSpace();
+	for(const FluidData& fluidData : space.fluid_getAll(point))
 	{
-		if(canFloatAtInFluidType(index, block, fluidData.type))
+		if(canFloatAtInFluidType(index, point, fluidData.type))
 			return fluidData.type;
 	}
 	return FluidTypeId::null();
 }
 template<class Derived, class Index, class ReferenceIndex>
-bool Portables<Derived, Index, ReferenceIndex>::canFloatAtInFluidType(const Index& index, const BlockIndex& block, const FluidTypeId& fluidType) const
+bool Portables<Derived, Index, ReferenceIndex>::canFloatAtInFluidType(const Index& index, const Point3D& point, const FluidTypeId& fluidType) const
 {
-	const DistanceInBlocks& floatDepth = floatsInAtDepth(index, fluidType);
+	const Distance& floatDepth = floatsInAtDepth(index, fluidType);
 	if(floatDepth.empty())
 		// Cannot float in this fluid at any depth.
 		return false;
-	BlockIndex current = block;
-	const Blocks& blocks = getArea().getBlocks();
-	auto& occupied = HasShapes<Derived, Index>::getBlocks(index);
+	Point3D current = point;
+	const Space& space = getArea().getSpace();
+	auto& occupied = HasShapes<Derived, Index>::getOccupied(index);
 	for(uint i = 0; floatDepth > i; ++i)
 	{
-		if(!blocks.fluid_contains(current, fluidType) && !occupied.contains(current))
+		if(!space.fluid_contains(current, fluidType) && !occupied.contains(current))
 			return false;
-		current = blocks.getBlockAbove(current);
+		current = current.above();
 	}
 	return true;
 }
@@ -527,28 +526,28 @@ void Portables<Derived, Index, ReferenceIndex>::unsetCarrier(const Index& index,
 template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::maybeFall(const Index& index)
 {
-	Blocks& blocks = getArea().getBlocks();
-	if(!blocks.shape_moveTypeCanEnter(getLocation(index), getMoveType(index)))
+	Space& space = getArea().getSpace();
+	if(!space.shape_moveTypeCanEnter(getLocation(index), getMoveType(index)))
 		fall(index);
 }
 template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::fall(const Index& index)
 {
-	Blocks& blocks = getArea().getBlocks();
+	Space& space = getArea().getSpace();
 	const ShapeId& shape = getShape(index);
 	const Facing4& facing = getFacing(index);
-	BlockIndex location = getLocation(index);
+	Point3D location = getLocation(index);
 	assert(!canFloatAt(index, location));
 	assert(!isFloating(index));
 	assert(location.exists());
-	assert(blocks.shape_anythingCanEnterEver(location));
-	DistanceInBlocks distance = DistanceInBlocks::create(0);
-	BlockIndex next;
-	const auto& occupied = this->getBlocks(index);
+	assert(space.shape_anythingCanEnterEver(location));
+	Distance distance = Distance::create(0);
+	Point3D next;
+	const auto& occupied = this->getOccupied(index);
 	while(true)
 	{
-		next = blocks.getBlockBelow(location);
-		if(blocks.shape_canFitEverOrCurrentlyDynamic(next, shape, facing, occupied) && !canFloatAt(index, location))
+		next = location.below();
+		if(space.shape_canFitEverOrCurrentlyDynamic(next, shape, facing, occupied) && !canFloatAt(index, location))
 		{
 			location = next;
 			++distance;
@@ -557,8 +556,8 @@ void Portables<Derived, Index, ReferenceIndex>::fall(const Index& index)
 			break;
 	}
 	assert(distance != 0);
-	auto blocksBelowEndPosition = blocks.shape_getBelowBlocksWithFacing(location, shape, facing);
-	MaterialTypeId materialType = blocks.solid_getHardest(blocksBelowEndPosition);
+	auto pointsBelowEndPosition = space.shape_getBelowPointsWithFacing(location, shape, facing);
+	MaterialTypeId materialType = space.solid_getHardest(pointsBelowEndPosition);
 	static_cast<Derived*>(this)->location_set(index, location, facing);
 	static_cast<Derived*>(this)->takeFallDamage(index, distance, materialType);
 	//TODO: dig out / destruct below impact.
@@ -573,14 +572,14 @@ Mass Portables<Derived, Index, ReferenceIndex>::onDeck_getMass(const Index& inde
 	return output;
 }
 template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index, const BlockIndex& previousLocation, const Facing4& previousFacing)
+void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index, const Point3D& previousLocation, const Facing4& previousFacing)
 {
 	Area& area = getArea();
-	Blocks& blocks = area.getBlocks();
-	const BlockIndex& newLocation = getLocation(index);
+	Space& space =  area.getSpace();
+	const Point3D& newLocation = getLocation(index);
 	assert(newLocation.exists());
 	const Facing4& newFacing = getFacing(index);
-	if(blocks.isExposedToSky(newLocation))
+	if(space.isExposedToSky(newLocation))
 		this->m_onSurface.set(index);
 	else
 		this->m_onSurface.maybeUnset(index);
@@ -589,23 +588,23 @@ void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index
 	if(deckId.exists())
 	{
 		assert(previousLocation.exists());
-		Offset3D offset = blocks.relativeOffsetTo(previousLocation, getLocation(index));
-		area.m_decks.shift(area, deckId, offset, DistanceInBlocks::create(1), previousLocation, previousFacing, newFacing);
+		Offset3D offset = previousLocation.offsetTo(getLocation(index));
+		area.m_decks.shift(area, deckId, offset, Distance::create(1), previousLocation, previousFacing, newFacing);
 	}
 	else
 	{
-		// TODO: move this to onInsertIntoBlocks method.
+		// TODO: move this to onInsertIntoPoints method.
 		const OffsetCuboidSet& deckOffsets = static_cast<Derived*>(this)->getDeckOffsets(index);
 		if(!deckOffsets.empty())
 		{
 			// Create decks for newly added.
-			CuboidSet decks(blocks, newLocation, newFacing, deckOffsets);
+			CuboidSet decks(newLocation, newFacing, deckOffsets);
 			m_hasDecks[index] = area.m_decks.registerDecks(area, decks, getActorOrItemIndex(index));
 		}
 	}
 	// Update which deck this portable is on.
-	const DeckId& onDeckOf = area.m_decks.getForBlock(getLocation(index));
-	const DeckId onDeckOfPrevious = previousLocation.exists() ? area.m_decks.getForBlock(previousLocation) : DeckId::null();
+	const DeckId& onDeckOf = area.m_decks.getForPoint(getLocation(index));
+	const DeckId onDeckOfPrevious = previousLocation.exists() ? area.m_decks.getForPoint(previousLocation) : DeckId::null();
 	if(onDeckOf != onDeckOfPrevious)
 	{
 		if(onDeckOf == DeckId::null())

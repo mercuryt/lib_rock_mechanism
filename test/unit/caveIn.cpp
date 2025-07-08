@@ -12,7 +12,7 @@ TEST_CASE("Cave In")
 {
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	static MaterialTypeId marble = MaterialType::byName("marble");
 	SUBCASE("Cave In doesn't happen when block is supported.")
 	{

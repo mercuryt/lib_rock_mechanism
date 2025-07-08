@@ -11,8 +11,8 @@ class WanderObjective;
 class WanderPathRequest final : public PathRequestBreadthFirst
 {
 	WanderObjective& m_objective;
-	BlockIndex m_lastBlock;
-	uint16_t m_blockCounter = 0;
+	Point3D m_lastPoint;
+	uint16_t m_pointCounter = 0;
 public:
 	WanderPathRequest(Area& area, WanderObjective& objective, const ActorIndex& actor);
 	WanderPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
@@ -23,7 +23,7 @@ public:
 };
 class WanderObjective final : public Objective
 {
-	BlockIndex m_destination;
+	Point3D m_destination;
 public:
 	WanderObjective();
 	WanderObjective(const Json& data, DeserializationMemo& deserializationMemo);

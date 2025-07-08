@@ -3,7 +3,7 @@
 #include "numericTypes/index.h"
 #include "../vision/visionRequests.h"
 #include "../area/area.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 bool Actors::vision_canSeeAnything(const ActorIndex& index) const
 {
 	return isAlive(index) && sleep_isAwake(index);
@@ -34,7 +34,7 @@ void Actors::vision_maybeUpdateCuboid(const ActorIndex& index, const VisionCuboi
 	if(vision_canSeeAnything(index))
 		m_area.m_visionRequests.maybeUpdateCuboid(getReference(index), newCuboid);
 }
-void Actors::vision_maybeUpdateRange(const ActorIndex& index, const DistanceInBlocks& range)
+void Actors::vision_maybeUpdateRange(const ActorIndex& index, const Distance& range)
 {
 	if(vision_canSeeAnything(index) && hasLocation(index))
 	{
@@ -42,10 +42,10 @@ void Actors::vision_maybeUpdateRange(const ActorIndex& index, const DistanceInBl
 		bool exists = m_area.m_visionRequests.maybeUpdateRange(ref, range);
 		if(!exists)
 			m_area.m_visionRequests.create(ref);
-		m_area.m_octTree.updateRange(ref, m_area.getBlocks().getCoordinates(m_area.getActors().getLocation(index)), range * range);
+		m_area.m_octTree.updateRange(ref, m_area.getActors().getLocation(index), range * range);
 	}
 }
-void Actors::vision_maybeUpdateLocation(const ActorIndex& index, const BlockIndex& location)
+void Actors::vision_maybeUpdateLocation(const ActorIndex& index, const Point3D& location)
 {
 	if(vision_canSeeAnything(index))
 	{

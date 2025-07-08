@@ -1,6 +1,6 @@
 #include "eat.h"
 #include "../area/area.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../items/items.h"
 #include "../actors/actors.h"
 #include "../plants.h"
@@ -20,15 +20,15 @@ void EatEvent::execute(Simulation&, Area *area)
 	Actors& actors = area->getActors();
 	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
 	// TODO: use the version of this method on mustEat and delete this one.
-	BlockIndex blockContainingFood = actors.eat_getAdjacentBlockWithTheMostDesiredFood(actor);
-	if(blockContainingFood.empty())
+	Point3D pointContainingFood = actors.eat_getAdjacentPointWithTheMostDesiredFood(actor);
+	if(pointContainingFood.empty())
 	{
 		actors.objective_canNotCompleteSubobjective(actor);
 		return;
 	}
-	Blocks& blocks = area->getBlocks();
+	Space& space = area->getSpace();
 	Items& items = area->getItems();
-	for(ItemIndex item : blocks.item_getAll(blockContainingFood))
+	for(ItemIndex item : space.item_getAll(pointContainingFood))
 	{
 		if(items.isPreparedMeal(item))
 		{
@@ -45,15 +45,15 @@ void EatEvent::execute(Simulation&, Area *area)
 	}
 	AnimalSpeciesId species = actors.getSpecies(actor);
 	if(AnimalSpecies::getEatsMeat(species))
-		for(ActorIndex actorToEat : blocks.actor_getAll(blockContainingFood))
+		for(ActorIndex actorToEat : space.actor_getAll(pointContainingFood))
 			if(!actors.isAlive(actorToEat) && actors.eat_canEatActor(actor, actorToEat))
 			{
 				eatActor(*area, actorToEat);
 				return;
 			}
-	if(blocks.plant_exists(blockContainingFood))
+	if(space.plant_exists(pointContainingFood))
 	{
-		PlantIndex plant = blocks.plant_get(blockContainingFood);
+		PlantIndex plant = space.plant_get(pointContainingFood);
 		Plants& plants = area->getPlants();
 		PlantSpeciesId plantSpecies = plants.getSpecies(plant);
 		if(AnimalSpecies::getEatsFruit(species) && PlantSpecies::getFluidType(plantSpecies) == AnimalSpecies::getFluidType(species) && plants.getFruitMass(plant) != 0)
@@ -137,7 +137,7 @@ EatPathRequest::EatPathRequest(Area &area, EatObjective &eo, const ActorIndex &a
 {
 	Actors& actors = area.getActors();
 	start = actors.getLocation(actorIndex);
-	maxRange = DistanceInBlocks::max();
+	maxRange = Distance::max();
 	actor = actors.getReference(actorIndex);
 	shape = actors.getShape(actorIndex);
 	moveType = actors.getMoveType(actorIndex);
@@ -148,61 +148,61 @@ EatPathRequest::EatPathRequest(Area &area, EatObjective &eo, const ActorIndex &a
 FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	assert(m_eatObjective.m_location.empty());
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	MustEat& mustEat = *area.getActors().m_mustEat[actorIndex].get();
 	if(m_eatObjective.m_tryToHunt)
 	{
-		auto destinationCondition = [&](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
+		auto destinationCondition = [&](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
 		{
-			for(ActorIndex prey : blocks.actor_getAll(block))
+			for(ActorIndex prey : space.actor_getAll(point))
 				if(mustEat.canEatActor(area, prey))
 				{
 					m_huntResult.setIndex(prey, area.getActors().m_referenceData);
-					return {true, block};
+					return {true, point};
 				}
-			return {false, block};
+			return {false, point};
 		};
-		constexpr bool useAnyOccupiedBlock = true;
-		return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour, adjacent);
+		constexpr bool useAnyOccupiedPoint = true;
+		return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedPoint, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour, adjacent);
 	}
 	else if(m_eatObjective.m_noFoodFound)
 		return terrainFacade.findPathToEdge(memo, start, facing, shape, m_eatObjective.m_detour);
 	else
 	{
 		// initalize candidates with null values.
-		m_candidates.fill(BlockIndex::null());
+		m_candidates.fill(Point3D::null());
 		if(area.getActors().isSentient(actorIndex))
 		{
 			// Sentients will only return true if the come across a maxRankedDesire (prepared meal).
 			// Otherwise they will store candidates ranked by desire.
 			// EatPathRequest::callback may use one of those candidates, if the actorIndex is hungry enough.
 			auto minimum = mustEat.getMinimumAcceptableDesire(area);
-			auto destinationCondition = [&mustEat, this, &area, minimum](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
+			auto destinationCondition = [&mustEat, this, &area, minimum](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
 			{
-				uint32_t eatDesire = mustEat.getDesireToEatSomethingAt(area, block);
+				uint32_t eatDesire = mustEat.getDesireToEatSomethingAt(area, point);
 				if(eatDesire < minimum)
-					return {false, block};
+					return {false, point};
 				if(eatDesire == maxRankedEatDesire)
-					return {true, block};
+					return {true, point};
 				if(eatDesire != 0 && m_candidates[eatDesire - 1u].empty())
-					m_candidates[eatDesire - 1u] = block;
-				return {false, block};
+					m_candidates[eatDesire - 1u] = point;
+				return {false, point};
 			};
-			constexpr bool useAnyOccupiedBlock = true;
-			return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour, adjacent);
+			constexpr bool useAnyOccupiedPoint = true;
+			return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedPoint, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour, adjacent);
 		}
 		else
 		{
 			// Nonsentients will eat whatever they come across first.
 			// Having preference would be nice but this is better for performance.
-			auto destinationCondition = [&mustEat, &area](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
+			auto destinationCondition = [&mustEat, &area](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
 			{
-				return {mustEat.getDesireToEatSomethingAt(area, block) != 0, block};
+				return {mustEat.getDesireToEatSomethingAt(area, point) != 0, point};
 			};
-			constexpr bool useAnyOccupiedBlock = true;
-			return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour, adjacent);
+			constexpr bool useAnyOccupiedPoint = true;
+			return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedPoint, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour, adjacent);
 		}
 	}
 }
@@ -279,7 +279,7 @@ void EatPathRequest::writeStep(Area& area, FindPathResult& result)
 		else
 		{
 			// Found max desirability target, use the result path.
-			m_eatObjective.m_location = result.blockThatPassedPredicate;
+			m_eatObjective.m_location = result.pointThatPassedPredicate;
 			if(result.useCurrentPosition)
 				m_eatObjective.execute(area, actorIndex);
 			else
@@ -307,7 +307,7 @@ EatObjective::EatObjective(const Json &data, DeserializationMemo &deserializatio
 	m_noFoodFound(data["noFoodFound"].get<bool>())
 {
 	if(data.contains("destination"))
-		m_location = data["location"].get<BlockIndex>();
+		m_location = data["location"].get<Point3D>();
 	if(data.contains("eventStart"))
 		m_eatEvent.schedule(area, Config::stepsToEat, *this, actor, data["eventStart"].get<Step>());
 }
@@ -352,7 +352,7 @@ void EatObjective::execute(Area &area, const ActorIndex &actor)
 	}
 	if(m_location.empty())
 	{
-		BlockIndex adjacent = mustEat.getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability(area);
+		Point3D adjacent = mustEat.getAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(area);
 		if(adjacent.empty())
 			// Find destination.
 			makePathRequest(area, actor);
@@ -368,7 +368,7 @@ void EatObjective::execute(Area &area, const ActorIndex &actor)
 	{
 		if(actors.isAdjacentToLocation(actor, m_location))
 		{
-			BlockIndex adjacent = mustEat.getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability(area);
+			Point3D adjacent = mustEat.getAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(area);
 			if(adjacent.empty())
 			{
 				// We are at the previously selected location but there is no  longer any food here, try again.
@@ -417,12 +417,12 @@ void EatObjective::noFoodFound()
 {
 	m_noFoodFound = true;
 }
-bool EatObjective::canEatAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const
+bool EatObjective::canEatAt(Area& area, const Point3D& point, const ActorIndex& actor) const
 {
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
-	for(ItemIndex item : blocks.item_getAll(block))
+	for(ItemIndex item : space.item_getAll(point))
 	{
 		if(actors.eat_canEatItem(actor, item))
 			return true;
@@ -433,14 +433,14 @@ bool EatObjective::canEatAt(Area& area, const BlockIndex& block, const ActorInde
 	}
 	AnimalSpeciesId species = actors.getSpecies(actor);
 	if(AnimalSpecies::getEatsMeat(species))
-		for(ActorIndex actor : blocks.actor_getAll(block))
+		for(ActorIndex actor : space.actor_getAll(point))
 			if(!actors.isAlive(actor) && AnimalSpecies::getFluidType(species) == AnimalSpecies::getFluidType(actors.getSpecies(actor)))
 				return true;
-	if(blocks.plant_exists(block))
+	if(space.plant_exists(point))
 	{
-		const PlantIndex plant = blocks.plant_get(block);
+		const PlantIndex plant = space.plant_get(point);
 		if(AnimalSpecies::getEatsFruit(species) && PlantSpecies::getFluidType(area.getPlants().getSpecies(plant)) == AnimalSpecies::getFluidType(species))
-			if(actors.eat_canEatPlant(actor, blocks.plant_get(block)))
+			if(actors.eat_canEatPlant(actor, space.plant_get(point)))
 				return true;
 	}
 	return false;

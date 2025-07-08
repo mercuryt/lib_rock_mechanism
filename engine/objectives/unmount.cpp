@@ -1,10 +1,10 @@
  #include "unmount.h"
  #include "../actors/actors.h"
  #include "../area/area.h"
- #include "../blocks/blocks.h"
+ #include "../space/space.h"
 UnmountObjective::UnmountObjective(const Json& data, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo),
-	m_location(data["location"].get<BlockIndex>())
+	m_location(data["location"].get<Point3D>())
 { }
 Json UnmountObjective::toJson() const
 {
@@ -14,19 +14,19 @@ Json UnmountObjective::toJson() const
 }
 void UnmountObjective::execute(Area& area, const ActorIndex& actor)
 {
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	Actors& actors = area.getActors();
 	assert(actors.onDeck_getIsOnDeckOf(actor).isActor());
 	const ActorIndex& mount = actors.onDeck_getIsOnDeckOf(actor).getActor();
 	const ShapeId& shape = actors.getCompoundShape(actor);
-	const BlockIndex& startingLocation = actors.getLocation(actor);
+	const Point3D& startingLocation = actors.getLocation(actor);
 	if(m_location.empty())
 	{
-		for(const BlockIndex& block : actors.getAdjacentBlocks(mount))
+		for(const Point3D& point : actors.getAdjacentPoints(mount))
 		{
-			if(blocks.shape_canEnterCurrentlyFrom(m_location, shape, startingLocation, actors.getBlocks(actor)))
+			if(space.shape_canEnterCurrentlyFrom(m_location, shape, startingLocation, actors.getOccupied(actor)))
 			{
-				actors.mount_undo(actor, block, blocks.facingToSetWhenEnteringFrom(block, actors.getLocation(actor)));
+				actors.mount_undo(actor, point, actors.getLocation(actor).getFacingTwords(point));
 				actors.objective_complete(actor, *this);
 				return;
 			}
@@ -35,16 +35,16 @@ void UnmountObjective::execute(Area& area, const ActorIndex& actor)
 	}
 	else
 	{
-		const BlockIndex& actorLocation = actors.getLocation(actor);
+		const Point3D& actorLocation = actors.getLocation(actor);
 		const ShapeId& compoundShape = actors.getCompoundShape(mount);
-		auto currentlyAdjacent = Shape::getBlocksWhichWouldBeAdjacentAt(compoundShape, blocks, actorLocation, actors.getFacing(mount));
+		auto currentlyAdjacent = Shape::getPointsWhichWouldBeAdjacentAt(compoundShape, space, actorLocation, actors.getFacing(mount));
 		if(currentlyAdjacent.contains(m_location))
 		{
 
-			const Facing4 facing = blocks.shape_canEnterEverWithAnyFacingReturnFacing(m_location, actors.getShape(actor), actors.getMoveType(actor));
+			const Facing4 facing = space.shape_canEnterEverWithAnyFacingReturnFacing(m_location, actors.getShape(actor), actors.getMoveType(actor));
 			if(facing != Facing4::Null)
 			{
-				actors.mount_undo(actor, m_location, blocks.facingToSetWhenEnteringFrom(m_location, actorLocation));
+				actors.mount_undo(actor, m_location, actorLocation.getFacingTwords(m_location));
 				actors.objective_complete(actor, *this);
 			}
 			else

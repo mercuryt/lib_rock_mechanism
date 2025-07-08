@@ -39,9 +39,9 @@ GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(const Json& data, Area& a
 FindPathResult GivePlantsFluidPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	assert(m_objective.m_project == nullptr);
-	DistanceInBlocks maxRange = Config::maxRangeToSearchForHorticultureDesignations;
+	Distance maxRange = Config::maxRangeToSearchForHorticultureDesignations;
 	constexpr bool unreserved = false;
-	return terrainFacade.findPathToBlockDesignation(memo, BlockDesignation::GivePlantFluid, faction, start, facing, shape, m_objective.m_detour, adjacent, unreserved, maxRange);
+	return terrainFacade.findPathToSpaceDesignation(memo, SpaceDesignation::GivePlantFluid, faction, start, facing, shape, m_objective.m_detour, adjacent, unreserved, maxRange);
 }
 void GivePlantsFluidPathRequest::writeStep(Area& area, FindPathResult& result)
 {
@@ -52,8 +52,8 @@ void GivePlantsFluidPathRequest::writeStep(Area& area, FindPathResult& result)
 		actors.objective_canNotCompleteObjective(actorIndex, m_objective);
 		return;
 	}
-	if(area.m_blockDesignations.getForFaction(faction).check(result.blockThatPassedPredicate, BlockDesignation::GivePlantFluid))
-		m_objective.selectPlantLocation(area, result.blockThatPassedPredicate, actorIndex);
+	if(area.m_spaceDesignations.getForFaction(faction).check(result.pointThatPassedPredicate, SpaceDesignation::GivePlantFluid))
+		m_objective.selectPlantLocation(area, result.pointThatPassedPredicate, actorIndex);
 	else
 		actors.objective_canNotCompleteSubobjective(actorIndex);
 }
@@ -93,7 +93,7 @@ Json GivePlantsFluidObjective::toJson() const
 }
 // Either get plant from Area::m_hasFarmFields or get the the nearest candidate.
 // This method and GivePlantsFluidThreadedTask are complimentary state machines, with this one handling syncronus tasks.
-// TODO: multi block actors.
+// TODO: multi point actors.
 void GivePlantsFluidObjective::execute(Area& area, const ActorIndex& actor)
 {
 	if(m_project != nullptr)
@@ -109,11 +109,11 @@ void GivePlantsFluidObjective::cancel(Area&, const ActorIndex&)
 		m_project = nullptr;
 	}
 }
-void GivePlantsFluidObjective::selectPlantLocation(Area& area, const BlockIndex& block, const ActorIndex& actor)
+void GivePlantsFluidObjective::selectPlantLocation(Area& area, const Point3D& point, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	const FactionId& faction = actors.getFaction(actor);
-	m_project = std::make_unique<GivePlantFluidProject>(block, area, faction);
+	m_project = std::make_unique<GivePlantFluidProject>(point, area, faction);
 	m_project->addWorkerCandidate(actor, *this);
 }
 void GivePlantsFluidObjective::reset(Area& area, const ActorIndex& actor)

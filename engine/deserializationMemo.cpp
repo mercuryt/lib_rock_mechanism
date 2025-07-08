@@ -10,7 +10,7 @@
 #include "area/stockpile.h"
 #include "eat.h"
 #include "drink.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "actors/actors.h"
 #include "items/items.h"
 #include "plants.h"

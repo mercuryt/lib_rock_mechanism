@@ -22,7 +22,7 @@ TEST_CASE("route_10_10_10")
 	static AnimalSpeciesId carp = AnimalSpecies::byName("carp");
 	static FluidTypeId water = FluidType::byName("water");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	SUBCASE("Route through open space")
 	{
@@ -252,7 +252,7 @@ TEST_CASE("route_5_5_3")
 {
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(5,5,3);
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	static MaterialTypeId marble = MaterialType::byName("marble");
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
@@ -316,7 +316,7 @@ TEST_CASE("route_5_5_5")
 {
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(5,5,5);
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	static MaterialTypeId marble = MaterialType::byName("marble");
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");

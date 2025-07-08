@@ -10,9 +10,9 @@
 template<uint shardWidth = 16>
 class ShardedBitSet
 {
-	Eigen::Array<DistanceInBlocksWidth, 3> m_convertToIndex;
+	Eigen::Array<DistanceWidth, 3> m_convertToIndex;
 	std::vector<bool> m_data;
-	ShardedBitSet(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z)
+	ShardedBitSet(const Distance& x, const Distance& y, const Distance& z)
 	{
 		m_data.resize((x * y * z).get());
 		const uint shard = x / shardWidth;

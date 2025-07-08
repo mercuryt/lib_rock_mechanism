@@ -5,7 +5,7 @@
 #include "../items/itemQuery.h"
 #include "../items/items.h"
 #include "../actors/actors.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../objectives/stockpile.h"
 #include "../reference.h"
 #include "../reservable.h"
@@ -23,7 +23,7 @@
 StockPile::StockPile(std::vector<ItemQuery>& q, Area& a, const FactionId& f) :
 	m_queries(q), m_area(a), m_faction(f), m_reenableScheduledEvent(m_area.m_eventSchedule) { }
 StockPile::StockPile(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
-	m_openBlocks(data["openBlocks"].get<Quantity>()),
+	m_openPoints(data["openPoints"].get<Quantity>()),
 	m_area(area), m_faction(data["faction"].get<FactionId>()),
 	m_enabled(data["enabled"].get<bool>()), m_reenableScheduledEvent(m_area.m_simulation.m_eventSchedule),
 	m_projectNeedingMoreWorkers(data.contains("projectNeedingMoreWorkers") ? &static_cast<StockPileProject&>(*deserializationMemo.m_projects.at(data["projectNeedingMoreWorkers"].get<uintptr_t>())) : nullptr)
@@ -31,18 +31,18 @@ StockPile::StockPile(const Json& data, DeserializationMemo& deserializationMemo,
 	deserializationMemo.m_stockpiles[data["address"].get<uintptr_t>()] = this;
 	for(const Json& queryData : data["queries"])
 		m_queries.emplace_back(queryData, area);
-	for(const BlockIndex& block : data["blocks"].get<SmallSet<BlockIndex>>())
-		addBlock(block);
+	for(const Point3D& point : data["space"].get<SmallSet<Point3D>>())
+		addPoint(point);
 }
 Json StockPile::toJson() const
 {
 	Json data{
 		{"address", reinterpret_cast<uintptr_t>(this)},
-		{"openBlocks", m_openBlocks},
+		{"openPoints", m_openPoints},
 		{"faction", m_faction},
 		{"enabled", m_enabled},
 		{"queries", m_queries},
-		{"blocks", m_blocks}
+		{"space", m_points}
 	};
 	if(m_projectNeedingMoreWorkers)
 		data["projectNeedingMoreWorkers"] = reinterpret_cast<uintptr_t>(m_projectNeedingMoreWorkers);
@@ -55,17 +55,17 @@ bool StockPile::accepts(const ItemIndex& item) const
 			return true;
 	return false;
 }
-void StockPile::addBlock(const BlockIndex& block)
+void StockPile::addPoint(const Point3D& point)
 {
-	Blocks& blocks = m_area.getBlocks();
-	assert(!m_blocks.contains(block));
-	assert(!blocks.stockpile_contains(block, m_faction));
-	blocks.stockpile_recordMembership(block, *this);
-	if(blocks.stockpile_contains(block, m_faction))
-		incrementOpenBlocks();
-	m_blocks.insert(block);
+	Space& space = m_area.getSpace();
+	assert(!m_points.contains(point));
+	assert(!space.stockpile_contains(point, m_faction));
+	space.stockpile_recordMembership(point, *this);
+	if(space.stockpile_contains(point, m_faction))
+		incrementOpenPoints();
+	m_points.insert(point);
 	Items& items = m_area.getItems();
-	for(ItemIndex item : blocks.item_getAll(block))
+	for(ItemIndex item : space.item_getAll(point))
 		if(accepts(item))
 		{
 			m_area.m_hasStocks.getForFaction(m_faction).record(m_area, item);
@@ -73,29 +73,29 @@ void StockPile::addBlock(const BlockIndex& block)
 				m_area.m_hasStockPiles.getForFaction(m_faction).removeItem(item);
 		}
 }
-void StockPile::removeBlock(const BlockIndex& block)
+void StockPile::removePoint(const Point3D& point)
 {
-	Blocks& blocks = m_area.getBlocks();
-	assert(m_blocks.contains(block));
-	assert(blocks.stockpile_contains(block, m_faction));
-	assert(blocks.stockpile_getForFaction(block, m_faction) == this);
-	// Collect projects delivering items to block.
+	Space& space = m_area.getSpace();
+	assert(m_points.contains(point));
+	assert(space.stockpile_contains(point, m_faction));
+	assert(space.stockpile_getForFaction(point, m_faction) == this);
+	// Collect projects delivering items to point.
 	// This is very slow, particularly when destroying a large stockpile when many stockpile projects exist. Probably doesn't get called often enough to matter.
 	std::vector<Project*> projectsToCancel;
 	for(auto& pair : m_area.m_hasStockPiles.getForFaction(m_faction).m_projectsByItem)
 		for(StockPileProject* project : pair.second)
-			if(project->getLocation() == block)
+			if(project->getLocation() == point)
 				projectsToCancel.push_back(project);
-	if(blocks.stockpile_isAvalible(block, m_faction))
-		decrementOpenBlocks();
-	blocks.stockpile_recordNoLongerMember(block, *this);
-	m_blocks.erase(block);
-	if(m_blocks.empty())
+	if(space.stockpile_isAvalible(point, m_faction))
+		decrementOpenPoints();
+	space.stockpile_recordNoLongerMember(point, *this);
+	m_points.erase(point);
+	if(m_points.empty())
 		m_area.m_hasStockPiles.getForFaction(m_faction).destroyStockPile(*this);
 	// Cancel collected projects.
 	for(Project* project : projectsToCancel)
 		project->cancel();
-	for(ItemIndex item : blocks.item_getAll(block))
+	for(ItemIndex item : space.item_getAll(point))
 		if(accepts(item))
 			m_area.m_hasStocks.getForFaction(m_faction).unrecord(m_area, item);
 }
@@ -104,21 +104,21 @@ void StockPile::updateQueries(std::vector<ItemQuery>& queries)
 	m_queries = queries;
 	//TODO: cancel projects targeting items in this stockpile which now match? Do we need to notify ItemCanBeStockPiled?
 }
-void StockPile::incrementOpenBlocks()
+void StockPile::incrementOpenPoints()
 {
-	++m_openBlocks;
-	if(m_openBlocks == 1)
+	++m_openPoints;
+	if(m_openPoints == 1)
 		m_area.m_hasStockPiles.getForFaction(m_faction).setAvailable(*this);
 }
-void StockPile::decrementOpenBlocks()
+void StockPile::decrementOpenPoints()
 {
-	--m_openBlocks;
-	if(m_openBlocks == 0)
+	--m_openPoints;
+	if(m_openPoints == 0)
 		m_area.m_hasStockPiles.getForFaction(m_faction).setUnavailable(*this);
 }
 Simulation& StockPile::getSimulation()
 {
-	assert(!m_blocks.empty());
+	assert(!m_points.empty());
 	return m_area.m_simulation;
 }
 void StockPile::addToProjectNeedingMoreWorkers(const ActorIndex& actor, StockPileObjective& objective)
@@ -128,9 +128,9 @@ void StockPile::addToProjectNeedingMoreWorkers(const ActorIndex& actor, StockPil
 }
 void StockPile::destroy()
 {
-	auto copy = m_blocks;
-	for(BlockIndex block : copy)
-		removeBlock(block);
+	auto copy = m_points;
+	for(Point3D point : copy)
+		removePoint(point);
 }
 bool StockPile::contains(ItemQuery& query) const
 {
@@ -157,7 +157,7 @@ StockPile& AreaHasStockPilesForFaction::addStockPile(std::vector<ItemQuery>&& qu
 StockPile& AreaHasStockPilesForFaction::addStockPile(std::vector<ItemQuery>& queries)
 {
 	StockPile& stockPile = m_stockPiles.emplace_back(queries, m_area, m_faction);
-	// Do not mark avalible yet, wait for the first open block to be added.
+	// Do not mark avalible yet, wait for the first open point to be added.
 	return stockPile;
 }
 AreaHasStockPilesForFaction::AreaHasStockPilesForFaction(const Json& data, DeserializationMemo& deserializationMemo, Area& a, const FactionId& f) :
@@ -291,7 +291,7 @@ Json AreaHasStockPilesForFaction::toJson() const
 }
 void AreaHasStockPilesForFaction::destroyStockPile(StockPile& stockPile)
 {
-	assert(stockPile.m_blocks.empty());
+	assert(stockPile.m_points.empty());
 	// Erase pointers from avalible stockpiles by item type.
 	for(ItemQuery& itemQuery : stockPile.m_queries)
 	{
@@ -328,14 +328,14 @@ void AreaHasStockPilesForFaction::destroyStockPile(StockPile& stockPile)
 	// Destruct.
 	m_stockPiles.remove(stockPile);
 }
-bool AreaHasStockPilesForFaction::isValidStockPileDestinationFor(const BlockIndex& block, const ItemIndex& item) const
+bool AreaHasStockPilesForFaction::isValidStockPileDestinationFor(const Point3D& point, const ItemIndex& item) const
 {
-	Blocks& blocks = m_area.getBlocks();
-	if(blocks.isReserved(block, m_faction))
+	Space& space = m_area.getSpace();
+	if(space.isReserved(point, m_faction))
 		return false;
-	if(!blocks.stockpile_isAvalible(block, m_faction))
+	if(!space.stockpile_isAvalible(point, m_faction))
 		return false;
-	return blocks.stockpile_getForFaction(block, m_faction)->accepts(item);
+	return space.stockpile_getForFaction(point, m_faction)->accepts(item);
 }
 void AreaHasStockPilesForFaction::addItem(const ItemIndex& item)
 {
@@ -351,9 +351,9 @@ void AreaHasStockPilesForFaction::addItem(const ItemIndex& item)
 		m_itemsWithDestinationsByStockPile.getOrCreate(stockPile).insert(ref);
 		m_itemsToBeStockPiled.insert(ref);
 	}
-	AreaHasBlockDesignationsForFaction& hasDesignations = m_area.m_blockDesignations.getForFaction(m_faction);
-	for(const BlockIndex& block : items.getBlocks(item))
-		hasDesignations.maybeSet(block, BlockDesignation::StockPileHaulFrom);
+	AreaHasSpaceDesignationsForFaction& hasDesignations = m_area.m_spaceDesignations.getForFaction(m_faction);
+	for(const Point3D& point : items.getOccupied(item))
+		hasDesignations.maybeSet(point, SpaceDesignation::StockPileHaulFrom);
 
 }
 void AreaHasStockPilesForFaction::maybeAddItem(const ItemIndex& item)
@@ -394,15 +394,15 @@ void AreaHasStockPilesForFaction::removeItem(const ItemIndex& item)
 			m_projects.remove(*stockPileProject);
 		}
 	}
-	// Unset block designation for all occupied unless the block contains another item which is also set to be stockpiled by the same faction.
-	AreaHasBlockDesignationsForFaction& hasDesignations = m_area.m_blockDesignations.getForFaction(m_faction);
-	Blocks& blocks = m_area.getBlocks();
-	for(const BlockIndex& block : items.getBlocks(item))
+	// Unset point designation for all occupied unless the point contains another item which is also set to be stockpiled by the same faction.
+	AreaHasSpaceDesignationsForFaction& hasDesignations = m_area.m_spaceDesignations.getForFaction(m_faction);
+	Space& space = m_area.getSpace();
+	for(const Point3D& point : items.getOccupied(item))
 	{
-		for(const ItemIndex& item : blocks.item_getAll(block))
+		for(const ItemIndex& item : space.item_getAll(point))
 			if(items.stockpile_canBeStockPiled(item, m_faction))
 				return;
-		hasDesignations.maybeUnset(block, BlockDesignation::StockPileHaulFrom);
+		hasDesignations.maybeUnset(point, SpaceDesignation::StockPileHaulFrom);
 	}
 }
 void AreaHasStockPilesForFaction::maybeRemoveFromItemsWithDestinationByStockPile(const StockPile& stockPile, const ItemIndex& item)
@@ -422,11 +422,11 @@ void AreaHasStockPilesForFaction::updateItemReferenceForProject(StockPileProject
 	removeFromProjectsByItem(project);
 	m_projectsByItem.getOrCreate(ref).insert(&project);
 }
-void AreaHasStockPilesForFaction::removeBlock(const BlockIndex& block)
+void AreaHasStockPilesForFaction::removePoint(const Point3D& point)
 {
-	StockPile* stockpile = m_area.getBlocks().stockpile_getForFaction(block, m_faction);
+	StockPile* stockpile = m_area.getSpace().stockpile_getForFaction(point, m_faction);
 	if(stockpile != nullptr)
-		stockpile->removeBlock(block);
+		stockpile->removePoint(point);
 }
 void AreaHasStockPilesForFaction::setAvailable(StockPile& stockPile)
 {
@@ -469,18 +469,18 @@ void AreaHasStockPilesForFaction::setUnavailable(StockPile& stockPile)
 		m_itemsWithDestinationsByStockPile.erase(&stockPile);
 	}
 }
-void AreaHasStockPilesForFaction::makeProject(const ItemIndex& item, const BlockIndex& destination, StockPileObjective& objective, const ActorIndex& actor)
+void AreaHasStockPilesForFaction::makeProject(const ItemIndex& item, const Point3D& destination, StockPileObjective& objective, const ActorIndex& actor)
 {
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	Actors& actors = m_area.getActors();
 	Items& items = m_area.getItems();
-	assert(blocks.stockpile_contains(destination, m_faction));
+	assert(space.stockpile_contains(destination, m_faction));
 	// Quantity per project is the ammount that can be hauled by hand, if any, or one.
 	// TODO: Hauling a load of generics with tools.
 	Quantity quantity = std::min({
 		items.getQuantity(item),
 		actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(actor, items.getSingleUnitMass(item), Config::minimumHaulSpeedInital),
-		blocks.shape_getQuantityOfItemWhichCouldFit(destination, items.getItemType(item))
+		space.shape_getQuantityOfItemWhichCouldFit(destination, items.getItemType(item))
 	});
 	// Max workers is one if at least one can be hauled by hand.
 	Quantity maxWorkers = Quantity::create(1);
@@ -542,15 +542,15 @@ bool AreaHasStockPilesForFaction::isAnyHaulingAvailableFor([[maybe_unused]] cons
 	assert(m_faction == m_area.getActors().getFaction(actor));
 	return !m_itemsToBeStockPiled.empty();
 }
-ItemIndex AreaHasStockPilesForFaction::getHaulableItemForAt(const ActorIndex& actor, const BlockIndex& block)
+ItemIndex AreaHasStockPilesForFaction::getHaulableItemForAt(const ActorIndex& actor, const Point3D& point)
 {
 	assert(m_area.getActors().getFaction(actor).exists());
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	FactionId faction = m_area.getActors().getFaction(actor);
 	Items& items = m_area.getItems();
-	if(blocks.isReserved(block, faction))
+	if(space.isReserved(point, faction))
 		return ItemIndex::null();
-	for(ItemIndex item : blocks.item_getAll(block))
+	for(ItemIndex item : space.item_getAll(point))
 	{
 		if(items.reservable_isFullyReserved(item, faction))
 			continue;

@@ -5,7 +5,7 @@
 #include "../items/itemQuery.h"
 #include "../items/items.h"
 #include "../actors/actors.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../objectives/stockpile.h"
 #include "../reference.h"
 #include "../reservable.h"
@@ -20,19 +20,19 @@
 #include <functional>
 #include <memory>
 #include <string>
-StockPileProject::StockPileProject(const FactionId& faction, Area& area, const BlockIndex& block, const ItemIndex& item, const Quantity& quantity, const Quantity& maxWorkers) :
-	Project(faction, area, block, maxWorkers),
+StockPileProject::StockPileProject(const FactionId& faction, Area& area, const Point3D& point, const ItemIndex& item, const Quantity& quantity, const Quantity& maxWorkers) :
+	Project(faction, area, point, maxWorkers),
 	m_item(item, area.getItems().m_referenceData),
 	m_quantity(quantity),
 	m_itemType(area.getItems().getItemType(item)),
-	m_materialType(area.getItems().getMaterialType(item)),
-	m_stockpile(*area.getBlocks().stockpile_getForFaction(block, faction)) { }
+	m_solid(area.getItems().getMaterialType(item)),
+	m_stockpile(* area.getSpace().stockpile_getForFaction(point, faction)) { }
 StockPileProject::StockPileProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
 	Project(data, deserializationMemo, area),
 	m_item(data["item"], area.getItems().m_referenceData),
 	m_quantity(data["quantity"].get<Quantity>()),
 	m_itemType(ItemType::byName(data["itemType"].get<std::string>())),
-	m_materialType(MaterialType::byName(data["materialType"].get<std::string>())),
+	m_solid(MaterialType::byName(data["materialType"].get<std::string>())),
 	m_stockpile(*deserializationMemo.m_stockpiles.at(data["stockpile"].get<uintptr_t>())) { }
 Json StockPileProject::toJson() const
 {
@@ -41,7 +41,7 @@ Json StockPileProject::toJson() const
 	data["stockpile"] = reinterpret_cast<uintptr_t>(&m_stockpile);
 	data["quantity"] = m_quantity;
 	data["itemType"] = m_itemType;
-	data["materialType"] = m_materialType;
+	data["materialType"] = m_solid;
 	return data;
 }
 void StockPileProject::onComplete()
@@ -54,7 +54,7 @@ void StockPileProject::onComplete()
 	FactionId faction = m_stockpile.m_faction;
 	Area& area = m_area;
 	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
-	BlockIndex location = m_location;
+	Point3D location = m_location;
 	hasStockPiles.maybeRemoveFromItemsWithDestinationByStockPile(m_stockpile, index);
 	hasStockPiles.destroyProject(*this);
 	items.location_clearStatic(index);

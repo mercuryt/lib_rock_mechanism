@@ -1,7 +1,7 @@
 #include "craft.h"
 #include "../definitions/skillType.h"
 #include "../actors/actors.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../area/area.h"
 #include "../path/terrainFacade.hpp"
 #include "../hasShapes.hpp"
@@ -26,22 +26,22 @@ CraftPathRequest::CraftPathRequest(const Json& data, Area& area, Deserialization
 	PathRequestBreadthFirst(data, area),
 	m_craftObjective(static_cast<CraftObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))),
 	m_craftJob(deserializationMemo.m_craftJobs.at(data["craftJob"].get<uintptr_t>())),
-	m_location(data["location"].get<BlockIndex>()) { }
+	m_location(data["location"].get<Point3D>()) { }
 FindPathResult CraftPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	FactionId faction = actors.getFaction(actorIndex);
 	HasCraftingLocationsAndJobsForFaction& hasCrafting = area.m_hasCraftingLocationsAndJobs.getForFaction(faction);
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	SkillTypeId skillType = m_craftObjective.m_skillType;
 	auto& excludeJobs = m_craftObjective.getFailedJobs();
-	auto predicate = [&blocks, faction, &hasCrafting, actorIndex, skillType, &excludeJobs](const BlockIndex& block, const Facing4&)
+	auto predicate = [&space, faction, &hasCrafting, actorIndex, skillType, &excludeJobs](const Point3D& point, const Facing4&)
 	{
-		bool result = !blocks.isReserved(block, faction) && hasCrafting.getJobForAtLocation(actorIndex, skillType, block, excludeJobs) != nullptr;
+		bool result = !space.isReserved(point, faction) && hasCrafting.getJobForAtLocation(actorIndex, skillType, point, excludeJobs) != nullptr;
 		if(result)
-			return std::make_pair(true, block);
-		return std::make_pair(false, BlockIndex::null());
+			return std::make_pair(true, point);
+		return std::make_pair(false, Point3D::null());
 	};
 	constexpr bool anyOccupied = true;
 	return terrainFacade.findPathToConditionBreadthFirst<anyOccupied, decltype(predicate)>(predicate, memo, start, facing, shape, detour, adjacent, faction, maxRange);
@@ -49,7 +49,7 @@ FindPathResult CraftPathRequest::readStep(Area& area, const TerrainFacade& terra
 void CraftPathRequest::writeStep(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	if(result.path.empty() && !result.useCurrentPosition)
 	{
@@ -58,21 +58,21 @@ void CraftPathRequest::writeStep(Area& area, FindPathResult& result)
 	}
 	if(result.useCurrentPosition)
 	{
-		if(blocks.isReserved(actors.getLocation(actorIndex), actors.getFaction(actorIndex)))
+		if(space.isReserved(actors.getLocation(actorIndex), actors.getFaction(actorIndex)))
 		{
 				actors.objective_canNotCompleteSubobjective(actorIndex);
 				return;
 		}
 	}
-	else if(blocks.isReserved(result.blockThatPassedPredicate, actors.getFaction(actorIndex)))
+	else if(space.isReserved(result.pointThatPassedPredicate, actors.getFaction(actorIndex)))
 	{
 		actors.objective_canNotCompleteSubobjective(actorIndex);
 		return;
 	}
-	BlockIndex block = result.blockThatPassedPredicate;
+	Point3D point = result.pointThatPassedPredicate;
 	SkillTypeId skillType = m_craftObjective.m_skillType;
 	FactionId faction = actors.getFaction(actorIndex);
-	auto pair = std::make_pair(area.m_hasCraftingLocationsAndJobs.getForFaction(faction).getJobForAtLocation(actorIndex, skillType, block, m_craftObjective.getFailedJobs()), block);
+	auto pair = std::make_pair(area.m_hasCraftingLocationsAndJobs.getForFaction(faction).getJobForAtLocation(actorIndex, skillType, point, m_craftObjective.getFailedJobs()), point);
 	m_craftJob = pair.first;
 	m_location = pair.second;
 
@@ -82,7 +82,7 @@ void CraftPathRequest::writeStep(Area& area, FindPathResult& result)
 	{
 		// Selected work loctaion has been reserved, try again.
 		FactionId faction = actors.getFaction(actorIndex);
-		if(area.getBlocks().isReserved(m_location, faction))
+		if( area.getSpace().isReserved(m_location, faction))
 		{
 			m_craftObjective.reset(area, actorIndex);
 			m_craftObjective.execute(area, actorIndex);

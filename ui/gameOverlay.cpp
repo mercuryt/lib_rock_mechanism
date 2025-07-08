@@ -54,21 +54,21 @@ void GameOverlay::drawMenu()
 	m_window.setPaused(true);
 	m_menu->setVisible(true);
 }
-void GameOverlay::assignLocationToInstallItem(const BlockIndex& block)
+void GameOverlay::assignLocationToInstallItem(const Point3D& point)
 {
 	assert(m_itemBeingInstalled.exists());
 	Area& area = *m_window.getArea();
-	area.m_hasInstallItemDesignations.getForFaction(m_window.getFaction()).add(area, block, m_itemBeingInstalled, m_facing, m_window.getFaction());
+	area.m_hasInstallItemDesignations.getForFaction(m_window.getFaction()).add(area, point, m_itemBeingInstalled, m_facing, m_window.getFaction());
 	m_itemBeingInstalled.clear();
 }
-void GameOverlay::assignLocationToMoveItemTo(const BlockIndex& block)
+void GameOverlay::assignLocationToMoveItemTo(const Point3D& point)
 {
 	assert(m_itemBeingMoved.exists());
 	assert(!m_window.getSelectedActors().empty());
 	m_window.getArea()->m_hasTargetedHauling.begin(
 		m_window.getSelectedActors(),
 		m_itemBeingMoved,
-		block
+		point
 	);
 	m_itemBeingMoved.clear();
 }
@@ -123,8 +123,8 @@ void GameOverlay::drawSelectionDescription()
 		case(SelectMode::Plants):
 			description = L"plants: " + std::to_wstring(m_window.getSelectedPlants().size());
 			break;
-		case(SelectMode::Blocks):
-			description = L"blocks: " + std::to_wstring(m_window.getSelectedBlocks().size());
+		case(SelectMode::Space):
+			description = L"space: " + std::to_wstring(m_window.getSelectedBlocks().size());
 			break;
 		default:
 			std::unreachable();

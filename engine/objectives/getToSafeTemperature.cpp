@@ -1,7 +1,7 @@
 #include "getToSafeTemperature.h"
 #include "../area/area.h"
 #include "../actors/actors.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../path/pathRequest.h"
 #include "../path/terrainFacade.hpp"
 #include "../hasShapes.hpp"
@@ -25,20 +25,20 @@ GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(const Json& dat
 FindPathResult GetToSafeTemperaturePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Actors& actors = area.getActors();
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	auto condition = [&actors, &blocks, actorIndex](const BlockIndex& location, const Facing4& facing) ->std::pair<bool, BlockIndex>
+	auto condition = [&actors, &space, actorIndex](const Point3D& location, const Facing4& facing) ->std::pair<bool, Point3D>
 	{
-		for(BlockIndex adjacent : actors.getBlocksWhichWouldBeOccupiedAtLocationAndFacing(actorIndex, location, facing))
-			if(actors.temperature_isSafe(actorIndex, blocks.temperature_get(adjacent)))
+		for(Point3D adjacent : actors.getPointsWhichWouldBeOccupiedAtLocationAndFacing(actorIndex, location, facing))
+			if(actors.temperature_isSafe(actorIndex, space.temperature_get(adjacent)))
 			return std::make_pair(true, location);
-		return std::make_pair(false, BlockIndex::null());
+		return std::make_pair(false, Point3D::null());
 	};
 	constexpr FactionId faction;
 	constexpr bool adjacent = false;
-	// Multi tile creatures at at a safe temperature if their location block is. This could be improved.
-	constexpr bool useAnyOccupiedBlock = false;
-	return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedBlock, decltype(condition)>(condition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_objective.m_detour, adjacent, faction, maxRange);
+	// Multi tile creatures at at a safe temperature if their location point is. This could be improved.
+	constexpr bool useAnyOccupiedPoint = false;
+	return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedPoint, decltype(condition)>(condition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_objective.m_detour, adjacent, faction, maxRange);
 }
 void GetToSafeTemperaturePathRequest::writeStep(Area& area, FindPathResult& result)
 {
@@ -84,8 +84,8 @@ void GetToSafeTemperatureObjective::execute(Area& area, const ActorIndex& actor)
 	Actors& actors = area.getActors();
 	if(m_noWhereWithSafeTemperatureFound)
 	{
-		Blocks& blocks = area.getBlocks();
-		if(actors.predicateForAnyOccupiedBlock(actor, [&blocks](const BlockIndex& block){ return blocks.isEdge(block); }))
+		Space& space =  area.getSpace();
+		if(actors.predicateForAnyOccupiedPoint(actor, [&space](const Point3D& point){ return space.isEdge(point); }))
 			// We are at the edge and can leave.
 			actors.leaveArea(actor);
 		else

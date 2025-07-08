@@ -8,12 +8,12 @@
 #include "definitions/moveType.h"
 
 // HasDesignations.
-void HasInstallItemDesignationsForFaction::add(Area& area, const BlockIndex& block, const ItemIndex& item, const Facing4& facing, const FactionId& faction)
+void HasInstallItemDesignationsForFaction::add(Area& area, const Point3D& point, const ItemIndex& item, const Facing4& facing, const FactionId& faction)
 {
-	assert(!m_designations.contains(block));
+	assert(!m_designations.contains(point));
 	Items& items = area.getItems();
-	const SmallSet<BlockIndex>& occupied = Shape::getBlocksOccupiedAt(items.getCompoundShape(item), area.getBlocks(), block, facing);
-	m_designations.emplace(block, area, items.getReference(item), block, facing, faction, occupied);
+	const SmallSet<Point3D>& occupied = Shape::getPointsOccupiedAt(items.getCompoundShape(item),  area.getSpace(), point, facing);
+	m_designations.emplace(point, area, items.getReference(item), point, facing, faction, occupied);
 }
 void AreaHasInstallItemDesignations::clearReservations()
 {

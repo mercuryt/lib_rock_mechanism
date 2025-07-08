@@ -13,16 +13,16 @@ TEST_CASE("vision cuboid basic")
 {
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(2,2,2);
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	auto& cuboids = area.m_visionCuboids;
 	const BlockIndex& low = blocks.getIndex_i(0, 0, 0);
 	const BlockIndex& high = blocks.getIndex_i(1, 1, 1);
 	SUBCASE("create")
 	{
 		CHECK(cuboids.size() == 1);
-		CHECK(cuboids.getVisionCuboidIndexForBlock(low).exists());
-		CHECK(cuboids.getVisionCuboidIndexForBlock(high) == cuboids.getVisionCuboidIndexForBlock(low));
-		VisionCuboidId visionCuboid = cuboids.getVisionCuboidIndexForBlock(low);
+		CHECK(cuboids.getVisionCuboidIndexForPoint(low).exists());
+		CHECK(cuboids.getVisionCuboidIndexForPoint(high) == cuboids.getVisionCuboidIndexForPoint(low));
+		VisionCuboidId visionCuboid = cuboids.getVisionCuboidIndexForPoint(low);
 		Cuboid cuboid = cuboids.getCuboidByVisionCuboidId(visionCuboid);
 		CHECK(cuboid.size() == 8);
 		CHECK(cuboids.getAdjacentsForVisionCuboid(visionCuboid).empty());
@@ -32,14 +32,14 @@ TEST_CASE("vision cuboid basic")
 		const BlockIndex& low = blocks.getIndex_i(0, 0, 0);
 		cuboids.blockIsOpaque(low);
 		CHECK(cuboids.size() == 3);
-		CHECK(cuboids.maybeGetVisionCuboidIndexForBlock(low).empty());
-		VisionCuboidId highCuboid = cuboids.getVisionCuboidIndexForBlock(high);
+		CHECK(cuboids.maybeGetVisionCuboidIndexForPoint(low).empty());
+		VisionCuboidId highCuboid = cuboids.getVisionCuboidIndexForPoint(high);
 		CHECK(cuboids.getCuboidByVisionCuboidId(highCuboid).size() == 4);
 		CHECK(cuboids.getAdjacentsForVisionCuboid(highCuboid).size() == 2);
-		VisionCuboidId eastCuboid = cuboids.getVisionCuboidIndexForBlock(blocks.getIndex_i(0, 1, 0));
+		VisionCuboidId eastCuboid = cuboids.getVisionCuboidIndexForPoint(blocks.getIndex_i(0, 1, 0));
 		CHECK(cuboids.getCuboidByVisionCuboidId(eastCuboid).size() == 2);
 		CHECK(cuboids.getAdjacentsForVisionCuboid(eastCuboid).size() == 2);
-		VisionCuboidId southCuboid = cuboids.getVisionCuboidIndexForBlock(blocks.getIndex_i(1, 0, 0));
+		VisionCuboidId southCuboid = cuboids.getVisionCuboidIndexForPoint(blocks.getIndex_i(1, 0, 0));
 		CHECK(cuboids.getCuboidByVisionCuboidId(southCuboid).size() == 1);
 		CHECK(cuboids.getAdjacentsForVisionCuboid(southCuboid).size() == 2);
 		CHECK(cuboids.getAdjacentsForVisionCuboid(highCuboid).contains(eastCuboid));
@@ -50,8 +50,8 @@ TEST_CASE("vision cuboid basic")
 		CHECK(cuboids.getAdjacentsForVisionCuboid(southCuboid).contains(eastCuboid));
 		cuboids.blockIsTransparent(low);
 		CHECK(cuboids.size() == 1);
-		CHECK(cuboids.getVisionCuboidIndexForBlock(low).exists());
-		VisionCuboidId cuboid = cuboids.getVisionCuboidIndexForBlock(high);
+		CHECK(cuboids.getVisionCuboidIndexForPoint(low).exists());
+		VisionCuboidId cuboid = cuboids.getVisionCuboidIndexForPoint(high);
 		CHECK(cuboids.getCuboidByVisionCuboidId(cuboid).size() == 8);
 		CHECK(cuboids.getAdjacentsForVisionCuboid(cuboid).empty());
 	}
@@ -62,18 +62,18 @@ TEST_CASE("vision cuboid split")
 	SUBCASE("split at")
 	{
 		Area& area = simulation.m_hasAreas->createArea(2,2,1);
-		Blocks& blocks = area.getBlocks();
+		Blocks& blocks = area.getSpace();
 		BlockIndex b1 = blocks.getIndex_i(0, 0, 0);
 		BlockIndex b2 = blocks.getIndex_i(1, 0, 0);
 		BlockIndex b3 = blocks.getIndex_i(0, 1, 0);
 		BlockIndex b4 = blocks.getIndex_i(1, 1, 0);
 		CHECK(area.m_visionCuboids.size() == 1);
 		area.m_visionCuboids.remove({blocks, b4, b4});
-		CHECK(area.m_visionCuboids.maybeGetVisionCuboidIndexForBlock(b4).empty());
+		CHECK(area.m_visionCuboids.maybeGetVisionCuboidIndexForPoint(b4).empty());
 		CHECK(area.m_visionCuboids.size() == 2);
-		VisionCuboidId vc1 = area.m_visionCuboids.getVisionCuboidIndexForBlock(b1);
-		VisionCuboidId vc2 = area.m_visionCuboids.getVisionCuboidIndexForBlock(b2);
-		VisionCuboidId vc3 = area.m_visionCuboids.getVisionCuboidIndexForBlock(b3);
+		VisionCuboidId vc1 = area.m_visionCuboids.getVisionCuboidIndexForPoint(b1);
+		VisionCuboidId vc2 = area.m_visionCuboids.getVisionCuboidIndexForPoint(b2);
+		VisionCuboidId vc3 = area.m_visionCuboids.getVisionCuboidIndexForPoint(b3);
 		if(vc1 == vc2)
 		{
 			assert(vc2 != vc3);
@@ -86,20 +86,20 @@ TEST_CASE("vision cuboid split")
 			CHECK(area.m_visionCuboids.getCuboidByVisionCuboidId(vc1).size() == 2);
 			CHECK(area.m_visionCuboids.getCuboidByVisionCuboidId(vc2).size() == 1);
 		}
-		CHECK(area.m_visionCuboids.maybeGetVisionCuboidIndexForBlock(b4).empty());
+		CHECK(area.m_visionCuboids.maybeGetVisionCuboidIndexForPoint(b4).empty());
 	}
 	SUBCASE("split below")
 	{
 		Area& area = simulation.m_hasAreas->createArea(3,3,3);
-		Blocks& blocks = area.getBlocks();
+		Blocks& blocks = area.getSpace();
 		BlockIndex middle = blocks.getIndex_i(1, 1, 1);
 		BlockIndex high = blocks.getIndex_i(2, 2, 2);
 		BlockIndex low = blocks.getIndex_i(0, 0, 0);
 		blocks.blockFeature_construct(middle, BlockFeatureTypeId::Floor, MaterialType::byName("marble"));
 		CHECK(area.m_visionCuboids.size() == 2);
-		CHECK(area.m_visionCuboids.getVisionCuboidIndexForBlock(middle) == area.m_visionCuboids.getVisionCuboidIndexForBlock(high));
-		CHECK(area.m_visionCuboids.getVisionCuboidIndexForBlock(middle) != area.m_visionCuboids.getVisionCuboidIndexForBlock(low));
-		CHECK(area.m_visionCuboids.getCuboidForBlock(low).size() == 9);
-		CHECK(area.m_visionCuboids.getCuboidForBlock(middle).size() == 18);
+		CHECK(area.m_visionCuboids.getVisionCuboidIndexForPoint(middle) == area.m_visionCuboids.getVisionCuboidIndexForPoint(high));
+		CHECK(area.m_visionCuboids.getVisionCuboidIndexForPoint(middle) != area.m_visionCuboids.getVisionCuboidIndexForPoint(low));
+		CHECK(area.m_visionCuboids.getCuboidForPoint(low).size() == 9);
+		CHECK(area.m_visionCuboids.getCuboidForPoint(middle).size() == 18);
 	}
 }

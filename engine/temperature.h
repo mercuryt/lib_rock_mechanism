@@ -19,12 +19,12 @@ struct DeserializationMemo;
 // Raises and lowers nearby temperature.
 class TemperatureSource final
 {
-	BlockIndex m_block;
+	Point3D m_point;
 	TemperatureDelta m_temperature;
-	TemperatureDelta getTemperatureDeltaForRange(const DistanceInBlocks& range);
+	TemperatureDelta getTemperatureDeltaForRange(const Distance& range);
 	void apply(Area& area);
 public:
-	TemperatureSource(Area& a, const TemperatureDelta& t, const BlockIndex& b) : m_block(b), m_temperature(t) { apply(a); }
+	TemperatureSource(Area& a, const TemperatureDelta& t, const Point3D& b) : m_point(b), m_temperature(t) { apply(a); }
 	void setTemperature(Area& a, const TemperatureDelta& t);
 	void unapply(Area& a);
 	friend class AreaHasTemperature;
@@ -32,15 +32,15 @@ public:
 //TODO:  move to area directory.
 class AreaHasTemperature final
 {
-	SmallMap<BlockIndex, TemperatureSource> m_sources;
+	SmallMap<Point3D, TemperatureSource> m_sources;
 	// TODO: make these medium maps.
-	// TODO: change SmallSet<BlockIndex> to CuboidSet.
+	// TODO: change SmallSet<Point3D> to CuboidSet.
 	// To possibly thaw.
-	std::map<Temperature, SmallSet<BlockIndex>> m_aboveGroundBlocksByMeltingPoint;
+	std::map<Temperature, SmallSet<Point3D>> m_aboveGroundPointsByMeltingPoint;
 	// To possibly freeze.
 	std::map<Temperature, SmallSet<FluidGroup*>> m_aboveGroundFluidGroupsByMeltingPoint;
 	// Collect deltas to apply sum.
-	SmallMap<BlockIndex, TemperatureDelta> m_blockDeltaDeltas;
+	SmallMap<Point3D, TemperatureDelta> m_pointDeltaDeltas;
 	Area& m_area;
 	Temperature m_ambiantSurfaceTemperature;
 
@@ -48,22 +48,22 @@ public:
 	AreaHasTemperature(Area& a) : m_area(a) { }
 	void setAmbientSurfaceTemperature(const Temperature& temperature);
 	void updateAmbientSurfaceTemperature();
-	void addTemperatureSource(const BlockIndex& block, const TemperatureDelta& temperature);
+	void addTemperatureSource(const Point3D& point, const TemperatureDelta& temperature);
 	void removeTemperatureSource(TemperatureSource& temperatureSource);
-	void addDelta(const BlockIndex& block, const TemperatureDelta& delta);
+	void addDelta(const Point3D& point, const TemperatureDelta& delta);
 	void applyDeltas();
 	void doStep() { applyDeltas(); }
-	void addMeltableSolidBlockAboveGround(const BlockIndex& block);
-	void removeMeltableSolidBlockAboveGround(const BlockIndex& block);
+	void addMeltableSolidPointAboveGround(const Point3D& point);
+	void removeMeltableSolidPointAboveGround(const Point3D& point);
 	void addFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
 	void maybeRemoveFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
-	[[nodiscard]] TemperatureSource& getTemperatureSourceAt(const BlockIndex& block);
+	[[nodiscard]] TemperatureSource& getTemperatureSourceAt(const Point3D& point);
 	[[nodiscard]] const Temperature& getAmbientSurfaceTemperature() const { return m_ambiantSurfaceTemperature; }
 	[[nodiscard]] Temperature getDailyAverageAmbientSurfaceTemperature() const;
 	[[nodiscard]] auto& getAboveGroundFluidGroupsByMeltingPoint() { return m_aboveGroundFluidGroupsByMeltingPoint; }
-	[[nodiscard]] auto& getAboveGroundBlocksByMeltingPoint() { return m_aboveGroundBlocksByMeltingPoint; }
+	[[nodiscard]] auto& getAboveGroundPointsByMeltingPoint() { return m_aboveGroundPointsByMeltingPoint; }
 	// For testing.
-	[[nodiscard]] auto& getBlockDeltaDeltas() { return m_blockDeltaDeltas; }
+	[[nodiscard]] auto& getPointDeltaDeltas() { return m_pointDeltaDeltas; }
 };
 class UnsafeTemperatureEvent;
 class ActorNeedsSafeTemperature

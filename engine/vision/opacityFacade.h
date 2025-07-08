@@ -13,7 +13,7 @@ class OpacityFacade final
 	RTreeBoolean m_fullOpacity;
 	RTreeBooleanLowZOnly m_floorOpacity;
 public:
-	void update(const Area& area, const BlockIndex& block);
+	void update(const Area& area, const Point3D& point);
 	void maybeInsertFull(const Cuboid& cuboid);
 	void maybeRemoveFull(const Cuboid& cuboid);
 	void maybeInsertFull(const Point3D& point) { maybeInsertFull({point, point}); }

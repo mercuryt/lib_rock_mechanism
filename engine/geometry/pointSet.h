@@ -12,7 +12,7 @@ class Sphere;
 
 struct Point3DSet
 {
-	using Data = Eigen::Array<DistanceInBlocksWidth, 3, Eigen::Dynamic>;
+	using Data = Eigen::Array<DistanceWidth, 3, Eigen::Dynamic>;
 	Data data;
 private:
 	uint m_size = 0;
@@ -32,14 +32,12 @@ public:
 	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfFacedTwordsPoints(const Point3D& location, const Facing4& facing) const;
 	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesFacingTwords(const Point3D& location, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& facings) const;
 	[[nodiscard]] Eigen::Array<int, 1, Eigen::Dynamic> distancesSquare(const Point3D& location) const;
-	[[nodiscard]] Eigen::Array<bool, 2, Eigen::Dynamic> canSeeAndCanBeSeenByDistanceAndFacingFilter(const Point3D& location, const Facing4& facing, const DistanceInBlocks& visionRangeSquared, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& facings, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& visionRangesSquared) const;
-	template<class BlocksT, class BlockSet>
-	[[nodiscard]] static Point3DSet fromBlockSet(const BlocksT& blocks, const BlockSet& blockSet)
+	[[nodiscard]] Eigen::Array<bool, 2, Eigen::Dynamic> canSeeAndCanBeSeenByDistanceAndFacingFilter(const Point3D& location, const Facing4& facing, const Distance& visionRangeSquared, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& facings, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& visionRangesSquared) const;
+	[[nodiscard]] static Point3DSet fromPointSet(const auto& points)
 	{
 		Point3DSet output;
-		// TODO: SIMD this.
-		for(const BlockIndex& block : blockSet)
-			output.insert(blocks.getCoordinates(block));
+		for(const Point3D& point : points)
+			output.insert(point);
 		return output;
 	}
 	class ConstIterator

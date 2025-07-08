@@ -20,7 +20,7 @@ public:
 };
 class HarvestObjective final : public Objective
 {
-	BlockIndex m_block;
+	Point3D m_point;
 public:
 	HasScheduledEvent<HarvestEvent> m_harvestEvent;
 	HarvestObjective(Area& area);
@@ -28,19 +28,19 @@ public:
 	void execute(Area& area, const ActorIndex& actor);
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
-	void select(Area& area, const BlockIndex& block, const ActorIndex& actor);
+	void select(Area& area, const Point3D& point, const ActorIndex& actor);
 	void begin(Area& area, const ActorIndex& actor);
 	void reset(Area& area, const ActorIndex& actor);
 	void makePathRequest(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] bool canHarvestAt(Area& area, const BlockIndex& block) const;
+	[[nodiscard]] bool canHarvestAt(Area& area, const Point3D& point) const;
 	[[nodiscard]] std::string name() const override { return "harvest"; }
-	[[nodiscard]] BlockIndex getBlockContainingPlantToHarvestAtLocationAndFacing(Area& area, const BlockIndex& location, Facing4 facing, const ActorIndex& actor);
-	[[nodiscard]] bool blockContainsHarvestablePlant(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
+	[[nodiscard]] Point3D getPointContainingPlantToHarvestAtLocationAndFacing(Area& area, const Point3D& location, Facing4 facing, const ActorIndex& actor);
+	[[nodiscard]] bool pointContainsHarvestablePlant(Area& area, const Point3D& point, const ActorIndex& actor) const;
 	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	friend class HarvestEvent;
 	// For testing.
-	BlockIndex getBlock() { return m_block; }
+	Point3D getPoint() { return m_point; }
 };
 class HarvestEvent final : public ScheduledEvent
 {

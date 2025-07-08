@@ -15,7 +15,7 @@
 #include <array>
 #include <string>
 
-class Blocks;
+class Space;
 struct DeserializationMemo;
 
 struct OffsetAndVolume
@@ -53,22 +53,22 @@ public:
 	[[nodiscard]] static SmallSet<OffsetAndVolume> makeOccupiedPositionsWithFacing(const ShapeId& id, const Facing4& facing);
 	[[nodiscard]] static SmallSet<Offset3D> makeAdjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing);
 	[[nodiscard]] static SmallSet<Offset3D> positionOffsets(const OffsetAndVolume& position);
-	[[nodiscard]] static SmallSet<BlockIndex> getBlocksOccupiedAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
-	[[nodiscard]] static SmallSet<BlockIndex> getBlocksOccupiedAndAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
-	[[nodiscard]] static SmallSet<std::pair<BlockIndex, CollisionVolume>> getBlocksOccupiedAtWithVolumes(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
-	[[nodiscard]] static SmallSet<BlockIndex> getBlocksWhichWouldBeAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing);
-	[[nodiscard]] static BlockIndex getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)> predicate);
-	[[nodiscard]] static BlockIndex getBlockWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)> predicate);
-	[[nodiscard]] static CollisionVolume getCollisionVolumeAtLocationBlock(const ShapeId& id);
+	[[nodiscard]] static SmallSet<Point3D> getPointsOccupiedAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing);
+	[[nodiscard]] static SmallSet<Point3D> getPointsOccupiedAndAdjacentAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing);
+	[[nodiscard]] static SmallSet<std::pair<Point3D, CollisionVolume>> getPointsOccupiedAtWithVolumes(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing);
+	[[nodiscard]] static SmallSet<Point3D> getPointsWhichWouldBeAdjacentAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing);
+	[[nodiscard]] static Point3D getPointWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing, std::function<bool(const Point3D&)> predicate);
+	[[nodiscard]] static Point3D getPointWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing, std::function<bool(const Point3D&)> predicate);
+	[[nodiscard]] static CollisionVolume getCollisionVolumeAtLocation(const ShapeId& id);
 	[[nodiscard]] static CollisionVolume getTotalCollisionVolume(const ShapeId& id);
 	[[nodiscard]] static SmallSet<OffsetAndVolume> getPositions(const ShapeId& id);
 	[[nodiscard]] static std::string getName(const ShapeId& id);
 	[[nodiscard]] static uint32_t getDisplayScale(const ShapeId& id);
 	[[nodiscard]] static bool getIsMultiTile(const ShapeId& id);
 	[[nodiscard]] static bool getIsRadiallySymetrical(const ShapeId& id);
-	[[nodiscard]] static DistanceInBlocks getZSize(const ShapeId& id);
-	[[nodiscard]] static SmallSet<OffsetAndVolume> getPositionsByZLevel(const ShapeId& id, const DistanceInBlocks& zLevel);
-	[[nodiscard]] static Quantity getNumberOfBlocksOnLeadingFaceAtOrBelowLevel(const ShapeId& id, const DistanceInBlocks& zLevel);
+	[[nodiscard]] static Distance getZSize(const ShapeId& id);
+	[[nodiscard]] static SmallSet<OffsetAndVolume> getPositionsByZLevel(const ShapeId& id, const Distance& zLevel);
+	[[nodiscard]] static Quantity getNumberOfPointsOnLeadingFaceAtOrBelowLevel(const ShapeId& id, const Distance& zLevel);
 	// If provided name is not found it is decoded into a custom shape.
 	[[nodiscard]] static ShapeId byName(const std::string& name);
 	[[nodiscard]] static bool hasShape(const std::string& name);

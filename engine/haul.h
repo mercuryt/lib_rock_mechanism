@@ -51,7 +51,7 @@ class HaulSubproject final
 {
 	SmallSet<ActorReference> m_workers;
 	SmallSet<ActorReference> m_nonsentients;
-	SmallMap<ActorReference, BlockIndex> m_liftPoints; // Used by Team strategy.
+	SmallMap<ActorReference, Point3D> m_liftPoints; // Used by Team strategy.
 	//TODO: storing this reference and also passing in area / project to various methods is redundant. Do one or the other.
 	Project& m_project;
 	ProjectRequirementCounts* m_projectRequirementCounts;

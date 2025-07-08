@@ -168,7 +168,7 @@ class BlockImpl<XprType, BlockRows, BlockCols, InnerPanel, Dense>
 
 namespace internal {
 
-/** \internal Internal implementation of dense Blocks in the general case. */
+/** \internal Internal implementation of dense Space in the general case. */
 template<typename XprType, int BlockRows, int BlockCols, bool InnerPanel, bool HasDirectAccess> class BlockImpl_dense
   : public internal::dense_xpr_base<Block<XprType, BlockRows, BlockCols, InnerPanel> >::type
 {
@@ -324,7 +324,7 @@ template<typename XprType, int BlockRows, int BlockCols, bool InnerPanel, bool H
     const internal::variable_if_dynamic<StorageIndex, ColsAtCompileTime> m_blockCols;
 };
 
-/** \internal Internal implementation of dense Blocks in the direct access case.*/
+/** \internal Internal implementation of dense Space in the direct access case.*/
 template<typename XprType, int BlockRows, int BlockCols, bool InnerPanel>
 class BlockImpl_dense<XprType,BlockRows,BlockCols, InnerPanel,true>
   : public MapBase<Block<XprType, BlockRows, BlockCols, InnerPanel> >

@@ -3,13 +3,13 @@
 #include "../actors/actors.h"
 #include "../area/area.h"
 #include "../deserializationMemo.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "numericTypes/types.h"
-ExterminateObjective::ExterminateObjective(Area& area, const BlockIndex& destination) :
+ExterminateObjective::ExterminateObjective(Area& area, const Point3D& destination) :
 	Objective(Config::exterminatePriority), m_destination(destination), m_event(area.m_eventSchedule) { }
 ExterminateObjective::ExterminateObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo),
-	m_destination(data["destination"].get<BlockIndex>()),
+	m_destination(data["destination"].get<Point3D>()),
 	m_event(area.m_eventSchedule)
 {
 	if(data.contains("eventStart"))
@@ -26,18 +26,17 @@ Json ExterminateObjective::toJson() const
 void ExterminateObjective::execute(Area& area, const ActorIndex& actor)
 {
 	ActorIndex closest;
-	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
-	BlockIndex thisActorLocation = actors.getLocation(actor);
-	BlockIndex closestActorLocation;
+	Point3D thisActorLocation = actors.getLocation(actor);
+	Point3D closestActorLocation;
 	for(const ActorReference& other : actors.vision_getCanSee(actor))
 	{
 		ActorIndex otherIndex = other.getIndex(actors.m_referenceData);
-		BlockIndex otherLocation = actors.getLocation(otherIndex);
+		Point3D otherLocation = actors.getLocation(otherIndex);
 		if(
 			actors.hasFaction(otherIndex) &&
 			!actors.isAlly(actor, otherIndex) &&
-			(closest.empty() || blocks.taxiDistance(closestActorLocation, thisActorLocation) < blocks.taxiDistance(otherLocation, thisActorLocation))
+			(closest.empty() || closestActorLocation.taxiDistanceTo(thisActorLocation) < otherLocation.taxiDistanceTo(thisActorLocation))
 		)
 		{
 			closest = otherIndex;
@@ -48,8 +47,8 @@ void ExterminateObjective::execute(Area& area, const ActorIndex& actor)
 		actors.combat_setTarget(actor, closest);
 	else
 	{
-		static constexpr DistanceInBlocks distanceToRallyPoint = DistanceInBlocks::create(10);
-		if(blocks.taxiDistance(thisActorLocation, m_destination) > distanceToRallyPoint)
+		static constexpr Distance distanceToRallyPoint = Distance::create(10);
+		if(thisActorLocation.taxiDistanceTo(m_destination) > distanceToRallyPoint)
 			actors.move_setDestination(actor, m_destination, m_detour);
 		m_event.schedule(area, *this, actor);
 	}

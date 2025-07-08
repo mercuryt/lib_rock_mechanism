@@ -5,7 +5,7 @@
 #include "../drama/engine.h"
 #include "../area/area.h"
 #include "../actors/actors.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../items/items.h"
 #include "../plants.h"
 #include "numericTypes/types.h"
@@ -32,7 +32,7 @@ void SimulationHasAreas::save()
 		af << pair.second->toJson();
 	}
 }
-Area& SimulationHasAreas::createArea(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z, bool createDrama)
+Area& SimulationHasAreas::createArea(const Distance& x, const Distance& y, const Distance& z, bool createDrama)
 {
 	AreaId id = ++m_nextId;
 	Area& output = loadArea(id, "unnamed area " + std::to_string(id.get()), x, y, z);
@@ -42,9 +42,9 @@ Area& SimulationHasAreas::createArea(const DistanceInBlocks& x, const DistanceIn
 }
 Area& SimulationHasAreas::createArea(uint x, uint y, uint z, bool createDrama)
 {
-	return createArea(DistanceInBlocks::create(x), DistanceInBlocks::create(y), DistanceInBlocks::create(z), createDrama);
+	return createArea(Distance::create(x), Distance::create(y), Distance::create(z), createDrama);
 }
-Area& SimulationHasAreas::loadArea(const AreaId& id, std::string name, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z)
+Area& SimulationHasAreas::loadArea(const AreaId& id, std::string name, const Distance& x, const Distance& y, const Distance& z)
 {
 	Area& area = m_areas.emplace(id, id, name, m_simulation, x, y, z);
 	m_areasById.insert(id, &area);

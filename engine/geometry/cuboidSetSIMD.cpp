@@ -51,8 +51,8 @@ void CuboidSetSIMD::erase(uint index)
 }
 void CuboidSetSIMD::clear()
 {
-	m_high.fill(DistanceInBlocks::null().get());
-	m_low.fill(DistanceInBlocks::null().get());
+	m_high.fill(Distance::null().get());
+	m_low.fill(Distance::null().get());
 	m_size = 0;
 	m_boundingBox.clear();
 }

@@ -7,7 +7,7 @@
 #include "objectives/drink.h"
 #include "actors/actors.h"
 #include "items/items.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "definitions/animalSpecies.h"
 #include <algorithm>
 // Must Drink.
@@ -128,14 +128,14 @@ void DrinkEvent::execute(Simulation&, Area* area)
 	Actors& actors = area->getActors();
 	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
 	CollisionVolume volume = actors.drink_getVolumeOfFluidRequested(actor);
-	BlockIndex drinkBlock = m_drinkObjective.getAdjacentBlockToDrinkAt(*area, actors.getLocation(actor), actors.getFacing(actor), actor);
-	if(drinkBlock.empty())
+	Point3D drinkPoint = m_drinkObjective.getAdjacentPointToDrinkAt(*area, actors.getLocation(actor), actors.getFacing(actor), actor);
+	if(drinkPoint.empty())
 	{
 		// There isn't anything to drink here anymore, try again.
 		m_drinkObjective.makePathRequest(*area, actor);
 		return;
 	}
-	ItemIndex item = m_drinkObjective.getItemToDrinkFromAt(*area, drinkBlock, actor);
+	ItemIndex item = m_drinkObjective.getItemToDrinkFromAt(*area, drinkPoint, actor);
 	Items& items = area->getItems();
 	if(item.exists())
 	{
@@ -145,10 +145,10 @@ void DrinkEvent::execute(Simulation&, Area* area)
 	}
 	else
 	{
-		Blocks& blocks = area->getBlocks();
+		Space& space = area->getSpace();
 		FluidTypeId fluidType = actors.drink_getFluidType(actor);
-		volume = std::min(volume, blocks.fluid_volumeOfTypeContains(drinkBlock, fluidType));
-		blocks.fluid_remove(drinkBlock, volume, fluidType);
+		volume = std::min(volume, space.fluid_volumeOfTypeContains(drinkPoint, fluidType));
+		space.fluid_remove(drinkPoint, volume, fluidType);
 	}
 	actors.drink_do(actor, volume);
 }

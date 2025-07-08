@@ -18,7 +18,7 @@ TEST_CASE("leadAndFollow")
 	static MaterialTypeId marble = MaterialType::byName("marble");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	SUBCASE("two dwarves")
@@ -146,10 +146,10 @@ TEST_CASE("leadAndFollow")
 		CHECK(actors.getLocation(troll1) == followerOrigin);
 		CHECK(actors.move_getRetries(dwarf1) == 1);
 		CHECK(actors.move_hasEvent(dwarf1));
-		CHECK(!blocks.shape_canEnterCurrentlyFrom(leaderOrigin, actors.getShape(troll1), actors.getLocation(troll1), actors.lineLead_getOccupiedBlocks(dwarf1)));
+		CHECK(!blocks.shape_canEnterCurrentlyFrom(leaderOrigin, actors.getShape(troll1), actors.getLocation(troll1), actors.lineLead_getOccupiedPoints(dwarf1)));
 		const BlockIndex& toMoveTo = blocks.getIndex_i(9, 1, 1);
 		actors.location_set(dwarf2, toMoveTo, Facing4::North);
-		CHECK(blocks.shape_canEnterCurrentlyFrom(leaderOrigin, actors.getShape(troll1), actors.getLocation(troll1), actors.lineLead_getOccupiedBlocks(dwarf1)));
+		CHECK(blocks.shape_canEnterCurrentlyFrom(leaderOrigin, actors.getShape(troll1), actors.getLocation(troll1), actors.lineLead_getOccupiedPoints(dwarf1)));
 		CHECK(actors.move_hasEvent(dwarf1));
 		Step delay = actors.move_stepsTillNextMoveEvent(dwarf1);
 		simulation.fastForward(delay);

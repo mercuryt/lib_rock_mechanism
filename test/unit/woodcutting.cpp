@@ -21,7 +21,7 @@ TEST_CASE("woodcutting")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	Plants& plants = area.getPlants();
 	Items& items = area.getItems();
@@ -30,7 +30,7 @@ TEST_CASE("woodcutting")
 	PlantIndex tree = plants.create({.location=treeLocation, .species=PlantSpecies::byName("poplar tree")});
 	CHECK(plants.getBlocks(tree).size() == 5);
 	FactionId faction = simulation.createFaction("Tower of Power");
-	area.m_blockDesignations.registerFaction(faction);
+	area.m_spaceDesignations.registerFaction(faction);
 	area.m_hasWoodCuttingDesignations.addFaction(faction);
 	ActorIndex dwarf = actors.create({
 		.species=AnimalSpecies::byName("dwarf"),
@@ -78,7 +78,7 @@ TEST_CASE("woodcutting")
 		area.m_hasStockPiles.registerFaction(faction);
 		area.m_hasStocks.addFaction(faction);
 		StockPile& stockpile = area.m_hasStockPiles.getForFaction(faction).addStockPile({ItemQuery::create(branch)});
-		stockpile.addBlock(branchStockpileLocation);
+		stockpile.addPoint(branchStockpileLocation);
 		const StockPileObjectiveType& stockPileObjectiveType = static_cast<const StockPileObjectiveType&>(ObjectiveType::getByName("stockpile"));
 		actors.objective_setPriority(dwarf, stockPileObjectiveType.getId(), Priority::create(100));
 		actors.equipment_add(dwarf, axe);

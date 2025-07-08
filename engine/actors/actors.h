@@ -42,7 +42,7 @@ struct ActorParamaters
 	DateTime birthDate = {0,0,0};
 	Step birthStep = Step::null();
 	Percent percentGrown = Percent::null();
-	BlockIndex location;
+	Point3D location;
 	ActorIndex mountedOn = ActorIndex::null();
 	Facing4 facing = Facing4::Null;
 	FactionId faction = FactionId::null();
@@ -91,7 +91,7 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	StrongVector<int32_t, ActorIndex> m_massBonusOrPenalty;
 	StrongVector<float, ActorIndex> m_massModifier;
 	StrongVector<Mass, ActorIndex> m_unencomberedCarryMass;
-	StrongVector<SmallSet<BlockIndex>, HasShapeIndex> m_leadFollowPath;
+	StrongVector<SmallSet<Point3D>, HasShapeIndex> m_leadFollowPath;
 	StrongVector<std::unique_ptr<HasObjectives>, ActorIndex> m_hasObjectives;
 	StrongVector<std::unique_ptr<Body>, ActorIndex> m_body;
 	StrongVector<std::unique_ptr<MustSleep>, ActorIndex> m_mustSleep;
@@ -111,23 +111,23 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
 	// Vision.
 	StrongVector<SmallSet<ActorReference>, ActorIndex> m_canSee;
 	StrongVector<SmallSet<ActorReference>, ActorIndex> m_canBeSeenBy;
-	StrongVector<DistanceInBlocks, ActorIndex> m_visionRange;
+	StrongVector<Distance, ActorIndex> m_visionRange;
 	// Combat.
 	HasScheduledEvents<AttackCoolDownEvent, ActorIndex> m_coolDownEvent;
 	StrongVector<std::vector<std::pair<CombatScore, Attack>>, ActorIndex> m_meleeAttackTable;
 	StrongVector<SmallSet<ActorIndex>, ActorIndex> m_targetedBy;
 	StrongVector<ActorIndex, ActorIndex> m_target;
 	StrongVector<Step, ActorIndex> m_onMissCoolDownMelee;
-	StrongVector<DistanceInBlocksFractional, ActorIndex> m_maxMeleeRange;
-	StrongVector<DistanceInBlocksFractional, ActorIndex> m_maxRange;
+	StrongVector<DistanceFractional, ActorIndex> m_maxMeleeRange;
+	StrongVector<DistanceFractional, ActorIndex> m_maxRange;
 	StrongVector<float, ActorIndex> m_coolDownDurationModifier;
 	StrongVector<CombatScore, ActorIndex> m_combatScore;
 	// Move.
 	HasScheduledEvents<MoveEvent, ActorIndex> m_moveEvent;
 	StrongVector<PathRequest*, ActorIndex> m_pathRequest;
-	// Path is stored backwards, with the first block being the destination and the last being the next step.
-	StrongVector<SmallSet<BlockIndex>, ActorIndex> m_path;
-	StrongVector<BlockIndex, ActorIndex> m_destination;
+	// Path is stored backwards, with the first point being the destination and the last being the next step.
+	StrongVector<SmallSet<Point3D>, ActorIndex> m_path;
+	StrongVector<Point3D, ActorIndex> m_destination;
 	StrongVector<Speed, ActorIndex> m_speedIndividual;
 	StrongVector<Speed, ActorIndex> m_speedActual;
 	StrongVector<uint8_t, ActorIndex> m_moveRetries;
@@ -146,27 +146,27 @@ public:
 	void sharedConstructor(const ActorIndex& index);
 	void scheduleNeeds(const ActorIndex& index);
 	void resetNeeds(const ActorIndex& index);
-	void location_set(const ActorIndex& index, const BlockIndex& block, const Facing4 facing);
-	void location_setStatic(const ActorIndex& index, const BlockIndex& block, const Facing4 facing);
-	void location_setDynamic(const ActorIndex& index, const BlockIndex& block, const Facing4 facing);
+	void location_set(const ActorIndex& index, const Point3D& point, const Facing4 facing);
+	void location_setStatic(const ActorIndex& index, const Point3D& point, const Facing4 facing);
+	void location_setDynamic(const ActorIndex& index, const Point3D& point, const Facing4 facing);
 private:
 	// These methods to the 'real' work, the public methods handle calling them and then possibly calling Portables::onSetLocation.
-	SetLocationAndFacingResult location_tryToSetStaticInternal(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
-	SetLocationAndFacingResult location_tryToSetDynamicInternal(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
+	SetLocationAndFacingResult location_tryToSetStaticInternal(const ActorIndex& index, const Point3D& point, const Facing4& facing);
+	SetLocationAndFacingResult location_tryToSetDynamicInternal(const ActorIndex& index, const Point3D& point, const Facing4& facing);
 public:
 	// Used when item already has a location, rolls back position on failure.
-	SetLocationAndFacingResult location_tryToMoveToStatic(const ActorIndex& index, const BlockIndex& block);
-	SetLocationAndFacingResult location_tryToMoveToDynamic(const ActorIndex& index, const BlockIndex& block);
+	SetLocationAndFacingResult location_tryToMoveToStatic(const ActorIndex& index, const Point3D& point);
+	SetLocationAndFacingResult location_tryToMoveToDynamic(const ActorIndex& index, const Point3D& point);
 	// Used when item does not have a location.
-	SetLocationAndFacingResult location_tryToSet(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
-	SetLocationAndFacingResult location_tryToSetStatic(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
-	SetLocationAndFacingResult location_tryToSetDynamic(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
+	SetLocationAndFacingResult location_tryToSet(const ActorIndex& index, const Point3D& point, const Facing4& facing);
+	SetLocationAndFacingResult location_tryToSetStatic(const ActorIndex& index, const Point3D& point, const Facing4& facing);
+	SetLocationAndFacingResult location_tryToSetDynamic(const ActorIndex& index, const Point3D& point, const Facing4& facing);
 	void location_clear(const ActorIndex& index);
 	void location_clearStatic(const ActorIndex& index);
 	void location_clearDynamic(const ActorIndex& index);
-	[[nodiscard]] bool location_canEnterEverWithFacing(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
-	[[nodiscard]] bool location_canEnterEverWithAnyFacing(const ActorIndex& index, const BlockIndex& block);
-	[[nodiscard]] Facing4 location_canEnterEverWithAnyFacingReturnFacing(const ActorIndex& index, const BlockIndex& block);
+	[[nodiscard]] bool location_canEnterEverWithFacing(const ActorIndex& index, const Point3D& point, const Facing4& facing);
+	[[nodiscard]] bool location_canEnterEverWithAnyFacing(const ActorIndex& index, const Point3D& point);
+	[[nodiscard]] Facing4 location_canEnterEverWithAnyFacingReturnFacing(const ActorIndex& index, const Point3D& point);
 	void removeMassFromCorpse(const ActorIndex& index, const Mass& mass);
 	void die(const ActorIndex& index, CauseOfDeath causeOfDeath);
 	void passout(const ActorIndex& index, const Step& duration);
@@ -175,13 +175,11 @@ public:
 	void takeHit(const ActorIndex& index, Hit& hit, BodyPart& bodyPart);
 	// May be null.
 	void setFaction(const ActorIndex& index, const FactionId& faction);
-	void reserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing4& facing);
-	void unreserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing4& facing);
 	void setBirthStep(const ActorIndex& index, const Step& step);
 	void setName(const ActorIndex& index, std::string name){ m_name[index] = name; }
-	void takeFallDamage(const ActorIndex& index, const DistanceInBlocks& distance, const MaterialTypeId& materialType);
+	void takeFallDamage(const ActorIndex& index, const Distance& distance, const MaterialTypeId& materialType);
 	void resetMoveType(const ActorIndex& index);
-	bool tryToMoveSoAsNotOccuping(const ActorIndex& index, const BlockIndex& block);
+	bool tryToMoveSoAsNotOccuping(const ActorIndex& index, const Point3D& point);
 	[[nodiscard]] SmallSet<ActorIndex> getAll() const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] ActorId getId(const ActorIndex& index) const { return m_id[index]; }
@@ -202,7 +200,7 @@ public:
 	[[nodiscard]] std::string getActionDescription(const ActorIndex& index) const;
 	[[nodiscard]] AnimalSpeciesId getSpecies(const ActorIndex& index) const { return m_species[index]; }
 	[[nodiscard]] Mass getUnencomberedCarryMass(const ActorIndex& index) const { return m_unencomberedCarryMass[index]; }
-	[[nodiscard]] BlockIndex getCombinedLocation(const ActorIndex& index) const;
+	[[nodiscard]] Point3D getCombinedLocation(const ActorIndex& index) const;
 	[[nodiscard]] ActorOrItemIndex getIsPiloting(const ActorIndex& index) const;
 	// -Stamina.
 	void stamina_recover(const ActorIndex& index);
@@ -221,12 +219,12 @@ public:
 	void vision_maybeSetNoLongerCanBeSeenBy(const ActorIndex& index, const ActorReference& other) { m_canBeSeenBy[index].maybeErase(other); }
 	void vision_clearCanSee(const ActorIndex& index);
 	void vision_maybeUpdateCuboid(const ActorIndex& index, const VisionCuboidId& newCuboid);
-	void vision_maybeUpdateRange(const ActorIndex& index, const DistanceInBlocks& range);
-	void vision_maybeUpdateLocation(const ActorIndex& index, const BlockIndex& location);
+	void vision_maybeUpdateRange(const ActorIndex& index, const Distance& range);
+	void vision_maybeUpdateLocation(const ActorIndex& index, const Point3D& location);
 	[[nodiscard]] SmallSet<ActorReference>& vision_getCanSee(const ActorIndex& index) { return m_canSee[index]; }
 	[[nodiscard]] SmallSet<ActorReference>& vision_getCanBeSeenBy(const ActorIndex& index) { return m_canBeSeenBy[index]; }
-	[[nodiscard]] DistanceInBlocks vision_getRange(const ActorIndex& index) const { return m_visionRange[index]; }
-	[[nodiscard]] DistanceInBlocks vision_getRangeSquared(const ActorIndex& index) const { return DistanceInBlocks::create(pow(m_visionRange[index].get(), 2)); }
+	[[nodiscard]] Distance vision_getRange(const ActorIndex& index) const { return m_visionRange[index]; }
+	[[nodiscard]] Distance vision_getRangeSquared(const ActorIndex& index) const { return Distance::create(pow(m_visionRange[index].get(), 2)); }
 	[[nodiscard]] bool vision_canSeeActor(const ActorIndex& index, const ActorIndex& other) const;
 	[[nodiscard]] bool vision_canSeeAnything(const ActorIndex& index) const;
 	// -Combat.
@@ -237,7 +235,7 @@ public:
 	void combat_setTarget(const ActorIndex& index, const ActorIndex& actor);
 	void combat_recordTargetedBy(const ActorIndex& index, const ActorIndex& actor);
 	void combat_removeTargetedBy(const ActorIndex& index, const ActorIndex& actor);
-	void combat_onMoveFrom(const ActorIndex& index, const BlockIndex& previous);
+	void combat_onMoveFrom(const ActorIndex& index, const Point3D& previous);
 	void combat_onDeath(const ActorIndex& index);
 	void combat_onLeaveArea(const ActorIndex& index);
 	void combat_noLongerTargetable(const ActorIndex& index);
@@ -245,18 +243,18 @@ public:
 	void combat_onTargetMoved(const ActorIndex& index);
 	void combat_freeHit(const ActorIndex& index, const ActorIndex& actor);
 	//TODO: Combat vs. items?
-	void combat_getIntoRangeAndLineOfSightOfActor(const ActorIndex& index, const ActorIndex& target, const DistanceInBlocksFractional& range);
+	void combat_getIntoRangeAndLineOfSightOfActor(const ActorIndex& index, const ActorIndex& target, const DistanceFractional& range);
 	[[nodiscard]] CombatScore combat_getCurrentMeleeCombatScore(const ActorIndex& index);
 	[[nodiscard]] bool combat_isOnCoolDown(const ActorIndex& index) const;
 	[[nodiscard]] bool combat_inRange(const ActorIndex& index, const ActorIndex& target) const;
 	[[nodiscard]] bool combat_doesProjectileHit(const ActorIndex& index, Attack& attack, const ActorIndex& target) const;
 	[[nodiscard]] Percent combat_projectileHitPercent(const ActorIndex& index, const Attack& attack, const ActorIndex& target) const;
-	[[nodiscard]] DistanceInBlocksFractional combat_getMaxMeleeRange(const ActorIndex& index) const { return m_maxMeleeRange[index]; }
-	[[nodiscard]] DistanceInBlocksFractional combat_getMaxRange(const ActorIndex& index) const { return m_maxRange[index] != DistanceInBlocksFractional::create(0) ? m_maxRange[index] : m_maxMeleeRange[index]; }
+	[[nodiscard]] DistanceFractional combat_getMaxMeleeRange(const ActorIndex& index) const { return m_maxMeleeRange[index]; }
+	[[nodiscard]] DistanceFractional combat_getMaxRange(const ActorIndex& index) const { return m_maxRange[index] != DistanceFractional::create(0) ? m_maxRange[index] : m_maxMeleeRange[index]; }
 	[[nodiscard]] CombatScore combat_getCombatScoreForAttack(const ActorIndex& index, const Attack& attack) const;
 	[[nodiscard]] const Attack& combat_getAttackForCombatScoreDifference(const ActorIndex& index, CombatScore scoreDifference) const;
 	[[nodiscard]] float combat_getQualityModifier(const ActorIndex& index, const Quality& quality) const;
-	[[nodiscard]] bool combat_blockIsValidPosition(const ActorIndex& index, const BlockIndex& block, const DistanceInBlocksFractional& attackRangeSquared) const;
+	[[nodiscard]] bool combat_positionIsValid(const ActorIndex& index, const Point3D& point, const DistanceFractional& attackRangeSquared) const;
 	AttackTypeId combat_getRangedAttackType(const ActorIndex& index, const ItemIndex& weapon);
 	//for degbugging combat
 	[[nodiscard]] std::vector<std::pair<CombatScore, Attack>>& combat_getAttackTable(const ActorIndex& index) { return m_meleeAttackTable[index]; }
@@ -277,52 +275,52 @@ public:
 	// -Move.
 	void move_updateIndividualSpeed(const ActorIndex& index);
 	void move_updateActualSpeed(const ActorIndex& index);
-	void move_setPath(const ActorIndex& index, const SmallSet<BlockIndex>& path);
+	void move_setPath(const ActorIndex& index, const SmallSet<Point3D>& path);
 	void move_setType(const ActorIndex& index, const MoveTypeId& moveType);
 	void move_setMoveSpeedActual(const ActorIndex& index, Speed speed);
 	void move_clearPath(const ActorIndex& index);
 	void move_callback(const ActorIndex& index);
-	void move_schedule(const ActorIndex& index, const BlockIndex& moveFrom);
-	void move_setDestination(const ActorIndex& index, const BlockIndex& destination, bool detour = false, bool adjacent = false, bool unreserved = false, bool reserve = false);
-	void move_setDestinationAdjacentToLocation(const ActorIndex& index, const BlockIndex& destination, bool detour = false, bool unreserved = false, bool reserve = false);
-	void move_setDestinationToAny(const ActorIndex& index, const SmallSet<BlockIndex>& candidates, bool detour, bool unreserved, bool reserve, const BlockIndex& huristicDestination);
+	void move_schedule(const ActorIndex& index, const Point3D& moveFrom);
+	void move_setDestination(const ActorIndex& index, const Point3D& destination, bool detour = false, bool adjacent = false, bool unreserved = false, bool reserve = false);
+	void move_setDestinationAdjacentToLocation(const ActorIndex& index, const Point3D& destination, bool detour = false, bool unreserved = false, bool reserve = false);
+	void move_setDestinationToAny(const ActorIndex& index, const SmallSet<Point3D>& candidates, bool detour, bool unreserved, bool reserve, const Point3D& huristicDestination);
 	void move_setDestinationAdjacentToActor(const ActorIndex& index, const ActorIndex& other, bool detour = false, bool unreserved = false, bool reserve = false);
 	void move_setDestinationAdjacentToItem(const ActorIndex& index, const ItemIndex& item, bool detour = false, bool unreserved = false, bool reserve = false);
 	void move_setDestinationAdjacentToPolymorphic(const ActorIndex& index, ActorOrItemIndex actorOrItemIndex, bool detour = false, bool unreserved = false, bool reserve = false);
 	void move_setDestinationAdjacentToPlant(const ActorIndex& index, const PlantIndex& plant, bool detour = false, bool unreserved = false, bool reserve = false);
-	void move_setDestinationAdjacentToFluidType(const ActorIndex& index, const FluidTypeId& fluidType, bool detour = false, bool unreserved = false, bool reserve = false, const DistanceInBlocks maxRange = DistanceInBlocks::max());
-	void move_setDestinationAdjacentToDesignation(const ActorIndex& index, const BlockDesignation& designation, bool detour = false, bool unreserved = false, bool reserve = false, const DistanceInBlocks maxRange = DistanceInBlocks::max());
+	void move_setDestinationAdjacentToFluidType(const ActorIndex& index, const FluidTypeId& fluidType, bool detour = false, bool unreserved = false, bool reserve = false, const Distance maxRange = Distance::max());
+	void move_setDestinationAdjacentToDesignation(const ActorIndex& index, const SpaceDesignation& designation, bool detour = false, bool unreserved = false, bool reserve = false, const Distance maxRange = Distance::max());
 	void move_setDestinationToEdge(const ActorIndex& index, bool detour = false);
 	// Used when destination changes in an absolute frame of refrence but not a local one.
 	// For example when on deck of an other object which is moving.
-	void move_updateDestination(const ActorIndex& index, const BlockIndex& block) { m_destination[index] = block; }
+	void move_updateDestination(const ActorIndex& index, const Point3D& point) { m_destination[index] = point; }
 	void move_clearAllEventsAndTasks(const ActorIndex& index);
 	void move_onDeath(const ActorIndex& index);
 	void move_onLeaveArea(const ActorIndex& index);
-	void move_pathRequestCallback(const ActorIndex& index, SmallSet<BlockIndex> path, bool useCurrentLocation, bool reserveDestination);
+	void move_pathRequestCallback(const ActorIndex& index, SmallSet<Point3D> path, bool useCurrentLocation, bool reserveDestination);
 	void move_pathRequestMaybeCancel(const ActorIndex& index);
 	void move_pathRequestRecord(const ActorIndex& index, std::unique_ptr<PathRequestDepthFirst> pathRequest);
 	void move_pathRequestRecord(const ActorIndex& index, std::unique_ptr<PathRequestBreadthFirst> pathRequest);
 	void move_pathRequestClear(const ActorIndex& index);
-	[[nodiscard]] bool move_destinationIsAdjacentToLocation(const ActorIndex& index, const BlockIndex& location);
-	[[nodiscard]] bool move_tryToReserveProposedDestination(const ActorIndex& index, const SmallSet<BlockIndex>& path);
+	[[nodiscard]] bool move_destinationIsAdjacentToLocation(const ActorIndex& index, const Point3D& location);
+	[[nodiscard]] bool move_tryToReserveProposedDestination(const ActorIndex& index, const SmallSet<Point3D>& path);
 	[[nodiscard]] bool move_tryToReserveOccupied(const ActorIndex& index);
 	[[nodiscard]] Speed move_getIndividualSpeedWithAddedMass(const ActorIndex& index, const Mass& mass) const;
 	[[nodiscard]] Speed move_getSpeed(const ActorIndex& index) const { return m_speedActual[index]; }
 	[[nodiscard]] bool move_canMove(const ActorIndex& index) const;
-	[[nodiscard]] Step move_delayToMoveInto(const ActorIndex& index, const BlockIndex& moveFrom, const BlockIndex& moveTo) const;
-	[[nodiscard]] SmallSet<BlockIndex> move_makePathTo(const ActorIndex& index, const BlockIndex& destination) const;
+	[[nodiscard]] Step move_delayToMoveInto(const ActorIndex& index, const Point3D& moveFrom, const Point3D& moveTo) const;
+	[[nodiscard]] SmallSet<Point3D> move_makePathTo(const ActorIndex& index, const Point3D& destination) const;
 	// For debugging move.
 	[[nodiscard]] PathRequest& move_getPathRequest(const ActorIndex& index) { return *m_pathRequest[index]; }
 	[[nodiscard]] auto& move_getPath(const ActorIndex& index) { return m_path[index]; }
-	[[nodiscard]] BlockIndex move_getDestination(const ActorIndex& index) { return m_destination[index]; }
+	[[nodiscard]] Point3D move_getDestination(const ActorIndex& index) { return m_destination[index]; }
 	[[nodiscard]] bool move_hasEvent(const ActorIndex& index) const { return m_moveEvent.exists(index); }
 	[[nodiscard]] bool move_hasPathRequest(const ActorIndex& index) const { return m_pathRequest[index] != nullptr; }
 	[[nodiscard]] bool move_hasPath(const ActorIndex& index) const { return !m_path[index].empty(); }
 	[[nodiscard]] Step move_stepsTillNextMoveEvent(const ActorIndex& index) const;
 	[[nodiscard]] uint8_t move_getRetries(const ActorIndex& index) const { return m_moveRetries[index]; }
-	[[nodiscard]] bool move_canPathTo(const ActorIndex& index, const BlockIndex& destination);
-	[[nodiscard]] bool move_canPathFromTo(const ActorIndex& index, const BlockIndex& start, const Facing4& startFacing, const BlockIndex& destination);
+	[[nodiscard]] bool move_canPathTo(const ActorIndex& index, const Point3D& destination);
+	[[nodiscard]] bool move_canPathFromTo(const ActorIndex& index, const Point3D& start, const Facing4& startFacing, const Point3D& destination);
 	// -CanPickUp.
 	void canPickUp_pickUpItem(const ActorIndex& index, const ItemIndex& item);
 	void canPickUp_pickUpItemQuantity(const ActorIndex& index, const ItemIndex& item, const Quantity& quantity);
@@ -337,11 +335,11 @@ public:
 	void canPickUp_updateActorIndex(const ActorIndex& index, const ActorIndex& oldIndex, const ActorIndex& newIndex);
 	void canPickUp_updateItemIndex(const ActorIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex);
 	void canPickUp_updateUnencomberedCarryMass(const ActorIndex& index);
-	void canPickUp_addFluidToContainerFromAdjacentBlocksIncludingOtherContainersWithLimit(const ActorIndex& index, const FluidTypeId& fluidType, const CollisionVolume& limit);
-	[[nodiscard]] ActorIndex canPickUp_tryToPutDownActor(const ActorIndex& index, const BlockIndex& location, const DistanceInBlocks maxRange = DistanceInBlocks::create(1));
-	[[nodiscard]] ItemIndex canPickUp_tryToPutDownItem(const ActorIndex& index, const BlockIndex& location, const DistanceInBlocks maxRange = DistanceInBlocks::create(1));
-	[[nodiscard]] ActorOrItemIndex canPickUp_tryToPutDownIfAny(const ActorIndex& index, const BlockIndex& location, const DistanceInBlocks maxRange = DistanceInBlocks::create(1));
-	[[nodiscard]] ActorOrItemIndex canPickUp_tryToPutDownPolymorphic(const ActorIndex& index, const BlockIndex& location, const DistanceInBlocks maxRange = DistanceInBlocks::create(1));
+	void canPickUp_addFluidToContainerFromAdjacentPointsIncludingOtherContainersWithLimit(const ActorIndex& index, const FluidTypeId& fluidType, const CollisionVolume& limit);
+	[[nodiscard]] ActorIndex canPickUp_tryToPutDownActor(const ActorIndex& index, const Point3D& location, const Distance maxRange = Distance::create(1));
+	[[nodiscard]] ItemIndex canPickUp_tryToPutDownItem(const ActorIndex& index, const Point3D& location, const Distance maxRange = Distance::create(1));
+	[[nodiscard]] ActorOrItemIndex canPickUp_tryToPutDownIfAny(const ActorIndex& index, const Point3D& location, const Distance maxRange = Distance::create(1));
+	[[nodiscard]] ActorOrItemIndex canPickUp_tryToPutDownPolymorphic(const ActorIndex& index, const Point3D& location, const Distance maxRange = Distance::create(1));
 	[[nodiscard]] ItemIndex canPickUp_getItem(const ActorIndex& index) const;
 	[[nodiscard]] ActorIndex canPickUp_getActor(const ActorIndex& index) const;
 	[[nodiscard]] ActorOrItemIndex canPickUp_getPolymorphic(const ActorIndex& index) const;
@@ -368,7 +366,7 @@ public:
 	[[nodiscard]] Mass canPickUp_getMass(const ActorIndex& index) const;
 	[[nodiscard]] Speed canPickUp_speedIfCarryingQuantity(const ActorIndex& index, const Mass& mass, const Quantity& quantity) const;
 	[[nodiscard]] Quantity canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(const ActorIndex& index, const Mass& mass, Speed minimumSpeed) const;
-	[[nodiscard]] bool canPickUp_canPutDown(const ActorIndex& index, const BlockIndex& block);
+	[[nodiscard]] bool canPickUp_canPutDown(const ActorIndex& index, const Point3D& point);
 	// Objectives.
 	void objective_addTaskToStart(const ActorIndex& index, std::unique_ptr<Objective> objective);
 	void objective_addTaskToEnd(const ActorIndex& index, std::unique_ptr<Objective> objective);
@@ -402,15 +400,15 @@ public:
 	void canReserve_clearAll(const ActorIndex& index);
 	void canReserve_setFaction(const ActorIndex& index, FactionId faction);
 	// Default dishonor callback is canNotCompleteCurrentObjective.
-	void canReserve_reserveLocation(const ActorIndex& index, const BlockIndex& block, std::unique_ptr<DishonorCallback> callback = nullptr);
+	void canReserve_reserveLocation(const ActorIndex& index, const Point3D& point, std::unique_ptr<DishonorCallback> callback = nullptr);
 	void canReserve_reserveItem(const ActorIndex& index, const ItemIndex& item, const Quantity& quantity, std::unique_ptr<DishonorCallback> callback = nullptr);
-	[[nodiscard]] bool canReserve_translateAndReservePositions(const ActorIndex& index, SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>>&& blocksAndCallbacks, const BlockIndex& prevousPivot, const BlockIndex& newPivot, const Facing4& previousFacing, const Facing4& newFacing);
-	[[nodiscard]] bool canReserve_tryToReserveLocation(const ActorIndex& index, const BlockIndex& block, std::unique_ptr<DishonorCallback> callback = nullptr);
+	[[nodiscard]] bool canReserve_translateAndReservePositions(const ActorIndex& index, SmallMap<Point3D, std::unique_ptr<DishonorCallback>>&& pointsAndCallbacks, const Point3D& prevousPivot, const Point3D& newPivot, const Facing4& previousFacing, const Facing4& newFacing);
+	[[nodiscard]] bool canReserve_tryToReserveLocation(const ActorIndex& index, const Point3D& point, std::unique_ptr<DishonorCallback> callback = nullptr);
 	[[nodiscard]] bool canReserve_tryToReserveItem(const ActorIndex& index, const ItemIndex& item, const Quantity& quantity, std::unique_ptr<DishonorCallback> callback = nullptr);
-	[[nodiscard]] SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>> canReserve_unreserveAndReturnBlocksAndCallbacksOnSameDeck(const ActorIndex& index);
+	[[nodiscard]] SmallMap<Point3D, std::unique_ptr<DishonorCallback>> canReserve_unreserveAndReturnPointsAndCallbacksOnSameDeck(const ActorIndex& index);
 	[[nodiscard]] bool canReserve_hasReservationWith(const ActorIndex& index, Reservable& reservable) const;
-	[[nodiscard]] bool canReserve_canReserveLocation(const ActorIndex& index, const BlockIndex& block, const Facing4& facing) const;
-	[[nodiscard]] bool canReserve_locationAtEndOfPathIsUnreserved(const ActorIndex& index, const SmallSet<BlockIndex>& path) const;
+	[[nodiscard]] bool canReserve_canReserveLocation(const ActorIndex& index, const Point3D& point, const Facing4& facing) const;
+	[[nodiscard]] bool canReserve_locationAtEndOfPathIsUnreserved(const ActorIndex& index, const SmallSet<Point3D>& path) const;
 private:
 	[[nodiscard]] CanReserve& canReserve_get(const ActorIndex& index);
 	// Project.
@@ -429,7 +427,7 @@ public:
 	[[nodiscard]] bool equipment_containsItem(const ActorIndex& index, const ItemIndex& item) const;
 	[[nodiscard]] bool equipment_containsItemType(const ActorIndex& index, const ItemTypeId& type) const;
 	[[nodiscard]] Mass equipment_getMass(const ActorIndex& index) const;
-	[[nodiscard]] ItemIndex equipment_getWeaponToAttackAtRange(const ActorIndex& index, const DistanceInBlocksFractional& range) const;
+	[[nodiscard]] ItemIndex equipment_getWeaponToAttackAtRange(const ActorIndex& index, const DistanceFractional& range) const;
 	[[nodiscard]] ItemIndex equipment_getAmmoForRangedWeapon(const ActorIndex& index, const ItemIndex& weapon) const;
 	[[nodiscard]] const auto& equipment_getAll(const ActorIndex& index) const { return m_equipmentSet[index]->getAll(); }
 	[[nodiscard]] const EquipmentSet& equipment_getSet(const ActorIndex& index) const { return *m_equipmentSet[index]; }
@@ -445,11 +443,11 @@ public:
 	void sleep_do(const ActorIndex& actor);
 	void sleep_wakeUp(const ActorIndex& actor);
 	void sleep_wakeUpEarly(const ActorIndex& actor);
-	void sleep_setSpot(const ActorIndex& index, const BlockIndex& location);
+	void sleep_setSpot(const ActorIndex& index, const Point3D& location);
 	void sleep_makeTired(const ActorIndex& index);
 	void sleep_clearObjective(const ActorIndex& index);
 	void sleep_maybeClearSpot(const ActorIndex& index);
-	[[nodiscard]] BlockIndex sleep_getSpot(const ActorIndex& index) const;
+	[[nodiscard]] Point3D sleep_getSpot(const ActorIndex& index) const;
 	[[nodiscard]] bool sleep_isAwake(const ActorIndex& index) const;
 	[[nodiscard]] bool sleep_isTired(const ActorIndex& index) const;
 	[[nodiscard]] Percent sleep_getPercentDoneSleeping(const ActorIndex& index) const;
@@ -474,10 +472,10 @@ public:
 	[[nodiscard]] bool eat_canEatItem(const ActorIndex& index, const ItemIndex& item) const;
 	[[nodiscard]] bool eat_canEatPlant(const ActorIndex& index, const PlantIndex& plant) const;
 	[[nodiscard]] Percent eat_getPercentStarved(const ActorIndex& index) const;
-	[[nodiscard]] BlockIndex eat_getAdjacentBlockWithTheMostDesiredFood(const ActorIndex& index) const;
+	[[nodiscard]] Point3D eat_getAdjacentPointWithTheMostDesiredFood(const ActorIndex& index) const;
 	// For Testing.
 	[[nodiscard]] Mass eat_getMassFoodRequested(const ActorIndex& index) const;
-	[[nodiscard]] uint32_t eat_getDesireToEatSomethingAt(const ActorIndex& index, const BlockIndex& block) const;
+	[[nodiscard]] uint32_t eat_getDesireToEatSomethingAt(const ActorIndex& index, const Point3D& point) const;
 	[[nodiscard]] uint32_t eat_getMinimumAcceptableDesire(const ActorIndex& index) const;
 	[[nodiscard]] bool eat_hasObjective(const ActorIndex& index) const;
 	[[nodiscard]] Step eat_getHungerEventStep(const ActorIndex& index) const;
@@ -538,8 +536,8 @@ public:
 	[[nodiscard]] bool grow_isGrowing(const ActorIndex& index) const;
 	[[nodiscard]] Percent grow_getPercent(const ActorIndex& index) const;
 	// For Line leader.
-	[[nodiscard]] const SmallSet<BlockIndex>& lineLead_getPath(const ActorIndex& index) const;
-	[[nodiscard]] OccupiedBlocksForHasShape lineLead_getOccupiedBlocks(const ActorIndex& index) const;
+	[[nodiscard]] const SmallSet<Point3D>& lineLead_getPath(const ActorIndex& index) const;
+	[[nodiscard]] OccupiedSpaceForHasShape lineLead_getOccupiedPoints(const ActorIndex& index) const;
 	[[nodiscard]] bool lineLead_pathEmpty(const ActorIndex& index) const;
 	[[nodiscard]] ShapeId lineLead_getLargestShape(const ActorIndex& index) const;
 	[[nodiscard]] MoveTypeId lineLead_getMoveType(const ActorIndex& index) const;
@@ -549,19 +547,19 @@ public:
 	[[nodiscard]] bool lineLead_followersCanMoveEver(const ActorIndex& index) const;
 	[[nodiscard]] bool lineLead_followersCanMoveCurrently(const ActorIndex& index) const;
 	void lineLead_clearPath(const ActorIndex& index);
-	void lineLead_appendToPath(const ActorIndex& index, const BlockIndex& block, const Facing4& facing);
-	void lineLead_pushFront(const ActorIndex& index, const BlockIndex& block);
+	void lineLead_appendToPath(const ActorIndex& index, const Point3D& point, const Facing4& facing);
+	void lineLead_pushFront(const ActorIndex& index, const Point3D& point);
 	void lineLead_popBackUnlessOccupiedByFollower(const ActorIndex& index);
 	void lineLead_moveFollowers(const ActorIndex& index);
 	// Mount.
-	[[nodiscard]] BlockIndex mount_findLocationToMountOn(const ActorIndex& index, const ActorIndex& toMount) const;
+	[[nodiscard]] Point3D mount_findLocationToMountOn(const ActorIndex& index, const ActorIndex& toMount) const;
 	[[nodiscard]] bool mount_isPilot(const ActorIndex& index) const { return m_isPilot[index]; }
 	[[nodiscard]] bool mount_hasPilot(const ActorIndex& index) const;
 	[[nodiscard]] bool mount_exists(const ActorIndex& index) const { return m_isOnDeckOf[index].exists(); }
 	[[nodiscard]] ActorIndex mount_getPilot(const ActorIndex& index) const;
 	[[nodiscard]] OffsetCuboidSet getDeckOffsets(const ActorIndex&) { return {}; }
-	void mount_do(const ActorIndex& index, const ActorIndex& toMount, const BlockIndex& location, const bool& pilot);
-	void mount_undo(const ActorIndex& index, const BlockIndex& location, const Facing4& facing);
+	void mount_do(const ActorIndex& index, const ActorIndex& toMount, const Point3D& location, const bool& pilot);
+	void mount_undo(const ActorIndex& index, const Point3D& location, const Facing4& facing);
 	// Pilot Item.
 	void pilotItem_set(const ActorIndex& index, const ItemIndex& item);
 	void pilotItem_unset(const ActorIndex& index);
@@ -621,9 +619,9 @@ public:
 class GetIntoAttackPositionPathRequest final : public PathRequestDepthFirst
 {
 	ActorReference target;
-	DistanceInBlocksFractional attackRangeSquared = DistanceInBlocksFractional::null();
+	DistanceFractional attackRangeSquared = DistanceFractional::null();
 public:
-	GetIntoAttackPositionPathRequest(Area& area, const ActorIndex& a, const ActorIndex& t, const DistanceInBlocksFractional& ar);
+	GetIntoAttackPositionPathRequest(Area& area, const ActorIndex& a, const ActorIndex& t, const DistanceFractional& ar);
 	GetIntoAttackPositionPathRequest(const Json& data, Area& area);
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;

@@ -12,25 +12,25 @@
 #include <vector>
 
 struct Faction;
-struct BlockFeatureType;
+struct PointFeatureType;
 class HasDigDesignationsForFaction;
 struct DeserializationMemo;
 
 class HasDigDesignationsForFaction final
 {
 	FactionId m_faction;
-	SmallMapStable<BlockIndex, DigProject> m_data;
+	SmallMapStable<Point3D, DigProject> m_data;
 public:
 	HasDigDesignationsForFaction(const FactionId& p) : m_faction(p) { }
 	HasDigDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const FactionId& faction, Area& area);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
-	void designate(Area& area, const BlockIndex& block, const BlockFeatureTypeId blockFeatureType);
-	void undesignate(const BlockIndex& block);
+	void designate(Area& area, const Point3D& point, const PointFeatureTypeId pointFeatureType);
+	void undesignate(const Point3D& point);
 	// To be called by undesignate as well as by DigProject::onCancel.
-	void remove(Area& area, const BlockIndex& block);
-	void removeIfExists(Area& area, const BlockIndex& block);
+	void remove(Area& area, const Point3D& point);
+	void removeIfExists(Area& area, const Point3D& point);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] BlockFeatureTypeId getForBlock(const BlockIndex& block) const;
+	[[nodiscard]] PointFeatureTypeId getForPoint(const Point3D& point) const;
 	[[nodiscard]] bool empty() const;
 	friend class AreaHasDigDesignations;
 };
@@ -46,14 +46,14 @@ public:
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	void addFaction(const FactionId& faction);
 	void removeFaction(const FactionId& faction);
-	// If blockFeatureType is null then dig out fully rather then digging out a feature.
-	void designate(const FactionId& faction, const BlockIndex& block, const BlockFeatureTypeId blockFeatureType);
-	void undesignate(const FactionId& faction, const BlockIndex& block);
-	void remove(const FactionId& faction, const BlockIndex& block);
-	void clearAll(const BlockIndex& block);
+	// If pointFeatureType is null then dig out fully rather then digging out a feature.
+	void designate(const FactionId& faction, const Point3D& point, const PointFeatureTypeId pointFeatureType);
+	void undesignate(const FactionId& faction, const Point3D& point);
+	void remove(const FactionId& faction, const Point3D& point);
+	void clearAll(const Point3D& point);
 	void clearReservations();
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool areThereAnyForFaction(const FactionId& faction) const;
-	[[nodiscard]] bool contains(const FactionId& faction, const BlockIndex& block) const { return m_data[faction].m_data.contains(block); }
-	[[nodiscard]] DigProject& getForFactionAndBlock(const FactionId& faction, const BlockIndex& block);
+	[[nodiscard]] bool contains(const FactionId& faction, const Point3D& point) const { return m_data[faction].m_data.contains(point); }
+	[[nodiscard]] DigProject& getForFactionAndPoint(const FactionId& faction, const Point3D& point);
 };

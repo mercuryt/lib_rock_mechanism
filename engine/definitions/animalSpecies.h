@@ -28,7 +28,7 @@ struct AnimalSpeciesParamaters
 	bool eatsMeat;
 	bool eatsLeaves;
 	bool eatsFruit;
-	DistanceInBlocks visionRange;
+	Distance visionRange;
 	uint32_t bodyScale;
 	MaterialTypeId materialType;
 	MoveTypeId moveType;
@@ -62,9 +62,9 @@ class AnimalSpecies
 	StrongBitSet<AnimalSpeciesId> m_eatsMeat;
 	StrongBitSet<AnimalSpeciesId> m_eatsLeaves;
 	StrongBitSet<AnimalSpeciesId> m_eatsFruit;
-	StrongVector<DistanceInBlocks, AnimalSpeciesId> m_visionRange;
+	StrongVector<Distance, AnimalSpeciesId> m_visionRange;
 	StrongVector<uint32_t, AnimalSpeciesId> m_bodyScale;
-	StrongVector<MaterialTypeId, AnimalSpeciesId> m_materialType;
+	StrongVector<MaterialTypeId, AnimalSpeciesId> m_solid;
 	StrongVector<MoveTypeId, AnimalSpeciesId> m_moveType;
 	StrongVector<FluidTypeId, AnimalSpeciesId> m_fluidType;
 	StrongVector<BodyTypeId, AnimalSpeciesId> m_bodyType;
@@ -96,7 +96,7 @@ public:
 	[[nodiscard]] static bool getEatsMeat(const AnimalSpeciesId& id);
 	[[nodiscard]] static bool getEatsLeaves(const AnimalSpeciesId& id);
 	[[nodiscard]] static bool getEatsFruit(const AnimalSpeciesId& id);
-	[[nodiscard]] static DistanceInBlocks getVisionRange(const AnimalSpeciesId& id);
+	[[nodiscard]] static Distance getVisionRange(const AnimalSpeciesId& id);
 	[[nodiscard]] static uint32_t getBodyScale(const AnimalSpeciesId& id);
 	[[nodiscard]] static MaterialTypeId getMaterialType(const AnimalSpeciesId& id);
 	[[nodiscard]] static MoveTypeId getMoveType(const AnimalSpeciesId& id);

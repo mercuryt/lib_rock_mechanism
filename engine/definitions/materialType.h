@@ -24,7 +24,7 @@ public:
 static MaterialTypeCategory materialTypeCategoryData;
 class SpoilData
 {
-	StrongVector<MaterialTypeId, SpoilsDataTypeId> m_materialType;
+	StrongVector<MaterialTypeId, SpoilsDataTypeId> m_solid;
 	StrongVector<ItemTypeId, SpoilsDataTypeId> m_itemType;
 	StrongVector<Percent, SpoilsDataTypeId> m_chance;
 	StrongVector<Quantity, SpoilsDataTypeId> m_min;
@@ -77,7 +77,7 @@ class MaterialType final
 	StrongVector<Density, MaterialTypeId> m_density;
 	StrongVector<uint32_t, MaterialTypeId> m_hardness;
 	StrongBitSet<MaterialTypeId> m_transparent;
-	StrongVector<MaterialCategoryTypeId, MaterialTypeId> m_materialTypeCategory;
+	StrongVector<MaterialCategoryTypeId, MaterialTypeId> m_solidCategory;
 	StrongVector<uint, MaterialTypeId> m_valuePerUnitFullDisplacement;
 	// Construction.
 	StrongVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId> m_construction_consumed;

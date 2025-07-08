@@ -2,7 +2,7 @@
 #include "simulation/simulation.h"
 #include "deserializeDishonorCallbacks.h"
 #include "numericTypes/types.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include <bits/ranges_algo.h>
 void CanReserve::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area)
 {
@@ -38,25 +38,25 @@ void CanReserve::setFaction(FactionId faction)
 		reservable->updateFactionFor(*this, m_faction, faction);
 	m_faction = faction;
 }
-bool CanReserve::translateAndReservePositions(Blocks& blocks, SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>>&& previouslyReserved, const BlockIndex& previousPivot, const BlockIndex& newPivot, const Facing4& previousFacing, const Facing4& newFacing)
+bool CanReserve::translateAndReservePositions(Space& space, SmallMap<Point3D, std::unique_ptr<DishonorCallback>>&& previouslyReserved, const Point3D& previousPivot, const Point3D& newPivot, const Facing4& previousFacing, const Facing4& newFacing)
 {
-	for(auto& [block, dishonorCallback] : previouslyReserved)
+	for(auto& [point, dishonorCallback] : previouslyReserved)
 	{
-		block = blocks.translatePosition(block, previousPivot, newPivot, previousFacing, newFacing);
-		if(blocks.isReserved(block, m_faction))
+		point = point.translate(previousPivot, newPivot, previousFacing, newFacing);
+		if(space.isReserved(point, m_faction))
 			return false;
-		blocks.reserve(block, *this, std::move(dishonorCallback));
-		m_blocks.insert(block, &blocks.getReservable(block));
+		space.reserve(point, *this, std::move(dishonorCallback));
+		m_points.insert(point, &space.getReservable(point));
 	}
 	return true;
 }
-void CanReserve::recordReservedBlock(const BlockIndex& block, Reservable* reservable)
+void CanReserve::recordReservedPoint(const Point3D& point, Reservable* reservable)
 {
-	m_blocks.insert(block, reservable);
+	m_points.insert(point, reservable);
 }
-void CanReserve::eraseReservedBlock(const BlockIndex& block)
+void CanReserve::eraseReservedPoint(const Point3D& point)
 {
-	m_blocks.erase(block);
+	m_points.erase(point);
 }
 bool CanReserve::hasReservationWith(Reservable& reservable) const { return std::ranges::find(m_reservables, &reservable) != m_reservables.end(); }
 bool CanReserve::hasReservations() const

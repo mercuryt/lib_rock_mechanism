@@ -1,52 +1,52 @@
 #include "fluidQueue.h"
 #include "fluidGroup.h"
 #include "../area/area.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "numericTypes/types.h"
 #include <assert.h>
-void FluidQueue::setBlocks(SmallSet<BlockIndex>& blocks)
+void FluidQueue::setPoints(SmallSet<Point3D>& points)
 {
-	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return !blocks.contains(futureFlowBlock.block); });
-	for(BlockIndex block : blocks)
-		if(!m_set.contains(block))
-			m_queue.emplace_back(block);
-	m_set.swap(blocks);
+	std::erase_if(m_queue, [&](FutureFlowPoint& futureFlowPoint){ return !points.contains(futureFlowPoint.point); });
+	for(Point3D point : points)
+		if(!m_set.contains(point))
+			m_queue.emplace_back(point);
+	m_set.swap(points);
 }
-void FluidQueue::maybeAddBlock(const BlockIndex& block)
+void FluidQueue::maybeAddPoint(const Point3D& point)
 {
-	if(m_set.contains(block))
+	if(m_set.contains(point))
 		return;
-	m_set.insert(block);
-	m_queue.emplace_back(block);
+	m_set.insert(point);
+	m_queue.emplace_back(point);
 }
-void FluidQueue::maybeAddBlocks(SmallSet<BlockIndex>& blocks)
+void FluidQueue::maybeAddPoints(SmallSet<Point3D>& points)
 {
-	//m_queue.reserve(m_queue.size() + blocks.size());
-	for(BlockIndex block : blocks)
-		if(!m_set.contains(block))
-			m_queue.emplace_back(block);
-	m_set.maybeInsertAll(blocks);
+	//m_queue.reserve(m_queue.size() + points.size());
+	for(Point3D point : points)
+		if(!m_set.contains(point))
+			m_queue.emplace_back(point);
+	m_set.maybeInsertAll(points);
 }
-void FluidQueue::removeBlock(const BlockIndex& block)
+void FluidQueue::removePoint(const Point3D& point)
 {
-	m_set.erase(block);
-	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return futureFlowBlock.block == block; });
+	m_set.erase(point);
+	std::erase_if(m_queue, [&](FutureFlowPoint& futureFlowPoint){ return futureFlowPoint.point == point; });
 }
-void FluidQueue::maybeRemoveBlock(const BlockIndex& block)
+void FluidQueue::maybeRemovePoint(const Point3D& point)
 {
-	if(m_set.contains(block))
-		removeBlock(block);
+	if(m_set.contains(point))
+		removePoint(point);
 }
-void FluidQueue::removeBlocks(SmallSet<BlockIndex>& blocks)
+void FluidQueue::removePoints(SmallSet<Point3D>& points)
 {
-	m_set.eraseIf([&](const BlockIndex& block){ return blocks.contains(block); });
-	std::erase_if(m_queue, [&](FutureFlowBlock& futureFlowBlock){ return blocks.contains(futureFlowBlock.block); });
+	m_set.eraseIf([&](const Point3D& point){ return points.contains(point); });
+	std::erase_if(m_queue, [&](FutureFlowPoint& futureFlowPoint){ return points.contains(futureFlowPoint.point); });
 }
 void FluidQueue::merge(FluidQueue& fluidQueue)
 {
 	//m_queue.reserve(m_queue.size() + fluidQueue.m_set.size());
-	for(BlockIndex block : fluidQueue.m_set)
-		maybeAddBlock(block);
+	for(Point3D point : fluidQueue.m_set)
+		maybeAddPoint(point);
 }
 void FluidQueue::noChange()
 {
@@ -56,21 +56,20 @@ uint32_t FluidQueue::groupSize() const
 {
 	return m_groupEnd - m_groupStart;
 }
-CollisionVolume FluidQueue::groupCapacityPerBlock() const
+CollisionVolume FluidQueue::groupCapacityPerPoint() const
 {
 	assert(m_groupStart != m_groupEnd);
 	return m_groupStart->capacity;
 }
-CollisionVolume FluidQueue::groupFlowTillNextStepPerBlock(Area& area) const
+CollisionVolume FluidQueue::groupFlowTillNextStepPerPoint() const
 {
 	assert(m_groupStart != m_groupEnd);
-	auto& blocks = area.getBlocks();
-	if(m_groupEnd == m_queue.end() || blocks.getZ(m_groupEnd->block) != blocks.getZ(m_groupStart->block))
+	if(m_groupEnd == m_queue.end() || m_groupEnd->point.z() != m_groupStart->point.z())
 		return CollisionVolume::null();
 	assert(m_groupEnd->capacity < m_groupStart->capacity);
 	return m_groupStart->capacity - m_groupEnd->capacity;
 }
-bool FluidQueue::groupContains(const BlockIndex& block) const
+bool FluidQueue::groupContains(const Point3D& point) const
 {
-	return std::ranges::find(m_groupStart, m_groupEnd, block, &FutureFlowBlock::block) != m_groupEnd;
+	return std::ranges::find(m_groupStart, m_groupEnd, point, &FutureFlowPoint::point) != m_groupEnd;
 }

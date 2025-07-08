@@ -11,7 +11,7 @@ TEST_CASE("block")
 {
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	BlockIndex lowest = BlockIndex::create(0);
 	CHECK(blocks.getBlockBelow(lowest).empty());
 	CHECK(blocks.getBlockNorth(lowest).empty());
@@ -19,6 +19,6 @@ TEST_CASE("block")
 	CHECK(blocks.getBlockAbove(lowest) == 100);
 	CHECK(blocks.getBlockSouth(lowest) == 10);
 	CHECK(blocks.getBlockEast(lowest) == 1);
-	CHECK(area.m_visionCuboids.getVisionCuboidIndexForBlock(lowest).exists());
+	CHECK(area.m_visionCuboids.getVisionCuboidIndexForPoint(lowest).exists());
 }
 

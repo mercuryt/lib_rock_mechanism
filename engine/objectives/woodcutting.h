@@ -29,8 +29,8 @@ public:
 	void onProjectCannotReserve(Area& area, const ActorIndex& actor);
 	[[nodiscard]] std::string name() const { return "woodcutting"; }
 	void joinProject(WoodCuttingProject& project, const ActorIndex& index);
-	[[nodiscard]] WoodCuttingProject* getJoinableProjectAt(Area& area, const BlockIndex& block, const ActorIndex& index);
-	[[nodiscard]] bool joinableProjectExistsAt(Area &area, const BlockIndex& block, const ActorIndex& actor) const;
+	[[nodiscard]] WoodCuttingProject* getJoinableProjectAt(Area& area, const Point3D& point, const ActorIndex& index);
+	[[nodiscard]] bool joinableProjectExistsAt(Area &area, const Point3D& point, const ActorIndex& actor) const;
 	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	friend class WoodCuttingPathRequest;
 	friend class WoodCuttingProject;
@@ -39,7 +39,7 @@ public:
 class WoodCuttingPathRequest final : public PathRequestBreadthFirst
 {
 	WoodCuttingObjective& m_woodCuttingObjective;
-	// Result is the block which will be the actors location while doing the woodCuttingging.
+	// Result is the point which will be the actors location while doing the woodCuttingging.
 public:
 	WoodCuttingPathRequest(Area& area, WoodCuttingObjective& woodCuttingObjective, const ActorIndex& actor);
 	WoodCuttingPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);

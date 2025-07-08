@@ -2,7 +2,7 @@
 #include "../area/woodcutting.h"
 #include "../area/area.h"
 #include "../actors/actors.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../reference.h"
 #include "../numericTypes/types.h"
 #include "../path/terrainFacade.hpp"
@@ -29,13 +29,13 @@ WoodCuttingPathRequest::WoodCuttingPathRequest(const Json& data, Area& area, Des
 FindPathResult WoodCuttingPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	ActorIndex actorIndex = actor.getIndex(area.getActors().m_referenceData);
-	auto predicate = [this, &area, actorIndex](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
+	auto predicate = [this, &area, actorIndex](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
 	{
-		return {m_woodCuttingObjective.joinableProjectExistsAt(area, block, actorIndex), block};
+		return {m_woodCuttingObjective.joinableProjectExistsAt(area, point, actorIndex), point};
 	};
-	constexpr bool useAnyOccupiedBlock = true;
+	constexpr bool useAnyOccupiedPoint = true;
 	constexpr bool unreserved = false;
-	return terrainFacade.findPathToBlockDesignationAndCondition<useAnyOccupiedBlock, decltype(predicate)>(predicate, memo, BlockDesignation::WoodCutting, faction, start, facing, shape, detour, adjacent, unreserved, maxRange);
+	return terrainFacade.findPathToSpaceDesignationAndCondition<useAnyOccupiedPoint, decltype(predicate)>(predicate, memo, SpaceDesignation::WoodCutting, faction, start, facing, shape, detour, adjacent, unreserved, maxRange);
 }
 void WoodCuttingPathRequest::writeStep(Area& area, FindPathResult& result)
 {
@@ -58,8 +58,8 @@ void WoodCuttingPathRequest::writeStep(Area& area, FindPathResult& result)
 			actors.objective_canNotCompleteSubobjective(actorIndex);
 			return;
 		}
-		BlockIndex target = result.blockThatPassedPredicate;
-		WoodCuttingProject& project = area.m_hasWoodCuttingDesignations.getForFactionAndBlock(actors.getFaction(actorIndex), target);
+		Point3D target = result.pointThatPassedPredicate;
+		WoodCuttingProject& project = area.m_hasWoodCuttingDesignations.getForFactionAndPoint(actors.getFaction(actorIndex), target);
 		if(project.canAddWorker(actorIndex))
 			m_woodCuttingObjective.joinProject(project, actorIndex);
 		else
@@ -95,16 +95,16 @@ void WoodCuttingObjective::execute(Area& area, const ActorIndex& actor)
 	{
 		Actors& actors = area.getActors();
 		WoodCuttingProject* project = nullptr;
-		std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block)
+		std::function<bool(const Point3D&)> predicate = [&](const Point3D& point)
 		{
-			if(!getJoinableProjectAt(area, block, actor))
+			if(!getJoinableProjectAt(area, point, actor))
 				return false;
-			project = &area.m_hasWoodCuttingDesignations.getForFactionAndBlock(actors.getFaction(actor), block);
+			project = &area.m_hasWoodCuttingDesignations.getForFactionAndPoint(actors.getFaction(actor), point);
 			if(project->canAddWorker(actor))
 				return true;
 			return false;
 		};
-		[[maybe_unused]] BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
+		[[maybe_unused]] Point3D adjacent = actors.getPointWhichIsAdjacentWithPredicate(actor, predicate);
 		if(project != nullptr)
 		{
 			assert(adjacent.exists());
@@ -152,25 +152,25 @@ void WoodCuttingObjective::joinProject(WoodCuttingProject& project, const ActorI
 	m_project = &project;
 	project.addWorkerCandidate(actor, *this);
 }
-WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(Area& area, const BlockIndex& block, const ActorIndex& actor)
+WoodCuttingProject* WoodCuttingObjective::getJoinableProjectAt(Area& area, const Point3D& point, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFaction(actor);
-	if(!area.getBlocks().designation_has(block, faction, BlockDesignation::WoodCutting))
+	if(! area.getSpace().designation_has(point, faction, SpaceDesignation::WoodCutting))
 		return nullptr;
-	WoodCuttingProject& output = area.m_hasWoodCuttingDesignations.getForFactionAndBlock(faction, block);
+	WoodCuttingProject& output = area.m_hasWoodCuttingDesignations.getForFactionAndPoint(faction, point);
 	if(!output.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&output))
 		return nullptr;
 	if(!output.canAddWorker(actor))
 		return nullptr;
 	return &output;
 }
-bool WoodCuttingObjective::joinableProjectExistsAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const
+bool WoodCuttingObjective::joinableProjectExistsAt(Area& area, const Point3D& point, const ActorIndex& actor) const
 {
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFaction(actor);
-	assert(area.getBlocks().designation_has(block, faction, BlockDesignation::WoodCutting));
-	WoodCuttingProject& project = area.m_hasWoodCuttingDesignations.getForFactionAndBlock(faction, block);
+	assert( area.getSpace().designation_has(point, faction, SpaceDesignation::WoodCutting));
+	WoodCuttingProject& project = area.m_hasWoodCuttingDesignations.getForFactionAndPoint(faction, point);
 	return !project.reservationsComplete() && !m_cannotJoinWhileReservationsAreNotComplete.contains(&project) && project.canAddWorker(actor);
 }
 bool WoodCuttingObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const

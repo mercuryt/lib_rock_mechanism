@@ -53,7 +53,7 @@ class Body final
 	HasScheduledEvent<BleedEvent> m_bleedEvent;
 	HasScheduledEvent<WoundsCloseEvent> m_woundsCloseEvent;
 	ActorIndex m_actor;
-	MaterialTypeId m_materialType;
+	MaterialTypeId m_solid;
 	FullDisplacement m_totalVolume = FullDisplacement::create(0);
 	Percent m_impairMovePercent = Percent::create(0);
 	Percent m_impairManipulationPercent = Percent::create(0);
@@ -77,7 +77,7 @@ public:
 	// TODO: periodicly update impairment as wounds heal.
 	void recalculateBleedAndImpairment(Area& area);
 	Wound& getWoundWhichIsBleedingTheMost();
-	void setMaterialType(const MaterialTypeId& materialType) { m_materialType = materialType; }
+	void setMaterialType(const MaterialTypeId& materialType) { m_solid = materialType; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool piercesSkin(Hit hit, const BodyPart& bodyPart) const;
 	[[nodiscard]] bool piercesFat(Hit hit, const BodyPart& bodyPart) const;

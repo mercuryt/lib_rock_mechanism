@@ -1,9 +1,8 @@
 #include "cuboidSet.h"
-#include "../blocks/blocks.h"
 #include "offsetCuboidSet.h"
-CuboidSet::CuboidSet(const Blocks& blocks, const BlockIndex& location, const Facing4& rotation, const OffsetCuboidSet& offsetPairs)
+CuboidSet::CuboidSet(const Point3D& location, const Facing4& rotation, const OffsetCuboidSet& offsetPairs)
 {
-	const Point3D coordinates = blocks.getCoordinates(location);
+	const Point3D coordinates = location;
 	auto end = offsetPairs.cuboidsEnd();
 	for(auto iter = offsetPairs.cuboidsBegin(); iter < end; ++iter)
 	{
@@ -42,16 +41,6 @@ void CuboidSet::remove(const Point3D& point)
 {
 	remove({point, point});
 }
-void CuboidSet::add(const Blocks& blocks, const BlockIndex& block)
-{
-	const Point3D& point = blocks.getCoordinates(block);
-	add({point, point});
-}
-void CuboidSet::remove(const Blocks& blocks, const BlockIndex& block)
-{
-	const Point3D& point = blocks.getCoordinates(block);
-	remove({point, point});
-}
 void CuboidSet::add(const Cuboid& cuboid)
 {
 	remove(cuboid);
@@ -74,7 +63,7 @@ void CuboidSet::remove(const Cuboid& cuboid)
 		for(const Cuboid& splitResult : pair.first.getChildrenWhenSplitByCuboid(cuboid))
 			create(splitResult);
 }
-void CuboidSet::shift(const Offset3D offset, const DistanceInBlocks& distance)
+void CuboidSet::shift(const Offset3D offset, const Distance& distance)
 {
 	for(Cuboid& cuboid : m_cuboids)
 		cuboid.shift(offset, distance);
@@ -84,10 +73,10 @@ void CuboidSet::addSet(const CuboidSet& other)
 	for(const Cuboid& cuboid : other.getCuboids())
 		add(cuboid);
 }
-void CuboidSet::rotateAroundPoint(Blocks& blocks, const BlockIndex& point, const Facing4& rotation)
+void CuboidSet::rotateAroundPoint(const Point3D& point, const Facing4& rotation)
 {
 	for(Cuboid& cuboid : m_cuboids)
-		cuboid.rotateAroundPoint(blocks, point, rotation);
+		cuboid.rotateAroundPoint(point, rotation);
 }
 void CuboidSet::mergeInternal(const Cuboid& absorbed, const uint& absorber)
 {
@@ -113,10 +102,6 @@ uint CuboidSet::size() const
 		output += cuboid.size();
 	return output;
 }
-bool CuboidSet::contains(const Blocks& blocks, const BlockIndex& block) const
-{
-	return contains(blocks.getCoordinates(block));
-}
 bool CuboidSet::contains(const Point3D& point) const
 {
 	for(const Cuboid& cuboid : m_cuboids)
@@ -124,14 +109,11 @@ bool CuboidSet::contains(const Point3D& point) const
 			return true;
 	return false;
 }
-SmallSet<BlockIndex> CuboidSet::toBlockSet(const Blocks& blocks) const
+SmallSet<Point3D> CuboidSet::toPointSet() const
 {
-	SmallSet<BlockIndex> output;
+	SmallSet<Point3D> output;
 	for(const Cuboid& cuboid : m_cuboids)
-	{
-		const auto view = cuboid.getView(blocks);
-		output.maybeInsertAll(view.begin(), view.end());
-	}
+		output.maybeInsertAll(cuboid);
 	return output;
 }
 bool CuboidSet::isAdjacent(const Cuboid& cuboid) const
@@ -161,20 +143,19 @@ void from_json(const Json& data, CuboidSet& cuboidSet)
 		cuboidSet.add(cuboid);
 	}
 }
-CuboidSetConstIterator::CuboidSetConstIterator(const Blocks& blocks, const CuboidSet& cuboidSet, bool end) :
-	m_blocks(blocks),
+CuboidSetConstIterator::CuboidSetConstIterator(const CuboidSet& cuboidSet, bool end) :
 	m_cuboidSet(cuboidSet),
 	m_outerIter(end ? m_cuboidSet.m_cuboids.end() : cuboidSet.m_cuboids.begin()),
-	m_innerIter(end ? m_cuboidSet.m_cuboids.end()->end(blocks) : m_outerIter->begin(m_blocks))
+	m_innerIter(end ? m_cuboidSet.m_cuboids.end()->end() : m_outerIter->begin())
 { }
 CuboidSetConstIterator& CuboidSetConstIterator::operator++()
 {
 	++m_innerIter;
-	if(m_innerIter == m_outerIter->end(m_blocks))
+	if(m_innerIter == m_outerIter->end())
 	{
 		++m_outerIter;
 		if(m_outerIter != m_cuboidSet.m_cuboids.end())
-			m_innerIter = m_outerIter->begin(m_blocks);
+			m_innerIter = m_outerIter->begin();
 	}
 	return *this;
 }
@@ -184,7 +165,7 @@ CuboidSetConstIterator CuboidSetConstIterator::operator++(int)
 	++(*this);
 	return output;
 }
-SmallSet<Cuboid> CuboidSetWithBoundingBoxAdjacent::removeAndReturnNoLongerAdjacentCuboids(const Blocks& blocks, const BlockIndex& block) { return removeAndReturnNoLongerAdjacentCuboids({blocks, block, block}); }
+SmallSet<Cuboid> CuboidSetWithBoundingBoxAdjacent::removeAndReturnNoLongerAdjacentCuboids(const Point3D& point) { return removeAndReturnNoLongerAdjacentCuboids({point, point}); }
 SmallSet<Cuboid> CuboidSetWithBoundingBoxAdjacent::removeAndReturnNoLongerAdjacentCuboids(const Cuboid& cuboid)
 {
 	bool changesBoundingBox = cuboid.contains(m_boundingBox.m_highest) || cuboid.contains(m_boundingBox.m_lowest);
@@ -213,7 +194,7 @@ SmallSet<Cuboid> CuboidSetWithBoundingBoxAdjacent::removeAndReturnNoLongerAdjace
 	}
 	return newlySplit;
 }
-void CuboidSetWithBoundingBoxAdjacent::addAndExtend(const Blocks& blocks, const BlockIndex& block) { return addAndExtend({blocks, block, block}); }
+void CuboidSetWithBoundingBoxAdjacent::addAndExtend(const Point3D& point) { return addAndExtend({point, point}); }
 void CuboidSetWithBoundingBoxAdjacent::addAndExtend(const Cuboid& cuboid)
 {
 	assert(CuboidSet::isAdjacent(cuboid));

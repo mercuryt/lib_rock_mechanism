@@ -2,30 +2,30 @@
 #include "fluidGroup.h"
 #include "../area/area.h"
 #include "../config.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "numericTypes/types.h"
 #include <algorithm>
-void DrainQueue::buildFor(SmallSet<BlockIndex>& members)
+void DrainQueue::buildFor(SmallSet<Point3D>& members)
 {
 	m_set = members;
-	for(BlockIndex block : members)
-		m_queue.emplace_back(block);
+	for(Point3D point : members)
+		m_queue.emplace_back(point);
 }
 void DrainQueue::initalizeForStep(Area& area, FluidGroup& fluidGroup)
 {
-	Blocks& blocks = area.getBlocks();
-	for(FutureFlowBlock& futureFlowBlock : m_queue)
+	Space& space =  area.getSpace();
+	for(FutureFlowPoint& futureFlowPoint : m_queue)
 	{
-		assert((blocks.fluid_contains(futureFlowBlock.block, fluidGroup.m_fluidType)));
-		assert(blocks.fluid_getTotalVolume(futureFlowBlock.block) <= Config::maxBlockVolume);
-		futureFlowBlock.delta = CollisionVolume::create(0);
-		futureFlowBlock.capacity = blocks.fluid_volumeOfTypeContains(futureFlowBlock.block, fluidGroup.m_fluidType);
+		assert((space.fluid_contains(futureFlowPoint.point, fluidGroup.m_fluidType)));
+		assert(space.fluid_getTotalVolume(futureFlowPoint.point) <= Config::maxPointVolume);
+		futureFlowPoint.delta = CollisionVolume::create(0);
+		futureFlowPoint.capacity = space.fluid_volumeOfTypeContains(futureFlowPoint.point, fluidGroup.m_fluidType);
 	}
-	std::ranges::sort(m_queue.begin(), m_queue.end(), [&](FutureFlowBlock& a, FutureFlowBlock& b){
-		return getPriority(area, a) > getPriority(area, b);
+	std::ranges::sort(m_queue.begin(), m_queue.end(), [&](FutureFlowPoint& a, FutureFlowPoint& b){
+		return getPriority(a) > getPriority(b);
 	});
 	m_groupStart = m_queue.begin();
-	findGroupEnd(area);
+	findGroupEnd();
 	m_futureEmpty.clear();
 	m_futureNoLongerFull.clear();
 	m_futurePotentialNoLongerAdjacent.clear();
@@ -37,79 +37,78 @@ void DrainQueue::recordDelta(Area& area, const CollisionVolume& volume, const Co
 	assert((m_groupStart->capacity >= volume));
 	assert((m_groupStart >= m_queue.begin() && m_groupStart <= m_queue.end()));
 	assert((m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end()));
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	// Record no longer full.
-	if(blocks.fluid_getTotalVolume(m_groupStart->block) == Config::maxBlockVolume && !m_futureNoLongerFull.contains((m_groupEnd-1)->block))
+	if(space.fluid_getTotalVolume(m_groupStart->point) == Config::maxPointVolume && !m_futureNoLongerFull.contains((m_groupEnd-1)->point))
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 			//TODO: is this maybe correct? Why would they already be added?
-			m_futureNoLongerFull.maybeInsert(iter->block);
+			m_futureNoLongerFull.maybeInsert(iter->point);
 	// Record fluid level changes.
 	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 	{
 		iter->delta += volume;
-		assert(iter->delta <= Config::maxBlockVolume);
+		assert(iter->delta <= Config::maxPointVolume);
 		iter->capacity -= volume;
 	}
-	// Record empty blocks and get next group.
+	// Record empty space and get next group.
 	if(volume == flowCapacity)
 	{
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
-			m_futureEmpty.insert(iter->block);
+			m_futureEmpty.insert(iter->point);
 		m_groupStart = m_groupEnd;
-		findGroupEnd(area);
+		findGroupEnd();
 	}
 	// Expand group for new higher level.
 	else if(volume == flowTillNextStep)
-		findGroupEnd(area);
+		findGroupEnd();
 }
 void DrainQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 {
 	assert((m_groupStart >= m_queue.begin() && m_groupStart <= m_queue.end()));
 	assert((m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end()));
-	SmallSet<BlockIndex> drainedFromAndAdjacent;
-	Blocks& blocks = area.getBlocks();
+	SmallSet<Point3D> drainedFromAndAdjacent;
+	Space& space =  area.getSpace();
 	for(auto iter = m_queue.begin(); iter != m_groupEnd; ++iter)
 	{
 		if(iter->delta == 0)
 			continue;
-		assert(blocks.fluid_contains(iter->block, fluidGroup.m_fluidType));
-		assert(blocks.fluid_volumeOfTypeContains(iter->block, fluidGroup.m_fluidType) >= iter->delta);
-		assert(iter->block.exists());
+		assert(space.fluid_contains(iter->point, fluidGroup.m_fluidType));
+		assert(space.fluid_volumeOfTypeContains(iter->point, fluidGroup.m_fluidType) >= iter->delta);
+		assert(iter->point.exists());
 		assert(iter->delta.exists());
-		assert(blocks.fluid_getTotalVolume(iter->block) >= iter->delta);
-		blocks.fluid_drainInternal(iter->block, iter->delta, fluidGroup.m_fluidType);
-		// Record blocks to set fluid groups unstable.
-		drainedFromAndAdjacent.maybeInsert(iter->block);
-		for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(iter->block))
-			if(blocks.fluid_canEnterEver(adjacent))
+		assert(space.fluid_getTotalVolume(iter->point) >= iter->delta);
+		space.fluid_drainInternal(iter->point, iter->delta, fluidGroup.m_fluidType);
+		// Record space to set fluid groups unstable.
+		drainedFromAndAdjacent.maybeInsert(iter->point);
+		for(const Point3D& adjacent : space.getDirectlyAdjacent(iter->point))
+			if(space.fluid_canEnterEver(adjacent))
 				drainedFromAndAdjacent.maybeInsert(adjacent);
 	}
 	// Set fluidGroups unstable.
 	// TODO: Would it be better to prevent fluid groups from becoming stable while in contact with another group? Either option seems bad.
-	for(BlockIndex block : drainedFromAndAdjacent)
-		blocks.fluid_setAllUnstableExcept(block, fluidGroup.m_fluidType);
+	for(Point3D point : drainedFromAndAdjacent)
+		space.fluid_setAllUnstableExcept(point, fluidGroup.m_fluidType);
 }
 CollisionVolume DrainQueue::groupLevel(Area& area, FluidGroup& fluidGroup) const
 {
 	assert((m_groupStart != m_groupEnd));
-	Blocks& blocks = area.getBlocks();
-	return blocks.fluid_volumeOfTypeContains(m_groupStart->block, fluidGroup.m_fluidType) - m_groupStart->delta;
+	Space& space =  area.getSpace();
+	return space.fluid_volumeOfTypeContains(m_groupStart->point, fluidGroup.m_fluidType) - m_groupStart->delta;
 }
-uint32_t DrainQueue::getPriority(Area& area, FutureFlowBlock& futureFlowBlock) const
+uint32_t DrainQueue::getPriority(FutureFlowPoint& futureFlowPoint) const
 {
-	Blocks& blocks = area.getBlocks();
 	//TODO: What is happening here?
-	return blocks.getZ(futureFlowBlock.block).get() * Config::maxBlockVolume.get() * 2 + futureFlowBlock.capacity.get();
+	return futureFlowPoint.point.z().get() * Config::maxPointVolume.get() * 2 + futureFlowPoint.capacity.get();
 }
-void DrainQueue::findGroupEnd(Area& area)
+void DrainQueue::findGroupEnd()
 {
 	if(m_groupStart == m_queue.end())
 	{
 		m_groupEnd = m_groupStart;
 		return;
 	}
-	uint32_t priority = getPriority(area, *m_groupStart);
+	uint32_t priority = getPriority(*m_groupStart);
 	for(m_groupEnd = m_groupStart + 1; m_groupEnd != m_queue.end(); ++m_groupEnd)
-		if(getPriority(area, *m_groupEnd) != priority)
+		if(getPriority(*m_groupEnd) != priority)
 			break;
 }

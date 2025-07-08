@@ -1,6 +1,6 @@
 #include "installItem.h"
 #include "../area/area.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../actors/actors.h"
 #include "../plants.h"
 #include "../items/items.h"
@@ -38,15 +38,15 @@ FindPathResult InstallItemPathRequest::readStep(Area& area, const TerrainFacade&
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	auto destinationCondition = [&, actorIndex](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
+	auto destinationCondition = [&, actorIndex](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
 	{
 		FactionId faction = actors.getFaction(actorIndex);
-		return {area.m_hasInstallItemDesignations.getForFaction(faction).contains(block), block};
+		return {area.m_hasInstallItemDesignations.getForFaction(faction).contains(point), point};
 	};
 	constexpr bool adjacent = true;
-	constexpr bool useAnyBlock = true;
-	const BlockIndex& huristicDestination = m_installItemObjective.m_project->getLocation();
-	return terrainFacade.findPathToConditionDepthFirst<useAnyBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, huristicDestination, m_installItemObjective.m_detour, adjacent);
+	constexpr bool useAnyPoint = true;
+	const Point3D& huristicDestination = m_installItemObjective.m_project->getLocation();
+	return terrainFacade.findPathToConditionDepthFirst<useAnyPoint, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, huristicDestination, m_installItemObjective.m_detour, adjacent);
 }
 void InstallItemPathRequest::writeStep(Area& area, FindPathResult& result)
 {
@@ -56,13 +56,13 @@ void InstallItemPathRequest::writeStep(Area& area, FindPathResult& result)
 		actors.objective_canNotCompleteObjective(actorIndex, m_installItemObjective);
 	else
 	{
-		BlockIndex block = result.blockThatPassedPredicate;
+		Point3D point = result.pointThatPassedPredicate;
 		auto& hasInstallItemDesignations = area.m_hasInstallItemDesignations.getForFaction(actors.getFaction(actorIndex));
-		if(!hasInstallItemDesignations.contains(block) || !hasInstallItemDesignations.getForBlock(block).canAddWorker(actorIndex))
+		if(!hasInstallItemDesignations.contains(point) || !hasInstallItemDesignations.getForPoint(point).canAddWorker(actorIndex))
 			// Canceled or reserved, try again.
 			m_installItemObjective.execute(area, actorIndex);
 		else
-			hasInstallItemDesignations.getForBlock(block).addWorkerCandidate(actorIndex, m_installItemObjective);
+			hasInstallItemDesignations.getForPoint(point).addWorkerCandidate(actorIndex, m_installItemObjective);
 	}
 
 }

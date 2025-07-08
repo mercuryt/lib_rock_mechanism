@@ -20,7 +20,7 @@ TEST_CASE("combat")
 	MaterialTypeId marble = MaterialType::byName("marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);

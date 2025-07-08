@@ -35,7 +35,7 @@ Mass Actors::equipment_getMass(const ActorIndex& index) const
 {
 	return m_equipmentSet[index]->getMass();
 }
-ItemIndex Actors::equipment_getWeaponToAttackAtRange(const ActorIndex& index, const DistanceInBlocksFractional& range) const
+ItemIndex Actors::equipment_getWeaponToAttackAtRange(const ActorIndex& index, const DistanceFractional& range) const
 {
 	return m_equipmentSet[index]->getWeaponToAttackAtRange(m_area, range);
 }

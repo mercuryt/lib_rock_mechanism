@@ -23,7 +23,7 @@ TEST_CASE("basicNeedsSentient")
 	FactionId faction = simulation.createFaction("Tower Of Power");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
@@ -185,7 +185,7 @@ TEST_CASE("basicNeedsNonsentient")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	Plants& plants = area.getPlants();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
@@ -356,7 +356,7 @@ TEST_CASE("actorGrowth")
 	FactionId faction = simulation.createFaction("Tower Of Power");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
@@ -410,7 +410,7 @@ TEST_CASE("death")
 	Simulation simulation("", step);
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName("marble"));
 	Actors& actors = area.getActors();
@@ -474,7 +474,7 @@ TEST_CASE("death-temperature")
 	Simulation simulation("", step);
 	Area& area = simulation.m_hasAreas->createArea(6,6,6);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName("marble"));
 	Actors& actors = area.getActors();

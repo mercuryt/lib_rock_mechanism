@@ -33,13 +33,13 @@ class Fire final
 public:
 	TemperatureSource m_temperatureSource;
 	HasScheduledEvent<FireEvent> m_event;
-	BlockIndex m_location;
-	MaterialTypeId m_materialType;
+	Point3D m_location;
+	MaterialTypeId m_solid;
 	FireStage m_stage;
 	bool m_hasPeaked;
 
 	// Default arguments are used when creating a fire normally, custom values are for deserializing or dramatic use.
-	Fire(Area& a, const BlockIndex& l, const MaterialTypeId& mt, bool hasPeaked = false, const FireStage stage = FireStage::Smouldering, const Step start = Step::null());
+	Fire(Area& a, const Point3D& l, const MaterialTypeId& mt, bool hasPeaked = false, const FireStage stage = FireStage::Smouldering, const Step start = Step::null());
 	[[nodiscard]] bool operator==(const Fire& fire) const { return &fire == this; }
 };
 class AreaHasFires final
@@ -47,18 +47,18 @@ class AreaHasFires final
 	Area& m_area;
 	// Outer map is hash because there are potentailly a large number of fires.
 	// TODO: Swap to boost unordered map.
-	std::unordered_map<BlockIndex, SmallMapStable<MaterialTypeId, Fire>, BlockIndex::Hash> m_fires;
+	std::unordered_map<Point3D, SmallMapStable<MaterialTypeId, Fire>, Point3D::Hash> m_fires;
 public:
 	AreaHasFires(Area& a) : m_area(a) { }
-	void ignite(const BlockIndex& block, const MaterialTypeId& materialType);
+	void ignite(const Point3D& point, const MaterialTypeId& materialType);
 	void extinguish(Fire& fire);
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] Fire& at(const BlockIndex& block, const MaterialTypeId& materialType);
-	[[nodiscard]] bool contains(const BlockIndex& block, const MaterialTypeId& materialType);
+	[[nodiscard]] Fire& at(const Point3D& point, const MaterialTypeId& materialType);
+	[[nodiscard]] bool contains(const Point3D& point, const MaterialTypeId& materialType);
 	[[nodiscard]] Json toJson() const;
 	// For testing.
-	[[maybe_unused, nodiscard]] bool containsFireAt(Fire& fire, const BlockIndex& block) const
+	[[maybe_unused, nodiscard]] bool containsFireAt(Fire& fire, const Point3D& point) const
 	{
-		return m_fires.at(block).contains(fire.m_materialType);
+		return m_fires.at(point).contains(fire.m_solid);
 	}
 };

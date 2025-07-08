@@ -9,6 +9,7 @@
 #include "dishonorCallback.h"
 #include "dataStructures/smallSet.h"
 #include "dataStructures/smallMap.h"
+#include "geometry/point3D.h"
 #include <algorithm>
 #include <sys/types.h>
 #include <cassert>
@@ -20,16 +21,16 @@
 struct Faction;
 class Reservable;
 class Area;
-class Blocks;
+class Space;
 struct DeserializationMemo;
 // Reservable holds all the data during runtime, but CanReserve is responsible for (de)serialization.
 class CanReserve final
 {
-	// TODO: Store reservables in two maps, one for blocks and one for ActorOrItem.
+	// TODO: Store reservables in two maps, one for space and one for ActorOrItem.
 	FactionId m_faction;
 	// TODO: make this a SmallSet
 	std::vector<Reservable*> m_reservables;
-	SmallMap<BlockIndex, Reservable*> m_blocks;
+	SmallMap<Point3D, Reservable*> m_points;
 	friend class Reservable;
 public:
 	CanReserve(FactionId f) : m_faction(f) { }
@@ -38,18 +39,19 @@ public:
 	void deleteAllWithoutCallback();
 	void setFaction(FactionId faction);
 	// Returns true if all new positions could be reserved.
-	[[nodiscard]] bool translateAndReservePositions(Blocks& blocks, SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>>&& previouslyReserved, const BlockIndex& previousLocation, const BlockIndex& newLocation, const Facing4& previousFacing, const Facing4& newFacing);
-	void recordReservedBlock(const BlockIndex& block, Reservable* reservable);
-	void eraseReservedBlock(const BlockIndex& block);
-	void deleteAllBlockReservationsWithoutCallback();
+	[[nodiscard]] bool translateAndReservePositions(Space& space, SmallMap<Point3D, std::unique_ptr<DishonorCallback>>&& previouslyReserved, const Point3D& previousLocation, const Point3D& newLocation, const Facing4& previousFacing, const Facing4& newFacing);
+	void recordReservedPoint(const Point3D& point, Reservable* reservable);
+	void eraseReservedPoint(const Point3D& point);
+	void deleteAllPointReservationsWithoutCallback();
 	template<typename Condition>
-	[[nodiscard]] SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>> unreserveAndReturnBlocksAndCallbacksWithCondition(Condition&& condition);
+	[[nodiscard]] SmallMap<Point3D, std::unique_ptr<DishonorCallback>> unreserveAndReturnPointsAndCallbacksWithCondition(Condition&& condition);
 	[[nodiscard]] bool hasReservationWith(Reservable& reservable) const;
 	[[nodiscard]] bool hasReservations() const;
+	[[nodiscard]] FactionId getFaction() const { return m_faction; }
 	~CanReserve();
 	CanReserve(CanReserve& reservable) = delete;
 };
-// TODO: A specalized reservable for block without count.
+// TODO: A specalized reservable for point without count.
 class Reservable final
 {
 	SmallMap<CanReserve*, Quantity> m_canReserves;

@@ -2,7 +2,7 @@
 #include "designations.h"
 #include "area/area.h"
 #include "actors/actors.h"
-#include "blockFeature.h"
+#include "pointFeature.h"
 #include "deserializationMemo.h"
 #include "deserializeDishonorCallbacks.h"
 #include "path/pathRequest.h"
@@ -20,11 +20,11 @@
 #include <memory>
 #include <sys/types.h>
 DigProject::DigProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : Project(data, deserializationMemo, area),
-	m_blockFeatureType(data["blockFeatureType"].get<BlockFeatureTypeId>()) { }
+	m_pointFeatureType(data["pointFeatureType"].get<PointFeatureTypeId>()) { }
 Json DigProject::toJson() const
 {
 	Json data = Project::toJson();
-	data["blockFeatureType"] = m_blockFeatureType;
+	data["pointFeatureType"] = m_pointFeatureType;
 	return data;
 }
 std::vector<std::pair<ItemQuery, Quantity>> DigProject::getConsumed() const { return {}; }
@@ -38,15 +38,15 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> DigProject::getByp
 {
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> output;
 	Random& random = m_area.m_simulation.m_random;
-	auto& blocks = m_area.getBlocks();
-	MaterialTypeId materialType = blocks.solid_is(m_location) ? blocks.solid_get(m_location) : blocks.blockFeature_getMaterialType(m_location);
+	auto& space = m_area.getSpace();
+	MaterialTypeId materialType = space.solid_is(m_location) ? space.solid_get(m_location) : space.pointFeature_getMaterialType(m_location);
 	if(materialType.exists())
 	{
 		for(SpoilsDataTypeId spoilDataId : MaterialType::getSpoilData(materialType))
 		{
 			if(!random.percentChance(SpoilData::getChance(spoilDataId)))
 				continue;
-			//TODO: reduce yield for block features.
+			//TODO: reduce yield for point features.
 			Quantity quantity = Quantity::create(random.getInRange(SpoilData::getMin(spoilDataId).get(), SpoilData::getMax(spoilDataId).get()));
 			output.emplace_back(SpoilData::getItemType(spoilDataId), SpoilData::getMaterialType(spoilDataId), quantity);
 		}
@@ -64,18 +64,18 @@ uint32_t DigProject::getWorkerDigScore(Area& area, ActorIndex actor)
 }
 void DigProject::onComplete()
 {
-	auto& blocks = m_area.getBlocks();
-	if(!blocks.solid_is(m_location))
+	auto& space = m_area.getSpace();
+	if(!space.solid_is(m_location))
 	{
-		assert(m_blockFeatureType == BlockFeatureTypeId::Null);
-		blocks.blockFeature_removeAll(m_location);
+		assert(m_pointFeatureType == PointFeatureTypeId::Null);
+		space.pointFeature_removeAll(m_location);
 	}
 	else
 	{
-		if(m_blockFeatureType == BlockFeatureTypeId::Null)
-			blocks.solid_setNot(m_location);
+		if(m_pointFeatureType == PointFeatureTypeId::Null)
+			space.solid_setNot(m_location);
 		else
-			blocks.blockFeature_hew(m_location, m_blockFeatureType);
+			space.pointFeature_hew(m_location, m_pointFeatureType);
 	}
 	// Remove designations for other factions as well as owning faction.
 	auto workers = std::move(m_workers);
@@ -100,11 +100,11 @@ void DigProject::onCancel()
 }
 void DigProject::onDelay()
 {
-	m_area.m_blockDesignations.getForFaction(m_faction).maybeUnset(m_location, BlockDesignation::Dig);
+	m_area.m_spaceDesignations.getForFaction(m_faction).maybeUnset(m_location, SpaceDesignation::Dig);
 }
 void DigProject::offDelay()
 {
-	m_area.m_blockDesignations.getForFaction(m_faction).set(m_location, BlockDesignation::Dig);
+	m_area.m_spaceDesignations.getForFaction(m_faction).set(m_location, SpaceDesignation::Dig);
 }
 // What would the total delay time be if we started from scratch now with current workers?
 Step DigProject::getDuration() const
@@ -118,7 +118,7 @@ Step DigProject::getDuration() const
 DigLocationDishonorCallback::DigLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_faction(data["faction"].get<FactionId>()),
 	m_area(deserializationMemo.area(data["area"])),
-	m_location(data["location"].get<BlockIndex>()) { }
+	m_location(data["location"].get<Point3D>()) { }
 Json DigLocationDishonorCallback::toJson() const { return Json({{"type", "DigLocationDishonorCallback"}, {"faction", m_faction}, {"location", m_location}, {"area", m_area}}); }
 void DigLocationDishonorCallback::execute([[maybe_unused]] const Quantity& oldCount, [[maybe_unused]] const Quantity& newCount)
 {

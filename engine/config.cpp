@@ -22,7 +22,7 @@ void Config::load()
 	attackCoolDownDurationBaseSteps = Step::create(data["attackCoolDownDurationBaseSeconds"].get<float>() * stepsPerSecond.get());
 	data["attackSkillCombatModifier"].get_to(attackSkillCombatModifier);
 	data["averageItemQuality"].get_to(averageItemQuality);
-	data["averageLandHeightBlocks"].get_to(averageLandHeightBlocks);
+	data["averageLandHeight"].get_to(averageLandHeight);
 	data["averageNumberOfRiversPerCandidate"].get_to(averageNumberOfRiversPerCandidate);
 	baseHealDelaySteps = Step::create(data["baseHealDelaySeconds"].get<float>() * stepsPerSecond.get());
 	data["baseMoveCost"].get_to(baseMoveCost);
@@ -30,7 +30,7 @@ void Config::load()
 	bleedPassOutDuration = Step::create(data["bleedPassOutDurationSeconds"].get<float>() * stepsPerSecond.get());
 	data["bleedToDeathRatio"].get_to(bleedToDeathRatio);
 	data["bleedToUnconciousessRatio"].get_to(bleedToUnconciousessRatio);
-	data["blocksPerMeter"].get_to(blocksPerMeter);
+	data["pointsPerMeter"].get_to(pointsPerMeter);
 	data["bludgeonBleedVoumeRateModifier"].get_to(bludgeonBleedVoumeRateModifier);
 	data["bludgeonPercentPermanantImparmentModifier"].get_to(bludgeonPercentPermanantImparmentModifier);
 	data["bludgeonPercentTemporaryImparmentModifier"].get_to(bludgeonPercentTemporaryImparmentModifier);
@@ -95,8 +95,8 @@ void Config::load()
 	loadDelaySteps = Step::create(data["loadDelaySeconds"].get<float>() * stepsPerSecond.get());
 	data["massCarryMaximimMovementRatio"].get_to(massCarryMaximimMovementRatio);
 	data["maxAnimalInsertLocationSearchRetries"].get_to(maxAnimalInsertLocationSearchRetries);
-	data["maxBlockVolume"].get_to(maxBlockVolume);
-	data["maxBlocksToLookForBetterFood"].get_to(maxBlocksToLookForBetterFood);
+	data["maxPointVolume"].get_to(maxPointVolume);
+	data["maxPointsToLookForBetterFood"].get_to(maxPointsToLookForBetterFood);
 	data["maxDistanceToLookForEatingLocation"].get_to(maxDistanceToLookForEatingLocation);
 	data["maxDistanceVisionModifier"].get_to(maxDistanceVisionModifier);
 	data["maxNumberOfWorkersForConstructionProject"].get_to(maxNumberOfWorkersForConstructionProject);
@@ -130,14 +130,14 @@ void Config::load()
 	data["minimumPercentFoliageForGrow"].get_to(minimumPercentFoliageForGrow);
 	data["minimumPercentGrowthForWoodCutting"].get_to(minimumPercentGrowthForWoodCutting);
 	data["minimumRainIntensityModifier"].get_to(minimumRainIntensityModifier);
-	data["minBlockStaticVolumeToSlowMovement"].get_to(minBlockStaticVolumeToSlowMovement);
+	data["minPointStaticVolumeToSlowMovement"].get_to(minPointStaticVolumeToSlowMovement);
 	minimumStepsBetweenRainPerPercentHumidity = Step::create(data["minimumDaysBetweenRainPerPercentHumidity"].get<float>() * stepsPerDay.get());
 	data["minimumSizeForOctTreeToSplit"].get_to(minimumSizeForOctTreeToSplit);
 	data["minimumOccupantsForOctTreeToSplit"].get_to(minimumOccupantsForOctTreeToSplit);
 	data["minimumOccupantsForOctTreeToUnsplit"].get_to(maximumOccupantsForOctTreeToMerge);
 	minimumStepsRainPerPercentHumidity = Step::create(data["minimumSecondsRainPerPercentHumidity"].get<float>() * stepsPerSecond.get());
 	data["minimumVolumeOfFluidToBreath"].get_to(minimumVolumeOfFluidToBreath);
-	data["minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests"].get_to(minimumSizeOfGroupOfMovingBlocksWhichSkipLineOfSightChecksForMakingVisionRequests);
+	data["minimumSizeOfGroupOfMovingPointsWhichSkipLineOfSightChecksForMakingVisionRequests"].get_to(minimumSizeOfGroupOfMovingPointsWhichSkipLineOfSightChecksForMakingVisionRequests);
 	data["moveTryAttemptsBeforeDetour"].get_to(moveTryAttemptsBeforeDetour);
 	data["modifierToTurnMassTimesFallDistanceIntoForce"].get_to(modifierToTurnMassTimesFallDistanceIntoForce);
 	data["musclePierceForceCost"].get_to(musclePierceForceCost);
@@ -182,7 +182,7 @@ void Config::load()
 	data["rateModifierForEvaporationPerDegreeTemperature"].get_to(rateModifierForEvaporationPerDegreeTemperature);
 	data["ratioOfHitAreaToBodyPartVolumeForSever"].get_to(ratioOfHitAreaToBodyPartVolumeForSever);
 	data["ratioOfTotalBodyVolumeWhichIsBlood"].get_to(ratioOfTotalBodyVolumeWhichIsBlood);
-	data["ratioOfVisionCuboidSlotsToReservePerBlock"].get_to(ratioOfVisionCuboidSlotsToReservePerBlock);
+	data["ratioOfVisionCuboidSlotsToReservePerPoint"].get_to(ratioOfVisionCuboidSlotsToReservePerPoint);
 	ratioWoundsCloseDelayToBleedVolume = data["ratioWoundsCloseDelayToBleedVolumeSeconds"].get<float>() * stepsPerSecond.get();
 	restIntervalSteps = Step::create(data["restIntervalSeconds"].get<uint32_t>() * stepsPerSecond.get());
 	data["reserveSizeVisionCuboidAdjacent"].get_to(reserveSizeVisionCuboidAdjacent);
@@ -220,8 +220,8 @@ void Config::load()
 	data["vehicleMassToCarryMassModifier"].get_to(vehicleMassToCarryMassModifier);
 	data["visionRequestsReservationSize"].get_to(visionRequestsReservationSize);
 	data["visionThreadingBatchSize"].get_to(visionThreadingBatchSize);
-	data["wanderMaximumNumberOfBlocks"].get_to(wanderMaximumNumberOfBlocks);
-	data["wanderMinimumNumberOfBlocks"].get_to(wanderMinimimNumberOfBlocks);
+	data["wanderMaximumNumberOfPoints"].get_to(wanderMaximumNumberOfPoints);
+	data["wanderMinimumNumberOfPoints"].get_to(wanderMinimimNumberOfPoints);
 	woodCuttingMaxSteps = Step::create(data["woodCuttingMaxMinutes"].get<float>() * stepsPerMinute.get());
 	data["woodCuttingObjectivePriority"].get_to(woodCuttingObjectivePriority);
 	data["woodCuttingSkillModifier"].get_to(woodCuttingSkillModifier);

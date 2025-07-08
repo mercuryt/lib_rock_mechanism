@@ -23,7 +23,7 @@ AttackTypeId AttackType::byName(std::string name)
 std::string AttackType::getName(const AttackTypeId& id) { return attackTypeData.m_name[id]; };
 uint32_t AttackType::getArea(const AttackTypeId& id) { return attackTypeData.m_area[id]; };
 Force AttackType::getBaseForce(const AttackTypeId& id) { return attackTypeData.m_baseForce[id]; };
-DistanceInBlocksFractional AttackType::getRange(const AttackTypeId& id) { return attackTypeData.m_range[id]; };
+DistanceFractional AttackType::getRange(const AttackTypeId& id) { return attackTypeData.m_range[id]; };
 CombatScore AttackType::getCombatScore(const AttackTypeId& id) { return attackTypeData.m_combatScore[id]; };
 Step AttackType::getCoolDown(const AttackTypeId& id) { return attackTypeData.m_coolDown[id]; };
 bool AttackType::getProjectile(const AttackTypeId& id) { return attackTypeData.m_projectile[id]; };

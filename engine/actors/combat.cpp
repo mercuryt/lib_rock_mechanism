@@ -72,7 +72,7 @@ void Actors::combat_attackLongRange(const ActorIndex& index, const ActorIndex& t
 CombatScore Actors::combat_getCurrentMeleeCombatScore(const ActorIndex& index)
 {
 	FactionId faction = getFaction(index);
-	uint32_t blocksContainingNonAllies = 0;
+	uint32_t pointsContainingNonAllies = 0;
 	// Apply bonuses and penalties based on relative locations.
 	CombatScore output = m_combatScore[index];
 	for(const ActorIndex& adjacent : getAdjacentActors(index))
@@ -92,14 +92,14 @@ CombatScore Actors::combat_getCurrentMeleeCombatScore(const ActorIndex& index)
 			if(highestAllyCombatScore != 0)
 				continue;
 			else
-				++blocksContainingNonAllies;
+				++pointsContainingNonAllies;
 		}
 		else
 			output += highestAllyCombatScore;
 	}
-	if(blocksContainingNonAllies > 1)
+	if(pointsContainingNonAllies > 1)
 	{
-		float flankingModifier =  1 + (blocksContainingNonAllies - 1) * Config::flankingModifier;
+		float flankingModifier =  1 + (pointsContainingNonAllies - 1) * Config::flankingModifier;
 		output /= flankingModifier;
 	}
 	return output;
@@ -108,19 +108,19 @@ void Actors::combat_coolDownCompleted(const ActorIndex& index)
 {
 	if(m_target[index].empty())
 		return;
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	//TODO: Move line of sight check to threaded task?
 	const ActorIndex& target = m_target[index];
-	BlockIndex location = m_location[index];
-	BlockIndex targetLocation = m_location[target];
-	if(blocks.distanceFractional(location, targetLocation) <= m_maxMeleeRange[index] && blocks.hasLineOfSightTo(location, targetLocation))
+	Point3D location = m_location[index];
+	Point3D targetLocation = m_location[target];
+	if(location.distanceToFractional(targetLocation) <= m_maxMeleeRange[index] && space.hasLineOfSightTo(location, targetLocation))
 		combat_attackMeleeRange(index, m_target[index]);
 }
 void Actors::combat_update(const ActorIndex& index)
 {
 	m_combatScore[index] = CombatScore::create(0);
-	m_maxMeleeRange[index] = DistanceInBlocksFractional::create(0.f);
-	m_maxRange[index] = DistanceInBlocksFractional::create(0.f);
+	m_maxMeleeRange[index] = DistanceFractional::create(0.f);
+	m_maxRange[index] = DistanceFractional::create(0.f);
 	// Collect attacks and combat scores from body and equipment.
 	m_meleeAttackTable[index].clear();
 	Body& body = *m_body[index].get();
@@ -136,7 +136,7 @@ void Actors::combat_update(const ActorIndex& index)
 	{
 		pair.first += m_combatScore[index];
 		m_combatScore[index] = pair.first;
-		DistanceInBlocksFractional range = AttackType::getRange(pair.second.attackType);
+		DistanceFractional range = AttackType::getRange(pair.second.attackType);
 		if(range > m_maxMeleeRange[index])
 			m_maxMeleeRange[index] = range;
 	}
@@ -210,16 +210,16 @@ void Actors::combat_removeTargetedBy(const ActorIndex& index, const ActorIndex& 
 	assert(m_targetedBy[index].contains(actor));
 	m_targetedBy[index].erase(actor);
 }
-void Actors::combat_onMoveFrom(const ActorIndex& index, const BlockIndex& previous)
+void Actors::combat_onMoveFrom(const ActorIndex& index, const Point3D& previous)
 {
 	// Notify all targeting actors of move so they may reroute.
 	for(const ActorIndex& actor : m_targetedBy[index])
 		combat_onTargetMoved(actor);
 	// Give all directly adjacent enemies a free hit against this actor.
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	FactionId faction = m_faction[index];
-	for(const BlockIndex& block : blocks.getDirectlyAdjacent(previous))
-		for(const ActorIndex& adjacent : blocks.actor_getAll(block))
+	for(const Point3D& point : space.getDirectlyAdjacent(previous))
+		for(const ActorIndex& adjacent : space.actor_getAll(point))
 		{
 			FactionId otherFaction = m_faction[adjacent];
 			if(m_area.m_simulation.m_hasFactions.isEnemy(faction, otherFaction))
@@ -260,15 +260,14 @@ void Actors::combat_freeHit(const ActorIndex& index, const ActorIndex& actor)
 	m_coolDownEvent.maybeUnschedule(index);
 	combat_attackMeleeRange(index, actor);
 }
-void Actors::combat_getIntoRangeAndLineOfSightOfActor(const ActorIndex& index, const ActorIndex& target, const DistanceInBlocksFractional& range)
+void Actors::combat_getIntoRangeAndLineOfSightOfActor(const ActorIndex& index, const ActorIndex& target, const DistanceFractional& range)
 {
 	move_pathRequestRecord(index, std::make_unique<GetIntoAttackPositionPathRequest>(m_area, index, target, range));
 }
 bool Actors::combat_isOnCoolDown(const ActorIndex& index) const { return m_coolDownEvent.exists(index); }
 bool Actors::combat_inRange(const ActorIndex& index, const ActorIndex& target) const
 {
-	Blocks& blocks = m_area.getBlocks();
-       	return blocks.distanceFractional(m_location[index], m_location[target]) <= m_maxRange[index];
+	return m_location[index].distanceToFractional(m_location[target]) <= m_maxRange[index];
 }
 Percent Actors::combat_projectileHitPercent(const ActorIndex& index, const Attack& attack, const ActorIndex& target) const
 {
@@ -296,15 +295,15 @@ float Actors::combat_getQualityModifier(const ActorIndex&, const Quality& qualit
 	int32_t adjusted = (int32_t)quality.get() - (int32_t)Config::averageItemQuality.get();
 	return 1.f + (adjusted * Config::itemQualityCombatModifier);
 }
-bool Actors::combat_blockIsValidPosition(const ActorIndex& index, const BlockIndex& block, const DistanceInBlocksFractional& attackRangeSquared) const
+bool Actors::combat_positionIsValid(const ActorIndex& index, const Point3D& point, const DistanceFractional& attackRangeSquared) const
 {
-	if(getBlocks(m_target[index]).contains(block))
+	if(getOccupied(m_target[index]).contains(point))
 		return true;
-	Blocks& blocks = m_area.getBlocks();
-	BlockIndex targetLocation = m_location[m_target[index]];
-	if(blocks.squareOfDistanceIsMoreThen(block, targetLocation, attackRangeSquared))
+	Space& space = m_area.getSpace();
+	Point3D targetLocation = m_location[m_target[index]];
+	if(point.squareOfDistanceIsGreaterThen(targetLocation, attackRangeSquared))
 		return false;
-	return blocks.hasLineOfSightTo(block, targetLocation);
+	return space.hasLineOfSightTo(point, targetLocation);
 }
 AttackTypeId Actors::combat_getRangedAttackType(const ActorIndex&, const ItemIndex& weapon)
 {
@@ -320,12 +319,12 @@ AttackTypeId Actors::combat_getRangedAttackType(const ActorIndex&, const ItemInd
 AttackCoolDownEvent::AttackCoolDownEvent(Area& area, const ActorIndex& actor, const Step& duration, const Step start) :
 	ScheduledEvent(area.m_simulation, duration, start), m_actor(actor) { }
 
-GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, const ActorIndex& actorIndex, const ActorIndex& targetIndex, const DistanceInBlocksFractional& ar) :
+GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, const ActorIndex& actorIndex, const ActorIndex& targetIndex, const DistanceFractional& ar) :
 	attackRangeSquared(ar * ar)
 {
 	Actors& actors = area.getActors();
 	start = actors.getLocation(actorIndex);
-	maxRange = DistanceInBlocks::max();
+	maxRange = Distance::max();
 	actor = actors.getReference(actorIndex);
 	shape = actors.getShape(actorIndex);
 	moveType = actors.getMoveType(actorIndex);
@@ -337,21 +336,21 @@ GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, c
 GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(const Json& data, Area& area) :
 	PathRequestDepthFirst(data, area),
 	target(data["target"], area.getActors().m_referenceData),
-	attackRangeSquared(data["attackRangeSquared"].get<DistanceInBlocksFractional>())
+	attackRangeSquared(data["attackRangeSquared"].get<DistanceFractional>())
 { }
 FindPathResult GetIntoAttackPositionPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo)
 {
 	Actors& actors = area.getActors();
-	auto destinationCondition = [&actors, this](const BlockIndex& location, const Facing4&) ->std::pair<bool, BlockIndex>
+	auto destinationCondition = [&actors, this](const Point3D& location, const Facing4&) ->std::pair<bool, Point3D>
 	{
-		if(actors.combat_blockIsValidPosition(actor.getIndex(actors.m_referenceData), location, attackRangeSquared))
+		if(actors.combat_positionIsValid(actor.getIndex(actors.m_referenceData), location, attackRangeSquared))
 			return std::make_pair(true, location);
-		return std::make_pair(false, BlockIndex::null());
+		return std::make_pair(false, Point3D::null());
 	};
 	// TODO: Range attack actors should use a different path priority condition to avoid getting too close.
-	constexpr bool useAnyBlock = true;
-	const BlockIndex& targetLocation = actors.getLocation(target.getIndex(actors.m_referenceData));
-	return terrainFacade.findPathToConditionDepthFirst<useAnyBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, targetLocation, detour, adjacent, faction, maxRange);
+	constexpr bool useAnyPoint = true;
+	const Point3D& targetLocation = actors.getLocation(target.getIndex(actors.m_referenceData));
+	return terrainFacade.findPathToConditionDepthFirst<useAnyPoint, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, targetLocation, detour, adjacent, faction, maxRange);
 }
 void GetIntoAttackPositionPathRequest::writeStep(Area& area, FindPathResult& result)
 {
@@ -364,7 +363,7 @@ void GetIntoAttackPositionPathRequest::writeStep(Area& area, FindPathResult& res
 			if(!actors.combat_isOnCoolDown(actorIndex))
 			{
 				const ActorIndex& targetIndex = target.getIndex(actors.m_referenceData);
-				DistanceInBlocksFractional range = actors.distanceToActorFractional(actorIndex, targetIndex);
+				DistanceFractional range = actors.distanceToActorFractional(actorIndex, targetIndex);
 				if(range <= actors.combat_getMaxMeleeRange(actorIndex))
 					// Melee range attack.
 					actors.combat_attackMeleeRange(actorIndex, targetIndex);

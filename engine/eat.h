@@ -18,7 +18,7 @@ class MustEat final
 	ActorReference m_actor;
 	EatObjective* m_eatObjective = nullptr;
 public:
-	BlockIndex m_eatingLocation;
+	Point3D m_eatingLocation;
 private:
 	Mass m_massFoodRequested = Mass::create(0);
 public:
@@ -35,9 +35,9 @@ public:
 	[[nodiscard]] Mass massFoodForBodyMass(Area& area) const;
 	[[nodiscard]] Mass getMassFoodRequested() const;
 	[[nodiscard]] Percent getPercentStarved() const;
-	[[nodiscard]] uint32_t getDesireToEatSomethingAt(Area& area, const BlockIndex& block) const;
+	[[nodiscard]] uint32_t getDesireToEatSomethingAt(Area& area, const Point3D& point) const;
 	[[nodiscard]] uint32_t getMinimumAcceptableDesire(Area& area) const;
-	[[nodiscard]] BlockIndex getAdjacentBlockWithHighestDesireFoodOfAcceptableDesireability(Area& area);
+	[[nodiscard]] Point3D getAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(Area& area);
 	[[nodiscard]] bool canEatActor(Area& area, const ActorIndex& actor) const;
 	[[nodiscard]] bool canEatPlant(Area& area, const PlantIndex& plant) const;
 	[[nodiscard]] bool canEatItem(Area& area, const ItemIndex& item) const;

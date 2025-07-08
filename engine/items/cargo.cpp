@@ -87,11 +87,11 @@ ActorOrItemIndex Items::cargo_loadPolymorphic(const ItemIndex& index, const Acto
 	else
 		return ActorOrItemIndex::createForItem(cargo_loadItem(index, actorOrItem.getItem(), quantity));
 }
-void Items::cargo_loadFluidFromLocation(const ItemIndex& index, const FluidTypeId& fluidType, const CollisionVolume& volume, const BlockIndex& location)
+void Items::cargo_loadFluidFromLocation(const ItemIndex& index, const FluidTypeId& fluidType, const CollisionVolume& volume, const Point3D& location)
 {
-	Blocks& blocks = m_area.getBlocks();
-	assert(blocks.fluid_volumeOfTypeContains(location, fluidType) >= volume);
-	blocks.fluid_remove(location, volume, fluidType);
+	Space& space = m_area.getSpace();
+	assert(space.fluid_volumeOfTypeContains(location, fluidType) >= volume);
+	space.fluid_remove(location, volume, fluidType);
 	cargo_addFluid(index, fluidType, volume);
 }
 void Items::cargo_loadFluidFromItem(const ItemIndex& index, const FluidTypeId& fluidType, const CollisionVolume& volume, const ItemIndex& item)
@@ -148,24 +148,22 @@ void Items::cargo_removeFluid(const ItemIndex& index, const CollisionVolume& vol
 	if(hasCargo.empty())
 		m_hasCargo[index] = nullptr;
 }
-void Items::cargo_unloadActorToLocation(const ItemIndex& index, const ActorIndex& actor, const BlockIndex& location)
+void Items::cargo_unloadActorToLocation(const ItemIndex& index, const ActorIndex& actor, const Point3D& location)
 {
 	assert(m_hasCargo[index]);
 	assert(cargo_containsActor(index, actor));
 	Actors& actors = m_area.getActors();
 	assert(actors.getLocation(actor).empty());
 	cargo_removeActor(index, actor);
-	Blocks& blocks = m_area.getBlocks();
-	const Facing4& facing = blocks.facingToSetWhenEnteringFrom(location, m_location[index]);
+	const Facing4& facing = m_location[index].getFacingTwords(location);
 	actors.location_set(actor, location, facing);
 }
-void Items::cargo_unloadItemToLocation(const ItemIndex& index, const ItemIndex& item, const BlockIndex& location)
+void Items::cargo_unloadItemToLocation(const ItemIndex& index, const ItemIndex& item, const Point3D& location)
 {
 	assert(cargo_containsItem(index, item));
 	assert(getLocation(item).empty());
 	cargo_removeItem(index, item);
-	Blocks& blocks = m_area.getBlocks();
-	const Facing4& facing = blocks.facingToSetWhenEnteringFrom(location, m_location[index]);
+	const Facing4& facing = m_location[index].getFacingTwords(location);
 	location_set(item, location, facing);
 }
 void Items::cargo_updateItemIndex(const ItemIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex)
@@ -176,16 +174,16 @@ void Items::cargo_updateActorIndex(const ItemIndex& index, const ActorIndex& old
 {
 	m_hasCargo[index]->m_actors.update(oldIndex, newIndex);
 }
-ItemIndex Items::cargo_unloadGenericItemToLocation(const ItemIndex& index, const ItemIndex& item, const BlockIndex& location, const Quantity& quantity)
+ItemIndex Items::cargo_unloadGenericItemToLocation(const ItemIndex& index, const ItemIndex& item, const Point3D& location, const Quantity& quantity)
 {
 	return cargo_unloadGenericItemToLocation(index, getItemType(item), getMaterialType(item), location, quantity);
 }
-ItemIndex Items::cargo_unloadGenericItemToLocation(const ItemIndex& index,const ItemTypeId& itemType,const MaterialTypeId& materialType, const BlockIndex& location, const Quantity& quantity)
+ItemIndex Items::cargo_unloadGenericItemToLocation(const ItemIndex& index,const ItemTypeId& itemType,const MaterialTypeId& materialType, const Point3D& location, const Quantity& quantity)
 {
 	cargo_removeItemGeneric(index, itemType, materialType, quantity);
-	return m_area.getBlocks().item_addGeneric(location, itemType, materialType, quantity);
+	return m_area.getSpace().item_addGeneric(location, itemType, materialType, quantity);
 }
-ActorOrItemIndex Items::cargo_unloadPolymorphicToLocation(const ItemIndex& index, const ActorOrItemIndex& actorOrItem, const BlockIndex& location, const Quantity& quantity)
+ActorOrItemIndex Items::cargo_unloadPolymorphicToLocation(const ItemIndex& index, const ActorOrItemIndex& actorOrItem, const Point3D& location, const Quantity& quantity)
 {
 	assert(actorOrItem.exists());
 	assert(actorOrItem.getLocation(m_area).empty());
@@ -206,12 +204,12 @@ ActorOrItemIndex Items::cargo_unloadPolymorphicToLocation(const ItemIndex& index
 	}
 	return actorOrItem;
 }
-void Items::cargo_unloadFluidToLocation(const ItemIndex& index, const CollisionVolume& volume, const BlockIndex& location)
+void Items::cargo_unloadFluidToLocation(const ItemIndex& index, const CollisionVolume& volume, const Point3D& location)
 {
 	assert(cargo_getFluidVolume(index) >= volume);
 	FluidTypeId fluidType = cargo_getFluidType(index);
 	cargo_removeFluid(index, volume);
-	m_area.getBlocks().fluid_add(location, volume, fluidType);
+	m_area.getSpace().fluid_add(location, volume, fluidType);
 }
 bool Items::cargo_exists(const ItemIndex& index) const { return m_hasCargo[index] != nullptr; }
 bool Items::cargo_containsActor(const ItemIndex& index, const ActorIndex& actor) const

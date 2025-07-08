@@ -1,5 +1,5 @@
 #include "widgets.h"
-#include "blockFeature.h"
+#include "pointFeature.h"
 #include "displayData.h"
 #include "../engine/simulation/simulation.h"
 #include "../engine/simulation/hasAreas.h"
@@ -81,17 +81,17 @@ Area& AreaSelectUI::get() const
 }
 bool AreaSelectUI::hasSelection() const { return !m_widget->getSelectedItemId().empty(); }
 // Plant SpeciesSelector
-tgui::ComboBox::Ptr widgetUtil::makePlantSpeciesSelectUI(Area& area, const BlockIndex& block)
+tgui::ComboBox::Ptr widgetUtil::makePlantSpeciesSelectUI(Area& area, const Point3D& point)
 {
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	output->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	output->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
 	bool selected = false;
 	output->onItemSelect([&](const tgui::String name){ lastSelectedPlantSpecies = PlantSpecies::byName(name.toWideString()); });
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	for(PlantSpeciesId id = PlantSpeciesId::create(0); id < PlantSpecies::size(); ++id)
 	{
-		if(block.exists() && !blocks.plant_canGrowHereEver(block, id))
+		if(point.exists() && !space.plant_canGrowHereEver(point, id))
 			continue;
 		std::wstring name = PlantSpecies::getName(id);
 		output->addItem(name, name);
@@ -466,24 +466,24 @@ tgui::ComboBox::Ptr widgetUtil::makeFactionSelectUI(Simulation& simulation, std:
 	}
 	return output;
 }
-// BlockFeatureTypeSelectUI
-tgui::ComboBox::Ptr widgetUtil::makeBlockFeatureTypeSelectUI()
+// PointFeatureTypeSelectUI
+tgui::ComboBox::Ptr widgetUtil::makePointFeatureTypeSelectUI()
 {
 	tgui::ComboBox::Ptr output = tgui::ComboBox::create();
 	output->setItemsToDisplay(displayData::maximumNumberOfItemsToDisplayInComboBox);
 	output->setExpandDirection(tgui::ComboBox::ExpandDirection::Automatic);
-	output->onItemSelect([](const tgui::String name){ lastSelectedBlockFeatureType = &BlockFeatureType::byName(name.toWideString()); });
+	output->onItemSelect([](const tgui::String name){ lastSelectedPointFeatureType = &PointFeatureType::byName(name.toWideString()); });
 	bool selected = false;
-	std::vector<BlockFeatureType*> types = BlockFeatureType::getAll();
-	for(const BlockFeatureType* itemType : sortByName(types))
+	std::vector<PointFeatureType*> types = PointFeatureType::getAll();
+	for(const PointFeatureType* itemType : sortByName(types))
 	{
 		output->addItem(itemType->name, itemType->name);
-		if(lastSelectedBlockFeatureType && lastSelectedBlockFeatureType == itemType)
+		if(lastSelectedPointFeatureType && lastSelectedPointFeatureType == itemType)
 		{
 			output->setSelectedItemById(itemType->name);
 			selected = true;
 		}
-		else if(!lastSelectedBlockFeatureType && !selected)
+		else if(!lastSelectedPointFeatureType && !selected)
 		{
 			output->setSelectedItemById(itemType->name);
 			selected = true;

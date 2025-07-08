@@ -6,7 +6,7 @@
 #include "../../objectives/exterminate.h"
 #include "../../actors/actors.h"
 #include "../../definitions/animalSpecies.h"
-#include "../../blocks/blocks.h"
+#include "../../space/space.h"
 #include "../../definitions/moveType.h"
 #include "../../simulation/hasActors.h"
 #include "../../numericTypes/types.h"
@@ -37,18 +37,18 @@ void BanditsArriveDramaArc::callback()
 {
 	auto& random = m_area->m_simulation.m_random;
 	static std::vector<AnimalSpeciesId> sentientSpecies = getSentientSpecies();
-	constexpr DistanceInBlocks maxBlockDistance = DistanceInBlocks::create(40);
+	constexpr Distance maxPointDistance = Distance::create(40);
 	Actors& actors = m_area->getActors();
 	if(m_isActive)
 	{
-		SmallSet<BlockIndex> exclude;
-		BlockIndex destination = m_area->getBlocks().getCenterAtGroundLevel();
+		SmallSet<Point3D> exclude;
+		Point3D destination = m_area->getSpace().getCenterAtGroundLevel();
 		if(!m_leader.exists())
 		{
 			AnimalSpeciesId species = random.getInVector(sentientSpecies);
 			ShapeId shape = AnimalSpecies::getShapes(species).back();
 			MoveTypeId moveType = AnimalSpecies::getMoveType(species);
-			BlockIndex location = findLocationOnEdgeForNear(shape, moveType, m_entranceBlock, maxBlockDistance, exclude);
+			Point3D location = findLocationOnEdgeForNear(shape, moveType, m_entrancePoint, maxPointDistance, exclude);
 			exclude.insert(location);
 			ActorParamaters params{
 				.species=species,
@@ -73,7 +73,7 @@ void BanditsArriveDramaArc::callback()
 			AnimalSpeciesId species = random.chance(0.5) ? actors.getSpecies(m_leader.getIndex(actors.m_referenceData)) : random.getInVector(sentientSpecies);
 			ShapeId shape = AnimalSpecies::getShapes(species).back();
 			MoveTypeId moveType = AnimalSpecies::getMoveType(species);
-			BlockIndex location = findLocationOnEdgeForNear(shape, moveType, m_entranceBlock, maxBlockDistance, exclude);
+			Point3D location = findLocationOnEdgeForNear(shape, moveType, m_entrancePoint, maxPointDistance, exclude);
 			if(location.exists())
 			{
 				exclude.insert(location);
@@ -100,7 +100,7 @@ void BanditsArriveDramaArc::callback()
 		{
 			scheduleDepart();
 			m_isActive = false;
-			m_entranceBlock = BlockIndex::null();
+			m_entrancePoint = Point3D::null();
 			m_leader.clear();
 		}
 	}
@@ -109,8 +109,8 @@ void BanditsArriveDramaArc::callback()
 		// Find entry point.
 		static ShapeId shape = Shape::byName("oneByOneFull");
 		static const MoveTypeId moveType = MoveType::byName("two legs and swim in water");
-		m_entranceBlock = getEntranceToArea(shape, moveType);
-		if(m_entranceBlock.empty())
+		m_entrancePoint = getEntranceToArea(shape, moveType);
+		if(m_entrancePoint.empty())
 			scheduleArrive();
 		else
 		{
@@ -119,7 +119,7 @@ void BanditsArriveDramaArc::callback()
 			m_isActive = true;
 			// Anounce.
 			std::string message = std::to_string(m_quantity.get()) + " bandits spotted nearby.";
-			m_engine.getSimulation().m_hasDialogues.createMessageBox(message, m_entranceBlock);
+			m_engine.getSimulation().m_hasDialogues.createMessageBox(message, m_entrancePoint);
 			// Reenter.
 			callback();
 		}

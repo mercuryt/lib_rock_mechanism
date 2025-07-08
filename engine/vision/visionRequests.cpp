@@ -6,7 +6,7 @@
 #include "../numericTypes/types.h"
 #include "../util.h"
 #include "../actors/actors.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../geometry/sphere.h"
 #include <cstddef>
 
@@ -21,9 +21,9 @@ void VisionRequests::create(const ActorReference& actor)
 	ActorIndex index = actor.getIndex(actors.m_referenceData);
 	assert(actors.hasLocation(index));
 	assert(actors.vision_canSeeAnything(index));
-	const BlockIndex& location = actors.getLocation(index);
-	const VisionCuboidId& visionCuboidIndex = m_area.m_visionCuboids.getVisionCuboidIndexForBlock(location);
-	m_data.emplace(m_area.getBlocks().getCoordinates(location), location, visionCuboidIndex, actor, actors.vision_getRange(index), actors.getFacing(index), actors.getBlocks(index));
+	const Point3D& location = actors.getLocation(index);
+	const VisionCuboidId& visionCuboidIndex = m_area.m_visionCuboids.getVisionCuboidIndexForPoint(location);
+	m_data.emplace(location, location, visionCuboidIndex, actor, actors.vision_getRange(index), actors.getFacing(index), actors.getOccupied(index));
 	if(m_data.back().range > m_largestRange)
 		m_largestRange = m_data.back().range;
 }
@@ -41,7 +41,7 @@ void VisionRequests::cancelIfExists(const ActorReference& actor)
 	bool largestRange = found->range == m_largestRange;
 	m_data.erase(found);
 	if(m_data.empty())
-		m_largestRange = DistanceInBlocks::create(0);
+		m_largestRange = Distance::create(0);
 	else if(largestRange)
 		m_largestRange = std::max_element(m_data.begin(), m_data.end(), [](const VisionRequest& a, const VisionRequest& b) { return a.actor < b.actor; })->range;
 }
@@ -50,20 +50,19 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 	for(auto iter = m_data.begin() + begin; iter != m_data.begin() + end; ++iter)
 	{
 		VisionRequest& request = *iter;
-		const DistanceInBlocks& rangeSquared = request.range * request.range;
+		const Distance& rangeSquared = request.range * request.range;
 		const VisionCuboidId& fromVisionCuboidIndex = request.cuboid;
-		const Point3D& fromCoords = request.coordinates;
 		assert(fromVisionCuboidIndex.exists());
 		SmallSet<ActorReference>& canSee = request.canSee;
 		SmallSet<ActorReference>& canBeSeenBy = request.canBeSeenBy;
 		// Collect results in a vector rather then a set to prevent cache thrashing.
-		const Sphere visionSphere{fromCoords, m_largestRange.toFloat()};
-		const VisionCuboidSetSIMD visionCuboids = m_area.m_visionCuboids.query(visionSphere, m_area.getBlocks());
+		const Sphere visionSphere{request.location, m_largestRange.toFloat()};
+		const VisionCuboidSetSIMD visionCuboids = m_area.m_visionCuboids.query(visionSphere, m_area.getSpace());
 		const Facing4 facing = request.facing;
-		const OccupiedBlocksForHasShape occupied = request.occupied;
+		const OccupiedSpaceForHasShape occupied = request.occupied;
 		m_area.m_octTree.query(visionSphere, &visionCuboids, [&](const LocationBucket& bucket)
 		{
-			const auto& [actors, canSeeAndCanBeSeenBy] = bucket.visionRequestQuery(m_area, fromCoords, facing, rangeSquared, fromVisionCuboidIndex, visionCuboids, occupied, m_largestRange);
+			const auto& [actors, canSeeAndCanBeSeenBy] = bucket.visionRequestQuery(m_area, request.location, facing, rangeSquared, fromVisionCuboidIndex, visionCuboids, occupied, m_largestRange);
 			for(uint i = 0; i < actors->size(); ++i)
 			{
 				if(canSeeAndCanBeSeenBy.col(i)[0])
@@ -96,7 +95,7 @@ void VisionRequests::readStep()
 		index = end;
 	}
 	// TODO: store hilbert number in request?
-	m_data.sort([&](const VisionRequest& a, const VisionRequest& b){ return a.coordinates.hilbertNumber() < b.coordinates.hilbertNumber(); });
+	m_data.sort([&](const VisionRequest& a, const VisionRequest& b){ return a.location.hilbertNumber() < b.location.hilbertNumber(); });
 	m_area.m_octTree.maybeSort();
 	//#pragma omp parallel for
 	for(auto [start, end] : ranges)
@@ -131,45 +130,45 @@ void VisionRequests::clear()
 	while(m_data.size())
 		cancelIfExists(m_data.back().actor);
 }
-void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightTo(const BlockIndex& block)
+void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightTo(const Point3D& point)
 {
-	maybeGenerateRequestsForAllWithLineOfSightToAny({block});
+	maybeGenerateRequestsForAllWithLineOfSightToAny({point});
 }
-void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::vector<BlockIndex>& blockSet)
+void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::vector<Point3D>& pointSet)
 {
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	struct CandidateData{
 		ActorReference actor;
-		DistanceInBlocks rangeSquared;
+		Distance rangeSquared;
 		Point3D coordinates;
 		VisionCuboidId cuboid;
 		Facing4 facing;
 	};
-	struct BlockData
+	struct PointData
 	{
-		BlockIndex index;
+		Point3D index;
 		Point3D coordinates;
 	};
 	std::vector<CandidateData> candidates;
 	SmallSet<ActorReference> results;
 	SmallSet<uint> locationBucketIndices;
 
-	std::vector<BlockData> blockDataStore;
-	std::ranges::transform(blockSet.begin(), blockSet.end(), std::back_inserter(blockDataStore),
-		[&](const BlockIndex& block) -> BlockData {
-			return {block, blocks.getCoordinates(block)};
+	std::vector<PointData> pointDataStore;
+	std::ranges::transform(pointSet.begin(), pointSet.end(), std::back_inserter(pointDataStore),
+		[&](const Point3D& point) -> PointData {
+			return {point, point};
 		});
-	int minX = std::ranges::min_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.x(); })->coordinates.x().get();
-	int maxX = std::ranges::max_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.x(); })->coordinates.x().get();
-	int minY = std::ranges::min_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.y(); })->coordinates.y().get();
-	int maxY = std::ranges::max_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.y(); })->coordinates.y().get();
-	int minZ = std::ranges::min_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.z(); })->coordinates.z().get();
-	int maxZ = std::ranges::max_element(blockDataStore, {}, [&](const BlockData& c) { return c.coordinates.z(); })->coordinates.z().get();
+	int minX = std::ranges::min_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.x(); })->coordinates.x().get();
+	int maxX = std::ranges::max_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.x(); })->coordinates.x().get();
+	int minY = std::ranges::min_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.y(); })->coordinates.y().get();
+	int maxY = std::ranges::max_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.y(); })->coordinates.y().get();
+	int minZ = std::ranges::min_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.z(); })->coordinates.z().get();
+	int maxZ = std::ranges::max_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.z(); })->coordinates.z().get();
 	Cuboid cuboid(
-		{DistanceInBlocks::create(maxX), DistanceInBlocks::create(maxY), DistanceInBlocks::create(maxZ)},
-		{DistanceInBlocks::create(minX), DistanceInBlocks::create(minY), DistanceInBlocks::create(minZ)}
+		{Distance::create(maxX), Distance::create(maxY), Distance::create(maxZ)},
+		{Distance::create(minX), Distance::create(minY), Distance::create(minZ)}
 	);
-	Point3DSet points = blocks.getCoordinateSet(blockSet);
+	Point3DSet points = Point3DSet::fromPointSet(pointSet);
 	m_area.m_octTree.query(cuboid, nullptr, [&](const LocationBucket& bucket){
 		const auto& [actorsResult, canBeSeenBy] = bucket.anyCanBeSeenQuery(m_area, cuboid, points);
 		for(auto i = LocationBucketContentsIndex::create(0); i < actorsResult->size(); ++i)
@@ -187,7 +186,7 @@ void VisionRequests::maybeUpdateCuboid(const ActorReference& actor, const Vision
 		iter->cuboid = newCuboid;
 	}
 }
-bool VisionRequests::maybeUpdateRange(const ActorReference& actor, const DistanceInBlocks& range)
+bool VisionRequests::maybeUpdateRange(const ActorReference& actor, const Distance& range)
 {
 	auto iter = m_data.findIf([&](const VisionRequest& request) { return request.actor == actor; });
 	if(iter == m_data.end())
@@ -195,14 +194,13 @@ bool VisionRequests::maybeUpdateRange(const ActorReference& actor, const Distanc
 	iter->range = range;
 	return true;
 }
-bool VisionRequests::maybeUpdateLocation(const ActorReference& actor, const BlockIndex& location)
+bool VisionRequests::maybeUpdateLocation(const ActorReference& actor, const Point3D& location)
 {
 	auto iter = m_data.findIf([&](const VisionRequest& request) { return request.actor == actor; });
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	if(iter == m_data.end())
 		return false;
-	iter->coordinates = blocks.getCoordinates(location);
 	iter->location = location;
-	iter->cuboid = m_area.m_visionCuboids.getVisionCuboidIndexForBlock(location);
+	iter->cuboid = m_area.m_visionCuboids.getVisionCuboidIndexForPoint(location);
 	return true;
 }

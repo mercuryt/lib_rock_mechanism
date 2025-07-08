@@ -23,8 +23,6 @@ class BlockIndex : public StrongInteger<BlockIndex, BlockIndexWidth>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const BlockIndex& index) const { return index.get(); } };
-	// A no inline version of create for use in debug console.
-	[[nodiscard]] static __attribute__((noinline)) BlockIndex dbg(const BlockIndexWidth& value);
 };
 inline void to_json(Json& data, const BlockIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, BlockIndex& index) { index = BlockIndex::create(data.get<BlockIndexWidth>()); }
@@ -87,7 +85,7 @@ public:
 inline void to_json(Json& data, const ActorIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, ActorIndex& index) { index = ActorIndex::create(data.get<uint32_t>()); }
 
-// The offset required to lookup in one block's getAdjacentUnfiltered to find another block.
+// The offset required to lookup in one point's getAdjacentUnfiltered to find another point.
 using AdjacentIndexWidth = int8_t;
 class AdjacentIndex : public StrongInteger<AdjacentIndex, AdjacentIndexWidth>
 {

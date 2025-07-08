@@ -73,7 +73,7 @@ void Body::initalize(Area& area)
 	setMaterialType(AnimalSpecies::getMaterialType(species));
 	for(BodyPartTypeId bodyPartType : BodyType::getBodyPartTypes(AnimalSpecies::getBodyType(species)))
 	{
-		m_bodyParts.emplace_back(bodyPartType, m_materialType);
+		m_bodyParts.emplace_back(bodyPartType, m_solid);
 		m_totalVolume += BodyPartType::getVolume(bodyPartType);
 	}
 	m_volumeOfBlood = healthyBloodVolume();
@@ -82,7 +82,7 @@ Body::Body(const Json& data, DeserializationMemo& deserializationMemo, const Act
        	m_bleedEvent(deserializationMemo.m_simulation.m_eventSchedule),
 	m_woundsCloseEvent(deserializationMemo.m_simulation.m_eventSchedule),
 	m_actor(a),
-	m_materialType(MaterialType::byName(data["materialType"].get<std::string>())),
+	m_solid(MaterialType::byName(data["materialType"].get<std::string>())),
 	m_totalVolume(data["totalVolume"].get<FullDisplacement>()),
 	m_impairMovePercent(data.contains("impairMovePercent") ? data["impairMovePercent"].get<Percent>() : Percent::create(0)),
 	m_impairManipulationPercent(data.contains("impairManipulationPercent") ? data["impairManipulationPercent"].get<Percent>() : Percent::create(0)),
@@ -98,7 +98,7 @@ Body::Body(const Json& data, DeserializationMemo& deserializationMemo, const Act
 Json Body::toJson() const
 {
 	Json data{
-		{"materialType", m_materialType},
+		{"materialType", m_solid},
 		{"totalVolume", m_totalVolume},
 		{"volumeOfBlood", m_volumeOfBlood},
 		{"isBleeding", m_isBleeding},

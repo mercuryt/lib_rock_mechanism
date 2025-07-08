@@ -27,11 +27,11 @@ public:
 	void makePathRequest(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const override { return "drink"; }
-	[[nodiscard]] bool canDrinkAt(Area& area, const BlockIndex& block, const Facing4& facing, const ActorIndex& actor) const;
-	[[nodiscard]] BlockIndex getAdjacentBlockToDrinkAt(Area& area, const BlockIndex& block, const Facing4& facing, const ActorIndex& actor) const;
-	[[nodiscard]] bool canDrinkItemAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
-	[[nodiscard]] ItemIndex getItemToDrinkFromAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
-	[[nodiscard]] bool containsSomethingDrinkable(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
+	[[nodiscard]] bool canDrinkAt(Area& area, const Point3D& point, const Facing4& facing, const ActorIndex& actor) const;
+	[[nodiscard]] Point3D getAdjacentPointToDrinkAt(Area& area, const Point3D& point, const Facing4& facing, const ActorIndex& actor) const;
+	[[nodiscard]] bool canDrinkItemAt(Area& area, const Point3D& point, const ActorIndex& actor) const;
+	[[nodiscard]] ItemIndex getItemToDrinkFromAt(Area& area, const Point3D& point, const ActorIndex& actor) const;
+	[[nodiscard]] bool containsSomethingDrinkable(Area& area, const Point3D& point, const ActorIndex& actor) const;
 	[[nodiscard]] bool isNeed() const { return true; }
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::drink; }
 	friend class DrinkEvent;

@@ -1,11 +1,11 @@
 #include "definitions/shape.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "geometry/cuboid.h"
 #include "deserializationMemo.h"
 #include "numericTypes/types.h"
 #include "util.h"
 #include "geometry/point3D.h"
-#include "blocks/adjacentOffsets.h"
+#include "space/adjacentOffsets.h"
 #include <string>
 #include <sys/types.h>
 //TODO: radial symetry for 2x2 and 3x3, etc.
@@ -80,73 +80,73 @@ SmallSet<Offset3D> Shape::positionOffsets(const OffsetAndVolume& offsetAndVolume
 	return output;
 }
 
-SmallSet<BlockIndex> Shape::getBlocksOccupiedAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
+SmallSet<Point3D> Shape::getPointsOccupiedAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing)
 {
-	SmallSet<BlockIndex> output;
+	SmallSet<Point3D> output;
 	output.reserve(shapeData.m_positions[id].size());
 	for(const auto& pair : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
 	{
-		BlockIndex block = blocks.offset(location, pair.offset);
-		assert(block.exists());
-		output.insert(block);
+		Point3D point = location.applyOffset(pair.offset);
+		assert(space.getAll().contains(point));
+		output.insert(point);
 	}
 	return output;
 }
-SmallSet<BlockIndex> Shape::getBlocksOccupiedAndAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
+SmallSet<Point3D> Shape::getPointsOccupiedAndAdjacentAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing)
 {
-	auto output = getBlocksOccupiedAt(id, blocks, location, facing);
-	output.maybeInsertAll(getBlocksWhichWouldBeAdjacentAt(id, blocks, location, facing));
+	auto output = getPointsOccupiedAt(id, space, location, facing);
+	output.maybeInsertAll(getPointsWhichWouldBeAdjacentAt(id, space, location, facing));
 	return output;
 }
-SmallSet<std::pair<BlockIndex, CollisionVolume>> Shape::getBlocksOccupiedAtWithVolumes(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
+SmallSet<std::pair<Point3D, CollisionVolume>> Shape::getPointsOccupiedAtWithVolumes(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing)
 {
-	SmallSet<std::pair<BlockIndex, CollisionVolume>> output;
+	SmallSet<std::pair<Point3D, CollisionVolume>> output;
 	output.reserve(shapeData.m_positions[id].size());
 	for(const auto& pair : positionsWithFacing(id, facing))
 	{
-		BlockIndex block = blocks.offset(location, pair.offset);
-		if(block.exists())
-			output.emplace(block, pair.volume);
+		Point3D point = location.applyOffset(pair.offset);
+		if(space.getAll().contains(point))
+			output.emplace(point, pair.volume);
 	}
 	return output;
 }
-SmallSet<BlockIndex> Shape::getBlocksWhichWouldBeAdjacentAt(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing)
+SmallSet<Point3D> Shape::getPointsWhichWouldBeAdjacentAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing)
 {
-	SmallSet<BlockIndex> output;
+	SmallSet<Point3D> output;
 	output.reserve(shapeData.m_positions[id].size());
 	for(const Offset3D& offset : shapeData.m_adjacentOffsetsCache[id][(uint)facing])
 	{
-		BlockIndex block = blocks.offset(location, offset);
-		if(block.exists())
-			output.insert(block);
+		Point3D point = location.applyOffset(offset);
+		if(space.getAll().contains(point))
+			output.insert(point);
 	}
 	return output;
 }
-BlockIndex Shape::getBlockWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)> predicate)
+Point3D Shape::getPointWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing, std::function<bool(const Point3D&)> predicate)
 {
 	for(const auto& pair : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
 	{
-		BlockIndex block = blocks.offset(location, pair.offset);
-		if(block.exists() && predicate(block))
-			return block;
+		Point3D point = location.applyOffset(pair.offset);
+		if(space.getAll().contains(point) && predicate(point))
+			return point;
 	}
-	return BlockIndex::null();
+	return Point3D::null();
 }
-BlockIndex Shape::getBlockWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Blocks& blocks, const BlockIndex& location, const Facing4& facing, std::function<bool(const BlockIndex&)> predicate)
+Point3D Shape::getPointWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing, std::function<bool(const Point3D&)> predicate)
 {
 	for(const Offset3D& offset : shapeData.m_adjacentOffsetsCache[id][(uint)facing])
 	{
-		BlockIndex block = blocks.offset(location, offset);
-		if(block.exists() && predicate(block))
-			return block;
+		Point3D point = location.applyOffset(offset);
+		if(space.getAll().contains(point) && predicate(point))
+			return point;
 	}
-	return BlockIndex::null();
+	return Point3D::null();
 }
-CollisionVolume Shape::getCollisionVolumeAtLocationBlock(const ShapeId& id) { return shapeData.m_positions[id].front().volume; }
+CollisionVolume Shape::getCollisionVolumeAtLocation(const ShapeId& id) { return shapeData.m_positions[id].front().volume; }
 CollisionVolume Shape::getTotalCollisionVolume(const ShapeId& id)
 {
 	if(!getIsMultiTile(id))
-		return getCollisionVolumeAtLocationBlock(id);
+		return getCollisionVolumeAtLocation(id);
 	else
 	{
 		CollisionVolume output = CollisionVolume::create(0);
@@ -170,16 +170,16 @@ uint32_t Shape::getDisplayScale(const ShapeId& id) { return shapeData.m_displayS
 bool Shape::getIsMultiTile(const ShapeId& id) { return shapeData.m_isMultiTile[id]; }
 bool Shape::getIsRadiallySymetrical(const ShapeId& id) { return shapeData.m_isRadiallySymetrical[id]; }
 // TODO: cache this.
-DistanceInBlocks Shape::getZSize(const ShapeId& id)
+Distance Shape::getZSize(const ShapeId& id)
 {
-	DistanceInBlocks output = DistanceInBlocks::create(0);
+	Distance output = Distance::create(0);
 	for(const OffsetAndVolume& offsetAndVolume : getPositions(id))
 		if(output < offsetAndVolume.offset.z())
-			output = DistanceInBlocks::create(offsetAndVolume.offset.z());
+			output = Distance::create(offsetAndVolume.offset.z());
 	return output;
 }
 // TODO: cache this.
-SmallSet<OffsetAndVolume> Shape::getPositionsByZLevel(const ShapeId& id, const DistanceInBlocks& zLevel)
+SmallSet<OffsetAndVolume> Shape::getPositionsByZLevel(const ShapeId& id, const Distance& zLevel)
 {
 	SmallSet<OffsetAndVolume> output;
 	for(const OffsetAndVolume& offsetAndVolume : getPositions(id))
@@ -187,7 +187,7 @@ SmallSet<OffsetAndVolume> Shape::getPositionsByZLevel(const ShapeId& id, const D
 			output.insert(offsetAndVolume);
 	return output;
 }
-Quantity Shape::getNumberOfBlocksOnLeadingFaceAtOrBelowLevel(const ShapeId& id, const DistanceInBlocks& zLevel)
+Quantity Shape::getNumberOfPointsOnLeadingFaceAtOrBelowLevel(const ShapeId& id, const Distance& zLevel)
 {
 	SmallSet<std::pair<int, int>> everyYAndZ;
 	for(const auto& offsetAndVolume : shapeData.m_positions[id])

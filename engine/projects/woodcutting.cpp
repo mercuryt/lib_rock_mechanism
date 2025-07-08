@@ -2,7 +2,7 @@
 #include "../definitions/itemType.h"
 #include "../plants.h"
 #include "../area/area.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../actors/actors.h"
 #include "../objectives/woodcutting.h"
 WoodCuttingProject::WoodCuttingProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : Project(data, deserializationMemo, area) { }
@@ -15,7 +15,7 @@ std::vector<std::pair<ItemQuery, Quantity>> WoodCuttingProject::getUnconsumed() 
 std::vector<ActorReference> WoodCuttingProject::getActors() const { return {}; }
 std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> WoodCuttingProject::getByproducts() const
 {
-	PlantIndex plant = m_area.getBlocks().plant_get(m_location);
+	PlantIndex plant = m_area.getSpace().plant_get(m_location);
 	Plants& plants = m_area.getPlants();
 	Percent percentGrown = plants.getPercentGrown(plant);
 	PlantSpeciesId species = plants.getSpecies(plant);
@@ -44,9 +44,9 @@ uint32_t WoodCuttingProject::getWorkerWoodCuttingScore(Area& area, const ActorIn
 }
 void WoodCuttingProject::onComplete()
 {
-	if(m_area.getBlocks().plant_exists(m_location))
+	if(m_area.getSpace().plant_exists(m_location))
 	{
-		PlantIndex plant = m_area.getBlocks().plant_get(m_location);
+		PlantIndex plant = m_area.getSpace().plant_get(m_location);
 		m_area.getPlants().die(plant);
 	}
 	// Remove designations for other factions as well as owning faction.
@@ -70,11 +70,11 @@ void WoodCuttingProject::onCancel()
 }
 void WoodCuttingProject::onDelay()
 {
-	m_area.getBlocks().designation_maybeUnset(m_location, m_faction, BlockDesignation::WoodCutting);
+	m_area.getSpace().designation_maybeUnset(m_location, m_faction, SpaceDesignation::WoodCutting);
 }
 void WoodCuttingProject::offDelay()
 {
-	m_area.getBlocks().designation_set(m_location, m_faction, BlockDesignation::WoodCutting);
+	m_area.getSpace().designation_set(m_location, m_faction, SpaceDesignation::WoodCutting);
 }
 // What would the total delay time be if we started from scratch now with current workers?
 Step WoodCuttingProject::getDuration() const

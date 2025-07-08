@@ -31,12 +31,12 @@ TEST_CASE("construct")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
 	FactionId faction = simulation.createFaction("Tower Of Power");
-	area.m_blockDesignations.registerFaction(faction);
+	area.m_spaceDesignations.registerFaction(faction);
 	const ConstructObjectiveType& constructObjectiveType = static_cast<const ConstructObjectiveType&>(ObjectiveType::getByName("construct"));
 	BlockIndex dwarf1Start = blocks.getIndex_i(1, 1, 2);
 	ActorIndex dwarf1 = actors.create(ActorParamaters{
@@ -77,7 +77,7 @@ TEST_CASE("construct")
 		BlockIndex wallLocation = blocks.getIndex_i(8, 4, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, wood);
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
-		CHECK(blocks.designation_has(wallLocation, faction, BlockDesignation::Construct));
+		CHECK(blocks.designation_has(wallLocation, faction, SpaceDesignation::Construct));
 		CHECK(area.m_hasConstructionDesignations.contains(faction, wallLocation));
 		CHECK(constructObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));
@@ -152,7 +152,7 @@ TEST_CASE("construct")
 		CHECK(actors.objective_getCurrentName(dwarf1) != "construct");
 		CHECK(!area.m_hasConstructionDesignations.contains(faction, wallLocation));
 		CHECK(!constructObjectiveType.canBeAssigned(area, dwarf1));
-		CHECK(!blocks.designation_has(wallLocation, faction, BlockDesignation::Construct));
+		CHECK(!blocks.designation_has(wallLocation, faction, SpaceDesignation::Construct));
 		CHECK(items.reservable_getUnreservedCount(boards, faction) == items.getQuantity(boards));
 		CHECK(items.reservable_getUnreservedCount(pegs, faction) == items.getQuantity(pegs));
 		CHECK(!items.reservable_isFullyReserved(saw, faction));
@@ -263,7 +263,7 @@ TEST_CASE("construct")
 		CHECK(!area.m_hasConstructionDesignations.contains(faction, wallLocation1));
 		CHECK(area.m_hasConstructionDesignations.contains(faction, wallLocation2));
 		CHECK(!project2->isOnDelay());
-		CHECK(blocks.designation_has(project2->getLocation(), faction, BlockDesignation::Construct));
+		CHECK(blocks.designation_has(project2->getLocation(), faction, SpaceDesignation::Construct));
 		// Both dwarves seek a project to join and find project2. This does not require a step if they are already adjacent but does if they are not.
 		CHECK(actors.objective_getCurrentName(dwarf1) == "construct");
 		CHECK(actors.objective_getCurrentName(dwarf2) == "construct");
@@ -285,7 +285,7 @@ TEST_CASE("construct")
 	{
 		BlockIndex stairsLocation = blocks.getIndex_i(8, 4, 2);
 		area.m_hasConstructionDesignations.designate(faction, stairsLocation, BlockFeatureTypeId::Stairs, wood);
-		CHECK(blocks.designation_has(stairsLocation, faction, BlockDesignation::Construct));
+		CHECK(blocks.designation_has(stairsLocation, faction, SpaceDesignation::Construct));
 		CHECK(area.m_hasConstructionDesignations.contains(faction, stairsLocation));
 		CHECK(constructObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
@@ -405,12 +405,12 @@ TEST_CASE("constructDirtWall")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	FactionId faction = simulation.createFaction("Tower Of Power");
-	area.m_blockDesignations.registerFaction(faction);
+	area.m_spaceDesignations.registerFaction(faction);
 	const ConstructObjectiveType& constructObjectiveType = static_cast<const ConstructObjectiveType&>(ObjectiveType::getByName("construct"));
 	BlockIndex dwarf1Start = blocks.getIndex_i(1, 1, 2);
 	ActorIndex dwarf1 = actors.create(ActorParamaters{

@@ -20,7 +20,7 @@ TEST_CASE("actor")
 	static AnimalSpeciesId troll = AnimalSpecies::byName("troll");
 	static MaterialTypeId marble = MaterialType::byName("marble");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	SUBCASE("single tile")

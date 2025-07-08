@@ -18,7 +18,7 @@ TEST_CASE("attributes")
 	AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
 

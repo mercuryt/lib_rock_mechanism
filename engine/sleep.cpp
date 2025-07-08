@@ -32,7 +32,7 @@ void MustSleep::scheduleTiredEvent(Area& area)
 }
 MustSleep::MustSleep(Area& area, const Json& data, const ActorIndex& a) :
 	m_sleepEvent(area.m_eventSchedule), m_tiredEvent(area.m_eventSchedule),
-	m_location(data.contains("location") ? data["location"].get<BlockIndex>() : BlockIndex::null()),
+	m_location(data.contains("location") ? data["location"].get<Point3D>() : Point3D::null()),
 	m_needsSleep(data["needsSleep"].get<bool>()), m_isAwake(data["isAwake"].get<bool>())
 {
 	m_actor.setIndex(a, area.getActors().m_referenceData);
@@ -155,9 +155,9 @@ void MustSleep::wakeUpEarly(Area& area)
 	actors.vision_createRequestIfCanSee(index);
 	//TODO: partial stamina recovery.
 }
-void MustSleep::setLocation(const BlockIndex& block)
+void MustSleep::setLocation(const Point3D& point)
 {
-	m_location = block;
+	m_location = point;
 }
 void MustSleep::unschedule()
 {

@@ -25,7 +25,7 @@ TEST_CASE("equip and unequip")
 	MaterialTypeId marble = MaterialType::byName("marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	BlockIndex destination = blocks.getIndex_i(8,2,1);
 	Actors& actors = area.getActors();
@@ -62,7 +62,7 @@ TEST_CASE("give item")
 	MaterialTypeId marble = MaterialType::byName("marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);

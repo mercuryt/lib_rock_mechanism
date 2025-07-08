@@ -40,11 +40,11 @@ TEST_CASE("json")
 	ItemTypeId pants = ItemType::byName("pants");
 	ItemTypeId pile = ItemType::byName("pile");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	Plants& plants = area.getPlants();
 	Items& items = area.getItems();
-	area.m_blockDesignations.registerFaction(faction);
+	area.m_spaceDesignations.registerFaction(faction);
 	areaBuilderUtil::setSolidLayer(area, 0, dirt);
 	area.m_hasFarmFields.registerFaction(faction);
 
@@ -93,7 +93,7 @@ TEST_CASE("json")
 		// Deserialize.
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
-		Blocks& blocks2 = area2.getBlocks();
+		Blocks& blocks2 = area2.getSpace();
 		Actors& actors2 = area2.getActors();
 		Items& items2 = area2.getItems();
 		Plants& plants2 = area2.getPlants();
@@ -212,7 +212,7 @@ TEST_CASE("json")
 		}
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
-		Blocks& blocks2 = area2.getBlocks();
+		Blocks& blocks2 = area2.getSpace();
 		Actors& actors2 = area2.getActors();
 		Items& items2 = area2.getItems();
 		FactionId faction2 = simulation2.m_hasFactions.byName("Tower of Power");
@@ -256,7 +256,7 @@ TEST_CASE("json")
 		}
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
-		Blocks& blocks2 = area2.getBlocks();
+		Blocks& blocks2 = area2.getSpace();
 		FactionId faction2 = simulation2.m_hasFactions.byName("Tower of Power");
 		BlockIndex projectLocation2 = blocks2.getIndex_i(8,4,1);
 		CHECK(area2.m_hasConstructionDesignations.contains(faction2, projectLocation2));
@@ -278,7 +278,7 @@ TEST_CASE("json")
 			std::vector<ItemQuery> queries;
 			queries.emplace_back(ItemQuery::create(pile));
 			StockPile &stockPile = area.m_hasStockPiles.getForFaction(faction).addStockPile(queries);
-			stockPile.addBlock(projectLocation1);
+			stockPile.addPoint(projectLocation1);
 			ItemIndex pile1 = items.create({.itemType = pile, .materialType = dirt, .location = pileLocation1, .quantity = Quantity::create(10)});
 			CHECK(stockPile.accepts(pile1));
 			area.m_hasStockPiles.getForFaction(faction).addItem(pile1);
@@ -301,7 +301,7 @@ TEST_CASE("json")
 		}
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
-		Blocks& blocks2 = area2.getBlocks();
+		Blocks& blocks2 = area2.getSpace();
 		Actors& actors2 = area2.getActors();
 		Items& items2 = area2.getItems();
 		FactionId faction2 = simulation2.m_hasFactions.byName("Tower of Power");
@@ -353,7 +353,7 @@ TEST_CASE("json")
 		}
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
-		Blocks& blocks2 = area2.getBlocks();
+		Blocks& blocks2 = area2.getSpace();
 		Actors& actors2 = area2.getActors();
 		FactionId faction2 = simulation2.m_hasFactions.byName("Tower of Power");
 		ActorIndex dwarf2 = blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
@@ -390,7 +390,7 @@ TEST_CASE("json")
 		}
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
-		Blocks& blocks2 = area2.getBlocks();
+		Blocks& blocks2 = area2.getSpace();
 		Actors& actors2 = area2.getActors();
 		ActorIndex dwarf2 = blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
 
@@ -424,7 +424,7 @@ TEST_CASE("json")
 		}
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
-		Blocks& blocks2 = area2.getBlocks();
+		Blocks& blocks2 = area2.getSpace();
 		Actors& actors2 = area2.getActors();
 		ActorIndex dwarf2 = blocks2.actor_getAll(blocks2.getIndex_i(5,5,1))[0];
 
@@ -461,7 +461,7 @@ TEST_CASE("json")
 		}
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
-		Blocks& blocks2 = area2.getBlocks();
+		Blocks& blocks2 = area2.getSpace();
 		Actors& actors2 = area2.getActors();
 		ActorIndex dwarf2 = simulation2.m_actors.getIndexForId(dwarf1Id);
 
@@ -498,14 +498,14 @@ TEST_CASE("json")
 
 			SowSeedsObjective &objective = actors.objective_getCurrent<SowSeedsObjective>(dwarf1);
 			BlockIndex block1 = objective.getBlock();
-			coordinates1 = area.getBlocks().getCoordinates(block1);
+			coordinates1 = area.getSpace().getCoordinates(block1);
 			// Serialize.
 			areaData = area.toJson();
 			simulationData = simulation.toJson();
 		}
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
-		Blocks& blocks2 = area2.getBlocks();
+		Blocks& blocks2 = area2.getSpace();
 		Actors& actors2 = area2.getActors();
 		ActorIndex dwarf2 = simulation2.m_actors.getIndexForId(dwarf1Id);
 
@@ -547,7 +547,7 @@ TEST_CASE("json")
 		}
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());
-		Blocks& blocks2 = area2.getBlocks();
+		Blocks& blocks2 = area2.getSpace();
 		Actors& actors2 = area2.getActors();
 		ActorIndex dwarf2 = simulation2.m_actors.getIndexForId(dwarf1Id);
 		Objective& objective2 = actors2.objective_getCurrent<Objective>(dwarf2);

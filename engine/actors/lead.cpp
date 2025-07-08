@@ -1,8 +1,8 @@
 #include "actors.h"
 #include "area/area.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "numericTypes/index.h"
-const SmallSet<BlockIndex>& Actors::lineLead_getPath(const ActorIndex& index) const
+const SmallSet<Point3D>& Actors::lineLead_getPath(const ActorIndex& index) const
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
@@ -55,21 +55,21 @@ bool Actors::lineLead_followersCanMoveEver(const ActorIndex& index) const
 {
 	assert(isLeading(index));
 	assert(!isFollowing(index));
-	const Blocks& blocks = m_area.getBlocks();
+	const Space& space = m_area.getSpace();
 	ActorOrItemIndex follower = getFollower(index);
 	auto& path = lineLead_getPath(index);
 	while(follower.exists())
 	{
-		const BlockIndex& location = follower.getLocation(m_area);
+		const Point3D& location = follower.getLocation(m_area);
 		auto index = path.findLastIndex(location);
 		assert(index != path.size());
 		if(index != 0)
 		{
-			const BlockIndex& next = path[index - 1];
-			if(!blocks.shape_anythingCanEnterEver(next))
+			const Point3D& next = path[index - 1];
+			if(!space.shape_anythingCanEnterEver(next))
 				return false;
-			const Facing4& facing = blocks.facingToSetWhenEnteringFrom(next, location);
-			if(!blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(next, follower.getShape(m_area), follower.getMoveType(m_area), facing))
+			const Facing4& facing = location.getFacingTwords(next);
+			if(!space.shape_shapeAndMoveTypeCanEnterEverWithFacing(next, follower.getShape(m_area), follower.getMoveType(m_area), facing))
 				return false;
 		}
 		follower = follower.getFollower(m_area);
@@ -80,35 +80,35 @@ bool Actors::lineLead_followersCanMoveCurrently(const ActorIndex& index) const
 {
 	assert(isLeading(index));
 	assert(!isFollowing(index));
-	const Blocks& blocks = m_area.getBlocks();
+	const Space& space = m_area.getSpace();
 	ActorOrItemIndex follower = getFollower(index);
 	auto& path = lineLead_getPath(index);
-	const auto& occupied = lineLead_getOccupiedBlocks(index);
+	const auto& occupied = lineLead_getOccupiedPoints(index);
 	while(follower.exists())
 	{
-		const BlockIndex& location = follower.getLocation(m_area);
+		const Point3D& location = follower.getLocation(m_area);
 		auto index = path.findLastIndex(location);
 		assert(index != path.size());
 		if(index != 0)
 		{
-			const BlockIndex& next = path[index - 1];
-			if(!blocks.shape_canEnterCurrentlyFrom(next, follower.getShape(m_area), location, occupied))
+			const Point3D& next = path[index - 1];
+			if(!space.shape_canEnterCurrentlyFrom(next, follower.getShape(m_area), location, occupied))
 				return false;
 		}
 		follower = follower.getFollower(m_area);
 	}
 	return true;
 }
-OccupiedBlocksForHasShape Actors::lineLead_getOccupiedBlocks(const ActorIndex& index) const
+OccupiedSpaceForHasShape Actors::lineLead_getOccupiedPoints(const ActorIndex& index) const
 {
-	OccupiedBlocksForHasShape output;
+	OccupiedSpaceForHasShape output;
 	assert(isLeading(index));
 	assert(!isFollowing(index));
 	ActorOrItemIndex follower = index.toActorOrItemIndex();
 	while(follower.exists())
 	{
-		for(BlockIndex block : follower.getBlocks(m_area))
-			output.insertNonunique(block);
+		for(Point3D point : follower.getOccupied(m_area))
+			output.insertNonunique(point);
 		follower = follower.getFollower(m_area);
 	}
 	output.makeUnique();
@@ -120,12 +120,12 @@ bool Actors::lineLead_pathEmpty(const ActorIndex& index) const
 	assert(isLeading(index));
 	return m_leadFollowPath[index].empty();
 }
-void Actors::lineLead_pushFront(const ActorIndex& index, const BlockIndex& block)
+void Actors::lineLead_pushFront(const ActorIndex& index, const Point3D& point)
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
-	assert(m_location[index] == block);
-	m_leadFollowPath[index].insertFrontNonunique(block);
+	assert(m_location[index] == point);
+	m_leadFollowPath[index].insertFrontNonunique(point);
 }
 void Actors::lineLead_popBackUnlessOccupiedByFollower(const ActorIndex& index)
 {
@@ -134,8 +134,8 @@ void Actors::lineLead_popBackUnlessOccupiedByFollower(const ActorIndex& index)
 	ActorOrItemIndex follower = index.toActorOrItemIndex();
 	while(follower.isLeading(m_area))
 		follower = follower.getFollower(m_area);
-	auto& blocksOfRearmostFollower = follower.getBlocks(m_area);
-	while(!blocksOfRearmostFollower.contains(m_leadFollowPath[index].back()))
+	auto& occupiedByRearmostFollower = follower.getOccupied(m_area);
+	while(!occupiedByRearmostFollower.contains(m_leadFollowPath[index].back()))
 		m_leadFollowPath[index].popBack();
 	assert(m_leadFollowPath[index].size() >= 2);
 }
@@ -143,27 +143,26 @@ void Actors::lineLead_clearPath(const ActorIndex& index)
 {
 	m_leadFollowPath[index].clear();
 }
-void Actors::lineLead_appendToPath(const ActorIndex& index, const BlockIndex& block, const Facing4& facing)
+void Actors::lineLead_appendToPath(const ActorIndex& index, const Point3D& point, const Facing4& facing)
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
 	if(m_leadFollowPath[index].empty())
 		m_leadFollowPath[index].insert(m_location[index]);
-	const BlockIndex& back = m_leadFollowPath[index].back();
-	if(block == back)
+	const Point3D& back = m_leadFollowPath[index].back();
+	if(point == back)
 		return;
-	Blocks& blocks = m_area.getBlocks();
-	if(blocks.isAdjacentToIncludingCornersAndEdges(block, back))
-		m_leadFollowPath[index].insert(block);
+	if(point.isAdjacentTo(back))
+		m_leadFollowPath[index].insert(point);
 	else
 	{
 		const MoveTypeId& moveType = lineLead_getMoveType(index);
 		const ShapeId& shape = lineLead_getLargestShape(index);
-		auto path = m_area.m_hasTerrainFacades.getForMoveType(moveType).findPathToWithoutMemo(block, facing, shape, back);
+		auto path = m_area.m_hasTerrainFacades.getForMoveType(moveType).findPathToWithoutMemo(point, facing, shape, back);
 		// TODO: Can this fail?
 		assert(!path.path.empty());
-		assert(!path.path.contains(block));
-		path.path.insert(block);
+		assert(!path.path.contains(point));
+		path.path.insert(point);
 		m_leadFollowPath[index].insertAllNonunique(path.path);
 	}
 }
@@ -172,20 +171,19 @@ void Actors::lineLead_moveFollowers(const ActorIndex& index)
 	//TODO: This could be done better by walking the followers and path simultaniously.
 	assert(isLeading(index));
 	assert(!isFollowing(index));
-	const Blocks& blocks = m_area.getBlocks();
 	ActorOrItemIndex follower = getFollower(index);
 	auto& path = lineLead_getPath(index);
-	const auto& occupied = lineLead_getOccupiedBlocks(index);
+	const auto& occupied = lineLead_getOccupiedPoints(index);
 	while(follower.exists())
 	{
-		const BlockIndex& location = follower.getLocation(m_area);
+		const Point3D& location = follower.getLocation(m_area);
 		auto found = path.find(location);
 		assert(found != path.end());
 		assert(found != path.begin());
-		const BlockIndex& next = *(--found);
-		if(follower.getLeader(m_area).occupiesBlock(m_area, next))
+		const Point3D& next = *(--found);
+		if(follower.getLeader(m_area).occupiesPoint(m_area, next))
 			return;
-		follower.location_set(m_area, next, blocks.facingToSetWhenEnteringFrom(next, location));
+		follower.location_set(m_area, next, location.getFacingTwords(next));
 		follower = follower.getFollower(m_area);
 	}
 }

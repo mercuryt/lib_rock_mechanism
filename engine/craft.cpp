@@ -19,7 +19,7 @@
 /*
 void CraftInputAction::execute()
 {
-	m_area.m_hasCraftingLocationsAndJobs.at(m_faction).addJob(m_craftJobType, m_materialType, m_quantity);
+	m_area.m_hasCraftingLocationsAndJobs.at(m_faction).addJob(m_craftJobType, m_solid, m_quantity);
 }
 void CraftCancelInputAction::execute()
 {
@@ -44,7 +44,7 @@ void CraftJobType::create(std::string name, ItemTypeId productType, const Quanti
 	craftJobTypeData.m_name.add(name);
 	craftJobTypeData.m_productType.add(productType);
 	craftJobTypeData.m_productQuantity.add(productQuantity);
-	craftJobTypeData.m_materialTypeCategory.add(category);
+	craftJobTypeData.m_solidCategory.add(category);
 	craftJobTypeData.m_stepTypes.add(stepTypes);
 }
 CraftJobTypeId CraftJobType::size() { return CraftJobTypeId::create(craftJobTypeData.m_name.size());}
@@ -57,7 +57,7 @@ CraftJobTypeId CraftJobType::byName(const std::string name)
 std::string CraftJobType::getName(const CraftJobTypeId& id) { return craftJobTypeData.m_name[id]; }
 ItemTypeId CraftJobType::getProductType(const CraftJobTypeId& id) { return craftJobTypeData.m_productType[id]; }
 Quantity CraftJobType::getProductQuantity(const CraftJobTypeId& id) { return craftJobTypeData.m_productQuantity[id]; }
-MaterialCategoryTypeId CraftJobType::getMaterialTypeCategory(const CraftJobTypeId& id) { return craftJobTypeData.m_materialTypeCategory[id]; }
+MaterialCategoryTypeId CraftJobType::getMaterialTypeCategory(const CraftJobTypeId& id) { return craftJobTypeData.m_solidCategory[id]; }
 std::vector<CraftStepType>& CraftJobType::getStepTypes(const CraftJobTypeId& id) { return craftJobTypeData.m_stepTypes[id]; }
 
 CraftStepProject::CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj, Area& area) :
@@ -108,7 +108,7 @@ void CraftStepProject::onCancel()
 void CraftStepProject::onAddToMaking(const ActorIndex& actor)
 {
 	Actors& actors = m_area.getActors();
-	Facing4 facing = m_area.getBlocks().shape_canEnterCurrentlyWithAnyFacingReturnFacing(m_location, actors.getShape(actor), actors.getBlocks(actor));
+	Facing4 facing = m_area.getSpace().shape_canEnterCurrentlyWithAnyFacingReturnFacing(m_location, actors.getShape(actor), actors.getOccupied(actor));
 	if(facing != Facing4::Null)
 		actors.location_set(actor, m_location, facing);
 	else
@@ -119,10 +119,10 @@ std::vector<std::pair<ItemQuery, Quantity>> CraftStepProject::getConsumed() cons
 	// Make a copy so we can edit itemQueries.
 	auto output = m_craftStepType.consumed;
 	for(auto& pair : output)
-		if(pair.first.m_materialType.exists())
+		if(pair.first.m_solid.exists())
 		{
 			pair.first.validate();
-			if(!pair.first.m_item.exists() && !pair.first.m_materialType.exists())
+			if(!pair.first.m_item.exists() && !pair.first.m_solid.exists())
 				pair.first.specalize(m_craftJob.materialType);
 		}
 	return output;
@@ -196,11 +196,11 @@ HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(con
 	for(const Json& pair : data["locationsByCategory"])
 	{
 		CraftStepTypeCategoryId category = CraftStepTypeCategory::byName(pair[0].get<std::string>());
-		for(const Json& blockQuery : pair[1])
+		for(const Json& query : pair[1])
 		{
-			BlockIndex block = blockQuery.get<BlockIndex>();
-			m_locationsByCategory.getOrCreate(category).insert(block);
-			m_stepTypeCategoriesByLocation.getOrCreate(block).push_back(category);
+			Point3D point = query.get<Point3D>();
+			m_locationsByCategory.getOrCreate(category).insert(point);
+			m_stepTypeCategoriesByLocation.getOrCreate(point).push_back(category);
 		}
 	}
 	if(data.contains("jobs"))
@@ -241,7 +241,7 @@ Json HasCraftingLocationsAndJobsForFaction::toJson() const
 		Json pair = Json::array();
 		pair[0] = category;
 		pair[1] = Json::array();
-		for(BlockIndex location : locations)
+		for(Point3D location : locations)
 			pair[1].push_back(location);
 		data["locationsByCategory"].push_back(pair);
 	}
@@ -276,34 +276,34 @@ Json HasCraftingLocationsAndJobsForFaction::toJson() const
 		data["jobs"].push_back(job.toJson());
 	return data;
 }
-void HasCraftingLocationsAndJobsForFaction::addLocation(CraftStepTypeCategoryId category, const BlockIndex& block)
+void HasCraftingLocationsAndJobsForFaction::addLocation(CraftStepTypeCategoryId category, const Point3D& point)
 {
-	m_locationsByCategory.getOrCreate(category).insert(block);
-	util::addUniqueToVectorAssert(m_stepTypeCategoriesByLocation.getOrCreate(block), category);
+	m_locationsByCategory.getOrCreate(category).insert(point);
+	util::addUniqueToVectorAssert(m_stepTypeCategoriesByLocation.getOrCreate(point), category);
 }
-void HasCraftingLocationsAndJobsForFaction::removeLocation(CraftStepTypeCategoryId category, const BlockIndex& block)
+void HasCraftingLocationsAndJobsForFaction::removeLocation(CraftStepTypeCategoryId category, const Point3D& point)
 {
 	for(const CraftJob& craftJob : m_jobs)
 	{
-		if(craftJob.craftStepProject && craftJob.craftStepProject->getLocation() == block)
+		if(craftJob.craftStepProject && craftJob.craftStepProject->getLocation() == point)
 			craftJob.craftStepProject->cancel();
 	}
 	if(m_locationsByCategory[category].size() == 1)
 		m_locationsByCategory.erase(category);
 	else
-		m_locationsByCategory[category].erase(block);
-	if(m_stepTypeCategoriesByLocation[block].size() == 1)
-		m_stepTypeCategoriesByLocation.erase(block);
+		m_locationsByCategory[category].erase(point);
+	if(m_stepTypeCategoriesByLocation[point].size() == 1)
+		m_stepTypeCategoriesByLocation.erase(point);
 	else
-		util::removeFromVectorByValueUnordered(m_stepTypeCategoriesByLocation[block], category);
+		util::removeFromVectorByValueUnordered(m_stepTypeCategoriesByLocation[point], category);
 }
-void HasCraftingLocationsAndJobsForFaction::maybeRemoveLocation(const BlockIndex& block)
+void HasCraftingLocationsAndJobsForFaction::maybeRemoveLocation(const Point3D& point)
 {
-	if(m_stepTypeCategoriesByLocation.contains(block))
+	if(m_stepTypeCategoriesByLocation.contains(point))
 	{
-		std::vector<CraftStepTypeCategoryId> categories(m_stepTypeCategoriesByLocation[block].begin(), m_stepTypeCategoriesByLocation[block].end());
+		std::vector<CraftStepTypeCategoryId> categories(m_stepTypeCategoriesByLocation[point].begin(), m_stepTypeCategoriesByLocation[point].end());
 		for(auto category : categories)
-			removeLocation(category, block);
+			removeLocation(category, point);
 	}
 }
 void HasCraftingLocationsAndJobsForFaction::addJob(const CraftJobTypeId& craftJobType, const MaterialTypeId& materialType, const Quantity& quantity, uint32_t minimumSkillLevel)
@@ -330,7 +330,7 @@ void HasCraftingLocationsAndJobsForFaction::removeJob(CraftJob& job)
 void HasCraftingLocationsAndJobsForFaction::stepComplete(CraftJob& craftJob, const ActorIndex& actor)
 {
 	craftJob.totalSkillPoints += craftJob.craftStepProject->getWorkerCraftScore(actor);
-	BlockIndex location = craftJob.craftStepProject->getLocation();
+	Point3D location = craftJob.craftStepProject->getLocation();
 	++craftJob.stepIterator;
 	if(craftJob.stepIterator == CraftJobType::getStepTypes(craftJob.craftJobType).end())
 		jobComplete(craftJob, location);
@@ -387,15 +387,15 @@ void HasCraftingLocationsAndJobsForFaction::unindexUnassigned(CraftJob& craftJob
 	else
 		util::removeFromVectorByValueUnordered(m_unassignedProjectsBySkill[craftStepType.skillType], &craftJob);
 }
-void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, const BlockIndex& location)
+void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, const Point3D& location)
 {
 	ItemIndex product;
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	Items& items = m_area.getItems();
 	ItemTypeId productType = CraftJobType::getProductType(craftJob.craftJobType);
 	if(ItemType::getIsGeneric(productType))
 	{
-		product = blocks.item_addGeneric(location, productType, craftJob.materialType, CraftJobType::getProductQuantity(craftJob.craftJobType));
+		product = space.item_addGeneric(location, productType, craftJob.materialType, CraftJobType::getProductQuantity(craftJob.craftJobType));
 		if(craftJob.workPiece.exists())
 			items.destroy(craftJob.workPiece.getIndex(items.m_referenceData));
 	}
@@ -427,7 +427,7 @@ void HasCraftingLocationsAndJobsForFaction::jobComplete(CraftJob& craftJob, cons
 	m_area.m_hasStockPiles.getForFaction(m_faction).maybeAddItem(product);
 	m_jobs.remove(craftJob);
 }
-void HasCraftingLocationsAndJobsForFaction::makeAndAssignStepProject(CraftJob& craftJob, const BlockIndex& location, CraftObjective& objective, const ActorIndex& actor)
+void HasCraftingLocationsAndJobsForFaction::makeAndAssignStepProject(CraftJob& craftJob, const Point3D& location, CraftObjective& objective, const ActorIndex& actor)
 {
 	Actors& actors = m_area.getActors();
 	craftJob.craftStepProject = std::make_unique<CraftStepProject>(actors.getFaction(actor), m_area, location, *craftJob.stepIterator, craftJob);
@@ -443,7 +443,7 @@ bool HasCraftingLocationsAndJobsForFaction::hasLocationsFor(const CraftJobTypeId
 			return false;
 	return true;
 }
-std::vector<CraftStepTypeCategoryId>& HasCraftingLocationsAndJobsForFaction::getStepTypeCategoriesForLocation(const BlockIndex& location)
+std::vector<CraftStepTypeCategoryId>& HasCraftingLocationsAndJobsForFaction::getStepTypeCategoriesForLocation(const Point3D& location)
 {
 	if(!m_stepTypeCategoriesByLocation.contains(location))
 	{
@@ -452,20 +452,20 @@ std::vector<CraftStepTypeCategoryId>& HasCraftingLocationsAndJobsForFaction::get
 	}
 	return m_stepTypeCategoriesByLocation[location];
 }
-CraftStepTypeCategoryId HasCraftingLocationsAndJobsForFaction::getDisplayStepTypeCategoryForLocation(const BlockIndex& location)
+CraftStepTypeCategoryId HasCraftingLocationsAndJobsForFaction::getDisplayStepTypeCategoryForLocation(const Point3D& location)
 {
 	if(!m_stepTypeCategoriesByLocation.contains(location))
 		return CraftStepTypeCategoryId::null();
 	return *m_stepTypeCategoriesByLocation[location].begin();
 }
 // May return nullptr;
-CraftJob* HasCraftingLocationsAndJobsForFaction::getJobForAtLocation(const ActorIndex& actor, const SkillTypeId& skillType, const BlockIndex& block, const SmallSet<CraftJob*>& excludeJobs)
+CraftJob* HasCraftingLocationsAndJobsForFaction::getJobForAtLocation(const ActorIndex& actor, const SkillTypeId& skillType, const Point3D& point, const SmallSet<CraftJob*>& excludeJobs)
 {
 	Actors& actors = m_area.getActors();
-	assert(!m_area.getBlocks().isReserved(block, actors.getFaction(actor)));
-	if(!m_stepTypeCategoriesByLocation.contains(block))
+	assert(!m_area.getSpace().isReserved(point, actors.getFaction(actor)));
+	if(!m_stepTypeCategoriesByLocation.contains(point))
 		return nullptr;
-	for(CraftStepTypeCategoryId category : m_stepTypeCategoriesByLocation[block])
+	for(CraftStepTypeCategoryId category : m_stepTypeCategoriesByLocation[point])
 		if(m_unassignedProjectsByStepTypeCategory.contains(category))
 			for(CraftJob* craftJob : m_unassignedProjectsByStepTypeCategory[category])
 				if(

@@ -1,4 +1,4 @@
-// One BlockIndex has xyz dimensions of 1 meter by 1 meter by 2 meters.
+// One Point3D has xyz dimensions of 1 meter by 1 meter by 2 meters.
 // This File defines physical types.
 // numericTypes/idTypes.h defines id types, which don't ever change.
 // numericTypes/index.h defines index types, which do change and must be updated.
@@ -15,34 +15,35 @@
 #include <iostream>
 #include <string>
 
-using Coordinates = Eigen::Array<DistanceInBlocksWidth, 3, 1>;
+using Coordinates = Eigen::Array<DistanceWidth, 3, 1>;
 struct Offset3D;
 struct Point3D
 {
 	Coordinates data;
-	Point3D() { data.fill(DistanceInBlocks::null().get()); }
+	using Primitive = Coordinates;
+	Point3D() { data.fill(Distance::null().get()); }
 	Point3D(Coordinates v) : data(v) { }
-	Point3D(const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z) : data(x.get(), y.get(), z.get()) { }
+	Point3D(const Distance& x, const Distance& y, const Distance& z) : data(x.get(), y.get(), z.get()) { }
 	Point3D(const Point3D& other) : data(other.data) { }
 	void clampHigh(const Point3D& other);
 	void clampLow(const Point3D& other);
 	Point3D min(const Point3D& other) const;
 	Point3D max(const Point3D& other) const;
 	void clear();
-	void setX(const DistanceInBlocks& x) { data[0] = x.get(); }
-	void setY(const DistanceInBlocks& y) { data[1] = y.get(); }
-	void setZ(const DistanceInBlocks& z) { data[2] = z.get(); }
+	void setX(const Distance& x) { data[0] = x.get(); }
+	void setY(const Distance& y) { data[1] = y.get(); }
+	void setZ(const Distance& z) { data[2] = z.get(); }
 	void swap(Point3D& other) { std::swap(data, other.data); }
 	Point3D& operator+=(const Offset3D& other);
 	Point3D& operator-=(const Offset3D& other);
 	Point3D& operator=(const Point3D& other) { data = other.data; return *this; }
-	[[nodiscard]] DistanceInBlocks x() const { return DistanceInBlocks::create(data[0]); }
-	[[nodiscard]] DistanceInBlocks y() const { return DistanceInBlocks::create(data[1]); }
-	[[nodiscard]] DistanceInBlocks z() const { return DistanceInBlocks::create(data[2]); }
-	[[nodiscard]] Point3D operator-(const DistanceInBlocks& distance) const;
-	[[nodiscard]] Point3D operator+(const DistanceInBlocks& distance) const;
-	[[nodiscard]] Point3D operator-(const DistanceInBlocksWidth& distance) const;
-	[[nodiscard]] Point3D operator+(const DistanceInBlocksWidth& distance) const;
+	[[nodiscard]] Distance x() const { return Distance::create(data[0]); }
+	[[nodiscard]] Distance y() const { return Distance::create(data[1]); }
+	[[nodiscard]] Distance z() const { return Distance::create(data[2]); }
+	[[nodiscard]] Point3D operator-(const Distance& distance) const;
+	[[nodiscard]] Point3D operator+(const Distance& distance) const;
+	[[nodiscard]] Point3D operator-(const DistanceWidth& distance) const;
+	[[nodiscard]] Point3D operator+(const DistanceWidth& distance) const;
 	[[nodiscard]] Point3D operator+(const Offset3D& other) const;
 	[[nodiscard]] Point3D operator-(const Offset3D& other) const;
 	[[nodiscard]] bool exists() const;
@@ -56,22 +57,48 @@ struct Point3D
 	[[nodiscard]] bool operator==(const Point3D& other) const;
 	[[nodiscard]] bool operator!=(const Point3D& other) const;
 	[[nodiscard]] std::strong_ordering operator<=>(const Point3D& other) const;
-	[[nodiscard]] DistanceInBlocks taxiDistanceTo(const Point3D& other) const;
-	[[nodiscard]] DistanceInBlocks distanceTo(const Point3D& other) const;
-	[[nodiscard]] DistanceInBlocksFractional distanceToFractional(const Point3D& other) const;
-	[[nodiscard]] DistanceInBlocks distanceSquared(const Point3D& other) const;
+	[[nodiscard]] Distance taxiDistanceTo(const Point3D& other) const;
+	[[nodiscard]] Distance distanceTo(const Point3D& other) const;
+	[[nodiscard]] DistanceFractional distanceToFractional(const Point3D& other) const;
+	[[nodiscard]] Distance distanceToSquared(const Point3D& other) const;
 	[[nodiscard]] std::string toString() const;
 	static const int hilbertOrder = 1;
 	[[nodiscard]] uint32_t hilbertNumber() const;
 	[[nodiscard]] Offset3D toOffset() const;
+	[[nodiscard]] Offset3D offsetTo(const Point3D& other) const;
+	[[nodiscard]] Point3D applyOffset(const Offset3D& other) const;
 	[[nodiscard]] bool isInFrontOf(const Point3D& coordinates, const Facing4& facing) const;
 	// Return value uses east rather then north as 0.
 	[[nodiscard]] double degreesFacingTwords(const Point3D& other) const;
 	[[nodiscard]] Facing4 getFacingTwords(const Point3D& other) const;
 	[[nodiscard]] Facing8 getFacingTwordsIncludingDiagonal(const Point3D& other) const;
+	[[nodiscard]] bool isAdjacentTo(const Point3D& point) const;
+	[[nodiscard]] bool squareOfDistanceIsGreaterThen(const Point3D& point, const DistanceFractional& distanceSquared) const;
+	[[nodiscard]] Point3D offsetRotated( const Offset3D& initalOffset, const Facing4& previousFacing, const Facing4& newFacing) const;
+	[[nodiscard]] Point3D offsetRotated( const Offset3D& initalOffset, const Facing4& facing) const;
+	[[nodiscard]] Point3D translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const;
+	[[nodiscard]] Point3D moveInDirection(const Facing6& facing, const Distance& distance) const;
+	// TODO: make this a view / iterator pair.
+	[[nodiscard]] std::array<Point3D, 26> getAllAdjacentIncludingOutOfBounds() const;
+	[[nodiscard]] bool isAdjacentToAny(const auto& points) const
+	{
+		for(const Point3D& point : points)
+			if(isAdjacentTo(point))
+				return true;
+		return false;
+	}
 	void log() const;
-	static Point3D create(const DistanceInBlocksWidth& x, const DistanceInBlocksWidth& y, const DistanceInBlocksWidth& z);
+	static Point3D create(const DistanceWidth& x, const DistanceWidth& y, const DistanceWidth& z);
 	static Point3D create(const Offset3D& offset);
+	static Point3D create(const Coordinates& offset);
+	static Point3D null();
+	static Point3D max() { return { Distance::max(), Distance::max(), Distance::max()}; }
+	struct Hash {
+		size_t operator()(const Point3D& point) const
+		{
+			return (point.x() + (point.y() * Distance::max()) + (point.z() * Distance::max() * Distance::max())).get();
+		}
+	};
 };
 inline void to_json(Json& data, const Point3D& point) { data = {point.x(), point.y(), point.z()}; }
 inline void from_json(const Json& data, Point3D& point)
@@ -102,14 +129,14 @@ struct Offset3D
 	Offset3D& operator=(const Offset3D& other);
 	Offset3D& operator=(const Point3D& other);
 	void operator*=(const Offset other) { data *= other.get(); }
-	void operator*=(const DistanceInBlocks& distance) { data *= distance.get(); }
+	void operator*=(const Distance& distance) { data *= distance.get(); }
 	void operator/=(const Offset other) { data /= other.get(); }
-	void operator/=(const DistanceInBlocks& distance) { data /= distance.get(); }
+	void operator/=(const Distance& distance) { data /= distance.get(); }
 	void operator+=(const Offset other) { data += other.get(); }
-	void operator+=(const DistanceInBlocks& distance) { data += distance.get(); }
+	void operator+=(const Distance& distance) { data += distance.get(); }
 	void operator+=(const Offset3D& other) { data += other.data; }
 	void operator-=(const Offset other) { data -= other.get(); }
-	void operator-=(const DistanceInBlocks& distance) { data -= distance.get(); }
+	void operator-=(const Distance& distance) { data -= distance.get(); }
 	void rotate2D(const Facing4& facing);
 	void rotate2D(const Facing4& oldFacing, const Facing4& newFacing);
 	void rotate2DInvert(const Facing4& facing);

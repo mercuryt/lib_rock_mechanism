@@ -2,7 +2,7 @@
 #include "../area/area.h"
 #include "../numericTypes/types.h"
 #include "actors/actors.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "../path/terrainFacade.hpp"
 #include "../hasShapes.hpp"
 // Path Request.
@@ -35,33 +35,33 @@ FindPathResult SleepPathRequest::readStep(Area& area, const TerrainFacade& terra
 		m_maxDesireCandidate = area.getActors().getLocation(actorIndex);
 	if(m_maxDesireCandidate.empty())
 	{
-		auto condition = [this, &area, actorIndex](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
+		auto condition = [this, &area, actorIndex](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
 		{
-			uint32_t desire = m_sleepObjective.desireToSleepAt(area, block, actorIndex);
+			uint32_t desire = m_sleepObjective.desireToSleepAt(area, point, actorIndex);
 			if(desire == 3)
 			{
-				m_maxDesireCandidate = block;
-				return {true, block};
+				m_maxDesireCandidate = point;
+				return {true, point};
 			}
 			else if(m_indoorCandidate.empty() && desire == 2)
-				m_indoorCandidate = block;
+				m_indoorCandidate = point;
 			else if(m_outdoorCandidate.empty() && desire == 1)
-				m_outdoorCandidate = block;
-			return {false, block};
+				m_outdoorCandidate = point;
+			return {false, point};
 		};
-		constexpr bool anyOccupiedBlock = false;
+		constexpr bool anyOccupiedPoint = false;
 		if(faction.exists())
 		{
 			constexpr bool unreserved = true;
-			return terrainFacade.findPathToBlockDesignationAndCondition<anyOccupiedBlock, decltype(condition)>(condition, memo, BlockDesignation::Sleep, faction, start, facing, shape, m_sleepObjective.m_detour, adjacent, unreserved, DistanceInBlocks::max());
+			return terrainFacade.findPathToSpaceDesignationAndCondition<anyOccupiedPoint, decltype(condition)>(condition, memo, SpaceDesignation::Sleep, faction, start, facing, shape, m_sleepObjective.m_detour, adjacent, unreserved, Distance::max());
 		}
 		else
-			return terrainFacade.findPathToConditionBreadthFirst<anyOccupiedBlock, decltype(condition)>(condition, memo, start, facing, shape, m_sleepObjective.m_detour, adjacent, faction, DistanceInBlocks::max());
+			return terrainFacade.findPathToConditionBreadthFirst<anyOccupiedPoint, decltype(condition)>(condition, memo, start, facing, shape, m_sleepObjective.m_detour, adjacent, faction, Distance::max());
 	}
 	else
 	{
 		m_sleepAtCurrentLocation = true;
-		return {{}, BlockIndex::null(), true};
+		return {{}, Point3D::null(), true};
 	}
 }
 void SleepPathRequest::writeStep(Area& area, FindPathResult& result)
@@ -76,7 +76,7 @@ void SleepPathRequest::writeStep(Area& area, FindPathResult& result)
 		else if(result.path.empty())
 		{
 			// Cannot path to spot, clear it and search for another place to sleep.
-			actors.sleep_setSpot(actorIndex, BlockIndex::null());
+			actors.sleep_setSpot(actorIndex, Point3D::null());
 			m_sleepObjective.execute(area, actorIndex);
 		}
 		else
@@ -126,15 +126,15 @@ Json SleepObjective::toJson() const
 void SleepObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	assert(actors.sleep_isAwake(actor));
-	BlockIndex sleepingSpot = actors.sleep_getSpot(actor);
+	Point3D sleepingSpot = actors.sleep_getSpot(actor);
 	// Check if the spot is still valid.
 	if(sleepingSpot.empty())
 	{
 		if(m_noWhereToSleepFound)
 		{
-			if(actors.predicateForAnyOccupiedBlock(actor, [&area](const BlockIndex& block){ return area.getBlocks().isEdge(block); }))
+			if(actors.predicateForAnyOccupiedPoint(actor, [&area](const Point3D& point){ return  area.getSpace().isEdge(point); }))
 				// We are at the edge and can leave.
 				actors.leaveArea(actor);
 			else
@@ -149,7 +149,7 @@ void SleepObjective::execute(Area& area, const ActorIndex& actor)
 		if(desireToSleepAt(area, actors.getLocation(actor), actor) == 0)
 		{
 			// Can not sleep here any more, look for another spot.
-			actors.sleep_setSpot(actor, BlockIndex::null());
+			actors.sleep_setSpot(actor, Point3D::null());
 			execute(area, actor);
 		}
 		else
@@ -157,7 +157,7 @@ void SleepObjective::execute(Area& area, const ActorIndex& actor)
 			actors.sleep_do(actor);
 	}
 	else
-		if(blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(sleepingSpot, actors.getShape(actor), actors.getMoveType(actor)))
+		if(space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(sleepingSpot, actors.getShape(actor), actors.getMoveType(actor)))
 		{
 			constexpr bool adjacent = false;
 			constexpr bool unreserved = true;
@@ -167,21 +167,21 @@ void SleepObjective::execute(Area& area, const ActorIndex& actor)
 		else
 		{
 			// Location no longer can be entered.
-			actors.sleep_setSpot(actor, BlockIndex::null());
+			actors.sleep_setSpot(actor, Point3D::null());
 			execute(area, actor);
 		}
 }
-uint32_t SleepObjective::desireToSleepAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const
+uint32_t SleepObjective::desireToSleepAt(Area& area, const Point3D& point, const ActorIndex& actor) const
 {
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	Actors& actors = area.getActors();
-	if(blocks.isReserved(block, actors.getFaction(actor)) || !actors.temperature_isSafe(actor, blocks.temperature_get(block)))
+	if(space.isReserved(point, actors.getFaction(actor)) || !actors.temperature_isSafe(actor, space.temperature_get(point)))
 		// Impossible to sleep here.
 		return 0;
-	if(area.m_hasSleepingSpots.containsUnassigned(block))
+	if(area.m_hasSleepingSpots.containsUnassigned(point))
 		// Most desirable.
 		return 3;
-	if(blocks.isExposedToSky(block) || !blocks.actor_empty(block))
+	if(space.isExposedToSky(point) || !space.actor_empty(point))
 		// Least deserable.
 		return 1;
 	else
@@ -203,7 +203,7 @@ void SleepObjective::reset(Area& area, const ActorIndex& actor)
 	actors.canReserve_clearAll(actor);
 	m_noWhereToSleepFound = false;
 }
-void SleepObjective::selectLocation(Area& area, const BlockIndex& location, const ActorIndex& actor)
+void SleepObjective::selectLocation(Area& area, const Point3D& location, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	actors.sleep_setSpot(actor, location);
@@ -219,7 +219,7 @@ void SleepObjective::makePathRequest(Area& area, const ActorIndex& actor)
 bool SleepObjective::onCanNotPath(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
-	BlockIndex sleepSpot = actors.sleep_getSpot(actor);
+	Point3D sleepSpot = actors.sleep_getSpot(actor);
 	if(sleepSpot.exists())
 	{
 		// Sleep spot exists but we can't get to it. Clear it and look for another.

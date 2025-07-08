@@ -98,15 +98,15 @@ void AreaHasFluidGroups::doStep(bool parallel)
 	for(FluidGroup& fluidGroup : m_fluidGroups)
 		fluidGroup.validate(m_area);
 }
-FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidTypeId& fluidType, SmallSet<BlockIndex>& blocks, bool checkMerge)
+FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidTypeId& fluidType, SmallSet<Point3D>& space, bool checkMerge)
 {
-	FluidGroup& fluidGroup = m_fluidGroups.emplace_back(m_allocator, fluidType, blocks, m_area, checkMerge);
+	FluidGroup& fluidGroup = m_fluidGroups.emplace_back(m_allocator, fluidType, space, m_area, checkMerge);
 	assert(!fluidGroup.m_stable);
 	return &fluidGroup;
 }
-FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidTypeId& fluidType, SmallSet<BlockIndex>&& blocks, bool checkMerge)
+FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidTypeId& fluidType, SmallSet<Point3D>&& space, bool checkMerge)
 {
-	return createFluidGroup(fluidType, blocks, checkMerge);
+	return createFluidGroup(fluidType, space, checkMerge);
 }
 void AreaHasFluidGroups::removeFluidGroup(FluidGroup& group)
 {
@@ -141,7 +141,7 @@ std::string AreaHasFluidGroups::toS() const
 	{
 		output += "type:" + (FluidType::getName(fluidGroup.m_fluidType));
 		output += "-total:" + std::to_string(fluidGroup.totalVolume(m_area).get());
-		output += "-blocks:" + std::to_string(fluidGroup.m_drainQueue.m_set.size());
+		output += "-space:" + std::to_string(fluidGroup.m_drainQueue.m_set.size());
 		output += "-status:";
 		if(fluidGroup.m_merged)
 			output += "-merged";

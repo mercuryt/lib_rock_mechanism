@@ -35,11 +35,11 @@ TEST_CASE("sow")
 	FactionId faction = simulation.createFaction("Tower Of Power");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	Plants& plants = area.getPlants();
 	Items& items = area.getItems();
-	area.m_blockDesignations.registerFaction(faction);
+	area.m_spaceDesignations.registerFaction(faction);
 	BlockIndex fieldLocation = blocks.getIndex_i(4, 4, 2);
 	BlockIndex pondLocation = blocks.getIndex_i(8, 8, 1);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
@@ -65,12 +65,12 @@ TEST_CASE("sow")
 		CHECK(field.plantSpecies == wheatGrass);
 		CHECK(blocks.farm_contains(fieldLocation, faction));
 		CHECK(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		CHECK(blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		CHECK(blocks.designation_has(fieldLocation, faction, SpaceDesignation::SowSeeds));
 		CHECK(objectiveType.canBeAssigned(area, actor));
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
 		CHECK(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		CHECK(blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		CHECK(blocks.designation_has(fieldLocation, faction, SpaceDesignation::SowSeeds));
 		CHECK(!blocks.isReserved(fieldLocation, faction));
 		CHECK(actors.objective_getCurrentName(actor) == "sow seeds");
 		CHECK(actors.move_hasPathRequest(actor));
@@ -79,14 +79,14 @@ TEST_CASE("sow")
 		constexpr bool adjacent = true;
 		CHECK(!area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor)).findPathToWithoutMemo(actors.getLocation(actor), actors.getFacing(actor), actors.getShape(actor), fieldLocation, detour, adjacent, faction).path.empty());
 		simulation.doStep();
-		CHECK(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		CHECK(!blocks.designation_has(fieldLocation, faction, SpaceDesignation::SowSeeds));
 		CHECK(!actors.move_getPath(actor).empty());
 		BlockIndex destination = actors.move_getDestination(actor);
 		simulation.fastForwardUntillActorIsAtDestination(area, actor, destination);
 		CHECK(actors.move_getPath(actor).empty());
 		CHECK(!actors.move_hasPathRequest(actor));
 		CHECK(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		CHECK(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		CHECK(!blocks.designation_has(fieldLocation, faction, SpaceDesignation::SowSeeds));
 		simulation.fastForward(Config::sowSeedsStepsDuration);
 		CHECK(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		CHECK(!area.getPlants().getAll().empty());
@@ -153,9 +153,9 @@ TEST_CASE("sow")
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
-		CHECK(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		CHECK(!blocks.designation_has(fieldLocation, faction, SpaceDesignation::SowSeeds));
 		actors.objective_cancel(actor, actors.objective_getCurrent<Objective>(actor));
-		CHECK(blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		CHECK(blocks.designation_has(fieldLocation, faction, SpaceDesignation::SowSeeds));
 		CHECK(!blocks.isReserved(fieldLocation, faction));
 	}
 	SUBCASE("player delays sowing objective")
@@ -164,10 +164,10 @@ TEST_CASE("sow")
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
-		CHECK(!blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		CHECK(!blocks.designation_has(fieldLocation, faction, SpaceDesignation::SowSeeds));
 		std::unique_ptr<GoToObjective> goToObjective = std::make_unique<GoToObjective>(fieldLocation);
 		actors.objective_addTaskToStart(actor, std::move(goToObjective));
-		CHECK(blocks.designation_has(fieldLocation, faction, BlockDesignation::SowSeeds));
+		CHECK(blocks.designation_has(fieldLocation, faction, SpaceDesignation::SowSeeds));
 		CHECK(!blocks.isReserved(fieldLocation, faction));
 	}
 }
@@ -181,11 +181,11 @@ TEST_CASE("harvest")
 	FactionId faction = simulation.createFaction("Tower Of Power");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	Plants& plants = area.getPlants();
 	Items& items = area.getItems();
-	area.m_blockDesignations.registerFaction(faction);
+	area.m_spaceDesignations.registerFaction(faction);
 	BlockIndex block = blocks.getIndex_i(4, 4, 2);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	area.m_hasFarmFields.registerFaction(faction);
@@ -203,7 +203,7 @@ TEST_CASE("harvest")
 		blocks.plant_create(block, wheatGrass, Percent::create(100));
 		CHECK(area.m_hasFarmFields.hasHarvestDesignations(faction));
 		CHECK(plants.getQuantityToHarvest(blocks.plant_get(block)) == PlantSpecies::getItemQuantityToHarvest(wheatGrass));
-		CHECK(blocks.designation_has(block, faction, BlockDesignation::Harvest));
+		CHECK(blocks.designation_has(block, faction, SpaceDesignation::Harvest));
 		CHECK(objectiveType.canBeAssigned(area, actor));
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
 		actors.satisfyNeeds(actor);
@@ -212,18 +212,18 @@ TEST_CASE("harvest")
 		CHECK(objective.blockContainsHarvestablePlant(area, block, actor));
 		CHECK(actors.move_hasPathRequest(actor));
 		CHECK(actors.move_canPathTo(actor, block));
-		const AreaHasBlockDesignationsForFaction& designations = area.m_blockDesignations.getForFaction(faction);
-		uint32_t offset = designations.getOffsetForDesignation(BlockDesignation::Harvest);
+		const AreaHasSpaceDesignationsForFaction& designations = area.m_spaceDesignations.getForFaction(faction);
+		uint32_t offset = designations.getOffsetForDesignation(SpaceDesignation::Harvest);
 		CHECK(designations.checkWithOffset(offset, block));
 		simulation.doStep();
-		CHECK(!blocks.designation_has(block, faction, BlockDesignation::Harvest));
+		CHECK(!blocks.designation_has(block, faction, SpaceDesignation::Harvest));
 		CHECK(!actors.move_getPath(actor).empty());
 		BlockIndex destination = actors.move_getDestination(actor);
 		simulation.fastForwardUntillActorIsAtDestination(area, actor, destination);
 		CHECK(actors.move_getPath(actor).empty());
 		CHECK(!actors.move_hasPathRequest(actor));
 		CHECK(!area.m_hasFarmFields.hasHarvestDesignations(faction));
-		CHECK(!blocks.designation_has(block, faction, BlockDesignation::Harvest));
+		CHECK(!blocks.designation_has(block, faction, SpaceDesignation::Harvest));
 		simulation.fastForward(Config::harvestEventDuration);
 		CHECK(!area.m_hasFarmFields.hasHarvestDesignations(faction));
 		CHECK(!objectiveType.canBeAssigned(area, actor));
@@ -296,9 +296,9 @@ TEST_CASE("harvest")
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
 		CHECK(!area.m_hasFarmFields.hasHarvestDesignations(faction));
-		CHECK(!blocks.designation_has(block, faction, BlockDesignation::Harvest));
+		CHECK(!blocks.designation_has(block, faction, SpaceDesignation::Harvest));
 		actors.objective_cancel(actor, actors.objective_getCurrent<Objective>(actor));
-		CHECK(blocks.designation_has(block, faction, BlockDesignation::Harvest));
+		CHECK(blocks.designation_has(block, faction, SpaceDesignation::Harvest));
 	}
 	SUBCASE("player delays harvest")
 	{
@@ -309,10 +309,10 @@ TEST_CASE("harvest")
 		actors.satisfyNeeds(actor);
 		simulation.doStep();
 		CHECK(!area.m_hasFarmFields.hasHarvestDesignations(faction));
-		CHECK(!blocks.designation_has(block, faction, BlockDesignation::Harvest));
+		CHECK(!blocks.designation_has(block, faction, SpaceDesignation::Harvest));
 		std::unique_ptr<GoToObjective> goToObjective = std::make_unique<GoToObjective>(block);
 		actors.objective_addTaskToStart(actor, std::move(goToObjective));
-		CHECK(blocks.designation_has(block, faction, BlockDesignation::Harvest));
+		CHECK(blocks.designation_has(block, faction, SpaceDesignation::Harvest));
 	}
 }
 TEST_CASE("givePlantFluid")
@@ -324,11 +324,11 @@ TEST_CASE("givePlantFluid")
 	FactionId faction = simulation.createFaction("Tower Of Power");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	Plants& plants = area.getPlants();
 	Items& items = area.getItems();
-	area.m_blockDesignations.registerFaction(faction);
+	area.m_spaceDesignations.registerFaction(faction);
 	BlockIndex block = blocks.getIndex_i(4, 4, 2);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	area.m_hasFarmFields.registerFaction(faction);

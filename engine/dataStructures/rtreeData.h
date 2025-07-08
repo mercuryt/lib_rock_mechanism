@@ -4,8 +4,19 @@
 #include "../strongInteger.h"
 #include "../dataStructures/strongVector.h"
 #include "../dataStructures/smallMap.h"
+#include "../json.h"
+struct RTreeDataConfig
+{
+	bool splitAndMerge = true;
+	bool leavesCanOverlap = false;
+};
 
-template<typename T>
+template <typename T>
+concept Sortable = requires(T a, T b) {
+    { a < b } -> std::same_as<bool>; // Check if operator< exists and returns bool
+};
+
+template<Sortable T, RTreeDataConfig config = RTreeDataConfig()>
 class RTreeData
 {
 	static constexpr uint nodeSize = 4;
@@ -14,12 +25,14 @@ class RTreeData
 	{
 	public:
 		struct Hash { [[nodiscard]] size_t operator()(const Index& index) const { return index.get(); } };
+		NLOHMANN_DEFINE_TYPE_INTRUSIVE(Index, data);
 	};
 	using ArrayIndexWidth = uint8_t;
 	class ArrayIndex final : public StrongInteger<ArrayIndex, ArrayIndexWidth>
 	{
 	public:
 		struct Hash { [[nodiscard]] size_t operator()(const ArrayIndex& index) const { return index.get(); } };
+		NLOHMANN_DEFINE_TYPE_INTRUSIVE(ArrayIndex, data);
 	};
 	union DataOrChild { T::Primitive data; Index::Primitive child; };
 	class Node
@@ -43,6 +56,8 @@ class RTreeData
 		[[nodiscard]] bool empty() const { return unusedCapacity() == nodeSize; }
 		[[nodiscard]] uint getLeafVolume() const;
 		[[nodiscard]] uint getNodeVolume() const;
+		[[nodiscard]] Json toJson() const;
+		void load(const Json& data);
 		void updateChildIndex(const Index& oldIndex, const Index& newIndex);
 		void insertLeaf(const Cuboid& cuboid, const T& value);
 		void insertBranch(const Cuboid& cuboid, const Index& index);
@@ -52,14 +67,16 @@ class RTreeData
 		void eraseLeavesByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
 		void clear();
 		void setParent(const Index& index) { m_parent = index; }
-		void updateLeaf(const ArrayIndex offset, const Cuboid& cuboid);
-		void updateLeafWithValue(const ArrayIndex offset, const Cuboid& cuboid, const T& value);
-		void updateBranchBoundry(const ArrayIndex offset, const Cuboid& cuboid);
+		void updateLeaf(const ArrayIndex& offset, const Cuboid& cuboid);
+		void updateValue(const ArrayIndex& offset, const T& value);
+		void updateLeafWithValue(const ArrayIndex& offset, const Cuboid& cuboid, const T& value);
+		void updateBranchBoundry(const ArrayIndex& offset, const Cuboid& cuboid);
 		[[nodiscard]] __attribute__((noinline)) std::string toString();
 	};
 	StrongVector<Node, Index> m_nodes;
 	SmallSet<Index> m_emptySlots;
 	SmallSet<Index> m_toComb;
+	T m_nullValue;
 	[[nodiscard]] std::tuple<Cuboid, ArrayIndex, ArrayIndex> findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids) const;
 	[[nodiscard]] SmallMap<Cuboid, T> gatherLeavesRecursive(const Index& parent) const;
 	void destroyWithChildren(const Index& index);
@@ -83,11 +100,50 @@ public:
 	RTreeData() { m_nodes.add(); m_nodes.back().setParent(Index::null()); }
 	void maybeInsert(const Cuboid& cuboid, const T& value);
 	void maybeRemove(const Cuboid& cuboid, const T& value);
+	void maybeRemove(const Cuboid& cuboid);
 	void maybeInsert(Cuboid&& cuboid, const T& value) { const Cuboid copy = cuboid; maybeInsert(copy, value); }
 	void maybeRemove(Cuboid&& cuboid, const T& value) { const Cuboid copy = cuboid; maybeRemove(copy, value); }
+	void maybeRemove(Cuboid&& cuboid) { const Cuboid copy = cuboid; maybeRemove(copy); }
 	void maybeInsert(const Point3D& point, const T& value) { const Cuboid cuboid = Cuboid(point, point); maybeInsert(cuboid, value); }
 	void maybeRemove(const Point3D& point, const T& value) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid, value); }
+	void maybeRemove(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid); }
+	void maybeInsertOrOverwrite(const Point3D& point, const T& value) { maybeRemove(point); maybeInsert(point, value); }
 	void prepare();
+	[[nodiscard]] Json toJson() const;
+	void load(const Json& data);
+	void update(const auto& shape, const T& oldValue, const T& newValue)
+	{
+
+		SmallSet<Index> openList;
+		openList.insert(Index::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			const auto leafCount = node.getLeafCount();
+			const auto& begin = interceptMask.begin();
+			const auto leafEnd = begin + leafCount;
+			for(auto iter = begin; iter != leafEnd; ++iter)
+				if(*iter)
+				{
+					uint8_t offset = iter - begin;
+					if(nodeDataAndChildIndices[offset].data == oldValue.get())
+						node.updateValue(ArrayIndex::create(offset), newValue);
+				}
+			const auto offsetOfFirstChild = node.offsetOfFirstChild();
+			const auto end = interceptMask.end();
+			for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+				if(*iter)
+				{
+					uint8_t offset = iter - begin;
+					openList.insert(Index::create(nodeDataAndChildIndices[offset].child));
+				}
+		}
+	}
 	[[nodiscard]] bool queryAny(const auto& shape) const
 	{
 		SmallSet<Index> openList;
@@ -113,7 +169,7 @@ public:
 			if(offsetOfFirstChild == 0)
 			{
 				// Unrollable version for nodes where every slot is a child.
-				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+				for(auto iter = begin; iter != end; ++iter)
 					if(*iter)
 						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
 			}
@@ -126,7 +182,7 @@ public:
 		}
 		return false;
 	}
-	[[nodiscard]] T queryGetAny(const auto& shape) const
+	[[nodiscard]]const T queryGetOne(const auto& shape) const
 	{
 		SmallSet<Index> openList;
 		openList.insert(Index::create(0));
@@ -155,7 +211,7 @@ public:
 			if(offsetOfFirstChild == 0)
 			{
 				// Unrollable version for nodes where every slot is a child.
-				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+				for(auto iter = begin; iter != end; ++iter)
 					if(*iter)
 						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
 			}
@@ -166,9 +222,9 @@ public:
 						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
 			}
 		}
-		return T::null();
+		return m_nullValue;
 	}
-	[[nodiscard]] SmallSet<T> queryGetAll(const auto& shape) const
+	[[nodiscard]] const SmallSet<T> queryGetAll(const auto& shape) const
 	{
 		SmallSet<Index> openList;
 		SmallSet<T> output;
@@ -198,7 +254,7 @@ public:
 			if(offsetOfFirstChild == 0)
 			{
 				// Unrollable version for nodes where every slot is a child.
-				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+				for(auto iter = begin; iter != end; ++iter)
 					if(*iter)
 						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
 			}
@@ -210,6 +266,52 @@ public:
 			}
 		}
 		output.makeUnique();
+		return output;
+	}
+	[[nodiscard]] const SmallSet<std::pair<Cuboid, T>> queryGetAllWithCuboids(const auto& shape) const
+	{
+		SmallSet<Index> openList;
+		SmallSet<std::pair<Cuboid, T>> output;
+		openList.insert(Index::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			const auto leafCount = node.getLeafCount();
+			if(!interceptMask.any())
+				continue;
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			const auto offsetOfFirstChild = node.offsetOfFirstChild();
+			if(leafCount != 0 && interceptMask.head(leafCount).any())
+			{
+				auto begin = interceptMask.begin();
+				auto end = begin + leafCount;
+				for(auto iter = begin; iter != end; ++iter)
+					if(*iter)
+					{
+						const auto offset = iter - begin;
+						output.emplace(nodeCuboids[offset], T::create(nodeDataAndChildIndices[offset].data));
+					}
+			}
+			const auto begin = interceptMask.begin();
+			const auto end = begin + nodeSize;
+			if(offsetOfFirstChild == 0)
+			{
+				// Unrollable version for nodes where every slot is a child.
+				for(auto iter = begin; iter != end; ++iter)
+					if(*iter)
+						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
+			}
+			else
+			{
+				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+					if(*iter)
+						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
+			}
+		}
 		return output;
 	}
 	[[nodiscard]] std::vector<bool> batchQueryAny(const auto& shapes) const
@@ -279,3 +381,7 @@ public:
 	__attribute__((noinline)) void assertAllLeafsAreUnique() const;
 	[[nodiscard]] static __attribute__((noinline)) uint getNodeSize();
 };
+template<typename T, RTreeDataConfig config = RTreeDataConfig()>
+void to_json(Json& data, const RTreeData<T, config>& tree) { data = tree.toJson(); }
+template<typename T, RTreeDataConfig config = RTreeDataConfig()>
+void from_json(const Json& data, RTreeData<T, config>& tree) { tree.load(data); }

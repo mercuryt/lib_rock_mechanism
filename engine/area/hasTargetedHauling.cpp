@@ -2,7 +2,7 @@
 #include "../actors/actors.h"
 #include "../objectives/targetedHaul.h"
 #include "area.h"
-TargetedHaulProject& AreaHasTargetedHauling::begin(const SmallSet<ActorIndex>& workers, const ActorOrItemIndex& target, const BlockIndex& destination)
+TargetedHaulProject& AreaHasTargetedHauling::begin(const SmallSet<ActorIndex>& workers, const ActorOrItemIndex& target, const Point3D& destination)
 {
 	Actors& actors = m_area.getActors();
 	ActorOrItemReference ref = target.toReference(m_area);

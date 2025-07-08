@@ -20,7 +20,7 @@ class StockPileProject;
 class Simulation;
 class ReenableStockPileScheduledEvent;
 class StockPile;
-class BlockIsPartOfStockPiles;
+class PointIsPartOfStockPiles;
 struct DeserializationMemo;
 struct MaterialType;
 struct FindPathResult;
@@ -33,7 +33,7 @@ class StockPileProject final : public Project
 	// Needed for generic items where the original item may no longer exist.
 	Quantity m_quantity = Quantity::create(0);
 	ItemTypeId m_itemType;
-	MaterialTypeId m_materialType;
+	MaterialTypeId m_solid;
 	StockPile& m_stockpile;
 	void onComplete() override;
 	void onReserve() override;
@@ -51,7 +51,7 @@ class StockPileProject final : public Project
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
 	std::vector<ActorReference> getActors() const;
 public:
-	StockPileProject(const FactionId& faction, Area& area, const BlockIndex& block, const ItemIndex& item, const Quantity& quantity, const Quantity& maxWorkers);
+	StockPileProject(const FactionId& faction, Area& area, const Point3D& point, const ItemIndex& item, const Quantity& quantity, const Quantity& maxWorkers);
 	StockPileProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool canAddWorker(const ActorIndex& actor) const;

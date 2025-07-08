@@ -20,7 +20,7 @@ TEST_CASE("Area")
 	Simulation simulation("", Step::create(1));
 	Area& area = simulation.m_hasAreas->createArea(10, 10, 10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	SUBCASE("Make Area")
 	{
@@ -197,7 +197,7 @@ TEST_CASE("vision-threading")
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	BlockIndex block1 = blocks.getIndex_i(3, 3, 1);
 	BlockIndex block2 = blocks.getIndex_i(7, 7, 1);
@@ -227,7 +227,7 @@ TEST_CASE("multiMergeOnAdd")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(2,2,1);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	BlockIndex block1 = blocks.getIndex_i(0, 0, 0);
 	BlockIndex block2 = blocks.getIndex_i(0, 1, 0);
 	BlockIndex block3 = blocks.getIndex_i(1, 0, 0);
@@ -257,7 +257,7 @@ inline void fourFluidsTestParallel(uint32_t scale, Step steps)
 	Simulation simulation("", Step::create(0));
 	Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 	std::vector<FluidGroup*> newlySplit;

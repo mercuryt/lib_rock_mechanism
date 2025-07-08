@@ -1711,7 +1711,7 @@
 		},
 		{
 			"data": {},
-			"id": "block",
+			"id": "point",
 			"index": 40,
 			"inputIndex": 3,
 			"inputSpriteIndex": 3,

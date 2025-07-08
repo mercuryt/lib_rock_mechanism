@@ -54,6 +54,10 @@ public:
 			insertNonunique(*begin);
 		makeUnique();
 	}
+	void maybeInsertAll(const auto& source)
+	{
+		maybeInsertAll(source.begin(), source.end());
+	}
 	void insertAll(const This& other)
 	{
 		insertAll(other.begin(), other.end());

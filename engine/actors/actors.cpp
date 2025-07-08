@@ -386,23 +386,23 @@ void Actors::load(const Json& data)
 	for(ActorIndex index : getAll())
 	{
 		m_area.m_simulation.m_actors.registerActor(getId(index), m_area.getActors(), index);
-		Blocks &blocks = m_area.getBlocks();
+		Space &space = m_area.getSpace();
 		if(m_location[index].exists())
 		{
 			if(isStatic(index))
 			{
 				for (const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
 				{
-					BlockIndex occupied = blocks.offset(m_location[index], pair.offset);
-					blocks.actor_recordStatic(occupied, index, pair.volume);
+					Point3D occupied = m_location[index].applyOffset(pair.offset);
+					space.actor_recordStatic(occupied, index, pair.volume);
 				}
 			}
 			else
 			{
 				for (const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
 				{
-					BlockIndex occupied = blocks.offset(m_location[index], pair.offset);
-					blocks.actor_recordDynamic(occupied, index, pair.volume);
+					Point3D occupied = m_location[index].applyOffset(pair.offset);
+					space.actor_recordDynamic(occupied, index, pair.volume);
 				}
 			}
 		}
@@ -549,10 +549,10 @@ void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
 	// Update stored index for all actors who are targeting this one.
 	for(ActorIndex actor : m_targetedBy[newIndex])
 		m_target[actor] = newIndex;
-	// Update SmallSet<ActorIndex> stored in occupied block(s).
-	Blocks& blocks = m_area.getBlocks();
-	for(BlockIndex block : m_blocks[newIndex])
-		blocks.actor_updateIndex(block, oldIndex, newIndex);
+	// Update SmallSet<ActorIndex> stored in occupied point(s).
+	Space& space = m_area.getSpace();
+	for(Point3D point : m_occupied[newIndex])
+		space.actor_updateIndex(point, oldIndex, newIndex);
 }
 void Actors::destroy(const ActorIndex& index)
 {
@@ -699,8 +699,8 @@ ActorIndex Actors::create(ActorParamaters params)
 	assert(m_targetedBy[index].empty());
 	m_target[index].clear();
 	m_onMissCoolDownMelee[index].clear();
-	m_maxMeleeRange[index] = DistanceInBlocksFractional::null();
-	m_maxRange[index] = DistanceInBlocksFractional::null();
+	m_maxMeleeRange[index] = DistanceFractional::null();
+	m_maxRange[index] = DistanceFractional::null();
 	m_coolDownDurationModifier[index] = 0;
 	m_combatScore[index] = CombatScore::null();
 	// Move.
@@ -727,7 +727,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	else if(params.piloting)
 	{
 		auto& decks = m_area.m_decks;
-		ActorOrItemIndex isPiloting = decks.getForId(decks.getForBlock(params.location));
+		ActorOrItemIndex isPiloting = decks.getForId(decks.getForPoint(params.location));
 		assert(isPiloting.isItem());
 		const ItemIndex& vehicle = isPiloting.getItem();
 		location_set(index, params.location, isPiloting.getFacing(m_area));
@@ -867,7 +867,7 @@ std::string Actors::getActionDescription(const ActorIndex& index) const
 		return const_cast<HasObjectives&>(*m_hasObjectives[index].get()).getCurrent().name();
 	return "no action";
 }
-BlockIndex Actors::getCombinedLocation(const ActorIndex& index) const
+Point3D Actors::getCombinedLocation(const ActorIndex& index) const
 {
 	if(!m_isPilot[index])
 		return getLocation(index);
@@ -897,26 +897,12 @@ ActorOrItemIndex Actors::getIsPiloting(const ActorIndex& index) const
 		return ActorOrItemIndex::null();
 	return m_isOnDeckOf[index];
 }
-void Actors::reserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing4& facing)
-{
-	if(m_faction[index].empty())
-		return;
-	for(BlockIndex occupied : getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing))
-		m_area.getBlocks().reserve(occupied, *m_canReserve[index]);
-}
-void Actors::unreserveAllBlocksAtLocationAndFacing(const ActorIndex& index, const BlockIndex& location, const Facing4& facing)
-{
-	if(m_faction[index].empty())
-		return;
-	for(BlockIndex occupied : getBlocksWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing))
-		m_area.getBlocks().unreserve(occupied, *m_canReserve[index]);
-}
 void Actors::setBirthStep(const ActorIndex& index, const Step& step)
 {
 	m_birthStep[index] = step;
 	m_canGrow[index]->updateGrowingStatus(m_area);
 }
-void Actors::takeFallDamage(const ActorIndex& index, const DistanceInBlocks& distance, const MaterialTypeId& materialType)
+void Actors::takeFallDamage(const ActorIndex& index, const Distance& distance, const MaterialTypeId& materialType)
 {
 	const Force& force = Force::create(distance.get() * getMass(index).get() * Config::modifierToTurnMassTimesFallDistanceIntoForce / Config::hitsToDivideActorFallDamageInto);
 	for(uint8_t i = 0; i < Config::hitsToDivideActorFallDamageInto; ++i)
@@ -934,17 +920,17 @@ void Actors::resetMoveType(const ActorIndex& index)
 	m_moveType[index] = AnimalSpecies::getMoveType(getSpecies(index));
 	//TODO: add extra move types granted by skills and equipment.
 }
-bool Actors::tryToMoveSoAsNotOccuping(const ActorIndex& index, const BlockIndex& block)
+bool Actors::tryToMoveSoAsNotOccuping(const ActorIndex& index, const Point3D& point)
 {
-	Blocks& blocks = m_area.getBlocks();
-	const BlockIndex& location = m_location[index];
-	for(const BlockIndex& adjacent : blocks.getAdjacentWithEdgeAndCornerAdjacent(location))
-		if(blocks.shape_anythingCanEnterEver(adjacent))
+	Space& space = m_area.getSpace();
+	const Point3D& location = m_location[index];
+	for(const Point3D& adjacent : space.getAdjacentWithEdgeAndCornerAdjacent(location))
+		if(space.shape_anythingCanEnterEver(adjacent))
 		{
-			const Facing4& facing = blocks.facingToSetWhenEnteringFrom(adjacent, block);
-			if(blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(adjacent, m_shape[index], m_moveType[index], facing, m_blocks[index]))
+			const Facing4& facing = point.getFacingTwords(adjacent);
+			if(space.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(adjacent, m_shape[index], m_moveType[index], facing, m_occupied[index]))
 			{
-				location_set(index, adjacent, blocks.facingToSetWhenEnteringFrom(adjacent, location));
+				location_set(index, adjacent, location.getFacingTwords(adjacent));
 				return true;
 			}
 		}
@@ -953,20 +939,19 @@ bool Actors::tryToMoveSoAsNotOccuping(const ActorIndex& index, const BlockIndex&
 Percent Actors::getPercentGrown(const ActorIndex& index) const { return m_canGrow[index]->growthPercent(); }
 void Actors::log(const ActorIndex& index) const
 {
-	Blocks& blocks = m_area.getBlocks();
 	std::cout << m_name[index];
 	std::cout << "(L" << AnimalSpecies::getName(m_species[index]) << ")";
 	Portables<Actors, ActorIndex, ActorReferenceIndex>::log(index);
 	if(objective_exists(index))
 		std::cout << ", current objective: " << objective_getCurrentName(index);
 	if(m_destination[index].exists())
-		std::cout << ", destination: " << blocks.getCoordinates(m_destination[index]).toString();
+		std::cout << ", destination: " << m_destination[index].toString();
 	if(!m_path[index].empty())
 		std::cout << ", path length: " << m_path[index].size();
 	if(m_pathRequest[index] != nullptr)
 		std::cout << ", path request exists";
 	if(m_project[index] != nullptr)
-		std::cout << ", project location: " << blocks.getCoordinates(m_project[index]->getLocation()).toString();
+		std::cout << ", project location: " << m_project[index]->getLocation().toString();
 	if(m_carrying[index].exists())
 	{
 		std::cout << ", carrying: {";
@@ -1003,7 +988,7 @@ void Actors::satisfyNeeds(const ActorIndex& index)
 void Actors::sleep_do(const ActorIndex& index) { m_mustSleep[index]->sleep(m_area); }
 void Actors::sleep_wakeUp(const ActorIndex& index){ m_mustSleep[index]->wakeUp(m_area); }
 void Actors::sleep_wakeUpEarly(const ActorIndex& index){ m_mustSleep[index]->wakeUpEarly(m_area); }
-void Actors::sleep_setSpot(const ActorIndex& index, const BlockIndex& location) { m_mustSleep[index]->setLocation(location); }
+void Actors::sleep_setSpot(const ActorIndex& index, const Point3D& location) { m_mustSleep[index]->setLocation(location); }
 void Actors::sleep_makeTired(const ActorIndex& index) { m_mustSleep[index]->tired(m_area); }
 void Actors::sleep_clearObjective(const ActorIndex& index) { m_mustSleep[index]->clearObjective(); }
 void Actors::sleep_maybeClearSpot(const ActorIndex& index) { return m_mustSleep[index]->clearSleepSpot(); }
@@ -1011,7 +996,7 @@ bool Actors::sleep_isAwake(const ActorIndex& index) const { return m_mustSleep[i
 bool Actors::sleep_isTired(const ActorIndex& index) const { return m_mustSleep[index]->isTired();}
 Percent Actors::sleep_getPercentDoneSleeping(const ActorIndex& index) const { return m_mustSleep[index]->getSleepPercent(); }
 Percent Actors::sleep_getPercentTired(const ActorIndex& index) const { return m_mustSleep[index]->getTiredPercent(); }
-BlockIndex Actors::sleep_getSpot(const ActorIndex& index) const { return m_mustSleep[index]->getLocation(); }
+Point3D Actors::sleep_getSpot(const ActorIndex& index) const { return m_mustSleep[index]->getLocation(); }
 bool Actors::sleep_hasTiredEvent(const ActorIndex& index) const { return m_mustSleep[index]->hasTiredEvent(); }
 // Skills.
 [[nodiscard]] SkillLevel Actors::skill_getLevel(const ActorIndex& index, const SkillTypeId& skillType) const { return m_skillSet[index].get(skillType); }

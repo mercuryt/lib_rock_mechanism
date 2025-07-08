@@ -20,9 +20,9 @@ class StockPileObjective final : public Objective
 {
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId>> m_closedList;
 	ItemReference m_item;
-	BlockIndex m_stockPileLocation;
+	Point3D m_stockPileLocation;
 	// Store where the actor will stand when picking up the item, for use when calculating the best drop off.
-	BlockIndex m_pickUpLocation;
+	Point3D m_pickUpLocation;
 	Facing4 m_pickUpFacing;
 	bool m_hasCheckedForCloserDropOffLocation = false;
 public:
@@ -33,13 +33,13 @@ public:
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
 	void reset(Area& area, const ActorIndex& actor);
-	[[nodiscard]] bool destinationCondition(Area& area, const BlockIndex& block, const ItemIndex& item, const ActorIndex& actor);
+	[[nodiscard]] bool destinationCondition(Area& area, const Point3D& point, const ItemIndex& item, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
 	std::string name() const { return "stockpile"; }
 	// For debug.
 	[[nodiscard]] bool hasItem() const { return m_item.exists(); }
 	[[nodiscard]] bool hasDestination() const { return m_stockPileLocation.exists(); }
-	[[nodiscard]] const BlockIndex& getDestination() const { return m_stockPileLocation; }
+	[[nodiscard]] const Point3D& getDestination() const { return m_stockPileLocation; }
 	[[nodiscard]] ItemReference getItem() const { return m_item; }
 	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	friend class StockPilePathRequest;
@@ -51,7 +51,7 @@ class StockPilePathRequest final : public PathRequestBreadthFirst
 	StockPileObjective& m_objective;
 	// One set of candidates for each type. When a new candidate is found compare it to all of the other type and if no match store it.
 	// No need to serialize these, they exist only for a single read step.
-	SmallMap<StockPile*, SmallSet<BlockIndex>> m_blocksByStockPile;
+	SmallMap<StockPile*, SmallSet<Point3D>> m_pointsByStockPile;
 
 	SmallSet<ItemIndex> m_items;
 public:
@@ -59,7 +59,7 @@ public:
 	StockPilePathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
-	[[nodiscard]] bool checkDestination(const Area& area, const ItemIndex& item, const BlockIndex& block) const;
+	[[nodiscard]] bool checkDestination(const Area& area, const ItemIndex& item, const Point3D& point) const;
 	[[nodiscard]] std::string name() const { return "stockpile"; }
 	[[nodiscard]] Json toJson() const;
 };

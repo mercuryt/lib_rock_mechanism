@@ -1,7 +1,7 @@
 #pragma once
 #include "cuboid.h"
-#include "cuboidSetSIMD.h"
 #include "paramaterizedLine.h"
+#include "sphere.h"
 
 template<int capacity>
 class CuboidArray
@@ -10,13 +10,13 @@ class CuboidArray
 	using Bool3DArray = Eigen::Array<bool, 3, capacity>;
 	using FloatArray = Eigen::Array<float, 1, capacity>;
 	using Float3DArray = Eigen::Array<float, 3, capacity>;
-	using PointArray = Eigen::Array<DistanceInBlocksWidth, 3, capacity>;
+	using PointArray = Eigen::Array<DistanceWidth, 3, capacity>;
 	using Offset3DArray = Eigen::Array<OffsetWidth, 3, capacity>;
 	using OffsetArray = Eigen::Array<OffsetWidth, 1, capacity>;
 	PointArray m_high;
 	PointArray m_low;
 public:
-	CuboidArray() : m_high(DistanceInBlocks::null().get()), m_low(DistanceInBlocks::null().get()) { }
+	CuboidArray() : m_high(Distance::null().get()), m_low(Distance::null().get()) { }
 	CuboidArray(const CuboidArray&) = default;
 	CuboidArray(CuboidArray&&) = default;
 	CuboidArray& operator=(const CuboidArray&) = default;
@@ -28,14 +28,15 @@ public:
 	}
 	void erase(const uint16_t& index)
 	{
-		m_high.col(index) = DistanceInBlocks::null().get();
-		m_low.col(index) = DistanceInBlocks::null().get();
+		m_high.col(index) = Distance::null().get();
+		m_low.col(index) = Distance::null().get();
 	}
 	void clear()
 	{
-		m_high = DistanceInBlocks::null().get();
-		m_low = DistanceInBlocks::null().get();
+		m_high = Distance::null().get();
+		m_low = Distance::null().get();
 	}
+	[[nodiscard]] int getCapacity() const { return capacity; }
 	[[nodiscard]] const Cuboid operator[](const uint& index) const { return {Coordinates(m_high.col(index)), Coordinates(m_low.col(index)) }; }
 	[[nodiscard]] Cuboid boundry() const
 	{
@@ -44,7 +45,7 @@ public:
 		uint j = 0;
 		for(uint i = 0; i < capacity; ++i)
 		{
-			if(m_high(0, i) != DistanceInBlocks::null().get())
+			if(m_high(0, i) != Distance::null().get())
 			{
 				copyMax.col(j) = m_high.col(i);
 				++j;
@@ -116,7 +117,7 @@ public:
 			highResults.row(0) = false;
 		else
 		{
-			const PointArray coordinatesAtHighX = replicatedStart + (replicatedSloap * stepsFromStartToHighFace.row(0).replicate(3, 1)).round().template cast<DistanceInBlocksWidth>();
+			const PointArray coordinatesAtHighX = replicatedStart + (replicatedSloap * stepsFromStartToHighFace.row(0).replicate(3, 1)).round().template cast<DistanceWidth>();
 			highResults.row(0) =
 				// Check Y.
 				coordinatesAtHighX.row(1) <= m_high.row(1) &&
@@ -133,7 +134,7 @@ public:
 			highResults.row(1) = false;
 		else
 		{
-			const PointArray coordinatesAtHighY = replicatedStart + (replicatedSloap * stepsFromStartToHighFace.row(1).replicate(3, 1)).round().template cast<DistanceInBlocksWidth>();
+			const PointArray coordinatesAtHighY = replicatedStart + (replicatedSloap * stepsFromStartToHighFace.row(1).replicate(3, 1)).round().template cast<DistanceWidth>();
 			highResults.row(1) =
 				// Check X.
 				coordinatesAtHighY.row(0) <= m_high.row(0) &&
@@ -150,7 +151,7 @@ public:
 			highResults.row(2) = false;
 		else
 		{
-			const PointArray coordinatesAtHighZ = replicatedStart + (replicatedSloap * stepsFromStartToHighFace.row(2).replicate(3, 1)).round().template cast<DistanceInBlocksWidth>();
+			const PointArray coordinatesAtHighZ = replicatedStart + (replicatedSloap * stepsFromStartToHighFace.row(2).replicate(3, 1)).round().template cast<DistanceWidth>();
 			highResults.row(2) =
 				// Check X.
 				coordinatesAtHighZ.row(0) <= m_high.row(0) &&
@@ -171,7 +172,7 @@ public:
 			lowResults.row(0) = false;
 		else
 		{
-			const PointArray coordinatesAtLowX = replicatedStart + (replicatedSloap * stepsFromStartToLowFace.row(0).replicate(3, 1)).round().template cast<DistanceInBlocksWidth>();
+			const PointArray coordinatesAtLowX = replicatedStart + (replicatedSloap * stepsFromStartToLowFace.row(0).replicate(3, 1)).round().template cast<DistanceWidth>();
 			lowResults.row(0) =
 				// Check Y.
 				coordinatesAtLowX.row(1) <= m_high.row(1) &&
@@ -188,7 +189,7 @@ public:
 			lowResults.row(1) = false;
 		else
 		{
-			const PointArray coordinatesAtLowY = replicatedStart + (replicatedSloap * stepsFromStartToLowFace.row(1).replicate(3, 1)).round().template cast<DistanceInBlocksWidth>();
+			const PointArray coordinatesAtLowY = replicatedStart + (replicatedSloap * stepsFromStartToLowFace.row(1).replicate(3, 1)).round().template cast<DistanceWidth>();
 			lowResults.row(1) =
 				// Check X.
 				coordinatesAtLowY.row(0) <= m_high.row(0) &&
@@ -206,7 +207,7 @@ public:
 			lowResults.row(2) = false;
 		else
 		{
-			const PointArray coordinatesAtLowZ = replicatedStart + (replicatedSloap * stepsFromStartToLowFace.row(2).replicate(3, 1)).round().template cast<DistanceInBlocksWidth>();
+			const PointArray coordinatesAtLowZ = replicatedStart + (replicatedSloap * stepsFromStartToLowFace.row(2).replicate(3, 1)).round().template cast<DistanceWidth>();
 			lowResults.row(2) =
 				// Check X.
 				coordinatesAtLowZ.row(0) <= m_high.row(0) &&
@@ -238,7 +239,7 @@ public:
 		const PointArray replicatedLowBoundry = line.boundry.m_lowest.data.replicate(1, capacity);
 		const OffsetArray distanceFromStartToLowZFace = m_low.row(2).template cast<OffsetWidth>() - replicatedStart.row(2).template cast<OffsetWidth>();
 		const FloatArray stepsFromStartToLowZFace = distanceFromStartToLowZFace.template cast<float>() / replicatedSloap.row(2);
-		const PointArray coordinatesAtLowZ = replicatedStart + (replicatedSloap * stepsFromStartToLowZFace.replicate(3, 1)).round().template cast<DistanceInBlocksWidth>();
+		const PointArray coordinatesAtLowZ = replicatedStart + (replicatedSloap * stepsFromStartToLowZFace.replicate(3, 1)).round().template cast<DistanceWidth>();
 		BoolArray results =
 			// Check X.
 			coordinatesAtLowZ.row(0) <= m_high.row(0) &&
@@ -268,12 +269,23 @@ public:
 		const BoolArray low = (cuboid.m_lowest.data.replicate(1, capacity) > (m_high + 1)).colwise().any();
 		return !(high || low);
 	}
+	static auto create(const auto& source)
+	{
+		CuboidArray<capacity> output;
+		uint i = 0;
+		for(const Cuboid& cuboid : source)
+		{
+			output.insert(i, cuboid);
+			++i;
+		}
+		return output;
+	}
 	class ConstIterator
 	{
-		const CuboidSetSIMD& m_set;
+		const CuboidArray& m_set;
 		uint m_index;
 	public:
-		ConstIterator(const CuboidSetSIMD& set, const uint& index) : m_set(set), m_index(index) { }
+		ConstIterator(const CuboidArray& set, const uint& index) : m_set(set), m_index(index) { }
 		void operator++() { ++m_index; }
 		[[nodiscard]] ConstIterator operator++(int) { auto copy = *this; ++(*this); return copy; }
 		[[nodiscard]] Cuboid operator*() const { return m_set[m_index]; }
@@ -284,3 +296,7 @@ public:
 	ConstIterator begin() const { return ConstIterator(*this, 0); }
 	ConstIterator end() const { return ConstIterator(*this, capacity); }
 };
+template<int size>
+inline void to_json(Json& data, const CuboidArray<size>& set) { data = SmallSet<Cuboid>::create(set); }
+template<int size>
+inline void from_json(const Json& data, CuboidArray<size>& set) { auto smallSet = data.get<SmallSet<Cuboid>>(); set = CuboidArray<size>::create(smallSet); }

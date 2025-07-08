@@ -51,8 +51,8 @@ Step PlantSpecies::getStepsTillDieWithoutFluid(const PlantSpeciesId& species) { 
 Step PlantSpecies::getStepsTillFullyGrown(const PlantSpeciesId& species) { return plantSpeciesData.m_stepsTillFullyGrown[species]; };
 Step PlantSpecies::getStepsTillFoliageGrowsFromZero(const PlantSpeciesId& species) { return plantSpeciesData.m_stepsTillFoliageGrowsFromZero[species]; };
 Step PlantSpecies::getStepsTillDieFromTemperature(const PlantSpeciesId& species) { return plantSpeciesData.m_stepsTillDieFromTemperature[species]; };
-DistanceInBlocks PlantSpecies::getRootRangeMax(const PlantSpeciesId& species) { return plantSpeciesData.m_rootRangeMax[species]; };
-DistanceInBlocks PlantSpecies::getRootRangeMin(const PlantSpeciesId& species) { return plantSpeciesData.m_rootRangeMin[species]; };
+Distance PlantSpecies::getRootRangeMax(const PlantSpeciesId& species) { return plantSpeciesData.m_rootRangeMax[species]; };
+Distance PlantSpecies::getRootRangeMin(const PlantSpeciesId& species) { return plantSpeciesData.m_rootRangeMin[species]; };
 Quantity PlantSpecies::getLogsGeneratedByFellingWhenFullGrown(const PlantSpeciesId& species) { return plantSpeciesData.m_logsGeneratedByFellingWhenFullGrown[species]; };
 Quantity PlantSpecies::getBranchesGeneratedByFellingWhenFullGrown(const PlantSpeciesId& species) { return plantSpeciesData.m_branchesGeneratedByFellingWhenFullGrown[species]; };
 Mass PlantSpecies::getAdultMass(const PlantSpeciesId& species) { return plantSpeciesData.m_adultMass[species]; };

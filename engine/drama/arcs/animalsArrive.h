@@ -4,6 +4,7 @@
 #include "../../numericTypes/types.h"
 #include "../../simulation/simulation.h"
 #include "../../reference.h"
+#include "../../geometry/point3D.h"
 #include <vector>
 class Area;
 struct AnimalSpecies;
@@ -12,7 +13,7 @@ struct DeserializationMemo;
 
 struct AnimalsArriveDramaArc final : public DramaArc
 {
-	BlockIndex m_entranceBlock;
+	Point3D m_entrancePoint;
 	SmallSet<ActorReference> m_actors;
 	bool m_isActive = false;
 	AnimalSpeciesId m_species;

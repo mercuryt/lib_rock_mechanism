@@ -8,7 +8,7 @@
 #include "../numericTypes/types.h"
 GoToObjective::GoToObjective(const Json& data, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo),
-	m_location(data["location"].get<BlockIndex>()) { }
+	m_location(data["location"].get<Point3D>()) { }
 Json GoToObjective::toJson() const
 {
 	Json data = Objective::toJson();
@@ -19,7 +19,7 @@ void GoToObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	if(actors.getCombinedLocation(actor) != m_location)
-		// BlockIndex, detour, adjacent, unreserved, reserve
+		// Point3D, detour, adjacent, unreserved, reserve
 		actors.move_setDestination(actor, m_location, m_detour, false, false, false);
 	else
 		actors.objective_complete(actor, *this);

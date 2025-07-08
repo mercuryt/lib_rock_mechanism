@@ -16,7 +16,7 @@ TEST_CASE("plant")
 	Simulation simulation("test", DateTime::toSteps(12, 100, 1200));
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Plants& plants = area.getPlants();
 	BlockIndex location = blocks.getIndex_i(5, 5, 2);
 	CHECK(blocks.isExposedToSky(location));
@@ -61,7 +61,7 @@ TEST_CASE("plantFruits")
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
 	Plants& plants = area.getPlants();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	BlockIndex location = blocks.getIndex_i(5, 5, 2);
 	areaBuilderUtil::setSolidLayer(area, 1, dirt);
 	blocks.plant_create(location, wheatGrass, Percent::create(50));
@@ -79,7 +79,7 @@ TEST_CASE("harvestSeasonEnds")
 	Simulation simulation("test", step);
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	Plants& plants = area.getPlants();
 	BlockIndex location = blocks.getIndex_i(5, 5, 2);
 	areaBuilderUtil::setSolidLayer(area, 1, dirt);

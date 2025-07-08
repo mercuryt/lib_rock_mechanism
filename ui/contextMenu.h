@@ -1,11 +1,11 @@
 #pragma once
 #include <TGUI/TGUI.hpp>
 class Window;
-class BlockIndex;
+class Point3D;
 class PlantIndex;
 class MaterialTypeId;
 struct MaterialType;
-struct BlockFeatureType;
+struct PointFeatureType;
 struct ContextMenuSegment final
 {
 	int m_count = 1;
@@ -28,18 +28,18 @@ class ContextMenu final
 	[[nodiscard]] bool plantIsValid(const PlantIndex& plant) const;
 public:
 	ContextMenu(Window& window, tgui::Group::Ptr gameOverlayGroup);
-	void draw(const BlockIndex& block);
-	void drawDigControls(const BlockIndex& block);
-	void drawConstructControls(const BlockIndex& block);
-	void construct(const BlockIndex& block, bool constructed, const MaterialTypeId& materialType, const BlockFeatureType* blockFeatureType);
-	void drawActorControls(const BlockIndex& block);
-	void drawPlantControls(const BlockIndex& block);
-	void drawItemControls(const BlockIndex& block);
-	void drawFluidControls(const BlockIndex& block);
-	void drawFarmFieldControls(const BlockIndex& block);
-	void drawStockPileControls(const BlockIndex& block);
-	void drawCraftControls(const BlockIndex& block);
-	void drawWoodCuttingControls(const BlockIndex& block);
+	void draw(const Point3D& point);
+	void drawDigControls(const Point3D& point);
+	void drawConstructControls(const Point3D& point);
+	void construct(const Point3D& point, bool constructed, const MaterialTypeId& materialType, const PointFeatureType* pointFeatureType);
+	void drawActorControls(const Point3D& point);
+	void drawPlantControls(const Point3D& point);
+	void drawItemControls(const Point3D& point);
+	void drawFluidControls(const Point3D& point);
+	void drawFarmFieldControls(const Point3D& point);
+	void drawStockPileControls(const Point3D& point);
+	void drawCraftControls(const Point3D& point);
+	void drawWoodCuttingControls(const Point3D& point);
 	void hide();
 	ContextMenuSegment& makeSubmenu(size_t index);
 	[[nodiscard]] bool isVisible() const { return m_root.m_panel->isVisible(); }

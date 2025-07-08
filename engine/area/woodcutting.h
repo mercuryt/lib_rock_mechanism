@@ -15,8 +15,8 @@ struct WoodCuttingLocationDishonorCallback final : public DishonorCallback
 {
 	FactionId m_faction;
 	Area& m_area;
-	BlockIndex m_location;
-	WoodCuttingLocationDishonorCallback(FactionId f, Area& a, const BlockIndex& l) : m_faction(f), m_area(a), m_location(l) { }
+	Point3D m_location;
+	WoodCuttingLocationDishonorCallback(FactionId f, Area& a, const Point3D& l) : m_faction(f), m_area(a), m_location(l) { }
 	WoodCuttingLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
 	void execute(const Quantity& oldCount, const Quantity& newCount);
 	[[nodiscard]] Json toJson() const;
@@ -26,16 +26,16 @@ class HasWoodCuttingDesignationsForFaction final
 {
 	Area& m_area;
 	FactionId m_faction;
-	SmallMapStable<BlockIndex, WoodCuttingProject> m_data;
+	SmallMapStable<Point3D, WoodCuttingProject> m_data;
 public:
 	HasWoodCuttingDesignationsForFaction(FactionId p, Area& a) : m_area(a), m_faction(p) { }
 	HasWoodCuttingDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, FactionId faction);
 	Json toJson() const;
-	void designate(const BlockIndex& block);
-	void undesignate(const BlockIndex& block);
+	void designate(const Point3D& point);
+	void undesignate(const Point3D& point);
 	// To be called by undesignate as well as by WoodCuttingProject::onCancel.
-	void remove(const BlockIndex& block);
-	void removeIfExists(const BlockIndex& block);
+	void remove(const Point3D& point);
+	void removeIfExists(const Point3D& point);
 	bool empty() const;
 	friend class AreaHasWoodCuttingDesignations;
 };
@@ -50,13 +50,13 @@ public:
 	Json toJson() const;
 	void addFaction(FactionId faction);
 	void removeFaction(FactionId faction);
-	// TODO: designate and undesignate should probably take plants rather then blocks as arguments.
-	void designate(FactionId faction, const BlockIndex& block);
-	void undesignate(FactionId faction, const BlockIndex& block);
-	void remove(FactionId faction, const BlockIndex& block);
-	void clearAll(const BlockIndex& block);
+	// TODO: designate and undesignate should probably take plants rather then space as arguments.
+	void designate(FactionId faction, const Point3D& point);
+	void undesignate(FactionId faction, const Point3D& point);
+	void remove(FactionId faction, const Point3D& point);
+	void clearAll(const Point3D& point);
 	void clearReservations();
 	bool areThereAnyForFaction(FactionId faction) const;
-	bool contains(FactionId faction, const BlockIndex& block) const;
-	WoodCuttingProject& getForFactionAndBlock(FactionId faction, const BlockIndex& block);
+	bool contains(FactionId faction, const Point3D& point) const;
+	WoodCuttingProject& getForFactionAndPoint(FactionId faction, const Point3D& point);
 };

@@ -24,7 +24,7 @@ struct ParamaterizedLine
 		assert(begin.exists());
 		assert(end.exists());
 		const Offset3D difference = end.toOffset() - begin.toOffset();
-		const DistanceInBlocksFractional distance = end.distanceToFractional(begin);
+		const DistanceFractional distance = end.distanceToFractional(begin);
 		sloap = difference.data.cast<float>();
 		sloap /= distance.get();
 		boundry = {begin.max(end), begin.min(end)};

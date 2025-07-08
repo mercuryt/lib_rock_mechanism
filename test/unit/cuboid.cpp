@@ -11,7 +11,7 @@ TEST_CASE("cuboid")
 {
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(2,2,2);
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	SUBCASE("create")
 	{
 		Cuboid cuboid(blocks, blocks.getIndex_i(1, 1, 1), blocks.getIndex_i(0, 0, 0));

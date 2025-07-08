@@ -1,7 +1,7 @@
 #include "simulation/simulation.h"
 #include "actors/actors.h"
 #include "definitions/animalSpecies.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "config.h"
 #include "definitions/definitions.h"
 #include "deserializationMemo.h"
@@ -163,31 +163,31 @@ void Simulation::fastForwardUntill(DateTime dateTime)
 	assert(dateTime.toSteps() > m_step);
 	fastForward(dateTime.toSteps() - m_step);
 }
-void Simulation::fastForwardUntillActorIsAtDestination(Area& area, const ActorIndex& actor, const BlockIndex& destination)
+void Simulation::fastForwardUntillActorIsAtDestination(Area& area, const ActorIndex& actor, const Point3D& destination)
 {
 	assert(area.getActors().move_getDestination(actor) == destination);
 	fastForwardUntillActorIsAt(area, actor, destination);
 }
-void Simulation::fastForwardUntillActorIsAt(Area& area, const ActorIndex& actor, const BlockIndex& destination)
+void Simulation::fastForwardUntillActorIsAt(Area& area, const ActorIndex& actor, const Point3D& destination)
 {
 	std::function<bool()> predicate = [&](){ return area.getActors().getLocation(actor) == destination; };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorIsAdjacentToDestination(Area& area, const ActorIndex& actor, const BlockIndex& destination)
+void Simulation::fastForwardUntillActorIsAdjacentToDestination(Area& area, const ActorIndex& actor, const Point3D& destination)
 {
 	Actors& actors = area.getActors();
 	#ifndef NDEBUG
 		assert(!actors.move_getPath(actor).empty());
-		const BlockIndex& adjacentDestination = actors.move_getPath(actor).front();
-		if(actors.getBlocks(actor).size() == 1)
-			assert(area.getBlocks().isAdjacentToIncludingCornersAndEdges(adjacentDestination, destination));
+		const Point3D& adjacentDestination = actors.move_getPath(actor).front();
+		if(actors.getOccupied(actor).size() == 1)
+			assert(adjacentDestination.isAdjacentTo(destination));
 	#endif
 	std::function<bool()> predicate = [&](){ return actors.isAdjacentToLocation(actor, destination); };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorIsAdjacentToLocation(Area& area, const ActorIndex& actor, const BlockIndex& block)
+void Simulation::fastForwardUntillActorIsAdjacentToLocation(Area& area, const ActorIndex& actor, const Point3D& point)
 {
-	std::function<bool()> predicate = [&](){ return area.getActors().isAdjacentToLocation(actor, block); };
+	std::function<bool()> predicate = [&](){ return area.getActors().isAdjacentToLocation(actor, point); };
 	fastForwardUntillPredicate(predicate);
 }
 void Simulation::fastForwardUntillActorIsAdjacentToActor(Area& area, const ActorIndex& actor, const ActorIndex& other)
@@ -216,7 +216,7 @@ void Simulation::fastForwardUntillActorHasEquipment(Area& area, const ActorIndex
 	std::function<bool()> predicate = [&](){ return actors.equipment_containsItem(actor, item); };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillItemIsAt(Area& area, const ItemIndex& item, const BlockIndex& destination)
+void Simulation::fastForwardUntillItemIsAt(Area& area, const ItemIndex& item, const Point3D& destination)
 {
 	std::function<bool()> predicate = [&](){ return area.getItems().getLocation(item) == destination; };
 	fastForwardUntillPredicate(predicate);

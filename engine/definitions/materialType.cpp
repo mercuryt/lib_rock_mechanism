@@ -12,14 +12,14 @@ void MaterialTypeCategory::create(std::string name) { materialTypeCategoryData.m
 const std::string& MaterialTypeCategory::getName(MaterialCategoryTypeId id){ return materialTypeCategoryData.m_name[id]; }
 SpoilsDataTypeId SpoilData::create(const MaterialTypeId& mt, const ItemTypeId& it, const Percent& c, const Quantity& mi, const Quantity& ma)
 {
-	spoilData.m_materialType.add(mt);
+	spoilData.m_solid.add(mt);
 	spoilData.m_itemType.add(it);
 	spoilData.m_chance.add(c);
 	spoilData.m_min.add(mi);
 	spoilData.m_max.add(ma);
-	return SpoilsDataTypeId::create(spoilData.m_materialType.size() - 1);
+	return SpoilsDataTypeId::create(spoilData.m_solid.size() - 1);
 }
-MaterialTypeId SpoilData::getMaterialType(const SpoilsDataTypeId& id) { return spoilData.m_materialType[id]; };
+MaterialTypeId SpoilData::getMaterialType(const SpoilsDataTypeId& id) { return spoilData.m_solid[id]; };
 ItemTypeId SpoilData::getItemType(const SpoilsDataTypeId& id) { return spoilData.m_itemType[id]; };
 Percent SpoilData::getChance(const SpoilsDataTypeId& id) { return spoilData.m_chance[id]; };
 Quantity SpoilData::getMin(const SpoilsDataTypeId& id) { return spoilData.m_min[id]; };
@@ -36,7 +36,7 @@ MaterialTypeId MaterialType::create(const MaterialTypeParamaters& p)
 	materialTypeData.m_density.add(p.density);
 	materialTypeData.m_hardness.add(p.hardness);
 	materialTypeData.m_transparent.add(p.transparent);
-	materialTypeData.m_materialTypeCategory.add(p.materialTypeCategory);
+	materialTypeData.m_solidCategory.add(p.materialTypeCategory);
 	materialTypeData.m_valuePerUnitFullDisplacement.add(p.valuePerUnitFullDisplacement);
 	materialTypeData.m_spoilData.add(p.spoilData);
 	materialTypeData.m_meltingPoint.add(p.meltingPoint);
@@ -69,7 +69,7 @@ Density MaterialType::getDensity(const MaterialTypeId& id) { return materialType
 uint32_t MaterialType::getHardness(const MaterialTypeId& id) { return materialTypeData.m_hardness[id]; }
 bool MaterialType::getTransparent(const MaterialTypeId& id) { return materialTypeData.m_transparent[id]; }
 uint MaterialType::getValuePerUnitFullDisplacement(const MaterialTypeId& id) { return materialTypeData.m_valuePerUnitFullDisplacement[id]; }
-MaterialCategoryTypeId MaterialType::getMaterialTypeCategory(const MaterialTypeId& id) { return materialTypeData.m_materialTypeCategory[id]; }
+MaterialCategoryTypeId MaterialType::getMaterialTypeCategory(const MaterialTypeId& id) { return materialTypeData.m_solidCategory[id]; }
 std::vector<SpoilsDataTypeId>& MaterialType::getSpoilData(const MaterialTypeId& id) { return materialTypeData.m_spoilData[id]; }
 Temperature MaterialType::getMeltingPoint(const MaterialTypeId& id) { return materialTypeData.m_meltingPoint[id]; }
 FluidTypeId MaterialType::getMeltsInto(const MaterialTypeId& id) { return materialTypeData.m_meltsInto[id]; }

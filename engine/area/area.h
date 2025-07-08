@@ -28,7 +28,7 @@
 #include "rain.h"
 #include "hasFluidGroups.h"
 #include "hasSleepingSpots.h"
-#include "hasBlockDesignations.h"
+#include "hasSpaceDesignations.h"
 #include "evaporation.h"
 #include "exteriorPortals.h"
 #include "hasTargetedHauling.h"
@@ -46,12 +46,12 @@
 class Simulation;
 struct DeserializationMemo;
 #ifdef NDEBUG
-	#include "blocks/blocks.h"
+	#include "space/space.h"
 	#include "actors/actors.h"
 	#include "items/items.h"
 	#include "plants.h"
 #else
-	class Blocks;
+	class Space;
 	class Actors;
 	class Items;
 	class Plants;
@@ -62,12 +62,12 @@ class Area final
 	// Dependency injection.
 	// TODO: Remove unique_ptr for release build.
 	#ifdef NDEBUG
-		Blocks m_blocks;
+		Space m_points;
 		Actors m_actors;
 		Plants m_plants;
 		Items m_items;
 	#else
-		std::unique_ptr<Blocks> m_blocks;
+		std::unique_ptr<Space> m_points;
 		std::unique_ptr<Actors> m_actors;
 		std::unique_ptr<Plants> m_plants;
 		std::unique_ptr<Items> m_items;
@@ -94,24 +94,24 @@ public:
 	AreaHasFluidGroups m_hasFluidGroups;
 	AreaHasRain m_hasRain;
 	AreaHasEvaporation m_hasEvaporation;
-	AreaHasBlockDesignations m_blockDesignations;
+	AreaHasSpaceDesignations m_spaceDesignations;
 	ActorOctTree m_octTree;
 	VisionRequests m_visionRequests;
 	OpacityFacade m_opacityFacade;
 	AreaHasVisionCuboids m_visionCuboids;
 	AreaHasExteriorPortals m_exteriorPortals;
-	SmallSet<BlockIndex> m_caveInCheck;
+	SmallSet<Point3D> m_caveInCheck;
 	AreaHasDecks m_decks;
 	// uint32_t is fall energy.
-	std::vector<std::tuple<SmallSet<BlockIndex>, DistanceInBlocks, uint32_t>> m_caveInData;
+	std::vector<std::tuple<SmallSet<Point3D>, Distance, uint32_t>> m_caveInData;
 	std::string m_name;
 	Simulation& m_simulation;
 	AreaId m_id;
 	bool m_destroy = false;
 	//WorldLocation* m_worldLocation;
 
-	// Create blocks and store adjacent
-	Area(AreaId id, std::string n, Simulation& s, const DistanceInBlocks& x, const DistanceInBlocks& y, const DistanceInBlocks& z);
+	// Create space and store adjacent
+	Area(AreaId id, std::string n, Simulation& s, const Distance& x, const Distance& y, const Distance& z);
 	Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s);
 	Area(const Area& area) = delete;
 	Area(const Area&& area) = delete;
@@ -120,33 +120,31 @@ public:
 
 	void doStep();
 
-	//BlockIndex getBlockForAdjacentLocation(WorldLocation& location);
-
 	// Cavein read/write
 	void doStepCaveIn();
 	void stepCaveInRead();
 	void stepCaveInWrite();
-	void registerPotentialCaveIn(const BlockIndex& block);
+	void registerPotentialCaveIn(const Point3D& point);
 	// To be called periodically by Simulation.
 	void updateClimate();
 
 	[[nodiscard]] std::string toS() const;
 	[[nodiscard]] Json toJson() const;
 	#ifdef NDEBUG
-		[[nodiscard]] Blocks& getBlocks() { return m_blocks; }
+		[[nodiscard]] Space& getSpace() { return m_points; }
 		[[nodiscard]] Plants& getPlants() { return m_plants; }
 		[[nodiscard]] Actors& getActors() { return m_actors; }
 		[[nodiscard]] Items& getItems() { return m_items; }
-		[[nodiscard]] const Blocks& getBlocks() const { return m_blocks; }
+		[[nodiscard]] const Space& getSpace() const { return m_points; }
 		[[nodiscard]] const Plants& getPlants() const { return m_plants; }
 		[[nodiscard]] const Actors& getActors() const { return m_actors; }
 		[[nodiscard]] const Items& getItems() const { return m_items; }
 	#else
-		[[nodiscard]] Blocks& getBlocks() { assert(m_blocks != nullptr); return *m_blocks.get(); }
+		[[nodiscard]] Space& getSpace() { assert(m_points != nullptr); return *m_points.get(); }
 		[[nodiscard]] Plants& getPlants() { assert(m_plants != nullptr); return *m_plants.get(); }
 		[[nodiscard]] Actors& getActors() { assert(m_actors != nullptr); return *m_actors.get(); }
 		[[nodiscard]] Items& getItems() { assert(m_items != nullptr); return *m_items.get(); }
-		[[nodiscard]] const Blocks& getBlocks() const { assert(m_blocks != nullptr); return *m_blocks.get(); }
+		[[nodiscard]] const Space& getSpace() const { assert(m_points != nullptr); return *m_points.get(); }
 		[[nodiscard]] const Plants& getPlants() const { assert(m_plants != nullptr); return *m_plants.get(); }
 		[[nodiscard]] const Actors& getActors() const { assert(m_actors != nullptr); return *m_actors.get(); }
 		[[nodiscard]] const Items& getItems() const { assert(m_items != nullptr); return *m_items.get(); }

@@ -25,10 +25,10 @@ public:
 	void cancel(Area&, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
 	void reset(Area& area, const ActorIndex& actor);
-	void selectLocation(Area& area, const BlockIndex& index, const ActorIndex& actor);
+	void selectLocation(Area& area, const Point3D& index, const ActorIndex& actor);
 	void makePathRequest(Area& area, const ActorIndex& actor);
 	[[nodiscard]] bool onCanNotPath(Area& area, const ActorIndex& actor);
-	[[nodiscard]] uint32_t desireToSleepAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
+	[[nodiscard]] uint32_t desireToSleepAt(Area& area, const Point3D& point, const ActorIndex& actor) const;
 	[[nodiscard]] std::string name() const { return "sleep"; }
 	[[nodiscard]] bool isNeed() const { return true; }
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::sleep; }
@@ -41,9 +41,9 @@ class SleepPathRequest final : public PathRequestBreadthFirst
 {
 	SleepObjective& m_sleepObjective;
 	// These variables area used from messaging from parallel code, no need to serialize.
-	BlockIndex m_indoorCandidate;
-	BlockIndex m_outdoorCandidate;
-	BlockIndex m_maxDesireCandidate;
+	Point3D m_indoorCandidate;
+	Point3D m_outdoorCandidate;
+	Point3D m_maxDesireCandidate;
 	bool m_sleepAtCurrentLocation = false;
 public:
 	SleepPathRequest(Area& area, SleepObjective& so, const ActorIndex& actor);

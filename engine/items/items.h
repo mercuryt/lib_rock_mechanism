@@ -21,7 +21,7 @@ struct ItemParamaters final
 	MaterialTypeId materialType;
 	CraftJob* craftJob = nullptr;
 	FactionId faction = FactionId::null();
-	BlockIndex location = BlockIndex::null();
+	Point3D location = Point3D::null();
 	ItemId id = ItemId::null();
 	Quantity quantity = Quantity::create(1);
 	Quality quality = Quality::null();
@@ -83,7 +83,7 @@ public:
 	void removeItemGeneric(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity);
 	// When an item changes index and it has cargo update the m_carrier data of the cargo.
 	void updateCarrierIndexForAllCargo(Area& area, const ItemIndex& newIndex);
-	ItemIndex unloadGenericTo(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity, const BlockIndex& location);
+	ItemIndex unloadGenericTo(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity, const Point3D& location);
 	[[nodiscard]] const SmallSet<ActorIndex>& getActors() const { return m_actors; }
 	[[nodiscard]] const SmallSet<ItemIndex>& getItems() const { return m_items; }
 	[[nodiscard]] bool canAddActor(Area& area, const ActorIndex& index) const;
@@ -110,7 +110,7 @@ class Items final : public Portables<Items, ItemIndex, ItemReferenceIndex>
 	StrongVector<ItemId, ItemIndex> m_id;
 	StrongBitSet<ItemIndex> m_installed;
 	StrongVector<ItemTypeId, ItemIndex> m_itemType;
-	StrongVector<MaterialTypeId, ItemIndex> m_materialType;
+	StrongVector<MaterialTypeId, ItemIndex> m_solid;
 	StrongVector<std::string, ItemIndex> m_name;
 	//TODO: Percent doesn't allow fine enough detail for tools wearing out over time?
 	StrongVector<Percent, ItemIndex> m_percentWear; // Always set to 0 for generic types.
@@ -132,19 +132,19 @@ public:
 	void destroy(const ItemIndex& index);
 	void setName(const ItemIndex& index, std::string name);
 	void pierced(const ItemIndex& index, const FullDisplacement volume);
-	void setTemperature(const ItemIndex& index, const Temperature& temperature, const BlockIndex& block);
+	void setTemperature(const ItemIndex& index, const Temperature& temperature, const Point3D& point);
 	void addQuantity(const ItemIndex& index, const Quantity& delta);
 	void removeQuantity(const ItemIndex& index, const Quantity& delta, CanReserve* canReserve = nullptr);
-	void install(const ItemIndex& index, const BlockIndex& block, const Facing4& facing, const FactionId& faction);
+	void install(const ItemIndex& index, const Point3D& point, const Facing4& facing, const FactionId& faction);
 	// Returns the index of the item which was passed in as 'index', it may have changed with 'item' being destroyed due to generic merge.
 	ItemIndex merge(const ItemIndex& index, const ItemIndex& item);
 	void setQuality(const ItemIndex& index, const Quality& quality);
 	void setWear(const ItemIndex& index, const Percent& wear);
 	void setQuantity(const ItemIndex& index, const Quantity& quantity);
 	void unsetCraftJobForWorkPiece(const ItemIndex& index);
-	void takeFallDamage(const ItemIndex&, const DistanceInBlocks&, const MaterialTypeId&) { /* TODO */ }
+	void takeFallDamage(const ItemIndex&, const Distance&, const MaterialTypeId&) { /* TODO */ }
 	void resetMoveType(const ItemIndex& index);
-	// Wrap HasShapes::SetStatic and unset to support constrcuted shapes setting or unsetting Blocks::m_dynamic instead.
+	// Wrap HasShapes::SetStatic and unset to support constrcuted shapes setting or unsetting Space::m_dynamic instead.
 	void setStatic(const ItemIndex& index);
 	void unsetStatic(const ItemIndex& index);
 	[[nodiscard]] SmallSet<ItemIndex> getAll() const;
@@ -166,35 +166,35 @@ public:
 	[[nodiscard]] FullDisplacement getVolume(const ItemIndex& index) const;
 	[[nodiscard]] MoveTypeId getMoveType(const ItemIndex& index) const;
 	[[nodiscard]] ItemTypeId getItemType(const ItemIndex& index) const { return m_itemType[index]; }
-	[[nodiscard]] MaterialTypeId getMaterialType(const ItemIndex& index) const { return m_materialType[index]; }
+	[[nodiscard]] MaterialTypeId getMaterialType(const ItemIndex& index) const { return m_solid[index]; }
 	[[nodiscard]] bool canCombine(const ItemIndex& index, const ItemIndex& toMerge);
 	// - Location.
 private:
 	// private methods do most of the work, public ones are mostly responsible for calling Portables::onSetLocation.
-	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetGenericStatic(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
-	SetLocationAndFacingResult location_tryToSetNongenericStatic(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
-	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetStaticInternal(const ItemIndex& index, const BlockIndex& block, const Facing4& facing);
-	SetLocationAndFacingResult location_tryToSetDynamicInternal(const ItemIndex& index, const BlockIndex& block, const Facing4& facing);
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetGenericStatic(const ItemIndex& index, const Point3D& point, const Facing4 facing);
+	SetLocationAndFacingResult location_tryToSetNongenericStatic(const ItemIndex& index, const Point3D& point, const Facing4 facing);
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetStaticInternal(const ItemIndex& index, const Point3D& point, const Facing4& facing);
+	SetLocationAndFacingResult location_tryToSetDynamicInternal(const ItemIndex& index, const Point3D& point, const Facing4& facing);
 public:
 	// Return an item index here because a static generic may combine and invalidat the passed in index.
-	ItemIndex location_set(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
-	ItemIndex location_setStatic(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
+	ItemIndex location_set(const ItemIndex& index, const Point3D& point, const Facing4 facing);
+	ItemIndex location_setStatic(const ItemIndex& index, const Point3D& point, const Facing4 facing);
 	// TODO: this shouldn't need to return anything.
-	ItemIndex location_setDynamic(const ItemIndex& index, const BlockIndex& block, const Facing4 facing);
+	ItemIndex location_setDynamic(const ItemIndex& index, const Point3D& point, const Facing4 facing);
 	// Used when item already has a location, rolls back position on failure.
-	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToStatic(const ItemIndex& index, const BlockIndex& block);
-	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToDynamic(const ItemIndex& index, const BlockIndex& block);
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToStatic(const ItemIndex& index, const Point3D& point);
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToDynamic(const ItemIndex& index, const Point3D& point);
 	// Used when item does not have a location.
-	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSet(const ItemIndex& index, const BlockIndex& location, const Facing4& facing);
-	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetStatic(const ItemIndex& index, const BlockIndex& block, const Facing4& facing);
-	SetLocationAndFacingResult location_tryToSetDynamic(const ItemIndex& index, const BlockIndex& block, const Facing4& facing);
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSet(const ItemIndex& index, const Point3D& location, const Facing4& facing);
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetStatic(const ItemIndex& index, const Point3D& point, const Facing4& facing);
+	SetLocationAndFacingResult location_tryToSetDynamic(const ItemIndex& index, const Point3D& point, const Facing4& facing);
 	void location_clear(const ItemIndex& index);
 	void location_clearStatic(const ItemIndex& index);
 	void location_clearDynamic(const ItemIndex& index);
-	[[nodiscard]] bool location_canEnterEverWithFacing(const ItemIndex& index, const BlockIndex& block, const Facing4& facing) const;
-	[[nodiscard]] bool location_canEnterCurrentlyWithFacing(const ItemIndex& index, const BlockIndex& block, const Facing4& facing) const;
-	[[nodiscard]] bool location_canEnterEverFrom(const ItemIndex& index, const BlockIndex& block, const BlockIndex& previous) const;
-	[[nodiscard]] bool location_canEnterCurrentlyFrom(const ItemIndex& index, const BlockIndex& block, const BlockIndex& previous) const;
+	[[nodiscard]] bool location_canEnterEverWithFacing(const ItemIndex& index, const Point3D& point, const Facing4& facing) const;
+	[[nodiscard]] bool location_canEnterCurrentlyWithFacing(const ItemIndex& index, const Point3D& point, const Facing4& facing) const;
+	[[nodiscard]] bool location_canEnterEverFrom(const ItemIndex& index, const Point3D& point, const Point3D& previous) const;
+	[[nodiscard]] bool location_canEnterCurrentlyFrom(const ItemIndex& index, const Point3D& point, const Point3D& previous) const;
 	// -Cargo.
 	void cargo_addActor(const ItemIndex& index, const ActorIndex& actor);
 	ItemIndex cargo_addItem(const ItemIndex& index, const ItemIndex& item, const Quantity& quantity);
@@ -204,7 +204,7 @@ public:
 	void cargo_loadActor(const ItemIndex& index, const ActorIndex& actor);
 	ItemIndex cargo_loadItem(const ItemIndex& index, const ItemIndex& item, const Quantity& quantity);
 	ActorOrItemIndex cargo_loadPolymorphic(const ItemIndex& index, const ActorOrItemIndex& actorOrItem, const Quantity& quantity);
-	void cargo_loadFluidFromLocation(const ItemIndex& index, const FluidTypeId& fluidType, const CollisionVolume& volume, const BlockIndex& location);
+	void cargo_loadFluidFromLocation(const ItemIndex& index, const FluidTypeId& fluidType, const CollisionVolume& volume, const Point3D& location);
 	void cargo_loadFluidFromItem(const ItemIndex& index, const FluidTypeId& fluidType, const CollisionVolume& volume, const ItemIndex& item);
 	void cargo_remove(const ItemIndex& index, const ActorOrItemIndex& actorOrItem);
 	void cargo_removeActor(const ItemIndex& index, const ActorIndex& actor);
@@ -212,14 +212,14 @@ public:
 	void cargo_removeItemGeneric(const ItemIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity);
 	void cargo_removeFluid(const ItemIndex& index, const CollisionVolume& volume);
 	// TODO: Check if location can hold shape.
-	void cargo_unloadActorToLocation(const ItemIndex& index, const ActorIndex& actor, const BlockIndex& location);
-	void cargo_unloadItemToLocation(const ItemIndex& index, const ItemIndex& item, const BlockIndex& location);
+	void cargo_unloadActorToLocation(const ItemIndex& index, const ActorIndex& actor, const Point3D& location);
+	void cargo_unloadItemToLocation(const ItemIndex& index, const ItemIndex& item, const Point3D& location);
 	void cargo_updateItemIndex(const ItemIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex);
 	void cargo_updateActorIndex(const ItemIndex& index, const ActorIndex& oldIndex, const ActorIndex& newIndex);
-	ItemIndex cargo_unloadGenericItemToLocation(const ItemIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const BlockIndex& location, const Quantity& quantity);
-	ItemIndex cargo_unloadGenericItemToLocation(const ItemIndex& index, const ItemIndex& item, const BlockIndex& location, const Quantity& quantity);
-	ActorOrItemIndex cargo_unloadPolymorphicToLocation(const ItemIndex& index, const ActorOrItemIndex& actorOrItem, const BlockIndex& location, const Quantity& quantity);
-	void cargo_unloadFluidToLocation(const ItemIndex& index, const CollisionVolume& volume, const BlockIndex& location);
+	ItemIndex cargo_unloadGenericItemToLocation(const ItemIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Point3D& location, const Quantity& quantity);
+	ItemIndex cargo_unloadGenericItemToLocation(const ItemIndex& index, const ItemIndex& item, const Point3D& location, const Quantity& quantity);
+	ActorOrItemIndex cargo_unloadPolymorphicToLocation(const ItemIndex& index, const ActorOrItemIndex& actorOrItem, const Point3D& location, const Quantity& quantity);
+	void cargo_unloadFluidToLocation(const ItemIndex& index, const CollisionVolume& volume, const Point3D& location);
 	[[nodiscard]] bool cargo_exists(const ItemIndex& index) const;
 	[[nodiscard]] bool cargo_containsActor(const ItemIndex& index, const ActorIndex& actor) const;
 	[[nodiscard]] bool cargo_containsItem(const ItemIndex& index, const ItemIndex& item) const;

@@ -1,9 +1,9 @@
 #include "woodcutting.h"
 #include "actors/actors.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "plants.h"
 #include "area/area.h"
-#include "blockFeature.h"
+#include "pointFeature.h"
 #include "deserializationMemo.h"
 #include "random.h"
 #include "reservable.h"
@@ -19,7 +19,7 @@
 WoodCuttingLocationDishonorCallback::WoodCuttingLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_faction(data["faction"].get<FactionId>()),
 	m_area(deserializationMemo.area(data["area"])),
-	m_location(data["location"].get<BlockIndex>()) { }
+	m_location(data["location"].get<Point3D>()) { }
 Json WoodCuttingLocationDishonorCallback::toJson() const { return Json({{"type", "WoodCuttingLocationDishonorCallback"}, {"faction", m_faction}, {"location", m_location}}); }
 void WoodCuttingLocationDishonorCallback::execute([[maybe_unused]] const Quantity& oldCount, [[maybe_unused]] const Quantity& newCount)
 {
@@ -31,8 +31,8 @@ HasWoodCuttingDesignationsForFaction::HasWoodCuttingDesignationsForFaction(const
 {
 	for(const Json& pair : data)
 	{
-		BlockIndex block = pair[0].get<BlockIndex>();
-		m_data.emplace(block, pair[1], deserializationMemo, m_area);
+		Point3D point = pair[0].get<Point3D>();
+		m_data.emplace(point, pair[1], deserializationMemo, m_area);
 	}
 }
 Json HasWoodCuttingDesignationsForFaction::toJson() const
@@ -45,35 +45,35 @@ Json HasWoodCuttingDesignationsForFaction::toJson() const
 	}
 	return data;
 }
-void HasWoodCuttingDesignationsForFaction::designate(const BlockIndex& block)
+void HasWoodCuttingDesignationsForFaction::designate(const Point3D& point)
 {
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	[[maybe_unused]] Plants& plants = m_area.getPlants();
-	assert(!m_data.contains(block));
-	assert(blocks.plant_exists(block));
-	assert(PlantSpecies::getIsTree(plants.getSpecies(blocks.plant_get(block))));
-	assert(plants.getPercentGrown(blocks.plant_get(block)) >= Config::minimumPercentGrowthForWoodCutting);
-	blocks.designation_set(block, m_faction, BlockDesignation::WoodCutting);
-	// To be called when block is no longer a suitable location, for example if it got crushed by a collapse.
-	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<WoodCuttingLocationDishonorCallback>(m_faction, m_area, block);
-	m_data.emplace(block, m_faction, m_area, block, std::move(locationDishonorCallback));
+	assert(!m_data.contains(point));
+	assert(space.plant_exists(point));
+	assert(PlantSpecies::getIsTree(plants.getSpecies(space.plant_get(point))));
+	assert(plants.getPercentGrown(space.plant_get(point)) >= Config::minimumPercentGrowthForWoodCutting);
+	space.designation_set(point, m_faction, SpaceDesignation::WoodCutting);
+	// To be called when point is no longer a suitable location, for example if it got crushed by a collapse.
+	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<WoodCuttingLocationDishonorCallback>(m_faction, m_area, point);
+	m_data.emplace(point, m_faction, m_area, point, std::move(locationDishonorCallback));
 }
-void HasWoodCuttingDesignationsForFaction::undesignate(const BlockIndex& block)
+void HasWoodCuttingDesignationsForFaction::undesignate(const Point3D& point)
 {
-	assert(m_data.contains(block));
-	WoodCuttingProject& project = m_data[block];
+	assert(m_data.contains(point));
+	WoodCuttingProject& project = m_data[point];
 	project.cancel();
 }
-void HasWoodCuttingDesignationsForFaction::remove(const BlockIndex& block)
+void HasWoodCuttingDesignationsForFaction::remove(const Point3D& point)
 {
-	assert(m_data.contains(block));
-	m_area.getBlocks().designation_unset(block, m_faction, BlockDesignation::WoodCutting);
-	m_data.erase(block);
+	assert(m_data.contains(point));
+	m_area.getSpace().designation_unset(point, m_faction, SpaceDesignation::WoodCutting);
+	m_data.erase(point);
 }
-void HasWoodCuttingDesignationsForFaction::removeIfExists(const BlockIndex& block)
+void HasWoodCuttingDesignationsForFaction::removeIfExists(const Point3D& point)
 {
-	if(m_data.contains(block))
-		remove(block);
+	if(m_data.contains(point))
+		remove(point);
 }
 bool HasWoodCuttingDesignationsForFaction::empty() const { return m_data.empty(); }
 // To be used by Area.
@@ -107,27 +107,27 @@ void AreaHasWoodCuttingDesignations::removeFaction(FactionId faction)
 	assert(m_data.contains(faction));
 	m_data.erase(faction);
 }
-// If blockFeatureType is null then woodCutting out fully rather then woodCuttingging out a feature.
-void AreaHasWoodCuttingDesignations::designate(FactionId faction, const BlockIndex& block)
+// If pointFeatureType is null then woodCutting out fully rather then woodCuttingging out a feature.
+void AreaHasWoodCuttingDesignations::designate(FactionId faction, const Point3D& point)
 {
 	if(!m_data.contains(faction))
 		addFaction(faction);
-	m_data[faction].designate(block);
+	m_data[faction].designate(point);
 }
-void AreaHasWoodCuttingDesignations::undesignate(FactionId faction, const BlockIndex& block)
+void AreaHasWoodCuttingDesignations::undesignate(FactionId faction, const Point3D& point)
 {
 	assert(m_data.contains(faction));
-	m_data[faction].undesignate(block);
+	m_data[faction].undesignate(point);
 }
-void AreaHasWoodCuttingDesignations::remove(FactionId faction, const BlockIndex& block)
+void AreaHasWoodCuttingDesignations::remove(FactionId faction, const Point3D& point)
 {
 	assert(m_data.contains(faction));
-	m_data[faction].remove(block);
+	m_data[faction].remove(point);
 }
-void AreaHasWoodCuttingDesignations::clearAll(const BlockIndex& block)
+void AreaHasWoodCuttingDesignations::clearAll(const Point3D& point)
 {
 	for(auto& pair : m_data)
-		pair.second->removeIfExists(block);
+		pair.second->removeIfExists(point);
 }
 void AreaHasWoodCuttingDesignations::clearReservations()
 {
@@ -141,15 +141,15 @@ bool AreaHasWoodCuttingDesignations::areThereAnyForFaction(FactionId faction) co
 		return false;
 	return !m_data[faction].empty();
 }
-bool AreaHasWoodCuttingDesignations::contains(FactionId faction, const BlockIndex& block) const
+bool AreaHasWoodCuttingDesignations::contains(FactionId faction, const Point3D& point) const
 {
 	if(!m_data.contains(faction))
 		return false;
-	return m_data[faction].m_data.contains(block);
+	return m_data[faction].m_data.contains(point);
 }
-WoodCuttingProject& AreaHasWoodCuttingDesignations::getForFactionAndBlock(FactionId faction, const BlockIndex& block)
+WoodCuttingProject& AreaHasWoodCuttingDesignations::getForFactionAndPoint(FactionId faction, const Point3D& point)
 {
 	assert(m_data.contains(faction));
-	assert(m_data[faction].m_data.contains(block));
-	return m_data[faction].m_data[block];
+	assert(m_data[faction].m_data.contains(point));
+	return m_data[faction].m_data[point];
 }

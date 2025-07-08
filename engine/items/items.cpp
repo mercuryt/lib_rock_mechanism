@@ -1,7 +1,7 @@
 #include "items.h"
 #include "../definitions/itemType.h"
 #include "../area/area.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../simulation/simulation.h"
 #include "../simulation/hasItems.h"
 #include "../util.h"
@@ -82,12 +82,12 @@ void ItemCanBeStockPiled::maybeUnsetAndScheduleReset(Area& area, const FactionId
 // Item
 void Items::onChangeAmbiantSurfaceTemperature()
 {
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	m_onSurface.forEach([&](const ItemIndex& index){
 		assert(m_location[index].exists());
-		Temperature temperature = blocks.temperature_get(m_location[index]);
-		for(const BlockIndex& block : getBlocks(index))
-			setTemperature(index, temperature, block);
+		Temperature temperature = space.temperature_get(m_location[index]);
+		for(const Point3D& point : getOccupied(index))
+			setTemperature(index, temperature, point);
 	});
 }
 Items::Items(Area& area) :
@@ -103,7 +103,7 @@ void Items::forEachData(Action&& action)
 	action(m_id);
 	action(m_installed);
 	action(m_itemType);
-	action(m_materialType);
+	action(m_solid);
 	action(m_name);
 	action(m_percentWear);
 	action(m_quality);
@@ -128,7 +128,7 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	m_id[index] = itemParamaters.id.exists() ? itemParamaters.id : m_area.m_simulation.m_items.getNextId();
 	m_installed.set(index, itemParamaters.installed);
 	const ItemTypeId& itemType = m_itemType[index] = itemParamaters.itemType;
-	m_materialType[index] = itemParamaters.materialType;
+	m_solid[index] = itemParamaters.materialType;
 	m_name[index] = itemParamaters.name;
 	m_percentWear[index] = itemParamaters.percentWear;
 	m_quality[index] = itemParamaters.quality;
@@ -136,7 +136,7 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	const auto& constructedShape = ItemType::getConstructedShape(itemType);
 	if(constructedShape != nullptr)
 	{
-		// Make a copy so we can rotate m_solidBlocks and m_features.
+		// Make a copy so we can rotate m_solidPoints and m_features.
 		m_constructedShape[index] = std::make_unique<ConstructedShape>(*constructedShape);
 		// Include decks for pathing purposes.
 		m_compoundShape[index] = m_constructedShape[index]->getShapeIncludingDecks();
@@ -168,33 +168,33 @@ void Items::moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex)
 		m_onSurface.maybeUnset(oldIndex);
 		m_onSurface.set(newIndex);
 	}
-	Blocks& blocks = m_area.getBlocks();
-	for(BlockIndex block : m_blocks[newIndex])
-		blocks.item_updateIndex(block, oldIndex, newIndex);
+	Space& space = m_area.getSpace();
+	for(Point3D point : m_occupied[newIndex])
+		space.item_updateIndex(point, oldIndex, newIndex);
 }
-void Items::setTemperature(const ItemIndex& index, const Temperature& temperature, const BlockIndex& block)
+void Items::setTemperature(const ItemIndex& index, const Temperature& temperature, const Point3D& point)
 {
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	const auto setTemperatureMaterialType = [&](const MaterialTypeId& materialType)
 	{
 		if(MaterialType::canBurn(materialType) && MaterialType::getIgnitionTemperature(materialType) <= temperature)
-			blocks.fire_maybeIgnite(block, materialType);
+			space.fire_maybeIgnite(point, materialType);
 		else if(MaterialType::canMelt(materialType) && MaterialType::getMeltingPoint(materialType) <= temperature)
 		{
-			// TODO: Would it be better to destroy the item and create rubble and then liquify the rubble in this block?
+			// TODO: Would it be better to destroy the item and create rubble and then liquify the rubble in this point?
 			const CollisionVolume volume = Shape::getTotalCollisionVolume(m_shape[index]);
-			const BlockIndex location = m_location[index];
+			const Point3D location = m_location[index];
 			destroy(index);
-			blocks.fluid_add(location, volume, MaterialType::getMeltsInto(materialType));
+			space.fluid_add(location, volume, MaterialType::getMeltsInto(materialType));
 		}
 	};
-	const MaterialTypeId& materialType = m_materialType[index];
+	const MaterialTypeId& materialType = m_solid[index];
 	if(materialType.exists())
 		setTemperatureMaterialType(materialType);
 	else
 	{
 		assert(m_constructedShape[index] != nullptr);
-		auto materialTypes = m_constructedShape[index]->getMaterialTypesAt(m_area, m_location[index], m_facing[index], block);
+		auto materialTypes = m_constructedShape[index]->getMaterialTypesAt(m_location[index], m_facing[index], point);
 		for(const MaterialTypeId& materialType : materialTypes)
 			setTemperatureMaterialType(materialType);
 	}
@@ -203,7 +203,7 @@ void Items::addQuantity(const ItemIndex& index, const Quantity& delta)
 {
 	assert(isStatic(index));
 	assert(delta != 0);
-	BlockIndex location = m_location[index];
+	Point3D location = m_location[index];
 	Facing4 facing = m_facing[index];
 	Quantity newQuantity = getQuantity(index) + delta;
 	// TODO: Update in place rather then exit, update, enter.
@@ -228,7 +228,7 @@ void Items::removeQuantity(const ItemIndex& index, const Quantity& delta, CanRes
 	{
 		assert(delta < m_quantity[index]);
 		// TODO: Update in place rather then exit, update, enter.
-		BlockIndex location = m_location[index];
+		Point3D location = m_location[index];
 		Facing4 facing = m_facing[index];
 		location_clearStatic(index);
 		setQuantity(index, getQuantity(index) - delta);
@@ -237,15 +237,15 @@ void Items::removeQuantity(const ItemIndex& index, const Quantity& delta, CanRes
 			m_reservables[index]->setMaxReservations(m_quantity[index]);
 	}
 }
-void Items::install(const ItemIndex& index, const BlockIndex& block, const Facing4& facing, const FactionId& faction)
+void Items::install(const ItemIndex& index, const Point3D& point, const Facing4& facing, const FactionId& faction)
 {
 	maybeSetStatic(index);
-	location_setStatic(index, block, facing);
+	location_setStatic(index, point, facing);
 	m_installed.set(index);
 	if(ItemType::getCraftLocationStepTypeCategory(m_itemType[index]).exists())
 	{
 		ItemTypeId item = m_itemType[index];
-		BlockIndex craftLocation = ItemType::getCraftLocation(item, m_area.getBlocks(), block, facing);
+		Point3D craftLocation = ItemType::getCraftLocation(item, point, facing);
 		if(craftLocation.exists())
 			m_area.m_hasCraftingLocationsAndJobs.getForFaction(faction).addLocation(ItemType::getCraftLocationStepTypeCategory(item), craftLocation);
 	}
@@ -256,7 +256,7 @@ ItemIndex Items::merge(const ItemIndex& index, const ItemIndex& other)
 	assert(isStatic(other));
 	assert(index != other);
 	assert(m_itemType[index] == m_itemType[other]);
-	assert(m_materialType[index] == m_materialType[other]);
+	assert(m_solid[index] == m_solid[other]);
 	assert(m_location[other].empty());
 	if(m_reservables[other] != nullptr)
 		reservable_merge(index, *m_reservables[other]);
@@ -295,9 +295,9 @@ void Items::setStatic(const ItemIndex& index)
 	const auto& constructed = m_constructedShape[index];
 	if(constructed != nullptr)
 	{
-		Blocks& blocks = m_area.getBlocks();
-		for(const BlockIndex& block : m_blocks[index])
-			blocks.unsetDynamic(block);
+		Space& space = m_area.getSpace();
+		for(const Point3D& point : m_occupied[index])
+			space.unsetDynamic(point);
 		m_static.set(index);
 	}
 	else
@@ -308,9 +308,9 @@ void Items::unsetStatic(const ItemIndex& index)
 	const auto& constructed = m_constructedShape[index];
 	if(constructed != nullptr)
 	{
-		Blocks& blocks = m_area.getBlocks();
-		for(const BlockIndex& block : m_blocks[index])
-			blocks.setDynamic(block);
+		Space& space = m_area.getSpace();
+		for(const Point3D& point : m_occupied[index])
+			space.setDynamic(point);
 		m_static.unset(index);
 	}
 	else
@@ -346,11 +346,11 @@ CraftJob& Items::getCraftJobForWorkPiece(const ItemIndex& index) const
 }
 Mass Items::getSingleUnitMass(const ItemIndex& index) const
 {
-	return Mass::create(std::max(1u, (ItemType::getFullDisplacement(m_itemType[index]) * MaterialType::getDensity(m_materialType[index])).get()));
+	return Mass::create(std::max(1u, (ItemType::getFullDisplacement(m_itemType[index]) * MaterialType::getDensity(m_solid[index])).get()));
 }
 Mass Items::getMass(const ItemIndex& index) const
 {
-	const MaterialTypeId& materialType = m_materialType[index];
+	const MaterialTypeId& materialType = m_solid[index];
 	Mass output;
 	if(materialType.exists())
 		output = ItemType::getFullDisplacement(m_itemType[index]) * MaterialType::getDensity(materialType) * m_quantity[index];
@@ -373,11 +373,11 @@ bool Items::canCombine(const ItemIndex& index, const ItemIndex& toMerge)
 {
 	if(!isStatic(toMerge))
 		return false;
-	return m_area.getBlocks().shape_staticCanEnterCurrentlyWithFacing(getLocation(index), getShape(toMerge), getFacing(index), {});
+	return m_area.getSpace().shape_staticCanEnterCurrentlyWithFacing(getLocation(index), getShape(toMerge), getFacing(index), {});
 }
 void Items::log(const ItemIndex& index) const
 {
-	std::cout << ItemType::getName(m_itemType[index]) << "[" << MaterialType::getName(m_materialType[index]) << "]";
+	std::cout << ItemType::getName(m_itemType[index]) << "[" << MaterialType::getName(m_solid[index]) << "]";
 	if(m_quantity[index] != 1)
 		std::cout << "(" << m_quantity[index].get() << ")";
 	if(m_craftJobForWorkPiece[index] != nullptr)
@@ -418,25 +418,25 @@ void Items::load(const Json& data)
 	data["onSurface"].get_to(m_onSurface);
 	data["name"].get_to(m_name);
 	data["itemType"].get_to(m_itemType);
-	data["materialType"].get_to(m_materialType);
+	data["materialType"].get_to(m_solid);
 	data["id"].get_to(m_id);
 	data["quality"].get_to(m_quality);
 	data["quantity"].get_to(m_quantity);
 	data["percentWear"].get_to(m_percentWear);
 	data["pilot"].get_to(m_pilot);
 	m_hasCargo.resize(m_id.size());
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	for(ItemIndex index : getAll())
 	{
 		m_area.m_simulation.m_items.registerItem(m_id[index], m_area.getItems(), index);
 		if(m_location[index].exists())
 			for (const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
 			{
-				BlockIndex occupied = blocks.offset(m_location[index], pair.offset);
+				Point3D occupied = m_location[index].applyOffset(pair.offset);
 				if(m_static[index])
-					blocks.item_recordStatic(occupied, index, CollisionVolume::create((m_quantity[index] * pair.volume.get()).get()));
+					space.item_recordStatic(occupied, index, CollisionVolume::create((m_quantity[index] * pair.volume.get()).get()));
 				else
-					blocks.item_recordDynamic(occupied, index, CollisionVolume::create((m_quantity[index] * pair.volume.get()).get()));
+					space.item_recordDynamic(occupied, index, CollisionVolume::create((m_quantity[index] * pair.volume.get()).get()));
 			}
 	}
 	m_canBeStockPiled.resize(m_id.size());
@@ -486,7 +486,7 @@ Json Items::toJson() const
 	data["name"] = m_name;
 	data["location"] = m_location;
 	data["itemType"] = m_itemType;
-	data["materialType"] = m_materialType;
+	data["materialType"] = m_solid;
 	data["quality"] = m_quality;
 	data["quantity"] = m_quantity;
 	data["percentWear"] = m_percentWear;
@@ -657,10 +657,10 @@ void ItemHasCargo::removeItemGeneric(Area& area, const ItemTypeId& itemType, con
 		}
 	std::unreachable();
 }
-ItemIndex ItemHasCargo::unloadGenericTo(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity, const BlockIndex& location)
+ItemIndex ItemHasCargo::unloadGenericTo(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity, const Point3D& location)
 {
 	removeItemGeneric(area, itemType, materialType, quantity);
-	return area.getBlocks().item_addGeneric(location, itemType, materialType, quantity);
+	return  area.getSpace().item_addGeneric(location, itemType, materialType, quantity);
 }
 void ItemHasCargo::updateCarrierIndexForAllCargo(Area& area, const ItemIndex& newIndex)
 {

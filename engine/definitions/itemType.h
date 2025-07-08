@@ -12,7 +12,7 @@
 #include <vector>
 
 class Area;
-class Blocks;
+class Space;
 
 struct ItemTypeParamaters final
 {
@@ -55,7 +55,7 @@ class ItemType final
 {
 	//TODO: remove craftLocationOffset?
 	StrongVector<std::unique_ptr<ConstructedShape>, ItemTypeId> m_constructedShape;
-	StrongVector<std::vector<MaterialCategoryTypeId>, ItemTypeId> m_materialTypeCategories;
+	StrongVector<std::vector<MaterialCategoryTypeId>, ItemTypeId> m_solidCategories;
 	StrongVector<std::string, ItemTypeId> m_name;
 	StrongVector<std::array<int32_t, 3>, ItemTypeId> m_craftLocationOffset;
 	StrongVector<ShapeId, ItemTypeId> m_shape;
@@ -86,7 +86,7 @@ public:
 	static ItemTypeId create(const ItemTypeParamaters& p);
 	[[nodiscard]] static ItemTypeId size();
 	[[nodiscard]] static AttackTypeId getRangedAttackType(const ItemTypeId& id);
-	[[nodiscard]] static BlockIndex getCraftLocation(const ItemTypeId& id, Blocks& blocks, const BlockIndex& location, const Facing4& facing);
+	[[nodiscard]] static Point3D getCraftLocation(const ItemTypeId& id, const Point3D& location, const Facing4& facing);
 	[[nodiscard]] static bool hasRangedAttack(const ItemTypeId& id);
 	[[nodiscard]] static bool hasMeleeAttack(const ItemTypeId& id);
 	[[nodiscard]] static const ItemTypeId byName(std::string name);
@@ -129,7 +129,7 @@ template<typename Action>
 void ItemType::forEachVector(Action action)
 {
 		action(itemTypeData.m_constructedShape);
-		action(itemTypeData.m_materialTypeCategories);
+		action(itemTypeData.m_solidCategories);
 		action(itemTypeData.m_name);
 		action(itemTypeData.m_craftLocationOffset);
 		action(itemTypeData.m_shape);

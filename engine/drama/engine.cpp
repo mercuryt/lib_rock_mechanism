@@ -7,7 +7,7 @@
 #include "../definitions/animalSpecies.h"
 #include "arcs/animalsArrive.h"
 #include "arcs/banditsArrive.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../deserializationMemo.h"
 #include "../simulation/hasAreas.h"
 #include "../numericTypes/types.h"
@@ -94,18 +94,18 @@ void DramaArc::actorsLeave(SmallSet<ActorIndex> actorsLeaving)
 		}
 	}
 }
-BlockIndex DramaArc::getEntranceToArea(const ShapeId& shape, const MoveTypeId& moveType) const
+Point3D DramaArc::getEntranceToArea(const ShapeId& shape, const MoveTypeId& moveType) const
 {
-	SmallSet<BlockIndex> candidates;
-	Blocks& blocks = m_area->getBlocks();
+	SmallSet<Point3D> candidates;
+	Space& space = m_area->getSpace();
 	// TODO: optimize this: only check faces of getAll() cuboid.
-	Cuboid cuboid = blocks.getAll();
-	for(const BlockIndex& block : cuboid.getView(blocks))
+	Cuboid cuboid = space.getAll();
+	for(const Point3D& point : cuboid)
 	{
-		if(blocks.shape_moveTypeCanEnter(block, moveType) && blocks.isEdge(block) && blocks.isExposedToSky(block))
-			candidates.insert(block);
+		if(space.shape_moveTypeCanEnter(point, moveType) && space.isEdge(point) && space.isExposedToSky(point))
+			candidates.insert(point);
 	}
-	BlockIndex candidate;
+	Point3D candidate;
 	static uint16_t minimumConnectedCount = 200;
 	do {
 		if(candidate.exists())
@@ -115,65 +115,65 @@ BlockIndex DramaArc::getEntranceToArea(const ShapeId& shape, const MoveTypeId& m
 			candidates.erase(*iterator);
 		}
 		if(candidates.empty())
-			return BlockIndex::null();
+			return Point3D::null();
 		candidate = candidates[m_area->m_simulation.m_random.getInRange(0u, candidates.size() - 1u)];
 	}
-	while (!blockIsConnectedToAtLeast(candidate, shape, moveType, minimumConnectedCount));
+	while (!pointIsConnectedToAtLeast(candidate, shape, moveType, minimumConnectedCount));
 	assert(candidate.exists());
 	return candidate;
 }
-BlockIndex DramaArc::findLocationOnEdgeForNear(const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& origin, const DistanceInBlocks& distance, const SmallSet<BlockIndex>& exclude) const
+Point3D DramaArc::findLocationOnEdgeForNear(const ShapeId& shape, const MoveTypeId& moveType, const Point3D& origin, const Distance& distance, const SmallSet<Point3D>& exclude) const
 {
 	Facing4 facing = getFacingAwayFromEdge(origin);
-	Blocks& blocks = m_area->getBlocks();
-	auto predicate = [&](const BlockIndex& thisBlock) -> bool {
-		if(exclude.contains(thisBlock))
+	Space& space = m_area->getSpace();
+	auto predicate = [&](const Point3D& thisPoint) -> bool {
+		if(exclude.contains(thisPoint))
 			return false;
 		// TODO: A single method doing both of these with one iteration would be faster.
-		if(!blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(thisBlock, shape, moveType, facing, {}))
+		if(!space.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(thisPoint, shape, moveType, facing, {}))
 			return false;
-		for(BlockIndex occupiedBlock : Shape::getBlocksOccupiedAt(shape, blocks, thisBlock, facing))
-			if(blocks.isEdge(occupiedBlock))
+		for(Point3D occupiedPoint : Shape::getPointsOccupiedAt(shape, space, thisPoint, facing))
+			if(space.isEdge(occupiedPoint))
 				return true;
 		return false;
 	};
-	// Get block in range of origin which satisifies predicate.
-	return blocks.getBlockInRangeWithCondition(origin, distance, predicate);
+	// Get point in range of origin which satisifies predicate.
+	return space.getPointInRangeWithCondition(origin, distance, predicate);
 }
-bool DramaArc::blockIsConnectedToAtLeast(const BlockIndex& origin, [[maybe_unused]] const ShapeId& shape, const MoveTypeId& moveType, uint16_t count) const
+bool DramaArc::pointIsConnectedToAtLeast(const Point3D& origin, [[maybe_unused]] const ShapeId& shape, const MoveTypeId& moveType, uint16_t count) const
 {
-	SmallSet<BlockIndex> accumulated;
-	std::stack<BlockIndex> open;
+	SmallSet<Point3D> accumulated;
+	std::stack<Point3D> open;
 	open.push(origin);
-	Blocks& blocks = m_area->getBlocks();
+	Space& space = m_area->getSpace();
 	while(!open.empty())
 	{
-		BlockIndex candidate = open.top();
+		Point3D candidate = open.top();
 		open.pop();
 		if(!accumulated.contains(candidate))
 		{
 			accumulated.insert(candidate);
 			if(accumulated.size() == count)
 				return true;
-			for(const BlockIndex& adjacent : blocks.getDirectlyAdjacent(candidate))
-				//TODO: check if shape can fit into block with any facing.
-				if(!blocks.solid_is(adjacent) && blocks.shape_moveTypeCanEnter(adjacent, moveType))
+			for(const Point3D& adjacent : space.getDirectlyAdjacent(candidate))
+				//TODO: check if shape can fit into point with any facing.
+				if(!space.solid_is(adjacent) && space.shape_moveTypeCanEnter(adjacent, moveType))
 					open.push(adjacent);
 		}
 	}
 	return false;
 }
-Facing4 DramaArc::getFacingAwayFromEdge(const BlockIndex& block) const
+Facing4 DramaArc::getFacingAwayFromEdge(const Point3D& point) const
 {
-	Blocks& blocks = m_area->getBlocks();
-	assert(blocks.isEdge(block));
-	if(blocks.getBlockNorth(block).empty())
+	Space& space = m_area->getSpace();
+	assert(space.isEdge(point));
+	if(point.y() == 0)
 		return Facing4::South;
-	if(blocks.getBlockSouth(block).empty())
+	if(point.y() == space.m_dimensions[1])
 		return Facing4::North;
-	if(blocks.getBlockEast(block).empty())
+	if(point.x() == space.m_dimensions[0])
 		return Facing4::West;
-	if(blocks.getBlockWest(block).empty())
+	if(point.x() == 0)
 		return Facing4::East;
 	return Facing4::North;
 }

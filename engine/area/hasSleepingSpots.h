@@ -1,18 +1,19 @@
 #pragma once
 #include "../config.h"
 #include "../numericTypes/index.h"
+#include "../geometry/point3D.h"
 struct Faction;
 struct DeserializationMemo;
 class Area;
 class AreaHasSleepingSpots final
 {
 	Area& m_area;
-	SmallSet<BlockIndex> m_unassigned;
+	SmallSet<Point3D> m_unassigned;
 public:
 	AreaHasSleepingSpots(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-	void designate(const FactionId& faction, const BlockIndex& block);
-	void undesignate(const FactionId& faction, const BlockIndex& block);
-	bool containsUnassigned(const BlockIndex& block) const { return m_unassigned.contains(block); }
+	void designate(const FactionId& faction, const Point3D& point);
+	void undesignate(const FactionId& faction, const Point3D& point);
+	bool containsUnassigned(const Point3D& point) const { return m_unassigned.contains(point); }
 };

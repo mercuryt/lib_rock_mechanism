@@ -27,7 +27,7 @@ void ActorOrItemIndex::followPolymorphic(Area& area, const ActorOrItemIndex& act
 	else
 		followItem(area, actorOrItem.getItem());
 }
-ActorOrItemIndex ActorOrItemIndex::location_set(Area& area, const BlockIndex& location, const Facing4& facing) const
+ActorOrItemIndex ActorOrItemIndex::location_set(Area& area, const Point3D& location, const Facing4& facing) const
 {
 	if(isActor())
 	{
@@ -165,48 +165,48 @@ ActorOrItemIndex ActorOrItemIndex::getLeader(Area& area) const
 	else
 		return area.getItems().getLeader(m_index.toItem());
 }
-bool ActorOrItemIndex::canEnterCurrentlyFrom(Area& area, const BlockIndex& destination, const BlockIndex& origin) const
+bool ActorOrItemIndex::canEnterCurrentlyFrom(Area& area, const Point3D& destination, const Point3D& origin) const
 {
 	if(isActor())
 	{
 		Actors& actors = area.getActors();
 		ShapeId shape = actors.getShape(m_index.toActor());
-		auto& occupied = actors.getBlocks(m_index.toActor());
-		return area.getBlocks().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
+		auto& occupied = actors.getOccupied(m_index.toActor());
+		return area.getSpace().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
 	}
 	else
 	{
 		Items& items = area.getItems();
 		ShapeId shape = items.getShape(m_index.toItem());
-		auto& occupied = items.getBlocks(m_index.toItem());
-		return area.getBlocks().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
+		auto& occupied = items.getOccupied(m_index.toItem());
+		return area.getSpace().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
 	}
 }
-bool ActorOrItemIndex::canEnterCurrentlyFromWithOccupied(Area& area, const BlockIndex& destination, const BlockIndex& origin, const OccupiedBlocksForHasShape& occupied) const
+bool ActorOrItemIndex::canEnterCurrentlyFromWithOccupied(Area& area, const Point3D& destination, const Point3D& origin, const OccupiedSpaceForHasShape& occupied) const
 {
 	if(isActor())
 	{
 		Actors& actors = area.getActors();
 		ShapeId shape = actors.getShape(m_index.toActor());
-		return area.getBlocks().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
+		return area.getSpace().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
 	}
 	else
 	{
 		Items& items = area.getItems();
 		ShapeId shape = items.getShape(m_index.toItem());
-		return area.getBlocks().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
+		return area.getSpace().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
 	}
 }
-BlockIndex ActorOrItemIndex::getLocation(const Area& area) const
+Point3D ActorOrItemIndex::getLocation(const Area& area) const
 { return isActor() ? area.getActors().getLocation(m_index.toActor()) : area.getItems().getLocation(m_index.toItem()); }
-const OccupiedBlocksForHasShape& ActorOrItemIndex::getBlocks(const Area& area) const
-{ return isActor() ? area.getActors().getBlocks(m_index.toActor()) : area.getItems().getBlocks(m_index.toItem()); }
-SmallSet<BlockIndex> ActorOrItemIndex::getAdjacentBlocks(Area& area) const
-{ return isActor() ? area.getActors().getAdjacentBlocks(m_index.toActor()) : area.getItems().getAdjacentBlocks(m_index.toItem()); }
+const OccupiedSpaceForHasShape& ActorOrItemIndex::getOccupied(const Area& area) const
+{ return isActor() ? area.getActors().getOccupied(m_index.toActor()) : area.getItems().getOccupied(m_index.toItem()); }
+SmallSet<Point3D> ActorOrItemIndex::getAdjacentPoints(Area& area) const
+{ return isActor() ? area.getActors().getAdjacentPoints(m_index.toActor()) : area.getItems().getAdjacentPoints(m_index.toItem()); }
 bool ActorOrItemIndex::isAdjacent(const Area& area, const ActorOrItemIndex& other) const
 {
-	const auto& otherBlocks = other.getBlocks(const_cast<Area&>(area));
-	return isActor() ? area.getActors().isAdjacentToAny(m_index.toActor(), otherBlocks) : area.getItems().isAdjacentToAny(m_index.toItem(), otherBlocks);
+	const auto& otherPoints = other.getOccupied(const_cast<Area&>(area));
+	return isActor() ? area.getActors().isAdjacentToAny(m_index.toActor(), otherPoints) : area.getItems().isAdjacentToAny(m_index.toItem(), otherPoints);
 }
 bool ActorOrItemIndex::isAdjacentToActor(const Area& area, const ActorIndex& other) const
 {
@@ -216,14 +216,14 @@ bool ActorOrItemIndex::isAdjacentToItem(const Area& area, const ItemIndex& item)
 {
 	return isActor() ? area.getActors().isAdjacentToItem(m_index.toActor(), item) : area.getItems().isAdjacentToItem(m_index.toItem(), item);
 }
-bool ActorOrItemIndex::isAdjacentToLocation(const Area& area, const BlockIndex& location) const
+bool ActorOrItemIndex::isAdjacentToLocation(const Area& area, const Point3D& location) const
 {
 	return isActor() ? area.getActors().isAdjacentToLocation(m_index.toActor(), location) : area.getItems().isAdjacentToLocation(m_index.toItem(), location);
 }
-bool ActorOrItemIndex::occupiesBlock(const Area& area, const BlockIndex& location) const
+bool ActorOrItemIndex::occupiesPoint(const Area& area, const Point3D& location) const
 {
-	// TODO: check Blocks::m_items / Blocks::m_actors instead?
-	return isActor() ? area.getActors().getBlocks(m_index.toActor()).contains(location) : area.getItems().getBlocks(m_index.toItem()).contains(location);
+	// TODO: check Space::m_items / Space::m_actors instead?
+	return isActor() ? area.getActors().getOccupied(m_index.toActor()).contains(location) : area.getItems().getOccupied(m_index.toItem()).contains(location);
 }
 ShapeId ActorOrItemIndex::getShape(const Area& area) const { return isActor() ? area.getActors().getShape(m_index.toActor()) : area.getItems().getShape(m_index.toItem()); }
 ShapeId ActorOrItemIndex::getCompoundShape(const Area& area) const { return isActor() ? area.getActors().getCompoundShape(m_index.toActor()) : area.getItems().getCompoundShape(m_index.toItem()); }
@@ -232,7 +232,7 @@ Facing4 ActorOrItemIndex::getFacing(const Area& area) const { return isActor() ?
 Mass ActorOrItemIndex::getMass(const Area& area) const { return isActor() ? area.getActors().getMass(m_index.toActor()) : area.getItems().getMass(m_index.toItem()); }
 Quantity ActorOrItemIndex::getQuantity(const Area& area) const { return isActor() ? Quantity::create(1) : area.getItems().getQuantity(m_index.toItem()); }
 Mass ActorOrItemIndex::getSingleUnitMass(const Area& area) const { return isActor() ? area.getActors().getMass(m_index.toActor()) : area.getItems().getSingleUnitMass(m_index.toItem()); }
-FullDisplacement ActorOrItemIndex::getVolume(const Area& area)  const { return isActor() ? area.getActors().getVolume(m_index.toActor()) : area.getItems().getVolume(m_index.toItem()); }
+FullDisplacement ActorOrItemIndex::getVolume(const Area& area) const { return isActor() ? area.getActors().getVolume(m_index.toActor()) : area.getItems().getVolume(m_index.toItem()); }
 bool ActorOrItemIndex::isGeneric(const Area& area) const {return isActor() ? false : area.getItems().isGeneric(m_index.toItem()); }
 Quantity ActorOrItemIndex::reservable_getUnreservedCount(Area& area, const FactionId& faction) const
 {

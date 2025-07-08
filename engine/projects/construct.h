@@ -12,7 +12,7 @@
 
 class ConstructPathRequest;
 struct Faction;
-struct BlockFeatureType;
+struct PointFeatureType;
 class ConstructObjective;
 class ConstructProject;
 class HasConstructionDesignationsForFaction;
@@ -22,8 +22,8 @@ struct FindPathResult;
 
 class ConstructProject final : public Project
 {
-	BlockFeatureTypeId m_blockFeatureType;
-	MaterialTypeId m_materialType;
+	PointFeatureTypeId m_pointFeatureType;
+	MaterialTypeId m_solid;
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
@@ -35,22 +35,22 @@ class ConstructProject final : public Project
 	void onDelay();
 	void offDelay();
 public:
-	// BlockFeatureType can be null, meaning the block is to be filled with a constructed wall.
-	ConstructProject(const FactionId& faction, Area& a, const BlockIndex& b, const BlockFeatureTypeId bft, const MaterialTypeId& mt, std::unique_ptr<DishonorCallback> dishonorCallback) :
-		Project(faction, a, b, Config::maxNumberOfWorkersForConstructionProject, std::move(dishonorCallback)), m_blockFeatureType(bft), m_materialType(mt) { }
+	// PointFeatureType can be null, meaning the point is to be filled with a constructed wall.
+	ConstructProject(const FactionId& faction, Area& a, const Point3D& b, const PointFeatureTypeId bft, const MaterialTypeId& mt, std::unique_ptr<DishonorCallback> dishonorCallback) :
+		Project(faction, a, b, Config::maxNumberOfWorkersForConstructionProject, std::move(dishonorCallback)), m_pointFeatureType(bft), m_solid(mt) { }
 	ConstructProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	[[nodiscard]] Json toJson() const;
 	// What would the total delay time be if we started from scratch now with current workers?
 	friend class HasConstructionDesignationsForFaction;
 	// For testing.
-	[[nodiscard, maybe_unused]] MaterialTypeId getMaterialType() const { return m_materialType; }
+	[[nodiscard, maybe_unused]] MaterialTypeId getMaterialType() const { return m_solid; }
 };
 struct ConstructionLocationDishonorCallback final : public DishonorCallback
 {
 	FactionId m_faction;
 	Area& m_area;
-	BlockIndex m_location;
-	ConstructionLocationDishonorCallback(const FactionId& f, Area& a, const BlockIndex& l) : m_faction(f), m_area(a), m_location(l) { }
+	Point3D m_location;
+	ConstructionLocationDishonorCallback(const FactionId& f, Area& a, const Point3D& l) : m_faction(f), m_area(a), m_location(l) { }
 	ConstructionLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
 	void execute(const Quantity& oldCount, const Quantity& newCount);

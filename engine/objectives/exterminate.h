@@ -7,10 +7,10 @@ struct DeserializationMemo;
 class ExterminateObjectiveScheduledEvent;
 class ExterminateObjective final : public Objective
 {
-	BlockIndex m_destination;
+	Point3D m_destination;
 	HasScheduledEvent<ExterminateObjectiveScheduledEvent> m_event;
 public:
-	ExterminateObjective(Area& area, const BlockIndex& destination);
+	ExterminateObjective(Area& area, const Point3D& destination);
 	ExterminateObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo);
 	void execute(Area&, const ActorIndex& actor);
 	void cancel(Area&, const ActorIndex&) { }

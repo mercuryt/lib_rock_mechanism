@@ -21,23 +21,23 @@ WanderPathRequest::WanderPathRequest(Area& area, WanderObjective& objective, con
 WanderPathRequest::WanderPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
 	PathRequestBreadthFirst(data, area),
 	m_objective(static_cast<WanderObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))),
-	m_lastBlock(data["lastBlock"].get<BlockIndex>())
+	m_lastPoint(data["lastPoint"].get<Point3D>())
 { }
 FindPathResult WanderPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Random& random = area.m_simulation.m_random;
-	m_blockCounter = random.getInRange(Config::wanderMinimimNumberOfBlocks, Config::wanderMaximumNumberOfBlocks);
-	auto destinationCondition = [this](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
+	m_pointCounter = random.getInRange(Config::wanderMinimimNumberOfPoints, Config::wanderMaximumNumberOfPoints);
+	auto destinationCondition = [this](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
 	{
-		if(!m_blockCounter)
-			return std::pair(true, block);
-		m_lastBlock = block;
-		return std::pair(false, BlockIndex::null());
+		if(!m_pointCounter)
+			return std::pair(true, point);
+		m_lastPoint = point;
+		return std::pair(false, Point3D::null());
 	};
 	Actors& actors = area.getActors();
 	const ActorIndex& actorIndex = actor.getIndex(actors.m_referenceData);
-	constexpr bool anyOccupiedBlock = false;
-	return terrainFacade.findPathToConditionBreadthFirst<anyOccupiedBlock>(destinationCondition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), detour, adjacent);
+	constexpr bool anyOccupiedPoint = false;
+	return terrainFacade.findPathToConditionBreadthFirst<anyOccupiedPoint>(destinationCondition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), detour, adjacent);
 }
 void WanderPathRequest::writeStep(Area& area, FindPathResult& result)
 {
@@ -45,11 +45,11 @@ void WanderPathRequest::writeStep(Area& area, FindPathResult& result)
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	if(result.path.empty())
 	{
-		if(m_lastBlock.empty())
+		if(m_lastPoint.empty())
 			actors.wait(actorIndex, Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective);
 		else
 		{
-			m_objective.m_destination = m_lastBlock;
+			m_objective.m_destination = m_lastPoint;
 			actors.move_setDestination(actorIndex, m_objective.m_destination);
 		}
 	}
@@ -63,7 +63,7 @@ Json WanderPathRequest::toJson() const
 {
 	Json output = PathRequestBreadthFirst::toJson();
 	output["objective"] = &m_objective;
-	output["lastBlock"] = m_lastBlock;
+	output["lastPoint"] = m_lastPoint;
 	output["type"] = "wander";
 	return output;
 }

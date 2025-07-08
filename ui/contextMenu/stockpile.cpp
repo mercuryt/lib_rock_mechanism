@@ -1,44 +1,44 @@
 #include "../contextMenu.h"
 #include "../window.h"
 #include "../displayData.h"
-#include "../../engine/blocks/blocks.h"
-void ContextMenu::drawStockPileControls(const BlockIndex& block)
+#include "../../engine/space/space.h"
+void ContextMenu::drawStockPileControls(const Point3D& point)
 {
 	Area& area = *m_window.getArea();
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	const FactionId& faction = m_window.getFaction();
 	// Stockpile
-	if(faction.exists() && blocks.stockpile_contains(block, faction))
+	if(faction.exists() && space.stockpile_contains(point, faction))
 	{
 		auto stockpileLabel = tgui::Label::create("stockpile");
 		m_root.add(stockpileLabel);
 		stockpileLabel->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
-		stockpileLabel->onMouseEnter([this, block, faction, &blocks]{
+		stockpileLabel->onMouseEnter([this, point, faction, &space]{
 			auto& submenu = makeSubmenu(0);
 			auto shrinkButton = tgui::Button::create("shrink");
 			shrinkButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 			submenu.add(shrinkButton);
-			shrinkButton->onClick([this, block, faction, &blocks]{
+			shrinkButton->onClick([this, point, faction, &space]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				StockPile* stockpile = blocks.stockpile_getForFaction(block, faction);
+				StockPile* stockpile = space.stockpile_getForFaction(point, faction);
 				if(stockpile)
-					for(const BlockIndex& selectedBlock : m_window.getSelectedBlocks().getView(blocks))
+					for(const Point3D& selectedBlock : m_window.getSelectedBlocks().getView(space))
 						if(stockpile->contains(selectedBlock))
-							stockpile->removeBlock(selectedBlock);
+							stockpile->removePoint(selectedBlock);
 				hide();
 			});
 			auto editButton = tgui::Button::create("edit");
 			editButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 			submenu.add(editButton);
-			editButton->onClick([this, block, faction, &blocks]{
-				StockPile* stockpile = blocks.stockpile_getForFaction(block, faction);
+			editButton->onClick([this, point, faction, &space]{
+				StockPile* stockpile = space.stockpile_getForFaction(point, faction);
 				if(stockpile)
 					m_window.showEditStockPile(stockpile);
 				hide();
 			});
 		});
 	}
-	else if(faction.exists() && blocks.shape_canStandIn(block))
+	else if(faction.exists() && space.shape_canStandIn(point))
 	{
 		auto createButton = tgui::Button::create("create stockpile");
 		createButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);

@@ -13,7 +13,7 @@ struct AttackTypeParamaters final
 	std::string name;
 	uint32_t area;
 	Force baseForce;
-	DistanceInBlocksFractional range;
+	DistanceFractional range;
 	CombatScore combatScore;
 	Step coolDown;
 	bool projectile;
@@ -27,7 +27,7 @@ class AttackType final
 	StrongVector<std::string, AttackTypeId> m_name;
 	StrongVector<uint32_t, AttackTypeId> m_area;
 	StrongVector<Force, AttackTypeId> m_baseForce;
-	StrongVector<DistanceInBlocksFractional, AttackTypeId> m_range;
+	StrongVector<DistanceFractional, AttackTypeId> m_range;
 	StrongVector<CombatScore, AttackTypeId> m_combatScore;
 	StrongVector<Step, AttackTypeId> m_coolDown;
 	StrongBitSet<AttackTypeId> m_projectile;
@@ -40,7 +40,7 @@ public:
 	[[nodiscard]] static std::string getName(const AttackTypeId& id);
 	[[nodiscard]] static uint32_t getArea(const AttackTypeId& id);
 	[[nodiscard]] static Force getBaseForce(const AttackTypeId& id);
-	[[nodiscard]] static DistanceInBlocksFractional getRange(const AttackTypeId& id);
+	[[nodiscard]] static DistanceFractional getRange(const AttackTypeId& id);
 	[[nodiscard]] static CombatScore getCombatScore(const AttackTypeId& id);
 	[[nodiscard]] static Step getCoolDown(const AttackTypeId& id);
 	[[nodiscard]] static bool getProjectile(const AttackTypeId& id);

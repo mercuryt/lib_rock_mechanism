@@ -3,8 +3,8 @@
 #include <TGUI/TGUI.hpp>
 class Area;
 class Simulation;
-class BlockIndex;
-struct BlockFeatureType;
+class Point3D;
+struct PointFeatureType;
 struct PlantSpecies;
 struct MaterialType;
 struct AnimalSpecies;
@@ -45,7 +45,7 @@ public:
 namespace widgetUtil
 {
 	inline PlantSpeciesId lastSelectedPlantSpecies;
-	tgui::ComboBox::Ptr makePlantSpeciesSelectUI(Area& area, const BlockIndex& block);
+	tgui::ComboBox::Ptr makePlantSpeciesSelectUI(Area& area, const Point3D& point);
 	inline MaterialTypeId lastSelectedMaterial;
 	inline MaterialTypeId lastSelectedConstructionMaterial;
 	tgui::ComboBox::Ptr makeMaterialSelectUI(MaterialTypeId& lastSelected, std::wstring nullLabel = L"", std::function<bool(const MaterialTypeId&)> predicate = nullptr);
@@ -59,8 +59,8 @@ namespace widgetUtil
 	tgui::ComboBox::Ptr makeItemTypeSelectUI();
 	inline FactionId lastSelectedFaction;
 	tgui::ComboBox::Ptr makeFactionSelectUI(Simulation& simulation, std::wstring nullLabel = L"");
-	inline const BlockFeatureType* lastSelectedBlockFeatureType = nullptr;
-	tgui::ComboBox::Ptr makeBlockFeatureTypeSelectUI();
+	inline const PointFeatureType* lastSelectedPointFeatureType = nullptr;
+	tgui::ComboBox::Ptr makePointFeatureTypeSelectUI();
 	inline CraftStepTypeCategoryId lastSelectedCraftStepTypeCategory;
 	tgui::ComboBox::Ptr makeCraftStepTypeCategorySelectUI();
 	inline CraftJobTypeId lastSelectedCraftJobType;

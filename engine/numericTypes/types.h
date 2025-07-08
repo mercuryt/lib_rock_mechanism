@@ -1,4 +1,4 @@
-// One BlockIndex has xyz dimensions of 1 meter by 1 meter by 2 meters.
+// One Point3D has xyz dimensions of 1 meter by 1 meter by 2 meters.
 // This File defines physical types.
 // numericTypes/idTypes.h defines id types, which don't ever change.
 // numericTypes/index.h defines index types, which do change and must be updated.
@@ -144,30 +144,30 @@ public:
 inline void to_json(Json& data, const Meters& index) { data = index.get(); }
 inline void from_json(const Json& data, Meters& index) { index = Meters::create(data.get<MetersWidth>()); }
 
-//TODO: DistanceInBlocksSquared, narrow DistanceInBlocks to 16.
-class DistanceInBlocksFractional;
-using DistanceInBlocksWidth = uint32_t;
-class DistanceInBlocks : public StrongInteger<DistanceInBlocks, DistanceInBlocksWidth>
+//TODO: DistanceSquared, narrow Distance to 16.
+class DistanceFractional;
+using DistanceWidth = uint32_t;
+class Distance : public StrongInteger<Distance, DistanceWidth>
 {
 public:
-	DistanceInBlocks operator+=(int32_t x) { data += x; return *this; }
-	[[nodiscard]] constexpr DistanceInBlocksFractional toFloat() const;
-	[[nodiscard]] constexpr DistanceInBlocks squared() const { return DistanceInBlocks::create(data * data); }
-	struct Hash { [[nodiscard]] size_t operator()(const DistanceInBlocks& index) const { return index.get(); } };
+	Distance operator+=(int32_t x) { data += x; return *this; }
+	[[nodiscard]] constexpr DistanceFractional toFloat() const;
+	[[nodiscard]] constexpr Distance squared() const { return Distance::create(data * data); }
+	struct Hash { [[nodiscard]] size_t operator()(const Distance& index) const { return index.get(); } };
 };
-inline void to_json(Json& data, const DistanceInBlocks& index) { data = index.get(); }
-inline void from_json(const Json& data, DistanceInBlocks& index) { index = DistanceInBlocks::create(data.get<DistanceInBlocksWidth>()); }
+inline void to_json(Json& data, const Distance& index) { data = index.get(); }
+inline void from_json(const Json& data, Distance& index) { index = Distance::create(data.get<DistanceWidth>()); }
 
-class DistanceInBlocksFractional : public StrongFloat<DistanceInBlocksFractional>
+class DistanceFractional : public StrongFloat<DistanceFractional>
 {
 public:
-	DistanceInBlocksFractional operator+=(float x) { data += x; return *this; }
-	[[nodiscard]] DistanceInBlocks toInt() const { return DistanceInBlocks::create(std::round(data)); }
-	struct Hash { [[nodiscard]] size_t operator()(const DistanceInBlocksFractional& index) const { return index.get(); } };
+	DistanceFractional operator+=(float x) { data += x; return *this; }
+	[[nodiscard]] Distance toInt() const { return Distance::create(std::round(data)); }
+	struct Hash { [[nodiscard]] size_t operator()(const DistanceFractional& index) const { return index.get(); } };
 };
-inline void to_json(Json& data, const DistanceInBlocksFractional& index) { data = index.get(); }
-inline void from_json(const Json& data, DistanceInBlocksFractional& index) { index = DistanceInBlocksFractional::create(data.get<float>()); }
-constexpr DistanceInBlocksFractional DistanceInBlocks::toFloat() const { return DistanceInBlocksFractional::create(data); }
+inline void to_json(Json& data, const DistanceFractional& index) { data = index.get(); }
+inline void from_json(const Json& data, DistanceFractional& index) { index = DistanceFractional::create(data.get<float>()); }
+constexpr DistanceFractional Distance::toFloat() const { return DistanceFractional::create(data); }
 // For use by location buckets.
 using DistanceInBucketsWidth = uint32_t;
 class DistanceInBuckets : public StrongInteger<DistanceInBuckets, DistanceInBucketsWidth>
@@ -310,7 +310,7 @@ public:
 inline void to_json(Json& data, const DeckId& index) { data = index.get(); }
 inline void from_json(const Json& data, DeckId& index) { index = DeckId::create(data.get<uint16_t>()); }
 
-enum class BlockFeatureTypeId
+enum class PointFeatureTypeId
 {
 	Door,
 	Flap,
@@ -324,17 +324,17 @@ enum class BlockFeatureTypeId
 	Stairs,
 	Null
 };
-NLOHMANN_JSON_SERIALIZE_ENUM(BlockFeatureTypeId,
+NLOHMANN_JSON_SERIALIZE_ENUM(PointFeatureTypeId,
 {
-	{BlockFeatureTypeId::Door, "Door"},
-	{BlockFeatureTypeId::Flap, "Flap"},
-	{BlockFeatureTypeId::FloodGate, "FloodGate"},
-	{BlockFeatureTypeId::Floor, "Floor"},
-	{BlockFeatureTypeId::FloorGrate, "FloorGrate"},
-	{BlockFeatureTypeId::Fortification, "Fortification"},
-	{BlockFeatureTypeId::Hatch, "Hatch"},
-	{BlockFeatureTypeId::Keel, "Keel"},
-	{BlockFeatureTypeId::Ramp, "Ramp"},
-	{BlockFeatureTypeId::Stairs, "Stairs"},
-	{BlockFeatureTypeId::Null, "Null"}
+	{PointFeatureTypeId::Door, "Door"},
+	{PointFeatureTypeId::Flap, "Flap"},
+	{PointFeatureTypeId::FloodGate, "FloodGate"},
+	{PointFeatureTypeId::Floor, "Floor"},
+	{PointFeatureTypeId::FloorGrate, "FloorGrate"},
+	{PointFeatureTypeId::Fortification, "Fortification"},
+	{PointFeatureTypeId::Hatch, "Hatch"},
+	{PointFeatureTypeId::Keel, "Keel"},
+	{PointFeatureTypeId::Ramp, "Ramp"},
+	{PointFeatureTypeId::Stairs, "Stairs"},
+	{PointFeatureTypeId::Null, "Null"}
 });

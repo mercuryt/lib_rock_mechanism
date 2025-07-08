@@ -6,22 +6,22 @@
 #include <cstdint>
 
 class FluidGroup;
-struct FutureFlowBlock;
+struct FutureFlowPoint;
 
 class DrainQueue final : public FluidQueue
 {
 public:
-	SmallSet<BlockIndex> m_futureEmpty;
-	SmallSet<BlockIndex> m_futureNoLongerFull;
-	SmallSet<BlockIndex> m_futurePotentialNoLongerAdjacent;
+	SmallSet<Point3D> m_futureEmpty;
+	SmallSet<Point3D> m_futureNoLongerFull;
+	SmallSet<Point3D> m_futurePotentialNoLongerAdjacent;
 private:
-	[[nodiscard]] uint32_t getPriority(Area& area, FutureFlowBlock& futureFlowBlock) const;
+	[[nodiscard]] uint32_t getPriority(FutureFlowPoint& futureFlowPoint) const;
 public:
 	DrainQueue(FluidAllocator& allocator) : FluidQueue(allocator) { }
-	void buildFor(SmallSet<BlockIndex>& members);
+	void buildFor(SmallSet<Point3D>& members);
 	void initalizeForStep(Area& area, FluidGroup& fluidGroup);
 	void recordDelta(Area& area, const CollisionVolume& volume, const CollisionVolume& flowCapacity, const CollisionVolume& flowTillNextStep);
 	void applyDelta(Area& area, FluidGroup& fluidGroup);
 	[[nodiscard]] CollisionVolume groupLevel(Area& area, FluidGroup& fluidGroup) const;
-	void findGroupEnd(Area& area);
+	void findGroupEnd();
 };

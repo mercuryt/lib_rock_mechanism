@@ -18,7 +18,7 @@ class MustSleep final
 	HasScheduledEventPausable<SleepEvent> m_sleepEvent; // 2
 	HasScheduledEvent<TiredEvent> m_tiredEvent; // 2
 	ActorReference m_actor;
-	BlockIndex m_location;
+	Point3D m_location;
 	SleepObjective* m_objective = nullptr;
 	bool m_needsSleep = false;
 	bool m_isAwake = true;
@@ -34,7 +34,7 @@ public:
 	void wakeUp(Area& area);
 	void makeSleepObjective(Area& area);
 	void wakeUpEarly(Area& area);
-	void setLocation(const BlockIndex& block);
+	void setLocation(const Point3D& point);
 	void unschedule();
 	void notTired(Area& area);
 	void scheduleTiredEvent(Area& area);
@@ -43,7 +43,7 @@ public:
 	[[nodiscard]] bool isAwake() const { return m_isAwake; }
 	[[nodiscard]] bool isTired() const { return m_needsSleep; }
 	[[nodiscard]] bool getNeedsSleep() const { return m_needsSleep; }
-	[[nodiscard]] BlockIndex getLocation() const { return m_location; }
+	[[nodiscard]] Point3D getLocation() const { return m_location; }
 	friend class SleepEvent;
 	friend class TiredEvent;
 	friend class SleepPathRequest;

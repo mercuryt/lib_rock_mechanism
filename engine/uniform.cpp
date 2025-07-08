@@ -12,7 +12,7 @@ UniformElement UniformElement::create(const ItemTypeId& itemType, const Quantity
 	UniformElement output{
 		.m_itemType = itemType,
 		.m_materialCategoryType = materialCategoryType,
-		.m_materialType = materialType,
+		.m_solid = materialType,
 		.m_quantity = quantity,
 	};
 	return output;
@@ -23,7 +23,7 @@ bool UniformElement::query(const ItemIndex& item, const Items& items) const
 	if(items.getItemType(item) != m_itemType)
 		return false;
 	const MaterialTypeId& materialType = items.getMaterialType(item);
-	if(m_materialType.exists() && materialType != m_materialType)
+	if(m_solid.exists() && materialType != m_solid)
 		return false;
 	if(m_materialCategoryType.exists() && MaterialType::getMaterialTypeCategory(materialType) != m_materialCategoryType)
 		return false;

@@ -63,81 +63,81 @@ ActorOrItemIndex Actors::canPickUp_pickUpPolymorphic(const ActorIndex& index, Ac
 		return canPickUp_getPolymorphic(index);
 	}
 }
-ActorIndex Actors::canPickUp_tryToPutDownActor(const ActorIndex& index, const BlockIndex& location, const DistanceInBlocks maxRange)
+ActorIndex Actors::canPickUp_tryToPutDownActor(const ActorIndex& index, const Point3D& location, const Distance maxRange)
 {
 	assert(m_carrying[index].exists());
 	assert(m_carrying[index].isActor());
 	ActorIndex other = m_carrying[index].getActor();
 	assert(m_static[other]);
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	ShapeId shape = m_shape[other];
-	auto predicate = [&](const BlockIndex& block) {
-		return blocks.shape_anythingCanEnterEver(block) &&
-			blocks.shape_staticShapeCanEnterWithAnyFacing(block, shape, {});
+	auto predicate = [&](const Point3D& point) {
+		return space.shape_anythingCanEnterEver(point) &&
+			space.shape_staticShapeCanEnterWithAnyFacing(point, shape, {});
 	};
-	BlockIndex targetLocation = blocks.getBlockInRangeWithCondition(location, maxRange, predicate);
+	Point3D targetLocation = space.getPointInRangeWithCondition(location, maxRange, predicate);
 	if(targetLocation.empty())
 	{
 		static const MoveTypeId moveTypeNone = MoveType::byName("none");
-		// No location found, try again without respecting Config::maxBlockVolume.
-		auto predicate2 = [&](const BlockIndex& block)
+		// No location found, try again without respecting Config::maxPointVolume.
+		auto predicate2 = [&](const Point3D& point)
 		{
-			return blocks.shape_anythingCanEnterEver(block) &&
-				   blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, shape, moveTypeNone);
+			return space.shape_anythingCanEnterEver(point) &&
+				   space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(point, shape, moveTypeNone);
 		};
-		targetLocation = blocks.getBlockInRangeWithCondition(location, maxRange, predicate2);
+		targetLocation = space.getPointInRangeWithCondition(location, maxRange, predicate2);
 	}
 	if(targetLocation.empty())
-		// There is nowhere to put down then actor even ignoring max block volume, i.e. it is a multi block shape which is interfearing with unenterable blocks.
+		// There is nowhere to put down then actor even ignoring max point volume, i.e. it is a multi point shape which is interfearing with unenterable space.
 		return ActorIndex::null();
 	m_carrying[index].clear();
 	unsetCarrier(other, ActorOrItemIndex::createForActor(index));
 	move_updateIndividualSpeed(index);
-	const Facing4& facing = blocks.shape_canEnterCurrentlyWithAnyFacingReturnFacing(targetLocation, shape, m_blocks[index]);
+	const Facing4& facing = space.shape_canEnterCurrentlyWithAnyFacingReturnFacing(targetLocation, shape, m_occupied[index]);
 	location_set(other, targetLocation, facing);
 	return other;
 }
-ItemIndex Actors::canPickUp_tryToPutDownItem(const ActorIndex& index, const BlockIndex& location, const DistanceInBlocks maxRange)
+ItemIndex Actors::canPickUp_tryToPutDownItem(const ActorIndex& index, const Point3D& location, const Distance maxRange)
 {
 	assert(m_carrying[index].exists());
 	assert(m_carrying[index].isItem());
 	ItemIndex item = m_carrying[index].getItem();
 	Items& items = m_area.getItems();
 	assert(items.isStatic(item));
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	ShapeId shape = m_area.getItems().getShape(item);
 	// Find a location to put down the carried item.
-	auto predicate = [&](const BlockIndex& block) {
-		return blocks.shape_anythingCanEnterEver(block) &&
-			blocks.shape_staticShapeCanEnterWithAnyFacing(block, shape, {});
+	auto predicate = [&](const Point3D& point) {
+		return space.shape_anythingCanEnterEver(point) &&
+			space.shape_staticShapeCanEnterWithAnyFacing(point, shape, {});
 	};
-	BlockIndex targetLocation = blocks.getBlockInRangeWithCondition(location, maxRange, predicate);
+	Point3D targetLocation = space.getPointInRangeWithCondition(location, maxRange, predicate);
 	if(targetLocation.empty())
 	{
 		static const MoveTypeId moveTypeNone = MoveType::byName("none");
-		// No location found, try again without respecting Config::maxBlockVolume.
-		auto predicate2 = [&](const BlockIndex &block)
+		// No location found, try again without respecting Config::maxPointVolume.
+		auto predicate2 = [&](const Point3D &point)
 		{
-			return blocks.shape_anythingCanEnterEver(block) &&
-				blocks.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(block, shape, moveTypeNone);
+			return space.shape_anythingCanEnterEver(point) &&
+				space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(point, shape, moveTypeNone);
 		};
-		targetLocation = blocks.getBlockInRangeWithCondition(location, maxRange, predicate2);
+		targetLocation = space.getPointInRangeWithCondition(location, maxRange, predicate2);
 	}
 	if(targetLocation.empty())
-		// There is nowhere to put down then item even ignoring max block volume, i.e. it is a multi block shape which is interfearing with unenterable blocks.
+		// There is nowhere to put down then item even ignoring max point volume, i.e. it is a multi point shape which is interfearing with unenterable space.
 		return ItemIndex::null();
 	m_carrying[index].clear();
 	items.unsetCarrier(item, ActorOrItemIndex::createForActor(index));
 	move_updateIndividualSpeed(index);
 	return m_area.getItems().location_set(item, targetLocation, Facing4::North);
 }
-ActorOrItemIndex Actors::canPickUp_tryToPutDownIfAny(const ActorIndex& index, const BlockIndex& location, const DistanceInBlocks maxRange)
+ActorOrItemIndex Actors::canPickUp_tryToPutDownIfAny(const ActorIndex& index, const Point3D& location, const Distance maxRange)
 {
 	if(!m_carrying[index].exists())
 		return m_carrying[index];
 	return canPickUp_tryToPutDownPolymorphic(index, location, maxRange);
 }
-ActorOrItemIndex Actors::canPickUp_tryToPutDownPolymorphic(const ActorIndex& index, const BlockIndex& location, const DistanceInBlocks maxRange)
+ActorOrItemIndex Actors::canPickUp_tryToPutDownPolymorphic(const ActorIndex& index, const Point3D& location, const Distance maxRange)
 {
 	assert(m_carrying[index].exists());
 	if(m_carrying[index].isActor())
@@ -342,11 +342,11 @@ Quantity Actors::canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(const 
 		++quantity;
 	return quantity;
 }
-bool Actors::canPickUp_canPutDown(const ActorIndex& index, const BlockIndex& block)
+bool Actors::canPickUp_canPutDown(const ActorIndex& index, const Point3D& point)
 {
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	auto& carrying = m_carrying[index];
-	return blocks.shape_canEnterCurrentlyWithAnyFacing(block, carrying.getShape(m_area), {});
+	return space.shape_canEnterCurrentlyWithAnyFacing(point, carrying.getShape(m_area), {});
 }
 void Actors::canPickUp_updateActorIndex(const ActorIndex& index, [[maybe_unused]] const ActorIndex& oldIndex, const ActorIndex& newIndex)
 {
@@ -366,9 +366,9 @@ void Actors::canPickUp_updateUnencomberedCarryMass(const ActorIndex& index)
 {
 	m_unencomberedCarryMass[index] = Mass::create(Config::unitsOfCarryMassPerUnitOfStrength * getStrength(index).get());
 }
-void Actors::canPickUp_addFluidToContainerFromAdjacentBlocksIncludingOtherContainersWithLimit(const ActorIndex& index, const FluidTypeId& fluidType, const CollisionVolume& volume)
+void Actors::canPickUp_addFluidToContainerFromAdjacentPointsIncludingOtherContainersWithLimit(const ActorIndex& index, const FluidTypeId& fluidType, const CollisionVolume& volume)
 {
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	Items& items = m_area.getItems();
 	const ItemIndex container = m_carrying[index].getItem();
 	CollisionVolume capacity = volume;
@@ -376,20 +376,20 @@ void Actors::canPickUp_addFluidToContainerFromAdjacentBlocksIncludingOtherContai
 		capacity -= items.cargo_getFluidVolume(container);
 	else
 		assert(!items.cargo_containsAnyFluid(container));
-	for(const BlockIndex& block : getAdjacentBlocks(index))
+	for(const Point3D& point : getAdjacentPoints(index))
 	{
-		if(blocks.fluid_contains(block, fluidType))
+		if(space.fluid_contains(point, fluidType))
 		{
-			const CollisionVolume avalible = blocks.fluid_volumeOfTypeContains(block, fluidType);
+			const CollisionVolume avalible = space.fluid_volumeOfTypeContains(point, fluidType);
 			const CollisionVolume volumeToTransfer = std::min(capacity, avalible);
 			assert(volumeToTransfer != 0);
-			blocks.fluid_remove(block, volumeToTransfer, fluidType);
+			space.fluid_remove(point, volumeToTransfer, fluidType);
 			items.cargo_addFluid(container, fluidType, volumeToTransfer);
 			capacity -= volumeToTransfer;
 			if(capacity == 0)
 				break;
 		}
-		for(const ItemIndex& otherContainer : blocks.item_getAll(block))
+		for(const ItemIndex& otherContainer : space.item_getAll(point))
 		{
 			if(items.cargo_containsFluidType(otherContainer, fluidType))
 			{

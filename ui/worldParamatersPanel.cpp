@@ -114,7 +114,7 @@ WorldParamatersView::WorldParamatersView(Window& w) : m_window(w), m_panel(tgui:
 	grid->addWidget(tgui::Label::create("z"), 4, 3);
 	grid->addWidget(m_areaSizeY, 5, 3);
 
-	auto averageLandHeightLabel = tgui::Label::create("average land height blocks");
+	auto averageLandHeightLabel = tgui::Label::create("average land height space");
 	grid->addWidget(averageLandHeightLabel, 1, 4);
 	grid->addWidget(m_averageLandHeightBlocks, 2, 4);
 

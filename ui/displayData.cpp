@@ -5,7 +5,7 @@
 #include "../engine/items/items.h"
 #include "../engine/plants.h"
 #include "../engine/definitions/animalSpecies.h"
-#include "../engine/blockFeature.h"
+#include "../engine/pointFeature.h"
 #include <SFML/Graphics/Color.hpp>
 #include <string>
 

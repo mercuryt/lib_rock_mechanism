@@ -70,8 +70,8 @@ std::wstring UniformCreateOrEditView::displayNameForElement(UniformElement& unif
 {
 	assert(uniformElement.m_itemType.exists());
 	std::wstring output;
-	if(uniformElement.m_materialType.exists())
-		output.append(MaterialType::getName(uniformElement.m_materialType) + L" ");
+	if(uniformElement.m_solid.exists())
+		output.append(MaterialType::getName(uniformElement.m_solid) + L" ");
 	else if(uniformElement.m_materialCategoryType.exists())
 		output.append(MaterialTypeCategory::getName(uniformElement.m_materialCategoryType) + L" ");
 	output.append(ItemType::getName(uniformElement.m_itemType));

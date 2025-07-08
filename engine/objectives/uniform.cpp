@@ -1,7 +1,7 @@
 #include "uniform.h"
 #include "../actors/actors.h"
 #include "../area/area.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../items/items.h"
 #include "../path/terrainFacade.hpp"
 #include "../numericTypes/types.h"
@@ -28,12 +28,12 @@ UniformPathRequest::UniformPathRequest(const Json& data, Area& area, Deserializa
 { }
 FindPathResult UniformPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
-	auto destinationCondition = [&area, this](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
+	auto destinationCondition = [&area, this](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
 	{
-		return {m_objective.blockContainsItem(area, block), block};
+		return {m_objective.pointContainsItem(area, point), point};
 	};
-	constexpr bool useAnyOccupiedBlock = true;
-	return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedBlock, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, detour, adjacent, faction, maxRange);
+	constexpr bool useAnyOccupiedPoint = true;
+	return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedPoint, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, detour, adjacent, faction, maxRange);
 }
 void UniformPathRequest::writeStep(Area& area, FindPathResult& result)
 {
@@ -49,8 +49,8 @@ void UniformPathRequest::writeStep(Area& area, FindPathResult& result)
 		}
 		else
 		{
-			BlockIndex block = result.blockThatPassedPredicate;
-			if(!m_objective.blockContainsItem(area, block))
+			Point3D point = result.pointThatPassedPredicate;
+			if(!m_objective.pointContainsItem(area, point))
 			{
 				// Destination no longer suitable.
 				m_objective.reset(area, actorIndex);
@@ -58,7 +58,7 @@ void UniformPathRequest::writeStep(Area& area, FindPathResult& result)
 			}
 			else
 			{
-				ItemIndex item = m_objective.getItemAtBlock(area, block);
+				ItemIndex item = m_objective.getItemAtPoint(area, point);
 				m_objective.select(area, item);
 				actors.move_setPath(actorIndex, result.path);
 			}
@@ -68,7 +68,7 @@ void UniformPathRequest::writeStep(Area& area, FindPathResult& result)
 	{
 		if(result.useCurrentPosition)
 		{
-			ItemIndex item = m_objective.getItemAtBlock(area, result.blockThatPassedPredicate);
+			ItemIndex item = m_objective.getItemAtPoint(area, result.pointThatPassedPredicate);
 			if(item.empty())
 			{
 				m_objective.reset(area, actorIndex);
@@ -130,10 +130,10 @@ void UniformObjective::execute(Area& area, const ActorIndex& actor)
 	}
 	else
 	{
-		std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block){ return blockContainsItem(area, block); };
-		BlockIndex adjacent = actors.getBlockWhichIsAdjacentWithPredicate(actor, predicate);
+		std::function<bool(const Point3D&)> predicate = [&](const Point3D& point){ return pointContainsItem(area, point); };
+		Point3D adjacent = actors.getPointWhichIsAdjacentWithPredicate(actor, predicate);
 		if(adjacent.exists())
-			equip(area, getItemAtBlock(area, adjacent), actor);
+			equip(area, getItemAtPoint(area, adjacent), actor);
 		else
 			actors.move_pathRequestRecord(actor, std::make_unique<UniformPathRequest>(area, *this, actor));
 	}
@@ -150,10 +150,10 @@ void UniformObjective::reset(Area& area, const ActorIndex& actor)
 	actors.move_pathRequestMaybeCancel(actor);
 	m_item.clear();
 }
-ItemIndex UniformObjective::getItemAtBlock(Area& area, const BlockIndex& block)
+ItemIndex UniformObjective::getItemAtPoint(Area& area, const Point3D& point)
 {
 	Items& items = area.getItems();
-	for(ItemIndex item : area.getBlocks().item_getAll(block))
+	for(ItemIndex item :  area.getSpace().item_getAll(point))
 		for(auto& element : m_elementsCopy)
 			if(element.query(item, items))
 				return item;

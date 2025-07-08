@@ -5,11 +5,12 @@
 #pragma GCC diagnostic pop
 #include "../numericTypes/types.h"
 #include "cuboid.h"
+#include "cuboidArray.h"
 #include "sphere.h"
 
 class CuboidSetSIMD
 {
-	using Data = Eigen::Array<DistanceInBlocksWidth, 3, Eigen::Dynamic>;
+	using Data = Eigen::Array<DistanceWidth, 3, Eigen::Dynamic>;
 	Data m_high;
 	Data m_low;
 	// TODO: change name to boundry.
@@ -32,6 +33,8 @@ public:
 	void clear();
 	template<class CuboidSetT>
 	void load(const CuboidSetT& contents) { assert(empty()); reserve(contents.size()); for(const Cuboid& cuboid : contents) insert(cuboid); }
+	template<int capacity>
+	void load(const CuboidArray<capacity>& contents) { assert(empty()); reserve(contents.capacity); for(const Cuboid& cuboid : contents) insert(cuboid); }
 	[[nodiscard]] Cuboid operator[](const uint& index) const { return {Coordinates(m_high.col(index)), Coordinates(m_low.col(index)) }; }
 	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
 	[[nodiscard]] bool containsAsMember(const Cuboid& cuboid) const;

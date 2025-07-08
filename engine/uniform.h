@@ -9,7 +9,7 @@ struct UniformElement final
 {
 	ItemTypeId m_itemType;
 	MaterialCategoryTypeId m_materialCategoryType;
-	MaterialTypeId m_materialType;
+	MaterialTypeId m_solid;
 	Quantity m_quantity;
 	[[nodiscard]] bool operator==(const UniformElement& other) const { return &other == this; }
 	[[nodiscard]] bool query(const ItemIndex& item, const Items& items) const;
@@ -17,7 +17,7 @@ struct UniformElement final
 		const ItemTypeId& itemType, const Quantity& quantity = Quantity::create(1), const MaterialTypeId& materialType = MaterialTypeId::null(),
 		const MaterialCategoryTypeId& materialCageoryType = MaterialCategoryTypeId::null(), const Quality qualityMin = Quality::create(0)
 	);
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(UniformElement, m_itemType, m_materialCategoryType, m_materialType, m_quantity);
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(UniformElement, m_itemType, m_materialCategoryType, m_solid, m_quantity);
 };
 struct Uniform final
 {

@@ -1,7 +1,7 @@
 #pragma once
 #include "area/area.h"
 #include "definitions/shape.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "numericTypes/index.h"
 #include "callbackTypes.h"
 
@@ -10,70 +10,71 @@ class MoveType;
 class PathInnerLoops
 {
 	template<AccessCondition AccessConditionT, DestinationCondition DestinationConditionT, typename Memo, bool symetric, bool adjacentSingleTile>
-	static FindPathResult findPathInner(AccessConditionT accessCondition, DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const BlockIndex& start)
+	static FindPathResult findPathInner(AccessConditionT accessCondition, DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const Point3D& start)
 	{
-		const Blocks& blocks = area.getBlocks();
-		// Use BlockIndex::max to indicate the start.
+		const Space& space =  area.getSpace();
+		// Use Point3D::max to indicate the start.
 		memo.setOpen(start, area);
-		memo.setClosed(start, BlockIndex::max());
+		memo.setClosed(start, Point3D::max());
 		while(!memo.openEmpty())
 		{
-			BlockIndex current = memo.next();
+			Point3D current = memo.next();
+			const auto allAdjacent = current.getAllAdjacentIncludingOutOfBounds();
 			for(AdjacentIndex adjacentCount = AdjacentIndex::create(0); adjacentCount < maxAdjacent; ++adjacentCount)
 			{
-				BlockIndex adjacentIndex = blocks.indexAdjacentToAtCount(current, adjacentCount);
-				if(adjacentIndex.empty())
-					// No block here, edge of area.
+				Point3D adjacent = allAdjacent[adjacentCount.get()];
+				if(!space.getAll().contains(adjacent))
+					// No point here, edge of area.
 					continue;
 				if constexpr (adjacentSingleTile)
 				{
 					Facing4 facing;
 					if constexpr(!symetric)
-						facing = blocks.facingToSetWhenEnteringFrom(adjacentIndex, current);
+						facing = current.getFacingTwords(adjacent);
 					else
 						facing = Facing4::North;
-					if(memo.isClosed(adjacentIndex))
+					if(memo.isClosed(adjacent))
 						continue;
-					//[[maybe_unused]] Point3D coordinates = blocks.getCoordinates(adjacentIndex);
+					//[[maybe_unused]] Point3D coordinates = adjacent;
 					//[[maybe_unused]] bool stopHere = coordinates.y() == 7 && coordinates.x() == 2 && coordinates.z() == 1;
-					auto [result, blockWhichPassedPredicate] = destinationCondition(adjacentIndex, facing);
+					auto [result, pointWhichPassedPredicate] = destinationCondition(adjacent, facing);
 					if(result)
 					{
-						const SmallSet<BlockIndex>& path = memo.getPath(current, BlockIndex::null());
-						return {path, blockWhichPassedPredicate, path.empty()};
+						const SmallSet<Point3D>& path = memo.getPath(current, Point3D::null());
+						return {path, pointWhichPassedPredicate, path.empty()};
 					}
-					if(terrainFacade.canEnterFrom(current, adjacentCount) && accessCondition(adjacentIndex, facing))
+					if(terrainFacade.canEnterFrom(current, adjacentCount) && accessCondition(adjacent, facing))
 					{
-						memo.setOpen(adjacentIndex, area);
-						memo.setClosed(adjacentIndex, current);
+						memo.setOpen(adjacent, area);
+						memo.setClosed(adjacent, current);
 					}
 				}
 				else if(terrainFacade.canEnterFrom(current, adjacentCount))
 				{
-					assert(adjacentIndex.exists());
-					if(memo.isClosed(adjacentIndex))
+					assert(adjacent.exists());
+					if(memo.isClosed(adjacent))
 						continue;
 					Facing4 facing;
 					if constexpr(!symetric)
-						facing = blocks.facingToSetWhenEnteringFrom(adjacentIndex, current);
+						facing = current.getFacingTwords(adjacent);
 					else
 						facing = Facing4::North;
-					if(!accessCondition(adjacentIndex, facing))
+					if(!accessCondition(adjacent, facing))
 						continue;
-					auto [result, blockWhichPassedPredicate] = destinationCondition(adjacentIndex, facing);
+					auto [result, pointWhichPassedPredicate] = destinationCondition(adjacent, facing);
 					if(result)
 					{
-						return {memo.getPath(current, adjacentIndex), blockWhichPassedPredicate, false};
+						return {memo.getPath(current, adjacent), pointWhichPassedPredicate, false};
 					}
-					memo.setOpen(adjacentIndex, area);
-					memo.setClosed(adjacentIndex, current);
+					memo.setOpen(adjacent, area);
+					memo.setClosed(adjacent, current);
 				}
 			}
 		}
-		return {{}, BlockIndex::null(), false};
+		return {{}, Point3D::null(), false};
 	}
 	template<AccessCondition AccessConditionT, DestinationCondition DestinationConditionT, typename Memo, bool adjacentSingleTile>
-	static FindPathResult findPathSetSymetric(AccessConditionT accessCondition, DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const BlockIndex& start, bool isSymetric)
+	static FindPathResult findPathSetSymetric(AccessConditionT accessCondition, DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const Point3D& start, bool isSymetric)
 	{
 		if(isSymetric)
 			return findPathInner<AccessConditionT, DestinationConditionT, Memo, true, adjacentSingleTile>(accessCondition, destinationCondition, area, terrainFacade, memo, start);
@@ -82,29 +83,29 @@ class PathInnerLoops
 	}
 	// Consumes isMultiTile, faction, and shape, all other arguments passed on to setSymetric.
 	template<AccessCondition AccessConditionT, DestinationCondition DestinationConditionT, typename Memo, bool adjacentSingleTile, bool isMultiTile>
-	static FindPathResult findPathSetUnreserved(AccessConditionT accessCondition, DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const BlockIndex& start, const FactionId& faction, const ShapeId& shape)
+	static FindPathResult findPathSetUnreserved(AccessConditionT accessCondition, DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const Point3D& start, const FactionId& faction, const ShapeId& shape)
 	{
 		if(faction.exists())
 		{
-			const Blocks& blocks = area.getBlocks();
+			const Space& space =  area.getSpace();
 			if(isMultiTile)
 			{
-				auto unreservedCondition = [&](const BlockIndex& block, const Facing4& facing) -> std::pair<bool, BlockIndex>
+				auto unreservedCondition = [&](const Point3D& point, const Facing4& facing) -> std::pair<bool, Point3D>
 				{
-					for(const BlockIndex& block : Shape::getBlocksOccupiedAt(shape, blocks, block, facing))
-						if(blocks.isReserved(block, faction))
-							return {false, block};
-					return destinationCondition(block, facing);
+					for(const Point3D& point : Shape::getPointsOccupiedAt(shape, space, point, facing))
+						if(space.isReserved(point, faction))
+							return {false, point};
+					return destinationCondition(point, facing);
 				};
 				return findPathSetSymetric<AccessConditionT, decltype(unreservedCondition), Memo, adjacentSingleTile>(accessCondition, unreservedCondition, area, terrainFacade, memo, start, Shape::getIsRadiallySymetrical(shape));
 			}
 			else
 			{
-				auto unreservedCondition = [&](const BlockIndex& block, const Facing4& facing) -> std::pair<bool, BlockIndex>
+				auto unreservedCondition = [&](const Point3D& point, const Facing4& facing) -> std::pair<bool, Point3D>
 				{
-					if(blocks.isReserved(block, faction))
-						return {false, block};
-					return destinationCondition(block, facing);
+					if(space.isReserved(point, faction))
+						return {false, point};
+					return destinationCondition(point, facing);
 				};
 				return findPathSetSymetric<AccessConditionT, decltype(unreservedCondition), Memo, adjacentSingleTile>(accessCondition, unreservedCondition, area, terrainFacade, memo, start, Shape::getIsRadiallySymetrical(shape));
 			}
@@ -113,14 +114,14 @@ class PathInnerLoops
 			return findPathSetSymetric<AccessConditionT, DestinationConditionT, Memo, adjacentSingleTile>(accessCondition, destinationCondition, area, terrainFacade, memo, start, Shape::getIsRadiallySymetrical(shape));
 	}
 	template<AccessCondition AccessConditionT, DestinationCondition DestinationConditionT, typename Memo, bool adjacentSingleTile, bool isMultiTile>
-	static FindPathResult findPathSetMaxRange(AccessConditionT accessCondition, DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const BlockIndex& start, const FactionId& faction, const ShapeId& shape, const DistanceInBlocks& maxRange)
+	static FindPathResult findPathSetMaxRange(AccessConditionT accessCondition, DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const Point3D& start, const FactionId& faction, const ShapeId& shape, const Distance& maxRange)
 	{
-		if(maxRange != DistanceInBlocks::max())
+		if(maxRange != Distance::max())
 		{
-			const Blocks& blocks = area.getBlocks();
-			auto maxRangeCondition = [&blocks, accessCondition, maxRange, start](const BlockIndex& block, const Facing4& facing) -> bool
+			const Space& space =  area.getSpace();
+			auto maxRangeCondition = [&space, accessCondition, maxRange, start](const Point3D& point, const Facing4& facing) -> bool
 			{
-				return blocks.taxiDistance(block, start) <= maxRange && accessCondition(block, facing);
+				return point.taxiDistanceTo(start) <= maxRange && accessCondition(point, facing);
 			};
 			return findPathSetUnreserved<decltype(maxRangeCondition), DestinationConditionT, Memo, adjacentSingleTile, isMultiTile>(maxRangeCondition, destinationCondition, area, terrainFacade, memo, start, faction, shape);
 		}
@@ -128,26 +129,26 @@ class PathInnerLoops
 			return findPathSetUnreserved<AccessConditionT, DestinationConditionT, Memo, adjacentSingleTile, isMultiTile>(accessCondition, destinationCondition, area, terrainFacade, memo, start, faction, shape);
 	}
 	template<bool adjacentSingleTile, bool isMultiTile, DestinationCondition DestinationConditionT, typename Memo>
-	static FindPathResult findPathSetDetour(DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const BlockIndex& start, const Facing4& startFacing, const FactionId& faction, const ShapeId& shape, const MoveTypeId& moveType, bool detour, const DistanceInBlocks& maxRange)
+	static FindPathResult findPathSetDetour(DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const Point3D& start, const Facing4& startFacing, const FactionId& faction, const ShapeId& shape, const MoveTypeId& moveType, bool detour, const Distance& maxRange)
 	{
-		const Blocks& blocks = area.getBlocks();
+		const Space& space =  area.getSpace();
 		if constexpr(isMultiTile)
 		{
 			if(detour)
 			{
-				// TODO: This is converting a SmallSet<BlockIndex> into a SmallSet<BlockIndex>, remove it when SmallSet<BlockIndex> is removed.
-				const OccupiedBlocksForHasShape initalBlocks = OccupiedBlocksForHasShape::create(Shape::getBlocksOccupiedAt(shape, blocks, start, startFacing));
-				auto accessCondition = [&blocks, &initalBlocks, shape, moveType](const BlockIndex& block, const Facing4& facing) -> bool
+				// TODO: This is converting a SmallSet<Point3D> into a SmallSet<Point3D>, remove it when SmallSet<Point3D> is removed.
+				const OccupiedSpaceForHasShape initalPoints = OccupiedSpaceForHasShape::create(Shape::getPointsOccupiedAt(shape, space, start, startFacing));
+				auto accessCondition = [&space, &initalPoints, shape, moveType](const Point3D& point, const Facing4& facing) -> bool
 				{
-					return blocks.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(block, shape, moveType, facing, initalBlocks);
+					return space.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(point, shape, moveType, facing, initalPoints);
 				};
 				return findPathSetMaxRange<decltype(accessCondition), DestinationConditionT, Memo, adjacentSingleTile, isMultiTile>(accessCondition, destinationCondition, area, terrainFacade, memo, start, faction, shape, maxRange);
 			}
 			else
 			{
-				auto accessCondition = [&blocks, shape, moveType](const BlockIndex& block, const Facing4& facing) -> bool
+				auto accessCondition = [&space, shape, moveType](const Point3D& point, const Facing4& facing) -> bool
 				{
-					return blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(block, shape, moveType, facing);
+					return space.shape_shapeAndMoveTypeCanEnterEverWithFacing(point, shape, moveType, facing);
 				};
 				return findPathSetMaxRange<decltype(accessCondition), DestinationConditionT, Memo, adjacentSingleTile, isMultiTile>(accessCondition, destinationCondition, area, terrainFacade, memo, start, faction, shape, maxRange);
 			}
@@ -156,55 +157,55 @@ class PathInnerLoops
 		{
 			if(detour)
 			{
-				CollisionVolume volume = Shape::getCollisionVolumeAtLocationBlock(shape);
-				auto accessCondition = [start, &blocks, maxRange, volume](const BlockIndex& block, const Facing4&) -> bool
+				CollisionVolume volume = Shape::getCollisionVolumeAtLocation(shape);
+				auto accessCondition = [start, &space, maxRange, volume](const Point3D& point, const Facing4&) -> bool
 				{
-					if (maxRange != DistanceInBlocks::max())
-						if(blocks.taxiDistance(start, block) > maxRange)
+					if (maxRange != Distance::max())
+						if(start.taxiDistanceTo(point) > maxRange)
 							return false;
-					return block == start || blocks.shape_getDynamicVolume(block) + volume <= Config::maxBlockVolume;
+					return point == start || space.shape_getDynamicVolume(point) + volume <= Config::maxPointVolume;
 				};
 				return findPathSetMaxRange<decltype(accessCondition), DestinationConditionT, Memo, adjacentSingleTile, isMultiTile>(accessCondition, destinationCondition, area, terrainFacade, memo, start, faction, shape, maxRange);
 			}
 			else
 			{
-				auto accessCondition = [](const BlockIndex&, const Facing4&) -> bool { return true; };
+				auto accessCondition = [](const Point3D&, const Facing4&) -> bool { return true; };
 				return findPathSetMaxRange<decltype(accessCondition), DestinationConditionT, Memo, adjacentSingleTile, isMultiTile>(accessCondition, destinationCondition, area, terrainFacade, memo, start, faction, shape, maxRange);
 			}
 		}
 	}
 public:
-	// Consumes adjacent and anyOccupiedBlock, all other paramaters are passed on to findPathSetDetour and onward.
-	template<typename Memo, bool anyOccupiedBlock, DestinationCondition DestinationConditionT>
-	static FindPathResult findPath(DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& start, const Facing4& facing, bool detour, bool adjacent, const FactionId& faction, const DistanceInBlocks maxRange)
+	// Consumes adjacent and anyOccupiedPoint, all other paramaters are passed on to findPathSetDetour and onward.
+	template<typename Memo, bool anyOccupiedPoint, DestinationCondition DestinationConditionT>
+	static FindPathResult findPath(DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const ShapeId& shape, const MoveTypeId& moveType, const Point3D& start, const Facing4& facing, bool detour, bool adjacent, const FactionId& faction, const Distance maxRange)
 	{
-		auto [result, blockWhichPassedPredicate] = destinationCondition(start, facing);
+		auto [result, pointWhichPassedPredicate] = destinationCondition(start, facing);
 		if(result)
-			return {{}, blockWhichPassedPredicate, true};
-		const Blocks& blocks = area.getBlocks();
+			return {{}, pointWhichPassedPredicate, true};
+		const Space& space =  area.getSpace();
 		if(Shape::getIsMultiTile(shape))
 		{
 			if(adjacent)
 			{
-				auto adjacentCondition = [shape, &blocks, destinationCondition](const BlockIndex& block, const Facing4& facing) ->std::pair<bool, BlockIndex>
+				auto adjacentCondition = [shape, &space, destinationCondition](const Point3D& point, const Facing4& facing) ->std::pair<bool, Point3D>
 				{
-					for(const BlockIndex& adjacent : Shape::getBlocksWhichWouldBeAdjacentAt(shape, blocks, block, facing))
+					for(const Point3D& adjacent : Shape::getPointsWhichWouldBeAdjacentAt(shape, space, point, facing))
 						if(destinationCondition(adjacent, Facing4::Null).first)
 							return {true, adjacent};
-					return {false, block};
+					return {false, point};
 				};
 				return findPathSetDetour<false, true, decltype(adjacentCondition), decltype(memo)>(adjacentCondition, area, terrainFacade, memo, start, facing, faction, shape, moveType, detour, maxRange);
 			}
 			else
 			{
-				if constexpr (anyOccupiedBlock)
+				if constexpr (anyOccupiedPoint)
 				{
-					auto occupiedCondition = [shape, &blocks, destinationCondition](const BlockIndex& block, const Facing4& facing) ->std::pair<bool, BlockIndex>
+					auto occupiedCondition = [shape, &space, destinationCondition](const Point3D& point, const Facing4& facing) ->std::pair<bool, Point3D>
 					{
-						for(const BlockIndex& occupied : Shape::getBlocksOccupiedAt(shape, blocks, block, facing))
+						for(const Point3D& occupied : Shape::getPointsOccupiedAt(shape, space, point, facing))
 							if(destinationCondition(occupied, Facing4::Null).first)
 								return {true, occupied};
-						return {false, block};
+						return {false, point};
 					};
 					return findPathSetDetour<false, true, decltype(occupiedCondition), decltype(memo)>(occupiedCondition, area, terrainFacade, memo, start, facing, faction, shape, moveType, detour, maxRange);
 				}

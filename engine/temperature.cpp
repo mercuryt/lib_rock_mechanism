@@ -1,7 +1,7 @@
 #include "temperature.h"
 #include "area/area.h"
 #include "datetime.h"
-#include "blocks/nthAdjacentOffsets.h"
+#include "space/nthAdjacentOffsets.h"
 #include "config.h"
 #include "objective.h"
 #include "objectives/getToSafeTemperature.h"
@@ -11,11 +11,11 @@
 #include "plants.h"
 #include "actors/actors.h"
 #include "items/items.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "definitions/animalSpecies.h"
 #include <cmath>
 enum class TemperatureZone { Surface, Underground, LavaSea };
-TemperatureDelta TemperatureSource::getTemperatureDeltaForRange(const DistanceInBlocks& range)
+TemperatureDelta TemperatureSource::getTemperatureDeltaForRange(const Distance& range)
 {
 	if(range == 0)
 		return m_temperature;
@@ -26,31 +26,31 @@ TemperatureDelta TemperatureSource::getTemperatureDeltaForRange(const DistanceIn
 }
 void TemperatureSource::apply(Area& area)
 {
-	Blocks& blocks = area.getBlocks();
-	area.m_hasTemperature.addDelta(m_block, m_temperature);
-	DistanceInBlocks range = DistanceInBlocks::create(1);
+	Space& space =  area.getSpace();
+	area.m_hasTemperature.addDelta(m_point, m_temperature);
+	Distance range = Distance::create(1);
 	while(range <= Config::heatDistanceMaximum)
 	{
 		TemperatureDelta delta = getTemperatureDeltaForRange(range);
 		if(delta == 0)
 			break;
-		for(const BlockIndex& block : blocks.getNthAdjacent(m_block, range))
-			area.m_hasTemperature.addDelta(block, delta);
+		for(const Point3D& point : space.getNthAdjacent(m_point, range))
+			area.m_hasTemperature.addDelta(point, delta);
 		++range;
 	}
 }
 void TemperatureSource::unapply(Area& area)
 {
-	Blocks& blocks = area.getBlocks();
-	area.m_hasTemperature.addDelta(m_block, m_temperature * -1);
-	DistanceInBlocks range = DistanceInBlocks::create(1);
+	Space& space =  area.getSpace();
+	area.m_hasTemperature.addDelta(m_point, m_temperature * -1);
+	Distance range = Distance::create(1);
 	while(true)
 	{
 		TemperatureDelta delta = getTemperatureDeltaForRange(range);
 		if(delta == 0)
 			break;
-		for(const BlockIndex& block : blocks.getNthAdjacent(m_block, range))
-			area.m_hasTemperature.addDelta(block, delta * -1);
+		for(const Point3D& point : space.getNthAdjacent(m_point, range))
+			area.m_hasTemperature.addDelta(point, delta * -1);
 		++range;
 	}
 }
@@ -60,82 +60,82 @@ void TemperatureSource::setTemperature(Area& area, const TemperatureDelta& t)
 	m_temperature = t;
 	apply(area);
 }
-void AreaHasTemperature::addTemperatureSource(const BlockIndex& block, const TemperatureDelta& temperature)
+void AreaHasTemperature::addTemperatureSource(const Point3D& point, const TemperatureDelta& temperature)
 {
-	m_sources.emplace(block, m_area, temperature, block);
+	m_sources.emplace(point, m_area, temperature, point);
 }
 void AreaHasTemperature::removeTemperatureSource(TemperatureSource& temperatureSource)
 {
-	assert(m_sources.contains(temperatureSource.m_block));
+	assert(m_sources.contains(temperatureSource.m_point));
 	//TODO: Optimize with iterator.
-	m_sources[temperatureSource.m_block].unapply(m_area);
-	m_sources.erase(temperatureSource.m_block);
+	m_sources[temperatureSource.m_point].unapply(m_area);
+	m_sources.erase(temperatureSource.m_point);
 }
-TemperatureSource& AreaHasTemperature::getTemperatureSourceAt(const BlockIndex& block)
+TemperatureSource& AreaHasTemperature::getTemperatureSourceAt(const Point3D& point)
 {
-	return m_sources[block];
+	return m_sources[point];
 }
-void AreaHasTemperature::addDelta(const BlockIndex& block, const TemperatureDelta& delta)
+void AreaHasTemperature::addDelta(const Point3D& point, const TemperatureDelta& delta)
 {
-	auto found = m_blockDeltaDeltas.find(block);
-	if(found == m_blockDeltaDeltas.end())
-		m_blockDeltaDeltas.insert(block, const_cast<TemperatureDelta&>(delta));
+	auto found = m_pointDeltaDeltas.find(point);
+	if(found == m_pointDeltaDeltas.end())
+		m_pointDeltaDeltas.insert(point, const_cast<TemperatureDelta&>(delta));
 	else
 		found->second += delta;
 }
-// TODO: optimize by splitting block deltas into different structures for different temperature zones, to avoid having to rerun getAmbientTemperature?
+// TODO: optimize by splitting point deltas into different structures for different temperature zones, to avoid having to rerun getAmbientTemperature?
 void AreaHasTemperature::applyDeltas()
 {
-	SmallMap<BlockIndex, TemperatureDelta> oldDeltaDeltas;
-	oldDeltaDeltas.swap(m_blockDeltaDeltas);
-	for(auto& [block, deltaDelta] : oldDeltaDeltas)
-		m_area.getBlocks().temperature_updateDelta(block, deltaDelta);
+	SmallMap<Point3D, TemperatureDelta> oldDeltaDeltas;
+	oldDeltaDeltas.swap(m_pointDeltaDeltas);
+	for(auto& [point, deltaDelta] : oldDeltaDeltas)
+		m_area.getSpace().temperature_updateDelta(point, deltaDelta);
 }
 void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature& temperature)
 {
 	m_ambiantSurfaceTemperature = temperature;
-	Blocks& blocks = m_area.getBlocks();
+	Space& space = m_area.getSpace();
 	m_area.getPlants().onChangeAmbiantSurfaceTemperature();
 	m_area.getActors().onChangeAmbiantSurfaceTemperature();
 	m_area.getItems().onChangeAmbiantSurfaceTemperature();
-	m_area.m_exteriorPortals.onChangeAmbiantSurfaceTemperature(blocks, temperature);
-	for(auto& [meltingPoint, toMeltOnSurface] : m_aboveGroundBlocksByMeltingPoint)
+	m_area.m_exteriorPortals.onChangeAmbiantSurfaceTemperature(space, temperature);
+	for(auto& [meltingPoint, toMeltOnSurface] : m_aboveGroundPointsByMeltingPoint)
 		if(meltingPoint <= temperature)
 		{
-			SmallSet<BlockIndex> toMelt;
-			for(const BlockIndex& block : toMeltOnSurface)
+			SmallSet<Point3D> toMelt;
+			for(const Point3D& point : toMeltOnSurface)
 			{
-				// This block has been processed already as part of another block's group.
-				if(toMelt.contains(block))
+				// This point has been processed already as part of another point's group.
+				if(toMelt.contains(point))
 					continue;
-				const MaterialTypeId& materialType = blocks.solid_get(block);
-				for(const BlockIndex& groupBlock : blocks.collectAdjacentsWithCondition(block, [&](const BlockIndex& b){ return blocks.solid_get(b) == materialType; }))
-					toMelt.maybeInsert(groupBlock);
+				const MaterialTypeId& materialType = space.solid_get(point);
+				for(const Point3D& groupPoint : space.collectAdjacentsWithCondition(point, [&](const Point3D& b){ return space.solid_get(b) == materialType; }))
+					toMelt.maybeInsert(groupPoint);
 			}
-			for(const BlockIndex& block : toMelt)
-				blocks.temperature_melt(block);
-			m_aboveGroundBlocksByMeltingPoint[meltingPoint].clear();
+			for(const Point3D& point : toMelt)
+				space.temperature_melt(point);
+			m_aboveGroundPointsByMeltingPoint[meltingPoint].clear();
 		}
 		else
 			break;
-	SmallMap<FluidTypeId, SmallSet<BlockIndex>> toFreeze;
+	SmallMap<FluidTypeId, SmallSet<Point3D>> toFreeze;
 	for(auto& [meltingPoint, fluidGroups] : m_aboveGroundFluidGroupsByMeltingPoint)
 	{
 		const FluidTypeId& fluidType = fluidGroups.front()->m_fluidType;
 		// TODO: replace getOrCreate with create.
-		auto& blockSet = toFreeze.getOrCreate(fluidType);
+		auto& pointSet = toFreeze.getOrCreate(fluidType);
 		if(meltingPoint > temperature)
 		{
 			for(FluidGroup* fluidGroup : fluidGroups)
 			{
-				for(FutureFlowBlock& futureFlowBlock : fluidGroup->m_drainQueue.m_queue)
-					if(blocks.isExposedToSky(futureFlowBlock.block))
-						blockSet.insert(futureFlowBlock.block);
+				for(FutureFlowPoint& futureFlowPoint : fluidGroup->m_drainQueue.m_queue)
+					if(space.isExposedToSky(futureFlowPoint.point))
+						pointSet.insert(futureFlowPoint.point);
 				fluidGroup->m_aboveGround = false;
 			}
-			for(const auto& [fluidType, blockSet] : toFreeze)
-				for(const BlockIndex& block : blockSet)
-					blocks.temperature_freeze(block, fluidType);
+			for(const auto& [fluidType, pointSet] : toFreeze)
+				for(const Point3D& point : pointSet)
+					space.temperature_freeze(point, fluidType);
 			// Any possible freezing at this temperature has happened so clear groupsByMeltingPoint for this temperature.
 			// Don't delete the empty set, it will be reused eventually.
 			fluidGroups.clear();
@@ -155,19 +155,19 @@ void AreaHasTemperature::updateAmbientSurfaceTemperature()
 	int32_t halfDay = Config::hoursPerDay / 2;
 	setAmbientSurfaceTemperature(dailyAverage + ((maxDailySwing * (std::max(0, halfDay - hoursFromHottestHourOfDay))) / halfDay) - (maxDailySwing / 2));
 }
-void AreaHasTemperature::addMeltableSolidBlockAboveGround(const BlockIndex& block)
+void AreaHasTemperature::addMeltableSolidPointAboveGround(const Point3D& point)
 {
-	Blocks& blocks = m_area.getBlocks();
-	assert(blocks.isExposedToSky(block));
-	assert(blocks.solid_is(block));
-	m_aboveGroundBlocksByMeltingPoint[MaterialType::getMeltingPoint(blocks.solid_get(block))].insert(block);
+	Space& space = m_area.getSpace();
+	assert(space.isExposedToSky(point));
+	assert(space.solid_is(point));
+	m_aboveGroundPointsByMeltingPoint[MaterialType::getMeltingPoint(space.solid_get(point))].insert(point);
 }
-// Must be run before block is set no longer solid if above ground.
-void AreaHasTemperature::removeMeltableSolidBlockAboveGround(const BlockIndex& block)
+// Must be run before point is set no longer solid if above ground.
+void AreaHasTemperature::removeMeltableSolidPointAboveGround(const Point3D& point)
 {
-	Blocks& blocks = m_area.getBlocks();
-	assert(blocks.solid_is(block));
-	m_aboveGroundBlocksByMeltingPoint.at(MaterialType::getMeltingPoint(blocks.solid_get(block))).erase(block);
+	Space& space = m_area.getSpace();
+	assert(space.solid_is(point));
+	m_aboveGroundPointsByMeltingPoint.at(MaterialType::getMeltingPoint(space.solid_get(point))).erase(point);
 }
 void AreaHasTemperature::addFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup)
 {
@@ -258,5 +258,5 @@ bool ActorNeedsSafeTemperature::isSafeAtCurrentLocation(Area& area) const
 	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
 	if(actors.getLocation(actor).empty())
 		return true;
-	return isSafe(area, area.getBlocks().temperature_get(actors.getLocation(actor)));
+	return isSafe(area,  area.getSpace().temperature_get(actors.getLocation(actor)));
 }

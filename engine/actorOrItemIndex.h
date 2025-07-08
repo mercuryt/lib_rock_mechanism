@@ -17,6 +17,7 @@ class CanFollow;
 class Area;
 struct Shape;
 class ActorOrItemReference;
+struct Point3D;
 class ActorOrItemIndex
 {
 	HasShapeIndex m_index;
@@ -32,7 +33,7 @@ public:
 	static ActorOrItemIndex null() { return ActorOrItemIndex(); }
 	void clear() { m_index.clear(); m_isActor = false; }
 	void updateIndex(const HasShapeIndex& index) { m_index = index; }
-	ActorOrItemIndex location_set(Area& area, const BlockIndex& location, const Facing4& facing) const;
+	ActorOrItemIndex location_set(Area& area, const Point3D& location, const Facing4& facing) const;
 	void location_clear(Area& area) const;
 	void location_clearStatic(Area& area) const;
 	void followActor(Area& area, const ActorIndex& actor) const;
@@ -57,17 +58,17 @@ public:
 	[[nodiscard]] ActorOrItemIndex getFollower(Area& area) const;
 	[[nodiscard]] ActorOrItemIndex getLeader(Area& area) const;
 
-	[[nodiscard]] bool canEnterCurrentlyFrom(Area& area, const BlockIndex& destination, const BlockIndex& origin) const;
-	[[nodiscard]] bool canEnterCurrentlyFromWithOccupied(Area& area, const BlockIndex& destination, const BlockIndex& origin, const OccupiedBlocksForHasShape& occupied) const;
+	[[nodiscard]] bool canEnterCurrentlyFrom(Area& area, const Point3D& destination, const Point3D& origin) const;
+	[[nodiscard]] bool canEnterCurrentlyFromWithOccupied(Area& area, const Point3D& destination, const Point3D& origin, const OccupiedSpaceForHasShape& occupied) const;
 
-	[[nodiscard]] BlockIndex getLocation(const Area& area) const;
-	[[nodiscard]] const OccupiedBlocksForHasShape& getBlocks(const Area& area) const;
-	[[nodiscard]] SmallSet<BlockIndex> getAdjacentBlocks(Area& area) const;
+	[[nodiscard]] Point3D getLocation(const Area& area) const;
+	[[nodiscard]] const OccupiedSpaceForHasShape& getOccupied(const Area& area) const;
+	[[nodiscard]] SmallSet<Point3D> getAdjacentPoints(Area& area) const;
 	[[nodiscard]] bool isAdjacent(const Area& area, const ActorOrItemIndex& other) const;
 	[[nodiscard]] bool isAdjacentToActor(const Area& area, const ActorIndex& other) const;
 	[[nodiscard]] bool isAdjacentToItem(const Area& area, const ItemIndex& item) const;
-	[[nodiscard]] bool isAdjacentToLocation(const Area& area, const BlockIndex& location) const;
-	[[nodiscard]] bool occupiesBlock(const Area& area, const BlockIndex& location) const;
+	[[nodiscard]] bool isAdjacentToLocation(const Area& area, const Point3D& location) const;
+	[[nodiscard]] bool occupiesPoint(const Area& area, const Point3D& location) const;
 
 	[[nodiscard]] ShapeId getShape(const Area& area) const;
 	[[nodiscard]] ShapeId getCompoundShape(const Area& area) const;

@@ -4,11 +4,11 @@
 
 class GivePlantFluidProject final : public Project
 {
-	BlockIndex m_plantLocation;
+	Point3D m_plantLocation;
 	CollisionVolume m_volume;
 	FluidTypeId m_fluidType;
 public:
-	GivePlantFluidProject(const BlockIndex& location, Area& area, const FactionId& faction);
+	GivePlantFluidProject(const Point3D& location, Area& area, const FactionId& faction);
 	GivePlantFluidProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	void onComplete() override;
 	void onCancel() override;

@@ -1,18 +1,18 @@
 #include "actors.h"
 #include "../area/area.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../hasShapes.hpp"
-BlockIndex Actors::mount_findLocationToMountOn(const ActorIndex& index, const ActorIndex& toMount) const
+Point3D Actors::mount_findLocationToMountOn(const ActorIndex& index, const ActorIndex& toMount) const
 {
-	const Blocks& blocks = m_area.getBlocks();
+	const Space& space = m_area.getSpace();
 	const ShapeId& shape = getShape(index);
 	const Facing4& facing = getFacing(toMount);
-	const auto& occupied = getBlocks(index);
-	for(const BlockIndex& block : getBlocksAbove(toMount))
+	const auto& occupied = getOccupied(index);
+	for(const Point3D& point : getPointsAbove(toMount))
 		// Should riders be dynamic or static?
-		if(blocks.shape_canFitEverOrCurrentlyDynamic(block, shape, facing, occupied))
-			return block;
-	return BlockIndex::null();
+		if(space.shape_canFitEverOrCurrentlyDynamic(point, shape, facing, occupied))
+			return point;
+	return Point3D::null();
 }
 bool Actors::mount_hasPilot(const ActorIndex& actor) const
 {
@@ -29,7 +29,7 @@ ActorIndex Actors::mount_getPilot(const ActorIndex& actor) const
 		}
 	return ActorIndex::null();
 }
-void Actors::mount_do(const ActorIndex& index, const ActorIndex& toMount, const BlockIndex& location, const bool& pilot)
+void Actors::mount_do(const ActorIndex& index, const ActorIndex& toMount, const Point3D& location, const bool& pilot)
 {
 	const Facing4& mountFacing = getFacing(toMount);
 	location_set(index, location, mountFacing);
@@ -46,14 +46,14 @@ void Actors::mount_do(const ActorIndex& index, const ActorIndex& toMount, const 
 		m_isPilot.set(index);
 	}
 }
-void Actors::mount_undo(const ActorIndex& index, const BlockIndex& location, const Facing4& facing)
+void Actors::mount_undo(const ActorIndex& index, const Point3D& location, const Facing4& facing)
 {
 	const ActorIndex& mount = m_isOnDeckOf[index].getActor();
 	assert(mount.exists());
-	const BlockIndex& previousLocation = m_location[index];
+	const Point3D& previousLocation = m_location[index];
 	removeShapeFromCompoundShape(mount, getShape(index), previousLocation, m_facing[index]);
-	Blocks& blocks = m_area.getBlocks();
-	assert(blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(location, getShape(index), getMoveType(index), facing));
+	Space& space = m_area.getSpace();
+	assert(space.shape_shapeAndMoveTypeCanEnterEverWithFacing(location, getShape(index), getMoveType(index), facing));
 	location_set(index, location, facing);
 	m_isOnDeckOf[index].clear();
 	m_onDeck[mount].erase(ActorOrItemIndex::createForActor(index));

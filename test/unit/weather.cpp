@@ -22,7 +22,7 @@ TEST_CASE("weather")
 	SUBCASE("rain")
 	{
 		Area& area = simulation.m_hasAreas->createArea(5, 5, 5);
-		Blocks& blocks = area.getBlocks();
+		Blocks& blocks = area.getSpace();
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		Step duration = Config::stepsPerMinute * 2;
 		area.m_hasRain.start(Percent::create(100), duration);
@@ -36,7 +36,7 @@ TEST_CASE("weather")
 	SUBCASE("exposed to sky")
 	{
 		Area& area = simulation.m_hasAreas->createArea(1, 1, 3);
-		Blocks& blocks = area.getBlocks();
+		Blocks& blocks = area.getSpace();
 		const BlockIndex& top = blocks.getIndex_i(0, 0, 2);
 		const BlockIndex& mid = blocks.getIndex_i(0, 0, 1);
 		const BlockIndex& bot = blocks.getIndex_i(0, 0, 0);
@@ -61,7 +61,7 @@ TEST_CASE("weather")
 	SUBCASE("freeze and thaw")
 	{
 		Area& area = simulation.m_hasAreas->createArea(5, 5, 5);
-		Blocks& blocks = area.getBlocks();
+		Blocks& blocks = area.getSpace();
 		Items& items = area.getItems();
 		areaBuilderUtil::setSolidLayers(area, 0, 3, marble);
 		const BlockIndex& above = blocks.getIndex_i(2, 2, 4);
@@ -83,7 +83,7 @@ TEST_CASE("weather")
 		auto& hasTemperature = area.m_hasTemperature;
 		CHECK(hasTemperature.getAboveGroundFluidGroupsByMeltingPoint().contains(freezing));
 		CHECK(!hasTemperature.getAboveGroundFluidGroupsByMeltingPoint()[freezing].empty());
-		CHECK(hasTemperature.getAboveGroundBlocksByMeltingPoint()[freezing].empty());
+		CHECK(hasTemperature.getAboveGroundPointsByMeltingPoint()[freezing].empty());
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
 		hasTemperature.setAmbientSurfaceTemperature(freezing - 1);
 		CHECK(area.m_hasFluidGroups.getAll().empty());
@@ -94,8 +94,8 @@ TEST_CASE("weather")
 		CHECK(blocks.solid_is(pond2));
 		CHECK(blocks.item_empty(above));
 		CHECK(hasTemperature.getAboveGroundFluidGroupsByMeltingPoint()[freezing].empty());
-		CHECK(hasTemperature.getAboveGroundBlocksByMeltingPoint().contains(freezing));
-		auto& blocksByMeltingPoint = hasTemperature.getAboveGroundBlocksByMeltingPoint()[freezing];
+		CHECK(hasTemperature.getAboveGroundPointsByMeltingPoint().contains(freezing));
+		auto& blocksByMeltingPoint = hasTemperature.getAboveGroundPointsByMeltingPoint()[freezing];
 		CHECK(blocksByMeltingPoint.size() == 1);
 		const ItemIndex& chunk1 = blocks.item_getGeneric(pond3, chunk, ice);
 		CHECK(items.getQuantity(chunk1) == Quantity::create(33));
@@ -107,7 +107,7 @@ TEST_CASE("weather")
 		CHECK(!blocks.solid_is(pond2));
 		CHECK(!blocks.solid_is(pond1));
 		CHECK(!hasTemperature.getAboveGroundFluidGroupsByMeltingPoint()[freezing].empty());
-		CHECK(hasTemperature.getAboveGroundBlocksByMeltingPoint()[freezing].empty());
+		CHECK(hasTemperature.getAboveGroundPointsByMeltingPoint()[freezing].empty());
 		CHECK(blocks.fluid_volumeOfTypeContains(pond1, water) == 100);
 		CHECK(blocks.fluid_volumeOfTypeContains(pond2, water) == 100);
 		CHECK(blocks.fluid_volumeOfTypeContains(pond3, water) == 99);
@@ -117,7 +117,7 @@ TEST_CASE("weather")
 	SUBCASE("ambient temperature and exterior portals")
 	{
 		Area& area = simulation.m_hasAreas->createArea(10, 10, 5);
-		Blocks& blocks = area.getBlocks();
+		Blocks& blocks = area.getSpace();
 		areaBuilderUtil::setSolidLayers(area, 0, 3, marble);
 		const BlockIndex& above = blocks.getIndex_i(5, 0, 3);
 		const BlockIndex& outside = blocks.getIndex_i(5, 0, 2);

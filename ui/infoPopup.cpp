@@ -1,6 +1,6 @@
 #include "infoPopup.h"
 #include "window.h"
-#include "../engine/blocks/blocks.h"
+#include "../engine/space/space.h"
 #include "../engine/items/items.h"
 #include "../engine/actors/actors.h"
 #include "../engine/plants.h"
@@ -29,75 +29,75 @@ void InfoPopup::makeWindow()
 	m_childWindow->add(m_grid);
 }
 void InfoPopup::add(tgui::Widget::Ptr widget) { m_grid->addWidget(widget, ++m_count, 1); }
-void InfoPopup::display(const BlockIndex& block)
+void InfoPopup::display(const Point3D& point)
 {
 	makeWindow();
 	Area& area = *m_window.getArea();
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	Actors& actors = area.getActors();
-	if(blocks.solid_is(block))
-		m_childWindow->setTitle(L"solid " + MaterialType::getName(blocks.solid_get(block)));
+	if(space.solid_is(point))
+		m_childWindow->setTitle(L"solid " + MaterialType::getName(space.solid_get(point)));
 	else
 	{
 		std::wstring title;
-		auto& blockFeatures = blocks.blockFeature_getAll(block);
-		if(blockFeatures.empty())
+		auto& pointFeatures = space.pointFeature_getAll(point);
+		if(pointFeatures.empty())
 		{
-			const BlockIndex& below = blocks.getBlockBelow(block);
-			if(below.exists() && blocks.solid_is(below))
-				title = L"rough " + MaterialType::getName(blocks.solid_get(below)) + L" floor";
+			const Point3D& below = point.below();
+			if(below.exists() && space.solid_is(below))
+				title = L"rough " + MaterialType::getName(space.solid_get(below)) + L" floor";
 			else
 				title = L"empty space";
 		}
 		else
 		{
-			const BlockFeature& blockFeature = blockFeatures.front();
-			title = blockFeature.blockFeatureType->name;
+			const PointFeature& pointFeature = pointFeatures.front();
+			title = pointFeature.pointFeatureType->name;
 		}
 		m_childWindow->setTitle(std::move(title));
-		for(const BlockFeature& blockFeature : blockFeatures)
-			add(tgui::Label::create(blockFeature.blockFeatureType->name + L" " + MaterialType::getName(blockFeature.materialType)));
-		add(tgui::Label::create(L"temperature: " + std::to_wstring(blocks.temperature_get(block).get())));
-		for(const ActorIndex& actor : blocks.actor_getAll(block))
+		for(const PointFeature& pointFeature : pointFeatures)
+			add(tgui::Label::create(pointFeature.pointFeatureType->name + L" " + MaterialType::getName(pointFeature.materialType)));
+		add(tgui::Label::create(L"temperature: " + std::to_wstring(space.temperature_get(point).get())));
+		for(const ActorIndex& actor : space.actor_getAll(point))
 		{
 			auto button = tgui::Button::create(actors.getName(actor));
 			button->onClick([=, this]{ display(actor); });
 			add(button);
 		}
-		for(const ItemIndex& item : blocks.item_getAll(block))
+		for(const ItemIndex& item : space.item_getAll(point))
 		{
 			tgui::Button::Ptr button;
 			button = tgui::Button::create(m_window.displayNameForItem(item));
 			button->onClick([=, this]{ display(item); });
 			add(button);
 		}
-		if(blocks.plant_exists(block))
+		if(space.plant_exists(point))
 		{
-			const PlantIndex& plant = blocks.plant_get(block);
+			const PlantIndex& plant = space.plant_get(point);
 			const Plants& plants = area.getPlants();
 			auto button = tgui::Button::create(PlantSpecies::getName(plants.getSpecies(plant)));
 			button->onClick([&]{ display(plant); });
 			add(button);
 		}
-		for(const FluidData& fluidData : blocks.fluid_getAll(block))
+		for(const FluidData& fluidData : space.fluid_getAll(point))
 		{
 			auto label = tgui::Label::create(FluidType::getName(fluidData.type) + L" : " + std::to_wstring(fluidData.volume.get()));
 			add(label);
 		}
-		if(m_window.getArea()->m_fluidSources.contains(block))
+		if(m_window.getArea()->m_fluidSources.contains(point))
 		{
-			const FluidSource& source = m_window.getArea()->m_fluidSources.at(block);
+			const FluidSource& source = m_window.getArea()->m_fluidSources.at(point);
 			auto label = tgui::Label::create(FluidType::getName(source.fluidType) + L" source : " + std::to_wstring(source.level.get()));
 			add(label);
 		}
-		if(m_window.getFaction().exists() && blocks.farm_contains(block, m_window.getFaction()))
+		if(m_window.getFaction().exists() && space.farm_contains(point, m_window.getFaction()))
 		{
-			const FarmField& field = *blocks.farm_get(block, m_window.getFaction());
+			const FarmField& field = *space.farm_get(point, m_window.getFaction());
 			auto label = tgui::Label::create((field.plantSpecies.exists() ? PlantSpecies::getName(field.plantSpecies) + L" " : L"") + L"field");
 			add(label);
 		}
 	}
-	m_update = [this, block]{ display(block); };
+	m_update = [this, point]{ display(point); };
 }
 void InfoPopup::display(const ItemIndex& item)
 {

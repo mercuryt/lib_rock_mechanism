@@ -53,7 +53,7 @@ namespace spriteCoordinates
 		data.try_emplace("axe", 169, 125, 32, 26, 16.0, 13.0 );
 		data.try_emplace("fruit", 85, 64, 22, 32, 11.0, 16.0 );
 		data.try_emplace("bar", 231, 124, 14, 28, 7.0, 14.0 );
-		data.try_emplace("block", 0, 126, 32, 26, 16.0, 13.0 );
+		data.try_emplace("point", 0, 126, 32, 26, 16.0, 13.0 );
 		data.try_emplace("board", 207, 177, 30, 23, 15.0, 11.5 );
 		data.try_emplace("rock", 224, 32, 32, 32, 16.0, 16.0 );
 		data.try_emplace("bucket", 171, 95, 30, 30, 15.0, 15.0 );
@@ -83,6 +83,6 @@ namespace spriteCoordinates
 		data.try_emplace("mace", 84, 96, 16, 29, 8.0, 14.5 );
 		data.try_emplace("spear", 231, 95, 17, 29, 8.5, 14.5 );
 		data.try_emplace("glave", 0, 64, 31, 32, 15.5, 16.0 );
-		
+
 	}
 } // namespace

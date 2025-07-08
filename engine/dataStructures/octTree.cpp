@@ -1,6 +1,5 @@
 #include "octTree.h"
 #include "../actors/actors.h"
-#include "../blocks/blocks.h"
 #include "../area/area.h"
 #include "../reference.h"
 #include "../partitionNotify.h"
@@ -11,14 +10,13 @@ ActorOctTree::ActorOctTree(const Cuboid& cuboid)
 }
 void ActorOctTree::record(Area& area, const ActorReference& actor)
 {
-	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	const ActorIndex& index = actor.getIndex(actors.m_referenceData);
-	const BlockIndex& location = actors.getLocation(index);
-	const DistanceInBlocks& visionRangeSquared = actors.vision_getRangeSquared(index);
+	const Point3D& location = actors.getLocation(index);
+	const Distance& visionRangeSquared = actors.vision_getRangeSquared(index);
 	const Facing4& facing = actors.getFacing(index);
-	const VisionCuboidId& visionCuboid = area.m_visionCuboids.getVisionCuboidIndexForBlock(location);
-	for(const Point3D& coordinates : Point3DSet::fromBlockSet(blocks, actors.getBlocks(index)))
+	const VisionCuboidId& visionCuboid = area.m_visionCuboids.getVisionCuboidIndexForPoint(location);
+	for(const Point3D& coordinates : Point3DSet::fromPointSet(actors.getOccupied(index)))
 	{
 		OctTreeIndex nodeIndex = OctTreeIndex::create(0);
 		while(true)
@@ -40,10 +38,9 @@ void ActorOctTree::record(Area& area, const ActorReference& actor)
 }
 void ActorOctTree::erase(Area& area, const ActorReference& actor)
 {
-	Blocks& blocks = area.getBlocks();
 	Actors& actors = area.getActors();
 	const ActorIndex& index = actor.getIndex(actors.m_referenceData);
-	for(const Point3D& coordinates : Point3DSet::fromBlockSet(blocks, actors.getBlocks(index)))
+	for(const Point3D& coordinates : Point3DSet::fromPointSet(actors.getOccupied(index)))
 	{
 		OctTreeIndex nodeIndex = OctTreeIndex::create(0);
 		while(true)
@@ -77,7 +74,7 @@ void ActorOctTree::updateVisionCuboid(const Point3D& coordinates, const VisionCu
 		nodeIndex = node.children[octant];
 	}
 }
-void ActorOctTree::updateRange(const ActorReference& actor, const Point3D& coordinates, const DistanceInBlocks& visionRangeSquared)
+void ActorOctTree::updateRange(const ActorReference& actor, const Point3D& coordinates, const Distance& visionRangeSquared)
 {
 	OctTreeIndex nodeIndex = OctTreeIndex::create(0);
 	while(true)
@@ -156,14 +153,14 @@ uint ActorOctTree::getActorCount() const
 CuboidArray<8> ActorOctTree::subdivide(const Cuboid& cuboid)
 {
 	// AnyFacing will do since it is a cube.
-	DistanceInBlocks quarterWidth = cuboid.dimensionForFacing(Facing6::Above) / 4;
+	Distance quarterWidth = cuboid.dimensionForFacing(Facing6::Above) / 4;
 	Point3D center = cuboid.getCenter();
-	DistanceInBlocks minX = center.x() - quarterWidth;
-	DistanceInBlocks maxX = center.x() + quarterWidth;
-	DistanceInBlocks minY = center.y() - quarterWidth;
-	DistanceInBlocks maxY = center.y() + quarterWidth;
-	DistanceInBlocks minZ = center.z() - quarterWidth;
-	DistanceInBlocks maxZ = center.z() + quarterWidth;
+	Distance minX = center.x() - quarterWidth;
+	Distance maxX = center.x() + quarterWidth;
+	Distance minY = center.y() - quarterWidth;
+	Distance maxY = center.y() + quarterWidth;
+	Distance minZ = center.z() - quarterWidth;
+	Distance maxZ = center.z() + quarterWidth;
 	CuboidArray<8> output;
 	output.insert(0, Cuboid::createCube({minX, minY, minZ}, quarterWidth));
 	output.insert(1, Cuboid::createCube({maxX, minY, minZ}, quarterWidth));

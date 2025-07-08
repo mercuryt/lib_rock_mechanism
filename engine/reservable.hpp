@@ -1,14 +1,14 @@
 #include "reservable.h"
 template<typename Condition>
-SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>> CanReserve::unreserveAndReturnBlocksAndCallbacksWithCondition(Condition&& condition)
+SmallMap<Point3D, std::unique_ptr<DishonorCallback>> CanReserve::unreserveAndReturnPointsAndCallbacksWithCondition(Condition&& condition)
 {
-	SmallMap<BlockIndex, std::unique_ptr<DishonorCallback>> output;
-	auto copy = m_blocks;
-	for(const auto& [block, reservable] : copy)
-		if(condition(block))
+	SmallMap<Point3D, std::unique_ptr<DishonorCallback>> output;
+	auto copy = m_points;
+	for(const auto& [point, reservable] : copy)
+		if(condition(point))
 		{
 			std::unique_ptr<DishonorCallback> callback = reservable->unreserveAndReturnCallback(*this);
-			output.insert(block, std::move(callback));
+			output.insert(point, std::move(callback));
 		}
 	return output;
 }

@@ -4,6 +4,7 @@
 #include "../strongInteger.h"
 #include "../dataStructures/strongVector.h"
 #include "../dataStructures/smallMap.h"
+#include "../json.h"
 
 class RTreeBoolean
 {
@@ -13,12 +14,14 @@ class RTreeBoolean
 	{
 	public:
 		struct Hash { [[nodiscard]] size_t operator()(const Index& index) const { return index.get(); } };
+		NLOHMANN_DEFINE_TYPE_INTRUSIVE(Index, data);
 	};
 	using ArrayIndexWidth = uint8_t;
 	class ArrayIndex : public StrongInteger<ArrayIndex, ArrayIndexWidth>
 	{
 	public:
 		struct Hash { [[nodiscard]] size_t operator()(const ArrayIndex& index) const { return index.get(); } };
+		NLOHMANN_DEFINE_TYPE_INTRUSIVE(ArrayIndex, data);
 	};
 	class Node
 	{
@@ -53,6 +56,7 @@ class RTreeBoolean
 		void updateLeaf(const ArrayIndex& offset, const Cuboid& cuboid);
 		void updateBranchBoundry(const ArrayIndex& offset, const Cuboid& cuboid);
 		[[nodiscard]] __attribute__((noinline)) std::string toString();
+		NLOHMANN_DEFINE_TYPE_INTRUSIVE(Node, m_cuboids, m_childIndices, m_parent, m_leafEnd, m_childBegin);
 	};
 	StrongVector<Node, Index> m_nodes;
 	SmallSet<Index> m_emptySlots;
@@ -189,4 +193,5 @@ public:
 	[[nodiscard]] __attribute__((noinline)) uint totalNodeVolume() const;
 	__attribute__((noinline)) void assertAllLeafsAreUnique() const;
 	[[nodiscard]] static __attribute__((noinline)) uint getNodeSize();
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(RTreeBoolean, m_nodes, m_emptySlots, m_toComb);
 };

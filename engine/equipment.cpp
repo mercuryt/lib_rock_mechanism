@@ -217,7 +217,7 @@ bool EquipmentSet::canEquipCurrently(Area& area, const ActorIndex& actor, const 
 	}
 	return true;
 }
-ItemIndex EquipmentSet::getWeaponToAttackAtRange(Area& area, const DistanceInBlocksFractional& range)
+ItemIndex EquipmentSet::getWeaponToAttackAtRange(Area& area, const DistanceFractional& range)
 {
 	Items& items = area.getItems();
 	for(ItemReference item : m_rangedWeapons)

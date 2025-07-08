@@ -2,18 +2,17 @@
 
 #include "../area/area.h"
 #include "../numericTypes/types.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../geometry/paramaterizedLine.h"
 
-void OpacityFacade::update(const Area& area, const BlockIndex& index)
+void OpacityFacade::update(const Area& area, const Point3D& point)
 {
-	const Blocks& blocks = area.getBlocks();
-	const Point3D point = blocks.getCoordinates(index);
-	if(blocks.canSeeThrough(index))
+	const Space& space =  area.getSpace();
+	if(space.canSeeThrough(point))
 		m_fullOpacity.maybeRemove(point);
 	else
 		m_fullOpacity.maybeInsert(point);
-	if(blocks.canSeeThroughFloor(index))
+	if(space.canSeeThroughFloor(point))
 		m_floorOpacity.maybeRemove(point);
 	else
 		m_floorOpacity.maybeInsert(point);
@@ -59,12 +58,11 @@ std::vector<bool> OpacityFacade::hasLineOfSightBatched(const std::vector<std::pa
 }
 void OpacityFacade::validate(const Area& area) const
 {
-	const Blocks& blocks = area.getBlocks();
-	Cuboid cuboid = blocks.getAll();
-	for(const BlockIndex& block : cuboid.getView(blocks))
+	const Space& space =  area.getSpace();
+	Cuboid cuboid = space.getAll();
+	for(const Point3D& point : cuboid)
 	{
-		[[maybe_unused]] Point3D point = blocks.getCoordinates(block);
-		assert(blocks.canSeeThrough(block) != m_fullOpacity.query(point));
-		assert(blocks.canSeeThroughFloor(block) != m_floorOpacity.query(point));
+		assert(space.canSeeThrough(point) != m_fullOpacity.query(point));
+		assert(space.canSeeThroughFloor(point) != m_floorOpacity.query(point));
 	}
 }

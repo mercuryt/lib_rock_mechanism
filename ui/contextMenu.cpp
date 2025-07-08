@@ -1,10 +1,10 @@
 #include "contextMenu.h"
-#include "../engine/blockFeature.h"
+#include "../engine/pointFeature.h"
 #include "../engine/config.h"
 #include "../engine/designations.h"
 #include "displayData.h"
 #include "../engine/plants.h"
-#include "../engine/blocks/blocks.h"
+#include "../engine/space/space.h"
 #include "widgets.h"
 #include "window.h"
 #include <TGUI/Widgets/HorizontalLayout.hpp>
@@ -30,7 +30,7 @@ ContextMenu::ContextMenu(Window& window, tgui::Group::Ptr gameOverlayGroup) :
 	gameOverlayGroup->add(m_root.m_panel);
 	m_root.m_panel->setVisible(false);
 }
-void ContextMenu::draw(const BlockIndex& block)
+void ContextMenu::draw(const Point3D& point)
 {
 	m_root.m_panel->setVisible(true);
 	m_root.m_panel->setOrigin(1, getOriginYForMousePosition());
@@ -40,25 +40,25 @@ void ContextMenu::draw(const BlockIndex& block)
 	m_submenus.clear();
 	auto blockInfoButton = tgui::Button::create("location info");
 	m_root.add(blockInfoButton);
-	blockInfoButton->onClick([this, block]{ m_window.getGameOverlay().drawInfoPopup(block); });
-	Blocks& blocks = m_window.getArea()->getBlocks();
+	blockInfoButton->onClick([this, point]{ m_window.getGameOverlay().drawInfoPopup(point); });
+	Space& space = m_window.getArea()->getSpace();
 	//TODO: shift to add to end of work queue.
-	if(blocks.solid_is(block) || !blocks.blockFeature_empty(block))
-		drawDigControls(block);
-	if(!blocks.solid_is(block))
+	if(space.solid_is(point) || !space.pointFeature_empty(point))
+		drawDigControls(point);
+	if(!space.solid_is(point))
 	{
-		drawConstructControls(block);
-		drawActorControls(block);
-		drawPlantControls(block);
-		drawItemControls(block);
-		drawFarmFieldControls(block);
-		drawStockPileControls(block);
-		drawCraftControls(block);
-		drawWoodCuttingControls(block);
+		drawConstructControls(point);
+		drawActorControls(point);
+		drawPlantControls(point);
+		drawItemControls(point);
+		drawFarmFieldControls(point);
+		drawStockPileControls(point);
+		drawCraftControls(point);
+		drawWoodCuttingControls(point);
 	}
 	if(m_window.m_editMode)
 	{
-		drawFluidControls(block);
+		drawFluidControls(point);
 		auto factionsButton = tgui::Button::create("factions");
 		m_root.add(factionsButton);
 		factionsButton->onClick([this]{
@@ -67,7 +67,7 @@ void ContextMenu::draw(const BlockIndex& block)
 		});
 		auto dramaButton = tgui::Button::create("drama");
 		m_root.add(dramaButton);
-		dramaButton->onClick([this, block]{
+		dramaButton->onClick([this, point]{
 			m_window.showEditDrama();
 			hide();
 		});

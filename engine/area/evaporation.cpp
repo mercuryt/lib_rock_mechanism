@@ -13,8 +13,8 @@ void AreaHasEvaporation::execute(Area& area)
 			float fluidTypeEvaporationRate = FluidType::getEvaporationRate(fluidGroup->m_fluidType);
 			if(fluidTypeEvaporationRate == 0.f)
 				continue;
-			Quantity blocksOnSurface = fluidGroup->countBlocksOnSurface(area);
-			CollisionVolume toRemove = std::min(CollisionVolume::create(blocksOnSurface.get() * rate), CollisionVolume::create(1));
+			Quantity pointsOnSurface = fluidGroup->countPointsOnSurface(area);
+			CollisionVolume toRemove = std::min(CollisionVolume::create(pointsOnSurface.get() * rate), CollisionVolume::create(1));
 			fluidGroup->removeFluid(area, toRemove);
 		}
 	schedule(area);

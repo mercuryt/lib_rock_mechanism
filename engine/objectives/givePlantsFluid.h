@@ -46,7 +46,7 @@ public:
 	void cancel(Area& area, const ActorIndex& actor) override;
 	void reset(Area& area, const ActorIndex& actor) override;
 	void delay(Area& area, const ActorIndex& actor) override;
-	void selectPlantLocation(Area& area, const BlockIndex& block, const ActorIndex& actor);
+	void selectPlantLocation(Area& area, const Point3D& point, const ActorIndex& actor);
 	void makePathRequest(Area& area, const ActorIndex& actor);
 	void onBeforeUnload(Area&, const ActorIndex&) override;
 	[[nodiscard]] std::string name() const override { return "give plants fluid"; }

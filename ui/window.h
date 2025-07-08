@@ -31,10 +31,10 @@
 //#include "worldParamatersPanel.h"
 struct GameView final
 {
-	BlockIndex center;
+	Point3D center;
 	uint32_t scale;
 };
-enum class SelectMode{Actors, Items, Plants, Blocks};
+enum class SelectMode{Actors, Items, Plants, Space};
 class Window final
 {
 	sf::RenderWindow m_window;
@@ -61,7 +61,7 @@ class Window final
 	std::unique_ptr<Simulation> m_simulation;
 	Area* m_area = nullptr;
 	uint32_t m_scale = displayData::defaultScale;
-	DistanceInBlocks m_z;
+	Distance m_z;
 	std::atomic<uint16_t> m_speed = 1;
 	SmallMap<AreaId, GameView> m_lastViewedSpotInArea;
 	CuboidSet m_selectedBlocks;
@@ -76,8 +76,8 @@ class Window final
 	Draw m_draw;
 	std::thread m_simulationThread;
 	sf::Vector2i m_positionWhereMouseDragBegan = {0,0};
-	BlockIndex m_firstCornerOfSelection;
-	BlockIndex m_blockUnderCursor;
+	Point3D m_firstCornerOfSelection;
+	Point3D m_blockUnderCursor;
 	SelectMode m_selectMode = SelectMode::Actors;
 	static constexpr int gameMarginSize = 400;
 
@@ -96,7 +96,7 @@ public:
 	void setSpeed(uint16_t speed);
 	void setArea(Area& area, GameView* gameView = nullptr);
 	void startLoop();
-	void centerView(const BlockIndex& block);
+	void centerView(const Point3D& point);
 	void setFrameRate(uint32_t);
 	void setItemToInstall(const ItemIndex& item) { m_gameOverlay.m_itemBeingInstalled = item; }
 	void setItemToMove(const ItemIndex& item) { m_gameOverlay.m_itemBeingMoved = item; }
@@ -126,7 +126,7 @@ public:
 	void showEditDrama(Area* area = nullptr) { hideAllPanels(); m_editDramaView.draw(area); }
 	// Select.
 	void deselectAll();
-	void selectBlock(const BlockIndex& block);
+	void selectBlock(const Point3D& point);
 	void selectItem(const ItemIndex& item);
 	void selectPlant(const PlantIndex& plant);
 	void selectActor(const ActorIndex& actor);
@@ -134,8 +134,8 @@ public:
 	SmallSet<ItemIndex>& getSelectedItems() { return m_selectedItems; }
 	SmallSet<PlantIndex>& getSelectedPlants() { return m_selectedPlants; }
 	SmallSet<ActorIndex>& getSelectedActors() { return m_selectedActors; }
-	[[nodiscard]] BlockIndex getBlockUnderCursor();
-	[[nodiscard]] BlockIndex getBlockAtPosition(sf::Vector2i pixelPos);
+	[[nodiscard]] Point3D getBlockUnderCursor();
+	[[nodiscard]] Point3D getBlockAtPosition(sf::Vector2i pixelPos);
 	// Filesystem.
 	void threadTask(std::function<void()> task, const std::wstring& title);
 	void save();

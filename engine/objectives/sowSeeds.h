@@ -24,24 +24,24 @@ public:
 class SowSeedsObjective final : public Objective
 {
 	HasScheduledEvent<SowSeedsEvent> m_event;
-	BlockIndex m_block;
+	Point3D m_point;
 public:
 	SowSeedsObjective(Area& area);
 	SowSeedsObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo);
 	void execute(Area& area, const ActorIndex& actor);
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
-	void select(Area& area, const BlockIndex& block, const ActorIndex& actor);
+	void select(Area& area, const Point3D& point, const ActorIndex& actor);
 	void begin(Area& area, const ActorIndex& actor);
 	void reset(Area& area, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "sow seeds"; }
-	[[nodiscard]] bool canSowAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const;
-	[[nodiscard]] BlockIndex getBlockToSowAt(Area& area, const BlockIndex& location, Facing4 facing, const ActorIndex& actor);
+	[[nodiscard]] bool canSowAt(Area& area, const Point3D& point, const ActorIndex& actor) const;
+	[[nodiscard]] Point3D getPointToSowAt(Area& area, const Point3D& location, Facing4 facing, const ActorIndex& actor);
 	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	friend class SowSeedsEvent;
 	// For testing.
-	[[nodiscard]] BlockIndex getBlock() { return m_block; }
+	[[nodiscard]] Point3D getPoint() { return m_point; }
 };
 class SowSeedsEvent final : public ScheduledEvent
 {

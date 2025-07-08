@@ -5,9 +5,9 @@
 struct DeserializationMemo;
 class StationObjective final : public Objective
 {
-	BlockIndex m_location;
+	Point3D m_location;
 public:
-	StationObjective(const BlockIndex& l, const Priority& priority = Config::stationPriority) : Objective(priority), m_location(l) { }
+	StationObjective(const Point3D& l, const Priority& priority = Config::stationPriority) : Objective(priority), m_location(l) { }
 	StationObjective(const Json& data, DeserializationMemo& deserializationMemo);
 	void execute(Area& area, const ActorIndex& actor);
 	void cancel(Area&, const ActorIndex&) { }
@@ -19,8 +19,8 @@ public:
 class StationInputAction final : public InputAction
 {
 public:
-	BlockIndex& m_block;
-	StationInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, BlockIndex& b);
+	Point3D& m_point;
+	StationInputAction(std::unordered_set<Actor*> actors, NewObjectiveEmplacementType emplacementType, InputQueue& inputQueue, Point3D& b);
 	void execute();
 };
 */

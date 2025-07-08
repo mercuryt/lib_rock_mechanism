@@ -46,7 +46,7 @@ public:
 	// Area is not const here due to reference counting.
 	[[nodiscard]] bool canEquipCurrently(Area& area, const ActorIndex& actor, const ItemIndex& item) const;
 	[[nodiscard]] bool empty() const { return m_equipments.empty(); }
-	[[nodiscard]] ItemIndex getWeaponToAttackAtRange(Area& area, const DistanceInBlocksFractional& range);
+	[[nodiscard]] ItemIndex getWeaponToAttackAtRange(Area& area, const DistanceFractional& range);
 	[[nodiscard]] ItemIndex getAmmoForRangedWeapon(Area& area, const ItemIndex& weapon);
 	[[nodiscard]] auto& getAll() { return m_equipments; }
 	[[nodiscard]] auto& getAll() const { return m_equipments; }

@@ -4,7 +4,7 @@
 #include "../simulation/simulation.h"
 #include "../simulation/hasActors.h"
 #include "actors/actors.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "reference.h"
 #include <memory>
 KillObjective::KillObjective(ActorReference t) : Objective(Config::killPriority), m_target(t) { }
@@ -23,12 +23,13 @@ void KillObjective::execute(Area& area, const ActorIndex& actor)
 	}
 	actors.combat_setTarget(actor, target);
 	// If not in range create GetIntoRangeThreadedTask.
-	Blocks& blocks = area.getBlocks();
 	if(
 		!actors.move_hasPathRequest(actor) &&
-			(blocks.distanceFractional(actors.getLocation(actor), actors.getLocation(target)) > actors.combat_getMaxRange(actor) ||
+		(
+			actors.getLocation(actor).distanceToFractional(actors.getLocation(target)) > actors.combat_getMaxRange(actor) ||
 			// TODO: hasLineOfSightIncludingActors
-			!area.m_opacityFacade.hasLineOfSight(blocks.getCoordinates(actors.getLocation(actor)), blocks.getCoordinates(actors.getLocation(target))))
+			!area.m_opacityFacade.hasLineOfSight(actors.getLocation(actor), actors.getLocation(target))
+		)
 	)
 		actors.combat_getIntoRangeAndLineOfSightOfActor(actor, target, actors.combat_getMaxRange(actor));
 	else

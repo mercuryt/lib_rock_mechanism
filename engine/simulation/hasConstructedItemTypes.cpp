@@ -8,17 +8,17 @@ void SimulationHasConstructedItemTypes::load()
 	for(const auto& [itemTypeId, itemTypeParamaters] : m_data)
 		ItemType::create(itemTypeId, itemTypeParamaters);
 }
-ItemIndex SimulationHasConstructedItemTypes::createShip(Area& area, const BlockIndex& block, const Facing4& facing, const std::string& name, const FactionId& faction)
+ItemIndex SimulationHasConstructedItemTypes::createShip(Area& area, const Point3D& point, const Facing4& facing, const std::string& name, const FactionId& faction)
 {
 	static const MoveTypeId moveTypeNone = MoveType::byName("none");
-	auto [constructedShape, location] = ConstructedShape::makeForKeelBlock(area, block, facing);
+	auto [constructedShape, location] = ConstructedShape::makeForKeelPoint(area, point, facing);
 	ItemTypeParamaters itemTypeParams{
 		.name="ship" + std::to_string(++m_nextNameNumber),
 		.shape=constructedShape.getShape(),
 		.moveType=moveTypeNone,
 		.motiveForce=constructedShape.getMotiveForce(),
 		.volume=constructedShape.getFullDisplacement(),
-		// TODO: create block feature type 'cargo hold'.
+		// TODO: create point feature type 'cargo hold'.
 		.internalVolume=FullDisplacement::create(0),
 		.value=constructedShape.getValue(),
 		.decks=constructedShape.getDecks(),

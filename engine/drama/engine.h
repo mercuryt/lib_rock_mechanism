@@ -1,9 +1,10 @@
 #pragma once
 #include "../numericTypes/types.h"
+#include "../numericTypes/index.h"
 #include "../config.h"
 #include "../deserializationMemo.h"
-#include "../numericTypes/index.h"
 #include "../dataStructures/smallMap.h"
+#include "../geometry/point3D.h"
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -26,10 +27,10 @@ protected:
 	DramaArc(DramaEngine& engine, DramaArcType type, Area* area = nullptr) : m_engine(engine), m_area(area), m_type(type) { }
 	DramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);
 	void actorsLeave(SmallSet<ActorIndex> actors);
-	[[nodiscard]] BlockIndex getEntranceToArea(const ShapeId& shape, const MoveTypeId& moveType) const;
-	[[nodiscard]] BlockIndex findLocationOnEdgeForNear(const ShapeId& shape, const MoveTypeId& moveType, const BlockIndex& origin, const DistanceInBlocks& distance, const SmallSet<BlockIndex>& exclude) const;
-	[[nodiscard]] bool blockIsConnectedToAtLeast(const BlockIndex& block, const ShapeId& shape, const MoveTypeId& moveType, uint16_t count) const;
-	[[nodiscard]] Facing4 getFacingAwayFromEdge(const BlockIndex& block) const;
+	[[nodiscard]] Point3D getEntranceToArea(const ShapeId& shape, const MoveTypeId& moveType) const;
+	[[nodiscard]] Point3D findLocationOnEdgeForNear(const ShapeId& shape, const MoveTypeId& moveType, const Point3D& origin, const Distance& distance, const SmallSet<Point3D>& exclude) const;
+	[[nodiscard]] bool pointIsConnectedToAtLeast(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType, uint16_t count) const;
+	[[nodiscard]] Facing4 getFacingAwayFromEdge(const Point3D& point) const;
 	[[nodiscard]] std::vector<AnimalSpeciesId> getSentientSpecies() const;
 	[[nodiscard]] virtual Json toJson() const;
 	static std::unique_ptr<DramaArc> load(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);

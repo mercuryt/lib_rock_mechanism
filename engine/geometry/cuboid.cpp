@@ -2,11 +2,10 @@
 #include "sphere.h"
 #include "../area/area.h"
 #include "../numericTypes/types.h"
-#include "../blocks/blocks.h"
-#include "../blocks/adjacentOffsets.h"
+#include "../space/space.h"
+#include "../space/adjacentOffsets.h"
 
 #include <cassert>
-Cuboid::Cuboid(const Blocks& blocks, const BlockIndex& h, const BlockIndex& l) : Cuboid(blocks.getCoordinates(h), blocks.getCoordinates(l)) { }
 Cuboid::Cuboid(const Point3D& highest, const Point3D& lowest) : m_highest(highest), m_lowest(lowest)
 {
 	if(!m_highest.exists())
@@ -16,14 +15,14 @@ Cuboid::Cuboid(const Point3D& highest, const Point3D& lowest) : m_highest(highes
 	}
 	assert((m_highest.data >= m_lowest.data).all());
 }
-SmallSet<BlockIndex> Cuboid::toSet(const Blocks& blocks) const
+SmallSet<Point3D> Cuboid::toSet() const
 {
-	SmallSet<BlockIndex> output;
-	for(const BlockIndex& block : getView(blocks))
-		output.insert(block);
+	SmallSet<Point3D> output;
+	for(const Point3D& point : (*this))
+		output.insert(point);
 	return output;
 }
-bool Cuboid::contains(const Blocks& blocks, const BlockIndex& block) const
+bool Cuboid::contains(const Point3D& point) const
 {
 	if(!m_highest.exists())
 	{
@@ -31,8 +30,7 @@ bool Cuboid::contains(const Blocks& blocks, const BlockIndex& block) const
 		return false;
 	}
 	assert(m_lowest.exists());
-	Point3D blockPosition = blocks.getCoordinates(block);
-	return contains(blockPosition);
+	return contains(point);
 }
 bool Cuboid::contains(const Point3D& point) const
 {
@@ -61,13 +59,13 @@ Cuboid Cuboid::canMergeSteal(const Cuboid& other) const
 	// Get face adjacent to other.
 	Cuboid face = getFace(facing);
 	// Shift the face one unit into other.
-	face.shift(facing, DistanceInBlocks::create(1));
+	face.shift(facing, Distance::create(1));
 	assert(canMerge(face));
 	// If other does not fully contain the face then we cannot steal.
 	if(!other.contains(face))
 		return {};
 	// Find another face on the opposite side of other by copying face and shifting it by other's width.
-	DistanceInBlocks depth = other.dimensionForFacing(facing);
+	Distance depth = other.dimensionForFacing(facing);
 	if(depth == 1)
 		return face;
 	auto face2 = face;
@@ -93,6 +91,10 @@ Cuboid Cuboid::sum(const Cuboid& other) const
 	assert(canMerge(other));
 	return { {m_highest.data.max(other.m_highest.data)}, {m_lowest.data.min(other.m_lowest.data)} };
 }
+[[nodiscard]] Cuboid Cuboid::intersection(const Cuboid& other) const
+{
+	return { {m_highest.data.min(other.m_highest.data)}, {m_lowest.data.max(other.m_lowest.data)} };
+}
 void Cuboid::merge(const Cuboid& cuboid)
 {
 	Cuboid sum = cuboid.sum(*this);
@@ -103,43 +105,38 @@ void Cuboid::setFrom(const Point3D& point)
 {
 	m_highest = m_lowest = point;
 }
-void Cuboid::setFrom(const Blocks& blocks, const BlockIndex& block)
+void Cuboid::setFrom(const Point3D& point)
 {
-	m_highest = m_lowest = blocks.getCoordinates(block);
+	m_highest = m_lowest = point;
 }
-void Cuboid::setFrom(const Blocks& blocks, const BlockIndex& a, const BlockIndex& b)
+void Cuboid::setFrom(const Point3D& a, const Point3D& b)
 {
-	Cuboid result = fromBlockPair(blocks, a, b);
+	Cuboid result = fromPointPair(a, b);
 	m_highest = result.m_highest;
 	m_lowest = result.m_lowest;
 }
-void Cuboid::shift(const Facing6& direction, const DistanceInBlocks& distance)
+void Cuboid::shift(const Facing6& direction, const Distance& distance)
 {
 	// TODO: make offsetsListDirectlyAdjacent return an Offset3D.
 	Offset3D offset = adjacentOffsets::direct[(uint)direction];
 	shift(offset, distance);
 }
-void Cuboid::shift(const Offset3D& offset, const DistanceInBlocks& distance)
+void Cuboid::shift(const Offset3D& offset, const Distance& distance)
 {
 	auto offsetModified = offset;
 	offsetModified *= distance;
 	m_highest += offsetModified;
 	m_lowest += offsetModified;
 }
-void Cuboid::rotateAroundPoint(Blocks& blocks, const BlockIndex& point, const Facing4& facing)
+void Cuboid::rotateAroundPoint(const Point3D& point, const Facing4& facing)
 {
-	Point3D pointCoordinates = blocks.getCoordinates(point);
-	Offset3D lowOffset = pointCoordinates - m_lowest;
-	Offset3D highOffset = pointCoordinates - m_highest;
-	const BlockIndex& newLow = blocks.offsetRotated(point, lowOffset, facing);
-	const BlockIndex& newHigh = blocks.offsetRotated(point, highOffset, facing);
-	//TODO: offset rotated already had the coordinates we are recaclulating here.
-	if(blocks.getCoordinates(newLow) > blocks.getCoordinates(newHigh))
-		setFrom(blocks, newLow, newHigh);
-	else
-		setFrom(blocks, newHigh, newLow);
+	Offset3D lowOffset = point - m_lowest;
+	Offset3D highOffset = point - m_highest;
+	const Point3D& newLow = point.offsetRotated(lowOffset, facing);
+	const Point3D& newHigh = point.offsetRotated(highOffset, facing);
+	setFrom(newLow, newHigh);
 }
-void Cuboid::setMaxZ(const DistanceInBlocks& distance)
+void Cuboid::setMaxZ(const Distance& distance)
 {
 	if(m_highest.z() > distance)
 		m_highest.data[2] = distance.get();
@@ -154,7 +151,7 @@ void Cuboid::maybeExpand(const Point3D& other)
 	m_highest.data = m_highest.data.max(other.data);
 	m_lowest.data = m_lowest.data.min(other.data);
 }
-Cuboid Cuboid::inflateAdd(const DistanceInBlocks& distance) const
+Cuboid Cuboid::inflateAdd(const Distance& distance) const
 {
 	return {
 		m_highest + distance,
@@ -208,23 +205,20 @@ uint Cuboid::size() const
 	return (m_highest.data + 1 - m_lowest.data).prod();
 }
 // static method
-Cuboid Cuboid::fromBlock(const Blocks& blocks, const BlockIndex& block)
+Cuboid Cuboid::fromPoint(const Point3D& point)
 {
-	Point3D a = blocks.getCoordinates(block);
-	return {a, a};
+	return {point, point};
 }
-Cuboid Cuboid::fromBlockPair(const Blocks& blocks, const BlockIndex& a, const BlockIndex& b)
+Cuboid Cuboid::fromPointPair(const Point3D& a, const Point3D& b)
 {
-	Point3D aCoordinates = blocks.getCoordinates(a);
-	Point3D bCoordinates = blocks.getCoordinates(b);
-	return { {aCoordinates.data.max(bCoordinates.data)}, {aCoordinates.data.min(bCoordinates.data)} };
+	return { {a.data.max(b.data)}, {a.data.min(b.data)} };
 }
-Cuboid fromBlockSet(const Blocks& blocks, const SmallSet<BlockIndex>& set)
+Cuboid fromPointSet(const SmallSet<Point3D>& set)
 {
-	const Point3DSet points = Point3DSet::fromBlockSet(blocks, set);
+	const Point3DSet points = Point3DSet::fromPointSet(set);
 	return points.boundry();
 }
-Cuboid Cuboid::createCube(const Point3D& center, const DistanceInBlocks& width)
+Cuboid Cuboid::createCube(const Point3D& center, const Distance& width)
 {
 	return {{center.data + width.get()}, {center.data - width.get()}};
 }
@@ -236,7 +230,7 @@ Point3D Cuboid::getCenter() const
 {
 	return {(m_lowest.data + m_highest.data) / 2};
 }
-DistanceInBlocks Cuboid::dimensionForFacing(const Facing6& facing) const
+Distance Cuboid::dimensionForFacing(const Facing6& facing) const
 {
 	// Add one to output because high/low is an inclusive rather then exclusive range.
 	switch(facing)
@@ -332,7 +326,7 @@ bool Cuboid::isTouching(const Cuboid& cuboid) const
 		return false;
 	return true;
 }
-Cuboid::iterator::iterator(const Blocks& blocks, const BlockIndex& lowest, const BlockIndex& highest) : m_blocks(&blocks)
+Cuboid::iterator::iterator(const Point3D& lowest, const Point3D& highest)
 {
 	if(!lowest.exists())
 	{
@@ -341,13 +335,13 @@ Cuboid::iterator::iterator(const Blocks& blocks, const BlockIndex& lowest, const
 	}
 	else
 	{
-		m_current = m_start = blocks.getCoordinates(lowest);
-		m_end = blocks.getCoordinates(highest);
+		m_current = m_start = lowest;
+		m_end = highest;
 	}
 }
 void Cuboid::iterator::setToEnd()
 {
-	m_start.data.fill(DistanceInBlocks::null().get());
+	m_start.data.fill(Distance::null().get());
 	// TODO: This line isn't needed.
 	m_end = m_current = m_start;
 }
@@ -356,7 +350,6 @@ Cuboid::iterator& Cuboid::iterator::operator=(const iterator& other)
 	m_start = other.m_start;
 	m_end = other.m_end;
 	m_current = other.m_current;
-	m_blocks = other.m_blocks;
 	return *this;
 }
 Cuboid::iterator& Cuboid::iterator::iterator::operator++()
@@ -382,9 +375,8 @@ Cuboid::iterator Cuboid::iterator::operator++(int)
 	++(*this);
 	return tmp;
 }
-BlockIndex Cuboid::iterator::operator*() { return m_blocks->getIndex(m_current); }
-CuboidView Cuboid::getView(const Blocks& blocks) const { assert(!empty()); return CuboidView(blocks, *this); }
-CuboidSurfaceView Cuboid::getSurfaceView(const Blocks& blocks) const { return CuboidSurfaceView(blocks, *this); }
+Point3D Cuboid::iterator::operator*() { return m_current; }
+CuboidSurfaceView Cuboid::getSurfaceView() const { return CuboidSurfaceView(*this); }
 std::string Cuboid::toString() const { return m_highest.toString() + ", " + m_lowest.toString(); }
 CuboidSurfaceView::Iterator::Iterator(const CuboidSurfaceView& v) :
 	view(v)
@@ -396,7 +388,7 @@ void CuboidSurfaceView::Iterator::setFace()
 	face = view.cuboid.getFace(facing);
 	while(facing != Facing6::Null)
 	{
-		const BlockIndex& aboveFace = view.blocks.getAtFacing(view.blocks.getIndex(face.m_highest), facing);
+		const Point3D& aboveFace = face.m_highest.moveInDirection(facing, Distance::create(1));
 		if(aboveFace.exists())
 			break;
 		facing = Facing6((uint)facing + 1);
@@ -447,4 +439,4 @@ bool CuboidSurfaceView::Iterator::operator==(const Iterator& other) const
 		return true;
 	return current == other.current;
 }
-std::pair<BlockIndex, Facing6> CuboidSurfaceView::Iterator::operator*() { return { view.blocks.getIndex(current), facing}; }
+std::pair<Point3D, Facing6> CuboidSurfaceView::Iterator::operator*() { return { current, facing }; }

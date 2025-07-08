@@ -38,7 +38,7 @@ AnimalSpeciesId AnimalSpecies::create(AnimalSpeciesParamaters p)
 	animalSpeciesData.m_eatsFruit.add(p.eatsFruit);
 	animalSpeciesData.m_visionRange.add(p.visionRange);
 	animalSpeciesData.m_bodyScale.add(p.bodyScale);
-	animalSpeciesData.m_materialType.add(p.materialType);
+	animalSpeciesData.m_solid.add(p.materialType);
 	animalSpeciesData.m_moveType.add(p.moveType);
 	animalSpeciesData.m_fluidType.add(p.fluidType);
 	animalSpeciesData.m_bodyType.add(p.bodyType);
@@ -68,9 +68,9 @@ bool AnimalSpecies::getNocturnal(const AnimalSpeciesId& id) { return animalSpeci
 bool AnimalSpecies::getEatsMeat(const AnimalSpeciesId& id) { return animalSpeciesData.m_eatsMeat[id]; };
 bool AnimalSpecies::getEatsLeaves(const AnimalSpeciesId& id) { return animalSpeciesData.m_eatsLeaves[id]; };
 bool AnimalSpecies::getEatsFruit(const AnimalSpeciesId& id) { return animalSpeciesData.m_eatsFruit[id]; };
-DistanceInBlocks AnimalSpecies::getVisionRange(const AnimalSpeciesId& id) { return animalSpeciesData.m_visionRange[id]; };
+Distance AnimalSpecies::getVisionRange(const AnimalSpeciesId& id) { return animalSpeciesData.m_visionRange[id]; };
 uint32_t AnimalSpecies::getBodyScale(const AnimalSpeciesId& id) { return animalSpeciesData.m_bodyScale[id]; };
-MaterialTypeId AnimalSpecies::getMaterialType(const AnimalSpeciesId& id) { return animalSpeciesData.m_materialType[id]; };
+MaterialTypeId AnimalSpecies::getMaterialType(const AnimalSpeciesId& id) { return animalSpeciesData.m_solid[id]; };
 MoveTypeId AnimalSpecies::getMoveType(const AnimalSpeciesId& id) { return animalSpeciesData.m_moveType[id]; };
 FluidTypeId AnimalSpecies::getFluidType(const AnimalSpeciesId& id) { return animalSpeciesData.m_fluidType[id]; };
 BodyTypeId AnimalSpecies::getBodyType(const AnimalSpeciesId& id) { return animalSpeciesData.m_bodyType[id]; };

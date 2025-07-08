@@ -10,7 +10,7 @@ struct LongRangePathNode
 {
 	CuboidSetWithBoundingBoxAdjacent contents;
 	SmallSet<LongRangePathNodeIndex> adjacent;
-	SmallMap<FactionId, SmallMap<BlockDesignation, Quantity>> designations;
+	SmallMap<FactionId, SmallMap<SpaceDesignation, Quantity>> designations;
 	bool destroy = false;
 	LongRangePathNode() = default;
 	LongRangePathNode(const Cuboid& cuboid) { contents.addAndExtend(cuboid); }
@@ -27,40 +27,40 @@ struct LongRangePathNode
 class LongRangePathFinderForMoveType
 {
 	StrongVector<LongRangePathNode, LongRangePathNodeIndex> m_data;
-	StrongVector<LongRangePathNodeIndex, BlockIndex> m_pathNodesByBlock;
-	void merge(Blocks& blocks, const LongRangePathNodeIndex& mergeInto, const LongRangePathNodeIndex& mergeFrom);
-	LongRangePathNodeIndex create(Blocks& blocks, const BlockIndex& block);
-	LongRangePathNodeIndex create(Blocks& blocks, const Cuboid& cuboid);
-	void addBlockToNode(Blocks& blocks, const LongRangePathNodeIndex& node, const BlockIndex& block);
+	RTreeData<LongRangePathNodeIndex> m_pathNodesByPoint;
+	void merge(Space& space, const LongRangePathNodeIndex& mergeInto, const LongRangePathNodeIndex& mergeFrom);
+	LongRangePathNodeIndex create(Space& space, const Point3D& point);
+	LongRangePathNodeIndex create(Space& space, const Cuboid& cuboid);
+	void addPointToNode(Space& space, const LongRangePathNodeIndex& node, const Point3D& point);
 public:
-	void setBlockPathable(Area& area, const BlockIndex& block);
-	void setBlockNotPathable(Area& area, const BlockIndex& block);
-	void clearDestroyed(Blocks& blocks);
-	void recordBlockHasDesignation(Area& area, const BlockIndex& block, const BlockDesignation& designation);
-	void recordBlockDoesNotHaveDesignation(Area& area, const BlockIndex& block, const BlockDesignation& designation);
+	void setPointPathable(Area& area, const Point3D& point);
+	void setPointNotPathable(Area& area, const Point3D& point);
+	void clearDestroyed(Space& space);
+	void recordPointHasDesignation(Area& area, const Point3D& point, const SpaceDesignation& designation);
+	void recordPointDoesNotHaveDesignation(Area& area, const Point3D& point, const SpaceDesignation& designation);
 	[[nodiscard]] bool canAbsorbNode(const LongRangePathNode& a, LongRangePathNode& b);
-	[[nodiscard]] bool canAbsorbBlock(const Blocks& blocks, const LongRangePathNode& node, const BlockIndex& block);
+	[[nodiscard]] bool canAbsorbPoint(const Space& space, const LongRangePathNode& node, const Point3D& point);
 	[[nodiscard]] bool canAbsorbCuboid(const LongRangePathNode& node, const Cuboid& cuboid);
-	[[nodiscard]] SmallSet<LongRangePathNodeIndex> pathToBlock(const BlockIndex& start, const BlockIndex& destination);
-	[[nodiscard]] SmallSet<LongRangePathNodeIndex> pathToDesignation(const BlockIndex& start, const BlockDesignation& designation, const FactionId& faction);
+	[[nodiscard]] SmallSet<LongRangePathNodeIndex> pathToPoint(const Point3D& start, const Point3D& destination);
+	[[nodiscard]] SmallSet<LongRangePathNodeIndex> pathToDesignation(const Point3D& start, const SpaceDesignation& designation, const FactionId& faction);
 	template<DestinationCondition Condition>
-	[[nodiscard]] SmallSet<LongRangePathNodeIndex> pathToBlockCondition(const Blocks& blocks, const BlockIndex& start, Condition&& condition)
+	[[nodiscard]] SmallSet<LongRangePathNodeIndex> pathToPointCondition(const Space& space, const Point3D& start, Condition&& condition)
 	{
 		auto nodeCondition = [&](const LongRangePathNode& node) -> bool {
-			for(const BlockIndex& block : node.contents.getView(blocks))
+			for(const Point3D& point : node.contents.getView())
 				// Ignore facing.
-				if(condition(block, Facing4::North))
+				if(condition(point, Facing4::North))
 					return true;
 			return false;
 		};
 		return pathToCondition(start, nodeCondition);
 	}
 	template<typename Condition>
-	[[nodiscard]] SmallSet<LongRangePathNodeIndex> pathToCondition(const BlockIndex& start, Condition&& condition)
+	[[nodiscard]] SmallSet<LongRangePathNodeIndex> pathToCondition(const Point3D& start, Condition&& condition)
 	{
 		SmallMap<LongRangePathNodeIndex, LongRangePathNodeIndex> closed;
 		std::deque<LongRangePathNodeIndex> open;
-		const LongRangePathNodeIndex startNodeIndex = m_pathNodesByBlock[start];
+		const LongRangePathNodeIndex startNodeIndex = m_pathNodesByPoint[start];
 		closed.insert(startNodeIndex, LongRangePathNodeIndex::max());
 		open.push_back(startNodeIndex);
 		while(!open.empty())

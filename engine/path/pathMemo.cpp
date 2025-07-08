@@ -1,26 +1,26 @@
 #include "pathMemo.h"
 #include "area/area.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "numericTypes/index.h"
-void PathMemoClosed::add(const BlockIndex& index, BlockIndex parent)
+void PathMemoClosed::add(const Point3D& index, Point3D parent)
 {
 	assert(!contains(index));
 	assert(index.exists());
 	// Max is used to indicate the start of the path.
-	if(parent != BlockIndex::max())
+	if(parent.z() != Distance::max())
 		assert(contains(parent));
-	m_data[index] = parent;
+	m_data.maybeInsertOrOverwrite(index, parent);
 	m_dirty.insert(index);
 }
-SmallSet<BlockIndex> PathMemoClosed::getPath(const BlockIndex& secondToLast, const BlockIndex& last) const
+SmallSet<Point3D> PathMemoClosed::getPath(const Point3D& secondToLast, const Point3D& last) const
 {
-	SmallSet<BlockIndex> output;
-	// Last may not exist if we are using the one block shape pathing adjacent to condition optimization.
+	SmallSet<Point3D> output;
+	// Last may not exist if we are using the one point shape pathing adjacent to condition optimization.
 	if(last.exists())
 		output.insert(last);
-	BlockIndex current = secondToLast;
+	Point3D current = secondToLast;
 	// Max is used to indicade the start of the path.
-	while(previous(current) != BlockIndex::max())
+	while(previous(current).z() != Distance::max())
 	{
 		output.insert(current);
 		current = previous(current);
@@ -28,92 +28,76 @@ SmallSet<BlockIndex> PathMemoClosed::getPath(const BlockIndex& secondToLast, con
 	return output;
 }
 // Breadth First.
-PathMemoBreadthFirst::PathMemoBreadthFirst(Area& area)
-{
-	m_closed.resize(area.getBlocks().size());
-}
 void PathMemoBreadthFirst::reset()
 {
 	m_closed.clear();
 	m_open.clear();
 }
-void PathMemoBreadthFirst::setClosed(const BlockIndex& block, const BlockIndex& previous)
+void PathMemoBreadthFirst::setClosed(const Point3D& point, const Point3D& previous)
 {
-	assert(block < m_closed.getSize());
-	if(previous != BlockIndex::max())
-		assert(previous < m_closed.getSize());
-	assert(!m_closed.contains(block));
-	m_closed.add(block, previous);
+	assert(!m_closed.contains(point));
+	m_closed.add(point, previous);
 }
-void PathMemoBreadthFirst::setOpen(const BlockIndex& block, const Area&)
+void PathMemoBreadthFirst::setOpen(const Point3D& point, const Area&)
 {
-	assert(block < m_closed.getSize());
-	assert(!m_closed.contains(block));
-	m_open.push_back(block);
+	assert(!m_closed.contains(point));
+	m_open.push_back(point);
 }
-bool PathMemoBreadthFirst::isClosed(const BlockIndex& block) const
+bool PathMemoBreadthFirst::isClosed(const Point3D& point) const
 {
-	return m_closed.contains(block);
+	return m_closed.contains(point);
 }
 bool PathMemoBreadthFirst::empty() const
 {
 	return m_closed.empty() && m_open.empty();
 }
-BlockIndex PathMemoBreadthFirst::next()
+Point3D PathMemoBreadthFirst::next()
 {
-	BlockIndex output = m_open.front();
+	Point3D output = m_open.front();
 	m_open.pop_front();
 	return output;
 }
-SmallSet<BlockIndex> PathMemoBreadthFirst::getPath(const BlockIndex& secondToLast, const BlockIndex& last) const
+SmallSet<Point3D> PathMemoBreadthFirst::getPath(const Point3D& secondToLast, const Point3D& last) const
 {
 	return m_closed.getPath(secondToLast, last);
 }
 // Depth First.
-PathMemoDepthFirst::PathMemoDepthFirst(Area& area)
-{
-	m_closed.resize(area.getBlocks().size());
-}
 void PathMemoDepthFirst::reset()
 {
 	m_closed.clear();
 	m_open.clear();
 	m_huristicDestination.clear();
 }
-void PathMemoDepthFirst::setClosed(const BlockIndex& block, const BlockIndex& previous)
+void PathMemoDepthFirst::setClosed(const Point3D& point, const Point3D& previous)
 {
-	assert(block < m_closed.getSize());
-	if(previous != BlockIndex::max())
-		assert(previous < m_closed.getSize());
-	assert(!m_closed.contains(block));
-	m_closed.add(block, previous);
+	assert(!m_closed.contains(point));
+	m_closed.add(point, previous);
 }
-void PathMemoDepthFirst::setOpen(const BlockIndex& block, const Area& area)
+void PathMemoDepthFirst::setOpen(const Point3D& point, const Area& area)
 {
 	assert(m_huristicDestination.exists());
-	assert(block < m_closed.getSize());
-	[[maybe_unused]] bool contains = m_closed.contains(block);
+	[[maybe_unused]] bool contains = m_closed.contains(point);
 	assert(!contains);
 	// Subtract from max rather then provide MediumMap with the ability to sort backwards.
-	DistanceInBlocks distance = DistanceInBlocks::max() - area.getBlocks().distanceSquared(block, m_huristicDestination);
-	m_open.insertNonUnique(distance, block);
+	Distance distance = Distance::max() - point.distanceToSquared(m_huristicDestination);
+	m_open.insertNonUnique(distance, point);
 }
-bool PathMemoDepthFirst::isClosed(const BlockIndex& block) const
+bool PathMemoDepthFirst::isClosed(const Point3D& point) const
 {
-	return m_closed.contains(block);
+	return m_closed.contains(point);
 }
 bool PathMemoDepthFirst::empty() const
 {
 	return m_closed.empty() && m_open.empty();
 }
-BlockIndex PathMemoDepthFirst::next()
+Point3D PathMemoDepthFirst::next()
 {
 	assert(!m_open.empty());
-	BlockIndex output = m_open.back().second;
+	Point3D output = m_open.back().second;
 	m_open.pop_back();
 	return output;
 }
-SmallSet<BlockIndex> PathMemoDepthFirst::getPath(const BlockIndex& secondToLast, const BlockIndex& last) const
+SmallSet<Point3D> PathMemoDepthFirst::getPath(const Point3D& secondToLast, const Point3D& last) const
 {
 	return m_closed.getPath(secondToLast, last);
 }

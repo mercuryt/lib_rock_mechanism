@@ -1,6 +1,6 @@
 #include "definitions/itemType.h"
 #include "area/area.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "definitions/attackType.h"
 #include "craft.h"
 #include "deserializationMemo.h"
@@ -28,11 +28,11 @@ bool ItemType::hasMeleeAttack(const ItemTypeId& id)
 			return true;
 	return false;
 }
-BlockIndex ItemType::getCraftLocation(const ItemTypeId& id, Blocks& blocks, const BlockIndex& location, const Facing4& facing)
+Point3D ItemType::getCraftLocation(const ItemTypeId& id, const Point3D& location, const Facing4& facing)
 {
 	assert(itemTypeData.m_craftLocationStepTypeCategory[id] != CraftStepTypeCategoryId::null());
 	auto [x, y, z] = util::rotateOffsetToFacing(itemTypeData.m_craftLocationOffset[id], facing);
-	return blocks.offset(location, x, y, z);
+	return location.applyOffset({x, y, z});
 }
 // Static methods.
 const ItemTypeId ItemType::byName(std::string name)
@@ -51,7 +51,7 @@ void ItemType::create(const ItemTypeId& id, const ItemTypeParamaters& p)
 	}
 	if(p.constructedShape != nullptr)
 		itemTypeData.m_constructedShape[id] = std::make_unique<ConstructedShape>(*p.constructedShape);
-	itemTypeData.m_materialTypeCategories[id] = p.materialTypeCategories;
+	itemTypeData.m_solidCategories[id] = p.materialTypeCategories;
 	itemTypeData.m_name[id] = p.name;
 	itemTypeData.m_craftLocationOffset[id] = p.craftLocationOffset;
 	itemTypeData.m_shape[id] = p.shape;
@@ -87,7 +87,7 @@ ItemTypeId ItemType::create(const ItemTypeParamaters& p)
 		itemTypeData.m_constructedShape.resize(itemTypeData.m_name.size() + 1);
 	else
 		itemTypeData.m_constructedShape.add(std::make_unique<ConstructedShape>(*constructedShape));
-	itemTypeData.m_materialTypeCategories.add(p.materialTypeCategories);
+	itemTypeData.m_solidCategories.add(p.materialTypeCategories);
 	itemTypeData.m_name.add(p.name);
 	itemTypeData.m_craftLocationOffset.add(p.craftLocationOffset);
 	itemTypeData.m_shape.add(p.shape);
@@ -115,9 +115,9 @@ ItemTypeId ItemType::create(const ItemTypeParamaters& p)
 	itemTypeData.m_motiveForce.add(p.motiveForce);
 	for(const Offset3D& offset : p.decks)
 		assert(offset != Offset3D::create(0,0,0));
-	return ItemTypeId::create(itemTypeData.m_materialTypeCategories.size() - 1);
+	return ItemTypeId::create(itemTypeData.m_solidCategories.size() - 1);
 }
-std::vector<MaterialCategoryTypeId>& ItemType::getMaterialTypeCategories(const ItemTypeId& id) { return itemTypeData.m_materialTypeCategories[id]; }
+std::vector<MaterialCategoryTypeId>& ItemType::getMaterialTypeCategories(const ItemTypeId& id) { return itemTypeData.m_solidCategories[id]; }
 std::string& ItemType::getName(const ItemTypeId& id) { return itemTypeData.m_name[id]; }
 std::array<int32_t, 3>& ItemType::getCraftLocationOffset(const ItemTypeId& id) { return itemTypeData.m_craftLocationOffset[id]; }
 ShapeId ItemType::getShape(const ItemTypeId& id) { return itemTypeData.m_shape[id]; }

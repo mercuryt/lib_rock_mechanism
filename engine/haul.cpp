@@ -2,7 +2,7 @@
 #include "actorOrItemIndex.h"
 #include "actors/actors.h"
 #include "items/items.h"
-#include "blocks/blocks.h"
+#include "space/space.h"
 #include "config.h"
 #include "area/area.h"
 #include "project.h"
@@ -122,7 +122,7 @@ HaulSubproject::HaulSubproject(const Json& data, Project& p, DeserializationMemo
 		for(const Json& liftPointData : data["liftPoints"])
 		{
 			ActorIndex actor = liftPointData[0].get<ActorIndex>();
-			m_liftPoints[actors.getReference(actor)] = liftPointData[1].get<BlockIndex>();
+			m_liftPoints[actors.getReference(actor)] = liftPointData[1].get<Point3D>();
 		}
 	deserializationMemo.m_haulSubprojects[data["address"].get<uintptr_t>()] = this;
 }
@@ -162,8 +162,8 @@ Json HaulSubproject::toJson() const
 	if(!m_liftPoints.empty())
 	{
 		data["liftPoints"] = Json::array();
-		for(auto [actor, block] : m_liftPoints)
-			data["liftPoints"].push_back(Json::array({actor, block}));
+		for(auto [actor, point] : m_liftPoints)
+			data["liftPoints"].push_back(Json::array({actor, point}));
 	}
 	return data;
 }
@@ -177,9 +177,9 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 	Area& area = m_project.m_area;
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	assert(actors.objective_exists(actor));
-	BlockIndex actorLocation = actors.getLocation(actor);
+	Point3D actorLocation = actors.getLocation(actor);
 	FactionId faction = m_project.getFaction();
 	ActorOrItemIndex toHaul = m_toHaul.getIndexPolymorphic(actors.m_referenceData, items.m_referenceData);
 	ItemIndex haulTool;
@@ -205,12 +205,12 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 					assert(ItemType::getCanHoldFluids(items.getItemType(toHaulIndex)));
 					if(items.cargo_getFluidVolume(toHaulIndex) != m_quantity.get())
 					{
-						// Actor attempts to fill toHaul with fluid from adjacent blocks.
+						// Actor attempts to fill toHaul with fluid from adjacent space.
 						// quantity does dual duty as volume when hauling fluids.
-						actors.canPickUp_addFluidToContainerFromAdjacentBlocksIncludingOtherContainersWithLimit(actor, m_fluidType, CollisionVolume::create(m_quantity.get()));
+						actors.canPickUp_addFluidToContainerFromAdjacentPointsIncludingOtherContainersWithLimit(actor, m_fluidType, CollisionVolume::create(m_quantity.get()));
 						if(!items.cargo_containsFluidType(toHaulIndex, m_fluidType))
 						{
-							// No fluid found in adjacent blocks, set destination to create a path request.
+							// No fluid found in adjacent space, set destination to create a path request.
 							actors.move_setDestinationAdjacentToFluidType(actor, m_fluidType);
 							return;
 						}
@@ -246,7 +246,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 			assert(m_workers.size() == 1);
 			if(actors.isLeadingPolymorphic(actor, toHaul))
 			{
-				BlockIndex projectLocation = m_project.m_location;
+				Point3D projectLocation = m_project.m_location;
 				if(actors.isAdjacentToLocation(actor, projectLocation))
 				{
 					// Unload
@@ -328,15 +328,15 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 				{
 					// No lift point exists for this actor, find one.
 					// TODO: move this logic to tryToSetHaulStrategy?
-					for(BlockIndex block : toHaul.getAdjacentBlocks(area))
+					for(Point3D point : toHaul.getAdjacentPoints(area))
 					{
-						Facing4 facing = blocks.facingToSetWhenEnteringFrom(m_project.m_location, block);
-						if(blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(block, actors.getShape(actor), actors.getMoveType(actor), facing) && !blocks.isReserved(block, faction))
+						Facing4 facing = point.getFacingTwords(m_project.m_location);
+						if(space.shape_shapeAndMoveTypeCanEnterEverWithFacing(point, actors.getShape(actor), actors.getMoveType(actor), facing) && !space.isReserved(point, faction))
 						{
-							m_liftPoints.insert(ref, block);
-							actors.canReserve_reserveLocation(actor, block);
+							m_liftPoints.insert(ref, point);
+							actors.canReserve_reserveLocation(actor, point);
 							// Destination, detour, adjacent, unreserved, reserve
-							actors.move_setDestination(actor, block, detour);
+							actors.move_setDestination(actor, point, detour);
 							return;
 						}
 					}
@@ -845,25 +845,25 @@ void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 	Area& area = m_project.m_area;
 	assert(delivered.getLocation(area).empty());
 	Actors& actors = area.getActors();
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	Items& items = area.getItems();
-	BlockIndex location = actors.getLocation(m_leader.exists() ?
+	Point3D location = actors.getLocation(m_leader.exists() ?
 		m_leader.getIndex(actors.m_referenceData) :
 		m_workers.front().getIndex(actors.m_referenceData)
 	);
 	const ShapeId& shape = delivered.getCompoundShape(area);
 	const MoveTypeId& moveType = delivered.getMoveType(area);
-	Facing4 facing = blocks.shape_canEnterEverWithAnyFacingReturnFacing(location, shape, moveType);
+	Facing4 facing = space.shape_canEnterEverWithAnyFacingReturnFacing(location, shape, moveType);
 	delivered.maybeSetStatic(area);
 	if(facing == Facing4::Null)
 	{
-		const auto pair = blocks.shape_getNearestEnterableEverBlockWithFacing(location, shape, moveType);
+		const auto pair = space.shape_getNearestEnterableEverPointWithFacing(location, shape, moveType);
 		location = pair.first;
 		facing = pair.second;
 	}
 	assert(location.exists());
 	assert(facing != Facing4::Null);
-	assert(blocks.shape_shapeAndMoveTypeCanEnterEverWithFacing(location, shape, moveType, facing));
+	assert(space.shape_shapeAndMoveTypeCanEnterEverWithFacing(location, shape, moveType, facing));
 	for(ActorReference worker : m_workers)
 		actors.canReserve_clearAll(worker.getIndex(actors.m_referenceData));
 	if(delivered.isItem())
@@ -875,7 +875,7 @@ void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 		Quantity quantity = delivered.getQuantity(area);
 		if(delivered.isGeneric(area))
 		{
-			ItemIndex existing = blocks.item_getGeneric(location, items.getItemType(deliveredIndex), items.getMaterialType(deliveredIndex));
+			ItemIndex existing = space.item_getGeneric(location, items.getItemType(deliveredIndex), items.getMaterialType(deliveredIndex));
 			if(existing.exists())
 			{
 				// Delivery location already contains a stack of this type and material.

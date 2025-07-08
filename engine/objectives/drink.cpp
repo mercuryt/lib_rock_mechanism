@@ -1,6 +1,6 @@
 #include "drink.h"
 #include "../area/area.h"
-#include "../blocks/blocks.h"
+#include "../space/space.h"
 #include "../actors/actors.h"
 #include "../items/items.h"
 #include "../plants.h"
@@ -13,7 +13,7 @@ DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, const Actor
 {
 	Actors& actors = area.getActors();
 	start = actors.getLocation(actorIndex);
-	maxRange = DistanceInBlocks::max();
+	maxRange = Distance::max();
 	actor = actors.getReference(actorIndex);
 	shape = actors.getShape(actorIndex);
 	moveType = actors.getMoveType(actorIndex);
@@ -27,12 +27,12 @@ FindPathResult DrinkPathRequest::readStep(Area& area, const TerrainFacade& terra
 	const ActorIndex& actorIndex = actor.getIndex(actors.m_referenceData);
 	if(m_drinkObjective.m_noDrinkFound)
 		return terrainFacade.findPathToEdge(memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_drinkObjective.m_detour);
-	auto destinationCondition = [this, &area, actorIndex](const BlockIndex& block, const Facing4&) -> std::pair<bool, BlockIndex>
+	auto destinationCondition = [this, &area, actorIndex](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
 	{
-		return {m_drinkObjective.containsSomethingDrinkable(area, block, actorIndex), block};
+		return {m_drinkObjective.containsSomethingDrinkable(area, point, actorIndex), point};
 	};
-	constexpr bool useAnyBlock = true;
-	return terrainFacade.findPathToConditionBreadthFirst<useAnyBlock, decltype(destinationCondition)>(destinationCondition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_drinkObjective.m_detour, adjacent, actors.getFaction(actorIndex), DistanceInBlocks::max());
+	constexpr bool useAnyPoint = true;
+	return terrainFacade.findPathToConditionBreadthFirst<useAnyPoint, decltype(destinationCondition)>(destinationCondition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_drinkObjective.m_detour, adjacent, actors.getFaction(actorIndex), Distance::max());
 }
 DrinkPathRequest::DrinkPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
 	PathRequestBreadthFirst(data, area),
@@ -132,28 +132,28 @@ void DrinkObjective::makePathRequest(Area& area, const ActorIndex& actor)
 {
 	area.getActors().move_pathRequestRecord(actor, std::make_unique<DrinkPathRequest>(area, *this, actor));
 }
-bool DrinkObjective::canDrinkAt(Area& area, const BlockIndex& block, const Facing4& facing, const ActorIndex& actor) const
+bool DrinkObjective::canDrinkAt(Area& area, const Point3D& point, const Facing4& facing, const ActorIndex& actor) const
 {
-	return getAdjacentBlockToDrinkAt(area, block, facing, actor).exists();
+	return getAdjacentPointToDrinkAt(area, point, facing, actor).exists();
 }
-BlockIndex DrinkObjective::getAdjacentBlockToDrinkAt(Area& area, const BlockIndex& location, const Facing4& facing, const ActorIndex& actor) const
+Point3D DrinkObjective::getAdjacentPointToDrinkAt(Area& area, const Point3D& location, const Facing4& facing, const ActorIndex& actor) const
 {
-	std::function<bool(const BlockIndex&)> predicate = [&](const BlockIndex& block) { return containsSomethingDrinkable(area, block, actor); };
-	return area.getActors().getBlockWhichIsAdjacentAtLocationWithFacingAndPredicate(actor, location, facing, predicate);
+	std::function<bool(const Point3D&)> predicate = [&](const Point3D& point) { return containsSomethingDrinkable(area, point, actor); };
+	return area.getActors().getPointWhichIsAdjacentAtLocationWithFacingAndPredicate(actor, location, facing, predicate);
 }
-bool DrinkObjective::canDrinkItemAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const
+bool DrinkObjective::canDrinkItemAt(Area& area, const Point3D& point, const ActorIndex& actor) const
 {
-	return getItemToDrinkFromAt(area, block, actor) != ItemIndex::null();
+	return getItemToDrinkFromAt(area, point, actor) != ItemIndex::null();
 }
-ItemIndex DrinkObjective::getItemToDrinkFromAt(Area& area, const BlockIndex& block, const ActorIndex& actor) const
+ItemIndex DrinkObjective::getItemToDrinkFromAt(Area& area, const Point3D& point, const ActorIndex& actor) const
 {
 	Items& items = area.getItems();
-	for(ItemIndex item : area.getBlocks().item_getAll(block))
+	for(ItemIndex item :  area.getSpace().item_getAll(point))
 		if(items.cargo_containsAnyFluid(item) && items.cargo_getFluidType(item) == area.getActors().drink_getFluidType(actor))
 			return item;
 	return ItemIndex::null();
 }
-bool DrinkObjective::containsSomethingDrinkable(Area& area, const BlockIndex& block, const ActorIndex& actor) const
+bool DrinkObjective::containsSomethingDrinkable(Area& area, const Point3D& point, const ActorIndex& actor) const
 {
-	return area.getBlocks().fluid_contains(block, area.getActors().drink_getFluidType(actor)) || canDrinkItemAt(area, block, actor);
+	return  area.getSpace().fluid_contains(point, area.getActors().drink_getFluidType(actor)) || canDrinkItemAt(area, point, actor);
 }

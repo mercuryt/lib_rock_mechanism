@@ -22,7 +22,7 @@ class StockPileProject;
 class Simulation;
 class ReenableStockPileScheduledEvent;
 class StockPile;
-class BlockIsPartOfStockPiles;
+class PointIsPartOfStockPiles;
 struct DeserializationMemo;
 struct MaterialType;
 struct FindPathResult;
@@ -31,8 +31,8 @@ class StockPileObjective;
 class StockPile
 {
 	std::vector<ItemQuery> m_queries;
-	SmallSet<BlockIndex> m_blocks;
-	Quantity m_openBlocks = Quantity::create(0);
+	SmallSet<Point3D> m_points;
+	Quantity m_openPoints = Quantity::create(0);
 	Area& m_area;
 	FactionId m_faction;
 	bool m_enabled = true;
@@ -41,11 +41,11 @@ class StockPile
 public:
 	StockPile(std::vector<ItemQuery>& q, Area& a, const FactionId& f);
 	StockPile(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
-	void addBlock(const BlockIndex& block);
-	void removeBlock(const BlockIndex& block);
+	void addPoint(const Point3D& point);
+	void removePoint(const Point3D& point);
 	void updateQueries(std::vector<ItemQuery>& queries);
-	void incrementOpenBlocks();
-	void decrementOpenBlocks();
+	void incrementOpenPoints();
+	void decrementOpenPoints();
 	void disableIndefinately() { m_enabled = false; }
 	void disableTemporarily(Step duration) { m_reenableScheduledEvent.schedule(*this, duration); disableIndefinately(); }
 	void reenable() { m_enabled = true; }
@@ -59,7 +59,7 @@ public:
 	[[nodiscard]] bool isEnabled() const { return m_enabled; }
 	[[nodiscard]] bool hasProjectNeedingMoreWorkers() const;
 	[[nodiscard]] Simulation& getSimulation();
-	[[nodiscard]] bool contains(const BlockIndex& block) const { return m_blocks.contains(block); }
+	[[nodiscard]] bool contains(const Point3D& point) const { return m_points.contains(point); }
 	[[nodiscard]] std::vector<ItemQuery>& getQueries() { return m_queries; }
 	[[nodiscard]] FactionId getFaction() { return m_faction; }
 	friend class AreaHasStockPilesForFaction;
@@ -75,17 +75,17 @@ public:
 	void execute(Simulation&, Area*) { m_stockPile.reenable(); }
 	void clearReferences(Simulation&, Area*) { m_stockPile.m_reenableScheduledEvent.clearPointer(); }
 };
-struct BlockIsPartOfStockPile
+struct PointIsPartOfStockPile
 {
 	StockPile* stockPile;
 	bool active = false;
 };
-class BlockIsPartOfStockPiles
+class PointIsPartOfStockPiles
 {
-	SmallMap<FactionId, BlockIsPartOfStockPile> m_stockPiles;
-	BlockIndex m_block;
+	SmallMap<FactionId, PointIsPartOfStockPile> m_stockPiles;
+	Point3D m_point;
 public:
-	BlockIsPartOfStockPiles(const BlockIndex& b): m_block(b) { }
+	PointIsPartOfStockPiles(const Point3D& b): m_point(b) { }
 	void recordMembership(StockPile& stockPile);
 	void recordNoLongerMember(StockPile& stockPile);
 	// When an item is added or removed update avalibility for all stockpiles.
@@ -120,8 +120,8 @@ class AreaHasStockPilesForFaction
 	std::list<StockPile> m_stockPiles;
 	Area& m_area;
 	FactionId m_faction;
-	// To be called when the last block is removed from the stockpile.
-	// To remove all blocks call StockPile::destroy.
+	// To be called when the last point is removed from the stockpile.
+	// To remove all space call StockPile::destroy.
 	void destroyStockPile(StockPile& stockPile);
 public:
 	AreaHasStockPilesForFaction(Area& a, const FactionId& f) : m_area(a), m_faction(f) { }
@@ -133,10 +133,10 @@ public:
 	void addItem(const ItemIndex& item);
 	void maybeAddItem(const ItemIndex& item);
 	void removeItem(const ItemIndex& item);
-	void removeBlock(const BlockIndex& block);
+	void removePoint(const Point3D& point);
 	void setAvailable(StockPile& stockPile);
 	void setUnavailable(StockPile& stockPile);
-	void makeProject(const ItemIndex& item, const BlockIndex& destination, StockPileObjective& objective, const ActorIndex& actor);
+	void makeProject(const ItemIndex& item, const Point3D& destination, StockPileObjective& objective, const ActorIndex& actor);
 	void cancelProject(StockPileProject& project);
 	void destroyProject(StockPileProject& project);
 	void removeFromProjectsByItem(StockPileProject& project);
@@ -144,9 +144,9 @@ public:
 	void removeQuery(StockPile& stockPile, const ItemQuery& query);
 	void maybeRemoveFromItemsWithDestinationByStockPile(const StockPile& stockpile, const ItemIndex& item);
 	void updateItemReferenceForProject(StockPileProject& project, const ItemReference& ref);
-	[[nodiscard]] bool isValidStockPileDestinationFor(const BlockIndex& block, const ItemIndex& item) const;
+	[[nodiscard]] bool isValidStockPileDestinationFor(const Point3D& point, const ItemIndex& item) const;
 	[[nodiscard]] bool isAnyHaulingAvailableFor(const ActorIndex& actor) const;
-	[[nodiscard]] ItemIndex getHaulableItemForAt(const ActorIndex& actor, const BlockIndex& block);
+	[[nodiscard]] ItemIndex getHaulableItemForAt(const ActorIndex& actor, const Point3D& point);
 	[[nodiscard]] StockPile* getStockPileFor(const ItemIndex& item) const;
 	friend class StockPilePathRequest;
 	friend class StockPileDestinationPathRequest;
@@ -166,7 +166,7 @@ public:
 	void registerFaction(const FactionId& faction) { assert(!m_data.contains(faction)); m_data.emplace(faction, m_area, faction); }
 	void unregisterFaction(const FactionId& faction) { assert(m_data.contains(faction)); m_data.erase(faction); }
 	void removeItemFromAllFactions(const ItemIndex& item) { for(auto& pair : m_data) { pair.second->removeItem(item); } }
-	void removeBlockFromAllFactions(const BlockIndex& block) { for(auto& pair : m_data) { pair.second->removeBlock(block); }}
+	void removePointFromAllFactions(const Point3D& point) { for(auto& pair : m_data) { pair.second->removePoint(point); }}
 	void clearReservations();
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);

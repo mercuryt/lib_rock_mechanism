@@ -49,7 +49,7 @@ struct FluidRequirementData final
 {
 	ProjectRequirementCounts counts;
 	SmallMap<ItemReference, CollisionVolume> containersAndVolumes;
-	SmallSet<BlockIndex> foundBlocks;
+	SmallSet<Point3D> foundPoints;
 	CollisionVolume volumeRequired;
 	CollisionVolume volumeFound = CollisionVolume::create(0);
 	FluidRequirementData() = default;
@@ -142,8 +142,8 @@ protected:
 	Area& m_area;
 	FactionId m_faction;
 	// Where the materials are delivered to and where the work gets done.
-	BlockIndex m_location;
-	Project(const FactionId& faction, Area& area, const BlockIndex& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr, const SmallSet<BlockIndex>& additionalBlocksToReserve = {});
+	Point3D m_location;
+	Project(const FactionId& faction, Area& area, const Point3D& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr, const SmallSet<Point3D>& additionalPointsToReserve = {});
 	Project(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 private:
 	// Count how many times we have attempted to create a haul subproject.
@@ -154,7 +154,7 @@ private:
 	Quantity m_maxWorkers = Quantity::create(0);
 	bool m_requirementsLoaded = false;
 	// If a project fails multiple times to create a haul subproject it resets and calls onDelay
-	// The onDelay method is expected to remove the project from listings, remove block designations, etc.
+	// The onDelay method is expected to remove the project from listings, remove point designations, etc.
 	// The scheduled event sets delay to false and calls the offDelay method.
 	bool m_delay = false;
 public:
@@ -196,7 +196,7 @@ public:
 	void clearReferenceFromRequiredItems(const ItemReference& ref);
 	// These two are to be used when a project is on a moving vehicle.
 	void clearLocation();
-	void setLocation(const BlockIndex& block);
+	void setLocation(const Point3D& point);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] FactionId getFaction() { return m_faction; }
 	[[nodiscard]] CanReserve& getCanReserve() { return m_canReserve; }
@@ -204,8 +204,8 @@ public:
 	[[nodiscard]] bool reservationsComplete() const;
 	[[nodiscard]] bool deliveriesComplete() const;
 	[[nodiscard]] bool isOnDelay() { return m_delay; }
-	// Block where the work will be done.
-	[[nodiscard]] BlockIndex getLocation() const { return m_location; }
+	// point where the work will be done.
+	[[nodiscard]] Point3D getLocation() const { return m_location; }
 	[[nodiscard]] bool hasCandidate(const ActorIndex& actor) const;
 	[[nodiscard]] bool hasWorker(const ActorIndex& actor) const;
 	// When cannotCompleteSubobjective is called do we reset and try again or do we call cannotCompleteObjective?
@@ -299,7 +299,7 @@ public:
 	void readStep(Simulation& simulation, Area* area);
 	void writeStep(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
-	[[nodiscard]] bool blockContainsDesiredItemOrActor(const BlockIndex& block, const ActorIndex& hauler);
+	[[nodiscard]] bool pointContainsDesiredItemOrActor(const Point3D& point, const ActorIndex& hauler);
 };
 class ProjectTryToAddWorkersThreadedTask final : public ThreadedTask
 {
@@ -316,13 +316,4 @@ public:
 	void writeStep(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 	[[nodiscard]] bool validate();
-};
-class BlockHasProjects
-{
-	SmallMap<FactionId, SmallSet<Project*>> m_data;
-public:
-	void add(Project& project);
-	void remove(Project& project);
-	Percent getProjectPercentComplete(const FactionId& faction) const;
-	[[nodiscard]] Project* get(const FactionId& faction) const;
 };

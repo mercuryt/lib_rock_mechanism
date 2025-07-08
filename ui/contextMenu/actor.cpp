@@ -5,16 +5,16 @@
 #include "../../engine/objectives/kill.h"
 #include "../../engine/objectives/goTo.h"
 #include "../../engine/objectives/station.h"
-#include "../../engine/blocks/blocks.h"
+#include "../../engine/space/space.h"
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/hasShapes.hpp"
-void ContextMenu::drawActorControls(const BlockIndex& block)
+void ContextMenu::drawActorControls(const Point3D& point)
 {
 	Area& area = *m_window.getArea();
-	Blocks& blocks = area.getBlocks();
+	Space& space =  area.getSpace();
 	Actors& actors = area.getActors();
 	// Actor submenu.
-	for(const ActorIndex& actor : blocks.actor_getAll(block))
+	for(const ActorIndex& actor : space.actor_getAll(point))
 	{
 		auto label = tgui::Label::create(actors.getName(actor));
 		label->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
@@ -83,11 +83,11 @@ void ContextMenu::drawActorControls(const BlockIndex& block)
 		auto goTo = tgui::Button::create("go to");
 		goTo->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(goTo);
-		goTo->onClick([this, block, &actors]{
+		goTo->onClick([this, point, &actors]{
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 			for(const ActorIndex& actor : m_window.getSelectedActors())
 			{
-				std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(block);
+				std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(point);
 				actors.objective_replaceTasks(actor, std::move(objective));
 			}
 			hide();
@@ -96,11 +96,11 @@ void ContextMenu::drawActorControls(const BlockIndex& block)
 		auto station = tgui::Button::create("station");
 		station->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(station);
-		station->onClick([this, block, &actors]{
+		station->onClick([this, point, &actors]{
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 			for(const ActorIndex& actor : m_window.getSelectedActors())
 			{
-				std::unique_ptr<Objective> objective = std::make_unique<StationObjective>(block);
+				std::unique_ptr<Objective> objective = std::make_unique<StationObjective>(point);
 				actors.objective_replaceTasks(actor, std::move(objective));
 			}
 			hide();
@@ -111,7 +111,7 @@ void ContextMenu::drawActorControls(const BlockIndex& block)
 		auto createActor = tgui::Label::create("create actor");
 		createActor->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(createActor);
-		createActor->onMouseEnter([this, block, &actors]{
+		createActor->onMouseEnter([this, point, &actors]{
 			auto& submenu = makeSubmenu(0);
 			auto nameLabel = tgui::Label::create("name");
 			nameLabel->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
@@ -132,12 +132,12 @@ void ContextMenu::drawActorControls(const BlockIndex& block)
 			auto confirm = tgui::Button::create("create");
 			confirm->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 			submenu.add(confirm);
-			confirm->onClick([this, block, nameUI, speciesUI, factionUI, &actors]{
+			confirm->onClick([this, point, nameUI, speciesUI, factionUI, &actors]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				const ActorIndex& actor = actors.create({
 					.species = widgetUtil::lastSelectedAnimalSpecies,
 					.name = nameUI->getText().toWideString(),
-					.location = block,
+					.location = point,
 					.faction = widgetUtil::lastSelectedFaction
 				});
 				actors.objective_maybeDoNext(actor);

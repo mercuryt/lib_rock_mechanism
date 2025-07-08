@@ -50,9 +50,9 @@ Speed Items::vehicle_getSpeed(const ItemIndex& item) const
 	{
 		const ShapeId& shape = getShape(item);
 		const auto& level = floatsInAtDepth(item, floatingInFluidType);
-		Quantity numberOfBlocksOnLeadingFaceAtOrBelowFloatLevel = Shape::getNumberOfBlocksOnLeadingFaceAtOrBelowLevel(shape, level);
+		Quantity numberOfPointsOnLeadingFaceAtOrBelowFloatLevel = Shape::getNumberOfPointsOnLeadingFaceAtOrBelowLevel(shape, level);
 		Speed drag = Speed::create(
-			numberOfBlocksOnLeadingFaceAtOrBelowFloatLevel.get() *
+			numberOfPointsOnLeadingFaceAtOrBelowFloatLevel.get() *
 			FluidType::getDensity(floatingInFluidType).get() *
 			baseSpeed.get() *
 			Config::fluidDragModifier

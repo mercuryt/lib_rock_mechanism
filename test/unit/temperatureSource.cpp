@@ -15,7 +15,7 @@ TEST_CASE("temperature")
 	Simulation simulation("", now.toSteps());
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	SUBCASE("solid blocks burn")
 	{
 		BlockIndex origin = blocks.getIndex_i(5, 5, 5);

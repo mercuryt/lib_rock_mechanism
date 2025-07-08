@@ -21,7 +21,7 @@ struct DeserializationMemo;
 
 struct PlantParamaters
 {
-	BlockIndex location;
+	Point3D location;
 	PlantSpeciesId species;
 	ShapeId shape = ShapeId::null();
 	Percent percentGrown = Percent::null();
@@ -43,7 +43,7 @@ class Plants final : public HasShapes<Plants, PlantIndex>
 	HasScheduledEvents<PlantEndOfHarvestEvent, PlantIndex> m_endOfHarvestEvent;
 	HasScheduledEvents<PlantFoliageGrowthEvent, PlantIndex> m_foliageGrowthEvent;
 	StrongVector<PlantSpeciesId, PlantIndex> m_species;
-	StrongVector<BlockIndex, PlantIndex> m_fluidSource;
+	StrongVector<Point3D, PlantIndex> m_fluidSource;
 	StrongVector<Quantity, PlantIndex> m_quantityToHarvest;
 	StrongVector<Percent, PlantIndex> m_percentGrown;
 	StrongVector<Percent, PlantIndex> m_percentFoliage;
@@ -81,13 +81,12 @@ public:
 	void foliageGrowth(const PlantIndex& index);
 	void updateShape(const PlantIndex& index);
 	void setShape(const PlantIndex& index, const ShapeId& shape);
-	void setLocation(const PlantIndex& index, const BlockIndex& location, const Facing4& facing);
+	void setLocation(const PlantIndex& index, const Point3D& location, const Facing4& facing);
 	void exit(const PlantIndex& index);
 	// Plants are able to do a more efficient range based sort becasue no references to them are ever stored.
 	// Portables are required to swap one at a time.
 	void sortRange(const PlantIndex& begin, const PlantIndex& end);
 	void maybeIncrementalSort(const std::chrono::microseconds timeBugdget);
-	[[nodiscard]] bool blockIsFull(const BlockIndex& index) const;
 	[[nodiscard]] SmallSet<PlantIndex> getAll() const;
 	[[nodiscard]] PlantSpeciesId getSpecies(const PlantIndex& index) const;
 	[[nodiscard]] Mass getFruitMass(const PlantIndex& index) const;
@@ -95,7 +94,7 @@ public:
 	[[nodiscard]] bool hasFluidSource(const PlantIndex& index);
 	[[nodiscard]] bool isGrowing(const PlantIndex& index) const { return m_growthEvent.exists(index); }
 	[[nodiscard]] Percent getPercentGrown(const PlantIndex& index) const;
-	[[nodiscard]] DistanceInBlocks getRootRange(const PlantIndex& index) const;
+	[[nodiscard]] Distance getRootRange(const PlantIndex& index) const;
 	[[nodiscard]] Percent getPercentFoliage(const PlantIndex& index) const;
 	[[nodiscard]] Mass getFoliageMass(const PlantIndex& index) const;
 	[[nodiscard]] Step getStepAtWhichPlantWillDieFromLackOfFluid(const PlantIndex& index) const;

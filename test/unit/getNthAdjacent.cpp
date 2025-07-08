@@ -32,7 +32,7 @@ TEST_CASE("getNthAdjacentBlocks")
 {
 	Simulation simulation;
 	Area& area = simulation.getAreas().createArea(8, 8, 8);
-	Blocks& blocks = area.getBlocks();
+	Blocks& blocks = area.getSpace();
 	const BlockIndex center = blocks.getIndex_i(4,4,4);
 	const BlockIndex above1 = blocks.getIndex_i(4,4,5);
 	const BlockIndex above2 = blocks.getIndex_i(4,4,6);

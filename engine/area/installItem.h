@@ -10,15 +10,15 @@
 #include <cstdio>
 class HasInstallItemDesignationsForFaction final
 {
-	SmallMapStable<BlockIndex, InstallItemProject> m_designations;
+	SmallMapStable<Point3D, InstallItemProject> m_designations;
 	FactionId m_faction;
 public:
 	HasInstallItemDesignationsForFaction(const FactionId& faction) : m_faction(faction) { }
-	void add(Area& area, const BlockIndex& block, const ItemIndex& item, const Facing4& facing, const FactionId& faction);
+	void add(Area& area, const Point3D& point, const ItemIndex& item, const Facing4& facing, const FactionId& faction);
 	void remove(Area& area, const ItemIndex& item);
 	bool empty() const { return m_designations.empty(); }
-	bool contains(const BlockIndex& block) const { return m_designations.contains(block); }
-	InstallItemProject& getForBlock(const BlockIndex& block) { return m_designations[block]; }
+	bool contains(const Point3D& point) const { return m_designations.contains(point); }
+	InstallItemProject& getForPoint(const Point3D& point) { return m_designations[point]; }
 	friend class AreaHasInstallItemDesignations;
 };
 class AreaHasInstallItemDesignations final
