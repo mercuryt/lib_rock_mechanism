@@ -5,6 +5,7 @@
 struct Faction;
 struct DeserializationMemo;
 class Area;
+// TODO: remove m_area, use default json.
 class AreaHasSleepingSpots final
 {
 	Area& m_area;

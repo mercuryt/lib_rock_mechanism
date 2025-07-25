@@ -83,7 +83,7 @@ ActorIndex Actors::canPickUp_tryToPutDownActor(const ActorIndex& index, const Po
 		auto predicate2 = [&](const Point3D& point)
 		{
 			return space.shape_anythingCanEnterEver(point) &&
-				   space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(point, shape, moveTypeNone);
+				  space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(point, shape, moveTypeNone);
 		};
 		targetLocation = space.getPointInRangeWithCondition(location, maxRange, predicate2);
 	}

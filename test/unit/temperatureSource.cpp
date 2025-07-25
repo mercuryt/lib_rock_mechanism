@@ -8,58 +8,58 @@
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/definitions/materialType.h"
 #include "../../engine/definitions/definitions.h"
-#include "../../engine/blocks/blocks.h"
+#include "../../engine/space/space.h"
 TEST_CASE("temperature")
 {
 	DateTime now(12, 150, 1200);
 	Simulation simulation("", now.toSteps());
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	SUBCASE("solid blocks burn")
 	{
-		BlockIndex origin = blocks.getIndex_i(5, 5, 5);
-		BlockIndex b1 = blocks.getIndex_i(5, 5, 6);
-		BlockIndex b2 = blocks.getIndex_i(5, 7, 5);
-		BlockIndex b3 = blocks.getIndex_i(9, 9, 9);
-		BlockIndex b4 = blocks.getIndex_i(5, 5, 7);
-		BlockIndex toBurn = blocks.getIndex_i(6, 5, 5);
-		BlockIndex toNotBurn = blocks.getIndex_i(4, 5, 5);
+		Point3D origin = Point3D::create(5, 5, 5);
+		Point3D b1 = Point3D::create(5, 5, 6);
+		Point3D b2 = Point3D::create(5, 7, 5);
+		Point3D b3 = Point3D::create(9, 9, 9);
+		Point3D b4 = Point3D::create(5, 5, 7);
+		Point3D toBurn = Point3D::create(6, 5, 5);
+		Point3D toNotBurn = Point3D::create(4, 5, 5);
 		auto wood = MaterialType::byName("poplar wood");
 		auto marble = MaterialType::byName("marble");
-		blocks.solid_set(toBurn, wood, false);
-		blocks.solid_set(toNotBurn, marble, false);
-		Temperature temperatureBeforeHeatSource = blocks.temperature_get(origin);
+		space.solid_set(toBurn, wood, false);
+		space.solid_set(toNotBurn, marble, false);
+		Temperature temperatureBeforeHeatSource = space.temperature_get(origin);
 		area.m_hasTemperature.addTemperatureSource(origin, TemperatureDelta::create(1000));
 		area.m_hasTemperature.applyDeltas();
-		CHECK(blocks.temperature_get(origin) == temperatureBeforeHeatSource + 1000);
-		CHECK(blocks.temperature_get(b1) == temperatureBeforeHeatSource + 1000);
-		CHECK(blocks.temperature_get(b2) == 462);
-		CHECK(blocks.temperature_get(b4) == blocks.temperature_get(b2));
-		CHECK(blocks.temperature_get(b4) < blocks.temperature_get(b1));
-		CHECK(blocks.temperature_get(b3) == temperatureBeforeHeatSource);
-		CHECK(blocks.temperature_get(toBurn) == temperatureBeforeHeatSource + 1000);
-		CHECK(blocks.temperature_get(toNotBurn) == temperatureBeforeHeatSource + 1000);
-		CHECK(blocks.fire_exists(toBurn));
+		CHECK(space.temperature_get(origin) == temperatureBeforeHeatSource + 1000);
+		CHECK(space.temperature_get(b1) == temperatureBeforeHeatSource + 1000);
+		CHECK(space.temperature_get(b2) == 462);
+		CHECK(space.temperature_get(b4) == space.temperature_get(b2));
+		CHECK(space.temperature_get(b4) < space.temperature_get(b1));
+		CHECK(space.temperature_get(b3) == temperatureBeforeHeatSource);
+		CHECK(space.temperature_get(toBurn) == temperatureBeforeHeatSource + 1000);
+		CHECK(space.temperature_get(toNotBurn) == temperatureBeforeHeatSource + 1000);
+		CHECK(space.fire_exists(toBurn));
 		// Fire exists but the new deltas it has created have not been applied
-		CHECK(blocks.temperature_get(toBurn) == temperatureBeforeHeatSource + 1000);
-		CHECK(!blocks.fire_exists(toNotBurn));
-		CHECK(blocks.temperature_get(toNotBurn) == temperatureBeforeHeatSource + 1000);
+		CHECK(space.temperature_get(toBurn) == temperatureBeforeHeatSource + 1000);
+		CHECK(!space.fire_exists(toNotBurn));
+		CHECK(space.temperature_get(toNotBurn) == temperatureBeforeHeatSource + 1000);
 		CHECK(!simulation.m_eventSchedule.m_data.empty());
 		area.m_hasTemperature.applyDeltas();
-		CHECK(blocks.temperature_get(toBurn) > temperatureBeforeHeatSource + 1000);
-		CHECK(blocks.temperature_get(toNotBurn) > temperatureBeforeHeatSource + 1000);
+		CHECK(space.temperature_get(toBurn) > temperatureBeforeHeatSource + 1000);
+		CHECK(space.temperature_get(toNotBurn) > temperatureBeforeHeatSource + 1000);
 	}
 	SUBCASE("burnt to ash")
 	{
-		BlockIndex origin = blocks.getIndex_i(5, 5, 5);
-		BlockIndex toBurn = blocks.getIndex_i(6, 5, 5);
+		Point3D origin = Point3D::create(5, 5, 5);
+		Point3D toBurn = Point3D::create(6, 5, 5);
 		auto wood = MaterialType::byName("poplar wood");
-		blocks.solid_set(toBurn, wood, false);
+		space.solid_set(toBurn, wood, false);
 		area.m_hasTemperature.addTemperatureSource(origin, TemperatureDelta::create(1000));
 		simulation.doStep();
-		CHECK(blocks.fire_exists(toBurn));
-		Fire& fire = blocks.fire_get(toBurn, wood);
+		CHECK(space.fire_exists(toBurn));
+		Fire& fire = space.fire_get(toBurn, wood);
 		CHECK(area.m_fires.containsFireAt(fire, toBurn));
 		CHECK(fire.m_stage == FireStage::Smouldering);
 		simulation.fastForward(MaterialType::getBurnStageDuration(wood) - 1);
@@ -72,7 +72,7 @@ TEST_CASE("temperature")
 		simulation.fastForward(MaterialType::getBurnStageDuration(wood) * Config::fireRampDownPhaseDurationFraction);
 		CHECK(fire.m_stage == FireStage::Smouldering);
 		simulation.fastForward(MaterialType::getBurnStageDuration(wood) * Config::fireRampDownPhaseDurationFraction);
-		CHECK(!blocks.fire_exists(toBurn));
-		CHECK(!blocks.solid_is(toBurn));
+		CHECK(!space.fire_exists(toBurn));
+		CHECK(!space.solid_is(toBurn));
 	}
 }

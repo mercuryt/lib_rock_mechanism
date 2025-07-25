@@ -40,3 +40,35 @@ ItemIndex SimulationHasConstructedItemTypes::createShip(Area& area, const Point3
 	};
 	return area.getItems().create(itemParams);
 }
+ItemIndex SimulationHasConstructedItemTypes::createPlatform(Area& area, const CuboidSet& cuboids, const Facing4& facing, const std::string& name, const FactionId& faction)
+{
+	static const MoveTypeId moveTypeNone = MoveType::byName("none");
+	auto [constructedShape, location] = ConstructedShape::makeForPlatform(area, cuboids, facing);
+	ItemTypeParamaters itemTypeParams{
+		.name="platform" + std::to_string(++m_nextNameNumber),
+		.shape=constructedShape.getShape(),
+		.moveType=moveTypeNone,
+		.volume=constructedShape.getFullDisplacement(),
+		// TODO: create point feature type 'cargo hold'.
+		.internalVolume=FullDisplacement::create(0),
+		.value=constructedShape.getValue(),
+		.decks=constructedShape.getDecks(),
+		.installable=false,
+		.generic=false,
+		.canHoldFluids=false,
+	};
+	itemTypeParams.constructedShape = std::make_unique<ConstructedShape>(std::move(constructedShape));
+	ItemTypeId itemType = ItemType::create(itemTypeParams);
+	m_data.insert(itemType, std::move(itemTypeParams));
+	ItemParamaters itemParams{
+		.itemType=itemType,
+		.materialType=MaterialTypeId::null(),
+		.faction=faction,
+		.location=location,
+		.percentWear=Percent::create(0),
+		.facing=facing,
+		.isStatic=false,
+		.name=name
+	};
+	return area.getItems().create(itemParams);
+}

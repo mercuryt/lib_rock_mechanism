@@ -27,8 +27,9 @@ struct DeserializationMemo;
 
 struct ProjectWorker final
 {
-	HaulSubproject* haulSubproject;
-	Objective* objective;
+	HaulSubproject* haulSubproject = nullptr;
+	Objective* objective = nullptr;
+	ProjectWorker() { assert(false); std::unreachable(); }
 	ProjectWorker(Objective& o) : haulSubproject(nullptr), objective(&o) { }
 	ProjectWorker(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;

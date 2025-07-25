@@ -26,6 +26,8 @@ public:
 	// If the value 0 is passed then the current step is used for start
 	// Passing a differernt start is for deserializing.
 	// TODO: Use Step::null() instead.
+	// Default constructor exists so ProjectWorker can have a default constructor so SmallMap with ProjectWorker can be explicitly instanced.
+	ScheduledEvent() { assert(false); std::unreachable(); }
 	ScheduledEvent(Simulation& simulation, const Step& delay, const Step start = Step::null());
 	void cancel(Simulation& simulation, Area* area);
 	virtual void execute(Simulation& simulation, Area* area) = 0;

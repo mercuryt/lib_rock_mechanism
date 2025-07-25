@@ -4,6 +4,7 @@
  * Not pointer stable.
  */
 #include "json.h"
+#include "../concepts.h"
 #include <algorithm>
 #include <vector>
 #include <cassert>
@@ -23,7 +24,13 @@ public:
 	SmallSet(This&& other) noexcept = default;
 	This& operator=(const This& other) = default;
 	This& operator=(This&& other) noexcept = default;
-	[[nodiscard]] Json toJson() const { return m_data; }
+	[[nodiscard]] Json toJson() const
+	{
+		Json output;
+		for(const T& value : m_data)
+			output.push_back(value);
+		return output;
+	}
 	void fromJson(const Json& data)
 	{
 		for(const Json& valueData : data)
@@ -100,8 +107,7 @@ public:
 	void eraseIf(Predicate&& predicate) { std::erase_if(m_data, predicate); }
 	void eraseAll(This& other)
 	{
-		other.sort();
-		std::erase_if(m_data, [&](const T& value){ return std::ranges::binary_search(other.m_data, value); });
+		std::erase_if(m_data, [&](const T& value){ return std::ranges::contains(other.m_data, value); });
 	}
 	template<typename Iterator>
 	void maybeEraseAll(Iterator begin, const Iterator& end)
@@ -159,7 +165,7 @@ public:
 	[[nodiscard]] bool contains(const T& value) const { return std::ranges::find(m_data, value) != m_data.end(); }
 	template<typename Predicate>
 	[[nodiscard]] bool containsAny(Predicate&& predicate) const { return std::ranges::find_if(m_data, predicate) != m_data.end(); }
-	[[nodiscard]] uint indexOf(const T& value) const { assert(contains(value)); return std::distance(m_data.begin(), find(value)); }
+	[[nodiscard]] uint indexOf(const T& value) const { assert(contains(value)); return std::distance(m_data.begin(), std::ranges::find(m_data, value)); }
 	[[nodiscard]] T& front() { return m_data.front(); }
 	[[nodiscard]] const T& front() const { return m_data.front(); }
 	[[nodiscard]] T& back() { return m_data.back(); }
@@ -174,6 +180,7 @@ public:
 	[[nodiscard]] const std::vector<T>& getVector() const { return m_data; }
 	[[nodiscard]] This::iterator find(const T& value) { return std::ranges::find(m_data, value); }
 	[[nodiscard]] This::const_iterator find(const T& value) const { return std::ranges::find(m_data, value); }
+	[[nodiscard]] bool isUnique() const { auto copy = *this; copy.makeUnique(); return size() == copy.size(); }
 	[[nodiscard]] uint findLastIndex(const T& value) const
 	{
 		const auto it = std::ranges::find(m_data.rbegin(), m_data.rend(), value);
@@ -195,17 +202,13 @@ public:
 		iterator(std::vector<T>::iterator i) : m_iter(i) { }
 		iterator& operator++() { ++m_iter; return *this; }
 		iterator& operator--() { --m_iter; return *this; }
-		[[nodiscard]] iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
-		[[nodiscard]] iterator& operator--(int) { auto copy = *this; --m_iter; return copy; }
+		[[nodiscard]] iterator operator++(int) { auto copy = *this; ++m_iter; return copy; }
+		[[nodiscard]] iterator operator--(int) { auto copy = *this; --m_iter; return copy; }
 		[[nodiscard]] T& operator*() { return *m_iter; }
 		[[nodiscard]] const T& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] T* operator->() { return &*m_iter; }
-		[[nodiscard]] iterator operator-(const iterator& other) const { return m_iter - other.m_iter; }
-		[[nodiscard]] iterator operator+(const iterator& other) const { return m_iter + other.m_iter; }
-		[[nodiscard]] iterator& operator+=(const iterator& other) { m_iter += other.m_iter; return *this; }
-		[[nodiscard]] iterator& operator-=(const iterator& other) { m_iter -= other.m_iter; return *this; }
 		[[nodiscard]] iterator operator-(const uint& index) const { return m_iter - index; }
 		[[nodiscard]] iterator operator+(const uint& index) const { return m_iter + index; }
 		[[nodiscard]] iterator& operator+=(const uint& index) { m_iter += index; return *this; }
@@ -224,30 +227,28 @@ public:
 		const_iterator(const iterator& i) : m_iter(i.m_iter) { }
 		const_iterator& operator++() { ++m_iter; return *this; }
 		const_iterator& operator--() { --m_iter; return *this; }
-		const_iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
-		const_iterator& operator--(int) { auto copy = *this; --m_iter; return copy; }
-		iterator& operator+=(const const_iterator& other) { m_iter += other.m_iter; return *this; }
+		const_iterator operator++(int) { auto copy = *this; ++m_iter; return copy; }
+		const_iterator operator--(int) { auto copy = *this; --m_iter; return copy; }
 		[[nodiscard]] const T& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const T* operator->() const { return &*m_iter; }
-		[[nodiscard]] const_iterator operator-(const iterator& other) { return m_iter - other.m_iter; }
-		[[nodiscard]] const_iterator operator+(const iterator& other) { return m_iter + other.m_iter; }
-		[[nodiscard]] iterator& operator+=(const iterator& other) { m_iter += other.m_iter; return *this; }
-		[[nodiscard]] iterator& operator-=(const iterator& other) { m_iter -= other.m_iter; return *this; }
 		[[nodiscard]] const_iterator operator-(const uint& index) { return m_iter - index; }
 		[[nodiscard]] const_iterator operator+(const uint& index) { return m_iter + index; }
-		[[nodiscard]] iterator& operator+=(const uint& index) { m_iter += index; return *this; }
-		[[nodiscard]] iterator& operator-=(const uint& index) { m_iter -= index; return *this; }
+		[[nodiscard]] const_iterator& operator+=(const uint& index) { m_iter += index; return *this; }
+		[[nodiscard]] const_iterator& operator-=(const uint& index) { m_iter -= index; return *this; }
 		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
 	};
 	[[nodiscard]] std::string toString() const
 	{
 		std::string output;
 		for(const T& value : m_data)
-			output += value.toString() + ", ";
+			if constexpr(HasToStringMethod<T>)
+				output += value.toString() + ", ";
+			else
+				output += std::to_string(value) + ", ";
 		return output;
 	}
 	template<typename Source>

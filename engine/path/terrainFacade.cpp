@@ -1,17 +1,18 @@
 #include "terrainFacade.hpp"
-#include "actors/actors.h"
-#include "area/area.h"
-#include "callbackTypes.h"
-#include "config.h"
-#include "numericTypes/index.h"
-#include "pathMemo.h"
-#include "definitions/shape.h"
-#include "simulation/simulation.h"
-#include "numericTypes/types.h"
-#include "util.h"
-#include "pathRequest.h"
+#include "../actors/actors.h"
+#include "../area/area.h"
+#include "../callbackTypes.h"
+#include "../config.h"
+#include "../dataStructures/rtreeData.hpp"
+#include "../definitions/shape.h"
+#include "../numericTypes/index.h"
+#include "../numericTypes/types.h"
+#include "../simulation/simulation.h"
+#include "../space/space.h"
+#include "../util.h"
 #include "findPathInnerLoops.h"
-#include "space/space.h"
+#include "pathMemo.h"
+#include "pathRequest.h"
 #include <algorithm>
 #include <queue>
 #include <iterator>
@@ -28,18 +29,45 @@ void FindPathResult::validate() const
 	if(path.empty() && !useCurrentPosition)
 		assert(pointThatPassedPredicate.empty());
 }
+PathRequestNoHuristicData::PathRequestNoHuristicData(std::unique_ptr<PathRequestBreadthFirst> pr, uint32_t sh) :
+	pathRequest(std::move(pr)),
+	spatialHash(sh)
+{ }
+PathRequestNoHuristicData::PathRequestNoHuristicData(PathRequestNoHuristicData&& other) noexcept :
+	pathRequest(std::move(other.pathRequest)),
+	spatialHash(other.spatialHash)
+{ }
+PathRequestNoHuristicData& PathRequestNoHuristicData::operator=(PathRequestNoHuristicData&& other) noexcept
+{
+	pathRequest = std::move(other.pathRequest);
+	spatialHash = other.spatialHash;
+	return *this;
+}
+PathRequestWithHuristicData::PathRequestWithHuristicData(std::unique_ptr<PathRequestDepthFirst> pr, uint32_t sh) :
+	pathRequest(std::move(pr)),
+	spatialHash(sh)
+{ }
+PathRequestWithHuristicData::PathRequestWithHuristicData(PathRequestWithHuristicData&& other) noexcept :
+	pathRequest(std::move(other.pathRequest)),
+	spatialHash(other.spatialHash)
+{ }
+PathRequestWithHuristicData& PathRequestWithHuristicData::operator=(PathRequestWithHuristicData&& other) noexcept
+{
+	pathRequest = std::move(other.pathRequest);
+	spatialHash = other.spatialHash;
+	return *this;
+}
 TerrainFacade::TerrainFacade(Area& area, const MoveTypeId& moveType) : m_area(area), m_moveType(moveType)
 {
 	Space& space = m_area.getSpace();
-	Cuboid cuboid = space.getAll();
-	for(const Point3D& point : cuboid)
-		update(point);
+	update(space.boundry());
 	m_pointToIndexConversionMultipliers = {space.m_sizeX * space.m_sizeY * 26,space.m_sizeX * 26, Distance::create(26)};
-	// Two results fit on a  cache line, by ensuring that the number of tasks per thread is a multiple of 2 we prevent false shareing.
+	// Two results fit on a cache line, by ensuring that the number of tasks per thread is a multiple of 2 we prevent false shareing.
 	assert(Config::pathRequestsPerThread % 2 == 0);
 }
 void TerrainFacade::doStep()
 {
+	m_enterable.prepare();
 	Actors& actors = m_area.getActors();
 	// Read step.
 	// Breadth first.
@@ -58,7 +86,7 @@ void TerrainFacade::doStep()
 	//#pragma omp parallel for
 	for(auto [begin, end] : ranges)
 	{
-		auto pair = m_area.m_simulation.m_hasPathMemos.getBreadthFirst(m_area);
+		auto pair = m_area.m_simulation.m_hasPathMemos.getBreadthFirst();
 		auto& memo = *pair.first;
 		auto point = pair.second;
 		assert(memo.empty());
@@ -92,7 +120,7 @@ void TerrainFacade::doStep()
 	//#pragma omp parallel for
 	for(auto [begin, end] : ranges)
 	{
-		auto pair = m_area.m_simulation.m_hasPathMemos.getDepthFirst(m_area);
+		auto pair = m_area.m_simulation.m_hasPathMemos.getDepthFirst();
 		auto& memo = *pair.first;
 		auto point = pair.second;
 		assert(memo.empty());
@@ -127,10 +155,10 @@ void TerrainFacade::clearPathRequests()
 	m_pathRequestsNoHuristic.clear();
 	m_pathRequestsWithHuristic.clear();
 }
-bool TerrainFacade::getValueForBit(const Point3D& from, const Point3D& to) const
+bool TerrainFacade::getValue(const Point3D& to, const Point3D& from) const
 {
 	Space& space = m_area.getSpace();
-	return to.exists() &&
+	return
 		space.shape_anythingCanEnterEver(to) &&
 		space.shape_moveTypeCanEnter(to, m_moveType) &&
 		space.shape_moveTypeCanEnterFrom(to, m_moveType, from);
@@ -155,17 +183,32 @@ void TerrainFacade::registerPathRequestWithHuristic(std::unique_ptr<PathRequestD
 {
 	m_pathRequestsWithHuristic.emplaceBack(std::move(pathRequest), pathRequest->start.hilbertNumber());
 }
-void TerrainFacade::update(const Point3D& point)
+AdjacentData TerrainFacade::makeDataForPoint(const Point3D& point) const
 {
-	Space& space = m_area.getSpace();
-	std::bitset<26> enterable;
-	uint8_t index = 0;
-	for(Point3D adjacent : point.getAllAdjacentIncludingOutOfBounds())
+	const Space& space = m_area.getSpace();
+	const Cuboid boundry = space.boundry();
+	AdjacentData data;
+	AdjacentIndex index = {0};
+	for(const Point3D& adjacent : point.getAllAdjacentIncludingOutOfBounds())
 	{
-		enterable.set(index, getValueForBit(point, adjacent));
+		bool value = boundry.contains(adjacent) && space.shape_moveTypeCanEnterFrom(adjacent, m_moveType, point);
+		data.set(index, value);
 		++index;
 	}
-	m_enterable.maybeInsertOrOverwrite(point, enterable);
+	return data;
+}
+void TerrainFacade::update(const Cuboid& cuboid)
+{
+	const Space& space = m_area.getSpace();
+	const Cuboid boundry = space.boundry();
+	m_enterable.maybeRemove(cuboid);
+	for(const Point3D& point : cuboid)
+		if(boundry.contains(point) && space.shape_anythingCanEnterEver(point))
+			m_enterable.maybeInsert(point, makeDataForPoint(point));
+}
+void TerrainFacade::maybeSetImpassable(const Cuboid& cuboid)
+{
+	m_enterable.maybeRemove(cuboid);
 }
 void TerrainFacade::movePathRequestNoHuristic(PathRequestIndex oldIndex, PathRequestIndex newIndex)
 {
@@ -176,6 +219,16 @@ void TerrainFacade::movePathRequestWithHuristic(PathRequestIndex oldIndex, PathR
 {
 	assert(oldIndex != newIndex);
 	m_pathRequestsWithHuristic[newIndex] = std::move(m_pathRequestsWithHuristic[oldIndex]);
+}
+void TerrainFacade::updatePoint(const Point3D& point)
+{
+	const Space& space = m_area.getSpace();
+	if(!space.shape_anythingCanEnterEver(point))
+	{
+		m_enterable.maybeRemove(point);
+		return;
+	}
+	m_enterable.maybeInsertOrOverwrite(point, makeDataForPoint(point));
 }
 void TerrainFacade::unregisterNoHuristic(PathRequest& pathRequest)
 {
@@ -188,11 +241,6 @@ void TerrainFacade::unregisterWithHuristic(PathRequest& pathRequest)
 	auto found = std::ranges::find(m_pathRequestsWithHuristic, &pathRequest, [&](const PathRequestWithHuristicData& data) { return data.pathRequest.get();});
 	assert(found != m_pathRequestsWithHuristic.end());
 	m_pathRequestsWithHuristic.remove(found);
-}
-bool TerrainFacade::canEnterFrom(const Point3D& point, AdjacentIndex adjacentCount) const
-{
-	Space& space = m_area.getSpace();
-	return m_enterable.queryGetOne(point).test(adjacentCount.get());
 }
 FindPathResult TerrainFacade::findPathTo(PathMemoDepthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& target, bool detour, bool adjacent, const FactionId& faction) const
 {
@@ -271,10 +319,15 @@ void AreaHasTerrainFacades::doStep()
 	for(auto& pair : m_data)
 		pair.second->doStep();
 }
-void AreaHasTerrainFacades::update(const Point3D& point)
+void AreaHasTerrainFacades::update(const Cuboid& cuboid)
 {
 	for(auto& pair : m_data)
-		pair.second->update(point);
+		pair.second->update(cuboid);
+}
+void AreaHasTerrainFacades::maybeSetImpassable(const Cuboid& cuboid)
+{
+	for(auto& pair : m_data)
+		pair.second->maybeSetImpassable(cuboid);
 }
 void AreaHasTerrainFacades::maybeRegisterMoveType(const MoveTypeId& moveType)
 {
@@ -282,15 +335,6 @@ void AreaHasTerrainFacades::maybeRegisterMoveType(const MoveTypeId& moveType)
 	auto found = m_data.find(moveType);
 	if(found == m_data.end())
 		m_data.emplace(moveType, m_area, moveType);
-}
-void AreaHasTerrainFacades::updatePointAndAdjacent(const Point3D& point)
-{
-	Space& space = m_area.getSpace();
-	if(space.shape_anythingCanEnterEver(point))
-		update(point);
-	for(Point3D adjacent : space.getAdjacentWithEdgeAndCornerAdjacent(point))
-		if(space.shape_anythingCanEnterEver(adjacent))
-			update(adjacent);
 }
 void AreaHasTerrainFacades::clearPathRequests()
 {

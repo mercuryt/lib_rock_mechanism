@@ -4,6 +4,7 @@
 #pragma once
 #include "../geometry/cuboid.h"
 #include "../geometry/cuboidArray.h"
+#include "../geometry/paramaterizedLine.h"
 #include "../strongInteger.h"
 #include "../dataStructures/strongVector.h"
 #include "../dataStructures/smallMap.h"
@@ -64,7 +65,7 @@ class RTreeBooleanLowZOnly
 	[[nodiscard]] SmallSet<Cuboid> gatherLeavesRecursive(const Index& parent) const;
 	void destroyWithChildren(const Index& index);
 	void tryToMergeLeaves(Node& parent);
-	void clearAllContained(Node& parent, const Cuboid& cuboid);
+	void clearAllContained(const Index& index, const Cuboid& cuboid);
 	void addToNodeRecursive(const Index& index, const Cuboid& cuboid);
 	// Removes intercepting leaves and contained branches. Intercepting branches are added to openList.
 	void removeFromNode(const Index& index, const Cuboid& cuboid, SmallSet<Index>& openList);

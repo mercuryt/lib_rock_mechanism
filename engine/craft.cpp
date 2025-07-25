@@ -191,7 +191,7 @@ Step CraftJob::getStep() const
 // HasCraftingLocationsAndJobs
 HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const FactionId& f) :
 	m_area(deserializationMemo.area(data["area"])),
-    	m_faction(f)
+  	m_faction(f)
 {
 	for(const Json& pair : data["locationsByCategory"])
 	{

@@ -157,7 +157,7 @@ Percent MustEat::getPercentStarved() const
 }
 uint32_t MustEat::getDesireToEatSomethingAt(Area& area, const Point3D& point) const
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Items& items = area.getItems();
 	Actors& actors = area.getActors();
 	const ActorReferenceData &referenceData = area.getActors().m_referenceData;

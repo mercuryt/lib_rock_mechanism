@@ -126,7 +126,7 @@ Json SleepObjective::toJson() const
 void SleepObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	assert(actors.sleep_isAwake(actor));
 	Point3D sleepingSpot = actors.sleep_getSpot(actor);
 	// Check if the spot is still valid.
@@ -134,7 +134,7 @@ void SleepObjective::execute(Area& area, const ActorIndex& actor)
 	{
 		if(m_noWhereToSleepFound)
 		{
-			if(actors.predicateForAnyOccupiedPoint(actor, [&area](const Point3D& point){ return  area.getSpace().isEdge(point); }))
+			if(actors.predicateForAnyOccupiedPoint(actor, [&area](const Point3D& point){ return area.getSpace().isEdge(point); }))
 				// We are at the edge and can leave.
 				actors.leaveArea(actor);
 			else
@@ -173,7 +173,7 @@ void SleepObjective::execute(Area& area, const ActorIndex& actor)
 }
 uint32_t SleepObjective::desireToSleepAt(Area& area, const Point3D& point, const ActorIndex& actor) const
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	if(space.isReserved(point, actors.getFaction(actor)) || !actors.temperature_isSafe(actor, space.temperature_get(point)))
 		// Impossible to sleep here.

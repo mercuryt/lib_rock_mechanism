@@ -36,6 +36,7 @@
 	"digStrengthModifier": 0.1,
 	"drinkPriority": 200,
 	"eatPriority": 100,
+	"energyGeneratedByOneUnitMassFallingOneDistance": 1,
 	"equipPriority": 1000,
 	"exterminateCheckFrequencySeconds": 1,
 	"exterminatePriority": 900,

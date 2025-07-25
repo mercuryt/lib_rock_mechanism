@@ -160,7 +160,7 @@ void ObjectiveType::load()
 	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("bone carving"));
 	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("assembling"));
 	objectiveTypeData[index++] = std::make_unique<DigObjectiveType>();
-	//  TODO: specalize construct into Earthworks, Masonry, Metal Construction, and Carpentry.
+	// TODO: specalize construct into Earthworks, Masonry, Metal Construction, and Carpentry.
 	objectiveTypeData[index++] = std::make_unique<ConstructObjectiveType>();
 	objectiveTypeData[index++] = std::make_unique<StockPileObjectiveType>();
 	objectiveTypeData[index++] = std::make_unique<SowSeedsObjectiveType>();
@@ -437,7 +437,7 @@ void HasObjectives::cannotCompleteSubobjective(Area& area)
 Objective& HasObjectives::getCurrent()
 {
 	assert(m_currentObjective != nullptr);
-       	return *m_currentObjective;
+    	return *m_currentObjective;
 }
 bool HasObjectives::queuesAreEmpty() const
 {

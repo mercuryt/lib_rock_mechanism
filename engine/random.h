@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <cassert>
 
-class Cuboid;
+struct Cuboid;
 struct Point3D;
 
 class Random
@@ -30,7 +30,12 @@ public:
 			return vector.at(getInRange((size_t)0, vector.size() - (size_t)1));
 		}
 	template<typename T>
-		T getInVector(const std::vector<T>& vector)
+		const T& getInVector(const std::vector<T>& vector)
+		{
+			return vector.at(getInRange((size_t)0, vector.size() - (size_t)1));
+		}
+	template<typename T>
+		T& getInVector(std::vector<T>& vector)
 		{
 			return vector.at(getInRange((size_t)0, vector.size() - (size_t)1));
 		}

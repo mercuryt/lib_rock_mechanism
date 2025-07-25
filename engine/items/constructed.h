@@ -6,6 +6,7 @@
 */
 #pragma once
 #include "../geometry/offsetCuboidSet.h"
+#include "../geometry/cuboidSet.h"
 #include "../numericTypes/types.h"
 #include "../numericTypes/index.h"
 #include "../json.h"
@@ -49,6 +50,7 @@ public:
 	[[nodiscard]] SmallSet<MaterialTypeId> getMaterialTypesAt(const Point3D& location, const Facing4& facing, const Point3D& point) const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] static std::pair<ConstructedShape, Point3D> makeForKeelPoint(Area& area, const Point3D& point, const Facing4& facing);
+	[[nodiscard]] static std::pair<ConstructedShape, Point3D> makeForPlatform(Area& area, const CuboidSet& cuboids, const Facing4& facing);
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ConstructedShape, m_solidPoints, m_features, m_decks, m_motiveForce, m_fullDisplacement, m_value, m_mass);
 };
 inline void to_json(Json& data, const std::unique_ptr<ConstructedShape>& shape) { data = *shape; }

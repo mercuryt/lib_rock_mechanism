@@ -16,7 +16,10 @@
 #include <string>
 
 using Coordinates = Eigen::Array<DistanceWidth, 3, 1>;
+using Offsets = Eigen::Array<OffsetWidth, 3, 1>;
 struct Offset3D;
+struct Cuboid;
+class AdjacentIndex;
 struct Point3D
 {
 	Coordinates data;
@@ -54,9 +57,10 @@ struct Point3D
 	[[nodiscard]] Point3D south() const ;
 	[[nodiscard]] Point3D west() const;
 	[[nodiscard]] Point3D above() const;
-	[[nodiscard]] bool operator==(const Point3D& other) const;
-	[[nodiscard]] bool operator!=(const Point3D& other) const;
+	[[nodiscard]] bool operator==(const Point3D& other) const { return (data == other.data).all();}
+	[[nodiscard]] bool operator!=(const Point3D& other) const { return (data != other.data).any();}
 	[[nodiscard]] std::strong_ordering operator<=>(const Point3D& other) const;
+	[[nodiscard]] Point3D subtractWithMinimum(const Distance& value) const;
 	[[nodiscard]] Distance taxiDistanceTo(const Point3D& other) const;
 	[[nodiscard]] Distance distanceTo(const Point3D& other) const;
 	[[nodiscard]] DistanceFractional distanceToFractional(const Point3D& other) const;
@@ -73,13 +77,14 @@ struct Point3D
 	[[nodiscard]] Facing4 getFacingTwords(const Point3D& other) const;
 	[[nodiscard]] Facing8 getFacingTwordsIncludingDiagonal(const Point3D& other) const;
 	[[nodiscard]] bool isAdjacentTo(const Point3D& point) const;
+	[[nodiscard]] bool isDirectlyAdjacentTo(const Point3D& point) const;
 	[[nodiscard]] bool squareOfDistanceIsGreaterThen(const Point3D& point, const DistanceFractional& distanceSquared) const;
 	[[nodiscard]] Point3D offsetRotated( const Offset3D& initalOffset, const Facing4& previousFacing, const Facing4& newFacing) const;
 	[[nodiscard]] Point3D offsetRotated( const Offset3D& initalOffset, const Facing4& facing) const;
 	[[nodiscard]] Point3D translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const;
 	[[nodiscard]] Point3D moveInDirection(const Facing6& facing, const Distance& distance) const;
-	// TODO: make this a view / iterator pair.
-	[[nodiscard]] std::array<Point3D, 26> getAllAdjacentIncludingOutOfBounds() const;
+	[[nodiscard]] Point3D atAdjacentIndex(const AdjacentIndex& index) const;
+	[[nodiscard]] Cuboid getAllAdjacentIncludingOutOfBounds() const;
 	[[nodiscard]] bool isAdjacentToAny(const auto& points) const
 	{
 		for(const Point3D& point : points)
@@ -90,13 +95,15 @@ struct Point3D
 	void log() const;
 	static Point3D create(const DistanceWidth& x, const DistanceWidth& y, const DistanceWidth& z);
 	static Point3D create(const Offset3D& offset);
+	static Point3D create(const Offsets& offset);
 	static Point3D create(const Coordinates& offset);
 	static Point3D null();
 	static Point3D max() { return { Distance::max(), Distance::max(), Distance::max()}; }
 	struct Hash {
 		size_t operator()(const Point3D& point) const
 		{
-			return (point.x() + (point.y() * Distance::max()) + (point.z() * Distance::max() * Distance::max())).get();
+			const size_t& max = Distance::max().get();
+			return (size_t)point.x().get() + ((size_t)point.y().get() * max) + ((size_t)point.z().get() * max * max);
 		}
 	};
 };
@@ -116,7 +123,6 @@ struct Point3D_fractional
 	[[nodiscard]] int y() const { return data[1]; }
 	[[nodiscard]] int z() const { return data[2]; }
 };
-using Offsets = Eigen::Array<OffsetWidth, 3, 1>;
 struct Offset3D
 {
 	Offsets data;
@@ -143,6 +149,9 @@ struct Offset3D
 	void clampHigh(const Offset3D& other);
 	void clampLow(const Offset3D& other);
 	void clear() { data.fill(Offset::null().get()); }
+	[[nodiscard]] int& x() { return data[0]; }
+	[[nodiscard]] int& y() { return data[1]; }
+	[[nodiscard]] int& z() { return data[2]; }
 	[[nodiscard]] Offset3D operator+(const Offset3D& other) const;
 	[[nodiscard]] Offset3D operator-(const Offset3D& other) const;
 	[[nodiscard]] Offset3D operator*(const Offset3D& other) const;
@@ -152,15 +161,13 @@ struct Offset3D
 	[[nodiscard]] Offset3D operator*(const int& other) const;
 	[[nodiscard]] Offset3D operator/(const int& other) const;
 	[[nodiscard]] bool operator==(const Offset3D& other) const { return (data == other.data).all();}
-	[[nodiscard]] bool operator!=(const Offset3D& other) const { return !((*this) == other); }
+	[[nodiscard]] bool operator!=(const Offset3D& other) const { return (data != other.data).any();}
 	[[nodiscard]] std::strong_ordering operator<=>(const Offset3D& other) const;
 	[[nodiscard]] const int& x() const { return data[0]; }
 	[[nodiscard]] const int& y() const { return data[1]; }
 	[[nodiscard]] const int& z() const { return data[2]; }
-	[[nodiscard]] int& x() { return data[0]; }
-	[[nodiscard]] int& y() { return data[1]; }
-	[[nodiscard]] int& z() { return data[2]; }
-	[[nodiscard]] bool empty() { return data[0] == Offset::null().get(); }
+	[[nodiscard]] bool empty() const { return data[0] == Offset::null().get(); }
+	[[nodiscard]] bool exists() const { return !empty(); }
 	[[nodiscard]] std::string toString() const;
 	static Offset3D create(const OffsetWidth& x, const OffsetWidth& y, const OffsetWidth& z) { return {Offset::create(x), Offset::create(y), Offset::create(z)}; }
 };

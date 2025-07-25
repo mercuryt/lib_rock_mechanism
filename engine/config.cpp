@@ -52,6 +52,7 @@ void Config::load()
 	data["digStrengthModifier"].get_to(digStrengthModifier);
 	data["drinkPriority"].get_to(drinkPriority);
 	data["eatPriority"].get_to(eatPriority);
+	data["energyGeneratedByOneUnitMassFallingOneDistance"].get_to(energyGeneratedByOneUnitMassFallingOneDistance);
 	data["equipPriority"].get_to(equipPriority);
 	exterminateCheckFrequency = Step::create(data["exterminateCheckFrequencySeconds"].get<float>() * stepsPerSecond.get());
 	data["exterminatePriority"].get_to(exterminatePriority);

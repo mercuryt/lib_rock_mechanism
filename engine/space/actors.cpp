@@ -1,7 +1,8 @@
 #include "space.h"
 #include "../actors/actors.h"
 #include "../area/area.h"
-#include "numericTypes/types.h"
+#include "../numericTypes/types.h"
+#include "../dataStructures/rtreeData.hpp"
 void Space::actor_recordDynamic(const Point3D& point, const ActorIndex& actor, const CollisionVolume& volume)
 {
 	Actors& actors = m_area.getActors();
@@ -83,7 +84,7 @@ bool Space::actor_contains(const Point3D& point, const ActorIndex& actor) const
 }
 bool Space::actor_empty(const Point3D& point) const
 {
-	return m_actors.queryAny(point);
+	return !m_actors.queryAny(point);
 }
 const SmallSet<ActorIndex>& Space::actor_getAll(const Point3D& point) const
 {

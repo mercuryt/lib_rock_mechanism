@@ -35,6 +35,5 @@ public:
 	[[nodiscard]] AreaHasSpaceDesignationsForFaction& maybeRegisterAndGetForFaction(const FactionId& faction);
 	[[nodiscard]] const AreaHasSpaceDesignationsForFaction& maybeRegisterAndGetForFaction(const FactionId& faction) const;
 	[[nodiscard]] std::vector<std::pair<FactionId, SpaceDesignation>> getForPoint(const Point3D& point) const;
-	[[nodiscard]] Json toJson() const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(AreaHasSpaceDesignations, m_data);
 };

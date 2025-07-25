@@ -234,17 +234,37 @@ void RTreeBooleanLowZOnly::tryToMergeLeaves(Node& parent)
 			++offset;
 	}
 }
-void RTreeBooleanLowZOnly::clearAllContained(Node& parent, const Cuboid& cuboid)
+void RTreeBooleanLowZOnly::clearAllContained(const Index& index, const Cuboid& cuboid)
 {
-	const auto& parentCuboids = parent.getCuboids();
-	const auto& parentChildIndices = parent.getChildIndices();
-	const auto containsMask = parentCuboids.indicesOfContainedCuboids(cuboid);
-	if(!containsMask.any())
-		return;
-	for(ArrayIndex i = parent.offsetOfFirstChild(); i < nodeSize; ++i)
-		if(containsMask[i.get()])
-			destroyWithChildren(parentChildIndices[i.get()]);
-	parent.eraseByMask(containsMask);
+	SmallSet<Index> openList;
+	openList.insert(index);
+	while(!openList.empty())
+	{
+		Node& node = m_nodes[openList.back()];
+		openList.popBack();
+		const auto& nodeCuboids = node.getCuboids();
+		const auto& nodeChildIndices = node.getChildIndices();
+		// Destroy contained branches.
+		const auto containsMask = nodeCuboids.indicesOfContainedCuboids(cuboid);
+		for(ArrayIndex i = node.offsetOfFirstChild(); i < nodeSize; ++i)
+			if(containsMask[i.get()])
+				destroyWithChildren(nodeChildIndices[i.get()]);
+		// Erase contained cuboids, both leaf and branch.
+		node.eraseByMask(containsMask);
+		// Gather branches intercted with to add to openList.
+		const auto interceptMask = nodeCuboids.indicesOfIntersectingCuboids(cuboid);
+		if(interceptMask.any())
+		{
+			const auto begin = interceptMask.begin();
+			const auto end = interceptMask.end();
+			for(auto iter = begin + node.offsetOfFirstChild().get(); iter != end; ++iter)
+				if(*iter)
+				{
+					ArrayIndex iterIndex = ArrayIndex::create(iter - begin);
+					openList.insert(nodeChildIndices[iterIndex.get()]);
+				}
+		}
+	}
 }
 void RTreeBooleanLowZOnly::addToNodeRecursive(const Index& index, const Cuboid& cuboid)
 {
@@ -252,7 +272,7 @@ void RTreeBooleanLowZOnly::addToNodeRecursive(const Index& index, const Cuboid& 
 	Node& parent = m_nodes[index];
 	const auto& parentCuboids = parent.getCuboids();
 	const auto& parentChildIndices = parent.getChildIndices();
-	clearAllContained(parent, cuboid);
+	clearAllContained(index, cuboid);
 	if(parent.unusedCapacity() == 0)
 	{
 		// Node is full, find two cuboids to merge.
@@ -365,8 +385,7 @@ void RTreeBooleanLowZOnly::removeFromNode(const Index& index, const Cuboid& cubo
 			fragments.insertAll(parentCuboids[i.get()].getChildrenWhenSplitByCuboid(cuboid));
 	// Copy intercept mask to create leaf intercept mask.
 	auto leafInterceptMask = interceptMask;
-	for(ArrayIndex i = parent.offsetOfFirstChild(); i < nodeSize; ++i)
-		leafInterceptMask[i.get()] = 0;
+	leafInterceptMask.tail(parent.getChildCount()) = 0;
 	// erase all intercepted leaves.
 	parent.eraseLeavesByMask(leafInterceptMask);
 	const Index index2 = index;
@@ -532,7 +551,7 @@ void RTreeBooleanLowZOnly::maybeRemove(const Cuboid& cuboid)
 {
 	// Erase all contained branches and leaves.
 	constexpr Index rootIndex = Index::create(0);
-	clearAllContained(m_nodes[rootIndex], cuboid);
+	clearAllContained(rootIndex, cuboid);
 	SmallSet<Index> openList;
 	SmallSet<Index> toUpdateBoundryMaybe;
 	openList.insert(rootIndex);

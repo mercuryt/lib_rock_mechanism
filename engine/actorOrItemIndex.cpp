@@ -234,6 +234,18 @@ Quantity ActorOrItemIndex::getQuantity(const Area& area) const { return isActor(
 Mass ActorOrItemIndex::getSingleUnitMass(const Area& area) const { return isActor() ? area.getActors().getMass(m_index.toActor()) : area.getItems().getSingleUnitMass(m_index.toItem()); }
 FullDisplacement ActorOrItemIndex::getVolume(const Area& area) const { return isActor() ? area.getActors().getVolume(m_index.toActor()) : area.getItems().getVolume(m_index.toItem()); }
 bool ActorOrItemIndex::isGeneric(const Area& area) const {return isActor() ? false : area.getItems().isGeneric(m_index.toItem()); }
+std::strong_ordering ActorOrItemIndex::operator<=>(const ActorOrItemIndex& other) const
+{
+	if(isActor())
+	{
+		if(other.isActor())
+			return m_index <=> other.m_index;
+		return std::strong_ordering::greater;
+	}
+	if(other.isActor())
+		return std::strong_ordering::less;
+	return m_index <=> other.m_index;
+}
 Quantity ActorOrItemIndex::reservable_getUnreservedCount(Area& area, const FactionId& faction) const
 {
 	if(isActor())
@@ -265,11 +277,6 @@ void ActorOrItemIndex::validate([[maybe_unused]] Area& area) const
 		assert(area.getActors().size() > m_index);
 	else
 		assert(area.getItems().size() > m_index);
-}
-std::strong_ordering ActorOrItemIndex::operator<=>(const ActorOrItemIndex& other) const
-{
-	assert(isActor() == other.isActor());
-	return m_index <=> other.m_index;
 }
 size_t ActorOrItemIndex::Hash::operator()(const ActorOrItemIndex& actorOrItem) const
 {

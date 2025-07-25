@@ -3,7 +3,7 @@
 #include "../area/area.h"
 #include "../config.h"
 #include "../partitionNotify.h"
-void LongRangePathFinderForMoveType::merge(Space& space, const LongRangePathNodeIndex& mergeInto, const LongRangePathNodeIndex& mergeFrom)
+void LongRangePathFinderForMoveType::merge(const LongRangePathNodeIndex& mergeInto, const LongRangePathNodeIndex& mergeFrom)
 {
 	assert(mergeInto != mergeFrom);
 	auto& from = m_data[mergeFrom];
@@ -19,7 +19,7 @@ void LongRangePathFinderForMoveType::merge(Space& space, const LongRangePathNode
 	into.adjacent.maybeInsertAll(from.adjacent);
 	from.destroy = true;
 }
-LongRangePathNodeIndex LongRangePathFinderForMoveType::create(Space& space, const Point3D& point)
+LongRangePathNodeIndex LongRangePathFinderForMoveType::create(const Point3D& point)
 {
 	Cuboid cuboid(point, point);
 	m_data.emplaceBack(cuboid);
@@ -31,7 +31,7 @@ LongRangePathNodeIndex LongRangePathFinderForMoveType::create(Space& space, cons
 	}
 	return index;
 }
-void LongRangePathFinderForMoveType::addPointToNode(Space& space, const LongRangePathNodeIndex& node, const Point3D& point)
+void LongRangePathFinderForMoveType::addPointToNode(const LongRangePathNodeIndex& node, const Point3D& point)
 {
 	assert(!m_data[node].destroy);
 	m_data[node].contents.addAndExtend(point);
@@ -41,7 +41,7 @@ void LongRangePathFinderForMoveType::addPointToNode(Space& space, const LongRang
 void LongRangePathFinderForMoveType::setPointPathable(Area& area, const Point3D& point)
 {
 	std::vector<LongRangePathNodeIndex> adjacentNodeIndices;
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	LongRangePathNodeIndex createdOrAddedToIndex;
 	for(const Point3D& adjacent : space.getAdjacentWithEdgeAndCornerAdjacent(point))
 	{
@@ -49,7 +49,7 @@ void LongRangePathFinderForMoveType::setPointPathable(Area& area, const Point3D&
 		if(
 			nodeIndex.exists() &&
 			!std::ranges::contains(adjacentNodeIndices, nodeIndex) &&
-			canAbsorbPoint(space, m_data[nodeIndex], point)
+			canAbsorbPoint(m_data[nodeIndex], point)
 		)
 		{
 			assert(!m_data[nodeIndex].destroy);
@@ -57,7 +57,7 @@ void LongRangePathFinderForMoveType::setPointPathable(Area& area, const Point3D&
 		}
 	}
 	if(adjacentNodeIndices.empty())
-		createdOrAddedToIndex = create(space, point);
+		createdOrAddedToIndex = create(point);
 	else
 	{
 		// Find largest of adjacentNodeIndices.
@@ -66,19 +66,19 @@ void LongRangePathFinderForMoveType::setPointPathable(Area& area, const Point3D&
 		});
 		const auto& largest = *iter;
 		// Merge with largest.
-		addPointToNode(space, largest, point);
+		addPointToNode(largest, point);
 		// Attempt to merge largest with remainder.
 		for(const auto& index : adjacentNodeIndices)
 			if(index != largest)
 			{
 				if(canAbsorbNode(m_data[largest], m_data[index]))
-					merge(space, largest, index);
+					merge(largest, index);
 				else
 					m_data[largest].adjacent.maybeInsert(index);
 			}
 		createdOrAddedToIndex = largest;
 	}
-	clearDestroyed(space);
+	clearDestroyed();
 	auto& node = m_data[createdOrAddedToIndex];
 	for(auto& [faction, designation] : area.m_spaceDesignations.getForPoint(point))
 		++node.designations.getOrCreate(faction).getOrInsert(designation, Quantity::create(0));
@@ -88,7 +88,7 @@ void LongRangePathFinderForMoveType::setPointNotPathable(Area& area, const Point
 	auto& nodeIndex = m_pathNodesByPoint.queryGetOne(point);
 	assert(nodeIndex.exists());
 	auto& node = m_data[nodeIndex];
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	SmallSet<LongRangePathNodeIndex> potentiallyNoLongerAdjacentNodes;
 	for(const Point3D& adjacent : space.getAdjacentWithEdgeAndCornerAdjacent(point))
 	{
@@ -127,11 +127,11 @@ void LongRangePathFinderForMoveType::setPointNotPathable(Area& area, const Point
 				--forFaction[designation];
 		}
 	}
-	clearDestroyed(space);
+	clearDestroyed();
 	for(const auto& cuboid : toCreate)
-		create(space, cuboid);
+		create(cuboid);
 }
-void LongRangePathFinderForMoveType::clearDestroyed(Space& space)
+void LongRangePathFinderForMoveType::clearDestroyed()
 {
 	auto condition = [&](const LongRangePathNodeIndex& node) { return m_data[node].destroy; };
 	auto callback = [&](const LongRangePathNodeIndex& oldIndex, const LongRangePathNodeIndex& newIndex) {
@@ -151,9 +151,8 @@ bool LongRangePathFinderForMoveType::canAbsorbNode(const LongRangePathNode& a, L
 	assert(!b.destroy);
 	return canAbsorbCuboid(a, b.contents.getBoundingBox());
 }
-bool LongRangePathFinderForMoveType::canAbsorbPoint(const Space& space, const LongRangePathNode& node, const Point3D& point)
+bool LongRangePathFinderForMoveType::canAbsorbPoint(const LongRangePathNode& node, const Point3D& point)
 {
-	auto point = point;
 	return canAbsorbCuboid(node, {point, point});
 }
 bool LongRangePathFinderForMoveType::canAbsorbCuboid(const LongRangePathNode& node, const Cuboid& cuboid)

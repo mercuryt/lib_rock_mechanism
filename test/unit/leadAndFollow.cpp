@@ -18,15 +18,15 @@ TEST_CASE("leadAndFollow")
 	static MaterialTypeId marble = MaterialType::byName("marble");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	SUBCASE("two dwarves")
 	{
-		BlockIndex origin1 = blocks.getIndex_i(2, 2, 1);
-		BlockIndex origin2 = blocks.getIndex_i(1, 1, 1);
-		BlockIndex destination1 = blocks.getIndex_i(9, 9, 1);
-		BlockIndex destination2 = blocks.getIndex_i(8, 8, 1);
+		Point3D origin1 = Point3D::create(2, 2, 1);
+		Point3D origin2 = Point3D::create(1, 1, 1);
+		Point3D destination1 = Point3D::create(9, 9, 1);
+		Point3D destination2 = Point3D::create(8, 8, 1);
 		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.location=origin1,
@@ -47,10 +47,10 @@ TEST_CASE("leadAndFollow")
 	}
 	SUBCASE("dwarf leads troll")
 	{
-		BlockIndex origin1 = blocks.getIndex_i(3, 3, 1);
-		BlockIndex origin2 = blocks.getIndex_i(2, 2, 1);
-		BlockIndex destination1 = blocks.getIndex_i(8, 8, 1);
-		BlockIndex destination2 = blocks.getIndex_i(7, 7, 1);
+		Point3D origin1 = Point3D::create(3, 3, 1);
+		Point3D origin2 = Point3D::create(2, 2, 1);
+		Point3D destination1 = Point3D::create(8, 8, 1);
+		Point3D destination2 = Point3D::create(7, 7, 1);
 		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.location=origin1,
@@ -70,9 +70,9 @@ TEST_CASE("leadAndFollow")
 	}
 	SUBCASE("troll leads dwarf")
 	{
-		BlockIndex origin1 = blocks.getIndex_i(3, 2, 1);
-		BlockIndex origin2 = blocks.getIndex_i(1, 1, 1);
-		BlockIndex destination1 = blocks.getIndex_i(8, 8, 1);
+		Point3D origin1 = Point3D::create(3, 2, 1);
+		Point3D origin2 = Point3D::create(1, 1, 1);
+		Point3D destination1 = Point3D::create(8, 8, 1);
 		ActorIndex troll1 = actors.create({
 			.species=troll,
 			.location=origin1,
@@ -92,13 +92,13 @@ TEST_CASE("leadAndFollow")
 	}
 	SUBCASE("use largest shape for pathing")
 	{
-		BlockIndex origin1 = blocks.getIndex_i(2, 2, 1);
-		BlockIndex origin2 = blocks.getIndex_i(1, 1, 1);
-		BlockIndex destination1 = blocks.getIndex_i(8, 8, 1);
-		blocks.solid_set(blocks.getIndex_i(5, 1, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(5, 3, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(5, 5, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(5, 7, 1), marble, false);
+		Point3D origin1 = Point3D::create(2, 2, 1);
+		Point3D origin2 = Point3D::create(1, 1, 1);
+		Point3D destination1 = Point3D::create(8, 8, 1);
+		space.solid_set(Point3D::create(5, 1, 1), marble, false);
+		space.solid_set(Point3D::create(5, 3, 1), marble, false);
+		space.solid_set(Point3D::create(5, 5, 1), marble, false);
+		space.solid_set(Point3D::create(5, 7, 1), marble, false);
 		ActorIndex dwarf1 = actors.create({
 			.species=AnimalSpecies::byName("dwarf"),
 			.location=origin1,
@@ -114,11 +114,11 @@ TEST_CASE("leadAndFollow")
 	}
 	SUBCASE("wait for follower to keep up if blocked temporarily")
 	{
-		BlockIndex leaderOrigin = blocks.getIndex_i(1, 2, 1);
-		BlockIndex followerOrigin = blocks.getIndex_i(1, 1, 1);
-		BlockIndex blockerOrigin = blocks.getIndex_i(2, 2, 1);
-		BlockIndex destination1 = blocks.getIndex_i(1, 8, 1);
-		BlockIndex destination2 = blocks.getIndex_i(1, 7, 1);
+		Point3D leaderOrigin = Point3D::create(1, 2, 1);
+		Point3D followerOrigin = Point3D::create(1, 1, 1);
+		Point3D blockerOrigin = Point3D::create(2, 2, 1);
+		Point3D destination1 = Point3D::create(1, 8, 1);
+		Point3D destination2 = Point3D::create(1, 7, 1);
 		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.location=leaderOrigin,
@@ -146,10 +146,10 @@ TEST_CASE("leadAndFollow")
 		CHECK(actors.getLocation(troll1) == followerOrigin);
 		CHECK(actors.move_getRetries(dwarf1) == 1);
 		CHECK(actors.move_hasEvent(dwarf1));
-		CHECK(!blocks.shape_canEnterCurrentlyFrom(leaderOrigin, actors.getShape(troll1), actors.getLocation(troll1), actors.lineLead_getOccupiedPoints(dwarf1)));
-		const BlockIndex& toMoveTo = blocks.getIndex_i(9, 1, 1);
+		CHECK(!space.shape_canEnterCurrentlyFrom(leaderOrigin, actors.getShape(troll1), actors.getLocation(troll1), actors.lineLead_getOccupiedPoints(dwarf1)));
+		const Point3D& toMoveTo = Point3D::create(9, 1, 1);
 		actors.location_set(dwarf2, toMoveTo, Facing4::North);
-		CHECK(blocks.shape_canEnterCurrentlyFrom(leaderOrigin, actors.getShape(troll1), actors.getLocation(troll1), actors.lineLead_getOccupiedPoints(dwarf1)));
+		CHECK(space.shape_canEnterCurrentlyFrom(leaderOrigin, actors.getShape(troll1), actors.getLocation(troll1), actors.lineLead_getOccupiedPoints(dwarf1)));
 		CHECK(actors.move_hasEvent(dwarf1));
 		Step delay = actors.move_stepsTillNextMoveEvent(dwarf1);
 		simulation.fastForward(delay);
@@ -160,9 +160,9 @@ TEST_CASE("leadAndFollow")
 	}
 	SUBCASE("repath if follower blocked permanantly")
 	{
-		BlockIndex origin1 = blocks.getIndex_i(2, 2, 1);
-		BlockIndex origin2 = blocks.getIndex_i(1, 1, 1);
-		BlockIndex destination1 = blocks.getIndex_i(8, 8, 1);
+		Point3D origin1 = Point3D::create(2, 2, 1);
+		Point3D origin2 = Point3D::create(1, 1, 1);
+		Point3D destination1 = Point3D::create(8, 8, 1);
 		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.location=origin1,
@@ -174,8 +174,8 @@ TEST_CASE("leadAndFollow")
 		actors.followActor(troll1, dwarf1);
 		actors.move_setDestination(dwarf1, destination1);
 		simulation.doStep();
-		BlockIndex firstStep = actors.move_getPath(dwarf1).back();
-		blocks.solid_set(firstStep, marble, false);
+		Point3D firstStep = actors.move_getPath(dwarf1).back();
+		space.solid_set(firstStep, marble, false);
 		Step stepsTillMoveEvent = actors.move_stepsTillNextMoveEvent(dwarf1);
 		//TODO: why minus 1? is steps till next move event wrong?
 		simulation.fastForward(stepsTillMoveEvent - 1);

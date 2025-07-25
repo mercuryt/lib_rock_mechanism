@@ -10,6 +10,7 @@
 #include "../items/items.h"
 #include "../plants.h"
 #include "../portables.hpp"
+#include "../dataStructures/rtreeData.hpp"
 #include <string>
 
 Space::Space(Area& area, const Distance& x, const Distance& y, const Distance& z) :
@@ -22,11 +23,14 @@ Space::Space(Area& area, const Distance& x, const Distance& y, const Distance& z
 	m_sizeY(y),
 	m_sizeZ(z),
 	m_zLevelSize(x.get() * y.get())
-{ }
+{
+	m_exposedToSky.initalize(Cuboid{Point3D(x - 1, y - 1, z - 1), Point3D::create(0,0,0)});
+}
 void Space::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	data["solid"].get_to(m_solid);
 	data["features"].get_to(m_features);
+	data["exposedToSky"].get_to(m_exposedToSky);
 	for(const Json& pair : data["fluid"])
 	{
 		Cuboid cuboid = pair[0].get<Cuboid>();
@@ -42,7 +46,7 @@ void Space::load(const Json& data, DeserializationMemo& deserializationMemo)
 		deserializationMemo.m_reservables[pair[1].get<uintptr_t>()] = reservable.get();
 		m_reservables.insert(cuboid, std::move(reservable));
 	}
-	Cuboid cuboid = getAll();
+	Cuboid cuboid = boundry();
 	for(const Point3D& point : cuboid)
 		m_area.m_opacityFacade.update(m_area, point);
 }
@@ -58,22 +62,26 @@ Json Space::toJson() const
 		{"mist", m_mist},
 		{"mistInverseDistanceFromSource", m_mistInverseDistanceFromSource},
 		{"reservables", Json::array()},
+		{"exposedToSky", m_exposedToSky}
 	};
-	for(const auto& [cuboid, reservablePtr] : m_reservables.queryGetAllWithCuboids(getAll()))
-		output["reservables"].push_back(std::pair(cuboid, reinterpret_cast<uintptr_t>(reservablePtr->get())));
-	for(const auto& [cuboid, fluids] : m_fluid.queryGetAllWithCuboids(getAll()))
-		output["fluid"].push_back(std::pair(cuboid, *fluids));
+	for(const auto& [data, cuboid] : m_reservables.queryGetAllWithCuboids(boundry()))
+		output["reservables"].push_back(std::pair(cuboid, reinterpret_cast<uintptr_t>(&data)));
+	for(const auto& [fluids, cuboid] : m_fluid.queryGetAllWithCuboids(boundry()))
+		output["fluid"].push_back(std::pair(cuboid, fluids));
 	return output;
 }
-Cuboid Space::getAll() const
+Cuboid Space::boundry() const
 {
-	return Cuboid(Point3D(m_dimensions), Point3D::create(0,0,0));
+	auto top = Point3D(m_dimensions - 1);
+	return Cuboid(top, Point3D::create(0,0,0));
 }
 Point3D Space::getCenterAtGroundLevel() const
 {
-	Point3D center(m_sizeX / 2, m_sizeY  / 2, m_sizeZ - 1);
+	Point3D center(m_sizeX / 2, m_sizeY / 2, m_sizeZ - 1);
+	if(center.z() == 0)
+		return center;
 	Point3D below = center.below();
-	while(!solid_is(below))
+	while(!solid_is(below) && below.z() != 0)
 	{
 		below = below.below();
 		center = below;
@@ -84,8 +92,8 @@ SmallSet<Point3D> Space::getAdjacentWithEdgeAndCornerAdjacent(const Point3D& poi
 {
 	SmallSet<Point3D> output;
 	output.reserve(26);
-	Cuboid cuboid = {Point3D(point.data + 1), Point3D(point.data - 1)};
-	cuboid = cuboid.intersection(getAll());
+	Cuboid cuboid = {Point3D(point.data + 1), point.subtractWithMinimum(Distance::create(1))};
+	cuboid = cuboid.intersection(boundry());
 	for(const Point3D& adjacent : cuboid)
 		if(adjacent != point)
 			output.insert(adjacent);
@@ -93,20 +101,28 @@ SmallSet<Point3D> Space::getAdjacentWithEdgeAndCornerAdjacent(const Point3D& poi
 }
 SmallSet<Point3D> Space::getDirectlyAdjacent(const Point3D& point) const
 {
+	assert(boundry().contains(point));
 	SmallSet<Point3D> output;
-	Cuboid cuboid(point, point);
-	cuboid = cuboid.inflateAdd(Distance::create(1));
-	for(const Point3D& adjacent : cuboid)
-		if(point != adjacent)
-			output.insert(adjacent);
+	if(point.x() != 0)
+		output.insert(point.west());
+	if(point.y() != 0)
+		output.insert(point.north());
+	if(point.z() != 0)
+		output.insert(point.below());
+	if(point.x() != m_sizeX - 1)
+		output.insert(point.east());
+	if(point.y() != m_sizeY - 1)
+		output.insert(point.south());
+	if(point.z() != m_sizeZ - 1)
+		output.insert(point.above());
 	return output;
 }
 SmallSet<Point3D> Space::getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const Point3D& point) const
 {
 	SmallSet<Point3D> output;
 	output.reserve(24);
-	Cuboid cuboid = {Point3D(point.data + 1), Point3D(point.data - 1)};
-	cuboid = cuboid.intersection(getAll());
+	Cuboid cuboid = {Point3D(point.data + 1), point.subtractWithMinimum(Distance::create(1))};
+	cuboid = cuboid.intersection(boundry());
 	for(const Point3D& adjacent : cuboid)
 		if(adjacent.x() != point.x() || adjacent.y() != point.x())
 			output.insert(adjacent);
@@ -144,14 +160,17 @@ SmallSet<Point3D> Space::getAdjacentOnSameZLevelOnly(const Point3D& point) const
 }
 SmallSet<Point3D> Space::getNthAdjacent(const Point3D& point, const Distance& n)
 {
-	while(n + 1 > m_indexOffsetsForNthAdjacent.size())
+	const Cuboid spaceBoundry = boundry();
+	const auto& offsets = getNthAdjacentOffsets(n.get());
+	SmallSet<Point3D> output;
+	const Offset3D pointOffset = point.toOffset();
+	for(const Offset3D& offset : offsets)
 	{
-		SmallSet<Point3D> offsetSet;
-		for(const Offset3D& offset : getNthAdjacentOffsets(m_indexOffsetsForNthAdjacent.size()))
-			offsetSet.insert(point.applyOffset(offset));
-		m_indexOffsetsForNthAdjacent.push_back(offsetSet);
+		Offset3D combined = pointOffset + offset;
+		if(spaceBoundry.contains(combined))
+			output.insert(Point3D::create(combined));
 	}
-	return m_indexOffsetsForNthAdjacent[n.get()];
+	return output;
 }
 bool Space::isAdjacentToActor(const Point3D& point, const ActorIndex& actor) const
 {
@@ -172,10 +191,14 @@ void Space::setExposedToSky(const Point3D& point, bool exposed)
 }
 void Space::setBelowVisible(const Point3D& point)
 {
+	if(point.z() == 0)
+		return;
 	Point3D below = point.below();
-	while(below.exists() && canSeeThroughFrom(below, below.above()) && !m_visible.query(below))
+	while(canSeeThroughFrom(below, below.above()) && !m_visible.query(below))
 	{
 		m_visible.maybeInsert(below);
+		if(below.z() == 0)
+			break;
 		below = below.below();
 	}
 }
@@ -287,6 +310,10 @@ bool Space::isEdge(const Point3D& point) const
 bool Space::hasLineOfSightTo(const Point3D& point, const Point3D& other) const
 {
 	return m_area.m_opacityFacade.hasLineOfSight(point, other);
+}
+Cuboid Space::getZLevel(const Distance& z)
+{
+	return Cuboid({m_sizeX - 1, m_sizeY - 1, z}, {Distance::create(0), Distance::create(0), z});
 }
 SmallSet<Point3D> Space::collectAdjacentsInRange(const Point3D& point, const Distance& range)
 {

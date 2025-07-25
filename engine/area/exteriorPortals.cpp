@@ -42,7 +42,6 @@ void AreaHasExteriorPortals::unsetDistance(Space& space, const Point3D& point)
 void AreaHasExteriorPortals::add(Area& area, const Point3D& point, Distance distance )
 {
 	Space& space = area.getSpace();
-	assert(space.temperature_transmits(point));
 	assert(!space.isExposedToSky(point));
 	// Distance might already be set if we are regenerating after removing.
 	if(m_distances.queryGetOne(point) != distance)
@@ -78,7 +77,7 @@ void AreaHasExteriorPortals::remove(Area& area, const Point3D& point)
 	SmallSet<Point3D> nextSet;
 	previousSet.insert(point);
 	currentSet.insert(point);
-	// Record space created by to other portals, they will be used to regenerate some of the cleared space.
+	// Record distances created by other portals, they will be used to regenerate some of the cleared space.
 	SmallSet<Point3D> regenerateFrom;
 	while(distance <= Config::maxDepthExteriorPortalPenetration)
 	{
@@ -88,7 +87,8 @@ void AreaHasExteriorPortals::remove(Area& area, const Point3D& point)
 			// Record in regenerateFrom instead of unsetting.
 			if(m_distances.queryGetOne(current) < distance)
 			{
-				if(m_distances.queryGetOne(current) != Config::maxDepthExteriorPortalPenetration && !previousSet.contains(current))
+				const Distance& currentDistance = m_distances.queryGetOne(current);
+				if(space.temperature_transmits(current) && currentDistance != Config::maxDepthExteriorPortalPenetration && !previousSet.contains(current))
 					regenerateFrom.insert(current);
 				continue;
 			}

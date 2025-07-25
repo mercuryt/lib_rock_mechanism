@@ -1,7 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
-#include "../../engine/blocks/blocks.h"
+#include "../../engine/space/space.h"
 #include "../../engine/plants.h"
 #include "../../engine/area/area.h"
 #include "../../engine/areaBuilderUtil.h"
@@ -33,14 +33,14 @@ TEST_CASE("haul")
 	static ItemTypeId panniers = ItemType::byName("panniers");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	FactionId faction = simulation.createFaction("Tower Of Power");
 	ActorIndex dwarf1 = actors.create({
 		.species=dwarf,
-		.location=blocks.getIndex_i(1, 1, 2),
+		.location=Point3D::create(1, 1, 2),
 		.faction=faction,
 		.hasCloths=false,
 		.hasSidearm=false
@@ -49,27 +49,27 @@ TEST_CASE("haul")
 	CHECK(!actors.canPickUp_exists(dwarf1));
 	SUBCASE("canPickup")
 	{
-		BlockIndex chunkLocation = blocks.getIndex_i(1, 2, 2);
+		Point3D chunkLocation = Point3D::create(1, 2, 2);
 		ItemIndex boulder1 = items.create({.itemType=boulder, .materialType=marble, .location=chunkLocation, .quantity=Quantity::create(1)});
-		ItemIndex boulder2 = items.create({.itemType=boulder, .materialType=lead, .location=blocks.getIndex_i(6,2,2), .quantity=Quantity::create(1)});
+		ItemIndex boulder2 = items.create({.itemType=boulder, .materialType=lead, .location=Point3D::create(6,2,2), .quantity=Quantity::create(1)});
 		CHECK(actors.canPickUp_item(dwarf1, boulder1));
 		CHECK(!actors.canPickUp_item(dwarf1, boulder2));
 		actors.canPickUp_pickUpItem(dwarf1, boulder1);
 		CHECK(items.getLocation(boulder1).empty());
-		BlockIndex destination = blocks.getIndex_i(5, 5, 2);
+		Point3D destination = Point3D::create(5, 5, 2);
 		actors.move_setDestinationAdjacentToLocation(dwarf1, destination);
 		simulation.doStep();
 		CHECK(!actors.move_getPath(dwarf1).empty());
 		while(!actors.isAdjacentToLocation(dwarf1, destination))
 			simulation.doStep();
 		CHECK(actors.canPickUp_tryToPutDownItem(dwarf1, destination).exists());
-		CHECK(blocks.item_getCount(destination, boulder, marble) == 1);
+		CHECK(space.item_getCount(destination, boulder, marble) == 1);
 		CHECK(items.getLocation(boulder1).exists());
 		CHECK(items.getLocation(boulder1) == destination);
 	}
 	SUBCASE("has haul tools")
 	{
-		BlockIndex cartLocation = blocks.getIndex_i(1, 2, 2);
+		Point3D cartLocation = Point3D::create(1, 2, 2);
 		items.create({
 			.itemType=cart,
 			.materialType=poplarWood,
@@ -83,8 +83,8 @@ TEST_CASE("haul")
 	}
 	SUBCASE("individual haul strategy")
 	{
-		BlockIndex destination = blocks.getIndex_i(5, 5, 2);
-		BlockIndex chunkLocation = blocks.getIndex_i(1, 5, 2);
+		Point3D destination = Point3D::create(5, 5, 2);
+		Point3D chunkLocation = Point3D::create(1, 5, 2);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=marble, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		ActorOrItemIndex cargo = ActorOrItemIndex::createForItem(chunk1);
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(SmallSet<ActorIndex>({dwarf1}), cargo, destination);
@@ -107,18 +107,18 @@ TEST_CASE("haul")
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
-		CHECK(blocks.item_getCount(destination, chunk, marble) == 1);
+		CHECK(space.item_getCount(destination, chunk, marble) == 1);
 		CHECK(!actors.canPickUp_exists(dwarf1));
 		CHECK(actors.objective_getCurrentName(dwarf1) != "haul");
 		CHECK(!cargo.reservable_hasAny(area));
 	}
 	SUBCASE("hand cart haul strategy")
 	{
-		BlockIndex destination = blocks.getIndex_i(5, 5, 2);
-		BlockIndex chunkLocation = blocks.getIndex_i(1, 5, 2);
+		Point3D destination = Point3D::create(5, 5, 2);
+		Point3D chunkLocation = Point3D::create(1, 5, 2);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInital) == 0);
-		BlockIndex cartLocation = blocks.getIndex_i(7, 7, 2);
+		Point3D cartLocation = Point3D::create(7, 7, 2);
 		ItemIndex cart = items.create({.itemType=ItemType::byName("cart"), .materialType=MaterialType::byName("poplar wood"), .location=cartLocation, .quality=Quality::create(50u), .percentWear=Percent::create(0)});
 		ActorOrItemIndex polymorphicChunk1 = ActorOrItemIndex::createForItem(chunk1);
 		CHECK(HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(area, dwarf1, cart, polymorphicChunk1, Config::minimumHaulSpeedInital) > 0);
@@ -148,7 +148,7 @@ TEST_CASE("haul")
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
-		CHECK(blocks.item_getCount(destination, chunk, gold) == 1);
+		CHECK(space.item_getCount(destination, chunk, gold) == 1);
 		CHECK(!actors.canPickUp_exists(dwarf1));
 		CHECK(!items.cargo_exists(cart));
 		CHECK(!items.reservable_isFullyReserved(cart, faction));
@@ -156,14 +156,14 @@ TEST_CASE("haul")
 	}
 	SUBCASE("team haul strategy")
 	{
-		BlockIndex destination = blocks.getIndex_i(8, 8, 2);
-		BlockIndex chunkLocation = blocks.getIndex_i(1, 5, 2);
+		Point3D destination = Point3D::create(8, 8, 2);
+		Point3D chunkLocation = Point3D::create(1, 5, 2);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		ActorOrItemIndex cargo = ActorOrItemIndex::createForItem(chunk1);
 		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInital) == 0);
 		ActorIndex dwarf2 = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(1, 2, 2),
+			.location=Point3D::create(1, 2, 2),
 			.faction=faction,
 		});
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(SmallSet<ActorIndex>({dwarf1, dwarf2}), cargo, destination);
@@ -201,7 +201,7 @@ TEST_CASE("haul")
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, leader, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
-		CHECK(blocks.item_getCount(destination, chunk, gold) == 1);
+		CHECK(space.item_getCount(destination, chunk, gold) == 1);
 		CHECK(!actors.isFollowing(follower));
 		CHECK(!actors.isLeadingActor(leader, follower));
 		CHECK(actors.objective_getCurrentName(dwarf1) != "haul");
@@ -209,19 +209,19 @@ TEST_CASE("haul")
 	}
 	SUBCASE("panniers haul strategy")
 	{
-		BlockIndex destination = blocks.getIndex_i(8, 8, 2);
-		BlockIndex chunkLocation = blocks.getIndex_i(1, 5, 2);
+		Point3D destination = Point3D::create(8, 8, 2);
+		Point3D chunkLocation = Point3D::create(1, 5, 2);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		ActorOrItemIndex cargo = ActorOrItemIndex::createForItem(chunk1);
 		ActorOrItemReference cargoRef = cargo.toReference(area);
 		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInital) == 0);
-		BlockIndex donkeyLocation = blocks.getIndex_i(1, 2, 2);
+		Point3D donkeyLocation = Point3D::create(1, 2, 2);
 		ActorIndex donkey1 = actors.create({
 			.species=donkey,
 			.location=donkeyLocation,
 		});
 		area.m_hasHaulTools.registerYokeableActor(area, donkey1);
-		BlockIndex panniersLocation = blocks.getIndex_i(5, 1, 2);
+		Point3D panniersLocation = Point3D::create(5, 1, 2);
 		ItemIndex panniers1 = items.create({.itemType=panniers, .materialType=poplarWood, .location=panniersLocation, .quality=Quality::create(3u), .percentWear=Percent::create(0)});
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(SmallSet<ActorIndex>({dwarf1}), cargo, destination);
 		// One step to activate the project and make reservations.
@@ -252,19 +252,19 @@ TEST_CASE("haul")
 		CHECK(items.cargo_containsPolymorphic(panniers1, cargo));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
-		CHECK(blocks.item_getCount(destination, chunk, gold) == 1);
+		CHECK(space.item_getCount(destination, chunk, gold) == 1);
 		CHECK(!actors.reservable_isFullyReserved(donkey1, faction));
 		CHECK(actors.objective_getCurrentName(dwarf1) != "haul");
 	}
 	SUBCASE("panniers area already equiped haul strategy")
 	{
-		BlockIndex destination = blocks.getIndex_i(8, 8, 2);
-		BlockIndex chunkLocation = blocks.getIndex_i(1, 5, 2);
+		Point3D destination = Point3D::create(8, 8, 2);
+		Point3D chunkLocation = Point3D::create(1, 5, 2);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		ActorOrItemIndex cargo = ActorOrItemIndex::createForItem(chunk1);
 		ActorOrItemReference cargoRef = cargo.toReference(area);
 		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInital) == 0);
-		BlockIndex donkeyLocation = blocks.getIndex_i(1, 3, 2);
+		Point3D donkeyLocation = Point3D::create(1, 3, 2);
 		ActorIndex donkey1 = actors.create({
 			.species=donkey,
 			.location=donkeyLocation,
@@ -298,23 +298,23 @@ TEST_CASE("haul")
 		CHECK(items.cargo_containsPolymorphic(panniers1, cargo));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
-		CHECK(blocks.item_getCount(destination, chunk, gold) == 1);
+		CHECK(space.item_getCount(destination, chunk, gold) == 1);
 		CHECK(!actors.reservable_isFullyReserved(donkey1, faction));
 		CHECK(actors.objective_getCurrentName(dwarf1) != "haul");
 	}
 	SUBCASE("animal cart haul strategy")
 	{
-		BlockIndex destination = blocks.getIndex_i(5, 5, 2);
-		BlockIndex boulderLocation = blocks.getIndex_i(1, 5, 2);
+		Point3D destination = Point3D::create(5, 5, 2);
+		Point3D boulderLocation = Point3D::create(1, 5, 2);
 		ItemIndex boulder1 = items.create({.itemType=boulder, .materialType=lead, .location=boulderLocation, .quantity=Quantity::create(1u)});
 		ActorOrItemIndex cargo = ActorOrItemIndex::createForItem(boulder1);
-		BlockIndex donkeyLocation = blocks.getIndex_i(4, 3, 2);
+		Point3D donkeyLocation = Point3D::create(4, 3, 2);
 		ActorIndex donkey1 = actors.create({
 			.species=donkey,
 			.location=donkeyLocation,
 		});
 		area.m_hasHaulTools.registerYokeableActor(area, donkey1);
-		BlockIndex cartLocation = blocks.getIndex_i(5, 1, 2);
+		Point3D cartLocation = Point3D::create(5, 1, 2);
 		ItemIndex cart1 = items.create({.itemType=cart, .materialType=poplarWood, .location=cartLocation, .quality=Quality::create(3u), .percentWear=Percent::create(0)});
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(SmallSet<ActorIndex>({dwarf1}), cargo, destination);
 		// One step to activate the project and make reservations.
@@ -341,24 +341,24 @@ TEST_CASE("haul")
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
-		CHECK(blocks.item_getCount(destination, boulder, lead) == 1);
+		CHECK(space.item_getCount(destination, boulder, lead) == 1);
 		CHECK(!actors.reservable_isFullyReserved(donkey1, faction));
 		CHECK(actors.objective_getCurrentName(dwarf1) != "haul");
 	}
 	SUBCASE("team hand cart haul strategy")
 	{
-		BlockIndex destination = blocks.getIndex_i(9, 9, 2);
-		BlockIndex cargoLocation = blocks.getIndex_i(1, 7, 2);
+		Point3D destination = Point3D::create(9, 9, 2);
+		Point3D cargoLocation = Point3D::create(1, 7, 2);
 		ItemIndex cargo1 = items.create({.itemType=boulder, .materialType=iron, .location=cargoLocation});
 		ActorOrItemIndex cargo = ActorOrItemIndex::createForItem(cargo1);
-		BlockIndex origin2 = blocks.getIndex_i(4, 3, 2);
+		Point3D origin2 = Point3D::create(4, 3, 2);
 		ActorIndex dwarf2 = actors.create({
 			.species=dwarf,
 			.location=origin2,
 			.faction=faction,
 		});
 		ActorReference dwarf2Ref = actors.m_referenceData.getReference(dwarf2);
-		BlockIndex cartLocation = blocks.getIndex_i(7, 1, 2);
+		Point3D cartLocation = Point3D::create(7, 1, 2);
 		ItemIndex cart1 = items.create({.itemType=cart, .materialType=poplarWood, .location=cartLocation, .quality=Quality::create(3u), .percentWear=Percent::create(0)});
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(SmallSet<ActorIndex>({dwarf1, dwarf2}), cargo, destination);
 		// One step to activate the project and make reservations.
@@ -377,8 +377,8 @@ TEST_CASE("haul")
 		if(actors.move_getPath(dwarf1).empty() || actors.move_getPath(dwarf2).empty())
 			// The two dwarves pathed to the same place, one needs to repath.
 			simulation.doStep();
-		BlockIndex destination1 = actors.move_getDestination(dwarf1);
-		BlockIndex destination2 = actors.move_getDestination(dwarf2);
+		Point3D destination1 = actors.move_getDestination(dwarf1);
+		Point3D destination2 = actors.move_getDestination(dwarf2);
 		CHECK(destination1.exists());
 		CHECK(destination2.exists());
 		CHECK(items.isAdjacentToLocation(cart1, destination1));
@@ -398,7 +398,7 @@ TEST_CASE("haul")
 		simulation.doStep();
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, destination);
 		simulation.fastForward(Config::addToStockPileDelaySteps);
-		CHECK(blocks.item_getCount(destination, boulder, iron) == 1);
+		CHECK(space.item_getCount(destination, boulder, iron) == 1);
 		CHECK(!items.reservable_isFullyReserved(cart1, faction));
 		CHECK(!actors.isLeadingItem(dwarf1, cart1));
 		CHECK(!actors.isFollowing(dwarf2));
@@ -406,8 +406,8 @@ TEST_CASE("haul")
 	}
 	SUBCASE("individual haul actor")
 	{
-		BlockIndex destination = blocks.getIndex_i(5, 5, 2);
-		BlockIndex cargoOrigin = blocks.getIndex_i(1, 5, 2);
+		Point3D destination = Point3D::create(5, 5, 2);
+		Point3D cargoOrigin = Point3D::create(1, 5, 2);
 		ActorIndex dwarf2 = actors.create({
 			.species=dwarf,
 			.percentGrown=Percent::create(30),

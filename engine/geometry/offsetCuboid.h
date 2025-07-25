@@ -1,11 +1,11 @@
+#pragma once
 #include "point3D.h"
 // TODO: Share code with Cuboid?
 
-class OffsetCuboid
+struct OffsetCuboid
 {
 	Offset3D m_high;
 	Offset3D m_low;
-public:
 	OffsetCuboid() = default;
 	OffsetCuboid(const Offset3D& high, const Offset3D& low);
 	OffsetCuboid(const OffsetCuboid& other) = default;

@@ -35,7 +35,7 @@ Step DateTime::toSteps(uint8_t hour, uint16_t day, uint16_t year)
 uint8_t DateTime::toSeason(Step step)
 {
 	DateTime dateTime(step);
-	uint8_t output =  float(dateTime.day - 1) / ((float)Config::daysPerYear / 4.f);
+	uint8_t output = float(dateTime.day - 1) / ((float)Config::daysPerYear / 4.f);
 	assert(output >= 0);
 	assert(output < 4);
 	return output;

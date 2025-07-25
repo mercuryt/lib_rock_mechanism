@@ -154,7 +154,7 @@ ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(Area
 }
 ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(Area& area, const Point3D& point, const ActorIndex& actor)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	if(!space.designation_has(point, actors.getFaction(actor), SpaceDesignation::Construct))
 		return nullptr;
@@ -167,7 +167,7 @@ ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(Area& area, 
 }
 bool ConstructObjective::joinableProjectExistsAt(Area& area, const Point3D& point, const ActorIndex& actor) const
 {
-	[[maybe_unused]] Space& space =  area.getSpace();
+	[[maybe_unused]] Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	assert(space.designation_has(point, actors.getFaction(actor), SpaceDesignation::Construct));
 	ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFaction(actor), point);

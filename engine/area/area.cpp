@@ -2,20 +2,21 @@
 * A game map made up of Space arranged in a cuboid with dimensions x, y, z.
 */
 
-#include "area/area.h"
-#include "space/space.h"
-#include "actors/actors.h"
-#include "items/items.h"
-#include "plants.h"
-#include "config.h"
-#include "deserializationMemo.h"
-#include "fire.h"
-#include "fluidType.h"
-#include "reference.h"
-#include "simulation/simulation.h"
-#include "simulation/hasAreas.h"
-#include "numericTypes/types.h"
-#include "portables.hpp"
+#include "area.h"
+#include "../space/space.h"
+#include "../actors/actors.h"
+#include "../items/items.h"
+#include "../plants.h"
+#include "../config.h"
+#include "../deserializationMemo.h"
+#include "../fire.h"
+#include "../fluidType.h"
+#include "../reference.h"
+#include "../simulation/simulation.h"
+#include "../simulation/hasAreas.h"
+#include "../numericTypes/types.h"
+#include "../dataStructures/rtreeData.hpp"
+#include "../portables.hpp"
 //#include "worldforge/worldLocation.h"
 #include <algorithm>
 #include <iostream>
@@ -26,12 +27,12 @@
 
 Area::Area(AreaId id, std::string n, Simulation& s, const Distance& x, const Distance& y, const Distance& z) :
 	#ifndef NDEBUG
-		m_points(std::make_unique<Space>(*this, x, y, z)),
+		m_space(std::make_unique<Space>(*this, x, y, z)),
 		m_actors(std::make_unique<Actors>(*this)),
 		m_plants(std::make_unique<Plants>(*this)),
 		m_items(std::make_unique<Items>(*this)),
 	#else
-		m_points(*this, x, y, z),
+		m_space(*this, x, y, z),
 		m_actors(*this),
 		m_plants(*this),
 		m_items(*this),
@@ -66,7 +67,7 @@ Area::Area(AreaId id, std::string n, Simulation& s, const Distance& x, const Dis
 }
 Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation) :
 	#ifndef NDEBUG
-		m_points(std::make_unique<Space>(*this, data["space"]["x"].get<Distance>(), data["space"]["y"].get<Distance>(), data["space"]["z"].get<Distance>())),
+		m_space(std::make_unique<Space>(*this, data["space"]["x"].get<Distance>(), data["space"]["y"].get<Distance>(), data["space"]["z"].get<Distance>())),
 		m_actors(std::make_unique<Actors>(*this)),
 		m_plants(std::make_unique<Plants>(*this)),
 		m_items(std::make_unique<Items>(*this)),
@@ -143,9 +144,6 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 
 	// Load fluid sources.
 	m_fluidSources.load(data["fluidSources"], deserializationMemo);
-	// Load caveInCheck
-	for(const Json& point : data["caveInCheck"])
-		m_caveInCheck.insert(point.get<Point3D>());
 	// Load rain.
 	if(data.contains("rain"))
 		m_hasRain.load(data["rain"], deserializationMemo);
@@ -171,8 +169,8 @@ Json Area::toJson() const
 		{"id", m_id}, {"name", m_name},
 		{"actors", getActors().toJson()}, {"items", getItems().toJson()}, {"space", getSpace().toJson()},
 		{"plants", getPlants().toJson()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires.toJson()},
-		{"sleepingSpots", m_hasSleepingSpots.toJson()}, {"caveInCheck", Json::array()}, {"rain", m_hasRain.toJson()},
-		{"designations", m_spaceDesignations.toJson()}
+		{"sleepingSpots", m_hasSleepingSpots.toJson()}, {"rain", m_hasRain.toJson()},
+		{"designations", m_spaceDesignations}
 	};
 	data["hasFarmFields"] = m_hasFarmFields.toJson();
 	data["hasSleepingSpots"] = m_hasSleepingSpots.toJson();
@@ -184,8 +182,6 @@ Json Area::toJson() const
 	data["targetedHauling"] = m_hasTargetedHauling.toJson();
 	data["visionCuboids"] = m_visionCuboids;
 	data["exteriorPortals"] = m_exteriorPortals;
-	for(Point3D point : m_caveInCheck)
-		data["caveInCheck"].push_back(point);
 	m_opacityFacade.validate(*this);
 	return data;
 }
@@ -196,7 +192,8 @@ void Area::setup()
 void Area::doStep()
 {
 	m_hasFluidGroups.doStep();
-	doStepCaveIn();
+	Space& space = getSpace();
+	space.doSupportStep();
 	m_hasTemperature.doStep();
 	if(m_hasRain.isRaining() && m_simulation.m_step.modulusIsZero(Config::rainWriteStepFreqency))
 		m_hasRain.doStep();
@@ -216,7 +213,7 @@ void Area::updateClimate()
 	if(m_simulation.m_step.modulusIsZero(Config::stepsPerDay))
 	{
 		uint16_t day = DateTime(m_simulation.m_step).day;
-		Plants& plants  = getPlants();
+		Plants& plants = getPlants();
 		for(auto plant : plants.getAll())
 			plants.setDayOfYear(plant, day);
 		m_hasFarmFields.setDayOfYear(day);

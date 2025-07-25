@@ -1,7 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
-#include "../../engine/blocks/blocks.h"
+#include "../../engine/space/space.h"
 #include "../../engine/plants.h"
 #include "../../engine/area/area.h"
 #include "../../engine/areaBuilderUtil.h"
@@ -25,28 +25,28 @@ TEST_CASE("equip and unequip")
 	MaterialTypeId marble = MaterialType::byName("marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	BlockIndex destination = blocks.getIndex_i(8,2,1);
+	Point3D destination = Point3D::create(8,2,1);
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	ActorIndex dwarf1 = actors.create({
 		.species=AnimalSpecies::byName("dwarf"),
-		.location=blocks.getIndex_i(1, 1, 1),
+		.location=Point3D::create(1, 1, 1),
 		.hasCloths=false,
 		.hasSidearm=false
 	});
-	BlockIndex swordLocation = blocks.getIndex_i(8,8,1);
+	Point3D swordLocation = Point3D::create(8,8,1);
 	ItemIndex longsword = items.create({.itemType=ItemType::byName("long sword"), .materialType=MaterialType::byName("bronze"), .location=swordLocation, .quality=Quality::create(20), .percentWear=Percent::create(10)});
 	ItemReference longswordRef = items.m_referenceData.getReference(longsword);
-	CHECK(items.getBlocks(longsword).size() == 1);
-	CHECK(items.getBlocks(longsword).front() == swordLocation);
+	CHECK(items.getOccupied(longsword).size() == 1);
+	CHECK(items.getOccupied(longsword).front() == swordLocation);
 	std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(longswordRef);
 	actors.objective_addTaskToStart(dwarf1, std::move(objective));
 	CHECK(actors.move_hasPathRequest(dwarf1));
 	simulation.doStep();
 	simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, swordLocation);
-	CHECK(blocks.item_empty(swordLocation));
+	CHECK(space.item_empty(swordLocation));
 	CHECK(actors.equipment_containsItem(dwarf1, longsword));
 	CHECK(actors.getActionDescription(dwarf1) != "equip");
 	std::unique_ptr<Objective> objective2 = std::make_unique<UnequipItemObjective>(longswordRef, destination);
@@ -62,19 +62,18 @@ TEST_CASE("give item")
 	MaterialTypeId marble = MaterialType::byName("marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
-	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	ActorIndex dwarf1 = actors.create({
 		.species=AnimalSpecies::byName("dwarf"),
-		.location=blocks.getIndex_i(1, 1, 1),
+		.location=Point3D::create(1, 1, 1),
 		.hasCloths=false,
 		.hasSidearm=false
 	});
 	ActorIndex dwarf2 = actors.create({
 		.species=AnimalSpecies::byName("dwarf"),
-		.location=blocks.getIndex_i(6, 6, 1),
+		.location=Point3D::create(6, 6, 1),
 		.hasCloths=false,
 		.hasSidearm=false
 	});

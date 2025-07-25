@@ -143,7 +143,7 @@ void DigObjective::joinProject(DigProject& project, const ActorIndex& actor)
 }
 DigProject* DigObjective::getJoinableProjectAt(Area& area, Point3D point, const ActorIndex& actor)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFaction(actor);
 	if(!space.designation_has(point, faction, SpaceDesignation::Dig))
@@ -157,7 +157,7 @@ DigProject* DigObjective::getJoinableProjectAt(Area& area, Point3D point, const 
 }
 bool DigObjective::joinableProjectExistsAt(Area& area, Point3D point, const ActorIndex& actor) const
 {
-	[[maybe_unused]] Space& space =  area.getSpace();
+	[[maybe_unused]] Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFaction(actor);
 	assert(space.designation_has(point, faction, SpaceDesignation::Dig));

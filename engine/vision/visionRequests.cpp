@@ -23,7 +23,7 @@ void VisionRequests::create(const ActorReference& actor)
 	assert(actors.vision_canSeeAnything(index));
 	const Point3D& location = actors.getLocation(index);
 	const VisionCuboidId& visionCuboidIndex = m_area.m_visionCuboids.getVisionCuboidIndexForPoint(location);
-	m_data.emplace(location, location, visionCuboidIndex, actor, actors.vision_getRange(index), actors.getFacing(index), actors.getOccupied(index));
+	m_data.emplace(location, visionCuboidIndex, actor, actors.vision_getRange(index), actors.getFacing(index), actors.getOccupied(index));
 	if(m_data.back().range > m_largestRange)
 		m_largestRange = m_data.back().range;
 }
@@ -45,7 +45,7 @@ void VisionRequests::cancelIfExists(const ActorReference& actor)
 	else if(largestRange)
 		m_largestRange = std::max_element(m_data.begin(), m_data.end(), [](const VisionRequest& a, const VisionRequest& b) { return a.actor < b.actor; })->range;
 }
-void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
+void VisionRequests::readStepSegment(const uint& begin, const uint& end)
 {
 	for(auto iter = m_data.begin() + begin; iter != m_data.begin() + end; ++iter)
 	{
@@ -57,7 +57,7 @@ void VisionRequests::readStepSegment(const uint& begin,  const uint& end)
 		SmallSet<ActorReference>& canBeSeenBy = request.canBeSeenBy;
 		// Collect results in a vector rather then a set to prevent cache thrashing.
 		const Sphere visionSphere{request.location, m_largestRange.toFloat()};
-		const VisionCuboidSetSIMD visionCuboids = m_area.m_visionCuboids.query(visionSphere, m_area.getSpace());
+		const VisionCuboidSetSIMD visionCuboids = m_area.m_visionCuboids.query(visionSphere);
 		const Facing4 facing = request.facing;
 		const OccupiedSpaceForHasShape occupied = request.occupied;
 		m_area.m_octTree.query(visionSphere, &visionCuboids, [&](const LocationBucket& bucket)
@@ -136,7 +136,6 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightTo(const Point3D&
 }
 void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::vector<Point3D>& pointSet)
 {
-	Space& space = m_area.getSpace();
 	struct CandidateData{
 		ActorReference actor;
 		Distance rangeSquared;
@@ -197,7 +196,6 @@ bool VisionRequests::maybeUpdateRange(const ActorReference& actor, const Distanc
 bool VisionRequests::maybeUpdateLocation(const ActorReference& actor, const Point3D& location)
 {
 	auto iter = m_data.findIf([&](const VisionRequest& request) { return request.actor == actor; });
-	Space& space = m_area.getSpace();
 	if(iter == m_data.end())
 		return false;
 	iter->location = location;

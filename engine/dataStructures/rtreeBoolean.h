@@ -1,6 +1,7 @@
 #pragma once
 #include "../geometry/cuboid.h"
 #include "../geometry/cuboidArray.h"
+#include "../geometry/cuboidSet.h"
 #include "../strongInteger.h"
 #include "../dataStructures/strongVector.h"
 #include "../dataStructures/smallMap.h"
@@ -65,7 +66,7 @@ class RTreeBoolean
 	[[nodiscard]] SmallSet<Cuboid> gatherLeavesRecursive(const Index& parent) const;
 	void destroyWithChildren(const Index& index);
 	void tryToMergeLeaves(Node& parent);
-	void clearAllContained(Node& parent, const Cuboid& cuboid);
+	void clearAllContained(const Index& index, const Cuboid& cuboid);
 	void addToNodeRecursive(const Index& index, const Cuboid& cuboid);
 	// Removes intercepting leaves and contained branches. Intercepting branches are added to openList.
 	void removeFromNode(const Index& index, const Cuboid& cuboid, SmallSet<Index>& openList);
@@ -87,7 +88,7 @@ public:
 	void maybeInsert(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeInsert(cuboid); }
 	void maybeRemove(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid); }
 	void prepare();
-	[[nodiscard]] bool query(const Point3D& begin, const Point3D& end) const { return query(ParamaterizedLine(begin, end)); }
+	[[nodiscard]] bool query(const Point3D& begin, const Point3D& end) const;
 	[[nodiscard]] bool query(const auto& shape) const
 	{
 		SmallSet<Index> openList;
@@ -180,6 +181,56 @@ public:
 			// Pop back at the end so we can use candidates as a reference and not have to make a move-copy.
 			openList.popBack();
 		}
+		return output;
+	}
+	[[nodiscard]] CuboidSet queryGetLeaves(const auto& shape) const
+	{
+		CuboidSet output;
+		SmallSet<Index> openList;
+		openList.insert(Index::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			const auto begin = interceptMask.begin();
+			const auto leafCount = node.getLeafCount();
+			const auto leafEnd = begin + leafCount;
+			if(leafCount != 0 && interceptMask.head(leafCount).any())
+				for(auto iter = begin; iter != leafEnd; ++iter)
+					if(*iter)
+						output.add(nodeCuboids[iter - begin]);
+			// TODO: Would it be better to check the whole intercept mask and continue if all are empty before checking leafs?
+			const auto childCount = node.getChildCount();
+			if(childCount == 0 || !interceptMask.tail(childCount).any())
+				continue;
+			const auto& nodeChildren = node.getChildIndices();
+			const auto offsetOfFirstChild = node.offsetOfFirstChild();
+			const auto end = begin + nodeSize;
+			if(offsetOfFirstChild == 0)
+			{
+				// Unrollable version for nodes where every slot is a child.
+				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+					if(*iter)
+						openList.insert(nodeChildren[iter - begin]);
+			}
+			else
+			{
+				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+					if(*iter)
+						openList.insert(nodeChildren[iter - begin]);
+			}
+		}
+		return output;
+	}
+	[[nodiscard]] CuboidSet queryGetIntersection(const auto& shape) const
+	{
+		const CuboidSet leaves = queryGetLeaves(shape);
+		CuboidSet output;
+		for(const Cuboid& leaf : leaves)
+			output.add(leaf.intersection(shape));
 		return output;
 	}
 	// For test and debug.

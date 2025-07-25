@@ -61,35 +61,35 @@ std::unique_ptr<Objective> DeserializationMemo::loadObjective(const Json& data, 
 	else if(name == "dig")
 		output = std::make_unique<DigObjective>(data, *this);
 	else if(name == "drink")
-		output =  std::make_unique<DrinkObjective>(data, *this, area, actor);
+		output = std::make_unique<DrinkObjective>(data, *this, area, actor);
 	else if(name == "eat")
-		output =  std::make_unique<EatObjective>(data, *this, area, actor);
+		output = std::make_unique<EatObjective>(data, *this, area, actor);
 	else if(name == "get To safe temperature")
-		output =  std::make_unique<GetToSafeTemperatureObjective>(data, *this);
+		output = std::make_unique<GetToSafeTemperatureObjective>(data, *this);
 	else if(name == "give plants fluid")
-		output =  std::make_unique<GivePlantsFluidObjective>(data, area, *this);
+		output = std::make_unique<GivePlantsFluidObjective>(data, area, *this);
 	else if(name == "go to")
-		output =  std::make_unique<GoToObjective>(data, *this);
+		output = std::make_unique<GoToObjective>(data, *this);
 	else if(name == "harvest")
-		output =  std::make_unique<HarvestObjective>(data, area, *this);
+		output = std::make_unique<HarvestObjective>(data, area, *this);
 	else if(name == "haul")
-		output =  std::make_unique<TargetedHaulObjective>(data, *this);
+		output = std::make_unique<TargetedHaulObjective>(data, *this);
 	else if(name == "kill")
-		output =  std::make_unique<KillObjective>(data, *this, area);
+		output = std::make_unique<KillObjective>(data, *this, area);
 	//else if(name == "medical")
-		//output =  std::make_unique<MedicalObjective>(data, *this);
+		//output = std::make_unique<MedicalObjective>(data, *this);
 	else if(name == "rest")
-		output =  std::make_unique<RestObjective>(data, area, actor, *this);
+		output = std::make_unique<RestObjective>(data, area, actor, *this);
 	else if(name == "sleep")
-		output =  std::make_unique<SleepObjective>(data, *this);
+		output = std::make_unique<SleepObjective>(data, *this);
 	else if(name == "station")
-		output =  std::make_unique<StationObjective>(data, *this);
+		output = std::make_unique<StationObjective>(data, *this);
 	else if(name == "sow seeds")
-		output =  std::make_unique<SowSeedsObjective>(data, area, actor, *this);
+		output = std::make_unique<SowSeedsObjective>(data, area, actor, *this);
 	else if(name == "stockpile")
-		output =  std::make_unique<StockPileObjective>(data, *this, area);
+		output = std::make_unique<StockPileObjective>(data, *this, area);
 	else if(name == "wait")
-		output =  std::make_unique<WaitObjective>(data, area, actor, *this);
+		output = std::make_unique<WaitObjective>(data, area, actor, *this);
 	else
 	{
 		assert(name == "wander");

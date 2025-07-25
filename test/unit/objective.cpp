@@ -53,7 +53,7 @@ TEST_CASE("objective")
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	ActorIndex actor = actors.create({
 		.species=dwarf,
-		.location=area.getSpace().getIndex_i(5, 5, 1),
+		.location=Point3D::create(5, 5, 1),
 	});
 	bool x = false;
 	// Add objective to end of empty task list and it becomes current objective.

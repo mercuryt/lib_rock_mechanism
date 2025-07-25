@@ -99,7 +99,7 @@ SetLocationAndFacingResult Items::location_tryToSetNongenericStatic(const ItemIn
 		if(space.solid_is(occupied) || space.pointFeature_blocksEntrance(occupied))
 		{
 			rollBackFrom = pair.offset;
-			output =  SetLocationAndFacingResult::PermanantlyBlocked;
+			output = SetLocationAndFacingResult::PermanantlyBlocked;
 			break;
 		}
 		if(space.shape_getDynamicVolume(occupied) + pair.volume > Config::maxPointVolume)

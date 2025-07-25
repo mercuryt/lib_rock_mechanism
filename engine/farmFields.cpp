@@ -10,6 +10,7 @@
 #include "space/space.h"
 #include "hasShapes.hpp"
 #include "actors/actors.h"
+#include "dataStructures/rtreeData.hpp"
 #include <algorithm>
 bool HasFarmFieldsForFaction::hasGivePlantsFluidDesignations() const
 {
@@ -19,12 +20,12 @@ PlantIndex HasFarmFieldsForFaction::getHighestPriorityPlantForGiveFluid(Area& ar
 {
 	assert(!m_pointsWithPlantsNeedingFluid.empty());
 	Plants& plants = area.getPlants();
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	m_pointsWithPlantsNeedingFluid.eraseIf([&](const Point3D& point) { return !space.plant_exists(point); });
 	if(!m_plantsNeedingFluidIsSorted)
 	{
 		m_pointsWithPlantsNeedingFluid.sort([&](const Point3D& a, const Point3D& b){
-		       	return plants.getStepAtWhichPlantWillDieFromLackOfFluid(space.plant_get(a)) < plants.getStepAtWhichPlantWillDieFromLackOfFluid(space.plant_get(b));
+		    	return plants.getStepAtWhichPlantWillDieFromLackOfFluid(space.plant_get(a)) < plants.getStepAtWhichPlantWillDieFromLackOfFluid(space.plant_get(b));
 		});
 		m_plantsNeedingFluidIsSorted = true;
 	}
@@ -96,7 +97,7 @@ void HasFarmFieldsForFaction::setDayOfYear(Area& area, uint32_t dayOfYear)
 		{
 			if(PlantSpecies::getDayOfYearForSowStart(farmField.plantSpecies) == dayOfYear)
 			{
-				Space& space =  area.getSpace();
+				Space& space = area.getSpace();
 				for(const Point3D& point : farmField.points)
 					if(space.plant_canGrowHereAtSomePointToday(point, farmField.plantSpecies))
 						addSowSeedsDesignation(area, point);
@@ -161,7 +162,7 @@ void HasFarmFieldsForFaction::designatePoints(Area& area, FarmField& farmField, 
 	if(farmField.timeToSow)
 		for(const Point3D& point : designated)
 			addSowSeedsDesignation(area, point);
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Plants& plants = area.getPlants();
 	for(const Point3D& point : designated)
 		if(space.plant_exists(point))
@@ -183,7 +184,7 @@ void HasFarmFieldsForFaction::clearSpecies(Area& area, FarmField& farmField)
 void HasFarmFieldsForFaction::shrink(Area& area, FarmField& farmField, SmallSet<Point3D>& undesignated)
 {
 	undesignatePoints(area, undesignated);
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	for(const Point3D& point : undesignated)
 		space.farm_remove(point, m_faction);
 	farmField.points.eraseIf([&](const Point3D& point){ return undesignated.contains(point); });
@@ -196,7 +197,7 @@ void HasFarmFieldsForFaction::remove(Area& area, FarmField& farmField)
 }
 void HasFarmFieldsForFaction::undesignatePoints(Area& area, SmallSet<Point3D>& undesignated)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	for(const Point3D& point : undesignated)
 	{
 		if(space.plant_exists(point))
@@ -213,7 +214,7 @@ void HasFarmFieldsForFaction::undesignatePoints(Area& area, SmallSet<Point3D>& u
 }
 void HasFarmFieldsForFaction::setPointData(Area& area)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	for(FarmField& field : m_farmFields)
 		for(const Point3D& point : field.points)
 			space.farm_insert(point, m_faction, field);

@@ -15,7 +15,7 @@ void AreaHasFluidSources::doStep()
 	Space& space = m_area.getSpace();
 	for(FluidSource& source : m_data)
 	{
-		CollisionVolume delta =  source.level - space.fluid_getTotalVolume(source.point);
+		CollisionVolume delta = source.level - space.fluid_getTotalVolume(source.point);
 		if(delta > 0)
 			space.fluid_add(source.point, delta, source.fluidType);
 		else if(delta < 0)

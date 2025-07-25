@@ -6,9 +6,10 @@ class PointsExposedToSky
 {
 	RTreeBoolean m_data;
 public:
-	void initalizeEmpty(Area& area);
+	void initalize(const Cuboid& cuboid);
 	void set(Area& area, const Point3D& point);
 	void unset(Area& area, const Point3D& point);
+	void maybeUnset(Area& area, const Cuboid& cuboid);
 	[[nodiscard]] bool check(const Point3D& point) const { return m_data.query(point); };
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(PointsExposedToSky, m_data);
 };

@@ -527,7 +527,11 @@ template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::maybeFall(const Index& index)
 {
 	Space& space = getArea().getSpace();
-	if(!space.shape_moveTypeCanEnter(getLocation(index), getMoveType(index)))
+	const Point3D& location = getLocation(index);
+	if(
+		location.z() != 0 &&
+		!space.shape_moveTypeCanEnter(location, getMoveType(index))
+	)
 		fall(index);
 }
 template<class Derived, class Index, class ReferenceIndex>
@@ -537,10 +541,10 @@ void Portables<Derived, Index, ReferenceIndex>::fall(const Index& index)
 	const ShapeId& shape = getShape(index);
 	const Facing4& facing = getFacing(index);
 	Point3D location = getLocation(index);
+	assert(location.z() != 0);
 	assert(!canFloatAt(index, location));
 	assert(!isFloating(index));
 	assert(location.exists());
-	assert(space.shape_anythingCanEnterEver(location));
 	Distance distance = Distance::create(0);
 	Point3D next;
 	const auto& occupied = this->getOccupied(index);
@@ -575,7 +579,7 @@ template<class Derived, class Index, class ReferenceIndex>
 void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index, const Point3D& previousLocation, const Facing4& previousFacing)
 {
 	Area& area = getArea();
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	const Point3D& newLocation = getLocation(index);
 	assert(newLocation.exists());
 	const Facing4& newFacing = getFacing(index);
@@ -604,7 +608,9 @@ void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index
 	}
 	// Update which deck this portable is on.
 	const DeckId& onDeckOf = area.m_decks.getForPoint(getLocation(index));
-	const DeckId onDeckOfPrevious = previousLocation.exists() ? area.m_decks.getForPoint(previousLocation) : DeckId::null();
+	DeckId onDeckOfPrevious = previousLocation.exists() ? area.m_decks.getForPoint(previousLocation) : DeckId::null();
+	if(onDeckOfPrevious == deckId)
+		onDeckOfPrevious.clear();
 	if(onDeckOf != onDeckOfPrevious)
 	{
 		if(onDeckOf == DeckId::null())

@@ -99,7 +99,7 @@ CombatScore Actors::combat_getCurrentMeleeCombatScore(const ActorIndex& index)
 	}
 	if(pointsContainingNonAllies > 1)
 	{
-		float flankingModifier =  1 + (pointsContainingNonAllies - 1) * Config::flankingModifier;
+		float flankingModifier = 1 + (pointsContainingNonAllies - 1) * Config::flankingModifier;
 		output /= flankingModifier;
 	}
 	return output;
@@ -154,7 +154,7 @@ void Actors::combat_update(const ActorIndex& index)
 	}
 	// Find the on miss cool down.
 	Step baseOnMissCoolDownDuration = m_equipmentSet[index]->hasWeapons() ?
-	       	m_equipmentSet[index]->getLongestMeleeWeaponCoolDown(m_area) :
+	    	m_equipmentSet[index]->getLongestMeleeWeaponCoolDown(m_area) :
 		Config::attackCoolDownDurationBaseSteps;
 	m_onMissCoolDownMelee[index] = std::max(Step::create(1), Step::create((float)baseOnMissCoolDownDuration.get() * m_coolDownDurationModifier[index]));
 	Items& items = m_area.getItems();

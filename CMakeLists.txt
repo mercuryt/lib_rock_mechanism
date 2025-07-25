@@ -26,7 +26,7 @@ else()
 	#add_compile_options(-D_GLIBCXX_DEBUG)
 endif()
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g2 -ggdb -fno-inline -fmax-errors=5")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g2 -ggdb -fno-inline")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -fno-exceptions -flto=auto -ltcmalloc -fno-rtti")
 if(NOT CMAKE_BUILD_TYPE EQUAL "Release")
 	add_compile_options(-fsanitize=address)

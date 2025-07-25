@@ -24,8 +24,6 @@ struct Uniform final
 	//TODO: use wide string with WideCharToMultiByte for serialization.
 	std::string name;
 	std::vector<UniformElement> elements;
-	Uniform(std::string n, const std::vector<UniformElement>& e) : name(n), elements(e) { }
-	Uniform() = default;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Uniform, name, elements);
 };
 inline void to_json(Json& data, const Uniform* const& uniform){ data = uniform->name; }

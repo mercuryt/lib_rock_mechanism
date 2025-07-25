@@ -21,7 +21,7 @@ class HasOnDestroySubscriptions;
 class Actors;
 class Items;
 class Space;
-class CuboidSet;
+struct CuboidSet;
 class FluidType;
 class DeckRotationData;
 

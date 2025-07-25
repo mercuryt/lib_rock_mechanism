@@ -34,7 +34,7 @@ Json HasConstructionDesignationsForFaction::toJson() const
 void HasConstructionDesignationsForFaction::designate(Area& area, const Point3D& point, const PointFeatureTypeId pointFeatureType, const MaterialTypeId& materialType)
 {
 	assert(!contains(point));
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	space.designation_set(point, m_faction, SpaceDesignation::Construct);
 	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<ConstructionLocationDishonorCallback>(m_faction, area, point);
 	m_data.emplace(point, m_faction, area, point, pointFeatureType, materialType, std::move(locationDishonorCallback));

@@ -99,7 +99,7 @@ void StockPileObjective::reset(Area& area, const ActorIndex& actor)
 }
 bool StockPileObjective::destinationCondition(Area& area, const Point3D& point, const ItemIndex& item, const ActorIndex& actor)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Items& items = area.getItems();
 	Actors& actors = area.getActors();
 	if(!space.item_empty(point))
@@ -140,7 +140,7 @@ StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo, 
 FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Actors& actors = area.getActors();
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Items& items = area.getItems();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	assert(!actors.project_exists(actorIndex));
@@ -257,7 +257,7 @@ void StockPilePathRequest::writeStep(Area& area, FindPathResult& result)
 }
 bool StockPilePathRequest::checkDestination(const Area& area, const ItemIndex& item, const Point3D& point) const
 {
-	const Space& space =  area.getSpace();
+	const Space& space = area.getSpace();
 	const Items& items = area.getItems();
 	// Only stockpile in non empty point if it means stacking generics.
 	if(!space.item_empty(point))
@@ -307,7 +307,7 @@ StockPileDestinationPathRequest::StockPileDestinationPathRequest(Area& area, Sto
 FindPathResult StockPileDestinationPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Actors& actors = area.getActors();
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Items& items = area.getItems();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	assert(!actors.project_exists(actorIndex));
@@ -333,7 +333,7 @@ void StockPileDestinationPathRequest::writeStep(Area& area, FindPathResult& resu
 	m_objective.m_hasCheckedForCloserDropOffLocation = true;
 	// Destination found, join or create a project.
 	assert(m_objective.m_stockPileLocation.exists());
-	Space &space =  area.getSpace();
+	Space &space = area.getSpace();
 	const ActorIndex& actor = actorIndex;
 	actors.canReserve_clearAll(actor);
 	const FactionId& faction = actors.getFaction(actor);

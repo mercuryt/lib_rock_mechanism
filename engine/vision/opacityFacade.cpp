@@ -7,7 +7,7 @@
 
 void OpacityFacade::update(const Area& area, const Point3D& point)
 {
-	const Space& space =  area.getSpace();
+	const Space& space = area.getSpace();
 	if(space.canSeeThrough(point))
 		m_fullOpacity.maybeRemove(point);
 	else
@@ -58,8 +58,8 @@ std::vector<bool> OpacityFacade::hasLineOfSightBatched(const std::vector<std::pa
 }
 void OpacityFacade::validate(const Area& area) const
 {
-	const Space& space =  area.getSpace();
-	Cuboid cuboid = space.getAll();
+	const Space& space = area.getSpace();
+	Cuboid cuboid = space.boundry();
 	for(const Point3D& point : cuboid)
 	{
 		assert(space.canSeeThrough(point) != m_fullOpacity.query(point));

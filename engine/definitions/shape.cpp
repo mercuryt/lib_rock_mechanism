@@ -26,6 +26,7 @@ ShapeId Shape::create(std::string name, SmallSet<OffsetAndVolume> positions, uin
 	}
 	return id;
 }
+uint16_t Shape::size(const ShapeId& id) { return shapeData.m_positions[id].size(); }
 SmallSet<OffsetAndVolume> Shape::positionsWithFacing(const ShapeId& id, const Facing4& facing) { return shapeData.m_occupiedOffsetsCache[id][(uint)facing]; }
 SmallSet<Offset3D> Shape::adjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing) { return shapeData.m_adjacentOffsetsCache[id][(uint)facing]; }
 SmallSet<OffsetAndVolume> Shape::makeOccupiedPositionsWithFacing(const ShapeId& id, const Facing4& facing)
@@ -87,7 +88,7 @@ SmallSet<Point3D> Shape::getPointsOccupiedAt(const ShapeId& id, const Space& spa
 	for(const auto& pair : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
 	{
 		Point3D point = location.applyOffset(pair.offset);
-		assert(space.getAll().contains(point));
+		assert(space.boundry().contains(point));
 		output.insert(point);
 	}
 	return output;
@@ -105,7 +106,7 @@ SmallSet<std::pair<Point3D, CollisionVolume>> Shape::getPointsOccupiedAtWithVolu
 	for(const auto& pair : positionsWithFacing(id, facing))
 	{
 		Point3D point = location.applyOffset(pair.offset);
-		if(space.getAll().contains(point))
+		if(space.boundry().contains(point))
 			output.emplace(point, pair.volume);
 	}
 	return output;
@@ -117,7 +118,7 @@ SmallSet<Point3D> Shape::getPointsWhichWouldBeAdjacentAt(const ShapeId& id, cons
 	for(const Offset3D& offset : shapeData.m_adjacentOffsetsCache[id][(uint)facing])
 	{
 		Point3D point = location.applyOffset(offset);
-		if(space.getAll().contains(point))
+		if(space.boundry().contains(point))
 			output.insert(point);
 	}
 	return output;
@@ -127,7 +128,7 @@ Point3D Shape::getPointWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, co
 	for(const auto& pair : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
 	{
 		Point3D point = location.applyOffset(pair.offset);
-		if(space.getAll().contains(point) && predicate(point))
+		if(space.boundry().contains(point) && predicate(point))
 			return point;
 	}
 	return Point3D::null();
@@ -137,7 +138,7 @@ Point3D Shape::getPointWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, co
 	for(const Offset3D& offset : shapeData.m_adjacentOffsetsCache[id][(uint)facing])
 	{
 		Point3D point = location.applyOffset(offset);
-		if(space.getAll().contains(point) && predicate(point))
+		if(space.boundry().contains(point) && predicate(point))
 			return point;
 	}
 	return Point3D::null();

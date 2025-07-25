@@ -6,6 +6,7 @@
 #include "../simulation/hasItems.h"
 #include "../numericTypes/types.h"
 #include "../definitions/itemType.h"
+#include "../dataStructures/rtreeData.hpp"
 #include <iterator>
 void Space::item_record(const Point3D& point, const ItemIndex& item, const CollisionVolume& volume)
 {
@@ -99,7 +100,7 @@ void Space::item_disperseAll(const Point3D& point)
 			points.insert(otherIndex);
 	auto copy = itemsInPoint;
 	Items& items = m_area.getItems();
-	for(auto item  : copy)
+	for(auto item : copy)
 	{
 		//TODO: split up stacks of generics, prefer space with more empty space.
 		const Point3D point = points[m_area.m_simulation.m_random.getInRange(0u, points.size() - 1u)];
@@ -172,6 +173,13 @@ ItemIndex Space::item_getGeneric(const Point3D& point, const ItemTypeId& itemTyp
 		return ItemIndex::null();
 	return *found;
 }
+const SmallSet<ItemIndex> Space::item_getAll(const Point3D& point) const
+{
+	SmallSet<ItemIndex> output;
+	for(const ItemIndex& item : m_items.queryGetOne(point))
+		output.insert(item);
+	return output;
+}
 // TODO: buggy
 bool Space::item_hasInstalledType(const Point3D& point, const ItemTypeId& itemType) const
 {
@@ -213,13 +221,9 @@ bool Space::item_hasContainerContainingFluidTypeCarryableBy(const Point3D& point
 }
 bool Space::item_empty(const Point3D& point) const
 {
-	return m_itemVolume.queryAny(point);
+	return !m_itemVolume.queryAny(point);
 }
 bool Space::item_contains(const Point3D& point, const ItemIndex& item) const
 {
 	return m_items.queryGetOne(point).contains(item);
-}
-const SmallSet<ItemIndex>& Space::item_getAll(const Point3D& point) const
-{
-	return m_items.queryGetOne(point);
 }

@@ -12,7 +12,7 @@ void HasInstallItemDesignationsForFaction::add(Area& area, const Point3D& point,
 {
 	assert(!m_designations.contains(point));
 	Items& items = area.getItems();
-	const SmallSet<Point3D>& occupied = Shape::getPointsOccupiedAt(items.getCompoundShape(item),  area.getSpace(), point, facing);
+	const SmallSet<Point3D>& occupied = Shape::getPointsOccupiedAt(items.getCompoundShape(item), area.getSpace(), point, facing);
 	m_designations.emplace(point, area, items.getReference(item), point, facing, faction, occupied);
 }
 void AreaHasInstallItemDesignations::clearReservations()

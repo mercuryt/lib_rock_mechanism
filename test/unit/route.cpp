@@ -22,13 +22,13 @@ TEST_CASE("route_10_10_10")
 	static AnimalSpeciesId carp = AnimalSpecies::byName("carp");
 	static FluidTypeId water = FluidType::byName("water");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	SUBCASE("Route through open space")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		BlockIndex origin = blocks.getIndex_i(3, 3, 1);
-		BlockIndex destination = blocks.getIndex_i(7, 7, 1);
+		Point3D origin = Point3D::create(3, 3, 1);
+		Point3D destination = Point3D::create(7, 7, 1);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
 			.location=origin,
@@ -40,18 +40,18 @@ TEST_CASE("route_10_10_10")
 	SUBCASE("Route around walls")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		BlockIndex origin = blocks.getIndex_i(3, 3, 1);
-		BlockIndex block1 = blocks.getIndex_i(5, 3, 1);
-		BlockIndex block2 = blocks.getIndex_i(5, 4, 1);
-		BlockIndex block3 = blocks.getIndex_i(5, 5, 1);
-		BlockIndex block4 = blocks.getIndex_i(5, 6, 1);
-		BlockIndex block5 = blocks.getIndex_i(5, 7, 1);
-		BlockIndex destination = blocks.getIndex_i(7, 7, 1);
-		blocks.solid_set(block1, marble, false);
-		blocks.solid_set(block2, marble, false);
-		blocks.solid_set(block3, marble, false);
-		blocks.solid_set(block4, marble, false);
-		blocks.solid_set(block5, marble, false);
+		Point3D origin = Point3D::create(3, 3, 1);
+		Point3D block1 = Point3D::create(5, 3, 1);
+		Point3D block2 = Point3D::create(5, 4, 1);
+		Point3D block3 = Point3D::create(5, 5, 1);
+		Point3D block4 = Point3D::create(5, 6, 1);
+		Point3D block5 = Point3D::create(5, 7, 1);
+		Point3D destination = Point3D::create(7, 7, 1);
+		space.solid_set(block1, marble, false);
+		space.solid_set(block2, marble, false);
+		space.solid_set(block3, marble, false);
+		space.solid_set(block4, marble, false);
+		space.solid_set(block5, marble, false);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
 			.location=origin,
@@ -63,18 +63,18 @@ TEST_CASE("route_10_10_10")
 	SUBCASE("No route found")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		BlockIndex origin = blocks.getIndex_i(0, 0, 1);
-		BlockIndex block1 = blocks.getIndex_i(2, 0, 1);
-		BlockIndex block2 = blocks.getIndex_i(2, 1, 1);
-		BlockIndex block3 = blocks.getIndex_i(2, 2, 1);
-		BlockIndex block4 = blocks.getIndex_i(1, 2, 1);
-		BlockIndex block5 = blocks.getIndex_i(0, 2, 1);
-		BlockIndex destination = blocks.getIndex_i(7, 7, 1);
-		blocks.solid_set(block1, marble, false);
-		blocks.solid_set(block2, marble, false);
-		blocks.solid_set(block3, marble, false);
-		blocks.solid_set(block4, marble, false);
-		blocks.solid_set(block5, marble, false);
+		Point3D origin = Point3D::create(0, 0, 1);
+		Point3D block1 = Point3D::create(2, 0, 1);
+		Point3D block2 = Point3D::create(2, 1, 1);
+		Point3D block3 = Point3D::create(2, 2, 1);
+		Point3D block4 = Point3D::create(1, 2, 1);
+		Point3D block5 = Point3D::create(0, 2, 1);
+		Point3D destination = Point3D::create(7, 7, 1);
+		space.solid_set(block1, marble, false);
+		space.solid_set(block2, marble, false);
+		space.solid_set(block3, marble, false);
+		space.solid_set(block4, marble, false);
+		space.solid_set(block5, marble, false);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
 			.location=origin,
@@ -86,9 +86,9 @@ TEST_CASE("route_10_10_10")
 	SUBCASE("Walk")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		BlockIndex origin = blocks.getIndex_i(3, 3, 1);
-		BlockIndex block1 = blocks.getIndex_i(4, 4, 1);
-		BlockIndex destination = blocks.getIndex_i(5, 5, 1);
+		Point3D origin = Point3D::create(3, 3, 1);
+		Point3D block1 = Point3D::create(4, 4, 1);
+		Point3D destination = Point3D::create(5, 5, 1);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
 			.location=origin,
@@ -122,17 +122,17 @@ TEST_CASE("route_10_10_10")
 	SUBCASE("Repath when route is blocked")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		BlockIndex origin = blocks.getIndex_i(3, 3, 1);
-		BlockIndex block1 = blocks.getIndex_i(3, 4, 1);
-		BlockIndex block2 = blocks.getIndex_i(3, 5, 1);
-		BlockIndex block3 = blocks.getIndex_i(4, 5, 1);
-		BlockIndex destination = blocks.getIndex_i(3, 6, 1);
+		Point3D origin = Point3D::create(3, 3, 1);
+		Point3D block1 = Point3D::create(3, 4, 1);
+		Point3D block2 = Point3D::create(3, 5, 1);
+		Point3D block3 = Point3D::create(4, 5, 1);
+		Point3D destination = Point3D::create(3, 6, 1);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
 			.location=origin,
 		});
 		// Set solid to make choice of route deterministic.
-		blocks.solid_set(blocks.getIndex_i(2,5,1), marble, false);
+		space.solid_set(Point3D::create(2,5,1), marble, false);
 		actors.objective_addTaskToEnd(actor, std::make_unique<GoToObjective>(destination));
 		simulation.doStep();
 		CHECK(actors.move_hasEvent(actor));
@@ -147,7 +147,7 @@ TEST_CASE("route_10_10_10")
 		simulation.doStep();
 		CHECK(actors.getLocation(actor) == block1);
 		CHECK(actors.move_hasEvent(actor));
-		blocks.solid_set(block2, marble, false);
+		space.solid_set(block2, marble, false);
 		// Step 2.
 		CHECK(actors.move_hasEvent(actor));
 		Step stepsTillNextMove = actors.move_stepsTillNextMoveEvent(actor);
@@ -167,10 +167,10 @@ TEST_CASE("route_10_10_10")
 	SUBCASE("Unpathable route becomes pathable when blockage is removed.")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		BlockIndex origin = blocks.getIndex_i(3, 3, 1);
-		BlockIndex wallStart = blocks.getIndex_i(0, 4, 1);
-		BlockIndex wallEnd = blocks.getIndex_i(9, 4, 2);
-		BlockIndex destination = blocks.getIndex_i(3, 6, 1);
+		Point3D origin = Point3D::create(3, 3, 1);
+		Point3D wallStart = Point3D::create(0, 4, 1);
+		Point3D wallEnd = Point3D::create(9, 4, 2);
+		Point3D destination = Point3D::create(3, 6, 1);
 		areaBuilderUtil::setSolidWall(area, wallStart, wallEnd, marble);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
@@ -179,7 +179,7 @@ TEST_CASE("route_10_10_10")
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
-		blocks.solid_setNot(wallStart);
+		space.solid_setNot(wallStart);
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
@@ -187,13 +187,13 @@ TEST_CASE("route_10_10_10")
 	SUBCASE("two by two creature cannot path through one block gap")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		BlockIndex origin = blocks.getIndex_i(2, 2, 1);
-		BlockIndex destination = blocks.getIndex_i(8, 8, 1);
-		blocks.solid_set(blocks.getIndex_i(1, 5, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(3, 5, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(5, 5, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(7, 5, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(9, 5, 1), marble, false);
+		Point3D origin = Point3D::create(2, 2, 1);
+		Point3D destination = Point3D::create(8, 8, 1);
+		space.solid_set(Point3D::create(1, 5, 1), marble, false);
+		space.solid_set(Point3D::create(3, 5, 1), marble, false);
+		space.solid_set(Point3D::create(5, 5, 1), marble, false);
+		space.solid_set(Point3D::create(7, 5, 1), marble, false);
+		space.solid_set(Point3D::create(9, 5, 1), marble, false);
 		ActorIndex actor = actors.create({
 			.species=troll,
 			.location=origin,
@@ -206,10 +206,10 @@ TEST_CASE("route_10_10_10")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, 9, marble);
-		BlockIndex origin = blocks.getIndex_i(1, 1, 1);
-		BlockIndex destination = blocks.getIndex_i(8, 8, 8);
-		BlockIndex ledge = blocks.getIndex_i(8, 8, 7);
-		blocks.solid_set(ledge, marble, false);
+		Point3D origin = Point3D::create(1, 1, 1);
+		Point3D destination = Point3D::create(8, 8, 8);
+		Point3D ledge = Point3D::create(8, 8, 7);
+		space.solid_set(ledge, marble, false);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
 			.location=origin,
@@ -222,8 +222,8 @@ TEST_CASE("route_10_10_10")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, 9, marble);
-		BlockIndex origin = blocks.getIndex_i(1, 1, 1);
-		BlockIndex destination = blocks.getIndex_i(8, 8, 8);
+		Point3D origin = Point3D::create(1, 1, 1);
+		Point3D destination = Point3D::create(8, 8, 8);
 		ActorIndex actor = actors.create({
 			.species=eagle,
 			.location=origin,
@@ -236,8 +236,8 @@ TEST_CASE("route_10_10_10")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, 9, marble);
-		BlockIndex water1 = blocks.getIndex_i(1, 1, 1);
-		BlockIndex water2 = blocks.getIndex_i(8, 8, 8);
+		Point3D water1 = Point3D::create(1, 1, 1);
+		Point3D water2 = Point3D::create(8, 8, 8);
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
 		ActorIndex actor = actors.create({
 			.species=carp,
@@ -252,7 +252,7 @@ TEST_CASE("route_5_5_3")
 {
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(5,5,3);
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	static MaterialTypeId marble = MaterialType::byName("marble");
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
@@ -264,16 +264,16 @@ TEST_CASE("route_5_5_3")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		areaBuilderUtil::setSolidWalls(area, 1, marble);
-		BlockIndex origin = blocks.getIndex_i(2, 1, 1);
-		BlockIndex destination = blocks.getIndex_i(2, 3, 1);
-		blocks.solid_set(blocks.getIndex_i(1, 2, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(2, 2, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(3, 2, 1), marble, false);
-		BlockIndex water1 = blocks.getIndex_i(1, 1, 1);
-		BlockIndex water2 = blocks.getIndex_i(3, 1, 1);
+		Point3D origin = Point3D::create(2, 1, 1);
+		Point3D destination = Point3D::create(2, 3, 1);
+		space.solid_set(Point3D::create(1, 2, 1), marble, false);
+		space.solid_set(Point3D::create(2, 2, 1), marble, false);
+		space.solid_set(Point3D::create(3, 2, 1), marble, false);
+		Point3D water1 = Point3D::create(1, 1, 1);
+		Point3D water2 = Point3D::create(3, 1, 1);
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
-		BlockIndex water3 = blocks.getIndex_i(1, 3, 1);
-		BlockIndex water4 = blocks.getIndex_i(3, 3, 1);
+		Point3D water3 = Point3D::create(1, 3, 1);
+		Point3D water4 = Point3D::create(3, 3, 1);
 		areaBuilderUtil::setFullFluidCuboid(area, water3, water4, water);
 		ActorIndex actor = actors.create({
 			.species=carp,
@@ -287,14 +287,14 @@ TEST_CASE("route_5_5_3")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
 		areaBuilderUtil::setSolidWalls(area, 2, marble);
-		BlockIndex origin = blocks.getIndex_i(2, 1, 2);
-		BlockIndex destination = blocks.getIndex_i(2, 3, 2);
-		BlockIndex midpoint = blocks.getIndex_i(2, 2, 1);
-		BlockIndex water1 = blocks.getIndex_i(1, 2, 1);
-		BlockIndex water2 = blocks.getIndex_i(3, 2, 1);
-		blocks.solid_setNot(water1);
-		blocks.solid_setNot(midpoint);
-		blocks.solid_setNot(water2);
+		Point3D origin = Point3D::create(2, 1, 2);
+		Point3D destination = Point3D::create(2, 3, 2);
+		Point3D midpoint = Point3D::create(2, 2, 1);
+		Point3D water1 = Point3D::create(1, 2, 1);
+		Point3D water2 = Point3D::create(3, 2, 1);
+		space.solid_setNot(water1);
+		space.solid_setNot(midpoint);
+		space.solid_setNot(water2);
 		areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
@@ -302,12 +302,12 @@ TEST_CASE("route_5_5_3")
 		});
 		actors.move_setType(actor, twoLegs);
 		actors.move_setDestination(actor, destination);
-		CHECK(!blocks.shape_moveTypeCanEnter(midpoint, actors.getMoveType(actor)));
+		CHECK(!space.shape_moveTypeCanEnter(midpoint, actors.getMoveType(actor)));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
 		actors.move_setType(actor, twoLegsAndSwimInWater);
 		actors.move_setDestination(actor, destination);
-		CHECK(blocks.shape_moveTypeCanEnter(midpoint, actors.getMoveType(actor)));
+		CHECK(space.shape_moveTypeCanEnter(midpoint, actors.getMoveType(actor)));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
 	}
@@ -316,30 +316,30 @@ TEST_CASE("route_5_5_5")
 {
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(5,5,5);
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	static MaterialTypeId marble = MaterialType::byName("marble");
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	static MoveTypeId twoLegsAndClimb1 = MoveType::byName("two legs and climb 1");
 	static MoveTypeId twoLegsAndClimb2 = MoveType::byName("two legs and climb 2");
-	static const BlockFeatureTypeId stairs = BlockFeatureTypeId::Stairs;
-	static const BlockFeatureTypeId ramp = BlockFeatureTypeId::Ramp;
-	static const BlockFeatureTypeId door = BlockFeatureTypeId::Door;
-	static const BlockFeatureTypeId fortification = BlockFeatureTypeId::Fortification;
+	static const PointFeatureTypeId stairs = PointFeatureTypeId::Stairs;
+	static const PointFeatureTypeId ramp = PointFeatureTypeId::Ramp;
+	static const PointFeatureTypeId door = PointFeatureTypeId::Door;
+	static const PointFeatureTypeId fortification = PointFeatureTypeId::Fortification;
 	static FluidTypeId water = FluidType::byName("water");
 	SUBCASE("walking path blocked by one height cliff if not climbing")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(1,1,1),
+			.location=Point3D::create(1,1,1),
 		});
-		blocks.solid_set(blocks.getIndex_i(4, 4, 1), marble, false);
-		actors.move_setDestination(actor, blocks.getIndex_i(4, 4, 2));
+		space.solid_set(Point3D::create(4, 4, 1), marble, false);
+		actors.move_setDestination(actor, Point3D::create(4, 4, 2));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
 		actors.move_setType(actor, twoLegsAndClimb1);
-		actors.move_setDestination(actor, blocks.getIndex_i(4, 4, 2));
+		actors.move_setDestination(actor, Point3D::create(4, 4, 2));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
 
@@ -349,14 +349,14 @@ TEST_CASE("route_5_5_5")
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(1,1,1),
+			.location=Point3D::create(1,1,1),
 		});
 		actors.move_setType(actor, twoLegsAndClimb1);
-		blocks.solid_set(blocks.getIndex_i(4, 4, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(4, 4, 2), marble, false);
-		const BlockIndex& destination = blocks.getIndex_i(4, 4, 3);
-		const BlockIndex& belowDestination = blocks.getIndex_i(4, 3, 2);
-		bool test = !blocks.shape_moveTypeCanEnter(belowDestination, twoLegsAndClimb1);
+		space.solid_set(Point3D::create(4, 4, 1), marble, false);
+		space.solid_set(Point3D::create(4, 4, 2), marble, false);
+		const Point3D& destination = Point3D::create(4, 4, 3);
+		const Point3D& belowDestination = Point3D::create(4, 3, 2);
+		bool test = !space.shape_moveTypeCanEnter(belowDestination, twoLegsAndClimb1);
 		CHECK(test);
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
@@ -370,47 +370,45 @@ TEST_CASE("route_5_5_5")
 	SUBCASE("stairs")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		const BlockIndex origin = blocks.getIndex_i(1, 1, 1);
-		const BlockIndex lowest = blocks.getIndex_i(2, 2, 1);
-		const BlockIndex middle = blocks.getIndex_i(3, 3, 2);
-		const BlockIndex highest = blocks.getIndex_i(2, 2, 3);
-		blocks.blockFeature_construct(lowest, stairs, marble);
-		blocks.blockFeature_construct(middle, stairs, marble);
-		blocks.blockFeature_construct(highest, stairs, marble);
-		CHECK(blocks.shape_canStandIn(middle));
-		bool test = blocks.shape_moveTypeCanEnter(middle, twoLegsAndClimb1);
+		const Point3D origin = Point3D::create(1, 1, 1);
+		const Point3D lowest = Point3D::create(2, 2, 1);
+		const Point3D middle = Point3D::create(3, 3, 2);
+		const Point3D highest = Point3D::create(2, 2, 3);
+		space.pointFeature_construct(lowest, stairs, marble);
+		space.pointFeature_construct(middle, stairs, marble);
+		space.pointFeature_construct(highest, stairs, marble);
+		CHECK(space.shape_canStandIn(middle));
+		bool test = space.shape_moveTypeCanEnter(middle, twoLegsAndClimb1);
 		CHECK(test);
-		test = blocks.shape_moveTypeCanEnterFrom(middle, twoLegsAndClimb1, lowest);
+		test = space.shape_moveTypeCanEnterFrom(middle, twoLegsAndClimb1, lowest);
 		CHECK(test);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
 			.location=origin,
 		});
-		actors.move_setDestination(actor, blocks.getIndex_i(2, 2, 4));
+		actors.move_setDestination(actor, Point3D::create(2, 2, 4));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
 	}
 	SUBCASE("ramp")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		blocks.solid_set(blocks.getIndex_i(4, 4, 1), marble, false);
-		BlockIndex destination = blocks.getIndex_i(4, 4, 2);
-		BlockIndex rampLocation = blocks.getIndex_i(4, 3, 1);
-		BlockIndex adjacentToRamp = blocks.getIndex_i(4, 2, 1);
+		space.solid_set(Point3D::create(4, 4, 1), marble, false);
+		Point3D destination = Point3D::create(4, 4, 2);
+		Point3D rampLocation = Point3D::create(4, 3, 1);
+		Point3D adjacentToRamp = Point3D::create(4, 2, 1);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(1,1,1),
+			.location=Point3D::create(1,1,1),
 		});
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(rampLocation, ramp, marble);
-		CHECK(blocks.shape_shapeAndMoveTypeCanEnterEverFrom(rampLocation, actors.getShape(actor), actors.getMoveType(actor), adjacentToRamp));
-		CHECK(blocks.getAdjacentWithEdgeAndCornerAdjacent(adjacentToRamp)[13] == rampLocation);
+		space.pointFeature_construct(rampLocation, ramp, marble);
+		CHECK(space.shape_shapeAndMoveTypeCanEnterEverFrom(rampLocation, actors.getShape(actor), actors.getMoveType(actor), adjacentToRamp));
+		CHECK(space.getAdjacentWithEdgeAndCornerAdjacent(adjacentToRamp)[13] == rampLocation);
 		auto& facade = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor));
-		CHECK(facade.getValueForBit(adjacentToRamp, rampLocation));
-		bool canEnterFrom = facade.canEnterFrom(adjacentToRamp, AdjacentIndex::create(13));
-		CHECK(canEnterFrom);
+		CHECK(facade.getValue(adjacentToRamp, rampLocation));
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
@@ -418,204 +416,204 @@ TEST_CASE("route_5_5_5")
 	SUBCASE("door")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		blocks.solid_set(blocks.getIndex_i(3, 0, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(3, 1, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(3, 3, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(3, 4, 1), marble, false);
+		space.solid_set(Point3D::create(3, 0, 1), marble, false);
+		space.solid_set(Point3D::create(3, 1, 1), marble, false);
+		space.solid_set(Point3D::create(3, 3, 1), marble, false);
+		space.solid_set(Point3D::create(3, 4, 1), marble, false);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(1,1,1),
+			.location=Point3D::create(1,1,1),
 		});
-		actors.move_setDestination(actor, blocks.getIndex_i(4, 3, 1));
+		actors.move_setDestination(actor, Point3D::create(4, 3, 1));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 2, 1), door, marble);
-		actors.move_setDestination(actor, blocks.getIndex_i(4, 3, 1));
+		space.pointFeature_construct(Point3D::create(3, 2, 1), door, marble);
+		actors.move_setDestination(actor, Point3D::create(4, 3, 1));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
-		blocks.blockFeature_lock(blocks.getIndex_i(3, 2, 1), door);
-		actors.move_setDestination(actor, blocks.getIndex_i(4, 3, 1));
+		space.pointFeature_lock(Point3D::create(3, 2, 1), door);
+		actors.move_setDestination(actor, Point3D::create(4, 3, 1));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
 	}
 	SUBCASE("fortification")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		blocks.solid_set(blocks.getIndex_i(3, 0, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(3, 1, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(3, 3, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(3, 4, 1), marble, false);
+		space.solid_set(Point3D::create(3, 0, 1), marble, false);
+		space.solid_set(Point3D::create(3, 1, 1), marble, false);
+		space.solid_set(Point3D::create(3, 3, 1), marble, false);
+		space.solid_set(Point3D::create(3, 4, 1), marble, false);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(1,1,1),
+			.location=Point3D::create(1,1,1),
 		});
-		actors.move_setDestination(actor, blocks.getIndex_i(4, 3, 1));
+		actors.move_setDestination(actor, Point3D::create(4, 3, 1));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 2, 1), fortification, marble);
-		actors.move_setDestination(actor, blocks.getIndex_i(4, 3, 1));
+		space.pointFeature_construct(Point3D::create(3, 2, 1), fortification, marble);
+		actors.move_setDestination(actor, Point3D::create(4, 3, 1));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
 	}
 	SUBCASE("can walk on floor")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		blocks.solid_set(blocks.getIndex_i(1, 1, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(1, 3, 1), marble, false);
+		space.solid_set(Point3D::create(1, 1, 1), marble, false);
+		space.solid_set(Point3D::create(1, 3, 1), marble, false);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(1,1,2),
+			.location=Point3D::create(1,1,2),
 		});
-		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
+		actors.move_setDestination(actor, Point3D::create(1, 3, 2));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(1, 2, 2), BlockFeatureTypeId::Floor, marble);
-		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
+		space.pointFeature_construct(Point3D::create(1, 2, 2), PointFeatureTypeId::Floor, marble);
+		actors.move_setDestination(actor, Point3D::create(1, 3, 2));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
 	}
 	SUBCASE("floor blocks vertical travel")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 4, marble);
-		blocks.solid_setNot(blocks.getIndex_i(3, 3, 1));
-		blocks.solid_setNot(blocks.getIndex_i(3, 3, 2));
-		blocks.solid_setNot(blocks.getIndex_i(3, 3, 3));
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 1), BlockFeatureTypeId::Stairs, marble);
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 2), BlockFeatureTypeId::Stairs, marble);
+		space.solid_setNot(Point3D::create(3, 3, 1));
+		space.solid_setNot(Point3D::create(3, 3, 2));
+		space.solid_setNot(Point3D::create(3, 3, 3));
+		space.pointFeature_construct(Point3D::create(3, 3, 1), PointFeatureTypeId::Stairs, marble);
+		space.pointFeature_construct(Point3D::create(3, 3, 2), PointFeatureTypeId::Stairs, marble);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(3,3,1),
+			.location=Point3D::create(3,3,1),
 		});
-		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
+		actors.move_setDestination(actor, Point3D::create(3, 3, 3));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 3), BlockFeatureTypeId::Floor, marble);
-		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
+		space.pointFeature_construct(Point3D::create(3, 3, 3), PointFeatureTypeId::Floor, marble);
+		actors.move_setDestination(actor, Point3D::create(3, 3, 3));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
 	}
 	SUBCASE("can walk on floor grate")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		blocks.solid_set(blocks.getIndex_i(1, 1, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(1, 3, 1), marble, false);
+		space.solid_set(Point3D::create(1, 1, 1), marble, false);
+		space.solid_set(Point3D::create(1, 3, 1), marble, false);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(1,1,2),
+			.location=Point3D::create(1,1,2),
 		});
-		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
+		actors.move_setDestination(actor, Point3D::create(1, 3, 2));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(1, 2, 2), BlockFeatureTypeId::FloorGrate, marble);
-		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
+		space.pointFeature_construct(Point3D::create(1, 2, 2), PointFeatureTypeId::FloorGrate, marble);
+		actors.move_setDestination(actor, Point3D::create(1, 3, 2));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
 	}
 	SUBCASE("floor grate blocks vertical travel")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 3, marble);
-		blocks.solid_setNot(blocks.getIndex_i(3, 3, 1));
-		blocks.solid_setNot(blocks.getIndex_i(3, 3, 2));
-		blocks.solid_setNot(blocks.getIndex_i(3, 3, 3));
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 1), BlockFeatureTypeId::Stairs, marble);
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 2), BlockFeatureTypeId::Stairs, marble);
+		space.solid_setNot(Point3D::create(3, 3, 1));
+		space.solid_setNot(Point3D::create(3, 3, 2));
+		space.solid_setNot(Point3D::create(3, 3, 3));
+		space.pointFeature_construct(Point3D::create(3, 3, 1), PointFeatureTypeId::Stairs, marble);
+		space.pointFeature_construct(Point3D::create(3, 3, 2), PointFeatureTypeId::Stairs, marble);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(3,3,1),
+			.location=Point3D::create(3,3,1),
 		});
-		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
+		actors.move_setDestination(actor, Point3D::create(3, 3, 3));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 3), BlockFeatureTypeId::FloorGrate, marble);
-		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
+		space.pointFeature_construct(Point3D::create(3, 3, 3), PointFeatureTypeId::FloorGrate, marble);
+		actors.move_setDestination(actor, Point3D::create(3, 3, 3));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
 	}
 	SUBCASE("can walk on hatch")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		blocks.solid_set(blocks.getIndex_i(1, 1, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(1, 3, 1), marble, false);
+		space.solid_set(Point3D::create(1, 1, 1), marble, false);
+		space.solid_set(Point3D::create(1, 3, 1), marble, false);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(1,1,2),
+			.location=Point3D::create(1,1,2),
 		});
-		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
+		actors.move_setDestination(actor, Point3D::create(1, 3, 2));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(1, 2, 2), BlockFeatureTypeId::Hatch, marble);
-		actors.move_setDestination(actor, blocks.getIndex_i(1, 3, 2));
+		space.pointFeature_construct(Point3D::create(1, 2, 2), PointFeatureTypeId::Hatch, marble);
+		actors.move_setDestination(actor, Point3D::create(1, 3, 2));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
 	}
 	SUBCASE("locked hatch blocks vertical travel")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 3, marble);
-		blocks.solid_setNot(blocks.getIndex_i(3, 3, 1));
-		blocks.solid_setNot(blocks.getIndex_i(3, 3, 2));
-		blocks.solid_setNot(blocks.getIndex_i(3, 3, 3));
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 1), BlockFeatureTypeId::Stairs, marble);
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 2), BlockFeatureTypeId::Stairs, marble);
+		space.solid_setNot(Point3D::create(3, 3, 1));
+		space.solid_setNot(Point3D::create(3, 3, 2));
+		space.solid_setNot(Point3D::create(3, 3, 3));
+		space.pointFeature_construct(Point3D::create(3, 3, 1), PointFeatureTypeId::Stairs, marble);
+		space.pointFeature_construct(Point3D::create(3, 3, 2), PointFeatureTypeId::Stairs, marble);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(3,3,1),
+			.location=Point3D::create(3,3,1),
 		});
-		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
+		actors.move_setDestination(actor, Point3D::create(3, 3, 3));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 3, 3), BlockFeatureTypeId::Hatch, marble);
-		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
+		space.pointFeature_construct(Point3D::create(3, 3, 3), PointFeatureTypeId::Hatch, marble);
+		actors.move_setDestination(actor, Point3D::create(3, 3, 3));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
-		blocks.blockFeature_lock(blocks.getIndex_i(3, 3, 3), BlockFeatureTypeId::Hatch);
-		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 3));
+		space.pointFeature_lock(Point3D::create(3, 3, 3), PointFeatureTypeId::Hatch);
+		actors.move_setDestination(actor, Point3D::create(3, 3, 3));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
 	}
 	SUBCASE("multi-block actors can use ramps")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		blocks.solid_set(blocks.getIndex_i(4, 4, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(4, 3, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(3, 4, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(3, 3, 1), marble, false);
+		space.solid_set(Point3D::create(4, 4, 1), marble, false);
+		space.solid_set(Point3D::create(4, 3, 1), marble, false);
+		space.solid_set(Point3D::create(3, 4, 1), marble, false);
+		space.solid_set(Point3D::create(3, 3, 1), marble, false);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(1,1,1),
+			.location=Point3D::create(1,1,1),
 		});
-		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 2));
+		actors.move_setDestination(actor, Point3D::create(3, 3, 2));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 2, 1), BlockFeatureTypeId::Ramp, marble);
-		blocks.blockFeature_construct(blocks.getIndex_i(4, 2, 1), BlockFeatureTypeId::Ramp, marble);
-		blocks.blockFeature_construct(blocks.getIndex_i(3, 1, 1), BlockFeatureTypeId::Ramp, marble);
-		blocks.blockFeature_construct(blocks.getIndex_i(4, 1, 1), BlockFeatureTypeId::Ramp, marble);
-		actors.move_setDestination(actor, blocks.getIndex_i(3, 3, 2));
+		space.pointFeature_construct(Point3D::create(3, 2, 1), PointFeatureTypeId::Ramp, marble);
+		space.pointFeature_construct(Point3D::create(4, 2, 1), PointFeatureTypeId::Ramp, marble);
+		space.pointFeature_construct(Point3D::create(3, 1, 1), PointFeatureTypeId::Ramp, marble);
+		space.pointFeature_construct(Point3D::create(4, 1, 1), PointFeatureTypeId::Ramp, marble);
+		actors.move_setDestination(actor, Point3D::create(3, 3, 2));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
 	}
 	SUBCASE("detour")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		BlockIndex origin = blocks.getIndex_i(2, 3, 1);
-		blocks.solid_set(blocks.getIndex_i(3, 1, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(3, 2, 1), marble, false);
-		blocks.solid_set(blocks.getIndex_i(3, 4, 1), marble, false);
+		Point3D origin = Point3D::create(2, 3, 1);
+		space.solid_set(Point3D::create(3, 1, 1), marble, false);
+		space.solid_set(Point3D::create(3, 2, 1), marble, false);
+		space.solid_set(Point3D::create(3, 4, 1), marble, false);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
 			.location=origin,
 		});
 		actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(3,3,1),
+			.location=Point3D::create(3,3,1),
 		});
-		actors.move_setDestination(actor, blocks.getIndex_i(4, 3, 1));
+		actors.move_setDestination(actor, Point3D::create(4, 3, 1));
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).size() == 2);
 		//pathThreadedTask.clearReferences();
 		//simulation.m_threadedTaskEngine.remove(pathThreadedTask);
-		CHECK(blocks.shape_shapeAndMoveTypeCanEnterEverFrom(blocks.getIndex_i(3, 3, 1), actors.getShape(actor), actors.getMoveType(actor), actors.getLocation(actor)));
-		CHECK(!blocks.shape_canEnterCurrentlyFrom(blocks.getIndex_i(3, 3, 1), actors.getShape(actor), actors.getLocation(actor), actors.getBlocks(actor)));
+		CHECK(space.shape_shapeAndMoveTypeCanEnterEverFrom(Point3D::create(3, 3, 1), actors.getShape(actor), actors.getMoveType(actor), actors.getLocation(actor)));
+		CHECK(!space.shape_canEnterCurrentlyFrom(Point3D::create(3, 3, 1), actors.getShape(actor), actors.getLocation(actor), actors.getOccupied(actor)));
 		CHECK(actors.move_hasEvent(actor));
 		// Move attempt 1.
 		Step stepsUntillScheduledStep = actors.move_stepsTillNextMoveEvent(actor);
@@ -639,15 +637,15 @@ TEST_CASE("route_5_5_5")
 	SUBCASE("air breathers cannot dive")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 3, marble);
-		BlockIndex surface = blocks.getIndex_i(3,3,3);
-		BlockIndex deep = blocks.getIndex_i(3,3,2);
-		blocks.solid_setNot(surface);
-		blocks.solid_setNot(deep);
-		blocks.fluid_add(surface, Config::maxBlockVolume, water);
-		blocks.fluid_add(deep, Config::maxBlockVolume, water);
+		Point3D surface = Point3D::create(3,3,3);
+		Point3D deep = Point3D::create(3,3,2);
+		space.solid_setNot(surface);
+		space.solid_setNot(deep);
+		space.fluid_add(surface, Config::maxPointVolume, water);
+		space.fluid_add(deep, Config::maxPointVolume, water);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(1,1,4),
+			.location=Point3D::create(1,1,4),
 		});
 		CHECK(!actors.move_canPathTo(actor, deep));
 	}

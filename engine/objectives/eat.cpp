@@ -148,7 +148,7 @@ EatPathRequest::EatPathRequest(Area &area, EatObjective &eo, const ActorIndex &a
 FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	assert(m_eatObjective.m_location.empty());
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	MustEat& mustEat = *area.getActors().m_mustEat[actorIndex].get();
@@ -371,7 +371,7 @@ void EatObjective::execute(Area &area, const ActorIndex &actor)
 			Point3D adjacent = mustEat.getAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(area);
 			if(adjacent.empty())
 			{
-				// We are at the previously selected location but there is no  longer any food here, try again.
+				// We are at the previously selected location but there is no longer any food here, try again.
 				m_location.clear();
 				actors.canReserve_clearAll(actor);
 				makePathRequest(area, actor);
@@ -419,7 +419,7 @@ void EatObjective::noFoodFound()
 }
 bool EatObjective::canEatAt(Area& area, const Point3D& point, const ActorIndex& actor) const
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	for(ItemIndex item : space.item_getAll(point))

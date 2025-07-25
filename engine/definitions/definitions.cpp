@@ -101,7 +101,7 @@ void definitions::loadMaterialTypes()
 			p.materialTypeCategory = MaterialTypeCategory::byName((data["category"].get<std::string>()));
 		if(data.contains("meltingPoint"))
 		{
-		       	p.meltingPoint = data["meltingPoint"].get<Temperature>();
+		    	p.meltingPoint = data["meltingPoint"].get<Temperature>();
 			assert(data.contains("meltsInto"));
 			p.meltsInto = FluidType::byName(data["meltsInto"].get<std::string>());
 		}

@@ -21,7 +21,7 @@
 #include <filesystem>
 #include <functional>
 Simulation::Simulation(std::string name, Step s) :
-       	m_eventSchedule(*this, nullptr), m_hourlyEvent(m_eventSchedule), m_deserializationMemo(*this), m_name(name), m_step(s)
+    	m_eventSchedule(*this, nullptr), m_hourlyEvent(m_eventSchedule), m_deserializationMemo(*this), m_name(name), m_step(s)
 {
 	m_hourlyEvent.schedule(*this);
 	m_path.append("save/"+name);

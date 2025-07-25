@@ -8,103 +8,59 @@
 #include "../items/items.h"
 #include "../plants.h"
 #include "../portables.hpp"
+#include "../dataStructures/rtreeData.hpp"
 
-void Space::solid_setShared(const Point3D& point, const MaterialTypeId& materialType, bool constructed)
+void Space::solid_setShared(const Point3D& point, const MaterialTypeId& materialType, bool wasEmpty)
 {
-	if(m_solid.queryGetOne(point) == materialType)
-		return;
 	assert(m_itemVolume.queryGetOne(point).empty());
-	Plants& plants = m_area.getPlants();
-	if(m_plants.queryGetOne(point).exists())
-	{
-		PlantIndex plant = m_plants.queryGetOne(point);
-		assert(!PlantSpecies::getIsTree(plants.getSpecies(plant)));
-		plants.die(plant);
-	}
-	if(materialType == m_solid.queryGetOne(point))
-		return;
-	bool wasEmpty = m_solid.queryGetOne(point).empty();
 	if(wasEmpty)
 		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
-	m_solid.maybeInsert(point, materialType);
-	if(constructed)
-		m_constructed.maybeInsert(point);
 	fluid_onPointSetSolid(point);
-	// TODO: why?
-	m_visible.maybeInsert(point);
 	// Space below are no longer exposed to sky.
-	const Point3D& below = point.below();
-	if(below.exists() && m_exposedToSky.check(below))
-		m_exposedToSky.unset(m_area, below);
+	if(point.z() != 0)
+	{
+		const Point3D& below = point.below();
+		if(m_exposedToSky.check(below))
+			m_exposedToSky.unset(m_area, below);
+	}
 	// Record as meltable.
 	if(m_exposedToSky.check(point) && MaterialType::canMelt(materialType))
 		m_area.m_hasTemperature.addMeltableSolidPointAboveGround(point);
 	// Remove from stockpiles.
 	m_area.m_hasStockPiles.removePointFromAllFactions(point);
 	m_area.m_hasCraftingLocationsAndJobs.maybeRemoveLocation(point);
-	if(wasEmpty && m_reservables.queryAny(point))
-		// There are no reservations which can exist on both a solid and not solid point.
-		dishonorAllReservations(point);
-	m_area.m_hasTerrainFacades.updatePointAndAdjacent(point);
 	m_area.m_exteriorPortals.onPointCanNotTransmitTemperature(m_area, point);
-}
-void Space::solid_setNotShared(const Point3D& point)
-{
-	if(!solid_is(point))
-		return;
-	if(m_exposedToSky.check(point) && MaterialType::canMelt(m_solid.queryGetOne(point)))
-		m_area.m_hasTemperature.removeMeltableSolidPointAboveGround(point);
-	m_solid.maybeRemove(point);
-	m_constructed.maybeRemove(point);
-	fluid_onPointSetNotSolid(point);
-	//TODO: Check if any adjacent are visible first?
-	// TODO: Why are we doing this? What does visible actually mean?
-	m_visible.maybeInsert(point);
-	setBelowVisible(point);
-	// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid point.
-	m_reservables.remove(point);
-	m_area.m_hasTerrainFacades.updatePointAndAdjacent(point);
-	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
-	m_area.m_exteriorPortals.onPointCanTransmitTemperature(m_area, point);
-	const Point3D& below = point.below();
-	if(m_exposedToSky.check(point))
-	{
-		if(below.exists() && !m_exposedToSky.check(below))
-			m_exposedToSky.set(m_area, below);
-	}
 }
 void Space::solid_set(const Point3D& point, const MaterialTypeId& materialType, bool constructed)
 {
-	bool wasEmpty = m_solid.queryGetOne(point).empty();
-	solid_setShared(point, materialType, constructed);
-	// Opacity.
-	if(!MaterialType::getTransparent(materialType) && wasEmpty)
-	{
-		m_area.m_visionCuboids.pointIsOpaque(point);
-		m_area.m_opacityFacade.update(m_area, point);
-	}
+	solid_setCuboid({point, point}, materialType, constructed);
 }
 void Space::solid_setNot(const Point3D& point)
 {
-	bool wasTransparent = MaterialType::getTransparent(solid_get(point));
-	solid_setNotShared(point);
-	// Vision cuboid.
-	if(!wasTransparent)
-	{
-		m_area.m_visionCuboids.pointIsTransparent(point);
-		m_area.m_opacityFacade.update(m_area, point);
-	}
-	// Gravity.
-	const Point3D& above = point.above();
-	if(above.exists() && shape_anythingCanEnterEver(above))
-		maybeContentsFalls(above);
+	solid_setNotCuboid({point, point});
 }
 void Space::solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& materialType, bool constructed)
 {
+	const MaterialTypeId& previous = m_solid.queryGetOne(cuboid);
+	bool wasTransparent = (previous.empty() || MaterialType::getTransparent(previous));
+	m_solid.maybeInsert(cuboid, materialType);
+	if(constructed)
+		m_constructed.maybeInsert(cuboid);
+	// TODO: why?
+	m_visible.maybeInsert(cuboid);
+	Plants& plants = m_area.getPlants();
+	const auto& plantIndices = m_plants.queryGetAll(cuboid);
+	for(const PlantIndex& plant : plantIndices)
+	{
+		assert(!PlantSpecies::getIsTree(plants.getSpecies(plant)));
+		plants.die(plant);
+	}
+	m_area.m_hasTerrainFacades.maybeSetImpassable(cuboid);
 	for(const Point3D& point : cuboid)
-		solid_setShared(point, materialType, constructed);
+		solid_setShared(point, materialType, previous.empty());
+	m_support.set(cuboid);
 	// Vision cuboid.
-	if(!MaterialType::getTransparent(materialType))
+	if(!MaterialType::getTransparent(materialType) && wasTransparent)
 	{
 		m_area.m_visionCuboids.cuboidIsOpaque(cuboid);
 		m_area.m_opacityFacade.maybeInsertFull(cuboid);
@@ -112,11 +68,51 @@ void Space::solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& material
 }
 void Space::solid_setNotCuboid(const Cuboid& cuboid)
 {
+	const auto& previous = m_solid.queryGetAll(cuboid);
+	if(previous.empty())
+		return;
+	bool wasTransparent = true;
+	for(const MaterialTypeId& material : previous)
+		if(!MaterialType::getTransparent(material))
+		{
+			wasTransparent = false;
+			break;
+		}
+	m_constructed.maybeRemove(cuboid);
+	// TODO: Why are we doing this? What does visible actually mean?
+	m_visible.maybeInsert(cuboid);
+	// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid point.
+	m_reservables.maybeRemove(cuboid);
+	m_area.m_hasTerrainFacades.update(cuboid);
+	const Cuboid spaceBoundry = boundry();
 	for(const Point3D& point : cuboid)
-		solid_setNotShared(point);
+	{
+		if(!solid_is(point))
+			continue;
+		if(m_exposedToSky.check(point) && MaterialType::canMelt(m_solid.queryGetOne(point)))
+			m_area.m_hasTemperature.removeMeltableSolidPointAboveGround(point);
+		fluid_onPointSetNotSolid(point);
+		setBelowVisible(point);
+		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
+	}
+	m_solid.maybeRemove(cuboid);
+	m_support.unset(cuboid);
+	for(const Point3D& point : cuboid)
+	{
+		m_area.m_exteriorPortals.onPointCanTransmitTemperature(m_area, point);
+		if(point.z() != 0 && m_exposedToSky.check(point))
+		{
+			const Point3D& below = point.below();
+			if(spaceBoundry.contains(below) && !m_exposedToSky.check(below))
+				m_exposedToSky.set(m_area, below);
+		}
+	}
 	// Vision cuboid.
-	m_area.m_visionCuboids.cuboidIsTransparent(cuboid);
-	m_area.m_opacityFacade.maybeRemoveFull(cuboid);
+	if(!wasTransparent)
+	{
+		m_area.m_visionCuboids.cuboidIsTransparent(cuboid);
+		m_area.m_opacityFacade.maybeRemoveFull(cuboid);
+	}
 	// Gravity.
 	const Point3D& aboveHighest = cuboid.m_highest.above();
 	if(aboveHighest.exists())
@@ -139,6 +135,15 @@ Mass Space::solid_getMass(const Point3D& point) const
 {
 	assert(solid_is(point));
 	return MaterialType::getDensity(m_solid.queryGetOne(point)) * FullDisplacement::create(Config::maxPointVolume.get());
+}
+Mass Space::solid_getMass(const CuboidSet& cuboidSet) const
+{
+	// TODO: use m_solid.queryCount(cuboidSet).
+	Mass output;
+	for(const Cuboid& cuboid : cuboidSet)
+		for(const Point3D& point : cuboid)
+			output += solid_getMass(point);
+	return output;
 }
 MaterialTypeId Space::solid_getHardest(const SmallSet<Point3D>& space)
 {

@@ -18,18 +18,18 @@ TEST_CASE("wound")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	ActorIndex actor = actors.create({
 		.species=dwarf,
-		.location=blocks.getIndex_i(1, 1, 2),
+		.location=Point3D::create(1, 1, 2),
 	});
-	BlockIndex pondLocation = blocks.getIndex_i(3, 7, 1);
-	blocks.solid_setNot(pondLocation);
-	blocks.fluid_add(pondLocation, Config::maxBlockVolume, FluidType::byName("water"));
-	BlockIndex fruitLocation = blocks.getIndex_i(6, 5, 2);
+	Point3D pondLocation = Point3D::create(3, 7, 1);
+	space.solid_setNot(pondLocation);
+	space.fluid_add(pondLocation, Config::maxPointVolume, FluidType::byName("water"));
+	Point3D fruitLocation = Point3D::create(6, 5, 2);
 	items.create({.itemType=ItemType::byName("apple"), .materialType=MaterialType::byName("fruit"), .location=fruitLocation, .quantity=Quantity::create(50u)});
 	SUBCASE("bleed to death")
 	{

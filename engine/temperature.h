@@ -24,6 +24,7 @@ class TemperatureSource final
 	TemperatureDelta getTemperatureDeltaForRange(const Distance& range);
 	void apply(Area& area);
 public:
+	TemperatureSource() { assert(false); std::unreachable(); }
 	TemperatureSource(Area& a, const TemperatureDelta& t, const Point3D& b) : m_point(b), m_temperature(t) { apply(a); }
 	void setTemperature(Area& a, const TemperatureDelta& t);
 	void unapply(Area& a);

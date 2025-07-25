@@ -61,6 +61,7 @@ namespace Config
 	inline float digStrengthModifier;
 	inline Priority drinkPriority;
 	inline Priority eatPriority;
+	inline Energy energyGeneratedByOneUnitMassFallingOneDistance;
 	inline Priority equipPriority;
 	inline Step exterminateCheckFrequency;
 	inline Priority exterminatePriority;

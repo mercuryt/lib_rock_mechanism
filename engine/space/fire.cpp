@@ -3,7 +3,8 @@
 #include "../definitions/materialType.h"
 #include "../fire.h"
 #include "../area/area.h"
-#include "numericTypes/types.h"
+#include "../numericTypes/types.h"
+#include "../dataStructures/rtreeData.hpp"
 #include <algorithm>
 void Space::fire_maybeIgnite(const Point3D& point, const MaterialTypeId& materialType)
 {
@@ -26,8 +27,9 @@ bool Space::fire_exists(const Point3D& point) const
 }
 bool Space::fire_existsForMaterialType(const Point3D& point, const MaterialTypeId& materialType) const
 {
-	const auto ptr =  m_fires.queryGetOne(point);
-	assert(ptr != nullptr);
+	const auto ptr = m_fires.queryGetOneOr(point, nullptr);
+	if(ptr == nullptr)
+		return false;
 	return ptr->contains(materialType);
 }
 FireStage Space::fire_getStage(const Point3D& point) const

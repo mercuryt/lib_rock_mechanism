@@ -7,8 +7,8 @@
 #include "../numericTypes/index.h"
 
 class Point3D;
-class Cuboid;
-class Sphere;
+struct Cuboid;
+struct Sphere;
 
 struct Point3DSet
 {

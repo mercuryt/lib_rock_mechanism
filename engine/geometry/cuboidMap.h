@@ -9,7 +9,7 @@
 #include <vector>
 
 template<typename Key>
-class CuboidMap
+struct CuboidMap
 {
 	CuboidSetSIMD m_cuboids;
 	std::vector<Key> m_keys;

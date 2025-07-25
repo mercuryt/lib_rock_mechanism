@@ -1,11 +1,15 @@
 #pragma once
+#include "../numericTypes/types.h"
 #include "../geometry/cuboidSet.h"
 #include "../dataStructures/smallSet.h"
 #include "../dataStructures/smallMap.h"
-#include "../numericTypes/types.h"
 #include "../dataStructures/strongVector.h"
+#include "../dataStructures/rtreeData.h"
 #include "../callbackTypes.h"
 #include "../designations.h"
+
+class Space;
+
 struct LongRangePathNode
 {
 	CuboidSetWithBoundingBoxAdjacent contents;
@@ -28,18 +32,18 @@ class LongRangePathFinderForMoveType
 {
 	StrongVector<LongRangePathNode, LongRangePathNodeIndex> m_data;
 	RTreeData<LongRangePathNodeIndex> m_pathNodesByPoint;
-	void merge(Space& space, const LongRangePathNodeIndex& mergeInto, const LongRangePathNodeIndex& mergeFrom);
-	LongRangePathNodeIndex create(Space& space, const Point3D& point);
-	LongRangePathNodeIndex create(Space& space, const Cuboid& cuboid);
-	void addPointToNode(Space& space, const LongRangePathNodeIndex& node, const Point3D& point);
+	void merge(const LongRangePathNodeIndex& mergeInto, const LongRangePathNodeIndex& mergeFrom);
+	LongRangePathNodeIndex create(const Point3D& point);
+	LongRangePathNodeIndex create(const Cuboid& cuboid);
+	void addPointToNode(const LongRangePathNodeIndex& node, const Point3D& point);
 public:
 	void setPointPathable(Area& area, const Point3D& point);
 	void setPointNotPathable(Area& area, const Point3D& point);
-	void clearDestroyed(Space& space);
+	void clearDestroyed();
 	void recordPointHasDesignation(Area& area, const Point3D& point, const SpaceDesignation& designation);
 	void recordPointDoesNotHaveDesignation(Area& area, const Point3D& point, const SpaceDesignation& designation);
 	[[nodiscard]] bool canAbsorbNode(const LongRangePathNode& a, LongRangePathNode& b);
-	[[nodiscard]] bool canAbsorbPoint(const Space& space, const LongRangePathNode& node, const Point3D& point);
+	[[nodiscard]] bool canAbsorbPoint(const LongRangePathNode& node, const Point3D& point);
 	[[nodiscard]] bool canAbsorbCuboid(const LongRangePathNode& node, const Cuboid& cuboid);
 	[[nodiscard]] SmallSet<LongRangePathNodeIndex> pathToPoint(const Point3D& start, const Point3D& destination);
 	[[nodiscard]] SmallSet<LongRangePathNodeIndex> pathToDesignation(const Point3D& start, const SpaceDesignation& designation, const FactionId& faction);
@@ -60,7 +64,7 @@ public:
 	{
 		SmallMap<LongRangePathNodeIndex, LongRangePathNodeIndex> closed;
 		std::deque<LongRangePathNodeIndex> open;
-		const LongRangePathNodeIndex startNodeIndex = m_pathNodesByPoint[start];
+		const LongRangePathNodeIndex startNodeIndex = m_pathNodesByPoint.queryGetOne(start);
 		closed.insert(startNodeIndex, LongRangePathNodeIndex::max());
 		open.push_back(startNodeIndex);
 		while(!open.empty())

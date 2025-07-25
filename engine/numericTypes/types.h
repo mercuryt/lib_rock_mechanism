@@ -199,8 +199,17 @@ class Speed : public StrongInteger<Speed, SpeedWidth>
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Speed& index) const { return index.get(); } };
 };
-inline void to_json(Json& data, const Speed& index) { data = index.get(); }
-inline void from_json(const Json& data, Speed& index) { index = Speed::create(data.get<SpeedWidth>()); }
+inline void to_json(Json& data, const Speed& speed) { data = speed.get(); }
+inline void from_json(const Json& data, Speed& speed) { speed = Speed::create(data.get<SpeedWidth>()); }
+
+using EnergyWidth = uint32_t;
+class Energy : public StrongInteger<Energy, EnergyWidth>
+{
+public:
+	struct Hash { [[nodiscard]] size_t operator()(const Energy& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const Energy& index) { data = index.get(); }
+inline void from_json(const Json& data, Energy& index) { index = Energy::create(data.get<EnergyWidth>()); }
 
 using MoveCostWidth = uint32_t;
 class MoveCost : public StrongInteger<MoveCost, MoveCostWidth>
@@ -338,3 +347,5 @@ NLOHMANN_JSON_SERIALIZE_ENUM(PointFeatureTypeId,
 	{PointFeatureTypeId::Stairs, "Stairs"},
 	{PointFeatureTypeId::Null, "Null"}
 });
+
+enum class Dimensions {X,Y,Z};

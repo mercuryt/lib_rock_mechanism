@@ -4,154 +4,126 @@
 #include "../../engine/definitions/definitions.h"
 #include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
-#include "../../engine/blocks/blocks.h"
+#include "../../engine/space/space.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
-TEST_CASE("Cave In")
+TEST_CASE("caveIn")
 {
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
+	Support& support = space.getSupport();
 	static MaterialTypeId marble = MaterialType::byName("marble");
 	SUBCASE("Cave In doesn't happen when block is supported.")
 	{
-		areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
+		areaBuilderUtil::setSolidLayer(area, Distance::create(0), marble);
 		// Set a supported block to be solid, verify nothing happens.
-		BlockIndex block = blocks.getIndex_i(5, 5, 1);
-		blocks.solid_set(block, marble, false);
-		area.m_caveInCheck.insert(block);
-		area.stepCaveInRead();
-		CHECK(area.m_caveInCheck.empty());
-		CHECK(area.m_caveInData.empty());
-		area.stepCaveInWrite();
-		CHECK(area.m_caveInCheck.size() == 0);
+		Point3D block = Point3D::create(5, 5, 1);
+		space.solid_set(block, marble, false);
+		support.maybeFall({block, block});
+		support.doStep(area);
+		CHECK(support.maybeFallVolume() == 0);
 	}
 	SUBCASE("Cave in does happen when block is not supported.")
 	{
-		areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
+		areaBuilderUtil::setSolidLayer(area, Distance::create(0), marble);
 		// Set a floating block to be solid and add to caveInCheck, verify it falls.
-		BlockIndex block = blocks.getIndex_i(5, 5, 2);
-		blocks.solid_set(block, marble, false);
-		area.m_caveInCheck.insert(block);
-		area.stepCaveInRead();
-		CHECK(area.m_caveInData.size() == 1);
-		area.stepCaveInWrite();
-		CHECK(!blocks.solid_is(blocks.getIndex_i(5, 5, 2)));
-		CHECK(blocks.solid_get(blocks.getIndex_i(5, 5, 1)) == marble);
-		CHECK(area.m_caveInCheck.size() == 1);
-		area.stepCaveInRead();
-		CHECK(area.m_caveInData.size() == 0);
-		area.stepCaveInWrite();
-		CHECK(area.m_caveInCheck.size() == 0);
+		Point3D block = Point3D::create(5, 5, 2);
+		space.solid_set(block, marble, false);
+		support.maybeFall({block, block});
+		support.doStep(area);
+		CHECK(!space.solid_is(Point3D::create(5, 5, 2)));
+		CHECK(space.solid_get(Point3D::create(5, 5, 1)) == marble);
+		CHECK(support.maybeFallVolume() == 0);
 	}
 	SUBCASE("Cave in does happen to multiple unconnected blocks which are unsuported.")
 	{
-		areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
+		areaBuilderUtil::setSolidLayer(area, Distance::create(0), marble);
 		// Verify multiple seperate blocks fall.
-		BlockIndex block = blocks.getIndex_i(5, 5, 2);
-		blocks.solid_set(block, marble, false);
-		BlockIndex block2 = blocks.getIndex_i(4, 4, 2);
-		blocks.solid_set(block2, marble, false);
-		area.m_caveInCheck.insert(block);
-		area.m_caveInCheck.insert(block2);
-		area.stepCaveInRead();
-		CHECK(area.m_caveInData.size() == 2);
-		area.stepCaveInWrite();
-		CHECK(!blocks.solid_is(block));
-		CHECK(!blocks.solid_is(block2));
-		CHECK(blocks.solid_get(blocks.getBlockBelow(block)) == marble);
-		CHECK(blocks.solid_get(blocks.getBlockBelow(block2)) == marble);
-		CHECK(area.m_caveInCheck.size() == 2);
+		Point3D block = Point3D::create(5, 5, 2);
+		space.solid_set(block, marble, false);
+		Point3D block2 = Point3D::create(4, 4, 2);
+		space.solid_set(block2, marble, false);
+		support.maybeFall({block, block});
+		support.maybeFall({block2, block2});
+		support.doStep(area);
+		CHECK(!space.solid_is(block));
+		CHECK(!space.solid_is(block2));
+		CHECK(space.solid_get(block.below()) == marble);
+		CHECK(space.solid_get(block2.below()) == marble);
+		CHECK(support.maybeFallVolume() == 0);
 	}
 	SUBCASE("Cave in connected blocks together.")
 	{
-		areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
+		areaBuilderUtil::setSolidLayer(area, Distance::create(0), marble);
 		// Verify contiguous groups fall together.
-		BlockIndex block = blocks.getIndex_i(5, 5, 2);
-		blocks.solid_set(block, marble, false);
-		BlockIndex block2 = blocks.getIndex_i(5, 6, 2);
-		blocks.solid_set(block2, marble, false);
-		area.m_caveInCheck.insert(block);
-		area.m_caveInCheck.insert(block2);
-		area.stepCaveInRead();
-		CHECK(area.m_caveInData.size() == 1);
-		area.stepCaveInWrite();
-		CHECK(!blocks.solid_is(block));
-		CHECK(!blocks.solid_is(block2));
-		CHECK(blocks.solid_get(blocks.getBlockBelow(block)) == marble);
-		CHECK(blocks.solid_get(blocks.getBlockBelow(block2)) == marble);
-		CHECK(area.m_caveInCheck.size() == 1);
+		Point3D block = Point3D::create(5, 5, 2);
+		space.solid_set(block, marble, false);
+		Point3D block2 = Point3D::create(5, 6, 2);
+		space.solid_set(block2, marble, false);
+		support.maybeFall({block, block});
+		support.maybeFall({block2, block2});
+		support.doStep(area);
+		CHECK(!space.solid_is(block));
+		CHECK(!space.solid_is(block2));
+		CHECK(space.solid_get(block.below()) == marble);
+		CHECK(space.solid_get(block2.below()) == marble);
+		CHECK(support.maybeFallVolume() == 0);
 	}
 	SUBCASE("Blocks on the edge of the area are anchored.")
 	{
-		areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
+		areaBuilderUtil::setSolidLayer(area, Distance::create(0), marble);
 		// Verify blocks on edges of area don't fall.
-		BlockIndex block = blocks.getIndex_i(0, 5, 2);
-		BlockIndex block2 = blocks.getIndex_i(1, 5, 2);
-		blocks.solid_set(block, marble, false);
-		blocks.solid_set(block2, marble, false);
-		area.m_caveInCheck.insert(block);
-		area.m_caveInCheck.insert(block2);
-		area.stepCaveInRead();
-		CHECK(area.m_caveInData.empty());
-		area.stepCaveInWrite();
-		CHECK(area.m_caveInCheck.empty());
-		CHECK(blocks.solid_get(block) == marble);
-		CHECK(blocks.solid_get(block2) == marble);
-		CHECK(!blocks.solid_is(blocks.getBlockBelow(block)));
-		CHECK(!blocks.solid_is(blocks.getBlockBelow(block2)));
-		CHECK(area.m_caveInCheck.size() == 0);
+		Point3D block = Point3D::create(0, 5, 2);
+		Point3D block2 = Point3D::create(1, 5, 2);
+		space.solid_set(block, marble, false);
+		space.solid_set(block2, marble, false);
+		support.maybeFall({block, block});
+		support.maybeFall({block2, block2});
+		support.doStep(area);
+		CHECK(space.solid_get(block) == marble);
+		CHECK(space.solid_get(block2) == marble);
+		CHECK(!space.solid_is(block.below()));
+		CHECK(!space.solid_is(block2.below()));
+		CHECK(support.maybeFallVolume() == 0);
 	}
 	SUBCASE("Verify recorded fall distance is the shortest.")
 	{
-		areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
-		BlockIndex block = blocks.getIndex_i(5, 5, 2);
-		BlockIndex block2 = blocks.getIndex_i(5, 5, 3);
-		BlockIndex block3 = blocks.getIndex_i(6, 5, 3);
-		blocks.solid_set(block, marble, false);
-		blocks.solid_set(block2, marble, false);
-		blocks.solid_set(block3, marble, false);
-		area.m_caveInCheck.insert(block);
-		area.m_caveInCheck.insert(block2);
-		area.m_caveInCheck.insert(block3);
-		area.stepCaveInRead();
-		CHECK(area.m_caveInData.size() == 1);
-		CHECK(std::get<0>(*area.m_caveInData.begin()).size() == 3);
-		CHECK(std::get<1>(*area.m_caveInData.begin()) == 1);
-		area.stepCaveInWrite();
-		CHECK(blocks.solid_get(block) == marble);
-		CHECK(blocks.solid_get(blocks.getBlockBelow(block)) == marble);
-		CHECK(!blocks.solid_is(block2));
-		CHECK(blocks.solid_get(blocks.getBlockBelow(block2)) == marble);
-		CHECK(!blocks.solid_is(block3));
-		CHECK(blocks.solid_get(blocks.getBlockBelow(block3)) == marble);
-		CHECK(area.m_caveInCheck.size() == 1);
+		areaBuilderUtil::setSolidLayer(area, Distance::create(0), marble);
+		Point3D block = Point3D::create(5, 5, 2);
+		Point3D block2 = Point3D::create(5, 5, 3);
+		Point3D block3 = Point3D::create(6, 5, 3);
+		space.solid_set(block, marble, false);
+		space.solid_set(block2, marble, false);
+		space.solid_set(block3, marble, false);
+		support.maybeFall({block, block});
+		support.maybeFall({block2, block2});
+		support.maybeFall({block2, block2});
+		support.doStep(area);
+		CHECK(space.solid_get(block) == marble);
+		CHECK(space.solid_get(block.below()) == marble);
+		CHECK(!space.solid_is(block2));
+		CHECK(space.solid_get(block2.below()) == marble);
+		CHECK(!space.solid_is(block3));
+		CHECK(space.solid_get(block3.below()) == marble);
+		CHECK(support.maybeFallVolume() == 0);
 	}
-	SUBCASE("Verify one group falling onto another unanchored group will keep falling in the next step.")
+	SUBCASE("Verify one group falling onto another unanchored group will keep falling.")
 	{
-		areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
-		BlockIndex block = blocks.getIndex_i(5, 5, 2);
-		BlockIndex block2 = blocks.getIndex_i(5, 5, 4);
-		blocks.solid_set(block, marble, false);
-		blocks.solid_set(block2, marble, false);
-		area.m_caveInCheck.insert(block);
-		area.m_caveInCheck.insert(block2);
-		area.stepCaveInRead();
-		CHECK(area.m_caveInData.size() == 2);
-		area.stepCaveInWrite();
-		CHECK(area.m_caveInCheck.size() == 2);
-		CHECK(!blocks.solid_is(block));
-		CHECK(!blocks.solid_is(block2));
-		CHECK(blocks.solid_get(blocks.getBlockBelow(block)) == marble);
-		CHECK(blocks.solid_get(blocks.getBlockBelow(block2)) == marble);
-		area.stepCaveInRead();
-		CHECK(area.m_caveInData.size() == 1);
-		area.stepCaveInWrite();
-		CHECK(blocks.solid_get(blocks.getBlockBelow(block)) == marble);
-		CHECK(blocks.solid_get(blocks.getBlockBelow(block)) == marble);
-		CHECK(!blocks.solid_is(block2));
-		CHECK(!blocks.solid_is(blocks.getBlockBelow(block2)));
-		CHECK(area.m_caveInCheck.size() == 1);
+		areaBuilderUtil::setSolidLayer(area, Distance::create(0), marble);
+		Point3D block = Point3D::create(5, 5, 2);
+		Point3D block2 = Point3D::create(5, 5, 4);
+		space.solid_set(block, marble, false);
+		space.solid_set(block2, marble, false);
+		support.maybeFall({block, block});
+		support.maybeFall({block2, block2});
+		support.doStep(area);
+		CHECK(space.solid_get(block.below()) == marble);
+		CHECK(!space.solid_is(block2));
+		CHECK(!space.solid_is(block2.below()));
+		CHECK(space.solid_is(block));
+		CHECK(space.solid_is(block.below()));
+		CHECK(support.maybeFallVolume() == 0);
 	}
 }

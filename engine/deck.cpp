@@ -4,24 +4,21 @@
 #include "actors/actors.h"
 #include "items/items.h"
 #include "reservable.hpp"
+#include "dataStructures/rtreeData.hpp"
 void AreaHasDecks::updatePoints(Area& area, const DeckId& id)
 {
-	auto view = m_data[id].cuboidSet.getView();
-	for(const Point3D& point : view)
+	for(const Cuboid& cuboid : m_data[id].cuboidSet)
 	{
-		assert(!m_pointData.queryAny(point));
-		m_pointData.maybeInsert(point, id);
-		// TODO: bulk update.
-		area.m_hasTerrainFacades.updatePointAndAdjacent(point);
+		area.m_hasTerrainFacades.update(cuboid);
+		m_pointData.maybeInsert(cuboid, id);
 	}
 }
 void AreaHasDecks::clearPoints(Area& area, const DeckId& id)
 {
-	for(const Point3D& point : m_data[id].cuboidSet.getView())
+	for(const Cuboid& cuboid : m_data[id].cuboidSet)
 	{
-		m_pointData.maybeRemove(point);
-		// TODO: bulk update.
-		area.m_hasTerrainFacades.updatePointAndAdjacent(point);
+		m_pointData.maybeRemove(cuboid);
+		area.m_hasTerrainFacades.update(cuboid);
 	}
 }
 [[nodiscard]] DeckId AreaHasDecks::registerDecks(Area& area, CuboidSet& decks, const ActorOrItemIndex& actorOrItemIndex)
@@ -60,7 +57,7 @@ DeckRotationData DeckRotationData::recordAndClearDependentPositions(Area& area, 
 	DeckRotationData output;
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	SmallSet<ActorOrItemIndex> actorsOrItemsOnDeck;
 	SmallSet<Project*> projectsOnDeck;
 	SmallSet<Point3D> pointsContainingFluid;
@@ -122,7 +119,7 @@ DeckRotationData DeckRotationData::recordAndClearDependentPositions(Area& area, 
 }
 void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const Point3D& previousPivot, const Point3D& newPivot, const Facing4& previousFacing, const Facing4& newFacing)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	SmallSet<ActorIndex> actorsWhichCannotReserveRotatedPosition;
@@ -196,7 +193,7 @@ void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const Point3D& pr
 }
 SetLocationAndFacingResult DeckRotationData::tryToReinstanceAtRotatedPosition(Area& area, const Point3D& previousPivot, const Point3D& newPivot, const Facing4& previousFacing, const Facing4& newFacing)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	SmallSet<ActorIndex> actorsWhichCannotReserveRotatedPosition;

@@ -4,7 +4,7 @@
 #include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/config.h"
-#include "../../engine/blocks/blocks.h"
+#include "../../engine/space/space.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
@@ -13,10 +13,9 @@ TEST_CASE("vision cuboid basic")
 {
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(2,2,2);
-	Blocks& blocks = area.getSpace();
 	auto& cuboids = area.m_visionCuboids;
-	const BlockIndex& low = blocks.getIndex_i(0, 0, 0);
-	const BlockIndex& high = blocks.getIndex_i(1, 1, 1);
+	const Point3D& low = Point3D::create(0, 0, 0);
+	const Point3D& high = Point3D::create(1, 1, 1);
 	SUBCASE("create")
 	{
 		CHECK(cuboids.size() == 1);
@@ -29,17 +28,17 @@ TEST_CASE("vision cuboid basic")
 	}
 	SUBCASE("can merge")
 	{
-		const BlockIndex& low = blocks.getIndex_i(0, 0, 0);
-		cuboids.blockIsOpaque(low);
+		const Point3D& low = Point3D::create(0, 0, 0);
+		cuboids.pointIsOpaque(low);
 		CHECK(cuboids.size() == 3);
 		CHECK(cuboids.maybeGetVisionCuboidIndexForPoint(low).empty());
 		VisionCuboidId highCuboid = cuboids.getVisionCuboidIndexForPoint(high);
 		CHECK(cuboids.getCuboidByVisionCuboidId(highCuboid).size() == 4);
 		CHECK(cuboids.getAdjacentsForVisionCuboid(highCuboid).size() == 2);
-		VisionCuboidId eastCuboid = cuboids.getVisionCuboidIndexForPoint(blocks.getIndex_i(0, 1, 0));
+		VisionCuboidId eastCuboid = cuboids.getVisionCuboidIndexForPoint(Point3D::create(0, 1, 0));
 		CHECK(cuboids.getCuboidByVisionCuboidId(eastCuboid).size() == 2);
 		CHECK(cuboids.getAdjacentsForVisionCuboid(eastCuboid).size() == 2);
-		VisionCuboidId southCuboid = cuboids.getVisionCuboidIndexForPoint(blocks.getIndex_i(1, 0, 0));
+		VisionCuboidId southCuboid = cuboids.getVisionCuboidIndexForPoint(Point3D::create(1, 0, 0));
 		CHECK(cuboids.getCuboidByVisionCuboidId(southCuboid).size() == 1);
 		CHECK(cuboids.getAdjacentsForVisionCuboid(southCuboid).size() == 2);
 		CHECK(cuboids.getAdjacentsForVisionCuboid(highCuboid).contains(eastCuboid));
@@ -48,7 +47,7 @@ TEST_CASE("vision cuboid basic")
 		CHECK(cuboids.getAdjacentsForVisionCuboid(eastCuboid).contains(southCuboid));
 		CHECK(cuboids.getAdjacentsForVisionCuboid(southCuboid).contains(highCuboid));
 		CHECK(cuboids.getAdjacentsForVisionCuboid(southCuboid).contains(eastCuboid));
-		cuboids.blockIsTransparent(low);
+		cuboids.pointIsTransparent(low);
 		CHECK(cuboids.size() == 1);
 		CHECK(cuboids.getVisionCuboidIndexForPoint(low).exists());
 		VisionCuboidId cuboid = cuboids.getVisionCuboidIndexForPoint(high);
@@ -62,13 +61,12 @@ TEST_CASE("vision cuboid split")
 	SUBCASE("split at")
 	{
 		Area& area = simulation.m_hasAreas->createArea(2,2,1);
-		Blocks& blocks = area.getSpace();
-		BlockIndex b1 = blocks.getIndex_i(0, 0, 0);
-		BlockIndex b2 = blocks.getIndex_i(1, 0, 0);
-		BlockIndex b3 = blocks.getIndex_i(0, 1, 0);
-		BlockIndex b4 = blocks.getIndex_i(1, 1, 0);
+		Point3D b1 = Point3D::create(0, 0, 0);
+		Point3D b2 = Point3D::create(1, 0, 0);
+		Point3D b3 = Point3D::create(0, 1, 0);
+		Point3D b4 = Point3D::create(1, 1, 0);
 		CHECK(area.m_visionCuboids.size() == 1);
-		area.m_visionCuboids.remove({blocks, b4, b4});
+		area.m_visionCuboids.remove(Cuboid{b4, b4});
 		CHECK(area.m_visionCuboids.maybeGetVisionCuboidIndexForPoint(b4).empty());
 		CHECK(area.m_visionCuboids.size() == 2);
 		VisionCuboidId vc1 = area.m_visionCuboids.getVisionCuboidIndexForPoint(b1);
@@ -91,11 +89,11 @@ TEST_CASE("vision cuboid split")
 	SUBCASE("split below")
 	{
 		Area& area = simulation.m_hasAreas->createArea(3,3,3);
-		Blocks& blocks = area.getSpace();
-		BlockIndex middle = blocks.getIndex_i(1, 1, 1);
-		BlockIndex high = blocks.getIndex_i(2, 2, 2);
-		BlockIndex low = blocks.getIndex_i(0, 0, 0);
-		blocks.blockFeature_construct(middle, BlockFeatureTypeId::Floor, MaterialType::byName("marble"));
+		Space& space = area.getSpace();
+		Point3D middle = Point3D::create(1, 1, 1);
+		Point3D high = Point3D::create(2, 2, 2);
+		Point3D low = Point3D::create(0, 0, 0);
+		space.pointFeature_construct(middle, PointFeatureTypeId::Floor, MaterialType::byName("marble"));
 		CHECK(area.m_visionCuboids.size() == 2);
 		CHECK(area.m_visionCuboids.getVisionCuboidIndexForPoint(middle) == area.m_visionCuboids.getVisionCuboidIndexForPoint(high));
 		CHECK(area.m_visionCuboids.getVisionCuboidIndexForPoint(middle) != area.m_visionCuboids.getVisionCuboidIndexForPoint(low));

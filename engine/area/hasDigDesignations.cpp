@@ -31,7 +31,7 @@ Json HasDigDesignationsForFaction::toJson() const
 void HasDigDesignationsForFaction::designate(Area& area, const Point3D& point, [[maybe_unused]] const PointFeatureTypeId pointFeatureType)
 {
 	assert(!m_data.contains(point));
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	space.designation_set(point, m_faction, SpaceDesignation::Dig);
 	// To be called when point is no longer a suitable location, for example if it got dug out already.
 	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<DigLocationDishonorCallback>(m_faction, area, point);

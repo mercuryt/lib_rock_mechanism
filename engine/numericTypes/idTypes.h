@@ -34,8 +34,9 @@ class VisionCuboidId : public StrongInteger<VisionCuboidId, VisionCuboidIdWidth>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const VisionCuboidId& index) const { return index.get(); } };
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(VisionCuboidId, data);
 };
+inline void to_json(Json& data, const VisionCuboidId& index) { data = index.get(); }
+inline void from_json(const Json& data, VisionCuboidId& index) { index = VisionCuboidId::create(data.get<VisionCuboidIdWidth>()); }
 
 using FactionIdWidth = uint16_t;
 class FactionId : public StrongInteger<FactionId, FactionIdWidth>

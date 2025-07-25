@@ -1,8 +1,9 @@
 
- #include "space.h"
- #include "../area/area.h"
- #include "../items/items.h"
- #include "../portables.hpp"
+#include "space.h"
+#include "../area/area.h"
+#include "../items/items.h"
+#include "../portables.hpp"
+#include "../dataStructures/rtreeData.hpp"
 
 void Space::floating_maybeSink(const Point3D& index)
 {
@@ -13,8 +14,10 @@ void Space::floating_maybeSink(const Point3D& index)
 		if(items.isFloating(item) && !items.canFloatAt(item, location))
 		{
 			items.setNotFloating(item);
+			if(location.z() == 0)
+				continue;
 			const Point3D& below = location.below();
-			if(below.exists() && shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(below, items.getShape(item), items.getMoveType(item), items.getFacing(item), items.getOccupied(item)))
+			if(shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(below, items.getShape(item), items.getMoveType(item), items.getFacing(item), items.getOccupied(item)))
 				items.fall(item);
 		}
 	}

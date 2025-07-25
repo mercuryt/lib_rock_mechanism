@@ -5,7 +5,7 @@
 #include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
-#include "../../engine/blocks/blocks.h"
+#include "../../engine/space/space.h"
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
 #include "../../engine/definitions/animalSpecies.h"
@@ -20,31 +20,31 @@ TEST_CASE("Area")
 	Simulation simulation("", Step::create(1));
 	Area& area = simulation.m_hasAreas->createArea(10, 10, 10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	SUBCASE("Make Area")
 	{
-		CHECK(blocks.m_sizeX == 10);
-		CHECK(blocks.m_sizeY == 10);
-		CHECK(blocks.m_sizeZ == 10);
+		CHECK(space.m_sizeX == 10);
+		CHECK(space.m_sizeY == 10);
+		CHECK(space.m_sizeZ == 10);
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		CHECK(FluidType::getName(water) == "water");
-		CHECK(blocks.solid_get(blocks.getIndex_i(5, 5, 0)) == marble);
+		CHECK(space.solid_get(Point3D::create(5, 5, 0)) == marble);
 		area.doStep();
 	}
 	SUBCASE("Test fluid in area")
 	{
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		BlockIndex block1 = blocks.getIndex_i(5, 5, 1);
-		BlockIndex block2 = blocks.getIndex_i(5, 5, 2);
-		blocks.solid_setNot(block1);
-		blocks.fluid_add(block2, CollisionVolume::create(100), water);
-		FluidGroup* fluidGroup = blocks.fluid_getGroup(block2, water);
+		Point3D block1 = Point3D::create(5, 5, 1);
+		Point3D block2 = Point3D::create(5, 5, 2);
+		space.solid_setNot(block1);
+		space.fluid_add(block2, CollisionVolume::create(100), water);
+		FluidGroup* fluidGroup = space.fluid_getGroup(block2, water);
 		area.doStep();
 		++simulation.m_step;
 		CHECK(area.m_hasFluidGroups.getUnstable().size() == 1);
-		CHECK(blocks.fluid_getTotalVolume(block1) == 100);
-		CHECK(blocks.fluid_getTotalVolume(block2) == 0);
+		CHECK(space.fluid_getTotalVolume(block1) == 100);
+		CHECK(space.fluid_getTotalVolume(block2) == 0);
 		area.doStep();
 		CHECK(fluidGroup->m_stable);
 		CHECK(!area.m_hasFluidGroups.getUnstable().contains(fluidGroup));
@@ -54,29 +54,29 @@ TEST_CASE("Area")
 		if constexpr(!Config::fluidPiston)
 			return
 		areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
-		BlockIndex block1 = blocks.getIndex_i(5, 5, 1);
-		BlockIndex block2 = blocks.getIndex_i(5, 5, 2);
-		blocks.solid_setNot(block1);
-		blocks.fluid_add(block1, CollisionVolume::create(100), water);
-		blocks.solid_set(block2, marble, false);
-		area.m_caveInCheck.insert(block2);
-		FluidGroup* fluidGroup = blocks.fluid_getGroup(block1, water);
+		Point3D block1 = Point3D::create(5, 5, 1);
+		Point3D block2 = Point3D::create(5, 5, 2);
+		space.solid_setNot(block1);
+		space.fluid_add(block1, CollisionVolume::create(100), water);
+		space.solid_set(block2, marble, false);
+		space.getSupport().maybeFall({block2, block2});
+		FluidGroup* fluidGroup = space.fluid_getGroup(block1, water);
 		area.doStep();
 		++simulation.m_step;
 		CHECK(area.m_hasFluidGroups.getUnstable().size() == 1);
 		CHECK(area.m_hasFluidGroups.getUnstable().contains(fluidGroup));
 		CHECK(!fluidGroup->m_stable);
-		CHECK(blocks.fluid_getTotalVolume(block1) == 0);
-		CHECK(blocks.solid_get(block1) == marble);
-		CHECK(!blocks.solid_is(block2));
+		CHECK(space.fluid_getTotalVolume(block1) == 0);
+		CHECK(space.solid_get(block1) == marble);
+		CHECK(!space.solid_is(block2));
 		CHECK(fluidGroup->m_excessVolume == 100);
 		CHECK(fluidGroup->m_drainQueue.m_set.size() == 0);
 		CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
 		CHECK(fluidGroup->m_fillQueue.m_set.contains(block2));
-		CHECK(blocks.fluid_canEnterEver(block2));
+		CHECK(space.fluid_canEnterEver(block2));
 		area.doStep();
 		++simulation.m_step;
-		CHECK(blocks.fluid_getTotalVolume(block2) == 100);
+		CHECK(space.fluid_getTotalVolume(block2) == 100);
 		CHECK(fluidGroup->m_excessVolume == 0);
 		CHECK(!fluidGroup->m_stable);
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
@@ -84,8 +84,8 @@ TEST_CASE("Area")
 	SUBCASE("Test move with threading")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		BlockIndex origin = blocks.getIndex_i(1, 1, 1);
-		BlockIndex destination = blocks.getIndex_i(8, 8, 1);
+		Point3D origin = Point3D::create(1, 1, 1);
+		Point3D destination = Point3D::create(8, 8, 1);
 		ActorIndex actor = actors.create(ActorParamaters{
 			.species=dwarf,
 			.location=origin,
@@ -122,11 +122,11 @@ TEST_CASE("Area")
 	SUBCASE("Test mist spreads")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		BlockIndex origin = blocks.getIndex_i(5, 5, 1);
-		BlockIndex block1 = blocks.getIndex_i(5, 6, 1);
-		BlockIndex block2 = blocks.getIndex_i(6, 6, 1);
-		BlockIndex block3 = blocks.getIndex_i(5, 5, 2);
-		blocks.fluid_spawnMist(origin, water);
+		Point3D origin = Point3D::create(5, 5, 1);
+		Point3D block1 = Point3D::create(5, 6, 1);
+		Point3D block2 = Point3D::create(6, 6, 1);
+		Point3D block3 = Point3D::create(5, 5, 2);
+		space.fluid_spawnMist(origin, water);
 		Step scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		CHECK(scheduledStep == 11);
 		while(simulation.m_step != scheduledStep)
@@ -135,14 +135,14 @@ TEST_CASE("Area")
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		CHECK(blocks.fluid_getMist(block1).empty());
+		CHECK(space.fluid_getMist(block1).empty());
 		area.doStep();
 		simulation.m_eventSchedule.doStep(simulation.m_step);
 		++simulation.m_step;
-		CHECK(blocks.fluid_getMist(origin) == water);
-		CHECK(blocks.fluid_getMist(block1) == water);
-		CHECK(blocks.fluid_getMist(block2).empty());
-		CHECK(blocks.fluid_getMist(block3) == water);
+		CHECK(space.fluid_getMist(origin) == water);
+		CHECK(space.fluid_getMist(block1) == water);
+		CHECK(space.fluid_getMist(block2).empty());
+		CHECK(space.fluid_getMist(block3) == water);
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		while(simulation.m_step != scheduledStep + 1 )
 		{
@@ -150,10 +150,10 @@ TEST_CASE("Area")
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		CHECK(blocks.fluid_getMist(origin) == water);
-		CHECK(blocks.fluid_getMist(block1) == water);
-		CHECK(blocks.fluid_getMist(block2) == water);
-		CHECK(blocks.fluid_getMist(block3) == water);
+		CHECK(space.fluid_getMist(origin) == water);
+		CHECK(space.fluid_getMist(block1) == water);
+		CHECK(space.fluid_getMist(block2) == water);
+		CHECK(space.fluid_getMist(block3) == water);
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		while(simulation.m_step != scheduledStep + 1)
 		{
@@ -161,10 +161,10 @@ TEST_CASE("Area")
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		CHECK(blocks.fluid_getMist(origin).empty());
-		CHECK(blocks.fluid_getMist(block1) == water);
-		CHECK(blocks.fluid_getMist(block2) == water);
-		CHECK(blocks.fluid_getMist(block3) == water);
+		CHECK(space.fluid_getMist(origin).empty());
+		CHECK(space.fluid_getMist(block1) == water);
+		CHECK(space.fluid_getMist(block2) == water);
+		CHECK(space.fluid_getMist(block3) == water);
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		while(simulation.m_step != scheduledStep + 1)
 		{
@@ -172,10 +172,10 @@ TEST_CASE("Area")
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		CHECK(blocks.fluid_getMist(origin).empty());
-		CHECK(blocks.fluid_getMist(block1).empty());
-		CHECK(blocks.fluid_getMist(block2) == water);
-		CHECK(blocks.fluid_getMist(block3).empty());
+		CHECK(space.fluid_getMist(origin).empty());
+		CHECK(space.fluid_getMist(block1).empty());
+		CHECK(space.fluid_getMist(block2) == water);
+		CHECK(space.fluid_getMist(block3).empty());
 		scheduledStep = simulation.m_eventSchedule.m_data.begin()->first;
 		while(simulation.m_step != scheduledStep + 1)
 		{
@@ -183,10 +183,10 @@ TEST_CASE("Area")
 			simulation.m_eventSchedule.doStep(simulation.m_step);
 			++simulation.m_step;
 		}
-		CHECK(blocks.fluid_getMist(origin).empty());
-		CHECK(blocks.fluid_getMist(block1).empty());
-		CHECK(blocks.fluid_getMist(block2).empty());
-		CHECK(blocks.fluid_getMist(block3).empty());
+		CHECK(space.fluid_getMist(origin).empty());
+		CHECK(space.fluid_getMist(block1).empty());
+		CHECK(space.fluid_getMist(block2).empty());
+		CHECK(space.fluid_getMist(block3).empty());
 	}
 }
 TEST_CASE("vision-threading")
@@ -197,23 +197,20 @@ TEST_CASE("vision-threading")
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
-	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
-	BlockIndex block1 = blocks.getIndex_i(3, 3, 1);
-	BlockIndex block2 = blocks.getIndex_i(7, 7, 1);
-	Point3D point1 = blocks.getCoordinates(block1);
-	Point3D point2 = blocks.getCoordinates(block2);
+	Point3D point1 = Point3D::create(3, 3, 1);
+	Point3D point2 = Point3D::create(7, 7, 1);
 	CHECK(point2.isInFrontOf(point1, point1.getFacingTwords(point2)));
 	CHECK(point1.isInFrontOf(point2, point2.getFacingTwords(point1)));
 	ActorIndex a1 = actors.create(ActorParamaters{
 		.species=dwarf,
-		.location=block1,
+		.location=point1,
 		.facing=point1.getFacingTwords(point2),
 	});
 	CHECK(area.m_visionRequests.size() == 1);
 	ActorIndex a2 = actors.create(ActorParamaters{
 		.species=dwarf,
-		.location=block2,
+		.location=point2,
 		.facing=point2.getFacingTwords(point1),
 	});
 	CHECK(area.m_visionRequests.size() == 2);
@@ -227,18 +224,18 @@ TEST_CASE("multiMergeOnAdd")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(2,2,1);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getSpace();
-	BlockIndex block1 = blocks.getIndex_i(0, 0, 0);
-	BlockIndex block2 = blocks.getIndex_i(0, 1, 0);
-	BlockIndex block3 = blocks.getIndex_i(1, 0, 0);
-	BlockIndex block4 = blocks.getIndex_i(1, 1, 0);
-	blocks.fluid_add(block1, Config::maxBlockVolume, water);
+	Space& space = area.getSpace();
+	Point3D block1 = Point3D::create(0, 0, 0);
+	Point3D block2 = Point3D::create(0, 1, 0);
+	Point3D block3 = Point3D::create(1, 0, 0);
+	Point3D block4 = Point3D::create(1, 1, 0);
+	space.fluid_add(block1, Config::maxPointVolume, water);
 	CHECK(area.m_hasFluidGroups.getAll().size() == 1);
-	blocks.fluid_add(block4, Config::maxBlockVolume, water);
+	space.fluid_add(block4, Config::maxPointVolume, water);
 	CHECK(area.m_hasFluidGroups.getAll().size() == 2);
-	blocks.fluid_add(block2, Config::maxBlockVolume, water);
+	space.fluid_add(block2, Config::maxPointVolume, water);
 	CHECK(area.m_hasFluidGroups.getAll().size() == 1);
-	blocks.fluid_add(block3, Config::maxBlockVolume, water);
+	space.fluid_add(block3, Config::maxPointVolume, water);
 	CHECK(area.m_hasFluidGroups.getAll().size() == 1);
 	simulation.doStep();
 }
@@ -257,31 +254,31 @@ inline void fourFluidsTestParallel(uint32_t scale, Step steps)
 	Simulation simulation("", Step::create(0));
 	Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	areaBuilderUtil::setSolidWalls(area, maxZ - 1, marble);
 	std::vector<FluidGroup*> newlySplit;
 	// Water is at 0,0
-	BlockIndex water1 = blocks.getIndex_i(1, 1, 1);
-	BlockIndex water2 = blocks.getIndex_i(halfMaxX - 1, halfMaxY - 1, maxZ - 1);
+	Point3D water1 = Point3D::create(1, 1, 1);
+	Point3D water2 = Point3D::create(halfMaxX - 1, halfMaxY - 1, maxZ - 1);
 	areaBuilderUtil::setFullFluidCuboid(area, water1, water2, water);
 	// CO2 is at 0,1
-	BlockIndex CO2_1 = blocks.getIndex_i(1, halfMaxY, 1);
-	BlockIndex CO2_2 = blocks.getIndex_i(halfMaxX - 1, maxY - 2, maxZ - 1);
+	Point3D CO2_1 = Point3D::create(1, halfMaxY, 1);
+	Point3D CO2_2 = Point3D::create(halfMaxX - 1, maxY - 2, maxZ - 1);
 	areaBuilderUtil::setFullFluidCuboid(area, CO2_1, CO2_2, CO2);
 	// Lava is at 1,0
-	BlockIndex lava1 = blocks.getIndex_i(halfMaxX, 1, 1);
-	BlockIndex lava2 = blocks.getIndex_i(maxX - 2, halfMaxY - 1, maxZ - 1);
+	Point3D lava1 = Point3D::create(halfMaxX, 1, 1);
+	Point3D lava2 = Point3D::create(maxX - 2, halfMaxY - 1, maxZ - 1);
 	areaBuilderUtil::setFullFluidCuboid(area, lava1, lava2, lava);
 	// Mercury is at 1,1
-	BlockIndex mercury1 = blocks.getIndex_i(halfMaxX, halfMaxY, 1);
-	BlockIndex mercury2 = blocks.getIndex_i(maxX - 2, maxY - 2, maxZ - 1);
+	Point3D mercury1 = Point3D::create(halfMaxX, halfMaxY, 1);
+	Point3D mercury2 = Point3D::create(maxX - 2, maxY - 2, maxZ - 1);
 	areaBuilderUtil::setFullFluidCuboid(area, mercury1, mercury2, mercury);
 	CHECK(area.m_hasFluidGroups.getAll().size() == 4);
-	FluidGroup* fgWater = blocks.fluid_getGroup(water1, water);
-	FluidGroup* fgCO2 = blocks.fluid_getGroup(CO2_1, CO2);
-	FluidGroup* fgLava = blocks.fluid_getGroup(lava1, lava);
-	FluidGroup* fgMercury = blocks.fluid_getGroup(mercury1, mercury);
+	FluidGroup* fgWater = space.fluid_getGroup(water1, water);
+	FluidGroup* fgCO2 = space.fluid_getGroup(CO2_1, CO2);
+	FluidGroup* fgLava = space.fluid_getGroup(lava1, lava);
+	FluidGroup* fgMercury = space.fluid_getGroup(mercury1, mercury);
 	CHECK(!fgWater->m_merged);
 	CHECK(!fgCO2->m_merged);
 	CHECK(!fgLava->m_merged);
@@ -315,8 +312,8 @@ inline void fourFluidsTestParallel(uint32_t scale, Step steps)
 	if(scale != 3)
 		CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
 	CHECK(fgMercury->totalVolume(area) == totalVolume);
-	CHECK(blocks.fluid_contains(blocks.getIndex_i(1, 1, 1), mercury));
-	CHECK(blocks.fluid_contains(blocks.getIndex_i(1, 1, maxZ - 1), CO2));
+	CHECK(space.fluid_contains(Point3D::create(1, 1, 1), mercury));
+	CHECK(space.fluid_contains(Point3D::create(1, 1, maxZ - 1), CO2));
 }
 TEST_CASE("four fluids scale 2 parallel")
 {

@@ -1,5 +1,6 @@
 #include "cuboid.h"
 #include "sphere.h"
+#include "offsetCuboid.h"
 #include "../area/area.h"
 #include "../numericTypes/types.h"
 #include "../space/space.h"
@@ -30,15 +31,24 @@ bool Cuboid::contains(const Point3D& point) const
 		return false;
 	}
 	assert(m_lowest.exists());
-	return contains(point);
-}
-bool Cuboid::contains(const Point3D& point) const
-{
-	return (point.data <= m_highest.data).all() && (point.data >= m_lowest.data).all();
+	return (m_highest.data >= point.data).all() && (m_lowest.data <= point.data).all();
 }
 bool Cuboid::contains(const Cuboid& cuboid) const
 {
 	return contains(cuboid.m_highest) && contains(cuboid.m_lowest);
+}
+bool Cuboid::contains(const Offset3D& offset) const
+{
+	assert(offset.exists());
+	return
+	(
+		(offset.data >= m_lowest.data.cast<OffsetWidth>()).all() &&
+		(offset.data <= m_highest.data.cast<OffsetWidth>()).all()
+	);
+}
+bool Cuboid::contains(const OffsetCuboid& cuboid) const
+{
+	return contains(cuboid.m_high) && contains(cuboid.m_low);
 }
 bool Cuboid::canMerge(const Cuboid& other) const
 {
@@ -105,10 +115,6 @@ void Cuboid::setFrom(const Point3D& point)
 {
 	m_highest = m_lowest = point;
 }
-void Cuboid::setFrom(const Point3D& point)
-{
-	m_highest = m_lowest = point;
-}
 void Cuboid::setFrom(const Point3D& a, const Point3D& b)
 {
 	Cuboid result = fromPointPair(a, b);
@@ -155,7 +161,7 @@ Cuboid Cuboid::inflateAdd(const Distance& distance) const
 {
 	return {
 		m_highest + distance,
-		m_lowest - distance
+		m_lowest.subtractWithMinimum(distance)
 	};
 }
 void Cuboid::clear() { m_lowest.clear(); m_highest.clear(); }
@@ -267,6 +273,25 @@ Facing6 Cuboid::getFacingTwordsOtherCuboid(const Cuboid& other) const
 bool Cuboid::isSomeWhatInFrontOf(const Point3D& point, const Facing4& facing) const
 {
 	return m_highest.isInFrontOf(point, facing) || m_lowest.isInFrontOf(point, facing);
+}
+bool Cuboid::isTouchingFace(const Cuboid& cuboid) const
+{
+	assert(isTouching(cuboid));
+	assert(!contains(cuboid));
+	const Eigen::Array<bool, 3, 1> maxEqualsMin = cuboid.m_lowest.data == m_highest.data;
+	const Eigen::Array<bool, 3, 1> minEqualsMax = cuboid.m_highest.data == m_lowest.data;
+	const Eigen::Array<bool, 3, 1> equalFaces = maxEqualsMin && minEqualsMax;
+	// If Two faces are equal then it is diagonal adjacent.
+	// If Three faces are equal then it is corner adjacent.
+	// One face is directly adjacent.
+	return equalFaces.count() == 1;
+}
+bool Cuboid::isTouchingFaceFromInside(const Cuboid& cuboid) const
+{
+	assert(cuboid.contains(*this));
+	const Eigen::Array<bool, 3, 1> maxEqualsMax = cuboid.m_highest.data == m_highest.data;
+	const Eigen::Array<bool, 3, 1> minEqualsMin = cuboid.m_lowest.data == m_lowest.data;
+	return (maxEqualsMax || minEqualsMin).any();
 }
 SmallSet<Cuboid> Cuboid::getChildrenWhenSplitByCuboid(const Cuboid& cuboid) const
 {
@@ -382,6 +407,10 @@ CuboidSurfaceView::Iterator::Iterator(const CuboidSurfaceView& v) :
 	view(v)
 {
 	setFace();
+}
+std::strong_ordering Cuboid::operator<=>(const Cuboid& other) const
+{
+	return m_highest <=> other.m_highest;
 }
 void CuboidSurfaceView::Iterator::setFace()
 {

@@ -1,6 +1,7 @@
 #pragma once
 #include "../geometry/cuboid.h"
 #include "../geometry/cuboidArray.h"
+#include "../geometry/cuboidSet.h"
 #include "../strongInteger.h"
 #include "../dataStructures/strongVector.h"
 #include "../dataStructures/smallMap.h"
@@ -16,10 +17,12 @@ concept Sortable = requires(T a, T b) {
     { a < b } -> std::same_as<bool>; // Check if operator< exists and returns bool
 };
 
+// TODO: create concept checking if T verifies the other template requirements.
+
 template<Sortable T, RTreeDataConfig config = RTreeDataConfig()>
 class RTreeData
 {
-	static constexpr uint nodeSize = 4;
+	static constexpr uint nodeSize = 32;
 	using IndexWidth = uint16_t;
 	class Index final : public StrongInteger<Index, IndexWidth>
 	{
@@ -81,7 +84,7 @@ class RTreeData
 	[[nodiscard]] SmallMap<Cuboid, T> gatherLeavesRecursive(const Index& parent) const;
 	void destroyWithChildren(const Index& index);
 	void tryToMergeLeaves(Node& parent);
-	void clearAllContained(Node& parent, const Cuboid& cuboid);
+	void clearAllContained(const Index& index, const Cuboid& cuboid);
 	void clearAllContainedWithValueRecursive(Node& parent, const Cuboid& cuboid, const T& value);
 	void addToNodeRecursive(const Index& index, const Cuboid& cuboid, const T& value);
 	// Removes intercepting leaves and contained branches. Intercepting branches are added to openList.
@@ -101,14 +104,13 @@ public:
 	void maybeInsert(const Cuboid& cuboid, const T& value);
 	void maybeRemove(const Cuboid& cuboid, const T& value);
 	void maybeRemove(const Cuboid& cuboid);
-	void maybeInsert(Cuboid&& cuboid, const T& value) { const Cuboid copy = cuboid; maybeInsert(copy, value); }
-	void maybeRemove(Cuboid&& cuboid, const T& value) { const Cuboid copy = cuboid; maybeRemove(copy, value); }
-	void maybeRemove(Cuboid&& cuboid) { const Cuboid copy = cuboid; maybeRemove(copy); }
 	void maybeInsert(const Point3D& point, const T& value) { const Cuboid cuboid = Cuboid(point, point); maybeInsert(cuboid, value); }
 	void maybeRemove(const Point3D& point, const T& value) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid, value); }
 	void maybeRemove(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid); }
-	void maybeInsertOrOverwrite(const Point3D& point, const T& value) { maybeRemove(point); maybeInsert(point, value); }
+	void maybeInsertOrOverwrite(const Point3D& point, const T& value);
 	void prepare();
+	void clear();
+	[[nodiscard]] bool empty() const { return leafCount() == 0; }
 	[[nodiscard]] Json toJson() const;
 	void load(const Json& data);
 	void update(const auto& shape, const T& oldValue, const T& newValue)
@@ -136,6 +138,47 @@ public:
 				}
 			const auto offsetOfFirstChild = node.offsetOfFirstChild();
 			const auto end = interceptMask.end();
+			for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+				if(*iter)
+				{
+					uint8_t offset = iter - begin;
+					openList.insert(Index::create(nodeDataAndChildIndices[offset].child));
+				}
+		}
+	}
+	void updateActionOne(const auto& shape, auto&& action)
+	{
+		SmallSet<Index> openList;
+		openList.insert(Index::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			const auto& leafCount = node.getLeafCount();
+			const auto& begin = interceptMask.begin();
+			const auto leafEnd = begin + leafCount;
+			if(!interceptMask.any())
+				continue;
+			if(interceptMask.head(leafCount).any())
+			{
+				for(auto iter = begin; iter != leafEnd; ++iter)
+					if(*iter)
+					{
+						uint8_t offset = iter - begin;
+						assert(nodeCuboids[offset].contains(shape));
+						const DataOrChild& dataOrChild = nodeDataAndChildIndices[offset];
+						// inflate from primitive temporarily for callback.
+						node.updateValue(ArrayIndex::create(offset), action(T::create(dataOrChild.data)));
+						return;
+
+					}
+			}
+			const auto& offsetOfFirstChild = node.offsetOfFirstChild();
+			const auto& end = interceptMask.end();
 			for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
 				if(*iter)
 				{
@@ -182,8 +225,9 @@ public:
 		}
 		return false;
 	}
-	[[nodiscard]]const T queryGetOne(const auto& shape) const
+	[[nodiscard]] const T queryGetOne(const auto& shape) const
 	{
+		assert(!config.leavesCanOverlap);
 		SmallSet<Index> openList;
 		openList.insert(Index::create(0));
 		while(!openList.empty())
@@ -223,6 +267,13 @@ public:
 			}
 		}
 		return m_nullValue;
+	}
+	[[nodiscard]] const T queryGetOneOr(const auto& shape, const T& alternate) const
+	{
+		const T& result = queryGetOne(shape);
+		if(result == m_nullValue)
+			return alternate;
+		return result;
 	}
 	[[nodiscard]] const SmallSet<T> queryGetAll(const auto& shape) const
 	{
@@ -265,7 +316,7 @@ public:
 						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
 			}
 		}
-		output.makeUnique();
+		assert(output.isUnique());
 		return output;
 	}
 	[[nodiscard]] const SmallSet<std::pair<Cuboid, T>> queryGetAllWithCuboids(const auto& shape) const
@@ -294,6 +345,52 @@ public:
 					{
 						const auto offset = iter - begin;
 						output.emplace(nodeCuboids[offset], T::create(nodeDataAndChildIndices[offset].data));
+					}
+			}
+			const auto begin = interceptMask.begin();
+			const auto end = begin + nodeSize;
+			if(offsetOfFirstChild == 0)
+			{
+				// Unrollable version for nodes where every slot is a child.
+				for(auto iter = begin; iter != end; ++iter)
+					if(*iter)
+						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
+			}
+			else
+			{
+				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+					if(*iter)
+						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
+			}
+		}
+		return output;
+	}
+	[[nodiscard]] CuboidSet queryGetAllCuboids(const auto& shape) const
+	{
+		SmallSet<Index> openList;
+		CuboidSet output;
+		openList.insert(Index::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			const auto leafCount = node.getLeafCount();
+			if(!interceptMask.any())
+				continue;
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			const auto offsetOfFirstChild = node.offsetOfFirstChild();
+			if(leafCount != 0 && interceptMask.head(leafCount).any())
+			{
+				auto begin = interceptMask.begin();
+				auto end = begin + leafCount;
+				for(auto iter = begin; iter != end; ++iter)
+					if(*iter)
+					{
+						const auto offset = iter - begin;
+						output.add(nodeCuboids[offset]);
 					}
 			}
 			const auto begin = interceptMask.begin();
@@ -368,14 +465,30 @@ public:
 		}
 		return output;
 	}
+	[[nodiscard]] CuboidSet queryGetIntersection(const auto& shape) const
+	{
+		const CuboidSet leaves = queryGetLeaves(shape);
+		CuboidSet output;
+		for(const Cuboid& leaf : leaves)
+			output.add(leaf.intersection(shape));
+		return output;
+	}
+	void queryRemove(CuboidSet& cuboids) const
+	{
+		Cuboid boundry = cuboids.boundry();
+		for(const Cuboid& cuboid : queryGetAllCuboids(boundry))
+			cuboids.remove(cuboid);
+	}
 	// For test and debug.
 	[[nodiscard]] __attribute__((noinline)) uint nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
 	[[nodiscard]] __attribute__((noinline)) uint leafCount() const;
 	[[nodiscard]] __attribute__((noinline)) const Node& getNode(uint i) const;
 	[[nodiscard]] __attribute__((noinline)) const Cuboid getNodeCuboid(uint i, uint o) const;
-	[[nodiscard]] __attribute__((noinline)) const Index& getNodeChild(uint i, uint o) const;
-	[[nodiscard]] __attribute__((noinline)) bool queryPoint(uint x, uint y, uint z) const;
+	[[nodiscard]] __attribute__((noinline)) Index getNodeChild(uint i, uint o) const;
+	[[nodiscard]] __attribute__((noinline)) T queryPoint(uint x, uint y, uint z) const;
 	[[nodiscard]] __attribute__((noinline)) bool queryPoint(uint x, uint y, uint z, const T& value) const;
+	[[nodiscard]] __attribute__((noinline)) uint queryPointCount(uint x, uint y, uint z) const;
+	[[nodiscard]] __attribute__((noinline)) Cuboid queryPointCuboid(uint x, uint y, uint z) const;
 	[[nodiscard]] __attribute__((noinline)) uint totalLeafVolume() const;
 	[[nodiscard]] __attribute__((noinline)) uint totalNodeVolume() const;
 	__attribute__((noinline)) void assertAllLeafsAreUnique() const;

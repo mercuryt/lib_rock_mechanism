@@ -14,7 +14,7 @@ Json UnmountObjective::toJson() const
 }
 void UnmountObjective::execute(Area& area, const ActorIndex& actor)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	assert(actors.onDeck_getIsOnDeckOf(actor).isActor());
 	const ActorIndex& mount = actors.onDeck_getIsOnDeckOf(actor).getActor();

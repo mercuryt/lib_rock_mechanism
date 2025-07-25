@@ -22,7 +22,7 @@ void UnequipItemObjective::execute(Area& area, const ActorIndex& actor)
 		actors.move_setDestinationAdjacentToLocation(actor, m_point, false, false, false);
 	else
 	{
-		Space& space =  area.getSpace();
+		Space& space = area.getSpace();
 		Items& items = area.getItems();
 		ItemIndex item = m_item.getIndex(items.m_referenceData);
 		ShapeId shape = items.getShape(item);

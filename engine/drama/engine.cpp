@@ -99,7 +99,7 @@ Point3D DramaArc::getEntranceToArea(const ShapeId& shape, const MoveTypeId& move
 	SmallSet<Point3D> candidates;
 	Space& space = m_area->getSpace();
 	// TODO: optimize this: only check faces of getAll() cuboid.
-	Cuboid cuboid = space.getAll();
+	Cuboid cuboid = space.boundry();
 	for(const Point3D& point : cuboid)
 	{
 		if(space.shape_moveTypeCanEnter(point, moveType) && space.isEdge(point) && space.isExposedToSky(point))

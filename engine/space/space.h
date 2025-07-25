@@ -16,6 +16,7 @@
 #include "../geometry/pointSet.h"
 
 #include "exposedToSky.h"
+#include "support.h"
 
 #include <vector>
 #include <memory>
@@ -54,8 +55,9 @@ class Space
 	RTreeData<CollisionVolume> m_dynamicVolume;
 	RTreeData<CollisionVolume> m_staticVolume;
 	RTreeData<TemperatureDelta> m_temperatureDelta;
-	std::vector<SmallSet<Point3D>> m_indexOffsetsForNthAdjacent;
+	std::vector<SmallSet<Offset3D>> m_indexOffsetsForNthAdjacent;
 	PointsExposedToSky m_exposedToSky;
+	Support m_support;
 	RTreeBoolean m_visible;
 	RTreeBoolean m_constructed;
 	RTreeBoolean m_dynamic;
@@ -76,9 +78,10 @@ public:
 	void maybeContentsFalls(const Point3D& point);
 	void setDynamic(const Point3D& point);
 	void unsetDynamic(const Point3D& point);
+	void doSupportStep() { m_support.doStep(m_area); }
 	[[nodiscard]] uint size() const { return m_dimensions.prod(); }
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] Cuboid getAll() const;
+	[[nodiscard]] Cuboid boundry() const;
 	[[nodiscard]] Point3D getCenterAtGroundLevel() const;
 	// TODO: Return limited set.
 	[[nodiscard]] SmallSet<Point3D> getAdjacentWithEdgeAndCornerAdjacent(const Point3D& point) const;
@@ -101,6 +104,8 @@ public:
 	[[nodiscard]] bool isEdge(const Point3D& point) const;
 	[[nodiscard]] bool hasLineOfSightTo(const Point3D& point, const Point3D& other) const;
 	[[nodiscard]] Cuboid getZLevel(const Distance& z);
+	[[nodiscard]] const Support& getSupport() const { return m_support; }
+	[[nodiscard]] Support& getSupport() { return m_support; }
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
 	void setExposedToSky(const Point3D& point, bool exposed);
 	void setBelowVisible(const Point3D& point);
@@ -155,10 +160,7 @@ public:
 	void designation_maybeUnset(const Point3D& point, const FactionId& faction, const SpaceDesignation& designation);
 	// -Solid.
 private:
-	// Private method to be used by both solid_set and solidSetCuboid.
-	void solid_setShared(const Point3D& point, const MaterialTypeId& materialType, bool constructed);
-	// Private method to be used by both solid_setNot and solidSetNotCuboid.
-	void solid_setNotShared(const Point3D& point);
+	void solid_setShared(const Point3D& point, const MaterialTypeId& materialType, bool wasEmpty);
 public:
 	void solid_set(const Point3D& point, const MaterialTypeId& materialType, bool constructed);
 	void solid_setNot(const Point3D& point);
@@ -169,8 +171,10 @@ public:
 	[[nodiscard]] bool solid_is(const Point3D& point) const;
 	[[nodiscard]] MaterialTypeId solid_get(const Point3D& point) const;
 	[[nodiscard]] Mass solid_getMass(const Point3D& point) const;
+	[[nodiscard]] Mass solid_getMass(const CuboidSet& cuboidSet) const;
 	[[nodiscard]] MaterialTypeId solid_getHardest(const SmallSet<Point3D>& space);
 	// -PointFeature.
+	// TODO: make construct / hew / remove work with cuboids.
 	void pointFeature_construct(const Point3D& point, const PointFeatureTypeId& featureType, const MaterialTypeId& materialType);
 	void pointFeature_hew(const Point3D& point, const PointFeatureTypeId& featureType);
 	void pointFeature_remove(const Point3D& point, const PointFeatureTypeId& type);
@@ -224,6 +228,7 @@ public:
 	// This prevents a problem where addPoint attempts to remove a point from a group which it has already been removed from.
 	// TODO: Seems messy.
 	void fluid_unsetGroupInternal(const Point3D& point, const FluidTypeId& fluidType);
+	void fluid_setGroupInternal(const Point3D& point, const FluidTypeId& fluidType, FluidGroup& fluidGroup);
 	void fluid_maybeRecordFluidOnDeck(const Point3D& point);
 	void fluid_maybeEraseFluidOnDeck(const Point3D& point);
 	// To be called from FluidGroup::splitStep only.
@@ -244,7 +249,6 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	[[nodiscard]] CollisionVolume fluid_getTotalVolume(const Point3D& point) const;
 	[[nodiscard]] FluidTypeId fluid_getMist(const Point3D& point) const;
 	[[nodiscard]] const FluidData* fluid_getData(const Point3D& point, const FluidTypeId& fluidType) const;
-	[[nodiscard]] FluidData* fluid_getData(const Point3D& point, const FluidTypeId& fluidType);
 	// Floating
 	void floating_maybeSink(const Point3D& point);
 	void floating_maybeFloatUp(const Point3D& point);
@@ -275,7 +279,6 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	[[nodiscard]] bool actor_contains(const Point3D& point, const ActorIndex& actor) const;
 	[[nodiscard]] bool actor_empty(const Point3D& point) const;
 	[[nodiscard]] FullDisplacement actor_volumeOf(const Point3D& point, const ActorIndex& actor) const;
-	[[nodiscard]] SmallSet<ActorIndex>& actor_getAll(const Point3D& point);
 	[[nodiscard]] const SmallSet<ActorIndex>& actor_getAll(const Point3D& point) const;
 	// -Items
 	void item_record(const Point3D& point, const ItemIndex& item, const CollisionVolume& volume);
@@ -291,8 +294,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	//ItemIndex get(const Point3D& point, ItemType& itemType) const;
 	[[nodiscard]] Quantity item_getCount(const Point3D& point, const ItemTypeId& itemType, const MaterialTypeId& materialType) const;
 	[[nodiscard]] ItemIndex item_getGeneric(const Point3D& point, const ItemTypeId& itemType, const MaterialTypeId& materialType) const;
-	[[nodiscard]] SmallSet<ItemIndex>& item_getAll(const Point3D& point);
-	[[nodiscard]] const SmallSet<ItemIndex>& item_getAll(const Point3D& point) const;
+	[[nodiscard]] const SmallSet<ItemIndex> item_getAll(const Point3D& point) const;
 	[[nodiscard]] bool item_hasInstalledType(const Point3D& point, const ItemTypeId& itemType) const;
 	[[nodiscard]] bool item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(const Point3D& point, const ActorIndex& actor) const;
 	[[nodiscard]] bool item_hasContainerContainingFluidTypeCarryableBy(const Point3D& point, const ActorIndex& actor, const FluidTypeId& fluidType) const;

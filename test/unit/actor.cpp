@@ -6,7 +6,7 @@
 #include "../../engine/area/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/actors/actors.h"
-#include "../../engine/blocks/blocks.h"
+#include "../../engine/space/space.h"
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
 #include "../../engine/definitions/materialType.h"
@@ -20,13 +20,13 @@ TEST_CASE("actor")
 	static AnimalSpeciesId troll = AnimalSpecies::byName("troll");
 	static MaterialTypeId marble = MaterialType::byName("marble");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	areaBuilderUtil::setSolidLayer(area, 0, marble);
 	SUBCASE("single tile")
 	{
 		int previousEventCount = area.m_eventSchedule.count();
-		BlockIndex origin1 = blocks.getIndex_i(5, 5, 1);
+		Point3D origin1 = Point3D::create(5, 5, 1);
 		ActorIndex dwarf1 = actors.create(ActorParamaters{
 			.species=dwarf,
 			.percentGrown=Percent::create(100),
@@ -38,24 +38,24 @@ TEST_CASE("actor")
 		CHECK(Shape::getName(actors.getShape(dwarf1)) == "oneByOneFull");
 		CHECK(area.m_eventSchedule.count() - previousEventCount == 3);
 		CHECK(actors.getLocation(dwarf1) == origin1);
-		CHECK(blocks.actor_contains(actors.getLocation(dwarf1), dwarf1));
+		CHECK(space.actor_contains(actors.getLocation(dwarf1), dwarf1));
 		CHECK(actors.combat_getCombatScore(dwarf1) != 0);
 	}
 	SUBCASE("multi tile")
 	{
 		// Multi tile.
-		BlockIndex origin2 = blocks.getIndex_i(7, 7, 1);
+		Point3D origin2 = Point3D::create(7, 7, 1);
 		ActorIndex troll1 = actors.create(ActorParamaters{
 			.species=troll,
 			.percentGrown=Percent::create(100),
 			.location=origin2,
 		});
-		BlockIndex block1 = blocks.getIndex_i(8, 7, 1);
-		BlockIndex block2 = blocks.getIndex_i(7, 8, 1);
-		BlockIndex block3 = blocks.getIndex_i(8, 8, 1);
-		CHECK(blocks.actor_contains(origin2, troll1));
-		CHECK(blocks.actor_contains(block1, troll1));
-		CHECK(blocks.actor_contains(block2, troll1));
-		CHECK(blocks.actor_contains(block3, troll1));
+		Point3D block1 = Point3D::create(8, 7, 1);
+		Point3D block2 = Point3D::create(7, 8, 1);
+		Point3D block3 = Point3D::create(8, 8, 1);
+		CHECK(space.actor_contains(origin2, troll1));
+		CHECK(space.actor_contains(block1, troll1));
+		CHECK(space.actor_contains(block2, troll1));
+		CHECK(space.actor_contains(block3, troll1));
 	}
 }

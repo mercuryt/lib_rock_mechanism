@@ -153,7 +153,7 @@ void UniformObjective::reset(Area& area, const ActorIndex& actor)
 ItemIndex UniformObjective::getItemAtPoint(Area& area, const Point3D& point)
 {
 	Items& items = area.getItems();
-	for(ItemIndex item :  area.getSpace().item_getAll(point))
+	for(ItemIndex item : area.getSpace().item_getAll(point))
 		for(auto& element : m_elementsCopy)
 			if(element.query(item, items))
 				return item;

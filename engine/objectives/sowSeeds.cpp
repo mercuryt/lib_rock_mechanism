@@ -84,7 +84,7 @@ Point3D SowSeedsObjective::getPointToSowAt(Area& area, const Point3D& location, 
 void SowSeedsObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	if(m_point.exists())
 	{
 		if(actors.isAdjacentToLocation(actor, m_point))
@@ -124,7 +124,7 @@ void SowSeedsObjective::cancel(Area& area, const ActorIndex& actor)
 	actors.canReserve_clearAll(actor);
 	actors.move_pathRequestMaybeCancel(actor);
 	m_event.maybeUnschedule();
-	auto& space =  area.getSpace();
+	auto& space = area.getSpace();
 	FactionId faction = actors.getFaction(actor);
 	if(m_point.exists() && space.farm_contains(m_point, faction))
 	{
@@ -138,7 +138,7 @@ void SowSeedsObjective::cancel(Area& area, const ActorIndex& actor)
 }
 void SowSeedsObjective::select(Area& area, const Point3D& point, const ActorIndex& actor)
 {
-	[[maybe_unused]] Space& space =  area.getSpace();
+	[[maybe_unused]] Space& space = area.getSpace();
 	[[maybe_unused]] Actors& actors = area.getActors();
 	assert(!space.plant_exists(point));
 	assert(space.farm_contains(point, actors.getFaction(actor)));
@@ -162,7 +162,7 @@ bool SowSeedsObjective::canSowAt(Area& area, const Point3D& point, const ActorIn
 {
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFaction(actor);
-	auto& space =  area.getSpace();
+	auto& space = area.getSpace();
 	return space.designation_has(point, faction, SpaceDesignation::SowSeeds) && !space.isReserved(point, faction);
 }
 SowSeedsPathRequest::SowSeedsPathRequest(Area& area, SowSeedsObjective& objective, const ActorIndex& actorIndex) :

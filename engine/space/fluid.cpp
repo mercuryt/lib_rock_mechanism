@@ -6,6 +6,7 @@
 #include "../items/items.h"
 #include "../deserializationMemo.h"
 #include "../numericTypes/types.h"
+#include "../dataStructures/rtreeData.hpp"
 const FluidData* Space::fluid_getData(const Point3D& point, const FluidTypeId& fluidType) const
 {
 	const auto& fluid = m_fluid.queryGetOne(point);
@@ -32,7 +33,7 @@ void Space::fluid_destroyData(const Point3D& point, const FluidTypeId& fluidType
 }
 void Space::fluid_setTotalVolume(const Point3D& point, const CollisionVolume& newTotal)
 {
-	CollisionVolume checkTotal = CollisionVolume::create(0);
+	[[maybe_unused]] CollisionVolume checkTotal = CollisionVolume::create(0);
 	for(const FluidData& data : m_fluid.queryGetOne(point))
 		checkTotal += data.volume;
 	assert(checkTotal == newTotal);
@@ -111,7 +112,7 @@ void Space::fluid_add(const Point3D& point, const CollisionVolume& volume, const
 	// Shift less dense fluids to excessVolume.
 	if(totalFluidVolume > Config::maxPointVolume)
 		fluid_resolveOverfull(point);
-	m_area.m_hasTerrainFacades.updatePointAndAdjacent(point);
+	m_area.m_hasTerrainFacades.update({point, point});
 	assert(fluidGroup != nullptr);
 	if(!fluidGroup->m_aboveGround && isExposedToSky(point))
 	{
@@ -153,69 +154,72 @@ void Space::fluid_setAllUnstableExcept(const Point3D& point, const FluidTypeId& 
 }
 void Space::fluid_drainInternal(const Point3D& point, const CollisionVolume& volume, const FluidTypeId& fluidType)
 {
-	const auto& fluidData = m_fluid.queryGetOne(point);
+	auto& fluidData = m_fluid.queryGetOneMutable(point);
 	auto iter = std::ranges::find(fluidData, fluidType, &FluidData::type);
 	assert(iter != fluidData.end());
 	auto offset = iter - fluidData.begin();
-	auto copy = fluidData;
 	if(iter->volume == volume)
-		// use Vector::erase rather then util::removeFromVectorByValueUnordered despite being slower to preserve sort order.
-		copy.erase(copy.begin() + offset);
+		// use Vector::erase rather then util::removeFromVectorByValueUnordered despite being slower in order to preserve sort order.
+		fluidData.erase(fluidData.begin() + offset);
 	else
-		copy[offset].volume -= volume;
-	m_fluid.insert(point, std::move(copy));
-	assert(m_totalFluidVolume.queryGetOne(point) >= volume);
-	auto totalVolume = m_totalFluidVolume.queryGetOne(point);
-	if(totalVolume != 0)
+		fluidData[offset].volume -= volume;
+	if(fluidData.empty())
+	{
 		m_fluid.remove(point);
-	m_totalFluidVolume.maybeInsert(point, totalVolume + volume);
+		m_totalFluidVolume.maybeRemove(point);
+	}
+	else
+		m_totalFluidVolume.updateActionOne(point, [&](const CollisionVolume& v) { return v - volume; });
 	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
-	m_area.m_hasTerrainFacades.updatePointAndAdjacent(point);
+	m_area.m_hasTerrainFacades.update({point, point});
 	floating_maybeSink(point);
 	fluid_maybeEraseFluidOnDeck(point);
 }
 void Space::fluid_fillInternal(const Point3D& point, const CollisionVolume& volume, FluidGroup& fluidGroup)
 {
-	const auto totalFluidVolume = m_totalFluidVolume.queryGetOne(point);
-	bool wasEmpty = totalFluidVolume == 0;
-	FluidData* found = fluid_getData(point, fluidGroup.m_fluidType);
-	if(!found)
-	{
-		const auto& fluids = m_fluid.queryGetOne(point);
-		auto copy = fluids;
-		if(!fluids.empty())
-			m_fluid.remove(point);
-		copy.emplace_back(fluidGroup.m_fluidType, &fluidGroup, volume);
-		m_fluid.insert(point, std::move(copy));
-	}
+	auto fluids = m_fluid.queryGetOne(point);
+	bool wasEmpty = fluids.empty();
+	const auto found = std::ranges::find(fluids, fluidGroup.m_fluidType, &FluidData::type);
+	if(found == fluids.end())
+		fluids.emplace_back(fluidGroup.m_fluidType, &fluidGroup, volume);
 	else
-	{
 		found->volume += volume;
-		//TODO: should this be enforced?
-		//assert(*found->group == fluidGroup);
-	}
-	fluid_setTotalVolume(point, totalFluidVolume + volume);
+	m_fluid.insert(point, std::move(fluids));
+	m_totalFluidVolume.updateActionOne(point, [&](const CollisionVolume& total){ return total + volume; });
 	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
-	m_area.m_hasTerrainFacades.updatePointAndAdjacent(point);
+	m_area.m_hasTerrainFacades.update({point, point});
 	floating_maybeFloatUp(point);
 	if(wasEmpty)
 		fluid_maybeRecordFluidOnDeck(point);
 }
 void Space::fluid_unsetGroupInternal(const Point3D& point, const FluidTypeId& fluidType)
 {
-	FluidData* found = fluid_getData(point, fluidType);
-	found->group = nullptr;
+	m_fluid.updateOne(point, [&](std::vector<FluidData>& fluid){
+		const auto found = std::ranges::find(fluid, fluidType, &FluidData::type);
+		assert(found != fluid.end());
+		found->group = nullptr;
+	});
+}
+void Space::fluid_setGroupInternal(const Point3D& point, const FluidTypeId& fluidType, FluidGroup& group)
+{
+	m_fluid.updateOne(point, [&](std::vector<FluidData>& fluid){
+		const auto found = std::ranges::find(fluid, fluidType, &FluidData::type);
+		assert(found != fluid.end());
+		found->group = &group;
+	});
 }
 bool Space::fluid_undisolveInternal(const Point3D& point, FluidGroup& fluidGroup)
 {
-	FluidData* found = fluid_getData(point, fluidGroup.m_fluidType);
-	if(found || fluid_canEnterCurrently(point, fluidGroup.m_fluidType))
+	auto& fluids = m_fluid.queryGetOneMutable(point);
+	const auto found = std::ranges::find(fluids, fluidGroup.m_fluidType, &FluidData::type);
+	// TODO: fluid_canEnterCurrently queries m_fluid again.
+	if(found != fluids.end() || fluid_canEnterCurrently(point, fluidGroup.m_fluidType))
 	{
 		CollisionVolume capacity = fluid_volumeOfTypeCanEnter(point, fluidGroup.m_fluidType);
 		assert(fluidGroup.m_excessVolume > 0);
 		CollisionVolume flow = std::min(capacity, CollisionVolume::create(fluidGroup.m_excessVolume));
 		fluidGroup.m_excessVolume -= flow.get();
-		if(found )
+		if(found != fluids.end())
 		{
 			// Merge disolved group into found group.
 			found->volume += flow;
@@ -229,10 +233,9 @@ bool Space::fluid_undisolveInternal(const Point3D& point, FluidGroup& fluidGroup
 			fluidGroup.addPoint(m_area, point, false);
 			fluidGroup.m_disolved = false;
 		}
-		const auto totalFluidVolume = m_totalFluidVolume.queryGetOne(point);
-		fluid_setTotalVolume(point, totalFluidVolume + flow);
+		m_totalFluidVolume.updateActionOne(point, [&](const CollisionVolume& volume) { return volume + flow; });
 		//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
-		m_area.m_hasTerrainFacades.updatePointAndAdjacent(point);
+		m_area.m_hasTerrainFacades.update({point, point});
 		return true;
 	}
 	return false;
@@ -246,20 +249,21 @@ void Space::fluid_removeSyncronus(const Point3D& point, const CollisionVolume& v
 {
 	assert(volume <= fluid_volumeOfTypeContains(point, fluidType));
 	assert(m_totalFluidVolume.queryGetOne(point) >= volume);
-	if(fluid_volumeOfTypeContains(point, fluidType) > volume)
-		fluid_getData(point, fluidType)->volume -= volume;
+	auto& fluids = m_fluid.queryGetOneMutable(point);
+	const auto found = std::ranges::find(fluids, fluidType, &FluidData::type);
+	if(found->volume > volume)
+		found->volume -= volume;
 	else
 	{
-		FluidGroup& group = *fluid_getGroup(point, fluidType);
-		fluid_destroyData(point, fluidType);
+		FluidGroup& group = *found->group;
 		if(group.getPoints().size() == 1)
 			m_area.m_hasFluidGroups.removeFluidGroup(group);
 		else
 			group.removePoint(m_area, point);
+		fluids.erase(found);
 	}
-	const auto totalFluidVolume = m_totalFluidVolume.queryGetOne(point);
-	fluid_setTotalVolume(point, totalFluidVolume - volume);
-	m_area.m_hasTerrainFacades.updatePointAndAdjacent(point);
+	m_totalFluidVolume.updateActionOne(point, [&](const CollisionVolume& total){ return total - volume; });
+	m_area.m_hasTerrainFacades.update({point, point});
 	floating_maybeSink(point);
 	fluid_maybeEraseFluidOnDeck(point);
 }
@@ -323,7 +327,7 @@ FluidTypeId Space::fluid_getMist(const Point3D& point) const
 void Space::fluid_resolveOverfull(const Point3D& point)
 {
 	std::vector<FluidTypeId> toErase;
-	auto totalFluidVolume = m_totalFluidVolume.queryGetOne(point);
+	CollisionVolume totalFluidVolume = m_totalFluidVolume.queryGetOne(point);
 	// Fluid types are sorted by density.
 	auto fluidDataSet = fluid_getAllSortedByDensityAscending(point);
 	for(FluidData& fluidData : fluidDataSet)
@@ -372,52 +376,76 @@ void Space::fluid_resolveOverfull(const Point3D& point)
 		}
 		fluid_destroyData(point, fluidType);
 	}
-	m_area.m_hasTerrainFacades.updatePointAndAdjacent(point);
+	m_area.m_hasTerrainFacades.update({point, point});
 }
 void Space::fluid_onPointSetSolid(const Point3D& point)
 {
 	// Displace fluids.
 	auto fluidDataSet = m_fluid.queryGetOne(point);
-	for(FluidData& fluidData : fluidDataSet)
+	if(!fluidDataSet.empty())
 	{
-		fluidData.group->removePoint(m_area, point);
-		fluidData.group->addFluid(m_area, fluidData.volume);
-		// If there is no where to put the fluid.
-		if(fluidData.group->m_drainQueue.m_set.empty() && fluidData.group->m_fillQueue.m_set.empty())
+		for(FluidData& fluidData : fluidDataSet)
 		{
-			// If fluid piston is enabled then find a place above to add to potential.
-			if constexpr (Config::fluidPiston)
+			fluidData.group->removePoint(m_area, point);
+			fluidData.group->addFluid(m_area, fluidData.volume);
+			// If there is no where to put the fluid.
+			if(fluidData.group->m_drainQueue.m_set.empty() && fluidData.group->m_fillQueue.m_set.empty())
 			{
-				Point3D above = point.above();
-				while(above.exists())
+				// If fluid piston is enabled then find a place above to add to potential.
+				if constexpr (Config::fluidPiston)
 				{
-					if(fluid_canEnterEver(above) && fluid_canEnterCurrently(above, fluidData.type))
+					Point3D above = point.above();
+					while(above.exists())
 					{
-						fluidData.group->m_fillQueue.maybeAddPoint(above);
-						break;
+						if(fluid_canEnterEver(above) && fluid_canEnterCurrently(above, fluidData.type))
+						{
+							fluidData.group->m_fillQueue.maybeAddPoint(above);
+							break;
+						}
+						above = above.above();
 					}
-					above = above.above();
+					// The only way that this 'piston' code should be triggered is if something falls, which means the top layer cannot be full.
+					assert(above.exists());
 				}
-				// The only way that this 'piston' code should be triggered is if something falls, which means the top layer cannot be full.
-				assert(above.exists());
+				else
+					// Otherwise destroy the group.
+					m_area.m_hasFluidGroups.removeFluidGroup(*fluidData.group);
 			}
-			else
-				// Otherwise destroy the group.
-				m_area.m_hasFluidGroups.removeFluidGroup(*fluidData.group);
+			fluidData.group = nullptr;
 		}
-		fluidData.group = nullptr;
+		m_fluid.remove(point);
+		fluid_setTotalVolume(point, CollisionVolume::create(0));
 	}
-	m_fluid.remove(point);
-	fluid_setTotalVolume(point, CollisionVolume::create(0));
-	// Remove from fluid fill queues of adjacent groups, if contained.
+	// Collect adjacent while also removing now solid point from all fill queues of adjacent groups.
+	SmallSet<Point3D> candidates;
 	for(const Point3D& adjacent : getDirectlyAdjacent(point))
 		if(fluid_canEnterEver(adjacent))
 		{
-			auto fluidDataSet = m_fluid.queryGetOne(adjacent);
-			for(FluidData& fluidData : fluidDataSet)
+			candidates.insert(adjacent);
+			auto adjacentFluidDataSet = m_fluid.queryGetOne(adjacent);
+			for(FluidData& fluidData : adjacentFluidDataSet)
 				fluidData.group->m_fillQueue.maybeRemovePoint(point);
-			m_fluid.insert(point, std::move(fluidDataSet));
 		}
+	// Add fluid to adjacent.
+	float size = candidates.size();
+	SmallMap<FluidTypeId, CollisionVolume> toDispersePerBlock;
+	SmallMap<FluidTypeId, CollisionVolume> toDisperseRemainder;
+	for(const FluidData& data : fluidDataSet)
+	{
+		CollisionVolume perBlock = CollisionVolume::create(std::floor((float)data.volume.get() / size));
+		CollisionVolume remainder = data.volume - (perBlock * size);
+		toDispersePerBlock.insert(data.type, perBlock);
+		toDisperseRemainder.insert(data.type, remainder);
+	}
+	for(const Point3D& point : candidates)
+		for(const auto& [fluidType, volume] : toDispersePerBlock)
+			fluid_add({point, point}, volume, fluidType);
+	auto& random = m_area.m_simulation.m_random;
+	for(const auto& [fluidType, volume] : toDisperseRemainder)
+	{
+		Point3D point = random.getInVector(candidates.getVector());
+		fluid_add({point, point}, volume, fluidType);
+	}
 }
 void Space::fluid_onPointSetNotSolid(const Point3D& point)
 {
@@ -430,7 +458,6 @@ void Space::fluid_onPointSetNotSolid(const Point3D& point)
 				fluidData.group->m_fillQueue.maybeAddPoint(point);
 				fluidData.group->m_stable = false;
 			}
-			m_fluid.insert(point, std::move(fluidDataSetCopy));
 		}
 }
 bool Space::fluid_contains(const Point3D& point, const FluidTypeId& fluidType) const

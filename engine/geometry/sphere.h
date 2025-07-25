@@ -4,14 +4,13 @@
 #include "../numericTypes/types.h"
 class Space;
 class Point3D;
-class Cuboid;
+struct Cuboid;
 
 struct Sphere
 {
 	Point3D center;
 	DistanceFractional radius;
 	[[nodiscard]] bool contains(const Point3D& point) const;
-	[[nodiscard]] bool contains(const Space& space, const Point3D& point) const;
 	[[nodiscard]] bool contains(const Cuboid& cuboid) const;
 	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
 	[[nodiscard]] DistanceFractional radiusSquared() const { return radius * radius; }

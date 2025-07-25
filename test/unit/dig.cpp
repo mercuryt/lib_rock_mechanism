@@ -27,7 +27,7 @@ TEST_CASE("dig")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	Items& items = area.getItems();
 	Actors& actors = area.getActors();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
@@ -37,19 +37,19 @@ TEST_CASE("dig")
 	const DigObjectiveType& digObjectiveType = static_cast<const DigObjectiveType&>(ObjectiveType::getByName("dig"));
 	ActorIndex dwarf1 = actors.create({
 		.species=dwarf,
-		.location=blocks.getIndex_i(1, 1, 4),
+		.location=Point3D::create(1, 1, 4),
 		.faction=faction,
 	});
 	ActorReference dwarf1Ref = actors.m_referenceData.getReference(dwarf1);
-	BlockIndex pickLocation = blocks.getIndex_i(5, 5, 4);
+	Point3D pickLocation = Point3D::create(5, 5, 4);
 	ItemIndex pick = items.create({.itemType=ItemType::byName("pick"), .materialType=bronze, .location=pickLocation, .quality=Quality::create(50u), .percentWear=Percent::create(0)});
 	area.m_hasDigDesignations.addFaction(faction);
 	SUBCASE("dig hole")
 	{
-		BlockIndex holeLocation = blocks.getIndex_i(8, 4, 3);
-		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
-		DigProject& project = area.m_hasDigDesignations.getForFactionAndBlock(faction, holeLocation);
-		CHECK(blocks.designation_has(holeLocation, faction, SpaceDesignation::Dig));
+		Point3D holeLocation = Point3D::create(8, 4, 3);
+		area.m_hasDigDesignations.designate(faction, holeLocation, PointFeatureTypeId::Null);
+		DigProject& project = area.m_hasDigDesignations.getForFactionAndPoint(faction, holeLocation);
+		CHECK(space.designation_has(holeLocation, faction, SpaceDesignation::Dig));
 		CHECK(area.m_hasDigDesignations.contains(faction, holeLocation));
 		CHECK(digObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
@@ -70,28 +70,28 @@ TEST_CASE("dig")
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, holeLocation);
 		Step stepsDuration = project.getDuration();
 		simulation.fastForward(stepsDuration);
-		CHECK(!blocks.solid_is(holeLocation));
-		CHECK(blocks.blockFeature_empty(holeLocation));
+		CHECK(!space.solid_is(holeLocation));
+		CHECK(space.pointFeature_empty(holeLocation));
 		CHECK(actors.objective_getCurrentName(dwarf1) != "dig");
 		CHECK(!actors.canPickUp_isCarryingItem(dwarf1, pick));
 		CHECK(!items.reservable_hasAnyReservations(pick));
 	}
 	SUBCASE("dig stairs and tunnel")
 	{
-		BlockIndex aboveStairs = blocks.getIndex_i(8, 4, 4);
-		BlockIndex stairsLocation1 = blocks.getIndex_i(8, 4, 3);
-		BlockIndex stairsLocation2 = blocks.getIndex_i(8, 4, 2);
-		BlockIndex tunnelStart = blocks.getIndex_i(8, 5, 2);
-		BlockIndex tunnelEnd = blocks.getIndex_i(8, 6, 2);
-		Cuboid tunnel(blocks, tunnelEnd, tunnelStart);
-		area.m_hasDigDesignations.designate(faction, stairsLocation1, BlockFeatureTypeId::Stairs);
-		area.m_hasDigDesignations.designate(faction, stairsLocation2, BlockFeatureTypeId::Stairs);
-		for(const BlockIndex& block : tunnel.getView(blocks))
-			area.m_hasDigDesignations.designate(faction, block, BlockFeatureTypeId::Null);
+		Point3D aboveStairs = Point3D::create(8, 4, 4);
+		Point3D stairsLocation1 = Point3D::create(8, 4, 3);
+		Point3D stairsLocation2 = Point3D::create(8, 4, 2);
+		Point3D tunnelStart = Point3D::create(8, 5, 2);
+		Point3D tunnelEnd = Point3D::create(8, 6, 2);
+		Cuboid tunnel(tunnelEnd, tunnelStart);
+		area.m_hasDigDesignations.designate(faction, stairsLocation1, PointFeatureTypeId::Stairs);
+		area.m_hasDigDesignations.designate(faction, stairsLocation2, PointFeatureTypeId::Stairs);
+		for(const Point3D& block : tunnel)
+			area.m_hasDigDesignations.designate(faction, block, PointFeatureTypeId::Null);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		// Find project, reserve, and activate.
 		simulation.doStep();
-		DigProject& project = *static_cast<DigProject*>(blocks.project_get(stairsLocation1, faction));
+		DigProject& project = *static_cast<DigProject*>(space.project_get(stairsLocation1, faction));
 		CHECK(project.reservationsComplete());
 		CHECK(project.getWorkers().contains(dwarf1Ref));
 		// Select a haul type to take the pick to the project site.
@@ -99,26 +99,26 @@ TEST_CASE("dig")
 		CHECK(actors.move_hasPathRequest(dwarf1));
 		// Path to pick.
 		simulation.doStep();
-		CHECK(blocks.isAdjacentToIncludingCornersAndEdges(pickLocation, actors.move_getDestination(dwarf1)));
+		CHECK(pickLocation.isAdjacentTo(actors.move_getDestination(dwarf1)));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, pickLocation);
 		CHECK(actors.move_hasPathRequest(dwarf1));
 		// Path to project.
 		simulation.doStep();
-		CHECK(blocks.isAdjacentToIncludingCornersAndEdges(stairsLocation1, actors.move_getDestination(dwarf1)));
+		CHECK(stairsLocation1.isAdjacentTo(actors.move_getDestination(dwarf1)));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, stairsLocation1);
 		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
-		std::function<bool()> predicate = [&]() { return !blocks.solid_is(stairsLocation1); };
+		std::function<bool()> predicate = [&]() { return !space.solid_is(stairsLocation1); };
 		simulation.fastForwardUntillPredicate(predicate, 180);
 		actors.satisfyNeeds(dwarf1);
 		DigObjective& objective = actors.objective_getCurrent<DigObjective>(dwarf1);
 		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
 		CHECK(objective.getProject() == nullptr);
-		CHECK(blocks.blockFeature_contains(stairsLocation1, BlockFeatureTypeId::Stairs));
-		CHECK(blocks.shape_shapeAndMoveTypeCanEnterEverFrom(stairsLocation1, actors.getShape(dwarf1), actors.getMoveType(dwarf1), aboveStairs));
+		CHECK(space.pointFeature_contains(stairsLocation1, PointFeatureTypeId::Stairs));
+		CHECK(space.shape_shapeAndMoveTypeCanEnterEverFrom(stairsLocation1, actors.getShape(dwarf1), actors.getMoveType(dwarf1), aboveStairs));
 		const auto& terrainFacade = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(dwarf1));
 		CHECK(terrainFacade.accessable(aboveStairs, actors.getFacing(dwarf1), stairsLocation1, dwarf1));
 		CHECK(actors.move_hasPathRequest(dwarf1));
-		CHECK(!blocks.isReserved(stairsLocation1, faction));
+		CHECK(!space.isReserved(stairsLocation1, faction));
 		// Find next project, make reservations, and activate.
 		simulation.doStep();
 		CHECK(&actors.objective_getCurrent<DigObjective>(dwarf1) == &objective);
@@ -131,11 +131,11 @@ TEST_CASE("dig")
 		// Path to locaton.
 		simulation.doStep();
 		CHECK(&actors.objective_getCurrent<DigObjective>(dwarf1) == &objective);
-		std::function<bool()> predicate2 = [&]() { return !blocks.solid_is(tunnelStart); };
+		std::function<bool()> predicate2 = [&]() { return !space.solid_is(tunnelStart); };
 		simulation.fastForwardUntillPredicate(predicate2, 180);
 		actors.satisfyNeeds(dwarf1);
 		// We are already adjacent to the next target, no need to path.
-		DigProject& project2 = *static_cast<DigProject*>(blocks.project_get(stairsLocation2, faction));
+		DigProject& project2 = *static_cast<DigProject*>(space.project_get(stairsLocation2, faction));
 		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
 		DigObjective& objective2 = actors.objective_getCurrent<DigObjective>(dwarf1);
 		CHECK(objective2.getProject() != nullptr);
@@ -146,24 +146,24 @@ TEST_CASE("dig")
 		simulation.doStep();
 		CHECK(project2.reservationsComplete());
 		CHECK(!actors.move_hasPathRequest(dwarf1));
-		std::function<bool()> predicate3 = [&]() { return !blocks.solid_is(stairsLocation2); };
+		std::function<bool()> predicate3 = [&]() { return !space.solid_is(stairsLocation2); };
 		simulation.fastForwardUntillPredicate(predicate3, 180);
 		actors.satisfyNeeds(dwarf1);
 		CHECK(objective.name() == "dig");
-		std::function<bool()> predicate4 = [&]() { return !blocks.solid_is(tunnelEnd); };
+		std::function<bool()> predicate4 = [&]() { return !space.solid_is(tunnelEnd); };
 		simulation.fastForwardUntillPredicate(predicate4, 600);
 	}
 	SUBCASE("tunnel into cliff face with equipmentSet pick")
 	{
-		BlockIndex cliffLowest = blocks.getIndex_i(7, 0, 4);
-		BlockIndex cliffHighest = blocks.getIndex_i(9, 9, 5);
+		Point3D cliffLowest = Point3D::create(7, 0, 4);
+		Point3D cliffHighest = Point3D::create(9, 9, 5);
 		areaBuilderUtil::setSolidWall(area, cliffLowest, cliffHighest, dirt);
-		BlockIndex tunnelStart = blocks.getIndex_i(7, 5, 4);
-		BlockIndex tunnelEnd = blocks.getIndex_i(9, 5, 4);
-		BlockIndex tunnelSecond = blocks.getIndex_i(8, 5, 4);
-		Cuboid tunnel(blocks, tunnelEnd, tunnelStart);
-		for(const BlockIndex& block : tunnel.getView(blocks))
-			area.m_hasDigDesignations.designate(faction, block, BlockFeatureTypeId::Null);
+		Point3D tunnelStart = Point3D::create(7, 5, 4);
+		Point3D tunnelEnd = Point3D::create(9, 5, 4);
+		Point3D tunnelSecond = Point3D::create(8, 5, 4);
+		Cuboid tunnel(tunnelEnd, tunnelStart);
+		for(const Point3D& block : tunnel)
+			area.m_hasDigDesignations.designate(faction, block, PointFeatureTypeId::Null);
 		items.location_clear(pick);
 		actors.equipment_add(dwarf1, pick);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
@@ -177,10 +177,10 @@ TEST_CASE("dig")
 		CHECK(actors.move_getDestination(dwarf1).exists());
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, tunnelStart);
 		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
-		std::function<bool()> predicate = [&]() { return !blocks.solid_is(tunnelStart); };
+		std::function<bool()> predicate = [&]() { return !space.solid_is(tunnelStart); };
 		simulation.fastForwardUntillPredicate(predicate, 45);
 		CHECK(!actors.objective_getCurrent<DigObjective>(dwarf1).getProject());
-		CHECK(!blocks.isReserved(tunnelStart, faction));
+		CHECK(!space.isReserved(tunnelStart, faction));
 		// Find next project, make reservations, and activate.
 		simulation.doStep();
 		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
@@ -188,7 +188,7 @@ TEST_CASE("dig")
 		CHECK(project);
 		CHECK(project->getLocation() == tunnelSecond);
 		CHECK(!actors.move_getDestination(dwarf1).exists());
-		CHECK(!blocks.isReserved(tunnelStart, faction));
+		CHECK(!space.isReserved(tunnelStart, faction));
 		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
 		project = actors.objective_getCurrent<DigObjective>(dwarf1).getProject();
 		CHECK(project);
@@ -205,7 +205,7 @@ TEST_CASE("dig")
 		project = actors.objective_getCurrent<DigObjective>(dwarf1).getProject();
 		CHECK(project);
 		CHECK(project->getLocation() == tunnelSecond);
-		std::function<bool()> predicate2 = [&]() { return !blocks.solid_is(tunnelSecond); };
+		std::function<bool()> predicate2 = [&]() { return !space.solid_is(tunnelSecond); };
 		simulation.fastForwardUntillPredicate(predicate2, 45);
 		actors.satisfyNeeds(dwarf1);
 		// Find project.
@@ -215,18 +215,18 @@ TEST_CASE("dig")
 		CHECK(actors.move_hasPathRequest(dwarf1));
 		simulation.doStep();
 		CHECK(actors.move_getPath(dwarf1).size() == 1);
-		std::function<bool()> predicate3 = [&]() { return !blocks.solid_is(tunnelEnd); };
+		std::function<bool()> predicate3 = [&]() { return !space.solid_is(tunnelEnd); };
 		simulation.fastForwardUntillPredicate(predicate3, 45);
 	}
 	SUBCASE("two workers")
 	{
 		ActorIndex dwarf2 = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(1, 2, 4),
+			.location=Point3D::create(1, 2, 4),
 			.faction=faction,
 		});
-		BlockIndex holeLocation = blocks.getIndex_i(8, 4, 3);
-		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
+		Point3D holeLocation = Point3D::create(8, 4, 3);
+		area.m_hasDigDesignations.designate(faction, holeLocation, PointFeatureTypeId::Null);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
 		actors.objective_setPriority(dwarf2, digObjectiveType.getId(), Priority::create(100));
@@ -250,20 +250,20 @@ TEST_CASE("dig")
 			CHECK(actors.move_destinationIsAdjacentToLocation(dwarf1, pickLocation));
 			CHECK(actors.move_destinationIsAdjacentToLocation(dwarf2, holeLocation));
 		}
-		std::function<bool()> predicate = [&]() { return !blocks.solid_is(holeLocation); };
+		std::function<bool()> predicate = [&]() { return !space.solid_is(holeLocation); };
 		simulation.fastForwardUntillPredicate(predicate, 22);
 	}
 	SUBCASE("two workers two holes")
 	{
 		ActorIndex dwarf2 = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(1, 2, 4),
+			.location=Point3D::create(1, 2, 4),
 			.faction=faction,
 		});
-		BlockIndex holeLocation1 = blocks.getIndex_i(6, 2, 3);
-		BlockIndex holeLocation2 = blocks.getIndex_i(9, 8, 3);
-		area.m_hasDigDesignations.designate(faction, holeLocation1, BlockFeatureTypeId::Null);
-		area.m_hasDigDesignations.designate(faction, holeLocation2, BlockFeatureTypeId::Null);
+		Point3D holeLocation1 = Point3D::create(6, 2, 3);
+		Point3D holeLocation2 = Point3D::create(9, 8, 3);
+		area.m_hasDigDesignations.designate(faction, holeLocation1, PointFeatureTypeId::Null);
+		area.m_hasDigDesignations.designate(faction, holeLocation2, PointFeatureTypeId::Null);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
 		actors.objective_setPriority(dwarf2, digObjectiveType.getId(), Priority::create(100));
@@ -279,7 +279,7 @@ TEST_CASE("dig")
 		simulation.doStep();
 		CHECK(project1.reservationsComplete());
 		// Wait for first project to complete.
-		std::function<bool()> predicate1 = [&]() { return !blocks.solid_is(holeLocation1); };
+		std::function<bool()> predicate1 = [&]() { return !space.solid_is(holeLocation1); };
 		simulation.fastForwardUntillPredicate(predicate1, 22);
 		CHECK(!actors.project_exists(dwarf1));
 		CHECK(!actors.project_exists(dwarf2));
@@ -295,7 +295,7 @@ TEST_CASE("dig")
 		simulation.doStep();
 		CHECK(project2.reservationsComplete());
 		// Wait for second project to complete.
-		std::function<bool()> predicate2 = [&]() { return !blocks.solid_is(holeLocation2); };
+		std::function<bool()> predicate2 = [&]() { return !space.solid_is(holeLocation2); };
 		simulation.fastForwardUntillPredicate(predicate2, 22);
 		simulation.doStep();
 		CHECK(actors.getActionDescription(dwarf1) != "dig");
@@ -303,11 +303,11 @@ TEST_CASE("dig")
 	}
 	SUBCASE("cannot path to spot")
 	{
-		areaBuilderUtil::setSolidWall(area, blocks.getIndex_i(0, 3, 4), blocks.getIndex_i(8, 3, 4), dirt);
-		BlockIndex gateway = blocks.getIndex_i(9, 3, 4);
-		BlockIndex holeLocation = blocks.getIndex_i(8, 4, 3);
-		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
-		DigProject& project = area.m_hasDigDesignations.getForFactionAndBlock(faction, holeLocation);
+		areaBuilderUtil::setSolidWall(area, Point3D::create(0, 3, 4), Point3D::create(8, 3, 4), dirt);
+		Point3D gateway = Point3D::create(9, 3, 4);
+		Point3D holeLocation = Point3D::create(8, 4, 3);
+		area.m_hasDigDesignations.designate(faction, holeLocation, PointFeatureTypeId::Null);
+		DigProject& project = area.m_hasDigDesignations.getForFactionAndPoint(faction, holeLocation);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		// One step to find the designation.
 		simulation.doStep();
@@ -318,7 +318,7 @@ TEST_CASE("dig")
 		simulation.doStep();
 		// Another step to path to the pick.
 		simulation.doStep();
-		blocks.solid_set(gateway, dirt, false);
+		space.solid_set(gateway, dirt, false);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, gateway);
 		// Cannot detour or find alternative block.
 		simulation.doStep();
@@ -328,8 +328,8 @@ TEST_CASE("dig")
 	}
 	SUBCASE("spot already dug")
 	{
-		BlockIndex holeLocation = blocks.getIndex_i(8, 8, 3);
-		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
+		Point3D holeLocation = Point3D::create(8, 8, 3);
+		area.m_hasDigDesignations.designate(faction, holeLocation, PointFeatureTypeId::Null);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		// One step to find the designation.
 		simulation.doStep();
@@ -341,7 +341,7 @@ TEST_CASE("dig")
 		// Another step to path to the pick.
 		simulation.doStep();
 		// Setting holeLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
-		blocks.solid_setNot(holeLocation);
+		space.solid_setNot(holeLocation);
 		CHECK(!actors.canPickUp_isCarryingItem(dwarf1, pick));
 		CHECK(!actors.project_exists(dwarf1));
 		CHECK(!items.reservable_isFullyReserved(pick, faction));
@@ -349,9 +349,9 @@ TEST_CASE("dig")
 	}
 	SUBCASE("pick destroyed")
 	{
-		BlockIndex holeLocation = blocks.getIndex_i(8, 4, 3);
-		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
-		DigProject& project = area.m_hasDigDesignations.getForFactionAndBlock(faction, holeLocation);
+		Point3D holeLocation = Point3D::create(8, 4, 3);
+		area.m_hasDigDesignations.designate(faction, holeLocation, PointFeatureTypeId::Null);
+		DigProject& project = area.m_hasDigDesignations.getForFactionAndPoint(faction, holeLocation);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		// One step to find the designation.
 		simulation.doStep();
@@ -370,8 +370,8 @@ TEST_CASE("dig")
 	}
 	SUBCASE("player cancels")
 	{
-		BlockIndex holeLocation = blocks.getIndex_i(8, 8, 3);
-		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
+		Point3D holeLocation = Point3D::create(8, 8, 3);
+		area.m_hasDigDesignations.designate(faction, holeLocation, PointFeatureTypeId::Null);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		// One step to find the designation.
 		simulation.doStep();
@@ -390,9 +390,9 @@ TEST_CASE("dig")
 	}
 	SUBCASE("player interrupts")
 	{
-		BlockIndex holeLocation = blocks.getIndex_i(8, 8, 3);
-		BlockIndex goToLocation = blocks.getIndex_i(1, 8, 4);
-		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
+		Point3D holeLocation = Point3D::create(8, 8, 3);
+		Point3D goToLocation = Point3D::create(1, 8, 4);
+		area.m_hasDigDesignations.designate(faction, holeLocation, PointFeatureTypeId::Null);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		// One step to find the designation.
 		simulation.doStep();
@@ -430,7 +430,7 @@ TEST_CASE("dig")
 		CHECK(items.isAdjacentToLocation(pick, actors.move_getDestination(dwarf1)));
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, items.getLocation(pick));
 		CHECK(actors.canPickUp_isCarryingItem(dwarf1, pick));
-		auto holeDug = [&]{ return !blocks.solid_is(holeLocation); };
+		auto holeDug = [&]{ return !space.solid_is(holeLocation); };
 		simulation.fastForwardUntillPredicate(holeDug, 45);
 	}
 	SUBCASE("player interrupts worker, project may reset")
@@ -439,13 +439,13 @@ TEST_CASE("dig")
 		actors.equipment_add(dwarf1, pick);
 		ActorIndex dwarf2 = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(1, 2, 4),
+			.location=Point3D::create(1, 2, 4),
 			.faction=faction,
 		});
 		ActorReference dwarf2Ref = actors.m_referenceData.getReference(dwarf2);
-		BlockIndex holeLocation = blocks.getIndex_i(8, 8, 3);
-		BlockIndex goToLocation = blocks.getIndex_i(1, 8, 4);
-		area.m_hasDigDesignations.designate(faction, holeLocation, BlockFeatureTypeId::Null);
+		Point3D holeLocation = Point3D::create(8, 8, 3);
+		Point3D goToLocation = Point3D::create(1, 8, 4);
+		area.m_hasDigDesignations.designate(faction, holeLocation, PointFeatureTypeId::Null);
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		actors.objective_setPriority(dwarf2, digObjectiveType.getId(), Priority::create(100));
 		// One step to find the designation,  activate the project, and reserve the pick.
@@ -510,7 +510,7 @@ TEST_CASE("dig")
 			CHECK(actors.move_hasPathRequest(dwarf2));
 			// Dwarf2 paths to project.
 			simulation.doStep();
-			CHECK(blocks.isAdjacentToIncludingCornersAndEdges(project.getLocation(), actors.move_getDestination(dwarf2)));
+			CHECK(project.getLocation().isAdjacentTo(actors.move_getDestination(dwarf2)));
 			CHECK(project.finishEventExists());
 			CHECK(project.getPercentComplete() == 0);
 		}
@@ -523,7 +523,7 @@ TEST_CASE("dig")
 			CHECK(project.reservationsComplete());
 			CHECK(actors.project_get(dwarf1) == &project);
 		}
-		auto holeDug = [&]{ return !blocks.solid_is(holeLocation); };
+		auto holeDug = [&]{ return !space.solid_is(holeLocation); };
 		// 23 minutes rather then 22 because dwarf2 is 'late'.
 		simulation.fastForwardUntillPredicate(holeDug, 23);
 		CHECK(!digObjectiveType.canBeAssigned(area, dwarf1));

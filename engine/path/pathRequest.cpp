@@ -201,7 +201,7 @@ GoToFluidTypePathRequest::GoToFluidTypePathRequest(const Json& data, Area& area)
 { }
 FindPathResult GoToFluidTypePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	auto destinationCondition = [&](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
 	{
 		return {space.fluid_contains(point, fluidType), point};
@@ -224,7 +224,7 @@ GoToSpaceDesignationPathRequest::GoToSpaceDesignationPathRequest(Point3D start, 
 }
 FindPathResult GoToSpaceDesignationPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	auto destinationCondition = [&](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
 	{
 		return {space.designation_has(point, faction, designation), point};
@@ -249,7 +249,7 @@ GoToSpaceDesignationPathRequest::GoToSpaceDesignationPathRequest(const Json& dat
 { }
 FindPathResult GoToEdgePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	auto destinationCondition = [&](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
 	{
 		return {space.isEdge(point), point};

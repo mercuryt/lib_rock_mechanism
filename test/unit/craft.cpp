@@ -2,7 +2,7 @@
 #include "../../engine/actors/actors.h"
 #include "../../engine/area/area.h"
 #include "../../engine/items/items.h"
-#include "../../engine/blocks/blocks.h"
+#include "../../engine/space/space.h"
 #include "../../engine/plants.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/simulation/simulation.h"
@@ -26,12 +26,12 @@ TEST_CASE("craft")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("marble"));
-	BlockIndex chiselLocation = blocks.getIndex_i(3, 5, 1);
-	BlockIndex sawingLocation = blocks.getIndex_i(9, 9, 1);
+	Point3D chiselLocation = Point3D::create(3, 5, 1);
+	Point3D sawingLocation = Point3D::create(9, 9, 1);
 	FactionId faction = simulation.createFaction("Tower Of Power");
 	area.m_hasCraftingLocationsAndJobs.addFaction(faction);
 	area.m_hasStockPiles.registerFaction(faction);
@@ -45,7 +45,7 @@ TEST_CASE("craft")
 	const CraftObjectiveType& craftObjectiveTypeAssembling = static_cast<const CraftObjectiveType&>(ObjectiveType::getByName("craft: assembling"));
 	ActorIndex dwarf1 = actors.create({
 		.species=AnimalSpecies::byName("dwarf"),
-		.location=blocks.getIndex_i(1, 1, 1),
+		.location=Point3D::create(1, 1, 1),
 		.faction=faction,
 	});
 	ActorReference dwarf1Ref = actors.m_referenceData.getReference(dwarf1);
@@ -57,7 +57,7 @@ TEST_CASE("craft")
 		// TODO: why doesnt' this method exist anymore?
 		auto pair = area.m_hasCraftingLocationsAndJobs.getForFaction(faction).getJobAndLocationForWhileExcluding(dwarf1, woodWorking, emptyJobSet);
 		CraftJob* job = pair.first;
-		BlockIndex location = pair.second;
+		Point3D location = pair.second;
 		CHECK(job != nullptr);
 		CHECK(location.exists());
 		CHECK(location == sawingLocation);
@@ -74,32 +74,32 @@ TEST_CASE("craft")
 	}
 	SUBCASE("craft bucket")
 	{
-		BlockIndex boardLocation = blocks.getIndex_i(3, 4, 1);
+		Point3D boardLocation = Point3D::create(3, 4, 1);
 		ItemIndex board = items.create({.itemType=ItemType::byName("board"), .materialType=wood, .location=boardLocation, .quantity=Quantity::create(10u)});
 		ItemIndex rope = items.create({
 			.itemType=ItemType::byName("rope"),
 			.materialType=MaterialType::byName("plant matter"),
-			.location=blocks.getIndex_i(8, 6, 1),
+			.location=Point3D::create(8, 6, 1),
 			.quantity=Quantity::create(10u),
 		});
 		items.create({
 			.itemType=ItemType::byName("saw"),
 			.materialType=bronze,
-			.location=blocks.getIndex_i(3, 7, 1),
+			.location=Point3D::create(3, 7, 1),
 			.quality=Quality::create(25u),
 			.percentWear=Percent::create(0)
 		});
 		items.create({
 			.itemType=ItemType::byName("mallet"),
 			.materialType=bronze,
-			.location=blocks.getIndex_i(4, 9, 1),
+			.location=Point3D::create(4, 9, 1),
 			.quality=Quality::create(25u),
 			.percentWear=Percent::create(0)
 		});
 		items.create({
 			.itemType=ItemType::byName("chisel"),
 			.materialType=bronze,
-			.location=blocks.getIndex_i(4, 9, 1),
+			.location=Point3D::create(4, 9, 1),
 			.quality=Quality::create(25u),
 			.percentWear=Percent::create(0)
 		});
@@ -131,7 +131,7 @@ TEST_CASE("craft")
 		SUBCASE("success")
 		{
 			simulation.fastForwardUntillActorIsAdjacentToItem(area, dwarf1, board);
-			std::function<bool()> predicate = [&](){ return blocks.item_getCount(sawingLocation, ItemType::byName("bucket"), wood) == 1; };
+			std::function<bool()> predicate = [&](){ return space.item_getCount(sawingLocation, ItemType::byName("bucket"), wood) == 1; };
 			simulation.fastForwardUntillPredicate(predicate, 11);
 			CHECK(actors.getLocation(dwarf1) == sawingLocation);
 			CHECK(job->getStep() == 2);
@@ -178,7 +178,7 @@ TEST_CASE("craft")
 			}
 			SUBCASE("by setting the location solid")
 			{
-				blocks.solid_set(sawingLocation, wood, false);
+				space.solid_set(sawingLocation, wood, false);
 				// There is no longer wood working to be done because there are no locations to do it at.
 				CHECK(!craftObjectiveTypeWoodWorking.canBeAssigned(area, dwarf1));
 			}
@@ -208,7 +208,7 @@ TEST_CASE("craft")
 		}
 		SUBCASE("location inaccessable")
 		{
-			areaBuilderUtil::setSolidWall(area, blocks.getIndex_i(0, 3, 1), blocks.getIndex_i(9, 3, 1), wood);
+			areaBuilderUtil::setSolidWall(area, Point3D::create(0, 3, 1), Point3D::create(9, 3, 1), wood);
 			simulation.fastForwardUntillActorHasNoDestination(area, dwarf1);
 			CHECK(job->craftStepProject == nullptr);
 			CHECK(actors.objective_getCurrentName(dwarf1).substr(0,5) != "craft");
@@ -219,7 +219,7 @@ TEST_CASE("craft")
 			actors.die(dwarf1, CauseOfDeath::thirst);
 			ActorIndex dwarf2 = actors.create({
 				.species=AnimalSpecies::byName("dwarf"),
-				.location=blocks.getIndex_i(1, 5, 1),
+				.location=Point3D::create(1, 5, 1),
 				.faction=faction,
 			});
 			CHECK(craftObjectiveTypeWoodWorking.canBeAssigned(area, dwarf2));

@@ -1,30 +1,38 @@
 #include "pathMemo.h"
-#include "area/area.h"
-#include "space/space.h"
-#include "numericTypes/index.h"
+#include "../numericTypes/index.h"
+#include "../dataStructures/rtreeData.hpp"
+#include "../geometry/cuboidSet.h"
 void PathMemoClosed::add(const Point3D& index, Point3D parent)
 {
 	assert(!contains(index));
-	assert(index.exists());
-	// Max is used to indicate the start of the path.
-	if(parent.z() != Distance::max())
-		assert(contains(parent));
-	m_data.maybeInsertOrOverwrite(index, parent);
-	m_dirty.insert(index);
+	const Priority priority = parent.exists() ? m_data.queryGetOne(parent) + 1 : Priority::create(0);
+	m_data.maybeInsert(index, priority);
 }
-SmallSet<Point3D> PathMemoClosed::getPath(const Point3D& secondToLast, const Point3D& last) const
+void PathMemoClosed::removeClosed(CuboidSet& cuboids) const { m_data.queryRemove(cuboids); }
+Point3D PathMemoClosed::previous(const Point3D& index) const
+{
+	assert(contains(index));
+	const Priority& priority = m_data.queryGetOne(index);
+	Cuboid adjacent = Cuboid(index + Distance::create(1), index.subtractWithMinimum(Distance::create(1)));
+	for(const auto& [adjacentCuboid, adjacentPriority] : m_data.queryGetAllWithCuboids(adjacent))
+		if(adjacentPriority < priority)
+			return adjacentCuboid.m_highest;
+	assert(false);
+	std::unreachable();
+}
+SmallSet<Point3D> PathMemoClosed::getPath(const Point3D& secondToLast, const Point3D& last, const Point3D& first) const
 {
 	SmallSet<Point3D> output;
 	// Last may not exist if we are using the one point shape pathing adjacent to condition optimization.
 	if(last.exists())
 		output.insert(last);
 	Point3D current = secondToLast;
-	// Max is used to indicade the start of the path.
-	while(previous(current).z() != Distance::max())
+	do
 	{
 		output.insert(current);
 		current = previous(current);
 	}
+	while(current != first);
 	return output;
 }
 // Breadth First.
@@ -38,7 +46,7 @@ void PathMemoBreadthFirst::setClosed(const Point3D& point, const Point3D& previo
 	assert(!m_closed.contains(point));
 	m_closed.add(point, previous);
 }
-void PathMemoBreadthFirst::setOpen(const Point3D& point, const Area&)
+void PathMemoBreadthFirst::setOpen(const Point3D& point)
 {
 	assert(!m_closed.contains(point));
 	m_open.push_back(point);
@@ -57,9 +65,9 @@ Point3D PathMemoBreadthFirst::next()
 	m_open.pop_front();
 	return output;
 }
-SmallSet<Point3D> PathMemoBreadthFirst::getPath(const Point3D& secondToLast, const Point3D& last) const
+SmallSet<Point3D> PathMemoBreadthFirst::getPath(const Point3D& secondToLast, const Point3D& last, const Point3D& first) const
 {
-	return m_closed.getPath(secondToLast, last);
+	return m_closed.getPath(secondToLast, last, first);
 }
 // Depth First.
 void PathMemoDepthFirst::reset()
@@ -73,7 +81,7 @@ void PathMemoDepthFirst::setClosed(const Point3D& point, const Point3D& previous
 	assert(!m_closed.contains(point));
 	m_closed.add(point, previous);
 }
-void PathMemoDepthFirst::setOpen(const Point3D& point, const Area& area)
+void PathMemoDepthFirst::setOpen(const Point3D& point)
 {
 	assert(m_huristicDestination.exists());
 	[[maybe_unused]] bool contains = m_closed.contains(point);
@@ -97,12 +105,12 @@ Point3D PathMemoDepthFirst::next()
 	m_open.pop_back();
 	return output;
 }
-SmallSet<Point3D> PathMemoDepthFirst::getPath(const Point3D& secondToLast, const Point3D& last) const
+SmallSet<Point3D> PathMemoDepthFirst::getPath(const Point3D& secondToLast, const Point3D& last, const Point3D& first) const
 {
-	return m_closed.getPath(secondToLast, last);
+	return m_closed.getPath(secondToLast, last, first);
 }
 // SimulaitonHasPathMemos.
-std::pair<PathMemoBreadthFirst*, uint8_t> SimulationHasPathMemos::getBreadthFirst(Area& area)
+std::pair<PathMemoBreadthFirst*, uint8_t> SimulationHasPathMemos::getBreadthFirst()
 {
 	std::lock_guard lock(m_mutex);
 	// Find an unreserved memo to use.
@@ -110,7 +118,7 @@ std::pair<PathMemoBreadthFirst*, uint8_t> SimulationHasPathMemos::getBreadthFirs
 	if(found == m_reservedBreadthFirst.end())
 	{
 		uint oldSize = m_breadthFirst.size();
-		m_breadthFirst.emplace_back(area);
+		m_breadthFirst.emplace_back(PathMemoBreadthFirst());
 		m_reservedBreadthFirst.resize(m_breadthFirst.size());
 		found = m_reservedBreadthFirst.begin() + oldSize;
 	}
@@ -118,7 +126,7 @@ std::pair<PathMemoBreadthFirst*, uint8_t> SimulationHasPathMemos::getBreadthFirs
 	m_reservedBreadthFirst[offset] = true;
 	return {&m_breadthFirst[offset], offset};
 }
-std::pair<PathMemoDepthFirst*, uint8_t> SimulationHasPathMemos::getDepthFirst(Area& area)
+std::pair<PathMemoDepthFirst*, uint8_t> SimulationHasPathMemos::getDepthFirst()
 {
 	std::lock_guard lock(m_mutex);
 	// Find an unreserved memo to use.
@@ -126,7 +134,7 @@ std::pair<PathMemoDepthFirst*, uint8_t> SimulationHasPathMemos::getDepthFirst(Ar
 	if(found == m_reservedDepthFirst.end())
 	{
 		uint oldSize = m_depthFirst.size();
-		m_depthFirst.emplace_back(area);
+		m_depthFirst.emplace_back();
 		m_reservedDepthFirst.resize(m_depthFirst.size());
 		found = m_reservedDepthFirst.begin() + oldSize;
 	}

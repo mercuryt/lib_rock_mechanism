@@ -97,12 +97,6 @@ public:
 		return iter->second;
 	}
 	[[nodiscard]] const V& operator[](const K& key) const { return const_cast<This&>(*this)[key]; }
-	[[nodiscard]] V& createEmpty(const K& key)
-	{
-		auto iter = std::ranges::find(m_data, key, &Pair::first);
-		assert(iter == m_data.end());
-		return m_data.emplace_back(key, V{}).second;
-	}
 	[[nodiscard]] V& getOrInsert(const K& key, V&& value)
 	{
 		auto iter = std::ranges::find(m_data, key, &Pair::first);
@@ -135,7 +129,7 @@ public:
 		iterator& operator++() { ++m_iter; return *this; }
 		[[nodiscard]] iterator operator+(uint steps) { return m_iter + steps; }
 		[[nodiscard]] iterator operator-(uint steps) { return m_iter - steps; }
-		[[nodiscard]] iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
+		[[nodiscard]] iterator operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] Pair& operator*() { return *m_iter; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
@@ -156,7 +150,7 @@ public:
 		const_iterator& operator++() { ++m_iter; return *this; }
 		[[nodiscard]] const_iterator operator+(uint steps) { return m_iter + steps; }
 		[[nodiscard]] const_iterator operator-(uint steps) { return m_iter - steps; }
-		[[nodiscard]] const_iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
+		[[nodiscard]] const_iterator operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }

@@ -33,7 +33,7 @@ FindPathResult CraftPathRequest::readStep(Area& area, const TerrainFacade& terra
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	FactionId faction = actors.getFaction(actorIndex);
 	HasCraftingLocationsAndJobsForFaction& hasCrafting = area.m_hasCraftingLocationsAndJobs.getForFaction(faction);
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	SkillTypeId skillType = m_craftObjective.m_skillType;
 	auto& excludeJobs = m_craftObjective.getFailedJobs();
 	auto predicate = [&space, faction, &hasCrafting, actorIndex, skillType, &excludeJobs](const Point3D& point, const Facing4&)
@@ -49,7 +49,7 @@ FindPathResult CraftPathRequest::readStep(Area& area, const TerrainFacade& terra
 void CraftPathRequest::writeStep(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	if(result.path.empty() && !result.useCurrentPosition)
 	{
@@ -76,7 +76,7 @@ void CraftPathRequest::writeStep(Area& area, FindPathResult& result)
 	m_craftJob = pair.first;
 	m_location = pair.second;
 
-	if(m_craftJob  == nullptr)
+	if(m_craftJob == nullptr)
 		actors.objective_canNotCompleteObjective(actorIndex, m_craftObjective);
 	else
 	{

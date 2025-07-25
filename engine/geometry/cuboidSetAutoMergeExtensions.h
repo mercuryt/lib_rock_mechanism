@@ -4,7 +4,7 @@
 #include "../dataStructures/strongVector.h"
 
 template<typename Key>
-class CuboidSetAutoMergeMap : public CuboidSet
+struct CuboidSetAutoMergeMap : public CuboidSet
 {
 protected:
 	std::vector<Key> m_keys;
@@ -86,7 +86,7 @@ public:
 #include "../numericTypes/index.h"
 
 template<typename Key, typename Area>
-class CuboidSetAutoMergeMapWithPointLookup : public CuboidSetAutoMergeMap<Key>
+struct CuboidSetAutoMergeMapWithPointLookup : public CuboidSetAutoMergeMap<Key>
 {
 protected:
 	Area& m_area;
@@ -99,16 +99,20 @@ protected:
 			cuboid.m_highest.above(),
 			cuboid.m_highest.south(),
 			cuboid.m_highest.east(),
-			cuboid.m_lowest.below(),
-			cuboid.m_lowest.north(),
-			cuboid.m_lowest.west()
 		};
+		if(cuboid.m_lowest.z() != 0)
+			candidatePoints[3] = cuboid.m_lowest.below();
+		if(cuboid.m_lowest.z() != 0)
+			candidatePoints[4] = cuboid.m_lowest.north();
+		if(cuboid.m_lowest.z() != 0)
+			candidatePoints[5] = cuboid.m_lowest.west();
 		for(const Point3D& point : candidatePoints)
-		{
-			Key key = m_pointLookup[point];
-			if(key.exists())
-				output.emplace_back(key, (*this)[key]);
-		}
+			if(point.exists())
+			{
+				const Key& key = m_pointLookup[point];
+				if(key.exists())
+					output.emplace_back(key, (*this)[key]);
+			}
 		return output;
 	};
 	void onCreate(const uint&, const Key& key, const Cuboid& cuboid) override
@@ -142,7 +146,7 @@ public:
 #include "cuboidMap.h"
 
 template<typename Key>
-class CuboidSetAutoMergeMapWithAdjacent : public CuboidSetAutoMergeMapWithPointLookup<Key>
+struct CuboidSetAutoMergeMapWithAdjacent : public CuboidSetAutoMergeMapWithPointLookup<Key>
 {
 protected:
 	std::vector<CuboidMap<Key>> m_adjacent;

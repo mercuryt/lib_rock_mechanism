@@ -25,7 +25,7 @@ GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(const Json& dat
 FindPathResult GetToSafeTemperaturePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Actors& actors = area.getActors();
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	auto condition = [&actors, &space, actorIndex](const Point3D& location, const Facing4& facing) ->std::pair<bool, Point3D>
 	{
@@ -84,7 +84,7 @@ void GetToSafeTemperatureObjective::execute(Area& area, const ActorIndex& actor)
 	Actors& actors = area.getActors();
 	if(m_noWhereWithSafeTemperatureFound)
 	{
-		Space& space =  area.getSpace();
+		Space& space = area.getSpace();
 		if(actors.predicateForAnyOccupiedPoint(actor, [&space](const Point3D& point){ return space.isEdge(point); }))
 			// We are at the edge and can leave.
 			actors.leaveArea(actor);

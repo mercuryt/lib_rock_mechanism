@@ -17,7 +17,7 @@ FactionId SimulationHasFactions::createFaction(std::string name)
 }
 FactionId SimulationHasFactions::byName(std::string name)
 {
-	auto found =  std::ranges::find(m_factions, name, &Faction::name);
+	auto found = std::ranges::find(m_factions, name, &Faction::name);
 	assert(found != m_factions.end());
 	return found->id;
 }

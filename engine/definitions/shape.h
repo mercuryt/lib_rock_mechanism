@@ -25,6 +25,7 @@ struct OffsetAndVolume
 	[[nodiscard]] bool operator==(const OffsetAndVolume& other) const { return offset == other.offset; }
 	[[nodiscard]] bool operator!=(const OffsetAndVolume& other) const { return offset != other.offset; }
 	[[nodiscard]] std::strong_ordering operator<=>(const OffsetAndVolume& other) const { return offset <=> other.offset; }
+	[[nodiscard]] std::string toString() const { return "{" + offset.toString() + ", " + volume.toString() + "}"; }
 };
 inline void to_json(Json& data, const OffsetAndVolume& x) { data[0] = x.offset; data[1] = x.volume; }
 inline void from_json(const Json& data, OffsetAndVolume& x) { data[0].get_to(x.offset); data[1].get_to(x.volume); }
@@ -48,6 +49,7 @@ struct Shape
 public:
 	static ShapeId create(const std::string name, SmallSet<OffsetAndVolume> positions, uint32_t displayScale);
 	[[nodiscard]] static Json toJson(const ShapeId& id);
+	[[nodiscard]] static uint16_t size(const ShapeId& id);
 	[[nodiscard]] static SmallSet<OffsetAndVolume> positionsWithFacing(const ShapeId& id, const Facing4& facing);
 	[[nodiscard]] static SmallSet<Offset3D> adjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing);
 	[[nodiscard]] static SmallSet<OffsetAndVolume> makeOccupiedPositionsWithFacing(const ShapeId& id, const Facing4& facing);

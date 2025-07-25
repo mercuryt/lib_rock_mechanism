@@ -2,15 +2,15 @@
 #include "../space/space.h"
 #include "../area/area.h"
 #include "../area/exteriorPortals.h"
-void PointsExposedToSky::initalizeEmpty(Area& area)
+void PointsExposedToSky::initalize(const Cuboid& cuboid)
 {
-	m_data.maybeInsert(area.getSpace().getAll());
+	m_data.maybeInsert(cuboid);
 }
 void PointsExposedToSky::set(Area& area, const Point3D& point)
 {
 	Point3D current = point;
-	Space& space =  area.getSpace();
-	while(current.exists())
+	Space& space = area.getSpace();
+	while(true)
 	{
 		m_data.maybeInsert(current);
 		if(space.solid_is(current))
@@ -32,14 +32,16 @@ void PointsExposedToSky::set(Area& area, const Point3D& point)
 		if(area.m_exteriorPortals.isRecordedAsPortal(current))
 			area.m_exteriorPortals.remove(area, current);
 		space.plant_updateGrowingStatus(current);
+		if(current.z() == 0)
+			break;
 		current = current.below();
 	}
 }
 void PointsExposedToSky::unset(Area& area, const Point3D& point)
 {
 	Point3D current = point;
-	Space& space =  area.getSpace();
-	while(current.exists() && check(current))
+	Space& space = area.getSpace();
+	while(check(current))
 	{
 		m_data.maybeRemove(current);
 		// Check for adjacent which are no longer portals because they are no longer adjacent to a point exposed to sky.
@@ -57,6 +59,8 @@ void PointsExposedToSky::unset(Area& area, const Point3D& point)
 		if(space.temperature_transmits(current) && AreaHasExteriorPortals::isPortal(space, current))
 			area.m_exteriorPortals.add(area, current);
 		space.plant_updateGrowingStatus(current);
+		if(current.z() == 0)
+			break;
 		current = current.below();
 	}
 }

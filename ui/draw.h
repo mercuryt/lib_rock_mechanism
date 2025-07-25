@@ -10,7 +10,7 @@ class Point3D;
 class ItemIndex;
 class PlantIndex;
 class ActorIndex;
-class Cuboid;
+struct Cuboid;
 class Draw final
 {
 	Window& m_window;

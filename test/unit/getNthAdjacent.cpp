@@ -1,9 +1,9 @@
 #include "../../lib/doctest.h"
-#include "../../engine/blocks/nthAdjacentOffsets.h"
+#include "../../engine/space/nthAdjacentOffsets.h"
 #include "../../engine/geometry/point3D.h"
 #include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
-#include "../../engine/blocks/blocks.h"
+#include "../../engine/space/space.h"
 #include <algorithm>
 TEST_CASE("getNthAdjacentOffsets")
 {
@@ -32,46 +32,46 @@ TEST_CASE("getNthAdjacentBlocks")
 {
 	Simulation simulation;
 	Area& area = simulation.getAreas().createArea(8, 8, 8);
-	Blocks& blocks = area.getSpace();
-	const BlockIndex center = blocks.getIndex_i(4,4,4);
-	const BlockIndex above1 = blocks.getIndex_i(4,4,5);
-	const BlockIndex above2 = blocks.getIndex_i(4,4,6);
-	const BlockIndex above3 = blocks.getIndex_i(4,4,7);
-	const BlockIndex edge = blocks.getIndex_i(0,4,4);
-	const BlockIndex nextToEdge = blocks.getIndex_i(0,3,4);
-	const BlockIndex nextToEdge2 = blocks.getIndex_i(0,2,4);
-	const BlockIndex corner = blocks.getIndex_i(0,0,4);
-	auto result = blocks.getNthAdjacent(center, DistanceInBlocks::create(1));
+	Space& space = area.getSpace();
+	const Point3D center = Point3D::create(4,4,4);
+	const Point3D above1 = Point3D::create(4,4,5);
+	const Point3D above2 = Point3D::create(4,4,6);
+	const Point3D above3 = Point3D::create(4,4,7);
+	const Point3D edge = Point3D::create(0,4,4);
+	const Point3D nextToEdge = Point3D::create(0,3,4);
+	const Point3D nextToEdge2 = Point3D::create(0,2,4);
+	const Point3D corner = Point3D::create(0,0,4);
+	auto result = space.getNthAdjacent(center, Distance::create(1));
 	CHECK(result.size() == 6);
 	CHECK(result.contains(above1));
 	CHECK(!result.contains(above2));
 	CHECK(!result.contains(above3));
 	CHECK(!result.contains(center));
-	result = blocks.getNthAdjacent(center, DistanceInBlocks::create(2));
+	result = space.getNthAdjacent(center, Distance::create(2));
 	CHECK(result.size() == 18);
 	CHECK(!result.contains(above1));
 	CHECK(result.contains(above2));
 	CHECK(!result.contains(above3));
 	CHECK(!result.contains(center));
-	result = blocks.getNthAdjacent(center, DistanceInBlocks::create(3));
+	result = space.getNthAdjacent(center, Distance::create(3));
 	CHECK(result.size() == 38);
 	CHECK(!result.contains(above1));
 	CHECK(!result.contains(above2));
 	CHECK(result.contains(above3));
 	CHECK(!result.contains(center));
 	CHECK(!result.contains(edge));
-	result = blocks.getNthAdjacent(center, DistanceInBlocks::create(4));
+	result = space.getNthAdjacent(center, Distance::create(4));
 	CHECK(result.size() == 63);
 	CHECK(result.contains(edge));
 	CHECK(!result.contains(nextToEdge));
 	CHECK(!result.contains(corner));
-	result = blocks.getNthAdjacent(center, DistanceInBlocks::create(5));
+	result = space.getNthAdjacent(center, Distance::create(5));
 	CHECK(result.size() == 84);
 	CHECK(!result.contains(corner));
 	CHECK(!result.contains(edge));
 	CHECK(result.contains(nextToEdge));
 	CHECK(!result.contains(nextToEdge2));
-	result = blocks.getNthAdjacent(center, DistanceInBlocks::create(6));
+	result = space.getNthAdjacent(center, Distance::create(6));
 	CHECK(result.size() == 92);
 	CHECK(!result.contains(corner));
 	CHECK(!result.contains(edge));

@@ -1,7 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
-#include "../../engine/blocks/blocks.h"
+#include "../../engine/space/space.h"
 #include "../../engine/plants.h"
 #include "../../engine/area/area.h"
 #include "../../engine/areaBuilderUtil.h"
@@ -20,15 +20,14 @@ TEST_CASE("combat")
 	MaterialTypeId marble = MaterialType::byName("marble");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
-	Blocks& blocks = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
-	areaBuilderUtil::setSolidLayer(area, DistanceInBlocks::create(0), marble);
+	areaBuilderUtil::setSolidLayer(area, Distance::create(0), marble);
 	FactionId faction = simulation.createFaction("Tower Of Power");
 	area.m_hasStockPiles.registerFaction(faction);
 	ActorIndex dwarf1 = actors.create({
 		.species=AnimalSpecies::byName("dwarf"),
-		.location=blocks.getIndex_i(1, 1, 1),
+		.location=Point3D::create(1, 1, 1),
 		.hasCloths=false,
 		.hasSidearm=false,
 	});
@@ -72,7 +71,7 @@ TEST_CASE("combat")
 		CHECK(actors.combat_getCombatScore(dwarf1) > initalScore);
 		ActorIndex rabbit = actors.create({
 			.species=AnimalSpecies::byName("dwarf rabbit"),
-			.location=blocks.getIndex_i(2, 2, 1),
+			.location=Point3D::create(2, 2, 1),
 		});
 		CHECK(actors.combat_getCombatScore(rabbit) < actors.combat_getCombatScore(dwarf1));
 		actors.combat_setTarget(dwarf1, rabbit);
@@ -85,7 +84,7 @@ TEST_CASE("combat")
 	{
 		ActorIndex rabbit = actors.create({
 			.species=AnimalSpecies::byName("dwarf rabbit"),
-			.location=blocks.getIndex_i(5, 5, 1),
+			.location=Point3D::create(5, 5, 1),
 		});
 		actors.combat_setTarget(dwarf1, rabbit);
 		CHECK(actors.move_hasPathRequest(dwarf1));
@@ -98,7 +97,7 @@ TEST_CASE("combat")
 		CombatScore initalScore = actors.combat_getCurrentMeleeCombatScore(dwarf1);
 		actors.create({
 			.species=AnimalSpecies::byName("dwarf"),
-			.location=blocks.getIndex_i(2, 1, 1),
+			.location=Point3D::create(2, 1, 1),
 			.faction=faction
 		});
 		CHECK(actors.combat_getCurrentMeleeCombatScore(dwarf1) > initalScore);
@@ -108,11 +107,11 @@ TEST_CASE("combat")
 		CombatScore initalScore = actors.combat_getCurrentMeleeCombatScore(dwarf1);
 		actors.create({
 			.species=AnimalSpecies::byName("dwarf rabbit"),
-			.location=blocks.getIndex_i(2, 1, 1),
+			.location=Point3D::create(2, 1, 1),
 		});
 		actors.create({
 			.species=AnimalSpecies::byName("dwarf rabbit"),
-			.location=blocks.getIndex_i(1, 2, 1),
+			.location=Point3D::create(1, 2, 1),
 		});
 		CHECK(actors.combat_getCurrentMeleeCombatScore(dwarf1) < initalScore);
 	}
@@ -133,7 +132,7 @@ TEST_CASE("combat")
 		actors.equipment_add(dwarf1, ammo);
 		ActorIndex rabbit = actors.create({
 			.species=AnimalSpecies::byName("dwarf rabbit"),
-			.location=blocks.getIndex_i(3, 3, 1),
+			.location=Point3D::create(3, 3, 1),
 		});
 		actors.combat_setTarget(dwarf1, rabbit);
 		CHECK(actors.combat_inRange(dwarf1, rabbit));

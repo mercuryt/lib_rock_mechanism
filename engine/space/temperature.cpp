@@ -2,16 +2,19 @@
 #include "../area/area.h"
 #include "../fluidType.h"
 #include "../definitions/itemType.h"
-#include "definitions/materialType.h"
-#include "numericTypes/types.h"
+#include "../definitions/materialType.h"
+#include "../numericTypes/types.h"
+#include "../dataStructures/rtreeData.hpp"
 void Space::temperature_updateDelta(const Point3D& point, const TemperatureDelta& deltaDelta)
 {
-	TemperatureDelta delta = m_temperatureDelta.queryGetOne(point);
+	TemperatureDelta delta = m_temperatureDelta.queryGetOneOr(point, TemperatureDelta::create(0));
 	delta += deltaDelta;
-	if(delta != deltaDelta)
+	if(delta == 0)
 		m_temperatureDelta.maybeRemove(point);
-	m_temperatureDelta.maybeInsert(point, delta);
-	Temperature temperature = Temperature::create(delta.get() + temperature_getAmbient(point).get());
+	else
+		m_temperatureDelta.maybeInsertOrOverwrite(point, delta);
+	//TODO: delta is queried twice here.
+	Temperature temperature = temperature_get(point);
 	if(solid_is(point))
 	{
 		auto material = solid_get(point);
@@ -19,12 +22,11 @@ void Space::temperature_updateDelta(const Point3D& point, const TemperatureDelta
 			MaterialType::canBurn(material) &&
 			MaterialType::getIgnitionTemperature(material) <= temperature
 		)
-		{
-			const auto& fires = m_fires.queryGetOne(point);
-			if(fires == nullptr || !fires->contains(material))
-				m_area.m_fires.ignite(point, material);
-		}
-		else if(MaterialType::getMeltingPoint(material).exists() && MaterialType::getMeltingPoint(material) <= temperature)
+			fire_maybeIgnite(point, material);
+		else if(
+			MaterialType::getMeltingPoint(material).exists() &&
+			MaterialType::getMeltingPoint(material) <= temperature
+		)
 			temperature_melt(point);
 	}
 	else
@@ -106,6 +108,8 @@ Temperature Space::temperature_get(const Point3D& point) const
 {
 	Temperature ambiant = temperature_getAmbient(point);
 	TemperatureDelta delta = m_temperatureDelta.queryGetOne(point);
+	if(!delta.exists())
+		delta = TemperatureDelta::create(0);
 	if(delta < 0 && (uint)delta.absoluteValue().get() > ambiant.get())
 		return Temperature::create(0);
 	return Temperature::create(ambiant.get() + delta.get());

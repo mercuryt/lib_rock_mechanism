@@ -177,7 +177,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 	Area& area = m_project.m_area;
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	assert(actors.objective_exists(actor));
 	Point3D actorLocation = actors.getLocation(actor);
 	FactionId faction = m_project.getFaction();
@@ -845,7 +845,7 @@ void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 	Area& area = m_project.m_area;
 	assert(delivered.getLocation(area).empty());
 	Actors& actors = area.getActors();
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Items& items = area.getItems();
 	Point3D location = actors.getLocation(m_leader.exists() ?
 		m_leader.getIndex(actors.m_referenceData) :

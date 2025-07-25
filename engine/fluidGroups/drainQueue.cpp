@@ -13,7 +13,7 @@ void DrainQueue::buildFor(SmallSet<Point3D>& members)
 }
 void DrainQueue::initalizeForStep(Area& area, FluidGroup& fluidGroup)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	for(FutureFlowPoint& futureFlowPoint : m_queue)
 	{
 		assert((space.fluid_contains(futureFlowPoint.point, fluidGroup.m_fluidType)));
@@ -37,7 +37,7 @@ void DrainQueue::recordDelta(Area& area, const CollisionVolume& volume, const Co
 	assert((m_groupStart->capacity >= volume));
 	assert((m_groupStart >= m_queue.begin() && m_groupStart <= m_queue.end()));
 	assert((m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end()));
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	// Record no longer full.
 	if(space.fluid_getTotalVolume(m_groupStart->point) == Config::maxPointVolume && !m_futureNoLongerFull.contains((m_groupEnd-1)->point))
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
@@ -67,7 +67,7 @@ void DrainQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 	assert((m_groupStart >= m_queue.begin() && m_groupStart <= m_queue.end()));
 	assert((m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end()));
 	SmallSet<Point3D> drainedFromAndAdjacent;
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	for(auto iter = m_queue.begin(); iter != m_groupEnd; ++iter)
 	{
 		if(iter->delta == 0)
@@ -92,7 +92,7 @@ void DrainQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 CollisionVolume DrainQueue::groupLevel(Area& area, FluidGroup& fluidGroup) const
 {
 	assert((m_groupStart != m_groupEnd));
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	return space.fluid_volumeOfTypeContains(m_groupStart->point, fluidGroup.m_fluidType) - m_groupStart->delta;
 }
 uint32_t DrainQueue::getPriority(FutureFlowPoint& futureFlowPoint) const

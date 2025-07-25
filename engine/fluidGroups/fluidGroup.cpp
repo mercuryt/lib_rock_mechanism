@@ -48,25 +48,26 @@ void FluidGroup::addPoint(Area& area, const Point3D& point, bool checkMerge)
 		return;
 	setUnstable(area);
 	// Cannot be in fill queue if full. Must be otherwise.
-	FluidData* found =  area.getSpace().fluid_getData(point, m_fluidType);
+	Space& space = area.getSpace();
+	const FluidData* found = space.fluid_getData(point, m_fluidType);
 	if(found && found->volume < Config::maxPointVolume)
 		m_fillQueue.maybeAddPoint(point);
 	else
 		m_fillQueue.maybeRemovePoint(point);
 	// Set group membership in Space.
-	found =  area.getSpace().fluid_getData(point, m_fluidType);
+	found = area.getSpace().fluid_getData(point, m_fluidType);
 	FluidGroup* oldGroup = found->group;
 	if(oldGroup != nullptr && oldGroup != this)
 		oldGroup->removePoint(area, point);
-	found->group = this;
+	space.fluid_setGroupInternal(point, m_fluidType, *this);
 	m_drainQueue.maybeAddPoint(point);
 	// Add adjacent if fluid can enter.
 	SmallSet<FluidGroup*> toMerge;
-	for(const Point3D& adjacent :  area.getSpace().getDirectlyAdjacent(point))
+	for(const Point3D& adjacent : area.getSpace().getDirectlyAdjacent(point))
 	{
-		if(! area.getSpace().fluid_canEnterEver(adjacent))
+		if(!area.getSpace().fluid_canEnterEver(adjacent))
 			continue;
-		FluidData* found =  area.getSpace().fluid_getData(adjacent, m_fluidType);
+		const FluidData* found = space.fluid_getData(adjacent, m_fluidType);
 		// Merge groups if needed.
 		if(found && checkMerge)
 		{
@@ -91,11 +92,11 @@ void FluidGroup::removePoint(Area& area, const Point3D& point)
 	setUnstable(area);
 	m_drainQueue.removePoint(point);
 	m_potentiallyNoLongerAdjacentFromSyncronusStep.insert(point);
-	for(const Point3D& adjacent :  area.getSpace().getDirectlyAdjacent(point))
+	for(const Point3D& adjacent : area.getSpace().getDirectlyAdjacent(point))
 		if( area.getSpace().fluid_canEnterEver(adjacent))
 		{
 			//Check for group split.
-			auto found =  area.getSpace().fluid_getData(adjacent, m_fluidType);
+			auto found = area.getSpace().fluid_getData(adjacent, m_fluidType);
 			if(found && found->group == this)
 				m_potentiallySplitFromSyncronusStep.maybeInsert(adjacent);
 			else
@@ -110,7 +111,7 @@ void FluidGroup::setUnstable(Area& area)
 }
 void FluidGroup::addMistFor(Area& area, const Point3D& point)
 {
-	auto& space =  area.getSpace();
+	auto& space = area.getSpace();
 	if(FluidType::getMistDuration(m_fluidType) != 0 &&
 		(
 			point.z() == 0 ||
@@ -132,7 +133,7 @@ FluidGroup* FluidGroup::merge(Area& area, FluidGroup* smaller)
 	assert(!smaller->m_destroy);
 	assert(!m_destroy);
 
-	auto& space =  area.getSpace();
+	auto& space = area.getSpace();
 	FluidGroup* larger = this;
 	if(smaller->m_drainQueue.m_set.size() > larger->m_drainQueue.m_set.size())
 		std::swap(smaller, larger);
@@ -148,7 +149,7 @@ FluidGroup* FluidGroup::merge(Area& area, FluidGroup* smaller)
 	for(const Point3D& point : smaller->m_drainQueue.m_set)
 	{
 		assert(space.fluid_contains(point, m_fluidType));
-		space.fluid_getData(point, m_fluidType)->group = larger;
+		space.fluid_setGroupInternal(point, m_fluidType, *larger);
 		assert(larger->m_drainQueue.m_set.contains(point));
 	}
 	// Merge other fluid groups ment to merge with smaller with larger instead.
@@ -172,7 +173,7 @@ void FluidGroup::readStep(Area& area)
 	assert(!m_destroy);
 	assert(!m_stable);
 	assert(!m_disolved);
-	auto& space =  area.getSpace();
+	auto& space = area.getSpace();
 	m_futureNewEmptyAdjacents.clear();
 	m_futureGroups.clear();
 	m_futureNotifyPotentialUnfullAdjacent.clear();
@@ -346,9 +347,9 @@ void FluidGroup::readStep(Area& area)
 	{
 		for(const Point3D& adjacent : space.getDirectlyAdjacent(point))
 			if( area.getSpace().fluid_canEnterEver(adjacent) && !m_drainQueue.m_set.contains(adjacent) && !m_fillQueue.m_set.contains(adjacent)
-			  )
+			 )
 			{
-				auto found =  area.getSpace().fluid_getData(adjacent, m_fluidType);
+				auto found = area.getSpace().fluid_getData(adjacent, m_fluidType);
 				if(!found || found->volume < Config::maxPointVolume || found->group != this)
 					m_futureNewEmptyAdjacents.maybeInsert(adjacent);
 			}
@@ -449,7 +450,7 @@ void FluidGroup::writeStep(Area& area)
 	assert(!m_disolved);
 	assert(!m_destroy);
 	validate(area);
-	auto& space =  area.getSpace();
+	auto& space = area.getSpace();
 	area.m_hasFluidGroups.validateAllFluidGroups();
 	m_drainQueue.applyDelta(area, *this);
 	m_fillQueue.applyDelta(area, *this);
@@ -517,7 +518,7 @@ void FluidGroup::afterWriteStep(Area& area)
 		return;
 	validate(area);
 	assert(!m_merged);
-	auto& space =  area.getSpace();
+	auto& space = area.getSpace();
 	// Do seeping through corners if enabled.
 	// Resolve overfull space.
 	validate(area);
@@ -537,7 +538,7 @@ void FluidGroup::splitStep(Area& area)
 	validate(area);
 	// Disperse disolved, split off fluidGroups of another fluidType.
 	// TODO: Transfer ownership to adjacent fluid groups with a lower density then this one but higher then disolved group.
-	auto& space =  area.getSpace();
+	auto& space = area.getSpace();
 	std::vector<FluidTypeId> dispersed;
 	for(auto& [fluidType, disolvedFluidGroup] : m_disolvedInThisGroup)
 	{
@@ -589,7 +590,7 @@ void FluidGroup::mergeStep(Area& area)
 	assert(!m_disolved);
 	assert(!m_destroy);
 	validate(area);
-	auto& space =  area.getSpace();
+	auto& space = area.getSpace();
 	// Record merge. First group consumes subsequent groups.
 	for(const Point3D& point : m_futureNewEmptyAdjacents)
 	{
@@ -614,7 +615,7 @@ CollisionVolume FluidGroup::totalVolume(Area& area) const
 {
 	CollisionVolume output = CollisionVolume::create(m_excessVolume);
 	for(const Point3D& point : m_drainQueue.m_set)
-		output +=  area.getSpace().fluid_volumeOfTypeContains(point, m_fluidType);
+		output += area.getSpace().fluid_volumeOfTypeContains(point, m_fluidType);
 	return output;
 }
 bool FluidGroup::dispositionIsStable(const CollisionVolume& fillVolume, const CollisionVolume& drainVolume) const
@@ -640,7 +641,7 @@ bool FluidGroup::dispositionIsStable(const CollisionVolume& fillVolume, const Co
 }
 Quantity FluidGroup::countPointsOnSurface(const Area& area) const
 {
-	const Space& space =  area.getSpace();
+	const Space& space = area.getSpace();
 	// TODO: could be optimized by only looking at the topmost z level in DrainQueue::m_queue
 	return Quantity::create(m_drainQueue.m_set.countIf([&](const Point3D& point){ return space.isExposedToSky(point); }));
 }
@@ -652,7 +653,7 @@ void FluidGroup::validate(Area& area) const
 	for(const Point3D& point : m_drainQueue.m_set)
 	{
 		assert(point.exists());
-		for(const FluidData& fluidData :  area.getSpace().fluid_getAll(point))
+		for(const FluidData& fluidData : area.getSpace().fluid_getAll(point))
 		{
 			if(fluidData.group == this)
 				continue;
@@ -666,7 +667,7 @@ void FluidGroup::validate(Area& area, [[maybe_unused]] SmallSet<FluidGroup*> toE
 	if(m_merged || m_destroy || m_disolved)
 		return;
 	for(const Point3D& point : m_drainQueue.m_set)
-		for(const FluidData& fluidData :  area.getSpace().fluid_getAll(point))
+		for(const FluidData& fluidData : area.getSpace().fluid_getAll(point))
 		{
 			if(fluidData.group == this)
 				continue;
@@ -677,7 +678,7 @@ void FluidGroup::validate(Area& area, [[maybe_unused]] SmallSet<FluidGroup*> toE
 }
 void FluidGroup::log(Area& area) const
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	for(const FutureFlowPoint& futureFlowPoint : m_drainQueue.m_queue)
 	{
 		if(&*m_drainQueue.m_groupEnd == &futureFlowPoint)
@@ -705,7 +706,7 @@ void FluidGroup::log(Area& area) const
 }
 void FluidGroup::logFill(Area& area) const
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	for(const FutureFlowPoint& futureFlowPoint : m_fillQueue.m_queue)
 	{
 		if(&*m_fillQueue.m_groupEnd == &futureFlowPoint)

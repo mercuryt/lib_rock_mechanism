@@ -72,7 +72,7 @@ void AreaHasRain::doStep()
 	Distance offset = Distance::create(random.getInRange(0u, Config::rainMaximumOffset.get()));
 	Distance i = Distance::create(0);
 	Space& space = m_area.getSpace();
-	Cuboid cuboid = space.getAll().getFace(Facing6::Above);
+	Cuboid cuboid = space.boundry().getFace(Facing6::Above);
 	for(const Point3D& point : cuboid)
 	{
 		if(offset != 0)

@@ -9,7 +9,7 @@
 #include "../../engine/plants.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
-#include "../../engine/blocks/blocks.h"
+#include "../../engine/space/space.h"
 #include "../../engine/definitions/itemType.h"
 #include "../../engine/objectives/eat.h"
 #include "../../engine/objectives/station.h"
@@ -23,14 +23,14 @@ TEST_CASE("basicNeedsSentient")
 	FactionId faction = simulation.createFaction("Tower Of Power");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	ActorIndex actor = actors.create(ActorParamaters{
 		.species=dwarf,
 		.percentGrown=Percent::create(50),
-		.location=blocks.getIndex_i(1, 1, 2),
+		.location=Point3D::create(1, 1, 2),
 		.percentHunger=Percent::create(0),
 		.percentTired=Percent::create(0),
 		.percentThirst=Percent::create(0),
@@ -39,28 +39,28 @@ TEST_CASE("basicNeedsSentient")
 	CHECK(actors.grow_isGrowing(actor));
 	SUBCASE("drink from pond")
 	{
-		BlockIndex pondLocation = blocks.getIndex_i(3, 3, 1);
-		blocks.solid_setNot(pondLocation);
-		blocks.fluid_add(pondLocation, CollisionVolume::create(100), water);
+		Point3D pondLocation = Point3D::create(3, 3, 1);
+		space.solid_setNot(pondLocation);
+		space.fluid_add(pondLocation, CollisionVolume::create(100), water);
 		actors.drink_setNeedsFluid(actor);
 		CHECK(!actors.grow_isGrowing(actor));
 		CHECK(actors.drink_isThirsty(actor));
 		CHECK(actors.objective_getCurrentName(actor) == "drink");
 		simulation.doStep();
-		BlockIndex destination = actors.move_getDestination(actor);
+		Point3D destination = actors.move_getDestination(actor);
 		CHECK(destination.exists());
-		CHECK(blocks.isAdjacentToIncludingCornersAndEdges(destination, pondLocation));
+		CHECK(destination.isAdjacentTo(pondLocation));
 		simulation.fastForwardUntillActorIsAtDestination(area, actor, destination);
 		simulation.fastForward(Config::stepsToDrink);
 		CHECK(!actors.drink_isThirsty(actor));
 		CHECK(actors.objective_getCurrentName(actor) != "drink");
 		CollisionVolume drinkVolume = MustDrink::drinkVolumeFor(area, actor);
 		simulation.doStep(); // Give a step for the fluid removal to take effect.
-		CHECK(blocks.fluid_volumeOfTypeContains(pondLocation, water) == Config::maxBlockVolume - drinkVolume);
+		CHECK(space.fluid_volumeOfTypeContains(pondLocation, water) == Config::maxPointVolume - drinkVolume);
 	}
 	SUBCASE("drink from bucket")
 	{
-		BlockIndex bucketLocation = blocks.getIndex_i(7, 7, 2);
+		Point3D bucketLocation = Point3D::create(7, 7, 2);
 		ItemIndex bucket = items.create({
 			.itemType=ItemType::byName("bucket"),
 			.materialType=MaterialType::byName("poplar wood"),
@@ -74,9 +74,9 @@ TEST_CASE("basicNeedsSentient")
 		CHECK(actors.drink_isThirsty(actor));
 		CHECK(actors.objective_getCurrentName(actor) == "drink");
 		simulation.doStep();
-		BlockIndex destination = actors.move_getDestination(actor);
+		Point3D destination = actors.move_getDestination(actor);
 		CHECK(destination.exists());
-		CHECK(blocks.isAdjacentToIncludingCornersAndEdges(destination, bucketLocation));
+		CHECK(destination.isAdjacentTo(bucketLocation));
 		simulation.fastForwardUntillActorIsAdjacentToItem(area, actor, bucket);
 		simulation.fastForward(Config::stepsToDrink);
 		CHECK(!actors.drink_isThirsty(actor));
@@ -90,7 +90,7 @@ TEST_CASE("basicNeedsSentient")
 	}
 	SUBCASE("eat prepared meal")
 	{
-		BlockIndex mealLocation = blocks.getIndex_i(5, 5, 2);
+		Point3D mealLocation = Point3D::create(5, 5, 2);
 		ItemIndex meal = items.create({
 			.itemType=ItemType::byName("prepared meal"),
 			.materialType=MaterialType::byName("fruit"),
@@ -109,20 +109,20 @@ TEST_CASE("basicNeedsSentient")
 		CHECK(actors.eat_isHungry(actor));
 		simulation.doStep();
 		CHECK(!actors.move_hasPathRequest(actor));
-		BlockIndex destination = actors.move_getDestination(actor);
+		Point3D destination = actors.move_getDestination(actor);
 		CHECK(destination.exists());
-		CHECK(blocks.isAdjacentToIncludingCornersAndEdges(destination, mealLocation));
+		CHECK(destination.isAdjacentTo(mealLocation));
 		simulation.fastForwardUntillActorIsAdjacentToItem(area, actor, meal);
 		CHECK(actors.objective_getCurrentName(actor) == "eat");
 		CHECK(actors.objective_getCurrent<EatObjective>(actor).hasEvent());
 		simulation.fastForward(Config::stepsToEat);
 		CHECK(!actors.eat_isHungry(actor));
 		CHECK(actors.objective_getCurrentName(actor) != "eat");
-		CHECK(blocks.item_empty(mealLocation));
+		CHECK(space.item_empty(mealLocation));
 	}
 	SUBCASE("eat fruit")
 	{
-		BlockIndex fruitLocation = blocks.getIndex_i(6, 5, 2);
+		Point3D fruitLocation = Point3D::create(6, 5, 2);
 		ItemIndex fruit = items.create({
 			.itemType=ItemType::byName("apple"),
 			.materialType=MaterialType::byName("fruit"),
@@ -172,7 +172,7 @@ TEST_CASE("basicNeedsSentient")
 		simulation.fastForward(Config::stepsToEat);
 		CHECK(!actors.eat_isHungry(actor));
 		CHECK(actors.objective_getCurrentName(actor) != "eat");
-		CHECK(!blocks.item_empty(fruitLocation));
+		CHECK(!space.item_empty(fruitLocation));
 		CHECK(items.getQuantity(fruit) < 50u);
 	}
 }
@@ -185,20 +185,20 @@ TEST_CASE("basicNeedsNonsentient")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	Plants& plants = area.getPlants();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	ActorIndex actor = actors.create(ActorParamaters{
 		.species=redDeer,
 		.percentGrown=Percent::create(50),
-		.location=blocks.getIndex_i(1, 1, 2),
+		.location=Point3D::create(1, 1, 2),
 	});
 	CHECK(actors.grow_isGrowing(actor));
 	CHECK(actors.drink_hasThristEvent(actor));
-	BlockIndex pondLocation = blocks.getIndex_i(3, 3, 1);
-	blocks.solid_setNot(pondLocation);
-	blocks.fluid_add(pondLocation, CollisionVolume::create(100), water);
+	Point3D pondLocation = Point3D::create(3, 3, 1);
+	space.solid_setNot(pondLocation);
+	space.fluid_add(pondLocation, CollisionVolume::create(100), water);
 	SUBCASE("sleep outside at current location")
 	{
 		// Generate objectives, discard eat if it exists.
@@ -225,9 +225,9 @@ TEST_CASE("basicNeedsNonsentient")
 	}
 	SUBCASE("eat leaves")
 	{
-		BlockIndex grassLocation = blocks.getIndex_i(5, 5, 2);
-		blocks.plant_create(grassLocation, wheatGrass, Percent::create(100));
-		PlantIndex grass = blocks.plant_get(grassLocation);
+		Point3D grassLocation = Point3D::create(5, 5, 2);
+		space.plant_create(grassLocation, wheatGrass, Percent::create(100));
+		PlantIndex grass = space.plant_get(grassLocation);
 		// Generate objectives.
 		actors.eat_setIsHungry(actor);
 		CHECK(actors.objective_getCurrentName(actor) == "eat");
@@ -241,9 +241,9 @@ TEST_CASE("basicNeedsNonsentient")
 			simulation.doStep();
 			CHECK(!actors.move_hasPathRequest(actor));
 			CHECK(actors.objective_getCurrentName(actor) == "eat");
-			BlockIndex destination = actors.move_getDestination(actor);
+			Point3D destination = actors.move_getDestination(actor);
 			CHECK(destination.exists());
-			CHECK(blocks.isAdjacentToIncludingCornersAndEdges(destination, grassLocation));
+			CHECK(destination.isAdjacentTo(grassLocation));
 			// Go to grass.
 			simulation.fastForwardUntillActorIsAdjacentToDestination(area, actor, grassLocation);
 		}
@@ -255,9 +255,9 @@ TEST_CASE("basicNeedsNonsentient")
 	}
 	SUBCASE("sleep at assigned spot")
 	{
-		areaBuilderUtil::setSolidWall(area, blocks.getIndex_i(0, 2, 2), blocks.getIndex_i(8, 2, 2), dirt);
-		BlockIndex gateway = blocks.getIndex_i(9, 2, 2);
-		BlockIndex spot = blocks.getIndex_i(5, 5, 2);
+		areaBuilderUtil::setSolidWall(area, Point3D::create(0, 2, 2), Point3D::create(8, 2, 2), dirt);
+		Point3D gateway = Point3D::create(9, 2, 2);
+		Point3D spot = Point3D::create(5, 5, 2);
 		actors.sleep_setSpot(actor, spot);
 		actors.sleep_makeTired(actor);
 		CHECK(actors.objective_getCurrentName(actor) == "sleep");
@@ -274,7 +274,7 @@ TEST_CASE("basicNeedsNonsentient")
 		}
 		SUBCASE("spot no longer suitable")
 		{
-			blocks.solid_set(spot, dirt, false);
+			space.solid_set(spot, dirt, false);
 			simulation.fastForwardUntillActorIsAdjacentToLocation(area, actor, spot);
 			// The actor is unable to path into the destination, and so tries to create another path.
 			CHECK(actors.move_hasPathRequest(actor));
@@ -288,7 +288,7 @@ TEST_CASE("basicNeedsNonsentient")
 		}
 		SUBCASE("cannot path to spot")
 		{
-			blocks.solid_set(gateway, dirt, false);
+			space.solid_set(gateway, dirt, false);
 			simulation.fastForwardUntillActorIsAdjacentToLocation(area, actor, gateway);
 			CHECK(actors.move_hasPathRequest(actor));
 			// Path to designated spot blocked, try to repath, no path found, clear designated spot.
@@ -307,7 +307,7 @@ TEST_CASE("basicNeedsNonsentient")
 		AnimalSpeciesId blackBear = AnimalSpecies::byName("black bear");
 		ActorIndex bear = actors.create(ActorParamaters{
 			.species=blackBear,
-			.location=blocks.getIndex_i(5, 1, 2),
+			.location=Point3D::create(5, 1, 2),
 		});
 		ActorIndex deer = actor;
 		Mass deerMass = actors.getMass(deer);
@@ -337,11 +337,11 @@ TEST_CASE("basicNeedsNonsentient")
 	SUBCASE("leave location with unsafe temperature")
 	{
 		CHECK(actors.grow_isGrowing(actor));
-		BlockIndex temperatureSourceLocation = blocks.getIndex_i(1, 1, 3);
+		Point3D temperatureSourceLocation = Point3D::create(1, 1, 3);
 		area.m_hasTemperature.addTemperatureSource(temperatureSourceLocation, TemperatureDelta::create(200));
 		simulation.doStep();
 		CHECK(!actors.temperature_isSafeAtCurrentLocation(actor));
-		CHECK(blocks.temperature_get(actors.getLocation(actor)) > AnimalSpecies::getMaximumSafeTemperature(actors.getSpecies(actor)));
+		CHECK(space.temperature_get(actors.getLocation(actor)) > AnimalSpecies::getMaximumSafeTemperature(actors.getSpecies(actor)));
 		CHECK(actors.objective_getCurrentName(actor) == "get to safe temperature");
 		CHECK(!actors.grow_isGrowing(actor));
 	}
@@ -356,26 +356,26 @@ TEST_CASE("actorGrowth")
 	FactionId faction = simulation.createFaction("Tower Of Power");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	ActorIndex actor = actors.create(ActorParamaters{
 		.species=dwarf,
 		.percentGrown=Percent::create(45),
-		.location=blocks.getIndex_i(1, 1, 2),
+		.location=Point3D::create(1, 1, 2),
 		.percentHunger=Percent::create(0),
 		.percentTired=Percent::create(0),
 		.percentThirst=Percent::create(0),
 	});
 	actors.setFaction(actor, faction);
 	CHECK(actors.grow_isGrowing(actor));
-	blocks.solid_setNot(blocks.getIndex_i(7, 7, 0));
-	blocks.fluid_add(blocks.getIndex_i(7, 7, 0), CollisionVolume::create(100), water);
+	space.solid_setNot(Point3D::create(7, 7, 0));
+	space.fluid_add(Point3D::create(7, 7, 0), CollisionVolume::create(100), water);
 	items.create({
 		.itemType=ItemType::byName("apple"),
 		.materialType=MaterialType::byName("fruit"),
-		.location=blocks.getIndex_i(1, 5, 2),
+		.location=Point3D::create(1, 5, 2),
 		.quantity=Quantity::create(1000),
 	});
 	CHECK(actors.grow_getEventPercent(actor) == 0);
@@ -410,11 +410,11 @@ TEST_CASE("death")
 	Simulation simulation("", step);
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName("marble"));
 	Actors& actors = area.getActors();
-	BlockIndex actorLocation = blocks.getIndex_i(1, 1, 2);
+	Point3D actorLocation = Point3D::create(1, 1, 2);
 	ActorIndex actor = actors.create(ActorParamaters{
 		.species=redDeer,
 		.percentGrown=Percent::create(45),
@@ -453,9 +453,9 @@ TEST_CASE("death")
 	}
 	SUBCASE("hunger")
 	{
-		BlockIndex pondLocation = blocks.getIndex_i(3, 3, 1);
-		blocks.solid_setNot(pondLocation);
-		blocks.fluid_add(pondLocation, CollisionVolume::create(100), FluidType::byName("water"));
+		Point3D pondLocation = Point3D::create(3, 3, 1);
+		space.solid_setNot(pondLocation);
+		space.fluid_add(pondLocation, CollisionVolume::create(100), FluidType::byName("water"));
 		// Generate objectives, discard drink if it exists.
 		CHECK(actors.eat_getHungerEventStep(actor) == AnimalSpecies::getStepsEatFrequency(redDeer) +  step);
 		actors.eat_setIsHungry(actor);
@@ -474,11 +474,11 @@ TEST_CASE("death-temperature")
 	Simulation simulation("", step);
 	Area& area = simulation.m_hasAreas->createArea(6,6,6);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName("marble"));
 	Actors& actors = area.getActors();
-	BlockIndex actorLocation = blocks.getIndex_i(1, 1, 2);
+	Point3D actorLocation = Point3D::create(1, 1, 2);
 	ActorIndex actor = actors.create(ActorParamaters{
 		.species=redDeer,
 		.percentGrown=Percent::create(45),
@@ -489,18 +489,18 @@ TEST_CASE("death-temperature")
 	actors.objective_addTaskToStart(actor, std::make_unique<StationObjective>(actorLocation, stationPriority));
 	SUBCASE("temperature")
 	{
-		BlockIndex temperatureSourceLocation = blocks.getIndex_i(3, 4, 2);
-		BlockIndex b1 = blocks.getIndex_i(3, 3, 2);
-		BlockIndex b2 = blocks.getIndex_i(3, 2, 2);
-		BlockIndex b3 = blocks.getIndex_i(3, 1, 2);
-		BlockIndex b4 = blocks.getIndex_i(2, 1, 2);
+		Point3D temperatureSourceLocation = Point3D::create(3, 4, 2);
+		Point3D b1 = Point3D::create(3, 3, 2);
+		Point3D b2 = Point3D::create(3, 2, 2);
+		Point3D b3 = Point3D::create(3, 1, 2);
+		Point3D b4 = Point3D::create(2, 1, 2);
 		area.m_hasTemperature.addTemperatureSource(temperatureSourceLocation, TemperatureDelta::create(6000));
 		simulation.doStep();
-		CHECK(blocks.temperature_get(b1) == blocks.temperature_get(temperatureSourceLocation));
-		CHECK(blocks.temperature_get(b2) < blocks.temperature_get(b1));
-		CHECK(blocks.temperature_get(b3) < blocks.temperature_get(b2));
-		CHECK(blocks.temperature_get(b4) < blocks.temperature_get(b3));
-		CHECK(blocks.temperature_get(actorLocation) < blocks.temperature_get(b4));
+		CHECK(space.temperature_get(b1) == space.temperature_get(temperatureSourceLocation));
+		CHECK(space.temperature_get(b2) < space.temperature_get(b1));
+		CHECK(space.temperature_get(b3) < space.temperature_get(b2));
+		CHECK(space.temperature_get(b4) < space.temperature_get(b3));
+		CHECK(space.temperature_get(actorLocation) < space.temperature_get(b4));
 		CHECK(!actors.temperature_isSafeAtCurrentLocation(actor));
 		simulation.fasterForward(AnimalSpecies::getStepsTillDieInUnsafeTemperature(actors.getSpecies(actor)) - 2);
 		CHECK(actors.isAlive(actor));

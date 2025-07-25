@@ -13,6 +13,7 @@ protected:
 	EventSchedule* m_schedule = nullptr;
 	ScheduledEvent* m_event = nullptr;
 public:
+	HasScheduledEvent() { assert(false); std::unreachable(); }
 	HasScheduledEvent(EventSchedule& s) : m_schedule(&s)
 	{
 		assert(&s != nullptr);
@@ -57,6 +58,7 @@ class HasScheduledEventPausable : public HasScheduledEvent<EventType>
 {
 	Step m_elapsedSteps;
 public:
+	HasScheduledEventPausable() { assert(false); std::unreachable(); }
 	HasScheduledEventPausable(EventSchedule& es) : HasScheduledEvent<EventType>(es), m_elapsedSteps(Step::create(0)) { }
 	void pause()
 	{
@@ -97,6 +99,7 @@ protected:
 	EventSchedule& m_schedule;
 	StrongVector<EventType*, Index> m_events;
 public:
+	HasScheduledEvents() { assert(false); std::unreachable(); }
 	HasScheduledEvents(EventSchedule& s) : m_schedule(s) { assert(&s); }
 	void load(Simulation& simulation, const Json& data, const Index& size)
 	{

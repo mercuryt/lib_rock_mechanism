@@ -7,7 +7,7 @@
 ConstructedShape::ConstructedShape(const Json& data) { nlohmann::from_json(data, *this); }
 void ConstructedShape::addPoint(Area& area, const Point3D& origin, const Facing4& facing, const Point3D& newPoint)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	const Offset3D offset = origin.offsetTo(newPoint);
 	const Point3D& rotatedPoint = origin.offsetRotated(offset, facing, Facing4::North);
 	Offset3D rotatedOffset = origin.offsetTo(rotatedPoint);
@@ -61,12 +61,9 @@ void ConstructedShape::constructDecks()
 		Offset3D above = pair.first;
 		++above.z();
 		m_decks.addOrMerge(above);
-		m_decks.maybeRemove(pair.first);
 	}
 	for(const auto& pair : m_features)
 	{
-		if(pair.second.blocksEntrance())
-			m_decks.maybeRemove(pair.first);
 		if(pair.second.canStandAbove())
 		{
 			Offset3D above = pair.first;
@@ -75,10 +72,15 @@ void ConstructedShape::constructDecks()
 				m_decks.addOrMerge(above);
 		}
 	}
+	for(const auto& pair : m_solidPoints)
+		m_decks.maybeRemove(pair.first);
+	for(const auto& pair : m_features)
+		if(pair.second.blocksEntrance())
+			m_decks.maybeRemove(pair.first);
 }
 void ConstructedShape::recordAndClearDynamic(Area& area, const Point3D& origin)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	for(const auto& [offset, materialType] : m_solidPoints)
 	{
 		const Point3D& point = origin.applyOffset(offset);
@@ -96,7 +98,7 @@ void ConstructedShape::recordAndClearDynamic(Area& area, const Point3D& origin)
 }
 void ConstructedShape::recordAndClearStatic(Area& area, const Point3D& origin)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	for(const auto& [offset, materialType] : m_solidPoints)
 	{
 		const Point3D& point = origin.applyOffset(offset);
@@ -113,7 +115,7 @@ void ConstructedShape::recordAndClearStatic(Area& area, const Point3D& origin)
 }
 SetLocationAndFacingResult ConstructedShape::tryToSetLocationAndFacingDynamic(Area& area, const Facing4& currentFacing, const Point3D& newLocation, const Facing4& newFacing, OccupiedSpaceForHasShape& occupied)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	SetLocationAndFacingResult output = SetLocationAndFacingResult::Success;
 	if(newFacing != currentFacing)
 	{
@@ -219,7 +221,7 @@ SetLocationAndFacingResult ConstructedShape::tryToSetLocationAndFacingDynamic(Ar
 }
 void ConstructedShape::setLocationAndFacingDynamic(Area& area, const Facing4& currentFacing, const Point3D& newLocation, const Facing4& newFacing, OccupiedSpaceForHasShape& occupied)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	if(newFacing != currentFacing)
 	{
 		for(auto& [offset, materialType] : m_solidPoints)
@@ -244,7 +246,7 @@ void ConstructedShape::setLocationAndFacingDynamic(Area& area, const Facing4& cu
 }
 void ConstructedShape::setLocationAndFacingStatic(Area& area, const Facing4& currentFacing, const Point3D& newLocation, const Facing4& newFacing, OccupiedSpaceForHasShape& occupied)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	if(newFacing != currentFacing)
 	{
 		for(auto& [offset, materialType] : m_solidPoints)
@@ -289,7 +291,7 @@ SmallSet<MaterialTypeId> ConstructedShape::getMaterialTypesAt(const Point3D& loc
 std::pair<ConstructedShape, Point3D> ConstructedShape::makeForKeelPoint(Area& area, const Point3D& point, const Facing4& facing)
 {
 	ConstructedShape output;
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	auto keelCondition = [&](const Point3D& point) { return space.pointFeature_contains(point, PointFeatureTypeId::Keel); };
 	auto keelPoints = space.collectAdjacentsWithCondition(point, keelCondition);
 	Offset3D sum = Offset3D::create(0,0,0);
@@ -312,6 +314,19 @@ std::pair<ConstructedShape, Point3D> ConstructedShape::makeForKeelPoint(Area& ar
 	for(const Point3D& point : keelPoints)
 		if(point != center)
 			output.addPoint(area, center, facing, point);
+	output.constructShape();
+	output.constructDecks();
+	return {output, center};
+}
+std::pair<ConstructedShape, Point3D> ConstructedShape::makeForPlatform(Area& area, const CuboidSet& cuboids, const Facing4& facing)
+{
+	ConstructedShape output;
+	Point3D center = cuboids.getLowest();
+	output.addPoint(area, center, facing, center);
+	for(const Cuboid& cuboid : cuboids)
+		for(const Point3D& point : cuboid)
+			if(point != center)
+				output.addPoint(area, center, facing, point);
 	output.constructShape();
 	output.constructDecks();
 	return {output, center};

@@ -39,7 +39,9 @@ public:
 	HasFarmFieldsForFaction() = default;
 	HasFarmFieldsForFaction(const FactionId& f) : m_faction(f) { }
 	HasFarmFieldsForFaction(HasFarmFieldsForFaction&& other) noexcept = default;
+	HasFarmFieldsForFaction(const HasFarmFieldsForFaction&) { assert(false); std::unreachable(); }
 	HasFarmFieldsForFaction& operator=(HasFarmFieldsForFaction&& other) noexcept = default;
+	HasFarmFieldsForFaction& operator=(const HasFarmFieldsForFaction&) { assert(false); std::unreachable(); }
 	void addGivePlantFluidDesignation(Area& area, const Point3D& location);
 	void removeGivePlantFluidDesignation(Area& area, const Point3D& location);
 	void addSowSeedsDesignation(Area& area, const Point3D& point);

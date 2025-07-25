@@ -13,6 +13,7 @@
 #include "items/items.h"
 #include "space/space.h"
 #include "definitions/animalSpecies.h"
+#include "dataStructures/rtreeData.hpp"
 #include <cmath>
 enum class TemperatureZone { Surface, Underground, LavaSea };
 TemperatureDelta TemperatureSource::getTemperatureDeltaForRange(const Distance& range)
@@ -26,7 +27,7 @@ TemperatureDelta TemperatureSource::getTemperatureDeltaForRange(const Distance& 
 }
 void TemperatureSource::apply(Area& area)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	area.m_hasTemperature.addDelta(m_point, m_temperature);
 	Distance range = Distance::create(1);
 	while(range <= Config::heatDistanceMaximum)
@@ -41,7 +42,7 @@ void TemperatureSource::apply(Area& area)
 }
 void TemperatureSource::unapply(Area& area)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	area.m_hasTemperature.addDelta(m_point, m_temperature * -1);
 	Distance range = Distance::create(1);
 	while(true)
@@ -258,5 +259,5 @@ bool ActorNeedsSafeTemperature::isSafeAtCurrentLocation(Area& area) const
 	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
 	if(actors.getLocation(actor).empty())
 		return true;
-	return isSafe(area,  area.getSpace().temperature_get(actors.getLocation(actor)));
+	return isSafe(area, area.getSpace().temperature_get(actors.getLocation(actor)));
 }

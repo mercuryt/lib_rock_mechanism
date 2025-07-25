@@ -9,7 +9,7 @@
 
 #include <memory>
 MistDisperseEvent::MistDisperseEvent(const Step& delay, Simulation& simulation, const FluidTypeId& ft, const Point3D& b) :
-       	ScheduledEvent(simulation, delay), m_fluidType(ft), m_point(b) {}
+    	ScheduledEvent(simulation, delay), m_fluidType(ft), m_point(b) {}
 void MistDisperseEvent::execute(Simulation& simulation, Area* area)
 {
 	Space& space = area->getSpace();
@@ -44,16 +44,16 @@ void MistDisperseEvent::execute(Simulation& simulation, Area* area)
 }
 bool MistDisperseEvent::continuesToExist(Area& area) const
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	if(space.fluid_getMist(m_point) == m_fluidType)
 		return true;
 	// if adjacent to falling fluid on same z level
 	for(Point3D adjacent : space.getAdjacentOnSameZLevelOnly(m_point))
 		// if adjacent to falling fluid.
-		if(space.fluid_contains(adjacent, m_fluidType))
+		if(space.fluid_contains(adjacent, m_fluidType) && adjacent.z() != 0)
 		{
 			Point3D belowAdjacent = adjacent.below();
-			if(belowAdjacent.exists() && !space.solid_is(belowAdjacent))
+			if(!space.solid_is(belowAdjacent))
 				return true;
 		}
 	for(const Point3D& adjacent : space.getDirectlyAdjacent(m_point))

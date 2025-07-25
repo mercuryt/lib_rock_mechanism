@@ -2,7 +2,7 @@
 #include "offsetCuboid.h"
 #include "../dataStructures/smallSet.h"
 
-class OffsetCuboidSet
+struct OffsetCuboidSet
 {
 	SmallSet<OffsetCuboid> m_data;
 	// Try to merge ane existing cuboid with each of the other cuboids.

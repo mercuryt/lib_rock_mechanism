@@ -109,6 +109,27 @@ bool CuboidSet::contains(const Point3D& point) const
 			return true;
 	return false;
 }
+bool CuboidSet::contains(const Cuboid& cuboid) const
+{
+	CuboidSet remainder;
+	remainder.add(cuboid);
+	for(const Cuboid& other : m_cuboids)
+	{
+		auto remainderCopy = remainder.m_cuboids;
+		for(const Cuboid& remainderCuboid : remainderCopy)
+		{
+			if(!remainderCuboid.intersects(other))
+				continue;
+			if(other.contains(remainderCuboid))
+			{
+				remainder.m_cuboids.erase(remainderCuboid);
+				if(remainder.m_cuboids.empty())
+					return true;
+			}
+		}
+	}
+	return false;
+}
 SmallSet<Point3D> CuboidSet::toPointSet() const
 {
 	SmallSet<Point3D> output;
@@ -122,6 +143,26 @@ bool CuboidSet::isAdjacent(const Cuboid& cuboid) const
 		if(c.isTouching(cuboid))
 			return true;
 	return false;
+}
+Cuboid CuboidSet::boundry() const
+{
+	Point3D highest;
+	Point3D lowest;
+	for(const Cuboid& cuboid : m_cuboids)
+	{
+		highest = highest.empty() ? cuboid.m_highest : highest.max(cuboid.m_highest);
+		lowest = lowest.empty() ? cuboid.m_lowest : lowest.max(cuboid.m_lowest);
+	}
+	return {highest, lowest};
+}
+Point3D CuboidSet::getLowest() const
+{
+	Point3D output{Distance::create(0),Distance::create(0),Distance::max()};
+	for(const Cuboid& cuboid : m_cuboids)
+			if(cuboid.m_lowest.z() < output.z())
+				output = cuboid.m_lowest;
+	assert(output.x().exists());
+	return output;
 }
 CuboidSet CuboidSet::create(const SmallSet<Point3D>& points)
 {

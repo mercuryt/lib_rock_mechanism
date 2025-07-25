@@ -12,7 +12,7 @@ class Area;
 class Simulation;
 class EventSchedule;
 class CanReserve;
-class OffsetCuboidSet;
+struct OffsetCuboidSet;
 class ConstructedShape;
 
 struct ItemParamaters final
@@ -34,8 +34,9 @@ struct ItemParamaters final
 class ReMarkItemForStockPilingEvent final : public ScheduledEvent
 {
 	FactionId m_faction;
-	ItemCanBeStockPiled& m_canBeStockPiled;
+	ItemCanBeStockPiled* m_canBeStockPiled = nullptr;
 public:
+	ReMarkItemForStockPilingEvent() { assert(false); std::unreachable(); }
 	ReMarkItemForStockPilingEvent(Area& area, ItemCanBeStockPiled& i, const FactionId& f, const Step& duration, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);

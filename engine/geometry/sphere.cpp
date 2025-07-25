@@ -5,11 +5,7 @@
 #include <cmath>
 bool Sphere::contains(const Point3D& point) const
 {
-	return point.distanceSquared(center).toFloat() < (radius * radius);
-}
-bool Sphere::contains(const Space& space, const Point3D& point) const
-{
-	return contains(point);
+	return point.distanceToSquared(center).toFloat() < (radius * radius);
 }
 bool Sphere::contains(const Cuboid& cuboid) const
 {

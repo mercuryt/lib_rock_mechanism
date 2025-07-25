@@ -9,17 +9,19 @@
 #include "point3D.h"
 class CuboidView;
 class CuboidSurfaceView;
-class Sphere;
-class Cuboid
+struct Sphere;
+class Offset3D;
+struct OffsetCuboid;
+struct Cuboid
 {
 public:
 	// TODO: remove the m_ prefix and make this a struct.
 	Point3D m_highest;
 	Point3D m_lowest;
-
-	Cuboid(const Point3D& highest, const Point3D& lowest);
-
 	Cuboid() = default;
+	Cuboid(const Point3D& highest, const Point3D& lowest);
+	Cuboid(const Cuboid&) = default;
+	Cuboid& operator=(const Cuboid&) = default;
 	void merge(const Cuboid& cuboid);
 	void setFrom(const Point3D& point);
 	void setFrom(const Point3D& a, const Point3D& b);
@@ -34,6 +36,8 @@ public:
 	[[nodiscard]] SmallSet<Point3D> toSet() const;
 	[[nodiscard]] bool contains(const Point3D& point) const;
 	[[nodiscard]] bool contains(const Cuboid& cuboid) const;
+	[[nodiscard]] bool contains(const Offset3D& offset) const;
+	[[nodiscard]] bool contains(const OffsetCuboid& cuboid) const;
 	[[nodiscard]] bool canMerge(const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid canMergeSteal(const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid sum(const Cuboid& cuboid) const;
@@ -50,6 +54,8 @@ public:
 	[[nodiscard]] Distance dimensionForFacing(const Facing6& facing) const;
 	[[nodiscard]] Facing6 getFacingTwordsOtherCuboid(const Cuboid& cuboid) const;
 	[[nodiscard]] bool isSomeWhatInFrontOf(const Point3D& position, const Facing4& facing) const;
+	[[nodiscard]] bool isTouchingFace(const Cuboid& position) const;
+	[[nodiscard]] bool isTouchingFaceFromInside(const Cuboid& position) const;
 	// TODO: Should this return a CuboidArray<6>?
 	[[nodiscard]] SmallSet<Cuboid> getChildrenWhenSplitByCuboid(const Cuboid& cuboid) const;
 	[[nodiscard]] std::pair<Cuboid, Cuboid> getChildrenWhenSplitBelowCuboid(const Cuboid& cuboid) const;
@@ -66,7 +72,7 @@ public:
 		Point3D m_current;
 		void setToEnd();
 	public:
-		iterator(const Point3D& low, const Point3D& high) : m_start(low), m_end(high), m_current(low) { }
+		iterator(const Point3D& low, const Point3D& high);
 		iterator(const iterator& other) = default;
 		iterator& operator=(const iterator& other);
 		iterator& operator++();
@@ -83,10 +89,10 @@ public:
 	//static_assert(std::forward_iterator<iterator>);
 	CuboidSurfaceView getSurfaceView() const;
 	std::string toString() const;
-	// Compares each pair of cuboids to find the combination where combined.size() - (pair1.size() + pair2.size()) is lowest.
-	[[nodiscard]] static std::tuple<Cuboid, uint, uint> findPairWithLeastNewVolumeWhenExtended(auto& cuboids);
+	[[nodiscard]] std::strong_ordering operator<=>(const Cuboid& other) const;
+	static Cuboid null() { return Cuboid(); }
 	struct Hash{
-		size_t operator()(const Cuboid& cuboid) { return Point3D::Hash()(cuboid.m_highest); }
+		[[nodiscard]] size_t operator()(const Cuboid& cuboid) { return Point3D::Hash()(cuboid.m_highest); }
 	};
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Cuboid, m_highest, m_lowest);
 };

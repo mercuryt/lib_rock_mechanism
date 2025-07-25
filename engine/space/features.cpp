@@ -5,6 +5,7 @@
 #include "../plants.h"
 #include "../reference.h"
 #include "../numericTypes/types.h"
+#include "../dataStructures/rtreeData.hpp"
 bool Space::pointFeature_contains(const Point3D& point, const PointFeatureTypeId& pointFeatureType) const
 {
 	return m_features.queryGetOne(point).contains(pointFeatureType);
@@ -33,7 +34,7 @@ void Space::pointFeature_remove(const Point3D& point, const PointFeatureTypeId& 
 		m_features.remove(point);
 	m_area.m_opacityFacade.update(m_area, point);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
-	m_area.m_hasTerrainFacades.updatePointAndAdjacent(point);
+	m_area.m_hasTerrainFacades.update({point, point});
 	if(!transmitedTemperaturePreviously && temperature_transmits(point))
 		m_area.m_exteriorPortals.onPointCanTransmitTemperature(m_area, point);
 	if(wasOpaque && !pointFeature_isOpaque(point))
@@ -50,7 +51,7 @@ void Space::pointFeature_removeAll(const Point3D& point)
 	m_features.remove(point);
 	m_area.m_opacityFacade.update(m_area, point);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
-	m_area.m_hasTerrainFacades.updatePointAndAdjacent(point);
+	m_area.m_hasTerrainFacades.update({point, point});
 	if(!transmitedTemperaturePreviously && temperature_transmits(point))
 		m_area.m_exteriorPortals.onPointCanTransmitTemperature(m_area, point);
 	if(wasOpaque)
@@ -74,7 +75,7 @@ void Space::pointFeature_construct(const Point3D& point, const PointFeatureTypeI
 	auto featuresCopy = features;
 	// Hewn, closed, locked.
 	featuresCopy.insert(pointFeatureType, materialType, false, true, false);
-	m_features.updateOne(point, features, std::move(featuresCopy));
+	m_features.insertOrOverwrite(point, std::move(featuresCopy));
 	const bool isFloorOrHatch = (pointFeatureType == PointFeatureTypeId::Floor || pointFeatureType == PointFeatureTypeId::Hatch);
 	if(isFloorOrHatch && !MaterialType::getTransparent(materialType))
 	{
@@ -87,7 +88,7 @@ void Space::pointFeature_construct(const Point3D& point, const PointFeatureTypeI
 		m_exposedToSky.unset(m_area, point);
 	}
 	m_area.m_opacityFacade.update(m_area, point);
-	m_area.m_hasTerrainFacades.updatePointAndAdjacent(point);
+	m_area.m_hasTerrainFacades.update({point, point});
 	if(transmitedTemperaturePreviously && !temperature_transmits(point))
 		m_area.m_exteriorPortals.onPointCanNotTransmitTemperature(m_area, point);
 }
@@ -113,7 +114,7 @@ void Space::pointFeature_hew(const Point3D& point, const PointFeatureTypeId& poi
 		// Neighter floor nor hatch can be hewn so we don't need to check if this is point opaque or floor opaque.
 		m_area.m_visionCuboids.pointIsOpaque(point);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
-	m_area.m_hasTerrainFacades.updatePointAndAdjacent(point);
+	m_area.m_hasTerrainFacades.update({point, point});
 }
 void Space::pointFeature_setTemperature(const Point3D& point, const Temperature& temperature)
 {
@@ -130,7 +131,7 @@ void Space::pointFeature_setAll(const Point3D& point, PointFeatureSet& features)
 	assert(m_features.queryGetOne(point).empty());
 	m_features.insert(point, std::move(features));
 	m_area.m_opacityFacade.update(m_area, point);
-	m_area.m_hasTerrainFacades.updatePointAndAdjacent(point);
+	m_area.m_hasTerrainFacades.update({point, point});
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
 	if(pointFeature_isOpaque(point))
 		m_area.m_visionCuboids.pointIsOpaque(point);
@@ -145,7 +146,7 @@ void Space::pointFeature_lock(const Point3D& point, const PointFeatureTypeId& po
 	auto& feature = featuresCopy.get(pointFeatureType);
 	feature.locked = true;
 	m_features.updateOne(point, features, std::move(featuresCopy));
-	m_area.m_hasTerrainFacades.updatePointAndAdjacent(point);
+	m_area.m_hasTerrainFacades.update({point, point});
 }
 void Space::pointFeature_unlock(const Point3D& point, const PointFeatureTypeId& pointFeatureType)
 {
@@ -155,7 +156,7 @@ void Space::pointFeature_unlock(const Point3D& point, const PointFeatureTypeId& 
 	auto& feature = featuresCopy.get(pointFeatureType);
 	feature.locked = false;
 	m_features.updateOne(point, features, std::move(featuresCopy));
-	m_area.m_hasTerrainFacades.updatePointAndAdjacent(point);
+	m_area.m_hasTerrainFacades.update({point, point});
 }
 void Space::pointFeature_close(const Point3D& point, const PointFeatureTypeId& pointFeatureType)
 {
@@ -206,7 +207,7 @@ bool Space::pointFeature_blocksEntrance(const Point3D& point) const
 			pointFeature.pointFeatureTypeId == PointFeatureTypeId::Fortification ||
 			pointFeature.pointFeatureTypeId == PointFeatureTypeId::FloodGate ||
 			(pointFeature.pointFeatureTypeId == PointFeatureTypeId::Door && pointFeature.locked)
-		  )
+		 )
 			return true;
 	}
 	return false;
@@ -236,7 +237,7 @@ bool Space::pointFeature_canEnterFromBelow(const Point3D& point) const
 			pointFeature.pointFeatureTypeId == PointFeatureTypeId::Floor ||
 			pointFeature.pointFeatureTypeId == PointFeatureTypeId::FloorGrate ||
 			(pointFeature.pointFeatureTypeId == PointFeatureTypeId::Hatch && pointFeature.locked)
-		  )
+		 )
 			return false;
 	return true;
 }
@@ -248,7 +249,7 @@ bool Space::pointFeature_canEnterFromAbove([[maybe_unused]] const Point3D& point
 			pointFeature.pointFeatureTypeId == PointFeatureTypeId::Floor ||
 			pointFeature.pointFeatureTypeId == PointFeatureTypeId::FloorGrate ||
 			(pointFeature.pointFeatureTypeId == PointFeatureTypeId::Hatch && pointFeature.locked)
-		  )
+		 )
 			return false;
 	return true;
 }

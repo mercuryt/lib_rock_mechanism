@@ -6,7 +6,7 @@
 #include "numericTypes/types.h"
 void FillQueue::buildFor(Area& area, FluidGroup& fluidGroup, SmallSet<Point3D>& members)
 {
-	auto& space =  area.getSpace();
+	auto& space = area.getSpace();
 	for(Point3D point : members)
 	{
 		assert(space.fluid_contains(point, fluidGroup.m_fluidType));
@@ -21,7 +21,7 @@ void FillQueue::buildFor(Area& area, FluidGroup& fluidGroup, SmallSet<Point3D>& 
 }
 void FillQueue::initalizeForStep(Area& area, FluidGroup& fluidGroup)
 {
-	auto& space =  area.getSpace();
+	auto& space = area.getSpace();
 	for(FutureFlowPoint& futureFlowPoint : m_queue)
 	{
 		futureFlowPoint.delta = CollisionVolume::create(0);
@@ -44,7 +44,7 @@ void FillQueue::recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionV
 	assert((m_groupStart != m_groupEnd));
 	assert(flowTillNextStep.exists());
 	validate();
-	auto& space =  area.getSpace();
+	auto& space = area.getSpace();
 	// Record fluid level changes.
 	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 	{
@@ -99,7 +99,7 @@ CollisionVolume FillQueue::groupLevel(Area& area, FluidGroup& fluidGroup) const
 	CollisionVolume highestLevel = CollisionVolume::create(0);
 	for(auto it = m_groupStart; it != m_groupEnd; ++it)
 	{
-		CollisionVolume level = it->delta +  area.getSpace().fluid_volumeOfTypeContains(it->point, fluidGroup.m_fluidType);
+		CollisionVolume level = it->delta + area.getSpace().fluid_volumeOfTypeContains(it->point, fluidGroup.m_fluidType);
 		if(level > highestLevel)
 			highestLevel = level;
 

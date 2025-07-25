@@ -2,10 +2,10 @@
 #include "cuboid.h"
 #include "../numericTypes/index.h"
 
-class CuboidSet;
+struct CuboidSet;
 struct CuboidSetConstView;
-class OffsetCuboidSet;
-class CuboidSetConstIterator
+struct OffsetCuboidSet;
+struct CuboidSetConstIterator
 {
 	const CuboidSet& m_cuboidSet;
 	SmallSet<Cuboid>::const_iterator m_outerIter;
@@ -24,7 +24,7 @@ struct CuboidSetConstView
 	[[nodiscard]] CuboidSetConstIterator begin() { return {m_cuboidSet, false}; }
 	[[nodiscard]] CuboidSetConstIterator end() { return {m_cuboidSet, true}; }
 };
-class CuboidSet
+struct CuboidSet
 {
 protected:
 	SmallSet<Cuboid> m_cuboids;
@@ -42,6 +42,7 @@ public:
 	CuboidSet& operator=(const CuboidSet& other) = default;
 	void add(const Point3D& point);
 	void remove(const Point3D& point);
+	void removeAll(const auto& cuboids) { for(const Cuboid& cuboid : cuboids) remove(cuboid); }
 	virtual void add(const Cuboid& cuboid);
 	virtual void remove(const Cuboid& cuboid);
 	void clear() { m_cuboids.clear(); }
@@ -52,22 +53,26 @@ public:
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] uint size() const;
 	[[nodiscard]] bool contains(const Point3D& point) const;
+	[[nodiscard]] bool contains(const Cuboid& cuboid) const;
 	[[nodiscard]] CuboidSetConstView getView() const { return {*this}; }
 	[[nodiscard]] const SmallSet<Cuboid>& getCuboids() const { return m_cuboids; }
 	[[nodiscard]] SmallSet<Point3D> toPointSet() const;
 	[[nodiscard]] bool isAdjacent(const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid boundry() const;
+	[[nodiscard]] Point3D getLowest() const;
+	[[nodiscard]] const Cuboid& front() const { return m_cuboids.front(); }
+	[[nodiscard]] const Cuboid& back() const { return m_cuboids.back(); }
 	[[nodiscard]] auto begin() { return m_cuboids.begin(); }
 	[[nodiscard]] auto end() { return m_cuboids.end(); }
 	[[nodiscard]] auto begin() const { return m_cuboids.begin(); }
 	[[nodiscard]] auto end() const { return m_cuboids.end(); }
 	static CuboidSet create(const SmallSet<Point3D>& space);
-	friend class CuboidSetConstIterator;
+	friend struct CuboidSetConstIterator;
 	friend struct CuboidSetConstView;
 };
 void to_json(Json& data, const CuboidSet& cuboidSet);
 void from_json(const Json& data, CuboidSet& cuboidSet);
-class CuboidSetWithBoundingBoxAdjacent : public CuboidSet
+struct CuboidSetWithBoundingBoxAdjacent : public CuboidSet
 {
 	Cuboid m_boundingBox;
 public:

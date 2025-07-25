@@ -10,7 +10,7 @@ template<bool anyOccupiedPoint, DestinationCondition DestinationConditionT>
 FindPathResult TerrainFacade::findPathBreadthFirstWithoutMemo(const Point3D& start, const Facing4& startFacing, DestinationConditionT& destinationCondition, const ShapeId& shape, const MoveTypeId& moveType, bool detour, bool adjacent, const FactionId& faction, const Distance& maxRange) const
 {
 	auto& hasMemos = m_area.m_simulation.m_hasPathMemos;
-	auto pair = hasMemos.getBreadthFirst(m_area);
+	auto pair = hasMemos.getBreadthFirst();
 	auto& memo = *pair.first;
 	auto index = pair.second;
 	auto output = PathInnerLoops::findPath<PathMemoBreadthFirst, anyOccupiedPoint, decltype(destinationCondition)>(destinationCondition, m_area, *this, memo, shape, moveType, start, startFacing, detour, adjacent, faction, maxRange);
@@ -22,7 +22,7 @@ template<bool anyOccupiedPoint, DestinationCondition DestinationConditionT>
 FindPathResult TerrainFacade::findPathDepthFirstWithoutMemo(const Point3D& from, const Facing4& startFacing, DestinationConditionT& destinationCondition, const Point3D& huristicDestination, const ShapeId& shape, const MoveTypeId& moveType, bool detour, bool adjacent, const FactionId& faction, const Distance& maxRange) const
 {
 	auto& hasMemos = m_area.m_simulation.m_hasPathMemos;
-	auto pair = hasMemos.getDepthFirst(m_area);
+	auto pair = hasMemos.getDepthFirst();
 	auto& memo = *pair.first;
 	auto index = pair.second;
 	memo.setDestination(huristicDestination);

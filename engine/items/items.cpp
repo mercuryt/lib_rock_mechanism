@@ -10,17 +10,18 @@
 #include "../definitions/moveType.h"
 #include "../numericTypes/types.h"
 #include "../portables.hpp"
+#include "../dataStructures/rtreeData.hpp"
 #include <memory>
 #include <ranges>
 // RemarkItemForStockPilingEvent
 ReMarkItemForStockPilingEvent::ReMarkItemForStockPilingEvent(Area& area, ItemCanBeStockPiled& canBeStockPiled, const FactionId& faction, const Step& duration, const Step start) :
 	ScheduledEvent(area.m_simulation, duration, start),
 	m_faction(faction),
-	m_canBeStockPiled(canBeStockPiled) { }
+	m_canBeStockPiled(&canBeStockPiled) { }
 void ReMarkItemForStockPilingEvent::execute(Simulation&, Area*)
 {
-	m_canBeStockPiled.maybeSet(m_faction);
-	m_canBeStockPiled.m_scheduledEvents.erase(m_faction);
+	m_canBeStockPiled->maybeSet(m_faction);
+	m_canBeStockPiled->m_scheduledEvents.erase(m_faction);
 }
 void ReMarkItemForStockPilingEvent::clearReferences(Simulation&, Area*) { }
 // ItemCanBeStockPiled
@@ -153,7 +154,7 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 		index = location_set(index, itemParamaters.location, itemParamaters.facing);
 	static const MoveTypeId rolling = MoveType::byName("roll");
 	static const ItemTypeId panniers = ItemType::byName("panniers");
-	if(itemType == panniers  || (moveType == rolling && ItemType::getInternalVolume(itemType) != 0))
+	if(itemType == panniers || (moveType == rolling && ItemType::getInternalVolume(itemType) != 0))
 		m_area.m_hasHaulTools.registerHaulTool(m_area, index);
 	return index;
 }
@@ -596,11 +597,11 @@ ItemIndex ItemHasCargo::addItemGeneric(Area& area, const ItemTypeId& itemType, c
 	assert(ItemType::getGeneric(itemType));
 	Items& items = area.getItems();
 	for(ItemIndex item : getItems())
-		if(items.getItemType(item) == itemType && items.getMaterialType(item)  == materialType)
+		if(items.getItemType(item) == itemType && items.getMaterialType(item) == materialType)
 		{
 			// Add to existing stack.
 			items.addQuantity(item, quantity);
-			m_mass += ItemType::getFullDisplacement(itemType) * MaterialType::getDensity(materialType)  * quantity;
+			m_mass += ItemType::getFullDisplacement(itemType) * MaterialType::getDensity(materialType) * quantity;
 			m_volume += ItemType::getFullDisplacement(itemType) * quantity;
 			return item;
 		}
@@ -660,7 +661,7 @@ void ItemHasCargo::removeItemGeneric(Area& area, const ItemTypeId& itemType, con
 ItemIndex ItemHasCargo::unloadGenericTo(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity, const Point3D& location)
 {
 	removeItemGeneric(area, itemType, materialType, quantity);
-	return  area.getSpace().item_addGeneric(location, itemType, materialType, quantity);
+	return area.getSpace().item_addGeneric(location, itemType, materialType, quantity);
 }
 void ItemHasCargo::updateCarrierIndexForAllCargo(Area& area, const ItemIndex& newIndex)
 {

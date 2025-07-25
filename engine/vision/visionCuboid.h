@@ -63,14 +63,14 @@ public:
 	[[nodiscard]] CuboidMap<VisionCuboidId> getAdjacentsForVisionCuboid(const VisionCuboidId& index) const { return getAdjacentsForIndex(getIndexForVisionCuboidId(index)); }
 	[[nodiscard]] bool canSeeInto(const Cuboid& a, const Cuboid& b) const;
 	[[nodiscard]] SmallSet<uint> getMergeCandidates(const Cuboid& cuboid) const;
-	[[nodiscard]] VisionCuboidSetSIMD query(const auto& queryShape, const auto& space) const
+	[[nodiscard]] VisionCuboidSetSIMD query(const auto& queryShape) const
 	{
 		VisionCuboidSetSIMD output(16);
 		auto eachCuboid = [&](const VisionCuboidId& index, const Cuboid& cuboid) { output.insert(index, cuboid); };
-		query(queryShape, eachCuboid, space);
+		query(queryShape, eachCuboid);
 		return output;
 	}
-	void query(const auto& queryShape, const auto& action, const auto& space) const
+	void query(const auto& queryShape, auto&& action) const
 	{
 		const Point3D center = queryShape.getCenter();
 		VisionCuboidId key = m_pointLookup.queryGetOne(center);

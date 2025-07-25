@@ -28,6 +28,8 @@ class ActorOrItemIndex
 	[[nodiscard]] static bool getActorBit(const HasShapeIndex& index);
 public:
 	ActorOrItemIndex() = default;
+	ActorOrItemIndex(const ActorOrItemIndex& other) : m_index(other.m_index), m_isActor(other.m_isActor) { }
+	ActorOrItemIndex& operator=(const ActorOrItemIndex& other) { m_index = other.m_index; m_isActor = other.m_isActor; return *this; }
 	static ActorOrItemIndex createForActor(const ActorIndex& actor) { return ActorOrItemIndex(actor, true); }
 	static ActorOrItemIndex createForItem(const ItemIndex& item) { return ActorOrItemIndex(item, false); }
 	static ActorOrItemIndex null() { return ActorOrItemIndex(); }

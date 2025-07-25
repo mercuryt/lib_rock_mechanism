@@ -12,12 +12,13 @@
 #include "designations.h"
 #include "numericTypes/index.h"
 #include "pathMemo.h"
+#include "pathRequest.h"
 #include "reference.h"
 #include "numericTypes/types.h"
 #include "callbackTypes.h"
 #include "dataStructures/strongVector.h"
 #include "dataStructures/smallMap.h"
-#include "dataStructures/rtreeDataIndex.h"
+#include "dataStructures/rtreeData.h"
 
 #include <bitset>
 
@@ -56,22 +57,11 @@ struct PathRequestNoHuristicData
 	std::unique_ptr<PathRequestBreadthFirst> pathRequest;
 	uint32_t spatialHash;
 	PathRequestNoHuristicData() = default;
-	PathRequestNoHuristicData(std::unique_ptr<PathRequestBreadthFirst> pr, uint32_t sh) :
-		pathRequest(std::move(pr)),
-		spatialHash(sh)
-	{ }
+	PathRequestNoHuristicData(std::unique_ptr<PathRequestBreadthFirst> pr, uint32_t sh);
 	PathRequestNoHuristicData(const PathRequestNoHuristicData& other) = delete;
-	PathRequestNoHuristicData(PathRequestNoHuristicData&& other) noexcept :
-		pathRequest(std::move(other.pathRequest)),
-		spatialHash(other.spatialHash)
-	{ }
+	PathRequestNoHuristicData(PathRequestNoHuristicData&& other) noexcept;
 	PathRequestNoHuristicData& operator=(const PathRequestNoHuristicData& other) = delete;
-	PathRequestNoHuristicData& operator=(PathRequestNoHuristicData&& other) noexcept
-	{
-		pathRequest = std::move(other.pathRequest);
-		spatialHash = other.spatialHash;
-		return *this;
-	}
+	PathRequestNoHuristicData& operator=(PathRequestNoHuristicData&& other) noexcept;
 };
 struct PathRequestWithHuristicData
 {
@@ -79,30 +69,42 @@ struct PathRequestWithHuristicData
 	std::unique_ptr<PathRequestDepthFirst> pathRequest;
 	uint32_t spatialHash;
 	PathRequestWithHuristicData() = default;
-	PathRequestWithHuristicData(std::unique_ptr<PathRequestDepthFirst> pr, uint32_t sh) :
-		pathRequest(std::move(pr)),
-		spatialHash(sh)
-	{ }
+	PathRequestWithHuristicData(std::unique_ptr<PathRequestDepthFirst> pr, uint32_t sh);
 	PathRequestWithHuristicData(const PathRequestWithHuristicData& other) = delete;
-	PathRequestWithHuristicData(PathRequestWithHuristicData&& other) noexcept :
-		pathRequest(std::move(other.pathRequest)),
-		spatialHash(other.spatialHash)
-	{ }
+	PathRequestWithHuristicData(PathRequestWithHuristicData&& other) noexcept;
 	PathRequestWithHuristicData& operator=(const PathRequestWithHuristicData& other) = delete;
-	PathRequestWithHuristicData& operator=(PathRequestWithHuristicData&& other) noexcept
+	PathRequestWithHuristicData& operator=(PathRequestWithHuristicData&& other) noexcept;
+};
+struct AdjacentData
+{
+	using Primitive = uint32_t;
+	std::bitset<maxAdjacent> data;
+	void set(const AdjacentIndex& index, bool value) { data[index.get()] = value; }
+	[[nodiscard]] bool check(const AdjacentIndex& index) const { return data[index.get()]; }
+	[[nodiscard]] Primitive get() const { return data.to_ulong(); }
+	[[nodiscard]] auto operator<=>(const AdjacentData& other) const { return data.to_ulong() <=> other.data.to_ulong(); }
+	[[nodiscard]] bool operator==(const AdjacentData& other) const { return data.to_ulong() == other.data.to_ulong(); }
+	static AdjacentData create(const Primitive& d) { return {d}; }
+	static AdjacentData null() { return {0}; }
+	class ConstIterator
 	{
-		pathRequest = std::move(other.pathRequest);
-		spatialHash = other.spatialHash;
-		return *this;
-	}
+		std::bitset<maxAdjacent> data;
+		AdjacentIndex index;
+		void advanceToNext() { while(index < maxAdjacent && !data[index.get()]) ++index; }
+	public:
+		ConstIterator(const std::bitset<maxAdjacent>& d, const AdjacentIndex& i) : data(d), index(i) { advanceToNext(); }
+		[[nodiscard]] const AdjacentIndex& operator*() const { return index; }
+		[[nodiscard]] bool operator!=(const ConstIterator& other) { return index != other.index; }
+		void operator++() { ++index; advanceToNext(); }
+	};
+	[[nodiscard]] ConstIterator begin() { return {data, AdjacentIndex::create(0)}; }
+	[[nodiscard]] ConstIterator end() { return {data, AdjacentIndex::create(maxAdjacent)}; }
 };
 class TerrainFacade final
 {
 	StrongVector<PathRequestNoHuristicData, PathRequestIndex> m_pathRequestsNoHuristic;
 	StrongVector<PathRequestWithHuristicData, PathRequestIndex> m_pathRequestsWithHuristic;
-	// TODO: This should not be using the Index variant but the Data variant requires a "Primitive" class member type. Either remove Primitive from RTreeData or make a wrapper for bitset.
-	// TODO: can this index be 16 bit?
-	RTreeDataIndex<std::bitset<26>, uint32_t> m_enterable;
+	RTreeData<AdjacentData> m_enterable;
 	Area& m_area;
 	Point3D m_pointToIndexConversionMultipliers;
 	MoveTypeId m_moveType;
@@ -111,10 +113,12 @@ class TerrainFacade final
 	[[nodiscard]] FindPathResult findPathBreadthFirstWithoutMemo(const Point3D& start, const Facing4& startFacing, DestinationConditionT& destinationCondition, const ShapeId& shape, const MoveTypeId& moveType, bool detour, bool adjacent, const FactionId& faction, const Distance& maxRange) const;
 	template<bool anyOccupiedPoint, DestinationCondition DestinationConditionT>
 	[[nodiscard]] FindPathResult findPathDepthFirstWithoutMemo(const Point3D& from, const Facing4& startFacing, DestinationConditionT& destinationCondition, const Point3D& huristicDestination, const ShapeId& shape, const MoveTypeId& moveType, bool detour, bool adjacent, const FactionId& faction, const Distance& maxRange) const;
-	PathRequestIndex getPathRequestIndexNoHuristic();
-	PathRequestIndex getPathRequestIndexWithHuristic();
+	[[nodiscard]] PathRequestIndex getPathRequestIndexNoHuristic();
+	[[nodiscard]] PathRequestIndex getPathRequestIndexWithHuristic();
+	[[nodiscard]] AdjacentData makeDataForPoint(const Point3D& point) const;
 	void movePathRequestNoHuristic(PathRequestIndex oldIndex, PathRequestIndex newIndex);
 	void movePathRequestWithHuristic(PathRequestIndex oldIndex, PathRequestIndex newIndex);
+	void updatePoint(const Point3D& point);
 public:
 	TerrainFacade(Area& area, const MoveTypeId& moveType);
 	void doStep();
@@ -122,10 +126,11 @@ public:
 	void registerPathRequestWithHuristic(std::unique_ptr<PathRequestDepthFirst> pathRequest);
 	void unregisterNoHuristic(PathRequest& pathRequest);
 	void unregisterWithHuristic(PathRequest& pathRequest);
-	void update(const Point3D& point);
+	void update(const Cuboid& cuboid);
+	void maybeSetImpassable(const Cuboid& cuboid);
 	void clearPathRequests();
-	[[nodiscard]] bool canEnterFrom(const Point3D &point, AdjacentIndex adjacentIndex) const;
-	[[nodiscard]] bool getValueForBit(const Point3D& from, const Point3D& to) const;
+	[[nodiscard]] const AdjacentData getAdjacentData(const Point3D& point) const { return m_enterable.queryGetOne(point); }
+	[[nodiscard]] bool getValue(const Point3D& to, const Point3D& from) const;
 	[[nodiscard]] FindPathResult findPathTo(PathMemoDepthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& target, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null()) const;
 	[[nodiscard]] FindPathResult findPathToWithoutMemo(const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& target, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null()) const;
 	[[nodiscard]] FindPathResult findPathToAnyOf(PathMemoDepthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, SmallSet<Point3D> indecies, const Point3D huristicDestination, bool detour = false, const FactionId& faction = FactionId::null()) const;
@@ -155,18 +160,19 @@ public:
 	[[nodiscard]] size_t getPathRequestCount() const { return m_pathRequestsNoHuristic.size() + m_pathRequestsWithHuristic.size(); }
 	[[nodiscard]] bool accessable(const Point3D& from, const Facing4& startFacing, const Point3D& to, const ActorIndex& actor) const;
 	[[nodiscard]] bool empty() const { return m_pathRequestsNoHuristic.empty() && m_pathRequestsWithHuristic.empty(); }
+	[[nodiscard]] CuboidSet getEnterableIntersection(const auto& shape) const { return m_enterable.queryGetIntersection(shape); }
 };
 class AreaHasTerrainFacades
 {
 	SmallMapStable<MoveTypeId, TerrainFacade> m_data;
 	Area& m_area;
-	void update(const Point3D& point);
 public:
 	AreaHasTerrainFacades(Area& area) : m_area(area) { }
 	void doStep();
-	void updatePointAndAdjacent(const Point3D& point);
 	void maybeRegisterMoveType(const MoveTypeId& moveType);
 	void clearPathRequests();
+	void update(const Cuboid& cuboid);
+	void maybeSetImpassable(const Cuboid& cuboid);
 	[[nodiscard]] TerrainFacade& getForMoveType(const MoveTypeId& moveTypeId);
 	[[nodiscard]] TerrainFacade& getOrCreateForMoveType(const MoveTypeId& moveTypeId);
 	[[nodiscard]] bool empty() const { for(const auto& pair : m_data) { if(!pair.second->empty()) return false; } return true; }

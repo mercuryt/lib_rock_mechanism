@@ -66,7 +66,7 @@ Json BodyPart::toJson() const
 		data["wounds"].push_back(wound.toJson());
 	return data;
 }
-Body::Body(Area& area, const ActorIndex& a) :  m_bleedEvent(area.m_eventSchedule), m_woundsCloseEvent(area.m_eventSchedule), m_actor(a) { }
+Body::Body(Area& area, const ActorIndex& a) : m_bleedEvent(area.m_eventSchedule), m_woundsCloseEvent(area.m_eventSchedule), m_actor(a) { }
 void Body::initalize(Area& area)
 {
 	AnimalSpeciesId species = area.getActors().getSpecies(m_actor);
@@ -79,7 +79,7 @@ void Body::initalize(Area& area)
 	m_volumeOfBlood = healthyBloodVolume();
 }
 Body::Body(const Json& data, DeserializationMemo& deserializationMemo, const ActorIndex& a) :
-       	m_bleedEvent(deserializationMemo.m_simulation.m_eventSchedule),
+    	m_bleedEvent(deserializationMemo.m_simulation.m_eventSchedule),
 	m_woundsCloseEvent(deserializationMemo.m_simulation.m_eventSchedule),
 	m_actor(a),
 	m_solid(MaterialType::byName(data["materialType"].get<std::string>())),

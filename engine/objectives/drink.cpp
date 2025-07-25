@@ -148,12 +148,12 @@ bool DrinkObjective::canDrinkItemAt(Area& area, const Point3D& point, const Acto
 ItemIndex DrinkObjective::getItemToDrinkFromAt(Area& area, const Point3D& point, const ActorIndex& actor) const
 {
 	Items& items = area.getItems();
-	for(ItemIndex item :  area.getSpace().item_getAll(point))
+	for(ItemIndex item : area.getSpace().item_getAll(point))
 		if(items.cargo_containsAnyFluid(item) && items.cargo_getFluidType(item) == area.getActors().drink_getFluidType(actor))
 			return item;
 	return ItemIndex::null();
 }
 bool DrinkObjective::containsSomethingDrinkable(Area& area, const Point3D& point, const ActorIndex& actor) const
 {
-	return  area.getSpace().fluid_contains(point, area.getActors().drink_getFluidType(actor)) || canDrinkItemAt(area, point, actor);
+	return area.getSpace().fluid_contains(point, area.getActors().drink_getFluidType(actor)) || canDrinkItemAt(area, point, actor);
 }

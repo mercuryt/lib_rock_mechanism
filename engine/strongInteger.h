@@ -7,13 +7,11 @@ template <typename T>
 concept Numeric = std::integral<T> || std::floating_point<T>;
 class Simulation;
 template <class Derived, typename T, T NULL_VALUE = std::numeric_limits<T>::max(), T MIN_VALUE = std::numeric_limits<T>::min()>
-class StrongInteger
+struct StrongInteger
 {
-protected:
 	T data = NULL_VALUE;
 	using This = StrongInteger<Derived, T, NULL_VALUE>;
 	constexpr static T MAX_VALUE = NULL_VALUE - 1;
-public:
 	using Primitive = T;
 	constexpr Derived& operator=(const This& o) { data = o.data; return static_cast<Derived&>(*this); }
 	constexpr Derived& operator=(const T& d) { data = d; return static_cast<Derived&>(*this); }

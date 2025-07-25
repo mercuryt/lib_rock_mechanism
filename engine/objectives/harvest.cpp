@@ -80,7 +80,7 @@ Json HarvestObjective::toJson() const
 }
 void HarvestObjective::execute(Area& area, const ActorIndex& actor)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	Plants& plants = area.getPlants();
 	if(m_point.exists())
@@ -111,7 +111,7 @@ void HarvestObjective::cancel(Area& area, const ActorIndex& actor)
 {
 
 	Actors& actors = area.getActors();
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Plants& plants = area.getPlants();
 	actors.move_pathRequestMaybeCancel(actor);
 	m_harvestEvent.maybeUnschedule();
@@ -120,7 +120,7 @@ void HarvestObjective::cancel(Area& area, const ActorIndex& actor)
 }
 void HarvestObjective::select(Area& area, const Point3D& point, const ActorIndex& actor)
 {
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	[[maybe_unused]] Plants& plants = area.getPlants();
 	Actors& actors = area.getActors();
 	assert(space.plant_exists(point));
@@ -153,7 +153,7 @@ Point3D HarvestObjective::getPointContainingPlantToHarvestAtLocationAndFacing(Ar
 bool HarvestObjective::pointContainsHarvestablePlant(Area& area, const Point3D& point, const ActorIndex& actor) const
 {
 	Actors& actors = area.getActors();
-	Space& space =  area.getSpace();
+	Space& space = area.getSpace();
 	Plants& plants = area.getPlants();
 	return space.plant_exists(point) && plants.readyToHarvest(space.plant_get(point)) && !space.isReserved(point, actors.getFaction(actor));
 }

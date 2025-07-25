@@ -1,6 +1,6 @@
 #include "../../lib/doctest.h"
 #include "../../engine/actors/actors.h"
-#include "../../engine/blocks/blocks.h"
+#include "../../engine/space/space.h"
 #include "../../engine/items/items.h"
 #include "../../engine/area/area.h"
 #include "../../engine/areaBuilderUtil.h"
@@ -18,7 +18,7 @@
 #include "../../engine/objectives/construct.h"
 #include "../../engine/items/items.h"
 #include "../../engine/actors/actors.h"
-#include "../../engine/blocks/blocks.h"
+#include "../../engine/space/space.h"
 #include "../../engine/plants.h"
 #include "../../engine/definitions/animalSpecies.h"
 #include "../../engine/portables.hpp"
@@ -31,14 +31,14 @@ TEST_CASE("construct")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, marble);
 	FactionId faction = simulation.createFaction("Tower Of Power");
 	area.m_spaceDesignations.registerFaction(faction);
 	const ConstructObjectiveType& constructObjectiveType = static_cast<const ConstructObjectiveType&>(ObjectiveType::getByName("construct"));
-	BlockIndex dwarf1Start = blocks.getIndex_i(1, 1, 2);
+	Point3D dwarf1Start = Point3D::create(1, 1, 2);
 	ActorIndex dwarf1 = actors.create(ActorParamaters{
 		.species=dwarf,
 		.location=dwarf1Start,
@@ -49,35 +49,35 @@ TEST_CASE("construct")
 	ItemIndex boards = items.create({
 		.itemType=ItemType::byName("board"),
 		.materialType=wood,
-		.location=blocks.getIndex_i(8,7,2),
+		.location=Point3D::create(8,7,2),
 		.quantity=Quantity::create(50u),
 	});
 	ItemIndex pegs = items.create({
 		.itemType=ItemType::byName("peg"),
 		.materialType=wood,
-		.location=blocks.getIndex_i(3, 8, 2),
+		.location=Point3D::create(3, 8, 2),
 		.quantity=Quantity::create(50u)
 	});
 	ItemIndex saw = items.create({
 		.itemType=ItemType::byName("saw"),
 		.materialType=MaterialType::byName("bronze"),
-		.location=blocks.getIndex_i(5,7,2),
+		.location=Point3D::create(5,7,2),
 		.quality=Quality::create(25u),
 		.percentWear=Percent::create(0)
 	});
 	ItemIndex mallet = items.create({
 		.itemType=ItemType::byName("mallet"),
 		.materialType=wood,
-		.location=blocks.getIndex_i(9, 5, 2),
+		.location=Point3D::create(9, 5, 2),
 		.quality=Quality::create(25u),
 		.percentWear=Percent::create(0),
 	});
 	SUBCASE("make wall")
 	{
-		BlockIndex wallLocation = blocks.getIndex_i(8, 4, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, wood);
+		Point3D wallLocation = Point3D::create(8, 4, 2);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, PointFeatureTypeId::Null, wood);
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
-		CHECK(blocks.designation_has(wallLocation, faction, SpaceDesignation::Construct));
+		CHECK(space.designation_has(wallLocation, faction, SpaceDesignation::Construct));
 		CHECK(area.m_hasConstructionDesignations.contains(faction, wallLocation));
 		CHECK(constructObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));
@@ -148,23 +148,23 @@ TEST_CASE("construct")
 		CHECK(project.deliveriesComplete());
 		// Deliveries complete, start construction.
 		CHECK(project.finishEventExists());
-		simulation.fastForwardUntillPredicate([&]()->bool { return blocks.solid_is(wallLocation); }, 180);
+		simulation.fastForwardUntillPredicate([&]()->bool { return space.solid_is(wallLocation); }, 180);
 		CHECK(actors.objective_getCurrentName(dwarf1) != "construct");
 		CHECK(!area.m_hasConstructionDesignations.contains(faction, wallLocation));
 		CHECK(!constructObjectiveType.canBeAssigned(area, dwarf1));
-		CHECK(!blocks.designation_has(wallLocation, faction, SpaceDesignation::Construct));
+		CHECK(!space.designation_has(wallLocation, faction, SpaceDesignation::Construct));
 		CHECK(items.reservable_getUnreservedCount(boards, faction) == items.getQuantity(boards));
 		CHECK(items.reservable_getUnreservedCount(pegs, faction) == items.getQuantity(pegs));
 		CHECK(!items.reservable_isFullyReserved(saw, faction));
 		CHECK(!items.reservable_isFullyReserved(mallet, faction));
-		CHECK(!blocks.isReserved(wallLocation, faction));
+		CHECK(!space.isReserved(wallLocation, faction));
 	}
 	SUBCASE("make two walls")
 	{
-		BlockIndex wallLocation1 = blocks.getIndex_i(8, 4, 2);
-		BlockIndex wallLocation2 = blocks.getIndex_i(8, 5, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation1, BlockFeatureTypeId::Null, wood);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation2, BlockFeatureTypeId::Null, wood);
+		Point3D wallLocation1 = Point3D::create(8, 4, 2);
+		Point3D wallLocation2 = Point3D::create(8, 5, 2);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation1, PointFeatureTypeId::Null, wood);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation2, PointFeatureTypeId::Null, wood);
 		CHECK(constructObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		CHECK(actors.objective_getCurrentName(dwarf1) == "construct");
@@ -174,29 +174,29 @@ TEST_CASE("construct")
 		simulation.doStep();
 		CHECK(project1.reservationsComplete());
 		simulation.fastForwardUntillPredicate([&]()->bool { return project1.deliveriesComplete(); });
-		simulation.fastForwardUntillPredicate([&]()->bool { return blocks.solid_is(wallLocation1); }, 180);
+		simulation.fastForwardUntillPredicate([&]()->bool { return space.solid_is(wallLocation1); }, 180);
 		simulation.doStep();
 		CHECK(project2.reservationsComplete());
 		simulation.fastForwardUntillPredicate([&]()->bool { return project2.deliveriesComplete(); });
-		simulation.fastForwardUntillPredicate([&]()->bool { return blocks.solid_is(wallLocation2); }, 180);
+		simulation.fastForwardUntillPredicate([&]()->bool { return space.solid_is(wallLocation2); }, 180);
 		CHECK(actors.objective_getCurrentName(dwarf1) != "construct");
 	}
 	SUBCASE("make wall with two workers")
 	{
 		ActorIndex dwarf2 = actors.create(ActorParamaters{
 			.species=dwarf,
-			.location=blocks.getIndex_i(1, 4, 2),
+			.location=Point3D::create(1, 4, 2),
 			.faction=faction
 		});
-		BlockIndex wallLocation = blocks.getIndex_i(8, 4, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, wood);
+		Point3D wallLocation = Point3D::create(8, 4, 2);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, PointFeatureTypeId::Null, wood);
 		CHECK(constructObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		actors.objective_setPriority(dwarf2, constructObjectiveType.getId(), Priority::create(100));;
 		CHECK(actors.objective_getCurrentName(dwarf1) == "construct");
 		CHECK(actors.objective_getCurrentName(dwarf2) == "construct");
 		// Find project to join.
-		std::function<bool()> predicate = [&]() { return blocks.solid_is(wallLocation); };
+		std::function<bool()> predicate = [&]() { return space.solid_is(wallLocation); };
 		simulation.fastForwardUntillPredicate(predicate, 90);
 		CHECK(actors.objective_getCurrentName(dwarf1) != "construct");
 		CHECK(actors.objective_getCurrentName(dwarf2) != "construct");
@@ -205,14 +205,14 @@ TEST_CASE("construct")
 	{
 		ActorIndex dwarf2 = actors.create({
 			.species=dwarf,
-			.location=blocks.getIndex_i(1, 8, 2),
+			.location=Point3D::create(1, 8, 2),
 			.faction=faction,
 		});
 		ActorReference dwarf2Ref = actors.m_referenceData.getReference(dwarf2);
-		BlockIndex wallLocation1 = blocks.getIndex_i(2, 4, 2);
-		BlockIndex wallLocation2 = blocks.getIndex_i(3, 8, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation1, BlockFeatureTypeId::Null, wood);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation2, BlockFeatureTypeId::Null, wood);
+		Point3D wallLocation1 = Point3D::create(2, 4, 2);
+		Point3D wallLocation2 = Point3D::create(3, 8, 2);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation1, PointFeatureTypeId::Null, wood);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation2, PointFeatureTypeId::Null, wood);
 		CHECK(constructObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		actors.objective_setPriority(dwarf2, constructObjectiveType.getId(), Priority::create(100));;
@@ -259,11 +259,11 @@ TEST_CASE("construct")
 		CHECK(area.m_hasConstructionDesignations.contains(faction, wallLocation2));
 		CHECK(project1->getWorkers().contains(dwarf2Ref));
 		// Build first wall segment.
-		simulation.fastForwardUntillPredicate([&]()->bool { return blocks.solid_is(wallLocation1); }, 90);
+		simulation.fastForwardUntillPredicate([&]()->bool { return space.solid_is(wallLocation1); }, 90);
 		CHECK(!area.m_hasConstructionDesignations.contains(faction, wallLocation1));
 		CHECK(area.m_hasConstructionDesignations.contains(faction, wallLocation2));
 		CHECK(!project2->isOnDelay());
-		CHECK(blocks.designation_has(project2->getLocation(), faction, SpaceDesignation::Construct));
+		CHECK(space.designation_has(project2->getLocation(), faction, SpaceDesignation::Construct));
 		// Both dwarves seek a project to join and find project2. This does not require a step if they are already adjacent but does if they are not.
 		CHECK(actors.objective_getCurrentName(dwarf1) == "construct");
 		CHECK(actors.objective_getCurrentName(dwarf2) == "construct");
@@ -276,16 +276,16 @@ TEST_CASE("construct")
 		CHECK(!project2->hasCandidate(dwarf2));
 		// Try to set haul strategy, both dwarves try to generate a haul subproject.
 		simulation.doStep();
-		simulation.fastForwardUntillPredicate([&]()->bool { return blocks.solid_is(wallLocation2); }, 90);
+		simulation.fastForwardUntillPredicate([&]()->bool { return space.solid_is(wallLocation2); }, 90);
 		CHECK(actors.objective_getCurrentName(dwarf1) != "construct");
 		CHECK(actors.objective_getCurrentName(dwarf2) != "construct");
 		CHECK(!area.m_hasConstructionDesignations.areThereAnyForFaction(faction));
 	}
 	SUBCASE("make stairs")
 	{
-		BlockIndex stairsLocation = blocks.getIndex_i(8, 4, 2);
-		area.m_hasConstructionDesignations.designate(faction, stairsLocation, BlockFeatureTypeId::Stairs, wood);
-		CHECK(blocks.designation_has(stairsLocation, faction, SpaceDesignation::Construct));
+		Point3D stairsLocation = Point3D::create(8, 4, 2);
+		area.m_hasConstructionDesignations.designate(faction, stairsLocation, PointFeatureTypeId::Stairs, wood);
+		CHECK(space.designation_has(stairsLocation, faction, SpaceDesignation::Construct));
 		CHECK(area.m_hasConstructionDesignations.contains(faction, stairsLocation));
 		CHECK(constructObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
@@ -299,16 +299,16 @@ TEST_CASE("construct")
 		// Find a path.
 		simulation.doStep();
 		CHECK(actors.move_getDestination(dwarf1) .exists());
-		std::function<bool()> predicate = [&]() { return blocks.blockFeature_contains(stairsLocation, BlockFeatureTypeId::Stairs); };
+		std::function<bool()> predicate = [&]() { return space.pointFeature_contains(stairsLocation, PointFeatureTypeId::Stairs); };
 		simulation.fastForwardUntillPredicate(predicate, 180);
-		CHECK(blocks.blockFeature_contains(stairsLocation, BlockFeatureTypeId::Stairs));
+		CHECK(space.pointFeature_contains(stairsLocation, PointFeatureTypeId::Stairs));
 	}
 	SUBCASE("cannot path to spot")
 	{
-		areaBuilderUtil::setSolidWall(area, blocks.getIndex_i(0, 3, 2), blocks.getIndex_i(8, 3, 2), wood);
-		BlockIndex gateway = blocks.getIndex_i(9, 3, 2);
-		BlockIndex wallLocation = blocks.getIndex_i(8, 4, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, wood);
+		areaBuilderUtil::setSolidWall(area, Point3D::create(0, 3, 2), Point3D::create(8, 3, 2), wood);
+		Point3D gateway = Point3D::create(9, 3, 2);
+		Point3D wallLocation = Point3D::create(8, 4, 2);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, PointFeatureTypeId::Null, wood);
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation, activate the project, and reserve the pick.
@@ -317,7 +317,7 @@ TEST_CASE("construct")
 		simulation.doStep();
 		// Another step to path to the pick.
 		simulation.doStep();
-		blocks.solid_set(gateway, wood, false);
+		space.solid_set(gateway, wood, false);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, gateway);
 		// Cannot detour or find alternative block.
 		simulation.doStep();
@@ -327,8 +327,8 @@ TEST_CASE("construct")
 	}
 	SUBCASE("spot has become solid")
 	{
-		BlockIndex wallLocation = blocks.getIndex_i(8, 8, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, wood);
+		Point3D wallLocation = Point3D::create(8, 8, 2);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, PointFeatureTypeId::Null, wood);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation, activate the project and reserve the pick.
 		simulation.doStep();
@@ -337,15 +337,15 @@ TEST_CASE("construct")
 		// Another step to path to the pick.
 		simulation.doStep();
 		// Setting wallLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
-		blocks.solid_set(wallLocation, wood, false);
+		space.solid_set(wallLocation, wood, false);
 		CHECK(!actors.project_exists(dwarf1));
 		CHECK(!items.reservable_isFullyReserved(saw, faction));
 		CHECK(!area.m_hasConstructionDesignations.areThereAnyForFaction(faction));
 	}
 	SUBCASE("saw destroyed")
 	{
-		BlockIndex wallLocation = blocks.getIndex_i(8, 4, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, wood);
+		Point3D wallLocation = Point3D::create(8, 4, 2);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, PointFeatureTypeId::Null, wood);
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation, activate the project and reserve the pick.
@@ -362,8 +362,8 @@ TEST_CASE("construct")
 	}
 	SUBCASE("player cancels")
 	{
-		BlockIndex wallLocation = blocks.getIndex_i(8, 8, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, wood);
+		Point3D wallLocation = Point3D::create(8, 8, 2);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, PointFeatureTypeId::Null, wood);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation, activate the project and reserve the pick.
 		simulation.doStep();
@@ -379,8 +379,8 @@ TEST_CASE("construct")
 	}
 	SUBCASE("player interrupts")
 	{
-		BlockIndex wallLocation = blocks.getIndex_i(8, 8, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, wood);
+		Point3D wallLocation = Point3D::create(8, 8, 2);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, PointFeatureTypeId::Null, wood);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation, activate the project and reserve the tools and materials.
 		simulation.doStep();
@@ -389,7 +389,7 @@ TEST_CASE("construct")
 		// Another step to path to the pick.
 		simulation.doStep();
 		// Setting wallLocation as not solid immideatly triggers the project locationDishonorCallback, which cancels the project.
-		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(blocks.getIndex_i(0, 8, 2));
+		std::unique_ptr<Objective> objective = std::make_unique<GoToObjective>(Point3D::create(0, 8, 2));
 		actors.objective_addTaskToStart(dwarf1, std::move(objective));
 		CHECK(actors.objective_getCurrentName(dwarf1) != "construct");
 		CHECK(!actors.project_exists(dwarf1));
@@ -405,14 +405,14 @@ TEST_CASE("constructDirtWall")
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Blocks& blocks = area.getSpace();
+	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	FactionId faction = simulation.createFaction("Tower Of Power");
 	area.m_spaceDesignations.registerFaction(faction);
 	const ConstructObjectiveType& constructObjectiveType = static_cast<const ConstructObjectiveType&>(ObjectiveType::getByName("construct"));
-	BlockIndex dwarf1Start = blocks.getIndex_i(1, 1, 2);
+	Point3D dwarf1Start = Point3D::create(1, 1, 2);
 	ActorIndex dwarf1 = actors.create(ActorParamaters{
 		.species=dwarf,
 		.location=dwarf1Start,
@@ -422,9 +422,9 @@ TEST_CASE("constructDirtWall")
 	area.m_hasConstructionDesignations.addFaction(faction);
 	SUBCASE("dirt wall")
 	{
-		ItemIndex dirtPile = items.create({.itemType=pile, .materialType=dirt, .location=blocks.getIndex_i(9, 9, 2), .quantity=Quantity::create(150u)});
-		BlockIndex wallLocation = blocks.getIndex_i(3, 3, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, dirt);
+		ItemIndex dirtPile = items.create({.itemType=pile, .materialType=dirt, .location=Point3D::create(9, 9, 2), .quantity=Quantity::create(150u)});
+		Point3D wallLocation = Point3D::create(3, 3, 2);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, PointFeatureTypeId::Null, dirt);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		Quantity dirtPerLoad = actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(dirtPile), Config::minimumHaulSpeedInital);
 		// One step to find the designation, activate the project and reserve the pile.
@@ -464,19 +464,19 @@ TEST_CASE("constructDirtWall")
 		CHECK(actors.getActionDescription(dwarf1) == "construct");
 		CHECK(project.deliveriesComplete());
 		CHECK(project.getFinishStep() != 0);
-		simulation.fastForwardUntillPredicate([&]{ return blocks.solid_is(wallLocation); }, 130);
+		simulation.fastForwardUntillPredicate([&]{ return space.solid_is(wallLocation); }, 130);
 		CHECK(area.getTotalCountOfItemTypeOnSurface(pile) == 0);
 	}
 	SUBCASE("dirt wall three piles")
 	{
-		BlockIndex pileLocation1 = blocks.getIndex_i(9, 9, 2);
-		BlockIndex pileLocation2 = blocks.getIndex_i(9, 7, 2);
-		BlockIndex pileLocation3 = blocks.getIndex_i(9, 5, 2);
+		Point3D pileLocation1 = Point3D::create(9, 9, 2);
+		Point3D pileLocation2 = Point3D::create(9, 7, 2);
+		Point3D pileLocation3 = Point3D::create(9, 5, 2);
 		ItemIndex dirtPile1 = items.create({.itemType=pile, .materialType=dirt, .location=pileLocation1, .quantity=Quantity::create(50u)});
 		ItemIndex dirtPile2 = items.create({.itemType=pile, .materialType=dirt, .location=pileLocation2, .quantity=Quantity::create(50u)});
 		ItemIndex dirtPile3 = items.create({.itemType=pile, .materialType=dirt, .location=pileLocation3, .quantity=Quantity::create(50u)});
-		BlockIndex wallLocation = blocks.getIndex_i(9, 0, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, dirt);
+		Point3D wallLocation = Point3D::create(9, 0, 2);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, PointFeatureTypeId::Null, dirt);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation,activate the project and reserve the pile.
 		simulation.doStep();
@@ -493,37 +493,37 @@ TEST_CASE("constructDirtWall")
 		simulation.doStep();
 		// Move pile 1.
 		// Pile 1 is the closest to the worker's starting position.
-		auto pile1Moved = [&]{ return blocks.item_getCount(pileLocation1, pile, dirt) == 0; };
+		auto pile1Moved = [&]{ return space.item_getCount(pileLocation1, pile, dirt) == 0; };
 		simulation.fastForwardUntillPredicate(pile1Moved);
 		CHECK(actors.canPickUp_isCarryingItem(dwarf1, dirtPile1));
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, wallLocation);
 		CHECK(!actors.canPickUp_exists(dwarf1));
 		// After Dropping off pile 1 the next closest is pile 3.
 		// Move pile 3.
-		auto pile3Moved = [&]{ return blocks.item_getCount(pileLocation3, pile, dirt) == 0; };
+		auto pile3Moved = [&]{ return space.item_getCount(pileLocation3, pile, dirt) == 0; };
 		simulation.fastForwardUntillPredicate(pile3Moved);
 		CHECK(actors.canPickUp_isCarryingItem(dwarf1, dirtPile3));
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, wallLocation);
 		CHECK(!actors.canPickUp_exists(dwarf1));
 		// The last Pile is pile 2.
 		// Move pile 2.
-		auto pile2Moved = [&]{ return blocks.item_getCount(pileLocation2, pile, dirt) == 0; };
+		auto pile2Moved = [&]{ return space.item_getCount(pileLocation2, pile, dirt) == 0; };
 		simulation.fastForwardUntillPredicate(pile2Moved);
 		CHECK(actors.canPickUp_isCarryingItem(dwarf1, dirtPile2));
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, wallLocation);
 		CHECK(!actors.canPickUp_exists(dwarf1));
 		CHECK(project.deliveriesComplete());
 		CHECK(project.getFinishStep() != 0);
-		auto predicate = [&]{ return blocks.solid_is(wallLocation); };
+		auto predicate = [&]{ return space.solid_is(wallLocation); };
 		simulation.fastForwardUntillPredicate(predicate, 130);
 	}
 	SUBCASE("dirt wall not enough dirt")
 	{
 		ItemTypeId pile = ItemType::byName("pile");
 		MaterialTypeId dirt = MaterialType::byName("dirt");
-		ItemIndex dirtPile = items.create({.itemType=pile, .materialType=dirt, .location=blocks.getIndex_i(9, 9, 2), .quantity=Quantity::create(140u)});
-		BlockIndex wallLocation = blocks.getIndex_i(3, 3, 2);
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, dirt);
+		ItemIndex dirtPile = items.create({.itemType=pile, .materialType=dirt, .location=Point3D::create(9, 9, 2), .quantity=Quantity::create(140u)});
+		Point3D wallLocation = Point3D::create(3, 3, 2);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, PointFeatureTypeId::Null, dirt);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(faction, wallLocation);
 		// One step to find the designation but fail to activate
@@ -545,18 +545,18 @@ TEST_CASE("constructDirtWall")
 	{
 		ItemTypeId pile = ItemType::byName("pile");
 		MaterialTypeId dirt = MaterialType::byName("dirt");
-		BlockIndex wallLocation = blocks.getIndex_i(3, 3, 2);
-		Cuboid pileLocation(blocks, blocks.getIndex_i(9, 9, 2), blocks.getIndex_i(0, 9, 2));
-		for(const BlockIndex& block : pileLocation.getView(blocks))
+		Point3D wallLocation = Point3D::create(3, 3, 2);
+		Cuboid pileLocation(Point3D::create(9, 9, 2), Point3D::create(0, 9, 2));
+		for(const Point3D& block : pileLocation)
 			items.create({.itemType=pile, .materialType=dirt, .location=block, .quantity=Quantity::create(15)});
-		area.m_hasConstructionDesignations.designate(faction, wallLocation, BlockFeatureTypeId::Null, dirt);
+		area.m_hasConstructionDesignations.designate(faction, wallLocation, PointFeatureTypeId::Null, dirt);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
 		// One step to find the designation, activate the project and reserve the piles.
 		simulation.doStep();
 		CHECK(actors.project_exists(dwarf1));
 		CHECK(actors.getActionDescription(dwarf1) == "construct");
 		ConstructProject& project = static_cast<ConstructProject&>(*actors.project_get(dwarf1));
-		ItemIndex firstInBlock = blocks.item_getAll(blocks.getIndex_i(8,9,2)).front();
+		ItemIndex firstInBlock = space.item_getAll(Point3D::create(8,9,2)).front();
 		CHECK(items.reservable_hasAnyReservations(firstInBlock));
 		CHECK(project.reservationsComplete());
 		// One step to pick a haul strategy.
@@ -565,7 +565,7 @@ TEST_CASE("constructDirtWall")
 		// One step to path.
 		simulation.doStep();
 		CHECK(actors.move_getDestination(dwarf1) .exists());
-		auto predicate = [&]{ return blocks.solid_is(wallLocation); };
+		auto predicate = [&]{ return space.solid_is(wallLocation); };
 		simulation.fastForwardUntillPredicate(predicate, 130);
 	}
 }

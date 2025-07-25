@@ -4,8 +4,9 @@
 #include "definitions/materialType.h"
 #include "space/space.h"
 #include "numericTypes/types.h"
+#include "dataStructures/rtreeData.hpp"
 FireEvent::FireEvent(Area& area, const Step& delay, Fire& f, const Step start) :
-       	ScheduledEvent(area.m_simulation, delay, start), m_fire(f) { }
+    	ScheduledEvent(area.m_simulation, delay, start), m_fire(f) { }
 void FireEvent::execute(Simulation&, Area* area)
 {
 	if(!m_fire.m_hasPeaked &&m_fire.m_stage == FireStage::Smouldering)

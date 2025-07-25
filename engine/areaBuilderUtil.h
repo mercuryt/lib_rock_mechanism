@@ -13,7 +13,7 @@ namespace areaBuilderUtil
 {
 	inline void setSolidLayer(Area& area, const Distance& z, const MaterialTypeId& materialType)
 	{
-		Space& space =  area.getSpace();
+		Space& space = area.getSpace();
 		Cuboid cuboid(
 			{space.m_sizeX - 1, space.m_sizeY - 1, z},
 			{Distance::create(0), Distance::create(0), z}
@@ -35,21 +35,21 @@ namespace areaBuilderUtil
 	}
 	inline void setSolidWall(Area& area, const Point3D& start, const Point3D& end, const MaterialTypeId& materialType)
 	{
-		Space& space =  area.getSpace();
-		Cuboid cuboid(space, end, start);
+		Space& space = area.getSpace();
+		Cuboid cuboid(end, start);
 		space.solid_setCuboid(cuboid, materialType, false);
 	}
 	inline void setSolidWalls(Area& area, const Distance& height, const MaterialTypeId& materialType)
 	{
-		Space& space =  area.getSpace();
+		Space& space = area.getSpace();
 		static constexpr Distance zero = Distance::create(0);
-		Cuboid cuboid(space, {space.m_sizeX - 1, zero, height}, {zero, zero, zero});
+		Cuboid cuboid({space.m_sizeX - 1, zero, height}, {zero, zero, zero});
 		space.solid_setCuboid(cuboid, materialType, false);
-		cuboid = {space, {space.m_sizeX - 1, space.m_sizeY - 1, height}, {zero, space.m_sizeY - 1, zero}};
+		cuboid = {{space.m_sizeX - 1, space.m_sizeY - 1, height}, {zero, space.m_sizeY - 1, zero}};
 		space.solid_setCuboid(cuboid, materialType, false);
-		cuboid = {space, {zero, space.m_sizeY - 1, height}, {zero, zero, zero}};
+		cuboid = {{zero, space.m_sizeY - 1, height}, {zero, zero, zero}};
 		space.solid_setCuboid(cuboid, materialType, false);
-		cuboid = {space, {space.m_sizeX - 1, space.m_sizeY - 1, height}, {space.m_sizeX - 1, zero, zero}};
+		cuboid = {{space.m_sizeX - 1, space.m_sizeY - 1, height}, {space.m_sizeX - 1, zero, zero}};
 		space.solid_setCuboid(cuboid, materialType, false);
 	}
 	inline void setSolidWalls(Area& area, uint height, const MaterialTypeId& materialType)
@@ -58,7 +58,7 @@ namespace areaBuilderUtil
 	}
 	inline void makeBuilding(Area& area, Cuboid cuboid, const MaterialTypeId& materialType)
 	{
-		Space& space =  area.getSpace();
+		Space& space = area.getSpace();
 		Point3D highCoordinates = cuboid.m_highest;
 		for(Distance z = Distance::create(0); z != cuboid.m_highest.z() + 2; ++ z)
 		{
@@ -80,12 +80,12 @@ namespace areaBuilderUtil
 	// TODO: low and high should be inverted.
 	inline void setFullFluidCuboid(Area& area, const Point3D& low, const Point3D& high, FluidTypeId fluidType)
 	{
-		Space& space =  area.getSpace();
+		Space& space = area.getSpace();
 		assert(space.fluid_getTotalVolume(low) == 0);
 		assert(space.fluid_canEnterEver(low));
 		assert(space.fluid_getTotalVolume(high) == 0);
 		assert(space.fluid_canEnterEver(high));
-		Cuboid cuboid(space, high, low);
+		Cuboid cuboid(high, low);
 		for(const Point3D& point : cuboid)
 		{
 			assert(space.fluid_getTotalVolume(point) == 0);
@@ -95,8 +95,8 @@ namespace areaBuilderUtil
 	}
 	inline void validateAllPointFluids(Area& area)
 	{
-		Space& space =  area.getSpace();
-		Cuboid cuboid = space.getAll();
+		Space& space = area.getSpace();
+		Cuboid cuboid = space.boundry();
 		for(const Point3D& point : cuboid)
 			for([[maybe_unused]] auto& [fluidType, group, volume] : space.fluid_getAll(point))
 				assert(group->m_fluidType == fluidType);

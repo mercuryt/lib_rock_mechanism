@@ -1,4 +1,5 @@
 #include "../config.h"
+#include "../space/adjacentOffsets.h"
 #include "cuboid.h"
 Point3D Point3D::operator-(const Distance& distance) const
 {
@@ -39,20 +40,12 @@ Point3D Point3D::max(const Point3D& other) const
 void Point3D::clear() { data.fill(Distance::null().get()); }
 bool Point3D::exists() const { return z().exists();}
 bool Point3D::empty() const { return z().empty();}
-Point3D Point3D::below() const { auto output = *this; --output.data[2]; return output; }
-Point3D Point3D::north() const { auto output = *this; --output.data[1]; return output; }
+Point3D Point3D::below() const { assert(data[2] != 0); auto output = *this; --output.data[2]; return output; }
+Point3D Point3D::north() const { assert(data[1] != 0); auto output = *this; --output.data[1]; return output; }
+Point3D Point3D::west() const { assert(data[0] != 0); auto output = *this; --output.data[0]; return output; }
 Point3D Point3D::east() const { auto output = *this; ++output.data[0]; return output; }
 Point3D Point3D::south() const { auto output = *this; ++output.data[1]; return output; }
-Point3D Point3D::west() const { auto output = *this; --output.data[0]; return output; }
 Point3D Point3D::above() const { auto output = *this; ++output.data[2]; return output; }
-bool Point3D::operator==(const Point3D& other) const
-{
-	return x() == other.x() && y() == other.y() && z() == other.z();
-}
-bool Point3D::operator!=(const Point3D& other) const
-{
-	return !(*this == other);
-}
 uint32_t Point3D::hilbertNumber() const
 {
 	int n = hilbertOrder;
@@ -124,6 +117,15 @@ std::strong_ordering Point3D::operator<=>(const Point3D& other) const
 	else
 		return z() <=> other.z();
 }
+Point3D Point3D::subtractWithMinimum(const Distance& distance) const
+{
+	auto copy = data;
+	const int value = distance.get();
+	copy(0) = ((int)data(0) - value <= 0) ? 0 : data(0) - value;
+	copy(1) = ((int)data(1) - value <= 0) ? 0 : data(1) - value;
+	copy(2) = ((int)data(2) - value <= 0) ? 0 : data(2) - value;
+	return copy;
+}
 Distance Point3D::taxiDistanceTo(const Point3D& other) const
 {
 	return Distance::create((data.cast<int>() - other.data.cast<int>()).abs().sum());
@@ -153,9 +155,10 @@ Offset3D Point3D::offsetTo(const Point3D& other) const
 }
 Point3D Point3D::applyOffset(const Offset3D& other) const
 {
-	Offsets copy = data.cast<OffsetWidth>();
+	assert((other.data >= 0).all());
+	Offset3D copy(data.cast<OffsetWidth>());
 	copy += other.data;
-	return Point3D(copy);
+	return Point3D::create(copy);
 }
 Facing4 Point3D::getFacingTwords(const Point3D& other) const
 {
@@ -256,6 +259,11 @@ Point3D Point3D::create(const Offset3D& offset)
 	assert(offset.z() >= 0);
 	return create(offset.x(), offset.y(), offset.z());
 }
+Point3D Point3D::create(const Offsets& offsets)
+{
+	Offset3D offset(offsets);
+	return create(offset);
+}
 Point3D Point3D::create(const Coordinates& coordinates)
 {
 	return Point3D(coordinates);
@@ -263,6 +271,10 @@ Point3D Point3D::create(const Coordinates& coordinates)
 bool Point3D::isAdjacentTo(const Point3D& point) const
 {
 	return (data >= point.data - 1).all() && (data <= point.data + 1).all() && (data != point.data).all();
+}
+bool Point3D::isDirectlyAdjacentTo(const Point3D& point) const
+{
+	return data.absolute_difference(point.data).sum() == 1;
 }
 bool Point3D::squareOfDistanceIsGreaterThen(const Point3D& point, const DistanceFractional& distanceSquared) const
 {
@@ -309,21 +321,21 @@ Point3D Point3D::moveInDirection(const Facing6& facing, const Distance& distance
 		case Facing6::Below:
 			output.data[2] -= distance.get();
 			break;
+		case Facing6::Null:
+			assert(false);
+			std::unreachable();
+
 	}
 	return output;
 }
-std::array<Point3D, 26> Point3D::getAllAdjacentIncludingOutOfBounds() const
+Point3D Point3D::atAdjacentIndex(const AdjacentIndex& index) const
 {
-	std::array<Point3D, 26> output;
-	Cuboid cuboid = {Point3D(data + 1), Point3D(data - 1)};
-	uint i = 0;
-	for(const Point3D& point : cuboid)
-		if(point != *this)
-		{
-			output[i] = point;
-			++i;
-		}
-	return output;
+	return applyOffset(adjacentOffsets::all[index.get()]);
+}
+Cuboid Point3D::getAllAdjacentIncludingOutOfBounds() const
+{
+	Cuboid output{*this, *this};
+	return output.inflateAdd(Distance::create(1));
 }
 Point3D Point3D::null() { return {Distance::null(), Distance::null(), Distance::null()}; }
 Offset3D::Offset3D(const Offset3D& other) : data(other.data) { }

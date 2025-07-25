@@ -3,7 +3,8 @@
 #include "../definitions/itemType.h"
 #include "../definitions/moveType.h"
 #include "../area/area.h"
-#include "numericTypes/types.h"
+#include "../numericTypes/types.h"
+#include "../dataStructures/rtreeData.hpp"
 bool Space::shape_anythingCanEnterEver(const Point3D& point) const
 {
 	if(isDynamic(point))
@@ -19,15 +20,18 @@ bool Space::shape_anythingCanEnterCurrently(const Point3D& point) const
 }
 bool Space::shape_canFitEverOrCurrentlyDynamic(const Point3D& point, const ShapeId& shape, const Facing4& facing, const OccupiedSpaceForHasShape& occupied) const
 {
+	Cuboid spaceBoundry = boundry();
 	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
 		Point3D otherIndex = point.applyOffset(pair.offset);
 		if(
-			otherIndex.empty() ||
+			!spaceBoundry.contains(otherIndex) ||
 			!shape_anythingCanEnterEver(otherIndex) ||
-			!shape_anythingCanEnterCurrently(otherIndex) ||
 			(
-				(m_dynamicVolume.queryGetOne(otherIndex) + pair.volume > Config::maxPointVolume) &&
+				(
+					!shape_anythingCanEnterCurrently(otherIndex) ||
+					(m_dynamicVolume.queryGetOneOr(otherIndex, CollisionVolume::create(0)) + pair.volume > Config::maxPointVolume)
+				) &&
 				!occupied.contains(otherIndex)
 			)
 		)
@@ -37,11 +41,12 @@ bool Space::shape_canFitEverOrCurrentlyDynamic(const Point3D& point, const Shape
 }
 bool Space::shape_canFitEverOrCurrentlyStatic(const Point3D& point, const ShapeId& shape, const Facing4& facing, const OccupiedSpaceForHasShape& occupied) const
 {
+	Cuboid spaceBoundry = boundry();
 	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
 		Point3D otherIndex = point.applyOffset(pair.offset);
 		if(
-			otherIndex.empty() ||
+			!spaceBoundry.contains(otherIndex) ||
 			!shape_anythingCanEnterEver(otherIndex) ||
 			!shape_anythingCanEnterCurrently(otherIndex) ||
 			(
@@ -55,10 +60,11 @@ bool Space::shape_canFitEverOrCurrentlyStatic(const Point3D& point, const ShapeI
 }
 bool Space::shape_canFitEver(const Point3D& point, const ShapeId& shape, const Facing4& facing) const
 {
+	Cuboid spaceBoundry = boundry();
 	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
 		Point3D otherIndex = point.applyOffset(pair.offset);
-		if( otherIndex.empty() || !shape_anythingCanEnterEver(otherIndex))
+		if(!spaceBoundry.contains(otherIndex) || !shape_anythingCanEnterEver(otherIndex))
 			return false;
 	}
 	return true;
@@ -80,12 +86,13 @@ bool Space::shape_shapeAndMoveTypeCanEnterEverAndCurrentlyFrom(const Point3D& po
 }
 bool Space::shape_shapeAndMoveTypeCanEnterEverWithFacing(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType, const Facing4& facing) const
 {
+	Cuboid spaceBoundry = boundry();
 	if(!shape_anythingCanEnterEver(point) || !shape_moveTypeCanEnter(point, moveType))
 		return false;
 	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
 		Point3D otherIndex = point.applyOffset(pair.offset);
-		if(otherIndex.empty() || !shape_anythingCanEnterEver(otherIndex))
+		if(!spaceBoundry.contains(otherIndex) || !shape_anythingCanEnterEver(otherIndex))
 			return false;
 	}
 	return true;
@@ -108,12 +115,14 @@ bool Space::shape_canEnterCurrentlyWithFacing(const Point3D& point, const ShapeI
 bool Space::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType, const Facing4& facing, const OccupiedSpaceForHasShape& occupied) const
 {
 	assert(shape_anythingCanEnterEver(point));
+	Cuboid spaceBoundry = boundry();
 	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
 		Point3D otherIndex = point.applyOffset(pair.offset);
 		if(occupied.contains(otherIndex))
 			continue;
-		if(otherIndex.empty() ||
+		if(
+			!spaceBoundry.contains(otherIndex) ||
 			!shape_anythingCanEnterEver(otherIndex) ||
 			!shape_anythingCanEnterCurrently(otherIndex) ||
 			m_dynamicVolume.queryGetOne(otherIndex) + pair.volume > Config::maxPointVolume ||
@@ -170,12 +179,6 @@ bool Space::shape_moveTypeCanEnterFrom(const Point3D& point, const MoveTypeId& m
 {
 	assert(shape_anythingCanEnterEver(point));
 	assert(shape_moveTypeCanEnter(point, moveType));
-	const Distance fromZ = from.z();
-	const Distance toZ = point.z();
-	// Floating requires fluid on same Z level.
-	// TODO: Does not combine with other move types.
-	if(MoveType::getFloating(moveType))
-		return fluid_any(point) && toZ == fromZ;
 	for(auto& [fluidType, volume] : MoveType::getSwim(moveType))
 	{
 		// Can travel within and enter liquid from any angle.
@@ -186,23 +189,22 @@ bool Space::shape_moveTypeCanEnterFrom(const Point3D& point, const MoveTypeId& m
 			return true;
 	}
 	// Can always enter on same z level.
-	if(toZ == fromZ)
+	if(point.z() == from.z())
 		return true;
 	// Cannot go up if:
-	if(toZ > fromZ && !pointFeature_canEnterFromBelow(point))
+	if(point.z() > from.z() && !pointFeature_canEnterFromBelow(point))
 		return false;
 	// Cannot go down if:
-	if(toZ < fromZ && !pointFeature_canEnterFromAbove(point, from))
+	if(point.z() < from.z() && !pointFeature_canEnterFromAbove(point, from))
 		return false;
 	// Can enter from any angle if flying or climbing.
-	const auto& climb = MoveType::getClimb(moveType);
-	if(MoveType::getFly(moveType) || climb == 2 || (climb == 1 && shape_canStandIn(point)))
+	if(MoveType::getFly(moveType) || MoveType::getClimb(moveType) > 0)
 		return true;
 	// Can go up if from contains a ramp or stairs.
-	if(toZ > fromZ && (pointFeature_contains(from, PointFeatureTypeId::Ramp) || pointFeature_contains(from, PointFeatureTypeId::Stairs)))
+	if(point.z() > from.z() && (pointFeature_contains(from, PointFeatureTypeId::Ramp) || pointFeature_contains(from, PointFeatureTypeId::Stairs)))
 		return true;
 	// Can go down if this contains a ramp or stairs.
-	if(toZ < fromZ && (pointFeature_contains(point, PointFeatureTypeId::Ramp) ||
+	if(point.z() < from.z() && (pointFeature_contains(point, PointFeatureTypeId::Ramp) ||
 					pointFeature_contains(point, PointFeatureTypeId::Stairs)
 	))
 		return true;
@@ -233,7 +235,10 @@ bool Space::shape_moveTypeCanEnter(const Point3D& point, const MoveTypeId& moveT
 		}
 	}
 	// Not swimming or floating and fluid level is too high.
-	if(m_totalFluidVolume.queryGetOne(point) > Config::maxPointVolume / 2)
+	CollisionVolume total = m_totalFluidVolume.queryGetOne(point);
+	if(!total.exists())
+		total = CollisionVolume::create(0);
+	if(total > Config::maxPointVolume / 2)
 		return false;
 	// Fly can always enter if fluid level isn't preventing it.
 	if(MoveType::getFly(moveType))
@@ -409,6 +414,8 @@ std::pair<Point3D, Facing4> Space::shape_getNearestEnterableEverPointWithFacing(
 }
 bool Space::shape_canStandIn(const Point3D& point) const
 {
+	if(point.z() == 0)
+		return false;
 	Point3D otherIndex = point.below();
 	return (
 		otherIndex.exists() && (solid_is(otherIndex) ||
