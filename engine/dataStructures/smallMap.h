@@ -4,121 +4,67 @@
  */
 #pragma once
 #include "json.h"
+#include "concepts.h"
 #include <algorithm>
 #include <vector>
 #include <cassert>
-template<typename T>
-concept MoveConstructible = std::is_move_constructible_v<T>;
 template<typename K, MoveConstructible V>
 class SmallMap
 {
 	using This = SmallMap<K, V>;
 	using Pair = std::pair<K, V>;
-	std::vector<Pair> m_data;
+	using Data =std::vector<Pair>;
+	Data m_data;
 public:
 	class iterator;
 	class const_iterator;
 	SmallMap() = default;
-	SmallMap(const std::initializer_list<std::pair<K, V>>& i) : m_data(i) { }
-	SmallMap(std::initializer_list<std::pair<K, V>>&& i) : m_data(i) { }
+	SmallMap(const std::initializer_list<Pair>& i);
 	SmallMap(const SmallMap& other) = default;
 	SmallMap(SmallMap&& other) noexcept = default;
 	SmallMap& operator=(const SmallMap& other) = default;
 	SmallMap& operator=(SmallMap&& other) noexcept = default;
-	void insert(const K& key, const V& value)
-	{
-		assert(!contains(key));
-		m_data.emplace_back(key, value);
-	}
-	void insert(const K& key, V&& value)
-	{
-		assert(!contains(key));
-		m_data.emplace_back(key, std::move(value));
-	}
-	void maybeInsert(const K& key, const V& value) { if(!contains(key)) insert(key, value); }
-	void maybeInsert(const K& key, V&& value) { if(!contains(key)) insert(key, std::forward<V>(value)); }
-	void insertNonUnique(const K& key, const V& value)
-	{
-		m_data.emplace_back(key, value);
-	}
-	void erase(const K& key)
-	{
-		erase(std::ranges::find(m_data, key, &Pair::first));
-	}
-	void erase(iterator& iter)
-	{
-		assert(iter != m_data.end());
-		if(iter != m_data.end() - 1)
-		{
-			iter->first = m_data.back().first;
-			iter->second = std::move(m_data.back().second);
-		}
-		m_data.pop_back();
-	}
-	void erase(iterator&& iter) { erase(iter); }
+	void insert(const K& key, const V& value);
+	void insert(const K& key, V&& value);
+	void maybeInsert(const K& key, const V& value);
+	void maybeInsert(const K& key, V&& value);
+	void insertNonUnique(const K& key, const V& value);
+	void erase(const K& key);
+	void erase(iterator& iter);
+	void erase(iterator&& iter);
 	template<typename Predicate>
 	void eraseIf(Predicate&& predicate) { std::erase_if(m_data, predicate); }
-	void maybeErase(const K& key)
-	{
-		iterator iter = std::ranges::find(m_data, key, &Pair::first);
-		if(iter != m_data.end())
-			erase(iter);
-	}
-	bool maybeEraseNotify(const K& key)
-	{
-		iterator iter = std::ranges::find(m_data, key, &Pair::first);
-		if(iter != m_data.end())
-		{
-			erase(iter);
-			return true;
-		}
-		return false;
-	}
-	void popBack() { m_data.pop_back(); }
-	void clear() { m_data.clear(); }
+	void maybeErase(const K& key);
+	bool maybeEraseNotify(const K& key);
+	void popBack();
+	void clear();
 	template<typename ...Args>
 	V& emplace(const K& key, Args&& ...args)
 	{
 		assert(!contains(key));
 		return m_data.emplace_back(key, V{std::forward<Args>(args)...}).second;
 	}
-	void swap(This& other) { m_data.swap(other.m_data); }
-	[[nodiscard]] uint size() const { return m_data.size(); }
-	[[nodiscard]] bool empty() const { return m_data.empty(); }
-	[[nodiscard]] bool contains(const K& key) const { return std::ranges::find(m_data, key, &Pair::first) != m_data.end(); }
-	[[nodiscard]] Pair& front() { return m_data.front(); }
-	[[nodiscard]] const Pair& front() const { return m_data.front(); }
-	[[nodiscard]] Pair& back() { return m_data.back(); }
-	[[nodiscard]] const Pair& back() const { return m_data.back(); }
-	[[nodiscard]] V& operator[](const K& key)
-	{
-		auto iter = std::ranges::find(m_data, key, &Pair::first);
-		assert(iter != m_data.end());
-		return iter->second;
-	}
-	[[nodiscard]] const V& operator[](const K& key) const { return const_cast<This&>(*this)[key]; }
-	[[nodiscard]] V& getOrInsert(const K& key, V&& value)
-	{
-		auto iter = std::ranges::find(m_data, key, &Pair::first);
-		if(iter == m_data.end())
-			return m_data.emplace_back(key, value).second;
-		return iter->second;
-	}
-	[[nodiscard]] V& getOrCreate(const K& key)
-	{
-		auto iter = std::ranges::find(m_data, key, &Pair::first);
-		if(iter == m_data.end())
-			return m_data.emplace_back(key, V{}).second;
-		return iter->second;
-	}
+	void swap(This& other);
+	void updateKey(const K& oldKey, const K& newKey);
+	[[nodiscard]] uint size() const;
+	[[nodiscard]] bool empty() const;
+	[[nodiscard]] bool contains(const K& key) const;
+	[[nodiscard]] Pair& front();
+	[[nodiscard]] const Pair& front() const;
+	[[nodiscard]] Pair& back();
+	[[nodiscard]] const Pair& back() const;
+	[[nodiscard]] V& operator[](const K& key);
+	[[nodiscard]] const V& operator[](const K& key) const;
+	[[nodiscard]] V& getOrInsert(const K& key, V&& value);
+	[[nodiscard]] V& getOrCreate(const K& key);
 	template<typename Condition>
 	[[nodiscard]] iterator findIf(Condition&& condition) { return std::ranges::find_if(m_data, condition); }
-	[[nodiscard]] iterator find(const K& key) { return std::ranges::find(m_data, key, &Pair::first); }
-	[[nodiscard]] const_iterator find(const K& key) const { return std::ranges::find(m_data, key, &Pair::first); }
-	[[nodiscard]] iterator begin() { return {*this, 0}; }
-	[[nodiscard]] iterator end() { return {*this, size()}; }
-	[[nodiscard]] const_iterator begin() const { return {*this, 0}; }
-	[[nodiscard]] const_iterator end() const { return {*this, size()}; }
+	[[nodiscard]] iterator find(const K& key);
+	[[nodiscard]] const_iterator find(const K& key) const;
+	[[nodiscard]] iterator begin();
+	[[nodiscard]] iterator end();
+	[[nodiscard]] const_iterator begin() const;
+	[[nodiscard]] const_iterator end() const;
 	class iterator
 	{
 		std::vector<Pair>::iterator m_iter;
@@ -134,10 +80,12 @@ public:
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
+		[[nodiscard]] const K& first() { return m_iter->first; }
 		[[nodiscard]] const K& first() const { return m_iter->first; }
 		[[nodiscard]] V& second() { return m_iter->second; }
 		[[nodiscard]] const V& second() const { return m_iter->second; }
 		[[nodiscard]] Pair* operator->() { return &*m_iter; }
+		[[nodiscard]] const Pair* operator->() const { return &*m_iter; }
 		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) const { return m_iter <=> other.m_iter; }
 	};
 	class const_iterator
@@ -168,56 +116,40 @@ class SmallMapStable
 	using Pair = std::pair<K, std::unique_ptr<V>>;
 	SmallMap<K, std::unique_ptr<V>> m_data;
 	using Data = decltype(m_data);
-	Data::iterator findData(const K& key) { return std::ranges::find_if(m_data, [&](const auto& pair) { return key == pair.first; }); }
-	Data::const_iterator findData(const K& key) const { return findData(key); }
+	Data::iterator findData(const K& key);
+	Data::const_iterator findData(const K& key) const;
 public:
 	class iterator;
 	class const_iterator;
 	SmallMapStable() = default;
-	SmallMapStable(const std::initializer_list<std::pair<K, V>>& i) : m_data(i) { }
-	SmallMapStable(const Json& data) { fromJson(data); }
-	void fromJson(const Json& data)
-	{
-		for(const Json& pair : data)
-			m_data.emplace(pair[0], std::unique_ptr<V>(pair[1]));
-	}
-	[[nodiscard]] Json toJson() const
-	{
-		Json output = Json::array();
-		for(const auto& [key, value] : m_data)
-			output.push_back({key, *value});
-		return output;
-	}
-	auto insert(const K& key, std::unique_ptr<V>&& value) -> V& { m_data.insert(key, std::move(value)); return *m_data[key]; }
-	void erase(const K& key) { m_data.erase(key); }
-	void clear() { m_data.clear(); }
+	SmallMapStable(std::initializer_list<Pair>&& i);
+	SmallMapStable(const Json& data);
+	void fromJson(const Json& data);
+	[[nodiscard]] Json toJson() const;
+	V& insert(const K& key, std::unique_ptr<V>&& value);
+	void erase(const K& key);
+	void clear();
 	template<typename ...Args>
 	V& emplace(const K& key, Args&& ...args) { return *m_data.emplace(key, std::make_unique<V>(std::forward<Args>(args)...)).get(); }
-	void swap(This& other) { m_data.swap(other.m_data); }
-	[[nodiscard]] uint size() const { return m_data.size(); }
-	[[nodiscard]] bool empty() const { return m_data.empty(); }
-	[[nodiscard]] bool contains(const K& key) const { return m_data.contains(key); }
-	[[nodiscard]] Pair& front() { return m_data.front(); }
-	[[nodiscard]] const Pair& front() const { return m_data.front(); }
-	[[nodiscard]] Pair& back() { return m_data.back(); }
-	[[nodiscard]] const Pair& back() const { return m_data.back(); }
-	[[nodiscard]] V& operator[](const K& key) { return *m_data[key].get(); }
-	[[nodiscard]] const V& operator[](const K& key) const { return const_cast<This&>(*this)[key]; }
+	void swap(This& other);
+	[[nodiscard]] uint size() const;
+	[[nodiscard]] bool empty() const;
+	[[nodiscard]] bool contains(const K& key) const;
+	[[nodiscard]] Pair& front();
+	[[nodiscard]] const Pair& front() const;
+	[[nodiscard]] Pair& back();
+	[[nodiscard]] const Pair& back() const;
+	[[nodiscard]] auto operator[](const K& key) -> V&;
+	[[nodiscard]] auto operator[](const K& key) const -> const V&;
 	template<typename Condition>
-	[[nodiscard]] iterator findIf(Condition&& condition) { return m_data.findIf([&](const std::pair<K, std::unique_ptr<V>>& pair){ return condition(*pair.second); }); }
-	[[nodiscard]] iterator find(const K& key) { return m_data.find(key); }
-	[[nodiscard]] const_iterator find(const K& key) const { return findData(key); }
-	[[nodiscard]] iterator begin() { return {*this, 0} ; }
-	[[nodiscard]] iterator end() { return {*this, size()}; }
-	[[nodiscard]] const_iterator begin() const { return {*this, 0}; }
-	[[nodiscard]] const_iterator end() const { return {*this, size()}; }
-	[[nodiscard]] V& getOrCreate(const K& key)
-	{
-		auto iter = std::ranges::find(m_data, key, &Pair::first);
-		if(iter == m_data.end())
-			return *(m_data.emplace_back(key, std::make_unique<V>()).second);
-		return *(iter->second);
-	}
+	[[nodiscard]] iterator findIf(Condition&& condition) { return m_data.findIf([&](const Pair& pair){ return condition(*pair.second); }); }
+	[[nodiscard]] iterator find(const K& key);
+	[[nodiscard]] const_iterator find(const K& key) const;
+	[[nodiscard]] iterator begin();
+	[[nodiscard]] iterator end();
+	[[nodiscard]] const_iterator begin() const;
+	[[nodiscard]] const_iterator end() const;
+	[[nodiscard]] V& getOrCreate(const K& key);
 	class iterator
 	{
 		Data::iterator m_iter;
@@ -226,15 +158,17 @@ public:
 		iterator(Data::iterator& iter) : m_iter(iter) { }
 		iterator(Data::iterator iter) : m_iter(iter) { }
 		iterator& operator++() { ++m_iter; return *this; }
-		[[nodiscard]] iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
+		[[nodiscard]] iterator operator++(int) { iterator copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] Pair& operator*() { return *m_iter; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
+		[[nodiscard]] const K& first() { return m_iter->first; }
 		[[nodiscard]] const K& first() const { return m_iter->first; }
-		[[nodiscard]] V& second() { return *m_iter->second.get(); }
+		[[nodiscard]] V& second() { return *m_iter->second; }
 		[[nodiscard]] const V& second() const { return *m_iter->second.get(); }
 		[[nodiscard]] Pair* operator->() { return &*m_iter; }
+		[[nodiscard]] const Pair* operator->() const { return &*m_iter; }
 		[[nodiscard]] iterator operator+(uint steps) { return m_iter + steps; }
 		[[nodiscard]] iterator operator-(uint steps) { return m_iter - steps; }
 		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) const { return m_iter <=> other.m_iter; }
@@ -247,15 +181,15 @@ public:
 		const_iterator(Data::const_iterator& iter) : m_iter(iter) { }
 		const_iterator(Data::const_iterator iter) : m_iter(iter) { }
 		const_iterator& operator++() { ++m_iter; return *this; }
-		[[nodiscard]] const_iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
+		[[nodiscard]] const_iterator operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const K& first() const { return m_iter->first; }
 		[[nodiscard]] const V& second() const { return *m_iter->second.get(); }
 		[[nodiscard]] const Pair* operator->() const { return &*m_iter; }
-		[[nodiscard]] iterator operator+(uint steps) { return m_iter + steps; }
-		[[nodiscard]] iterator operator-(uint steps) { return m_iter - steps; }
+		[[nodiscard]] const_iterator operator+(uint steps) { return m_iter + steps; }
+		[[nodiscard]] const_iterator operator-(uint steps) { return m_iter - steps; }
 		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
 	};
 };

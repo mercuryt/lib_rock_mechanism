@@ -10,7 +10,6 @@
 #include "space/space.h"
 #include "hasShapes.hpp"
 #include "actors/actors.h"
-#include "dataStructures/rtreeData.hpp"
 #include <algorithm>
 bool HasFarmFieldsForFaction::hasGivePlantsFluidDesignations() const
 {

@@ -47,8 +47,8 @@ class Space
 	RTreeData<CollisionVolume> m_totalFluidVolume;
 	RTreeData<Distance> m_mistInverseDistanceFromSource;
 	//TODO: store these 4 as overlaping RTree.
-	RTreeDataIndex<std::vector<std::pair<ActorIndex, CollisionVolume>>, uint32_t> m_actorVolume;
-	RTreeDataIndex<std::vector<std::pair<ItemIndex, CollisionVolume>>, uint32_t> m_itemVolume;
+	RTreeDataIndex<SmallMap<ActorIndex, CollisionVolume>, uint32_t> m_actorVolume;
+	RTreeDataIndex<SmallMap<ItemIndex, CollisionVolume>, uint32_t> m_itemVolume;
 	RTreeDataIndex<SmallSet<ActorIndex>, uint32_t> m_actors;
 	RTreeDataIndex<SmallSet<ItemIndex>, uint32_t> m_items;
 	RTreeData<PlantIndex> m_plants;
@@ -84,7 +84,7 @@ public:
 	[[nodiscard]] Cuboid boundry() const;
 	[[nodiscard]] Point3D getCenterAtGroundLevel() const;
 	// TODO: Return limited set.
-	[[nodiscard]] SmallSet<Point3D> getAdjacentWithEdgeAndCornerAdjacent(const Point3D& point) const;
+	[[nodiscard]] Cuboid getAdjacentWithEdgeAndCornerAdjacent(const Point3D& point) const;
 	[[nodiscard]] SmallSet<Point3D> getDirectlyAdjacent(const Point3D& point) const;
 	[[nodiscard]] SmallSet<Point3D> getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const Point3D& point) const;
 	[[nodiscard]] SmallSet<Point3D> getAdjacentOnSameZLevelOnly(const Point3D& point) const;

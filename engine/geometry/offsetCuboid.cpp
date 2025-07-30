@@ -1,4 +1,5 @@
 #include "offsetCuboid.h"
+#include "../dataStructures/smallSet.h"
 OffsetCuboid::OffsetCuboid(const Offset3D& high, const Offset3D& low) :
 	m_high(high),
 	m_low(low)

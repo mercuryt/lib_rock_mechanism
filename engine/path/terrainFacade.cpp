@@ -3,12 +3,12 @@
 #include "../area/area.h"
 #include "../callbackTypes.h"
 #include "../config.h"
-#include "../dataStructures/rtreeData.hpp"
 #include "../definitions/shape.h"
 #include "../numericTypes/index.h"
 #include "../numericTypes/types.h"
 #include "../simulation/simulation.h"
 #include "../space/space.h"
+#include "../space/adjacentOffsets.h"
 #include "../util.h"
 #include "findPathInnerLoops.h"
 #include "pathMemo.h"
@@ -185,30 +185,52 @@ void TerrainFacade::registerPathRequestWithHuristic(std::unique_ptr<PathRequestD
 }
 AdjacentData TerrainFacade::makeDataForPoint(const Point3D& point) const
 {
+	[[maybe_unused]] Point3D debugPoint = Point3D::create(0,4,1);
 	const Space& space = m_area.getSpace();
+	assert(space.shape_anythingCanEnterEver(point));
+	assert(space.shape_moveTypeCanEnter(point, m_moveType));
 	const Cuboid boundry = space.boundry();
+	assert(boundry.contains(point));
 	AdjacentData data;
-	AdjacentIndex index = {0};
-	for(const Point3D& adjacent : point.getAllAdjacentIncludingOutOfBounds())
+	const Offset3D pointOffset = point.toOffset();
+	for(AdjacentIndex index = {0}; index != maxAdjacent; ++index)
 	{
-		bool value = boundry.contains(adjacent) && space.shape_moveTypeCanEnterFrom(adjacent, m_moveType, point);
+		Offset3D offset = adjacentOffsets::all[index.get()];
+		offset += pointOffset;
+		bool value = false;
+		if(boundry.contains(offset))
+		{
+			Point3D adjacent = Point3D::create(offset);
+			value =
+				space.shape_anythingCanEnterEver(adjacent) &&
+				space.shape_moveTypeCanEnter(adjacent, m_moveType) &&
+				space.shape_moveTypeCanEnterFrom(adjacent, m_moveType, point);
+		}
 		data.set(index, value);
-		++index;
 	}
 	return data;
 }
 void TerrainFacade::update(const Cuboid& cuboid)
 {
 	const Space& space = m_area.getSpace();
-	const Cuboid boundry = space.boundry();
+	assert(space.boundry().contains(cuboid));
 	m_enterable.maybeRemove(cuboid);
 	for(const Point3D& point : cuboid)
-		if(boundry.contains(point) && space.shape_anythingCanEnterEver(point))
-			m_enterable.maybeInsert(point, makeDataForPoint(point));
+		if(
+			space.shape_anythingCanEnterEver(point) &&
+			space.shape_moveTypeCanEnter(point, m_moveType)
+		)
+		{
+			const AdjacentData data = makeDataForPoint(point);
+			if(!data.empty())
+				m_enterable.maybeInsert(point, data);
+		}
 }
 void TerrainFacade::maybeSetImpassable(const Cuboid& cuboid)
 {
 	m_enterable.maybeRemove(cuboid);
+	// Inflate the cuboid to update the points which were previously touching it.
+	update(m_area.getSpace().boundry().intersection(cuboid.inflateAdd(Distance::create(1))));
 }
 void TerrainFacade::movePathRequestNoHuristic(PathRequestIndex oldIndex, PathRequestIndex newIndex)
 {
@@ -317,17 +339,17 @@ bool TerrainFacade::accessable(const Point3D& start, const Facing4& startFacing,
 void AreaHasTerrainFacades::doStep()
 {
 	for(auto& pair : m_data)
-		pair.second->doStep();
+		pair.second.doStep();
 }
 void AreaHasTerrainFacades::update(const Cuboid& cuboid)
 {
 	for(auto& pair : m_data)
-		pair.second->update(cuboid);
+		pair.second.update(cuboid);
 }
 void AreaHasTerrainFacades::maybeSetImpassable(const Cuboid& cuboid)
 {
 	for(auto& pair : m_data)
-		pair.second->maybeSetImpassable(cuboid);
+		pair.second.maybeSetImpassable(cuboid);
 }
 void AreaHasTerrainFacades::maybeRegisterMoveType(const MoveTypeId& moveType)
 {
@@ -339,7 +361,7 @@ void AreaHasTerrainFacades::maybeRegisterMoveType(const MoveTypeId& moveType)
 void AreaHasTerrainFacades::clearPathRequests()
 {
 	for(auto& pair : m_data)
-		pair.second->clearPathRequests();
+		pair.second.clearPathRequests();
 }
 TerrainFacade& AreaHasTerrainFacades::getForMoveType(const MoveTypeId& moveType)
 {
@@ -353,5 +375,5 @@ TerrainFacade& AreaHasTerrainFacades::getOrCreateForMoveType(const MoveTypeId& m
 	if(found == m_data.end())
 		return m_data.emplace(moveType, m_area, moveType);
 	else
-		return *found->second;
+		return found->second;
 }

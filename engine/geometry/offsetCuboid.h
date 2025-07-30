@@ -1,6 +1,9 @@
 #pragma once
 #include "point3D.h"
+#include "../dataStructures/smallSet.h"
 // TODO: Share code with Cuboid?
+
+struct OffsetCuboid;
 
 struct OffsetCuboid
 {
@@ -37,6 +40,7 @@ struct OffsetCuboid
 	ConstIterator end() const { auto current = m_low; current.z() = m_high.z() + 1; return {*this, current}; }
 	[[nodiscard]] Json toJson() const;
 	void load(const Json& data);
+	[[nodiscard]] std::string toString() const { return "{" + m_high.toString() + "," + m_low.toString() + "}"; }
 };
 inline void to_json(Json& data, const OffsetCuboid& cuboid) { data = cuboid.toJson(); }
 inline void from_json(const Json& data, OffsetCuboid& cuboid) { cuboid.load(data); }

@@ -1,6 +1,7 @@
 #pragma once
-#include "numericTypes/types.h"
-#include "body.h"
+#include "../numericTypes/types.h"
+#include "../body.h"
+#include "../dataStructures/strongVector.h"
 #include <string>
 struct AnimalSpeciesParamaters
 {

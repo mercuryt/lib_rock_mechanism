@@ -3,6 +3,7 @@
 #include "numericTypes/types.h"
 #include "dataStructures/strongVector.h"
 #include "dataStructures/smallMap.h"
+#include "dataStructures/smallSet.h"
 
 #include <string>
 

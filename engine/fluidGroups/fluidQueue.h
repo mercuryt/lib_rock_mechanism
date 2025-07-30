@@ -3,8 +3,9 @@
  */
 #pragma once
 
-#include "numericTypes/types.h"
-#include "geometry/point3D.h"
+#include "../numericTypes/types.h"
+#include "../geometry/point3D.h"
+#include "../dataStructures/smallSet.h"
 #include "fluidAllocator.h"
 #include <vector>
 #include <cstdint>

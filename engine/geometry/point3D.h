@@ -79,6 +79,8 @@ struct Point3D
 	[[nodiscard]] bool isAdjacentTo(const Point3D& point) const;
 	[[nodiscard]] bool isDirectlyAdjacentTo(const Point3D& point) const;
 	[[nodiscard]] bool squareOfDistanceIsGreaterThen(const Point3D& point, const DistanceFractional& distanceSquared) const;
+	[[nodiscard]] bool contains(const Point3D& point) const;
+	[[nodiscard]] bool contains(const Cuboid& cuboid) const;
 	[[nodiscard]] Point3D offsetRotated( const Offset3D& initalOffset, const Facing4& previousFacing, const Facing4& newFacing) const;
 	[[nodiscard]] Point3D offsetRotated( const Offset3D& initalOffset, const Facing4& facing) const;
 	[[nodiscard]] Point3D translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const;
@@ -93,12 +95,13 @@ struct Point3D
 		return false;
 	}
 	void log() const;
-	static Point3D create(const DistanceWidth& x, const DistanceWidth& y, const DistanceWidth& z);
-	static Point3D create(const Offset3D& offset);
-	static Point3D create(const Offsets& offset);
-	static Point3D create(const Coordinates& offset);
-	static Point3D null();
-	static Point3D max() { return { Distance::max(), Distance::max(), Distance::max()}; }
+	[[nodiscard]] static Point3D create(const DistanceWidth& x, const DistanceWidth& y, const DistanceWidth& z);
+	[[nodiscard]] static Point3D create(const Offset3D& offset);
+	[[nodiscard]] static Point3D create(const Offsets& offset);
+	[[nodiscard]] static Point3D create(const Coordinates& offset);
+	[[nodiscard]] __attribute__((noinline)) static Point3D createDbg(const DistanceWidth& x, const DistanceWidth& y, const DistanceWidth& z);
+	[[nodiscard]] static Point3D null();
+	[[nodiscard]] static Point3D max() { return { Distance::max(), Distance::max(), Distance::max()}; }
 	struct Hash {
 		size_t operator()(const Point3D& point) const
 		{
@@ -169,7 +172,8 @@ struct Offset3D
 	[[nodiscard]] bool empty() const { return data[0] == Offset::null().get(); }
 	[[nodiscard]] bool exists() const { return !empty(); }
 	[[nodiscard]] std::string toString() const;
-	static Offset3D create(const OffsetWidth& x, const OffsetWidth& y, const OffsetWidth& z) { return {Offset::create(x), Offset::create(y), Offset::create(z)}; }
+	[[nodiscard]] static Offset3D create(const OffsetWidth& x, const OffsetWidth& y, const OffsetWidth& z);
+	[[nodiscard]] __attribute__((noinline)) static Offset3D createDbg(const OffsetWidth& x, const OffsetWidth& y, const OffsetWidth& z);
 };
 inline void to_json(Json& data, const Offset3D& point) { data = {point.x(), point.y(), point.z()}; }
 inline void from_json(const Json& data, Offset3D& point)
@@ -178,3 +182,6 @@ inline void from_json(const Json& data, Offset3D& point)
 	data[1].get_to(point.data[1]);
 	data[2].get_to(point.data[2]);
 }
+
+[[nodiscard]] __attribute__((noinline)) Offset3D createOffset(const OffsetWidth& x, const OffsetWidth& y, const OffsetWidth& z);
+[[nodiscard]] __attribute__((noinline)) Point3D createPoint(const DistanceWidth& x, const DistanceWidth& y, const DistanceWidth& z);

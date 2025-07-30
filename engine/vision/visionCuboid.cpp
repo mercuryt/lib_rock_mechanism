@@ -3,7 +3,6 @@
 #include "../numericTypes/types.h"
 #include "../space/space.h"
 #include "../actors/actors.h"
-#include "../dataStructures/rtreeData.hpp"
 
 VisionCuboidSetSIMD::VisionCuboidSetSIMD(uint capacity) :
 	m_cuboidSet(capacity),

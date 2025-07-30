@@ -1,11 +1,10 @@
 #include "pathMemo.h"
 #include "../numericTypes/index.h"
-#include "../dataStructures/rtreeData.hpp"
 #include "../geometry/cuboidSet.h"
 void PathMemoClosed::add(const Point3D& index, Point3D parent)
 {
 	assert(!contains(index));
-	const Priority priority = parent.exists() ? m_data.queryGetOne(parent) + 1 : Priority::create(0);
+	const Priority priority = parent.exists() ? m_data.queryGetOneOr(parent, Priority::create(0)) + 1 : Priority::create(0);
 	m_data.maybeInsert(index, priority);
 }
 void PathMemoClosed::removeClosed(CuboidSet& cuboids) const { m_data.queryRemove(cuboids); }

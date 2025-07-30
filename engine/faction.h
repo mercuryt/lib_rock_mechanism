@@ -3,6 +3,7 @@
  */
 #pragma once
 #include "numericTypes/types.h"
+#include "dataStructures/smallSet.h"
 #include <string>
 struct DeserializationMemo;
 struct Faction

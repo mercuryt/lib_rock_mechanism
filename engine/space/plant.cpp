@@ -3,7 +3,6 @@
 #include "../definitions/materialType.h"
 #include "../plants.h"
 #include "../numericTypes/types.h"
-#include "../dataStructures/rtreeData.hpp"
 PlantIndex Space::plant_create(const Point3D& point, const PlantSpeciesId& plantSpecies, const Percent growthPercent)
 {
 	assert(!m_plants.queryAny(point));

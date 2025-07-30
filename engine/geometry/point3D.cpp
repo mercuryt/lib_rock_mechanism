@@ -155,9 +155,9 @@ Offset3D Point3D::offsetTo(const Point3D& other) const
 }
 Point3D Point3D::applyOffset(const Offset3D& other) const
 {
-	assert((other.data >= 0).all());
 	Offset3D copy(data.cast<OffsetWidth>());
 	copy += other.data;
+	assert((copy.data >= 0).all());
 	return Point3D::create(copy);
 }
 Facing4 Point3D::getFacingTwords(const Point3D& other) const
@@ -252,6 +252,10 @@ Point3D Point3D::create(const DistanceWidth& x, const DistanceWidth& y, const Di
 {
 	return Point3D(Distance::create(x), Distance::create(y), Distance::create(z));
 }
+Point3D Point3D::createDbg(const DistanceWidth& x, const DistanceWidth& y, const DistanceWidth& z)
+{
+	return {Distance::create(x), Distance::create(y), Distance::create(z)};
+}
 Point3D Point3D::create(const Offset3D& offset)
 {
 	assert(offset.x() >= 0);
@@ -270,7 +274,8 @@ Point3D Point3D::create(const Coordinates& coordinates)
 }
 bool Point3D::isAdjacentTo(const Point3D& point) const
 {
-	return (data >= point.data - 1).all() && (data <= point.data + 1).all() && (data != point.data).all();
+	assert(point != *this);
+	return (data >= point.data - 1).all() && (data <= point.data + 1).all();
 }
 bool Point3D::isDirectlyAdjacentTo(const Point3D& point) const
 {
@@ -280,6 +285,8 @@ bool Point3D::squareOfDistanceIsGreaterThen(const Point3D& point, const Distance
 {
 	return distanceToSquared(point) > distanceSquared.get();
 }
+bool Point3D::contains(const Point3D& point) const { return (*this) == point; }
+bool Point3D::contains(const Cuboid& cuboid) const { return (*this) == cuboid.m_highest && (*this) == cuboid.m_lowest; }
 Point3D Point3D::offsetRotated(const Offset3D& initalOffset, const Facing4& previousFacing, const Facing4& newFacing) const
 {
 	int rotation = (int)newFacing - (int)previousFacing;
@@ -338,6 +345,7 @@ Cuboid Point3D::getAllAdjacentIncludingOutOfBounds() const
 	return output.inflateAdd(Distance::create(1));
 }
 Point3D Point3D::null() { return {Distance::null(), Distance::null(), Distance::null()}; }
+
 Offset3D::Offset3D(const Offset3D& other) : data(other.data) { }
 Offset3D::Offset3D(const Point3D& point) { data = point.data.cast<int>(); }
 Offset3D& Offset3D::operator=(const Offset3D& other) { data = other.data; return *this; }
@@ -418,4 +426,16 @@ void Offset3D::clampHigh(const Offset3D& other)
 void Offset3D::clampLow(const Offset3D& other)
 {
 	data = data.min(other.data);
+}
+Offset3D Offset3D::create(const OffsetWidth& x, const OffsetWidth& y, const OffsetWidth& z) { return {Offset::create(x), Offset::create(y), Offset::create(z)}; }
+Offset3D Offset3D::createDbg(const OffsetWidth& x, const OffsetWidth& y, const OffsetWidth& z) { return {Offset::create(x), Offset::create(y), Offset::create(z)}; }
+
+Point3D createPoint(const DistanceWidth& x, const DistanceWidth& y, const DistanceWidth& z)
+{
+	return Point3D::create(x,y,z);
+}
+
+Offset3D createOffset(const OffsetWidth& x, const OffsetWidth& y, const OffsetWidth& z)
+{
+	return Offset3D::create(x,y,z);
 }

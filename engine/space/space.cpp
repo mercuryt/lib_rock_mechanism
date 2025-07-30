@@ -10,7 +10,6 @@
 #include "../items/items.h"
 #include "../plants.h"
 #include "../portables.hpp"
-#include "../dataStructures/rtreeData.hpp"
 #include <string>
 
 Space::Space(Area& area, const Distance& x, const Distance& y, const Distance& z) :
@@ -88,16 +87,10 @@ Point3D Space::getCenterAtGroundLevel() const
 	}
 	return center;
 }
-SmallSet<Point3D> Space::getAdjacentWithEdgeAndCornerAdjacent(const Point3D& point) const
+Cuboid Space::getAdjacentWithEdgeAndCornerAdjacent(const Point3D& point) const
 {
-	SmallSet<Point3D> output;
-	output.reserve(26);
-	Cuboid cuboid = {Point3D(point.data + 1), point.subtractWithMinimum(Distance::create(1))};
-	cuboid = cuboid.intersection(boundry());
-	for(const Point3D& adjacent : cuboid)
-		if(adjacent != point)
-			output.insert(adjacent);
-	return output;
+	Cuboid output = {Point3D(point.data + 1), point.subtractWithMinimum(Distance::create(1))};
+	return output.intersection(boundry());
 }
 SmallSet<Point3D> Space::getDirectlyAdjacent(const Point3D& point) const
 {

@@ -45,6 +45,8 @@ struct CraftStepType final
 	std::vector<std::pair<ItemQuery, Quantity>> consumed;
 	std::vector<std::pair<ItemQuery, Quantity>> unconsumed;
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> byproducts;
+	// Dummy method to make explicit instantiation of StrongVector happy.
+	bool operator==(const CraftStepType&) const { assert(false); return false; }
 };
 // A specific step of a specific CraftJob.
 class CraftStepProject final : public Project

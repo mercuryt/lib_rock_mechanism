@@ -84,6 +84,7 @@ struct AdjacentData
 	[[nodiscard]] Primitive get() const { return data.to_ulong(); }
 	[[nodiscard]] auto operator<=>(const AdjacentData& other) const { return data.to_ulong() <=> other.data.to_ulong(); }
 	[[nodiscard]] bool operator==(const AdjacentData& other) const { return data.to_ulong() == other.data.to_ulong(); }
+	[[nodiscard]] bool empty() const { return !data.any(); }
 	static AdjacentData create(const Primitive& d) { return {d}; }
 	static AdjacentData null() { return {0}; }
 	class ConstIterator
@@ -121,6 +122,8 @@ class TerrainFacade final
 	void updatePoint(const Point3D& point);
 public:
 	TerrainFacade(Area& area, const MoveTypeId& moveType);
+	TerrainFacade(TerrainFacade&&) noexcept = default;
+	TerrainFacade& operator=(TerrainFacade&&) noexcept = default;
 	void doStep();
 	void registerPathRequestNoHuristic(std::unique_ptr<PathRequestBreadthFirst> pathRequest);
 	void registerPathRequestWithHuristic(std::unique_ptr<PathRequestDepthFirst> pathRequest);
@@ -164,7 +167,7 @@ public:
 };
 class AreaHasTerrainFacades
 {
-	SmallMapStable<MoveTypeId, TerrainFacade> m_data;
+	SmallMap<MoveTypeId, TerrainFacade> m_data;
 	Area& m_area;
 public:
 	AreaHasTerrainFacades(Area& area) : m_area(area) { }
@@ -175,6 +178,6 @@ public:
 	void maybeSetImpassable(const Cuboid& cuboid);
 	[[nodiscard]] TerrainFacade& getForMoveType(const MoveTypeId& moveTypeId);
 	[[nodiscard]] TerrainFacade& getOrCreateForMoveType(const MoveTypeId& moveTypeId);
-	[[nodiscard]] bool empty() const { for(const auto& pair : m_data) { if(!pair.second->empty()) return false; } return true; }
+	[[nodiscard]] bool empty() const { for(const auto& pair : m_data) { if(!pair.second.empty()) return false; } return true; }
 	[[nodiscard]] bool contains(const MoveTypeId& moveTypeId) const { return m_data.contains(moveTypeId); }
 };

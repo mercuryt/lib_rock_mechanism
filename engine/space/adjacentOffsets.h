@@ -9,30 +9,30 @@ namespace adjacentOffsets
 		Offset3D::create(0,0,-1),	Offset3D::create(0,-1,0),	Offset3D::create(1,0,0),	Offset3D::create(0,1,0),	Offset3D::create(-1,0,0),	Offset3D::create(0,0,1)
 	}};
 	static inline const std::array<Offset3D, 26> all{{
-		Offset3D::create(-1,1,-1),	Offset3D::create(-1,0,-1),	Offset3D::create(-1,-1,-1),
-		Offset3D::create(0,1,-1),	Offset3D::create(0,0,-1),	Offset3D::create(0,-1,-1),
-		Offset3D::create(1,1,-1),	Offset3D::create(1,0,-1),	Offset3D::create(1,-1,-1),
+		Offset3D::create(-1,-1,-1),	Offset3D::create(0,-1,-1),	Offset3D::create(1,-1,-1),
+		Offset3D::create(-1,0,-1),	Offset3D::create(0,0,-1),	Offset3D::create(1,0,-1),
+		Offset3D::create(-1,1,-1),	Offset3D::create(0,1,-1),	Offset3D::create(1,1,-1),
 
-		Offset3D::create(-1,-1,0),	Offset3D::create(-1,0,0),	Offset3D::create(0,-1,0),
-		Offset3D::create(1,1,0),	Offset3D::create(0,1,0),
-		Offset3D::create(1,-1,0),	Offset3D::create(1,0,0),	Offset3D::create(-1,1,0),
+		Offset3D::create(-1,-1,0),	Offset3D::create(0,-1,0),	Offset3D::create(1,-1,0),
+		Offset3D::create(-1,0,0),								Offset3D::create(1,0,0),
+		Offset3D::create(-1,1,0),	Offset3D::create(0,1,0),	Offset3D::create(1,1,0),
 
-		Offset3D::create(-1,1,1),	Offset3D::create(-1,0,1),	Offset3D::create(-1,-1,1),
-		Offset3D::create(0,1,1),	Offset3D::create(0,0,1),	Offset3D::create(0,-1,1),
-		Offset3D::create(1,1,1),	Offset3D::create(1,0,1),	Offset3D::create(1,-1,1)
+		Offset3D::create(-1,-1,1),	Offset3D::create(0,-1,1),	Offset3D::create(1,-1,1),
+		Offset3D::create(-1,0,1),	Offset3D::create(0,0,1),	Offset3D::create(1,0,1),
+		Offset3D::create(-1,1,1),	Offset3D::create(0,1,1),	Offset3D::create(1,1,1),
 	}};
 	static inline const std::array<Offset3D, 24> allExceptDirectlyAboveAndBelow{{
-		Offset3D::create(-1,1,-1),	Offset3D::create(-1,0,-1),	Offset3D::create(-1,-1,-1),
-		Offset3D::create(0,1,-1),	Offset3D::create(0,-1,-1),
-		Offset3D::create(1,1,-1),	Offset3D::create(1,0,-1),	Offset3D::create(1,-1,-1),
+		Offset3D::create(-1,-1,-1),	Offset3D::create(0,-1,-1),	Offset3D::create(1,-1,-1),
+		Offset3D::create(-1,0,-1),								Offset3D::create(1,0,-1),
+		Offset3D::create(-1,1,-1),	Offset3D::create(0,1,-1),	Offset3D::create(1,1,-1),
 
-		Offset3D::create(-1,-1,0),	Offset3D::create(-1,0,0),	Offset3D::create(0,-1,0),
-		Offset3D::create(1,1,0),	Offset3D::create(0,1,0),
-		Offset3D::create(1,-1,0),	Offset3D::create(1,0,0),	Offset3D::create(-1,1,0),
+		Offset3D::create(-1,-1,0),	Offset3D::create(0,-1,0),	Offset3D::create(1,-1,0),
+		Offset3D::create(-1,0,0),								Offset3D::create(1,0,0),
+		Offset3D::create(-1,1,0),	Offset3D::create(0,1,0),	Offset3D::create(1,1,0),
 
-		Offset3D::create(-1,1,1),	Offset3D::create(-1,0,1),	Offset3D::create(-1,-1,1),
-		Offset3D::create(0,1,1),	Offset3D::create(0,-1,1),
-		Offset3D::create(1,1,1),	Offset3D::create(1,0,1),	Offset3D::create(1,-1,1)
+		Offset3D::create(-1,-1,1),	Offset3D::create(0,-1,1),	Offset3D::create(1,-1,1),
+		Offset3D::create(-1,0,1),								Offset3D::create(1,0,1),
+		Offset3D::create(-1,1,1),	Offset3D::create(0,1,1),	Offset3D::create(1,1,1),
 	}};
 	static std::array<Offset3D, 18> directAndEdge{{
 		Offset3D::create(-1,0,-1),

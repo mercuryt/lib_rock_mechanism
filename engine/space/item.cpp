@@ -6,7 +6,6 @@
 #include "../simulation/hasItems.h"
 #include "../numericTypes/types.h"
 #include "../definitions/itemType.h"
-#include "../dataStructures/rtreeData.hpp"
 #include <iterator>
 void Space::item_record(const Point3D& point, const ItemIndex& item, const CollisionVolume& volume)
 {
@@ -20,30 +19,17 @@ void Space::item_recordStatic(const Point3D& point, const ItemIndex& item, const
 {
 	Items& items = m_area.getItems();
 	assert(!items.isStatic(item));
-	auto itemVolumeCopy = m_itemVolume.queryGetOne(point);
-	itemVolumeCopy.emplace_back(item, volume);
-	m_itemVolume.insert(point, std::move(itemVolumeCopy));
-	auto itemsCopy = m_items.queryGetOne(point);
-	itemsCopy.insert(item);
-	m_items.insert(point, std::move(itemsCopy));
-	auto volumeCopy = m_dynamicVolume.queryGetOne(point);
-	volumeCopy += volume;
-	m_staticVolume.maybeInsert(point, volumeCopy);
-
+	m_items.updateOrInsertOne(point, [&](SmallSet<ItemIndex>& items){ items.insert(item); });
+	m_itemVolume.updateOrInsertOne(point, [&](SmallMap<ItemIndex, CollisionVolume>& itemVolumes){ itemVolumes.insert(item, volume); });
+	m_staticVolume.updateAddOne(point, volume);
 }
 void Space::item_recordDynamic(const Point3D& point, const ItemIndex& item, const CollisionVolume& volume)
 {
 	Items& items = m_area.getItems();
 	assert(!items.isStatic(item));
-	auto itemVolumeCopy = m_itemVolume.queryGetOne(point);
-	itemVolumeCopy.emplace_back(item, volume);
-	m_itemVolume.insert(point, std::move(itemVolumeCopy));
-	auto itemsCopy = m_items.queryGetOne(point);
-	itemsCopy.insert(item);
-	m_items.insert(point, std::move(itemsCopy));
-	auto volumeCopy = m_dynamicVolume.queryGetOne(point);
-	volumeCopy += volume;
-	m_dynamicVolume.maybeInsert(point, volumeCopy);
+	m_items.updateOrInsertOne(point, [&](SmallSet<ItemIndex>& items){ items.insert(item); });
+	m_itemVolume.updateOrInsertOne(point, [&](SmallMap<ItemIndex, CollisionVolume>& itemVolumes){ itemVolumes.insert(item, volume); });
+	m_dynamicVolume.updateAddOne(point, volume);
 }
 void Space::item_erase(const Point3D& point, const ItemIndex& item)
 {
@@ -55,33 +41,27 @@ void Space::item_erase(const Point3D& point, const ItemIndex& item)
 }
 void Space::item_eraseDynamic(const Point3D& point, const ItemIndex& item)
 {
-	auto itemVolumeCopy = m_itemVolume.queryGetOne(point);
-	auto iter = std::ranges::find(itemVolumeCopy, item, &std::pair<ItemIndex, CollisionVolume>::first);
-	CollisionVolume volume = iter->second;
-	if(iter != itemVolumeCopy.end())
-		(*iter) = itemVolumeCopy.back();
-	itemVolumeCopy.pop_back();
-	auto itemCopy = m_items.queryGetOne(point);
-	itemCopy.erase(item);
-	m_items.insert(point, std::move(itemCopy));
-	auto volumeCopy = m_dynamicVolume.queryGetOne(point);
-	volumeCopy -= volume;
-	m_dynamicVolume.maybeInsert(point, volumeCopy);
+	Items& items = m_area.getItems();
+	assert(!items.isStatic(item));
+	m_items.updateOne(point, [&](SmallSet<ItemIndex>& items){ items.erase(item); });
+	CollisionVolume volume;
+	m_itemVolume.updateOne(point, [&](SmallMap<ItemIndex, CollisionVolume>& itemVolumes){
+		volume = itemVolumes[item];
+		itemVolumes.erase(item);
+	});
+	m_staticVolume.updateSubtractOne(point, volume);
 }
 void Space::item_eraseStatic(const Point3D& point, const ItemIndex& item)
 {
-	auto itemVolumeCopy = m_itemVolume.queryGetOne(point);
-	auto iter = std::ranges::find(itemVolumeCopy, item, &std::pair<ItemIndex, CollisionVolume>::first);
-	CollisionVolume volume = iter->second;
-	if(iter != itemVolumeCopy.end())
-		(*iter) = itemVolumeCopy.back();
-	itemVolumeCopy.pop_back();
-	auto itemCopy = m_items.queryGetOne(point);
-	itemCopy.erase(item);
-	m_items.insert(point, std::move(itemCopy));
-	auto volumeCopy = m_staticVolume.queryGetOne(point);
-	volumeCopy -= volume;
-	m_staticVolume.maybeInsert(point, volumeCopy);
+	Items& items = m_area.getItems();
+	assert(!items.isStatic(item));
+	m_items.updateOne(point, [&](SmallSet<ItemIndex>& items){ items.erase(item); });
+	CollisionVolume volume;
+	m_itemVolume.updateOne(point, [&](SmallMap<ItemIndex, CollisionVolume>& itemVolumes){
+		volume = itemVolumes[item];
+		itemVolumes.erase(item);
+	});
+	m_staticVolume.updateSubtractOne(point, volume);
 }
 void Space::item_setTemperature(const Point3D& point, const Temperature& temperature)
 {
@@ -112,10 +92,7 @@ void Space::item_disperseAll(const Point3D& point)
 void Space::item_updateIndex(const Point3D& point, const ItemIndex& oldIndex, const ItemIndex& newIndex)
 {
 	m_items.updateOne(point, [&](SmallSet<ItemIndex>& data){ data.update(oldIndex, newIndex); });
-	m_itemVolume.updateOne(point, [&](std::vector<std::pair<ItemIndex, CollisionVolume>> data){
-		auto iter = std::ranges::find(data, oldIndex, &std::pair<ItemIndex, CollisionVolume>::first);
-		iter->first = newIndex;
-	});
+	m_itemVolume.updateOne(point, [&](SmallMap<ItemIndex, CollisionVolume>& data){ data.updateKey(oldIndex, newIndex); });
 }
 ItemIndex Space::item_addGeneric(const Point3D& point, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity)
 {
@@ -124,11 +101,7 @@ ItemIndex Space::item_addGeneric(const Point3D& point, const ItemTypeId& itemTyp
 	CollisionVolume volume = Shape::getCollisionVolumeAtLocation(ItemType::getShape(itemType)) * quantity;
 	// Assume that generics added through this method are static.
 	// Generics in transit ( being hauled by multiple workers ) should not use this method and should use setLocationAndFacing instead.
-	const auto& totalVolume = m_staticVolume.queryGetOne(point);
-	if(totalVolume == 0)
-		m_staticVolume.maybeInsert(point, volume);
-	else
-		m_staticVolume.update(point, totalVolume, totalVolume + volume);
+	m_staticVolume.updateAddOne(point, volume);
 	const auto& pointItems = m_items.queryGetOne(point);
 	auto found = pointItems.findIf([itemType, &items](const auto& item) { return items.getItemType(item) == itemType; });
 	if(found == pointItems.end())
@@ -185,11 +158,10 @@ bool Space::item_hasInstalledType(const Point3D& point, const ItemTypeId& itemTy
 {
 	const auto& itemsInPoint = m_itemVolume.queryGetOne(point);
 	Items& items = m_area.getItems();
-	auto found = std::ranges::find_if(itemsInPoint, [&](auto pair) {
-		ItemIndex item = pair.first;
-		return items.getItemType(item) == itemType;
-	});
-	return found != itemsInPoint.end() && items.isInstalled(found->first);
+	for(const auto& [item, volume] : itemsInPoint)
+		if(items.getItemType(item) == itemType)
+			return items.isInstalled(item);
+	return false;
 }
 bool Space::item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(const Point3D& point, const ActorIndex& actor) const
 {

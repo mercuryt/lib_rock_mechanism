@@ -1,4 +1,5 @@
 #include "rtreeBoolean.h"
+#include "strongVector.hpp"
 #include "../geometry/paramaterizedLine.h"
 RTreeBoolean::ArrayIndex RTreeBoolean::Node::offsetFor(const Index& index) const
 {

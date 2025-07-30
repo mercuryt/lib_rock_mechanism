@@ -9,7 +9,6 @@
 #include "reference.h"
 #include "simulation/simulation.h"
 #include "numericTypes/types.h"
-#include "dataStructures/rtreeData.hpp"
 
 Plants::Plants(Area& area) :
 	HasShapes<Plants, PlantIndex>(area),

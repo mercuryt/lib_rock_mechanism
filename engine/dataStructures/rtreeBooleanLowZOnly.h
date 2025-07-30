@@ -7,7 +7,8 @@
 #include "../geometry/paramaterizedLine.h"
 #include "../strongInteger.h"
 #include "../dataStructures/strongVector.h"
-#include "../dataStructures/smallMap.h"
+#include "../dataStructures/smallMap.hpp"
+#include "../dataStructures/smallSet.hpp"
 
 class RTreeBooleanLowZOnly
 {

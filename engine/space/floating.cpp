@@ -3,7 +3,6 @@
 #include "../area/area.h"
 #include "../items/items.h"
 #include "../portables.hpp"
-#include "../dataStructures/rtreeData.hpp"
 
 void Space::floating_maybeSink(const Point3D& index)
 {

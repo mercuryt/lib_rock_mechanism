@@ -4,7 +4,6 @@
 #include "../definitions/moveType.h"
 #include "../area/area.h"
 #include "../numericTypes/types.h"
-#include "../dataStructures/rtreeData.hpp"
 bool Space::shape_anythingCanEnterEver(const Point3D& point) const
 {
 	if(isDynamic(point))
@@ -20,19 +19,22 @@ bool Space::shape_anythingCanEnterCurrently(const Point3D& point) const
 }
 bool Space::shape_canFitEverOrCurrentlyDynamic(const Point3D& point, const ShapeId& shape, const Facing4& facing, const OccupiedSpaceForHasShape& occupied) const
 {
-	Cuboid spaceBoundry = boundry();
+	const Cuboid spaceBoundry = boundry();
+	const Offset3D pointOffset = point.toOffset();
 	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
-		Point3D otherIndex = point.applyOffset(pair.offset);
+		const Offset3D sum = pointOffset + pair.offset;
+		if(!spaceBoundry.contains(sum))
+			return false;
+		const Point3D otherPoint = Point3D::create(sum);
 		if(
-			!spaceBoundry.contains(otherIndex) ||
-			!shape_anythingCanEnterEver(otherIndex) ||
+			!shape_anythingCanEnterEver(otherPoint) ||
 			(
 				(
-					!shape_anythingCanEnterCurrently(otherIndex) ||
-					(m_dynamicVolume.queryGetOneOr(otherIndex, CollisionVolume::create(0)) + pair.volume > Config::maxPointVolume)
+					!shape_anythingCanEnterCurrently(otherPoint) ||
+					(m_dynamicVolume.queryGetOneOr(otherPoint, CollisionVolume::create(0)) + pair.volume > Config::maxPointVolume)
 				) &&
-				!occupied.contains(otherIndex)
+				!occupied.contains(otherPoint)
 			)
 		)
 			return false;
@@ -41,17 +43,20 @@ bool Space::shape_canFitEverOrCurrentlyDynamic(const Point3D& point, const Shape
 }
 bool Space::shape_canFitEverOrCurrentlyStatic(const Point3D& point, const ShapeId& shape, const Facing4& facing, const OccupiedSpaceForHasShape& occupied) const
 {
-	Cuboid spaceBoundry = boundry();
+	const Cuboid spaceBoundry = boundry();
+	const Offset3D pointOffset = point.toOffset();
 	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
-		Point3D otherIndex = point.applyOffset(pair.offset);
+		const Offset3D sum = pointOffset + pair.offset;
+		if(!spaceBoundry.contains(sum))
+			return false;
+		const Point3D otherPoint = Point3D::create(sum);
 		if(
-			!spaceBoundry.contains(otherIndex) ||
-			!shape_anythingCanEnterEver(otherIndex) ||
-			!shape_anythingCanEnterCurrently(otherIndex) ||
+			!shape_anythingCanEnterEver(otherPoint) ||
+			!shape_anythingCanEnterCurrently(otherPoint) ||
 			(
-				(m_staticVolume.queryGetOne(otherIndex) + pair.volume > Config::maxPointVolume ) &&
-				!occupied.contains(otherIndex)
+				(m_staticVolume.queryGetOne(otherPoint) + pair.volume > Config::maxPointVolume ) &&
+				!occupied.contains(otherPoint)
 			)
 		)
 			return false;
@@ -60,11 +65,16 @@ bool Space::shape_canFitEverOrCurrentlyStatic(const Point3D& point, const ShapeI
 }
 bool Space::shape_canFitEver(const Point3D& point, const ShapeId& shape, const Facing4& facing) const
 {
-	Cuboid spaceBoundry = boundry();
+	assert(shape_anythingCanEnterEver(point));
+	const Cuboid spaceBoundry = boundry();
+	const Offset3D pointOffset = point.toOffset();
 	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
-		Point3D otherIndex = point.applyOffset(pair.offset);
-		if(!spaceBoundry.contains(otherIndex) || !shape_anythingCanEnterEver(otherIndex))
+		const Offset3D sum = pointOffset + pair.offset;
+		if(!spaceBoundry.contains(sum))
+			return false;
+		const Point3D otherPoint = Point3D::create(sum);
+		if(!shape_anythingCanEnterEver(otherPoint))
 			return false;
 	}
 	return true;
@@ -86,28 +96,36 @@ bool Space::shape_shapeAndMoveTypeCanEnterEverAndCurrentlyFrom(const Point3D& po
 }
 bool Space::shape_shapeAndMoveTypeCanEnterEverWithFacing(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType, const Facing4& facing) const
 {
-	Cuboid spaceBoundry = boundry();
+	const Cuboid spaceBoundry = boundry();
 	if(!shape_anythingCanEnterEver(point) || !shape_moveTypeCanEnter(point, moveType))
 		return false;
+	const Offset3D pointOffset = point.toOffset();
 	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
-		Point3D otherIndex = point.applyOffset(pair.offset);
-		if(!spaceBoundry.contains(otherIndex) || !shape_anythingCanEnterEver(otherIndex))
+		const Offset3D sum = pointOffset + pair.offset;
+		if(!spaceBoundry.contains(sum))
+			return false;
+		const Point3D otherPoint = Point3D::create(sum);
+		if(!shape_anythingCanEnterEver(otherPoint))
 			return false;
 	}
 	return true;
 }
 bool Space::shape_canEnterCurrentlyWithFacing(const Point3D& point, const ShapeId& shape, const Facing4& facing, const OccupiedSpaceForHasShape& occupied) const
 {
-	assert(shape_anythingCanEnterEver(point));
+	assert(shape_canFitEver(point, shape, facing));
+	const Cuboid spaceBoundry = boundry();
+	const Offset3D pointOffset = point.toOffset();
 	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
-		Point3D otherIndex = point.applyOffset(pair.offset);
-		assert(otherIndex.exists());
-		assert(shape_anythingCanEnterEver(otherIndex));
-		if(occupied.contains(otherIndex))
+		const Offset3D sum = pointOffset + pair.offset;
+		if(!spaceBoundry.contains(sum))
+			return false;
+		const Point3D otherPoint = Point3D::create(sum);
+		assert(shape_anythingCanEnterEver(otherPoint));
+		if(occupied.contains(otherPoint))
 			continue;
-		if(!shape_anythingCanEnterCurrently(otherIndex) || m_dynamicVolume.queryGetOne(otherIndex) + pair.volume > Config::maxPointVolume)
+		if(!shape_anythingCanEnterCurrently(otherPoint) || m_dynamicVolume.queryGetOne(otherPoint) + pair.volume > Config::maxPointVolume)
 			return false;
 	}
 	return true;
@@ -116,18 +134,21 @@ bool Space::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const Point3
 {
 	assert(shape_anythingCanEnterEver(point));
 	Cuboid spaceBoundry = boundry();
+	const Offset3D pointOffset = point.toOffset();
 	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
-		Point3D otherIndex = point.applyOffset(pair.offset);
-		if(occupied.contains(otherIndex))
+		const Offset3D sum = pointOffset + pair.offset;
+		if(!spaceBoundry.contains(sum))
+			return false;
+		const Point3D otherPoint = Point3D::create(sum);
+		if(occupied.contains(otherPoint))
 			continue;
 		if(
-			!spaceBoundry.contains(otherIndex) ||
-			!shape_anythingCanEnterEver(otherIndex) ||
-			!shape_anythingCanEnterCurrently(otherIndex) ||
-			m_dynamicVolume.queryGetOne(otherIndex) + pair.volume > Config::maxPointVolume ||
-			!shape_moveTypeCanEnter(otherIndex, moveType) ||
-			(pair.offset.z() != 0 && !pointFeature_multiTileCanEnterAtNonZeroZOffset(otherIndex))
+			!shape_anythingCanEnterEver(otherPoint) ||
+			!shape_anythingCanEnterCurrently(otherPoint) ||
+			m_dynamicVolume.queryGetOne(otherPoint) + pair.volume > Config::maxPointVolume ||
+			!shape_moveTypeCanEnter(otherPoint, moveType) ||
+			(pair.offset.z() != 0 && !pointFeature_multiTileCanEnterAtNonZeroZOffset(otherPoint))
 		)
 			return false;
 	}
@@ -229,9 +250,12 @@ bool Space::shape_moveTypeCanEnter(const Point3D& point, const MoveTypeId& moveT
 				return true;
 			if(shape_moveTypeCanBreath(point, moveType))
 				return true;
-			Point3D above = point.above();
-			if(above.exists() && shape_anythingCanEnterEver(above) && shape_moveTypeCanBreath(above, moveType))
-				return true;
+			if(point.z() != m_sizeZ - 1)
+			{
+				const Point3D above = point.above();
+				if(shape_anythingCanEnterEver(above) && shape_moveTypeCanBreath(above, moveType))
+					return true;
+			}
 		}
 	}
 	// Not swimming or floating and fluid level is too high.
@@ -255,9 +279,9 @@ bool Space::shape_moveTypeCanEnter(const Point3D& point, const MoveTypeId& moveT
 			else
 			{
 				// Only climb2 moveTypes can enter.
-				for(Point3D otherIndex : getAdjacentOnSameZLevelOnly(point))
+				for(Point3D otherPoint : getAdjacentOnSameZLevelOnly(point))
 					//TODO: check for climable features?
-					if(isSupport(otherIndex))
+					if(isSupport(otherPoint))
 						return true;
 				return false;
 			}
@@ -266,7 +290,7 @@ bool Space::shape_moveTypeCanEnter(const Point3D& point, const MoveTypeId& moveT
 }
 bool Space::shape_moveTypeCanBreath(const Point3D& point, const MoveTypeId& moveType) const
 {
-	if(m_totalFluidVolume.queryGetOne(point) < Config::maxPointVolume && !MoveType::getOnlyBreathsFluids(moveType))
+	if(m_totalFluidVolume.queryGetOneOr(point, {0}) < Config::maxPointVolume && !MoveType::getOnlyBreathsFluids(moveType))
 		return true;
 	for(const FluidData& fluidData : m_fluid.queryGetOne(point))
 		//TODO: Minimum volume should probably be scaled by body size somehow.
@@ -329,13 +353,18 @@ std::pair<bool, Facing4> Space::shape_staticCanEnterCurrentlyWithAnyFacingReturn
 }
 bool Space::shape_staticShapeCanEnterWithFacing(const Point3D& point, const ShapeId& shape, const Facing4& facing, const OccupiedSpaceForHasShape& occupied) const
 {
+	const Offset3D pointOffset = point.toOffset();
+	const Cuboid spaceBoundry = boundry();
 	for(const auto& pair : Shape::positionsWithFacing(shape, facing))
 	{
-		Point3D otherIndex = point.applyOffset(pair.offset);
-		assert(otherIndex.exists());
-		if(occupied.contains(otherIndex))
+		const Offset3D sum = pointOffset + pair.offset;
+		if(!spaceBoundry.contains(sum))
+			return false;
+		const Point3D otherPoint = Point3D::create(sum);
+		assert(otherPoint.exists());
+		if(occupied.contains(otherPoint))
 			continue;
-		if(!shape_anythingCanEnterCurrently(otherIndex) || (m_staticVolume.queryGetOne(otherIndex) + pair.volume > Config::maxPointVolume))
+		if((m_staticVolume.queryGetOne(otherPoint) + pair.volume > Config::maxPointVolume))
 			return false;
 	}
 	return true;
@@ -351,17 +380,15 @@ bool Space::shape_staticShapeCanEnterWithAnyFacing(const Point3D& point, const S
 }
 CollisionVolume Space::shape_getDynamicVolume(const Point3D& point) const
 {
-	return m_dynamicVolume.queryGetOne(point);
+	return m_dynamicVolume.queryGetOneOr(point, CollisionVolume::create(0));
 }
 CollisionVolume Space::shape_getStaticVolume(const Point3D& point) const
 {
-	return m_staticVolume.queryGetOne(point);
+	return m_staticVolume.queryGetOneOr(point, CollisionVolume::create(0));
 }
 Quantity Space::shape_getQuantityOfItemWhichCouldFit(const Point3D& point, const ItemTypeId& itemType) const
 {
-	if(m_staticVolume.queryGetOne(point) >= Config::maxPointVolume)
-		return Quantity::create(0);
-	CollisionVolume freeVolume = Config::maxPointVolume - m_staticVolume.queryGetOne(point);
+	CollisionVolume freeVolume = Config::maxPointVolume - m_staticVolume.queryGetOneOr(point, CollisionVolume::create(0));
 	return Quantity::create((freeVolume / Shape::getCollisionVolumeAtLocation(ItemType::getShape(itemType))).get());
 }
 SmallSet<Point3D> Space::shape_getBelowPointsWithFacing(const Point3D& point, const ShapeId& shape, const Facing4& facing) const
@@ -416,42 +443,28 @@ bool Space::shape_canStandIn(const Point3D& point) const
 {
 	if(point.z() == 0)
 		return false;
-	Point3D otherIndex = point.below();
+	const Point3D otherPoint = point.below();
 	return (
-		otherIndex.exists() && (solid_is(otherIndex) ||
-		pointFeature_canStandAbove(otherIndex))) ||
+		(
+			solid_is(otherPoint) ||
+			pointFeature_canStandAbove(otherPoint))
+		) ||
 		pointFeature_canStandIn(point) ||
 		m_area.m_decks.pointIsPartOfDeck(point);
 }
 void Space::shape_addStaticVolume(const Point3D& point, const CollisionVolume& volume)
 {
-	auto total = m_staticVolume.queryGetOne(point);
-	if(total != 0)
-		m_staticVolume.maybeRemove(point);
-	total += volume;
-	m_staticVolume.maybeInsert(point, total);
+	m_staticVolume.updateAddOne(point, volume);
 }
 void Space::shape_removeStaticVolume(const Point3D& point, const CollisionVolume& volume)
 {
-	assert(m_staticVolume.queryGetOne(point) >= volume);
-	auto total = m_staticVolume.queryGetOne(point);
-	m_staticVolume.maybeRemove(point);
-	total += volume;
-	m_staticVolume.maybeInsert(point, total);
+	m_staticVolume.updateSubtractOne(point, volume);
 }
 void Space::shape_addDynamicVolume(const Point3D& point, const CollisionVolume& volume)
 {
-	auto total = m_dynamicVolume.queryGetOne(point);
-	if(total != 0)
-		m_dynamicVolume.maybeRemove(point);
-	total += volume;
-	m_dynamicVolume.maybeInsert(point, total);
+	m_dynamicVolume.updateAddOne(point, volume);
 }
 void Space::shape_removeDynamicVolume(const Point3D& point, const CollisionVolume& volume)
 {
-	assert(m_dynamicVolume.queryGetOne(point) >= volume);
-	auto total = m_dynamicVolume.queryGetOne(point);
-	m_dynamicVolume.maybeRemove(point);
-	total += volume;
-	m_dynamicVolume.maybeInsert(point, total);
+	m_dynamicVolume.updateSubtractOne(point, volume);
 }

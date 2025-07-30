@@ -2,6 +2,13 @@
 #include "area/area.h"
 #include "actors/actors.h"
 #include "items/items.h"
+
+template class Reference<ItemIndex, ItemReferenceIndex>;
+template class Reference<ActorIndex, ActorReferenceIndex>;
+
+template class ReferenceData<ItemIndex, ItemReferenceIndex>;
+template class ReferenceData<ActorIndex, ActorReferenceIndex>;
+
 void ActorOrItemReference::load(const Json& data, Area& area)
 {
 	if(data[0])

@@ -10,7 +10,6 @@
 #include "../definitions/moveType.h"
 #include "../numericTypes/types.h"
 #include "../portables.hpp"
-#include "../dataStructures/rtreeData.hpp"
 #include <memory>
 #include <ranges>
 // RemarkItemForStockPilingEvent

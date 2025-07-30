@@ -4,7 +4,6 @@
 #include "actors/actors.h"
 #include "items/items.h"
 #include "reservable.hpp"
-#include "dataStructures/rtreeData.hpp"
 void AreaHasDecks::updatePoints(Area& area, const DeckId& id)
 {
 	for(const Cuboid& cuboid : m_data[id].cuboidSet)

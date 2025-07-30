@@ -25,6 +25,11 @@ void CuboidArray<capacity>::clear()
 	m_low = Distance::null().get();
 }
 template<int capacity>
+bool CuboidArray<capacity>::operator==(const CuboidArray& other) const
+{
+	return (m_high == other.m_high).all() && (m_low == other.m_low).all();
+}
+template<int capacity>
 bool CuboidArray<capacity>::contains(const Cuboid& cuboid) const
 {
 	for(const Cuboid& otherCuboid : *this)
@@ -40,18 +45,12 @@ template<int capacity>
 Cuboid CuboidArray<capacity>::boundry() const
 {
 	// Null cuboids need to be filtered from the max side of the boundry because we use a large number for null.
-	PointArray copyMax;
-	uint j = 0;
-	for(uint i = 0; i < capacity; ++i)
-	{
-		if(m_high(0, i) != Distance::null().get())
-		{
-			copyMax.col(j) = m_high.col(i);
-			++j;
-		}
-	}
+	PointArray copyMax = m_high;
+	const BoolArray isNotNull = !(m_high == Distance::null().get()).colwise().any();
+	Eigen::Array<DistanceWidth, 1, capacity> isNotNullInt = isNotNull.template cast<DistanceWidth>();
+	copyMax *= isNotNullInt.replicate(3, 1);
 	return {
-		Point3D(copyMax.block(0,0,3,j).rowwise().maxCoeff()),
+		Point3D(copyMax.rowwise().maxCoeff()),
 		Point3D(m_low.rowwise().minCoeff())
 	};
 }

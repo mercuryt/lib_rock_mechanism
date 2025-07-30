@@ -1,9 +1,10 @@
 #pragma once
 
-#include "portables.h"
-#include "numericTypes/types.h"
-#include "definitions/itemType.h"
-#include "reference.h"
+#include "../dataStructures/strongVector.h"
+#include "../definitions/itemType.h"
+#include "../numericTypes/types.h"
+#include "../portables.h"
+#include "../reference.h"
 
 class ItemHasCargo;
 class ItemCanBeStockPiled;

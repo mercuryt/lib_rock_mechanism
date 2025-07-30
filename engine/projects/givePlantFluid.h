@@ -1,6 +1,7 @@
 #pragma once
 #include "../project.h"
 #include "../numericTypes/index.h"
+#include "../dataStructures/smallMap.hpp"
 
 class GivePlantFluidProject final : public Project
 {

@@ -5,7 +5,6 @@
 #include "../plants.h"
 #include "../reference.h"
 #include "../numericTypes/types.h"
-#include "../dataStructures/rtreeData.hpp"
 bool Space::pointFeature_contains(const Point3D& point, const PointFeatureTypeId& pointFeatureType) const
 {
 	return m_features.queryGetOne(point).contains(pointFeatureType);
@@ -88,7 +87,7 @@ void Space::pointFeature_construct(const Point3D& point, const PointFeatureTypeI
 		m_exposedToSky.unset(m_area, point);
 	}
 	m_area.m_opacityFacade.update(m_area, point);
-	m_area.m_hasTerrainFacades.update({point, point});
+	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
 	if(transmitedTemperaturePreviously && !temperature_transmits(point))
 		m_area.m_exteriorPortals.onPointCanNotTransmitTemperature(m_area, point);
 }
@@ -114,7 +113,7 @@ void Space::pointFeature_hew(const Point3D& point, const PointFeatureTypeId& poi
 		// Neighter floor nor hatch can be hewn so we don't need to check if this is point opaque or floor opaque.
 		m_area.m_visionCuboids.pointIsOpaque(point);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
-	m_area.m_hasTerrainFacades.update({point, point});
+	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
 }
 void Space::pointFeature_setTemperature(const Point3D& point, const Temperature& temperature)
 {

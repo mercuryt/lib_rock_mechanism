@@ -1,6 +1,5 @@
 #include "space.h"
 #include "../reservable.h"
-#include "../dataStructures/rtreeData.hpp"
 void Space::reserve(const Point3D& point, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
 {
 	Reservable* reservable = nullptr;

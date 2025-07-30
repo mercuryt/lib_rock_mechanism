@@ -1,10 +1,9 @@
 #pragma once
 #include "json.h"
+#include "concepts.h"
 #include <compare>
 #include <limits>
 #include <concepts>
-template <typename T>
-concept Numeric = std::integral<T> || std::floating_point<T>;
 class Simulation;
 template <class Derived, typename T, T NULL_VALUE = std::numeric_limits<T>::max(), T MIN_VALUE = std::numeric_limits<T>::min()>
 struct StrongInteger

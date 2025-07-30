@@ -1,4 +1,5 @@
 #include "offsetCuboidSet.h"
+#include "../dataStructures/smallSet.h"
 void OffsetCuboidSet::maybeMergeExisting(SmallSet<OffsetCuboid>::iterator iter)
 {
 	OffsetCuboid& toMerge = *iter;

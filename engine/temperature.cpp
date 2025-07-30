@@ -13,7 +13,6 @@
 #include "items/items.h"
 #include "space/space.h"
 #include "definitions/animalSpecies.h"
-#include "dataStructures/rtreeData.hpp"
 #include <cmath>
 enum class TemperatureZone { Surface, Underground, LavaSea };
 TemperatureDelta TemperatureSource::getTemperatureDeltaForRange(const Distance& range)
@@ -156,19 +155,19 @@ void AreaHasTemperature::updateAmbientSurfaceTemperature()
 	int32_t halfDay = Config::hoursPerDay / 2;
 	setAmbientSurfaceTemperature(dailyAverage + ((maxDailySwing * (std::max(0, halfDay - hoursFromHottestHourOfDay))) / halfDay) - (maxDailySwing / 2));
 }
-void AreaHasTemperature::addMeltableSolidPointAboveGround(const Point3D& point)
+void AreaHasTemperature::maybeAddMeltableSolidPointAboveGround(const Point3D& point)
 {
 	Space& space = m_area.getSpace();
 	assert(space.isExposedToSky(point));
 	assert(space.solid_is(point));
-	m_aboveGroundPointsByMeltingPoint[MaterialType::getMeltingPoint(space.solid_get(point))].insert(point);
+	m_aboveGroundPointsByMeltingPoint[MaterialType::getMeltingPoint(space.solid_get(point))].maybeInsert(point);
 }
 // Must be run before point is set no longer solid if above ground.
-void AreaHasTemperature::removeMeltableSolidPointAboveGround(const Point3D& point)
+void AreaHasTemperature::maybeRemoveMeltableSolidPointAboveGround(const Point3D& point)
 {
 	Space& space = m_area.getSpace();
 	assert(space.solid_is(point));
-	m_aboveGroundPointsByMeltingPoint.at(MaterialType::getMeltingPoint(space.solid_get(point))).erase(point);
+	m_aboveGroundPointsByMeltingPoint.at(MaterialType::getMeltingPoint(space.solid_get(point))).maybeErase(point);
 }
 void AreaHasTemperature::addFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup)
 {

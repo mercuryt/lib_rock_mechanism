@@ -1,5 +1,5 @@
 #pragma once
-#include "rtreeData.h"
+#include "rtreeData.hpp"
 #include "../strongInteger.h"
 
 template<typename T, typename DataIndexWidth, RTreeDataConfig config = RTreeDataConfig()>
@@ -27,35 +27,16 @@ class RTreeDataIndex
 		m_tree.maybeRemove(shape);
 	}
 public:
-	void insert(const Cuboid& cuboid, T&& value)
-	{
-		const DataIndex index = DataIndex::create(m_data.size());
-		m_tree.maybeInsert(cuboid, index);
-		m_data.emplaceBack(std::move(value), cuboid);
-	}
-	void insertOrOverwrite(const Cuboid& cuboid, T&& value)
-	{
-		const DataIndex found = m_tree.queryGetOne(cuboid);
-		if(found.exists())
-		{
-			m_data[found].first = std::move(value);
-			assert(m_data[found].second == cuboid);
-		}
-		else
-		{
-			const DataIndex index = DataIndex::create(m_data.size());
-			m_tree.maybeInsert(cuboid, index);
-			m_data.emplaceBack(std::move(value), cuboid);
-		}
-	}
-	void insert(const Point3D& point, T&& value) { insert({point, point}, std::move(value)); }
-	void insertOrOverwrite(const Point3D& point, T&& value) { insertOrOverwrite({point, point}, std::move(value)); }
+	void insert(const Cuboid& cuboid, T&& value);
+	void insertOrOverwrite(const Cuboid& cuboid, T&& value);
+	void insert(const Point3D& point, T&& value);
+	void insertOrOverwrite(const Point3D& point, T&& value);
 	void remove(const auto& shape)
 	{
 		const DataIndex index = m_tree.queryGetOne(shape);
 		removeInternal(shape, index);
 	}
-	void remove(const Point3D& point) { remove(Cuboid{point, point}); }
+	void remove(const Point3D& point);
 	void maybeRemove(const auto& shape)
 	{
 		const DataIndex index = m_tree.queryGetOne(shape);
@@ -71,12 +52,28 @@ public:
 	}
 	void updateOne(const auto& shape, auto&& action)
 	{
-		const DataIndex& index = m_tree.queryGetOne(shape);
-		assert(m_data[index].second.contains(shape));
+		const auto& [index, cuboid] = m_tree.queryGetOneWithCuboid(shape);
+		assert(index.exists());
+		assert(cuboid.contains(shape) && shape.contains(cuboid));
 		action(m_data[index].first);
 	}
-	void clear() { m_tree.clear(); m_data.clear(); }
-	[[nodiscard]] bool empty() const { return m_tree.empty(); }
+	void updateOrInsertOne(const auto& shape, auto&& action)
+	{
+		const auto& [index, cuboid] = m_tree.queryGetOneWithCuboid(shape);
+		if(index.exists())
+		{
+			assert(cuboid.contains(shape) && shape.contains(cuboid));
+			action(m_data[index].first);
+		}
+		else
+		{
+			T value;
+			action(value);
+			insert(shape, std::move(value));
+		}
+	}
+	void clear();
+	[[nodiscard]] bool empty() const;
 	[[nodiscard]] bool queryAny(const auto& shape) const { return m_tree.queryAny(shape); }
 	[[nodiscard]] const T& queryGetOne(const auto& shape) const
 	{

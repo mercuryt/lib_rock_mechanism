@@ -4,7 +4,6 @@
 #include "../fire.h"
 #include "../area/area.h"
 #include "../numericTypes/types.h"
-#include "../dataStructures/rtreeData.hpp"
 #include <algorithm>
 void Space::fire_maybeIgnite(const Point3D& point, const MaterialTypeId& materialType)
 {

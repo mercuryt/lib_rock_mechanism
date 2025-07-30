@@ -28,7 +28,7 @@ public:
 	void insert(const uint16_t& index, const Cuboid& cuboid);
 	void erase(const uint16_t& index);
 	void clear();
-	[[nodiscard]] __attribute__((noinline)) bool contains(const Cuboid& cuboid) const;
+	[[nodiscard]] bool operator==(const CuboidArray&) const;
 	[[nodiscard]] int getCapacity() const;
 	[[nodiscard]] const Cuboid operator[](const uint& index) const;
 	[[nodiscard]] Cuboid boundry() const;
@@ -47,6 +47,7 @@ public:
 	[[nodiscard]] BoolArray indicesOfTouchingCuboids(const Cuboid& cuboid) const;
 	[[nodiscard]] __attribute__((noinline)) std::string toString() const;
 	[[nodiscard]] __attribute__((noinline)) Cuboid at(uint i) const;
+	[[nodiscard]] __attribute__((noinline)) bool contains(const Cuboid& cuboid) const;
 	static CuboidArray<capacity> create(const auto& source)
 	{
 		CuboidArray<capacity> output;

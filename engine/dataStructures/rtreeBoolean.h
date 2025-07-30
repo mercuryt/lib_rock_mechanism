@@ -3,9 +3,10 @@
 #include "../geometry/cuboidArray.h"
 #include "../geometry/cuboidSet.h"
 #include "../strongInteger.h"
-#include "../dataStructures/strongVector.h"
-#include "../dataStructures/smallMap.h"
 #include "../json.h"
+#include "strongVector.h"
+#include "smallMap.h"
+#include "smallSet.h"
 
 class RTreeBoolean
 {

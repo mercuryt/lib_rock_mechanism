@@ -101,9 +101,16 @@ Cuboid Cuboid::sum(const Cuboid& other) const
 	assert(canMerge(other));
 	return { {m_highest.data.max(other.m_highest.data)}, {m_lowest.data.min(other.m_lowest.data)} };
 }
-[[nodiscard]] Cuboid Cuboid::intersection(const Cuboid& other) const
+Cuboid Cuboid::intersection(const Cuboid& other) const
 {
 	return { {m_highest.data.min(other.m_highest.data)}, {m_lowest.data.max(other.m_lowest.data)} };
+}
+Cuboid Cuboid::intersection(const Point3D& point) const
+{
+	if(contains(point))
+		return {point, point};
+	else
+		return {};
 }
 void Cuboid::merge(const Cuboid& cuboid)
 {

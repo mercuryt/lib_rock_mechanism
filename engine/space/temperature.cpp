@@ -4,7 +4,6 @@
 #include "../definitions/itemType.h"
 #include "../definitions/materialType.h"
 #include "../numericTypes/types.h"
-#include "../dataStructures/rtreeData.hpp"
 void Space::temperature_updateDelta(const Point3D& point, const TemperatureDelta& deltaDelta)
 {
 	TemperatureDelta delta = m_temperatureDelta.queryGetOneOr(point, TemperatureDelta::create(0));

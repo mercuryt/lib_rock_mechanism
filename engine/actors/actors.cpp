@@ -1,7 +1,6 @@
 #include "actors.h"
 #include "../area/area.h"
 #include "../config.h"
-#include "../dataStructures/rtreeData.hpp"
 #include "../definitions/animalSpecies.h"
 #include "../definitions/bodyType.h"
 #include "../definitions/itemType.h"

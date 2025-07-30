@@ -1,4 +1,5 @@
 #include "rtreeBooleanLowZOnly.h"
+#include "strongVector.hpp"
 RTreeBooleanLowZOnly::ArrayIndex RTreeBooleanLowZOnly::Node::offsetFor(const Index& index) const
 {
 	auto found = std::ranges::find(m_childIndices.begin() + m_childBegin.get(), m_childIndices.end(), index);

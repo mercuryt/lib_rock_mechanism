@@ -15,7 +15,7 @@
 #include "../simulation/simulation.h"
 #include "../simulation/hasAreas.h"
 #include "../numericTypes/types.h"
-#include "../dataStructures/rtreeData.hpp"
+#include "../dataStructures/rtreeData.h"
 #include "../portables.hpp"
 //#include "worldforge/worldLocation.h"
 #include <algorithm>

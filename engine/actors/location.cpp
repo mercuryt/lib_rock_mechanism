@@ -251,6 +251,7 @@ void Actors::location_clear(const ActorIndex& index)
 }
 void Actors::location_clearStatic(const ActorIndex& index)
 {
+	assert(isStatic(index));
 	assert(m_location[index].exists());
 	Point3D location = m_location[index];
 	m_area.m_octTree.erase(m_area, getReference(index));
@@ -266,6 +267,7 @@ void Actors::location_clearStatic(const ActorIndex& index)
 }
 void Actors::location_clearDynamic(const ActorIndex& index)
 {
+	assert(!isStatic(index));
 	assert(m_location[index].exists());
 	Point3D location = m_location[index];
 	m_area.m_octTree.erase(m_area, getReference(index));

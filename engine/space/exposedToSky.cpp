@@ -17,7 +17,7 @@ void PointsExposedToSky::set(Area& area, const Point3D& point)
 		{
 			const MaterialTypeId& materialType = space.solid_get(current);
 			if(MaterialType::canMelt(materialType))
-				area.m_hasTemperature.addMeltableSolidPointAboveGround(current);
+				area.m_hasTemperature.maybeAddMeltableSolidPointAboveGround(current);
 			break;
 		}
 		// Check for adjacent which are now portals because they are adjacent to a point exposed to sky.
@@ -52,7 +52,7 @@ void PointsExposedToSky::unset(Area& area, const Point3D& point)
 		{
 			const MaterialTypeId& materialType = space.solid_get(current);
 			if(MaterialType::canMelt(materialType))
-				area.m_hasTemperature.removeMeltableSolidPointAboveGround(current);
+				area.m_hasTemperature.maybeRemoveMeltableSolidPointAboveGround(current);
 			break;
 		}
 		// Check if this point is now a portal.

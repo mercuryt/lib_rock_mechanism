@@ -54,8 +54,8 @@ public:
 	void addDelta(const Point3D& point, const TemperatureDelta& delta);
 	void applyDeltas();
 	void doStep() { applyDeltas(); }
-	void addMeltableSolidPointAboveGround(const Point3D& point);
-	void removeMeltableSolidPointAboveGround(const Point3D& point);
+	void maybeAddMeltableSolidPointAboveGround(const Point3D& point);
+	void maybeRemoveMeltableSolidPointAboveGround(const Point3D& point);
 	void addFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
 	void maybeRemoveFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup);
 	[[nodiscard]] TemperatureSource& getTemperatureSourceAt(const Point3D& point);

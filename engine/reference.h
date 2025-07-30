@@ -2,7 +2,8 @@
 #include "numericTypes/types.h"
 #include "json.h"
 #include "numericTypes/index.h"
-#include "dataStructures/strongVector.h"
+#include "dataStructures/strongVector.hpp"
+#include "dataStructures/smallSet.hpp"
 #include <cassert>
 #include <compare>
 #include <functional>
@@ -171,7 +172,8 @@ public:
 	}
 	[[nodiscard]] size_t hash() const { return m_referenceIndex.get(); }
 	[[nodiscard]] Json toJson() const { return m_referenceIndex.get(); }
-	struct Hash { [[nodiscard]] size_t operator()(const Reference<Index, ReferenceIndex>& reference) const { return reference.get(); } };
+	[[nodiscard]] std::string toString() const { return m_referenceIndex.toString(); }
+	struct Hash { [[nodiscard]] size_t operator()(const Reference<Index, ReferenceIndex>& reference) const { return reference.getReferenceIndex().get(); } };
 };
 template<typename Index, typename ReferenceIndex>
 void to_json(Json& data, const Reference<Index, ReferenceIndex>& ref) { data = ref.toJson(); }
@@ -334,6 +336,21 @@ public:
 		return !isActor();
 	}
 	[[nodiscard]] bool exists() const { return m_reference.index() != 0; }
+	[[nodiscard]] std::strong_ordering operator<=>(const ActorOrItemReference& other) const
+	{
+		if(isActor())
+		{
+			if(other.isItem())
+				return std::strong_ordering::less;
+			return other.toActorReference() <=> toActorReference();
+		}
+		else
+		{
+			if(other.isActor())
+				return std::strong_ordering::greater;
+			return other.toItemReference() <=> toItemReference();
+		}
+	}
 	[[nodiscard]] bool operator==(const ActorOrItemReference& ref) const { return ref.m_reference == m_reference; }
 	[[nodiscard]] HasShapeIndex getIndex(const ActorReferenceData& actorData, const ItemReferenceData& itemData) const
 	{
@@ -362,9 +379,16 @@ public:
 		else
 			return {false, std::get<2>(m_reference).toJson()};
 	}
+	[[nodiscard]] std::string toString() const
+	{
+		if(isActor())
+			return toActorReference().toString();
+		else
+			return toItemReference().toString();
+	}
 	struct Hash
 	{
-		[[nodiscard]]size_t operator()(const ActorOrItemReference& reference) const
+		[[nodiscard]] constexpr std::size_t operator()(const ActorOrItemReference& reference) const
 		{
 			switch(reference.m_reference.index())
 			{

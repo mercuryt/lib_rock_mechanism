@@ -42,6 +42,7 @@ public:
 	[[nodiscard]] Cuboid canMergeSteal(const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid sum(const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid intersection(const Cuboid& cuboid) const;
+	[[nodiscard]] Cuboid intersection(const Point3D& point) const;
 	[[nodiscard]] Cuboid getFace(const Facing6& faceing) const;
 	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
 	[[nodiscard]] bool overlapsWithSphere(const Sphere& sphere) const;
@@ -58,6 +59,10 @@ public:
 	[[nodiscard]] bool isTouchingFaceFromInside(const Cuboid& position) const;
 	// TODO: Should this return a CuboidArray<6>?
 	[[nodiscard]] SmallSet<Cuboid> getChildrenWhenSplitByCuboid(const Cuboid& cuboid) const;
+	// Overloaded methods for getChildrenWhenSplitBy.
+	// TODO: Add variants for line and sphere?
+	[[nodiscard]] SmallSet<Cuboid> getChildrenWhenSplitBy(const Cuboid& cuboid) const { return getChildrenWhenSplitByCuboid(cuboid); }
+	[[nodiscard]] SmallSet<Cuboid> getChildrenWhenSplitBy(const Point3D& point) const { return getChildrenWhenSplitByCuboid({point, point}); }
 	[[nodiscard]] std::pair<Cuboid, Cuboid> getChildrenWhenSplitBelowCuboid(const Cuboid& cuboid) const;
 	[[nodiscard]] bool isTouching(const Cuboid& cuboid) const;
 	[[nodiscard]] static Cuboid fromPoint(const Point3D& point);

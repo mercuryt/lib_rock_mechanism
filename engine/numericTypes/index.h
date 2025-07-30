@@ -4,6 +4,7 @@
 #include "util.h"
 #include "strongInteger.h"
 #include "dataStructures/strongVector.h"
+#include "dataStructures/smallSet.h"
 #include <array>
 #include <compare>
 #include <cstddef>
@@ -60,6 +61,7 @@ class PlantIndex final : public StrongInteger<PlantIndex, uint32_t>
 public:
 	[[nodiscard]] HasShapeIndex toHasShape() const { return HasShapeIndex::create(get()); }
 	[[nodiscard]] static PlantIndex cast(const HasShapeIndex& index) { PlantIndex output; output.set(index.get()); return output; }
+	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const This& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const PlantIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, PlantIndex& index) { index = PlantIndex::create(data.get<uint32_t>()); }
@@ -71,6 +73,7 @@ public:
 	[[nodiscard]] ActorOrItemIndex toActorOrItemIndex() const;
 	[[nodiscard]] HasShapeIndex toHasShape() const { return HasShapeIndex::create(get()); }
 	[[nodiscard]] static ItemIndex cast(const HasShapeIndex& index) { ItemIndex output; output.set(index.get()); return output; }
+	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const ItemIndex& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const ItemIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, ItemIndex& index) { index = ItemIndex::create(data.get<uint32_t>()); }
@@ -81,6 +84,7 @@ public:
 	[[nodiscard]] ActorOrItemIndex toActorOrItemIndex() const;
 	[[nodiscard]] HasShapeIndex toHasShape() const { return HasShapeIndex::create(get()); }
 	[[nodiscard]] static ActorIndex cast(const HasShapeIndex& index) { ActorIndex output; output.set(index.get()); return output; }
+	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const ActorIndex& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const ActorIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, ActorIndex& index) { index = ActorIndex::create(data.get<uint32_t>()); }

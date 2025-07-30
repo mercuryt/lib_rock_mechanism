@@ -8,7 +8,6 @@
 #include "../items/items.h"
 #include "../plants.h"
 #include "../portables.hpp"
-#include "../dataStructures/rtreeData.hpp"
 
 void Space::solid_setShared(const Point3D& point, const MaterialTypeId& materialType, bool wasEmpty)
 {
@@ -25,7 +24,7 @@ void Space::solid_setShared(const Point3D& point, const MaterialTypeId& material
 	}
 	// Record as meltable.
 	if(m_exposedToSky.check(point) && MaterialType::canMelt(materialType))
-		m_area.m_hasTemperature.addMeltableSolidPointAboveGround(point);
+		m_area.m_hasTemperature.maybeAddMeltableSolidPointAboveGround(point);
 	// Remove from stockpiles.
 	m_area.m_hasStockPiles.removePointFromAllFactions(point);
 	m_area.m_hasCraftingLocationsAndJobs.maybeRemoveLocation(point);
@@ -83,20 +82,20 @@ void Space::solid_setNotCuboid(const Cuboid& cuboid)
 	m_visible.maybeInsert(cuboid);
 	// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid point.
 	m_reservables.maybeRemove(cuboid);
-	m_area.m_hasTerrainFacades.update(cuboid);
 	const Cuboid spaceBoundry = boundry();
 	for(const Point3D& point : cuboid)
 	{
 		if(!solid_is(point))
 			continue;
 		if(m_exposedToSky.check(point) && MaterialType::canMelt(m_solid.queryGetOne(point)))
-			m_area.m_hasTemperature.removeMeltableSolidPointAboveGround(point);
+			m_area.m_hasTemperature.maybeRemoveMeltableSolidPointAboveGround(point);
 		fluid_onPointSetNotSolid(point);
 		setBelowVisible(point);
 		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
 	}
 	m_solid.maybeRemove(cuboid);
 	m_support.unset(cuboid);
+	m_area.m_hasTerrainFacades.update(spaceBoundry.intersection(cuboid.inflateAdd(Distance::create(1))));
 	for(const Point3D& point : cuboid)
 	{
 		m_area.m_exteriorPortals.onPointCanTransmitTemperature(m_area, point);
