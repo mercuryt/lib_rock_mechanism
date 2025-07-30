@@ -33,7 +33,7 @@ void Space::pointFeature_remove(const Point3D& point, const PointFeatureTypeId& 
 		m_features.remove(point);
 	m_area.m_opacityFacade.update(m_area, point);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
-	m_area.m_hasTerrainFacades.update({point, point});
+	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
 	if(!transmitedTemperaturePreviously && temperature_transmits(point))
 		m_area.m_exteriorPortals.onPointCanTransmitTemperature(m_area, point);
 	if(wasOpaque && !pointFeature_isOpaque(point))
@@ -50,7 +50,7 @@ void Space::pointFeature_removeAll(const Point3D& point)
 	m_features.remove(point);
 	m_area.m_opacityFacade.update(m_area, point);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
-	m_area.m_hasTerrainFacades.update({point, point});
+	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
 	if(!transmitedTemperaturePreviously && temperature_transmits(point))
 		m_area.m_exteriorPortals.onPointCanTransmitTemperature(m_area, point);
 	if(wasOpaque)
@@ -130,7 +130,7 @@ void Space::pointFeature_setAll(const Point3D& point, PointFeatureSet& features)
 	assert(m_features.queryGetOne(point).empty());
 	m_features.insert(point, std::move(features));
 	m_area.m_opacityFacade.update(m_area, point);
-	m_area.m_hasTerrainFacades.update({point, point});
+	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
 	if(pointFeature_isOpaque(point))
 		m_area.m_visionCuboids.pointIsOpaque(point);
@@ -145,7 +145,8 @@ void Space::pointFeature_lock(const Point3D& point, const PointFeatureTypeId& po
 	auto& feature = featuresCopy.get(pointFeatureType);
 	feature.locked = true;
 	m_features.updateOne(point, features, std::move(featuresCopy));
-	m_area.m_hasTerrainFacades.update({point, point});
+	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
+
 }
 void Space::pointFeature_unlock(const Point3D& point, const PointFeatureTypeId& pointFeatureType)
 {
@@ -155,7 +156,8 @@ void Space::pointFeature_unlock(const Point3D& point, const PointFeatureTypeId& 
 	auto& feature = featuresCopy.get(pointFeatureType);
 	feature.locked = false;
 	m_features.updateOne(point, features, std::move(featuresCopy));
-	m_area.m_hasTerrainFacades.update({point, point});
+	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
+
 }
 void Space::pointFeature_close(const Point3D& point, const PointFeatureTypeId& pointFeatureType)
 {

@@ -32,4 +32,12 @@ void RTreeDataIndex<T, DataIndexWidth, config>::remove(const Point3D& point) { r
 template<typename T, typename DataIndexWidth, RTreeDataConfig config>
 void RTreeDataIndex<T, DataIndexWidth, config>::clear() { m_tree.clear(); m_data.clear(); }
 template<typename T, typename DataIndexWidth, RTreeDataConfig config>
-[[nodiscard]] bool RTreeDataIndex<T, DataIndexWidth, config>::empty() const { return m_tree.empty(); }
+bool RTreeDataIndex<T, DataIndexWidth, config>::empty() const { return m_tree.empty(); }
+template<typename T, typename DataIndexWidth, RTreeDataConfig config>
+CuboidSet RTreeDataIndex<T, DataIndexWidth, config>::getLeafCuboids() const
+{
+	CuboidSet output;
+	for(const auto& pair : m_data)
+		output.add(pair.second);
+	return output;
+}

@@ -14,6 +14,11 @@ CuboidSet::CuboidSet(const Point3D& location, const Facing4& rotation, const Off
 		add({Point3D::create(high), Point3D::create(low)});
 	}
 }
+CuboidSet::CuboidSet(const std::initializer_list<Cuboid>& cuboids)
+{
+	for(const Cuboid& cuboid : cuboids)
+		m_cuboids.insert(cuboid);
+}
 void CuboidSet::create(const Cuboid& cuboid)
 {
 	uint i = 0;
@@ -57,8 +62,16 @@ void CuboidSet::remove(const Cuboid& cuboid)
 			toSplit.emplace(existing, i);
 		++i;
 	}
-	for(const auto& pair : toSplit)
-		destroy(pair.second);
+	SmallSet<Cuboid> copy;
+	copy.reserve(m_cuboids.size() - toSplit.size());
+	const uint count = m_cuboids.size();
+	for(uint i = 0; i != count; ++i)
+	{
+		const auto iter = std::ranges::find(toSplit.m_data, i, &std::pair<Cuboid, uint>::second);
+		if(iter == toSplit.m_data.end())
+			copy.insert(m_cuboids[i]);
+	}
+	m_cuboids = std::move(copy);
 	for(const auto& pair : toSplit)
 		for(const Cuboid& splitResult : pair.first.getChildrenWhenSplitByCuboid(cuboid))
 			create(splitResult);

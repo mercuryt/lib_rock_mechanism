@@ -38,6 +38,7 @@ public:
 	CuboidSet(const CuboidSet& other) = default;
 	CuboidSet(CuboidSet&& other) noexcept = default;
 	CuboidSet(const Point3D& location, const Facing4& rotation, const OffsetCuboidSet& offsetPairs);
+	CuboidSet(const std::initializer_list<Cuboid>& cuboids);
 	CuboidSet& operator=(CuboidSet&& other) noexcept = default;
 	CuboidSet& operator=(const CuboidSet& other) = default;
 	void add(const Point3D& point);

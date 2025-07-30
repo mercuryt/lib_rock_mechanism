@@ -75,6 +75,8 @@ public:
 	void clear();
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] bool queryAny(const auto& shape) const { return m_tree.queryAny(shape); }
+	[[nodiscard]] CuboidSet getLeafCuboids() const;
+	[[nodiscard]] const auto& getLeaves() const { return m_data; }
 	[[nodiscard]] const T& queryGetOne(const auto& shape) const
 	{
 		const DataIndex& index = m_tree.queryGetOne(shape);

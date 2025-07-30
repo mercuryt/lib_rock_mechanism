@@ -98,8 +98,8 @@ struct AdjacentData
 		[[nodiscard]] bool operator!=(const ConstIterator& other) { return index != other.index; }
 		void operator++() { ++index; advanceToNext(); }
 	};
-	[[nodiscard]] ConstIterator begin() { return {data, AdjacentIndex::create(0)}; }
-	[[nodiscard]] ConstIterator end() { return {data, AdjacentIndex::create(maxAdjacent)}; }
+	[[nodiscard]] ConstIterator begin() const { return {data, AdjacentIndex::create(0)}; }
+	[[nodiscard]] ConstIterator end() const { return {data, AdjacentIndex::create(maxAdjacent)}; }
 };
 class TerrainFacade final
 {
@@ -159,6 +159,8 @@ public:
 
 	[[nodiscard]] FindPathResult findPathToEdge(PathMemoBreadthFirst& memo, const Point3D &start, const Facing4 &startFacing, const ShapeId &shape, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathAdjacentToPolymorphicWithoutMemo(const Point3D &start, const Facing4 &startFacing, const ShapeId &shape, const ActorOrItemIndex &actorOrItem, bool detour = false) const;
+	[[nodiscard]] auto& getArea() { return m_area; }
+	[[nodiscard]] const auto& getArea() const { return m_area; }
 	// For testing.
 	[[nodiscard]] size_t getPathRequestCount() const { return m_pathRequestsNoHuristic.size() + m_pathRequestsWithHuristic.size(); }
 	[[nodiscard]] bool accessable(const Point3D& from, const Facing4& startFacing, const Point3D& to, const ActorIndex& actor) const;

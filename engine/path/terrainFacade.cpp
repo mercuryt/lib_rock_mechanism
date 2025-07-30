@@ -4,6 +4,7 @@
 #include "../callbackTypes.h"
 #include "../config.h"
 #include "../definitions/shape.h"
+#include "../definitions/moveType.h"
 #include "../numericTypes/index.h"
 #include "../numericTypes/types.h"
 #include "../simulation/simulation.h"
@@ -60,7 +61,54 @@ PathRequestWithHuristicData& PathRequestWithHuristicData::operator=(PathRequestW
 TerrainFacade::TerrainFacade(Area& area, const MoveTypeId& moveType) : m_area(area), m_moveType(moveType)
 {
 	Space& space = m_area.getSpace();
-	update(space.boundry());
+	static const MoveTypeId twoLegs = MoveType::byName("two legs");
+	static const MoveTypeId fourLegs = MoveType::byName("four legs");
+	static const MoveTypeId roll = MoveType::byName("roll");
+	static const MoveTypeId fly = MoveType::byName("fly");
+	if(moveType == fly)
+	{
+		CuboidSet candidates{space.boundry()};
+		candidates.removeAll(space.getSolid().getLeafCuboids());
+		for(const auto& [value, cuboid] : space.getPointFeatures().getLeaves())
+			if(value.blocksEntrance())
+				candidates.remove(cuboid);
+		for(const Cuboid& cuboid : candidates)
+			update(cuboid);
+	}
+	else if(moveType == twoLegs || moveType == fourLegs || moveType == roll)
+	{
+		CuboidSet candidates;
+		Distance maxZ = space.m_sizeZ - 1;
+		const CuboidSet solidLeaves = space.getSolid().getLeafCuboids();
+		for(const Cuboid& cuboid : solidLeaves)
+			if(cuboid.m_highest.z() != maxZ)
+			{
+				const Cuboid above = cuboid.getFace(Facing6::Above);
+				candidates.add(above);
+			}
+		const auto featureLeaves = space.getPointFeatures().getLeaves();
+		for(const auto& [value, cuboid] : featureLeaves)
+			if(value.canStandIn())
+				candidates.add(cuboid);
+		candidates.removeAll(solidLeaves);
+		if(moveType == roll || moveType == fourLegs)
+		{
+			// Rolling and four legs is the same as two legs except stairs are excluded.
+			for(const auto& [value, cuboid] : featureLeaves)
+				if(value.blocksEntrance() || value.contains(PointFeatureTypeId::Stairs))
+					candidates.remove(cuboid);
+		}
+		else
+		{
+			for(const auto& [value, cuboid] : featureLeaves)
+				if(value.blocksEntrance())
+					candidates.remove(cuboid);
+		}
+		for(const Cuboid& cuboid : candidates)
+			update(cuboid);
+	}
+	else
+		update(space.boundry());
 	m_pointToIndexConversionMultipliers = {space.m_sizeX * space.m_sizeY * 26,space.m_sizeX * 26, Distance::create(26)};
 	// Two results fit on a cache line, by ensuring that the number of tasks per thread is a multiple of 2 we prevent false shareing.
 	assert(Config::pathRequestsPerThread % 2 == 0);

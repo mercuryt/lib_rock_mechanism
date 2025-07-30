@@ -866,6 +866,19 @@ Json RTreeData<T, config>::toJson() const
 	return output;
 }
 template<Sortable T, RTreeDataConfig config>
+CuboidSet RTreeData<T, config>::getLeafCuboids() const
+{
+	CuboidSet output;
+	for(const Node& node : m_nodes)
+	{
+		const auto leafCount = node.getLeafCount();
+		const auto& cuboids = node.getCuboids();
+		for(auto i = 0; i < leafCount; ++i)
+			output.add(cuboids[i]);
+	}
+	return output;
+}
+template<Sortable T, RTreeDataConfig config>
 void RTreeData<T, config>::load(const Json& data)
 {
 	for(const Json& nodeData : data["nodes"])

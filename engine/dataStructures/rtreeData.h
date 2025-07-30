@@ -118,6 +118,7 @@ public:
 	void clear();
 	[[nodiscard]] bool empty() const { return leafCount() == 0; }
 	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] CuboidSet getLeafCuboids() const;
 	void load(const Json& data);
 	void update(const auto& shape, const T& oldValue, const T& newValue)
 	{

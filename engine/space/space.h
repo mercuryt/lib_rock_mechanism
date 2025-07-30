@@ -104,6 +104,8 @@ public:
 	[[nodiscard]] bool isEdge(const Point3D& point) const;
 	[[nodiscard]] bool hasLineOfSightTo(const Point3D& point, const Point3D& other) const;
 	[[nodiscard]] Cuboid getZLevel(const Distance& z);
+	[[nodiscard]] const auto& getSolid() const { return m_solid; }
+	[[nodiscard]] const auto& getPointFeatures() const { return m_features; }
 	[[nodiscard]] const Support& getSupport() const { return m_support; }
 	[[nodiscard]] Support& getSupport() { return m_support; }
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.

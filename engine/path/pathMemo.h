@@ -19,6 +19,7 @@ public:
 	[[nodiscard]] bool empty() const { return m_data.empty(); }
 	[[nodiscard]] Point3D previous(const Point3D& index) const;
 	[[nodiscard]] SmallSet<Point3D> getPath(const Point3D& secondToLast, const Point3D& last, const Point3D& first) const;
+	[[nodiscard]] CuboidSet getIntersecting(const auto& shape) const { return m_data.queryGetAllCuboids(shape); }
 	void add(const Point3D& index, Point3D parent);
 	void clear() { m_data.clear(); }
 	void removeClosed(CuboidSet& cuboids) const;
@@ -39,6 +40,7 @@ public:
 	[[nodiscard]] bool openEmpty() const { return m_open.empty(); }
 	[[nodiscard]] Point3D next();
 	[[nodiscard]] SmallSet<Point3D> getPath(const Point3D& secondToLast, const Point3D& last, const Point3D& first) const;
+	[[nodiscard]] CuboidSet getClosedIntersecting(const auto& shape) const { return m_closed.getIntersecting(shape); }
 };
 class PathMemoDepthFirst final
 {
@@ -56,6 +58,7 @@ public:
 	[[nodiscard]] bool openEmpty() const { return m_open.empty(); }
 	[[nodiscard]] Point3D next();
 	[[nodiscard]] SmallSet<Point3D> getPath(const Point3D& secondToLast, const Point3D& last, const Point3D& first) const;
+	[[nodiscard]] CuboidSet getClosedIntersecting(const auto& shape) const { return m_closed.getIntersecting(shape); }
 };
 class SimulationHasPathMemos final
 {

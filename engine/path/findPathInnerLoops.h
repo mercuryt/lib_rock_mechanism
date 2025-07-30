@@ -17,9 +17,11 @@ class PathInnerLoops
 		memo.setClosed(start, Point3D::max());
 		while(!memo.openEmpty())
 		{
-			Point3D current = memo.next();
+			const Point3D current = memo.next();
 			//TODO: check if last seen enterable can be reused.
-			AdjacentData enterable = terrainFacade.getAdjacentData(current);
+			const AdjacentData enterable = terrainFacade.getAdjacentData(current);
+			const Cuboid adjacent = terrainFacade.getArea().getSpace().getAdjacentWithEdgeAndCornerAdjacent(current);
+			const CuboidSet closed = memo.getClosedIntersecting(adjacent);
 			for(const AdjacentIndex& adjacentIndex : enterable)
 			{
 				const Point3D adjacent = current.atAdjacentIndex(adjacentIndex);
@@ -34,7 +36,7 @@ class PathInnerLoops
 					}
 					if(accessCondition(adjacent, Facing4::North))
 					{
-						if(memo.isClosed(adjacent))
+						if(closed.contains(adjacent))
 							continue;
 						memo.setOpen(adjacent);
 						memo.setClosed(adjacent, current);
@@ -42,7 +44,7 @@ class PathInnerLoops
 				}
 				else
 				{
-					if(memo.isClosed(adjacent))
+					if(closed.contains(adjacent))
 						continue;
 					Facing4 facing;
 					if constexpr(!symetric)
