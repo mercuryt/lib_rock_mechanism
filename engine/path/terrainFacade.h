@@ -85,6 +85,7 @@ struct AdjacentData
 	[[nodiscard]] auto operator<=>(const AdjacentData& other) const { return data.to_ulong() <=> other.data.to_ulong(); }
 	[[nodiscard]] bool operator==(const AdjacentData& other) const { return data.to_ulong() == other.data.to_ulong(); }
 	[[nodiscard]] bool empty() const { return !data.any(); }
+	[[nodiscard]] std::string toString() const { return data.to_string(); }
 	static AdjacentData create(const Primitive& d) { return {d}; }
 	static AdjacentData null() { return {0}; }
 	class ConstIterator

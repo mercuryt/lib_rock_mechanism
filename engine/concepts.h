@@ -11,6 +11,9 @@ template <typename T>
 concept HasGetMethod = requires(T a) { a.get(); };
 
 template <typename T>
+concept HasEmptyMethod = requires(T a) { a.empty(); };
+
+template <typename T>
 concept HasToJsonMethod = requires(T a) { to_json(Json{}, a); };
 
 template <typename T>

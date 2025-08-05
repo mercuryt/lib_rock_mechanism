@@ -49,14 +49,13 @@ void FluidGroup::addPoint(Area& area, const Point3D& point, bool checkMerge)
 	setUnstable(area);
 	// Cannot be in fill queue if full. Must be otherwise.
 	Space& space = area.getSpace();
-	const FluidData* found = space.fluid_getData(point, m_fluidType);
-	if(found && found->volume < Config::maxPointVolume)
+	const FluidData found = space.fluid_getData(point, m_fluidType);
+	if(found.exists() && found.volume < Config::maxPointVolume)
 		m_fillQueue.maybeAddPoint(point);
 	else
 		m_fillQueue.maybeRemovePoint(point);
 	// Set group membership in Space.
-	found = area.getSpace().fluid_getData(point, m_fluidType);
-	FluidGroup* oldGroup = found->group;
+	FluidGroup* oldGroup = found.group;
 	if(oldGroup != nullptr && oldGroup != this)
 		oldGroup->removePoint(area, point);
 	space.fluid_setGroupInternal(point, m_fluidType, *this);
@@ -67,16 +66,16 @@ void FluidGroup::addPoint(Area& area, const Point3D& point, bool checkMerge)
 	{
 		if(!area.getSpace().fluid_canEnterEver(adjacent))
 			continue;
-		const FluidData* found = space.fluid_getData(adjacent, m_fluidType);
+		const FluidData foundAdjacent = space.fluid_getData(adjacent, m_fluidType);
 		// Merge groups if needed.
-		if(found && checkMerge)
+		if(foundAdjacent.exists() && checkMerge)
 		{
-			assert(!found->group->m_merged);
-			if(found->group == this)
+			assert(!foundAdjacent.group->m_merged);
+			if(foundAdjacent.group == this)
 				continue;
-			toMerge.maybeInsert(found->group);
+			toMerge.maybeInsert(foundAdjacent.group);
 		}
-		if(!found || found->volume < Config::maxPointVolume)
+		if(foundAdjacent.empty() || foundAdjacent.volume < Config::maxPointVolume)
 			m_fillQueue.maybeAddPoint(adjacent);
 	}
 	// TODO: (performance) collect all groups to merge recursively and then merge all into the largest.
@@ -96,8 +95,8 @@ void FluidGroup::removePoint(Area& area, const Point3D& point)
 		if( area.getSpace().fluid_canEnterEver(adjacent))
 		{
 			//Check for group split.
-			auto found = area.getSpace().fluid_getData(adjacent, m_fluidType);
-			if(found && found->group == this)
+			auto foundAdjacent = area.getSpace().fluid_getData(adjacent, m_fluidType);
+			if(foundAdjacent.exists() && foundAdjacent.group == this)
 				m_potentiallySplitFromSyncronusStep.maybeInsert(adjacent);
 			else
 				//Check for empty adjacent to remove.
@@ -156,13 +155,13 @@ FluidGroup* FluidGroup::merge(Area& area, FluidGroup* smaller)
 	for(const Point3D& point : smaller->m_futureNewEmptyAdjacents)
 	{
 		auto found = space.fluid_getData(point, m_fluidType);
-		if(!found)
+		if(found.empty())
 			continue;
-		if(!found->group->m_merged && found->group != larger)
+		if(!found.group->m_merged && found.group != larger)
 		{
-			larger->merge(area, found->group);
+			larger->merge(area, found.group);
 			if(larger->m_merged)
-				larger = found->group;
+				larger = found.group;
 		}
 	}
 	return larger;
@@ -350,7 +349,7 @@ void FluidGroup::readStep(Area& area)
 			 )
 			{
 				auto found = area.getSpace().fluid_getData(adjacent, m_fluidType);
-				if(!found || found->volume < Config::maxPointVolume || found->group != this)
+				if(found.empty() || found.volume < Config::maxPointVolume || found.group != this)
 					m_futureNewEmptyAdjacents.maybeInsert(adjacent);
 			}
 	}
@@ -461,7 +460,7 @@ void FluidGroup::writeStep(Area& area)
 	// Don't add to drain queue if taken by another fluid group already.
 	m_futureAddToDrainQueue.eraseIf([&](const Point3D& point){
 		auto found = space.fluid_getData(point, m_fluidType);
-		return found && found->group != this;
+		return found.exists() && found.group != this;
 	});
 	for([[maybe_unused]] const Point3D& point : m_futureAddToDrainQueue)
 		assert(!m_futureRemoveFromDrainQueue.contains(point));
@@ -598,14 +597,14 @@ void FluidGroup::mergeStep(Area& area)
 		if(m_merged)
 			return;
 		auto found = space.fluid_getData(point, m_fluidType);
-		if(!found)
+		if(found.empty())
 			continue;
-		found->group->validate(area);
-		assert(!found->group->m_merged);
-		assert(found->group->m_fluidType == m_fluidType);
-		if(found->group != this)
+		found.group->validate(area);
+		assert(!found.group->m_merged);
+		assert(found.group->m_fluidType == m_fluidType);
+		if(found.group != this)
 		{
-			merge(area, found->group);
+			merge(area, found.group);
 			continue;
 		}
 	}

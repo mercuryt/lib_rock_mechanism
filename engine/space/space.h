@@ -25,9 +25,43 @@ class FluidGroup;
 
 struct FluidData
 {
-	FluidTypeId type;
-	FluidGroup* group;
-	CollisionVolume volume;
+	struct Primitive
+	{
+		FluidGroup* group;
+		FluidTypeId::Primitive type;
+		CollisionVolume::Primitive volume;
+		[[nodiscard]] bool operator==(const Primitive&) const = default;
+		[[nodiscard]] std::strong_ordering operator<=>(const Primitive&) const = default;
+	};
+	static_assert(std::is_trivial_v<Primitive>);
+	//TODO: Replace pointer with index or id.
+	FluidGroup* group = nullptr;
+	FluidTypeId type = FluidTypeId::null();
+	CollisionVolume volume = {0};
+	// Fluid data leafs should never overlap if they are the same fluid type.
+	[[nodiscard]] std::strong_ordering operator<=>(const FluidData& other) const { return type <=> other.type; }
+	[[nodiscard]] bool operator==(const FluidData& other) const = default;
+	[[nodiscard]] bool empty() const { return type.empty() || volume == 0; }
+	[[nodiscard]] bool exists() const { return !empty(); }
+	[[nodiscard]] std::string toString() const { return "{type: " + FluidType::getName(type) + ", volume: " + volume.toString() + "}"; }
+	void clear() { group = nullptr; type.clear(); volume = {0}; }
+	Primitive get() const { return {group, type.get(), volume.get()}; }
+	static FluidData create(const Primitive& data)
+	{
+		FluidData output;
+		output.group = data.group;
+		output.type = FluidTypeId::create(data.type);
+		output.volume = CollisionVolume::create(data.volume);
+		return output;
+	}
+	static FluidData null() { return {}; }
+};
+using FluidBase = RTreeData<FluidData, RTreeDataConfig{.leavesCanOverlap = true}>;
+class FluidDataRTree final : public FluidBase
+{
+public:
+	// m_fluid leaves can overlap only if they have different fluid types.
+	[[nodiscard]] bool canOverlap(const FluidData& a, const FluidData& b) const override;
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(FluidData, type, volume);
 class Space
@@ -36,13 +70,12 @@ class Space
 	SmallMap<Point3D, SmallMap<FactionId, FarmField*>> m_farmFields;
 	SmallMap<Point3D, SmallMap<FactionId, PointIsPartOfStockPile>> m_stockPiles;
 	constexpr static RTreeDataConfig noMerge{.splitAndMerge = false};
-	SmallMap<FactionId, RTreeDataIndex<SmallSet<Project*>, uint16_t, noMerge>> m_projects;
+	SmallMap<FactionId, RTreeData<RTreeDataWrapper<Project*, nullptr>>> m_projects;
 	RTreeDataIndex<std::unique_ptr<Reservable>, uint16_t, noMerge> m_reservables;
 	RTreeDataIndex<SmallMapStable<MaterialTypeId, Fire>*, uint32_t, noMerge> m_fires;
 	RTreeData<MaterialTypeId> m_solid;
 	RTreeDataIndex<PointFeatureSet, uint32_t> m_features;
-	//TODO: store as overlaping RTree.
-	RTreeDataIndex<std::vector<FluidData>, uint32_t> m_fluid;
+	FluidDataRTree m_fluid;
 	RTreeData<FluidTypeId> m_mist;
 	RTreeData<CollisionVolume> m_totalFluidVolume;
 	RTreeData<Distance> m_mistInverseDistanceFromSource;
@@ -88,6 +121,7 @@ public:
 	[[nodiscard]] SmallSet<Point3D> getDirectlyAdjacent(const Point3D& point) const;
 	[[nodiscard]] SmallSet<Point3D> getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const Point3D& point) const;
 	[[nodiscard]] SmallSet<Point3D> getAdjacentOnSameZLevelOnly(const Point3D& point) const;
+	[[nodiscard]] Cuboid getAdjacentWithEdgeOnSameZLevelOnly(const Point3D& point) const;
 	// getNthAdjacent is not const because the point offsets are created and cached.
 	[[nodiscard]] SmallSet<Point3D> getNthAdjacent(const Point3D& point, const Distance& distance);
 	[[nodiscard]] bool isAdjacentToActor(const Point3D& point, const ActorIndex& actor) const;
@@ -105,6 +139,7 @@ public:
 	[[nodiscard]] bool hasLineOfSightTo(const Point3D& point, const Point3D& other) const;
 	[[nodiscard]] Cuboid getZLevel(const Distance& z);
 	[[nodiscard]] const auto& getSolid() const { return m_solid; }
+	[[nodiscard]] const auto& getFluidTotal() const { return m_totalFluidVolume; }
 	[[nodiscard]] const auto& getPointFeatures() const { return m_features; }
 	[[nodiscard]] const Support& getSupport() const { return m_support; }
 	[[nodiscard]] Support& getSupport() { return m_support; }
@@ -246,11 +281,11 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	[[nodiscard]] bool fluid_typeCanEnterCurrently(const Point3D& point, const FluidTypeId& fluidType) const;
 	[[nodiscard]] bool fluid_any(const Point3D& point) const;
 	[[nodiscard]] bool fluid_contains(const Point3D& point, const FluidTypeId& fluidType) const;
-	[[nodiscard]] const std::vector<FluidData>& fluid_getAll(const Point3D& point) const;
-	[[nodiscard]] const std::vector<FluidData> fluid_getAllSortedByDensityAscending(const Point3D& point);
+	[[nodiscard]] const SmallSet<FluidData> fluid_getAll(const Point3D& point) const;
+	[[nodiscard]] const SmallSet<FluidData> fluid_getAllSortedByDensityAscending(const Point3D& point);
 	[[nodiscard]] CollisionVolume fluid_getTotalVolume(const Point3D& point) const;
 	[[nodiscard]] FluidTypeId fluid_getMist(const Point3D& point) const;
-	[[nodiscard]] const FluidData* fluid_getData(const Point3D& point, const FluidTypeId& fluidType) const;
+	[[nodiscard]] const FluidData fluid_getData(const Point3D& point, const FluidTypeId& fluidType) const;
 	// Floating
 	void floating_maybeSink(const Point3D& point);
 	void floating_maybeFloatUp(const Point3D& point);
@@ -397,3 +432,16 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	Space(Space&) = delete;
 	Space(Space&&) = delete;
 };
+
+inline void to_json(Json& data, const FluidData::Primitive& p)
+{
+	data["group"] = (uintptr_t)p.group;
+	data["type"] = p.type;
+	data["volume"] = p.volume;
+}
+inline void from_json(const Json& data, FluidData::Primitive& p)
+{
+	p.group = (FluidGroup*)data["group"].get<uintptr_t>();
+	data["type"].get_to(p.type);
+	data["volume"].get_to(p.volume);
+}

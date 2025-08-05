@@ -98,7 +98,7 @@ namespace areaBuilderUtil
 		Space& space = area.getSpace();
 		Cuboid cuboid = space.boundry();
 		for(const Point3D& point : cuboid)
-			for([[maybe_unused]] auto& [fluidType, group, volume] : space.fluid_getAll(point))
+			for([[maybe_unused]] auto& [group, fluidType, volume] : space.fluid_getAll(point))
 				assert(group->m_fluidType == fluidType);
 	}
 	// Get one fluid group with the specified type. Return null if there is more then one.

@@ -234,7 +234,7 @@ bool Space::shape_moveTypeCanEnterFrom(const Point3D& point, const MoveTypeId& m
 bool Space::shape_moveTypeCanEnter(const Point3D& point, const MoveTypeId& moveType) const
 {
 	assert(shape_anythingCanEnterEver(point));
-	const auto& fluidDataSet = m_fluid.queryGetOne(point);
+	const auto& fluidDataSet = m_fluid.queryGetAll(point);
 	// Floating.
 	if(MoveType::getFloating(moveType) && !fluidDataSet.empty())
 		// Any floating move type can potentailly float in any amount of any type of fluid.
@@ -259,9 +259,7 @@ bool Space::shape_moveTypeCanEnter(const Point3D& point, const MoveTypeId& moveT
 		}
 	}
 	// Not swimming or floating and fluid level is too high.
-	CollisionVolume total = m_totalFluidVolume.queryGetOne(point);
-	if(!total.exists())
-		total = CollisionVolume::create(0);
+	CollisionVolume total = m_totalFluidVolume.queryGetOneOr(point, {0});
 	if(total > Config::maxPointVolume / 2)
 		return false;
 	// Fly can always enter if fluid level isn't preventing it.
@@ -292,7 +290,7 @@ bool Space::shape_moveTypeCanBreath(const Point3D& point, const MoveTypeId& move
 {
 	if(m_totalFluidVolume.queryGetOneOr(point, {0}) < Config::maxPointVolume && !MoveType::getOnlyBreathsFluids(moveType))
 		return true;
-	for(const FluidData& fluidData : m_fluid.queryGetOne(point))
+	for(const FluidData& fluidData : m_fluid.queryGetAll(point))
 		//TODO: Minimum volume should probably be scaled by body size somehow.
 		if(MoveType::getBreathableFluids(moveType).contains(fluidData.type) && fluidData.volume >= Config::minimumVolumeOfFluidToBreath)
 			return true;

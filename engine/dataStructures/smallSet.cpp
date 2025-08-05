@@ -26,3 +26,4 @@ template struct SmallSet<Project*>;
 template struct SmallSet<uint>;
 template struct SmallSet<RTreeBoolean::Index>;
 template struct SmallSet<std::pair<Cuboid, uint>>;
+template struct SmallSet<RTreeNodeIndex>;

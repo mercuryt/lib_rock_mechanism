@@ -74,7 +74,7 @@ void FillQueue::recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionV
 void FillQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 {
 	validate();
-	auto& space = area.getSpace();
+	Space& space = area.getSpace();
 	for(auto iter = m_queue.begin(); iter != m_groupEnd; ++iter)
 	{
 		if(iter->delta == 0)

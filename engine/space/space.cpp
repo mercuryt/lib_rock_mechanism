@@ -33,8 +33,8 @@ void Space::load(const Json& data, DeserializationMemo& deserializationMemo)
 	for(const Json& pair : data["fluid"])
 	{
 		Cuboid cuboid = pair[0].get<Cuboid>();
-		std::vector<FluidData> fluidData = pair[1].get<std::vector<FluidData>>();
-		m_fluid.insert(cuboid, std::move(fluidData));
+		FluidData fluidData = pair[1].get<FluidData>();
+		m_fluid.maybeInsert(cuboid, fluidData);
 	}
 	data["mist"].get_to(m_mist);
 	data["mistInverseDistanceFromSource"].get_to(m_mistInverseDistanceFromSource);
@@ -150,6 +150,15 @@ SmallSet<Point3D> Space::getAdjacentOnSameZLevelOnly(const Point3D& point) const
 		output.insert(copy);
 	}
 	return output;
+}
+Cuboid Space::getAdjacentWithEdgeOnSameZLevelOnly(const Point3D& point) const
+{
+	Point3D high(point.data + 1);
+	high.z() = point.z();
+	Point3D low = point.subtractWithMinimum({1});
+	low.z() = point.z();
+	Cuboid output = {high, low};
+	return output.intersection(boundry());
 }
 SmallSet<Point3D> Space::getNthAdjacent(const Point3D& point, const Distance& n)
 {
@@ -313,3 +322,4 @@ SmallSet<Point3D> Space::collectAdjacentsInRange(const Point3D& point, const Dis
 	auto condition = [&](const Point3D& b){ return b.taxiDistanceTo(point) <= range; };
 	return collectAdjacentsWithCondition(point, condition);
 }
+bool FluidDataRTree::canOverlap(const FluidData& a, const FluidData& b) const { return a.type != b.type; }

@@ -26,6 +26,7 @@
 #include "../fire.h"
 #include "../objective.h"
 #include "../projects/installItem.h"
+#include "rtreeData.hpp"
 
 class Area;
 class CraftJob;
@@ -39,6 +40,7 @@ class ProjectRequirementCounts;
 class FarmField;
 class CanReserve;
 
+//template class SmallMap<FactionId, RTreeDataIndex<SmallSet<Project*>, uint16_t, noMerge>>;
 template class SmallMap<ActorOrItemIndex, DeckRotationDataSingle>;
 template class SmallMap<ActorReference, ProjectWorker>;
 template class SmallMap<ActorReference, SmallMap<ProjectRequirementCounts*, ItemReference>>;
@@ -55,7 +57,7 @@ template class SmallMap<FactionId, HasFarmFieldsForFaction>;
 template class SmallMap<FactionId, HasScheduledEvent<ReMarkItemForStockPilingEvent>>;
 template class SmallMap<FactionId, PointIsPartOfStockPile>;
 template class SmallMap<FactionId, Quantity>;
-//template class SmallMap<FactionId, RTreeDataIndex<SmallSet<Project*>, uint16_t, noMerge>>;
+template class SmallMap<FactionId, RTreeData<RTreeDataWrapper<Project*, nullptr>>>;
 template class SmallMap<FactionId, SimulationHasUniformsForFaction>;
 template class SmallMap<FactionId, SmallMap<SpaceDesignation, Quantity>>;
 template class SmallMap<FluidGroup*, SmallSet<Point3D>>;
@@ -83,6 +85,8 @@ template class SmallMap<Point3D, TemperatureSource>;
 template class SmallMap<Point3D, std::unique_ptr<DishonorCallback>>;
 template class SmallMap<Point3D, std::vector<CraftStepTypeCategoryId>>;
 template class SmallMap<Project*, DeckRotationDataSingle>;
+template class SmallMap<RTreeBoolean::Index, SmallSet<uint>>;
+template class SmallMap<RTreeNodeIndex, SmallSet<uint8_t>>;
 template class SmallMap<SkillTypeId, Skill>;
 template class SmallMap<SkillTypeId, std::vector<CraftJob*>>;
 template class SmallMap<StockPile*, SmallSet<ItemReference>>;
@@ -90,8 +94,6 @@ template class SmallMap<StockPile*, SmallSet<Point3D>>;
 template class SmallMap<VisionCuboidId, Cuboid>;
 template class SmallMap<std::string, Uniform>;
 template class SmallMap<uint, uint>;
-template class SmallMap<RTreeBoolean::Index, SmallSet<uint>>;
-
 template class SmallMapStable<AreaId, Area>;
 template class SmallMapStable<FactionId, AreaHasStockPilesForFaction>;
 template class SmallMapStable<FactionId, HasConstructionDesignationsForFaction>;

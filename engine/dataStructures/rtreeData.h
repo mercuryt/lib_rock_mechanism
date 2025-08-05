@@ -4,16 +4,18 @@
 #include "../geometry/cuboidSet.h"
 #include "../strongInteger.h"
 #include "../json.h"
+#include "../numericTypes/index.h"
 #include "strongVector.hpp"
-#include "smallMap.hpp"
+#include "smallMap.h"
 #include "smallSet.hpp"
+
+#include <bitset>
 struct	RTreeDataConfig
 {
-	bool splitAndMerge = true;
-	bool leavesCanOverlap = false;
+	const bool splitAndMerge = true;
+	const bool leavesCanOverlap = false;
 };
-
-template <typename T>
+template<typename T>
 concept Sortable = requires(T a, T b) {
 	{ a < b } -> std::same_as<bool>; // Check if operator< exists and returns bool
 };
@@ -23,80 +25,69 @@ concept Sortable = requires(T a, T b) {
 template<Sortable T, RTreeDataConfig config = RTreeDataConfig()>
 class RTreeData
 {
-	static constexpr uint nodeSize = 32;
-	using IndexWidth = uint16_t;
-	class Index final : public StrongInteger<Index, IndexWidth>
-	{
-	public:
-		struct Hash { [[nodiscard]] size_t operator()(const Index& index) const { return index.get(); } };
-		NLOHMANN_DEFINE_TYPE_INTRUSIVE(Index, data);
-	};
-	using ArrayIndexWidth = uint8_t;
-	class ArrayIndex final : public StrongInteger<ArrayIndex, ArrayIndexWidth>
-	{
-	public:
-		struct Hash { [[nodiscard]] size_t operator()(const ArrayIndex& index) const { return index.get(); } };
-		NLOHMANN_DEFINE_TYPE_INTRUSIVE(ArrayIndex, data);
-	};
-	union DataOrChild { T::Primitive data; Index::Primitive child; };
+	static constexpr uint8_t nodeSize = 32;
+	union DataOrChild { T::Primitive data; RTreeNodeIndex::Primitive child; };
 	class Node
 	{
 		CuboidArray<nodeSize> m_cuboids;
 		std::array<DataOrChild, nodeSize> m_dataAndChildIndices;
-		Index m_parent;
-		ArrayIndex m_leafEnd = ArrayIndex::create(0);
-		ArrayIndex m_childBegin = ArrayIndex::create(nodeSize);
+		RTreeNodeIndex m_parent;
+		RTreeArrayIndex m_leafEnd = RTreeArrayIndex::create(0);
+		RTreeArrayIndex m_childBegin = RTreeArrayIndex::create(nodeSize);
 		// TODO: store sort order?
 	public:
 		[[nodiscard]] const auto& getCuboids() const { return m_cuboids; }
 		[[nodiscard]] const auto& getDataAndChildIndices() const { return m_dataAndChildIndices; }
 		[[nodiscard]] auto& getDataAndChildIndices() { return m_dataAndChildIndices; }
 		[[nodiscard]] const auto& getParent() const { return m_parent; }
-		[[nodiscard]] int getLeafCount() const { return m_leafEnd.get(); }
-		[[nodiscard]] int getChildCount() const { return nodeSize - m_childBegin.get(); }
-		[[nodiscard]] int unusedCapacity() const { return (m_childBegin - m_leafEnd).get(); }
+		[[nodiscard]] uint8_t getLeafCount() const { return m_leafEnd.get(); }
+		[[nodiscard]] uint8_t getChildCount() const { return nodeSize - m_childBegin.get(); }
+		[[nodiscard]] uint8_t unusedCapacity() const { return (m_childBegin - m_leafEnd).get(); }
 		[[nodiscard]] int sortOrder() const { return m_cuboids.boundry().getCenter().hilbertNumber(); };
-		[[nodiscard]] ArrayIndex offsetFor(const Index& index) const;
-		[[nodiscard]] ArrayIndex offsetOfFirstChild() const { return m_childBegin; }
+		[[nodiscard]] RTreeArrayIndex offsetFor(const RTreeNodeIndex& index) const;
+		[[nodiscard]] RTreeArrayIndex offsetOfFirstChild() const { return m_childBegin; }
 		[[nodiscard]] bool empty() const { return unusedCapacity() == nodeSize; }
 		[[nodiscard]] uint getLeafVolume() const;
 		[[nodiscard]] uint getNodeVolume() const;
 		[[nodiscard]] Json toJson() const;
+		[[nodiscard]] bool containsLeaf(const Cuboid& cuboid, const T& value);
 		[[nodiscard]] bool operator==(const Node& other) const = default;
 		void load(const Json& data);
-		void updateChildIndex(const Index& oldIndex, const Index& newIndex);
+		void updateChildIndex(const RTreeNodeIndex& oldIndex, const RTreeNodeIndex& newIndex);
 		void insertLeaf(const Cuboid& cuboid, const T& value);
 		void insertLeaf(const Point3D& point, const T& value) { insertLeaf(Cuboid{point, point}, value); }
-		void insertBranch(const Cuboid& cuboid, const Index& index);
-		void eraseBranch(const ArrayIndex& offset);
-		void eraseLeaf(const ArrayIndex& offset);
+		void insertBranch(const Cuboid& cuboid, const RTreeNodeIndex& index);
+		void eraseBranch(const RTreeArrayIndex& offset);
+		void eraseLeaf(const RTreeArrayIndex& offset);
 		void eraseByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
+		void eraseLeavesByMask(const std::bitset<nodeSize>& mask);
 		void eraseLeavesByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
 		void clear();
-		void setParent(const Index& index) { m_parent = index; }
-		void updateLeaf(const ArrayIndex& offset, const Cuboid& cuboid);
-		void updateValue(const ArrayIndex& offset, const T& value);
-		void updateLeafWithValue(const ArrayIndex& offset, const Cuboid& cuboid, const T& value);
-		void updateLeafWithValue(const ArrayIndex& offset, const Point3D& point, const T& value) { updateLeafWithValue(offset, Cuboid{point, point}, value); }
-		void updateBranchBoundry(const ArrayIndex& offset, const Cuboid& cuboid);
+		void setParent(const RTreeNodeIndex& index) { m_parent = index; }
+		void updateLeaf(const RTreeArrayIndex& offset, const Cuboid& cuboid);
+		void updateValue(const RTreeArrayIndex& offset, const T& value);
+		void updateLeafWithValue(const RTreeArrayIndex& offset, const Cuboid& cuboid, const T& value);
+		void maybeUpdateLeafWithValue(const RTreeArrayIndex& offset, const Cuboid& cuboid, const T& value);
+		void updateLeafWithValue(const RTreeArrayIndex& offset, const Point3D& point, const T& value) { updateLeafWithValue(offset, Cuboid{point, point}, value); }
+		void updateBranchBoundry(const RTreeArrayIndex& offset, const Cuboid& cuboid);
 		[[nodiscard]] __attribute__((noinline)) std::string toString();
 	};
-	StrongVector<Node, Index> m_nodes;
-	SmallSet<Index> m_emptySlots;
-	SmallSet<Index> m_toComb;
+	StrongVector<Node, RTreeNodeIndex> m_nodes;
+	SmallSet<RTreeNodeIndex> m_emptySlots;
+	SmallSet<RTreeNodeIndex> m_toComb;
 	T m_nullValue;
-	[[nodiscard]] std::tuple<Cuboid, ArrayIndex, ArrayIndex> findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids) const;
-	[[nodiscard]] SmallMap<Cuboid, T> gatherLeavesRecursive(const Index& parent) const;
-	void destroyWithChildren(const Index& index);
+	[[nodiscard]] std::tuple<Cuboid, RTreeArrayIndex, RTreeArrayIndex> findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids) const;
+	[[nodiscard]] SmallSet<std::pair<Cuboid, T>> gatherLeavesRecursive(const RTreeNodeIndex& parent) const;
+	void destroyWithChildren(const RTreeNodeIndex& index);
 	void tryToMergeLeaves(Node& parent);
-	void clearAllContained(const Index& index, const Cuboid& cuboid);
+	void clearAllContained(const RTreeNodeIndex& index, const Cuboid& cuboid);
 	void clearAllContainedWithValueRecursive(Node& parent, const Cuboid& cuboid, const T& value);
-	void addToNodeRecursive(const Index& index, const Cuboid& cuboid, const T& value);
+	void addToNodeRecursive(const RTreeNodeIndex& index, const Cuboid& cuboid, const T& value);
 	// Removes intercepting leaves and contained branches. Intercepting branches are added to openList.
-	void removeFromNode(const Index& index, const Cuboid& cuboid, SmallSet<Index>& openList);
-	void removeFromNodeWithValue(const Index& index, const Cuboid& cuboid, SmallSet<Index>& openList, const T& value);
+	void removeFromNode(const RTreeNodeIndex& index, const Cuboid& cuboid, SmallSet<RTreeNodeIndex>& openList);
+	void removeFromNodeWithValue(const RTreeNodeIndex& index, const Cuboid& cuboid, SmallSet<RTreeNodeIndex>& openList, const T& value);
 	void removeFromNodeByMask(Node& node, const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
-	void merge(const Index& destination, const Index& source);
+	void merge(const RTreeNodeIndex& destination, const RTreeNodeIndex& source);
 	// Iterate m_toComb and try to recursively merge leaves.
 	// Then check for single child nodes and splice them out. If the child is a leaf re-add the parent to m_toComb.
 	// Finally check for child branches that can be merged upwards. If any are merged re-add parent to m_toComb.
@@ -105,8 +96,10 @@ class RTreeData
 	void defragment();
 	// Sort m_nodes by hilbert order of center. The node in position 0 is the top level and never moves.
 	void sort();
+	static void addIntersectedChildrenToOpenList(const Node& node, const CuboidArray<nodeSize>::BoolArray& intersecting, SmallSet<RTreeNodeIndex>& openList);
+	[[nodiscard]] virtual bool canOverlap(const T&, const T&) const { return true; }
 public:
-	RTreeData() { m_nodes.add(); m_nodes.back().setParent(Index::null()); }
+	RTreeData() { m_nodes.add(); m_nodes.back().setParent(RTreeNodeIndex::null()); }
 	void maybeInsert(const Cuboid& cuboid, const T& value);
 	void maybeRemove(const Cuboid& cuboid, const T& value);
 	void maybeRemove(const Cuboid& cuboid);
@@ -114,65 +107,58 @@ public:
 	void maybeRemove(const Point3D& point, const T& value) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid, value); }
 	void maybeRemove(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid); }
 	void maybeInsertOrOverwrite(const Point3D& point, const T& value);
+	void maybeInsertOrOverwrite(const Cuboid& cuboid, const T& value);
+	void insert(const auto& shape, const T& value) { assert(!queryAnyEqual(shape, value)); maybeInsert(shape, value); }
+	void remove(const auto& shape, const T& value) { assert(queryAnyEqual(shape, value)); maybeRemove(shape, value); }
 	void prepare();
 	void clear();
 	[[nodiscard]] bool empty() const { return leafCount() == 0; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] CuboidSet getLeafCuboids() const;
 	void load(const Json& data);
-	void update(const auto& shape, const T& oldValue, const T& newValue)
+	void maybeRemoveWithConditionOne(const auto& shape, const auto& condition)
 	{
-
-		SmallSet<Index> openList;
-		openList.insert(Index::create(0));
-		while(!openList.empty())
-		{
-			auto index = openList.back();
-			openList.popBack();
-			Node& node = m_nodes[index];
-			const auto& nodeCuboids = node.getCuboids();
-			auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
-			const auto leafCount = node.getLeafCount();
-			const auto& begin = interceptMask.begin();
-			const auto leafEnd = begin + leafCount;
-			for(auto iter = begin; iter != leafEnd; ++iter)
-				if(*iter)
-				{
-					uint8_t offset = iter - begin;
-					if(nodeDataAndChildIndices[offset].data == oldValue.get())
-						node.updateValue(ArrayIndex::create(offset), newValue);
-				}
-			const auto offsetOfFirstChild = node.offsetOfFirstChild();
-			const auto end = interceptMask.end();
-			for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-				if(*iter)
-				{
-					uint8_t offset = iter - begin;
-					openList.insert(Index::create(nodeDataAndChildIndices[offset].child));
-				}
-		}
+		const auto action = [](T& otherData) { otherData.clear(); };
+		maybeUpdateOrDestroyActionWithConditionOne(shape, action, condition);
 	}
-	void updateAction(const auto& shape, auto&& action, bool stopAfterOne = false, bool createIfNotFound = false, bool canDestroy = true, const T& nullValue = T())
+	bool queryAnyEqual(const auto& shape, const T& value)
+	{
+		const auto condition = [&](const T& v) { return value == v; };
+		return queryAnyWithCondition(shape, condition);
+	}
+	struct UpdateActionConfig
+	{
+		bool create = false;
+		bool destroy = false;
+		bool stopAfterOne = false;
+		bool allowNotFound = false;
+		bool allowNotChanged = false;
+		bool allowAlreadyExistsInAnotherSlot = false;
+	};
+	template<UpdateActionConfig queryConfig>
+	void updateAction(const auto& shape, auto&& action, const T& nullValue = T())
 	{
 		// stopAfterOne is only safe to use for non-overlaping leaves, otherwise the result would be hard to predict.
-		if(stopAfterOne)
+		if(queryConfig.stopAfterOne)
 			assert(!config.leavesCanOverlap);
-		SmallSet<Index> openList;
-		openList.insert(Index::create(0));
+		SmallSet<RTreeNodeIndex> openList;
+		openList.insert(RTreeNodeIndex::create(0));
+		bool updated = false;
 		while(!openList.empty())
 		{
 			auto index = openList.back();
 			openList.popBack();
 			Node& node = m_nodes[index];
 			const auto& nodeCuboids = node.getCuboids();
-			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
 			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			if(!interceptMask.any())
+				continue;
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
 			const auto& leafCount = node.getLeafCount();
 			const auto& begin = interceptMask.begin();
 			const auto leafEnd = begin + leafCount;
-			if(!interceptMask.any())
-				continue;
+			// Erasing leafs durring iteration would invalidate the intercept mask. Collect and then erase all at end.
+			std::bitset<nodeSize> leavesToErase;
 			if(interceptMask.head(leafCount).any())
 			{
 				for(auto iter = begin; iter != leafEnd; ++iter)
@@ -185,16 +171,164 @@ public:
 						assert(initalValue != nullValue && initalValue != m_nullValue);
 						T value = initalValue;
 						action(value);
+						if constexpr(queryConfig.allowAlreadyExistsInAnotherSlot)
+						{
+							if(node.containsLeaf(leafCuboid, value))
+								return;
+						}
+						else
+							assert(!node.containsLeaf(leafCuboid, value));
 						// When nullValue is specificed it will probably always be 0.
 						// This is distinct from m_nullValue which will usually be the largest integer T can store.
 						// If nullValue is not provided these checks become redundant and the compiler will remove one.
 						if(value == nullValue || value == m_nullValue)
 						{
-							assert(canDestroy);
-							node.eraseLeaf(ArrayIndex::create(offset));
+							// Destroy updated leaf.
+							assert(queryConfig.destroy);
+							if constexpr(queryConfig.stopAfterOne)
+								node.eraseLeaf(RTreeArrayIndex::create(offset));
+							else
+								leavesToErase[offset] = true;
 						}
 						else
-							node.updateLeafWithValue(ArrayIndex::create(offset), leafCuboid.intersection(shape), value);
+						{
+							// Update leaf.
+							const Cuboid intersection = leafCuboid.intersection((shape));
+							if constexpr(queryConfig.allowNotChanged)
+								node.maybeUpdateLeafWithValue(RTreeArrayIndex::create(offset), intersection, value);
+							else
+								node.updateLeafWithValue(RTreeArrayIndex::create(offset), intersection, value);
+							// Validate any overlaps.
+							if constexpr(!config.leavesCanOverlap)
+								assert(queryCount(intersection) == 1);
+							else
+							{
+								const auto valuesAndCuboids = queryGetAllWithCuboids(intersection);
+								bool newlyCreatedFound = false;
+								for(const auto& [cuboid, v] : valuesAndCuboids)
+								{
+									if(cuboid == intersection && v == value)
+									{
+										assert(!newlyCreatedFound);
+										newlyCreatedFound = true;
+										continue;
+									}
+									assert(canOverlap(v, value));
+								}
+							}
+						}
+						if(!shape.contains(leafCuboid))
+						{
+							// The leaf cuboid is intercepted but not contained, fragment the unintercepted parts and re add them with the inital value.
+							assert(config.splitAndMerge);
+							const auto fragments = leafCuboid.getChildrenWhenSplitBy(shape);
+							// Re-add fragments.
+							const auto fragmentsEnd = fragments.end();
+							for(auto i = fragments.begin(); i != fragmentsEnd; ++i)
+								addToNodeRecursive(index, *i, initalValue);
+						}
+						if constexpr(queryConfig.stopAfterOne)
+							return;
+						else
+							updated = true;
+					}
+				if constexpr(queryConfig.destroy)
+					if(leavesToErase.any())
+					{
+						assert(!queryConfig.stopAfterOne);
+						node.eraseLeavesByMask(leavesToErase);
+					}
+			}
+			addIntersectedChildrenToOpenList(node, interceptMask, openList);
+		}
+		if(!updated)
+		{
+			if constexpr(queryConfig.create)
+			{
+				T value = nullValue;
+				action(value);
+				assert(value != m_nullValue && value != nullValue);
+				maybeInsert(shape, value);
+			}
+			else if constexpr(!queryConfig.allowNotFound)
+			{
+				// Nothing found to update
+				assert(false);
+				std::unreachable();
+			}
+		}
+	}
+	template<UpdateActionConfig queryConfig>
+	void updateActionWithCondition(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	{
+		SmallSet<RTreeNodeIndex> openList;
+		openList.insert(RTreeNodeIndex::create(0));
+		bool updated = false;
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			if(!interceptMask.any())
+				continue;
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			const uint8_t& leafCount = node.getLeafCount();
+			if(interceptMask.head(leafCount).any())
+			{
+				const auto begin = interceptMask.begin();
+				const auto leafEnd = begin + leafCount;
+				std::bitset<nodeSize> leavesToErase;
+				for(auto iter = begin; iter != leafEnd; ++iter)
+					if(*iter)
+					{
+						uint8_t offset = iter - begin;
+						Cuboid leafCuboid = nodeCuboids[offset];
+						// inflate from primitive temporarily for callback.
+						T initalValue = T::create(nodeDataAndChildIndices[offset].data);
+						assert(initalValue != nullValue && initalValue != m_nullValue);
+						T value = initalValue;
+						if(!condition(value))
+							continue;
+						action(value);
+						// When nullValue is specificed it will probably always be 0.
+						// This is distinct from m_nullValue which will usually be the largest integer T can store.
+						// If nullValue is not provided these checks become redundant and the compiler will remove one.
+						if(value == nullValue || value == m_nullValue)
+						{
+							assert(queryConfig.destroy);
+							if constexpr(queryConfig.stopAfterOne)
+								node.eraseLeaf(RTreeArrayIndex::create(offset));
+							else
+								leavesToErase[offset] = true;
+						}
+						else
+						{
+							Cuboid intersection = leafCuboid.intersection((shape));
+							if constexpr(queryConfig.allowNotChanged)
+								node.maybeUpdateLeafWithValue(RTreeArrayIndex::create(offset), intersection, value);
+							else
+								node.updateLeafWithValue(RTreeArrayIndex::create(offset), intersection, value);
+							// Validate any overlaps.
+							if constexpr(!config.leavesCanOverlap)
+								assert(queryCount(intersection) == 1);
+							else
+							{
+								const auto valuesAndCuboids = queryGetAllWithCuboids(intersection);
+								bool newlyCreatedFound = false;
+								for(const auto& [cuboid, v] : valuesAndCuboids)
+								{
+									if(cuboid == intersection && v == value)
+									{
+										assert(!newlyCreatedFound);
+										newlyCreatedFound = true;
+										continue;
+									}
+									assert(canOverlap(v, value));
+								}
+							}
+						}
 						if(!shape.contains(leafCuboid))
 						{
 							const auto fragments = leafCuboid.getChildrenWhenSplitBy(shape);
@@ -203,67 +337,123 @@ public:
 							for(auto i = fragments.begin(); i != fragmentsEnd; ++i)
 								addToNodeRecursive(index, *i, initalValue);
 						}
-						return;
-
+						if constexpr(queryConfig.stopAfterOne)
+							return;
+						else
+							updated = true;
+					}
+				if constexpr(queryConfig.destroy)
+					if(leavesToErase.any())
+					{
+						assert(!queryConfig.stopAfterOne);
+						node.eraseLeavesByMask(leavesToErase);
 					}
 			}
-			const auto& offsetOfFirstChild = node.offsetOfFirstChild();
-			const auto& end = interceptMask.end();
-			for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-				if(*iter)
-				{
-					uint8_t offset = iter - begin;
-					openList.insert(Index::create(nodeDataAndChildIndices[offset].child));
-				}
+			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 		}
-		if(createIfNotFound)
+		if(!updated)
 		{
-			T value = nullValue;
-			action(value);
-			assert(value != m_nullValue && value != nullValue);
-			maybeInsert(shape, value);
+			if constexpr(queryConfig.create)
+			{
+				T value = nullValue;
+				action(value);
+				assert(value != m_nullValue && value != nullValue);
+				maybeInsert(shape, value);
+			}
+			else if constexpr (!queryConfig.allowNotFound)
+			{
+				// Nothing found to update
+				assert(false);
+				std::unreachable();
+			}
 		}
-		else
-		{
-			// Nothing found to update
-			assert(false);
-			std::unreachable();
-		}
+	}
+	// Change a value.
+	void update(const auto& shape, const T& oldValue, const T& newValue)
+	{
+		const auto condition = [&](const T& value) { return value == oldValue; };
+		const auto action = [&](T& value) { return value = newValue; };
+		updateActionWithCondition<{}>(shape, action, condition);
+	}
+	void updateActionAll(const auto& shape, auto&& action)
+	{
+		constexpr UpdateActionConfig queryConfig{.allowNotFound = true};
+		updateAction<queryConfig>(shape, action);
+	}
+	void updateOrCreateActionOne(const auto& shape, auto&& action, const T& nullValue = T())
+	{
+		constexpr UpdateActionConfig queryConfig{.create = true, .stopAfterOne = true};
+		updateAction<queryConfig>(shape, action, nullValue);
+	}
+	void updateOrDestroyActionOne(const auto& shape, auto&& action, const T& nullValue = T())
+	{
+		constexpr UpdateActionConfig queryConfig{.destroy = true, .stopAfterOne = true};
+		updateAction<queryConfig>(shape, action, nullValue);
+	}
+	void maybeUpdateOrDestroyActionAll(const auto& shape, auto&& action, const T& nullValue = T())
+	{
+		constexpr UpdateActionConfig queryConfig{.destroy = true, .allowNotFound = true};
+		updateAction<queryConfig>(shape, action, nullValue);
+	}
+	void updateOrDestroyActionAll(const auto& shape, auto&& action, const T& nullValue = T())
+	{
+		constexpr UpdateActionConfig queryConfig{.destroy = true};
+		updateAction<queryConfig>(shape, action, nullValue);
+	}
+	void updateActionWithConditionOne(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	{
+		constexpr UpdateActionConfig queryConfig{.stopAfterOne = true};
+		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+	}
+	void updateActionWithConditionAll(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	{
+		constexpr UpdateActionConfig queryConfig{.allowNotFound = true};
+		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+	}
+	void updateOrCreateActionWithConditionOne(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	{
+		constexpr UpdateActionConfig queryConfig{.create = true, .stopAfterOne = true};
+		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+	}
+	void updateOrDestroyActionWithConditionOne(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	{
+		constexpr UpdateActionConfig queryConfig{.destroy = true, .stopAfterOne = true};
+		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+	}
+	void maybeUpdateOrDestroyActionWithConditionOne(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	{
+		constexpr UpdateActionConfig queryConfig{.destroy = true, .stopAfterOne = true, .allowNotFound = true};
+		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
 	}
 	// Updates a value if it exists, creates one if not, destroys if the created value is equal to nullValue or m_nullValue.
 	void updateOrCreateOrDestoryActionOne(const auto& shape, auto&& action, const T& nullValue = T())
 	{
-		constexpr bool create = true;
-		constexpr bool destroy = true;
-		constexpr bool stopAfterOne = true;
-		updateAction(shape, action, stopAfterOne, create, destroy, nullValue);
+		constexpr UpdateActionConfig queryConfig{.create = true, .destroy = true, .stopAfterOne = true};
+		updateAction<queryConfig>(shape, action, nullValue);
 	}
-
-	void updateOrDestroyActionOne(const auto& shape, auto&& action, const T& nullValue = T())
+	void updateActionWithConditionOneAllowNotChanged(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
 	{
-		constexpr bool create = false;
-		constexpr bool destroy = true;
-		constexpr bool stopAfterOne = true;
-		updateAction(shape, action, stopAfterOne, create, destroy, nullValue);
+		constexpr UpdateActionConfig queryConfig{.stopAfterOne = true, .allowNotChanged = true};
+		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
 	}
-	void updateAddOne(const auto& shape, const T& value)
+	T updateAddOne(const auto& shape, const T& value)
 	{
-		constexpr bool create = true;
-		constexpr bool destroy = false;
-		constexpr bool stopAfterOne = true;
-		updateAction(shape, [&](T& v){ v += value; }, stopAfterOne, create, destroy, T::create(0));
+		T output;
+		constexpr UpdateActionConfig queryConfig{.create = true, .stopAfterOne = true};
+		updateAction<queryConfig>(shape, [&](T& v){ v += value; output = v; }, T::create(0));
+		return output;
 	}
-	void updateSubtractOne(const auto& shape, const T& value)
+	T updateSubtractOne(const auto& shape, const T& value)
 	{
-		constexpr bool create = false;
-		constexpr bool destroy = true;
-		constexpr bool stopAfterOne = true;
-		updateAction(shape, [&](T& v){ v -= value; }, stopAfterOne, create, destroy, T::create(0));
+		T output;
+		constexpr UpdateActionConfig queryConfig{.destroy = true, .stopAfterOne = true};
+		updateAction<queryConfig>(shape, [&](T& v){ v -= value; output = v; }, T::create(0));
+		return output;
 	}
 	[[nodiscard]] bool queryAny(const auto& shape) const
 	{
-		SmallSet<Index> openList;
-		openList.insert(Index::create(0));
+		SmallSet<RTreeNodeIndex> openList;
+		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
 			auto index = openList.back();
@@ -274,35 +464,44 @@ public:
 			const auto leafCount = node.getLeafCount();
 			if(leafCount != 0 && interceptMask.head(leafCount).any())
 				return true;
-			const auto childCount = node.getChildCount();
-			// TODO: Would it be better to check the whole intercept mask and continue if all are empty before checking leafs?
-			if(childCount == 0 || !interceptMask.tail(childCount).any())
-				continue;
-			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			const auto offsetOfFirstChild = node.offsetOfFirstChild();
-			auto begin = interceptMask.begin();
-			auto end = begin + nodeSize;
-			if(offsetOfFirstChild == 0)
-			{
-				// Unrollable version for nodes where every slot is a child.
-				for(auto iter = begin; iter != end; ++iter)
-					if(*iter)
-						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
-			}
-			else
-			{
-				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-					if(*iter)
-						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
-			}
+			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 		}
 		return false;
 	}
-	[[nodiscard]] const T queryGetOne(const auto& shape) const
+	[[nodiscard]] bool queryAnyWithCondition(const auto& shape, const auto& condition) const
 	{
-		assert(!config.leavesCanOverlap);
-		SmallSet<Index> openList;
-		openList.insert(Index::create(0));
+		SmallSet<RTreeNodeIndex> openList;
+		openList.insert(RTreeNodeIndex::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			const auto leafCount = node.getLeafCount();
+			if(leafCount != 0 && interceptMask.head(leafCount).any())
+			{
+				const auto begin = interceptMask.begin();
+				const auto end = begin + leafCount;
+				for(auto iter = begin; iter != end; ++iter)
+					if(*iter)
+					{
+						const uint8_t offset = iter - begin;
+						if(condition(T::create(nodeDataAndChildIndices[offset].data)))
+							return true;
+					}
+			}
+			addIntersectedChildrenToOpenList(node, interceptMask, openList);
+
+		}
+		return false;
+	}
+	[[nodiscard]] const T queryGetFirst(const auto& shape) const
+	{
+		SmallSet<RTreeNodeIndex> openList;
+		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
 			auto index = openList.back();
@@ -314,7 +513,6 @@ public:
 			if(!interceptMask.any())
 				continue;
 			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			const auto offsetOfFirstChild = node.offsetOfFirstChild();
 			if(leafCount != 0 && interceptMask.head(leafCount).any())
 			{
 				auto begin = interceptMask.begin();
@@ -323,21 +521,43 @@ public:
 					if(*iter)
 						return T::create(nodeDataAndChildIndices[iter - begin].data);
 			}
-			auto begin = interceptMask.begin();
-			const auto end = begin + nodeSize;
-			if(offsetOfFirstChild == 0)
+			addIntersectedChildrenToOpenList(node, interceptMask, openList);
+		}
+		return m_nullValue;
+	}
+	[[nodiscard]] const T queryGetOne(const auto& shape) const
+	{
+		assert(!config.leavesCanOverlap);
+		return queryGetFirst(shape);
+	}
+	[[nodiscard]] const T queryGetOneWithCondition(const auto& shape, const auto& condition) const
+	{
+		SmallSet<RTreeNodeIndex> openList;
+		openList.insert(RTreeNodeIndex::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			const auto leafCount = node.getLeafCount();
+			if(!interceptMask.any())
+				continue;
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			if(leafCount != 0 && interceptMask.head(leafCount).any())
 			{
-				// Unrollable version for nodes where every slot is a child.
+				auto begin = interceptMask.begin();
+				auto end = begin + leafCount;
 				for(auto iter = begin; iter != end; ++iter)
 					if(*iter)
-						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
+					{
+						const auto candidate = T::create(nodeDataAndChildIndices[iter - begin].data);
+						if(condition(candidate))
+							return candidate;
+					}
 			}
-			else
-			{
-				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-					if(*iter)
-						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
-			}
+			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 		}
 		return m_nullValue;
 	}
@@ -351,8 +571,8 @@ public:
 	[[nodiscard]] const std::pair<T, Cuboid> queryGetOneWithCuboid(const auto& shape) const
 	{
 		assert(!config.leavesCanOverlap);
-		SmallSet<Index> openList;
-		openList.insert(Index::create(0));
+		SmallSet<RTreeNodeIndex> openList;
+		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
 			auto index = openList.back();
@@ -364,7 +584,6 @@ public:
 			if(!interceptMask.any())
 				continue;
 			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			const auto offsetOfFirstChild = node.offsetOfFirstChild();
 			if(leafCount != 0 && interceptMask.head(leafCount).any())
 			{
 				auto begin = interceptMask.begin();
@@ -376,29 +595,15 @@ public:
 						return {T::create(nodeDataAndChildIndices[offset].data), nodeCuboids[offset]};
 					}
 			}
-			auto begin = interceptMask.begin();
-			const auto end = begin + nodeSize;
-			if(offsetOfFirstChild == 0)
-			{
-				// Unrollable version for nodes where every slot is a child.
-				for(auto iter = begin; iter != end; ++iter)
-					if(*iter)
-						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
-			}
-			else
-			{
-				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-					if(*iter)
-						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
-			}
+			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 		}
 		return {m_nullValue, {}};
 	}
 	[[nodiscard]] const SmallSet<T> queryGetAll(const auto& shape) const
 	{
-		SmallSet<Index> openList;
+		SmallSet<RTreeNodeIndex> openList;
 		SmallSet<T> output;
-		openList.insert(Index::create(0));
+		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
 			auto index = openList.back();
@@ -410,7 +615,6 @@ public:
 			if(!interceptMask.any())
 				continue;
 			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			const auto offsetOfFirstChild = node.offsetOfFirstChild();
 			if(leafCount != 0 && interceptMask.head(leafCount).any())
 			{
 				auto begin = interceptMask.begin();
@@ -419,30 +623,16 @@ public:
 					if(*iter)
 						output.insertNonunique(T::create(nodeDataAndChildIndices[iter - begin].data));
 			}
-			const auto begin = interceptMask.begin();
-			const auto end = begin + nodeSize;
-			if(offsetOfFirstChild == 0)
-			{
-				// Unrollable version for nodes where every slot is a child.
-				for(auto iter = begin; iter != end; ++iter)
-					if(*iter)
-						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
-			}
-			else
-			{
-				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-					if(*iter)
-						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
-			}
+			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 		}
 		assert(output.isUnique());
 		return output;
 	}
 	[[nodiscard]] const SmallSet<std::pair<Cuboid, T>> queryGetAllWithCuboids(const auto& shape) const
 	{
-		SmallSet<Index> openList;
+		SmallSet<RTreeNodeIndex> openList;
 		SmallSet<std::pair<Cuboid, T>> output;
-		openList.insert(Index::create(0));
+		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
 			auto index = openList.back();
@@ -454,7 +644,6 @@ public:
 			if(!interceptMask.any())
 				continue;
 			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			const auto offsetOfFirstChild = node.offsetOfFirstChild();
 			if(leafCount != 0 && interceptMask.head(leafCount).any())
 			{
 				auto begin = interceptMask.begin();
@@ -466,29 +655,15 @@ public:
 						output.emplace(nodeCuboids[offset], T::create(nodeDataAndChildIndices[offset].data));
 					}
 			}
-			const auto begin = interceptMask.begin();
-			const auto end = begin + nodeSize;
-			if(offsetOfFirstChild == 0)
-			{
-				// Unrollable version for nodes where every slot is a child.
-				for(auto iter = begin; iter != end; ++iter)
-					if(*iter)
-						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
-			}
-			else
-			{
-				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-					if(*iter)
-						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
-			}
+			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 		}
 		return output;
 	}
 	[[nodiscard]] CuboidSet queryGetAllCuboids(const auto& shape) const
 	{
-		SmallSet<Index> openList;
+		SmallSet<RTreeNodeIndex> openList;
 		CuboidSet output;
-		openList.insert(Index::create(0));
+		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
 			auto index = openList.back();
@@ -499,8 +674,6 @@ public:
 			const auto leafCount = node.getLeafCount();
 			if(!interceptMask.any())
 				continue;
-			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			const auto offsetOfFirstChild = node.offsetOfFirstChild();
 			if(leafCount != 0 && interceptMask.head(leafCount).any())
 			{
 				auto begin = interceptMask.begin();
@@ -512,41 +685,59 @@ public:
 						output.add(nodeCuboids[offset]);
 					}
 			}
-			const auto begin = interceptMask.begin();
-			const auto end = begin + nodeSize;
-			if(offsetOfFirstChild == 0)
+			addIntersectedChildrenToOpenList(node, interceptMask, openList);
+		}
+		return output;
+	}
+	[[nodiscard]] const SmallSet<T> queryGetAllWithCondition(const auto& shape, const auto& condition) const
+	{
+		SmallSet<RTreeNodeIndex> openList;
+		SmallSet<T> output;
+		openList.insert(RTreeNodeIndex::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			const auto leafCount = node.getLeafCount();
+			if(!interceptMask.any())
+				continue;
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			if(leafCount != 0 && interceptMask.head(leafCount).any())
 			{
-				// Unrollable version for nodes where every slot is a child.
+				auto begin = interceptMask.begin();
+				auto end = begin + leafCount;
 				for(auto iter = begin; iter != end; ++iter)
 					if(*iter)
-						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
+					{
+						T value = T::create(nodeDataAndChildIndices[iter - begin].data);
+						if(condition(value))
+							output.insertNonunique(value);
+					}
 			}
-			else
-			{
-				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-					if(*iter)
-						openList.insert(Index::create(nodeDataAndChildIndices[iter - begin].child));
-			}
+			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 		}
+		assert(output.isUnique());
 		return output;
 	}
 	[[nodiscard]] std::vector<bool> batchQueryAny(const auto& shapes) const
 	{
+		assert(shapes.size() < UINT8_MAX);
 		std::vector<bool> output;
 		output.resize(shapes.size());
-		SmallMap<Index, SmallSet<uint>> openList;
-		openList.insert(Index::create(0), {});
+		SmallMap<RTreeNodeIndex, SmallSet<uint8_t>> openList;
+		openList.insert(RTreeNodeIndex::create(0), {});
 		auto& rootNodeCandidateList = openList.back().second;
 		rootNodeCandidateList.resize(shapes.size());
 		std::ranges::iota(rootNodeCandidateList.getVector(), 0);
 		while(!openList.empty())
 		{
-			auto& [index, candidates] = openList.back();
+			const auto& [index, candidates] = openList.back();
 			const Node& node = m_nodes[index];
 			const auto& nodeCuboids = node.getCuboids();
-			const auto& nodeChildren = node.getDataAndChildIndices();
-			const auto offsetOfFirstChild = node.offsetOfFirstChild();
-			for(const uint& shapeIndex : candidates)
+			for(const uint8_t& shapeIndex : candidates)
 			{
 				if(output[shapeIndex])
 					// This shape has already intersected with a leaf, no need to check further.
@@ -559,24 +750,26 @@ public:
 					output[shapeIndex] = true;
 					continue;
 				}
-				// Record all node intersections.
-				const auto childCount = node.getChildCount();
+				// Record intersected children in openList.
+				const auto offsetOfFirstChild = node.offsetOfFirstChild();
+				const uint8_t childCount = nodeSize - offsetOfFirstChild.get();
 				if(childCount == 0 || !interceptMask.tail(childCount).any())
 					continue;
-				auto begin = interceptMask.begin();
-				const auto end = begin + nodeSize;
+				const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+				const auto begin = interceptMask.begin();
+				const auto end = interceptMask.end();
 				if(offsetOfFirstChild == 0)
 				{
 					// Unrollable version for nodes where every slot is a child.
-					for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+					for(auto iter = begin; iter != end; ++iter)
 						if(*iter)
-							openList.getOrCreate(Index::create(nodeChildren[iter - begin].child)).insert(shapeIndex);
+							openList.getOrCreate(RTreeNodeIndex::create(nodeDataAndChildIndices[iter - begin].child)).insert(shapeIndex);
 				}
 				else
 				{
 					for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
 						if(*iter)
-							openList.getOrCreate(Index::create(nodeChildren[iter - begin].child)).insert(shapeIndex);
+							openList.getOrCreate(RTreeNodeIndex::create(nodeDataAndChildIndices[iter - begin].child)).insert(shapeIndex);
 				}
 			}
 			// Pop back at the end so we can use candidates as a reference and not have to make a move-copy.
@@ -598,22 +791,61 @@ public:
 		for(const Cuboid& cuboid : queryGetAllCuboids(boundry))
 			cuboids.remove(cuboid);
 	}
+	[[nodiscard]] uint16_t queryCount(const auto& shape) const
+	{
+		SmallSet<RTreeNodeIndex> openList;
+		uint16_t output = 0;
+		openList.insert(RTreeNodeIndex::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			const auto leafCount = node.getLeafCount();
+			if(!interceptMask.any())
+				continue;
+			output += interceptMask.head(leafCount).count();
+			addIntersectedChildrenToOpenList(node, interceptMask, openList);
+		}
+		return output;
+	}
 	// For test and debug.
-	[[nodiscard]] __attribute__((noinline)) uint nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
-	[[nodiscard]] __attribute__((noinline)) uint leafCount() const;
+	[[nodiscard]] __attribute__((noinline)) uint8_t nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
+	[[nodiscard]] __attribute__((noinline)) uint8_t leafCount() const;
 	[[nodiscard]] __attribute__((noinline)) const Node& getNode(uint i) const;
 	[[nodiscard]] __attribute__((noinline)) const Cuboid getNodeCuboid(uint i, uint o) const;
-	[[nodiscard]] __attribute__((noinline)) Index getNodeChild(uint i, uint o) const;
-	[[nodiscard]] __attribute__((noinline)) T queryPoint(uint x, uint y, uint z) const;
+	[[nodiscard]] __attribute__((noinline)) RTreeNodeIndex getNodeChild(uint i, uint o) const;
+	[[nodiscard]] __attribute__((noinline)) T queryPointOne(uint x, uint y, uint z) const;
+	[[nodiscard]] __attribute__((noinline)) T queryPointFirst(uint x, uint y, uint z) const;
+	[[nodiscard]] __attribute__((noinline)) SmallSet<T> queryPointAll(uint x, uint y, uint z) const;
 	[[nodiscard]] __attribute__((noinline)) bool queryPoint(uint x, uint y, uint z, const T& value) const;
-	[[nodiscard]] __attribute__((noinline)) uint queryPointCount(uint x, uint y, uint z) const;
+	[[nodiscard]] __attribute__((noinline)) uint8_t queryPointCount(uint x, uint y, uint z) const;
 	[[nodiscard]] __attribute__((noinline)) Cuboid queryPointCuboid(uint x, uint y, uint z) const;
 	[[nodiscard]] __attribute__((noinline)) uint totalLeafVolume() const;
 	[[nodiscard]] __attribute__((noinline)) uint totalNodeVolume() const;
 	__attribute__((noinline)) void assertAllLeafsAreUnique() const;
 	[[nodiscard]] static __attribute__((noinline)) uint getNodeSize();
+	__attribute__((noinline)) std::string toString(uint x, uint y, uint z) const;
 };
-template<typename T, RTreeDataConfig config = RTreeDataConfig()>
+template<Sortable T, RTreeDataConfig config>
 void to_json(Json& data, const RTreeData<T, config>& tree) { data = tree.toJson(); }
-template<typename T, RTreeDataConfig config = RTreeDataConfig()>
+template<Sortable T, RTreeDataConfig config>
 void from_json(const Json& data, RTreeData<T, config>& tree) { tree.load(data); }
+
+// Wraps data to have the parts that RTreeData expects, such as ::Primitive.
+template<typename T, T defaultValue>
+struct RTreeDataWrapper
+{
+	T data = defaultValue;
+	using Primitive = T;
+	void clear() { data = defaultValue; }
+	[[nodiscard]] T get() const { return data; }
+	[[nodiscard]] std::strong_ordering operator<=>(const RTreeDataWrapper<T, defaultValue>& other) const = default;
+	[[nodiscard]] bool operator==(const RTreeDataWrapper<T, defaultValue>& other) const = default;
+	[[nodiscard]] bool exists() const { return data != defaultValue; }
+	[[nodiscard]] bool empty() const { return data == defaultValue; }
+	[[nodiscard]] static RTreeDataWrapper<T, defaultValue> create(const T& p) { return {p}; }
+	[[nodiscard]] static RTreeDataWrapper<T, defaultValue> null() { return {defaultValue}; }
+};

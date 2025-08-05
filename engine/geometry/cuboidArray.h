@@ -5,7 +5,7 @@
 struct Sphere;
 struct ParamaterizedLine;
 
-template<int capacity>
+template<uint16_t capacity>
 struct CuboidArray
 {
 public:
@@ -29,8 +29,8 @@ public:
 	void erase(const uint16_t& index);
 	void clear();
 	[[nodiscard]] bool operator==(const CuboidArray&) const;
-	[[nodiscard]] int getCapacity() const;
-	[[nodiscard]] const Cuboid operator[](const uint& index) const;
+	[[nodiscard]] uint16_t getCapacity() const;
+	[[nodiscard]] const Cuboid operator[](const uint16_t& index) const;
 	[[nodiscard]] Cuboid boundry() const;
 	[[nodiscard]] BoolArray indicesOfIntersectingCuboids(const Point3D& point) const;
 	[[nodiscard]] BoolArray indicesOfIntersectingCuboids(const Cuboid& cuboid) const;
@@ -45,13 +45,14 @@ public:
 	[[nodiscard]] BoolArray indicesOfIntersectingCuboidsLowZOnly(const ParamaterizedLine& line) const;
 	[[nodiscard]] BoolArray indicesOfMergeableCuboids(const Cuboid& cuboid) const;
 	[[nodiscard]] BoolArray indicesOfTouchingCuboids(const Cuboid& cuboid) const;
+	[[nodiscard]] uint16_t indexOfCuboid(const Cuboid& cuboid);
 	[[nodiscard]] __attribute__((noinline)) std::string toString() const;
-	[[nodiscard]] __attribute__((noinline)) Cuboid at(uint i) const;
+	[[nodiscard]] __attribute__((noinline)) Cuboid at(uint16_t i) const;
 	[[nodiscard]] __attribute__((noinline)) bool contains(const Cuboid& cuboid) const;
 	static CuboidArray<capacity> create(const auto& source)
 	{
 		CuboidArray<capacity> output;
-		uint i = 0;
+		uint16_t i = 0;
 		for(const Cuboid& cuboid : source)
 		{
 			output.insert(i, cuboid);
@@ -62,20 +63,22 @@ public:
 	class ConstIterator
 	{
 		const CuboidArray& m_set;
-		uint m_index;
+		uint16_t m_index;
 	public:
-		ConstIterator(const CuboidArray& set, const uint& index) : m_set(set), m_index(index) { }
+		ConstIterator(const CuboidArray& set, const uint16_t& index) : m_set(set), m_index(index) { }
 		void operator++() { ++m_index; }
 		[[nodiscard]] ConstIterator operator++(int) { auto copy = *this; ++(*this); return copy; }
 		[[nodiscard]] Cuboid operator*() const { return m_set[m_index]; }
 		[[nodiscard]] bool operator==(const ConstIterator& other) { assert(&m_set == &other.m_set); return m_index == other.m_index; }
 		[[nodiscard]] bool operator!=(const ConstIterator& other) { assert(&m_set == &other.m_set); return m_index != other.m_index; }
+		[[nodiscard]] uint16_t operator-(const ConstIterator& other) { assert(&m_set == &other.m_set); assert(m_index >= other.m_index); return m_index - other.m_index; }
+		[[nodiscard]] uint16_t operator+(const ConstIterator& other) { assert(&m_set == &other.m_set); return m_index + other.m_index; }
 		[[nodiscard]] std::strong_ordering operator<=>(const ConstIterator& other) { assert(&m_set == &other.m_set); return m_index <=> other.m_index; }
 	};
 	ConstIterator begin() const { return ConstIterator(*this, 0); }
 	ConstIterator end() const { return ConstIterator(*this, capacity); }
 };
-template<int size>
-inline void to_json(Json& data, const CuboidArray<size>& set) { data = SmallSet<Cuboid>::create(set); }
-template<int size>
-inline void from_json(const Json& data, CuboidArray<size>& set) { auto smallSet = data.get<SmallSet<Cuboid>>(); set = CuboidArray<size>::create(smallSet); }
+template<uint16_t capacity>
+inline void to_json(Json& data, const CuboidArray<capacity>& set) { data = SmallSet<Cuboid>::create(set); }
+template<uint16_t capacity>
+inline void from_json(const Json& data, CuboidArray<capacity>& set) { auto smallSet = data.get<SmallSet<Cuboid>>(); set = CuboidArray<capacity>::create(smallSet); }

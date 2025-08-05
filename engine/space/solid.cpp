@@ -40,9 +40,10 @@ void Space::solid_setNot(const Point3D& point)
 }
 void Space::solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& materialType, bool constructed)
 {
+	// TODO: This assumes previous is all one type.
 	const MaterialTypeId& previous = m_solid.queryGetOne(cuboid);
 	bool wasTransparent = (previous.empty() || MaterialType::getTransparent(previous));
-	m_solid.maybeInsert(cuboid, materialType);
+	m_solid.maybeInsertOrOverwrite(cuboid, materialType);
 	if(constructed)
 		m_constructed.maybeInsert(cuboid);
 	// TODO: why?

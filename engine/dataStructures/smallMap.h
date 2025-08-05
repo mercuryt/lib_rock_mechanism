@@ -44,6 +44,12 @@ public:
 		assert(!contains(key));
 		return m_data.emplace_back(key, V{std::forward<Args>(args)...}).second;
 	}
+	template<typename Condition>
+	void sort(Condition&& condition)
+	{
+		auto pairCondition = [&](const Pair& a, const Pair& b) { return condition(a.first, b.first); };
+		std::ranges::sort(m_data, pairCondition);
+	}
 	void swap(This& other);
 	void updateKey(const K& oldKey, const K& newKey);
 	[[nodiscard]] uint size() const;

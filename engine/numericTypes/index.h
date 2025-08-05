@@ -118,6 +118,23 @@ public:
 inline void to_json(Json& data, const ItemReferenceIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, ItemReferenceIndex& index) { index = ItemReferenceIndex::create(data.get<ItemReferenceIndexWidth>()); }
 
+
+using RTreeNodeIndexWidth = uint16_t;
+class RTreeNodeIndex final : public StrongInteger<RTreeNodeIndex, RTreeNodeIndexWidth>
+{
+public:
+	struct Hash { [[nodiscard]] size_t operator()(const RTreeNodeIndex& index) const { return index.get(); } };
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(RTreeNodeIndex, data);
+};
+
+using RTreeArrayIndexWidth = uint8_t;
+class RTreeArrayIndex final : public StrongInteger<RTreeArrayIndex, RTreeArrayIndexWidth>
+{
+public:
+	struct Hash { [[nodiscard]] size_t operator()(const RTreeArrayIndex& index) const { return index.get(); } };
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(RTreeArrayIndex, data);
+};
+
 inline HasShapeIndex HasShapeIndex::cast(const PlantIndex& o) { return HasShapeIndex::create(o.get()); }
 inline HasShapeIndex HasShapeIndex::cast(const ItemIndex& o) { return HasShapeIndex::create(o.get()); }
 inline HasShapeIndex HasShapeIndex::cast(const ActorIndex& o) { return HasShapeIndex::create(o.get()); }

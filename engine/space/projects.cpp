@@ -1,46 +1,42 @@
 #include "space.h"
+
 void Space::project_add(const Point3D& point, Project& project)
 {
-	FactionId faction = project.getFaction();
-	assert(!m_projects.contains(faction) || !m_projects[faction].queryGetOne(point).contains(&project));
-	m_projects.getOrCreate(faction).updateOne(point, [&](SmallSet<Project*>& set){ set.insert(&project); });
+	m_projects.getOrCreate(project.getFaction()).insert(point, RTreeDataWrapper<Project*, nullptr>(&project));
 }
 void Space::project_remove(const Point3D& point, Project& project)
 {
-	FactionId faction = project.getFaction();
-	auto& projects = m_projects[faction].queryGetOne(point);
-	assert(m_projects.contains(faction) && m_projects[faction].queryGetOne(point).contains(&project));
-	if(projects.size() == 1)
-		m_projects.erase(faction);
-	else
-		m_projects[faction].updateOne(point, [&](SmallSet<Project*>& set) { set.erase(&project); });
+	m_projects[project.getFaction()].remove(point, RTreeDataWrapper<Project*, nullptr>(&project));
 }
 Percent Space::project_getPercentComplete(const Point3D& point, const FactionId& faction) const
 {
-	if(!m_projects.contains(faction))
+	const auto found = m_projects.find(faction);
+	if(found == m_projects.end())
 		return Percent::create(0);
-	auto& projects = m_projects[faction].queryGetOne(point);
-	for(Project* project : projects)
-		if(project->getPercentComplete().exists())
-			return project->getPercentComplete();
-	return Percent::create(0);
+	auto& projects = found.second();
+	for(const RTreeDataWrapper<Project*, nullptr>& project : projects.queryGetAll(point))
+	{
+		Percent output = project.get()->getPercentComplete();
+		if(output.empty())
+			continue;
+		return output;
+	}
+	return {0};
 }
 Project* Space::project_get(const Point3D& point, const FactionId& faction) const
 {
-	if(!m_projects.contains(faction))
+	const auto found = m_projects.find(faction);
+	if(found == m_projects.end())
 		return nullptr;
-	auto& projects = m_projects[faction].queryGetOne(point);
-	for(Project* project : projects)
-		return project;
-	return nullptr;
+	auto& projects = found.second();
+	return projects.queryGetFirst(point).get();
 }
 Project* Space::project_getIfBegun(const Point3D& point, const FactionId& faction) const
 {
-	if(!m_projects.contains(faction))
+	const auto found = m_projects.find(faction);
+	if(found == m_projects.end())
 		return nullptr;
-	auto& projects = m_projects[faction].queryGetOne(point);
-	for(Project* project : projects)
-		if(project->finishEventExists())
-			return project;
-	return nullptr;
+	auto& projects = found.second();
+	const auto condition = [&](const RTreeDataWrapper<Project*, nullptr>& project){ return project.get()->finishEventExists(); };
+	return projects.queryGetOneWithCondition(point, condition).get();
 }

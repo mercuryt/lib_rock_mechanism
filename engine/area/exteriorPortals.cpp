@@ -112,6 +112,8 @@ void AreaHasExteriorPortals::onChangeAmbiantSurfaceTemperature(Space& space, con
 	for(auto distance = Distance::create(0); distance <= Config::maxDepthExteriorPortalPenetration; ++distance)
 	{
 		TemperatureDelta oldDelta = m_deltas[distance.get()];
+		if(oldDelta.empty())
+			oldDelta = {0};
 		TemperatureDelta newDelta = m_deltas[distance.get()] = getDeltaForAmbientTemperatureAndDistance(temperature, distance);
 		if(newDelta == oldDelta)
 			return;
