@@ -1123,7 +1123,7 @@ TEST_CASE("fluids smaller")
 		CHECK(fg1->m_excessVolume == 1);
 		// Step 2.
 		space.solid_set(origin1, marble, false);
-		CHECK(space.solid_is(origin1));
+		CHECK(space.solid_isAny(origin1));
 		CHECK(fg1->m_potentiallySplitFromSyncronusStep.size() == 2);
 		CHECK(fg1->m_potentiallySplitFromSyncronusStep.contains(block1));
 		CHECK(fg1->m_potentiallySplitFromSyncronusStep.contains(block2));
@@ -1168,7 +1168,7 @@ TEST_CASE("fluids smaller")
 		CHECK(area.m_hasFluidGroups.getUnstable().size() == 1);
 		CHECK(space.fluid_getTotalVolume(block1) == 0);
 		CHECK(space.solid_get(block1) == marble);
-		CHECK(!space.solid_is(block2));
+		CHECK(!space.solid_isAny(block2));
 		CHECK(fluidGroup->m_excessVolume == 100);
 		CHECK(fluidGroup->m_drainQueue.m_set.size() == 0);
 		CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);

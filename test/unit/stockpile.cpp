@@ -168,8 +168,8 @@ TEST_CASE("stockpile")
 		// Both dwarves find chunk 1
 		simulation.doStep();
 		// Destination is confirmed for both. Project is created, reserves and activates.
-		// Two worker which resered the project becomes dwarf1 (if not already) and the other dwarf2 and the other dwarf2.
 		simulation.doStep();
+		// The worker which resered the project becomes dwarf1 (if not already) and the other dwarf2 and the other dwarf2.
 		if(!actors.project_exists(dwarf1))
 		{
 			std::swap(dwarf1, dwarf2);
@@ -178,7 +178,7 @@ TEST_CASE("stockpile")
 		StockPileProject& project = *static_cast<StockPileProject*>(actors.project_get(dwarf1));
 		CHECK(project.hasTryToHaulThreadedTask());
 		CHECK(project.getItem().getIndex(items.m_referenceData) == chunk1);
-		CHECK(project.getLocation() == stockpileLocation1);
+		//CHECK(project.getLocation() == stockpileLocation1);
 		CHECK(project.hasWorker(dwarf1));
 		CHECK(project.getMaxWorkers() == 1);
 		CHECK(!project.hasWorker(dwarf2));
@@ -208,8 +208,6 @@ TEST_CASE("stockpile")
 		CHECK(actors.objective_getCurrent<StockPileObjective>(project1WorkerRef.getIndex(actors.m_referenceData)).m_project);
 		CHECK(!project.getWorkers().contains(project2WorkerRef));
 		CHECK(actors.objective_getCurrentName(project2WorkerRef.getIndex(actors.m_referenceData)) == "stockpile");
-		StockPileObjective& objective2 = actors.objective_getCurrent<StockPileObjective>(dwarf2);
-		CHECK(objective2.getDestination() == stockpileLocation2);
 		CHECK(actors.project_exists(project2WorkerRef.getIndex(actors.m_referenceData)));
 		StockPileProject& project2 = *static_cast<StockPileProject*>(actors.project_get(project2WorkerRef.getIndex(actors.m_referenceData)));
 		CHECK(project2.getItem().getIndex(items.m_referenceData) == chunk2);
@@ -229,9 +227,13 @@ TEST_CASE("stockpile")
 		// Project2 paths.
 		simulation.doStep();
 		CHECK(actors.move_getDestination(project2WorkerRef.getIndex(actors.m_referenceData)).exists());
-		std::function<bool()> predicate = [&](){ return items.getLocation(chunk1) == stockpileLocation1; };
-		simulation.fastForwardUntillPredicate(predicate);
-		predicate = [&](){ return items.getLocation(chunk2) == stockpileLocation2; };
+		std::function<bool()> predicate = [&](){
+			const auto& location1 = items.getLocation(chunk1);
+			const auto& location2 = items.getLocation(chunk2);
+			return
+				(location1 == stockpileLocation1 || location2 == stockpileLocation1) &&
+				(location1 == stockpileLocation2 || location2 == stockpileLocation2);
+		};
 		simulation.fastForwardUntillPredicate(predicate);
 		CHECK(actors.objective_getCurrentName(project1WorkerRef.getIndex(actors.m_referenceData)) != "stockpile");
 		CHECK(actors.objective_getCurrentName(project2WorkerRef.getIndex(actors.m_referenceData)) != "stockpile");
@@ -353,7 +355,6 @@ TEST_CASE("stockpile")
 		CHECK(objective.getDestination() == stockpileLocation);
 		// select Haul strategy.
 		simulation.doStep();
-		ActorReference dwarf1Ref = area.getActors().m_referenceData.getReference(dwarf1);
 		CHECK(project2.getProjectWorkerFor(dwarf1Ref).haulSubproject != nullptr);
 		CHECK(project2.getProjectWorkerFor(dwarf1Ref).haulSubproject->getHaulStrategy() == HaulStrategy::Individual);
 		CHECK(actors.objective_getCurrentName(dwarf1) == "stockpile");

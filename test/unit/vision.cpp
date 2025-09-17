@@ -354,15 +354,15 @@ TEST_CASE("vision")
 		Point3D block4 = Point3D::create(1, 1, 7);
 		Point3D block5 = Point3D::create(9, 9, 1);
 		CHECK(area.m_visionCuboids.size() == 1);
-		CHECK(area.m_visionCuboids.getCuboidForPoint(block1).size() == 900);
+		CHECK(area.m_visionCuboids.getCuboidForPoint(block1).volume() == 900);
 		CHECK(area.m_visionCuboids.getVisionCuboidIndexForPoint(block1) == area.m_visionCuboids.getVisionCuboidIndexForPoint(block2));
 		CHECK(area.m_visionCuboids.getVisionCuboidIndexForPoint(block1) == area.m_visionCuboids.getVisionCuboidIndexForPoint(block3));
 		CHECK(area.m_visionCuboids.getVisionCuboidIndexForPoint(block1) == area.m_visionCuboids.getVisionCuboidIndexForPoint(block4));
 		CHECK(area.m_visionCuboids.getVisionCuboidIndexForPoint(block1) == area.m_visionCuboids.getVisionCuboidIndexForPoint(block5));
 		space.pointFeature_construct(block3, floor, marble);
 		CHECK(area.m_visionCuboids.size() == 2);
-		CHECK(area.m_visionCuboids.getCuboidForPoint(block1).size() == 400);
-		CHECK(area.m_visionCuboids.getCuboidForPoint(block4).size() == 500);
+		CHECK(area.m_visionCuboids.getCuboidForPoint(block1).volume() == 400);
+		CHECK(area.m_visionCuboids.getCuboidForPoint(block4).volume() == 500);
 		CHECK(area.m_visionCuboids.getVisionCuboidIndexForPoint(block1) == area.m_visionCuboids.getVisionCuboidIndexForPoint(block2));
 		CHECK(area.m_visionCuboids.getVisionCuboidIndexForPoint(block1) != area.m_visionCuboids.getVisionCuboidIndexForPoint(block3));
 		CHECK(area.m_visionCuboids.getVisionCuboidIndexForPoint(block1) != area.m_visionCuboids.getVisionCuboidIndexForPoint(block4));
@@ -376,7 +376,7 @@ TEST_CASE("vision")
 		space.pointFeature_remove(block3, floor);
 		CHECK(area.m_visionCuboids.size() == 6);
 		CHECK(area.m_visionCuboids.getVisionCuboidIndexForPoint(block3) == area.m_visionCuboids.getVisionCuboidIndexForPoint(block4));
-		CHECK(area.m_visionCuboids.getCuboidForPoint(block4).size() == 700);
+		CHECK(area.m_visionCuboids.getCuboidForPoint(block4).volume() == 700);
 		space.solid_setNot(block2);
 		CHECK(area.m_visionCuboids.size() == 1);
 		CHECK(area.m_visionCuboids.getCuboidForPoint(block2).exists());

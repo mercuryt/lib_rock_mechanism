@@ -10,14 +10,14 @@ uint RTreeBooleanLowZOnly::Node::getLeafVolume() const
 {
 	uint output = 0;
 	for(auto i = ArrayIndex::create(0); i < m_leafEnd; ++i)
-		output += m_cuboids[i.get()].size();
+		output += m_cuboids[i.get()].volume();
 	return output;
 }
 uint RTreeBooleanLowZOnly::Node::getNodeVolume() const
 {
 	uint output = 0;
 	for(auto i = m_childBegin; i < nodeSize; ++i)
-		output += m_cuboids[i.get()].size();
+		output += m_cuboids[i.get()].volume();
 	return output;
 }
 void RTreeBooleanLowZOnly::Node::updateChildIndex(const Index& oldIndex, const Index& newIndex)
@@ -145,8 +145,8 @@ std::tuple<Cuboid, RTreeBooleanLowZOnly::ArrayIndex, RTreeBooleanLowZOnly::Array
 			const Cuboid& secondCuboid = cuboids[secondResultIndex.get()];
 			Cuboid sum = firstCuboid;
 			sum.maybeExpand(secondCuboid);
-			const uint size = sum.size();
-			int emptySpace = size - (firstCuboid.size() + secondCuboid.size());
+			const uint size = sum.volume();
+			int emptySpace = size - (firstCuboid.volume() + secondCuboid.volume());
 			// If empty space is equal hen prefer the smaller result.
 			// TODO: This may be counter productive.
 			if(resultEmptySpace > emptySpace || (resultEmptySpace == emptySpace && resultSize > size))
@@ -184,9 +184,9 @@ void RTreeBooleanLowZOnly::destroyWithChildren(const Index& index)
 	openList.insert(index);
 	while(!openList.empty())
 	{
-		Index index = openList.back();
-		m_emptySlots.insert(index);
-		Node& node = m_nodes[index];
+		Index current = openList.back();
+		m_emptySlots.insert(current);
+		Node& node = m_nodes[current];
 		const auto& children = node.getChildIndices();
 		openList.popBack();
 		for(auto i = node.offsetOfFirstChild(); i < nodeSize; ++i)
@@ -296,7 +296,7 @@ void RTreeBooleanLowZOnly::addToNodeRecursive(const Index& index, const Cuboid& 
 			{
 				// Both first and second cuboids are leaves.
 				if(
-					mergedCuboid.size() == extended[firstArrayIndex.get()].size() + extended[secondArrayIndex.get()].size() &&
+					mergedCuboid.volume() == extended[firstArrayIndex.get()].volume() + extended[secondArrayIndex.get()].volume() &&
 					mergedCuboid.dimensionForFacing(Facing6::Above) == 1
 				)
 				{

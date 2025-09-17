@@ -2,6 +2,7 @@
 #include "cuboidArray.h"
 #include "paramaterizedLine.h"
 #include "sphere.h"
+#include "cuboidSet.h"
 
 
 template<uint16_t capacity>
@@ -9,8 +10,8 @@ CuboidArray<capacity>::CuboidArray() : m_high(Distance::null().get()), m_low(Dis
 template<uint16_t capacity>
 void CuboidArray<capacity>::insert(const uint16_t& index, const Cuboid& cuboid)
 {
-	m_high.col(index) = cuboid.m_highest.data;
-	m_low.col(index) = cuboid.m_lowest.data;
+	m_high.col(index) = cuboid.m_high.data;
+	m_low.col(index) = cuboid.m_low.data;
 }
 template<uint16_t capacity>
 void CuboidArray<capacity>::erase(const uint16_t& index)
@@ -66,25 +67,52 @@ template<uint16_t capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboids(const Cuboid& cuboid) const
 {
 	return (
-		(m_high >= cuboid.m_lowest.data.replicate(1, capacity)).colwise().all() &&
-		(m_low <= cuboid.m_highest.data.replicate(1, capacity)).colwise().all()
+		(m_high >= cuboid.m_low.data.replicate(1, capacity)).colwise().all() &&
+		(m_low <= cuboid.m_high.data.replicate(1, capacity)).colwise().all()
 	);
+}
+template<uint16_t capacity>
+CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboids(const CuboidSet& cuboids) const
+{
+	BoolArray output;
+	output.fill(0);
+	for(const Cuboid& cuboid : cuboids)
+		output += indicesOfIntersectingCuboids(cuboid);
+	return output;
 }
 template<uint16_t capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfContainedCuboids(const Cuboid& cuboid) const
 {
 	return (
-		(m_high <= cuboid.m_highest.data.replicate(1, capacity)).colwise().all() &&
-		(m_low >= cuboid.m_lowest.data.replicate(1, capacity)).colwise().all()
+		(m_high <= cuboid.m_high.data.replicate(1, capacity)).colwise().all() &&
+		(m_low >= cuboid.m_low.data.replicate(1, capacity)).colwise().all()
 	);
+}
+template<uint16_t capacity>
+CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfContainedCuboids(const CuboidSet& cuboids) const
+{
+	BoolArray output;
+	output.fill(0);
+	for(const Cuboid& cuboid : cuboids)
+		output += indicesOfContainedCuboids(cuboid);
+	return output;
 }
 template<uint16_t capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfCuboidsContaining(const Cuboid& cuboid) const
 {
 	return (
-		(m_high >= cuboid.m_highest.data.replicate(1, capacity)).colwise().all() &&
-		(m_low <= cuboid.m_lowest.data.replicate(1, capacity)).colwise().all()
+		(m_high >= cuboid.m_high.data.replicate(1, capacity)).colwise().all() &&
+		(m_low <= cuboid.m_low.data.replicate(1, capacity)).colwise().all()
 	);
+}
+template<uint16_t capacity>
+CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfCuboidsContaining(const CuboidSet& cuboids) const
+{
+	BoolArray output;
+	output.fill(0);
+	for(const Cuboid& cuboid : cuboids)
+		output += indicesOfCuboidsContaining(cuboid);
+	return output;
 }
 template<uint16_t capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboids(const Sphere& sphere) const
@@ -111,8 +139,102 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 {
 	const PointArray replicatedStart = line.begin.data.replicate(1, capacity);
 	const Float3DArray replicatedSloap = line.sloap.replicate(1, capacity);
-	const PointArray replicatedHighBoundry = line.boundry.m_highest.data.replicate(1, capacity);
-	const PointArray replicatedLowBoundry = line.boundry.m_lowest.data.replicate(1, capacity);
+	const PointArray replicatedHighBoundry = line.boundry.m_high.data.replicate(1, capacity);
+	const PointArray replicatedLowBoundry = line.boundry.m_low.data.replicate(1, capacity);
+	const Offset3DArray distanceFromStartToHighFace = m_high.template cast<OffsetWidth>() - replicatedStart.template cast<OffsetWidth>();
+	const Float3DArray stepsFromStartToHighFace = distanceFromStartToHighFace.template cast<float>() / replicatedSloap;
+	const Offset3DArray distanceFromStartToLowFace = m_low.template cast<OffsetWidth>() - replicatedStart.template cast<OffsetWidth>();
+	const Float3DArray stepsFromStartToLowFace = distanceFromStartToLowFace.template cast<float>() / replicatedSloap;
+	BoolArray result;
+	result.setZero();
+	// X
+	if(line.sloap.x() != 0.0f)
+	{
+		const PointArray coordinatesAtHighX = replicatedStart + (replicatedSloap * stepsFromStartToHighFace.row(0).replicate(3, 1)).round().template cast<DistanceWidth>();
+		result +=
+			// Check Y.
+			coordinatesAtHighX.row(1) <= m_high.row(1) &&
+			coordinatesAtHighX.row(1) >= m_low.row(1) &&
+			// Check Z.
+			coordinatesAtHighX.row(2) <= m_high.row(2) &&
+			coordinatesAtHighX.row(2) >= m_low.row(2) &&
+			// Check range.
+			(coordinatesAtHighX <= replicatedHighBoundry).colwise().all() &&
+			(coordinatesAtHighX >= replicatedLowBoundry).colwise().all();
+		const PointArray coordinatesAtLowX = replicatedStart + (replicatedSloap * stepsFromStartToLowFace.row(0).replicate(3, 1)).round().template cast<DistanceWidth>();
+		result +=
+			// Check Y.
+			coordinatesAtLowX.row(1) <= m_high.row(1) &&
+			coordinatesAtLowX.row(1) >= m_low.row(1) &&
+			// Check Z.
+			coordinatesAtLowX.row(2) <= m_high.row(2) &&
+			coordinatesAtLowX.row(2) >= m_low.row(2) &&
+			// Check range.
+			(coordinatesAtLowX <= replicatedHighBoundry).colwise().all() &&
+			(coordinatesAtLowX >= replicatedLowBoundry).colwise().all();
+	}
+	// Y
+	if(line.sloap.y() != 0.0f)
+	{
+		const PointArray coordinatesAtHighY = replicatedStart + (replicatedSloap * stepsFromStartToHighFace.row(1).replicate(3, 1)).round().template cast<DistanceWidth>();
+		result +=
+			// Check X.
+			coordinatesAtHighY.row(0) <= m_high.row(0) &&
+			coordinatesAtHighY.row(0) >= m_low.row(0) &&
+			// Check Z.
+			coordinatesAtHighY.row(2) <= m_high.row(2) &&
+			coordinatesAtHighY.row(2) >= m_low.row(2) &&
+			// Check range.
+			(coordinatesAtHighY <= replicatedHighBoundry).colwise().all() &&
+			(coordinatesAtHighY >= replicatedLowBoundry).colwise().all();
+		const PointArray coordinatesAtLowY = replicatedStart + (replicatedSloap * stepsFromStartToLowFace.row(1).replicate(3, 1)).round().template cast<DistanceWidth>();
+		result +=
+			// Check X.
+			coordinatesAtLowY.row(0) <= m_high.row(0) &&
+			coordinatesAtLowY.row(0) >= m_low.row(0) &&
+			// Check Z.
+			coordinatesAtLowY.row(2) <= m_high.row(2) &&
+			coordinatesAtLowY.row(2) >= m_low.row(2) &&
+			// Check range.
+			(coordinatesAtLowY <= replicatedHighBoundry).colwise().all() &&
+			(coordinatesAtLowY >= replicatedLowBoundry).colwise().all();
+	}
+	// Z
+	if(line.sloap.z() != 0.0f)
+	{
+		const PointArray coordinatesAtHighZ = replicatedStart + (replicatedSloap * stepsFromStartToHighFace.row(2).replicate(3, 1)).round().template cast<DistanceWidth>();
+		result +=
+			// Check X.
+			coordinatesAtHighZ.row(0) <= m_high.row(0) &&
+			coordinatesAtHighZ.row(0) >= m_low.row(0) &&
+			// Check Y.
+			coordinatesAtHighZ.row(1) <= m_high.row(1) &&
+			coordinatesAtHighZ.row(1) >= m_low.row(1) &&
+			// Check range.
+			(coordinatesAtHighZ <= replicatedHighBoundry).colwise().all() &&
+			(coordinatesAtHighZ >= replicatedLowBoundry).colwise().all();
+		const PointArray coordinatesAtLowZ = replicatedStart + (replicatedSloap * stepsFromStartToLowFace.row(2).replicate(3, 1)).round().template cast<DistanceWidth>();
+		result +=
+			// Check X.
+			coordinatesAtLowZ.row(0) <= m_high.row(0) &&
+			coordinatesAtLowZ.row(0) >= m_low.row(0) &&
+			// Check Y.
+			coordinatesAtLowZ.row(1) <= m_high.row(1) &&
+			coordinatesAtLowZ.row(1) >= m_low.row(1) &&
+			// Check range.
+			(coordinatesAtLowZ <= replicatedHighBoundry).colwise().all() &&
+			(coordinatesAtLowZ >= replicatedLowBoundry).colwise().all();
+	}
+	return result;
+}
+template<uint16_t capacity>
+CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboidsWhereThereIsADifferenceInEntranceAndExitZ(const ParamaterizedLine& line) const
+{
+	assert(line.sloap.z() != 0);
+	const PointArray replicatedStart = line.begin.data.replicate(1, capacity);
+	const Float3DArray replicatedSloap = line.sloap.replicate(1, capacity);
+	const PointArray replicatedHighBoundry = line.boundry.m_high.data.replicate(1, capacity);
+	const PointArray replicatedLowBoundry = line.boundry.m_low.data.replicate(1, capacity);
 	// Check for intersection with high faces.
 	const Offset3DArray distanceFromStartToHighFace = m_high.template cast<OffsetWidth>() - replicatedStart.template cast<OffsetWidth>();
 	const Float3DArray stepsFromStartToHighFace = distanceFromStartToHighFace.template cast<float>() / replicatedSloap;
@@ -244,8 +366,8 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 	}
 	const PointArray replicatedStart = line.begin.data.replicate(1, capacity);
 	const Float3DArray replicatedSloap = line.sloap.replicate(1, capacity);
-	const PointArray replicatedHighBoundry = line.boundry.m_highest.data.replicate(1, capacity);
-	const PointArray replicatedLowBoundry = line.boundry.m_lowest.data.replicate(1, capacity);
+	const PointArray replicatedHighBoundry = line.boundry.m_high.data.replicate(1, capacity);
+	const PointArray replicatedLowBoundry = line.boundry.m_low.data.replicate(1, capacity);
 	const OffsetArray distanceFromStartToLowZFace = m_low.row(2).template cast<OffsetWidth>() - replicatedStart.row(2).template cast<OffsetWidth>();
 	const FloatArray stepsFromStartToLowZFace = distanceFromStartToLowZFace.template cast<float>() / replicatedSloap.row(2);
 	const PointArray coordinatesAtLowZ = replicatedStart + (replicatedSloap * stepsFromStartToLowZFace.replicate(3, 1)).round().template cast<DistanceWidth>();
@@ -262,10 +384,19 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 	return results.colwise().any();
 }
 template<uint16_t capacity>
+CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboidsLowZOnly(const CuboidSet& cuboids) const
+{
+	BoolArray output;
+	output.fill(0);
+	for(const Cuboid& cuboid : cuboids)
+		output += indicesOfIntersectingCuboidsLowZOnly(cuboid);
+	return output;
+}
+template<uint16_t capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfMergeableCuboids(const Cuboid& cuboid) const
 {
-	const Bool3DArray sharedAxesHigh = m_high == cuboid.m_highest.data.replicate(1, capacity);
-	const Bool3DArray sharedAxesLow = m_low == cuboid.m_lowest.data.replicate(1, capacity);
+	const Bool3DArray sharedAxesHigh = m_high == cuboid.m_high.data.replicate(1, capacity);
+	const Bool3DArray sharedAxesLow = m_low == cuboid.m_low.data.replicate(1, capacity);
 	const Bool3DArray highAndLowAreShared = sharedAxesHigh && sharedAxesLow;
 	const Eigen::Array<uint8_t, 3, capacity> highAndLowAreSharedInteger = highAndLowAreShared.template cast<uint8_t>();
 	const Eigen::Array<uint8_t, 1, capacity> countOfSharedAxes = highAndLowAreSharedInteger.colwise().sum();
@@ -276,16 +407,25 @@ template<uint16_t capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfTouchingCuboids(const Cuboid& cuboid) const
 {
 	// Use plus one on each side of the comparitor operator to avoid subtraction as these are unsigned coordinates.
-	const BoolArray high = ((cuboid.m_highest.data.replicate(1, capacity) + 1 < m_low)).colwise().any();
-	const BoolArray low = (cuboid.m_lowest.data.replicate(1, capacity) > (m_high + 1)).colwise().any();
+	const BoolArray high = ((cuboid.m_high.data.replicate(1, capacity) + 1 < m_low)).colwise().any();
+	const BoolArray low = (cuboid.m_low.data.replicate(1, capacity) > (m_high + 1)).colwise().any();
 	return !(high || low);
+}
+template<uint16_t capacity>
+CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfTouchingCuboids(const CuboidSet& cuboids) const
+{
+	BoolArray output;
+	output.fill(0);
+	for(const Cuboid& cuboid : cuboids)
+		output += indicesOfTouchingCuboids(cuboid);
+	return output;
 }
 template<uint16_t capacity>
 uint16_t CuboidArray<capacity>::indexOfCuboid(const Cuboid& cuboid)
 {
-	const PointArray replicatedHigh = cuboid.m_highest.data.replicate(1, capacity);
+	const PointArray replicatedHigh = cuboid.m_high.data.replicate(1, capacity);
 	const BoolArray high = (m_high == replicatedHigh).colwise().all();
-	const PointArray replicatedLow = cuboid.m_lowest.data.replicate(1, capacity);
+	const PointArray replicatedLow = cuboid.m_low.data.replicate(1, capacity);
 	const BoolArray low = (m_low == replicatedLow).colwise().all();
 	const BoolArray match = high && low;
 	if(!match.any())

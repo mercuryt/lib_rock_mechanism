@@ -40,6 +40,14 @@ public:
 			output.insert(point);
 		return output;
 	}
+	[[nodiscard]] static Point3DSet fromCuboidSet(const auto& cuboids)
+	{
+		Point3DSet output;
+		for(const Cuboid& cuboid : cuboids)
+			for(const Point3D& point : cuboid)
+				output.insert(point);
+		return output;
+	}
 	class ConstIterator
 	{
 		const Point3DSet& m_set;

@@ -4,7 +4,6 @@
  * Not pointer stable.
  */
 #include "../json.h"
-#include "../concepts.h"
 #include <algorithm>
 #include <vector>
 #include <cassert>

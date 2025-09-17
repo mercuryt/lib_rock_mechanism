@@ -7,7 +7,6 @@
 #include "../../engine/objectives/station.h"
 #include "../../engine/space/space.h"
 #include "../../engine/simulation/hasActors.h"
-#include "../../engine/hasShapes.hpp"
 void ContextMenu::drawActorControls(const Point3D& point)
 {
 	Area& area = *m_window.getArea();

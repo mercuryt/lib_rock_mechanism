@@ -15,7 +15,7 @@ if(MSVC)
 	add_compile_options(/W4)
 else()
 	# additional warnings
-	add_compile_options(-Wall -Wextra -Werror -Wunused-function -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wdouble-promotion -Woverloaded-virtual -fopenmp
+	add_compile_options(-Wall -Wextra -Werror -Wshadow -Wunused-function -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wdouble-promotion -Woverloaded-virtual -fopenmp
 	#-ftrivial-auto-var-init=pattern
 	# Disabled due to false positives around const ObjectiveType& types
 	-Wno-dangling-reference
@@ -29,10 +29,10 @@ endif()
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g2 -ggdb -fno-inline")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -fno-exceptions -flto=auto -ltcmalloc -fno-rtti")
 if(NOT CMAKE_BUILD_TYPE EQUAL "Release")
-	add_compile_options(-fsanitize=address)
-	add_link_options(-fsanitize=address)
-	add_compile_options(-fsanitize=undefined)
-	add_link_options(-fsanitize=undefined)
+	#add_compile_options(-fsanitize=address)
+	#add_link_options(-fsanitize=address)
+	#add_compile_options(-fsanitize=undefined)
+	#add_link_options(-fsanitize=undefined)
 endif()
 
 add_subdirectory(engine)

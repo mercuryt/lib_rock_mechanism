@@ -37,11 +37,11 @@ class AreaHasVisionCuboids final : public CuboidSet
 	Area& m_area;
 	VisionCuboidId m_nextKey = VisionCuboidId::create(0);
 public:
-	void create(const Cuboid& cuboid) override;
+	void insertOrMerge(const Cuboid& cuboid) override;
 	void destroy(const uint& index) override;
 	// Override for more efficient lookup of cuboids to destroy.
 	void remove(const Cuboid& cuboid) override;
-	void remove(const SmallSet<Point3D>& points);
+	void remove(const CuboidSet& cuboids);
 	void onKeySetForPoint(const VisionCuboidId& key, const Point3D& point);
 	void sliceBelow(const Cuboid& cuboid);
 	void mergeBelow(const Cuboid& cuboid);

@@ -48,4 +48,4 @@ public:
 	[[nodiscard]] static SkillTypeId getSkillType(const AttackTypeId& id);
 	[[nodiscard]] static ItemTypeId getProjectileItemType(const AttackTypeId& id);
 };
-inline AttackType attackTypeData;
+inline AttackType g_attackTypeData;

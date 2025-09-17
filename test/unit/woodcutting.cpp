@@ -10,6 +10,7 @@
 #include "../../engine/items/items.h"
 #include "../../engine/definitions/itemType.h"
 #include "../../engine/definitions/animalSpecies.h"
+#include "../../engine/definitions/plantSpecies.h"
 #include "../../engine/objectives/woodcutting.h"
 #include "../../engine/objectives/stockpile.h"
 #include "objective.h"
@@ -28,7 +29,7 @@ TEST_CASE("woodcutting")
 	areaBuilderUtil::setSolidLayer(area, 0, MaterialType::byName("dirt"));
 	Point3D treeLocation = Point3D::create(5, 5, 1);
 	PlantIndex tree = plants.create({.location=treeLocation, .species=PlantSpecies::byName("poplar tree")});
-	CHECK(plants.getOccupied(tree).size() == 5);
+	CHECK(plants.getOccupied(tree).volume() == 5);
 	FactionId faction = simulation.createFaction("Tower of Power");
 	area.m_spaceDesignations.registerFaction(faction);
 	area.m_hasWoodCuttingDesignations.addFaction(faction);

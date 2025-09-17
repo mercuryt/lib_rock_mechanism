@@ -1,19 +1,20 @@
 #include "woodcutting.h"
-#include "actors/actors.h"
-#include "space/space.h"
-#include "plants.h"
-#include "area/area.h"
-#include "pointFeature.h"
-#include "deserializationMemo.h"
-#include "random.h"
-#include "reservable.h"
-#include "path/terrainFacade.h"
-#include "numericTypes/types.h"
-#include "util.h"
-#include "simulation/simulation.h"
-#include "definitions/itemType.h"
-#include "objectives/woodcutting.h"
-#include "projects/woodcutting.h"
+#include "../actors/actors.h"
+#include "../space/space.h"
+#include "../plants.h"
+#include "../area/area.h"
+#include "../pointFeature.h"
+#include "../deserializationMemo.h"
+#include "../random.h"
+#include "../reservable.h"
+#include "../path/terrainFacade.h"
+#include "../numericTypes/types.h"
+#include "../util.h"
+#include "../simulation/simulation.h"
+#include "../definitions/itemType.h"
+#include "../objectives/woodcutting.h"
+#include "../projects/woodcutting.h"
+#include "../definitions/plantSpecies.h"
 #include <memory>
 #include <sys/types.h>
 WoodCuttingLocationDishonorCallback::WoodCuttingLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) :
@@ -76,6 +77,7 @@ void HasWoodCuttingDesignationsForFaction::removeIfExists(const Point3D& point)
 		remove(point);
 }
 bool HasWoodCuttingDesignationsForFaction::empty() const { return m_data.empty(); }
+WoodCuttingProject& HasWoodCuttingDesignationsForFaction::getForPoint(const Point3D& point) { return m_data[point]; }
 // To be used by Area.
 void AreaHasWoodCuttingDesignations::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
@@ -147,9 +149,5 @@ bool AreaHasWoodCuttingDesignations::contains(FactionId faction, const Point3D& 
 		return false;
 	return m_data[faction].m_data.contains(point);
 }
-WoodCuttingProject& AreaHasWoodCuttingDesignations::getForFactionAndPoint(FactionId faction, const Point3D& point)
-{
-	assert(m_data.contains(faction));
-	assert(m_data[faction].m_data.contains(point));
-	return m_data[faction].m_data[point];
-}
+HasWoodCuttingDesignationsForFaction& AreaHasWoodCuttingDesignations::getForFaction(FactionId faction) { return m_data[faction]; }
+const HasWoodCuttingDesignationsForFaction& AreaHasWoodCuttingDesignations::getForFaction(FactionId faction) const { return m_data[faction]; }

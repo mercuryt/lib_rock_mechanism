@@ -181,11 +181,11 @@ std::pair<AnimalSpeciesId, Quantity> AnimalsArriveDramaArc::getSpeciesAndQuantit
 }
 bool AnimalsArriveDramaArc::isSmall(const ShapeId& shape)
 {
-	return CollisionVolume::create(Shape::getPositions(shape).front().offset.z()) < Config::maxPointVolume / 4 && Shape::getPositions(shape).size() == 1;
+	return Shape::getCollisionVolumeAtLocation(shape) < Config::maxPointVolume / 4 && Shape::getTotalCollisionVolume(shape) == 1;
 }
 bool AnimalsArriveDramaArc::isLarge(const ShapeId& shape)
 {
-	return Shape::getPositions(shape).size() > 8;
+	return Shape::getTotalCollisionVolume(shape) > 8;
 }
 bool AnimalsArriveDramaArc::isMedium(const ShapeId& shape)
 {

@@ -52,7 +52,6 @@ class StockPilePathRequest final : public PathRequestBreadthFirst
 	// One set of candidates for each type. When a new candidate is found compare it to all of the other type and if no match store it.
 	// No need to serialize these, they exist only for a single read step.
 	SmallMap<StockPile*, SmallSet<Point3D>> m_pointsByStockPile;
-
 	SmallSet<ItemIndex> m_items;
 public:
 	StockPilePathRequest(Area& area, StockPileObjective& spo, const ActorIndex& actor);

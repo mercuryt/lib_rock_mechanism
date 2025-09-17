@@ -9,7 +9,6 @@
 #include "../../engine/objectives/unequipItem.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/definitions/moveType.h"
-#include "../../engine/hasShapes.hpp"
 #include <cmath>
 #include <regex>
 void ContextMenu::drawItemControls(const Point3D& point)

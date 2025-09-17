@@ -22,22 +22,23 @@ void UnmountObjective::execute(Area& area, const ActorIndex& actor)
 	const Point3D& startingLocation = actors.getLocation(actor);
 	if(m_location.empty())
 	{
-		for(const Point3D& point : actors.getAdjacentPoints(mount))
-		{
-			if(space.shape_canEnterCurrentlyFrom(m_location, shape, startingLocation, actors.getOccupied(actor)))
+		for(const Cuboid& cuboid : actors.getAdjacentCuboids(mount))
+			for(const Point3D& point : cuboid)
 			{
-				actors.mount_undo(actor, point, actors.getLocation(actor).getFacingTwords(point));
-				actors.objective_complete(actor, *this);
-				return;
+				if(space.shape_canEnterCurrentlyFrom(m_location, shape, startingLocation, actors.getOccupied(actor)))
+				{
+					actors.mount_undo(actor, point, actors.getLocation(actor).getFacingTwords(point));
+					actors.objective_complete(actor, *this);
+					return;
+				}
 			}
-		}
 		actors.objective_canNotCompleteObjective(actor, *this);
 	}
 	else
 	{
 		const Point3D& actorLocation = actors.getLocation(actor);
 		const ShapeId& compoundShape = actors.getCompoundShape(mount);
-		auto currentlyAdjacent = Shape::getPointsWhichWouldBeAdjacentAt(compoundShape, space, actorLocation, actors.getFacing(mount));
+		CuboidSet currentlyAdjacent = Shape::getCuboidsWhichWouldBeAdjacentAt(compoundShape, space, actorLocation, actors.getFacing(mount));
 		if(currentlyAdjacent.contains(m_location))
 		{
 

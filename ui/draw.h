@@ -1,6 +1,5 @@
 #pragma once
 #include "../engine/numericTypes/types.h"
-#include "../engine/hasShapeTypes.h"
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/System/Vector2.hpp>
@@ -56,7 +55,7 @@ public:
 	void singleTileActor(const ActorIndex& actor);
 	void multiTileActor(const ActorIndex& actor);
 	void actorOverlay(const ActorIndex& actor);
-	void multiTileBorder(const OccupiedSpaceForHasShape& blocksOccpuied, sf::Color color, float thickness);
+	void multiTileBorder(const MapWithCuboidKeys<CollisionVolume>& blocksOccpuied, sf::Color color, float thickness);
 	void borderSegmentOnBlock(const Point3D& point, const Facing4& facing, sf::Color color, float thickness);
 	void accessableSymbol(const Point3D& point);
 	void inaccessableSymbol(const Point3D& point);

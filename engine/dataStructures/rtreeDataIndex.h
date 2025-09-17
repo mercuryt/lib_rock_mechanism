@@ -2,7 +2,7 @@
 #include "rtreeData.hpp"
 #include "../strongInteger.h"
 
-template<typename T, typename DataIndexWidth, RTreeDataConfig config = RTreeDataConfig()>
+template<typename T, typename DataIndexWidth, RTreeDataConfig config>
 class RTreeDataIndex
 {
 	class DataIndex : public StrongInteger<DataIndex, DataIndexWidth>
@@ -21,7 +21,7 @@ class RTreeDataIndex
 		if(index != last)
 		{
 			m_data[index] = std::move(m_data[last]);
-			m_tree.update(shape, last, index);
+			m_tree.update(m_data[index].second, last, index);
 		}
 		m_data.popBack();
 		m_tree.maybeRemove(shape);
@@ -73,8 +73,19 @@ public:
 		}
 	}
 	void clear();
+	void prepare();
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] bool queryAny(const auto& shape) const { return m_tree.queryAny(shape); }
+	[[nodiscard]] bool queryAnyWithCondition(const auto& shape, const auto& condition) const
+	{
+		const auto indexCondition = [&](const DataIndex& index){ return condition(m_data[index].first); };
+		return m_tree.queryAnyWithCondition(shape, indexCondition);
+	}
+	[[nodiscard]] bool batchQueryAnyWithCondition(const auto& shapes, const auto& condition) const
+	{
+		const auto indexCondition = [&](const DataIndex& index){ return condition(m_data[index].first); };
+		return m_tree.queryAnyWithCondition(shapes, indexCondition);
+	}
 	[[nodiscard]] CuboidSet getLeafCuboids() const;
 	[[nodiscard]] const auto& getLeaves() const { return m_data; }
 	[[nodiscard]] const T& queryGetOne(const auto& shape) const

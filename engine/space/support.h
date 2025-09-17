@@ -14,6 +14,7 @@ public:
 	void set(const auto& shape) { m_support.maybeInsert(shape); }
 	void unset(const auto& shape) { m_support.maybeRemove(shape); }
 	void maybeFall(const Cuboid& cuboid) { m_maybeFall.add(cuboid); }
+	void prepare();
 	[[nodiscard]] CuboidSet getUnsupported(const Area& area, const Cuboid& cuboid) const;
-	[[nodiscard]] uint maybeFallVolume() const { return m_maybeFall.size(); }
+	[[nodiscard]] uint maybeFallVolume() const { return m_maybeFall.volume(); }
 };

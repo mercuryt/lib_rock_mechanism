@@ -9,7 +9,7 @@
 #include "../numericTypes/index.h"
 #include "../definitions/moveType.h"
 #include "../numericTypes/types.h"
-#include "../portables.hpp"
+#include "../portables.h"
 #include <memory>
 #include <ranges>
 // RemarkItemForStockPilingEvent
@@ -86,32 +86,14 @@ void Items::onChangeAmbiantSurfaceTemperature()
 	m_onSurface.forEach([&](const ItemIndex& index){
 		assert(m_location[index].exists());
 		Temperature temperature = space.temperature_get(m_location[index]);
-		for(const Point3D& point : getOccupied(index))
-			setTemperature(index, temperature, point);
+		for(const Cuboid& cuboid : getOccupied(index))
+			for(const Point3D& point : cuboid)
+				setTemperature(index, temperature, point);
 	});
 }
 Items::Items(Area& area) :
-	Portables(area, false)
+	Portables(area)
 { }
-template<typename Action>
-void Items::forEachData(Action&& action)
-{
-	forEachDataPortables(action);
-	action(m_canBeStockPiled);
-	action(m_craftJobForWorkPiece);
-	action(m_hasCargo);
-	action(m_id);
-	action(m_installed);
-	action(m_itemType);
-	action(m_solid);
-	action(m_name);
-	action(m_percentWear);
-	action(m_quality);
-	action(m_quantity);
-	action(m_onSurface);
-	action(m_pilot);
-	action(m_constructedShape);
-}
 ItemIndex Items::create(ItemParamaters itemParamaters)
 {
 	ItemIndex index = ItemIndex::create(size());
@@ -121,7 +103,7 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 	ShapeId shape = ItemType::getShape(itemParamaters.itemType);
 	if(itemParamaters.quantity > 1)
 		shape = Shape::mutateMultiplyVolume(shape, itemParamaters.quantity);
-	Portables<Items, ItemIndex, ItemReferenceIndex>::create(index, moveType, shape, itemParamaters.faction, itemParamaters.isStatic, itemParamaters.quantity);
+	Portables<Items, ItemIndex, ItemReferenceIndex, false>::create(index, moveType, shape, itemParamaters.faction, itemParamaters.isStatic, itemParamaters.quantity);
 	assert(m_canBeStockPiled[index] == nullptr);
 	m_craftJobForWorkPiece[index] = itemParamaters.craftJob;
 	assert(m_hasCargo[index] == nullptr);
@@ -169,8 +151,8 @@ void Items::moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex)
 		m_onSurface.set(newIndex);
 	}
 	Space& space = m_area.getSpace();
-	for(Point3D point : m_occupied[newIndex])
-		space.item_updateIndex(point, oldIndex, newIndex);
+	const Cuboid boundry = this->boundry(newIndex);
+	space.item_updateIndex(boundry, oldIndex, newIndex);
 }
 void Items::setTemperature(const ItemIndex& index, const Temperature& temperature, const Point3D& point)
 {
@@ -195,8 +177,8 @@ void Items::setTemperature(const ItemIndex& index, const Temperature& temperatur
 	{
 		assert(m_constructedShape[index] != nullptr);
 		auto materialTypes = m_constructedShape[index]->getMaterialTypesAt(m_location[index], m_facing[index], point);
-		for(const MaterialTypeId& materialType : materialTypes)
-			setTemperatureMaterialType(materialType);
+		for(const MaterialTypeId& featureMaterialType : materialTypes)
+			setTemperatureMaterialType(featureMaterialType);
 	}
 }
 void Items::addQuantity(const ItemIndex& index, const Quantity& delta)
@@ -296,8 +278,8 @@ void Items::setStatic(const ItemIndex& index)
 	if(constructed != nullptr)
 	{
 		Space& space = m_area.getSpace();
-		for(const Point3D& point : m_occupied[index])
-			space.unsetDynamic(point);
+		for(const Cuboid& cuboid : m_occupied[index])
+			space.unsetDynamic(cuboid);
 		m_static.set(index);
 	}
 	else
@@ -309,8 +291,8 @@ void Items::unsetStatic(const ItemIndex& index)
 	if(constructed != nullptr)
 	{
 		Space& space = m_area.getSpace();
-		for(const Point3D& point : m_occupied[index])
-			space.setDynamic(point);
+		for(const Cuboid& cuboid : m_occupied[index])
+			space.setDynamic(cuboid);
 		m_static.unset(index);
 	}
 	else
@@ -382,7 +364,7 @@ void Items::log(const ItemIndex& index) const
 		std::cout << "(" << m_quantity[index].get() << ")";
 	if(m_craftJobForWorkPiece[index] != nullptr)
 		std::cout << "{" << m_craftJobForWorkPiece[index]->getStep().get() << "}";
-	Portables<Items, ItemIndex, ItemReferenceIndex>::log(index);
+	Portables<Items, ItemIndex, ItemReferenceIndex, false>::log(index);
 	std::cout << std::endl;
 }
 // Wrapper methods.
@@ -414,7 +396,7 @@ bool Items::stockpile_canBeStockPiled(const ItemIndex& index, const FactionId& f
 }
 void Items::load(const Json& data)
 {
-	static_cast<Portables<Items, ItemIndex, ItemReferenceIndex>*>(this)->load(data);
+	static_cast<Portables<Items, ItemIndex, ItemReferenceIndex, false>*>(this)->load(data);
 	data["onSurface"].get_to(m_onSurface);
 	data["name"].get_to(m_name);
 	data["itemType"].get_to(m_itemType);
@@ -429,15 +411,15 @@ void Items::load(const Json& data)
 	for(ItemIndex index : getAll())
 	{
 		m_area.m_simulation.m_items.registerItem(m_id[index], m_area.getItems(), index);
-		if(m_location[index].exists())
-			for (const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
-			{
-				Point3D occupied = m_location[index].applyOffset(pair.offset);
-				if(m_static[index])
-					space.item_recordStatic(occupied, index, CollisionVolume::create((m_quantity[index] * pair.volume.get()).get()));
-				else
-					space.item_recordDynamic(occupied, index, CollisionVolume::create((m_quantity[index] * pair.volume.get()).get()));
-			}
+		const Point3D& location = m_location[index];
+		if(location.exists())
+		{
+			const MapWithCuboidKeys<CollisionVolume> toOccupy = Shape::getCuboidsOccupiedAtWithVolume(m_shape[index], space, location, m_facing[index]);
+			if(m_static[index])
+				space.item_recordStatic(toOccupy, index);
+			else
+				space.item_recordDynamic(toOccupy, index);
+		}
 	}
 	m_canBeStockPiled.resize(m_id.size());
 	for(auto iter = data["canBeStockPiled"].begin(); iter != data["canBeStockPiled"].end(); ++iter)
@@ -481,7 +463,7 @@ void to_json(Json& data, std::unique_ptr<ItemHasCargo> hasCargo) { data = hasCar
 void to_json(Json& data, std::unique_ptr<ItemCanBeStockPiled> canBeStockPiled) { data = canBeStockPiled == nullptr ? Json{false} : canBeStockPiled->toJson(); }
 Json Items::toJson() const
 {
-	Json data = Portables<Items, ItemIndex, ItemReferenceIndex>::toJson();
+	Json data = Portables<Items, ItemIndex, ItemReferenceIndex, false>::toJson();
 	data["id"] = m_id;
 	data["name"] = m_name;
 	data["location"] = m_location;

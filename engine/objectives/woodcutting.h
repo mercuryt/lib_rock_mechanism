@@ -17,7 +17,7 @@ public:
 class WoodCuttingObjective final : public Objective
 {
 	WoodCuttingProject* m_project = nullptr;
-	SmallSet<Project*> m_cannotJoinWhileReservationsAreNotComplete;
+	SmallSet<WoodCuttingProject*> m_cannotJoinWhileReservationsAreNotComplete;
 public:
 	WoodCuttingObjective();
 	WoodCuttingObjective(const Json& data, DeserializationMemo& deserializationMemo);
@@ -30,7 +30,7 @@ public:
 	[[nodiscard]] std::string name() const { return "woodcutting"; }
 	void joinProject(WoodCuttingProject& project, const ActorIndex& index);
 	[[nodiscard]] WoodCuttingProject* getJoinableProjectAt(Area& area, const Point3D& point, const ActorIndex& index);
-	[[nodiscard]] bool joinableProjectExistsAt(Area &area, const Point3D& point, const ActorIndex& actor) const;
+	[[nodiscard]] Point3D joinableProjectExistsAt(Area &area, const Cuboid& cuboid, const ActorIndex& actor) const;
 	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	friend class WoodCuttingPathRequest;
 	friend class WoodCuttingProject;

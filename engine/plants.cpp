@@ -1,7 +1,8 @@
 #include "plants.h"
 #include "area/area.h"
+#include "space/space.h"
 #include "eventSchedule.h"
-#include "hasShapes.hpp"
+#include "hasShapes.h"
 #include "numericTypes/index.h"
 #include "definitions/itemType.h"
 #include "definitions/plantSpecies.h"
@@ -23,11 +24,7 @@ void Plants::moveIndex(const PlantIndex& oldIndex, const PlantIndex& newIndex)
 {
 	forEachData([&](auto& data){ data.moveIndex(oldIndex, newIndex);});
 	Space& space = m_area.getSpace();
-	for(Point3D point : m_occupied[newIndex])
-	{
-		assert(space.plant_get(point) == oldIndex);
-		space.plant_set(point, newIndex);
-	}
+	space.plant_updateIndex(this->boundry(newIndex), oldIndex, newIndex);
 }
 void Plants::onChangeAmbiantSurfaceTemperature()
 {
@@ -37,25 +34,6 @@ void Plants::onChangeAmbiantSurfaceTemperature()
 		Temperature temperature = space.temperature_get(m_location[index]);
 		setTemperature(PlantIndex::cast(index), temperature);
 	}
-}
-template<typename Action>
-void Plants::forEachData(Action&& action)
-{
-	forEachDataHasShapes(action);
-	action(m_growthEvent);
-	action(m_shapeGrowthEvent);
-	action(m_fluidEvent);
-	action(m_temperatureEvent);
-	action(m_endOfHarvestEvent);
-	action(m_foliageGrowthEvent);
-	action(m_species);
-	action(m_fluidSource);
-	action(m_quantityToHarvest);
-	action(m_percentGrown);
-	action(m_percentFoliage);
-	action(m_wildGrowth);
-	action(m_volumeFluidRequested);
-	action(m_onSurface);
 }
 PlantIndex Plants::create(PlantParamaters paramaters)
 {
@@ -76,7 +54,7 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 	m_volumeFluidRequested[index] = CollisionVolume::create(0);
 	auto& space = m_area.getSpace();
 	assert(space.plant_canGrowHereEver(location, species));
-	setLocation(index, location, Facing4::North);
+	location_set(index, location, Facing4::North);
 	uint8_t wildGrowth = PlantSpecies::wildGrowthForPercentGrown(species, getPercentGrown(index));
 	if(wildGrowth)
 		doWildGrowth(index, wildGrowth);
@@ -107,7 +85,7 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 void Plants::destroy(const PlantIndex& index)
 {
 	// No need to explicitly unschedule events here, destorying the event holder will do it.
-	exit(index);
+	location_clear(index);
 	const auto& s = PlantIndex::create(size() - 1);
 	if(index != s)
 	{
@@ -195,12 +173,13 @@ bool Plants::hasFluidSource(const PlantIndex& index)
 	if(m_fluidSource[index].exists() && space.fluid_contains(m_fluidSource[index], PlantSpecies::getFluidType(species)))
 		return true;
 	m_fluidSource[index].clear();
-	for(Point3D point : space.collectAdjacentsInRange(m_location[index], getRootRange(index)))
-		if(space.fluid_contains(point, PlantSpecies::getFluidType(species)))
-		{
-			m_fluidSource[index] = point;
-			return true;
-		}
+	for(const Cuboid& cuboid : space.collectAdjacentsInRange(m_location[index], getRootRange(index)))
+		for(const Point3D& point : cuboid)
+			if(space.fluid_contains(point, PlantSpecies::getFluidType(species)))
+			{
+				m_fluidSource[index] = point;
+				return true;
+			}
 	return false;
 }
 void Plants::setDayOfYear(const PlantIndex& index, uint32_t dayOfYear)
@@ -352,31 +331,27 @@ void Plants::doWildGrowth(const PlantIndex& index, uint8_t count)
 	m_wildGrowth[index] += count;
 	assert(m_wildGrowth[index] <= PlantSpecies::getMaxWildGrowth(species));
 	Simulation& simulation = m_area.m_simulation;
-	const SmallSet<OffsetAndVolume>& positions = Shape::getPositions(m_shape[index]);
 	while(count)
 	{
 		count--;
 		std::vector<Point3D> candidates;
-		for(Point3D point : getAdjacentPoints(index))
-			if(
-				space.shape_anythingCanEnterEver(point) &&
-				space.shape_getDynamicVolume(point) == 0 &&
-				point.z() > m_location[index].z()
-			)
-			{
-				Offset3D offset = m_location[index].offsetTo(point);
-				if(std::ranges::find(positions.getVector(), offset, &OffsetAndVolume::offset) == positions.getVector().end())
+		for(const Cuboid& cuboid : getAdjacentCuboids(index))
+			for(const Point3D& point : cuboid)
+				if(
+					space.shape_anythingCanEnterEver(point) &&
+					space.shape_getDynamicVolume(point) == 0 &&
+					point.z() > m_location[index].z()
+				)
 					candidates.push_back(point);
-			}
 		if(candidates.empty())
 			m_wildGrowth[index] = PlantSpecies::getMaxWildGrowth(species);
 		else
 		{
-			Point3D toGrowInto = candidates[simulation.m_random.getInRange(0u, (uint)candidates.size() - 1u)];
-			Offset3D offset = m_location[index].offsetTo(toGrowInto);
+			const Point3D toGrowInto = candidates[simulation.m_random.getInRange(0u, (uint)candidates.size() - 1u)];
+			const Offset3D offset = m_location[index].offsetTo(toGrowInto);
 			// Use the volume of the location position as the volume of the new growth position.
-			OffsetAndVolume offsetAndVolume = {offset, Shape::getCollisionVolumeAtLocation(m_shape[index])};
-			setShape(index, Shape::mutateAdd(m_shape[index], offsetAndVolume));
+			const std::pair<OffsetCuboid, CollisionVolume> pair  = {OffsetCuboid{offset, offset}, Shape::getCollisionVolumeAtLocation(m_shape[index])};
+			setShape(index, Shape::mutateAdd(m_shape[index], pair));
 		}
 	}
 }
@@ -420,27 +395,27 @@ void Plants::updateShape(const PlantIndex& index)
 		doWildGrowth(index);
 	}
 }
-void Plants::setLocation(const PlantIndex& index, const Point3D& location, const Facing4&)
+void Plants::location_set(const PlantIndex& index, const Point3D& location, const Facing4&)
 {
 	assert(m_location[index].empty());
 	Space& space = m_area.getSpace();
 	auto& occupied = m_occupied[index];
-	for(Point3D point : Shape::getPointsOccupiedAt(m_shape[index], space, location, Facing4::North))
+	for(const Cuboid& cuboid : Shape::getCuboidsOccupiedAt(m_shape[index], space, location, Facing4::North))
 	{
-		space.plant_set(point, index);
-		occupied.insert(point);
+		space.plant_set(cuboid, index);
+		occupied.add(cuboid);
 	}
 	m_location[index] = location;
 	m_facing[index] = Facing4::North;
 	if(space.isExposedToSky(location))
 		m_onSurface.set(index);
 }
-void Plants::exit(const PlantIndex& index)
+void Plants::location_clear(const PlantIndex& index)
 {
 	assert(m_location[index].exists());
 	Space& space = m_area.getSpace();
-	for(Point3D point : m_occupied[index])
-		space.plant_erase(point);
+	for(const Cuboid& cuboid : m_occupied[index])
+		space.plant_erase(cuboid);
 	m_location[index].clear();
 	m_occupied[index].clear();
 }
@@ -477,13 +452,6 @@ void Plants::maybeIncrementalSort(const std::chrono::microseconds timeBudget)
 		// Set m_sortEntropy to 0 even though we don't know that some previously sorted part may now be unsorted.
 		m_sortEntropy = 0;
 	}
-}
-void Plants::setShape(const PlantIndex& index, const ShapeId& shape)
-{
-	Point3D location = getLocation(index);
-	exit(index);
-	m_shape[index] = shape;
-	setLocation(index, location, Facing4::North);
 }
 PlantSpeciesId Plants::getSpecies(const PlantIndex& index) const { return m_species[index]; }
 Json Plants::toJson() const
@@ -525,9 +493,9 @@ void Plants::load(const Json& data)
 	m_wildGrowth = data["m_wildGrowth"].get<StrongVector<uint8_t, PlantIndex>>();
 	m_volumeFluidRequested = data["m_volumeFluidRequested"].get<StrongVector<CollisionVolume, PlantIndex>>();
 	Space& space = m_area.getSpace();
-	for(PlantIndex index : getAll())
-		for(Point3D point : m_occupied[index])
-			space.plant_set(point, index);
+	for(const PlantIndex& index : getAll())
+		for(const Cuboid& cuboid : m_occupied[index])
+			space.plant_set(cuboid, index);
 }
 void to_json(Json& data, const Plants& plants)
 {

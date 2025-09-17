@@ -1,10 +1,11 @@
 #include "actorOrItemIndex.h"
 #include "area/area.h"
+#include "space/space.h"
 #include "numericTypes/index.h"
 #include "numericTypes/types.h"
 #include "actors/actors.h"
 #include "items/items.h"
-#include "portables.hpp"
+#include "portables.h"
 #include <compare>
 void ActorOrItemIndex::followActor(Area& area, const ActorIndex& actor) const
 {
@@ -182,7 +183,7 @@ bool ActorOrItemIndex::canEnterCurrentlyFrom(Area& area, const Point3D& destinat
 		return area.getSpace().shape_canEnterCurrentlyFrom(destination, shape, origin, occupied);
 	}
 }
-bool ActorOrItemIndex::canEnterCurrentlyFromWithOccupied(Area& area, const Point3D& destination, const Point3D& origin, const OccupiedSpaceForHasShape& occupied) const
+bool ActorOrItemIndex::canEnterCurrentlyFromWithOccupied(Area& area, const Point3D& destination, const Point3D& origin, const CuboidSet& occupied) const
 {
 	if(isActor())
 	{
@@ -199,14 +200,16 @@ bool ActorOrItemIndex::canEnterCurrentlyFromWithOccupied(Area& area, const Point
 }
 Point3D ActorOrItemIndex::getLocation(const Area& area) const
 { return isActor() ? area.getActors().getLocation(m_index.toActor()) : area.getItems().getLocation(m_index.toItem()); }
-const OccupiedSpaceForHasShape& ActorOrItemIndex::getOccupied(const Area& area) const
+const CuboidSet& ActorOrItemIndex::getOccupied(const Area& area) const
 { return isActor() ? area.getActors().getOccupied(m_index.toActor()) : area.getItems().getOccupied(m_index.toItem()); }
-SmallSet<Point3D> ActorOrItemIndex::getAdjacentPoints(Area& area) const
-{ return isActor() ? area.getActors().getAdjacentPoints(m_index.toActor()) : area.getItems().getAdjacentPoints(m_index.toItem()); }
+const MapWithCuboidKeys<CollisionVolume>& ActorOrItemIndex::getOccupiedWithVolume(const Area& area) const
+{ return isActor() ? area.getActors().getOccupiedWithVolume(m_index.toActor()) : area.getItems().getOccupiedWithVolume(m_index.toItem()); }
+CuboidSet ActorOrItemIndex::getAdjacentCuboids(Area& area) const
+{ return isActor() ? area.getActors().getAdjacentCuboids(m_index.toActor()) : area.getItems().getAdjacentCuboids(m_index.toItem()); }
 bool ActorOrItemIndex::isAdjacent(const Area& area, const ActorOrItemIndex& other) const
 {
-	const auto& otherPoints = other.getOccupied(const_cast<Area&>(area));
-	return isActor() ? area.getActors().isAdjacentToAny(m_index.toActor(), otherPoints) : area.getItems().isAdjacentToAny(m_index.toItem(), otherPoints);
+	const CuboidSet& otherOccupied = other.getOccupied(const_cast<Area&>(area));
+	return isActor() ? area.getActors().isAdjacentToAnyCuboid(m_index.toActor(), otherOccupied) : area.getItems().isAdjacentToAnyCuboid(m_index.toItem(), otherOccupied);
 }
 bool ActorOrItemIndex::isAdjacentToActor(const Area& area, const ActorIndex& other) const
 {

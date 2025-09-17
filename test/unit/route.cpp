@@ -323,6 +323,7 @@ TEST_CASE("route_5_5_5")
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
 	static MoveTypeId twoLegsAndClimb1 = MoveType::byName("two legs and climb 1");
 	static MoveTypeId twoLegsAndClimb2 = MoveType::byName("two legs and climb 2");
+	static MoveTypeId twoLegsAndSwimInWater = MoveType::byName("two legs and swim in water");
 	static const PointFeatureTypeId stairs = PointFeatureTypeId::Stairs;
 	static const PointFeatureTypeId ramp = PointFeatureTypeId::Ramp;
 	static const PointFeatureTypeId door = PointFeatureTypeId::Door;
@@ -348,21 +349,28 @@ TEST_CASE("route_5_5_5")
 	SUBCASE("walking path blocked by two height cliff if not climbing 2")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
+		const Point3D& start = Point3D::create(0,0,1);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
-			.location=Point3D::create(1,1,1),
+			.location=start,
 		});
 		actors.move_setType(actor, twoLegsAndClimb1);
-		space.solid_set(Point3D::create(4, 4, 1), marble, false);
-		space.solid_set(Point3D::create(4, 4, 2), marble, false);
-		const Point3D& destination = Point3D::create(4, 4, 3);
-		const Point3D& belowDestination = Point3D::create(4, 3, 2);
+		space.solid_set(Point3D::create(0, 1, 1), marble, false);
+		space.solid_set(Point3D::create(0, 1, 2), marble, false);
+		const Point3D& destination = Point3D::create(0, 1, 3);
+		const Point3D& belowDestination = Point3D::create(0, 0, 2);
 		bool test = !space.shape_moveTypeCanEnter(belowDestination, twoLegsAndClimb1);
 		CHECK(test);
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
 		actors.move_setType(actor, twoLegsAndClimb2);
+		test = space.shape_moveTypeCanEnterFrom(belowDestination, twoLegsAndClimb2, start);
+		CHECK(test);
+		test = space.shape_moveTypeCanEnterFrom(destination, twoLegsAndClimb2, belowDestination);
+		CHECK(test);
+		AdjacentData adjacentData = area.m_hasTerrainFacades.getForMoveType(twoLegsAndClimb2).getAdjacentData(start);
+		CHECK(adjacentData.check({21}));
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
@@ -371,23 +379,26 @@ TEST_CASE("route_5_5_5")
 	SUBCASE("stairs")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
-		const Point3D origin = Point3D::create(1, 1, 1);
-		const Point3D lowest = Point3D::create(2, 2, 1);
-		const Point3D middle = Point3D::create(3, 3, 2);
-		const Point3D highest = Point3D::create(2, 2, 3);
-		space.pointFeature_construct(lowest, stairs, marble);
+		const Point3D origin = Point3D::create(0, 0, 1);
+		const Point3D middle = Point3D::create(0, 0, 2);
+		const Point3D highest = Point3D::create(0, 0, 3);
+		space.pointFeature_construct(origin, stairs, marble);
 		space.pointFeature_construct(middle, stairs, marble);
 		space.pointFeature_construct(highest, stairs, marble);
+		space.prepareRtrees();
 		CHECK(space.shape_canStandIn(middle));
-		bool test = space.shape_moveTypeCanEnter(middle, twoLegsAndClimb1);
+		bool test = space.shape_moveTypeCanEnter(middle, twoLegsAndSwimInWater);
 		CHECK(test);
-		test = space.shape_moveTypeCanEnterFrom(middle, twoLegsAndClimb1, lowest);
+		test = space.shape_moveTypeCanEnterFrom(middle, twoLegsAndSwimInWater, origin);
 		CHECK(test);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
 			.location=origin,
 		});
-		actors.move_setDestination(actor, Point3D::create(2, 2, 4));
+		CHECK(actors.getMoveType(actor) == twoLegsAndSwimInWater);
+		AdjacentData adjacentData = area.m_hasTerrainFacades.getForMoveType(twoLegsAndSwimInWater).getAdjacentData(origin);
+		CHECK(adjacentData.check({21}));
+		actors.move_setDestination(actor, Point3D::create(0, 0, 4));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
 	}
@@ -597,6 +608,7 @@ TEST_CASE("route_5_5_5")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
 		Point3D origin = Point3D::create(2, 3, 1);
+		Point3D blockerLocation = Point3D::create(3,3,1);
 		space.solid_set(Point3D::create(3, 1, 1), marble, false);
 		space.solid_set(Point3D::create(3, 2, 1), marble, false);
 		space.solid_set(Point3D::create(3, 4, 1), marble, false);
@@ -606,7 +618,7 @@ TEST_CASE("route_5_5_5")
 		});
 		actors.create({
 			.species=dwarf,
-			.location=Point3D::create(3,3,1),
+			.location=blockerLocation
 		});
 		actors.move_setDestination(actor, Point3D::create(4, 3, 1));
 		simulation.doStep();
@@ -614,7 +626,8 @@ TEST_CASE("route_5_5_5")
 		//pathThreadedTask.clearReferences();
 		//simulation.m_threadedTaskEngine.remove(pathThreadedTask);
 		CHECK(space.shape_shapeAndMoveTypeCanEnterEverFrom(Point3D::create(3, 3, 1), actors.getShape(actor), actors.getMoveType(actor), actors.getLocation(actor)));
-		CHECK(!space.shape_canEnterCurrentlyFrom(Point3D::create(3, 3, 1), actors.getShape(actor), actors.getLocation(actor), actors.getOccupied(actor)));
+		CHECK(space.shape_getDynamicVolume(blockerLocation) == 100);
+		CHECK(!space.shape_canEnterCurrentlyFrom(blockerLocation, actors.getShape(actor), origin, actors.getOccupied(actor)));
 		CHECK(actors.move_hasEvent(actor));
 		// Move attempt 1.
 		Step stepsUntillScheduledStep = actors.move_stepsTillNextMoveEvent(actor);

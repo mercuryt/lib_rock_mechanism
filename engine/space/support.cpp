@@ -8,10 +8,9 @@
 void Support::doStep(Area& area)
 {
 	Items& items = area.getItems();
-	m_support.prepare();
-	while(!m_maybeFall.empty())
+	const auto copy = m_maybeFall;
+	for(const Cuboid& cuboid : copy)
 	{
-		const Cuboid& cuboid = m_maybeFall.front();
 		const CuboidSet unsupported = getUnsupported(area, cuboid);
 		if(!unsupported.empty())
 		{
@@ -36,10 +35,10 @@ CuboidSet Support::getUnsupported(const Area& area, const Cuboid& cuboid) const
 	closedList.add(cuboid);
 	while(!openList.empty())
 	{
-		openList.sort([&](const Cuboid& a, const Cuboid& b) { return a.m_lowest.z() > b.m_lowest.z(); });
+		openList.sort([&](const Cuboid& a, const Cuboid& b) { return a.m_low.z() > b.m_low.z(); });
 		const Cuboid current = openList.back();
 		openList.popBack();
-		const auto adjacentToCurrent = m_support.queryGetLeaves(current.inflateAdd(Distance::create(1)));
+		const auto adjacentToCurrent = m_support.queryGetLeaves(current.inflate(Distance::create(1)));
 		for(const Cuboid& adjacent : adjacentToCurrent)
 			if(adjacent != current && current.isTouchingFace(adjacent) && !closedList.contains(adjacent))
 			{
@@ -52,3 +51,4 @@ CuboidSet Support::getUnsupported(const Area& area, const Cuboid& cuboid) const
 	}
 	return closedList;
 }
+void Support::prepare() { m_support.prepare(); }

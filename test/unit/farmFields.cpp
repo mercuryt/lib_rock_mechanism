@@ -22,6 +22,7 @@
 #include "../../engine/path/terrainFacade.h"
 #include "../../engine/definitions/itemType.h"
 #include "../../engine/definitions/animalSpecies.h"
+#include "../../engine/definitions/plantSpecies.h"
 #include "../../engine/definitions/itemType.h"
 #include "../../engine/definitions/materialType.h"
 #include <memory>
@@ -60,9 +61,9 @@ TEST_CASE("sow")
 	const SowSeedsObjectiveType& objectiveType = static_cast<const SowSeedsObjectiveType&>(ObjectiveType::getByName("sow seeds"));
 	SUBCASE("success")
 	{
-		CHECK(field.plantSpecies.empty());
+		CHECK(field.m_plantSpecies.empty());
 		area.m_hasFarmFields.getForFaction(faction).setSpecies(area, field, wheatGrass);
-		CHECK(field.plantSpecies == wheatGrass);
+		CHECK(field.m_plantSpecies == wheatGrass);
 		CHECK(space.farm_contains(fieldLocation, faction));
 		CHECK(area.m_hasFarmFields.hasSowSeedsDesignations(faction));
 		CHECK(space.designation_has(fieldLocation, faction, SpaceDesignation::SowSeeds));
@@ -76,8 +77,7 @@ TEST_CASE("sow")
 		CHECK(actors.move_hasPathRequest(actor));
 		CHECK(actors.objective_getCurrent<SowSeedsObjective>(actor).canSowAt(area, fieldLocation, actor));
 		constexpr bool detour = false;
-		constexpr bool adjacent = true;
-		CHECK(!area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor)).findPathToWithoutMemo(actors.getLocation(actor), actors.getFacing(actor), actors.getShape(actor), fieldLocation, detour, adjacent, faction).path.empty());
+		CHECK(!area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor)).findPathToWithoutMemo<false, false>(actors.getLocation(actor), actors.getFacing(actor), actors.getShape(actor), fieldLocation, detour, faction).path.empty());
 		simulation.doStep();
 		CHECK(!space.designation_has(fieldLocation, faction, SpaceDesignation::SowSeeds));
 		CHECK(!actors.move_getPath(actor).empty());
@@ -130,6 +130,9 @@ TEST_CASE("sow")
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, actor, fieldLocation);
 		// No alternative route or location found, cannot complete objective.
 		CHECK(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
+		simulation.fastForwardUntillActorHasNoDestination(area, actor);
+		CHECK(actors.objective_getCurrentName(actor) == "sow seeds");
+		CHECK(actors.move_hasPathRequest(actor));
 		simulation.doStep();
 		CHECK(actors.objective_getCurrentName(actor) != "sow seeds");
 	}
@@ -142,6 +145,7 @@ TEST_CASE("sow")
 		CHECK(!actors.move_getPath(actor).empty());
 		area.m_hasFarmFields.getForFaction(faction).remove(area, field);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, actor, fieldLocation);
+		simulation.fastForwardUntillActorHasNoDestination(area, actor);
 		// Point3D is not select to grow anymore, cannot complete task, search for another route / another location to sow.
 		simulation.doStep();
 		CHECK(actors.objective_getCurrentName(actor) != "sow seeds");
@@ -162,6 +166,7 @@ TEST_CASE("sow")
 	{
 		area.m_hasFarmFields.getForFaction(faction).setSpecies(area, field, wheatGrass);
 		actors.objective_setPriority(actor, objectiveType.getId(), Priority::create(10));
+		CHECK(actors.move_hasPathRequest(actor));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
 		CHECK(!space.designation_has(fieldLocation, faction, SpaceDesignation::SowSeeds));
@@ -216,10 +221,10 @@ TEST_CASE("harvest")
 		CHECK(designations.check(block, SpaceDesignation::Harvest));
 		simulation.doStep();
 		CHECK(!space.designation_has(block, faction, SpaceDesignation::Harvest));
-		CHECK(!actors.move_getPath(actor).empty());
+		CHECK(actors.move_hasPath(actor));
 		Point3D destination = actors.move_getDestination(actor);
 		simulation.fastForwardUntillActorIsAtDestination(area, actor, destination);
-		CHECK(actors.move_getPath(actor).empty());
+		CHECK(!actors.move_hasPath(actor));
 		CHECK(!actors.move_hasPathRequest(actor));
 		CHECK(!area.m_hasFarmFields.hasHarvestDesignations(faction));
 		CHECK(!space.designation_has(block, faction, SpaceDesignation::Harvest));
@@ -354,7 +359,7 @@ TEST_CASE("givePlantFluid")
 		space.fluid_add(pondLocation, CollisionVolume::create(100), water);
 		CHECK(actors.canPickUp_quantityWhichCanBePickedUpUnencombered(actor, items.getItemType(bucket), items.getMaterialType(bucket)) != 0);
 		plants.setMaybeNeedsFluid(plant);
-		space.plant_exists(block);
+		CHECK(space.plant_exists(block));
 		CHECK(plants.getVolumeFluidRequested(plant) != 0);
 		CHECK(!plants.isGrowing(plant));
 		CHECK(area.m_hasFarmFields.hasGivePlantsFluidDesignations(faction));

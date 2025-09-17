@@ -7,12 +7,8 @@
 class Fire;
 class Project;
 
-constexpr static RTreeDataConfig noMerge{.splitAndMerge = false};
+template class RTreeDataIndex<std::unique_ptr<Reservable>, uint16_t, RTreeDataConfigs::noMergeOrOverlap>;
+template class RTreeDataIndex<SmallMapStable<MaterialTypeId, Fire>*, uint32_t, RTreeDataConfigs::noMergeOrOverlap>;
 
-template class RTreeDataIndex<std::unique_ptr<Reservable>, uint16_t, noMerge>;
-template class RTreeDataIndex<SmallMapStable<MaterialTypeId, Fire>*, uint32_t, noMerge>;
-template class RTreeDataIndex<PointFeatureSet, uint32_t>;
-template class RTreeDataIndex<SmallMap<ActorIndex, CollisionVolume>, uint32_t>;
-template class RTreeDataIndex<SmallMap<ItemIndex, CollisionVolume>, uint32_t>;
-template class RTreeDataIndex<SmallSet<ActorIndex>, uint32_t>;
-template class RTreeDataIndex<SmallSet<ItemIndex>, uint32_t>;
+template class RTreeData<RTreeDataIndex<std::unique_ptr<Reservable>, uint16_t, RTreeDataConfigs::noMergeOrOverlap>::DataIndex, RTreeDataConfigs::noMergeOrOverlap>;
+template class RTreeData<RTreeDataIndex<SmallMapStable<MaterialTypeId, Fire>*, uint32_t, RTreeDataConfigs::noMergeOrOverlap>::DataIndex, RTreeDataConfigs::noMergeOrOverlap>;

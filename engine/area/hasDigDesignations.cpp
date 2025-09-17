@@ -123,8 +123,8 @@ void AreaHasDigDesignations::clearAll(const Point3D& point)
 void AreaHasDigDesignations::clearReservations()
 {
 	for(auto& pair : m_data)
-		for(auto& pair : pair.second->m_data)
-			pair.second->clearReservations();
+		for(auto& pair2 : pair.second->m_data)
+			pair2.second->clearReservations();
 }
 bool AreaHasDigDesignations::areThereAnyForFaction(const FactionId& faction) const
 {

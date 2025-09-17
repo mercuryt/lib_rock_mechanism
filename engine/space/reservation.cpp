@@ -2,20 +2,17 @@
 #include "../reservable.h"
 void Space::reserve(const Point3D& point, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
 {
-	Reservable* reservable = nullptr;
-	if(!m_reservables.queryAny(point))
+	const auto action = [&](std::unique_ptr<Reservable>& reservable)
 	{
-		m_reservables.insert(point, std::make_unique<Reservable>(Quantity::create(1)));
-		reservable = m_reservables.queryGetOne(point).get();
-	}
-	else
-		reservable = m_reservables.queryGetOne(point).get();
-	reservable->reserveFor(canReserve, Quantity::create(1), std::move(callback));
-	canReserve.recordReservedPoint(point, reservable);
+		if(reservable == nullptr)
+			reservable = std::make_unique<Reservable>(Quantity::create(1));
+		reservable->reserveFor(canReserve, {1}, std::move(callback));
+	};
+	m_reservables.updateOrInsertOne(point, action);
 }
 void Space::unreserve(const Point3D& point, CanReserve& canReserve)
 {
-	assert(m_reservables.queryGetOne(point) != nullptr);
+	assert(m_reservables.queryAny(point));
 	auto& reservable = *m_reservables.queryGetOneMutable(point);
 	assert(reservable.hasAnyReservationsFor(canReserve));
 	reservable.clearReservationFor(canReserve);
@@ -33,11 +30,19 @@ void Space::setReservationDishonorCallback(const Point3D& point, CanReserve& can
 	assert(m_reservables.queryGetOne(point) != nullptr);
 	m_reservables.queryGetOne(point)->setDishonorCallbackFor(canReserve, std::move(callback));
 }
-[[nodiscard]] bool Space::isReserved(const Point3D& point, const FactionId& faction) const
+bool Space::isReserved(const Point3D& point, const FactionId& faction) const
 {
-	if(m_reservables.queryGetOne(point) == nullptr)
-		return false;
-	return m_reservables.queryGetOne(point)->hasAnyReservationsWith(faction);
+	return isReservedAny(Cuboid(point, point), faction);
+}
+bool Space::isReservedAny(const Cuboid& cuboid, const FactionId& faction) const
+{
+	const auto condition = [&](const std::unique_ptr<Reservable>& reservable){ return reservable->hasAnyReservationsWith(faction); };
+	return m_reservables.queryAnyWithCondition(cuboid, condition);
+}
+bool Space::isReservedAny(const CuboidSet& cuboids, const FactionId& faction) const
+{
+	const auto condition = [&](const std::unique_ptr<Reservable>& reservable){ return reservable->hasAnyReservationsWith(faction); };
+	return m_reservables.batchQueryAnyWithCondition(cuboids, condition);
 }
 Reservable& Space::getReservable(const Point3D& point) { return *m_reservables.queryGetOne(point); }
 

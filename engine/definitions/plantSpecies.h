@@ -104,4 +104,4 @@ public:
 	Quantity static getItemQuantityToHarvest(const PlantSpeciesId& species);
 	uint16_t static getDayOfYearToStartHarvest(const PlantSpeciesId& species);
 };
-inline PlantSpecies plantSpeciesData;
+inline PlantSpecies g_plantSpeciesData;

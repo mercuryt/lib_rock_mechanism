@@ -37,6 +37,14 @@ public:
 	void remove(const Point3D& point);
 	void removeIfExists(const Point3D& point);
 	bool empty() const;
+	[[nodiscard]] WoodCuttingProject& getForPoint(const Point3D& point);
+	[[nodiscard]] WoodCuttingProject* getProjectWithCondition(const auto& shape, auto&& condition)
+	{
+		for(const auto& [point, project] : m_data)
+			if(shape.contains(point) && condition(*project))
+				return project.get();
+		return nullptr;
+	}
 	friend class AreaHasWoodCuttingDesignations;
 };
 // To be used by Area.
@@ -58,5 +66,6 @@ public:
 	void clearReservations();
 	bool areThereAnyForFaction(FactionId faction) const;
 	bool contains(FactionId faction, const Point3D& point) const;
-	WoodCuttingProject& getForFactionAndPoint(FactionId faction, const Point3D& point);
+	HasWoodCuttingDesignationsForFaction& getForFaction(FactionId faction);
+	const HasWoodCuttingDesignationsForFaction& getForFaction(FactionId faction) const;
 };

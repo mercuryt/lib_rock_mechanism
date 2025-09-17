@@ -179,7 +179,7 @@ void Simulation::fastForwardUntillActorIsAdjacentToDestination(Area& area, const
 	#ifndef NDEBUG
 		assert(!actors.move_getPath(actor).empty());
 		const Point3D& adjacentDestination = actors.move_getPath(actor).front();
-		if(actors.getOccupied(actor).size() == 1)
+		if(actors.getOccupied(actor).volume() == 1)
 			assert(adjacentDestination.isAdjacentTo(destination));
 	#endif
 	std::function<bool()> predicate = [&](){ return actors.isAdjacentToLocation(actor, destination); };

@@ -13,26 +13,26 @@ TEST_CASE("cuboid")
 	SUBCASE("create")
 	{
 		Cuboid cuboid(Point3D::create(1, 1, 1), Point3D::create(0, 0, 0));
-		CHECK(cuboid.size() == 8);
+		CHECK(cuboid.volume() == 8);
 		CHECK(cuboid.contains(Point3D::create(1, 1, 0)));
 	}
 	SUBCASE("merge")
 	{
 		Cuboid c1(Point3D::create(0, 1, 1), Point3D::create(0, 0, 0));
-		CHECK(c1.size() == 4);
+		CHECK(c1.volume() == 4);
 		Cuboid c2(Point3D::create(1, 1, 1), Point3D::create(1, 0, 0));
 		CHECK(c1.canMerge(c2));
 		Cuboid sum = c1.sum(c2);
-		CHECK(sum.size() == 8);
+		CHECK(sum.volume() == 8);
 		CHECK(c1 != c2);
 		c2.merge(c1);
-		CHECK(c2.size() == 8);
+		CHECK(c2.volume() == 8);
 	}
 	SUBCASE("get face")
 	{
 		Cuboid c1(Point3D::create(1, 1, 1), Point3D::create(0, 0, 0));
 		Cuboid face = c1.getFace(Facing6::East); // x + 1.
-		CHECK(face.size() == 4);
+		CHECK(face.volume() == 4);
 		CHECK(face.contains(Point3D::create(1, 0, 0)));
 		CHECK(!face.contains(Point3D::create(0, 0, 0)));
 	}
@@ -42,8 +42,8 @@ TEST_CASE("cuboid")
 		Cuboid c2(Point3D::create(0, 0, 0), Point3D::create(0, 0, 0));
 		SmallSet<Cuboid> children = c1.getChildrenWhenSplitByCuboid(c2);
 		CHECK(children.size() == 3);
-		CHECK(children.containsAny([](const Cuboid& cuboid) { return cuboid.size() == 4; }));
-		CHECK(children.containsAny([](const Cuboid& cuboid) { return cuboid.size() == 2; }));
-		CHECK(children.containsAny([](const Cuboid& cuboid) { return cuboid.size() == 1; }));
+		CHECK(children.containsAny([](const Cuboid& cuboid) { return cuboid.volume() == 4; }));
+		CHECK(children.containsAny([](const Cuboid& cuboid) { return cuboid.volume() == 2; }));
+		CHECK(children.containsAny([](const Cuboid& cuboid) { return cuboid.volume() == 1; }));
 	}
 }

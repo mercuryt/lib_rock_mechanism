@@ -1,5 +1,6 @@
 #include "actors.h"
 #include "../area/area.h"
+#include "../space/space.h"
 #include "../config.h"
 #include "../definitions/animalSpecies.h"
 #include "../definitions/bodyType.h"
@@ -12,7 +13,7 @@
 #include "../items/items.h"
 #include "../numericTypes/types.h"
 #include "../objectives/wait.h"
-#include "../portables.hpp"
+#include "../portables.h"
 #include "../simulation/hasActors.h"
 #include "../simulation/simulation.h"
 #include "../sleep.h"
@@ -251,13 +252,13 @@ void ActorParamaters::generateEquipment(Area& area, const ActorIndex& actor)
 template<class T>
 void to_json(const Json& data, std::unique_ptr<T>& t) { data = *t; }
 Actors::Actors(Area& area) :
-	Portables<Actors, ActorIndex, ActorReferenceIndex>(area, true),
+	Portables<Actors, ActorIndex, ActorReferenceIndex, true>(area),
 	m_coolDownEvent(area.m_eventSchedule),
 	m_moveEvent(area.m_eventSchedule)
 { }
 void Actors::load(const Json& data)
 {
-	Portables<Actors, ActorIndex, ActorReferenceIndex>::load(data);
+	Portables<Actors, ActorIndex, ActorReferenceIndex, true>::load(data);
 	ActorIndex size = ActorIndex::create(m_location.size());
 	data["id"].get_to(m_id);
 	data["name"].get_to(m_name);
@@ -306,51 +307,45 @@ void Actors::load(const Json& data)
 		m_area.m_hasTerrainFacades.maybeRegisterMoveType(moveType);
 	m_body.resize(size);
 	assert(data.contains("body") && data["body"].contains("data"));
-	const auto& bodyData = data["body"]["data"];
 	i = ActorIndex::create(0);
-	for(const Json& data : bodyData)
+	for(const Json& bodyData : data["body"]["data"])
 	{
-		m_body[i] = std::make_unique<Body>(data, deserializationMemo, i);
+		m_body[i] = std::make_unique<Body>(bodyData, deserializationMemo, i);
 		++i;
 	}
 	m_mustSleep.resize(size);
 	i = ActorIndex::create(0);
-	const auto& sleepData = data["mustSleep"]["data"];
-	for(const Json& data : sleepData)
+	for(const Json& sleepData : data["mustSleep"]["data"])
 	{
-		m_mustSleep[i] = std::make_unique<MustSleep>(m_area, data, i);
+		m_mustSleep[i] = std::make_unique<MustSleep>(m_area, sleepData, i);
 		++i;
 	}
 	m_mustDrink.resize(size);
-	const auto& drinkData = data["mustDrink"]["data"];
 	i = ActorIndex::create(0);
-	for(const Json& data : drinkData)
+	for(const Json& drinkData : data["mustDrink"]["data"])
 	{
-		m_mustDrink[i] = std::make_unique<MustDrink>(m_area, data, i, m_species[i]);
+		m_mustDrink[i] = std::make_unique<MustDrink>(m_area, drinkData, i, m_species[i]);
 		++i;
 	}
 	m_mustEat.resize(size);
 	i = ActorIndex::create(0);
-	const auto& eatData = data["mustEat"]["data"];
-	for(const Json& data : eatData)
+	for(const Json& eatData : data["mustEat"]["data"])
 	{
-		m_mustEat[i] = std::make_unique<MustEat>(m_area, data, i, m_species[i]);
+		m_mustEat[i] = std::make_unique<MustEat>(m_area, eatData, i, m_species[i]);
 		++i;
 	}
 	m_needsSafeTemperature.resize(size);
 	i = ActorIndex::create(0);
-	const auto& temperatureData = data["needsSafeTemperature"]["data"];
-	for(const Json& data : temperatureData)
+	for(const Json& temperatureData : data["needsSafeTemperature"]["data"])
 	{
-		m_needsSafeTemperature[i] = std::make_unique<ActorNeedsSafeTemperature>(data, i, m_area);
+		m_needsSafeTemperature[i] = std::make_unique<ActorNeedsSafeTemperature>(temperatureData, i, m_area);
 		++i;
 	}
 	m_canGrow.resize(size);
 	i = ActorIndex::create(0);
-	const auto& growData = data["canGrow"]["data"];
-	for(const Json& data : growData)
+	for(const Json& growData : data["canGrow"]["data"])
 	{
-		m_canGrow[i] = std::make_unique<CanGrow>(m_area, data, i);
+		m_canGrow[i] = std::make_unique<CanGrow>(m_area, growData, i);
 		++i;
 	}
 	m_equipmentSet.resize(size);
@@ -375,9 +370,9 @@ void Actors::load(const Json& data)
 	{
 		ActorIndex index = ActorIndex::create(std::stoi(iter.key()));
 		ActorReference ref = getReference(index);
-		for(const Json& data : iter.value())
+		for(const Json& refData : iter.value())
 		{
-			ActorReference otherRef(data, m_referenceData);
+			ActorReference otherRef(refData, m_referenceData);
 			m_canSee[index].insert(otherRef);
 			ActorIndex otherIndex = otherRef.getIndex(m_referenceData);
 			m_canBeSeenBy[otherIndex].insert(ref);
@@ -387,26 +382,15 @@ void Actors::load(const Json& data)
 	{
 		m_area.m_simulation.m_actors.registerActor(getId(index), m_area.getActors(), index);
 		Space &space = m_area.getSpace();
-		if(m_location[index].exists())
+		const Point3D location = m_location[index];
+		if(location.exists())
 		{
-			if(isStatic(index))
-			{
-				for (const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
-				{
-					Point3D occupied = m_location[index].applyOffset(pair.offset);
-					space.actor_recordStatic(occupied, index, pair.volume);
-				}
-			}
+			const MapWithCuboidKeys<CollisionVolume> toOccupy = Shape::getCuboidsOccupiedAtWithVolume(m_shape[index], space, location, m_facing[index]);
+			if(m_static[index])
+				space.actor_recordStatic(toOccupy, index);
 			else
-			{
-				for (const auto& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], m_facing[index]))
-				{
-					Point3D occupied = m_location[index].applyOffset(pair.offset);
-					space.actor_recordDynamic(occupied, index, pair.volume);
-				}
-			}
+				space.actor_recordDynamic(toOccupy, index);
 		}
-
 	}
 	m_project.resize(size);
 }
@@ -414,29 +398,27 @@ void Actors::loadObjectivesAndReservations(const Json& data)
 {
 	auto& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
 	m_hasObjectives.resize(m_id.size());
-	const auto& objectiveData = data["hasObjectives"]["data"];
 	ActorIndex index = ActorIndex::create(0);
-	for(const Json& data : objectiveData)
+	for(const Json& objectiveData : data["hasObjectives"]["data"])
 	{
 		m_hasObjectives[index] = std::make_unique<HasObjectives>(index);
-		m_hasObjectives[index]->load(data, deserializationMemo, m_area, index);
+		m_hasObjectives[index]->load(objectiveData, deserializationMemo, m_area, index);
 		++index;
 	}
 	m_canReserve.resize(m_id.size());
 	index = ActorIndex::create(0);
-	const auto& reserveData = data["canReserve"]["data"];
-	for(const Json& data : reserveData)
+	for(const Json& reserveData : data["canReserve"]["data"])
 	{
 		m_canReserve[index] = std::make_unique<CanReserve>(m_faction[index]);
-		m_canReserve[index]->load(data, deserializationMemo, m_area);
+		m_canReserve[index]->load(reserveData, deserializationMemo, m_area);
 		++index;
 	}
 	m_pathRequest.resize(m_id.size());
 	const auto& pathRequestData = data["pathRequest"];
 	for(auto iter = pathRequestData.begin(); iter != pathRequestData.end(); ++iter)
 	{
-		ActorIndex index = ActorIndex::create(std::stoi(iter.key()));
-		m_pathRequest[index] = &PathRequest::load(iter.value(), deserializationMemo, m_area, m_moveType[index]);
+		ActorIndex actor = ActorIndex::create(std::stoi(iter.key()));
+		m_pathRequest[actor] = &PathRequest::load(iter.value(), deserializationMemo, m_area, m_moveType[actor]);
 	}
 }
 void to_json(Json& data, const std::unique_ptr<CanReserve>& canReserve) { data = canReserve->toJson(); }
@@ -525,7 +507,7 @@ Json Actors::toJson() const
 		if(!m_canSee[index].empty())
 			output["canSee"][i] = m_canSee[index];
 	}
-	output.update(Portables<Actors, ActorIndex, ActorReferenceIndex>::toJson());
+	output.update(Portables<Actors, ActorIndex, ActorReferenceIndex, true>::toJson());
 	return output;
 }
 void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
@@ -551,8 +533,8 @@ void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
 		m_target[actor] = newIndex;
 	// Update SmallSet<ActorIndex> stored in occupied point(s).
 	Space& space = m_area.getSpace();
-	for(Point3D point : m_occupied[newIndex])
-		space.actor_updateIndex(point, oldIndex, newIndex);
+	for(const Cuboid& cuboid : m_occupied[newIndex])
+		space.actor_updateIndex(cuboid, oldIndex, newIndex);
 }
 void Actors::destroy(const ActorIndex& index)
 {
@@ -584,66 +566,6 @@ void Actors::onChangeAmbiantSurfaceTemperature()
 {
 	m_onSurface.forEach([this](const ActorIndex& index) { m_needsSafeTemperature[index]->onChange(m_area); });
 }
-template<typename Action>
-void Actors::forEachData(Action&& action)
-{
-	forEachDataPortables(action);
-	action(m_id);
-	action(m_name);
-	action(m_species);
-	action(m_project);
-	action(m_birthStep);
-	action(m_causeOfDeath);
-	action(m_strength);
-	action(m_strengthBonusOrPenalty);
-	action(m_strengthModifier);
-	action(m_agility);
-	action(m_agilityBonusOrPenalty);
-	action(m_agilityModifier);
-	action(m_dextarity);
-	action(m_dextarityBonusOrPenalty);
-	action(m_dextarityModifier);
-	action(m_adultHeight);
-	action(m_mass);
-	action(m_massBonusOrPenalty);
-	action(m_massModifier);
-	action(m_unencomberedCarryMass);
-	action(m_leadFollowPath);
-	action(m_hasObjectives);
-	action(m_body);
-	action(m_mustSleep);
-	action(m_mustDrink);
-	action(m_mustEat);
-	action(m_needsSafeTemperature);
-	action(m_canGrow);
-	action(m_skillSet);
-	action(m_canReserve);
-	action(m_hasUniform);
-	action(m_equipmentSet);
-	action(m_carrying);
-	action(m_stamina);
-	action(m_canSee);
-	action(m_canBeSeenBy);
-	action(m_visionRange);
-	action(m_coolDownEvent);
-	action(m_meleeAttackTable);
-	action(m_targetedBy);
-	action(m_target);
-	action(m_onMissCoolDownMelee);
-	action(m_maxMeleeRange);
-	action(m_maxRange);
-	action(m_coolDownDurationModifier);
-	action(m_combatScore);
-	action(m_moveEvent);
-	action(m_pathRequest);
-	action(m_path);
-	action(m_destination);
-	action(m_speedIndividual);
-	action(m_speedActual);
-	action(m_moveRetries);
-	action(m_onSurface);
-	action(m_isPilot);
-}
 ActorIndex Actors::create(ActorParamaters params)
 {
 	ActorIndex index = ActorIndex::create(m_id.size());
@@ -652,7 +574,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	MoveTypeId moveType = AnimalSpecies::getMoveType(params.species);
 	m_area.m_hasTerrainFacades.maybeRegisterMoveType(moveType);
 	ShapeId shape = AnimalSpecies::shapeForPercentGrown(params.species, params.getPercentGrown(m_area.m_simulation));
-	Portables<Actors, ActorIndex, ActorReferenceIndex>::create(index, moveType, shape, params.faction, isStatic, Quantity::create(1));
+	Portables<Actors, ActorIndex, ActorReferenceIndex, true>::create(index, moveType, shape, params.faction, isStatic, Quantity::create(1));
 	Simulation& simulation = m_area.m_simulation;
 	m_id[index] = params.getId(simulation);
 	m_name[index] = params.getName(simulation);
@@ -727,7 +649,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	else if(params.piloting)
 	{
 		auto& decks = m_area.m_decks;
-		ActorOrItemIndex isPiloting = decks.getForId(decks.getForPoint(params.location));
+		ActorOrItemIndex isPiloting = decks.getForId(decks.queryDeckId(params.location));
 		assert(isPiloting.isItem());
 		const ItemIndex& vehicle = isPiloting.getItem();
 		location_set(index, params.location, isPiloting.getFacing(m_area));
@@ -941,7 +863,7 @@ void Actors::log(const ActorIndex& index) const
 {
 	std::cout << m_name[index];
 	std::cout << "(L" << AnimalSpecies::getName(m_species[index]) << ")";
-	Portables<Actors, ActorIndex, ActorReferenceIndex>::log(index);
+	Portables<Actors, ActorIndex, ActorReferenceIndex, true>::log(index);
 	if(objective_exists(index))
 		std::cout << ", current objective: " << objective_getCurrentName(index);
 	if(m_destination[index].exists())

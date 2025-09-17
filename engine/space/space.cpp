@@ -9,7 +9,7 @@
 #include "../actors/actors.h"
 #include "../items/items.h"
 #include "../plants.h"
-#include "../portables.hpp"
+#include "../portables.h"
 #include <string>
 
 Space::Space(Area& area, const Distance& x, const Distance& y, const Distance& z) :
@@ -74,13 +74,18 @@ Cuboid Space::boundry() const
 	auto top = Point3D(m_dimensions - 1);
 	return Cuboid(top, Point3D::create(0,0,0));
 }
+OffsetCuboid Space::offsetBoundry() const
+{
+	auto top = Point3D(m_dimensions - 1);
+	return OffsetCuboid(top.toOffset(), Offset3D::create(0,0,0));
+}
 Point3D Space::getCenterAtGroundLevel() const
 {
 	Point3D center(m_sizeX / 2, m_sizeY / 2, m_sizeZ - 1);
 	if(center.z() == 0)
 		return center;
 	Point3D below = center.below();
-	while(!solid_is(below) && below.z() != 0)
+	while(!solid_isAny(below) && below.z() != 0)
 	{
 		below = below.below();
 		center = below;
@@ -176,13 +181,15 @@ SmallSet<Point3D> Space::getNthAdjacent(const Point3D& point, const Distance& n)
 }
 bool Space::isAdjacentToActor(const Point3D& point, const ActorIndex& actor) const
 {
-	const auto& points = m_area.getActors().getOccupied(actor);
-	return point.isAdjacentToAny(points);
+	const Cuboid adjacent = point.getAllAdjacentIncludingOutOfBounds();
+	const auto condition = [&](const ActorIndex& a){ return a == actor; };
+	return m_actors.queryAnyWithCondition(adjacent, condition);
 }
 bool Space::isAdjacentToItem(const Point3D& point, const ItemIndex& item) const
 {
-	const auto& points = m_area.getItems().getOccupied(item);
-	return point.isAdjacentToAny(points);
+	const Cuboid adjacent = point.getAllAdjacentIncludingOutOfBounds();
+	const auto condition = [&](const ItemIndex& i){ return i == item; };
+	return m_items.queryAnyWithCondition(adjacent, condition);
 }
 void Space::setExposedToSky(const Point3D& point, bool exposed)
 {
@@ -206,35 +213,37 @@ void Space::setBelowVisible(const Point3D& point)
 }
 bool Space::canSeeIntoFromAlways(const Point3D& to, const Point3D& from) const
 {
-	if(solid_is(to) && !MaterialType::getTransparent(m_solid.queryGetOne(to)))
+	if(solid_isAny(to) && !MaterialType::getTransparent(m_solid.queryGetOne(to)))
 		return false;
 	if(pointFeature_contains(to, PointFeatureTypeId::Door))
 		return false;
 	// looking up.
+	const Cuboid toCuboid{to, to};
 	if(to.z() > from.z())
 	{
-		const PointFeature* floor = pointFeature_at(to, PointFeatureTypeId::Floor);
-		if(floor != nullptr && !MaterialType::getTransparent(floor->materialType))
+		const PointFeature& floor = pointFeature_at(toCuboid, PointFeatureTypeId::Floor);
+		if(floor.exists() && !MaterialType::getTransparent(floor.materialType))
 			return false;
-		const PointFeature* hatch = pointFeature_at(to, PointFeatureTypeId::Hatch);
-		if(hatch != nullptr && !MaterialType::getTransparent(hatch->materialType))
+		const PointFeature& hatch = pointFeature_at(toCuboid, PointFeatureTypeId::Hatch);
+		if(hatch.exists() && !MaterialType::getTransparent(hatch.materialType))
 			return false;
 	}
 	// looking down.
+	const Cuboid fromCuboid{from, from};
 	if(to.z() < from.z())
 	{
-		const PointFeature* floor = pointFeature_at(from, PointFeatureTypeId::Floor);
-		if(floor != nullptr && !MaterialType::getTransparent(floor->materialType))
+		const PointFeature& floor = pointFeature_at(fromCuboid, PointFeatureTypeId::Floor);
+		if(floor.exists() && !MaterialType::getTransparent(floor.materialType))
 			return false;
-		const PointFeature* hatch = pointFeature_at(from, PointFeatureTypeId::Hatch);
-		if(hatch != nullptr && !MaterialType::getTransparent(hatch->materialType))
+		const PointFeature& hatch = pointFeature_at(fromCuboid, PointFeatureTypeId::Hatch);
+		if(hatch.exists() && !MaterialType::getTransparent(hatch.materialType))
 			return false;
 	}
 	return true;
 }
 void Space::moveContentsTo(const Point3D& from, const Point3D& to)
 {
-	if(solid_is(from))
+	if(solid_isAny(from))
 	{
 		solid_set(to, solid_get(from), m_constructed.query(from));
 		solid_setNot(from);
@@ -252,31 +261,80 @@ void Space::maybeContentsFalls(const Point3D& point)
 	for(const ActorIndex& actor : actorsCopy)
 		actors.fall(actor);
 }
-void Space::setDynamic(const Point3D& point) { m_dynamic.maybeInsert(point); }
-void Space::unsetDynamic(const Point3D& point) { m_dynamic.maybeInsert(point); }
-bool Space::canSeeThrough(const Point3D& point) const
+void Space::prepareRtrees()
 {
-	const MaterialTypeId& material = solid_get(point);
+	#pragma omp parallel
+	#pragma omp single nowait
+	{
+		#pragma omp task
+			for(auto& pair : m_projects)
+				pair.second.prepare();
+		#pragma omp task
+			m_reservables.prepare();
+		#pragma omp task
+			m_fires.prepare();
+		#pragma omp task
+			m_solid.prepare();
+		#pragma omp task
+			m_features.prepare();
+		#pragma omp task
+			m_mist.prepare();
+		#pragma omp task
+			m_mistInverseDistanceFromSource.prepare();
+		#pragma omp task
+			m_actors.prepare();
+		#pragma omp task
+			m_items.prepare();
+		#pragma omp task
+			m_totalFluidVolume.prepare();
+		#pragma omp task
+			m_fluid.prepare();
+		#pragma omp task
+			m_plants.prepare();
+		#pragma omp task
+			m_dynamicVolume.prepare();
+		#pragma omp task
+			m_staticVolume.prepare();
+		#pragma omp task
+			m_temperatureDelta.prepare();
+		#pragma omp task
+			m_visible.prepare();
+		#pragma omp task
+			m_constructed.prepare();
+		#pragma omp task
+			m_dynamic.prepare();
+		#pragma omp task
+			m_support.prepare();
+		#pragma omp task
+			m_exposedToSky.prepare();
+		#pragma omp task
+			m_area.m_spaceDesignations.prepare();
+	}
+}
+bool Space::canSeeThrough(const Cuboid& cuboid) const
+{
+	const MaterialTypeId& material = solid_get(cuboid);
 	if(material.exists() && !MaterialType::getTransparent(material))
 		return false;
-	const PointFeature* door = pointFeature_at(point, PointFeatureTypeId::Door);
-	if(door != nullptr && door->closed && !MaterialType::getTransparent(door->materialType) )
+	const PointFeature& door = pointFeature_at(cuboid, PointFeatureTypeId::Door);
+	if(door.exists() && door.isClosed() && !MaterialType::getTransparent(door.materialType) )
 		return false;
 	return true;
 }
-bool Space::canSeeThroughFloor(const Point3D& point) const
+bool Space::canSeeThrough(const Point3D& point) const { return canSeeThrough(Cuboid{point, point}); }
+bool Space::canSeeThroughFloor(const Cuboid& cuboid) const
 {
-	const PointFeature* floor = pointFeature_at(point, PointFeatureTypeId::Floor);
-	if(floor != nullptr && !MaterialType::getTransparent(floor->materialType))
+	const PointFeature& floor = pointFeature_at(cuboid, PointFeatureTypeId::Floor);
+	if(floor.exists() && !MaterialType::getTransparent(floor.materialType))
 		return false;
-	const PointFeature* hatch = pointFeature_at(point, PointFeatureTypeId::Hatch);
-	if(hatch != nullptr && !MaterialType::getTransparent(hatch->materialType) && hatch->closed)
+	const PointFeature& hatch = pointFeature_at(cuboid, PointFeatureTypeId::Hatch);
+	if(hatch.exists() && !MaterialType::getTransparent(hatch.materialType) && hatch.isClosed())
 		return false;
 	return true;
 }
 bool Space::canSeeThroughFrom(const Point3D& point, const Point3D& otherPoint) const
 {
-	if(!canSeeThrough(point))
+	if(!canSeeThrough({point, point}))
 		return false;
 	// On the same level.
 	auto z = point.z();
@@ -286,20 +344,20 @@ bool Space::canSeeThroughFrom(const Point3D& point, const Point3D& otherPoint) c
 	// looking up.
 	if(z > otherZ)
 	{
-		if(!canSeeThroughFloor(point))
+		if(!canSeeThroughFloor({point, point}))
 			return false;
 	}
 	// looking down.
 	if(z < otherZ)
 	{
-		if(!canSeeThroughFloor(otherPoint))
+		if(!canSeeThroughFloor({otherPoint, otherPoint}))
 			return false;
 	}
 	return true;
 }
 bool Space::isSupport(const Point3D& point) const
 {
-	return solid_is(point) || pointFeature_isSupport(point);
+	return solid_isAny(point) || pointFeature_isSupport(point);
 }
 bool Space::isExposedToSky(const Point3D& point) const
 {
@@ -309,6 +367,10 @@ bool Space::isEdge(const Point3D& point) const
 {
 	return (point.data == 0).any() && (point.data == m_dimensions).any();
 }
+bool Space::isEdge(const Cuboid& cuboid) const
+{
+	return isEdge(cuboid.m_high) || isEdge(cuboid.m_low);
+}
 bool Space::hasLineOfSightTo(const Point3D& point, const Point3D& other) const
 {
 	return m_area.m_opacityFacade.hasLineOfSight(point, other);
@@ -317,9 +379,28 @@ Cuboid Space::getZLevel(const Distance& z)
 {
 	return Cuboid({m_sizeX - 1, m_sizeY - 1, z}, {Distance::create(0), Distance::create(0), z});
 }
-SmallSet<Point3D> Space::collectAdjacentsInRange(const Point3D& point, const Distance& range)
+CuboidSet Space::collectAdjacentsInRange(const Point3D& point, const Distance& range)
 {
 	auto condition = [&](const Point3D& b){ return b.taxiDistanceTo(point) <= range; };
 	return collectAdjacentsWithCondition(point, condition);
 }
-bool FluidDataRTree::canOverlap(const FluidData& a, const FluidData& b) const { return a.type != b.type; }
+bool Space::designation_anyForFaction(const FactionId& faction, const SpaceDesignation& designation) const
+{
+	return m_area.m_spaceDesignations.getForFaction(faction).any(designation);
+}
+bool Space::designation_has(const Point3D& shape, const FactionId& faction, const SpaceDesignation& designation) const { return m_area.m_spaceDesignations.getForFaction(faction).check(shape, designation); }
+bool Space::designation_has(const Cuboid& shape, const FactionId& faction, const SpaceDesignation& designation) const { return m_area.m_spaceDesignations.getForFaction(faction).check(shape, designation); }
+bool Space::designation_has(const CuboidSet& shape, const FactionId& faction, const SpaceDesignation& designation) const { return m_area.m_spaceDesignations.getForFaction(faction).check(shape, designation); }
+Point3D Space::designation_hasPoint(const Cuboid& shape, const FactionId& faction, const SpaceDesignation& designation) const { return m_area.m_spaceDesignations.getForFaction(faction).queryPoint(shape, designation); }
+Point3D Space::designation_hasPoint(const CuboidSet& shape, const FactionId& faction, const SpaceDesignation& designation) const { return m_area.m_spaceDesignations.getForFaction(faction).queryPoint(shape, designation); }
+void Space::designation_set(const Point3D& shape, const FactionId& faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).set(shape, designation); }
+void Space::designation_set(const Cuboid& shape, const FactionId& faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).set(shape, designation); }
+void Space::designation_set(const CuboidSet& shape, const FactionId& faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).set(shape, designation); }
+void Space::designation_unset(const Point3D& shape, const FactionId& faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).unset(shape, designation); }
+void Space::designation_unset(const Cuboid& shape, const FactionId& faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).unset(shape, designation); }
+void Space::designation_unset(const CuboidSet& shape, const FactionId& faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).unset(shape, designation); }
+void Space::designation_maybeUnset(const Point3D& shape, const FactionId& faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).maybeUnset(shape, designation); }
+void Space::designation_maybeUnset(const Cuboid& shape, const FactionId& faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).maybeUnset(shape, designation); }
+void Space::designation_maybeUnset(const CuboidSet& shape, const FactionId& faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).maybeUnset(shape, designation); }
+bool FluidRTree::canOverlap(const FluidData& a, const FluidData& b) const { return a.type != b.type; }
+bool PointFeatureRTree::canOverlap(const PointFeature& a, const PointFeature& b) const { return a.pointFeatureType != b.pointFeatureType; }

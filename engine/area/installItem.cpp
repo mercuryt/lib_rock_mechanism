@@ -12,7 +12,7 @@ void HasInstallItemDesignationsForFaction::add(Area& area, const Point3D& point,
 {
 	assert(!m_designations.contains(point));
 	Items& items = area.getItems();
-	const SmallSet<Point3D>& occupied = Shape::getPointsOccupiedAt(items.getCompoundShape(item), area.getSpace(), point, facing);
+	const CuboidSet& occupied = Shape::getCuboidsOccupiedAt(items.getCompoundShape(item), area.getSpace(), point, facing);
 	m_designations.emplace(point, area, items.getReference(item), point, facing, faction, occupied);
 }
 void AreaHasInstallItemDesignations::clearReservations()
@@ -25,4 +25,11 @@ void HasInstallItemDesignationsForFaction::remove(Area& area, const ItemIndex& i
 {
 	assert(m_designations.contains(area.getItems().getLocation(item)));
 	m_designations.erase(area.getItems().getLocation(item));
+}
+Point3D HasInstallItemDesignationsForFaction::getPointInCuboid(const Cuboid& cuboid) const
+{
+	for(const auto& [point, project]  : m_designations)
+		if(cuboid.contains(point))
+			return point;
+	return Point3D::null();
 }

@@ -29,9 +29,10 @@ public:
 	[[nodiscard]] std::string name() const override { return "drink"; }
 	[[nodiscard]] bool canDrinkAt(Area& area, const Point3D& point, const Facing4& facing, const ActorIndex& actor) const;
 	[[nodiscard]] Point3D getAdjacentPointToDrinkAt(Area& area, const Point3D& point, const Facing4& facing, const ActorIndex& actor) const;
-	[[nodiscard]] bool canDrinkItemAt(Area& area, const Point3D& point, const ActorIndex& actor) const;
-	[[nodiscard]] ItemIndex getItemToDrinkFromAt(Area& area, const Point3D& point, const ActorIndex& actor) const;
-	[[nodiscard]] bool containsSomethingDrinkable(Area& area, const Point3D& point, const ActorIndex& actor) const;
+	[[nodiscard]] Point3D getPointToDrinkItemAt(Area& area, const Cuboid& cuboid, const ActorIndex& actor) const;
+	[[nodiscard]] ItemIndex getItemToDrinkFromAt(Area& area, const Cuboid& cuboid, const ActorIndex& actor) const;
+	[[nodiscard]] ItemIndex getItemToDrinkFromAt(Area& area, const Point3D& point, const ActorIndex& actor) const { return getItemToDrinkFromAt(area, {point, point}, actor); }
+	[[nodiscard]] Point3D containsSomethingDrinkable(Area& area, const Cuboid& cuboid, const ActorIndex& actor) const;
 	[[nodiscard]] bool isNeed() const { return true; }
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::drink; }
 	friend class DrinkEvent;

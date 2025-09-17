@@ -28,6 +28,7 @@ namespace areaBuilderUtil
 	{
 		for(;zbegin <= zend; ++zbegin)
 			setSolidLayer(area, zbegin, materialType);
+		area.getSpace().solid_prepare();
 	}
 	inline void setSolidLayers(Area& area, uint zbegin, uint zend, const MaterialTypeId& materialType)
 	{
@@ -38,6 +39,7 @@ namespace areaBuilderUtil
 		Space& space = area.getSpace();
 		Cuboid cuboid(end, start);
 		space.solid_setCuboid(cuboid, materialType, false);
+		space.solid_prepare();
 	}
 	inline void setSolidWalls(Area& area, const Distance& height, const MaterialTypeId& materialType)
 	{
@@ -51,6 +53,7 @@ namespace areaBuilderUtil
 		space.solid_setCuboid(cuboid, materialType, false);
 		cuboid = {{space.m_sizeX - 1, space.m_sizeY - 1, height}, {space.m_sizeX - 1, zero, zero}};
 		space.solid_setCuboid(cuboid, materialType, false);
+		space.solid_prepare();
 	}
 	inline void setSolidWalls(Area& area, uint height, const MaterialTypeId& materialType)
 	{
@@ -59,8 +62,8 @@ namespace areaBuilderUtil
 	inline void makeBuilding(Area& area, Cuboid cuboid, const MaterialTypeId& materialType)
 	{
 		Space& space = area.getSpace();
-		Point3D highCoordinates = cuboid.m_highest;
-		for(Distance z = Distance::create(0); z != cuboid.m_highest.z() + 2; ++ z)
+		Point3D highCoordinates = cuboid.m_high;
+		for(Distance z = Distance::create(0); z != cuboid.m_high.z() + 2; ++ z)
 		{
 			for(Distance x = Distance::create(0); x != highCoordinates.x() + 1; ++x)
 			{

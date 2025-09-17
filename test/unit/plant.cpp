@@ -6,7 +6,7 @@
 #include "../../engine/plants.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
-#include "../../engine/hasShapes.hpp"
+#include "../../engine/definitions/plantSpecies.h"
 TEST_CASE("plant")
 {
 	static MaterialTypeId marble = MaterialType::byName("marble");

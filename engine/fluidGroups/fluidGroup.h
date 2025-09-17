@@ -25,7 +25,7 @@ struct FluidGroupSplitData final
 {
 	SmallSet<Point3D> members;
 	SmallSet<Point3D> futureAdjacent;
-	FluidGroupSplitData(SmallSet<Point3D>& m) : members(m) {}
+	FluidGroupSplitData(const SmallSet<Point3D>& m) : members(m) {}
 };
 
 class FluidGroup final
@@ -85,5 +85,6 @@ public:
 	[[nodiscard]] bool dispositionIsStable(const CollisionVolume& fillVolume, const CollisionVolume& drainVolume) const;
 	[[nodiscard]] bool operator==(const FluidGroup& fluidGroup) const { return &fluidGroup == this; }
 	[[nodiscard]] Quantity countPointsOnSurface(const Area& area) const;
+	[[nodiscard]] uint countPoints() const;
 	friend class Area;
 };

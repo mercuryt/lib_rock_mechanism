@@ -132,8 +132,8 @@ Point3D DramaArc::findLocationOnEdgeForNear(const ShapeId& shape, const MoveType
 		// TODO: A single method doing both of these with one iteration would be faster.
 		if(!space.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(thisPoint, shape, moveType, facing, {}))
 			return false;
-		for(Point3D occupiedPoint : Shape::getPointsOccupiedAt(shape, space, thisPoint, facing))
-			if(space.isEdge(occupiedPoint))
+		for(const Cuboid& occupied : Shape::getCuboidsOccupiedAt(shape, space, thisPoint, facing))
+			if(space.isEdge(occupied))
 				return true;
 		return false;
 	};
@@ -157,7 +157,7 @@ bool DramaArc::pointIsConnectedToAtLeast(const Point3D& origin, [[maybe_unused]]
 				return true;
 			for(const Point3D& adjacent : space.getDirectlyAdjacent(candidate))
 				//TODO: check if shape can fit into point with any facing.
-				if(!space.solid_is(adjacent) && space.shape_moveTypeCanEnter(adjacent, moveType))
+				if(!space.solid_isAny(adjacent) && space.shape_moveTypeCanEnter(adjacent, moveType))
 					open.push(adjacent);
 		}
 	}

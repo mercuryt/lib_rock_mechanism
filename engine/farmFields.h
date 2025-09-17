@@ -1,39 +1,34 @@
 #pragma once
-//#include "input.h"
-#include "definitions/plantSpecies.h"
+#include "designations.h"
 #include "geometry/cuboid.h"
 #include "geometry/cuboidSet.h"
 #include "config.h"
 #include "dataStructures/smallMap.h"
+#include "dataStructures/rtreeBoolean.h"
 
-#include <list>
-
-class Area;
 struct FarmField;
 struct DeserializationMemo;
 struct Faction;
 
 struct FarmField
 {
-	SmallSet<Point3D> points;
-	PlantSpeciesId plantSpecies;
-	bool timeToSow = false;
+	CuboidSet m_cuboids;
+	PlantSpeciesId m_plantSpecies;
+	bool m_timeToSow = false;
 	FarmField() = default;
 	FarmField(FarmField&& other) noexcept = default;
-	FarmField(SmallSet<Point3D>&& b) : points(std::move(b)) { }
+	FarmField(CuboidSet&& cuboids) : m_cuboids(std::move(cuboids)) { }
 	FarmField(const Json& data) { nlohmann::from_json(data, *this); }
 	FarmField& operator=(FarmField&& other) noexcept = default;
 	[[nodiscard]] bool operator==(const FarmField& other) const { return this == &other; }
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(FarmField, points, plantSpecies, timeToSow);
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(FarmField, m_cuboids, m_plantSpecies, m_timeToSow);
 };
 // To be used by HasFarmFields, which is used by Area.
 class HasFarmFieldsForFaction
 {
 	FactionId m_faction;
 	SmallSetStable<FarmField> m_farmFields;
-	SmallSet<Point3D> m_pointsWithPlantsNeedingFluid;
-	SmallSet<Point3D> m_pointsWithPlantsToHarvest;
-	SmallSet<Point3D> m_pointsNeedingSeedsSewn;
+	SmallSet<std::pair<Step, PlantIndex>> m_plantsNeedingFluid;
 	bool m_plantsNeedingFluidIsSorted = false;
 public:
 	HasFarmFieldsForFaction() = default;
@@ -42,31 +37,34 @@ public:
 	HasFarmFieldsForFaction(const HasFarmFieldsForFaction&) { assert(false); std::unreachable(); }
 	HasFarmFieldsForFaction& operator=(HasFarmFieldsForFaction&& other) noexcept = default;
 	HasFarmFieldsForFaction& operator=(const HasFarmFieldsForFaction&) { assert(false); std::unreachable(); }
-	void addGivePlantFluidDesignation(Area& area, const Point3D& location);
-	void removeGivePlantFluidDesignation(Area& area, const Point3D& location);
-	void addSowSeedsDesignation(Area& area, const Point3D& point);
-	void removeSowSeedsDesignation(Area& area, const Point3D& point);
+	template<typename ShapeT>
+	void addGivePlantFluidDesignation(Area& area, const ShapeT& shape);
+	void removeGivePlantFluidDesignation(auto& area, const auto& shape) { area.getSpace().designation_unset(shape, m_faction, SpaceDesignation::GivePlantFluid); }
+	void maybeRemoveGivePlantFluidDesignation(auto& area, const auto& shape) { area.getSpace().designation_maybeUnset(shape, m_faction, SpaceDesignation::GivePlantFluid); }
+	void addSowSeedsDesignation(auto& area, const auto& shape) { area.getSpace().designation_set(shape, m_faction, SpaceDesignation::SowSeeds); }
+	void removeSowSeedsDesignation(auto& area, const auto& shape) { area.getSpace().designation_unset(shape, m_faction, SpaceDesignation::SowSeeds); }
+	void maybeRemoveSowSeedsDesignation(auto& area, const auto& shape) { area.getSpace().designation_maybeUnset(shape, m_faction, SpaceDesignation::SowSeeds); }
 	void addHarvestDesignation(Area& area, const PlantIndex& plant);
 	void removeHarvestDesignation(Area& area, const PlantIndex& plant);
+	void maybeRemoveHarvestDesignation(auto& area, const auto& shape) { area.getSpace().designation_maybeUnset(shape, m_faction, SpaceDesignation::Harvest); }
 	void setDayOfYear(Area& area, uint32_t dayOfYear);
-	[[nodiscard]] FarmField& create(Area& area, SmallSet<Point3D>&& space);
-	[[nodiscard]] FarmField& create(Area& area, const SmallSet<Point3D>& space);
+	[[nodiscard]] FarmField& create(Area& area, CuboidSet&& cuboids);
+	[[nodiscard]] FarmField& create(Area& area, const CuboidSet& cuboids);
 	[[nodiscard]] FarmField& create(Area& area, const Cuboid& cuboid);
-	[[nodiscard]] FarmField& create(Area& area, const CuboidSet& cuboid);
-	void extend(Area& area, FarmField& farmField, SmallSet<Point3D>& space);
+	void extend(Area& area, FarmField& farmField, CuboidSet& cuboids);
 	void setSpecies(Area& area, FarmField& farmField, const PlantSpeciesId& plantSpecies);
 	void clearSpecies(Area& area, FarmField& farmField);
-	void designatePoints(Area& area, FarmField& farmField, SmallSet<Point3D>& space);
-	void shrink(Area& area, FarmField& farmField, SmallSet<Point3D>& space);
+	void designatePoints(Area& area, FarmField& farmField, CuboidSet& cuboids);
+	void shrink(Area& area, FarmField& farmField, CuboidSet& cuboids);
 	void remove(Area& area, FarmField& farmField);
-	void undesignatePoints(Area& area, SmallSet<Point3D>& space);
+	void undesignatePoints(Area& area, CuboidSet& cuboids);
 	void setPointData(Area& area);
-	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid(Area& area);
-	[[nodiscard]] bool hasHarvestDesignations() const;
+	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid();
 	[[nodiscard]] bool hasGivePlantsFluidDesignations() const;
-	[[nodiscard]] bool hasSowSeedsDesignations() const;
+	[[nodiscard]] bool hasHarvestDesignations(Area& area) const;
+	[[nodiscard]] bool hasSowSeedsDesignations(Area& area) const;
 	[[nodiscard]] PlantSpeciesId getPlantSpeciesFor(const Point3D& point) const;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(HasFarmFieldsForFaction, m_faction, m_farmFields, m_pointsWithPlantsNeedingFluid, m_pointsWithPlantsToHarvest, m_pointsNeedingSeedsSewn, m_plantsNeedingFluidIsSorted);
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(HasFarmFieldsForFaction, m_faction, m_farmFields, m_plantsNeedingFluid, m_plantsNeedingFluidIsSorted);
 };
 class AreaHasFarmFields
 {
@@ -79,7 +77,7 @@ public:
 	[[nodiscard]] HasFarmFieldsForFaction& getForFaction(const FactionId& faction);
 	void registerFaction(const FactionId& faction);
 	void unregisterFaction(const FactionId& faction);
-	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid(Area& area, const FactionId& faction);
+	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid(const FactionId& faction);
 	void removeAllSowSeedsDesignations(const Point3D& point);
 	void setDayOfYear(uint32_t dayOfYear);
 	[[nodiscard]] bool hasGivePlantsFluidDesignations(const FactionId& faction) const;

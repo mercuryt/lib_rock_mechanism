@@ -1,9 +1,10 @@
 #include "items.h"
 #include "../definitions/itemType.h"
 #include "../area/area.h"
+#include "../space/space.h"
 #include "../definitions/materialType.h"
 #include "../numericTypes/types.h"
-#include "../portables.hpp"
+#include "../portables.h"
 #include "../actors/actors.h"
 #include <regex>
 void Items::cargo_addActor(const ItemIndex& index, const ActorIndex& actor)

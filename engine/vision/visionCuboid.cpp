@@ -29,7 +29,7 @@ AreaHasVisionCuboids::AreaHasVisionCuboids(Area& area) : m_area(area) { }
 void AreaHasVisionCuboids::initalize()
 {
 	const Space& space = m_area.getSpace();
-	create(space.boundry());
+	insertOrMerge(space.boundry());
 }
 void AreaHasVisionCuboids::pointIsTransparent(const Point3D& point)
 {
@@ -60,8 +60,8 @@ void AreaHasVisionCuboids::cuboidIsOpaque(const Cuboid& cuboid)
 bool AreaHasVisionCuboids::canSeeInto(const Cuboid& a, const Cuboid& b) const
 {
 	assert(a != b);
-	assert(a.m_highest != b.m_highest);
-	assert(a.m_lowest != b.m_lowest);
+	assert(a.m_high != b.m_high);
+	assert(a.m_low != b.m_low);
 	Space& space = m_area.getSpace();
 	// Get a cuboid representing a face of m_cuboid.
 	Facing6 facing = a.getFacingTwordsOtherCuboid(b);
@@ -70,9 +70,8 @@ bool AreaHasVisionCuboids::canSeeInto(const Cuboid& a, const Cuboid& b) const
 	// Verify that the whole face can be seen through from the direction of m_cuboid.
 	for(const Point3D& point : face)
 	{
-		assert(face.contains(point));
-		assert(space.boundry().contains(point.moveInDirection(facing, Distance::create(1))));
-		if(!space.canSeeIntoFromAlways(point.moveInDirection(facing, Distance::create(1)), point))
+		const auto adjacent = Point3D::create(point.moveInDirection(facing, Distance::create(1)));
+		if(!space.canSeeIntoFromAlways(adjacent, point))
 			return false;
 	};
 	return true;
@@ -93,18 +92,18 @@ SmallSet<uint> AreaHasVisionCuboids::getMergeCandidates(const Cuboid& cuboid) co
 	SmallSet<Point3D> candidatePoints;
 	candidatePoints.reserve(6);
 	Cuboid boundry = m_area.getSpace().boundry();
-	if(cuboid.m_highest.z() < boundry.m_highest.z())
-		candidatePoints.insert(cuboid.m_highest.above());
-	if(cuboid.m_highest.y() < boundry.m_highest.y())
-		candidatePoints.insert(cuboid.m_highest.south());
-	if(cuboid.m_highest.x() < boundry.m_highest.x())
-		candidatePoints.insert(cuboid.m_highest.east());
-	if(cuboid.m_lowest.z() != 0)
-		candidatePoints.insert(cuboid.m_lowest.below());
-	if(cuboid.m_lowest.y() != 0)
-		candidatePoints.insert(cuboid.m_lowest.north());
-	if(cuboid.m_lowest.x() != 0)
-		candidatePoints.insert(cuboid.m_lowest.west());
+	if(cuboid.m_high.z() < boundry.m_high.z())
+		candidatePoints.insert(cuboid.m_high.above());
+	if(cuboid.m_high.y() < boundry.m_high.y())
+		candidatePoints.insert(cuboid.m_high.south());
+	if(cuboid.m_high.x() < boundry.m_high.x())
+		candidatePoints.insert(cuboid.m_high.east());
+	if(cuboid.m_low.z() != 0)
+		candidatePoints.insert(cuboid.m_low.below());
+	if(cuboid.m_low.y() != 0)
+		candidatePoints.insert(cuboid.m_low.north());
+	if(cuboid.m_low.x() != 0)
+		candidatePoints.insert(cuboid.m_low.west());
 	for(const Point3D& point : candidatePoints)
 	{
 		VisionCuboidId visionCuboidIndex = m_pointLookup.queryGetOne(point);
@@ -116,7 +115,7 @@ SmallSet<uint> AreaHasVisionCuboids::getMergeCandidates(const Cuboid& cuboid) co
 	}
 	return output;
 };
-void AreaHasVisionCuboids::create(const Cuboid& cuboid)
+void AreaHasVisionCuboids::insertOrMerge(const Cuboid& cuboid)
 {
 	validate();
 	for(const uint& index : getMergeCandidates(cuboid))
@@ -142,8 +141,8 @@ void AreaHasVisionCuboids::create(const Cuboid& cuboid)
 	CuboidMap<VisionCuboidId>& adjacent = m_adjacent.back();
 	for(const auto& [point, facing] : cuboid.getSurfaceView())
 	{
-		const Point3D& outside = point.moveInDirection(facing, Distance::create(1));
-		VisionCuboidId outsideKey = m_pointLookup.queryGetOne(outside);
+		const Offset3D& outside = point.moveInDirection(facing, Distance::create(1));
+		VisionCuboidId outsideKey = m_pointLookup.queryGetOne(Point3D::create(outside));
 		if(outsideKey.exists() && !adjacent.contains(outsideKey))
 		{
 			adjacent.insert(outsideKey, getCuboidByVisionCuboidId(outsideKey));
@@ -193,11 +192,10 @@ void AreaHasVisionCuboids::remove(const Cuboid& cuboid)
 		destroy(getIndexForVisionCuboidId(pair.first));
 	for(const auto& pair : toSplit)
 		for(const Cuboid& splitResult : pair.second.getChildrenWhenSplitByCuboid(cuboid))
-			create(splitResult);
+			insertOrMerge(splitResult);
 }
-void AreaHasVisionCuboids::remove(const SmallSet<Point3D>& points)
+void AreaHasVisionCuboids::remove(const CuboidSet& cuboids)
 {
-	auto cuboids = CuboidSet::create(points);
 	for(const Cuboid& cuboid : cuboids)
 		remove(cuboid);
 }
@@ -209,7 +207,7 @@ void AreaHasVisionCuboids::sliceBelow(const Cuboid& cuboid)
 	for(uint i = 0; i < m_keys.size(); ++i)
 		if(cuboid.intersects(m_cuboids[i]))
 			toSplit.emplace(m_keys[i], m_cuboids[i]);
-	for(const auto& [key, cuboid] : toSplit)
+	for(const auto& [key, splitCuboid] : toSplit)
 	{
 		uint index = getIndexForVisionCuboidId(key);
 		destroy(index);
@@ -218,9 +216,9 @@ void AreaHasVisionCuboids::sliceBelow(const Cuboid& cuboid)
 	{
 		auto children = pair.second.getChildrenWhenSplitBelowCuboid(cuboid);
 		if(children.first.exists())
-			create(children.first);
+			insertOrMerge(children.first);
 		if(children.second.exists())
-			create(children.second);
+			insertOrMerge(children.second);
 	}
 }
 void AreaHasVisionCuboids::mergeBelow(const Cuboid& cuboid)
@@ -229,15 +227,15 @@ void AreaHasVisionCuboids::mergeBelow(const Cuboid& cuboid)
 	for(uint i = 0; i < m_keys.size(); ++i)
 		if(cuboid.intersects(m_cuboids[i]))
 			toMerge.emplace(m_keys[i], m_cuboids[i]);
-	for(const auto& [key, cuboid] : toMerge)
+	for(const auto& [key, mergeCuboid] : toMerge)
 	{
 		uint index = getIndexForVisionCuboidId(key);
 		destroy(index);
 	}
-	for(const auto& [key, cuboid] : toMerge)
+	for(const auto& [key, mergeCuboid] : toMerge)
 		// create will clear the current cuboid, create a new one in the same place and attempt to merge it as normal.
 		// TODO: Identify cuboids which will be replicated.
-		create(cuboid);
+		insertOrMerge(mergeCuboid);
 }
 uint AreaHasVisionCuboids::getIndexForVisionCuboidId(const VisionCuboidId& key) const
 {

@@ -7,9 +7,9 @@
 #include "../actors/actors.h"
 #include "../space/space.h"
 #include "../plants.h"
-#include "../hasShapes.hpp"
 #include "../path/terrainFacade.hpp"
 #include "../path/pathRequest.h"
+#include "../definitions/plantSpecies.h"
 // Event.
 HarvestEvent::HarvestEvent(const Step& delay, Area& area, HarvestObjective& ho, const ActorIndex& actor, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_harvestObjective(ho)
@@ -39,7 +39,7 @@ void HarvestEvent::execute(Simulation&, Area* area)
 		assert(numberItemsHarvested != 0);
 		//TODO: apply horticulture skill.
 		plants.harvest(plant, numberItemsHarvested);
-		space.item_addGeneric(actors.getLocation(actor), fruitItemType, plantMatter, numberItemsHarvested);
+		[[maybe_unused]] const ItemIndex& item = space.item_addGeneric(actors.getLocation(actor), fruitItemType, plantMatter, numberItemsHarvested);
 		actors.objective_complete(actor, m_harvestObjective);
 	}
 }
@@ -179,7 +179,9 @@ HarvestPathRequest::HarvestPathRequest(const Json& data, Area& area, Deserializa
 FindPathResult HarvestPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	constexpr bool unreserved = false;
-	return terrainFacade.findPathToSpaceDesignation(memo, SpaceDesignation::Harvest, faction, start, facing, shape, m_objective.m_detour, adjacent, unreserved, Config::maxRangeToSearchForHorticultureDesignations);
+	constexpr bool anyOccupiedPoint = false;
+	constexpr bool useAdjacent = true;
+	return terrainFacade.findPathToSpaceDesignation<anyOccupiedPoint, useAdjacent>(memo, SpaceDesignation::Harvest, faction, start, facing, shape, m_objective.m_detour, unreserved, Config::maxRangeToSearchForHorticultureDesignations);
 }
 void HarvestPathRequest::writeStep(Area& area, FindPathResult& result)
 {

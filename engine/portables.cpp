@@ -1,5 +1,7 @@
 #include "portables.hpp"
 
+template class Portables<Actors, ActorIndex, ActorReferenceIndex, true>;
+template class Portables<Items, ItemIndex, ItemReferenceIndex, false>;
 
 // Class method.
 Speed PortablesHelpers::getMoveSpeedForGroup(const Area& area, std::vector<ActorOrItemIndex>& actorsAndItems)

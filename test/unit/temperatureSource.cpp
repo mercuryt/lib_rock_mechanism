@@ -73,6 +73,6 @@ TEST_CASE("temperature")
 		CHECK(fire.m_stage == FireStage::Smouldering);
 		simulation.fastForward(MaterialType::getBurnStageDuration(wood) * Config::fireRampDownPhaseDurationFraction);
 		CHECK(!space.fire_exists(toBurn));
-		CHECK(!space.solid_is(toBurn));
+		CHECK(!space.solid_isAny(toBurn));
 	}
 }

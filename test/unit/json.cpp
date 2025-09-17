@@ -1,6 +1,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/simulation/simulation.h"
 #include "../../engine/definitions/animalSpecies.h"
+#include "../../engine/definitions/plantSpecies.h"
 #include "../../engine/simulation/hasItems.h"
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
@@ -17,7 +18,6 @@
 #include "../../engine/objectives/dig.h"
 #include "../../engine/objectives/construct.h"
 #include "../../engine/objectives/stockpile.h"
-#include "../../engine/portables.hpp"
 #include "../../engine/numericTypes/types.h"
 TEST_CASE("json")
 {
@@ -102,7 +102,7 @@ TEST_CASE("json")
 		CHECK(space2.m_sizeX == space2.m_sizeY);
 		CHECK(space2.m_sizeX == space2.m_sizeZ);
 		CHECK(space2.m_sizeX == 10);
-		CHECK(space2.solid_is(Point3D::create(5,5,0)));
+		CHECK(space2.solid_isAny(Point3D::create(5,5,0)));
 		CHECK(space2.solid_get(Point3D::create(5,5,0)) == dirt);
 		// Plant.
 		CHECK(space2.plant_exists(Point3D::create(8,8,1)));
@@ -153,7 +153,7 @@ TEST_CASE("json")
 		CHECK(items2.getWear(axe2) == 10);
 		// Point3D features.
 		CHECK(space2.pointFeature_contains(Point3D::create(1,8,1), PointFeatureTypeId::Stairs));
-		CHECK(space2.pointFeature_at(Point3D::create(1,8,1), PointFeatureTypeId::Stairs)->materialType == wood);
+		CHECK(space2.pointFeature_at(Point3D::create(1,8,1), PointFeatureTypeId::Stairs).materialType == wood);
 		CHECK(space2.pointFeature_contains(Point3D::create(9,1,1), PointFeatureTypeId::Door));
 		// Item cargo.
 		CHECK(!space2.item_empty(Point3D::create(0,0,1)));
@@ -176,7 +176,7 @@ TEST_CASE("json")
 		// Farm fields.
 		CHECK(area2.m_hasFarmFields.contains(faction2));
 		CHECK(space2.farm_contains(Point3D::create(1,6,1), faction2));
-		CHECK(space2.farm_get(Point3D::create(1,6,1), faction2)->plantSpecies == sage);
+		CHECK(space2.farm_get(Point3D::create(1,6,1), faction2)->m_plantSpecies == sage);
 		CHECK(space2.farm_contains(Point3D::create(1,7,1), faction2));
 		// OpacityFacade.
 		area2.m_opacityFacade.validate(area);
@@ -309,7 +309,7 @@ TEST_CASE("json")
 		ItemIndex pile2 = space2.item_getAll(pileLocation2)[0];
 		ActorIndex dwarf2 = space2.actor_getAll(Point3D::create(5,5,1))[0];
 		CHECK(space2.stockpile_contains(projectLocation2, faction2));
-		StockPile& stockPile2 = *space2.stockpile_getForFaction(projectLocation2, faction2);
+		StockPile& stockPile2 = *space2.stockpile_getOneForFaction(projectLocation2, faction2);
 		CHECK(stockPile2.accepts(pile2));
 		CHECK(area2.m_hasStockPiles.getForFaction(faction2).getItemsWithProjectsCount() == 1);
 		StockPileObjective& objective = actors2.objective_getCurrent<StockPileObjective>(dwarf2);

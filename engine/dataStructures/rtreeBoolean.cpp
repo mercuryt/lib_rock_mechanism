@@ -11,14 +11,21 @@ uint RTreeBoolean::Node::getLeafVolume() const
 {
 	uint output = 0;
 	for(auto i = ArrayIndex::create(0); i < m_leafEnd; ++i)
-		output += m_cuboids[i.get()].size();
+		output += m_cuboids[i.get()].volume();
 	return output;
 }
 uint RTreeBoolean::Node::getNodeVolume() const
 {
 	uint output = 0;
 	for(auto i = m_childBegin; i < nodeSize; ++i)
-		output += m_cuboids[i.get()].size();
+		output += m_cuboids[i.get()].volume();
+	return output;
+}
+CuboidSet RTreeBoolean::Node::getLeafCuboids() const
+{
+	CuboidSet output;
+	for(auto i = ArrayIndex::create(0); i < m_leafEnd; ++i)
+		output.add(m_cuboids[i.get()]);
 	return output;
 }
 void RTreeBoolean::Node::updateChildIndex(const Index& oldIndex, const Index& newIndex)
@@ -146,8 +153,8 @@ std::tuple<Cuboid, RTreeBoolean::ArrayIndex, RTreeBoolean::ArrayIndex> RTreeBool
 			const Cuboid& secondCuboid = cuboids[secondResultIndex.get()];
 			Cuboid sum = firstCuboid;
 			sum.maybeExpand(secondCuboid);
-			const uint size = sum.size();
-			int emptySpace = size - (firstCuboid.size() + secondCuboid.size());
+			const uint size = sum.volume();
+			int emptySpace = size - (firstCuboid.volume() + secondCuboid.volume());
 			// If empty space is equal hen prefer the smaller result.
 			// TODO: This may be counter productive.
 			if(resultEmptySpace > emptySpace || (resultEmptySpace == emptySpace && resultSize > size))
@@ -185,9 +192,9 @@ void RTreeBoolean::destroyWithChildren(const Index& index)
 	openList.insert(index);
 	while(!openList.empty())
 	{
-		Index index = openList.back();
-		m_emptySlots.insert(index);
-		Node& node = m_nodes[index];
+		Index current = openList.back();
+		m_emptySlots.insert(current);
+		Node& node = m_nodes[current];
 		const auto& children = node.getChildIndices();
 		openList.popBack();
 		for(auto i = node.offsetOfFirstChild(); i < nodeSize; ++i)
@@ -293,7 +300,7 @@ void RTreeBoolean::addToNodeRecursive(const Index& index, const Cuboid& cuboid)
 			if(newCuboidIsSecondIndex || secondArrayIndex < leafCount)
 			{
 				// Both first and second cuboids are leaves.
-				if(mergedCuboid.size() == extended[firstArrayIndex.get()].size() + extended[secondArrayIndex.get()].size())
+				if(mergedCuboid.volume() == extended[firstArrayIndex.get()].volume() + extended[secondArrayIndex.get()].volume())
 				{
 					// Can merge into a single leaf.
 					parent.updateLeaf(firstArrayIndex, mergedCuboid);
@@ -592,6 +599,18 @@ void RTreeBoolean::prepare()
 		sort();
 }
 bool RTreeBoolean::query(const Point3D& begin, const Point3D& end) const { return query(ParamaterizedLine(begin, end)); }
+CuboidSet RTreeBoolean::toCuboidSet() const
+{
+	CuboidSet output;
+	for(Index i = Index::create(0); i < m_nodes.size(); ++i)
+	{
+		if(m_emptySlots.contains(i))
+			continue;
+		const Node& node = m_nodes[i];
+		output.addSet(node.getLeafCuboids());
+	}
+	return output;
+}
 uint RTreeBoolean::leafCount() const
 {
 	uint output = 0;
@@ -632,3 +651,265 @@ void RTreeBoolean::assertAllLeafsAreUnique() const
 	// Will assert fail if any leaves are not unique.
 	[[maybe_unused]] const auto leaves = gatherLeavesRecursive(Index::create(0));
 }
+// Template methods.
+template<typename ShapeT>
+bool RTreeBoolean::query(const ShapeT& shape) const
+{
+	SmallSet<Index> openList;
+	openList.insert(Index::create(0));
+	while(!openList.empty())
+	{
+		auto index = openList.back();
+		openList.popBack();
+		const Node& node = m_nodes[index];
+		const auto& nodeCuboids = node.getCuboids();
+		const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+		const auto leafCount = node.getLeafCount();
+		if(leafCount != 0 && interceptMask.head(leafCount).any())
+			return true;
+		// TODO: Would it be better to check the whole intercept mask and continue if all are empty before checking leafs?
+		const auto childCount = node.getChildCount();
+		if(childCount == 0 || !interceptMask.tail(childCount).any())
+			continue;
+		const auto& nodeChildren = node.getChildIndices();
+		const auto offsetOfFirstChild = node.offsetOfFirstChild();
+		auto begin = interceptMask.begin();
+		auto end = begin + nodeSize;
+		if(offsetOfFirstChild == 0)
+		{
+			// Unrollable version for nodes where every slot is a child.
+			for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+				if(*iter)
+					openList.insert(nodeChildren[iter - begin]);
+		}
+		else
+		{
+			for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+				if(*iter)
+					openList.insert(nodeChildren[iter - begin]);
+		}
+	}
+	return false;
+}
+template bool RTreeBoolean::query(const Point3D& shape) const;
+template bool RTreeBoolean::query(const Cuboid& shape) const;
+template bool RTreeBoolean::query(const CuboidSet& shape) const;
+template bool RTreeBoolean::query(const Sphere& shape) const;
+template bool RTreeBoolean::query(const ParamaterizedLine& shape) const;
+
+template<typename ShapeT>
+Cuboid RTreeBoolean::queryGetLeaf(const ShapeT& shape) const
+{
+	SmallSet<Index> openList;
+	openList.insert(Index::create(0));
+	while(!openList.empty())
+	{
+		auto index = openList.back();
+		openList.popBack();
+		const Node& node = m_nodes[index];
+		const auto& nodeCuboids = node.getCuboids();
+		const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+		const auto leafCount = node.getLeafCount();
+		auto begin = interceptMask.begin();
+		auto end = begin + nodeSize;
+		auto leafEnd = begin + leafCount;
+		if(leafCount != 0 && interceptMask.head(leafCount).any())
+		{
+			for(auto iter = begin; iter != leafEnd; ++iter)
+				if(*iter)
+					return nodeCuboids[iter - begin];
+		}
+		// TODO: Would it be better to check the whole intercept mask and continue if all are empty before checking leafs?
+		const auto childCount = node.getChildCount();
+		if(childCount == 0 || !interceptMask.tail(childCount).any())
+			continue;
+		const auto& nodeChildren = node.getChildIndices();
+		const auto offsetOfFirstChild = node.offsetOfFirstChild();
+		if(offsetOfFirstChild == 0)
+		{
+			// Unrollable version for nodes where every slot is a child.
+			for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+				if(*iter)
+					openList.insert(nodeChildren[iter - begin]);
+		}
+		else
+		{
+			for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+				if(*iter)
+					openList.insert(nodeChildren[iter - begin]);
+		}
+	}
+	return {};
+}
+template Cuboid RTreeBoolean::queryGetLeaf(const Point3D& shape) const;
+template Cuboid RTreeBoolean::queryGetLeaf(const Cuboid& shape) const;
+template Cuboid RTreeBoolean::queryGetLeaf(const CuboidSet& shape) const;
+template Cuboid RTreeBoolean::queryGetLeaf(const Sphere& shape) const;
+template Cuboid RTreeBoolean::queryGetLeaf(const ParamaterizedLine& shape) const;
+
+template<typename ShapeT>
+Point3D RTreeBoolean::queryGetPoint(const ShapeT& shape) const
+{
+	SmallSet<Index> openList;
+	openList.insert(Index::create(0));
+	while(!openList.empty())
+	{
+		auto index = openList.back();
+		openList.popBack();
+		const Node& node = m_nodes[index];
+		const auto& nodeCuboids = node.getCuboids();
+		const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+		const auto leafCount = node.getLeafCount();
+		auto begin = interceptMask.begin();
+		auto end = begin + nodeSize;
+		auto leafEnd = begin + leafCount;
+		if(leafCount != 0 && interceptMask.head(leafCount).any())
+		{
+			for(auto iter = begin; iter != leafEnd; ++iter)
+				if(*iter)
+					return nodeCuboids[iter - begin].intersectionPoint(shape);
+		}
+		// TODO: Would it be better to check the whole intercept mask and continue if all are empty before checking leafs?
+		const auto childCount = node.getChildCount();
+		if(childCount == 0 || !interceptMask.tail(childCount).any())
+			continue;
+		const auto& nodeChildren = node.getChildIndices();
+		const auto offsetOfFirstChild = node.offsetOfFirstChild();
+		if(offsetOfFirstChild == 0)
+		{
+			// Unrollable version for nodes where every slot is a child.
+			for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+				if(*iter)
+					openList.insert(nodeChildren[iter - begin]);
+		}
+		else
+		{
+			for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+				if(*iter)
+					openList.insert(nodeChildren[iter - begin]);
+		}
+	}
+	return Point3D::null();
+}
+template Point3D RTreeBoolean::queryGetPoint(const Cuboid& shape) const;
+template Point3D RTreeBoolean::queryGetPoint(const CuboidSet& shape) const;
+template<typename ShapeT>
+std::vector<bool> RTreeBoolean::batchQuery(const ShapeT& shapes) const
+{
+	std::vector<bool> output;
+	output.resize(shapes.size());
+	SmallMap<Index, SmallSet<uint>> openlist;
+	openlist.insert(Index::create(0), {});
+	auto& rootnodecandidatelist = openlist.back().second;
+	rootnodecandidatelist.resize(shapes.size());
+	std::ranges::iota(rootnodecandidatelist.getVector(), 0);
+	while(!openlist.empty())
+	{
+		auto& [index, candidates] = openlist.back();
+		const Node& node = m_nodes[index];
+		const auto& nodeCuboids = node.getCuboids();
+		const auto& nodeChildren = node.getChildIndices();
+		const auto offsetOfFirstChild = node.offsetOfFirstChild();
+		for(const uint& shapeIndex : candidates)
+		{
+			if(output[shapeIndex])
+				// this shape has already intersected with a leaf, no need to check further.
+				continue;
+			const auto& interceptmask = nodeCuboids.indicesOfIntersectingCuboids(shapes[shapeIndex]);
+			// record a leaf intersection.
+			const auto leafCount = node.getLeafCount();
+			if(leafCount != 0 && interceptmask.head(leafCount).any())
+			{
+				output[shapeIndex] = true;
+				continue;
+			}
+			// record all node intersections.
+			const auto childcount = node.getChildCount();
+			if(childcount == 0 || !interceptmask.tail(childcount).any())
+				continue;
+			auto begin = interceptmask.begin();
+			const auto end = begin + nodeSize;
+			if(offsetOfFirstChild == 0)
+			{
+				// unrollable version for nodes where every slot is a child.
+				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+					if(*iter)
+						openlist.getOrCreate(nodeChildren[iter - begin]).insert(shapeIndex);
+			}
+			else
+			{
+				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+					if(*iter)
+						openlist.getOrCreate(nodeChildren[iter - begin]).insert(shapeIndex);
+			}
+		}
+		// pop back at the end so we can use candidates as a reference and not have to make a move-copy.
+		openlist.popBack();
+	}
+	return output;
+}
+template std::vector<bool> RTreeBoolean::batchQuery(const SmallSet<Point3D>& shapes) const;
+template std::vector<bool> RTreeBoolean::batchQuery(const CuboidSet& shapes) const;
+template std::vector<bool> RTreeBoolean::batchQuery(const std::vector<ParamaterizedLine>& shapes) const;
+template<typename ShapeT>
+CuboidSet RTreeBoolean::queryGetLeaves(const ShapeT& shape) const
+{
+	CuboidSet output;
+	SmallSet<Index> openList;
+	openList.insert(Index::create(0));
+	while(!openList.empty())
+	{
+		auto index = openList.back();
+		openList.popBack();
+		const Node& node = m_nodes[index];
+		const auto& nodeCuboids = node.getCuboids();
+		const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+		const auto begin = interceptMask.begin();
+		const auto leafCount = node.getLeafCount();
+		const auto leafEnd = begin + leafCount;
+		if(leafCount != 0 && interceptMask.head(leafCount).any())
+			for(auto iter = begin; iter != leafEnd; ++iter)
+				if(*iter)
+					output.add(nodeCuboids[iter - begin]);
+		// TODO: Would it be better to check the whole intercept mask and continue if all are empty before checking leafs?
+		const auto childCount = node.getChildCount();
+		if(childCount == 0 || !interceptMask.tail(childCount).any())
+			continue;
+		const auto& nodeChildren = node.getChildIndices();
+		const auto offsetOfFirstChild = node.offsetOfFirstChild();
+		const auto end = begin + nodeSize;
+		if(offsetOfFirstChild == 0)
+		{
+			// Unrollable version for nodes where every slot is a child.
+			for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+				if(*iter)
+					openList.insert(nodeChildren[iter - begin]);
+		}
+		else
+		{
+			for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
+				if(*iter)
+					openList.insert(nodeChildren[iter - begin]);
+		}
+	}
+	return output;
+}
+template CuboidSet RTreeBoolean::queryGetLeaves(const Cuboid& shape) const;
+template CuboidSet RTreeBoolean::queryGetLeaves(const CuboidSet& shape) const;
+template<typename ShapeT>
+CuboidSet RTreeBoolean::queryGetIntersection(const ShapeT& shape) const
+{
+	CuboidSet output;
+	if constexpr(std::is_same_v<ShapeT, CuboidSet>)
+	{
+		for(const auto& subShape : shape)
+			for(const Cuboid& leaf : queryGetLeaves(subShape))
+				output.add(leaf.intersection(subShape));
+	}
+	else
+		for(const Cuboid& leaf : queryGetLeaves(shape))
+			output.add(leaf.intersection(shape));
+	return output;
+}
+template CuboidSet RTreeBoolean::queryGetIntersection(const Cuboid& shape) const;
+template CuboidSet RTreeBoolean::queryGetIntersection(const CuboidSet& shape) const;

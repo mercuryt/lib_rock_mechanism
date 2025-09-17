@@ -37,7 +37,8 @@ FindPathResult WanderPathRequest::readStep(Area& area, const TerrainFacade& terr
 	Actors& actors = area.getActors();
 	const ActorIndex& actorIndex = actor.getIndex(actors.m_referenceData);
 	constexpr bool anyOccupiedPoint = false;
-	return terrainFacade.findPathToConditionBreadthFirst<anyOccupiedPoint>(destinationCondition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), detour, adjacent);
+	constexpr bool useAdjacent = false;
+	return terrainFacade.findPathToConditionBreadthFirst<decltype(destinationCondition), anyOccupiedPoint, useAdjacent>(destinationCondition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), detour);
 }
 void WanderPathRequest::writeStep(Area& area, FindPathResult& result)
 {

@@ -67,9 +67,9 @@ bool Random::chance(float chance)
 }
 Point3D Random::getInCuboid(const Cuboid& cuboid)
 {
-	std::uniform_int_distribution<DistanceWidth> rangeX(cuboid.m_lowest.x().get(), cuboid.m_highest.x().get());
-	std::uniform_int_distribution<DistanceWidth> rangeY(cuboid.m_lowest.y().get(), cuboid.m_highest.y().get());
-	std::uniform_int_distribution<DistanceWidth> rangeZ(cuboid.m_lowest.z().get(), cuboid.m_highest.z().get());
+	std::uniform_int_distribution<DistanceWidth> rangeX(cuboid.m_low.x().get(), cuboid.m_high.x().get());
+	std::uniform_int_distribution<DistanceWidth> rangeY(cuboid.m_low.y().get(), cuboid.m_high.y().get());
+	std::uniform_int_distribution<DistanceWidth> rangeZ(cuboid.m_low.z().get(), cuboid.m_high.z().get());
 	return Point3D::create(
 		rangeX(rng),
 		rangeY(rng),

@@ -1,6 +1,7 @@
 #include "dig.h"
 #include "designations.h"
 #include "area/area.h"
+#include "space/space.h"
 #include "actors/actors.h"
 #include "pointFeature.h"
 #include "deserializationMemo.h"
@@ -16,7 +17,6 @@
 #include "simulation/simulation.h"
 #include "definitions/itemType.h"
 #include "objectives/dig.h"
-#include "hasShapes.hpp"
 #include <memory>
 #include <sys/types.h>
 DigProject::DigProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : Project(data, deserializationMemo, area),
@@ -39,7 +39,9 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> DigProject::getByp
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> output;
 	Random& random = m_area.m_simulation.m_random;
 	auto& space = m_area.getSpace();
-	MaterialTypeId materialType = space.solid_is(m_location) ? space.solid_get(m_location) : space.pointFeature_getMaterialType(m_location);
+	MaterialTypeId materialType = space.solid_get(m_location);
+	if(materialType.empty())
+		materialType = space.pointFeature_getMaterialTypeFirst(m_location);
 	if(materialType.exists())
 	{
 		for(SpoilsDataTypeId spoilDataId : MaterialType::getSpoilData(materialType))
@@ -65,7 +67,7 @@ uint32_t DigProject::getWorkerDigScore(Area& area, ActorIndex actor)
 void DigProject::onComplete()
 {
 	auto& space = m_area.getSpace();
-	if(!space.solid_is(m_location))
+	if(!space.solid_isAny(m_location))
 	{
 		assert(m_pointFeatureType == PointFeatureTypeId::Null);
 		space.pointFeature_removeAll(m_location);

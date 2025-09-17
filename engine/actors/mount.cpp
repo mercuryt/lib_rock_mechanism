@@ -1,17 +1,18 @@
 #include "actors.h"
 #include "../area/area.h"
 #include "../space/space.h"
-#include "../hasShapes.hpp"
+#include "../items/items.h"
 Point3D Actors::mount_findLocationToMountOn(const ActorIndex& index, const ActorIndex& toMount) const
 {
 	const Space& space = m_area.getSpace();
 	const ShapeId& shape = getShape(index);
 	const Facing4& facing = getFacing(toMount);
 	const auto& occupied = getOccupied(index);
-	for(const Point3D& point : getPointsAbove(toMount))
-		// Should riders be dynamic or static?
-		if(space.shape_canFitEverOrCurrentlyDynamic(point, shape, facing, occupied))
-			return point;
+	for(const Cuboid& cuboid : getCuboidsAbove(toMount))
+		for(const Point3D& point : cuboid)
+			// Should riders be dynamic or static?
+			if(space.shape_canFitEverOrCurrentlyDynamic(point, shape, facing, occupied))
+				return point;
 	return Point3D::null();
 }
 bool Actors::mount_hasPilot(const ActorIndex& actor) const
@@ -23,9 +24,9 @@ ActorIndex Actors::mount_getPilot(const ActorIndex& actor) const
 	for(const ActorOrItemIndex& onDeck : m_onDeck[actor])
 		if(onDeck.isActor())
 		{
-			const ActorIndex& actor = onDeck.getActor();
-			if(m_isPilot[actor])
-				return actor;
+			const ActorIndex& actorOnDeck = onDeck.getActor();
+			if(m_isPilot[actorOnDeck])
+				return actorOnDeck;
 		}
 	return ActorIndex::null();
 }

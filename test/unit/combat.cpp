@@ -13,7 +13,6 @@
 #include "../../engine/definitions/animalSpecies.h"
 #include "../../engine/numericTypes/types.h"
 #include "../../engine/definitions/itemType.h"
-#include "../../engine/hasShapes.hpp"
 #include <functional>
 TEST_CASE("combat")
 {
@@ -61,13 +60,6 @@ TEST_CASE("combat")
 		});
 		actors.equipment_add(dwarf1, longsword);
 		CHECK(actors.combat_getAttackTable(dwarf1).size() == 7);
-		ItemIndex pants = items.create({
-			.itemType=ItemType::byName("pants"),
-			.materialType=MaterialType::byName("plant matter"),
-			.quality=Quality::create(50u),
-			.percentWear=Percent::create(10),
-		});
-		actors.equipment_add(dwarf1, pants);
 		CHECK(actors.combat_getCombatScore(dwarf1) > initalScore);
 		ActorIndex rabbit = actors.create({
 			.species=AnimalSpecies::byName("dwarf rabbit"),

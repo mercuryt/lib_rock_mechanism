@@ -4,7 +4,7 @@
 #include "../numericTypes/types.h"
 #include "../numericTypes/idTypes.h"
 #include "../dataStructures/smallMap.h"
-#include "../dataStructures/rtreeBoolean.h"
+#include "../dataStructures/rtreeBoolean.hpp"
 
 class Area;
 struct DeserializationMemo;
@@ -12,14 +12,29 @@ class AreaHasSpaceDesignationsForFaction final
 {
 	std::array<RTreeBoolean, (int)SpaceDesignation::SPACE_DESIGNATION_MAX> m_data;
 public:
-	void set(const Point3D& point, const SpaceDesignation& designation);
-	void unset(const Point3D& point, const SpaceDesignation& designation);
-	void maybeUnset(const Point3D& point, const SpaceDesignation& designation);
-	void maybeSet(const Point3D& point, const SpaceDesignation& designation);
-	[[nodiscard]] bool check(const Point3D& point, const SpaceDesignation& designation) const;
-	[[nodiscard]] SpaceDesignation getDisplayDesignation(const Point3D& point) const;
-	[[nodiscard]] bool empty(const Point3D& point) const;
+	void set(const auto& shape, const SpaceDesignation& designation) { assert(shape.exists()); assert(!m_data[(int)designation].query(shape)); maybeSet(shape, designation); }
+	void unset(const auto& shape, const SpaceDesignation& designation) { assert(m_data[(int)designation].query(shape)); maybeUnset(shape, designation); }
+	void maybeUnset(const auto& shape, const SpaceDesignation& designation) { m_data[(int)designation].maybeRemove(shape); }
+	void maybeSet(const auto& shape, const SpaceDesignation& designation) { m_data[(int)designation].maybeInsert(shape); }
+	void prepare() { for(auto& rtree : m_data) rtree.prepare(); }
+	[[nodiscard]] bool any(const SpaceDesignation& designation) const;
+	[[nodiscard]] bool check(const auto& shape, const SpaceDesignation& designation) const { return m_data[(int)designation].query(shape); }
+	[[nodiscard]] Point3D queryPoint(const auto& shape, const SpaceDesignation& designation) const { return m_data[(int)designation].queryGetPoint(shape); }
+	[[nodiscard]] Point3D queryPointWithCondition(const auto& shape, const SpaceDesignation& designation, auto&& condition) const { return m_data[(int)designation].queryGetPointWithCondition(shape, condition); }
 	[[nodiscard]] std::vector<SpaceDesignation> getForPoint(const Point3D& point) const;
+	[[nodiscard]] const RTreeBoolean& getForDesignation(const SpaceDesignation& designation) const;
+	[[nodiscard]] Cuboid getCuboidWithDesignationAndCondition(const SpaceDesignation& designation, const auto& shape, auto&& condition)
+	{
+		return m_data[(int)designation].queryGetLeafWithCondition(shape, condition);
+	};
+	[[nodiscard]] Cuboid getCuboidWithDesignation(const SpaceDesignation& designation, const auto& shape) const { return m_data[(int)designation].queryGetLeaf(shape); }
+	[[nodiscard]] bool empty(const auto& shape) const
+	{
+		for(int i = 0; i < (int)SpaceDesignation::SPACE_DESIGNATION_MAX; ++i)
+			if(check(shape, (SpaceDesignation)i))
+				return true;
+		return false;
+	}
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(AreaHasSpaceDesignationsForFaction, m_data);
 };
 class AreaHasSpaceDesignations final
@@ -29,6 +44,7 @@ public:
 	void registerFaction(const FactionId& faction) { m_data.emplace(faction); }
 	void maybeRegisterFaction(const FactionId& faction) { if(!contains(faction)) m_data.emplace(faction); }
 	void unregisterFaction(const FactionId& faction) { m_data.erase(faction); }
+	void prepare() { for(auto& pair : m_data) pair.second.prepare(); }
 	[[nodiscard]] bool contains(const FactionId& faction) const { return m_data.contains(faction); }
 	[[nodiscard]] AreaHasSpaceDesignationsForFaction& getForFaction(const FactionId& faction) { return m_data[faction]; }
 	[[nodiscard]] const AreaHasSpaceDesignationsForFaction& getForFaction(const FactionId& faction) const { return m_data[faction]; }

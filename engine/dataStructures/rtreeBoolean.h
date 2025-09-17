@@ -10,7 +10,7 @@
 
 class RTreeBoolean
 {
-	static constexpr uint nodeSize = 32;
+	static constexpr uint nodeSize = 64;
 	using IndexWidth = uint16_t;
 	class Index : public StrongInteger<Index, IndexWidth>
 	{
@@ -46,6 +46,7 @@ class RTreeBoolean
 		[[nodiscard]] bool empty() const { return unusedCapacity() == nodeSize; }
 		[[nodiscard]] uint getLeafVolume() const;
 		[[nodiscard]] uint getNodeVolume() const;
+		[[nodiscard]] CuboidSet getLeafCuboids() const;
 		void updateChildIndex(const Index& oldIndex, const Index& newIndex);
 		void insertLeaf(const Cuboid& cuboid);
 		void insertBranch(const Cuboid& cuboid, const Index& index);
@@ -82,158 +83,39 @@ class RTreeBoolean
 	void sort();
 public:
 	RTreeBoolean() { m_nodes.add(); m_nodes.back().setParent(Index::null()); }
+	void insert(const auto& shape) { assert(!query(shape)); maybeInsert(shape); }
+	void remove(const auto& shape) { assert(query(shape)); maybeRemove(shape); }
 	void maybeInsert(const Cuboid& cuboid);
 	void maybeRemove(const Cuboid& cuboid);
+	// TODO: rewrite as batch descent.
+	void maybeRemove(const CuboidSet& cuboids) { for(const Cuboid& cuboid : cuboids) maybeRemove(cuboid); }
+	void maybeInsert(const CuboidSet& cuboids) { for(const Cuboid& cuboid : cuboids) maybeInsert(cuboid); }
 	void maybeInsert(Cuboid&& cuboid) { const Cuboid copy = cuboid; maybeInsert(copy); }
 	void maybeRemove(Cuboid&& cuboid) { const Cuboid copy = cuboid; maybeRemove(copy); }
 	void maybeInsert(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeInsert(cuboid); }
 	void maybeRemove(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid); }
 	void prepare();
+	[[nodiscard]] bool empty() const  { return nodeCount() == 1 && leafCount() == 0; }
+	[[nodiscard]] CuboidSet toCuboidSet() const;
 	[[nodiscard]] bool query(const Point3D& begin, const Point3D& end) const;
-	[[nodiscard]] bool query(const auto& shape) const
-	{
-		SmallSet<Index> openList;
-		openList.insert(Index::create(0));
-		while(!openList.empty())
-		{
-			auto index = openList.back();
-			openList.popBack();
-			const Node& node = m_nodes[index];
-			const auto& nodeCuboids = node.getCuboids();
-			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
-			const auto leafCount = node.getLeafCount();
-			if(leafCount != 0 && interceptMask.head(leafCount).any())
-				return true;
-			// TODO: Would it be better to check the whole intercept mask and continue if all are empty before checking leafs?
-			const auto childCount = node.getChildCount();
-			if(childCount == 0 || !interceptMask.tail(childCount).any())
-				continue;
-			const auto& nodeChildren = node.getChildIndices();
-			const auto offsetOfFirstChild = node.offsetOfFirstChild();
-			auto begin = interceptMask.begin();
-			auto end = begin + nodeSize;
-			if(offsetOfFirstChild == 0)
-			{
-				// Unrollable version for nodes where every slot is a child.
-				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-					if(*iter)
-						openList.insert(nodeChildren[iter - begin]);
-			}
-			else
-			{
-				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-					if(*iter)
-						openList.insert(nodeChildren[iter - begin]);
-			}
-		}
-		return false;
-	}
+	template<typename ShapeT>
+	[[nodiscard]] bool query(const ShapeT& shape) const;
+	template<typename ShapeT>
+	[[nodiscard]] Cuboid queryGetLeaf(const ShapeT& shape) const;
+	template<typename ShapeT>
+	[[nodiscard]] Point3D queryGetPoint(const ShapeT& shape) const;
 	// Shapes should be an iterable collection supported by CuboidArray's intersection check.
 	// Returns a bitset with 1 set for each shape which intersects something.
-	[[nodiscard]] std::vector<bool> batchQuery(const auto& shapes) const
-	{
-		std::vector<bool> output;
-		output.resize(shapes.size());
-		SmallMap<Index, SmallSet<uint>> openList;
-		openList.insert(Index::create(0), {});
-		auto& rootNodeCandidateList = openList.back().second;
-		rootNodeCandidateList.resize(shapes.size());
-		std::ranges::iota(rootNodeCandidateList.getVector(), 0);
-		while(!openList.empty())
-		{
-			auto& [index, candidates] = openList.back();
-			const Node& node = m_nodes[index];
-			const auto& nodeCuboids = node.getCuboids();
-			const auto& nodeChildren = node.getChildIndices();
-			const auto offsetOfFirstChild = node.offsetOfFirstChild();
-			for(const uint& shapeIndex : candidates)
-			{
-				if(output[shapeIndex])
-					// This shape has already intersected with a leaf, no need to check further.
-					continue;
-				const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shapes[shapeIndex]);
-				// Record a leaf intersection.
-				const auto leafCount = node.getLeafCount();
-				if(leafCount != 0 && interceptMask.head(leafCount).any())
-				{
-					output[shapeIndex] = true;
-					continue;
-				}
-				// Record all node intersections.
-				const auto childCount = node.getChildCount();
-				if(childCount == 0 || !interceptMask.tail(childCount).any())
-					continue;
-				auto begin = interceptMask.begin();
-				const auto end = begin + nodeSize;
-				if(offsetOfFirstChild == 0)
-				{
-					// Unrollable version for nodes where every slot is a child.
-					for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-						if(*iter)
-							openList.getOrCreate(nodeChildren[iter - begin]).insert(shapeIndex);
-				}
-				else
-				{
-					for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-						if(*iter)
-							openList.getOrCreate(nodeChildren[iter - begin]).insert(shapeIndex);
-				}
-			}
-			// Pop back at the end so we can use candidates as a reference and not have to make a move-copy.
-			openList.popBack();
-		}
-		return output;
-	}
-	[[nodiscard]] CuboidSet queryGetLeaves(const auto& shape) const
-	{
-		CuboidSet output;
-		SmallSet<Index> openList;
-		openList.insert(Index::create(0));
-		while(!openList.empty())
-		{
-			auto index = openList.back();
-			openList.popBack();
-			const Node& node = m_nodes[index];
-			const auto& nodeCuboids = node.getCuboids();
-			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
-			const auto begin = interceptMask.begin();
-			const auto leafCount = node.getLeafCount();
-			const auto leafEnd = begin + leafCount;
-			if(leafCount != 0 && interceptMask.head(leafCount).any())
-				for(auto iter = begin; iter != leafEnd; ++iter)
-					if(*iter)
-						output.add(nodeCuboids[iter - begin]);
-			// TODO: Would it be better to check the whole intercept mask and continue if all are empty before checking leafs?
-			const auto childCount = node.getChildCount();
-			if(childCount == 0 || !interceptMask.tail(childCount).any())
-				continue;
-			const auto& nodeChildren = node.getChildIndices();
-			const auto offsetOfFirstChild = node.offsetOfFirstChild();
-			const auto end = begin + nodeSize;
-			if(offsetOfFirstChild == 0)
-			{
-				// Unrollable version for nodes where every slot is a child.
-				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-					if(*iter)
-						openList.insert(nodeChildren[iter - begin]);
-			}
-			else
-			{
-				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-					if(*iter)
-						openList.insert(nodeChildren[iter - begin]);
-			}
-		}
-		return output;
-	}
-	[[nodiscard]] CuboidSet queryGetIntersection(const auto& shape) const
-	{
-		const CuboidSet leaves = queryGetLeaves(shape);
-		CuboidSet output;
-		for(const Cuboid& leaf : leaves)
-			output.add(leaf.intersection(shape));
-		return output;
-	}
+	template<typename ShapeT>
+	[[nodiscard]] std::vector<bool> batchQuery(const ShapeT& shapes) const;
+	template<typename ShapeT>
+	[[nodiscard]] CuboidSet queryGetLeaves(const ShapeT& shape) const;
+	template<typename ShapeT>
+	[[nodiscard]] CuboidSet queryGetIntersection(const ShapeT& shape) const;
+	template<typename ShapeT>
+	[[nodiscard]] Cuboid queryGetLeafWithCondition(const ShapeT& shape, auto&& condition) const;
+	template<typename ShapeT>
+	[[nodiscard]] Point3D queryGetPointWithCondition(const ShapeT& shape, auto&& condition) const;
 	// For test and debug.
 	[[nodiscard]] __attribute__((noinline)) uint nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
 	[[nodiscard]] __attribute__((noinline)) uint leafCount() const;

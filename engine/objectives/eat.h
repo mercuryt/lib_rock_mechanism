@@ -12,7 +12,6 @@ public:
 	[[nodiscard]] bool canBeAssigned(Area&, const ActorIndex&) const { std::unreachable(); }
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, const ActorIndex&) const { std::unreachable(); }
 	EatObjectiveType() = default;
-	EatObjectiveType(const Json&, DeserializationMemo&);
 	[[nodiscard]] std::string name() const { return "eat"; }
 };
 class EatEvent final : public ScheduledEvent
@@ -28,8 +27,6 @@ public:
 	void eatActor(Area& area, const ActorIndex& actor);
 	void eatPlantLeaves(Area& area, const PlantIndex& plant);
 	void eatFruitFromPlant(Area& area, const PlantIndex& plant);
-	[[nodiscard]] uint32_t getDesireToEatSomethingAt(Area& area, const Point3D& point) const;
-	[[nodiscard]] uint32_t getMinimumAcceptableDesire() const;
 	[[nodiscard]] std::string name() const { return "eat"; }
 };
 constexpr int maxRankedEatDesire = 3;

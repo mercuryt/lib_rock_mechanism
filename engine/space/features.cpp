@@ -5,32 +5,26 @@
 #include "../plants.h"
 #include "../reference.h"
 #include "../numericTypes/types.h"
+#include "../definitions/plantSpecies.h"
 bool Space::pointFeature_contains(const Point3D& point, const PointFeatureTypeId& pointFeatureType) const
 {
-	return m_features.queryGetOne(point).contains(pointFeatureType);
+	const auto condition = [&](const PointFeature& feature){ return feature.pointFeatureType == pointFeatureType; };
+	return m_features.queryAnyWithCondition(point, condition);
 }
-const PointFeatureSet& Space::pointFeature_getAll(const Point3D& point) const { return m_features.queryGetOne(point); }
-// Can return nullptr.
-const PointFeature* Space::pointFeature_at(const Point3D& point, const PointFeatureTypeId& pointFeatureType) const
+const PointFeature Space::pointFeature_at(const Cuboid& cuboid, const PointFeatureTypeId& pointFeatureType) const
 {
-	return m_features.queryGetOne(point).maybeGet(pointFeatureType);
+	const auto condition = [&](const PointFeature& feature){ return feature.pointFeatureType == pointFeatureType; };
+	assert(m_features.queryCountWithCondition(cuboid, condition) < 2);
+	return m_features.queryGetOneWithCondition(cuboid, condition);
 }
 void Space::pointFeature_remove(const Point3D& point, const PointFeatureTypeId& pointFeatureType)
 {
-	assert(!solid_is(point));
+	assert(!solid_isAny(point));
 	const bool transmitedTemperaturePreviously = temperature_transmits(point);
 	const bool wasOpaque = pointFeature_isOpaque(point);
 	const bool floorWasOpaque = pointFeature_floorIsOpaque(point);
-	const auto& features = m_features.queryGetOne(point);
-	assert(!features.empty());
-	if(features.size() == 1)
-	{
-		auto featuresCopy = features;
-		featuresCopy.remove(pointFeatureType);
-		m_features.updateOne(point, features, std::move(featuresCopy));
-	}
-	else
-		m_features.remove(point);
+	const auto condition = [&](const PointFeature& feature){ return feature.pointFeatureType == pointFeatureType; };
+	m_features.maybeRemoveWithConditionOne(point, condition);
 	m_area.m_opacityFacade.update(m_area, point);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
 	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
@@ -43,11 +37,11 @@ void Space::pointFeature_remove(const Point3D& point, const PointFeatureTypeId& 
 }
 void Space::pointFeature_removeAll(const Point3D& point)
 {
-	assert(!solid_is(point));
+	assert(!solid_isAny(point));
 	const bool transmitedTemperaturePreviously = temperature_transmits(point);
 	const bool wasOpaque = pointFeature_isOpaque(point);
 	const bool floorWasOpaque = pointFeature_floorIsOpaque(point);
-	m_features.remove(point);
+	m_features.maybeRemove(point);
 	m_area.m_opacityFacade.update(m_area, point);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
 	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
@@ -58,9 +52,43 @@ void Space::pointFeature_removeAll(const Point3D& point)
 	if(floorWasOpaque)
 		m_area.m_visionCuboids.pointFloorIsTransparent(point);
 }
+void Space::pointFeature_add(const Cuboid& cuboid, const PointFeature& feature)
+{
+	for(const Point3D& point : cuboid)
+		pointFeature_add(point, feature);
+}
+void Space::pointFeature_add(const Point3D& point, const PointFeature& feature)
+{
+	assert(!solid_isAny(point));
+	const bool transmitedTemperaturePreviously = temperature_transmits(point);
+	const bool materialTypeIsTransparent = MaterialType::getTransparent(feature.materialType);
+	Plants& plants = m_area.getPlants();
+	if(plant_exists(point))
+	{
+		assert(!PlantSpecies::getIsTree(plants.getSpecies(plant_get(point))));
+		plant_erase(point);
+	}
+	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
+	m_features.insert(point, feature);
+	const bool isFloorOrHatch = (feature.pointFeatureType == PointFeatureTypeId::Floor || feature.pointFeatureType == PointFeatureTypeId::Hatch);
+	if(isFloorOrHatch && !MaterialType::getTransparent(feature.materialType))
+	{
+		m_area.m_visionCuboids.pointFloorIsOpaque(point);
+		m_exposedToSky.unset(m_area, point);
+	}
+	else if(PointFeatureType::byId(feature.pointFeatureType).opaque && !materialTypeIsTransparent)
+	{
+		m_area.m_visionCuboids.pointIsOpaque(point);
+		m_exposedToSky.unset(m_area, point);
+	}
+	m_area.m_opacityFacade.update(m_area, point);
+	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
+	if(transmitedTemperaturePreviously && !temperature_transmits(point))
+		m_area.m_exteriorPortals.onPointCanNotTransmitTemperature(m_area, point);
+}
 void Space::pointFeature_construct(const Point3D& point, const PointFeatureTypeId& pointFeatureType, const MaterialTypeId& materialType)
 {
-	assert(!solid_is(point));
+	assert(!solid_isAny(point));
 	const bool transmitedTemperaturePreviously = temperature_transmits(point);
 	const bool materialTypeIsTransparent = MaterialType::getTransparent(materialType);
 	Plants& plants = m_area.getPlants();
@@ -70,18 +98,14 @@ void Space::pointFeature_construct(const Point3D& point, const PointFeatureTypeI
 		plant_erase(point);
 	}
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
-	const auto& features = m_features.queryGetOne(point);
-	auto featuresCopy = features;
-	// Hewn, closed, locked.
-	featuresCopy.insert(pointFeatureType, materialType, false, true, false);
-	m_features.insertOrOverwrite(point, std::move(featuresCopy));
+	m_features.insert(point, PointFeature::create(materialType, pointFeatureType));
 	const bool isFloorOrHatch = (pointFeatureType == PointFeatureTypeId::Floor || pointFeatureType == PointFeatureTypeId::Hatch);
 	if(isFloorOrHatch && !MaterialType::getTransparent(materialType))
 	{
 		m_area.m_visionCuboids.pointFloorIsOpaque(point);
 		m_exposedToSky.unset(m_area, point);
 	}
-	else if(PointFeatureType::byId(pointFeatureType).pointIsOpaque && !materialTypeIsTransparent)
+	else if(PointFeatureType::byId(pointFeatureType).opaque && !materialTypeIsTransparent)
 	{
 		m_area.m_visionCuboids.pointIsOpaque(point);
 		m_exposedToSky.unset(m_area, point);
@@ -93,14 +117,10 @@ void Space::pointFeature_construct(const Point3D& point, const PointFeatureTypeI
 }
 void Space::pointFeature_hew(const Point3D& point, const PointFeatureTypeId& pointFeatureType)
 {
-	assert(solid_is(point));
+	assert(solid_isAny(point));
 	const MaterialTypeId& materialType = solid_get(point);
 	const bool materialTypeIsTransparent = MaterialType::getTransparent(materialType);
-	const auto& features = m_features.queryGetOne(point);
-	auto featuresCopy = features;
-	// Hewn, closed, locked.
-	featuresCopy.insert(pointFeatureType, materialType, true, true, false);
-	m_features.updateOne(point, features, std::move(featuresCopy));
+	m_features.insert(point, PointFeature::create(materialType, pointFeatureType, true));
 	// Solid_setNot will handle calling m_exteriorPortals.onPointCanTransmitTemperature.
 	// TODO: There is no support for hewing hatches or flaps. This is ok because those things can't be hewn. Could be fixed anyway?
 	const Point3D& above = point.above();
@@ -109,7 +129,8 @@ void Space::pointFeature_hew(const Point3D& point, const PointFeatureTypeId& poi
 		m_area.getActors().tryToMoveSoAsNotOccuping(actor, above);
 	solid_setNot(point);
 	m_area.m_opacityFacade.update(m_area, point);
-	if(!PointFeatureType::byId(pointFeatureType).pointIsOpaque && !materialTypeIsTransparent)
+	// The point has been set to transparent by solid_setNot but may need to be set to opaque again depending on the feature  and material types.
+	if(PointFeatureType::byId(pointFeatureType).opaque && !materialTypeIsTransparent)
 		// Neighter floor nor hatch can be hewn so we don't need to check if this is point opaque or floor opaque.
 		m_area.m_visionCuboids.pointIsOpaque(point);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
@@ -117,7 +138,7 @@ void Space::pointFeature_hew(const Point3D& point, const PointFeatureTypeId& poi
 }
 void Space::pointFeature_setTemperature(const Point3D& point, const Temperature& temperature)
 {
-	for(const PointFeature& feature : m_features.queryGetOne(point))
+	for(const PointFeature& feature : m_features.queryGetAll(point))
 	{
 		if(MaterialType::getIgnitionTemperature(feature.materialType).exists() &&
 			temperature > MaterialType::getIgnitionTemperature(feature.materialType)
@@ -125,52 +146,43 @@ void Space::pointFeature_setTemperature(const Point3D& point, const Temperature&
 			m_area.m_fires.ignite(point, feature.materialType);
 	}
 }
-void Space::pointFeature_setAll(const Point3D& point, PointFeatureSet& features)
+MapWithCuboidKeys<PointFeature> Space::pointFeature_getAllWithCuboidsAndRemove(const CuboidSet& cuboids)
 {
-	assert(m_features.queryGetOne(point).empty());
-	m_features.insert(point, std::move(features));
-	m_area.m_opacityFacade.update(m_area, point);
-	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
-	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
-	if(pointFeature_isOpaque(point))
-		m_area.m_visionCuboids.pointIsOpaque(point);
-	if(pointFeature_floorIsOpaque(point))
-		m_area.m_visionCuboids.pointFloorIsOpaque(point);
+	MapWithCuboidKeys<PointFeature> output;
+	for(const Cuboid& cuboid : cuboids)
+		// TODO: RTreeData::queryGetAndRemoveAllWithCuboids.
+		for(const auto& [subCuboid, pointFeature] : m_features.queryGetAllWithCuboids(cuboid))
+			output.insertOrMerge(subCuboid, pointFeature);
+	m_features.maybeRemove(cuboids);
+	return output;
 }
 void Space::pointFeature_lock(const Point3D& point, const PointFeatureTypeId& pointFeatureType)
 {
 	assert(pointFeature_contains(point, pointFeatureType));
-	const auto& features = m_features.queryGetOne(point);
-	auto featuresCopy = features;
-	auto& feature = featuresCopy.get(pointFeatureType);
-	feature.locked = true;
-	m_features.updateOne(point, features, std::move(featuresCopy));
+	const auto condition = [&](const PointFeature& feature){ return feature.pointFeatureType == pointFeatureType; };
+	const auto action = [&](PointFeature& feature){ feature.setLocked(true); };
+	m_features.updateActionWithConditionOne(point, action, condition);
 	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
 
 }
 void Space::pointFeature_unlock(const Point3D& point, const PointFeatureTypeId& pointFeatureType)
 {
 	assert(pointFeature_contains(point, pointFeatureType));
-	const auto& features = m_features.queryGetOne(point);
-	auto featuresCopy = features;
-	auto& feature = featuresCopy.get(pointFeatureType);
-	feature.locked = false;
-	m_features.updateOne(point, features, std::move(featuresCopy));
+	const auto condition = [&](const PointFeature& feature){ return feature.pointFeatureType == pointFeatureType; };
+	const auto action = [&](PointFeature& feature){ feature.setLocked(false); };
+	m_features.updateActionWithConditionOne(point, action, condition);
 	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
-
 }
 void Space::pointFeature_close(const Point3D& point, const PointFeatureTypeId& pointFeatureType)
 {
 	assert(pointFeature_contains(point, pointFeatureType));
-	const auto& features = m_features.queryGetOne(point);
-	auto featuresCopy = features;
-	auto& feature = featuresCopy.get(pointFeatureType);
-	assert(!feature.closed);
-	feature.closed = true;
-	m_features.updateOne(point, features, std::move(featuresCopy));
+	const auto condition = [&](const PointFeature& feature){ return feature.pointFeatureType == pointFeatureType; };
+	bool isTransparent;
+	auto action = [&isTransparent](PointFeature& feature) mutable { isTransparent = MaterialType::getTransparent(feature.materialType); feature.setClosed(true); };
+	m_features.updateActionWithConditionOne(point, action, condition);
 	m_area.m_opacityFacade.update(m_area, point);
 	m_area.m_exteriorPortals.onPointCanNotTransmitTemperature(m_area, point);
-	if(!MaterialType::getTransparent(feature.materialType))
+	if(!isTransparent)
 	{
 		if(pointFeatureType == PointFeatureTypeId::Hatch)
 			m_area.m_visionCuboids.pointFloorIsOpaque(point);
@@ -182,15 +194,13 @@ void Space::pointFeature_close(const Point3D& point, const PointFeatureTypeId& p
 void Space::pointFeature_open(const Point3D& point, const PointFeatureTypeId& pointFeatureType)
 {
 	assert(pointFeature_contains(point, pointFeatureType));
-	const auto& features = m_features.queryGetOne(point);
-	auto featuresCopy = features;
-	auto& feature = featuresCopy.get(pointFeatureType);
-	assert(!feature.closed);
-	feature.closed = true;
-	m_features.updateOne(point, features, std::move(featuresCopy));
+	const auto condition = [&](const PointFeature& feature){ return feature.pointFeatureType == pointFeatureType; };
+	bool isTransparent;
+	auto action = [&isTransparent](PointFeature& feature) mutable { isTransparent = MaterialType::getTransparent(feature.materialType); feature.setClosed(false); };
+	m_features.updateActionWithConditionOne(point, action, condition);
 	m_area.m_opacityFacade.update(m_area, point);
 	m_area.m_exteriorPortals.onPointCanTransmitTemperature(m_area, point);
-	if(!MaterialType::getTransparent(feature.materialType))
+	if(!isTransparent)
 	{
 		if(pointFeatureType == PointFeatureTypeId::Hatch)
 			m_area.m_visionCuboids.pointFloorIsTransparent(point);
@@ -199,83 +209,75 @@ void Space::pointFeature_open(const Point3D& point, const PointFeatureTypeId& po
 		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
 	}
 }
-// Space entrance from all angles, does not include floor and hatch which only point from below.
-bool Space::pointFeature_blocksEntrance(const Point3D& point) const
-{
-	for(const PointFeature& pointFeature : m_features.queryGetOne(point))
-	{
-		if(
-			pointFeature.pointFeatureTypeId == PointFeatureTypeId::Fortification ||
-			pointFeature.pointFeatureTypeId == PointFeatureTypeId::FloodGate ||
-			(pointFeature.pointFeatureTypeId == PointFeatureTypeId::Door && pointFeature.locked)
-		 )
-			return true;
-	}
-	return false;
-}
 bool Space::pointFeature_canStandIn(const Point3D& point) const
 {
-	return m_features.queryGetOne(point).canStandIn();
+	const auto condition = [&](const PointFeature& feature) { return PointFeatureType::byId(feature.pointFeatureType).canStandIn; };
+	return m_features.queryAnyWithCondition(point, condition);
 }
 bool Space::pointFeature_canStandAbove(const Point3D& point) const
 {
-	for(const PointFeature& pointFeature : m_features.queryGetOne(point))
-		if(PointFeatureType::byId(pointFeature.pointFeatureTypeId).canStandAbove)
-			return true;
-	return false;
+	const auto condition = [&](const PointFeature& feature) { return PointFeatureType::byId(feature.pointFeatureType).canStandAbove; };
+	return m_features.queryAnyWithCondition(point, condition);
 }
 bool Space::pointFeature_isSupport(const Point3D& point) const
 {
-	for(const PointFeature& pointFeature : m_features.queryGetOne(point))
-		if(PointFeatureType::byId(pointFeature.pointFeatureTypeId).isSupportAgainstCaveIn)
-			return true;
-	return false;
+	const auto condition = [&](const PointFeature& feature) { return PointFeatureType::byId(feature.pointFeatureType).isSupportAgainstCaveIn; };
+	return m_features.queryAnyWithCondition(point, condition);
 }
 bool Space::pointFeature_canEnterFromBelow(const Point3D& point) const
 {
-	for(const PointFeature& pointFeature : m_features.queryGetOne(point))
-		if(
-			pointFeature.pointFeatureTypeId == PointFeatureTypeId::Floor ||
-			pointFeature.pointFeatureTypeId == PointFeatureTypeId::FloorGrate ||
-			(pointFeature.pointFeatureTypeId == PointFeatureTypeId::Hatch && pointFeature.locked)
-		 )
-			return false;
-	return true;
+	assert(shape_anythingCanEnterEver(point));
+	const auto condition = [&](const PointFeature& feature) {
+		return
+			feature.pointFeatureType == PointFeatureTypeId::Floor ||
+			feature.pointFeatureType == PointFeatureTypeId::FloorGrate ||
+			(feature.pointFeatureType == PointFeatureTypeId::Hatch && feature.isLocked());
+	};
+	return !m_features.queryAnyWithCondition(point, condition);
 }
 bool Space::pointFeature_canEnterFromAbove([[maybe_unused]] const Point3D& point, const Point3D& from) const
 {
 	assert(shape_anythingCanEnterEver(point));
-	for(const PointFeature& pointFeature : m_features.queryGetOne(from))
-		if(
-			pointFeature.pointFeatureTypeId == PointFeatureTypeId::Floor ||
-			pointFeature.pointFeatureTypeId == PointFeatureTypeId::FloorGrate ||
-			(pointFeature.pointFeatureTypeId == PointFeatureTypeId::Hatch && pointFeature.locked)
-		 )
-			return false;
-	return true;
+	return pointFeature_canEnterFromBelow(from);
 }
-MaterialTypeId Space::pointFeature_getMaterialType(const Point3D& point) const
+MaterialTypeId Space::pointFeature_getMaterialType(const Point3D& point, const PointFeatureTypeId& featureType) const
 {
-	if(m_features.queryGetOne(point).empty())
+	const auto condition = [&](const PointFeature& feature){ return feature.pointFeatureType == featureType; };
+	const PointFeature& feature = m_features.queryGetOneWithCondition(point, condition);
+	return feature.materialType;
+}
+MaterialTypeId Space::pointFeature_getMaterialTypeFirst(const Point3D& point) const
+{
+	const PointFeature& feature = m_features.queryGetFirst(point);
+	if(feature.exists())
+		return feature.materialType;
+	else
 		return MaterialTypeId::null();
-	return m_features.queryGetOne(point).front().materialType;
-}
-bool Space::pointFeature_empty(const Point3D& point) const
-{
-	return m_features.queryGetOne(point).empty();
 }
 bool Space::pointFeature_multiTileCanEnterAtNonZeroZOffset(const Point3D& point) const
 {
-	for(const PointFeature& pointFeature : m_features.queryGetOne(point))
-		if(PointFeatureType::byId(pointFeature.pointFeatureTypeId).blocksMultiTileShapesIfNotAtZeroZOffset)
-			return false;
-	return true;
+	const auto condition = [&](const PointFeature& feature) { return PointFeatureType::byId(feature.pointFeatureType).blocksMultiTileShapesIfNotAtZeroZOffset; };
+	return m_features.queryAnyWithCondition(point, condition);
 }
 bool Space::pointFeature_isOpaque(const Point3D& point) const
 {
-	return m_features.queryGetOne(point).isOpaque();
+	const auto condition = [&](const PointFeature& feature) { return PointFeatureType::byId(feature.pointFeatureType).opaque; };
+	return m_features.queryAnyWithCondition(point, condition);
 }
 bool Space::pointFeature_floorIsOpaque(const Point3D& point) const
 {
-	return m_features.queryGetOne(point).floorIsOpaque();
+	const auto condition = [&](const PointFeature& feature) {
+		return(
+			!MaterialType::getTransparent(feature.materialType) &&
+			(
+				feature.pointFeatureType == PointFeatureTypeId::Floor ||
+				(
+					feature.pointFeatureType == PointFeatureTypeId::Hatch &&
+					feature.isClosed()
+				)
+
+			)
+		);
+	};
+	return m_features.queryAnyWithCondition(point, condition);
 }

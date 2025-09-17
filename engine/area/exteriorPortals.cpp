@@ -94,7 +94,7 @@ void AreaHasExteriorPortals::remove(Area& area, const Point3D& point)
 			}
 			unsetDistance(space, current);
 			// Don't propigate through solid, but do warm / cool the exterior space.
-			if(!space.solid_is(current))
+			if(!space.solid_isAny(current))
 				for(const Point3D& adjacent : space.getAdjacentWithEdgeAndCornerAdjacent(current))
 					if(!m_distances.queryGetOne(adjacent).empty())
 						nextSet.maybeInsert(adjacent);
@@ -104,8 +104,8 @@ void AreaHasExteriorPortals::remove(Area& area, const Point3D& point)
 		nextSet.clear();
 		++distance;
 	}
-	for(const Point3D& point : regenerateFrom)
-		add(area, point, m_distances.queryGetOne(point));
+	for(const Point3D& regenerateFromPoint : regenerateFrom)
+		add(area, regenerateFromPoint, m_distances.queryGetOne(regenerateFromPoint));
 }
 void AreaHasExteriorPortals::onChangeAmbiantSurfaceTemperature(Space& space, const Temperature& temperature)
 {

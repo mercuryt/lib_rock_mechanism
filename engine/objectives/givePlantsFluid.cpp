@@ -14,7 +14,6 @@
 #include "../numericTypes/types.h"
 #include "../plants.h"
 #include "../path/terrainFacade.hpp"
-#include "../hasShapes.hpp"
 
 // Path Request.
 GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective, const ActorIndex& actorIndex) :
@@ -39,9 +38,13 @@ GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(const Json& data, Area& a
 FindPathResult GivePlantsFluidPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	assert(m_objective.m_project == nullptr);
-	Distance maxRange = Config::maxRangeToSearchForHorticultureDesignations;
+	constexpr bool anyOccupied = false;
+	constexpr bool useAdjacent = true;
 	constexpr bool unreserved = false;
-	return terrainFacade.findPathToSpaceDesignation(memo, SpaceDesignation::GivePlantFluid, faction, start, facing, shape, m_objective.m_detour, adjacent, unreserved, maxRange);
+	return terrainFacade.findPathToSpaceDesignation<anyOccupied, useAdjacent>(
+		memo, SpaceDesignation::GivePlantFluid, faction, start, facing, shape,
+		m_objective.m_detour, unreserved, Config::maxRangeToSearchForHorticultureDesignations
+	);
 }
 void GivePlantsFluidPathRequest::writeStep(Area& area, FindPathResult& result)
 {

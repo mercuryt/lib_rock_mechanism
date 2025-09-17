@@ -68,7 +68,7 @@ TEST_CASE("Area")
 		CHECK(!fluidGroup->m_stable);
 		CHECK(space.fluid_getTotalVolume(block1) == 0);
 		CHECK(space.solid_get(block1) == marble);
-		CHECK(!space.solid_is(block2));
+		CHECK(!space.solid_isAny(block2));
 		CHECK(fluidGroup->m_excessVolume == 100);
 		CHECK(fluidGroup->m_drainQueue.m_set.size() == 0);
 		CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);

@@ -2,7 +2,6 @@
 #include "../area/area.h"
 #include "../projects/construct.h"
 #include "../path/terrainFacade.hpp"
-#include "../hasShapes.hpp"
 #include "../actors/actors.h"
 #include "../space/space.h"
 #include "../reference.h"
@@ -30,14 +29,11 @@ ConstructPathRequest::ConstructPathRequest(const Json& data, Area& area, Deseria
 FindPathResult ConstructPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	ActorIndex actorIndex = actor.getIndex(area.getActors().m_referenceData);
-
-	auto predicate = [&area, this, actorIndex](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
-	{
-		return {m_constructObjective.joinableProjectExistsAt(area, point, actorIndex), point};
-	};
-	constexpr bool useAnyPoint = true;
+	auto predicate = [&area, this, actorIndex](const Cuboid& cuboid) -> bool { return m_constructObjective.joinableProjectExistsAt(area, cuboid, actorIndex).exists(); };
+	constexpr bool useAnyPoint = false;
+	constexpr bool findAdjacent = true;
 	constexpr bool unreserved = false;
-	return terrainFacade.findPathToSpaceDesignationAndCondition<useAnyPoint, decltype(predicate)>(predicate, memo, SpaceDesignation::Construct, faction, start, facing, shape, detour, adjacent, unreserved, maxRange);
+	return terrainFacade.findPathToSpaceDesignationAndCondition<decltype(predicate), useAnyPoint, findAdjacent>(predicate, memo, SpaceDesignation::Construct, faction, start, facing, shape, detour, unreserved, maxRange);
 }
 void ConstructPathRequest::writeStep(Area& area, FindPathResult& result)
 {
@@ -83,24 +79,15 @@ void ConstructObjective::execute(Area& area, const ActorIndex& actor)
 	else
 	{
 		ConstructProject* project = nullptr;
-		AreaHasSpaceDesignationsForFaction& hasDesignations = area.m_spaceDesignations.getForFaction(actors.getFaction(actor));
-		std::function<bool(const Point3D&)> predicate = [&](const Point3D& point)
-		{
-			if(hasDesignations.check(point, SpaceDesignation::Construct) && joinableProjectExistsAt(area, point, actor))
-			{
-				project = &area.m_hasConstructionDesignations.getProject(actors.getFaction(actor), point);
-				return project->canAddWorker(actor);
-			}
-			return false;
-		};
-		[[maybe_unused]] Point3D adjacent = actors.getPointWhichIsAdjacentWithPredicate(actor, predicate);
+		const FactionId& faction = actors.getFaction(actor);
+		//TODO: optimize for single tile and other single cuboid shapes by using a Cuboid rather then a CuboidSet for adjacent.
+		const CuboidSet& adjacent = actors.getAdjacentCuboids(actor);
+		const auto condition = [&](const ConstructProject& p) { return p.canAddWorker(actor); };
+		project = area.m_hasConstructionDesignations.getProjectWithCondition(faction, adjacent, condition);
 		if(project != nullptr)
-		{
-			assert(adjacent.exists());
 			joinProject(*project, actor);
-			return;
-		}
-		actors.move_pathRequestRecord(actor, std::make_unique<ConstructPathRequest>(area, *this, actor));
+		else
+			actors.move_pathRequestRecord(actor, std::make_unique<ConstructPathRequest>(area, *this, actor));
 	}
 }
 void ConstructObjective::cancel(Area& area, const ActorIndex& actor)
@@ -144,38 +131,41 @@ void ConstructObjective::joinProject(ConstructProject& project, const ActorIndex
 ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(Area& area, const Point3D& location, const Facing4& facing, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
-	for(Point3D adjacent : actors.getAdjacentPointsAtLocationWithFacing(actor, location, facing))
+	for(const Cuboid& adjacentCuboid : actors.getAdjacentCuboidsAtLocationWithFacing(actor, location, facing))
 	{
-		ConstructProject* project = getProjectWhichActorCanJoinAt(area, adjacent, actor);
+		ConstructProject* project = getProjectWhichActorCanJoinAt(area, adjacentCuboid, actor);
 		if(project != nullptr)
 			return project;
 	}
 	return nullptr;
 }
-ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(Area& area, const Point3D& point, const ActorIndex& actor)
+const ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentTo(Area& area, const Point3D& location, const Facing4& facing, const ActorIndex& actor) const
 {
-	Space& space = area.getSpace();
-	Actors& actors = area.getActors();
-	if(!space.designation_has(point, actors.getFaction(actor), SpaceDesignation::Construct))
-		return nullptr;
-	ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFaction(actor), point);
-	if(!project.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&project))
-		return nullptr;
-	if(project.canAddWorker(actor))
-		return &project;
-	return nullptr;
+	return const_cast<ConstructObjective*>(this)->getProjectWhichActorCanJoinAdjacentTo(area, location, facing, actor);
 }
-bool ConstructObjective::joinableProjectExistsAt(Area& area, const Point3D& point, const ActorIndex& actor) const
+ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(Area& area, const Cuboid& cuboid, const ActorIndex& actor)
 {
-	[[maybe_unused]] Space& space = area.getSpace();
 	Actors& actors = area.getActors();
-	assert(space.designation_has(point, actors.getFaction(actor), SpaceDesignation::Construct));
-	ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFaction(actor), point);
-	if(!project.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&project))
+	const auto condition = [&](const ConstructProject& project)
+	{
+		if(!project.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains((Project*)&project))
+			return false;
+		if(project.canAddWorker(actor))
+			return true;
 		return false;
-	if(project.canAddWorker(actor))
-		return true;
-	return false;
+	};
+	return area.m_hasConstructionDesignations.getProjectWithCondition(actors.getFaction(actor), cuboid, condition);
+}
+const ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(Area& area, const Cuboid& cuboid, const ActorIndex& actor) const
+{
+	return const_cast<ConstructObjective*>(this)->getProjectWhichActorCanJoinAt(area, cuboid, actor);
+}
+Point3D ConstructObjective::joinableProjectExistsAt(Area& area, const Cuboid& cuboid, const ActorIndex& actor) const
+{
+	const ConstructProject* project = getProjectWhichActorCanJoinAt(area, cuboid, actor);
+	if(project != nullptr)
+		return project->getLocation();
+	return Point3D::null();
 }
 bool ConstructObjective::canJoinProjectAdjacentToLocationAndFacing(Area& area, const Point3D& location, const Facing4& facing, const ActorIndex& actor) const
 {

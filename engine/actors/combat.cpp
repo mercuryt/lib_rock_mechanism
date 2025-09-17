@@ -12,7 +12,6 @@
 #include "../config.h"
 #include "../random.h"
 #include "../items/items.h"
-#include "../hasShapes.hpp"
 #include "../reference.h"
 #include "../path/terrainFacade.hpp"
 
@@ -348,9 +347,9 @@ FindPathResult GetIntoAttackPositionPathRequest::readStep(Area& area, const Terr
 		return std::make_pair(false, Point3D::null());
 	};
 	// TODO: Range attack actors should use a different path priority condition to avoid getting too close.
-	constexpr bool useAnyPoint = true;
+	constexpr bool useAnyPoint = false;
 	const Point3D& targetLocation = actors.getLocation(target.getIndex(actors.m_referenceData));
-	return terrainFacade.findPathToConditionDepthFirst<useAnyPoint, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, targetLocation, detour, adjacent, faction, maxRange);
+	return terrainFacade.findPathToConditionDepthFirst<decltype(destinationCondition), useAnyPoint, false>(destinationCondition, memo, start, facing, shape, targetLocation, detour, faction, maxRange);
 }
 void GetIntoAttackPositionPathRequest::writeStep(Area& area, FindPathResult& result)
 {

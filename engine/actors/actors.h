@@ -6,7 +6,7 @@
 #include "../datetime.h"
 #include "../definitions/attackType.h"
 #include "../equipment.h"
-#include "../geometry/offsetCuboidSet.h"
+#include "../geometry/cuboidSet.h"
 #include "../numericTypes/index.h"
 #include "../numericTypes/types.h"
 #include "../objective.h"
@@ -70,7 +70,7 @@ struct ActorParamaters
 	Percent getPercentTired(Simulation& simulation);
 	void generateEquipment(Area& area, const ActorIndex& actor);
 };
-class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex>
+class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex, true>
 {
 	StrongVector<ActorId, ActorIndex> m_id;
 	StrongVector<std::string, ActorIndex> m_name;
@@ -141,7 +141,65 @@ public:
 	void loadObjectivesAndReservations(const Json& data);
 	void onChangeAmbiantSurfaceTemperature();
 	template<typename Action>
-	void forEachData(Action&& action);
+	void forEachData(Action&& action)
+	{
+		forEachDataPortables(action);
+		action(m_id);
+		action(m_name);
+		action(m_species);
+		action(m_project);
+		action(m_birthStep);
+		action(m_causeOfDeath);
+		action(m_strength);
+		action(m_strengthBonusOrPenalty);
+		action(m_strengthModifier);
+		action(m_agility);
+		action(m_agilityBonusOrPenalty);
+		action(m_agilityModifier);
+		action(m_dextarity);
+		action(m_dextarityBonusOrPenalty);
+		action(m_dextarityModifier);
+		action(m_adultHeight);
+		action(m_mass);
+		action(m_massBonusOrPenalty);
+		action(m_massModifier);
+		action(m_unencomberedCarryMass);
+		action(m_leadFollowPath);
+		action(m_hasObjectives);
+		action(m_body);
+		action(m_mustSleep);
+		action(m_mustDrink);
+		action(m_mustEat);
+		action(m_needsSafeTemperature);
+		action(m_canGrow);
+		action(m_skillSet);
+		action(m_canReserve);
+		action(m_hasUniform);
+		action(m_equipmentSet);
+		action(m_carrying);
+		action(m_stamina);
+		action(m_canSee);
+		action(m_canBeSeenBy);
+		action(m_visionRange);
+		action(m_coolDownEvent);
+		action(m_meleeAttackTable);
+		action(m_targetedBy);
+		action(m_target);
+		action(m_onMissCoolDownMelee);
+		action(m_maxMeleeRange);
+		action(m_maxRange);
+		action(m_coolDownDurationModifier);
+		action(m_combatScore);
+		action(m_moveEvent);
+		action(m_pathRequest);
+		action(m_path);
+		action(m_destination);
+		action(m_speedIndividual);
+		action(m_speedActual);
+		action(m_moveRetries);
+		action(m_onSurface);
+		action(m_isPilot);
+	}
 	ActorIndex create(ActorParamaters params);
 	void destroy(const ActorIndex& index);
 	void sharedConstructor(const ActorIndex& index);
@@ -284,7 +342,7 @@ public:
 	void move_schedule(const ActorIndex& index, const Point3D& moveFrom);
 	void move_setDestination(const ActorIndex& index, const Point3D& destination, bool detour = false, bool adjacent = false, bool unreserved = false, bool reserve = false);
 	void move_setDestinationAdjacentToLocation(const ActorIndex& index, const Point3D& destination, bool detour = false, bool unreserved = false, bool reserve = false);
-	void move_setDestinationToAny(const ActorIndex& index, const SmallSet<Point3D>& candidates, bool detour, bool unreserved, bool reserve, const Point3D& huristicDestination);
+	void move_setDestinationToAny(const ActorIndex& index, const CuboidSet& candidates, bool detour, bool unreserved, bool reserve, const Point3D& huristicDestination);
 	void move_setDestinationAdjacentToActor(const ActorIndex& index, const ActorIndex& other, bool detour = false, bool unreserved = false, bool reserve = false);
 	void move_setDestinationAdjacentToItem(const ActorIndex& index, const ItemIndex& item, bool detour = false, bool unreserved = false, bool reserve = false);
 	void move_setDestinationAdjacentToPolymorphic(const ActorIndex& index, ActorOrItemIndex actorOrItemIndex, bool detour = false, bool unreserved = false, bool reserve = false);
@@ -476,8 +534,8 @@ public:
 	[[nodiscard]] Point3D eat_getAdjacentPointWithTheMostDesiredFood(const ActorIndex& index) const;
 	// For Testing.
 	[[nodiscard]] Mass eat_getMassFoodRequested(const ActorIndex& index) const;
-	[[nodiscard]] uint32_t eat_getDesireToEatSomethingAt(const ActorIndex& index, const Point3D& point) const;
-	[[nodiscard]] uint32_t eat_getMinimumAcceptableDesire(const ActorIndex& index) const;
+	[[nodiscard]] std::pair<Point3D, uint8_t> eat_getDesireToEatSomethingAt(const ActorIndex& index, const Cuboid& cuboid) const;
+	[[nodiscard]] uint8_t eat_getMinimumAcceptableDesire(const ActorIndex& index) const;
 	[[nodiscard]] bool eat_hasObjective(const ActorIndex& index) const;
 	[[nodiscard]] Step eat_getHungerEventStep(const ActorIndex& index) const;
 	[[nodiscard]] bool eat_hasHungerEvent(const ActorIndex& index) const;
@@ -538,7 +596,7 @@ public:
 	[[nodiscard]] Percent grow_getPercent(const ActorIndex& index) const;
 	// For Line leader.
 	[[nodiscard]] const SmallSet<Point3D>& lineLead_getPath(const ActorIndex& index) const;
-	[[nodiscard]] OccupiedSpaceForHasShape lineLead_getOccupiedPoints(const ActorIndex& index) const;
+	[[nodiscard]] CuboidSet lineLead_getOccupiedCuboids(const ActorIndex& index) const;
 	[[nodiscard]] bool lineLead_pathEmpty(const ActorIndex& index) const;
 	[[nodiscard]] ShapeId lineLead_getLargestShape(const ActorIndex& index) const;
 	[[nodiscard]] MoveTypeId lineLead_getMoveType(const ActorIndex& index) const;

@@ -6,7 +6,6 @@
 #include "../items/items.h"
 #include "../numericTypes/types.h"
 #include "../path/terrainFacade.hpp"
-#include "../hasShapes.hpp"
 // PathRequest.
 InstallItemPathRequest::InstallItemPathRequest(Area& area, InstallItemObjective& iio, const ActorIndex& actorIndex) :
 	m_installItemObjective(iio)
@@ -38,15 +37,17 @@ FindPathResult InstallItemPathRequest::readStep(Area& area, const TerrainFacade&
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	auto destinationCondition = [&, actorIndex](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
+	FactionId actorFaction = actors.getFaction(actorIndex);
+	const auto& forFaction = area.m_hasInstallItemDesignations.getForFaction(actorFaction);
+	auto destinationCondition = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
 	{
-		FactionId faction = actors.getFaction(actorIndex);
-		return {area.m_hasInstallItemDesignations.getForFaction(faction).contains(point), point};
+		const Point3D point = forFaction.getPointInCuboid(cuboid);
+		return {point.exists(), point};
 	};
-	constexpr bool adjacent = true;
 	constexpr bool useAnyPoint = true;
-	const Point3D& huristicDestination = m_installItemObjective.m_project->getLocation();
-	return terrainFacade.findPathToConditionDepthFirst<useAnyPoint, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, huristicDestination, m_installItemObjective.m_detour, adjacent);
+	constexpr bool useAdjacent = false;
+	const Point3D& projectLocation = m_installItemObjective.m_project->getLocation();
+	return terrainFacade.findPathToConditionDepthFirst<decltype(destinationCondition), useAnyPoint, useAdjacent>(destinationCondition, memo, start, facing, shape, projectLocation, m_installItemObjective.m_detour);
 }
 void InstallItemPathRequest::writeStep(Area& area, FindPathResult& result)
 {

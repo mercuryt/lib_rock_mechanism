@@ -24,3 +24,8 @@ concept MoveConstructible = std::is_move_constructible_v<T>;
 
 template <typename T>
 concept Numeric = std::integral<T> || std::floating_point<T>;
+
+template<typename T>
+concept Sortable = requires(T a, T b) {
+	{ a < b } -> std::same_as<bool>; // Check if operator< exists and returns bool
+};

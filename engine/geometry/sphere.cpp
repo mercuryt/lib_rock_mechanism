@@ -9,11 +9,11 @@ bool Sphere::contains(const Point3D& point) const
 }
 bool Sphere::contains(const Cuboid& cuboid) const
 {
-	return contains(cuboid.m_highest) && contains(cuboid.m_lowest);
+	return contains(cuboid.m_high) && contains(cuboid.m_low);
 }
 bool Sphere::intersects(const Cuboid& cuboid) const
 {
-	return doesCuboidIntersectSphere(cuboid.m_highest, cuboid.m_lowest, *this);
+	return doesCuboidIntersectSphere(cuboid.m_high, cuboid.m_low, *this);
 }
 bool Sphere::doesCuboidIntersectSphere(const Point3D& highest, const Point3D& lowest, const Sphere& sphere)
 {

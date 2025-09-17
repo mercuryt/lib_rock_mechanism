@@ -22,8 +22,8 @@ public:
 	// non virtual.
 	void equip(Area& area, const ItemIndex& item, const ActorIndex& actor);
 	void select(Area& area, const ItemIndex& item);
-	bool pointContainsItem(Area& area, const Point3D& point) const { return const_cast<UniformObjective*>(this)->getItemAtPoint(area, point).exists(); }
-	ItemIndex getItemAtPoint(Area& area, const Point3D& point);
+	Point3D getLocationOfItemInCuboid(Area& area, const Cuboid& cuboid) const;
+	ItemIndex getItemAtLocation(Area& area, const Cuboid& cuboid);
 	// For testing.
 	[[nodiscard]] ItemReference getItem() { return m_item; }
 	friend class UniformThreadedTask;

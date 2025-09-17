@@ -30,7 +30,7 @@ void definitions::loadShapes()
 	{
 		Shape::create(
 			(data["name"].get<std::string>()),
-			data["positions"].get<SmallSet<OffsetAndVolume>>(),
+			data["positions"].get<MapWithOffsetCuboidKeys<CollisionVolume>>(),
 			// TODO: move this to ui.
 			data.contains("displayScale") ? data["displayScale"].get<uint32_t>() : 1
 		);
@@ -65,7 +65,8 @@ void definitions::loadMoveTypes()
 	{
 		MoveTypeParamaters p{
 			.name=(data["name"].get<std::string>()),
-			.walk=data["walk"].get<bool>(),
+			.surface=data["surface"].get<bool>(),
+			.stairs=data["stairs"].get<bool>(),
 			.climb=data["climb"].get<uint8_t>(),
 			.jumpDown=data["jumpDown"].get<bool>(),
 			.fly=data["fly"].get<bool>(),

@@ -32,6 +32,13 @@ public:
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] PointFeatureTypeId getForPoint(const Point3D& point) const;
 	[[nodiscard]] bool empty() const;
+	[[nodiscard]] DigProject* getProjectWithCondition(const auto& shape, auto&& condition)
+	{
+		for(const auto& [point, project] : m_data)
+			if(shape.contains(point) && condition(*project))
+				return project.get();
+		return nullptr;
+	}
 	friend class AreaHasDigDesignations;
 };
 // To be used by Area.
@@ -56,4 +63,5 @@ public:
 	[[nodiscard]] bool areThereAnyForFaction(const FactionId& faction) const;
 	[[nodiscard]] bool contains(const FactionId& faction, const Point3D& point) const { return m_data[faction].m_data.contains(point); }
 	[[nodiscard]] DigProject& getForFactionAndPoint(const FactionId& faction, const Point3D& point);
+	[[nodiscard]] DigProject* getProjectWithCondition(const FactionId& faction, const auto& shape, auto&& condition) { return m_data[faction].getProjectWithCondition(shape, condition); }
 };

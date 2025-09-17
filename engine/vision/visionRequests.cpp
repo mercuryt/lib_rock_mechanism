@@ -59,7 +59,7 @@ void VisionRequests::readStepSegment(const uint& begin, const uint& end)
 		const Sphere visionSphere{request.location, m_largestRange.toFloat()};
 		const VisionCuboidSetSIMD visionCuboids = m_area.m_visionCuboids.query(visionSphere);
 		const Facing4 facing = request.facing;
-		const OccupiedSpaceForHasShape occupied = request.occupied;
+		const CuboidSet& occupied = request.occupied;
 		m_area.m_octTree.query(visionSphere, &visionCuboids, [&](const LocationBucket& bucket)
 		{
 			const auto& [actors, canSeeAndCanBeSeenBy] = bucket.visionRequestQuery(m_area, request.location, facing, rangeSquared, fromVisionCuboidIndex, visionCuboids, occupied, m_largestRange);

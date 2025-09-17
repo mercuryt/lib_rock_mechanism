@@ -1,6 +1,6 @@
-#include "definitions/shape.h"
+#include "shape.h"
 #include "space/space.h"
-#include "geometry/cuboid.h"
+#include "geometry/cuboidSet.h"
 #include "deserializationMemo.h"
 #include "numericTypes/types.h"
 #include "util.h"
@@ -9,262 +9,327 @@
 #include <string>
 #include <sys/types.h>
 //TODO: radial symetry for 2x2 and 3x3, etc.
-ShapeId Shape::create(std::string name, SmallSet<OffsetAndVolume> positions, uint32_t displayScale)
+ShapeId Shape::create(std::string name, MapWithOffsetCuboidKeys<CollisionVolume>&& positions, uint32_t displayScale)
 {
-	shapeData.m_name.add(name);
-	shapeData.m_positions.add(positions);
-	shapeData.m_displayScale.add(displayScale);
-	shapeData.m_isMultiTile.add(positions.size() != 1);
-	shapeData.m_isRadiallySymetrical.add(positions.size() == 1);
-	shapeData.m_occupiedOffsetsCache.add();
-	shapeData.m_adjacentOffsetsCache.add();
-	ShapeId id = ShapeId::create(shapeData.m_name.size() - 1);
+	g_shapeData.m_name.add(name);
+	g_shapeData.m_displayScale.add(displayScale);
+	g_shapeData.m_isMultiTile.add(positions.size() != 1);
+	g_shapeData.m_isRadiallySymetrical.add(positions.size() == 1);
+	g_shapeData.m_positions.add(std::move(positions));
+	g_shapeData.m_occupiedOffsetsCache.add();
+	g_shapeData.m_adjacentOffsetsCache.add();
+	g_shapeData.m_boundryOffsetCache.add();
+	ShapeId id = ShapeId::create(g_shapeData.m_name.size() - 1);
 	for(Facing4 i = Facing4::North; i != Facing4::Null; i = Facing4((uint)i + 1))
 	{
-		shapeData.m_occupiedOffsetsCache[id][(uint)i] = makeOccupiedPositionsWithFacing(id, i);
-		shapeData.m_adjacentOffsetsCache[id][(uint)i] = makeAdjacentPositionsWithFacing(id, i);
+		g_shapeData.m_occupiedOffsetsCache[id][(uint)i] = makeOccupiedCuboidsWithFacing(id, i);
+		g_shapeData.m_adjacentOffsetsCache[id][(uint)i] = makeAdjacentCuboidsWithFacing(id, i);
+		g_shapeData.m_boundryOffsetCache[id][(uint)i] = makeOffsetCuboidBoundryWithFacing(id, i);
 	}
 	return id;
 }
-uint16_t Shape::size(const ShapeId& id) { return shapeData.m_positions[id].size(); }
-SmallSet<OffsetAndVolume> Shape::positionsWithFacing(const ShapeId& id, const Facing4& facing) { return shapeData.m_occupiedOffsetsCache[id][(uint)facing]; }
-SmallSet<Offset3D> Shape::adjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing) { return shapeData.m_adjacentOffsetsCache[id][(uint)facing]; }
-SmallSet<OffsetAndVolume> Shape::makeOccupiedPositionsWithFacing(const ShapeId& id, const Facing4& facing)
+const MapWithOffsetCuboidKeys<CollisionVolume>& Shape::positionsWithFacing(const ShapeId& id, const Facing4& facing) { return g_shapeData.m_occupiedOffsetsCache[id][(uint)facing]; }
+const OffsetCuboidSet& Shape::adjacentCuboidsWithFacing(const ShapeId& id, const Facing4& facing) { return g_shapeData.m_adjacentOffsetsCache[id][(uint)facing]; }
+MapWithOffsetCuboidKeys<CollisionVolume> Shape::makeOccupiedCuboidsWithFacing(const ShapeId& id, const Facing4& facing)
 {
 	//TODO: cache.
-	SmallSet<OffsetAndVolume> output;
+	MapWithOffsetCuboidKeys<CollisionVolume> output;
+	// Make copy to rotate.
+	auto shapeDataPositions = g_shapeData.m_positions[id];
 	switch(facing)
 	{
 		case Facing4::North:
-			return shapeData.m_positions[id];
+			return g_shapeData.m_positions[id];
 		case Facing4::East:
-			for(auto pair : shapeData.m_positions[id])
+			for(auto& [offsetCuboid, volume] : shapeDataPositions)
 			{
-				std::swap(pair.offset.data[0], pair.offset.data[1]);
-				output.insert(pair);
+				std::swap(offsetCuboid.m_high.data[0], offsetCuboid.m_high.data[1]);
+				std::swap(offsetCuboid.m_low.data[0], offsetCuboid.m_low.data[1]);
+				output.insert(offsetCuboid, volume);
 			}
 			return output;
 		case Facing4::South:
-			for(auto pair : shapeData.m_positions[id])
+			for(auto& [offsetCuboid, volume] : shapeDataPositions)
 			{
-				pair.offset.data[1] *= -1;
-				output.insert(pair);
+				offsetCuboid.m_high.data[1] *= -1;
+				offsetCuboid.m_low.data[1] *= -1;
+				output.insert(offsetCuboid, volume);
 			}
 			return output;
 		case Facing4::West:
-			for(auto pair : shapeData.m_positions[id])
+			for(auto& [offsetCuboid, volume] : shapeDataPositions)
 			{
-				std::swap(pair.offset.data[0], pair.offset.data[1]);
-				pair.offset.data[0] *= -1;
-				output.insert(pair);
+				std::swap(offsetCuboid.m_high.data[0], offsetCuboid.m_high.data[1]);
+				std::swap(offsetCuboid.m_low.data[0], offsetCuboid.m_low.data[1]);
+				offsetCuboid.m_high.data[0] *= -1;
+				offsetCuboid.m_low.data[0] *= -1;
+				output.insert(offsetCuboid, volume);
 			}
 			return output;
 		default:
 			std::unreachable();
 	}
 	std::unreachable();
-	return output;
 }
-SmallSet<Offset3D> Shape::makeAdjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing)
+OffsetCuboidSet Shape::makeAdjacentCuboidsWithFacing(const ShapeId& id, const Facing4& facing)
 {
-	SmallSet<Offset3D> output;
-	for(const auto& position : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
-		for(auto& offset : positionOffsets(position))
-			output.maybeInsert(offset);
-	return output;
-}
-SmallSet<Offset3D> Shape::positionOffsets(const OffsetAndVolume& offsetAndVolume)
-{
-	SmallSet<Offset3D> output;
-	for(const auto& offsets : adjacentOffsets::all)
-		output.insert(offsetAndVolume.offset + offsets);
-	return output;
-}
-
-SmallSet<Point3D> Shape::getPointsOccupiedAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing)
-{
-	SmallSet<Point3D> output;
-	output.reserve(shapeData.m_positions[id].size());
-	for(const auto& pair : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
+	OffsetCuboidSet output;
+	const auto& occupiedOffsets = g_shapeData.m_occupiedOffsetsCache[id][(uint)facing];
+	for(const auto& [offsetCuboid, volume] : occupiedOffsets)
 	{
-		Point3D point = location.applyOffset(pair.offset);
-		assert(space.boundry().contains(point));
-		output.insert(point);
+		OffsetCuboid inflated = offsetCuboid;
+		inflated.inflate({1});
+		output.add(inflated);
+	}
+	// Leave the occupied cuboids in the set for simple shapes.
+	if(occupiedOffsets.size() > 4)
+		for(const auto& [offsetCuboid, volume] : occupiedOffsets)
+			output.removeContainedAndFragmentIntercepted(offsetCuboid);
+	return output;
+}
+MapWithOffsetCuboidKeys<CollisionVolume> Shape::getCuboidsWithVolumeByZLevel(const ShapeId& id, const Distance& z)
+{
+	MapWithOffsetCuboidKeys<CollisionVolume> output;
+	const OffsetCuboid plane{Offset3D(Offset::max(), Offset::max(), Offset::create(z.get())), Offset3D::create(0, 0, z.get())};
+	for(const auto& [offsetCuboid, volume] : g_shapeData.m_positions[id])
+		if(plane.intersects(offsetCuboid))
+			output.insertOrMerge(plane.intersection(offsetCuboid), volume);
+	return output;
+}
+CuboidSet Shape::getCuboidsOccupiedAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing)
+{
+	CuboidSet output;
+	output.reserve(g_shapeData.m_positions[id].size());
+	const OffsetCuboid offsetBoundry = space.offsetBoundry();
+	for(const auto& [offsetCuboid, volume] : g_shapeData.m_occupiedOffsetsCache[id][(uint)facing])
+	{
+		const OffsetCuboid relativeOffsetCuboid = offsetCuboid.relativeToPoint(location);
+		assert(offsetBoundry.contains(relativeOffsetCuboid));
+		const Cuboid cuboid  = Cuboid::create(relativeOffsetCuboid);
+		output.add(cuboid);
 	}
 	return output;
 }
-SmallSet<Point3D> Shape::getPointsOccupiedAndAdjacentAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing)
+OffsetCuboid Shape::makeOffsetCuboidBoundryWithFacing(const ShapeId& id, const Facing4& facing)
 {
-	auto output = getPointsOccupiedAt(id, space, location, facing);
-	output.maybeInsertAll(getPointsWhichWouldBeAdjacentAt(id, space, location, facing));
+	//TODO: keep a cache of offset boundries by facing.
+	OffsetCuboid output;
+	for(const auto& [offsetCuboid, volume] : g_shapeData.m_occupiedOffsetsCache[id][(uint)facing])
+		if(!output.exists())
+			output = offsetCuboid;
+		else
+			output.maybeExpand(offsetCuboid);
 	return output;
 }
-SmallSet<std::pair<Point3D, CollisionVolume>> Shape::getPointsOccupiedAtWithVolumes(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing)
+CuboidSet Shape::getCuboidsOccupiedAndAdjacentAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing)
 {
-	SmallSet<std::pair<Point3D, CollisionVolume>> output;
-	output.reserve(shapeData.m_positions[id].size());
-	for(const auto& pair : positionsWithFacing(id, facing))
+	CuboidSet output;
+	const OffsetCuboid offsetBoundry = space.offsetBoundry();
+	for(const auto& [offsetCuboid, volume] : g_shapeData.m_occupiedOffsetsCache[id][(uint)facing])
 	{
-		Point3D point = location.applyOffset(pair.offset);
-		if(space.boundry().contains(point))
-			output.emplace(point, pair.volume);
+		OffsetCuboid relativeOffsetCuboid = offsetCuboid.relativeToPoint(location);
+		relativeOffsetCuboid.inflate({1});
+		const Cuboid cuboid = Cuboid::create(offsetBoundry.intersection(relativeOffsetCuboid));
+		output.add(cuboid);
 	}
 	return output;
 }
-SmallSet<Point3D> Shape::getPointsWhichWouldBeAdjacentAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing)
+MapWithCuboidKeys<CollisionVolume> Shape::getCuboidsOccupiedAtWithVolume(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing)
 {
-	SmallSet<Point3D> output;
-	output.reserve(shapeData.m_positions[id].size());
-	for(const Offset3D& offset : shapeData.m_adjacentOffsetsCache[id][(uint)facing])
+	assert(location.exists());
+	assert(facing != Facing4::Null);
+	MapWithCuboidKeys<CollisionVolume> output;
+	output.reserve(g_shapeData.m_positions[id].size());
+	const OffsetCuboid offsetBoundry = space.offsetBoundry();
+	for(const auto& [offsetCuboid, volume] : positionsWithFacing(id, facing))
 	{
-		Point3D point = location.applyOffset(offset);
-		if(space.boundry().contains(point))
-			output.insert(point);
+		const OffsetCuboid relativeOffsetCuboid = offsetCuboid.relativeToPoint(location);
+		assert(offsetBoundry.contains(relativeOffsetCuboid));
+		const Cuboid cuboid = Cuboid::create(relativeOffsetCuboid);
+		output.insert(cuboid, volume);
+	}
+	return output;
+}
+CuboidSet Shape::getCuboidsWhichWouldBeAdjacentAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing)
+{
+	CuboidSet output;
+	output.reserve(g_shapeData.m_positions[id].size());
+	const OffsetCuboid offsetBoundry = space.offsetBoundry();
+	for(const OffsetCuboid& offsetCuboid : g_shapeData.m_adjacentOffsetsCache[id][(uint)facing])
+	{
+		OffsetCuboid relativeOffsetCuboid = offsetCuboid.relativeToPoint(location);
+		if(!offsetBoundry.intersects(relativeOffsetCuboid))
+			continue;
+		const Cuboid cuboid = Cuboid::create(offsetBoundry.intersection(relativeOffsetCuboid));
+		output.add(cuboid);
 	}
 	return output;
 }
 Point3D Shape::getPointWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing, std::function<bool(const Point3D&)> predicate)
 {
-	for(const auto& pair : shapeData.m_occupiedOffsetsCache[id][(uint)facing])
+	const OffsetCuboid offsetBoundry = space.offsetBoundry();
+	for(const auto& [offsetCuboid, volume] : g_shapeData.m_occupiedOffsetsCache[id][(uint)facing])
 	{
-		Point3D point = location.applyOffset(pair.offset);
-		if(space.boundry().contains(point) && predicate(point))
-			return point;
+		OffsetCuboid relativeOffsetCuboid = offsetCuboid.relativeToPoint(location);
+		assert(offsetBoundry.contains(relativeOffsetCuboid));
+		const Cuboid cuboid = Cuboid::create(relativeOffsetCuboid);
+		for(const Point3D& point : cuboid)
+			if(predicate(point))
+				return point;
 	}
 	return Point3D::null();
 }
 Point3D Shape::getPointWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing, std::function<bool(const Point3D&)> predicate)
 {
-	for(const Offset3D& offset : shapeData.m_adjacentOffsetsCache[id][(uint)facing])
+	const OffsetCuboid offsetBoundry = space.offsetBoundry();
+	for(const OffsetCuboid& offsetCuboid : g_shapeData.m_adjacentOffsetsCache[id][(uint)facing])
 	{
-		Point3D point = location.applyOffset(offset);
-		if(space.boundry().contains(point) && predicate(point))
-			return point;
+		OffsetCuboid relativeOffsetCuboid = offsetCuboid.relativeToPoint(location);
+		if(!offsetBoundry.intersects(relativeOffsetCuboid))
+			continue;
+		const Cuboid cuboid = Cuboid::create(offsetBoundry.intersection(relativeOffsetCuboid));
+		for(const Point3D& point : cuboid)
+			if(predicate(point))
+				return point;
 	}
 	return Point3D::null();
 }
-CollisionVolume Shape::getCollisionVolumeAtLocation(const ShapeId& id) { return shapeData.m_positions[id].front().volume; }
+CollisionVolume Shape::getCollisionVolumeAtLocation(const ShapeId& id)
+{
+	const auto& [offsetCuboid, volume] = g_shapeData.m_positions[id].front();
+	assert(offsetCuboid.contains(Offset3D::create(0,0,0)));
+	return volume;
+}
 CollisionVolume Shape::getTotalCollisionVolume(const ShapeId& id)
 {
-	if(!getIsMultiTile(id))
-		return getCollisionVolumeAtLocation(id);
-	else
-	{
-		CollisionVolume output = CollisionVolume::create(0);
-		for(const auto& [offset, volume] : getPositions(id))
-		{
-			output += volume;
-		}
-		return output;
-	}
+	CollisionVolume output = CollisionVolume::create(0);
+	for(const auto& [offset, volume] : getOffsetCuboidsWithVolume(id))
+		output += volume;
+	return output;
+}
+uint16_t Shape::getCuboidsCount(const ShapeId& id)
+{
+	return getOffsetCuboidsWithVolume(id).size();
+}
+const MapWithOffsetCuboidKeys<CollisionVolume>& Shape::getOffsetCuboidsWithVolume(const ShapeId& id)
+{
+	return g_shapeData.m_positions[id];
+}
+const OffsetCuboid& Shape::getOffsetCuboidBoundryWithFacing(const ShapeId& id, const Facing4& facing)
+{
+	return g_shapeData.m_boundryOffsetCache[id][(int)facing];
 }
 ShapeId Shape::byName(const std::string& name)
 {
-	auto found = shapeData.m_name.find(name);
-	if(found == shapeData.m_name.end())
+	auto found = g_shapeData.m_name.find(name);
+	if(found == g_shapeData.m_name.end())
 		return loadFromName(name);
-	return ShapeId::create(found - shapeData.m_name.begin());
+	return ShapeId::create(found - g_shapeData.m_name.begin());
 }
-SmallSet<OffsetAndVolume> Shape::getPositions(const ShapeId& id) { return shapeData.m_positions[id]; }
-std::string Shape::getName(const ShapeId& id) { return shapeData.m_name[id]; }
-uint32_t Shape::getDisplayScale(const ShapeId& id) { return shapeData.m_displayScale[id]; }
-bool Shape::getIsMultiTile(const ShapeId& id) { return shapeData.m_isMultiTile[id]; }
-bool Shape::getIsRadiallySymetrical(const ShapeId& id) { return shapeData.m_isRadiallySymetrical[id]; }
+std::string Shape::getName(const ShapeId& id) { return g_shapeData.m_name[id]; }
+uint32_t Shape::getDisplayScale(const ShapeId& id) { return g_shapeData.m_displayScale[id]; }
+bool Shape::getIsMultiPoint(const ShapeId& id) { return g_shapeData.m_isMultiTile[id]; }
+bool Shape::getIsRadiallySymetrical(const ShapeId& id) { return g_shapeData.m_isRadiallySymetrical[id]; }
 // TODO: cache this.
-Distance Shape::getZSize(const ShapeId& id)
+Offset Shape::getZSize(const ShapeId& id)
 {
-	Distance output = Distance::create(0);
-	for(const OffsetAndVolume& offsetAndVolume : getPositions(id))
-		if(output < offsetAndVolume.offset.z())
-			output = Distance::create(offsetAndVolume.offset.z());
-	return output;
-}
-// TODO: cache this.
-SmallSet<OffsetAndVolume> Shape::getPositionsByZLevel(const ShapeId& id, const Distance& zLevel)
-{
-	SmallSet<OffsetAndVolume> output;
-	for(const OffsetAndVolume& offsetAndVolume : getPositions(id))
-		if(zLevel == offsetAndVolume.offset.z())
-			output.insert(offsetAndVolume);
-	return output;
+	assert(!g_shapeData.m_positions[id].empty());
+	//TODO: why aren't the type of high and low OffsetWidth?
+	Offset high = Offset::min();
+	Offset low = Offset::max();
+	for(const auto& [offsetCuboid, volume] : g_shapeData.m_positions[id])
+	{
+		high = std::max(high, offsetCuboid.m_high.z());
+		low = std::min(low, offsetCuboid.m_low.z());
+	}
+	return high - low;
 }
 Quantity Shape::getNumberOfPointsOnLeadingFaceAtOrBelowLevel(const ShapeId& id, const Distance& zLevel)
 {
-	SmallSet<std::pair<int, int>> everyYAndZ;
-	for(const auto& offsetAndVolume : shapeData.m_positions[id])
+	Quantity output = {0};
+	Offset zLevelOffset = Offset::create(zLevel.get());
+	for(const auto& [offsetCuboid, volume] : g_shapeData.m_positions[id])
 	{
-		const auto& offset = offsetAndVolume.offset;
-		if(zLevel <= offset.z())
-			everyYAndZ.maybeInsert({offset.y(), offset.z()});
+		assert(offsetCuboid.m_high.z() >= 0);
+		Offset offsetCuboidHighZ = offsetCuboid.m_high.z();
+		if(zLevelOffset <= offsetCuboidHighZ)
+		{
+			const OffsetCuboid leadingFace = offsetCuboid.getFace(Facing6::North);
+			Offset faceAreaPerZLevel = leadingFace.m_high.y() - leadingFace.m_low.y();
+			Offset distanceZ = std::min(zLevelOffset, offsetCuboidHighZ) - offsetCuboid.m_low.z();
+			output += (faceAreaPerZLevel * distanceZ).get();
+		}
 	}
-	return Quantity::create(everyYAndZ.size());
+	return output;
 }
 bool Shape::hasShape(const std::string& name)
 {
-	auto found = shapeData.m_name.find(name);
-	return found != shapeData.m_name.end();
+	auto found = g_shapeData.m_name.find(name);
+	return found != g_shapeData.m_name.end();
 }
 ShapeId Shape::loadFromName(std::string name)
 {
-	std::vector<int> tokens;
-	std::stringstream ss(name);
-	std::string item;
-
-	while(getline(ss, item, ' '))
-		tokens.push_back(stoi(item));
-	assert(tokens.size() % 4 == 0);
-	SmallSet<OffsetAndVolume> positions;
-	for(size_t i = 0; i < tokens.size(); i+=4)
-	{
-		int x = tokens[i];
-		int y = tokens[i+1];
-		int z = tokens[i+2];
-		int v = tokens[i+3];
-		positions.insert(OffsetAndVolume{Offset3D::create(x, y, z), CollisionVolume::create(v)});
-	}
+	Json data = Json::parse(name);
+	MapWithOffsetCuboidKeys<CollisionVolume> positions;
+	data.get_to(positions);
 	// Runtime shapes always have display scale = 1
-	return Shape::create(name, positions, 1);
+	return Shape::create(name, std::move(positions), 1);
 }
-ShapeId Shape::mutateAdd(const ShapeId& id, const OffsetAndVolume& position)
+ShapeId Shape::mutateAdd(const ShapeId& id, const std::pair<OffsetCuboid, CollisionVolume>& position)
 {
-	return mutateAddMultiple(id, {position});
+	MapWithOffsetCuboidKeys<CollisionVolume> positions;
+	positions.insert(position);
+	return mutateAddMultiple(id, positions);
 }
-ShapeId Shape::mutateAddMultiple(const ShapeId& shape, const SmallSet<OffsetAndVolume>& positions)
+ShapeId Shape::mutateAddMultiple(const ShapeId& shape, const MapWithOffsetCuboidKeys<CollisionVolume>& positions)
 {
 	// Make a copy.
-	SmallSet<OffsetAndVolume> merged = shapeData.m_positions[shape];
+	MapWithOffsetCuboidKeys<CollisionVolume> merged = g_shapeData.m_positions[shape];
 	merged.insertAll(positions);
-	return createCustom(merged);
+	// TODO: merge cuboids.
+	return createCustom(std::move(merged));
 }
-ShapeId Shape::mutateRemove(const ShapeId& id, const OffsetAndVolume& position)
+ShapeId Shape::mutateRemove(const ShapeId& id, const std::pair<OffsetCuboid, CollisionVolume>& pair)
 {
-	SmallSet<OffsetAndVolume> positions = {position};
-	return mutateRemoveMultiple(id, positions);
+	MapWithOffsetCuboidKeys<CollisionVolume> cuboids;
+	cuboids.insert(pair);
+	return mutateRemoveMultiple(id, cuboids);
 }
-ShapeId Shape::mutateRemoveMultiple(const ShapeId& id, SmallSet<OffsetAndVolume>& positions)
+ShapeId Shape::mutateRemoveMultiple(const ShapeId& id, const MapWithOffsetCuboidKeys<CollisionVolume>& cuboids)
 {
 	// Make a copy.
-	SmallSet<OffsetAndVolume> purged = shapeData.m_positions[id];
-	purged.eraseAll(positions);
+	MapWithOffsetCuboidKeys<CollisionVolume> purged;
+	for(const auto& [toRemove, volumeToRemove] : cuboids)
+	{
+		for(const auto& [offsetCuboid, volume] : g_shapeData.m_positions[id])
+			// TODO: use volume to remove in order to make possible multiple small creatures riding at the same location.
+			if(toRemove.intersects(offsetCuboid))
+			{
+				if(toRemove.contains(offsetCuboid))
+					continue;
+				for(const OffsetCuboid& fragment : offsetCuboid.getChildrenWhenSplitByCuboid(toRemove))
+					purged.insert(fragment, volume);
+			}
+			else
+				purged.insert({offsetCuboid, volume});
+	}
 	purged.sort();
-	return createCustom(purged);
+	return createCustom(std::move(purged));
 }
 ShapeId Shape::mutateMultiplyVolume(const ShapeId& id, const Quantity& quantity)
 {
 	// Make a copy.
-	SmallSet<OffsetAndVolume> copy = shapeData.m_positions[id];
-	for(OffsetAndVolume& offsetAndVolume : copy)
-		offsetAndVolume.volume *= quantity.get();
-	return createCustom(copy);
+	MapWithOffsetCuboidKeys<CollisionVolume> copy = g_shapeData.m_positions[id];
+	for(auto& [offsetCuboid, volume]  : copy)
+		volume *= quantity.get();
+	return createCustom(std::move(copy));
 }
-std::string Shape::makeName(SmallSet<OffsetAndVolume>& positions)
+std::string Shape::makeName(const MapWithOffsetCuboidKeys<CollisionVolume>& positions)
 {
-	std::string output;
-	for(const auto& pair : positions)
-		output += std::to_string(pair.offset.x()) + " " + std::to_string(pair.offset.y()) + " " + std::to_string(pair.offset.z()) + " " + std::to_string(pair.volume.get()) + " ";
-	return output;
+	Json data(positions);
+	return data.dump();
 }
-ShapeId Shape::createCustom(SmallSet<OffsetAndVolume>& positions)
+ShapeId Shape::createCustom(MapWithOffsetCuboidKeys<CollisionVolume>&& positions)
 {
 	positions.sort();
 	std::string name = makeName(positions);
@@ -272,5 +337,5 @@ ShapeId Shape::createCustom(SmallSet<OffsetAndVolume>& positions)
 	if(output.exists())
 		return output;
 	// Runtime shapes always have display scale = 1
-	return Shape::create(name, positions, 1);
+	return Shape::create(name, std::move(positions), 1);
 }

@@ -47,10 +47,10 @@ bool Actors::canReserve_tryToReserveItem(const ActorIndex& index, const ItemInde
 }
 SmallMap<Point3D, std::unique_ptr<DishonorCallback>> Actors::canReserve_unreserveAndReturnPointsAndCallbacksOnSameDeck(const ActorIndex& index)
 {
-	DeckId deckId = m_area.m_decks.getForPoint(m_location[index]);
+	DeckId deckId = m_area.m_decks.queryDeckId(m_location[index]);
 	if(deckId.empty())
 		return {};
-	auto condition = [&](const Point3D& point) { return m_area.m_decks.getForPoint(point) == deckId; };
+	auto condition = [&](const Point3D& point) { return m_area.m_decks.queryDeckId(point) == deckId; };
 	return m_canReserve[index]->unreserveAndReturnPointsAndCallbacksWithCondition(condition);
 }
 
@@ -60,13 +60,11 @@ bool Actors::canReserve_hasReservationWith(const ActorIndex& index, Reservable& 
 }
 bool Actors::canReserve_canReserveLocation(const ActorIndex& index, const Point3D& location, const Facing4& facing) const
 {
-	Space& space = m_area.getSpace();
+	const Space& space = m_area.getSpace();
 	FactionId faction = m_faction[index];
 	assert(faction.exists());
-	for(Point3D occupied : Shape::getPointsOccupiedAt(m_shape[index], space, location, facing))
-		if(space.isReserved(occupied, faction))
-			return false;
-	return true;
+	const CuboidSet& cuboidSet = Shape::getCuboidsOccupiedAt(m_shape[index], space, location, facing);
+	return !space.isReservedAny(cuboidSet, faction);
 }
 bool Actors::canReserve_locationAtEndOfPathIsUnreserved(const ActorIndex& index, const SmallSet<Point3D>& path) const
 {

@@ -25,7 +25,7 @@ struct CuboidSet;
 class FluidType;
 class DeckRotationData;
 
-template<class Derived, class Index, class ReferenceIndex>
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
 class Portables : public HasShapes<Derived, Index>
 {
 protected:
@@ -47,11 +47,9 @@ protected:
 	StrongVector<ActorOrItemIndex, Index> m_isOnDeckOf;
 	StrongVector<DeckId, Index> m_hasDecks;
 	StrongVector<SmallSet<Project*>, Index> m_projectsOnDeck;
-	StrongVector<SmallSet<Point3D>, Index> m_pointsContainingFluidOnDeck;
+	StrongVector<CuboidSet, Index> m_cuboidsContainingFluidOnDeck;
 	StrongVector<FluidTypeId, Index> m_floating;
-	// Is this thing an actor?
-	bool m_isActors;
-	Portables(Area& area, bool isActors);
+	Portables(Area& area);
 	void create(const Index& index, const MoveTypeId& moveType, const ShapeId& shape, const FactionId& faction, bool isStatic, const Quantity& quantity);
 	void log(const Index& index) const;
 	void updateLeaderSpeedActual(const Index& index);
@@ -61,8 +59,22 @@ protected:
 	[[nodiscard]] ActorOrItemIndex getActorOrItemIndex(const Index& index);
 public:
 	ReferenceData<Index, ReferenceIndex> m_referenceData;
-	template<typename Action>
-	void forEachDataPortables(Action&& action);
+	void forEachDataPortables(auto&& action)
+	{
+		this->forEachDataHasShapes(action);
+		action(m_reservables);
+		action(m_destroy);
+		action(m_follower);
+		action(m_leader);
+		action(m_carrier);
+		action(m_moveType);
+		action(m_onDeck);
+		action(m_isOnDeckOf);
+		action(m_hasDecks);
+		action(m_projectsOnDeck);
+		action(m_cuboidsContainingFluidOnDeck);
+		action(m_floating);
+	}
 	void load(const Json& data);
 	void followActor(const Index& index, const ActorIndex& actor);
 	void followItem(const Index& index, const ItemIndex& item);
@@ -78,7 +90,7 @@ public:
 	void unsetCarrier(const Index& index, const ActorOrItemIndex& carrier);
 	void updateCarrierIndex(const Index& index, const HasShapeIndex& newIndex) { m_carrier[index].updateIndex(newIndex); }
 	void setFollower(const Index& index, const ActorOrItemIndex& follower) { assert(!follower.isStatic(getArea())); m_follower[index] = follower; }
-	void setLeader(const Index& index, const ActorOrItemIndex& leader) { assert(!leader.isStatic(getArea())); return m_leader[index] = leader; }
+	void setLeader(const Index& index, const ActorOrItemIndex& leader) { assert(!leader.isStatic(getArea())); m_leader[index] = leader; }
 	void unsetFollower(const Index& index, [[maybe_unused]] const ActorOrItemIndex& follower) { assert(m_follower[index] == follower); m_follower[index].clear(); }
 	void unsetLeader(const Index& index, const ActorOrItemIndex& leader) { assert(m_follower[index] == leader); m_leader[index].clear(); }
 	void fall(const Index& index);
@@ -107,7 +119,8 @@ public:
 	[[nodiscard]] ShapeId getShape(const Index& index) const { return HasShapes<Derived, Index>::getShape(index); }
 	[[nodiscard]] Facing4 getFacing(const Index& index) const { return HasShapes<Derived, Index>::getFacing(index); }
 	[[nodiscard]] auto getReference(const Index& index) -> Reference<Index, ReferenceIndex> const { return m_referenceData.getReference(index); }
-	[[nodiscard]] OccupiedSpaceForHasShape getOccupiedCombined(const Index& index) const;
+	[[nodiscard]] CuboidSet getOccupiedCombined(const Index& index) const;
+	[[nodiscard]] MapWithCuboidKeys<CollisionVolume> getOccupiedCombinedWithVolumes(const Index& index) const;
 	// Floating.
 	[[nodiscard]] Distance floatsInAtDepth(const Index& index, const FluidTypeId& fluidType) const;
 	[[nodiscard]] bool canFloatAt(const Index& index, const Point3D& point) const;
@@ -146,8 +159,9 @@ public:
 	void onDeck_clear(const Index& index);
 	void onDeck_set(const Index& index, const ActorOrItemIndex& onDeckOf);
 	void onDeck_destroyDecks(const Index& index);
-	void onDeck_recordPointContainingFluid(const Index& index, const Point3D& point) { m_pointsContainingFluidOnDeck[index].insert(point); }
-	void onDeck_erasePointContainingFluid(const Index& index, const Point3D& point) { m_pointsContainingFluidOnDeck[index].erase(point); }
+	// TODO: Change to cuboids.
+	void onDeck_recordPointContainingFluid(const Index& index, const Point3D& point) { m_cuboidsContainingFluidOnDeck[index].add(point); }
+	void onDeck_erasePointContainingFluid(const Index& index, const Point3D& point) { m_cuboidsContainingFluidOnDeck[index].remove(point); }
 	[[nodiscard]] DeckId onDeck_createDecks(const Index& index, const CuboidSet& cuboidSet);
 	[[nodiscard]] const ActorOrItemIndex& onDeck_getIsOnDeckOf(const Index& index) const { return m_isOnDeckOf[index]; }
 	[[nodiscard]] bool onDeck_isOnDeck(const Index& index) const { return m_isOnDeckOf[index].exists(); }
@@ -155,8 +169,8 @@ public:
 	[[nodiscard]] const SmallSet<ActorOrItemIndex>& onDeck_get(const Index& index) const { return m_onDeck[index]; }
 	[[nodiscard]] bool onDeck_hasAnyContent(const Index& index) const { return !m_onDeck[index].empty(); }
 	[[nodiscard]] Mass onDeck_getMass(const Index& index) const;
-	[[nodiscard]] const auto& onDeck_getProjects(const Index& index) const { return m_projectsOnDeck[index]; }
-	[[nodiscard]] const auto& onDeck_getPointsContainingFluid(const Index& index) const { return m_pointsContainingFluidOnDeck[index]; }
+	[[nodiscard]] const SmallSet<Project*>& onDeck_getProjects(const Index& index) const { return m_projectsOnDeck[index]; }
+	[[nodiscard]] const CuboidSet& onDeck_getCuboidsContainingFluid(const Index& index) const { return m_cuboidsContainingFluidOnDeck[index]; }
 };
 class PortablesHelpers
 {

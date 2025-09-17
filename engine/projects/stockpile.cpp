@@ -15,7 +15,7 @@
 #include "../numericTypes/types.h"
 #include "../definitions/itemType.h"
 #include "../util.h"
-#include "../portables.hpp"
+#include "../portables.h"
 #include <cwchar>
 #include <functional>
 #include <memory>
@@ -26,7 +26,7 @@ StockPileProject::StockPileProject(const FactionId& faction, Area& area, const P
 	m_quantity(quantity),
 	m_itemType(area.getItems().getItemType(item)),
 	m_solid(area.getItems().getMaterialType(item)),
-	m_stockpile(* area.getSpace().stockpile_getForFaction(point, faction)) { }
+	m_stockpile(*area.getSpace().stockpile_getOneForFaction(point, faction)) { }
 StockPileProject::StockPileProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
 	Project(data, deserializationMemo, area),
 	m_item(data["item"], area.getItems().m_referenceData),

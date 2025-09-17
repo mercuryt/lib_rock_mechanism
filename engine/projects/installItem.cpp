@@ -8,7 +8,7 @@
 #include "../definitions/moveType.h"
 
 // Project.
-InstallItemProject::InstallItemProject(Area& area, const ItemReference& i, const Point3D& l, const Facing4& facing, const FactionId& faction, const SmallSet<Point3D>& occupied) :
+InstallItemProject::InstallItemProject(Area& area, const ItemReference& i, const Point3D& l, const Facing4& facing, const FactionId& faction, const CuboidSet& occupied) :
 	Project(faction, area, l, Quantity::create(1), nullptr, occupied), m_item(i), m_facing(facing) { }
 void InstallItemProject::onComplete()
 {

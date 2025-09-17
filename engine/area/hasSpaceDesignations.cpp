@@ -1,40 +1,7 @@
 #include "hasSpaceDesignations.h"
-void AreaHasSpaceDesignationsForFaction::set(const Point3D& point, const SpaceDesignation& designation)
+bool AreaHasSpaceDesignationsForFaction::any(const SpaceDesignation& designation) const
 {
-	assert(point.exists());
-	assert(!m_data[(int)designation].query(point));
-	m_data[(int)designation].maybeInsert(point);
-}
-void AreaHasSpaceDesignationsForFaction::unset(const Point3D& point, const SpaceDesignation& designation)
-{
-	assert(m_data[(int)designation].query(point));
-	m_data[(int)designation].maybeRemove(point);
-}
-void AreaHasSpaceDesignationsForFaction::maybeSet(const Point3D& point, const SpaceDesignation& designation)
-{
-	m_data[(int)designation].maybeInsert(point);
-}
-void AreaHasSpaceDesignationsForFaction::maybeUnset(const Point3D& point, const SpaceDesignation& designation)
-{
-	m_data[(int)designation].maybeRemove(point);
-}
-bool AreaHasSpaceDesignationsForFaction::check(const Point3D& point, const SpaceDesignation& designation) const
-{
-	return m_data[(int)designation].query(point);
-}
-SpaceDesignation AreaHasSpaceDesignationsForFaction::getDisplayDesignation(const Point3D& point) const
-{
-	for(int i = 0; i < (int)SpaceDesignation::SPACE_DESIGNATION_MAX; ++i)
-		if(check(point, (SpaceDesignation)i))
-			return (SpaceDesignation)i;
-	return SpaceDesignation::SPACE_DESIGNATION_MAX;
-}
-bool AreaHasSpaceDesignationsForFaction::empty(const Point3D& point) const
-{
-	for(int i = 0; i < (int)SpaceDesignation::SPACE_DESIGNATION_MAX; ++i)
-		if(check(point, (SpaceDesignation)i))
-			return true;
-	return false;
+	return !m_data[(uint8_t)designation].empty();
 }
 std::vector<SpaceDesignation> AreaHasSpaceDesignationsForFaction::getForPoint(const Point3D& point) const
 {
@@ -45,6 +12,7 @@ std::vector<SpaceDesignation> AreaHasSpaceDesignationsForFaction::getForPoint(co
 			output.push_back(designation);
 	return output;
 }
+const RTreeBoolean& AreaHasSpaceDesignationsForFaction::getForDesignation(const SpaceDesignation& designation) const { return m_data[(uint8_t)designation]; }
 AreaHasSpaceDesignationsForFaction& AreaHasSpaceDesignations::maybeRegisterAndGetForFaction(const FactionId& faction)
 {
 	auto found = m_data.find(faction);

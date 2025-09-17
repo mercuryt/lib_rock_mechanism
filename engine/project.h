@@ -144,7 +144,7 @@ protected:
 	FactionId m_faction;
 	// Where the materials are delivered to and where the work gets done.
 	Point3D m_location;
-	Project(const FactionId& faction, Area& area, const Point3D& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr, const SmallSet<Point3D>& additionalPointsToReserve = {});
+	Project(const FactionId& faction, Area& area, const Point3D& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr, const CuboidSet& additionalPointsToReserve = {});
 	Project(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 private:
 	// Count how many times we have attempted to create a haul subproject.
@@ -300,7 +300,7 @@ public:
 	void readStep(Simulation& simulation, Area* area);
 	void writeStep(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
-	[[nodiscard]] bool pointContainsDesiredItemOrActor(const Point3D& point, const ActorIndex& hauler);
+	[[nodiscard]] Point3D containsDesiredItemOrActor(const Cuboid& cuboid, const ActorIndex& hauler);
 };
 class ProjectTryToAddWorkersThreadedTask final : public ThreadedTask
 {

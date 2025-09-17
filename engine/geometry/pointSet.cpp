@@ -22,8 +22,8 @@ Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesOfContainedPoints(const
 {
 	Eigen::Array<DistanceWidth, 3, Eigen::Dynamic> truncatedData = data.block(0, 0, 3, m_size);
 	return (
-		(truncatedData <= cuboid.m_highest.data.replicate(1, m_size)).colwise().all() &&
-		(truncatedData >= cuboid.m_lowest.data.replicate(1, m_size)).colwise().all()
+		(truncatedData <= cuboid.m_high.data.replicate(1, m_size)).colwise().all() &&
+		(truncatedData >= cuboid.m_low.data.replicate(1, m_size)).colwise().all()
 	);
 }
 Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesOfContainedPoints(const Sphere& sphere) const

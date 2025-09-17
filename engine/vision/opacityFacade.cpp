@@ -5,17 +5,17 @@
 #include "../space/space.h"
 #include "../geometry/paramaterizedLine.h"
 
-void OpacityFacade::update(const Area& area, const Point3D& point)
+void OpacityFacade::update(const Area& area, const Cuboid& cuboid)
 {
 	const Space& space = area.getSpace();
-	if(space.canSeeThrough(point))
-		m_fullOpacity.maybeRemove(point);
+	if(space.canSeeThrough(cuboid))
+		m_fullOpacity.maybeRemove(cuboid);
 	else
-		m_fullOpacity.maybeInsert(point);
-	if(space.canSeeThroughFloor(point))
-		m_floorOpacity.maybeRemove(point);
+		m_fullOpacity.maybeInsert(cuboid);
+	if(space.canSeeThroughFloor(cuboid))
+		m_floorOpacity.maybeRemove(cuboid);
 	else
-		m_floorOpacity.maybeInsert(point);
+		m_floorOpacity.maybeInsert(cuboid);
 }
 void OpacityFacade::maybeInsertFull(const Cuboid& cuboid) { m_fullOpacity.maybeInsert(cuboid); }
 void OpacityFacade::maybeRemoveFull(const Cuboid& cuboid) { m_fullOpacity.maybeRemove(cuboid); }
@@ -62,7 +62,7 @@ void OpacityFacade::validate(const Area& area) const
 	Cuboid cuboid = space.boundry();
 	for(const Point3D& point : cuboid)
 	{
-		assert(space.canSeeThrough(point) != m_fullOpacity.query(point));
-		assert(space.canSeeThroughFloor(point) != m_floorOpacity.query(point));
+		assert(space.canSeeThrough({point, point}) != m_fullOpacity.query(point));
+		assert(space.canSeeThroughFloor({point, point}) != m_floorOpacity.query(point));
 	}
 }

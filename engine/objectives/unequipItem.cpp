@@ -26,7 +26,7 @@ void UnequipItemObjective::execute(Area& area, const ActorIndex& actor)
 		Items& items = area.getItems();
 		ItemIndex item = m_item.getIndex(items.m_referenceData);
 		ShapeId shape = items.getShape(item);
-		const OccupiedSpaceForHasShape& occupied = items.getOccupied(item);
+		const CuboidSet& occupied = items.getOccupied(item);
 		if(space.shape_canEnterCurrentlyWithAnyFacing(m_point, shape, occupied))
 		{
 			actors.equipment_remove(actor, item);

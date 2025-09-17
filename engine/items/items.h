@@ -103,7 +103,7 @@ public:
 	[[nodiscard]] Json toJson() const;
 	friend class Items;
 };
-class Items final : public Portables<Items, ItemIndex, ItemReferenceIndex>
+class Items final : public Portables<Items, ItemIndex, ItemReferenceIndex, false>
 {
 	//TODO: change to bitset or remove.
 	StrongVector<std::unique_ptr<ItemCanBeStockPiled>, ItemIndex> m_canBeStockPiled;
@@ -127,7 +127,24 @@ public:
 	void loadCargoAndCraftJobs(const Json& json);
 	void onChangeAmbiantSurfaceTemperature();
 	template<typename Action>
-	void forEachData(Action&& action);
+	void forEachData(Action&& action)
+	{
+		forEachDataPortables(action);
+		action(m_canBeStockPiled);
+		action(m_craftJobForWorkPiece);
+		action(m_hasCargo);
+		action(m_id);
+		action(m_installed);
+		action(m_itemType);
+		action(m_solid);
+		action(m_name);
+		action(m_percentWear);
+		action(m_quality);
+		action(m_quantity);
+		action(m_onSurface);
+		action(m_pilot);
+		action(m_constructedShape);
+	}
 	// Returns index in case of nongeneric or generics with a type not present at the location.
 	// If a generic of the same type is found return it instead.
 	ItemIndex create(ItemParamaters paramaters);

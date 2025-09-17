@@ -14,7 +14,7 @@ void MistDisperseEvent::execute(Simulation& simulation, Area* area)
 {
 	Space& space = area->getSpace();
 	// Mist does not or cannont exist here anymore, clear and return.
-	if(space.fluid_getMist(m_point).empty() || space.solid_is(m_point) || space.fluid_getTotalVolume(m_point) == Config::maxPointVolume)
+	if(space.fluid_getMist(m_point).empty() || space.solid_isAny(m_point) || space.fluid_getTotalVolume(m_point) == Config::maxPointVolume)
 	{
 		space.fluid_clearMist(m_point);
 		return;
@@ -53,7 +53,7 @@ bool MistDisperseEvent::continuesToExist(Area& area) const
 		if(space.fluid_contains(adjacent, m_fluidType) && adjacent.z() != 0)
 		{
 			Point3D belowAdjacent = adjacent.below();
-			if(!space.solid_is(belowAdjacent))
+			if(!space.solid_isAny(belowAdjacent))
 				return true;
 		}
 	for(const Point3D& adjacent : space.getDirectlyAdjacent(m_point))

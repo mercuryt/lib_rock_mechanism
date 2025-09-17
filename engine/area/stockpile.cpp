@@ -15,7 +15,7 @@
 #include "../numericTypes/types.h"
 #include "../definitions/itemType.h"
 #include "../util.h"
-#include "../portables.hpp"
+#include "../portables.h"
 #include <cwchar>
 #include <functional>
 #include <memory>
@@ -42,7 +42,7 @@ Json StockPile::toJson() const
 		{"faction", m_faction},
 		{"enabled", m_enabled},
 		{"queries", m_queries},
-		{"space", m_points}
+		{"space", m_cuboids}
 	};
 	if(m_projectNeedingMoreWorkers)
 		data["projectNeedingMoreWorkers"] = reinterpret_cast<uintptr_t>(m_projectNeedingMoreWorkers);
@@ -58,12 +58,12 @@ bool StockPile::accepts(const ItemIndex& item) const
 void StockPile::addPoint(const Point3D& point)
 {
 	Space& space = m_area.getSpace();
-	assert(!m_points.contains(point));
+	assert(!m_cuboids.contains(point));
 	assert(!space.stockpile_contains(point, m_faction));
 	space.stockpile_recordMembership(point, *this);
 	if(space.stockpile_contains(point, m_faction))
 		incrementOpenPoints();
-	m_points.insert(point);
+	m_cuboids.add(point);
 	Items& items = m_area.getItems();
 	for(ItemIndex item : space.item_getAll(point))
 		if(accepts(item))
@@ -76,9 +76,9 @@ void StockPile::addPoint(const Point3D& point)
 void StockPile::removePoint(const Point3D& point)
 {
 	Space& space = m_area.getSpace();
-	assert(m_points.contains(point));
+	assert(m_cuboids.contains(point));
 	assert(space.stockpile_contains(point, m_faction));
-	assert(space.stockpile_getForFaction(point, m_faction) == this);
+	assert(space.stockpile_getOneForFaction(point, m_faction) == this);
 	// Collect projects delivering items to point.
 	// This is very slow, particularly when destroying a large stockpile when many stockpile projects exist. Probably doesn't get called often enough to matter.
 	std::vector<Project*> projectsToCancel;
@@ -89,8 +89,8 @@ void StockPile::removePoint(const Point3D& point)
 	if(space.stockpile_isAvalible(point, m_faction))
 		decrementOpenPoints();
 	space.stockpile_recordNoLongerMember(point, *this);
-	m_points.erase(point);
-	if(m_points.empty())
+	m_cuboids.add(point);
+	if(m_cuboids.empty())
 		m_area.m_hasStockPiles.getForFaction(m_faction).destroyStockPile(*this);
 	// Cancel collected projects.
 	for(Project* project : projectsToCancel)
@@ -118,7 +118,7 @@ void StockPile::decrementOpenPoints()
 }
 Simulation& StockPile::getSimulation()
 {
-	assert(!m_points.empty());
+	assert(!m_cuboids.empty());
 	return m_area.m_simulation;
 }
 void StockPile::addToProjectNeedingMoreWorkers(const ActorIndex& actor, StockPileObjective& objective)
@@ -128,9 +128,11 @@ void StockPile::addToProjectNeedingMoreWorkers(const ActorIndex& actor, StockPil
 }
 void StockPile::destroy()
 {
-	auto copy = m_points;
-	for(Point3D point : copy)
-		removePoint(point);
+	auto copy = m_cuboids;
+	for(const Cuboid& cuboid : copy)
+		// TODO: removeCuboid rather then removePoint.
+		for(const Point3D& point : cuboid)
+			removePoint(point);
 }
 bool StockPile::contains(ItemQuery& query) const
 {
@@ -291,7 +293,7 @@ Json AreaHasStockPilesForFaction::toJson() const
 }
 void AreaHasStockPilesForFaction::destroyStockPile(StockPile& stockPile)
 {
-	assert(stockPile.m_points.empty());
+	assert(stockPile.m_cuboids.empty());
 	// Erase pointers from avalible stockpiles by item type.
 	for(ItemQuery& itemQuery : stockPile.m_queries)
 	{
@@ -335,7 +337,7 @@ bool AreaHasStockPilesForFaction::isValidStockPileDestinationFor(const Point3D& 
 		return false;
 	if(!space.stockpile_isAvalible(point, m_faction))
 		return false;
-	return space.stockpile_getForFaction(point, m_faction)->accepts(item);
+	return space.stockpile_getOneForFaction(point, m_faction)->accepts(item);
 }
 void AreaHasStockPilesForFaction::addItem(const ItemIndex& item)
 {
@@ -352,8 +354,8 @@ void AreaHasStockPilesForFaction::addItem(const ItemIndex& item)
 		m_itemsToBeStockPiled.insert(ref);
 	}
 	AreaHasSpaceDesignationsForFaction& hasDesignations = m_area.m_spaceDesignations.getForFaction(m_faction);
-	for(const Point3D& point : items.getOccupied(item))
-		hasDesignations.maybeSet(point, SpaceDesignation::StockPileHaulFrom);
+	for(const Cuboid& cuboid : items.getOccupied(item))
+		hasDesignations.maybeSet(cuboid, SpaceDesignation::StockPileHaulFrom);
 
 }
 void AreaHasStockPilesForFaction::maybeAddItem(const ItemIndex& item)
@@ -397,13 +399,11 @@ void AreaHasStockPilesForFaction::removeItem(const ItemIndex& item)
 	// Unset point designation for all occupied unless the point contains another item which is also set to be stockpiled by the same faction.
 	AreaHasSpaceDesignationsForFaction& hasDesignations = m_area.m_spaceDesignations.getForFaction(m_faction);
 	Space& space = m_area.getSpace();
-	for(const Point3D& point : items.getOccupied(item))
-	{
-		for(const ItemIndex& item : space.item_getAll(point))
-			if(items.stockpile_canBeStockPiled(item, m_faction))
-				return;
-		hasDesignations.maybeUnset(point, SpaceDesignation::StockPileHaulFrom);
-	}
+	const CuboidSet& occupied = items.getOccupied(item);
+	for(const ItemIndex& itemOccupingSameSpace : space.item_getAll(occupied))
+		if(items.stockpile_canBeStockPiled(itemOccupingSameSpace, m_faction))
+			return;
+	hasDesignations.maybeUnset(occupied, SpaceDesignation::StockPileHaulFrom);
 }
 void AreaHasStockPilesForFaction::maybeRemoveFromItemsWithDestinationByStockPile(const StockPile& stockPile, const ItemIndex& item)
 {
@@ -424,7 +424,7 @@ void AreaHasStockPilesForFaction::updateItemReferenceForProject(StockPileProject
 }
 void AreaHasStockPilesForFaction::removePoint(const Point3D& point)
 {
-	StockPile* stockpile = m_area.getSpace().stockpile_getForFaction(point, m_faction);
+	StockPile* stockpile = m_area.getSpace().stockpile_getOneForFaction(point, m_faction);
 	if(stockpile != nullptr)
 		stockpile->removePoint(point);
 }
@@ -594,8 +594,8 @@ void AreaHasStockPiles::loadWorkers(const Json& data, DeserializationMemo& deser
 void AreaHasStockPiles::clearReservations()
 {
 	for(auto& pair : m_data)
-		for(auto& pair : pair.second->m_projectsByItem)
-			for(auto& project : pair.second)
+		for(auto& pair2 : pair.second->m_projectsByItem)
+			for(auto& project : pair2.second)
 				project->clearReservations();
 }
 Json AreaHasStockPiles::toJson() const

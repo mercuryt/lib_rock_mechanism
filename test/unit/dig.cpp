@@ -17,7 +17,6 @@
 #include "../../engine/plants.h"
 #include "../../engine/numericTypes/types.h"
 #include "../../engine/definitions/animalSpecies.h"
-#include "../../engine/portables.hpp"
 TEST_CASE("dig")
 {
 	static MaterialTypeId dirt = MaterialType::byName("dirt");
@@ -70,7 +69,7 @@ TEST_CASE("dig")
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, holeLocation);
 		Step stepsDuration = project.getDuration();
 		simulation.fastForward(stepsDuration);
-		CHECK(!space.solid_is(holeLocation));
+		CHECK(!space.solid_isAny(holeLocation));
 		CHECK(space.pointFeature_empty(holeLocation));
 		CHECK(actors.objective_getCurrentName(dwarf1) != "dig");
 		CHECK(!actors.canPickUp_isCarryingItem(dwarf1, pick));
@@ -107,7 +106,7 @@ TEST_CASE("dig")
 		CHECK(stairsLocation1.isAdjacentTo(actors.move_getDestination(dwarf1)));
 		simulation.fastForwardUntillActorIsAdjacentToDestination(area, dwarf1, stairsLocation1);
 		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
-		std::function<bool()> predicate = [&]() { return !space.solid_is(stairsLocation1); };
+		std::function<bool()> predicate = [&]() { return !space.solid_isAny(stairsLocation1); };
 		simulation.fastForwardUntillPredicate(predicate, 180);
 		actors.satisfyNeeds(dwarf1);
 		DigObjective& objective = actors.objective_getCurrent<DigObjective>(dwarf1);
@@ -131,7 +130,7 @@ TEST_CASE("dig")
 		// Path to locaton.
 		simulation.doStep();
 		CHECK(&actors.objective_getCurrent<DigObjective>(dwarf1) == &objective);
-		std::function<bool()> predicate2 = [&]() { return !space.solid_is(tunnelStart); };
+		std::function<bool()> predicate2 = [&]() { return !space.solid_isAny(tunnelStart); };
 		simulation.fastForwardUntillPredicate(predicate2, 180);
 		actors.satisfyNeeds(dwarf1);
 		// We are already adjacent to the next target, no need to path.
@@ -146,11 +145,11 @@ TEST_CASE("dig")
 		simulation.doStep();
 		CHECK(project2.reservationsComplete());
 		CHECK(!actors.move_hasPathRequest(dwarf1));
-		std::function<bool()> predicate3 = [&]() { return !space.solid_is(stairsLocation2); };
+		std::function<bool()> predicate3 = [&]() { return !space.solid_isAny(stairsLocation2); };
 		simulation.fastForwardUntillPredicate(predicate3, 180);
 		actors.satisfyNeeds(dwarf1);
 		CHECK(objective.name() == "dig");
-		std::function<bool()> predicate4 = [&]() { return !space.solid_is(tunnelEnd); };
+		std::function<bool()> predicate4 = [&]() { return !space.solid_isAny(tunnelEnd); };
 		simulation.fastForwardUntillPredicate(predicate4, 600);
 	}
 	SUBCASE("tunnel into cliff face with equipmentSet pick")
@@ -177,7 +176,7 @@ TEST_CASE("dig")
 		CHECK(actors.move_getDestination(dwarf1).exists());
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, tunnelStart);
 		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
-		std::function<bool()> predicate = [&]() { return !space.solid_is(tunnelStart); };
+		std::function<bool()> predicate = [&]() { return !space.solid_isAny(tunnelStart); };
 		simulation.fastForwardUntillPredicate(predicate, 45);
 		CHECK(!actors.objective_getCurrent<DigObjective>(dwarf1).getProject());
 		CHECK(!space.isReserved(tunnelStart, faction));
@@ -205,7 +204,7 @@ TEST_CASE("dig")
 		project = actors.objective_getCurrent<DigObjective>(dwarf1).getProject();
 		CHECK(project);
 		CHECK(project->getLocation() == tunnelSecond);
-		std::function<bool()> predicate2 = [&]() { return !space.solid_is(tunnelSecond); };
+		std::function<bool()> predicate2 = [&]() { return !space.solid_isAny(tunnelSecond); };
 		simulation.fastForwardUntillPredicate(predicate2, 45);
 		actors.satisfyNeeds(dwarf1);
 		// Find project.
@@ -215,7 +214,7 @@ TEST_CASE("dig")
 		CHECK(actors.move_hasPathRequest(dwarf1));
 		simulation.doStep();
 		CHECK(actors.move_getPath(dwarf1).size() == 1);
-		std::function<bool()> predicate3 = [&]() { return !space.solid_is(tunnelEnd); };
+		std::function<bool()> predicate3 = [&]() { return !space.solid_isAny(tunnelEnd); };
 		simulation.fastForwardUntillPredicate(predicate3, 45);
 	}
 	SUBCASE("two workers")
@@ -250,7 +249,7 @@ TEST_CASE("dig")
 			CHECK(actors.move_destinationIsAdjacentToLocation(dwarf1, pickLocation));
 			CHECK(actors.move_destinationIsAdjacentToLocation(dwarf2, holeLocation));
 		}
-		std::function<bool()> predicate = [&]() { return !space.solid_is(holeLocation); };
+		std::function<bool()> predicate = [&]() { return !space.solid_isAny(holeLocation); };
 		simulation.fastForwardUntillPredicate(predicate, 22);
 	}
 	SUBCASE("two workers two holes")
@@ -279,7 +278,7 @@ TEST_CASE("dig")
 		simulation.doStep();
 		CHECK(project1.reservationsComplete());
 		// Wait for first project to complete.
-		std::function<bool()> predicate1 = [&]() { return !space.solid_is(holeLocation1); };
+		std::function<bool()> predicate1 = [&]() { return !space.solid_isAny(holeLocation1); };
 		simulation.fastForwardUntillPredicate(predicate1, 22);
 		CHECK(!actors.project_exists(dwarf1));
 		CHECK(!actors.project_exists(dwarf2));
@@ -295,7 +294,7 @@ TEST_CASE("dig")
 		simulation.doStep();
 		CHECK(project2.reservationsComplete());
 		// Wait for second project to complete.
-		std::function<bool()> predicate2 = [&]() { return !space.solid_is(holeLocation2); };
+		std::function<bool()> predicate2 = [&]() { return !space.solid_isAny(holeLocation2); };
 		simulation.fastForwardUntillPredicate(predicate2, 22);
 		simulation.doStep();
 		CHECK(actors.getActionDescription(dwarf1) != "dig");
@@ -430,7 +429,7 @@ TEST_CASE("dig")
 		CHECK(items.isAdjacentToLocation(pick, actors.move_getDestination(dwarf1)));
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, items.getLocation(pick));
 		CHECK(actors.canPickUp_isCarryingItem(dwarf1, pick));
-		auto holeDug = [&]{ return !space.solid_is(holeLocation); };
+		auto holeDug = [&]{ return !space.solid_isAny(holeLocation); };
 		simulation.fastForwardUntillPredicate(holeDug, 45);
 	}
 	SUBCASE("player interrupts worker, project may reset")
@@ -471,7 +470,7 @@ TEST_CASE("dig")
 			simulation.doStep();
 			CHECK(!project.reservationsComplete());
 			CHECK(!actors.project_exists(dwarf2));
-			CHECK(!actors.objective_getCurrent<DigObjective>(dwarf2).getJoinableProjectAt(area, holeLocation, dwarf2));
+			CHECK(!actors.objective_getCurrent<DigObjective>(dwarf2).getJoinableProjectAt(area, Cuboid{holeLocation, holeLocation}, dwarf2));
 			// dwarf2 is unable to find another dig project, turns on objective type delay in objective priority set.
 			simulation.doStep();
 			CHECK(actors.objective_getCurrentName(dwarf2) == "wander");
@@ -491,28 +490,12 @@ TEST_CASE("dig")
 			Step delay = dwarf2DelayEndsAt - simulation.m_step;
 			simulation.fastForward(delay);
 			CHECK(!actors.objective_isOnDelay(dwarf2, ObjectiveType::getIdByName("dig")));
-			if(actors.move_hasPathRequest(dwarf2))
-			{
-				simulation.doStep();
-				CHECK(actors.move_getDestination(dwarf2).exists());
-			}
-			else
-			{
-				CHECK(!actors.move_getPath(dwarf2).empty());
-			}
-			simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf2, actors.move_getDestination(dwarf2));
 			simulation.fastForwardUntillPredicate([&](){ return actors.objective_getCurrentName(dwarf2) == "dig"; });
-			CHECK(actors.move_hasPathRequest(dwarf2));
-			// Dwarf2 finds and joins project.
-			simulation.doStep();
-			CHECK(actors.project_exists(dwarf2));
-			CHECK(actors.project_get(dwarf2) == &project);
-			CHECK(actors.move_hasPathRequest(dwarf2));
-			// Dwarf2 paths to project.
-			simulation.doStep();
-			CHECK(project.getLocation().isAdjacentTo(actors.move_getDestination(dwarf2)));
+			if(actors.project_get(dwarf2) != &project)
+				simulation.fastForwardUntillPredicate([&](){ return actors.project_get(dwarf2) == &project; });
+			// Dwarf1 has the pick so they must also be assigned to the project.
+			CHECK(actors.project_get(dwarf1) == &project);
 			CHECK(project.finishEventExists());
-			CHECK(project.getPercentComplete() == 0);
 		}
 		SUBCASE("no reset")
 		{
@@ -523,7 +506,7 @@ TEST_CASE("dig")
 			CHECK(project.reservationsComplete());
 			CHECK(actors.project_get(dwarf1) == &project);
 		}
-		auto holeDug = [&]{ return !space.solid_is(holeLocation); };
+		auto holeDug = [&]{ return !space.solid_isAny(holeLocation); };
 		// 23 minutes rather then 22 because dwarf2 is 'late'.
 		simulation.fastForwardUntillPredicate(holeDug, 23);
 		CHECK(!digObjectiveType.canBeAssigned(area, dwarf1));

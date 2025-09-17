@@ -19,11 +19,14 @@ using Coordinates = Eigen::Array<DistanceWidth, 3, 1>;
 using Offsets = Eigen::Array<OffsetWidth, 3, 1>;
 struct Offset3D;
 struct Cuboid;
+struct OffsetCuboid;
 class AdjacentIndex;
+
 struct Point3D
 {
 	Coordinates data;
 	using Primitive = Coordinates;
+	using DimensionType = Distance;
 	Point3D() { data.fill(Distance::null().get()); }
 	Point3D(Coordinates v) : data(v) { }
 	Point3D(const Distance& x, const Distance& y, const Distance& z) : data(x.get(), y.get(), z.get()) { }
@@ -40,6 +43,7 @@ struct Point3D
 	Point3D& operator+=(const Offset3D& other);
 	Point3D& operator-=(const Offset3D& other);
 	Point3D& operator=(const Point3D& other) { data = other.data; return *this; }
+	[[nodiscard]] auto get() const { return data; }
 	[[nodiscard]] Distance x() const { return Distance::create(data[0]); }
 	[[nodiscard]] Distance y() const { return Distance::create(data[1]); }
 	[[nodiscard]] Distance z() const { return Distance::create(data[2]); }
@@ -49,6 +53,7 @@ struct Point3D
 	[[nodiscard]] Point3D operator+(const DistanceWidth& distance) const;
 	[[nodiscard]] Point3D operator+(const Offset3D& other) const;
 	[[nodiscard]] Point3D operator-(const Offset3D& other) const;
+	[[nodiscard]] Point3D operator/(const int& other) const;
 	[[nodiscard]] bool exists() const;
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] Point3D below() const;
@@ -81,12 +86,14 @@ struct Point3D
 	[[nodiscard]] bool squareOfDistanceIsGreaterThen(const Point3D& point, const DistanceFractional& distanceSquared) const;
 	[[nodiscard]] bool contains(const Point3D& point) const;
 	[[nodiscard]] bool contains(const Cuboid& cuboid) const;
-	[[nodiscard]] Point3D offsetRotated( const Offset3D& initalOffset, const Facing4& previousFacing, const Facing4& newFacing) const;
-	[[nodiscard]] Point3D offsetRotated( const Offset3D& initalOffset, const Facing4& facing) const;
-	[[nodiscard]] Point3D translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const;
-	[[nodiscard]] Point3D moveInDirection(const Facing6& facing, const Distance& distance) const;
-	[[nodiscard]] Point3D atAdjacentIndex(const AdjacentIndex& index) const;
+	[[nodiscard]] OffsetCuboid offsetCuboidRotated( const OffsetCuboid& cuboid, const Facing4& previousFacing, const Facing4& newFacing) const;
+	[[nodiscard]] Offset3D offsetRotated( const Offset3D& initalOffset, const Facing4& previousFacing, const Facing4& newFacing) const;
+	[[nodiscard]] Offset3D offsetRotated( const Offset3D& initalOffset, const Facing4& facing) const;
+	[[nodiscard]] Offset3D translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const;
+	[[nodiscard]] Offset3D moveInDirection(const Facing6& facing, const Distance& distance) const;
+	[[nodiscard]] Offset3D atAdjacentIndex(const AdjacentIndex& index) const;
 	[[nodiscard]] Cuboid getAllAdjacentIncludingOutOfBounds() const;
+	[[nodiscard]] Cuboid boundry() const;
 	[[nodiscard]] bool isAdjacentToAny(const auto& points) const
 	{
 		for(const Point3D& point : points)
@@ -96,12 +103,14 @@ struct Point3D
 	}
 	void log() const;
 	[[nodiscard]] static Point3D create(const DistanceWidth& x, const DistanceWidth& y, const DistanceWidth& z);
+	[[nodiscard]] static Point3D create(const Offset& x, const Offset& y, const Offset& z);
 	[[nodiscard]] static Point3D create(const Offset3D& offset);
 	[[nodiscard]] static Point3D create(const Offsets& offset);
 	[[nodiscard]] static Point3D create(const Coordinates& offset);
 	[[nodiscard]] __attribute__((noinline)) static Point3D createDbg(const DistanceWidth& x, const DistanceWidth& y, const DistanceWidth& z);
 	[[nodiscard]] static Point3D null();
-	[[nodiscard]] static Point3D max() { return { Distance::max(), Distance::max(), Distance::max()}; }
+	[[nodiscard]] static Point3D max();
+	[[nodiscard]] static Point3D min();
 	struct Hash {
 		size_t operator()(const Point3D& point) const
 		{
@@ -128,6 +137,7 @@ struct Point3D_fractional
 };
 struct Offset3D
 {
+	using DimensionType = Offset;
 	Offsets data;
 	Offset3D() : data(Offset::null().get()) { }
 	Offset3D(const Offset& x, const Offset& y, const Offset& z) : data(x.get(), y.get(), z.get()) { }
@@ -152,9 +162,15 @@ struct Offset3D
 	void clampHigh(const Offset3D& other);
 	void clampLow(const Offset3D& other);
 	void clear() { data.fill(Offset::null().get()); }
-	[[nodiscard]] int& x() { return data[0]; }
-	[[nodiscard]] int& y() { return data[1]; }
-	[[nodiscard]] int& z() { return data[2]; }
+	void setX(const Offset& x);
+	void setY(const Offset& y);
+	void setZ(const Offset& z);
+	static const int hilbertOrder = 1;
+	[[nodiscard]] uint32_t hilbertNumber() const;
+	[[nodiscard]] auto get() const { return data; }
+	[[nodiscard]] const Offset x() const { return Offset::create(data[0]); }
+	[[nodiscard]] const Offset y() const { return Offset::create(data[1]); }
+	[[nodiscard]] const Offset z() const { return Offset::create(data[2]); }
 	[[nodiscard]] Offset3D operator+(const Offset3D& other) const;
 	[[nodiscard]] Offset3D operator-(const Offset3D& other) const;
 	[[nodiscard]] Offset3D operator*(const Offset3D& other) const;
@@ -166,14 +182,25 @@ struct Offset3D
 	[[nodiscard]] bool operator==(const Offset3D& other) const { return (data == other.data).all();}
 	[[nodiscard]] bool operator!=(const Offset3D& other) const { return (data != other.data).any();}
 	[[nodiscard]] std::strong_ordering operator<=>(const Offset3D& other) const;
-	[[nodiscard]] const int& x() const { return data[0]; }
-	[[nodiscard]] const int& y() const { return data[1]; }
-	[[nodiscard]] const int& z() const { return data[2]; }
 	[[nodiscard]] bool empty() const { return data[0] == Offset::null().get(); }
 	[[nodiscard]] bool exists() const { return !empty(); }
 	[[nodiscard]] std::string toString() const;
 	[[nodiscard]] static Offset3D create(const OffsetWidth& x, const OffsetWidth& y, const OffsetWidth& z);
 	[[nodiscard]] __attribute__((noinline)) static Offset3D createDbg(const OffsetWidth& x, const OffsetWidth& y, const OffsetWidth& z);
+	[[nodiscard]] Offset3D below() const;
+	[[nodiscard]] Offset3D north() const;
+	[[nodiscard]] Offset3D east() const;
+	[[nodiscard]] Offset3D south() const ;
+	[[nodiscard]] Offset3D west() const;
+	[[nodiscard]] Offset3D above() const;
+	[[nodiscard]] Offset3D translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const;
+	[[nodiscard]] Offset3D moveInDirection(const Facing6& facing, const Distance& distance) const;
+	[[nodiscard]] Offset3D min(const Offset3D& other) const;
+	[[nodiscard]] Offset3D max(const Offset3D& other) const;
+	[[nodiscard]] static Offset3D null();
+	[[nodiscard]] static Offset3D min();
+	[[nodiscard]] static Offset3D max();
+
 };
 inline void to_json(Json& data, const Offset3D& point) { data = {point.x(), point.y(), point.z()}; }
 inline void from_json(const Json& data, Offset3D& point)

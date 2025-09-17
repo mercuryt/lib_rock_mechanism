@@ -4,7 +4,7 @@
 void PathMemoClosed::add(const Point3D& index, Point3D parent)
 {
 	assert(!contains(index));
-	const Priority priority = parent.exists() ? m_data.queryGetOneOr(parent, Priority::create(0)) + 1 : Priority::create(0);
+	const Priority priority = parent.exists() ? m_data.queryGetOne(parent) + 1 : Priority::create(0);
 	m_data.maybeInsert(index, priority);
 }
 void PathMemoClosed::removeClosed(CuboidSet& cuboids) const { m_data.queryRemove(cuboids); }
@@ -15,23 +15,25 @@ Point3D PathMemoClosed::previous(const Point3D& index) const
 	Cuboid adjacent = Cuboid(index + Distance::create(1), index.subtractWithMinimum(Distance::create(1)));
 	for(const auto& [adjacentCuboid, adjacentPriority] : m_data.queryGetAllWithCuboids(adjacent))
 		if(adjacentPriority < priority)
-			return adjacentCuboid.m_highest;
+			return adjacentCuboid.m_high;
 	assert(false);
 	std::unreachable();
 }
 SmallSet<Point3D> PathMemoClosed::getPath(const Point3D& secondToLast, const Point3D& last, const Point3D& first) const
 {
+	assert(first != last);
 	SmallSet<Point3D> output;
+	//TODO: reserve output capacity based on priority of second to last.
 	// Last may not exist if we are using the one point shape pathing adjacent to condition optimization.
 	if(last.exists())
 		output.insert(last);
 	Point3D current = secondToLast;
-	do
+	while(current != first)
 	{
 		output.insert(current);
 		current = previous(current);
 	}
-	while(current != first);
+	// First is the start location, omit it from the output.
 	return output;
 }
 // Breadth First.

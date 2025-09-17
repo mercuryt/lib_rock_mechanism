@@ -5,7 +5,6 @@
 #include "../items/items.h"
 #include "../path/terrainFacade.hpp"
 #include "../numericTypes/types.h"
-#include "../hasShapes.hpp"
 // Equip uniform.
 UniformPathRequest::UniformPathRequest(Area& area, UniformObjective& objective, const ActorIndex& actorIndex) :
 	m_objective(objective)
@@ -28,12 +27,14 @@ UniformPathRequest::UniformPathRequest(const Json& data, Area& area, Deserializa
 { }
 FindPathResult UniformPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
-	auto destinationCondition = [&area, this](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
+	auto destinationCondition = [&area, this](const Cuboid& cuboid) -> std::pair<bool, Point3D>
 	{
-		return {m_objective.pointContainsItem(area, point), point};
+		const Point3D& point = m_objective.getLocationOfItemInCuboid(area, cuboid);
+		return {point.exists(), point};
 	};
-	constexpr bool useAnyOccupiedPoint = true;
-	return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedPoint, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, detour, adjacent, faction, maxRange);
+	constexpr bool useAnyOccupiedPoint = false;
+	constexpr bool useAdjacent = true;
+	return terrainFacade.findPathToConditionBreadthFirst<decltype(destinationCondition), useAnyOccupiedPoint, useAdjacent>(destinationCondition, memo, start, facing, shape, detour, faction, maxRange);
 }
 void UniformPathRequest::writeStep(Area& area, FindPathResult& result)
 {
@@ -50,7 +51,8 @@ void UniformPathRequest::writeStep(Area& area, FindPathResult& result)
 		else
 		{
 			Point3D point = result.pointThatPassedPredicate;
-			if(!m_objective.pointContainsItem(area, point))
+			ItemIndex item = m_objective.getItemAtLocation(area, {point, point});
+			if(item.empty())
 			{
 				// Destination no longer suitable.
 				m_objective.reset(area, actorIndex);
@@ -58,7 +60,6 @@ void UniformPathRequest::writeStep(Area& area, FindPathResult& result)
 			}
 			else
 			{
-				ItemIndex item = m_objective.getItemAtPoint(area, point);
 				m_objective.select(area, item);
 				actors.move_setPath(actorIndex, result.path);
 			}
@@ -68,7 +69,7 @@ void UniformPathRequest::writeStep(Area& area, FindPathResult& result)
 	{
 		if(result.useCurrentPosition)
 		{
-			ItemIndex item = m_objective.getItemAtPoint(area, result.pointThatPassedPredicate);
+			ItemIndex item = m_objective.getItemAtLocation(area, {result.pointThatPassedPredicate, result.pointThatPassedPredicate});
 			if(item.empty())
 			{
 				m_objective.reset(area, actorIndex);
@@ -130,12 +131,19 @@ void UniformObjective::execute(Area& area, const ActorIndex& actor)
 	}
 	else
 	{
-		std::function<bool(const Point3D&)> predicate = [&](const Point3D& point){ return pointContainsItem(area, point); };
-		Point3D adjacent = actors.getPointWhichIsAdjacentWithPredicate(actor, predicate);
-		if(adjacent.exists())
-			equip(area, getItemAtPoint(area, adjacent), actor);
-		else
-			actors.move_pathRequestRecord(actor, std::make_unique<UniformPathRequest>(area, *this, actor));
+		CuboidSet adjacent = actors.getAdjacentCuboids(actor);
+		// Collect any which are adjacent at location.
+		for(const Cuboid& cuboid : adjacent)
+		{
+			const ItemIndex item = getItemAtLocation(area, cuboid);
+			if(item.exists())
+			{
+				equip(area, item, actor);
+				return;
+			}
+		}
+		// Try to path to next location.
+		actors.move_pathRequestRecord(actor, std::make_unique<UniformPathRequest>(area, *this, actor));
 	}
 }
 void UniformObjective::cancel(Area& area, const ActorIndex& actor)
@@ -150,14 +158,22 @@ void UniformObjective::reset(Area& area, const ActorIndex& actor)
 	actors.move_pathRequestMaybeCancel(actor);
 	m_item.clear();
 }
-ItemIndex UniformObjective::getItemAtPoint(Area& area, const Point3D& point)
+Point3D UniformObjective::getLocationOfItemInCuboid(Area& area, const Cuboid& cuboid) const
+{
+	const ItemIndex& item = const_cast<UniformObjective*>(this)->getItemAtLocation(area, cuboid);
+	return item.empty() ? Point3D::null() : area.getItems().getLocation(item);
+}
+ItemIndex UniformObjective::getItemAtLocation(Area& area, const Cuboid& cuboid)
 {
 	Items& items = area.getItems();
-	for(ItemIndex item : area.getSpace().item_getAll(point))
+	const auto condition = [&](const ItemIndex& item)
+	{
 		for(auto& element : m_elementsCopy)
 			if(element.query(item, items))
-				return item;
-	return ItemIndex::null();
+				return true;
+		return false;
+	};
+	return area.getSpace().item_getOneWithCondition(cuboid, condition);
 }
 void UniformObjective::select(Area& area, const ItemIndex& item) { m_item.setIndex(item, area.getItems().m_referenceData); }
 void UniformObjective::equip(Area& area, const ItemIndex& item, const ActorIndex& actor)

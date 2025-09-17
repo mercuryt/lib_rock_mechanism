@@ -48,7 +48,7 @@ void ConstructProject::onComplete()
 {
 	Space& space = m_area.getSpace();
 	Actors& actors = m_area.getActors();
-	assert(!space.solid_is(m_location));
+	assert(!space.solid_isAny(m_location));
 	// Store values we will need to copy before destroying construction project.
 	const auto pointFeatureType = m_pointFeatureType;
 	const auto location = m_location;

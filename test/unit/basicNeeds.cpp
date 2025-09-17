@@ -4,6 +4,7 @@
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/definitions/animalSpecies.h"
+#include "../../engine/definitions/plantSpecies.h"
 #include "../../engine/area/area.h"
 #include "../../engine/areaBuilderUtil.h"
 #include "../../engine/plants.h"
@@ -98,7 +99,7 @@ TEST_CASE("basicNeedsSentient")
 			.quality=Quality::create(50),
 			.percentWear=Percent::create(0),
 		});
-		CHECK(actors.eat_getDesireToEatSomethingAt(actor, mealLocation) == maxRankedEatDesire);
+		CHECK(actors.eat_getDesireToEatSomethingAt(actor, Cuboid(mealLocation, mealLocation)).second == maxRankedEatDesire);
 		actors.eat_setIsHungry(actor);
 		CHECK(actors.eat_hasObjective(actor));
 		// Discard drink objective if exists.
@@ -129,7 +130,7 @@ TEST_CASE("basicNeedsSentient")
 			.location=fruitLocation,
 			.quantity=Quantity::create(50),
 		});
-		CHECK(actors.eat_getDesireToEatSomethingAt(actor, fruitLocation) == 2);
+		CHECK(actors.eat_getDesireToEatSomethingAt(actor, Cuboid(fruitLocation, fruitLocation)).second == 2);
 		actors.eat_setIsHungry(actor);
 		// Discard drink objective if exists.
 		if(actors.drink_getVolumeOfFluidRequested(actor) != 0)
@@ -313,13 +314,14 @@ TEST_CASE("basicNeedsNonsentient")
 		Mass deerMass = actors.getMass(deer);
 		actors.die(deer, CauseOfDeath::thirst);
 		CHECK(!actors.isAlive(deer));
-		CHECK(actors.eat_getDesireToEatSomethingAt(bear, actors.getLocation(deer)) != 0);
+		Point3D deerLocation = actors.getLocation(deer);
+		CHECK(actors.eat_getDesireToEatSomethingAt(bear, Cuboid(deerLocation, deerLocation)).second != 0);
 		actors.eat_setIsHungry(bear);
 		// Bear is hungry.
 		CHECK(actors.eat_getMassFoodRequested(bear) != 0);
 		CHECK(actors.objective_getCurrentName(bear) == "eat");
 		CHECK(actors.move_hasPathRequest(bear));
-		FindPathResult result = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(bear)).findPathToWithoutMemo(actors.getLocation(bear), actors.getFacing(bear), actors.getShape(bear), actors.getLocation(deer));
+		FindPathResult result = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(bear)).findPathToWithoutMemo<false, false>(actors.getLocation(bear), actors.getFacing(bear), actors.getShape(bear), actors.getLocation(deer));
 		CHECK(!result.path.empty());
 		EatObjective& objective = actors.objective_getCurrent<EatObjective>(bear);
 		CHECK(!objective.hasLocation());

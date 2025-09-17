@@ -1,6 +1,7 @@
 #pragma once
 
 #include "smallSet.h"
+#include "../concepts.h"
 template<typename T>
 SmallSet<T>::SmallSet(uint capacity) { reserve(capacity); };
 template<typename T>
@@ -111,10 +112,8 @@ void SmallSet<T>::swap(SmallSet<T>& other) { m_data.swap(other.m_data); }
 template<typename T>
 void SmallSet<T>::sort()
 {
-	if constexpr(HasHashMethod<T>)
+	if constexpr(Sortable<T>)
 		std::ranges::sort(m_data);
-	else if constexpr(HasGetMethod<T>)
-		std::ranges::sort(m_data, [&](const auto& a, const auto& b) { return a.get() < b.get(); });
 	else
 	{
 		assert(false);
@@ -130,15 +129,7 @@ void SmallSet<T>::updateIfExistsAndNewValueDoesNot(const T& oldValue, const T& n
 template<typename T>
 void SmallSet<T>::makeUnique()
 {
-	if constexpr(HasHashMethod<T>)
-		std::ranges::sort(m_data);
-	else if constexpr(HasGetMethod<T>)
-		std::ranges::sort(m_data, [&](const auto& a, const auto& b) { return a.get() < b.get(); });
-	else
-	{
-		assert(false);
-		std::unreachable();
-	}
+	sort();
 	m_data.erase(std::ranges::unique(m_data).begin(), m_data.end());
 }
 template<typename T>

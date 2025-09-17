@@ -66,8 +66,8 @@ struct GoToPathRequest : public PathRequestDepthFirst
 };
 struct GoToAnyPathRequest : public PathRequestDepthFirst
 {
-	SmallSet<Point3D> destinations;
-	GoToAnyPathRequest(Point3D start, Distance maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, Point3D huristicDestination, SmallSet<Point3D> destinations);
+	CuboidSet destinations;
+	GoToAnyPathRequest(Point3D start, Distance maxRange, ActorReference actor, ShapeId shape, FactionId faction, MoveTypeId moveType, Facing4 facing, bool detour, bool adjacent, bool reserveDestination, Point3D huristicDestination, CuboidSet destinations);
 	GoToAnyPathRequest(const Json& data, Area& area);
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
 	[[nodiscard]] Json toJson() const override;

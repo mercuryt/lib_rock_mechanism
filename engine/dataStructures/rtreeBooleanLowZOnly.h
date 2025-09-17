@@ -12,7 +12,7 @@
 
 class RTreeBooleanLowZOnly
 {
-	static constexpr uint nodeSize = 32;
+	static constexpr uint nodeSize = 64;
 	using IndexWidth = uint16_t;
 	class Index : public StrongInteger<Index, IndexWidth>
 	{

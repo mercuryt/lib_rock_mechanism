@@ -39,8 +39,8 @@ TEST_CASE("equip and unequip")
 	Point3D swordLocation = Point3D::create(8,8,1);
 	ItemIndex longsword = items.create({.itemType=ItemType::byName("long sword"), .materialType=MaterialType::byName("bronze"), .location=swordLocation, .quality=Quality::create(20), .percentWear=Percent::create(10)});
 	ItemReference longswordRef = items.m_referenceData.getReference(longsword);
-	CHECK(items.getOccupied(longsword).size() == 1);
-	CHECK(items.getOccupied(longsword).front() == swordLocation);
+	CHECK(items.getOccupied(longsword).volume() == 1);
+	CHECK(items.getOccupied(longsword).front().m_high == swordLocation);
 	std::unique_ptr<Objective> objective = std::make_unique<EquipItemObjective>(longswordRef);
 	actors.objective_addTaskToStart(dwarf1, std::move(objective));
 	CHECK(actors.move_hasPathRequest(dwarf1));

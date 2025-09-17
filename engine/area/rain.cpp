@@ -8,6 +8,7 @@
 #include "../simulation/simulation.h"
 #include "../plants.h"
 #include "../space/space.h"
+#include "../definitions/plantSpecies.h"
 AreaHasRain::AreaHasRain(Area& a, Simulation&) :
 	m_humidityBySeason({Percent::create(30),Percent::create(15),Percent::create(10),Percent::create(20)}),
 	m_event(a.m_eventSchedule),
@@ -82,7 +83,7 @@ void AreaHasRain::doStep()
 		else
 		{
 			Point3D current = point;
-			while(!space.solid_is(current) && space.fluid_canEnterCurrently(current, m_currentlyRainingFluidType))
+			while(!space.solid_isAny(current) && space.fluid_canEnterCurrently(current, m_currentlyRainingFluidType))
 			{
 				current = current.below();
 				if(current.z() == 0)

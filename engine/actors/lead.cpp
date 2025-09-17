@@ -15,7 +15,7 @@ ShapeId Actors::lineLead_getLargestShape(const ActorIndex& index) const
 	while(follower.exists())
 	{
 		ShapeId followerShape = follower.getShape(m_area);
-		if(Shape::getPositions(output).size() < Shape::getPositions(followerShape).size())
+		if(Shape::getCuboidsCount(output) < Shape::getCuboidsCount(followerShape))
 			output = followerShape;
 		follower = follower.getFollower(m_area);
 	}
@@ -61,11 +61,11 @@ bool Actors::lineLead_followersCanMoveEver(const ActorIndex& index) const
 	while(follower.exists())
 	{
 		const Point3D& location = follower.getLocation(m_area);
-		auto index = path.findLastIndex(location);
-		assert(index != path.size());
-		if(index != 0)
+		auto lastIndexForLocation = path.findLastIndex(location);
+		assert(lastIndexForLocation != path.size());
+		if(lastIndexForLocation != 0)
 		{
-			const Point3D& next = path[index - 1];
+			const Point3D& next = path[lastIndexForLocation - 1];
 			if(!space.shape_anythingCanEnterEver(next))
 				return false;
 			const Facing4& facing = location.getFacingTwords(next);
@@ -83,15 +83,15 @@ bool Actors::lineLead_followersCanMoveCurrently(const ActorIndex& index) const
 	const Space& space = m_area.getSpace();
 	ActorOrItemIndex follower = getFollower(index);
 	auto& path = lineLead_getPath(index);
-	const auto& occupied = lineLead_getOccupiedPoints(index);
+	const CuboidSet& occupied = lineLead_getOccupiedCuboids(index);
 	while(follower.exists())
 	{
 		const Point3D& location = follower.getLocation(m_area);
-		auto index = path.findLastIndex(location);
-		assert(index != path.size());
-		if(index != 0)
+		auto lastIndexForLocation = path.findLastIndex(location);
+		assert(lastIndexForLocation != path.size());
+		if(lastIndexForLocation != 0)
 		{
-			const Point3D& next = path[index - 1];
+			const Point3D& next = path[lastIndexForLocation - 1];
 			if(!space.shape_canEnterCurrentlyFrom(next, follower.getShape(m_area), location, occupied))
 				return false;
 		}
@@ -99,19 +99,17 @@ bool Actors::lineLead_followersCanMoveCurrently(const ActorIndex& index) const
 	}
 	return true;
 }
-OccupiedSpaceForHasShape Actors::lineLead_getOccupiedPoints(const ActorIndex& index) const
+CuboidSet Actors::lineLead_getOccupiedCuboids(const ActorIndex& index) const
 {
-	OccupiedSpaceForHasShape output;
+	CuboidSet output;
 	assert(isLeading(index));
 	assert(!isFollowing(index));
 	ActorOrItemIndex follower = index.toActorOrItemIndex();
 	while(follower.exists())
 	{
-		for(Point3D point : follower.getOccupied(m_area))
-			output.insertNonunique(point);
+		output.addSet(follower.getOccupied(m_area));
 		follower = follower.getFollower(m_area);
 	}
-	output.makeUnique();
 	return output;
 }
 bool Actors::lineLead_pathEmpty(const ActorIndex& index) const
@@ -158,7 +156,9 @@ void Actors::lineLead_appendToPath(const ActorIndex& index, const Point3D& point
 	{
 		const MoveTypeId& moveType = lineLead_getMoveType(index);
 		const ShapeId& shape = lineLead_getLargestShape(index);
-		auto path = m_area.m_hasTerrainFacades.getForMoveType(moveType).findPathToWithoutMemo(point, facing, shape, back);
+		constexpr bool anyOccupied = false;
+		constexpr bool adjacent = false;
+		auto path = m_area.m_hasTerrainFacades.getForMoveType(moveType).findPathToWithoutMemo<anyOccupied, adjacent>(point, facing, shape, back);
 		// TODO: Can this fail?
 		assert(!path.path.empty());
 		assert(!path.path.contains(point));
@@ -173,7 +173,6 @@ void Actors::lineLead_moveFollowers(const ActorIndex& index)
 	assert(!isFollowing(index));
 	ActorOrItemIndex follower = getFollower(index);
 	auto& path = lineLead_getPath(index);
-	const auto& occupied = lineLead_getOccupiedPoints(index);
 	while(follower.exists())
 	{
 		const Point3D& location = follower.getLocation(m_area);

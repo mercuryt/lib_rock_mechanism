@@ -15,7 +15,7 @@ uint RTreeData<T, config>::Node::getLeafVolume() const
 {
 	uint output = 0;
 	for(auto i = RTreeArrayIndex::create(0); i < m_leafEnd; ++i)
-		output += m_cuboids[i.get()].size();
+		output += m_cuboids[i.get()].volume();
 	return output;
 }
 template<Sortable T, RTreeDataConfig config>
@@ -23,7 +23,7 @@ uint RTreeData<T, config>::Node::getNodeVolume() const
 {
 	uint output = 0;
 	for(auto i = m_childBegin; i < nodeSize; ++i)
-		output += m_cuboids[i.get()].size();
+		output += m_cuboids[i.get()].volume();
 	return output;
 }
 template<Sortable T, RTreeDataConfig config>
@@ -143,7 +143,7 @@ void RTreeData<T, config>::Node::eraseByMask(const Eigen::Array<bool, 1, Eigen::
 			insertBranch(copyCuboids[i.get()], RTreeNodeIndex::create(copyChildren[i.get()].child));
 }
 template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::Node::eraseLeavesByMask(const std::bitset<nodeSize>& mask)
+void RTreeData<T, config>::Node::eraseLeavesByMask(const BitSet<uint64_t, nodeSize>& mask)
 {
 	RTreeArrayIndex leafEnd = m_leafEnd;
 	const auto copyCuboids = m_cuboids;
@@ -277,8 +277,8 @@ std::tuple<Cuboid, RTreeArrayIndex, RTreeArrayIndex> RTreeData<T, config>::findP
 			const Cuboid& secondCuboid = cuboids[secondResultIndex.get()];
 			Cuboid sum = firstCuboid;
 			sum.maybeExpand(secondCuboid);
-			const uint size = sum.size();
-			int emptySpace = size - (firstCuboid.size() + secondCuboid.size());
+			const uint size = sum.volume();
+			int emptySpace = size - (firstCuboid.volume() + secondCuboid.volume());
 			// If empty space is equal then prefer the smaller result.
 			// TODO: This may be counter productive.
 			if(resultEmptySpace > emptySpace || (resultEmptySpace == emptySpace && resultSize > size))
@@ -318,10 +318,10 @@ void RTreeData<T, config>::destroyWithChildren(const RTreeNodeIndex& index)
 	openList.insert(index);
 	while(!openList.empty())
 	{
-		RTreeNodeIndex index = openList.back();
+		RTreeNodeIndex current = openList.back();
 		openList.popBack();
-		m_emptySlots.insert(index);
-		Node& node = m_nodes[index];
+		m_emptySlots.insert(current);
+		Node& node = m_nodes[current];
 		const auto& dataAndChildren = node.getDataAndChildIndices();
 		for(auto i = node.offsetOfFirstChild(); i < nodeSize; ++i)
 		{
@@ -454,7 +454,7 @@ void RTreeData<T, config>::addToNodeRecursive(const RTreeNodeIndex& index, const
 				if constexpr (config.splitAndMerge)
 				{
 					merge = (
-						(mergedCuboid.size() == extended[firstArrayIndex.get()].size() + extended[secondArrayIndex.get()].size()) &&
+						(mergedCuboid.volume() == extended[firstArrayIndex.get()].volume() + extended[secondArrayIndex.get()].volume()) &&
 						(
 							// Can merge if second index is the newly added cuboid and first index has the same value.
 							(parentDataAndChildIndices[firstArrayIndex.get()].data == value.get() && secondArrayIndexIsNewCuboid) ||
@@ -567,8 +567,8 @@ void RTreeData<T, config>::removeFromNode(const RTreeNodeIndex& index, const Cub
 		const uint8_t& leafCount = parent.getLeafCount();
 		for(RTreeArrayIndex i = RTreeArrayIndex::create(0); i < leafCount; ++i)
 			if(interceptMask[i.get()])
-				for(const Cuboid& cuboid : parentCuboids[i.get()].getChildrenWhenSplitByCuboid(cuboid))
-					fragments.emplace(cuboid, T::create(parentDataAndChildIndices[i.get()].data));
+				for(const Cuboid& fragment : parentCuboids[i.get()].getChildrenWhenSplitByCuboid(cuboid))
+					fragments.emplace(fragment, T::create(parentDataAndChildIndices[i.get()].data));
 		// TODO: this could probably be better in regards to avoiding fragment generation rather then checking for empty. Will have to add more complex DEBUG logic.
 		if constexpr(!config.splitAndMerge)
 			assert(fragments.empty());
@@ -577,8 +577,8 @@ void RTreeData<T, config>::removeFromNode(const RTreeNodeIndex& index, const Cub
 		// erase all intercepted leaves.
 		parent.eraseLeavesByMask(leafInterceptMask);
 		// insert fragments. Invalidates parent and cuboids, as well as index.
-		for(const auto& [cuboid, value] : fragments)
-			addToNodeRecursive(indexCopy, cuboid, value);
+		for(const auto& [fragment, value] : fragments)
+			addToNodeRecursive(indexCopy, fragment, value);
 	}
 	Node& parent = m_nodes[indexCopy];
 	addIntersectedChildrenToOpenList(parent, interceptMask, openList);
@@ -870,6 +870,20 @@ void RTreeData<T, config>::maybeRemove(const Cuboid& cuboid)
 	}
 }
 template<Sortable T, RTreeDataConfig config>
+void RTreeData<T, config>::maybeRemove(const CuboidSet& cuboids)
+{
+	//TODO: optimize this like batch queries.
+	for(const Cuboid& cuboid : cuboids)
+		maybeRemove(cuboid);
+}
+template<Sortable T, RTreeDataConfig config>
+void RTreeData<T, config>::maybeInsert(const CuboidSet& cuboids, const T& value)
+{
+	//TODO: optimize this like batch queries.
+	for(const Cuboid& cuboid : cuboids)
+		maybeInsert(cuboid, value);
+}
+template<Sortable T, RTreeDataConfig config>
 void RTreeData<T, config>::maybeRemove(const Cuboid& cuboid, const T& value)
 {
 	// Erase all contained branches and leaves.
@@ -937,6 +951,18 @@ void RTreeData<T, config>::clear()
 	m_toComb.clear();
 }
 template<Sortable T, RTreeDataConfig config>
+bool RTreeData<T, config>::anyLeafOverlapsAnother()
+{
+	CuboidSet seen;
+	for(const Cuboid& cuboid : getLeafCuboids())
+	{
+		if(seen.intersects(cuboid))
+			return true;
+		seen.add(cuboid);
+	}
+	return false;
+}
+template<Sortable T, RTreeDataConfig config>
 Json RTreeData<T, config>::toJson() const
 {
 	Json output;
@@ -973,7 +999,12 @@ void RTreeData<T, config>::load(const Json& data)
 	data["toComb"].get_to(m_toComb);
 }
 template<Sortable T, RTreeDataConfig config>
-uint8_t RTreeData<T, config>::leafCount() const
+uint32_t RTreeData<T, config>::nodeCount() const
+{
+	return m_nodes.size() - m_emptySlots.size();
+}
+template<Sortable T, RTreeDataConfig config>
+uint32_t RTreeData<T, config>::leafCount() const
 {
 	uint output = 0;
 	for(RTreeNodeIndex i = RTreeNodeIndex::create(0); i < m_nodes.size(); ++i)

@@ -1,5 +1,6 @@
 #pragma once
 #include "geometry/cuboidSet.h"
+#include "geometry/mapWithCuboidKeys.h"
 #include "strongInteger.h"
 #include "numericTypes/types.h"
 #include "actorOrItemIndex.h"
@@ -22,11 +23,11 @@ class AreaHasDecks
 public:
 	void updatePoints(Area& area, const DeckId& id);
 	void clearPoints(Area& area, const DeckId& id);
-	[[nodiscard]] DeckId registerDecks(Area& area, CuboidSet& decks, const ActorOrItemIndex& actorOrItemIndex);
+	[[nodiscard]] DeckId registerDecks(Area& area, const CuboidSet& decks, const ActorOrItemIndex& actorOrItemIndex);
 	void unregisterDecks(Area& area, const DeckId& id);
 	void shift(Area& area, const DeckId& id, const Offset3D& offset, const Distance& distance, const Point3D& origin, const Facing4& oldFacing, const Facing4& newFacing);
-	[[nodiscard]] bool pointIsPartOfDeck(const Point3D& point) const { return m_pointData.queryAny(point); }
-	[[nodiscard]] DeckId getForPoint(const Point3D& point) const { return m_pointData.queryGetOne(point); }
+	[[nodiscard]] bool isPartOfDeck(const auto& shape) const { return m_pointData.queryAny(shape); }
+	[[nodiscard]] DeckId queryDeckId(const auto& shape) const { return m_pointData.queryGetOne(shape); }
 	[[nodiscard]] ActorOrItemIndex getForId(const DeckId& id) { return m_data[id].actorOrItemIndex; }
 };
 // To be used to store data when moving an item with traversable decks.
@@ -61,7 +62,7 @@ class DeckRotationData
 {
 	SmallMap<Project*, DeckRotationDataSingle> m_projects;
 	SmallMap<ActorOrItemIndex, DeckRotationDataSingle> m_actorsOrItems;
-	SmallMap<Point3D, SmallMap<FluidTypeId, CollisionVolume>> m_fluids;
+	MapWithCuboidKeys<std::pair<FluidTypeId, CollisionVolume>> m_fluids;
 	void rollback(Area& area, SmallMap<ActorOrItemIndex, DeckRotationDataSingle>::iterator begin, SmallMap<ActorOrItemIndex, DeckRotationDataSingle>::iterator end);
 public:
 	static DeckRotationData recordAndClearDependentPositions(Area& area, const ActorOrItemIndex& actorOrItem);

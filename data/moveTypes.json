@@ -1,7 +1,8 @@
 [
   {
     "name": "two legs",
-    "walk": true,
+    "surface": true,
+    "stairs": true,
     "swim": null,
     "climb": 0,
     "jumpDown": false,
@@ -9,7 +10,8 @@
     "floating": false
   },{
     "name": "four legs",
-    "walk": true,
+    "surface": true,
+    "stairs": false,
     "swim": null,
     "climb": 0,
     "jumpDown": false,
@@ -17,7 +19,8 @@
     "floating": false
   },{
     "name": "fly",
-    "walk": false,
+    "surface": false,
+    "stairs": true,
     "swim": null,
     "climb": 0,
     "jumpDown": false,
@@ -25,7 +28,8 @@
     "floating": false
   },{
     "name": "swim in water",
-    "walk": false,
+    "surface": false,
+    "stairs": true,
     "swim": {
       "water": 50
     },
@@ -37,7 +41,8 @@
     "floating": false
   },{
     "name": "two legs and swim in water",
-    "walk": true,
+    "surface": true,
+    "stairs": true,
     "swim": {
       "water": 50
     },
@@ -47,7 +52,8 @@
     "floating": false
   },{
     "name": "four legs and swim in water",
-    "walk": true,
+    "surface": true,
+    "stairs": false,
     "swim": {
       "water": 50
     },
@@ -57,7 +63,8 @@
     "floating": false
   },{
     "name": "swim in mercury",
-    "walk": false,
+    "surface": false,
+    "stairs": true,
     "swim": {
       "mercury": 50
     },
@@ -68,7 +75,8 @@
     "floating": false
   },{
     "name": "two legs and swim in mercury",
-    "walk": true,
+    "surface": true,
+    "stairs": true,
     "swim": {
       "mercury": 50
     },
@@ -78,7 +86,8 @@
     "floating": false
   },{
     "name": "two legs and climb 1",
-    "walk": true,
+    "surface": true,
+    "stairs": true,
     "swim": null,
     "climb": 1,
     "jumpDown": false,
@@ -86,7 +95,8 @@
     "floating": false
   },{
     "name": "two legs and climb 2",
-    "walk": true,
+    "surface": true,
+    "stairs": true,
     "swim": null,
     "climb": 2,
     "jumpDown": false,
@@ -94,7 +104,8 @@
     "floating": false
   },{
     "name": "roll",
-    "walk": true,
+    "surface": true,
+    "stairs": false,
     "swim": null,
     "breathless": "true",
     "climb": 0,
@@ -103,7 +114,8 @@
     "floating": false
   },{
     "name": "floating",
-    "walk": false,
+    "surface": false,
+    "stairs": true,
     "swim": null,
     "breathless": "true",
     "climb": 0,
@@ -112,7 +124,8 @@
     "floating": true
   },{
     "name": "none",
-    "walk": true,
+    "surface": true,
+    "stairs": true,
     "swim": null,
     "breathless": "true",
     "climb": 0,

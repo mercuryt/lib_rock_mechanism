@@ -2,8 +2,9 @@
 #include "actors.h"
 #include "../items/items.h"
 #include "../area/area.h"
+#include "../space/space.h"
 #include "../definitions/itemType.h"
-#include "../portables.hpp"
+#include "../portables.h"
 #include "numericTypes/index.h"
 #include "definitions/moveType.h"
 #include "sleep.h"
@@ -376,20 +377,22 @@ void Actors::canPickUp_addFluidToContainerFromAdjacentPointsIncludingOtherContai
 		capacity -= items.cargo_getFluidVolume(container);
 	else
 		assert(!items.cargo_containsAnyFluid(container));
-	for(const Point3D& point : getAdjacentPoints(index))
+
+	for(const Cuboid& cuboid : getAdjacentCuboids(index))
 	{
-		if(space.fluid_contains(point, fluidType))
-		{
-			const CollisionVolume avalible = space.fluid_volumeOfTypeContains(point, fluidType);
-			const CollisionVolume volumeToTransfer = std::min(capacity, avalible);
-			assert(volumeToTransfer != 0);
-			space.fluid_remove(point, volumeToTransfer, fluidType);
-			items.cargo_addFluid(container, fluidType, volumeToTransfer);
-			capacity -= volumeToTransfer;
-			if(capacity == 0)
-				break;
-		}
-		for(const ItemIndex& otherContainer : space.item_getAll(point))
+		if(space.fluid_contains(cuboid, fluidType))
+			for(const Point3D& point : cuboid)
+			{
+				const CollisionVolume avalible = space.fluid_volumeOfTypeContains(point, fluidType);
+				const CollisionVolume volumeToTransfer = std::min(capacity, avalible);
+				assert(volumeToTransfer != 0);
+				space.fluid_remove(point, volumeToTransfer, fluidType);
+				items.cargo_addFluid(container, fluidType, volumeToTransfer);
+				capacity -= volumeToTransfer;
+				if(capacity == 0)
+					break;
+			}
+		for(const ItemIndex& otherContainer : space.item_getAll(cuboid))
 		{
 			if(items.cargo_containsFluidType(otherContainer, fluidType))
 			{

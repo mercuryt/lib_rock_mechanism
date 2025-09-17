@@ -6,12 +6,6 @@
 #include "items/itemQuery.h"
 #include "numericTypes/types.h"
 
-#include <string>
-#include <sys/types.h>
-#include <vector>
-#include <algorithm>
-#include <cassert>
-
 class MaterialTypeCategory
 {
 	StrongVector<std::string, MaterialCategoryTypeId> m_name;
@@ -37,7 +31,7 @@ public:
 	[[nodiscard]] static Quantity getMin(const SpoilsDataTypeId& id);
 	[[nodiscard]] static Quantity getMax(const SpoilsDataTypeId& id);
 };
-inline SpoilData spoilData;
+inline SpoilData g_spoilData;
 struct MaterialTypeConstructionDataParamaters final
 {
 	std::vector<std::pair<ItemQuery, Quantity>> consumed = {};
@@ -112,6 +106,7 @@ public:
 	[[nodiscard]] static Temperature getMeltingPoint(const MaterialTypeId& id);
 	[[nodiscard]] static FluidTypeId getMeltsInto(const MaterialTypeId& id);
 	[[nodiscard]] static bool canMelt(const MaterialTypeId& id);
+	[[nodiscard]] static Mass getMassForSolidVolumeAsANumberOfPoints(const MaterialTypeId& id, uint32_t numberOfPoints);
 	// Fire.
 	[[nodiscard]] static bool canBurn(const MaterialTypeId& id);
 	[[nodiscard]] static Step getBurnStageDuration(const MaterialTypeId& id);
@@ -125,4 +120,4 @@ public:
 	[[nodiscard]] static SkillTypeId construction_getSkill(const MaterialTypeId& id);
 	[[nodiscard]] static Step construction_getDuration(const MaterialTypeId& id);
 };
-inline MaterialType materialTypeData;
+inline MaterialType g_materialTypeData;

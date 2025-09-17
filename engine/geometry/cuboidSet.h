@@ -1,87 +1,103 @@
 #pragma once
 #include "cuboid.h"
+#include "offsetCuboid.h"
 #include "../numericTypes/index.h"
+#include "../dataStructures/smallSet.h"
 
-struct CuboidSet;
-struct CuboidSetConstView;
 struct OffsetCuboidSet;
-struct CuboidSetConstIterator
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+struct CuboidSetConstIteratorBase
 {
-	const CuboidSet& m_cuboidSet;
-	SmallSet<Cuboid>::const_iterator m_outerIter;
-	Cuboid::iterator m_innerIter;
+	const CuboidSetType& m_cuboidSet;
+	SmallSet<CuboidType>::const_iterator m_outerIter;
+	CuboidType::ConstIterator m_innerIter;
 public:
-	CuboidSetConstIterator(const CuboidSet& cuboidSet, bool end = false);
-	CuboidSetConstIterator& operator++();
-	[[nodiscard]] CuboidSetConstIterator operator++(int);
-	[[nodiscard]] bool operator==(const CuboidSetConstIterator& other) const { return m_outerIter == other.m_outerIter && m_innerIter == other.m_innerIter; }
-	[[nodiscard]] bool operator!=(const CuboidSetConstIterator& other) const { return !(*this == other); }
-	[[nodiscard]] Point3D operator*() { assert(m_innerIter != m_outerIter->end()); return *m_innerIter; }
+	CuboidSetConstIteratorBase(const CuboidSetType& cuboidSet, bool end = false);
+	CuboidSetConstIteratorBase& operator++();
+	[[nodiscard]] CuboidSetConstIteratorBase operator++(int);
+	[[nodiscard]] bool operator==(const CuboidSetConstIteratorBase& other) const { return m_outerIter == other.m_outerIter && m_innerIter == other.m_innerIter; }
+	[[nodiscard]] bool operator!=(const CuboidSetConstIteratorBase& other) const { return !(*this == other); }
+	[[nodiscard]] PointType operator*() const { assert(m_innerIter != m_outerIter->end()); return *m_innerIter; }
 };
-struct CuboidSetConstView
-{
-	const CuboidSet& m_cuboidSet;
-	[[nodiscard]] CuboidSetConstIterator begin() { return {m_cuboidSet, false}; }
-	[[nodiscard]] CuboidSetConstIterator end() { return {m_cuboidSet, true}; }
-};
-struct CuboidSet
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+struct CuboidSetBase
 {
 protected:
-	SmallSet<Cuboid> m_cuboids;
 	// Overriden by AreaHasVisionCuboids.
-	virtual void create(const Cuboid& cuboid);
+	virtual void insertOrMerge(const CuboidType& cuboid);
 	virtual void destroy(const uint& cuboid);
 	// For merging contained cuboids.
-	void mergeInternal(const Cuboid& absorbed, const uint& absorber);
+	void mergeInternal(const CuboidType& absorbed, const uint& absorber);
 public:
-	CuboidSet() = default;
-	CuboidSet(const CuboidSet& other) = default;
-	CuboidSet(CuboidSet&& other) noexcept = default;
-	CuboidSet(const Point3D& location, const Facing4& rotation, const OffsetCuboidSet& offsetPairs);
-	CuboidSet(const std::initializer_list<Cuboid>& cuboids);
-	CuboidSet& operator=(CuboidSet&& other) noexcept = default;
-	CuboidSet& operator=(const CuboidSet& other) = default;
-	void add(const Point3D& point);
-	void remove(const Point3D& point);
-	void removeAll(const auto& cuboids) { for(const Cuboid& cuboid : cuboids) remove(cuboid); }
-	virtual void add(const Cuboid& cuboid);
-	virtual void remove(const Cuboid& cuboid);
+	SmallSet<CuboidType> m_cuboids;
+	CuboidSetBase() = default;
+	CuboidSetBase(const CuboidSetType& other) : m_cuboids(other.m_cuboids) { }
+	CuboidSetBase(CuboidSetType&& other) noexcept : m_cuboids(std::move(other.m_cuboids)) { }
+	CuboidSetBase(const PointType& location, const Facing4& rotation, const OffsetCuboidSet& offsetPairs);
+	CuboidSetBase(const std::initializer_list<CuboidType>& cuboids);
+	CuboidSetBase(const CuboidType& cuboid) : m_cuboids({cuboid}) { }
+	CuboidSetType& operator=(CuboidSetType&& other) noexcept { m_cuboids = std::move(other.m_cuboids); return static_cast<CuboidSetType&>(*this); }
+	CuboidSetType& operator=(const CuboidSetType& other) { m_cuboids = other.m_cuboids; return static_cast<CuboidSetType&>(*this); }
+	void add(const PointType& point);
+	void addAll(const CuboidSetType& other);
+	void remove(const PointType& point);
+	void removeAll(const auto& cuboids) { for(const CuboidType& cuboid : cuboids) remove(cuboid); }
+	void removeContainedAndFragmentIntercepted(const CuboidType& cuboid);
+	void removeContainedAndFragmentInterceptedAll(const CuboidSetType& cuboids);
+	// TODO: why virtual?
+	virtual void add(const CuboidType& cuboid);
+	virtual void remove(const CuboidType& cuboid);
 	void clear() { m_cuboids.clear(); }
 	void shift(const Offset3D offset, const Distance& distance);
 	// For merging with other cuboid sets.
-	void addSet(const CuboidSet& other);
-	void rotateAroundPoint(const Point3D& point, const Facing4& rotation);
+	void addSet(const CuboidSetType& other);
+	void rotateAroundPoint(const PointType& point, const Facing4& rotation);
+	void reserve(const uint16_t& capacity) { m_cuboids.reserve(capacity); }
+	void swap(CuboidSetType& other);
+	[[nodiscard]] const CuboidType& operator[](const uint8_t& index) const { return m_cuboids[index]; }
+	[[nodiscard]] CuboidType& operator[](const uint8_t& index){ return m_cuboids[index]; }
+	[[nodiscard]] PointType center() const;
+	[[nodiscard]] PointType::DimensionType lowestZ() const;
 	[[nodiscard]] bool empty() const;
+	[[nodiscard]] bool exists() const;
 	[[nodiscard]] uint size() const;
+	[[nodiscard]] uint volume() const;
 	[[nodiscard]] bool contains(const Point3D& point) const;
+	[[nodiscard]] bool contains(const Offset3D& point) const;
 	[[nodiscard]] bool contains(const Cuboid& cuboid) const;
-	[[nodiscard]] CuboidSetConstView getView() const { return {*this}; }
-	[[nodiscard]] const SmallSet<Cuboid>& getCuboids() const { return m_cuboids; }
-	[[nodiscard]] SmallSet<Point3D> toPointSet() const;
-	[[nodiscard]] bool isAdjacent(const Cuboid& cuboid) const;
-	[[nodiscard]] Cuboid boundry() const;
-	[[nodiscard]] Point3D getLowest() const;
-	[[nodiscard]] const Cuboid& front() const { return m_cuboids.front(); }
-	[[nodiscard]] const Cuboid& back() const { return m_cuboids.back(); }
+	[[nodiscard]] bool contains(const OffsetCuboid& cuboid) const;
+	[[nodiscard]] const auto& getCuboids() const { return m_cuboids; }
+	[[nodiscard]] SmallSet<PointType> toPointSet() const;
+	[[nodiscard]] bool isAdjacent(const CuboidType& cuboid) const;
+	[[nodiscard]] CuboidType boundry() const;
+	[[nodiscard]] PointType getLowest() const;
+	[[nodiscard]] const CuboidType& front() const { return m_cuboids.front(); }
+	[[nodiscard]] const CuboidType& back() const { return m_cuboids.back(); }
 	[[nodiscard]] auto begin() { return m_cuboids.begin(); }
 	[[nodiscard]] auto end() { return m_cuboids.end(); }
 	[[nodiscard]] auto begin() const { return m_cuboids.begin(); }
 	[[nodiscard]] auto end() const { return m_cuboids.end(); }
-	static CuboidSet create(const SmallSet<Point3D>& space);
+	[[nodiscard]] CuboidSetType intersection(const CuboidType& cuboid) const;
+	[[nodiscard]] PointType intersectionPoint(const CuboidType& cuboid) const;
+	[[nodiscard]] bool intersects(const CuboidType& cuboid) const;
+	[[nodiscard]] __attribute__((noinline)) std::string toString() const;
+	[[nodiscard]] static CuboidSetType create(const SmallSet<PointType>& space);
 	friend struct CuboidSetConstIterator;
 	friend struct CuboidSetConstView;
 };
+// CuboidSet is not marked final because AreaHasVisionCuboids derives from it.
+struct CuboidSet : public CuboidSetBase<Cuboid, Point3D, CuboidSet>
+{
+	[[nodiscard]] static CuboidSet create(const Cuboid& cuboid);
+	[[nodiscard]] static CuboidSet create([[maybe_unused]]const OffsetCuboid& spaceBoundry, const Point3D& pivot, const Facing4& newFacing, const OffsetCuboidSet& cuboids);
+};
+struct OffsetCuboidSet final : public CuboidSetBase<OffsetCuboid, Offset3D, OffsetCuboidSet> { };
+
 void to_json(Json& data, const CuboidSet& cuboidSet);
 void from_json(const Json& data, CuboidSet& cuboidSet);
-struct CuboidSetWithBoundingBoxAdjacent : public CuboidSet
-{
-	Cuboid m_boundingBox;
-public:
-	void addAndExtend(const Cuboid& cuboid);
-	void addAndExtend(const Point3D& point);
-	[[nodiscard]] SmallSet<Cuboid> removeAndReturnNoLongerAdjacentCuboids(const Cuboid& cuboid);
-	[[nodiscard]] SmallSet<Cuboid> removeAndReturnNoLongerAdjacentCuboids(const Point3D& point);
-	[[nodiscard]] bool contains(const Point3D& point) const { return m_boundingBox.contains(point) ? CuboidSet::contains(point) : false; }
-	[[nodiscard]] const Cuboid& getBoundingBox() const { return m_boundingBox; }
-	[[nodiscard]] bool isAdjacent(const CuboidSetWithBoundingBoxAdjacent& cuboid) const;
-};
+
+void to_json(Json& data, const OffsetCuboidSet& cuboidSet);
+void from_json(const Json& data, OffsetCuboidSet& cuboidSet);
+
+struct CuboidSetConstIterator final : public CuboidSetConstIteratorBase<Cuboid, Point3D, CuboidSet>{};
+struct OffsetCuboidSetConstIterator final : public CuboidSetConstIteratorBase<OffsetCuboid, Offset3D, OffsetCuboidSet>{};

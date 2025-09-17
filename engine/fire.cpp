@@ -31,7 +31,7 @@ void FireEvent::execute(Simulation&, Area* area)
 		Step delay = MaterialType::getBurnStageDuration(m_fire.m_solid) * Config::fireRampDownPhaseDurationFraction;
 		m_fire.m_event.schedule(*area, delay, m_fire);
 		Space& space = area->getSpace();
-		if(space.solid_is(m_fire.m_location) && space.solid_get(m_fire.m_location) == m_fire.m_solid)
+		if(space.solid_isAny(m_fire.m_location) && space.solid_get(m_fire.m_location) == m_fire.m_solid)
 		{
 			space.solid_setNot(m_fire.m_location);
 			//TODO: create debris / wreckage?

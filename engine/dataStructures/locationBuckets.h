@@ -36,7 +36,7 @@ public:
 	void reserve(int size);
 	// TODO: prevent checking line of sight to multi tile creaters straddling location bucket boundry.
 	[[nodiscard]] const std::pair<const std::vector<ActorReference>*, Eigen::Array<bool, 2, Eigen::Dynamic>>
-	visionRequestQuery(const Area& area, const Point3D& position, const Facing4& facing, const Distance& getVisionRangeSquared, const VisionCuboidId& visionCuboid, const VisionCuboidSetSIMD& visionCuboids, const OccupiedSpaceForHasShape& occupiedPoints, const Distance& largestVisionRange) const;
+	visionRequestQuery(const Area& area, const Point3D& position, const Facing4& facing, const Distance& getVisionRangeSquared, const VisionCuboidId& visionCuboid, const VisionCuboidSetSIMD& visionCuboids, const CuboidSet& occupied, const Distance& largestVisionRange) const;
 	[[nodiscard]] const std::pair<const StrongVector<ActorReference, LocationBucketContentsIndex>*, Eigen::Array<bool, 1, Eigen::Dynamic>>
 	anyCanBeSeenQuery(const Area& area, const Cuboid& cuboid, const Point3DSet& points) const;
 	[[nodiscard]] const std::pair<const StrongVector<ActorReference, LocationBucketContentsIndex>*, Eigen::Array<bool, 1, Eigen::Dynamic>>

@@ -1,7 +1,7 @@
 #include "actors.h"
 #include "../area/area.h"
 #include "../space/space.h"
-#include "../portables.hpp"
+#include "../portables.h"
 
 void Actors::location_set(const ActorIndex& index, const Point3D& location, const Facing4 facing)
 {
@@ -28,12 +28,10 @@ void Actors::location_setStatic(const ActorIndex& index, const Point3D& location
 	m_location[index] = location;
 	m_facing[index] = facing;
 	assert(m_occupied[index].empty());
-	for(const OffsetAndVolume& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
-	{
-		Point3D occupied = location.applyOffset(pair.offset);
-		space.actor_recordStatic(occupied, index, pair.volume);
-		m_occupied[index].insert(occupied);
-	}
+	assert(m_occupiedWithVolume[index].empty());
+	m_occupiedWithVolume[index] = Shape::getCuboidsOccupiedAtWithVolume(m_shape[index], space, location, facing);
+	space.actor_recordStatic(m_occupiedWithVolume[index], index);
+	m_occupied[index] = m_occupiedWithVolume[index].getCuboids();
 	// Record in vision facade if has location and can currently see.
 	vision_maybeUpdateLocation(index, location);
 	// TODO: redundant with location_clear also calling getReference.
@@ -59,12 +57,10 @@ void Actors::location_setDynamic(const ActorIndex& index, const Point3D& locatio
 	m_location[index] = location;
 	m_facing[index] = facing;
 	assert(m_occupied[index].empty());
-	for(const OffsetAndVolume& pair : Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing))
-	{
-		const Point3D& occupied = location.applyOffset(pair.offset);
-		space.actor_recordDynamic(occupied, index, pair.volume);
-		m_occupied[index].insert(occupied);
-	}
+	assert(m_occupiedWithVolume[index].empty());
+	m_occupiedWithVolume[index] = Shape::getCuboidsOccupiedAtWithVolume(m_shape[index], space, location, facing);
+	space.actor_recordDynamic(m_occupiedWithVolume[index], index);
+	m_occupied[index] = m_occupiedWithVolume[index].getCuboids();
 	// Record in vision facade if has location and can currently see.
 	vision_maybeUpdateLocation(index, location);
 	// TODO: redundant with location_clear also calling getReference.
@@ -145,102 +141,36 @@ SetLocationAndFacingResult Actors::location_tryToSetStaticInternal(const ActorIn
 	assert(m_location[index].empty());
 	assert(isStatic(index));
 	Space& space = m_area.getSpace();
-	auto& occupiedPoints = m_occupied[index];
-	assert(occupiedPoints.empty());
-	Offset3D rollBackFrom;
-	SetLocationAndFacingResult output = SetLocationAndFacingResult::Success;
-	auto offsetsAndVolumes = Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing);
-	for(const OffsetAndVolume& pair : offsetsAndVolumes)
-	{
-		const Point3D& occupied = location.applyOffset(pair.offset);
-		if(space.solid_is(occupied) || space.pointFeature_blocksEntrance(occupied))
-		{
-			rollBackFrom = pair.offset;
-			output = SetLocationAndFacingResult::PermanantlyBlocked;
-			break;
-		}
-		if(space.shape_getStaticVolume(occupied) + pair.volume > Config::maxPointVolume)
-		{
-			output = SetLocationAndFacingResult::TemporarilyBlocked;
-			rollBackFrom = pair.offset;
-			break;
-		}
-		else
-		{
-			space.actor_recordStatic(occupied, index, pair.volume);
-			occupiedPoints.insert(occupied);
-		}
-	}
-	if(output == SetLocationAndFacingResult::Success)
-	{
-		m_location[index] = location;
-		m_facing[index] = facing;
-	}
-	else
-	{
-		// Set location failed, roll back.
-		for(const OffsetAndVolume& offsetAndVolume : offsetsAndVolumes)
-		{
-			if(offsetAndVolume.offset == rollBackFrom)
-				break;
-			const Point3D& notOccupied = location.applyOffset(offsetAndVolume.offset);
-			space.actor_eraseStatic(notOccupied, index);
-		}
-		m_occupied[index].clear();
-	}
-	return output;
+	MapWithCuboidKeys<CollisionVolume> cuboidsAndVolumes = Shape::getCuboidsOccupiedAtWithVolume(m_shape[index], space, location, facing);
+	const CuboidSet& occupied = m_occupied[index];
+	cuboidsAndVolumes.removeContainedAndFragmentInterceptedAll(occupied);
+	for(const auto& [cuboid, volume] : cuboidsAndVolumes)
+		// Don't use shape_anythingCanEnterEverHere because it checks Space::m_dynamic.
+		if(space.solid_isAny(cuboid) || space.pointFeature_blocksEntrance(cuboid))
+			return SetLocationAndFacingResult::PermanantlyBlocked;
+	for(const auto& [cuboid, volume] : cuboidsAndVolumes)
+		if(space.shape_cuboidCanFitCurrentlyStatic(cuboid, volume))
+			return SetLocationAndFacingResult::TemporarilyBlocked;
+	location_setStatic(index, location, facing);
+	return SetLocationAndFacingResult::Success;
 }
 SetLocationAndFacingResult Actors::location_tryToSetDynamicInternal(const ActorIndex& index, const Point3D& location, const Facing4& facing)
 {
 	assert(m_location[index].empty());
 	assert(!isStatic(index));
 	Space& space = m_area.getSpace();
-	auto& occupiedPoints = m_occupied[index];
-	assert(occupiedPoints.empty());
-	Offset3D rollBackFrom;
-	SetLocationAndFacingResult output = SetLocationAndFacingResult::Success;
-	auto offsetsAndVolumes = Shape::makeOccupiedPositionsWithFacing(m_shape[index], facing);
-	for(const OffsetAndVolume& pair : offsetsAndVolumes)
-	{
-		const Point3D& occupied = location.applyOffset(pair.offset);
-		if(space.solid_is(occupied) || space.pointFeature_blocksEntrance(occupied))
-		{
-			rollBackFrom = pair.offset;
-			output = SetLocationAndFacingResult::PermanantlyBlocked;
-			break;
-		}
-		if(space.shape_getDynamicVolume(occupied) + pair.volume > Config::maxPointVolume)
-		{
-			output = SetLocationAndFacingResult::TemporarilyBlocked;
-			rollBackFrom = pair.offset;
-			break;
-		}
-		else
-		{
-			space.actor_recordDynamic(occupied, index, pair.volume);
-			occupiedPoints.insert(occupied);
-		}
-	}
-	if(output == SetLocationAndFacingResult::Success)
-	{
-		m_location[index] = location;
-		m_facing[index] = facing;
-	}
-	else
-	{
-		// Set location failed, roll back.
-		for(const OffsetAndVolume& offsetAndVolume : offsetsAndVolumes)
-		{
-			if(offsetAndVolume.offset == rollBackFrom)
-				break;
-			const Point3D& notOccupied = location.applyOffset(offsetAndVolume.offset);
-			assert(m_occupied[index].contains(notOccupied));
-			space.actor_eraseDynamic(notOccupied, index);
-		}
-		m_occupied[index].clear();
-	}
-	return output;
-
+	MapWithCuboidKeys<CollisionVolume> cuboidsAndVolumes = Shape::getCuboidsOccupiedAtWithVolume(m_shape[index], space, location, facing);
+	const CuboidSet& occupied = m_occupied[index];
+	cuboidsAndVolumes.removeContainedAndFragmentInterceptedAll(occupied);
+	for(const auto& [cuboid, volume] : cuboidsAndVolumes)
+		// Don't use shape_anythingCanEnterEverHere because it checks Space::m_dynamic.
+		if(space.solid_isAny(cuboid) || space.pointFeature_blocksEntrance(cuboid))
+			return SetLocationAndFacingResult::PermanantlyBlocked;
+	for(const auto& [cuboid, volume] : cuboidsAndVolumes)
+		if(space.shape_cuboidCanFitCurrentlyDynamic(cuboid, volume))
+			return SetLocationAndFacingResult::TemporarilyBlocked;
+	location_setDynamic(index, location, facing);
+	return SetLocationAndFacingResult::Success;
 }
 void Actors::location_clear(const ActorIndex& index)
 {
@@ -256,11 +186,11 @@ void Actors::location_clearStatic(const ActorIndex& index)
 	Point3D location = m_location[index];
 	m_area.m_octTree.erase(m_area, getReference(index));
 	auto& space = m_area.getSpace();
-	for(Point3D occupied : m_occupied[index])
-		space.actor_eraseStatic(occupied, index);
+	space.actor_eraseStatic(m_occupiedWithVolume[index], index);
 	m_location[index].clear();
 	m_facing[index] = Facing4::Null;
 	m_occupied[index].clear();
+	m_occupiedWithVolume[index].clear();
 	if(space.isExposedToSky(location))
 		m_onSurface.maybeUnset(index);
 	move_pathRequestMaybeCancel(index);
@@ -272,11 +202,11 @@ void Actors::location_clearDynamic(const ActorIndex& index)
 	Point3D location = m_location[index];
 	m_area.m_octTree.erase(m_area, getReference(index));
 	auto& space = m_area.getSpace();
-	for(Point3D occupied : m_occupied[index])
-		space.actor_eraseDynamic(occupied, index);
+	space.actor_eraseDynamic(m_occupiedWithVolume[index], index);
 	m_location[index].clear();
 	m_facing[index] = Facing4::Null;
 	m_occupied[index].clear();
+	m_occupiedWithVolume[index].clear();
 	if(space.isExposedToSky(location))
 		m_onSurface.maybeUnset(index);
 	move_pathRequestMaybeCancel(index);

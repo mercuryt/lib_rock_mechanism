@@ -5,6 +5,7 @@
 #include "../space/space.h"
 #include "../actors/actors.h"
 #include "../objectives/woodcutting.h"
+#include "../definitions/plantSpecies.h"
 WoodCuttingProject::WoodCuttingProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : Project(data, deserializationMemo, area) { }
 std::vector<std::pair<ItemQuery, Quantity>> WoodCuttingProject::getConsumed() const { return {}; }
 std::vector<std::pair<ItemQuery, Quantity>> WoodCuttingProject::getUnconsumed() const

@@ -13,7 +13,7 @@ void PointsExposedToSky::set(Area& area, const Point3D& point)
 	while(true)
 	{
 		m_data.maybeInsert(current);
-		if(space.solid_is(current))
+		if(space.solid_isAny(current))
 		{
 			const MaterialTypeId& materialType = space.solid_get(current);
 			if(MaterialType::canMelt(materialType))
@@ -48,7 +48,7 @@ void PointsExposedToSky::unset(Area& area, const Point3D& point)
 		for(const Point3D& adjacent : space.getAdjacentWithEdgeAndCornerAdjacent(current))
 			if(area.m_exteriorPortals.isRecordedAsPortal(adjacent) && (!space.temperature_transmits(adjacent) || !AreaHasExteriorPortals::isPortal(space, adjacent)))
 				area.m_exteriorPortals.remove(area, adjacent);
-		if(space.solid_is(current))
+		if(space.solid_isAny(current))
 		{
 			const MaterialTypeId& materialType = space.solid_get(current);
 			if(MaterialType::canMelt(materialType))

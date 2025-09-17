@@ -6,6 +6,7 @@
 #include "../plants.h"
 #include "../definitions/itemType.h"
 #include "../definitions/animalSpecies.h"
+#include "../definitions/plantSpecies.h"
 #include "../path/terrainFacade.hpp"
 #include "../numericTypes/types.h"
 #include "kill.h"
@@ -154,18 +155,30 @@ FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrain
 	MustEat& mustEat = *area.getActors().m_mustEat[actorIndex].get();
 	if(m_eatObjective.m_tryToHunt)
 	{
-		auto destinationCondition = [&](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
+		// Hunt.
+		auto destinationCondition = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
 		{
-			for(ActorIndex prey : space.actor_getAll(point))
+			for(const ActorIndex& prey : space.actor_getAll(cuboid))
 				if(mustEat.canEatActor(area, prey))
 				{
-					m_huntResult.setIndex(prey, area.getActors().m_referenceData);
-					return {true, point};
+					m_huntResult.setIndex(prey, actors.m_referenceData);
+					const Point3D& preyLocation = actors.getLocation(prey);
+					if(cuboid.contains(preyLocation))
+						return {true, preyLocation};
+					else
+					{
+						// Find a specific point which is part of the multi point prey and would be adjacent at destination.
+						const CuboidSet& occupied = actors.getOccupied(prey);
+						Point3D intersect = occupied.intersectionPoint(cuboid);
+						assert(intersect.exists());
+						return {true, intersect};
+					}
 				}
-			return {false, point};
+			return {false, Point3D::null()};
 		};
-		constexpr bool useAnyOccupiedPoint = true;
-		return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedPoint, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour, adjacent);
+		constexpr bool useAnyOccupiedPoint = false;
+		constexpr bool useAdjacent = true;
+		return terrainFacade.findPathToConditionBreadthFirst<decltype(destinationCondition), useAnyOccupiedPoint, useAdjacent>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour);
 	}
 	else if(m_eatObjective.m_noFoodFound)
 		return terrainFacade.findPathToEdge(memo, start, facing, shape, m_eatObjective.m_detour);
@@ -179,30 +192,35 @@ FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrain
 			// Otherwise they will store candidates ranked by desire.
 			// EatPathRequest::callback may use one of those candidates, if the actorIndex is hungry enough.
 			auto minimum = mustEat.getMinimumAcceptableDesire(area);
-			auto destinationCondition = [&mustEat, this, &area, minimum](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
+			auto destinationCondition = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
 			{
-				uint32_t eatDesire = mustEat.getDesireToEatSomethingAt(area, point);
+				const auto [foodLocation, eatDesire] = mustEat.getDesireToEatSomethingAt(area, cuboid);
 				if(eatDesire < minimum)
-					return {false, point};
+					return {false, foodLocation};
 				if(eatDesire == maxRankedEatDesire)
-					return {true, point};
+					return {true, foodLocation};
 				if(eatDesire != 0 && m_candidates[eatDesire - 1u].empty())
-					m_candidates[eatDesire - 1u] = point;
-				return {false, point};
+					m_candidates[eatDesire - 1u] = foodLocation;
+				return {false, foodLocation};
 			};
-			constexpr bool useAnyOccupiedPoint = true;
-			return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedPoint, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour, adjacent);
+			constexpr bool useAnyOccupiedPoint = false;
+			constexpr bool useAdjacent = true;
+			return terrainFacade.findPathToConditionBreadthFirst<decltype(destinationCondition), useAnyOccupiedPoint, useAdjacent>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour);
 		}
 		else
 		{
 			// Nonsentients will eat whatever they come across first.
 			// Having preference would be nice but this is better for performance.
-			auto destinationCondition = [&mustEat, &area](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
+			auto destinationCondition = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
 			{
-				return {mustEat.getDesireToEatSomethingAt(area, point) != 0, point};
+				const auto [foodLocation, eatDesire] = mustEat.getDesireToEatSomethingAt(area, cuboid);
+				if(eatDesire != 0)
+					return {true, foodLocation};
+				return {false, Point3D::null()};
 			};
-			constexpr bool useAnyOccupiedPoint = true;
-			return terrainFacade.findPathToConditionBreadthFirst<useAnyOccupiedPoint, decltype(destinationCondition)>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour, adjacent);
+			constexpr bool useAnyOccupiedPoint = false;
+			constexpr bool useAdjacent = true;
+			return terrainFacade.findPathToConditionBreadthFirst<decltype(destinationCondition), useAnyOccupiedPoint, useAdjacent>(destinationCondition, memo, start, facing, shape, m_eatObjective.m_detour);
 		}
 	}
 }
@@ -422,7 +440,7 @@ bool EatObjective::canEatAt(Area& area, const Point3D& point, const ActorIndex& 
 	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
-	for(ItemIndex item : space.item_getAll(point))
+	const auto itemCondition = [&](const ItemIndex& item)
 	{
 		if(actors.eat_canEatItem(actor, item))
 			return true;
@@ -430,16 +448,25 @@ bool EatObjective::canEatAt(Area& area, const Point3D& point, const ActorIndex& 
 			for(ItemIndex i : items.cargo_getItems(item))
 				if(actors.eat_canEatItem(actor, i))
 					return true;
-	}
-	AnimalSpeciesId species = actors.getSpecies(actor);
+		return false;
+	};
+	if(space.item_queryAnyWithCondition(point, itemCondition))
+		return true;
+	const AnimalSpeciesId& species = actors.getSpecies(actor);
+	const FluidTypeId& fluidType = AnimalSpecies::getFluidType(species);
 	if(AnimalSpecies::getEatsMeat(species))
-		for(ActorIndex actor : space.actor_getAll(point))
-			if(!actors.isAlive(actor) && AnimalSpecies::getFluidType(species) == AnimalSpecies::getFluidType(actors.getSpecies(actor)))
-				return true;
-	if(space.plant_exists(point))
 	{
-		const PlantIndex plant = space.plant_get(point);
-		if(AnimalSpecies::getEatsFruit(species) && PlantSpecies::getFluidType(area.getPlants().getSpecies(plant)) == AnimalSpecies::getFluidType(species))
+		const auto scavengeCondition = [&](const ActorIndex& prey)
+		{
+			return !actors.isAlive(prey) && fluidType == AnimalSpecies::getFluidType(actors.getSpecies(prey));
+		};
+		if(space.actor_queryAnyWithCondition(point, scavengeCondition))
+			return true;
+	}
+	const PlantIndex& plant = space.plant_get(point);
+	if(plant.exists())
+	{
+		if(AnimalSpecies::getEatsFruit(species) && PlantSpecies::getFluidType(area.getPlants().getSpecies(plant)) == fluidType)
 			if(actors.eat_canEatPlant(actor, space.plant_get(point)))
 				return true;
 	}

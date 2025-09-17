@@ -1,6 +1,7 @@
 #include "space.h"
 #include "../area/area.h"
 #include "../definitions/materialType.h"
+#include "../definitions/plantSpecies.h"
 #include "../plants.h"
 #include "../numericTypes/types.h"
 PlantIndex Space::plant_create(const Point3D& point, const PlantSpeciesId& plantSpecies, const Percent growthPercent)
@@ -11,11 +12,6 @@ PlantIndex Space::plant_create(const Point3D& point, const PlantSpeciesId& plant
 		.species=plantSpecies,
 		.percentGrown=growthPercent,
 	});
-}
-void Space::plant_set(const Point3D& point, const PlantIndex& plant)
-{
-	assert(!m_plants.queryAny(point));
-	m_plants.maybeInsert(point, plant);
 }
 void Space::plant_updateGrowingStatus(const Point3D& point)
 {
@@ -31,11 +27,6 @@ void Space::plant_setTemperature(const Point3D& point, const Temperature& temper
 	if(index.exists())
 		plants.setTemperature(index, temperature);
 }
-void Space::plant_erase(const Point3D& point)
-{
-	assert(m_plants.queryAny(point));
-	m_plants.maybeRemove(point);
-}
 bool Space::plant_canGrowHereCurrently(const Point3D& point, const PlantSpeciesId& plantSpecies) const
 {
 	Temperature temperature = temperature_get(point);
@@ -47,7 +38,7 @@ bool Space::plant_canGrowHereCurrently(const Point3D& point, const PlantSpeciesI
 	if(point.z() != 0)
 	{
 		Point3D below = point.below();
-		if(!solid_is(below) || m_solid.queryGetOne(below) != dirtType)
+		if(!solid_isAny(below) || m_solid.queryGetOne(below) != dirtType)
 			return false;
 	}
 	return true;
@@ -74,16 +65,8 @@ bool Space::plant_anythingCanGrowHereEver(const Point3D& point) const
 	if(point.z() != 0)
 	{
 		Point3D below = point.below();
-		if(!solid_is(below) || m_solid.queryGetOne(below) != dirtType)
+		if(!solid_isAny(below) || m_solid.queryGetOne(below) != dirtType)
 			return false;
 	}
 	return true;
-}
-PlantIndex Space::plant_get(const Point3D& point) const
-{
-	return m_plants.queryGetOne(point);
-}
-bool Space::plant_exists(const Point3D& point) const
-{
-	return m_plants.queryAny(point);
 }

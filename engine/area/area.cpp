@@ -16,7 +16,7 @@
 #include "../simulation/hasAreas.h"
 #include "../numericTypes/types.h"
 #include "../dataStructures/rtreeData.h"
-#include "../portables.hpp"
+#include "../portables.h"
 //#include "worldforge/worldLocation.h"
 #include <algorithm>
 #include <iostream>
@@ -193,6 +193,7 @@ void Area::doStep()
 {
 	m_hasFluidGroups.doStep();
 	Space& space = getSpace();
+	space.prepareRtrees();
 	space.doSupportStep();
 	m_hasTemperature.doStep();
 	if(m_hasRain.isRaining() && m_simulation.m_step.modulusIsZero(Config::rainWriteStepFreqency))

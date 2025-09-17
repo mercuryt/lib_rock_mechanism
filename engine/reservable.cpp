@@ -42,7 +42,9 @@ bool CanReserve::translateAndReservePositions(Space& space, SmallMap<Point3D, st
 {
 	for(auto& [point, dishonorCallback] : previouslyReserved)
 	{
-		point = point.translate(previousPivot, newPivot, previousFacing, newFacing);
+		const Offset3D offset = point.translate(previousPivot, newPivot, previousFacing, newFacing);
+		assert(space.offsetBoundry().contains(offset));
+		point = Point3D::create(offset);
 		if(space.isReserved(point, m_faction))
 			return false;
 		space.reserve(point, *this, std::move(dishonorCallback));

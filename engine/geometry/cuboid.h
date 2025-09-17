@@ -12,19 +12,20 @@ class CuboidSurfaceView;
 struct Sphere;
 class Offset3D;
 struct OffsetCuboid;
+struct CuboidSet;
 struct Cuboid
 {
-public:
-	// TODO: remove the m_ prefix and make this a struct.
-	Point3D m_highest;
-	Point3D m_lowest;
+	using PointType = Point3D;
+	Point3D m_high;
+	Point3D m_low;
 	Cuboid() = default;
-	Cuboid(const Point3D& highest, const Point3D& lowest);
+	Cuboid(const Point3D& high, const Point3D& low);
 	Cuboid(const Cuboid&) = default;
 	Cuboid& operator=(const Cuboid&) = default;
 	void merge(const Cuboid& cuboid);
 	void setFrom(const Point3D& point);
-	void setFrom(const Point3D& a, const Point3D& b);
+	void setFrom(const Point3D& high, const Point3D& low);
+	void setFrom(const Offset3D& high, const Offset3D& low);
 	void clear();
 	void shift(const Facing6& direction, const Distance& distance);
 	void shift(const Offset3D& offset, const Distance& distance);
@@ -32,24 +33,37 @@ public:
 	void setMaxZ(const Distance& distance);
 	void maybeExpand(const Cuboid& other);
 	void maybeExpand(const Point3D& point);
-	[[nodiscard]] Cuboid inflateAdd(const Distance& distance) const;
+	[[nodiscard]] Cuboid boundry() const { return *this; }
+	[[nodiscard]] Cuboid inflate(const Distance& distance) const;
 	[[nodiscard]] SmallSet<Point3D> toSet() const;
 	[[nodiscard]] bool contains(const Point3D& point) const;
 	[[nodiscard]] bool contains(const Cuboid& cuboid) const;
 	[[nodiscard]] bool contains(const Offset3D& offset) const;
 	[[nodiscard]] bool contains(const OffsetCuboid& cuboid) const;
+	bool containsAnyPoints(const auto& points) const
+	{
+		for(const Point3D& point : points)
+			if(contains(point))
+				return true;
+		return false;
+	}
 	[[nodiscard]] bool canMerge(const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid canMergeSteal(const Cuboid& cuboid) const;
+	// TODO: this should return an OffsetCuboid.
 	[[nodiscard]] Cuboid sum(const Cuboid& cuboid) const;
+	[[nodiscard]] OffsetCuboid difference(const Point3D& other) const;
 	[[nodiscard]] Cuboid intersection(const Cuboid& cuboid) const;
 	[[nodiscard]] Cuboid intersection(const Point3D& point) const;
+	[[nodiscard]] Point3D intersectionPoint(const Point3D& point) const;
+	[[nodiscard]] Point3D intersectionPoint(const Cuboid& cuboid) const;
+	[[nodiscard]] Point3D intersectionPoint(const CuboidSet& cuboid) const;
+	[[nodiscard]] OffsetCuboid above() const;
 	[[nodiscard]] Cuboid getFace(const Facing6& faceing) const;
 	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
 	[[nodiscard]] bool overlapsWithSphere(const Sphere& sphere) const;
-	//TODO: rename size to volume.
-	[[nodiscard]] uint size() const;
-	[[nodiscard]] bool empty() const { return m_highest.empty(); }
-	[[nodiscard]] bool exists() const { return m_highest.exists(); }
+	[[nodiscard]] uint volume() const;
+	[[nodiscard]] bool empty() const { return m_high.empty(); }
+	[[nodiscard]] bool exists() const { return m_high.exists(); }
 	[[nodiscard]] bool operator==(const Cuboid& cuboid) const;
 	[[nodiscard]] Point3D getCenter() const;
 	[[nodiscard]] Distance dimensionForFacing(const Facing6& facing) const;
@@ -65,11 +79,13 @@ public:
 	[[nodiscard]] SmallSet<Cuboid> getChildrenWhenSplitBy(const Point3D& point) const { return getChildrenWhenSplitByCuboid({point, point}); }
 	[[nodiscard]] std::pair<Cuboid, Cuboid> getChildrenWhenSplitBelowCuboid(const Cuboid& cuboid) const;
 	[[nodiscard]] bool isTouching(const Cuboid& cuboid) const;
+	[[nodiscard]] OffsetCuboid translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const;
 	[[nodiscard]] static Cuboid fromPoint(const Point3D& point);
 	[[nodiscard]] static Cuboid fromPointPair(const Point3D& a, const Point3D& b);
 	[[nodiscard]] static Cuboid fromPointSet(const SmallSet<Point3D>& set);
 	[[nodiscard]] static Cuboid createCube(const Point3D& center, const Distance& width);
-	class iterator
+	[[nodiscard]] static Cuboid create(const OffsetCuboid& cuboid);
+	class ConstIterator
 	{
 	private:
 		Point3D m_start;
@@ -77,29 +93,31 @@ public:
 		Point3D m_current;
 		void setToEnd();
 	public:
-		iterator(const Point3D& low, const Point3D& high);
-		iterator(const iterator& other) = default;
-		iterator& operator=(const iterator& other);
-		iterator& operator++();
-		[[nodiscard]] iterator operator++(int);
-		[[nodiscard]] bool operator==(const iterator& other) const { return m_current == other.m_current; }
-		[[nodiscard]] bool operator!=(const iterator& other) const { return !(*this == other); }
-		[[nodiscard]] Point3D operator*();
+		ConstIterator(const Point3D& low, const Point3D& high);
+		ConstIterator(const ConstIterator& other) = default;
+		ConstIterator& operator=(const ConstIterator& other);
+		ConstIterator& operator++();
+		[[nodiscard]] ConstIterator operator++(int);
+		[[nodiscard]] bool operator==(const ConstIterator& other) const { return m_current == other.m_current; }
+		[[nodiscard]] bool operator!=(const ConstIterator& other) const { return !(*this == other); }
+		[[nodiscard]] const Point3D operator*() const;
 	};
-	iterator begin() { return iterator(m_lowest, m_highest); }
-	iterator end() { return iterator(Point3D::null(), Point3D::null()); }
-	const iterator begin() const { return iterator(m_lowest, m_highest); }
-	const iterator end() const { return iterator(Point3D::null(), Point3D::null()); }
+	ConstIterator begin() { return ConstIterator(m_low, m_high); }
+	ConstIterator end() { return ConstIterator(Point3D::null(), Point3D::null()); }
+	const ConstIterator begin() const { return ConstIterator(m_low, m_high); }
+	const ConstIterator end() const { return ConstIterator(Point3D::null(), Point3D::null()); }
 	//TODO:
 	//static_assert(std::forward_iterator<iterator>);
 	CuboidSurfaceView getSurfaceView() const;
 	std::string toString() const;
 	[[nodiscard]] std::strong_ordering operator<=>(const Cuboid& other) const;
 	static Cuboid null() { return Cuboid(); }
+	static Cuboid create(const Offset3D& high, const Offset3D& low) { assert(low.z() >= 0); return {Point3D::create(high), Point3D::create(low)}; }
+	static Cuboid create(const Point3D& high, const Point3D& low);
 	struct Hash{
-		[[nodiscard]] size_t operator()(const Cuboid& cuboid) { return Point3D::Hash()(cuboid.m_highest); }
+		[[nodiscard]] size_t operator()(const Cuboid& cuboid) { return Point3D::Hash()(cuboid.m_high); }
 	};
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Cuboid, m_highest, m_lowest);
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Cuboid, m_high, m_low);
 };
 struct CuboidSurfaceView : public std::ranges::view_interface<CuboidSurfaceView>
 {
@@ -125,3 +143,10 @@ struct CuboidSurfaceView : public std::ranges::view_interface<CuboidSurfaceView>
 	Iterator end() const { Iterator output(*this); output.setToEnd(); return output; }
 	//static_assert(std::forward_iterator<Iterator>);
 };
+
+// Check that lambda has signature (Cuboid) -> bool.
+template<typename T>
+concept CuboidToBool = requires(T f, Cuboid cuboid) {
+	{ f(cuboid) } -> std::same_as<bool>;
+};
+

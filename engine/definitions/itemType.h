@@ -5,7 +5,7 @@
 #include "eventSchedule.hpp"
 #include "numericTypes/types.h"
 #include "items/constructed.h"
-#include "geometry/offsetCuboidSet.h"
+#include "geometry/cuboidSet.h"
 
 #include <ratio>
 #include <string>
@@ -123,36 +123,36 @@ public:
 	template<typename Action>
 	void forEachVector(Action action);
 };
-inline ItemType itemTypeData;
+inline ItemType g_itemTypeData;
 
 template<typename Action>
 void ItemType::forEachVector(Action action)
 {
-		action(itemTypeData.m_constructedShape);
-		action(itemTypeData.m_solidCategories);
-		action(itemTypeData.m_name);
-		action(itemTypeData.m_craftLocationOffset);
-		action(itemTypeData.m_shape);
-		action(itemTypeData.m_moveType);
-		action(itemTypeData.m_edibleForDrinkersOf);
-		action(itemTypeData.m_craftLocationStepTypeCategory);
-		action(itemTypeData.m_fullDisplacement);
-		action(itemTypeData.m_internalVolume);
-		action(itemTypeData.m_value);
-		action(itemTypeData.m_installable);
-		action(itemTypeData.m_generic);
-		action(itemTypeData.m_canHoldFluids);
-		action(itemTypeData.m_attackTypes);
-		action(itemTypeData.m_combatSkill);
-		action(itemTypeData.m_attackCoolDownBase);
-		action(itemTypeData.m_decks);
-		action(itemTypeData.m_motiveForce);
-		action(itemTypeData.m_wearable_defenseScore);
-		action(itemTypeData.m_wearable_layer);
-		action(itemTypeData.m_wearable_bodyTypeScale);
-		action(itemTypeData.m_wearable_forceAbsorbedUnpiercedModifier);
-		action(itemTypeData.m_wearable_forceAbsorbedPiercedModifier);
-		action(itemTypeData.m_wearable_percentCoverage);
-		action(itemTypeData.m_wearable_rigid);
-		action(itemTypeData.m_wearable_bodyPartsCovered);
+		action(g_itemTypeData.m_constructedShape);
+		action(g_itemTypeData.m_solidCategories);
+		action(g_itemTypeData.m_name);
+		action(g_itemTypeData.m_craftLocationOffset);
+		action(g_itemTypeData.m_shape);
+		action(g_itemTypeData.m_moveType);
+		action(g_itemTypeData.m_edibleForDrinkersOf);
+		action(g_itemTypeData.m_craftLocationStepTypeCategory);
+		action(g_itemTypeData.m_fullDisplacement);
+		action(g_itemTypeData.m_internalVolume);
+		action(g_itemTypeData.m_value);
+		action(g_itemTypeData.m_installable);
+		action(g_itemTypeData.m_generic);
+		action(g_itemTypeData.m_canHoldFluids);
+		action(g_itemTypeData.m_attackTypes);
+		action(g_itemTypeData.m_combatSkill);
+		action(g_itemTypeData.m_attackCoolDownBase);
+		action(g_itemTypeData.m_decks);
+		action(g_itemTypeData.m_motiveForce);
+		action(g_itemTypeData.m_wearable_defenseScore);
+		action(g_itemTypeData.m_wearable_layer);
+		action(g_itemTypeData.m_wearable_bodyTypeScale);
+		action(g_itemTypeData.m_wearable_forceAbsorbedUnpiercedModifier);
+		action(g_itemTypeData.m_wearable_forceAbsorbedPiercedModifier);
+		action(g_itemTypeData.m_wearable_percentCoverage);
+		action(g_itemTypeData.m_wearable_rigid);
+		action(g_itemTypeData.m_wearable_bodyPartsCovered);
 }

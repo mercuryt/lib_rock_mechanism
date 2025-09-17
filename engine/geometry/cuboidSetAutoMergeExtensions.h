@@ -91,21 +91,21 @@ struct CuboidSetAutoMergeMapWithPointLookup : public CuboidSetAutoMergeMap<Key>
 protected:
 	Area& m_area;
 	RTreeData<Key> m_pointLookup;
-	std::vector<std::pair<Key, Cuobid>> getAdjacentCandidates(const Cuboid& cuboid) override
+	std::vector<std::pair<Key, Cuboid>> getAdjacentCandidates(const Cuboid& cuboid) override
 	{
 		Space& space = m_area.getSpace();
 		std::vector<std::pair<Key,Cuboid>> output;
 		std::array<Point3D, 6> candidatePoints = {
-			cuboid.m_highest.above(),
-			cuboid.m_highest.south(),
-			cuboid.m_highest.east(),
+			cuboid.m_high.above(),
+			cuboid.m_high.south(),
+			cuboid.m_high.east(),
 		};
-		if(cuboid.m_lowest.z() != 0)
-			candidatePoints[3] = cuboid.m_lowest.below();
-		if(cuboid.m_lowest.z() != 0)
-			candidatePoints[4] = cuboid.m_lowest.north();
-		if(cuboid.m_lowest.z() != 0)
-			candidatePoints[5] = cuboid.m_lowest.west();
+		if(cuboid.m_low.z() != 0)
+			candidatePoints[3] = cuboid.m_low.below();
+		if(cuboid.m_low.z() != 0)
+			candidatePoints[4] = cuboid.m_low.north();
+		if(cuboid.m_low.z() != 0)
+			candidatePoints[5] = cuboid.m_low.west();
 		for(const Point3D& point : candidatePoints)
 			if(point.exists())
 			{

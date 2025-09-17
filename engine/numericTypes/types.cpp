@@ -18,3 +18,27 @@ Density Density::operator*(float other) const { return Density::create(other * d
 Mass Mass::operator*(uint32_t other) const { auto output = Mass::create(data * other); return output; }
 Mass Mass::operator*(float other) const { return Mass::create(data * other); }
 Density Mass::operator/(const FullDisplacement& displacement) const { return Density::create((float)data / (float)displacement.get()); }
+
+Temperature& Temperature::operator+=(const TemperatureDelta& delta)
+{
+	data = addWithMaximum(delta.get()).get();
+	return *this;
+}
+Temperature& Temperature::operator-=(const TemperatureDelta& delta)
+{
+	data = subtractWithMinimum(delta.get()).get();
+	return *this;
+}
+
+Temperature Temperature::operator+(const TemperatureDelta& delta) const
+{
+	auto copy = *this;
+	copy += delta;
+	return copy;
+}
+Temperature Temperature::operator-(const TemperatureDelta& delta) const
+{
+	auto copy = *this;
+	copy += delta;
+	return copy;
+}

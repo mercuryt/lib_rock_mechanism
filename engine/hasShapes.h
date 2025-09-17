@@ -8,7 +8,7 @@
 #include "dataStructures/strongVector.h"
 #include "definitions/shape.h"
 #include "numericTypes/types.h"
-#include "hasShapeTypes.h"
+#include "geometry/cuboidSet.h"
 
 struct Shape;
 class Area;
@@ -26,7 +26,8 @@ protected:
 	StrongVector<Point3D, Index> m_location;
 	StrongVector<Facing4, Index> m_facing;
 	StrongVector<FactionId, Index> m_faction;
-	StrongVector<OccupiedSpaceForHasShape, Index> m_occupied;
+	StrongVector<CuboidSet, Index> m_occupied;
+	StrongVector<MapWithCuboidKeys<CollisionVolume>, Index> m_occupiedWithVolume;
 	StrongBitSet<Index> m_static;
 	StrongBitSet<Index> m_onSurface;
 	//TODO: Do we need m_underground?
@@ -38,7 +39,19 @@ protected:
 	void resize(const Index& newSize);
 public:
 	template<typename Action>
-	void forEachDataHasShapes(Action&& action);
+	void forEachDataHasShapes(Action&& action)
+	{
+		action(m_shape);
+		action(m_compoundShape);
+		action(m_location);
+		action(m_facing);
+		action(m_faction);
+		action(m_occupied);
+		action(m_occupiedWithVolume);
+		action(m_static);
+		action(m_underground);
+		action(m_onSurface);
+	}
 	void setStatic(const Index& index);
 	void maybeSetStatic(const Index& index);
 	void unsetStatic(const Index& index);
@@ -55,22 +68,22 @@ public:
 	[[nodiscard]] bool hasLocation(const Index& index) const { return getLocation(index).exists(); }
 	[[nodiscard]] Facing4 getFacing(const Index& index) const { return m_facing[index]; }
 	[[nodiscard]] const auto& getOccupied(const Index& index) const { return m_occupied[index]; }
-	[[nodiscard]] const SmallSet<Point3D> getPointsAbove(const Index& index) const;
+	[[nodiscard]] const auto& getOccupiedWithVolume(const Index& index) const { return m_occupiedWithVolume[index]; }
+	[[nodiscard]] CuboidSet getCuboidsAbove(const Index& index) const;
 	[[nodiscard]] FactionId getFaction(const Index& index) const { return m_faction[index]; }
 	[[nodiscard]] bool hasFaction(const Index& index) const { return m_faction[index].exists(); }
 	[[nodiscard]] bool isStatic(const Index& index) const { return m_static[index]; }
 	[[nodiscard]] bool isAdjacentToLocation(const Index& index, const Point3D& point) const;
-	template<class Points>
-	[[nodiscard]] bool isAdjacentToAny(const Index& index, const Points& point) const;
-	[[nodiscard]] bool predicateForAnyOccupiedPoint(const Index& index, std::function<bool(const Point3D&)> predicate) const;
-	[[nodiscard]] bool predicateForAnyAdjacentPoint(const Index& index, std::function<bool(const Point3D&)> predicate) const;
-	[[nodiscard]] bool predicateForAnyOccupiedPointAtLocationAndFacing(const Index& index, std::function<bool(const Point3D&)> predicate, const Point3D& location, const Facing4& facing) const;
-	[[nodiscard]] SmallSet<Point3D> getAdjacentPoints(const Index& index) const;
-	[[nodiscard]] SmallSet<Point3D> getOccupiedAndAdjacentPoints(const Index& index) const;
+	//TODO: change these into templates?
+	[[nodiscard]] bool predicateForAnyOccupiedCuboid(const Index& index, std::function<bool(const Cuboid&)> predicate) const;
+	[[nodiscard]] bool predicateForAnyAdjacentCuboid(const Index& index, std::function<bool(const Cuboid&)> predicate) const;
+	[[nodiscard]] bool predicateForAnyOccupiedCuboidAtLocationAndFacing(const Index& index, std::function<bool(const Cuboid&)> predicate, const Point3D& location, const Facing4& facing) const;
+	[[nodiscard]] CuboidSet getAdjacentCuboids(const Index& index) const;
+	[[nodiscard]] CuboidSet getOccupiedAndAdjacentCuboids(const Index& index) const;
 	[[nodiscard]] SmallSet<ItemIndex> getAdjacentItems(const Index& index) const;
 	[[nodiscard]] SmallSet<ActorIndex> getAdjacentActors(const Index& index) const;
-	[[nodiscard]] SmallSet<Point3D> getAdjacentPointsAtLocationWithFacing(const Index& index, const Point3D& point, const Facing4& facing) const;
-	[[nodiscard]] SmallSet<Point3D> getPointsWhichWouldBeOccupiedAtLocationAndFacing(const Index& index, const Point3D& location, const Facing4& facing) const;
+	[[nodiscard]] CuboidSet getAdjacentCuboidsAtLocationWithFacing(const Index& index, const Point3D& point, const Facing4& facing) const;
+	[[nodiscard]] CuboidSet getCuboidsWhichWouldBeOccupiedAtLocationAndFacing(const Index& index, const Point3D& location, const Facing4& facing) const;
 	[[nodiscard]] bool allPointsAtLocationAndFacingAreReservable(const Index& index, const Point3D& location, const Facing4& facing, const FactionId& faction) const;
 	[[nodiscard]] bool allOccupiedPointsAreReservable(const Index& index, const FactionId& faction) const;
 	[[nodiscard]] bool isAdjacentToActor(const Index& index, const ActorIndex& actor) const;
@@ -93,6 +106,14 @@ public:
 	[[nodiscard]] Point3D getPointWhichIsOccupiedWithPredicate(const Index& index, std::function<bool(const Point3D&)>& predicate) const;
 	[[nodiscard]] ItemIndex getItemWhichIsAdjacentAtLocationWithFacingAndPredicate(const Index& index, const Point3D& location, const Facing4& facing, std::function<bool(const ItemIndex&)>& predicate) const;
 	[[nodiscard]] ItemIndex getItemWhichIsAdjacentWithPredicate(const Index& index, std::function<bool(const ItemIndex&)>& predicate) const;
+	template<class PointCollection>
+	bool isAdjacentToAny(const Index& index, const PointCollection& locations) const
+	{
+		const auto predicate = [&](const Cuboid& cuboid) { return cuboid.containsAnyPoints(locations); };
+		return predicateForAnyAdjacentCuboid(index, predicate);
+	}
+	bool isAdjacentToAnyCuboid(const Index& index, const CuboidSet& cuboids) const;
+	[[nodiscard]] Cuboid boundry(const Index& index) const { return m_occupied[index].boundry(); }
 	[[nodiscard]] Area& getArea() { return m_area; }
 	[[nodiscard]] const Area& getArea() const { return m_area; }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(HasShapes, m_shape, m_location, m_facing, m_faction, m_occupied, m_static, m_underground);

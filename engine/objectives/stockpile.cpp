@@ -5,7 +5,6 @@
 #include "../space/space.h"
 #include "../path/terrainFacade.hpp"
 #include "../numericTypes/types.h"
-#include "../hasShapes.hpp"
 // Objective Type.
 bool StockPileObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
 {
@@ -107,13 +106,14 @@ bool StockPileObjective::destinationCondition(Area& area, const Point3D& point, 
 		if(!items.isGeneric(item) || space.item_getAll(point).size() != 1 || space.item_getCount(point, items.getItemType(item), items.getMaterialType(item)) == 0)
 			return false;
 	FactionId faction = actors.getFaction(actor);
-	const StockPile* stockpile = space.stockpile_getForFaction(point, faction);
+	const StockPile* stockpile = space.stockpile_getOneForFaction(point, faction);
 	if(stockpile == nullptr || !stockpile->isEnabled() || !space.stockpile_isAvalible(point, faction))
 		return false;
 	if(space.isReserved(point, faction))
 		return false;
 	if(!stockpile->accepts(item))
 		return false;
+	// TODO: this should be move out of this method so it can be marked const.
 	m_stockPileLocation = point;
 	return true;
 };
@@ -144,82 +144,93 @@ FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& t
 	Items& items = area.getItems();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	assert(!actors.project_exists(actorIndex));
-	const FactionId& faction = actors.getFaction(actorIndex);
-	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
-	AreaHasSpaceDesignationsForFaction& designationsForFaction = area.m_spaceDesignations.getForFaction(faction);
-	auto predicate = [this, actorIndex, faction, &hasStockPiles, &space, &items, &area, &designationsForFaction](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
+	const FactionId& actorFaction = actors.getFaction(actorIndex);
+	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(actorFaction);
+	AreaHasSpaceDesignationsForFaction& designationsForFaction = area.m_spaceDesignations.getForFaction(actorFaction);
+	auto predicate = [this, actorIndex, actorFaction, &hasStockPiles, &space, &items, &area, &designationsForFaction](const Cuboid& cuboid) -> std::pair<bool, Point3D>
 	{
-		if(designationsForFaction.check(point, SpaceDesignation::StockPileHaulFrom)) [[unlikely]]
+		if(designationsForFaction.check(cuboid, SpaceDesignation::StockPileHaulFrom)) [[unlikely]]
 		{
-			for(ItemIndex item : space.item_getAll(point))
+			for(ItemIndex item : space.item_getAll(cuboid))
 			{
 				// Multi point items could be encountered more then once.
 				if(m_items.contains(item))
 					continue;
-				if(items.reservable_isFullyReserved(item, faction))
+				if(items.reservable_isFullyReserved(item, actorFaction))
 					// Cannot stockpile reserved items.
 					continue;
-				if(items.stockpile_canBeStockPiled(item, faction))
+				if(items.stockpile_canBeStockPiled(item, actorFaction))
 				{
 					// Item can be stockpiled, check if any of the stockpiles we have seen so far will accept it.
-					for (const auto& [stockpile, space] : m_pointsByStockPile)
-						for(const Point3D& point : space)
-							if (stockpile->accepts(item) && checkDestination(area, item, point))
+					for (const auto& [stockpile, points] : m_pointsByStockPile)
+						for(const Point3D& stockpilePoint : points)
+							if (stockpile->accepts(item) && checkDestination(area, item, stockpilePoint))
 							{
 								// Success
 								m_objective.m_item = area.getItems().m_referenceData.getReference(item);
-								m_objective.m_stockPileLocation = point;
-								return {true, point};
+								m_objective.m_stockPileLocation = stockpilePoint;
+								return {true, stockpilePoint};
 							}
 					// Item does not match any stockpile seen so far, store it to compare against future stockpiles.
 					m_items.insert(item);
 				}
 			}
 		}
-		if(designationsForFaction.check(point, SpaceDesignation::StockPileHaulTo)) [[unlikely]]
+		if(designationsForFaction.check(cuboid, SpaceDesignation::StockPileHaulTo)) [[unlikely]]
 		{
-			StockPile *stockPile = space.stockpile_getForFaction(point, faction);
-			if(stockPile != nullptr && (!m_pointsByStockPile.contains(stockPile) || !m_pointsByStockPile[stockPile].contains(point)))
+			for(RTreeDataWrapper<StockPile*, nullptr> wrappedStockpile : space.stockpile_getAllForFaction(cuboid, actorFaction))
 			{
-				if(space.isReserved(point, faction))
-					return {false, point};
-				if(!space.item_empty(point))
+				StockPile* stockPile = wrappedStockpile.get();
+				CuboidSet intersection = stockPile->getCuboids().intersection(cuboid);
+				for(const Cuboid& intersectingCuboid : intersection)
 				{
-					// Point static volume is full, don't stockpile here.
-					if(space.shape_getStaticVolume(point) >= Config::maxPointVolume)
-						return {false, point};
-					// There is more then one item type in this point, don't stockpile anything here.
-					if(space.item_getAll(point).size() != 1)
-						return {false, point};
-					// Non generics don't stack, don't stockpile anything here if there is a non generic present.
-					ItemTypeId itemType = items.getItemType(space.item_getAll(point).front());
-					if(!ItemType::getIsGeneric(itemType))
-						return {false, point};
-				}
-				for(ItemIndex item : m_items)
-					if(stockPile->accepts(item) && checkDestination(area, item, point))
+					for(const Point3D& point : intersectingCuboid)
 					{
-						// Success
-						m_objective.m_item = area.getItems().m_referenceData.getReference(item);
-						m_objective.m_stockPileLocation = point;
-						return {true, point};
+						if(!m_pointsByStockPile.contains(stockPile) || !m_pointsByStockPile[stockPile].contains(point))
+						{
+							if(space.isReserved(point, actorFaction))
+								return {false, point};
+							if(!space.item_empty(point))
+							{
+								// Point static volume is full, don't stockpile here.
+								if(space.shape_getStaticVolume(point) >= Config::maxPointVolume)
+									return {false, point};
+								// There is more then one item type in this point, don't stockpile anything here.
+								if(space.item_getAll(point).size() != 1)
+									return {false, point};
+								// Non generics don't stack, don't stockpile anything here if there is a non generic present.
+								ItemTypeId itemType = items.getItemType(space.item_getAll(point).front());
+								if(!ItemType::getIsGeneric(itemType))
+									return {false, point};
+							}
+							for(ItemIndex item : m_items)
+								if(stockPile->accepts(item) && checkDestination(area, item, point))
+								{
+									// Success
+									m_objective.m_item = area.getItems().m_referenceData.getReference(item);
+									m_objective.m_stockPileLocation = point;
+									return {true, point};
+								}
+							// No item seen so far matches the found stockpile, store it to check against future items.
+							m_pointsByStockPile.getOrCreate(stockPile).insert(point);
+						}
 					}
-				// No item seen so far matches the found stockpile, store it to check against future items.
-				m_pointsByStockPile.getOrCreate(stockPile).insert(point);
+				}
 			}
 		}
-		return {false, point};
+		return {false, Point3D::null()};
 	};
 	//TODO: Optimization oppurtunity: path is unused.
-	constexpr bool anyOccupied = true;
+	constexpr bool anyOccupied = false;
+	constexpr bool useAdjacent = true;
 	// TODO: Add a SpaceDesignation to the query?
-	return terrainFacade.findPathToConditionBreadthFirst<anyOccupied, decltype(predicate)>(predicate, memo, start, facing, shape, detour, adjacent, faction, maxRange);
+	return terrainFacade.findPathToConditionBreadthFirst<decltype(predicate), anyOccupied, useAdjacent>(predicate, memo, start, facing, shape, detour, faction, maxRange);
 }
 void StockPilePathRequest::writeStep(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
 	const ActorIndex& actorIndex = actor.getIndex(actors.m_referenceData);
-	const FactionId& faction = actors.getFaction(actorIndex);
+	const FactionId& actorFaction = actors.getFaction(actorIndex);
 	if(!m_objective.m_item.exists())
 	{
 		// No haulable item found.
@@ -231,7 +242,7 @@ void StockPilePathRequest::writeStep(Area& area, FindPathResult& result)
 		Items& items = area.getItems();
 		const ItemIndex& item = m_objective.m_item.getIndex(items.m_referenceData);
 		if(
-			items.reservable_isFullyReserved(item, faction) ||
+			items.reservable_isFullyReserved(item, actorFaction) ||
 			!m_objective.destinationCondition(area, m_objective.m_stockPileLocation, item, actorIndex)
 		)
 		{
@@ -307,17 +318,21 @@ StockPileDestinationPathRequest::StockPileDestinationPathRequest(Area& area, Sto
 FindPathResult StockPileDestinationPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Actors& actors = area.getActors();
-	Space& space = area.getSpace();
 	Items& items = area.getItems();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	assert(!actors.project_exists(actorIndex));
-	const FactionId& faction = actors.getFaction(actorIndex);
-	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
-	auto predicate = [this, actorIndex, faction, &hasStockPiles, &space, &items, &area](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>{
-		return {m_objective.destinationCondition(area, point, m_objective.m_item.getIndex(items.m_referenceData), actorIndex), point};
+	const FactionId& actorFaction = actors.getFaction(actorIndex);
+	const auto predicate = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
+	{
+		for(const Point3D& point : cuboid)
+			// TODO: use cuboids instead of points to query here.
+			if(m_objective.destinationCondition(area, point, m_objective.m_item.getIndex(items.m_referenceData), actorIndex))
+				return {true, point};
+		return {false, Point3D::null()};
 	};
-	constexpr bool anyOccupied = true;
-	return terrainFacade.findPathToConditionBreadthFirst<anyOccupied, decltype(predicate)>(predicate, memo, start, facing, shape, detour, adjacent, faction, maxRange);
+	constexpr bool anyOccupied = false;
+	constexpr bool anyAdjacent = true;
+	return terrainFacade.findPathToConditionBreadthFirst<decltype(predicate), anyOccupied, anyAdjacent>(predicate, memo, start, facing, shape, detour, actorFaction, maxRange);
 }
 void StockPileDestinationPathRequest::writeStep(Area& area, FindPathResult& result)
 {
@@ -334,24 +349,23 @@ void StockPileDestinationPathRequest::writeStep(Area& area, FindPathResult& resu
 	// Destination found, join or create a project.
 	assert(m_objective.m_stockPileLocation.exists());
 	Space &space = area.getSpace();
-	const ActorIndex& actor = actorIndex;
-	actors.canReserve_clearAll(actor);
-	const FactionId& faction = actors.getFaction(actor);
-	assert(space.stockpile_getForFaction(m_objective.m_stockPileLocation, faction));
-	StockPile &stockpile = *space.stockpile_getForFaction(m_objective.m_stockPileLocation, faction);
+	actors.canReserve_clearAll(actorIndex);
+	const FactionId& actorFaction = actors.getFaction(actorIndex);
+	assert(space.stockpile_getOneForFaction(m_objective.m_stockPileLocation, actorFaction) != nullptr);
+	StockPile &stockpile = *space.stockpile_getOneForFaction(m_objective.m_stockPileLocation, actorFaction);
 	if (stockpile.hasProjectNeedingMoreWorkers())
-		stockpile.addToProjectNeedingMoreWorkers(actor, m_objective);
+		stockpile.addToProjectNeedingMoreWorkers(actorIndex, m_objective);
 	else
 	{
-		auto &hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
+		auto &hasStockPiles = area.m_hasStockPiles.getForFaction(actorFaction);
 		if (hasStockPiles.m_projectsByItem.contains(m_objective.m_item))
 		{
 			// Projects found, select one to join.
 			for (StockPileProject* stockPileProject : hasStockPiles.m_projectsByItem[m_objective.m_item])
-				if (stockPileProject->canAddWorker(actor))
+				if (stockPileProject->canAddWorker(actorIndex))
 				{
 					m_objective.m_project = stockPileProject;
-					stockPileProject->addWorkerCandidate(actor, m_objective);
+					stockPileProject->addWorkerCandidate(actorIndex, m_objective);
 					return;
 				}
 		}
@@ -360,7 +374,7 @@ void StockPileDestinationPathRequest::writeStep(Area& area, FindPathResult& resu
 		ItemIndex item = m_objective.m_item.getIndex(items.m_referenceData);
 		// Pass responsability for tracking the item to the project.
 		m_objective.m_item.clear();
-		hasStockPiles.makeProject(item, m_objective.m_stockPileLocation, m_objective, actor);
+		hasStockPiles.makeProject(item, m_objective.m_stockPileLocation, m_objective, actorIndex);
 	}
 }
 StockPileDestinationPathRequest::StockPileDestinationPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :

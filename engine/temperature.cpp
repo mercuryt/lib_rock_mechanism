@@ -102,18 +102,19 @@ void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature& tempera
 	for(auto& [meltingPoint, toMeltOnSurface] : m_aboveGroundPointsByMeltingPoint)
 		if(meltingPoint <= temperature)
 		{
-			SmallSet<Point3D> toMelt;
+			CuboidSet toMelt;
 			for(const Point3D& point : toMeltOnSurface)
 			{
 				// This point has been processed already as part of another point's group.
 				if(toMelt.contains(point))
 					continue;
 				const MaterialTypeId& materialType = space.solid_get(point);
-				for(const Point3D& groupPoint : space.collectAdjacentsWithCondition(point, [&](const Point3D& b){ return space.solid_get(b) == materialType; }))
-					toMelt.maybeInsert(groupPoint);
+				for(const Cuboid& cuboid : space.collectAdjacentsWithCondition(point, [&](const Point3D& b){ return space.solid_get(b) == materialType; }))
+					toMelt.add(cuboid);
 			}
-			for(const Point3D& point : toMelt)
-				space.temperature_melt(point);
+			for(const Cuboid& cuboid : toMelt)
+				for(const Point3D& point : cuboid)
+					space.temperature_melt(point);
 			m_aboveGroundPointsByMeltingPoint[meltingPoint].clear();
 		}
 		else
@@ -133,9 +134,9 @@ void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature& tempera
 						pointSet.insert(futureFlowPoint.point);
 				fluidGroup->m_aboveGround = false;
 			}
-			for(const auto& [fluidType, pointSet] : toFreeze)
-				for(const Point3D& point : pointSet)
-					space.temperature_freeze(point, fluidType);
+			for(const auto& [fluidTypeToFreeze, pointsToFreeze] : toFreeze)
+				for(const Point3D& point : pointsToFreeze)
+					space.temperature_freeze(point, fluidTypeToFreeze);
 			// Any possible freezing at this temperature has happened so clear groupsByMeltingPoint for this temperature.
 			// Don't delete the empty set, it will be reused eventually.
 			fluidGroups.clear();
@@ -159,14 +160,14 @@ void AreaHasTemperature::maybeAddMeltableSolidPointAboveGround(const Point3D& po
 {
 	Space& space = m_area.getSpace();
 	assert(space.isExposedToSky(point));
-	assert(space.solid_is(point));
+	assert(space.solid_isAny(point));
 	m_aboveGroundPointsByMeltingPoint[MaterialType::getMeltingPoint(space.solid_get(point))].maybeInsert(point);
 }
 // Must be run before point is set no longer solid if above ground.
 void AreaHasTemperature::maybeRemoveMeltableSolidPointAboveGround(const Point3D& point)
 {
 	Space& space = m_area.getSpace();
-	assert(space.solid_is(point));
+	assert(space.solid_isAny(point));
 	m_aboveGroundPointsByMeltingPoint.at(MaterialType::getMeltingPoint(space.solid_get(point))).maybeErase(point);
 }
 void AreaHasTemperature::addFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup)

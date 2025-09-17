@@ -82,6 +82,7 @@ public:
 	[[nodiscard]] const auto& keys() const { return  m_keys; }
 	[[nodiscard]] Cuboid operator[](const Key& key) const { auto found = std::ranges::find(m_keys, key); assert(found != m_keys.end()); uint index = std::distance(m_keys.begin(), found); return m_cuboids[index];}
 	[[nodiscard]] Cuboid byIndex(const uint& index) const { return m_cuboids[index]; }
+	[[nodiscard]] Cuboid boundry() const { return m_cuboids.boundry(); }
 	[[nodiscard]] std::string toString() const
 	{
 		std::string output;

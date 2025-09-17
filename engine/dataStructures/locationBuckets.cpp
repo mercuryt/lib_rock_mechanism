@@ -85,7 +85,7 @@ void LocationBucket::reserve(int size)
 	m_actors.reserve(size);
 }
 const std::pair<const std::vector<ActorReference>*, Eigen::Array<bool, 2, Eigen::Dynamic>>
-LocationBucket::visionRequestQuery(const Area& area, const Point3D& position, const Facing4& facing, const Distance& visionRangeSquared, const VisionCuboidId& visionCuboid, const VisionCuboidSetSIMD& visionCuboids, const OccupiedSpaceForHasShape& occupiedPoints, const Distance& largestVisionRange) const
+LocationBucket::visionRequestQuery(const Area& area, const Point3D& position, const Facing4& facing, const Distance& visionRangeSquared, const VisionCuboidId& visionCuboid, const VisionCuboidSetSIMD& visionCuboids, const CuboidSet& occupied, const Distance& largestVisionRange) const
 {
 	Sphere sphere(position, largestVisionRange.toFloat());
 	// Broad phase culling.
@@ -114,11 +114,10 @@ LocationBucket::visionRequestQuery(const Area& area, const Point3D& position, co
 		}
 	}
 	// Multi tile actors must check if their non location space can be seen.
-	if(occupiedPoints.size() != 1 && !output.row(1).all())
+	if(occupied.volume() != 1 && !output.row(1).all())
 	{
-		Point3DSet points = Point3DSet::fromPointSet(occupiedPoints);
-		Cuboid cuboid = points.boundry().inflateAdd(largestVisionRange);
-		auto canSeeOccupiedPoint = anyCanBeSeenQuery(area, cuboid, Point3DSet::fromPointSet(occupiedPoints), output.row(1));
+		Cuboid cuboid = occupied.boundry().inflate(largestVisionRange);
+		auto canSeeOccupiedPoint = anyCanBeSeenQuery(area, cuboid, Point3DSet::fromCuboidSet(occupied), output.row(1));
 		output.row(1) += canSeeOccupiedPoint.second;
 	}
 	return std::pair(&m_actors.toVector(), output);

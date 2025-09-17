@@ -106,4 +106,4 @@ public:
 	[[nodiscard]] static std::vector<ShapeId> getShapes(const AnimalSpeciesId& id);
 	[[nodiscard]] static AnimalSpeciesId size();
 };
-inline AnimalSpecies animalSpeciesData;
+inline AnimalSpecies g_animalSpeciesData;

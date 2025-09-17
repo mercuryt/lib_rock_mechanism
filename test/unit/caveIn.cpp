@@ -33,7 +33,7 @@ TEST_CASE("caveIn")
 		space.solid_set(block, marble, false);
 		support.maybeFall({block, block});
 		support.doStep(area);
-		CHECK(!space.solid_is(Point3D::create(5, 5, 2)));
+		CHECK(!space.solid_isAny(Point3D::create(5, 5, 2)));
 		CHECK(space.solid_get(Point3D::create(5, 5, 1)) == marble);
 		CHECK(support.maybeFallVolume() == 0);
 	}
@@ -48,8 +48,8 @@ TEST_CASE("caveIn")
 		support.maybeFall({block, block});
 		support.maybeFall({block2, block2});
 		support.doStep(area);
-		CHECK(!space.solid_is(block));
-		CHECK(!space.solid_is(block2));
+		CHECK(!space.solid_isAny(block));
+		CHECK(!space.solid_isAny(block2));
 		CHECK(space.solid_get(block.below()) == marble);
 		CHECK(space.solid_get(block2.below()) == marble);
 		CHECK(support.maybeFallVolume() == 0);
@@ -65,8 +65,8 @@ TEST_CASE("caveIn")
 		support.maybeFall({block, block});
 		support.maybeFall({block2, block2});
 		support.doStep(area);
-		CHECK(!space.solid_is(block));
-		CHECK(!space.solid_is(block2));
+		CHECK(!space.solid_isAny(block));
+		CHECK(!space.solid_isAny(block2));
 		CHECK(space.solid_get(block.below()) == marble);
 		CHECK(space.solid_get(block2.below()) == marble);
 		CHECK(support.maybeFallVolume() == 0);
@@ -84,8 +84,8 @@ TEST_CASE("caveIn")
 		support.doStep(area);
 		CHECK(space.solid_get(block) == marble);
 		CHECK(space.solid_get(block2) == marble);
-		CHECK(!space.solid_is(block.below()));
-		CHECK(!space.solid_is(block2.below()));
+		CHECK(!space.solid_isAny(block.below()));
+		CHECK(!space.solid_isAny(block2.below()));
 		CHECK(support.maybeFallVolume() == 0);
 	}
 	SUBCASE("Verify recorded fall distance is the shortest.")
@@ -103,9 +103,9 @@ TEST_CASE("caveIn")
 		support.doStep(area);
 		CHECK(space.solid_get(block) == marble);
 		CHECK(space.solid_get(block.below()) == marble);
-		CHECK(!space.solid_is(block2));
+		CHECK(!space.solid_isAny(block2));
 		CHECK(space.solid_get(block2.below()) == marble);
-		CHECK(!space.solid_is(block3));
+		CHECK(!space.solid_isAny(block3));
 		CHECK(space.solid_get(block3.below()) == marble);
 		CHECK(support.maybeFallVolume() == 0);
 	}
@@ -120,10 +120,10 @@ TEST_CASE("caveIn")
 		support.maybeFall({block2, block2});
 		support.doStep(area);
 		CHECK(space.solid_get(block.below()) == marble);
-		CHECK(!space.solid_is(block2));
-		CHECK(!space.solid_is(block2.below()));
-		CHECK(space.solid_is(block));
-		CHECK(space.solid_is(block.below()));
+		CHECK(!space.solid_isAny(block2));
+		CHECK(!space.solid_isAny(block2.below()));
+		CHECK(space.solid_isAny(block));
+		CHECK(space.solid_isAny(block.below()));
 		CHECK(support.maybeFallVolume() == 0);
 	}
 }

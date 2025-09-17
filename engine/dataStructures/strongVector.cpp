@@ -4,7 +4,7 @@
 #include "../numericTypes/idTypes.h"
 #include "../numericTypes/index.h"
 #include "../reference.h"
-#include "../geometry/offsetCuboidSet.h"
+#include "../geometry/cuboidSet.h"
 #include "../definitions/moveType.h"
 #include "../definitions/shape.h"
 #include "../body.h"
@@ -56,7 +56,8 @@ template class StrongVector<SkillTypeId, ItemTypeId>;
 template class StrongVector<SkillTypeId, MaterialTypeId>;
 template class StrongVector<SmallMap<FluidTypeId, CollisionVolume>, MoveTypeId>;
 template class StrongVector<SmallSet<FluidTypeId>, MoveTypeId>;
-template class StrongVector<SmallSet<OffsetAndVolume>, ShapeId>;
+template class StrongVector<MapWithOffsetCuboidKeys<CollisionVolume>, ShapeId>;
+template class StrongVector<MapWithCuboidKeys<CollisionVolume>, ShapeId>;
 template class StrongVector<Step, AnimalSpeciesId>;
 template class StrongVector<Step, AttackTypeId>;
 template class StrongVector<Step, FluidTypeId>;

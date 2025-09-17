@@ -4,7 +4,6 @@
 #include "../actors/actors.h"
 #include "../items/items.h"
 #include "../plants.h"
-#include "../hasShapes.hpp"
 #include "../path/terrainFacade.hpp"
 
 // Drink Threaded Task.
@@ -27,12 +26,14 @@ FindPathResult DrinkPathRequest::readStep(Area& area, const TerrainFacade& terra
 	const ActorIndex& actorIndex = actor.getIndex(actors.m_referenceData);
 	if(m_drinkObjective.m_noDrinkFound)
 		return terrainFacade.findPathToEdge(memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_drinkObjective.m_detour);
-	auto destinationCondition = [this, &area, actorIndex](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
+	auto destinationCondition = [this, &area, actorIndex](const Cuboid& cuboid) -> std::pair<bool, Point3D>
 	{
-		return {m_drinkObjective.containsSomethingDrinkable(area, point, actorIndex), point};
+		const Point3D point = m_drinkObjective.containsSomethingDrinkable(area, cuboid, actorIndex);
+		return {point.exists(), point};
 	};
-	constexpr bool useAnyPoint = true;
-	return terrainFacade.findPathToConditionBreadthFirst<useAnyPoint, decltype(destinationCondition)>(destinationCondition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_drinkObjective.m_detour, adjacent, actors.getFaction(actorIndex), Distance::max());
+	constexpr bool useAnyPoint = false;
+	constexpr bool useAdjacent = true;
+	return terrainFacade.findPathToConditionBreadthFirst<decltype(destinationCondition), useAnyPoint, useAdjacent>(destinationCondition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_drinkObjective.m_detour, actors.getFaction(actorIndex), Distance::max());
 }
 DrinkPathRequest::DrinkPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
 	PathRequestBreadthFirst(data, area),
@@ -138,22 +139,37 @@ bool DrinkObjective::canDrinkAt(Area& area, const Point3D& point, const Facing4&
 }
 Point3D DrinkObjective::getAdjacentPointToDrinkAt(Area& area, const Point3D& location, const Facing4& facing, const ActorIndex& actor) const
 {
-	std::function<bool(const Point3D&)> predicate = [&](const Point3D& point) { return containsSomethingDrinkable(area, point, actor); };
+	//TODO: Make this work with cuboids?
+	std::function<bool(const Point3D&)> predicate = [&](const Point3D& point) { return containsSomethingDrinkable(area, {point, point}, actor).exists(); };
 	return area.getActors().getPointWhichIsAdjacentAtLocationWithFacingAndPredicate(actor, location, facing, predicate);
 }
-bool DrinkObjective::canDrinkItemAt(Area& area, const Point3D& point, const ActorIndex& actor) const
+Point3D DrinkObjective::getPointToDrinkItemAt(Area& area, const Cuboid& cuboid, const ActorIndex& actor) const
 {
-	return getItemToDrinkFromAt(area, point, actor) != ItemIndex::null();
+	const ItemIndex item = getItemToDrinkFromAt(area, cuboid, actor);
+	if(item.empty())
+		return Point3D::null();
+	const Items& items = area.getItems();
+	Point3D output = items.getLocation(item);
+	if(cuboid.contains(output))
+		return output;
+	const CuboidSet& occupied = items.getOccupied(item);
+	return occupied.intersectionPoint(cuboid);
 }
-ItemIndex DrinkObjective::getItemToDrinkFromAt(Area& area, const Point3D& point, const ActorIndex& actor) const
+ItemIndex DrinkObjective::getItemToDrinkFromAt(Area& area, const Cuboid& cuboid, const ActorIndex& actor) const
 {
 	Items& items = area.getItems();
-	for(ItemIndex item : area.getSpace().item_getAll(point))
+	for(ItemIndex item : area.getSpace().item_getAll(cuboid))
 		if(items.cargo_containsAnyFluid(item) && items.cargo_getFluidType(item) == area.getActors().drink_getFluidType(actor))
 			return item;
 	return ItemIndex::null();
 }
-bool DrinkObjective::containsSomethingDrinkable(Area& area, const Point3D& point, const ActorIndex& actor) const
+Point3D DrinkObjective::containsSomethingDrinkable(Area& area, const Cuboid& cuboid, const ActorIndex& actor) const
 {
-	return area.getSpace().fluid_contains(point, area.getActors().drink_getFluidType(actor)) || canDrinkItemAt(area, point, actor);
+	const Space& space = area.getSpace();
+	const FluidTypeId& fluidType = area.getActors().drink_getFluidType(actor);
+	const auto condition  = [&](const FluidData& fluidData) { return fluidData.type == fluidType; };
+	Point3D output = space.fluid_queryGetPointWithCondition(cuboid, condition);
+	if(output.empty())
+		output = getPointToDrinkItemAt(area, cuboid, actor);
+	return output;
 }

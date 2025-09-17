@@ -8,7 +8,7 @@ TEST_CASE("cuboidSet")
 	Cuboid firstCuboid(Point3D::create(2, 2, 2), Point3D::create(1, 1, 1));
 	cuboidSet.add(firstCuboid);
 	CHECK(!cuboidSet.empty());
-	CHECK(cuboidSet.size() == 8);
+	CHECK(cuboidSet.volume() == 8);
 	CHECK(cuboidSet.contains(Point3D::create(1, 2, 1)));
 	SUBCASE("merge")
 	{
@@ -16,7 +16,7 @@ TEST_CASE("cuboidSet")
 		CHECK(firstCuboid.canMerge(secondCuboid));
 		CHECK(!firstCuboid.intersects(secondCuboid));
 		cuboidSet.add(secondCuboid);
-		CHECK(cuboidSet.size() == 12);
+		CHECK(cuboidSet.volume() == 12);
 		CHECK(cuboidSet.getCuboids().size() == 1);
 	}
 	SUBCASE("add")
@@ -25,7 +25,7 @@ TEST_CASE("cuboidSet")
 		CHECK(!firstCuboid.canMerge(secondCuboid));
 		CHECK(!firstCuboid.intersects(secondCuboid));
 		cuboidSet.add(secondCuboid);
-		CHECK(cuboidSet.size() == 10);
+		CHECK(cuboidSet.volume() == 10);
 		CHECK(cuboidSet.getCuboids().size() == 2);
 	}
 	SUBCASE("split")
@@ -34,7 +34,7 @@ TEST_CASE("cuboidSet")
 		CHECK(!firstCuboid.canMerge(secondCuboid));
 		CHECK(firstCuboid.intersects(secondCuboid));
 		cuboidSet.add(secondCuboid);
-		CHECK(cuboidSet.size() == 9);
+		CHECK(cuboidSet.volume() == 9);
 		CHECK(cuboidSet.getCuboids().size() == 4);
 	}
 }

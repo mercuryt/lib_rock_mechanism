@@ -1,5 +1,6 @@
 #include "actors.h"
 #include "../area/area.h"
+#include "../plants.h"
 #include "../deserializationMemo.h"
 #include "../fluidType.h"
 #include "../definitions/moveType.h"
@@ -8,7 +9,7 @@
 #include "../util.h"
 #include "../path/pathRequest.h"
 #include "../space/space.h"
-#include "../portables.hpp"
+#include "../portables.h"
 #include "config.h"
 #include "eventSchedule.h"
 #include "items/items.h"
@@ -244,32 +245,13 @@ void Actors::move_setDestination(const ActorIndex& index, const Point3D& destina
 	assert(m_pathRequest[index] == nullptr);
 	const ShapeId& shape = getCompoundShape(index);
 	const MoveTypeId& moveType = getMoveType(index);
-	if(!adjacent)
-		move_pathRequestRecord(index, std::make_unique<GoToPathRequest>(location, Distance::max(), getReference(index), shape, faction, moveType, m_facing[index], detour, adjacent, reserve, destination));
-	else
-	{
-		SmallSet<Point3D> candidates;
-		for(const Point3D& adjacent : space.getAdjacentWithEdgeAndCornerAdjacent(destination))
-			if(
-				space.shape_anythingCanEnterEver(adjacent) &&
-				space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, shape, moveType)
-			)
-				candidates.insert(adjacent);
-		move_pathRequestRecord(
-			index,
-			std::make_unique<GoToAnyPathRequest>(
-				location, Distance::max(), getReference(index),
-				shape, faction, moveType, m_facing[index],
-				detour, adjacent, reserve, destination, candidates
-			)
-		);
-	}
+	move_pathRequestRecord(index, std::make_unique<GoToPathRequest>(location, Distance::max(), getReference(index), shape, faction, moveType, m_facing[index], detour, adjacent, reserve, destination));
 }
 void Actors::move_setDestinationAdjacentToLocation(const ActorIndex& index, const Point3D& destination, bool detour, bool unreserved, bool reserve)
 {
 	move_setDestination(index, destination, detour, true, unreserved, reserve);
 }
-void Actors::move_setDestinationToAny(const ActorIndex& index, const SmallSet<Point3D>& candidates, bool detour, bool unreserved, bool reserve, const Point3D& huristicDestination)
+void Actors::move_setDestinationToAny(const ActorIndex& index, const CuboidSet& candidates, bool detour, bool unreserved, bool reserve, const Point3D& huristicDestination)
 {
 	FactionId faction;
 	if(unreserved)
@@ -284,13 +266,14 @@ void Actors::move_setDestinationAdjacentToActor(const ActorIndex& index, const A
 	assert(!isAdjacentToLocation(index, otherLocation));
 	Space& space = m_area.getSpace();
 	assert(m_pathRequest[index] == nullptr);
-		SmallSet<Point3D> candidates;
-	for(const Point3D& adjacent : getAdjacentPoints(other))
-		if(
-			space.shape_anythingCanEnterEver(adjacent) &&
-			space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
-		)
-			candidates.insert(adjacent);
+	CuboidSet candidates;
+	for(const Cuboid& cuboid : getAdjacentCuboids(other))
+		for(const Point3D& adjacent : cuboid)
+			if(
+				space.shape_anythingCanEnterEver(adjacent) &&
+				space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
+			)
+				candidates.add(adjacent);
 	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, otherLocation);
 }
 void Actors::move_setDestinationAdjacentToItem(const ActorIndex& index, const ItemIndex& item, bool detour, bool unreserved, bool reserve)
@@ -301,13 +284,14 @@ void Actors::move_setDestinationAdjacentToItem(const ActorIndex& index, const It
 	Space& space = m_area.getSpace();
 	Items& items = m_area.getItems();
 	assert(m_pathRequest[index] == nullptr);
-		SmallSet<Point3D> candidates;
-		for(const Point3D& adjacent : items.getAdjacentPoints(item))
+	CuboidSet candidates;
+	for(const Cuboid& cuboid : items.getAdjacentCuboids(item))
+		for(const Point3D& adjacent : cuboid)
 			if(
 				space.shape_anythingCanEnterEver(adjacent) &&
 				space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
 			)
-				candidates.insert(adjacent);
+				candidates.add(adjacent);
 	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, items.getLocation(item));
 }
 void Actors::move_setDestinationAdjacentToPlant(const ActorIndex& index, const PlantIndex& plant, bool detour, bool unreserved, bool reserve)
@@ -317,13 +301,14 @@ void Actors::move_setDestinationAdjacentToPlant(const ActorIndex& index, const P
 	Space& space = m_area.getSpace();
 	Plants& plants = m_area.getPlants();
 	assert(m_pathRequest[index] == nullptr);
-		SmallSet<Point3D> candidates;
-		for(const Point3D& adjacent : plants.getAdjacentPoints(plant))
+	CuboidSet candidates;
+	for(const Cuboid& cuboid : plants.getAdjacentCuboids(plant))
+		for(const Point3D& adjacent : cuboid)
 			if(
 				space.shape_anythingCanEnterEver(adjacent) &&
 				space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
 			)
-				candidates.insert(adjacent);
+				candidates.add(adjacent);
 	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, plants.getLocation(plant));
 }
 void Actors::move_setDestinationAdjacentToPolymorphic(const ActorIndex& index, ActorOrItemIndex actorOrItemIndex, bool detour, bool unreserved, bool reserve)
@@ -373,17 +358,17 @@ bool Actors::move_tryToReserveProposedDestination(const ActorIndex& index, const
 	Space& space = m_area.getSpace();
 	Point3D location = path.back();
 	FactionId faction = getFaction(index);
-	if(Shape::getIsMultiTile(shape))
+	if(Shape::getIsMultiPoint(shape))
 	{
 		assert(!path.empty());
 		Point3D previous = path.size() == 1 ? getLocation(index) : path[path.size() - 2];
 		Facing4 facing = previous.getFacingTwords(location);
-		auto occupiedPoints = Shape::getPointsOccupiedAt(shape, space, location, facing);
-		for(Point3D point : occupiedPoints)
-			if(space.isReserved(point, faction))
-				return false;
-		for(Point3D point : occupiedPoints)
-			space.reserve(point, canReserve);
+		auto occupiedCuboids = Shape::getCuboidsOccupiedAt(shape, space, location, facing);
+		if(space.isReservedAny(occupiedCuboids, faction))
+			return false;
+		for(const Cuboid& cuboid : occupiedCuboids)
+			for(const Point3D& point : cuboid)
+				space.reserve(point, canReserve);
 	}
 	else
 	{
@@ -398,17 +383,18 @@ bool Actors::move_tryToReserveOccupied(const ActorIndex& index)
 	ShapeId shape = getShape(index);
 	CanReserve& canReserve = canReserve_get(index);
 	Space& space = m_area.getSpace();
-	Point3D location = getLocation(index);
-	FactionId faction = getFaction(index);
-	if(Shape::getIsMultiTile(shape))
+	const Point3D& location = getLocation(index);
+	const Facing4& facing = getFacing(index);
+	const FactionId& faction = getFaction(index);
+	if(Shape::getIsMultiPoint(shape))
 	{
 		assert(!m_path[index].empty());
-		auto occupiedPoints = getOccupied(index);
-		for(Point3D point : occupiedPoints)
-			if(space.isReserved(point, faction))
-				return false;
-		for(Point3D point : occupiedPoints)
-			space.reserve(point, canReserve);
+		auto occupiedCuboids = Shape::getCuboidsOccupiedAt(shape, space, location, facing);
+		if(space.isReservedAny(occupiedCuboids, faction))
+			return false;
+		for(const Cuboid& cuboid : occupiedCuboids)
+			for(const Point3D& point : cuboid)
+				space.reserve(point, canReserve);
 	}
 	else
 	{
@@ -513,7 +499,7 @@ SmallSet<Point3D> Actors::move_makePathTo(const ActorIndex& index, const Point3D
 {
 	assert(destination != m_location[index]);
 	const FindPathResult result = m_area.m_hasTerrainFacades.getForMoveType(
-		m_moveType[index]).findPathToWithoutMemo(m_location[index], m_facing[index], m_compoundShape[index], destination
+		m_moveType[index]).findPathToWithoutMemo<false, false>(m_location[index], m_facing[index], m_compoundShape[index], destination
 	);
 	assert(!result.useCurrentPosition);
 	return result.path;

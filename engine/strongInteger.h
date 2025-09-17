@@ -158,8 +158,21 @@ struct StrongInteger
 	[[nodiscard]] constexpr Derived subtractWithMinimum(const Other& other) const
 	{
 		assert(exists());
+		if(other < 0)
+			return addWithMaximum(other * -1);
 		int result = (int)data - (int)other;
 		return Derived::create(result < (int)MIN_VALUE ? MIN_VALUE : result);
+	}
+	[[nodiscard]] constexpr Derived addWithMaximum(const This& other) const { assert(other.exists()); return addWithMaximum(other.data); }
+	template<Numeric Other>
+	[[nodiscard]] constexpr Derived addWithMaximum(const Other& other) const
+	{
+		assert(exists());
+		if(other < 0)
+			return subtractWithMinimum(other * -1);
+		static_assert(MAX_VALUE < INT64_MAX);
+		int64_t result = (int64_t)data + (int64_t)other;
+		return Derived::create(result > (int64_t)MAX_VALUE ? MAX_VALUE : result);
 	}
 	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const This& index) const { return index.get(); } };
 };

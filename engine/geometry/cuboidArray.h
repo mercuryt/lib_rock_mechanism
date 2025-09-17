@@ -4,6 +4,7 @@
 
 struct Sphere;
 struct ParamaterizedLine;
+struct CuboidSet;
 
 template<uint16_t capacity>
 struct CuboidArray
@@ -34,17 +35,23 @@ public:
 	[[nodiscard]] Cuboid boundry() const;
 	[[nodiscard]] BoolArray indicesOfIntersectingCuboids(const Point3D& point) const;
 	[[nodiscard]] BoolArray indicesOfIntersectingCuboids(const Cuboid& cuboid) const;
-	[[nodiscard]] BoolArray indicesOfContainedCuboids(const Cuboid& cuboid) const;
-	[[nodiscard]] BoolArray indicesOfCuboidsContaining(const Cuboid& cuboid) const;
+	[[nodiscard]] BoolArray indicesOfIntersectingCuboids(const CuboidSet& cuboids) const;
 	[[nodiscard]] BoolArray indicesOfIntersectingCuboids(const Sphere& sphere) const;
-	[[nodiscard]] BoolArray indicesOfContainedCuboids(const Sphere& sphere) const;
 	[[nodiscard]] BoolArray indicesOfIntersectingCuboids(const ParamaterizedLine& line) const;
+	[[nodiscard]] BoolArray indicesOfContainedCuboids(const Cuboid& cuboid) const;
+	[[nodiscard]] BoolArray indicesOfContainedCuboids(const CuboidSet& cuboids) const;
+	[[nodiscard]] BoolArray indicesOfContainedCuboids(const Sphere& sphere) const;
+	[[nodiscard]] BoolArray indicesOfCuboidsContaining(const Cuboid& cuboid) const;
+	[[nodiscard]] BoolArray indicesOfCuboidsContaining(const CuboidSet& cuboids) const;
+	[[nodiscard]] BoolArray indicesOfIntersectingCuboidsWhereThereIsADifferenceInEntranceAndExitZ(const ParamaterizedLine& line) const;
 	[[nodiscard]] BoolArray indicesOfIntersectingCuboidsLowZOnly(const Point3D& point) const;
 	[[nodiscard]] BoolArray indicesOfIntersectingCuboidsLowZOnly(const Cuboid& cuboid) const;
 	[[nodiscard]] BoolArray indicesOfIntersectingCuboidsLowZOnly(const Sphere& sphere) const;
 	[[nodiscard]] BoolArray indicesOfIntersectingCuboidsLowZOnly(const ParamaterizedLine& line) const;
+	[[nodiscard]] BoolArray indicesOfIntersectingCuboidsLowZOnly(const CuboidSet& cuboids) const;
 	[[nodiscard]] BoolArray indicesOfMergeableCuboids(const Cuboid& cuboid) const;
 	[[nodiscard]] BoolArray indicesOfTouchingCuboids(const Cuboid& cuboid) const;
+	[[nodiscard]] BoolArray indicesOfTouchingCuboids(const CuboidSet& cuboids) const;
 	[[nodiscard]] uint16_t indexOfCuboid(const Cuboid& cuboid);
 	[[nodiscard]] __attribute__((noinline)) std::string toString() const;
 	[[nodiscard]] __attribute__((noinline)) Cuboid at(uint16_t i) const;

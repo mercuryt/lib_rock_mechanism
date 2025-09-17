@@ -14,7 +14,6 @@
 #include "../../engine/projects/targetedHaul.h"
 #include "../../engine/definitions/itemType.h"
 #include "../../engine/definitions/animalSpecies.h"
-#include "../../engine/portables.hpp"
 #include "reference.h"
 #include "numericTypes/types.h"
 TEST_CASE("haul")
@@ -29,7 +28,7 @@ TEST_CASE("haul")
 	static AnimalSpeciesId donkey = AnimalSpecies::byName("horse");
 	static ItemTypeId chunk = ItemType::byName("chunk");
 	static ItemTypeId boulder = ItemType::byName("boulder");
-	static ItemTypeId cart = ItemType::byName("cart");
+	static ItemTypeId cartType = ItemType::byName("cart");
 	static ItemTypeId panniers = ItemType::byName("panniers");
 	Simulation simulation;
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
@@ -71,7 +70,7 @@ TEST_CASE("haul")
 	{
 		Point3D cartLocation = Point3D::create(1, 2, 2);
 		items.create({
-			.itemType=cart,
+			.itemType=cartType,
 			.materialType=poplarWood,
 			.location=cartLocation,
 			.quality=Quality::create(3u),
@@ -315,7 +314,7 @@ TEST_CASE("haul")
 		});
 		area.m_hasHaulTools.registerYokeableActor(area, donkey1);
 		Point3D cartLocation = Point3D::create(5, 1, 2);
-		ItemIndex cart1 = items.create({.itemType=cart, .materialType=poplarWood, .location=cartLocation, .quality=Quality::create(3u), .percentWear=Percent::create(0)});
+		ItemIndex cart1 = items.create({.itemType=cartType, .materialType=poplarWood, .location=cartLocation, .quality=Quality::create(3u), .percentWear=Percent::create(0)});
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(SmallSet<ActorIndex>({dwarf1}), cargo, destination);
 		// One step to activate the project and make reservations.
 		simulation.doStep();
@@ -359,7 +358,7 @@ TEST_CASE("haul")
 		});
 		ActorReference dwarf2Ref = actors.m_referenceData.getReference(dwarf2);
 		Point3D cartLocation = Point3D::create(7, 1, 2);
-		ItemIndex cart1 = items.create({.itemType=cart, .materialType=poplarWood, .location=cartLocation, .quality=Quality::create(3u), .percentWear=Percent::create(0)});
+		ItemIndex cart1 = items.create({.itemType=cartType, .materialType=poplarWood, .location=cartLocation, .quality=Quality::create(3u), .percentWear=Percent::create(0)});
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(SmallSet<ActorIndex>({dwarf1, dwarf2}), cargo, destination);
 		// One step to activate the project and make reservations.
 		simulation.doStep();

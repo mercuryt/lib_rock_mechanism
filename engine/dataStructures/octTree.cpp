@@ -16,7 +16,7 @@ void ActorOctTree::record(Area& area, const ActorReference& actor)
 	const Distance& visionRangeSquared = actors.vision_getRangeSquared(index);
 	const Facing4& facing = actors.getFacing(index);
 	const VisionCuboidId& visionCuboid = area.m_visionCuboids.getVisionCuboidIndexForPoint(location);
-	for(const Point3D& coordinates : Point3DSet::fromPointSet(actors.getOccupied(index)))
+	for(const Point3D& coordinates : Point3DSet::fromCuboidSet(actors.getOccupied(index)))
 	{
 		OctTreeIndex nodeIndex = OctTreeIndex::create(0);
 		while(true)
@@ -40,25 +40,26 @@ void ActorOctTree::erase(Area& area, const ActorReference& actor)
 {
 	Actors& actors = area.getActors();
 	const ActorIndex& index = actor.getIndex(actors.m_referenceData);
-	for(const Point3D& coordinates : Point3DSet::fromPointSet(actors.getOccupied(index)))
-	{
-		OctTreeIndex nodeIndex = OctTreeIndex::create(0);
-		while(true)
+	for(const Cuboid& cuboid : actors.getOccupied(index))
+		for(const Point3D& coordinates : cuboid)
 		{
-			OctTreeNode& node = m_nodes[nodeIndex];
-			node.contents.remove(actor);
-			if(node.shouldMerge())
+			OctTreeIndex nodeIndex = OctTreeIndex::create(0);
+			while(true)
 			{
-				collapse(nodeIndex);
-				break;
+				OctTreeNode& node = m_nodes[nodeIndex];
+				node.contents.remove(actor);
+				if(node.shouldMerge())
+				{
+					collapse(nodeIndex);
+					break;
+				}
+				if(!node.hasChildren())
+					break;
+				// Select new parent node at next level down.
+				uint8_t octant = getOctant(node.center, coordinates);
+				nodeIndex = node.children[octant];
 			}
-			if(!node.hasChildren())
-				break;
-			// Select new parent node at next level down.
-			uint8_t octant = getOctant(node.center, coordinates);
-			nodeIndex = node.children[octant];
 		}
-	}
 }
 void ActorOctTree::updateVisionCuboid(const Point3D& coordinates, const VisionCuboidId& cuboid)
 {
@@ -129,15 +130,15 @@ void ActorOctTree::collapse(const OctTreeIndex& nodeIndex)
 	removeNotify(m_nodes,
 		[&](const OctTreeIndex& otherIndex){ return m_nodes[otherIndex].parent == nodeIndex; },
 		[&](const OctTreeIndex& oldIndex, const OctTreeIndex& newIndex){
-			OctTreeNode node = m_nodes[oldIndex];
+			OctTreeNode otherNode = m_nodes[oldIndex];
 			// Update parent.
-			OctTreeNode parent = m_nodes[node.parent];
+			OctTreeNode parent = m_nodes[otherNode.parent];
 			auto found = std::ranges::find(parent.children, oldIndex);
 			assert(found != parent.children.end());
 			(*found) = newIndex;
 			// Update children.
-			if(node.hasChildren())
-				for(const OctTreeIndex& childIndex : node.children)
+			if(otherNode.hasChildren())
+				for(const OctTreeIndex& childIndex : otherNode.children)
 					m_nodes[childIndex].parent = newIndex;
 		}
 	);

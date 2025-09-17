@@ -3,7 +3,6 @@
 #include "../config.h"
 #include "../farmFields.h"
 #include "../simulation/simulation.h"
-#include "../hasShapes.hpp"
 #include "../path/terrainFacade.hpp"
 #include "../actors/actors.h"
 #include "../space/space.h"
@@ -31,7 +30,7 @@ void SowSeedsEvent::execute(Simulation&, Area* area)
 		m_objective.execute(*area, actor);
 	}
 	assert(space.farm_get(point, faction));
-	PlantSpeciesId plantSpecies = space.farm_get(point, faction)->plantSpecies;
+	PlantSpeciesId plantSpecies = space.farm_get(point, faction)->m_plantSpecies;
 	space.plant_create(point, plantSpecies, Percent::create(0));
 	actors.objective_complete(actor, m_objective);
 }
@@ -90,7 +89,7 @@ void SowSeedsObjective::execute(Area& area, const ActorIndex& actor)
 		if(actors.isAdjacentToLocation(actor, m_point))
 		{
 			FarmField* field = space.farm_get(m_point, actors.getFaction(actor));
-			if(field != nullptr && space.plant_canGrowHereAtSomePointToday(m_point, field->plantSpecies))
+			if(field != nullptr && space.plant_canGrowHereAtSomePointToday(m_point, field->m_plantSpecies))
 			{
 				begin(area, actor);
 				return;
@@ -132,7 +131,7 @@ void SowSeedsObjective::cancel(Area& area, const ActorIndex& actor)
 		if(field == nullptr)
 			return;
 		//TODO: check it is still planting season.
-		if(space.plant_canGrowHereAtSomePointToday(m_point, field->plantSpecies))
+		if(space.plant_canGrowHereAtSomePointToday(m_point, field->m_plantSpecies))
 			area.m_hasFarmFields.getForFaction(faction).addSowSeedsDesignation(area, m_point);
 	}
 }
@@ -189,7 +188,9 @@ FindPathResult SowSeedsPathRequest::readStep(Area& area, const TerrainFacade& te
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	constexpr bool unreserved = false;
-	return terrainFacade.findPathToSpaceDesignation(memo, SpaceDesignation::SowSeeds, actors.getFaction(actorIndex), actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_objective.m_detour, adjacent, unreserved, Config::maxRangeToSearchForHorticultureDesignations);
+	constexpr bool useAnyPoint = false;
+	constexpr bool useAdjacent = false;
+	return terrainFacade.findPathToSpaceDesignation<useAnyPoint, useAdjacent>(memo, SpaceDesignation::SowSeeds, actors.getFaction(actorIndex), actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_objective.m_detour, unreserved, Config::maxRangeToSearchForHorticultureDesignations);
 }
 void SowSeedsPathRequest::writeStep(Area& area, FindPathResult& result)
 {

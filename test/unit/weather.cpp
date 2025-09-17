@@ -6,7 +6,6 @@
 #include "../../engine/threadedTask.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
-#include "../../engine/hasShapes.hpp"
 #include "../../engine/plants.h"
 #include "config.h"
 #include <iterator>
@@ -87,11 +86,11 @@ TEST_CASE("weather")
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
 		hasTemperature.setAmbientSurfaceTemperature(freezing - 1);
 		CHECK(area.m_hasFluidGroups.getAll().empty());
-		CHECK(!space.solid_is(pond3));
+		CHECK(!space.solid_isAny(pond3));
 		static const ItemTypeId& chunk = ItemType::byName("chunk");
 		CHECK(space.item_getCount(pond3, chunk, ice) == Quantity::create(33));
-		CHECK(space.solid_is(pond1));
-		CHECK(space.solid_is(pond2));
+		CHECK(space.solid_isAny(pond1));
+		CHECK(space.solid_isAny(pond2));
 		CHECK(space.item_empty(above));
 		CHECK(hasTemperature.getAboveGroundFluidGroupsByMeltingPoint()[freezing].empty());
 		CHECK(hasTemperature.getAboveGroundPointsByMeltingPoint().contains(freezing));
@@ -102,10 +101,10 @@ TEST_CASE("weather")
 		CHECK(items.isOnSurface(chunk1));
 		hasTemperature.setAmbientSurfaceTemperature(freezing + 1);
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
-		CHECK(!space.solid_is(pond3));
+		CHECK(!space.solid_isAny(pond3));
 		CHECK(space.item_empty(pond3));
-		CHECK(!space.solid_is(pond2));
-		CHECK(!space.solid_is(pond1));
+		CHECK(!space.solid_isAny(pond2));
+		CHECK(!space.solid_isAny(pond1));
 		CHECK(!hasTemperature.getAboveGroundFluidGroupsByMeltingPoint()[freezing].empty());
 		CHECK(hasTemperature.getAboveGroundPointsByMeltingPoint()[freezing].empty());
 		CHECK(space.fluid_volumeOfTypeContains(pond1, water) == 100);

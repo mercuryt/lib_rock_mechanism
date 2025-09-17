@@ -4,7 +4,6 @@
 #include "actors/actors.h"
 #include "space/space.h"
 #include "../path/terrainFacade.hpp"
-#include "../hasShapes.hpp"
 // Path Request.
 SleepPathRequest::SleepPathRequest(Area& area, SleepObjective& so, const ActorIndex& actorIndex) :
 	m_sleepObjective(so)
@@ -35,28 +34,49 @@ FindPathResult SleepPathRequest::readStep(Area& area, const TerrainFacade& terra
 		m_maxDesireCandidate = area.getActors().getLocation(actorIndex);
 	if(m_maxDesireCandidate.empty())
 	{
-		auto condition = [this, &area, actorIndex](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
-		{
-			uint32_t desire = m_sleepObjective.desireToSleepAt(area, point, actorIndex);
-			if(desire == 3)
-			{
-				m_maxDesireCandidate = point;
-				return {true, point};
-			}
-			else if(m_indoorCandidate.empty() && desire == 2)
-				m_indoorCandidate = point;
-			else if(m_outdoorCandidate.empty() && desire == 1)
-				m_outdoorCandidate = point;
-			return {false, point};
-		};
 		constexpr bool anyOccupiedPoint = false;
+		constexpr bool useAdjacent = false;
 		if(faction.exists())
 		{
-			constexpr bool unreserved = true;
-			return terrainFacade.findPathToSpaceDesignationAndCondition<anyOccupiedPoint, decltype(condition)>(condition, memo, SpaceDesignation::Sleep, faction, start, facing, shape, m_sleepObjective.m_detour, adjacent, unreserved, Distance::max());
+			const RTreeBoolean& designations = area.m_spaceDesignations.getForFaction(faction).getForDesignation(SpaceDesignation::Sleep);
+			auto condition = [&](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
+			{
+				if(designations.query(point))
+				{
+					uint32_t desire = m_sleepObjective.desireToSleepAt(area, point, actorIndex);
+					if(desire == 3)
+					{
+						m_maxDesireCandidate = point;
+						return {true, point};
+					}
+					else if(m_indoorCandidate.empty() && desire == 2)
+						m_indoorCandidate = point;
+					else if(m_outdoorCandidate.empty() && desire == 1)
+						m_outdoorCandidate = point;
+				}
+				return {false, Point3D::null()};
+			};
+			// TODO: Use findPathToSpaceDesignationAndConditon.
+			return terrainFacade.findPathToConditionBreadthFirst<decltype(condition), anyOccupiedPoint, useAdjacent>(condition, memo, start, facing, shape, m_sleepObjective.m_detour, faction, Distance::max());
 		}
 		else
-			return terrainFacade.findPathToConditionBreadthFirst<anyOccupiedPoint, decltype(condition)>(condition, memo, start, facing, shape, m_sleepObjective.m_detour, adjacent, faction, Distance::max());
+		{
+			auto condition = [&](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
+			{
+				uint32_t desire = m_sleepObjective.desireToSleepAt(area, point, actorIndex);
+				if(desire == 3)
+				{
+					m_maxDesireCandidate = point;
+					return {true, point};
+				}
+				else if(m_indoorCandidate.empty() && desire == 2)
+					m_indoorCandidate = point;
+				else if(m_outdoorCandidate.empty() && desire == 1)
+					m_outdoorCandidate = point;
+				return {false, Point3D::null()};
+			};
+			return terrainFacade.findPathToConditionBreadthFirst<decltype(condition), anyOccupiedPoint, useAdjacent>(condition, memo, start, facing, shape, m_sleepObjective.m_detour, faction, Distance::max());
+		}
 	}
 	else
 	{
@@ -134,7 +154,7 @@ void SleepObjective::execute(Area& area, const ActorIndex& actor)
 	{
 		if(m_noWhereToSleepFound)
 		{
-			if(actors.predicateForAnyOccupiedPoint(actor, [&area](const Point3D& point){ return area.getSpace().isEdge(point); }))
+			if(actors.isOnEdge(actor))
 				// We are at the edge and can leave.
 				actors.leaveArea(actor);
 			else

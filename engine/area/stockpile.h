@@ -31,7 +31,7 @@ class StockPileObjective;
 class StockPile
 {
 	std::vector<ItemQuery> m_queries;
-	SmallSet<Point3D> m_points;
+	CuboidSet m_cuboids;
 	Quantity m_openPoints = Quantity::create(0);
 	Area& m_area;
 	FactionId m_faction;
@@ -59,9 +59,10 @@ public:
 	[[nodiscard]] bool isEnabled() const { return m_enabled; }
 	[[nodiscard]] bool hasProjectNeedingMoreWorkers() const;
 	[[nodiscard]] Simulation& getSimulation();
-	[[nodiscard]] bool contains(const Point3D& point) const { return m_points.contains(point); }
+	[[nodiscard]] bool contains(const Point3D& point) const { return m_cuboids.contains(point); }
 	[[nodiscard]] std::vector<ItemQuery>& getQueries() { return m_queries; }
 	[[nodiscard]] FactionId getFaction() { return m_faction; }
+	[[nodiscard]] const CuboidSet& getCuboids() { return m_cuboids; }
 	friend class AreaHasStockPilesForFaction;
 	friend class ReenableStockPileScheduledEvent;
 	friend class StockPileProject;
@@ -88,8 +89,6 @@ public:
 	PointIsPartOfStockPiles(const Point3D& b): m_point(b) { }
 	void recordMembership(StockPile& stockPile);
 	void recordNoLongerMember(StockPile& stockPile);
-	// When an item is added or removed update avalibility for all stockpiles.
-	void updateActive();
 	[[nodiscard]] StockPile* getForFaction(const FactionId& faction) { if(!m_stockPiles.contains(faction)) return nullptr; return m_stockPiles[faction].stockPile; }
 	[[nodiscard]] bool contains(const FactionId& faction) const { return m_stockPiles.contains(faction); }
 	[[nodiscard]] bool isAvalible(const FactionId& faction) const;

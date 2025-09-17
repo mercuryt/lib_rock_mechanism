@@ -11,7 +11,7 @@
 class Area;
 struct VisionRequest
 {
-	OccupiedSpaceForHasShape occupied;
+	CuboidSet occupied;
 	SmallSet<ActorReference> canSee = {};
 	SmallSet<ActorReference> canBeSeenBy = {};
 	Point3D location;
@@ -19,7 +19,7 @@ struct VisionRequest
 	ActorReference actor;
 	Distance range;
 	Facing4 facing;
-	VisionRequest(const Point3D& _location, const VisionCuboidId& _cuboid, const ActorReference& _actor, const Distance _range, const Facing4& _facing, const OccupiedSpaceForHasShape& _occupied) :
+	VisionRequest(const Point3D& _location, const VisionCuboidId& _cuboid, const ActorReference& _actor, const Distance _range, const Facing4& _facing, const CuboidSet& _occupied) :
 		occupied(_occupied), location(_location), cuboid(_cuboid), actor(_actor), range(_range), facing(_facing) { }
 	struct hash { [[nodiscard]] static bool operator()(const VisionRequest& request) { return request.actor.getReferenceIndex().get(); }};
 	[[nodiscard]] bool operator==(const VisionRequest& visionRequest) const { return visionRequest.actor == actor; }

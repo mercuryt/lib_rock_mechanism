@@ -60,7 +60,24 @@ public:
 	void load(const Json& data);
 	void onChangeAmbiantSurfaceTemperature();
 	template<typename Action>
-	void forEachData(Action&& action);
+	void forEachData(Action&& action)
+	{
+		forEachDataHasShapes(action);
+		action(m_growthEvent);
+		action(m_shapeGrowthEvent);
+		action(m_fluidEvent);
+		action(m_temperatureEvent);
+		action(m_endOfHarvestEvent);
+		action(m_foliageGrowthEvent);
+		action(m_species);
+		action(m_fluidSource);
+		action(m_quantityToHarvest);
+		action(m_percentGrown);
+		action(m_percentFoliage);
+		action(m_wildGrowth);
+		action(m_volumeFluidRequested);
+		action(m_onSurface);
+	}
 	PlantIndex create(PlantParamaters paramaters);
 	void destroy(const PlantIndex& index);
 	void die(const PlantIndex& index);
@@ -80,9 +97,8 @@ public:
 	void makeFoliageGrowthEvent(const PlantIndex& index);
 	void foliageGrowth(const PlantIndex& index);
 	void updateShape(const PlantIndex& index);
-	void setShape(const PlantIndex& index, const ShapeId& shape);
-	void setLocation(const PlantIndex& index, const Point3D& location, const Facing4& facing);
-	void exit(const PlantIndex& index);
+	void location_set(const PlantIndex& index, const Point3D& location, const Facing4& facing);
+	void location_clear(const PlantIndex& index);
 	// Plants are able to do a more efficient range based sort becasue no references to them are ever stored.
 	// Portables are required to swap one at a time.
 	void sortRange(const PlantIndex& begin, const PlantIndex& end);

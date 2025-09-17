@@ -3,6 +3,7 @@
 #include "../area/area.h"
 #include "../space/space.h"
 #include "../actors/actors.h"
+#include "../definitions/plantSpecies.h"
 
 GivePlantFluidProject::GivePlantFluidProject(const Point3D& location, Area& area, const FactionId& faction) :
 	Project(faction, area, location, Quantity::create(1)),
@@ -47,7 +48,7 @@ void GivePlantFluidProject::onCancel()
 		plant.exists() &&
 		m_area.getPlants().getVolumeFluidRequested(plant) != 0 &&
 		space.farm_contains(m_plantLocation, m_faction) &&
-		space.farm_get(m_plantLocation, m_faction)->plantSpecies == plants.getSpecies(plant)
+		space.farm_get(m_plantLocation, m_faction)->m_plantSpecies == plants.getSpecies(plant)
 	)
 		m_area.m_hasFarmFields.getForFaction(m_faction).addGivePlantFluidDesignation(m_area, m_plantLocation);
 }

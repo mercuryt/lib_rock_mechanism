@@ -2,20 +2,7 @@
 
 #include "definitions/materialType.h"
 #include "numericTypes/types.h"
-
-
-struct PointFeature
-{
-	PointFeatureTypeId pointFeatureTypeId;
-	MaterialTypeId materialType;
-	// TODO: Replace hewn with ItemType* to differentiate between walls made of carved space from those made from uncut stone or between wood planks and logs.
-	// TODO: collapse these into a bitset.
-	bool hewn = false;
-	bool closed = true;
-	bool locked = false;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(PointFeature, pointFeatureTypeId, materialType, hewn, closed, locked);
-	[[nodiscard]] bool operator==(const PointFeature& other) const = default;
-};
+#include "dataStructures/bitset.h"
 
 struct PointFeatureType
 {
@@ -27,7 +14,7 @@ struct PointFeatureType
 	const bool canStandAbove;
 	const bool isSupportAgainstCaveIn;
 	const bool blocksMultiTileShapesIfNotAtZeroZOffset;
-	const bool pointIsOpaque;
+	const bool opaque;
 	const Force motiveForce;
 	const uint value;
 	bool operator==(const PointFeatureType& x) const { return this == &x; }
@@ -39,6 +26,7 @@ static std::array<PointFeatureType, 10> pointFeatureTypeData = {{
 	{"door", false, false, true, false, false, false, true, true, Force::create(0), 1},
 	{"flap", false, false, false, false, false, false, true, true, Force::create(0), 1},
 	{"floodGate", true, true, false, false, true, false, true, false, Force::create(0), 1},
+	// Floor and hatch are not marked as opaque, they are handled seperately.
 	{"floor", false, false, false, true, false, false, true, false, Force::create(0), 1},
 	{"floorGrate", false, false, false, true, false, false, true, false, Force::create(0), 1},
 	{"fortification", true, true, false, false, true, true, true, false, Force::create(0), 1},
@@ -47,30 +35,46 @@ static std::array<PointFeatureType, 10> pointFeatureTypeData = {{
 	{"ramp", true, false, false, true, true, false, true, false, Force::create(0), 1},
 	{"stairs", true, false, false, true, true, false, true, false, Force::create(0), 1},
 }};
-class PointFeatureSet
+
+struct PointFeature
 {
-	std::vector<PointFeature> m_data;
-public:
-	void insert(const PointFeatureTypeId& typeId, const MaterialTypeId& materialType, bool hewn, bool closed, bool locked);
-	void remove(const PointFeatureTypeId& typeId);
-	void clear() { m_data.clear(); }
-	[[nodiscard]] bool contains(const PointFeatureTypeId& typeId) const;
-	[[nodiscard]] bool empty() const { return m_data.empty(); }
-	[[nodiscard]] bool canStandIn() const;
-	[[nodiscard]] bool canStandAbove() const;
-	[[nodiscard]] bool blocksEntrance() const;
-	[[nodiscard]] bool isOpaque() const;
-	[[nodiscard]] bool floorIsOpaque() const;
-	[[nodiscard]] const PointFeature& front() const { return m_data.front(); }
-	[[nodiscard]] const PointFeature& get(const PointFeatureTypeId& typeId) const { return const_cast<PointFeatureSet&>(*this).get(typeId); }
-	[[nodiscard]] const PointFeature* maybeGet(const PointFeatureTypeId& typeId) const { return const_cast<PointFeatureSet&>(*this).maybeGet(typeId); }
-	[[nodiscard]] PointFeature& get(const PointFeatureTypeId& typeId);
-	[[nodiscard]] PointFeature* maybeGet(const PointFeatureTypeId& typeId);
-	[[nodiscard]] const auto begin() const { return m_data.begin(); }
-	[[nodiscard]] const auto end() const { return m_data.end(); }
-	[[nodiscard]] auto begin() { return m_data.begin(); }
-	[[nodiscard]] auto end() { return m_data.end(); }
-	[[nodiscard]] auto size() const { return m_data.size(); }
-	[[nodiscard]] bool operator==(const PointFeatureSet& other) const = default;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(PointFeatureSet, m_data);
+	struct Primitive
+	{
+		MaterialTypeId::Primitive materialType;
+		PointFeatureTypeId pointFeatureType;
+		uint8_t hewnAndClosedAndLocked;
+		std::strong_ordering operator<=>(const Primitive& other) const { return pointFeatureType <=> other.pointFeatureType; }
+		bool operator==(const Primitive& other) const = default;
+		NLOHMANN_DEFINE_TYPE_INTRUSIVE(Primitive, materialType, pointFeatureType, hewnAndClosedAndLocked);
+	};
+	MaterialTypeId materialType;
+	PointFeatureTypeId pointFeatureType;
+	// TODO: Replace hewn with ItemTypeId to differentiate between walls made of carved space from those made from uncut stone or between wood planks and logs?
+	// Initalize hewn as false, closed as true, and locked as false.
+	BitSet<uint8_t, 3> hewnAndClosedAndLocked;
+	void setClosed(bool setTo) { hewnAndClosedAndLocked.set(1, setTo); }
+	void setLocked(bool setTo) { hewnAndClosedAndLocked.set(2, setTo); }
+	void clear();
+	[[nodiscard]] bool isHewn() const { return hewnAndClosedAndLocked.test(0); }
+	[[nodiscard]] bool isClosed() const { return hewnAndClosedAndLocked.test(1); }
+	[[nodiscard]] bool isLocked() const { return hewnAndClosedAndLocked.test(2); }
+	[[nodiscard]] bool exists() const { return materialType.exists(); }
+	[[nodiscard]] Primitive get() const { return {materialType.get(), pointFeatureType, hewnAndClosedAndLocked.data}; }
+	[[nodiscard]] std::strong_ordering operator<=>(const PointFeature& other) const { return pointFeatureType <=> other.pointFeatureType; }
+	[[nodiscard]] bool operator==(const PointFeature& other) const = default;
+	[[nodiscard]] std::string toString() const;
+	[[nodiscard]] static PointFeature null() { return {}; }
+	[[nodiscard]] static PointFeature create(const Primitive& primitive) { return {MaterialTypeId::create(primitive.materialType), primitive.pointFeatureType, BitSet<uint8_t, 3>::create(primitive.hewnAndClosedAndLocked)}; }
+	[[nodiscard]] static PointFeature create(const MaterialTypeId& materialType, const PointFeatureTypeId& pointFeatureType, bool hewn = false, bool closed = true, bool locked = false)
+	{
+		BitSet<uint8_t, 3> hewnAndClosedAndLocked;
+		hewnAndClosedAndLocked.set(0, hewn);
+		hewnAndClosedAndLocked.set(1, closed);
+		hewnAndClosedAndLocked.set(2, locked);
+		PointFeature output{materialType, pointFeatureType, hewnAndClosedAndLocked};
+		return output;
+	}
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(PointFeature, materialType, pointFeatureType, hewnAndClosedAndLocked);
+private:
+	void setHewn(bool setTo) { hewnAndClosedAndLocked.set(0, setTo); }
 };

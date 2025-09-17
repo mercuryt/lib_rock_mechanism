@@ -19,6 +19,7 @@ public:
 	bool empty() const { return m_designations.empty(); }
 	bool contains(const Point3D& point) const { return m_designations.contains(point); }
 	InstallItemProject& getForPoint(const Point3D& point) { return m_designations[point]; }
+	Point3D getPointInCuboid(const Cuboid& cuboid) const;
 	friend class AreaHasInstallItemDesignations;
 };
 class AreaHasInstallItemDesignations final

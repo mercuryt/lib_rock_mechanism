@@ -14,7 +14,7 @@
 #include "path/terrainFacade.hpp"
 #include "numericTypes/types.h"
 #include "objectives/wander.h"
-#include "portables.hpp"
+#include "portables.h"
 #include <algorithm>
 #include <memory>
 // Project worker.
@@ -89,23 +89,21 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep(Simulation&, Area*)
 		if(projectWorker.haulSubproject != nullptr)
 			continue;
 		ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-		auto destinationConditon = [this, actorIndex](const Point3D& point, const Facing4&) ->std::pair<bool, Point3D>
+		auto destinationConditon = [this, actorIndex](const Cuboid& cuboid) -> std::pair<bool, Point3D>
 		{
-			if(pointContainsDesiredItemOrActor(point, actorIndex))
-				return std::make_pair(true, point);
-			return std::make_pair(false, Point3D::null());
+			const Point3D point = containsDesiredItemOrActor(cuboid, actorIndex);
+			return {point.exists(), point};
 		};
 		// Path result is unused, running only for condition side effect.
 		constexpr bool anyOccupiedPoint = true;
 		constexpr bool adjacent = true;
 		[[maybe_unused]] FindPathResult result = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actorIndex)).
-			findPathToConditionBreadthFirstWithoutMemo<anyOccupiedPoint, decltype(destinationConditon)>(
+			findPathToConditionBreadthFirstWithoutMemo<decltype(destinationConditon), anyOccupiedPoint, adjacent>(
 				destinationConditon,
 				actors.getLocation(actorIndex),
 				actors.getFacing(actorIndex),
 				actors.getShape(actorIndex),
 				projectWorker.objective->m_detour,
-				adjacent,
 				actors.getFaction(actorIndex)
 			);
 		// Only make at most one per step.
@@ -196,12 +194,12 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep(Simulation&, Area* ar
 	}
 }
 void ProjectTryToMakeHaulSubprojectThreadedTask::clearReferences(Simulation&, Area*) { m_project.m_tryToHaulThreadedTask.clearPointer(); }
-bool ProjectTryToMakeHaulSubprojectThreadedTask::pointContainsDesiredItemOrActor(const Point3D& point, const ActorIndex& actor)
+Point3D ProjectTryToMakeHaulSubprojectThreadedTask::containsDesiredItemOrActor(const Cuboid& cuboid, const ActorIndex& actor)
 {
 	auto& space = m_project.m_area.getSpace();
 	Actors& actors = m_project.m_area.getActors();
 	Items& items = m_project.m_area.getItems();
-	for(const ItemIndex& item : space.item_getAll(point))
+	for(const ItemIndex& item : space.item_getAll(cuboid))
 	{
 		ItemReference itemRef = items.m_referenceData.getReference(item);
 		if(m_project.m_itemsToPickup.contains(itemRef))
@@ -209,7 +207,7 @@ bool ProjectTryToMakeHaulSubprojectThreadedTask::pointContainsDesiredItemOrActor
 			ActorOrItemReference ref = ActorOrItemReference::createForItem(itemRef);
 			m_haulProjectParamaters = HaulSubproject::tryToSetHaulStrategy(m_project, ref, actor, FluidTypeId::null(), CollisionVolume::null());
 			if(m_haulProjectParamaters.strategy != HaulStrategy::None)
-				return true;
+				return cuboid.m_high;
 		}
 		if(m_project.m_fluidContainersToPickup.contains(itemRef))
 		{
@@ -218,10 +216,10 @@ bool ProjectTryToMakeHaulSubprojectThreadedTask::pointContainsDesiredItemOrActor
 			CollisionVolume volume = m_project.getFluidVolumeForContainer(itemRef);
 			m_haulProjectParamaters = HaulSubproject::tryToSetHaulStrategy(m_project, ref, actor, fluidType, volume);
 			if(m_haulProjectParamaters.strategy != HaulStrategy::None)
-				return true;
+				return cuboid.m_high;
 		}
 	}
-	for(const ActorIndex& targetActor : space.actor_getAll(point))
+	for(const ActorIndex& targetActor : space.actor_getAll(cuboid))
 	{
 		ActorReference actorRef = actors.getReference(targetActor);
 		if(m_project.m_actorsToPickup.contains(actorRef))
@@ -229,10 +227,10 @@ bool ProjectTryToMakeHaulSubprojectThreadedTask::pointContainsDesiredItemOrActor
 			ActorOrItemReference ref = ActorOrItemReference::createForActor(actorRef);
 			m_haulProjectParamaters = HaulSubproject::tryToSetHaulStrategy(m_project, ref, actor, FluidTypeId::null(), CollisionVolume::null());
 			if(m_haulProjectParamaters.strategy != HaulStrategy::None)
-				return true;
+				return cuboid.m_high;
 		}
 	}
-	return false;
+	return Point3D::null();
 };
 ProjectTryToAddWorkersThreadedTask::ProjectTryToAddWorkersThreadedTask(Project& p) : m_project(p) { }
 void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
@@ -256,8 +254,9 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 		{
 			// Verify the worker can path to the job site.
 			TerrainFacade& terrainFacade = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(candidateIndex));
+			constexpr bool anyOccupiedPoint = false;
 			constexpr bool adjacent = true;
-			FindPathResult result = terrainFacade.findPathToWithoutMemo(actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), m_project.m_location, objective->m_detour, adjacent);
+			FindPathResult result = terrainFacade.findPathToWithoutMemo<anyOccupiedPoint, adjacent>(actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), m_project.m_location, objective->m_detour);
 			if(result.path.empty() && !result.useCurrentPosition)
 			{
 				m_cannotPathToJobSite.insert(candidate);
@@ -365,10 +364,9 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 			};
 			// Verfy the worker can path to the required materials. Cumulative for all candidates in this step but reset if not satisfied.
 			// capture by reference is used here because the pathing is being done immideatly instead of batched.
-			auto destinationCondition = [&](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
+			auto destinationCondition = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
 			{
-				auto& space = m_project.m_area.getSpace();
-				for(ItemIndex item : space.item_getAll(point))
+				for(ItemIndex item : space.item_getAll(cuboid))
 				{
 					if(items.reservable_isFullyReserved(item, m_project.m_faction))
 						continue;
@@ -382,14 +380,14 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 							continue;
 						recordItemOnGround(item, projectRequirementCounts);
 						if(m_project.reservationsComplete())
-							return std::make_pair(true, point);
+							return std::make_pair(true, items.getLocation(item));
 					}
 					if(ItemType::getCanHoldFluids(items.getItemType(item)) && !m_project.m_requiredFluids.empty())
 					{
 						recordContainerOnGround(item, m_project.m_requiredFluids.back().first);
 					}
 				}
-				for(ActorIndex actor : space.actor_getAll(point))
+				for(ActorIndex actor : space.actor_getAll(cuboid))
 				{
 					ActorReference actorRef = actors.getReference(actor);
 					for(const ActorReference& otherRef : m_project.m_requiredActors)
@@ -402,19 +400,24 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 							continue;
 						recordActorOnGround(actor);
 						if(m_project.reservationsComplete())
-							return std::make_pair(true, point);
+							return std::make_pair(true, actors.getLocation(actor));
 					}
 				}
-				for(const FluidData& fluidData : space.fluid_getAll(point))
+				for(const FluidData& fluidData : space.fluid_getAll(cuboid))
 				{
 					if(m_project.m_requiredFluids.contains(fluidData.type))
 					{
 						auto& requiredData = m_project.m_requiredFluids[fluidData.type];
 						if(requiredData.volumeFound < requiredData.volumeRequired)
 						{
-							recordFluidOnGround(fluidData.type, point);
-							if(m_project.reservationsComplete())
-								return std::make_pair(true, point);
+							// TODO: change group to use cuboid set.
+							for(const Point3D& point : fluidData.group->getPoints())
+								if(cuboid.contains(point))
+								{
+									recordFluidOnGround(fluidData.type, point);
+									if(m_project.reservationsComplete())
+										return std::make_pair(true, point);
+								}
 						}
 					}
 				}
@@ -425,7 +428,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 			constexpr bool anyOccupiedPoint = true;
 			constexpr bool detour = false;
 			constexpr bool adjacent = true;
-			[[maybe_unused]] FindPathResult result = terrainFacade.findPathToConditionBreadthFirstWithoutMemo<anyOccupiedPoint, decltype(destinationCondition)>(destinationCondition, actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), detour, adjacent);
+			[[maybe_unused]] FindPathResult result = terrainFacade.findPathToConditionBreadthFirstWithoutMemo<decltype(destinationCondition), anyOccupiedPoint, adjacent>(destinationCondition, actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), detour);
 		}
 	}
 	if(!m_project.reservationsComplete())
@@ -628,7 +631,7 @@ void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 	m_project.m_requiredFluids.clear();
 }
 // Derived classes are expected to provide getDuration, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete.
-Project::Project(const FactionId& faction, Area& area, const Point3D& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback, const SmallSet<Point3D>& additionalPointsToReserve) :
+Project::Project(const FactionId& faction, Area& area, const Point3D& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback, const CuboidSet& additionalPointsToReserve) :
 	m_finishEvent(area.m_eventSchedule),
 	m_tryToHaulEvent(area.m_eventSchedule),
 	m_tryToReserveEvent(area.m_eventSchedule),
@@ -643,9 +646,10 @@ Project::Project(const FactionId& faction, Area& area, const Point3D& location, 
 {
 	Space& space = m_area.getSpace();
 	space.reserve(m_location, m_canReserve, std::move(locationDishonorCallback));
-	for(const Point3D& point : additionalPointsToReserve)
-		// This isn't what required shape callback was meant for but the code would be the same. Rename it maybe?
-		space.reserve(point, m_canReserve, std::make_unique<ProjectRequiredShapeDishonoredCallback>(*this));
+	for(const Cuboid& cuboid : additionalPointsToReserve)
+		for(const Point3D& point : cuboid)
+			// This isn't what required shape callback was meant for but the code would be the same. Rename it maybe?
+			space.reserve(point, m_canReserve, std::make_unique<ProjectRequiredShapeDishonoredCallback>(*this));
 	space.project_add(m_location, *this);
 }
 Project::Project(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :

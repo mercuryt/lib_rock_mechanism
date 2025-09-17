@@ -14,15 +14,22 @@ public:
 	HasConstructionDesignationsForFaction(const FactionId& p) : m_faction(p) { }
 	HasConstructionDesignationsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const FactionId& faction, Area& area);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
+	[[nodiscard]] Json toJson() const;
 	// If pointFeatureType is null then construct a wall rather then a feature.
 	void designate(Area& area, const Point3D& point, const PointFeatureTypeId pointFeatureType, const MaterialTypeId& materialType);
 	void undesignate(const Point3D& point);
 	void remove(Area& area, const Point3D& point);
 	void removeIfExists(Area& area, const Point3D& point);
-	bool contains(const Point3D& point) const;
-	PointFeatureTypeId getForPoint(const Point3D& point) const;
-	bool empty() const;
+	[[nodiscard]] bool contains(const Point3D& point) const;
+	[[nodiscard]] PointFeatureTypeId getForPoint(const Point3D& point) const;
+	[[nodiscard]] bool empty() const;
+	[[nodiscard]] ConstructProject* getProjectWithCondition(const auto& shape, auto&& condition)
+	{
+		for(const auto& [point, project] : m_data)
+			if(shape.contains(point) && condition(*project))
+				return project.get();
+		return nullptr;
+	}
 	friend class AreaHasConstructionDesignations;
 };
 // To be used by Area.
@@ -35,7 +42,7 @@ public:
 	AreaHasConstructionDesignations(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
-	Json toJson() const;
+	[[nodiscard]] Json toJson() const;
 	void addFaction(const FactionId& faction);
 	void removeFaction(const FactionId& faction);
 	// If pointFeatureType is null then dig out fully rather then digging out a feature.
@@ -44,8 +51,9 @@ public:
 	void remove(const FactionId& faction, const Point3D& point);
 	void clearAll(const Point3D& point);
 	void clearReservations();
-	bool areThereAnyForFaction(const FactionId& faction) const;
-	bool contains(const FactionId& faction, const Point3D& point) const;
-	ConstructProject& getProject(const FactionId& faction, const Point3D& point);
-	HasConstructionDesignationsForFaction& getForFaction(const FactionId& faction) { return m_data[faction]; }
+	[[nodiscard]] bool areThereAnyForFaction(const FactionId& faction) const;
+	[[nodiscard]] bool contains(const FactionId& faction, const Point3D& point) const;
+	[[nodiscard]] ConstructProject& getProject(const FactionId& faction, const Point3D& point);
+	[[nodiscard]] ConstructProject* getProjectWithCondition(const FactionId& faction, const auto& shape, auto&& condition) { return m_data[faction].getProjectWithCondition(shape, condition); }
+	[[nodiscard]] HasConstructionDesignationsForFaction& getForFaction(const FactionId& faction) { return m_data[faction]; }
 };

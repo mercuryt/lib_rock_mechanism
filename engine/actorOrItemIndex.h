@@ -4,10 +4,10 @@
  */
 #pragma once
 #include "numericTypes/types.h"
-#include "hasShapeTypes.h"
 #include "config.h"
 #include "dishonorCallback.h"
 #include "numericTypes/index.h"
+#include "geometry/mapWithCuboidKeys.h"
 #include <compare>
 #include <functional>
 #include <iterator>
@@ -32,6 +32,8 @@ public:
 	ActorOrItemIndex& operator=(const ActorOrItemIndex& other) { m_index = other.m_index; m_isActor = other.m_isActor; return *this; }
 	static ActorOrItemIndex createForActor(const ActorIndex& actor) { return ActorOrItemIndex(actor, true); }
 	static ActorOrItemIndex createForItem(const ItemIndex& item) { return ActorOrItemIndex(item, false); }
+	static ActorOrItemIndex create(const ItemIndex& item) { return createForItem(item); }
+	static ActorOrItemIndex create(const ActorIndex& actor) { return createForActor(actor); }
 	static ActorOrItemIndex null() { return ActorOrItemIndex(); }
 	void clear() { m_index.clear(); m_isActor = false; }
 	void updateIndex(const HasShapeIndex& index) { m_index = index; }
@@ -61,11 +63,12 @@ public:
 	[[nodiscard]] ActorOrItemIndex getLeader(Area& area) const;
 
 	[[nodiscard]] bool canEnterCurrentlyFrom(Area& area, const Point3D& destination, const Point3D& origin) const;
-	[[nodiscard]] bool canEnterCurrentlyFromWithOccupied(Area& area, const Point3D& destination, const Point3D& origin, const OccupiedSpaceForHasShape& occupied) const;
+	[[nodiscard]] bool canEnterCurrentlyFromWithOccupied(Area& area, const Point3D& destination, const Point3D& origin, const CuboidSet& occupied) const;
 
 	[[nodiscard]] Point3D getLocation(const Area& area) const;
-	[[nodiscard]] const OccupiedSpaceForHasShape& getOccupied(const Area& area) const;
-	[[nodiscard]] SmallSet<Point3D> getAdjacentPoints(Area& area) const;
+	[[nodiscard]] const CuboidSet& getOccupied(const Area& area) const;
+	[[nodiscard]] const MapWithCuboidKeys<CollisionVolume>& getOccupiedWithVolume(const Area& area) const;
+	[[nodiscard]] CuboidSet getAdjacentCuboids(Area& area) const;
 	[[nodiscard]] bool isAdjacent(const Area& area, const ActorOrItemIndex& other) const;
 	[[nodiscard]] bool isAdjacentToActor(const Area& area, const ActorIndex& other) const;
 	[[nodiscard]] bool isAdjacentToItem(const Area& area, const ItemIndex& item) const;

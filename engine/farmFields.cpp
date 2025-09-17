@@ -8,216 +8,160 @@
 #include "simulation/simulation.h"
 #include "plants.h"
 #include "space/space.h"
-#include "hasShapes.hpp"
+#include "hasShapes.h"
 #include "actors/actors.h"
 #include <algorithm>
 bool HasFarmFieldsForFaction::hasGivePlantsFluidDesignations() const
 {
-	return !m_pointsWithPlantsNeedingFluid.empty();
+	return !m_plantsNeedingFluid.empty();
 }
-PlantIndex HasFarmFieldsForFaction::getHighestPriorityPlantForGiveFluid(Area& area)
+bool HasFarmFieldsForFaction::hasHarvestDesignations(Area& area) const
 {
-	assert(!m_pointsWithPlantsNeedingFluid.empty());
-	Plants& plants = area.getPlants();
-	Space& space = area.getSpace();
-	m_pointsWithPlantsNeedingFluid.eraseIf([&](const Point3D& point) { return !space.plant_exists(point); });
+	return area.getSpace().designation_anyForFaction(m_faction, SpaceDesignation::Harvest);
+}
+bool HasFarmFieldsForFaction::hasSowSeedsDesignations(Area& area) const
+{
+	return area.getSpace().designation_anyForFaction(m_faction, SpaceDesignation::SowSeeds);
+}
+PlantIndex HasFarmFieldsForFaction::getHighestPriorityPlantForGiveFluid()
+{
+	assert(!m_plantsNeedingFluid.empty());
 	if(!m_plantsNeedingFluidIsSorted)
 	{
-		m_pointsWithPlantsNeedingFluid.sort([&](const Point3D& a, const Point3D& b){
-		    	return plants.getStepAtWhichPlantWillDieFromLackOfFluid(space.plant_get(a)) < plants.getStepAtWhichPlantWillDieFromLackOfFluid(space.plant_get(b));
-		});
+		std::ranges::sort(m_plantsNeedingFluid.m_data, std::less{}, &std::pair<Step, PlantIndex>::first);
 		m_plantsNeedingFluidIsSorted = true;
 	}
-	PlantIndex output = space.plant_get(m_pointsWithPlantsNeedingFluid.front());
-	if(plants.getStepAtWhichPlantWillDieFromLackOfFluid(output) - area.m_simulation.m_step > Config::stepsTillDiePlantPriorityOveride)
-		return PlantIndex::null();
-	return output;
-}
-bool HasFarmFieldsForFaction::hasSowSeedsDesignations() const
-{
-	return !m_pointsNeedingSeedsSewn.empty();
-}
-bool HasFarmFieldsForFaction::hasHarvestDesignations() const
-{
-	return !m_pointsWithPlantsToHarvest.empty();
+	return m_plantsNeedingFluid.front().second;
 }
 PlantSpeciesId HasFarmFieldsForFaction::getPlantSpeciesFor(const Point3D& point) const
 {
 	for(const FarmField& farmField : m_farmFields)
-		if(farmField.points.contains(point))
-			return farmField.plantSpecies;
+		if(farmField.m_cuboids.contains(point))
+			return farmField.m_plantSpecies;
 	std::unreachable();
 	return PlantSpecies::byName("");
-}
-void HasFarmFieldsForFaction::addGivePlantFluidDesignation(Area& area, const Point3D& location)
-{
-	assert(!m_pointsWithPlantsNeedingFluid.contains(location));
-	m_plantsNeedingFluidIsSorted = false;
-	m_pointsWithPlantsNeedingFluid.insert(location);
-	 area.getSpace().designation_set(location, m_faction, SpaceDesignation::GivePlantFluid);
-}
-void HasFarmFieldsForFaction::removeGivePlantFluidDesignation(Area& area, const Point3D& location)
-{
-	assert(m_pointsWithPlantsNeedingFluid.contains(location));
-	m_pointsWithPlantsNeedingFluid.erase(location);
-	 area.getSpace().designation_unset(location, m_faction, SpaceDesignation::GivePlantFluid);
-}
-void HasFarmFieldsForFaction::addSowSeedsDesignation(Area& area, const Point3D& point)
-{
-	assert(!m_pointsNeedingSeedsSewn.contains(point));
-	m_pointsNeedingSeedsSewn.insert(point);
-	 area.getSpace().designation_set(point, m_faction, SpaceDesignation::SowSeeds);
-}
-void HasFarmFieldsForFaction::removeSowSeedsDesignation(Area& area, const Point3D& point)
-{
-	assert(m_pointsNeedingSeedsSewn.contains(point));
-	m_pointsNeedingSeedsSewn.erase(point);
-	 area.getSpace().designation_unset(point, m_faction, SpaceDesignation::SowSeeds);
 }
 void HasFarmFieldsForFaction::addHarvestDesignation(Area& area, const PlantIndex& plant)
 {
 	Point3D location = area.getPlants().getLocation(plant);
-	assert(!m_pointsWithPlantsToHarvest.contains(location));
-	m_pointsWithPlantsToHarvest.insert(location);
-	 area.getSpace().designation_set(location, m_faction, SpaceDesignation::Harvest);
+	area.getSpace().designation_set(location, m_faction, SpaceDesignation::Harvest);
 }
 void HasFarmFieldsForFaction::removeHarvestDesignation(Area& area, const PlantIndex& plant)
 {
 	Point3D location = area.getPlants().getLocation(plant);
-	assert(m_pointsWithPlantsToHarvest.contains(location));
-	m_pointsWithPlantsToHarvest.erase(location);
-	 area.getSpace().designation_unset(location, m_faction, SpaceDesignation::Harvest);
+	area.getSpace().designation_unset(location, m_faction, SpaceDesignation::Harvest);
 }
 void HasFarmFieldsForFaction::setDayOfYear(Area& area, uint32_t dayOfYear)
 {
 	//TODO: Add sow designation when blocking item or plant is removed.
 	for(FarmField& farmField : m_farmFields)
-		if(farmField.plantSpecies.exists())
+		if(farmField.m_plantSpecies.exists())
 		{
-			if(PlantSpecies::getDayOfYearForSowStart(farmField.plantSpecies) == dayOfYear)
+			if(PlantSpecies::getDayOfYearForSowStart(farmField.m_plantSpecies) == dayOfYear)
 			{
 				Space& space = area.getSpace();
-				for(const Point3D& point : farmField.points)
-					if(space.plant_canGrowHereAtSomePointToday(point, farmField.plantSpecies))
-						addSowSeedsDesignation(area, point);
-				farmField.timeToSow = true;
+				if(space.plant_canGrowHereAtSomePointToday(farmField.m_cuboids.front().m_high, farmField.m_plantSpecies))
+					addSowSeedsDesignation(area, farmField.m_cuboids);
+				farmField.m_timeToSow = true;
 			}
-			if(PlantSpecies::getDayOfYearForSowEnd(farmField.plantSpecies) == dayOfYear)
+			if(PlantSpecies::getDayOfYearForSowEnd(farmField.m_plantSpecies) == dayOfYear)
 			{
-				assert(farmField.timeToSow);
-				farmField.timeToSow = false;
-				for(const Point3D& point : farmField.points)
-					if(m_pointsNeedingSeedsSewn.contains(point))
-						removeSowSeedsDesignation(area, point);
+				assert(farmField.m_timeToSow);
+				farmField.m_timeToSow = false;
+				maybeRemoveSowSeedsDesignation(area, farmField.m_cuboids);
 			}
 		}
 }
-FarmField& HasFarmFieldsForFaction::create(Area& area, SmallSet<Point3D>&& space)
+FarmField& HasFarmFieldsForFaction::create(Area& area, CuboidSet&& space)
 {
 	m_farmFields.emplace(std::move(space));
 	auto& field = m_farmFields.back();
-	for(const Point3D& point : field.points)
-		 area.getSpace().farm_insert(point, m_faction, field);
+	area.getSpace().farm_insert(field.m_cuboids, m_faction, field);
 	return field;
 }
-FarmField& HasFarmFieldsForFaction::create(Area& area, const SmallSet<Point3D>& space)
+FarmField& HasFarmFieldsForFaction::create(Area& area, const CuboidSet& newCuboids)
 {
-	SmallSet<Point3D> adapter;
-	adapter.maybeInsertAll(space.begin(), space.end());
+	CuboidSet adapter;
+	adapter.addSet(newCuboids);
 	return create(area, std::move(adapter));
 }
-FarmField& HasFarmFieldsForFaction::create(Area& area, const Cuboid& cuboid)
+FarmField& HasFarmFieldsForFaction::create(Area& area, const Cuboid& cuboid) { return create(area, CuboidSet::create(cuboid)); }
+void HasFarmFieldsForFaction::extend(Area& area, FarmField& farmField, CuboidSet& cuboids)
 {
-	auto set = cuboid.toSet();
-	return create(area, std::move(set));
-}
-FarmField& HasFarmFieldsForFaction::create(Area& area, const CuboidSet& cuboidSet)
-{
-	auto set = cuboidSet.toPointSet();
-	return create(area, std::move(set));
-}
-void HasFarmFieldsForFaction::extend(Area& area, FarmField& farmField, SmallSet<Point3D>& space)
-{
-	farmField.points.maybeInsertAll(space.begin(), space.end());
-	if(farmField.plantSpecies.exists())
-		designatePoints(area, farmField, space);
-	for(const Point3D& point : space)
-		 area.getSpace().farm_insert(point, m_faction, farmField);
+	farmField.m_cuboids.addSet(cuboids);
+	if(farmField.m_plantSpecies.exists())
+		designatePoints(area, farmField, cuboids);
+	area.getSpace().farm_insert(cuboids, m_faction, farmField);
 }
 void HasFarmFieldsForFaction::setSpecies(Area& area, FarmField& farmField, const PlantSpeciesId& plantSpecies)
 {
-	assert(farmField.plantSpecies.empty());
-	farmField.plantSpecies = plantSpecies;
+	assert(farmField.m_plantSpecies.empty());
+	farmField.m_plantSpecies = plantSpecies;
 	int32_t day = DateTime(area.m_simulation.m_step).day;
 	if(day >= PlantSpecies::getDayOfYearForSowStart(plantSpecies) && day <= PlantSpecies::getDayOfYearForSowEnd(plantSpecies))
 	{
-		farmField.timeToSow = true;
-		designatePoints(area, farmField, farmField.points);
+		farmField.m_timeToSow = true;
+		designatePoints(area, farmField, farmField.m_cuboids);
 	}
 }
-void HasFarmFieldsForFaction::designatePoints(Area& area, FarmField& farmField, SmallSet<Point3D>& designated)
+void HasFarmFieldsForFaction::designatePoints(Area& area, FarmField& farmField, CuboidSet& designated)
 {
 	// Designate for sow if the season is right.
-	if(farmField.timeToSow)
-		for(const Point3D& point : designated)
-			addSowSeedsDesignation(area, point);
+	if(farmField.m_timeToSow)
+		addSowSeedsDesignation(area, designated);
 	Space& space = area.getSpace();
 	Plants& plants = area.getPlants();
-	for(const Point3D& point : designated)
-		if(space.plant_exists(point))
-		{
-			const PlantIndex& plant = space.plant_get(point);
-			// Designate plants already existing for fluid if the species is right and they need fluid.
-			if(plants.getSpecies(plant) == farmField.plantSpecies && plants.getVolumeFluidRequested(plant) != 0)
-				addGivePlantFluidDesignation(area, point);
-			if(plants.readyToHarvest(plant))
-				addHarvestDesignation(area, plant);
-		}
+	for(const PlantIndex& plant : space.plant_getAll(designated))
+	{
+		if(plants.getSpecies(plant) == farmField.m_plantSpecies && plants.getVolumeFluidRequested(plant) != 0)
+			addGivePlantFluidDesignation(area, plants.getLocation(plant));
+		if(plants.readyToHarvest(plant))
+			addHarvestDesignation(area, plant);
+	}
 }
 void HasFarmFieldsForFaction::clearSpecies(Area& area, FarmField& farmField)
 {
-	assert(farmField.plantSpecies.exists());
-	farmField.plantSpecies.clear();
-	undesignatePoints(area, farmField.points);
+	assert(farmField.m_plantSpecies.exists());
+	farmField.m_plantSpecies.clear();
+	undesignatePoints(area, farmField.m_cuboids);
 }
-void HasFarmFieldsForFaction::shrink(Area& area, FarmField& farmField, SmallSet<Point3D>& undesignated)
+void HasFarmFieldsForFaction::shrink(Area& area, FarmField& farmField, CuboidSet& undesignated)
 {
 	undesignatePoints(area, undesignated);
 	Space& space = area.getSpace();
-	for(const Point3D& point : undesignated)
-		space.farm_remove(point, m_faction);
-	farmField.points.eraseIf([&](const Point3D& point){ return undesignated.contains(point); });
-	if(farmField.points.empty())
+	space.farm_remove(undesignated, m_faction);
+	farmField.m_cuboids.removeContainedAndFragmentInterceptedAll(undesignated);
+	if(farmField.m_cuboids.empty())
 		m_farmFields.erase(farmField);
 }
 void HasFarmFieldsForFaction::remove(Area& area, FarmField& farmField)
 {
-	shrink(area, farmField, farmField.points);
+	shrink(area, farmField, farmField.m_cuboids);
 }
-void HasFarmFieldsForFaction::undesignatePoints(Area& area, SmallSet<Point3D>& undesignated)
+void HasFarmFieldsForFaction::undesignatePoints(Area& area, CuboidSet& undesignated)
 {
-	Space& space = area.getSpace();
-	for(const Point3D& point : undesignated)
-	{
-		if(space.plant_exists(point))
-		{
-			const PlantIndex& plant = space.plant_get(point);
-			if(space.designation_has(point, m_faction, SpaceDesignation::GivePlantFluid))
-				area.m_hasFarmFields.getForFaction(m_faction).removeGivePlantFluidDesignation(area, point);
-			if(space.designation_has(point, m_faction, SpaceDesignation::Harvest))
-				area.m_hasFarmFields.getForFaction(m_faction).removeHarvestDesignation(area, plant);
-		}
-		else if(space.designation_has(point, m_faction, SpaceDesignation::SowSeeds))
-				area.m_hasFarmFields.getForFaction(m_faction).removeSowSeedsDesignation(area, point);
-	}
+	area.m_hasFarmFields.getForFaction(m_faction).maybeRemoveSowSeedsDesignation(area, undesignated);
+	area.m_hasFarmFields.getForFaction(m_faction).maybeRemoveHarvestDesignation(area, undesignated);
+	area.m_hasFarmFields.getForFaction(m_faction).maybeRemoveGivePlantFluidDesignation(area, undesignated);
 }
 void HasFarmFieldsForFaction::setPointData(Area& area)
 {
 	Space& space = area.getSpace();
 	for(FarmField& field : m_farmFields)
-		for(const Point3D& point : field.points)
-			space.farm_insert(point, m_faction, field);
+		space.farm_insert(field.m_cuboids, m_faction, field);
 }
+template<typename ShapeT>
+void HasFarmFieldsForFaction::addGivePlantFluidDesignation(Area& area, const ShapeT& shape)
+{
+	m_plantsNeedingFluidIsSorted = false;
+	const Plants& plants = area.getPlants();
+	for(const PlantIndex& plant : area.getSpace().plant_getAll(shape))
+		m_plantsNeedingFluid.insert({plants.getStepAtWhichPlantWillDieFromLackOfFluid(plant), plant});
+	area.getSpace().designation_set(shape, m_faction, SpaceDesignation::GivePlantFluid);
+}
+template void HasFarmFieldsForFaction::addGivePlantFluidDesignation<Point3D>(Area& area, const Point3D& shape);
+template void HasFarmFieldsForFaction::addGivePlantFluidDesignation<Cuboid>(Area& area, const Cuboid& shape);
+template void HasFarmFieldsForFaction::addGivePlantFluidDesignation<CuboidSet>(Area& area, const CuboidSet& shape);
 HasFarmFieldsForFaction& AreaHasFarmFields::getForFaction(const FactionId& faction)
 {
 	if(!m_data.contains(faction))
@@ -232,8 +176,8 @@ void AreaHasFarmFields::load(const Json& data)
 		assert(!m_data.contains(faction));
 		m_data.emplace(faction, pair[1]);
 	}
-	for(auto& [faction, data] : m_data)
-		data.setPointData(m_area);
+	for(auto& [faction, fieldData] : m_data)
+		fieldData.setPointData(m_area);
 }
 Json AreaHasFarmFields::toJson() const
 {
@@ -252,11 +196,11 @@ void AreaHasFarmFields::unregisterFaction(const FactionId& faction)
 	assert(m_data.contains(faction));
 	m_data.erase(faction);
 }
-PlantIndex AreaHasFarmFields::getHighestPriorityPlantForGiveFluid(Area& area, const FactionId& faction)
+PlantIndex AreaHasFarmFields::getHighestPriorityPlantForGiveFluid(const FactionId& faction)
 {
 	if(!m_data.contains(faction))
 		return PlantIndex::null();
-	return m_data[faction].getHighestPriorityPlantForGiveFluid(area);
+	return m_data[faction].getHighestPriorityPlantForGiveFluid();
 }
 void AreaHasFarmFields::removeAllSowSeedsDesignations(const Point3D& point)
 {
@@ -274,19 +218,19 @@ bool AreaHasFarmFields::hasGivePlantsFluidDesignations(const FactionId& faction)
 {
 	if(!m_data.contains(faction))
 		return false;
-	return m_data[faction].hasGivePlantsFluidDesignations();
+	return m_area.m_spaceDesignations.getForFaction(faction).any(SpaceDesignation::GivePlantFluid);
 }
 bool AreaHasFarmFields::hasSowSeedsDesignations(const FactionId& faction) const
 {
 	if(!m_data.contains(faction))
 		return false;
-	return m_data[faction].hasSowSeedsDesignations();
+	return m_area.m_spaceDesignations.getForFaction(faction).any(SpaceDesignation::SowSeeds);
 }
 bool AreaHasFarmFields::hasHarvestDesignations(const FactionId& faction) const
 {
 	if(!m_data.contains(faction))
 		return false;
-	return m_data[faction].hasHarvestDesignations();
+	return m_area.m_spaceDesignations.getForFaction(faction).any(SpaceDesignation::Harvest);
 }
 PlantSpeciesId AreaHasFarmFields::getPlantSpeciesFor(const FactionId& faction, const Point3D& location) const
 {

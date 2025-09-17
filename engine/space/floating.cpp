@@ -2,7 +2,7 @@
 #include "space.h"
 #include "../area/area.h"
 #include "../items/items.h"
-#include "../portables.hpp"
+#include "../portables.h"
 
 void Space::floating_maybeSink(const Point3D& index)
 {

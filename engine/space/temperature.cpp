@@ -6,25 +6,25 @@
 #include "../numericTypes/types.h"
 void Space::temperature_updateDelta(const Point3D& point, const TemperatureDelta& deltaDelta)
 {
+	assert(deltaDelta != 0);
 	TemperatureDelta delta = m_temperatureDelta.queryGetOneOr(point, TemperatureDelta::create(0));
 	delta += deltaDelta;
 	if(delta == 0)
 		m_temperatureDelta.maybeRemove(point);
 	else
 		m_temperatureDelta.maybeInsertOrOverwrite(point, delta);
-	//TODO: delta is queried twice here.
-	Temperature temperature = temperature_get(point);
-	if(solid_is(point))
+	Temperature temperature = temperature_getAmbient(point) + delta;
+	const MaterialTypeId& solidMaterial = solid_get(point);
+	if(solidMaterial.exists())
 	{
-		auto material = solid_get(point);
 		if(
-			MaterialType::canBurn(material) &&
-			MaterialType::getIgnitionTemperature(material) <= temperature
+			MaterialType::canBurn(solidMaterial) &&
+			MaterialType::getIgnitionTemperature(solidMaterial) <= temperature
 		)
-			fire_maybeIgnite(point, material);
+			fire_maybeIgnite(point, solidMaterial);
 		else if(
-			MaterialType::getMeltingPoint(material).exists() &&
-			MaterialType::getMeltingPoint(material) <= temperature
+			MaterialType::getMeltingPoint(solidMaterial).exists() &&
+			MaterialType::getMeltingPoint(solidMaterial) <= temperature
 		)
 			temperature_melt(point);
 	}
@@ -63,18 +63,18 @@ void Space::temperature_freeze(const Point3D& point, const FluidTypeId& fluidTyp
 		Quantity createChunkQuantity = Quantity::create((fluidVolume / chunkVolumeSingle).get());
 		if(createChunkQuantity != 0)
 		{
-			item_addGeneric(point, chunk, FluidType::getFreezesInto(fluidType), createChunkQuantity);
+			[[maybe_unused]] const ItemIndex item = item_addGeneric(point, chunk, FluidType::getFreezesInto(fluidType), createChunkQuantity);
 			fluidVolume -= chunkVolumeSingle.get() * createChunkQuantity.get();
 		}
 		Quantity createPileQuantity = Quantity::create((fluidVolume / pileVolumeSingle).get());
 		if(createPileQuantity != 0)
-			item_addGeneric(point, pile, FluidType::getFreezesInto(fluidType), createPileQuantity);
+			[[maybe_unused]] const ItemIndex item = item_addGeneric(point, pile, FluidType::getFreezesInto(fluidType), createPileQuantity);
 		assert(fluidVolume == createPileQuantity.get() * pileVolumeSingle.get());
 	}
 }
 void Space::temperature_melt(const Point3D& point)
 {
-	assert(solid_is(point));
+	assert(solid_isAny(point));
 	assert(MaterialType::getMeltsInto(solid_get(point)).exists());
 	FluidTypeId fluidType = MaterialType::getMeltsInto(solid_get(point));
 	solid_setNot(point);
@@ -115,16 +115,16 @@ Temperature Space::temperature_get(const Point3D& point) const
 }
 bool Space::temperature_transmits(const Point3D& point) const
 {
-	if(solid_is(point))
+	if(solid_isAny(point))
 		return false;
-	const PointFeature* door = pointFeature_at(point, PointFeatureTypeId::Door);
-	if(door != nullptr && door->closed)
+	const PointFeature& door = pointFeature_at(point, PointFeatureTypeId::Door);
+	if(door.exists() && door.isClosed())
 		return false;
-	const PointFeature* flap = pointFeature_at(point, PointFeatureTypeId::Flap);
-	if(flap != nullptr && flap->closed)
+	const PointFeature& flap = pointFeature_at(point, PointFeatureTypeId::Flap);
+	if(flap.exists() && flap.isClosed())
 		return false;
-	const PointFeature* hatch = pointFeature_at(point, PointFeatureTypeId::Hatch);
-	if(hatch != nullptr && hatch->closed)
+	const PointFeature& hatch = pointFeature_at(point, PointFeatureTypeId::Hatch);
+	if(hatch.exists() && hatch.isClosed())
 		return false;
 	return true;
 }

@@ -2,6 +2,7 @@
 #include "actors/actors.h"
 #include "items/items.h"
 #include "area/area.h"
+#include "space/space.h"
 #include "deserializationMemo.h"
 #include "definitions/materialType.h"
 #include "path/pathRequest.h"
@@ -11,7 +12,7 @@
 #include "util.h"
 #include "simulation/simulation.h"
 #include "definitions/itemType.h"
-#include "hasShapes.hpp"
+#include "hasShapes.h"
 
 #include <chrono>
 #include <cstdint>
@@ -473,7 +474,6 @@ CraftJob* HasCraftingLocationsAndJobsForFaction::getJobForAtLocation(const Actor
 					craftJob->stepIterator->skillType == skillType &&
 					actors.skill_getLevel(actor, skillType) >= craftJob->minimumSkillLevel
 				)
-
 					return craftJob;
 	return nullptr;
 }

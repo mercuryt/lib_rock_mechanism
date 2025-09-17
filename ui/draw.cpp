@@ -905,7 +905,7 @@ void Draw::multiTileActor(const ActorIndex& actor)
 	Actors& actors = m_window.m_area->getActors();
 	AnimalSpeciesDisplayData& display = displayData::actorData[actors.getSpecies(actor)];
 	auto [sprite, origin] = sprites::make(display.image);
-	const OccupiedSpaceForHasShape& occupiedBlocks = actors.getOccupied(actor);
+	const MapWithCuboidKeys<CollisionVolume>& occupiedBlocks = actors.getOccupied(actor);
 	// TODO: move display scale to display data.
 	if(Shape::getDisplayScale(actors.getShape(actor)) == 1)
 	{
@@ -935,7 +935,7 @@ void Draw::multiTileActor(const ActorIndex& actor)
 		spriteOnBlockWithScale(topLeft, sprite, Shape::getDisplayScale(actors.getShape(actor)), &display.color);
 	}
 }
-void Draw::multiTileBorder(const OccupiedSpaceForHasShape& blocksOccpuied, sf::Color color, float thickness)
+void Draw::multiTileBorder(const MapWithCuboidKeys<CollisionVolume>& blocksOccpuied, sf::Color color, float thickness)
 {
 	Space& space = m_window.m_area->getSpace();
 	for(const Point3D& point : blocksOccpuied)

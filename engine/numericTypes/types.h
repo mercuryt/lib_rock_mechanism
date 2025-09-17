@@ -32,11 +32,30 @@ public:
 inline void to_json(Json& data, const Step& index) { data = index.get(); }
 inline void from_json(const Json& data, Step& index) { index = Step::create(data.get<StepWidth>()); }
 
+class TemperatureDelta;
 using TemperatureWidth = uint32_t;
 class Temperature : public StrongInteger<Temperature, TemperatureWidth>
 {
+	using Base = StrongInteger<Temperature, TemperatureWidth>;
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Temperature& index) const { return index.get(); } };
+	// Rather then assert failing when a TemperatureDelta addition or subtraction would cause an overflow just pin to max or min value.
+	Temperature& operator+=(const TemperatureDelta& delta);
+	Temperature& operator-=(const TemperatureDelta& delta);
+	Temperature operator+(const TemperatureDelta& delta) const;
+	Temperature operator-(const TemperatureDelta& delta) const;
+	Temperature& operator+=(const Temperature& other) { return Base::operator+=(other); }
+	Temperature& operator-=(const Temperature& other) { return Base::operator-=(other); }
+	Temperature operator+(const Temperature& other) const { return Base::operator+(other); }
+	Temperature operator-(const Temperature& other) const { return Base::operator-(other); }
+	template<Numeric Other>
+	Temperature& operator+=(const Other& other) { return Base::operator+=(other); }
+	template<Numeric Other>
+	Temperature& operator-=(const Other& other) { return Base::operator-=(other); }
+	template<Numeric Other>
+	Temperature operator+(const Other& other) const { return Base::operator+(other); }
+	template<Numeric Other>
+	Temperature operator-(const Other& other) const { return Base::operator-(other); }
 };
 inline void to_json(Json& data, const Temperature& index) { data = index.get(); }
 inline void from_json(const Json& data, Temperature& index) { index = Temperature::create(data.get<TemperatureWidth>()); }

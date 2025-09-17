@@ -4,11 +4,12 @@
 
 #pragma once
 
-#include "config.h"
-#include "dataStructures/strongVector.h"
-#include "numericTypes/types.h"
-#include "numericTypes/index.h"
-#include "geometry/point3D.h"
+#include "../config.h"
+#include "../dataStructures/strongVector.h"
+#include "../numericTypes/types.h"
+#include "../numericTypes/index.h"
+#include "../geometry/cuboidSet.h"
+#include "../geometry/mapWithCuboidKeys.h"
 
 #include <cassert>
 #include <vector>
@@ -18,70 +19,62 @@
 class Space;
 struct DeserializationMemo;
 
-struct OffsetAndVolume
-{
-	Offset3D offset;
-	CollisionVolume volume;
-	[[nodiscard]] bool operator==(const OffsetAndVolume& other) const { return offset == other.offset; }
-	[[nodiscard]] bool operator!=(const OffsetAndVolume& other) const { return offset != other.offset; }
-	[[nodiscard]] std::strong_ordering operator<=>(const OffsetAndVolume& other) const { return offset <=> other.offset; }
-	[[nodiscard]] std::string toString() const { return "{" + offset.toString() + ", " + volume.toString() + "}"; }
-};
-inline void to_json(Json& data, const OffsetAndVolume& x) { data[0] = x.offset; data[1] = x.volume; }
-inline void from_json(const Json& data, OffsetAndVolume& x) { data[0].get_to(x.offset); data[1].get_to(x.volume); }
 struct ShapeParamaters
 {
-	SmallSet<OffsetAndVolume> positions;
+	MapWithOffsetCuboidKeys<CollisionVolume> positions;
 	std::string name;
 	uint32_t displayScale;
 };
 
 struct Shape
 {
-	StrongVector<std::array<SmallSet<OffsetAndVolume>,4>, ShapeId> m_occupiedOffsetsCache;
-	StrongVector<std::array<SmallSet<Offset3D>,4>, ShapeId> m_adjacentOffsetsCache;
-	StrongVector<SmallSet<OffsetAndVolume>, ShapeId> m_positions;
+	StrongVector<std::array<MapWithOffsetCuboidKeys<CollisionVolume>,4>, ShapeId> m_occupiedOffsetsCache;
+	StrongVector<std::array<OffsetCuboid,4>, ShapeId> m_boundryOffsetCache;
+	StrongVector<std::array<OffsetCuboidSet,4>, ShapeId> m_adjacentOffsetsCache;
+	StrongVector<MapWithOffsetCuboidKeys<CollisionVolume>, ShapeId> m_positions;
 	StrongVector<std::string, ShapeId> m_name;
 	StrongBitSet<ShapeId> m_isMultiTile;
 	StrongBitSet<ShapeId> m_isRadiallySymetrical;
 	//TODO: This doesn't belong here. Move to UI.
 	StrongVector<uint32_t, ShapeId> m_displayScale;
 public:
-	static ShapeId create(const std::string name, SmallSet<OffsetAndVolume> positions, uint32_t displayScale);
+	static ShapeId create(const std::string name, MapWithOffsetCuboidKeys<CollisionVolume>&& positions, uint32_t displayScale);
 	[[nodiscard]] static Json toJson(const ShapeId& id);
 	[[nodiscard]] static uint16_t size(const ShapeId& id);
-	[[nodiscard]] static SmallSet<OffsetAndVolume> positionsWithFacing(const ShapeId& id, const Facing4& facing);
-	[[nodiscard]] static SmallSet<Offset3D> adjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing);
-	[[nodiscard]] static SmallSet<OffsetAndVolume> makeOccupiedPositionsWithFacing(const ShapeId& id, const Facing4& facing);
-	[[nodiscard]] static SmallSet<Offset3D> makeAdjacentPositionsWithFacing(const ShapeId& id, const Facing4& facing);
-	[[nodiscard]] static SmallSet<Offset3D> positionOffsets(const OffsetAndVolume& position);
-	[[nodiscard]] static SmallSet<Point3D> getPointsOccupiedAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing);
-	[[nodiscard]] static SmallSet<Point3D> getPointsOccupiedAndAdjacentAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing);
-	[[nodiscard]] static SmallSet<std::pair<Point3D, CollisionVolume>> getPointsOccupiedAtWithVolumes(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing);
-	[[nodiscard]] static SmallSet<Point3D> getPointsWhichWouldBeAdjacentAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing);
+	[[nodiscard]] static const MapWithOffsetCuboidKeys<CollisionVolume>& positionsWithFacing(const ShapeId& id, const Facing4& facing);
+	[[nodiscard]] static const OffsetCuboidSet& adjacentCuboidsWithFacing(const ShapeId& id, const Facing4& facing);
+	[[nodiscard]] static MapWithOffsetCuboidKeys<CollisionVolume> makeOccupiedCuboidsWithFacing(const ShapeId& id, const Facing4& facing);
+	[[nodiscard]] static OffsetCuboidSet makeAdjacentCuboidsWithFacing(const ShapeId& id, const Facing4& facing);
+	[[nodiscard]] static OffsetCuboid makeOffsetCuboidBoundryWithFacing(const ShapeId& id, const Facing4& facing);
+	[[nodiscard]] static MapWithOffsetCuboidKeys<CollisionVolume> getCuboidsWithVolumeByZLevel(const ShapeId& id, const Distance& z);
+	[[nodiscard]] static CuboidSet getCuboidsOccupiedAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing);
+	[[nodiscard]] static CuboidSet getCuboidsOccupiedAndAdjacentAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing);
+	[[nodiscard]] static MapWithCuboidKeys<CollisionVolume> getCuboidsOccupiedAtWithVolume(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing);
+	[[nodiscard]] static CuboidSet getCuboidsWhichWouldBeAdjacentAt(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing);
 	[[nodiscard]] static Point3D getPointWhichWouldBeOccupiedAtWithPredicate(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing, std::function<bool(const Point3D&)> predicate);
 	[[nodiscard]] static Point3D getPointWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing, std::function<bool(const Point3D&)> predicate);
 	[[nodiscard]] static CollisionVolume getCollisionVolumeAtLocation(const ShapeId& id);
 	[[nodiscard]] static CollisionVolume getTotalCollisionVolume(const ShapeId& id);
-	[[nodiscard]] static SmallSet<OffsetAndVolume> getPositions(const ShapeId& id);
+	[[nodiscard]] static uint16_t getCuboidsCount(const ShapeId& id);
+	[[nodiscard]] static const MapWithOffsetCuboidKeys<CollisionVolume>& getOffsetCuboidsWithVolume(const ShapeId& id);
+	[[nodiscard]] static const OffsetCuboid& getOffsetCuboidBoundryWithFacing(const ShapeId& id, const Facing4& facing);
 	[[nodiscard]] static std::string getName(const ShapeId& id);
 	[[nodiscard]] static uint32_t getDisplayScale(const ShapeId& id);
-	[[nodiscard]] static bool getIsMultiTile(const ShapeId& id);
+	[[nodiscard]] static bool getIsMultiPoint(const ShapeId& id);
 	[[nodiscard]] static bool getIsRadiallySymetrical(const ShapeId& id);
-	[[nodiscard]] static Distance getZSize(const ShapeId& id);
-	[[nodiscard]] static SmallSet<OffsetAndVolume> getPositionsByZLevel(const ShapeId& id, const Distance& zLevel);
+	[[nodiscard]] static Offset getZSize(const ShapeId& id);
 	[[nodiscard]] static Quantity getNumberOfPointsOnLeadingFaceAtOrBelowLevel(const ShapeId& id, const Distance& zLevel);
 	// If provided name is not found it is decoded into a custom shape.
 	[[nodiscard]] static ShapeId byName(const std::string& name);
 	[[nodiscard]] static bool hasShape(const std::string& name);
 	// Creates a copy, adds a position to it and returns it.
-	[[nodiscard]] static ShapeId mutateAdd(const ShapeId& id, const OffsetAndVolume& position);
-	[[nodiscard]] static ShapeId mutateAddMultiple(const ShapeId& id, const SmallSet<OffsetAndVolume>& positions);
-	[[nodiscard]] static ShapeId mutateRemove(const ShapeId& id, const OffsetAndVolume& position);
-	[[nodiscard]] static ShapeId mutateRemoveMultiple(const ShapeId& id, SmallSet<OffsetAndVolume>& positions);
+	[[nodiscard]] static ShapeId mutateAdd(const ShapeId& id, const std::pair<OffsetCuboid, CollisionVolume>& cuboidAndVolume);
+	[[nodiscard]] static ShapeId mutateAddMultiple(const ShapeId& id, const MapWithOffsetCuboidKeys<CollisionVolume>& cuboidsWithVolume);
+	[[nodiscard]] static ShapeId mutateRemove(const ShapeId& id, const std::pair<OffsetCuboid, CollisionVolume>& cuboid);
+	[[nodiscard]] static ShapeId mutateRemoveMultiple(const ShapeId& id, const MapWithOffsetCuboidKeys<CollisionVolume>& cuboidsWithVolume);
 	[[nodiscard]] static ShapeId mutateMultiplyVolume(const ShapeId& id, const Quantity& quantity);
-	[[nodiscard]] static std::string makeName(SmallSet<OffsetAndVolume>& positions);
+	[[nodiscard]] static std::string makeName(const MapWithOffsetCuboidKeys<CollisionVolume>& positions);
 	[[nodiscard]] static ShapeId loadFromName(std::string name);
-	[[nodiscard]] static ShapeId createCustom(SmallSet<OffsetAndVolume>& positions);
+	[[nodiscard]] static ShapeId createCustom(MapWithOffsetCuboidKeys<CollisionVolume>&& positions);
 };
-inline Shape shapeData;
+inline Shape g_shapeData;

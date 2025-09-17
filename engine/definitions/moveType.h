@@ -10,7 +10,8 @@
 struct MoveTypeParamaters
 {
 	std::string name;
-	bool walk;
+	bool surface;
+	bool stairs;
 	uint8_t climb;
 	bool jumpDown;
 	bool fly;
@@ -23,7 +24,8 @@ struct MoveTypeParamaters
 class MoveType
 {
 	StrongVector<std::string, MoveTypeId> m_name;
-	StrongBitSet<MoveTypeId> m_walk;
+	StrongBitSet<MoveTypeId> m_surface;
+	StrongBitSet<MoveTypeId> m_stairs;
 	StrongVector<uint8_t, MoveTypeId> m_climb;
 	StrongBitSet<MoveTypeId> m_jumpDown;
 	StrongBitSet<MoveTypeId> m_fly;
@@ -39,7 +41,8 @@ public:
 	static void create(const MoveTypeParamaters& paramaters);
 	[[nodiscard]] static MoveTypeId byName(const std::string& name);
 	[[nodiscard]] static std::string getName(const MoveTypeId& id);
-	[[nodiscard]] static bool getWalk(const MoveTypeId& id);
+	[[nodiscard]] static bool getSurface(const MoveTypeId& id);
+	[[nodiscard]] static bool getStairs(const MoveTypeId& id);
 	[[nodiscard]] static uint8_t getClimb(const MoveTypeId& id);
 	[[nodiscard]] static bool getJumpDown(const MoveTypeId& id);
 	[[nodiscard]] static bool getFly(const MoveTypeId& id);
@@ -49,4 +52,4 @@ public:
 	[[nodiscard]] static SmallMap<FluidTypeId, CollisionVolume>& getSwim(const MoveTypeId& id);
 	[[nodiscard]] static SmallSet<FluidTypeId>& getBreathableFluids(const MoveTypeId& id);
 };
-inline MoveType moveTypeData;
+inline MoveType g_moveTypeData;

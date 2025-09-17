@@ -44,4 +44,4 @@ public:
 	[[nodiscard]] static std::string getName(const BodyTypeId& id);
 	[[nodiscard]] static std::vector<BodyPartTypeId>& getBodyPartTypes(const BodyTypeId& id);
 };
-inline BodyType bodyTypeData;
+inline BodyType g_bodyTypeData;

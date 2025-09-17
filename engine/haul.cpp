@@ -16,7 +16,7 @@
 #include "definitions/materialType.h"
 #include "numericTypes/types.h"
 #include "numericTypes/index.h"
-#include "portables.hpp"
+#include "portables.h"
 
 #include <memory>
 #include <sys/types.h>
@@ -328,18 +328,20 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 				{
 					// No lift point exists for this actor, find one.
 					// TODO: move this logic to tryToSetHaulStrategy?
-					for(Point3D point : toHaul.getAdjacentPoints(area))
-					{
-						Facing4 facing = point.getFacingTwords(m_project.m_location);
-						if(space.shape_shapeAndMoveTypeCanEnterEverWithFacing(point, actors.getShape(actor), actors.getMoveType(actor), facing) && !space.isReserved(point, faction))
+					for(const Cuboid& cuboid : toHaul.getAdjacentCuboids(area))
+						for(const Point3D& point : cuboid)
 						{
-							m_liftPoints.insert(ref, point);
-							actors.canReserve_reserveLocation(actor, point);
-							// Destination, detour, adjacent, unreserved, reserve
-							actors.move_setDestination(actor, point, detour);
-							return;
+							Facing4 facing = point.getFacingTwords(m_project.m_location);
+							if(space.shape_shapeAndMoveTypeCanEnterEverWithFacing(point, actors.getShape(actor), actors.getMoveType(actor), facing) && !space.isReserved(point, faction))
+							{
+								m_liftPoints.insert(ref, point);
+								//TODO: This should be tryToResereve?
+								actors.canReserve_reserveLocation(actor, point);
+								// Destination, detour, adjacent, unreserved, reserve
+								actors.move_setDestination(actor, point, detour);
+								return;
+							}
 						}
-					}
 					std::unreachable(); // team strategy should not be choosen if there is not enough space to reserve for lifting.
 				}
 			}

@@ -34,8 +34,10 @@ public:
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "construct"; }
 	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(Area& area, const Point3D& location, const Facing4& facing, const ActorIndex& actor);
-	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(Area& area, const Point3D& point, const ActorIndex& actor);
-	[[nodiscard]] bool joinableProjectExistsAt(Area& area, const Point3D& point, const ActorIndex& actor) const;
+	[[nodiscard]] const ConstructProject* getProjectWhichActorCanJoinAdjacentTo(Area& area, const Point3D& location, const Facing4& facing, const ActorIndex& actor) const;
+	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(Area& area, const Cuboid& cuboid, const ActorIndex& actor);
+	[[nodiscard]] const ConstructProject* getProjectWhichActorCanJoinAt(Area& area, const Cuboid& cuboid, const ActorIndex& actor) const;
+	[[nodiscard]] Point3D joinableProjectExistsAt(Area& area, const Cuboid& cuboid, const ActorIndex& actor) const;
 	[[nodiscard]] bool canJoinProjectAdjacentToLocationAndFacing(Area& area, const Point3D& point, const Facing4& facing, const ActorIndex& actor) const;
 	friend class ConstructPathRequest;
 	friend class ConstructProject;

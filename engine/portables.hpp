@@ -1,25 +1,24 @@
 #pragma once
-#include "portables.h"
 #include "actorOrItemIndex.h"
 #include "actors/actors.h"
-#include "deserializationMemo.h"
-#include "numericTypes/index.h"
-#include "items/items.h"
 #include "area/area.h"
-#include "onDestroy.h"
-#include "reservable.h"
-#include "simulation/simulation.h"
-#include "numericTypes/types.h"
 #include "definitions/moveType.h"
-#include "hasShapes.hpp"
+#include "deserializationMemo.h"
+#include "fluidType.h"
+#include "items/items.h"
+#include "numericTypes/index.h"
+#include "numericTypes/types.h"
+#include "onDestroy.h"
+#include "portables.h"
+#include "reservable.h"
 #include "reservable.hpp"
+#include "simulation/simulation.h"
+#include "space/space.h"
 #include <cstdint>
 #include <memory>
 
-template<class Derived, class Index, class ReferenceIndex>
-Portables<Derived, Index, ReferenceIndex>::Portables(Area& area, bool isActors) : HasShapes<Derived, Index>(area), m_isActors(isActors) { }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::updateStoredIndicesPortables(const Index& oldIndex, const Index& newIndex)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>Portables<Derived, Index, ReferenceIndex, isActors>::Portables(Area& area) : HasShapes<Derived, Index>(area) { }
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::updateStoredIndicesPortables(const Index& oldIndex, const Index& newIndex)
 {
 	Actors& actors = getActors();
 	Items& items = getItems();
@@ -85,26 +84,7 @@ void Portables<Derived, Index, ReferenceIndex>::updateStoredIndicesPortables(con
 		}
 	}
 }
-template<class Derived, class Index, class ReferenceIndex>
-template<typename Action>
-void Portables<Derived, Index, ReferenceIndex>::forEachDataPortables(Action&& action)
-{
-	this->forEachDataHasShapes(action);
-	action(m_reservables);
-	action(m_destroy);
-	action(m_follower);
-	action(m_leader);
-	action(m_carrier);
-	action(m_moveType);
-	action(m_onDeck);
-	action(m_isOnDeckOf);
-	action(m_hasDecks);
-	action(m_projectsOnDeck);
-	action(m_pointsContainingFluidOnDeck);
-	action(m_floating);
-}
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::create(const Index& index, const MoveTypeId& moveType, const ShapeId& shape, const FactionId& faction, bool isStatic, const Quantity& quantity)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::create(const Index& index, const MoveTypeId& moveType, const ShapeId& shape, const FactionId& faction, bool isStatic, const Quantity& quantity)
 {
 	HasShapes<Derived, Index>::create(index, shape, faction, isStatic);
 	m_moveType[index] = moveType;
@@ -122,8 +102,7 @@ void Portables<Derived, Index, ReferenceIndex>::create(const Index& index, const
 	// Corresponding remove in Actors::destroy and Items::destroy.
 	m_referenceData.add(index);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::onRemove(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::onRemove(const Index& index)
 {
 	if(m_hasDecks[index].exists())
 	{
@@ -133,36 +112,32 @@ void Portables<Derived, Index, ReferenceIndex>::onRemove(const Index& index)
 		m_projectsOnDeck[index].clear();
 	}
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::setFloating(const Index& index, const FluidTypeId& fluidType)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::setFloating(const Index& index, const FluidTypeId& fluidType)
 {
 	// Only dead actors float, otherwise they swim.
-	if(m_isActors)
+	if constexpr(isActors)
 		assert(!getActors().isAlive(getActorOrItemIndex(index).getActor()));
 	m_floating[index] = fluidType;
 	static const MoveTypeId& floatingMoveType = MoveType::byName("floating");
 	setMoveType(index, floatingMoveType);
-	if(!m_isActors)
+	if constexpr(!isActors)
 	{
 		// TODO: update pilot speed.
 	}
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::unsetFloating(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::unsetFloating(const Index& index)
 {
 	m_floating[index].clear();
-	Derived::resetMoveType(index);
+	static_cast<Derived*>(this)->resetMoveType(index);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::setMoveType(const Index& index, const MoveTypeId& moveType)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::setMoveType(const Index& index, const MoveTypeId& moveType)
 {
 	assert(m_moveType[index] != moveType);
 	m_moveType[index] = moveType;
 	getArea().m_hasTerrainFacades.maybeRegisterMoveType(moveType);
 	maybeFall(index);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::log(const Index& index) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::log(const Index& index) const
 {
 	std::cout << ", moveType: " << MoveType::getName(m_moveType[index]);
 	if(m_follower[index].exists())
@@ -175,25 +150,24 @@ void Portables<Derived, Index, ReferenceIndex>::log(const Index& index) const
 	if(location.exists())
 	{
 		std::cout << ", location: " << location.toString();
-		for(const Point3D& occupied : this->m_occupied[index])
-			if(occupied != location)
-				std::cout << "-" << occupied.toString();
+		for(const Cuboid& cuboid : this->m_occupied[index])
+			for(const Point3D& occupied : cuboid)
+				if(occupied != location)
+					std::cout << "-" << occupied.toString();
 	}
 	//if(!m_onDeck[index].empty())
 		//std::cout << ", on deck " << m_onDeck[index].toString();
 	if(m_isOnDeckOf[index].exists())
 		std::cout << ", is on deck of " << m_isOnDeckOf[index].toString();
 }
-template<class Derived, class Index, class ReferenceIndex>
-ActorOrItemIndex Portables<Derived, Index, ReferenceIndex>::getActorOrItemIndex(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>ActorOrItemIndex Portables<Derived, Index, ReferenceIndex, isActors>::getActorOrItemIndex(const Index& index)
 {
-	if(m_isActors)
+	if constexpr(isActors)
 		return ActorOrItemIndex::createForActor(ActorIndex::create(index.get()));
 	else
 		return ActorOrItemIndex::createForItem(ItemIndex::create(index.get()));
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::followActor(const Index& index, const ActorIndex& actor)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::followActor(const Index& index, const ActorIndex& actor)
 {
 	Actors& actors = getActors();
 	assert(!isFollowing(index));
@@ -207,7 +181,7 @@ void Portables<Derived, Index, ReferenceIndex>::followActor(const Index& index, 
 		return;
 	}
 	// if piloting something then set that thing to follow rather then the pilot.
-	if(m_isActors)
+	if constexpr(isActors)
 	{
 		const ActorOrItemIndex& followerPiloting =  actors.getIsPiloting(ActorIndex::create(index.get()));
 		if(followerPiloting.exists())
@@ -223,8 +197,7 @@ void Portables<Derived, Index, ReferenceIndex>::followActor(const Index& index, 
 	actors.lineLead_appendToPath(lineLeader, this->m_location[index], this->m_facing[index]);
 	actors.move_updateActualSpeed(lineLeader);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::followItem(const Index& index, const ItemIndex& item)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::followItem(const Index& index, const ItemIndex& item)
 {
 	Actors& actors = getActors();
 	Items& items = getItems();
@@ -234,7 +207,7 @@ void Portables<Derived, Index, ReferenceIndex>::followItem(const Index& index, c
 	// Only follow items which already have leaders;
 	assert(items.isFollowing(item));
 	// if piloting something then set that thing to follow rather then the pilot.
-	if(m_isActors)
+	if constexpr(isActors)
 	{
 		const ActorOrItemIndex& followerPiloting = actors.getIsPiloting(ActorIndex::create(index.get()));
 		if(followerPiloting.exists())
@@ -250,16 +223,14 @@ void Portables<Derived, Index, ReferenceIndex>::followItem(const Index& index, c
 	actors.move_updateActualSpeed(lineLeader);
 	actors.lineLead_appendToPath(lineLeader, this->m_location[index], this->m_facing[index]);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::followPolymorphic(const Index& index, const ActorOrItemIndex& actorOrItem)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::followPolymorphic(const Index& index, const ActorOrItemIndex& actorOrItem)
 {
 	if(actorOrItem.isActor())
 		followActor(index, ActorIndex::create(actorOrItem.get().get()));
 	else
 		followItem(index, ItemIndex::create(actorOrItem.get().get()));
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::unfollowActor(const Index& index, const ActorIndex& actor)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::unfollowActor(const Index& index, const ActorIndex& actor)
 {
 	assert(!isLeading(index));
 	assert(isFollowing(index));
@@ -278,8 +249,7 @@ void Portables<Derived, Index, ReferenceIndex>::unfollowActor(const Index& index
 	m_leader[index].clear();
 	getActors().move_updateActualSpeed(lineLeader);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::unfollowItem(const Index& index, const ItemIndex& item)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::unfollowItem(const Index& index, const ItemIndex& item)
 {
 	assert(!isLeading(index));
 	ActorIndex lineLeader = getLineLeader(index);
@@ -290,8 +260,7 @@ void Portables<Derived, Index, ReferenceIndex>::unfollowItem(const Index& index,
 	items.unsetFollower(item, getActorOrItemIndex(index));
 	getActors().move_updateActualSpeed(lineLeader);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::unfollow(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::unfollow(const Index& index)
 {
 	ActorOrItemIndex leader = m_leader[index];
 	assert(leader.isLeading(getArea()));
@@ -300,14 +269,12 @@ void Portables<Derived, Index, ReferenceIndex>::unfollow(const Index& index)
 	else
 		unfollowItem(index, leader.getItem());
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::unfollowIfAny(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::unfollowIfAny(const Index& index)
 {
 	if(m_leader[index].exists())
 		unfollow(index);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::leadAndFollowDisband(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::leadAndFollowDisband(const Index& index)
 {
 	assert(isFollowing(index) || isLeading(index));
 	ActorOrItemIndex follower = getActorOrItemIndex(index);
@@ -327,115 +294,118 @@ void Portables<Derived, Index, ReferenceIndex>::leadAndFollowDisband(const Index
 	getActors().lineLead_clearPath(leader.getActor());
 
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::maybeLeadAndFollowDisband(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::maybeLeadAndFollowDisband(const Index& index)
 {
 	if(isFollowing(index) || isLeading(index))
 		leadAndFollowDisband(index);
 }
-template<class Derived, class Index, class ReferenceIndex>
-bool Portables<Derived, Index, ReferenceIndex>::isFollowing(const Index& index) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::isFollowing(const Index& index) const
 {
 	return m_leader[index].exists();
 }
-template<class Derived, class Index, class ReferenceIndex>
-bool Portables<Derived, Index, ReferenceIndex>::isLeading(const Index& index) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::isLeading(const Index& index) const
 {
 	return m_follower[index].exists();
 }
-template<class Derived, class Index, class ReferenceIndex>
-bool Portables<Derived, Index, ReferenceIndex>::isLeadingActor(const Index& index, const ActorIndex& actor) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::isLeadingActor(const Index& index, const ActorIndex& actor) const
 {
 	if(!isLeading(index))
 		return false;
 	const auto& follower = m_follower[index];
 	return follower.isActor() && follower.getActor() == actor;
 }
-template<class Derived, class Index, class ReferenceIndex>
-bool Portables<Derived, Index, ReferenceIndex>::isLeadingItem(const Index& index, const ItemIndex& item) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::isLeadingItem(const Index& index, const ItemIndex& item) const
 {
 	if(!isLeading(index))
 		return false;
 	const auto& follower = m_follower[index];
 	return follower.isItem() && follower.getItem() == item;
 }
-template<class Derived, class Index, class ReferenceIndex>
-bool Portables<Derived, Index, ReferenceIndex>::isLeadingPolymorphic(const Index& index, const ActorOrItemIndex& actorOrItem) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::isLeadingPolymorphic(const Index& index, const ActorOrItemIndex& actorOrItem) const
 {
 	return m_follower[index] == actorOrItem;
 }
-template<class Derived, class Index, class ReferenceIndex>
-OccupiedSpaceForHasShape Portables<Derived, Index, ReferenceIndex>::getOccupiedCombined(const Index& index) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+MapWithCuboidKeys<CollisionVolume> Portables<Derived, Index, ReferenceIndex, isActors>::getOccupiedCombinedWithVolumes(const Index& index) const
 {
-	const OccupiedSpaceForHasShape& occupied = HasShapes<Derived, Index>::getOccupied(index);
-	OccupiedSpaceForHasShape output;
+	const MapWithCuboidKeys<CollisionVolume>& occupied = this->m_occupiedWithVolume[index];
+	MapWithCuboidKeys<CollisionVolume> output;
 	const Area& area = getArea();
 	uint toReserve = occupied.size();
 	for(const ActorOrItemIndex& onDeck : m_onDeck[index])
-		toReserve += Shape::getPositions(onDeck.getShape(area)).size();
+		toReserve += Shape::getCuboidsCount(onDeck.getShape(area));
 	output.reserve(toReserve);
-	for(const Point3D& point : occupied)
-		output.insert(point);
+	output = occupied;
 	for(const ActorOrItemIndex& onDeck : m_onDeck[index])
-		for(const Point3D& point : onDeck.getOccupied(area))
-			output.insert(point);
+		for(const auto& pair : onDeck.getOccupiedWithVolume(area))
+			output.insertOrMerge(pair);
 	return output;
 }
-template<class Derived, class Index, class ReferenceIndex>
-Distance Portables<Derived, Index, ReferenceIndex>::floatsInAtDepth(const Index& index, const FluidTypeId& fluidType) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+CuboidSet Portables<Derived, Index, ReferenceIndex, isActors>::getOccupiedCombined(const Index& index) const
+{
+	const CuboidSet& occupied = this->m_occupied[index];
+	const Area& area = getArea();
+	uint toReserve = occupied.size();
+	for(const ActorOrItemIndex& onDeck : m_onDeck[index])
+		toReserve += Shape::getCuboidsCount(onDeck.getShape(area));
+	CuboidSet output;
+	output.reserve(toReserve);
+	output.addAll(occupied);
+	for(const ActorOrItemIndex& onDeck : m_onDeck[index])
+		output.addAll(onDeck.getOccupied(area));
+	return output;
+}
+template<class Derived, class Index, class ReferenceIndex, bool isActors>Distance Portables<Derived, Index, ReferenceIndex, isActors>::floatsInAtDepth(const Index& index, const FluidTypeId& fluidType) const
 {
 	const Mass mass = static_cast<const Derived*>(this)->getMass(index);
 	CollisionVolume displacement = CollisionVolume::create(0);
 	Distance output = Distance::create(0);
 	const Density& fluidDensity = FluidType::getDensity(fluidType);
 	const ShapeId& shape = HasShapes<Derived, Index>::getShape(index);
-	Distance shapeHeight = Shape::getZSize(shape);
-	SmallSet<Offset3D> previousLevel;
-	SmallSet<Offset3D> nextLevel;
+	Distance shapeHeight = Distance::create(Shape::getZSize(shape).get());
+	OffsetCuboidSet previousLevel;
+	OffsetCuboidSet nextLevel;
+	const Cuboid boundry = getArea().getSpace().boundry();
 	while(fluidDensity < mass / displacement.toVolume())
 	{
-		auto thisLevel = Shape::getPositionsByZLevel(shape, output);
-		if(thisLevel.size() < previousLevel.size() || shapeHeight < output)
+		MapWithOffsetCuboidKeys<CollisionVolume> thisLevel = Shape::getCuboidsWithVolumeByZLevel(shape, output);
+		if(thisLevel.size() < previousLevel.volume() || shapeHeight < output)
 		{
 			// Hull ends here.
 			return Distance::null();
 		}
 		// Anything directly above a recorded point is assumed to be eiter part of or contained within the hull.
-		displacement += Config::maxPointVolume * nextLevel.size();
+		displacement += Config::maxPointVolume * nextLevel.volume();
 		// Use previous level to ensure we don't record the same point twice.
 		previousLevel.swap(nextLevel);
 		nextLevel.clear();
-		for(const OffsetAndVolume& offsetAndVolume : thisLevel)
+		for(const std::pair<OffsetCuboid, CollisionVolume>& cuboidAndVolume : thisLevel)
 		{
-			if(nextLevel.contains(offsetAndVolume.offset))
+			if(nextLevel.contains(cuboidAndVolume.first))
 				continue;
-			Offset3D above = offsetAndVolume.offset;
-			++above.z();
-			nextLevel.insert(above);
-			displacement += offsetAndVolume.volume;
+			OffsetCuboid above = cuboidAndVolume.first.above();
+			assert(boundry.contains(above));
+			nextLevel.add(above);
+			displacement += cuboidAndVolume.second;
 		}
 		++output;
 	}
 	return output;
 }
-template<class Derived, class Index, class ReferenceIndex>
-bool Portables<Derived, Index, ReferenceIndex>::canFloatAt(const Index& index, const Point3D& point) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::canFloatAt(const Index& index, const Point3D& point) const
 {
 	return getFluidTypeCanFloatInAt(index, point).exists();
 }
-template<class Derived, class Index, class ReferenceIndex>
-FluidTypeId Portables<Derived, Index, ReferenceIndex>::getFluidTypeCanFloatInAt(const Index& index, const Point3D& point) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>FluidTypeId Portables<Derived, Index, ReferenceIndex, isActors>::getFluidTypeCanFloatInAt(const Index& index, const Point3D& point) const
 {
 	const Space& space = getArea().getSpace();
 	for(const FluidData& fluidData : space.fluid_getAll(point))
-	{
 		if(canFloatAtInFluidType(index, point, fluidData.type))
 			return fluidData.type;
-	}
 	return FluidTypeId::null();
 }
-template<class Derived, class Index, class ReferenceIndex>
-bool Portables<Derived, Index, ReferenceIndex>::canFloatAtInFluidType(const Index& index, const Point3D& point, const FluidTypeId& fluidType) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::canFloatAtInFluidType(const Index& index, const Point3D& point, const FluidTypeId& fluidType) const
 {
 	const Distance& floatDepth = floatsInAtDepth(index, fluidType);
 	if(floatDepth.empty())
@@ -452,15 +422,14 @@ bool Portables<Derived, Index, ReferenceIndex>::canFloatAtInFluidType(const Inde
 	}
 	return true;
 }
-template<class Derived, class Index, class ReferenceIndex>
-Speed Portables<Derived, Index, ReferenceIndex>::lead_getSpeed(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>Speed Portables<Derived, Index, ReferenceIndex, isActors>::lead_getSpeed(const Index& index)
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
 	Area& area = getArea();
 	Actors& actors = area.getActors();
 	ActorOrItemIndex wrapped = getActorOrItemIndex(index);
-	if(m_isActors)
+	if constexpr(isActors)
 	{
  		const ActorOrItemIndex& isPiloting = actors.getIsPiloting(static_cast<const ActorIndex&>(index));
 		if(isPiloting.exists())
@@ -476,8 +445,7 @@ Speed Portables<Derived, Index, ReferenceIndex>::lead_getSpeed(const Index& inde
 	}
 	return PortablesHelpers::getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, Mass::create(0), Mass::create(0), Mass::create(0));
 }
-template<class Derived, class Index, class ReferenceIndex>
-ActorIndex Portables<Derived, Index, ReferenceIndex>::getLineLeader(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>ActorIndex Portables<Derived, Index, ReferenceIndex, isActors>::getLineLeader(const Index& index)
 {
 	// Recursively traverse to the front of the line and return the leader.
 	Items& items = getArea().getItems();
@@ -486,7 +454,7 @@ ActorIndex Portables<Derived, Index, ReferenceIndex>::getLineLeader(const Index&
 	if(leader.empty())
 	{
 		assert(m_follower[index].exists());
-		if(!m_isActors)
+		if constexpr(!isActors)
 		{
 			// If the leader is an item then return it's pilot.
 			const ActorIndex& pilot = items.pilot_get(leader.getItem());
@@ -504,27 +472,23 @@ ActorIndex Portables<Derived, Index, ReferenceIndex>::getLineLeader(const Index&
 	else
 		return getItems().getLineLeader(leader.getItem());
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::setCarrier(const Index& index, const ActorOrItemIndex& carrier)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::setCarrier(const Index& index, const ActorOrItemIndex& carrier)
 {
 	assert(!m_carrier[index].exists());
 	m_carrier[index] = carrier;
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::maybeSetCarrier(const Index& index, const ActorOrItemIndex& carrier)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::maybeSetCarrier(const Index& index, const ActorOrItemIndex& carrier)
 {
 	if(m_carrier[index] == carrier)
 		return;
 	setCarrier(index, carrier);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::unsetCarrier(const Index& index, [[maybe_unused]] const ActorOrItemIndex& carrier)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::unsetCarrier(const Index& index, [[maybe_unused]] const ActorOrItemIndex& carrier)
 {
 	assert(m_carrier[index] == carrier);
 	m_carrier[index].clear();
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::maybeFall(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::maybeFall(const Index& index)
 {
 	Space& space = getArea().getSpace();
 	const Point3D& location = getLocation(index);
@@ -534,13 +498,13 @@ void Portables<Derived, Index, ReferenceIndex>::maybeFall(const Index& index)
 	)
 		fall(index);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::fall(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::fall(const Index& index)
 {
 	Space& space = getArea().getSpace();
 	const ShapeId& shape = getShape(index);
 	const Facing4& facing = getFacing(index);
 	Point3D location = getLocation(index);
+	assert(location.exists());
 	assert(location.z() != 0);
 	assert(!canFloatAt(index, location));
 	assert(!isFloating(index));
@@ -548,7 +512,7 @@ void Portables<Derived, Index, ReferenceIndex>::fall(const Index& index)
 	Distance distance = Distance::create(0);
 	Point3D next;
 	const auto& occupied = this->getOccupied(index);
-	while(true)
+	while(location.z() != 0)
 	{
 		next = location.below();
 		if(space.shape_canFitEverOrCurrentlyDynamic(next, shape, facing, occupied) && !canFloatAt(index, location))
@@ -561,13 +525,12 @@ void Portables<Derived, Index, ReferenceIndex>::fall(const Index& index)
 	}
 	assert(distance != 0);
 	auto pointsBelowEndPosition = space.shape_getBelowPointsWithFacing(location, shape, facing);
-	MaterialTypeId materialType = space.solid_getHardest(pointsBelowEndPosition);
+	const auto [materialType, hardness] = space.solid_getHardest(pointsBelowEndPosition);
 	static_cast<Derived*>(this)->location_set(index, location, facing);
 	static_cast<Derived*>(this)->takeFallDamage(index, distance, materialType);
 	//TODO: dig out / destruct below impact.
 }
-template<class Derived, class Index, class ReferenceIndex>
-Mass Portables<Derived, Index, ReferenceIndex>::onDeck_getMass(const Index& index) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>Mass Portables<Derived, Index, ReferenceIndex, isActors>::onDeck_getMass(const Index& index) const
 {
 	const Area& area = getArea();
 	Mass output = Mass::create(0);
@@ -575,8 +538,7 @@ Mass Portables<Derived, Index, ReferenceIndex>::onDeck_getMass(const Index& inde
 		output += onDeck.getMass(area);
 	return output;
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index, const Point3D& previousLocation, const Facing4& previousFacing)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::onSetLocation(const Index& index, const Point3D& previousLocation, const Facing4& previousFacing)
 {
 	Area& area = getArea();
 	Space& space = area.getSpace();
@@ -602,13 +564,13 @@ void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index
 		if(!deckOffsets.empty())
 		{
 			// Create decks for newly added.
-			CuboidSet decks(newLocation, newFacing, deckOffsets);
+			CuboidSet decks = CuboidSet::create(space.offsetBoundry(), newLocation, newFacing, deckOffsets);
 			m_hasDecks[index] = area.m_decks.registerDecks(area, decks, getActorOrItemIndex(index));
 		}
 	}
 	// Update which deck this portable is on.
-	const DeckId& onDeckOf = area.m_decks.getForPoint(getLocation(index));
-	DeckId onDeckOfPrevious = previousLocation.exists() ? area.m_decks.getForPoint(previousLocation) : DeckId::null();
+	const DeckId& onDeckOf = area.m_decks.queryDeckId(getLocation(index));
+	DeckId onDeckOfPrevious = previousLocation.exists() ? area.m_decks.queryDeckId(previousLocation) : DeckId::null();
 	if(onDeckOfPrevious == deckId)
 		onDeckOfPrevious.clear();
 	if(onDeckOf != onDeckOfPrevious)
@@ -635,15 +597,14 @@ void Portables<Derived, Index, ReferenceIndex>::onSetLocation(const Index& index
 			setNotFloating(index);
 	}
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::updateIndexInCarrier(const Index& oldIndex, const Index& newIndex)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::updateIndexInCarrier(const Index& oldIndex, const Index& newIndex)
 {
 	if(m_carrier[newIndex].isActor())
 	{
 		// Carrier is actor, either via canPickUp or equipmentSet.
 		const ActorIndex& actor = ActorIndex::cast(m_carrier[newIndex].get());
 		Actors& actors = getActors();
-		if(m_isActors)
+		if constexpr(isActors)
 		{
 			// actor is carrying actor
 			ActorIndex oi = ActorIndex::cast(oldIndex);
@@ -665,7 +626,7 @@ void Portables<Derived, Index, ReferenceIndex>::updateIndexInCarrier(const Index
 		const ItemIndex& item = ItemIndex::cast(m_carrier[newIndex].get());
 		Items& items = getItems();
 		assert(ItemType::getInternalVolume(items.getItemType(item)) != 0);
-		if(m_isActors)
+		if constexpr(isActors)
 		{
 			ActorIndex oi = ActorIndex::cast(oldIndex);
 			ActorIndex ni = ActorIndex::cast(newIndex);
@@ -679,43 +640,35 @@ void Portables<Derived, Index, ReferenceIndex>::updateIndexInCarrier(const Index
 		}
 	}
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::reservable_reserve(const Index& index, CanReserve& canReserve, const Quantity quantity, std::unique_ptr<DishonorCallback> callback)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_reserve(const Index& index, CanReserve& canReserve, const Quantity quantity, std::unique_ptr<DishonorCallback> callback)
 {
 	m_reservables[index]->reserveFor(canReserve, quantity, std::move(callback));
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::reservable_unreserve(const Index& index, CanReserve& canReserve, const Quantity quantity)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_unreserve(const Index& index, CanReserve& canReserve, const Quantity quantity)
 {
 	m_reservables[index]->clearReservationFor(canReserve, quantity);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::reservable_unreserveFaction(const Index& index, const FactionId& faction)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_unreserveFaction(const Index& index, const FactionId& faction)
 {
 	m_reservables[index]->clearReservationsFor(faction);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::reservable_maybeUnreserve(const Index& index, CanReserve& canReserve, const Quantity quantity)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_maybeUnreserve(const Index& index, CanReserve& canReserve, const Quantity quantity)
 {
 	m_reservables[index]->maybeClearReservationFor(canReserve, quantity);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::reservable_unreserveAll(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_unreserveAll(const Index& index)
 {
 	m_reservables[index]->clearAll();
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::reservable_setDishonorCallback(const Index& index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_setDishonorCallback(const Index& index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
 {
 	m_reservables[index]->setDishonorCallbackFor(canReserve, std::move(callback));
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::reservable_merge(const Index& index, Reservable& other)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_merge(const Index& index, Reservable& other)
 {
 	m_reservables[index]->merge(other);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::load(const Json& data)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::load(const Json& data)
 {
 	nlohmann::from_json(data, static_cast<HasShapes<Derived, Index>&>(*this));
 	data["moveType"].get_to(m_moveType);
@@ -748,8 +701,7 @@ void Portables<Derived, Index, ReferenceIndex>::load(const Json& data)
 		deserializationMemo.m_reservables[address] = m_reservables[index].get();
 	}
 }
-template<class Derived, class Index, class ReferenceIndex>
-Json Portables<Derived, Index, ReferenceIndex>::toJson() const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>Json Portables<Derived, Index, ReferenceIndex, isActors>::toJson() const
 {
 	Json output;
 	nlohmann::to_json(output, *this);
@@ -781,79 +733,68 @@ Json Portables<Derived, Index, ReferenceIndex>::toJson() const
 	}
 	return output;
 }
-template<class Derived, class Index, class ReferenceIndex>
-bool Portables<Derived, Index, ReferenceIndex>::reservable_hasAnyReservations(const Index& index) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::reservable_hasAnyReservations(const Index& index) const
 {
 	return m_reservables[index]->hasAnyReservations();
 }
-template<class Derived, class Index, class ReferenceIndex>
-bool Portables<Derived, Index, ReferenceIndex>::reservable_exists(const Index& index, const FactionId& faction) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::reservable_exists(const Index& index, const FactionId& faction) const
 {
 	return m_reservables[index]->hasAnyReservationsWith(faction);
 }
-template<class Derived, class Index, class ReferenceIndex>
-bool Portables<Derived, Index, ReferenceIndex>::reservable_existsFor(const Index& index, const CanReserve& canReserve) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::reservable_existsFor(const Index& index, const CanReserve& canReserve) const
 {
 	return m_reservables[index]->hasAnyReservationsFor(canReserve);
 }
-template<class Derived, class Index, class ReferenceIndex>
-bool Portables<Derived, Index, ReferenceIndex>::reservable_isFullyReserved(const Index& index, const FactionId& faction) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::reservable_isFullyReserved(const Index& index, const FactionId& faction) const
 {
 	return m_reservables[index]->isFullyReserved(faction);
 }
-template<class Derived, class Index, class ReferenceIndex>
-Quantity Portables<Derived, Index, ReferenceIndex>::reservable_getUnreservedCount(const Index& index, const FactionId& faction) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>Quantity Portables<Derived, Index, ReferenceIndex, isActors>::reservable_getUnreservedCount(const Index& index, const FactionId& faction) const
 {
 	return m_reservables[index]->getUnreservedCount(faction);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::onDestroy_subscribe(const Index& index, HasOnDestroySubscriptions& hasSubscriptions)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::onDestroy_subscribe(const Index& index, HasOnDestroySubscriptions& hasSubscriptions)
 {
 	if(m_destroy[index] == nullptr)
 		m_destroy[index] = std::make_unique<OnDestroy>();
 	hasSubscriptions.subscribe(*m_destroy[index].get());
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::onDestroy_subscribeThreadSafe(const Index& index, HasOnDestroySubscriptions& hasSubscriptions)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::onDestroy_subscribeThreadSafe(const Index& index, HasOnDestroySubscriptions& hasSubscriptions)
 {
 	std::lock_guard<std::mutex> lock(HasOnDestroySubscriptions::m_mutex);
 	onDestroy_subscribe(index, hasSubscriptions);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::onDestroy_unsubscribe(const Index& index, HasOnDestroySubscriptions& hasSubscriptions)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::onDestroy_unsubscribe(const Index& index, HasOnDestroySubscriptions& hasSubscriptions)
 {
 	m_destroy[index]->unsubscribe(hasSubscriptions);
 	if(m_destroy[index]->empty())
 		m_destroy[index] = nullptr;
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::onDestroy_unsubscribeAll(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::onDestroy_unsubscribeAll(const Index& index)
 {
 	m_destroy[index]->unsubscribeAll();
 	m_destroy[index] = nullptr;
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::onDestroy_merge(const Index& index, OnDestroy& other)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::onDestroy_merge(const Index& index, OnDestroy& other)
 {
 	if(m_destroy[index] == nullptr)
 		m_destroy[index] = std::make_unique<OnDestroy>();
 	m_destroy[index]->merge(other);
 }
-template<class Derived, class Index, class ReferenceIndex>
-DeckId Portables<Derived, Index, ReferenceIndex>::onDeck_createDecks(const Index& index, const CuboidSet& cuboidSet)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>DeckId Portables<Derived, Index, ReferenceIndex, isActors>::onDeck_createDecks(const Index& index, const CuboidSet& cuboidSet)
 {
-	DeckId output =  getArea().m_decks.registerDecks(cuboidSet);
+	Area& area = getArea();
+	DeckId output = area.m_decks.registerDecks(area, cuboidSet, ActorOrItemIndex::create(index));
 	m_hasDecks[index] = output;
 	return output;
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::onDeck_destroyDecks(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::onDeck_destroyDecks(const Index& index)
 {
 	assert(m_hasDecks[index].exists());
-	getArea().m_decks.unregisterDeck(index);
+	Area& area = getArea();
+	area.m_decks.unregisterDecks(area, m_hasDecks[index]);
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::onDeck_clear(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::onDeck_clear(const Index& index)
 {
 	const ActorOrItemIndex& onDeckOf = m_isOnDeckOf[index];
 	assert(onDeckOf.isItem());
@@ -865,8 +806,7 @@ void Portables<Derived, Index, ReferenceIndex>::onDeck_clear(const Index& index)
 		getActors().move_setMoveSpeedActual(pilot, items.vehicle_getSpeed(onDeckOfItem));
 	m_isOnDeckOf[index].clear();
 }
-template<class Derived, class Index, class ReferenceIndex>
-void Portables<Derived, Index, ReferenceIndex>::onDeck_set(const Index& index, const ActorOrItemIndex& onDeckOf)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::onDeck_set(const Index& index, const ActorOrItemIndex& onDeckOf)
 {
 	if(m_isOnDeckOf[index].exists())
 		onDeck_clear(index);

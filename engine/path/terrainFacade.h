@@ -19,8 +19,7 @@
 #include "dataStructures/strongVector.h"
 #include "dataStructures/smallMap.h"
 #include "dataStructures/rtreeData.h"
-
-#include <bitset>
+#include "dataStructures/bitset.h"
 
 struct MoveType;
 struct Shape;
@@ -78,23 +77,23 @@ struct PathRequestWithHuristicData
 struct AdjacentData
 {
 	using Primitive = uint32_t;
-	std::bitset<maxAdjacent> data;
-	void set(const AdjacentIndex& index, bool value) { data[index.get()] = value; }
+	BitSet<uint32_t, maxAdjacent> data;
+	void set(const AdjacentIndex& index, bool value) { data.set(index.get(), value); }
 	[[nodiscard]] bool check(const AdjacentIndex& index) const { return data[index.get()]; }
-	[[nodiscard]] Primitive get() const { return data.to_ulong(); }
-	[[nodiscard]] auto operator<=>(const AdjacentData& other) const { return data.to_ulong() <=> other.data.to_ulong(); }
-	[[nodiscard]] bool operator==(const AdjacentData& other) const { return data.to_ulong() == other.data.to_ulong(); }
-	[[nodiscard]] bool empty() const { return !data.any(); }
-	[[nodiscard]] std::string toString() const { return data.to_string(); }
+	[[nodiscard]] Primitive get() const { return data.data; }
+	[[nodiscard]] auto operator<=>(const AdjacentData& other) const { return data.data <=> other.data.data; }
+	[[nodiscard]] bool operator==(const AdjacentData& other) const { return data.data == other.data.data; }
+	[[nodiscard]] bool empty() const { return data.empty(); }
+	[[nodiscard]] std::string toString() const { return data.toString(); }
 	static AdjacentData create(const Primitive& d) { return {d}; }
 	static AdjacentData null() { return {0}; }
 	class ConstIterator
 	{
-		std::bitset<maxAdjacent> data;
+		BitSet<uint32_t, maxAdjacent> data;
 		AdjacentIndex index;
 		void advanceToNext() { while(index < maxAdjacent && !data[index.get()]) ++index; }
 	public:
-		ConstIterator(const std::bitset<maxAdjacent>& d, const AdjacentIndex& i) : data(d), index(i) { advanceToNext(); }
+		ConstIterator(const BitSet<uint32_t, maxAdjacent>& d, const AdjacentIndex& i) : data(d), index(i) { advanceToNext(); }
 		[[nodiscard]] const AdjacentIndex& operator*() const { return index; }
 		[[nodiscard]] bool operator!=(const ConstIterator& other) { return index != other.index; }
 		void operator++() { ++index; advanceToNext(); }
@@ -111,13 +110,14 @@ class TerrainFacade final
 	Point3D m_pointToIndexConversionMultipliers;
 	MoveTypeId m_moveType;
 	// Non batched pathing uses the WithoutMemo variants.
-	template<bool anyOccupiedPoint, DestinationCondition DestinationConditionT>
-	[[nodiscard]] FindPathResult findPathBreadthFirstWithoutMemo(const Point3D& start, const Facing4& startFacing, DestinationConditionT& destinationCondition, const ShapeId& shape, const MoveTypeId& moveType, bool detour, bool adjacent, const FactionId& faction, const Distance& maxRange) const;
-	template<bool anyOccupiedPoint, DestinationCondition DestinationConditionT>
-	[[nodiscard]] FindPathResult findPathDepthFirstWithoutMemo(const Point3D& from, const Facing4& startFacing, DestinationConditionT& destinationCondition, const Point3D& huristicDestination, const ShapeId& shape, const MoveTypeId& moveType, bool detour, bool adjacent, const FactionId& faction, const Distance& maxRange) const;
+	template <typename DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
+	[[nodiscard]] FindPathResult findPathBreadthFirstWithoutMemo(const Point3D &start, const Facing4 &startFacing, DestinationConditionT &destinationCondition, const ShapeId &shape, const MoveTypeId &moveType, bool detour, const FactionId &faction, const Distance &maxRange) const;
+	template<typename DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
+	[[nodiscard]] FindPathResult findPathDepthFirstWithoutMemo(const Point3D& from, const Facing4& startFacing, DestinationConditionT& destinationCondition, const Point3D& huristicDestination, const ShapeId& shape, const MoveTypeId& moveType, bool detour, const FactionId& faction, const Distance& maxRange) const;
 	[[nodiscard]] PathRequestIndex getPathRequestIndexNoHuristic();
 	[[nodiscard]] PathRequestIndex getPathRequestIndexWithHuristic();
 	[[nodiscard]] AdjacentData makeDataForPoint(const Point3D& point) const;
+	[[nodiscard]] AdjacentData makeDataForPoint(const Point3D& point, const CuboidSet& candidates) const;
 	void movePathRequestNoHuristic(PathRequestIndex oldIndex, PathRequestIndex newIndex);
 	void movePathRequestWithHuristic(PathRequestIndex oldIndex, PathRequestIndex newIndex);
 	void updatePoint(const Point3D& point);
@@ -131,32 +131,37 @@ public:
 	void unregisterNoHuristic(PathRequest& pathRequest);
 	void unregisterWithHuristic(PathRequest& pathRequest);
 	void update(const Cuboid& cuboid);
+	void update(const Cuboid& cuboid, const CuboidSet& candidates);
 	void maybeSetImpassable(const Cuboid& cuboid);
 	void clearPathRequests();
+	[[nodiscard]] MoveTypeId getMoveType() const { return m_moveType; }
 	[[nodiscard]] const AdjacentData getAdjacentData(const Point3D& point) const { return m_enterable.queryGetOne(point); }
 	[[nodiscard]] bool getValue(const Point3D& to, const Point3D& from) const;
 	[[nodiscard]] FindPathResult findPathTo(PathMemoDepthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& target, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null()) const;
-	[[nodiscard]] FindPathResult findPathToWithoutMemo(const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& target, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null()) const;
-	[[nodiscard]] FindPathResult findPathToAnyOf(PathMemoDepthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, SmallSet<Point3D> indecies, const Point3D huristicDestination, bool detour = false, const FactionId& faction = FactionId::null()) const;
-	[[nodiscard]] FindPathResult findPathToAnyOfWithoutMemo(const Point3D& start, const Facing4& startFacing, const ShapeId& shape, SmallSet<Point3D> indecies, const Point3D huristicDestination, bool detour = false, const FactionId& faction = FactionId::null()) const;
+	template<bool anyOccupiedPoint, bool adjacent>
+	[[nodiscard]] FindPathResult findPathToWithoutMemo(const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& target, bool detour = false, const FactionId& faction = FactionId::null()) const;
+	template<bool anyOccupiedPoint, bool adjacent>
+	[[nodiscard]] FindPathResult findPathToAnyOf(PathMemoDepthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const CuboidSet& indecies, const Point3D huristicDestination, bool detour = false, const FactionId& faction = FactionId::null()) const;
+	[[nodiscard]] FindPathResult findPathToAnyOfWithoutMemo(const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const CuboidSet& indecies, const Point3D huristicDestination, bool detour = false, const FactionId& faction = FactionId::null()) const;
 
-	template<bool anyOccupiedPoint, DestinationCondition DestinationConditionT>
-	[[nodiscard]] FindPathResult findPathToConditionDepthFirst(DestinationConditionT& destinationCondition, PathMemoDepthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& huristicDestination, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null(), const Distance& maxRange = Distance::max()) const;
+	template<typename DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
+	[[nodiscard]] FindPathResult findPathToConditionDepthFirst(DestinationConditionT& destinationCondition, PathMemoDepthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& huristicDestination, bool detour = false, const FactionId& faction = FactionId::null(), const Distance& maxRange = Distance::max()) const;
 
-	template<bool anyOccupiedPoint, DestinationCondition DestinationConditionT>
-	[[nodiscard]] FindPathResult findPathToConditionDepthFirstWithoutMemo(DestinationConditionT& destinationCondition, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& huristicDestination, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null(), const Distance& maxRange = Distance::max()) const;
+	template<bool anyOccupiedPoint, DestinationCondition DestinationConditionT, bool adjacent>
+	[[nodiscard]] FindPathResult findPathToConditionDepthFirstWithoutMemo(DestinationConditionT& destinationCondition, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& huristicDestination, bool detour = false, const FactionId& faction = FactionId::null(), const Distance& maxRange = Distance::max()) const;
 
-	template<bool anyOccupiedPoint, DestinationCondition DestinationConditionT>
-	[[nodiscard]] FindPathResult findPathToConditionBreadthFirst(DestinationConditionT destinationCondition, PathMemoBreadthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null(), const Distance& maxRange = Distance::max()) const;
+	template<typename DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
+	[[nodiscard]] FindPathResult findPathToConditionBreadthFirst(DestinationConditionT destinationCondition, PathMemoBreadthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, bool detour = false, const FactionId& faction = FactionId::null(), const Distance& maxRange = Distance::max()) const;
 
-	template<bool anyOccupiedPoint, DestinationCondition DestinationConditionT>
-	[[nodiscard]] FindPathResult findPathToConditionBreadthFirstWithoutMemo(DestinationConditionT& destinationCondition, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, bool detour = false, bool adjacent = false, const FactionId& faction = FactionId::null(), const Distance& maxRange = Distance::max()) const;
+	template<typename DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
+	[[nodiscard]] FindPathResult findPathToConditionBreadthFirstWithoutMemo(DestinationConditionT& destinationCondition, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, bool detour = false, const FactionId& faction = FactionId::null(), const Distance& maxRange = Distance::max()) const;
 
-	[[nodiscard]] FindPathResult findPathToSpaceDesignation(PathMemoBreadthFirst &memo, const SpaceDesignation designation, const FactionId &faction, const Point3D &start, const Facing4 &startFacing, const ShapeId &shape, bool detour, bool adjacent, bool unreserved, const Distance &maxRange) const;
+	template<bool anyOccupiedPoint, bool adjacent>
+	[[nodiscard]] FindPathResult findPathToSpaceDesignation(PathMemoBreadthFirst &memo, const SpaceDesignation designation, const FactionId &faction, const Point3D &start, const Facing4 &startFacing, const ShapeId &shape, bool detour, bool unreserved, const Distance &maxRange) const;
 
 	// Faction is sent by value on pupose.
-	template<bool anyOccupiedPoint, DestinationCondition DestinationConditionT>
-	[[nodiscard]] FindPathResult findPathToSpaceDesignationAndCondition(DestinationConditionT& destinationCondition, PathMemoBreadthFirst &memo, const SpaceDesignation designation, FactionId faction, const Point3D &start, const Facing4 &startFacing, const ShapeId &shape, bool detour, bool adjacent, bool unreserved, const Distance &maxRange) const;
+	template<CuboidToBool DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
+	[[nodiscard]] FindPathResult findPathToSpaceDesignationAndCondition(DestinationConditionT& destinationCondition, PathMemoBreadthFirst &memo, const SpaceDesignation designation, FactionId faction, const Point3D &start, const Facing4 &startFacing, const ShapeId &shape, bool detour, bool unreserved, const Distance &maxRange) const;
 
 	[[nodiscard]] FindPathResult findPathToEdge(PathMemoBreadthFirst& memo, const Point3D &start, const Facing4 &startFacing, const ShapeId &shape, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathAdjacentToPolymorphicWithoutMemo(const Point3D &start, const Facing4 &startFacing, const ShapeId &shape, const ActorOrItemIndex &actorOrItem, bool detour = false) const;

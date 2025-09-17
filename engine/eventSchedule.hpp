@@ -99,7 +99,7 @@ protected:
 	EventSchedule& m_schedule;
 	StrongVector<EventType*, Index> m_events;
 public:
-	HasScheduledEvents() { assert(false); std::unreachable(); }
+	//HasScheduledEvents() : m_schedule(*nullptr) { assert(false); std::unreachable(); }
 	HasScheduledEvents(EventSchedule& s) : m_schedule(s) { assert(&s); }
 	void load(Simulation& simulation, const Json& data, const Index& size)
 	{

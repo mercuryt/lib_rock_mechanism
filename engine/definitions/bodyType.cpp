@@ -23,18 +23,18 @@ std::vector<std::pair<AttackTypeId, MaterialTypeId>>& BodyPartType::getAttackTyp
 
 bool BodyType::hasBodyPart(const BodyTypeId& id, const BodyPartTypeId& bodyPartType)
 {
-	return std::ranges::find(bodyTypeData.m_bodyPartTypes[id], bodyPartType) != bodyTypeData.m_bodyPartTypes[id].end();
+	return std::ranges::find(g_bodyTypeData.m_bodyPartTypes[id], bodyPartType) != g_bodyTypeData.m_bodyPartTypes[id].end();
 }
 void BodyType::create(std::string name, std::vector<BodyPartTypeId>& bodyPartTypes)
 {
-	bodyTypeData.m_name.add(name);
-	bodyTypeData.m_bodyPartTypes.add(bodyPartTypes);
+	g_bodyTypeData.m_name.add(name);
+	g_bodyTypeData.m_bodyPartTypes.add(bodyPartTypes);
 }
 BodyTypeId BodyType::byName(std::string name)
 {
-	auto found = bodyTypeData.m_name.find(name);
-	assert(found != bodyTypeData.m_name.end());
-	return BodyTypeId::create(found - bodyTypeData.m_name.begin());
+	auto found = g_bodyTypeData.m_name.find(name);
+	assert(found != g_bodyTypeData.m_name.end());
+	return BodyTypeId::create(found - g_bodyTypeData.m_name.begin());
 }
-std::string BodyType::getName(const BodyTypeId& id) { return bodyTypeData.m_name[id]; }
-std::vector<BodyPartTypeId>& BodyType::getBodyPartTypes(const BodyTypeId& id) { return bodyTypeData.m_bodyPartTypes[id]; }
+std::string BodyType::getName(const BodyTypeId& id) { return g_bodyTypeData.m_name[id]; }
+std::vector<BodyPartTypeId>& BodyType::getBodyPartTypes(const BodyTypeId& id) { return g_bodyTypeData.m_bodyPartTypes[id]; }

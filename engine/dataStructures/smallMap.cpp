@@ -22,7 +22,6 @@
 #include "../actors/uniform.h"
 #include "../actors/skill.h"
 #include "../items/items.h"
-#include "../path/longRange.h"
 #include "../fire.h"
 #include "../objective.h"
 #include "../projects/installItem.h"
@@ -72,10 +71,8 @@ template class SmallMap<ItemTypeId, ItemTypeParamaters>;
 template class SmallMap<ItemTypeId, SmallMap<MaterialTypeId, SmallSet<ItemIndex>>>;
 template class SmallMap<ItemTypeId, SmallSet<ItemReference>>;
 template class SmallMap<ItemTypeId, SmallSet<StockPile*>>;
-template class SmallMap<LongRangePathNodeIndex, LongRangePathNodeIndex>;
-template class SmallMap<MoveTypeId, LongRangePathFinderForMoveType>;
 template class SmallMap<Offset3D, MaterialTypeId>;
-template class SmallMap<Offset3D, PointFeatureSet>;
+template class SmallMap<Offset3D, PointFeature>;
 template class SmallMap<Point3D, Reservable*>;
 template class SmallMap<Point3D, SmallMap<FactionId, FarmField*>>;
 template class SmallMap<Point3D, SmallMap<FactionId, PointIsPartOfStockPile>>;
