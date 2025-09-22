@@ -388,18 +388,19 @@ FindPathResult TerrainFacade::findPathTo(PathMemoDepthFirst& memo, const Point3D
 template<bool anyOccupiedPoint, bool adjacent>
 FindPathResult TerrainFacade::findPathToWithoutMemo(const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& target, bool detour, const FactionId& faction) const
 {
-	if constexpr(adjacent)
+	if constexpr(adjacent || anyOccupiedPoint)
 	{
 		auto destinationCondition = [target](const Cuboid& cuboid) -> std::pair<bool, Point3D> { return {cuboid.contains(target), target}; };
-		return findPathDepthFirstWithoutMemo<decltype(destinationCondition), anyOccupiedPoint, true>(start, startFacing, destinationCondition, target, shape, m_moveType, detour, faction, Distance::max());
+		return findPathDepthFirstWithoutMemo<decltype(destinationCondition), anyOccupiedPoint, adjacent>(start, startFacing, destinationCondition, target, shape, m_moveType, detour, faction, Distance::max());
 	}
 	else
 	{
 		auto destinationCondition = [target](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D> { return {point == target, point}; };
-		return findPathDepthFirstWithoutMemo<decltype(destinationCondition), anyOccupiedPoint, false>(start, startFacing, destinationCondition, target, shape, m_moveType, detour, faction, Distance::max());
+		return findPathDepthFirstWithoutMemo<decltype(destinationCondition), false, false>(start, startFacing, destinationCondition, target, shape, m_moveType, detour, faction, Distance::max());
 	}
 }
 template FindPathResult TerrainFacade::findPathToWithoutMemo<false, true>(const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& target, bool detour, const FactionId& faction) const;
+template FindPathResult TerrainFacade::findPathToWithoutMemo<true, false>(const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& target, bool detour, const FactionId& faction) const;
 template<bool anyOccupiedPoint, bool adjacent>
 FindPathResult TerrainFacade::findPathToAnyOf(PathMemoDepthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const CuboidSet& points, const Point3D huristicDestination, bool detour, const FactionId& faction) const
 {

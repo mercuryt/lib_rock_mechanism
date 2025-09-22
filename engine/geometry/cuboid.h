@@ -69,6 +69,7 @@ struct Cuboid
 	[[nodiscard]] Distance dimensionForFacing(const Facing6& facing) const;
 	[[nodiscard]] Facing6 getFacingTwordsOtherCuboid(const Cuboid& cuboid) const;
 	[[nodiscard]] bool isSomeWhatInFrontOf(const Point3D& position, const Facing4& facing) const;
+	[[nodiscard]] bool isTouching(const Cuboid& cuboid) const;
 	[[nodiscard]] bool isTouchingFace(const Cuboid& position) const;
 	[[nodiscard]] bool isTouchingFaceFromInside(const Cuboid& position) const;
 	// TODO: Should this return a CuboidArray<6>?
@@ -78,7 +79,6 @@ struct Cuboid
 	[[nodiscard]] SmallSet<Cuboid> getChildrenWhenSplitBy(const Cuboid& cuboid) const { return getChildrenWhenSplitByCuboid(cuboid); }
 	[[nodiscard]] SmallSet<Cuboid> getChildrenWhenSplitBy(const Point3D& point) const { return getChildrenWhenSplitByCuboid({point, point}); }
 	[[nodiscard]] std::pair<Cuboid, Cuboid> getChildrenWhenSplitBelowCuboid(const Cuboid& cuboid) const;
-	[[nodiscard]] bool isTouching(const Cuboid& cuboid) const;
 	[[nodiscard]] OffsetCuboid translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const;
 	[[nodiscard]] static Cuboid fromPoint(const Point3D& point);
 	[[nodiscard]] static Cuboid fromPointPair(const Point3D& a, const Point3D& b);

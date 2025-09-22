@@ -196,6 +196,14 @@ uint SmallSet<T>::findLastIndex(const T& value) const
 	return std::distance(m_data.begin(), it.base()) - 1;
 }
 template<typename T>
+int SmallSet<T>::maybeFindLastIndex(const T& value) const
+{
+	const auto it = std::ranges::find(m_data.rbegin(), m_data.rend(), value);
+	if(it == m_data.rend())
+		return -1;
+	return std::distance(m_data.begin(), it.base()) - 1;
+}
+template<typename T>
 std::string SmallSet<T>::toString() const
 {
 	std::string output;

@@ -1,17 +1,15 @@
 #pragma once
 #include "hasShapes.h"
+
 #include "actors/actors.h"
 #include "area/area.h"
-#include "space/space.h"
-#include "numericTypes/index.h"
 #include "items/items.h"
+#include "numericTypes/index.h"
+#include "numericTypes/types.h"
 #include "plants.h"
 #include "simulation/simulation.h"
-#include "numericTypes/types.h"
-#include <cassert>
-#include <cstdint>
-#include <iostream>
-#include <ranges>
+#include "space/space.h"
+
 template<class Derived, class Index>
 HasShapes<Derived, Index>::HasShapes(Area& area) : m_area(area) { }
 template<class Derived, class Index>
@@ -129,23 +127,20 @@ bool HasShapes<Derived, Index>::isAdjacentToPlant(const Index& index, const Plan
 template<class Derived, class Index>
 bool HasShapes<Derived, Index>::isAdjacentToActorAt(const Index& index, const Point3D& location, const Facing4& facing, const ActorIndex& actor) const
 {
-	auto occupied = getCuboidsWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing);
-	const auto predicate = [&](const Cuboid& cuboid) { return occupied.intersects(cuboid); };
-	return m_area.getActors().predicateForAnyAdjacentCuboid(actor, predicate);
+	const auto& occupied = Shape::getCuboidsOccupiedAt(m_shape[index], m_area.getSpace(), location, facing);
+	return occupied.isTouching(m_area.getActors().getOccupied(actor));
 }
 template<class Derived, class Index>
 bool HasShapes<Derived, Index>::isAdjacentToItemAt(const Index& index, const Point3D& location, const Facing4& facing, const ItemIndex& item) const
 {
-	auto occupied = getCuboidsWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing);
-	const auto predicate = [&](const Cuboid& cuboid) { return occupied.intersects(cuboid); };
-	return m_area.getItems().predicateForAnyAdjacentCuboid(item, predicate);
+	const auto& occupied = Shape::getCuboidsOccupiedAt(m_shape[index], m_area.getSpace(), location, facing);
+	return occupied.isTouching(m_area.getItems().getOccupied(item));
 }
 template<class Derived, class Index>
 bool HasShapes<Derived, Index>::isAdjacentToPlantAt(const Index& index, const Point3D& location, const Facing4& facing, const PlantIndex& plant) const
 {
-	auto occupied = getCuboidsWhichWouldBeOccupiedAtLocationAndFacing(index, location, facing);
-	const auto predicate = [&](const Cuboid& cuboid) { return occupied.intersects(cuboid); };
-	return m_area.getPlants().predicateForAnyAdjacentCuboid(plant, predicate);
+	const auto& occupied = Shape::getCuboidsOccupiedAt(m_shape[index], m_area.getSpace(), location, facing);
+	return occupied.isTouching(m_area.getPlants().getOccupied(plant));
 }
 template<class Derived, class Index>
 Distance HasShapes<Derived, Index>::distanceToActor(const Index& index, const ActorIndex& actor) const
@@ -227,10 +222,11 @@ template<class Derived, class Index>
 bool HasShapes<Derived, Index>::predicateForAnyAdjacentCuboid(const Index& index, std::function<bool(const Cuboid&)> predicate) const
 {
 	assert(m_location[index].exists());
+	const OffsetCuboid& boundry = m_area.getSpace().offsetBoundry();
 	//TODO: cache this.
 	for(const OffsetCuboid& offset : Shape::adjacentCuboidsWithFacing(m_shape[index], m_facing[index]))
 	{
-		Cuboid cuboid = Cuboid::create(offset.relativeToPoint(m_location[index]));
+		Cuboid cuboid = Cuboid::create(offset.intersection(boundry).relativeToPoint(m_location[index]));
 		if(predicate(cuboid))
 			return true;
 	}

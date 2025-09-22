@@ -58,18 +58,41 @@ bool Actors::lineLead_followersCanMoveEver(const ActorIndex& index) const
 	const Space& space = m_area.getSpace();
 	ActorOrItemIndex follower = getFollower(index);
 	auto& path = lineLead_getPath(index);
+	Point3D next;
+	CuboidSet futureOccupiedForCurrentLeader = getOccupied(index);
+	const CuboidSet& occupied = lineLead_getOccupiedCuboids(index);
 	while(follower.exists())
 	{
 		const Point3D& location = follower.getLocation(m_area);
-		auto lastIndexForLocation = path.findLastIndex(location);
-		assert(lastIndexForLocation != path.size());
-		if(lastIndexForLocation != 0)
+		auto lastIndexForLocation = path.maybeFindLastIndex(location);
+		if(lastIndexForLocation != -1)
 		{
-			const Point3D& next = path[lastIndexForLocation - 1];
-			if(!space.shape_anythingCanEnterEver(next))
-				return false;
-			const Facing4& facing = location.getFacingTwords(next);
-			if(!space.shape_shapeAndMoveTypeCanEnterEverWithFacing(next, follower.getShape(m_area), follower.getMoveType(m_area), facing))
+			// Follower is on path. Get the next step and check it for validity.
+			next = path[lastIndexForLocation - 1];
+			if(!space.shape_shapeAndMoveTypeCanEnterEverFrom(next, follower.getShape(m_area), follower.getMoveType(m_area), location))
+				next.clear();
+		}
+		if(next.empty())
+		{
+			// Either the follower is not on the path yet or it can't enter the next space. Find another location for it which touches the future location of it's leader.
+			const ShapeId& shape = follower.getShape(m_area);
+			const Cuboid candidates = space.getAdjacentWithEdgeAndCornerAdjacent(location);
+			const MoveTypeId& moveType = follower.getMoveType(m_area);
+			for(const Point3D& point : candidates)
+			{
+				if(point == location)
+					continue;
+				const Facing4 facing = location.getFacingTwords(point);
+				const CuboidSet toOccupy = Shape::getCuboidsOccupiedAt(follower.getShape(m_area), space, point, facing);
+				if(
+					toOccupy.isTouching(futureOccupiedForCurrentLeader) &&
+					space.shape_anythingCanEnterEver(point) &&
+					space.shape_moveTypeCanEnter(point, moveType) &&
+					space.shape_shapeAndMoveTypeCanEnterEverFrom(point, shape, moveType, location)
+				)
+					next = point;
+			}
+			if(next.empty())
 				return false;
 		}
 		follower = follower.getFollower(m_area);
@@ -84,17 +107,42 @@ bool Actors::lineLead_followersCanMoveCurrently(const ActorIndex& index) const
 	ActorOrItemIndex follower = getFollower(index);
 	auto& path = lineLead_getPath(index);
 	const CuboidSet& occupied = lineLead_getOccupiedCuboids(index);
+	Point3D next;
+	CuboidSet futureOccupiedForCurrentLeader = getOccupied(index);
 	while(follower.exists())
 	{
 		const Point3D& location = follower.getLocation(m_area);
-		auto lastIndexForLocation = path.findLastIndex(location);
-		assert(lastIndexForLocation != path.size());
-		if(lastIndexForLocation != 0)
+		auto lastIndexForLocation = path.maybeFindLastIndex(location);
+		if(lastIndexForLocation != -1)
 		{
-			const Point3D& next = path[lastIndexForLocation - 1];
+			// Follower is on path. Get the next step and check it for validity.
+			next = path[lastIndexForLocation - 1];
 			if(!space.shape_canEnterCurrentlyFrom(next, follower.getShape(m_area), location, occupied))
+				next.clear();
+		}
+		if(next.empty())
+		{
+			const ShapeId& shape = follower.getShape(m_area);
+			const Cuboid candidates = space.getAdjacentWithEdgeAndCornerAdjacent(location);
+			const MoveTypeId& moveType = follower.getMoveType(m_area);
+			for(const Point3D& point : candidates)
+			{
+				if(point == location)
+					continue;
+				const Facing4 facing = location.getFacingTwords(point);
+				const CuboidSet toOccupy = Shape::getCuboidsOccupiedAt(follower.getShape(m_area), space, point, facing);
+				if(
+					toOccupy.isTouching(futureOccupiedForCurrentLeader) &&
+					space.shape_anythingCanEnterEver(point) &&
+					space.shape_moveTypeCanEnter(point, moveType) &&
+					space.shape_shapeAndMoveTypeCanEnterEverAndCurrentlyFrom(point, shape, moveType, location, occupied)
+				)
+					next = point;
+			}
+			if(next.empty())
 				return false;
 		}
+		futureOccupiedForCurrentLeader = getCuboidsWhichWouldBeOccupiedAtLocationAndFacing(index, next, location.getFacingTwords(next));
 		follower = follower.getFollower(m_area);
 	}
 	return true;
@@ -150,13 +198,14 @@ void Actors::lineLead_appendToPath(const ActorIndex& index, const Point3D& point
 	const Point3D& back = m_leadFollowPath[index].back();
 	if(point == back)
 		return;
-	if(point.isAdjacentTo(back))
+	Space& space = m_area.getSpace();
+	const ShapeId& shape = lineLead_getLargestShape(index);
+	const MoveTypeId& moveType = lineLead_getMoveType(index);
+	if(point.isAdjacentTo(back) && space.shape_shapeAndMoveTypeCanEnterEverFrom(back, shape, moveType, point))
 		m_leadFollowPath[index].insert(point);
 	else
 	{
-		const MoveTypeId& moveType = lineLead_getMoveType(index);
-		const ShapeId& shape = lineLead_getLargestShape(index);
-		constexpr bool anyOccupied = false;
+		constexpr bool anyOccupied = true;
 		constexpr bool adjacent = false;
 		auto path = m_area.m_hasTerrainFacades.getForMoveType(moveType).findPathToWithoutMemo<anyOccupied, adjacent>(point, facing, shape, back);
 		// TODO: Can this fail?
@@ -166,23 +215,53 @@ void Actors::lineLead_appendToPath(const ActorIndex& index, const Point3D& point
 		m_leadFollowPath[index].insertAllNonunique(path.path);
 	}
 }
+// TODO: very redundant with can move.
 void Actors::lineLead_moveFollowers(const ActorIndex& index)
 {
-	//TODO: This could be done better by walking the followers and path simultaniously.
 	assert(isLeading(index));
 	assert(!isFollowing(index));
+	const Space& space = m_area.getSpace();
 	ActorOrItemIndex follower = getFollower(index);
-	auto& path = lineLead_getPath(index);
+	const SmallSet<Point3D>& path = lineLead_getPath(index);
+	const CuboidSet& occupied = lineLead_getOccupiedCuboids(index);
+	// Leader has already moved, so it's future occupied is its current occupied.
+	CuboidSet futureOccupiedForCurrentLeader = getOccupied(index);
 	while(follower.exists())
 	{
 		const Point3D& location = follower.getLocation(m_area);
-		auto found = path.find(location);
-		assert(found != path.end());
-		assert(found != path.begin());
-		const Point3D& next = *(--found);
-		if(follower.getLeader(m_area).occupiesPoint(m_area, next))
-			return;
-		follower.location_set(m_area, next, location.getFacingTwords(next));
+		auto lastIndexForLocation = path.maybeFindLastIndex(location);
+		Point3D next = lastIndexForLocation == -1 ? path.back() : path[lastIndexForLocation - 1];
+		if(!next.isAdjacentTo(location) || !space.shape_canEnterCurrentlyFrom(next, follower.getShape(m_area), location, occupied))
+		{
+			next.clear();
+			// Either the follower is not on the path yet or it can't enter the next space. Find another location for it which touches the future location of it's leader.
+			const MoveTypeId& moveType = follower.getMoveType(m_area);
+			const ShapeId& shape = follower.getShape(m_area);
+			Cuboid candidates = space.getAdjacentWithEdgeAndCornerAdjacent(location);
+			Distance closestDistance = Distance::max();
+			for(const Point3D& point : candidates)
+			{
+				const Facing4 facing = location.getFacingTwords(point);
+				if(
+					!space.shape_anythingCanEnterEver(point) ||
+					!space.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(point, shape, moveType, facing, occupied)
+				)
+					continue;
+				const CuboidSet cuboids = Shape::getCuboidsOccupiedAt(follower.getShape(m_area), space, point, facing);
+				if(!cuboids.isTouching(futureOccupiedForCurrentLeader))
+					continue;
+				Distance pointDistance = point.distanceTo(path.back());
+				if(closestDistance > pointDistance)
+				{
+					closestDistance = pointDistance;
+					next = point;
+				}
+			}
+			assert(next.exists());
+		}
+		follower.location_set(m_area, next, location.getFacingTwords((next)));
+		// This is a redundant calculation which has already been done in location_set.
+		futureOccupiedForCurrentLeader = getCuboidsWhichWouldBeOccupiedAtLocationAndFacing(index, next, location.getFacingTwords(next));
 		follower = follower.getFollower(m_area);
 	}
 }

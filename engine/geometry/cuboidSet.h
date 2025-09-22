@@ -80,6 +80,8 @@ public:
 	[[nodiscard]] CuboidSetType intersection(const CuboidType& cuboid) const;
 	[[nodiscard]] PointType intersectionPoint(const CuboidType& cuboid) const;
 	[[nodiscard]] bool intersects(const CuboidType& cuboid) const;
+	[[nodiscard]] bool isTouching(const CuboidType& cuboid) const;
+	[[nodiscard]] bool isTouching(const CuboidSetType& cuboids) const;
 	[[nodiscard]] __attribute__((noinline)) std::string toString() const;
 	[[nodiscard]] static CuboidSetType create(const SmallSet<PointType>& space);
 	friend struct CuboidSetConstIterator;

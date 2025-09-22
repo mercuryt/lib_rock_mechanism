@@ -269,6 +269,7 @@ Cuboid Cuboid::createCube(const Point3D& center, const Distance& width)
 }
 Cuboid Cuboid::create(const OffsetCuboid& cuboid)
 {
+	assert((cuboid.m_low.data >= 0).all());
 	return {Point3D(cuboid.m_high.data.cast<DistanceWidth>()), Point3D(cuboid.m_low.data.cast<DistanceWidth>())};
 }
 bool Cuboid::operator==(const Cuboid& cuboid) const

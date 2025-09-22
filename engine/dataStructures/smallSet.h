@@ -112,6 +112,7 @@ struct SmallSet
 	[[nodiscard]] This::const_iterator find(const T& value) const;
 	[[nodiscard]] bool isUnique() const;
 	[[nodiscard]] uint findLastIndex(const T& value) const;
+	[[nodiscard]] int maybeFindLastIndex(const T& value) const;
 	template<typename Predicate>
 	[[nodiscard]] This::iterator findIf(Predicate&& predicate) { return std::ranges::find_if(m_data, predicate); }
 	template<typename Predicate>

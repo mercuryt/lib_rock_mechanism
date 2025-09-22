@@ -40,6 +40,7 @@ public:
 	ActorOrItemIndex location_set(Area& area, const Point3D& location, const Facing4& facing) const;
 	void location_clear(Area& area) const;
 	void location_clearStatic(Area& area) const;
+	void location_clearDynamic(Area& area) const;
 	void followActor(Area& area, const ActorIndex& actor) const;
 	void followItem(Area& area, const ItemIndex& item) const;
 	void followPolymorphic(Area& area, const ActorOrItemIndex& actorOrItem) const;
@@ -68,7 +69,7 @@ public:
 	[[nodiscard]] Point3D getLocation(const Area& area) const;
 	[[nodiscard]] const CuboidSet& getOccupied(const Area& area) const;
 	[[nodiscard]] const MapWithCuboidKeys<CollisionVolume>& getOccupiedWithVolume(const Area& area) const;
-	[[nodiscard]] CuboidSet getAdjacentCuboids(Area& area) const;
+	[[nodiscard]] CuboidSet getAdjacentCuboids(const Area& area) const;
 	[[nodiscard]] bool isAdjacent(const Area& area, const ActorOrItemIndex& other) const;
 	[[nodiscard]] bool isAdjacentToActor(const Area& area, const ActorIndex& other) const;
 	[[nodiscard]] bool isAdjacentToItem(const Area& area, const ItemIndex& item) const;
@@ -84,6 +85,14 @@ public:
 	[[nodiscard]] FullDisplacement getVolume(const Area& area) const;
 	[[nodiscard]] Facing4 getFacing(const Area& area) const;
 	[[nodiscard]] bool isGeneric(const Area& area) const;
+	[[nodiscard]] Point3D findAdjacentPointWithCondition(const Area& area, auto&& condition)
+	{
+		for(const Cuboid& cuboid : getAdjacentCuboids(area))
+			for(const Point3D& point : cuboid)
+				if(condition(point))
+					return point;
+		return Point3D::null();
+	}
 	[[nodiscard]] std::strong_ordering operator<=>(const ActorOrItemIndex& other) const;
 	[[nodiscard]] bool operator==(const ActorOrItemIndex& other) const = default;
 	struct Hash
@@ -95,8 +104,8 @@ public:
 	void reservable_maybeUnreserve(Area& area, CanReserve& canReserve, const Quantity quantity = Quantity::create(1)) const;
 	void reservable_unreserveFaction(Area& area, const FactionId& faction) const;
 	void validate(Area& area) const;
-	[[nodiscard]] Quantity reservable_getUnreservedCount(Area& area, const FactionId& faction) const;
-	[[nodiscard]] bool reservable_exists(Area& area, const FactionId& faction) const;
-	[[nodiscard]] bool reservable_hasAny(Area& area) const;
+	[[nodiscard]] Quantity reservable_getUnreservedCount(const Area& area, const FactionId& faction) const;
+	[[nodiscard]] bool reservable_exists(const Area& area, const FactionId& faction) const;
+	[[nodiscard]] bool reservable_hasAny(const Area& area) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ActorOrItemIndex, m_index, m_isActor);
 };

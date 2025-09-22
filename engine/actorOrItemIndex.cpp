@@ -52,6 +52,13 @@ void ActorOrItemIndex::location_clearStatic(Area& area) const
 	else
 		area.getItems().location_clearStatic(m_index.toItem());
 }
+void ActorOrItemIndex::location_clearDynamic(Area& area) const
+{
+	if(isActor())
+		area.getActors().location_clearDynamic(m_index.toActor());
+	else
+		area.getItems().location_clearDynamic(m_index.toItem());
+}
 void ActorOrItemIndex::reservable_reserve(Area& area, CanReserve& canReserve, const Quantity quantity , std::unique_ptr<DishonorCallback> callback) const
 {
 	if(isActor())
@@ -204,7 +211,7 @@ const CuboidSet& ActorOrItemIndex::getOccupied(const Area& area) const
 { return isActor() ? area.getActors().getOccupied(m_index.toActor()) : area.getItems().getOccupied(m_index.toItem()); }
 const MapWithCuboidKeys<CollisionVolume>& ActorOrItemIndex::getOccupiedWithVolume(const Area& area) const
 { return isActor() ? area.getActors().getOccupiedWithVolume(m_index.toActor()) : area.getItems().getOccupiedWithVolume(m_index.toItem()); }
-CuboidSet ActorOrItemIndex::getAdjacentCuboids(Area& area) const
+CuboidSet ActorOrItemIndex::getAdjacentCuboids(const Area& area) const
 { return isActor() ? area.getActors().getAdjacentCuboids(m_index.toActor()) : area.getItems().getAdjacentCuboids(m_index.toItem()); }
 bool ActorOrItemIndex::isAdjacent(const Area& area, const ActorOrItemIndex& other) const
 {
@@ -249,21 +256,21 @@ std::strong_ordering ActorOrItemIndex::operator<=>(const ActorOrItemIndex& other
 		return std::strong_ordering::less;
 	return m_index <=> other.m_index;
 }
-Quantity ActorOrItemIndex::reservable_getUnreservedCount(Area& area, const FactionId& faction) const
+Quantity ActorOrItemIndex::reservable_getUnreservedCount(const Area& area, const FactionId& faction) const
 {
 	if(isActor())
 		return area.getActors().reservable_getUnreservedCount(m_index.toActor(), faction);
 	else
 		return area.getItems().reservable_getUnreservedCount(m_index.toItem(), faction);
 }
-bool ActorOrItemIndex::reservable_exists(Area& area, const FactionId& faction) const
+bool ActorOrItemIndex::reservable_exists(const Area& area, const FactionId& faction) const
 {
 	if(isActor())
 		return area.getActors().reservable_exists(m_index.toActor(), faction);
 	else
 		return area.getItems().reservable_exists(m_index.toItem(), faction);
 }
-bool ActorOrItemIndex::reservable_hasAny(Area& area) const
+bool ActorOrItemIndex::reservable_hasAny(const Area& area) const
 {
 	if(isActor())
 		return area.getActors().reservable_hasAnyReservations(m_index.toActor());

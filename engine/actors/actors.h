@@ -605,6 +605,8 @@ public:
 	[[nodiscard]] std::vector<ActorOrItemIndex> lineLead_getAll(const ActorIndex& index) const;
 	[[nodiscard]] bool lineLead_followersCanMoveEver(const ActorIndex& index) const;
 	[[nodiscard]] bool lineLead_followersCanMoveCurrently(const ActorIndex& index) const;
+	[[nodiscard]] Point3D lineLead_followerGetNextStep(const ActorIndex&  lineLeader, const ActorOrItemIndex& follower, const SmallSet<Point3D>& path, const CuboidSet& occupied) const;
+	[[nodiscard]] SetLocationAndFacingResult lineLead_tryToMove(const ActorIndex& index);
 	void lineLead_clearPath(const ActorIndex& index);
 	void lineLead_appendToPath(const ActorIndex& index, const Point3D& point, const Facing4& facing);
 	void lineLead_pushFront(const ActorIndex& index, const Point3D& point);

@@ -57,7 +57,7 @@ bool Space::shape_canFitEver(const Point3D& location, const ShapeId& shape, cons
 	// TODO: optimize for single point shape.
 	assert(shape_anythingCanEnterEver(location));
 	// Check that occupied space is in bounds.
-	Cuboid spaceBoundry = boundry();
+	OffsetCuboid spaceBoundry = offsetBoundry();
 	OffsetCuboid toOccupyBoundry = Shape::getOffsetCuboidBoundryWithFacing(shape, facing).relativeToPoint(location);
 	if(!spaceBoundry.contains(toOccupyBoundry))
 		return false;
@@ -96,6 +96,19 @@ bool Space::shape_canFitCurrentlyStatic(const Point3D& location, const ShapeId& 
 	{
 		const auto condition = [&](const CollisionVolume& v){ return volume + v > Config::maxPointVolume; };
 		if(m_staticVolume.queryAnyWithCondition(cuboid, condition))
+			return false;
+	}
+	return true;
+}
+bool Space::shape_canFitCurrentlyDynamic(const Point3D& location, const ShapeId& shape, const Facing4& facing, const CuboidSet& occupied) const
+{
+	assert(shape_canFitEver(location, shape, facing));
+	MapWithCuboidKeys<CollisionVolume> toOccupy = Shape::getCuboidsOccupiedAtWithVolume(shape, *this, location, facing);
+	toOccupy.removeContainedAndFragmentInterceptedAll(occupied);
+	for(const auto& [cuboid, volume] : toOccupy)
+	{
+		const auto condition = [&](const CollisionVolume& v){ return volume + v > Config::maxPointVolume; };
+		if(m_dynamicVolume.queryAnyWithCondition(cuboid, condition))
 			return false;
 	}
 	return true;
@@ -143,14 +156,15 @@ bool Space::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const Point3
 	assert(shape_anythingCanEnterEver(location));
 	if(!shape_moveTypeCanEnter(location, moveType))
 		return false;
-	Cuboid spaceBoundry = boundry();
-	MapWithCuboidKeys<CollisionVolume> toOccupy = Shape::getCuboidsOccupiedAtWithVolume(shape, *this, location, facing);
-	Cuboid toOccupyBoundry = toOccupy.boundry();
-	if(!spaceBoundry.contains(toOccupyBoundry))
+	OffsetCuboid spaceBoundry = offsetBoundry();
+	OffsetCuboid offsetShapeBoundry = Shape::getOffsetCuboidBoundryWithFacing(shape, facing).relativeToPoint(location);
+	if(!spaceBoundry.contains(offsetShapeBoundry))
 		return false;
+	MapWithCuboidKeys<CollisionVolume> toOccupy = Shape::getCuboidsOccupiedAtWithVolume(shape, *this, location, facing);
+	Cuboid shapeBoundry = Cuboid::create(offsetShapeBoundry);
 	toOccupy.removeContainedAndFragmentInterceptedAll(occupied);
-	bool isFlat = toOccupyBoundry.m_high.z() == toOccupyBoundry.m_low.z();
-	Cuboid toOccupyBoundryWithoutLowestLevel = isFlat ? toOccupyBoundry : Cuboid{toOccupyBoundry.m_high, toOccupyBoundry.m_low.above()};
+	bool isFlat = shapeBoundry.m_high.z() == shapeBoundry.m_low.z();
+	Cuboid toOccupyBoundryWithoutLowestLevel = isFlat ? shapeBoundry : Cuboid{shapeBoundry.m_high, shapeBoundry.m_low.above()};
 	for(const auto& [cuboid, volume] : toOccupy)
 	{
 		if(!shape_anythingCanEnterEver(cuboid) || !shape_anythingCanEnterCurrently(cuboid))

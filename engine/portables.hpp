@@ -173,6 +173,7 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>void Po
 	assert(!isFollowing(index));
 	assert(!isLeading(index));
 	assert(!actors.isLeading(actor));
+	assert(this->m_occupied[index].isTouching(actors.getOccupied(actor)));
 	// If following a pilot, follow the mount or vehicle instead.
 	const ActorOrItemIndex& leaderPiloting = actors.getIsPiloting(actor);
 	if(leaderPiloting.exists())
@@ -194,7 +195,6 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>void Po
 	this->maybeUnsetStatic(index);
 	actors.setFollower(actor, getActorOrItemIndex(index));
 	ActorIndex lineLeader = getLineLeader(index);
-	actors.lineLead_appendToPath(lineLeader, this->m_location[index], this->m_facing[index]);
 	actors.move_updateActualSpeed(lineLeader);
 }
 template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::followItem(const Index& index, const ItemIndex& item)
@@ -221,7 +221,6 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>void Po
 	items.getFollower(item) = getActorOrItemIndex(index);
 	ActorIndex lineLeader = getLineLeader(index);
 	actors.move_updateActualSpeed(lineLeader);
-	actors.lineLead_appendToPath(lineLeader, this->m_location[index], this->m_facing[index]);
 }
 template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::followPolymorphic(const Index& index, const ActorOrItemIndex& actorOrItem)
 {
