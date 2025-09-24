@@ -77,6 +77,7 @@ public:
 	}
 	void load(const Json& data);
 	void followActor(const Index& index, const ActorIndex& actor);
+	void followActorAllowTeleport(const Index& index, const ActorIndex& actor);
 	void followItem(const Index& index, const ItemIndex& item);
 	void followPolymorphic(const Index& index, const ActorOrItemIndex& ActorOrItem);
 	void unfollow(const Index& index);

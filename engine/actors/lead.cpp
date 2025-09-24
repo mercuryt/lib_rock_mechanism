@@ -65,7 +65,7 @@ bool Actors::lineLead_followersCanMoveEver(const ActorIndex& index) const
 	{
 		const Point3D& location = follower.getLocation(m_area);
 		auto lastIndexForLocation = path.maybeFindLastIndex(location);
-		if(lastIndexForLocation != -1)
+		if(lastIndexForLocation  > 0)
 		{
 			// Follower is on path. Get the next step and check it for validity.
 			next = path[lastIndexForLocation - 1];
@@ -83,14 +83,16 @@ bool Actors::lineLead_followersCanMoveEver(const ActorIndex& index) const
 				if(point == location)
 					continue;
 				const Facing4 facing = location.getFacingTwords(point);
-				const CuboidSet toOccupy = Shape::getCuboidsOccupiedAt(follower.getShape(m_area), space, point, facing);
 				if(
-					toOccupy.isTouching(futureOccupiedForCurrentLeader) &&
 					space.shape_anythingCanEnterEver(point) &&
 					space.shape_moveTypeCanEnter(point, moveType) &&
 					space.shape_shapeAndMoveTypeCanEnterEverFrom(point, shape, moveType, location)
 				)
-					next = point;
+				{
+					const CuboidSet toOccupy = Shape::getCuboidsOccupiedAt(follower.getShape(m_area), space, point, facing);
+					if( toOccupy.isTouching(futureOccupiedForCurrentLeader))
+						next = point;
+				}
 			}
 			if(next.empty())
 				return false;
@@ -113,7 +115,7 @@ bool Actors::lineLead_followersCanMoveCurrently(const ActorIndex& index) const
 	{
 		const Point3D& location = follower.getLocation(m_area);
 		auto lastIndexForLocation = path.maybeFindLastIndex(location);
-		if(lastIndexForLocation != -1)
+		if(lastIndexForLocation  > 0)
 		{
 			// Follower is on path. Get the next step and check it for validity.
 			next = path[lastIndexForLocation - 1];
@@ -130,14 +132,16 @@ bool Actors::lineLead_followersCanMoveCurrently(const ActorIndex& index) const
 				if(point == location)
 					continue;
 				const Facing4 facing = location.getFacingTwords(point);
-				const CuboidSet toOccupy = Shape::getCuboidsOccupiedAt(follower.getShape(m_area), space, point, facing);
 				if(
-					toOccupy.isTouching(futureOccupiedForCurrentLeader) &&
 					space.shape_anythingCanEnterEver(point) &&
 					space.shape_moveTypeCanEnter(point, moveType) &&
 					space.shape_shapeAndMoveTypeCanEnterEverAndCurrentlyFrom(point, shape, moveType, location, occupied)
 				)
-					next = point;
+				{
+					const CuboidSet toOccupy = Shape::getCuboidsOccupiedAt(follower.getShape(m_area), space, point, facing);
+					if( toOccupy.isTouching(futureOccupiedForCurrentLeader))
+						next = point;
+				}
 			}
 			if(next.empty())
 				return false;
@@ -230,8 +234,17 @@ void Actors::lineLead_moveFollowers(const ActorIndex& index)
 	{
 		const Point3D& location = follower.getLocation(m_area);
 		auto lastIndexForLocation = path.maybeFindLastIndex(location);
-		Point3D next = lastIndexForLocation == -1 ? path.back() : path[lastIndexForLocation - 1];
-		if(!next.isAdjacentTo(location) || !space.shape_canEnterCurrentlyFrom(next, follower.getShape(m_area), location, occupied))
+		Point3D next;
+		if(lastIndexForLocation > 0)
+			next = path[lastIndexForLocation - 1];
+		else if(!path.empty())
+			next = path.back();
+		const ShapeId& followerShape = follower.getShape(m_area);
+		if(
+			!next.isAdjacentTo(location) ||
+			!space.shape_canFitEver(next, followerShape, location.getFacingTwords(next)) ||
+			!space.shape_canEnterCurrentlyFrom(next, followerShape, location, occupied)
+		)
 		{
 			next.clear();
 			// Either the follower is not on the path yet or it can't enter the next space. Find another location for it which touches the future location of it's leader.

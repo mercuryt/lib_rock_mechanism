@@ -171,11 +171,12 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 {
 	ActorReference ref = m_project.m_area.getActors().getReference(actor);
 	assert(m_workers.contains(ref));
+	Area& area = m_project.m_area;
+	Actors& actors = area.getActors();
+	assert(!actors.isFollowing(actor));
 	Objective& objective = *m_project.m_workers[ref].objective;
 	bool detour = objective.m_detour;
 	bool hasCargo = false;
-	Area& area = m_project.m_area;
-	Actors& actors = area.getActors();
 	Items& items = area.getItems();
 	Space& space = area.getSpace();
 	assert(actors.objective_exists(actor));
@@ -311,7 +312,11 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 							{
 								ActorIndex followerIndex = follower.getIndex(actors.m_referenceData);
 								if(follower != m_leader)
+								{
+									if(actors.move_hasEvent(followerIndex) || actors.move_hasPathRequest(followerIndex))
+										actors.move_clearAllEventsAndTasks(followerIndex);
 									actors.followPolymorphic(followerIndex, toHaul);
+								}
 								actors.canReserve_clearAll(followerIndex);
 							}
 							actors.move_setDestinationAdjacentToLocation(leaderIndex, m_project.m_location, detour);
@@ -554,7 +559,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 						// Actor can harness beast to item.
 						// Don't check if item is adjacent to beast, allow it to teleport.
 						// TODO: Make not teleport.
-						items.followActor(haulTool, beastOfBurden);
+						items.followActorAllowTeleport(haulTool, beastOfBurden);
 						// Skip adjacent check, potentially teleport.
 						actors.canReserve_clearAll(actor);
 						actors.move_setDestinationAdjacentToPolymorphic(actor, toHaul, detour);

@@ -73,6 +73,7 @@ void Actors::move_callback(const ActorIndex& index)
 {
 	assert(!m_path[index].empty());
 	assert(m_destination[index].exists());
+	assert(!isFollowing(index));
 	const Point3D& newLocation = m_path[index].back();
 	const Point3D previousLocation = getCombinedLocation(index);
 	const Facing4 previousFacing = getFacing(index);
@@ -188,6 +189,7 @@ void Actors::move_callback(const ActorIndex& index)
 }
 void Actors::move_schedule(const ActorIndex& index, const Point3D& moveFrom)
 {
+	assert(!isFollowing(index));
 	assert(moveFrom != m_destination[index]);
 	const Point3D& moveTo = m_path[index].back();
 	m_moveEvent.schedule(index, move_delayToMoveInto(index, moveFrom, moveTo), m_area, index);

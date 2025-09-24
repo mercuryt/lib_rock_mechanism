@@ -414,6 +414,9 @@ void HasObjectives::subobjectiveComplete(Area& area)
 	#ifndef NDEBUG
 		Actors& actors = area.getActors();
 		assert(actors.sleep_isAwake(m_actor));
+		assert(!actors.move_hasEvent(m_actor));
+		assert(!actors.move_hasPath(m_actor));
+		assert(!actors.move_hasPathRequest(m_actor));
 	#endif
 	if(m_currentObjective == nullptr)
 		getNext(area);

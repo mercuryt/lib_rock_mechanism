@@ -181,8 +181,6 @@ TEST_CASE("haul")
 		simulation.fastForwardUntillActorHasNoDestination(area, dwarf2);
 		if(!cargo.isAdjacentToActor(area, dwarf1))
 			simulation.fastForwardUntillActorIsAdjacentToPolymorphic(area, dwarf1, cargo);
-		if(actors.move_getDestination(dwarf1).exists())
-			simulation.fastForwardUntillActorHasNoDestination(area, dwarf1);
 		ActorIndex leader = dwarf1;
 		ActorIndex follower = dwarf2;
 		if(actors.isFollowing(dwarf2))

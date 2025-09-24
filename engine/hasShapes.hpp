@@ -174,8 +174,7 @@ bool HasShapes<Derived, Index>::allOccupiedPointsAreReservable(const Index& inde
 template<class Derived, class Index>
 bool HasShapes<Derived, Index>::isAdjacentToLocation(const Index& index, const Point3D& location) const
 {
-	const auto predicate = [&](const Cuboid& cuboid) { return cuboid.contains(location); };
-	return predicateForAnyAdjacentCuboid(index, predicate);
+	return getAdjacentCuboids(index).contains(location);
 }
 template<class Derived, class Index>
 bool HasShapes<Derived, Index>::isAdjacentToAnyCuboid(const Index& index, const CuboidSet& cuboids) const

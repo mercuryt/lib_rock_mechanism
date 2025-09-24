@@ -170,10 +170,20 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>ActorOr
 template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::followActor(const Index& index, const ActorIndex& actor)
 {
 	Actors& actors = getActors();
+	assert(this->m_occupied[index].isTouching(actors.getOccupied(actor)));
+	followActorAllowTeleport(index, actor);
+}
+template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::followActorAllowTeleport(const Index& index, const ActorIndex& actor)
+{
+	Actors& actors = getActors();
 	assert(!isFollowing(index));
 	assert(!isLeading(index));
 	assert(!actors.isLeading(actor));
-	assert(this->m_occupied[index].isTouching(actors.getOccupied(actor)));
+	if constexpr(isActors)
+	{
+		assert(!static_cast<Actors*>(this)->move_hasEvent(index));
+		assert(!static_cast<Actors*>(this)->move_hasPathRequest(index));
+	}
 	// If following a pilot, follow the mount or vehicle instead.
 	const ActorOrItemIndex& leaderPiloting = actors.getIsPiloting(actor);
 	if(leaderPiloting.exists())
@@ -204,6 +214,11 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>void Po
 	assert(!isFollowing(index));
 	assert(!isLeading(index));
 	assert(!items.isLeading(item));
+	if constexpr(isActors)
+	{
+		assert(!static_cast<Actors*>(this)->move_hasEvent(index));
+		assert(!static_cast<Actors*>(this)->move_hasPathRequest(index));
+	}
 	// Only follow items which already have leaders;
 	assert(items.isFollowing(item));
 	// if piloting something then set that thing to follow rather then the pilot.

@@ -39,6 +39,7 @@ class ProjectRequirementCounts;
 class FarmField;
 class CanReserve;
 
+
 //template class SmallMap<FactionId, RTreeDataIndex<SmallSet<Project*>, uint16_t, noMerge>>;
 template class SmallMap<ActorOrItemIndex, DeckRotationDataSingle>;
 template class SmallMap<ActorReference, ProjectWorker>;
