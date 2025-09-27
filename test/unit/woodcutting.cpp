@@ -51,6 +51,7 @@ TEST_CASE("woodcutting")
 	{
 		items.location_set(axe, Point3D::create(3,8,1), Facing4::North);
 		// One step to find the designation, activate the project, and reserve the axe.
+		CHECK(actors.objective_getCurrent<WoodCuttingObjective>(dwarf).joinableProjectExistsAt(area, Cuboid{treeLocation, treeLocation}, dwarf).exists());
 		simulation.doStep();
 		CHECK(actors.project_exists(dwarf));
 		project = actors.project_get(dwarf);

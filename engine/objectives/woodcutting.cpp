@@ -167,8 +167,12 @@ Point3D WoodCuttingObjective::joinableProjectExistsAt(Area& area, const Cuboid& 
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFaction(actor);
 	assert(area.getSpace().designation_has(cuboid, faction, SpaceDesignation::WoodCutting));
-
-	const auto condition = [&](WoodCuttingProject& project) { return !project.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains(&project) && project.canAddWorker(actor); };
+	const auto condition = [&](WoodCuttingProject& project) {
+		return
+			!project.reservationsComplete() &&
+			!m_cannotJoinWhileReservationsAreNotComplete.contains(&project) &&
+			project.canAddWorker(actor);
+	};
 	WoodCuttingProject* project = area.m_hasWoodCuttingDesignations.getForFaction(faction).getProjectWithCondition(cuboid, condition);
 	if(project != nullptr)
 		return project->getLocation();

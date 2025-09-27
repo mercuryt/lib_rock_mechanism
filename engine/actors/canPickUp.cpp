@@ -380,10 +380,13 @@ void Actors::canPickUp_addFluidToContainerFromAdjacentPointsIncludingOtherContai
 
 	for(const Cuboid& cuboid : getAdjacentCuboids(index))
 	{
+		// TODO: rewrite as querying point in cuboid rather then iterating points.
 		if(space.fluid_contains(cuboid, fluidType))
 			for(const Point3D& point : cuboid)
 			{
 				const CollisionVolume avalible = space.fluid_volumeOfTypeContains(point, fluidType);
+				if(avalible == 0)
+					continue;
 				const CollisionVolume volumeToTransfer = std::min(capacity, avalible);
 				assert(volumeToTransfer != 0);
 				space.fluid_remove(point, volumeToTransfer, fluidType);

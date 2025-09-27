@@ -364,10 +364,14 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 			};
 			// Verfy the worker can path to the required materials. Cumulative for all candidates in this step but reset if not satisfied.
 			// capture by reference is used here because the pathing is being done immideatly instead of batched.
+			SmallSet<ItemIndex> itemsWhichHaveBeenProcessedAlready;
 			auto destinationCondition = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
 			{
 				for(ItemIndex item : space.item_getAll(cuboid))
 				{
+					if(itemsWhichHaveBeenProcessedAlready.contains(item))
+						continue;
+					itemsWhichHaveBeenProcessedAlready.insert(item);
 					if(items.reservable_isFullyReserved(item, m_project.m_faction))
 						continue;
 					for(auto& [itemQuery, projectRequirementCounts] : m_project.m_requiredItems)

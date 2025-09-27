@@ -31,6 +31,7 @@ public:
 	void setNeedsFood(Area& area);
 	void unschedule();
 	void setObjective(EatObjective& objective);
+	void setPercentStarved(const Percent& percent);
 	[[nodiscard]] bool needsFood() const;
 	[[nodiscard]] Mass massFoodForBodyMass(Area& area) const;
 	[[nodiscard]] Mass getMassFoodRequested() const;

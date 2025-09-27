@@ -33,7 +33,6 @@ template const StockPile* Space::stockpile_getOneForFaction(const Cuboid& shape,
 void Space::stockpile_recordNoLongerMember(const Point3D& point, StockPile& stockPile)
 {
 	assert(stockpile_contains(point, stockPile.getFaction()));
-	m_stockPiles[stockPile.getFaction()].removeAll(point);
 	const FactionId& faction = stockPile.getFaction();
 	if(stockpile_isAvalible(point, stockPile.getFaction()))
 	{

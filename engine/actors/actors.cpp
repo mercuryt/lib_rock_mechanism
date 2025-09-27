@@ -532,9 +532,12 @@ void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
 	for(ActorIndex actor : m_targetedBy[newIndex])
 		m_target[actor] = newIndex;
 	// Update SmallSet<ActorIndex> stored in occupied point(s).
-	Space& space = m_area.getSpace();
-	for(const Cuboid& cuboid : m_occupied[newIndex])
-		space.actor_updateIndex(cuboid, oldIndex, newIndex);
+	if(hasLocation(newIndex))
+	{
+		Space& space = m_area.getSpace();
+		for(const Cuboid& cuboid : m_occupied[newIndex])
+			space.actor_updateIndex(cuboid, oldIndex, newIndex);
+	}
 }
 void Actors::destroy(const ActorIndex& index)
 {

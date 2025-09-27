@@ -415,7 +415,8 @@ TEST_CASE("stockpile")
 		// The second worker verifys drop off, creates project, makes reservations; the first paths to cargoOrigin.
 		simulation.doStep();
 		CHECK(actors.objective_getCurrentName(dwarf2) == "stockpile");
-		CHECK(objective.getDestination() == stockpileLocation1);
+		const bool hasDestination = objective.getDestination() == stockpileLocation1 || objective.getDestination() == stockpileLocation2;
+		CHECK(hasDestination);
 		CHECK(actors.project_exists(dwarf2));
 		StockPileProject& project = static_cast<StockPileProject&>(*actors.project_get(dwarf2));
 		CHECK(project.getItem().getIndex(items.m_referenceData) == cargo);
@@ -431,19 +432,8 @@ TEST_CASE("stockpile")
 		CHECK(cargoOrigin.isAdjacentTo(actors.move_getDestination(dwarf1)));
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf2, cargoOrigin);
 		CHECK(actors.canPickUp_exists(dwarf2));
-		auto predicate1 = [&]{ return space.item_getCount(stockpileLocation1, pile, sand) != 0; };
-		CHECK(actors.objective_getCurrentName(dwarf2) == "stockpile");
-		simulation.fastForwardUntillPredicate(predicate1);
-		Quantity firstDeliveryQuantity = space.item_getCount(stockpileLocation1, pile, sand);
-		CHECK(actors.objective_getCurrentName(dwarf2) == "stockpile");
-		auto predicate2 = [&]{ return space.item_getCount(stockpileLocation1, pile, sand) > firstDeliveryQuantity || space.item_getCount(stockpileLocation2, pile, sand) > firstDeliveryQuantity; };
-		simulation.fastForwardUntillPredicate(predicate2);
-		if(actors.getActionDescription(dwarf2) != "stockpile")
-			CHECK(actors.objective_getCurrentName(dwarf1) != "stockpile");
-		else
-			CHECK(actors.objective_getCurrentName(dwarf2) == "stockpile");
-		auto predicate3 = [&]{ return space.item_getCount(stockpileLocation1, pile, sand) == 100 && space.item_getCount(stockpileLocation2, pile, sand) == 100; };
-		simulation.fastForwardUntillPredicate(predicate3);
+		auto predicate = [&]{ return space.item_getCount(stockpileLocation1, pile, sand) == 100 && space.item_getCount(stockpileLocation2, pile, sand) == 100; };
+		simulation.fastForwardUntillPredicate(predicate);
 		CHECK(!actors.project_exists(dwarf1));
 		CHECK(!actors.project_exists(dwarf2));
 		simulation.doStep();

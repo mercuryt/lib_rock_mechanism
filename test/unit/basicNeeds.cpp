@@ -152,12 +152,16 @@ TEST_CASE("basicNeedsSentient")
 		simulation.doStep();
 		CHECK(actors.objective_hasSupressedNeed(actor, eatNeedType));
 		CHECK(actors.objective_getCurrentName(actor) == "wander");
-		simulation.fasterForwardUntillPredicate([&](){ return actors.eat_getMinimumAcceptableDesire(actor) == 2 && actors.objective_getCurrentName(actor) == "eat"; }, Config::minutesPerHour * 6);
-		CHECK(actors.move_hasPathRequest(actor));
+		// Station actor so it doesn't wander while fast forwarding six hours.
+		actors.objective_addTaskToStart(actor, std::make_unique<StationObjective>(actors.getLocation(actor)));
+		simulation.fasterForwardUntillPredicate([&](){ return actors.eat_getMinimumAcceptableDesire(actor) == 2; }, Config::minutesPerHour * 6);
+		actors.objective_complete(actor, actors.objective_getCurrent<StationObjective>(actor));
+		CHECK(actors.objective_getCurrentName(actor) == "eat");
 		const EatObjective& objective = actors.objective_getCurrent<EatObjective>(actor);
 		CHECK(actors.eat_canEatItem(actor, fruit));
 		CHECK(objective.canEatAt(area, fruitLocation, actor));
 		CHECK(!objective.hasLocation());
+		CHECK(actors.move_hasPathRequest(actor));
 		simulation.doStep();
 		// Because we aren't finding a max desirable target we can't use a path generated from the first step of searching, we need a second step to find a path to the selected candidate.
 		CHECK(actors.move_hasPathRequest(actor));
@@ -386,6 +390,7 @@ TEST_CASE("actorGrowth")
 	Step nextPercentIncreaseStep = actors.grow_getEventStep(actor);
 	CHECK(nextPercentIncreaseStep <= simulation.m_step + Config::stepsPerDay * 95);
 	CHECK(nextPercentIncreaseStep >= simulation.m_step + Config::stepsPerDay * 90);
+	actors.objective_addTaskToStart(actor, std::make_unique<StationObjective>(actors.getLocation(actor)));
 	simulation.fasterForward(Config::stepsPerHour * 26);
 	actors.satisfyNeeds(actor);
 	CHECK(actors.grow_isGrowing(actor));

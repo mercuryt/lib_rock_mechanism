@@ -474,7 +474,11 @@ template<typename ShapeT>
 Point3D Space::fluid_containsPoint(const ShapeT& shape, const FluidTypeId& fluidType) const
 {
 	const auto condition = [fluidType](const FluidData& data) { return data.type == fluidType; };
-	return m_fluid.queryGetOneCuboidWithCondition(shape, condition).intersection(shape).m_high;
+	const Cuboid result = m_fluid.queryGetOneCuboidWithCondition(shape, condition);
+	if(result.empty())
+		return Point3D::null();
+	return result.intersection(shape).m_high;
+
 }
 template Point3D Space::fluid_containsPoint(const Point3D& shape, const FluidTypeId& fluidType) const;
 template Point3D Space::fluid_containsPoint(const Cuboid& shape, const FluidTypeId& fluidType) const;

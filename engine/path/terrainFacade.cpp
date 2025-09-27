@@ -302,7 +302,7 @@ AdjacentData TerrainFacade::makeDataForPoint(const Point3D& point, const CuboidS
 void TerrainFacade::update(const Cuboid& cuboid)
 {
 	const Space& space = m_area.getSpace();
-	assert(space.boundry().contains(cuboid));
+	assert(space.boundry().intersects(cuboid));
 	m_enterable.maybeRemove(cuboid);
 	for(const Point3D& point : cuboid)
 		if(

@@ -150,9 +150,12 @@ void Items::moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex)
 		m_onSurface.maybeUnset(oldIndex);
 		m_onSurface.set(newIndex);
 	}
-	Space& space = m_area.getSpace();
-	const Cuboid boundry = this->boundry(newIndex);
-	space.item_updateIndex(boundry, oldIndex, newIndex);
+	if(hasLocation(newIndex))
+	{
+		Space& space = m_area.getSpace();
+		const Cuboid boundry = this->boundry(newIndex);
+		space.item_updateIndex(boundry, oldIndex, newIndex);
+	}
 }
 void Items::setTemperature(const ItemIndex& index, const Temperature& temperature, const Point3D& point)
 {
