@@ -199,6 +199,7 @@ TEST_CASE("route_10_10_10")
 			.species=troll,
 			.location=origin,
 		});
+		CHECK(Shape::getIsMultiTile(actors.getShape(actor)));
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());

@@ -12,11 +12,12 @@ protected:
 	float data = FLT_MAX;
 	using This = StrongFloat<Derived>;
 public:
+	using Primitive = float;
 	[[nodiscard]] constexpr static Derived create(const float& d) { Derived der; der.set(d); return der; }
 	[[nodiscard]] constexpr static Derived null() { return create(FLT_MAX); }
 	[[nodiscard]] constexpr bool exists() const { return data != FLT_MAX; }
 	[[nodiscard]] constexpr bool empty() const { return data == FLT_MAX; }
-	[[nodiscard]] constexpr float get() const { assert(exists()); return data; }
+	[[nodiscard]] constexpr float get() const { return data; }
 	//TODO: return const references?
 	[[nodiscard]] constexpr static Derived max() { return create(std::numeric_limits<float>::max()); }
 	[[nodiscard]] constexpr static Derived min() { return create(std::numeric_limits<float>::min()); }

@@ -171,7 +171,11 @@ Json SmallMapStable<K,V>::toJson() const
 	{
 		Json output = Json::array();
 		for(const auto& [key, value] : m_data)
-			output.push_back({key, *value});
+		{
+			Json jsonValue;
+			to_json(jsonValue, *value.get());
+			output.push_back({key, jsonValue});
+		}
 		return output;
 	}
 	else

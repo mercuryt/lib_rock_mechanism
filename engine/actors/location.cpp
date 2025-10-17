@@ -71,46 +71,21 @@ void Actors::location_setDynamic(const ActorIndex& index, const Point3D& locatio
 // Used when item already has a location, rolls back position on failure.
 SetLocationAndFacingResult Actors::location_tryToMoveToStatic(const ActorIndex& index, const Point3D& location)
 {
+	assert(hasLocation(index));
+	assert(isStatic(index));
 	const Point3D previousLocation = getLocation(index);
-	const Facing4 previousFacing = getFacing(index);
+	assert(previousLocation.isAdjacentTo(location));
 	const Facing4 facing = previousLocation.getFacingTwords(location);
-	DeckRotationData deckRotationData = DeckRotationData::recordAndClearDependentPositions(m_area, ActorOrItemIndex::createForActor(index));
-	location_clear(index);
-	SetLocationAndFacingResult output = location_tryToSetDynamicInternal(index, location, facing);
-	if(output == SetLocationAndFacingResult::Success)
-	{
-		SetLocationAndFacingResult deckSetLocationResult = deckRotationData.tryToReinstanceAtRotatedPosition(m_area, previousLocation, location, previousFacing, facing);
-		if(deckSetLocationResult == SetLocationAndFacingResult::Success)
-			onSetLocation(index, previousLocation, previousFacing);
-		else
-			output = deckSetLocationResult;
-	}
-	// Not using else here: output.second may have changed due to deck occupants reinstance failing.
-	if(output != SetLocationAndFacingResult::Success)
-	{
-		// Rollback.
-		[[maybe_unused]] const SetLocationAndFacingResult status = location_tryToSetDynamicInternal(index, previousLocation, previousFacing);
-		assert(status == SetLocationAndFacingResult::Success);
-	}
-	return output;
+	return location_tryToSetStatic(index, location, facing);
 }
 SetLocationAndFacingResult Actors::location_tryToMoveToDynamic(const ActorIndex& index, const Point3D& location)
 {
+	assert(hasLocation(index));
+	assert(!isStatic(index));
 	const Point3D previousLocation = getLocation(index);
-	const Facing4 previousFacing = getFacing(index);
+	assert(previousLocation.isAdjacentTo(location));
 	const Facing4 facing = previousLocation.getFacingTwords(location);
-	DeckRotationData deckRotationData = DeckRotationData::recordAndClearDependentPositions(m_area, ActorOrItemIndex::createForActor(index));
-	location_clear(index);
-	SetLocationAndFacingResult output = location_tryToSetDynamicInternal(index, location, facing);
-	if(output != SetLocationAndFacingResult::Success)
-		// Rollback.
-		location_setDynamic(index, previousLocation, previousFacing);
-	else
-	{
-		deckRotationData.reinstanceAtRotatedPosition(m_area, previousLocation, location, previousFacing, facing);
-		onSetLocation(index, previousLocation, previousFacing);
-	}
-	return output;
+	return location_tryToSetDynamic(index, location, facing);
 }
 // Used when item does not have a location.
 SetLocationAndFacingResult Actors::location_tryToSet(const ActorIndex& index, const Point3D& location, const Facing4& facing)
@@ -122,51 +97,42 @@ SetLocationAndFacingResult Actors::location_tryToSet(const ActorIndex& index, co
 }
 SetLocationAndFacingResult Actors::location_tryToSetStatic(const ActorIndex& index, const Point3D& location, const Facing4& facing)
 {
-	assert(m_location[index].empty());
-	SetLocationAndFacingResult output = location_tryToSetStaticInternal(index, location, facing);
-	if(output == SetLocationAndFacingResult::Success)
-		onSetLocation(index, Point3D::null(), Facing4::Null);
-	return output;
-}
-SetLocationAndFacingResult Actors::location_tryToSetDynamic(const ActorIndex& index, const Point3D& location, const Facing4& facing)
-{
-	assert(m_location[index].empty());
-	SetLocationAndFacingResult output = location_tryToSetDynamicInternal(index, location, facing);
-	if(output == SetLocationAndFacingResult::Success)
-		onSetLocation(index, Point3D::null(), Facing4::Null);
-	return output;
-}
-SetLocationAndFacingResult Actors::location_tryToSetStaticInternal(const ActorIndex& index, const Point3D& location, const Facing4& facing)
-{
-	assert(m_location[index].empty());
 	assert(isStatic(index));
 	Space& space = m_area.getSpace();
-	MapWithCuboidKeys<CollisionVolume> cuboidsAndVolumes = Shape::getCuboidsOccupiedAtWithVolume(m_shape[index], space, location, facing);
-	const CuboidSet& occupied = m_occupied[index];
-	cuboidsAndVolumes.removeContainedAndFragmentInterceptedAll(occupied);
-	for(const auto& [cuboid, volume] : cuboidsAndVolumes)
+	const Point3D& previousLocation = getCombinedLocation(index);
+	const Offset3D offset = previousLocation.offsetTo(location);
+	const Facing4& previousFacing = getFacing(index);
+	// Apply the same shift to the offsets as the offset from the previous location to the new one and subtract the unshifted position.
+	const MapWithOffsetCuboidKeys<CollisionVolume> offsetCuboidsAndVolumesDelta = Shape::applyOffsetAndRotationAndSubtractOriginal(m_compoundShape[index], offset, previousFacing, facing);
+	// Apply the new location to the offsets.
+	const MapWithCuboidKeys<CollisionVolume> cuboidsAndVolumesDelta = offsetCuboidsAndVolumesDelta.relativeTo(previousLocation);
+	for(const auto& [cuboid, volume] : cuboidsAndVolumesDelta)
 		// Don't use shape_anythingCanEnterEverHere because it checks Space::m_dynamic.
 		if(space.solid_isAny(cuboid) || space.pointFeature_blocksEntrance(cuboid))
 			return SetLocationAndFacingResult::PermanantlyBlocked;
-	for(const auto& [cuboid, volume] : cuboidsAndVolumes)
+	for(const auto& [cuboid, volume] : cuboidsAndVolumesDelta)
 		if(space.shape_cuboidCanFitCurrentlyStatic(cuboid, volume))
 			return SetLocationAndFacingResult::TemporarilyBlocked;
 	location_setStatic(index, location, facing);
 	return SetLocationAndFacingResult::Success;
 }
-SetLocationAndFacingResult Actors::location_tryToSetDynamicInternal(const ActorIndex& index, const Point3D& location, const Facing4& facing)
+SetLocationAndFacingResult Actors::location_tryToSetDynamic(const ActorIndex& index, const Point3D& location, const Facing4& facing)
 {
-	assert(m_location[index].empty());
 	assert(!isStatic(index));
 	Space& space = m_area.getSpace();
-	MapWithCuboidKeys<CollisionVolume> cuboidsAndVolumes = Shape::getCuboidsOccupiedAtWithVolume(m_shape[index], space, location, facing);
-	const CuboidSet& occupied = m_occupied[index];
-	cuboidsAndVolumes.removeContainedAndFragmentInterceptedAll(occupied);
-	for(const auto& [cuboid, volume] : cuboidsAndVolumes)
+	// Get offsets and volumes for facing. Use compound shape to include anything on deck.
+	const Point3D& previousLocation = getCombinedLocation(index);
+	const Offset3D offset = previousLocation.offsetTo(location);
+	const Facing4& previousFacing = getFacing(index);
+	// Apply the same shift to the offsets as the offset from the previous location to the new one and subtract the unshifted position.
+	MapWithOffsetCuboidKeys<CollisionVolume> offsetCuboidsAndVolumesDelta = Shape::applyOffsetAndRotationAndSubtractOriginal(m_compoundShape[index], offset, previousFacing, facing);
+	// Apply the new location to the offsets.
+	const MapWithCuboidKeys<CollisionVolume> cuboidsAndVolumesDelta = offsetCuboidsAndVolumesDelta.relativeTo(previousLocation);
+	for(const auto& [cuboid, volume] : cuboidsAndVolumesDelta)
 		// Don't use shape_anythingCanEnterEverHere because it checks Space::m_dynamic.
 		if(space.solid_isAny(cuboid) || space.pointFeature_blocksEntrance(cuboid))
 			return SetLocationAndFacingResult::PermanantlyBlocked;
-	for(const auto& [cuboid, volume] : cuboidsAndVolumes)
+	for(const auto& [cuboid, volume] : cuboidsAndVolumesDelta)
 		if(space.shape_cuboidCanFitCurrentlyDynamic(cuboid, volume))
 			return SetLocationAndFacingResult::TemporarilyBlocked;
 	location_setDynamic(index, location, facing);

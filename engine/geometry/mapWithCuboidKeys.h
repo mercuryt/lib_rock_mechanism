@@ -38,12 +38,20 @@ struct MapWithCuboidKeysBase
 	[[nodiscard]] bool contains(const Offset3D& point) const;
 	[[nodiscard]] Pair front() const { return data.front(); }
 	[[nodiscard]] CuboidSetType makeCuboidSet() const;
+	[[nodiscard]] Quantity volume() const;
+	[[nodiscard]] std::string toString() const;
 };
 
 template<typename T>
 struct MapWithCuboidKeys final : public MapWithCuboidKeysBase<T, Cuboid, CuboidSet> { };
 template<typename T>
-struct MapWithOffsetCuboidKeys final : public MapWithCuboidKeysBase<T, OffsetCuboid, OffsetCuboidSet> { };
+struct MapWithOffsetCuboidKeys final : public MapWithCuboidKeysBase<T, OffsetCuboid, OffsetCuboidSet>
+{
+	//TODO: this is defined here rather then the base class to simplify returning the derived type, but the logic could be useful for the non offset variant as well.
+	[[nodiscard]] MapWithOffsetCuboidKeys<T> shiftAndRotateAndRemoveIntersectionWithOriginal(const Offset3D& offset, const Facing4& previousRotation, const Facing4& newRotation) const;
+	[[nodiscard]] MapWithOffsetCuboidKeys<T> applyOffset(const Offset3D& offset) const;
+	[[nodiscard]] MapWithCuboidKeys<T> relativeTo(const Point3D& location) const;
+};
 
 template<typename T>
 void to_json(Json& data, const MapWithCuboidKeys<T>& map)
@@ -56,7 +64,10 @@ void from_json(const Json& data, MapWithCuboidKeys<T>& map)
 {
 	for(const Json& pair : data)
 	{
-		Cuboid cuboid = (pair[0].size() == 2) ? pair[0].get<Cuboid>() : Cuboid(pair[0].get<Point3D>(), pair[0].get<Point3D>());
+		Cuboid cuboid = (pair[0].size() == 2) ?
+			Cuboid::fromPointPair(pair[0][0].get<Point3D>(), pair[0][1].get<Point3D>()) :
+			Cuboid(pair[0].get<Point3D>(), pair[0].get<Point3D>());
+		assert(cuboid.m_high >= cuboid.m_low);
 		const T volume = pair[1].get<T>();
 		map.insert(cuboid, volume);
 	}
@@ -72,7 +83,10 @@ void from_json(const Json& data, MapWithOffsetCuboidKeys<T>& map)
 {
 	for(const Json& pair : data)
 	{
-		OffsetCuboid cuboid = (pair[0].size() == 2) ? pair[0].get<OffsetCuboid>() : OffsetCuboid(pair[0].get<Offset3D>(), pair[0].get<Offset3D>());
+		OffsetCuboid cuboid = (pair[0].size() == 2) ?
+			OffsetCuboid::create(pair[0][0].get<Point3D>(), pair[0][1].get<Point3D>()) :
+			OffsetCuboid(pair[0].get<Offset3D>(), pair[0].get<Offset3D>());
+		assert(cuboid.m_high >= cuboid.m_low);
 		const T volume = pair[1].get<T>();
 		map.insert(cuboid, volume);
 	}

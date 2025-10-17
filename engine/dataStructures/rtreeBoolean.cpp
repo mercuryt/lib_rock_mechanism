@@ -136,6 +136,7 @@ std::string RTreeBoolean::Node::toString()
 	}
 	return output;
 }
+void RTreeBoolean::beforeJsonLoad() { m_nodes.clear(); }
 std::tuple<Cuboid, RTreeBoolean::ArrayIndex, RTreeBoolean::ArrayIndex> RTreeBoolean::findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids) const
 {
 	// May be negitive because resulting cuboids may intersect.

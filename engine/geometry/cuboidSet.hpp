@@ -140,6 +140,8 @@ void CuboidSetBase<CuboidType, PointType, CuboidSetType>::rotateAroundPoint(cons
 template<typename CuboidType, typename PointType, typename CuboidSetType>
 void CuboidSetBase<CuboidType, PointType, CuboidSetType>::swap(CuboidSetType& other) { other.m_cuboids.swap(m_cuboids); }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
+void CuboidSetBase<CuboidType, PointType, CuboidSetType>::popBack() { m_cuboids.popBack(); }
+template<typename CuboidType, typename PointType, typename CuboidSetType>
 void CuboidSetBase<CuboidType, PointType, CuboidSetType>::mergeInternal(const CuboidType& absorbed, const uint& absorber)
 {
 	CuboidType absorberCopy = m_cuboids[absorber];
@@ -157,13 +159,17 @@ template<typename CuboidType, typename PointType, typename CuboidSetType>
 PointType CuboidSetBase<CuboidType, PointType, CuboidSetType>::center() const
 {
 	Offset3D sum = Offset3D::create(0,0,0);
+	uint totalVolume = 0;
 	for(const CuboidType& cuboid : m_cuboids)
+	{
+		totalVolume += cuboid.volume();
 		for(const PointType& point : cuboid)
 			if constexpr(std::is_same_v<PointType, Offset3D>)
 				sum += point;
 			else
 				sum += point.toOffset();
-	sum /= Distance::create(m_cuboids.size());
+	}
+	sum.data /= totalVolume;
 	if constexpr(std::is_same_v<PointType, Offset3D>)
 		return sum;
 	else
@@ -238,7 +244,8 @@ bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::contains(const Cuboid&
 template<typename CuboidType, typename PointType, typename CuboidSetType>
 bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::contains(const OffsetCuboid& offsetCuboid) const
 {
-	assert(!offsetCuboid.hasAnyNegativeCoordinates());
+	if(offsetCuboid.hasAnyNegativeCoordinates())
+		return false;
 	return contains(Cuboid::create(offsetCuboid));
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
@@ -306,10 +313,34 @@ bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::intersects(const Cuboi
 	return false;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
+bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::intersects(const CuboidSetType& cuboids) const
+{
+	for(const CuboidType& c : m_cuboids)
+		if(cuboids.intersects(c))
+			return true;
+	return false;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
 bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::isTouching(const CuboidType& cuboid) const
 {
 	for(const CuboidType& c : m_cuboids)
 		if(cuboid.isTouching(c))
+			return true;
+	return false;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::isTouchingFace(const CuboidType& cuboid) const
+{
+	for(const CuboidType& c : m_cuboids)
+		if(cuboid.isTouchingFace(c))
+			return true;
+	return false;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::isTouchingFaceFromInside(const CuboidType& cuboid) const
+{
+	for(const CuboidType& c : m_cuboids)
+		if(cuboid.isTouchingFaceFromInside(c))
 			return true;
 	return false;
 }

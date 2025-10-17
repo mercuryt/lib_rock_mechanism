@@ -25,6 +25,8 @@ struct OffsetCuboid
 	[[nodiscard]] OffsetCuboid intersection(const OffsetCuboid& other) const;
 	[[nodiscard]] bool canMerge(const OffsetCuboid& other) const;
 	[[nodiscard]] bool isTouching(const OffsetCuboid& other) const;
+	[[nodiscard]] bool isTouchingFace(const OffsetCuboid& other) const;
+	[[nodiscard]] bool isTouchingFaceFromInside(const OffsetCuboid& other) const;
 	[[nodiscard]] OffsetCuboid translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const;
 	[[nodiscard]] std::pair<Offset3D, Offset3D> toOffsetPair() const { return {m_high, m_low}; }
 	[[nodiscard]] SmallSet<OffsetCuboid> getChildrenWhenSplitByCuboid(const OffsetCuboid& cuboid) const;

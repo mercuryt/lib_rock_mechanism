@@ -113,6 +113,10 @@ Cuboid Cuboid::intersection(const Cuboid& other) const
 	assert(intersects(other));
 	return { {m_high.data.min(other.m_high.data)}, {m_low.data.max(other.m_low.data)} };
 }
+Cuboid Cuboid::intersection(const OffsetCuboid& other) const
+{
+	return Cuboid::create(other.intersection(OffsetCuboid::create(*this)));
+}
 Cuboid Cuboid::intersection(const Point3D& point) const
 {
 	if(contains(point))
@@ -405,7 +409,12 @@ bool Cuboid::isTouching(const Cuboid& cuboid) const
 }
 OffsetCuboid Cuboid::translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const
 {
-	return {m_high.translate(previousPivot, nextPivot, previousFacing, nextFacing), m_low.translate(previousPivot, nextPivot, previousFacing, nextFacing)};
+	return OffsetCuboid::create(m_high.translate(previousPivot, nextPivot, previousFacing, nextFacing), m_low.translate(previousPivot, nextPivot, previousFacing, nextFacing));
+}
+OffsetCuboid Cuboid::offsetTo(const Point3D& point) const
+{
+	const Offset3D offsetPoint = point.toOffset();
+	return OffsetCuboid::create(m_high.toOffset() - offsetPoint, m_low.toOffset() - offsetPoint);
 }
 Cuboid::ConstIterator::ConstIterator(const Point3D& lowest, const Point3D& highest)
 {

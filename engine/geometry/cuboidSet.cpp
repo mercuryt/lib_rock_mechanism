@@ -19,8 +19,9 @@ CuboidSet CuboidSet::create([[maybe_unused]]const OffsetCuboid& spaceBoundry, co
 	CuboidSet output;
 	for(OffsetCuboid offset : cuboids)
 	{
-		offset = offset.difference(pivot);
+
 		offset.rotate2D(newFacing);
+		offset = offset.relativeToPoint(pivot);
 		assert(spaceBoundry.contains(offset));
 		output.add(Cuboid::create(offset));
 	}

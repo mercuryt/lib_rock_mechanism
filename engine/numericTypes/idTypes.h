@@ -81,6 +81,8 @@ public:
 };
 void to_json(Json& data, const MaterialTypeId& index);
 void from_json(const Json& data, MaterialTypeId& index);
+static_assert(HasToJsonMethod<MaterialTypeId>);
+static_assert(HasFromJsonMethod<MaterialTypeId>);
 
 using MaterialCategoryTypeIdWidth = uint16_t;
 class MaterialCategoryTypeId : public StrongInteger<MaterialCategoryTypeId, MaterialCategoryTypeIdWidth>

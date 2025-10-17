@@ -6,11 +6,13 @@
 #include "../reference.h"
 #include "../numericTypes/types.h"
 #include "../definitions/plantSpecies.h"
+CuboidSet Space::pointFeature_getCuboidsIntersecting(const Cuboid& cuboid) const { return m_features.queryGetAllCuboids(cuboid); }
 bool Space::pointFeature_contains(const Point3D& point, const PointFeatureTypeId& pointFeatureType) const
 {
 	const auto condition = [&](const PointFeature& feature){ return feature.pointFeatureType == pointFeatureType; };
 	return m_features.queryAnyWithCondition(point, condition);
 }
+SmallSet<std::pair<Cuboid, PointFeature>> Space::pointFeature_getAllWithCuboids(const Cuboid& cuboid) const { return m_features.queryGetAllWithCuboids(cuboid); }
 const PointFeature Space::pointFeature_at(const Cuboid& cuboid, const PointFeatureTypeId& pointFeatureType) const
 {
 	const auto condition = [&](const PointFeature& feature){ return feature.pointFeatureType == pointFeatureType; };
@@ -60,8 +62,7 @@ void Space::pointFeature_add(const Cuboid& cuboid, const PointFeature& feature)
 void Space::pointFeature_add(const Point3D& point, const PointFeature& feature)
 {
 	assert(!solid_isAny(point));
-	const bool transmitedTemperaturePreviously = temperature_transmits(point);
-	const bool materialTypeIsTransparent = MaterialType::getTransparent(feature.materialType);
+	assert(pointFeature_empty(point));
 	Plants& plants = m_area.getPlants();
 	if(plant_exists(point))
 	{
@@ -71,10 +72,12 @@ void Space::pointFeature_add(const Point3D& point, const PointFeature& feature)
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
 	m_features.insert(point, feature);
 	const bool isFloorOrHatch = (feature.pointFeatureType == PointFeatureTypeId::Floor || feature.pointFeatureType == PointFeatureTypeId::Hatch);
-	if(isFloorOrHatch && !MaterialType::getTransparent(feature.materialType))
+	const bool materialTypeIsTransparent = MaterialType::getTransparent(feature.materialType);
+	if(isFloorOrHatch && !materialTypeIsTransparent)
 	{
 		m_area.m_visionCuboids.pointFloorIsOpaque(point);
-		m_exposedToSky.unset(m_area, point);
+		if(point.z() != 0)
+			m_exposedToSky.unset(m_area, point.below());
 	}
 	else if(PointFeatureType::byId(feature.pointFeatureType).opaque && !materialTypeIsTransparent)
 	{
@@ -83,7 +86,7 @@ void Space::pointFeature_add(const Point3D& point, const PointFeature& feature)
 	}
 	m_area.m_opacityFacade.update(m_area, point);
 	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
-	if(transmitedTemperaturePreviously && !temperature_transmits(point))
+	if(!temperature_transmits(point))
 		m_area.m_exteriorPortals.onPointCanNotTransmitTemperature(m_area, point);
 }
 void Space::pointFeature_construct(const Point3D& point, const PointFeatureTypeId& pointFeatureType, const MaterialTypeId& materialType)

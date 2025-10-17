@@ -72,7 +72,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 		m_plants(std::make_unique<Plants>(*this)),
 		m_items(std::make_unique<Items>(*this)),
 	#else
-		m_points(*this, data["space"]["x"].get<Distance>(), data["space"]["y"].get<Distance>(), data["space"]["z"].get<Distance>()),
+		m_space(*this, data["space"]["x"].get<Distance>(), data["space"]["y"].get<Distance>(), data["space"]["z"].get<Distance>()),
 		m_actors(*this),
 		m_plants(*this),
 		m_items(*this),

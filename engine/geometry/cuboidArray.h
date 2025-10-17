@@ -73,8 +73,8 @@ public:
 		uint16_t m_index;
 	public:
 		ConstIterator(const CuboidArray& set, const uint16_t& index) : m_set(set), m_index(index) { }
-		void operator++() { ++m_index; }
-		[[nodiscard]] ConstIterator operator++(int) { auto copy = *this; ++(*this); return copy; }
+		ConstIterator operator++() { ++m_index; return *this; }
+		[[nodiscard]] ConstIterator operator++(int) { auto output = *this; ++(*this); return output; }
 		[[nodiscard]] Cuboid operator*() const { return m_set[m_index]; }
 		[[nodiscard]] bool operator==(const ConstIterator& other) { assert(&m_set == &other.m_set); return m_index == other.m_index; }
 		[[nodiscard]] bool operator!=(const ConstIterator& other) { assert(&m_set == &other.m_set); return m_index != other.m_index; }
@@ -86,6 +86,6 @@ public:
 	ConstIterator end() const { return ConstIterator(*this, capacity); }
 };
 template<uint16_t capacity>
-inline void to_json(Json& data, const CuboidArray<capacity>& set) { data = SmallSet<Cuboid>::create(set); }
+inline void to_json(Json& data, const CuboidArray<capacity>& array) { std::vector<Cuboid> vector; vector.reserve(capacity); for(const Cuboid& cuboid : array) vector.push_back(cuboid); data = vector; }
 template<uint16_t capacity>
-inline void from_json(const Json& data, CuboidArray<capacity>& set) { auto smallSet = data.get<SmallSet<Cuboid>>(); set = CuboidArray<capacity>::create(smallSet); }
+inline void from_json(const Json& data, CuboidArray<capacity>& array) { auto vector = data.get<std::vector<Cuboid>>(); array = CuboidArray<capacity>::create(vector); }

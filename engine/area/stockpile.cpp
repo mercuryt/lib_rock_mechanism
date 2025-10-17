@@ -31,8 +31,9 @@ StockPile::StockPile(const Json& data, DeserializationMemo& deserializationMemo,
 	deserializationMemo.m_stockpiles[data["address"].get<uintptr_t>()] = this;
 	for(const Json& queryData : data["queries"])
 		m_queries.emplace_back(queryData, area);
-	for(const Point3D& point : data["space"].get<SmallSet<Point3D>>())
-		addPoint(point);
+	for(const Cuboid& cuboid : data["space"].get<CuboidSet>())
+		for(const Point3D& point : cuboid)
+			addPoint(point);
 }
 Json StockPile::toJson() const
 {

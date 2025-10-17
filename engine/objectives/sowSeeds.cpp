@@ -149,7 +149,7 @@ void SowSeedsObjective::begin(Area& area, const ActorIndex& actor)
 {
 	[[maybe_unused]] Actors& actors = area.getActors();
 	assert(m_point.exists());
-	assert(actors.isAdjacentToLocation(actor, m_point));
+	assert(actors.getLocation(actor) == m_point || actors.isAdjacentToLocation(actor, m_point));
 	m_event.schedule(Config::sowSeedsStepsDuration, area, *this, actor);
 }
 void SowSeedsObjective::reset(Area& area, const ActorIndex& actor)

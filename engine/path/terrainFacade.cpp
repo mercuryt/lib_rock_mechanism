@@ -29,6 +29,12 @@ void FindPathResult::validate() const
 		assert(!path.empty() || useCurrentPosition);
 	if(path.empty() && !useCurrentPosition)
 		assert(pointThatPassedPredicate.empty());
+	if(!path.empty())
+	{
+		auto iter = path.end();
+		while(--iter != path.begin())
+			assert(iter->isAdjacentTo(*(iter - 1)));
+	}
 }
 PathRequestNoHuristicData::PathRequestNoHuristicData(std::unique_ptr<PathRequestBreadthFirst> pr, uint32_t sh) :
 	pathRequest(std::move(pr)),
@@ -111,15 +117,17 @@ TerrainFacade::TerrainFacade(Area& area, const MoveTypeId& moveType) : m_area(ar
 	}
 	else
 	{
-		CuboidSet candidates = CuboidSet::create(space.boundry());
-		candidates.removeAll(space.getSolid().getLeafCuboids());
-		const auto featureLeaves = space.getPointFeatures().queryGetAllWithCuboids(space.boundry());
-		for(const auto& [cuboid, value] : featureLeaves)
-		{
-			const PointFeatureType& featureType = PointFeatureType::byId(value.pointFeatureType);
-			if(featureType.blocksEntrance)
-				candidates.remove(cuboid);
-		}
+		Cuboid boundry = space.boundry();
+		CuboidSet candidates = CuboidSet::create(boundry);
+		CuboidSet cannotEnter = space.getSolid().getLeafCuboids();
+		const auto featureCondition = [&](const PointFeature& feature) { return PointFeatureType::byId(feature.pointFeatureType).blocksEntrance; };
+		CuboidSet allFeaturesWhichBlockEntrance = space.pointFeature_queryCuboids(boundry, featureCondition);
+		cannotEnter.addAll(allFeaturesWhichBlockEntrance);
+		CuboidSet allDynamic = space.getDynamic().queryGetLeaves(boundry);
+		// Remove dynamic from cannotEnter: dynamic cuboids are only temporarily impassible.
+		// Note that despite this deck space is 'permanantly' passible.
+		cannotEnter.removeContainedAndFragmentInterceptedAll(allDynamic);
+		candidates.removeAll(cannotEnter);
 		for(const Cuboid& cuboid : candidates)
 			update(cuboid, candidates);
 	}
@@ -292,6 +300,7 @@ AdjacentData TerrainFacade::makeDataForPoint(const Point3D& point, const CuboidS
 			continue;
 		const Point3D adjacentPoint = Point3D::create(adjacent);
 		if(
+			space.shape_anythingCanEnterEver(adjacentPoint) &&
 			space.shape_moveTypeCanEnter(adjacentPoint, m_moveType) &&
 			space.shape_moveTypeCanEnterFrom(Point3D::create(adjacent), m_moveType, point)
 		)

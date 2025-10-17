@@ -49,10 +49,11 @@ TEST_CASE("actor")
 			.species=troll,
 			.percentGrown=Percent::create(100),
 			.location=origin2,
+			.facing=Facing4::South
 		});
-		Point3D block1 = Point3D::create(8, 7, 1);
+		Point3D block1 = Point3D::create(6, 7, 1);
 		Point3D block2 = Point3D::create(7, 8, 1);
-		Point3D block3 = Point3D::create(8, 8, 1);
+		Point3D block3 = Point3D::create(6, 8, 1);
 		CHECK(space.actor_contains(origin2, troll1));
 		CHECK(space.actor_contains(block1, troll1));
 		CHECK(space.actor_contains(block2, troll1));

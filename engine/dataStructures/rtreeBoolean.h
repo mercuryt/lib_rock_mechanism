@@ -83,6 +83,7 @@ class RTreeBoolean
 	void sort();
 public:
 	RTreeBoolean() { m_nodes.add(); m_nodes.back().setParent(Index::null()); }
+	void beforeJsonLoad();
 	void insert(const auto& shape) { assert(!query(shape)); maybeInsert(shape); }
 	void remove(const auto& shape) { assert(query(shape)); maybeRemove(shape); }
 	void maybeInsert(const Cuboid& cuboid);

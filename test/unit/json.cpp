@@ -495,6 +495,8 @@ TEST_CASE("json")
 			// Serialize.
 			areaData = area.toJson();
 			simulationData = simulation.toJson();
+			Objective& objective1 = actors.objective_getCurrent<Objective>(dwarf1);
+			coordinates1 = static_cast<SowSeedsObjective&>(objective1).getPoint();
 		}
 		Simulation simulation2(simulationData);
 		Area& area2 = simulation2.m_hasAreas->loadAreaFromJson(areaData, simulation2.getDeserializationMemo());

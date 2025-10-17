@@ -104,7 +104,8 @@ class RTreeData
 	static void addIntersectedChildrenToOpenList(const Node& node, const CuboidArray<nodeSize>::BoolArray& intersecting, SmallSet<RTreeNodeIndex>& openList);
 	[[nodiscard]] virtual bool canOverlap(const T&, const T&) const { return true; }
 public:
-	RTreeData() { m_nodes.add(); m_nodes.back().setParent(RTreeNodeIndex::null()); }
+	RTreeData();
+	void beforeJsonLoad();
 	void maybeInsert(const Cuboid& cuboid, const T& value);
 	void maybeRemove(const Cuboid& cuboid, const T& value);
 	void maybeRemove(const Cuboid& cuboid);
@@ -322,7 +323,7 @@ public:
 						if(value == nullValue || value == m_nullValue)
 						{
 							assert(queryConfig.destroy);
-							if constexpr(queryConfig.stopAfterOne)
+							if constexpr (queryConfig.stopAfterOne)
 								node.eraseLeaf(RTreeArrayIndex::create(offset));
 							else
 								leavesToErase.set(offset);
@@ -1006,7 +1007,7 @@ public:
 	}
 	[[nodiscard]] CuboidSet queryGetIntersection(const auto& shape) const
 	{
-		const CuboidSet leaves = queryGetLeaves(shape);
+		const CuboidSet leaves = queryGetAllCuboids(shape);
 		CuboidSet output;
 		for(const Cuboid& leaf : leaves)
 			output.add(leaf.intersection(shape));
@@ -1071,7 +1072,7 @@ public:
 		return output;
 	}
 	template<typename Result, auto predicate>
-	[[nodiscard]] std::pair<T, Result> queryGetHighestReturnWithPredicateOutput(const auto& shape)
+	[[nodiscard]] std::pair<T, Result> queryGetHighestReturnWithPredicateOutput(const auto& shape) const
 	{
 		SmallSet<RTreeNodeIndex> openList;
 		T outputValue;
@@ -1109,6 +1110,45 @@ public:
 			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 		}
 		return {outputValue, outputResult};
+	}
+	[[nodiscard]] Point3D queryGetLowestPoint(const auto& shape) const
+	{
+		SmallSet<RTreeNodeIndex> openList;
+		Point3D output;
+		T outputValue;
+		openList.insert(RTreeNodeIndex::create(0));
+		bool first = true;;
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			if(!interceptMask.any())
+				continue;
+			const auto leafCount = node.getLeafCount();
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			if(leafCount != 0 && interceptMask.head(leafCount).any())
+			{
+				auto begin = interceptMask.begin();
+				auto end = begin + leafCount;
+				for(auto iter = begin; iter != end; ++iter)
+					if(*iter)
+					{
+						const auto offset = iter - begin;
+						T value = T::create(nodeDataAndChildIndices[offset].data);
+						if(first || value < outputValue)
+						{
+							first = false;
+							output = nodeCuboids[offset].intersectionPoint(shape);
+							outputValue = value;
+						}
+					}
+			}
+			addIntersectedChildrenToOpenList(node, interceptMask, openList);
+		}
+		return output;
 	}
 	// For test and debug.
 	[[nodiscard]] __attribute__((noinline)) uint32_t nodeCount() const;

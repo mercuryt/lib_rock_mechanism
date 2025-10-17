@@ -112,7 +112,7 @@ public:
 	void moveContentsTo(const Point3D& point, const Point3D& other);
 	void maybeContentsFalls(const Point3D& point);
 	void setDynamic(const auto& shape) { m_dynamic.maybeInsert(shape); }
-	void unsetDynamic(const auto& shape) { m_dynamic.maybeInsert(shape); }
+	void unsetDynamic(const auto& shape) { m_dynamic.maybeRemove(shape); }
 	void doSupportStep() { m_support.doStep(m_area); }
 	void prepareRtrees();
 	[[nodiscard]] uint size() const { return m_dimensions.prod(); }
@@ -145,6 +145,7 @@ public:
 	[[nodiscard]] bool hasLineOfSightTo(const Point3D& point, const Point3D& other) const;
 	[[nodiscard]] Cuboid getZLevel(const Distance& z);
 	[[nodiscard]] const auto& getSolid() const { return m_solid; }
+	[[nodiscard]] const auto& getDynamic() const { return m_dynamic; }
 	[[nodiscard]] const auto& getFluidTotal() const { return m_totalFluidVolume; }
 	[[nodiscard]] const auto& getPointFeatures() const { return m_features; }
 	[[nodiscard]] const Support& getSupport() const { return m_support; }
@@ -152,9 +153,7 @@ public:
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
 	void setExposedToSky(const Point3D& point, bool exposed);
 	void setBelowVisible(const Point3D& point);
-	//TODO: Use std::function instead of template.
-	template <typename F>
-	[[nodiscard]] CuboidSet collectAdjacentsWithCondition(const Point3D& point, F&& condition)
+	[[nodiscard]] CuboidSet collectAdjacentsWithCondition(const Point3D& point, auto&& condition)
 	{
 		CuboidSet output;
 		std::stack<Point3D> openList;
@@ -169,6 +168,28 @@ public:
 				{
 					output.add(adjacent);
 					openList.push(adjacent);
+				}
+		}
+		return output;
+	}
+	template<bool includeStart = false>
+	[[nodiscard]] CuboidSet collectAdjacentsWithCondition(const CuboidSet& start, auto&& condition)
+	{
+		CuboidSet output;
+		if constexpr(includeStart)
+			output = start;
+		CuboidSet openList = start;
+		while(!openList.empty())
+		{
+			Cuboid current = openList.back();
+			openList.popBack();
+			const CuboidSet result = condition(current.inflate({1}));
+			for(const Cuboid& resultCuboid : result)
+				//TODO: change this from contains to containsWithinOneCuboid.
+				if(!output.contains(resultCuboid))
+				{
+					openList.add(resultCuboid);
+					output.add(resultCuboid);
 				}
 		}
 		return output;
@@ -230,6 +251,7 @@ public:
 	[[nodiscard]] MapWithCuboidKeys<MaterialTypeId> solid_getAllWithCuboidsAndRemove(const CuboidSet& cuboids);
 	[[nodiscard]] Mass solid_getMass(const Point3D& point) const;
 	[[nodiscard]] Mass solid_getMass(const CuboidSet& cuboidSet) const;
+	[[nodiscard]] CuboidSet solid_getCuboidsIntersecting(const Cuboid& cuboid) const;
 	Mass getMass(const auto& shape) const
 	{
 		assert(solid_isAny(shape));
@@ -277,6 +299,9 @@ public:
 	[[nodiscard]] MaterialTypeId pointFeature_getMaterialType(const Point3D& point, const PointFeatureTypeId& pointFeatureType) const;
 	[[nodiscard]] MaterialTypeId pointFeature_getMaterialTypeFirst(const Point3D& point) const;
 	[[nodiscard]] bool pointFeature_contains(const Point3D& point, const PointFeatureTypeId& pointFeatureType) const;
+	[[nodiscard]] CuboidSet pointFeature_getCuboidsIntersecting(const Cuboid& cuboid) const;
+	[[nodiscard]] CuboidSet pointFeature_queryCuboids(const Cuboid& cuboid, auto&& condition) const { return m_features.queryGetAllCuboidsWithCondition(cuboid, condition); }
+	[[nodiscard]] SmallSet<std::pair<Cuboid, PointFeature>> pointFeature_getAllWithCuboids(const Cuboid& cuboid) const;
 	// -Fluids
 	void fluid_spawnMist(const Point3D& point, const FluidTypeId& fluidType, const Distance maxMistSpread = Distance::create(0));
 	void fluid_clearMist(const Point3D& point);

@@ -7,21 +7,22 @@
 bool Space::shape_canFitEverOrCurrentlyDynamic(const Point3D& location, const ShapeId& shape, const Facing4& facing, const CuboidSet& occupied) const
 {
 	const Cuboid spaceBoundry = boundry();
+	const OffsetCuboid toOccupyBoundry = Shape::getOffsetCuboidBoundryWithFacing(shape, facing).relativeToPoint(location);
 	// Some piece of the shape is not in bounds.
+	if(!spaceBoundry.contains(toOccupyBoundry))
+		return false;
 	MapWithCuboidKeys<CollisionVolume> toOccupyWithVolume = Shape::getCuboidsOccupiedAtWithVolume(shape, *this, location, facing);
 	CuboidSet toOccupy = toOccupyWithVolume.makeCuboidSet();
-	if(!spaceBoundry.contains(toOccupy.boundry()))
-		return false;
 	toOccupy.removeContainedAndFragmentInterceptedAll(occupied);
 	if(m_solid.batchQueryAny(toOccupy))
+		return false;
+	if(!shape_anythingCanEnterCurrently(toOccupy))
 		return false;
 	const auto featureCondition = [&](const PointFeature& feature) { return PointFeatureType::byId(feature.pointFeatureType).blocksEntrance; };
 	if(m_features.batchQueryWithConditionAny(toOccupy, featureCondition))
 		return false;
 	for(const auto& [cuboid, volume] : toOccupyWithVolume)
 	{
-		if(!shape_anythingCanEnterCurrently(cuboid))
-			return false;
 		const auto volumeCondition = [&](const CollisionVolume& v){ return volume + v > Config::maxPointVolume; };
 		if(m_dynamicVolume.queryAnyWithCondition(cuboid, volumeCondition))
 			return false;
@@ -39,13 +40,13 @@ bool Space::shape_canFitEverOrCurrentlyStatic(const Point3D& location, const Sha
 	toOccupy.removeContainedAndFragmentInterceptedAll(occupied);
 	if(m_solid.batchQueryAny(toOccupy))
 		return false;
+	if(!shape_anythingCanEnterCurrently(toOccupy))
+		return false;
 	const auto featureCondition = [&](const PointFeature& feature) { return PointFeatureType::byId(feature.pointFeatureType).blocksEntrance; };
 	if(m_features.batchQueryWithConditionAny(toOccupy, featureCondition))
 		return false;
 	for(const auto& [cuboid, volume] : toOccupyWithVolume)
 	{
-		if(!shape_anythingCanEnterCurrently(cuboid))
-			return false;
 		const auto volumeCondition = [&](const CollisionVolume& v){ return volume + v > Config::maxPointVolume; };
 		if(m_staticVolume.queryAnyWithCondition(cuboid, volumeCondition))
 			return false;
@@ -63,13 +64,19 @@ bool Space::shape_canFitEver(const Point3D& location, const ShapeId& shape, cons
 		return false;
 	CuboidSet toOccupy = Shape::getCuboidsOccupiedAt(shape, *this, location, facing);
 	// Check solid.
-	if(m_solid.queryAny(toOccupy))
+	Cuboid toOccupyBoundryCuboid = Cuboid::create(toOccupyBoundry);
+	CuboidSet solid = m_solid.queryGetIntersection(toOccupyBoundryCuboid);
+	CuboidSet dynamic = m_dynamic.queryGetIntersection(toOccupyBoundryCuboid);
+	solid.removeContainedAndFragmentInterceptedAll(dynamic);
+	if(!solid.empty())
 		return false;
 	// Check feature blocks entrance or locked door.
 	const auto featureCondition = [&](const PointFeature& feature){
 		return PointFeatureType::byId(feature.pointFeatureType).blocksEntrance || (feature.pointFeatureType == PointFeatureTypeId::Door && feature.isLocked());
 	};
-	if(m_features.queryAnyWithCondition(toOccupy, featureCondition))
+	CuboidSet features = m_features.queryGetAllCuboidsWithCondition(toOccupy, featureCondition);
+	features.removeContainedAndFragmentInterceptedAll(dynamic);
+	if(!features.empty())
 		return false;
 	// Check if tall shape intersects floor or hatch above ground level.
 	bool isFlat = toOccupyBoundry.m_high.z() == toOccupyBoundry.m_low.z();
@@ -512,7 +519,7 @@ std::pair<Point3D, Facing4> Space::shape_getNearestEnterableEverPointWithFacing(
 bool Space::shape_cuboidCanFitCurrentlyStatic(const Cuboid& cuboid, const CollisionVolume& volume) const
 {
 	if(volume == Config::maxPointVolume)
-		return m_staticVolume.queryAny(cuboid);
+		return !m_staticVolume.queryAny(cuboid);
 	const auto condition = [&](const CollisionVolume& v) { return v + volume <= Config::maxPointVolume; };
 	return m_staticVolume.queryAnyWithCondition(cuboid, condition);
 }

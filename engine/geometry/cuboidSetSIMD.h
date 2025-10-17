@@ -8,6 +8,8 @@
 #include "cuboidArray.h"
 #include "sphere.h"
 
+struct CuboidSet;
+
 class CuboidSetSIMD
 {
 	using Data = Eigen::Array<DistanceWidth, 3, Eigen::Dynamic>;
@@ -21,8 +23,7 @@ public:
 	CuboidSetSIMD(uint capacity = 8) { assert(capacity != 0); reserve(capacity); }
 	CuboidSetSIMD(const CuboidSetSIMD& other) { m_high = other.m_high; m_low = other.m_low; m_boundingBox = other.m_boundingBox; m_size = other.m_size; m_capacity = other.m_capacity; }
 	CuboidSetSIMD(CuboidSetSIMD&& other) noexcept { m_high = std::move(other.m_high); m_low = std::move(other.m_low); m_boundingBox = other.m_boundingBox; m_size = other.m_size; m_capacity = other.m_capacity; }
-	template<class CuboidSetT>
-	CuboidSetSIMD(const CuboidSetT& contents) { load(contents); }
+	CuboidSetSIMD(const CuboidSet& contents);
 	void operator=(const CuboidSetSIMD& other) { m_high = other.m_high; m_low = other.m_low; m_boundingBox = other.m_boundingBox; m_size = other.m_size; m_capacity = other.m_capacity; }
 	void operator=(CuboidSetSIMD&& other) { m_high = std::move(other.m_high); m_low = std::move(other.m_low); m_boundingBox = other.m_boundingBox; m_size = other.m_size; m_capacity = other.m_capacity; }
 	void reserve(uint capacity);
@@ -31,8 +32,7 @@ public:
 	void erase(const Cuboid& cuboid);
 	void erase(uint index);
 	void clear();
-	template<class CuboidSetT>
-	void load(const CuboidSetT& contents) { assert(empty()); reserve(contents.size()); for(const Cuboid& cuboid : contents) insert(cuboid); }
+	void load(const std::vector<Cuboid>& contents);
 	template<int capacity>
 	void load(const CuboidArray<capacity>& contents) { assert(empty()); reserve(contents.capacity); for(const Cuboid& cuboid : contents) insert(cuboid); }
 	[[nodiscard]] Cuboid operator[](const uint& index) const { return {Coordinates(m_high.col(index)), Coordinates(m_low.col(index)) }; }
@@ -63,5 +63,5 @@ public:
 	ConstIterator end() const { return {*this, m_size}; }
 };
 
-inline void to_json(Json& data, const CuboidSetSIMD& set) { data = set.toVector(); }
-inline void from_json(const Json& data, CuboidSetSIMD& set) { set.load(data.get<std::vector<Cuboid>>()); }
+void to_json(Json& data, const CuboidSetSIMD& set);
+void from_json(const Json& data, CuboidSetSIMD& set);

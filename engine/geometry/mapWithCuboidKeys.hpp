@@ -106,3 +106,60 @@ CuboidSetType MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::makeCuboidSet
 		output.add(cuboid);
 	return output;
 }
+template<typename T, typename CuboidType, typename CuboidSetType>
+Quantity MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::volume() const
+{
+	Quantity output{0};
+	for(const auto& pair : data)
+		output += pair.first.volume();
+	return output;
+}
+template<typename T, typename CuboidType, typename CuboidSetType>
+std::string MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::toString() const
+{
+	std::string output;
+	for(const auto& [cuboid, value] : data)
+	{
+		output += cuboid.toString() + " : ";
+		if constexpr(HasToStringMethod<T>)
+			output += value.toString() + ", ";
+		else if constexpr(std::is_pointer<T>())
+			output += std::to_string((uintptr_t)value) + ", ";
+		else if constexpr(Numeric<T>)
+			output += std::to_string(value) + ", ";
+		else
+			assert(false);
+	}
+	return output;
+}
+template<typename T>
+MapWithOffsetCuboidKeys<T> MapWithOffsetCuboidKeys<T>::applyOffset(const Offset3D& offset) const
+{
+	auto output = *this;
+	for(auto& [cuboid, value] : output)
+		cuboid.shift(offset, {1});
+	return output;
+}
+template<typename T>
+MapWithOffsetCuboidKeys<T> MapWithOffsetCuboidKeys<T>::shiftAndRotateAndRemoveIntersectionWithOriginal(const Offset3D& offset, const Facing4& previousRotation, const Facing4& newRotation) const
+{
+	MapWithOffsetCuboidKeys<T> output;
+	for(const auto& [cuboid, value] : this->data)
+	{
+		OffsetCuboid shifted = cuboid;
+		shifted.shift(offset, {1});
+		shifted.rotate2D(previousRotation, newRotation);
+		output.insert({shifted, value});
+	}
+	for(const auto& [cuboid, value] : this->data)
+		output.removeContainedAndFragmentIntercepted(cuboid);
+	return output;
+}
+template<typename T>
+MapWithCuboidKeys<T> MapWithOffsetCuboidKeys<T>::relativeTo(const Point3D& location) const
+{
+	MapWithCuboidKeys<T> output;
+	for(const auto& [cuboid, value] : this->data)
+		output.insert(Cuboid::create(cuboid.relativeToPoint(location)), value);
+	return output;
+}

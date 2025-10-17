@@ -48,7 +48,7 @@ struct PointFeature
 		NLOHMANN_DEFINE_TYPE_INTRUSIVE(Primitive, materialType, pointFeatureType, hewnAndClosedAndLocked);
 	};
 	MaterialTypeId materialType;
-	PointFeatureTypeId pointFeatureType;
+	PointFeatureTypeId pointFeatureType = PointFeatureTypeId::Null;
 	// TODO: Replace hewn with ItemTypeId to differentiate between walls made of carved space from those made from uncut stone or between wood planks and logs?
 	// Initalize hewn as false, closed as true, and locked as false.
 	BitSet<uint8_t, 3> hewnAndClosedAndLocked;
@@ -78,3 +78,4 @@ struct PointFeature
 private:
 	void setHewn(bool setTo) { hewnAndClosedAndLocked.set(0, setTo); }
 };
+

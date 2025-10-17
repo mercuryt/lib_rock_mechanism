@@ -29,27 +29,27 @@
 	},
 	{
 		"name": "oneByTwoFull",
-		"positions": [[[0,0,0],100], [[0,1,0],100]]
+		"positions": [[[[0,0,0], [0,-1,0]],100]]
 	},
 	{
 		"name": "oneByOneByTwoFull",
-		"positions": [[[0,0,0],100], [[0,0,1],100]]
+		"positions": [[[[0,0,0], [0,0,1]],100]]
 	},
 	{
 		"name": "oneByOneByThreeFull",
-		"positions": [[[0,0,0],100], [[0,0,1],100], [[0,0,2],100]]
+		"positions": [[[[0,0,0],[0,0,2]],100]]
 	},
 	{
 		"name": "oneByOneByFourFull",
-		"positions": [[[0,0,0],100], [[0,0,1],100], [[0,0,2],100], [[0,0,3],100]]
+		"positions": [[[[0,0,0], [0,0,3]],100]]
 	},
 	{
 		"name": "twoByTwoFull",
-		"positions": [[[0,0,0],100], [[0,1,0],100], [[1,0,0],100], [[1,1,0],100]],
+		"positions": [[[[0,0,0],[-1,-1,0]],100]],
 		"displayScale": 2
 	},
 	{
 		"name": "oneByThreeByOne",
-		"positions": [[[-1,0,0],100], [[0,0,0],100], [[0,1,0],100]]
+		"positions": [[[[0,1,0], [0,-1,0]],100]]
 	}
 ]

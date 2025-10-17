@@ -189,31 +189,28 @@ public:
 	[[nodiscard]] bool canCombine(const ItemIndex& index, const ItemIndex& toMerge);
 	// - Location.
 private:
-	// private methods do most of the work, public ones are mostly responsible for calling Portables::onSetLocation.
-	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetGenericStatic(const ItemIndex& index, const Point3D& point, const Facing4 facing);
-	SetLocationAndFacingResult location_tryToSetNongenericStatic(const ItemIndex& index, const Point3D& point, const Facing4 facing);
-	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetStaticInternal(const ItemIndex& index, const Point3D& point, const Facing4& facing);
-	SetLocationAndFacingResult location_tryToSetDynamicInternal(const ItemIndex& index, const Point3D& point, const Facing4& facing);
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetGenericStatic(const ItemIndex& index, const Point3D& location, const Facing4 facing);
+	SetLocationAndFacingResult location_tryToSetNongenericStatic(const ItemIndex& index, const Point3D& location, const Facing4 facing);
 public:
 	// Return an item index here because a static generic may combine and invalidat the passed in index.
-	ItemIndex location_set(const ItemIndex& index, const Point3D& point, const Facing4 facing);
-	ItemIndex location_setStatic(const ItemIndex& index, const Point3D& point, const Facing4 facing);
+	ItemIndex location_set(const ItemIndex& index, const Point3D& location, const Facing4 facing);
+	ItemIndex location_setStatic(const ItemIndex& index, const Point3D& location, const Facing4 facing);
 	// TODO: this shouldn't need to return anything.
-	ItemIndex location_setDynamic(const ItemIndex& index, const Point3D& point, const Facing4 facing);
+	ItemIndex location_setDynamic(const ItemIndex& index, const Point3D& location, const Facing4 facing);
 	// Used when item already has a location, rolls back position on failure.
-	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToStatic(const ItemIndex& index, const Point3D& point);
-	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToDynamic(const ItemIndex& index, const Point3D& point);
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToStatic(const ItemIndex& index, const Point3D& location);
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToDynamic(const ItemIndex& index, const Point3D& location);
 	// Used when item does not have a location.
 	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSet(const ItemIndex& index, const Point3D& location, const Facing4& facing);
-	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetStatic(const ItemIndex& index, const Point3D& point, const Facing4& facing);
-	SetLocationAndFacingResult location_tryToSetDynamic(const ItemIndex& index, const Point3D& point, const Facing4& facing);
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetStatic(const ItemIndex& index, const Point3D& location, const Facing4& facing);
+	SetLocationAndFacingResult location_tryToSetDynamic(const ItemIndex& index, const Point3D& location, const Facing4& facing);
 	void location_clear(const ItemIndex& index);
 	void location_clearStatic(const ItemIndex& index);
 	void location_clearDynamic(const ItemIndex& index);
-	[[nodiscard]] bool location_canEnterEverWithFacing(const ItemIndex& index, const Point3D& point, const Facing4& facing) const;
-	[[nodiscard]] bool location_canEnterCurrentlyWithFacing(const ItemIndex& index, const Point3D& point, const Facing4& facing) const;
-	[[nodiscard]] bool location_canEnterEverFrom(const ItemIndex& index, const Point3D& point, const Point3D& previous) const;
-	[[nodiscard]] bool location_canEnterCurrentlyFrom(const ItemIndex& index, const Point3D& point, const Point3D& previous) const;
+	[[nodiscard]] bool location_canEnterEverWithFacing(const ItemIndex& index, const Point3D& location, const Facing4& facing) const;
+	[[nodiscard]] bool location_canEnterCurrentlyWithFacing(const ItemIndex& index, const Point3D& location, const Facing4& facing) const;
+	[[nodiscard]] bool location_canEnterEverFrom(const ItemIndex& index, const Point3D& location, const Point3D& previous) const;
+	[[nodiscard]] bool location_canEnterCurrentlyFrom(const ItemIndex& index, const Point3D& location, const Point3D& previous) const;
 	// -Cargo.
 	void cargo_addActor(const ItemIndex& index, const ActorIndex& actor);
 	ItemIndex cargo_addItem(const ItemIndex& index, const ItemIndex& item, const Quantity& quantity);

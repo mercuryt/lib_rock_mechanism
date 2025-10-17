@@ -22,33 +22,44 @@ void Support::doStep(Area& area)
 		else
 			m_maybeFall.remove(cuboid);
 	}
+	// Points in maybeFall which have not fallen due to being empty must be cleared.
+	m_maybeFall.clear();
 }
 CuboidSet Support::getUnsupported(const Area& area, const Cuboid& cuboid) const
 {
 	const Cuboid boundry = area.getSpace().boundry();
 	assert(boundry.contains(cuboid));
-	if(cuboid.isTouchingFaceFromInside(boundry))
-		return {};
-	SmallSet<Cuboid> openList;
+	const Space& space = area.getSpace();
+	CuboidSet openList = space.solid_getCuboidsIntersecting(cuboid);
+	for(const auto& [featureCuboid, pointFeature] : space.pointFeature_getAllWithCuboids(cuboid))
+		if(PointFeatureType::byId(pointFeature.pointFeatureType).isSupportAgainstCaveIn)
+			openList.add(featureCuboid);
 	CuboidSet closedList;
-	openList.insert(cuboid);
-	closedList.add(cuboid);
+	closedList.addAll(openList);
 	while(!openList.empty())
 	{
-		openList.sort([&](const Cuboid& a, const Cuboid& b) { return a.m_low.z() > b.m_low.z(); });
-		const Cuboid current = openList.back();
+		const Cuboid candidate = openList.back();
 		openList.popBack();
-		const auto adjacentToCurrent = m_support.queryGetLeaves(current.inflate(Distance::create(1)));
-		for(const Cuboid& adjacent : adjacentToCurrent)
-			if(adjacent != current && current.isTouchingFace(adjacent) && !closedList.contains(adjacent))
+		if(candidate.isTouchingFaceFromInside(boundry))
+			// If candidate is touching the edge of the space then all are supported.
+			return {};
+		const Cuboid adjacentCuboid = candidate.inflate({1});
+		for(const Cuboid& adjacentToCandidiate : space.solid_getCuboidsIntersecting(adjacentCuboid))
+			if(candidate != adjacentToCandidiate && candidate.isTouchingFace(adjacentToCandidiate) && !closedList.contains(adjacentToCandidiate))
 			{
-				if(adjacent.isTouchingFaceFromInside(boundry))
-					// Edge found.
-					return {};
-				closedList.add(adjacent);
-				openList.insert(adjacent);
+				closedList.add(adjacentToCandidiate);
+				openList.add(adjacentToCandidiate);
+			}
+		for(const auto& [featureCuboid, pointFeature] : space.pointFeature_getAllWithCuboids(adjacentCuboid))
+			if(candidate != featureCuboid && candidate.isTouchingFace(featureCuboid) && !closedList.contains(featureCuboid))
+			{
+				if(PointFeatureType::byId(pointFeature.pointFeatureType).isSupportAgainstCaveIn)
+					openList.add(featureCuboid);
+				closedList.add(featureCuboid);
 			}
 	}
+	// Group is not supported
+	//TODO: check if nonsupporting featureCuboids are supported from elsewhere.
 	return closedList;
 }
 void Support::prepare() { m_support.prepare(); }

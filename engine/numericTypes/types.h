@@ -28,6 +28,7 @@ class Step : public StrongInteger<Step, StepWidth>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Step& index) const { return index.get(); } };
+	__attribute__((noinline)) static Step createDbg(const StepWidth& value);
 };
 inline void to_json(Json& data, const Step& index) { data = index.get(); }
 inline void from_json(const Json& data, Step& index) { index = Step::create(data.get<StepWidth>()); }

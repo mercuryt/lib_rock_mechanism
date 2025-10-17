@@ -36,6 +36,7 @@ public:
 	CuboidSetBase(const PointType& location, const Facing4& rotation, const OffsetCuboidSet& offsetPairs);
 	CuboidSetBase(const std::initializer_list<CuboidType>& cuboids);
 	CuboidSetBase(const CuboidType& cuboid) : m_cuboids({cuboid}) { }
+	CuboidSetBase(const SmallSet<CuboidType>& cuboids) : m_cuboids(cuboids) { }
 	CuboidSetType& operator=(CuboidSetType&& other) noexcept { m_cuboids = std::move(other.m_cuboids); return static_cast<CuboidSetType&>(*this); }
 	CuboidSetType& operator=(const CuboidSetType& other) { m_cuboids = other.m_cuboids; return static_cast<CuboidSetType&>(*this); }
 	void add(const PointType& point);
@@ -54,6 +55,7 @@ public:
 	void rotateAroundPoint(const PointType& point, const Facing4& rotation);
 	void reserve(const uint16_t& capacity) { m_cuboids.reserve(capacity); }
 	void swap(CuboidSetType& other);
+	void popBack();
 	[[nodiscard]] const CuboidType& operator[](const uint8_t& index) const { return m_cuboids[index]; }
 	[[nodiscard]] CuboidType& operator[](const uint8_t& index){ return m_cuboids[index]; }
 	[[nodiscard]] PointType center() const;
@@ -80,7 +82,10 @@ public:
 	[[nodiscard]] CuboidSetType intersection(const CuboidType& cuboid) const;
 	[[nodiscard]] PointType intersectionPoint(const CuboidType& cuboid) const;
 	[[nodiscard]] bool intersects(const CuboidType& cuboid) const;
+	[[nodiscard]] bool intersects(const CuboidSetType& cuboid) const;
 	[[nodiscard]] bool isTouching(const CuboidType& cuboid) const;
+	[[nodiscard]] bool isTouchingFace(const CuboidType& cuboid) const;
+	[[nodiscard]] bool isTouchingFaceFromInside(const CuboidType& cuboid) const;
 	[[nodiscard]] bool isTouching(const CuboidSetType& cuboids) const;
 	[[nodiscard]] __attribute__((noinline)) std::string toString() const;
 	[[nodiscard]] static CuboidSetType create(const SmallSet<PointType>& space);

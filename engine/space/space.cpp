@@ -27,16 +27,23 @@ Space::Space(Area& area, const Distance& x, const Distance& y, const Distance& z
 }
 void Space::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
+	// The constructors for the rtrees insert an empty root node. This is correct for 'normal' initalization but not for deserialization.
+	// Delete these root nodes prior to deserializing.
+	m_solid.beforeJsonLoad();
 	data["solid"].get_to(m_solid);
+	m_features.beforeJsonLoad();
 	data["features"].get_to(m_features);
+	m_exposedToSky.beforeJsonLoad();
 	data["exposedToSky"].get_to(m_exposedToSky);
 	for(const Json& pair : data["fluid"])
 	{
-		Cuboid cuboid = pair[0].get<Cuboid>();
-		FluidData fluidData = pair[1].get<FluidData>();
-		m_fluid.maybeInsert(cuboid, fluidData);
+		FluidData fluidData = pair[0].get<FluidData>();
+		Cuboid cuboid = pair[1].get<Cuboid>();
+		fluid_add(cuboid, fluidData.volume, fluidData.type);
 	}
+	m_mist.beforeJsonLoad();
 	data["mist"].get_to(m_mist);
+	m_mistInverseDistanceFromSource.beforeJsonLoad();
 	data["mistInverseDistanceFromSource"].get_to(m_mistInverseDistanceFromSource);
 	for(const Json& pair : data["reservables"])
 	{
@@ -55,16 +62,16 @@ Json Space::toJson() const
 		{"x", m_sizeX},
 		{"y", m_sizeY},
 		{"z", m_sizeZ},
-		{"solid", m_solid},
-		{"features", m_features},
 		{"fluid", Json::array()},
-		{"mist", m_mist},
-		{"mistInverseDistanceFromSource", m_mistInverseDistanceFromSource},
 		{"reservables", Json::array()},
-		{"exposedToSky", m_exposedToSky}
 	};
+	output["exposedToSky"] = m_exposedToSky;
+	output["solid"] = m_solid;
+	output["features"] = m_features;
+	output["mist"] = m_mist;
+	output["mistInverseDistanceFromSource"] = m_mistInverseDistanceFromSource;
 	for(const auto& [data, cuboid] : m_reservables.queryGetAllWithCuboids(boundry()))
-		output["reservables"].push_back(std::pair(cuboid, reinterpret_cast<uintptr_t>(&data)));
+		output["reservables"].push_back(std::pair(cuboid, reinterpret_cast<uintptr_t>(data.get())));
 	for(const auto& [fluids, cuboid] : m_fluid.queryGetAllWithCuboids(boundry()))
 		output["fluid"].push_back(std::pair(cuboid, fluids));
 	return output;

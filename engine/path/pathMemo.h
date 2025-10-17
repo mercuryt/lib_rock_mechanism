@@ -13,14 +13,14 @@ struct CuboidSet;
 
 class PathMemoClosed final
 {
-	RTreeData<Priority> m_data;
+	RTreeData<DistanceFractional> m_data;
 public:
 	[[nodiscard]] bool contains(const Point3D& index) const { return m_data.queryAny(index); }
 	[[nodiscard]] bool empty() const { return m_data.empty(); }
 	[[nodiscard]] Point3D previous(const Point3D& index) const;
 	[[nodiscard]] SmallSet<Point3D> getPath(const Point3D& secondToLast, const Point3D& last, const Point3D& first) const;
 	[[nodiscard]] CuboidSet getIntersecting(const auto& shape) const { return m_data.queryGetAllCuboids(shape); }
-	void add(const Point3D& index, Point3D parent);
+	void add(const Point3D& index, const Point3D& start);
 	void clear() { m_data.clear(); }
 	void removeClosed(CuboidSet& cuboids) const;
 };
@@ -32,7 +32,7 @@ class PathMemoBreadthFirst final
 	PathMemoClosed m_closed;
 public:
 	void reset();
-	void setClosed(const Point3D& point, const Point3D& previous);
+	void setClosed(const Point3D& point, const Point3D& start);
 	void setOpen(const Point3D& point);
 	void removeClosed(CuboidSet& cuboids) { m_closed.removeClosed(cuboids); }
 	[[nodiscard]] bool isClosed(const Point3D& point) const;
@@ -49,7 +49,7 @@ class PathMemoDepthFirst final
 	Point3D m_huristicDestination;
 public:
 	void reset();
-	void setClosed(const Point3D& point, const Point3D& previous);
+	void setClosed(const Point3D& point, const Point3D& start);
 	void setOpen(const Point3D& point);
 	void removeClosed(CuboidSet& cuboids) { m_closed.removeClosed(cuboids); }
 	void setDestination(const Point3D& point) { m_huristicDestination = point; }

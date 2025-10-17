@@ -32,7 +32,8 @@ Point3D ItemType::getCraftLocation(const ItemTypeId& id, const Point3D& location
 {
 	assert(g_itemTypeData.m_craftLocationStepTypeCategory[id] != CraftStepTypeCategoryId::null());
 	auto [x, y, z] = util::rotateOffsetToFacing(g_itemTypeData.m_craftLocationOffset[id], facing);
-	return location.applyOffset({x, y, z});
+	const Offset3D offsetLocation = location.applyOffset({x, y, z});
+	return Point3D::create(offsetLocation);
 }
 // Static methods.
 const ItemTypeId ItemType::byName(std::string name)

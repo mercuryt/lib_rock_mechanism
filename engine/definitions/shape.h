@@ -60,13 +60,14 @@ public:
 	[[nodiscard]] static const OffsetCuboid& getOffsetCuboidBoundryWithFacing(const ShapeId& id, const Facing4& facing);
 	[[nodiscard]] static std::string getName(const ShapeId& id);
 	[[nodiscard]] static uint32_t getDisplayScale(const ShapeId& id);
-	[[nodiscard]] static bool getIsMultiPoint(const ShapeId& id);
+	[[nodiscard]] static bool getIsMultiTile(const ShapeId& id);
 	[[nodiscard]] static bool getIsRadiallySymetrical(const ShapeId& id);
 	[[nodiscard]] static Offset getZSize(const ShapeId& id);
 	[[nodiscard]] static Quantity getNumberOfPointsOnLeadingFaceAtOrBelowLevel(const ShapeId& id, const Distance& zLevel);
 	// If provided name is not found it is decoded into a custom shape.
 	[[nodiscard]] static ShapeId byName(const std::string& name);
 	[[nodiscard]] static bool hasShape(const std::string& name);
+	[[nodiscard]] static MapWithOffsetCuboidKeys<CollisionVolume> applyOffsetAndRotationAndSubtractOriginal(const ShapeId& shape, const Offset3D& offset, const Facing4& initalFacing, const Facing4& newFacing);
 	// Creates a copy, adds a position to it and returns it.
 	[[nodiscard]] static ShapeId mutateAdd(const ShapeId& id, const std::pair<OffsetCuboid, CollisionVolume>& cuboidAndVolume);
 	[[nodiscard]] static ShapeId mutateAddMultiple(const ShapeId& id, const MapWithOffsetCuboidKeys<CollisionVolume>& cuboidsWithVolume);

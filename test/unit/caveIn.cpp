@@ -97,9 +97,7 @@ TEST_CASE("caveIn")
 		space.solid_set(block, marble, false);
 		space.solid_set(block2, marble, false);
 		space.solid_set(block3, marble, false);
-		support.maybeFall({block, block});
-		support.maybeFall({block2, block2});
-		support.maybeFall({block2, block2});
+		support.maybeFall({block3, block});
 		support.doStep(area);
 		CHECK(space.solid_get(block) == marble);
 		CHECK(space.solid_get(block.below()) == marble);

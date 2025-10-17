@@ -160,7 +160,7 @@ GoToPathRequest::GoToPathRequest(const Json& data, Area& area) :
 { }
 FindPathResult GoToPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo)
 {
-		return terrainFacade.findPathTo(memo, start, facing, shape, destination, detour, adjacent, faction);
+	return terrainFacade.findPathTo(memo, start, facing, shape, destination, detour, adjacent, faction);
 }
 Json GoToPathRequest::toJson() const
 {

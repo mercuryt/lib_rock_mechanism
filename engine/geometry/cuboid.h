@@ -53,6 +53,7 @@ struct Cuboid
 	[[nodiscard]] Cuboid sum(const Cuboid& cuboid) const;
 	[[nodiscard]] OffsetCuboid difference(const Point3D& other) const;
 	[[nodiscard]] Cuboid intersection(const Cuboid& cuboid) const;
+	[[nodiscard]] Cuboid intersection(const OffsetCuboid& cuboid) const;
 	[[nodiscard]] Cuboid intersection(const Point3D& point) const;
 	[[nodiscard]] Point3D intersectionPoint(const Point3D& point) const;
 	[[nodiscard]] Point3D intersectionPoint(const Cuboid& cuboid) const;
@@ -80,6 +81,7 @@ struct Cuboid
 	[[nodiscard]] SmallSet<Cuboid> getChildrenWhenSplitBy(const Point3D& point) const { return getChildrenWhenSplitByCuboid({point, point}); }
 	[[nodiscard]] std::pair<Cuboid, Cuboid> getChildrenWhenSplitBelowCuboid(const Cuboid& cuboid) const;
 	[[nodiscard]] OffsetCuboid translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const;
+	[[nodiscard]] OffsetCuboid offsetTo(const Point3D& point) const;
 	[[nodiscard]] static Cuboid fromPoint(const Point3D& point);
 	[[nodiscard]] static Cuboid fromPointPair(const Point3D& a, const Point3D& b);
 	[[nodiscard]] static Cuboid fromPointSet(const SmallSet<Point3D>& set);

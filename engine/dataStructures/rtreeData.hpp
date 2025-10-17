@@ -44,8 +44,11 @@ Json RTreeData<T, config>::Node::toJson() const
 			output["dataAndChildIndices"][i] = m_dataAndChildIndices[i].child;
 		return output;
 	}
-	assert(false);
-	std::unreachable();
+	else
+	{
+		assert(false);
+		std::unreachable();
+	}
 }
 template<Sortable T, RTreeDataConfig config>
 bool RTreeData<T, config>::Node::containsLeaf(const Cuboid& cuboid, const T& value)
@@ -67,13 +70,16 @@ void RTreeData<T, config>::Node::load(const Json& data)
 		for(uint i = 0; i < nodeSize; ++i)
 		{
 			if(i < m_leafEnd)
-				data["dataAndChildIndices"].get_to(m_dataAndChildIndices[i].data);
+				data["dataAndChildIndices"][i].get_to(m_dataAndChildIndices[i].data);
 			if(i >= m_childBegin)
-				data["dataAndChildIndices"].get_to(m_dataAndChildIndices[i].child);
+				data["dataAndChildIndices"][i].get_to(m_dataAndChildIndices[i].child);
 		}
 	}
-	assert(false);
-	std::unreachable();
+	else
+	{
+		assert(false);
+		std::unreachable();
+	}
 }
 template<Sortable T, RTreeDataConfig config>
 void RTreeData<T, config>::Node::updateChildIndex(const RTreeNodeIndex& oldIndex, const RTreeNodeIndex& newIndex)
@@ -819,6 +825,14 @@ void RTreeData<T, config>::addIntersectedChildrenToOpenList(const Node& node, co
 				openList.insert(RTreeNodeIndex::create(nodeDataAndChildIndices[iter - begin].child));
 	}
 }
+template<Sortable T, RTreeDataConfig config>
+RTreeData<T, config>::RTreeData()
+{
+	m_nodes.add();
+	m_nodes.back().setParent(RTreeNodeIndex::null());
+}
+template<Sortable T, RTreeDataConfig config>
+void RTreeData<T, config>::beforeJsonLoad() { m_nodes.clear(); }
 template<Sortable T, RTreeDataConfig config>
 void RTreeData<T, config>::maybeInsert(const Cuboid& cuboid, const T& value)
 {

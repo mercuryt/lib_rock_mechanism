@@ -47,9 +47,10 @@ void Space::item_eraseDynamic(const MapWithCuboidKeys<CollisionVolume>& mapWithC
 	Items& items = m_area.getItems();
 	assert(!items.isStatic(item));
 	for(const auto& pair : mapWithCuboidKeys)
+	{
 		m_items.remove(pair.first, item);
-	for(const auto& pair : mapWithCuboidKeys)
 		m_dynamicVolume.updateSubtractAll(pair.first, pair.second);
+	}
 }
 void Space::item_eraseStatic(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKeys, const ItemIndex& item)
 {

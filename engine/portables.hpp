@@ -506,10 +506,12 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>void Po
 {
 	Space& space = getArea().getSpace();
 	const Point3D& location = getLocation(index);
-	if(
-		location.z() != 0 &&
-		!space.shape_moveTypeCanEnter(location, getMoveType(index))
-	)
+	if(location.z() == 0)
+		return;
+	const Point3D below = location.below();
+	const ShapeId& shape = getShape(index);
+	const CuboidSet& occupied = this->m_occupied[index];
+	if(space.shape_canFitEverOrCurrentlyDynamic(below, shape, getFacing(index), occupied) && !canFloatAt(index, location))
 		fall(index);
 }
 template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::fall(const Index& index)
@@ -544,7 +546,8 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>void Po
 	static_cast<Derived*>(this)->takeFallDamage(index, distance, materialType);
 	//TODO: dig out / destruct below impact.
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>Mass Portables<Derived, Index, ReferenceIndex, isActors>::onDeck_getMass(const Index& index) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+Mass Portables<Derived, Index, ReferenceIndex, isActors>::onDeck_getMass(const Index& index) const
 {
 	const Area& area = getArea();
 	Mass output = Mass::create(0);
@@ -552,7 +555,8 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>Mass Po
 		output += onDeck.getMass(area);
 	return output;
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::onSetLocation(const Index& index, const Point3D& previousLocation, const Facing4& previousFacing)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+void Portables<Derived, Index, ReferenceIndex, isActors>::onSetLocation(const Index& index, const Point3D& previousLocation, const Facing4& previousFacing)
 {
 	Area& area = getArea();
 	Space& space = area.getSpace();

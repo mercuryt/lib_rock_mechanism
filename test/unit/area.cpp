@@ -222,20 +222,21 @@ TEST_CASE("multiMergeOnAdd")
 {
 	static FluidTypeId water = FluidType::byName("water");
 	Simulation simulation;
-	Area& area = simulation.m_hasAreas->createArea(2,2,1);
+	Area& area = simulation.m_hasAreas->createArea(1,4,1);
 	area.m_hasRain.disable();
 	Space& space = area.getSpace();
 	Point3D block1 = Point3D::create(0, 0, 0);
 	Point3D block2 = Point3D::create(0, 1, 0);
-	Point3D block3 = Point3D::create(1, 0, 0);
-	Point3D block4 = Point3D::create(1, 1, 0);
+	Point3D block3 = Point3D::create(0, 2, 0);
+	Point3D block4 = Point3D::create(0, 3, 0);
 	space.fluid_add(block1, Config::maxPointVolume, water);
 	CHECK(area.m_hasFluidGroups.getAll().size() == 1);
-	space.fluid_add(block4, Config::maxPointVolume, water);
+	space.fluid_add(block3, Config::maxPointVolume, water);
 	CHECK(area.m_hasFluidGroups.getAll().size() == 2);
 	space.fluid_add(block2, Config::maxPointVolume, water);
+	area.m_hasFluidGroups.clearMergedFluidGroups();
 	CHECK(area.m_hasFluidGroups.getAll().size() == 1);
-	space.fluid_add(block3, Config::maxPointVolume, water);
+	space.fluid_add(block4, Config::maxPointVolume, water);
 	CHECK(area.m_hasFluidGroups.getAll().size() == 1);
 	simulation.doStep();
 }

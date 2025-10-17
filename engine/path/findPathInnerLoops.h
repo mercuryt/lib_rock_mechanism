@@ -14,7 +14,7 @@ class PathInnerLoops
 	{
 		// Use Point3D::null() to indicate the start.
 		memo.setOpen(start);
-		memo.setClosed(start, Point3D::null());
+		memo.setClosed(start, start);
 		while(!memo.openEmpty())
 		{
 			const Point3D current = memo.next();
@@ -42,7 +42,7 @@ class PathInnerLoops
 				if(result)
 					return {memo.getPath(current, adjacent, start), pointWhichPassedPredicate, false};
 				memo.setOpen(adjacent);
-				memo.setClosed(adjacent, current);
+				memo.setClosed(adjacent, start);
 			}
 		}
 		return {{}, Point3D::null(), false};
@@ -155,7 +155,7 @@ public:
 	static FindPathResult findPath(DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const ShapeId& shape, const MoveTypeId& moveType, const Point3D& start, const Facing4& facing, bool detour, const FactionId& faction, const Distance maxRange)
 	{
 		const Space& space = area.getSpace();
-		if(Shape::getIsMultiPoint(shape))
+		if(Shape::getIsMultiTile(shape))
 		{
 			if constexpr (anyOccupiedPoint)
 			{
@@ -211,7 +211,7 @@ public:
 	static FindPathResult findPathAdjacentTo(DestinationConditionT destinationCondition, const Area& area, const TerrainFacade& terrainFacade, Memo& memo, const ShapeId& shape, const MoveTypeId& moveType, const Point3D& start, const Facing4& facing, bool detour, const FactionId& faction, const Distance maxRange)
 	{
 		const Space& space = area.getSpace();
-		if(Shape::getIsMultiPoint(shape))
+		if(Shape::getIsMultiTile(shape))
 		{
 			auto adjacentCondition = [shape, &space, destinationCondition](const Point3D& point, const Facing4& facingAtPoint) -> std::pair<bool, Point3D>
 			{

@@ -91,7 +91,7 @@ void FluidGroup::removePoint(Area& area, const Point3D& point)
 {
 	setUnstable(area);
 	m_drainQueue.removePoint(point);
-	m_potentiallyNoLongerAdjacentFromSyncronusStep.insert(point);
+	m_potentiallyNoLongerAdjacentFromSyncronusStep.maybeInsert(point);
 	for(const Point3D& adjacent : area.getSpace().getDirectlyAdjacent(point))
 		if( area.getSpace().fluid_canEnterEver(adjacent))
 		{

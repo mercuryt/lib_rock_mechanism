@@ -1,6 +1,8 @@
 #include "cuboidSetSIMD.h"
+#include "cuboidSet.h"
 #include "sphere.h"
 #include "../config.h"
+CuboidSetSIMD::CuboidSetSIMD(const CuboidSet& contents) { load(contents.m_cuboids.m_data); }
 void CuboidSetSIMD::reserve(uint capacity)
 {
 	if(capacity < m_capacity)
@@ -55,6 +57,13 @@ void CuboidSetSIMD::clear()
 	m_low.fill(Distance::null().get());
 	m_size = 0;
 	m_boundingBox.clear();
+}
+void CuboidSetSIMD::load(const std::vector<Cuboid>& contents)
+{
+	assert(empty());
+	reserve(contents.size());
+	for(const Cuboid& cuboid : contents)
+		insert(cuboid);
 }
 bool CuboidSetSIMD::intersects(const Cuboid& cuboid) const
 {
@@ -113,3 +122,5 @@ std::vector<Cuboid> CuboidSetSIMD::toVector() const
 		output.push_back(cuboid);
 	return output;
 }
+void to_json(Json& data, const CuboidSetSIMD& set) { data = set.toVector(); }
+void from_json(const Json& data, CuboidSetSIMD& set) { set.load(data.get<std::vector<Cuboid>>()); }

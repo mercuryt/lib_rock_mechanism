@@ -468,9 +468,9 @@ TEST_CASE("constructDirtWall")
 	}
 	SUBCASE("dirt wall three piles")
 	{
-		Point3D pileLocation1 = Point3D::create(9, 9, 2);
+		Point3D pileLocation1 = Point3D::create(9, 5, 2);
 		Point3D pileLocation2 = Point3D::create(9, 7, 2);
-		Point3D pileLocation3 = Point3D::create(9, 5, 2);
+		Point3D pileLocation3 = Point3D::create(9, 9, 2);
 		ItemIndex dirtPile1 = items.create({.itemType=pile, .materialType=dirt, .location=pileLocation1, .quantity=Quantity::create(50u)});
 		ItemIndex dirtPile2 = items.create({.itemType=pile, .materialType=dirt, .location=pileLocation2, .quantity=Quantity::create(50u)});
 		ItemIndex dirtPile3 = items.create({.itemType=pile, .materialType=dirt, .location=pileLocation3, .quantity=Quantity::create(50u)});
@@ -497,18 +497,17 @@ TEST_CASE("constructDirtWall")
 		CHECK(actors.canPickUp_isCarryingItem(dwarf1, dirtPile1));
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, wallLocation);
 		CHECK(!actors.canPickUp_exists(dwarf1));
-		// After Dropping off pile 1 the next closest is pile 3.
-		// Move pile 3.
-		auto pile3Moved = [&]{ return space.item_getCount(pileLocation3, pile, dirt) == 0; };
-		simulation.fastForwardUntillPredicate(pile3Moved);
-		CHECK(actors.canPickUp_isCarryingItem(dwarf1, dirtPile3));
-		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, wallLocation);
-		CHECK(!actors.canPickUp_exists(dwarf1));
-		// The last Pile is pile 2.
+		// After Dropping off pile 1 the next closest is pile 2.
 		// Move pile 2.
 		auto pile2Moved = [&]{ return space.item_getCount(pileLocation2, pile, dirt) == 0; };
 		simulation.fastForwardUntillPredicate(pile2Moved);
 		CHECK(actors.canPickUp_isCarryingItem(dwarf1, dirtPile2));
+		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, wallLocation);
+		CHECK(!actors.canPickUp_exists(dwarf1));
+		// The last Pile is pile 3.
+		// Move pile 3.
+		auto pile3Moved = [&]{ return space.item_getCount(pileLocation3, pile, dirt) == 0; };
+		simulation.fastForwardUntillPredicate(pile3Moved);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, wallLocation);
 		CHECK(!actors.canPickUp_exists(dwarf1));
 		CHECK(project.deliveriesComplete());

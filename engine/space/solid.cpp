@@ -128,8 +128,7 @@ MapWithCuboidKeys<MaterialTypeId> Space::solid_getAllWithCuboidsAndRemove(const 
 	for(const Cuboid& cuboid : cuboids)
 		for(const auto& [materialCuboid, materialType] : m_solid.queryGetAllWithCuboids(cuboid))
 			output.insertOrMerge(materialCuboid, materialType);
-	for(const Cuboid& cuboid : cuboids)
-		m_solid.removeAll(cuboid);
+	m_solid.maybeRemove(cuboids);
 	return output;
 }
 Mass Space::solid_getMass(const Point3D& point) const
@@ -138,6 +137,7 @@ Mass Space::solid_getMass(const Point3D& point) const
 	assert(!materialType.empty());
 	return Config::maxPointVolume.toVolume() * MaterialType::getDensity(materialType);
 }
+CuboidSet Space::solid_getCuboidsIntersecting(const Cuboid& cuboid) const { return m_solid.queryGetAllCuboids(cuboid); }
 Mass Space::solid_getMass(const CuboidSet& cuboidSet) const
 {
 	// TODO: use m_solid.queryCount(cuboidSet).

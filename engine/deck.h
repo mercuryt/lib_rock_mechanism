@@ -43,13 +43,13 @@ struct DeckRotationDataSingle
 		location(l),
 		facing(f)
 	{ }
-	DeckRotationDataSingle(const DeckRotationDataSingle&) { assert(false); std::unreachable(); }
+	DeckRotationDataSingle(const DeckRotationDataSingle&) = delete;
 	DeckRotationDataSingle(DeckRotationDataSingle&& other) noexcept :
 		reservedPointsAndCallbacks(std::move(other.reservedPointsAndCallbacks)),
 		location(other.location),
 		facing(other.facing)
 	{ }
-	DeckRotationDataSingle& operator=(const DeckRotationDataSingle&) { assert(false); std::unreachable(); }
+	DeckRotationDataSingle& operator=(const DeckRotationDataSingle&) = delete;
 	DeckRotationDataSingle& operator=(DeckRotationDataSingle&& other) noexcept
 	{
 		reservedPointsAndCallbacks = std::move(other.reservedPointsAndCallbacks);

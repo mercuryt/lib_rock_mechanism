@@ -26,10 +26,12 @@ void SimulationHasAreas::incrementHour()
 }
 void SimulationHasAreas::save()
 {
-	for(auto& pair : m_areas)
+	for(auto& [areaId, area] : m_areas)
 	{
-		std::ofstream af(m_simulation.m_path/"area"/(std::to_string(pair.second->m_id.get()) + ".json"));
-		af << pair.second->toJson();
+		std::ofstream af(m_simulation.m_path/"area"/(std::to_string(areaId.get()) + ".json"));
+		// Ensure spatial compression prior to serialization.
+		area->getSpace().prepareRtrees();
+		af << area->toJson();
 	}
 }
 Area& SimulationHasAreas::createArea(const Distance& x, const Distance& y, const Distance& z, bool createDrama)

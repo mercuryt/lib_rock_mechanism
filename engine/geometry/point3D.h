@@ -75,7 +75,8 @@ struct Point3D
 	[[nodiscard]] uint32_t hilbertNumber() const;
 	[[nodiscard]] Offset3D toOffset() const;
 	[[nodiscard]] Offset3D offsetTo(const Point3D& other) const;
-	[[nodiscard]] Point3D applyOffset(const Offset3D& other) const;
+	[[nodiscard]] Offset3D offsetTo(const Offset3D& other) const;
+	[[nodiscard]] Offset3D applyOffset(const Offset3D& other) const;
 	[[nodiscard]] bool isInFrontOf(const Point3D& coordinates, const Facing4& facing) const;
 	// Return value uses east rather then north as 0.
 	[[nodiscard]] double degreesFacingTwords(const Point3D& other) const;
@@ -94,6 +95,7 @@ struct Point3D
 	[[nodiscard]] Offset3D atAdjacentIndex(const AdjacentIndex& index) const;
 	[[nodiscard]] Cuboid getAllAdjacentIncludingOutOfBounds() const;
 	[[nodiscard]] Cuboid boundry() const;
+	//TODO: move to helper.
 	[[nodiscard]] bool isAdjacentToAny(const auto& points) const
 	{
 		for(const Point3D& point : points)

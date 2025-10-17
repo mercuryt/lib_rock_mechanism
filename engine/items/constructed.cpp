@@ -8,12 +8,11 @@ ConstructedShape::ConstructedShape(const Json& data) { nlohmann::from_json(data,
 void ConstructedShape::addCuboidSet(Area& area, const Point3D& origin, const Facing4& facing, const CuboidSet& cuboids)
 {
 	Space& space = area.getSpace();
-	const Offset3D offsetOrigin = origin.toOffset();
 	for(const auto& [solidCuboid, materialType] : space.solid_getAllWithCuboidsAndRemove(cuboids))
 	{
 		OffsetCuboid offsetCuboid = solidCuboid.difference(origin);
-		offsetCuboid.rotateAroundPoint(offsetOrigin, facing);
-		m_solid.insert(offsetCuboid, materialType);
+		offsetCuboid.rotate2D(facing);
+		m_solid.insertOrMerge(offsetCuboid, materialType);
 		uint size = solidCuboid.volume();
 		m_value += MaterialType::getValuePerUnitFullDisplacement(materialType) * size;
 		m_mass += MaterialType::getMassForSolidVolumeAsANumberOfPoints(materialType, size);
@@ -21,9 +20,9 @@ void ConstructedShape::addCuboidSet(Area& area, const Point3D& origin, const Fac
 	}
 	for(const auto& [featureCuboid, feature] : space.pointFeature_getAllWithCuboidsAndRemove(cuboids))
 	{
-		OffsetCuboid offsetCuboid = OffsetCuboid::create(featureCuboid, origin);
-		offsetCuboid.rotateAroundPoint(offsetOrigin, facing);
-		m_features.insert(offsetCuboid, feature);
+		OffsetCuboid offsetCuboid = featureCuboid.difference(origin);
+		offsetCuboid.rotate2D(facing);
+		m_features.insertOrMerge(offsetCuboid, feature);
 		const auto& featureType = PointFeatureType::byId(feature.pointFeatureType);
 		uint size = featureCuboid.volume();
 		if(featureType.blocksEntrance)
@@ -67,7 +66,7 @@ void ConstructedShape::constructDecks()
 			m_decks.remove(pair.first);
 	}
 }
-void ConstructedShape::recordAndClearDynamic(Area& area, const CuboidSet& occupied)
+void ConstructedShape::recordAndClearDynamic(Area& area, const CuboidSet& occupied, const Point3D& location)
 {
 	Space& space = area.getSpace();
 	for(const auto& [solidCuboid, materialType] : space.solid_getAllWithCuboidsAndRemove(occupied))
@@ -75,40 +74,38 @@ void ConstructedShape::recordAndClearDynamic(Area& area, const CuboidSet& occupi
 			space.solid_setNotDynamic(point);
 	m_features.clear();
 	for(const auto& [featureCuboid, feature] : space.pointFeature_getAllWithCuboidsAndRemove(occupied))
-		m_features.insertOrMerge(OffsetCuboid::create(featureCuboid), feature);
+		m_features.insertOrMerge(featureCuboid.offsetTo(location), feature);
+	//TODO: combine with other loop at 72? Use cuboids rather then points.
 	for(const Cuboid& cuboid : occupied)
 		for(const Point3D& point : cuboid)
-		{
 			space.pointFeature_removeAll(point);
-			space.unsetDynamic(point);
-		}
 }
-void ConstructedShape::recordAndClearStatic(Area& area, const CuboidSet& occupied)
+void ConstructedShape::recordAndClearStatic(Area& area, const CuboidSet& occupied, const Point3D& location)
 {
 	Space& space = area.getSpace();
 	for(const auto& [solidCuboid, materialType] : space.solid_getAllWithCuboidsAndRemove(occupied))
 		space.solid_setNotCuboid(solidCuboid);
 	m_features.clear();
 	for(const auto& [featureCuboid, feature] : space.pointFeature_getAllWithCuboidsAndRemove(occupied))
-		m_features.insertOrMerge(OffsetCuboid::create(featureCuboid), feature);
+		m_features.insertOrMerge(featureCuboid.offsetTo(location), feature);
 	for(const Cuboid& cuboid : occupied)
 		for(const Point3D& point : cuboid)
 			space.pointFeature_removeAll(point);
 }
-void ConstructedShape::setLocationAndFacingDynamic(Area& area, const Point3D& previousLocation, const Facing4& currentFacing, const Point3D& newLocation, const Facing4& newFacing, CuboidSet& occupied)
+void ConstructedShape::setLocationAndFacingDynamic(Area& area, const Facing4& currentFacing, const Point3D& newLocation, const Facing4& newFacing, CuboidSet& occupied)
 {
 	Space& space = area.getSpace();
 	if(newFacing != currentFacing)
 	{
 		for(auto& [offsetCuboid, materialType] : m_solid)
-			offsetCuboid = offsetCuboid.translate(previousLocation, newLocation, currentFacing, newFacing);
+			offsetCuboid.rotate2D(currentFacing, newFacing);
 		for(auto& [offsetCuboid, features] : m_features)
-			offsetCuboid = offsetCuboid.translate(previousLocation, newLocation, currentFacing, newFacing);
+			offsetCuboid.rotate2D(currentFacing, newFacing);
 	}
 	[[maybe_unused]] OffsetCuboid boundry = space.offsetBoundry();
 	for(const auto& [offsetCuboid, materialType] : m_solid)
 	{
-		const OffsetCuboid relativeOffsetCuboid = offsetCuboid.difference(newLocation);
+		const OffsetCuboid relativeOffsetCuboid = offsetCuboid.relativeToPoint(newLocation);
 		assert(boundry.contains(relativeOffsetCuboid));
 		const Cuboid cuboid = Cuboid::create(relativeOffsetCuboid);
 		assert(space.shape_anythingCanEnterEver(cuboid));
@@ -118,22 +115,24 @@ void ConstructedShape::setLocationAndFacingDynamic(Area& area, const Point3D& pr
 	}
 	for(auto& [offsetCuboid, feature] : m_features)
 	{
-		const OffsetCuboid relativeOffsetCuboid = offsetCuboid.relativeToOffset(newLocation);
+		const OffsetCuboid relativeOffsetCuboid = offsetCuboid.relativeToPoint(newLocation);
 		assert(boundry.contains(relativeOffsetCuboid));
 		const Cuboid cuboid = Cuboid::create(relativeOffsetCuboid);
+		assert(space.shape_anythingCanEnterEver(cuboid));
 		space.pointFeature_add(cuboid, feature);
+		space.setDynamic(cuboid);
 		occupied.add(cuboid);
 	}
 }
-void ConstructedShape::setLocationAndFacingStatic(Area& area, const Point3D& previousLocation, const Facing4& currentFacing, const Point3D& newLocation, const Facing4& newFacing, CuboidSet& occupied)
+void ConstructedShape::setLocationAndFacingStatic(Area& area, const Facing4& currentFacing, const Point3D& newLocation, const Facing4& newFacing, CuboidSet& occupied)
 {
 	Space& space = area.getSpace();
 	if(newFacing != currentFacing)
 	{
 		for(auto& [offsetCuboid, materialType] : m_solid)
-			offsetCuboid = offsetCuboid.translate(previousLocation, newLocation, currentFacing, newFacing);
+			offsetCuboid.rotate2D(currentFacing, newFacing);
 		for(auto& [offsetCuboid, features] : m_features)
-			offsetCuboid = offsetCuboid.translate(previousLocation, newLocation, currentFacing, newFacing);
+			offsetCuboid.rotate2D(currentFacing, newFacing);
 	}
 	[[maybe_unused]] OffsetCuboid boundry = space.offsetBoundry();
 	for(const auto& [offsetCuboid, materialType] : m_solid)
@@ -175,20 +174,33 @@ std::pair<ConstructedShape, Point3D> ConstructedShape::makeForKeelPoint(Area& ar
 	ConstructedShape output;
 	Space& space = area.getSpace();
 	auto keelCondition = [&](const Point3D& p) { return space.pointFeature_contains(p, PointFeatureTypeId::Keel); };
+	assert(keelCondition(point));
 	CuboidSet keelCuboids = space.collectAdjacentsWithCondition(point, keelCondition);
+	assert(!keelCuboids.empty());
 	Offset3D sum = Offset3D::create(0,0,0);
 	for(const Cuboid& cuboid : keelCuboids)
 		sum += cuboid.getCenter().toOffset();
 	Point3D center = keelCuboids.center();
 	Distance lowestZ = keelCuboids.lowestZ();
 	center.setZ(lowestZ);
-	output.addCuboidSet(area, point, facing, keelCuboids);
-	// Only keel space are allowed on same level as center.
-	auto occupiedCondition = [&](const Point3D& p) {
-		return ( space.solid_isAny(p) || !space.pointFeature_empty(p)) && p.z() > lowestZ;
+	output.addCuboidSet(area, center, facing, keelCuboids);
+	auto occupiedCondition = [&](const Cuboid& cuboid) -> CuboidSet
+	{
+		CuboidSet conditionOutput;
+		for(const Cuboid& solidCuboid : space.solid_getCuboidsIntersecting(cuboid))
+			// Only keel space are allowed on same level as center.
+			if(solidCuboid.m_low.z() > 0)
+				conditionOutput.add(solidCuboid);
+		for(const auto& [featureCuboid, feature] : space.pointFeature_getAllWithCuboids(cuboid))
+			//TODO: handle floors, floor grates, and hatches not connecting to the level below: slice off lower part of cuboid.
+			if(featureCuboid.m_low.z() > 0 || feature.pointFeatureType == PointFeatureTypeId::Keel)
+				conditionOutput.add(featureCuboid);
+		return conditionOutput;
 	};
-	CuboidSet connectedCuboids = space.collectAdjacentsWithCondition(center, occupiedCondition);
-	output.addCuboidSet(area, point, facing, connectedCuboids);
+	constexpr bool includeStart = false;
+	CuboidSet connectedCuboids = space.collectAdjacentsWithCondition<includeStart>(keelCuboids, occupiedCondition);
+	assert(!connectedCuboids.empty());
+	output.addCuboidSet(area, center, facing, connectedCuboids);
 	output.constructShape();
 	output.constructDecks();
 	return {output, center};

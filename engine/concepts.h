@@ -14,10 +14,10 @@ template <typename T>
 concept HasEmptyMethod = requires(T a) { a.empty(); };
 
 template <typename T>
-concept HasToJsonMethod = requires(T a) { to_json(Json{}, a); };
+concept HasToJsonMethod = requires(T a, Json json) { to_json(json, a); };
 
 template <typename T>
-concept HasFromJsonMethod = requires(T a) { from_json(Json{}, a); };
+concept HasFromJsonMethod = requires(T a, Json json) { from_json(json, a); };
 
 template<typename T>
 concept MoveConstructible = std::is_move_constructible_v<T>;

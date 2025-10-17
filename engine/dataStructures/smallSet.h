@@ -168,8 +168,8 @@ struct SmallSet
 		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
 	};
 	[[nodiscard]] std::string toString() const;
-	template<typename Source>
-	static SmallSet<T> create(const Source& source) { SmallSet<T> output; for(const T& value : source) output.insert(value); return output; }
+	static SmallSet<T> create(const auto& source) { SmallSet<T> output; for(const T& value : source) output.insert(value); return output; }
+	static SmallSet<T> createNonunique(const auto& source) { SmallSet<T> output; for(const T& value : source) output.insertNonunique(value); return output; }
 };
 // Define custom serialization / deserialization instead of using intrusive because this type is used in raws and specifiying field name would be annoying.
 template<typename T>

@@ -2,6 +2,7 @@
 #include "../space/adjacentOffsets.h"
 #include "cuboid.h"
 #include "offsetCuboid.h"
+#include <cmath> // for fmod
 Point3D Point3D::operator-(const Distance& distance) const
 {
 	return (*this) - distance.get();
@@ -154,59 +155,47 @@ Offset3D Point3D::offsetTo(const Point3D& other) const
 {
 	return other.toOffset() - toOffset();
 }
-Point3D Point3D::applyOffset(const Offset3D& other) const
+Offset3D Point3D::offsetTo(const Offset3D& other) const
+{
+	return other - toOffset();
+}
+Offset3D Point3D::applyOffset(const Offset3D& other) const
 {
 	Offset3D copy(data.cast<OffsetWidth>());
 	copy += other.data;
-	assert((copy.data >= 0).all());
-	return Point3D::create(copy);
+	return copy;
 }
 Facing4 Point3D::getFacingTwords(const Point3D& other) const
 {
 	double degrees = degreesFacingTwords(other);
-	assert(degrees <= 360);
-	if(degrees >= 45 && degrees < 135)
-		return Facing4::South;
-	if(degrees >= 135 && degrees < 225)
-		return Facing4::West;
-	if(degrees >= 225 && degrees < 315)
-		return Facing4::North;
-	assert(degrees >= 315 || degrees < 45);
-	return Facing4::East;
+	// To handle values >= 315 returning 0, meaning north.
+	degrees += 45.0;
+	degrees = fmod(degrees, 360.0);
+	assert(degrees <= 360.0);
+	// TODO: benchmark this vs a series of if statments.
+	return (Facing4)(degrees / 90.0);
 }
 Facing8 Point3D::getFacingTwordsIncludingDiagonal(const Point3D& other) const
 {
 	double degrees = degreesFacingTwords(other);
-	assert(degrees <= 360);
-	if(degrees >= 22.5 && degrees < 67.5)
-		return Facing8::SouthEast;
-	if(degrees >= 67.5 && degrees < 112.5)
-		return Facing8::South;
-	if(degrees >= 112.5 && degrees < 157.5)
-		return Facing8::SouthWest;
-	if(degrees >= 157.5 && degrees < 202.5)
-		return Facing8::West;
-	if(degrees >= 202.5 && degrees < 247.5)
-		return Facing8::NorthWest;
-	if(degrees >= 247.5 && degrees < 292.5)
-		return Facing8::North;
-	if(degrees >= 292.5 && degrees < 337.5)
-		return Facing8::NorthEast;
-	assert(degrees >= 337.5 || degrees < 22.5);
-	return Facing8::East;
+	// To handle values >= 338.5 returning 0, meaning north.
+	degrees += 22.5;
+	degrees = fmod(degrees, 360.0);
+	assert(degrees <= 360.0);
+	return (Facing8)(degrees / 45.0);
 }
 bool Point3D::isInFrontOf(const Point3D& other, const Facing4& facing) const
 {
 	switch(facing)
 	{
 		case Facing4::North:
-			return other.y() >= y();
+			return other.y() <= y();
 			break;
 		case Facing4::East:
 			return other.x() <= x();
 			break;
 		case Facing4::South:
-			return other.y() <= y();
+			return other.y() >= y();
 			break;
 		case Facing4::West:
 			return other.x() >= x();
@@ -225,7 +214,14 @@ double Point3D::degreesFacingTwords(const Point3D& other) const
 	if (angleRadians < 0 )
 		angleRadians += M_PI * 2;
 	// Convert to degrees
-	return angleRadians * 180.0 / M_PI;
+	double degrees = angleRadians * 180.0 / M_PI;
+	// TODO: Is there a better way to do this?
+	// Rotate 90 degrees counter clockwise so 0 is at north rather then east.
+	degrees -= 90;
+	if(degrees < 0)
+		degrees += 360;
+	return degrees;
+
 }
 Point3D& Point3D::operator+=(const Offset3D& other)
 {
@@ -320,7 +316,7 @@ Offset3D Point3D::offsetRotated(const Offset3D& initalOffset, const Facing4& fac
 }
 Offset3D Point3D::translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const
 {
-	Offset3D destinationOffset = offsetTo(previousPivot);
+	Offset3D destinationOffset = previousPivot.offsetTo(*this);
 	return nextPivot.offsetRotated(destinationOffset, previousFacing, nextFacing);
 }
 Offset3D Point3D::moveInDirection(const Facing6& facing, const Distance& distance) const
@@ -464,15 +460,15 @@ Offset3D createOffset(const OffsetWidth& x, const OffsetWidth& y, const OffsetWi
 {
 	return Offset3D::create(x,y,z);
 }
-Offset3D Offset3D::below() const { assert(data[2] != 0); auto output = *this; --output.data[2]; return output; }
-Offset3D Offset3D::north() const { assert(data[1] != 0); auto output = *this; --output.data[1]; return output; }
-Offset3D Offset3D::west() const { assert(data[0] != 0); auto output = *this; --output.data[0]; return output; }
+Offset3D Offset3D::below() const { auto output = *this; --output.data[2]; return output; }
+Offset3D Offset3D::north() const { auto output = *this; --output.data[1]; return output; }
+Offset3D Offset3D::west() const { auto output = *this; --output.data[0]; return output; }
 Offset3D Offset3D::east() const { auto output = *this; ++output.data[0]; return output; }
 Offset3D Offset3D::south() const { auto output = *this; ++output.data[1]; return output; }
 Offset3D Offset3D::above() const { auto output = *this; ++output.data[2]; return output; }
 Offset3D Offset3D::translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const
 {
-	Offset3D destinationOffset = previousPivot.toOffset();
+	Offset3D destinationOffset = previousPivot.offsetTo(*this);
 	return nextPivot.offsetRotated(destinationOffset, previousFacing, nextFacing);
 }
 Offset3D Offset3D::moveInDirection(const Facing6& facing, const Distance& distance) const

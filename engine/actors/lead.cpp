@@ -1,7 +1,8 @@
 #include "actors.h"
-#include "area/area.h"
-#include "space/space.h"
-#include "numericTypes/index.h"
+#include "../area/area.h"
+#include "../space/space.h"
+#include "../numericTypes/index.h"
+#include "../geometry/setOfPointsHelper.h"
 const SmallSet<Point3D>& Actors::lineLead_getPath(const ActorIndex& index) const
 {
 	assert(!isFollowing(index));
@@ -51,6 +52,92 @@ std::vector<ActorOrItemIndex> Actors::lineLead_getAll(const ActorIndex& index) c
 	}
 	return output;
 }
+std::pair<Point3D, Facing4> Actors::lineLead_followerGetNextStep(const ActorOrItemIndex& follower, const SmallSet<Point3D>& path, const CuboidSet& occupiedByCurrentLeader) const
+{
+	assert(occupiedByCurrentLeader.exists());
+	assert(follower.exists());
+	assert(follower.isFollowing(m_area));
+	const Space& space = m_area.getSpace();
+	const Point3D currentLocation = follower.getLocation(m_area);
+	auto indexOfCurrentLocation = path.maybeFindLastIndex(currentLocation);
+	const bool isOnPathOrAdjacentToStart = indexOfCurrentLocation != -1 || (!path.empty() && path.back().isAdjacentTo(currentLocation));
+	const ShapeId shape = follower.getShape(m_area);
+	if(isOnPathOrAdjacentToStart)
+	{
+		if(indexOfCurrentLocation == -1)
+			// The current position is not on the path but it is adjacent to the back.
+			// Setting current location to path size acts like the location was found at one path the end of path.
+			indexOfCurrentLocation = path.size();
+		int indexOfCandidateLocation = indexOfCurrentLocation - 1;
+		Point3D previous = currentLocation;
+		// Step through the path from the current point onward untill we find one where we touch the current leader.
+		for(; indexOfCandidateLocation != -1; --indexOfCandidateLocation)
+		{
+			Point3D candidate = path[indexOfCandidateLocation];
+			Facing4 candidateFacing = previous.getFacingTwords(candidate);
+			if(!space.shape_canFitEver(candidate, shape, candidateFacing))
+				return {Point3D::null(), Facing4::Null};
+			// TODO: this call contains some redundant logic with shape_canFitEver.
+			const CuboidSet toOccupy = Shape::getCuboidsOccupiedAt(shape, space, candidate, candidateFacing);
+			const bool isTouching = toOccupy.isTouching(occupiedByCurrentLeader);
+			if(isTouching)
+				return {candidate, candidateFacing};
+			previous = candidate;
+		}
+	}
+	else
+	{
+		// Not yet on path or adjacent to it's start, try and pick a next step which gets closer while maintaining touch with leader.
+		Cuboid candidates = space.getAdjacentWithEdgeAndCornerAdjacent(currentLocation);
+		Cuboid exclude{currentLocation, currentLocation};
+		const Cuboid& boundry = space.boundry();
+		const MoveTypeId& moveType = follower.getMoveType(m_area);
+		for(Distance jumpDistance{1}; jumpDistance < 100; ++jumpDistance)
+		{
+			Distance closestToPathDistanceSquared = Distance::max();
+			std::pair<Point3D, Facing4> output;
+			// Iterate candidates lookin for one which the follower can enter, where it would be touching the current leader, and find the one nearest to any point on the path.
+			for(const Point3D& candidate : candidates)
+				if(
+					!exclude.contains(candidate) &&
+					space.shape_anythingCanEnterEver(candidate)
+				)
+				{
+					const Facing4 facing = currentLocation.getFacingTwords(candidate);
+					if(space.shape_canFitEver(candidate, shape, facing) && space.shape_moveTypeCanEnter(candidate, moveType))
+					{
+						// TODO: this call contains some redundant logic with shape_canFitEver.
+						const CuboidSet toOccupy = Shape::getCuboidsOccupiedAt(shape, space, candidate, facing);
+						const bool isTouching = toOccupy.isTouching(occupiedByCurrentLeader);
+						if(isTouching)
+						{
+							Distance distanceSquaredToPath = path.empty() ? Distance{0} : setOfPointsHelper::distanceToClosestSquared(path, candidate);
+							if(distanceSquaredToPath == 0)
+								// Either the candidate is on the path or the path is empty. Either way this candidate is as good as any.
+								return {candidate, facing};
+							if(distanceSquaredToPath < closestToPathDistanceSquared)
+							{
+								closestToPathDistanceSquared = distanceSquaredToPath;
+								output = {candidate, facing};
+							}
+						}
+					}
+				}
+			if(output.first.exists())
+				// At least one candidate was found. Return the candidate and facing nearest to the path.
+				return output;
+			if(exclude.contains(occupiedByCurrentLeader.boundry()))
+				// We have already seached all reasonable candidates, break out of the loop and return null.
+				break;
+			// No valid candidate found, expand the search area.
+			exclude = candidates;
+			candidates = candidates.inflate({1});
+			candidates = candidates.intersection(boundry);
+		}
+
+	}
+	return {Point3D::null(), Facing4::Null};
+}
 bool Actors::lineLead_followersCanMoveEver(const ActorIndex& index) const
 {
 	assert(isLeading(index));
@@ -60,43 +147,15 @@ bool Actors::lineLead_followersCanMoveEver(const ActorIndex& index) const
 	auto& path = lineLead_getPath(index);
 	Point3D next;
 	CuboidSet futureOccupiedForCurrentLeader = getOccupied(index);
-	const CuboidSet& occupied = lineLead_getOccupiedCuboids(index);
 	while(follower.exists())
 	{
-		const Point3D& location = follower.getLocation(m_area);
-		auto lastIndexForLocation = path.maybeFindLastIndex(location);
-		if(lastIndexForLocation  > 0)
-		{
-			// Follower is on path. Get the next step and check it for validity.
-			next = path[lastIndexForLocation - 1];
-			if(!space.shape_shapeAndMoveTypeCanEnterEverFrom(next, follower.getShape(m_area), follower.getMoveType(m_area), location))
-				next.clear();
-		}
-		if(next.empty())
-		{
-			// Either the follower is not on the path yet or it can't enter the next space. Find another location for it which touches the future location of it's leader.
-			const ShapeId& shape = follower.getShape(m_area);
-			const Cuboid candidates = space.getAdjacentWithEdgeAndCornerAdjacent(location);
-			const MoveTypeId& moveType = follower.getMoveType(m_area);
-			for(const Point3D& point : candidates)
-			{
-				if(point == location)
-					continue;
-				const Facing4 facing = location.getFacingTwords(point);
-				if(
-					space.shape_anythingCanEnterEver(point) &&
-					space.shape_moveTypeCanEnter(point, moveType) &&
-					space.shape_shapeAndMoveTypeCanEnterEverFrom(point, shape, moveType, location)
-				)
-				{
-					const CuboidSet toOccupy = Shape::getCuboidsOccupiedAt(follower.getShape(m_area), space, point, facing);
-					if( toOccupy.isTouching(futureOccupiedForCurrentLeader))
-						next = point;
-				}
-			}
-			if(next.empty())
-				return false;
-		}
+		if(futureOccupiedForCurrentLeader.isTouching(follower.getOccupied(m_area)))
+			//
+			return true;
+		const auto& [location, facing] = lineLead_followerGetNextStep(follower, path, futureOccupiedForCurrentLeader);
+		if(location.empty())
+			return false;
+		futureOccupiedForCurrentLeader = Shape::getCuboidsOccupiedAndAdjacentAt(follower.getShape(m_area), space, location, facing);
 		follower = follower.getFollower(m_area);
 	}
 	return true;
@@ -113,40 +172,19 @@ bool Actors::lineLead_followersCanMoveCurrently(const ActorIndex& index) const
 	CuboidSet futureOccupiedForCurrentLeader = getOccupied(index);
 	while(follower.exists())
 	{
-		const Point3D& location = follower.getLocation(m_area);
-		auto lastIndexForLocation = path.maybeFindLastIndex(location);
-		if(lastIndexForLocation  > 0)
-		{
-			// Follower is on path. Get the next step and check it for validity.
-			next = path[lastIndexForLocation - 1];
-			if(!space.shape_canEnterCurrentlyFrom(next, follower.getShape(m_area), location, occupied))
-				next.clear();
-		}
-		if(next.empty())
-		{
-			const ShapeId& shape = follower.getShape(m_area);
-			const Cuboid candidates = space.getAdjacentWithEdgeAndCornerAdjacent(location);
-			const MoveTypeId& moveType = follower.getMoveType(m_area);
-			for(const Point3D& point : candidates)
-			{
-				if(point == location)
-					continue;
-				const Facing4 facing = location.getFacingTwords(point);
-				if(
-					space.shape_anythingCanEnterEver(point) &&
-					space.shape_moveTypeCanEnter(point, moveType) &&
-					space.shape_shapeAndMoveTypeCanEnterEverAndCurrentlyFrom(point, shape, moveType, location, occupied)
-				)
-				{
-					const CuboidSet toOccupy = Shape::getCuboidsOccupiedAt(follower.getShape(m_area), space, point, facing);
-					if( toOccupy.isTouching(futureOccupiedForCurrentLeader))
-						next = point;
-				}
-			}
-			if(next.empty())
-				return false;
-		}
-		futureOccupiedForCurrentLeader = getCuboidsWhichWouldBeOccupiedAtLocationAndFacing(index, next, location.getFacingTwords(next));
+		if(futureOccupiedForCurrentLeader.intersects(follower.getOccupied(m_area)))
+			// Leader and follower are intersecting after leader took a step, wait for leader to take another step.
+			return true;
+		const ShapeId& shape = follower.getShape(m_area);
+		const auto& [location, facing] = lineLead_followerGetNextStep(follower, path, futureOccupiedForCurrentLeader);
+		assert(location.exists());
+		if(futureOccupiedForCurrentLeader.contains(location))
+			// This one cannot advance because it's next step is occupied by it's leader even after the leader has advanced.
+			// We return true because we still want the leader and everything ahead of it to advance, and we know that nothing after this ponit will be able to.
+			return true;
+		if(!space.shape_canEnterCurrentlyWithFacing(location, shape, facing, occupied))
+			return false;
+		futureOccupiedForCurrentLeader = Shape::getCuboidsOccupiedAndAdjacentAt(shape, space, location, facing);
 		follower = follower.getFollower(m_area);
 	}
 	return true;
@@ -184,10 +222,8 @@ void Actors::lineLead_popBackUnlessOccupiedByFollower(const ActorIndex& index)
 	ActorOrItemIndex follower = index.toActorOrItemIndex();
 	while(follower.isLeading(m_area))
 		follower = follower.getFollower(m_area);
-	auto& occupiedByRearmostFollower = follower.getOccupied(m_area);
-	while(!occupiedByRearmostFollower.contains(m_leadFollowPath[index].back()))
+	if(m_leadFollowPath[index].size() > 1 && follower.getLocation(m_area) == *(m_leadFollowPath[index].end() - 2))
 		m_leadFollowPath[index].popBack();
-	assert(m_leadFollowPath[index].size() >= 2);
 }
 void Actors::lineLead_clearPath(const ActorIndex& index)
 {
@@ -228,53 +264,22 @@ void Actors::lineLead_moveFollowers(const ActorIndex& index)
 	ActorOrItemIndex follower = getFollower(index);
 	const SmallSet<Point3D>& path = lineLead_getPath(index);
 	const CuboidSet& occupied = lineLead_getOccupiedCuboids(index);
+	CuboidSet occupiedForCurrentLeader = getOccupied(index);
 	// Leader has already moved, so it's future occupied is its current occupied.
-	CuboidSet futureOccupiedForCurrentLeader = getOccupied(index);
 	while(follower.exists())
 	{
-		const Point3D& location = follower.getLocation(m_area);
-		auto lastIndexForLocation = path.maybeFindLastIndex(location);
-		Point3D next;
-		if(lastIndexForLocation > 0)
-			next = path[lastIndexForLocation - 1];
-		else if(!path.empty())
-			next = path.back();
-		const ShapeId& followerShape = follower.getShape(m_area);
-		if(
-			!next.isAdjacentTo(location) ||
-			!space.shape_canFitEver(next, followerShape, location.getFacingTwords(next)) ||
-			!space.shape_canEnterCurrentlyFrom(next, followerShape, location, occupied)
-		)
-		{
-			next.clear();
-			// Either the follower is not on the path yet or it can't enter the next space. Find another location for it which touches the future location of it's leader.
-			const MoveTypeId& moveType = follower.getMoveType(m_area);
-			const ShapeId& shape = follower.getShape(m_area);
-			Cuboid candidates = space.getAdjacentWithEdgeAndCornerAdjacent(location);
-			Distance closestDistance = Distance::max();
-			for(const Point3D& point : candidates)
-			{
-				const Facing4 facing = location.getFacingTwords(point);
-				if(
-					!space.shape_anythingCanEnterEver(point) ||
-					!space.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(point, shape, moveType, facing, occupied)
-				)
-					continue;
-				const CuboidSet cuboids = Shape::getCuboidsOccupiedAt(follower.getShape(m_area), space, point, facing);
-				if(!cuboids.isTouching(futureOccupiedForCurrentLeader))
-					continue;
-				Distance pointDistance = point.distanceTo(path.back());
-				if(closestDistance > pointDistance)
-				{
-					closestDistance = pointDistance;
-					next = point;
-				}
-			}
-			assert(next.exists());
-		}
-		follower.location_set(m_area, next, location.getFacingTwords((next)));
-		// This is a redundant calculation which has already been done in location_set.
-		futureOccupiedForCurrentLeader = getCuboidsWhichWouldBeOccupiedAtLocationAndFacing(index, next, location.getFacingTwords(next));
+		if(occupiedForCurrentLeader.intersects(follower.getOccupied(m_area)))
+			// Leader and follower are intersecting after leader took a step, wait for leader to take another step.
+			return;
+		const ShapeId& shape = follower.getShape(m_area);
+		const auto& [location, facing] = lineLead_followerGetNextStep(follower, path, occupiedForCurrentLeader);
+		assert(location.exists());
+		if(occupiedForCurrentLeader.contains(location))
+			// Next spot to occupy is already occupied by the current leader. Stop advancing here.
+			return;
+		assert(space.shape_canEnterCurrentlyWithFacing(location, shape, facing, occupied));
+		follower.location_set(m_area, location, facing);
+		occupiedForCurrentLeader = follower.getOccupied(m_area);
 		follower = follower.getFollower(m_area);
 	}
 }

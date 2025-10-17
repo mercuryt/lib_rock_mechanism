@@ -10,7 +10,8 @@ void Space::stockpile_recordMembership(const Point3D& point, StockPile& stockPil
 	if(stockpile_isAvalible(point, stockPile.getFaction()))
 	{
 		stockPile.incrementOpenPoints();
-		m_area.m_spaceDesignations.getForFaction(stockPile.getFaction()).set(point, SpaceDesignation::StockPileHaulTo);
+		// TODO: This probably shouldn't be maybe. I think it's only used by JSON load.
+		m_area.m_spaceDesignations.getForFaction(stockPile.getFaction()).maybeSet(point, SpaceDesignation::StockPileHaulTo);
 	}
 }
 template<typename ShapeT>

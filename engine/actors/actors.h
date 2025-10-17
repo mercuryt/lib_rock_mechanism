@@ -208,10 +208,6 @@ public:
 	void location_set(const ActorIndex& index, const Point3D& point, const Facing4 facing);
 	void location_setStatic(const ActorIndex& index, const Point3D& point, const Facing4 facing);
 	void location_setDynamic(const ActorIndex& index, const Point3D& point, const Facing4 facing);
-private:
-	// These methods to the 'real' work, the public methods handle calling them and then possibly calling Portables::onSetLocation.
-	SetLocationAndFacingResult location_tryToSetStaticInternal(const ActorIndex& index, const Point3D& point, const Facing4& facing);
-	SetLocationAndFacingResult location_tryToSetDynamicInternal(const ActorIndex& index, const Point3D& point, const Facing4& facing);
 public:
 	// Used when item already has a location, rolls back position on failure.
 	SetLocationAndFacingResult location_tryToMoveToStatic(const ActorIndex& index, const Point3D& point);
@@ -605,7 +601,7 @@ public:
 	[[nodiscard]] std::vector<ActorOrItemIndex> lineLead_getAll(const ActorIndex& index) const;
 	[[nodiscard]] bool lineLead_followersCanMoveEver(const ActorIndex& index) const;
 	[[nodiscard]] bool lineLead_followersCanMoveCurrently(const ActorIndex& index) const;
-	[[nodiscard]] Point3D lineLead_followerGetNextStep(const ActorIndex&  lineLeader, const ActorOrItemIndex& follower, const SmallSet<Point3D>& path, const CuboidSet& occupied) const;
+	[[nodiscard]] std::pair<Point3D, Facing4> lineLead_followerGetNextStep(const ActorOrItemIndex& follower, const SmallSet<Point3D>& path, const CuboidSet& occupiedByCurrentLeader) const;
 	[[nodiscard]] SetLocationAndFacingResult lineLead_tryToMove(const ActorIndex& index);
 	void lineLead_clearPath(const ActorIndex& index);
 	void lineLead_appendToPath(const ActorIndex& index, const Point3D& point, const Facing4& facing);

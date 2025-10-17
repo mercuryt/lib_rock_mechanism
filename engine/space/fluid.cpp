@@ -73,23 +73,23 @@ void Space::fluid_add(const Point3D& point, const CollisionVolume& volume, const
 	}
 	auto totalFluidVolume = m_totalFluidVolume.updateAddOne(point, volume);
 	bool wasEmpty = totalFluidVolume == volume;
-	// Try to find any adjacent group to join.
+	// Try to find any adjacent groups to join.
 	const Cuboid adjacent = getAdjacentWithEdgeAndCornerAdjacent(point);
-	fluidData = m_fluid.queryGetOneWithCondition(adjacent, condition);
-	m_fluid.maybeInsert(point, {nullptr, fluidType, volume});
+	FluidData found = m_fluid.queryGetOneWithCondition(adjacent, condition);
 	// Fluid Data nullptr will be filled in by either group->addPoint or createFluidGroup.
+	m_fluid.maybeInsert(point, {nullptr, fluidType, volume});
 	FluidGroup* group = nullptr;
-	if(fluidData.exists())
-	{
-		group = fluidData.group;
-		group->addPoint(m_area, point, true);
-	}
-	else
+	if(found.empty())
 	{
 		// No FluidGroup exists at point or adjacent. Create fluid group.
 		// Possibly clear space first to prevent reallocation.
 		m_area.m_hasFluidGroups.clearMergedFluidGroups();
 		group = m_area.m_hasFluidGroups.createFluidGroup(fluidType, {point});
+	}
+	else
+	{
+		group = found.group;
+		group->addPoint(m_area, point, true);
 	}
 	assert(group != nullptr);
 	m_area.m_hasFluidGroups.markUnstable(*group);

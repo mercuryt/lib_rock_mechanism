@@ -360,7 +360,7 @@ bool Actors::move_tryToReserveProposedDestination(const ActorIndex& index, const
 	Space& space = m_area.getSpace();
 	Point3D location = path.back();
 	FactionId faction = getFaction(index);
-	if(Shape::getIsMultiPoint(shape))
+	if(Shape::getIsMultiTile(shape))
 	{
 		assert(!path.empty());
 		Point3D previous = path.size() == 1 ? getLocation(index) : path[path.size() - 2];
@@ -388,7 +388,7 @@ bool Actors::move_tryToReserveOccupied(const ActorIndex& index)
 	const Point3D& location = getLocation(index);
 	const Facing4& facing = getFacing(index);
 	const FactionId& faction = getFaction(index);
-	if(Shape::getIsMultiPoint(shape))
+	if(Shape::getIsMultiTile(shape))
 	{
 		assert(!m_path[index].empty());
 		auto occupiedCuboids = Shape::getCuboidsOccupiedAt(shape, space, location, facing);
