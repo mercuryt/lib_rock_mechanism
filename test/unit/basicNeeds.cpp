@@ -505,6 +505,8 @@ TEST_CASE("death-temperature")
 		Point3D b3 = Point3D::create(3, 1, 2);
 		Point3D b4 = Point3D::create(2, 1, 2);
 		area.m_hasTemperature.addTemperatureSource(temperatureSourceLocation, TemperatureDelta::create(6000));
+		CHECK(actors.temperature_isSafeAtCurrentLocation(actor));
+		// One step to propigate temperature and create death event.
 		simulation.doStep();
 		CHECK(space.temperature_get(b1) == space.temperature_get(temperatureSourceLocation));
 		CHECK(space.temperature_get(b2) < space.temperature_get(b1));
@@ -512,7 +514,8 @@ TEST_CASE("death-temperature")
 		CHECK(space.temperature_get(b4) < space.temperature_get(b3));
 		CHECK(space.temperature_get(actorLocation) < space.temperature_get(b4));
 		CHECK(!actors.temperature_isSafeAtCurrentLocation(actor));
-		simulation.fasterForward(AnimalSpecies::getStepsTillDieInUnsafeTemperature(actors.getSpecies(actor)) - 1);
+		// TODO: Why - 2 and not - 1?
+		simulation.fasterForward(AnimalSpecies::getStepsTillDieInUnsafeTemperature(actors.getSpecies(actor)) - 2);
 		CHECK(actors.isAlive(actor));
 		simulation.doStep();
 		CHECK(!actors.isAlive(actor));

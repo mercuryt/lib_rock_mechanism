@@ -36,16 +36,12 @@ void UnmountObjective::execute(Area& area, const ActorIndex& actor)
 	}
 	else
 	{
-		const Point3D& actorLocation = actors.getLocation(actor);
-		const ShapeId& compoundShape = actors.getCompoundShape(mount);
-		CuboidSet currentlyAdjacent = Shape::getCuboidsWhichWouldBeAdjacentAt(compoundShape, space, actorLocation, actors.getFacing(mount));
-		if(currentlyAdjacent.contains(m_location))
+		if(actors.isAdjacentToOrOccupies(mount, m_location))
 		{
-
 			const Facing4 facing = space.shape_canEnterEverWithAnyFacingReturnFacing(m_location, actors.getShape(actor), actors.getMoveType(actor));
 			if(facing != Facing4::Null)
 			{
-				actors.mount_undo(actor, m_location, actorLocation.getFacingTwords(m_location));
+				actors.mount_undo(actor, m_location, facing);
 				actors.objective_complete(actor, *this);
 			}
 			else

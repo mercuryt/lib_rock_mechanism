@@ -58,6 +58,7 @@ template class StrongVector<SmallMap<FluidTypeId, CollisionVolume>, MoveTypeId>;
 template class StrongVector<SmallSet<FluidTypeId>, MoveTypeId>;
 template class StrongVector<MapWithOffsetCuboidKeys<CollisionVolume>, ShapeId>;
 template class StrongVector<MapWithCuboidKeys<CollisionVolume>, ShapeId>;
+template class StrongVector<Step, ActorIndex>;
 template class StrongVector<Step, AnimalSpeciesId>;
 template class StrongVector<Step, AttackTypeId>;
 template class StrongVector<Step, FluidTypeId>;
