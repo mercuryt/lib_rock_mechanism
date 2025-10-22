@@ -87,6 +87,8 @@ public:
 	[[nodiscard]] bool isTouchingFace(const CuboidType& cuboid) const;
 	[[nodiscard]] bool isTouchingFaceFromInside(const CuboidType& cuboid) const;
 	[[nodiscard]] bool isTouching(const CuboidSetType& cuboids) const;
+	[[nodiscard]] bool isIntersectingOrAdjacentTo(const CuboidSetType& cuboids) const;
+	[[nodiscard]] bool isIntersectingOrAdjacentTo(const CuboidType& cuboid) const;
 	[[nodiscard]] __attribute__((noinline)) std::string toString() const;
 	[[nodiscard]] static CuboidSetType create(const SmallSet<PointType>& space);
 	friend struct CuboidSetConstIterator;

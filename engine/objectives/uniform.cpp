@@ -116,7 +116,7 @@ void UniformObjective::execute(Area& area, const ActorIndex& actor)
 	if(m_item.exists())
 	{
 		ItemIndex item = m_item.getIndex(items.m_referenceData);
-		if(!actors.isAdjacentToItem(actor, item))
+		if(!actors.isIntersectingOrAdjacentTo(actor, item))
 			actors.move_setDestinationAdjacentToItem(actor, item);
 		else
 		{

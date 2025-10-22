@@ -179,7 +179,7 @@ TEST_CASE("haul")
 		CHECK(actors.objective_getCurrentName(dwarf2) == "haul");
 		// Get into starting positions.
 		simulation.fastForwardUntillActorHasNoDestination(area, dwarf2);
-		if(!cargo.isAdjacentToActor(area, dwarf1))
+		if(!cargo.isIntersectingOrAdjacentTo(area, dwarf1))
 			simulation.fastForwardUntillActorIsAdjacentToPolymorphic(area, dwarf1, cargo);
 		ActorIndex leader = dwarf1;
 		ActorIndex follower = dwarf2;

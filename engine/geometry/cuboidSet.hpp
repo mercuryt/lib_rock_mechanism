@@ -353,6 +353,24 @@ bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::isTouching(const Cuboi
 	return false;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
+bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::isIntersectingOrAdjacentTo(const CuboidSetType& cuboids) const
+{
+	for(const CuboidType& c : cuboids)
+		if(isIntersectingOrAdjacentTo(c))
+			return true;
+	return false;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::isIntersectingOrAdjacentTo(const CuboidType& cuboid) const
+{
+	CuboidType inflated = cuboid;
+	inflated.inflate({1});
+	for(const CuboidType& c : m_cuboids)
+		if(inflated.intersects(c))
+			return true;
+	return false;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
 std::string CuboidSetBase<CuboidType, PointType, CuboidSetType>::toString() const
 {
 	return m_cuboids.toString();

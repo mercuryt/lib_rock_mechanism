@@ -116,20 +116,20 @@ TEST_CASE("leadAndFollow")
 	SUBCASE("wait for follower to keep up if blocked temporarily")
 	{
 		space.solid_set(Point3D::create(2, 1, 1), marble, false);
-		Point3D leaderOrigin = Point3D::create(0, 2, 1);
-		Point3D followerOrigin = Point3D::create(0, 1, 1);
-		Point3D blockerOrigin = Point3D::create(1, 2, 1);
-		Point3D destination1 = Point3D::create(0, 8, 1);
-		Point3D destination2 = Point3D::create(0, 7, 1);
+		Point3D leaderOrigin = Point3D::create(1, 2, 1);
+		Point3D followerOrigin = Point3D::create(1, 1, 1);
+		Point3D blockerOrigin = Point3D::create(0, 2, 1);
+		Point3D destination1 = Point3D::create(1, 8, 1);
+		Point3D destination2 = Point3D::create(1, 7, 1);
 		ActorIndex dwarf1 = actors.create({
 			.species=dwarf,
 			.location=leaderOrigin,
-			.facing=Facing4::South,
+			.facing=Facing4::North,
 		});
 		ActorIndex troll1 = actors.create({
 			.species=troll,
 			.location=followerOrigin,
-			.facing=Facing4::South,
+			.facing=Facing4::North,
 		});
 		ActorIndex dwarf2 = actors.create({
 			.species=dwarf,

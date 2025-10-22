@@ -218,6 +218,14 @@ bool ActorOrItemIndex::isAdjacent(const Area& area, const ActorOrItemIndex& othe
 	const CuboidSet& otherOccupied = other.getOccupied(const_cast<Area&>(area));
 	return isActor() ? area.getActors().isAdjacentToAnyCuboid(m_index.toActor(), otherOccupied) : area.getItems().isAdjacentToAnyCuboid(m_index.toItem(), otherOccupied);
 }
+bool ActorOrItemIndex::isIntersectingOrAdjacentTo(const Area& area, const ActorIndex& other) const
+{
+	return isActor() ? area.getActors().isIntersectingOrAdjacentTo(m_index.toActor(), other) : area.getItems().isIntersectingOrAdjacentTo(m_index.toItem(), other);
+}
+bool ActorOrItemIndex::isIntersectingOrAdjacentTo(const Area& area, const ItemIndex& item) const
+{
+	return isActor() ? area.getActors().isIntersectingOrAdjacentTo(m_index.toActor(), item) : area.getItems().isIntersectingOrAdjacentTo(m_index.toItem(), item);
+}
 bool ActorOrItemIndex::isAdjacentToActor(const Area& area, const ActorIndex& other) const
 {
 	return isActor() ? area.getActors().isAdjacentToActor(m_index.toActor(), other) : area.getItems().isAdjacentToActor(m_index.toItem(), other);

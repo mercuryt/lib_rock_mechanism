@@ -16,7 +16,7 @@ void EquipItemObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	ItemIndex item = m_item.getIndex(area.getItems().m_referenceData);
-	if(!actors.isAdjacentToItem(actor, item))
+	if(!actors.isIntersectingOrAdjacentTo(actor, item))
 		// detour, unresered, reserve.
 		// TODO: detour.
 		actors.move_setDestinationAdjacentToItem(actor, item, false, false, false);

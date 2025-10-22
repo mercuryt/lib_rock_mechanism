@@ -116,6 +116,7 @@ TEST_CASE("vision")
 		ActorIndex a2 = actors.create({
 			.species=troll,
 			.location=block3,
+			.facing=Facing4::South,
 		});
 		CHECK(actors.getOccupied(a2).contains(block4));
 		const Point3D block1Coordinates = block1;
@@ -225,6 +226,7 @@ TEST_CASE("vision")
 		ActorIndex a2 = actors.create({
 			.species=dwarf,
 			.location=block3,
+			.facing=block3.getFacingTwords(block1),
 		});
 		area.m_visionRequests.doStep();
 		auto result = actors.vision_getCanSee(a1);

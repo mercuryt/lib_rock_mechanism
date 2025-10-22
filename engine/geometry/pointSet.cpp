@@ -36,13 +36,13 @@ Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesOfFacedTwordsPoints(con
 	switch(facing)
 	{
 		case Facing4::North:
-			return truncatedData.row(1) <= location.y().get();
+			return truncatedData.row(1) >= location.y().get();
 			break;
 		case Facing4::East:
 			return truncatedData.row(0) >= location.x().get();
 			break;
 		case Facing4::South:
-			return truncatedData.row(1) >= location.y().get();
+			return truncatedData.row(1) <= location.y().get();
 			break;
 		case Facing4::West:
 			return truncatedData.row(0) <= location.x().get();
@@ -56,9 +56,9 @@ Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesFacingTwords(const Poin
 	assert(facings.size() == m_size);
 	Eigen::Array<DistanceWidth, 3, Eigen::Dynamic> truncatedData = data.block(0, 0, 3, m_size);
 	return (
-		(facings == Facing4::North && truncatedData.row(1) >= location.y().get()) ||
+		(facings == Facing4::North && truncatedData.row(1) <= location.y().get()) ||
 		(facings == Facing4::East && truncatedData.row(0) <= location.x().get()) ||
-		(facings == Facing4::South && truncatedData.row(1) <= location.y().get()) ||
+		(facings == Facing4::South && truncatedData.row(1) >= location.y().get()) ||
 		(facings == Facing4::West && truncatedData.row(0) >= location.x().get())
 	);
 }

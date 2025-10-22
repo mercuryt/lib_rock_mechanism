@@ -127,7 +127,13 @@ SetLocationAndFacingResult Actors::location_tryToSetDynamic(const ActorIndex& in
 	// Apply the same shift to the offsets as the offset from the previous location to the new one and subtract the unshifted position.
 	MapWithOffsetCuboidKeys<CollisionVolume> offsetCuboidsAndVolumesDelta = Shape::applyOffsetAndRotationAndSubtractOriginal(m_compoundShape[index], offset, previousFacing, facing);
 	// Apply the new location to the offsets.
-	const MapWithCuboidKeys<CollisionVolume> cuboidsAndVolumesDelta = offsetCuboidsAndVolumesDelta.relativeTo(previousLocation);
+	MapWithCuboidKeys<CollisionVolume> cuboidsAndVolumesDelta = offsetCuboidsAndVolumesDelta.relativeTo(previousLocation);
+	if(isLeading(index))
+	{
+		assert(!isFollowing(index));
+		CuboidSet lineOccupied = lineLead_getOccupiedCuboids(index);
+		cuboidsAndVolumesDelta.removeContainedAndFragmentInterceptedAll(lineOccupied);
+	}
 	for(const auto& [cuboid, volume] : cuboidsAndVolumesDelta)
 		// Don't use shape_anythingCanEnterEverHere because it checks Space::m_dynamic.
 		if(space.solid_isAny(cuboid) || space.pointFeature_blocksEntrance(cuboid))

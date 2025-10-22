@@ -44,6 +44,7 @@ TEST_CASE("basicNeedsSentient")
 		space.solid_setNot(pondLocation);
 		space.fluid_add(pondLocation, CollisionVolume::create(100), water);
 		actors.drink_setNeedsFluid(actor);
+		actors.eat_setNeverHungry(actor);
 		CHECK(!actors.grow_isGrowing(actor));
 		CHECK(actors.drink_isThirsty(actor));
 		CHECK(actors.objective_getCurrentName(actor) == "drink");
@@ -71,6 +72,7 @@ TEST_CASE("basicNeedsSentient")
 		});
 		items.cargo_addFluid(bucket, water, CollisionVolume::create(2));
 		actors.drink_setNeedsFluid(actor);
+		actors.eat_setNeverHungry(actor);
 		CHECK(!actors.grow_isGrowing(actor));
 		CHECK(actors.drink_isThirsty(actor));
 		CHECK(actors.objective_getCurrentName(actor) == "drink");
@@ -101,6 +103,7 @@ TEST_CASE("basicNeedsSentient")
 		});
 		CHECK(actors.eat_getDesireToEatSomethingAt(actor, Cuboid(mealLocation, mealLocation)).second == maxRankedEatDesire);
 		actors.eat_setIsHungry(actor);
+		actors.drink_setNeverThirsty(actor);
 		CHECK(actors.eat_hasObjective(actor));
 		// Discard drink objective if exists.
 		if(actors.drink_getVolumeOfFluidRequested(actor) != 0)
@@ -132,6 +135,7 @@ TEST_CASE("basicNeedsSentient")
 		});
 		CHECK(actors.eat_getDesireToEatSomethingAt(actor, Cuboid(fruitLocation, fruitLocation)).second == 2);
 		actors.eat_setIsHungry(actor);
+		actors.drink_setNeverThirsty(actor);
 		// Discard drink objective if exists.
 		if(actors.drink_getVolumeOfFluidRequested(actor) != 0)
 			actors.drink_do(actor, actors.drink_getVolumeOfFluidRequested(actor));
@@ -208,9 +212,8 @@ TEST_CASE("basicNeedsNonsentient")
 	{
 		// Generate objectives, discard eat if it exists.
 		actors.sleep_makeTired(actor);
-		// Discard drink objective if exists.
-		if(actors.drink_getVolumeOfFluidRequested(actor) != 0)
-			actors.drink_do(actor, actors.drink_getVolumeOfFluidRequested(actor));
+		actors.drink_setNeverThirsty(actor);
+		actors.eat_setNeverHungry(actor);
 		actors.stamina_spend(actor, Stamina::create(1));
 		CHECK(!actors.stamina_isFull(actor));
 		if(actors.eat_getMassFoodRequested(actor) != 0)
@@ -235,6 +238,7 @@ TEST_CASE("basicNeedsNonsentient")
 		PlantIndex grass = space.plant_get(grassLocation);
 		// Generate objectives.
 		actors.eat_setIsHungry(actor);
+		actors.drink_setNeverThirsty(actor);
 		CHECK(actors.objective_getCurrentName(actor) == "eat");
 		CHECK(actors.eat_isHungry(actor));
 		CHECK(plants.getPercentFoliage(grass) == 100);
@@ -265,6 +269,8 @@ TEST_CASE("basicNeedsNonsentient")
 		Point3D spot = Point3D::create(5, 5, 2);
 		actors.sleep_setSpot(actor, spot);
 		actors.sleep_makeTired(actor);
+		actors.eat_setNeverHungry(actor);
+		actors.drink_setNeverThirsty(actor);
 		CHECK(actors.objective_getCurrentName(actor) == "sleep");
 		// Path to spot.
 		simulation.doStep();
@@ -310,9 +316,10 @@ TEST_CASE("basicNeedsNonsentient")
 	SUBCASE("scavenge corpse")
 	{
 		AnimalSpeciesId blackBear = AnimalSpecies::byName("black bear");
+		Point3D bearStart = Point3D::create(5, 1, 2);
 		ActorIndex bear = actors.create(ActorParamaters{
 			.species=blackBear,
-			.location=Point3D::create(5, 1, 2),
+			.location=bearStart,
 		});
 		ActorIndex deer = actor;
 		Mass deerMass = actors.getMass(deer);
@@ -321,6 +328,7 @@ TEST_CASE("basicNeedsNonsentient")
 		Point3D deerLocation = actors.getLocation(deer);
 		CHECK(actors.eat_getDesireToEatSomethingAt(bear, Cuboid(deerLocation, deerLocation)).second != 0);
 		actors.eat_setIsHungry(bear);
+		actors.drink_setNeverThirsty(actor);
 		// Bear is hungry.
 		CHECK(actors.eat_getMassFoodRequested(bear) != 0);
 		CHECK(actors.objective_getCurrentName(bear) == "eat");
@@ -332,8 +340,12 @@ TEST_CASE("basicNeedsNonsentient")
 		// Bear goes to deer corpse.
 		simulation.doStep();
 		CHECK(objective.hasLocation());
-		if(!actors.isAdjacentToActor(bear, deer))
+		if(!actors.isIntersectingOrAdjacentTo(bear, deer))
 			simulation.fastForwardUntillActorIsAdjacentToActor(area, bear, deer);
+		CHECK(!actors.move_hasPath(bear));
+		// TODO: why is there ane extra step here?
+		CHECK(actors.eat_isEating(bear));
+		CHECK(bearStart.getFacingTwords(deerLocation) == Facing4::West);
 		// Bear eats.
 		simulation.fastForward(Config::stepsToEat);
 		CHECK(!actors.eat_isHungry(bear));
@@ -356,15 +368,12 @@ TEST_CASE("actorGrowth")
 {
 	static MaterialTypeId dirt = MaterialType::byName("dirt");
 	static AnimalSpeciesId dwarf = AnimalSpecies::byName("dwarf");
-	static FluidTypeId water = FluidType::byName("water");
 	Step step = DateTime(8, 60, 10000).toSteps();
 	Simulation simulation("", step);
 	FactionId faction = simulation.createFaction("Tower Of Power");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
-	Items& items = area.getItems();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	ActorIndex actor = actors.create(ActorParamaters{
 		.species=dwarf,
@@ -375,15 +384,9 @@ TEST_CASE("actorGrowth")
 		.percentThirst=Percent::create(0),
 	});
 	actors.setFaction(actor, faction);
+	actors.eat_setNeverHungry(actor);
+	actors.drink_setNeverThirsty(actor);
 	CHECK(actors.grow_isGrowing(actor));
-	space.solid_setNot(Point3D::create(7, 7, 0));
-	space.fluid_add(Point3D::create(7, 7, 0), CollisionVolume::create(100), water);
-	items.create({
-		.itemType=ItemType::byName("apple"),
-		.materialType=MaterialType::byName("fruit"),
-		.location=Point3D::create(1, 5, 2),
-		.quantity=Quantity::create(1000),
-	});
 	CHECK(actors.grow_getEventPercent(actor) == 0);
 	CHECK(actors.grow_getPercent(actor) == 45);
 	CHECK(actors.grow_isGrowing(actor));
@@ -392,7 +395,6 @@ TEST_CASE("actorGrowth")
 	CHECK(nextPercentIncreaseStep >= simulation.m_step + Config::stepsPerDay * 90);
 	actors.objective_addTaskToStart(actor, std::make_unique<StationObjective>(actors.getLocation(actor)));
 	simulation.fasterForward(Config::stepsPerHour * 26);
-	actors.satisfyNeeds(actor);
 	CHECK(actors.grow_isGrowing(actor));
 	Percent percentGrowthEventComplete = actors.grow_getEventPercent(actor);
 	CHECK(percentGrowthEventComplete == 1);
@@ -417,7 +419,6 @@ TEST_CASE("death")
 	Simulation simulation("", step);
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
-	Space& space = area.getSpace();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName("marble"));
 	Actors& actors = area.getActors();
@@ -434,6 +435,7 @@ TEST_CASE("death")
 	{
 		// Generate objectives, discard eat if it exists.
 		actors.drink_setNeedsFluid(actor);
+		actors.eat_setNeverHungry(actor);
 		CHECK(actors.objective_getCurrentName(actor) == "drink");
 		CHECK(actors.move_hasPathRequest(actor));
 		// Fail to find anything to drink, create path request to area edge.
@@ -456,13 +458,12 @@ TEST_CASE("death")
 		CHECK(actors.isAlive(actor));
 		simulation.doStep();
 		CHECK(!actors.isAlive(actor));
+		CHECK(actors.getDeathStep(actor) == simulation.m_step - 1);
 		CHECK(actors.getCauseOfDeath(actor) == CauseOfDeath::thirst);
 	}
 	SUBCASE("hunger")
 	{
-		Point3D pondLocation = Point3D::create(3, 3, 1);
-		space.solid_setNot(pondLocation);
-		space.fluid_add(pondLocation, CollisionVolume::create(100), FluidType::byName("water"));
+		actors.drink_setNeverThirsty(actor);
 		// Generate objectives, discard drink if it exists.
 		CHECK(actors.eat_getHungerEventStep(actor) == AnimalSpecies::getStepsEatFrequency(redDeer) +  step);
 		actors.eat_setIsHungry(actor);
@@ -491,6 +492,8 @@ TEST_CASE("death-temperature")
 		.percentGrown=Percent::create(45),
 		.location=actorLocation,
 	});
+	actors.eat_setNeverHungry(actor);
+	actors.drink_setNeverThirsty(actor);
 	// Set low priority station to prevent wandering around while waiting for events.
 	Priority stationPriority = Priority::create(1);
 	actors.objective_addTaskToStart(actor, std::make_unique<StationObjective>(actorLocation, stationPriority));
@@ -509,7 +512,7 @@ TEST_CASE("death-temperature")
 		CHECK(space.temperature_get(b4) < space.temperature_get(b3));
 		CHECK(space.temperature_get(actorLocation) < space.temperature_get(b4));
 		CHECK(!actors.temperature_isSafeAtCurrentLocation(actor));
-		simulation.fasterForward(AnimalSpecies::getStepsTillDieInUnsafeTemperature(actors.getSpecies(actor)) - 2);
+		simulation.fasterForward(AnimalSpecies::getStepsTillDieInUnsafeTemperature(actors.getSpecies(actor)) - 1);
 		CHECK(actors.isAlive(actor));
 		simulation.doStep();
 		CHECK(!actors.isAlive(actor));

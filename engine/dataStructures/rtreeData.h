@@ -1111,6 +1111,43 @@ public:
 		}
 		return {outputValue, outputResult};
 	}
+	[[nodiscard]] T queryGetLowest(const auto& shape) const
+	{
+		SmallSet<RTreeNodeIndex> openList;
+		T output;
+		openList.insert(RTreeNodeIndex::create(0));
+		bool first = true;;
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			if(!interceptMask.any())
+				continue;
+			const auto leafCount = node.getLeafCount();
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			if(leafCount != 0 && interceptMask.head(leafCount).any())
+			{
+				auto begin = interceptMask.begin();
+				auto end = begin + leafCount;
+				for(auto iter = begin; iter != end; ++iter)
+					if(*iter)
+					{
+						const auto offset = iter - begin;
+						T value = T::create(nodeDataAndChildIndices[offset].data);
+						if(first || value < output)
+						{
+							first = false;
+							output = value;
+						}
+					}
+			}
+			addIntersectedChildrenToOpenList(node, interceptMask, openList);
+		}
+		return output;
+	}
 	[[nodiscard]] Point3D queryGetLowestPoint(const auto& shape) const
 	{
 		SmallSet<RTreeNodeIndex> openList;

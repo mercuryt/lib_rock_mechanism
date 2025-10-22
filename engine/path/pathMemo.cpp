@@ -1,18 +1,22 @@
 #include "pathMemo.h"
 #include "../numericTypes/index.h"
 #include "../geometry/cuboidSet.h"
-void PathMemoClosed::add(const Point3D& index, const Point3D& start)
+void PathMemoClosed::add(const Point3D& point, const Point3D& previous)
 {
-	assert(!contains(index));
-	m_data.maybeInsert(index, start.distanceToFractional(index));
+	assert(!contains(point));
+	if(m_seen.empty())
+	{
+		assert(previous.empty());
+		m_cameFrom.insert(point, Point3D::max());
+	}
+	else
+		m_cameFrom.maybeInsert(point, previous);
+	m_seen.insert(point);
 }
-void PathMemoClosed::removeClosed(CuboidSet& cuboids) const { m_data.queryRemove(cuboids); }
 Point3D PathMemoClosed::previous(const Point3D& point) const
 {
-	assert(contains(point));
-	Cuboid adjacent = point.getAllAdjacentIncludingOutOfBounds();
-	Point3D output =  m_data.queryGetLowestPoint(adjacent);
-	assert(output != point);
+	Point3D output = m_cameFrom[point];
+	assert(output.exists() && output != Point3D::max());
 	return output;
 }
 SmallSet<Point3D> PathMemoClosed::getPath(const Point3D& secondToLast, const Point3D& last, const Point3D& first) const
@@ -37,10 +41,10 @@ void PathMemoBreadthFirst::reset()
 	m_closed.clear();
 	m_open.clear();
 }
-void PathMemoBreadthFirst::setClosed(const Point3D& point, const Point3D& start)
+void PathMemoBreadthFirst::setClosed(const Point3D& point, const Point3D& previous)
 {
 	assert(!m_closed.contains(point));
-	m_closed.add(point, start);
+	m_closed.add(point, previous);
 }
 void PathMemoBreadthFirst::setOpen(const Point3D& point)
 {
@@ -72,10 +76,10 @@ void PathMemoDepthFirst::reset()
 	m_open.clear();
 	m_huristicDestination.clear();
 }
-void PathMemoDepthFirst::setClosed(const Point3D& point, const Point3D& start)
+void PathMemoDepthFirst::setClosed(const Point3D& point, const Point3D& previous)
 {
 	assert(!m_closed.contains(point));
-	m_closed.add(point, start);
+	m_closed.add(point, previous);
 }
 void PathMemoDepthFirst::setOpen(const Point3D& point)
 {

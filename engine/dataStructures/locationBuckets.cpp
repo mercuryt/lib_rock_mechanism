@@ -116,7 +116,8 @@ LocationBucket::visionRequestQuery(const Area& area, const Point3D& position, co
 	// Multi tile actors must check if their non location space can be seen.
 	if(occupied.volume() != 1 && !output.row(1).all())
 	{
-		Cuboid cuboid = occupied.boundry().inflate(largestVisionRange);
+		Cuboid cuboid = occupied.boundry();
+		cuboid.inflate(largestVisionRange);
 		auto canSeeOccupiedPoint = anyCanBeSeenQuery(area, cuboid, Point3DSet::fromCuboidSet(occupied), output.row(1));
 		output.row(1) += canSeeOccupiedPoint.second;
 	}

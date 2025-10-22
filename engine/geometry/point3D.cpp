@@ -184,9 +184,9 @@ Facing8 Point3D::getFacingTwordsIncludingDiagonal(const Point3D& other) const
 	assert(degrees <= 360.0);
 	return (Facing8)(degrees / 45.0);
 }
-bool Point3D::isInFrontOf(const Point3D& other, const Facing4& facing) const
+bool Point3D::isInFrontOf(const Point3D& other, const Facing4& otherFacing) const
 {
-	switch(facing)
+	switch(otherFacing)
 	{
 		case Facing4::North:
 			return other.y() <= y();
@@ -209,17 +209,16 @@ double Point3D::degreesFacingTwords(const Point3D& other) const
 	// TODO: SIMD.
 	double x1 = x().get(), y1 = y().get(), x2 = other.x().get(), y2 = other.y().get();
 	// Calculate the angle using atan2
-	double angleRadians = atan2(y2 - y1, x2 - x1);
+	double angleRadians = atan2(x2 - x1, y2 - y1);
 	// make negative angles positive by adding 6 radians.
 	if (angleRadians < 0 )
 		angleRadians += M_PI * 2;
 	// Convert to degrees
 	double degrees = angleRadians * 180.0 / M_PI;
 	// TODO: Is there a better way to do this?
-	// Rotate 90 degrees counter clockwise so 0 is at north rather then east.
-	degrees -= 90;
-	if(degrees < 0)
-		degrees += 360;
+	// Rotate so that 0 is North.
+	if(degrees == 360.0)
+		degrees = 0.0;
 	return degrees;
 
 }
@@ -357,7 +356,8 @@ Offset3D Point3D::atAdjacentIndex(const AdjacentIndex& index) const
 Cuboid Point3D::getAllAdjacentIncludingOutOfBounds() const
 {
 	Cuboid output{*this, *this};
-	return output.inflate(Distance::create(1));
+	output.inflate(Distance::create(1));
+	return output;
 }
 Cuboid Point3D::boundry() const { return {*this, *this}; }
 Point3D Point3D::null() { return {Distance::null(), Distance::null(), Distance::null()}; }

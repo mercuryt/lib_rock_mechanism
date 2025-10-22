@@ -43,7 +43,8 @@ CuboidSet Support::getUnsupported(const Area& area, const Cuboid& cuboid) const
 		if(candidate.isTouchingFaceFromInside(boundry))
 			// If candidate is touching the edge of the space then all are supported.
 			return {};
-		const Cuboid adjacentCuboid = candidate.inflate({1});
+		Cuboid adjacentCuboid = candidate;
+		adjacentCuboid.inflate({1});
 		for(const Cuboid& adjacentToCandidiate : space.solid_getCuboidsIntersecting(adjacentCuboid))
 			if(candidate != adjacentToCandidiate && candidate.isTouchingFace(adjacentToCandidiate) && !closedList.contains(adjacentToCandidiate))
 			{

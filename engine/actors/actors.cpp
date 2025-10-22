@@ -715,6 +715,7 @@ bool Actors::canMove(const ActorIndex& index) const
 }
 void Actors::die(const ActorIndex& index, CauseOfDeath causeOfDeath)
 {
+	m_deathStep[index] = m_area.m_simulation.m_step;
 	m_causeOfDeath[index] = causeOfDeath;
 	combat_onDeath(index);
 	move_onDeath(index);

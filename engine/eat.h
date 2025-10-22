@@ -38,7 +38,7 @@ public:
 	[[nodiscard]] Percent getPercentStarved() const;
 	[[nodiscard]] std::pair<Point3D, uint8_t> getDesireToEatSomethingAt(Area& area, const Cuboid& cuboid) const;
 	[[nodiscard]] uint8_t getMinimumAcceptableDesire(Area& area) const;
-	[[nodiscard]] Point3D getAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(Area& area);
+	[[nodiscard]] Point3D getOccupiedOrAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(Area& area);
 	[[nodiscard]] bool canEatActor(Area& area, const ActorIndex& actor) const;
 	[[nodiscard]] bool canEatPlant(Area& area, const PlantIndex& plant) const;
 	[[nodiscard]] bool canEatItem(Area& area, const ItemIndex& item) const;

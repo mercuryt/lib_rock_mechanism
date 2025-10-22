@@ -9,6 +9,10 @@ void Actors::drink_setNeedsFluid(const ActorIndex& index)
 	m_mustDrink[index]->unschedule();
 	m_mustDrink[index]->setNeedsFluid(m_area);
 }
+void Actors::drink_setNeverThirsty(const ActorIndex& index)
+{
+	m_mustDrink[index]->unschedule();
+}
 CollisionVolume Actors::drink_getVolumeOfFluidRequested(const ActorIndex& index) const
 {
 	return m_mustDrink[index]->getVolumeFluidRequested();

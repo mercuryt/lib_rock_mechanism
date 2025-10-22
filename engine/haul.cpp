@@ -229,7 +229,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 			}
 			else
 			{
-				if(toHaul.isAdjacentToActor(area, actor))
+				if(toHaul.isIntersectingOrAdjacentTo(area, actor))
 				{
 					actors.canReserve_clearAll(actor);
 					toHaul.reservable_unreserve(area, m_project.m_canReserve, m_quantity);
@@ -259,7 +259,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 			}
 			else
 			{
-				if(toHaul.isAdjacentToActor(area, actor))
+				if(toHaul.isIntersectingOrAdjacentTo(area, actor))
 				{
 					actors.canReserve_clearAll(actor);
 					// Reservation is held project, not by actor.
@@ -381,7 +381,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 				else
 				{
 					// Cart not loaded.
-					if(toHaul.isAdjacentToActor(area, actor))
+					if(toHaul.isIntersectingOrAdjacentTo(area, actor))
 					{
 						// Can load here.
 						//TODO: set delay for loading.
@@ -400,7 +400,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 			else
 			{
 				// Don't have Cart.
-				if(actors.isAdjacentToItem(actor, haulTool))
+				if(actors.isIntersectingOrAdjacentTo(actor, haulTool))
 				{
 					// Cart is here.
 					items.followActor(haulTool, actor);
@@ -425,7 +425,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 					// Special case where the beast already had the haul item before the task began.
 					// Different from when the actor must fetch the haul item first.
 					assert(!actors.isLeading(actor));
-					if(actors.isAdjacentToActor(actor, beastOfBurden))
+					if(actors.isIntersectingOrAdjacentTo(actor, beastOfBurden))
 					{
 						actors.followActor(beastOfBurden, actor);
 						actors.canReserve_clearAll(actor);
@@ -455,7 +455,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 				else
 				{
 					// Panniers don't have cargo.
-					if(toHaul.isAdjacentToActor(area, actor))
+					if(toHaul.isIntersectingOrAdjacentTo(area, actor))
 					{
 						// Actor is at pickup location.
 						// TODO: loading delay.
@@ -475,7 +475,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 				if(actors.canPickUp_isCarryingItem(actor, haulTool))
 				{
 					// Actor has panniers.
-					if(actors.isAdjacentToActor(actor, beastOfBurden))
+					if(actors.isIntersectingOrAdjacentTo(actor, beastOfBurden))
 					{
 						// Actor can put on panniers.
 						actors.canPickUp_removeItem(actor, haulTool);
@@ -533,7 +533,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 				else
 				{
 					// Cart doesn't have cargo.
-					if(toHaul.isAdjacentToActor(area, actor))
+					if(toHaul.isIntersectingOrAdjacentTo(area, actor))
 					{
 						// Actor is at pickup location.
 						// TODO: loading delay.
@@ -554,7 +554,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 				if(actors.isLeadingActor(actor, beastOfBurden))
 				{
 					// Actor has beast.
-					if(actors.isAdjacentToItem(actor, haulTool))
+					if(actors.isIntersectingOrAdjacentTo(actor, haulTool))
 					{
 						// Actor can harness beast to item.
 						// Don't check if item is adjacent to beast, allow it to teleport.
@@ -570,7 +570,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 				else
 				{
 					// Get beast.
-					if(actors.isAdjacentToActor(actor, beastOfBurden))
+					if(actors.isIntersectingOrAdjacentTo(actor, beastOfBurden))
 					{
 						actors.followActor(beastOfBurden, actor);
 						actors.canReserve_clearAll(actor);
@@ -610,7 +610,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 				}
 				else
 				{
-					if(toHaul.isAdjacentToActor(area, actor))
+					if(toHaul.isIntersectingOrAdjacentTo(area, actor))
 					{
 						//TODO: set delay for loading.
 						toHaul.reservable_maybeUnreserve(area, m_project.m_canReserve);
@@ -623,7 +623,7 @@ void HaulSubproject::commandWorker(const ActorIndex& actor)
 						actors.move_setDestinationAdjacentToPolymorphic(actor, toHaul, detour);
 				}
 			}
-			else if(actors.isAdjacentToItem(actor, haulTool))
+			else if(actors.isIntersectingOrAdjacentTo(actor, haulTool))
 			{
 				if(allWorkersAreAdjacentTo(haulTool))
 				{
@@ -674,7 +674,7 @@ bool HaulSubproject::allWorkersAreAdjacentTo(const ActorOrItemIndex& actorOrItem
 	//TODO: use std::all_of
 	auto& referenceData = m_project.m_area.getActors().m_referenceData;
 	for(ActorReference worker : m_workers)
-		if(!actorOrItem.isAdjacentToActor(m_project.m_area, worker.getIndex(referenceData)))
+		if(!actorOrItem.isIntersectingOrAdjacentTo(m_project.m_area, worker.getIndex(referenceData)))
 			return false;
 	return true;
 }
@@ -684,7 +684,7 @@ bool HaulSubproject::allWorkersAreAdjacentTo(const ItemIndex& index)
 	auto& referenceData = m_project.m_area.getActors().m_referenceData;
 	Items& items = m_project.m_area.getItems();
 	for(ActorReference worker : m_workers)
-		if(!items.isAdjacentToActor(index, worker.getIndex(referenceData)))
+		if(!items.isIntersectingOrAdjacentTo(index, worker.getIndex(referenceData)))
 			return false;
 	return true;
 	//return std::all_of(m_workers.begin(), m_workers.end(), [&](const ActorReference& worker) { return m_project.m_area.getItems().isAdjacentToActor(index, worker.getIndex(referenceData)); });

@@ -74,6 +74,8 @@ public:
 	[[nodiscard]] bool isAdjacentToActor(const Area& area, const ActorIndex& other) const;
 	[[nodiscard]] bool isAdjacentToItem(const Area& area, const ItemIndex& item) const;
 	[[nodiscard]] bool isAdjacentToLocation(const Area& area, const Point3D& location) const;
+	[[nodiscard]] bool isIntersectingOrAdjacentTo(const Area& area, const ActorIndex& other) const;
+	[[nodiscard]] bool isIntersectingOrAdjacentTo(const Area& area, const ItemIndex& item) const;
 	[[nodiscard]] bool occupiesPoint(const Area& area, const Point3D& location) const;
 
 	[[nodiscard]] ShapeId getShape(const Area& area) const;

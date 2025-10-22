@@ -175,7 +175,8 @@ std::pair<Point3D, uint8_t> MustEat::getDesireToEatSomethingAt(Area& area, const
 	}
 	if(AnimalSpecies::getEatsFruit(species))
 	{
-		for(const PlantIndex& plant : space.plant_getAll(cuboid))
+		const SmallSet<PlantIndex> adjacentPlants = space.plant_getAll(cuboid);
+		for(const PlantIndex& plant : adjacentPlants)
 			if(area.getPlants().getFruitMass(plant) != 0)
 				return {plants.getLocation(plant), 2};
 	}
@@ -210,14 +211,14 @@ uint8_t MustEat::getMinimumAcceptableDesire(Area& area) const
 	}
 	return 0;
 }
-Point3D MustEat::getAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(Area& area)
+Point3D MustEat::getOccupiedOrAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(Area& area)
 {
 	// Lower is better.
 	uint8_t minEatDesire = UINT8_MAX;
 	Point3D output;
 	const Actors& actors = area.getActors();
 	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
-	for(const Cuboid& adjacent : actors.getAdjacentCuboids(actor))
+	for(const Cuboid& adjacent : actors.getOccupiedAndAdjacentCuboids(actor))
 	{
 		const auto [point, desire] = getDesireToEatSomethingAt(area, adjacent);
 		if(desire != 0 && desire < minEatDesire)

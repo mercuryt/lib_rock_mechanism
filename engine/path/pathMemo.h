@@ -3,7 +3,7 @@
  * Pather is required to call reset before returning.
  */
 #pragma once
-#include "dataStructures/rtreeData.h"
+#include "dataStructures/rtreeBoolean.h"
 #include "dataStructures/sortedVectorContainers.h"
 #include "numericTypes/index.h"
 #include <cstdint>
@@ -13,16 +13,16 @@ struct CuboidSet;
 
 class PathMemoClosed final
 {
-	RTreeData<DistanceFractional> m_data;
+	SmallMap<Point3D, Point3D> m_cameFrom;
+	RTreeBoolean m_seen;
 public:
-	[[nodiscard]] bool contains(const Point3D& index) const { return m_data.queryAny(index); }
-	[[nodiscard]] bool empty() const { return m_data.empty(); }
+	[[nodiscard]] bool contains(const Point3D& point) const { return m_seen.query(point); }
+	[[nodiscard]] bool empty() const { return m_seen.empty(); }
 	[[nodiscard]] Point3D previous(const Point3D& index) const;
 	[[nodiscard]] SmallSet<Point3D> getPath(const Point3D& secondToLast, const Point3D& last, const Point3D& first) const;
-	[[nodiscard]] CuboidSet getIntersecting(const auto& shape) const { return m_data.queryGetAllCuboids(shape); }
-	void add(const Point3D& index, const Point3D& start);
-	void clear() { m_data.clear(); }
-	void removeClosed(CuboidSet& cuboids) const;
+	[[nodiscard]] CuboidSet getIntersecting(const auto& shape) const { return m_seen.queryGetLeaves(shape); }
+	void add(const Point3D& index, const Point3D& previous);
+	void clear() { m_cameFrom.clear(); m_seen.clear(); }
 };
 
 class PathMemoBreadthFirst final
@@ -32,9 +32,8 @@ class PathMemoBreadthFirst final
 	PathMemoClosed m_closed;
 public:
 	void reset();
-	void setClosed(const Point3D& point, const Point3D& start);
+	void setClosed(const Point3D& point, const Point3D& previous);
 	void setOpen(const Point3D& point);
-	void removeClosed(CuboidSet& cuboids) { m_closed.removeClosed(cuboids); }
 	[[nodiscard]] bool isClosed(const Point3D& point) const;
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] bool openEmpty() const { return m_open.empty(); }
@@ -49,9 +48,8 @@ class PathMemoDepthFirst final
 	Point3D m_huristicDestination;
 public:
 	void reset();
-	void setClosed(const Point3D& point, const Point3D& start);
+	void setClosed(const Point3D& point, const Point3D& previous);
 	void setOpen(const Point3D& point);
-	void removeClosed(CuboidSet& cuboids) { m_closed.removeClosed(cuboids); }
 	void setDestination(const Point3D& point) { m_huristicDestination = point; }
 	[[nodiscard]] bool isClosed(const Point3D& point) const;
 	[[nodiscard]] bool empty() const;

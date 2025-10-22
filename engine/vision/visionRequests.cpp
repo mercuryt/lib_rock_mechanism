@@ -172,7 +172,8 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::
 		const auto& [actorsResult, canBeSeenBy] = bucket.anyCanBeSeenQuery(m_area, cuboid, points);
 		for(auto i = LocationBucketContentsIndex::create(0); i < actorsResult->size(); ++i)
 			if(canBeSeenBy[i.get()])
-				results.insert((*actorsResult)[i]);
+				// Multi tile actors will be recorded more then once in bucket. Only record them once in results.
+				results.maybeInsert((*actorsResult)[i]);
 	});
 	for(ActorReference actor : results)
 		maybeCreate(actor);

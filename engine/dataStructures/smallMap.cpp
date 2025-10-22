@@ -39,6 +39,7 @@ class ProjectRequirementCounts;
 class FarmField;
 class CanReserve;
 
+template class std::vector<std::pair<Point3D, Point3D>>;
 
 //template class SmallMap<FactionId, RTreeDataIndex<SmallSet<Project*>, uint16_t, noMerge>>;
 template class SmallMap<ActorOrItemIndex, DeckRotationDataSingle>;
@@ -92,6 +93,8 @@ template class SmallMap<StockPile*, SmallSet<Point3D>>;
 template class SmallMap<VisionCuboidId, Cuboid>;
 template class SmallMap<std::string, Uniform>;
 template class SmallMap<uint, uint>;
+template class SmallMap<Point3D, Point3D>;
+
 template class SmallMapStable<AreaId, Area>;
 template class SmallMapStable<FactionId, AreaHasStockPilesForFaction>;
 template class SmallMapStable<FactionId, HasConstructionDesignationsForFaction>;

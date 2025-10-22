@@ -29,7 +29,7 @@ void GiveItemObjective::execute(Area& area, const ActorIndex& actor)
 	Items& items = area.getItems();
 	ActorIndex recipient = m_recipient.getIndex(actors.m_referenceData);
 	ItemIndex item = m_item.getIndex(items.m_referenceData);
-	if(!actors.isAdjacentToActor(actor, recipient))
+	if(!actors.isIntersectingOrAdjacentTo(actor, recipient))
 		// detour, unresered, reserve.
 		// TODO: detour.
 		actors.move_setDestinationAdjacentToActor(actor, recipient);

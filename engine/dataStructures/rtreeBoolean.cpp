@@ -583,6 +583,13 @@ void RTreeBoolean::maybeRemove(const Cuboid& cuboid)
 			parent.updateBranchBoundry(offset, node.getCuboids().boundry());
 	}
 }
+void RTreeBoolean::clear()
+{
+	m_nodes.resize(1);
+	m_emptySlots.clear();
+	m_toComb.clear();
+	m_nodes.front().clear();
+}
 void RTreeBoolean::prepare()
 {
 	bool toSort = false;

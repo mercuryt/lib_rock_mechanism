@@ -19,7 +19,7 @@ void MountObjective::execute(Area& area, const ActorIndex& actor)
 {
 	Actors& actors = area.getActors();
 	const ActorIndex& toMount = m_toMount.getIndex(actors.m_referenceData);
-	if(actors.isAdjacentToActor(actor, toMount))
+	if(actors.isIntersectingOrAdjacentTo(actor, toMount))
 	{
 		const Point3D& location = actors.mount_findLocationToMountOn(actor, toMount);
 		if(location.empty())

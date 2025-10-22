@@ -14,7 +14,7 @@ class PathInnerLoops
 	{
 		// Use Point3D::null() to indicate the start.
 		memo.setOpen(start);
-		memo.setClosed(start, start);
+		memo.setClosed(start, Point3D::null());
 		while(!memo.openEmpty())
 		{
 			const Point3D current = memo.next();
@@ -42,7 +42,7 @@ class PathInnerLoops
 				if(result)
 					return {memo.getPath(current, adjacent, start), pointWhichPassedPredicate, false};
 				memo.setOpen(adjacent);
-				memo.setClosed(adjacent, start);
+				memo.setClosed(adjacent, current);
 			}
 		}
 		return {{}, Point3D::null(), false};

@@ -44,19 +44,16 @@ TEST_CASE("actor")
 	SUBCASE("multi tile")
 	{
 		// Multi tile.
-		Point3D origin2 = Point3D::create(7, 7, 1);
+		Point3D origin = Point3D::create(7, 7, 1);
 		ActorIndex troll1 = actors.create(ActorParamaters{
 			.species=troll,
 			.percentGrown=Percent::create(100),
-			.location=origin2,
+			.location=origin,
 			.facing=Facing4::South
 		});
-		Point3D block1 = Point3D::create(6, 7, 1);
-		Point3D block2 = Point3D::create(7, 8, 1);
-		Point3D block3 = Point3D::create(6, 8, 1);
-		CHECK(space.actor_contains(origin2, troll1));
-		CHECK(space.actor_contains(block1, troll1));
-		CHECK(space.actor_contains(block2, troll1));
-		CHECK(space.actor_contains(block3, troll1));
+		const CuboidSet occupied = actors.getOccupied(troll1);
+		CHECK(occupied.volume() == 4);
+		const Point3D highPoint = Point3D::create(8,8,1);
+		CHECK(occupied.contains(Cuboid::create(highPoint, origin)));
 	}
 }

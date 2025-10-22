@@ -74,6 +74,7 @@ public:
 	[[nodiscard]] bool hasFaction(const Index& index) const { return m_faction[index].exists(); }
 	[[nodiscard]] bool isStatic(const Index& index) const { return m_static[index]; }
 	[[nodiscard]] bool isAdjacentToLocation(const Index& index, const Point3D& point) const;
+	[[nodiscard]] bool isAdjacentToOrOccupies(const Index& index, const Point3D& point) const;
 	//TODO: change these into templates?
 	[[nodiscard]] bool predicateForAnyOccupiedCuboid(const Index& index, std::function<bool(const Cuboid&)> predicate) const;
 	[[nodiscard]] bool predicateForAnyAdjacentCuboid(const Index& index, std::function<bool(const Cuboid&)> predicate) const;
@@ -95,6 +96,9 @@ public:
 	[[nodiscard]] bool isOnEdgeAt(const Index& index, const Point3D& location, const Facing4& facing) const;
 	[[nodiscard]] bool isOnEdge(const Index& index) const;
 	[[nodiscard]] bool isOnSurface(const Index& index) const;
+	[[nodiscard]] bool isIntersectingOrAdjacentTo(const Index& index, const CuboidSet& cuboids) const;
+	[[nodiscard]] bool isIntersectingOrAdjacentTo(const Index& index, const ActorIndex& actor) const;
+	[[nodiscard]] bool isIntersectingOrAdjacentTo(const Index& index, const ItemIndex& item) const;
 	[[nodiscard]] const auto& getOnSurface() const { return m_onSurface; }
 	[[nodiscard]] Distance distanceToActor(const Index& index, const ActorIndex& actor) const;
 	[[nodiscard]] Distance distanceToItem(const Index& index, const ItemIndex& item) const;

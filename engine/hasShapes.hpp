@@ -177,6 +177,11 @@ bool HasShapes<Derived, Index>::isAdjacentToLocation(const Index& index, const P
 	return getAdjacentCuboids(index).contains(location);
 }
 template<class Derived, class Index>
+bool HasShapes<Derived, Index>::isAdjacentToOrOccupies(const Index& index, const Point3D& point) const
+{
+	return m_occupied[index].intersects(point.getAllAdjacentIncludingOutOfBounds());
+}
+template<class Derived, class Index>
 bool HasShapes<Derived, Index>::isAdjacentToAnyCuboid(const Index& index, const CuboidSet& cuboids) const
 {
 	const auto predicate = [&](const Cuboid& cuboid) { return cuboids.intersects(cuboid); };
@@ -198,6 +203,25 @@ bool HasShapes<Derived, Index>::isOnEdge(const Index& index) const
 }
 template<class Derived, class Index>
 bool HasShapes<Derived, Index>::isOnSurface(const Index& index) const { return m_onSurface[index]; }
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::isIntersectingOrAdjacentTo(const Index& index, const CuboidSet& cuboids) const
+{
+	return m_occupied[index].isIntersectingOrAdjacentTo(cuboids);
+}
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::isIntersectingOrAdjacentTo(const Index& index, const ActorIndex& actor) const
+{
+	assert(m_area.getActors().hasLocation(actor));
+	assert(hasLocation(index));
+	return m_occupied[index].isIntersectingOrAdjacentTo(m_area.getActors().getOccupied(actor));
+}
+template<class Derived, class Index>
+bool HasShapes<Derived, Index>::isIntersectingOrAdjacentTo(const Index& index, const ItemIndex& item) const
+{
+	assert(m_area.getItems().hasLocation(item));
+	assert(hasLocation(index));
+	return m_occupied[index].isIntersectingOrAdjacentTo(m_area.getItems().getOccupied(item));
+}
 template<class Derived, class Index>
 bool HasShapes<Derived, Index>::predicateForAnyOccupiedCuboid(const Index& index, std::function<bool(const Cuboid&)> predicate) const
 {
@@ -237,10 +261,11 @@ CuboidSet HasShapes<Derived, Index>::getAdjacentCuboids(const Index& index) cons
 	CuboidSet output;
 	const auto& occupied = m_occupied[index];
 	const Cuboid& boundry = m_area.getSpace().boundry();
-	for(const Cuboid& cuboid : occupied)
+	// Make a copy so we can inflate it.
+	for(Cuboid cuboid : occupied)
 	{
-		Cuboid expanded = cuboid.inflate({1});
-		output.add(expanded.intersection(boundry));
+		cuboid.inflate({1});
+		output.add(cuboid.intersection(boundry));
 	}
 	output.removeContainedAndFragmentInterceptedAll(occupied);
 	return output;

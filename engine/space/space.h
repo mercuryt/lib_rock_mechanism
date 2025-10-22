@@ -183,7 +183,8 @@ public:
 		{
 			Cuboid current = openList.back();
 			openList.popBack();
-			const CuboidSet result = condition(current.inflate({1}));
+			current.inflate({1});
+			const CuboidSet result = condition(current);
 			for(const Cuboid& resultCuboid : result)
 				//TODO: change this from contains to containsWithinOneCuboid.
 				if(!output.contains(resultCuboid))

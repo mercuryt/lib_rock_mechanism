@@ -33,8 +33,8 @@ struct Cuboid
 	void setMaxZ(const Distance& distance);
 	void maybeExpand(const Cuboid& other);
 	void maybeExpand(const Point3D& point);
+	void inflate(const Distance& distance);
 	[[nodiscard]] Cuboid boundry() const { return *this; }
-	[[nodiscard]] Cuboid inflate(const Distance& distance) const;
 	[[nodiscard]] SmallSet<Point3D> toSet() const;
 	[[nodiscard]] bool contains(const Point3D& point) const;
 	[[nodiscard]] bool contains(const Cuboid& cuboid) const;

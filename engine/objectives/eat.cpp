@@ -21,7 +21,7 @@ void EatEvent::execute(Simulation&, Area *area)
 	Actors& actors = area->getActors();
 	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
 	// TODO: use the version of this method on mustEat and delete this one.
-	Point3D pointContainingFood = actors.eat_getAdjacentPointWithTheMostDesiredFood(actor);
+	Point3D pointContainingFood = actors.eat_getOccupiedOrAdjacentPointWithTheMostDesiredFood(actor);
 	if(pointContainingFood.empty())
 	{
 		actors.objective_canNotCompleteSubobjective(actor);
@@ -370,7 +370,7 @@ void EatObjective::execute(Area &area, const ActorIndex &actor)
 	}
 	if(m_location.empty())
 	{
-		Point3D adjacent = mustEat.getAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(area);
+		Point3D adjacent = mustEat.getOccupiedOrAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(area);
 		if(adjacent.empty())
 			// Find destination.
 			makePathRequest(area, actor);
@@ -384,9 +384,9 @@ void EatObjective::execute(Area &area, const ActorIndex &actor)
 	}
 	else
 	{
-		if(actors.isAdjacentToLocation(actor, m_location))
+		if(actors.isAdjacentToOrOccupies(actor, m_location))
 		{
-			Point3D adjacent = mustEat.getAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(area);
+			Point3D adjacent = mustEat.getOccupiedOrAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(area);
 			if(adjacent.empty())
 			{
 				// We are at the previously selected location but there is no longer any food here, try again.

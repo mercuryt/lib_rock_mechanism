@@ -95,6 +95,7 @@ public:
 	void maybeRemove(Cuboid&& cuboid) { const Cuboid copy = cuboid; maybeRemove(copy); }
 	void maybeInsert(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeInsert(cuboid); }
 	void maybeRemove(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid); }
+	void clear();
 	void prepare();
 	[[nodiscard]] bool empty() const  { return nodeCount() == 1 && leafCount() == 0; }
 	[[nodiscard]] CuboidSet toCuboidSet() const;

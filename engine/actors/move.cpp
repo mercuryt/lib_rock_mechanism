@@ -280,7 +280,7 @@ void Actors::move_setDestinationAdjacentToActor(const ActorIndex& index, const A
 }
 void Actors::move_setDestinationAdjacentToItem(const ActorIndex& index, const ItemIndex& item, bool detour, bool unreserved, bool reserve)
 {
-	assert(!isAdjacentToItem(index, item));
+	assert(!isIntersectingOrAdjacentTo(index, item));
 	assert(!isAdjacentToLocation(index, m_area.getItems().getLocation(item)));
 	assert(m_pathRequest[index] == nullptr);
 	Space& space = m_area.getSpace();

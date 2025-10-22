@@ -95,7 +95,9 @@ void Space::solid_setNotCuboid(const Cuboid& cuboid)
 	}
 	m_solid.maybeRemove(cuboid);
 	m_support.unset(cuboid);
-	m_area.m_hasTerrainFacades.update(spaceBoundry.intersection(cuboid.inflate(Distance::create(1))));
+	Cuboid inflated = cuboid;
+	inflated.inflate({1});
+	m_area.m_hasTerrainFacades.update(spaceBoundry.intersection(inflated));
 	for(const Point3D& point : cuboid)
 	{
 		m_area.m_exteriorPortals.onPointCanTransmitTemperature(m_area, point);

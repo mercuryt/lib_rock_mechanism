@@ -1,5 +1,6 @@
 #include "actors.h"
 #include "../eat.h"
+#include "../objectives/eat.h"
 void Actors::eat_do(const ActorIndex& index, const Mass& mass)
 {
 	m_mustEat[index]->eat(m_area, mass);
@@ -8,9 +9,19 @@ void Actors::eat_setIsHungry(const ActorIndex& index)
 {
 	m_mustEat[index]->setNeedsFood(m_area);
 }
+void Actors::eat_setNeverHungry(const ActorIndex& index)
+{
+	m_mustEat[index]->unschedule();
+}
 bool Actors::eat_isHungry(const ActorIndex& index) const
 {
 	return m_mustEat[index]->needsFood();
+}
+bool Actors::eat_isEating(const ActorIndex& index) const
+{
+	if(objective_getCurrentName(index) != "eat")
+		return false;
+	return objective_getCurrent<EatObjective>(index).hasEvent();
 }
 bool Actors::eat_canEatActor(const ActorIndex& index, const ActorIndex& other) const
 {
@@ -28,9 +39,9 @@ Percent Actors::eat_getPercentStarved(const ActorIndex& index) const
 {
 	return m_mustEat[index]->getPercentStarved();
 }
-Point3D Actors::eat_getAdjacentPointWithTheMostDesiredFood(const ActorIndex& index) const
+Point3D Actors::eat_getOccupiedOrAdjacentPointWithTheMostDesiredFood(const ActorIndex& index) const
 {
-	return m_mustEat[index]->getAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(m_area);
+	return m_mustEat[index]->getOccupiedOrAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(m_area);
 }
 std::pair<Point3D, uint8_t> Actors::eat_getDesireToEatSomethingAt(const ActorIndex& index, const Cuboid& cuboid) const
 {

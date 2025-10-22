@@ -52,6 +52,8 @@ MapWithOffsetCuboidKeys<CollisionVolume> Shape::makeOccupiedCuboidsWithFacing(co
 		case Facing4::South:
 			for(auto& [offsetCuboid, volume] : shapeDataPositions)
 			{
+				offsetCuboid.m_high.data[0] *= -1;
+				offsetCuboid.m_low.data[0] *= -1;
 				offsetCuboid.m_high.data[1] *= -1;
 				offsetCuboid.m_low.data[1] *= -1;
 				offsetCuboid = OffsetCuboid::create(offsetCuboid.m_high, offsetCuboid.m_low);

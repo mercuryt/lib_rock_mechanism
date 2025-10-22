@@ -77,6 +77,7 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex, t
 	StrongVector<AnimalSpeciesId, ActorIndex> m_species;
 	StrongVector<Project*, ActorIndex> m_project;
 	StrongVector<Step, ActorIndex> m_birthStep;
+	StrongVector<Step, ActorIndex> m_deathStep;
 	StrongVector<CauseOfDeath, ActorIndex> m_causeOfDeath;
 	StrongVector<AttributeLevel, ActorIndex> m_strength;
 	StrongVector<AttributeLevelBonusOrPenalty, ActorIndex> m_strengthBonusOrPenalty;
@@ -149,6 +150,7 @@ public:
 		action(m_species);
 		action(m_project);
 		action(m_birthStep);
+		action(m_deathStep);
 		action(m_causeOfDeath);
 		action(m_strength);
 		action(m_strengthBonusOrPenalty);
@@ -252,6 +254,7 @@ public:
 	[[nodiscard]] Quantity getAgeInYears(const ActorIndex& index) const;
 	[[nodiscard]] Step getAge(const ActorIndex& index) const;
 	[[nodiscard]] Step getBirthStep(const ActorIndex& index) const { return m_birthStep[index]; }
+	[[nodiscard]] Step getDeathStep(const ActorIndex& index) const { return m_deathStep[index]; }
 	[[nodiscard]] std::string getActionDescription(const ActorIndex& index) const;
 	[[nodiscard]] AnimalSpeciesId getSpecies(const ActorIndex& index) const { return m_species[index]; }
 	[[nodiscard]] Mass getUnencomberedCarryMass(const ActorIndex& index) const { return m_unencomberedCarryMass[index]; }
@@ -446,6 +449,8 @@ public:
 	[[nodiscard]] std::string objective_getCurrentName(const ActorIndex& index) const;
 	template<typename T>
 	T& objective_getCurrent(const ActorIndex& index) { return static_cast<T&>(m_hasObjectives[index]->getCurrent()); }
+	template<typename T>
+	const T& objective_getCurrent(const ActorIndex& index) const { return static_cast<T&>(m_hasObjectives[index]->getCurrent()); }
 	// For testing.
 	[[nodiscard]] bool objective_queuesAreEmpty(const ActorIndex& index) const;
 	[[nodiscard]] bool objective_isOnDelay(const ActorIndex& index, const ObjectiveTypeId& objectiveTypeId) const;
@@ -512,6 +517,7 @@ public:
 	// Drink.
 	void drink_do(const ActorIndex& index, const CollisionVolume& volume);
 	void drink_setNeedsFluid(const ActorIndex& index);
+	void drink_setNeverThirsty(const ActorIndex& index);
 	[[nodiscard]] CollisionVolume drink_getVolumeOfFluidRequested(const ActorIndex& index) const;
 	[[nodiscard]] bool drink_isThirsty(const ActorIndex& index) const;
 	[[nodiscard]] FluidTypeId drink_getFluidType(const ActorIndex& index) const;
@@ -522,12 +528,14 @@ public:
 	// Eat.
 	void eat_do(const ActorIndex& index, const Mass& mass);
 	void eat_setIsHungry(const ActorIndex& index);
+	void eat_setNeverHungry(const ActorIndex& index);
 	[[nodiscard]] bool eat_isHungry(const ActorIndex& index) const;
+	[[nodiscard]] bool eat_isEating(const ActorIndex& index) const;
 	[[nodiscard]] bool eat_canEatActor(const ActorIndex& index, const ActorIndex& other) const;
 	[[nodiscard]] bool eat_canEatItem(const ActorIndex& index, const ItemIndex& item) const;
 	[[nodiscard]] bool eat_canEatPlant(const ActorIndex& index, const PlantIndex& plant) const;
 	[[nodiscard]] Percent eat_getPercentStarved(const ActorIndex& index) const;
-	[[nodiscard]] Point3D eat_getAdjacentPointWithTheMostDesiredFood(const ActorIndex& index) const;
+	[[nodiscard]] Point3D eat_getOccupiedOrAdjacentPointWithTheMostDesiredFood(const ActorIndex& index) const;
 	// For Testing.
 	[[nodiscard]] Mass eat_getMassFoodRequested(const ActorIndex& index) const;
 	[[nodiscard]] std::pair<Point3D, uint8_t> eat_getDesireToEatSomethingAt(const ActorIndex& index, const Cuboid& cuboid) const;

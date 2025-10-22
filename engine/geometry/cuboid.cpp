@@ -200,12 +200,10 @@ void Cuboid::maybeExpand(const Point3D& other)
 	m_high.data = m_high.data.max(other.data);
 	m_low.data = m_low.data.min(other.data);
 }
-Cuboid Cuboid::inflate(const Distance& distance) const
+void Cuboid::inflate(const Distance& distance)
 {
-	return {
-		m_high + distance,
-		m_low.subtractWithMinimum(distance)
-	};
+	m_high.data += distance.data;
+	m_low = m_low.subtractWithMinimum(distance);
 }
 void Cuboid::clear() { m_low.clear(); m_high.clear(); }
 Cuboid Cuboid::getFace(const Facing6& facing) const

@@ -345,7 +345,9 @@ void TerrainFacade::maybeSetImpassable(const Cuboid& cuboid)
 {
 	m_enterable.maybeRemove(cuboid);
 	// Inflate the cuboid to update the points which were previously touching it.
-	update(m_area.getSpace().boundry().intersection(cuboid.inflate(Distance::create(1))));
+	Cuboid inflated = cuboid;
+	inflated.inflate({1});
+	update(m_area.getSpace().boundry().intersection(inflated));
 }
 void TerrainFacade::movePathRequestNoHuristic(PathRequestIndex oldIndex, PathRequestIndex newIndex)
 {

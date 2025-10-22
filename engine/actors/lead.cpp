@@ -131,7 +131,7 @@ std::pair<Point3D, Facing4> Actors::lineLead_followerGetNextStep(const ActorOrIt
 				break;
 			// No valid candidate found, expand the search area.
 			exclude = candidates;
-			candidates = candidates.inflate({1});
+			candidates.inflate({1});
 			candidates = candidates.intersection(boundry);
 		}
 
@@ -149,8 +149,7 @@ bool Actors::lineLead_followersCanMoveEver(const ActorIndex& index) const
 	CuboidSet futureOccupiedForCurrentLeader = getOccupied(index);
 	while(follower.exists())
 	{
-		if(futureOccupiedForCurrentLeader.isTouching(follower.getOccupied(m_area)))
-			//
+		if(futureOccupiedForCurrentLeader.isIntersectingOrAdjacentTo(follower.getOccupied(m_area)))
 			return true;
 		const auto& [location, facing] = lineLead_followerGetNextStep(follower, path, futureOccupiedForCurrentLeader);
 		if(location.empty())
@@ -172,7 +171,7 @@ bool Actors::lineLead_followersCanMoveCurrently(const ActorIndex& index) const
 	CuboidSet futureOccupiedForCurrentLeader = getOccupied(index);
 	while(follower.exists())
 	{
-		if(futureOccupiedForCurrentLeader.intersects(follower.getOccupied(m_area)))
+		if(futureOccupiedForCurrentLeader.isIntersectingOrAdjacentTo(follower.getOccupied(m_area)))
 			// Leader and follower are intersecting after leader took a step, wait for leader to take another step.
 			return true;
 		const ShapeId& shape = follower.getShape(m_area);
