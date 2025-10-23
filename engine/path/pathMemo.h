@@ -43,7 +43,7 @@ public:
 };
 class PathMemoDepthFirst final
 {
-	MediumMap<Distance, Point3D> m_open;
+	MediumMap<DistanceSquared, Point3D> m_open;
 	PathMemoClosed m_closed;
 	Point3D m_huristicDestination;
 public:

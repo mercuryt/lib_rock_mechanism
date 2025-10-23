@@ -134,17 +134,17 @@ Distance Point3D::taxiDistanceTo(const Point3D& other) const
 }
 Distance Point3D::distanceTo(const Point3D& other) const
 {
-	Distance squared = distanceToSquared(other);
-	return Distance::create(pow((double)squared.get(), 0.5));
+	DistanceSquared squared = distanceToSquared(other);
+	return squared.unsquared();
 }
 DistanceFractional Point3D::distanceToFractional(const Point3D& other) const
 {
-	Distance squared = distanceToSquared(other);
+	DistanceSquared squared = distanceToSquared(other);
 	return DistanceFractional::create(pow((double)squared.get(), 0.5));
 }
-Distance Point3D::distanceToSquared(const Point3D& other) const
+DistanceSquared Point3D::distanceToSquared(const Point3D& other) const
 {
-	return Distance::create((data - other.data).square().sum());
+	return DistanceSquared::create((data - other.data).square().sum());
 }
 std::string Point3D::toString() const
 {

@@ -50,7 +50,7 @@ void VisionRequests::readStepSegment(const uint& begin, const uint& end)
 	for(auto iter = m_data.begin() + begin; iter != m_data.begin() + end; ++iter)
 	{
 		VisionRequest& request = *iter;
-		const Distance& rangeSquared = request.range * request.range;
+		const DistanceSquared& rangeSquared = request.range.squared();
 		const VisionCuboidId& fromVisionCuboidIndex = request.cuboid;
 		assert(fromVisionCuboidIndex.exists());
 		SmallSet<ActorReference>& canSee = request.canSee;
@@ -138,7 +138,7 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::
 {
 	struct CandidateData{
 		ActorReference actor;
-		Distance rangeSquared;
+		DistanceSquared rangeSquared;
 		Point3D coordinates;
 		VisionCuboidId cuboid;
 		Facing4 facing;

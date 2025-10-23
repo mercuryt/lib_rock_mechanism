@@ -69,7 +69,7 @@ struct Point3D
 	[[nodiscard]] Distance taxiDistanceTo(const Point3D& other) const;
 	[[nodiscard]] Distance distanceTo(const Point3D& other) const;
 	[[nodiscard]] DistanceFractional distanceToFractional(const Point3D& other) const;
-	[[nodiscard]] Distance distanceToSquared(const Point3D& other) const;
+	[[nodiscard]] DistanceSquared distanceToSquared(const Point3D& other) const;
 	[[nodiscard]] std::string toString() const;
 	static const int hilbertOrder = 1;
 	[[nodiscard]] uint32_t hilbertNumber() const;

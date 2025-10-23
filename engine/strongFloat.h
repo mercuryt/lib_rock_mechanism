@@ -10,7 +10,6 @@ class StrongFloat
 {
 protected:
 	float data = FLT_MAX;
-	using This = StrongFloat<Derived>;
 public:
 	using Primitive = float;
 	[[nodiscard]] constexpr static Derived create(const float& d) { Derived der; der.set(d); return der; }

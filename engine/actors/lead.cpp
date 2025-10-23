@@ -94,7 +94,7 @@ std::pair<Point3D, Facing4> Actors::lineLead_followerGetNextStep(const ActorOrIt
 		const MoveTypeId& moveType = follower.getMoveType(m_area);
 		for(Distance jumpDistance{1}; jumpDistance < 100; ++jumpDistance)
 		{
-			Distance closestToPathDistanceSquared = Distance::max();
+			DistanceSquared closestToPathDistanceSquared = DistanceSquared::max();
 			std::pair<Point3D, Facing4> output;
 			// Iterate candidates lookin for one which the follower can enter, where it would be touching the current leader, and find the one nearest to any point on the path.
 			for(const Point3D& candidate : candidates)
@@ -111,7 +111,7 @@ std::pair<Point3D, Facing4> Actors::lineLead_followerGetNextStep(const ActorOrIt
 						const bool isTouching = toOccupy.isTouching(occupiedByCurrentLeader);
 						if(isTouching)
 						{
-							Distance distanceSquaredToPath = path.empty() ? Distance{0} : setOfPointsHelper::distanceToClosestSquared(path, candidate);
+							DistanceSquared distanceSquaredToPath = path.empty() ? DistanceSquared{0} : setOfPointsHelper::distanceToClosestSquared(path, candidate);
 							if(distanceSquaredToPath == 0)
 								// Either the candidate is on the path or the path is empty. Either way this candidate is as good as any.
 								return {candidate, facing};

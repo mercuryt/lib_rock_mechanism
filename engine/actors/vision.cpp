@@ -42,7 +42,7 @@ void Actors::vision_maybeUpdateRange(const ActorIndex& index, const Distance& ra
 		bool exists = m_area.m_visionRequests.maybeUpdateRange(ref, range);
 		if(!exists)
 			m_area.m_visionRequests.create(ref);
-		m_area.m_octTree.updateRange(ref, m_area.getActors().getLocation(index), range * range);
+		m_area.m_octTree.updateRange(ref, m_area.getActors().getLocation(index), range.squared());
 	}
 }
 void Actors::vision_maybeUpdateLocation(const ActorIndex& index, const Point3D& location)

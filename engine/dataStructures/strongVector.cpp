@@ -11,6 +11,58 @@
 #include "../craft.h"
 #include "../items/constructed.h"
 
+template class std::vector<BodyTypeId>;
+template class std::vector<CombatScore>;
+template class std::vector<CraftStepTypeCategoryId>;
+template class std::vector<Density>;
+template class std::vector<Distance>;
+template class std::vector<DistanceFractional>;
+template class std::vector<FluidTypeId>;
+template class std::vector<Force>;
+template class std::vector<FullDisplacement>;
+template class std::vector<ItemTypeId>;
+template class std::vector<MapWithCuboidKeys<CollisionVolume>>;
+template class std::vector<MapWithOffsetCuboidKeys<CollisionVolume>>;
+template class std::vector<Mass>;
+template class std::vector<MaterialCategoryTypeId>;
+template class std::vector<MaterialTypeId>;
+template class std::vector<MoveTypeId>;
+template class std::vector<MoveTypeParamaters>;
+template class std::vector<OffsetCuboidSet>;
+template class std::vector<Percent>;
+template class std::vector<Quantity>;
+template class std::vector<RTreeBoolean::Node>;
+template class std::vector<RTreeBooleanLowZOnly::Node>;
+template class std::vector<ShapeId>;
+template class std::vector<SkillExperiencePoints>;
+template class std::vector<SkillTypeId>;
+template class std::vector<SmallMap<FluidTypeId, CollisionVolume>>;
+template class std::vector<SmallSet<FluidTypeId>>;
+template class std::vector<Step>;
+template class std::vector<Temperature>;
+template class std::vector<TemperatureDelta>;
+template class std::vector<WoundType>;
+template class std::vector<float>;
+template class std::vector<std::array<AttributeLevel, 3>>;
+template class std::vector<std::array<Mass, 3>>;
+template class std::vector<std::array<Step, 2>>;
+template class std::vector<std::array<int32_t, 3>>;
+template class std::vector<std::array<uint32_t, 3>>;
+template class std::vector<std::string>;
+//template class std::vector<std::unique_ptr<ConstructedShape>>;
+template class std::vector<std::vector<AttackTypeId>>;
+template class std::vector<std::vector<BodyPartTypeId>>;
+template class std::vector<std::vector<CraftStepType>>;
+template class std::vector<std::vector<MaterialCategoryTypeId>>;
+template class std::vector<std::vector<ShapeId>>;
+template class std::vector<std::vector<SpoilsDataTypeId>>;
+template class std::vector<std::vector<std::pair<AttackTypeId, MaterialTypeId>>>;
+template class std::vector<std::vector<std::pair<ItemQuery, Quantity>>>;
+template class std::vector<std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>>>;
+template class std::vector<uint16_t>;
+template class std::vector<uint32_t>;
+template class std::vector<uint8_t>;
+
 template class StrongVector<BodyTypeId, AnimalSpeciesId>;
 template class StrongVector<CombatScore, AttackTypeId>;
 template class StrongVector<CraftStepTypeCategoryId, ItemTypeId>;

@@ -4,6 +4,7 @@
 
 template class RTreeData<DeckId>;
 template class RTreeData<Distance>;
+template class RTreeData<DistanceSquared>;
 template class RTreeData<LongRangePathNodeIndex>;
 template class RTreeData<Priority>;
 template class RTreeData<AdjacentData>;

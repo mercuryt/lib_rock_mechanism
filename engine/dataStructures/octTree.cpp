@@ -13,7 +13,7 @@ void ActorOctTree::record(Area& area, const ActorReference& actor)
 	Actors& actors = area.getActors();
 	const ActorIndex& index = actor.getIndex(actors.m_referenceData);
 	const Point3D& location = actors.getLocation(index);
-	const Distance& visionRangeSquared = actors.vision_getRangeSquared(index);
+	const DistanceSquared& visionRangeSquared = actors.vision_getRangeSquared(index);
 	const Facing4& facing = actors.getFacing(index);
 	const VisionCuboidId& visionCuboid = area.m_visionCuboids.getVisionCuboidIndexForPoint(location);
 	for(const Point3D& coordinates : Point3DSet::fromCuboidSet(actors.getOccupied(index)))
@@ -75,7 +75,7 @@ void ActorOctTree::updateVisionCuboid(const Point3D& coordinates, const VisionCu
 		nodeIndex = node.children[octant];
 	}
 }
-void ActorOctTree::updateRange(const ActorReference& actor, const Point3D& coordinates, const Distance& visionRangeSquared)
+void ActorOctTree::updateRange(const ActorReference& actor, const Point3D& coordinates, const DistanceSquared& visionRangeSquared)
 {
 	OctTreeIndex nodeIndex = OctTreeIndex::create(0);
 	while(true)

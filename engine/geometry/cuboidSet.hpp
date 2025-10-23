@@ -179,8 +179,6 @@ template<typename CuboidType, typename PointType, typename CuboidSetType>
 PointType::DimensionType CuboidSetBase<CuboidType, PointType, CuboidSetType>::lowestZ() const
 {
 	const CuboidType& lowest = std::ranges::min(m_cuboids.m_data, {}, [&](const CuboidType& cuboid) { return cuboid.m_low.z(); });
-	if constexpr(std::is_same_v<PointType, Point3D>)
-		assert(lowest.m_low.z() <= Offset::max().get());
 	return lowest.m_low.z();
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>

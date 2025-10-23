@@ -9,7 +9,7 @@ template <class Derived, typename T, T NULL_VALUE = std::numeric_limits<T>::max(
 struct StrongInteger
 {
 	T data = NULL_VALUE;
-	using This = StrongInteger<Derived, T, NULL_VALUE>;
+	using This = StrongInteger<Derived, T, NULL_VALUE, MIN_VALUE>;
 	constexpr static T MAX_VALUE = NULL_VALUE - 1;
 	using Primitive = T;
 	constexpr Derived& operator=(const This& o) { data = o.data; return static_cast<Derived&>(*this); }

@@ -32,7 +32,7 @@ public:
 	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfFacedTwordsPoints(const Point3D& location, const Facing4& facing) const;
 	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesFacingTwords(const Point3D& location, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& facings) const;
 	[[nodiscard]] Eigen::Array<int, 1, Eigen::Dynamic> distancesSquare(const Point3D& location) const;
-	[[nodiscard]] Eigen::Array<bool, 2, Eigen::Dynamic> canSeeAndCanBeSeenByDistanceAndFacingFilter(const Point3D& location, const Facing4& facing, const Distance& visionRangeSquared, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& facings, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& visionRangesSquared) const;
+	[[nodiscard]] Eigen::Array<bool, 2, Eigen::Dynamic> canSeeAndCanBeSeenByDistanceAndFacingFilter(const Point3D& location, const Facing4& facing, const DistanceSquared& visionRangeSquared, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& facings, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& visionRangesSquared) const;
 	[[nodiscard]] static Point3DSet fromPointSet(const auto& points)
 	{
 		Point3DSet output;

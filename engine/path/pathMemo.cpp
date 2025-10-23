@@ -87,7 +87,7 @@ void PathMemoDepthFirst::setOpen(const Point3D& point)
 	[[maybe_unused]] bool contains = m_closed.contains(point);
 	assert(!contains);
 	// Subtract from max rather then provide MediumMap with the ability to sort backwards.
-	Distance distance = Distance::max() - point.distanceToSquared(m_huristicDestination);
+	DistanceSquared distance = DistanceSquared::max() - point.distanceToSquared(m_huristicDestination);
 	m_open.insertNonUnique(distance, point);
 }
 bool PathMemoDepthFirst::isClosed(const Point3D& point) const

@@ -1,10 +1,10 @@
 #include "setOfPointsHelper.h"
-Distance setOfPointsHelper::distanceToClosestSquared(const SmallSet<Point3D>& pointSet, const Point3D& point)
+DistanceSquared setOfPointsHelper::distanceToClosestSquared(const SmallSet<Point3D>& pointSet, const Point3D& point)
 {
-	Distance output = Distance::max();
+	DistanceSquared output = DistanceSquared::max();
 	for(const Point3D& otherPoint : pointSet)
 	{
-		Distance distance = point.distanceToSquared(otherPoint);
+		DistanceSquared distance = point.distanceToSquared(otherPoint);
 		if(distance == 0)
 			return {0};
 		if(distance < output)

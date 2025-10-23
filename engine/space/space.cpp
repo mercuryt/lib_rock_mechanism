@@ -43,8 +43,8 @@ void Space::load(const Json& data, DeserializationMemo& deserializationMemo)
 	}
 	m_mist.beforeJsonLoad();
 	data["mist"].get_to(m_mist);
-	m_mistInverseDistanceFromSource.beforeJsonLoad();
-	data["mistInverseDistanceFromSource"].get_to(m_mistInverseDistanceFromSource);
+	m_mistInverseDistanceFromSourceSquared.beforeJsonLoad();
+	data["mistInverseDistanceFromSource"].get_to(m_mistInverseDistanceFromSourceSquared);
 	for(const Json& pair : data["reservables"])
 	{
 		Cuboid cuboid = pair[0].get<Cuboid>();
@@ -69,7 +69,7 @@ Json Space::toJson() const
 	output["solid"] = m_solid;
 	output["features"] = m_features;
 	output["mist"] = m_mist;
-	output["mistInverseDistanceFromSource"] = m_mistInverseDistanceFromSource;
+	output["mistInverseDistanceFromSource"] = m_mistInverseDistanceFromSourceSquared;
 	for(const auto& [data, cuboid] : m_reservables.queryGetAllWithCuboids(boundry()))
 		output["reservables"].push_back(std::pair(cuboid, reinterpret_cast<uintptr_t>(data.get())));
 	for(const auto& [fluids, cuboid] : m_fluid.queryGetAllWithCuboids(boundry()))
@@ -287,7 +287,7 @@ void Space::prepareRtrees()
 		#pragma omp task
 			m_mist.prepare();
 		#pragma omp task
-			m_mistInverseDistanceFromSource.prepare();
+			m_mistInverseDistanceFromSourceSquared.prepare();
 		#pragma omp task
 			m_actors.prepare();
 		#pragma omp task

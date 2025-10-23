@@ -24,19 +24,19 @@ class LocationBucket
 	StrongVector<ActorReference, LocationBucketContentsIndex> m_actors;
 	void sort() { /* todo. */}
 	void remove(const LocationBucketContentsIndex& index);
-	[[nodiscard]] Eigen::Array<bool, 2, Eigen::Dynamic> canSeeAndCanBeSeenByDistanceAndFacingFilter(const Point3D& location, const Facing4& facing, const Distance& visionRangeSquared) const;
+	[[nodiscard]] Eigen::Array<bool, 2, Eigen::Dynamic> canSeeAndCanBeSeenByDistanceAndFacingFilter(const Point3D& location, const Facing4& facing, const DistanceSquared& visionRangeSquared) const;
 	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> canBeSeenByDistanceAndFacingFilter(const Point3D& location) const;
 public:
-	void insert(const ActorReference& actor, const Point3D& point, const VisionCuboidId& cuboid, const Distance& visionRangeSquared, const Facing4& facing);
+	void insert(const ActorReference& actor, const Point3D& point, const VisionCuboidId& cuboid, const DistanceSquared& visionRangeSquared, const Facing4& facing);
 	void remove(const ActorReference& actor);
 	void copyIndex(const LocationBucket& other, const LocationBucketContentsIndex& otherIndex);
-	void updateVisionRangeSquared(const ActorReference& actor, const Point3D& point, const Distance& visionRangeSquaed);
+	void updateVisionRangeSquared(const ActorReference& actor, const Point3D& point, const DistanceSquared& visionRangeSquared);
 	void updateVisionCuboidIndex(const Point3D& point, const VisionCuboidId& cuboid);
 	void prefetch() const;
 	void reserve(int size);
 	// TODO: prevent checking line of sight to multi tile creaters straddling location bucket boundry.
 	[[nodiscard]] const std::pair<const std::vector<ActorReference>*, Eigen::Array<bool, 2, Eigen::Dynamic>>
-	visionRequestQuery(const Area& area, const Point3D& position, const Facing4& facing, const Distance& getVisionRangeSquared, const VisionCuboidId& visionCuboid, const VisionCuboidSetSIMD& visionCuboids, const CuboidSet& occupied, const Distance& largestVisionRange) const;
+	visionRequestQuery(const Area& area, const Point3D& position, const Facing4& facing, const DistanceSquared& getVisionRangeSquared, const VisionCuboidId& visionCuboid, const VisionCuboidSetSIMD& visionCuboids, const CuboidSet& occupied, const Distance& largestVisionRange) const;
 	[[nodiscard]] const std::pair<const StrongVector<ActorReference, LocationBucketContentsIndex>*, Eigen::Array<bool, 1, Eigen::Dynamic>>
 	anyCanBeSeenQuery(const Area& area, const Cuboid& cuboid, const Point3DSet& points) const;
 	[[nodiscard]] const std::pair<const StrongVector<ActorReference, LocationBucketContentsIndex>*, Eigen::Array<bool, 1, Eigen::Dynamic>>
@@ -48,6 +48,6 @@ public:
 	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesWhichIntersectShape(const auto& queryShape) const;
 	[[nodiscard]] Point3D getPosition(const LocationBucketContentsIndex& index) const { return m_points[index.get()]; }
 	[[nodiscard]] VisionCuboidId getCuboidIndex(const LocationBucketContentsIndex& index) const { return VisionCuboidId::create(m_visionCuboidIndices[index.get()]); }
-	[[nodiscard]] Distance getVisionRangeSquared(const LocationBucketContentsIndex& index) const { return Distance::create(m_visionRangeSquared[index.get()]); }
+	[[nodiscard]] DistanceSquared getVisionRangeSquared(const LocationBucketContentsIndex& index) const { return DistanceSquared::create(m_visionRangeSquared[index.get()]); }
 	[[nodiscard]] Facing4 getFacing(const LocationBucketContentsIndex& index) const { return m_facing[index.get()]; }
 };

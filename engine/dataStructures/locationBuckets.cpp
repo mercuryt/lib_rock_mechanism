@@ -31,7 +31,7 @@ void LocationBucket::copyIndex(const LocationBucket& other, const LocationBucket
 	m_facing[index.get()] = other.m_facing[otherIndex.get()];
 	m_actors.add(other.m_actors[otherIndex]);
 }
-void LocationBucket::insert(const ActorReference& actor, const Point3D& coordinates, const VisionCuboidId& cuboid, const Distance& visionRangeSquared, const Facing4& facing)
+void LocationBucket::insert(const ActorReference& actor, const Point3D& coordinates, const VisionCuboidId& cuboid, const DistanceSquared& visionRangeSquared, const Facing4& facing)
 {
 	LocationBucketContentsIndex index = LocationBucketContentsIndex::create(m_actors.size());
 	if(m_actors.size() == m_actors.capacity())
@@ -49,7 +49,7 @@ void LocationBucket::remove(const ActorReference& actor)
 		while(i < m_actors.size() && m_actors[i] == actor)
 			remove(i);
 }
-void LocationBucket::updateVisionRangeSquared(const ActorReference& actor, const Point3D& coordinates, const Distance& visionRangeSquared)
+void LocationBucket::updateVisionRangeSquared(const ActorReference& actor, const Point3D& coordinates, const DistanceSquared& visionRangeSquared)
 {
 	for(auto i = LocationBucketContentsIndex::create(0); i < m_actors.size(); ++i)
 		if(m_actors[i] == actor && m_points[i.get()] == coordinates.data)
@@ -85,7 +85,7 @@ void LocationBucket::reserve(int size)
 	m_actors.reserve(size);
 }
 const std::pair<const std::vector<ActorReference>*, Eigen::Array<bool, 2, Eigen::Dynamic>>
-LocationBucket::visionRequestQuery(const Area& area, const Point3D& position, const Facing4& facing, const Distance& visionRangeSquared, const VisionCuboidId& visionCuboid, const VisionCuboidSetSIMD& visionCuboids, const CuboidSet& occupied, const Distance& largestVisionRange) const
+LocationBucket::visionRequestQuery(const Area& area, const Point3D& position, const Facing4& facing, const DistanceSquared& visionRangeSquared, const VisionCuboidId& visionCuboid, const VisionCuboidSetSIMD& visionCuboids, const CuboidSet& occupied, const Distance& largestVisionRange) const
 {
 	Sphere sphere(position, largestVisionRange.toFloat());
 	// Broad phase culling.
@@ -165,7 +165,7 @@ LocationBucket::anyCanBeSeenQuery(const Area& area, const Cuboid& cuboid, const 
 		}
 	return {&m_actors, canBeSeenBy};
 }
-Eigen::Array<bool, 2, Eigen::Dynamic> LocationBucket::canSeeAndCanBeSeenByDistanceAndFacingFilter(const Point3D& location, const Facing4& facing, const Distance& visionRangeSquared) const
+Eigen::Array<bool, 2, Eigen::Dynamic> LocationBucket::canSeeAndCanBeSeenByDistanceAndFacingFilter(const Point3D& location, const Facing4& facing, const DistanceSquared& visionRangeSquared) const
 {
 	Eigen::Array<int, 1, Eigen::Dynamic> distances = m_points.distancesSquare(location);
 	Eigen::Array<Facing4, 1, Eigen::Dynamic> truncatedFacings = m_facing.block(0, 0, 1, m_actors.size());

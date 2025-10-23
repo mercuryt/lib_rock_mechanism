@@ -31,22 +31,22 @@ void Space::fluid_spawnMist(const Point3D& point, const FluidTypeId& fluidType, 
 		return;
 	m_mist.maybeInsertOrOverwrite(point, fluidType);
 	const Distance inverseDistance = maxMistSpread != 0 ? maxMistSpread : FluidType::getMaxMistSpread(fluidType);
-	m_mistInverseDistanceFromSource.maybeInsertOrOverwrite(point, inverseDistance);
+	m_mistInverseDistanceFromSourceSquared.maybeInsertOrOverwrite(point, inverseDistance.squared());
 	MistDisperseEvent::emplace(m_area, FluidType::getMistDuration(fluidType), fluidType, point);
 }
 void Space::fluid_clearMist(const Point3D& point)
 {
 	m_mist.maybeRemove(point);
-	m_mistInverseDistanceFromSource.maybeRemove(point);
+	m_mistInverseDistanceFromSourceSquared.maybeRemove(point);
 }
 Distance Space::fluid_getMistInverseDistanceToSource(const Point3D& point) const
 {
-	return m_mistInverseDistanceFromSource.queryGetOne(point);
+	return m_mistInverseDistanceFromSourceSquared.queryGetOne(point).unsquared();
 }
 void Space::fluid_mistSetFluidTypeAndInverseDistance(const Point3D& point, const FluidTypeId& fluidType, const Distance& inverseDistance)
 {
 	m_mist.maybeInsertOrOverwrite(point, fluidType);
-	m_mistInverseDistanceFromSource.maybeInsertOrOverwrite(point, inverseDistance);
+	m_mistInverseDistanceFromSourceSquared.maybeInsertOrOverwrite(point, inverseDistance.squared());
 }
 FluidGroup* Space::fluid_getGroup(const Point3D& point, const FluidTypeId& fluidType) const
 {

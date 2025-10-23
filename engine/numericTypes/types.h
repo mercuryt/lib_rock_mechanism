@@ -164,15 +164,25 @@ public:
 inline void to_json(Json& data, const Meters& index) { data = index.get(); }
 inline void from_json(const Json& data, Meters& index) { index = Meters::create(data.get<MetersWidth>()); }
 
-//TODO: DistanceSquared, narrow Distance to 16.
 class DistanceFractional;
-using DistanceWidth = uint32_t;
-class Distance : public StrongInteger<Distance, DistanceWidth>
+class Distance;
+using DistanceSquaredWidth = int32_t;
+class DistanceSquared : public StrongInteger<DistanceSquared, DistanceSquaredWidth>
 {
 public:
-	Distance operator+=(int32_t x) { data += x; return *this; }
 	[[nodiscard]] constexpr DistanceFractional toFloat() const;
-	[[nodiscard]] constexpr Distance squared() const { return Distance::create(data * data); }
+	[[nodiscard]] constexpr Distance unsquared() const;
+	struct Hash { [[nodiscard]] size_t operator()(const DistanceSquared& index) const { return index.get(); } };
+};
+inline void to_json(Json& data, const DistanceSquared& index) { data = index.get(); }
+inline void from_json(const Json& data, DistanceSquared& index) { index = DistanceSquared::create(data.get<DistanceSquaredWidth>()); }
+
+using DistanceWidth = int16_t;
+class Distance : public StrongInteger<Distance, DistanceWidth, std::numeric_limits<DistanceWidth>::max(), 0>
+{
+public:
+	[[nodiscard]] constexpr DistanceFractional toFloat() const;
+	[[nodiscard]] constexpr DistanceSquared squared() const { return DistanceSquared::create(data * data); }
 	struct Hash { [[nodiscard]] size_t operator()(const Distance& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Distance& index) { data = index.get(); }
@@ -181,19 +191,22 @@ inline void from_json(const Json& data, Distance& index) { index = Distance::cre
 class DistanceFractional : public StrongFloat<DistanceFractional>
 {
 public:
-	DistanceFractional operator+=(float x) { data += x; return *this; }
-	[[nodiscard]] Distance toInt() const { return Distance::create(std::round(data)); }
+	[[nodiscard]] constexpr Distance toInt() const { return Distance::create(std::round(data)); }
 	struct Hash { [[nodiscard]] size_t operator()(const DistanceFractional& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const DistanceFractional& index) { data = index.get(); }
 inline void from_json(const Json& data, DistanceFractional& index) { index = DistanceFractional::create(data.get<float>()); }
+
 constexpr DistanceFractional Distance::toFloat() const { return DistanceFractional::create(data); }
+// TODO: DistanceSquaredFractional?
+constexpr DistanceFractional DistanceSquared::toFloat() const { return DistanceFractional::create(data); }
+constexpr Distance DistanceSquared::unsquared() const { return Distance::create(std::sqrt(data)); }
+
 // For use by location buckets.
 using DistanceInBucketsWidth = uint32_t;
 class DistanceInBuckets : public StrongInteger<DistanceInBuckets, DistanceInBucketsWidth>
 {
 public:
-	DistanceInBuckets operator+=(int32_t x) { data += x; return *this; }
 	struct Hash { [[nodiscard]] size_t operator()(const DistanceInBuckets& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const DistanceInBuckets& index) { data = index.get(); }
@@ -203,7 +216,6 @@ using OffsetWidth = int32_t;
 class Offset : public StrongInteger<Offset, OffsetWidth>
 {
 public:
-	Offset operator+=(int32_t x) { data += x; return *this; }
 	struct Hash { [[nodiscard]] size_t operator()(const Offset& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const Offset& index) { data = index.get(); }

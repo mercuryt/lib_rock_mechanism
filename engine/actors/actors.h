@@ -282,7 +282,7 @@ public:
 	[[nodiscard]] SmallSet<ActorReference>& vision_getCanSee(const ActorIndex& index) { return m_canSee[index]; }
 	[[nodiscard]] SmallSet<ActorReference>& vision_getCanBeSeenBy(const ActorIndex& index) { return m_canBeSeenBy[index]; }
 	[[nodiscard]] Distance vision_getRange(const ActorIndex& index) const { return m_visionRange[index]; }
-	[[nodiscard]] Distance vision_getRangeSquared(const ActorIndex& index) const { return Distance::create(pow(m_visionRange[index].get(), 2)); }
+	[[nodiscard]] DistanceSquared vision_getRangeSquared(const ActorIndex& index) const { return m_visionRange[index].squared(); }
 	[[nodiscard]] bool vision_canSeeActor(const ActorIndex& index, const ActorIndex& other) const;
 	[[nodiscard]] bool vision_canSeeAnything(const ActorIndex& index) const;
 	// -Combat.

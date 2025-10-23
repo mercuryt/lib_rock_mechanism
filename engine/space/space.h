@@ -80,7 +80,7 @@ class Space
 	FluidRTree m_fluid;
 	RTreeData<FluidTypeId> m_mist;
 	RTreeData<CollisionVolume> m_totalFluidVolume;
-	RTreeData<Distance> m_mistInverseDistanceFromSource;
+	RTreeData<DistanceSquared> m_mistInverseDistanceFromSourceSquared;
 	//TODO: store these 4 as overlaping RTree.
 	RTreeData<ActorIndex, RTreeDataConfigs::noMerge> m_actors;
 	RTreeData<ItemIndex, RTreeDataConfigs::noMerge> m_items;

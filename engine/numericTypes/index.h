@@ -61,7 +61,7 @@ class PlantIndex final : public StrongInteger<PlantIndex, uint32_t>
 public:
 	[[nodiscard]] HasShapeIndex toHasShape() const { return HasShapeIndex::create(get()); }
 	[[nodiscard]] static PlantIndex cast(const HasShapeIndex& index) { PlantIndex output; output.set(index.get()); return output; }
-	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const This& index) const { return index.get(); } };
+	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const PlantIndex& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const PlantIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, PlantIndex& index) { index = PlantIndex::create(data.get<uint32_t>()); }
@@ -78,7 +78,8 @@ public:
 inline void to_json(Json& data, const ItemIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, ItemIndex& index) { index = ItemIndex::create(data.get<uint32_t>()); }
 
-class ActorIndex final : public StrongInteger<ActorIndex, uint32_t>
+using ActorIndexWidth = uint16_t;
+class ActorIndex final : public StrongInteger<ActorIndex, ActorIndexWidth>
 {
 public:
 	[[nodiscard]] ActorOrItemIndex toActorOrItemIndex() const;
@@ -87,7 +88,7 @@ public:
 	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const ActorIndex& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const ActorIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, ActorIndex& index) { index = ActorIndex::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, ActorIndex& index) { index = ActorIndex::create(data.get<ActorIndexWidth>()); }
 
 // The offset required to lookup in one point's getAdjacentUnfiltered to find another point.
 using AdjacentIndexWidth = int8_t;
@@ -100,7 +101,7 @@ public:
 inline void to_json(Json& data, const AdjacentIndex& index) { data = index.get(); }
 inline void from_json(const Json& data, AdjacentIndex& index) { index = AdjacentIndex::create(data.get<AdjacentIndexWidth>()); }
 
-using ActorReferenceIndexWidth = uint32_t;
+using ActorReferenceIndexWidth = uint16_t;
 class ActorReferenceIndex : public StrongInteger<ActorReferenceIndex, ActorReferenceIndexWidth>
 {
 public:
