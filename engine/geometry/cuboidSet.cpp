@@ -14,6 +14,12 @@ CuboidSet CuboidSet::create(const Cuboid& cuboid)
 	output.add(cuboid);
 	return output;
 }
+CuboidSet CuboidSet::create(const Point3D& point)
+{
+	CuboidSet output;
+	output.add(point);
+	return output;
+}
 CuboidSet CuboidSet::create([[maybe_unused]]const OffsetCuboid& spaceBoundry, const Point3D& pivot, const Facing4& newFacing, const OffsetCuboidSet& cuboids)
 {
 	CuboidSet output;
@@ -25,6 +31,18 @@ CuboidSet CuboidSet::create([[maybe_unused]]const OffsetCuboid& spaceBoundry, co
 		assert(spaceBoundry.contains(offset));
 		output.add(Cuboid::create(offset));
 	}
+	return output;
+}
+OffsetCuboidSet OffsetCuboidSet::create(const OffsetCuboid& cuboid)
+{
+	OffsetCuboidSet output;
+	output.add(cuboid);
+	return output;
+}
+OffsetCuboidSet OffsetCuboidSet::create(const Offset3D& point)
+{
+	OffsetCuboidSet output;
+	output.add(point);
 	return output;
 }
 void to_json(Json& data, const CuboidSet& cuboidSet)

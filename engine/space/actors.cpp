@@ -10,7 +10,7 @@ void Space::actor_recordDynamic(const MapWithCuboidKeys<CollisionVolume>& toOccu
 	for(const auto& [cuboid, volume] : toOccupy)
 		m_actors.insert(cuboid, actor);
 	for(const auto& [cuboid, volume] : toOccupy)
-		m_dynamicVolume.updateAddAll(cuboid, volume);
+		m_dynamicVolume.updateAdd(cuboid, volume);
 }
 void Space::actor_recordStatic(const MapWithCuboidKeys<CollisionVolume>& toOccupy, const ActorIndex& actor)
 {
@@ -20,7 +20,7 @@ void Space::actor_recordStatic(const MapWithCuboidKeys<CollisionVolume>& toOccup
 	for(const auto& [cuboid, volume] : toOccupy)
 		m_actors.insert(cuboid, actor);
 	for(const auto& [cuboid, volume] : toOccupy)
-		m_staticVolume.updateAddAll(cuboid, volume);
+		m_staticVolume.updateAdd(cuboid, volume);
 }
 void Space::actor_eraseDynamic(const MapWithCuboidKeys<CollisionVolume>& toOccupy, const ActorIndex& actor)
 {
@@ -30,7 +30,7 @@ void Space::actor_eraseDynamic(const MapWithCuboidKeys<CollisionVolume>& toOccup
 	for(const auto& [cuboid, volume] : toOccupy)
 		m_actors.removeAll(cuboid, actor);
 	for(const auto& [cuboid, volume] : toOccupy)
-		m_dynamicVolume.updateSubtractAll(cuboid, volume);
+		m_dynamicVolume.updateSubtract(cuboid, volume);
 }
 void Space::actor_eraseStatic(const MapWithCuboidKeys<CollisionVolume>& toOccupy, const ActorIndex& actor)
 {
@@ -40,7 +40,7 @@ void Space::actor_eraseStatic(const MapWithCuboidKeys<CollisionVolume>& toOccupy
 	for(const auto& [cuboid, volume] : toOccupy)
 		m_actors.removeAll(cuboid, actor);
 	for(const auto& [cuboid, volume] : toOccupy)
-		m_staticVolume.updateSubtractAll(cuboid, volume);
+		m_staticVolume.updateSubtract(cuboid, volume);
 }
 void Space::actor_setTemperature(const Point3D& point, [[maybe_unused]] const Temperature& temperature)
 {

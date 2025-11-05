@@ -77,12 +77,14 @@ void DrainQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 		assert(iter->point.exists());
 		assert(iter->delta.exists());
 		assert(space.fluid_getTotalVolume(iter->point) >= iter->delta);
+		[[maybe_unused]] bool breakIf = fluidGroup.m_fluidType == 0 && fluidGroup.m_drainQueue.m_set.size() == 250 && area.m_simulation.m_step == 11 && iter->point == Point3D::create(9,4,4);
 		space.fluid_drainInternal(iter->point, iter->delta, fluidGroup.m_fluidType);
 		// Record space to set fluid groups unstable.
 		drainedFromAndAdjacent.maybeInsert(iter->point);
 		for(const Point3D& adjacent : space.getDirectlyAdjacent(iter->point))
 			if(space.fluid_canEnterEver(adjacent))
 				drainedFromAndAdjacent.maybeInsert(adjacent);
+		fluidGroup.validate(area);
 	}
 	// Set fluidGroups unstable.
 	// TODO: Would it be better to prevent fluid groups from becoming stable while in contact with another group? Either option seems bad.

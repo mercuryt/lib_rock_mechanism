@@ -360,6 +360,8 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	[[nodiscard]] CuboidSet fluid_queryGetCuboids(const Cuboid& shape) const;
 	[[nodiscard]] CuboidSet fluid_queryGetCuboidsWithCondition(const auto& shape, const auto& condition) const { return m_fluid.queryGetAllCuboidsWithCondition(shape, condition); }
 	[[nodiscard]] Point3D fluid_queryGetPointWithCondition(const auto& shape, const auto& condition) const { return m_fluid.queryGetOnePointWithCondition(shape, condition); }
+	__attribute__((noinline)) void fluid_validateTotalForPoint(const Point3D& point) const;
+	__attribute__((noinline)) void fluid_validateAllTotals() const;
 	// Floating
 	void floating_maybeSink(const Point3D& point);
 	void floating_maybeFloatUp(const Point3D& point);

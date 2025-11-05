@@ -646,6 +646,7 @@ void FluidGroup::validate(Area& area) const
 	assert(area.m_hasFluidGroups.contains(*this));
 	if(m_merged || m_destroy || m_disolved)
 		return;
+	const Space& space = area.getSpace();
 	for(const Point3D& point : m_drainQueue.m_set)
 	{
 		assert(point.exists());
@@ -656,6 +657,7 @@ void FluidGroup::validate(Area& area) const
 			assert(fluidData.group->m_fluidType == fluidData.type);
 			assert(fluidData.group->m_drainQueue.m_set.contains(point));
 		}
+		space.fluid_validateTotalForPoint(point);
 	}
 }
 void FluidGroup::validate(Area& area, [[maybe_unused]] SmallSet<FluidGroup*> toErase) const

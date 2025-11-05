@@ -546,20 +546,20 @@ bool Space::shape_canStandIn(const Point3D& point) const
 void Space::shape_addStaticVolume(const MapWithCuboidKeys<CollisionVolume>& cuboidsAndVolumes)
 {
 	for(const auto& [cuboid, volume] : cuboidsAndVolumes)
-		m_staticVolume.updateAddAll(cuboid, volume);
+		m_staticVolume.updateAdd(cuboid, volume);
 }
 void Space::shape_removeStaticVolume(const MapWithCuboidKeys<CollisionVolume>& cuboidsAndVolumes)
 {
 	for(const auto& [cuboid, volume] : cuboidsAndVolumes)
-		m_staticVolume.updateSubtractAll(cuboid, volume);
+		m_staticVolume.updateSubtract(cuboid, volume);
 }
 void Space::shape_addDynamicVolume(const MapWithCuboidKeys<CollisionVolume>& cuboidsAndVolumes)
 {
 	for(const auto& [cuboid, volume] : cuboidsAndVolumes)
-		m_dynamicVolume.updateAddAll(cuboid, volume);
+		m_dynamicVolume.updateAdd(cuboid, volume);
 }
 void Space::shape_removeDynamicVolume(const MapWithCuboidKeys<CollisionVolume>& cuboidsAndVolumes)
 {
 	for(const auto& [cuboid, volume] : cuboidsAndVolumes)
-		m_dynamicVolume.updateSubtractAll(cuboid, volume);
+		m_dynamicVolume.updateSubtract(cuboid, volume);
 }

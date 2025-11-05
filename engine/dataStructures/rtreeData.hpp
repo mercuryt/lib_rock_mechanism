@@ -1,5 +1,6 @@
 #pragma once
 #include "rtreeData.h"
+#include "../geometry/mapWithCuboidKeys.hpp"
 template<Sortable T, RTreeDataConfig config>
 RTreeArrayIndex RTreeData<T, config>::Node::offsetFor(const RTreeNodeIndex& index) const
 {
@@ -643,6 +644,26 @@ void RTreeData<T, config>::removeFromNodeByMask(Node& node, const Eigen::Array<b
 		node.eraseByMask(mask);
 }
 template<Sortable T, RTreeDataConfig config>
+void RTreeData<T, config>::updateBoundriesMaybe(const SmallSet<RTreeNodeIndex>& nodeIndices)
+{
+	for(const RTreeNodeIndex& index : nodeIndices)
+	{
+		assert(index != 0);
+		Node& node = m_nodes[index];
+		const RTreeNodeIndex parentIndex = node.getParent();
+		Node& parent = m_nodes[parentIndex];
+		const RTreeArrayIndex offset = parent.offsetFor(index);
+		if(node.empty())
+		{
+			parent.eraseBranch(offset);
+			m_toComb.maybeInsert(parentIndex);
+			m_emptySlots.insert(index);
+		}
+		else
+			parent.updateBranchBoundry(offset, node.getCuboids().boundry());
+	}
+}
+template<Sortable T, RTreeDataConfig config>
 void RTreeData<T, config>::merge(const RTreeNodeIndex& destination, const RTreeNodeIndex& source)
 {
 	// TODO: maybe leave source nodes intact instead of striping out leaves?
@@ -843,7 +864,9 @@ void RTreeData<T, config>::maybeInsert(const Cuboid& cuboid, const T& value)
 		for(const T& v : queryGetAll(cuboid))
 			assert(canOverlap(v, value));
 	constexpr RTreeNodeIndex zeroIndex = RTreeNodeIndex::create(0);
+	[[maybe_unused]] bool breakIf = cuboid.volume() == 1 && cuboid.m_high == Point3D::create(20, 1, 1);
 	addToNodeRecursive(zeroIndex, cuboid, value);
+	validate();
 }
 template<Sortable T, RTreeDataConfig config>
 void RTreeData<T, config>::maybeRemove(const Cuboid& cuboid)
@@ -854,6 +877,7 @@ void RTreeData<T, config>::maybeRemove(const Cuboid& cuboid)
 	if constexpr (!config.leavesCanOverlap && !config.splitAndMerge)
 	{
 		assert(!queryAny(cuboid));
+		validate();
 		return;
 	}
 	SmallSet<RTreeNodeIndex> openList;
@@ -867,21 +891,8 @@ void RTreeData<T, config>::maybeRemove(const Cuboid& cuboid)
 		if(index != 0)
 			toUpdateBoundryMaybe.maybeInsert(index);
 	}
-	for(const RTreeNodeIndex& index : toUpdateBoundryMaybe)
-	{
-		Node& node = m_nodes[index];
-		const RTreeNodeIndex parentIndex = node.getParent();
-		Node& parent = m_nodes[parentIndex];
-		const RTreeArrayIndex offset = parent.offsetFor(index);
-		if(node.empty())
-		{
-			parent.eraseBranch(offset);
-			m_toComb.maybeInsert(parentIndex);
-			m_emptySlots.insert(index);
-		}
-		else
-			parent.updateBranchBoundry(offset, node.getCuboids().boundry());
-	}
+	updateBoundriesMaybe(toUpdateBoundryMaybe);
+	validate();
 }
 template<Sortable T, RTreeDataConfig config>
 void RTreeData<T, config>::maybeRemove(const CuboidSet& cuboids)
@@ -911,24 +922,12 @@ void RTreeData<T, config>::maybeRemove(const Cuboid& cuboid, const T& value)
 		auto index = openList.back();
 		openList.popBack();
 		removeFromNodeWithValue(index, cuboid, openList, value);
+		//TODO: Check if cuboid is touching the boundry of the node at index from the inside. If not then no need to update the boundry.
 		if(index != 0)
 			toUpdateBoundryMaybe.maybeInsert(index);
 	}
-	for(const RTreeNodeIndex& index : toUpdateBoundryMaybe)
-	{
-		Node& node = m_nodes[index];
-		const RTreeNodeIndex parentIndex = node.getParent();
-		Node& parent = m_nodes[parentIndex];
-		const RTreeArrayIndex offset = parent.offsetFor(index);
-		if(node.empty())
-		{
-			parent.eraseBranch(offset);
-			m_toComb.maybeInsert(parentIndex);
-			m_emptySlots.insert(index);
-		}
-		else
-			parent.updateBranchBoundry(offset, node.getCuboids().boundry());
-	}
+	updateBoundriesMaybe(toUpdateBoundryMaybe);
+	validate();
 }
 template<Sortable T, RTreeDataConfig config>
 void RTreeData<T, config>::maybeInsertOrOverwrite(const Cuboid& cuboid, const T& value)
@@ -955,6 +954,7 @@ void RTreeData<T, config>::prepare()
 	}
 	if(toSort)
 		sort();
+	validate();
 }
 template<Sortable T, RTreeDataConfig config>
 void RTreeData<T, config>::clear()
@@ -965,7 +965,7 @@ void RTreeData<T, config>::clear()
 	m_toComb.clear();
 }
 template<Sortable T, RTreeDataConfig config>
-bool RTreeData<T, config>::anyLeafOverlapsAnother()
+bool RTreeData<T, config>::anyLeafOverlapsAnother() const
 {
 	CuboidSet seen;
 	for(const Cuboid& cuboid : getLeafCuboids())
@@ -999,6 +999,32 @@ CuboidSet RTreeData<T, config>::getLeafCuboids() const
 			output.add(cuboids[i]);
 	}
 	return output;
+}
+template<Sortable T, RTreeDataConfig config>
+void RTreeData<T, config>::validate() const
+{
+	for(RTreeNodeIndex index = RTreeNodeIndex::create(0); index < m_nodes.size(); ++index)
+	{
+		const Node& node = m_nodes[index];
+		const auto cuboids = node.getCuboids();
+		// Check that cuboid recorded in parent matches boundry of cuboids recorded in child.
+		if(index != 0)
+		{
+			if(m_emptySlots.contains(index))
+				continue;
+			const Node& parent = m_nodes[node.getParent()];
+			const RTreeArrayIndex offset = parent.offsetFor(index);
+			const auto& parentCuboids = parent.getCuboids();
+			assert(parentCuboids[offset.get()] == cuboids.boundry());
+		}
+		// Check that leaves don't overlap unless allowed.
+		if constexpr(!config.leavesCanOverlap)
+		{
+			const auto leafCount = node.getLeafCount();
+			for(uint i = 0; i < leafCount; ++i)
+				assert(queryCount(cuboids[i]) == 1);
+		}
+	}
 }
 template<Sortable T, RTreeDataConfig config>
 void RTreeData<T, config>::load(const Json& data)

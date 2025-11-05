@@ -91,6 +91,9 @@ public:
 	[[nodiscard]] bool isIntersectingOrAdjacentTo(const CuboidType& cuboid) const;
 	[[nodiscard]] __attribute__((noinline)) std::string toString() const;
 	[[nodiscard]] static CuboidSetType create(const SmallSet<PointType>& space);
+	[[nodiscard]] static CuboidSetType create(const CuboidSetType& set);
+	[[nodiscard]] static CuboidSetType create(const CuboidType& cuboid);
+	[[nodiscard]] static CuboidSetType create(const PointType& point);
 	friend struct CuboidSetConstIterator;
 	friend struct CuboidSetConstView;
 };
@@ -98,9 +101,14 @@ public:
 struct CuboidSet : public CuboidSetBase<Cuboid, Point3D, CuboidSet>
 {
 	[[nodiscard]] static CuboidSet create(const Cuboid& cuboid);
+	[[nodiscard]] static CuboidSet create(const Point3D& point);
 	[[nodiscard]] static CuboidSet create([[maybe_unused]]const OffsetCuboid& spaceBoundry, const Point3D& pivot, const Facing4& newFacing, const OffsetCuboidSet& cuboids);
 };
-struct OffsetCuboidSet final : public CuboidSetBase<OffsetCuboid, Offset3D, OffsetCuboidSet> { };
+struct OffsetCuboidSet final : public CuboidSetBase<OffsetCuboid, Offset3D, OffsetCuboidSet>
+{
+	[[nodiscard]] static OffsetCuboidSet create(const OffsetCuboid& cuboid);
+	[[nodiscard]] static OffsetCuboidSet create(const Offset3D& point);
+};
 
 void to_json(Json& data, const CuboidSet& cuboidSet);
 void from_json(const Json& data, CuboidSet& cuboidSet);

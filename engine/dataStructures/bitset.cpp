@@ -2,6 +2,6 @@
 
 #include <cstdint>
 
-template struct BitSet<uint8_t, 3>; // For Point feature.
-template struct BitSet<uint32_t, 26>; // For enterable.
-template struct BitSet<uint64_t, 64>; // For rtree.
+template struct BitSet<uint8_t, 3u>; // For Point feature.
+template struct BitSet<uint32_t, 26u>; // For enterable.
+template struct BitSet<uint64_t, 64u>; // For rtree.

@@ -56,6 +56,11 @@ Cuboid CuboidArray<capacity>::boundry() const
 	};
 }
 template<uint16_t capacity>
+bool CuboidArray<capacity>::intersects(const Cuboid& cuboid) const
+{
+	return indicesOfIntersectingCuboids(cuboid).any();
+}
+template<uint16_t capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboids(const Point3D& point) const
 {
 	return (
@@ -434,6 +439,18 @@ uint16_t CuboidArray<capacity>::indexOfCuboid(const Cuboid& cuboid)
 		if(match.coeff(i))
 			return i;
 	std::unreachable();
+}
+template<uint16_t capacity>
+bool CuboidArray<capacity>::anyOverlap() const
+{
+	const auto& beginCuboids = begin();
+	const auto& endCuboids = end();
+	const auto oneBeforeEnd = endCuboids - 1;
+	for(auto outer = beginCuboids; outer != oneBeforeEnd; ++outer)
+		for(auto inner = outer + 1; inner != endCuboids; ++inner)
+			if((*outer) != (*inner) && (*outer).intersects(*inner))
+				return true;
+	return false;
 }
 template<uint16_t capacity>
 std::string CuboidArray<capacity>::toString() const

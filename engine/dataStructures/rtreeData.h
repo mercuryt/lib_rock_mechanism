@@ -2,6 +2,7 @@
 #include "../geometry/cuboid.h"
 #include "../geometry/cuboidArray.h"
 #include "../geometry/cuboidSet.h"
+#include "../geometry/mapWithCuboidKeys.h"
 #include "../strongInteger.h"
 #include "../json.h"
 #include "../numericTypes/index.h"
@@ -92,6 +93,7 @@ class RTreeData
 	void removeFromNode(const RTreeNodeIndex& index, const Cuboid& cuboid, SmallSet<RTreeNodeIndex>& openList);
 	void removeFromNodeWithValue(const RTreeNodeIndex& index, const Cuboid& cuboid, SmallSet<RTreeNodeIndex>& openList, const T& value);
 	void removeFromNodeByMask(Node& node, const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
+	void updateBoundriesMaybe(const SmallSet<RTreeNodeIndex>& indices);
 	void merge(const RTreeNodeIndex& destination, const RTreeNodeIndex& source);
 	// Iterate m_toComb and try to recursively merge leaves.
 	// Then check for single child nodes and splice them out. If the child is a leaf re-add the parent to m_toComb.
@@ -116,23 +118,40 @@ public:
 	void maybeRemove(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid); }
 	void maybeInsertOrOverwrite(const Point3D& point, const T& value);
 	void maybeInsertOrOverwrite(const Cuboid& cuboid, const T& value);
-	void insert(const auto& shape, const T& value) { assert(!queryAnyEqual(shape, value)); maybeInsert(shape, value); }
-	void remove(const auto& shape, const T& value) { assert(queryAnyEqual(shape, value)); maybeRemove(shape, value); }
+	void insert(const auto& shape, const T& value)
+	{
+		if constexpr(config.leavesCanOverlap)
+			assert(!queryAnyEqual(shape, value));
+		else
+			assert(!queryAny(shape));
+		maybeInsert(shape, value);
+	}
+	void remove(const auto& shape, const T& value)
+	{
+		assert(queryAnyEqual(shape, value));
+		maybeRemove(shape, value);
+	}
 	void removeAll(const auto& shape, const T& value) { assert(queryAnyEqual(shape, value)); maybeRemove(shape, value); }
 	void removeAll(const auto& shape) { assert(queryAny(shape)); maybeRemove(shape); }
 	void prepare();
 	void clear();
 	[[nodiscard]] bool empty() const { return leafCount() == 0; }
-	[[nodiscard]] __attribute__((noinline)) bool anyLeafOverlapsAnother();
+	[[nodiscard]] __attribute__((noinline)) bool anyLeafOverlapsAnother() const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] CuboidSet getLeafCuboids() const;
 	void load(const Json& data);
+	void validate() const;
+	void removeWithCondition(const auto& shape, const auto& condition)
+	{
+		const auto action = [](T& otherData) { otherData.clear(); };
+		updateOrDestroyActionWithConditionAll(shape, action, condition);
+	}
 	void maybeRemoveWithConditionOne(const auto& shape, const auto& condition)
 	{
 		const auto action = [](T& otherData) { otherData.clear(); };
 		maybeUpdateOrDestroyActionWithConditionOne(shape, action, condition);
 	}
-	bool queryAnyEqual(const auto& shape, const T& value) const
+	[[nodiscard]] bool queryAnyEqual(const auto& shape, const T& value) const
 	{
 		const auto condition = [&](const T& v) { return value == v; };
 		return queryAnyWithCondition(shape, condition);
@@ -145,150 +164,30 @@ public:
 		bool allowNotFound = false;
 		bool allowNotChanged = false;
 		bool allowAlreadyExistsInAnotherSlot = false;
-		bool applyToEmptySpace = false;
 	};
 	template<UpdateActionConfig queryConfig>
 	void updateAction(const auto& shape, auto&& action, const T& nullValue = T())
 	{
 		// stopAfterOne is only safe to use for non-overlaping leaves, otherwise the result would be hard to predict.
 		if(queryConfig.stopAfterOne)
-			assert(!config.leavesCanOverlap);
-		// Both create and applyToEmpty would be redundant.
-		assert(queryConfig.applyToEmptySpace + queryConfig.create < 2);
-		[[maybe_unused]] CuboidSet emptySpaceInShape = CuboidSet::create(shape.boundry());
-		SmallSet<RTreeNodeIndex> openList;
-		openList.insert(RTreeNodeIndex::create(0));
-		bool updated = false;
-		while(!openList.empty())
-		{
-			auto index = openList.back();
-			openList.popBack();
-			Node& node = m_nodes[index];
-			const auto& nodeCuboids = node.getCuboids();
-			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
-			if(!interceptMask.any())
-				continue;
-			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			const auto& leafCount = node.getLeafCount();
-			const auto& begin = interceptMask.begin();
-			const auto leafEnd = begin + leafCount;
-			// Erasing leafs durring iteration would invalidate the intercept mask. Collect and then erase all at end.
-			BitSet<uint64_t, nodeSize> leavesToErase;
-			if(interceptMask.head(leafCount).any())
-			{
-				for(auto iter = begin; iter != leafEnd; ++iter)
-					if(*iter)
-					{
-						uint8_t offset = iter - begin;
-						Cuboid leafCuboid = nodeCuboids[offset];
-						if constexpr(queryConfig.applyToEmptySpace)
-							emptySpaceInShape.remove(leafCuboid.intersection(shape));
-						// inflate from primitive temporarily for callback.
-						T initalValue = T::create(nodeDataAndChildIndices[offset].data);
-						assert(initalValue != nullValue && initalValue != m_nullValue);
-						T value = initalValue;
-						action(value);
-						if constexpr(queryConfig.allowAlreadyExistsInAnotherSlot)
-						{
-							if(node.containsLeaf(leafCuboid, value))
-								return;
-						}
-						else
-							assert(!node.containsLeaf(leafCuboid, value));
-						// When nullValue is specificed it will probably always be 0.
-						// This is distinct from m_nullValue which will usually be the largest integer T can store.
-						// If nullValue is not provided these checks become redundant and the compiler will remove one.
-						if(value == nullValue || value == m_nullValue)
-						{
-							// Destroy updated leaf.
-							assert(queryConfig.destroy);
-							if constexpr(queryConfig.stopAfterOne)
-								node.eraseLeaf(RTreeArrayIndex::create(offset));
-							else
-								leavesToErase.set(offset);
-						}
-						else
-						{
-							// Update leaf.
-							const Cuboid intersection = leafCuboid.intersection((shape));
-							if constexpr(queryConfig.allowNotChanged)
-								node.maybeUpdateLeafWithValue(RTreeArrayIndex::create(offset), intersection, value);
-							else
-								node.updateLeafWithValue(RTreeArrayIndex::create(offset), intersection, value);
-							// Validate any overlaps.
-							if constexpr(!config.leavesCanOverlap)
-								assert(queryCount(intersection) == 1);
-							else
-							{
-								const auto valuesAndCuboids = queryGetAllWithCuboids(intersection);
-								bool newlyCreatedFound = false;
-								for(const auto& [cuboid, v] : valuesAndCuboids)
-								{
-									if(cuboid == intersection && v == value)
-									{
-										assert(!newlyCreatedFound);
-										newlyCreatedFound = true;
-										continue;
-									}
-									assert(canOverlap(v, value));
-								}
-							}
-						}
-						if(!shape.contains(leafCuboid))
-						{
-							// The leaf cuboid is intercepted but not contained, fragment the unintercepted parts and re add them with the inital value.
-							assert(config.splitAndMerge);
-							const auto fragments = leafCuboid.getChildrenWhenSplitBy(shape);
-							// Re-add fragments.
-							const auto fragmentsEnd = fragments.end();
-							for(auto i = fragments.begin(); i != fragmentsEnd; ++i)
-								addToNodeRecursive(index, *i, initalValue);
-						}
-						if constexpr(queryConfig.stopAfterOne)
-							return;
-						else
-							updated = true;
-					}
-				if constexpr(queryConfig.destroy)
-					if(leavesToErase.any())
-					{
-						assert(!queryConfig.stopAfterOne);
-						node.eraseLeavesByMask(leavesToErase);
-					}
-			}
-			addIntersectedChildrenToOpenList(node, interceptMask, openList);
-		}
-		if(!updated)
-		{
-			if constexpr(queryConfig.create)
-			{
-				T value = nullValue;
-				action(value);
-				assert(value != m_nullValue && value != nullValue);
-				maybeInsert(shape, value);
-			}
-			else if constexpr(queryConfig.applyToEmptySpace)
-			{
-				T value = nullValue;
-				action(value);
-				assert(value != m_nullValue && value != nullValue);
-				for(const Cuboid& cuboid : emptySpaceInShape)
-					maybeInsert(cuboid, value);
-			}
-			else if constexpr(!queryConfig.allowNotFound)
-			{
-				// Nothing found to update
-				assert(false);
-				std::unreachable();
-			}
-		}
+			assert(!config.leavesCanOverlap && !config.splitAndMerge);
+		auto condition = [](const T&){ return true; };
+		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
 	}
 	template<UpdateActionConfig queryConfig>
 	void updateActionWithCondition(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
 	{
 		SmallSet<RTreeNodeIndex> openList;
 		openList.insert(RTreeNodeIndex::create(0));
-		bool updated = false;
+		bool found = false;
+		// Track space which was not updated. If queryConfig.create is true then fill this space in at the end with the result of action(nullValue).
+		[[maybe_unused]] CuboidSet emptySpaceInShape;
+		if constexpr(queryConfig.create)
+			emptySpaceInShape = CuboidSet::create(shape);
+		// An action may cause a leaf to be shrunk or destroyed. Collect all nodes where this happens so we can correct their boundries.
+		SmallSet<RTreeNodeIndex> toUpdateBoundryMaybe;
+		// When a leaf is shrunk or destroyed it may generate fragments. Collect thes to readd at end.
+		MapWithCuboidKeys<T> fragmentsToReAdd;
 		while(!openList.empty())
 		{
 			auto index = openList.back();
@@ -302,10 +201,12 @@ public:
 			const uint8_t& leafCount = node.getLeafCount();
 			if(interceptMask.head(leafCount).any())
 			{
+				// Iterate the leaf segment of intercept mask.
 				const auto begin = interceptMask.begin();
 				const auto leafEnd = begin + leafCount;
 				BitSet<uint64_t, nodeSize> leavesToErase;
 				for(auto iter = begin; iter != leafEnd; ++iter)
+				{
 					if(*iter)
 					{
 						uint8_t offset = iter - begin;
@@ -317,80 +218,89 @@ public:
 						if(!condition(value))
 							continue;
 						action(value);
-						// When nullValue is specificed it will probably always be 0.
-						// This is distinct from m_nullValue which will usually be the largest integer T can store.
-						// If nullValue is not provided these checks become redundant and the compiler will remove one.
-						if(value == nullValue || value == m_nullValue)
+						// Note space where action has been applied so we can create into empty space later.
+						if constexpr(queryConfig.create)
+							emptySpaceInShape.remove(leafCuboid.intersection(shape));
+						found = true;
+						if(value == initalValue)
 						{
-							assert(queryConfig.destroy);
-							if constexpr (queryConfig.stopAfterOne)
-								node.eraseLeaf(RTreeArrayIndex::create(offset));
-							else
-								leavesToErase.set(offset);
+							// Action did not change the value.
+							assert(queryConfig.allowNotChanged);
+							continue;
 						}
-						else
+						if(shape.contains(leafCuboid))
 						{
-							Cuboid intersection = leafCuboid.intersection((shape));
-							if constexpr(queryConfig.allowNotChanged)
-								node.maybeUpdateLeafWithValue(RTreeArrayIndex::create(offset), intersection, value);
-							else
-								node.updateLeafWithValue(RTreeArrayIndex::create(offset), intersection, value);
-							// Validate any overlaps.
-							if constexpr(!config.leavesCanOverlap)
-								assert(queryCount(intersection) == 1);
+							// When nullValue is specificed it will probably always be 0.
+							// This is distinct from m_nullValue which will usually be the largest integer T can store.
+							// If nullValue is not provided these checks become redundant and the compiler will remove one.
+							if(value == nullValue || value == m_nullValue)
+							{
+								// Action changed value to null.
+								assert(queryConfig.destroy);
+								leavesToErase.set(offset);
+								if(index != 0)
+									toUpdateBoundryMaybe.maybeInsert(index);
+							}
 							else
 							{
-								const auto valuesAndCuboids = queryGetAllWithCuboids(intersection);
-								bool newlyCreatedFound = false;
-								for(const auto& [cuboid, v] : valuesAndCuboids)
-								{
-									if(cuboid == intersection && v == value)
-									{
-										assert(!newlyCreatedFound);
-										newlyCreatedFound = true;
-										continue;
-									}
-									assert(canOverlap(v, value));
-								}
+								// Update value without changing geometry.
+								node.updateValue(RTreeArrayIndex::create(offset), value);
 							}
 						}
-						if(!shape.contains(leafCuboid))
+						else
 						{
-							const auto fragments = leafCuboid.getChildrenWhenSplitBy(shape);
-							// Re-add fragments.
-							const auto fragmentsEnd = fragments.end();
-							for(auto i = fragments.begin(); i != fragmentsEnd; ++i)
-								addToNodeRecursive(index, *i, initalValue);
+							// Shape does not contain leaf. Record fragments and note index for boundry update.
+							if(index != 0)
+								toUpdateBoundryMaybe.maybeInsert(index);
+							for(const Cuboid& cuboid : leafCuboid.getChildrenWhenSplitBy(shape))
+								fragmentsToReAdd.insert(cuboid, initalValue);
+							if(value == nullValue || value == m_nullValue)
+							{
+								// Action changed value to null.
+								assert(queryConfig.destroy);
+								leavesToErase.set(offset);
+							}
+							else
+							{
+								// Update leaf value and cuboid.
+								node.updateLeafWithValue(RTreeArrayIndex::create(offset), leafCuboid.intersection(shape),  value);
+							}
 						}
 						if constexpr(queryConfig.stopAfterOne)
-							return;
-						else
-							updated = true;
+							break;
 					}
+				}
 				if constexpr(queryConfig.destroy)
 					if(leavesToErase.any())
 					{
-						assert(!queryConfig.stopAfterOne);
 						node.eraseLeavesByMask(leavesToErase);
 					}
+				//
+				if constexpr(queryConfig.stopAfterOne)
+					if(found)
+						break;
 			}
 			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 		}
-		if(!updated)
+		// Repair any boundries altered by destroying or shrinking leaves.
+		updateBoundriesMaybe(toUpdateBoundryMaybe);
+		validate();
+		// ReAdd fragments created by destroying or shrinking leaves.
+		for(const auto& [cuboid, value] : fragmentsToReAdd)
+			insert(cuboid, value);
+		if constexpr(queryConfig.create)
 		{
-			if constexpr(queryConfig.create)
-			{
-				T value = nullValue;
-				action(value);
-				assert(value != m_nullValue && value != nullValue);
-				maybeInsert(shape, value);
-			}
-			else if constexpr (!queryConfig.allowNotFound)
-			{
-				// Nothing found to update
-				assert(false);
-				std::unreachable();
-			}
+			// Create new leaves in the space within shape where no leaf currently exists.
+			T value = nullValue;
+			action(value);
+			assert(value != m_nullValue && value != nullValue);
+			insert(emptySpaceInShape, value);
+		}
+		else if(!found && !queryConfig.allowNotFound)
+		{
+			// Nothing found to update
+			assert(false);
+			std::unreachable();
 		}
 	}
 	// Change a value.
@@ -435,9 +345,19 @@ public:
 		constexpr UpdateActionConfig queryConfig{.allowNotFound = true};
 		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
 	}
+	void updateOrDestroyActionWithConditionAll(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	{
+		constexpr UpdateActionConfig queryConfig{.destroy = true, .allowNotFound = true};
+		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+	}
 	void updateOrCreateActionWithConditionOne(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
 	{
 		constexpr UpdateActionConfig queryConfig{.create = true, .stopAfterOne = true};
+		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+	}
+	void updateOrCreateActionWithConditionAll(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	{
+		constexpr UpdateActionConfig queryConfig{.create = true};
 		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
 	}
 	void updateOrDestroyActionWithConditionOne(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
@@ -461,28 +381,19 @@ public:
 		constexpr UpdateActionConfig queryConfig{.stopAfterOne = true, .allowNotChanged = true};
 		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
 	}
-	T updateAddOne(const auto& shape, const T& value)
+	void updateActionWithConditionAllAllowNotChanged(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	{
+		constexpr UpdateActionConfig queryConfig{.stopAfterOne = true};
+		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+	}
+	T updateAdd(const auto& shape, const T& value)
 	{
 		T output;
-		constexpr UpdateActionConfig queryConfig{.stopAfterOne = true, .applyToEmptySpace = true};
+		constexpr UpdateActionConfig queryConfig{.create = true};
 		updateAction<queryConfig>(shape, [&](T& v){ v += value; output = v; }, T::create(0));
 		return output;
 	}
-	T updateSubtractOne(const auto& shape, const T& value)
-	{
-		T output;
-		constexpr UpdateActionConfig queryConfig{.destroy = true, .stopAfterOne = true};
-		updateAction<queryConfig>(shape, [&](T& v){ v -= value; output = v; }, T::create(0));
-		return output;
-	}
-	T updateAddAll(const auto& shape, const T& value)
-	{
-		T output;
-		constexpr UpdateActionConfig queryConfig{.applyToEmptySpace = true};
-		updateAction<queryConfig>(shape, [&](T& v){ v += value; output = v; }, T::create(0));
-		return output;
-	}
-	T updateSubtractAll(const auto& shape, const T& value)
+	T updateSubtract(const auto& shape, const T& value)
 	{
 		T output;
 		constexpr UpdateActionConfig queryConfig{.destroy = true};

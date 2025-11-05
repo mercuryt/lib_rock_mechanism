@@ -33,6 +33,7 @@ public:
 	[[nodiscard]] uint16_t getCapacity() const;
 	[[nodiscard]] const Cuboid operator[](const uint16_t& index) const;
 	[[nodiscard]] Cuboid boundry() const;
+	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
 	[[nodiscard]] BoolArray indicesOfIntersectingCuboids(const Point3D& point) const;
 	[[nodiscard]] BoolArray indicesOfIntersectingCuboids(const Cuboid& cuboid) const;
 	[[nodiscard]] BoolArray indicesOfIntersectingCuboids(const CuboidSet& cuboids) const;
@@ -53,6 +54,7 @@ public:
 	[[nodiscard]] BoolArray indicesOfTouchingCuboids(const Cuboid& cuboid) const;
 	[[nodiscard]] BoolArray indicesOfTouchingCuboids(const CuboidSet& cuboids) const;
 	[[nodiscard]] uint16_t indexOfCuboid(const Cuboid& cuboid);
+	[[nodiscard]] bool anyOverlap() const;
 	[[nodiscard]] __attribute__((noinline)) std::string toString() const;
 	[[nodiscard]] __attribute__((noinline)) Cuboid at(uint16_t i) const;
 	[[nodiscard]] __attribute__((noinline)) bool contains(const Cuboid& cuboid) const;
@@ -75,12 +77,16 @@ public:
 		ConstIterator(const CuboidArray& set, const uint16_t& index) : m_set(set), m_index(index) { }
 		ConstIterator operator++() { ++m_index; return *this; }
 		[[nodiscard]] ConstIterator operator++(int) { auto output = *this; ++(*this); return output; }
+		ConstIterator operator--() { assert(m_index > 0); --m_index; return *this; }
+		[[nodiscard]] ConstIterator operator--(int) { auto output = *this; --(*this); return output; }
 		[[nodiscard]] Cuboid operator*() const { return m_set[m_index]; }
-		[[nodiscard]] bool operator==(const ConstIterator& other) { assert(&m_set == &other.m_set); return m_index == other.m_index; }
-		[[nodiscard]] bool operator!=(const ConstIterator& other) { assert(&m_set == &other.m_set); return m_index != other.m_index; }
-		[[nodiscard]] uint16_t operator-(const ConstIterator& other) { assert(&m_set == &other.m_set); assert(m_index >= other.m_index); return m_index - other.m_index; }
-		[[nodiscard]] uint16_t operator+(const ConstIterator& other) { assert(&m_set == &other.m_set); return m_index + other.m_index; }
-		[[nodiscard]] std::strong_ordering operator<=>(const ConstIterator& other) { assert(&m_set == &other.m_set); return m_index <=> other.m_index; }
+		[[nodiscard]] bool operator==(const ConstIterator& other) const { assert(&m_set == &other.m_set); return m_index == other.m_index; }
+		[[nodiscard]] bool operator!=(const ConstIterator& other) const { assert(&m_set == &other.m_set); return m_index != other.m_index; }
+		[[nodiscard]] ConstIterator operator-(const ConstIterator& other) const { assert(&m_set == &other.m_set); return (*this) - other.m_index; }
+		[[nodiscard]] ConstIterator operator+(const ConstIterator& other) const { assert(&m_set == &other.m_set); return (*this) + other.m_index; }
+		[[nodiscard]] ConstIterator operator-(const uint16_t& value) const { assert(m_index >= value); auto copy = *this; copy.m_index -= value; return copy; }
+		[[nodiscard]] ConstIterator operator+(const uint16_t& value) const { auto copy = *this; copy.m_index += value; return copy; }
+		[[nodiscard]] std::strong_ordering operator<=>(const ConstIterator& other) const { assert(&m_set == &other.m_set); return m_index <=> other.m_index; }
 	};
 	ConstIterator begin() const { return ConstIterator(*this, 0); }
 	ConstIterator end() const { return ConstIterator(*this, capacity); }

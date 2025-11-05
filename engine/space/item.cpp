@@ -23,7 +23,7 @@ void Space::item_recordStatic(const MapWithCuboidKeys<CollisionVolume>& mapWithC
 		m_items.insert(pair.first, item);
 	// Iterate twice for cache locality.
 	for(const auto& pair : mapWithCuboidKeys)
-		m_staticVolume.updateAddAll(pair.first, pair.second);
+		m_staticVolume.updateAdd(pair.first, pair.second);
 }
 void Space::item_recordDynamic(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKeys, const ItemIndex& item)
 {
@@ -32,7 +32,7 @@ void Space::item_recordDynamic(const MapWithCuboidKeys<CollisionVolume>& mapWith
 	for(const auto& pair : mapWithCuboidKeys)
 		m_items.insert(pair.first, item);
 	for(const auto& pair : mapWithCuboidKeys)
-		m_dynamicVolume.updateAddAll(pair.first, pair.second);
+		m_dynamicVolume.updateAdd(pair.first, pair.second);
 }
 void Space::item_erase(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKeys, const ItemIndex& item)
 {
@@ -49,7 +49,7 @@ void Space::item_eraseDynamic(const MapWithCuboidKeys<CollisionVolume>& mapWithC
 	for(const auto& pair : mapWithCuboidKeys)
 	{
 		m_items.remove(pair.first, item);
-		m_dynamicVolume.updateSubtractAll(pair.first, pair.second);
+		m_dynamicVolume.updateSubtract(pair.first, pair.second);
 	}
 }
 void Space::item_eraseStatic(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKeys, const ItemIndex& item)
@@ -59,7 +59,7 @@ void Space::item_eraseStatic(const MapWithCuboidKeys<CollisionVolume>& mapWithCu
 	for(const auto& pair : mapWithCuboidKeys)
 		m_items.remove(pair.first, item);
 	for(const auto& pair : mapWithCuboidKeys)
-		m_staticVolume.updateSubtractAll(pair.first, pair.second);
+		m_staticVolume.updateSubtract(pair.first, pair.second);
 }
 void Space::item_setTemperature(const Point3D& point, const Temperature& temperature)
 {

@@ -381,3 +381,18 @@ CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::create(const 
 		output.add({point, point});
 	return output;
 }
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::create(const CuboidSetType& set)
+{
+	return set;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::create(const CuboidType& cuboid)
+{
+	return CuboidSetType::create(cuboid);
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::create(const PointType& point)
+{
+	return CuboidSetType::create(CuboidType::create(point, point));
+}

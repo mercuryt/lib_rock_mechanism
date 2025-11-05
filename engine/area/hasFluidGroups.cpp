@@ -29,6 +29,7 @@ void AreaHasFluidGroups::doStep(bool parallel)
 	m_unstableFluidGroups.eraseIf([](auto* fluidGroup){ return fluidGroup->m_destroy; });
 	std::erase_if(m_fluidGroups, [](const FluidGroup& fluidGroup){ return fluidGroup.m_destroy; });
 	// Apply flow.
+	validateAllFluidGroups();
 	for(FluidGroup* fluidGroup : m_unstableFluidGroups)
 	{
 		fluidGroup->writeStep(m_area);
