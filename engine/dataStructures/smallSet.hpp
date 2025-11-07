@@ -99,6 +99,18 @@ void SmallSet<T>::eraseAll(SmallSet<T>& other)
 	std::erase_if(m_data, [&](const T& value){ return std::ranges::contains(other.m_data, value); });
 }
 template<typename T>
+void SmallSet<T>::maybeEraseAllWhereBothSetsAreSorted(const This& other)
+{
+	auto new_end = std::remove_if(m_data.begin(), m_data.end(),
+			[&](const T& x) {
+				// Check if element x exists in the second sorted range
+				return std::binary_search(other.m_data.begin(), other.m_data.end(), x);
+			}
+		);
+    // Erase the elements at the end of the vector
+    m_data.erase(new_end, m_data.end());
+}
+template<typename T>
 void SmallSet<T>::eraseIndex(const uint& index)
 {
 	erase(m_data.begin() + index);

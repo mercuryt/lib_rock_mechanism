@@ -77,7 +77,11 @@ void DrainQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 		assert(iter->point.exists());
 		assert(iter->delta.exists());
 		assert(space.fluid_getTotalVolume(iter->point) >= iter->delta);
-		[[maybe_unused]] bool breakIf = fluidGroup.m_fluidType == 0 && fluidGroup.m_drainQueue.m_set.size() == 250 && area.m_simulation.m_step == 11 && iter->point == Point3D::create(9,4,4);
+		[[maybe_unused]] bool breakIfFluidType = fluidGroup.m_fluidType == 7;
+		[[maybe_unused]] bool breakIfSize = fluidGroup.m_drainQueue.m_set.size() == 273;
+		[[maybe_unused]] bool breakIfStep = area.m_simulation.m_step == 8;
+		[[maybe_unused]] bool breakIfPoint = iter->point == Point3D::create(12,10,5);
+		[[maybe_unused]] bool breakIf = breakIfFluidType && breakIfSize && breakIfStep && breakIfPoint;
 		space.fluid_drainInternal(iter->point, iter->delta, fluidGroup.m_fluidType);
 		// Record space to set fluid groups unstable.
 		drainedFromAndAdjacent.maybeInsert(iter->point);

@@ -488,6 +488,7 @@ void RTreeData<T, config>::addToNodeRecursive(const RTreeNodeIndex& index, const
 					Node& parent2 = m_nodes[indexCopy];
 					const auto& parentDataAndChildIndices2 = parent2.getDataAndChildIndices();
 					const RTreeNodeIndex newIndex = RTreeNodeIndex::create(m_nodes.size() - 1);
+					assert(!m_emptySlots.contains(newIndex));
 					newNode.insertLeaf(extended[firstArrayIndex.get()], T::create(parentDataAndChildIndices2[firstArrayIndex.get()].data));
 					const T& valueToInsertForSecondIndex = secondArrayIndexIsNewCuboid ? value : T::create(parentDataAndChildIndices2[secondArrayIndex.get()].data);
 					newNode.insertLeaf(extended[secondArrayIndex.get()], valueToInsertForSecondIndex);
@@ -676,6 +677,10 @@ template<Sortable T, RTreeDataConfig config>
 void RTreeData<T, config>::comb()
 {
 	// Attempt to merge leaves and child nodes.
+	// Don't comb empty slots.
+	m_toComb.sort();
+	m_emptySlots.sort();
+	m_toComb.maybeEraseAllWhereBothSetsAreSorted(m_emptySlots);
 	// Repeat untill there are no more mergers found, then repeat with parent if it has space to merge child.
 	while(!m_toComb.empty())
 	{
@@ -724,6 +729,7 @@ void RTreeData<T, config>::comb()
 			}
 		}
 	}
+	validate();
 }
 // This method is identical to the one in rTreeBoolean.
 template<Sortable T, RTreeDataConfig config>
@@ -1003,8 +1009,16 @@ CuboidSet RTreeData<T, config>::getLeafCuboids() const
 template<Sortable T, RTreeDataConfig config>
 void RTreeData<T, config>::validate() const
 {
+	if(!config.validate)
+		return;
+	assert(m_emptySlots.size() <= m_nodes.size());
+	for(const RTreeNodeIndex& index : m_emptySlots)
+		assert(index < m_nodes.size());
+	SmallSet<RTreeNodeIndex> childIndices;
 	for(RTreeNodeIndex index = RTreeNodeIndex::create(0); index < m_nodes.size(); ++index)
 	{
+		if(m_emptySlots.contains(index))
+			return;
 		const Node& node = m_nodes[index];
 		const auto cuboids = node.getCuboids();
 		// Check that cuboid recorded in parent matches boundry of cuboids recorded in child.
@@ -1024,7 +1038,20 @@ void RTreeData<T, config>::validate() const
 			for(uint i = 0; i < leafCount; ++i)
 				assert(queryCount(cuboids[i]) == 1);
 		}
+		// Check that child indices aren't in m_emptySlots and are unique.
+		const auto dataOrChildIndices = node.getDataAndChildIndices();
+		const auto nodeCount = m_nodes.size();
+		for(RTreeArrayIndex i = node.offsetOfFirstChild(); i != nodeSize; ++i)
+		{
+			const RTreeNodeIndex childIndex = RTreeNodeIndex::create(dataOrChildIndices[i.get()].child);
+			childIndices.insert(childIndex);
+			assert(!m_emptySlots.contains(childIndex));
+			assert(nodeCount > childIndex);
+		}
 	}
+	// Check that indices in toComb are not also in m_emptySlots.
+	for(const RTreeNodeIndex& index : m_toComb)
+		assert(!m_emptySlots.contains(index));
 }
 template<Sortable T, RTreeDataConfig config>
 void RTreeData<T, config>::load(const Json& data)

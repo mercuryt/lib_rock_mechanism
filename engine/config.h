@@ -12,7 +12,6 @@ namespace Config
 	//
 	// sort command for vim:
 	// 	sort /\t/w* /w* /w* /
-	// TODO: interval should be type Step but I don't know how to make it work with constexpr.
 	inline constexpr uint actorDoVisionInterval = 3;
 	inline constexpr bool fluidPiston = false;
 	inline constexpr float dataStoreVectorResizeFactor = 1.5;
@@ -21,6 +20,7 @@ namespace Config
 	inline constexpr int maxItemsPerPoint = 4;
 	inline constexpr float goldenRatio = 1.61834f;
 	inline constexpr Distance maxDepthExteriorPortalPenetration = Distance::create(6);
+	inline constexpr bool validateFluidTotals = false;
 
 	// sort command for vim:
 	// 	sort /\t/w* /w* /

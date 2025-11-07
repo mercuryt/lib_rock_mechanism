@@ -421,6 +421,10 @@ void RTreeBoolean::merge(const Index& destination, const Index& source)
 void RTreeBoolean::comb()
 {
 	// Attempt to merge leaves and child nodes.
+	// Don't comb empty slots.
+	m_toComb.sort();
+	m_emptySlots.sort();
+	m_toComb.maybeEraseAllWhereBothSetsAreSorted(m_emptySlots);
 	// Repeat untill there are no more mergers found, then repeat with parent if it has space to merge child.
 	while(!m_toComb.empty())
 	{

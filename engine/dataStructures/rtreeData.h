@@ -15,6 +15,7 @@ struct RTreeDataConfig
 {
 	bool splitAndMerge = true;
 	bool leavesCanOverlap = false;
+	bool validate = false;
 };
 
 namespace RTreeDataConfigs
@@ -186,7 +187,7 @@ public:
 			emptySpaceInShape = CuboidSet::create(shape);
 		// An action may cause a leaf to be shrunk or destroyed. Collect all nodes where this happens so we can correct their boundries.
 		SmallSet<RTreeNodeIndex> toUpdateBoundryMaybe;
-		// When a leaf is shrunk or destroyed it may generate fragments. Collect thes to readd at end.
+		// When a leaf is shrunk or destroyed it may generate fragments. Collect these to readd at end.
 		MapWithCuboidKeys<T> fragmentsToReAdd;
 		while(!openList.empty())
 		{
@@ -267,7 +268,10 @@ public:
 							}
 						}
 						if constexpr(queryConfig.stopAfterOne)
+						{
+							assert(leafCuboid.contains(shape));
 							break;
+						}
 					}
 				}
 				if constexpr(queryConfig.destroy)

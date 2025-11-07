@@ -95,6 +95,7 @@ namespace areaBuilderUtil
 			assert(space.fluid_canEnterEver(point));
 			space.fluid_add(point, CollisionVolume::create(100), fluidType);
 		}
+		space.prepareRtrees();
 	}
 	inline void validateAllPointFluids(Area& area)
 	{

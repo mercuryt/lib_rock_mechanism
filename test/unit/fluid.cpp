@@ -1480,6 +1480,7 @@ TEST_CASE("fluids multi scale")
 		while(simulation.m_step < steps)
 		{
 			area.m_hasFluidGroups.doStep(false);
+			space.prepareRtrees();
 			++simulation.m_step;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
@@ -1545,6 +1546,7 @@ TEST_CASE("fluids multi scale")
 		while(simulation.m_step < steps)
 		{
 			area.m_hasFluidGroups.doStep(false);
+			space.prepareRtrees();
 			++simulation.m_step;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
@@ -1618,6 +1620,7 @@ TEST_CASE("fluids multi scale")
 		while(simulation.m_step < steps)
 		{
 			area.m_hasFluidGroups.doStep(false);
+			space.prepareRtrees();
 			fgMercury = areaBuilderUtil::getFluidGroup(area, mercury);
 			if(fgMercury != nullptr)
 				CHECK(fgMercury->totalVolume(area) == totalVolume);
@@ -1712,6 +1715,7 @@ TEST_CASE("fluids multi scale")
 		while(simulation.m_step < steps)
 		{
 			area.m_hasFluidGroups.doStep(false);
+			space.prepareRtrees();
 			++simulation.m_step;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
@@ -1779,6 +1783,7 @@ TEST_CASE("fluids multi scale")
 		while(simulation.m_step < steps)
 		{
 			area.m_hasFluidGroups.doStep(false);
+			space.prepareRtrees();
 			++simulation.m_step;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
@@ -1818,6 +1823,15 @@ TEST_CASE("fluids multi scale")
 	{
 		trenchTest3FluidsMerge(16, 4, Step::create(24));
 	}
+}
+TEST_CASE("four fluids multi scale")
+{
+	static MaterialTypeId marble = MaterialType::byName("marble");
+	static FluidTypeId water = FluidType::byName("water");
+	static FluidTypeId CO2 = FluidType::byName("CO2");
+	static FluidTypeId mercury = FluidType::byName("mercury");
+	static FluidTypeId lava = FluidType::byName("lava");
+	Simulation simulation;
 	auto fourFluidsTest = [&](uint32_t scale, Step steps)
 	{
 		uint32_t maxX = (scale * 2) + 2;
@@ -1862,6 +1876,7 @@ TEST_CASE("fluids multi scale")
 		while(simulation.m_step < steps)
 		{
 			area.m_hasFluidGroups.doStep(false);
+			space.prepareRtrees();
 			++simulation.m_step;
 		}
 		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);

@@ -289,6 +289,7 @@ inline void fourFluidsTestParallel(uint32_t scale, Step steps)
 	while(simulation.m_step < steps)
 	{
 		area.doStep();
+		space.prepareRtrees();
 		++simulation.m_step;
 	}
 	uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);

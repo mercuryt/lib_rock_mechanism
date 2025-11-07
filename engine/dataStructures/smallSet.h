@@ -58,6 +58,7 @@ struct SmallSet
 	void eraseAll(This& other);
 	template<typename Iterator>
 	void maybeEraseAll(Iterator begin, const Iterator& end) { for(; begin != end; ++begin) maybeErase(*begin); }
+	void maybeEraseAllWhereBothSetsAreSorted(const This& other);
 	void eraseIndex(const uint& index);
 	void popBack();
 	void clear();
