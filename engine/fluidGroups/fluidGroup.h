@@ -15,7 +15,6 @@
 #include "fluidGroups/fillQueue.h"
 #include "numericTypes/types.h"
 #include "numericTypes/index.h"
-#include "dataStructures/smallSet.h"
 #include "dataStructures/smallMap.h"
 
 class Area;
@@ -23,9 +22,9 @@ struct FluidType;
 
 struct FluidGroupSplitData final
 {
-	SmallSet<Point3D> members;
-	SmallSet<Point3D> futureAdjacent;
-	FluidGroupSplitData(const SmallSet<Point3D>& m) : members(m) {}
+	CuboidSet members;
+	CuboidSet futureAdjacent;
+	FluidGroupSplitData(const CuboidSet& m) : members(m) {}
 };
 
 class FluidGroup final
@@ -35,18 +34,16 @@ public:
 	DrainQueue m_drainQueue;
 	// For spitting into multiple fluidGroups.
 	std::vector<FluidGroupSplitData> m_futureGroups;
-	// For notifing groups with different fluids of unfull status. Groups with the same fluid are merged instead.
-	SmallMap<FluidGroup*, SmallSet<Point3D>> m_futureNotifyPotentialUnfullAdjacent;
 
-	SmallSet<Point3D> m_potentiallyNoLongerAdjacentFromSyncronusStep;
-	SmallSet<Point3D> m_potentiallySplitFromSyncronusStep;
+	CuboidSet m_potentiallyNoLongerAdjacentFromSyncronusStep;
+	CuboidSet m_potentiallySplitFromSyncronusStep;
 
-	SmallSet<Point3D> m_futureNewEmptyAdjacents;
+	CuboidSet m_futureNewEmptyAdjacents;
 
-	SmallSet<Point3D> m_futureAddToDrainQueue;
-	SmallSet<Point3D> m_futureRemoveFromDrainQueue;
-	SmallSet<Point3D> m_futureAddToFillQueue;
-	SmallSet<Point3D> m_futureRemoveFromFillQueue;
+	CuboidSet m_futureAddToDrainQueue;
+	CuboidSet m_futureRemoveFromDrainQueue;
+	CuboidSet m_futureAddToFillQueue;
+	CuboidSet m_futureRemoveFromFillQueue;
 	SmallMap<FluidTypeId, FluidGroup*> m_disolvedInThisGroup;
 	FluidTypeId m_fluidType;
 	int32_t m_excessVolume = 0;
@@ -60,7 +57,7 @@ public:
 	bool m_disolved = false;
 	bool m_aboveGround = false;
 
-	FluidGroup(FluidAllocator& allocator, const FluidTypeId& ft, SmallSet<Point3D>& space, Area& area, bool checkMerge = true);
+	FluidGroup(FluidAllocator& allocator, const FluidTypeId& ft, const CuboidSet& points, Area& area, bool checkMerge = true);
 	FluidGroup(const FluidGroup&) = delete;
 	void addFluid(Area& area, const CollisionVolume& fluidVolume);
 	void removeFluid(Area& area, const CollisionVolume& fluidVolume);
@@ -81,7 +78,7 @@ public:
 	void log(Area& area) const;
 	void logFill(Area& area) const;
 	[[nodiscard]] CollisionVolume totalVolume(Area& area) const;
-	[[nodiscard]] SmallSet<Point3D>& getPoints() { return m_drainQueue.m_set; }
+	[[nodiscard]] const CuboidSet& getPoints() const { return m_drainQueue.m_set; }
 	[[nodiscard]] bool dispositionIsStable(const CollisionVolume& fillVolume, const CollisionVolume& drainVolume) const;
 	[[nodiscard]] bool operator==(const FluidGroup& fluidGroup) const { return &fluidGroup == this; }
 	[[nodiscard]] Quantity countPointsOnSurface(const Area& area) const;

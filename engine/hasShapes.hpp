@@ -265,9 +265,9 @@ CuboidSet HasShapes<Derived, Index>::getAdjacentCuboids(const Index& index) cons
 	for(Cuboid cuboid : occupied)
 	{
 		cuboid.inflate({1});
-		output.add(cuboid.intersection(boundry));
+		output.maybeAdd(cuboid.intersection(boundry));
 	}
-	output.removeContainedAndFragmentInterceptedAll(occupied);
+	output.maybeRemoveAll(occupied);
 	return output;
 }
 template<class Derived, class Index>
@@ -369,7 +369,7 @@ CuboidSet HasShapes<Derived, Index>::getCuboidsAbove(const Index& index) const
 	{
 		Cuboid above = cuboid.getFace(Facing6::Above);
 		above.shift(Facing6::Above, Distance::create(1));
-		output.add(above);
+		output.maybeAdd(above);
 	}
 	return output;
 }

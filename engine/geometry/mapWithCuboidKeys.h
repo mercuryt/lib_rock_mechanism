@@ -19,8 +19,8 @@ struct MapWithCuboidKeysBase
 	void insert(const CuboidType& cuboid, const T& value);
 	void insert(const Pair& pair);
 	void insertAll(const This& other);
-	void removeContainedAndFragmentIntercepted(const CuboidType& cuboid);
-	void removeContainedAndFragmentInterceptedAll(const CuboidSetType& cuboids);
+	void maybeRemove(const CuboidType& cuboid);
+	void maybeRemoveAll(const CuboidSetType& cuboids);
 	void clear();
 	void reserve(const uint16_t& capacity) { data.reserve(capacity); }
 	void sort();

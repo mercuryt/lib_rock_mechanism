@@ -37,17 +37,40 @@ public:
 	CuboidSetBase(const std::initializer_list<CuboidType>& cuboids);
 	CuboidSetBase(const CuboidType& cuboid) : m_cuboids({cuboid}) { }
 	CuboidSetBase(const SmallSet<CuboidType>& cuboids) : m_cuboids(cuboids) { }
+	CuboidSetBase(const SmallSet<PointType>& points) { for(const PointType& point : points) add(point); }
 	CuboidSetType& operator=(CuboidSetType&& other) noexcept { m_cuboids = std::move(other.m_cuboids); return static_cast<CuboidSetType&>(*this); }
 	CuboidSetType& operator=(const CuboidSetType& other) { m_cuboids = other.m_cuboids; return static_cast<CuboidSetType&>(*this); }
-	void add(const PointType& point);
-	void addAll(const CuboidSetType& other);
-	void remove(const PointType& point);
-	void removeAll(const auto& cuboids) { for(const CuboidType& cuboid : cuboids) remove(cuboid); }
-	void removeContainedAndFragmentIntercepted(const CuboidType& cuboid);
-	void removeContainedAndFragmentInterceptedAll(const CuboidSetType& cuboids);
+	void maybeAdd(const PointType& point);
+	void maybeAddAll(const CuboidSetType& other);
+	void add(const auto& shape)
+	{
+		assert(!shape.empty());
+		assert(!intersects(shape));
+		maybeAdd(shape);
+	}
+	void addAll(const auto& shape)
+	{
+		assert(!shape.empty());
+		assert(!intersects(shape));
+		maybeAddAll(shape);
+	}
+	void maybeRemove(const PointType& point);
+	void maybeRemoveAll(const auto& cuboids) { for(const CuboidType& cuboid : cuboids) maybeRemove(cuboid); }
+	void remove(const auto& shape)
+	{
+		assert(!shape.empty());
+		assert(intersects(shape));
+		maybeRemove(shape);
+	}
+	void removeAll(const auto& shape)
+	{
+		assert(!shape.empty());
+		assert(intersects(shape));
+		maybeRemoveAll(shape);
+	}
 	// TODO: why virtual?
-	virtual void add(const CuboidType& cuboid);
-	virtual void remove(const CuboidType& cuboid);
+	virtual void maybeAdd(const CuboidType& cuboid);
+	virtual void maybeRemove(const CuboidType& cuboid);
 	void clear() { m_cuboids.clear(); }
 	void shift(const Offset3D offset, const Distance& distance);
 	// For merging with other cuboid sets.
@@ -56,6 +79,7 @@ public:
 	void reserve(const uint16_t& capacity) { m_cuboids.reserve(capacity); }
 	void swap(CuboidSetType& other);
 	void popBack();
+	void inflate(const Distance& distance);
 	[[nodiscard]] const CuboidType& operator[](const uint8_t& index) const { return m_cuboids[index]; }
 	[[nodiscard]] CuboidType& operator[](const uint8_t& index){ return m_cuboids[index]; }
 	[[nodiscard]] PointType center() const;
@@ -70,6 +94,7 @@ public:
 	[[nodiscard]] bool contains(const OffsetCuboid& cuboid) const;
 	[[nodiscard]] const auto& getCuboids() const { return m_cuboids; }
 	[[nodiscard]] SmallSet<PointType> toPointSet() const;
+	[[nodiscard]] bool isAdjacent(const PointType& cuboid) const;
 	[[nodiscard]] bool isAdjacent(const CuboidType& cuboid) const;
 	[[nodiscard]] CuboidType boundry() const;
 	[[nodiscard]] PointType getLowest() const;
@@ -80,7 +105,9 @@ public:
 	[[nodiscard]] auto begin() const { return m_cuboids.begin(); }
 	[[nodiscard]] auto end() const { return m_cuboids.end(); }
 	[[nodiscard]] CuboidSetType intersection(const CuboidType& cuboid) const;
+	[[nodiscard]] CuboidSetType intersection(const CuboidSetType& cuboid) const;
 	[[nodiscard]] PointType intersectionPoint(const CuboidType& cuboid) const;
+	[[nodiscard]] bool intersects(const PointType& point) const;
 	[[nodiscard]] bool intersects(const CuboidType& cuboid) const;
 	[[nodiscard]] bool intersects(const CuboidSetType& cuboid) const;
 	[[nodiscard]] bool isTouching(const CuboidType& cuboid) const;
@@ -89,6 +116,15 @@ public:
 	[[nodiscard]] bool isTouching(const CuboidSetType& cuboids) const;
 	[[nodiscard]] bool isIntersectingOrAdjacentTo(const CuboidSetType& cuboids) const;
 	[[nodiscard]] bool isIntersectingOrAdjacentTo(const CuboidType& cuboid) const;
+	[[nodiscard]] CuboidSetType getAdjacent() const;
+	[[nodiscard]] CuboidSetType getDirectlyAdjacent() const;
+	[[nodiscard]] uint countIf(auto&& condition) const
+	{
+		uint output = 0;
+		for(const Cuboid& cuboid : m_cuboids)
+			output += cuboid.countIf(condition);
+		return output;
+	}
 	[[nodiscard]] __attribute__((noinline)) std::string toString() const;
 	[[nodiscard]] static CuboidSetType create(const SmallSet<PointType>& space);
 	[[nodiscard]] static CuboidSetType create(const CuboidSetType& set);
@@ -103,6 +139,7 @@ struct CuboidSet : public CuboidSetBase<Cuboid, Point3D, CuboidSet>
 	[[nodiscard]] static CuboidSet create(const Cuboid& cuboid);
 	[[nodiscard]] static CuboidSet create(const Point3D& point);
 	[[nodiscard]] static CuboidSet create([[maybe_unused]]const OffsetCuboid& spaceBoundry, const Point3D& pivot, const Facing4& newFacing, const OffsetCuboidSet& cuboids);
+	[[nodiscard]] static CuboidSet create(const SmallSet<Point3D>& points);
 };
 struct OffsetCuboidSet final : public CuboidSetBase<OffsetCuboid, Offset3D, OffsetCuboidSet>
 {

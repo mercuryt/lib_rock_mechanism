@@ -64,7 +64,7 @@ void StockPile::addPoint(const Point3D& point)
 	space.stockpile_recordMembership(point, *this);
 	if(space.stockpile_contains(point, m_faction))
 		incrementOpenPoints();
-	m_cuboids.add(point);
+	m_cuboids.maybeAdd(point);
 	Items& items = m_area.getItems();
 	for(ItemIndex item : space.item_getAll(point))
 		if(accepts(item))
@@ -90,7 +90,7 @@ void StockPile::removePoint(const Point3D& point)
 	if(space.stockpile_isAvalible(point, m_faction))
 		decrementOpenPoints();
 	space.stockpile_recordNoLongerMember(point, *this);
-	m_cuboids.add(point);
+	m_cuboids.maybeAdd(point);
 	if(m_cuboids.empty())
 		m_area.m_hasStockPiles.getForFaction(m_faction).destroyStockPile(*this);
 	// Cancel collected projects.

@@ -65,7 +65,7 @@ TEST_CASE("vision cuboid split")
 		Point3D b3 = Point3D::create(0, 1, 0);
 		Point3D b4 = Point3D::create(1, 1, 0);
 		CHECK(area.m_visionCuboids.size() == 1);
-		area.m_visionCuboids.remove(Cuboid{b4, b4});
+		area.m_visionCuboids.maybeRemove(Cuboid{b4, b4});
 		CHECK(area.m_visionCuboids.maybeGetVisionCuboidIndexForPoint(b4).empty());
 		CHECK(area.m_visionCuboids.size() == 2);
 		VisionCuboidId vc1 = area.m_visionCuboids.getVisionCuboidIndexForPoint(b1);

@@ -110,7 +110,7 @@ void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature& tempera
 					continue;
 				const MaterialTypeId& materialType = space.solid_get(point);
 				for(const Cuboid& cuboid : space.collectAdjacentsWithCondition(point, [&](const Point3D& b){ return space.solid_get(b) == materialType; }))
-					toMelt.add(cuboid);
+					toMelt.maybeAdd(cuboid);
 			}
 			for(const Cuboid& cuboid : toMelt)
 				for(const Point3D& point : cuboid)

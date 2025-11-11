@@ -1,8 +1,8 @@
 #pragma once
 #include "rtreeData.h"
 #include "../geometry/mapWithCuboidKeys.hpp"
-template<Sortable T, RTreeDataConfig config>
-RTreeArrayIndex RTreeData<T, config>::Node::offsetFor(const RTreeNodeIndex& index) const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+RTreeArrayIndex RTreeData<T, config, nullPrimitive>::Node::offsetFor(const RTreeNodeIndex& index) const
 {
 	const auto begin = m_dataAndChildIndices.begin();
 	auto found = std::ranges::find(begin + m_childBegin.get(), m_dataAndChildIndices.end(), index.get(), &DataOrChild::child);
@@ -11,24 +11,24 @@ RTreeArrayIndex RTreeData<T, config>::Node::offsetFor(const RTreeNodeIndex& inde
 	assert(output >= m_childBegin);
 	return output;
 }
-template<Sortable T, RTreeDataConfig config>
-uint RTreeData<T, config>::Node::getLeafVolume() const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+uint RTreeData<T, config, nullPrimitive>::Node::getLeafVolume() const
 {
 	uint output = 0;
 	for(auto i = RTreeArrayIndex::create(0); i < m_leafEnd; ++i)
 		output += m_cuboids[i.get()].volume();
 	return output;
 }
-template<Sortable T, RTreeDataConfig config>
-uint RTreeData<T, config>::Node::getNodeVolume() const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+uint RTreeData<T, config, nullPrimitive>::Node::getNodeVolume() const
 {
 	uint output = 0;
 	for(auto i = m_childBegin; i < nodeSize; ++i)
 		output += m_cuboids[i.get()].volume();
 	return output;
 }
-template<Sortable T, RTreeDataConfig config>
-Json RTreeData<T, config>::Node::toJson() const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+Json RTreeData<T, config, nullPrimitive>::Node::toJson() const
 {
 	if constexpr(HasToJsonMethod<T>)
 	{
@@ -51,16 +51,17 @@ Json RTreeData<T, config>::Node::toJson() const
 		std::unreachable();
 	}
 }
-template<Sortable T, RTreeDataConfig config>
-bool RTreeData<T, config>::Node::containsLeaf(const Cuboid& cuboid, const T& value)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+bool RTreeData<T, config, nullPrimitive>::Node::containsLeaf(const Cuboid& cuboid, const T& value)
 {
+	assert(value != T::create(nullPrimitive));
 	uint index = m_cuboids.indexOfCuboid(cuboid);
 	if(index >= m_leafEnd.get())
 		return false;
 	return m_dataAndChildIndices[index].data == value.get();
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::Node::load(const Json& data)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::Node::load(const Json& data)
 {
 	if constexpr(HasFromJsonMethod<T>)
 	{
@@ -82,23 +83,24 @@ void RTreeData<T, config>::Node::load(const Json& data)
 		std::unreachable();
 	}
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::Node::updateChildIndex(const RTreeNodeIndex& oldIndex, const RTreeNodeIndex& newIndex)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::Node::updateChildIndex(const RTreeNodeIndex& oldIndex, const RTreeNodeIndex& newIndex)
 {
 	RTreeArrayIndex offset = offsetFor(oldIndex);
 	m_dataAndChildIndices[offset.get()].child = newIndex.get();
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::Node::insertLeaf(const Cuboid& cuboid, const T& value)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::Node::insertLeaf(const Cuboid& cuboid, const T& value)
 {
+	assert(value != T::create(nullPrimitive));
 	assert(m_leafEnd != m_childBegin);
 	assert(!containsLeaf(cuboid, value));
 	m_cuboids.insert(m_leafEnd.get(), cuboid);
 	m_dataAndChildIndices[m_leafEnd.get()].data = value.get();
 	++m_leafEnd;
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::Node::insertBranch(const Cuboid& cuboid, const RTreeNodeIndex& index)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::Node::insertBranch(const Cuboid& cuboid, const RTreeNodeIndex& index)
 {
 	assert(m_leafEnd != m_childBegin);
 	uint toInsertAt = m_childBegin.get() - 1;
@@ -106,8 +108,8 @@ void RTreeData<T, config>::Node::insertBranch(const Cuboid& cuboid, const RTreeN
 	m_cuboids.insert(toInsertAt, cuboid);
 	--m_childBegin;
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::Node::eraseBranch(const RTreeArrayIndex& offset)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::Node::eraseBranch(const RTreeArrayIndex& offset)
 {
 	assert(offset < nodeSize);
 	assert(offset >= m_childBegin);
@@ -120,8 +122,8 @@ void RTreeData<T, config>::Node::eraseBranch(const RTreeArrayIndex& offset)
 	m_dataAndChildIndices[m_childBegin.get()].child = RTreeNodeIndex::null().get();
 	++m_childBegin;
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::Node::eraseLeaf(const RTreeArrayIndex& offset)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::Node::eraseLeaf(const RTreeArrayIndex& offset)
 {
 	assert(offset < m_leafEnd);
 	const RTreeArrayIndex lastLeaf = m_leafEnd - 1;
@@ -134,8 +136,8 @@ void RTreeData<T, config>::Node::eraseLeaf(const RTreeArrayIndex& offset)
 	m_dataAndChildIndices[lastLeaf.get()].data = T::null().get();
 	--m_leafEnd;
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::Node::eraseByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::Node::eraseByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask)
 {
 	const RTreeArrayIndex leafEnd = m_leafEnd;
 	const RTreeArrayIndex childBegin = m_childBegin;
@@ -149,8 +151,8 @@ void RTreeData<T, config>::Node::eraseByMask(const Eigen::Array<bool, 1, Eigen::
 		if(!mask[i.get()])
 			insertBranch(copyCuboids[i.get()], RTreeNodeIndex::create(copyChildren[i.get()].child));
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::Node::eraseLeavesByMask(const BitSet<uint64_t, nodeSize>& mask)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::Node::eraseLeavesByMask(const BitSet<uint64_t, nodeSize>& mask)
 {
 	RTreeArrayIndex leafEnd = m_leafEnd;
 	const auto copyCuboids = m_cuboids;
@@ -167,8 +169,8 @@ void RTreeData<T, config>::Node::eraseLeavesByMask(const BitSet<uint64_t, nodeSi
 		m_dataAndChildIndices[i.get()].data = T::null().get();
 	}
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::Node::eraseLeavesByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::Node::eraseLeavesByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask)
 {
 	RTreeArrayIndex leafEnd = m_leafEnd;
 	const auto copyCuboids = m_cuboids;
@@ -185,8 +187,8 @@ void RTreeData<T, config>::Node::eraseLeavesByMask(const Eigen::Array<bool, 1, E
 		m_dataAndChildIndices[i.get()].data = T::null().get();
 	}
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::Node::clear()
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::Node::clear()
 {
 	m_cuboids.clear();
 	for(RTreeArrayIndex i = RTreeArrayIndex::create(0); i < m_leafEnd; ++i)
@@ -196,8 +198,8 @@ void RTreeData<T, config>::Node::clear()
 	m_leafEnd = RTreeArrayIndex::create(0);
 	m_childBegin = RTreeArrayIndex::create(nodeSize);
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::Node::updateLeaf(const RTreeArrayIndex& offset, const Cuboid& cuboid)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::Node::updateLeaf(const RTreeArrayIndex& offset, const Cuboid& cuboid)
 {
 	assert(offset < m_leafEnd);
 	assert(!m_cuboids[offset.get()].empty());
@@ -205,27 +207,30 @@ void RTreeData<T, config>::Node::updateLeaf(const RTreeArrayIndex& offset, const
 	assert(!containsLeaf(cuboid, value));
 	m_cuboids.insert(offset.get(), cuboid);
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::Node::updateValue(const RTreeArrayIndex& offset, const T& value)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::Node::updateValue(const RTreeArrayIndex& offset, const T& value)
 {
 	assert(offset < m_leafEnd);
+	assert(value != T::create(nullPrimitive));
 	[[maybe_unused]] const auto cuboid = m_cuboids[offset.get()];
 	assert(!cuboid.empty());
 	assert(!containsLeaf(cuboid, value));
 	m_dataAndChildIndices[offset.get()].data = value.get();
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::Node::updateLeafWithValue(const RTreeArrayIndex& offset, const Cuboid& cuboid, const T& value)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::Node::updateLeafWithValue(const RTreeArrayIndex& offset, const Cuboid& cuboid, const T& value)
 {
+	assert(value != T::create(nullPrimitive));
 	assert(offset < m_leafEnd);
 	assert(!m_cuboids[offset.get()].empty());
 	assert(!containsLeaf(cuboid, value));
 	m_cuboids.insert(offset.get(), cuboid);
 	m_dataAndChildIndices[offset.get()].data = value.get();
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::Node::maybeUpdateLeafWithValue(const RTreeArrayIndex& offset, const Cuboid& cuboid, const T& value)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::Node::maybeUpdateLeafWithValue(const RTreeArrayIndex& offset, const Cuboid& cuboid, const T& value)
 {
+	assert(value != T::create(nullPrimitive));
 	assert(offset < m_leafEnd);
 	assert(!m_cuboids[offset.get()].empty());
 	if(m_cuboids[offset.get()] == cuboid && m_dataAndChildIndices[offset.get()].data == value.get())
@@ -234,15 +239,15 @@ void RTreeData<T, config>::Node::maybeUpdateLeafWithValue(const RTreeArrayIndex&
 	m_cuboids.insert(offset.get(), cuboid);
 	m_dataAndChildIndices[offset.get()].data = value.get();
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::Node::updateBranchBoundry(const RTreeArrayIndex& offset, const Cuboid& cuboid)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::Node::updateBranchBoundry(const RTreeArrayIndex& offset, const Cuboid& cuboid)
 {
 	assert(offset >= m_childBegin);
 	assert(!m_cuboids[offset.get()].empty());
 	m_cuboids.insert(offset.get(), cuboid);
 }
-template<Sortable T, RTreeDataConfig config>
-std::string RTreeData<T, config>::Node::toString()
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+std::string RTreeData<T, config, nullPrimitive>::Node::toString()
 {
 	std::string output = "parent: " + m_parent.toString() + "; ";
 	if(m_leafEnd != 0)
@@ -266,8 +271,8 @@ std::string RTreeData<T, config>::Node::toString()
 	}
 	return output;
 }
-template<Sortable T, RTreeDataConfig config>
-std::tuple<Cuboid, RTreeArrayIndex, RTreeArrayIndex> RTreeData<T, config>::findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids) const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+std::tuple<Cuboid, RTreeArrayIndex, RTreeArrayIndex> RTreeData<T, config, nullPrimitive>::findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids) const
 {
 	// May be negitive because resulting cuboids may intersect.
 	int resultEmptySpace = INT32_MAX;
@@ -298,8 +303,8 @@ std::tuple<Cuboid, RTreeArrayIndex, RTreeArrayIndex> RTreeData<T, config>::findP
 	}
 	return output;
 }
-template<Sortable T, RTreeDataConfig config>
-SmallSet<std::pair<Cuboid, T>> RTreeData<T, config>::gatherLeavesRecursive(const RTreeNodeIndex& parent) const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+SmallSet<std::pair<Cuboid, T>> RTreeData<T, config, nullPrimitive>::gatherLeavesRecursive(const RTreeNodeIndex& parent) const
 {
 	SmallSet<std::pair<Cuboid, T>> output;
 	SmallSet<RTreeNodeIndex> openList;
@@ -318,8 +323,8 @@ SmallSet<std::pair<Cuboid, T>> RTreeData<T, config>::gatherLeavesRecursive(const
 	}
 	return output;
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::destroyWithChildren(const RTreeNodeIndex& index)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::destroyWithChildren(const RTreeNodeIndex& index)
 {
 	SmallSet<RTreeNodeIndex> openList;
 	openList.insert(index);
@@ -338,8 +343,8 @@ void RTreeData<T, config>::destroyWithChildren(const RTreeNodeIndex& index)
 		}
 	}
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::tryToMergeLeaves(Node& parent)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::tryToMergeLeaves(Node& parent)
 {
 	// Iterate through leaves
 	RTreeArrayIndex offset = RTreeArrayIndex::create(0);
@@ -375,8 +380,8 @@ void RTreeData<T, config>::tryToMergeLeaves(Node& parent)
 			++offset;
 	}
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::clearAllContained(const RTreeNodeIndex& index, const Cuboid& cuboid)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::clearAllContained(const RTreeNodeIndex& index, const Cuboid& cuboid)
 {
 	SmallSet<RTreeNodeIndex> openList;
 	openList.insert(index);
@@ -404,9 +409,10 @@ void RTreeData<T, config>::clearAllContained(const RTreeNodeIndex& index, const 
 		m_toComb.maybeInsert(index);
 	}
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::clearAllContainedWithValueRecursive(Node& parent, const Cuboid& cuboid, const T& value)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::clearAllContainedWithValueRecursive(Node& parent, const Cuboid& cuboid, const T& value)
 {
+	assert(value != T::create(nullPrimitive));
 	const auto& parentCuboids = parent.getCuboids();
 	const auto& parentDataAndChildIndices = parent.getDataAndChildIndices();
 	auto containsMask = parentCuboids.indicesOfContainedCuboids(cuboid);
@@ -429,9 +435,10 @@ void RTreeData<T, config>::clearAllContainedWithValueRecursive(Node& parent, con
 	}
 	parent.eraseByMask(containsMask);
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::addToNodeRecursive(const RTreeNodeIndex& index, const Cuboid& cuboid, const T& value)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::addToNodeRecursive(const RTreeNodeIndex& index, const Cuboid& cuboid, const T& value)
 {
+	assert(value != T::create(nullPrimitive));
 	m_toComb.maybeInsert(index);
 	Node& parent = m_nodes[index];
 	const auto& parentCuboids = parent.getCuboids();
@@ -557,8 +564,8 @@ void RTreeData<T, config>::addToNodeRecursive(const RTreeNodeIndex& index, const
 	else
 		parent.insertLeaf(cuboid, value);
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::removeFromNode(const RTreeNodeIndex& index, const Cuboid& cuboid, SmallSet<RTreeNodeIndex>& openList)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::removeFromNode(const RTreeNodeIndex& index, const Cuboid& cuboid, SmallSet<RTreeNodeIndex>& openList)
 {
 	CuboidArray<nodeSize>::BoolArray interceptMask;
 	// Copy index before possibly invalidating it later.
@@ -592,9 +599,10 @@ void RTreeData<T, config>::removeFromNode(const RTreeNodeIndex& index, const Cub
 	addIntersectedChildrenToOpenList(parent, interceptMask, openList);
 	m_toComb.maybeInsert(index);
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::removeFromNodeWithValue(const RTreeNodeIndex& index, const Cuboid& cuboid, SmallSet<RTreeNodeIndex>& openList, const T& value)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::removeFromNodeWithValue(const RTreeNodeIndex& index, const Cuboid& cuboid, SmallSet<RTreeNodeIndex>& openList, const T& value)
 {
+	assert(value != T::create(nullPrimitive));
 	CuboidArray<nodeSize>::BoolArray interceptMask;
 	const RTreeNodeIndex indexCopy = index;
 	// These node references are going to be invalidated by inserting fragments, which may generate a new node.
@@ -633,8 +641,8 @@ void RTreeData<T, config>::removeFromNodeWithValue(const RTreeNodeIndex& index, 
 	addIntersectedChildrenToOpenList(parent, interceptMask, openList);
 	m_toComb.maybeInsert(indexCopy);
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::removeFromNodeByMask(Node& node, const Eigen::Array<bool, 1, Eigen::Dynamic>& mask)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::removeFromNodeByMask(Node& node, const Eigen::Array<bool, 1, Eigen::Dynamic>& mask)
 {
 		const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
 		// Mark branches in m_node destroyed.
@@ -644,8 +652,8 @@ void RTreeData<T, config>::removeFromNodeByMask(Node& node, const Eigen::Array<b
 		// Erase branches and leaves from node.
 		node.eraseByMask(mask);
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::updateBoundriesMaybe(const SmallSet<RTreeNodeIndex>& nodeIndices)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::updateBoundriesMaybe(const SmallSet<RTreeNodeIndex>& nodeIndices)
 {
 	for(const RTreeNodeIndex& index : nodeIndices)
 	{
@@ -664,8 +672,8 @@ void RTreeData<T, config>::updateBoundriesMaybe(const SmallSet<RTreeNodeIndex>& 
 			parent.updateBranchBoundry(offset, node.getCuboids().boundry());
 	}
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::merge(const RTreeNodeIndex& destination, const RTreeNodeIndex& source)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::merge(const RTreeNodeIndex& destination, const RTreeNodeIndex& source)
 {
 	// TODO: maybe leave source nodes intact instead of striping out leaves?
 	const auto leaves = gatherLeavesRecursive(source);
@@ -673,8 +681,8 @@ void RTreeData<T, config>::merge(const RTreeNodeIndex& destination, const RTreeN
 		addToNodeRecursive(destination, leaf, value);
 }
 // This method is identical to the one in rTreeBoolean, other then calling a different tryToMergeLeaves
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::comb()
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::comb()
 {
 	// Attempt to merge leaves and child nodes.
 	// Don't comb empty slots.
@@ -732,8 +740,8 @@ void RTreeData<T, config>::comb()
 	validate();
 }
 // This method is identical to the one in rTreeBoolean.
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::defragment()
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::defragment()
 {
 	// Copy nodes from then end of m_nodes over empty slots.
 	// Update parent and child indices.
@@ -771,8 +779,8 @@ void RTreeData<T, config>::defragment()
 	}
 }
 // This method is identical to the one in rTreeBoolean.
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::sort()
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::sort()
 {
 	assert(m_emptySlots.empty());
 	assert(m_toComb.empty());
@@ -828,8 +836,8 @@ void RTreeData<T, config>::sort()
 	}
 	m_nodes = std::move(sortedNodes);
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::addIntersectedChildrenToOpenList(const Node& node, const CuboidArray<nodeSize>::BoolArray& interceptMask, SmallSet<RTreeNodeIndex>& openList)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::addIntersectedChildrenToOpenList(const Node& node, const CuboidArray<nodeSize>::BoolArray& interceptMask, SmallSet<RTreeNodeIndex>& openList)
 {
 	const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
 	const auto offsetOfFirstChild = node.offsetOfFirstChild();
@@ -852,18 +860,18 @@ void RTreeData<T, config>::addIntersectedChildrenToOpenList(const Node& node, co
 				openList.insert(RTreeNodeIndex::create(nodeDataAndChildIndices[iter - begin].child));
 	}
 }
-template<Sortable T, RTreeDataConfig config>
-RTreeData<T, config>::RTreeData()
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+RTreeData<T, config, nullPrimitive>::RTreeData()
 {
 	m_nodes.add();
 	m_nodes.back().setParent(RTreeNodeIndex::null());
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::beforeJsonLoad() { m_nodes.clear(); }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::maybeInsert(const Cuboid& cuboid, const T& value)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::beforeJsonLoad() { m_nodes.clear(); }
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::maybeInsert(const Cuboid& cuboid, const T& value)
 {
-	assert(value != m_nullValue);
+	assert(value != T::create(nullPrimitive));
 	if constexpr(!config.leavesCanOverlap)
 		assert(!queryAny(cuboid));
 	else
@@ -874,8 +882,8 @@ void RTreeData<T, config>::maybeInsert(const Cuboid& cuboid, const T& value)
 	addToNodeRecursive(zeroIndex, cuboid, value);
 	validate();
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::maybeRemove(const Cuboid& cuboid)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::maybeRemove(const Cuboid& cuboid)
 {
 	// Erase all contained branches and leaves.
 	constexpr RTreeNodeIndex rootIndex = RTreeNodeIndex::create(0);
@@ -900,23 +908,24 @@ void RTreeData<T, config>::maybeRemove(const Cuboid& cuboid)
 	updateBoundriesMaybe(toUpdateBoundryMaybe);
 	validate();
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::maybeRemove(const CuboidSet& cuboids)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::maybeRemove(const CuboidSet& cuboids)
 {
 	//TODO: optimize this like batch queries.
 	for(const Cuboid& cuboid : cuboids)
 		maybeRemove(cuboid);
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::maybeInsert(const CuboidSet& cuboids, const T& value)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::maybeInsert(const CuboidSet& cuboids, const T& value)
 {
 	//TODO: optimize this like batch queries.
 	for(const Cuboid& cuboid : cuboids)
 		maybeInsert(cuboid, value);
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::maybeRemove(const Cuboid& cuboid, const T& value)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::maybeRemove(const Cuboid& cuboid, const T& value)
 {
+	assert(value != T::create(nullPrimitive));
 	// Erase all contained branches and leaves.
 	constexpr RTreeNodeIndex rootIndex = RTreeNodeIndex::create(0);
 	clearAllContainedWithValueRecursive(m_nodes[rootIndex], cuboid, value);
@@ -935,17 +944,17 @@ void RTreeData<T, config>::maybeRemove(const Cuboid& cuboid, const T& value)
 	updateBoundriesMaybe(toUpdateBoundryMaybe);
 	validate();
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::maybeInsertOrOverwrite(const Cuboid& cuboid, const T& value)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::maybeInsertOrOverwrite(const Cuboid& cuboid, const T& value)
 {
 	// TODO: turn this into a call to updateOrInsert?
 	maybeRemove(cuboid);
 	maybeInsert(cuboid, value);
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::maybeInsertOrOverwrite(const Point3D& point, const T& value) { maybeInsertOrOverwrite({point, point}, value); }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::prepare()
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::maybeInsertOrOverwrite(const Point3D& point, const T& value) { maybeInsertOrOverwrite({point, point}, value); }
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::prepare()
 {
 	bool toSort = false;
 	if(!m_toComb.empty())
@@ -962,28 +971,28 @@ void RTreeData<T, config>::prepare()
 		sort();
 	validate();
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::clear()
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::clear()
 {
 	m_nodes.resize(1);
 	m_nodes[RTreeNodeIndex::create(0)].clear();
 	m_emptySlots.clear();
 	m_toComb.clear();
 }
-template<Sortable T, RTreeDataConfig config>
-bool RTreeData<T, config>::anyLeafOverlapsAnother() const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+bool RTreeData<T, config, nullPrimitive>::anyLeafOverlapsAnother() const
 {
 	CuboidSet seen;
 	for(const Cuboid& cuboid : getLeafCuboids())
 	{
 		if(seen.intersects(cuboid))
 			return true;
-		seen.add(cuboid);
+		seen.maybeAdd(cuboid);
 	}
 	return false;
 }
-template<Sortable T, RTreeDataConfig config>
-Json RTreeData<T, config>::toJson() const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+Json RTreeData<T, config, nullPrimitive>::toJson() const
 {
 	Json output;
 	output["nodes"] = Json::array();
@@ -993,8 +1002,8 @@ Json RTreeData<T, config>::toJson() const
 		output["nodes"].push_back(node.toJson());
 	return output;
 }
-template<Sortable T, RTreeDataConfig config>
-CuboidSet RTreeData<T, config>::getLeafCuboids() const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+CuboidSet RTreeData<T, config, nullPrimitive>::getLeafCuboids() const
 {
 	CuboidSet output;
 	for(const Node& node : m_nodes)
@@ -1002,12 +1011,12 @@ CuboidSet RTreeData<T, config>::getLeafCuboids() const
 		const auto leafCount = node.getLeafCount();
 		const auto& cuboids = node.getCuboids();
 		for(auto i = 0; i < leafCount; ++i)
-			output.add(cuboids[i]);
+			output.maybeAdd(cuboids[i]);
 	}
 	return output;
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::validate() const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::validate() const
 {
 	if(!config.validate)
 		return;
@@ -1032,14 +1041,15 @@ void RTreeData<T, config>::validate() const
 			assert(parentCuboids[offset.get()] == cuboids.boundry());
 		}
 		// Check that leaves don't overlap unless allowed.
+		const auto leafCount = node.getLeafCount();
 		if constexpr(!config.leavesCanOverlap)
-		{
-			const auto leafCount = node.getLeafCount();
 			for(uint i = 0; i < leafCount; ++i)
 				assert(queryCount(cuboids[i]) == 1);
-		}
-		// Check that child indices aren't in m_emptySlots and are unique.
 		const auto dataOrChildIndices = node.getDataAndChildIndices();
+		// Check that leaf values are not null.
+		for(uint i = 0; i < leafCount; ++i)
+			assert(T::create(dataOrChildIndices[i].data) != T::create(nullPrimitive));
+		// Check that child indices aren't in m_emptySlots and are unique.
 		const auto nodeCount = m_nodes.size();
 		for(RTreeArrayIndex i = node.offsetOfFirstChild(); i != nodeSize; ++i)
 		{
@@ -1053,8 +1063,8 @@ void RTreeData<T, config>::validate() const
 	for(const RTreeNodeIndex& index : m_toComb)
 		assert(!m_emptySlots.contains(index));
 }
-template<Sortable T, RTreeDataConfig config>
-void RTreeData<T, config>::load(const Json& data)
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::load(const Json& data)
 {
 	for(const Json& nodeData : data["nodes"])
 	{
@@ -1065,13 +1075,13 @@ void RTreeData<T, config>::load(const Json& data)
 	data["emptySlots"].get_to(m_emptySlots);
 	data["toComb"].get_to(m_toComb);
 }
-template<Sortable T, RTreeDataConfig config>
-uint32_t RTreeData<T, config>::nodeCount() const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+uint32_t RTreeData<T, config, nullPrimitive>::nodeCount() const
 {
 	return m_nodes.size() - m_emptySlots.size();
 }
-template<Sortable T, RTreeDataConfig config>
-uint32_t RTreeData<T, config>::leafCount() const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+uint32_t RTreeData<T, config, nullPrimitive>::leafCount() const
 {
 	uint output = 0;
 	for(RTreeNodeIndex i = RTreeNodeIndex::create(0); i < m_nodes.size(); ++i)
@@ -1083,28 +1093,28 @@ uint32_t RTreeData<T, config>::leafCount() const
 	}
 	return output;
 }
-template<Sortable T, RTreeDataConfig config>
-const RTreeData<T, config>::Node& RTreeData<T, config>::getNode(uint i) const { return m_nodes[RTreeNodeIndex::create(i)]; }
-template<Sortable T, RTreeDataConfig config>
-const Cuboid RTreeData<T, config>::getNodeCuboid(uint i, uint o) const { return m_nodes[RTreeNodeIndex::create(i)].getCuboids()[o]; }
-template<Sortable T, RTreeDataConfig config>
-RTreeNodeIndex RTreeData<T, config>::getNodeChild(uint i, uint o) const { return RTreeNodeIndex::create(m_nodes[RTreeNodeIndex::create(i)].getDataAndChildIndices()[o].child); }
-template<Sortable T, RTreeDataConfig config>
-T RTreeData<T, config>::queryPointOne(uint x, uint y, uint z) const { return queryGetOne(Point3D::create(x,y,z)); }
-template<Sortable T, RTreeDataConfig config>
-T RTreeData<T, config>::queryPointFirst(uint x, uint y, uint z) const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+const RTreeData<T, config, nullPrimitive>::Node& RTreeData<T, config, nullPrimitive>::getNode(uint i) const { return m_nodes[RTreeNodeIndex::create(i)]; }
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+const Cuboid RTreeData<T, config, nullPrimitive>::getNodeCuboid(uint i, uint o) const { return m_nodes[RTreeNodeIndex::create(i)].getCuboids()[o]; }
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+RTreeNodeIndex RTreeData<T, config, nullPrimitive>::getNodeChild(uint i, uint o) const { return RTreeNodeIndex::create(m_nodes[RTreeNodeIndex::create(i)].getDataAndChildIndices()[o].child); }
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+T RTreeData<T, config, nullPrimitive>::queryPointOne(uint x, uint y, uint z) const { return queryGetOne(Point3D::create(x,y,z)); }
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+T RTreeData<T, config, nullPrimitive>::queryPointFirst(uint x, uint y, uint z) const
 {
 	const auto found = queryGetAll(Point3D::create(x,y,z));
 	if(found.empty())
 		return T();
 	return found.front();
 }
-template<Sortable T, RTreeDataConfig config>
-SmallSet<T> RTreeData<T, config>::queryPointAll(uint x, uint y, uint z) const { return queryGetAll(Point3D::create(x,y,z)); }
-template<Sortable T, RTreeDataConfig config>
-uint8_t RTreeData<T, config>::queryPointCount(uint x, uint y, uint z) const { return queryCount(Point3D::create(x,y,z)); }
-template<Sortable T, RTreeDataConfig config>
-Cuboid RTreeData<T, config>::queryPointCuboid(uint x, uint y, uint z) const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+SmallSet<T> RTreeData<T, config, nullPrimitive>::queryPointAll(uint x, uint y, uint z) const { return queryGetAll(Point3D::create(x,y,z)); }
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+uint8_t RTreeData<T, config, nullPrimitive>::queryPointCount(uint x, uint y, uint z) const { return queryCount(Point3D::create(x,y,z)); }
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+Cuboid RTreeData<T, config, nullPrimitive>::queryPointCuboid(uint x, uint y, uint z) const
 {
 	static const Cuboid null;
 	const CuboidSet& result = queryGetAllCuboids(Point3D::create(x,y,z));
@@ -1112,8 +1122,8 @@ Cuboid RTreeData<T, config>::queryPointCuboid(uint x, uint y, uint z) const
 		return null;
 	return result.front();
 }
-template<Sortable T, RTreeDataConfig config>
-uint RTreeData<T, config>::totalNodeVolume() const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+uint RTreeData<T, config, nullPrimitive>::totalNodeVolume() const
 {
 	uint output = 0;
 	const auto end = m_nodes.size();
@@ -1122,8 +1132,8 @@ uint RTreeData<T, config>::totalNodeVolume() const
 			output += m_nodes[index].getNodeVolume();
 	return output;
 }
-template<Sortable T, RTreeDataConfig config>
-uint RTreeData<T, config>::totalLeafVolume() const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+uint RTreeData<T, config, nullPrimitive>::totalLeafVolume() const
 {
 	uint output = 0;
 	const auto end = m_nodes.size();
@@ -1132,10 +1142,10 @@ uint RTreeData<T, config>::totalLeafVolume() const
 			output += m_nodes[index].getLeafVolume();
 	return output;
 }
-template<Sortable T, RTreeDataConfig config>
-uint RTreeData<T, config>::getNodeSize() { return nodeSize; }
-template<Sortable T, RTreeDataConfig config>
-std::string RTreeData<T, config>::toString(uint x, uint y, uint z) const
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+uint RTreeData<T, config, nullPrimitive>::getNodeSize() { return nodeSize; }
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+std::string RTreeData<T, config, nullPrimitive>::toString(uint x, uint y, uint z) const
 {
 	if constexpr(HasToStringMethod<T>)
 	{

@@ -25,7 +25,7 @@ CuboidSet RTreeBoolean::Node::getLeafCuboids() const
 {
 	CuboidSet output;
 	for(auto i = ArrayIndex::create(0); i < m_leafEnd; ++i)
-		output.add(m_cuboids[i.get()]);
+		output.maybeAdd(m_cuboids[i.get()]);
 	return output;
 }
 void RTreeBoolean::Node::updateChildIndex(const Index& oldIndex, const Index& newIndex)
@@ -882,7 +882,7 @@ CuboidSet RTreeBoolean::queryGetLeaves(const ShapeT& shape) const
 		if(leafCount != 0 && interceptMask.head(leafCount).any())
 			for(auto iter = begin; iter != leafEnd; ++iter)
 				if(*iter)
-					output.add(nodeCuboids[iter - begin]);
+					output.maybeAdd(nodeCuboids[iter - begin]);
 		// TODO: Would it be better to check the whole intercept mask and continue if all are empty before checking leafs?
 		const auto childCount = node.getChildCount();
 		if(childCount == 0 || !interceptMask.tail(childCount).any())
@@ -916,11 +916,11 @@ CuboidSet RTreeBoolean::queryGetIntersection(const ShapeT& shape) const
 	{
 		for(const auto& subShape : shape)
 			for(const Cuboid& leaf : queryGetLeaves(subShape))
-				output.add(leaf.intersection(subShape));
+				output.maybeAdd(leaf.intersection(subShape));
 	}
 	else
 		for(const Cuboid& leaf : queryGetLeaves(shape))
-			output.add(leaf.intersection(shape));
+			output.maybeAdd(leaf.intersection(shape));
 	return output;
 }
 template CuboidSet RTreeBoolean::queryGetIntersection(const Cuboid& shape) const;

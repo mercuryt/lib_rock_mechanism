@@ -84,12 +84,12 @@ OffsetCuboidSet Shape::makeAdjacentCuboidsWithFacing(const ShapeId& id, const Fa
 	{
 		OffsetCuboid inflated = offsetCuboid;
 		inflated.inflate({1});
-		output.add(inflated);
+		output.maybeAdd(inflated);
 	}
 	// Leave the occupied cuboids in the set for simple shapes.
 	if(occupiedOffsets.size() > 4)
 		for(const auto& [offsetCuboid, volume] : occupiedOffsets)
-			output.removeContainedAndFragmentIntercepted(offsetCuboid);
+			output.maybeRemove(offsetCuboid);
 	return output;
 }
 MapWithOffsetCuboidKeys<CollisionVolume> Shape::getCuboidsWithVolumeByZLevel(const ShapeId& id, const Distance& z)
@@ -111,7 +111,7 @@ CuboidSet Shape::getCuboidsOccupiedAt(const ShapeId& id, const Space& space, con
 		const OffsetCuboid relativeOffsetCuboid = offsetCuboid.relativeToPoint(location);
 		assert(offsetBoundry.contains(relativeOffsetCuboid));
 		const Cuboid cuboid  = Cuboid::create(relativeOffsetCuboid);
-		output.add(cuboid);
+		output.maybeAdd(cuboid);
 	}
 	return output;
 }
@@ -134,7 +134,7 @@ CuboidSet Shape::getCuboidsOccupiedAndAdjacentAt(const ShapeId& id, const Space&
 		OffsetCuboid relativeOffsetCuboid = offsetCuboid.relativeToPoint(location);
 		relativeOffsetCuboid.inflate({1});
 		const Cuboid cuboid = Cuboid::create(offsetBoundry.intersection(relativeOffsetCuboid));
-		output.add(cuboid);
+		output.maybeAdd(cuboid);
 	}
 	return output;
 }
@@ -165,7 +165,7 @@ CuboidSet Shape::getCuboidsWhichWouldBeAdjacentAt(const ShapeId& id, const Space
 		if(!offsetBoundry.intersects(relativeOffsetCuboid))
 			continue;
 		const Cuboid cuboid = Cuboid::create(offsetBoundry.intersection(relativeOffsetCuboid));
-		output.add(cuboid);
+		output.maybeAdd(cuboid);
 	}
 	return output;
 }
@@ -277,7 +277,7 @@ MapWithOffsetCuboidKeys<CollisionVolume> Shape::applyOffsetAndRotationAndSubtrac
 	const MapWithOffsetCuboidKeys<CollisionVolume>& positionsWithNewFacing = g_shapeData.m_occupiedOffsetsCache[shape][(uint)newFacing];
 	MapWithOffsetCuboidKeys<CollisionVolume> positionsWithNewFacingOffset = positionsWithNewFacing.applyOffset(offset);
 	// TODO: Make difference in volumes instead of treating the inital facing positions as full volume?
-	positionsWithNewFacingOffset.removeContainedAndFragmentInterceptedAll(positionsWithInitalFacing.makeCuboidSet());
+	positionsWithNewFacingOffset.maybeRemoveAll(positionsWithInitalFacing.makeCuboidSet());
 	return positionsWithNewFacingOffset;
 }
 ShapeId Shape::loadFromName(std::string name)

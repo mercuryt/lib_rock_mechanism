@@ -12,9 +12,9 @@ CuboidSetBase<CuboidType, PointType, CuboidSetType>::CuboidSetBase(const PointTy
 		high.rotate2D(rotation);
 		low.rotate2D(rotation);
 		if constexpr(std::is_same_v<PointType, Offset3D>)
-			add(CuboidType{high, low});
+			maybeAdd(CuboidType{high, low});
 		else
-			add(CuboidType{PointType::create(high), PointType::create(low)});
+			maybeAdd(CuboidType{PointType::create(high), PointType::create(low)});
 	}
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
@@ -45,27 +45,27 @@ void CuboidSetBase<CuboidType, PointType, CuboidSetType>::destroy(const uint& in
 	m_cuboids.eraseIndex(index);
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-void CuboidSetBase<CuboidType, PointType, CuboidSetType>::add(const PointType& point)
+void CuboidSetBase<CuboidType, PointType, CuboidSetType>::maybeAdd(const PointType& point)
 {
-	add({point, point});
+	maybeAdd({point, point});
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-void CuboidSetBase<CuboidType, PointType, CuboidSetType>::addAll(const CuboidSetType& other)
+void CuboidSetBase<CuboidType, PointType, CuboidSetType>::maybeAddAll(const CuboidSetType& other)
 {
 	if(empty())
 		for(const CuboidType& cuboid : other)
 			m_cuboids.insert(cuboid);
 	else
 		for(const CuboidType& cuboid : other)
-			add(cuboid);
+			maybeAdd(cuboid);
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-void CuboidSetBase<CuboidType, PointType, CuboidSetType>::remove(const PointType& point)
+void CuboidSetBase<CuboidType, PointType, CuboidSetType>::maybeRemove(const PointType& point)
 {
-	remove({point, point});
+	maybeRemove({point, point});
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-void CuboidSetBase<CuboidType, PointType, CuboidSetType>::removeContainedAndFragmentIntercepted(const CuboidType& cuboid)
+void CuboidSetBase<CuboidType, PointType, CuboidSetType>::maybeRemove(const CuboidType& cuboid)
 {
 	const auto copy = m_cuboids;
 	m_cuboids.clear();
@@ -81,43 +81,10 @@ void CuboidSetBase<CuboidType, PointType, CuboidSetType>::removeContainedAndFrag
 	}
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-void CuboidSetBase<CuboidType, PointType, CuboidSetType>::removeContainedAndFragmentInterceptedAll(const CuboidSetType& cuboids)
+void CuboidSetBase<CuboidType, PointType, CuboidSetType>::maybeAdd(const CuboidType& cuboid)
 {
-	for(const CuboidType& cuboid : cuboids)
-		removeContainedAndFragmentIntercepted(cuboid);
-}
-template<typename CuboidType, typename PointType, typename CuboidSetType>
-void CuboidSetBase<CuboidType, PointType, CuboidSetType>::add(const CuboidType& cuboid)
-{
-	remove(cuboid);
+	maybeRemove(cuboid);
 	insertOrMerge(cuboid);
-}
-template<typename CuboidType, typename PointType, typename CuboidSetType>
-void CuboidSetBase<CuboidType, PointType, CuboidSetType>::remove(const CuboidType& cuboid)
-{
-	assert(cuboid.exists());
-	//TODO: partition instead of toSplit.
-	SmallSet<std::pair<CuboidType, uint>> toSplit;
-	uint i = 0;
-	for(const CuboidType& existing : m_cuboids)
-	{
-		if(existing.intersects(cuboid))
-			toSplit.emplace(existing, i);
-		++i;
-	}
-	SmallSet<CuboidType> copy;
-	copy.reserve(m_cuboids.size() - toSplit.size());
-	const uint count = m_cuboids.size();
-	for(i = 0; i != count; ++i)
-	{
-		const auto iter = std::ranges::find(toSplit.m_data, i, &std::pair<CuboidType, uint>::second);
-		if(iter == toSplit.m_data.end())
-			copy.insert(m_cuboids[i]);
-	}
-	m_cuboids = std::move(copy);
-	for(const auto& pair : toSplit)
-		for(const CuboidType& splitResult : pair.first.getChildrenWhenSplitByCuboid(cuboid))
-			insertOrMerge(splitResult);
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
 void CuboidSetBase<CuboidType, PointType, CuboidSetType>::shift(const Offset3D offset, const Distance& distance)
@@ -129,7 +96,7 @@ template<typename CuboidType, typename PointType, typename CuboidSetType>
 void CuboidSetBase<CuboidType, PointType, CuboidSetType>::addSet(const CuboidSetType& other)
 {
 	for(const CuboidType& cuboid : other.getCuboids())
-		add(cuboid);
+		maybeAdd(cuboid);
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
 void CuboidSetBase<CuboidType, PointType, CuboidSetType>::rotateAroundPoint(const PointType& point, const Facing4& rotation)
@@ -141,6 +108,17 @@ template<typename CuboidType, typename PointType, typename CuboidSetType>
 void CuboidSetBase<CuboidType, PointType, CuboidSetType>::swap(CuboidSetType& other) { other.m_cuboids.swap(m_cuboids); }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
 void CuboidSetBase<CuboidType, PointType, CuboidSetType>::popBack() { m_cuboids.popBack(); }
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+void CuboidSetBase<CuboidType, PointType, CuboidSetType>::inflate(const Distance& distance)
+{
+	auto copy = m_cuboids;
+	clear();
+	for(CuboidType& cuboid : copy)
+	{
+		cuboid.inflate(distance);
+		maybeAdd(cuboid);
+	}
+}
 template<typename CuboidType, typename PointType, typename CuboidSetType>
 void CuboidSetBase<CuboidType, PointType, CuboidSetType>::mergeInternal(const CuboidType& absorbed, const uint& absorber)
 {
@@ -263,6 +241,14 @@ bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::isAdjacent(const Cuboi
 	return false;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
+bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::isAdjacent(const PointType& point) const
+{
+	for(const auto& cuboid : m_cuboids)
+		if(cuboid.isTouching(point))
+			return true;
+	return false;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
 CuboidType CuboidSetBase<CuboidType, PointType, CuboidSetType>::boundry() const
 {
 	PointType highest;
@@ -270,7 +256,7 @@ CuboidType CuboidSetBase<CuboidType, PointType, CuboidSetType>::boundry() const
 	for(const CuboidType& cuboid : m_cuboids)
 	{
 		highest = highest.empty() ? cuboid.m_high : highest.max(cuboid.m_high);
-		lowest = lowest.empty() ? cuboid.m_low : lowest.max(cuboid.m_low);
+		lowest = lowest.empty() ? cuboid.m_low : lowest.min(cuboid.m_low);
 	}
 	return {highest, lowest};
 }
@@ -294,6 +280,16 @@ CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::intersection(
 	return output;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::intersection(const CuboidSetType& other) const
+{
+	CuboidSetType output;
+	for(const CuboidType& cuboid : m_cuboids)
+		for(const CuboidType& otherCuboid : other)
+			if(otherCuboid.intersects(cuboid))
+				output.add(otherCuboid.intersection(cuboid));
+	return output;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
 PointType CuboidSetBase<CuboidType, PointType, CuboidSetType>::intersectionPoint(const CuboidType& cuboid) const
 {
 	CuboidSetType output;
@@ -307,6 +303,14 @@ bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::intersects(const Cuboi
 {
 	for(const CuboidType& c : m_cuboids)
 		if(cuboid.intersects(c))
+			return true;
+	return false;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::intersects(const PointType& point) const
+{
+	for(const CuboidType& c : m_cuboids)
+		if(c.intersects(point))
 			return true;
 	return false;
 }
@@ -369,6 +373,31 @@ bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::isIntersectingOrAdjace
 	return false;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::getAdjacent() const
+{
+	assert(!empty());
+	CuboidSetType derived;
+	derived.m_cuboids = m_cuboids;
+	CuboidSetType inflated = derived;
+	inflated.inflate({1});
+	inflated.removeAll(derived);
+	return inflated;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::getDirectlyAdjacent() const
+{
+	assert(!empty());
+	CuboidSetType output;
+	for(const CuboidType& cuboid : m_cuboids)
+		for(Facing6 facing = Facing6::Below; facing != Facing6::Null; facing = (Facing6)((uint)facing + 1u))
+		{
+			CuboidType face = cuboid.getFace(facing);
+			face.shift(facing, {1});
+			output.maybeAdd(face);
+		}
+	return output;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
 std::string CuboidSetBase<CuboidType, PointType, CuboidSetType>::toString() const
 {
 	return m_cuboids.toString();
@@ -378,7 +407,7 @@ CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::create(const 
 {
 	CuboidSetType output;
 	for(const PointType& point : points)
-		output.add({point, point});
+		output.add(CuboidType::create(point, point));
 	return output;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>

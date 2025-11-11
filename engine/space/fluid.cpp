@@ -22,7 +22,10 @@ void Space::fluid_destroyData(const Point3D& point, const FluidTypeId& fluidType
 }
 void Space::fluid_setTotalVolume(const Point3D& point, const CollisionVolume& newTotal)
 {
-	m_totalFluidVolume.maybeInsertOrOverwrite(point, newTotal);
+	if(newTotal == 0)
+		m_totalFluidVolume.remove(point);
+	else
+		m_totalFluidVolume.maybeInsertOrOverwrite(point, newTotal);
 }
 void Space::fluid_spawnMist(const Point3D& point, const FluidTypeId& fluidType, const Distance maxMistSpread)
 {

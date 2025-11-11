@@ -40,7 +40,7 @@ struct Cuboid
 	[[nodiscard]] bool contains(const Cuboid& cuboid) const;
 	[[nodiscard]] bool contains(const Offset3D& offset) const;
 	[[nodiscard]] bool contains(const OffsetCuboid& cuboid) const;
-	bool containsAnyPoints(const auto& points) const
+	[[nodiscard]] bool containsAnyPoints(const auto& points) const
 	{
 		for(const Point3D& point : points)
 			if(contains(point))
@@ -60,6 +60,7 @@ struct Cuboid
 	[[nodiscard]] Point3D intersectionPoint(const CuboidSet& cuboid) const;
 	[[nodiscard]] OffsetCuboid above() const;
 	[[nodiscard]] Cuboid getFace(const Facing6& faceing) const;
+	[[nodiscard]] bool intersects(const Point3D& point) const;
 	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
 	[[nodiscard]] bool overlapsWithSphere(const Sphere& sphere) const;
 	[[nodiscard]] uint volume() const;
@@ -71,6 +72,7 @@ struct Cuboid
 	[[nodiscard]] Facing6 getFacingTwordsOtherCuboid(const Cuboid& cuboid) const;
 	[[nodiscard]] bool isSomeWhatInFrontOf(const Point3D& position, const Facing4& facing) const;
 	[[nodiscard]] bool isTouching(const Cuboid& cuboid) const;
+	[[nodiscard]] bool isTouching(const Point3D& point) const;
 	[[nodiscard]] bool isTouchingFace(const Cuboid& position) const;
 	[[nodiscard]] bool isTouchingFaceFromInside(const Cuboid& position) const;
 	// TODO: Should this return a CuboidArray<6>?
@@ -82,6 +84,14 @@ struct Cuboid
 	[[nodiscard]] std::pair<Cuboid, Cuboid> getChildrenWhenSplitBelowCuboid(const Cuboid& cuboid) const;
 	[[nodiscard]] OffsetCuboid translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const;
 	[[nodiscard]] OffsetCuboid offsetTo(const Point3D& point) const;
+	[[nodiscard]] uint countIf(auto&& condition) const
+	{
+		uint output = 0;
+		for(const Point3D& point : *this)
+			if(condition(point))
+				++output;
+		return output;
+	}
 	[[nodiscard]] static Cuboid fromPoint(const Point3D& point);
 	[[nodiscard]] static Cuboid fromPointPair(const Point3D& a, const Point3D& b);
 	[[nodiscard]] static Cuboid fromPointSet(const SmallSet<Point3D>& set);

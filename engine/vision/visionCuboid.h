@@ -40,8 +40,8 @@ public:
 	void insertOrMerge(const Cuboid& cuboid) override;
 	void destroy(const uint& index) override;
 	// Override for more efficient lookup of cuboids to destroy.
-	void remove(const Cuboid& cuboid) override;
-	void remove(const CuboidSet& cuboids);
+	void maybeRemove(const Cuboid& cuboid) override;
+	void maybeRemove(const CuboidSet& cuboids);
 	void onKeySetForPoint(const VisionCuboidId& key, const Point3D& point);
 	void sliceBelow(const Cuboid& cuboid);
 	void mergeBelow(const Cuboid& cuboid);

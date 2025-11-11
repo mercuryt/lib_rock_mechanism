@@ -233,6 +233,10 @@ Cuboid Cuboid::getFace(const Facing6& facing) const
 			std::unreachable();
 	}
 }
+bool Cuboid::intersects(const Point3D& point) const
+{
+	return !(m_high.data < point.data || m_low.data > point.data).any();
+}
 bool Cuboid::intersects(const Cuboid& other) const
 {
 	return !(m_high.data < other.m_low.data || m_low.data > other.m_high.data).any();
@@ -391,19 +395,13 @@ std::pair<Cuboid, Cuboid> Cuboid::getChildrenWhenSplitBelowCuboid(const Cuboid& 
 		output.second = Cuboid(Point3D(m_high.x(), m_high.y(), splitLowest.z() - 1), m_low);
 	return output;
 }
-bool Cuboid::isTouching(const Cuboid& cuboid) const
+bool Cuboid::isTouching(const Cuboid& other) const
 {
-	// TODO: SIMD.
-	if(
-		cuboid.m_low.x() > m_high.x() + 1 ||
-		cuboid.m_low.y() > m_high.y() + 1 ||
-		cuboid.m_low.z() > m_high.z() + 1 ||
-		cuboid.m_high.x() + 1 < m_low.x() ||
-		cuboid.m_high.y() + 1 < m_low.y() ||
-		cuboid.m_high.z() + 1 < m_low.z()
-	)
-		return false;
-	return true;
+	return !((m_high.data + 1) < other.m_low.data || m_low.data > (other.m_high.data + 1)).any();
+}
+bool Cuboid::isTouching(const Point3D& point) const
+{
+	return !((m_high.data + 1) < point.data || m_low.data > (point.data + 1)).any();
 }
 OffsetCuboid Cuboid::translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const
 {

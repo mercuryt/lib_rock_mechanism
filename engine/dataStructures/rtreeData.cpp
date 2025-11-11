@@ -10,7 +10,7 @@ template class RTreeData<Priority>;
 template class RTreeData<AdjacentData>;
 template class RTreeData<MaterialTypeId>;
 template class RTreeData<FluidTypeId>;
-template class RTreeData<CollisionVolume>;
+template class RTreeData<CollisionVolume, RTreeDataConfig{}, 0u>;
 template class RTreeData<PlantIndex>;
 template class RTreeData<TemperatureDelta>;
 template class RTreeData<VisionCuboidId>;

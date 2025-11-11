@@ -40,12 +40,12 @@ struct FluidData
 	CollisionVolume volume = {0};
 	// Fluid data leafs should never overlap if they are the same fluid type.
 	[[nodiscard]] std::strong_ordering operator<=>(const FluidData& other) const { return type <=> other.type; }
-	[[nodiscard]] bool operator==(const FluidData& other) const = default;
+	[[nodiscard]] constexpr bool operator==(const FluidData& other) const = default;
 	[[nodiscard]] bool empty() const { return type.empty() || volume == 0; }
 	[[nodiscard]] bool exists() const { return !empty(); }
 	[[nodiscard]] std::string toString() const { return "{type: " + FluidType::getName(type) + ", volume: " + volume.toString() + "}"; }
 	void clear() { group = nullptr; type.clear(); volume = {0}; }
-	Primitive get() const { return {group, type.get(), volume.get()}; }
+	constexpr Primitive get() const { return {group, type.get(), volume.get()}; }
 	static FluidData create(const Primitive& data)
 	{
 		FluidData output;
@@ -54,7 +54,8 @@ struct FluidData
 		output.volume = CollisionVolume::create(data.volume);
 		return output;
 	}
-	static FluidData null() { return {}; }
+	static constexpr FluidData null() { return {}; }
+	static constexpr Primitive nullPrimitive() { return {.group=nullptr, .type=FluidTypeId::nullPrimitive(), .volume=0}; }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(FluidData, type, volume);
 };
 using FluidBase = RTreeData<FluidData, RTreeDataConfigs::canOverlapAndMerge>;
@@ -79,14 +80,14 @@ class Space
 	PointFeatureRTree m_features;
 	FluidRTree m_fluid;
 	RTreeData<FluidTypeId> m_mist;
-	RTreeData<CollisionVolume> m_totalFluidVolume;
+	RTreeData<CollisionVolume, RTreeDataConfig{}, 0u> m_totalFluidVolume;
 	RTreeData<DistanceSquared> m_mistInverseDistanceFromSourceSquared;
 	//TODO: store these 4 as overlaping RTree.
 	RTreeData<ActorIndex, RTreeDataConfigs::noMerge> m_actors;
 	RTreeData<ItemIndex, RTreeDataConfigs::noMerge> m_items;
 	RTreeData<PlantIndex> m_plants;
-	RTreeData<CollisionVolume> m_dynamicVolume;
-	RTreeData<CollisionVolume> m_staticVolume;
+	RTreeData<CollisionVolume, RTreeDataConfig{}, 0u> m_dynamicVolume;
+	RTreeData<CollisionVolume, RTreeDataConfig{}, 0u> m_staticVolume;
 	RTreeData<TemperatureDelta> m_temperatureDelta;
 	RTreeBoolean m_visible;
 	RTreeBoolean m_constructed;
@@ -158,7 +159,7 @@ public:
 		CuboidSet output;
 		std::stack<Point3D> openList;
 		openList.push(point);
-		output.add(point);
+		output.maybeAdd(point);
 		while(!openList.empty())
 		{
 			Point3D current = openList.top();
@@ -166,7 +167,7 @@ public:
 			for(const Point3D& adjacent : getDirectlyAdjacent(current))
 				if(condition(adjacent) && !output.contains(adjacent))
 				{
-					output.add(adjacent);
+					output.maybeAdd(adjacent);
 					openList.push(adjacent);
 				}
 		}
@@ -189,8 +190,8 @@ public:
 				//TODO: change this from contains to containsWithinOneCuboid.
 				if(!output.contains(resultCuboid))
 				{
-					openList.add(resultCuboid);
-					output.add(resultCuboid);
+					openList.maybeAdd(resultCuboid);
+					output.maybeAdd(resultCuboid);
 				}
 		}
 		return output;
@@ -252,7 +253,7 @@ public:
 	[[nodiscard]] MapWithCuboidKeys<MaterialTypeId> solid_getAllWithCuboidsAndRemove(const CuboidSet& cuboids);
 	[[nodiscard]] Mass solid_getMass(const Point3D& point) const;
 	[[nodiscard]] Mass solid_getMass(const CuboidSet& cuboidSet) const;
-	[[nodiscard]] CuboidSet solid_getCuboidsIntersecting(const Cuboid& cuboid) const;
+	[[nodiscard]] CuboidSet solid_queryCuboids(const auto& shape) const { return m_solid.queryGetAllCuboids(shape); }
 	Mass getMass(const auto& shape) const
 	{
 		assert(solid_isAny(shape));
@@ -360,6 +361,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	[[nodiscard]] CuboidSet fluid_queryGetCuboids(const Cuboid& shape) const;
 	[[nodiscard]] CuboidSet fluid_queryGetCuboidsWithCondition(const auto& shape, const auto& condition) const { return m_fluid.queryGetAllCuboidsWithCondition(shape, condition); }
 	[[nodiscard]] Point3D fluid_queryGetPointWithCondition(const auto& shape, const auto& condition) const { return m_fluid.queryGetOnePointWithCondition(shape, condition); }
+	[[nodiscard]] const SmallSet<FluidData> fluid_queryGetWithCondition(const auto& shape, const auto& condition) const { return m_fluid.queryGetAllWithCondition(shape, condition); }
 	__attribute__((noinline)) void fluid_validateTotalForPoint(const Point3D& point) const;
 	__attribute__((noinline)) void fluid_validateAllTotals() const;
 	// Floating

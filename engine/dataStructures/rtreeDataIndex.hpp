@@ -40,6 +40,6 @@ CuboidSet RTreeDataIndex<T, DataIndexWidth, config>::getLeafCuboids() const
 {
 	CuboidSet output;
 	for(const auto& pair : m_data)
-		output.add(pair.second);
+		output.maybeAdd(pair.second);
 	return output;
 }

@@ -13,7 +13,7 @@ bool Space::shape_canFitEverOrCurrentlyDynamic(const Point3D& location, const Sh
 		return false;
 	MapWithCuboidKeys<CollisionVolume> toOccupyWithVolume = Shape::getCuboidsOccupiedAtWithVolume(shape, *this, location, facing);
 	CuboidSet toOccupy = toOccupyWithVolume.makeCuboidSet();
-	toOccupy.removeContainedAndFragmentInterceptedAll(occupied);
+	toOccupy.maybeRemoveAll(occupied);
 	if(m_solid.batchQueryAny(toOccupy))
 		return false;
 	if(!shape_anythingCanEnterCurrently(toOccupy))
@@ -37,7 +37,7 @@ bool Space::shape_canFitEverOrCurrentlyStatic(const Point3D& location, const Sha
 	// Some piece of the shape is not in bounds.
 	if(!spaceBoundry.contains(toOccupy.boundry()))
 		return false;
-	toOccupy.removeContainedAndFragmentInterceptedAll(occupied);
+	toOccupy.maybeRemoveAll(occupied);
 	if(m_solid.batchQueryAny(toOccupy))
 		return false;
 	if(!shape_anythingCanEnterCurrently(toOccupy))
@@ -67,7 +67,7 @@ bool Space::shape_canFitEver(const Point3D& location, const ShapeId& shape, cons
 	Cuboid toOccupyBoundryCuboid = Cuboid::create(toOccupyBoundry);
 	CuboidSet solid = m_solid.queryGetIntersection(toOccupyBoundryCuboid);
 	CuboidSet dynamic = m_dynamic.queryGetIntersection(toOccupyBoundryCuboid);
-	solid.removeContainedAndFragmentInterceptedAll(dynamic);
+	solid.maybeRemoveAll(dynamic);
 	if(!solid.empty())
 		return false;
 	// Check feature blocks entrance or locked door.
@@ -75,7 +75,7 @@ bool Space::shape_canFitEver(const Point3D& location, const ShapeId& shape, cons
 		return PointFeatureType::byId(feature.pointFeatureType).blocksEntrance || (feature.pointFeatureType == PointFeatureTypeId::Door && feature.isLocked());
 	};
 	CuboidSet features = m_features.queryGetAllCuboidsWithCondition(toOccupy, featureCondition);
-	features.removeContainedAndFragmentInterceptedAll(dynamic);
+	features.maybeRemoveAll(dynamic);
 	if(!features.empty())
 		return false;
 	// Check if tall shape intersects floor or hatch above ground level.
@@ -98,7 +98,7 @@ bool Space::shape_canFitCurrentlyStatic(const Point3D& location, const ShapeId& 
 {
 	assert(shape_canFitEver(location, shape, facing));
 	MapWithCuboidKeys<CollisionVolume> toOccupy = Shape::getCuboidsOccupiedAtWithVolume(shape, *this, location, facing);
-	toOccupy.removeContainedAndFragmentInterceptedAll(occupied);
+	toOccupy.maybeRemoveAll(occupied);
 	for(const auto& [cuboid, volume] : toOccupy)
 	{
 		const auto condition = [&](const CollisionVolume& v){ return volume + v > Config::maxPointVolume; };
@@ -111,7 +111,7 @@ bool Space::shape_canFitCurrentlyDynamic(const Point3D& location, const ShapeId&
 {
 	assert(shape_canFitEver(location, shape, facing));
 	MapWithCuboidKeys<CollisionVolume> toOccupy = Shape::getCuboidsOccupiedAtWithVolume(shape, *this, location, facing);
-	toOccupy.removeContainedAndFragmentInterceptedAll(occupied);
+	toOccupy.maybeRemoveAll(occupied);
 	for(const auto& [cuboid, volume] : toOccupy)
 	{
 		const auto condition = [&](const CollisionVolume& v){ return volume + v > Config::maxPointVolume; };
@@ -147,7 +147,7 @@ bool Space::shape_canEnterCurrentlyWithFacing(const Point3D& location, const Sha
 {
 	assert(shape_canFitEver(location, shape, facing));
 	MapWithCuboidKeys<CollisionVolume> toOccupy = Shape::getCuboidsOccupiedAtWithVolume(shape, *this, location, facing);
-	toOccupy.removeContainedAndFragmentInterceptedAll(occupied);
+	toOccupy.maybeRemoveAll(occupied);
 	for(const auto& [cuboid, volume] : toOccupy)
 	{
 		if(!shape_anythingCanEnterCurrently(cuboid))
@@ -169,7 +169,7 @@ bool Space::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const Point3
 		return false;
 	MapWithCuboidKeys<CollisionVolume> toOccupy = Shape::getCuboidsOccupiedAtWithVolume(shape, *this, location, facing);
 	Cuboid shapeBoundry = Cuboid::create(offsetShapeBoundry);
-	toOccupy.removeContainedAndFragmentInterceptedAll(occupied);
+	toOccupy.maybeRemoveAll(occupied);
 	bool isFlat = shapeBoundry.m_high.z() == shapeBoundry.m_low.z();
 	Cuboid toOccupyBoundryWithoutLowestLevel = isFlat ? shapeBoundry : Cuboid{shapeBoundry.m_high, shapeBoundry.m_low.above()};
 	for(const auto& [cuboid, volume] : toOccupy)
@@ -478,7 +478,7 @@ CuboidSet Space::shape_getBelowPointsWithFacing(const Point3D& point, const Shap
 			continue;
 		Cuboid belowFace = cuboid.getFace(Facing6::Below);
 		belowFace.shift(Facing6::Below, {1});
-		output.add(belowFace);
+		output.maybeAdd(belowFace);
 	}
 	return output;
 }

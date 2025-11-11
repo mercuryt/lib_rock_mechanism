@@ -415,13 +415,16 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 						if(requiredData.volumeFound < requiredData.volumeRequired)
 						{
 							// TODO: change group to use cuboid set.
-							for(const Point3D& point : fluidData.group->getPoints())
-								if(cuboid.contains(point))
-								{
-									recordFluidOnGround(fluidData.type, point);
-									if(m_project.reservationsComplete())
-										return std::make_pair(true, point);
-								}
+							for(const Cuboid& fluidGroupCuboid : fluidData.group->getPoints())
+							{
+								for(const Point3D point : fluidGroupCuboid)
+									if(cuboid.contains(point))
+									{
+										recordFluidOnGround(fluidData.type, point);
+										if(m_project.reservationsComplete())
+											return std::make_pair(true, point);
+									}
+							}
 						}
 					}
 				}

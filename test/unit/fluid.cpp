@@ -30,7 +30,7 @@ TEST_CASE("fluids smaller")
 		space.fluid_add(block, CollisionVolume::create(100), water);
 		CHECK(space.fluid_contains(Point3D::create(5, 5, 1), water));
 		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
-		CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
+		CHECK(fluidGroup->m_fillQueue.m_set.volume() == 1);
 		fluidGroup->readStep(area);
 		CHECK(fluidGroup->m_stable);
 		fluidGroup->writeStep(area);
@@ -79,8 +79,8 @@ TEST_CASE("fluids smaller")
 		space.fluid_add(block, Config::maxPointVolume * 2u, water);
 		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		CHECK(!fluidGroup->m_stable);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 1);
-		CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 1);
+		CHECK(fluidGroup->m_fillQueue.m_set.volume() == 1);
 		CHECK(fluidGroup->m_fillQueue.m_queue[0].point == block2);
 		// Step 1.
 		fluidGroup->readStep(area);
@@ -90,8 +90,8 @@ TEST_CASE("fluids smaller")
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 2);
-		CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 2);
+		CHECK(fluidGroup->m_fillQueue.m_set.volume() == 1);
 		CHECK(fluidGroup->m_fillQueue.m_queue[0].point == block3);
 		CHECK(space.fluid_contains(block2, water));
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == Config::maxPointVolume);
@@ -137,8 +137,8 @@ TEST_CASE("fluids smaller")
 		CHECK(fluidGroup->m_destroy == false);
 		// Step 1.
 		fluidGroup->readStep(area);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 1);
-		CHECK(fluidGroup->m_drainQueue.m_futureEmpty.size() == 1);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 1);
+		CHECK(fluidGroup->m_drainQueue.m_futureEmpty.volume() == 1);
 		CHECK(fluidGroup->m_destroy == true);
 	}
 	SUBCASE("Flow into adjacent hole")
@@ -155,39 +155,39 @@ TEST_CASE("fluids smaller")
 		space.fluid_add(origin, Config::maxPointVolume, water);
 		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		CHECK(!fluidGroup->m_stable);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 1);
-		CHECK(fluidGroup->m_fillQueue.m_set.size() == 2);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 1);
+		CHECK(fluidGroup->m_fillQueue.m_set.volume() == 2);
 		// Step 1.
 		fluidGroup->readStep(area);
 		CHECK(fluidGroup->m_destroy == false);
-		CHECK(fluidGroup->m_fillQueue.m_set.size() == 2);
+		CHECK(fluidGroup->m_fillQueue.m_set.volume() == 2);
 		CHECK(fluidGroup->m_fillQueue.m_set.contains(block2));
 		CHECK(fluidGroup->m_fillQueue.m_set.contains(block5));
 		CHECK(fluidGroup->m_futureRemoveFromFillQueue.empty());
-		CHECK(fluidGroup->m_futureAddToFillQueue.size() == 3);
+		CHECK(fluidGroup->m_futureAddToFillQueue.volume() == 3);
 		fluidGroup->writeStep(area);
 		fluidGroup->afterWriteStep(area);
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 2);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 2);
 		CHECK(!space.fluid_getGroup(destination, water));
 		CHECK(space.fluid_getGroup(block2, water));
 		CHECK(space.fluid_getGroup(origin, water));
 		CHECK(space.fluid_volumeOfTypeContains(origin, water) == Config::maxPointVolume / 2);
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == Config::maxPointVolume / 2);
-		CHECK(fluidGroup->m_fillQueue.m_set.size() == 5);
+		CHECK(fluidGroup->m_fillQueue.m_set.volume() == 5);
 		CHECK(fluidGroup->m_fillQueue.m_set.contains(destination));
 		CHECK(fluidGroup->m_fillQueue.m_set.contains(block2));
 		CHECK(fluidGroup->m_fillQueue.m_set.contains(origin));
 		CHECK(fluidGroup->m_fillQueue.m_set.contains(block4));
 		CHECK(fluidGroup->m_fillQueue.m_set.contains(block5));
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 2);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 2);
 		CHECK(fluidGroup->m_drainQueue.m_set.contains(block2));
 		CHECK(fluidGroup->m_drainQueue.m_set.contains(origin));
 		// Step 2.
 		fluidGroup->readStep(area);
-		CHECK(fluidGroup->m_futureRemoveFromFillQueue.size() == 4);
+		CHECK(fluidGroup->m_futureRemoveFromFillQueue.volume() == 4);
 		fluidGroup->writeStep(area);
 		fluidGroup->afterWriteStep(area);
 		fluidGroup->splitStep(area);
@@ -196,10 +196,10 @@ TEST_CASE("fluids smaller")
 		CHECK(!space.fluid_getGroup(block2, water));
 		CHECK(!space.fluid_getGroup(origin, water));
 		CHECK(space.fluid_volumeOfTypeContains(destination, water) == Config::maxPointVolume);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 1);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 1);
 		// If the group is stable at this point depends on the viscosity of water, do one more step to make sure.
-		CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 1);
+		CHECK(fluidGroup->m_fillQueue.m_set.volume() == 1);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 1);
 		// Step 3.
 		fluidGroup->readStep(area);
 		fluidGroup->writeStep(area);
@@ -230,7 +230,7 @@ TEST_CASE("fluids smaller")
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 5);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 5);
 		CHECK(space.fluid_volumeOfTypeContains(block, water) == 20);
 		CHECK(space.fluid_volumeOfTypeContains(block2a, water) == 20);
 		CHECK(space.fluid_volumeOfTypeContains(block2b, water) == 20);
@@ -244,7 +244,7 @@ TEST_CASE("fluids smaller")
 		fluidGroup->afterWriteStep(area);
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 13);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 13);
 		CHECK(space.fluid_volumeOfTypeContains(block, water) == 7);
 		CHECK(space.fluid_volumeOfTypeContains(block2a, water) == 7);
 		CHECK(space.fluid_volumeOfTypeContains(block2b, water) == 7);
@@ -261,7 +261,7 @@ TEST_CASE("fluids smaller")
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 1);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 1);
 		CHECK(space.fluid_volumeOfTypeContains(block, water) == 0);
 		CHECK(space.fluid_volumeOfTypeContains(block2a, water) == 0);
 		CHECK(space.fluid_volumeOfTypeContains(block3, water) == 0);
@@ -293,7 +293,7 @@ TEST_CASE("fluids smaller")
 		CHECK(space.fluid_getGroup(origin1, water) == space.fluid_getGroup(origin2, water));
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
 		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 2);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 2);
 		fluidGroup->readStep(area);
 		fluidGroup->writeStep(area);
 		fluidGroup->afterWriteStep(area);
@@ -343,10 +343,10 @@ TEST_CASE("fluids smaller")
 		fg1->mergeStep(area);
 		fg2->mergeStep(area);
 		CHECK(fg2->m_merged);
-		CHECK(fg1->m_drainQueue.m_set.size() == 3);
+		CHECK(fg1->m_drainQueue.m_set.volume() == 3);
 		CHECK(fg1->m_excessVolume == 0);
-		CHECK(fg1->m_fillQueue.m_set.size() == 6);
-		CHECK(fg1->m_drainQueue.m_set.size() == 3);
+		CHECK(fg1->m_fillQueue.m_set.volume() == 6);
+		CHECK(fg1->m_drainQueue.m_set.volume() == 3);
 		CHECK(space.fluid_volumeOfTypeContains(origin1, water) == 50);
 		CHECK(space.fluid_volumeOfTypeContains(block1, water) == 100);
 		CHECK(space.fluid_volumeOfTypeContains(origin2, water) == 50);
@@ -431,19 +431,19 @@ TEST_CASE("fluids smaller")
 		CHECK(fgMercury != nullptr);
 		CHECK(fgWater->m_fluidType == water);
 		CHECK(fgMercury->m_fluidType == mercury);
-		CHECK(fgWater->m_fillQueue.m_set.size() == 1);
+		CHECK(fgWater->m_fillQueue.m_set.volume() == 1);
 		// Step 1.
 		fgWater->readStep(area);
-		CHECK(fgWater->m_fillQueue.m_set.size() == 1);
+		CHECK(fgWater->m_fillQueue.m_set.volume() == 1);
 		fgMercury->readStep(area);
 		fgWater->writeStep(area);
-		CHECK(fgWater->m_drainQueue.m_set.size() == 1);
+		CHECK(fgWater->m_drainQueue.m_set.volume() == 1);
 		fgMercury->writeStep(area);
 		fgWater->afterWriteStep(area);
 		fgMercury->afterWriteStep(area);
 		fgWater->splitStep(area);
 		fgMercury->splitStep(area);
-		CHECK(fgWater->m_fillQueue.m_set.size() == 2);
+		CHECK(fgWater->m_fillQueue.m_set.volume() == 2);
 		CHECK(fgWater->m_fillQueue.m_set.contains(block1));
 		CHECK(fgWater->m_fillQueue.m_set.contains(block2));
 		fgWater->mergeStep(area);
@@ -457,10 +457,10 @@ TEST_CASE("fluids smaller")
 		CHECK(fgMercury->m_excessVolume == 0);
 		CHECK(!fgWater->m_stable);
 		CHECK(!fgMercury->m_stable);
-		CHECK(fgWater->m_fillQueue.m_set.size() == 2);
+		CHECK(fgWater->m_fillQueue.m_set.volume() == 2);
 		CHECK(fgWater->m_fillQueue.m_set.contains(block1));
 		CHECK(fgWater->m_fillQueue.m_set.contains(block2));
-		CHECK(fgMercury->m_fillQueue.m_set.size() == 3);
+		CHECK(fgMercury->m_fillQueue.m_set.volume() == 3);
 		// Step 2.
 		fgWater->readStep(area);
 		fgMercury->readStep(area);
@@ -481,11 +481,11 @@ TEST_CASE("fluids smaller")
 		CHECK(fgMercury->m_excessVolume == 0);
 		CHECK(!fgWater->m_stable);
 		CHECK(!fgMercury->m_stable);
-		CHECK(fgWater->m_fillQueue.m_set.size() == 3);
+		CHECK(fgWater->m_fillQueue.m_set.volume() == 3);
 		CHECK(fgWater->m_fillQueue.m_set.contains(block1));
 		CHECK(fgWater->m_fillQueue.m_set.contains(block2));
 		CHECK(fgWater->m_fillQueue.m_set.contains(block3));
-		CHECK(fgWater->m_drainQueue.m_set.size() == 1);
+		CHECK(fgWater->m_drainQueue.m_set.volume() == 1);
 		CHECK(fgWater->m_drainQueue.m_set.contains(block2));
 		// Step 3.
 		fgWater->readStep(area);
@@ -499,8 +499,8 @@ TEST_CASE("fluids smaller")
 		fgMercury->splitStep(area);
 		fgWater->mergeStep(area);
 		fgMercury->mergeStep(area);
-		CHECK(fgWater->m_drainQueue.m_set.size() == 1);
-		CHECK(fgWater->m_fillQueue.m_set.size() == 2);
+		CHECK(fgWater->m_drainQueue.m_set.volume() == 1);
+		CHECK(fgWater->m_fillQueue.m_set.volume() == 2);
 		CHECK(space.fluid_volumeOfTypeContains(block1, water) == 0);
 		CHECK(space.fluid_volumeOfTypeContains(block1, mercury) == 100);
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == 100);
@@ -557,9 +557,10 @@ TEST_CASE("fluids smaller")
 		fg1->mergeStep(area);
 		fg2->mergeStep(area);
 		fg3->mergeStep(area);
-		CHECK(fg2->m_drainQueue.m_set.size() == 7);
-		CHECK(fg1->m_merged);
-		CHECK(fg3->m_merged);
+		// One group is merged into by the other two
+		CHECK(fg1->m_merged + fg2->m_merged + fg3->m_merged == 2);
+		FluidGroup* remainingGroup = (!fg1->m_merged) ? fg1 : (!fg2->m_merged) ? fg2 : fg3;
+		CHECK(remainingGroup->m_drainQueue.m_set.volume() == 7);
 		CHECK(space.fluid_volumeOfTypeContains(block1, water) == 50);
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == 50);
 		CHECK(space.fluid_volumeOfTypeContains(block3, water) == 33);
@@ -568,10 +569,10 @@ TEST_CASE("fluids smaller")
 		CHECK(space.fluid_volumeOfTypeContains(block6, water) == 50);
 		CHECK(space.fluid_volumeOfTypeContains(block7, water) == 50);
 		// Step 2.
-		fg2->readStep(area);
-		fg2->writeStep(area);
-		fg2->splitStep(area);
-		fg2->mergeStep(area);
+		remainingGroup->readStep(area);
+		remainingGroup->writeStep(area);
+		remainingGroup->splitStep(area);
+		remainingGroup->mergeStep(area);
 		CHECK(space.fluid_volumeOfTypeContains(block1, water) == 42);
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == 42);
 		CHECK(space.fluid_volumeOfTypeContains(block3, water) == 42);
@@ -579,8 +580,8 @@ TEST_CASE("fluids smaller")
 		CHECK(space.fluid_volumeOfTypeContains(block5, water) == 42);
 		CHECK(space.fluid_volumeOfTypeContains(block6, water) == 42);
 		CHECK(space.fluid_volumeOfTypeContains(block7, water) == 42);
-		fg2->readStep(area);
-		CHECK(fg2->m_stable);
+		remainingGroup->readStep(area);
+		CHECK(remainingGroup->m_stable);
 	}
 	SUBCASE("Split test 2")
 	{
@@ -607,7 +608,7 @@ TEST_CASE("fluids smaller")
 		space.fluid_add(origin2, CollisionVolume::create(20), water);
 		space.fluid_add(origin3, CollisionVolume::create(20), water);
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
-		CHECK(fg1->m_drainQueue.m_set.size() == 3);
+		CHECK(fg1->m_drainQueue.m_set.volume() == 3);
 		// Step 1.
 		fg1->readStep(area);
 		fg1->writeStep(area);
@@ -616,15 +617,15 @@ TEST_CASE("fluids smaller")
 		fg1->mergeStep(area);
 		CHECK(fg1->m_excessVolume == 0);
 		CHECK(fg1->totalVolume(area) == 30);
-		CHECK(fg1->m_drainQueue.m_set.size() == 1);
+		CHECK(fg1->m_drainQueue.m_set.volume() == 1);
 		fg1 = space.fluid_getGroup(block3, water);
 		CHECK(fg1->m_drainQueue.m_set.contains(block3));
 		FluidGroup* fg2 = space.fluid_getGroup(block4, water);
 		CHECK(fg1 != fg2);
-		CHECK(fg2->m_drainQueue.m_set.size() == 1);
+		CHECK(fg2->m_drainQueue.m_set.volume() == 1);
 		CHECK(fg2->totalVolume(area) == 30);
-		CHECK(fg1->m_fillQueue.m_set.size() == 3);
-		CHECK(fg2->m_fillQueue.m_set.size() == 2);
+		CHECK(fg1->m_fillQueue.m_set.volume() == 3);
+		CHECK(fg2->m_fillQueue.m_set.volume() == 2);
 		CHECK(area.m_hasFluidGroups.getAll().size() == 2);
 		CHECK(space.fluid_volumeOfTypeContains(origin1, water) == 0);
 		CHECK(space.fluid_volumeOfTypeContains(origin2, water) == 0);
@@ -698,8 +699,8 @@ TEST_CASE("fluids smaller")
 		space.fluid_add(origin3, CollisionVolume::create(20), water);
 		space.fluid_add(origin4, CollisionVolume::create(20), water);
 		CHECK(area.m_hasFluidGroups.getAll().size() == 2);
-		CHECK(fg1->m_drainQueue.m_set.size() == 1);
-		CHECK(fg2->m_drainQueue.m_set.size() == 3);
+		CHECK(fg1->m_drainQueue.m_set.volume() == 1);
+		CHECK(fg2->m_drainQueue.m_set.volume() == 3);
 		CHECK(fg1 != fg2);
 		// Step 1.
 		fg1->readStep(area);
@@ -713,7 +714,7 @@ TEST_CASE("fluids smaller")
 		fg2->splitStep(area);
 		fg1->mergeStep(area);
 		fg2->mergeStep(area);
-		CHECK(fg1->m_drainQueue.m_set.size() == 3);
+		CHECK(fg1->m_drainQueue.m_set.volume() == 3);
 		CHECK(space.fluid_volumeOfTypeContains(origin1, water) == 50);
 		CHECK(space.fluid_volumeOfTypeContains(origin2, water) == 0);
 		CHECK(space.fluid_volumeOfTypeContains(origin3, water) == 0);
@@ -728,7 +729,7 @@ TEST_CASE("fluids smaller")
 		fg2->readStep(area);
 		CHECK(fg1->m_excessVolume == 0);
 		fg1->writeStep(area);
-		CHECK(fg1->m_drainQueue.m_set.size() == 2);
+		CHECK(fg1->m_drainQueue.m_set.volume() == 2);
 		fg2->writeStep(area);
 		fg1->afterWriteStep(area);
 		fg2->afterWriteStep(area);
@@ -794,17 +795,17 @@ TEST_CASE("fluids smaller")
 		FluidGroup* fg4 = space.fluid_getGroup(block2, water);
 		CHECK(!fg3->m_merged);
 		fg3->splitStep(area);
-		CHECK(fg1->m_drainQueue.m_set.size() == 2);
-		CHECK(fg2->m_drainQueue.m_set.size() == 1);
+		CHECK(fg1->m_drainQueue.m_set.volume() == 2);
+		CHECK(fg2->m_drainQueue.m_set.volume() == 1);
 		fg1->mergeStep(area);
-		CHECK(fg1->m_drainQueue.m_set.size() == 3);
+		CHECK(fg1->m_drainQueue.m_set.volume() == 3);
 		fg2->mergeStep(area);
 		fg4->mergeStep(area);
 		fg3->mergeStep(area);
 		CHECK(fg4->m_merged);
 		CHECK(fg2->m_merged);
-		CHECK(fg1->m_drainQueue.m_set.size() == 3);
-		CHECK(fg4->m_drainQueue.m_set.size() == 1);
+		CHECK(fg1->m_drainQueue.m_set.volume() == 3);
+		CHECK(fg4->m_drainQueue.m_set.volume() == 1);
 		CHECK(fg1 != fg4);
 		CHECK(space.fluid_volumeOfTypeContains(origin1, water) == 50);
 		CHECK(space.fluid_volumeOfTypeContains(origin2, water) == 0);
@@ -820,7 +821,7 @@ TEST_CASE("fluids smaller")
 		fg3->readStep(area);
 		CHECK(fg1->m_excessVolume == 0);
 		fg1->writeStep(area);
-		CHECK(fg1->m_drainQueue.m_set.size() == 2);
+		CHECK(fg1->m_drainQueue.m_set.volume() == 2);
 		fg3->writeStep(area);
 		fg1->afterWriteStep(area);
 		fg3->afterWriteStep(area);
@@ -1124,6 +1125,7 @@ TEST_CASE("fluids smaller")
 		// Step 2.
 		space.solid_set(origin1, marble, false);
 		CHECK(space.solid_isAny(origin1));
+		CHECK(!fg1->m_fillQueue.m_set.contains(origin1));
 		CHECK(fg1->m_potentiallySplitFromSyncronusStep.size() == 2);
 		CHECK(fg1->m_potentiallySplitFromSyncronusStep.contains(block1));
 		CHECK(fg1->m_potentiallySplitFromSyncronusStep.contains(block2));
@@ -1170,8 +1172,8 @@ TEST_CASE("fluids smaller")
 		CHECK(space.solid_get(block1) == marble);
 		CHECK(!space.solid_isAny(block2));
 		CHECK(fluidGroup->m_excessVolume == 100);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 0);
-		CHECK(fluidGroup->m_fillQueue.m_set.size() == 1);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 0);
+		CHECK(fluidGroup->m_fillQueue.m_set.volume() == 1);
 		CHECK(fluidGroup->m_fillQueue.m_set.contains(block2));
 		CHECK(space.fluid_canEnterEver(block2));
 		fluidGroup->readStep(area);
@@ -1245,14 +1247,14 @@ TEST_CASE("area larger")
 		space.fluid_add(origin2, CollisionVolume::create(100), water);
 		FluidGroup* fluidGroup = *area.m_hasFluidGroups.getUnstable().begin();
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 2);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 2);
 		fluidGroup->readStep(area);
 		fluidGroup->writeStep(area);
 		fluidGroup->afterWriteStep(area);
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 5);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 5);
 		CHECK(space.fluid_volumeOfTypeContains(origin1, water) == 40);
 		CHECK(space.fluid_volumeOfTypeContains(origin2, water) == 0);
 		CHECK(space.fluid_volumeOfTypeContains(block1, water) == 40);
@@ -1264,7 +1266,7 @@ TEST_CASE("area larger")
 		fluidGroup->afterWriteStep(area);
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 13);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 13);
 		CHECK(space.fluid_volumeOfTypeContains(origin1, water) == 15);
 		CHECK(space.fluid_volumeOfTypeContains(block1, water) == 15);
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == 15);
@@ -1276,7 +1278,7 @@ TEST_CASE("area larger")
 		fluidGroup->afterWriteStep(area);
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 25);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 25);
 		CHECK(space.fluid_volumeOfTypeContains(origin1, water) == 7);
 		CHECK(space.fluid_volumeOfTypeContains(block1, water) == 7);
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == 7);
@@ -1291,7 +1293,7 @@ TEST_CASE("area larger")
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 41);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 41);
 		CHECK(space.fluid_volumeOfTypeContains(origin1, water) == 4);
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == 4);
 		CHECK(space.fluid_volumeOfTypeContains(block3, water) == 4);
@@ -1304,7 +1306,7 @@ TEST_CASE("area larger")
 		fluidGroup->afterWriteStep(area);
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 61);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 61);
 		CHECK(space.fluid_volumeOfTypeContains(origin1, water) == 3);
 		CHECK(space.fluid_volumeOfTypeContains(block1, water) == 3);
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == 3);
@@ -1319,7 +1321,7 @@ TEST_CASE("area larger")
 		fluidGroup->afterWriteStep(area);
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 85);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 85);
 		CHECK(space.fluid_volumeOfTypeContains(origin1, water) == 2);
 		CHECK(space.fluid_volumeOfTypeContains(block1, water) == 2);
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == 2);
@@ -1350,7 +1352,7 @@ TEST_CASE("area larger")
 		fluidGroup->afterWriteStep(area);
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 5);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 5);
 		CHECK(space.fluid_volumeOfTypeContains(block, water) == 20);
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == 0);
 		for(const Point3D& adjacent : space.getDirectlyAdjacent(block))
@@ -1366,7 +1368,7 @@ TEST_CASE("area larger")
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 13);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 13);
 		CHECK(space.fluid_volumeOfTypeContains(block, water) == 7);
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == 7);
 		CHECK(space.fluid_volumeOfTypeContains(block3, water) == 7);
@@ -1379,7 +1381,7 @@ TEST_CASE("area larger")
 		fluidGroup->afterWriteStep(area);
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 25);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 25);
 		CHECK(space.fluid_volumeOfTypeContains(block, water) == 3);
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == 3);
 		CHECK(space.fluid_volumeOfTypeContains(block3, water) == 3);
@@ -1394,7 +1396,7 @@ TEST_CASE("area larger")
 		fluidGroup->afterWriteStep(area);
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 41);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 41);
 		CHECK(space.fluid_volumeOfTypeContains(block, water) == 2);
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == 2);
 		CHECK(space.fluid_volumeOfTypeContains(block3, water) == 2);
@@ -1409,7 +1411,7 @@ TEST_CASE("area larger")
 		fluidGroup->afterWriteStep(area);
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 61);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 61);
 		CHECK(space.fluid_volumeOfTypeContains(block, water) == 1);
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == 1);
 		CHECK(space.fluid_volumeOfTypeContains(block3, water) == 1);
@@ -1426,7 +1428,7 @@ TEST_CASE("area larger")
 		fluidGroup->splitStep(area);
 		fluidGroup->mergeStep(area);
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
-		CHECK(fluidGroup->m_drainQueue.m_set.size() == 85);
+		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 85);
 		CHECK(space.fluid_volumeOfTypeContains(block, water) == 1);
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == 1);
 		CHECK(space.fluid_volumeOfTypeContains(block3, water) == 1);
@@ -1487,10 +1489,10 @@ TEST_CASE("fluids multi scale")
 		uint32_t expectedHeight = 1 + (maxZ - 1) / 2;
 		uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
 		CHECK(fgWater->m_stable);
-		CHECK(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgWater->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(fgWater->totalVolume(area) == totalVolume);
 		CHECK(fgCO2->m_stable);
-		CHECK(fgCO2->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgCO2->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(fgCO2->totalVolume(area) == totalVolume);
 		CHECK(space.fluid_getGroup(Point3D::create(1, 1, 1), water));
 		CHECK(space.fluid_getGroup(Point3D::create(maxX - 2, 1, 1), water));
@@ -1553,13 +1555,13 @@ TEST_CASE("fluids multi scale")
 		uint32_t expectedHeight = std::max(1u, maxZ / 3);
 		uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
 		CHECK(fgWater->m_stable);
-		CHECK(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgWater->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(fgWater->totalVolume(area) == totalVolume);
 		CHECK(fgCO2->m_stable);
-		CHECK(fgCO2->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgCO2->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(fgCO2->totalVolume(area) == totalVolume);
 		CHECK(fgLava->m_stable);
-		CHECK(fgLava->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgLava->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(fgLava->totalVolume(area) == totalVolume);
 		CHECK(space.fluid_getGroup(Point3D::create(1, 1, 1), lava));
 		CHECK(space.fluid_getGroup(Point3D::create(maxX - 2, 1, 1), lava));
@@ -1638,16 +1640,16 @@ TEST_CASE("fluids multi scale")
 		fgLava = areaBuilderUtil::getFluidGroup(area, lava);
 		CHECK(fgLava != nullptr);
 		CHECK(fgWater->m_stable);
-		CHECK(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgWater->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(fgWater->totalVolume(area) == totalVolume);
 		CHECK(fgCO2->m_stable);
-		CHECK(fgCO2->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgCO2->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(fgCO2->totalVolume(area) == totalVolume);
 		CHECK(fgLava->m_stable);
-		CHECK(fgLava->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgLava->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(fgLava->totalVolume(area) == totalVolume);
 		CHECK(fgMercury->m_stable);
-		CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgMercury->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(fgMercury->totalVolume(area) == totalVolume);
 		CHECK(space.fluid_getGroup(Point3D::create(1, 1, 1), mercury));
 		CHECK(space.fluid_getGroup(Point3D::create(maxX - 2, 1, 1), mercury));
@@ -1726,8 +1728,8 @@ TEST_CASE("fluids multi scale")
 		FluidGroup* fgCO2 = space.fluid_getGroup(water2, CO2);
 		CHECK(fgWater->totalVolume(area) == totalVolume);
 		CHECK(fgCO2->totalVolume(area) == totalVolume);
-		CHECK(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
-		CHECK(fgCO2->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgWater->m_drainQueue.m_set.volume() == expectedBlocks);
+		CHECK(fgCO2->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(area.m_hasFluidGroups.getAll().size() == 2);
 	};
 	SUBCASE("trench test 2 fluids merge scale 4-1")
@@ -1799,9 +1801,9 @@ TEST_CASE("fluids multi scale")
 		CHECK(fgWater->totalVolume(area) == totalVolumeWater);
 		CHECK(fgCO2->totalVolume(area) == totalVolumeCO2);
 		CHECK(fgMercury->totalVolume(area) == totalVolumeMercury);
-		CHECK(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
-		CHECK((fgCO2->m_drainQueue.m_set.size() == expectedBlocks || fgCO2->m_drainQueue.m_set.size() == expectedBlocks * 2));
-		CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgWater->m_drainQueue.m_set.volume() == expectedBlocks);
+		CHECK((fgCO2->m_drainQueue.m_set.volume() == expectedBlocks || fgCO2->m_drainQueue.m_set.volume() == expectedBlocks * 2));
+		CHECK(fgMercury->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(fgWater->m_stable);
 		CHECK(fgCO2->m_stable);
 		CHECK(fgMercury->m_stable);
@@ -1889,19 +1891,19 @@ TEST_CASE("four fluids multi scale")
 		fgCO2 = areaBuilderUtil::getFluidGroup(area, CO2);
 		CHECK(fgWater != nullptr);
 		CHECK(fgWater->m_stable);
-		CHECK(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgWater->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(fgWater->totalVolume(area) == totalVolume);
 		CHECK(fgCO2 != nullptr);
 		CHECK(fgCO2->m_stable);
-		CHECK(fgCO2->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgCO2->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(fgCO2->totalVolume(area) == totalVolume);
 		CHECK(fgLava != nullptr);
 		CHECK(fgLava->m_stable);
-		CHECK(fgLava->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgLava->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(fgLava->totalVolume(area) == totalVolume);
 		CHECK(fgMercury != nullptr);
 		CHECK(fgMercury->m_stable);
-		CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgMercury->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(fgMercury->totalVolume(area) == totalVolume);
 		CHECK(space.fluid_getGroup(Point3D::create(1, 1, 1), mercury));
 		CHECK(space.fluid_getGroup(Point3D::create(1, 1, maxZ - 1), CO2));

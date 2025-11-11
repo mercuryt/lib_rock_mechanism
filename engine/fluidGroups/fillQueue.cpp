@@ -4,21 +4,6 @@
 #include "../area/area.h"
 #include "../space/space.h"
 #include "numericTypes/types.h"
-void FillQueue::buildFor(Area& area, FluidGroup& fluidGroup, SmallSet<Point3D>& members)
-{
-	auto& space = area.getSpace();
-	for(Point3D point : members)
-	{
-		assert(space.fluid_contains(point, fluidGroup.m_fluidType));
-		for(Point3D adjacent : space.getDirectlyAdjacent(point))
-			if(
-				space.fluid_canEnterEver(adjacent) &&
-				space.fluid_canEnterCurrently(adjacent, fluidGroup.m_fluidType) &&
-				space.fluid_volumeOfTypeContains(adjacent, fluidGroup.m_fluidType) != Config::maxPointVolume
-			)
-				maybeAddPoint(adjacent);
-	}
-}
 void FillQueue::initalizeForStep(Area& area, FluidGroup& fluidGroup)
 {
 	auto& space = area.getSpace();
@@ -49,7 +34,7 @@ void FillQueue::recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionV
 	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 	{
 		if(iter->delta == 0 && !space.fluid_contains(iter->point, fluidGroup.m_fluidType))
-			m_futureNoLongerEmpty.maybeInsert(iter->point);
+			m_futureNoLongerEmpty.maybeAdd(iter->point);
 		iter->delta += volume;
 		assert(iter->delta <= Config::maxPointVolume);
 		assert(iter->capacity >= volume);
@@ -61,7 +46,7 @@ void FillQueue::recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionV
 		assert((space.fluid_volumeOfTypeContains(m_groupStart->point, fluidGroup.m_fluidType) + m_groupStart->delta) <= Config::maxPointVolume);
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 			if((space.fluid_volumeOfTypeContains(iter->point, fluidGroup.m_fluidType) + iter->delta) == Config::maxPointVolume)
-				m_futureFull.insert(iter->point);
+				m_futureFull.add(iter->point);
 		m_groupStart = m_groupEnd;
 		findGroupEnd();
 	}
@@ -88,7 +73,7 @@ void FillQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 			(iter->point->m_hasFluids.m_fluids[m_fluidGroup.m_fluidType].first == Config::maxPointVolume && m_futureFull.contains(iter->point)));
 		*/
 		if(space.fluid_getTotalVolume(iter->point) > Config::maxPointVolume)
-			m_overfull.insert(iter->point);
+			m_overfull.add(iter->point);
 	}
 	validate();
 }

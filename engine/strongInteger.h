@@ -70,6 +70,7 @@ struct StrongInteger
 	[[nodiscard]] T& getReference() { return data; }
 	[[nodiscard]] constexpr static Derived create(const T& d){ Derived der; der.set(d); return der; }
 	[[nodiscard]] constexpr static Derived null() { return Derived::create(NULL_VALUE); }
+	[[nodiscard]] constexpr static Primitive nullPrimitive() { return NULL_VALUE; }
 	[[nodiscard]] constexpr static Derived max() { return Derived::create(NULL_VALUE - 1); }
 	[[nodiscard]] constexpr static Derived min() { return Derived::create(MIN_VALUE); }
 	[[nodiscard]] constexpr Derived absoluteValue() { assert(exists()); return Derived::create(std::abs(data)); }

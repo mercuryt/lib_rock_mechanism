@@ -43,8 +43,8 @@ struct PointFeature
 		MaterialTypeId::Primitive materialType;
 		PointFeatureTypeId pointFeatureType;
 		uint8_t hewnAndClosedAndLocked;
-		std::strong_ordering operator<=>(const Primitive& other) const { return pointFeatureType <=> other.pointFeatureType; }
-		bool operator==(const Primitive& other) const = default;
+		[[nodiscard]] constexpr std::strong_ordering operator<=>(const Primitive& other) const { return pointFeatureType <=> other.pointFeatureType; }
+		[[nodiscard]] constexpr bool operator==(const Primitive& other) const = default;
 		NLOHMANN_DEFINE_TYPE_INTRUSIVE(Primitive, materialType, pointFeatureType, hewnAndClosedAndLocked);
 	};
 	MaterialTypeId materialType;
@@ -55,17 +55,18 @@ struct PointFeature
 	void setClosed(bool setTo) { hewnAndClosedAndLocked.set(1, setTo); }
 	void setLocked(bool setTo) { hewnAndClosedAndLocked.set(2, setTo); }
 	void clear();
-	[[nodiscard]] bool isHewn() const { return hewnAndClosedAndLocked.test(0); }
-	[[nodiscard]] bool isClosed() const { return hewnAndClosedAndLocked.test(1); }
-	[[nodiscard]] bool isLocked() const { return hewnAndClosedAndLocked.test(2); }
-	[[nodiscard]] bool exists() const { return materialType.exists(); }
-	[[nodiscard]] Primitive get() const { return {materialType.get(), pointFeatureType, hewnAndClosedAndLocked.data}; }
-	[[nodiscard]] std::strong_ordering operator<=>(const PointFeature& other) const { return pointFeatureType <=> other.pointFeatureType; }
-	[[nodiscard]] bool operator==(const PointFeature& other) const = default;
+	[[nodiscard]] constexpr bool isHewn() const { return hewnAndClosedAndLocked.test(0); }
+	[[nodiscard]] constexpr bool isClosed() const { return hewnAndClosedAndLocked.test(1); }
+	[[nodiscard]] constexpr bool isLocked() const { return hewnAndClosedAndLocked.test(2); }
+	[[nodiscard]] constexpr bool exists() const { return materialType.exists(); }
+	[[nodiscard]] constexpr Primitive get() const { return {materialType.get(), pointFeatureType, hewnAndClosedAndLocked.data}; }
+	[[nodiscard]] constexpr std::strong_ordering operator<=>(const PointFeature& other) const { return pointFeatureType <=> other.pointFeatureType; }
+	[[nodiscard]] constexpr bool operator==(const PointFeature& other) const = default;
 	[[nodiscard]] std::string toString() const;
-	[[nodiscard]] static PointFeature null() { return {}; }
-	[[nodiscard]] static PointFeature create(const Primitive& primitive) { return {MaterialTypeId::create(primitive.materialType), primitive.pointFeatureType, BitSet<uint8_t, 3>::create(primitive.hewnAndClosedAndLocked)}; }
-	[[nodiscard]] static PointFeature create(const MaterialTypeId& materialType, const PointFeatureTypeId& pointFeatureType, bool hewn = false, bool closed = true, bool locked = false)
+	[[nodiscard]] constexpr static PointFeature null() { return {}; }
+	[[nodiscard]] constexpr static Primitive nullPrimitive() { return {.materialType=MaterialTypeId::nullPrimitive(), .pointFeatureType=PointFeatureTypeId::Null, .hewnAndClosedAndLocked=0}; }
+	[[nodiscard]] constexpr static PointFeature create(const Primitive& primitive) { return {MaterialTypeId::create(primitive.materialType), primitive.pointFeatureType, BitSet<uint8_t, 3>::create(primitive.hewnAndClosedAndLocked)}; }
+	[[nodiscard]] constexpr static PointFeature create(const MaterialTypeId& materialType, const PointFeatureTypeId& pointFeatureType, bool hewn = false, bool closed = true, bool locked = false)
 	{
 		BitSet<uint8_t, 3> hewnAndClosedAndLocked;
 		hewnAndClosedAndLocked.set(0, hewn);

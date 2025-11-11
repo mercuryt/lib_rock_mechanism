@@ -85,7 +85,7 @@ void CraftPathRequest::writeStep(Area& area, FindPathResult& result)
 	else
 	{
 		// Selected work loctaion has been reserved, try again.
-		if( area.getSpace().isReserved(m_location, faction))
+		if(area.getSpace().isReserved(m_location, faction))
 		{
 			m_craftObjective.reset(area, actorIndex);
 			m_craftObjective.execute(area, actorIndex);

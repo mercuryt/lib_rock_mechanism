@@ -86,7 +86,8 @@ struct AdjacentData
 	[[nodiscard]] bool empty() const { return data.empty(); }
 	[[nodiscard]] std::string toString() const { return data.toString(); }
 	static AdjacentData create(const Primitive& d) { return {d}; }
-	static AdjacentData null() { return {0}; }
+	constexpr static AdjacentData null() { return {0}; }
+	constexpr static Primitive nullPrimitive() { return 0; }
 	class ConstIterator
 	{
 		BitSet<uint32_t, maxAdjacent> data;

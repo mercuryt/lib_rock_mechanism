@@ -130,7 +130,7 @@ void HasFarmFieldsForFaction::shrink(Area& area, FarmField& farmField, CuboidSet
 	undesignatePoints(area, undesignated);
 	Space& space = area.getSpace();
 	space.farm_remove(undesignated, m_faction);
-	farmField.m_cuboids.removeContainedAndFragmentInterceptedAll(undesignated);
+	farmField.m_cuboids.maybeRemoveAll(undesignated);
 	if(farmField.m_cuboids.empty())
 		m_farmFields.erase(farmField);
 }

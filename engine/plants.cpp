@@ -403,7 +403,7 @@ void Plants::location_set(const PlantIndex& index, const Point3D& location, cons
 	for(const Cuboid& cuboid : Shape::getCuboidsOccupiedAt(m_shape[index], space, location, Facing4::North))
 	{
 		space.plant_set(cuboid, index);
-		occupied.add(cuboid);
+		occupied.maybeAdd(cuboid);
 	}
 	m_location[index] = location;
 	m_facing[index] = Facing4::North;

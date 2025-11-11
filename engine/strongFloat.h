@@ -14,6 +14,7 @@ public:
 	using Primitive = float;
 	[[nodiscard]] constexpr static Derived create(const float& d) { Derived der; der.set(d); return der; }
 	[[nodiscard]] constexpr static Derived null() { return create(FLT_MAX); }
+	[[nodiscard]] constexpr static float nullPrimitive() { return FLT_MAX; }
 	[[nodiscard]] constexpr bool exists() const { return data != FLT_MAX; }
 	[[nodiscard]] constexpr bool empty() const { return data == FLT_MAX; }
 	[[nodiscard]] constexpr float get() const { return data; }

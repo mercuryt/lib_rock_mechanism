@@ -48,22 +48,22 @@ void ConstructedShape::constructShape()
 void ConstructedShape::constructDecks()
 {
 	for(const auto& pair : m_solid)
-		m_decks.add(pair.first.above());
+		m_decks.maybeAdd(pair.first.above());
 	for(const auto& [cuboid, feature] : m_features)
 	{
 		const OffsetCuboid above = cuboid.above();
 		if(PointFeatureType::byId(feature.pointFeatureType).canStandAbove)
 			for(const Offset3D& point : above)
 				if(!m_solid.contains(point))
-					m_decks.add(point);
+					m_decks.maybeAdd(point);
 	}
 	for(const auto& pair : m_solid)
-		m_decks.removeContainedAndFragmentIntercepted(pair.first);
+		m_decks.maybeRemove(pair.first);
 	for(const auto& pair : m_features)
 	{
 		const PointFeatureType& featureType = PointFeatureType::byId(pair.second.pointFeatureType);
 		if(featureType.blocksEntrance)
-			m_decks.remove(pair.first);
+			m_decks.maybeRemove(pair.first);
 	}
 }
 void ConstructedShape::recordAndClearDynamic(Area& area, const CuboidSet& occupied, const Point3D& location)
@@ -111,7 +111,7 @@ void ConstructedShape::setLocationAndFacingDynamic(Area& area, const Facing4& cu
 		assert(space.shape_anythingCanEnterEver(cuboid));
 		assert(space.item_empty(cuboid) && space.actor_empty(cuboid));
 		space.solid_setCuboidDynamic(cuboid, materialType, true);
-		occupied.add(cuboid);
+		occupied.maybeAdd(cuboid);
 	}
 	for(auto& [offsetCuboid, feature] : m_features)
 	{
@@ -121,7 +121,7 @@ void ConstructedShape::setLocationAndFacingDynamic(Area& area, const Facing4& cu
 		assert(space.shape_anythingCanEnterEver(cuboid));
 		space.pointFeature_add(cuboid, feature);
 		space.setDynamic(cuboid);
-		occupied.add(cuboid);
+		occupied.maybeAdd(cuboid);
 	}
 }
 void ConstructedShape::setLocationAndFacingStatic(Area& area, const Facing4& currentFacing, const Point3D& newLocation, const Facing4& newFacing, CuboidSet& occupied)
@@ -143,7 +143,7 @@ void ConstructedShape::setLocationAndFacingStatic(Area& area, const Facing4& cur
 		assert(space.shape_anythingCanEnterEver(cuboid));
 		assert(space.item_empty(cuboid) && space.actor_empty(cuboid));
 		space.solid_setCuboid(cuboid, materialType, true);
-		occupied.add(cuboid);
+		occupied.maybeAdd(cuboid);
 	}
 	for(auto& [offsetCuboid, feature] : m_features)
 	{
@@ -152,7 +152,7 @@ void ConstructedShape::setLocationAndFacingStatic(Area& area, const Facing4& cur
 		const Cuboid cuboid = Cuboid::create(relativeOffsetCuboid);
 		// Not bothering with move here because this method shouldn't be very hot.
 		space.pointFeature_add(cuboid, feature);
-		occupied.add(cuboid);
+		occupied.maybeAdd(cuboid);
 	}
 }
 SmallSet<MaterialTypeId> ConstructedShape::getMaterialTypesAt(const Point3D& location, const Facing4& facing, const Point3D& point) const
@@ -187,14 +187,14 @@ std::pair<ConstructedShape, Point3D> ConstructedShape::makeForKeelPoint(Area& ar
 	auto occupiedCondition = [&](const Cuboid& cuboid) -> CuboidSet
 	{
 		CuboidSet conditionOutput;
-		for(const Cuboid& solidCuboid : space.solid_getCuboidsIntersecting(cuboid))
+		for(const Cuboid& solidCuboid : space.solid_queryCuboids(cuboid))
 			// Only keel space are allowed on same level as center.
 			if(solidCuboid.m_low.z() > 0)
-				conditionOutput.add(solidCuboid);
+				conditionOutput.maybeAdd(solidCuboid);
 		for(const auto& [featureCuboid, feature] : space.pointFeature_getAllWithCuboids(cuboid))
 			//TODO: handle floors, floor grates, and hatches not connecting to the level below: slice off lower part of cuboid.
 			if(featureCuboid.m_low.z() > 0 || feature.pointFeatureType == PointFeatureTypeId::Keel)
-				conditionOutput.add(featureCuboid);
+				conditionOutput.maybeAdd(featureCuboid);
 		return conditionOutput;
 	};
 	constexpr bool includeStart = false;

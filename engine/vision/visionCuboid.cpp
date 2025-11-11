@@ -34,12 +34,12 @@ void AreaHasVisionCuboids::initalize()
 void AreaHasVisionCuboids::pointIsTransparent(const Point3D& point)
 {
 	assert(maybeGetVisionCuboidIndexForPoint(point).empty());
-	add({point, point});
+	maybeAdd({point, point});
 }
 void AreaHasVisionCuboids::pointIsOpaque(const Point3D& point)
 {
 	Cuboid cuboid(point, point);
-	remove(cuboid);
+	maybeRemove(cuboid);
 }
 void AreaHasVisionCuboids::pointFloorIsTransparent(const Point3D& point)
 {
@@ -51,11 +51,11 @@ void AreaHasVisionCuboids::pointFloorIsOpaque(const Point3D& point)
 }
 void AreaHasVisionCuboids::cuboidIsTransparent(const Cuboid& cuboid)
 {
-	add(cuboid);
+	maybeAdd(cuboid);
 }
 void AreaHasVisionCuboids::cuboidIsOpaque(const Cuboid& cuboid)
 {
-	remove(cuboid);
+	maybeRemove(cuboid);
 }
 bool AreaHasVisionCuboids::canSeeInto(const Cuboid& a, const Cuboid& b) const
 {
@@ -178,7 +178,7 @@ void AreaHasVisionCuboids::destroy(const uint& index)
 	m_cuboids.eraseIndex(index);
 	validate();
 }
-void AreaHasVisionCuboids::remove(const Cuboid& cuboid)
+void AreaHasVisionCuboids::maybeRemove(const Cuboid& cuboid)
 {
 	//TODO: partition instead of toSplit.
 	SmallMap<VisionCuboidId, Cuboid> toSplit;
@@ -194,10 +194,10 @@ void AreaHasVisionCuboids::remove(const Cuboid& cuboid)
 		for(const Cuboid& splitResult : pair.second.getChildrenWhenSplitByCuboid(cuboid))
 			insertOrMerge(splitResult);
 }
-void AreaHasVisionCuboids::remove(const CuboidSet& cuboids)
+void AreaHasVisionCuboids::maybeRemove(const CuboidSet& cuboids)
 {
 	for(const Cuboid& cuboid : cuboids)
-		remove(cuboid);
+		maybeRemove(cuboid);
 }
 void AreaHasVisionCuboids::sliceBelow(const Cuboid& cuboid)
 {

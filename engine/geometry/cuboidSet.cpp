@@ -11,13 +11,13 @@ template struct CuboidSetConstIteratorBase<OffsetCuboid, Offset3D, OffsetCuboidS
 CuboidSet CuboidSet::create(const Cuboid& cuboid)
 {
 	CuboidSet output;
-	output.add(cuboid);
+	output.maybeAdd(cuboid);
 	return output;
 }
 CuboidSet CuboidSet::create(const Point3D& point)
 {
 	CuboidSet output;
-	output.add(point);
+	output.maybeAdd(point);
 	return output;
 }
 CuboidSet CuboidSet::create([[maybe_unused]]const OffsetCuboid& spaceBoundry, const Point3D& pivot, const Facing4& newFacing, const OffsetCuboidSet& cuboids)
@@ -29,20 +29,27 @@ CuboidSet CuboidSet::create([[maybe_unused]]const OffsetCuboid& spaceBoundry, co
 		offset.rotate2D(newFacing);
 		offset = offset.relativeToPoint(pivot);
 		assert(spaceBoundry.contains(offset));
-		output.add(Cuboid::create(offset));
+		output.maybeAdd(Cuboid::create(offset));
 	}
+	return output;
+}
+CuboidSet CuboidSet::create(const SmallSet<Point3D>& points)
+{
+	CuboidSet output;
+	for(const Point3D& point : points)
+		output.add(point);
 	return output;
 }
 OffsetCuboidSet OffsetCuboidSet::create(const OffsetCuboid& cuboid)
 {
 	OffsetCuboidSet output;
-	output.add(cuboid);
+	output.maybeAdd(cuboid);
 	return output;
 }
 OffsetCuboidSet OffsetCuboidSet::create(const Offset3D& point)
 {
 	OffsetCuboidSet output;
-	output.add(point);
+	output.maybeAdd(point);
 	return output;
 }
 void to_json(Json& data, const CuboidSet& cuboidSet)
@@ -55,7 +62,7 @@ void from_json(const Json& data, CuboidSet& cuboidSet)
 	for(const Json& pair : data)
 	{
 		Cuboid cuboid(pair[0].get<Point3D>(), pair[1].get<Point3D>());
-		cuboidSet.add(cuboid);
+		cuboidSet.maybeAdd(cuboid);
 	}
 }
 void to_json(Json& data, const OffsetCuboidSet& cuboidSet)
@@ -68,7 +75,7 @@ void from_json(const Json& data, OffsetCuboidSet& cuboidSet)
 	for(const Json& pair : data)
 	{
 		OffsetCuboid cuboid(pair[0].get<Offset3D>(), pair[1].get<Offset3D>());
-		cuboidSet.add(cuboid);
+		cuboidSet.maybeAdd(cuboid);
 	}
 }
 

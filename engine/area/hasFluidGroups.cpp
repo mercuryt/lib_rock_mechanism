@@ -101,7 +101,7 @@ void AreaHasFluidGroups::doStep(bool parallel)
 }
 FluidGroup* AreaHasFluidGroups::createFluidGroup(const FluidTypeId& fluidType, SmallSet<Point3D>& space, bool checkMerge)
 {
-	FluidGroup& fluidGroup = m_fluidGroups.emplace_back(m_allocator, fluidType, space, m_area, checkMerge);
+	FluidGroup& fluidGroup = m_fluidGroups.emplace_back(m_allocator, fluidType, CuboidSet::create(space), m_area, checkMerge);
 	assert(!fluidGroup.m_stable);
 	return &fluidGroup;
 }

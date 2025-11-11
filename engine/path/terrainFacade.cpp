@@ -80,21 +80,21 @@ TerrainFacade::TerrainFacade(Area& area, const MoveTypeId& moveType) : m_area(ar
 			{
 				Cuboid above = cuboid.getFace(Facing6::Above);
 				above.shift(Facing6::Above, {1});
-				candidates.add(above);
+				candidates.maybeAdd(above);
 			}
-		candidates.removeAll(solidLeaves);
+		candidates.maybeRemoveAll(solidLeaves);
 		// Features.
 		const auto featureLeaves = space.getPointFeatures().queryGetAllWithCuboids(space.boundry());
 		for(const auto& [cuboid, value] : featureLeaves)
 		{
 			const PointFeatureType& featureType = PointFeatureType::byId(value.pointFeatureType);
 			if(featureType.canStandIn)
-				candidates.add(cuboid);
+				candidates.maybeAdd(cuboid);
 			if(featureType.canStandAbove)
 			{
 				Cuboid above = cuboid.getFace(Facing6::Above);
 				above.shift(Facing6::Above, {1});
-				candidates.add(above);
+				candidates.maybeAdd(above);
 			}
 		}
 		// Fluids.
@@ -102,7 +102,7 @@ TerrainFacade::TerrainFacade(Area& area, const MoveTypeId& moveType) : m_area(ar
 		{
 			const auto condition = [&](const FluidData& fluidData) { return swim.contains(fluidData.type); };
 			const CuboidSet fluidGroups = space.fluid_queryGetCuboidsWithCondition(space.boundry(), condition);
-			candidates.addAll(fluidGroups);
+			candidates.maybeAddAll(fluidGroups);
 		}
 		for(const Cuboid& cuboid : candidates)
 			update(cuboid, candidates);
@@ -122,12 +122,12 @@ TerrainFacade::TerrainFacade(Area& area, const MoveTypeId& moveType) : m_area(ar
 		CuboidSet cannotEnter = space.getSolid().getLeafCuboids();
 		const auto featureCondition = [&](const PointFeature& feature) { return PointFeatureType::byId(feature.pointFeatureType).blocksEntrance; };
 		CuboidSet allFeaturesWhichBlockEntrance = space.pointFeature_queryCuboids(boundry, featureCondition);
-		cannotEnter.addAll(allFeaturesWhichBlockEntrance);
+		cannotEnter.maybeAddAll(allFeaturesWhichBlockEntrance);
 		CuboidSet allDynamic = space.getDynamic().queryGetLeaves(boundry);
 		// Remove dynamic from cannotEnter: dynamic cuboids are only temporarily impassible.
 		// Note that despite this deck space is 'permanantly' passible.
-		cannotEnter.removeContainedAndFragmentInterceptedAll(allDynamic);
-		candidates.removeAll(cannotEnter);
+		cannotEnter.maybeRemoveAll(allDynamic);
+		candidates.maybeRemoveAll(cannotEnter);
 		for(const Cuboid& cuboid : candidates)
 			update(cuboid, candidates);
 	}
@@ -469,7 +469,7 @@ FindPathResult TerrainFacade::findPathAdjacentToPolymorphicWithoutMemo(const Poi
 				space.shape_moveTypeCanEnter(point, m_moveType) &&
 				space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(point, shape, m_moveType)
 			)
-				targets.add(point);
+				targets.maybeAdd(point);
 	if(targets.empty())
 		return { };
 	return findPathToAnyOfWithoutMemo(start, startFacing, shape, targets, actorOrItem.getLocation(m_area), detour);

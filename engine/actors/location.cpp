@@ -132,7 +132,7 @@ SetLocationAndFacingResult Actors::location_tryToSetDynamic(const ActorIndex& in
 	{
 		assert(!isFollowing(index));
 		CuboidSet lineOccupied = lineLead_getOccupiedCuboids(index);
-		cuboidsAndVolumesDelta.removeContainedAndFragmentInterceptedAll(lineOccupied);
+		cuboidsAndVolumesDelta.maybeRemoveAll(lineOccupied);
 	}
 	for(const auto& [cuboid, volume] : cuboidsAndVolumesDelta)
 		// Don't use shape_anythingCanEnterEverHere because it checks Space::m_dynamic.

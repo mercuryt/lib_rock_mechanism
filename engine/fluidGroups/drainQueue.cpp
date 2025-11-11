@@ -5,12 +5,6 @@
 #include "../space/space.h"
 #include "numericTypes/types.h"
 #include <algorithm>
-void DrainQueue::buildFor(SmallSet<Point3D>& members)
-{
-	m_set = members;
-	for(Point3D point : members)
-		m_queue.emplace_back(point);
-}
 void DrainQueue::initalizeForStep(Area& area, FluidGroup& fluidGroup)
 {
 	Space& space = area.getSpace();
@@ -28,7 +22,6 @@ void DrainQueue::initalizeForStep(Area& area, FluidGroup& fluidGroup)
 	findGroupEnd();
 	m_futureEmpty.clear();
 	m_futureNoLongerFull.clear();
-	m_futurePotentialNoLongerAdjacent.clear();
 }
 void DrainQueue::recordDelta(Area& area, const CollisionVolume& volume, const CollisionVolume& flowCapacity, const CollisionVolume& flowTillNextStep)
 {
@@ -42,7 +35,7 @@ void DrainQueue::recordDelta(Area& area, const CollisionVolume& volume, const Co
 	if(space.fluid_getTotalVolume(m_groupStart->point) == Config::maxPointVolume && !m_futureNoLongerFull.contains((m_groupEnd-1)->point))
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 			//TODO: is this maybe correct? Why would they already be added?
-			m_futureNoLongerFull.maybeInsert(iter->point);
+			m_futureNoLongerFull.maybeAdd(iter->point);
 	// Record fluid level changes.
 	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 	{
@@ -54,7 +47,7 @@ void DrainQueue::recordDelta(Area& area, const CollisionVolume& volume, const Co
 	if(volume == flowCapacity)
 	{
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
-			m_futureEmpty.insert(iter->point);
+			m_futureEmpty.add(iter->point);
 		m_groupStart = m_groupEnd;
 		findGroupEnd();
 	}
@@ -77,11 +70,6 @@ void DrainQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 		assert(iter->point.exists());
 		assert(iter->delta.exists());
 		assert(space.fluid_getTotalVolume(iter->point) >= iter->delta);
-		[[maybe_unused]] bool breakIfFluidType = fluidGroup.m_fluidType == 7;
-		[[maybe_unused]] bool breakIfSize = fluidGroup.m_drainQueue.m_set.size() == 273;
-		[[maybe_unused]] bool breakIfStep = area.m_simulation.m_step == 8;
-		[[maybe_unused]] bool breakIfPoint = iter->point == Point3D::create(12,10,5);
-		[[maybe_unused]] bool breakIf = breakIfFluidType && breakIfSize && breakIfStep && breakIfPoint;
 		space.fluid_drainInternal(iter->point, iter->delta, fluidGroup.m_fluidType);
 		// Record space to set fluid groups unstable.
 		drainedFromAndAdjacent.maybeInsert(iter->point);

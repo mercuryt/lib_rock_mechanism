@@ -26,7 +26,7 @@ void MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::insertAll(const This& 
 		insert(pair);
 }
 template<typename T, typename CuboidType, typename CuboidSetType>
-void MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::removeContainedAndFragmentIntercepted(const CuboidType& cuboid)
+void MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::maybeRemove(const CuboidType& cuboid)
 {
 	auto copy = data;
 	copy.reserve(data.size());
@@ -43,10 +43,10 @@ void MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::removeContainedAndFrag
 	}
 }
 template<typename T, typename CuboidType, typename CuboidSetType>
-void MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::removeContainedAndFragmentInterceptedAll(const CuboidSetType& cuboids)
+void MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::maybeRemoveAll(const CuboidSetType& cuboids)
 {
 	for(const CuboidType& cuboid : cuboids)
-		removeContainedAndFragmentIntercepted(cuboid);
+		maybeRemove(cuboid);
 }
 template<typename T, typename CuboidType, typename CuboidSetType>
 void MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::clear() { data.clear(); }
@@ -152,7 +152,7 @@ MapWithOffsetCuboidKeys<T> MapWithOffsetCuboidKeys<T>::shiftAndRotateAndRemoveIn
 		output.insert({shifted, value});
 	}
 	for(const auto& [cuboid, value] : this->data)
-		output.removeContainedAndFragmentIntercepted(cuboid);
+		output.maybeRemove(cuboid);
 	return output;
 }
 template<typename T>

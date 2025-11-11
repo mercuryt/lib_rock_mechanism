@@ -302,17 +302,17 @@ inline void fourFluidsTestParallel(uint32_t scale, Step steps)
 	CHECK(area.m_hasFluidGroups.getAll().size() == 4);
 	CHECK(fgWater->m_stable);
 	if(scale != 3)
-		CHECK(fgWater->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgWater->m_drainQueue.m_set.volume() == expectedBlocks);
 	CHECK(fgWater->totalVolume(area) == totalVolume);
 	CHECK(fgCO2->m_stable);
-	CHECK(fgCO2->m_drainQueue.m_set.size() == expectedBlocks);
+	CHECK(fgCO2->m_drainQueue.m_set.volume() == expectedBlocks);
 	CHECK(fgCO2->totalVolume(area) == totalVolume);
 	CHECK(fgMercury->m_stable);
-	CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
+	CHECK(fgMercury->m_drainQueue.m_set.volume() == expectedBlocks);
 	CHECK(fgMercury->totalVolume(area) == totalVolume);
 	CHECK(fgLava->m_stable);
 	if(scale != 3)
-		CHECK(fgMercury->m_drainQueue.m_set.size() == expectedBlocks);
+		CHECK(fgMercury->m_drainQueue.m_set.volume() == expectedBlocks);
 	CHECK(fgMercury->totalVolume(area) == totalVolume);
 	CHECK(space.fluid_contains(Point3D::create(1, 1, 1), mercury));
 	CHECK(space.fluid_contains(Point3D::create(1, 1, maxZ - 1), CO2));

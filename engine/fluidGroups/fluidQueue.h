@@ -4,8 +4,7 @@
 #pragma once
 
 #include "../numericTypes/types.h"
-#include "../geometry/point3D.h"
-#include "../dataStructures/smallSet.h"
+#include "../geometry/cuboidSet.h"
 #include "fluidAllocator.h"
 #include <vector>
 #include <cstdint>
@@ -35,16 +34,15 @@ class FluidQueue
 public:
 	std::pmr::vector<FutureFlowPoint> m_queue;
 	// TODO: does maintaining m_set actually make any sense?
-	SmallSet<Point3D> m_set;
+	CuboidSet m_set;
 	std::pmr::vector<FutureFlowPoint>::iterator m_groupStart, m_groupEnd;
 
 	FluidQueue(FluidAllocator& allocator) : m_queue(&allocator) { }
-	void setPoints(SmallSet<Point3D>& points);
 	void maybeAddPoint(const Point3D& point);
-	void maybeAddPoints(SmallSet<Point3D>& points);
+	void maybeAddPoints(const CuboidSet& points);
 	void removePoint(const Point3D& point);
 	void maybeRemovePoint(const Point3D& point);
-	void removePoints(SmallSet<Point3D>& points);
+	void removePoints(const CuboidSet& points);
 	void merge(FluidQueue& fluidQueue);
 	void noChange();
 	[[nodiscard]] uint32_t groupSize() const;

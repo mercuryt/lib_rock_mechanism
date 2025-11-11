@@ -18,12 +18,15 @@ struct OffsetCuboid
 	[[nodiscard]] std::strong_ordering operator<=>(const OffsetCuboid& other) const = default;
 	[[nodiscard]] bool operator==(const OffsetCuboid& other) const = default;
 	[[nodiscard]] bool exists() const { return m_high.exists(); }
+	[[nodiscard]] bool empty() const { return m_high.empty(); }
 	[[nodiscard]] uint volume() const;
 	[[nodiscard]] bool contains(const Offset3D& offset) const;
 	[[nodiscard]] bool contains(const OffsetCuboid& other) const;
+	[[nodiscard]] bool intersects(const Offset3D& offset) const;
 	[[nodiscard]] bool intersects(const OffsetCuboid& other) const;
 	[[nodiscard]] OffsetCuboid intersection(const OffsetCuboid& other) const;
 	[[nodiscard]] bool canMerge(const OffsetCuboid& other) const;
+	[[nodiscard]] bool isTouching(const Offset3D& offset) const;
 	[[nodiscard]] bool isTouching(const OffsetCuboid& other) const;
 	[[nodiscard]] bool isTouchingFace(const OffsetCuboid& other) const;
 	[[nodiscard]] bool isTouchingFaceFromInside(const OffsetCuboid& other) const;

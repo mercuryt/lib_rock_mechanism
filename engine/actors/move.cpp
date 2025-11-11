@@ -275,7 +275,7 @@ void Actors::move_setDestinationAdjacentToActor(const ActorIndex& index, const A
 				space.shape_anythingCanEnterEver(adjacent) &&
 				space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
 			)
-				candidates.add(adjacent);
+				candidates.maybeAdd(adjacent);
 	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, otherLocation);
 }
 void Actors::move_setDestinationAdjacentToItem(const ActorIndex& index, const ItemIndex& item, bool detour, bool unreserved, bool reserve)
@@ -293,7 +293,7 @@ void Actors::move_setDestinationAdjacentToItem(const ActorIndex& index, const It
 				space.shape_anythingCanEnterEver(adjacent) &&
 				space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
 			)
-				candidates.add(adjacent);
+				candidates.maybeAdd(adjacent);
 	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, items.getLocation(item));
 }
 void Actors::move_setDestinationAdjacentToPlant(const ActorIndex& index, const PlantIndex& plant, bool detour, bool unreserved, bool reserve)
@@ -310,7 +310,7 @@ void Actors::move_setDestinationAdjacentToPlant(const ActorIndex& index, const P
 				space.shape_anythingCanEnterEver(adjacent) &&
 				space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
 			)
-				candidates.add(adjacent);
+				candidates.maybeAdd(adjacent);
 	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, plants.getLocation(plant));
 }
 void Actors::move_setDestinationAdjacentToPolymorphic(const ActorIndex& index, ActorOrItemIndex actorOrItemIndex, bool detour, bool unreserved, bool reserve)

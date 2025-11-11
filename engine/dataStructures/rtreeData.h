@@ -29,7 +29,7 @@ namespace RTreeDataConfigs
 
 // TODO: create concept checking if T verifies the other template requirements.
 
-template<Sortable T, RTreeDataConfig config = RTreeDataConfig()>
+template<Sortable T, RTreeDataConfig config = RTreeDataConfig(), typename T::Primitive nullPrimitive = T::nullPrimitive()>
 class RTreeData
 {
 	static constexpr uint8_t nodeSize = 64;
@@ -82,7 +82,6 @@ class RTreeData
 	StrongVector<Node, RTreeNodeIndex> m_nodes;
 	SmallSet<RTreeNodeIndex> m_emptySlots;
 	SmallSet<RTreeNodeIndex> m_toComb;
-	T m_nullValue;
 	[[nodiscard]] std::tuple<Cuboid, RTreeArrayIndex, RTreeArrayIndex> findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids) const;
 	[[nodiscard]] SmallSet<std::pair<Cuboid, T>> gatherLeavesRecursive(const RTreeNodeIndex& parent) const;
 	void destroyWithChildren(const RTreeNodeIndex& index);
@@ -132,10 +131,16 @@ public:
 		assert(queryAnyEqual(shape, value));
 		maybeRemove(shape, value);
 	}
+	void remove(const auto& shape)
+	{
+		assert(queryAny(shape));
+		maybeRemove(shape);
+	}
 	void removeAll(const auto& shape, const T& value) { assert(queryAnyEqual(shape, value)); maybeRemove(shape, value); }
 	void removeAll(const auto& shape) { assert(queryAny(shape)); maybeRemove(shape); }
 	void prepare();
 	void clear();
+	[[nodiscard]] __attribute__((noinline)) static T nullValue() { return T::create(nullPrimitive); }
 	[[nodiscard]] bool empty() const { return leafCount() == 0; }
 	[[nodiscard]] __attribute__((noinline)) bool anyLeafOverlapsAnother() const;
 	[[nodiscard]] Json toJson() const;
@@ -167,21 +172,21 @@ public:
 		bool allowAlreadyExistsInAnotherSlot = false;
 	};
 	template<UpdateActionConfig queryConfig>
-	void updateAction(const auto& shape, auto&& action, const T& nullValue = T())
+	void updateAction(const auto& shape, auto&& action)
 	{
 		// stopAfterOne is only safe to use for non-overlaping leaves, otherwise the result would be hard to predict.
 		if(queryConfig.stopAfterOne)
 			assert(!config.leavesCanOverlap && !config.splitAndMerge);
 		auto condition = [](const T&){ return true; };
-		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+		updateActionWithCondition<queryConfig>(shape, action, condition);
 	}
 	template<UpdateActionConfig queryConfig>
-	void updateActionWithCondition(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	void updateActionWithCondition(const auto& shape, auto&& action, const auto& condition)
 	{
 		SmallSet<RTreeNodeIndex> openList;
 		openList.insert(RTreeNodeIndex::create(0));
 		bool found = false;
-		// Track space which was not updated. If queryConfig.create is true then fill this space in at the end with the result of action(nullValue).
+		// Track space which was not updated. If queryConfig.create is true then fill this space in at the end with the result of action(T::create(nullPrimitive)).
 		[[maybe_unused]] CuboidSet emptySpaceInShape;
 		if constexpr(queryConfig.create)
 			emptySpaceInShape = CuboidSet::create(shape);
@@ -214,14 +219,14 @@ public:
 						Cuboid leafCuboid = nodeCuboids[offset];
 						// inflate from primitive temporarily for callback.
 						T initalValue = T::create(nodeDataAndChildIndices[offset].data);
-						assert(initalValue != nullValue && initalValue != m_nullValue);
+						assert(initalValue != T::create(nullPrimitive));
 						T value = initalValue;
 						if(!condition(value))
 							continue;
 						action(value);
 						// Note space where action has been applied so we can create into empty space later.
 						if constexpr(queryConfig.create)
-							emptySpaceInShape.remove(leafCuboid.intersection(shape));
+							emptySpaceInShape.maybeRemove(leafCuboid.intersection(shape));
 						found = true;
 						if(value == initalValue)
 						{
@@ -231,10 +236,7 @@ public:
 						}
 						if(shape.contains(leafCuboid))
 						{
-							// When nullValue is specificed it will probably always be 0.
-							// This is distinct from m_nullValue which will usually be the largest integer T can store.
-							// If nullValue is not provided these checks become redundant and the compiler will remove one.
-							if(value == nullValue || value == m_nullValue)
+							if(value == T::create(nullPrimitive))
 							{
 								// Action changed value to null.
 								assert(queryConfig.destroy);
@@ -255,7 +257,7 @@ public:
 								toUpdateBoundryMaybe.maybeInsert(index);
 							for(const Cuboid& cuboid : leafCuboid.getChildrenWhenSplitBy(shape))
 								fragmentsToReAdd.insert(cuboid, initalValue);
-							if(value == nullValue || value == m_nullValue)
+							if(value == T::create(nullPrimitive))
 							{
 								// Action changed value to null.
 								assert(queryConfig.destroy);
@@ -295,9 +297,9 @@ public:
 		if constexpr(queryConfig.create)
 		{
 			// Create new leaves in the space within shape where no leaf currently exists.
-			T value = nullValue;
+			T value = T::create(nullPrimitive);
 			action(value);
-			assert(value != m_nullValue && value != nullValue);
+			assert(value != T::create(nullPrimitive));
 			insert(emptySpaceInShape, value);
 		}
 		else if(!found && !queryConfig.allowNotFound)
@@ -319,89 +321,89 @@ public:
 		constexpr UpdateActionConfig queryConfig{.allowNotFound = true};
 		updateAction<queryConfig>(shape, action);
 	}
-	void updateOrCreateActionOne(const auto& shape, auto&& action, const T& nullValue = T())
+	void updateOrCreateActionOne(const auto& shape, auto&& action)
 	{
 		constexpr UpdateActionConfig queryConfig{.create = true, .stopAfterOne = true};
-		updateAction<queryConfig>(shape, action, nullValue);
+		updateAction<queryConfig>(shape, action);
 	}
-	void updateOrDestroyActionOne(const auto& shape, auto&& action, const T& nullValue = T())
+	void updateOrDestroyActionOne(const auto& shape, auto&& action)
 	{
 		constexpr UpdateActionConfig queryConfig{.destroy = true, .stopAfterOne = true};
-		updateAction<queryConfig>(shape, action, nullValue);
+		updateAction<queryConfig>(shape, action);
 	}
-	void maybeUpdateOrDestroyActionAll(const auto& shape, auto&& action, const T& nullValue = T())
+	void maybeUpdateOrDestroyActionAll(const auto& shape, auto&& action)
 	{
 		constexpr UpdateActionConfig queryConfig{.destroy = true, .allowNotFound = true};
-		updateAction<queryConfig>(shape, action, nullValue);
+		updateAction<queryConfig>(shape, action);
 	}
-	void updateOrDestroyActionAll(const auto& shape, auto&& action, const T& nullValue = T())
+	void updateOrDestroyActionAll(const auto& shape, auto&& action)
 	{
 		constexpr UpdateActionConfig queryConfig{.destroy = true};
-		updateAction<queryConfig>(shape, action, nullValue);
+		updateAction<queryConfig>(shape, action);
 	}
-	void updateActionWithConditionOne(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	void updateActionWithConditionOne(const auto& shape, auto&& action, const auto& condition)
 	{
 		constexpr UpdateActionConfig queryConfig{.stopAfterOne = true};
-		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+		updateActionWithCondition<queryConfig>(shape, action, condition);
 	}
-	void updateActionWithConditionAll(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	void updateActionWithConditionAll(const auto& shape, auto&& action, const auto& condition)
 	{
 		constexpr UpdateActionConfig queryConfig{.allowNotFound = true};
-		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+		updateActionWithCondition<queryConfig>(shape, action, condition);
 	}
-	void updateOrDestroyActionWithConditionAll(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	void updateOrDestroyActionWithConditionAll(const auto& shape, auto&& action, const auto& condition)
 	{
 		constexpr UpdateActionConfig queryConfig{.destroy = true, .allowNotFound = true};
-		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+		updateActionWithCondition<queryConfig>(shape, action, condition);
 	}
-	void updateOrCreateActionWithConditionOne(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	void updateOrCreateActionWithConditionOne(const auto& shape, auto&& action, const auto& condition)
 	{
 		constexpr UpdateActionConfig queryConfig{.create = true, .stopAfterOne = true};
-		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+		updateActionWithCondition<queryConfig>(shape, action, condition);
 	}
-	void updateOrCreateActionWithConditionAll(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	void updateOrCreateActionWithConditionAll(const auto& shape, auto&& action, const auto& condition)
 	{
 		constexpr UpdateActionConfig queryConfig{.create = true};
-		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+		updateActionWithCondition<queryConfig>(shape, action, condition);
 	}
-	void updateOrDestroyActionWithConditionOne(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	void updateOrDestroyActionWithConditionOne(const auto& shape, auto&& action, const auto& condition)
 	{
 		constexpr UpdateActionConfig queryConfig{.destroy = true, .stopAfterOne = true};
-		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+		updateActionWithCondition<queryConfig>(shape, action, condition);
 	}
-	void maybeUpdateOrDestroyActionWithConditionOne(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	void maybeUpdateOrDestroyActionWithConditionOne(const auto& shape, auto&& action, const auto& condition)
 	{
 		constexpr UpdateActionConfig queryConfig{.destroy = true, .stopAfterOne = true, .allowNotFound = true};
-		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+		updateActionWithCondition<queryConfig>(shape, action, condition);
 	}
-	// Updates a value if it exists, creates one if not, destroys if the created value is equal to nullValue or m_nullValue.
-	void updateOrCreateOrDestoryActionOne(const auto& shape, auto&& action, const T& nullValue = T())
+	// Updates a value if it exists, creates one if not, destroys if the created value is equal to T::create(nullPrimitive).
+	void updateOrCreateOrDestoryActionOne(const auto& shape, auto&& action)
 	{
 		constexpr UpdateActionConfig queryConfig{.create = true, .destroy = true, .stopAfterOne = true};
-		updateAction<queryConfig>(shape, action, nullValue);
+		updateAction<queryConfig>(shape, action);
 	}
-	void updateActionWithConditionOneAllowNotChanged(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	void updateActionWithConditionOneAllowNotChanged(const auto& shape, auto&& action, const auto& condition)
 	{
 		constexpr UpdateActionConfig queryConfig{.stopAfterOne = true, .allowNotChanged = true};
-		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+		updateActionWithCondition<queryConfig>(shape, action, condition);
 	}
-	void updateActionWithConditionAllAllowNotChanged(const auto& shape, auto&& action, const auto& condition, const T& nullValue = T())
+	void updateActionWithConditionAllAllowNotChanged(const auto& shape, auto&& action, const auto& condition)
 	{
 		constexpr UpdateActionConfig queryConfig{.stopAfterOne = true};
-		updateActionWithCondition<queryConfig>(shape, action, condition, nullValue);
+		updateActionWithCondition<queryConfig>(shape, action, condition);
 	}
 	T updateAdd(const auto& shape, const T& value)
 	{
 		T output;
 		constexpr UpdateActionConfig queryConfig{.create = true};
-		updateAction<queryConfig>(shape, [&](T& v){ v += value; output = v; }, T::create(0));
+		updateAction<queryConfig>(shape, [&](T& v){ v += value; output = v; });
 		return output;
 	}
 	T updateSubtract(const auto& shape, const T& value)
 	{
 		T output;
 		constexpr UpdateActionConfig queryConfig{.destroy = true};
-		updateAction<queryConfig>(shape, [&](T& v){ v -= value; output = v; }, T::create(0));
+		updateAction<queryConfig>(shape, [&](T& v){ v -= value; output = v; });
 		return output;
 	}
 	[[nodiscard]] bool queryAny(const auto& shape) const
@@ -477,7 +479,7 @@ public:
 			}
 			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 		}
-		return m_nullValue;
+		return T::create(nullPrimitive);
 	}
 	[[nodiscard]] const T queryGetOne(const auto& shape) const
 	{
@@ -513,7 +515,7 @@ public:
 			}
 			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 		}
-		return m_nullValue;
+		return T::create(nullPrimitive);
 	}
 	[[nodiscard]] std::pair<T, Cuboid> queryGetOneWithCuboidAndCondition(const auto& shape, const auto& condition) const
 	{
@@ -545,7 +547,7 @@ public:
 			}
 			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 		}
-		return {m_nullValue, Cuboid::null()};
+		return {T::create(nullPrimitive), Cuboid::null()};
 	}
 	[[nodiscard]] Cuboid queryGetOneCuboidWithCondition(const auto& shape, const auto& condition) const
 	{
@@ -620,7 +622,7 @@ public:
 	[[nodiscard]] const T queryGetOneOr(const auto& shape, const T& alternate) const
 	{
 		const T& result = queryGetOne(shape);
-		if(result == m_nullValue)
+		if(result == T::create(nullPrimitive))
 			return alternate;
 		return result;
 	}
@@ -653,7 +655,7 @@ public:
 			}
 			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 		}
-		return {m_nullValue, {}};
+		return {T::create(nullPrimitive), {}};
 	}
 	[[nodiscard]] const SmallSet<T> queryGetAll(const auto& shape) const
 	{
@@ -738,7 +740,7 @@ public:
 					if(*iter)
 					{
 						const auto offset = iter - begin;
-						output.add(nodeCuboids[offset]);
+						output.maybeAdd(nodeCuboids[offset]);
 					}
 			}
 			addIntersectedChildrenToOpenList(node, interceptMask, openList);
@@ -771,7 +773,7 @@ public:
 						const auto offset = iter - begin;
 						const T value = T::create(nodeDataAndChildIndices[offset].data);
 						if(condition(value))
-							output.add(nodeCuboids[offset]);
+							output.maybeAdd(nodeCuboids[offset]);
 					}
 			}
 			addIntersectedChildrenToOpenList(node, interceptMask, openList);
@@ -925,14 +927,14 @@ public:
 		const CuboidSet leaves = queryGetAllCuboids(shape);
 		CuboidSet output;
 		for(const Cuboid& leaf : leaves)
-			output.add(leaf.intersection(shape));
+			output.maybeAdd(leaf.intersection(shape));
 		return output;
 	}
 	void queryRemove(CuboidSet& cuboids) const
 	{
 		Cuboid boundry = cuboids.boundry();
 		for(const Cuboid& cuboid : queryGetAllCuboids(boundry))
-			cuboids.remove(cuboid);
+			cuboids.maybeRemove(cuboid);
 	}
 	[[nodiscard]] uint16_t queryCount(const auto& shape) const
 	{
@@ -1132,11 +1134,12 @@ struct RTreeDataWrapper
 	T data = defaultValue;
 	using Primitive = T;
 	void clear() { data = defaultValue; }
-	[[nodiscard]] T get() const { return data; }
-	[[nodiscard]] std::strong_ordering operator<=>(const RTreeDataWrapper<T, defaultValue>& other) const = default;
-	[[nodiscard]] bool operator==(const RTreeDataWrapper<T, defaultValue>& other) const = default;
-	[[nodiscard]] bool exists() const { return data != defaultValue; }
-	[[nodiscard]] bool empty() const { return data == defaultValue; }
-	[[nodiscard]] static RTreeDataWrapper<T, defaultValue> create(const T& p) { return {p}; }
-	[[nodiscard]] static RTreeDataWrapper<T, defaultValue> null() { return {defaultValue}; }
+	[[nodiscard]] constexpr T get() const { return data; }
+	[[nodiscard]] constexpr std::strong_ordering operator<=>(const RTreeDataWrapper<T, defaultValue>& other) const = default;
+	[[nodiscard]] constexpr bool operator==(const RTreeDataWrapper<T, defaultValue>& other) const = default;
+	[[nodiscard]] constexpr bool exists() const { return data != defaultValue; }
+	[[nodiscard]] constexpr bool empty() const { return data == defaultValue; }
+	[[nodiscard]] constexpr static RTreeDataWrapper<T, defaultValue> create(const T& p) { return {p}; }
+	[[nodiscard]] constexpr static RTreeDataWrapper<T, defaultValue> null() { return {defaultValue}; }
+	[[nodiscard]] constexpr static Primitive nullPrimitive() { return defaultValue; }
 };

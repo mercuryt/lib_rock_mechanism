@@ -4,49 +4,48 @@
 #include "../space/space.h"
 #include "numericTypes/types.h"
 #include <assert.h>
-void FluidQueue::setPoints(SmallSet<Point3D>& points)
-{
-	std::erase_if(m_queue, [&](FutureFlowPoint& futureFlowPoint){ return !points.contains(futureFlowPoint.point); });
-	for(Point3D point : points)
-		if(!m_set.contains(point))
-			m_queue.emplace_back(point);
-	m_set.swap(points);
-}
 void FluidQueue::maybeAddPoint(const Point3D& point)
 {
 	if(m_set.contains(point))
 		return;
-	m_set.insert(point);
+	m_set.add(point);
 	m_queue.emplace_back(point);
 }
-void FluidQueue::maybeAddPoints(SmallSet<Point3D>& points)
+void FluidQueue::maybeAddPoints(const CuboidSet& points)
 {
-	//m_queue.reserve(m_queue.size() + points.size());
-	for(Point3D point : points)
-		if(!m_set.contains(point))
+	//m_queue.reserve(m_queue.size() + points.volume());
+	//m_set.reserve(m_set.size() + points.size());
+	auto filtered = points;
+	filtered.maybeRemoveAll(m_set);
+	if(filtered.empty())
+		return;
+	for(const Cuboid& cuboid : filtered)
+		for(const Point3D point : cuboid)
 			m_queue.emplace_back(point);
-	m_set.maybeInsertAll(points);
+	m_set.addAll(filtered);
 }
 void FluidQueue::removePoint(const Point3D& point)
 {
-	m_set.erase(point);
-	std::erase_if(m_queue, [&](FutureFlowPoint& futureFlowPoint){ return futureFlowPoint.point == point; });
+	m_set.remove(point);
+	auto found = std::ranges::find_if(m_queue, [&](FutureFlowPoint& futureFlowPoint){ return futureFlowPoint.point == point; });
+	assert(found != m_queue.end());
+	m_queue.erase(found);
 }
 void FluidQueue::maybeRemovePoint(const Point3D& point)
 {
-	if(m_set.contains(point))
-		removePoint(point);
+	if(!m_set.contains(point))
+		return;
+	removePoint(point);
 }
-void FluidQueue::removePoints(SmallSet<Point3D>& points)
+void FluidQueue::removePoints(const CuboidSet& points)
 {
-	m_set.eraseIf([&](const Point3D& point){ return points.contains(point); });
+	m_set.maybeRemoveAll(points);
 	std::erase_if(m_queue, [&](FutureFlowPoint& futureFlowPoint){ return points.contains(futureFlowPoint.point); });
 }
 void FluidQueue::merge(FluidQueue& fluidQueue)
 {
-	//m_queue.reserve(m_queue.size() + fluidQueue.m_set.size());
-	for(Point3D point : fluidQueue.m_set)
-		maybeAddPoint(point);
+	//m_queue.reserve(m_queue.size() + fluidQueue.m_set.volume());
+	maybeAddPoints(fluidQueue.m_set);
 }
 void FluidQueue::noChange()
 {

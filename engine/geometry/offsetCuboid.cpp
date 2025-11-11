@@ -24,6 +24,10 @@ bool OffsetCuboid::contains(const OffsetCuboid& other) const
 		(m_high.data >= other.m_high.data).all() && (m_low.data <= other.m_high.data).all() &&
 		(m_high.data >= other.m_low.data).all() && (m_low.data <= other.m_low.data).all();
 }
+bool OffsetCuboid::intersects(const Offset3D& offset) const
+{
+	return !(m_high.data < offset.data || m_low.data > offset.data).any();
+}
 bool OffsetCuboid::intersects(const OffsetCuboid& other) const
 {
 	return !(m_high.data < other.m_low.data || m_low.data > other.m_high.data).any();
@@ -43,9 +47,13 @@ bool OffsetCuboid::canMerge(const OffsetCuboid& other) const
 	assert(count != 3);
 	return count == 2;
 }
-bool OffsetCuboid::isTouching(const OffsetCuboid& cuboid) const
+bool OffsetCuboid::isTouching(const OffsetCuboid& other) const
 {
-	return (cuboid.m_high.data >= m_low.data && m_high.data >= cuboid.m_low.data).all();
+	return !((m_high.data + 1) < other.m_low.data || m_low.data > (other.m_high.data + 1)).any();
+}
+bool OffsetCuboid::isTouching(const Offset3D& offset) const
+{
+	return !((m_high.data + 1) < offset.data || m_low.data > (offset.data + 1)).any();
 }
 bool OffsetCuboid::isTouchingFace(const OffsetCuboid& cuboid) const
 {

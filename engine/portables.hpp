@@ -365,9 +365,9 @@ CuboidSet Portables<Derived, Index, ReferenceIndex, isActors>::getOccupiedCombin
 		toReserve += Shape::getCuboidsCount(onDeck.getShape(area));
 	CuboidSet output;
 	output.reserve(toReserve);
-	output.addAll(occupied);
+	output.maybeAddAll(occupied);
 	for(const ActorOrItemIndex& onDeck : m_onDeck[index])
-		output.addAll(onDeck.getOccupied(area));
+		output.maybeAddAll(onDeck.getOccupied(area));
 	return output;
 }
 template<class Derived, class Index, class ReferenceIndex, bool isActors>Distance Portables<Derived, Index, ReferenceIndex, isActors>::floatsInAtDepth(const Index& index, const FluidTypeId& fluidType) const
@@ -400,7 +400,7 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>Distanc
 				continue;
 			OffsetCuboid above = cuboidAndVolume.first.above();
 			assert(boundry.contains(above));
-			nextLevel.add(above);
+			nextLevel.maybeAdd(above);
 			displacement += cuboidAndVolume.second;
 		}
 		++output;
