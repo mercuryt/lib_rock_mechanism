@@ -384,7 +384,7 @@ CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::getAdjacent()
 	return inflated;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::getDirectlyAdjacent() const
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::getDirectlyAdjacent(const Distance& distance) const
 {
 	assert(!empty());
 	CuboidSetType output;
@@ -392,7 +392,22 @@ CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::getDirectlyAd
 		for(Facing6 facing = Facing6::Below; facing != Facing6::Null; facing = (Facing6)((uint)facing + 1u))
 		{
 			CuboidType face = cuboid.getFace(facing);
-			face.shift(facing, {1});
+			face.maybeShift(facing, distance);
+			output.maybeAdd(face);
+		}
+	return output;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::inflateFaces(const Distance& distance) const
+{
+	assert(!empty());
+	CuboidSetType output;
+	output.m_cuboids = this->m_cuboids;
+	for(const CuboidType& cuboid : m_cuboids)
+		for(Facing6 facing = Facing6::Below; facing != Facing6::Null; facing = (Facing6)((uint)facing + 1u))
+		{
+			CuboidType face = cuboid.getFace(facing);
+				face.maybeShift(facing, distance);
 			output.maybeAdd(face);
 		}
 	return output;

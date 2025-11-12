@@ -174,6 +174,23 @@ void Cuboid::shift(const Offset3D& offset, const Distance& distance)
 	assert(distance != 0);
 	auto offsetModified = offset;
 	offsetModified *= distance;
+	assert(((m_low.toOffset() + offsetModified).data >= 0).all());
+	m_high += offsetModified;
+	m_low += offsetModified;
+}
+void Cuboid::maybeShift(const Facing6& direction, const Distance& distance)
+{
+	// TODO: make offsetsListDirectlyAdjacent return an Offset3D.
+	Offset3D offset = adjacentOffsets::direct[(uint)direction];
+	shift(offset, distance);
+}
+void Cuboid::maybeShift(const Offset3D& offset, const Distance& distance)
+{
+	assert(distance != 0);
+	auto offsetModified = offset;
+	offsetModified *= distance;
+	if(((m_low.toOffset() + offsetModified).data < 0).any())
+		return;
 	m_high += offsetModified;
 	m_low += offsetModified;
 }

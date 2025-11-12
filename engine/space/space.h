@@ -330,10 +330,11 @@ public:
 	// Fluid group will be set again in addPoint within the new group's constructor.
 	// This prevents a problem where addPoint attempts to remove a point from a group which it has already been removed from.
 	// TODO: Seems messy.
-	void fluid_unsetGroupInternal(const Point3D& point, const FluidTypeId& fluidType);
+	void fluid_unsetGroupsInternal(const CuboidSet& points, const FluidTypeId& fluidType);
 	void fluid_setGroupInternal(const Point3D& point, const FluidTypeId& fluidType, FluidGroup& fluidGroup);
 	void fluid_maybeRecordFluidOnDeck(const Point3D& point);
 	void fluid_maybeEraseFluidOnDeck(const Point3D& point);
+	void fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(CuboidSet& set) const;
 	[[nodiscard]] Distance fluid_getMistInverseDistanceToSource(const Point3D& point) const;
 	[[nodiscard]] FluidGroup* fluid_getGroup(const Point3D& point, const FluidTypeId& fluidType) const;
 	// To be called from FluidGroup::splitStep only.
@@ -361,7 +362,14 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	[[nodiscard]] CuboidSet fluid_queryGetCuboids(const Cuboid& shape) const;
 	[[nodiscard]] CuboidSet fluid_queryGetCuboidsWithCondition(const auto& shape, const auto& condition) const { return m_fluid.queryGetAllCuboidsWithCondition(shape, condition); }
 	[[nodiscard]] Point3D fluid_queryGetPointWithCondition(const auto& shape, const auto& condition) const { return m_fluid.queryGetOnePointWithCondition(shape, condition); }
+	[[nodiscard]] const SmallSet<FluidData> fluid_queryGetAll(const auto& shape) const { return m_fluid.queryGetAll(shape); }
 	[[nodiscard]] const SmallSet<FluidData> fluid_queryGetWithCondition(const auto& shape, const auto& condition) const { return m_fluid.queryGetAllWithCondition(shape, condition); }
+	[[nodiscard]] const std::vector<std::pair<Cuboid, FluidData>> fluid_queryGetWithCuboidsAndCondition(const auto& shape, const auto& condition) const { return m_fluid.queryGetAllWithCuboidsAndCondition(shape, condition); }
+	[[nodiscard]] const SmallSet<std::pair<Cuboid, FluidData>> fluid_queryGetWithCuboids(const auto& shape) const { return m_fluid.queryGetAllWithCuboids(shape); }
+	[[nodiscard]] CuboidSet fluid_queryGetCuboidsOverfull(const auto& shape) const
+	{
+		return m_fluid.queryGetAllCuboidsWithCondition(shape, [&](const FluidData& data) { return data.volume > Config::maxPointVolume; });
+	}
 	__attribute__((noinline)) void fluid_validateTotalForPoint(const Point3D& point) const;
 	__attribute__((noinline)) void fluid_validateAllTotals() const;
 	// Floating

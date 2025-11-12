@@ -47,6 +47,9 @@ struct OffsetCuboid
 	void inflate(const Distance& distance);
 	void shift(const Facing6& direction, const Distance& distance);
 	void shift(const Offset3D& offset, const Distance& distance);
+	// Provided for symetry with Cuboid, not actually useful.
+	void maybeShift(const Facing6& direction, const Distance& distance) { shift(direction, distance); }
+	void maybeShift(const Offset3D& offset, const Distance& distance) { shift(offset, distance); }
 	void rotateAroundPoint(const Offset3D& point, const Facing4& facing);
 	void rotate2D(const Facing4& facing);
 	void rotate2D(const Facing4& oldFacing, const Facing4& newFacing);

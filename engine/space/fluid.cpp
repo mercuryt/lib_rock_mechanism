@@ -178,11 +178,11 @@ void Space::fluid_fillInternal(const Point3D& point, const CollisionVolume& volu
 	if(wasEmpty)
 		fluid_maybeRecordFluidOnDeck(point);
 }
-void Space::fluid_unsetGroupInternal(const Point3D& point, const FluidTypeId& fluidType)
+void Space::fluid_unsetGroupsInternal(const CuboidSet& points, const FluidTypeId& fluidType)
 {
 	const auto condition = [&](const FluidData& data){ return data.type == fluidType; };
 	const auto action = [](FluidData& data){ data.group = nullptr; };
-	m_fluid.updateActionWithConditionOne(point, action, condition);
+	m_fluid.updateActionWithConditionAll(points, action, condition);
 }
 void Space::fluid_setGroupInternal(const Point3D& point, const FluidTypeId& fluidType, FluidGroup& group)
 {
@@ -515,6 +515,10 @@ void Space::fluid_maybeEraseFluidOnDeck(const Point3D& point)
 		const ItemIndex& item = isOnDeckOf.getItem();
 		m_area.getItems().onDeck_erasePointContainingFluid(item, point);
 	}
+}
+void Space::fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(CuboidSet& set) const
+{
+	set.maybeRemoveAll(m_solid.queryGetAllCuboids(set.boundry()));
 }
 void Space::fluid_validateTotalForPoint(const Point3D& point) const
 {

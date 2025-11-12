@@ -29,6 +29,9 @@ struct Cuboid
 	void clear();
 	void shift(const Facing6& direction, const Distance& distance);
 	void shift(const Offset3D& offset, const Distance& distance);
+	// MaybeShift only shifts if the result is non negitive.
+	void maybeShift(const Facing6& direction, const Distance& distance);
+	void maybeShift(const Offset3D& offset, const Distance& distance);
 	void rotateAroundPoint(const Point3D& point, const Facing4& rotation);
 	void setMaxZ(const Distance& distance);
 	void maybeExpand(const Cuboid& other);

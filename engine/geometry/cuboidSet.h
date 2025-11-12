@@ -117,7 +117,8 @@ public:
 	[[nodiscard]] bool isIntersectingOrAdjacentTo(const CuboidSetType& cuboids) const;
 	[[nodiscard]] bool isIntersectingOrAdjacentTo(const CuboidType& cuboid) const;
 	[[nodiscard]] CuboidSetType getAdjacent() const;
-	[[nodiscard]] CuboidSetType getDirectlyAdjacent() const;
+	[[nodiscard]] CuboidSetType getDirectlyAdjacent(const Distance& distance) const;
+	[[nodiscard]] CuboidSetType inflateFaces(const Distance& distance) const;
 	[[nodiscard]] uint countIf(auto&& condition) const
 	{
 		uint output = 0;

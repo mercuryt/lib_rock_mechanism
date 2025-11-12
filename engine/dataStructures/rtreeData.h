@@ -181,6 +181,12 @@ public:
 		updateActionWithCondition<queryConfig>(shape, action, condition);
 	}
 	template<UpdateActionConfig queryConfig>
+	void updateActionWithCondition(const CuboidSet& cuboidSet, auto&& action, const auto& condition)
+	{
+		for(const Cuboid& cuboid : cuboidSet)
+			updateActionWithCondition<queryConfig>(cuboid, action, condition);
+	}
+	template<UpdateActionConfig queryConfig>
 	void updateActionWithCondition(const auto& shape, auto&& action, const auto& condition)
 	{
 		SmallSet<RTreeNodeIndex> openList;
@@ -811,6 +817,41 @@ public:
 			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 		}
 		assert(output.isUnique());
+		return output;
+	}
+	[[nodiscard]] const std::vector<std::pair<Cuboid, T>> queryGetAllWithCuboidsAndCondition(const auto& shape, const auto& condition) const
+	{
+		SmallSet<RTreeNodeIndex> openList;
+		std::vector<std::pair<Cuboid, T>> output;
+		openList.insert(RTreeNodeIndex::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			const auto leafCount = node.getLeafCount();
+			if(!interceptMask.any())
+				continue;
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			if(leafCount != 0 && interceptMask.head(leafCount).any())
+			{
+				auto begin = interceptMask.begin();
+				auto end = begin + leafCount;
+				for(auto iter = begin; iter != end; ++iter)
+					if(*iter)
+					{
+						const auto offset = iter - begin;
+						T value = T::create(nodeDataAndChildIndices[offset].data);
+						if(condition(value))
+							output.emplace_back(nodeCuboids[offset], value);
+					}
+			}
+			addIntersectedChildrenToOpenList(node, interceptMask, openList);
+		}
+		std::ranges::sort(output);
+		output.erase(unique(output.begin(), output.end()), output.end());
 		return output;
 	}
 	[[nodiscard]] bool batchQueryAny(const auto& shapes) const
