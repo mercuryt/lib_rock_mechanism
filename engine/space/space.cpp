@@ -133,7 +133,7 @@ SmallSet<Point3D> Space::getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAbove
 			output.insert(adjacent);
 	return output;
 }
-SmallSet<Point3D> Space::getAdjacentOnSameZLevelOnly(const Point3D& point) const
+SmallSet<Point3D> Space::getDirectlyAdjacentOnSameZLevelOnly(const Point3D& point) const
 {
 	SmallSet<Point3D> output;
 	output.reserve(4);

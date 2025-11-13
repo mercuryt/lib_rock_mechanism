@@ -44,7 +44,7 @@ void FluidGroup::removeFluid(Area& area, const CollisionVolume& volume)
 void FluidGroup::addPoint(Area& area, const Point3D& point, bool checkMerge)
 {
 	assert(!m_merged);
-	assert( area.getSpace().fluid_contains(point, m_fluidType));
+	assert(area.getSpace().fluid_contains(point, m_fluidType));
 	// Already recorded this one.
 	if(m_drainQueue.m_set.contains(point))
 		return;
@@ -60,7 +60,7 @@ void FluidGroup::addPoint(Area& area, const Point3D& point, bool checkMerge)
 	FluidGroup* oldGroup = found.group;
 	if(oldGroup != nullptr && oldGroup != this)
 		oldGroup->removePoint(area, point);
-	space.fluid_setGroupInternal(point, m_fluidType, *this);
+	space.fluid_setGroupsInternal(CuboidSet::create(point), m_fluidType, *this);
 	m_drainQueue.maybeAddPoint(point);
 	// Add adjacent if fluid can enter.
 	SmallSet<FluidGroup*> toMerge;
@@ -119,9 +119,13 @@ void FluidGroup::addMistFor(Area& area, const Point3D& point)
 			!space.solid_isAny(point.below())
 		)
 	)
-		for(const Point3D& adjacent : space.getAdjacentOnSameZLevelOnly(point))
-			if(space.fluid_canEnterEver(adjacent))
+	{
+		CuboidSet toSpawnMist = CuboidSet::create(space.getDirectlyAdjacentOnSameZLevelOnly(point));
+		space.fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(toSpawnMist);
+		for(const Cuboid& cuboid : toSpawnMist)
+			for(const Point3D& adjacent : cuboid)
 				space.fluid_spawnMist(adjacent, m_fluidType);
+	}
 }
 FluidGroup* FluidGroup::merge(Area& area, FluidGroup* smaller)
 {
@@ -147,13 +151,7 @@ FluidGroup* FluidGroup::merge(Area& area, FluidGroup* smaller)
 	larger->m_drainQueue.merge(smaller->m_drainQueue);
 	larger->m_fillQueue.merge(smaller->m_fillQueue);
 	// Set fluidGroup for merged space.
-	for(const Cuboid& cuboid : smaller->m_drainQueue.m_set)
-		for(const Point3D& point : cuboid)
-		{
-			assert(space.fluid_contains(point, m_fluidType));
-			space.fluid_setGroupInternal(point, m_fluidType, *larger);
-			assert(larger->m_drainQueue.m_set.contains(point));
-		}
+	space.fluid_setGroupsInternal(smaller->m_drainQueue.m_set, m_fluidType, *larger);
 	// Merge other fluid groups ment to merge with smaller with larger instead.
 	auto condition = [&](const FluidData& data) { return data.type == m_fluidType && !data.group->m_merged && data.group != larger; };
 	const auto potentialMerge = space.fluid_queryGetWithCondition(smaller->m_futureNewEmptyAdjacents, condition);
@@ -357,32 +355,16 @@ void FluidGroup::readStep(Area& area)
 	potentialNewGroups.swap(m_potentiallySplitFromSyncronusStep);
 	CuboidSet possiblyNoLongerAdjacent;
 	possiblyNoLongerAdjacent.swap(m_potentiallyNoLongerAdjacentFromSyncronusStep);
-	// Collect all adjacent to futureEmpty which fluid can enter ever.
-	CuboidSet adjacentToFutureEmpty;
-	//adjacentToFutureEmpty.reserve(m_drainQueue.m_futureEmpty.size() * 6);
-	// TODO: Why do attempts to cuboidize this block fail to pass tests?
-	/*
-		// TODO: change inflateFaces to inflate to add diagonal flow.
-		if(!m_drainQueue.m_futureEmpty.empty())
-		{
-			CuboidSet adjacentToFutureEmpty = m_drainQueue.m_futureEmpty.inflateFaces({1});
-			space.fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(adjacentToFutureEmpty);
-			potentialNewGroups.maybeAddAll(adjacentToFutureEmpty.intersection(futurePoints));
-			adjacentToFutureEmpty.maybeRemoveAll(futurePoints);
-			possiblyNoLongerAdjacent.maybeAddAll(adjacentToFutureEmpty);
-		}
-
-	*/
-	for(const Cuboid& cuboid : m_drainQueue.m_futureEmpty)
-		for(const Point3D& point : cuboid)
-		{
-			for(const Point3D& adjacentPoint : space.getDirectlyAdjacent(point))
-				if(area.getSpace().fluid_canEnterEver(adjacentPoint))
-					adjacentToFutureEmpty.maybeAdd(adjacentPoint);
-		}
-	potentialNewGroups.maybeAddAll(adjacentToFutureEmpty.intersection(futurePoints));
-	adjacentToFutureEmpty.maybeRemoveAll(futurePoints);
-	possiblyNoLongerAdjacent.maybeAddAll(adjacentToFutureEmpty);
+	if(!m_drainQueue.m_futureEmpty.empty())
+	{
+		// Collect all adjacent to futureEmpty which fluid can enter ever.
+		//adjacentToFutureEmpty.reserve(m_drainQueue.m_futureEmpty.size() * 6);
+		CuboidSet adjacentToFutureEmpty = m_drainQueue.m_futureEmpty.inflateFaces({1});
+		space.fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(adjacentToFutureEmpty);
+		potentialNewGroups.maybeAddAll(adjacentToFutureEmpty.intersection(futurePoints));
+		adjacentToFutureEmpty.maybeRemoveAll(futurePoints);
+		possiblyNoLongerAdjacent.maybeAddAll(adjacentToFutureEmpty);
+	}
 	// Seperate into contiguous groups. Each point in potentialNewGroups might be in a seperate group.
 	// If there is only one potential new group there can not be a split: there needs to be another group to split from.
 	potentialNewGroups = potentialNewGroups.intersection(futurePoints);
@@ -411,33 +393,24 @@ void FluidGroup::readStep(Area& area)
 		// Put it at the end because it needs to be in a known place and it will be removed later.
 		std::rotate(it, it + 1, m_futureGroups.end());
 		// Record each group's future new adjacent.
-		for(const Cuboid& cuboid : m_futureNewEmptyAdjacents)
-			for(const Point3D& point : cuboid)
-				for(const Point3D& adjacent : space.getDirectlyAdjacent(point))
-					if(area.getSpace().fluid_canEnterEver(adjacent))
-					{
-						for(FluidGroupSplitData& fluidGroupSplitData : m_futureGroups)
-							if(fluidGroupSplitData.members.contains(adjacent))
-								fluidGroupSplitData.futureAdjacent.maybeAdd(point);
-					}
+		if(!m_futureNewEmptyAdjacents.empty())
+		{
+			for(FluidGroupSplitData& fluidGroupSplitData : m_futureGroups)
+			{
+				CuboidSet adjacentToMembers = fluidGroupSplitData.members.inflateFaces({1});
+				fluidGroupSplitData.futureAdjacent.maybeAddAll(adjacentToMembers.intersection(m_futureNewEmptyAdjacents));
+			}
+		}
 	}
 	// -Find no longer adjacent empty to remove from fill queue and newEmptyAdjacent.
-	CuboidSet futureRemoveFromEmptyAdjacents;
 	//futureRemoveFromEmptyAdjacents.reserve(possiblyNoLongerAdjacent.size());
 	possiblyNoLongerAdjacent.maybeRemoveAll(futurePoints);
-	for(const Cuboid& cuboid : possiblyNoLongerAdjacent)
-		for(const Point3D& point : cuboid)
-		{
-			bool stillAdjacent = false;
-			for(const Point3D& adjacent : space.getDirectlyAdjacent(point))
-				if(area.getSpace().fluid_canEnterEver(adjacent) && futurePoints.contains(adjacent))
-				{
-					stillAdjacent = true;
-					break;
-				}
-			if(!stillAdjacent)
-				futureRemoveFromEmptyAdjacents.add(point);
-		}
+	CuboidSet futureRemoveFromEmptyAdjacents = possiblyNoLongerAdjacent;
+	if(!futurePoints.empty())
+	{
+		CuboidSet directlyAdjacentToFuturePoints = futurePoints.inflateFaces({1});
+		futureRemoveFromEmptyAdjacents.maybeRemoveAll(directlyAdjacentToFuturePoints);
+	}
 	// Convert descriptive future to proscriptive future.
 	m_futureAddToDrainQueue = m_fillQueue.m_futureNoLongerEmpty;
 	m_futureRemoveFromDrainQueue = m_drainQueue.m_futureEmpty;
@@ -461,10 +434,9 @@ void FluidGroup::writeStep(Area& area)
 	validate(area);
 	auto& space = area.getSpace();
 	area.m_hasFluidGroups.validateAllFluidGroups();
+	// Update queues.
 	m_drainQueue.applyDelta(area, *this);
 	m_fillQueue.applyDelta(area, *this);
-	// Update queues.
-	validate(area);
 	assert(!m_futureAddToFillQueue.intersects(m_futureRemoveFromFillQueue));
 	// Don't add to drain queue if taken by another fluid group already.
 	auto containsDifferentFluidGroupWithSameFluidType = [&](const FluidData& data) { return data.group != this && data.type == m_fluidType; };
@@ -528,10 +500,12 @@ void FluidGroup::afterWriteStep(Area& area)
 	auto& space = area.getSpace();
 	// Resolve overfull space.
 	// TODO: cuboidize.
-	for(const Cuboid& cuboid : m_fillQueue.m_overfull)
+	CuboidSet overfull = m_fillQueue.m_overfull;
+	// Check that points maked as overfull are still overfull.
+	overfull = space.fluid_queryGetCuboidsOverfull(overfull.boundry()).intersection(overfull);
+	for(const Cuboid& cuboid : overfull)
 			for(const Point3D& point : cuboid)
-				if(space.fluid_getTotalVolume(point) > Config::maxPointVolume)
-					space.fluid_resolveOverfull(point);
+				space.fluid_resolveOverfull(point);
 	// Create mist.
 	for(const Cuboid& cuboid : m_fillQueue.m_futureNoLongerEmpty)
 		for(const Point3D point : cuboid)
@@ -569,20 +543,19 @@ void FluidGroup::splitStep(Area& area)
 	formerMembers.maybeRemoveAll(m_futureGroups.back().members);
 	space.fluid_unsetGroupsInternal(formerMembers, m_fluidType);
 	m_drainQueue.removePoints(formerMembers);
-	//TODO: this seems to be removing drainQueue and all adjacent from fillQueue. Why?
-	CuboidSet formerFill;
-	for(const Cuboid& cuboid : m_fillQueue.m_set)
-		for(const Point3D& point : cuboid)
-			if(!m_drainQueue.m_set.contains(point) && !m_drainQueue.m_set.isAdjacent(point))
-				formerFill.add(point);
+	// Remove points which are no longer adjacent to drain queue from fill queue.
+	CuboidSet formerFill = m_fillQueue.m_set;
+	CuboidSet drainQueueAndAdjacent = m_drainQueue.m_set;
+	drainQueueAndAdjacent.inflate({1});
+	formerFill.maybeRemoveAll(drainQueueAndAdjacent);
 	m_fillQueue.removePoints(formerFill);
-	m_futureNewEmptyAdjacents = m_futureGroups.back().futureAdjacent;
 	// Remove largest group, it will remain as this instance.
+	m_futureNewEmptyAdjacents = m_futureGroups.back().futureAdjacent;
 	m_futureGroups.pop_back();
 	// Create new groups.
 	for(auto& [members, newAdjacent] : m_futureGroups)
 	{
-		FluidGroup* fluidGroup = area.m_hasFluidGroups.createFluidGroup(m_fluidType, members.toPointSet(), false);
+		FluidGroup* fluidGroup = area.m_hasFluidGroups.createFluidGroup(m_fluidType, members, false);
 		// TODO: change this back to swap.
 		const auto futureNewAsCuboidSet = fluidGroup->m_futureNewEmptyAdjacents;
 		fluidGroup->m_futureNewEmptyAdjacents = newAdjacent;
@@ -597,18 +570,15 @@ void FluidGroup::mergeStep(Area& area)
 	assert(!m_destroy);
 	validate(area);
 	auto& space = area.getSpace();
-	// TODO: fix errors caused by the following:
-	/*
 	auto condition = [&](const FluidData& data) { return data.type == m_fluidType && data.group != this; };
 	for(const FluidData& data : space.fluid_queryGetWithCondition(m_futureNewEmptyAdjacents, condition))
 	{
 		if(m_merged)
 			return;
-		assert(!data.group->m_merged);
-		data.group->validate(area);
-		merge(area, data.group);
+		if(!data.group->m_merged)
+			merge(area, data.group);
 	}
-	*/
+	/*
 	// Record merge. First group consumes subsequent groups.
 	for(const Cuboid& cuboid : m_futureNewEmptyAdjacents)
 		for(const Point3D& point : cuboid)
@@ -625,6 +595,7 @@ void FluidGroup::mergeStep(Area& area)
 			if(found.group != this)
 				merge(area, found.group);
 		}
+	*/
 	validate(area);
 }
 CollisionVolume FluidGroup::totalVolume(Area& area) const
@@ -669,35 +640,23 @@ void FluidGroup::validate(Area& area) const
 	if(m_merged || m_destroy || m_disolved)
 		return;
 	const Space& space = area.getSpace();
-	for(const Cuboid& cuboid : m_drainQueue.m_set)
-		for(const Point3D& point : cuboid)
-		{
-			assert(point.exists());
-			for(const FluidData& fluidData : space.fluid_getAll(point))
-			{
-				if(fluidData.group != this)
-					continue;
-				assert(fluidData.group->m_fluidType == fluidData.type);
-				assert(fluidData.group->m_drainQueue.m_set.contains(point));
-			}
-			space.fluid_validateTotalForPoint(point);
-		}
+	auto condition = [&](const FluidData& data) { return data.group == this && data.type == m_fluidType; };
+	CuboidSet recordedInSpaceFluid = space.fluid_queryGetCuboidsWithCondition(m_drainQueue.m_set, condition);
+	auto drainQueueCopy = m_drainQueue.m_set;
+	assert(recordedInSpaceFluid.contains(m_drainQueue.m_set));
+	assert(m_drainQueue.m_set.contains(recordedInSpaceFluid));
 }
 void FluidGroup::validate(Area& area, [[maybe_unused]] SmallSet<FluidGroup*> toErase) const
 {
 	if(m_merged || m_destroy || m_disolved)
 		return;
 	const Space& space = area.getSpace();
-	for(const Cuboid& cuboid : m_drainQueue.m_set)
-		for(const Point3D& point : cuboid)
-			for(const FluidData& fluidData : space.fluid_getAll(point))
-			{
-				if(fluidData.group != this)
-					continue;
-				assert(fluidData.group->m_fluidType == fluidData.type);
-				assert(fluidData.group->m_drainQueue.m_set.contains(point));
-				assert(!toErase.contains(fluidData.group));
-			}
+	auto condition = [&](const FluidData& data) { return data.group == this && data.type == m_fluidType; };
+	CuboidSet recordedInSpaceFluid = space.fluid_queryGetCuboidsWithCondition(m_drainQueue.m_set, condition);
+	auto drainQueueCopy = m_drainQueue.m_set;
+	assert(recordedInSpaceFluid.contains(m_drainQueue.m_set));
+	assert(m_drainQueue.m_set.contains(recordedInSpaceFluid));
+	assert(!toErase.contains(const_cast<FluidGroup*>(this)));
 }
 void FluidGroup::log(Area& area) const
 {

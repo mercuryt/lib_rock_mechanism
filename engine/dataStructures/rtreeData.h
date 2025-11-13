@@ -395,7 +395,7 @@ public:
 	}
 	void updateActionWithConditionAllAllowNotChanged(const auto& shape, auto&& action, const auto& condition)
 	{
-		constexpr UpdateActionConfig queryConfig{.stopAfterOne = true};
+		constexpr UpdateActionConfig queryConfig{};
 		updateActionWithCondition<queryConfig>(shape, action, condition);
 	}
 	T updateAdd(const auto& shape, const T& value)
@@ -816,7 +816,7 @@ public:
 			}
 			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 		}
-		assert(output.isUnique());
+		output.makeUnique();
 		return output;
 	}
 	[[nodiscard]] const std::vector<std::pair<Cuboid, T>> queryGetAllWithCuboidsAndCondition(const auto& shape, const auto& condition) const

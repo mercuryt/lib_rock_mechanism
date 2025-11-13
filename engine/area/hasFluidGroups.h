@@ -17,8 +17,8 @@ class AreaHasFluidGroups final
 	Area& m_area;
 public:
 	AreaHasFluidGroups(Area& area) : m_fluidGroups(&m_allocator), m_area(area) { }
-	FluidGroup* createFluidGroup(const FluidTypeId& fluidType, SmallSet<Point3D>& space, bool checkMerge = true);
-	FluidGroup* createFluidGroup(const FluidTypeId& fluidType, SmallSet<Point3D>&& space, bool checkMerge = true);
+	FluidGroup* createFluidGroup(const FluidTypeId& fluidType, const CuboidSet& space, bool checkMerge = true);
+	FluidGroup* createFluidGroup(const FluidTypeId& fluidType, CuboidSet&& space, bool checkMerge = true);
 	void doStep(bool parallel = true);
 	void removeFluidGroup(FluidGroup& group);
 	void clearMergedFluidGroups();

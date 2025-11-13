@@ -77,7 +77,7 @@ void CuboidSetBase<CuboidType, PointType, CuboidSetType>::maybeRemove(const Cubo
 			continue;
 		else
 			for(const CuboidType& fragment : existingCuboid.getChildrenWhenSplitBy(cuboid))
-				m_cuboids.insert(fragment);
+				add(fragment);
 	}
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
@@ -193,36 +193,21 @@ bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::contains(const Offset3
 	return false;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::contains(const Cuboid& cuboid) const
+bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::contains(const CuboidType& cuboid) const
 {
-	CuboidSetType remainder;
-	if constexpr(std::is_same_v<PointType, Offset3D>)
-		remainder.add(OffsetCuboid::create(cuboid));
-	else
-		remainder.add(cuboid);
+	uint remainingVolume = cuboid.volume();
 	for(const CuboidType& other : m_cuboids)
-	{
-		auto remainderCopy = remainder.m_cuboids;
-		for(const CuboidType& remainderCuboid : remainderCopy)
-		{
-			if(!remainderCuboid.intersects(other))
-				continue;
-			if(other.contains(remainderCuboid))
-			{
-				remainder.m_cuboids.erase(remainderCuboid);
-				if(remainder.m_cuboids.empty())
-					return true;
-			}
-		}
-	}
-	return false;
+		if(other.intersects(cuboid))
+			remainingVolume -= other.intersection(cuboid).volume();
+	return remainingVolume == 0;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::contains(const OffsetCuboid& offsetCuboid) const
+bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::contains(const CuboidSetType& other) const
 {
-	if(offsetCuboid.hasAnyNegativeCoordinates())
-		return false;
-	return contains(Cuboid::create(offsetCuboid));
+	for(const CuboidType& cuboid : other)
+		if(!contains(cuboid))
+			return false;
+	return true;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
 SmallSet<PointType> CuboidSetBase<CuboidType, PointType, CuboidSetType>::toPointSet() const

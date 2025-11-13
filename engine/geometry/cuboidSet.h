@@ -90,8 +90,8 @@ public:
 	[[nodiscard]] uint volume() const;
 	[[nodiscard]] bool contains(const Point3D& point) const;
 	[[nodiscard]] bool contains(const Offset3D& point) const;
-	[[nodiscard]] bool contains(const Cuboid& cuboid) const;
-	[[nodiscard]] bool contains(const OffsetCuboid& cuboid) const;
+	[[nodiscard]] bool contains(const CuboidType& cuboid) const;
+	[[nodiscard]] bool contains(const CuboidSetType& cuboid) const;
 	[[nodiscard]] const auto& getCuboids() const { return m_cuboids; }
 	[[nodiscard]] SmallSet<PointType> toPointSet() const;
 	[[nodiscard]] bool isAdjacent(const PointType& cuboid) const;
@@ -119,6 +119,7 @@ public:
 	[[nodiscard]] CuboidSetType getAdjacent() const;
 	[[nodiscard]] CuboidSetType getDirectlyAdjacent(const Distance& distance) const;
 	[[nodiscard]] CuboidSetType inflateFaces(const Distance& distance) const;
+	[[nodiscard]] CuboidSetType inflated(const Distance& distance) const;
 	[[nodiscard]] uint countIf(auto&& condition) const
 	{
 		uint output = 0;

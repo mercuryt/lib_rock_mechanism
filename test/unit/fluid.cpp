@@ -802,8 +802,11 @@ TEST_CASE("fluids smaller")
 		fg2->mergeStep(area);
 		fg4->mergeStep(area);
 		fg3->mergeStep(area);
-		CHECK(fg4->m_merged);
-		CHECK(fg2->m_merged);
+		// Either 3 merges into 2 or 2 merges into 3.
+		FluidGroup* fg2Or3 = fg3->m_merged ? fg2 : fg3;
+		if(fg3->m_merged)
+			CHECK(!fg2->m_merged);
+		CHECK(!fg1->m_merged);
 		CHECK(fg1->m_drainQueue.m_set.volume() == 3);
 		CHECK(fg4->m_drainQueue.m_set.volume() == 1);
 		CHECK(fg1 != fg4);
@@ -818,19 +821,19 @@ TEST_CASE("fluids smaller")
 		CHECK(space.fluid_volumeOfTypeContains(block4, water) == 50);
 		// Step 2.
 		fg1->readStep(area);
-		fg3->readStep(area);
+		fg2Or3->readStep(area);
 		CHECK(fg1->m_excessVolume == 0);
 		fg1->writeStep(area);
 		CHECK(fg1->m_drainQueue.m_set.volume() == 2);
-		fg3->writeStep(area);
+		fg2Or3->writeStep(area);
 		fg1->afterWriteStep(area);
-		fg3->afterWriteStep(area);
+		fg2Or3->afterWriteStep(area);
 		fg1->splitStep(area);
-		fg3->splitStep(area);
+		fg2Or3->splitStep(area);
 		fg1->mergeStep(area);
 		CHECK(fg1->m_excessVolume == 0);
-		fg3->mergeStep(area);
-		CHECK(fg3->m_stable);
+		fg2Or3->mergeStep(area);
+		CHECK(fg2Or3->m_stable);
 		CHECK(space.fluid_volumeOfTypeContains(origin1, water) == 65);
 		CHECK(space.fluid_volumeOfTypeContains(block1, water) == 65);
 		CHECK(space.fluid_volumeOfTypeContains(origin5, water) == 65);

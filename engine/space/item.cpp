@@ -73,7 +73,7 @@ void Space::item_disperseAll(const Point3D& point)
 	if(itemsInPoint.empty())
 		return;
 	SmallSet<Point3D> points;
-	for(Point3D otherIndex : getAdjacentOnSameZLevelOnly(point))
+	for(Point3D otherIndex : getDirectlyAdjacentOnSameZLevelOnly(point))
 		if(!solid_isAny(otherIndex))
 			points.insert(otherIndex);
 	auto copy = itemsInPoint;

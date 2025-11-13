@@ -88,7 +88,7 @@ void Space::fluid_add(const Point3D& point, const CollisionVolume& volume, const
 		// No FluidGroup exists at point or adjacent. Create fluid group.
 		// Possibly clear space first to prevent reallocation.
 		m_area.m_hasFluidGroups.clearMergedFluidGroups();
-		group = m_area.m_hasFluidGroups.createFluidGroup(fluidType, {point});
+		group = m_area.m_hasFluidGroups.createFluidGroup(fluidType, CuboidSet::create(point));
 	}
 	else
 	{
@@ -184,11 +184,11 @@ void Space::fluid_unsetGroupsInternal(const CuboidSet& points, const FluidTypeId
 	const auto action = [](FluidData& data){ data.group = nullptr; };
 	m_fluid.updateActionWithConditionAll(points, action, condition);
 }
-void Space::fluid_setGroupInternal(const Point3D& point, const FluidTypeId& fluidType, FluidGroup& group)
+void Space::fluid_setGroupsInternal(const CuboidSet& points, const FluidTypeId& fluidType, FluidGroup& group)
 {
 	const auto condition = [&](const FluidData& data) { return data.type == fluidType; };
 	const auto action = [&](FluidData& data) { data.group = &group; };
-	m_fluid.updateActionWithConditionOneAllowNotChanged(point, action, condition);
+	m_fluid.updateActionWithConditionAllAllowNotChanged(points, action, condition);
 }
 bool Space::fluid_undisolveInternal(const Point3D& point, FluidGroup& fluidGroup)
 {

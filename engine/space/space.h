@@ -125,7 +125,7 @@ public:
 	[[nodiscard]] Cuboid getAdjacentWithEdgeAndCornerAdjacent(const Point3D& point) const;
 	[[nodiscard]] SmallSet<Point3D> getDirectlyAdjacent(const Point3D& point) const;
 	[[nodiscard]] SmallSet<Point3D> getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(const Point3D& point) const;
-	[[nodiscard]] SmallSet<Point3D> getAdjacentOnSameZLevelOnly(const Point3D& point) const;
+	[[nodiscard]] SmallSet<Point3D> getDirectlyAdjacentOnSameZLevelOnly(const Point3D& point) const;
 	[[nodiscard]] Cuboid getAdjacentWithEdgeOnSameZLevelOnly(const Point3D& point) const;
 	// getNthAdjacent is not const because the point offsets are created and cached.
 	[[nodiscard]] SmallSet<Point3D> getNthAdjacent(const Point3D& point, const Distance& distance);
@@ -331,7 +331,7 @@ public:
 	// This prevents a problem where addPoint attempts to remove a point from a group which it has already been removed from.
 	// TODO: Seems messy.
 	void fluid_unsetGroupsInternal(const CuboidSet& points, const FluidTypeId& fluidType);
-	void fluid_setGroupInternal(const Point3D& point, const FluidTypeId& fluidType, FluidGroup& fluidGroup);
+	void fluid_setGroupsInternal(const CuboidSet& points, const FluidTypeId& fluidType, FluidGroup& fluidGroup);
 	void fluid_maybeRecordFluidOnDeck(const Point3D& point);
 	void fluid_maybeEraseFluidOnDeck(const Point3D& point);
 	void fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(CuboidSet& set) const;
@@ -368,7 +368,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	[[nodiscard]] const SmallSet<std::pair<Cuboid, FluidData>> fluid_queryGetWithCuboids(const auto& shape) const { return m_fluid.queryGetAllWithCuboids(shape); }
 	[[nodiscard]] CuboidSet fluid_queryGetCuboidsOverfull(const auto& shape) const
 	{
-		return m_fluid.queryGetAllCuboidsWithCondition(shape, [&](const FluidData& data) { return data.volume > Config::maxPointVolume; });
+		return m_totalFluidVolume.queryGetAllCuboidsWithCondition(shape, [&](const CollisionVolume& data) { return data > Config::maxPointVolume; });
 	}
 	__attribute__((noinline)) void fluid_validateTotalForPoint(const Point3D& point) const;
 	__attribute__((noinline)) void fluid_validateAllTotals() const;

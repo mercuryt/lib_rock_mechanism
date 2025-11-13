@@ -48,7 +48,7 @@ bool MistDisperseEvent::continuesToExist(Area& area) const
 	if(space.fluid_getMist(m_point) == m_fluidType)
 		return true;
 	// if adjacent to falling fluid on same z level
-	for(Point3D adjacent : space.getAdjacentOnSameZLevelOnly(m_point))
+	for(Point3D adjacent : space.getDirectlyAdjacentOnSameZLevelOnly(m_point))
 		// if adjacent to falling fluid.
 		if(space.fluid_contains(adjacent, m_fluidType) && adjacent.z() != 0)
 		{

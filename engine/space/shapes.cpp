@@ -370,7 +370,7 @@ bool Space::shape_moveTypeCanEnter(const Point3D& point, const MoveTypeId& moveT
 			else
 			{
 				// Only climb2 moveTypes can enter.
-				for(Point3D otherPoint : getAdjacentOnSameZLevelOnly(point))
+				for(Point3D otherPoint : getDirectlyAdjacentOnSameZLevelOnly(point))
 					//TODO: check for climable features?
 					if(isSupport(otherPoint))
 						return true;
