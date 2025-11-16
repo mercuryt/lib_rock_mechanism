@@ -81,7 +81,7 @@ TEST_CASE("fluids smaller")
 		CHECK(!fluidGroup->m_stable);
 		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 1);
 		CHECK(fluidGroup->m_fillQueue.m_set.volume() == 1);
-		CHECK(fluidGroup->m_fillQueue.m_queue[0].point == block2);
+		CHECK(fluidGroup->m_fillQueue.m_set.contains(block2));
 		// Step 1.
 		fluidGroup->readStep(area);
 		CHECK(!fluidGroup->m_stable);
@@ -92,7 +92,7 @@ TEST_CASE("fluids smaller")
 		CHECK(area.m_hasFluidGroups.getAll().size() == 1);
 		CHECK(fluidGroup->m_drainQueue.m_set.volume() == 2);
 		CHECK(fluidGroup->m_fillQueue.m_set.volume() == 1);
-		CHECK(fluidGroup->m_fillQueue.m_queue[0].point == block3);
+		CHECK(fluidGroup->m_fillQueue.m_set.contains(block3));
 		CHECK(space.fluid_contains(block2, water));
 		CHECK(space.fluid_volumeOfTypeContains(block2, water) == Config::maxPointVolume);
 		CHECK(fluidGroup == space.fluid_getGroup(block2, water));

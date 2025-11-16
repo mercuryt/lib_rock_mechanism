@@ -89,12 +89,8 @@ namespace areaBuilderUtil
 		assert(space.fluid_getTotalVolume(high) == 0);
 		assert(space.fluid_canEnterEver(high));
 		Cuboid cuboid(high, low);
-		for(const Point3D& point : cuboid)
-		{
-			assert(space.fluid_getTotalVolume(point) == 0);
-			assert(space.fluid_canEnterEver(point));
-			space.fluid_add(point, CollisionVolume::create(100), fluidType);
-		}
+		assert(!space.fluid_any(cuboid));
+		space.fluid_add(cuboid, CollisionVolume::create(100), fluidType);
 		space.prepareRtrees();
 	}
 	inline void validateAllPointFluids(Area& area)

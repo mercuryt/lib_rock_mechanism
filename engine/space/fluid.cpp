@@ -58,10 +58,85 @@ FluidGroup* Space::fluid_getGroup(const Point3D& point, const FluidTypeId& fluid
 		return nullptr;
 	return found.group;
 }
+void Space::fluid_add(const CuboidSet& points, const CollisionVolume& volume, const FluidTypeId& fluidType)
+{
+	assert(!solid_isAny(points));
+	// Find overlaping groups to join / merge.
+	const auto fluidTypeCondition = [fluidType](const FluidData& data) { return data.type == fluidType; };
+	SmallSet<FluidGroup*> groups;
+	FluidGroup* largestGroup = nullptr;
+	CuboidSet inflatedPoints = points.inflateFaces({1});
+	CuboidSet wasEmpty = points;
+	uint32_t numberOfPointsOverlappingExistingGroups = 0;
+	for(const auto& [cuboid, fluidData] : m_fluid.queryGetAllWithCuboidsAndCondition(inflatedPoints, fluidTypeCondition))
+	{
+		groups.maybeInsert(fluidData.group);
+		wasEmpty.maybeRemove(cuboid);
+		numberOfPointsOverlappingExistingGroups += cuboid.volume();
+	}
+	// Add only to those points which are not already part of a group for totalVolume. Points which are part of a group will be converted into excess volume for the largest group instead.
+	m_totalFluidVolume.updateAdd(wasEmpty, volume);
+	for(FluidGroup* group : groups)
+		if(largestGroup == nullptr || largestGroup->m_drainQueue.m_set.volume() < group->m_drainQueue.m_set.volume())
+			largestGroup = group;
+	if(largestGroup == nullptr)
+	{
+		// No FluidGroup exists at point or adjacent. Create fluid group.
+		// Possibly clear space first to prevent reallocation.
+		m_area.m_hasFluidGroups.clearMergedFluidGroups();
+		largestGroup = m_area.m_hasFluidGroups.createFluidGroup(fluidType, points);
+	}
+	// Set group to nullptr for now, will be changed when added to group.
+	m_fluid.insert(wasEmpty, FluidData{.group=nullptr, .type=fluidType, .volume=volume});
+	largestGroup->addFluid(m_area, volume * numberOfPointsOverlappingExistingGroups);
+	// Merge all found groups into largest.
+	for(FluidGroup* group : groups)
+		if(group != largestGroup)
+			largestGroup->merge(m_area, group);
+	m_area.m_hasFluidGroups.markUnstable(*largestGroup);
+	// Add points which formerly did not have any fluid of fluidType to the largest group.
+	largestGroup->addPoints(m_area, wasEmpty, false);
+	if(!largestGroup->m_aboveGround && m_exposedToSky.check(points))
+	{
+		largestGroup->m_aboveGround = true;
+		if(FluidType::getFreezesInto(largestGroup->m_fluidType).exists())
+			m_area.m_hasTemperature.addFreezeableFluidGroupAboveGround(*largestGroup);
+	}
+	for(const Cuboid& cuboid : points)
+		for(const Point3D& point : cuboid)
+		{
+			floating_maybeFloatUp(point);
+			// Float.
+			Items& items = m_area.getItems();
+			for(const ItemIndex& item : item_getAll(point))
+			{
+				const Point3D& location = items.getLocation(item);
+				if(!items.isFloating(item))
+				{
+					if(items.canFloatAt(item, location))
+						items.setFloating(item, fluidType);
+				}
+				else
+				{
+					const Point3D& above = location.above();
+					if(items.canFloatAt(item, above))
+						items.location_set(item, above, items.getFacing(item));
+				}
+			}
+		}
+	for(const Cuboid& cuboid : wasEmpty)
+		for(const Point3D& point : cuboid)
+			fluid_maybeRecordFluidOnDeck(point);
+	CuboidSet overfull = fluid_queryGetCuboidsOverfull(points);
+	for(const Cuboid& cuboid : overfull)
+		for(const Point3D& point : cuboid)
+			fluid_resolveOverfull(point);
+	for(const Cuboid& cuboid : inflatedPoints)
+		m_area.m_hasTerrainFacades.update(cuboid);
+}
 void Space::fluid_add(const Cuboid& cuboid, const CollisionVolume& volume, const FluidTypeId& fluidType)
 {
-	for(const Point3D& point : cuboid)
-		fluid_add(point, volume, fluidType);
+	fluid_add(CuboidSet::create(cuboid), volume, fluidType);
 }
 void Space::fluid_add(const Point3D& point, const CollisionVolume& volume, const FluidTypeId& fluidType)
 {
@@ -468,10 +543,6 @@ const MapWithCuboidKeys<std::pair<FluidTypeId, CollisionVolume>> Space::fluid_ge
 	m_fluid.removeAll(cuboids);
 	m_totalFluidVolume.removeAll(cuboids);
 	return output;
-}
-bool Space::fluid_any(const Point3D& point) const
-{
-	return m_fluid.queryAny(point);
 }
 template<typename ShapeT>
 bool Space::fluid_contains(const ShapeT& shape, const FluidTypeId& fluidType) const

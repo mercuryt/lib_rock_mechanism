@@ -37,7 +37,7 @@ void FluidQueue::maybeRemovePoint(const Point3D& point)
 		return;
 	removePoint(point);
 }
-void FluidQueue::removePoints(const CuboidSet& points)
+void FluidQueue::maybeRemovePoints(const CuboidSet& points)
 {
 	m_set.maybeRemoveAll(points);
 	std::erase_if(m_queue, [&](FutureFlowPoint& futureFlowPoint){ return points.contains(futureFlowPoint.point); });

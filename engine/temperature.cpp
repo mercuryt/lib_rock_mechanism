@@ -129,9 +129,10 @@ void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature& tempera
 		{
 			for(FluidGroup* fluidGroup : fluidGroups)
 			{
-				for(FutureFlowPoint& futureFlowPoint : fluidGroup->m_drainQueue.m_queue)
-					if(space.isExposedToSky(futureFlowPoint.point))
-						pointSet.insert(futureFlowPoint.point);
+				for(const Cuboid& cuboid : fluidGroup->m_drainQueue.m_set)
+					for(const Point3D point : cuboid)
+						if(space.isExposedToSky(point))
+							pointSet.insert(point);
 				fluidGroup->m_aboveGround = false;
 			}
 			for(const auto& [fluidTypeToFreeze, pointsToFreeze] : toFreeze)

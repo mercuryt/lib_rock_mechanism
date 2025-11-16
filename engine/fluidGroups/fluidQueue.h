@@ -42,7 +42,7 @@ public:
 	void maybeAddPoints(const CuboidSet& points);
 	void removePoint(const Point3D& point);
 	void maybeRemovePoint(const Point3D& point);
-	void removePoints(const CuboidSet& points);
+	void maybeRemovePoints(const CuboidSet& points);
 	void merge(FluidQueue& fluidQueue);
 	void noChange();
 	[[nodiscard]] uint32_t groupSize() const;

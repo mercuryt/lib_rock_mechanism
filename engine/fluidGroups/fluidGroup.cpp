@@ -26,10 +26,8 @@ FluidGroup::FluidGroup(Allocator& allocator, const FluidTypeId& ft, const Cuboid
 	m_fillQueue(allocator), m_drainQueue(allocator), m_fluidType(ft)
 {
 	Space& space = area.getSpace();
-	for(const Cuboid& cuboid : points)
-		for(const Point3D& point : cuboid)
-			if(space.fluid_contains(point, m_fluidType))
-				addPoint(area, point, checkMerge);
+	CuboidSet pointsWithFluidOfType = points.intersection(space.fluid_queryGetCuboidsWithCondition(points, [&](const FluidData& data){ return data.type == m_fluidType; }));
+	addPoints(area, pointsWithFluidOfType, checkMerge);
 }
 void FluidGroup::addFluid(Area& area, const CollisionVolume& volume)
 {
@@ -40,6 +38,44 @@ void FluidGroup::removeFluid(Area& area, const CollisionVolume& volume)
 {
 	m_excessVolume -= volume.get();
 	setUnstable(area);
+}
+void FluidGroup::addPoints(Area& area, const CuboidSet& points, bool checkMerge)
+{
+	assert(!m_merged);
+	CuboidSet toAdd = points;
+	toAdd.maybeRemoveAll(m_drainQueue.m_set);
+	if(toAdd.empty())
+		return;
+	setUnstable(area);
+	// Cannot be in fill queue if full. Must be otherwise.
+	Space& space = area.getSpace();
+	CuboidSet pointsWhichAreFull = space.fluid_queryGetCuboidsWithCondition(toAdd, [&](const FluidData& data) { return data.type == m_fluidType && data.volume >= Config::maxPointVolume; });
+	m_fillQueue.maybeRemovePoints(pointsWhichAreFull);
+	CuboidSet pointsWhichAreNotFull = toAdd;
+	pointsWhichAreNotFull.maybeRemoveAll(pointsWhichAreFull);
+	m_fillQueue.maybeAddPoints(pointsWhichAreNotFull);
+	// Set group membership in Space.
+	space.fluid_setGroupsInternal(toAdd, m_fluidType, *this);
+	m_drainQueue.maybeAddPoints(toAdd);
+	// Add adjacent to fill queue if fluid can enter.
+	CuboidSet adjacent = toAdd.getDirectlyAdjacent({1}).intersection(space.boundry());
+	space.fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(adjacent);
+	m_fillQueue.maybeAddPoints(adjacent);
+	FluidGroup* larger = this;
+	if(checkMerge)
+	{
+		// Merge all intersecting and adjacent groups into the largest.
+		SmallSet<FluidGroup*> toMerge;
+		for(const FluidData& data : space.fluid_queryGetWithCondition(adjacent, [&](const FluidData& data) { return data.type == m_fluidType; }))
+			toMerge.maybeInsert(data.group);
+		for(FluidGroup* oldGroupToMergeWith : toMerge)
+			// oldGroup may have been merged by recursion in a previous iteration.
+			if(!oldGroupToMergeWith->m_merged)
+				larger = larger->merge(area, oldGroupToMergeWith);
+	}
+	for(const Cuboid& cuboid : toAdd)
+		for(const Point3D point : cuboid)
+			larger->addMistFor(area, point);
 }
 void FluidGroup::addPoint(Area& area, const Point3D& point, bool checkMerge)
 {
@@ -485,9 +521,9 @@ void FluidGroup::writeStep(Area& area)
 				assert(found);
 			}
 		}
-	m_fillQueue.removePoints(m_futureRemoveFromFillQueue);
+	m_fillQueue.maybeRemovePoints(m_futureRemoveFromFillQueue);
 	m_fillQueue.maybeAddPoints(m_futureAddToFillQueue);
-	m_drainQueue.removePoints(m_futureRemoveFromDrainQueue);
+	m_drainQueue.maybeRemovePoints(m_futureRemoveFromDrainQueue);
 	m_drainQueue.maybeAddPoints(m_futureAddToDrainQueue);
 	area.m_hasFluidGroups.validateAllFluidGroups();
 }
@@ -542,13 +578,13 @@ void FluidGroup::splitStep(Area& area)
 	CuboidSet formerMembers = m_drainQueue.m_set;
 	formerMembers.maybeRemoveAll(m_futureGroups.back().members);
 	space.fluid_unsetGroupsInternal(formerMembers, m_fluidType);
-	m_drainQueue.removePoints(formerMembers);
+	m_drainQueue.maybeRemovePoints(formerMembers);
 	// Remove points which are no longer adjacent to drain queue from fill queue.
 	CuboidSet formerFill = m_fillQueue.m_set;
 	CuboidSet drainQueueAndAdjacent = m_drainQueue.m_set;
 	drainQueueAndAdjacent.inflate({1});
 	formerFill.maybeRemoveAll(drainQueueAndAdjacent);
-	m_fillQueue.removePoints(formerFill);
+	m_fillQueue.maybeRemovePoints(formerFill);
 	// Remove largest group, it will remain as this instance.
 	m_futureNewEmptyAdjacents = m_futureGroups.back().futureAdjacent;
 	m_futureGroups.pop_back();

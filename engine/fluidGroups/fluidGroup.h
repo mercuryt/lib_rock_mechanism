@@ -62,6 +62,7 @@ public:
 	void addFluid(Area& area, const CollisionVolume& fluidVolume);
 	void removeFluid(Area& area, const CollisionVolume& fluidVolume);
 	void addPoint(Area& area, const Point3D& point, bool checkMerge = true);
+	void addPoints(Area& area, const CuboidSet& points, bool checkMerge = true);
 	void removePoint(Area& area, const Point3D& point);
 	void addMistFor(Area& area, const Point3D& point);
 	// Takes a pointer to the other fluid group because we may switch them inorder to merge into the larger one.

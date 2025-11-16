@@ -167,10 +167,10 @@ void Items::setTemperature(const ItemIndex& index, const Temperature& temperatur
 		else if(MaterialType::canMelt(materialType) && MaterialType::getMeltingPoint(materialType) <= temperature)
 		{
 			// TODO: Would it be better to destroy the item and create rubble and then liquify the rubble in this point?
-			const CollisionVolume volume = Shape::getTotalCollisionVolume(m_shape[index]);
-			const Point3D location = m_location[index];
+			const CuboidSet occupied = m_occupied[index];
+			const CollisionVolume volume = Shape::getTotalCollisionVolume(m_shape[index]) / occupied.volume();
 			destroy(index);
-			space.fluid_add(location, volume, MaterialType::getMeltsInto(materialType));
+			space.fluid_add(occupied, volume, MaterialType::getMeltsInto(materialType));
 		}
 	};
 	const MaterialTypeId& materialType = m_solid[index];

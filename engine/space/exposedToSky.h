@@ -12,6 +12,6 @@ public:
 	void maybeUnset(Area& area, const Cuboid& cuboid);
 	void prepare() { m_data.prepare(); }
 	void beforeJsonLoad() { m_data.beforeJsonLoad(); }
-	[[nodiscard]] bool check(const Point3D& point) const { return m_data.query(point); };
+	[[nodiscard]] bool check(const auto& shape) const { return m_data.query(shape); };
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(PointsExposedToSky, m_data);
 };

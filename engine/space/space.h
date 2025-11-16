@@ -310,6 +310,7 @@ public:
 	// Add fluid, handle falling / sinking, group membership, excessive quantity sent to fluid group.
 	void fluid_add(const Point3D& point, const CollisionVolume& volume, const FluidTypeId& fluidType);
 	void fluid_add(const Cuboid& cuboid, const CollisionVolume& volume, const FluidTypeId& fluidType);
+	void fluid_add(const CuboidSet& points, const CollisionVolume& volume, const FluidTypeId& fluidType);
 	// To be used durring read step.
 	void fluid_remove(const Point3D& point, const CollisionVolume& volume, const FluidTypeId& fluidType);
 	// To be used used durring write step.
@@ -348,7 +349,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	[[nodiscard]] FluidTypeId fluid_getTypeWithMostVolume(const Point3D& point) const;
 	[[nodiscard]] bool fluid_canEnterEver(const Point3D& point) const;
 	[[nodiscard]] bool fluid_typeCanEnterCurrently(const Point3D& point, const FluidTypeId& fluidType) const;
-	[[nodiscard]] bool fluid_any(const Point3D& point) const;
+	[[nodiscard]] bool fluid_any(const auto& shape) const { return m_fluid.queryAny(shape); }
 	template<typename ShapeT>
 	[[nodiscard]] bool fluid_contains(const ShapeT& shape, const FluidTypeId& fluidType) const;
 	template<typename ShapeT>
