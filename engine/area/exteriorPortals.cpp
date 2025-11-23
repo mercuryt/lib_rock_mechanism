@@ -156,13 +156,13 @@ void AreaHasExteriorPortals::onPointCanTransmitTemperature(Area& area, const Poi
 	}
 	add(area, point, distance);
 }
-void AreaHasExteriorPortals::onPointCanNotTransmitTemperature(Area& area, const Point3D& point)
+void AreaHasExteriorPortals::onCuboidCanNotTransmitTemperature(Area& area, const Cuboid& cuboid)
 {
-
-	const Distance& distance = m_distances.queryGetOne(point);
-	if(distance.empty())
-		return;
-	remove(area, point);
+	CuboidSet hasDistance;
+	m_distances.queryForEachCuboid(cuboid, [&](const Cuboid& foundCuboid) { hasDistance.add(foundCuboid); });
+	for(const Cuboid& hasDistanceCuboid : hasDistance)
+		for(const Point3D& point : hasDistanceCuboid)
+			remove(area, point);
 }
 TemperatureDelta AreaHasExteriorPortals::getDeltaForAmbientTemperatureAndDistance(const Temperature& ambientTemperature, const Distance& distance)
 {

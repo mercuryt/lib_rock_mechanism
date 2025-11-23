@@ -87,7 +87,7 @@ void Space::pointFeature_add(const Point3D& point, const PointFeature& feature)
 	m_area.m_opacityFacade.update(m_area, point);
 	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
 	if(!temperature_transmits(point))
-		m_area.m_exteriorPortals.onPointCanNotTransmitTemperature(m_area, point);
+		m_area.m_exteriorPortals.onCuboidCanNotTransmitTemperature(m_area, {point, point});
 }
 void Space::pointFeature_construct(const Point3D& point, const PointFeatureTypeId& pointFeatureType, const MaterialTypeId& materialType)
 {
@@ -116,7 +116,7 @@ void Space::pointFeature_construct(const Point3D& point, const PointFeatureTypeI
 	m_area.m_opacityFacade.update(m_area, point);
 	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
 	if(transmitedTemperaturePreviously && !temperature_transmits(point))
-		m_area.m_exteriorPortals.onPointCanNotTransmitTemperature(m_area, point);
+		m_area.m_exteriorPortals.onCuboidCanNotTransmitTemperature(m_area, {point, point});
 }
 void Space::pointFeature_hew(const Point3D& point, const PointFeatureTypeId& pointFeatureType)
 {
@@ -184,7 +184,7 @@ void Space::pointFeature_close(const Point3D& point, const PointFeatureTypeId& p
 	auto action = [&isTransparent](PointFeature& feature) mutable { isTransparent = MaterialType::getTransparent(feature.materialType); feature.setClosed(true); };
 	m_features.updateActionWithConditionOne(point, action, condition);
 	m_area.m_opacityFacade.update(m_area, point);
-	m_area.m_exteriorPortals.onPointCanNotTransmitTemperature(m_area, point);
+	m_area.m_exteriorPortals.onCuboidCanNotTransmitTemperature(m_area, {point, point});
 	if(!isTransparent)
 	{
 		if(pointFeatureType == PointFeatureTypeId::Hatch)
