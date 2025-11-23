@@ -182,7 +182,7 @@ void Cuboid::maybeShift(const Facing6& direction, const Distance& distance)
 {
 	// TODO: make offsetsListDirectlyAdjacent return an Offset3D.
 	Offset3D offset = adjacentOffsets::direct[(uint)direction];
-	shift(offset, distance);
+	maybeShift(offset, distance);
 }
 void Cuboid::maybeShift(const Offset3D& offset, const Distance& distance)
 {
@@ -428,6 +428,20 @@ OffsetCuboid Cuboid::offsetTo(const Point3D& point) const
 {
 	const Offset3D offsetPoint = point.toOffset();
 	return OffsetCuboid::create(m_high.toOffset() - offsetPoint, m_low.toOffset() - offsetPoint);
+}
+SmallSet<Cuboid> Cuboid::sliceAtEachZ() const
+{
+	SmallSet<Cuboid> output;
+	output.reserve(m_high.z().get() - m_low.z().get() + 1);
+	for(Distance z = m_low.z(); z <= m_high.z(); ++z)
+	{
+		Point3D lowCopy = m_low;
+		Point3D highCopy = m_high;
+		lowCopy.setZ(z);
+		highCopy.setZ(z);
+		output.emplace(highCopy, lowCopy);
+	}
+	return output;
 }
 Cuboid::ConstIterator::ConstIterator(const Point3D& lowest, const Point3D& highest)
 {

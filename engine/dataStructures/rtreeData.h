@@ -613,12 +613,7 @@ public:
 						const auto offset = iter - begin;
 						const auto candidate = T::create(nodeDataAndChildIndices[offset].data);
 						if(condition(candidate))
-						{
-							if constexpr(std::is_same_v<CuboidSet, ShapeT>)
-								return nodeCuboids[offset].intersection(shape).front().m_high;
-							else
-								return nodeCuboids[offset].intersection(shape).m_high;
-						}
+								return nodeCuboids[offset].intersectionPoint(shape);
 					}
 			}
 			addIntersectedChildrenToOpenList(node, interceptMask, openList);
@@ -663,7 +658,17 @@ public:
 		}
 		return {T::create(nullPrimitive), {}};
 	}
-	[[nodiscard]] const SmallSet<T> queryGetAll(const auto& shape) const
+	void queryForEach(const auto& shape, auto&& action) const
+	{
+		auto wrappedAction = [&](const Cuboid&, const T& value) { action(value); };
+		queryForEachWithCuboids(shape, wrappedAction);
+	}
+	void queryForEachCuboid(const auto& shape, auto&& action) const
+	{
+		auto wrappedAction = [&](const Cuboid& cuboid, const T&) { action(cuboid); };
+		queryForEachWithCuboids(shape, wrappedAction);
+	}
+	void queryForEachWithCuboids(const auto& shape, auto&& action) const
 	{
 		SmallSet<RTreeNodeIndex> openList;
 		SmallSet<T> output;
@@ -685,172 +690,58 @@ public:
 				auto end = begin + leafCount;
 				for(auto iter = begin; iter != end; ++iter)
 					if(*iter)
-						output.insertNonunique(T::create(nodeDataAndChildIndices[iter - begin].data));
+					{
+						auto offset = iter - begin;
+						action(nodeCuboids[offset], T::create(nodeDataAndChildIndices[offset].data));
+					}
 			}
 			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 		}
+	}
+	[[nodiscard]] const SmallSet<T> queryGetAll(const auto& shape) const
+	{
+		SmallSet<T> output;
+		auto action = [&](const T& value) { output.insertNonunique(value); };
+		queryForEach(shape, action);
 		output.makeUnique();
 		return output;
 	}
 	[[nodiscard]] const SmallSet<std::pair<Cuboid, T>> queryGetAllWithCuboids(const auto& shape) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
 		SmallSet<std::pair<Cuboid, T>> output;
-		openList.insert(RTreeNodeIndex::create(0));
-		while(!openList.empty())
-		{
-			auto index = openList.back();
-			openList.popBack();
-			const Node& node = m_nodes[index];
-			const auto& nodeCuboids = node.getCuboids();
-			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
-			const auto leafCount = node.getLeafCount();
-			if(!interceptMask.any())
-				continue;
-			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			if(leafCount != 0 && interceptMask.head(leafCount).any())
-			{
-				auto begin = interceptMask.begin();
-				auto end = begin + leafCount;
-				for(auto iter = begin; iter != end; ++iter)
-					if(*iter)
-					{
-						const auto offset = iter - begin;
-						output.emplace(nodeCuboids[offset], T::create(nodeDataAndChildIndices[offset].data));
-					}
-			}
-			addIntersectedChildrenToOpenList(node, interceptMask, openList);
-		}
+		auto action = [&](const Cuboid& cuboid, const T& value) { output.emplace(cuboid, value); };
+		queryForEachWithCuboids(shape, action);
 		return output;
 	}
 	[[nodiscard]] CuboidSet queryGetAllCuboids(const auto& shape) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
 		CuboidSet output;
-		openList.insert(RTreeNodeIndex::create(0));
-		while(!openList.empty())
-		{
-			auto index = openList.back();
-			openList.popBack();
-			const Node& node = m_nodes[index];
-			const auto& nodeCuboids = node.getCuboids();
-			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
-			const auto leafCount = node.getLeafCount();
-			if(!interceptMask.any())
-				continue;
-			if(leafCount != 0 && interceptMask.head(leafCount).any())
-			{
-				auto begin = interceptMask.begin();
-				auto end = begin + leafCount;
-				for(auto iter = begin; iter != end; ++iter)
-					if(*iter)
-					{
-						const auto offset = iter - begin;
-						output.maybeAdd(nodeCuboids[offset]);
-					}
-			}
-			addIntersectedChildrenToOpenList(node, interceptMask, openList);
-		}
+		auto action = [&](const Cuboid& cuboid) { output.maybeAdd(cuboid); };
+		queryForEachCuboid(shape, action);
 		return output;
 	}
 	[[nodiscard]] CuboidSet queryGetAllCuboidsWithCondition(const auto& shape, const auto& condition) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
 		CuboidSet output;
-		openList.insert(RTreeNodeIndex::create(0));
-		while(!openList.empty())
-		{
-			auto index = openList.back();
-			openList.popBack();
-			const Node& node = m_nodes[index];
-			const auto& nodeCuboids = node.getCuboids();
-			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
-			const auto leafCount = node.getLeafCount();
-			if(!interceptMask.any())
-				continue;
-			if(leafCount != 0 && interceptMask.head(leafCount).any())
-			{
-				auto begin = interceptMask.begin();
-				auto end = begin + leafCount;
-				for(auto iter = begin; iter != end; ++iter)
-					if(*iter)
-					{
-						const auto offset = iter - begin;
-						const T value = T::create(nodeDataAndChildIndices[offset].data);
-						if(condition(value))
-							output.maybeAdd(nodeCuboids[offset]);
-					}
-			}
-			addIntersectedChildrenToOpenList(node, interceptMask, openList);
-		}
+		auto action = [&](const Cuboid& cuboid, const T& value) { if(condition(value)) output.maybeAdd(cuboid); };
+		queryForEachWithCuboids(shape, action);
 		return output;
 	}
 	[[nodiscard]] const SmallSet<T> queryGetAllWithCondition(const auto& shape, const auto& condition) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
 		SmallSet<T> output;
-		openList.insert(RTreeNodeIndex::create(0));
-		while(!openList.empty())
-		{
-			auto index = openList.back();
-			openList.popBack();
-			const Node& node = m_nodes[index];
-			const auto& nodeCuboids = node.getCuboids();
-			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
-			const auto leafCount = node.getLeafCount();
-			if(!interceptMask.any())
-				continue;
-			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			if(leafCount != 0 && interceptMask.head(leafCount).any())
-			{
-				auto begin = interceptMask.begin();
-				auto end = begin + leafCount;
-				for(auto iter = begin; iter != end; ++iter)
-					if(*iter)
-					{
-						T value = T::create(nodeDataAndChildIndices[iter - begin].data);
-						if(condition(value))
-							output.insertNonunique(value);
-					}
-			}
-			addIntersectedChildrenToOpenList(node, interceptMask, openList);
-		}
+		auto action = [&](const T& value) { if(condition(value)) output.insertNonunique(value); };
+		queryForEach(shape, action);
 		output.makeUnique();
 		return output;
 	}
 	[[nodiscard]] const std::vector<std::pair<Cuboid, T>> queryGetAllWithCuboidsAndCondition(const auto& shape, const auto& condition) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
 		std::vector<std::pair<Cuboid, T>> output;
-		openList.insert(RTreeNodeIndex::create(0));
-		while(!openList.empty())
-		{
-			auto index = openList.back();
-			openList.popBack();
-			const Node& node = m_nodes[index];
-			const auto& nodeCuboids = node.getCuboids();
-			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
-			const auto leafCount = node.getLeafCount();
-			if(!interceptMask.any())
-				continue;
-			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			if(leafCount != 0 && interceptMask.head(leafCount).any())
-			{
-				auto begin = interceptMask.begin();
-				auto end = begin + leafCount;
-				for(auto iter = begin; iter != end; ++iter)
-					if(*iter)
-					{
-						const auto offset = iter - begin;
-						T value = T::create(nodeDataAndChildIndices[offset].data);
-						if(condition(value))
-							output.emplace_back(nodeCuboids[offset], value);
-					}
-			}
-			addIntersectedChildrenToOpenList(node, interceptMask, openList);
-		}
+		auto action = [&](const Cuboid& cuboid, const T& value) { if(condition(value)) output.emplace_back(cuboid, value); };
+		queryForEachWithCuboids(shape, action);
 		std::ranges::sort(output);
+		// TODO: std::ranges::unique
 		output.erase(unique(output.begin(), output.end()), output.end());
 		return output;
 	}
@@ -1032,117 +923,52 @@ public:
 	template<typename Result, auto predicate>
 	[[nodiscard]] std::pair<T, Result> queryGetHighestReturnWithPredicateOutput(const auto& shape) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
 		T outputValue;
 		Result outputResult;
-		openList.insert(RTreeNodeIndex::create(0));
-		bool first = true;;
-		while(!openList.empty())
+		bool first = true;
+		auto action = [&](const T& value)
 		{
-			auto index = openList.back();
-			openList.popBack();
-			const Node& node = m_nodes[index];
-			const auto& nodeCuboids = node.getCuboids();
-			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
-			if(!interceptMask.any())
-				continue;
-			const auto leafCount = node.getLeafCount();
-			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			if(leafCount != 0 && interceptMask.head(leafCount).any())
+			Result result = predicate(value);
+			if(first || result > outputResult)
 			{
-				auto begin = interceptMask.begin();
-				auto end = begin + leafCount;
-				for(auto iter = begin; iter != end; ++iter)
-					if(*iter)
-					{
-						T value = T::create(nodeDataAndChildIndices[iter - begin].data);
-						Result result = predicate(value);
-						if(first || result > outputResult)
-						{
-							first = false;
-							outputResult = result;
-							outputValue = value;
-						}
-					}
+				first = false;
+				outputResult = result;
+				outputValue = value;
 			}
-			addIntersectedChildrenToOpenList(node, interceptMask, openList);
-		}
+		};
+		queryForEach(shape, action);
 		return {outputValue, outputResult};
 	}
 	[[nodiscard]] T queryGetLowest(const auto& shape) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
 		T output;
-		openList.insert(RTreeNodeIndex::create(0));
-		bool first = true;;
-		while(!openList.empty())
+		bool first = true;
+		auto action = [&](const T& value)
 		{
-			auto index = openList.back();
-			openList.popBack();
-			const Node& node = m_nodes[index];
-			const auto& nodeCuboids = node.getCuboids();
-			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
-			if(!interceptMask.any())
-				continue;
-			const auto leafCount = node.getLeafCount();
-			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			if(leafCount != 0 && interceptMask.head(leafCount).any())
+			if(first || value < output)
 			{
-				auto begin = interceptMask.begin();
-				auto end = begin + leafCount;
-				for(auto iter = begin; iter != end; ++iter)
-					if(*iter)
-					{
-						const auto offset = iter - begin;
-						T value = T::create(nodeDataAndChildIndices[offset].data);
-						if(first || value < output)
-						{
-							first = false;
-							output = value;
-						}
-					}
+				first = false;
+				output = value;
 			}
-			addIntersectedChildrenToOpenList(node, interceptMask, openList);
-		}
+		};
+		queryForEach(shape, action);
 		return output;
 	}
 	[[nodiscard]] Point3D queryGetLowestPoint(const auto& shape) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
 		Point3D output;
 		T outputValue;
-		openList.insert(RTreeNodeIndex::create(0));
-		bool first = true;;
-		while(!openList.empty())
+		bool first = true;
+		auto action = [&](const Cuboid& cuboid, const T& value)
 		{
-			auto index = openList.back();
-			openList.popBack();
-			const Node& node = m_nodes[index];
-			const auto& nodeCuboids = node.getCuboids();
-			const auto& interceptMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
-			if(!interceptMask.any())
-				continue;
-			const auto leafCount = node.getLeafCount();
-			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			if(leafCount != 0 && interceptMask.head(leafCount).any())
+			if(first || value < outputValue)
 			{
-				auto begin = interceptMask.begin();
-				auto end = begin + leafCount;
-				for(auto iter = begin; iter != end; ++iter)
-					if(*iter)
-					{
-						const auto offset = iter - begin;
-						T value = T::create(nodeDataAndChildIndices[offset].data);
-						if(first || value < outputValue)
-						{
-							first = false;
-							output = nodeCuboids[offset].intersectionPoint(shape);
-							outputValue = value;
-						}
-					}
+				first = false;
+				output = cuboid.intersectionPoint(shape);
+				outputValue = value;
 			}
-			addIntersectedChildrenToOpenList(node, interceptMask, openList);
-		}
+		};
+		queryForEach(shape, action);
 		return output;
 	}
 	// For test and debug.

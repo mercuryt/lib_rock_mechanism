@@ -50,23 +50,24 @@ void FluidGroup::addPoints(Area& area, const CuboidSet& points, bool checkMerge)
 	// Cannot be in fill queue if full. Must be otherwise.
 	Space& space = area.getSpace();
 	CuboidSet pointsWhichAreFull = space.fluid_queryGetCuboidsWithCondition(toAdd, [&](const FluidData& data) { return data.type == m_fluidType && data.volume >= Config::maxPointVolume; });
-	m_fillQueue.maybeRemovePoints(pointsWhichAreFull);
+	m_fillQueue.m_set.maybeRemoveAll(pointsWhichAreFull);
 	CuboidSet pointsWhichAreNotFull = toAdd;
 	pointsWhichAreNotFull.maybeRemoveAll(pointsWhichAreFull);
-	m_fillQueue.maybeAddPoints(pointsWhichAreNotFull);
+	m_fillQueue.m_set.maybeAddAll(pointsWhichAreNotFull);
 	// Set group membership in Space.
 	space.fluid_setGroupsInternal(toAdd, m_fluidType, *this);
-	m_drainQueue.maybeAddPoints(toAdd);
+	m_drainQueue.m_set.maybeAddAll(toAdd);
 	// Add adjacent to fill queue if fluid can enter.
 	CuboidSet adjacent = toAdd.getDirectlyAdjacent({1}).intersection(space.boundry());
 	space.fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(adjacent);
-	m_fillQueue.maybeAddPoints(adjacent);
+	m_fillQueue.m_set.maybeAddAll(adjacent);
 	FluidGroup* larger = this;
 	if(checkMerge)
 	{
 		// Merge all intersecting and adjacent groups into the largest.
+
 		SmallSet<FluidGroup*> toMerge;
-		for(const FluidData& data : space.fluid_queryGetWithCondition(adjacent, [&](const FluidData& data) { return data.type == m_fluidType; }))
+		for(const FluidData& data : space.fluid_queryGetWithCondition(adjacent, [&](const FluidData& data) { return data.type == m_fluidType && data.group != this; }))
 			toMerge.maybeInsert(data.group);
 		for(FluidGroup* oldGroupToMergeWith : toMerge)
 			// oldGroup may have been merged by recursion in a previous iteration.
@@ -89,15 +90,15 @@ void FluidGroup::addPoint(Area& area, const Point3D& point, bool checkMerge)
 	Space& space = area.getSpace();
 	const FluidData found = space.fluid_getData(point, m_fluidType);
 	if(found.exists() && found.volume < Config::maxPointVolume)
-		m_fillQueue.maybeAddPoint(point);
+		m_fillQueue.m_set.maybeAdd(point);
 	else
-		m_fillQueue.maybeRemovePoint(point);
+		m_fillQueue.m_set.maybeRemove(point);
 	// Set group membership in Space.
 	FluidGroup* oldGroup = found.group;
 	if(oldGroup != nullptr && oldGroup != this)
 		oldGroup->removePoint(area, point);
 	space.fluid_setGroupsInternal(CuboidSet::create(point), m_fluidType, *this);
-	m_drainQueue.maybeAddPoint(point);
+	m_drainQueue.m_set.maybeAdd(point);
 	// Add adjacent if fluid can enter.
 	SmallSet<FluidGroup*> toMerge;
 	for(const Point3D& adjacent : area.getSpace().getDirectlyAdjacent(point))
@@ -114,7 +115,7 @@ void FluidGroup::addPoint(Area& area, const Point3D& point, bool checkMerge)
 			toMerge.maybeInsert(foundAdjacent.group);
 		}
 		if(foundAdjacent.empty() || foundAdjacent.volume < Config::maxPointVolume)
-			m_fillQueue.maybeAddPoint(adjacent);
+			m_fillQueue.m_set.maybeAdd(adjacent);
 	}
 	// TODO: (performance) collect all groups to merge recursively and then merge all into the largest.
 	FluidGroup* larger = this;
@@ -127,7 +128,7 @@ void FluidGroup::addPoint(Area& area, const Point3D& point, bool checkMerge)
 void FluidGroup::removePoint(Area& area, const Point3D& point)
 {
 	setUnstable(area);
-	m_drainQueue.removePoint(point);
+	m_drainQueue.m_set.maybeRemove(point);
 	m_potentiallyNoLongerAdjacentFromSyncronusStep.maybeAdd(point);
 	for(const Point3D& adjacent : area.getSpace().getDirectlyAdjacent(point))
 		if(area.getSpace().fluid_canEnterEver(adjacent))
@@ -184,8 +185,8 @@ FluidGroup* FluidGroup::merge(Area& area, FluidGroup* smaller)
 	// Add excess volume.
 	larger->m_excessVolume += smaller->m_excessVolume;
 	// Merge queues.
-	larger->m_drainQueue.merge(smaller->m_drainQueue);
-	larger->m_fillQueue.merge(smaller->m_fillQueue);
+	larger->m_drainQueue.m_set.maybeAddAll(smaller->m_drainQueue.m_set);
+	larger->m_fillQueue.m_set.maybeAddAll(smaller->m_fillQueue.m_set);
 	// Set fluidGroup for merged space.
 	space.fluid_setGroupsInternal(smaller->m_drainQueue.m_set, m_fluidType, *larger);
 	// Merge other fluid groups ment to merge with smaller with larger instead.
@@ -214,8 +215,8 @@ void FluidGroup::readStep(Area& area)
 	validate(area);
 	// If there is no where to flow into there is nothing to do.
 	if(m_fillQueue.m_set.empty() ||
-		((m_fillQueue.groupSize() == 0 || m_fillQueue.groupCapacityPerPoint() == 0) && m_excessVolume >= 0 ) ||
-		((m_drainQueue.groupSize() == 0 || m_drainQueue.groupCapacityPerPoint() == 0) && m_excessVolume <= 0)
+		((m_fillQueue.groupVolume() == 0 || m_fillQueue.groupCapacityPerPoint() == 0) && m_excessVolume >= 0 ) ||
+		((m_drainQueue.groupVolume() == 0 || m_drainQueue.groupCapacityPerPoint() == 0) && m_excessVolume <= 0)
 	)
 	{
 		m_stable = true;
@@ -224,10 +225,10 @@ void FluidGroup::readStep(Area& area)
 		return;
 	}
 	// Disperse m_excessVolume.
-	while(m_excessVolume > 0 && m_fillQueue.groupSize() != 0 && m_fillQueue.m_groupStart != m_fillQueue.m_queue.end())
+	while(m_excessVolume > 0 && m_fillQueue.groupVolume() != 0 && m_fillQueue.m_groupStart != m_fillQueue.m_queue.end())
 	{
 		// If there isn't enough to spread evenly then do nothing.
-		if((uint32_t)m_excessVolume < m_fillQueue.groupSize())
+		if((uint32_t)m_excessVolume < m_fillQueue.groupVolume())
 			break;
 		// How much fluid is there space for total.
 		CollisionVolume flowCapacity = m_fillQueue.groupCapacityPerPoint();
@@ -236,15 +237,15 @@ void FluidGroup::readStep(Area& area)
 		if(flowTillNextStep.empty())
 			// If unset then set to max in order to exclude from std::min
 			flowTillNextStep = CollisionVolume::max();
-		CollisionVolume excessPerPoint = CollisionVolume::create(m_excessVolume / m_fillQueue.groupSize());
+		CollisionVolume excessPerPoint = CollisionVolume::create(m_excessVolume / m_fillQueue.groupVolume());
 		CollisionVolume flowPerPoint = std::min({flowTillNextStep, flowCapacity, excessPerPoint});
-		m_excessVolume -= flowPerPoint.get() * m_fillQueue.groupSize();
+		m_excessVolume -= flowPerPoint.get() * m_fillQueue.groupVolume();
 		m_fillQueue.recordDelta(area, *this, flowPerPoint, flowCapacity, flowTillNextStep);
 	}
-	while(m_excessVolume < 0 && m_drainQueue.groupSize() != 0 && m_drainQueue.m_groupStart != m_drainQueue.m_queue.end())
+	while(m_excessVolume < 0 && m_drainQueue.groupVolume() != 0 && m_drainQueue.m_groupStart != m_drainQueue.m_queue.end())
 	{
 		// If there isn't enough to spread evenly then do nothing.
-		if((uint32_t)(-1 * m_excessVolume) < m_drainQueue.groupSize())
+		if((uint32_t)(-1 * m_excessVolume) < m_drainQueue.groupVolume())
 			break;
 		// How much is avaliable to drain total.
 		CollisionVolume flowCapacity = m_drainQueue.groupCapacityPerPoint();
@@ -253,17 +254,17 @@ void FluidGroup::readStep(Area& area)
 		if(flowTillNextStep.empty())
 			// If unset then set to max in order to exclude from std::min
 			flowTillNextStep = CollisionVolume::max();
-		CollisionVolume excessPerPoint = CollisionVolume::create((-1 * m_excessVolume) / m_drainQueue.groupSize());
+		CollisionVolume excessPerPoint = CollisionVolume::create((-1 * m_excessVolume) / m_drainQueue.groupVolume());
 		CollisionVolume flowPerPoint = std::min({flowCapacity, flowTillNextStep, excessPerPoint});
-		m_excessVolume += (flowPerPoint * m_drainQueue.groupSize()).get();
+		m_excessVolume += (flowPerPoint * m_drainQueue.groupVolume()).get();
 		m_drainQueue.recordDelta(area, flowPerPoint, flowCapacity, flowTillNextStep);
 	}
 	// Do primary flow.
 	// If we have reached the end of either queue the loop ends.
-	while(m_viscosity > 0 && m_drainQueue.groupSize() != 0 && m_fillQueue.groupSize() != 0)
+	while(m_viscosity > 0 && m_drainQueue.groupVolume() != 0 && m_fillQueue.groupVolume() != 0)
 	{
 		assert(m_fillQueue.m_groupEnd == m_fillQueue.m_queue.end() ||
-				m_fillQueue.m_groupStart->point.z() != m_fillQueue.m_groupEnd->point.z() ||
+				m_fillQueue.m_groupStart->cuboid.m_high.z() != m_fillQueue.m_groupEnd->cuboid.m_high.z() ||
 				m_fillQueue.m_groupStart->capacity != m_fillQueue.m_groupEnd->capacity);
 		CollisionVolume drainVolume = m_drainQueue.groupLevel(area, *this);
 		assert(drainVolume != 0);
@@ -280,21 +281,20 @@ void FluidGroup::readStep(Area& area)
 		{
 			// if no new space have been added this step then set stable
 			if(m_fillQueue.m_futureNoLongerEmpty.empty() && m_disolvedInThisGroup.empty())
-			{
 				m_stable = true;
-			}
 			break;
 		}
+		// TODO: What is being validated here?
 		for(auto itd = m_drainQueue.m_groupStart; itd != m_drainQueue.m_groupEnd; ++itd)
 			if(itd->delta != 0)
 				for(auto itf = m_fillQueue.m_groupStart; itf != m_fillQueue.m_groupEnd; ++itf)
 					if(itf->delta != 0)
-						assert(itf->point != itd->point);
+						assert(itf->cuboid != itd->cuboid);
 		for(auto itf = m_fillQueue.m_groupStart; itf != m_fillQueue.m_groupEnd; ++itf)
 			if(itf->delta != 0)
 				for(auto itd = m_drainQueue.m_groupStart; itd != m_drainQueue.m_groupEnd; ++itd)
 					if(itd->delta != 0)
-						assert(itf->point != itd->point);
+						assert(itf->cuboid != itd->cuboid);
 		// How much fluid is there space for total.
 		CollisionVolume flowCapacityFill = m_fillQueue.groupCapacityPerPoint();
 		// How much can be filled before the next low point(s).
@@ -311,10 +311,10 @@ void FluidGroup::readStep(Area& area)
 			flowTillNextStepDrain = CollisionVolume::max();
 		// How much can drain before equalization. Only applies if the groups are on the same z.
 		CollisionVolume maxDrainForEqualibrium, maxFillForEquilibrium;
-		if(m_fillQueue.m_groupStart->point.z() ==m_drainQueue.m_groupStart->point.z())
+		if(m_fillQueue.m_groupStart->cuboid.m_high.z() == m_drainQueue.m_groupStart->cuboid.m_high.z())
 		{
-			CollisionVolume totalLevel = (fillVolume * m_fillQueue.groupSize()) + (drainVolume * m_drainQueue.groupSize());
-			uint32_t totalCount = m_fillQueue.groupSize() + m_drainQueue.groupSize();
+			CollisionVolume totalLevel = (fillVolume * m_fillQueue.groupVolume()) + (drainVolume * m_drainQueue.groupVolume());
+			uint32_t totalCount = m_fillQueue.groupVolume() + m_drainQueue.groupVolume();
 			// We want to round down here so default truncation is fine.
 			CollisionVolume equalibriumLevel = totalLevel / totalCount;
 			maxDrainForEqualibrium = drainVolume - equalibriumLevel;
@@ -327,15 +327,15 @@ void FluidGroup::readStep(Area& area)
 		CollisionVolume PerPointFill = std::min({flowCapacityFill, flowTillNextStepFill, maxFillForEquilibrium, CollisionVolume::create(m_viscosity)});
 		CollisionVolume PerPointDrain = std::min({flowCapacityDrain, flowTillNextStepDrain, maxDrainForEqualibrium});
 		assert(PerPointDrain != 0);
-		CollisionVolume totalFill = PerPointFill * m_fillQueue.groupSize();
-		CollisionVolume totalDrain = PerPointDrain * m_drainQueue.groupSize();
+		CollisionVolume totalFill = PerPointFill * m_fillQueue.groupVolume();
+		CollisionVolume totalDrain = PerPointDrain * m_drainQueue.groupVolume();
 		if(totalFill < totalDrain)
 		{
 			if(maxFillForEquilibrium == PerPointFill)
 				PerPointDrain = maxDrainForEqualibrium;
 			else
-				PerPointDrain = CollisionVolume::create(std::ceil((float)totalFill.get() / (float)m_drainQueue.groupSize()));
-			totalDrain = PerPointDrain * m_drainQueue.groupSize();
+				PerPointDrain = CollisionVolume::create(std::ceil((float)totalFill.get() / (float)m_drainQueue.groupVolume()));
+			totalDrain = PerPointDrain * m_drainQueue.groupVolume();
 		}
 		else if(totalFill > totalDrain)
 		{
@@ -344,8 +344,8 @@ void FluidGroup::readStep(Area& area)
 				PerPointFill = maxFillForEquilibrium;
 			else
 				// truncate to round down
-				PerPointFill = totalDrain / (float)m_fillQueue.groupSize();
-			totalFill = PerPointFill * m_fillQueue.groupSize();
+				PerPointFill = totalDrain / (float)m_fillQueue.groupVolume();
+			totalFill = PerPointFill * m_fillQueue.groupVolume();
 		}
 		assert(totalFill <= totalDrain);
 		// Viscosity is consumed by flow.
@@ -521,10 +521,10 @@ void FluidGroup::writeStep(Area& area)
 				assert(found);
 			}
 		}
-	m_fillQueue.maybeRemovePoints(m_futureRemoveFromFillQueue);
-	m_fillQueue.maybeAddPoints(m_futureAddToFillQueue);
-	m_drainQueue.maybeRemovePoints(m_futureRemoveFromDrainQueue);
-	m_drainQueue.maybeAddPoints(m_futureAddToDrainQueue);
+	m_fillQueue.m_set.maybeRemoveAll(m_futureRemoveFromFillQueue);
+	m_fillQueue.m_set.maybeAddAll(m_futureAddToFillQueue);
+	m_drainQueue.m_set.maybeRemoveAll(m_futureRemoveFromDrainQueue);
+	m_drainQueue.m_set.maybeAddAll(m_futureAddToDrainQueue);
 	area.m_hasFluidGroups.validateAllFluidGroups();
 }
 void FluidGroup::afterWriteStep(Area& area)
@@ -563,12 +563,20 @@ void FluidGroup::splitStep(Area& area)
 		assert(m_fluidType != fluidType);
 		assert(disolvedFluidGroup->m_fluidType == fluidType);
 		assert(disolvedFluidGroup->m_excessVolume > 0);
-		for(FutureFlowPoint& futureFlowPoint : m_fillQueue.m_queue)
-			if(space.fluid_undisolveInternal(futureFlowPoint.point, *disolvedFluidGroup))
-			{
-				dispersed.push_back(fluidType);
+		bool done = false;
+		// Find a point in the fill queue to add the disolved fluid.
+		for(const Cuboid& cuboid : m_fillQueue.m_set)
+		{
+			for(const Point3D& point : cuboid)
+				if(space.fluid_undisolveInternal(point, *disolvedFluidGroup))
+				{
+					dispersed.push_back(fluidType);
+					done = true;
+					break;
+				}
+			if(done)
 				break;
-			}
+		}
 	}
 	for(FluidTypeId fluidType : dispersed)
 		m_disolvedInThisGroup.erase(fluidType);
@@ -578,13 +586,13 @@ void FluidGroup::splitStep(Area& area)
 	CuboidSet formerMembers = m_drainQueue.m_set;
 	formerMembers.maybeRemoveAll(m_futureGroups.back().members);
 	space.fluid_unsetGroupsInternal(formerMembers, m_fluidType);
-	m_drainQueue.maybeRemovePoints(formerMembers);
+	m_drainQueue.m_set.maybeRemoveAll(formerMembers);
 	// Remove points which are no longer adjacent to drain queue from fill queue.
 	CuboidSet formerFill = m_fillQueue.m_set;
 	CuboidSet drainQueueAndAdjacent = m_drainQueue.m_set;
 	drainQueueAndAdjacent.inflate({1});
 	formerFill.maybeRemoveAll(drainQueueAndAdjacent);
-	m_fillQueue.maybeRemovePoints(formerFill);
+	m_fillQueue.m_set.maybeRemoveAll(formerFill);
 	// Remove largest group, it will remain as this instance.
 	m_futureNewEmptyAdjacents = m_futureGroups.back().futureAdjacent;
 	m_futureGroups.pop_back();
@@ -644,8 +652,8 @@ CollisionVolume FluidGroup::totalVolume(Area& area) const
 }
 bool FluidGroup::dispositionIsStable(const CollisionVolume& fillVolume, const CollisionVolume& drainVolume) const
 {
-	Distance drainZ = m_drainQueue.m_groupStart->point.z();
-	Distance fillZ = m_fillQueue.m_groupStart->point.z();
+	Distance drainZ = m_drainQueue.m_groupStart->cuboid.m_high.z();
+	Distance fillZ = m_fillQueue.m_groupStart->cuboid.m_high.z();
 	if(drainZ < fillZ)
 		return true;
 	if(drainZ == fillZ &&
@@ -655,7 +663,7 @@ bool FluidGroup::dispositionIsStable(const CollisionVolume& fillVolume, const Co
 				fillVolume == 0 &&
 				(
 					drainVolume == 1 ||
-					drainVolume * m_drainQueue.groupSize() < (m_fillQueue.groupSize() + m_drainQueue.groupSize())
+					drainVolume * m_drainQueue.groupVolume() < (m_fillQueue.groupVolume() + m_drainQueue.groupVolume())
 				)
 			)
 		)
@@ -669,7 +677,7 @@ Quantity FluidGroup::countPointsOnSurface(const Area& area) const
 	// TODO: could be optimized by only looking at the topmost z level in DrainQueue::m_queue
 	return Quantity::create(m_drainQueue.m_set.countIf([&](const Point3D& point){ return space.isExposedToSky(point); }));
 }
-uint FluidGroup::countPoints() const { return m_drainQueue.m_set.size(); }
+uint FluidGroup::countPoints() const { return m_drainQueue.m_set.volume(); }
 void FluidGroup::validate(Area& area) const
 {
 	assert(area.m_hasFluidGroups.contains(*this));
@@ -693,48 +701,4 @@ void FluidGroup::validate(Area& area, [[maybe_unused]] SmallSet<FluidGroup*> toE
 	assert(recordedInSpaceFluid.contains(m_drainQueue.m_set));
 	assert(m_drainQueue.m_set.contains(recordedInSpaceFluid));
 	assert(!toErase.contains(const_cast<FluidGroup*>(this)));
-}
-void FluidGroup::log(Area& area) const
-{
-	Space& space = area.getSpace();
-	for(const FutureFlowPoint& futureFlowPoint : m_drainQueue.m_queue)
-	{
-		if(&*m_drainQueue.m_groupEnd == &futureFlowPoint)
-			std::cout << "drain group end\n";
-		futureFlowPoint.point.log();
-		std::cout <<
-			"d:" << futureFlowPoint.delta.get() << " " <<
-			"c:" << futureFlowPoint.capacity.get() << " " <<
-			"v:" << space.fluid_volumeOfTypeContains(futureFlowPoint.point, m_fluidType).get() << " " <<
-			"t:" << space.fluid_getTotalVolume(futureFlowPoint.point).get();
-		std::cout << '\n';
-	}
-	std::cout << "total:" << totalVolume(area).get() << '\n';
-	if(m_excessVolume)
-		std::cout << "excess:" << m_excessVolume << '\n';
-	if(m_merged)
-		std::cout << "merged" << '\n';
-	if(m_destroy)
-		std::cout << "destroy" << '\n';
-	if(m_disolved)
-		std::cout << "disolved" << '\n';
-	if(m_stable)
-		std::cout << "stable" << '\n';
-	std::cout << std::endl;
-}
-void FluidGroup::logFill(Area& area) const
-{
-	Space& space = area.getSpace();
-	for(const FutureFlowPoint& futureFlowPoint : m_fillQueue.m_queue)
-	{
-		if(&*m_fillQueue.m_groupEnd == &futureFlowPoint)
-			std::cout << "fill group end\n";
-		futureFlowPoint.point.log();
-		std::cout <<
-			"d:" << futureFlowPoint.delta.get() << " " <<
-			"c:" << futureFlowPoint.capacity.get() << " " <<
-			"v:" << space.fluid_volumeOfTypeContains(futureFlowPoint.point, m_fluidType).get() << " " <<
-			"t:" << space.fluid_getTotalVolume(futureFlowPoint.point).get();
-		std::cout << std::endl;
-	}
 }

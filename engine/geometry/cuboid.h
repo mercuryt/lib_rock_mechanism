@@ -87,6 +87,7 @@ struct Cuboid
 	[[nodiscard]] std::pair<Cuboid, Cuboid> getChildrenWhenSplitBelowCuboid(const Cuboid& cuboid) const;
 	[[nodiscard]] OffsetCuboid translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const;
 	[[nodiscard]] OffsetCuboid offsetTo(const Point3D& point) const;
+	[[nodiscard]] SmallSet<Cuboid> sliceAtEachZ() const;
 	[[nodiscard]] uint countIf(auto&& condition) const
 	{
 		uint output = 0;

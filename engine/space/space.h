@@ -323,10 +323,10 @@ public:
 	void fluid_mistSetFluidTypeAndInverseDistance(const Point3D& point, const FluidTypeId& fluidType, const Distance& inverseDistance);
 	// TODO: This could probably be resolved in a better way.
 	// Exposing these two methods breaks encapusalition a bit but allows better performance from fluidGroup.
-	void fluid_setAllUnstableExcept(const Point3D& point, const FluidTypeId& fluidType);
+	void fluid_setAllUnstableExcept(const CuboidSet& points, const FluidTypeId& fluidType);
 	// To be used by DrainQueue / FillQueue.
-	void fluid_drainInternal(const Point3D& point, const CollisionVolume& volume, const FluidTypeId& fluidType);
-	void fluid_fillInternal(const Point3D& point, const CollisionVolume& volume, FluidGroup& fluidGroup);
+	void fluid_drainInternal(const Cuboid& cuboid, const CollisionVolume& volume, const FluidTypeId& fluidType);
+	void fluid_fillInternal(const Cuboid& cuboid, const CollisionVolume& volume, FluidGroup& fluidGroup);
 	// To be used by fluid group split, so the space which will be in soon to be created groups can briefly have fluid without having a fluidGroup.
 	// Fluid group will be set again in addPoint within the new group's constructor.
 	// This prevents a problem where addPoint attempts to remove a point from a group which it has already been removed from.
@@ -367,6 +367,9 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	[[nodiscard]] const SmallSet<FluidData> fluid_queryGetWithCondition(const auto& shape, const auto& condition) const { return m_fluid.queryGetAllWithCondition(shape, condition); }
 	[[nodiscard]] const std::vector<std::pair<Cuboid, FluidData>> fluid_queryGetWithCuboidsAndCondition(const auto& shape, const auto& condition) const { return m_fluid.queryGetAllWithCuboidsAndCondition(shape, condition); }
 	[[nodiscard]] const SmallSet<std::pair<Cuboid, FluidData>> fluid_queryGetWithCuboids(const auto& shape) const { return m_fluid.queryGetAllWithCuboids(shape); }
+	[[nodiscard]] bool fluid_queryAnyWithCondition(const auto& shape, auto&& condition) const { return m_fluid.queryAnyWithCondition(shape, condition); }
+	void fluid_forEach(const auto& shape, auto&& action) const { m_fluid.queryForEach(shape, action); }
+	void fluid_forEachWithCuboid(const auto& shape, auto&& action) const { m_fluid.queryForEachWithCuboids(shape, action); }
 	[[nodiscard]] CuboidSet fluid_queryGetCuboidsOverfull(const auto& shape) const
 	{
 		return m_totalFluidVolume.queryGetAllCuboidsWithCondition(shape, [&](const CollisionVolume& data) { return data > Config::maxPointVolume; });

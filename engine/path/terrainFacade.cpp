@@ -509,6 +509,11 @@ void AreaHasTerrainFacades::update(const Cuboid& cuboid)
 	for(auto& pair : m_data)
 		pair.second.update(cuboid);
 }
+void AreaHasTerrainFacades::update(const CuboidSet& cuboids)
+{
+	for(const Cuboid& cuboid : cuboids)
+		update(cuboid);
+}
 void AreaHasTerrainFacades::maybeSetImpassable(const Cuboid& cuboid)
 {
 	for(auto& pair : m_data)

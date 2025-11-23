@@ -4,71 +4,46 @@
 #include "../space/space.h"
 #include "numericTypes/types.h"
 #include <assert.h>
-void FluidQueue::maybeAddPoint(const Point3D& point)
-{
-	if(m_set.contains(point))
-		return;
-	m_set.add(point);
-	m_queue.emplace_back(point);
-}
-void FluidQueue::maybeAddPoints(const CuboidSet& points)
-{
-	//m_queue.reserve(m_queue.size() + points.volume());
-	//m_set.reserve(m_set.size() + points.size());
-	auto filtered = points;
-	filtered.maybeRemoveAll(m_set);
-	if(filtered.empty())
-		return;
-	for(const Cuboid& cuboid : filtered)
-		for(const Point3D point : cuboid)
-			m_queue.emplace_back(point);
-	m_set.addAll(filtered);
-}
-void FluidQueue::removePoint(const Point3D& point)
-{
-	m_set.remove(point);
-	auto found = std::ranges::find_if(m_queue, [&](FutureFlowPoint& futureFlowPoint){ return futureFlowPoint.point == point; });
-	assert(found != m_queue.end());
-	m_queue.erase(found);
-}
-void FluidQueue::maybeRemovePoint(const Point3D& point)
-{
-	if(!m_set.contains(point))
-		return;
-	removePoint(point);
-}
-void FluidQueue::maybeRemovePoints(const CuboidSet& points)
-{
-	m_set.maybeRemoveAll(points);
-	std::erase_if(m_queue, [&](FutureFlowPoint& futureFlowPoint){ return points.contains(futureFlowPoint.point); });
-}
-void FluidQueue::merge(FluidQueue& fluidQueue)
-{
-	//m_queue.reserve(m_queue.size() + fluidQueue.m_set.volume());
-	maybeAddPoints(fluidQueue.m_set);
-}
-void FluidQueue::noChange()
+template<typename Derived>
+void FluidQueue<Derived>::noChange()
 {
 	m_groupStart = m_groupEnd = m_queue.begin();
 }
-uint32_t FluidQueue::groupSize() const
+template<typename Derived>
+void FluidQueue<Derived>::findGroupEnd()
 {
-	return m_groupEnd - m_groupStart;
+	m_groupEnd = m_groupStart;
+	// Fill Queue may have future flow cuboids with 0 capacity due to them being fully occupied by heavyer fluids.
+	// These get sorted to the back and act the same as the end of the queue, where m_groupEnd == m_groupStart.
+	if(m_groupStart->capacity == 0)
+		return;
+	const auto& end = m_queue.end();
+	const auto& startPriority = Derived::getPriority(*m_groupStart);
+	while(m_groupEnd != end && Derived::getPriority(*m_groupEnd) == startPriority)
+		++m_groupEnd;
 }
-CollisionVolume FluidQueue::groupCapacityPerPoint() const
+template<typename Derived>
+uint32_t FluidQueue<Derived>::groupVolume() const
+{
+	uint32_t output = 0;
+	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
+		output += iter->cuboid.volume();
+	return output;
+}
+template<typename Derived>
+CollisionVolume FluidQueue<Derived>::groupCapacityPerPoint() const
 {
 	assert(m_groupStart != m_groupEnd);
 	return m_groupStart->capacity;
 }
-CollisionVolume FluidQueue::groupFlowTillNextStepPerPoint() const
+template<typename Derived>
+CollisionVolume FluidQueue<Derived>::groupFlowTillNextStepPerPoint() const
 {
 	assert(m_groupStart != m_groupEnd);
-	if(m_groupEnd == m_queue.end() || m_groupEnd->point.z() != m_groupStart->point.z())
+	if(m_groupEnd == m_queue.end() || m_groupEnd->cuboid.m_high.z() != m_groupStart->cuboid.m_high.z())
 		return CollisionVolume::null();
 	assert(m_groupEnd->capacity < m_groupStart->capacity);
 	return m_groupStart->capacity - m_groupEnd->capacity;
 }
-bool FluidQueue::groupContains(const Point3D& point) const
-{
-	return std::ranges::find(m_groupStart, m_groupEnd, point, &FutureFlowPoint::point) != m_groupEnd;
-}
+template class FluidQueue<FillQueue>;
+template class FluidQueue<DrainQueue>;

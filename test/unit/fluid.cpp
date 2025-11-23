@@ -85,6 +85,8 @@ TEST_CASE("fluids smaller")
 		// Step 1.
 		fluidGroup->readStep(area);
 		CHECK(!fluidGroup->m_stable);
+		CHECK(fluidGroup->m_futureAddToDrainQueue.contains(block2));
+		CHECK(fluidGroup->m_futureRemoveFromFillQueue.contains(block2));
 		fluidGroup->writeStep(area);
 		fluidGroup->afterWriteStep(area);
 		fluidGroup->splitStep(area);

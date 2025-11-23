@@ -7,6 +7,9 @@ void AreaHasFluidGroups::doStep(bool parallel)
 	if(m_unstableFluidGroups.empty())
 		// All groups are stable, nothing to do here.
 		return;
+	// Some fluid groups may have been marked merged during the syncronus step. Remove them.
+	m_unstableFluidGroups.eraseIf([](auto* fluidGroup){ return fluidGroup->m_merged; });
+	std::erase_if(m_fluidGroups, [](const FluidGroup& fluidGroup){ return fluidGroup.m_merged; });
 	// Calculate flow.
 	// unstable will be used to iterate the contents of m_unstableFluidGroups while altering it. It will be reinitalized with fresh copies several times.
 	SmallSet<FluidGroup*> unstable = m_unstableFluidGroups;
@@ -142,7 +145,7 @@ std::string AreaHasFluidGroups::toS() const
 	{
 		output += "type:" + (FluidType::getName(fluidGroup.m_fluidType));
 		output += "-total:" + std::to_string(fluidGroup.totalVolume(m_area).get());
-		output += "-space:" + std::to_string(fluidGroup.m_drainQueue.m_set.size());
+		output += "-space:" + std::to_string(fluidGroup.m_drainQueue.m_set.volume());
 		output += "-status:";
 		if(fluidGroup.m_merged)
 			output += "-merged";

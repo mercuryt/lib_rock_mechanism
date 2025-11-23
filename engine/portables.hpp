@@ -603,7 +603,7 @@ void Portables<Derived, Index, ReferenceIndex, isActors>::onSetLocation(const In
 	}
 	// Set floating.
 	// TODO: opitmize this.
-	if(MoveType::getSwim(getMoveType(index)).empty())
+	if constexpr(!isActors)
 	{
 		const FluidTypeId& fluidType = getFluidTypeCanFloatInAt(index, newLocation);
 		if(fluidType.exists())

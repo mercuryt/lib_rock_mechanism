@@ -76,8 +76,6 @@ public:
 	void setUnstable(Area& area);
 	void validate(Area& area) const;
 	void validate(Area& area, SmallSet<FluidGroup*> toErase) const;
-	void log(Area& area) const;
-	void logFill(Area& area) const;
 	[[nodiscard]] CollisionVolume totalVolume(Area& area) const;
 	[[nodiscard]] const CuboidSet& getPoints() const { return m_drainQueue.m_set; }
 	[[nodiscard]] bool dispositionIsStable(const CollisionVolume& fillVolume, const CollisionVolume& drainVolume) const;

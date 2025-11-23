@@ -6,17 +6,32 @@
 #include "numericTypes/types.h"
 void FillQueue::initalizeForStep(Area& area, FluidGroup& fluidGroup)
 {
-	auto& space = area.getSpace();
-	for(FutureFlowPoint& futureFlowPoint : m_queue)
+	if(!m_set.empty())
 	{
-		futureFlowPoint.delta = CollisionVolume::create(0);
-		futureFlowPoint.capacity = space.fluid_volumeOfTypeCanEnter(futureFlowPoint.point, fluidGroup.m_fluidType);
+		Space& space = area.getSpace();
+		RTreeData<CollisionVolume> capacity;
+		capacity.insert(m_set, Config::maxPointVolume);
+		Density density = FluidType::getDensity(fluidGroup.m_fluidType);
+		auto actionSubtract = [&](const Cuboid& cuboid, const FluidData& data) mutable {
+			if(FluidType::getDensity(data.type) >= density)
+				capacity.updateSubtract(cuboid, data.volume);
+		};
+		space.fluid_forEachWithCuboid(m_set, actionSubtract);
+		m_queue.clear();
+		auto actionEmplace = [&](const Cuboid& cuboid, const CollisionVolume& volume)
+		{
+			for(const Cuboid& flatCuboid : cuboid.sliceAtEachZ())
+				m_queue.emplace_back(flatCuboid, volume, CollisionVolume::create(0));
+		};
+		capacity.queryForEachWithCuboids(space.boundry(), actionEmplace);
+		[[maybe_unused]] uint totalQueueVolume = 0;
+		for(const FutureFlowCuboid& ffc : m_queue)
+			totalQueueVolume += ffc.cuboid.volume();
+		assert(totalQueueVolume == m_set.volume());
+		std::sort(m_queue.begin(), m_queue.end(), compare);
+		m_groupStart = m_queue.begin();
+		findGroupEnd();
 	}
-	std::ranges::sort(m_queue.begin(), m_queue.end(), [&](FutureFlowPoint& a, FutureFlowPoint& b){
-		return getPriority(a) < getPriority(b);
-	});
-	m_groupStart = m_queue.begin();
-	findGroupEnd();
 	m_futureFull.clear();
 	m_futureNoLongerEmpty.clear();
 	m_overfull.clear();
@@ -33,8 +48,16 @@ void FillQueue::recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionV
 	// Record fluid level changes.
 	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 	{
-		if(iter->delta == 0 && !space.fluid_contains(iter->point, fluidGroup.m_fluidType))
-			m_futureNoLongerEmpty.maybeAdd(iter->point);
+		if(iter->delta == 0)
+		{
+			CuboidSet toAddToFutureNoLongerEmpty = CuboidSet::create(iter->cuboid);
+			space.fluid_forEachWithCuboid(toAddToFutureNoLongerEmpty, [&](const Cuboid& cuboid, const FluidData& data) mutable
+			{
+				if(data.type == fluidGroup.m_fluidType)
+					toAddToFutureNoLongerEmpty.maybeRemove(cuboid);
+			});
+			m_futureNoLongerEmpty.maybeAddAll(toAddToFutureNoLongerEmpty);
+		}
 		iter->delta += volume;
 		assert(iter->delta <= Config::maxPointVolume);
 		assert(iter->capacity >= volume);
@@ -43,10 +66,26 @@ void FillQueue::recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionV
 	// Record full space and get next group.
 	if(flowCapacity == volume)
 	{
-		assert((space.fluid_volumeOfTypeContains(m_groupStart->point, fluidGroup.m_fluidType) + m_groupStart->delta) <= Config::maxPointVolume);
+		assert(!space.fluid_queryAnyWithCondition(m_groupStart->cuboid, [&](const FluidData& data)
+		{
+			return data.type == fluidGroup.m_fluidType && data.volume + m_groupStart->delta > Config::maxPointVolume;
+		}));
+		// Record full so it can be removed from fill queue.
 		for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
-			if((space.fluid_volumeOfTypeContains(iter->point, fluidGroup.m_fluidType) + iter->delta) == Config::maxPointVolume)
-				m_futureFull.add(iter->point);
+		{
+			if(iter->delta == Config::maxPointVolume)
+				m_futureFull.add(iter->cuboid);
+			else
+			{
+				space.fluid_forEachWithCuboid(iter->cuboid, [&](const Cuboid& cuboid, const FluidData& data){
+					if(
+						data.type == fluidGroup.m_fluidType &&
+						data.volume + iter->delta == Config::maxPointVolume
+					)
+						m_futureFull.add(cuboid.intersection(iter->cuboid));
+				});
+			}
+		}
 		m_groupStart = m_groupEnd;
 		findGroupEnd();
 	}
@@ -65,15 +104,17 @@ void FillQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 		if(iter->delta == 0)
 			continue;
 		assert(
-				!space.fluid_contains(iter->point, fluidGroup.m_fluidType) ||
-				space.fluid_getGroup(iter->point, fluidGroup.m_fluidType) != nullptr);
-		space.fluid_fillInternal(iter->point, iter->delta, fluidGroup);
+				!space.fluid_contains(iter->cuboid, fluidGroup.m_fluidType) ||
+				!space.fluid_queryAnyWithCondition(iter->cuboid, [&](const FluidData& data) { return data.type == fluidGroup.m_fluidType && data.group == nullptr; })
+		);
+		space.fluid_fillInternal(iter->cuboid, iter->delta, fluidGroup);
 		/*assert(iter->point->m_hasFluids.m_fluids[m_fluidGroup.m_fluidType].second != &m_fluidGroup ||
 			(iter->point->m_hasFluids.m_fluids[m_fluidGroup.m_fluidType].first < Config::maxPointVolume && !m_futureFull.contains(iter->point)) ||
 			(iter->point->m_hasFluids.m_fluids[m_fluidGroup.m_fluidType].first == Config::maxPointVolume && m_futureFull.contains(iter->point)));
 		*/
-		if(space.fluid_getTotalVolume(iter->point) > Config::maxPointVolume)
-			m_overfull.add(iter->point);
+		const CuboidSet overfull = space.fluid_queryGetCuboidsOverfull(iter->cuboid).intersection(iter->cuboid);
+		if(!overfull.empty())
+			m_overfull.addAll(overfull);
 	}
 	validate();
 }
@@ -84,40 +125,27 @@ CollisionVolume FillQueue::groupLevel(Area& area, FluidGroup& fluidGroup) const
 	CollisionVolume highestLevel = CollisionVolume::create(0);
 	for(auto it = m_groupStart; it != m_groupEnd; ++it)
 	{
-		CollisionVolume level = it->delta + area.getSpace().fluid_volumeOfTypeContains(it->point, fluidGroup.m_fluidType);
+		CollisionVolume level = it->delta + area.getSpace().fluid_volumeOfTypeContains(it->cuboid.m_high, fluidGroup.m_fluidType);
 		if(level > highestLevel)
 			highestLevel = level;
 
 	}
 	return highestLevel;
 }
-uint32_t FillQueue::getPriority(FutureFlowPoint& futureFlowPoint) const
-{
-	if(futureFlowPoint.capacity == 0)
-		return UINT32_MAX;
-	//TODO: What is happening here?
-	return (( futureFlowPoint.point.z().get() + 1) * Config::maxPointVolume.get() * 2) - futureFlowPoint.capacity.get();
-}
-void FillQueue::findGroupEnd()
-{
-	if(m_groupStart == m_queue.end() || m_groupStart->capacity == 0)
-	{
-		m_groupEnd = m_groupStart;
-		return;
-	}
-	uint32_t priority = getPriority(*m_groupStart);
-	for(m_groupEnd = m_groupStart + 1; m_groupEnd != m_queue.end(); ++m_groupEnd)
-	{
-		uint32_t otherPriority = getPriority(*m_groupEnd);
-		assert(priority <= otherPriority);
-		if(otherPriority != priority)
-			break;
-	}
-	validate();
-}
 void FillQueue::validate() const
 {
 	assert((m_groupStart >= m_queue.begin() && m_groupStart <= m_queue.end()));
 	assert((m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end()));
-	assert((m_groupEnd == m_queue.end() || m_groupEnd == m_groupStart || m_groupStart->point.z() != m_groupEnd->point.z() || m_groupStart->capacity > m_groupEnd->capacity));
+	assert((m_groupEnd == m_queue.end() || m_groupEnd == m_groupStart || m_groupStart->cuboid.m_high.z() != m_groupEnd->cuboid.m_high.z() || m_groupStart->capacity > m_groupEnd->capacity));
+}
+uint32_t FillQueue::getPriority(const FutureFlowCuboid& futureFlowPoint)
+{
+	if(futureFlowPoint.capacity == 0)
+		return UINT32_MAX;
+	//TODO: What is happening here?
+	return (( futureFlowPoint.cuboid.m_high.z().get() + 1) * Config::maxPointVolume.get() * 2) - futureFlowPoint.capacity.get();
+}
+bool FillQueue::compare(const FutureFlowCuboid& a, const FutureFlowCuboid& b)
+{
+	return getPriority(a) < getPriority(b);
 }

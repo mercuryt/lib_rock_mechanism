@@ -184,6 +184,7 @@ public:
 	void maybeRegisterMoveType(const MoveTypeId& moveType);
 	void clearPathRequests();
 	void update(const Cuboid& cuboid);
+	void update(const CuboidSet& cuboids);
 	void maybeSetImpassable(const Cuboid& cuboid);
 	[[nodiscard]] TerrainFacade& getForMoveType(const MoveTypeId& moveTypeId);
 	[[nodiscard]] TerrainFacade& getOrCreateForMoveType(const MoveTypeId& moveTypeId);
