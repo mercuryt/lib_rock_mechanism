@@ -7,6 +7,7 @@
 #include "strongVector.h"
 #include "smallMap.h"
 #include "smallSet.h"
+#include "bitset.h"
 
 class RTreeBoolean
 {
@@ -81,6 +82,7 @@ class RTreeBoolean
 	void defragment();
 	// Sort m_nodes by hilbert order of center. The node in position 0 is the top level and never moves.
 	void sort();
+	static void addIntersectedChildrenToOpenList(const Node& node, BitSet<uint64_t, 64>& intersecting, SmallSet<Index>& openList);
 public:
 	RTreeBoolean() { m_nodes.add(); m_nodes.back().setParent(Index::null()); }
 	void beforeJsonLoad();
@@ -97,6 +99,7 @@ public:
 	void maybeRemove(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid); }
 	void clear();
 	void prepare();
+	[[nodiscard]] bool canPrepare() const;
 	[[nodiscard]] bool empty() const  { return nodeCount() == 1 && leafCount() == 0; }
 	[[nodiscard]] CuboidSet toCuboidSet() const;
 	[[nodiscard]] bool query(const Point3D& begin, const Point3D& end) const;

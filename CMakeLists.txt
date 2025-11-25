@@ -15,7 +15,7 @@ if(MSVC)
 	add_compile_options(/W4)
 else()
 	# additional warnings
-	add_compile_options(-Wall -Wextra -Werror -Wshadow -Wunused-function -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wdouble-promotion -Woverloaded-virtual -fopenmp
+	add_compile_options(-Wall -Wextra -Werror -Wshadow -Wunused-function -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wdouble-promotion -Woverloaded-virtual -fopenmp -march=native
 	#-ftrivial-auto-var-init=pattern
 	# Disabled due to false positives around const ObjectiveType& types
 	-Wno-dangling-reference

@@ -1,6 +1,10 @@
 #pragma once
 
 #include "../json.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wduplicated-branches"
+#include "../lib/Eigen/Dense"
+#pragma GCC diagnostic pop
 
 template<typename IntType, unsigned int capacity>
 struct BitSet
@@ -24,9 +28,13 @@ struct BitSet
 	void fill();
 	void fill(bool value);
 	void operator=(IntType d);
-	[[nodiscard]] static BitSet create(const IntType& d);
+	[[nodiscard]] uint8_t getNextAndClear();
+	[[nodiscard]] uint8_t getNext();
+	[[nodiscard]] static BitSet<IntType, capacity> create(const IntType& d);
+	[[nodiscard]] static BitSet<IntType, capacity> create(const Eigen::Array<bool, 1, 64>& boolArray);
 	[[nodiscard]] __attribute__((noinline)) bool testDbg(const uint8_t& index) const;
 	[[nodiscard]] __attribute__((noinline)) std::string toString() const;
+	[[nodiscard]] __attribute__((noinline)) uint popCount() const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(BitSet, data);
 };
 

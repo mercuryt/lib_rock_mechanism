@@ -28,7 +28,6 @@ void Space::solid_setShared(const Point3D& point, const MaterialTypeId& material
 		m_area.m_hasTemperature.maybeAddMeltableSolidPointAboveGround(point);
 	// Remove from stockpiles.
 	m_area.m_hasStockPiles.removePointFromAllFactions(point);
-	m_area.m_hasCraftingLocationsAndJobs.maybeRemoveLocation(point);
 }
 void Space::solid_set(const Point3D& point, const MaterialTypeId& materialType, bool constructed)
 {
@@ -53,6 +52,7 @@ void Space::solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& material
 	}
 	m_area.m_hasTerrainFacades.maybeSetImpassable(cuboid);
 	m_area.m_exteriorPortals.onCuboidCanNotTransmitTemperature(m_area, cuboid);
+	m_area.m_hasCraftingLocationsAndJobs.maybeRemoveCuboid(cuboid);
 	for(const Point3D& point : cuboid)
 		solid_setShared(point, materialType, previous.empty());
 	m_support.set(cuboid);

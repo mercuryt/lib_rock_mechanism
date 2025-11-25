@@ -152,7 +152,7 @@ public:
 	// To be used by the player.
 	void removeLocation(CraftStepTypeCategoryId craftStepTypeCategory, const Point3D& point);
 	// To be used by invalidating events such as set solid.
-	void maybeRemoveLocation(const Point3D& point);
+	void maybeRemoveCuboid(const Cuboid& cuboid);
 	// designate something to be crafted.
 	void addJob(const CraftJobTypeId& craftJobType, const MaterialTypeId& materialType, const Quantity& quantity, uint32_t minimumSkillLevel = 0);
 	void cloneJob(CraftJob& craftJob);
@@ -197,7 +197,7 @@ public:
 	[[nodiscard]] Json toJson() const;
 	void addFaction(const FactionId& faction) { m_data.try_emplace(faction, faction, m_area); }
 	void removeFaction(const FactionId& faction) { m_data.erase(faction); }
-	void maybeRemoveLocation(const Point3D& location) { for(auto& pair : m_data) pair.second.maybeRemoveLocation(location); }
+	void maybeRemoveCuboid(const Cuboid& cuboid) { for(auto& pair : m_data) pair.second.maybeRemoveCuboid(cuboid); }
 	void clearReservations();
 	[[nodiscard]] HasCraftingLocationsAndJobsForFaction& getForFaction(const FactionId& faction);
 };

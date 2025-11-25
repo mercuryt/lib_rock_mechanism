@@ -298,14 +298,15 @@ void HasCraftingLocationsAndJobsForFaction::removeLocation(CraftStepTypeCategory
 	else
 		util::removeFromVectorByValueUnordered(m_stepTypeCategoriesByLocation[point], category);
 }
-void HasCraftingLocationsAndJobsForFaction::maybeRemoveLocation(const Point3D& point)
+void HasCraftingLocationsAndJobsForFaction::maybeRemoveCuboid(const Cuboid& cuboid)
 {
-	if(m_stepTypeCategoriesByLocation.contains(point))
-	{
-		std::vector<CraftStepTypeCategoryId> categories(m_stepTypeCategoriesByLocation[point].begin(), m_stepTypeCategoriesByLocation[point].end());
-		for(auto category : categories)
-			removeLocation(category, point);
-	}
+	for(const Point3D& point : cuboid)
+		if(m_stepTypeCategoriesByLocation.contains(point))
+		{
+			std::vector<CraftStepTypeCategoryId> categories(m_stepTypeCategoriesByLocation[point].begin(), m_stepTypeCategoriesByLocation[point].end());
+			for(auto category : categories)
+				removeLocation(category, point);
+		}
 }
 void HasCraftingLocationsAndJobsForFaction::addJob(const CraftJobTypeId& craftJobType, const MaterialTypeId& materialType, const Quantity& quantity, uint32_t minimumSkillLevel)
 {
