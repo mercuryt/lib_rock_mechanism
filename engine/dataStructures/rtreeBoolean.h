@@ -53,8 +53,8 @@ class RTreeBoolean
 		void insertBranch(const Cuboid& cuboid, const Index& index);
 		void eraseBranch(const ArrayIndex& offset);
 		void eraseLeaf(const ArrayIndex& offset);
-		void eraseByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
-		void eraseLeavesByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
+		void eraseByMask(BitSet64& mask);
+		void eraseLeavesByMask(BitSet64 mask);
 		void clear();
 		void setParent(const Index& index) { m_parent = index; }
 		void updateLeaf(const ArrayIndex& offset, const Cuboid& cuboid);

@@ -9,31 +9,47 @@
 #pragma once
 
 template<typename IntType, unsigned int capacity>
-BitSet<IntType, capacity>::BitSet() : data(0) { }
+BitSet<IntType, capacity>::BitSet() : data(zero) { }
 template<typename IntType, unsigned int capacity>
 BitSet<IntType, capacity>::BitSet(const IntType& value) : data(value) { }
 template<typename IntType, unsigned int capacity>
 bool BitSet<IntType, capacity>::operator[](const uint8_t& index) const { return test(index); }
 template<typename IntType, unsigned int capacity>
-bool BitSet<IntType, capacity>::test(const uint8_t& index) const { assert(index < capacity); return (data >> index) & std::integral_constant<IntType, 1>::value; }
+bool BitSet<IntType, capacity>::test(const uint8_t& index) const { assert(index < capacity); return (data >> index) & one; }
 template<typename IntType, unsigned int capacity>
-bool BitSet<IntType, capacity>::empty() const { return data == 0; }
+bool BitSet<IntType, capacity>::empty() const { return data == zero; }
 template<typename IntType, unsigned int capacity>
-bool BitSet<IntType, capacity>::any() const { return data != 0; }
+bool BitSet<IntType, capacity>::any() const { return data != zero; }
 template<typename IntType, unsigned int capacity>
-void BitSet<IntType, capacity>::set(const uint8_t& index) { data |= (std::integral_constant<IntType, 1>::value << index); }
+void BitSet<IntType, capacity>::set(const uint8_t& index) { assert(index < capacity); data |= (one << index); }
 template<typename IntType, unsigned int capacity>
-void BitSet<IntType, capacity>::set(const uint8_t& index, bool value) { if(value) set(index); else unset(index); }
+void BitSet<IntType, capacity>::set(const uint8_t& index, bool value) { assert(index < capacity); if(value) set(index); else unset(index); }
 template<typename IntType, unsigned int capacity>
-void BitSet<IntType, capacity>::unset(const uint8_t& index) { data &= ~(std::integral_constant<IntType, 1>::value << index); }
+void BitSet<IntType, capacity>::unset(const uint8_t& index) { assert(index < capacity); data &= ~(one << index); }
 template<typename IntType, unsigned int capacity>
-void BitSet<IntType, capacity>::clear() { data = 0; }
+void BitSet<IntType, capacity>::clear() { data = zero; }
 template<typename IntType, unsigned int capacity>
 void BitSet<IntType, capacity>::fill() { data = std::numeric_limits<IntType>::max(); }
 template<typename IntType, unsigned int capacity>
 void BitSet<IntType, capacity>::fill(bool value) { if(value) fill(); else clear(); }
 template<typename IntType, unsigned int capacity>
 void BitSet<IntType, capacity>::operator=(IntType d) { data = d; }
+template<typename IntType, unsigned int capacity>
+void BitSet<IntType, capacity>::flip() { data = ~data; }
+template<typename IntType, unsigned int capacity>
+void BitSet<IntType, capacity>::clearAllAfterInclusive(const uint8_t& index)
+{
+	assert(index < capacity);
+	const IntType mask = (one << index) - one;
+	data &= mask;
+}
+template<typename IntType, unsigned int capacity>
+void BitSet<IntType, capacity>::clearAllBefore(const uint8_t& index)
+{
+	assert(index < capacity);
+	const IntType mask = ~zero << index;
+	data &= mask;
+}
 template<typename IntType, unsigned int capacity>
 uint8_t BitSet<IntType, capacity>::getNextAndClear()
 {
@@ -44,11 +60,13 @@ uint8_t BitSet<IntType, capacity>::getNextAndClear()
 template<typename IntType, unsigned int capacity>
 uint8_t BitSet<IntType, capacity>::getNext() { return std::countr_zero(data); }
 template<typename IntType, unsigned int capacity>
+uint8_t BitSet<IntType, capacity>::getLast() { assert(!empty()); return (capacity - 1) - std::countl_zero(data); }
+template<typename IntType, unsigned int capacity>
 BitSet<IntType, capacity> BitSet<IntType, capacity>::create(const IntType& d) { return {d}; }
 template<typename IntType, unsigned int capacity>
 BitSet<IntType, capacity> BitSet<IntType, capacity>::create(const Eigen::Array<bool, 1, 64>& booleanArray)
 {
-	if constexpr(64 != capacity)
+	if constexpr(64u != capacity)
 	{
 		assert(false);
 		std::unreachable();
@@ -56,8 +74,8 @@ BitSet<IntType, capacity> BitSet<IntType, capacity>::create(const Eigen::Array<b
 	// Eigen::Array<bool> stores bools densely as bytes under the hood.
     const uint8_t* ptr = reinterpret_cast<const uint8_t*>(booleanArray.data());
 	// load the two halves
-	__m256i v0 = _mm256_load_si256(reinterpret_cast<const __m256i*>(ptr));
-	__m256i v1 = _mm256_load_si256(reinterpret_cast<const __m256i*>(ptr + 32));
+	__m256i v0 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(ptr));
+	__m256i v1 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(ptr + 32));
 	// Convert 1 to 255. 0 is unchanged.
 	__m256i fullByteV0 = _mm256_cmpgt_epi8(v0, _mm256_setzero_si256());
 	__m256i fullByteV1 = _mm256_cmpgt_epi8(v1, _mm256_setzero_si256());
@@ -68,7 +86,7 @@ BitSet<IntType, capacity> BitSet<IntType, capacity>::create(const Eigen::Array<b
 	return (static_cast<uint64_t>(mask1) << 32) | mask0;
 }
 template<typename IntType, unsigned int capacity>
-bool BitSet<IntType, capacity>::testDbg(const uint8_t& index) const { assert(index < capacity); return (data >> index) & std::integral_constant<IntType, 1>::value; }
+bool BitSet<IntType, capacity>::testDbg(const uint8_t& index) const { assert(index < capacity); return (data >> index) & one; }
 template<typename IntType, unsigned int capacity>
 std::string BitSet<IntType, capacity>::toString() const { return std::bitset<capacity>(data).to_string(); }
 template<typename IntType, unsigned int capacity>

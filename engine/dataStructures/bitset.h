@@ -10,6 +10,8 @@ template<typename IntType, unsigned int capacity>
 struct BitSet
 {
 	using This = BitSet<IntType, capacity>;
+	constexpr static IntType one = 1;
+	constexpr static IntType zero = 0;
 	static_assert(sizeof(IntType) >= (capacity / 8));
 	IntType data;
 	BitSet();
@@ -28,8 +30,12 @@ struct BitSet
 	void fill();
 	void fill(bool value);
 	void operator=(IntType d);
+	void clearAllAfterInclusive(const uint8_t& index);
+	void clearAllBefore(const uint8_t& index);
+	void flip();
 	[[nodiscard]] uint8_t getNextAndClear();
 	[[nodiscard]] uint8_t getNext();
+	[[nodiscard]] uint8_t getLast();
 	[[nodiscard]] static BitSet<IntType, capacity> create(const IntType& d);
 	[[nodiscard]] static BitSet<IntType, capacity> create(const Eigen::Array<bool, 1, 64>& boolArray);
 	[[nodiscard]] __attribute__((noinline)) bool testDbg(const uint8_t& index) const;
@@ -37,16 +43,4 @@ struct BitSet
 	[[nodiscard]] __attribute__((noinline)) uint popCount() const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(BitSet, data);
 };
-
-template<unsigned int capacity>
-struct BitSet<
-	std::conditional<std::greater(capacity, 32u), uint64_t,
-		std::conditional<std::greater(capacity, 16u), uint32_t,
-			std::conditional<std::greater(capacity, 8u), uint16_t,
-				uint8_t
-			>
-		>
-	>,
-	capacity
->
-{ };
+typedef BitSet<uint64_t, 64u> BitSet64;
