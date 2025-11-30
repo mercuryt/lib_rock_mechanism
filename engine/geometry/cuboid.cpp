@@ -370,6 +370,7 @@ bool Cuboid::isTouchingFaceFromInside(const Cuboid& cuboid) const
 }
 SmallSet<Cuboid> Cuboid::getChildrenWhenSplitByCuboid(const Cuboid& cuboid) const
 {
+	assert(intersects(cuboid));
 	Point3D splitHighest = cuboid.m_high;
 	Point3D splitLowest = cuboid.m_low;
 	// Clamp split high and low to this so split highest cannot be higher then m_high and split lowest cannot be lower then m_low.

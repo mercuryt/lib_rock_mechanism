@@ -536,12 +536,15 @@ void FluidGroup::afterWriteStep(Area& area)
 	auto& space = area.getSpace();
 	// Resolve overfull space.
 	// TODO: cuboidize.
-	CuboidSet overfull = m_fillQueue.m_overfull;
-	// Check that points maked as overfull are still overfull.
-	overfull = space.fluid_queryGetCuboidsOverfull(overfull.boundry()).intersection(overfull);
-	for(const Cuboid& cuboid : overfull)
-			for(const Point3D& point : cuboid)
-				space.fluid_resolveOverfull(point);
+	if(!m_fillQueue.m_overfull.empty())
+	{
+		CuboidSet overfull = m_fillQueue.m_overfull;
+		// Check that points maked as overfull are still overfull.
+		overfull = space.fluid_queryGetCuboidsOverfull(overfull.boundry()).intersection(overfull);
+		for(const Cuboid& cuboid : overfull)
+				for(const Point3D& point : cuboid)
+					space.fluid_resolveOverfull(point);
+	}
 	// Create mist.
 	for(const Cuboid& cuboid : m_fillQueue.m_futureNoLongerEmpty)
 		for(const Point3D point : cuboid)

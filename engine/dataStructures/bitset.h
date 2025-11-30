@@ -36,6 +36,8 @@ struct BitSet
 	[[nodiscard]] uint8_t getNextAndClear();
 	[[nodiscard]] uint8_t getNext();
 	[[nodiscard]] uint8_t getLast();
+	[[nodiscard]] BitSet<IntType, capacity> head(const uint8_t& index) const; // Make a copy, mask everything before inclusive, return.
+	[[nodiscard]] BitSet<IntType, capacity> afterInclusive(const uint8_t& index) const; // Make a copy, mask everything after, return.
 	[[nodiscard]] static BitSet<IntType, capacity> create(const IntType& d);
 	[[nodiscard]] static BitSet<IntType, capacity> create(const Eigen::Array<bool, 1, 64>& boolArray);
 	[[nodiscard]] __attribute__((noinline)) bool testDbg(const uint8_t& index) const;

@@ -152,21 +152,35 @@ void RTreeData<T, config, nullPrimitive>::Node::eraseByMask(const Eigen::Array<b
 			insertBranch(copyCuboids[i.get()], RTreeNodeIndex::create(copyChildren[i.get()].child));
 }
 template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
-void RTreeData<T, config, nullPrimitive>::Node::eraseLeavesByMask(const BitSet<uint64_t, nodeSize>& mask)
+void RTreeData<T, config, nullPrimitive>::Node::eraseByMask(BitSet mask)
 {
 	RTreeArrayIndex leafEnd = m_leafEnd;
+	RTreeArrayIndex childBegin = m_childBegin;
 	const auto copyCuboids = m_cuboids;
 	const auto copyDataAndChildIndices = m_dataAndChildIndices;
-	// Overwrite from copy.
-	m_leafEnd = RTreeArrayIndex::create(0);
-	for(RTreeArrayIndex i = RTreeArrayIndex::create(0); i < leafEnd; ++i)
-		if(!mask[i.get()])
-			insertLeaf(copyCuboids[i.get()], T::create(copyDataAndChildIndices[i.get()].data));
-	// Clear any remaning leaves.
-	for(auto i = m_leafEnd; i < leafEnd; ++i)
+	// Flip list of indices to remove into list to keep.
+	mask.flip();
+	clear();
+	if(leafEnd != 0)
 	{
-		m_cuboids.erase(i.get());
-		m_dataAndChildIndices[i.get()].data = T::null().get();
+		BitSet leafMask = mask;
+		if(leafEnd != nodeSize)
+			leafMask.clearAllAfterInclusive(leafEnd.get());
+		while(leafMask.any())
+		{
+			const uint8_t arrayIndex = leafMask.getNextAndClear();
+			insertLeaf(copyCuboids[arrayIndex], T::create(copyDataAndChildIndices[arrayIndex].data));
+		}
+	}
+	if(childBegin != nodeSize)
+	{
+		if(childBegin != 0)
+			mask.clearAllBefore(childBegin.get());
+		while(mask.any())
+		{
+			const uint8_t arrayIndex = mask.getNextAndClear();
+			insertBranch(copyCuboids[arrayIndex], RTreeNodeIndex::create(copyDataAndChildIndices[arrayIndex].child));
+		}
 	}
 }
 template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
@@ -186,6 +200,27 @@ void RTreeData<T, config, nullPrimitive>::Node::eraseLeavesByMask(const Eigen::A
 		m_cuboids.erase(i.get());
 		m_dataAndChildIndices[i.get()].data = T::null().get();
 	}
+}
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::Node::eraseLeavesByMask(BitSet mask)
+{
+	RTreeArrayIndex leafEnd = m_leafEnd;
+	const auto copyCuboids = m_cuboids;
+	const auto copyDataAndChildIndices = m_dataAndChildIndices;
+	// Overwrite from copy.
+	m_leafEnd = RTreeArrayIndex::create(0);
+	// Flip from a list to remove into a list to keep.
+	mask.flip();
+	if(leafEnd != nodeSize)
+		mask.clearAllAfterInclusive(leafEnd.get());
+	while(mask.any())
+	{
+		const uint8_t arrayIndex = mask.getNextAndClear();
+		insertLeaf(copyCuboids[arrayIndex], T::create(copyDataAndChildIndices[arrayIndex].data));
+	}
+	// Clear any remaning leaves.
+	for(auto i = m_leafEnd; i < leafEnd; ++i)
+		m_cuboids.erase(i.get());
 }
 template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
 void RTreeData<T, config, nullPrimitive>::Node::clear()
@@ -569,6 +604,7 @@ void RTreeData<T, config, nullPrimitive>::removeFromNode(const RTreeNodeIndex& i
 {
 	CuboidArray<nodeSize>::BoolArray interceptMask;
 	// Copy index before possibly invalidating it later.
+	BitSet interceptBitSet;
 	RTreeNodeIndex indexCopy = index;
 	// These node references are going to be invalidated by inserting fragments, which may generate a new node.
 	// A scope is used to ensure they are not used after they are invalidated.
@@ -577,26 +613,41 @@ void RTreeData<T, config, nullPrimitive>::removeFromNode(const RTreeNodeIndex& i
 		const auto& parentCuboids = parent.getCuboids();
 		const auto& parentDataAndChildIndices = parent.getDataAndChildIndices();
 		interceptMask = parentCuboids.indicesOfIntersectingCuboids(cuboid);
-		// Fragment all intercepted leaves.
-		SmallSet<std::pair<Cuboid, T>> fragments;
+		interceptBitSet = BitSet::create(interceptMask);
 		const uint8_t& leafCount = parent.getLeafCount();
-		for(RTreeArrayIndex i = RTreeArrayIndex::create(0); i < leafCount; ++i)
-			if(interceptMask[i.get()])
-				for(const Cuboid& fragment : parentCuboids[i.get()].getChildrenWhenSplitByCuboid(cuboid))
-					fragments.emplace(fragment, T::create(parentDataAndChildIndices[i.get()].data));
-		// TODO: this could probably be better in regards to avoiding fragment generation rather then checking for empty. Will have to add more complex DEBUG logic.
-		if constexpr(!config.splitAndMerge)
-			assert(fragments.empty());
-		// Copy intercept mask head to create leaf intercept mask.
-		auto leafInterceptMask = interceptMask.head(leafCount);
-		// erase all intercepted leaves.
-		parent.eraseLeavesByMask(leafInterceptMask);
-		// insert fragments. Invalidates parent and cuboids, as well as index.
-		for(const auto& [fragment, value] : fragments)
-			addToNodeRecursive(indexCopy, fragment, value);
+		if(leafCount != 0)
+		{
+			SmallSet<std::pair<Cuboid, T>> fragments;
+			BitSet interceptBitSetLeaves = interceptBitSet;
+			if(leafCount != nodeSize)
+				interceptBitSetLeaves.clearAllAfterInclusive(leafCount);
+			// Make a copy before destructively iterating the original.
+			// TODO: combine two iterations.
+			BitSet interceptBitSetLeaves2 = interceptBitSetLeaves;
+			while(interceptBitSetLeaves.any())
+			{
+				const uint8_t arrayIndex = interceptBitSetLeaves.getNextAndClear();
+				for(const Cuboid& fragment : parentCuboids[arrayIndex].getChildrenWhenSplitByCuboid(cuboid))
+					fragments.emplace(fragment, T::create(parentDataAndChildIndices[arrayIndex].data));
+			}
+			// TODO: this could probably be better in regards to avoiding fragment generation rather then checking for empty. Will have to add more complex DEBUG logic.
+			if constexpr(!config.splitAndMerge)
+				assert(fragments.empty());
+			// Erase all intercepted leaves.
+			parent.eraseLeavesByMask(interceptBitSetLeaves2);
+			// Insert fragments. Invalidates parent and cuboids, etc. as well as index.
+			for(const auto& [fragment, value] : fragments)
+				addToNodeRecursive(indexCopy, fragment, value);
+		}
 	}
 	Node& parent = m_nodes[indexCopy];
-	addIntersectedChildrenToOpenList(parent, interceptMask, openList);
+	const auto offsetOfFirstChild = parent.offsetOfFirstChild();
+	if(offsetOfFirstChild != nodeSize)
+	{
+		interceptBitSet.clearAllBefore(offsetOfFirstChild.get());
+		if(interceptBitSet.any())
+			addIntersectedChildrenToOpenList(parent, interceptBitSet, openList);
+	}
 	m_toComb.maybeInsert(index);
 }
 template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
@@ -604,41 +655,53 @@ void RTreeData<T, config, nullPrimitive>::removeFromNodeWithValue(const RTreeNod
 {
 	assert(value != T::create(nullPrimitive));
 	CuboidArray<nodeSize>::BoolArray interceptMask;
+	BitSet interceptBitSet;
 	const RTreeNodeIndex indexCopy = index;
 	// These node references are going to be invalidated by inserting fragments, which may generate a new node.
 	// A scope is used to ensure they are not used after they are invalidated.
 	{
 		Node& parent = m_nodes[indexCopy];
-		const auto& parentCuboids = parent.getCuboids();
-		const auto& parentDataAndChildIndices = parent.getDataAndChildIndices();
-		interceptMask = parentCuboids.indicesOfIntersectingCuboids(cuboid);
-		// Fragment all intercepted leaves.
-		SmallSet<Cuboid> fragments;
-		const auto& leafEnd = parent.getLeafCount();
-		for(RTreeArrayIndex i = RTreeArrayIndex::create(0); i < leafEnd; ++i)
-			if(interceptMask[i.get()])
+		const auto& leafCount = parent.getLeafCount();
+		if(leafCount != 0)
+		{
+			const auto& parentCuboids = parent.getCuboids();
+			const auto& parentDataAndChildIndices = parent.getDataAndChildIndices();
+			interceptMask = parentCuboids.indicesOfIntersectingCuboids(cuboid);
+			if(!interceptMask.any())
+				return;
+			interceptBitSet = BitSet::create(interceptMask);
+			// Fragment all intercepted leaves.
+			BitSet leafBitSet = interceptBitSet;
+			if(leafCount != nodeSize)
+				leafBitSet.clearAllAfterInclusive(leafCount);
+			// Copy bit set to destructively iterate twice.
+			// TODO: combine theses two iterations.
+			BitSet leafBitSet2 = leafBitSet;
+			SmallSet<Cuboid> fragments;
+			while(leafBitSet.any())
 			{
+				const uint8_t arrayIndex = leafBitSet.getNextAndClear();
 				// Only remove leaves with the same value. Remove others from intercept mask so they aren't destroyed.
-				if(parentDataAndChildIndices[i.get()].data == value.get())
-					fragments.insertAll(parentCuboids[i.get()].getChildrenWhenSplitByCuboid(cuboid));
+				if(parentDataAndChildIndices[arrayIndex].data == value.get())
+					fragments.insertAll(parentCuboids[arrayIndex].getChildrenWhenSplitByCuboid(cuboid));
 				else
-					interceptMask[i.get()] = false;
+					leafBitSet2.unset(arrayIndex);
 			}
-		// TODO: this could probably be better in regards to avoiding fragment generation rather then checking for empty. Will have to add more complex DEBUG logic.
-		if constexpr(!config.splitAndMerge)
-			assert(fragments.empty());
-		// Copy intercept mask to create leaf intercept mask.
-		auto leafInterceptMask = interceptMask;
-		leafInterceptMask.tail(parent.getChildCount()) = 0;
-		// erase all intercepted leaves with the same value.
-		parent.eraseByMask(leafInterceptMask);
-		// insert fragments. Invalidates parent and cuboids, as well as indexCopy.
-		const auto end = fragments.end();
-		for(auto i = fragments.begin(); i < end; ++i)
-			addToNodeRecursive(indexCopy, *i, value);
+			// erase all intercepted leaves with the same value.
+			parent.eraseByMask(leafBitSet2);
+			// insert fragments. Invalidates parent and cuboids, as well as indexCopy.
+			const auto end = fragments.end();
+			for(auto i = fragments.begin(); i < end; ++i)
+				addToNodeRecursive(indexCopy, *i, value);
+		}
 	}
 	Node& parent = m_nodes[indexCopy];
-	addIntersectedChildrenToOpenList(parent, interceptMask, openList);
+	const RTreeArrayIndex& offsetOfFirstChild = parent.offsetOfFirstChild();
+	if(offsetOfFirstChild < nodeSize)
+	{
+		interceptBitSet.clearAllBefore(parent.offsetOfFirstChild().get());
+		addIntersectedChildrenToOpenList(parent, interceptBitSet, openList);
+	}
 	m_toComb.maybeInsert(indexCopy);
 }
 template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
@@ -649,6 +712,21 @@ void RTreeData<T, config, nullPrimitive>::removeFromNodeByMask(Node& node, const
 		for(RTreeArrayIndex i = node.offsetOfFirstChild(); i < nodeSize; ++i)
 			if(mask[i.get()])
 				destroyWithChildren(RTreeNodeIndex::create(nodeDataAndChildIndices[i.get()].child));
+		// Erase branches and leaves from node.
+		node.eraseByMask(mask);
+}
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::removeFromNodeByMask(Node& node, BitSet mask)
+{
+		const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+		// Mark branches in m_node destroyed.
+		// Make copy to destructively iterate.
+		BitSet mask2 = mask;
+		while(mask2.any())
+		{
+			const uint8_t arrayIndex = mask2.getNextAndClear();
+			destroyWithChildren(RTreeNodeIndex::create(nodeDataAndChildIndices[arrayIndex].child));
+		}
 		// Erase branches and leaves from node.
 		node.eraseByMask(mask);
 }
@@ -858,6 +936,21 @@ void RTreeData<T, config, nullPrimitive>::addIntersectedChildrenToOpenList(const
 		for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
 			if(*iter)
 				openList.insert(RTreeNodeIndex::create(nodeDataAndChildIndices[iter - begin].child));
+	}
+}
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+void RTreeData<T, config, nullPrimitive>::addIntersectedChildrenToOpenList(const Node& node, BitSet interceptMask, SmallSet<RTreeNodeIndex>& openList)
+{
+	const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+	const auto offsetOfFirstChild = node.offsetOfFirstChild();
+	assert(interceptMask.getNext() >= offsetOfFirstChild.get());
+	const uint8_t childCount = nodeSize - offsetOfFirstChild.get();
+	if(childCount == 0)
+		return;
+	while(interceptMask.any())
+	{
+		const uint8_t arrayIndex = interceptMask.getNextAndClear();
+		openList.insert(RTreeNodeIndex::create(nodeDataAndChildIndices[arrayIndex].child));
 	}
 }
 template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>

@@ -236,6 +236,7 @@ bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::isAdjacent(const Point
 template<typename CuboidType, typename PointType, typename CuboidSetType>
 CuboidType CuboidSetBase<CuboidType, PointType, CuboidSetType>::boundry() const
 {
+	assert(exists());
 	PointType highest;
 	PointType lowest;
 	for(const CuboidType& cuboid : m_cuboids)

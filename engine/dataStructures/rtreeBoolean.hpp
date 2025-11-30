@@ -10,7 +10,7 @@ Cuboid RTreeBoolean::queryGetLeafWithCondition(const ShapeT& shape, auto&& condi
 		openList.popBack();
 		const Node& node = m_nodes[index];
 		const auto& nodeCuboids = node.getCuboids();
-		BitSet<uint64_t, 64> interceptMask = BitSet<uint64_t, 64>::create(nodeCuboids.indicesOfIntersectingCuboids(shape));
+		BitSet interceptMask = BitSet64::create(nodeCuboids.indicesOfIntersectingCuboids(shape));
 		const auto leafCount = node.getLeafCount();
 		while(!interceptMask.empty())
 		{

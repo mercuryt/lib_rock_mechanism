@@ -71,7 +71,7 @@ void RTreeBoolean::Node::eraseLeaf(const ArrayIndex& offset)
 	assert(m_childIndices[offset.get()].empty());
 	--m_leafEnd;
 }
-void RTreeBoolean::Node::eraseByMask(BitSet64& mask)
+void RTreeBoolean::Node::eraseByMask(BitSet& mask)
 {
 	ArrayIndex leafEnd = m_leafEnd;
 	ArrayIndex childBegin = m_childBegin;
@@ -82,7 +82,7 @@ void RTreeBoolean::Node::eraseByMask(BitSet64& mask)
 	clear();
 	if(leafEnd != 0)
 	{
-		BitSet64 leafMask = mask;
+		BitSet leafMask = mask;
 		if(leafEnd != nodeSize)
 			leafMask.clearAllAfterInclusive(leafEnd.get());
 		while(leafMask.any())
@@ -102,7 +102,7 @@ void RTreeBoolean::Node::eraseByMask(BitSet64& mask)
 		}
 	}
 }
-void RTreeBoolean::Node::eraseLeavesByMask(BitSet64 mask)
+void RTreeBoolean::Node::eraseLeavesByMask(BitSet mask)
 {
 	ArrayIndex leafEnd = m_leafEnd;
 	const auto copyCuboids = m_cuboids;
@@ -278,10 +278,10 @@ void RTreeBoolean::clearAllContained(const Index& index, const Cuboid& cuboid)
 		if(containsMask.any())
 		{
 			// Destroy contained branches.
-			BitSet64 containedBitSet = BitSet64::create(containsMask);
+			BitSet containedBitSet = BitSet::create(containsMask);
 			// Copy bitset before destructive iteration to pass onto node.eraseByMask.
 			// TODO: combine these two interations.
-			BitSet64 containedBitSet2 = containedBitSet;
+			BitSet containedBitSet2 = containedBitSet;
 			const auto offsetOfFirstChild = node.offsetOfFirstChild();
 			if(offsetOfFirstChild != nodeSize)
 			{
@@ -302,7 +302,7 @@ void RTreeBoolean::clearAllContained(const Index& index, const Cuboid& cuboid)
 		intersectMask.head(node.getLeafCount()) = false;
 		if(intersectMask.any())
 		{
-			auto bitset = BitSet64::create(intersectMask);
+			auto bitset = BitSet::create(intersectMask);
 			const auto& leafCount = node.getLeafCount();
 			if(leafCount != 0)
 				bitset.clearAllBefore(leafCount);
@@ -425,18 +425,18 @@ void RTreeBoolean::removeFromNode(const Index& index, const Cuboid& cuboid, Smal
 	SmallSet<Cuboid> fragments;
 	const auto& leafEnd = parent.getLeafCount();
 	const auto& childBegin = parent.offsetOfFirstChild().get();
-	BitSet64 intersectBitSet = BitSet64::create(intersectMask);
+	BitSet intersectBitSet = BitSet::create(intersectMask);
 	if(leafEnd != 0)
 	{
 		// Node has leaves.
-		BitSet64 leafIntersectBitSet = intersectBitSet;
+		BitSet leafIntersectBitSet = intersectBitSet;
 		if(childBegin != nodeSize)
 			leafIntersectBitSet.clearAllAfterInclusive(childBegin);
 		if(leafIntersectBitSet.any())
 		{
 			// Copy leafIntersectBitSet to send to eraseLeavesByMask.
 			// TODO: combine two iterations.
-			BitSet64 leafIntersectBitSet2 = leafIntersectBitSet;
+			BitSet leafIntersectBitSet2 = leafIntersectBitSet;
 			while(leafIntersectBitSet.any())
 			{
 				uint8_t arrayIndex = leafIntersectBitSet.getNextAndClear();
@@ -598,7 +598,7 @@ void RTreeBoolean::sort()
 	}
 	m_nodes = std::move(sortedNodes);
 }
-void RTreeBoolean::addIntersectedChildrenToOpenList(const Node& node, BitSet64& intersectMask, SmallSet<Index>& openList)
+void RTreeBoolean::addIntersectedChildrenToOpenList(const Node& node, BitSet& intersectMask, SmallSet<Index>& openList)
 {
 	[[maybe_unused]] const auto offsetOfFirstChild = node.offsetOfFirstChild();
 	// Any bits representing leaves have already been cleared.
@@ -746,7 +746,7 @@ bool RTreeBoolean::query(const ShapeT& shape) const
 		const auto childCount = node.getChildCount();
 		if(childCount != 0 && intersectMask.tail(childCount).any())
 		{
-			auto bitset = BitSet64::create(intersectMask);
+			auto bitset = BitSet::create(intersectMask);
 			addIntersectedChildrenToOpenList(node, bitset, openList);
 		}
 	}
@@ -769,7 +769,7 @@ Cuboid RTreeBoolean::queryGetLeaf(const ShapeT& shape) const
 		openList.popBack();
 		const Node& node = m_nodes[index];
 		const auto& nodeCuboids = node.getCuboids();
-		BitSet64 intersectMask = BitSet64::create(nodeCuboids.indicesOfIntersectingCuboids(shape));
+		BitSet intersectMask = BitSet::create(nodeCuboids.indicesOfIntersectingCuboids(shape));
 		if(intersectMask.any())
 		{
 			const auto arrayIndex = intersectMask.getNext();
@@ -796,7 +796,7 @@ Point3D RTreeBoolean::queryGetPoint(const ShapeT& shape) const
 		openList.popBack();
 		const Node& node = m_nodes[index];
 		const auto& nodeCuboids = node.getCuboids();
-		BitSet64 intersectMask = BitSet64::create(nodeCuboids.indicesOfIntersectingCuboids(shape));
+		BitSet intersectMask = BitSet::create(nodeCuboids.indicesOfIntersectingCuboids(shape));
 		if(!intersectMask.empty())
 		{
 			const auto arrayIndex = intersectMask.getNext();
@@ -879,8 +879,8 @@ CuboidSet RTreeBoolean::queryGetLeaves(const ShapeT& shape) const
 		openList.popBack();
 		const Node& node = m_nodes[index];
 		const auto& nodeCuboids = node.getCuboids();
-		BitSet64 intersectMask = BitSet64::create(nodeCuboids.indicesOfIntersectingCuboids(shape));
-		BitSet64 leafIntersectMask = intersectMask;
+		BitSet intersectMask = BitSet::create(nodeCuboids.indicesOfIntersectingCuboids(shape));
+		BitSet leafIntersectMask = intersectMask;
 		const auto& leafCount = node.getLeafCount();
 		if(leafCount != 0)
 		{

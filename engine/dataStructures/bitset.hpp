@@ -46,7 +46,7 @@ void BitSet<IntType, capacity>::clearAllAfterInclusive(const uint8_t& index)
 template<typename IntType, unsigned int capacity>
 void BitSet<IntType, capacity>::clearAllBefore(const uint8_t& index)
 {
-	assert(index < capacity);
+	assert(index <= capacity);
 	const IntType mask = ~zero << index;
 	data &= mask;
 }
@@ -61,6 +61,20 @@ template<typename IntType, unsigned int capacity>
 uint8_t BitSet<IntType, capacity>::getNext() { return std::countr_zero(data); }
 template<typename IntType, unsigned int capacity>
 uint8_t BitSet<IntType, capacity>::getLast() { assert(!empty()); return (capacity - 1) - std::countl_zero(data); }
+template<typename IntType, unsigned int capacity>
+BitSet<IntType, capacity> BitSet<IntType, capacity>::head(const uint8_t& index) const
+{
+	BitSet output = *this;
+	output.clearAllAfterInclusive(index);
+	return output;
+}
+template<typename IntType, unsigned int capacity>
+BitSet<IntType, capacity> BitSet<IntType, capacity>::afterInclusive(const uint8_t& index) const
+{
+	BitSet output = * this;
+	output.clearAllBefore(index);
+	return output;
+}
 template<typename IntType, unsigned int capacity>
 BitSet<IntType, capacity> BitSet<IntType, capacity>::create(const IntType& d) { return {d}; }
 template<typename IntType, unsigned int capacity>

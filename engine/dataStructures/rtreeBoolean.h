@@ -12,6 +12,7 @@
 class RTreeBoolean
 {
 	static constexpr uint nodeSize = 64;
+	using BitSet = BitSet64;
 	using IndexWidth = uint16_t;
 	class Index : public StrongInteger<Index, IndexWidth>
 	{
@@ -53,8 +54,8 @@ class RTreeBoolean
 		void insertBranch(const Cuboid& cuboid, const Index& index);
 		void eraseBranch(const ArrayIndex& offset);
 		void eraseLeaf(const ArrayIndex& offset);
-		void eraseByMask(BitSet64& mask);
-		void eraseLeavesByMask(BitSet64 mask);
+		void eraseByMask(BitSet& mask);
+		void eraseLeavesByMask(BitSet mask);
 		void clear();
 		void setParent(const Index& index) { m_parent = index; }
 		void updateLeaf(const ArrayIndex& offset, const Cuboid& cuboid);
@@ -82,7 +83,7 @@ class RTreeBoolean
 	void defragment();
 	// Sort m_nodes by hilbert order of center. The node in position 0 is the top level and never moves.
 	void sort();
-	static void addIntersectedChildrenToOpenList(const Node& node, BitSet<uint64_t, 64>& intersecting, SmallSet<Index>& openList);
+	static void addIntersectedChildrenToOpenList(const Node& node, BitSet& intersecting, SmallSet<Index>& openList);
 public:
 	RTreeBoolean() { m_nodes.add(); m_nodes.back().setParent(Index::null()); }
 	void beforeJsonLoad();
