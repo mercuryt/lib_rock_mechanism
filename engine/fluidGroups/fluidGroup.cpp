@@ -58,7 +58,7 @@ void FluidGroup::addPoints(Area& area, const CuboidSet& points, bool checkMerge)
 	space.fluid_setGroupsInternal(toAdd, m_fluidType, *this);
 	m_drainQueue.m_set.maybeAddAll(toAdd);
 	// Add adjacent to fill queue if fluid can enter.
-	CuboidSet adjacent = toAdd.getDirectlyAdjacent({1}).intersection(space.boundry());
+	CuboidSet adjacent = toAdd.getAdjacent().intersection(space.boundry());
 	space.fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(adjacent);
 	m_fillQueue.m_set.maybeAddAll(adjacent);
 	FluidGroup* larger = this;
@@ -101,7 +101,7 @@ void FluidGroup::addPoint(Area& area, const Point3D& point, bool checkMerge)
 	m_drainQueue.m_set.maybeAdd(point);
 	// Add adjacent if fluid can enter.
 	SmallSet<FluidGroup*> toMerge;
-	for(const Point3D& adjacent : area.getSpace().getDirectlyAdjacent(point))
+	for(const Point3D& adjacent : area.getSpace().getAdjacentWithEdgeAndCornerAdjacent(point))
 	{
 		if(!area.getSpace().fluid_canEnterEver(adjacent))
 			continue;
@@ -130,7 +130,7 @@ void FluidGroup::removePoint(Area& area, const Point3D& point)
 	setUnstable(area);
 	m_drainQueue.m_set.maybeRemove(point);
 	m_potentiallyNoLongerAdjacentFromSyncronusStep.maybeAdd(point);
-	for(const Point3D& adjacent : area.getSpace().getDirectlyAdjacent(point))
+	for(const Point3D& adjacent : area.getSpace().getAdjacentWithEdgeAndCornerAdjacent(point))
 		if(area.getSpace().fluid_canEnterEver(adjacent))
 		{
 			//Check for group split.
@@ -372,10 +372,9 @@ void FluidGroup::readStep(Area& area)
 	}
 	// We can't return here because we need to convert descriptive future into proscriptive future.
 	// Find future space for futureEmptyAdjacent.
-	// TODO: Change getDirectlyAdjacent to getAdjacent to flow diagonally.
 	if(!m_fillQueue.m_futureNoLongerEmpty.empty())
 	{
-		CuboidSet toAddToFutureNewEmptyAdjacents = m_fillQueue.m_futureNoLongerEmpty.getDirectlyAdjacent({1}).intersection(space.boundry());
+		CuboidSet toAddToFutureNewEmptyAdjacents = m_fillQueue.m_futureNoLongerEmpty.getAdjacent().intersection(space.boundry());
 		if(!toAddToFutureNewEmptyAdjacents.empty())
 		{
 			space.fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(toAddToFutureNewEmptyAdjacents);
@@ -395,7 +394,8 @@ void FluidGroup::readStep(Area& area)
 	{
 		// Collect all adjacent to futureEmpty which fluid can enter ever.
 		//adjacentToFutureEmpty.reserve(m_drainQueue.m_futureEmpty.size() * 6);
-		CuboidSet adjacentToFutureEmpty = m_drainQueue.m_futureEmpty.inflateFaces({1});
+		CuboidSet adjacentToFutureEmpty = m_drainQueue.m_futureEmpty;
+		adjacentToFutureEmpty.inflate({1});
 		space.fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(adjacentToFutureEmpty);
 		potentialNewGroups.maybeAddAll(adjacentToFutureEmpty.intersection(futurePoints));
 		adjacentToFutureEmpty.maybeRemoveAll(futurePoints);
@@ -433,7 +433,8 @@ void FluidGroup::readStep(Area& area)
 		{
 			for(FluidGroupSplitData& fluidGroupSplitData : m_futureGroups)
 			{
-				CuboidSet adjacentToMembers = fluidGroupSplitData.members.inflateFaces({1});
+				CuboidSet adjacentToMembers = fluidGroupSplitData.members;
+				adjacentToMembers.inflate({1});
 				fluidGroupSplitData.futureAdjacent.maybeAddAll(adjacentToMembers.intersection(m_futureNewEmptyAdjacents));
 			}
 		}
@@ -444,8 +445,9 @@ void FluidGroup::readStep(Area& area)
 	CuboidSet futureRemoveFromEmptyAdjacents = possiblyNoLongerAdjacent;
 	if(!futurePoints.empty())
 	{
-		CuboidSet directlyAdjacentToFuturePoints = futurePoints.inflateFaces({1});
-		futureRemoveFromEmptyAdjacents.maybeRemoveAll(directlyAdjacentToFuturePoints);
+		CuboidSet adjacentToFuturePoints = futurePoints;
+		adjacentToFuturePoints.inflate({1});
+		futureRemoveFromEmptyAdjacents.maybeRemoveAll(adjacentToFuturePoints);
 	}
 	// Convert descriptive future to proscriptive future.
 	m_futureAddToDrainQueue = m_fillQueue.m_futureNoLongerEmpty;

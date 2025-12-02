@@ -81,7 +81,7 @@ void DrainQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 		drainedFromAndAdjacent.maybeAdd(iter->cuboid);
 		CuboidSet adjacent;
 		adjacent.add(iter->cuboid);
-		adjacent = adjacent.inflateFaces({1});
+		adjacent.inflate({1});
 		space.fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(adjacent);
 		drainedFromAndAdjacent.maybeAddAll(adjacent);
 	}

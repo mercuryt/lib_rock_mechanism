@@ -319,7 +319,7 @@ inline void fourFluidsTestParallel(uint32_t scale, Step steps)
 }
 TEST_CASE("four fluids scale 2 parallel")
 {
-	fourFluidsTestParallel(2, Step::create(10));
+	fourFluidsTestParallel(2, Step::create(11));
 }
 TEST_CASE("four fluids scale 3 parallel")
 {
