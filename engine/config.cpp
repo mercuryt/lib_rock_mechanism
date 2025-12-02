@@ -131,6 +131,7 @@ void Config::load()
 	data["minimumPercentFoliageForGrow"].get_to(minimumPercentFoliageForGrow);
 	data["minimumPercentGrowthForWoodCutting"].get_to(minimumPercentGrowthForWoodCutting);
 	data["minimumRainIntensityModifier"].get_to(minimumRainIntensityModifier);
+	data["minimumRatioAdjacentSpaceContainingFluidToFloat"].get_to(minimumRatioAdjacentSpaceContainingFluidToFloat);
 	data["minPointStaticVolumeToSlowMovement"].get_to(minPointStaticVolumeToSlowMovement);
 	minimumStepsBetweenRainPerPercentHumidity = Step::create(data["minimumDaysBetweenRainPerPercentHumidity"].get<float>() * stepsPerDay.get());
 	data["minimumSizeForOctTreeToSplit"].get_to(minimumSizeForOctTreeToSplit);

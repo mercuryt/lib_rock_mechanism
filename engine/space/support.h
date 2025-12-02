@@ -17,4 +17,5 @@ public:
 	void prepare();
 	[[nodiscard]] CuboidSet getUnsupported(const Area& area, const Cuboid& cuboid) const;
 	[[nodiscard]] uint maybeFallVolume() const { return m_maybeFall.volume(); }
+	[[nodiscard]] bool canPrepare() const { return m_support.canPrepare(); }
 };

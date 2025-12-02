@@ -74,6 +74,7 @@ public:
 	}
 	void clear();
 	void prepare();
+	[[nodiscard]] bool canPrepare() const;
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] bool queryAny(const auto& shape) const { return m_tree.queryAny(shape); }
 	[[nodiscard]] bool queryAnyWithCondition(const auto& shape, const auto& condition) const

@@ -3,6 +3,13 @@ bool AreaHasSpaceDesignationsForFaction::any(const SpaceDesignation& designation
 {
 	return !m_data[(uint8_t)designation].empty();
 }
+bool AreaHasSpaceDesignationsForFaction::canPrepare() const
+{
+	for(const auto& rtree : m_data)
+		if(rtree.canPrepare())
+			return true;
+	return false;
+}
 std::vector<SpaceDesignation> AreaHasSpaceDesignationsForFaction::getForPoint(const Point3D& point) const
 {
 	std::vector<SpaceDesignation> output;
@@ -32,4 +39,11 @@ std::vector<std::pair<FactionId, SpaceDesignation>> AreaHasSpaceDesignations::ge
 		for(const auto& designation : forFaction.getForPoint(point))
 			output.emplace_back(faction, designation);
 	return output;
+}
+bool AreaHasSpaceDesignations::canPrepare() const
+{
+	for(const auto& pair : m_data)
+		if(pair.second.canPrepare())
+			return true;
+	return false;
 }

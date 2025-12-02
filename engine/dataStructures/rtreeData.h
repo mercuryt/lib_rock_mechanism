@@ -144,6 +144,7 @@ public:
 	void removeAll(const auto& shape) { assert(queryAny(shape)); maybeRemove(shape); }
 	void prepare();
 	void clear();
+	[[nodiscard]] bool canPrepare() const;
 	[[nodiscard]] __attribute__((noinline)) static T nullValue() { return T::create(nullPrimitive); }
 	[[nodiscard]] bool empty() const { return leafCount() == 0; }
 	[[nodiscard]] __attribute__((noinline)) bool anyLeafOverlapsAnother() const;

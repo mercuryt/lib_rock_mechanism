@@ -370,7 +370,8 @@ CuboidSet Portables<Derived, Index, ReferenceIndex, isActors>::getOccupiedCombin
 		output.maybeAddAll(onDeck.getOccupied(area));
 	return output;
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>Distance Portables<Derived, Index, ReferenceIndex, isActors>::floatsInAtDepth(const Index& index, const FluidTypeId& fluidType) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+Distance Portables<Derived, Index, ReferenceIndex, isActors>::floatsInAtDepth(const Index& index, const FluidTypeId& fluidType) const
 {
 	const Mass mass = static_cast<const Derived*>(this)->getMass(index);
 	CollisionVolume displacement = CollisionVolume::create(0);
@@ -405,38 +406,39 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>Distanc
 		}
 		++output;
 	}
-	return output;
+	// Use depth 0 to mean the topmost block which contains the fluid.
+	return output - 1;
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::canFloatAt(const Index& index, const Point3D& point) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+bool Portables<Derived, Index, ReferenceIndex, isActors>::canFloatAt(const Index& index, const Point3D& point, const Facing4& facing) const
 {
-	return getFluidTypeCanFloatInAt(index, point).exists();
+	return getFluidTypeCanFloatInAt(index, point, facing).exists();
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>FluidTypeId Portables<Derived, Index, ReferenceIndex, isActors>::getFluidTypeCanFloatInAt(const Index& index, const Point3D& point) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+FluidTypeId Portables<Derived, Index, ReferenceIndex, isActors>::getFluidTypeCanFloatInAt(const Index& index, const Point3D& point, const Facing4& facing) const
 {
 	const Space& space = getArea().getSpace();
 	for(const FluidData& fluidData : space.fluid_getAll(point))
-		if(canFloatAtInFluidType(index, point, fluidData.type))
+		if(canFloatAtInFluidTypeWithFacing(index, point, fluidData.type, facing))
 			return fluidData.type;
 	return FluidTypeId::null();
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::canFloatAtInFluidType(const Index& index, const Point3D& point, const FluidTypeId& fluidType) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+bool Portables<Derived, Index, ReferenceIndex, isActors>::canFloatAtInFluidTypeWithFacing(const Index& index, const Point3D& point, const FluidTypeId& fluidType, const Facing4& facing) const
 {
 	const Distance& floatDepth = floatsInAtDepth(index, fluidType);
 	if(floatDepth.empty())
 		// Cannot float in this fluid at any depth.
 		return false;
-	Point3D current = point;
 	const Space& space = getArea().getSpace();
-	auto& occupied = HasShapes<Derived, Index>::getOccupied(index);
-	for(uint i = 0; floatDepth > i; ++i)
-	{
-		if(!space.fluid_contains(current, fluidType) && !occupied.contains(current))
-			return false;
-		current = current.above();
-	}
-	return true;
+	const FluidGroup* fluidGroup = space.fluid_getGroup(point, fluidType);
+	if(fluidGroup->m_stable)
+		return fluidGroup->m_drainQueue.m_set.highestZ() - floatDepth >= point.z();
+	else
+		return space.fluid_shapeIsMostlySurroundedByFluidOfTypeAtDistanceAboveLocationWithFacing(getShape(index), fluidType, floatDepth, point,  facing);
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>Speed Portables<Derived, Index, ReferenceIndex, isActors>::lead_getSpeed(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+Speed Portables<Derived, Index, ReferenceIndex, isActors>::lead_getSpeed(const Index& index)
 {
 	assert(!isFollowing(index));
 	assert(isLeading(index));
@@ -459,7 +461,8 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>Speed P
 	}
 	return PortablesHelpers::getMoveSpeedForGroupWithAddedMass(area, actorsAndItems, Mass::create(0), Mass::create(0), Mass::create(0));
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>ActorIndex Portables<Derived, Index, ReferenceIndex, isActors>::getLineLeader(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+ActorIndex Portables<Derived, Index, ReferenceIndex, isActors>::getLineLeader(const Index& index)
 {
 	// Recursively traverse to the front of the line and return the leader.
 	Items& items = getArea().getItems();
@@ -511,7 +514,8 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>void Po
 	const Point3D below = location.below();
 	const ShapeId& shape = getShape(index);
 	const CuboidSet& occupied = this->m_occupied[index];
-	if(space.shape_canFitEverOrCurrentlyDynamic(below, shape, getFacing(index), occupied) && !canFloatAt(index, location))
+	const Facing4& facing = getFacing(index);
+	if(space.shape_canFitEverOrCurrentlyDynamic(below, shape, facing, occupied) && !canFloatAt(index, location, facing))
 		fall(index);
 }
 template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::fall(const Index& index)
@@ -522,7 +526,7 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>void Po
 	Point3D location = getLocation(index);
 	assert(location.exists());
 	assert(location.z() != 0);
-	assert(!canFloatAt(index, location));
+	assert(!canFloatAt(index, location, facing));
 	assert(!isFloating(index));
 	assert(location.exists());
 	Distance distance = Distance::create(0);
@@ -531,7 +535,7 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>void Po
 	while(location.z() != 0)
 	{
 		next = location.below();
-		if(space.shape_canFitEverOrCurrentlyDynamic(next, shape, facing, occupied) && !canFloatAt(index, location))
+		if(space.shape_canFitEverOrCurrentlyDynamic(next, shape, facing, occupied) && !canFloatAt(index, location, facing))
 		{
 			location = next;
 			++distance;
@@ -605,7 +609,7 @@ void Portables<Derived, Index, ReferenceIndex, isActors>::onSetLocation(const In
 	// TODO: opitmize this.
 	if constexpr(!isActors)
 	{
-		const FluidTypeId& fluidType = getFluidTypeCanFloatInAt(index, newLocation);
+		const FluidTypeId& fluidType = getFluidTypeCanFloatInAt(index, newLocation, newFacing);
 		if(fluidType.exists())
 		{
 			if(!isFloating(index))

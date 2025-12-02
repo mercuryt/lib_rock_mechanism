@@ -13,5 +13,6 @@ public:
 	void prepare() { m_data.prepare(); }
 	void beforeJsonLoad() { m_data.beforeJsonLoad(); }
 	[[nodiscard]] bool check(const auto& shape) const { return m_data.query(shape); };
+	[[nodiscard]] bool canPrepare() const { return m_data.canPrepare(); };
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(PointsExposedToSky, m_data);
 };

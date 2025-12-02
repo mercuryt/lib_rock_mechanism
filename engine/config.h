@@ -141,6 +141,7 @@ namespace Config
 	inline Percent minimumPercentFoliageForGrow;
 	inline Percent minimumPercentGrowthForWoodCutting;
 	inline float minimumRainIntensityModifier;
+	inline float minimumRatioAdjacentSpaceContainingFluidToFloat;
 	inline CollisionVolume minPointStaticVolumeToSlowMovement;
 	inline Step minimumStepsBetweenRainPerPercentHumidity;
 	inline Step minimumStepsRainPerPercentHumidity;

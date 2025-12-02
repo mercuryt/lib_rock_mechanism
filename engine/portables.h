@@ -124,9 +124,9 @@ public:
 	[[nodiscard]] MapWithCuboidKeys<CollisionVolume> getOccupiedCombinedWithVolumes(const Index& index) const;
 	// Floating.
 	[[nodiscard]] Distance floatsInAtDepth(const Index& index, const FluidTypeId& fluidType) const;
-	[[nodiscard]] bool canFloatAt(const Index& index, const Point3D& point) const;
-	[[nodiscard]] FluidTypeId getFluidTypeCanFloatInAt(const Index& index, const Point3D& point) const;
-	[[nodiscard]] bool canFloatAtInFluidType(const Index& index, const Point3D& point, const FluidTypeId& fluidType) const;
+	[[nodiscard]] bool canFloatAt(const Index& index, const Point3D& point, const Facing4& facing) const;
+	[[nodiscard]] FluidTypeId getFluidTypeCanFloatInAt(const Index& index, const Point3D& point, const Facing4& facing) const;
+	[[nodiscard]] bool canFloatAtInFluidTypeWithFacing(const Index& index, const Point3D& point, const FluidTypeId& fluidType, const Facing4& facing) const;
 	[[nodiscard]] bool isFloating(const Index& index) const { return m_floating[index].exists(); }
 	void setNotFloating(const Index& index) { m_floating[index].clear(); }
 	// For testing.

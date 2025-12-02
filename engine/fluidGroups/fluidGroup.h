@@ -29,6 +29,7 @@ struct FluidGroupSplitData final
 
 class FluidGroup final
 {
+	constexpr static bool doValidation = false;
 public:
 	FillQueue m_fillQueue;
 	DrainQueue m_drainQueue;

@@ -368,6 +368,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	[[nodiscard]] const std::vector<std::pair<Cuboid, FluidData>> fluid_queryGetWithCuboidsAndCondition(const auto& shape, const auto& condition) const { return m_fluid.queryGetAllWithCuboidsAndCondition(shape, condition); }
 	[[nodiscard]] const SmallSet<std::pair<Cuboid, FluidData>> fluid_queryGetWithCuboids(const auto& shape) const { return m_fluid.queryGetAllWithCuboids(shape); }
 	[[nodiscard]] bool fluid_queryAnyWithCondition(const auto& shape, auto&& condition) const { return m_fluid.queryAnyWithCondition(shape, condition); }
+	[[nodiscard]] bool fluid_shapeIsMostlySurroundedByFluidOfTypeAtDistanceAboveLocationWithFacing(const ShapeId& shape, const FluidTypeId& fluidType, const Distance& distance, const Point3D& location, const Facing4& facing) const;
 	void fluid_forEach(const auto& shape, auto&& action) const { m_fluid.queryForEach(shape, action); }
 	void fluid_forEachWithCuboid(const auto& shape, auto&& action) const { m_fluid.queryForEachWithCuboids(shape, action); }
 	[[nodiscard]] CuboidSet fluid_queryGetCuboidsOverfull(const auto& shape) const

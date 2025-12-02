@@ -9,8 +9,9 @@ void Space::floating_maybeSink(const Point3D& index)
 	Items& items = m_area.getItems();
 	for(const ItemIndex& item : item_getAll(index))
 	{
+		const Facing4& facing = items.getFacing(item);
 		const Point3D& location = items.getLocation(item);
-		if(items.isFloating(item) && !items.canFloatAt(item, location))
+		if(items.isFloating(item) && !items.canFloatAt(item, location, facing))
 		{
 			items.setNotFloating(item);
 			if(location.z() == 0)
@@ -27,16 +28,17 @@ void Space::floating_maybeFloatUp(const Point3D& index)
 	auto copy = item_getAll(index);
 	for(const ItemIndex& item : copy)
 	{
+		const Facing4& facing = items.getFacing(item);
 		const Point3D& location = items.getLocation(item);
 		if(!items.isFloating(item))
 		{
-			const FluidTypeId& fluidType = items.getFluidTypeCanFloatInAt(item, location);
+			const FluidTypeId& fluidType = items.getFluidTypeCanFloatInAt(item, location, facing);
 			items.setFloating(item, fluidType);
 		}
 		if(items.isFloating(item))
 		{
 			Point3D above = location;
-			while(above.exists() && shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(above, items.getShape(item), items.getMoveType(item), items.getFacing(item), items.getOccupied(item)) && items.canFloatAt(item, above))
+			while(above.exists() && shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(above, items.getShape(item), items.getMoveType(item), items.getFacing(item), items.getOccupied(item)) && items.canFloatAt(item, above, facing))
 				above = above.above();
 			if(above != location)
 				items.location_set(item, above, items.getFacing(item));

@@ -276,46 +276,66 @@ void Space::prepareRtrees()
 		#pragma omp task
 			for(auto& pair : m_projects)
 				pair.second.prepare();
-		#pragma omp task
-			m_reservables.prepare();
-		#pragma omp task
-			m_fires.prepare();
-		#pragma omp task
-			m_solid.prepare();
-		#pragma omp task
-			m_features.prepare();
-		#pragma omp task
-			m_mist.prepare();
-		#pragma omp task
-			m_mistInverseDistanceFromSourceSquared.prepare();
-		#pragma omp task
-			m_actors.prepare();
-		#pragma omp task
-			m_items.prepare();
-		#pragma omp task
-			m_totalFluidVolume.prepare();
-		#pragma omp task
-			m_fluid.prepare();
-		#pragma omp task
-			m_plants.prepare();
-		#pragma omp task
-			m_dynamicVolume.prepare();
-		#pragma omp task
-			m_staticVolume.prepare();
-		#pragma omp task
-			m_temperatureDelta.prepare();
-		#pragma omp task
-			m_visible.prepare();
-		#pragma omp task
-			m_constructed.prepare();
-		#pragma omp task
-			m_dynamic.prepare();
-		#pragma omp task
-			m_support.prepare();
-		#pragma omp task
-			m_exposedToSky.prepare();
-		#pragma omp task
-			m_area.m_spaceDesignations.prepare();
+		if(m_reservables.canPrepare())
+			#pragma omp task
+				m_reservables.prepare();
+		if(m_fires.canPrepare())
+			#pragma omp task
+				m_fires.prepare();
+		if(m_solid.canPrepare())
+			#pragma omp task
+				m_solid.prepare();
+		if(m_features.canPrepare())
+			#pragma omp task
+				m_features.prepare();
+		if(m_mist.canPrepare())
+			#pragma omp task
+				m_mist.prepare();
+		if(m_mistInverseDistanceFromSourceSquared.canPrepare())
+			#pragma omp task
+				m_mistInverseDistanceFromSourceSquared.prepare();
+		if(m_actors.canPrepare())
+			#pragma omp task
+				m_actors.prepare();
+		if(m_items.canPrepare())
+			#pragma omp task
+				m_items.prepare();
+		if(m_totalFluidVolume.canPrepare())
+			#pragma omp task
+				m_totalFluidVolume.prepare();
+		if(m_fluid.canPrepare())
+			#pragma omp task
+				m_fluid.prepare();
+		if(m_plants.canPrepare())
+			#pragma omp task
+				m_plants.prepare();
+		if(m_dynamicVolume.canPrepare())
+			#pragma omp task
+				m_dynamicVolume.prepare();
+		if(m_staticVolume.canPrepare())
+			#pragma omp task
+				m_staticVolume.prepare();
+		if(m_temperatureDelta.canPrepare())
+			#pragma omp task
+				m_temperatureDelta.prepare();
+		if(m_visible.canPrepare())
+			#pragma omp task
+				m_visible.prepare();
+		if(m_constructed.canPrepare())
+			#pragma omp task
+				m_constructed.prepare();
+		if(m_dynamic.canPrepare())
+			#pragma omp task
+				m_dynamic.prepare();
+		if(m_support.canPrepare())
+			#pragma omp task
+				m_support.prepare();
+		if(m_exposedToSky.canPrepare())
+			#pragma omp task
+				m_exposedToSky.prepare();
+		if(m_area.m_spaceDesignations.canPrepare())
+			#pragma omp task
+				m_area.m_spaceDesignations.prepare();
 	}
 }
 bool Space::canSeeThrough(const Cuboid& cuboid) const

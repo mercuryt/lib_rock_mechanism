@@ -160,6 +160,12 @@ PointType::DimensionType CuboidSetBase<CuboidType, PointType, CuboidSetType>::lo
 	return lowest.m_low.z();
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
+PointType::DimensionType CuboidSetBase<CuboidType, PointType, CuboidSetType>::highestZ() const
+{
+	const CuboidType& highest = std::ranges::min(m_cuboids.m_data, std::greater{}, [&](const CuboidType& cuboid) { return cuboid.m_high.z(); });
+	return highest.m_high.z();
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
 bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::empty() const { return m_cuboids.empty(); }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
 bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::exists() const { return !m_cuboids.empty(); }
@@ -396,6 +402,41 @@ CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::inflateFaces(
 				face.maybeShift(facing, distance);
 			output.maybeAdd(face);
 		}
+	return output;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::adjacentSlicedAtZ(const PointType::DimensionType& zLevel) const
+{
+	assert(boundry().m_high.z() >= zLevel);
+	assert(boundry().m_low.z() <= zLevel);
+	CuboidSetType output;
+	// Iterate copies.
+	for(CuboidType cuboid : m_cuboids)
+	{
+		if(cuboid.m_high.z() > zLevel || cuboid.m_low.z() < zLevel)
+			continue;
+		//TODO: Cuboid::inflateXAndY
+		cuboid.inflate({1});
+		// Make inflated cuboid into a flat slice.
+		cuboid.m_high.setZ(zLevel);
+		cuboid.m_low.setZ(zLevel);
+		CuboidSetType notContained = CuboidSetType::create(cuboid);
+		notContained.maybeRemoveAll(*this);
+		output.maybeAddAll(notContained);
+	}
+	return output;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::flattened(const PointType::DimensionType& zLevel) const
+{
+	CuboidSetType output;
+	// Make a copy.
+	for(CuboidType cuboid : m_cuboids)
+	{
+		cuboid.m_high.setZ(zLevel);
+		cuboid.m_low.setZ(zLevel);
+		output.maybeAdd(cuboid);
+	}
 	return output;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>

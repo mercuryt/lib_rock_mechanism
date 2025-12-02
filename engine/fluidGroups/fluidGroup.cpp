@@ -525,7 +525,7 @@ void FluidGroup::writeStep(Area& area)
 	m_fillQueue.m_set.maybeAddAll(m_futureAddToFillQueue);
 	m_drainQueue.m_set.maybeRemoveAll(m_futureRemoveFromDrainQueue);
 	m_drainQueue.m_set.maybeAddAll(m_futureAddToDrainQueue);
-	area.m_hasFluidGroups.validateAllFluidGroups();
+	validate(area);
 }
 void FluidGroup::afterWriteStep(Area& area)
 {
@@ -683,6 +683,8 @@ Quantity FluidGroup::countPointsOnSurface(const Area& area) const
 uint FluidGroup::countPoints() const { return m_drainQueue.m_set.volume(); }
 void FluidGroup::validate(Area& area) const
 {
+	if constexpr(!doValidation)
+		return;
 	assert(area.m_hasFluidGroups.contains(*this));
 	if(m_merged || m_destroy || m_disolved)
 		return;
@@ -695,6 +697,8 @@ void FluidGroup::validate(Area& area) const
 }
 void FluidGroup::validate(Area& area, [[maybe_unused]] SmallSet<FluidGroup*> toErase) const
 {
+	if constexpr(!doValidation)
+		return;
 	if(m_merged || m_destroy || m_disolved)
 		return;
 	const Space& space = area.getSpace();

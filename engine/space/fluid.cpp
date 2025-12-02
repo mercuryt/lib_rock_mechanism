@@ -6,6 +6,7 @@
 #include "../items/items.h"
 #include "../deserializationMemo.h"
 #include "../numericTypes/types.h"
+#include "../geometry/point3D.h"
 const FluidData Space::fluid_getData(const Point3D& point, const FluidTypeId& fluidType) const
 {
 	const auto condition = [fluidType](const FluidData& data) { return data.type == fluidType; };
@@ -114,15 +115,16 @@ void Space::fluid_add(const CuboidSet& points, const CollisionVolume& volume, co
 			for(const ItemIndex& item : item_getAll(point))
 			{
 				const Point3D& location = items.getLocation(item);
+				const Facing4& facing = items.getFacing(item);
 				if(!items.isFloating(item))
 				{
-					if(items.canFloatAt(item, location))
+					if(items.canFloatAt(item, location, facing))
 						items.setFloating(item, fluidType);
 				}
 				else
 				{
 					const Point3D& above = location.above();
-					if(items.canFloatAt(item, above))
+					if(items.canFloatAt(item, above, facing))
 						items.location_set(item, above, items.getFacing(item));
 				}
 			}
@@ -192,15 +194,16 @@ void Space::fluid_add(const Point3D& point, const CollisionVolume& volume, const
 	for(const ItemIndex& item : item_getAll(point))
 	{
 		const Point3D& location = items.getLocation(item);
+		const Facing4& facing = items.getFacing(item);
 		if(!items.isFloating(item))
 		{
-			if(items.canFloatAt(item, location))
+			if(items.canFloatAt(item, location, facing))
 				items.setFloating(item, fluidType);
 		}
 		else
 		{
 			const Point3D& above = location.above();
-			if(items.canFloatAt(item, above))
+			if(items.canFloatAt(item, above, facing))
 				items.location_set(item, above, items.getFacing(item));
 		}
 	}
@@ -235,7 +238,6 @@ void Space::fluid_drainInternal(const Cuboid& cuboid, const CollisionVolume& vol
 	{
 		floating_maybeSink(point);
 		fluid_maybeEraseFluidOnDeck(point);
-		fluid_validateTotalForPoint(point);
 	}
 }
 void Space::fluid_fillInternal(const Cuboid& cuboid, const CollisionVolume& volume, FluidGroup& fluidGroup)
@@ -255,8 +257,6 @@ void Space::fluid_fillInternal(const Cuboid& cuboid, const CollisionVolume& volu
 	};
 	m_fluid.updateOrCreateActionWithConditionAll(cuboid, action, condition);
 	m_totalFluidVolume.updateAdd(cuboid, volume);
-	for(const Point3D& point : cuboid)
-		fluid_validateTotalForPoint(point);
 	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
 	Cuboid adjacent = cuboid;
 	adjacent.inflate({1});
@@ -616,4 +616,21 @@ void Space::fluid_validateAllTotals() const
 	for(const Cuboid& cuboid : m_fluid.getLeafCuboids())
 		for(const Point3D& point : cuboid)
 			fluid_validateTotalForPoint(point);
+}
+bool Space::fluid_shapeIsMostlySurroundedByFluidOfTypeAtDistanceAboveLocationWithFacing(const ShapeId& shape, const FluidTypeId& fluidType, const Distance& distance, const Point3D& location, const Facing4& facing) const
+{
+	const CuboidSet toOccupy = Shape::getCuboidsOccupiedAt(shape, *this, location, facing);
+	const Distance floatLevel = location.z() + distance;
+	// Truncate toOccupy above the waterline and then flatten it there to create a horizontal cross-section.
+	const Point3D truncateAboveHigh(Distance::max(), Distance::max(), Distance::max());
+	const Point3D truncateAboveLow(Distance::min(), Distance::min(), floatLevel + 1);
+	const Cuboid toRemoveFromOccupied = Cuboid::create(truncateAboveHigh, truncateAboveLow);
+	CuboidSet toOccupyTruncatedAndFlattened = toOccupy;
+	toOccupyTruncatedAndFlattened.maybeRemove(toRemoveFromOccupied);
+	toOccupyTruncatedAndFlattened = toOccupyTruncatedAndFlattened.flattened(floatLevel);
+	const CuboidSet toOccupyAdjacentAtZLevel = toOccupyTruncatedAndFlattened.adjacentSlicedAtZ(floatLevel);
+	auto condition = [&](const FluidData& data) { return data.type == fluidType; };
+	const CuboidSet adjacentAtZLevelWithFluidType = m_fluid.queryGetAllCuboidsWithCondition(toOccupyAdjacentAtZLevel, condition).intersection(toOccupyAdjacentAtZLevel);
+	float ratio = (float)toOccupyAdjacentAtZLevel.volume() / (float)adjacentAtZLevelWithFluidType.volume();
+	return ratio >= Config::minimumRatioAdjacentSpaceContainingFluidToFloat;
 }

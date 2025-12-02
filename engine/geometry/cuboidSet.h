@@ -84,6 +84,7 @@ public:
 	[[nodiscard]] CuboidType& operator[](const uint8_t& index){ return m_cuboids[index]; }
 	[[nodiscard]] PointType center() const;
 	[[nodiscard]] PointType::DimensionType lowestZ() const;
+	[[nodiscard]] PointType::DimensionType highestZ() const;
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] bool exists() const;
 	[[nodiscard]] uint size() const;
@@ -120,6 +121,8 @@ public:
 	[[nodiscard]] CuboidSetType getDirectlyAdjacent(const Distance& distance) const;
 	[[nodiscard]] CuboidSetType inflateFaces(const Distance& distance) const;
 	[[nodiscard]] CuboidSetType inflated(const Distance& distance) const;
+	[[nodiscard]] CuboidSetType adjacentSlicedAtZ(const PointType::DimensionType& zLevel) const;
+	[[nodiscard]] CuboidSetType flattened(const PointType::DimensionType& zLevel) const;
 	[[nodiscard]] uint countIf(auto&& condition) const
 	{
 		uint output = 0;

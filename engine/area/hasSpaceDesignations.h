@@ -18,6 +18,7 @@ public:
 	void maybeSet(const auto& shape, const SpaceDesignation& designation) { m_data[(int)designation].maybeInsert(shape); }
 	void prepare() { for(auto& rtree : m_data) rtree.prepare(); }
 	[[nodiscard]] bool any(const SpaceDesignation& designation) const;
+	[[nodiscard]] bool canPrepare() const;
 	[[nodiscard]] bool check(const auto& shape, const SpaceDesignation& designation) const { return m_data[(int)designation].query(shape); }
 	[[nodiscard]] Point3D queryPoint(const auto& shape, const SpaceDesignation& designation) const { return m_data[(int)designation].queryGetPoint(shape); }
 	[[nodiscard]] Point3D queryPointWithCondition(const auto& shape, const SpaceDesignation& designation, auto&& condition) const { return m_data[(int)designation].queryGetPointWithCondition(shape, condition); }
@@ -46,6 +47,7 @@ public:
 	void unregisterFaction(const FactionId& faction) { m_data.erase(faction); }
 	void prepare() { for(auto& pair : m_data) pair.second.prepare(); }
 	[[nodiscard]] bool contains(const FactionId& faction) const { return m_data.contains(faction); }
+	[[nodiscard]] bool canPrepare() const;
 	[[nodiscard]] AreaHasSpaceDesignationsForFaction& getForFaction(const FactionId& faction) { return m_data[faction]; }
 	[[nodiscard]] const AreaHasSpaceDesignationsForFaction& getForFaction(const FactionId& faction) const { return m_data[faction]; }
 	[[nodiscard]] AreaHasSpaceDesignationsForFaction& maybeRegisterAndGetForFaction(const FactionId& faction);

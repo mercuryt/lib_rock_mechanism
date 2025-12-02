@@ -34,6 +34,8 @@ void RTreeDataIndex<T, DataIndexWidth, config>::clear() { m_tree.clear(); m_data
 template<typename T, typename DataIndexWidth, RTreeDataConfig config>
 void RTreeDataIndex<T, DataIndexWidth, config>::prepare() { m_tree.prepare(); }
 template<typename T, typename DataIndexWidth, RTreeDataConfig config>
+bool  RTreeDataIndex<T, DataIndexWidth, config>::canPrepare() const { return m_tree.canPrepare(); }
+template<typename T, typename DataIndexWidth, RTreeDataConfig config>
 bool RTreeDataIndex<T, DataIndexWidth, config>::empty() const { return m_tree.empty(); }
 template<typename T, typename DataIndexWidth, RTreeDataConfig config>
 CuboidSet RTreeDataIndex<T, DataIndexWidth, config>::getLeafCuboids() const

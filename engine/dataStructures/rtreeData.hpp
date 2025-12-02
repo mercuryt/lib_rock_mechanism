@@ -1109,6 +1109,11 @@ CuboidSet RTreeData<T, config, nullPrimitive>::getLeafCuboids() const
 	return output;
 }
 template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
+bool RTreeData<T, config, nullPrimitive>::canPrepare() const
+{
+	return !m_toComb.empty() || !m_emptySlots.empty();
+}
+template<Sortable T, RTreeDataConfig config, T::Primitive nullPrimitive>
 void RTreeData<T, config, nullPrimitive>::validate() const
 {
 	if(!config.validate)
