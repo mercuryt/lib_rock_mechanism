@@ -56,6 +56,9 @@ template class std::vector<std::pair<FactionId, HasFarmFieldsForFaction>>;
 //template class std::vector<std::pair<FactionId, HasScheduledEvent<ReMarkItemForStockPilingEvent>>>;
 template class std::vector<std::pair<FactionId, PointIsPartOfStockPile>>;
 template class std::vector<std::pair<FactionId, Quantity>>;
+template class std::vector<std::pair<FactionId, RTreeData<RTreeDataWrapper<Project*, nullptr>>>>;
+template class std::vector<std::pair<FactionId, SimulationHasUniformsForFaction>>;
+template class std::vector<std::pair<FactionId, SmallMap<SpaceDesignation, Quantity>>>;
 
 //template class SmallMap<FactionId, RTreeDataIndex<SmallSet<Project*>, uint16_t, noMerge>>;
 template class SmallMap<ActorOrItemIndex, DeckRotationDataSingle>;

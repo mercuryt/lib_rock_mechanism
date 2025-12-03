@@ -106,32 +106,8 @@ void Space::fluid_add(const CuboidSet& points, const CollisionVolume& volume, co
 		if(FluidType::getFreezesInto(largestGroup->m_fluidType).exists())
 			m_area.m_hasTemperature.addFreezeableFluidGroupAboveGround(*largestGroup);
 	}
-	for(const Cuboid& cuboid : points)
-		for(const Point3D& point : cuboid)
-		{
-			floating_maybeFloatUp(point);
-			// Float.
-			Items& items = m_area.getItems();
-			for(const ItemIndex& item : item_getAll(point))
-			{
-				const Point3D& location = items.getLocation(item);
-				const Facing4& facing = items.getFacing(item);
-				if(!items.isFloating(item))
-				{
-					if(items.canFloatAt(item, location, facing))
-						items.setFloating(item, fluidType);
-				}
-				else
-				{
-					const Point3D& above = location.above();
-					if(items.canFloatAt(item, above, facing))
-						items.location_set(item, above, items.getFacing(item));
-				}
-			}
-		}
-	for(const Cuboid& cuboid : wasEmpty)
-		for(const Point3D& point : cuboid)
-			fluid_maybeRecordFluidOnDeck(point);
+	floating_maybeFloatUp(points);
+	fluid_maybeRecordFluidOnDeck(wasEmpty);
 	CuboidSet overfull = fluid_queryGetCuboidsOverfull(points);
 	for(const Cuboid& cuboid : overfull)
 		for(const Point3D& point : cuboid)
@@ -188,7 +164,7 @@ void Space::fluid_add(const Point3D& point, const CollisionVolume& volume, const
 		if(FluidType::getFreezesInto(group->m_fluidType).exists())
 			m_area.m_hasTemperature.addFreezeableFluidGroupAboveGround(*group);
 	}
-	floating_maybeFloatUp(point);
+	floating_maybeFloatUp(CuboidSet::create(point));
 	// Float.
 	Items& items = m_area.getItems();
 	for(const ItemIndex& item : item_getAll(point))
@@ -208,7 +184,7 @@ void Space::fluid_add(const Point3D& point, const CollisionVolume& volume, const
 		}
 	}
 	if(wasEmpty)
-		fluid_maybeRecordFluidOnDeck(point);
+		fluid_maybeRecordFluidOnDeck(CuboidSet::create(point));
 }
 void Space::fluid_setAllUnstableExcept(const CuboidSet& points, const FluidTypeId& fluidType)
 {
@@ -234,11 +210,9 @@ void Space::fluid_drainInternal(const Cuboid& cuboid, const CollisionVolume& vol
 	Cuboid adjacent = cuboid;
 	adjacent.inflate({1});
 	m_area.m_hasTerrainFacades.update(adjacent);
-	for(const Point3D& point : cuboid)
-	{
-		floating_maybeSink(point);
-		fluid_maybeEraseFluidOnDeck(point);
-	}
+	floating_maybeSink(CuboidSet::create(cuboid));
+	// TODO: replace wrapping in CuboidSet with use of templated method.
+	fluid_maybeEraseFluidOnDeck(CuboidSet::create(cuboid));
 }
 void Space::fluid_fillInternal(const Cuboid& cuboid, const CollisionVolume& volume, FluidGroup& fluidGroup)
 {
@@ -261,12 +235,8 @@ void Space::fluid_fillInternal(const Cuboid& cuboid, const CollisionVolume& volu
 	Cuboid adjacent = cuboid;
 	adjacent.inflate({1});
 	m_area.m_hasTerrainFacades.update(adjacent);
-	for(const Cuboid& wasEmptyCuboid : wasEmpty)
-		for(const Point3D& point : wasEmptyCuboid)
-		{
-			floating_maybeFloatUp(point);
-			fluid_maybeRecordFluidOnDeck(point);
-		}
+	fluid_maybeRecordFluidOnDeck(wasEmpty);
+	floating_maybeFloatUp(wasEmpty);
 }
 void Space::fluid_unsetGroupsInternal(const CuboidSet& points, const FluidTypeId& fluidType)
 {
@@ -337,8 +307,8 @@ void Space::fluid_removeSyncronus(const Point3D& point, const CollisionVolume& v
 	m_totalFluidVolume.updateSubtract(point, volume);
 	fluid_validateTotalForPoint(point);
 	m_area.m_hasTerrainFacades.update(point.getAllAdjacentIncludingOutOfBounds());
-	floating_maybeSink(point);
-	fluid_maybeEraseFluidOnDeck(point);
+	floating_maybeSink(CuboidSet::create(point));
+	fluid_maybeEraseFluidOnDeck(CuboidSet::create(point));
 }
 void Space::fluid_removeAllSyncronus(const Point3D& point)
 {
@@ -579,27 +549,27 @@ Point3D Space::fluid_containsPoint(const ShapeT& shape, const FluidTypeId& fluid
 }
 template Point3D Space::fluid_containsPoint(const Point3D& shape, const FluidTypeId& fluidType) const;
 template Point3D Space::fluid_containsPoint(const Cuboid& shape, const FluidTypeId& fluidType) const;
-void Space::fluid_maybeRecordFluidOnDeck(const Point3D& point)
+void Space::fluid_maybeRecordFluidOnDeck(const CuboidSet& points)
 {
-	assert(m_totalFluidVolume.queryAny(point));
-	const DeckId& deckId = m_area.m_decks.queryDeckId(point);
+	assert(m_totalFluidVolume.queryAll(points));
+	const DeckId& deckId = m_area.m_decks.queryDeckId(points);
 	if(deckId.exists())
 	{
 		const ActorOrItemIndex& isOnDeckOf = m_area.m_decks.getForId(deckId);
 		assert(isOnDeckOf.isItem());
 		const ItemIndex& item = isOnDeckOf.getItem();
-		m_area.getItems().onDeck_recordPointContainingFluid(item, point);
+		m_area.getItems().onDeck_recordPointsContainingFluid(item, points);
 	}
 }
-void Space::fluid_maybeEraseFluidOnDeck(const Point3D& point)
+void Space::fluid_maybeEraseFluidOnDeck(const CuboidSet& points)
 {
-	const DeckId& deckId = m_area.m_decks.queryDeckId(point);
+	const DeckId& deckId = m_area.m_decks.queryDeckId(points);
 	if(deckId.exists())
 	{
 		const ActorOrItemIndex& isOnDeckOf = m_area.m_decks.getForId(deckId);
 		assert(isOnDeckOf.isItem());
 		const ItemIndex& item = isOnDeckOf.getItem();
-		m_area.getItems().onDeck_erasePointContainingFluid(item, point);
+		m_area.getItems().onDeck_erasePointsContainingFluid(item, points);
 	}
 }
 void Space::fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(CuboidSet& set) const

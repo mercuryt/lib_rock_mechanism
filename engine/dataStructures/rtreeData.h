@@ -483,6 +483,15 @@ public:
 		}
 		return false;
 	}
+	[[nodiscard]] bool queryAllWithCondition(const auto& shape, auto&& condition)
+	{
+		return queryGetAllCuboidsWithCondition(shape, condition).contains(shape);
+	}
+	[[nodiscard]] bool queryAll(const auto& shape)
+	{
+		auto condition = [&](const T&){ return true; };
+		return queryAllWithCondition(shape, condition);
+	}
 	[[nodiscard]] const T queryGetFirst(const auto& shape) const
 	{
 		SmallSet<RTreeNodeIndex> openList;

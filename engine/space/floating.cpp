@@ -4,36 +4,33 @@
 #include "../items/items.h"
 #include "../portables.h"
 
-void Space::floating_maybeSink(const Point3D& index)
+void Space::floating_maybeSink(const CuboidSet& points)
 {
 	Items& items = m_area.getItems();
-	for(const ItemIndex& item : item_getAll(index))
+	auto condition = [&](const ItemIndex& item) { return items.isFloating(item) && !items.canFloatAt(item, items.getLocation(item), items.getFacing(item)); };
+	for(const ItemIndex& item : m_items.queryGetAllWithCondition(points, condition))
 	{
-		const Facing4& facing = items.getFacing(item);
-		const Point3D& location = items.getLocation(item);
-		if(items.isFloating(item) && !items.canFloatAt(item, location, facing))
-		{
-			items.setNotFloating(item);
-			if(location.z() == 0)
-				continue;
-			const Point3D& below = location.below();
-			if(shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(below, items.getShape(item), items.getMoveType(item), items.getFacing(item), items.getOccupied(item)))
-				items.fall(item);
-		}
+		items.setNotFloating(item);
+		const Point3D location = items.getLocation(item);
+		if(location.z() == 0)
+			continue;
+		const Point3D& below = location.below();
+		if(shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(below, items.getShape(item), items.getMoveType(item), items.getFacing(item), items.getOccupied(item)))
+			items.fall(item);
 	}
 }
-void Space::floating_maybeFloatUp(const Point3D& index)
+void Space::floating_maybeFloatUp(const CuboidSet& points)
 {
 	Items& items = m_area.getItems();
-	auto copy = item_getAll(index);
-	for(const ItemIndex& item : copy)
+	for(const ItemIndex& item : m_items.queryGetAll(points))
 	{
 		const Facing4& facing = items.getFacing(item);
 		const Point3D& location = items.getLocation(item);
 		if(!items.isFloating(item))
 		{
 			const FluidTypeId& fluidType = items.getFluidTypeCanFloatInAt(item, location, facing);
-			items.setFloating(item, fluidType);
+			if(fluidType.exists())
+				items.setFloating(item, fluidType);
 		}
 		if(items.isFloating(item))
 		{

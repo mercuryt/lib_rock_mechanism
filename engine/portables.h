@@ -160,9 +160,8 @@ public:
 	void onDeck_clear(const Index& index);
 	void onDeck_set(const Index& index, const ActorOrItemIndex& onDeckOf);
 	void onDeck_destroyDecks(const Index& index);
-	// TODO: Change to cuboids.
-	void onDeck_recordPointContainingFluid(const Index& index, const Point3D& point) { m_cuboidsContainingFluidOnDeck[index].add(point); }
-	void onDeck_erasePointContainingFluid(const Index& index, const Point3D& point) { m_cuboidsContainingFluidOnDeck[index].remove(point); }
+	void onDeck_recordPointsContainingFluid(const Index& index, const CuboidSet& points) { m_cuboidsContainingFluidOnDeck[index].addAll(points); }
+	void onDeck_erasePointsContainingFluid(const Index& index, const CuboidSet& points) { m_cuboidsContainingFluidOnDeck[index].removeAll(points); }
 	[[nodiscard]] DeckId onDeck_createDecks(const Index& index, const CuboidSet& cuboidSet);
 	[[nodiscard]] const ActorOrItemIndex& onDeck_getIsOnDeckOf(const Index& index) const { return m_isOnDeckOf[index]; }
 	[[nodiscard]] bool onDeck_isOnDeck(const Index& index) const { return m_isOnDeckOf[index].exists(); }

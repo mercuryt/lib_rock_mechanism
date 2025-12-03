@@ -333,8 +333,8 @@ public:
 	// TODO: Seems messy.
 	void fluid_unsetGroupsInternal(const CuboidSet& points, const FluidTypeId& fluidType);
 	void fluid_setGroupsInternal(const CuboidSet& points, const FluidTypeId& fluidType, FluidGroup& fluidGroup);
-	void fluid_maybeRecordFluidOnDeck(const Point3D& point);
-	void fluid_maybeEraseFluidOnDeck(const Point3D& point);
+	void fluid_maybeRecordFluidOnDeck(const CuboidSet& points);
+	void fluid_maybeEraseFluidOnDeck(const CuboidSet& points);
 	void fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(CuboidSet& set) const;
 	[[nodiscard]] Distance fluid_getMistInverseDistanceToSource(const Point3D& point) const;
 	[[nodiscard]] FluidGroup* fluid_getGroup(const Point3D& point, const FluidTypeId& fluidType) const;
@@ -378,8 +378,8 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	__attribute__((noinline)) void fluid_validateTotalForPoint(const Point3D& point) const;
 	__attribute__((noinline)) void fluid_validateAllTotals() const;
 	// Floating
-	void floating_maybeSink(const Point3D& point);
-	void floating_maybeFloatUp(const Point3D& point);
+	void floating_maybeSink(const CuboidSet& points);
+	void floating_maybeFloatUp(const CuboidSet& points);
 	// -Fire
 	void fire_maybeIgnite(const Point3D& point, const MaterialTypeId& materialType);
 	void fire_setPointer(const Point3D& point, SmallMapStable<MaterialTypeId, Fire>* pointer);
