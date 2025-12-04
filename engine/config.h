@@ -126,6 +126,7 @@ namespace Config
 	inline Stamina maxStaminaPointsBase;
 	inline Quantity maxWorkersForStockPileProject;
 	inline Distance maxZLevelForDeepAmbiantTemperature;
+	inline PsycologyWeight maximumDeltaToAlterPsycologyCurrentSquared;
 	inline Step maximumDurationToWaitInsteadOfWander;
 	inline float maximumRainIntensityModifier;
 	inline uint32_t maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom;
@@ -135,6 +136,7 @@ namespace Config
 	inline Meters metersPerUnitElevationLociiIntensity;
 	inline Meters minimumAltitudeForHeadwaterFormation;
 	inline float minimumAttackCoolDownModifier;
+	inline PsycologyWeight minimumDeltaToAlterPsycologyBaselineSquared;
 	inline Step minimumDurationToWaitInsteadOfWander;
 	inline Speed minimumHaulSpeedInital;
 	inline float minimumOverloadRatio;

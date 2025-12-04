@@ -351,6 +351,15 @@ public:
 inline void to_json(Json& data, const DeckId& index) { data = index.get(); }
 inline void from_json(const Json& data, DeckId& index) { index = DeckId::create(data.get<uint16_t>()); }
 
+using PsycologyWeightWidth = int16_t;
+class PsycologyWeight : public StrongInteger<PsycologyWeight, PsycologyWeightWidth>
+{
+public:
+	struct Hash { [[nodiscard]] size_t operator()(const PsycologyWeight& value) const { return value.get(); } };
+};
+inline void to_json(Json& data, const PsycologyWeight& value) { data = value.get(); }
+inline void from_json(const Json& data, PsycologyWeight& value) { value = PsycologyWeight::create(data.get<PsycologyWeightWidth>()); }
+
 enum class PointFeatureTypeId
 {
 	Door,

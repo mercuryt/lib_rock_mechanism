@@ -116,6 +116,7 @@ void Config::load()
 	data["maxStaminaPointsBase"].get_to(maxStaminaPointsBase);
 	data["maxWorkersForStockPileProject"].get_to(maxWorkersForStockPileProject);
 	data["maxZLevelForDeepAmbiantTemperature"].get_to(maxZLevelForDeepAmbiantTemperature);
+	data["maximumDeltaToAlterPsycologyCurrentSquared"].get_to(maximumDeltaToAlterPsycologyCurrentSquared);
 	maximumDurationToWaitInsteadOfWander = Step::create(data["maximumDurationToWaitInsteadOfWanderMinutes"].get<float>() * stepsPerMinute.get());
 	data["maximumRainIntensityModifier"].get_to(maximumRainIntensityModifier);
 	data["maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom"].get_to(maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom);
@@ -125,6 +126,7 @@ void Config::load()
 	data["metersPerUnitElevationLociiIntensity"].get_to(metersPerUnitElevationLociiIntensity);
 	data["minimumAltitudeForHeadwaterFormation"].get_to(minimumAltitudeForHeadwaterFormation);
 	data["minimumAttackCoolDownModifier"].get_to(minimumAttackCoolDownModifier);
+	data["minimumDeltaToAlterPsycologyBaselineSquared"].get_to(minimumDeltaToAlterPsycologyBaselineSquared);
 	minimumDurationToWaitInsteadOfWander = Step::create(data["minimumDurationToWaitInsteadOfWanderMinutes"].get<float>() * stepsPerMinute.get());
 	data["minimumHaulSpeedInital"].get_to(minimumHaulSpeedInital);
 	data["minimumOverloadRatio"].get_to(minimumOverloadRatio);
