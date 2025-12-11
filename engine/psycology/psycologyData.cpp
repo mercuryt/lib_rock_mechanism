@@ -1,15 +1,18 @@
 #include "psycologyData.h"
 #include "../config.h"
+#include "../objectives/flee.h"
+#include "../area/area.h"
 // Psycology Data
 void PsycologyData::operator+=(const PsycologyData& other) { m_data += other.m_data; }
 void PsycologyData::operator*=(const float& scale) { m_data = m_data.cast<float>() * scale; }
-PsycologyData PsycologyData::operator-(const PsycologyData& other) { return PsycologyData::create(m_data - other.m_data); }
+PsycologyData PsycologyData::operator-(const PsycologyData& other) const { return PsycologyData::create(m_data - other.m_data); }
 void PsycologyData::addTo(const PsycologyAttribute& attribute, const PsycologyWeight& value) { m_data[(uint)attribute] += value.get(); }
 void PsycologyData::set(const PsycologyAttribute& attribute, const PsycologyWeight& value) { m_data[(uint)attribute] = value.get(); }
-const PsycologyWeight PsycologyData::getValueFor(const PsycologyAttribute& attribute) { return {m_data[(uint)attribute]}; }
-bool PsycologyData::anyAbove(const PsycologyData& other) { return (m_data > other.m_data).any(); }
-bool PsycologyData::anyBelow(const PsycologyData& other) { return (m_data < other.m_data).any(); }
-SmallSet<PsycologyAttribute> PsycologyData::getAbove(const PsycologyData& other)
+void PsycologyData::setAllToZero() { m_data = 0; }
+const PsycologyWeight PsycologyData::getValueFor(const PsycologyAttribute& attribute) const { return {m_data[(uint)attribute]}; }
+bool PsycologyData::anyAbove(const PsycologyData& other) const { return (m_data > other.m_data).any(); }
+bool PsycologyData::anyBelow(const PsycologyData& other) const { return (m_data < other.m_data).any(); }
+SmallSet<PsycologyAttribute> PsycologyData::getAbove(const PsycologyData& other) const
 {
 	const auto result = m_data > other.m_data;
 	SmallSet<PsycologyAttribute> output;
@@ -18,7 +21,7 @@ SmallSet<PsycologyAttribute> PsycologyData::getAbove(const PsycologyData& other)
 			output.insert((PsycologyAttribute)i);
 	return output;
 }
-[[nodiscard]] SmallSet<PsycologyAttribute> PsycologyData::getBelow(const PsycologyData& other)
+[[nodiscard]] SmallSet<PsycologyAttribute> PsycologyData::getBelow(const PsycologyData& other) const
 {
 	const auto result = m_data < other.m_data;
 	SmallSet<PsycologyAttribute> output;
@@ -34,6 +37,12 @@ PsycologyData PsycologyData::create(const decltype(m_data) data)
 	return output;
 }
 // Psycology
+void Psycology::initalize()
+{
+	m_current.setAllToZero();
+	m_highTriggers.setAllToZero();
+	m_lowTriggers.setAllToZero();
+}
 void Psycology::checkThreasholds(Area& area, const ActorIndex& actor)
 {
 	if(m_current.anyAbove(m_highTriggers))
@@ -49,7 +58,7 @@ void Psycology::checkThreasholds(Area& area, const ActorIndex& actor)
 			// All triggered callbacks are removed from the list and then called.
 			// They are responsible for cleaning up their own holders.
 			for(const std::unique_ptr<PsycologyCallback>& ptr : toCallAndDestroy)
-				ptr->action(actor, area, *this);
+				ptr->action(actor, area, *this, current);
 			// Update highTriggers.
 			if(!callbacks.empty())
 			{
@@ -73,7 +82,7 @@ void Psycology::checkThreasholds(Area& area, const ActorIndex& actor)
 			// All triggered callbacks are removed from the list and then called.
 			// They are responsible for cleaning up their own holders.
 			for(const std::unique_ptr<PsycologyCallback>& ptr : toCallAndDestroy)
-				ptr->action(actor, area, *this);
+				ptr->action(actor, area, *this, current);
 			// Update lowTriggers.
 			if(!callbacks.empty())
 			{
@@ -106,25 +115,15 @@ void Psycology::apply(const PsycologyEvent& event, Area& area, const ActorIndex&
 	m_current += event.deltas;
 	checkThreasholds(area, actor);
 }
-void Psycology::doStep(Area& area, const ActorIndex& actor)
+void Psycology::addAll(const PsycologyData& deltas, Area& area, const ActorIndex& actor)
 {
-	auto delta = m_current.m_data - m_baseLine.m_data;
-	auto toAddToBaseLine = (delta.abs2() > Config::minimumDeltaToAlterPsycologyBaselineSquared.get());
-	// Values greater then 0 become 1. Values less become -1. 0 is unchanged.
-	auto deltaScaledToOne =(delta > 0).cast<int16_t>() - (delta < 0).cast<int16_t>();
-	auto toAddToBaseLine = deltaScaledToOne * toAddToBaseLine.cast<int16_t>();
-	m_baseLine.m_data += toAddToBaseLine;
-	auto toSubtractFromCurrent = delta.abs2() > Config::maximumDeltaToAlterPsycologyCurrentSquared.get();
-	m_current.m_data -= deltaScaledToOne * toSubtractFromCurrent;
+	m_current += deltas;
+	checkThreasholds(area, actor);
 }
-void Psycology::addToCurrent(const PsycologyAttribute& attribute, const PsycologyWeight& value, Area& area, const ActorIndex& actor)
+void Psycology::addTo(const PsycologyAttribute& attribute, const PsycologyWeight& value, Area& area, const ActorIndex& actor)
 {
 	m_current.addTo(attribute, value);
 	checkThreasholds(area, actor);
-}
-void Psycology::addToBaseLine(const PsycologyAttribute& attribute, const PsycologyWeight& value, Area& area, const ActorIndex& actor)
-{
-	m_baseLine.addTo(attribute, value);
 }
 void Psycology::registerHighCallback(const PsycologyAttribute& attribute, std::unique_ptr<PsycologyCallback>&& callback)
 {
@@ -145,10 +144,9 @@ void Psycology::unregisterHighCallback(const PsycologyAttribute& attribute, Psyc
 	callbacks.erase(std::ranges::find_if(callbacks, [&](const std::unique_ptr<PsycologyCallback>& ptr){ return &*ptr == &callback; }));
 	if(wasLowest)
 	{
-		PsycologyWeight newHighTrigger;
-		const auto max = std::ranges::min_element(callbacks, {}, [&](const std::unique_ptr<PsycologyCallback>& ptr) { return ptr->threshold; });
-		newHighTrigger = (*max)->threshold;
-		m_highTriggers.set(attribute, newHighTrigger);
+		// Set new lowest high callback for attribute.
+		const auto min = std::ranges::min_element(callbacks, {}, [&](const std::unique_ptr<PsycologyCallback>& ptr) { return ptr->threshold; });
+		m_highTriggers.set(attribute, (*min)->threshold);
 	}
 }
 void Psycology::unregisterLowCallback(const PsycologyAttribute& attribute, PsycologyCallback& callback)
@@ -158,9 +156,12 @@ void Psycology::unregisterLowCallback(const PsycologyAttribute& attribute, Psyco
 	callbacks.erase(std::ranges::find_if(callbacks, [&](const std::unique_ptr<PsycologyCallback>& ptr){ return &*ptr == &callback; }));
 	if(wasLowest)
 	{
-		PsycologyWeight newLowTrigger;
-		const auto max = std::ranges::min_element(callbacks, {}, [&](const std::unique_ptr<PsycologyCallback>& ptr) { return ptr->threshold; });
-		newLowTrigger = (*max)->threshold;
-		m_lowTriggers.set(attribute, newLowTrigger);
+		// Set new highest low callback for attribute.
+		const auto max = std::ranges::max_element(callbacks, {}, [&](const std::unique_ptr<PsycologyCallback>& ptr) { return ptr->threshold; });
+		m_lowTriggers.set(attribute, (*max)->threshold);
 	}
 }
+void Psycology::addFriend(const ActorReference& actor) { m_friends.insert(actor); }
+void Psycology::removeFriend(const ActorReference& actor) { m_frieds.remove(actor); }
+void Psycology::addFamily(const ActorReference& actor, const FamilyRelationship& relationship) { m_family.insert(actor, relationship);}
+PsycologyWeight Psycology::getValueFor(const PsycologyAttribute& attribute) const { return m_current.getValueFor(attribute); }

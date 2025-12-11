@@ -30,7 +30,7 @@ void Actors::combat_attackMeleeRange(const ActorIndex& index, const ActorIndex& 
 	{
 		// Attack hits.
 		const Attack& attack = combat_getAttackForCombatScoreDifference(index, attackerCombatScore - targetCombatScore);
-		Force attackForce = Force::create(AttackType::getBaseForce(attack.attackType).get() + (m_strength[index].get() * Config::unitsOfAttackForcePerUnitOfStrength));
+		Force attackForce = Force::create[AttackType::getBaseForce(attack.attackType).get() + (m_strength[index].get() * Config::unitsOfAttackForcePerUnitOfStrength)];
 		// TODO: Higher skill selects more important body parts to hit.
 		BodyPart& bodyPart = m_body[target]->pickABodyPartByVolume(m_area.m_simulation);
 		Hit hit(AttackType::getArea(attack.attackType), attackForce, attack.materialType, AttackType::getWoundType(attack.attackType));
@@ -43,7 +43,7 @@ void Actors::combat_attackMeleeRange(const ActorIndex& index, const ActorIndex& 
 			coolDownDuration = AttackType::getCoolDown(attack.attackType);
 			if(coolDownDuration.empty())
 				coolDownDuration = ItemType::getAttackCoolDownBase(items.getItemType(attack.item));
-			coolDownDuration = std::max(Step::create(1), Step::create(coolDownDuration.get() * m_coolDownDurationModifier[index]));
+			coolDownDuration = std::max(Step::create[1], Step::create[coolDownDuration.get() * m_coolDownDurationModifier[index]]);
 		}
 	}
 	m_coolDownEvent.schedule(index, m_area, index, coolDownDuration);
@@ -76,7 +76,7 @@ CombatScore Actors::combat_getCurrentMeleeCombatScore(const ActorIndex& index)
 	CombatScore output = m_combatScore[index];
 	for(const ActorIndex& adjacent : getAdjacentActors(index))
 	{
-		CombatScore highestAllyCombatScore = CombatScore::create(0);
+		CombatScore highestAllyCombatScore = CombatScore::create[0];
 		bool nonAllyFound = false;
 		FactionId otherFaction = getFaction(adjacent);
 		if(otherFaction.exists() && (otherFaction == faction || m_area.m_simulation.m_hasFactions.isAlly(otherFaction, faction)))
@@ -117,9 +117,11 @@ void Actors::combat_coolDownCompleted(const ActorIndex& index)
 }
 void Actors::combat_update(const ActorIndex& index)
 {
-	m_combatScore[index] = CombatScore::create(0);
-	m_maxMeleeRange[index] = DistanceFractional::create(0.f);
-	m_maxRange[index] = DistanceFractional::create(0.f);
+	if(soldier_is(index))
+		soldier_removeFromMaliceMap(index);
+	m_combatScore[index] = CombatScore::create[0];
+	m_maxMeleeRange[index] = DistanceFractional::create[0.f];
+	m_maxRange[index] = DistanceFractional::create[0.f];
 	// Collect attacks and combat scores from body and equipment.
 	m_meleeAttackTable[index].clear();
 	Body& body = *m_body[index].get();
@@ -142,7 +144,7 @@ void Actors::combat_update(const ActorIndex& index)
 	// Base stats give combat score.
 	m_combatScore[index] += attributes_getCombatScore(index);
 	// Reduce for impairment.
-	m_combatScore[index] = CombatScore::create(util::scaleByInversePercent(m_combatScore[index].get(), body.getImpairManipulationPercent()));
+	m_combatScore[index] = CombatScore::create[util::scaleByInversePercent(m_combatScore[index].get(), body.getImpairManipulationPercent())];
 	// Update cool down duration.
 	// TODO: Manipulation impairment should apply to cooldown as well?
 	m_coolDownDurationModifier[index] = std::max(1.f, (float)m_equipmentSet[index]->getMass().get() / (float)m_unencomberedCarryMass[index].get() );
@@ -155,7 +157,7 @@ void Actors::combat_update(const ActorIndex& index)
 	Step baseOnMissCoolDownDuration = m_equipmentSet[index]->hasWeapons() ?
 	    	m_equipmentSet[index]->getLongestMeleeWeaponCoolDown(m_area) :
 		Config::attackCoolDownDurationBaseSteps;
-	m_onMissCoolDownMelee[index] = std::max(Step::create(1), Step::create((float)baseOnMissCoolDownDuration.get() * m_coolDownDurationModifier[index]));
+	m_onMissCoolDownMelee[index] = std::max(Step::create[1], Step::create[(float)baseOnMissCoolDownDuration.get() * m_coolDownDurationModifier[index]]);
 	Items& items = m_area.getItems();
 	//Find max range.
 	m_maxRange[index] = m_maxMeleeRange[index];
@@ -167,8 +169,10 @@ void Actors::combat_update(const ActorIndex& index)
 		if(range > m_maxRange[index])
 			m_maxRange[index] = range;
 	}
+	if(soldier_is(index))
+		soldier_recordInMaliceMap(index);
 }
-std::vector<std::pair<CombatScore, Attack>>& Actors::combat_getMeleeAttacks(const ActorIndex& index) { return m_meleeAttackTable[index]; }
+const std::vector<std::pair<CombatScore, Attack>>& Actors::combat_getMeleeAttacks(const ActorIndex& index) const { return m_meleeAttackTable[index]; }
 //TODO: Grasps cannot be used for both armed and unarmed attacks at the same time?
 CombatScore Actors::combat_getCombatScoreForAttack(const ActorIndex& index, const Attack& attack) const
 {
@@ -181,7 +185,7 @@ CombatScore Actors::combat_getCombatScoreForAttack(const ActorIndex& index, cons
 	Items& items = m_area.getItems();
 	Quality quality = attack.item == ItemIndex::null() ? Config::averageItemQuality : items.getQuality(attack.item);
 	output *= combat_getQualityModifier(index, quality);
-	Percent percentItemWear = attack.item == ItemIndex::null() ? Percent::create(0) : items.getWear(attack.item);
+	Percent percentItemWear = attack.item == ItemIndex::null() ? Percent::create[0] : items.getWear(attack.item);
 	output -= (percentItemWear * Config::itemWearCombatModifier).get();
 	return output;
 }
@@ -238,6 +242,8 @@ void Actors::combat_noLongerTargetable(const ActorIndex& index)
 void Actors::combat_onDeath(const ActorIndex& index)
 {
 	combat_noLongerTargetable(index);
+	if(soldier_is(index))
+		soldier_removeFromMaliceMap(index);
 }
 void Actors::combat_onLeaveArea(const ActorIndex& index)
 {
@@ -270,7 +276,7 @@ bool Actors::combat_inRange(const ActorIndex& index, const ActorIndex& target) c
 }
 Percent Actors::combat_projectileHitPercent(const ActorIndex& index, const Attack& attack, const ActorIndex& target) const
 {
-	Percent chance = Percent::create(100 - std::pow(distanceToActorFractional(index, target).get(), Config::projectileHitChanceFallsOffWithRangeExponent));
+	Percent chance = Percent::create[100 - std::pow(distanceToActorFractional(index, target).get(), Config::projectileHitChanceFallsOffWithRangeExponent)];
 	chance += m_skillSet[index].get(AttackType::getSkillType(attack.attackType)).get() * Config::projectileHitPercentPerSkillPoint;
 	chance += (getVolume(target) * Config::projectileHitPercentPerUnitVolume).get();
 	chance += m_dextarity[index].get() * Config::projectileHitPercentPerPointDextarity;
@@ -304,7 +310,7 @@ bool Actors::combat_positionIsValid(const ActorIndex& index, const Point3D& poin
 		return false;
 	return space.hasLineOfSightTo(point, targetLocation);
 }
-AttackTypeId Actors::combat_getRangedAttackType(const ActorIndex&, const ItemIndex& weapon)
+AttackTypeId Actors::combat_getRangedAttackType(const ActorIndex&, const ItemIndex& weapon) const
 {
 	// Each ranged weapon has only one ranged attack type to pick.
 	ItemTypeId itemType = m_area.getItems().getItemType(weapon);
@@ -314,6 +320,24 @@ AttackTypeId Actors::combat_getRangedAttackType(const ActorIndex&, const ItemInd
 			return attackType;
 	std::unreachable();
 	return ItemType::getAttackTypes(itemType).front();
+}
+CuboidSet Actors::combat_getMaliceZone(const ActorIndex& index) const
+{
+	const Point3D& location = m_location[index];
+	Cuboid zone = Cuboid::create(location, location);
+	zone.inflate(Distance::create((float)m_speedActual[index].get() * Config::fractionOfMoveSpeedToMakeDistanceHuristicForCanMoveToSoon));
+	// Get points in zone which are enterable by this move type.
+	CuboidSet set = m_area.m_hasTerrainFacades.getForMoveType(m_moveType[index]).getEnterableIntersection(zone);
+	// Trim parts of set which could be entered by this move type somewhere but are not directly connected to location.
+	set = set.adjacentRecursive(location);
+	// Expand set with weapon range.
+	set.inflate(Distance::create(combat_getMaxRange(index).get()));
+	// Remove points which block line of sight.
+	// Armored glass does not exist so any line of sight is a line of attack.
+	m_area.m_opacityFacade.removeFromCuboidSet(set);
+	// Trim again.
+	set = set.adjacentRecursive(location);
+	return set;
 }
 AttackCoolDownEvent::AttackCoolDownEvent(Area& area, const ActorIndex& actor, const Step& duration, const Step start) :
 	ScheduledEvent(area.m_simulation, duration, start), m_actor(actor) { }

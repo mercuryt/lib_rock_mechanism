@@ -2,6 +2,7 @@
 #include "sphere.h"
 #include "offsetCuboid.h"
 #include "cuboidSet.h"
+#include "paramaterizedLine.h"
 #include "../area/area.h"
 #include "../numericTypes/types.h"
 #include "../space/space.h"
@@ -137,6 +138,122 @@ Point3D Cuboid::intersectionPoint(const CuboidSet& cuboids) const
 		if(intersects(other))
 			return intersection(other).m_high;
 	std::unreachable();
+}
+std::pair<Point3D, Point3D> Cuboid::intersectionPoints(const ParamaterizedLine& line) const
+{
+	std::pair<Point3D, Point3D> output;
+	for(Facing6 facing = Facing6::Below; facing != Facing6::Null; facing = (Facing6)((uint)facing + 1u))
+	{
+		const Point3D point = intersectionPointForFace(line, facing);
+		if(point.exists())
+			if(output.first.exists())
+			{
+				output.second = point;
+				return output;
+			}
+			else
+				output.first = point;
+
+	}
+	std::unreachable();
+}
+Point3D Cuboid::intersectionPointForFace(const ParamaterizedLine& line, const Facing6& face) const
+{
+	switch(face)
+	{
+		case Facing6::Above:
+		{
+			Offset plane = Offset::create(m_high.z().get());
+			Offset delta = plane - Offset::create(line.begin.z().get());
+			auto offsetData = (line.sloap * delta.get()).cast<OffsetWidth>();
+			Offset3D offset = Offset3D::create(offsetData[0], offsetData[1], offsetData[2]);
+			Point3D intersectionWithPlane = Point3D::create(line.begin.applyOffset(offset));
+			if(
+				intersectionWithPlane.x() >= m_low.x() && intersectionWithPlane.x() <= m_high.x() &&
+				intersectionWithPlane.y() >= m_low.y() && intersectionWithPlane.y() <= m_high.y()
+			)
+				return intersectionWithPlane;
+			else
+				return Point3D::null();
+		}
+		case Facing6::North:
+		{
+			Offset plane = Offset::create(m_high.y().get());
+			Offset delta = plane - Offset::create(line.begin.y().get());
+			auto offsetData = (line.sloap * delta.get()).cast<OffsetWidth>();
+			Offset3D offset = Offset3D::create(offsetData[0], offsetData[1], offsetData[2]);
+			Point3D intersectionWithPlane = Point3D::create(line.begin.applyOffset(offset));
+			if(
+				intersectionWithPlane.x() >= m_low.x() && intersectionWithPlane.x() <= m_high.x() &&
+				intersectionWithPlane.z() >= m_low.z() && intersectionWithPlane.z() <= m_high.z()
+			)
+				return intersectionWithPlane;
+			else
+				return Point3D::null();
+		}
+		case Facing6::East:
+		{
+			Offset plane = Offset::create(m_high.x().get());
+			Offset delta = plane - Offset::create(line.begin.x().get());
+			auto offsetData = (line.sloap * delta.get()).cast<OffsetWidth>();
+			Offset3D offset = Offset3D::create(offsetData[0], offsetData[1], offsetData[2]);
+			Point3D intersectionWithPlane = Point3D::create(line.begin.applyOffset(offset));
+			if(
+				intersectionWithPlane.y() >= m_low.y() && intersectionWithPlane.y() <= m_high.y() &&
+				intersectionWithPlane.z() >= m_low.z() && intersectionWithPlane.z() <= m_high.z()
+			)
+				return intersectionWithPlane;
+			else
+				return Point3D::null();
+		}
+		case Facing6::Below:
+		{
+			Offset plane = Offset::create(m_low.z().get());
+			Offset delta = plane - Offset::create(line.begin.z().get());
+			auto offsetData = (line.sloap * delta.get()).cast<OffsetWidth>();
+			Offset3D offset = Offset3D::create(offsetData[0], offsetData[1], offsetData[2]);
+			Point3D intersectionWithPlane = Point3D::create(line.begin.applyOffset(offset));
+			if(
+				intersectionWithPlane.x() >= m_low.x() && intersectionWithPlane.x() <= m_high.x() &&
+				intersectionWithPlane.y() >= m_low.y() && intersectionWithPlane.y() <= m_high.y()
+			)
+				return intersectionWithPlane;
+			else
+				return Point3D::null();
+		}
+		case Facing6::South:
+		{
+			Offset plane = Offset::create(m_low.y().get());
+			Offset delta = plane - Offset::create(line.begin.y().get());
+			auto offsetData = (line.sloap * delta.get()).cast<OffsetWidth>();
+			Offset3D offset = Offset3D::create(offsetData[0], offsetData[1], offsetData[2]);
+			Point3D intersectionWithPlane = Point3D::create(line.begin.applyOffset(offset));
+			if(
+				intersectionWithPlane.x() >= m_low.x() && intersectionWithPlane.x() <= m_high.x() &&
+				intersectionWithPlane.z() >= m_low.z() && intersectionWithPlane.z() <= m_high.z()
+			)
+				return intersectionWithPlane;
+			else
+				return Point3D::null();
+		}
+		case Facing6::West:
+		{
+			Offset plane = Offset::create(m_low.x().get());
+			Offset delta = plane - Offset::create(line.begin.x().get());
+			auto offsetData = (line.sloap * delta.get()).cast<OffsetWidth>();
+			Offset3D offset = Offset3D::create(offsetData[0], offsetData[1], offsetData[2]);
+			Point3D intersectionWithPlane = Point3D::create(line.begin.applyOffset(offset));
+			if(
+				intersectionWithPlane.y() >= m_low.y() && intersectionWithPlane.y() <= m_high.y() &&
+				intersectionWithPlane.z() >= m_low.z() && intersectionWithPlane.z() <= m_high.z()
+			)
+				return intersectionWithPlane;
+			else
+				return Point3D::null();
+		}
+		default:
+			std::unreachable();
+	};
 }
 OffsetCuboid Cuboid::above() const
 {

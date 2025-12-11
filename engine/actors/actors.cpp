@@ -293,12 +293,14 @@ void Actors::load(const Json& data)
 	data["maxRange"].get_to(m_maxRange);
 	data["coolDownDurationModifier"].get_to(m_coolDownDurationModifier);
 	data["combatScore"].get_to(m_combatScore);
+	data["soldier"].get_to(m_soldier);
 	m_moveEvent.load(m_area.m_simulation, data["moveEvent"], size);
 	data["path"].get_to(m_path);
 	data["destination"].get_to(m_destination);
 	data["speedIndividual"].get_to(m_speedIndividual);
 	data["speedActual"].get_to(m_speedActual);
 	data["moveRetries"].get_to(m_moveRetries);
+	data["psycology"].get_to(m_psycology);
 	data["skillSet"].get_to(m_skillSet);
 	auto& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
 	m_moveType.resize(size);
@@ -486,6 +488,7 @@ Json Actors::toJson() const
 		{"maxRange", m_maxRange},
 		{"coolDownDurationModifier", m_coolDownDurationModifier},
 		{"combatScore", m_combatScore},
+		{"soldier", m_soldier},
 		{"moveEvent", m_moveEvent},
 		{"pathRequest", Json::object()},
 		{"path", m_path},
@@ -494,6 +497,7 @@ Json Actors::toJson() const
 		{"speedIndividual", m_speedIndividual},
 		{"speedActual", m_speedActual},
 		{"moveRetries", m_moveRetries},
+		{"psycology", m_psycology},
 	};
 	for(auto index : getAll())
 	{
@@ -628,6 +632,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_maxRange[index] = DistanceFractional::null();
 	m_coolDownDurationModifier[index] = 0;
 	m_combatScore[index] = CombatScore::null();
+	m_soldier[index] = SoldierData::create();
 	// Move.
 	assert(!m_moveEvent.exists(index));
 	assert(m_pathRequest[index] == nullptr);
@@ -636,6 +641,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_speedIndividual[index] = Speed::create(0);
 	m_speedActual[index] = Speed::create(0);
 	m_moveRetries[index] = 0;
+	m_psycology[index].initalize();
 	m_onSurface.maybeUnset(index);
 	assert(m_isPilot[index] == false);
 	simulation.m_actors.registerActor(m_id[index], *this, index);
@@ -703,6 +709,24 @@ bool Actors::isEnemy(const ActorIndex& index, const ActorIndex& other) const
 {
 	return m_area.m_simulation.m_hasFactions.isEnemy(getFaction(index), getFaction(other));
 }
+Point3D Actors::getNearestVisibleEnemyLocation(const ActorIndex& actor) const
+{
+	Point3D output;
+	DistanceSquared outputDistance;
+	const Point3D& location = m_location[actor];
+	for(const ActorReference& ref : m_canSee[actor])
+	{
+		const ActorIndex enemy = ref.getIndex(m_referenceData);
+		const Point3D enemyLocation = m_location[enemy];
+		const DistanceSquared distance = enemyLocation.distanceToSquared(location);
+		if(outputDistance > distance)
+		{
+			outputDistance = distance;
+			output = enemyLocation;
+		}
+	}
+	return output;
+}
 bool Actors::isAlly(const ActorIndex& index, const ActorIndex& other) const
 {
 	return m_area.m_simulation.m_hasFactions.isAlly(getFaction(index), getFaction(other));
@@ -732,9 +756,11 @@ void Actors::die(const ActorIndex& index, CauseOfDeath causeOfDeath)
 		m_area.m_hasHaulTools.unregisterYokeableActor(m_area, index);
 	onRemove(index);
 }
-void Actors::passout(const ActorIndex&, const Step&)
+void Actors::passout(const ActorIndex& index, const Step&)
 {
 	//TODO
+	if(soldier_is(index))
+		soldier_removeFromMaliceMap(index);
 }
 void Actors::leaveArea(const ActorIndex& index)
 {

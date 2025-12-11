@@ -19,6 +19,7 @@ public:
 	void maybeRemoveFull(const Cuboid& cuboid);
 	void maybeInsertFull(const Point3D& point) { maybeInsertFull({point, point}); }
 	void maybeRemoveFull(const Point3D& point) { maybeRemoveFull({point, point}); }
+	void removeFromCuboidSet(CuboidSet& set) const { m_fullOpacity.queryRemove(set); }
 	[[nodiscard]] bool hasLineOfSight(const Point3D& fromCoords, const Point3D& toCoords) const;
 	[[nodiscard]] std::vector<bool> hasLineOfSightBatched(const std::vector<std::pair<Point3D, Point3D>>& coords) const;
 	__attribute__((noinline)) void validate(const Area& area) const;

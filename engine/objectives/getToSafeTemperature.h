@@ -14,7 +14,6 @@ public:
 	[[nodiscard]] bool canBeAssigned(Area&, const ActorIndex&) const { std::unreachable(); }
 	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, const ActorIndex&) const { std::unreachable(); }
 	GetToSafeTemperatureObjectiveType() = default;
-	GetToSafeTemperatureObjectiveType(const Json&, DeserializationMemo&);
 	[[nodiscard]] std::string name() const { return "get to safe temperature"; }
 };
 class GetToSafeTemperatureObjective final : public Objective

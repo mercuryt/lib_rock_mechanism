@@ -66,6 +66,8 @@ void Actors::location_setDynamic(const ActorIndex& index, const Point3D& locatio
 	// TODO: redundant with location_clear also calling getReference.
 	m_area.m_octTree.record(m_area, getReference(index));
 	deckRotationData.reinstanceAtRotatedPosition(m_area, previousLocation, location, previousFacing, facing);
+	if(soldier_is(index))
+		soldier_recordInMaliceMap(index);
 	onSetLocation(index, previousLocation, previousFacing);
 }
 // Used when item already has a location, rolls back position on failure.
@@ -182,6 +184,8 @@ void Actors::location_clearDynamic(const ActorIndex& index)
 	if(space.isExposedToSky(location))
 		m_onSurface.maybeUnset(index);
 	move_pathRequestMaybeCancel(index);
+	if(soldier_is(index))
+		soldier_removeFromMaliceMap(index);
 }
 bool Actors::location_canEnterEverWithFacing(const ActorIndex& index, const Point3D& point, const Facing4& facing)
 {

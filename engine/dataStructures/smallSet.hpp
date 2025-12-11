@@ -169,6 +169,15 @@ T& SmallSet<T>::operator[](const uint& index) { return m_data[index]; }
 template<typename T>
 bool SmallSet<T>::contains(const T& value) const { return std::ranges::find(m_data, value) != m_data.end(); }
 template<typename T>
+bool SmallSet<T>::containsAny(const This& other) const
+{
+	// TODO: can this be rewritten as a single pass?
+	for(const T& item : m_data)
+		if(other.contains(item))
+			return true;
+	return false;
+}
+template<typename T>
 uint SmallSet<T>::indexOf(const T& value) const { assert(contains(value)); return std::distance(m_data.begin(), std::ranges::find(m_data, value)); }
 template<typename T>
 T& SmallSet<T>::front() { return m_data.front(); }
@@ -214,6 +223,17 @@ int SmallSet<T>::maybeFindLastIndex(const T& value) const
 	if(it == m_data.rend())
 		return -1;
 	return std::distance(m_data.begin(), it.base()) - 1;
+}
+template<typename T>
+std::pair<SmallSet<T>, SmallSet<T>> SmallSet<T>::getDeltaPair(const SmallSet<T>& other) const
+{
+	// First set is items to remove, second is items to insert, when transitioning from this to other.
+	std::pair<SmallSet<T>, SmallSet<T>> output;
+	other.sort();
+	sort();
+	std::set_difference(m_data.begin(), m_data.end(), other.begin(), other.m_data.end(), std::back_inserter(output.first));
+	std::set_difference(other.m_data.begin(), other.m_data.end(), m_data.begin(), m_data.end(), std::back_inserter(output.second));
+	return output;
 }
 template<typename T>
 std::string SmallSet<T>::toString() const

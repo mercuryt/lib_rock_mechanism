@@ -28,6 +28,7 @@ enum class NeedType
 	drink,
 	sleep,
 	temperature,
+	flee,
 	test,
 };
 class ObjectiveType

@@ -123,6 +123,7 @@ public:
 	[[nodiscard]] CuboidSetType inflated(const Distance& distance) const;
 	[[nodiscard]] CuboidSetType adjacentSlicedAtZ(const PointType::DimensionType& zLevel) const;
 	[[nodiscard]] CuboidSetType flattened(const PointType::DimensionType& zLevel) const;
+	[[nodiscard]] CuboidSetType adjacentRecursive(const Point3D& point) const;
 	[[nodiscard]] uint countIf(auto&& condition) const
 	{
 		uint output = 0;

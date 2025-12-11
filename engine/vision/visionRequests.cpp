@@ -107,16 +107,37 @@ void VisionRequests::writeStep()
 	for(VisionRequest& request : m_data)
 	{
 		ActorIndex index = request.actor.getIndex(actors.m_referenceData);
-		SmallSet<ActorReference> noLongerCanSee = std::move(actors.vision_getCanSee(index));
-		noLongerCanSee.eraseAll(request.canSee);
-		SmallSet<ActorReference> noLongerCanBeSeenBy = std::move(actors.vision_getCanBeSeenBy(index));
-		noLongerCanBeSeenBy.eraseAll(request.canBeSeenBy);
+		const auto [noLongerCanSee, canNowSee] = actors.vision_getCanSee(index).getDeltaPair(request.canSee);
+		const auto [noLongerCanBeSeenBy, canNowBeSeenBy] = actors.vision_getCanBeSeenBy(index).getDeltaPair(request.canBeSeenBy);
+		PsycologyData psycologyDelta;
+		psycologyDelta.setAllToZero();
+		for(const ActorReference& ref : noLongerCanSee)
+		{
+			// Actor looses sight of ref.
+			const ActorIndex other = ref.getIndex(actors.m_referenceData);
+			actors.vision_setNoLongerCanBeSeenBy(other, request.actor);
+		}
+		for(const ActorReference& ref : canNowSee)
+		{
+			// Ref enters actor's line of sight.
+			const ActorIndex other = ref.getIndex(actors.m_referenceData);
+			actors.vision_setCanBeSeenBy(other, request.actor);
+		}
+		actors.psycology_get(index).addAll(psycologyDelta, m_area, index);
+		for(const ActorReference& ref : noLongerCanBeSeenBy)
+		{
+			// Ref looses sight of actor.
+			const ActorIndex other = ref.getIndex(actors.m_referenceData);
+			actors.vision_setNoLongerCanBeSeenBy(index, ref);
+		}
+		for(const ActorReference& ref : canNowBeSeenBy)
+		{
+			// Actor enter's ref's line of sight.
+			const ActorIndex other = ref.getIndex(actors.m_referenceData);
+			actors.vision_setCanBeSeenBy(index, ref);
+		}
 		actors.vision_setCanSee(index, std::move(request.canSee));
 		actors.vision_setCanBeSeenBy(index, std::move(request.canBeSeenBy));
-		for(const ActorReference& ref : noLongerCanSee)
-			actors.vision_maybeSetNoLongerCanSee(index, ref);
-		for(const ActorReference& ref : noLongerCanBeSeenBy)
-			actors.vision_maybeSetNoLongerCanBeSeenBy(index, ref);
 	}
 }
 void VisionRequests::doStep()

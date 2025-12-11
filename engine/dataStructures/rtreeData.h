@@ -921,6 +921,54 @@ public:
 		queryForEach(shape, action);
 		return output;
 	}
+	[[nodiscard]] T queryNearestWithCondition(const auto& shape, const Point3D& location, auto&& condition) const
+	{
+		SmallSet<RTreeNodeIndex> openList;
+		openList.insert(RTreeNodeIndex::create(0));
+		Distance closestDistance = Distance::max();
+		T output;
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& intersectMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			if(!intersectMask.any())
+				continue;
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			const auto leafCount = node.getLeafCount();
+			BitSet intersectBitSet = BitSet::create(intersectMask);
+			if(leafCount != 0)
+			{
+				BitSet leafBitSet = intersectBitSet;
+				if(leafCount != nodeSize)
+					leafBitSet.clearAllAfterInclusive(leafCount);
+				while(leafBitSet.any())
+				{
+					const uint arrayIndex = leafBitSet.getNextAndClear();
+					// Using center distance because it's much cheaper to compute then edge distance.
+					const Distance distance = nodeCuboids[arrayIndex].center().distanceTo(location);
+					if(distance >= closestDistance)
+						continue;
+					const auto candidate = T::create(nodeDataAndChildIndices[arrayIndex].data);
+					if(condition(candidate))
+					{
+						closestDistance = distance;
+						output = candidate;
+					}
+				}
+			}
+			if(leafCount != nodeSize)
+			{
+				intersectBitSet.clearAllBefore(leafCount);
+				if(intersectBitSet.any())
+					addIntersectedChildrenToOpenList(node, intersectBitSet, openList);
+			}
+
+		}
+		return output;
+	}
 	// For test and debug.
 	[[nodiscard]] __attribute__((noinline)) uint32_t nodeCount() const;
 	[[nodiscard]] __attribute__((noinline)) uint32_t leafCount() const;

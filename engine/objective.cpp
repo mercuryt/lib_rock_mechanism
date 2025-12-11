@@ -24,6 +24,7 @@
 #include "objectives/getToSafeTemperature.h"
 #include "objectives/mount.h"
 #include "objectives/unmount.h"
+#include "objectives/flee.h"
 #include "numericTypes/types.h"
 #include "portables.h"
 
@@ -171,6 +172,7 @@ void ObjectiveType::load()
 	objectiveTypeData[index++] = std::make_unique<EatObjectiveType>();
 	objectiveTypeData[index++] = std::make_unique<DrinkObjectiveType>();
 	objectiveTypeData[index++] = std::make_unique<GetToSafeTemperatureObjectiveType>();
+	objectiveTypeData[index++] = std::make_unique<FleeObjectiveType>();
 }
 // Static method.
 ObjectiveTypeId ObjectiveType::getIdByName(std::string name)

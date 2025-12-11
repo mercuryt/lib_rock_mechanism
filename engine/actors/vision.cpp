@@ -1,4 +1,5 @@
 #include "actors.h"
+#include "../psycology/psycologyData.h"
 #include "numericTypes/types.h"
 #include "numericTypes/index.h"
 #include "../vision/visionRequests.h"
@@ -7,6 +8,13 @@
 bool Actors::vision_canSeeAnything(const ActorIndex& index) const
 {
 	return isAlive(index) && sleep_isAwake(index);
+}
+bool Actors::vision_canSeeEnemy(const ActorIndex& index) const
+{
+	for(const ActorReference& actor : m_canSee[index])
+		if(isEnemy(index, actor.getIndex(m_referenceData)))
+			return true;
+	return false;
 }
 bool Actors::vision_canSeeActor(const ActorIndex& index, const ActorIndex& actor) const
 {
@@ -21,6 +29,22 @@ void Actors::vision_createRequestIfCanSee(const ActorIndex& index)
 void Actors::vision_clearRequestIfExists(const ActorIndex& index)
 {
 	m_area.m_visionRequests.cancelIfExists(m_area.getActors().getReference(index));
+}
+void Actors::vision_setCanSee(const ActorIndex& index, const ActorReference& other)
+{
+	m_canSee[index].insert(other);
+}
+void Actors::vision_setCanBeSeenBy(const ActorIndex& index, const ActorReference& other)
+{
+	m_canBeSeenBy[index].insert(other);
+}
+void Actors::vision_setNoLongerCanSee(const ActorIndex& index, const ActorReference& other)
+{
+	m_canSee[index].erase(other);
+}
+void Actors::vision_setNoLongerCanBeSeenBy(const ActorIndex& index, const ActorReference& other)
+{
+	m_canBeSeenBy[index].erase(other);
 }
 void Actors::vision_clearCanSee(const ActorIndex& index)
 {
@@ -54,4 +78,8 @@ void Actors::vision_maybeUpdateLocation(const ActorIndex& index, const Point3D& 
 		if(!exists)
 			m_area.m_visionRequests.create(ref);
 	}
+}
+void Actors::vision_onSight(const ActorIndex& index, const ActorIndex& other)
+{
+	// TODO:
 }

@@ -76,6 +76,8 @@ void SmallMap<K,V>::popBack() { m_data.pop_back(); }
 template<typename K, MoveConstructible V>
 void SmallMap<K,V>::clear() { m_data.clear(); }
 template<typename K, MoveConstructible V>
+void SmallMap<K,V>::sort() { std::ranges::sort(m_data); }
+template<typename K, MoveConstructible V>
 void SmallMap<K,V>::swap(This& other) { m_data.swap(other.m_data); }
 template<typename K, MoveConstructible V>
 void SmallMap<K,V>::updateKey(const K& oldKey, const K& newKey)
@@ -93,6 +95,8 @@ template<typename K, MoveConstructible V>
 bool SmallMap<K,V>::empty() const { return m_data.empty(); }
 template<typename K, MoveConstructible V>
 bool SmallMap<K,V>::contains(const K& key) const { return std::ranges::find(m_data, key, &Pair::first) != m_data.end(); }
+template<typename K, MoveConstructible V>
+bool SmallMap<K,V>::containsAny(const SmallSet<K>& keys) const { for(const K& key : keys) if(contains(key)) return true; return false; }
 template<typename K, MoveConstructible V>
 SmallMap<K,V>::Pair& SmallMap<K,V>::front() { return m_data.front(); }
 template<typename K, MoveConstructible V>

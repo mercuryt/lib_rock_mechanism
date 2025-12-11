@@ -20,7 +20,7 @@ public:
 	unsigned long getInRange(unsigned long lowest, unsigned long highest);
 	float getInRange(float lowest, float highest);
 	double getInRange(double lowest, double highest);
-	bool percentChance(Percent percent);
+	bool percentChance(const Percent& percent);
 	bool chance(double chance);
 	bool chance(float chance);
 	Point3D getInCuboid(const Cuboid& cuboid);
@@ -58,4 +58,18 @@ public:
 			}
 			return output;
 		}
+	template<typename T>
+	T applyRandomFuzzPlusOrMinusPercent(const T& input, const Percent& percent)
+	{
+		T output = input;
+		int maxPlus = percent.ratio() * (float)input.get();
+		return input + getInRange(-maxPlus, maxPlus);
+	}
+	template<typename T>
+	T applyRandomFuzzPlusOrMinusRatio(const T& input, const float& ratio)
+	{
+		T output = input;
+		int maxPlus = ratio * (float)input.get();
+		return input + getInRange(-maxPlus, maxPlus);
+	}
 };

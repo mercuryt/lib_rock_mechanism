@@ -552,7 +552,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	[[nodiscard]] Temperature temperature_getDailyAverageAmbient(const Point3D& point) const;
 	[[nodiscard]] Temperature temperature_get(const Point3D& point) const;
 	[[nodiscard]] bool temperature_transmits(const Point3D& point) const;
-	[[nodiscard]] std::string toString(const Point3D& point) const;
+	[[nodiscard]] __attribute__((noinline)) std::string toString(const Point3D& point) const;
 	Space(Space&) = delete;
 	Space(Space&&) = delete;
 };

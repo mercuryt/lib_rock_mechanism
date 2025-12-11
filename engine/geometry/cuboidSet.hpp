@@ -440,6 +440,29 @@ CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::flattened(con
 	return output;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::adjacentRecursive(const Point3D& point) const
+{
+	// TODO: There are alot of redundant comparisons here. Could it be optimized by moving already found cuboids to the front of the vector and starting the search beyond them?
+	SmallSet<uint16_t> openList;
+	SmallSet<uint16_t> closedList;
+	uint16_t end = m_cuboids.size();
+	while(!openList.empty())
+	{
+		const Cuboid current = openList.back();
+		openList.popBack();
+		for(uint16_t i = 0; i != end; ++i)
+			if(m_cuboids[i] != current && m_cuboids[i].isTouching(current) && !closedList.contains(i))
+			{
+				openList.insert(i);
+				closedList.insert(i);
+				output.add(m_cuboids[i]);
+			}
+	}
+	//TODO: This could be generated from closed list.
+	CuboidSetType output;
+	return output;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
 std::string CuboidSetBase<CuboidType, PointType, CuboidSetType>::toString() const
 {
 	return m_cuboids.toString();

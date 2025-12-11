@@ -38,6 +38,7 @@ public:
 	bool maybeEraseNotify(const K& key);
 	void popBack();
 	void clear();
+	void sort();
 	template<typename ...Args>
 	V& emplace(const K& key, Args&& ...args)
 	{
@@ -55,6 +56,7 @@ public:
 	[[nodiscard]] uint size() const;
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] bool contains(const K& key) const;
+	[[nodiscard]] bool containsAny(const SmallSet<K>& keys) const;
 	[[nodiscard]] Pair& front();
 	[[nodiscard]] const Pair& front() const;
 	[[nodiscard]] Pair& back();

@@ -193,6 +193,8 @@ class DistanceFractional : public StrongFloat<DistanceFractional>
 public:
 	[[nodiscard]] constexpr Distance toInt() const { return Distance::create(std::round(data)); }
 	struct Hash { [[nodiscard]] size_t operator()(const DistanceFractional& index) const { return index.get(); } };
+	static DistanceFractional create(const Distance& distance) { return {(float)distance.get()}; }
+	static DistanceFractional create(const float& distance) { return {distance}; }
 };
 inline void to_json(Json& data, const DistanceFractional& index) { data = index.get(); }
 inline void from_json(const Json& data, DistanceFractional& index) { index = DistanceFractional::create(data.get<float>()); }
@@ -359,6 +361,7 @@ public:
 };
 inline void to_json(Json& data, const PsycologyWeight& value) { data = value.get(); }
 inline void from_json(const Json& data, PsycologyWeight& value) { value = PsycologyWeight::create(data.get<PsycologyWeightWidth>()); }
+
 
 enum class PointFeatureTypeId
 {

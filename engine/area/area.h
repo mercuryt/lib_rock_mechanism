@@ -77,6 +77,10 @@ public:
 	AreaHasTemperature m_hasTemperature;
 	AreaHasTerrainFacades m_hasTerrainFacades;
 	AreaHasFires m_fires;
+	// To be updated when an actor becomes a soldier, stops being a soldier, or moves while being a soldier.
+	// Used by summing for all enemy factions for point or path and comparing delta to PsycologyAttribute::Courage.
+	// A failed courage check generates a flee objective.
+	SmallMap<FactionId, RTreeData<CombatScore>> m_maliceMap;
 	AreaHasFarmFields m_hasFarmFields;
 	AreaHasHaulTools m_hasHaulTools;
 	AreaHasDigDesignations m_hasDigDesignations;

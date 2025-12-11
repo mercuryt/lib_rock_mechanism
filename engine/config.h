@@ -68,11 +68,13 @@ namespace Config
 	inline float fatPierceForceCost;
 	inline float fireRampDownPhaseDurationFraction;
 	inline float flankingModifier;
+	inline Priority fleePriority;
 	inline float fluidDragModifier;
 	inline uint16_t fluidGroupsPerThread;
 	inline float forceAbsorbedPiercedModifier;
 	inline float forceAbsorbedUnpiercedModifier;
 	inline float fractionAttackCoolDownReductionPerPointOfDextarity;
+	inline float fractionOfMoveSpeedToMakeDistanceHuristicForCanMoveToSoon;
 	inline uint32_t getIntoAttackPositionMaxRange;
 	inline Priority getToSafeTemperaturePriority;
 	inline Step givePlantsFluidDelaySteps;
@@ -136,6 +138,7 @@ namespace Config
 	inline Meters metersPerUnitElevationLociiIntensity;
 	inline Meters minimumAltitudeForHeadwaterFormation;
 	inline float minimumAttackCoolDownModifier;
+	inline float minimumCombatScoreDifferenceToFeelFear;
 	inline PsycologyWeight minimumDeltaToAlterPsycologyBaselineSquared;
 	inline Step minimumDurationToWaitInsteadOfWander;
 	inline Speed minimumHaulSpeedInital;
@@ -194,8 +197,10 @@ namespace Config
 	inline Distance rainMaximumOffset;
 	inline Distance rainMaximumSpacing;
 	inline Step rainWriteStepFreqency;
+	inline Percent randomFuzzToApplyToCourageChecks;
 	inline float rateModifierForEvaporationPerDegreeTemperature;
 	inline float ratioOfHitAreaToBodyPartVolumeForSever;
+	inline float ratioOfMaximumVarianceForCourageTest;
 	inline float ratioOfTotalBodyVolumeWhichIsBlood;
 	inline float ratioOfVisionCuboidSlotsToReservePerPoint;
 	inline float ratioWoundsCloseDelayToBleedVolume;
@@ -213,6 +218,7 @@ namespace Config
 	inline uint32_t staminaPointsPerRestPeriod;
 	inline Priority stationPriority;
 	inline Step stepsFrequencyToLookForHaulSubprojects;
+	inline Step stepsFrequencyToRunRelationshipEvent;
 	inline Step stepsPerDay;
 	inline Step stepsPerHour;
 	inline Step stepsPerMinute;
@@ -236,6 +242,8 @@ namespace Config
 	inline Mass unitsBodyMassPerUnitFoodConsumed;
 	inline float unitsOfAttackForcePerUnitOfStrength;
 	inline float unitsOfCarryMassPerUnitOfStrength;
+	inline PsycologyWeight unitsOfCourageToGainOnPassingFearTest;
+	inline PsycologyWeight unitsOfCourageToLoseOnFailingFearTest;
 	inline float unitsOfMoveSpeedPerUnitOfAgility;
 	inline uint32_t unitsOfWoundAreaPerUnitItemScaleFactor;
 	inline float unitsOfVolumePerUnitOfCollisionVolume;

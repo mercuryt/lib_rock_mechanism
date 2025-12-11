@@ -122,6 +122,7 @@ public:
 	[[nodiscard]] Cuboid queryGetLeafWithCondition(const ShapeT& shape, auto&& condition) const;
 	template<typename ShapeT>
 	[[nodiscard]] Point3D queryGetPointWithCondition(const ShapeT& shape, auto&& condition) const;
+	void queryRemove(CuboidSet& set) const;
 	// For test and debug.
 	[[nodiscard]] __attribute__((noinline)) uint nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
 	[[nodiscard]] __attribute__((noinline)) uint leafCount() const;

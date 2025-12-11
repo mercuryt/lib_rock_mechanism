@@ -96,6 +96,7 @@ struct SmallSet
 	[[nodiscard]] bool contains(const T& value) const;
 	template<typename Predicate>
 	[[nodiscard]] bool containsAny(Predicate&& predicate) const { return std::ranges::find_if(m_data, predicate) != m_data.end(); }
+	[[nodiscard]] bool containsAny(const This& other) const;
 	[[nodiscard]] uint indexOf(const T& value) const;
 	[[nodiscard]] T& front();
 	[[nodiscard]] const T& front() const;
@@ -114,6 +115,7 @@ struct SmallSet
 	[[nodiscard]] bool isUnique() const;
 	[[nodiscard]] uint findLastIndex(const T& value) const;
 	[[nodiscard]] int maybeFindLastIndex(const T& value) const;
+	[[nodiscard]] std::pair<SmallSet<T>, SmallSet<T>> getDeltaPair(const SmallSet<T>& other) const;
 	template<typename Predicate>
 	[[nodiscard]] This::iterator findIf(Predicate&& predicate) { return std::ranges::find_if(m_data, predicate); }
 	template<typename Predicate>

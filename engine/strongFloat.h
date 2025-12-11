@@ -6,11 +6,9 @@
 #include <float.h>
 
 template <class Derived>
-class StrongFloat
+struct StrongFloat
 {
-protected:
 	float data = FLT_MAX;
-public:
 	using Primitive = float;
 	[[nodiscard]] constexpr static Derived create(const float& d) { Derived der; der.set(d); return der; }
 	[[nodiscard]] constexpr static Derived null() { return create(FLT_MAX); }

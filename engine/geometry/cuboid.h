@@ -13,6 +13,7 @@ struct Sphere;
 class Offset3D;
 struct OffsetCuboid;
 struct CuboidSet;
+struct ParamaterizedLine;
 struct Cuboid
 {
 	using PointType = Point3D;
@@ -61,6 +62,8 @@ struct Cuboid
 	[[nodiscard]] Point3D intersectionPoint(const Point3D& point) const;
 	[[nodiscard]] Point3D intersectionPoint(const Cuboid& cuboid) const;
 	[[nodiscard]] Point3D intersectionPoint(const CuboidSet& cuboid) const;
+	[[nodiscard]] std::pair<Point3D, Point3D> intersectionPoints(const ParamaterizedLine& line) const;
+	[[nodiscard]] Point3D intersectionPointForFace(const ParamaterizedLine& line, const Facing6& face) const;
 	[[nodiscard]] OffsetCuboid above() const;
 	[[nodiscard]] Cuboid getFace(const Facing6& faceing) const;
 	[[nodiscard]] bool intersects(const Point3D& point) const;

@@ -59,11 +59,13 @@ void Config::load()
 	data["fatPierceForceCost"].get_to(fatPierceForceCost);
 	data["fireRampDownPhaseDurationFraction"].get_to(fireRampDownPhaseDurationFraction);
 	data["flankingModifier"].get_to(flankingModifier);
+	data["fleePriority"].get_to(fleePriority);
 	data["fluidDragModifier"].get_to(fluidDragModifier);
 	data["fluidGroupsPerThread"].get_to(fluidGroupsPerThread);
 	data["forceAbsorbedPiercedModifier"].get_to(forceAbsorbedPiercedModifier);
 	data["forceAbsorbedUnpiercedModifier"].get_to(forceAbsorbedUnpiercedModifier);
 	data["fractionAttackCoolDownReductionPerPointOfDextarity"].get_to(fractionAttackCoolDownReductionPerPointOfDextarity);
+	data["fractionOfMoveSpeedToMakeDistanceHuristicForCanMoveToSoon"].get_to(fractionOfMoveSpeedToMakeDistanceHuristicForCanMoveToSoon);
 	data["getIntoAttackPositionMaxRange"].get_to(getIntoAttackPositionMaxRange);
 	data["getToSafeTemperaturePriority"].get_to(getToSafeTemperaturePriority);
 	givePlantsFluidDelaySteps = Step::create(data["givePlantsFluidDelaySeconds"].get<float>() * stepsPerSecond.get());
@@ -126,6 +128,7 @@ void Config::load()
 	data["metersPerUnitElevationLociiIntensity"].get_to(metersPerUnitElevationLociiIntensity);
 	data["minimumAltitudeForHeadwaterFormation"].get_to(minimumAltitudeForHeadwaterFormation);
 	data["minimumAttackCoolDownModifier"].get_to(minimumAttackCoolDownModifier);
+	data["minimumCombatScoreDifferenceToFeelFear"].get_to(minimumCombatScoreDifferenceToFeelFear);
 	data["minimumDeltaToAlterPsycologyBaselineSquared"].get_to(minimumDeltaToAlterPsycologyBaselineSquared);
 	minimumDurationToWaitInsteadOfWander = Step::create(data["minimumDurationToWaitInsteadOfWanderMinutes"].get<float>() * stepsPerMinute.get());
 	data["minimumHaulSpeedInital"].get_to(minimumHaulSpeedInital);
@@ -183,8 +186,10 @@ void Config::load()
 	data["rainMaximumSpacing"].get_to(rainMaximumSpacing);
 	data["rainMaximumSpacing"].get_to(rainMaximumSpacing);
 	rainWriteStepFreqency = Step::create(data["rainWriteStepFreqencySeconds"].get<float>() * stepsPerSecond.get());
+	data["randomFuzzToApplyToCourageChecks"].get_to(randomFuzzToApplyToCourageChecks);
 	data["rateModifierForEvaporationPerDegreeTemperature"].get_to(rateModifierForEvaporationPerDegreeTemperature);
 	data["ratioOfHitAreaToBodyPartVolumeForSever"].get_to(ratioOfHitAreaToBodyPartVolumeForSever);
+	data["ratioOfMaximumVarianceForCourageTest"].get_to(ratioOfMaximumVarianceForCourageTest);
 	data["ratioOfTotalBodyVolumeWhichIsBlood"].get_to(ratioOfTotalBodyVolumeWhichIsBlood);
 	data["ratioOfVisionCuboidSlotsToReservePerPoint"].get_to(ratioOfVisionCuboidSlotsToReservePerPoint);
 	ratioWoundsCloseDelayToBleedVolume = data["ratioWoundsCloseDelayToBleedVolumeSeconds"].get<float>() * stepsPerSecond.get();
@@ -201,6 +206,7 @@ void Config::load()
 	data["staminaPointsPerRestPeriod"].get_to(staminaPointsPerRestPeriod);
 	data["stationPriority"].get_to(stationPriority);
 	stepsFrequencyToLookForHaulSubprojects = Step::create(data["secondsFrequencyToLookForHaulSubprojects"].get<float>() * stepsPerSecond.get());
+	stepsFrequencyToRunRelationshipEvent = Step::create(data["minutesFrequencyToRunRelationshipEvent"].get<float>() * stepsPerMinute.get());
 	stepsTillDiePlantPriorityOveride = Step::create(data["hoursTillDiePlantPriorityOveride"].get<uint32_t>() * stepsPerHour.get());
 	stepsToDelayBeforeTryingAgainToCompleteAnObjective = Step::create(data["secondsToDelayBeforeTryingAgainToCompleteAnObjective"].get<float>() * stepsPerSecond.get());
 	stepsToDelayBeforeTryingAgainToFollowLeader = Step::create(data["secondsToDelayBeforeTryingAgainToFollowLeader"].get<float>() * stepsPerSecond.get());
@@ -218,6 +224,8 @@ void Config::load()
 	data["unitsBodyMassPerUnitFoodConsumed"].get_to(unitsBodyMassPerUnitFoodConsumed);
 	data["unitsOfAttackForcePerUnitOfStrength"].get_to(unitsOfAttackForcePerUnitOfStrength);
 	data["unitsOfCarryMassPerUnitOfStrength"].get_to(unitsOfCarryMassPerUnitOfStrength);
+	data["unitsOfCourageToGainOnPassingFearTest"].get_to(unitsOfCourageToGainOnPassingFearTest);
+	data["unitsOfCourageToLoseOnFailingFearTest"].get_to(unitsOfCourageToLoseOnFailingFearTest);
 	data["unitsOfMoveSpeedPerUnitOfAgility"].get_to(unitsOfMoveSpeedPerUnitOfAgility);
 	data["unitsOfWoundAreaPerUnitItemScaleFactor"].get_to(unitsOfWoundAreaPerUnitItemScaleFactor);
 	data["unitsOfVolumePerUnitOfCollisionVolume"].get_to(unitsOfVolumePerUnitOfCollisionVolume);

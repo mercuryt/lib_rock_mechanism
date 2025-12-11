@@ -10,7 +10,7 @@ GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(Area& area, Get
 {
 	Actors& actors = area.getActors();
 	start = actors.getLocation(actorIndex);
-	maxRange = Config::maxRangeToSearchForHorticultureDesignations;
+	maxRange = Distance::max();
 	actor = actors.getReference(actorIndex);
 	shape = actors.getShape(actorIndex);
 	moveType = actors.getMoveType(actorIndex);
