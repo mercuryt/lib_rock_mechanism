@@ -28,7 +28,7 @@ class DigProject final : public Project
 	[[nodiscard]] std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
 	[[nodiscard]] SkillTypeId getSkill() const;
 	[[nodiscard]] std::string description() const;
-	[[nodiscard]] static int32_t getWorkerDigScore(Area& area, ActorIndex actor);
+	[[nodiscard]] static int getWorkerDigScore(Area& area, ActorIndex actor);
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
 	// PointFeatureType can be null, meaning the point is to be fully excavated.

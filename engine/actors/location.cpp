@@ -197,7 +197,7 @@ bool Actors::location_canEnterEverWithAnyFacing(const ActorIndex& index, const P
 }
 Facing4 Actors::location_canEnterEverWithAnyFacingReturnFacing(const ActorIndex& index, const Point3D& point)
 {
-	for(auto facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int32_t)facing + 1))
+	for(auto facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int)facing + 1))
 		if(location_canEnterEverWithFacing(index, point, facing))
 			return facing;
 	return Facing4::Null;

@@ -30,7 +30,7 @@ class ConstructProject final : public Project
 	[[nodiscard]] SkillTypeId getSkill() const;
 	[[nodiscard]] std::string description() const;
 	std::vector<ActorReference> getActors() const;
-	int32_t getWorkerConstructScore(const ActorIndex& actor) const;
+	int getWorkerConstructScore(const ActorIndex& actor) const;
 	Step getDuration() const;
 	void onComplete();
 	void onCancel();

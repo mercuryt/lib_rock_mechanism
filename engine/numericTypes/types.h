@@ -34,7 +34,7 @@ public:
 inline void to_json(Json& data, const Step& index) { data = index.get(); }
 inline void from_json(const Json& data, Step& index) { index = Step::create(data.get<StepWidth>()); }
 
-// TODO: Benchmark with int32_t.
+// TODO: Benchmark with int.
 class TemperatureDelta;
 using TemperatureWidth = int16_t;
 class Temperature : public StrongInteger<Temperature, TemperatureWidth, INT16_MAX, 0>
@@ -72,7 +72,7 @@ public:
 inline void to_json(Json& data, const TemperatureDelta& index) { data = index.get(); }
 inline void from_json(const Json& data, TemperatureDelta& index) { index = TemperatureDelta::create(data.get<TemperatureDeltaWidth>()); }
 
-using QuantityWidth = int32_t;
+using QuantityWidth = int;
 class Quantity : public StrongInteger<Quantity, QuantityWidth, INT32_MAX, 0>
 {
 public:
@@ -82,7 +82,7 @@ inline void to_json(Json& data, const Quantity& index) { data = index.get(); }
 inline void from_json(const Json& data, Quantity& index) { index = Quantity::create(data.get<QuantityWidth>()); }
 
 class FullDisplacement;
-using CollisionVolumeWidth = int32_t;
+using CollisionVolumeWidth = int;
 class CollisionVolume : public StrongInteger<CollisionVolume, CollisionVolumeWidth, INT32_MAX, 0>
 {
 public:
@@ -99,7 +99,7 @@ inline void from_json(const Json& data, CollisionVolume& index) { index = Collis
 
 class Mass;
 class Density;
-using FullDisplacementWidth = int32_t;
+using FullDisplacementWidth = int;
 class FullDisplacement : public StrongInteger<FullDisplacement, FullDisplacementWidth, INT32_MAX, 0>
 {
 public:
@@ -114,7 +114,7 @@ public:
 inline void to_json(Json& data, const FullDisplacement& index) { data = index.get(); }
 inline void from_json(const Json& data, FullDisplacement& index) { index = FullDisplacement::create(data.get<FullDisplacementWidth>()); }
 
-using MassWidth = int32_t;
+using MassWidth = int;
 class Mass : public StrongInteger<Mass, MassWidth, INT32_MAX, 0>
 {
 public:
@@ -139,7 +139,7 @@ inline void to_json(Json& data, const Density& index) { data = index.get(); }
 inline void from_json(const Json& data, Density& index) { index = Density::create(data.get<float>()); }
 
 class Speed;
-using ForceWidth = int32_t;
+using ForceWidth = int;
 class Force : public StrongInteger<Force, ForceWidth, INT32_MAX, 0>
 {
 public:
@@ -149,7 +149,7 @@ public:
 inline void to_json(Json& data, const Force& index) { data = index.get(); }
 inline void from_json(const Json& data, Force& index) { index = Force::create(data.get<ForceWidth>()); }
 
-using KilometersWidth = int32_t;
+using KilometersWidth = int;
 class Kilometers : public StrongInteger<Kilometers, KilometersWidth, INT32_MAX, 0>
 {
 public:
@@ -158,7 +158,7 @@ public:
 inline void to_json(Json& data, const Kilometers& index) { data = index.get(); }
 inline void from_json(const Json& data, Kilometers& index) { index = Kilometers::create(data.get<KilometersWidth>()); }
 
-using MetersWidth = int32_t;
+using MetersWidth = int;
 class Meters : public StrongInteger<Meters, MetersWidth, INT32_MAX, 0>
 {
 public:
@@ -169,7 +169,7 @@ inline void from_json(const Json& data, Meters& index) { index = Meters::create(
 
 class DistanceFractional;
 class Distance;
-using DistanceSquaredWidth = int32_t;
+using DistanceSquaredWidth = int;
 class DistanceSquared : public StrongInteger<DistanceSquared, DistanceSquaredWidth, INT32_MAX, 0>
 {
 public:
@@ -208,7 +208,7 @@ constexpr DistanceFractional DistanceSquared::toFloat() const { return DistanceF
 constexpr Distance DistanceSquared::unsquared() const { return Distance::create(std::sqrt(data)); }
 
 // For use by location buckets.
-using DistanceInBucketsWidth = int32_t;
+using DistanceInBucketsWidth = int;
 class DistanceInBuckets : public StrongInteger<DistanceInBuckets, DistanceInBucketsWidth, INT32_MAX, 0>
 {
 public:
@@ -217,7 +217,7 @@ public:
 inline void to_json(Json& data, const DistanceInBuckets& index) { data = index.get(); }
 inline void from_json(const Json& data, DistanceInBuckets& index) { index = DistanceInBuckets::create(data.get<DistanceInBucketsWidth>()); }
 
-using OffsetWidth = int32_t;
+using OffsetWidth = int;
 class Offset : public StrongInteger<Offset, OffsetWidth, INT32_MAX, INT32_MIN>
 {
 public:
@@ -230,7 +230,7 @@ inline void from_json(const Json& data, Offset& index) { index = Offset::create(
 //using Longitude = double;
 //using Bearing = double;
 
-using SpeedWidth = int32_t;
+using SpeedWidth = int;
 class Speed : public StrongInteger<Speed, SpeedWidth, INT32_MAX, 0>
 {
 public:
@@ -239,7 +239,7 @@ public:
 inline void to_json(Json& data, const Speed& speed) { data = speed.get(); }
 inline void from_json(const Json& data, Speed& speed) { speed = Speed::create(data.get<SpeedWidth>()); }
 
-using EnergyWidth = int32_t;
+using EnergyWidth = int;
 class Energy : public StrongInteger<Energy, EnergyWidth, INT32_MAX, 0>
 {
 public:
@@ -248,7 +248,7 @@ public:
 inline void to_json(Json& data, const Energy& index) { data = index.get(); }
 inline void from_json(const Json& data, Energy& index) { index = Energy::create(data.get<EnergyWidth>()); }
 
-using MoveCostWidth = int32_t;
+using MoveCostWidth = int;
 class MoveCost : public StrongInteger<MoveCost, MoveCostWidth, INT32_MAX, 0>
 {
 public:
@@ -257,7 +257,7 @@ public:
 inline void to_json(Json& data, const MoveCost& index) { data = index.get(); }
 inline void from_json(const Json& data, MoveCost& index) { index = MoveCost::create(data.get<MoveCostWidth>()); }
 
-using QualityWidth = int32_t;
+using QualityWidth = int;
 class Quality : public StrongInteger<Quality, QualityWidth, INT32_MAX, 0>
 {
 public:
@@ -266,7 +266,7 @@ public:
 inline void to_json(Json& data, const Quality& index) { data = index.get(); }
 inline void from_json(const Json& data, Quality& index) { index = Quality::create(data.get<QualityWidth>()); }
 
-using PercentWidth = int32_t;
+using PercentWidth = int;
 class Percent : public StrongInteger<Percent, PercentWidth, INT32_MAX, 0>
 {
 public:
@@ -285,7 +285,7 @@ public:
 inline void to_json(Json& data, const CombatScore& index) { data = index.get(); }
 inline void from_json(const Json& data, CombatScore& index) { index = CombatScore::create(data.get<CombatScoreWidth>()); }
 
-using SkillLevelWidth = int32_t;
+using SkillLevelWidth = int;
 class SkillLevel : public StrongInteger<SkillLevel, SkillLevelWidth, INT32_MAX, 0>
 {
 public:
@@ -294,7 +294,7 @@ public:
 inline void to_json(Json& data, const SkillLevel& index) { data = index.get(); }
 inline void from_json(const Json& data, SkillLevel& index) { index = SkillLevel::create(data.get<SkillLevelWidth>()); }
 
-using SkillExperiencePointsWidth = int32_t;
+using SkillExperiencePointsWidth = int;
 class SkillExperiencePoints : public StrongInteger<SkillExperiencePoints, SkillExperiencePointsWidth, INT32_MAX, 0>
 {
 public:
@@ -303,7 +303,7 @@ public:
 inline void to_json(Json& data, const SkillExperiencePoints& index) { data = index.get(); }
 inline void from_json(const Json& data, SkillExperiencePoints& index) { index = SkillExperiencePoints::create(data.get<SkillExperiencePointsWidth>()); }
 
-using AttributeLevelWidth = int32_t;
+using AttributeLevelWidth = int;
 class AttributeLevel : public StrongInteger<AttributeLevel, AttributeLevelWidth, INT32_MAX, 0>
 {
 public:
@@ -312,7 +312,7 @@ public:
 inline void to_json(Json& data, const AttributeLevel& index) { data = index.get(); }
 inline void from_json(const Json& data, AttributeLevel& index) { index = AttributeLevel::create(data.get<AttributeLevelWidth>()); }
 
-using AttributeLevelBonusOrPenaltyWidth = int32_t;
+using AttributeLevelBonusOrPenaltyWidth = int;
 class AttributeLevelBonusOrPenalty : public StrongInteger<AttributeLevelBonusOrPenalty, AttributeLevelBonusOrPenaltyWidth, INT32_MAX, 0>
 {
 public:
@@ -321,7 +321,7 @@ public:
 inline void to_json(Json& data, const AttributeLevelBonusOrPenalty& index) { data = index.get(); }
 inline void from_json(const Json& data, AttributeLevelBonusOrPenalty& index) { index = AttributeLevelBonusOrPenalty::create(data.get<AttributeLevelBonusOrPenaltyWidth>()); }
 
-using PriorityWidth = int32_t;
+using PriorityWidth = int;
 class Priority : public StrongInteger<Priority, PriorityWidth, INT32_MAX, 0>
 {
 public:
@@ -330,7 +330,7 @@ public:
 inline void to_json(Json& data, const Priority& index) { data = index.get(); }
 inline void from_json(const Json& data, Priority& index) { index = Priority::create(data.get<PriorityWidth>()); }
 
-using StaminaWidth = int32_t;
+using StaminaWidth = int;
 class Stamina : public StrongInteger<Stamina, StaminaWidth, INT32_MAX, 0>
 {
 public:
@@ -339,22 +339,22 @@ public:
 inline void to_json(Json& data, const Stamina& index) { data = index.get(); }
 inline void from_json(const Json& data, Stamina& index) { index = Stamina::create(data.get<StaminaWidth>()); }
 
-using LongRangePathNodeIndexWidth = int32_t;
+using LongRangePathNodeIndexWidth = int;
 class LongRangePathNodeIndex : public StrongInteger<LongRangePathNodeIndex, LongRangePathNodeIndexWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const LongRangePathNodeIndex& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const LongRangePathNodeIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, LongRangePathNodeIndex& index) { index = LongRangePathNodeIndex::create(data.get<int32_t>()); }
+inline void from_json(const Json& data, LongRangePathNodeIndex& index) { index = LongRangePathNodeIndex::create(data.get<int>()); }
 
-class DeckId final : public StrongInteger<DeckId, int32_t, INT32_MAX, 0>
+class DeckId final : public StrongInteger<DeckId, int, INT_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Step& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const DeckId& index) { data = index.get(); }
-inline void from_json(const Json& data, DeckId& index) { index = DeckId::create(data.get<int16_t>()); }
+inline void from_json(const Json& data, DeckId& index) { index = DeckId::create(data.get<int>()); }
 
 class PsycologyWeight : public StrongFloat<PsycologyWeight>
 {

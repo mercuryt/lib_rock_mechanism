@@ -45,7 +45,7 @@ struct MaterialTypeParamaters final
 {
 	std::string name;
 	Density density;
-	int32_t hardness;
+	int hardness;
 	bool transparent;
 	MaterialCategoryTypeId materialTypeCategory = MaterialCategoryTypeId::null();
 	std::vector<SpoilsDataTypeId> spoilData = {};
@@ -69,10 +69,10 @@ class MaterialType final
 {
 	StrongVector<std::string, MaterialTypeId> m_name;
 	StrongVector<Density, MaterialTypeId> m_density;
-	StrongVector<int32_t, MaterialTypeId> m_hardness;
+	StrongVector<int, MaterialTypeId> m_hardness;
 	StrongBitSet<MaterialTypeId> m_transparent;
 	StrongVector<MaterialCategoryTypeId, MaterialTypeId> m_solidCategory;
-	StrongVector<int32_t, MaterialTypeId> m_valuePerUnitFullDisplacement;
+	StrongVector<int, MaterialTypeId> m_valuePerUnitFullDisplacement;
 	// Construction.
 	StrongVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId> m_construction_consumed;
 	StrongVector<std::vector<std::pair<ItemQuery, Quantity>>, MaterialTypeId>  m_construction_unconsumed;
@@ -98,15 +98,15 @@ public:
 	[[nodiscard]] static MaterialTypeId byName(std::string name);
 	[[nodiscard]] static std::string& getName(const MaterialTypeId& id);
 	[[nodiscard]] static Density getDensity(const MaterialTypeId& id);
-	[[nodiscard]] static int32_t getHardness(const MaterialTypeId& id);
+	[[nodiscard]] static int getHardness(const MaterialTypeId& id);
 	[[nodiscard]] static bool getTransparent(const MaterialTypeId& id);
-	[[nodiscard]] static int32_t getValuePerUnitFullDisplacement(const MaterialTypeId& id);
+	[[nodiscard]] static int getValuePerUnitFullDisplacement(const MaterialTypeId& id);
 	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(const MaterialTypeId& id);
 	[[nodiscard]] static std::vector<SpoilsDataTypeId>& getSpoilData(const MaterialTypeId& id);
 	[[nodiscard]] static Temperature getMeltingPoint(const MaterialTypeId& id);
 	[[nodiscard]] static FluidTypeId getMeltsInto(const MaterialTypeId& id);
 	[[nodiscard]] static bool canMelt(const MaterialTypeId& id);
-	[[nodiscard]] static Mass getMassForSolidVolumeAsANumberOfPoints(const MaterialTypeId& id, int32_t numberOfPoints);
+	[[nodiscard]] static Mass getMassForSolidVolumeAsANumberOfPoints(const MaterialTypeId& id, int numberOfPoints);
 	// Fire.
 	[[nodiscard]] static bool canBurn(const MaterialTypeId& id);
 	[[nodiscard]] static Step getBurnStageDuration(const MaterialTypeId& id);

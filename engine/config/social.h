@@ -9,11 +9,11 @@ namespace Config::Social
 	inline Step inspirationalSpeachDuration;
 	inline Step inspirationalSpeachEffectDuration;
 	inline Step intervalBetweenChats;
-	inline int8_t maximumDurationToChastiseCycles;
+	inline int maximumDurationToChastiseCycles;
 	inline PsycologyWeight minimumAngerForChastisingToBeAngry;
 	inline float minimumCastingScoreForChastiseMistakeAtWork;
 	inline float minimumCastingScoreForPraiseSuccessAtWork;
-	inline int8_t minimumDurationToChastiseCycles;
+	inline int minimumDurationToChastiseCycles;
 	inline PsycologyWeight minimumPrideToAlwaysGetAngryWhenChastised;
 	inline float minimumRatioOfSkillLevelsToChastise;
 	inline float multipleForChastiseDurationIfSomeoneWasHurt;

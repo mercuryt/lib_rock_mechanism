@@ -29,7 +29,7 @@ public:
 	void eatFruitFromPlant(Area& area, const PlantIndex& plant);
 	[[nodiscard]] std::string name() const { return "eat"; }
 };
-constexpr int32_t maxRankedEatDesire = 3;
+constexpr int maxRankedEatDesire = 3;
 class EatPathRequest final : public PathRequestBreadthFirst
 {
 	std::array<Point3D, maxRankedEatDesire> m_candidates;

@@ -47,7 +47,7 @@ public:
 	void addHarvestDesignation(Area& area, const PlantIndex& plant);
 	void removeHarvestDesignation(Area& area, const PlantIndex& plant);
 	void maybeRemoveHarvestDesignation(auto& area, const auto& shape) { area.getSpace().designation_maybeUnset(shape, m_faction, SpaceDesignation::Harvest); }
-	void setDayOfYear(Area& area, int16_t dayOfYear);
+	void setDayOfYear(Area& area, int dayOfYear);
 	[[nodiscard]] FarmField& create(Area& area, CuboidSet&& cuboids);
 	[[nodiscard]] FarmField& create(Area& area, const CuboidSet& cuboids);
 	[[nodiscard]] FarmField& create(Area& area, const Cuboid& cuboid);
@@ -79,7 +79,7 @@ public:
 	void unregisterFaction(const FactionId& faction);
 	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid(const FactionId& faction);
 	void removeAllSowSeedsDesignations(const Point3D& point);
-	void setDayOfYear(int16_t dayOfYear);
+	void setDayOfYear(int dayOfYear);
 	[[nodiscard]] bool hasGivePlantsFluidDesignations(const FactionId& faction) const;
 	[[nodiscard]] bool hasHarvestDesignations(const FactionId& faction) const;
 	[[nodiscard]] bool hasSowSeedsDesignations(const FactionId& faction) const;

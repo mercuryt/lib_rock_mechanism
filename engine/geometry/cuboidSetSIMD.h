@@ -17,30 +17,30 @@ class CuboidSetSIMD
 	Data m_low;
 	// TODO: change name to boundry.
 	Cuboid m_boundingBox;
-	int32_t m_size = 0;
-	int32_t m_capacity = 0;
+	int m_size = 0;
+	int m_capacity = 0;
 public:
-	CuboidSetSIMD(int32_t capacity = 8) { assert(capacity != 0); reserve(capacity); }
+	CuboidSetSIMD(int capacity = 8) { assert(capacity != 0); reserve(capacity); }
 	CuboidSetSIMD(const CuboidSetSIMD& other) { m_high = other.m_high; m_low = other.m_low; m_boundingBox = other.m_boundingBox; m_size = other.m_size; m_capacity = other.m_capacity; }
 	CuboidSetSIMD(CuboidSetSIMD&& other) noexcept { m_high = std::move(other.m_high); m_low = std::move(other.m_low); m_boundingBox = other.m_boundingBox; m_size = other.m_size; m_capacity = other.m_capacity; }
 	CuboidSetSIMD(const CuboidSet& contents);
 	void operator=(const CuboidSetSIMD& other) { m_high = other.m_high; m_low = other.m_low; m_boundingBox = other.m_boundingBox; m_size = other.m_size; m_capacity = other.m_capacity; }
 	void operator=(CuboidSetSIMD&& other) { m_high = std::move(other.m_high); m_low = std::move(other.m_low); m_boundingBox = other.m_boundingBox; m_size = other.m_size; m_capacity = other.m_capacity; }
-	void reserve(int32_t capacity);
+	void reserve(int capacity);
 	void insert(const Cuboid& cuboid);
-	void update(const int32_t index, const Cuboid& cuboid);
+	void update(const int index, const Cuboid& cuboid);
 	void erase(const Cuboid& cuboid);
-	void erase(int32_t index);
+	void erase(int index);
 	void clear();
 	void load(const std::vector<Cuboid>& contents);
-	template<int32_t capacity>
+	template<int capacity>
 	void load(const CuboidArray<capacity>& contents) { assert(empty()); reserve(contents.capacity); for(const Cuboid& cuboid : contents) insert(cuboid); }
-	[[nodiscard]] Cuboid operator[](const int32_t& index) const { return {Coordinates(m_high.col(index)), Coordinates(m_low.col(index)) }; }
+	[[nodiscard]] Cuboid operator[](const int& index) const { return {Coordinates(m_high.col(index)), Coordinates(m_low.col(index)) }; }
 	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
 	[[nodiscard]] bool containsAsMember(const Cuboid& cuboid) const;
 	[[nodiscard]] bool empty() const { return m_size == 0; }
-	[[nodiscard]] int32_t size() const { return m_size; }
-	[[nodiscard]] int32_t capacity() const { return m_capacity; }
+	[[nodiscard]] int size() const { return m_size; }
+	[[nodiscard]] int capacity() const { return m_capacity; }
 	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfIntersectingCuboids(const Cuboid& cuboid) const;
 	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfContainedCuboids(const Cuboid& cuboid) const;
 	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfIntersectingCuboids(const Sphere& sphere) const;
@@ -50,11 +50,11 @@ public:
 	class ConstIterator
 	{
 		const CuboidSetSIMD& m_set;
-		int32_t m_index = 0;
+		int m_index = 0;
 	public:
-		ConstIterator(const CuboidSetSIMD& set, int32_t index) : m_set(set), m_index(index) { }
+		ConstIterator(const CuboidSetSIMD& set, int index) : m_set(set), m_index(index) { }
 		[[nodiscard]] Cuboid operator*() const { return m_set[m_index]; }
-		void operator++(int32_t) { ++m_index; }
+		void operator++(int) { ++m_index; }
 		ConstIterator operator++() { auto copy = *this; ++m_index; return copy; }
 		[[nodiscard]] bool operator==(const ConstIterator& other) const { assert(&m_set == &other.m_set); return m_index == other.m_index; }
 		[[nodiscard]] bool operator!=(const ConstIterator& other) const { return !((*this) == other); }

@@ -185,7 +185,7 @@ void Config::load()
 	data["pointsOfCombatScorePerUnitOfDextarity"].get_to(pointsOfCombatScorePerUnitOfDextarity);
 	data["pointsOfCombatScorePerUnitOfStrength"].get_to(pointsOfCombatScorePerUnitOfStrength);
 	data["projectTryToMakeSubprojectRetriesBeforeProjectDelay"].get_to(projectTryToMakeSubprojectRetriesBeforeProjectDelay);
-	projectDelayAfterExauhstingSubprojectRetries = Step::create(data["projectDelayAfterExauhstingSubprojectRetriesSeconds"].get<int32_t>() * stepsPerSecond.get());
+	projectDelayAfterExauhstingSubprojectRetries = Step::create(data["projectDelayAfterExauhstingSubprojectRetriesSeconds"].get<int>() * stepsPerSecond.get());
 	data["projectileHitChanceFallsOffWithRangeExponent"].get_to(projectileHitChanceFallsOffWithRangeExponent);
 	data["projectileHitPercentPerPointAttackTypeCombatScore"].get_to(projectileHitPercentPerPointAttackTypeCombatScore);
 	data["projectileHitPercentPerPointDextarity"].get_to(projectileHitPercentPerPointDextarity);
@@ -205,7 +205,7 @@ void Config::load()
 	data["ratioOfTotalBodyVolumeWhichIsBlood"].get_to(ratioOfTotalBodyVolumeWhichIsBlood);
 	data["ratioOfVisionCuboidSlotsToReservePerPoint"].get_to(ratioOfVisionCuboidSlotsToReservePerPoint);
 	ratioWoundsCloseDelayToBleedVolume = data["ratioWoundsCloseDelayToBleedVolumeSeconds"].get<float>() * stepsPerSecond.get();
-	restIntervalSteps = Step::create(data["restIntervalSeconds"].get<int32_t>() * stepsPerSecond.get());
+	restIntervalSteps = Step::create(data["restIntervalSeconds"].get<int>() * stepsPerSecond.get());
 	data["reserveSizeVisionCuboidAdjacent"].get_to(reserveSizeVisionCuboidAdjacent);
 	data["rollingMassModifier"].get_to(rollingMassModifier);
 	data["floatingMassModifier"].get_to(floatingMassModifier);
@@ -222,10 +222,10 @@ void Config::load()
 	data["stationPriority"].get_to(stationPriority);
 	stepsFrequencyToLookForHaulSubprojects = Step::create(data["secondsFrequencyToLookForHaulSubprojects"].get<float>() * stepsPerSecond.get());
 	stepsFrequencyToRunRelationshipEvent = Step::create(data["minutesFrequencyToRunRelationshipEvent"].get<float>() * stepsPerMinute.get());
-	stepsTillDiePlantPriorityOveride = Step::create(data["hoursTillDiePlantPriorityOveride"].get<int32_t>() * stepsPerHour.get());
+	stepsTillDiePlantPriorityOveride = Step::create(data["hoursTillDiePlantPriorityOveride"].get<int>() * stepsPerHour.get());
 	stepsToDelayBeforeTryingAgainToCompleteAnObjective = Step::create(data["secondsToDelayBeforeTryingAgainToCompleteAnObjective"].get<float>() * stepsPerSecond.get());
 	stepsToDelayBeforeTryingAgainToFollowLeader = Step::create(data["secondsToDelayBeforeTryingAgainToFollowLeader"].get<float>() * stepsPerSecond.get());
-	stepsToDelayBeforeTryingAgainToReserveItemsAndActorsForAProject = Step::create(data["minutesToDelayBeforeTryingAgaintoReserveItemsAndActorsForAProject"].get<int32_t>() * stepsPerMinute.get());
+	stepsToDelayBeforeTryingAgainToReserveItemsAndActorsForAProject = Step::create(data["minutesToDelayBeforeTryingAgaintoReserveItemsAndActorsForAProject"].get<int>() * stepsPerMinute.get());
 	stepsToDisableStockPile = Step::create(data["minutesToDisableStockPile"].get<float>() * stepsPerMinute.get());
 	stepsToDrink = Step::create(data["secondsToDrink"].get<float>() * stepsPerSecond.get());
 	stepsToEat = Step::create(data["secondsToEat"].get<float>() * stepsPerSecond.get());

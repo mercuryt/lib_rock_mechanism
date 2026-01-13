@@ -52,7 +52,7 @@ public:
 	template<typename T>
 	T getInEnum()
 	{
-		return (T)getInRange(0, (int32_t)T::Null - 1);
+		return (T)getInRange(0, (int)T::Null - 1);
 	}
 	template<typename T>
 	T* getInVector(const std::vector<T*>& vector)
@@ -75,7 +75,7 @@ public:
 		return vector[getInRange((size_t)0, vector.size() - (size_t)1)];
 	}
 	template<typename T>
-	std::vector<T*> getMultipleInVector(const std::vector<T*>& vector, int32_t count)
+	std::vector<T*> getMultipleInVector(const std::vector<T*>& vector, int count)
 	{
 		assert(count <= vector.size());
 		auto copy = vector;
@@ -92,13 +92,13 @@ public:
 	T applyRandomFuzzPlusOrMinusPercent(const T& input, const Percent& percent)
 	{
 		T output = input;
-		int32_t maxPlus = percent.ratio() * (float)input.get();
+		int maxPlus = percent.ratio() * (float)input.get();
 		return input + getInRange(-maxPlus, maxPlus);
 	}
 	template<typename T>
 	T applyRandomFuzzPlusOrMinusRatio(const T& input, const float& ratio)
 	{
-		int32_t maxPlus = ratio * (float)input.get();
+		int maxPlus = ratio * (float)input.get();
 		return input + getInRange(-maxPlus, maxPlus);
 	}
 };

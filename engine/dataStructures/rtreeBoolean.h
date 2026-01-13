@@ -13,7 +13,7 @@
 
 class RTreeBoolean
 {
-	static constexpr int8_t nodeSize = Config::rtreeNodeSize;
+	static constexpr int nodeSize = Config::rtreeNodeSize;
 	using BitSet = BitSet64;
 	class Node
 	{
@@ -27,15 +27,15 @@ class RTreeBoolean
 		[[nodiscard]] const auto& getCuboids() const { return m_cuboids; }
 		[[nodiscard]] const auto& getChildIndices() const { return m_childIndices; }
 		[[nodiscard]] const auto& getParent() const { return m_parent; }
-		[[nodiscard]] int32_t getLeafCount() const { return m_leafEnd.get(); }
-		[[nodiscard]] int32_t getChildCount() const { return nodeSize - m_childBegin.get(); }
-		[[nodiscard]] int32_t unusedCapacity() const { return (m_childBegin - m_leafEnd).get(); }
-		[[nodiscard]] int32_t sortOrder() const { return m_cuboids.boundry().getCenter().hilbertNumber(); };
+		[[nodiscard]] int getLeafCount() const { return m_leafEnd.get(); }
+		[[nodiscard]] int getChildCount() const { return nodeSize - m_childBegin.get(); }
+		[[nodiscard]] int unusedCapacity() const { return (m_childBegin - m_leafEnd).get(); }
+		[[nodiscard]] int sortOrder() const { return m_cuboids.boundry().getCenter().hilbertNumber(); };
 		[[nodiscard]] RTreeArrayIndex offsetFor(const RTreeNodeIndex& index) const;
 		[[nodiscard]] RTreeArrayIndex offsetOfFirstChild() const { return m_childBegin; }
 		[[nodiscard]] bool empty() const { return unusedCapacity() == nodeSize; }
-		[[nodiscard]] int32_t getLeafVolume() const;
-		[[nodiscard]] int32_t getNodeVolume() const;
+		[[nodiscard]] int getLeafVolume() const;
+		[[nodiscard]] int getNodeVolume() const;
 		[[nodiscard]] CuboidSet getLeafCuboids() const;
 		[[nodiscard]] bool hasChildren() const;
 		void updateChildIndex(const RTreeNodeIndex& oldIndex, const RTreeNodeIndex& newIndex);
@@ -113,15 +113,15 @@ public:
 	[[nodiscard]] Point3D queryGetPointWithCondition(const ShapeT& shape, auto&& condition) const;
 	void queryRemove(CuboidSet& set) const;
 	// For test and debug.
-	[[nodiscard]] __attribute__((noinline)) int32_t nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
-	[[nodiscard]] __attribute__((noinline)) int32_t leafCount() const;
-	[[nodiscard]] __attribute__((noinline)) const Node& getNode(int32_t i) const;
-	[[nodiscard]] __attribute__((noinline)) const Cuboid getNodeCuboid(int32_t i, int32_t o) const;
-	[[nodiscard]] __attribute__((noinline)) const RTreeNodeIndex& getNodeChild(int32_t i, int32_t o) const;
-	[[nodiscard]] __attribute__((noinline)) bool queryPoint(int32_t x, int32_t y, int32_t z) const;
-	[[nodiscard]] __attribute__((noinline)) int32_t totalLeafVolume() const;
-	[[nodiscard]] __attribute__((noinline)) int32_t totalNodeVolume() const;
+	[[nodiscard]] __attribute__((noinline)) int nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
+	[[nodiscard]] __attribute__((noinline)) int leafCount() const;
+	[[nodiscard]] __attribute__((noinline)) const Node& getNode(int i) const;
+	[[nodiscard]] __attribute__((noinline)) const Cuboid getNodeCuboid(int i, int o) const;
+	[[nodiscard]] __attribute__((noinline)) const RTreeNodeIndex& getNodeChild(int i, int o) const;
+	[[nodiscard]] __attribute__((noinline)) bool queryPoint(int x, int y, int z) const;
+	[[nodiscard]] __attribute__((noinline)) int totalLeafVolume() const;
+	[[nodiscard]] __attribute__((noinline)) int totalNodeVolume() const;
 	__attribute__((noinline)) void assertAllLeafsAreUnique() const;
-	[[nodiscard]] static __attribute__((noinline)) int32_t getNodeSize();
+	[[nodiscard]] static __attribute__((noinline)) int getNodeSize();
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(RTreeBoolean, m_nodes, m_emptySlots, m_toComb);
 };

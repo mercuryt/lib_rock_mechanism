@@ -68,13 +68,13 @@ CraftStepProject::CraftStepProject(const Json& data, DeserializationMemo& deseri
 Step CraftStepProject::getDuration() const
 {
 	Actors& actors = m_area.getActors();
-	int32_t totalScore = 0;
+	int totalScore = 0;
 	for(auto& pair : m_workers)
 		totalScore += getWorkerCraftScore(pair.first.getIndex(actors.m_referenceData));
 	return m_craftStepType.stepsDuration / totalScore;
 }
 // Static method.
-int32_t CraftStepProject::getWorkerCraftScore(const ActorIndex& actor) const
+int CraftStepProject::getWorkerCraftScore(const ActorIndex& actor) const
 {
 	return 1 + m_area.getActors().skill_getLevel(actor, m_craftStepType.skillType).get();
 }
@@ -142,7 +142,7 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> CraftStepProject::
 			std::get<1>(tuple) = m_craftJob.materialType;
 	return output;
 }
-CraftJob::CraftJob(const CraftJobTypeId& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, const ItemIndex& wp, const MaterialTypeId& mt, int32_t msl) :
+CraftJob::CraftJob(const CraftJobTypeId& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, const ItemIndex& wp, const MaterialTypeId& mt, int msl) :
 		craftJobType(cjt), hasCraftingLocationsAndJobs(hclaj), materialType(mt),
 		stepIterator(CraftJobType::getStepTypes(craftJobType).begin()), minimumSkillLevel(msl),
 		totalSkillPoints(0), reservable(Quantity::create(1))
@@ -155,8 +155,8 @@ CraftJob::CraftJob(const Json& data, DeserializationMemo& deserializationMemo, H
 	materialType(data.contains("materialType") ? MaterialType::byName(data["materialType"].get<std::string>()) : MaterialTypeId::null()),
 	stepIterator(CraftJobType::getStepTypes(craftJobType).begin() + data["stepIndex"].get<size_t>()),
 	craftStepProject(data.contains("craftStepProject") ? std::make_unique<CraftStepProject>(data["craftStepProject"], deserializationMemo, *this, area) : nullptr),
-	minimumSkillLevel(data["minimumSkillLevel"].get<int32_t>()),
-	totalSkillPoints(data["totalSkillPoints"].get<int32_t>()),
+	minimumSkillLevel(data["minimumSkillLevel"].get<int>()),
+	totalSkillPoints(data["totalSkillPoints"].get<int>()),
 	reservable(Quantity::create(1))
 {
 	deserializationMemo.m_craftJobs[data["address"].get<uintptr_t>()] = this;
@@ -308,7 +308,7 @@ void HasCraftingLocationsAndJobsForFaction::maybeRemoveCuboid(const Cuboid& cubo
 				removeLocation(category, point);
 		}
 }
-void HasCraftingLocationsAndJobsForFaction::addJob(const CraftJobTypeId& craftJobType, const MaterialTypeId& materialType, const Quantity& quantity, int32_t minimumSkillLevel)
+void HasCraftingLocationsAndJobsForFaction::addJob(const CraftJobTypeId& craftJobType, const MaterialTypeId& materialType, const Quantity& quantity, int minimumSkillLevel)
 {
 	if(CraftJobType::getMaterialTypeCategory(craftJobType).exists() && materialType.exists())
 		assert(MaterialType::getMaterialTypeCategory(materialType) == CraftJobType::getMaterialTypeCategory(craftJobType));

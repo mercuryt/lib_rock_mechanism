@@ -2,12 +2,12 @@
 #include "numericTypes/types.h"
 struct DateTime
 {
-	int8_t hour;
-	int16_t day;
-	int16_t year;
+	int hour;
+	int day;
+	int year;
 	DateTime(Step step);
-	DateTime(int8_t h, int16_t d, int16_t y);
+	DateTime(int h, int d, int y);
 	[[nodiscard]] Step toSteps();
-	[[nodiscard]] static Step toSteps(int8_t hour, int16_t day, int16_t year);
-	[[nodiscard]] static int8_t toSeason(Step step);
+	[[nodiscard]] static Step toSteps(int hour, int day, int year);
+	[[nodiscard]] static int toSeason(Step step);
 };

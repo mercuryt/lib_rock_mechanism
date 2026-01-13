@@ -281,7 +281,7 @@ public:
 			m_unusedReferenceIndices.insert(refIndex);
 		}
 	}
-	void reserve(int32_t size)
+	void reserve(int size)
 	{
 		m_referencesByIndex.reserve(size);
 		// The current 'next reference' is determined by the length of indices by reference, which is why we reserve rather then resize here.

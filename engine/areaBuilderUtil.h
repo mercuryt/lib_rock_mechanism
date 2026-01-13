@@ -20,7 +20,7 @@ namespace areaBuilderUtil
 		);
 		space.solid_setCuboid(cuboid, materialType, false);
 	}
-	inline void setSolidLayer(Area& area, int32_t z, const MaterialTypeId& materialType)
+	inline void setSolidLayer(Area& area, int z, const MaterialTypeId& materialType)
 	{
 		setSolidLayer(area, Distance::create(z), materialType);
 	}
@@ -30,7 +30,7 @@ namespace areaBuilderUtil
 			setSolidLayer(area, zbegin, materialType);
 		area.getSpace().solid_prepare();
 	}
-	inline void setSolidLayers(Area& area, int32_t zbegin, int32_t zend, const MaterialTypeId& materialType)
+	inline void setSolidLayers(Area& area, int zbegin, int zend, const MaterialTypeId& materialType)
 	{
 		setSolidLayers(area, Distance::create(zbegin), Distance::create(zend), materialType);
 	}
@@ -55,7 +55,7 @@ namespace areaBuilderUtil
 		space.solid_setCuboid(cuboid, materialType, false);
 		space.solid_prepare();
 	}
-	inline void setSolidWalls(Area& area, int32_t height, const MaterialTypeId& materialType)
+	inline void setSolidWalls(Area& area, int height, const MaterialTypeId& materialType)
 	{
 		setSolidWalls(area, Distance::create(height), materialType);
 	}

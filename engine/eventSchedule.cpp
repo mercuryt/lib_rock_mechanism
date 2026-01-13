@@ -74,9 +74,9 @@ Step EventSchedule::getNextEventStep() const
 		return Step::null();
 	return m_data.begin()->first;
 }
-int32_t EventSchedule::count()
+int EventSchedule::count()
 {
-	int32_t output = 0;
+	int output = 0;
 	for(auto& pair : m_data)
 		for(auto& event : pair.second)
 			if(!event->m_cancel)

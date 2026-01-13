@@ -53,7 +53,7 @@ struct Point3D
 	[[nodiscard]] Point3D operator+(const DistanceWidth& distance) const;
 	[[nodiscard]] Point3D operator+(const Offset3D& other) const;
 	[[nodiscard]] Point3D operator-(const Offset3D& other) const;
-	[[nodiscard]] Point3D operator/(const int32_t& other) const;
+	[[nodiscard]] Point3D operator/(const int& other) const;
 	[[nodiscard]] bool exists() const;
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] Point3D below() const;
@@ -71,8 +71,8 @@ struct Point3D
 	[[nodiscard]] DistanceFractional distanceToFractional(const Point3D& other) const;
 	[[nodiscard]] DistanceSquared distanceToSquared(const Point3D& other) const;
 	[[nodiscard]] std::string toString() const;
-	static const int32_t hilbertOrder = 1;
-	[[nodiscard]] int32_t hilbertNumber() const;
+	static const int hilbertOrder = 1;
+	[[nodiscard]] int hilbertNumber() const;
 	[[nodiscard]] Offset3D toOffset() const;
 	[[nodiscard]] Offset3D offsetTo(const Point3D& other) const;
 	[[nodiscard]] Offset3D offsetTo(const Offset3D& other) const;
@@ -133,9 +133,9 @@ struct Point3D_fractional
 	Eigen::Array3f data;
 	Point3D_fractional() = default;
 	static Point3D_fractional create(const Point3D& point) { Point3D_fractional output; output.data = point.data.cast<float>(); return output; }
-	[[nodiscard]] int32_t x() const { return data[0]; }
-	[[nodiscard]] int32_t y() const { return data[1]; }
-	[[nodiscard]] int32_t z() const { return data[2]; }
+	[[nodiscard]] int x() const { return data[0]; }
+	[[nodiscard]] int y() const { return data[1]; }
+	[[nodiscard]] int z() const { return data[2]; }
 };
 struct Offset3D
 {
@@ -143,7 +143,7 @@ struct Offset3D
 	Offsets data;
 	Offset3D() : data(Offset::null().get()) { }
 	Offset3D(const Offset& x, const Offset& y, const Offset& z) : data(x.get(), y.get(), z.get()) { }
-	Offset3D(const int32_t& x, const int32_t& y, const int32_t& z) : data(x, y, z) { }
+	Offset3D(const int& x, const int& y, const int& z) : data(x, y, z) { }
 	Offset3D(const Offsets& offsets) : data(offsets) { }
 	Offset3D(const Offset3D& other);
 	Offset3D(const Point3D& point);
@@ -167,8 +167,8 @@ struct Offset3D
 	void setX(const Offset& x);
 	void setY(const Offset& y);
 	void setZ(const Offset& z);
-	static const int32_t hilbertOrder = 1;
-	[[nodiscard]] int32_t hilbertNumber() const;
+	static const int hilbertOrder = 1;
+	[[nodiscard]] int hilbertNumber() const;
 	[[nodiscard]] auto get() const { return data; }
 	[[nodiscard]] const Offset x() const { return Offset::create(data[0]); }
 	[[nodiscard]] const Offset y() const { return Offset::create(data[1]); }
@@ -177,10 +177,10 @@ struct Offset3D
 	[[nodiscard]] Offset3D operator-(const Offset3D& other) const;
 	[[nodiscard]] Offset3D operator*(const Offset3D& other) const;
 	[[nodiscard]] Offset3D operator/(const Offset3D& other) const;
-	[[nodiscard]] Offset3D operator+(const int32_t& other) const;
-	[[nodiscard]] Offset3D operator-(const int32_t& other) const;
-	[[nodiscard]] Offset3D operator*(const int32_t& other) const;
-	[[nodiscard]] Offset3D operator/(const int32_t& other) const;
+	[[nodiscard]] Offset3D operator+(const int& other) const;
+	[[nodiscard]] Offset3D operator-(const int& other) const;
+	[[nodiscard]] Offset3D operator*(const int& other) const;
+	[[nodiscard]] Offset3D operator/(const int& other) const;
 	[[nodiscard]] bool operator==(const Offset3D& other) const { return (data == other.data).all();}
 	[[nodiscard]] bool operator!=(const Offset3D& other) const { return (data != other.data).any();}
 	[[nodiscard]] std::strong_ordering operator<=>(const Offset3D& other) const;

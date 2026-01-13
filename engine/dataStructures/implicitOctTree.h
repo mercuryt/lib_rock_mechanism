@@ -3,7 +3,7 @@
 namespace ImplicitOctTree
 {
 	template<typename T>
-	T query(const Point3D& point, const std::vector<T>& data, const Point3D& center, const Distance& halfWidth, int8_t octant = 0, const int32_t& index = 0, const int32_t& depth = 0)
+	T query(const Point3D& point, const std::vector<T>& data, const Point3D& center, const Distance& halfWidth, int octant = 0, const int& index = 0, const int& depth = 0)
 	{
 		const auto childOctant = center.getOctant(point);
 		switch(childOctant)
@@ -15,6 +15,6 @@ namespace ImplicitOctTree
 				center.data += halfWidth.get();
 
 		}
-		int32_t newIndex = std::pow(8, depth) + (octant * std::pow(8, depth - 1) ) + childOctant;
+		int newIndex = std::pow(8, depth) + (octant * std::pow(8, depth - 1) ) + childOctant;
 	}
 }

@@ -56,7 +56,7 @@ public:
 	}
 	void swap(This& other);
 	void updateKey(const K& oldKey, const K& newKey);
-	[[nodiscard]] int32_t size() const;
+	[[nodiscard]] int size() const;
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] bool contains(const K& key) const;
 	[[nodiscard]] bool containsAny(const SmallSet<K>& keys) const;
@@ -81,13 +81,13 @@ public:
 	{
 		std::vector<Pair>::iterator m_iter;
 	public:
-		iterator(This& map, int32_t i) : m_iter(map.m_data.begin() + i) { }
+		iterator(This& map, int i) : m_iter(map.m_data.begin() + i) { }
 		iterator(std::vector<Pair>::iterator& iter) : m_iter(iter) { }
 		iterator(std::vector<Pair>::iterator iter) : m_iter(iter) { }
 		iterator& operator++() { ++m_iter; return *this; }
-		[[nodiscard]] iterator operator+(int32_t steps) { return m_iter + steps; }
-		[[nodiscard]] iterator operator-(int32_t steps) { return m_iter - steps; }
-		[[nodiscard]] iterator operator++(int32_t) { auto copy = *this; ++m_iter; return copy; }
+		[[nodiscard]] iterator operator+(int steps) { return m_iter + steps; }
+		[[nodiscard]] iterator operator-(int steps) { return m_iter - steps; }
+		[[nodiscard]] iterator operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] Pair& operator*() { return *m_iter; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
@@ -104,13 +104,13 @@ public:
 	{
 		std::vector<Pair>::const_iterator m_iter;
 	public:
-		const_iterator(const This& map, int32_t i) : m_iter(map.m_data.begin() + i) { }
+		const_iterator(const This& map, int i) : m_iter(map.m_data.begin() + i) { }
 		const_iterator(std::vector<Pair>::const_iterator& iter) : m_iter(iter) { }
 		const_iterator(std::vector<Pair>::const_iterator iter) : m_iter(iter) { }
 		const_iterator& operator++() { ++m_iter; return *this; }
-		[[nodiscard]] const_iterator operator+(int32_t steps) { return m_iter + steps; }
-		[[nodiscard]] const_iterator operator-(int32_t steps) { return m_iter - steps; }
-		[[nodiscard]] const_iterator operator++(int32_t) { auto copy = *this; ++m_iter; return copy; }
+		[[nodiscard]] const_iterator operator+(int steps) { return m_iter + steps; }
+		[[nodiscard]] const_iterator operator-(int steps) { return m_iter - steps; }
+		[[nodiscard]] const_iterator operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
@@ -145,7 +145,7 @@ public:
 	template<typename ...Args>
 	V& emplace(const K& key, Args&& ...args) { return *m_data.emplace(key, std::make_unique<V>(std::forward<Args>(args)...)).get(); }
 	void swap(This& other);
-	[[nodiscard]] int32_t size() const;
+	[[nodiscard]] int size() const;
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] bool contains(const K& key) const;
 	[[nodiscard]] Pair& front();
@@ -167,12 +167,12 @@ public:
 	{
 		Data::iterator m_iter;
 	public:
-		iterator(This& map, int32_t i) : m_iter(map.m_data.begin() + i) { }
+		iterator(This& map, int i) : m_iter(map.m_data.begin() + i) { }
 		iterator(Data::iterator& iter) : m_iter(iter) { }
 		iterator(Data::iterator iter) : m_iter(iter) { }
 		[[nodiscard]] Data::iterator get() { return m_iter; }
 		iterator& operator++() { ++m_iter; return *this; }
-		[[nodiscard]] iterator operator++(int32_t) { iterator copy = *this; ++m_iter; return copy; }
+		[[nodiscard]] iterator operator++(int) { iterator copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] Pair& operator*() { return *m_iter; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
@@ -183,28 +183,28 @@ public:
 		[[nodiscard]] const V& second() const { return *m_iter->second.get(); }
 		[[nodiscard]] Pair* operator->() { return &*m_iter; }
 		[[nodiscard]] const Pair* operator->() const { return &*m_iter; }
-		[[nodiscard]] iterator operator+(int32_t steps) { return m_iter + steps; }
-		[[nodiscard]] iterator operator-(int32_t steps) { return m_iter - steps; }
+		[[nodiscard]] iterator operator+(int steps) { return m_iter + steps; }
+		[[nodiscard]] iterator operator-(int steps) { return m_iter - steps; }
 		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) const { return m_iter <=> other.m_iter; }
 	};
 	class const_iterator
 	{
 		Data::const_iterator m_iter;
 	public:
-		const_iterator(const This& map, int32_t i) : m_iter(map.m_data.begin() + i) { }
+		const_iterator(const This& map, int i) : m_iter(map.m_data.begin() + i) { }
 		const_iterator(Data::const_iterator& iter) : m_iter(iter) { }
 		const_iterator(Data::const_iterator iter) : m_iter(iter) { }
 		[[nodiscard]] Data::const_iterator get() { return m_iter; }
 		const_iterator& operator++() { ++m_iter; return *this; }
-		[[nodiscard]] const_iterator operator++(int32_t) { auto copy = *this; ++m_iter; return copy; }
+		[[nodiscard]] const_iterator operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const K& first() const { return m_iter->first; }
 		[[nodiscard]] const V& second() const { return *m_iter->second.get(); }
 		[[nodiscard]] const Pair* operator->() const { return &*m_iter; }
-		[[nodiscard]] const_iterator operator+(int32_t steps) { return m_iter + steps; }
-		[[nodiscard]] const_iterator operator-(int32_t steps) { return m_iter - steps; }
+		[[nodiscard]] const_iterator operator+(int steps) { return m_iter + steps; }
+		[[nodiscard]] const_iterator operator-(int steps) { return m_iter - steps; }
 		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
 	};
 };

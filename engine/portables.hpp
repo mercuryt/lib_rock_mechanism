@@ -347,7 +347,7 @@ MapWithCuboidKeys<CollisionVolume> Portables<Derived, Index, ReferenceIndex, isA
 	const MapWithCuboidKeys<CollisionVolume>& occupied = this->m_occupiedWithVolume[index];
 	MapWithCuboidKeys<CollisionVolume> output;
 	const Area& area = getArea();
-	int32_t toReserve = occupied.size();
+	int toReserve = occupied.size();
 	for(const ActorOrItemIndex& onDeck : m_onDeck[index])
 		toReserve += Shape::getCuboidsCount(onDeck.getShape(area));
 	output.reserve(toReserve);
@@ -362,7 +362,7 @@ CuboidSet Portables<Derived, Index, ReferenceIndex, isActors>::getOccupiedCombin
 {
 	const CuboidSet& occupied = this->m_occupied[index];
 	const Area& area = getArea();
-	int32_t toReserve = occupied.size();
+	int toReserve = occupied.size();
 	for(const ActorOrItemIndex& onDeck : m_onDeck[index])
 		toReserve += Shape::getCuboidsCount(onDeck.getShape(area));
 	CuboidSet output;

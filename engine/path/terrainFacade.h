@@ -34,7 +34,7 @@ class TerrainFacade;
 class PathRequestBreadthFirst;
 class PathRequestDepthFirst;
 
-constexpr int32_t maxAdjacent = 26;
+constexpr int maxAdjacent = 26;
 // TODO: optimization: single point shapes don't need facing
 
 struct FindPathResult
@@ -54,9 +54,9 @@ struct PathRequestNoHuristicData
 {
 	FindPathResult result;
 	std::unique_ptr<PathRequestBreadthFirst> pathRequest;
-	int32_t spatialHash;
+	int spatialHash;
 	PathRequestNoHuristicData() = default;
-	PathRequestNoHuristicData(std::unique_ptr<PathRequestBreadthFirst> pr, int32_t sh);
+	PathRequestNoHuristicData(std::unique_ptr<PathRequestBreadthFirst> pr, int sh);
 	PathRequestNoHuristicData(const PathRequestNoHuristicData& other) = delete;
 	PathRequestNoHuristicData(PathRequestNoHuristicData&& other) noexcept;
 	PathRequestNoHuristicData& operator=(const PathRequestNoHuristicData& other) = delete;
@@ -66,9 +66,9 @@ struct PathRequestWithHuristicData
 {
 	FindPathResult result;
 	std::unique_ptr<PathRequestDepthFirst> pathRequest;
-	int32_t spatialHash;
+	int spatialHash;
 	PathRequestWithHuristicData() = default;
-	PathRequestWithHuristicData(std::unique_ptr<PathRequestDepthFirst> pr, int32_t sh);
+	PathRequestWithHuristicData(std::unique_ptr<PathRequestDepthFirst> pr, int sh);
 	PathRequestWithHuristicData(const PathRequestWithHuristicData& other) = delete;
 	PathRequestWithHuristicData(PathRequestWithHuristicData&& other) noexcept;
 	PathRequestWithHuristicData& operator=(const PathRequestWithHuristicData& other) = delete;

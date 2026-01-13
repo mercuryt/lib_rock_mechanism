@@ -64,12 +64,12 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> DigProject::getByp
 }
 SkillTypeId DigProject::getSkill() const { static auto output = SkillType::byName("dig"); return output; }
 // Static.
-int32_t DigProject::getWorkerDigScore(Area& area, ActorIndex actor)
+int DigProject::getWorkerDigScore(Area& area, ActorIndex actor)
 {
 	static SkillTypeId digType = SkillType::byName("dig");
 	Actors& actors = area.getActors();
-	int32_t strength = actors.getStrength(actor).get();
-	int32_t skillLevel = actors.skill_getLevel(actor, digType).get();
+	int strength = actors.getStrength(actor).get();
+	int skillLevel = actors.skill_getLevel(actor, digType).get();
 	return (strength * Config::digStrengthModifier) + (skillLevel * Config::digSkillModifier);
 }
 void DigProject::onComplete()
@@ -119,7 +119,7 @@ void DigProject::offDelay()
 // What would the total delay time be if we started from scratch now with current workers?
 Step DigProject::getDuration() const
 {
-	int32_t totalScore = 0;
+	int totalScore = 0;
 	Actors& actors = m_area.getActors();
 	for(auto& pair : m_workers)
 		totalScore += getWorkerDigScore(m_area, pair.first.getIndex(actors.m_referenceData));

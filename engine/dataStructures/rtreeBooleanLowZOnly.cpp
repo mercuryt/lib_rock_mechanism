@@ -6,16 +6,16 @@ RTreeBooleanLowZOnly::ArrayIndex RTreeBooleanLowZOnly::Node::offsetFor(const Ind
 	assert(found != m_childIndices.end());
 	return ArrayIndex::create(std::distance(m_childIndices.begin(), found));
 }
-int32_t RTreeBooleanLowZOnly::Node::getLeafVolume() const
+int RTreeBooleanLowZOnly::Node::getLeafVolume() const
 {
-	int32_t output = 0;
+	int output = 0;
 	for(auto i = ArrayIndex::create(0); i < m_leafEnd; ++i)
 		output += m_cuboids[i.get()].volume();
 	return output;
 }
-int32_t RTreeBooleanLowZOnly::Node::getNodeVolume() const
+int RTreeBooleanLowZOnly::Node::getNodeVolume() const
 {
-	int32_t output = 0;
+	int output = 0;
 	for(auto i = m_childBegin; i < nodeSize; ++i)
 		output += m_cuboids[i.get()].volume();
 	return output;
@@ -34,7 +34,7 @@ void RTreeBooleanLowZOnly::Node::insertLeaf(const Cuboid& cuboid)
 void RTreeBooleanLowZOnly::Node::insertBranch(const Cuboid& cuboid, const Index& index)
 {
 	assert(m_leafEnd != m_childBegin);
-	int32_t toInsertAt = m_childBegin.get() - 1;
+	int toInsertAt = m_childBegin.get() - 1;
 	m_childIndices[toInsertAt] = index;
 	m_cuboids.insert(toInsertAt, cuboid);
 	--m_childBegin;
@@ -131,8 +131,8 @@ std::string RTreeBooleanLowZOnly::Node::toString()
 std::tuple<Cuboid, RTreeBooleanLowZOnly::ArrayIndex, RTreeBooleanLowZOnly::ArrayIndex> RTreeBooleanLowZOnly::findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids) const
 {
 	// May be negitive because resulting cuboids may intersect.
-	int32_t resultEmptySpace = INT32_MAX;
-	int32_t resultSize = INT32_MAX;
+	int resultEmptySpace = INT32_MAX;
+	int resultSize = INT32_MAX;
 	std::tuple<Cuboid, ArrayIndex, ArrayIndex> output;
 	const auto endInner = nodeSize + 1;
 	// Skip the final iteration of the outer loop, it would be redundant.
@@ -145,8 +145,8 @@ std::tuple<Cuboid, RTreeBooleanLowZOnly::ArrayIndex, RTreeBooleanLowZOnly::Array
 			const Cuboid& secondCuboid = cuboids[secondResultIndex.get()];
 			Cuboid sum = firstCuboid;
 			sum.maybeExpand(secondCuboid);
-			const int32_t size = sum.volume();
-			int32_t emptySpace = size - (firstCuboid.volume() + secondCuboid.volume());
+			const int size = sum.volume();
+			int emptySpace = size - (firstCuboid.volume() + secondCuboid.volume());
 			// If empty space is equal hen prefer the smaller result.
 			// TODO: This may be counter productive.
 			if(resultEmptySpace > emptySpace || (resultEmptySpace == emptySpace && resultSize > size))
@@ -430,14 +430,14 @@ void RTreeBooleanLowZOnly::comb()
 			// Try to merge child branches into this branch.
 			bool merged = false;
 			// plus one because we are removing one as well as adding.
-			int32_t capacity = node.unusedCapacity() + 1;
+			int capacity = node.unusedCapacity() + 1;
 			const auto& nodeChildIndices = node.getChildIndices();
 			for(ArrayIndex i = node.offsetOfFirstChild(); i < nodeSize; ++i)
 			{
 				// Take copy rather then reference because the original may be erased.
 				const Index childIndex = nodeChildIndices[i.get()];
 				Node& childNode = m_nodes[childIndex];
-				int32_t childSize = childNode.getChildCount() + childNode.getLeafCount();
+				int childSize = childNode.getChildCount() + childNode.getLeafCount();
 				if(childSize <= capacity)
 				{
 					// Child can fit into parent, copy the elements and discard.
@@ -596,9 +596,9 @@ void RTreeBooleanLowZOnly::prepare()
 	if(toSort)
 		sort();
 }
-int32_t RTreeBooleanLowZOnly::leafCount() const
+int RTreeBooleanLowZOnly::leafCount() const
 {
-	int32_t output = 0;
+	int output = 0;
 	for(Index i = Index::create(0); i < m_nodes.size(); ++i)
 	{
 		if(m_emptySlots.contains(i))
@@ -608,29 +608,29 @@ int32_t RTreeBooleanLowZOnly::leafCount() const
 	}
 	return output;
 }
-const RTreeBooleanLowZOnly::Node& RTreeBooleanLowZOnly::getNode(int32_t i) const { return m_nodes[Index::create(i)]; }
-const Cuboid RTreeBooleanLowZOnly::getNodeCuboid(int32_t i, int32_t o) const { return m_nodes[Index::create(i)].getCuboids()[o]; }
-const RTreeBooleanLowZOnly::Index& RTreeBooleanLowZOnly::getNodeChild(int32_t i, int32_t o) const { return m_nodes[Index::create(i)].getChildIndices()[o]; }
-bool RTreeBooleanLowZOnly::queryPoint(int32_t x, int32_t y, int32_t z) const { return query(Point3D::create(x,y,z)); }
-int32_t RTreeBooleanLowZOnly::totalNodeVolume() const
+const RTreeBooleanLowZOnly::Node& RTreeBooleanLowZOnly::getNode(int i) const { return m_nodes[Index::create(i)]; }
+const Cuboid RTreeBooleanLowZOnly::getNodeCuboid(int i, int o) const { return m_nodes[Index::create(i)].getCuboids()[o]; }
+const RTreeBooleanLowZOnly::Index& RTreeBooleanLowZOnly::getNodeChild(int i, int o) const { return m_nodes[Index::create(i)].getChildIndices()[o]; }
+bool RTreeBooleanLowZOnly::queryPoint(int x, int y, int z) const { return query(Point3D::create(x,y,z)); }
+int RTreeBooleanLowZOnly::totalNodeVolume() const
 {
-	int32_t output = 0;
+	int output = 0;
 	const auto end = m_nodes.size();
 	for(Index index = Index::create(0); index < end; ++index)
 		if(!m_emptySlots.contains(index))
 			output += m_nodes[index].getNodeVolume();
 	return output;
 }
-int32_t RTreeBooleanLowZOnly::totalLeafVolume() const
+int RTreeBooleanLowZOnly::totalLeafVolume() const
 {
-	int32_t output = 0;
+	int output = 0;
 	const auto end = m_nodes.size();
 	for(Index index = Index::create(0); index < end; ++index)
 		if(!m_emptySlots.contains(index))
 			output += m_nodes[index].getLeafVolume();
 	return output;
 }
-int32_t RTreeBooleanLowZOnly::getNodeSize() { return nodeSize; }
+int RTreeBooleanLowZOnly::getNodeSize() { return nodeSize; }
 void RTreeBooleanLowZOnly::assertAllLeafsAreUnique() const
 {
 	// Will assert fail if any leaves are not unique.

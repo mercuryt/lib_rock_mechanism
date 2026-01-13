@@ -66,15 +66,15 @@ bool MaterialType::empty() { return g_materialTypeData.m_density.empty(); }
 MaterialTypeId MaterialType::size() { return MaterialTypeId::create(g_materialTypeData.m_name.size()); }
 std::string& MaterialType::getName(const MaterialTypeId& id) { return g_materialTypeData.m_name[id]; }
 Density MaterialType::getDensity(const MaterialTypeId& id) { return g_materialTypeData.m_density[id]; }
-int32_t MaterialType::getHardness(const MaterialTypeId& id) { return g_materialTypeData.m_hardness[id]; }
+int MaterialType::getHardness(const MaterialTypeId& id) { return g_materialTypeData.m_hardness[id]; }
 bool MaterialType::getTransparent(const MaterialTypeId& id) { return g_materialTypeData.m_transparent[id]; }
-int32_t MaterialType::getValuePerUnitFullDisplacement(const MaterialTypeId& id) { return g_materialTypeData.m_valuePerUnitFullDisplacement[id]; }
+int MaterialType::getValuePerUnitFullDisplacement(const MaterialTypeId& id) { return g_materialTypeData.m_valuePerUnitFullDisplacement[id]; }
 MaterialCategoryTypeId MaterialType::getMaterialTypeCategory(const MaterialTypeId& id) { return g_materialTypeData.m_solidCategory[id]; }
 std::vector<SpoilsDataTypeId>& MaterialType::getSpoilData(const MaterialTypeId& id) { return g_materialTypeData.m_spoilData[id]; }
 Temperature MaterialType::getMeltingPoint(const MaterialTypeId& id) { return g_materialTypeData.m_meltingPoint[id]; }
 FluidTypeId MaterialType::getMeltsInto(const MaterialTypeId& id) { return g_materialTypeData.m_meltsInto[id]; }
 bool MaterialType::canMelt(const MaterialTypeId& id) { return g_materialTypeData.m_meltsInto[id].exists(); }
-Mass MaterialType::getMassForSolidVolumeAsANumberOfPoints(const MaterialTypeId& id, int32_t numberOfPoints) { return {(int32_t)(getDensity(id).get() * Config::maxPointVolume.get()) * numberOfPoints};}
+Mass MaterialType::getMassForSolidVolumeAsANumberOfPoints(const MaterialTypeId& id, int numberOfPoints) { return {(int)(getDensity(id).get() * Config::maxPointVolume.get()) * numberOfPoints};}
 // Fire.
 bool MaterialType::canBurn(const MaterialTypeId& id) { return g_materialTypeData.m_burnStageDuration[id].exists(); }
 Step MaterialType::getBurnStageDuration(const MaterialTypeId& id) { return g_materialTypeData.m_burnStageDuration[id]; }

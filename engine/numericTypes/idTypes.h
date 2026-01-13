@@ -1,7 +1,7 @@
 #pragma once
 #include "../strongInteger.h"
 #include <cstdint>
-using AreaIdWidth = int32_t;
+using AreaIdWidth = int;
 class AreaId : public StrongInteger<AreaId, AreaIdWidth, INT32_MAX, 0>
 {
 public:
@@ -10,7 +10,7 @@ public:
 inline void to_json(Json& data, const AreaId& index) { data = index.get(); }
 inline void from_json(const Json& data, AreaId& index) { index = AreaId::create(data.get<AreaIdWidth>()); }
 
-using ItemIdWidth = int32_t;
+using ItemIdWidth = int;
 class ItemId : public StrongInteger<ItemId, ItemIdWidth, INT32_MAX, 0>
 {
 public:
@@ -19,7 +19,7 @@ public:
 inline void to_json(Json& data, const ItemId& index) { data = index.get(); }
 inline void from_json(const Json& data, ItemId& index) { index = ItemId::create(data.get<ItemIdWidth>()); }
 
-using ActorIdWidth = int32_t;
+using ActorIdWidth = int;
 class ActorId : public StrongInteger<ActorId, ActorIdWidth, INT32_MAX, 0>
 {
 public:
@@ -28,7 +28,7 @@ public:
 inline void to_json(Json& data, const ActorId& index) { data = index.get(); }
 inline void from_json(const Json& data, ActorId& index) { index = ActorId::create(data.get<ActorIdWidth>()); }
 
-using VisionCuboidIdWidth = int32_t;
+using VisionCuboidIdWidth = int;
 class VisionCuboidId : public StrongInteger<VisionCuboidId, VisionCuboidIdWidth, INT32_MAX, 0>
 {
 public:
@@ -46,8 +46,8 @@ public:
 inline void to_json(Json& data, const FactionId& index) { data = index.get(); }
 inline void from_json(const Json& data, FactionId& index) { index = FactionId::create(data.get<FactionIdWidth>()); }
 
-using ObjectiveTypeIdWidth = int8_t;
-class ObjectiveTypeId : public StrongInteger<ObjectiveTypeId, ObjectiveTypeIdWidth, INT8_MAX, 0>
+using ObjectiveTypeIdWidth = int;
+class ObjectiveTypeId : public StrongInteger<ObjectiveTypeId, ObjectiveTypeIdWidth, INT_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const ObjectiveTypeId& index) const { return index.get(); } };
@@ -127,8 +127,8 @@ public:
 void to_json(Json& data, const ShapeId& index);
 void from_json(const Json& data, ShapeId& index);
 
-using SkillTypeIdWidth = int16_t;
-class SkillTypeId : public StrongInteger<SkillTypeId, SkillTypeIdWidth, INT16_MAX, 0>
+using SkillTypeIdWidth = int;
+class SkillTypeId : public StrongInteger<SkillTypeId, SkillTypeIdWidth, INT_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const SkillTypeId& index) const { return index.get(); } };
@@ -145,8 +145,8 @@ public:
 void to_json(Json& data, const MoveTypeId& index);
 void from_json(const Json& data, MoveTypeId& index);
 
-using BodyTypeIdWidth = int8_t;
-class BodyTypeId : public StrongInteger<BodyTypeId, BodyTypeIdWidth, INT8_MAX, 0>
+using BodyTypeIdWidth = int;
+class BodyTypeId : public StrongInteger<BodyTypeId, BodyTypeIdWidth, INT_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const BodyTypeId& index) const { return index.get(); } };
@@ -154,8 +154,8 @@ public:
 void to_json(Json& data, const BodyTypeId& index);
 void from_json(const Json& data, BodyTypeId& index);
 
-using BodyPartTypeIdWidth = int8_t;
-class BodyPartTypeId : public StrongInteger<BodyPartTypeId, BodyPartTypeIdWidth, INT8_MAX, 0>
+using BodyPartTypeIdWidth = int;
+class BodyPartTypeId : public StrongInteger<BodyPartTypeId, BodyPartTypeIdWidth, INT_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const BodyPartTypeId& index) const { return index.get(); } };

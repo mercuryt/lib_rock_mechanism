@@ -101,8 +101,8 @@ class Space
 public:
 	const Coordinates m_pointToIndexConversionMultipliers;
 	const Coordinates m_dimensions;
-	int32_t m_sizeXInChunks;
-	int32_t m_sizeXTimesYInChunks;
+	int m_sizeXInChunks;
+	int m_sizeXTimesYInChunks;
 	//TODO: replace these with functions accessing m_dimensions.
 	const Distance m_sizeX;
 	const Distance m_sizeY;
@@ -116,7 +116,7 @@ public:
 	void unsetDynamic(const auto& shape) { m_dynamic.maybeRemove(shape); }
 	void doSupportStep() { m_support.doStep(m_area); }
 	void prepareRtrees();
-	[[nodiscard]] int32_t size() const { return m_dimensions.prod(); }
+	[[nodiscard]] int size() const { return m_dimensions.prod(); }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Cuboid boundry() const;
 	[[nodiscard]] OffsetCuboid offsetBoundry() const;
@@ -259,7 +259,7 @@ public:
 		assert(solid_isAny(shape));
 		return MaterialType::getDensity(m_solid.queryGetOne(shape)) * FullDisplacement::create(Config::maxPointVolume.get());
 	}
-	[[nodiscard]] std::pair<MaterialTypeId, int32_t> solid_getHardest(const CuboidSet& cuboids);
+	[[nodiscard]] std::pair<MaterialTypeId, int> solid_getHardest(const CuboidSet& cuboids);
 	// -PointFeature.
 	void pointFeature_add(const Cuboid& cuboid, const PointFeature& feature);
 	// TODO: remove pointFeature_add, use cuboid instead.

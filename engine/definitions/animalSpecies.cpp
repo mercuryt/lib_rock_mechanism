@@ -1,7 +1,7 @@
 #include "definitions/animalSpecies.h"
 ShapeId AnimalSpecies::shapeForPercentGrown(const AnimalSpeciesId& id, const Percent& percentGrown)
 {
-	int32_t index = util::scaleByPercentRange(0, g_animalSpeciesData.m_shapes[id].size() - 1, percentGrown);
+	int index = util::scaleByPercentRange(0, g_animalSpeciesData.m_shapes[id].size() - 1, percentGrown);
 	return g_animalSpeciesData.m_shapes[id][index];
 }
 // Static method.
@@ -51,7 +51,7 @@ std::array<AttributeLevel, 3> AnimalSpecies::getStrength(const AnimalSpeciesId& 
 std::array<AttributeLevel, 3> AnimalSpecies::getDextarity(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_dextarity[id]; };
 std::array<AttributeLevel, 3> AnimalSpecies::getAgility(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_agility[id]; };
 std::array<Mass, 3> AnimalSpecies::getMass(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_mass[id]; };
-std::array<int32_t, 3> AnimalSpecies::getHeight(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_height[id]; };
+std::array<int, 3> AnimalSpecies::getHeight(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_height[id]; };
 std::array<Step, 2> AnimalSpecies::getDeathAgeSteps(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_deathAgeSteps[id]; };
 Step AnimalSpecies::getStepsTillFullyGrown(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_stepsTillFullyGrown[id]; };
 Step AnimalSpecies::getStepsTillDieWithoutFood(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_stepsTillDieWithoutFood[id]; };
@@ -69,7 +69,7 @@ bool AnimalSpecies::getEatsMeat(const AnimalSpeciesId& id) { return g_animalSpec
 bool AnimalSpecies::getEatsLeaves(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_eatsLeaves[id]; };
 bool AnimalSpecies::getEatsFruit(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_eatsFruit[id]; };
 Distance AnimalSpecies::getVisionRange(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_visionRange[id]; };
-int32_t AnimalSpecies::getBodyScale(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_bodyScale[id]; };
+int AnimalSpecies::getBodyScale(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_bodyScale[id]; };
 MaterialTypeId AnimalSpecies::getMaterialType(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_solid[id]; };
 MoveTypeId AnimalSpecies::getMoveType(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_moveType[id]; };
 FluidTypeId AnimalSpecies::getFluidType(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_fluidType[id]; };

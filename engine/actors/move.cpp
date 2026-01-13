@@ -495,7 +495,7 @@ Step Actors::move_delayToMoveInto(const ActorIndex& index, const Point3D& from, 
 	static const Step stepsPerSecond = Config::stepsPerSecond;
 	MoveCost cost = space.shape_moveCostFrom(to, m_moveType[index], from);
 	assert(cost != 0);
-	return Step::create(std::max(1, int32_t(std::round(float(stepsPerSecond.get() * cost.get()) / float(speed.get())))));
+	return Step::create(std::max(1, int(std::round(float(stepsPerSecond.get() * cost.get()) / float(speed.get())))));
 }
 SmallSet<Point3D> Actors::move_makePathTo(const ActorIndex& index, const Point3D& destination) const
 {

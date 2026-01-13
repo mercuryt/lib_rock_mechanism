@@ -16,6 +16,6 @@ public:
 	void maybeFall(const Cuboid& cuboid) { m_maybeFall.maybeAdd(cuboid); }
 	void prepare();
 	[[nodiscard]] CuboidSet getUnsupported(const Area& area, const Cuboid& cuboid) const;
-	[[nodiscard]] int32_t maybeFallVolume() const { return m_maybeFall.volume(); }
+	[[nodiscard]] int maybeFallVolume() const { return m_maybeFall.volume(); }
 	[[nodiscard]] bool canPrepare() const { return m_support.canPrepare(); }
 };

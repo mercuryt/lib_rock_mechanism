@@ -8,7 +8,7 @@
 #include "../config/psycology.h"
 #include "confrontation.h"
 #include "followScript.h"
-ChastiseObjective::ChastiseObjective(Area& area, const ActorIndex& recipient, std::string&& subject, const SkillTypeId& skill, int8_t duration, bool angry) :
+ChastiseObjective::ChastiseObjective(Area& area, const ActorIndex& recipient, std::string&& subject, const SkillTypeId& skill, int duration, bool angry) :
 	Objective(Config::Social::socialPriorityHigh),
 	m_subject(std::move(subject)),
 	m_skillBeingCritisized(skill),

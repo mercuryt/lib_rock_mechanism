@@ -65,8 +65,8 @@ class SimulationHasPathMemos final
 	std::vector<bool> m_reservedDepthFirst;
 	std::mutex m_mutex;
 public:
-	std::pair<PathMemoBreadthFirst*, int8_t> getBreadthFirst();
-	std::pair<PathMemoDepthFirst*, int8_t> getDepthFirst();
-	void releaseBreadthFirst(int8_t index);
-	void releaseDepthFirst(int8_t index);
+	std::pair<PathMemoBreadthFirst*, int> getBreadthFirst();
+	std::pair<PathMemoDepthFirst*, int> getDepthFirst();
+	void releaseBreadthFirst(int index);
+	void releaseDepthFirst(int index);
 };

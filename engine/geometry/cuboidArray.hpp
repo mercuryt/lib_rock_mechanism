@@ -122,21 +122,21 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfCuboidsContaini
 template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboids(const Sphere& sphere) const
 {
-	int32_t radius = sphere.radius.get();
-	const Eigen::Array<int32_t, 3, 1>& center = sphere.center.data.template cast<int32_t>();
+	int radius = sphere.radius.get();
+	const Eigen::Array<int, 3, 1>& center = sphere.center.data.template cast<int>();
 	return !(
-		((m_high.template cast<int32_t>() + radius) < center.replicate(1, capacity)).colwise().any() ||
-		((m_low.template cast<int32_t>() - radius) > center.replicate(1, capacity)).colwise().any()
+		((m_high.template cast<int>() + radius) < center.replicate(1, capacity)).colwise().any() ||
+		((m_low.template cast<int>() - radius) > center.replicate(1, capacity)).colwise().any()
 	);
 }
 template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfContainedCuboids(const Sphere& sphere) const
 {
-	int32_t radius = sphere.radius.get();
-	const Eigen::Array<int32_t, 3, 1>& center = sphere.center.data.cast<int32_t>();
+	int radius = sphere.radius.get();
+	const Eigen::Array<int, 3, 1>& center = sphere.center.data.cast<int>();
 	return !(
-		((m_high.template cast<int32_t>() - radius) >= center.replicate(1, capacity)).colwise().any() &&
-		((m_low.template cast<int32_t>() + radius) <= center.replicate(1, capacity)).colwise().any()
+		((m_high.template cast<int>() - radius) >= center.replicate(1, capacity)).colwise().any() &&
+		((m_low.template cast<int>() + radius) <= center.replicate(1, capacity)).colwise().any()
 	);
 }
 template<int capacity>
@@ -403,8 +403,8 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfMergeableCuboid
 	const Bool3DArray sharedAxesHigh = m_high == cuboid.m_high.data.replicate(1, capacity);
 	const Bool3DArray sharedAxesLow = m_low == cuboid.m_low.data.replicate(1, capacity);
 	const Bool3DArray highAndLowAreShared = sharedAxesHigh && sharedAxesLow;
-	const Eigen::Array<int8_t, 3, capacity> highAndLowAreSharedInteger = highAndLowAreShared.template cast<int8_t>();
-	const Eigen::Array<int8_t, 1, capacity> countOfSharedAxes = highAndLowAreSharedInteger.colwise().sum();
+	const Eigen::Array<int, 3, capacity> highAndLowAreSharedInteger = highAndLowAreShared.template cast<int>();
+	const Eigen::Array<int, 1, capacity> countOfSharedAxes = highAndLowAreSharedInteger.colwise().sum();
 	const BoolArray twoAxesAreShared = countOfSharedAxes == 2;
 	return twoAxesAreShared && indicesOfTouchingCuboids(cuboid);
 }

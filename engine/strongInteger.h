@@ -76,8 +76,8 @@ struct StrongInteger
 	[[nodiscard]] constexpr bool exists() const { return data != NULL_VALUE; }
 	[[nodiscard]] constexpr bool empty() const { return data == NULL_VALUE; }
 	[[nodiscard]] constexpr bool modulusIsZero(const This& other) const { assert(exists()); return data % other.data == 0;  }
-	[[nodiscard]] constexpr Derived operator++(int32_t) { assert(exists()); assert(data != NULL_VALUE); T d = data; ++data; return Derived::create(d); }
-	[[nodiscard]] constexpr Derived operator--(int32_t) { assert(exists()); assert(data != MIN_VALUE); T d = data; --data; return Derived::create(d); }
+	[[nodiscard]] constexpr Derived operator++(int) { assert(exists()); assert(data != NULL_VALUE); T d = data; ++data; return Derived::create(d); }
+	[[nodiscard]] constexpr Derived operator--(int) { assert(exists()); assert(data != MIN_VALUE); T d = data; --data; return Derived::create(d); }
 	[[nodiscard]] constexpr bool operator==(const This& other) const { return other.data == data; }
 	[[nodiscard]] constexpr bool operator!=(const This& other) const { return other.data != data; }
 	template<Numeric Other>
@@ -164,8 +164,8 @@ struct StrongInteger
 		assert(exists());
 		if(other < 0)
 			return addWithMaximum(other * -1);
-		int32_t result = (int32_t)data - (int32_t)other;
-		return Derived::create(result < (int32_t)MIN_VALUE ? MIN_VALUE : result);
+		int result = (int)data - (int)other;
+		return Derived::create(result < (int)MIN_VALUE ? MIN_VALUE : result);
 	}
 	[[nodiscard]] constexpr Derived addWithMaximum(const This& other) const { assert(other.exists()); return addWithMaximum(other.data); }
 	template<Numeric Other>

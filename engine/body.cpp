@@ -15,7 +15,7 @@
 #include "actors/actors.h"
 #include <cstdint>
 // Static method.
-Wound::Wound(Area& area, const ActorIndex& a, const WoundType wt, BodyPart& bp, Hit h, int32_t bvr, Percent ph) :
+Wound::Wound(Area& area, const ActorIndex& a, const WoundType wt, BodyPart& bp, Hit h, int bvr, Percent ph) :
 	woundType(wt), bodyPart(bp), hit(h), bleedVolumeRate(bvr), percentHealed(ph), healEvent(area.m_eventSchedule)
 {
 	AnimalSpeciesId species = area.getActors().getSpecies(a);
@@ -25,7 +25,7 @@ Wound::Wound(Area& area, const ActorIndex& a, const WoundType wt, BodyPart& bp, 
 }
 Wound::Wound(const Json& data, DeserializationMemo& deserializationMemo, BodyPart& bp) :
 	woundType(woundTypeByName(data["woundType"].get<std::string>())),
-	bodyPart(bp), hit(data["hit"]), bleedVolumeRate(data["bleedVolumeRate"].get<int32_t>()),
+	bodyPart(bp), hit(data["hit"]), bleedVolumeRate(data["bleedVolumeRate"].get<int>()),
 	percentHealed(data["percentHealed"].get<Percent>()), healEvent(deserializationMemo.m_simulation.m_eventSchedule) { }
 Json Wound::toJson() const
 {
@@ -128,7 +128,7 @@ Json Body::toJson() const
 BodyPart& Body::pickABodyPartByVolume(Simulation& simulation)
 {
 	Random& random = simulation.m_random;
-	int32_t roll = random.getInRange(0, m_totalVolume.get());
+	int roll = random.getInRange(0, m_totalVolume.get());
 	for(BodyPart& bodyPart : m_bodyParts)
 	{
 		FullDisplacement volume = BodyPartType::getVolume(bodyPart.bodyPartType);
@@ -155,7 +155,7 @@ void Body::getHitDepth(Hit& hit, const BodyPart& bodyPart)
 	if(piercesSkin(hit, bodyPart))
 	{
 		++hit.depth;
-		int32_t hardnessDelta = std::max(1, (int32_t)MaterialType::getHardness(bodyPart.materialType) - (int32_t)MaterialType::getHardness(hit.materialType));
+		int hardnessDelta = std::max(1, (int)MaterialType::getHardness(bodyPart.materialType) - (int)MaterialType::getHardness(hit.materialType));
 		Force forceDelta = Force::create(hardnessDelta * hit.area * Config::skinPierceForceCost);
 		hit.force = hit.force < forceDelta ? Force::create(0) : hit.force - forceDelta;
 		if(piercesFat(hit, bodyPart))
@@ -179,8 +179,8 @@ Wound& Body::addWound(Area& area, BodyPart& bodyPart, Hit& hit)
 	// Run Body::getHitDepth on hit before calling this method.
 	assert(hit.depth != 0);
 	Actors& actors = area.getActors();
-	int32_t scale = AnimalSpecies::getBodyScale(actors.getSpecies(m_actor));
-	int32_t bleedVolumeRate = WoundCalculations::getBleedVolumeRate(hit, bodyPart.bodyPartType, scale);
+	int scale = AnimalSpecies::getBodyScale(actors.getSpecies(m_actor));
+	int bleedVolumeRate = WoundCalculations::getBleedVolumeRate(hit, bodyPart.bodyPartType, scale);
 	Wound& wound = bodyPart.wounds.emplace_back(area, m_actor, hit.woundType, bodyPart, hit, bleedVolumeRate);
 	float ratio = (float)hit.area / (BodyPartType::getVolume(bodyPart.bodyPartType).get() * scale);
 	if(BodyPartType::getVital(bodyPart.bodyPartType) && hit.depth == 4 && ratio >= Config::hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea)
@@ -257,7 +257,7 @@ void Body::sever(BodyPart& bodyPart, Wound& wound)
 }
 void Body::recalculateBleedAndImpairment(Area& area)
 {
-	int32_t bleedVolumeRate = 0;
+	int bleedVolumeRate = 0;
 	m_impairManipulationPercent = Percent::create(0);
 	m_impairMovePercent = Percent::create(0);
 	for(BodyPart& bodyPart : m_bodyParts)
@@ -324,7 +324,7 @@ void Body::recalculateBleedAndImpairment(Area& area)
 Wound& Body::getWoundWhichIsBleedingTheMost()
 {
 	Wound* output = nullptr;
-	int32_t outputBleedRate = 0;
+	int outputBleedRate = 0;
 	for(BodyPart& bodyPart : m_bodyParts)
 		for(Wound& wound : bodyPart.wounds)
 			if(wound.bleedVolumeRate >= outputBleedRate)
@@ -356,29 +356,29 @@ Step Body::getStepsTillBleedToDeath() const
 bool Body::piercesSkin(Hit hit, const BodyPart& bodyPart) const
 {
 	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
-	int32_t pierceScore = (int32_t)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceSkinModifier;
-	int32_t defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
+	int pierceScore = (int)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceSkinModifier;
+	int defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
 	return pierceScore > defenseScore;
 }
 bool Body::piercesFat(Hit hit, const BodyPart& bodyPart) const
 {
 	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
-	int32_t pierceScore = (int32_t)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceFatModifier;
-	int32_t defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
+	int pierceScore = (int)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceFatModifier;
+	int defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
 	return pierceScore > defenseScore;
 }
 bool Body::piercesMuscle(Hit hit, const BodyPart& bodyPart) const
 {
 	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
-	int32_t pierceScore = (int32_t)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceMuscelModifier;
-	int32_t defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
+	int pierceScore = (int)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceMuscelModifier;
+	int defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
 	return pierceScore > defenseScore;
 }
 bool Body::piercesBone(Hit hit, const BodyPart& bodyPart) const
 {
 	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
-	int32_t pierceScore = (int32_t)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceBoneModifier;
-	int32_t defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
+	int pierceScore = (int)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceBoneModifier;
+	int defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
 	return pierceScore > defenseScore;
 }
 FullDisplacement Body::healthyBloodVolume() const

@@ -35,7 +35,7 @@ public:
 	void create(const ActorReference& actor);
 	void maybeCreate(const ActorReference& actor);
 	void cancelIfExists(const ActorReference& actor);
-	void readStepSegment(const int32_t& begin, const int32_t& end);
+	void readStepSegment(const int& begin, const int& end);
 	void doStep();
 	void readStep();
 	void writeStep();

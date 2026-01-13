@@ -228,7 +228,7 @@ void FluidGroup::readStep(Area& area)
 	while(m_excessVolume > 0 && m_fillQueue.groupVolume() != 0 && m_fillQueue.m_groupStart != m_fillQueue.m_queue.end())
 	{
 		// If there isn't enough to spread evenly then do nothing.
-		if((int32_t)m_excessVolume < m_fillQueue.groupVolume())
+		if((int)m_excessVolume < m_fillQueue.groupVolume())
 			break;
 		// How much fluid is there space for total.
 		CollisionVolume flowCapacity = m_fillQueue.groupCapacityPerPoint();
@@ -245,7 +245,7 @@ void FluidGroup::readStep(Area& area)
 	while(m_excessVolume < 0 && m_drainQueue.groupVolume() != 0 && m_drainQueue.m_groupStart != m_drainQueue.m_queue.end())
 	{
 		// If there isn't enough to spread evenly then do nothing.
-		if((int32_t)(-1 * m_excessVolume) < m_drainQueue.groupVolume())
+		if((int)(-1 * m_excessVolume) < m_drainQueue.groupVolume())
 			break;
 		// How much is avaliable to drain total.
 		CollisionVolume flowCapacity = m_drainQueue.groupCapacityPerPoint();
@@ -270,10 +270,10 @@ void FluidGroup::readStep(Area& area)
 		assert(drainVolume != 0);
 		CollisionVolume fillVolume = m_fillQueue.groupLevel(area, *this);
 		assert(fillVolume < Config::maxPointVolume);
-		//int32_t fillInverseCapacity = Config::maxPointVolume - m_fillQueue.m_groupStart->capacity;
+		//int fillInverseCapacity = Config::maxPointVolume - m_fillQueue.m_groupStart->capacity;
 		//assert(m_drainQueue.m_groupStart->point->m_z > m_fillQueue.m_groupStart->point->m_z || drainVolume >= fillVolume);
-		//int32_t drainZ = m_drainQueue.m_groupStart->point->m_z;
-		//int32_t fillZ = m_fillQueue.m_groupStart->point->m_z;
+		//int drainZ = m_drainQueue.m_groupStart->point->m_z;
+		//int fillZ = m_fillQueue.m_groupStart->point->m_z;
 		//TODO: using fillVolume > drainVolume here rather then the above assert feels like a hack.
 		//if(drainZ < fillZ || (drainZ == fillZ && (fillVolume >= drainVolume || (drainVolume == 1 && fillVolume == 0))))
 		[[maybe_unused]] bool stopHere = area.m_simulation.m_step == 6 && fillVolume == 0 && drainVolume == 2;
@@ -314,7 +314,7 @@ void FluidGroup::readStep(Area& area)
 		if(m_fillQueue.m_groupStart->cuboid.m_high.z() == m_drainQueue.m_groupStart->cuboid.m_high.z())
 		{
 			CollisionVolume totalLevel = (fillVolume * m_fillQueue.groupVolume()) + (drainVolume * m_drainQueue.groupVolume());
-			int32_t totalCount = m_fillQueue.groupVolume() + m_drainQueue.groupVolume();
+			int totalCount = m_fillQueue.groupVolume() + m_drainQueue.groupVolume();
 			// We want to round down here so default truncation is fine.
 			CollisionVolume equalibriumLevel = totalLevel / totalCount;
 			maxDrainForEqualibrium = drainVolume - equalibriumLevel;
@@ -354,7 +354,7 @@ void FluidGroup::readStep(Area& area)
 		m_drainQueue.recordDelta(area, PerPointDrain, flowCapacityDrain, flowTillNextStepDrain);
 		if(PerPointFill != 0)
 			m_fillQueue.recordDelta(area, *this, PerPointFill, flowCapacityFill, flowTillNextStepFill);
-		m_excessVolume += (int32_t)totalDrain.get() - (int32_t)totalFill.get();
+		m_excessVolume += (int)totalDrain.get() - (int)totalFill.get();
 		// If we are at equilibrium then stop looping.
 		// Don't mark stable because there may be newly added adjacent to flow into next tick.
 		if(PerPointDrain == maxDrainForEqualibrium)
@@ -682,7 +682,7 @@ Quantity FluidGroup::countPointsOnSurface(const Area& area) const
 	// TODO: could be optimized by only looking at the topmost z level in DrainQueue::m_queue
 	return Quantity::create(m_drainQueue.m_set.countIf([&](const Point3D& point){ return space.isExposedToSky(point); }));
 }
-int32_t FluidGroup::countPoints() const { return m_drainQueue.m_set.volume(); }
+int FluidGroup::countPoints() const { return m_drainQueue.m_set.volume(); }
 void FluidGroup::validate(Area& area) const
 {
 	if constexpr(!doValidation)

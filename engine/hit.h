@@ -11,12 +11,12 @@
 // TODO: HitParamaters.
 struct Hit
 {
-	int32_t area;
+	int area;
 	Force force;
-	int32_t depth;
+	int depth;
 	MaterialTypeId materialType;
 	WoundType woundType;
-	Hit(int32_t a, const Force& f, const MaterialTypeId& mt, const WoundType& wt);
+	Hit(int a, const Force& f, const MaterialTypeId& mt, const WoundType& wt);
 	Hit(const Json& data);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] PsycologyWeight pain() const;

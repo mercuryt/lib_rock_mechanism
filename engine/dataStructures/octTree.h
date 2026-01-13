@@ -17,7 +17,7 @@ class Area;
 class VisionCuboidId;
 class Distance;
 
-class OctTreeIndex : public StrongInteger<OctTreeIndex, int16_t, INT16_MAX, 0>
+class OctTreeIndex : public StrongInteger<OctTreeIndex, int, INT_MAX, 0>
 {
 public:
 	OctTreeIndex() = default;
@@ -43,7 +43,7 @@ struct OctTreeNode
 	[[nodiscard]] bool hasChildren() const { return !center.empty(); }
 	[[nodiscard]] bool shouldSplit() const { return !hasChildren() && size() >= Config::minimumOccupantsForOctTreeToSplit && cuboid.dimensionForFacing(Facing6::Above) >= Config::minimumSizeForOctTreeToSplit; }
 	[[nodiscard]] bool shouldMerge() const { return hasChildren() && size() <= Config::maximumOccupantsForOctTreeToMerge; }
-	[[nodiscard]] int32_t size() const { return contents.size(); }
+	[[nodiscard]] int size() const { return contents.size(); }
 };
 
 class ActorOctTree
@@ -59,10 +59,10 @@ public:
 	void maybeSort();
 	void split(const OctTreeIndex& node);
 	void collapse(const OctTreeIndex& node);
-	[[nodiscard]] int32_t getCount() const { return m_nodes.size(); }
-	[[nodiscard]] int32_t getActorCount() const;
+	[[nodiscard]] int getCount() const { return m_nodes.size(); }
+	[[nodiscard]] int getActorCount() const;
 	[[nodiscard]] bool contains(const ActorReference& actor, const Point3D& coordinates);
-	[[nodiscard]] static int8_t getOctant(const Point3D& center, const Point3D& coordinates);
+	[[nodiscard]] static int getOctant(const Point3D& center, const Point3D& coordinates);
 	[[nodiscard]] static CuboidArray<8> subdivide(const Cuboid& cuboid);
 	template<class Action>
 	void query(const auto& queryShape, const VisionCuboidSetSIMD* visionCuboids, Action&& action)

@@ -76,9 +76,9 @@ public:
 	public:
 		ConstIterator(const CuboidArray& set, const int& index) : m_set(set), m_index(index) { }
 		ConstIterator operator++() { ++m_index; return *this; }
-		[[nodiscard]] ConstIterator operator++(int32_t) { auto output = *this; ++(*this); return output; }
+		[[nodiscard]] ConstIterator operator++(int) { auto output = *this; ++(*this); return output; }
 		ConstIterator operator--() { assert(m_index > 0); --m_index; return *this; }
-		[[nodiscard]] ConstIterator operator--(int32_t) { auto output = *this; --(*this); return output; }
+		[[nodiscard]] ConstIterator operator--(int) { auto output = *this; --(*this); return output; }
 		[[nodiscard]] Cuboid operator*() const { return m_set[m_index]; }
 		[[nodiscard]] bool operator==(const ConstIterator& other) const { assert(&m_set == &other.m_set); return m_index == other.m_index; }
 		[[nodiscard]] bool operator!=(const ConstIterator& other) const { assert(&m_set == &other.m_set); return m_index != other.m_index; }

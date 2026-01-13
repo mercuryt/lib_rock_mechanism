@@ -19,7 +19,7 @@ struct OffsetCuboid
 	[[nodiscard]] bool operator==(const OffsetCuboid& other) const = default;
 	[[nodiscard]] bool exists() const { return m_high.exists(); }
 	[[nodiscard]] bool empty() const { return m_high.empty(); }
-	[[nodiscard]] int32_t volume() const;
+	[[nodiscard]] int volume() const;
 	[[nodiscard]] bool contains(const Offset3D& offset) const;
 	[[nodiscard]] bool contains(const OffsetCuboid& other) const;
 	[[nodiscard]] bool intersects(const Offset3D& offset) const;
@@ -65,7 +65,7 @@ struct OffsetCuboid
 		[[nodiscard]] bool operator==(const ConstIterator& other) const;
 		[[nodiscard]] Offset3D operator*() const;
 		ConstIterator operator++();
-		[[nodiscard]] ConstIterator operator++(int32_t);
+		[[nodiscard]] ConstIterator operator++(int);
 	};
 	ConstIterator begin() const { return {*this, m_low}; }
 	ConstIterator end() const { auto current = m_low; current.setZ(m_high.z() + 1); return {*this, current}; }

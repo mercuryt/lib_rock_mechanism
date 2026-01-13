@@ -8,7 +8,7 @@ struct CuboidSet;
 class SimulationHasConstructedItemTypes
 {
 	SmallMap<ItemTypeId, ItemTypeParamaters> m_data;
-	int32_t m_nextNameNumber = 0;
+	int m_nextNameNumber = 0;
 public:
 	// After deserialization of the simulation call 'load' to load stored item type paramaters into ItemType.
 	void load();

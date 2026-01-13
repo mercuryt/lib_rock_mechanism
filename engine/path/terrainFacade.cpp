@@ -36,7 +36,7 @@ void FindPathResult::validate() const
 			assert(iter->isAdjacentTo(*(iter - 1)));
 	}
 }
-PathRequestNoHuristicData::PathRequestNoHuristicData(std::unique_ptr<PathRequestBreadthFirst> pr, int32_t sh) :
+PathRequestNoHuristicData::PathRequestNoHuristicData(std::unique_ptr<PathRequestBreadthFirst> pr, int sh) :
 	pathRequest(std::move(pr)),
 	spatialHash(sh)
 { }
@@ -50,7 +50,7 @@ PathRequestNoHuristicData& PathRequestNoHuristicData::operator=(PathRequestNoHur
 	spatialHash = other.spatialHash;
 	return *this;
 }
-PathRequestWithHuristicData::PathRequestWithHuristicData(std::unique_ptr<PathRequestDepthFirst> pr, int32_t sh) :
+PathRequestWithHuristicData::PathRequestWithHuristicData(std::unique_ptr<PathRequestDepthFirst> pr, int sh) :
 	pathRequest(std::move(pr)),
 	spatialHash(sh)
 { }
@@ -142,12 +142,12 @@ void TerrainFacade::doStep()
 	Actors& actors = m_area.getActors();
 	// Read step.
 	// Breadth first.
-	int32_t numberOfRequests = m_pathRequestsNoHuristic.size();
-	int32_t i = 0;
-	std::vector<std::pair<int32_t, int32_t>> ranges;
+	int numberOfRequests = m_pathRequestsNoHuristic.size();
+	int i = 0;
+	std::vector<std::pair<int, int>> ranges;
 	while(i < numberOfRequests)
 	{
-		int32_t end = std::min(numberOfRequests, i + Config::pathRequestsPerThread);
+		int end = std::min(numberOfRequests, i + Config::pathRequestsPerThread);
 		ranges.emplace_back(i, end);
 		i = end;
 	}
@@ -181,7 +181,7 @@ void TerrainFacade::doStep()
 	ranges.clear();
 	while(i < numberOfRequests)
 	{
-		int32_t end = std::min(numberOfRequests, i + Config::pathRequestsPerThread);
+		int end = std::min(numberOfRequests, i + Config::pathRequestsPerThread);
 		ranges.emplace_back(i, end);
 		i = end;
 	}

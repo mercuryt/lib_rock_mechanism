@@ -8,16 +8,16 @@ void Config::Psycology::load()
 	Json data = Json::parse(f);
 	data["angerToAddWhenChastised"].get_to(angerToAddWhenChastised);
 	data["angerToAddWhenLosingAConfrontation"].get_to(angerToAddWhenLosingAConfrontation);
-	coolDownForStandGround = Config::stepsPerMinute * data["coolDownForStandGroundMinutes"].get<int32_t>();
-	durationForAccidentalHomicidePrideLoss = Config::stepsPerDay * data["durationForAccidentalHomicidePrideLossDays"].get<int32_t>();
-	durationForConfrontationWinPrideGain = Config::stepsPerHour * data["durationForConfrontationWinPrideGainHours"].get<int32_t>();
-	durationForAccidentalInjuryPrideLoss = Config::stepsPerHour * data["durationForAccidentalInjuryPrideLossHours"].get<int32_t>();
-	durationForConfrontationLossPrideLoss = Config::stepsPerHour * data["durationForConfrontationLossPrideLossHours"].get<int32_t>();
+	coolDownForStandGround = Config::stepsPerMinute * data["coolDownForStandGroundMinutes"].get<int>();
+	durationForAccidentalHomicidePrideLoss = Config::stepsPerDay * data["durationForAccidentalHomicidePrideLossDays"].get<int>();
+	durationForConfrontationWinPrideGain = Config::stepsPerHour * data["durationForConfrontationWinPrideGainHours"].get<int>();
+	durationForAccidentalInjuryPrideLoss = Config::stepsPerHour * data["durationForAccidentalInjuryPrideLossHours"].get<int>();
+	durationForConfrontationLossPrideLoss = Config::stepsPerHour * data["durationForConfrontationLossPrideLossHours"].get<int>();
 	data["courageToGainOnStandGround"].get_to(courageToGainOnStandGround);
-	loseConfrontationDuration = Config::stepsPerDay * data["loseConfrontationDurationDays"].get<int32_t>();
+	loseConfrontationDuration = Config::stepsPerDay * data["loseConfrontationDurationDays"].get<int>();
 	data["minimumRatioOfDeltaToFriendlyMaliceToTestCourge"].get_to(minimumRatioOfDeltaToFriendlyMaliceToTestCourge);
 	data["minimumMaliceDeltaPlusCourageToHoldFirmWithoutTest"].get_to(minimumMaliceDeltaPlusCourageToHoldFirmWithoutTest);
 	data["prideToLoseWhenAccidentallyKilling"].get_to(prideToLoseWhenAccidentallyKilling);
 	data["prideToLoseWhenAccidentallyInjuring"].get_to(prideToLoseWhenAccidentallyInjuring);
-	intervalToCheckIfSoldiersFlee  = Config::stepsPerSecond * data["intervalToCheckIfSoldiersFleeseconds"].get<int32_t>();
+	intervalToCheckIfSoldiersFlee  = Config::stepsPerSecond * data["intervalToCheckIfSoldiersFleeseconds"].get<int>();
 }

@@ -89,7 +89,7 @@ std::pair<ActorReference, std::string> MistakeAtWorkDramaArc::doSwitchMaybeRetur
 			// TODO: Higher skill selects more important body parts to hit.
 			BodyPart& bodyPart = actors.body_pickABodyPartByVolume(victimIndex);
 			auto& random = m_area->m_simulation.m_random;
-			int32_t hitArea = random.getInRange(Config::accidentalHitSmallestArea, Config::accidentalHitLargestArea);
+			int hitArea = random.getInRange(Config::accidentalHitSmallestArea, Config::accidentalHitLargestArea);
 			// TODO: Generate wountType from hit area.
 			const WoundType woundType = random.getInEnum<WoundType>();
 			Hit hit(hitArea, hitForce, items.getMaterialType(tool), woundType);
@@ -186,7 +186,7 @@ void MistakeAtWorkDramaArc::callback()
 		}
 		if(chastiser.exists())
 		{
-			int8_t duration = m_area->m_simulation.m_random.getInRange(Config::Social::minimumDurationToChastiseCycles, Config::Social::maximumDurationToChastiseCycles);
+			int duration = m_area->m_simulation.m_random.getInRange(Config::Social::minimumDurationToChastiseCycles, Config::Social::maximumDurationToChastiseCycles);
 			if(death)
 				duration *= Config::Social::multipleForChastiseDurationIfSomeoneWasKilled;
 			else if(mistakeType == MistakeAtWorkType::HurtSomeone)

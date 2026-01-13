@@ -39,7 +39,7 @@ public:
 	FluidQueue(FluidAllocator& allocator) : m_queue(&allocator) { }
 	void noChange();
 	void findGroupEnd();
-	[[nodiscard]] int32_t groupVolume() const;
+	[[nodiscard]] int groupVolume() const;
 	[[nodiscard]] CollisionVolume groupLevel() const;
 	[[nodiscard]] CollisionVolume groupCapacityPerPoint() const;
 	[[nodiscard]] CollisionVolume groupFlowTillNextStepPerPoint() const;

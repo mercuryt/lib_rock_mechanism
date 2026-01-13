@@ -7,7 +7,7 @@ OffsetCuboid::OffsetCuboid(const Offset3D& high, const Offset3D& low) :
 {
 	assert(high >= low);
 }
-int32_t OffsetCuboid::volume() const
+int OffsetCuboid::volume() const
 {
 	return
 		((m_high.x().get() + 1) - m_low.x().get()) *
@@ -43,7 +43,7 @@ bool OffsetCuboid::canMerge(const OffsetCuboid& other) const
 	auto high = other.m_high.data == m_high.data;
 	auto low = other.m_low.data == m_low.data;
 	auto sum = high && low;
-	int32_t count = sum.count();
+	int count = sum.count();
 	assert(count != 3);
 	return count == 2;
 }
@@ -181,7 +181,7 @@ void OffsetCuboid::inflate(const Distance& distance)
 void OffsetCuboid::shift(const Facing6& direction, const Distance& distance)
 {
 	// TODO: make offsetsListDirectlyAdjacent return an Offset3D.
-	Offset3D offset = adjacentOffsets::direct[(int32_t)direction];
+	Offset3D offset = adjacentOffsets::direct[(int)direction];
 	shift(offset, distance);
 }
 void OffsetCuboid::shift(const Offset3D& offset, const Distance& distance)
@@ -208,7 +208,7 @@ void OffsetCuboid::rotate2D(const Facing4& facing)
 }
 void OffsetCuboid::rotate2D(const Facing4& oldFacing, const Facing4& newFacing)
 {
-	int32_t rotation = (int32_t)newFacing - (int32_t)oldFacing;
+	int rotation = (int)newFacing - (int)oldFacing;
 	if(rotation < 0)
 		rotation += 4;
 	rotate2D((Facing4)rotation);
@@ -247,7 +247,7 @@ OffsetCuboid::ConstIterator OffsetCuboid::ConstIterator::operator++()
 	}
 	return *this;
 }
-OffsetCuboid::ConstIterator OffsetCuboid::ConstIterator::operator++(int32_t)
+OffsetCuboid::ConstIterator OffsetCuboid::ConstIterator::operator++(int)
 {
 	auto copy = *this;
 	++(*this);

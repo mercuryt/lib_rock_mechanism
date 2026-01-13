@@ -6,12 +6,12 @@
 #include "../strongInteger.h"
 #include <array>
 
-using Octant = int8_t;
+using Octant = int;
 // TODO: unused.
-template<typename NodeData, int32_t splitThreashold, int32_t mergeThreashold>
+template<typename NodeData, int splitThreashold, int mergeThreashold>
 class Bool3D
 {
-	class Index : public StrongInteger<Index, int16_t, INT16_MAX, 0>
+	class Index : public StrongInteger<Index, int, INT_MAX, 0>
 	{
 	public:
 		Index() = default;

@@ -155,7 +155,7 @@ Percent MustEat::getPercentStarved() const
 		return Percent::create(0);
 	return m_hungerEvent.percentComplete();
 }
-std::pair<Point3D, int8_t> MustEat::getDesireToEatSomethingAt(Area& area, const Cuboid& cuboid) const
+std::pair<Point3D, int> MustEat::getDesireToEatSomethingAt(Area& area, const Cuboid& cuboid) const
 {
 	Space& space = area.getSpace();
 	Items& items = area.getItems();
@@ -192,7 +192,7 @@ std::pair<Point3D, int8_t> MustEat::getDesireToEatSomethingAt(Area& area, const 
 				return {plants.getLocation(plant), 3};
 	return {Point3D::null(), 0};
 }
-int8_t MustEat::getMinimumAcceptableDesire(Area& area) const
+int MustEat::getMinimumAcceptableDesire(Area& area) const
 {
 	assert(m_hungerEvent.exists());
 	// Sentients demand max rank ( prepared meals) to start, but become less picky as they get more hungry.
@@ -214,7 +214,7 @@ int8_t MustEat::getMinimumAcceptableDesire(Area& area) const
 Point3D MustEat::getOccupiedOrAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(Area& area)
 {
 	// Lower is better.
-	int8_t minEatDesire = INT8_MAX;
+	int minEatDesire = INT_MAX;
 	Point3D output;
 	const Actors& actors = area.getActors();
 	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);

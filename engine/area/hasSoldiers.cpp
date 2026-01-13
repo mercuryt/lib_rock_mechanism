@@ -12,7 +12,7 @@ void AreaHasSoldiersForFaction::prefetchToL3() const
 void AreaHasSoldiersCourageCheckThreadData::prefetchToL1(const AreaHasSoldiers& areaHasSoldiers) const
 {
 	auto& forFaction = areaHasSoldiers.m_data[faction];
-	int32_t count = std::min(Config::soldiersPerMoraleCheckThread, forFaction.soldiers.size());
+	int count = std::min(Config::soldiersPerMoraleCheckThread, forFaction.soldiers.size());
 	util::prefetchL1ReadModeSegment(forFaction.soldiers, start, count);
 	util::prefetchL1ReadModeSegment(forFaction.soldierLocations, start, count);
 	util::prefetchL1ReadModeSegment(forFaction.courage, start, count);
@@ -140,17 +140,17 @@ void AreaHasSoldiers::updateSoldierCombatScore(Area& area, const ActorIndex& act
 void AreaHasSoldiers::doStepThread(Area& area, const AreaHasSoldiersCourageCheckThreadData& threadData)
 {
 	threadData.prefetchToL1(*this);
-	SmallMap<int32_t, PsycologyWeight> actorsNeedingToTestCourage;
+	SmallMap<int, PsycologyWeight> actorsNeedingToTestCourage;
 	auto& forFaction = m_data[threadData.faction];
 	const auto& courage = forFaction.courage;
 	const auto& soldiers = forFaction.soldiers;
 	std::vector<Point3D> soldierLocationsForThisThread;
-	const int8_t end = forFaction.soldierLocations.size() - threadData.start > Config::soldiersPerMoraleCheckThread ? threadData.start + Config::soldiersPerMoraleCheckThread : forFaction.soldierLocations.size();
+	const int end = forFaction.soldierLocations.size() - threadData.start > Config::soldiersPerMoraleCheckThread ? threadData.start + Config::soldiersPerMoraleCheckThread : forFaction.soldierLocations.size();
 	// Wolud it be better to pass a view rather then copy the soldiers locations into a smaller vector?
 	for(int i = threadData.start; i != end; ++i)
 		soldierLocationsForThisThread.push_back(forFaction.soldierLocations[i]);
-	forFaction.maliceMap.batchQueryForEach(soldierLocationsForThisThread, [&](const PsycologyWeight maliceDelta, const Cuboid&, const int32_t& index){
-		const int32_t adjustedIndex = index + threadData.start;
+	forFaction.maliceMap.batchQueryForEach(soldierLocationsForThisThread, [&](const PsycologyWeight maliceDelta, const Cuboid&, const int& index){
+		const int adjustedIndex = index + threadData.start;
 		if(maliceDelta + courage[adjustedIndex] < Config::Psycology::minimumMaliceDeltaPlusCourageToHoldFirmWithoutTest)
 			actorsNeedingToTestCourage.insert(adjustedIndex, maliceDelta);
 	});
@@ -175,9 +175,9 @@ void AreaHasSoldiers::doStep(Area& area)
 		threadDatas.clear();
 		for(const auto& [faction, forFaction] : m_data)
 		{
-			int8_t soldiersAssignedToThread = 0;
+			int soldiersAssignedToThread = 0;
 			forFaction.prefetchToL3();
-			int8_t soldierCount = forFaction.soldiers.size();
+			int soldierCount = forFaction.soldiers.size();
 			while(soldiersAssignedToThread < soldierCount)
 			{
 				threadDatas.emplace_back(faction, soldiersAssignedToThread);

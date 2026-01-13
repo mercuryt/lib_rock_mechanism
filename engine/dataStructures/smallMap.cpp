@@ -63,7 +63,7 @@ template class std::vector<std::pair<FactionId, SmallMap<SpaceDesignation, Quant
 template class std::vector<std::pair<FactionId, StrongVector<Squad, SquadIndex>>>;
 //template class std::vector<std::pair<FactionId, HasOnSight>>;
 
-//template struct SmallMap<FactionId, RTreeDataIndex<SmallSet<Project*>, int16_t, noMerge>>;
+//template struct SmallMap<FactionId, RTreeDataIndex<SmallSet<Project*>, int, noMerge>>;
 template struct SmallMap<ActorOrItemIndex, DeckRotationDataSingle>;
 template struct SmallMap<ActorReference, ProjectWorker>;
 template struct SmallMap<ActorReference, SmallMap<ProjectRequirementCounts*, ItemReference>>;
@@ -109,15 +109,14 @@ template struct SmallMap<Point3D, TemperatureSource>;
 template struct SmallMap<Point3D, std::unique_ptr<DishonorCallback>>;
 template struct SmallMap<Point3D, std::vector<CraftStepTypeCategoryId>>;
 template struct SmallMap<Project*, DeckRotationDataSingle>;
-template struct SmallMap<RTreeNodeIndex, SmallSet<int32_t>>;
-template struct SmallMap<RTreeNodeIndex, SmallSet<int8_t>>;
+template struct SmallMap<RTreeNodeIndex, SmallSet<int>>;
 template struct SmallMap<SkillTypeId, Skill>;
 template struct SmallMap<SkillTypeId, std::vector<CraftJob*>>;
 template struct SmallMap<StockPile*, SmallSet<ItemReference>>;
 template struct SmallMap<StockPile*, SmallSet<Point3D>>;
 template struct SmallMap<VisionCuboidId, Cuboid>;
 template struct SmallMap<std::string, Uniform>;
-template struct SmallMap<int32_t, int32_t>;
+template struct SmallMap<int, int>;
 
 template struct SmallMapStable<AreaId, Area>;
 template struct SmallMapStable<FactionId, AreaHasStockPilesForFaction>;

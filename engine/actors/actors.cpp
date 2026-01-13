@@ -38,7 +38,7 @@ Percent ActorParamaters::getPercentGrown(Simulation& simulation)
 		Step adjustedMax = Step::create(util::scaleByPercent(AnimalSpecies::getDeathAgeSteps(species)[0].get(), Percent::create(85)));
 		// Using util::scaleByPercent and util::fractionToPercent give the wrong result here for some reason.
 		Step ageSteps = Step::create(((float)adjustedMax.get() / (float)percentLifeTime.get()) * 100.f);
-		percentGrown = Percent::create(std::min(100, (int32_t)(((float)ageSteps.get() / (float)AnimalSpecies::getStepsTillFullyGrown(species).get()) * 100.f)));
+		percentGrown = Percent::create(std::min(100, (int)(((float)ageSteps.get() / (float)AnimalSpecies::getStepsTillFullyGrown(species).get()) * 100.f)));
 		birthStep = simulation.m_step - ageSteps;
 	}
 	return percentGrown;
@@ -890,8 +890,8 @@ void Actors::takeFallDamage(const ActorIndex& index, const Distance& distance, c
 	{
 		auto& body = *m_body[index];
 		BodyPart& hitPart = body.pickABodyPartByVolume(m_area.m_simulation);
-		int32_t area = Config::convertBodyPartVolumeToArea(BodyPartType::getVolume(hitPart.bodyPartType));
-		area = m_area.m_simulation.m_random.getInRange(int32_t(area * 0.25), area);
+		int area = Config::convertBodyPartVolumeToArea(BodyPartType::getVolume(hitPart.bodyPartType));
+		area = m_area.m_simulation.m_random.getInRange(int(area * 0.25), area);
 		Hit hit(area, force, materialType, WoundType::Bludgeon);
 		takeHit(index, hit, hitPart);
 	}

@@ -68,7 +68,7 @@ std::pair<Point3D, Facing4> Actors::lineLead_followerGetNextStep(const ActorOrIt
 			// The current position is not on the path but it is adjacent to the back.
 			// Setting current location to path size acts like the location was found at one path the end of path.
 			indexOfCurrentLocation = path.size();
-		int32_t indexOfCandidateLocation = indexOfCurrentLocation - 1;
+		int indexOfCandidateLocation = indexOfCurrentLocation - 1;
 		Point3D previous = currentLocation;
 		// Step through the path from the current point onward untill we find one where we touch the current leader.
 		for(; indexOfCandidateLocation != -1; --indexOfCandidateLocation)

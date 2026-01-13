@@ -63,7 +63,7 @@ public:
 	Simulation(std::filesystem::path path);
 	Simulation(const Json& data);
 	Json toJson() const;
-	void doStep(int16_t count = 1);
+	void doStep(int count = 1);
 	void incrementHour();
 	void save();
 	FactionId createFaction(std::string name);
@@ -90,10 +90,10 @@ public:
 	[[maybe_unused]] void fastForwardUntillActorHasNoDestination(Area& area, const ActorIndex& actor);
 	[[maybe_unused]] void fastForwardUntillActorHasEquipment(Area& area, const ActorIndex& actor, const ItemIndex& item);
 	[[maybe_unused]] void fastForwardUntillItemIsAt(Area& area, const ItemIndex& actor, const Point3D& destination);
-	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()>&& predicate, int32_t minutes = 10);
-	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()>& predicate, int32_t minutes = 10);
-	[[maybe_unused]] void fasterForwardUntillPredicate(std::function<bool()>& predicate, int32_t minutes = 10);
-	[[maybe_unused]] void fasterForwardUntillPredicate(std::function<bool()>&& predicate, int32_t minutes = 10);
+	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()>&& predicate, int minutes = 10);
+	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()>& predicate, int minutes = 10);
+	[[maybe_unused]] void fasterForwardUntillPredicate(std::function<bool()>& predicate, int minutes = 10);
+	[[maybe_unused]] void fasterForwardUntillPredicate(std::function<bool()>&& predicate, int minutes = 10);
 	[[maybe_unused]] void fastForwardUntillNextEvent();
 	[[nodiscard, maybe_unused]] DeserializationMemo& getDeserializationMemo() { return m_deserializationMemo; }
 	// temportary.

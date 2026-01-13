@@ -214,7 +214,7 @@ void Area::updateClimate()
 	// Once per day.
 	if(m_simulation.m_step.modulusIsZero(Config::stepsPerDay))
 	{
-		int16_t day = DateTime(m_simulation.m_step).day;
+		int day = DateTime(m_simulation.m_step).day;
 		Plants& plants = getPlants();
 		for(auto plant : plants.getAll())
 			plants.setDayOfYear(plant, day);

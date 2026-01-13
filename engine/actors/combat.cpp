@@ -97,7 +97,7 @@ void Actors::combat_attackLongRange(const ActorIndex& index, const ActorIndex& t
 CombatScore Actors::combat_getCurrentMeleeCombatScore(const ActorIndex& index)
 {
 	FactionId faction = getFaction(index);
-	int8_t pointsContainingNonAllies = 0;
+	int pointsContainingNonAllies = 0;
 	// Apply bonuses and penalties based on relative locations.
 	CombatScore output = m_combatScore[index];
 	for(const ActorIndex& adjacent : getAdjacentActors(index))
@@ -343,7 +343,7 @@ bool Actors::combat_doesProjectileHit(const ActorIndex& index, Attack& attack, c
 }
 float Actors::combat_getQualityModifier(const ActorIndex&, const Quality& quality) const
 {
-	int32_t adjusted = (int32_t)quality.get() - (int32_t)Config::averageItemQuality.get();
+	int adjusted = (int)quality.get() - (int)Config::averageItemQuality.get();
 	return 1.f + (adjusted * Config::itemQualityCombatModifier);
 }
 bool Actors::combat_positionIsValid(const ActorIndex& index, const Point3D& point, const DistanceFractional& attackRangeSquared) const

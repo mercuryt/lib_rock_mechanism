@@ -69,7 +69,7 @@ struct Cuboid
 	[[nodiscard]] bool intersects(const Point3D& point) const;
 	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
 	[[nodiscard]] bool overlapsWithSphere(const Sphere& sphere) const;
-	[[nodiscard]] int32_t volume() const;
+	[[nodiscard]] int volume() const;
 	[[nodiscard]] bool empty() const { return m_high.empty(); }
 	[[nodiscard]] bool exists() const { return m_high.exists(); }
 	[[nodiscard]] bool operator==(const Cuboid& cuboid) const;
@@ -91,9 +91,9 @@ struct Cuboid
 	[[nodiscard]] OffsetCuboid translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const;
 	[[nodiscard]] OffsetCuboid offsetTo(const Point3D& point) const;
 	[[nodiscard]] SmallSet<Cuboid> sliceAtEachZ() const;
-	[[nodiscard]] int32_t countIf(auto&& condition) const
+	[[nodiscard]] int countIf(auto&& condition) const
 	{
-		int32_t output = 0;
+		int output = 0;
 		for(const Point3D& point : *this)
 			if(condition(point))
 				++output;
@@ -116,7 +116,7 @@ struct Cuboid
 		ConstIterator(const ConstIterator& other) = default;
 		ConstIterator& operator=(const ConstIterator& other);
 		ConstIterator& operator++();
-		[[nodiscard]] ConstIterator operator++(int32_t);
+		[[nodiscard]] ConstIterator operator++(int);
 		[[nodiscard]] bool operator==(const ConstIterator& other) const { return m_current == other.m_current; }
 		[[nodiscard]] bool operator!=(const ConstIterator& other) const { return !(*this == other); }
 		[[nodiscard]] const Point3D operator*() const;
@@ -153,7 +153,7 @@ struct CuboidSurfaceView : public std::ranges::view_interface<CuboidSurfaceView>
 		void setToEnd();
 		Iterator(const CuboidSurfaceView& v);
 		Iterator& operator++();
-		Iterator operator++(int32_t);
+		Iterator operator++(int);
 		bool operator==(const Iterator& other) const;
 		bool operator!=(const Iterator& other) const { return !(*this == other); }
 		std::pair<Point3D, Facing6> operator*();

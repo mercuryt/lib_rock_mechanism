@@ -193,7 +193,7 @@ ObjectiveTypeId ObjectiveType::getId() const
 {
 	auto iter = objectiveTypeData.find_if([&](const std::unique_ptr<ObjectiveType>& type) { return type.get() == this; });
 	assert(iter != objectiveTypeData.end());
-	int32_t distance = std::distance(objectiveTypeData.begin(), iter);
+	int distance = std::distance(objectiveTypeData.begin(), iter);
 	return ObjectiveTypeId::create(distance);
 }
 // Objective.

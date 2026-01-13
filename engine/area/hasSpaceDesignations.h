@@ -10,28 +10,28 @@ class Area;
 struct DeserializationMemo;
 class AreaHasSpaceDesignationsForFaction final
 {
-	std::array<RTreeBoolean, (int32_t)SpaceDesignation::SPACE_DESIGNATION_MAX> m_data;
+	std::array<RTreeBoolean, (int)SpaceDesignation::SPACE_DESIGNATION_MAX> m_data;
 public:
-	void set(const auto& shape, const SpaceDesignation& designation) { assert(shape.exists()); assert(!m_data[(int32_t)designation].query(shape)); maybeSet(shape, designation); }
-	void unset(const auto& shape, const SpaceDesignation& designation) { assert(m_data[(int32_t)designation].query(shape)); maybeUnset(shape, designation); }
-	void maybeUnset(const auto& shape, const SpaceDesignation& designation) { m_data[(int32_t)designation].maybeRemove(shape); }
-	void maybeSet(const auto& shape, const SpaceDesignation& designation) { m_data[(int32_t)designation].maybeInsert(shape); }
+	void set(const auto& shape, const SpaceDesignation& designation) { assert(shape.exists()); assert(!m_data[(int)designation].query(shape)); maybeSet(shape, designation); }
+	void unset(const auto& shape, const SpaceDesignation& designation) { assert(m_data[(int)designation].query(shape)); maybeUnset(shape, designation); }
+	void maybeUnset(const auto& shape, const SpaceDesignation& designation) { m_data[(int)designation].maybeRemove(shape); }
+	void maybeSet(const auto& shape, const SpaceDesignation& designation) { m_data[(int)designation].maybeInsert(shape); }
 	void prepare() { for(auto& rtree : m_data) rtree.prepare(); }
 	[[nodiscard]] bool any(const SpaceDesignation& designation) const;
 	[[nodiscard]] bool canPrepare() const;
-	[[nodiscard]] bool check(const auto& shape, const SpaceDesignation& designation) const { return m_data[(int32_t)designation].query(shape); }
-	[[nodiscard]] Point3D queryPoint(const auto& shape, const SpaceDesignation& designation) const { return m_data[(int32_t)designation].queryGetPoint(shape); }
-	[[nodiscard]] Point3D queryPointWithCondition(const auto& shape, const SpaceDesignation& designation, auto&& condition) const { return m_data[(int32_t)designation].queryGetPointWithCondition(shape, condition); }
+	[[nodiscard]] bool check(const auto& shape, const SpaceDesignation& designation) const { return m_data[(int)designation].query(shape); }
+	[[nodiscard]] Point3D queryPoint(const auto& shape, const SpaceDesignation& designation) const { return m_data[(int)designation].queryGetPoint(shape); }
+	[[nodiscard]] Point3D queryPointWithCondition(const auto& shape, const SpaceDesignation& designation, auto&& condition) const { return m_data[(int)designation].queryGetPointWithCondition(shape, condition); }
 	[[nodiscard]] std::vector<SpaceDesignation> getForPoint(const Point3D& point) const;
 	[[nodiscard]] const RTreeBoolean& getForDesignation(const SpaceDesignation& designation) const;
 	[[nodiscard]] Cuboid getCuboidWithDesignationAndCondition(const SpaceDesignation& designation, const auto& shape, auto&& condition)
 	{
-		return m_data[(int32_t)designation].queryGetLeafWithCondition(shape, condition);
+		return m_data[(int)designation].queryGetLeafWithCondition(shape, condition);
 	};
-	[[nodiscard]] Cuboid getCuboidWithDesignation(const SpaceDesignation& designation, const auto& shape) const { return m_data[(int32_t)designation].queryGetLeaf(shape); }
+	[[nodiscard]] Cuboid getCuboidWithDesignation(const SpaceDesignation& designation, const auto& shape) const { return m_data[(int)designation].queryGetLeaf(shape); }
 	[[nodiscard]] bool empty(const auto& shape) const
 	{
-		for(int i = 0; i < (int32_t)SpaceDesignation::SPACE_DESIGNATION_MAX; ++i)
+		for(int i = 0; i < (int)SpaceDesignation::SPACE_DESIGNATION_MAX; ++i)
 			if(check(shape, (SpaceDesignation)i))
 				return true;
 		return false;

@@ -12,10 +12,10 @@ class ChastiseObjective final : public Objective
 	std::string m_subject;
 	ActorReference m_recipient;
 	SkillTypeId m_skillBeingCritisized;
-	int8_t m_duration;
+	int m_duration;
 	bool m_angry;
 public:
-	ChastiseObjective(Area& area, const ActorIndex& receipent, std::string&& subject, const SkillTypeId& skill, int8_t duration, bool m_angry);
+	ChastiseObjective(Area& area, const ActorIndex& receipent, std::string&& subject, const SkillTypeId& skill, int duration, bool m_angry);
 	ChastiseObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo);
 	void execute(Area& area, const ActorIndex& actor) override;
 	void cancel(Area& area, const ActorIndex& actor) override;

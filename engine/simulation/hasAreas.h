@@ -19,7 +19,7 @@ public:
 	SimulationHasAreas(Simulation& simulation) : m_simulation(simulation) { }
 	SimulationHasAreas(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation);
 	Area& createArea(const Distance& x, const Distance& y, const Distance& z, bool createDrama = false);
-	Area& createArea(int32_t x, int32_t y, int32_t z, bool createDrama = false);
+	Area& createArea(int x, int y, int z, bool createDrama = false);
 	Area& loadArea(const AreaId& id, std::string name, const Distance& x, const Distance& y, const Distance& z);
 	Area& loadAreaFromJson(const Json& data, DeserializationMemo& deserializationMemo);
 	Area& loadAreaFromPath(const AreaId& id, DeserializationMemo& deserializationMemo);

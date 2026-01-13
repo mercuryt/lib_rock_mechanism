@@ -17,10 +17,10 @@ bool Sphere::intersects(const Cuboid& cuboid) const
 }
 bool Sphere::doesCuboidIntersectSphere(const Point3D& highest, const Point3D& lowest, const Sphere& sphere)
 {
-	int32_t radius = sphere.radius.get();
-	const Eigen::Array<int32_t, 1, 3>& high = highest.toOffset().data;
-	const Eigen::Array<int32_t, 1, 3>& low = lowest.toOffset().data;
-	const Eigen::Array<int32_t, 1, 3>& center = sphere.center.toOffset().data;
+	int radius = sphere.radius.get();
+	const Eigen::Array<int, 1, 3>& high = highest.toOffset().data;
+	const Eigen::Array<int, 1, 3>& low = lowest.toOffset().data;
+	const Eigen::Array<int, 1, 3>& center = sphere.center.toOffset().data;
 	return !(
 		((high + radius) < center).any() ||
 		((low - radius) > center).any()

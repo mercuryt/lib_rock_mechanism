@@ -97,7 +97,7 @@ Items::Items(Area& area) :
 ItemIndex Items::create(ItemParamaters itemParamaters)
 {
 	ItemIndex index = ItemIndex::create(size());
-	// TODO: This 'toItem' call should not be neccessary. Why does ItemIndex + int32_t = HasShapeIndex?
+	// TODO: This 'toItem' call should not be neccessary. Why does ItemIndex + int = HasShapeIndex?
 	resize(index + 1);
 	const MoveTypeId& moveType = ItemType::getMoveType(itemParamaters.itemType);
 	ShapeId shape = ItemType::getShape(itemParamaters.itemType);
@@ -486,7 +486,7 @@ Json Items::toJson() const
 	data["installed"] = m_installed;
 	data["onSurface"] = m_onSurface;
 	data["canBeStockPiled"] = Json::object();
-	int32_t i = 0;
+	int i = 0;
 	for(const auto& canBeStockPiled : m_canBeStockPiled)
 	{
 		if(canBeStockPiled != nullptr)

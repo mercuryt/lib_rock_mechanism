@@ -29,7 +29,7 @@ public:
 	void makePathRequest(Area& area, const ActorIndex& actor);
 	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("sleep").getId(); }
 	[[nodiscard]] bool onCanNotPath(Area& area, const ActorIndex& actor);
-	[[nodiscard]] int32_t desireToSleepAt(Area& area, const Point3D& point, const ActorIndex& actor) const;
+	[[nodiscard]] int desireToSleepAt(Area& area, const Point3D& point, const ActorIndex& actor) const;
 	[[nodiscard]] std::string name() const { return "sleep"; }
 	[[nodiscard]] bool isNeed() const { return true; }
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::sleep; }

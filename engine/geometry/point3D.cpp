@@ -13,9 +13,9 @@ Point3D Point3D::operator+(const Distance& distance) const
 }
 Point3D Point3D::operator-(const DistanceWidth& distance) const
 {
-	Offsets result = data.cast<int32_t>() - (int32_t)distance;
+	Offsets result = data.cast<int>() - (int)distance;
 	auto greaterThenZero = result > 0;
-	result *= greaterThenZero.cast<int32_t>();
+	result *= greaterThenZero.cast<int>();
 	return Coordinates(result.cast<DistanceWidth>());
 }
 Point3D Point3D::operator+(const DistanceWidth& distance) const
@@ -48,18 +48,18 @@ Point3D Point3D::west() const { assert(data[0] != 0); auto output = *this; --out
 Point3D Point3D::east() const { auto output = *this; ++output.data[0]; return output; }
 Point3D Point3D::south() const { auto output = *this; ++output.data[1]; return output; }
 Point3D Point3D::above() const { auto output = *this; ++output.data[2]; return output; }
-int32_t Point3D::hilbertNumber() const
+int Point3D::hilbertNumber() const
 {
-	int32_t n = hilbertOrder;
-	int32_t _x = x().get();
-	int32_t _y = y().get();
-	int32_t _z = z().get();
-	int32_t index = 0;
-	int32_t rx, ry, rz;
+	int n = hilbertOrder;
+	int _x = x().get();
+	int _y = y().get();
+	int _z = z().get();
+	int index = 0;
+	int rx, ry, rz;
 
-	for (int32_t i = n - 1; i >= 0; --i)
+	for (int i = n - 1; i >= 0; --i)
 	{
-		int32_t mask = 1 << i;
+		int mask = 1 << i;
 		rx = (_x & mask) > 0;
 		ry = (_y & mask) > 0;
 		rz = (_z & mask) > 0;
@@ -122,15 +122,15 @@ std::strong_ordering Point3D::operator<=>(const Point3D& other) const
 Point3D Point3D::subtractWithMinimum(const Distance& distance) const
 {
 	auto copy = data;
-	const int32_t value = distance.get();
-	copy(0) = ((int32_t)data(0) - value <= 0) ? 0 : data(0) - value;
-	copy(1) = ((int32_t)data(1) - value <= 0) ? 0 : data(1) - value;
-	copy(2) = ((int32_t)data(2) - value <= 0) ? 0 : data(2) - value;
+	const int value = distance.get();
+	copy(0) = ((int)data(0) - value <= 0) ? 0 : data(0) - value;
+	copy(1) = ((int)data(1) - value <= 0) ? 0 : data(1) - value;
+	copy(2) = ((int)data(2) - value <= 0) ? 0 : data(2) - value;
 	return copy;
 }
 Distance Point3D::taxiDistanceTo(const Point3D& other) const
 {
-	return Distance::create((data.cast<int32_t>() - other.data.cast<int32_t>()).abs().sum());
+	return Distance::create((data.cast<int>() - other.data.cast<int>()).abs().sum());
 }
 Distance Point3D::distanceTo(const Point3D& other) const
 {
@@ -240,7 +240,7 @@ Point3D Point3D::operator-(const Offset3D& other) const
 {
 	return Point3D(data - other.data.cast<DistanceWidth>());
 }
-Point3D Point3D::operator/(const int32_t& other) const
+Point3D Point3D::operator/(const int& other) const
 {
 	return Point3D(data / other);
 }
@@ -295,14 +295,14 @@ bool Point3D::contains(const Point3D& point) const { return (*this) == point; }
 bool Point3D::contains(const Cuboid& cuboid) const { return (*this) == cuboid.m_high && (*this) == cuboid.m_low; }
 OffsetCuboid Point3D::offsetCuboidRotated( const OffsetCuboid& cuboid, const Facing4& previousFacing, const Facing4& newFacing) const
 {
-	int32_t rotation = (int32_t)newFacing - (int32_t)previousFacing;
+	int rotation = (int)newFacing - (int)previousFacing;
 	if(rotation < 0)
 		rotation += 4;
 	return {offsetRotated(cuboid.m_high, (Facing4)rotation), offsetRotated(cuboid.m_high, (Facing4)rotation)};
 }
 Offset3D Point3D::offsetRotated(const Offset3D& initalOffset, const Facing4& previousFacing, const Facing4& newFacing) const
 {
-	int32_t rotation = (int32_t)newFacing - (int32_t)previousFacing;
+	int rotation = (int)newFacing - (int)previousFacing;
 	if(rotation < 0)
 		rotation += 4;
 	return offsetRotated(initalOffset, (Facing4)rotation);
@@ -365,9 +365,9 @@ Point3D Point3D::max() { return { Distance::max(), Distance::max(), Distance::ma
 Point3D Point3D::min() { return { Distance::min(), Distance::min(), Distance::min()}; }
 
 Offset3D::Offset3D(const Offset3D& other) : data(other.data) { }
-Offset3D::Offset3D(const Point3D& point) { data = point.data.cast<int32_t>(); }
+Offset3D::Offset3D(const Point3D& point) { data = point.data.cast<int>(); }
 Offset3D& Offset3D::operator=(const Offset3D& other) { data = other.data; return *this; }
-Offset3D& Offset3D::operator=(const Point3D& other) { data = other.data.cast<int32_t>(); return *this; }
+Offset3D& Offset3D::operator=(const Point3D& other) { data = other.data.cast<int>(); return *this; }
 std::strong_ordering Offset3D::operator<=>(const Offset3D& other) const
 {
 	if (x() != other.x())
@@ -381,10 +381,10 @@ Offset3D Offset3D::operator+(const Offset3D& other) const { return Offsets(data 
 Offset3D Offset3D::operator-(const Offset3D& other) const { return Offsets(data - other.data); }
 Offset3D Offset3D::operator*(const Offset3D& other) const { return Offsets(data * other.data); }
 Offset3D Offset3D::operator/(const Offset3D& other) const { return Offsets(data / other.data); }
-Offset3D Offset3D::operator+(const int32_t& other) const { return Offsets(data + other); }
-Offset3D Offset3D::operator-(const int32_t& other) const { return Offsets(data - other); }
-Offset3D Offset3D::operator*(const int32_t& other) const { return Offsets(data * other); }
-Offset3D Offset3D::operator/(const int32_t& other) const { return Offsets(data / other); }
+Offset3D Offset3D::operator+(const int& other) const { return Offsets(data + other); }
+Offset3D Offset3D::operator-(const int& other) const { return Offsets(data - other); }
+Offset3D Offset3D::operator*(const int& other) const { return Offsets(data * other); }
+Offset3D Offset3D::operator/(const int& other) const { return Offsets(data / other); }
 std::string Offset3D::toString() const
 {
 	return "(" + x().toString() + "," + y().toString() + "," + z().toString() + ")";
@@ -432,7 +432,7 @@ void Offset3D::rotate2D(const Facing4& facing)
 }
 void Offset3D::rotate2D(const Facing4& oldFacing, const Facing4& newFacing)
 {
-	int32_t rotation = (int32_t)newFacing - (int32_t)oldFacing;
+	int rotation = (int)newFacing - (int)oldFacing;
 	if(rotation < 0)
 		rotation += 4;
 	rotate2D((Facing4)rotation);
@@ -512,18 +512,18 @@ Offset3D Offset3D::max(const Offset3D& other) const
 Offset3D Offset3D::min() { return {Offset::min(), Offset::min(), Offset::min()}; }
 Offset3D Offset3D::max() { return {Offset::max(), Offset::max(), Offset::max()}; }
 Offset3D Offset3D::null() { return {}; }
-int32_t Offset3D::hilbertNumber() const
+int Offset3D::hilbertNumber() const
 {
-	int32_t n = hilbertOrder;
-	int32_t _x = x().get();
-	int32_t _y = y().get();
-	int32_t _z = z().get();
-	int32_t index = 0;
-	int32_t rx, ry, rz;
+	int n = hilbertOrder;
+	int _x = x().get();
+	int _y = y().get();
+	int _z = z().get();
+	int index = 0;
+	int rx, ry, rz;
 
-	for (int32_t i = n - 1; i >= 0; --i)
+	for (int i = n - 1; i >= 0; --i)
 	{
-		int32_t mask = 1 << i;
+		int mask = 1 << i;
 		rx = (_x & mask) > 0;
 		ry = (_y & mask) > 0;
 		rz = (_z & mask) > 0;

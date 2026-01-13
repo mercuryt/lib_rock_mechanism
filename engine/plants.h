@@ -26,7 +26,7 @@ struct PlantParamaters
 	ShapeId shape = ShapeId::null();
 	Percent percentGrown = Percent::null();
 	Percent percentFoliage = Percent::null();
-	int8_t wildGrowth = 0;
+	int wildGrowth = 0;
 	Quantity quantityToHarvest = Quantity::null();
 	Percent percentNeedsFluid = Percent::null();
 	Percent percentNeedsSafeTemperature = Percent::null();
@@ -47,12 +47,12 @@ class Plants final : public HasShapes<Plants, PlantIndex>
 	StrongVector<Quantity, PlantIndex> m_quantityToHarvest;
 	StrongVector<Percent, PlantIndex> m_percentGrown;
 	StrongVector<Percent, PlantIndex> m_percentFoliage;
-	StrongVector<int8_t, PlantIndex> m_wildGrowth;
+	StrongVector<int, PlantIndex> m_wildGrowth;
 	StrongVector<CollisionVolume, PlantIndex> m_volumeFluidRequested;
 	PlantIndex m_incrementalSortPosition;
 	std::chrono::microseconds m_averageSortTimePerPlant = std::chrono::microseconds(10);
-	int32_t m_averageSortTimeSampleSize = 0;
-	int16_t m_sortEntropy = 0;
+	int m_averageSortTimeSampleSize = 0;
+	int m_sortEntropy = 0;
 	void moveIndex(const PlantIndex& oldIndex, const PlantIndex& newIndex);
 	void updateFluidVolumeRequested(const PlantIndex& index);
 public:
@@ -86,13 +86,13 @@ public:
 	void setHasFluidForNow(const PlantIndex& index);
 	void setMaybeNeedsFluid(const PlantIndex& index);
 	void addFluid(const PlantIndex& index, const CollisionVolume& volume, const FluidTypeId& fluidType);
-	void setDayOfYear(const PlantIndex& index, int16_t dayOfYear);
+	void setDayOfYear(const PlantIndex& index, int dayOfYear);
 	void setQuantityToHarvest(const PlantIndex& index);
 	void harvest(const PlantIndex& index, const Quantity& quantity);
 	void endOfHarvest(const PlantIndex& index);
 	void updateGrowingStatus(const PlantIndex& index);
 	void removeFoliageMass(const PlantIndex& index, const Mass& mass);
-	void doWildGrowth(const PlantIndex& index, int8_t count = 1);
+	void doWildGrowth(const PlantIndex& index, int count = 1);
 	void removeFruitQuantity(const PlantIndex& index, const Quantity& quantity);
 	void makeFoliageGrowthEvent(const PlantIndex& index);
 	void foliageGrowth(const PlantIndex& index);

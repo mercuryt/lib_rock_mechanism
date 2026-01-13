@@ -14,7 +14,7 @@ class AreaHasSoldiers;
 struct AreaHasSoldiersCourageCheckThreadData
 {
 	const FactionId faction;
-	const int8_t start;
+	const int start;
 	void prefetchToL1(const AreaHasSoldiers& areaHasSoldiers) const;
 };
 struct AreaHasSoldiersForFaction

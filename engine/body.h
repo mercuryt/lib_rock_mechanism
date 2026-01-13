@@ -24,12 +24,12 @@ struct Wound final
 	const WoundType woundType;
 	BodyPart& bodyPart;
 	Hit hit;
-	int32_t bleedVolumeRate;
+	int bleedVolumeRate;
 	Percent percentHealed;
 	Percent maxPercentTemporaryImpairment;
 	Percent maxPercentPermanantImpairment;
 	HasScheduledEvent<WoundHealEvent> healEvent;
-	Wound(Area& area, const ActorIndex& a, const WoundType wt, BodyPart& bp, Hit h, const int32_t bvr, const Percent ph = Percent::create(0));
+	Wound(Area& area, const ActorIndex& a, const WoundType wt, BodyPart& bp, Hit h, const int bvr, const Percent ph = Percent::create(0));
 	Wound(const Json& data, DeserializationMemo& deserializationMemo, BodyPart& bp);
 	bool operator==(const Wound& other) const { return &other == this; }
 	Percent getPercentHealed() const;

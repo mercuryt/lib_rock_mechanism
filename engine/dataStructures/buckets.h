@@ -2,12 +2,12 @@
 #include <cstdint>
 #include <array>
 #include <vector>
-template<typename T, int32_t turnsPerCycle>
+template<typename T, int turnsPerCycle>
 class Buckets
 {
 private:
 	std::array<std::vector<T*>, turnsPerCycle> buckets;
-	int32_t bucketFor(int x)
+	int bucketFor(int x)
 	{
 		return x % turnsPerCycle;
 	}
@@ -20,7 +20,7 @@ public:
 	{
 		std::erase(buckets.at(bucketFor(x.m_id)), &x);
 	}
-	std::vector<T*>& get(int32_t step)
+	std::vector<T*>& get(int step)
 	{
 		return buckets[bucketFor(step)];
 	}

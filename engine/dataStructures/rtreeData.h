@@ -883,10 +883,10 @@ public:
 		for(const Cuboid& cuboid : queryGetAllCuboids(boundry))
 			cuboids.maybeRemove(cuboid);
 	}
-	[[nodiscard]] int16_t queryCount(const auto& shape) const
+	[[nodiscard]] int queryCount(const auto& shape) const
 	{
 		SmallSet<RTreeNodeIndex> openList;
-		int16_t output = 0;
+		int output = 0;
 		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
@@ -909,10 +909,10 @@ public:
 		}
 		return output;
 	}
-	[[nodiscard]] int16_t queryCountWithCondition(const auto& shape, const auto& condition) const
+	[[nodiscard]] int queryCountWithCondition(const auto& shape, const auto& condition) const
 	{
 		SmallSet<RTreeNodeIndex> openList;
-		int16_t output = 0;
+		int output = 0;
 		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{

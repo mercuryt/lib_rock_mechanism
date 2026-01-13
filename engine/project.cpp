@@ -885,7 +885,7 @@ bool Project::reservationsComplete() const
 	for(const auto& pair : m_requiredItems)
 		if(pair.second.required > pair.second.reserved)
 			return false;
-	if((int32_t)m_requiredActors.size() > m_actorAlreadyAtSite.size() + m_actorsToPickup.size())
+	if((int)m_requiredActors.size() > m_actorAlreadyAtSite.size() + m_actorsToPickup.size())
 		return false;
 	for(const auto& [fluidType, fluidData] : m_requiredFluids)
 		// Check if we have reserved enough carrying capacity and have found enough fluid.
@@ -899,7 +899,7 @@ bool Project::deliveriesComplete() const
 	for(auto& pair : m_requiredItems)
 		if(pair.second.required > pair.second.delivered)
 			return false;
-	if((int32_t)m_requiredActors.size() > m_deliveredActors.size())
+	if((int)m_requiredActors.size() > m_deliveredActors.size())
 		return false;
 	for(const auto& [fluidType, fluidData] : m_requiredFluids)
 		if(fluidData.counts.required > fluidData.counts.delivered)

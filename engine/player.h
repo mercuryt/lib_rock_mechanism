@@ -9,10 +9,10 @@
 
 class Player
 {
-	inline static int32_t nextId = 1;
+	inline static int nextId = 1;
 public:
 	std::string m_name;
-	int32_t m_id;
+	int m_id;
 	Faction* m_faction;
 	Player(std::string n) : m_name(n), m_id(nextId++) { }
 };

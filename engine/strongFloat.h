@@ -25,8 +25,8 @@ struct StrongFloat
 	constexpr Derived& operator=(const StrongFloat<Derived>& d) { data = d.data; return static_cast<Derived&>(*this); }
 	constexpr Derived& operator++() { assert(exists()); ++data; return static_cast<Derived&>(*this); }
 	constexpr Derived& operator--() { assert(exists()); --data; return static_cast<Derived&>(*this); }
-	[[nodiscard]] constexpr Derived operator++(int32_t) { assert(exists()); auto d = data; ++data; return d; }
-	[[nodiscard]] constexpr Derived operator--(int32_t) { assert(exists());  auto d = data; --data; return d; }
+	[[nodiscard]] constexpr Derived operator++(int) { assert(exists()); auto d = data; ++data; return d; }
+	[[nodiscard]] constexpr Derived operator--(int) { assert(exists());  auto d = data; --data; return d; }
 	constexpr Derived& operator+=(const float& other) { assert(exists()); data += other; return static_cast<Derived&>(*this); }
 	constexpr Derived& operator-=(const float& other) { assert(exists()); data -= other; return static_cast<Derived&>(*this); }
 	constexpr Derived& operator*=(const float& other) { assert(exists()); data *= other; return static_cast<Derived&>(*this); }

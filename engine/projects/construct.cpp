@@ -48,7 +48,7 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> ConstructProject::
 	return MaterialType::construction_getByproducts(m_solid);
 }
 SkillTypeId ConstructProject::getSkill() const { return MaterialType::construction_getSkill(m_solid); }
-int32_t ConstructProject::getWorkerConstructScore(const ActorIndex& actor) const
+int ConstructProject::getWorkerConstructScore(const ActorIndex& actor) const
 {
 	Actors& actors = m_area.getActors();
 	return (actors.getStrength(actor).get() * Config::constructStrengthModifier) +
@@ -101,7 +101,7 @@ void ConstructProject::offDelay()
 // What would the total delay time be if we started from scratch now with current workers?
 Step ConstructProject::getDuration() const
 {
-	int32_t totalScore = 0;
+	int totalScore = 0;
 	Actors& actors = m_area.getActors();
 	for(auto& pair : m_workers)
 		totalScore += getWorkerConstructScore(pair.first.getIndex(actors.m_referenceData));

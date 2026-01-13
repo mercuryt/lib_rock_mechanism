@@ -97,7 +97,7 @@ void Psycology::checkThreasholds(Area& area, const ActorIndex& actor)
 		for(const PsycologyAttribute& attribute : m_current.getAbove(m_highTriggers))
 		{
 			const PsycologyWeight current = m_current.getValueFor(attribute);
-			auto& callbacks = m_highCallbacks[(int32_t)attribute];
+			auto& callbacks = m_highCallbacks[(int)attribute];
 			auto iter = std::partition(callbacks.begin(), callbacks.end(), [&](const std::unique_ptr<PsycologyCallback>& callback) { return callback->threshold <= current; });
 			std::vector<std::unique_ptr<PsycologyCallback>> toCallAndDestroy;
 			std::ranges::move(iter, callbacks.end(), std::back_inserter(toCallAndDestroy));
@@ -121,7 +121,7 @@ void Psycology::checkThreasholds(Area& area, const ActorIndex& actor)
 		for(const PsycologyAttribute& attribute : m_current.getBelow(m_lowTriggers))
 		{
 			const PsycologyWeight current = m_current.getValueFor(attribute);
-			auto& callbacks = m_lowCallbacks[(int32_t)attribute];
+			auto& callbacks = m_lowCallbacks[(int)attribute];
 			auto iter = std::partition(callbacks.begin(), callbacks.end(), [&](const std::unique_ptr<PsycologyCallback>& callback) { return callback->threshold >= current; });
 			std::vector<std::unique_ptr<PsycologyCallback>> toCallAndDestroy;
 			std::ranges::move(iter, callbacks.end(), std::back_inserter(toCallAndDestroy));
@@ -152,7 +152,7 @@ void Psycology::apply(PsycologyEvent& event, Area& area, const ActorIndex& actor
 	auto found = m_cooldowns.find(event.type);
 	if(found != m_cooldowns.end() && found->second < area.m_simulation.m_step)
 		return;
-	for(int i = 0; i != (int32_t)PsycologyAttribute::Null; ++i)
+	for(int i = 0; i != (int)PsycologyAttribute::Null; ++i)
 	{
 		const PsycologyAttribute attribute = (PsycologyAttribute)i;
 		for(std::unique_ptr<PsycologyCallback>& ptr : event.highCallbacks[i])
@@ -206,20 +206,20 @@ void Psycology::remove(const PsycologyEventType& eventType, const PsycologyData&
 	for(const PsycologyAttribute& attribute : attributesToUpdateThreasholds)
 	{
 		// Find the new lowest high trigger.
-		if(m_highCallbacks[(int32_t)attribute].empty())
-			m_highTriggers.m_data[(int32_t)attribute] = FLT_MAX;
+		if(m_highCallbacks[(int)attribute].empty())
+			m_highTriggers.m_data[(int)attribute] = FLT_MAX;
 		else
 		{
-			const auto found = std::ranges::min_element(m_highCallbacks[(int32_t)attribute], std::ranges::less{}, [](const std::unique_ptr<PsycologyCallback>& callback){ return callback->threshold;});
-			m_highTriggers.m_data[(int32_t)attribute] = (*found)->threshold.get();
+			const auto found = std::ranges::min_element(m_highCallbacks[(int)attribute], std::ranges::less{}, [](const std::unique_ptr<PsycologyCallback>& callback){ return callback->threshold;});
+			m_highTriggers.m_data[(int)attribute] = (*found)->threshold.get();
 		}
 		// Find the new highest low trigger.
-		if(m_lowCallbacks[(int32_t)attribute].empty())
-			m_lowTriggers.m_data[(int32_t)attribute] = FLT_MIN;
+		if(m_lowCallbacks[(int)attribute].empty())
+			m_lowTriggers.m_data[(int)attribute] = FLT_MIN;
 		else
 		{
-			const auto found = std::ranges::min_element(m_lowCallbacks[(int32_t)attribute], std::ranges::greater{}, [](const std::unique_ptr<PsycologyCallback>& callback){ return callback->threshold;});
-			m_lowTriggers.m_data[(int32_t)attribute] = (*found)->threshold.get();
+			const auto found = std::ranges::min_element(m_lowCallbacks[(int)attribute], std::ranges::greater{}, [](const std::unique_ptr<PsycologyCallback>& callback){ return callback->threshold;});
+			m_lowTriggers.m_data[(int)attribute] = (*found)->threshold.get();
 		}
 	}
 	m_current -= deltas;
@@ -229,18 +229,18 @@ void Psycology::registerHighCallback(const PsycologyAttribute& attribute, std::u
 {
 	if(m_highTriggers.getValueFor(attribute) > callback->threshold)
 		m_highTriggers.set(attribute, callback->threshold);
-	m_highCallbacks[(int32_t)attribute].push_back(std::move(callback));
+	m_highCallbacks[(int)attribute].push_back(std::move(callback));
 }
 void Psycology::registerLowCallback(const PsycologyAttribute& attribute, std::unique_ptr<PsycologyCallback>&& callback)
 {
 	if(m_lowTriggers.getValueFor(attribute) > callback->threshold)
 		m_lowTriggers.set(attribute, callback->threshold);
-	m_lowCallbacks[(int32_t)attribute].push_back(std::move(callback));
+	m_lowCallbacks[(int)attribute].push_back(std::move(callback));
 }
 void Psycology::unregisterHighCallback(const PsycologyAttribute& attribute, PsycologyCallback& callback)
 {
 	bool wasLowest = m_highTriggers.getValueFor(attribute) == callback.threshold;
-	auto& callbacks = m_highCallbacks[(int32_t)attribute];
+	auto& callbacks = m_highCallbacks[(int)attribute];
 	callbacks.erase(std::ranges::find_if(callbacks, [&](const std::unique_ptr<PsycologyCallback>& ptr){ return &*ptr == &callback; }));
 	if(wasLowest)
 	{
@@ -252,7 +252,7 @@ void Psycology::unregisterHighCallback(const PsycologyAttribute& attribute, Psyc
 void Psycology::unregisterLowCallback(const PsycologyAttribute& attribute, PsycologyCallback& callback)
 {
 	bool wasLowest = m_lowTriggers.getValueFor(attribute) == callback.threshold;
-	auto& callbacks = m_lowCallbacks[(int32_t)attribute];
+	auto& callbacks = m_lowCallbacks[(int)attribute];
 	callbacks.erase(std::ranges::find_if(callbacks, [&](const std::unique_ptr<PsycologyCallback>& ptr){ return &*ptr == &callback; }));
 	if(wasLowest)
 	{

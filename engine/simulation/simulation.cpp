@@ -53,7 +53,7 @@ Simulation::Simulation(const Json& data) :
 	m_hasAreas = std::make_unique<SimulationHasAreas>(data["hasAreas"], m_deserializationMemo, *this);
 	data["squads"].get_to(m_hasSquads);
 }
-void Simulation::doStep(int16_t count)
+void Simulation::doStep(int count)
 {
 	assert(count);
 	bool locked = false;
@@ -223,7 +223,7 @@ void Simulation::fastForwardUntillItemIsAt(Area& area, const ItemIndex& item, co
 	std::function<bool()> predicate = [&](){ return area.getItems().getLocation(item) == destination; };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillPredicate(std::function<bool()>& predicate, int32_t minutes)
+void Simulation::fastForwardUntillPredicate(std::function<bool()>& predicate, int minutes)
 {
 	assert(!predicate());
 	[[maybe_unused]] Step lastStep = m_step + (Config::stepsPerMinute * minutes);
@@ -237,7 +237,7 @@ void Simulation::fastForwardUntillPredicate(std::function<bool()>& predicate, in
 			break;
 	}
 }
-void Simulation::fasterForwardUntillPredicate(std::function<bool()>& predicate, int32_t minutes)
+void Simulation::fasterForwardUntillPredicate(std::function<bool()>& predicate, int minutes)
 {
 	assert(!predicate());
 	[[maybe_unused]] Step lastStep = m_step + (Config::stepsPerMinute * minutes);
@@ -250,11 +250,11 @@ void Simulation::fasterForwardUntillPredicate(std::function<bool()>& predicate, 
 			break;
 	}
 }
-void Simulation::fastForwardUntillPredicate(std::function<bool()>&& predicate, int32_t minutes)
+void Simulation::fastForwardUntillPredicate(std::function<bool()>&& predicate, int minutes)
 {
 	fastForwardUntillPredicate(predicate, minutes);
 }
-void Simulation::fasterForwardUntillPredicate(std::function<bool()>&& predicate, int32_t minutes)
+void Simulation::fasterForwardUntillPredicate(std::function<bool()>&& predicate, int minutes)
 {
 	fasterForwardUntillPredicate(predicate, minutes);
 }

@@ -21,12 +21,12 @@ public:
 		std::ranges::sort(data);
 	}
 	[[nodiscard]] bool contains(const T& value) const { return std::binary_search(data.begin(), data.end(), value); }
-	[[nodiscard]] int32_t size() const { return data.size(); }
+	[[nodiscard]] int size() const { return data.size(); }
 	[[nodiscard]] iterator find(const T& value)
 	{
 		auto iter = std::lower_bound(data.begin(), data.end(), value);
 		if(*iter == value)
-			return {*this, (int32_t)std::distance(data.begin(), iter)};
+			return {*this, (int)std::distance(data.begin(), iter)};
 		return end();
 	}
 	[[nodiscard]] const_iterator find(const T& value) const { return const_cast<MediumSet<T>*>(this)->find(value); }
@@ -38,9 +38,9 @@ public:
 	{
 		std::vector<T>::iterator m_iter;
 	public:
-		iterator(MediumSet<T>& set, int32_t i) : m_iter(set.data.begin() + i) { }
+		iterator(MediumSet<T>& set, int i) : m_iter(set.data.begin() + i) { }
 		iterator& operator++() { ++m_iter; return *this; }
-		iterator& operator++(int32_t) { auto copy = *this; ++m_iter; return copy; }
+		iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] T& operator*() { return *m_iter; }
 		[[nodiscard]] const T& operator*() const { *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
@@ -49,9 +49,9 @@ public:
 	{
 		std::vector<T>::const_iterator m_iter;
 	public:
-		const_iterator(const MediumSet<T>& set, int32_t i) : m_iter(set.data.begin() + i) { }
+		const_iterator(const MediumSet<T>& set, int i) : m_iter(set.data.begin() + i) { }
 		const_iterator& operator++() { ++m_iter; return *this; }
-		const_iterator& operator++(int32_t) { auto copy = *this; ++m_iter; return copy; }
+		const_iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] const T& operator*() const { *m_iter; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
 	};
@@ -81,7 +81,7 @@ public:
 	void clear() { data.clear(); }
 	[[nodiscard]] bool contains(const K& key) const { return std::ranges::binary_search(data, key, {}, &Pair::first); }
 	[[nodiscard]] bool empty() const { return data.empty(); }
-	[[nodiscard]] int32_t size() const { return data.size(); }
+	[[nodiscard]] int size() const { return data.size(); }
 	[[nodiscard]] Pair& back() { return data.back(); }
 	[[nodiscard]] iterator find(const K& key)
 	{
@@ -101,9 +101,9 @@ public:
 	{
 		std::vector<Pair>::iterator m_iter;
 	public:
-		iterator(This& set, int32_t i) : m_iter(set.data.begin() + i) { }
+		iterator(This& set, int i) : m_iter(set.data.begin() + i) { }
 		iterator& operator++() { ++m_iter; return *this; }
-		iterator& operator++(int32_t) { auto copy = *this; ++m_iter; return copy; }
+		iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] Pair& operator*() { *m_iter; }
 		[[nodiscard]] const Pair& operator*() const { *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
@@ -112,9 +112,9 @@ public:
 	{
 		std::vector<Pair>::const_iterator m_iter;
 	public:
-		const_iterator(const This& set, int32_t i) : m_iter(set.data.begin() + i) { }
+		const_iterator(const This& set, int i) : m_iter(set.data.begin() + i) { }
 		const_iterator& operator++() { ++m_iter; return *this; }
-		const_iterator& operator++(int32_t) { auto copy = *this; ++m_iter; return copy; }
+		const_iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] const Pair& operator*() const { *m_iter; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
 	};

@@ -131,7 +131,7 @@ Point3D DramaArc::getEntranceToArea(const ShapeId& shape, const MoveTypeId& move
 			candidates.insert(point);
 	}
 	Point3D candidate;
-	static int16_t minimumConnectedCount = 200;
+	static int minimumConnectedCount = 200;
 	do {
 		if(candidate.exists())
 		{
@@ -165,7 +165,7 @@ Point3D DramaArc::findLocationOnEdgeForNear(const ShapeId& shape, const MoveType
 	// Get point in range of origin which satisifies predicate.
 	return space.getPointInRangeWithCondition(origin, distance, predicate);
 }
-bool DramaArc::pointIsConnectedToAtLeast(const Point3D& origin, [[maybe_unused]] const ShapeId& shape, const MoveTypeId& moveType, int16_t count) const
+bool DramaArc::pointIsConnectedToAtLeast(const Point3D& origin, [[maybe_unused]] const ShapeId& shape, const MoveTypeId& moveType, int count) const
 {
 	SmallSet<Point3D> accumulated;
 	std::stack<Point3D> open;

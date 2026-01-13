@@ -21,27 +21,27 @@ namespace util
 	{
 		return (base * (uint64_t)percent.get()) / 100;
 	}
-	inline int32_t scaleByInversePercent(int32_t base, Percent percent)
+	inline int scaleByInversePercent(int base, Percent percent)
 	{
 		return scaleByPercent(base, Percent::create(100 - percent.get()));
 	}
-	inline int32_t scaleByFractionRange(int32_t min, int32_t max, int32_t numerator, int32_t denominator)
+	inline int scaleByFractionRange(int min, int max, int numerator, int denominator)
 	{
 		return min + (((max - min) * numerator) / denominator);
 	}
-	inline int32_t scaleByPercentRange(int32_t min, int32_t max, Percent percent)
+	inline int scaleByPercentRange(int min, int max, Percent percent)
 	{
 		return scaleByFractionRange(min, max, percent.get(), 100);
 	}
-	inline int32_t scaleByFraction(int32_t base, int32_t numerator, int32_t denominator)
+	inline int scaleByFraction(int base, int numerator, int denominator)
 	{
 		return (base * numerator) / denominator;
 	}
-	inline int32_t scaleByInverseFraction(int32_t base, int32_t numerator, int32_t denominator)
+	inline int scaleByInverseFraction(int base, int numerator, int denominator)
 	{
 		return scaleByFraction(base, denominator - numerator, denominator);
 	}
-	inline Percent fractionToPercent(int32_t numerator, int32_t denominator)
+	inline Percent fractionToPercent(int numerator, int denominator)
 	{
 		return Percent::create(std::round(((float)numerator / (float)denominator) * 100.f));
 	}
@@ -53,7 +53,7 @@ namespace util
 	}
 	//template<typename T>
 	//struct AddressEquivalence{ bool operator()(T& other){ return &other == this; } };
-	inline std::array<int32_t, 3> rotateOffsetToFacing(const std::array<int32_t, 3>& position, const Facing4& facing)
+	inline std::array<int, 3> rotateOffsetToFacing(const std::array<int, 3>& position, const Facing4& facing)
 	{
 		auto [x, y, z] = position;
 		switch(facing)
@@ -75,7 +75,7 @@ namespace util
 		return radians * (180.0/3.141592653589793238463);
 	}
 	template<typename T>
-	inline void removeFromVectorByIndexUnordered(std::vector<T>& vector, int32_t index)
+	inline void removeFromVectorByIndexUnordered(std::vector<T>& vector, int index)
 	{
 		std::swap(vector[index], vector.back());
 		vector.pop_back();
@@ -110,7 +110,7 @@ namespace util
 		(*iter) = std::move(vector.back());
 		vector.pop_back();
 	}
-	template<typename T, int32_t size>
+	template<typename T, int size>
 	inline void removeFromArrayByValueUnordered(std::array<T, size>& array, const T& value)
 	{
 		auto iter = std::ranges::find(array, value);
@@ -119,8 +119,8 @@ namespace util
 		*iter = *last;
 		*last = T::null();
 	}
-	template<typename T, int32_t size>
-	inline void removeFromArrayByIndexUnordered(std::array<T, size>& array, const int32_t& index)
+	template<typename T, int size>
+	inline void removeFromArrayByIndexUnordered(std::array<T, size>& array, const int& index)
 	{
 		auto lastIndex = (std::ranges::find(array, T::null()) - 1) - array.begin();
 		array[index] = array[lastIndex];
@@ -138,7 +138,7 @@ namespace util
 		if(std::ranges::find(vector, value) == vector.end())
 			vector.push_back(value);
 	}
-	inline Facing4 getFacingForAdjacentOffset(int8_t adjacentOffset)
+	inline Facing4 getFacingForAdjacentOffset(int adjacentOffset)
 	{
 		switch(adjacentOffset)
 		{
@@ -183,10 +183,10 @@ namespace util
 	}
 	inline Facing4 rotateFacingByDifference(const Facing4& facing, const Facing4& previousFacing, const Facing4& newFacing)
 	{
-		int32_t difference = (int32_t)newFacing - (int32_t)previousFacing;
+		int difference = (int)newFacing - (int)previousFacing;
 		if(difference < 0)
 			difference += 4;
-		int32_t output = (int32_t)facing + difference;
+		int output = (int)facing + difference;
 		if(output > 3)
 			output -= 4;
 		assert(output >= 0 && output < 4);
@@ -207,7 +207,7 @@ namespace util
 		}
 	}
 	template<typename T>
-	void prefetchL1ReadModeSegment(const std::vector<T>& vector, int32_t start, int32_t size)
+	void prefetchL1ReadModeSegment(const std::vector<T>& vector, int start, int size)
 	{
 		constexpr auto stepSize = bytesPerCacheLine / sizeof(T);
 		auto address = &vector[start];

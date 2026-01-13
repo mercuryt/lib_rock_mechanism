@@ -179,4 +179,4 @@ bool BitSet<IntType, capacity>::testDbg(const IntType& index) const { assert(ind
 template<typename IntType, IntType capacity>
 std::string BitSet<IntType, capacity>::toString() const { return std::bitset<capacity>(data).to_string(); }
 template<typename IntType, IntType capacity>
-int32_t BitSet<IntType, capacity>::popCount() const { return __builtin_popcountll(data); }
+int BitSet<IntType, capacity>::popCount() const { return __builtin_popcountll(data); }

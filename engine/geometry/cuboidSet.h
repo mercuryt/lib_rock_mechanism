@@ -14,7 +14,7 @@ struct CuboidSetConstIteratorBase
 public:
 	CuboidSetConstIteratorBase(const CuboidSetType& cuboidSet, bool end = false);
 	CuboidSetConstIteratorBase& operator++();
-	[[nodiscard]] CuboidSetConstIteratorBase operator++(int32_t);
+	[[nodiscard]] CuboidSetConstIteratorBase operator++(int);
 	[[nodiscard]] bool operator==(const CuboidSetConstIteratorBase& other) const { return m_outerIter == other.m_outerIter && m_innerIter == other.m_innerIter; }
 	[[nodiscard]] bool operator!=(const CuboidSetConstIteratorBase& other) const { return !(*this == other); }
 	[[nodiscard]] PointType operator*() const { assert(m_innerIter != m_outerIter->end()); return *m_innerIter; }
@@ -25,9 +25,9 @@ struct CuboidSetBase
 protected:
 	// Overriden by AreaHasVisionCuboids.
 	virtual void insertOrMerge(const CuboidType& cuboid);
-	virtual void destroy(const int32_t& cuboid);
+	virtual void destroy(const int& cuboid);
 	// For merging contained cuboids.
-	void mergeInternal(const CuboidType& absorbed, const int32_t& absorber);
+	void mergeInternal(const CuboidType& absorbed, const int& absorber);
 public:
 	SmallSet<CuboidType> m_cuboids;
 	CuboidSetBase() = default;
@@ -80,15 +80,15 @@ public:
 	void swap(CuboidSetType& other);
 	void popBack();
 	void inflate(const Distance& distance);
-	[[nodiscard]] const CuboidType& operator[](const int8_t& index) const { return m_cuboids[index]; }
-	[[nodiscard]] CuboidType& operator[](const int8_t& index){ return m_cuboids[index]; }
+	[[nodiscard]] const CuboidType& operator[](const int& index) const { return m_cuboids[index]; }
+	[[nodiscard]] CuboidType& operator[](const int& index){ return m_cuboids[index]; }
 	[[nodiscard]] PointType center() const;
 	[[nodiscard]] PointType::DimensionType lowestZ() const;
 	[[nodiscard]] PointType::DimensionType highestZ() const;
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] bool exists() const;
-	[[nodiscard]] int32_t size() const;
-	[[nodiscard]] int32_t volume() const;
+	[[nodiscard]] int size() const;
+	[[nodiscard]] int volume() const;
 	[[nodiscard]] bool contains(const Point3D& point) const;
 	[[nodiscard]] bool contains(const Offset3D& point) const;
 	[[nodiscard]] bool contains(const CuboidType& cuboid) const;
@@ -125,9 +125,9 @@ public:
 	[[nodiscard]] CuboidSetType adjacentSlicedAtZ(const PointType::DimensionType& zLevel) const;
 	[[nodiscard]] CuboidSetType flattened(const PointType::DimensionType& zLevel) const;
 	[[nodiscard]] CuboidSetType adjacentRecursive(const PointType& point) const;
-	[[nodiscard]] int32_t countIf(auto&& condition) const
+	[[nodiscard]] int countIf(auto&& condition) const
 	{
-		int32_t output = 0;
+		int output = 0;
 		for(const Cuboid& cuboid : m_cuboids)
 			output += cuboid.countIf(condition);
 		return output;

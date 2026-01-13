@@ -55,7 +55,7 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 	auto& space = m_area.getSpace();
 	assert(space.plant_canGrowHereEver(location, species));
 	location_set(index, location, Facing4::North);
-	int8_t wildGrowth = PlantSpecies::wildGrowthForPercentGrown(species, getPercentGrown(index));
+	int wildGrowth = PlantSpecies::wildGrowthForPercentGrown(species, getPercentGrown(index));
 	if(wildGrowth != 0)
 		doWildGrowth(index, wildGrowth);
 	// TODO: Generate event start steps from paramaters for fluid and temperature.
@@ -68,11 +68,11 @@ PlantIndex Plants::create(PlantParamaters paramaters)
 	// Fruit.
 	if(PlantSpecies::getStepsDurationHarvest(species).exists())
 	{
-		int16_t day = m_area.m_simulation.getDateTime().day;
-		int16_t start = PlantSpecies::getDayOfYearToStartHarvest(species);
+		int day = m_area.m_simulation.getDateTime().day;
+		int start = PlantSpecies::getDayOfYearToStartHarvest(species);
 		if(day >= start)
 		{
-			int16_t daysDuration = (PlantSpecies::getStepsDurationHarvest(species) / Config::stepsPerDay).get();
+			int daysDuration = (PlantSpecies::getStepsDurationHarvest(species) / Config::stepsPerDay).get();
 			if(day - start < daysDuration)
 				setQuantityToHarvest(index);
 		}
@@ -182,7 +182,7 @@ bool Plants::hasFluidSource(const PlantIndex& index)
 			}
 	return false;
 }
-void Plants::setDayOfYear(const PlantIndex& index, int16_t dayOfYear)
+void Plants::setDayOfYear(const PlantIndex& index, int dayOfYear)
 {
 	PlantSpeciesId species = m_species[index];
 	if(PlantSpecies::getItemQuantityToHarvest(species).exists() && dayOfYear == PlantSpecies::getDayOfYearToStartHarvest(species))
@@ -193,7 +193,7 @@ void Plants::setQuantityToHarvest(const PlantIndex& index)
 	PlantSpeciesId species = m_species[index];
 	Step duration = PlantSpecies::getStepsDurationHarvest(species);
 	Step now = m_area.m_simulation.m_step;
-	int16_t year = m_area.m_simulation.getDateTime().year;
+	int year = m_area.m_simulation.getDateTime().year;
 	Step start = (Config::stepsPerDay * (PlantSpecies::getDayOfYearToStartHarvest(species) - 1)) + (Config::stepsPerYear * year);
 	Step end = start + duration;
 	Step remaining = end - now;
@@ -297,7 +297,7 @@ void Plants::updateFluidVolumeRequested(const PlantIndex& index)
 Step Plants::stepsPerShapeChange(const PlantIndex& index) const
 {
 	PlantSpeciesId species = m_species[index];
-	int32_t shapesCount = PlantSpecies::getShapes(species).size() + PlantSpecies::getMaxWildGrowth(species);
+	int shapesCount = PlantSpecies::getShapes(species).size() + PlantSpecies::getMaxWildGrowth(species);
 	return PlantSpecies::getStepsTillFullyGrown(species) / shapesCount;
 }
 bool Plants::temperatureEventExists(const PlantIndex& index) const
@@ -324,7 +324,7 @@ void Plants::removeFoliageMass(const PlantIndex& index, const Mass& mass)
 	makeFoliageGrowthEvent(index);
 	updateGrowingStatus(index);
 }
-void Plants::doWildGrowth(const PlantIndex& index, int8_t count)
+void Plants::doWildGrowth(const PlantIndex& index, int count)
 {
 	PlantSpeciesId species = m_species[index];
 	auto& space = m_area.getSpace();
@@ -347,7 +347,7 @@ void Plants::doWildGrowth(const PlantIndex& index, int8_t count)
 			m_wildGrowth[index] = PlantSpecies::getMaxWildGrowth(species);
 		else
 		{
-			const Point3D toGrowInto = candidates[simulation.m_random.getInRange(0, (int32_t)candidates.size() - 1)];
+			const Point3D toGrowInto = candidates[simulation.m_random.getInRange(0, (int)candidates.size() - 1)];
 			const Offset3D offset = m_location[index].offsetTo(toGrowInto);
 			// Use the volume of the location position as the volume of the new growth position.
 			const std::pair<OffsetCuboid, CollisionVolume> pair  = {OffsetCuboid{offset, offset}, Shape::getCollisionVolumeAtLocation(m_shape[index])};
@@ -388,7 +388,7 @@ void Plants::updateShape(const PlantIndex& index)
 	ShapeId shape = PlantSpecies::shapeForPercentGrown(species, percent);
 	if(shape != m_shape[index])
 		setShape(index, shape);
-	int8_t wildGrowthSteps = PlantSpecies::wildGrowthForPercentGrown(species, percent);
+	int wildGrowthSteps = PlantSpecies::wildGrowthForPercentGrown(species, percent);
 	if(wildGrowthSteps > m_wildGrowth[index])
 	{
 		assert(m_wildGrowth[index] + 1 == wildGrowthSteps);
@@ -490,7 +490,7 @@ void Plants::load(const Json& data)
 	m_quantityToHarvest = data["m_quantityToHarvest"].get<StrongVector<Quantity, PlantIndex>>();
 	m_percentGrown = data["m_percentGrown"].get<StrongVector<Percent, PlantIndex>>();
 	m_percentFoliage = data["m_percentFoliage"].get<StrongVector<Percent, PlantIndex>>();
-	m_wildGrowth = data["m_wildGrowth"].get<StrongVector<int8_t, PlantIndex>>();
+	m_wildGrowth = data["m_wildGrowth"].get<StrongVector<int, PlantIndex>>();
 	m_volumeFluidRequested = data["m_volumeFluidRequested"].get<StrongVector<CollisionVolume, PlantIndex>>();
 	Space& space = m_area.getSpace();
 	for(const PlantIndex& index : getAll())

@@ -185,7 +185,7 @@ public:
 		m_events[newIndex] = m_events[oldIndex];
 		m_events[newIndex]->onMoveIndex(oldIndex, newIndex);
 	}
-	void sortRangeWithOrder(const Index& begin, const Index& end, std::vector<std::pair<int32_t, Index>> sortOrder)
+	void sortRangeWithOrder(const Index& begin, const Index& end, std::vector<std::pair<int, Index>> sortOrder)
 	{
 		m_events.sortRangeWithOrder(begin, end, sortOrder);
 	}
@@ -216,7 +216,7 @@ public:
 	[[nodiscard]] Json toJson() const
 	{
 		Json output = Json::object();
-		int32_t i = 0;
+		int i = 0;
 		for(const EventType* event : m_events)
 		{
 			if(event != nullptr)

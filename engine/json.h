@@ -26,7 +26,7 @@ namespace nlohmann {
 		}
 	};
 	// Eigen array holding a 1d series of float.
-	template <int32_t capacity>
+	template <int capacity>
 	struct adl_serializer<Eigen::Array<float, 1, capacity>>
 	{
 		static void to_json(Json& j, const Eigen::Array<float, 1, capacity>& v)

@@ -43,11 +43,11 @@ Point3D Actors::eat_getOccupiedOrAdjacentPointWithTheMostDesiredFood(const Actor
 {
 	return m_mustEat[index]->getOccupiedOrAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(m_area);
 }
-std::pair<Point3D, int8_t> Actors::eat_getDesireToEatSomethingAt(const ActorIndex& index, const Cuboid& cuboid) const
+std::pair<Point3D, int> Actors::eat_getDesireToEatSomethingAt(const ActorIndex& index, const Cuboid& cuboid) const
 {
 	return m_mustEat[index]->getDesireToEatSomethingAt(m_area, cuboid);
 }
-int8_t Actors::eat_getMinimumAcceptableDesire(const ActorIndex& index) const
+int Actors::eat_getMinimumAcceptableDesire(const ActorIndex& index) const
 {
 	return m_mustEat[index]->getMinimumAcceptableDesire(m_area);
 }

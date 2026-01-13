@@ -91,7 +91,7 @@ void SmallMap<K,V>::updateKey(const K& oldKey, const K& newKey)
 		}
 }
 template<typename K, MoveConstructible V>
-int32_t SmallMap<K,V>::size() const { return m_data.size(); }
+int SmallMap<K,V>::size() const { return m_data.size(); }
 template<typename K, MoveConstructible V>
 bool SmallMap<K,V>::empty() const { return m_data.empty(); }
 template<typename K, MoveConstructible V>
@@ -209,7 +209,7 @@ void SmallMapStable<K,V>::clear() { m_data.clear(); }
 template<typename K, typename V>
 void SmallMapStable<K,V>::swap(This& other) { m_data.swap(other.m_data); }
 template<typename K, typename V>
-int32_t SmallMapStable<K,V>::size() const { return m_data.size(); }
+int SmallMapStable<K,V>::size() const { return m_data.size(); }
 template<typename K, typename V>
 bool SmallMapStable<K,V>::empty() const { return m_data.empty(); }
 template<typename K, typename V>

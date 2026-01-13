@@ -39,7 +39,7 @@ public:
 	[[nodiscard]] static HasShapeIndex cast(const PlantIndex& o);
 	[[nodiscard]] static HasShapeIndex cast(const ItemIndex& o);
 	[[nodiscard]] static HasShapeIndex cast(const ActorIndex& o);
-	[[nodiscard]] static HasShapeIndex null() { return StrongInteger<HasShapeIndex, int32_t>::null(); }
+	[[nodiscard]] static HasShapeIndex null() { return StrongInteger<HasShapeIndex, int>::null(); }
 	[[nodiscard]] PlantIndex toPlant() const;
 	[[nodiscard]] ActorIndex toActor() const;
 	[[nodiscard]] ItemIndex toItem() const;

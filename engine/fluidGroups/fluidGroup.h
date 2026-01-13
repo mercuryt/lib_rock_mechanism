@@ -47,8 +47,8 @@ public:
 	CuboidSet m_futureRemoveFromFillQueue;
 	SmallMap<FluidTypeId, FluidGroup*> m_disolvedInThisGroup;
 	FluidTypeId m_fluidType;
-	int32_t m_excessVolume = 0;
-	int32_t m_viscosity = 0;
+	int m_excessVolume = 0;
+	int m_viscosity = 0;
 	// Currently at rest?
 	bool m_stable = false;
 	// Will be destroyed.
@@ -82,6 +82,6 @@ public:
 	[[nodiscard]] bool dispositionIsStable(const CollisionVolume& fillVolume, const CollisionVolume& drainVolume) const;
 	[[nodiscard]] bool operator==(const FluidGroup& fluidGroup) const { return &fluidGroup == this; }
 	[[nodiscard]] Quantity countPointsOnSurface(const Area& area) const;
-	[[nodiscard]] int32_t countPoints() const;
+	[[nodiscard]] int countPoints() const;
 	friend class Area;
 };

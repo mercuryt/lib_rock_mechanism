@@ -45,7 +45,7 @@ void VisionRequests::cancelIfExists(const ActorReference& actor)
 	else if(largestRange)
 		m_largestRange = std::max_element(m_data.begin(), m_data.end(), [](const VisionRequest& a, const VisionRequest& b) { return a.actor < b.actor; })->range;
 }
-void VisionRequests::readStepSegment(const int32_t& begin, const int32_t& end)
+void VisionRequests::readStepSegment(const int& begin, const int& end)
 {
 	for(auto iter = m_data.begin() + begin; iter != m_data.begin() + end; ++iter)
 	{
@@ -85,12 +85,12 @@ void VisionRequests::readStepSegment(const int32_t& begin, const int32_t& end)
 }
 void VisionRequests::readStep()
 {
-	int32_t index = 0;
-	int32_t size = m_data.size();
-	std::vector<std::pair<int32_t, int32_t>> ranges;
+	int index = 0;
+	int size = m_data.size();
+	std::vector<std::pair<int, int>> ranges;
 	while(index != size)
 	{
-		int32_t end = std::min(size, index + Config::visionThreadingBatchSize);
+		int end = std::min(size, index + Config::visionThreadingBatchSize);
 		ranges.emplace_back(index, end);
 		index = end;
 	}
@@ -193,19 +193,19 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::
 	};
 	std::vector<CandidateData> candidates;
 	SmallSet<ActorReference> results;
-	SmallSet<int32_t> locationBucketIndices;
+	SmallSet<int> locationBucketIndices;
 
 	std::vector<PointData> pointDataStore;
 	std::ranges::transform(pointSet.begin(), pointSet.end(), std::back_inserter(pointDataStore),
 		[&](const Point3D& point) -> PointData {
 			return {point, point};
 		});
-	int32_t minX = std::ranges::min_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.x(); })->coordinates.x().get();
-	int32_t maxX = std::ranges::max_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.x(); })->coordinates.x().get();
-	int32_t minY = std::ranges::min_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.y(); })->coordinates.y().get();
-	int32_t maxY = std::ranges::max_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.y(); })->coordinates.y().get();
-	int32_t minZ = std::ranges::min_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.z(); })->coordinates.z().get();
-	int32_t maxZ = std::ranges::max_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.z(); })->coordinates.z().get();
+	int minX = std::ranges::min_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.x(); })->coordinates.x().get();
+	int maxX = std::ranges::max_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.x(); })->coordinates.x().get();
+	int minY = std::ranges::min_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.y(); })->coordinates.y().get();
+	int maxY = std::ranges::max_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.y(); })->coordinates.y().get();
+	int minZ = std::ranges::min_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.z(); })->coordinates.z().get();
+	int maxZ = std::ranges::max_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.z(); })->coordinates.z().get();
 	Cuboid cuboid(
 		{Distance::create(maxX), Distance::create(maxY), Distance::create(maxZ)},
 		{Distance::create(minX), Distance::create(minY), Distance::create(minZ)}

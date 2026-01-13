@@ -6,8 +6,8 @@ bool Random::percentChance(const Percent& percent)
 		return true;
 	if(percent <= 0)
 		return false;
-	std::uniform_int_distribution<int32_t> dist(1, 100);
-	return dist(rng) <= (int32_t)percent.get();
+	std::uniform_int_distribution<int> dist(1, 100);
+	return dist(rng) <= (int)percent.get();
 }
 bool Random::chance(double chance)
 {

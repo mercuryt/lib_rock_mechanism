@@ -37,7 +37,7 @@ protected:
 	void actorsLeave(SmallSet<ActorIndex> actors);
 	[[nodiscard]] Point3D getEntranceToArea(const ShapeId& shape, const MoveTypeId& moveType) const;
 	[[nodiscard]] Point3D findLocationOnEdgeForNear(const ShapeId& shape, const MoveTypeId& moveType, const Point3D& origin, const Distance& distance, const SmallSet<Point3D>& exclude) const;
-	[[nodiscard]] bool pointIsConnectedToAtLeast(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType, int16_t count) const;
+	[[nodiscard]] bool pointIsConnectedToAtLeast(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType, int count) const;
 	[[nodiscard]] Facing4 getFacingAwayFromEdge(const Point3D& point) const;
 	[[nodiscard]] std::vector<AnimalSpeciesId> getSentientSpecies() const;
 	[[nodiscard]] virtual Json toJson() const;

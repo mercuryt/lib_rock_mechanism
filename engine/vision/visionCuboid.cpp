@@ -4,7 +4,7 @@
 #include "../space/space.h"
 #include "../actors/actors.h"
 
-VisionCuboidSetSIMD::VisionCuboidSetSIMD(int32_t capacity) :
+VisionCuboidSetSIMD::VisionCuboidSetSIMD(int capacity) :
 	m_cuboidSet(capacity),
 	m_indices(capacity)
 { }
@@ -84,10 +84,10 @@ void AreaHasVisionCuboids::onKeySetForPoint(const VisionCuboidId& newIndex, cons
 		m_area.m_visionRequests.maybeUpdateCuboid(actors.getReference(actor), newIndex);
 	m_area.m_octTree.updateVisionCuboid(point, newIndex);
 }
-SmallSet<int32_t> AreaHasVisionCuboids::getMergeCandidates(const Cuboid& cuboid) const
+SmallSet<int> AreaHasVisionCuboids::getMergeCandidates(const Cuboid& cuboid) const
 {
 	// TODO: SmallSetLimited<6>.
-	SmallSet<int32_t> output;
+	SmallSet<int> output;
 	output.reserve(6);
 	SmallSet<Point3D> candidatePoints;
 	candidatePoints.reserve(6);
@@ -109,7 +109,7 @@ SmallSet<int32_t> AreaHasVisionCuboids::getMergeCandidates(const Cuboid& cuboid)
 		VisionCuboidId visionCuboidIndex = m_pointLookup.queryGetOne(point);
 		if(visionCuboidIndex.exists())
 		{
-			int32_t index = getIndexForVisionCuboidId(visionCuboidIndex);
+			int index = getIndexForVisionCuboidId(visionCuboidIndex);
 			output.insert(index);
 		}
 	}
@@ -118,7 +118,7 @@ SmallSet<int32_t> AreaHasVisionCuboids::getMergeCandidates(const Cuboid& cuboid)
 void AreaHasVisionCuboids::insertOrMerge(const Cuboid& cuboid)
 {
 	validate();
-	for(const int32_t& index : getMergeCandidates(cuboid))
+	for(const int& index : getMergeCandidates(cuboid))
 	{
 		const Cuboid& otherCuboid = getCuboidByIndex(index);
 		assert(!cuboid.intersects(otherCuboid));
@@ -146,14 +146,14 @@ void AreaHasVisionCuboids::insertOrMerge(const Cuboid& cuboid)
 		if(outsideKey.exists() && !adjacent.contains(outsideKey))
 		{
 			adjacent.insert(outsideKey, getCuboidByVisionCuboidId(outsideKey));
-			const int32_t outsideIndex = getIndexForVisionCuboidId(outsideKey);
+			const int outsideIndex = getIndexForVisionCuboidId(outsideKey);
 			m_adjacent[outsideIndex].insert(key, cuboid);
 			validate();
 		}
 	}
 	validate();
 }
-void AreaHasVisionCuboids::destroy(const int32_t& index)
+void AreaHasVisionCuboids::destroy(const int& index)
 {
 	validate();
 	const Cuboid cuboid = m_cuboids[index];
@@ -162,7 +162,7 @@ void AreaHasVisionCuboids::destroy(const int32_t& index)
 	// Adjacent.
 	for(const auto& [otherKey, otherCuboid] : m_adjacent[index])
 	{
-		const int32_t& otherIndex = getIndexForVisionCuboidId(otherKey);
+		const int& otherIndex = getIndexForVisionCuboidId(otherKey);
 		assert(m_adjacent[otherIndex].contains(key));
 		assert(m_adjacent[otherIndex][key] == m_cuboids[index]);
 		assert(m_adjacent[index][otherKey] == otherCuboid);
@@ -210,7 +210,7 @@ void AreaHasVisionCuboids::sliceBelow(const Cuboid& cuboid)
 			toSplit.emplace(m_keys[i], m_cuboids[i]);
 	for(const auto& [key, splitCuboid] : toSplit)
 	{
-		int32_t index = getIndexForVisionCuboidId(key);
+		int index = getIndexForVisionCuboidId(key);
 		destroy(index);
 	}
 	for(const auto& pair : toSplit)
@@ -230,7 +230,7 @@ void AreaHasVisionCuboids::mergeBelow(const Cuboid& cuboid)
 			toMerge.emplace(m_keys[i], m_cuboids[i]);
 	for(const auto& [key, mergeCuboid] : toMerge)
 	{
-		int32_t index = getIndexForVisionCuboidId(key);
+		int index = getIndexForVisionCuboidId(key);
 		destroy(index);
 	}
 	for(const auto& [key, mergeCuboid] : toMerge)
@@ -238,7 +238,7 @@ void AreaHasVisionCuboids::mergeBelow(const Cuboid& cuboid)
 		// TODO: Identify cuboids which will be replicated.
 		insertOrMerge(mergeCuboid);
 }
-int32_t AreaHasVisionCuboids::getIndexForVisionCuboidId(const VisionCuboidId& key) const
+int AreaHasVisionCuboids::getIndexForVisionCuboidId(const VisionCuboidId& key) const
 {
 	auto found = std::ranges::find(m_keys, key);
 	assert(found != m_keys.end());
@@ -246,7 +246,7 @@ int32_t AreaHasVisionCuboids::getIndexForVisionCuboidId(const VisionCuboidId& ke
 }
 Cuboid AreaHasVisionCuboids::getCuboidByVisionCuboidId(const VisionCuboidId& key) const
 {
-	int32_t index = getIndexForVisionCuboidId(key);
+	int index = getIndexForVisionCuboidId(key);
 	return getCuboidByIndex(index);
 }
 void AreaHasVisionCuboids::validate() const
@@ -257,7 +257,7 @@ void AreaHasVisionCuboids::validate() const
 		[[maybe_unused]] const Cuboid& cuboid = m_cuboids[i];
 		for(const auto& [adjacentKey, adjacentCuboid] : m_adjacent[i])
 		{
-			int32_t adjacentI = getIndexForVisionCuboidId(adjacentKey);
+			int adjacentI = getIndexForVisionCuboidId(adjacentKey);
 			CuboidMap<VisionCuboidId> adjacentAdjacent = m_adjacent[adjacentI];
 			assert(adjacentAdjacent.contains(key));
 			assert(adjacentAdjacent[key] == cuboid);

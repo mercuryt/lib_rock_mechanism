@@ -9,9 +9,9 @@ Contained& StrongVector<Contained, Index>::operator[](const Index& index) { asse
 template<typename Contained, class Index>
 const Contained& StrongVector<Contained, Index>::operator[](const Index& index) const { assert(index < size()); return data[index.get()]; }
 template<typename Contained, class Index>
-int32_t StrongVector<Contained, Index>::size() const { return data.size(); }
+int StrongVector<Contained, Index>::size() const { return data.size(); }
 template<typename Contained, class Index>
-int32_t StrongVector<Contained, Index>::capacity() const { return data.capacity(); }
+int StrongVector<Contained, Index>::capacity() const { return data.capacity(); }
 template<typename Contained, class Index>
 StrongVector<Contained, Index>::iterator StrongVector<Contained, Index>::begin() { return data.begin(); }
 template<typename Contained, class Index>
@@ -102,7 +102,7 @@ void StrongVector<Contained, Index>::erase(iterator iterStart, iterator iterEnd)
 template<typename Contained, class Index>
 void StrongVector<Contained, Index>::moveIndex(const Index& oldIndex, const Index& newIndex) { data[newIndex.get()] = std::move(data[oldIndex.get()]); }
 template<typename Contained, class Index>
-void StrongVector<Contained, Index>::sortRangeWithOrder(const Index& begin, const Index& end, std::vector<std::pair<int32_t, Index>> sortOrder)
+void StrongVector<Contained, Index>::sortRangeWithOrder(const Index& begin, const Index& end, std::vector<std::pair<int, Index>> sortOrder)
 {
 	std::vector<Contained> copy;
 	copy.reserve((end - begin).get());
@@ -143,7 +143,7 @@ void StrongBitSet<Index>::moveIndex(const Index& oldIndex, const Index& newIndex
 template<class Index>
 void StrongBitSet<Index>::fill(const bool& status) { std::fill(data.begin(), data.end(), status); }
 template<class Index>
-void StrongBitSet<Index>::sortRangeWithOrder(const Index& begin, const Index& end, std::vector<std::pair<int32_t, Index>> sortOrder)
+void StrongBitSet<Index>::sortRangeWithOrder(const Index& begin, const Index& end, std::vector<std::pair<int, Index>> sortOrder)
 {
 	std::vector<bool> copy;
 	copy.reserve((end - begin).get());

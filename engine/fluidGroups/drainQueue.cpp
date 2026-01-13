@@ -18,7 +18,7 @@ void DrainQueue::initalizeForStep(Area& area, FluidGroup& fluidGroup)
 					m_queue.emplace_back(flatCuboid, data.volume, CollisionVolume::create(0));
 		};
 		space.fluid_forEachWithCuboid(m_set, action);
-		[[maybe_unused]] int32_t totalQueueVolume = 0;
+		[[maybe_unused]] int totalQueueVolume = 0;
 		for(const FutureFlowCuboid& ffc : m_queue)
 			totalQueueVolume += ffc.cuboid.volume();
 		assert(totalQueueVolume == m_set.volume());
@@ -95,7 +95,7 @@ CollisionVolume DrainQueue::groupLevel(Area& area, FluidGroup& fluidGroup) const
 	Space& space = area.getSpace();
 	return space.fluid_volumeOfTypeContains(m_groupStart->cuboid.m_high, fluidGroup.m_fluidType) - m_groupStart->delta;
 }
-int32_t DrainQueue::getPriority(const FutureFlowCuboid& futureFlowPoint)
+int DrainQueue::getPriority(const FutureFlowCuboid& futureFlowPoint)
 {
 	//TODO: What is happening here?
 	return (futureFlowPoint.cuboid.m_high.z().get() * Config::maxPointVolume.get() * 2) + futureFlowPoint.capacity.get();

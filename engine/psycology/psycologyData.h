@@ -74,7 +74,7 @@ enum class PsycologyEventType
 // Used by Psycology and PsycologyEvent.
 struct PsycologyData
 {
-	static constexpr uint32_t capacity = (int32_t)PsycologyAttribute::Null;
+	static constexpr uint32_t capacity = (int)PsycologyAttribute::Null;
 	Eigen::Array<float, 1, capacity> m_data;
 	void operator+=(const PsycologyData& other);
 	void operator-=(const PsycologyData& other);

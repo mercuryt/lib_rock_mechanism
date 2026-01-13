@@ -8,7 +8,7 @@
 #include <iterator>
 #include <vector>
 #include <ranges>
-template <typename Contained, const Contained& null, int32_t capacity>
+template <typename Contained, const Contained& null, int capacity>
 class HybridSequence
 {
 public:
@@ -16,7 +16,7 @@ public:
 	class const_iterator;
 private:
 	using This = HybridSequence<Contained, null, capacity>;
-	static constexpr int32_t offset = std::ceil((float)sizeof(std::vector<Contained>) / (float)sizeof(Contained));
+	static constexpr int offset = std::ceil((float)sizeof(std::vector<Contained>) / (float)sizeof(Contained));
 	union Data{ std::array<Contained, capacity + offset> array; std::vector<Contained> vector; } data;
 	[[nodiscard]] This::iterator firstEmptyInArray() const { return std::ranges::find(begin(), data.array.end(), null); }
 public:
@@ -84,9 +84,9 @@ public:
 			return true;
 		return data.ranges::find(data.vector, value) != data.vector.end();
 	}
-	[[nodiscard]] int16_t size()
+	[[nodiscard]] int size()
 	{
-		int16_t output = (std::ranges::find(data.array, null) - 1) - begin();
+		int output = (std::ranges::find(data.array, null) - 1) - begin();
 		if(output == capacity)
 			output += data.vector.size();
 		return output;
@@ -118,9 +118,9 @@ public:
 	class iterator
 	{
 		This& data;
-		int16_t offset = 0;
+		int offset = 0;
 	public:
-		iterator(This& d, int16_t o) : data(d), offset(o) { }
+		iterator(This& d, int o) : data(d), offset(o) { }
 		[[nodiscard]] Contained& operator*()
 		{
 			if(offset <= capacity)
@@ -128,14 +128,14 @@ public:
 			return (*data.vector.begin() + offset);
 		}
 		iterator& operator++() { offset++; return *this; }
-		[[nodiscard]] iterator& operator++(int32_t) { auto copy = *this; offset++; return copy; }
+		[[nodiscard]] iterator& operator++(int) { auto copy = *this; offset++; return copy; }
 	};
 	class const_iterator
 	{
 		const This& data;
-		int16_t offset = 0;
+		int offset = 0;
 	public:
-		const_iterator(This& d, int16_t o) : data(d), offset(o) { }
+		const_iterator(This& d, int o) : data(d), offset(o) { }
 		[[nodiscard]] const Contained& operator*()
 		{
 			if(offset <= capacity)
@@ -143,6 +143,6 @@ public:
 			return (*data.vector.begin() + offset);
 		}
 		iterator& operator++() { offset++; return *this; }
-		[[nodiscard]] iterator& operator++(int32_t) { auto copy = *this; offset++; return copy; }
+		[[nodiscard]] iterator& operator++(int) { auto copy = *this; offset++; return copy; }
 	};
 };

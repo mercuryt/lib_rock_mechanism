@@ -92,9 +92,9 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex, t
 	StrongVector<AttributeLevel, ActorIndex> m_dextarity;
 	StrongVector<AttributeLevelBonusOrPenalty, ActorIndex> m_dextarityBonusOrPenalty;
 	StrongVector<float, ActorIndex> m_dextarityModifier;
-	StrongVector<int32_t, ActorIndex> m_adultHeight;
+	StrongVector<int, ActorIndex> m_adultHeight;
 	StrongVector<Mass, ActorIndex> m_mass;
-	StrongVector<int32_t, ActorIndex> m_massBonusOrPenalty;
+	StrongVector<int, ActorIndex> m_massBonusOrPenalty;
 	StrongVector<float, ActorIndex> m_massModifier;
 	StrongVector<Mass, ActorIndex> m_unencomberedCarryMass;
 	StrongVector<SmallSet<Point3D>, HasShapeIndex> m_leadFollowPath;
@@ -141,7 +141,7 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex, t
 	StrongVector<Point3D, ActorIndex> m_destination;
 	StrongVector<Speed, ActorIndex> m_speedIndividual;
 	StrongVector<Speed, ActorIndex> m_speedActual;
-	StrongVector<int8_t, ActorIndex> m_moveRetries;
+	StrongVector<int, ActorIndex> m_moveRetries;
 	StrongVector<Psycology, ActorIndex> m_psycology;
 	StrongVector<std::pair<std::string, Step>, ActorIndex> m_dialog;
 	// Is piloting current m_isOnDeckOf
@@ -427,7 +427,7 @@ public:
 	[[nodiscard]] bool move_hasPathRequest(const ActorIndex& index) const { return m_pathRequest[index] != nullptr; }
 	[[nodiscard]] bool move_hasPath(const ActorIndex& index) const { return !m_path[index].empty(); }
 	[[nodiscard]] Step move_stepsTillNextMoveEvent(const ActorIndex& index) const;
-	[[nodiscard]] int8_t move_getRetries(const ActorIndex& index) const { return m_moveRetries[index]; }
+	[[nodiscard]] int move_getRetries(const ActorIndex& index) const { return m_moveRetries[index]; }
 	[[nodiscard]] bool move_canPathTo(const ActorIndex& index, const Point3D& destination);
 	[[nodiscard]] bool move_canPathFromTo(const ActorIndex& index, const Point3D& start, const Facing4& startFacing, const Point3D& destination);
 	// -CanPickUp.
@@ -596,8 +596,8 @@ public:
 	void psycology_event(const ActorIndex& index, const PsycologyEventType& type, const PsycologyData& delta, const Step& duration = {}, const Step& cooldown = {});
 	// For Testing.
 	[[nodiscard]] Mass eat_getMassFoodRequested(const ActorIndex& index) const;
-	[[nodiscard]] std::pair<Point3D, int8_t> eat_getDesireToEatSomethingAt(const ActorIndex& index, const Cuboid& cuboid) const;
-	[[nodiscard]] int8_t eat_getMinimumAcceptableDesire(const ActorIndex& index) const;
+	[[nodiscard]] std::pair<Point3D, int> eat_getDesireToEatSomethingAt(const ActorIndex& index, const Cuboid& cuboid) const;
+	[[nodiscard]] int eat_getMinimumAcceptableDesire(const ActorIndex& index) const;
 	[[nodiscard]] bool eat_hasObjective(const ActorIndex& index) const;
 	[[nodiscard]] Step eat_getHungerEventStep(const ActorIndex& index) const;
 	[[nodiscard]] bool eat_hasHungerEvent(const ActorIndex& index) const;
@@ -625,8 +625,8 @@ public:
 	void setAgilityModifier(const ActorIndex& index, float modifer);
 	void onAgilityChanged(const ActorIndex& index);
 	void updateAgility(const ActorIndex& index);
-	void addIntrinsicMassBonusOrPenalty(const ActorIndex& index, int32_t bonusOrPenalty);
-	void setIntrinsicMassBonusOrPenalty(const ActorIndex& index, int32_t bonusOrPenalty);
+	void addIntrinsicMassBonusOrPenalty(const ActorIndex& index, int bonusOrPenalty);
+	void setIntrinsicMassBonusOrPenalty(const ActorIndex& index, int bonusOrPenalty);
 	void addIntrinsicMassModifier(const ActorIndex& index, float modifer);
 	void setIntrinsicMassModifier(const ActorIndex& index, float modifer);
 	void onIntrinsicMassChanged(const ActorIndex& index);
@@ -641,7 +641,7 @@ public:
 	[[nodiscard]] AttributeLevelBonusOrPenalty getAgilityBonusOrPenalty(const ActorIndex& index) const;
 	[[nodiscard]] float getAgilityModifier(const ActorIndex& index) const;
 	[[nodiscard]] Mass getIntrinsicMass(const ActorIndex& index) const;
-	[[nodiscard]] int32_t getIntrinsicMassBonusOrPenalty(const ActorIndex& index) const;
+	[[nodiscard]] int getIntrinsicMassBonusOrPenalty(const ActorIndex& index) const;
 	[[nodiscard]] float getIntrinsicMassModifier(const ActorIndex& index) const;
 	[[nodiscard]] CombatScore attributes_getCombatScore(const ActorIndex& index) const;
 	[[nodiscard]] Speed attributes_getMoveSpeed(const ActorIndex& index) const;

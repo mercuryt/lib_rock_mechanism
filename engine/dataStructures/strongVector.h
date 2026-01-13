@@ -14,8 +14,8 @@ public:
 	[[nodiscard]] const std::vector<Contained>& toVector() const;
 	[[nodiscard]] Contained& operator[](const Index& index);
 	[[nodiscard]] const Contained& operator[](const Index& index) const;
-	[[nodiscard]] int32_t size() const;
-	[[nodiscard]] int32_t capacity() const;
+	[[nodiscard]] int size() const;
+	[[nodiscard]] int capacity() const;
 	[[nodiscard]] iterator begin();
 	[[nodiscard]] iterator end();
 	[[nodiscard]] const_iterator begin() const;
@@ -65,7 +65,7 @@ public:
 	void sortBy(Comparitor&& comparitor) { std::sort(data.begin(), data.end(), comparitor); }
 	// Provides symatry with more complex data stores like HasEvents and ReferenceData.
 	void moveIndex(const Index& oldIndex, const Index& newIndex);
-	void sortRangeWithOrder(const Index& begin, const Index& end, std::vector<std::pair<int32_t, Index>> sortOrder);
+	void sortRangeWithOrder(const Index& begin, const Index& end, std::vector<std::pair<int, Index>> sortOrder);
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(StrongVector, data);
 };
 template <class Index>
@@ -87,7 +87,7 @@ public:
 	void add(const bool& status);
 	void moveIndex(const Index& oldIndex, const Index& newIndex);
 	void fill(const bool& status);
-	void sortRangeWithOrder(const Index& begin, const Index& end, std::vector<std::pair<int32_t, Index>> sortOrder);
+	void sortRangeWithOrder(const Index& begin, const Index& end, std::vector<std::pair<int, Index>> sortOrder);
 	template<typename Action>
 	void forEach(Action&& action)
 	{
@@ -99,7 +99,7 @@ public:
 	{
 		const StrongBitSet* bitSet;
 		Index offset;
-		[[nodiscard]] Iterator operator++(int32_t) { auto output = *this; ++(*this); return output; }
+		[[nodiscard]] Iterator operator++(int) { auto output = *this; ++(*this); return output; }
 		Iterator operator++() { auto size = bitSet->size(); assert(offset != size); do ++offset; while(offset != size && !(*bitSet)[offset]); return *this; }
 		[[nodiscard]] Index operator*() const { assert(offset != bitSet->size()); return offset; }
 		[[nodiscard]] bool operator==(const Iterator& other) const { assert(other.bitSet == bitSet); return other.offset == offset; }

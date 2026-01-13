@@ -30,8 +30,8 @@ struct PsycologyCallback
 struct PsycologyEvent final
 {
 	PsycologyData deltas;
-	std::array<std::vector<std::unique_ptr<PsycologyCallback>>, (int32_t)PsycologyAttribute::Null> highCallbacks;
-	std::array<std::vector<std::unique_ptr<PsycologyCallback>>, (int32_t)PsycologyAttribute::Null> lowCallbacks;
+	std::array<std::vector<std::unique_ptr<PsycologyCallback>>, (int)PsycologyAttribute::Null> highCallbacks;
+	std::array<std::vector<std::unique_ptr<PsycologyCallback>>, (int)PsycologyAttribute::Null> lowCallbacks;
 	PsycologyEventType type;
 	PsycologyEvent(const PsycologyEventType& t) : type(t) { deltas.setAllToZero(); }
 	PsycologyEvent(const PsycologyEventType& t, const PsycologyData& d) : deltas(d), type(t) { }
@@ -62,8 +62,8 @@ class Psycology final
 	PsycologyData m_current;
 	PsycologyData m_highTriggers;
 	PsycologyData m_lowTriggers;
-	std::array<std::vector<std::unique_ptr<PsycologyCallback>>, (int32_t)PsycologyAttribute::Null> m_highCallbacks;
-	std::array<std::vector<std::unique_ptr<PsycologyCallback>>, (int32_t)PsycologyAttribute::Null> m_lowCallbacks;
+	std::array<std::vector<std::unique_ptr<PsycologyCallback>>, (int)PsycologyAttribute::Null> m_highCallbacks;
+	std::array<std::vector<std::unique_ptr<PsycologyCallback>>, (int)PsycologyAttribute::Null> m_lowCallbacks;
 	SmallSet<ActorId> m_friends;
 	SmallMap<ActorId, FamilyRelationship> m_family;
 	ActorHasRelationships m_relationships;

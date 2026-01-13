@@ -138,8 +138,8 @@ void EquipmentSet::modifyImpact(Area& area, Hit& hit, const BodyPartTypeId& body
 		if(std::ranges::find(bodyPartsCovered, bodyPartType) != bodyPartsCovered.end() && random.percentChance(chance))
 		{
 			auto hardness = MaterialType::getHardness(materialType);
-			int32_t pierceScore = ((float)hit.force.get() / hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceModifier;
-			int32_t defenseScore = ItemType::getWearable_defenseScore(itemType) * hardness;
+			int pierceScore = ((float)hit.force.get() / hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceModifier;
+			int defenseScore = ItemType::getWearable_defenseScore(itemType) * hardness;
 			if(pierceScore < defenseScore)
 			{
 				if(ItemType::getWearable_rigid(itemType))

@@ -71,7 +71,7 @@ void Space::fluid_add(const CuboidSet& points, const CollisionVolume& volume, co
 	FluidGroup* largestGroup = nullptr;
 	CuboidSet inflatedPoints = points.inflateFaces({1}).intersection(boundry());
 	CuboidSet wasEmpty = points;
-	int32_t numberOfPointsOverlappingExistingGroups = 0;
+	int numberOfPointsOverlappingExistingGroups = 0;
 	for(const auto& [cuboid, fluidData] : m_fluid.queryGetAllWithCuboidsAndCondition(inflatedPoints, fluidTypeCondition))
 	{
 		groups.maybeInsert(fluidData.group);

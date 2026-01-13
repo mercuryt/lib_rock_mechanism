@@ -11,8 +11,8 @@ protected:
 	Key nextKey = Key::create(0);
 public:
 	virtual std::vector<std::pair<Key, Cuboid>> getAdjacentCandidates(const Cuboid&) { return std::ranges::zip(m_keys, m_cuboids); }
-	virtual void onCreate(const int32_t&, const Key&, const Cuboid&) { }
-	virtual void onDestroy(const int32_t&, const Key&, const Cuboid&) { }
+	virtual void onCreate(const int&, const Key&, const Cuboid&) { }
+	virtual void onDestroy(const int&, const Key&, const Cuboid&) { }
 	[[nodiscard]] virtual bool canMerge(const Cuboid&, const Cuboid&) { return true; }
 	void add(const Cuboid& cuboid) override
 	{
@@ -41,7 +41,7 @@ public:
 				toSplit.emplaceBack(m_keys[i], m_cuboids[i]);
 		for(const auto& [key, cuboid] : toSplit)
 		{
-			int32_t index = getIndexForKey(key);
+			int index = getIndexForKey(key);
 			onDestroy(index, key, cuboid);
 			if(index != m_keys.size() - 1)
 				m_keys[index] = m_keys.back();
@@ -62,7 +62,7 @@ public:
 				toSplit.emplaceBack(m_keys[i], m_cuboids[i]);
 		for(const auto& [key, cuboid] : toSplit)
 		{
-			int32_t index = getIndexForKey(key);
+			int index = getIndexForKey(key);
 			onDestroy(index, key, cuboid);
 			if(index != m_keys.size() - 1)
 				m_keys[index] = m_keys.back();
@@ -77,10 +77,10 @@ public:
 	{
 		auto found = std::ranges::find(m_keys, key);
 		assert(found != m_keys.end());
-		int32_t index = std::distance(m_keys.begin(), found);
+		int index = std::distance(m_keys.begin(), found);
 		return m_cuboids[index];
 	}
-	[[nodistance]] int32_t getIndexForKey(const Key& key) { std::distance(&*m_keys.begin(), &key); }
+	[[nodistance]] int getIndexForKey(const Key& key) { std::distance(&*m_keys.begin(), &key); }
 };
 
 #include "../numericTypes/index.h"
@@ -115,7 +115,7 @@ protected:
 			}
 		return output;
 	};
-	void onCreate(const int32_t&, const Key& key, const Cuboid& cuboid) override
+	void onCreate(const int&, const Key& key, const Cuboid& cuboid) override
 	{
 		for(const Point3D& point : cuboid)
 		{
@@ -123,7 +123,7 @@ protected:
 			m_pointLookup[point] = key;
 		}
 	}
-	void onDestroy(const int32_t&, const Key& key, const Cuboid& cuboid) override
+	void onDestroy(const int&, const Key& key, const Cuboid& cuboid) override
 	{
 		for(const Point3D& point : cuboid)
 		{
@@ -152,7 +152,7 @@ protected:
 	std::vector<CuboidMap<Key>> m_adjacent;
 public:
 	CuboidSetAutoMergeMapWithAdjacent(Area& area) : CuboidSetAutoMergeMapWithPointLookup(area) { }
-	void onCreate(const int32_t& index, const Key& key, const Cuboid& cuboid) override
+	void onCreate(const int& index, const Key& key, const Cuboid& cuboid) override
 	{
 		CuboidSetAutoMergeMapWithPointLookup<Key>::onCreate(key, cuboid);
 		const Space& space = m_area.getSpace();
@@ -166,17 +166,17 @@ public:
 			if(outsideKey.exists() && !adjacent.contains(outsideKey))
 			{
 				adjacent.insert(outsideKey, m_cuboids[outsideKey]);
-				const int32_t outsideIndex = getIndexForKey(outsideKey);
+				const int outsideIndex = getIndexForKey(outsideKey);
 				m_adjacent[outsideIndex].insert(key, cuboid);
 			}
 		}
 	}
-	void onDestroy(const int32_t& index, const Key& key, const Cuboid& cuboid) override
+	void onDestroy(const int& index, const Key& key, const Cuboid& cuboid) override
 	{
 		CuboidSetAutoMergeMapWithPointLookup<Key>::onDestroy(key, cuboid);
 		for(const auto& [otherKey, otherCuboid] : m_adjacent[key])
 		{
-			int32_t otherIndex = getIndexForKey(otherKey);
+			int otherIndex = getIndexForKey(otherKey);
 			assert(m_adjacent[otherIndex][key] == cuboid);
 			assert(m_adjacent[index][otherKey] == otherCuboid);
 			m_adjacent[otherIndex].remove(key);
@@ -195,7 +195,7 @@ public:
 		{
 			key = openList.back();
 			openList.popBack();
-			int32_t index = getIndexForKey(key);
+			int index = getIndexForKey(key);
 			const Cuboid& cuboid = CuboidSet::m_cuboids[index];
 			action(key, cuboid);
 			const auto& adjacent = m_adjacent[index];
@@ -210,7 +210,7 @@ public:
 		}
 	}
 	[[nodiscard]] Key getKeyAt(const Point3D& point) const { return CuboidSetAutoMergeMapWithPointLookup<Key>::m_pointLookup[point]; }
-	[[nodiscard]] int32_t size() const { return CuboidSetAutoMergeMap<Key>::m_keys.size(); }
+	[[nodiscard]] int size() const { return CuboidSetAutoMergeMap<Key>::m_keys.size(); }
 	[[nodiscard]] Area& getArea() { return m_area; }
 
 	virtual void onKeySetForPoint(const Key& key, const Point3D& index) override { CuboidSetAutoMergeMapWithPointLookup<Key>::onSetKeyForPoint(key, index); }

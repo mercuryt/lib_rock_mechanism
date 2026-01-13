@@ -15,7 +15,7 @@ const PointFeatureType& PointFeatureType::byName(const std::string& name)
 const PointFeatureType& PointFeatureType::byId(const PointFeatureTypeId& id)
 {
 	assert(id != PointFeatureTypeId::Null);
-	return pointFeatureTypeData[(int32_t)id];
+	return pointFeatureTypeData[(int)id];
 }
 std::string PointFeature::toString() const
 {

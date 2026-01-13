@@ -60,5 +60,5 @@ public:
 	[[nodiscard]] Area* getArea() { return m_area; }
 	[[nodiscard]] Step simulationStep() const;
 	// For testing.
-	[[maybe_unused, nodiscard]]int32_t count();
+	[[maybe_unused, nodiscard]]int count();
 };

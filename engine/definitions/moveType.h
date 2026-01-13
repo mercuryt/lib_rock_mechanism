@@ -12,7 +12,7 @@ struct MoveTypeParamaters
 	std::string name;
 	bool surface;
 	bool stairs;
-	int8_t climb;
+	int climb;
 	bool jumpDown;
 	bool fly;
 	bool breathless;
@@ -26,7 +26,7 @@ class MoveType
 	StrongVector<std::string, MoveTypeId> m_name;
 	StrongBitSet<MoveTypeId> m_surface;
 	StrongBitSet<MoveTypeId> m_stairs;
-	StrongVector<int8_t, MoveTypeId> m_climb;
+	StrongVector<int, MoveTypeId> m_climb;
 	StrongBitSet<MoveTypeId> m_jumpDown;
 	StrongBitSet<MoveTypeId> m_fly;
 	StrongBitSet<MoveTypeId> m_breathless;
@@ -43,7 +43,7 @@ public:
 	[[nodiscard]] static std::string getName(const MoveTypeId& id);
 	[[nodiscard]] static bool getSurface(const MoveTypeId& id);
 	[[nodiscard]] static bool getStairs(const MoveTypeId& id);
-	[[nodiscard]] static int8_t getClimb(const MoveTypeId& id);
+	[[nodiscard]] static int getClimb(const MoveTypeId& id);
 	[[nodiscard]] static bool getJumpDown(const MoveTypeId& id);
 	[[nodiscard]] static bool getFly(const MoveTypeId& id);
 	[[nodiscard]] static bool getBreathless(const MoveTypeId& id);

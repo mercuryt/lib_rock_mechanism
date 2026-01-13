@@ -23,7 +23,7 @@ struct ShapeParamaters
 {
 	MapWithOffsetCuboidKeys<CollisionVolume> positions;
 	std::string name;
-	int32_t displayScale;
+	int displayScale;
 };
 
 struct Shape
@@ -36,11 +36,11 @@ struct Shape
 	StrongBitSet<ShapeId> m_isMultiTile;
 	StrongBitSet<ShapeId> m_isRadiallySymetrical;
 	//TODO: This doesn't belong here. Move to UI.
-	StrongVector<int32_t, ShapeId> m_displayScale;
+	StrongVector<int, ShapeId> m_displayScale;
 public:
-	static ShapeId create(const std::string name, MapWithOffsetCuboidKeys<CollisionVolume>&& positions, int32_t displayScale);
+	static ShapeId create(const std::string name, MapWithOffsetCuboidKeys<CollisionVolume>&& positions, int displayScale);
 	[[nodiscard]] static Json toJson(const ShapeId& id);
-	[[nodiscard]] static int16_t size(const ShapeId& id);
+	[[nodiscard]] static int size(const ShapeId& id);
 	[[nodiscard]] static const MapWithOffsetCuboidKeys<CollisionVolume>& positionsWithFacing(const ShapeId& id, const Facing4& facing);
 	[[nodiscard]] static const OffsetCuboidSet& adjacentCuboidsWithFacing(const ShapeId& id, const Facing4& facing);
 	[[nodiscard]] static MapWithOffsetCuboidKeys<CollisionVolume> makeOccupiedCuboidsWithFacing(const ShapeId& id, const Facing4& facing);
@@ -55,11 +55,11 @@ public:
 	[[nodiscard]] static Point3D getPointWhichWouldBeAdjacentAtWithPredicate(const ShapeId& id, const Space& space, const Point3D& location, const Facing4& facing, std::function<bool(const Point3D&)> predicate);
 	[[nodiscard]] static CollisionVolume getCollisionVolumeAtLocation(const ShapeId& id);
 	[[nodiscard]] static CollisionVolume getTotalCollisionVolume(const ShapeId& id);
-	[[nodiscard]] static int16_t getCuboidsCount(const ShapeId& id);
+	[[nodiscard]] static int getCuboidsCount(const ShapeId& id);
 	[[nodiscard]] static const MapWithOffsetCuboidKeys<CollisionVolume>& getOffsetCuboidsWithVolume(const ShapeId& id);
 	[[nodiscard]] static const OffsetCuboid& getOffsetCuboidBoundryWithFacing(const ShapeId& id, const Facing4& facing);
 	[[nodiscard]] static std::string getName(const ShapeId& id);
-	[[nodiscard]] static int32_t getDisplayScale(const ShapeId& id);
+	[[nodiscard]] static int getDisplayScale(const ShapeId& id);
 	[[nodiscard]] static bool getIsMultiTile(const ShapeId& id);
 	[[nodiscard]] static bool getIsRadiallySymetrical(const ShapeId& id);
 	[[nodiscard]] static Offset getZSize(const ShapeId& id);

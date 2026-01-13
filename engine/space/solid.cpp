@@ -148,15 +148,15 @@ Mass Space::solid_getMass(const CuboidSet& cuboidSet) const
 			output += solid_getMass(point);
 	return output;
 }
-std::pair<MaterialTypeId, int32_t> Space::solid_getHardest(const CuboidSet& cuboids)
+std::pair<MaterialTypeId, int> Space::solid_getHardest(const CuboidSet& cuboids)
 {
 	// Check Solid first.
 	const auto predicateSolid = [&](const MaterialTypeId& materialType) { return MaterialType::getHardness(materialType); };
 	MaterialTypeId output;
-	int32_t hardness = 0;
+	int hardness = 0;
 	for(const Cuboid& cuboid : cuboids)
 	{
-		const auto [materialType, cuboidHardness] = m_solid.queryGetHighestReturnWithPredicateOutput<int32_t, predicateSolid>(cuboid);
+		const auto [materialType, cuboidHardness] = m_solid.queryGetHighestReturnWithPredicateOutput<int, predicateSolid>(cuboid);
 		if(cuboidHardness > hardness)
 		{
 			hardness = cuboidHardness;
@@ -169,7 +169,7 @@ std::pair<MaterialTypeId, int32_t> Space::solid_getHardest(const CuboidSet& cubo
 	const auto predicateFeature = [&](const PointFeature& feature) { return MaterialType::getHardness(feature.materialType); };
 	for(const Cuboid& cuboid : cuboids)
 	{
-		const auto [feature, cuboidHardness] = m_features.queryGetHighestReturnWithPredicateOutput<int32_t, predicateFeature>(cuboid);
+		const auto [feature, cuboidHardness] = m_features.queryGetHighestReturnWithPredicateOutput<int, predicateFeature>(cuboid);
 		if(cuboidHardness > hardness)
 		{
 			hardness = cuboidHardness;

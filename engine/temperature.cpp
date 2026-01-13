@@ -151,10 +151,10 @@ void AreaHasTemperature::updateAmbientSurfaceTemperature()
 	// TODO: Latitude and altitude.
 	Temperature dailyAverage = getDailyAverageAmbientSurfaceTemperature();
 	static Temperature maxDailySwing = Temperature::create(35);
-	static int8_t hottestHourOfDay = 14;
-	int8_t hour = DateTime(m_area.m_simulation.m_step).hour;
-	int8_t hoursFromHottestHourOfDay = std::abs((int32_t)hottestHourOfDay - hour);
-	int8_t halfDay = Config::hoursPerDay / 2;
+	static int hottestHourOfDay = 14;
+	int hour = DateTime(m_area.m_simulation.m_step).hour;
+	int hoursFromHottestHourOfDay = std::abs((int)hottestHourOfDay - hour);
+	int halfDay = Config::hoursPerDay / 2;
 	setAmbientSurfaceTemperature(dailyAverage + ((maxDailySwing * (std::max(0, halfDay - hoursFromHottestHourOfDay))) / halfDay) - (maxDailySwing / 2));
 }
 void AreaHasTemperature::maybeAddMeltableSolidPointAboveGround(const Point3D& point)
@@ -190,9 +190,9 @@ Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature() const
 	// TODO: Latitude and altitude.
 	static Temperature yearlyHottestDailyAverage = Temperature::create(290);
 	static Temperature yearlyColdestDailyAverage = Temperature::create(270);
-	static int16_t dayOfYearOfSolstice = Config::daysPerYear / 2;
-	int16_t day = DateTime(m_area.m_simulation.m_step).day;
-	int16_t daysFromSolstice = std::abs(day - (int32_t)dayOfYearOfSolstice);
+	static int dayOfYearOfSolstice = Config::daysPerYear / 2;
+	int day = DateTime(m_area.m_simulation.m_step).day;
+	int daysFromSolstice = std::abs(day - (int)dayOfYearOfSolstice);
 	return yearlyColdestDailyAverage + ((yearlyHottestDailyAverage - yearlyColdestDailyAverage) * (dayOfYearOfSolstice - daysFromSolstice)) / dayOfYearOfSolstice;
 }
 UnsafeTemperatureEvent::UnsafeTemperatureEvent(Area& area, const ActorIndex& a, const Step start) :

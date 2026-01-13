@@ -17,7 +17,7 @@ class WoodCuttingProject final : public Project
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
 	[[nodiscard]] SkillTypeId getSkill() const;
 	[[nodiscard]] std::string description() const { return "woodcutting"; }
-	static int32_t getWorkerWoodCuttingScore(Area& area, const ActorIndex& actor);
+	static int getWorkerWoodCuttingScore(Area& area, const ActorIndex& actor);
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
 	// PointFeatureType can be null, meaning the point is to be fully excavated.
