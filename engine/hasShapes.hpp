@@ -99,14 +99,14 @@ void HasShapes<Derived, Index>::removeShapeFromCompoundShape(const Index& index,
 	m_compoundShape[index] = Shape::mutateRemoveMultiple(m_compoundShape[index], offsetsAndVolumes);
 }
 template<class Derived, class Index>
-std::vector<std::pair<uint32_t, Index>> HasShapes<Derived, Index>::getSortOrder(const Index& begin, const Index& end)
+std::vector<std::pair<int32_t, Index>> HasShapes<Derived, Index>::getSortOrder(const Index& begin, const Index& end)
 {
 	assert(end > begin + 1);
-	std::vector<std::pair<uint32_t, Index>> sortOrder;
+	std::vector<std::pair<int32_t, Index>> sortOrder;
 	sortOrder.reserve((end - begin).get());
 	for(Index index = begin; index < end; ++index)
 		sortOrder.emplace_back(m_location[index].hilbertNumber(), index);
-	std::ranges::sort(sortOrder, std::less{}, &std::pair<uint32_t, Index>::first);
+	std::ranges::sort(sortOrder, std::less{}, &std::pair<int32_t, Index>::first);
 	return sortOrder;
 }
 template<class Derived, class Index>

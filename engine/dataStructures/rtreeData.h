@@ -3,11 +3,12 @@
 #include "../geometry/cuboidArray.h"
 #include "../geometry/cuboidSet.h"
 #include "../geometry/mapWithCuboidKeys.h"
-#include "../strongInteger.h"
 #include "../json.h"
 #include "../numericTypes/index.h"
 #include "../concepts.h"
+#include "../config/config.h"
 #include "strongVector.hpp"
+#include "strongArray.h"
 #include "smallMap.h"
 #include "smallSet.hpp"
 #include "bitset.h"
@@ -32,13 +33,13 @@ namespace RTreeDataConfigs
 template<Sortable T, RTreeDataConfig config = RTreeDataConfig(), typename T::Primitive nullPrimitive = T::nullPrimitive()>
 class RTreeData
 {
-	static constexpr uint8_t nodeSize = 64;
+	static constexpr int nodeSize = Config::rtreeNodeSize;
 	using BitSet = BitSet64;
 	union DataOrChild { T::Primitive data; RTreeNodeIndex::Primitive child; };
 	class Node
 	{
 		CuboidArray<nodeSize> m_cuboids;
-		std::array<DataOrChild, nodeSize> m_dataAndChildIndices;
+		StrongArray<DataOrChild, RTreeArrayIndex, nodeSize> m_dataAndChildIndices;
 		RTreeNodeIndex m_parent;
 		RTreeArrayIndex m_leafEnd = RTreeArrayIndex::create(0);
 		RTreeArrayIndex m_childBegin = RTreeArrayIndex::create(nodeSize);
@@ -48,17 +49,18 @@ class RTreeData
 		[[nodiscard]] const auto& getDataAndChildIndices() const { return m_dataAndChildIndices; }
 		[[nodiscard]] auto& getDataAndChildIndices() { return m_dataAndChildIndices; }
 		[[nodiscard]] const auto& getParent() const { return m_parent; }
-		[[nodiscard]] uint8_t getLeafCount() const { return m_leafEnd.get(); }
-		[[nodiscard]] uint8_t getChildCount() const { return nodeSize - m_childBegin.get(); }
-		[[nodiscard]] uint8_t unusedCapacity() const { return (m_childBegin - m_leafEnd).get(); }
+		[[nodiscard]] int getLeafCount() const { return m_leafEnd.get(); }
+		[[nodiscard]] int getChildCount() const { return nodeSize - m_childBegin.get(); }
+		[[nodiscard]] int unusedCapacity() const { return (m_childBegin - m_leafEnd).get(); }
 		[[nodiscard]] int sortOrder() const { return m_cuboids.boundry().getCenter().hilbertNumber(); };
 		[[nodiscard]] RTreeArrayIndex offsetFor(const RTreeNodeIndex& index) const;
 		[[nodiscard]] RTreeArrayIndex offsetOfFirstChild() const { return m_childBegin; }
 		[[nodiscard]] bool empty() const { return unusedCapacity() == nodeSize; }
-		[[nodiscard]] unsigned int getLeafVolume() const;
-		[[nodiscard]] unsigned int getNodeVolume() const;
+		[[nodiscard]] int getLeafVolume() const;
+		[[nodiscard]] int getNodeVolume() const;
 		[[nodiscard]] Json toJson() const;
-		[[nodiscard]] bool containsLeaf(const Cuboid& cuboid, const T& value);
+		[[nodiscard]] bool containsLeaf(const Cuboid& cuboid, const T& value) const;
+		[[nodiscard]] bool hasChildren() const ;
 		[[nodiscard]] bool operator==(const Node& other) const = default;
 		void load(const Json& data);
 		void updateChildIndex(const RTreeNodeIndex& oldIndex, const RTreeNodeIndex& newIndex);
@@ -106,7 +108,6 @@ class RTreeData
 	void defragment();
 	// Sort m_nodes by hilbert order of center. The node in position 0 is the top level and never moves.
 	void sort();
-	static void addIntersectedChildrenToOpenList(const Node& node, const CuboidArray<nodeSize>::BoolArray& intersecting, SmallSet<RTreeNodeIndex>& openList);
 	static void addIntersectedChildrenToOpenList(const Node& node, const BitSet intersecting, SmallSet<RTreeNodeIndex>& openList);
 	[[nodiscard]] virtual bool canOverlap(const T&, const T&) const { return true; }
 public:
@@ -150,6 +151,23 @@ public:
 	[[nodiscard]] __attribute__((noinline)) bool anyLeafOverlapsAnother() const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] CuboidSet getLeafCuboids() const;
+	[[nodiscard]] SmallSet<T> getAllWithCondition(auto&& condition) const
+	{
+		SmallSet<T> output;
+		for(const Node& node : m_nodes)
+		{
+			const int leafCount = node.getLeafCount();
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			const RTreeArrayIndex end = RTreeArrayIndex::create(leafCount);
+			for(RTreeArrayIndex i = {0}; i != end; ++i)
+			{
+				T value = T::create(nodeDataAndChildIndices[i].data);
+				if(condition(value))
+					output.maybeInsert(value);
+			}
+		}
+		return output;
+	}
 	void load(const Json& data);
 	void validate() const;
 	void removeWithCondition(const auto& shape, const auto& condition)
@@ -215,7 +233,7 @@ public:
 			if(!intersectMask.any())
 				continue;
 			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			const uint8_t& leafCount = node.getLeafCount();
+			const int& leafCount = node.getLeafCount();
 			BitSet intersectBitSet = BitSet::create(intersectMask);
 			if(intersectMask.head(leafCount).any())
 			{
@@ -226,8 +244,8 @@ public:
 				BitSet leavesToErase;
 				while(leafBitSet.any())
 				{
-					const uint8_t arrayIndex = leafBitSet.getNextAndClear();
-					Cuboid leafCuboid = nodeCuboids[arrayIndex];
+					const RTreeArrayIndex arrayIndex{leafBitSet.getNextAndClear()};
+					Cuboid leafCuboid = nodeCuboids[arrayIndex.get()];
 					// inflate from primitive temporarily for callback.
 					T initalValue = T::create(nodeDataAndChildIndices[arrayIndex].data);
 					assert(initalValue != T::create(nullPrimitive));
@@ -251,14 +269,14 @@ public:
 						{
 							// Action changed value to null.
 							assert(queryConfig.destroy);
-							leavesToErase.set(arrayIndex);
+							leavesToErase.set(arrayIndex.get());
 							if(index != 0)
 								toUpdateBoundryMaybe.maybeInsert(index);
 						}
 						else
 						{
 							// Update value without changing geometry.
-							node.updateValue(RTreeArrayIndex::create(arrayIndex), value);
+							node.updateValue(arrayIndex, value);
 						}
 					}
 					else
@@ -272,12 +290,12 @@ public:
 						{
 							// Action changed value to null.
 							assert(queryConfig.destroy);
-							leavesToErase.set(arrayIndex);
+							leavesToErase.set(arrayIndex.get());
 						}
 						else
 						{
 							// Update leaf value and cuboid.
-							node.updateLeafWithValue(RTreeArrayIndex::create(arrayIndex), leafCuboid.intersection(shape),  value);
+							node.updateLeafWithValue(arrayIndex, leafCuboid.intersection(shape),  value);
 						}
 					}
 					if constexpr(queryConfig.stopAfterOne)
@@ -296,11 +314,9 @@ public:
 					if(found)
 						break;
 			}
-			const auto& offsetOfFirstChild = node.offsetOfFirstChild();
-			if(offsetOfFirstChild != nodeSize)
+			if(node.hasChildren())
 			{
-				if(leafCount != 0)
-					intersectBitSet.clearAllBefore(leafCount);
+				intersectBitSet.clearAllBefore(leafCount);
 				addIntersectedChildrenToOpenList(node, intersectBitSet, openList);
 			}
 		}
@@ -436,7 +452,7 @@ public:
 			const auto leafCount = node.getLeafCount();
 			if(leafCount != 0 && intersectMask.head(leafCount).any())
 				return true;
-			if(leafCount != nodeSize)
+			if(node.hasChildren())
 			{
 				BitSet intersectBitSet = BitSet::create(intersectMask);
 				intersectBitSet.clearAllBefore(leafCount);
@@ -468,12 +484,12 @@ public:
 					leafBitSet.clearAllAfterInclusive(leafCount);
 				while(leafBitSet.any())
 				{
-					const uint arrayIndex = leafBitSet.getNextAndClear();
+					const RTreeArrayIndex arrayIndex{leafBitSet.getNextAndClear()};
 					if(condition(T::create(nodeDataAndChildIndices[arrayIndex].data)))
 						return true;
 				}
 			}
-			if(leafCount != nodeSize)
+			if(node.hasChildren())
 			{
 				intersectBitSet.clearAllBefore(leafCount);
 				if(intersectBitSet.any())
@@ -507,10 +523,10 @@ public:
 				continue;
 			const auto leafCount = node.getLeafCount();
 			BitSet intersectBitSet = BitSet::create(intersectMask);
-			const uint8_t arrayIndex = intersectBitSet.getNext();
+			const RTreeArrayIndex arrayIndex{intersectBitSet.getNext()};
 			if(arrayIndex < leafCount)
 				return T::create(node.getDataAndChildIndices()[arrayIndex].data);
-			if(leafCount != 0)
+			if(node.hasChildren())
 			{
 				intersectBitSet.clearAllBefore(leafCount);
 				if(intersectBitSet.any())
@@ -548,13 +564,13 @@ public:
 				const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
 				while(leafBitSet.any())
 				{
-					const uint8_t arrayIndex = leafBitSet.getNextAndClear();
+					const RTreeArrayIndex arrayIndex{leafBitSet.getNextAndClear()};
 					const auto candidate = T::create(nodeDataAndChildIndices[arrayIndex].data);
 					if(condition(candidate))
-						return {candidate, nodeCuboids[arrayIndex]};
+						return {candidate, nodeCuboids[arrayIndex.get()]};
 				}
 			}
-			if(offsetOfFirstChild != nodeSize)
+			if(node.hasChildren())
 			{
 				intersectBitSet.clearAllBefore(leafCount);
 				addIntersectedChildrenToOpenList(node, intersectBitSet, openList);
@@ -622,12 +638,12 @@ public:
 					intersectBitSetLeaves.clearAllAfterInclusive(leafCount);
 				while(intersectBitSetLeaves.any())
 				{
-					const uint8_t arrayIndex = intersectBitSetLeaves.getNextAndClear();
-					action(nodeCuboids[arrayIndex], T::create(nodeDataAndChildIndices[arrayIndex].data));
+					const RTreeArrayIndex arrayIndex{intersectBitSetLeaves.getNextAndClear()};
+					action(nodeCuboids[arrayIndex.get()], T::create(nodeDataAndChildIndices[arrayIndex].data));
 				}
 			}
 			const auto offsetOfFirstChild = node.offsetOfFirstChild();
-			if(offsetOfFirstChild != nodeSize)
+			if(node.hasChildren())
 			{
 				intersectBitSet.clearAllBefore(offsetOfFirstChild.get());
 				addIntersectedChildrenToOpenList(node, intersectBitSet, openList);
@@ -683,20 +699,20 @@ public:
 	}
 	[[nodiscard]] bool batchQueryAny(const auto& shapes) const
 	{
-		assert(shapes.size() < UINT8_MAX);
 		std::vector<bool> output;
 		output.resize(shapes.size());
-		SmallMap<RTreeNodeIndex, SmallSet<uint8_t>> openList;
-		openList.insert(RTreeNodeIndex::create(0), {});
-		auto& rootNodeCandidateList = openList.back().second;
-		rootNodeCandidateList.resize(shapes.size());
-		std::ranges::iota(rootNodeCandidateList.getVector(), 0);
+		SmallMap<RTreeNodeIndex, SmallSet<int>> openList;
+		SmallSet<int> topLevelCandidates;
+		topLevelCandidates.resize(shapes.size());
+		std::iota(topLevelCandidates.m_data.begin(), topLevelCandidates.m_data.end(), 0);
+		openList.insert(RTreeNodeIndex::create(0), std::move(topLevelCandidates));
 		while(!openList.empty())
 		{
 			const auto& [index, candidates] = openList.back();
 			const Node& node = m_nodes[index];
 			const auto& nodeCuboids = node.getCuboids();
-			for(const uint8_t& shapeIndex : candidates)
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			for(const int& shapeIndex : candidates)
 			{
 				if(output[shapeIndex])
 					// This shape has already intersected with a leaf, no need to check further.
@@ -707,25 +723,11 @@ public:
 				if(leafCount != 0 && intersectMask.head(leafCount).any())
 					return true;
 				// Record intersected children in openList.
-				const auto offsetOfFirstChild = node.offsetOfFirstChild();
-				const uint8_t childCount = nodeSize - offsetOfFirstChild.get();
-				if(childCount == 0 || !intersectMask.tail(childCount).any())
-					continue;
-				const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-				const auto begin = intersectMask.begin();
-				const auto end = intersectMask.end();
-				if(offsetOfFirstChild == 0)
+				BitSet intersectBitMask = BitSet::create(intersectMask);
+				while(!intersectBitMask.empty())
 				{
-					// Unrollable version for nodes where every slot is a child.
-					for(auto iter = begin; iter != end; ++iter)
-						if(*iter)
-							openList.getOrCreate(RTreeNodeIndex::create(nodeDataAndChildIndices[iter - begin].child)).insert(shapeIndex);
-				}
-				else
-				{
-					for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-						if(*iter)
-							openList.getOrCreate(RTreeNodeIndex::create(nodeDataAndChildIndices[iter - begin].child)).insert(shapeIndex);
+					const RTreeArrayIndex arrayIndex{intersectBitMask.getNextAndClear()};
+					openList.getOrCreate(RTreeNodeIndex::create(nodeDataAndChildIndices[arrayIndex].child)).insert(shapeIndex);
 				}
 			}
 			// Pop back at the end so we can use candidates as a reference and not have to make a move-copy.
@@ -735,60 +737,137 @@ public:
 	}
 	[[nodiscard]] bool batchQueryWithConditionAny(const auto& shapes, const auto& condition) const
 	{
-		assert(shapes.size() < UINT8_MAX);
 		std::vector<bool> output;
 		output.resize(shapes.size());
-		SmallMap<RTreeNodeIndex, SmallSet<uint8_t>> openList;
-		openList.insert(RTreeNodeIndex::create(0), {});
-		auto& rootNodeCandidateList = openList.back().second;
-		rootNodeCandidateList.resize(shapes.size());
-		std::ranges::iota(rootNodeCandidateList.getVector(), 0);
+		SmallMap<RTreeNodeIndex, SmallSet<int>> openList;
+		SmallSet<int> topLevelCandidates;
+		topLevelCandidates.resize(shapes.size());
+		std::iota(topLevelCandidates.m_data.begin(), topLevelCandidates.m_data.end(), 0);
+		openList.insert(RTreeNodeIndex::create(0), std::move(topLevelCandidates));
 		while(!openList.empty())
 		{
 			const auto& [index, candidates] = openList.back();
 			const Node& node = m_nodes[index];
 			const auto& nodeCuboids = node.getCuboids();
-			for(const uint8_t& shapeIndex : candidates)
+			for(const int& shapeIndex : candidates)
 			{
 				if(output[shapeIndex])
 					// This shape has already intersected with a leaf, no need to check further.
 					continue;
 				const auto& intersectMask = nodeCuboids.indicesOfIntersectingCuboids(shapes[shapeIndex]);
-				// Record a leaf intersection.
+				BitSet intersectBitMask = BitSet::create(intersectMask);
+				BitSet leafBitMask = intersectBitMask;
 				const auto leafCount = node.getLeafCount();
+				leafBitMask.clearAllAfterInclusive(leafCount);
 				const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-				const auto begin = intersectMask.begin();
-				const auto end = intersectMask.end();
-				const auto leafEnd = begin + leafCount;
-				if(leafCount != 0 && intersectMask.head(leafCount).any())
+				while(!leafBitMask.empty())
 				{
-					for(auto iter = begin; iter != leafEnd; ++iter)
-						if(*iter && condition(T::create(nodeDataAndChildIndices[iter - begin].data)))
-							return true;
+					const RTreeArrayIndex arrayIndex{leafBitMask.getNextAndClear()};
+					if(condition(T::create(nodeDataAndChildIndices[arrayIndex].data)))
+						return true;
 				}
 				// Record intersected children in openList.
-				const auto offsetOfFirstChild = node.offsetOfFirstChild();
-				const uint8_t childCount = nodeSize - offsetOfFirstChild.get();
-				if(childCount == 0 || !intersectMask.tail(childCount).any())
-					continue;
-				if(offsetOfFirstChild == 0)
+				intersectBitMask.clearAllBefore(leafCount);
+				while(!intersectBitMask.empty())
 				{
-					// Unrollable version for nodes where every slot is a child.
-					for(auto iter = begin; iter != end; ++iter)
-						if(*iter)
-							openList.getOrCreate(RTreeNodeIndex::create(nodeDataAndChildIndices[iter - begin].child)).insert(shapeIndex);
-				}
-				else
-				{
-					for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-						if(*iter)
-							openList.getOrCreate(RTreeNodeIndex::create(nodeDataAndChildIndices[iter - begin].child)).insert(shapeIndex);
+					const RTreeArrayIndex arrayIndex{intersectBitMask.getNextAndClear()};
+					openList.getOrCreate(RTreeNodeIndex::create(nodeDataAndChildIndices[arrayIndex].child)).insert(shapeIndex);
 				}
 			}
 			// Pop back at the end so we can use candidates as a reference and not have to make a move-copy.
 			openList.popBack();
 		}
 		return false;
+	}
+	void batchQueryForEachWithCondition(const auto& shapes, auto&& action, auto&& condition) const
+	{
+		SmallMap<RTreeNodeIndex, SmallSet<int>> openList;
+		SmallSet<int> topLevelCandidates;
+		topLevelCandidates.resize(shapes.size());
+		std::iota(topLevelCandidates.m_data.begin(), topLevelCandidates.m_data.end(), 0);
+		openList.insert(RTreeNodeIndex::create(0), std::move(topLevelCandidates));
+		while(!openList.empty())
+		{
+			const auto& [index, candidates] = openList.back();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
+			for(const int& shapeIndex : candidates)
+			{
+				BitSet intersectMask = BitSet::create(nodeCuboids.indicesOfIntersectingCuboids(shapes[shapeIndex]));
+				BitSet leafMask = intersectMask;
+				const int leafCount = node.getLeafCount();
+				leafMask.clearAllAfterInclusive(leafCount);
+				// Handle all leaf intersections.
+				while(!leafMask.empty())
+				{
+					const RTreeArrayIndex arrayIndex{leafMask.getNextAndClear()};
+					const T value = T::create(nodeDataAndChildIndices[arrayIndex].data);
+					if(condition(value))
+						action(value, nodeCuboids[arrayIndex.get()], shapeIndex);
+				}
+				// record all node intersections.
+				intersectMask.clearAllBefore(leafCount);
+				while(!intersectMask.empty())
+				{
+					const RTreeArrayIndex arrayIndex{intersectMask.getNextAndClear()};
+					openList.getOrCreate(RTreeNodeIndex::create(nodeDataAndChildIndices[arrayIndex].child)).insert(shapeIndex);
+				}
+			}
+			openList.popBack();
+		}
+	}
+	void batchQueryForEach(const auto& shapes, auto&& action) const
+	{
+		constexpr auto condition = [](const T&) { return true; };
+		batchQueryForEachWithCondition(shapes, action, condition);
+	}
+	[[nodiscard]] std::vector<T> batchQueryGetFirstWithCondition(const auto& shapes, auto&& condition) const
+	{
+		std::vector<T> output;
+		output.resize(shapes.size());
+		auto action = [&](const T& value, const Cuboid&, const int& shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex] = value; };
+		batchQueryForEachWithCondition(shapes, action, condition);
+		return output;
+	}
+	[[nodiscard]] std::vector<SmallSet<T>> batchQueryGetAllWithCondition(const auto& shapes, auto&& condition) const
+	{
+		std::vector<SmallSet<T>> output;
+		output.resize(shapes.size());
+		auto action = [&](const T& value, const Cuboid&, const int& shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].maybeInsert(value); };
+		batchQueryForEachWithCondition(shapes, action, condition);
+		return output;
+	}
+	[[nodiscard]] std::vector<CuboidSet> batchQueryGetAllCuboidsWithCondition(const auto& shapes, auto&& condition) const
+	{
+		std::vector<CuboidSet> output;
+		output.resize(shapes.size());
+		auto action = [&](const T&, const Cuboid& cuboid, const int& shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].add(cuboid); };
+		batchQueryForEachWithCondition(shapes, action, condition);
+		return output;
+	}
+	[[nodiscard]] std::vector<std::pair<CuboidSet, T>> batchQueryGetAllWithCuboidsAndCondition(const auto& shapes, auto&& condition) const
+	{
+		std::vector<MapWithCuboidKeys<T>> output;
+		output.resize(shapes.size());
+		auto action = [&](const T& value, const Cuboid& cuboid, const int& shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].insert({cuboid, value}); };
+		batchQueryForEachWithCondition(shapes, action, condition);
+		return output;
+	}
+	[[nodiscard]] std::vector<T> batchQueryGetFirst(const auto& shapes) const
+	{
+		constexpr auto condition = [](const T&) { return true; };
+		return batchQueryGetFirstWithCondition(shapes, condition);
+	}
+	[[nodiscard]] std::vector<SmallSet<T>> batchQueryGetAll(const auto& shapes) const
+	{
+		constexpr auto condition = [](const T&) { return true; };
+		return batchQueryGetAllWithCondition(shapes, condition);
+	}
+	[[nodiscard]] std::vector<CuboidSet> batchQueryGetAllCuboids(const auto& shapes) const
+	{
+		constexpr auto condition = [](const T&) { return true; };
+		return batchQueryGetAllCuboidsWithCondition(shapes, condition);
 	}
 	[[nodiscard]] CuboidSet queryGetIntersection(const auto& shape) const
 	{
@@ -804,10 +883,10 @@ public:
 		for(const Cuboid& cuboid : queryGetAllCuboids(boundry))
 			cuboids.maybeRemove(cuboid);
 	}
-	[[nodiscard]] uint16_t queryCount(const auto& shape) const
+	[[nodiscard]] int16_t queryCount(const auto& shape) const
 	{
 		SmallSet<RTreeNodeIndex> openList;
-		uint16_t output = 0;
+		int16_t output = 0;
 		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
@@ -820,8 +899,7 @@ public:
 				continue;
 			const auto leafCount = node.getLeafCount();
 			output += intersectMask.head(leafCount).count();
-			const auto& offsetOfFirstChild = node.offsetOfFirstChild();
-			if(offsetOfFirstChild != nodeSize)
+			if(node.hasChildren())
 			{
 				BitSet intersectBitSet = BitSet::create(intersectMask);
 				intersectBitSet.clearAllBefore(leafCount);
@@ -831,10 +909,10 @@ public:
 		}
 		return output;
 	}
-	[[nodiscard]] uint16_t queryCountWithCondition(const auto& shape, const auto& condition) const
+	[[nodiscard]] int16_t queryCountWithCondition(const auto& shape, const auto& condition) const
 	{
 		SmallSet<RTreeNodeIndex> openList;
-		uint16_t output = 0;
+		int16_t output = 0;
 		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
@@ -856,13 +934,13 @@ public:
 					leafBitSet.clearAllAfterInclusive(offsetOfFirstChild.get());
 				while(leafBitSet.any())
 				{
-					const uint8_t arrayIndex = leafBitSet.getNextAndClear();
+					const RTreeArrayIndex arrayIndex{leafBitSet.getNextAndClear()};
 					T value = T::create(nodeDataAndChildIndices[arrayIndex].data);
 					if(condition(value))
 						++output;
 				}
 			}
-			if(offsetOfFirstChild != nodeSize)
+			if(node.hasChildren())
 			{
 				intersectBitSet.clearAllBefore(leafCount);
 				addIntersectedChildrenToOpenList(node, intersectBitSet, openList);
@@ -946,9 +1024,9 @@ public:
 					leafBitSet.clearAllAfterInclusive(leafCount);
 				while(leafBitSet.any())
 				{
-					const uint arrayIndex = leafBitSet.getNextAndClear();
+					const RTreeArrayIndex arrayIndex{leafBitSet.getNextAndClear()};
 					// Using center distance because it's much cheaper to compute then edge distance.
-					const Distance distance = nodeCuboids[arrayIndex].center().distanceTo(location);
+					const Distance distance = nodeCuboids[arrayIndex.get()].center().distanceTo(location);
 					if(distance >= closestDistance)
 						continue;
 					const auto candidate = T::create(nodeDataAndChildIndices[arrayIndex].data);
@@ -959,7 +1037,7 @@ public:
 					}
 				}
 			}
-			if(leafCount != nodeSize)
+			if(node.hasChildren())
 			{
 				intersectBitSet.clearAllBefore(leafCount);
 				if(intersectBitSet.any())
@@ -970,22 +1048,22 @@ public:
 		return output;
 	}
 	// For test and debug.
-	[[nodiscard]] __attribute__((noinline)) uint32_t nodeCount() const;
-	[[nodiscard]] __attribute__((noinline)) uint32_t leafCount() const;
-	[[nodiscard]] __attribute__((noinline)) const Node& getNode(uint i) const;
-	[[nodiscard]] __attribute__((noinline)) const Cuboid getNodeCuboid(uint i, uint o) const;
-	[[nodiscard]] __attribute__((noinline)) RTreeNodeIndex getNodeChild(uint i, uint o) const;
-	[[nodiscard]] __attribute__((noinline)) T queryPointOne(uint x, uint y, uint z) const;
-	[[nodiscard]] __attribute__((noinline)) T queryPointFirst(uint x, uint y, uint z) const;
-	[[nodiscard]] __attribute__((noinline)) SmallSet<T> queryPointAll(uint x, uint y, uint z) const;
-	[[nodiscard]] __attribute__((noinline)) bool queryPoint(uint x, uint y, uint z, const T& value) const;
-	[[nodiscard]] __attribute__((noinline)) uint8_t queryPointCount(uint x, uint y, uint z) const;
-	[[nodiscard]] __attribute__((noinline)) Cuboid queryPointCuboid(uint x, uint y, uint z) const;
-	[[nodiscard]] __attribute__((noinline)) uint totalLeafVolume() const;
-	[[nodiscard]] __attribute__((noinline)) uint totalNodeVolume() const;
+	[[nodiscard]] __attribute__((noinline)) int nodeCount() const;
+	[[nodiscard]] __attribute__((noinline)) int leafCount() const;
+	[[nodiscard]] __attribute__((noinline)) const Node& getNode(int i) const;
+	[[nodiscard]] __attribute__((noinline)) const Cuboid getNodeCuboid(int i, int o) const;
+	[[nodiscard]] __attribute__((noinline)) RTreeNodeIndex getNodeChild(int i, int o) const;
+	[[nodiscard]] __attribute__((noinline)) T queryPointOne(int x, int y, int z) const;
+	[[nodiscard]] __attribute__((noinline)) T queryPointFirst(int x, int y, int z) const;
+	[[nodiscard]] __attribute__((noinline)) SmallSet<T> queryPointAll(int x, int y, int z) const;
+	[[nodiscard]] __attribute__((noinline)) bool queryPoint(int x, int y, int z, const T& value) const;
+	[[nodiscard]] __attribute__((noinline)) int queryPointCount(int x, int y, int z) const;
+	[[nodiscard]] __attribute__((noinline)) Cuboid queryPointCuboid(int x, int y, int z) const;
+	[[nodiscard]] __attribute__((noinline)) int totalLeafVolume() const;
+	[[nodiscard]] __attribute__((noinline)) int totalNodeVolume() const;
 	__attribute__((noinline)) void assertAllLeafsAreUnique() const;
-	[[nodiscard]] static __attribute__((noinline)) uint getNodeSize();
-	__attribute__((noinline)) std::string toString(uint x, uint y, uint z) const;
+	[[nodiscard]] static __attribute__((noinline)) int getNodeSize();
+	__attribute__((noinline)) std::string toString(int x, int y, int z) const;
 };
 template<Sortable T, RTreeDataConfig config>
 void to_json(Json& data, const RTreeData<T, config>& tree) { data = tree.toJson(); }

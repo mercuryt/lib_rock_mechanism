@@ -83,7 +83,7 @@ struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
 	void execute(const Quantity&, const Quantity&);
 	[[nodiscard]] Json toJson() const;
 };
-// Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, and onComplete. onDelivered is optional.
+// Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete. onDelivered is optional.
 class Project
 {
 	// Tracks the progress of the 'actual' work of the project, after the hauling is done.
@@ -106,6 +106,7 @@ class Project
 	SmallMap<FluidTypeId, FluidRequirementData> m_requiredFluids;
 	// Required items which will be destroyed at the end of the project.
 	SmallMap<ItemReference, Quantity> m_toConsume;
+	SmallSet<ItemReference> m_unconsumed;
 	// Required items which are equiped by workers (tools).
 	SmallMap<ActorReference, SmallMap<ProjectRequirementCounts*, ItemReference>> m_reservedEquipment;
 	// Containers with fluid to consume at end of project.
@@ -159,6 +160,7 @@ private:
 	// The scheduled event sets delay to false and calls the offDelay method.
 	bool m_delay = false;
 public:
+	bool m_qualityBonus = false;
 	// Seperated from primary Json constructor because must be run after objectives are created.
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
 	void addWorkerCandidate(const ActorIndex& actor, Objective& objective);
@@ -198,6 +200,9 @@ public:
 	// These two are to be used when a project is on a moving vehicle.
 	void clearLocation();
 	void setLocation(const Point3D& point);
+	void addBonusProduction(const Percent& bonus);
+	void removeItemFromConsumed(const ItemReference& item);
+	void setQualityBonus();
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] FactionId getFaction() { return m_faction; }
 	[[nodiscard]] CanReserve& getCanReserve() { return m_canReserve; }
@@ -209,6 +214,10 @@ public:
 	[[nodiscard]] Point3D getLocation() const { return m_location; }
 	[[nodiscard]] bool hasCandidate(const ActorIndex& actor) const;
 	[[nodiscard]] bool hasWorker(const ActorIndex& actor) const;
+	[[nodiscard]] bool hasWorkers() const;
+	[[nodiscard]] bool inProgress() const;
+	[[nodiscard]] ItemIndex getRandomItemToConsume() const;
+	[[nodiscard]] ItemIndex getRandomUnconsumedItem() const;
 	// When cannotCompleteSubobjective is called do we reset and try again or do we call cannotCompleteObjective?
 	// Should be false for objectives like targeted hauling, where if the specific target is inaccessable there is no fallback possible.
 	[[nodiscard]] virtual bool canReset() const { return true; }
@@ -239,11 +248,14 @@ public:
 	[[nodiscard]] virtual std::vector<ActorReference> getActors() const = 0;
 	[[nodiscard]] virtual SmallMap<FluidTypeId, CollisionVolume> getFluids() const { return { }; };
 	[[nodiscard]] virtual std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const = 0;
-	virtual ~Project() = default;
-	[[nodiscard]] bool operator==(const Project& other) const { return &other == this; }
+	[[nodiscard]] virtual SkillTypeId getSkill() const = 0;
+	[[nodiscard]] virtual std::string description() const = 0;
+	[[nodiscard]] virtual bool hasQuality() const { return false; }
 	[[nodiscard]] bool itemIsFluidContainer(const ItemReference& item) const;
 	[[nodiscard]] FluidTypeId getFluidTypeForContainer(const ItemReference& item) const;
 	[[nodiscard]] CollisionVolume getFluidVolumeForContainer(const ItemReference& item) const;
+	[[nodiscard]] bool operator==(const Project& other) const { return &other == this; }
+	virtual ~Project() = default;
 	// For testing.
 	[[nodiscard]] const ProjectWorker& getProjectWorkerFor(ActorReference actor) const { return m_workers[actor]; }
 	[[nodiscard]] auto& getWorkers() { return m_workers; }

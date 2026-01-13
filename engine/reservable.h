@@ -4,7 +4,7 @@
  */
 
 #pragma once
-#include "config.h"
+#include "config/config.h"
 #include "numericTypes/types.h"
 #include "dishonorCallback.h"
 #include "dataStructures/smallSet.h"

@@ -1,0 +1,16 @@
+{
+	"angerToAddWhenChastised": 2,
+	"angerToAddWhenLosingAConfrontation": 4,
+	"coolDownForStandGroundHours" : 24,
+	"courageToGainOnStandGround" : 1,
+	"durationForAccidentalHomicidePrideLossDays" : 180,
+	"loseConfrontationDurationloseConfrontationDurationDays" : 10,
+	"durationForConfrontationWinPrideGainHours" : 5,
+	"durationForAccidentalInjuryPrideLossHours" : 50,
+	"durationForConfrontationLossPrideLossHours" : 12,
+	"minimumRatioOfDeltaToFriendlyMaliceToTestCourge" : 0.8,
+	"minimumMaliceDeltaPlusCourageToHoldFirmWithoutTest" : 0,
+	"prideToLoseWhenAccidentallyKilling" : 20,
+	"prideToLoseWhenAccidentallyInjuring" : 8,
+	"intervalToCheckIfSoldiersFleeSeconds" : 30
+}

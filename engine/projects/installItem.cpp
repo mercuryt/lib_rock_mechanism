@@ -24,3 +24,9 @@ void InstallItemProject::onComplete()
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);
 }
+std::string InstallItemProject::description() const
+{
+	Items& items = m_area.getItems();
+	ItemIndex item = m_item.getIndex(items.m_referenceData);
+	return "install " + items.description(item);
+}

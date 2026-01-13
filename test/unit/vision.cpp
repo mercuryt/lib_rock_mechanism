@@ -8,7 +8,7 @@
 #include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
-#include "../../engine/config.h"
+#include "../../engine/config/config.h"
 TEST_CASE("vision")
 {
 	Simulation simulation;

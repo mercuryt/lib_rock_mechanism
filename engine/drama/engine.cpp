@@ -7,6 +7,9 @@
 #include "../definitions/animalSpecies.h"
 #include "arcs/animalsArrive.h"
 #include "arcs/banditsArrive.h"
+#include "arcs/mistakeAtWork.h"
+#include "arcs/successAtWork.h"
+#include "arcs/inspirationalSpeach.h"
 #include "../space/space.h"
 #include "../deserializationMemo.h"
 #include "../simulation/hasAreas.h"
@@ -36,9 +39,21 @@ std::string DramaArc::typeToString(DramaArcType type)
 			return "animals arrive";
 		case DramaArcType::BanditsArrive:
 			return "bandits arrive";
+		case DramaArcType::MistakeAtWork:
+			return "mistake at work";
+		case DramaArcType::SuccessAtWork:
+			return "success at work";
+		/*
+		case DramaArcType::AccidentalHomicide:
+			return "accidental homicide";
+		case DramaArcType::AccidentalInjury:
+			return "accidental injury";
+		*/
+		case DramaArcType::InspirationalSpeach:
+			return "inspirational speach";
+		default:
+			std::unreachable();
 	}
-	std::unreachable();
-	return "";
 }
 DramaArcType DramaArc::stringToType(std::string string)
 {
@@ -57,10 +72,20 @@ std::unique_ptr<DramaArc> DramaArc::load(const Json& data, DeserializationMemo& 
 	{
 		case DramaArcType::AnimalsArrive:
 			return std::make_unique<AnimalsArriveDramaArc>(data, deserializationMemo, dramaEngine);
-			break;
 		case DramaArcType::BanditsArrive:
 			return std::make_unique<BanditsArriveDramaArc>(data, deserializationMemo, dramaEngine);
-			break;
+		case DramaArcType::MistakeAtWork:
+			return std::make_unique<MistakeAtWorkDramaArc>(data, deserializationMemo, dramaEngine);
+		case DramaArcType::SuccessAtWork:
+			return std::make_unique<SuccessAtWorkDramaArc>(data, deserializationMemo, dramaEngine);
+		/*
+		case DramaArcType::AccidentalHomicide:
+			return std::make_unique<AccidentalHomicideDramaArc>(data, deserializationMemo, dramaEngine);
+		case DramaArcType::AccidentalInjury:
+			return std::make_unique<AccidentaInjuryDramaArc>(data, deserializationMemo, dramaEngine);
+		*/
+		case DramaArcType::InspirationalSpeach:
+			return std::make_unique<InspirationalSpeachDramaArc>(data, deserializationMemo, dramaEngine);
 	}
 	std::unreachable();
 	return std::make_unique<AnimalsArriveDramaArc>(data, deserializationMemo, dramaEngine);
@@ -106,7 +131,7 @@ Point3D DramaArc::getEntranceToArea(const ShapeId& shape, const MoveTypeId& move
 			candidates.insert(point);
 	}
 	Point3D candidate;
-	static uint16_t minimumConnectedCount = 200;
+	static int16_t minimumConnectedCount = 200;
 	do {
 		if(candidate.exists())
 		{
@@ -140,7 +165,7 @@ Point3D DramaArc::findLocationOnEdgeForNear(const ShapeId& shape, const MoveType
 	// Get point in range of origin which satisifies predicate.
 	return space.getPointInRangeWithCondition(origin, distance, predicate);
 }
-bool DramaArc::pointIsConnectedToAtLeast(const Point3D& origin, [[maybe_unused]] const ShapeId& shape, const MoveTypeId& moveType, uint16_t count) const
+bool DramaArc::pointIsConnectedToAtLeast(const Point3D& origin, [[maybe_unused]] const ShapeId& shape, const MoveTypeId& moveType, int16_t count) const
 {
 	SmallSet<Point3D> accumulated;
 	std::stack<Point3D> open;
@@ -200,7 +225,7 @@ Json DramaEngine::toJson() const
 		arcs.push_back(arc->toJson());
 	return {{"arcs", arcs}};
 }
-void DramaEngine::add(std::unique_ptr<DramaArc> dramaticArc)
+void DramaEngine::add(std::unique_ptr<DramaArc>&& dramaticArc)
 {
 	if(dramaticArc->m_area)
 		util::addUniqueToVectorAssert(m_arcsByArea.getOrCreate(dramaticArc->m_area->m_id), dramaticArc.get());
@@ -234,6 +259,17 @@ void DramaEngine::createArcTypeForArea(DramaArcType type, Area& area)
 		case DramaArcType::BanditsArrive:
 			arc = std::make_unique<BanditsArriveDramaArc>(*this, area);
 			break;
+		case DramaArcType::MistakeAtWork:
+			arc = std::make_unique<MistakeAtWorkDramaArc>(*this, area);
+			break;
+		case DramaArcType::SuccessAtWork:
+			arc = std::make_unique<SuccessAtWorkDramaArc>(*this, area);
+			break;
+		case DramaArcType::InspirationalSpeach:
+			arc = std::make_unique<InspirationalSpeachDramaArc>(*this, area);
+			break;
+		default:
+			std::unreachable();
 	}
 	add(std::move(arc));
 }

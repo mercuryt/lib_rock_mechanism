@@ -1,7 +1,7 @@
 #pragma once
 #include "../uniform.h"
 #include "../numericTypes/types.h"
-#include "../config.h"
+#include "../config/config.h"
 class UniformObjective;
 class Area;
 class ActorHasUniform final

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../dataStructures/strongVector.h"
-#include "woundType.h"
 #include "../numericTypes/types.h"
+#include "woundType.h"
 
 #include <string>
 #include <vector>
@@ -11,7 +11,7 @@
 struct AttackTypeParamaters final
 {
 	std::string name;
-	uint32_t area;
+	int32_t area;
 	Force baseForce;
 	DistanceFractional range;
 	CombatScore combatScore;
@@ -25,7 +25,7 @@ struct AttackTypeParamaters final
 class AttackType final
 {
 	StrongVector<std::string, AttackTypeId> m_name;
-	StrongVector<uint32_t, AttackTypeId> m_area;
+	StrongVector<int32_t, AttackTypeId> m_area;
 	StrongVector<Force, AttackTypeId> m_baseForce;
 	StrongVector<DistanceFractional, AttackTypeId> m_range;
 	StrongVector<CombatScore, AttackTypeId> m_combatScore;
@@ -38,7 +38,7 @@ public:
 	static AttackTypeId create(const AttackTypeParamaters& p);
 	static AttackTypeId byName(std::string name);
 	[[nodiscard]] static std::string getName(const AttackTypeId& id);
-	[[nodiscard]] static uint32_t getArea(const AttackTypeId& id);
+	[[nodiscard]] static int32_t getArea(const AttackTypeId& id);
 	[[nodiscard]] static Force getBaseForce(const AttackTypeId& id);
 	[[nodiscard]] static DistanceFractional getRange(const AttackTypeId& id);
 	[[nodiscard]] static CombatScore getCombatScore(const AttackTypeId& id);

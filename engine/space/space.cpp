@@ -48,7 +48,7 @@ void Space::load(const Json& data, DeserializationMemo& deserializationMemo)
 	for(const Json& pair : data["reservables"])
 	{
 		Cuboid cuboid = pair[0].get<Cuboid>();
-		auto reservable = std::make_unique<Reservable>(Quantity::create(1u));
+		auto reservable = std::make_unique<Reservable>(Quantity::create(1));
 		deserializationMemo.m_reservables[pair[1].get<uintptr_t>()] = reservable.get();
 		m_reservables.insert(cuboid, std::move(reservable));
 	}

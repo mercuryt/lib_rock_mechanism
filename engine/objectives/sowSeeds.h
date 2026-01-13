@@ -3,7 +3,7 @@
 #include "../path/pathRequest.h"
 #include "../path/terrainFacade.h"
 #include "../eventSchedule.hpp"
-#include "../config.h"
+#include "../config/config.h"
 #include "../numericTypes/types.h"
 
 #include <memory>
@@ -34,6 +34,8 @@ public:
 	void select(Area& area, const Point3D& point, const ActorIndex& actor);
 	void begin(Area& area, const ActorIndex& actor);
 	void reset(Area& area, const ActorIndex& actor);
+	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("sow seeds").getId(); }
+
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "sow seeds"; }
 	[[nodiscard]] bool canSowAt(Area& area, const Point3D& point, const ActorIndex& actor) const;

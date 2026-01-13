@@ -1,19 +1,17 @@
 #include "faction.h"
-#include "deserializationMemo.h"
-#include "simulation/simulation.h"
 Faction& SimulationHasFactions::getById(const FactionId& id)
 {
-	return m_factions.at(id.get());
+	return m_factions[id];
 }
 const Faction& SimulationHasFactions::getById(const FactionId& id) const
 {
-	return m_factions.at(id.get());
+	return m_factions[id];
 }
 FactionId SimulationHasFactions::createFaction(std::string name)
 {
 	FactionId id = FactionId::create(m_factions.size());
-	m_factions.emplace_back(id, name);
-	return m_factions.back().id;
+	m_factions.emplaceBack(id, name);
+	return id;
 }
 FactionId SimulationHasFactions::byName(std::string name)
 {

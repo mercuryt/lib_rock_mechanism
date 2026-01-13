@@ -11,11 +11,11 @@
 
 #include <vector>
 
-#include "fluidGroups/drainQueue.h"
-#include "fluidGroups/fillQueue.h"
-#include "numericTypes/types.h"
-#include "numericTypes/index.h"
-#include "dataStructures/smallMap.h"
+#include "drainQueue.h"
+#include "fillQueue.h"
+#include "../numericTypes/types.h"
+#include "../numericTypes/index.h"
+#include "../dataStructures/smallMap.h"
 
 class Area;
 struct FluidType;
@@ -48,7 +48,7 @@ public:
 	SmallMap<FluidTypeId, FluidGroup*> m_disolvedInThisGroup;
 	FluidTypeId m_fluidType;
 	int32_t m_excessVolume = 0;
-	uint32_t m_viscosity = 0;
+	int32_t m_viscosity = 0;
 	// Currently at rest?
 	bool m_stable = false;
 	// Will be destroyed.
@@ -82,6 +82,6 @@ public:
 	[[nodiscard]] bool dispositionIsStable(const CollisionVolume& fillVolume, const CollisionVolume& drainVolume) const;
 	[[nodiscard]] bool operator==(const FluidGroup& fluidGroup) const { return &fluidGroup == this; }
 	[[nodiscard]] Quantity countPointsOnSurface(const Area& area) const;
-	[[nodiscard]] uint countPoints() const;
+	[[nodiscard]] int32_t countPoints() const;
 	friend class Area;
 };

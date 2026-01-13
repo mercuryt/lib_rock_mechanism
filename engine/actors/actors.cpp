@@ -1,7 +1,7 @@
 #include "actors.h"
 #include "../area/area.h"
 #include "../space/space.h"
-#include "../config.h"
+#include "../config/config.h"
 #include "../definitions/animalSpecies.h"
 #include "../definitions/bodyType.h"
 #include "../definitions/itemType.h"
@@ -38,7 +38,7 @@ Percent ActorParamaters::getPercentGrown(Simulation& simulation)
 		Step adjustedMax = Step::create(util::scaleByPercent(AnimalSpecies::getDeathAgeSteps(species)[0].get(), Percent::create(85)));
 		// Using util::scaleByPercent and util::fractionToPercent give the wrong result here for some reason.
 		Step ageSteps = Step::create(((float)adjustedMax.get() / (float)percentLifeTime.get()) * 100.f);
-		percentGrown = Percent::create(std::min(100u, (uint)(((float)ageSteps.get() / (float)AnimalSpecies::getStepsTillFullyGrown(species).get()) * 100.f)));
+		percentGrown = Percent::create(std::min(100, (int32_t)(((float)ageSteps.get() / (float)AnimalSpecies::getStepsTillFullyGrown(species).get()) * 100.f)));
 		birthStep = simulation.m_step - ageSteps;
 	}
 	return percentGrown;
@@ -290,6 +290,7 @@ void Actors::load(const Json& data)
 	data["target"].get_to(m_target);
 	data["onMissCoolDownMelee"].get_to(m_onMissCoolDownMelee);
 	data["maxMeleeRange"].get_to(m_maxMeleeRange);
+	data["maxMeleeRangeNonLethal"].get_to(m_maxMeleeRangeNonLethal);
 	data["maxRange"].get_to(m_maxRange);
 	data["coolDownDurationModifier"].get_to(m_coolDownDurationModifier);
 	data["combatScore"].get_to(m_combatScore);
@@ -300,7 +301,7 @@ void Actors::load(const Json& data)
 	data["speedIndividual"].get_to(m_speedIndividual);
 	data["speedActual"].get_to(m_speedActual);
 	data["moveRetries"].get_to(m_moveRetries);
-	data["psycology"].get_to(m_psycology);
+	data["dialog"].get_to(m_dialog);
 	data["skillSet"].get_to(m_skillSet);
 	auto& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
 	m_moveType.resize(size);
@@ -365,6 +366,13 @@ void Actors::load(const Json& data)
 		m_hasUniform[index] = std::make_unique<ActorHasUniform>();
 		m_hasUniform[index]->load(m_area, iter.value(), m_faction[index]);
 	}
+	m_onSight.resize(size);
+	const auto& onSightData = data["onSight"];
+	for(auto iter = onSightData.begin(); iter != onSightData.end(); ++iter)
+	{
+		ActorIndex index = ActorIndex::create(std::stoi(iter.key()));
+		m_onSight[index] = HasOnSight(iter.value(), deserializationMemo, m_area);
+	}
 	m_canSee.resize(size);
 	assert(data["canSee"].type() == Json::value_t::object);
 	const auto& canSeeData = data["canSee"];
@@ -379,6 +387,12 @@ void Actors::load(const Json& data)
 			ActorIndex otherIndex = otherRef.getIndex(m_referenceData);
 			m_canBeSeenBy[otherIndex].insert(ref);
 		}
+	}
+	m_psycology.resize(size);
+	for(ActorIndex index{0}; index != size; ++index)
+	{
+		const Json& psycologyData = data["psycology"][index.get()];
+		m_psycology[index] = Psycology::load(psycologyData, m_area.m_simulation);
 	}
 	for(ActorIndex index : getAll())
 	{
@@ -478,6 +492,7 @@ Json Actors::toJson() const
 		{"carrying", m_carrying},
 		{"stamina", m_stamina},
 		{"visionRange", m_visionRange},
+		{"onSight", Json::object()},
 		{"coolDownEvent", m_coolDownEvent},
 		// TODO: These don't need to be serialized
 		{"targetedBy", m_targetedBy},
@@ -485,6 +500,7 @@ Json Actors::toJson() const
 		// TODO: These don't need to be serialized
 		{"onMissCoolDownMelee", m_onMissCoolDownMelee},
 		{"maxMeleeRange", m_maxMeleeRange},
+		{"maxMeleeRangeNonLethal", m_maxMeleeRangeNonLethal},
 		{"maxRange", m_maxRange},
 		{"coolDownDurationModifier", m_coolDownDurationModifier},
 		{"combatScore", m_combatScore},
@@ -492,12 +508,12 @@ Json Actors::toJson() const
 		{"moveEvent", m_moveEvent},
 		{"pathRequest", Json::object()},
 		{"path", m_path},
-		{"pathIter", Json::array()},
 		{"destination", m_destination},
 		{"speedIndividual", m_speedIndividual},
 		{"speedActual", m_speedActual},
 		{"moveRetries", m_moveRetries},
-		{"psycology", m_psycology},
+		{"psycology", Json::array()},
+		{"dialog", m_dialog},
 	};
 	for(auto index : getAll())
 	{
@@ -505,11 +521,14 @@ Json Actors::toJson() const
 		if(m_hasUniform[index] != nullptr)
 			output["uniform"][i] = *m_hasUniform[index];
 		if(m_equipmentSet[index] != nullptr)
-			output["equipmentSet"][i] = *m_equipmentSet[index];
+			output["equipmentSet"][i] = m_equipmentSet[index]->toJson();
 		if(m_pathRequest[index] != nullptr)
 			output["pathRequest"][i] = *m_pathRequest[index];
 		if(!m_canSee[index].empty())
 			output["canSee"][i] = m_canSee[index];
+		output["psycology"][index.get()] = m_psycology[index].toJson();
+		if(!m_onSight[index].empty())
+			output["onSight"][i] = m_onSight[index].toJson();
 	}
 	output.update(Portables<Actors, ActorIndex, ActorReferenceIndex, true>::toJson());
 	return output;
@@ -541,6 +560,11 @@ void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
 		Space& space = m_area.getSpace();
 		for(const Cuboid& cuboid : m_occupied[newIndex])
 			space.actor_updateIndex(cuboid, oldIndex, newIndex);
+	}
+	if(m_soldier[newIndex].squad.exists())
+	{
+		m_area.m_simulation.m_hasSquads.squadsForFaction(m_faction[newIndex])[m_soldier[newIndex].squad].updateActorIndex(oldIndex, newIndex);
+		m_area.m_hasSoldiers.updateSoldierIndex(m_area, oldIndex, newIndex);
 	}
 }
 void Actors::destroy(const ActorIndex& index)
@@ -622,13 +646,16 @@ ActorIndex Actors::create(ActorParamaters params)
 	assert(m_canSee[index].empty());
 	assert(m_canBeSeenBy[index].empty());
 	m_visionRange[index] = AnimalSpecies::getVisionRange(params.species);
+	assert(m_onSight[index].empty());
 	// Combat.
 	assert(!m_coolDownEvent.exists(index));
 	assert(m_meleeAttackTable[index].empty());
+	assert(m_meleeAttackTableNonLethal[index].empty());
 	assert(m_targetedBy[index].empty());
 	m_target[index].clear();
 	m_onMissCoolDownMelee[index].clear();
 	m_maxMeleeRange[index] = DistanceFractional::null();
+	m_maxMeleeRangeNonLethal[index] = DistanceFractional::null();
 	m_maxRange[index] = DistanceFractional::null();
 	m_coolDownDurationModifier[index] = 0;
 	m_combatScore[index] = CombatScore::null();
@@ -642,6 +669,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_speedActual[index] = Speed::create(0);
 	m_moveRetries[index] = 0;
 	m_psycology[index].initalize();
+	assert(m_dialog[index].first == "");
 	m_onSurface.maybeUnset(index);
 	assert(m_isPilot[index] == false);
 	simulation.m_actors.registerActor(m_id[index], *this, index);
@@ -670,6 +698,7 @@ ActorIndex Actors::create(ActorParamaters params)
 			params.facing = Facing4::North;
 		location_set(index, params.location, params.facing);
 	}
+	m_onSight[index].setOwner(getReference(index), m_area);
 	return index;
 }
 void Actors::sharedConstructor(const ActorIndex& index)
@@ -857,12 +886,12 @@ void Actors::setBirthStep(const ActorIndex& index, const Step& step)
 void Actors::takeFallDamage(const ActorIndex& index, const Distance& distance, const MaterialTypeId& materialType)
 {
 	const Force& force = Force::create(distance.get() * getMass(index).get() * Config::modifierToTurnMassTimesFallDistanceIntoForce / Config::hitsToDivideActorFallDamageInto);
-	for(uint8_t i = 0; i < Config::hitsToDivideActorFallDamageInto; ++i)
+	for(int i = 0; i < Config::hitsToDivideActorFallDamageInto; ++i)
 	{
 		auto& body = *m_body[index];
 		BodyPart& hitPart = body.pickABodyPartByVolume(m_area.m_simulation);
-		uint32_t area = Config::convertBodyPartVolumeToArea(BodyPartType::getVolume(hitPart.bodyPartType));
-		area = m_area.m_simulation.m_random.getInRange(uint(area * 0.25), area);
+		int32_t area = Config::convertBodyPartVolumeToArea(BodyPartType::getVolume(hitPart.bodyPartType));
+		area = m_area.m_simulation.m_random.getInRange(int32_t(area * 0.25), area);
 		Hit hit(area, force, materialType, WoundType::Bludgeon);
 		takeHit(index, hit, hitPart);
 	}

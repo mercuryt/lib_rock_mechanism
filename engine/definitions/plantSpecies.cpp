@@ -33,12 +33,12 @@ void PlantSpecies::create(PlantSpeciesParamaters& p)
 	g_plantSpeciesData.m_itemQuantityToHarvest.add(p.itemQuantityToHarvest);
 	g_plantSpeciesData.m_dayOfYearToStartHarvest.add(p.dayOfYearToStartHarvest);
 }
-const std::pair<ShapeId, uint8_t> PlantSpecies::shapeAndWildGrowthForPercentGrown(const PlantSpeciesId& species, const Percent& percentGrown)
+const std::pair<ShapeId, int8_t> PlantSpecies::shapeAndWildGrowthForPercentGrown(const PlantSpeciesId& species, const Percent& percentGrown)
 {
-	uint8_t totalGrowthStages = g_plantSpeciesData.m_shapes[species].size() + g_plantSpeciesData.m_maxWildGrowth[species];
-	uint8_t growthStage = util::scaleByPercentRange(1, totalGrowthStages, percentGrown);
+	size_t totalGrowthStages = g_plantSpeciesData.m_shapes[species].size() + (size_t)g_plantSpeciesData.m_maxWildGrowth[species];
+	size_t growthStage = util::scaleByPercentRange(1, totalGrowthStages, percentGrown);
 	size_t index = std::min(static_cast<size_t>(growthStage), g_plantSpeciesData.m_shapes[species].size()) - 1;
-	uint8_t wildGrowthSteps = g_plantSpeciesData.m_shapes[species].size() < growthStage ? growthStage - g_plantSpeciesData.m_shapes[species].size() : 0u;
+	int8_t wildGrowthSteps = g_plantSpeciesData.m_shapes[species].size() < growthStage ? growthStage - g_plantSpeciesData.m_shapes[species].size() : 0u;
 	return std::make_pair(g_plantSpeciesData.m_shapes[species][index], wildGrowthSteps);
 }
 PlantSpeciesId PlantSpecies::size() {return PlantSpeciesId::create(g_plantSpeciesData.m_name.size()); }
@@ -59,15 +59,15 @@ Mass PlantSpecies::getAdultMass(const PlantSpeciesId& species) { return g_plantS
 Temperature PlantSpecies::getMaximumGrowingTemperature(const PlantSpeciesId& species) { return g_plantSpeciesData.m_maximumGrowingTemperature[species]; };
 Temperature PlantSpecies::getMinimumGrowingTemperature(const PlantSpeciesId& species) { return g_plantSpeciesData.m_minimumGrowingTemperature[species]; };
 FullDisplacement PlantSpecies::getVolumeFluidConsumed(const PlantSpeciesId& species) { return g_plantSpeciesData.m_volumeFluidConsumed[species]; };
-uint16_t PlantSpecies::getDayOfYearForSowStart(const PlantSpeciesId& species) { return g_plantSpeciesData.m_dayOfYearForSowStart[species]; };
-uint16_t PlantSpecies::getDayOfYearForSowEnd(const PlantSpeciesId& species) { return g_plantSpeciesData.m_dayOfYearForSowEnd[species]; };
-uint8_t PlantSpecies::getMaxWildGrowth(const PlantSpeciesId& species) { return g_plantSpeciesData.m_maxWildGrowth[species]; };
+int16_t PlantSpecies::getDayOfYearForSowStart(const PlantSpeciesId& species) { return g_plantSpeciesData.m_dayOfYearForSowStart[species]; };
+int16_t PlantSpecies::getDayOfYearForSowEnd(const PlantSpeciesId& species) { return g_plantSpeciesData.m_dayOfYearForSowEnd[species]; };
+int8_t PlantSpecies::getMaxWildGrowth(const PlantSpeciesId& species) { return g_plantSpeciesData.m_maxWildGrowth[species]; };
 bool PlantSpecies::getAnnual(const PlantSpeciesId& species) { return g_plantSpeciesData.m_annual[species]; };
 bool PlantSpecies::getGrowsInSunLight(const PlantSpeciesId& species) { return g_plantSpeciesData.m_growsInSunLight[species]; };
 bool PlantSpecies::getIsTree(const PlantSpeciesId& species) { return g_plantSpeciesData.m_isTree[species]; };
 // returns base shape and wild growth steps.
 ShapeId PlantSpecies::shapeForPercentGrown(const PlantSpeciesId& species, const Percent& percentGrown) { return shapeAndWildGrowthForPercentGrown(species, percentGrown).first; }
-uint8_t PlantSpecies::wildGrowthForPercentGrown(const PlantSpeciesId& species, const Percent& percentGrown) { return shapeAndWildGrowthForPercentGrown(species, percentGrown).second; }
+int8_t PlantSpecies::wildGrowthForPercentGrown(const PlantSpeciesId& species, const Percent& percentGrown) { return shapeAndWildGrowthForPercentGrown(species, percentGrown).second; }
 // Static method.
 PlantSpeciesId PlantSpecies::byName(std::string name)
 {
@@ -79,4 +79,4 @@ PlantSpeciesId PlantSpecies::byName(std::string name)
 ItemTypeId PlantSpecies::getFruitItemType(const PlantSpeciesId& species) { return g_plantSpeciesData.m_fruitItemType[species]; }
 Step PlantSpecies::getStepsDurationHarvest(const PlantSpeciesId& species) { return g_plantSpeciesData.m_stepsDurationHarvest[species]; }
 Quantity PlantSpecies::getItemQuantityToHarvest(const PlantSpeciesId& species) { return g_plantSpeciesData.m_itemQuantityToHarvest[species]; }
-uint16_t PlantSpecies::getDayOfYearToStartHarvest(const PlantSpeciesId& species) { return g_plantSpeciesData.m_dayOfYearToStartHarvest[species]; }
+int16_t PlantSpecies::getDayOfYearToStartHarvest(const PlantSpeciesId& species) { return g_plantSpeciesData.m_dayOfYearToStartHarvest[species]; }

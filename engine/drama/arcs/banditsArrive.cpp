@@ -1,7 +1,7 @@
 #include "banditsArrive.h"
 #include "../engine.h"
 #include "../../area/area.h"
-#include "../../config.h"
+#include "../../config/config.h"
 #include "../../simulation/simulation.h"
 #include "../../objectives/exterminate.h"
 #include "../../actors/actors.h"

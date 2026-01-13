@@ -1,21 +1,22 @@
 #pragma once
 
-#include "config.h"
-#include "datetime.h"
-#include "deserializationMemo.h"
-#include "dialogueBox.h"
-#include "eventSchedule.hpp"
-#include "faction.h"
+#include "../config/config.h"
+#include "../datetime.h"
+#include "../deserializationMemo.h"
+#include "../dialogueBox.h"
+#include "../eventSchedule.hpp"
+#include "../faction.h"
 //#include "input.h"
-#include "random.h"
-#include "definitions/shape.h"
+#include "../random.h"
+#include "../threadedTask.h"
+#include "../uniform.h"
+#include "../definitions/shape.h"
+#include "../numericTypes/types.h"
+#include "../path/pathMemo.h"
 #include "hasActors.h"
 #include "hasItems.h"
 #include "hasConstructedItemTypes.h"
-#include "threadedTask.h"
-#include "numericTypes/types.h"
-#include "uniform.h"
-#include "path/pathMemo.h"
+#include "hasSquads.h"
 
 #include <future>
 #include <list>
@@ -41,6 +42,7 @@ public:
 	SimulationHasItems m_items;
 	SimulationHasConstructedItemTypes m_constructedItemTypes;
 	SimulationHasPathMemos m_hasPathMemos;
+	SimulationHasSquads m_hasSquads;
 	DialogueBoxQueue m_hasDialogues;
 private:
 	DeserializationMemo m_deserializationMemo;
@@ -61,7 +63,7 @@ public:
 	Simulation(std::filesystem::path path);
 	Simulation(const Json& data);
 	Json toJson() const;
-	void doStep(uint16_t count = 1);
+	void doStep(int16_t count = 1);
 	void incrementHour();
 	void save();
 	FactionId createFaction(std::string name);
@@ -88,10 +90,10 @@ public:
 	[[maybe_unused]] void fastForwardUntillActorHasNoDestination(Area& area, const ActorIndex& actor);
 	[[maybe_unused]] void fastForwardUntillActorHasEquipment(Area& area, const ActorIndex& actor, const ItemIndex& item);
 	[[maybe_unused]] void fastForwardUntillItemIsAt(Area& area, const ItemIndex& actor, const Point3D& destination);
-	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()>&& predicate, uint32_t minutes = 10);
-	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()>& predicate, uint32_t minutes = 10);
-	[[maybe_unused]] void fasterForwardUntillPredicate(std::function<bool()>& predicate, uint32_t minutes = 10);
-	[[maybe_unused]] void fasterForwardUntillPredicate(std::function<bool()>&& predicate, uint32_t minutes = 10);
+	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()>&& predicate, int32_t minutes = 10);
+	[[maybe_unused]] void fastForwardUntillPredicate(std::function<bool()>& predicate, int32_t minutes = 10);
+	[[maybe_unused]] void fasterForwardUntillPredicate(std::function<bool()>& predicate, int32_t minutes = 10);
+	[[maybe_unused]] void fasterForwardUntillPredicate(std::function<bool()>&& predicate, int32_t minutes = 10);
 	[[maybe_unused]] void fastForwardUntillNextEvent();
 	[[nodiscard, maybe_unused]] DeserializationMemo& getDeserializationMemo() { return m_deserializationMemo; }
 	// temportary.

@@ -2,7 +2,7 @@
 
 #include "objective.h"
 #include "eventSchedule.h"
-#include "config.h"
+#include "config/config.h"
 #include "numericTypes/types.h"
 
 class Simulation;

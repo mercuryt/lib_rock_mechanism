@@ -1,5 +1,5 @@
 #include "mistDisperseEvent.h"
-#include "config.h"
+#include "config/config.h"
 #include "area/area.h"
 #include "eventSchedule.h"
 #include "simulation/simulation.h"

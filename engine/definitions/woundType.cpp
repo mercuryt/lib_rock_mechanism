@@ -2,10 +2,10 @@
 #include "body.h"
 #include "definitions/bodyType.h"
 #include "hit.h"
-#include "config.h"
+#include "config/config.h"
 #include "numericTypes/types.h"
 #include <algorithm>
-Step WoundCalculations::getStepsTillHealed(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale)
+Step WoundCalculations::getStepsTillHealed(const Hit& hit, const BodyPartTypeId& bodyPartType, int32_t scale)
 {
 	assert(hit.depth !=0 );
 	FullDisplacement hitVolume = FullDisplacement::create(hit.depth * hit.area * Config::hitScaleModifier);
@@ -25,7 +25,7 @@ Step WoundCalculations::getStepsTillHealed(const Hit& hit, const BodyPartTypeId&
 			return Step::create(0);
 	}
 }
-uint32_t WoundCalculations::getBleedVolumeRate(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale)
+int32_t WoundCalculations::getBleedVolumeRate(const Hit& hit, const BodyPartTypeId& bodyPartType, int32_t scale)
 {
 	if(hit.depth == 0)
 		return 0;
@@ -36,17 +36,17 @@ uint32_t WoundCalculations::getBleedVolumeRate(const Hit& hit, const BodyPartTyp
 	switch (woundType)
 	{
 		case WoundType::Pierce:
-			return std::max(1u, (uint32_t)(ratio * Config::pierceBleedVoumeRateModifier));
+			return std::max(1, (int32_t)(ratio * Config::pierceBleedVoumeRateModifier));
 		case WoundType::Cut:
-			return std::max(1u, (uint32_t)(ratio * Config::cutBleedVoumeRateModifier));
+			return std::max(1, (int32_t)(ratio * Config::cutBleedVoumeRateModifier));
 		case WoundType::Bludgeon:
-			return std::max(1u, (uint32_t)(ratio * Config::bludgeonBleedVoumeRateModifier));
+			return std::max(1, (int32_t)(ratio * Config::bludgeonBleedVoumeRateModifier));
 		default:
 			std::unreachable();
 			return 0;
 	}
 }
-Percent WoundCalculations::getPercentTemporaryImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale)
+Percent WoundCalculations::getPercentTemporaryImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, int32_t scale)
 {
 	FullDisplacement hitVolume = FullDisplacement::create(hit.depth * hit.area * Config::hitScaleModifier);
 	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPartType) * scale;
@@ -64,7 +64,7 @@ Percent WoundCalculations::getPercentTemporaryImpairment(const Hit& hit, const B
 			return Percent::create(0);
 	}
 }
-Percent WoundCalculations::getPercentPermanentImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale)
+Percent WoundCalculations::getPercentPermanentImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, int32_t scale)
 {
 	FullDisplacement hitVolume = FullDisplacement::create(hit.depth * hit.area * Config::hitScaleModifier);
 	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPartType) * scale;

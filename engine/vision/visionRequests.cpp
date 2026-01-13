@@ -1,6 +1,6 @@
 #include "visionRequests.h"
 #include "../area/area.h"
-#include "../config.h"
+#include "../config/config.h"
 #include "../dataStructures/locationBuckets.h"
 #include "../simulation/simulation.h"
 #include "../numericTypes/types.h"
@@ -45,7 +45,7 @@ void VisionRequests::cancelIfExists(const ActorReference& actor)
 	else if(largestRange)
 		m_largestRange = std::max_element(m_data.begin(), m_data.end(), [](const VisionRequest& a, const VisionRequest& b) { return a.actor < b.actor; })->range;
 }
-void VisionRequests::readStepSegment(const uint& begin, const uint& end)
+void VisionRequests::readStepSegment(const int32_t& begin, const int32_t& end)
 {
 	for(auto iter = m_data.begin() + begin; iter != m_data.begin() + end; ++iter)
 	{
@@ -63,7 +63,7 @@ void VisionRequests::readStepSegment(const uint& begin, const uint& end)
 		m_area.m_octTree.query(visionSphere, &visionCuboids, [&](const LocationBucket& bucket)
 		{
 			const auto& [actors, canSeeAndCanBeSeenBy] = bucket.visionRequestQuery(m_area, request.location, facing, rangeSquared, fromVisionCuboidIndex, visionCuboids, occupied, m_largestRange);
-			for(uint i = 0; i < actors->size(); ++i)
+			for(size_t i = 0; i < actors->size(); ++i)
 			{
 				if(canSeeAndCanBeSeenBy.col(i)[0])
 					canSee.insertNonunique((*actors)[i]);
@@ -85,12 +85,12 @@ void VisionRequests::readStepSegment(const uint& begin, const uint& end)
 }
 void VisionRequests::readStep()
 {
-	uint index = 0;
-	uint size = m_data.size();
-	std::vector<std::pair<uint, uint>> ranges;
+	int32_t index = 0;
+	int32_t size = m_data.size();
+	std::vector<std::pair<int32_t, int32_t>> ranges;
 	while(index != size)
 	{
-		uint end = std::min(size, index + Config::visionThreadingBatchSize);
+		int32_t end = std::min(size, index + Config::visionThreadingBatchSize);
 		ranges.emplace_back(index, end);
 		index = end;
 	}
@@ -109,35 +109,57 @@ void VisionRequests::writeStep()
 		ActorIndex index = request.actor.getIndex(actors.m_referenceData);
 		const auto [noLongerCanSee, canNowSee] = actors.vision_getCanSee(index).getDeltaPair(request.canSee);
 		const auto [noLongerCanBeSeenBy, canNowBeSeenBy] = actors.vision_getCanBeSeenBy(index).getDeltaPair(request.canBeSeenBy);
-		PsycologyData psycologyDelta;
-		psycologyDelta.setAllToZero();
+		// CanSee / CanBeSeenBy.
+		// Update for this actor.
+		actors.vision_setCanSee(index, std::move(request.canSee));
+		actors.vision_setCanBeSeenBy(index, std::move(request.canBeSeenBy));
+		// Update for other actors.
 		for(const ActorReference& ref : noLongerCanSee)
 		{
 			// Actor looses sight of ref.
 			const ActorIndex other = ref.getIndex(actors.m_referenceData);
 			actors.vision_setNoLongerCanBeSeenBy(other, request.actor);
 		}
+		const FactionId& faction = actors.getFaction(index);
+		SmallSet<FactionId> enemyFactions;
+		if(faction.exists())
+		 	enemyFactions = m_area.m_simulation.m_hasFactions.getEnemies(faction);
+		// Civilians free from enemies on sight, soldiers evaluate the malice delta and do a test of courage first.
+		// TODO: Civilians shouldn't flee from enemies who are much weaker then themselves.
+		const bool isNotFleeingAndIsNotSoldier = !actors.combat_isFleeing(index) && !actors.soldier_is(index);
 		for(const ActorReference& ref : canNowSee)
 		{
 			// Ref enters actor's line of sight.
 			const ActorIndex other = ref.getIndex(actors.m_referenceData);
 			actors.vision_setCanBeSeenBy(other, request.actor);
+			if(isNotFleeingAndIsNotSoldier && enemyFactions.contains(actors.getFaction(other)))
+				actors.combat_flee(index);
 		}
-		actors.psycology_get(index).addAll(psycologyDelta, m_area, index);
 		for(const ActorReference& ref : noLongerCanBeSeenBy)
 		{
 			// Ref looses sight of actor.
 			const ActorIndex other = ref.getIndex(actors.m_referenceData);
-			actors.vision_setNoLongerCanBeSeenBy(index, ref);
+			actors.vision_setNoLongerCanBeSeenBy(other, request.actor);
 		}
 		for(const ActorReference& ref : canNowBeSeenBy)
 		{
 			// Actor enter's ref's line of sight.
 			const ActorIndex other = ref.getIndex(actors.m_referenceData);
-			actors.vision_setCanBeSeenBy(index, ref);
+			actors.vision_setCanBeSeenBy(other, request.actor);
 		}
-		actors.vision_setCanSee(index, std::move(request.canSee));
-		actors.vision_setCanBeSeenBy(index, std::move(request.canBeSeenBy));
+		// -OnSight.
+		if(!canNowSee.empty())
+			actors.onSight_get(index).execute(m_area, request.actor, canNowSee);
+		m_area.m_hasOnSight.maybeExecute(faction, m_area, request.actor, canNowSee);
+		// Iterate this twice to be sure that all canSee/canBeSeen relationships are updated before any callbacks are run.
+		for(const ActorReference& ref : canNowBeSeenBy)
+		{
+			const ActorIndex other = ref.getIndex(actors.m_referenceData);
+			actors.onSight_get(other).execute(m_area, ref, request.actor);
+			const FactionId& otherFaction = actors.getFaction(other);
+			m_area.m_hasOnSight.maybeExecute(otherFaction, m_area, ref, request.actor);
+		}
+		// TODO: AreaHasOnSightForFaction.
 	}
 }
 void VisionRequests::doStep()
@@ -171,19 +193,19 @@ void VisionRequests::maybeGenerateRequestsForAllWithLineOfSightToAny(const std::
 	};
 	std::vector<CandidateData> candidates;
 	SmallSet<ActorReference> results;
-	SmallSet<uint> locationBucketIndices;
+	SmallSet<int32_t> locationBucketIndices;
 
 	std::vector<PointData> pointDataStore;
 	std::ranges::transform(pointSet.begin(), pointSet.end(), std::back_inserter(pointDataStore),
 		[&](const Point3D& point) -> PointData {
 			return {point, point};
 		});
-	int minX = std::ranges::min_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.x(); })->coordinates.x().get();
-	int maxX = std::ranges::max_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.x(); })->coordinates.x().get();
-	int minY = std::ranges::min_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.y(); })->coordinates.y().get();
-	int maxY = std::ranges::max_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.y(); })->coordinates.y().get();
-	int minZ = std::ranges::min_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.z(); })->coordinates.z().get();
-	int maxZ = std::ranges::max_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.z(); })->coordinates.z().get();
+	int32_t minX = std::ranges::min_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.x(); })->coordinates.x().get();
+	int32_t maxX = std::ranges::max_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.x(); })->coordinates.x().get();
+	int32_t minY = std::ranges::min_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.y(); })->coordinates.y().get();
+	int32_t maxY = std::ranges::max_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.y(); })->coordinates.y().get();
+	int32_t minZ = std::ranges::min_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.z(); })->coordinates.z().get();
+	int32_t maxZ = std::ranges::max_element(pointDataStore, {}, [&](const PointData& c) { return c.coordinates.z(); })->coordinates.z().get();
 	Cuboid cuboid(
 		{Distance::create(maxX), Distance::create(maxY), Distance::create(maxZ)},
 		{Distance::create(minX), Distance::create(minY), Distance::create(minZ)}

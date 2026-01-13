@@ -1,8 +1,2 @@
-d
-b test/unit/fluid.cpp:1521
+catch throw
 r
-b hasFluidGroups.cpp:27 if m_area.m_simulation.m_step.data == 11
-c
-c
-b fluidGroups/fluidGroup.cpp:242
-c

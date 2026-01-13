@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config.h"
+#include "config/config.h"
 #include "reference.h"
 #include "numericTypes/types.h"
 #include "dataStructures/smallSet.h"
@@ -52,5 +52,5 @@ public:
 	[[nodiscard]] auto& getAll() const { return m_equipments; }
 	[[nodiscard]] bool hasAnyEquipmentWithReservations(Area& area, const ActorIndex& actor) const;
 	[[nodiscard]] ItemIndex getFirstItemWithType(const Area& area, const ItemTypeId& type) const;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_ONLY_SERIALIZE(EquipmentSet, m_equipments);
+	[[nodiscard]] Json toJson() const;
 };

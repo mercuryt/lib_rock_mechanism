@@ -7,7 +7,7 @@
 #pragma GCC diagnostic pop
 
 //Shard width should be a power of 2.
-template<uint shardWidth = 16>
+template<int32_t shardWidth = 16>
 class ShardedBitSet
 {
 	Eigen::Array<DistanceWidth, 3> m_convertToIndex;
@@ -15,12 +15,12 @@ class ShardedBitSet
 	ShardedBitSet(const Distance& x, const Distance& y, const Distance& z)
 	{
 		m_data.resize((x * y * z).get());
-		const uint shard = x / shardWidth;
+		const int32_t shard = x / shardWidth;
 		m_convertToIndex = {(x * y).get() , x.get(), 1};
 	}
-	uint convertPoint(const Point3D& point)
+	int32_t convertPoint(const Point3D& point)
 	{
-		const uint shard = point.x() / shardWidth;
+		const int32_t shard = point.x() / shardWidth;
 		auto copy = point.data;
 		assert(copy[0] >= shard * shardWidth);
 		copy[0] -= shard * shardWidth;

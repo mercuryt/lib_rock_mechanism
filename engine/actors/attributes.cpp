@@ -1,6 +1,6 @@
 #include "actors.h"
 #include "definitions/animalSpecies.h"
-#include "config.h"
+#include "config/config.h"
 #include "numericTypes/types.h"
 
 void Actors::attributes_onUpdateGrowthPercent(const ActorIndex& index)
@@ -139,12 +139,12 @@ void Actors::setIntrinsicMassModifier(const ActorIndex& index, float modifier)
 	m_massModifier[index] = modifier;
 	onIntrinsicMassChanged(index);
 }
-void Actors::addIntrinsicMassBonusOrPenalty(const ActorIndex& index, uint32_t bonusOrPenalty)
+void Actors::addIntrinsicMassBonusOrPenalty(const ActorIndex& index, int32_t bonusOrPenalty)
 {
 	m_massBonusOrPenalty[index] += bonusOrPenalty;
 	onIntrinsicMassChanged(index);
 }
-void Actors::setIntrinsicMassBonusOrPenalty(const ActorIndex& index, uint32_t bonusOrPenalty)
+void Actors::setIntrinsicMassBonusOrPenalty(const ActorIndex& index, int32_t bonusOrPenalty)
 {
 	m_massBonusOrPenalty[index] = bonusOrPenalty;
 	onIntrinsicMassChanged(index);
@@ -156,7 +156,7 @@ void Actors::updateIntrinsicMass(const ActorIndex& index)
 	const auto& massData = AnimalSpecies::getMass(species);
 	Mass max = massData[1];
 	Mass min = massData[0];
-	uint adultMass = util::scaleByFractionRange(min.get(), max.get(), m_adultHeight[index], AnimalSpecies::getHeight(species)[1]);
+	int32_t adultMass = util::scaleByFractionRange(min.get(), max.get(), m_adultHeight[index], AnimalSpecies::getHeight(species)[1]);
 	m_mass[index] = Mass::create(util::scaleByPercentRange(massData[2].get(), adultMass, grown));
 }
 void Actors::onIntrinsicMassChanged(const ActorIndex& index)

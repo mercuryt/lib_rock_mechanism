@@ -110,7 +110,7 @@ Step MustDrink::getStepsTillDead() const
 	assert(needsFluid());
 	return m_thirstEvent.remainingSteps();
 }
-CollisionVolume MustDrink::drinkVolumeFor(Area& area, const ActorIndex& actor) { return CollisionVolume::create(std::max(1u, area.getActors().getMass(actor).get() / Config::unitsBodyMassPerUnitFluidConsumed)); }
+CollisionVolume MustDrink::drinkVolumeFor(Area& area, const ActorIndex& actor) { return CollisionVolume::create(std::max(1, area.getActors().getMass(actor).get() / Config::unitsBodyMassPerUnitFluidConsumed)); }
 // Drink Event.
 DrinkEvent::DrinkEvent(Area& area, const Step& delay, DrinkObjective& drob, const ActorIndex& actor, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_drinkObjective(drob)

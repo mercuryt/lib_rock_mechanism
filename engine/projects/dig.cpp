@@ -27,6 +27,13 @@ Json DigProject::toJson() const
 	data["pointFeatureType"] = m_pointFeatureType;
 	return data;
 }
+std::string DigProject::description() const
+{
+	std::string output = "dig";
+	if(m_pointFeatureType != PointFeatureTypeId::Null)
+		output += "out " + PointFeatureType::byId(m_pointFeatureType).name;
+	return output;
+}
 std::vector<std::pair<ItemQuery, Quantity>> DigProject::getConsumed() const { return {}; }
 std::vector<std::pair<ItemQuery, Quantity>> DigProject::getUnconsumed() const
 {
@@ -55,13 +62,14 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> DigProject::getByp
 	}
 	return output;
 }
+SkillTypeId DigProject::getSkill() const { static auto output = SkillType::byName("dig"); return output; }
 // Static.
-uint32_t DigProject::getWorkerDigScore(Area& area, ActorIndex actor)
+int32_t DigProject::getWorkerDigScore(Area& area, ActorIndex actor)
 {
 	static SkillTypeId digType = SkillType::byName("dig");
 	Actors& actors = area.getActors();
-	uint32_t strength = actors.getStrength(actor).get();
-	uint32_t skillLevel = actors.skill_getLevel(actor, digType).get();
+	int32_t strength = actors.getStrength(actor).get();
+	int32_t skillLevel = actors.skill_getLevel(actor, digType).get();
 	return (strength * Config::digStrengthModifier) + (skillLevel * Config::digSkillModifier);
 }
 void DigProject::onComplete()
@@ -111,7 +119,7 @@ void DigProject::offDelay()
 // What would the total delay time be if we started from scratch now with current workers?
 Step DigProject::getDuration() const
 {
-	uint32_t totalScore = 0u;
+	int32_t totalScore = 0;
 	Actors& actors = m_area.getActors();
 	for(auto& pair : m_workers)
 		totalScore += getWorkerDigScore(m_area, pair.first.getIndex(actors.m_referenceData));

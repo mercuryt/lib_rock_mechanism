@@ -4,7 +4,8 @@
 struct SoldierData
 {
 	CuboidSet maliceZone;
-	SquadId squad;
+	SquadIndex squad;
 	bool isDrafted;
 	static SoldierData create() { SoldierData output; output.isDrafted = false; return output; }
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SoldierData, maliceZone, squad, isDrafted);
 };

@@ -5,15 +5,16 @@
 #include "../definitions/itemType.h"
 #include "../simulation/simulation.h"
 #include "../simulation/hasActors.h"
-#include "skill.h"
 #include "../numericTypes/types.h"
 #include "../util.h"
 #include "../definitions/weaponType.h"
-#include "../config.h"
+#include "../config/config.h"
 #include "../random.h"
 #include "../items/items.h"
 #include "../reference.h"
 #include "../path/terrainFacade.hpp"
+#include "../objectives/flee.h"
+#include "skill.h"
 
 #include <cstdint>
 #include <sys/types.h>
@@ -25,29 +26,54 @@ void Actors::combat_attackMeleeRange(const ActorIndex& index, const ActorIndex& 
 	assert(!m_coolDownEvent.exists(index));
 	CombatScore attackerCombatScore = combat_getCurrentMeleeCombatScore(index);
 	CombatScore targetCombatScore = combat_getCurrentMeleeCombatScore(target);
-	Step coolDownDuration = m_onMissCoolDownMelee[index];
+	Step coolDownDuration;
 	if(attackerCombatScore > targetCombatScore)
 	{
 		// Attack hits.
 		const Attack& attack = combat_getAttackForCombatScoreDifference(index, attackerCombatScore - targetCombatScore);
-		Force attackForce = Force::create[AttackType::getBaseForce(attack.attackType).get() + (m_strength[index].get() * Config::unitsOfAttackForcePerUnitOfStrength)];
+		Force attackForce = Force::create(AttackType::getBaseForce(attack.attackType).get() + (m_strength[index].get() * Config::unitsOfAttackForcePerUnitOfStrength));
 		// TODO: Higher skill selects more important body parts to hit.
 		BodyPart& bodyPart = m_body[target]->pickABodyPartByVolume(m_area.m_simulation);
 		Hit hit(AttackType::getArea(attack.attackType), attackForce, attack.materialType, AttackType::getWoundType(attack.attackType));
 		takeHit(target, hit, bodyPart);
 		// If there is a weapon being used take the cool down from it, otherwise use onMiss cool down.
 		if(attack.item.exists())
-		{
-			Items& items = m_area.getItems();
-
-			coolDownDuration = AttackType::getCoolDown(attack.attackType);
-			if(coolDownDuration.empty())
-				coolDownDuration = ItemType::getAttackCoolDownBase(items.getItemType(attack.item));
-			coolDownDuration = std::max(Step::create[1], Step::create[coolDownDuration.get() * m_coolDownDurationModifier[index]]);
-		}
+			coolDownDuration = combat_getCoolDown(index, attack);
+		else
+			coolDownDuration = m_onMissCoolDownMelee[index];
 	}
-	m_coolDownEvent.schedule(index, m_area, index, coolDownDuration);
+	else
+		coolDownDuration = m_onMissCoolDownMelee[index];
+	m_coolDownEvent.schedule(index, m_area, index, coolDownDuration * m_coolDownDurationModifier[index]);
 	//TODO: Skill growth.
+}
+Step Actors::combat_attackMeleeRangeNonLethal(const ActorIndex& index, const ActorIndex& target)
+{
+	assert(!m_coolDownEvent.exists(index));
+	//AcceptableDeficiency: Unlike lethal combat, non lethal does not have adjacent bonus.
+	CombatScore attackerCombatScore = m_combatScoreNonLethal[index];
+	CombatScore targetCombatScore = m_combatScoreNonLethal[target];
+	Step coolDownDuration;
+	if(attackerCombatScore > targetCombatScore)
+	{
+		// Attack hits.
+		const Attack& attack = combat_getNonLethalAttackForCombatScoreDifference(index, attackerCombatScore - targetCombatScore);
+		Force attackForce = Force::create(AttackType::getBaseForce(attack.attackType).get() + (m_strength[index].get() * Config::unitsOfAttackForcePerUnitOfStrength));
+		// TODO: Higher skill selects more important body parts to hit.
+		BodyPart& bodyPart = m_body[target]->pickABodyPartByVolume(m_area.m_simulation);
+		Hit hit(AttackType::getArea(attack.attackType), attackForce, attack.materialType, AttackType::getWoundType(attack.attackType));
+		takeHit(target, hit, bodyPart);
+		// If there is a weapon being used take the cool down from it, otherwise use onMiss cool down.
+		if(attack.item.exists())
+			coolDownDuration = combat_getCoolDown(index, attack);
+		else
+			coolDownDuration = m_onMissCoolDownMelee[index];
+	}
+	else
+		coolDownDuration = m_onMissCoolDownMelee[index];
+	// No cooldown scheduled here: non lethal fight cooldowns are managed by the ConfrontationObjective in order to check if the fighters still want to continue.
+	//TODO: Skill growth.
+	return coolDownDuration;
 }
 void Actors::combat_attackLongRange(const ActorIndex& index, const ActorIndex& target, const ItemIndex& weapon, const ItemIndex& ammo)
 {
@@ -71,12 +97,12 @@ void Actors::combat_attackLongRange(const ActorIndex& index, const ActorIndex& t
 CombatScore Actors::combat_getCurrentMeleeCombatScore(const ActorIndex& index)
 {
 	FactionId faction = getFaction(index);
-	uint32_t pointsContainingNonAllies = 0;
+	int8_t pointsContainingNonAllies = 0;
 	// Apply bonuses and penalties based on relative locations.
 	CombatScore output = m_combatScore[index];
 	for(const ActorIndex& adjacent : getAdjacentActors(index))
 	{
-		CombatScore highestAllyCombatScore = CombatScore::create[0];
+		CombatScore highestAllyCombatScore = CombatScore::create(0);
 		bool nonAllyFound = false;
 		FactionId otherFaction = getFaction(adjacent);
 		if(otherFaction.exists() && (otherFaction == faction || m_area.m_simulation.m_hasFactions.isAlly(otherFaction, faction)))
@@ -119,34 +145,44 @@ void Actors::combat_update(const ActorIndex& index)
 {
 	if(soldier_is(index))
 		soldier_removeFromMaliceMap(index);
-	m_combatScore[index] = CombatScore::create[0];
-	m_maxMeleeRange[index] = DistanceFractional::create[0.f];
-	m_maxRange[index] = DistanceFractional::create[0.f];
+	m_combatScore[index] = CombatScore::create(0);
+	m_maxMeleeRange[index] = DistanceFractional::create(0.f);
+	m_maxRange[index] = DistanceFractional::create(0.f);
 	// Collect attacks and combat scores from body and equipment.
 	m_meleeAttackTable[index].clear();
+	m_meleeAttackTableNonLethal[index].clear();
 	Body& body = *m_body[index].get();
 	for(Attack& attack : body.getMeleeAttacks())
-		m_meleeAttackTable[index].emplace_back(combat_getCombatScoreForAttack(index, attack), attack);
-	for(Attack& attack : m_equipmentSet[index]->getMeleeAttacks(m_area))
-		m_meleeAttackTable[index].emplace_back(combat_getCombatScoreForAttack(index, attack), attack);
-	// Sort by combat score, low to high.
-	std::sort(m_meleeAttackTable[index].begin(), m_meleeAttackTable[index].end(), [](const auto& a, const auto& b){ return a.first < b.first; });
-	// Iterate attacks low to high, add running total to each score.
-	// Also find max melee attack range.
-	for(auto& pair : m_meleeAttackTable[index])
 	{
-		pair.first += m_combatScore[index];
-		m_combatScore[index] = pair.first;
-		DistanceFractional range = AttackType::getRange(pair.second.attackType);
-		if(range > m_maxMeleeRange[index])
-			m_maxMeleeRange[index] = range;
+		const CombatScore score  = combat_getCombatScoreForAttack(index, attack);
+		m_meleeAttackTable[index].add(score, attack);
+		if(attack.isNonLethalAgainst(m_species[index]))
+			m_meleeAttackTableNonLethal[index].add(score, attack);
 	}
+	for(Attack& attack : m_equipmentSet[index]->getMeleeAttacks(m_area))
+	{
+		const CombatScore score  = combat_getCombatScoreForAttack(index, attack);
+		m_meleeAttackTable[index].add(score, attack);
+		if(attack.isNonLethalAgainst(m_species[index]))
+			m_meleeAttackTableNonLethal[index].add(score, attack);
+	}
+	const auto& [totalScore, maxRange] = m_meleeAttackTable[index].build();
+	m_combatScore[index] = totalScore;
+	m_maxMeleeRange[index] = maxRange;
+	const auto& [totalScoreNonLethal, maxRangeNonLethal] = m_meleeAttackTable[index].build();
+	m_combatScoreNonLethal[index] = totalScoreNonLethal;
+	m_maxMeleeRangeNonLethal[index] = maxRangeNonLethal;
 	// Base stats give combat score.
-	m_combatScore[index] += attributes_getCombatScore(index);
+	const CombatScore attributeBonus = attributes_getCombatScore(index);
+	m_combatScore[index] += attributeBonus;
+	m_combatScoreNonLethal[index] += attributeBonus;
 	// Reduce for impairment.
-	m_combatScore[index] = CombatScore::create[util::scaleByInversePercent(m_combatScore[index].get(), body.getImpairManipulationPercent())];
+	const Percent imparment = body.getImpairManipulationPercent();
+	m_combatScore[index] = CombatScore::create(util::scaleByInversePercent(m_combatScore[index].get(), imparment));
+	m_combatScoreNonLethal[index] = CombatScore::create(util::scaleByInversePercent(m_combatScoreNonLethal[index].get(), imparment));
 	// Update cool down duration.
 	// TODO: Manipulation impairment should apply to cooldown as well?
+	// TODO: Pain causes impairment.
 	m_coolDownDurationModifier[index] = std::max(1.f, (float)m_equipmentSet[index]->getMass().get() / (float)m_unencomberedCarryMass[index].get() );
 	if(m_dextarity[index] > Config::attackCoolDownDurationBaseDextarity)
 	{
@@ -157,7 +193,7 @@ void Actors::combat_update(const ActorIndex& index)
 	Step baseOnMissCoolDownDuration = m_equipmentSet[index]->hasWeapons() ?
 	    	m_equipmentSet[index]->getLongestMeleeWeaponCoolDown(m_area) :
 		Config::attackCoolDownDurationBaseSteps;
-	m_onMissCoolDownMelee[index] = std::max(Step::create[1], Step::create[(float)baseOnMissCoolDownDuration.get() * m_coolDownDurationModifier[index]]);
+	m_onMissCoolDownMelee[index] = std::max(Step::create(1), Step::create((float)baseOnMissCoolDownDuration.get() * m_coolDownDurationModifier[index]));
 	Items& items = m_area.getItems();
 	//Find max range.
 	m_maxRange[index] = m_maxMeleeRange[index];
@@ -172,7 +208,6 @@ void Actors::combat_update(const ActorIndex& index)
 	if(soldier_is(index))
 		soldier_recordInMaliceMap(index);
 }
-const std::vector<std::pair<CombatScore, Attack>>& Actors::combat_getMeleeAttacks(const ActorIndex& index) const { return m_meleeAttackTable[index]; }
 //TODO: Grasps cannot be used for both armed and unarmed attacks at the same time?
 CombatScore Actors::combat_getCombatScoreForAttack(const ActorIndex& index, const Attack& attack) const
 {
@@ -185,16 +220,17 @@ CombatScore Actors::combat_getCombatScoreForAttack(const ActorIndex& index, cons
 	Items& items = m_area.getItems();
 	Quality quality = attack.item == ItemIndex::null() ? Config::averageItemQuality : items.getQuality(attack.item);
 	output *= combat_getQualityModifier(index, quality);
-	Percent percentItemWear = attack.item == ItemIndex::null() ? Percent::create[0] : items.getWear(attack.item);
+	Percent percentItemWear = attack.item == ItemIndex::null() ? Percent::create(0) : items.getWear(attack.item);
 	output -= (percentItemWear * Config::itemWearCombatModifier).get();
 	return output;
 }
-const Attack& Actors::combat_getAttackForCombatScoreDifference(const ActorIndex& index, CombatScore scoreDifference) const
+const Attack& Actors::combat_getAttackForCombatScoreDifference(const ActorIndex& index, const CombatScore& scoreDifference) const
 {
-	for(auto& pair : m_meleeAttackTable[index])
-		if(pair.first > scoreDifference)
-			return pair.second;
-	return m_meleeAttackTable[index].back().second;
+	return m_meleeAttackTable[index].getForCombatScoreDifference(scoreDifference);
+}
+const Attack& Actors::combat_getNonLethalAttackForCombatScoreDifference(const ActorIndex& index, CombatScore scoreDifference) const
+{
+	return m_meleeAttackTableNonLethal[index].getForCombatScoreDifference(scoreDifference);
 }
 void Actors::combat_setTarget(const ActorIndex& index, const ActorIndex& actor)
 {
@@ -269,6 +305,16 @@ void Actors::combat_getIntoRangeAndLineOfSightOfActor(const ActorIndex& index, c
 {
 	move_pathRequestRecord(index, std::make_unique<GetIntoAttackPositionPathRequest>(m_area, index, target, range));
 }
+void Actors::combat_flee(const ActorIndex &index)
+{
+	objective_addNeed(index, std::make_unique<FleeObjective>());
+}
+bool Actors::combat_isFleeing(const ActorIndex &index)
+{
+	// TODO: Create an objective type id.
+	static ObjectiveTypeId fleeObjectiveTypeId = ObjectiveType::getByName("flee").getId();
+	return objective_getCurrentTypeId(index) == fleeObjectiveTypeId;
+}
 bool Actors::combat_isOnCoolDown(const ActorIndex& index) const { return m_coolDownEvent.exists(index); }
 bool Actors::combat_inRange(const ActorIndex& index, const ActorIndex& target) const
 {
@@ -276,7 +322,7 @@ bool Actors::combat_inRange(const ActorIndex& index, const ActorIndex& target) c
 }
 Percent Actors::combat_projectileHitPercent(const ActorIndex& index, const Attack& attack, const ActorIndex& target) const
 {
-	Percent chance = Percent::create[100 - std::pow(distanceToActorFractional(index, target).get(), Config::projectileHitChanceFallsOffWithRangeExponent)];
+	Percent chance = Percent::create(100 - std::pow(distanceToActorFractional(index, target).get(), Config::projectileHitChanceFallsOffWithRangeExponent));
 	chance += m_skillSet[index].get(AttackType::getSkillType(attack.attackType)).get() * Config::projectileHitPercentPerSkillPoint;
 	chance += (getVolume(target) * Config::projectileHitPercentPerUnitVolume).get();
 	chance += m_dextarity[index].get() * Config::projectileHitPercentPerPointDextarity;
@@ -321,7 +367,7 @@ AttackTypeId Actors::combat_getRangedAttackType(const ActorIndex&, const ItemInd
 	std::unreachable();
 	return ItemType::getAttackTypes(itemType).front();
 }
-CuboidSet Actors::combat_getMaliceZone(const ActorIndex& index) const
+CuboidSet Actors::combat_makeMalicePoints(const ActorIndex& index) const
 {
 	const Point3D& location = m_location[index];
 	Cuboid zone = Cuboid::create(location, location);
@@ -338,6 +384,24 @@ CuboidSet Actors::combat_getMaliceZone(const ActorIndex& index) const
 	// Trim again.
 	set = set.adjacentRecursive(location);
 	return set;
+}
+Step Actors::combat_getCoolDown(const ActorIndex& index, const Attack& attack) const
+{
+	Step output;
+	// If there is a weapon being used take the cool down from it, otherwise use onMiss cool down.
+	if(attack.item.exists())
+	{
+		Items& items = m_area.getItems();
+		output = AttackType::getCoolDown(attack.attackType);
+		if(output.empty())
+			output = ItemType::getAttackCoolDownBase(items.getItemType(attack.item));
+		output = std::max(Step::create(1), Step::create(output.get() * m_coolDownDurationModifier[index]));
+	}
+	else
+		// m_onMissCollDownMelee already has m_coolDownDurationModifier applied to it.
+		// TODO: Rename to defaultCoolDownMelee.
+		output = m_onMissCoolDownMelee[index];
+	return output;
 }
 AttackCoolDownEvent::AttackCoolDownEvent(Area& area, const ActorIndex& actor, const Step& duration, const Step start) :
 	ScheduledEvent(area.m_simulation, duration, start), m_actor(actor) { }

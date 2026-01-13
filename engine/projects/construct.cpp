@@ -24,6 +24,16 @@ Json ConstructProject::toJson() const
 	data["materialType"] = m_solid;
 	return data;
 }
+std::string ConstructProject::description() const
+{
+	std::string output = "construct ";
+	if(m_pointFeatureType == PointFeatureTypeId::Null)
+		output += "solid";
+	else
+		output += PointFeatureType::byId(m_pointFeatureType).name + " from";
+	output += MaterialType::getName(m_solid);
+	return output;
+}
 std::vector<std::pair<ItemQuery, Quantity>> ConstructProject::getConsumed() const
 {
 	return MaterialType::construction_getConsumed(m_solid);
@@ -37,12 +47,12 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> ConstructProject::
 {
 	return MaterialType::construction_getByproducts(m_solid);
 }
-uint32_t ConstructProject::getWorkerConstructScore(const ActorIndex& actor) const
+SkillTypeId ConstructProject::getSkill() const { return MaterialType::construction_getSkill(m_solid); }
+int32_t ConstructProject::getWorkerConstructScore(const ActorIndex& actor) const
 {
 	Actors& actors = m_area.getActors();
-	SkillTypeId constructSkill = MaterialType::construction_getSkill(m_solid);
 	return (actors.getStrength(actor).get() * Config::constructStrengthModifier) +
-		(actors.skill_getLevel(actor, constructSkill).get() * Config::constructSkillModifier);
+		(actors.skill_getLevel(actor, getSkill()).get() * Config::constructSkillModifier);
 }
 void ConstructProject::onComplete()
 {
@@ -91,7 +101,7 @@ void ConstructProject::offDelay()
 // What would the total delay time be if we started from scratch now with current workers?
 Step ConstructProject::getDuration() const
 {
-	uint32_t totalScore = 0;
+	int32_t totalScore = 0;
 	Actors& actors = m_area.getActors();
 	for(auto& pair : m_workers)
 		totalScore += getWorkerConstructScore(pair.first.getIndex(actors.m_referenceData));

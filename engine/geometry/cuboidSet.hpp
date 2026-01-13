@@ -26,7 +26,7 @@ CuboidSetBase<CuboidType, PointType, CuboidSetType>::CuboidSetBase(const std::in
 template<typename CuboidType, typename PointType, typename CuboidSetType>
 void CuboidSetBase<CuboidType, PointType, CuboidSetType>::insertOrMerge(const CuboidType& cuboid)
 {
-	uint i = 0;
+	int32_t i = 0;
 	for(const CuboidType& existing : m_cuboids)
 	{
 		assert(!cuboid.intersects(existing));
@@ -40,7 +40,7 @@ void CuboidSetBase<CuboidType, PointType, CuboidSetType>::insertOrMerge(const Cu
 	m_cuboids.insert(cuboid);
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-void CuboidSetBase<CuboidType, PointType, CuboidSetType>::destroy(const uint& index)
+void CuboidSetBase<CuboidType, PointType, CuboidSetType>::destroy(const int32_t& index)
 {
 	m_cuboids.eraseIndex(index);
 }
@@ -120,7 +120,7 @@ void CuboidSetBase<CuboidType, PointType, CuboidSetType>::inflate(const Distance
 	}
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-void CuboidSetBase<CuboidType, PointType, CuboidSetType>::mergeInternal(const CuboidType& absorbed, const uint& absorber)
+void CuboidSetBase<CuboidType, PointType, CuboidSetType>::mergeInternal(const CuboidType& absorbed, const int32_t& absorber)
 {
 	CuboidType absorberCopy = m_cuboids[absorber];
 	assert(absorbed.canMerge(absorberCopy));
@@ -137,7 +137,7 @@ template<typename CuboidType, typename PointType, typename CuboidSetType>
 PointType CuboidSetBase<CuboidType, PointType, CuboidSetType>::center() const
 {
 	Offset3D sum = Offset3D::create(0,0,0);
-	uint totalVolume = 0;
+	int32_t totalVolume = 0;
 	for(const CuboidType& cuboid : m_cuboids)
 	{
 		totalVolume += cuboid.volume();
@@ -170,14 +170,14 @@ bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::empty() const { return
 template<typename CuboidType, typename PointType, typename CuboidSetType>
 bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::exists() const { return !m_cuboids.empty(); }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-uint CuboidSetBase<CuboidType, PointType, CuboidSetType>::size() const
+int32_t CuboidSetBase<CuboidType, PointType, CuboidSetType>::size() const
 {
 	return m_cuboids.size();
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-uint CuboidSetBase<CuboidType, PointType, CuboidSetType>::volume() const
+int32_t CuboidSetBase<CuboidType, PointType, CuboidSetType>::volume() const
 {
-	uint output = 0;
+	int32_t output = 0;
 	for(const CuboidType& cuboid : m_cuboids)
 		output += cuboid.volume();
 	return output;
@@ -201,7 +201,7 @@ bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::contains(const Offset3
 template<typename CuboidType, typename PointType, typename CuboidSetType>
 bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::contains(const CuboidType& cuboid) const
 {
-	uint remainingVolume = cuboid.volume();
+	int32_t remainingVolume = cuboid.volume();
 	for(const CuboidType& other : m_cuboids)
 		if(other.intersects(cuboid))
 			remainingVolume -= other.intersection(cuboid).volume();
@@ -222,6 +222,15 @@ SmallSet<PointType> CuboidSetBase<CuboidType, PointType, CuboidSetType>::toPoint
 	for(const CuboidType& cuboid : m_cuboids)
 		output.maybeInsertAll(cuboid);
 	return output;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+const CuboidType& CuboidSetBase<CuboidType, PointType, CuboidSetType>::getCuboidContaining(const PointType& point) const
+{
+	for(const CuboidType& cuboid : m_cuboids)
+		if(cuboid.contains(point))
+			return cuboid;
+	assert(false);
+	std::unreachable();
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
 bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::isAdjacent(const CuboidType& cuboid) const
@@ -381,7 +390,7 @@ CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::getDirectlyAd
 	assert(!empty());
 	CuboidSetType output;
 	for(const CuboidType& cuboid : m_cuboids)
-		for(Facing6 facing = Facing6::Below; facing != Facing6::Null; facing = (Facing6)((uint)facing + 1u))
+		for(Facing6 facing = Facing6::Below; facing != Facing6::Null; facing = (Facing6)((int8_t)facing + 1))
 		{
 			CuboidType face = cuboid.getFace(facing);
 			face.maybeShift(facing, distance);
@@ -396,7 +405,7 @@ CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::inflateFaces(
 	CuboidSetType output;
 	output.m_cuboids = this->m_cuboids;
 	for(const CuboidType& cuboid : m_cuboids)
-		for(Facing6 facing = Facing6::Below; facing != Facing6::Null; facing = (Facing6)((uint)facing + 1u))
+		for(Facing6 facing = Facing6::Below; facing != Facing6::Null; facing = (Facing6)((int8_t)facing + 1))
 		{
 			CuboidType face = cuboid.getFace(facing);
 				face.maybeShift(facing, distance);
@@ -440,26 +449,45 @@ CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::flattened(con
 	return output;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::adjacentRecursive(const Point3D& point) const
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::adjacentRecursive(const PointType& point) const
 {
 	// TODO: There are alot of redundant comparisons here. Could it be optimized by moving already found cuboids to the front of the vector and starting the search beyond them?
-	SmallSet<uint16_t> openList;
-	SmallSet<uint16_t> closedList;
-	uint16_t end = m_cuboids.size();
+	CuboidSetType output;
+	SmallSet<int> openList;
+	SmallSet<int> candidates;
+	int end = m_cuboids.size();
+	for(int i = 0; i != end; ++i)
+		if(m_cuboids[i].contains(point))
+			openList.insert(i);
+		else
+			candidates.insert(i);
+	assert(!openList.empty());
 	while(!openList.empty())
 	{
-		const Cuboid current = openList.back();
+		const int currentIndex = openList.back();
+		const CuboidType currentCuboid = m_cuboids[currentIndex];
 		openList.popBack();
-		for(uint16_t i = 0; i != end; ++i)
-			if(m_cuboids[i] != current && m_cuboids[i].isTouching(current) && !closedList.contains(i))
+		int candidateEnd = candidates.size();
+		SmallSet<int> toRemove;
+		for(int i = 0; i != candidateEnd; ++i)
+		{
+			int candidateIndex = candidates[i];
+			assert(candidateIndex != currentIndex);
+			if(m_cuboids[candidateIndex].isTouching(currentCuboid))
 			{
-				openList.insert(i);
-				closedList.insert(i);
-				output.add(m_cuboids[i]);
+				toRemove.insert(i);
+				openList.insert(candidateIndex);
+				output.add(m_cuboids[candidateIndex]);
 			}
+			// Sort indices toRemove in descending order so as not to invalidate when moving from the back.
+			std::sort(toRemove.m_data.begin(), toRemove.m_data.end(), std::greater<int>());
+			for(int index : toRemove)
+			{
+				candidates[index] = candidates.back();
+				candidates.popBack();
+			}
+		}
 	}
-	//TODO: This could be generated from closed list.
-	CuboidSetType output;
 	return output;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>

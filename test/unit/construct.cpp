@@ -11,7 +11,7 @@
 #include "../../engine/projects/construct.h"
 #include "../../engine/geometry/cuboid.h"
 #include "../../engine/objectives/goTo.h"
-#include "../../engine/config.h"
+#include "../../engine/config/config.h"
 #include "../../engine/definitions/materialType.h"
 #include "../../engine/numericTypes/types.h"
 #include "../../engine/definitions/itemType.h"
@@ -444,7 +444,7 @@ TEST_CASE("constructDirtWall")
 		Quantity quantity = found->second;
 		CHECK(quantity <= items.getQuantity(dirtPile));
 		Quantity trips = Quantity::create(std::ceil((float)quantity.get() / (float)dirtPerLoad.get()));
-		for(uint i = 0; i < trips; ++i)
+		for(int i = 0; i < trips; ++i)
 		{
 			simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, items.getLocation(dirtPile));
 			if(!actors.canPickUp_isCarryingItem(dwarf1, dirtPile))

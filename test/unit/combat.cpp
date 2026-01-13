@@ -41,7 +41,7 @@ TEST_CASE("combat")
 	SUBCASE("attack table")
 	{
 		auto& attackTable = actors.combat_getAttackTable(dwarf1);
-		CHECK(attackTable.size() == actors.combat_getMeleeAttacks(dwarf1).size());
+		CHECK(attackTable.size() == actors.combat_getAttackTable(dwarf1).size());
 		CHECK(attackTable.size() == 4);
 		CHECK(actors.combat_getCombatScore(dwarf1) == 26);
 		CHECK(actors.combat_getMaxRange(dwarf1) == 1.5f);

@@ -3,7 +3,7 @@
 #include "../../engine/area/area.h"
 #include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
-#include "../../engine/config.h"
+#include "../../engine/config/config.h"
 #include "../../engine/space/space.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"

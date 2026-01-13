@@ -38,6 +38,44 @@ public:
 			unschedule();
 	}
 	void clearPointer() { assert(exists()); m_event = nullptr; }
+	void updateStep(const Step& to)
+	{
+		// It is safe to move events from one step to another because they are refered to only via their addresses, which are not changing as their unique_ptr handles are moved,
+		assert(exists());
+		Step& from = m_event->m_step;
+		assert(from != to);
+		// This assertation is commented out because simulation is not avalible in this TU.
+		//assert(from > m_schedule->getSimulation().m_step);
+		const auto found = std::ranges::find(m_schedule->m_data[from], m_event, [&](const std::unique_ptr<ScheduledEvent>& ptr) { return ptr.get(); });
+		assert(found != m_schedule->m_data[from].end());
+		// Update m_step recorded in the ScheduledEvent.
+		std::unique_ptr<ScheduledEvent>& event = *found;
+		event->m_step = to;
+		// Move and erase.
+		m_schedule->m_data[to].push_back(std::move(event));
+		auto& fromVector = m_schedule->m_data[from];
+		(*found) = std::move(fromVector.back());
+		fromVector.pop_back();
+	}
+	void bonusPercent(const Percent& percent, const Step& currentStep)
+	{
+		Step bonusSteps = Step::create(util::scaleByPercent(m_event->duration().get(), percent));
+		Step to = currentStep + bonusSteps;
+		if(to >= m_event->m_step)
+		{
+			// Run event now.
+			auto& vector = m_schedule->m_data[m_event->m_step];
+			const auto found = std::ranges::find(vector, m_event, [&](const std::unique_ptr<ScheduledEvent>& ptr) { return ptr.get(); });
+			std::unique_ptr<ScheduledEvent> event = std::move(*found);
+			(*found) = std::move(vector.back());
+			vector.pop_back();
+			clearPointer();
+			event->execute(m_schedule->getSimulation(), m_schedule->getArea());
+		}
+		else
+			// Set new scheduled step.
+			updateStep(to);
+	}
 	[[nodiscard]] Percent percentComplete() const { assert(exists()); return m_event->percentComplete(m_schedule->getSimulation()); }
 	[[nodiscard]] float fractionComplete() const { assert(exists()); return m_event->fractionComplete(m_schedule->getSimulation()); }
 	[[nodiscard]] bool exists() const { return m_event != nullptr; }
@@ -47,6 +85,7 @@ public:
 	[[nodiscard]] Step elapsedSteps() const { assert(exists()); return m_event->elapsedSteps(m_schedule->getSimulation()); }
 	[[nodiscard]] Step duration() const { assert(exists()); return m_event->duration(); }
 	[[nodiscard]] ScheduledEvent* getEvent() { return m_event; }
+	[[nodiscard]] const ScheduledEvent* getEvent() const { return m_event; }
 	~HasScheduledEvent()
 	{
 		if(exists())
@@ -146,7 +185,7 @@ public:
 		m_events[newIndex] = m_events[oldIndex];
 		m_events[newIndex]->onMoveIndex(oldIndex, newIndex);
 	}
-	void sortRangeWithOrder(const Index& begin, const Index& end, std::vector<std::pair<uint32_t, Index>> sortOrder)
+	void sortRangeWithOrder(const Index& begin, const Index& end, std::vector<std::pair<int32_t, Index>> sortOrder)
 	{
 		m_events.sortRangeWithOrder(begin, end, sortOrder);
 	}
@@ -177,7 +216,7 @@ public:
 	[[nodiscard]] Json toJson() const
 	{
 		Json output = Json::object();
-		int i = 0;
+		int32_t i = 0;
 		for(const EventType* event : m_events)
 		{
 			if(event != nullptr)

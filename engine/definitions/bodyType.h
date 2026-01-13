@@ -40,6 +40,7 @@ class BodyType final
 public:
 	static bool hasBodyPart(const BodyTypeId& id, const BodyPartTypeId& bodyPartType);
 	static void create(std::string name, std::vector<BodyPartTypeId>& bodyPartTypes);
+	[[nodiscard]] static std::vector<std::pair<AttackTypeId, MaterialTypeId>> collectAttacks(const BodyTypeId& id);
 	[[nodiscard]] static BodyTypeId byName(std::string name);
 	[[nodiscard]] static std::string getName(const BodyTypeId& id);
 	[[nodiscard]] static std::vector<BodyPartTypeId>& getBodyPartTypes(const BodyTypeId& id);

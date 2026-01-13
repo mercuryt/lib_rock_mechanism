@@ -4,7 +4,7 @@
  * Stored in Area::m_visionCuboids. Deleted durring DerivedArea::writeStep if m_destroy is true.
  */
 #pragma once
-#include "config.h"
+#include "../config/config.h"
 #include "../geometry/cuboidMap.h"
 #include "../geometry/cuboidSetSIMD.h"
 #include "../geometry/cuboidSet.h"
@@ -20,7 +20,7 @@ class VisionCuboidSetSIMD
 	CuboidSetSIMD m_cuboidSet;
 	Eigen::ArrayX<VisionCuboidIdWidth> m_indices;
 public:
-	VisionCuboidSetSIMD(uint capacity);
+	VisionCuboidSetSIMD(int32_t capacity);
 	void insert(const VisionCuboidId& index, const Cuboid& cuboid);
 	void maybeInsert(const VisionCuboidId& index, const Cuboid& cuboid);
 	void clear();
@@ -38,7 +38,7 @@ class AreaHasVisionCuboids final : public CuboidSet
 	VisionCuboidId m_nextKey = VisionCuboidId::create(0);
 public:
 	void insertOrMerge(const Cuboid& cuboid) override;
-	void destroy(const uint& index) override;
+	void destroy(const int32_t& index) override;
 	// Override for more efficient lookup of cuboids to destroy.
 	void maybeRemove(const Cuboid& cuboid) override;
 	void maybeRemove(const CuboidSet& cuboids);
@@ -55,14 +55,14 @@ public:
 	void cuboidIsOpaque(const Cuboid& cuboid);
 	[[nodiscard]] VisionCuboidId getVisionCuboidIndexForPoint(const Point3D& point) const { auto output = m_pointLookup.queryGetOne(point); assert(output.exists()); return output; }
 	[[nodiscard]] VisionCuboidId maybeGetVisionCuboidIndexForPoint(const Point3D& point) const { return m_pointLookup.queryGetOne(point); }
-	[[nodiscard]] uint getIndexForVisionCuboidId(const VisionCuboidId& index) const;
+	[[nodiscard]] int32_t getIndexForVisionCuboidId(const VisionCuboidId& index) const;
 	[[nodiscard]] Cuboid getCuboidByVisionCuboidId(const VisionCuboidId& index) const;
-	[[nodiscard]] Cuboid getCuboidByIndex(const uint& index) const { return m_cuboids[index]; }
+	[[nodiscard]] Cuboid getCuboidByIndex(const int32_t& index) const { return m_cuboids[index]; }
 	[[nodiscard]] Cuboid getCuboidForPoint(const Point3D& point) const { return getCuboidByVisionCuboidId(getVisionCuboidIndexForPoint(point)); }
-	[[nodiscard]] CuboidMap<VisionCuboidId> getAdjacentsForIndex(const uint& index) const { return m_adjacent[index]; }
+	[[nodiscard]] CuboidMap<VisionCuboidId> getAdjacentsForIndex(const int32_t& index) const { return m_adjacent[index]; }
 	[[nodiscard]] CuboidMap<VisionCuboidId> getAdjacentsForVisionCuboid(const VisionCuboidId& index) const { return getAdjacentsForIndex(getIndexForVisionCuboidId(index)); }
 	[[nodiscard]] bool canSeeInto(const Cuboid& a, const Cuboid& b) const;
-	[[nodiscard]] SmallSet<uint> getMergeCandidates(const Cuboid& cuboid) const;
+	[[nodiscard]] SmallSet<int32_t> getMergeCandidates(const Cuboid& cuboid) const;
 	[[nodiscard]] VisionCuboidSetSIMD query(const auto& queryShape) const
 	{
 		VisionCuboidSetSIMD output(16);
@@ -81,7 +81,7 @@ public:
 		{
 			key = openList.back();
 			openList.popBack();
-			uint index = getIndexForVisionCuboidId(key);
+			int32_t index = getIndexForVisionCuboidId(key);
 			const Cuboid& cuboid = CuboidSet::m_cuboids[index];
 			action(key, cuboid);
 			const CuboidMap<VisionCuboidId>& adjacent = m_adjacent[index];

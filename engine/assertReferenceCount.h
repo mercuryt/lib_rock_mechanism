@@ -8,7 +8,7 @@
 #endif
 template<class T>
 class AssertReference;
-template<class T, typename Count = uint8_t, Count Max = std::numeric_limits<Count>::max()>
+template<class T, typename Count = int8_t, Count Max = std::numeric_limits<Count>::max()>
 class AssertReferenceCount
 {
 	T m_data;

@@ -2,7 +2,7 @@
 #include "designations.h"
 #include "geometry/cuboid.h"
 #include "geometry/cuboidSet.h"
-#include "config.h"
+#include "config/config.h"
 #include "dataStructures/smallMap.h"
 #include "dataStructures/rtreeBoolean.h"
 
@@ -47,7 +47,7 @@ public:
 	void addHarvestDesignation(Area& area, const PlantIndex& plant);
 	void removeHarvestDesignation(Area& area, const PlantIndex& plant);
 	void maybeRemoveHarvestDesignation(auto& area, const auto& shape) { area.getSpace().designation_maybeUnset(shape, m_faction, SpaceDesignation::Harvest); }
-	void setDayOfYear(Area& area, uint32_t dayOfYear);
+	void setDayOfYear(Area& area, int16_t dayOfYear);
 	[[nodiscard]] FarmField& create(Area& area, CuboidSet&& cuboids);
 	[[nodiscard]] FarmField& create(Area& area, const CuboidSet& cuboids);
 	[[nodiscard]] FarmField& create(Area& area, const Cuboid& cuboid);
@@ -79,7 +79,7 @@ public:
 	void unregisterFaction(const FactionId& faction);
 	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid(const FactionId& faction);
 	void removeAllSowSeedsDesignations(const Point3D& point);
-	void setDayOfYear(uint32_t dayOfYear);
+	void setDayOfYear(int16_t dayOfYear);
 	[[nodiscard]] bool hasGivePlantsFluidDesignations(const FactionId& faction) const;
 	[[nodiscard]] bool hasHarvestDesignations(const FactionId& faction) const;
 	[[nodiscard]] bool hasSowSeedsDesignations(const FactionId& faction) const;

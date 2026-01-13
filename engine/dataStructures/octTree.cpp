@@ -31,7 +31,7 @@ void ActorOctTree::record(Area& area, const ActorReference& actor)
 			if(!node.hasChildren())
 				break;
 			// Select new parent node at next level down.
-			uint8_t octant = getOctant(node.center, coordinates);
+			int8_t octant = getOctant(node.center, coordinates);
 			nodeIndex = node.children[octant];
 		}
 	}
@@ -56,7 +56,7 @@ void ActorOctTree::erase(Area& area, const ActorReference& actor)
 				if(!node.hasChildren())
 					break;
 				// Select new parent node at next level down.
-				uint8_t octant = getOctant(node.center, coordinates);
+				int8_t octant = getOctant(node.center, coordinates);
 				nodeIndex = node.children[octant];
 			}
 		}
@@ -71,7 +71,7 @@ void ActorOctTree::updateVisionCuboid(const Point3D& coordinates, const VisionCu
 		if(!node.hasChildren())
 			break;
 		// Select new parent node at next level down.
-		uint8_t octant = getOctant(node.center, coordinates);
+		int8_t octant = getOctant(node.center, coordinates);
 		nodeIndex = node.children[octant];
 	}
 }
@@ -85,7 +85,7 @@ void ActorOctTree::updateRange(const ActorReference& actor, const Point3D& coord
 		if(!node.hasChildren())
 			break;
 		// Select new parent node at next level down.
-		uint8_t octant = getOctant(node.center, coordinates);
+		int8_t octant = getOctant(node.center, coordinates);
 		nodeIndex = node.children[octant];
 	}
 }
@@ -101,13 +101,13 @@ void ActorOctTree::split(const OctTreeIndex& nodeIndex)
 	node.center = node.cuboid.getCenter();
 	// Record child indices.
 	OctTreeIndex childIndex = OctTreeIndex::create(m_nodes.size());
-	for(uint8_t octant = 0; octant < 8; ++octant)
+	for(int octant = 0; octant < 8; ++octant)
 	{
 		node.children[octant] = childIndex;
 		++childIndex;
 	}
 	// Create children.
-	for(uint8_t octant = 0; octant < 8; ++octant)
+	for(int octant = 0; octant < 8; ++octant)
 		m_nodes.emplaceBack(nodeIndex, m_nodes[nodeIndex].cuboids[octant]);
 	// Copy content into newly created child nodes.
 	auto locationBucketIndex = LocationBucketContentsIndex::create(0);
@@ -115,7 +115,7 @@ void ActorOctTree::split(const OctTreeIndex& nodeIndex)
 	OctTreeNode& node2 = m_nodes[nodeIndex];
 	for(const Point3D& position : node2.contents.getPoints())
 	{
-		uint8_t octant = getOctant(node2.center, position);
+		int8_t octant = getOctant(node2.center, position);
 		// Copy whole record.
 		// TODO: delay sorting till all are inserted.
 		m_nodes[node2.children[octant]].contents.copyIndex(node2.contents, locationBucketIndex);
@@ -147,7 +147,7 @@ void ActorOctTree::collapse(const OctTreeIndex& nodeIndex)
 {
 	return m_nodes[OctTreeIndex::create(0)].contents.contains(actor, coordinates);
 }
-uint ActorOctTree::getActorCount() const
+int32_t ActorOctTree::getActorCount() const
 {
 	return m_nodes[OctTreeIndex::create(0)].contents.size();
 }

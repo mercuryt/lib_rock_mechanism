@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "config.h"
+#include "config/config.h"
 //#include "input.h"
 #include "objective.h"
 #include "eventSchedule.h"

@@ -16,43 +16,32 @@
 
 namespace util
 {
-	inline uint64_t scaleByPercent(uint64_t base, Percent percent)
+	template<typename Base>
+	inline Base scaleByPercent(Base base, Percent percent)
 	{
-		return (base * (uint64_t)percent.get()) / 100u;
+		return (base * (uint64_t)percent.get()) / 100;
 	}
-	inline uint32_t scaleByPercent(uint32_t base, Percent percent)
-	{
-		return (base * percent.get()) / 100u;
-	}
-	inline int scaleByPercent(int base, Percent percent)
-	{
-		return (base * percent.get()) / 100u;
-	}
-	inline float scaleByPercent(float base, Percent percent)
-	{
-		return (base * percent.get()) / 100u;
-	}
-	inline int scaleByInversePercent(int base, Percent percent)
+	inline int32_t scaleByInversePercent(int32_t base, Percent percent)
 	{
 		return scaleByPercent(base, Percent::create(100 - percent.get()));
 	}
-	inline int scaleByFractionRange(int min, int max, int32_t numerator, int32_t denominator)
+	inline int32_t scaleByFractionRange(int32_t min, int32_t max, int32_t numerator, int32_t denominator)
 	{
 		return min + (((max - min) * numerator) / denominator);
 	}
-	inline int scaleByPercentRange(int min, int max, Percent percent)
+	inline int32_t scaleByPercentRange(int32_t min, int32_t max, Percent percent)
 	{
-		return scaleByFractionRange(min, max, percent.get(), 100u);
+		return scaleByFractionRange(min, max, percent.get(), 100);
 	}
-	inline int scaleByFraction(int base, int32_t numerator, int32_t denominator)
+	inline int32_t scaleByFraction(int32_t base, int32_t numerator, int32_t denominator)
 	{
 		return (base * numerator) / denominator;
 	}
-	inline int scaleByInverseFraction(int base, int32_t numerator, int32_t denominator)
+	inline int32_t scaleByInverseFraction(int32_t base, int32_t numerator, int32_t denominator)
 	{
 		return scaleByFraction(base, denominator - numerator, denominator);
 	}
-	inline Percent fractionToPercent(int numerator, int denominator)
+	inline Percent fractionToPercent(int32_t numerator, int32_t denominator)
 	{
 		return Percent::create(std::round(((float)numerator / (float)denominator) * 100.f));
 	}
@@ -86,7 +75,7 @@ namespace util
 		return radians * (180.0/3.141592653589793238463);
 	}
 	template<typename T>
-	inline void removeFromVectorByIndexUnordered(std::vector<T>& vector, uint index)
+	inline void removeFromVectorByIndexUnordered(std::vector<T>& vector, int32_t index)
 	{
 		std::swap(vector[index], vector.back());
 		vector.pop_back();
@@ -121,22 +110,20 @@ namespace util
 		(*iter) = std::move(vector.back());
 		vector.pop_back();
 	}
-	template<typename T, int size>
+	template<typename T, int32_t size>
 	inline void removeFromArrayByValueUnordered(std::array<T, size>& array, const T& value)
 	{
 		auto iter = std::ranges::find(array, value);
 		assert(iter != array.end());
 		auto last = std::ranges::find(array, T::null()) - 1;
-		if(last != iter)
-			*iter = *last;
+		*iter = *last;
 		*last = T::null();
 	}
-	template<typename T, int size>
-	inline void removeFromArrayByIndexUnordered(std::array<T, size>& array, const uint& index)
+	template<typename T, int32_t size>
+	inline void removeFromArrayByIndexUnordered(std::array<T, size>& array, const int32_t& index)
 	{
 		auto lastIndex = (std::ranges::find(array, T::null()) - 1) - array.begin();
-		if(lastIndex != index)
-			array[index] = array[lastIndex];
+		array[index] = array[lastIndex];
 		array[lastIndex] = T::null();
 	}
 	template<typename T>
@@ -151,7 +138,7 @@ namespace util
 		if(std::ranges::find(vector, value) == vector.end())
 			vector.push_back(value);
 	}
-	inline Facing4 getFacingForAdjacentOffset(uint8_t adjacentOffset)
+	inline Facing4 getFacingForAdjacentOffset(int8_t adjacentOffset)
 	{
 		switch(adjacentOffset)
 		{
@@ -196,13 +183,39 @@ namespace util
 	}
 	inline Facing4 rotateFacingByDifference(const Facing4& facing, const Facing4& previousFacing, const Facing4& newFacing)
 	{
-		int difference = (int)newFacing - (int)previousFacing;
+		int32_t difference = (int32_t)newFacing - (int32_t)previousFacing;
 		if(difference < 0)
 			difference += 4;
-		int output = (int)facing + difference;
+		int32_t output = (int32_t)facing + difference;
 		if(output > 3)
 			output -= 4;
 		assert(output >= 0 && output < 4);
 		return (Facing4)output;
+	}
+	// Can't use Config here, config.h imports util.h. Could fix by creating util.hpp.
+	constexpr static int bytesPerCacheLine = 64;
+	template<typename T>
+	void prefetchL3ReadMode(const std::vector<T>& vector)
+	{
+		constexpr auto stepSize = bytesPerCacheLine / sizeof(T);
+		auto address = &*vector.begin();
+		auto end = &*vector.end();
+		while(address < end)
+		{
+			__builtin_prefetch(address, 0, 2);
+			address += stepSize;
+		}
+	}
+	template<typename T>
+	void prefetchL1ReadModeSegment(const std::vector<T>& vector, int32_t start, int32_t size)
+	{
+		constexpr auto stepSize = bytesPerCacheLine / sizeof(T);
+		auto address = &vector[start];
+		auto end = address + (size * sizeof(T));
+		while(address < end)
+		{
+			__builtin_prefetch(address, 0, 3);
+			address += stepSize;
+		}
 	}
 }

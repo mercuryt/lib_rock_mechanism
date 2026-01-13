@@ -26,7 +26,7 @@ Step ScheduledEvent::remaningSteps(Simulation& simulation) const
 Step ScheduledEvent::elapsedSteps(Simulation& simulation) const { return simulation.m_step - m_startStep; }
 Percent ScheduledEvent::percentComplete(Simulation& simulation) const
 {
-	return Percent::create(fractionComplete(simulation) * 100u);
+	return Percent::create(fractionComplete(simulation) * 100);
 }
 float ScheduledEvent::fractionComplete(Simulation& simulation) const
 {
@@ -74,9 +74,9 @@ Step EventSchedule::getNextEventStep() const
 		return Step::null();
 	return m_data.begin()->first;
 }
-uint32_t EventSchedule::count()
+int32_t EventSchedule::count()
 {
-	uint32_t output = 0;
+	int32_t output = 0;
 	for(auto& pair : m_data)
 		for(auto& event : pair.second)
 			if(!event->m_cancel)

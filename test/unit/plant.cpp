@@ -56,7 +56,7 @@ TEST_CASE("plantFruits")
 {
 	static MaterialTypeId dirt = MaterialType::byName("dirt");
 	static PlantSpeciesId wheatGrass = PlantSpecies::byName("wheat grass");
-	uint16_t dayOfYear = PlantSpecies::getDayOfYearToStartHarvest(wheatGrass);
+	int16_t dayOfYear = PlantSpecies::getDayOfYearToStartHarvest(wheatGrass);
 	Simulation simulation("test", DateTime::toSteps(24, dayOfYear - 1, 1200));
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
 	area.m_hasRain.disable();
@@ -74,7 +74,7 @@ TEST_CASE("harvestSeasonEnds")
 {
 	static MaterialTypeId dirt = MaterialType::byName("dirt");
 	static PlantSpeciesId wheatGrass = PlantSpecies::byName("wheat grass");
-	uint16_t dayOfYear = PlantSpecies::getDayOfYearToStartHarvest(wheatGrass);
+	int16_t dayOfYear = PlantSpecies::getDayOfYearToStartHarvest(wheatGrass);
 	Step step = DateTime::toSteps(24, dayOfYear - 1, 1200) + PlantSpecies::getStepsDurationHarvest(wheatGrass);
 	Simulation simulation("test", step);
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);

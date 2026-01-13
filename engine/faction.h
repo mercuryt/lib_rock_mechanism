@@ -4,6 +4,7 @@
 #pragma once
 #include "numericTypes/types.h"
 #include "dataStructures/smallSet.h"
+#include "dataStructures/strongVector.h"
 #include <string>
 struct DeserializationMemo;
 struct Faction
@@ -20,7 +21,7 @@ struct Faction
 class SimulationHasFactions final
 {
 	// Factions are never destroyed so their id is their index.
-	std::vector<Faction> m_factions;
+	StrongVector<Faction, FactionId> m_factions;
 public:
 	Faction& getById(const FactionId& id);
 	const Faction& getById(const FactionId& id) const;
@@ -29,7 +30,9 @@ public:
 	[[nodiscard]] bool isAlly(const FactionId& a, const FactionId& b) const;
 	[[nodiscard]] bool isEnemy(const FactionId& a, const FactionId& b) const;
 	[[nodiscard]] bool containsFactionWithName(std::string name) const;
-	[[nodiscard]] std::vector<Faction>& getAll() { return m_factions; }
-	[[nodiscard]] const std::vector<Faction>& getAll() const { return m_factions; }
+	[[nodiscard]] auto& getAll() { return m_factions; }
+	[[nodiscard]] const auto& getAll() const { return m_factions; }
+	[[nodiscard]] const auto& getEnemies(const FactionId& id) const { return m_factions[id].enemies; }
+	[[nodiscard]] const auto& getAllies(const FactionId& id) const { return m_factions[id].allies; }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SimulationHasFactions, m_factions);
 };

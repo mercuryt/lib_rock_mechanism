@@ -193,7 +193,7 @@ bool Space::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(const Poi
 {
 	if(Shape::getIsRadiallySymetrical(shape))
 		return shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(point, shape, moveType, Facing4::North, occupied);
-	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((uint)facing + 1))
+	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int32_t)facing + 1))
 		if(shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(point, shape, moveType, facing, occupied))
 			return true;
 	return false;
@@ -202,7 +202,7 @@ bool Space::shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(const Point3D& point
 {
 	if(Shape::getIsRadiallySymetrical(shape))
 		return shape_shapeAndMoveTypeCanEnterEverWithFacing(point, shape, moveType, Facing4::North);
-	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((uint)facing + 1))
+	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int32_t)facing + 1))
 		if(shape_shapeAndMoveTypeCanEnterEverWithFacing(point, shape, moveType, facing))
 			return true;
 	return false;
@@ -210,7 +210,7 @@ bool Space::shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(const Point3D& point
 Facing4 Space::shape_canEnterEverWithAnyFacingReturnFacing(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType) const
 {
 	if(shape_moveTypeCanEnter(point, moveType))
-		for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((uint)facing + 1))
+		for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int32_t)facing + 1))
 			if(shape_canFitEver(point, shape, facing))
 				return facing;
 	return Facing4::Null;
@@ -218,7 +218,7 @@ Facing4 Space::shape_canEnterEverWithAnyFacingReturnFacing(const Point3D& point,
 Facing4 Space::shape_canEnterEverOrCurrentlyWithAnyFacingReturnFacing(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType, const CuboidSet& occupied) const
 {
 	if(shape_moveTypeCanEnter(point, moveType))
-		for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((uint)facing + 1))
+		for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int32_t)facing + 1))
 			if(shape_canFitEverOrCurrentlyDynamic(point, shape, facing, occupied))
 				return facing;
 	return Facing4::Null;
@@ -226,7 +226,7 @@ Facing4 Space::shape_canEnterEverOrCurrentlyWithAnyFacingReturnFacing(const Poin
 Facing4 Space::shape_canEnterEverOrCurrentlyWithAnyFacingReturnFacingStatic(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType, const CuboidSet& occupied) const
 {
 	if(shape_moveTypeCanEnter(point, moveType))
-		for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((uint)facing + 1))
+		for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int32_t)facing + 1))
 			if(shape_canFitEverOrCurrentlyStatic(point, shape, facing, occupied))
 				return facing;
 	return Facing4::Null;
@@ -412,14 +412,14 @@ bool Space::shape_canEnterCurrentlyWithAnyFacing(const Point3D& point, const Sha
 {
 	if(Shape::getIsRadiallySymetrical(shape))
 		return shape_canEnterCurrentlyWithFacing(point, shape, Facing4::North, occupied);
-	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((uint)facing + 1))
+	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int32_t)facing + 1))
 		if(shape_canEnterCurrentlyWithFacing(point, shape, facing, occupied))
 			return true;
 	return false;
 }
 Facing4 Space::shape_canEnterCurrentlyWithAnyFacingReturnFacing(const Point3D& point, const ShapeId& shape, const CuboidSet& occupied) const
 {
-	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((uint)facing + 1))
+	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int32_t)facing + 1))
 		if(shape_canEnterCurrentlyWithFacing(point, shape, facing, occupied))
 			return facing;
 	return Facing4::Null;
@@ -430,14 +430,14 @@ bool Space::shape_staticCanEnterCurrentlyWithFacing(const Point3D& point, const 
 }
 bool Space::shape_staticCanEnterCurrentlyWithAnyFacing(const Point3D& point, const ShapeId& shape, const CuboidSet& occupied) const
 {
-	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((uint)facing + 1))
+	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int32_t)facing + 1))
 		if(shape_staticCanEnterCurrentlyWithFacing(point, shape, facing, occupied))
 			return true;
 	return false;
 }
 std::pair<bool, Facing4> Space::shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(const Point3D& point, const ShapeId& shape, const CuboidSet& occupied) const
 {
-	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((uint)facing + 1))
+	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int32_t)facing + 1))
 		if(shape_staticCanEnterCurrentlyWithFacing(point, shape, facing, occupied))
 			return {true, facing};
 	return {false, Facing4::North};
@@ -450,7 +450,7 @@ bool Space::shape_staticShapeCanEnterWithAnyFacing(const Point3D& point, const S
 {
 	if(Shape::getIsRadiallySymetrical(shape))
 		return shape_staticShapeCanEnterWithFacing(point, shape, Facing4::North, occupied);
-	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((uint)facing + 1))
+	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int32_t)facing + 1))
 		if(shape_staticShapeCanEnterWithFacing(point, shape, facing, occupied))
 			return true;
 	return false;

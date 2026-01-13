@@ -3,7 +3,7 @@
 #include "../path/pathRequest.h"
 #include "../numericTypes/types.h"
 #include "../dataStructures/smallSet.h"
-#include "deserializationMemo.h"
+#include "../deserializationMemo.h"
 struct CraftJob;
 struct SkillType;
 class CraftObjectiveType final : public ObjectiveType
@@ -29,6 +29,7 @@ public:
 	void delay(Area& area, const ActorIndex& actor) override{ cancel(area, actor); }
 	void reset(Area& area, const ActorIndex& actor) override;
 	void recordFailedJob(CraftJob& craftJob) { assert(!m_failedJobs.contains(&craftJob)); m_failedJobs.insert(&craftJob); }
+	[[nodiscard]] ObjectiveTypeId getTypeId() const override;
 	[[nodiscard]] Json toJson() const override;
 	[[nodiscard]] SmallSet<CraftJob*>& getFailedJobs() { return m_failedJobs; }
 	[[nodiscard]] std::string name() const override;

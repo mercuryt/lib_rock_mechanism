@@ -3,8 +3,8 @@
 #include <algorithm>
 struct Mock
 {
-	uint32_t m_id;
-	Mock(uint32_t id) : m_id(id) { }
+	int m_id;
+	Mock(int id) : m_id(id) { }
 };
 inline bool contains(std::vector<Mock*>& v, Mock& m)
 {

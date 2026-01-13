@@ -19,7 +19,7 @@ class ConstructedShape
 	OffsetCuboidSet m_decks;
 	ShapeId m_shape;
 	ShapeId m_shapeIncludingDecks;
-	uint m_value = 0;
+	int32_t m_value = 0;
 	Force m_motiveForce = Force::create(0);
 	FullDisplacement m_fullDisplacement = FullDisplacement::create(0);
 	Mass m_mass = Mass::create(0);
@@ -42,7 +42,7 @@ public:
 	[[nodiscard]] const OffsetCuboidSet& getDecks() const { return m_decks; }
 	[[nodiscard]] FullDisplacement getFullDisplacement() const { return m_fullDisplacement; }
 	[[nodiscard]] Force getMotiveForce() const { return m_motiveForce; }
-	[[nodiscard]] uint getValue() const { return m_value; }
+	[[nodiscard]] int32_t getValue() const { return m_value; }
 	[[nodiscard]] Mass getMass() const { return m_mass; }
 	// TODO: this would be better as a view.
 	[[nodiscard]] SmallSet<MaterialTypeId> getMaterialTypesAt(const Point3D& location, const Facing4& facing, const Point3D& point) const;

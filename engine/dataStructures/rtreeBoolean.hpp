@@ -1,9 +1,10 @@
+#pragma once
 #include "rtreeBoolean.h"
 template<typename ShapeT>
 Cuboid RTreeBoolean::queryGetLeafWithCondition(const ShapeT& shape, auto&& condition) const
 {
-	SmallSet<Index> openList;
-	openList.insert(Index::create(0));
+	SmallSet<RTreeNodeIndex> openList;
+	openList.insert(RTreeNodeIndex::create(0));
 	while(!openList.empty())
 	{
 		auto index = openList.back();
@@ -11,16 +12,17 @@ Cuboid RTreeBoolean::queryGetLeafWithCondition(const ShapeT& shape, auto&& condi
 		const Node& node = m_nodes[index];
 		const auto& nodeCuboids = node.getCuboids();
 		BitSet interceptMask = BitSet64::create(nodeCuboids.indicesOfIntersectingCuboids(shape));
+		BitSet leafInterceptMask = interceptMask;
 		const auto leafCount = node.getLeafCount();
-		while(!interceptMask.empty())
+		leafInterceptMask.clearAllAfterInclusive(leafCount);
+		while(!leafInterceptMask.empty())
 		{
-			const auto arrayIndex = interceptMask.getNextAndClear();
-			if(arrayIndex >= leafCount)
-				break;
+			const auto arrayIndex = leafInterceptMask.getNextAndClear();
 			Cuboid cuboid = nodeCuboids[arrayIndex];
 			if(condition(cuboid))
 				return cuboid;
 		}
+		interceptMask.clearAllBefore(leafCount);
 		if(!interceptMask.empty())
 			addIntersectedChildrenToOpenList(node, interceptMask, openList);
 	}
@@ -33,28 +35,4 @@ Point3D RTreeBoolean::queryGetPointWithCondition(const ShapeT& shape, auto&& con
 	if(found.empty())
 		return Point3D::null();
 	return found.intersectionPoint(shape);
-}
-void RTreeBoolean::queryRemove(CuboidSet& set) const
-{
-	SmallSet<Index> openList;
-	openList.insert(Index::create(0));
-	while(!openList.empty())
-	{
-		auto index = openList.back();
-		openList.popBack();
-		const Node& node = m_nodes[index];
-		const auto& nodeCuboids = node.getCuboids();
-		BitSet interceptMask = BitSet64::create(nodeCuboids.indicesOfIntersectingCuboids(set));
-		const auto leafCount = node.getLeafCount();
-		while(!interceptMask.empty())
-		{
-			const auto arrayIndex = interceptMask.getNextAndClear();
-			if(arrayIndex >= leafCount)
-				break;
-			Cuboid cuboid = nodeCuboids[arrayIndex];
-			set.remove(cuboid);
-		}
-		if(!interceptMask.empty())
-			addIntersectedChildrenToOpenList(node, interceptMask, openList);
-	}
 }

@@ -1,6 +1,6 @@
 #include "stockpile.h"
 #include "../area/area.h"
-#include "../config.h"
+#include "../config/config.h"
 #include "../deserializationMemo.h"
 #include "../items/itemQuery.h"
 #include "../items/items.h"
@@ -115,4 +115,10 @@ bool StockPileProject::canAddWorker(const ActorIndex& actor) const
 std::vector<std::pair<ItemQuery, Quantity>> StockPileProject::getConsumed() const { return {}; }
 std::vector<std::pair<ItemQuery, Quantity>> StockPileProject::getUnconsumed() const { return {{ItemQuery::create(m_item), m_quantity}}; }
 std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> StockPileProject::getByproducts() const {return {}; }
+std::string StockPileProject::description() const
+{
+	Items& items = m_area.getItems();
+	ItemIndex item = m_item.getIndex(items.m_referenceData);
+	return "stockpile " + items.description(item);
+}
 std::vector<ActorReference> StockPileProject::getActors() const { return {}; }

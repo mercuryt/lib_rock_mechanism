@@ -23,7 +23,7 @@ FluidTypeId FluidType::create(FluidTypeParamaters& p)
 void FluidType::setFreezesInto(const FluidTypeId& fluid, const MaterialTypeId& material) { assert(fluid.exists()); assert(material.exists()); fluidTypeData.m_freezesInto[fluid] = material; }
 std::string FluidType::getName(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_name[id]; };
 std::string FluidType::maybeGetName(const FluidTypeId& id) { if(!id.exists()) return "none"; return fluidTypeData.m_name[id]; };
-uint32_t FluidType::getViscosity(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_viscosity[id]; };
+int32_t FluidType::getViscosity(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_viscosity[id]; };
 Density FluidType::getDensity(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_density[id]; };
 Step FluidType::getMistDuration(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_mistDuration[id]; };
 Distance FluidType::getMaxMistSpread(const FluidTypeId& id) { assert(id.exists()); return fluidTypeData.m_maxMistSpread[id]; };

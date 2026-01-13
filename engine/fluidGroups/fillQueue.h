@@ -1,8 +1,8 @@
 #pragma once
 
 #include "fluidQueue.h"
-#include "numericTypes/types.h"
-#include "numericTypes/index.h"
+#include "../numericTypes/types.h"
+#include "../numericTypes/index.h"
 
 class FluidGroup;
 
@@ -12,7 +12,7 @@ public:
 	CuboidSet m_futureFull;
 	CuboidSet m_futureNoLongerEmpty;
 	CuboidSet m_overfull;
-	[[nodiscard]] static uint32_t getPriority(const FutureFlowCuboid& futureFlowPoint);
+	[[nodiscard]] static int32_t getPriority(const FutureFlowCuboid& futureFlowPoint);
 	[[nodiscard]] static bool compare(const FutureFlowCuboid& a, const FutureFlowCuboid& b);
 	FillQueue(FluidAllocator& allocator) : FluidQueue<FillQueue>(allocator) { }
 	void initalizeForStep(Area& area, FluidGroup& fluidGroup);

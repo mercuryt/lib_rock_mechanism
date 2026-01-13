@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "config.h"
+#include "config/config.h"
 #include "numericTypes/types.h"
 #include "numericTypes/index.h"
 
-#include <list>
+#include <vector>
 #include <map>
 #include <memory>
 #include <cassert>
@@ -50,7 +50,7 @@ class EventSchedule
 	Area* m_area = nullptr;
 public:
 	EventSchedule(Simulation& s, Area* area) : m_simulation(s), m_area(area) { }
-	std::map<Step, std::list<std::unique_ptr<ScheduledEvent>>> m_data;
+	std::map<Step, std::vector<std::unique_ptr<ScheduledEvent>>> m_data;
 	void schedule(std::unique_ptr<ScheduledEvent> scheduledEvent);
 	void unschedule(ScheduledEvent& scheduledEvent);
 	void doStep(const Step& stepNumber);
@@ -60,5 +60,5 @@ public:
 	[[nodiscard]] Area* getArea() { return m_area; }
 	[[nodiscard]] Step simulationStep() const;
 	// For testing.
-	[[maybe_unused, nodiscard]]uint32_t count();
+	[[maybe_unused, nodiscard]]int32_t count();
 };

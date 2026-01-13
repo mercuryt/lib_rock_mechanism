@@ -9,12 +9,12 @@
 #include <array>
 #include <cassert>
 
-template<typename T, uint capacity>
+template<typename T, int32_t capacity>
 class LimitedSet
 {
 	using This = LimitedSet<T, capacity>;
 	std::array<T, capacity> m_data;
-	uint8_t m_size = 0;
+	int32_t m_size = 0;
 public:
 	class iterator;
 	class const_iterator;
@@ -57,7 +57,7 @@ public:
 	void eraseAll(This& other);
 	template<typename Iterator>
 	void maybeEraseAll(Iterator begin, const Iterator& end) { for(; begin != end; ++begin) maybeErase(*begin); }
-	void eraseIndex(const uint& index);
+	void eraseIndex(const int32_t& index);
 	void popBack();
 	void clear();
 	template<typename ...Args>
@@ -86,19 +86,19 @@ public:
 	void removeDuplicatesAndValue(const T& value);
 	[[nodiscard]] bool operator==(const This& other);
 	template<typename Predicate>
-	[[nodiscard]] uint countIf(Predicate&& predicate) const  { return std::ranges::count_if(m_data, predicate); }
-	[[nodiscard]] const T& operator[](const uint& index) const;
-	[[nodiscard]] T& operator[](const uint& index);
+	[[nodiscard]] int32_t countIf(Predicate&& predicate) const  { return std::ranges::count_if(m_data, predicate); }
+	[[nodiscard]] const T& operator[](const int32_t& index) const;
+	[[nodiscard]] T& operator[](const int32_t& index);
 	[[nodiscard]] bool contains(const T& value) const;
 	template<typename Predicate>
 	[[nodiscard]] bool containsAny(Predicate&& predicate) const { return std::ranges::find_if(m_data, predicate) != m_data.end(); }
-	[[nodiscard]] uint indexOf(const T& value) const;
+	[[nodiscard]] int32_t indexOf(const T& value) const;
 	[[nodiscard]] T& front();
 	[[nodiscard]] const T& front() const;
 	[[nodiscard]] T& back();
 	[[nodiscard]] const T& back() const;
 	[[nodiscard]] bool empty() const;
-	[[nodiscard]] uint size() const;
+	[[nodiscard]] int32_t size() const;
 	[[nodiscard]] This::iterator begin();
 	[[nodiscard]] This::iterator end();
 	[[nodiscard]] This::const_iterator begin() const;
@@ -108,7 +108,7 @@ public:
 	[[nodiscard]] This::iterator find(const T& value);
 	[[nodiscard]] This::const_iterator find(const T& value) const;
 	[[nodiscard]] bool isUnique() const;
-	[[nodiscard]] uint findLastIndex(const T& value) const;
+	[[nodiscard]] int32_t findLastIndex(const T& value) const;
 	template<typename Predicate>
 	[[nodiscard]] This::iterator findIf(Predicate&& predicate) { return std::ranges::find_if(m_data, predicate); }
 	template<typename Predicate>
@@ -120,21 +120,21 @@ public:
 	protected:
 		std::array<T, capacity>::iterator m_iter;
 	public:
-		iterator(This& s, uint i) : m_iter(s.m_data.begin() + i) { }
+		iterator(This& s, int32_t i) : m_iter(s.m_data.begin() + i) { }
 		iterator(std::array<T, capacity>::iterator i) : m_iter(i) { }
 		iterator& operator++() { ++m_iter; return *this; }
 		iterator& operator--() { --m_iter; return *this; }
-		[[nodiscard]] iterator operator++(int) { auto copy = *this; ++m_iter; return copy; }
-		[[nodiscard]] iterator operator--(int) { auto copy = *this; --m_iter; return copy; }
+		[[nodiscard]] iterator operator++(int32_t) { auto copy = *this; ++m_iter; return copy; }
+		[[nodiscard]] iterator operator--(int32_t) { auto copy = *this; --m_iter; return copy; }
 		[[nodiscard]] T& operator*() { return *m_iter; }
 		[[nodiscard]] const T& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] T* operator->() { return &*m_iter; }
-		[[nodiscard]] iterator operator-(const uint& index) const { return m_iter - index; }
-		[[nodiscard]] iterator operator+(const uint& index) const { return m_iter + index; }
-		[[nodiscard]] iterator& operator+=(const uint& index) { m_iter += index; return *this; }
-		[[nodiscard]] iterator& operator-=(const uint& index) { m_iter -= index; return *this; }
+		[[nodiscard]] iterator operator-(const int32_t& index) const { return m_iter - index; }
+		[[nodiscard]] iterator operator+(const int32_t& index) const { return m_iter + index; }
+		[[nodiscard]] iterator& operator+=(const int32_t& index) { m_iter += index; return *this; }
+		[[nodiscard]] iterator& operator-=(const int32_t& index) { m_iter -= index; return *this; }
 		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) const { return m_iter <=> other.m_iter; }
 		friend class const_iterator;
 	};
@@ -143,24 +143,24 @@ public:
 	protected:
 		std::array<T, capacity>::const_iterator m_iter;
 	public:
-		const_iterator(const This& s, uint i) : m_iter(s.m_data.begin() + i) { }
+		const_iterator(const This& s, int32_t i) : m_iter(s.m_data.begin() + i) { }
 		const_iterator(std::array<T, capacity>::const_iterator i) : m_iter(i) { }
 		const_iterator(const const_iterator& i) : m_iter(i.m_iter) { }
 		const_iterator(const iterator& i) : m_iter(i.m_iter) { }
 		const_iterator& operator++() { ++m_iter; return *this; }
 		const_iterator& operator--() { --m_iter; return *this; }
-		const_iterator operator++(int) { auto copy = *this; ++m_iter; return copy; }
-		const_iterator operator--(int) { auto copy = *this; --m_iter; return copy; }
+		const_iterator operator++(int32_t) { auto copy = *this; ++m_iter; return copy; }
+		const_iterator operator--(int32_t) { auto copy = *this; --m_iter; return copy; }
 		[[nodiscard]] const T& operator*() const { return *m_iter; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const T* operator->() const { return &*m_iter; }
-		[[nodiscard]] const_iterator operator-(const uint& index) { return m_iter - index; }
-		[[nodiscard]] const_iterator operator+(const uint& index) { return m_iter + index; }
-		[[nodiscard]] const_iterator& operator+=(const uint& index) { m_iter += index; return *this; }
-		[[nodiscard]] const_iterator& operator-=(const uint& index) { m_iter -= index; return *this; }
+		[[nodiscard]] const_iterator operator-(const int32_t& index) { return m_iter - index; }
+		[[nodiscard]] const_iterator operator+(const int32_t& index) { return m_iter + index; }
+		[[nodiscard]] const_iterator& operator+=(const int32_t& index) { m_iter += index; return *this; }
+		[[nodiscard]] const_iterator& operator-=(const int32_t& index) { m_iter -= index; return *this; }
 		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
 	};
 	[[nodiscard]] std::string toString() const;
@@ -168,7 +168,7 @@ public:
 	static LimitedSet<T, capacity> create(const Source& source) { LimitedSet<T, capacity> output; for(const T& value : source) output.insert(value); return output; }
 };
 // Define custom serialization / deserialization instead of using intrusive because this type is used in raws and specifiying field name would be annoying.
-template<typename T, uint capacity>
+template<typename T, int32_t capacity>
 inline void to_json(Json& data, const LimitedSet<T, capacity>& set) { data = set.toJson(); }
-template<typename T, uint capacity>
+template<typename T, int32_t capacity>
 inline void from_json(const Json& data, LimitedSet<T, capacity>& set) { set.fromJson(data); }

@@ -5,32 +5,32 @@
 #include "cuboidSet.h"
 
 
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::CuboidArray() : m_high(Distance::null().get()), m_low(Distance::null().get()) { }
-template<uint16_t capacity>
-void CuboidArray<capacity>::insert(const uint16_t& index, const Cuboid& cuboid)
+template<int capacity>
+void CuboidArray<capacity>::insert(const int& index, const Cuboid& cuboid)
 {
 	m_high.col(index) = cuboid.m_high.data;
 	m_low.col(index) = cuboid.m_low.data;
 }
-template<uint16_t capacity>
-void CuboidArray<capacity>::erase(const uint16_t& index)
+template<int capacity>
+void CuboidArray<capacity>::erase(const int& index)
 {
 	m_high.col(index) = Distance::null().get();
 	m_low.col(index) = Distance::null().get();
 }
-template<uint16_t capacity>
+template<int capacity>
 void CuboidArray<capacity>::clear()
 {
 	m_high = Distance::null().get();
 	m_low = Distance::null().get();
 }
-template<uint16_t capacity>
+template<int capacity>
 bool CuboidArray<capacity>::operator==(const CuboidArray& other) const
 {
 	return (m_high == other.m_high).all() && (m_low == other.m_low).all();
 }
-template<uint16_t capacity>
+template<int capacity>
 bool CuboidArray<capacity>::contains(const Cuboid& cuboid) const
 {
 	for(const Cuboid& otherCuboid : *this)
@@ -38,11 +38,11 @@ bool CuboidArray<capacity>::contains(const Cuboid& cuboid) const
 			return true;
 	return false;
 }
-template<uint16_t capacity>
-uint16_t CuboidArray<capacity>::getCapacity() const { return capacity; }
-template<uint16_t capacity>
-const Cuboid CuboidArray<capacity>::operator[](const uint16_t& index) const { return {Coordinates(m_high.col(index)), Coordinates(m_low.col(index)) }; }
-template<uint16_t capacity>
+template<int capacity>
+int CuboidArray<capacity>::getCapacity() const { return capacity; }
+template<int capacity>
+const Cuboid CuboidArray<capacity>::operator[](const int& index) const { return {Coordinates(m_high.col(index)), Coordinates(m_low.col(index)) }; }
+template<int capacity>
 Cuboid CuboidArray<capacity>::boundry() const
 {
 	// Null cuboids need to be filtered from the max side of the boundry because we use a large number for null.
@@ -55,12 +55,12 @@ Cuboid CuboidArray<capacity>::boundry() const
 		Point3D(m_low.rowwise().minCoeff())
 	};
 }
-template<uint16_t capacity>
+template<int capacity>
 bool CuboidArray<capacity>::intersects(const Cuboid& cuboid) const
 {
 	return indicesOfIntersectingCuboids(cuboid).any();
 }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboids(const Point3D& point) const
 {
 	return (
@@ -68,7 +68,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 		(m_low <= point.data.replicate(1, capacity)).colwise().all()
 	);
 }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboids(const Cuboid& cuboid) const
 {
 	return (
@@ -76,7 +76,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 		(m_low <= cuboid.m_high.data.replicate(1, capacity)).colwise().all()
 	);
 }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboids(const CuboidSet& cuboids) const
 {
 	BoolArray output;
@@ -85,7 +85,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 		output += indicesOfIntersectingCuboids(cuboid);
 	return output;
 }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfContainedCuboids(const Cuboid& cuboid) const
 {
 	return (
@@ -93,7 +93,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfContainedCuboid
 		(m_low >= cuboid.m_low.data.replicate(1, capacity)).colwise().all()
 	);
 }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfContainedCuboids(const CuboidSet& cuboids) const
 {
 	BoolArray output;
@@ -102,7 +102,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfContainedCuboid
 		output += indicesOfContainedCuboids(cuboid);
 	return output;
 }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfCuboidsContaining(const Cuboid& cuboid) const
 {
 	return (
@@ -110,7 +110,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfCuboidsContaini
 		(m_low <= cuboid.m_low.data.replicate(1, capacity)).colwise().all()
 	);
 }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfCuboidsContaining(const CuboidSet& cuboids) const
 {
 	BoolArray output;
@@ -119,27 +119,27 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfCuboidsContaini
 		output += indicesOfCuboidsContaining(cuboid);
 	return output;
 }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboids(const Sphere& sphere) const
 {
-	int radius = sphere.radius.get();
-	const Eigen::Array<int, 3, 1>& center = sphere.center.data.template cast<int>();
+	int32_t radius = sphere.radius.get();
+	const Eigen::Array<int32_t, 3, 1>& center = sphere.center.data.template cast<int32_t>();
 	return !(
-		((m_high.template cast<int>() + radius) < center.replicate(1, capacity)).colwise().any() ||
-		((m_low.template cast<int>() - radius) > center.replicate(1, capacity)).colwise().any()
+		((m_high.template cast<int32_t>() + radius) < center.replicate(1, capacity)).colwise().any() ||
+		((m_low.template cast<int32_t>() - radius) > center.replicate(1, capacity)).colwise().any()
 	);
 }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfContainedCuboids(const Sphere& sphere) const
 {
-	int radius = sphere.radius.get();
-	const Eigen::Array<int, 3, 1>& center = sphere.center.data.cast<int>();
+	int32_t radius = sphere.radius.get();
+	const Eigen::Array<int32_t, 3, 1>& center = sphere.center.data.cast<int32_t>();
 	return !(
-		((m_high.template cast<int>() - radius) >= center.replicate(1, capacity)).colwise().any() &&
-		((m_low.template cast<int>() + radius) <= center.replicate(1, capacity)).colwise().any()
+		((m_high.template cast<int32_t>() - radius) >= center.replicate(1, capacity)).colwise().any() &&
+		((m_low.template cast<int32_t>() + radius) <= center.replicate(1, capacity)).colwise().any()
 	);
 }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboids(const ParamaterizedLine& line) const
 {
 	const PointArray replicatedStart = line.begin.data.replicate(1, capacity);
@@ -232,7 +232,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 	}
 	return result;
 }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboidsWhereThereIsADifferenceInEntranceAndExitZ(const ParamaterizedLine& line) const
 {
 	assert(line.sloap.z() != 0);
@@ -353,13 +353,13 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 	}
 	return highResults.colwise().any() || lowResults.colwise().any();
 }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboidsLowZOnly(const Point3D& point) const { return indicesOfIntersectingCuboids(point); }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboidsLowZOnly(const Cuboid& cuboid) const { return indicesOfIntersectingCuboids(cuboid); }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboidsLowZOnly(const Sphere& sphere) const { return indicesOfIntersectingCuboids(sphere); }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboidsLowZOnly(const ParamaterizedLine& line) const
 {
 	// Cannot intersect z face with no z slope.
@@ -388,7 +388,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 		(coordinatesAtLowZ >= replicatedLowBoundry).colwise().all();
 	return results.colwise().any();
 }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCuboidsLowZOnly(const CuboidSet& cuboids) const
 {
 	BoolArray output;
@@ -397,18 +397,18 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 		output += indicesOfIntersectingCuboidsLowZOnly(cuboid);
 	return output;
 }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfMergeableCuboids(const Cuboid& cuboid) const
 {
 	const Bool3DArray sharedAxesHigh = m_high == cuboid.m_high.data.replicate(1, capacity);
 	const Bool3DArray sharedAxesLow = m_low == cuboid.m_low.data.replicate(1, capacity);
 	const Bool3DArray highAndLowAreShared = sharedAxesHigh && sharedAxesLow;
-	const Eigen::Array<uint8_t, 3, capacity> highAndLowAreSharedInteger = highAndLowAreShared.template cast<uint8_t>();
-	const Eigen::Array<uint8_t, 1, capacity> countOfSharedAxes = highAndLowAreSharedInteger.colwise().sum();
+	const Eigen::Array<int8_t, 3, capacity> highAndLowAreSharedInteger = highAndLowAreShared.template cast<int8_t>();
+	const Eigen::Array<int8_t, 1, capacity> countOfSharedAxes = highAndLowAreSharedInteger.colwise().sum();
 	const BoolArray twoAxesAreShared = countOfSharedAxes == 2;
 	return twoAxesAreShared && indicesOfTouchingCuboids(cuboid);
 }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfTouchingCuboids(const Cuboid& cuboid) const
 {
 	// Use plus one on each side of the comparitor operator to avoid subtraction as these are unsigned coordinates.
@@ -416,7 +416,7 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfTouchingCuboids
 	const BoolArray low = (cuboid.m_low.data.replicate(1, capacity) > (m_high + 1)).colwise().any();
 	return !(high || low);
 }
-template<uint16_t capacity>
+template<int capacity>
 CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfTouchingCuboids(const CuboidSet& cuboids) const
 {
 	BoolArray output;
@@ -425,8 +425,8 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfTouchingCuboids
 		output += indicesOfTouchingCuboids(cuboid);
 	return output;
 }
-template<uint16_t capacity>
-uint16_t CuboidArray<capacity>::indexOfCuboid(const Cuboid& cuboid)
+template<int capacity>
+int CuboidArray<capacity>::indexOfCuboid(const Cuboid& cuboid) const
 {
 	const PointArray replicatedHigh = cuboid.m_high.data.replicate(1, capacity);
 	const BoolArray high = (m_high == replicatedHigh).colwise().all();
@@ -435,12 +435,12 @@ uint16_t CuboidArray<capacity>::indexOfCuboid(const Cuboid& cuboid)
 	const BoolArray match = high && low;
 	if(!match.any())
 		return capacity;
-	for(uint16_t i = 0; i != capacity; ++i)
+	for(int i = 0; i != capacity; ++i)
 		if(match.coeff(i))
 			return i;
 	std::unreachable();
 }
-template<uint16_t capacity>
+template<int capacity>
 bool CuboidArray<capacity>::anyOverlap() const
 {
 	const auto& beginCuboids = begin();
@@ -452,7 +452,7 @@ bool CuboidArray<capacity>::anyOverlap() const
 				return true;
 	return false;
 }
-template<uint16_t capacity>
+template<int capacity>
 std::string CuboidArray<capacity>::toString() const
 {
 	SmallSet<Cuboid> cuboids;
@@ -465,5 +465,5 @@ std::string CuboidArray<capacity>::toString() const
 		output += cuboid.toString() + " ";
 	return output;
 }
-template<uint16_t capacity>
-Cuboid CuboidArray<capacity>::at(uint16_t i) const { return (*this)[i]; }
+template<int capacity>
+Cuboid CuboidArray<capacity>::at(int i) const { return (*this)[i]; }

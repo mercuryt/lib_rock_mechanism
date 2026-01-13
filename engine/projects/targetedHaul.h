@@ -1,9 +1,9 @@
 // Send specific actors to haul a specific item to a specific place.
 #pragma once
-#include "project.h"
-#include "objective.h"
-#include "reference.h"
-#include "items/itemQuery.h"
+#include "../project.h"
+#include "../objective.h"
+#include "../reference.h"
+#include "../items/itemQuery.h"
 
 struct DeserializationMemo;
 
@@ -20,6 +20,8 @@ class TargetedHaulProject final : public Project
 		else
 			return {{ItemQuery::create(m_target.toItemReference()), haulQuantityForTargetedHaul}};
 	}
+	[[nodiscard]] SkillTypeId getSkill() const { return SkillTypeId::null(); }
+	[[nodiscard]] std::string description() const;
 	std::vector<ActorReference> getActors() const
 	{
 		if(m_target.isItem())

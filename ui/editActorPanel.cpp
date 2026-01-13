@@ -202,7 +202,7 @@ void EditActorView::draw(const ActorIndex& actor)
 		auto levelUI = tgui::SpinControl::create();
 		levelUI->setValue(skill.m_level.get());
 		levelUI->setMinimum(0);
-		levelUI->setMaximum(UINT32_MAX);
+		levelUI->setMaximum(INT32_MAX);
 		Skill* skillPointer = &skill;
 		levelUI->onValueChange([skillPointer](const float& value){ skillPointer->m_level = SkillLevel::create(value); });
 		skillsGrid->addWidget(levelUI, 2, skillsCount);

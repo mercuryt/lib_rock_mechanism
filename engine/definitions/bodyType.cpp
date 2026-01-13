@@ -30,6 +30,13 @@ void BodyType::create(std::string name, std::vector<BodyPartTypeId>& bodyPartTyp
 	g_bodyTypeData.m_name.add(name);
 	g_bodyTypeData.m_bodyPartTypes.add(bodyPartTypes);
 }
+std::vector<std::pair<AttackTypeId, MaterialTypeId>> BodyType::collectAttacks(const BodyTypeId& id)
+{
+	std::vector<std::pair<AttackTypeId, MaterialTypeId>> output;
+	for(const BodyPartTypeId& part : BodyType::getBodyPartTypes(id))
+		std::ranges::copy(BodyPartType::getAttackTypesAndMaterials(part), std::back_inserter(output));
+	return output;
+}
 BodyTypeId BodyType::byName(std::string name)
 {
 	auto found = g_bodyTypeData.m_name.find(name);

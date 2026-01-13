@@ -2,7 +2,7 @@
 #include "../objective.h"
 #include "../path/pathRequest.h"
 #include "../numericTypes/types.h"
-#include "../config.h"
+#include "../config/config.h"
 #include "callbackTypes.h"
 #include "deserializationMemo.h"
 #include "dataStructures/smallSet.h"
@@ -30,6 +30,7 @@ public:
 	void reset(Area& area, const ActorIndex& actor);
 	void onProjectCannotReserve(Area& area, const ActorIndex& actor);
 	void joinProject(DigProject& project, const ActorIndex& actor);
+	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("dig").getId(); }
 	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	[[nodiscard]] Json toJson() const;
 	template<typename ShapeT>

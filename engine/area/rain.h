@@ -1,7 +1,7 @@
 #pragma once
-#include "eventSchedule.hpp"
-#include "numericTypes/types.h"
-#include "config.h"
+#include "../eventSchedule.hpp"
+#include "../numericTypes/types.h"
+#include "../config/config.h"
 #include <array>
 class Area;
 class RainEvent;

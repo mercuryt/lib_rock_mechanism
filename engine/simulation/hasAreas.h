@@ -2,7 +2,7 @@
 
 #include "../area/area.h"
 #include "../numericTypes/types.h"
-#include "../config.h"
+#include "../config/config.h"
 
 #include <string>
 
@@ -19,7 +19,7 @@ public:
 	SimulationHasAreas(Simulation& simulation) : m_simulation(simulation) { }
 	SimulationHasAreas(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation);
 	Area& createArea(const Distance& x, const Distance& y, const Distance& z, bool createDrama = false);
-	Area& createArea(uint x, uint y, uint z, bool createDrama = false);
+	Area& createArea(int32_t x, int32_t y, int32_t z, bool createDrama = false);
 	Area& loadArea(const AreaId& id, std::string name, const Distance& x, const Distance& y, const Distance& z);
 	Area& loadAreaFromJson(const Json& data, DeserializationMemo& deserializationMemo);
 	Area& loadAreaFromPath(const AreaId& id, DeserializationMemo& deserializationMemo);

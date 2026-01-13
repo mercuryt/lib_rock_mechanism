@@ -25,6 +25,7 @@ public:
 	void delay(Area& area, const ActorIndex& actor);
 	void reset(Area& area, const ActorIndex& actor);
 	void makePathRequest(Area& area, const ActorIndex& actor);
+	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("drink").getId(); }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const override { return "drink"; }
 	[[nodiscard]] bool canDrinkAt(Area& area, const Point3D& point, const Facing4& facing, const ActorIndex& actor) const;

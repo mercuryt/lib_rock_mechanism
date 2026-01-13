@@ -9,6 +9,7 @@
 #include "../items/items.h"
 #include "../plants.h"
 #include "numericTypes/types.h"
+#include <fstream>
 
 SimulationHasAreas::SimulationHasAreas(const Json& data, DeserializationMemo&, Simulation& simulation) : m_simulation(simulation)
 {
@@ -42,7 +43,7 @@ Area& SimulationHasAreas::createArea(const Distance& x, const Distance& y, const
 		m_simulation.m_dramaEngine->createArcsForArea(output);
 	return output;
 }
-Area& SimulationHasAreas::createArea(uint x, uint y, uint z, bool createDrama)
+Area& SimulationHasAreas::createArea(int32_t x, int32_t y, int32_t z, bool createDrama)
 {
 	return createArea(Distance::create(x), Distance::create(y), Distance::create(z), createDrama);
 }
@@ -63,7 +64,7 @@ void SimulationHasAreas::destroyArea(Area& area)
 }
 Area& SimulationHasAreas::loadAreaFromJson(const Json& data, DeserializationMemo& deserializationMemo)
 {
-	const AreaId id = AreaId::create(data["id"].get<uint>());
+	const AreaId id = AreaId::create(data["id"].get<int32_t>());
 	return m_areas.insert(id, std::make_unique<Area>(data, deserializationMemo, m_simulation));
 }
 Area& SimulationHasAreas::loadAreaFromPath(const AreaId& id, DeserializationMemo& deserializationMemo)

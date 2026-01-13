@@ -2,7 +2,7 @@
 #include "../objective.h"
 #include "../simulation/simulation.h"
 #include "../area/area.h"
-#include "../config.h"
+#include "../config/config.h"
 #include "actors/actors.h"
 #include "numericTypes/types.h"
 

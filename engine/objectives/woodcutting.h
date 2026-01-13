@@ -27,8 +27,9 @@ public:
 	void reset(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor);
 	void onProjectCannotReserve(Area& area, const ActorIndex& actor);
-	[[nodiscard]] std::string name() const { return "woodcutting"; }
 	void joinProject(WoodCuttingProject& project, const ActorIndex& index);
+	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("woodcutting").getId(); }
+	[[nodiscard]] std::string name() const { return "woodcutting"; }
 	[[nodiscard]] WoodCuttingProject* getJoinableProjectAt(Area& area, const Point3D& point, const ActorIndex& index);
 	[[nodiscard]] Point3D joinableProjectExistsAt(Area &area, const Cuboid& cuboid, const ActorIndex& actor) const;
 	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }

@@ -1,6 +1,6 @@
 #include "sowSeeds.h"
 #include "../area/area.h"
-#include "../config.h"
+#include "../config/config.h"
 #include "../farmFields.h"
 #include "../simulation/simulation.h"
 #include "../path/terrainFacade.hpp"

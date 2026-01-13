@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../numericTypes/types.h"
-#include "../config.h"
+#include "../config/config.h"
 
 struct DeserializationMemo;
 class Actors;
@@ -19,12 +19,11 @@ class SimulationHasActors final
 	// TODO: Use boost unordered_map.
 	std::unordered_map<ActorId, ActorDataLocation, ActorId::Hash> m_actors;
 public:
-	SimulationHasActors() = default;
-	Json toJson() const;
 	[[nodiscard]] ActorId getNextId() { return ++m_nextId; }
 	void registerActor(const ActorId& id, Actors& store, const ActorIndex& index);
 	void removeActor(const ActorId& id);
-	ActorIndex getIndexForId(const ActorId& id) const;
-	Area& getAreaForId(const ActorId& id) const;
+	[[nodiscard]] const ActorIndex& getIndexForId(const ActorId& id) const;
+	[[nodiscard]] Area& getAreaForId(const ActorId& id) const;
+	[[nodiscard]] const ActorDataLocation& getDataLocation(const ActorId& id) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SimulationHasActors, m_nextId);
 };

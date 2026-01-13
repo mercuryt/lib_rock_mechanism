@@ -1,8 +1,8 @@
 #pragma once
 // To be used to find actors fitting criteria.
-#include "reference.h"
-#include "numericTypes/types.h"
-#include "config.h"
+#include "../reference.h"
+#include "../numericTypes/types.h"
+#include "../config/config.h"
 class Area;
 struct DeserializationMemo;
 struct ActorQuery

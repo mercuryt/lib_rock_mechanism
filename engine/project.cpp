@@ -1,7 +1,7 @@
 #include "project.h"
 #include "actorOrItemIndex.h"
 #include "area/area.h"
-#include "config.h"
+#include "config/config.h"
 #include "deserializationMemo.h"
 #include "haul.h"
 #include "reference.h"
@@ -304,6 +304,8 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 					assert(counts.delivered <= counts.reserved);
 					assert(!m_itemAlreadyAtSite.contains(itemRef));
 					m_itemAlreadyAtSite.insert(itemRef, quantity);
+					// TODO: project shoud be read only here, requires tracking reservationsComplete seperately for task.
+					m_project.m_unconsumed.insert(itemRef);
 				}
 				else
 					// TODO: project shoud be read only here, requires tracking reservationsComplete seperately for task.
@@ -698,6 +700,12 @@ Project::Project(const Json& data, DeserializationMemo& deserializationMemo, Are
 			ItemReference ref(pair[0], items.m_referenceData);
 			m_toConsume.insert(ref, pair[1].get<Quantity>());
 		}
+	if(data.contains("unconsumed"))
+		for(const Json& pair : data["unconsumed"])
+		{
+			ItemReference ref(pair[0], items.m_referenceData);
+			m_unconsumed.insert(ref);
+		}
 	if(data.contains("itemsToPickup"))
 		for(const Json& tuple : data["itemsToPickup"])
 		{
@@ -820,6 +828,12 @@ Json Project::toJson() const
 		for(const auto& [item, quantity] : m_toConsume)
 			data["toConsume"].push_back({item, quantity});
 	}
+	if(!m_unconsumed.empty())
+	{
+		data["unconsumed"] = Json::array();
+		for(const auto& item : m_unconsumed)
+			data["unconsumed"].push_back(item);
+	}
 	if(!m_itemsToPickup.empty())
 	{
 		data["itemsToPickup"] = Json::array();
@@ -871,7 +885,7 @@ bool Project::reservationsComplete() const
 	for(const auto& pair : m_requiredItems)
 		if(pair.second.required > pair.second.reserved)
 			return false;
-	if(m_requiredActors.size() > m_actorAlreadyAtSite.size() + m_actorsToPickup.size())
+	if((int32_t)m_requiredActors.size() > m_actorAlreadyAtSite.size() + m_actorsToPickup.size())
 		return false;
 	for(const auto& [fluidType, fluidData] : m_requiredFluids)
 		// Check if we have reserved enough carrying capacity and have found enough fluid.
@@ -885,7 +899,7 @@ bool Project::deliveriesComplete() const
 	for(auto& pair : m_requiredItems)
 		if(pair.second.required > pair.second.delivered)
 			return false;
-	if(m_requiredActors.size() > m_deliveredActors.size())
+	if((int32_t)m_requiredActors.size() > m_deliveredActors.size())
 		return false;
 	for(const auto& [fluidType, fluidData] : m_requiredFluids)
 		if(fluidData.counts.required > fluidData.counts.delivered)
@@ -1237,6 +1251,7 @@ void Project::reset()
 	m_tryToHaulThreadedTask.maybeCancel(m_area.m_simulation, &m_area);
 	m_tryToAddWorkersThreadedTask.maybeCancel(m_area.m_simulation, &m_area);
 	m_toConsume.clear();
+	m_unconsumed.clear();
 	m_haulRetries = Quantity::create(0);
 	m_requiredItems.clear();
 	m_requiredActors.clear();
@@ -1302,6 +1317,22 @@ void Project::setLocation(const Point3D& point)
 	m_area.getSpace().project_add(point, *this);
 	m_location = point;
 }
+// For SuccessAtWorkDramaArc.
+void Project::addBonusProduction(const Percent& bonus)
+{
+	m_finishEvent.bonusPercent(bonus, m_area.m_simulation.m_step);
+}
+// For SuccessAtWorkDramaArc.
+void Project::removeItemFromConsumed(const ItemReference& item)
+{
+	assert(m_toConsume.contains(item));
+	auto found = m_toConsume.find(item);
+	assert(found != m_toConsume.end());
+	if(found->second == 1)
+		m_toConsume.erase(found);
+	else
+		--found->second;
+}
 // For testing.
 bool Project::hasCandidate(const ActorIndex& actor) const
 {
@@ -1312,6 +1343,28 @@ bool Project::hasWorker(const ActorIndex& actor) const
 {
 	ActorReference ref = m_area.getActors().getReference(actor);
 	return m_workers.contains(ref);
+}
+bool Project::hasWorkers() const
+{
+	return !m_workers.empty();
+}
+bool Project::inProgress() const
+{
+	return m_finishEvent.exists();
+}
+ItemIndex Project::getRandomItemToConsume() const
+{
+	if(m_toConsume.empty())
+		return ItemIndex::null();
+	const ItemReference& ref = m_area.m_simulation.m_random.getInVector(m_toConsume.m_data).first;
+	return ref.getIndex(m_area.getItems().m_referenceData);
+}
+ItemIndex Project::getRandomUnconsumedItem() const
+{
+	if(m_unconsumed.empty())
+		return ItemIndex::null();
+	const ItemReference& ref = m_area.m_simulation.m_random.getInVector(m_unconsumed.m_data);
+	return ref.getIndex(m_area.getItems().m_referenceData);
 }
 SmallSet<ActorIndex> Project::getWorkersAndCandidates()
 {

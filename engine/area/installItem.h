@@ -1,11 +1,11 @@
 #pragma once
-#include "project.h"
-#include "objective.h"
-#include "reference.h"
-#include "path/pathRequest.h"
-#include "projects/installItem.h"
-#include "numericTypes/types.h"
-#include "numericTypes/index.h"
+#include "../project.h"
+#include "../objective.h"
+#include "../reference.h"
+#include "../path/pathRequest.h"
+#include "../projects/installItem.h"
+#include "../numericTypes/types.h"
+#include "../numericTypes/index.h"
 
 #include <cstdio>
 class HasInstallItemDesignationsForFaction final

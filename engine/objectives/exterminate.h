@@ -1,6 +1,6 @@
 #pragma once
 #include "../objective.h"
-#include "../config.h"
+#include "../config/config.h"
 #include "../area/area.h"
 #include "eventSchedule.hpp"
 struct DeserializationMemo;

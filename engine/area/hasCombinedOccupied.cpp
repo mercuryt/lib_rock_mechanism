@@ -14,8 +14,8 @@ void AreaHasCombinedOccupied::remove(const ActorIndex& actor, Area& area)
 	Actors& actors = area.getActors();
 	const FactionId& faction = actors.getFaction(actor);
 	CuboidSet occupied = actors.getOccupied(actor);
-	auto condition = [&](const ActorIndex& other) { actors.getFaction(other) == faction; };
-	const auto otherActorFromTheSameFactionIntersectingThisActor = space.actor_queryAnyWithCondition(occupied, condition);
+	auto condition = [&](const ActorIndex& other) { return actors.getFaction(other) == faction; };
+	const auto otherActorFromTheSameFactionIntersectingThisActor = space.actor_queryCuboidsWithCondition(occupied, condition);
 	occupied.maybeRemoveAll(otherActorFromTheSameFactionIntersectingThisActor);
 	m_data[faction].remove(occupied);
 }
@@ -26,7 +26,7 @@ bool AreaHasCombinedOccupied::queryAnyEnemyInLineOfSight(const ActorIndex& actor
 	const FactionId& faction = actors.getFaction(actor);
 	const Point3D& location = actors.getLocation(actor);
 	const Sphere visionRange = {actors.getLocation(actor), DistanceFractional::create(actors.vision_getRange(actor))};
-	for(const auto [otherFaction, rtree] : m_data)
+	for(const auto& [otherFaction, rtree] : m_data)
 		if(hasFactions.isEnemy(faction, otherFaction))
 			for(const Cuboid& cuboid : rtree.queryGetLeaves(visionRange))
 				// TODO: Batch query?

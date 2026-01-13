@@ -1,5 +1,5 @@
 #pragma once
-#include "../config.h"
+#include "../config/config.h"
 #include "../numericTypes/index.h"
 #include "../geometry/point3D.h"
 struct Faction;

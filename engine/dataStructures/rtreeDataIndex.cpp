@@ -7,8 +7,8 @@
 class Fire;
 class Project;
 
-template class RTreeDataIndex<std::unique_ptr<Reservable>, uint16_t, RTreeDataConfigs::noMergeOrOverlap>;
-template class RTreeDataIndex<SmallMapStable<MaterialTypeId, Fire>*, uint32_t, RTreeDataConfigs::noMergeOrOverlap>;
+template class RTreeDataIndex<std::unique_ptr<Reservable>, RTreeDataConfigs::noMergeOrOverlap>;
+template class RTreeDataIndex<SmallMapStable<MaterialTypeId, Fire>*, RTreeDataConfigs::noMergeOrOverlap>;
 
-template class RTreeData<RTreeDataIndex<std::unique_ptr<Reservable>, uint16_t, RTreeDataConfigs::noMergeOrOverlap>::DataIndex, RTreeDataConfigs::noMergeOrOverlap>;
-template class RTreeData<RTreeDataIndex<SmallMapStable<MaterialTypeId, Fire>*, uint32_t, RTreeDataConfigs::noMergeOrOverlap>::DataIndex, RTreeDataConfigs::noMergeOrOverlap>;
+template class RTreeData<RTreeDataIndex<std::unique_ptr<Reservable>, RTreeDataConfigs::noMergeOrOverlap>::DataIndex, RTreeDataConfigs::noMergeOrOverlap>;
+template class RTreeData<RTreeDataIndex<SmallMapStable<MaterialTypeId, Fire>*, RTreeDataConfigs::noMergeOrOverlap>::DataIndex, RTreeDataConfigs::noMergeOrOverlap>;

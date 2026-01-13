@@ -10,7 +10,7 @@
 #include "../../engine/simulation/hasActors.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/project.h"
-#include "../../engine/config.h"
+#include "../../engine/config/config.h"
 #include "../../engine/haul.h"
 #include "../../engine/definitions/animalSpecies.h"
 #include "../../engine/definitions/itemType.h"

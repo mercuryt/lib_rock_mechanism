@@ -1,7 +1,6 @@
 #pragma once
 #include "geometry/cuboidSet.h"
 #include "geometry/mapWithCuboidKeys.h"
-#include "strongInteger.h"
 #include "numericTypes/types.h"
 #include "actorOrItemIndex.h"
 #include "dataStructures/smallMap.h"

@@ -3,7 +3,7 @@
  */
 #pragma once
 
-#include "config.h"
+#include "config/config.h"
 #include "deserializationMemo.h"
 #include "faction.h"
 #include <cassert>

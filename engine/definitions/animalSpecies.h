@@ -12,7 +12,7 @@ struct AnimalSpeciesParamaters
 	std::array<AttributeLevel, 3> dextarity;
 	std::array<AttributeLevel, 3> agility;
 	std::array<Mass, 3> mass;
-	std::array<uint32_t, 3> height;
+	std::array<int32_t, 3> height;
 	std::array<Step, 2> deathAgeSteps;
 	Step stepsTillFullyGrown;
 	Step stepsTillDieWithoutFood;
@@ -30,7 +30,7 @@ struct AnimalSpeciesParamaters
 	bool eatsLeaves;
 	bool eatsFruit;
 	Distance visionRange;
-	uint32_t bodyScale;
+	int32_t bodyScale;
 	MaterialTypeId materialType;
 	MoveTypeId moveType;
 	FluidTypeId fluidType;
@@ -46,7 +46,7 @@ class AnimalSpecies
 	StrongVector<std::array<AttributeLevel, 3>, AnimalSpeciesId> m_dextarity;
 	StrongVector<std::array<AttributeLevel, 3>, AnimalSpeciesId> m_agility;
 	StrongVector<std::array<Mass, 3>, AnimalSpeciesId> m_mass;
-	StrongVector<std::array<uint32_t, 3>, AnimalSpeciesId> m_height;
+	StrongVector<std::array<int32_t, 3>, AnimalSpeciesId> m_height;
 	StrongVector<std::array<Step, 2>, AnimalSpeciesId> m_deathAgeSteps;
 	StrongVector<Step, AnimalSpeciesId> m_stepsTillFullyGrown;
 	StrongVector<Step, AnimalSpeciesId> m_stepsTillDieWithoutFood;
@@ -64,7 +64,7 @@ class AnimalSpecies
 	StrongBitSet<AnimalSpeciesId> m_eatsLeaves;
 	StrongBitSet<AnimalSpeciesId> m_eatsFruit;
 	StrongVector<Distance, AnimalSpeciesId> m_visionRange;
-	StrongVector<uint32_t, AnimalSpeciesId> m_bodyScale;
+	StrongVector<int32_t, AnimalSpeciesId> m_bodyScale;
 	StrongVector<MaterialTypeId, AnimalSpeciesId> m_solid;
 	StrongVector<MoveTypeId, AnimalSpeciesId> m_moveType;
 	StrongVector<FluidTypeId, AnimalSpeciesId> m_fluidType;
@@ -80,7 +80,7 @@ public:
 	[[nodiscard]] static std::array<AttributeLevel, 3> getDextarity(const AnimalSpeciesId& id);
 	[[nodiscard]] static std::array<AttributeLevel, 3> getAgility(const AnimalSpeciesId& id);
 	[[nodiscard]] static std::array<Mass, 3> getMass(const AnimalSpeciesId& id);
-	[[nodiscard]] static std::array<uint32_t, 3> getHeight(const AnimalSpeciesId& id);
+	[[nodiscard]] static std::array<int32_t, 3> getHeight(const AnimalSpeciesId& id);
 	[[nodiscard]] static std::array<Step, 2> getDeathAgeSteps(const AnimalSpeciesId& id);
 	[[nodiscard]] static Step getStepsTillFullyGrown(const AnimalSpeciesId& id);
 	[[nodiscard]] static Step getStepsTillDieWithoutFood(const AnimalSpeciesId& id);
@@ -98,7 +98,7 @@ public:
 	[[nodiscard]] static bool getEatsLeaves(const AnimalSpeciesId& id);
 	[[nodiscard]] static bool getEatsFruit(const AnimalSpeciesId& id);
 	[[nodiscard]] static Distance getVisionRange(const AnimalSpeciesId& id);
-	[[nodiscard]] static uint32_t getBodyScale(const AnimalSpeciesId& id);
+	[[nodiscard]] static int32_t getBodyScale(const AnimalSpeciesId& id);
 	[[nodiscard]] static MaterialTypeId getMaterialType(const AnimalSpeciesId& id);
 	[[nodiscard]] static MoveTypeId getMoveType(const AnimalSpeciesId& id);
 	[[nodiscard]] static FluidTypeId getFluidType(const AnimalSpeciesId& id);

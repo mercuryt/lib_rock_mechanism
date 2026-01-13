@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config.h"
+#include "config/config.h"
 #include "reference.h"
 #include "simulation/simulation.h"
 #include "eventSchedule.hpp"
@@ -36,8 +36,8 @@ public:
 	[[nodiscard]] Mass massFoodForBodyMass(Area& area) const;
 	[[nodiscard]] Mass getMassFoodRequested() const;
 	[[nodiscard]] Percent getPercentStarved() const;
-	[[nodiscard]] std::pair<Point3D, uint8_t> getDesireToEatSomethingAt(Area& area, const Cuboid& cuboid) const;
-	[[nodiscard]] uint8_t getMinimumAcceptableDesire(Area& area) const;
+	[[nodiscard]] std::pair<Point3D, int8_t> getDesireToEatSomethingAt(Area& area, const Cuboid& cuboid) const;
+	[[nodiscard]] int8_t getMinimumAcceptableDesire(Area& area) const;
 	[[nodiscard]] Point3D getOccupiedOrAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(Area& area);
 	[[nodiscard]] bool canEatActor(Area& area, const ActorIndex& actor) const;
 	[[nodiscard]] bool canEatPlant(Area& area, const PlantIndex& plant) const;

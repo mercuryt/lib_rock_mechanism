@@ -74,20 +74,20 @@ public:
 };
 class Space
 {
-	RTreeDataIndex<std::unique_ptr<Reservable>, uint16_t, RTreeDataConfigs::noMergeOrOverlap> m_reservables;
-	RTreeDataIndex<SmallMapStable<MaterialTypeId, Fire>*, uint32_t, RTreeDataConfigs::noMergeOrOverlap> m_fires;
+	RTreeDataIndex<std::unique_ptr<Reservable>, RTreeDataConfigs::noMergeOrOverlap> m_reservables;
+	RTreeDataIndex<SmallMapStable<MaterialTypeId, Fire>*, RTreeDataConfigs::noMergeOrOverlap> m_fires;
 	RTreeData<MaterialTypeId> m_solid;
 	PointFeatureRTree m_features;
 	FluidRTree m_fluid;
 	RTreeData<FluidTypeId> m_mist;
-	RTreeData<CollisionVolume, RTreeDataConfig{}, 0u> m_totalFluidVolume;
+	RTreeData<CollisionVolume, RTreeDataConfig{}, 0> m_totalFluidVolume;
 	RTreeData<DistanceSquared> m_mistInverseDistanceFromSourceSquared;
 	//TODO: store these 4 as overlaping RTree.
 	RTreeData<ActorIndex, RTreeDataConfigs::noMerge> m_actors;
 	RTreeData<ItemIndex, RTreeDataConfigs::noMerge> m_items;
 	RTreeData<PlantIndex> m_plants;
-	RTreeData<CollisionVolume, RTreeDataConfig{}, 0u> m_dynamicVolume;
-	RTreeData<CollisionVolume, RTreeDataConfig{}, 0u> m_staticVolume;
+	RTreeData<CollisionVolume, RTreeDataConfig{}, 0> m_dynamicVolume;
+	RTreeData<CollisionVolume, RTreeDataConfig{}, 0> m_staticVolume;
 	RTreeData<TemperatureDelta> m_temperatureDelta;
 	RTreeBoolean m_visible;
 	RTreeBoolean m_constructed;
@@ -101,8 +101,8 @@ class Space
 public:
 	const Coordinates m_pointToIndexConversionMultipliers;
 	const Coordinates m_dimensions;
-	uint m_sizeXInChunks;
-	uint m_sizeXTimesYInChunks;
+	int32_t m_sizeXInChunks;
+	int32_t m_sizeXTimesYInChunks;
 	//TODO: replace these with functions accessing m_dimensions.
 	const Distance m_sizeX;
 	const Distance m_sizeY;
@@ -116,7 +116,7 @@ public:
 	void unsetDynamic(const auto& shape) { m_dynamic.maybeRemove(shape); }
 	void doSupportStep() { m_support.doStep(m_area); }
 	void prepareRtrees();
-	[[nodiscard]] uint size() const { return m_dimensions.prod(); }
+	[[nodiscard]] int32_t size() const { return m_dimensions.prod(); }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Cuboid boundry() const;
 	[[nodiscard]] OffsetCuboid offsetBoundry() const;
@@ -259,7 +259,7 @@ public:
 		assert(solid_isAny(shape));
 		return MaterialType::getDensity(m_solid.queryGetOne(shape)) * FullDisplacement::create(Config::maxPointVolume.get());
 	}
-	[[nodiscard]] std::pair<MaterialTypeId, uint32_t> solid_getHardest(const CuboidSet& cuboids);
+	[[nodiscard]] std::pair<MaterialTypeId, int32_t> solid_getHardest(const CuboidSet& cuboids);
 	// -PointFeature.
 	void pointFeature_add(const Cuboid& cuboid, const PointFeature& feature);
 	// TODO: remove pointFeature_add, use cuboid instead.
@@ -409,6 +409,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	[[nodiscard]] bool actor_empty(const auto& shape) const { return !m_actors.queryAny(shape); }
 	[[nodiscard]] const SmallSet<ActorIndex> actor_getAll(const auto& shape) const { return m_actors.queryGetAll(shape); }
 	[[nodiscard]] bool actor_queryAnyWithCondition(const auto& shape, const auto& condition) { return m_actors.queryAnyWithCondition(shape, condition); }
+	[[nodiscard]] CuboidSet actor_queryCuboidsWithCondition(const auto& shape, const auto& condition) { return m_actors.queryGetAllCuboidsWithCondition(shape, condition); }
 	// -Items
 	void item_record(const MapWithCuboidKeys<CollisionVolume>& cuboidsAndVolumes, const ItemIndex& item);
 	void item_recordStatic(const MapWithCuboidKeys<CollisionVolume>& cuboidsAndVolumes, const ItemIndex& item);
@@ -543,6 +544,13 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	[[nodiscard]] Project* project_get(const Point3D& point, const FactionId& faction) const;
 	[[nodiscard]] Project* project_getIfBegun(const Point3D& point, const FactionId& faction) const;
 	[[nodiscard]] Project* project_queryGetOne(const FactionId& faction, const auto& shape, auto&& condition) const { return m_projects[faction].queryGetOneWithCondition(shape, condition).get(); }
+	template<typename AreaT>
+	[[nodiscard]] Project* project_randomForFactionWithCondition(const FactionId& faction, auto&& condition, AreaT& area) const
+	{
+		auto wrappedCondition = [&](const RTreeDataWrapper<Project*, nullptr>& wrappedProject) { return condition(*wrappedProject.get()); };
+		return area.m_simulation.m_random.getInVector(m_projects[faction].getAllWithCondition(wrappedCondition).m_data).get();
+	}
+	[[nodiscard]] const auto& project_getAll() const { return m_projects; }
 	// -Temperature
 	void temperature_freeze(const Point3D& point, const FluidTypeId& fluidType);
 	void temperature_melt(const Point3D& point);

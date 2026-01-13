@@ -38,7 +38,7 @@ void AreaHasDecks::shift(Area& area, const DeckId& id, const Offset3D& offset, c
 	clearPoints(area, id);
 	if(oldFacing != newFacing)
 	{
-		int facingChange = (int)oldFacing - (int)newFacing;
+		int32_t facingChange = (int32_t)oldFacing - (int32_t)newFacing;
 		if(facingChange < 0)
 			facingChange += 4;
 		m_data[id].cuboidSet.rotateAroundPoint(origin, (Facing4)facingChange);
@@ -134,7 +134,7 @@ void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const Point3D& pr
 			auto& path = actors.move_getPath(actor);
 			if(!path.empty())
 			{
-				uint i = 0;
+				int32_t i = 0;
 				for(const Point3D& point : path)
 				{
 					const Offset3D offset = point.translate(previousPivot, newPivot, previousFacing, newFacing);
@@ -228,7 +228,7 @@ SetLocationAndFacingResult DeckRotationData::tryToReinstanceAtRotatedPosition(Ar
 			auto& path = actors.move_getPath(actor);
 			if(!path.empty())
 			{
-				uint i = 0;
+				int32_t i = 0;
 				for(const Point3D& point : path)
 				{
 					const Offset3D pathOffset = point.translate(previousPivot, newPivot, previousFacing, newFacing);

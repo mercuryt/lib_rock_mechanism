@@ -24,7 +24,7 @@ void FillQueue::initalizeForStep(Area& area, FluidGroup& fluidGroup)
 				m_queue.emplace_back(flatCuboid, volume, CollisionVolume::create(0));
 		};
 		capacity.queryForEachWithCuboids(space.boundry(), actionEmplace);
-		[[maybe_unused]] uint totalQueueVolume = 0;
+		[[maybe_unused]] int32_t totalQueueVolume = 0;
 		for(const FutureFlowCuboid& ffc : m_queue)
 			totalQueueVolume += ffc.cuboid.volume();
 		assert(totalQueueVolume == m_set.volume());
@@ -138,10 +138,10 @@ void FillQueue::validate() const
 	assert((m_groupEnd >= m_queue.begin() && m_groupEnd <= m_queue.end()));
 	assert((m_groupEnd == m_queue.end() || m_groupEnd == m_groupStart || m_groupStart->cuboid.m_high.z() != m_groupEnd->cuboid.m_high.z() || m_groupStart->capacity > m_groupEnd->capacity));
 }
-uint32_t FillQueue::getPriority(const FutureFlowCuboid& futureFlowPoint)
+int32_t FillQueue::getPriority(const FutureFlowCuboid& futureFlowPoint)
 {
 	if(futureFlowPoint.capacity == 0)
-		return UINT32_MAX;
+		return INT32_MAX;
 	//TODO: What is happening here?
 	return (( futureFlowPoint.cuboid.m_high.z().get() + 1) * Config::maxPointVolume.get() * 2) - futureFlowPoint.capacity.get();
 }

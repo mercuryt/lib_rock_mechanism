@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config.h"
+#include "config/config.h"
 #include "eventSchedule.hpp"
 #include "reference.h"
 #include "numericTypes/types.h"

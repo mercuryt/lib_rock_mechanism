@@ -1,6 +1,6 @@
 #include "stockpile.h"
 #include "area.h"
-#include "../config.h"
+#include "../config/config.h"
 #include "../deserializationMemo.h"
 #include "../items/itemQuery.h"
 #include "../items/items.h"

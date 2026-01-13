@@ -30,6 +30,7 @@ public:
 	void reset(Area& area, const ActorIndex& actor);
 	void joinProject(ConstructProject& project, const ActorIndex& actor);
 	void onProjectCannotReserve(Area& area, const ActorIndex& actor);
+	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("construct").getId(); }
 	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "construct"; }

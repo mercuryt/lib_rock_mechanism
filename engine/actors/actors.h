@@ -16,7 +16,9 @@
 #include "../reference.h"
 #include "../uniform.h"
 #include "../vision/visionRequests.h"
-#include "../psycology/psycologyData.h"
+#include "../psycology/psycology.h"
+#include "../onSight.h"
+#include "../attackTable.h"
 #include "uniform.h"
 #include "skill.h"
 #include "soldier.h"
@@ -90,7 +92,7 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex, t
 	StrongVector<AttributeLevel, ActorIndex> m_dextarity;
 	StrongVector<AttributeLevelBonusOrPenalty, ActorIndex> m_dextarityBonusOrPenalty;
 	StrongVector<float, ActorIndex> m_dextarityModifier;
-	StrongVector<uint32_t, ActorIndex> m_adultHeight;
+	StrongVector<int32_t, ActorIndex> m_adultHeight;
 	StrongVector<Mass, ActorIndex> m_mass;
 	StrongVector<int32_t, ActorIndex> m_massBonusOrPenalty;
 	StrongVector<float, ActorIndex> m_massModifier;
@@ -116,16 +118,20 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex, t
 	StrongVector<SmallSet<ActorReference>, ActorIndex> m_canSee;
 	StrongVector<SmallSet<ActorReference>, ActorIndex> m_canBeSeenBy;
 	StrongVector<Distance, ActorIndex> m_visionRange;
+	StrongVector<HasOnSight, ActorIndex> m_onSight;
 	// Combat.
 	HasScheduledEvents<AttackCoolDownEvent, ActorIndex> m_coolDownEvent;
-	StrongVector<std::vector<std::pair<CombatScore, Attack>>, ActorIndex> m_meleeAttackTable;
+	StrongVector<AttackTable, ActorIndex> m_meleeAttackTable;
+	StrongVector<AttackTable, ActorIndex> m_meleeAttackTableNonLethal;
 	StrongVector<SmallSet<ActorIndex>, ActorIndex> m_targetedBy;
 	StrongVector<ActorIndex, ActorIndex> m_target;
 	StrongVector<Step, ActorIndex> m_onMissCoolDownMelee;
 	StrongVector<DistanceFractional, ActorIndex> m_maxMeleeRange;
+	StrongVector<DistanceFractional, ActorIndex> m_maxMeleeRangeNonLethal;
 	StrongVector<DistanceFractional, ActorIndex> m_maxRange;
 	StrongVector<float, ActorIndex> m_coolDownDurationModifier;
 	StrongVector<CombatScore, ActorIndex> m_combatScore;
+	StrongVector<CombatScore, ActorIndex> m_combatScoreNonLethal;
 	StrongVector<SoldierData, ActorIndex> m_soldier;
 	// Move.
 	HasScheduledEvents<MoveEvent, ActorIndex> m_moveEvent;
@@ -135,8 +141,9 @@ class Actors final : public Portables<Actors, ActorIndex, ActorReferenceIndex, t
 	StrongVector<Point3D, ActorIndex> m_destination;
 	StrongVector<Speed, ActorIndex> m_speedIndividual;
 	StrongVector<Speed, ActorIndex> m_speedActual;
-	StrongVector<uint8_t, ActorIndex> m_moveRetries;
+	StrongVector<int8_t, ActorIndex> m_moveRetries;
 	StrongVector<Psycology, ActorIndex> m_psycology;
+	StrongVector<std::pair<std::string, Step>, ActorIndex> m_dialog;
 	// Is piloting current m_isOnDeckOf
 	StrongBitSet<ActorIndex> m_isPilot;
 	void moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex);
@@ -155,6 +162,7 @@ public:
 		action(m_project);
 		action(m_birthStep);
 		action(m_deathStep);
+
 		action(m_causeOfDeath);
 		action(m_strength);
 		action(m_strengthBonusOrPenalty);
@@ -187,15 +195,19 @@ public:
 		action(m_canSee);
 		action(m_canBeSeenBy);
 		action(m_visionRange);
+		action(m_onSight);
 		action(m_coolDownEvent);
 		action(m_meleeAttackTable);
+		action(m_meleeAttackTableNonLethal);
 		action(m_targetedBy);
 		action(m_target);
 		action(m_onMissCoolDownMelee);
 		action(m_maxMeleeRange);
+		action(m_maxMeleeRangeNonLethal);
 		action(m_maxRange);
 		action(m_coolDownDurationModifier);
 		action(m_combatScore);
+		action(m_combatScoreNonLethal);
 		action(m_soldier);
 		action(m_moveEvent);
 		action(m_pathRequest);
@@ -205,6 +217,7 @@ public:
 		action(m_speedActual);
 		action(m_moveRetries);
 		action(m_psycology);
+		action(m_dialog);
 		action(m_onSurface);
 		action(m_isPilot);
 	}
@@ -244,6 +257,7 @@ public:
 	void resetMoveType(const ActorIndex& index);
 	bool tryToMoveSoAsNotOccuping(const ActorIndex& index, const Point3D& point);
 	[[nodiscard]] SmallSet<ActorIndex> getAll() const;
+	[[nodiscard]] ActorIndex getRandom() const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] ActorId getId(const ActorIndex& index) const { return m_id[index]; }
 	[[nodiscard]] std::string getName(const ActorIndex& index) const { return m_name[index]; }
@@ -274,6 +288,7 @@ public:
 	void stamina_setFull(const ActorIndex& index);
 	bool stamina_hasAtLeast(const ActorIndex& index, const Stamina& stamina) const;
 	bool stamina_isFull(const ActorIndex& index) const;
+	bool stamina_empty(const ActorIndex& index) const;
 	[[nodiscard]] Stamina stamina_getMax(const ActorIndex& index) const;
 	[[nodiscard]] Stamina stamina_get(const ActorIndex& index) const { return m_stamina[index]; }
 	// -Vision.
@@ -281,13 +296,15 @@ public:
 	void vision_clearRequestIfExists(const ActorIndex& index);
 	void vision_setCanSee(const ActorIndex& index, const ActorReference& other);
 	void vision_setCanBeSeenBy(const ActorIndex& index, const ActorReference& other);
+	void vision_setCanSee(const ActorIndex& index, SmallSet<ActorReference>&& others);
+	void vision_setCanBeSeenBy(const ActorIndex& index, SmallSet<ActorReference>&& others);
 	void vision_setNoLongerCanSee(const ActorIndex& index, const ActorReference& other);
 	void vision_setNoLongerCanBeSeenBy(const ActorIndex& index, const ActorReference& other);
 	void vision_clearCanSee(const ActorIndex& index);
 	void vision_maybeUpdateCuboid(const ActorIndex& index, const VisionCuboidId& newCuboid);
 	void vision_maybeUpdateRange(const ActorIndex& index, const Distance& range);
 	void vision_maybeUpdateLocation(const ActorIndex& index, const Point3D& location);
-	void vision_onSight(const ActorIndex& index, const ActorIndex& other);
+	void vision_removeOpaqueFromCuboidSet(const CuboidSet& cuboidSet) const;
 	[[nodiscard]] SmallSet<ActorReference>& vision_getCanSee(const ActorIndex& index) { return m_canSee[index]; }
 	[[nodiscard]] SmallSet<ActorReference>& vision_getCanBeSeenBy(const ActorIndex& index) { return m_canBeSeenBy[index]; }
 	[[nodiscard]] Distance vision_getRange(const ActorIndex& index) const { return m_visionRange[index]; }
@@ -295,9 +312,13 @@ public:
 	[[nodiscard]] bool vision_canSeeActor(const ActorIndex& index, const ActorIndex& other) const;
 	[[nodiscard]] bool vision_canSeeAnything(const ActorIndex& index) const;
 	[[nodiscard]] bool vision_canSeeEnemy(const ActorIndex& index) const;
-	[[nodiscard]] void vision_removeOpaqueFromCuboidSet(const CuboidSet& cuboidSet) const;
+	// -OnSight
+	[[nodiscard]] HasOnSight& onSight_get(const ActorIndex& index) { return m_onSight[index]; }
+	[[nodiscard]] const HasOnSight& onSight_get(const ActorIndex& index) const { return m_onSight[index]; }
 	// -Combat.
 	void combat_attackMeleeRange(const ActorIndex& index, const ActorIndex& target);
+	// Return cooldown for this attack so ConfrontationObjective or another objective or drama arc can manage it and run code before/after hits.
+	Step combat_attackMeleeRangeNonLethal(const ActorIndex& index, const ActorIndex& target);
 	void combat_attackLongRange(const ActorIndex& index, const ActorIndex& target, const ItemIndex& weapon, const ItemIndex& ammo);
 	void combat_coolDownCompleted(const ActorIndex& index);
 	void combat_update(const ActorIndex& index);
@@ -309,38 +330,44 @@ public:
 	void combat_onLeaveArea(const ActorIndex& index);
 	void combat_noLongerTargetable(const ActorIndex& index);
 	void combat_targetNoLongerTargetable(const ActorIndex& index);
-	void combat_onTargetMoved(const ActorIndex& index);
-	void combat_freeHit(const ActorIndex& index, const ActorIndex& actor);
-	//TODO: Combat vs. items?
-	void combat_getIntoRangeAndLineOfSightOfActor(const ActorIndex& index, const ActorIndex& target, const DistanceFractional& range);
-	[[nodiscard]] CombatScore combat_getCurrentMeleeCombatScore(const ActorIndex& index);
-	[[nodiscard]] bool combat_isOnCoolDown(const ActorIndex& index) const;
-	[[nodiscard]] bool combat_inRange(const ActorIndex& index, const ActorIndex& target) const;
-	[[nodiscard]] bool combat_doesProjectileHit(const ActorIndex& index, Attack& attack, const ActorIndex& target) const;
+	void combat_onTargetMoved(const ActorIndex &index);
+	void combat_freeHit(const ActorIndex &index, const ActorIndex &actor);
+	// TODO: Combat vs. items?
+	void combat_getIntoRangeAndLineOfSightOfActor(const ActorIndex &index, const ActorIndex &target, const DistanceFractional &range);
+	void combat_flee(const ActorIndex &index);
+	[[nodiscard]] bool combat_isFleeing(const ActorIndex &index);
+	[[nodiscard]] CombatScore combat_getCurrentMeleeCombatScore(const ActorIndex &index);
+	[[nodiscard]] bool combat_isOnCoolDown(const ActorIndex &index) const;
+	[[nodiscard]] bool combat_inRange(const ActorIndex &index, const ActorIndex &target) const;
+	[[nodiscard]] bool combat_doesProjectileHit(const ActorIndex &index, Attack &attack, const ActorIndex &target) const;
 	[[nodiscard]] Percent combat_projectileHitPercent(const ActorIndex& index, const Attack& attack, const ActorIndex& target) const;
 	[[nodiscard]] DistanceFractional combat_getMaxMeleeRange(const ActorIndex& index) const { return m_maxMeleeRange[index]; }
+	[[nodiscard]] DistanceFractional combat_getMaxMeleeRangeNonLethal(const ActorIndex& index) const { return m_maxMeleeRangeNonLethal[index]; }
 	[[nodiscard]] DistanceFractional combat_getMaxRange(const ActorIndex& index) const { return m_maxRange[index] != DistanceFractional::create(0) ? m_maxRange[index] : m_maxMeleeRange[index]; }
 	[[nodiscard]] CombatScore combat_getCombatScoreForAttack(const ActorIndex& index, const Attack& attack) const;
-	[[nodiscard]] const Attack& combat_getAttackForCombatScoreDifference(const ActorIndex& index, CombatScore scoreDifference) const;
+	[[nodiscard]] const Attack& combat_getAttackForCombatScoreDifference(const ActorIndex& index, const CombatScore& scoreDifference) const;
+	[[nodiscard]] const Attack& combat_getNonLethalAttackForCombatScoreDifference(const ActorIndex& index, CombatScore scoreDifference) const;
 	[[nodiscard]] float combat_getQualityModifier(const ActorIndex& index, const Quality& quality) const;
 	[[nodiscard]] bool combat_positionIsValid(const ActorIndex& index, const Point3D& point, const DistanceFractional& attackRangeSquared) const;
 	[[nodiscard]] AttackTypeId combat_getRangedAttackType(const ActorIndex& index, const ItemIndex& weapon) const;
-	[[nodiscard]] CuboidSet combat_getMaliceZone(const ActorIndex& index) const;
-	[[nodiscard]] const std::vector<std::pair<CombatScore, Attack>>& combat_getAttackTable(const ActorIndex& index) const { return m_meleeAttackTable[index]; }
+	[[nodiscard]] CuboidSet combat_makeMalicePoints(const ActorIndex& index) const;
+	[[nodiscard]] Step combat_getCoolDown(const ActorIndex& index, const Attack& attack) const;
+	[[nodiscard]] const AttackTable& combat_getAttackTable(const ActorIndex& index) const { return m_meleeAttackTable[index]; }
+	[[nodiscard]] const AttackTable& combat_getAttackTableNonLethal(const ActorIndex& index) const { return m_meleeAttackTableNonLethal[index]; }
 	[[nodiscard]] float combat_getCoolDownDurationModifier(const ActorIndex& index) const { return m_coolDownDurationModifier[index]; }
-	[[nodiscard, maybe_unused]] CombatScore combat_getCombatScore(const ActorIndex& index) const { return m_combatScore[index]; }
-	[[nodiscard]] std::vector<std::pair<CombatScore, Attack>>& combat_getMeleeAttacks(const ActorIndex& index) const;
+	[[nodiscard]] CombatScore combat_getCombatScore(const ActorIndex& index) const { return m_combatScore[index]; }
+	[[nodiscard]] CombatScore combat_getCombatScoreNonLethal(const ActorIndex& index) const { return m_combatScoreNonLethal[index]; }
 	// -Soldier.
 	// Updates MaliceMap for faction. Used by location_setDynamic and when combatScore changes.
 	void soldier_removeFromMaliceMap(const ActorIndex& index);
 	void soldier_recordInMaliceMap(const ActorIndex& index);
 	void soldier_mobilize(const ActorIndex& index);
 	void soldier_demobilize(const ActorIndex& index);
-	[[nodiscard]] CombatScore soldier_getEnemyMaliceAtLocation(const ActorIndex& index, const Point3D& location) const;
-	[[nodiscard]] CombatScore soldier_getFriendlyMaliceAtLocation(const ActorIndex& index, const Point3D& location) const;
-	[[nodiscard]] bool soldier_testMaliceDeltaAtLocationAgainstCourage(const ActorIndex& index, const Point3D& location) const;
+	void soldier_onSetLocation(const ActorIndex& index);
+	void soldier_setSquad(const ActorIndex& index, const SquadIndex& squad);
 	// If an actor's SoldierData does not have a squad set then the actor is not a soldier.
 	[[nodiscard]] bool soldier_is(const ActorIndex& index) const;
+	[[nodiscard]] CuboidSet& soldier_getRecordedMalicePoints(const ActorIndex& index);
 	// -Body.
 	[[nodiscard]] Percent body_getImpairMovePercent(const ActorIndex& index);
 	//TODO: change to getImpairDextarityPercent?
@@ -349,9 +376,11 @@ public:
 	[[nodiscard]] Step body_getStepsTillBleedToDeath(const ActorIndex& index);
 	[[nodiscard]] bool body_hasBleedEvent(const ActorIndex& index) const;
 	[[nodiscard]] bool body_isInjured(const ActorIndex& index) const;
+	[[nodiscard]] bool body_isSeriouslyInjured(const ActorIndex& index) const;
 	[[nodiscard]] BodyPart& body_pickABodyPartByVolume(const ActorIndex& index) const;
 	[[nodiscard]] BodyPart& body_pickABodyPartByType(const ActorIndex& index, const BodyPartTypeId& bodyPartType) const;
 	[[nodiscard]] const std::vector<Wound*> body_getWounds(const ActorIndex& index) const;
+	[[nodiscard]] const PsycologyWeight& body_getPain(const ActorIndex& index) const;
 	// -Move.
 	void move_updateIndividualSpeed(const ActorIndex& index);
 	void move_updateActualSpeed(const ActorIndex& index);
@@ -398,7 +427,7 @@ public:
 	[[nodiscard]] bool move_hasPathRequest(const ActorIndex& index) const { return m_pathRequest[index] != nullptr; }
 	[[nodiscard]] bool move_hasPath(const ActorIndex& index) const { return !m_path[index].empty(); }
 	[[nodiscard]] Step move_stepsTillNextMoveEvent(const ActorIndex& index) const;
-	[[nodiscard]] uint8_t move_getRetries(const ActorIndex& index) const { return m_moveRetries[index]; }
+	[[nodiscard]] int8_t move_getRetries(const ActorIndex& index) const { return m_moveRetries[index]; }
 	[[nodiscard]] bool move_canPathTo(const ActorIndex& index, const Point3D& destination);
 	[[nodiscard]] bool move_canPathFromTo(const ActorIndex& index, const Point3D& start, const Facing4& startFacing, const Point3D& destination);
 	// -CanPickUp.
@@ -469,6 +498,7 @@ public:
 	[[nodiscard]] bool objective_hasSupressedNeed(const ActorIndex& index, NeedType needType) const;
 	[[nodiscard]] Priority objective_getPriorityFor(const ActorIndex& index, const ObjectiveTypeId& objectiveType) const;
 	[[nodiscard]] std::string objective_getCurrentName(const ActorIndex& index) const;
+	[[nodiscard]] ObjectiveTypeId objective_getCurrentTypeId(const ActorIndex& index) const;
 	template<typename T>
 	T& objective_getCurrent(const ActorIndex& index) { return static_cast<T&>(m_hasObjectives[index]->getCurrent()); }
 	template<typename T>
@@ -562,10 +592,12 @@ public:
 	[[nodiscard]] PsycologyWeight psycology_actorCausesFear(const ActorIndex& index, const ActorIndex& other) const;
 	[[nodiscard]] const Psycology& psycology_getConst(const ActorIndex& index) const;
 	[[nodiscard]] Psycology& psycology_get(const ActorIndex& index);
+	void psycology_event(const ActorIndex& index, const PsycologyEventType& type, const PsycologyAttribute& attribute, const PsycologyWeight& weight, const Step& duration = {}, const Step& cooldown = {});
+	void psycology_event(const ActorIndex& index, const PsycologyEventType& type, const PsycologyData& delta, const Step& duration = {}, const Step& cooldown = {});
 	// For Testing.
 	[[nodiscard]] Mass eat_getMassFoodRequested(const ActorIndex& index) const;
-	[[nodiscard]] std::pair<Point3D, uint8_t> eat_getDesireToEatSomethingAt(const ActorIndex& index, const Cuboid& cuboid) const;
-	[[nodiscard]] uint8_t eat_getMinimumAcceptableDesire(const ActorIndex& index) const;
+	[[nodiscard]] std::pair<Point3D, int8_t> eat_getDesireToEatSomethingAt(const ActorIndex& index, const Cuboid& cuboid) const;
+	[[nodiscard]] int8_t eat_getMinimumAcceptableDesire(const ActorIndex& index) const;
 	[[nodiscard]] bool eat_hasObjective(const ActorIndex& index) const;
 	[[nodiscard]] Step eat_getHungerEventStep(const ActorIndex& index) const;
 	[[nodiscard]] bool eat_hasHungerEvent(const ActorIndex& index) const;
@@ -593,8 +625,8 @@ public:
 	void setAgilityModifier(const ActorIndex& index, float modifer);
 	void onAgilityChanged(const ActorIndex& index);
 	void updateAgility(const ActorIndex& index);
-	void addIntrinsicMassBonusOrPenalty(const ActorIndex& index, uint32_t bonusOrPenalty);
-	void setIntrinsicMassBonusOrPenalty(const ActorIndex& index, uint32_t bonusOrPenalty);
+	void addIntrinsicMassBonusOrPenalty(const ActorIndex& index, int32_t bonusOrPenalty);
+	void setIntrinsicMassBonusOrPenalty(const ActorIndex& index, int32_t bonusOrPenalty);
 	void addIntrinsicMassModifier(const ActorIndex& index, float modifer);
 	void setIntrinsicMassModifier(const ActorIndex& index, float modifer);
 	void onIntrinsicMassChanged(const ActorIndex& index);
@@ -655,6 +687,14 @@ public:
 	void pilotItem_set(const ActorIndex& index, const ItemIndex& item);
 	void pilotItem_unset(const ActorIndex& index);
 	[[nodiscard]] bool pilotItem_isPilotingConstructedItem(const ActorIndex& index);
+	// Drama.
+	// Duration paramater is how long to show the line for.
+	// Default value null indicates to keep shoiwng it untill clearDialog is called.
+	void drama_setDialog(const ActorIndex& index, const std::string& line, const Step& duration = Step::null());
+	void drama_clearDialog(const ActorIndex& index);
+	// Set actor to be puppeted by another actor's objective.
+	// Undone by calling objective_complete.
+	void drama_castForRole(const ActorIndex& index, Objective& objective, const ActorIndex& objectiveOwner);
 	// For testing.
 	[[nodiscard]] bool grow_getEventExists(const ActorIndex& index) const;
 	[[nodiscard]] Percent grow_getEventPercent(const ActorIndex& index) const;
@@ -720,9 +760,3 @@ public:
 	[[nodiscard]] std::string name() { return "attack"; }
 };
 inline void to_json(Json& data, const std::unique_ptr<GetIntoAttackPositionPathRequest>& pathRequest) { data = pathRequest->toJson(); }
-struct Attack final
-{
-	AttackTypeId attackType;
-	MaterialTypeId materialType;
-	ItemIndex item; // Can be null for natural weapons.
-};

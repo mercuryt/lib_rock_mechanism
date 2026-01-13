@@ -1,18 +1,17 @@
 #pragma once
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wduplicated-branches"
-#include "../lib/Eigen/Dense"
+#include "../../lib/Eigen/Dense"
 #pragma GCC diagnostic pop
-#include "../strongInteger.h"
 #include "../dataStructures/smallSet.h"
 #include "../numericTypes/types.h"
-#include <functional>
 
 class ActorIndex;
 class Area;
 
 enum class PsycologyAttribute
 {
+	Positivity,
 	// When an actor is drafted and tries to enter a point where their enemies have more total threat or tries to path to same a low courage level will generate a FleeObjective.
 	Courage,
 	// High pride makes an actor more likely to reciprocate a ShoutAt objective, or possibly directly escalating to FistFight.
@@ -36,6 +35,7 @@ enum class PsycologyAttribute
 	// May be overiden by high Community or Loyalty.
 	// Low greed events manifest as acts of charity.
 	Greed,
+	Respect,
 	Null,
 };
 
@@ -53,12 +53,31 @@ enum class FamilyRelationship
 	Other, // For more complex relationships like second cousine once removed.
 	Null,
 };
+// A unique id for each source of psycological change.
+enum class PsycologyEventType
+{
+	AccidentalHomicide,
+	AccidentalSeriousInjury,
+	Chastise,
+	Chastised,
+	Chat,
+	Flee,
+	InspirationalSpeach,
+	LoseConfrontation,
+	Praise,
+	Praised,
+	StandGround,
+	WinConfrontation,
+	Null,
+};
 // A SIMD alligned array of PsycologyWeights, one per PsycologyAttribute.
 // Used by Psycology and PsycologyEvent.
 struct PsycologyData
 {
-	Eigen::Array<PsycologyWeightWidth, 1, (uint)PsycologyAttribute::Null> m_data;
+	static constexpr uint32_t capacity = (int32_t)PsycologyAttribute::Null;
+	Eigen::Array<float, 1, capacity> m_data;
 	void operator+=(const PsycologyData& other);
+	void operator-=(const PsycologyData& other);
 	void operator*=(const float& scale);
 	[[nodiscard]] PsycologyData operator-(const PsycologyData& other) const;
 	void addTo(const PsycologyAttribute& attribute, const PsycologyWeight& value);
@@ -70,105 +89,9 @@ struct PsycologyData
 	// TODO: We could use a bitmask instead of a small set here.
 	[[nodiscard]] SmallSet<PsycologyAttribute> getAbove(const PsycologyData& other) const;
 	[[nodiscard]] SmallSet<PsycologyAttribute> getBelow(const PsycologyData& other) const;
-	static PsycologyData create(const decltype(m_data) data);
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(PsycologyData, m_data);
 };
-// Something that happens when a PsycologyAttribute passes some threashold.
-class Psycology;
-struct PsycologyCallback
-{
-	PsycologyWeight threshold;
-	virtual void action(const ActorIndex& actor, Area& area, Psycology& psycology, const PsycologyWeight& level) = 0;
-};
-// A pointer to a PsycologyCallback and some lifetime management methods for it.
-template<typename PsycologyCallbackType, PsycologyAttribute attribute, bool high>
-class PsycologyCallbackHolder
-{
-	PsycologyCallback* m_callback;
-public:
-	template<typename ...Args>
-	void create(Psycology& psycology, Args&& ...args)
-	{
-		std::unique_ptr callback = std::make_unique<PsycologyCallbackType>(args...);
-		m_callback = callback.get();
-		if constexpr (high)
-			psycology.registerHighCallback(attribute, std::move(callback));
-		else
-			psycology.registerLowCallback(attribute, std::move(callback));
-	}
-	void cancel(Psycology& psycology)
-	{
-		if constexpr(high)
-			psycology.unregisterHighCallback(attribute, m_callback);
-		else
-			psycology.unregisterLowCallback(attribute, m_callback);
-		clear();
-	}
-	void clear()
-	{
-		assert(m_callback != nullptr);
-		m_callback = nullptr;
-	}
-	[[nodiscard]] bool empty() const { return m_callback == nullptr; }
-};
-// Represents an instant change in psycological state due to some event.
-// Changes Psycology::m_current and optionally adds new callbacks.
-struct PsycologyEvent
-{
-	PsycologyData deltas;
-	std::array<std::vector<std::unique_ptr<PsycologyCallback>>, (uint)PsycologyAttribute::Null> highCallbacks;
-	std::array<std::vector<std::unique_ptr<PsycologyCallback>>, (uint)PsycologyAttribute::Null> lowCallbacks;
-};
-// To be used by Actors
-class Psycology
-{
-	PsycologyData m_current;
-	PsycologyData m_highTriggers;
-	PsycologyData m_lowTriggers;
-	std::array<std::vector<std::unique_ptr<PsycologyCallback>>, (uint)PsycologyAttribute::Null> m_highCallbacks;
-	std::array<std::vector<std::unique_ptr<PsycologyCallback>>, (uint)PsycologyAttribute::Null> m_lowCallbacks;
-	SmallSet<ActorReference> m_friends;
-	SmallMap<ActorReference, FamilyRelationship> m_family;
-	// Possibly trigger callbacks.
-	void checkThreasholds(Area& area, const ActorIndex& actor);
-public:
-	void initalize();
-	// Record callbacks, modify current, check threasholds.
-	void apply(const PsycologyEvent& event, Area& area, const ActorIndex& actor);
-	void addAll(const PsycologyData& deltas, Area& area, const ActorIndex& actor);
-	void addTo(const PsycologyAttribute& attribute, const PsycologyWeight& value, Area& area, const ActorIndex& actor);
-	void registerHighCallback(const PsycologyAttribute& attribute, std::unique_ptr<PsycologyCallback>&& callback);
-	void registerLowCallback(const PsycologyAttribute& attribute, std::unique_ptr<PsycologyCallback>&& callback);
-	void unregisterHighCallback(const PsycologyAttribute& attribute, PsycologyCallback& callback);
-	void unregisterLowCallback(const PsycologyAttribute& attribute, PsycologyCallback& callback);
-	void addFriend(const ActorReference& actor);
-	void removeFriend(const ActorReference& actor);
-	void addFamily(const ActorReference& actor, const FamilyRelationship& relationship);
-	[[nodiscard]] const SmallSet<ActorReference>& getFriends() const { return m_friends; }
-	[[nodiscard]] const SmallMap<ActorReference, FamilyRelationship>& getFamily() const { return m_family; }
-	[[nodiscard]] PsycologyWeight getValueFor(const PsycologyAttribute& attribute) const;
-};
-// For varous relationships found in the relationships directory to inherit from.
-class RelationshipBase { };
-// To be used by Actors, Items, and Plants.
-class HasRelationships
-{
-	std::vector<std::unique_ptr<RelationshipBase>> m_relationships;
-public:
-	template<typename RelationshipType, typename ...Args>
-	void create(Args&& ...args)
-	{
-		m_relationships.push_back(std::make_unique<RelationshipType>(args...));
-		// No duplicates.
-		assert(std::ranges::find_if(m_relationships.begin(), m_relationships.end() - 1, [&](const auto& ptr){ return ptr->isSameAs(*m_relationships.back()); }) == m_relationships.end() - 1);
-	}
-	void destroy(const RelationshipBase& relationship) { m_relationships.erase(std::ranges::find_if(m_relationships, [&](const auto& ptr){ return ptr.get() == &relationship; })); }
-	[[nodiscard]] RelationshipBase* maybeGet(auto&& condition) const
-	{
-		const auto found = std::ranges::find_if(m_relationships, condition);
-		if(found == m_relationships.end())
-			return nullptr;
-		// Return address that iterator refers to.
-		return &(*found);
-	}
-
-};
+/*
+inline void to_json(Json& data, const PsycologyData& pData) { std::vector<float> vector; vector.reserve(PsycologyData::capacity); for(const float& weight : pData.m_data) vector.push_back(weight); data = vector; }
+inline void from_json(const Json& data, PsycologyData& pData) { auto vector = data.get<std::vector<float>>(); for(int i = 0; i != PsycologyData::capacity; ++i) pData.m_data[i] = vector[i]; }
+*/

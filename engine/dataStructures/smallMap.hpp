@@ -1,5 +1,6 @@
 #pragma once
 #include "smallMap.h"
+#include "smallSet.h"
 template<typename K, MoveConstructible V>
 SmallMap<K,V>::SmallMap(const std::initializer_list<Pair>& i)
 {
@@ -76,7 +77,7 @@ void SmallMap<K,V>::popBack() { m_data.pop_back(); }
 template<typename K, MoveConstructible V>
 void SmallMap<K,V>::clear() { m_data.clear(); }
 template<typename K, MoveConstructible V>
-void SmallMap<K,V>::sort() { std::ranges::sort(m_data); }
+void SmallMap<K,V>::sort() { std::ranges::sort(m_data, {}, &std::pair<K, V>::first); }
 template<typename K, MoveConstructible V>
 void SmallMap<K,V>::swap(This& other) { m_data.swap(other.m_data); }
 template<typename K, MoveConstructible V>
@@ -90,7 +91,7 @@ void SmallMap<K,V>::updateKey(const K& oldKey, const K& newKey)
 		}
 }
 template<typename K, MoveConstructible V>
-uint SmallMap<K,V>::size() const { return m_data.size(); }
+int32_t SmallMap<K,V>::size() const { return m_data.size(); }
 template<typename K, MoveConstructible V>
 bool SmallMap<K,V>::empty() const { return m_data.empty(); }
 template<typename K, MoveConstructible V>
@@ -135,6 +136,15 @@ V& SmallMap<K,V>::getOrCreate(const K& key)
 		return m_data.back().second;
 	}
 	return iter->second;
+}
+template<typename K, MoveConstructible V>
+SmallSet<K> SmallMap<K,V>::keys() const
+{
+	SmallSet<K> output;
+	output.reserve(size());
+	for(const auto& pair : m_data)
+		output.insert(pair.first);
+	return output;
 }
 template<typename K, MoveConstructible V>
 SmallMap<K,V>::iterator SmallMap<K,V>::find(const K& key) { return std::ranges::find(m_data, key, &Pair::first); }
@@ -193,11 +203,13 @@ auto SmallMapStable<K,V>::insert(const K& key, std::unique_ptr<V>&& value) -> V&
 template<typename K, typename V>
 void SmallMapStable<K,V>::erase(const K& key) { m_data.erase(key); }
 template<typename K, typename V>
+void SmallMapStable<K,V>::erase(iterator& iter) { m_data.erase(iter.get()); }
+template<typename K, typename V>
 void SmallMapStable<K,V>::clear() { m_data.clear(); }
 template<typename K, typename V>
 void SmallMapStable<K,V>::swap(This& other) { m_data.swap(other.m_data); }
 template<typename K, typename V>
-uint SmallMapStable<K,V>::size() const { return m_data.size(); }
+int32_t SmallMapStable<K,V>::size() const { return m_data.size(); }
 template<typename K, typename V>
 bool SmallMapStable<K,V>::empty() const { return m_data.empty(); }
 template<typename K, typename V>

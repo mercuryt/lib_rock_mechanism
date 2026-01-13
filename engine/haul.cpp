@@ -3,7 +3,7 @@
 #include "actors/actors.h"
 #include "items/items.h"
 #include "space/space.h"
-#include "config.h"
+#include "config/config.h"
 #include "area/area.h"
 #include "project.h"
 #include "reference.h"
@@ -70,13 +70,13 @@ HaulSubproject::HaulSubproject(Project& p, HaulSubprojectParamaters& paramaters)
 	{
 		m_haulTool.setIndex(paramaters.haulTool, items.m_referenceData);
 		std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<HaulSubprojectDishonorCallback>(*this);
-		items.reservable_reserve(paramaters.haulTool, m_project.m_canReserve, Quantity::create(1u), std::move(dishonorCallback));
+		items.reservable_reserve(paramaters.haulTool, m_project.m_canReserve, Quantity::create(1), std::move(dishonorCallback));
 	}
 	if(paramaters.beastOfBurden.exists())
 	{
 		m_beastOfBurden.setIndex(paramaters.beastOfBurden, actors.m_referenceData);
 		std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<HaulSubprojectDishonorCallback>(*this);
-		actors.reservable_reserve(paramaters.beastOfBurden, m_project.m_canReserve, Quantity::create(1u), std::move(dishonorCallback));
+		actors.reservable_reserve(paramaters.beastOfBurden, m_project.m_canReserve, Quantity::create(1), std::move(dishonorCallback));
 	}
 	if(m_toHaul.getIndexPolymorphic(actors.m_referenceData, items.m_referenceData).isGeneric(area))
 	{
@@ -911,6 +911,8 @@ void HaulSubproject::complete(const ActorOrItemIndex& delivered)
 			items.reservable_reserve(deliveredIndex, m_project.getCanReserve(), m_quantity);
 			if(m_projectRequirementCounts->consumed)
 				m_project.m_toConsume.getOrInsert(ref, Quantity::create(0)) += m_quantity;
+			else
+				m_project.m_unconsumed.insert(ref);
 			//TODO: This belongs in CraftProject.
 			if(items.isWorkPiece(deliveredIndex))
 				items.location_setStatic(deliveredIndex, m_project.m_location, Facing4::North);
@@ -1127,7 +1129,7 @@ ActorIndex AreaHasHaulTools::getPannierBearerToHaulCargoWithMassWithMinimumSpeed
 	for(ActorReference actor : m_yolkableActors)
 	{
 		ActorIndex index = actor.getIndex(actors.m_referenceData);
-		if(!actors.reservable_isFullyReserved(index, faction) && minimumHaulSpeed <= actors.canPickUp_speedIfCarryingQuantity(index, hasShape.getMass(area), Quantity::create(1u)))
+		if(!actors.reservable_isFullyReserved(index, faction) && minimumHaulSpeed <= actors.canPickUp_speedIfCarryingQuantity(index, hasShape.getMass(area), Quantity::create(1)))
 			return index;
 	}
 	return ActorIndex::null();

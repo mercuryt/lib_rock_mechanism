@@ -20,12 +20,13 @@ struct StrongFloat
 	[[nodiscard]] constexpr static Derived max() { return create(std::numeric_limits<float>::max()); }
 	[[nodiscard]] constexpr static Derived min() { return create(std::numeric_limits<float>::min()); }
 	constexpr void set(const float& d ) { data = d; }
+	constexpr void clear() { data = FLT_MAX; }
 	constexpr Derived& operator=(const float& d) { data = d; return static_cast<Derived&>(*this); }
 	constexpr Derived& operator=(const StrongFloat<Derived>& d) { data = d.data; return static_cast<Derived&>(*this); }
 	constexpr Derived& operator++() { assert(exists()); ++data; return static_cast<Derived&>(*this); }
 	constexpr Derived& operator--() { assert(exists()); --data; return static_cast<Derived&>(*this); }
-	[[nodiscard]] constexpr Derived operator++(int) { assert(exists()); auto d = data; ++data; return d; }
-	[[nodiscard]] constexpr Derived operator--(int) { assert(exists());  auto d = data; --data; return d; }
+	[[nodiscard]] constexpr Derived operator++(int32_t) { assert(exists()); auto d = data; ++data; return d; }
+	[[nodiscard]] constexpr Derived operator--(int32_t) { assert(exists());  auto d = data; --data; return d; }
 	constexpr Derived& operator+=(const float& other) { assert(exists()); data += other; return static_cast<Derived&>(*this); }
 	constexpr Derived& operator-=(const float& other) { assert(exists()); data -= other; return static_cast<Derived&>(*this); }
 	constexpr Derived& operator*=(const float& other) { assert(exists()); data *= other; return static_cast<Derived&>(*this); }
@@ -34,6 +35,7 @@ struct StrongFloat
 	[[nodiscard]] constexpr Derived operator-(const float& other) const { assert(exists()); return create(data - other); }
 	[[nodiscard]] constexpr Derived operator*(const float& other) const { assert(exists()); return create(data * other); }
 	[[nodiscard]] constexpr Derived operator/(const float& other) const { assert(exists()); return create(data / other); }
+	[[nodiscard]] constexpr Derived operator-() const { assert(exists()); return create(-data); }
 	[[nodiscard]] constexpr bool operator==(const float& other) const { assert(exists()); return data == other; }
 	[[nodiscard]] constexpr bool operator!=(const float& other) const { assert(exists()); return data != other; }
 	[[nodiscard]] constexpr std::partial_ordering operator<=>(const float& other) const { assert(exists()); return data <=> other; }

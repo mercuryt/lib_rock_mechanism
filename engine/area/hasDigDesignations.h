@@ -1,12 +1,12 @@
 #pragma once
 
-#include "geometry/cuboid.h"
+#include "../geometry/cuboid.h"
 //#include "input.h"
-#include "reservable.h"
-#include "numericTypes/types.h"
-#include "eventSchedule.hpp"
-#include "project.h"
-#include "config.h"
+#include "../reservable.h"
+#include "../numericTypes/types.h"
+#include "../eventSchedule.hpp"
+#include "../project.h"
+#include "../config/config.h"
 #include "../projects/dig.h"
 
 #include <vector>

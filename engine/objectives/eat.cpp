@@ -199,8 +199,8 @@ FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrain
 					return {false, foodLocation};
 				if(eatDesire == maxRankedEatDesire)
 					return {true, foodLocation};
-				if(eatDesire != 0 && m_candidates[eatDesire - 1u].empty())
-					m_candidates[eatDesire - 1u] = foodLocation;
+				if(eatDesire != 0 && m_candidates[eatDesire - 1].empty())
+					m_candidates[eatDesire - 1] = foodLocation;
 				return {false, foodLocation};
 			};
 			constexpr bool useAnyOccupiedPoint = false;

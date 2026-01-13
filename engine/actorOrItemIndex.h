@@ -4,7 +4,7 @@
  */
 #pragma once
 #include "numericTypes/types.h"
-#include "config.h"
+#include "config/config.h"
 #include "dishonorCallback.h"
 #include "numericTypes/index.h"
 #include "geometry/mapWithCuboidKeys.h"

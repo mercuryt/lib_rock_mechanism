@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config.h"
+#include "config/config.h"
 #include "dataStructures/strongVector.h"
 #include "numericTypes/types.h"
 
@@ -13,7 +13,7 @@
 struct FluidTypeParamaters
 {
 	std::string name;
-	uint32_t viscosity;
+	int32_t viscosity;
 	Density density;
 	Step mistDuration;
 	Distance maxMistSpread;
@@ -24,7 +24,7 @@ struct FluidTypeParamaters
 class FluidType
 {
 	StrongVector<std::string, FluidTypeId> m_name;
-	StrongVector<uint32_t, FluidTypeId> m_viscosity;
+	StrongVector<int32_t, FluidTypeId> m_viscosity;
 	StrongVector<Density, FluidTypeId> m_density;
 	StrongVector<Step, FluidTypeId> m_mistDuration;
 	StrongVector<Distance, FluidTypeId> m_maxMistSpread;
@@ -37,7 +37,7 @@ public:
 	static void setFreezesInto(const FluidTypeId& fluid, const MaterialTypeId& material);
 	[[nodiscard]] static std::string getName(const FluidTypeId& id);
 	[[nodiscard]] static std::string maybeGetName(const FluidTypeId& id);
-	[[nodiscard]] static uint32_t getViscosity(const FluidTypeId& id);
+	[[nodiscard]] static int32_t getViscosity(const FluidTypeId& id);
 	[[nodiscard]] static Density getDensity(const FluidTypeId& id);
 	[[nodiscard]] static Step getMistDuration(const FluidTypeId& id);
 	[[nodiscard]] static Distance getMaxMistSpread(const FluidTypeId& id);

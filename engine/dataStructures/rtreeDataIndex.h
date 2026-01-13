@@ -2,10 +2,10 @@
 #include "rtreeData.hpp"
 #include "../strongInteger.h"
 
-template<typename T, typename DataIndexWidth, RTreeDataConfig config>
+template<typename T, RTreeDataConfig config>
 class RTreeDataIndex
 {
-	class DataIndex : public StrongInteger<DataIndex, DataIndexWidth>
+	class DataIndex : public StrongInteger<DataIndex, int, INT_MAX, 0>
 	{
 	public:
 		NLOHMANN_DEFINE_TYPE_INTRUSIVE(DataIndex, data);
@@ -120,7 +120,7 @@ public:
 			m_data(data)
 		{ }
 		ConstIterator& operator++() { ++m_iter; return *this; }
-		[[nodiscard]] ConstIterator operator++(int) { auto copy = *this; ++m_iter; return copy;}
+		[[nodiscard]] ConstIterator operator++(int32_t) { auto copy = *this; ++m_iter; return copy;}
 		[[nodiscard]] const T& operator*() const { return m_data[*m_iter].first; }
 		[[nodiscard]] bool operator==(const ConstIterator& other) const { return m_iter == other.m_iter; }
 	};
@@ -144,7 +144,7 @@ public:
 			m_data(data)
 		{ }
 		ConstIteratorWithCuboids& operator++() { ++m_iter; return *this; }
-		[[nodiscard]] ConstIteratorWithCuboids operator++(int) { auto copy = *this; ++m_iter; return copy;}
+		[[nodiscard]] ConstIteratorWithCuboids operator++(int32_t) { auto copy = *this; ++m_iter; return copy;}
 		[[nodiscard]] const std::pair<T, Cuboid>& operator*() const { return m_data[*m_iter]; }
 		[[nodiscard]] bool operator==(const ConstIteratorWithCuboids& other) const { return m_iter == other.m_iter; }
 	};

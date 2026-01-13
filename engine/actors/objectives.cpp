@@ -75,6 +75,14 @@ std::string Actors::objective_getCurrentName(const ActorIndex& index) const
 {
 	return m_hasObjectives[index]->getCurrent().name();
 }
+ObjectiveTypeId Actors::objective_getCurrentTypeId(const ActorIndex& index) const
+{
+	auto& hasObjectives = m_hasObjectives[index];
+	if(hasObjectives->hasCurrent())
+		return m_hasObjectives[index]->getCurrent().getTypeId();
+	else
+		return ObjectiveTypeId::null();
+}
 Priority Actors::objective_getPriorityFor(const ActorIndex& index, const ObjectiveTypeId& objectiveType) const
 {
 	return m_hasObjectives[index]->m_prioritySet.getPriorityFor(objectiveType);

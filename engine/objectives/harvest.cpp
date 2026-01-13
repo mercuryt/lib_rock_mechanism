@@ -1,6 +1,6 @@
 #include "harvest.h"
 #include "../area/area.h"
-#include "../config.h"
+#include "../config/config.h"
 #include "../farmFields.h"
 #include "../objective.h"
 #include "../simulation/simulation.h"

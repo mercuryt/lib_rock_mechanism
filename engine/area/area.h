@@ -22,6 +22,7 @@
 #include "../farmFields.h"
 #include "../actors/grow.h"
 #include "../deck.h"
+#include "../onSight.h"
 #include "installItem.h"
 #include "woodcutting.h"
 #include "stockpile.h"
@@ -34,6 +35,8 @@
 #include "hasTargetedHauling.h"
 #include "hasDigDesignations.h"
 #include "hasConstructionDesignations.h"
+#include "hasSoldiers.h"
+#include "hasOnSightForFaction.h"
 //#include "medical.h"
 
 #include <vector>
@@ -80,7 +83,8 @@ public:
 	// To be updated when an actor becomes a soldier, stops being a soldier, or moves while being a soldier.
 	// Used by summing for all enemy factions for point or path and comparing delta to PsycologyAttribute::Courage.
 	// A failed courage check generates a flee objective.
-	SmallMap<FactionId, RTreeData<CombatScore>> m_maliceMap;
+	AreaHasSoldiers m_hasSoldiers;
+	AreaHasOnSightForFaction m_hasOnSight;
 	AreaHasFarmFields m_hasFarmFields;
 	AreaHasHaulTools m_hasHaulTools;
 	AreaHasDigDesignations m_hasDigDesignations;

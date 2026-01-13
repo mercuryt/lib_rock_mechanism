@@ -9,18 +9,19 @@
 #include "../dataStructures/strongVector.h"
 #include "../dataStructures/smallMap.hpp"
 #include "../dataStructures/smallSet.hpp"
+#include "../config/config.h"
 
 class RTreeBooleanLowZOnly
 {
-	static constexpr uint nodeSize = 64;
-	using IndexWidth = uint16_t;
-	class Index : public StrongInteger<Index, IndexWidth>
+	static constexpr int32_t nodeSize = Config::rtreeNodeSize;
+	using IndexWidth = int16_t;
+	class Index : public StrongInteger<Index, IndexWidth, INT16_MAX, 0>
 	{
 	public:
 		struct Hash { [[nodiscard]] size_t operator()(const Index& index) const { return index.get(); } };
 	};
-	using ArrayIndexWidth = uint8_t;
-	class ArrayIndex : public StrongInteger<ArrayIndex, ArrayIndexWidth>
+	using ArrayIndexWidth = int8_t;
+	class ArrayIndex : public StrongInteger<ArrayIndex, ArrayIndexWidth, nodeSize + 1, 0>
 	{
 	public:
 		struct Hash { [[nodiscard]] size_t operator()(const ArrayIndex& index) const { return index.get(); } };
@@ -37,15 +38,15 @@ class RTreeBooleanLowZOnly
 		[[nodiscard]] const auto& getCuboids() const { return m_cuboids; }
 		[[nodiscard]] const auto& getChildIndices() const { return m_childIndices; }
 		[[nodiscard]] const auto& getParent() const { return m_parent; }
-		[[nodiscard]] int getLeafCount() const { return m_leafEnd.get(); }
-		[[nodiscard]] int getChildCount() const { return nodeSize - m_childBegin.get(); }
-		[[nodiscard]] int unusedCapacity() const { return (m_childBegin - m_leafEnd).get(); }
-		[[nodiscard]] int sortOrder() const { return m_cuboids.boundry().getCenter().hilbertNumber(); };
+		[[nodiscard]] int32_t getLeafCount() const { return m_leafEnd.get(); }
+		[[nodiscard]] int32_t getChildCount() const { return nodeSize - m_childBegin.get(); }
+		[[nodiscard]] int32_t unusedCapacity() const { return (m_childBegin - m_leafEnd).get(); }
+		[[nodiscard]] int32_t sortOrder() const { return m_cuboids.boundry().getCenter().hilbertNumber(); };
 		[[nodiscard]] ArrayIndex offsetFor(const Index& index) const;
 		[[nodiscard]] ArrayIndex offsetOfFirstChild() const { return m_childBegin; }
 		[[nodiscard]] bool empty() const { return unusedCapacity() == nodeSize; }
-		[[nodiscard]] uint getLeafVolume() const;
-		[[nodiscard]] uint getNodeVolume() const;
+		[[nodiscard]] int32_t getLeafVolume() const;
+		[[nodiscard]] int32_t getNodeVolume() const;
 		void updateChildIndex(const Index& oldIndex, const Index& newIndex);
 		void insertLeaf(const Cuboid& cuboid);
 		void insertBranch(const Cuboid& cuboid, const Index& index);
@@ -134,7 +135,7 @@ public:
 	{
 		std::vector<bool> output;
 		output.resize(shapes.size());
-		SmallMap<Index, SmallSet<uint>> openList;
+		SmallMap<Index, SmallSet<int32_t>> openList;
 		openList.insert(Index::create(0), {});
 		auto& rootNodeCandidateList = openList.back().second;
 		rootNodeCandidateList.resize(shapes.size());
@@ -146,7 +147,7 @@ public:
 			const auto& nodeCuboids = node.getCuboids();
 			const auto& nodeChildren = node.getChildIndices();
 			const auto offsetOfFirstChild = node.offsetOfFirstChild();
-			for(const uint& shapeIndex : candidates)
+			for(const int32_t& shapeIndex : candidates)
 			{
 				if(output[shapeIndex])
 					// This shape has already intersected with a leaf, no need to check further.
@@ -187,14 +188,14 @@ public:
 		return output;
 	}
 	// For test and debug.
-	[[nodiscard]] __attribute__((noinline)) uint nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
-	[[nodiscard]] __attribute__((noinline)) uint leafCount() const;
-	[[nodiscard]] __attribute__((noinline)) const Node& getNode(uint i) const;
-	[[nodiscard]] __attribute__((noinline)) const Cuboid getNodeCuboid(uint i, uint o) const;
-	[[nodiscard]] __attribute__((noinline)) const Index& getNodeChild(uint i, uint o) const;
-	[[nodiscard]] __attribute__((noinline)) bool queryPoint(uint x, uint y, uint z) const;
-	[[nodiscard]] __attribute__((noinline)) uint totalLeafVolume() const;
-	[[nodiscard]] __attribute__((noinline)) uint totalNodeVolume() const;
+	[[nodiscard]] __attribute__((noinline)) int32_t nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
+	[[nodiscard]] __attribute__((noinline)) int32_t leafCount() const;
+	[[nodiscard]] __attribute__((noinline)) const Node& getNode(int32_t i) const;
+	[[nodiscard]] __attribute__((noinline)) const Cuboid getNodeCuboid(int32_t i, int32_t o) const;
+	[[nodiscard]] __attribute__((noinline)) const Index& getNodeChild(int32_t i, int32_t o) const;
+	[[nodiscard]] __attribute__((noinline)) bool queryPoint(int32_t x, int32_t y, int32_t z) const;
+	[[nodiscard]] __attribute__((noinline)) int32_t totalLeafVolume() const;
+	[[nodiscard]] __attribute__((noinline)) int32_t totalNodeVolume() const;
 	__attribute__((noinline)) void assertAllLeafsAreUnique() const;
-	[[nodiscard]] static __attribute__((noinline)) uint getNodeSize();
+	[[nodiscard]] static __attribute__((noinline)) int32_t getNodeSize();
 };

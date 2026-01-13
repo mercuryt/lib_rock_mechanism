@@ -1,7 +1,7 @@
 #pragma once
 
 #include "numericTypes/types.h"
-#include "config.h"
+#include "config/config.h"
 
 struct ItemType;
 struct FluidType;
@@ -26,16 +26,16 @@ struct PlantSpeciesParamaters final
 	const Temperature maximumGrowingTemperature = Temperature::null();
 	const Temperature minimumGrowingTemperature = Temperature::null();
 	const FullDisplacement volumeFluidConsumed = FullDisplacement::null();
-	const uint16_t dayOfYearForSowStart = 0;
-	const uint16_t dayOfYearForSowEnd = 0;
-	const uint8_t maxWildGrowth = 0;
+	const int16_t dayOfYearForSowStart = 0;
+	const int16_t dayOfYearForSowEnd = 0;
+	const int8_t maxWildGrowth = 0;
 	const bool annual = false;
 	const bool growsInSunLight = false;
 	const bool isTree = false;
 	ItemTypeId fruitItemType = ItemTypeId::null();
 	Step stepsDurationHarvest = Step::null();
 	Quantity itemQuantityToHarvest = Quantity::null();
-	uint16_t dayOfYearToStartHarvest = 0;
+	int16_t dayOfYearToStartHarvest = 0;
 };
 class PlantSpecies final
 {
@@ -56,9 +56,9 @@ class PlantSpecies final
 	StrongVector<Temperature, PlantSpeciesId> m_maximumGrowingTemperature;
 	StrongVector<Temperature, PlantSpeciesId> m_minimumGrowingTemperature;
 	StrongVector<FullDisplacement, PlantSpeciesId> m_volumeFluidConsumed;
-	StrongVector<uint16_t, PlantSpeciesId> m_dayOfYearForSowStart;
-	StrongVector<uint16_t, PlantSpeciesId> m_dayOfYearForSowEnd;
-	StrongVector<uint8_t, PlantSpeciesId> m_maxWildGrowth;
+	StrongVector<int16_t, PlantSpeciesId> m_dayOfYearForSowStart;
+	StrongVector<int16_t, PlantSpeciesId> m_dayOfYearForSowEnd;
+	StrongVector<int8_t, PlantSpeciesId> m_maxWildGrowth;
 	StrongBitSet<PlantSpeciesId> m_annual;
 	StrongBitSet<PlantSpeciesId> m_growsInSunLight;
 	StrongBitSet<PlantSpeciesId> m_isTree;
@@ -66,7 +66,7 @@ class PlantSpecies final
 	StrongVector<ItemTypeId, PlantSpeciesId> m_fruitItemType;
 	StrongVector<Step, PlantSpeciesId> m_stepsDurationHarvest;
 	StrongVector<Quantity, PlantSpeciesId> m_itemQuantityToHarvest;
-	StrongVector<uint16_t, PlantSpeciesId> m_dayOfYearToStartHarvest;
+	StrongVector<int16_t, PlantSpeciesId> m_dayOfYearToStartHarvest;
 public:
 	static void create(PlantSpeciesParamaters& paramaters);
 	[[nodiscard]] static PlantSpeciesId size();
@@ -87,21 +87,21 @@ public:
 	[[nodiscard]] static Temperature getMaximumGrowingTemperature(const PlantSpeciesId& species);
 	[[nodiscard]] static Temperature getMinimumGrowingTemperature(const PlantSpeciesId& species);
 	[[nodiscard]] static FullDisplacement getVolumeFluidConsumed(const PlantSpeciesId& species);
-	[[nodiscard]] static uint16_t getDayOfYearForSowStart(const PlantSpeciesId& species);
-	[[nodiscard]] static uint16_t getDayOfYearForSowEnd(const PlantSpeciesId& species);
-	[[nodiscard]] static uint8_t getMaxWildGrowth(const PlantSpeciesId& species);
+	[[nodiscard]] static int16_t getDayOfYearForSowStart(const PlantSpeciesId& species);
+	[[nodiscard]] static int16_t getDayOfYearForSowEnd(const PlantSpeciesId& species);
+	[[nodiscard]] static int8_t getMaxWildGrowth(const PlantSpeciesId& species);
 	[[nodiscard]] static bool getAnnual(const PlantSpeciesId& species);
 	[[nodiscard]] static bool getGrowsInSunLight(const PlantSpeciesId& species);
 	[[nodiscard]] static bool getIsTree(const PlantSpeciesId& species);
 	// returns base shape and wild growth steps.
-	[[nodiscard]] static const std::pair<ShapeId, uint8_t> shapeAndWildGrowthForPercentGrown(const PlantSpeciesId& species, const Percent& percentGrown);
+	[[nodiscard]] static const std::pair<ShapeId, int8_t> shapeAndWildGrowthForPercentGrown(const PlantSpeciesId& species, const Percent& percentGrown);
 	[[nodiscard]] static ShapeId shapeForPercentGrown(const PlantSpeciesId& species, const Percent& percentGrown);
-	[[nodiscard]] static uint8_t wildGrowthForPercentGrown(const PlantSpeciesId& species, const Percent& percentGrown);
+	[[nodiscard]] static int8_t wildGrowthForPercentGrown(const PlantSpeciesId& species, const Percent& percentGrown);
 	[[nodiscard]] static PlantSpeciesId byName(std::string name);
 	// Harvest.
 	ItemTypeId static getFruitItemType(const PlantSpeciesId& species);
 	Step static getStepsDurationHarvest(const PlantSpeciesId& species);
 	Quantity static getItemQuantityToHarvest(const PlantSpeciesId& species);
-	uint16_t static getDayOfYearToStartHarvest(const PlantSpeciesId& species);
+	int16_t static getDayOfYearToStartHarvest(const PlantSpeciesId& species);
 };
 inline PlantSpecies g_plantSpeciesData;

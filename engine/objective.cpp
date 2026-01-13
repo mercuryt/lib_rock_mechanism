@@ -153,7 +153,7 @@ void SupressedNeedEvent::clearReferences(Simulation&, Area*) { m_supressedNeed.m
 // Static method.
 void ObjectiveType::load()
 {
-	objectiveTypeData.resize(18);
+	objectiveTypeData.resize(17);
 	ObjectiveTypeId index = ObjectiveTypeId::create(0);
 	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("wood working"));
 	objectiveTypeData[index++] = std::make_unique<CraftObjectiveType>(SkillType::byName("metal working"));
@@ -193,7 +193,7 @@ ObjectiveTypeId ObjectiveType::getId() const
 {
 	auto iter = objectiveTypeData.find_if([&](const std::unique_ptr<ObjectiveType>& type) { return type.get() == this; });
 	assert(iter != objectiveTypeData.end());
-	uint distance = std::distance(objectiveTypeData.begin(), iter);
+	int32_t distance = std::distance(objectiveTypeData.begin(), iter);
 	return ObjectiveTypeId::create(distance);
 }
 // Objective.
@@ -319,7 +319,7 @@ void HasObjectives::addNeed(Area& area, std::unique_ptr<Objective> objective)
 		area.getActors().sleep_wakeUpEarly(m_actor);
 	Objective* o = objective.get();
 	m_needsQueue.push_back(std::move(objective));
-	m_needsQueue.sort([](const std::unique_ptr<Objective>& a, const std::unique_ptr<Objective>& b){ return a->m_priority > b->m_priority; });
+	std::ranges::sort(m_needsQueue, [](const std::unique_ptr<Objective>& a, const std::unique_ptr<Objective>& b){ return a->m_priority > b->m_priority; });
 	m_typesOfNeedsInQueue.insert(needType);
 	maybeUsurpsPriority(area, *o);
 }
@@ -333,7 +333,7 @@ void HasObjectives::addTaskToEnd(Area& area, std::unique_ptr<Objective> objectiv
 void HasObjectives::addTaskToStart(Area& area, std::unique_ptr<Objective> objective)
 {
 	Objective* o = objective.get();
-	m_tasksQueue.push_front(std::move(objective));
+	m_tasksQueue.insert(m_tasksQueue.begin(), std::move(objective));
 	maybeUsurpsPriority(area, *o);
 }
 void HasObjectives::replaceTasks(Area& area, std::unique_ptr<Objective> objective)
@@ -442,7 +442,7 @@ void HasObjectives::cannotCompleteSubobjective(Area& area)
 Objective& HasObjectives::getCurrent()
 {
 	assert(m_currentObjective != nullptr);
-    	return *m_currentObjective;
+   	return *m_currentObjective;
 }
 bool HasObjectives::queuesAreEmpty() const
 {

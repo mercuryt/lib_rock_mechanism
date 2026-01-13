@@ -187,6 +187,7 @@ public:
 	[[nodiscard]] ItemTypeId getItemType(const ItemIndex& index) const { return m_itemType[index]; }
 	[[nodiscard]] MaterialTypeId getMaterialType(const ItemIndex& index) const { return m_solid[index]; }
 	[[nodiscard]] bool canCombine(const ItemIndex& index, const ItemIndex& toMerge);
+	[[nodiscard]] std::string description(const ItemIndex& index);
 	// - Location.
 private:
 	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetGenericStatic(const ItemIndex& index, const Point3D& location, const Facing4 facing);

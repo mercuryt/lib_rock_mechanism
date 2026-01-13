@@ -1,7 +1,7 @@
 #include "rain.h"
 #include "../fluidType.h"
 #include "../area/area.h"
-#include "../config.h"
+#include "../config/config.h"
 #include "../random.h"
 #include "../numericTypes/types.h"
 #include "../util.h"
@@ -70,7 +70,7 @@ void AreaHasRain::doStep()
 		return;
 	auto& random = m_area.m_simulation.m_random;
 	Distance spacing = Distance::create(util::scaleByInversePercent(Config::rainMaximumSpacing.get(), m_intensityPercent));
-	Distance offset = Distance::create(random.getInRange(0, Config::rainMaximumOffset.get()));
+	Distance offset = Distance::create(random.getInRange((DistanceWidth)0, Config::rainMaximumOffset.get()));
 	Distance i = Distance::create(0);
 	Space& space = m_area.getSpace();
 	Cuboid cuboid = space.boundry().getFace(Facing6::Above);

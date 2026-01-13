@@ -12,6 +12,21 @@ TargetedHaulProject::TargetedHaulProject(const Json& data, DeserializationMemo& 
 	if(data.contains("target"))
 		m_target.load(data["target"], area);
 }
+std::string TargetedHaulProject::description() const
+{
+	std::string output = "haul ";
+	if(m_target.isActor())
+	{
+		Actors& actors = m_area.getActors();
+		output += actors.getName(m_target.toActorIndex(actors.m_referenceData));
+	}
+	else
+	{
+		Items& items = m_area.getItems();
+		output += items.description(m_target.toItemIndex(items.m_referenceData));
+	}
+	return output;
+}
 Json TargetedHaulProject::toJson() const
 {
 	Json data = Project::toJson();

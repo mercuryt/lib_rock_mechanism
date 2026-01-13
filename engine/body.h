@@ -7,6 +7,8 @@
 #include "eventSchedule.hpp"
 
 #include <vector>
+// Wound and BodyPart are both stored in lists. This probably should be changed.
+#include <list>
 #include <utility>
 
 struct BodyPart;
@@ -22,12 +24,12 @@ struct Wound final
 	const WoundType woundType;
 	BodyPart& bodyPart;
 	Hit hit;
-	uint32_t bleedVolumeRate;
+	int32_t bleedVolumeRate;
 	Percent percentHealed;
 	Percent maxPercentTemporaryImpairment;
 	Percent maxPercentPermanantImpairment;
 	HasScheduledEvent<WoundHealEvent> healEvent;
-	Wound(Area& area, const ActorIndex& a, const WoundType wt, BodyPart& bp, Hit h, const uint32_t bvr, const Percent ph = Percent::create(0));
+	Wound(Area& area, const ActorIndex& a, const WoundType wt, BodyPart& bp, Hit h, const int32_t bvr, const Percent ph = Percent::create(0));
 	Wound(const Json& data, DeserializationMemo& deserializationMemo, BodyPart& bp);
 	bool operator==(const Wound& other) const { return &other == this; }
 	Percent getPercentHealed() const;
@@ -58,6 +60,7 @@ class Body final
 	Percent m_impairMovePercent = Percent::create(0);
 	Percent m_impairManipulationPercent = Percent::create(0);
 	FullDisplacement m_volumeOfBlood = FullDisplacement::create(0);
+	PsycologyWeight m_pain = PsycologyWeight::create(0);
 	bool m_isBleeding = false;
 public:
 	std::list<BodyPart> m_bodyParts;
@@ -87,16 +90,18 @@ public:
 	[[nodiscard]] std::vector<Attack> getMeleeAttacks() const;
 	[[nodiscard]] FullDisplacement getVolume(Area& area) const;
 	[[nodiscard]] bool isInjured() const;
+	[[nodiscard]] bool isSeriouslyInjured() const;
 	[[nodiscard]] Step getStepsTillBleedToDeath() const;
 	[[nodiscard]] bool hasBodyPart(const BodyPartTypeId& bodyPartType) const;
 	[[nodiscard]] Step getStepsTillWoundsClose() const { return m_woundsCloseEvent.remainingSteps(); }
 	[[nodiscard]] Percent getImpairMovePercent() const { return m_impairMovePercent; }
 	[[nodiscard]] Percent getImpairManipulationPercent() const { return m_impairManipulationPercent; }
+	[[nodiscard]] const PsycologyWeight& getPain() const { return m_pain; }
 	[[nodiscard]] std::vector<Wound*> getAllWounds();
-	// For testing.
-	[[maybe_unused, nodiscard]] bool hasBleedEvent() const { return m_bleedEvent.exists(); }
-	[[maybe_unused, nodiscard]] bool hasBodyPart() const;
-	[[maybe_unused, nodiscard]] Percent getImpairPercentFor(const BodyPartTypeId& bodyPartType) const;
+	[[nodiscard]] bool hasBleedEvent() const { return m_bleedEvent.exists(); }
+	[[nodiscard]] bool hasBodyPart() const;
+	[[nodiscard]] Percent getImpairPercentFor(const BodyPartTypeId& bodyPartType) const;
+	[[nodiscard]] Percent getImpairPercentFor(const BodyPart& bodyPart) const;
 	friend class WoundHealEvent;
 	friend class BleedEvent;
 	friend class WoundsCloseEvent;

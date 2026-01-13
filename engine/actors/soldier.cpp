@@ -1,15 +1,17 @@
 #include "actors.h"
 #include "../area/area.h"
+#include "../config/psycology.h"
 
+// When a soldier is demobilized, loses conciousness, dies, or leaves area.
 void Actors::soldier_removeFromMaliceMap(const ActorIndex& index)
 {
-	m_area.m_maliceMap[m_faction[index]].updateSubtract(m_soldier[index].maliceZone, m_combatScore[index]);
+	m_area.m_hasSoldiers.remove(m_area, index);
 	// No need to clear maliceZone, it get's overrwritten before each use.
 }
+// When a soldier is drafted, regains conciousness, or arrives at area.
 void Actors::soldier_recordInMaliceMap(const ActorIndex& index)
 {
-	m_soldier[index].maliceZone = combat_getMaliceZone(index);
-	m_area.m_maliceMap[m_faction[index]].updateAdd(m_soldier[index].maliceZone, m_combatScore[index]);
+	m_area.m_hasSoldiers.add(m_area, index);
 }
 void Actors::soldier_mobilize(const ActorIndex& index)
 {
@@ -21,27 +23,13 @@ void Actors::soldier_demobilize(const ActorIndex& index)
 	soldier_removeFromMaliceMap(index);
 	m_soldier[index].isDrafted = false;
 }
-CombatScore Actors::soldier_getEnemyMaliceAtLocation(const ActorIndex& index, const Point3D& location) const
+void Actors::soldier_onSetLocation(const ActorIndex& index)
 {
-	CombatScore output = {0};
-	const FactionId& soldierFaction = m_faction[index];
-	for(const auto& [factionId, maliceMap] : m_area.m_maliceMap)
-		if(m_area.m_simulation.m_hasFactions.isEnemy(factionId, soldierFaction))
-			output += maliceMap.queryGetOne(location);
-	return output;
+	soldier_recordInMaliceMap(index);
 }
-CombatScore Actors::soldier_getFriendlyMaliceAtLocation(const ActorIndex& index, const Point3D& location) const
+void Actors::soldier_setSquad(const ActorIndex& index, const SquadIndex& squad)
 {
-	return m_area.m_maliceMap[m_faction[index]].queryGetOne(location);
-}
-bool Actors::soldier_testMaliceDeltaAtLocationAgainstCourage(const ActorIndex& index, const Point3D& location) const
-{
-	int32_t friendly = (int32_t)soldier_getFriendlyMaliceAtLocation(index, location).get();
-	int32_t enemy =  (int32_t)soldier_getEnemyMaliceAtLocation(index, location).get();
-	// High delta is more threat.
-	int32_t delta = enemy - friendly;
-	const PsycologyWeight& courage = psycology_getConst(index).getValueFor(PsycologyAttribute::Courage);
-	// Zero courage gives an even chance when there is no malice delta.
-	return m_area.m_simulation.m_random.applyRandomFuzzPlusOrMinusRatio(courage, Config::ratioOfMaximumVarianceForCourageTest) > delta;
+	m_soldier[index].squad = squad;
 }
 bool Actors::soldier_is(const ActorIndex& index) const { return m_soldier[index].squad.exists(); }
+CuboidSet& Actors::soldier_getRecordedMalicePoints(const ActorIndex& index) { return m_soldier[index].maliceZone; }

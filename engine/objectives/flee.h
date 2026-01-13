@@ -3,7 +3,7 @@
 #include "../numericTypes/types.h"
 #include "../objective.h"
 #include "../path/pathRequest.h"
-#include "../config.h"
+#include "../config/config.h"
 
 class Area;
 struct DeserializationMemo;
@@ -25,7 +25,8 @@ public:
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
 	void reset(Area& area, const ActorIndex& actor);
-	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("flee").getId(); }
+	[[nodiscard]] Json toJson() const { return Objective::toJson(); }
 	[[nodiscard]] std::string name() const { return "flee"; }
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::flee; }
 	friend class FleePathRequest;

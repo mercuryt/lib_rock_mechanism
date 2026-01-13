@@ -1,6 +1,6 @@
 #pragma once
 
-#include "numericTypes/types.h"
+#include "../numericTypes/types.h"
 
 #include <string>
 #include <vector>
@@ -8,7 +8,7 @@
 #include <algorithm>
 struct Hit;
 class BodyPartType;
-enum class WoundType { Pierce, Cut, Bludgeon };
+enum class WoundType { Pierce, Cut, Bludgeon, Null };
 
 inline WoundType woundTypeByName(std::string name)
 {
@@ -30,9 +30,9 @@ inline std::string getWoundTypeName(const WoundType& woundType)
 }
 namespace WoundCalculations
 {
-	Step getStepsTillHealed(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale);
-	uint32_t getBleedVolumeRate(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale);
-	Percent getPercentTemporaryImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale);
-	Percent getPercentPermanentImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, uint32_t scale);
+	Step getStepsTillHealed(const Hit& hit, const BodyPartTypeId& bodyPartType, int32_t scale);
+	int32_t getBleedVolumeRate(const Hit& hit, const BodyPartTypeId& bodyPartType, int32_t scale);
+	Percent getPercentTemporaryImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, int32_t scale);
+	Percent getPercentPermanentImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, int32_t scale);
 	WoundType byName(std::string name);
 }

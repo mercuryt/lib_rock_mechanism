@@ -1,12 +1,12 @@
 #pragma once
 
-#include "geometry/cuboid.h"
+#include "../geometry/cuboid.h"
 //#include "input.h"
-#include "reservable.h"
-#include "numericTypes/types.h"
-#include "eventSchedule.hpp"
-#include "project.h"
-#include "config.h"
+#include "../reservable.h"
+#include "../numericTypes/types.h"
+#include "../eventSchedule.hpp"
+#include "../project.h"
+#include "../config/config.h"
 
 #include <vector>
 
@@ -26,7 +26,9 @@ class DigProject final : public Project
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
 	[[nodiscard]] std::vector<ActorReference> getActors() const;
 	[[nodiscard]] std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
-	[[nodiscard]] static uint32_t getWorkerDigScore(Area& area, ActorIndex actor);
+	[[nodiscard]] SkillTypeId getSkill() const;
+	[[nodiscard]] std::string description() const;
+	[[nodiscard]] static int32_t getWorkerDigScore(Area& area, ActorIndex actor);
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
 	// PointFeatureType can be null, meaning the point is to be fully excavated.

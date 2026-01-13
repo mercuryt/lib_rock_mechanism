@@ -1,7 +1,7 @@
 #include "eat.h"
 #include "actors/actors.h"
 #include "definitions/animalSpecies.h"
-#include "config.h"
+#include "config/config.h"
 #include "definitions/itemType.h"
 #include "objective.h"
 #include "area/area.h"
@@ -146,7 +146,7 @@ bool MustEat::needsFood() const { return m_massFoodRequested != 0; }
 Mass MustEat::massFoodForBodyMass(Area& area) const
 {
 	const ActorReferenceData &referenceData = area.getActors().m_referenceData;
-	return Mass::create(std::max(1u, (area.getActors().getMass(m_actor.getIndex(referenceData)) / Config::unitsBodyMassPerUnitFoodConsumed).get()));
+	return Mass::create(std::max(1, (area.getActors().getMass(m_actor.getIndex(referenceData)) / Config::unitsBodyMassPerUnitFoodConsumed).get()));
 }
 Mass MustEat::getMassFoodRequested() const { return m_massFoodRequested; }
 Percent MustEat::getPercentStarved() const
@@ -155,7 +155,7 @@ Percent MustEat::getPercentStarved() const
 		return Percent::create(0);
 	return m_hungerEvent.percentComplete();
 }
-std::pair<Point3D, uint8_t> MustEat::getDesireToEatSomethingAt(Area& area, const Cuboid& cuboid) const
+std::pair<Point3D, int8_t> MustEat::getDesireToEatSomethingAt(Area& area, const Cuboid& cuboid) const
 {
 	Space& space = area.getSpace();
 	Items& items = area.getItems();
@@ -192,14 +192,14 @@ std::pair<Point3D, uint8_t> MustEat::getDesireToEatSomethingAt(Area& area, const
 				return {plants.getLocation(plant), 3};
 	return {Point3D::null(), 0};
 }
-uint8_t MustEat::getMinimumAcceptableDesire(Area& area) const
+int8_t MustEat::getMinimumAcceptableDesire(Area& area) const
 {
 	assert(m_hungerEvent.exists());
 	// Sentients demand max rank ( prepared meals) to start, but become less picky as they get more hungry.
 	// Non sentients still prefer prepared meals if they can get to them, but are willing to scavange by default.
 	Percent hunger = getPercentStarved();
 	const ActorReferenceData &referenceData = area.getActors().m_referenceData;
-	for(uint8_t i = 0; i < Config::minimumHungerLevelThresholds.size(); ++i )
+	for(size_t i = 0; i < Config::minimumHungerLevelThresholds.size(); ++i )
 	{
 		if(hunger < Config::minimumHungerLevelThresholds[i])
 		{
@@ -214,7 +214,7 @@ uint8_t MustEat::getMinimumAcceptableDesire(Area& area) const
 Point3D MustEat::getOccupiedOrAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(Area& area)
 {
 	// Lower is better.
-	uint8_t minEatDesire = UINT8_MAX;
+	int8_t minEatDesire = INT8_MAX;
 	Point3D output;
 	const Actors& actors = area.getActors();
 	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);

@@ -281,7 +281,7 @@ public:
 			m_unusedReferenceIndices.insert(refIndex);
 		}
 	}
-	void reserve(uint size)
+	void reserve(int32_t size)
 	{
 		m_referencesByIndex.reserve(size);
 		// The current 'next reference' is determined by the length of indices by reference, which is why we reserve rather then resize here.
@@ -321,6 +321,8 @@ class ActorOrItemReference
 	std::variant<std::monostate, ActorReference, ItemReference> m_reference;
 public:
 	ActorOrItemReference() = default;
+	ActorOrItemReference(const ActorReference& target) { setActor(target); }
+	ActorOrItemReference(const ItemReference& target) { setItem(target); }
 	ActorOrItemReference(const Json& data, Area& area) { load(data, area); }
 	void setActor(const ActorReference& target) { m_reference.emplace<1>(target); }
 	void setItem(const ItemReference& target) { m_reference.emplace<2>(target); }

@@ -2,7 +2,7 @@
 #include "area/area.h"
 #include "datetime.h"
 #include "space/nthAdjacentOffsets.h"
-#include "config.h"
+#include "config/config.h"
 #include "objective.h"
 #include "objectives/getToSafeTemperature.h"
 #include "simulation/simulation.h"
@@ -151,10 +151,10 @@ void AreaHasTemperature::updateAmbientSurfaceTemperature()
 	// TODO: Latitude and altitude.
 	Temperature dailyAverage = getDailyAverageAmbientSurfaceTemperature();
 	static Temperature maxDailySwing = Temperature::create(35);
-	static uint32_t hottestHourOfDay = 14;
-	int32_t hour = DateTime(m_area.m_simulation.m_step).hour;
-	int32_t hoursFromHottestHourOfDay = std::abs((int32_t)hottestHourOfDay - hour);
-	int32_t halfDay = Config::hoursPerDay / 2;
+	static int8_t hottestHourOfDay = 14;
+	int8_t hour = DateTime(m_area.m_simulation.m_step).hour;
+	int8_t hoursFromHottestHourOfDay = std::abs((int32_t)hottestHourOfDay - hour);
+	int8_t halfDay = Config::hoursPerDay / 2;
 	setAmbientSurfaceTemperature(dailyAverage + ((maxDailySwing * (std::max(0, halfDay - hoursFromHottestHourOfDay))) / halfDay) - (maxDailySwing / 2));
 }
 void AreaHasTemperature::maybeAddMeltableSolidPointAboveGround(const Point3D& point)
@@ -190,9 +190,9 @@ Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature() const
 	// TODO: Latitude and altitude.
 	static Temperature yearlyHottestDailyAverage = Temperature::create(290);
 	static Temperature yearlyColdestDailyAverage = Temperature::create(270);
-	static uint32_t dayOfYearOfSolstice = Config::daysPerYear / 2;
-	int32_t day = DateTime(m_area.m_simulation.m_step).day;
-	uint32_t daysFromSolstice = std::abs(day - (int32_t)dayOfYearOfSolstice);
+	static int16_t dayOfYearOfSolstice = Config::daysPerYear / 2;
+	int16_t day = DateTime(m_area.m_simulation.m_step).day;
+	int16_t daysFromSolstice = std::abs(day - (int32_t)dayOfYearOfSolstice);
 	return yearlyColdestDailyAverage + ((yearlyHottestDailyAverage - yearlyColdestDailyAverage) * (dayOfYearOfSolstice - daysFromSolstice)) / dayOfYearOfSolstice;
 }
 UnsafeTemperatureEvent::UnsafeTemperatureEvent(Area& area, const ActorIndex& a, const Step start) :

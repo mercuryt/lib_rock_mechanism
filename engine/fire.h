@@ -7,7 +7,8 @@
 #include <algorithm>
 #include <string>
 
-enum class FireStage{Smouldering, Burning, Flaming};
+// There are potentally alot of fire objects and their stage isn't accessed frequently so it's worth using an 8 bit enum here.
+enum class FireStage : int8_t {Smouldering, Burning, Flaming};
 NLOHMANN_JSON_SERIALIZE_ENUM(FireStage, {
 		{FireStage::Smouldering, "Smouldering"},
 		{FireStage::Burning, "Burning"},

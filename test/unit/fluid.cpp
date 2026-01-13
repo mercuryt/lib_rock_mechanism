@@ -1236,12 +1236,12 @@ TEST_CASE("fluids multi scale")
 	static FluidTypeId mercury = FluidType::byName("mercury");
 	static FluidTypeId lava = FluidType::byName("lava");
 	Simulation simulation;
-	auto trenchTest2Fluids = [&](uint32_t scaleL, uint32_t scaleW, Step steps)
+	auto trenchTest2Fluids = [&](int scaleL, int scaleW, Step steps)
 	{
-		uint32_t maxX = scaleL + 2;
-		uint32_t maxY = scaleW + 2;
-		uint32_t maxZ = scaleW + 1;
-		uint32_t halfMaxX = maxX / 2;
+		int maxX = scaleL + 2;
+		int maxY = scaleW + 2;
+		int maxZ = scaleW + 1;
+		int halfMaxX = maxX / 2;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 		area.m_hasRain.disable();
 		Space& space = area.getSpace();
@@ -1269,9 +1269,9 @@ TEST_CASE("fluids multi scale")
 			space.prepareRtrees();
 			++simulation.m_step;
 		}
-		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
-		uint32_t expectedHeight = 1 + (maxZ - 1) / 2;
-		uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
+		int totalBlocks2D = (maxX - 2) * (maxY - 2);
+		int expectedHeight = 1 + (maxZ - 1) / 2;
+		int expectedBlocks = totalBlocks2D * expectedHeight;
 		CHECK(fgWater->m_stable);
 		CHECK(fgWater->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(fgWater->totalVolume(area) == totalVolume);
@@ -1299,12 +1299,12 @@ TEST_CASE("fluids multi scale")
 	{
 		trenchTest2Fluids(20, 5, Step::create(20));
 	}
-	auto trenchTest3Fluids = [&](uint32_t scaleL, uint32_t scaleW, Step steps)
+	auto trenchTest3Fluids = [&](int scaleL, int scaleW, Step steps)
 	{
-		uint32_t maxX = scaleL + 2;
-		uint32_t maxY = scaleW + 2;
-		uint32_t maxZ = scaleW + 1;
-		uint32_t thirdMaxX = maxX / 3;
+		int maxX = scaleL + 2;
+		int maxY = scaleW + 2;
+		int maxZ = scaleW + 1;
+		int thirdMaxX = maxX / 3;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 		area.m_hasRain.disable();
 		Space& space = area.getSpace();
@@ -1335,9 +1335,9 @@ TEST_CASE("fluids multi scale")
 			space.prepareRtrees();
 			++simulation.m_step;
 		}
-		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
-		uint32_t expectedHeight = std::max(1u, maxZ / 3);
-		uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
+		int totalBlocks2D = (maxX - 2) * (maxY - 2);
+		int expectedHeight = std::max(1, maxZ / 3);
+		int expectedBlocks = totalBlocks2D * expectedHeight;
 		CHECK(fgWater->m_stable);
 		CHECK(fgWater->m_drainQueue.m_set.volume() == expectedBlocks);
 		CHECK(fgWater->totalVolume(area) == totalVolume);
@@ -1368,12 +1368,12 @@ TEST_CASE("fluids multi scale")
 	{
 		trenchTest3Fluids(18, 3, Step::create(30));
 	}
-	auto trenchTest4Fluids = [&](uint32_t scaleL, uint32_t scaleW, Step steps)
+	auto trenchTest4Fluids = [&](int scaleL, int scaleW, Step steps)
 	{
-		uint32_t maxX = scaleL + 2;
-		uint32_t maxY = scaleW + 2;
-		uint32_t maxZ = scaleW + 1;
-		uint32_t quarterMaxX = maxX / 4;
+		int maxX = scaleL + 2;
+		int maxY = scaleW + 2;
+		int maxZ = scaleW + 1;
+		int quarterMaxX = maxX / 4;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 		area.m_hasRain.disable();
 		Space& space = area.getSpace();
@@ -1412,9 +1412,9 @@ TEST_CASE("fluids multi scale")
 				CHECK(fgMercury->totalVolume(area) == totalVolume);
 			++simulation.m_step;
 		}
-		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
-		uint32_t expectedHeight = std::max(1u, maxZ / 4);
-		uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
+		int totalBlocks2D = (maxX - 2) * (maxY - 2);
+		int expectedHeight = std::max(1, maxZ / 4);
+		int expectedBlocks = totalBlocks2D * expectedHeight;
 		fgWater = areaBuilderUtil::getFluidGroup(area, water);
 		CHECK(fgWater != nullptr);
 		fgCO2 = areaBuilderUtil::getFluidGroup(area, CO2);
@@ -1466,12 +1466,12 @@ TEST_CASE("fluids multi scale")
 	{
 		trenchTest4Fluids(16, 4, Step::create(26));
 	}
-	auto trenchTest2FluidsMerge = [&](uint32_t scaleL, uint32_t scaleW, Step steps)
+	auto trenchTest2FluidsMerge = [&](int scaleL, int scaleW, Step steps)
 	{
-		uint32_t maxX = scaleL + 2;
-		uint32_t maxY = scaleW + 2;
-		uint32_t maxZ = scaleW + 1;
-		uint32_t quarterMaxX = maxX / 4;
+		int maxX = scaleL + 2;
+		int maxY = scaleW + 2;
+		int maxZ = scaleW + 1;
+		int quarterMaxX = maxX / 4;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 		area.m_hasRain.disable();
 		Space& space = area.getSpace();
@@ -1504,9 +1504,9 @@ TEST_CASE("fluids multi scale")
 			space.prepareRtrees();
 			++simulation.m_step;
 		}
-		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
-		uint32_t expectedHeight = std::max(1u, maxZ / 2);
-		uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
+		int totalBlocks2D = (maxX - 2) * (maxY - 2);
+		int expectedHeight = std::max(1, maxZ / 2);
+		int expectedBlocks = totalBlocks2D * expectedHeight;
 		CHECK(area.m_hasFluidGroups.getUnstable().empty());
 		fgWater = space.fluid_getGroup(water1, water);
 		FluidGroup* fgCO2 = space.fluid_getGroup(water2, CO2);
@@ -1532,12 +1532,12 @@ TEST_CASE("fluids multi scale")
 	{
 		trenchTest2FluidsMerge(16, 4, Step::create(12));
 	}
-	auto trenchTest3FluidsMerge = [&](uint32_t scaleL, uint32_t scaleW, Step steps)
+	auto trenchTest3FluidsMerge = [&](int scaleL, int scaleW, Step steps)
 	{
-		uint32_t maxX = scaleL + 2;
-		uint32_t maxY = scaleW + 2;
-		uint32_t maxZ = scaleW + 1;
-		uint32_t quarterMaxX = maxX / 4;
+		int maxX = scaleL + 2;
+		int maxY = scaleW + 2;
+		int maxZ = scaleW + 1;
+		int quarterMaxX = maxX / 4;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 		area.m_hasRain.disable();
 		Space& space = area.getSpace();
@@ -1572,9 +1572,9 @@ TEST_CASE("fluids multi scale")
 			space.prepareRtrees();
 			++simulation.m_step;
 		}
-		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
-		uint32_t expectedHeight = std::max(1u, maxZ / 4);
-		uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
+		int totalBlocks2D = (maxX - 2) * (maxY - 2);
+		int expectedHeight = std::max(1, maxZ / 4);
+		int expectedBlocks = totalBlocks2D * expectedHeight;
 		CHECK(area.m_hasFluidGroups.getUnstable().empty());
 		fgWater = areaBuilderUtil::getFluidGroup(area, water);
 		FluidGroup* fgCO2 = areaBuilderUtil::getFluidGroup(area, CO2);
@@ -1618,13 +1618,13 @@ TEST_CASE("four fluids multi scale")
 	static FluidTypeId mercury = FluidType::byName("mercury");
 	static FluidTypeId lava = FluidType::byName("lava");
 	Simulation simulation;
-	auto fourFluidsTest = [&](uint32_t scale, Step steps)
+	auto fourFluidsTest = [&](int scale, Step steps)
 	{
-		uint32_t maxX = (scale * 2) + 2;
-		uint32_t maxY = (scale * 2) + 2;
-		uint32_t maxZ = (scale * 1) + 1;
-		uint32_t halfMaxX = maxX / 2;
-		uint32_t halfMaxY = maxY / 2;
+		int maxX = (scale * 2) + 2;
+		int maxY = (scale * 2) + 2;
+		int maxZ = (scale * 1) + 1;
+		int halfMaxX = maxX / 2;
+		int halfMaxY = maxY / 2;
 		Area& area = simulation.m_hasAreas->createArea(maxX, maxY, maxZ);
 		area.m_hasRain.disable();
 		Space& space = area.getSpace();
@@ -1665,9 +1665,9 @@ TEST_CASE("four fluids multi scale")
 			space.prepareRtrees();
 			++simulation.m_step;
 		}
-		uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
-		uint32_t expectedHeight = ((maxZ - 2) / 4) + 1;
-		uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
+		int totalBlocks2D = (maxX - 2) * (maxY - 2);
+		int expectedHeight = ((maxZ - 2) / 4) + 1;
+		int expectedBlocks = totalBlocks2D * expectedHeight;
 		CHECK(area.m_hasFluidGroups.getAll().size() == 4);
 		fgMercury = areaBuilderUtil::getFluidGroup(area, mercury);
 		fgWater = areaBuilderUtil::getFluidGroup(area, water);

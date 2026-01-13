@@ -1,5 +1,5 @@
 #include "datetime.h"
-#include "config.h"
+#include "config/config.h"
 #include <cstdint>
 #include <cassert>
 DateTime::DateTime(Step step)
@@ -13,7 +13,7 @@ DateTime::DateTime(Step step)
 	assert(day <= Config::daysPerYear);
 	assert(hour <= Config::hoursPerDay);
 }
-DateTime::DateTime(uint8_t h, uint16_t d, uint16_t y) : hour(h), day(d), year(y)
+DateTime::DateTime(int8_t h, int16_t d, int16_t y) : hour(h), day(d), year(y)
 {
 	if(!hour)
 	{
@@ -26,16 +26,16 @@ Step DateTime::toSteps()
 	return toSteps(hour, day, year);
 }
 // Static methods.
-Step DateTime::toSteps(uint8_t hour, uint16_t day, uint16_t year)
+Step DateTime::toSteps(int8_t hour, int16_t day, int16_t year)
 {
 	assert(day);
 	assert(hour);
 	return (Config::stepsPerYear * year) + (Config::stepsPerDay * --day) + (Config::stepsPerHour * --hour);
 }
-uint8_t DateTime::toSeason(Step step)
+int8_t DateTime::toSeason(Step step)
 {
 	DateTime dateTime(step);
-	uint8_t output = float(dateTime.day - 1) / ((float)Config::daysPerYear / 4.f);
+	int8_t output = float(dateTime.day - 1) / ((float)Config::daysPerYear / 4.f);
 	assert(output >= 0);
 	assert(output < 4);
 	return output;

@@ -1,32 +1,36 @@
 #pragma once
 
-#include "numericTypes/types.h"
-#include "numericTypes/index.h"
+#include "../numericTypes/types.h"
+#include "../numericTypes/index.h"
 #include <cmath>
 #include <cstdint>
-#include <fstream>
 namespace Config
 {
-	//inline uint32_t medicalPriority;
-	//inline uint32_t medicalProjectDelaySteps;
+	//inline int32_t medicalPriority;
+	//inline int32_t medicalProjectDelaySteps;
 	//
 	// sort command for vim:
 	// 	sort /\t/w* /w* /w* /
-	inline constexpr uint actorDoVisionInterval = 3;
+	inline constexpr int actorDoVisionInterval = 3;
+	inline constexpr int bytesPerCacheLine = 64;
 	inline constexpr bool fluidPiston = false;
 	inline constexpr float dataStoreVectorResizeFactor = 1.5;
 	inline constexpr float dataStoreVectorInitalSize = 10;
+	inline constexpr float goldenRatio = 1.61834f;
 	inline constexpr int maxActorsPerPoint = 4;
 	inline constexpr int maxItemsPerPoint = 4;
-	inline constexpr float goldenRatio = 1.61834f;
 	inline constexpr Distance maxDepthExteriorPortalPenetration = Distance::create(6);
+	inline constexpr int rtreeNodeSize = {64};
+	inline constexpr std::size_t soldiersPerMoraleCheckThread = 64;
 	inline constexpr bool validateFluidTotals = false;
 
 	// sort command for vim:
 	// 	sort /\t/w* /w* /
+	inline int32_t accidentalHitLargestArea;
+	inline int32_t accidentalHitSmallestArea;
 	inline Step addToStockPileDelaySteps;
 	inline float adjacentAllyCombatScoreBonusModifier;
-	inline uint32_t attackCoolDownDurationBaseDextarity;
+	inline int32_t attackCoolDownDurationBaseDextarity;
 	inline Step attackCoolDownDurationBaseSteps;
 	inline float attackSkillCombatModifier;
 	inline Quality averageItemQuality;
@@ -39,22 +43,27 @@ namespace Config
 	inline float bleedToDeathRatio;
 	inline float bleedToUnconciousessRatio;
 	inline float pointsPerMeter;
-	inline uint32_t bludgeonBleedVoumeRateModifier;
-	inline uint32_t bludgeonPercentPermanantImparmentModifier;
-	inline uint32_t bludgeonPercentTemporaryImparmentModifier;
-	inline uint32_t bludgeonStepsTillHealedModifier;
+	inline int32_t bludgeonBleedVoumeRateModifier;
+	inline int32_t bludgeonPercentPermanantImparmentModifier;
+	inline int32_t bludgeonPercentTemporaryImparmentModifier;
+	inline int32_t bludgeonStepsTillHealedModifier;
 	inline float bodyHardnessModifier;
+	inline float chastiseCastingCallBonusForDefenderIsFamily;
+	inline float chastiseCastingCallBonusForDefenderIsFriend;
+	inline float chastiseCastingCallDefenderMinimumScore;
 	inline float chanceToWaitInsteadOfWander;
+	inline Step confrontationObjectiveTempoSteps;
 	inline Priority constructObjectivePriority;
 	inline float constructSkillModifier;
 	inline float constructStrengthModifier;
 	inline Priority craftObjectivePriority;
-	inline uint32_t cutBleedVoumeRateModifier;
-	inline uint32_t cutPercentPermanantImparmentModifier;
-	inline uint32_t cutPercentTemporaryImparmentModifier;
-	inline uint32_t cutStepsTillHealedModifier;
-	inline uint16_t daysPerYear;
+	inline int32_t cutBleedVoumeRateModifier;
+	inline int32_t cutPercentPermanantImparmentModifier;
+	inline int32_t cutPercentTemporaryImparmentModifier;
+	inline int32_t cutStepsTillHealedModifier;
+	inline int16_t daysPerYear;
 	inline Temperature deepAmbiantTemperature;
+	inline Step dialogLineDefaultDurationSteps;
 	inline Step digMaxSteps;
 	inline Priority digObjectivePriority;
 	inline float digSkillModifier;
@@ -70,12 +79,12 @@ namespace Config
 	inline float flankingModifier;
 	inline Priority fleePriority;
 	inline float fluidDragModifier;
-	inline uint16_t fluidGroupsPerThread;
+	inline int16_t fluidGroupsPerThread;
 	inline float forceAbsorbedPiercedModifier;
 	inline float forceAbsorbedUnpiercedModifier;
 	inline float fractionAttackCoolDownReductionPerPointOfDextarity;
 	inline float fractionOfMoveSpeedToMakeDistanceHuristicForCanMoveToSoon;
-	inline uint32_t getIntoAttackPositionMaxRange;
+	inline int32_t getIntoAttackPositionMaxRange;
 	inline Priority getToSafeTemperaturePriority;
 	inline Step givePlantsFluidDelaySteps;
 	inline Priority givePlantsFluidPriority;
@@ -88,10 +97,10 @@ namespace Config
 	inline float heatFractionForSmoulder;
 	inline Distance heatDistanceMaximum;
 	inline TemperatureDelta heatRadianceMinimum;
-	inline uint32_t hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea;
-	inline uint32_t hitScaleModifier;
-	inline uint8_t hitsToDivideActorFallDamageInto;
-	inline uint32_t hoursPerDay;
+	inline int32_t hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea;
+	inline int32_t hitScaleModifier;
+	inline int8_t hitsToDivideActorFallDamageInto;
+	inline int32_t hoursPerDay;
 	inline FullDisplacement impassibleItemVolume;
 	inline Step installItemDuration;
 	inline Priority installItemPriority;
@@ -103,11 +112,12 @@ namespace Config
 	inline float itemWearCombatModifier;
 	inline float itemWearModifier;
 	inline Priority killPriority;
-	inline uint32_t lakeDepthModifier;
-	inline uint32_t lakeRadiusModifier;
+	inline int32_t lakeDepthModifier;
+	inline int32_t lakeRadiusModifier;
 	inline Step loadDelaySteps;
 	inline float massCarryMaximimMovementRatio;
-	inline uint32_t maxAnimalInsertLocationSearchRetries;
+	inline int32_t maxAnimalInsertLocationSearchRetries;
+	inline Distance maxChastiseDistance;
 	inline CollisionVolume maxPointVolume;
 	inline Distance maxPointsToLookForBetterFood;
 	inline Distance maxDistanceToLookForEatingLocation;
@@ -123,15 +133,17 @@ namespace Config
 	inline Distance maxRangeToSearchForWoodCuttingDesignations;
 	inline Distance maxRangeToSearchForHorticultureDesignations;
 	inline Distance maxRangeToSearchForUniformEquipment;
-	inline uint8_t maxSizeOfLongRangePathNode;
-	inline uint32_t maxSkillLevel;
+	inline int8_t maxSizeOfLongRangePathNode;
+	inline int32_t maxSkillLevel;
 	inline Stamina maxStaminaPointsBase;
 	inline Quantity maxWorkersForStockPileProject;
 	inline Distance maxZLevelForDeepAmbiantTemperature;
 	inline PsycologyWeight maximumDeltaToAlterPsycologyCurrentSquared;
 	inline Step maximumDurationToWaitInsteadOfWander;
+	inline float maximumForceRatioToMassForNonLethalAttack;
 	inline float maximumRainIntensityModifier;
-	inline uint32_t maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom;
+	inline float maximumRatioOfBloodRemainingForSeriousInjury;
+	inline int32_t maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom;
 	inline Step maximumStepsBetweenRainPerPercentHumidity;
 	inline Step maximumStepsRainPerPercentHumidity;
 	inline Meters metersHeightCarvedByRivers;
@@ -142,6 +154,7 @@ namespace Config
 	inline PsycologyWeight minimumDeltaToAlterPsycologyBaselineSquared;
 	inline Step minimumDurationToWaitInsteadOfWander;
 	inline Speed minimumHaulSpeedInital;
+	inline Percent minimumImpairPercentForSeriousInjury;
 	inline float minimumOverloadRatio;
 	inline Percent minimumPercentFoliageForGrow;
 	inline Percent minimumPercentGrowthForWoodCutting;
@@ -150,42 +163,43 @@ namespace Config
 	inline CollisionVolume minPointStaticVolumeToSlowMovement;
 	inline Step minimumStepsBetweenRainPerPercentHumidity;
 	inline Step minimumStepsRainPerPercentHumidity;
-	inline uint16_t minimumSizeForOctTreeToSplit;
-	inline uint16_t minimumOccupantsForOctTreeToSplit;
-	inline uint16_t maximumOccupantsForOctTreeToMerge;
-	inline uint32_t minimumSizeOfGroupOfMovingPointsWhichSkipLineOfSightChecksForMakingVisionRequests;
+	inline int16_t minimumSizeForOctTreeToSplit;
+	inline int16_t minimumOccupantsForOctTreeToSplit;
+	inline int16_t maximumOccupantsForOctTreeToMerge;
+	inline int32_t minimumSizeOfGroupOfMovingPointsWhichSkipLineOfSightChecksForMakingVisionRequests;
 	inline CollisionVolume minimumVolumeOfFluidToBreath;
-	inline uint32_t minutesPerHour;
-	inline uint32_t moveTryAttemptsBeforeDetour;
+	inline int32_t minutesPerHour;
+	inline int32_t moveTryAttemptsBeforeDetour;
 	inline float modifierToTurnMassTimesFallDistanceIntoForce;
 	inline float musclePierceForceCost;
-	inline uint8_t octTreeSortEntropyThreshold;
+	inline int8_t octTreeSortEntropyThreshold;
 	//TODO: is this a duplicate?
 	inline Priority objectivePrioiorityKill;
 	inline Priority objectivePrioritySleep;
-	inline uint8_t pathRequestsPerThread;
+	inline PsycologyWeight painWhenALimbIsSevered;
+	inline int8_t pathRequestsPerThread;
 	inline float pathHuristicConstant;
 	inline Percent percentHeightCarvedByRivers;
 	// How hungry does an actor have to be to cross a hunger threshold and be willing to eat something less desirable?
-	inline std::array<uint8_t, 3> minimumHungerLevelThresholds;
+	inline std::array<int8_t, 3> minimumHungerLevelThresholds;
 	inline Percent percentOfPlantMassWhichIsFoliage;
 	inline Percent percentPermanantImparmentMinimum;
-	inline uint32_t pierceBleedVoumeRateModifier;
+	inline int32_t pierceBleedVoumeRateModifier;
 	inline float pierceBoneModifier;
 	inline float pierceFatModifier;
 	inline float pierceModifier;
 	inline float pierceMuscelModifier;
-	inline uint32_t piercePercentPermanantImparmentModifier;
-	inline uint32_t piercePercentTemporaryImparmentModifier;
+	inline int32_t piercePercentPermanantImparmentModifier;
+	inline int32_t piercePercentTemporaryImparmentModifier;
 	inline float pierceSkinModifier;
-	inline uint32_t pierceStepsTillHealedModifier;
-	inline uint8_t plantSortEntropyThreashold;
+	inline int32_t pierceStepsTillHealedModifier;
+	inline int16_t plantSortEntropyThreashold;
 	inline float pointsOfCombatScorePerUnitOfAgility;
 	inline float pointsOfCombatScorePerUnitOfDextarity;
 	inline float pointsOfCombatScorePerUnitOfStrength;
-	inline uint32_t projectTryToMakeSubprojectRetriesBeforeProjectDelay;
+	inline int32_t projectTryToMakeSubprojectRetriesBeforeProjectDelay;
 	inline Step projectDelayAfterExauhstingSubprojectRetries;
-	inline uint32_t projectileHitChanceFallsOffWithRangeExponent;
+	inline int32_t projectileHitChanceFallsOffWithRangeExponent;
 	inline float projectileHitPercentPerPointAttackTypeCombatScore;
 	inline float projectileHitPercentPerPointDextarity;
 	inline float projectileHitPercentPerPointQuality;
@@ -197,25 +211,27 @@ namespace Config
 	inline Distance rainMaximumOffset;
 	inline Distance rainMaximumSpacing;
 	inline Step rainWriteStepFreqency;
-	inline Percent randomFuzzToApplyToCourageChecks;
 	inline float rateModifierForEvaporationPerDegreeTemperature;
 	inline float ratioOfHitAreaToBodyPartVolumeForSever;
 	inline float ratioOfMaximumVarianceForCourageTest;
 	inline float ratioOfTotalBodyVolumeWhichIsBlood;
 	inline float ratioOfVisionCuboidSlotsToReservePerPoint;
 	inline float ratioWoundsCloseDelayToBleedVolume;
-	inline uint reserveSizeVisionCuboidAdjacent;
+	inline int32_t reserveSizeVisionCuboidAdjacent;
 	inline Step restIntervalSteps;
 	inline float rollingMassModifier;
 	inline float floatingMassModifier;
 	inline float rowForcePerUnitStrength;
-	inline uint32_t scaleOfHumanBody;
-	inline uint32_t secondsPerMinute;
+	inline int32_t scaleOfHumanBody;
+	inline int32_t secondsPerMinute;
 	inline float skinPierceForceCost;
+	inline SkillExperiencePoints skillPointsToAddWhenChastised;
+	inline SkillExperiencePoints skillPointsToAddWhenChastising;
+	inline SkillExperiencePoints skillPointsToAddWhenSuccessAtWork;
 	inline Priority sleepObjectivePriority;
 	inline Priority sowSeedsPriority;
 	inline Step sowSeedsStepsDuration;
-	inline uint32_t staminaPointsPerRestPeriod;
+	inline int32_t staminaPointsPerRestPeriod;
 	inline Priority stationPriority;
 	inline Step stepsFrequencyToLookForHaulSubprojects;
 	inline Step stepsFrequencyToRunRelationshipEvent;
@@ -234,30 +250,28 @@ namespace Config
 	inline Step stepsToEat;
 	inline Priority stockPilePriority;
 	inline Priority targetedHaulPriority;
-	inline uint8_t threadedTaskBatchSize;
-	inline uint32_t unarmedCombatScoreBase;
+	inline int8_t threadedTaskBatchSize;
+	inline int32_t unarmedCombatScoreBase;
 	inline float unarmedCombatSkillModifier;
 	inline Temperature undergroundAmbiantTemperature;
-	inline uint32_t unitsBodyMassPerUnitFluidConsumed;
+	inline int32_t unitsBodyMassPerUnitFluidConsumed;
 	inline Mass unitsBodyMassPerUnitFoodConsumed;
 	inline float unitsOfAttackForcePerUnitOfStrength;
 	inline float unitsOfCarryMassPerUnitOfStrength;
-	inline PsycologyWeight unitsOfCourageToGainOnPassingFearTest;
-	inline PsycologyWeight unitsOfCourageToLoseOnFailingFearTest;
 	inline float unitsOfMoveSpeedPerUnitOfAgility;
-	inline uint32_t unitsOfWoundAreaPerUnitItemScaleFactor;
+	inline int32_t unitsOfWoundAreaPerUnitItemScaleFactor;
 	inline float unitsOfVolumePerUnitOfCollisionVolume;
 	inline float vehicleMassToCarryMassModifier;
 	inline size_t visionRequestsReservationSize;
-	inline uint16_t visionThreadingBatchSize;
-	inline uint32_t wanderMaximumNumberOfPoints;
-	inline uint32_t wanderMinimimNumberOfPoints;
+	inline int16_t visionThreadingBatchSize;
+	inline int16_t wanderMaximumNumberOfPoints;
+	inline int16_t wanderMinimimNumberOfPoints;
 	inline Step woodCuttingMaxSteps;
 	inline Priority woodCuttingObjectivePriority;
 	inline float woodCuttingSkillModifier;
 	inline float woodCuttingStrengthModifier;
 	inline Step yokeDelaySteps;
 
-	inline uint32_t convertBodyPartVolumeToArea(FullDisplacement volume){ return sqrt(volume.get()); }
+	inline int32_t convertBodyPartVolumeToArea(FullDisplacement volume){ return sqrt(volume.get()); }
 	void load();
 }

@@ -1,5 +1,5 @@
 #pragma once
-#include "config.h"
+#include "config/config.h"
 #include "objective.h"
 #include "path/pathRequest.h"
 struct DeserializationMemo;

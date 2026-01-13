@@ -1,8 +1,8 @@
 #pragma once
 #include "../fluidGroups/fluidGroup.h"
 #include "../fluidGroups/fluidAllocator.h"
-#include "numericTypes/index.h"
-#include "dataStructures/smallSet.h"
+#include "../numericTypes/index.h"
+#include "../dataStructures/smallSet.h"
 #include <list>
 #include <string>
 class Area;

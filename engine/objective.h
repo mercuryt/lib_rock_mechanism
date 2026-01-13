@@ -2,16 +2,13 @@
 #pragma once
 
 #include "reference.h"
-#include "config.h"
+#include "config/config.h"
 #include "eventSchedule.hpp"
 #include "reservable.h"
 #include "numericTypes/types.h"
 //#include "input.h"
 
-#include <map>
 #include <memory>
-#include <queue>
-#include <utility>
 #include <vector>
 
 class WaitEvent;
@@ -72,13 +69,14 @@ public:
 	// Will be 'flushed' when this instance is destroyed and then another objective of this type is created later, after objectivePrioritySet delay ends.
 	virtual void onProjectCannotReserve(Area&, const ActorIndex&) { }
 	virtual void onBeforeUnload(Area&, const ActorIndex&) { }
+	// An other actor -not the one this belongs to- which is being puppeted by this has found something to do with higer priority.
+	virtual void actorGoesOffScript(Area&, [[maybe_unused]] const ActorIndex& owningActor, [[maybe_unused]] const ActorIndex& offScriptActor) { std::unreachable(); }
 	// Returns true if the problem is resolved or false otherwise.
 	// If false is returned canNotCompleteObjective is called.
 	[[nodiscard]] virtual bool onCanNotPath(Area&, const ActorIndex&) { return false; }
 	[[nodiscard]] virtual bool canBeAddedToPrioritySet() { return false; }
 	[[nodiscard]] virtual std::string name() const = 0;
-	// TODO: This is silly.
-	[[nodiscard]] ObjectiveTypeId getTypeId() const { return ObjectiveType::getIdByName(name());}
+	[[nodiscard]] virtual ObjectiveTypeId getTypeId() const { return ObjectiveTypeId::null(); }
 	// Needs are biological imperatives which overide tasks. Eat, sleep, etc.
 	[[nodiscard]] virtual bool isNeed() const { return false; }
 	// When an objective is interrputed by a higher priority objective should it be kept in the task queue for later or discarded?
@@ -156,12 +154,12 @@ class HasObjectives final
 {
 	// Two objective queues, objectives are choosen from which ever has the higher priority.
 	// Biological needs like eat, drink, go to safe temperature, and sleep go into needs queue, possibly overiding the current objective in either queue.
-	std::list<std::unique_ptr<Objective>> m_needsQueue;
+	std::vector<std::unique_ptr<Objective>> m_needsQueue;
 	// Prevent duplicate Objectives in needs queue.
 	SmallSet<NeedType> m_typesOfNeedsInQueue;
 	// Voluntary tasks like harvest, dig, build, craft, guard, station, and kill go into task queue. Station and kill both have higher priority then baseline needs like eat but lower then needs like flee.
 	// findNewTask only adds one task at a time so there usually is only once objective in the queue. More then one task objective can be added by the user manually.
-	std::list<std::unique_ptr<Objective>> m_tasksQueue;
+	std::vector<std::unique_ptr<Objective>> m_tasksQueue;
 	SmallMapStable<NeedType, SupressedNeed> m_supressedNeeds;
 	Objective* m_currentObjective = nullptr;
 	ActorIndex m_actor;

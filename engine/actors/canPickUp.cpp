@@ -1,14 +1,14 @@
-#include "actorOrItemIndex.h"
 #include "actors.h"
+#include "../actorOrItemIndex.h"
 #include "../items/items.h"
 #include "../area/area.h"
 #include "../space/space.h"
 #include "../definitions/itemType.h"
 #include "../portables.h"
-#include "numericTypes/index.h"
-#include "definitions/moveType.h"
-#include "sleep.h"
-#include "numericTypes/types.h"
+#include "../numericTypes/index.h"
+#include "../definitions/moveType.h"
+#include "../sleep.h"
+#include "../numericTypes/types.h"
 void Actors::canPickUp_pickUpItem(const ActorIndex& index, const ItemIndex& item)
 {
 	canPickUp_pickUpItemQuantity(index, item, Quantity::create(1));
@@ -334,14 +334,28 @@ Speed Actors::canPickUp_speedIfCarryingQuantity(const ActorIndex& index, const M
 	assert(!m_carrying[index].exists());
 	return move_getIndividualSpeedWithAddedMass(index, mass * quantity);
 }
-Quantity Actors::canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(const ActorIndex& index, const Mass& mass, Speed minimumSpeed) const
+Quantity Actors::canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(const ActorIndex& index, const Mass& unitMass, Speed minimumSpeed) const
 {
 	assert(minimumSpeed != 0);
-	//TODO: replace iteration with calculation?
-	Quantity quantity = Quantity::create(0);
-	while(canPickUp_speedIfCarryingQuantity(index, mass, quantity + 1) >= minimumSpeed)
-		++quantity;
-	return quantity;
+	Speed baseSpeed = Speed::create(m_agility[index].get() * Config::unitsOfMoveSpeedPerUnitOfAgility);
+	if(baseSpeed < minimumSpeed)
+		return {0};
+	const Mass carryMass = m_equipmentSet[index]->getMass() + canPickUp_getMass(index) + onDeck_getMass(index);
+	const Mass unencomberedCarryMass = m_unencomberedCarryMass[index];
+	const Speed impairedSpeed = Speed::create(util::scaleByInversePercent(baseSpeed.get(), m_body[index]->getImpairMovePercent()));
+	if(impairedSpeed < minimumSpeed)
+		return {0};
+	const float requiredRatio = std::sqrt(((float)minimumSpeed.get() - 1.f) / (float)impairedSpeed.get());
+	// required ratio represents unencumbered / carry mass at given minimum speed.
+	// reqiredRatio = unencumbered / carryMass.
+	// carryMass * requiredRatio = unencumbered.
+	// carryMass = unencumbered / requiredRatio.
+	Mass totalCarryMass = Mass::create((float)unencomberedCarryMass.get() / requiredRatio);
+	if(totalCarryMass <= carryMass)
+		return {0};
+	Quantity output = Quantity::create(((totalCarryMass - carryMass) / unitMass).get());
+	assert(move_getIndividualSpeedWithAddedMass(index, unitMass * output) >= minimumSpeed);
+	return output;
 }
 bool Actors::canPickUp_canPutDown(const ActorIndex& index, const Point3D& point)
 {

@@ -4,28 +4,20 @@
  * Represents a hit which a body can recieve.
  */
 
-#include "config.h"
+#include "config/config.h"
 #include "definitions/materialType.h"
 #include "definitions/woundType.h"
 
 // TODO: HitParamaters.
 struct Hit
 {
-	uint32_t area;
+	int32_t area;
 	Force force;
-	uint32_t depth;
+	int32_t depth;
 	MaterialTypeId materialType;
-	const WoundType woundType;
-	Hit(uint32_t a, const Force& f, const MaterialTypeId& mt, const WoundType& wt) : area(a), force(f), depth(0), materialType(mt), woundType(wt) { }
-	Hit(const Json& data) : area(data["area"].get<uint32_t>()), force(data["force"].get<Force>()), depth(data["depth"].get<uint32_t>()), materialType(MaterialType::byName(data["materialType"].get<std::string>())), woundType(woundTypeByName(data["woundType"].get<std::string>())) { }
-	Json toJson() const
-	{
-		Json data;
-		data["area"] = area;
-		data["force"] = force;
-		data["depth"] = depth;
-		data["materialType"] = materialType;
-		data["woundType"] = getWoundTypeName(woundType);
-		return data;
-	}
+	WoundType woundType;
+	Hit(int32_t a, const Force& f, const MaterialTypeId& mt, const WoundType& wt);
+	Hit(const Json& data);
+	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] PsycologyWeight pain() const;
 };

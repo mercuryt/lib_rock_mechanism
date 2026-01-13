@@ -109,7 +109,7 @@ Temperature Space::temperature_get(const Point3D& point) const
 	TemperatureDelta delta = m_temperatureDelta.queryGetOne(point);
 	if(!delta.exists())
 		delta = TemperatureDelta::create(0);
-	if(delta < 0 && (uint)delta.absoluteValue().get() > ambiant.get())
+	if(delta < 0 && (int32_t)delta.absoluteValue().get() > ambiant.get())
 		return Temperature::create(0);
 	return Temperature::create(ambiant.get() + delta.get());
 }

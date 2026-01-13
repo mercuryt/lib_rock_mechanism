@@ -16,7 +16,7 @@ struct PointFeatureType
 	const bool blocksMultiTileShapesIfNotAtZeroZOffset;
 	const bool opaque;
 	const Force motiveForce;
-	const uint value;
+	const int32_t value;
 	bool operator==(const PointFeatureType& x) const { return this == &x; }
 	static const PointFeatureType& byName(const std::string& name);
 	static const PointFeatureType& byId(const PointFeatureTypeId& id);

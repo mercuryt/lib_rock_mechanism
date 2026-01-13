@@ -1,11 +1,11 @@
 #pragma once
 
-#include "definitions/attackType.h"
-#include "dataStructures/strongVector.h"
-#include "eventSchedule.hpp"
-#include "numericTypes/types.h"
-#include "items/constructed.h"
-#include "geometry/cuboidSet.h"
+#include "attackType.h"
+#include "../dataStructures/strongVector.h"
+#include "../eventSchedule.hpp"
+#include "../numericTypes/types.h"
+#include "../items/constructed.h"
+#include "../geometry/cuboidSet.h"
 
 #include <ratio>
 #include <string>
@@ -28,7 +28,7 @@ struct ItemTypeParamaters final
 	CraftStepTypeCategoryId craftLocationStepTypeCategory = CraftStepTypeCategoryId::null();
 	FullDisplacement volume;
 	FullDisplacement internalVolume;
-	uint32_t value;
+	int32_t value;
 	OffsetCuboidSet decks = {};
 	bool installable;
 	bool generic;
@@ -36,11 +36,11 @@ struct ItemTypeParamaters final
 	std::vector<AttackTypeId> attackTypes = {};
 	SkillTypeId combatSkill = SkillTypeId::null();
 	Step attackCoolDownBase = Step::null();
-	uint32_t wearable_defenseScore = 0;
-	uint32_t wearable_layer = 0;
-	uint32_t wearable_bodyTypeScale = 0;
-	uint32_t wearable_forceAbsorbedUnpiercedModifier = 0;
-	uint32_t wearable_forceAbsorbedPiercedModifier = 0;
+	int32_t wearable_defenseScore = 0;
+	int32_t wearable_layer = 0;
+	int32_t wearable_bodyTypeScale = 0;
+	int32_t wearable_forceAbsorbedUnpiercedModifier = 0;
+	int32_t wearable_forceAbsorbedPiercedModifier = 0;
 	Percent wearable_percentCoverage = Percent::null();
 	bool wearable_rigid = false;
 	std::vector<BodyPartTypeId> wearable_bodyPartsCovered = {};
@@ -64,7 +64,7 @@ class ItemType final
 	StrongVector<CraftStepTypeCategoryId, ItemTypeId> m_craftLocationStepTypeCategory;
 	StrongVector<FullDisplacement, ItemTypeId> m_fullDisplacement;
 	StrongVector<FullDisplacement, ItemTypeId> m_internalVolume;
-	StrongVector<uint32_t, ItemTypeId> m_value;
+	StrongVector<int32_t, ItemTypeId> m_value;
 	StrongBitSet<ItemTypeId> m_installable;
 	StrongBitSet<ItemTypeId> m_generic;
 	StrongBitSet<ItemTypeId> m_canHoldFluids;
@@ -73,11 +73,11 @@ class ItemType final
 	StrongVector<Step, ItemTypeId> m_attackCoolDownBase;
 	StrongVector<OffsetCuboidSet, ItemTypeId> m_decks;
 	StrongVector<Force, ItemTypeId> m_motiveForce;
-	StrongVector<uint32_t, ItemTypeId> m_wearable_defenseScore;
-	StrongVector<uint32_t, ItemTypeId> m_wearable_layer;
-	StrongVector<uint32_t, ItemTypeId> m_wearable_bodyTypeScale;
-	StrongVector<uint32_t, ItemTypeId> m_wearable_forceAbsorbedUnpiercedModifier;
-	StrongVector<uint32_t, ItemTypeId> m_wearable_forceAbsorbedPiercedModifier;
+	StrongVector<int32_t, ItemTypeId> m_wearable_defenseScore;
+	StrongVector<int32_t, ItemTypeId> m_wearable_layer;
+	StrongVector<int32_t, ItemTypeId> m_wearable_bodyTypeScale;
+	StrongVector<int32_t, ItemTypeId> m_wearable_forceAbsorbedUnpiercedModifier;
+	StrongVector<int32_t, ItemTypeId> m_wearable_forceAbsorbedPiercedModifier;
 	StrongVector<Percent, ItemTypeId> m_wearable_percentCoverage;
 	StrongBitSet<ItemTypeId> m_wearable_rigid;
 	StrongVector<std::vector<BodyPartTypeId>, ItemTypeId> m_wearable_bodyPartsCovered;
@@ -100,7 +100,7 @@ public:
 	[[nodiscard]] static CraftStepTypeCategoryId getCraftLocationStepTypeCategory(const ItemTypeId& id);
 	[[nodiscard]] static FullDisplacement getFullDisplacement(const ItemTypeId& id);
 	[[nodiscard]] static FullDisplacement getInternalVolume(const ItemTypeId& id);
-	[[nodiscard]] static uint32_t getValue(const ItemTypeId& id);
+	[[nodiscard]] static int32_t getValue(const ItemTypeId& id);
 	[[nodiscard]] static bool getInstallable(const ItemTypeId& id);
 	[[nodiscard]] static bool getGeneric(const ItemTypeId& id);
 	[[nodiscard]] static bool getCanHoldFluids(const ItemTypeId& id);
@@ -109,11 +109,11 @@ public:
 	[[nodiscard]] static Step getAttackCoolDownBase(const ItemTypeId& id);
 	[[nodiscard]] static bool getIsWeapon(const ItemTypeId& id);
 	[[nodiscard]] static bool getIsGeneric(const ItemTypeId& id);
-	[[nodiscard]] static uint32_t getWearable_defenseScore(const ItemTypeId& id);
-	[[nodiscard]] static uint32_t getWearable_layer(const ItemTypeId& id);
-	[[nodiscard]] static uint32_t getWearable_bodyTypeScale(const ItemTypeId& id);
-	[[nodiscard]] static uint32_t getWearable_forceAbsorbedUnpiercedModifier(const ItemTypeId& id);
-	[[nodiscard]] static uint32_t getWearable_forceAbsorbedPiercedModifier(const ItemTypeId& id);
+	[[nodiscard]] static int32_t getWearable_defenseScore(const ItemTypeId& id);
+	[[nodiscard]] static int32_t getWearable_layer(const ItemTypeId& id);
+	[[nodiscard]] static int32_t getWearable_bodyTypeScale(const ItemTypeId& id);
+	[[nodiscard]] static int32_t getWearable_forceAbsorbedUnpiercedModifier(const ItemTypeId& id);
+	[[nodiscard]] static int32_t getWearable_forceAbsorbedPiercedModifier(const ItemTypeId& id);
 	[[nodiscard]] static Percent getWearable_percentCoverage(const ItemTypeId& id);
 	[[nodiscard]] static bool getWearable_rigid(const ItemTypeId& id);
 	[[nodiscard]] static std::vector<BodyPartTypeId>& getWearable_bodyPartsCovered(const ItemTypeId& id);

@@ -1,10 +1,10 @@
 #pragma once
-#include "config.h"
-#include "numericTypes/types.h"
-#include "numericTypes/index.h"
-#include "dataStructures/smallSet.h"
-#include "reference.h"
-#include "geometry/point3D.h"
+#include "../config/config.h"
+#include "../numericTypes/types.h"
+#include "../numericTypes/index.h"
+#include "../dataStructures/smallSet.h"
+#include "../reference.h"
+#include "../geometry/point3D.h"
 #include <cassert>
 #include <cstdint>
 #include <vector>
@@ -35,7 +35,7 @@ public:
 	void create(const ActorReference& actor);
 	void maybeCreate(const ActorReference& actor);
 	void cancelIfExists(const ActorReference& actor);
-	void readStepSegment(const uint& begin, const uint& end);
+	void readStepSegment(const int32_t& begin, const int32_t& end);
 	void doStep();
 	void readStep();
 	void writeStep();

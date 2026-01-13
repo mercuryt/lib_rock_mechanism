@@ -1,7 +1,7 @@
 #pragma once
-#include "reference.h"
-#include "numericTypes/types.h"
-#include "json.h"
+#include "../reference.h"
+#include "../numericTypes/types.h"
+#include "../json.h"
 class Area;
 class ItemQuery final
 {

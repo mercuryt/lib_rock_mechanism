@@ -4,7 +4,8 @@
 #include "objective.h"
 #include "project.h"
 #include "deserializationMemo.h"
-OnDestroy::OnDestroy(const Json& data, DeserializationMemo& deserializationMemo)
+OnDestroy::OnDestroy(const Json& data, DeserializationMemo& deserializationMemo, const ActorOrItemReference& destroyed) :
+	m_destroyed(destroyed)
 {
 	deserializationMemo.m_onDestroys[data.get<uintptr_t>()] = this;
 }
@@ -23,7 +24,7 @@ void OnDestroy::unsubscribeAll()
 OnDestroy::~OnDestroy()
 {
 	for(HasOnDestroySubscriptions* hasSubscription : m_subscriptions)
-		hasSubscription->callback();
+		hasSubscription->callback(m_destroyed);
 }
 std::mutex HasOnDestroySubscriptions::m_mutex;
 HasOnDestroySubscriptions::HasOnDestroySubscriptions(const Json& data, DeserializationMemo& deserializationMemo, Area& area) : m_callback(OnDestroyCallBack::fromJson(data["callback"], deserializationMemo, area))
@@ -33,6 +34,7 @@ HasOnDestroySubscriptions::HasOnDestroySubscriptions(const Json& data, Deseriali
 }
 void HasOnDestroySubscriptions::subscribe(OnDestroy& onDestroy)
 {
+	assert(hasCallBack());
 	assert(!m_onDestroys.contains(&onDestroy));
 	m_onDestroys.insert(&onDestroy);
 	onDestroy.subscribe(*this);
@@ -60,13 +62,14 @@ void HasOnDestroySubscriptions::unsubscribeAll()
 	m_onDestroys.clear();
 }
 void HasOnDestroySubscriptions::setCallback(std::unique_ptr<OnDestroyCallBack>&& callback) { m_callback = std::move(callback); }
-void HasOnDestroySubscriptions::callback()
+void HasOnDestroySubscriptions::callback(const ActorOrItemReference& destroyed)
 {
+	assert(!hasCallBack());
 	unsubscribeAll();
 	assert(m_callback != nullptr);
 	auto cb = std::move(m_callback);
 	m_callback = nullptr;
-	cb->callback();
+	cb->callback(destroyed);
 }
 Json HasOnDestroySubscriptions::toJson() const
 {
@@ -77,11 +80,15 @@ Json HasOnDestroySubscriptions::toJson() const
 		output["onDestroy"] = m_onDestroys;
 	return output;
 }
+bool HasOnDestroySubscriptions::hasCallBack() const { return m_callback != nullptr; }
 HasOnDestroySubscriptions::~HasOnDestroySubscriptions() { unsubscribeAll(); }
 std::unique_ptr<OnDestroyCallBack> OnDestroyCallBack::fromJson(const Json& data, DeserializationMemo& deserializationMemo, Area& area)
 {
+	// TODO: This is questionable.
 	if(data.contains("project"))
 		return std::make_unique<ResetProjectOnDestroyCallBack>(data, deserializationMemo);
+	if(data.contains("canSee"))
+		return std::make_unique<OnSightOnDestroyCallBack>(data, deserializationMemo, area);
 	else
 	{
 		assert(data.contains("objective"));
@@ -94,11 +101,11 @@ CancelObjectiveOnDestroyCallBack::CancelObjectiveOnDestroyCallBack(const Json& d
 	m_objective(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())),
 	m_area(area),
 	m_actor(data["actor"], area.getActors().m_referenceData) { }
-void CancelObjectiveOnDestroyCallBack::callback()
+void CancelObjectiveOnDestroyCallBack::callback(const ActorOrItemReference&)
 {
 	m_area.getActors().objective_canNotCompleteObjective(m_actor.getIndex(m_area.getActors().m_referenceData), m_objective);
 }
-Json CancelObjectiveOnDestroyCallBack::toJson()
+Json CancelObjectiveOnDestroyCallBack::toJson() const
 {
 	return {{"actor", m_actor}, {"objective"}, &m_objective};
 }
@@ -106,11 +113,11 @@ Json CancelObjectiveOnDestroyCallBack::toJson()
 ResetProjectOnDestroyCallBack::ResetProjectOnDestroyCallBack(Project& project) : m_project(project) { }
 ResetProjectOnDestroyCallBack::ResetProjectOnDestroyCallBack(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_project(*deserializationMemo.m_projects.at(data["project"].get<uintptr_t>())) { }
-void ResetProjectOnDestroyCallBack::callback()
+void ResetProjectOnDestroyCallBack::callback(const ActorOrItemReference&)
 {
 	m_project.reset();
 }
-Json ResetProjectOnDestroyCallBack::toJson()
+Json ResetProjectOnDestroyCallBack::toJson() const
 {
 	std::unreachable();
 	//return {{"project"}, m_project};

@@ -1,7 +1,7 @@
 #pragma once
 #include "numericTypes/types.h"
 #include "geometry/point3D.h"
-#include "config.h"
+#include "config/config.h"
 #include <vector>
 class FluidType;
 class Area;

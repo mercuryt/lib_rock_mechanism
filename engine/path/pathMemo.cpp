@@ -110,45 +110,45 @@ SmallSet<Point3D> PathMemoDepthFirst::getPath(const Point3D& secondToLast, const
 	return m_closed.getPath(secondToLast, last, first);
 }
 // SimulaitonHasPathMemos.
-std::pair<PathMemoBreadthFirst*, uint8_t> SimulationHasPathMemos::getBreadthFirst()
+std::pair<PathMemoBreadthFirst*, int8_t> SimulationHasPathMemos::getBreadthFirst()
 {
 	std::lock_guard lock(m_mutex);
 	// Find an unreserved memo to use.
 	auto found = std::ranges::find(m_reservedBreadthFirst, false);
 	if(found == m_reservedBreadthFirst.end())
 	{
-		uint oldSize = m_breadthFirst.size();
+		int32_t oldSize = m_breadthFirst.size();
 		m_breadthFirst.emplace_back(PathMemoBreadthFirst());
 		m_reservedBreadthFirst.resize(m_breadthFirst.size());
 		found = m_reservedBreadthFirst.begin() + oldSize;
 	}
-	uint offset = std::distance(m_reservedBreadthFirst.begin(), found);
+	int32_t offset = std::distance(m_reservedBreadthFirst.begin(), found);
 	m_reservedBreadthFirst[offset] = true;
 	return {&m_breadthFirst[offset], offset};
 }
-std::pair<PathMemoDepthFirst*, uint8_t> SimulationHasPathMemos::getDepthFirst()
+std::pair<PathMemoDepthFirst*, int8_t> SimulationHasPathMemos::getDepthFirst()
 {
 	std::lock_guard lock(m_mutex);
 	// Find an unreserved memo to use.
 	auto found = std::ranges::find(m_reservedDepthFirst, false);
 	if(found == m_reservedDepthFirst.end())
 	{
-		uint oldSize = m_depthFirst.size();
+		int32_t oldSize = m_depthFirst.size();
 		m_depthFirst.emplace_back();
 		m_reservedDepthFirst.resize(m_depthFirst.size());
 		found = m_reservedDepthFirst.begin() + oldSize;
 	}
-	uint offset = std::distance(m_reservedDepthFirst.begin(), found);
+	int32_t offset = std::distance(m_reservedDepthFirst.begin(), found);
 	m_reservedDepthFirst[offset] = true;
 	return {&m_depthFirst[offset], offset};
 }
-void SimulationHasPathMemos::releaseBreadthFirst(uint8_t index)
+void SimulationHasPathMemos::releaseBreadthFirst(int8_t index)
 {
 	std::lock_guard lock(m_mutex);
 	m_reservedBreadthFirst[index] = false;
 	assert(m_breadthFirst[index].empty());
 }
-void SimulationHasPathMemos::releaseDepthFirst(uint8_t index)
+void SimulationHasPathMemos::releaseDepthFirst(int8_t index)
 {
 	std::lock_guard lock(m_mutex);
 	m_reservedDepthFirst[index] = false;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../objective.h"
-#include "../config.h"
+#include "../config/config.h"
 #include "../eventSchedule.hpp"
 #include "../path/pathRequest.h"
 #include "../numericTypes/types.h"
@@ -32,6 +32,7 @@ public:
 	void begin(Area& area, const ActorIndex& actor);
 	void reset(Area& area, const ActorIndex& actor);
 	void makePathRequest(Area& area, const ActorIndex& actor);
+	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("harvest").getId(); }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool canHarvestAt(Area& area, const Point3D& point) const;
 	[[nodiscard]] std::string name() const override { return "harvest"; }

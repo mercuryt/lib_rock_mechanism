@@ -8,18 +8,18 @@
  */
 #pragma once
 
-#include "config.h"
-#include "designations.h"
-#include "numericTypes/index.h"
+#include "../config/config.h"
+#include "../designations.h"
+#include "../numericTypes/index.h"
+#include "../reference.h"
+#include "../numericTypes/types.h"
+#include "../callbackTypes.h"
+#include "../dataStructures/strongVector.h"
+#include "../dataStructures/smallMap.h"
+#include "../dataStructures/rtreeData.h"
+#include "../dataStructures/bitset.h"
 #include "pathMemo.h"
 #include "pathRequest.h"
-#include "reference.h"
-#include "numericTypes/types.h"
-#include "callbackTypes.h"
-#include "dataStructures/strongVector.h"
-#include "dataStructures/smallMap.h"
-#include "dataStructures/rtreeData.h"
-#include "dataStructures/bitset.h"
 
 struct MoveType;
 struct Shape;
@@ -34,7 +34,7 @@ class TerrainFacade;
 class PathRequestBreadthFirst;
 class PathRequestDepthFirst;
 
-constexpr int maxAdjacent = 26;
+constexpr int32_t maxAdjacent = 26;
 // TODO: optimization: single point shapes don't need facing
 
 struct FindPathResult
@@ -54,9 +54,9 @@ struct PathRequestNoHuristicData
 {
 	FindPathResult result;
 	std::unique_ptr<PathRequestBreadthFirst> pathRequest;
-	uint32_t spatialHash;
+	int32_t spatialHash;
 	PathRequestNoHuristicData() = default;
-	PathRequestNoHuristicData(std::unique_ptr<PathRequestBreadthFirst> pr, uint32_t sh);
+	PathRequestNoHuristicData(std::unique_ptr<PathRequestBreadthFirst> pr, int32_t sh);
 	PathRequestNoHuristicData(const PathRequestNoHuristicData& other) = delete;
 	PathRequestNoHuristicData(PathRequestNoHuristicData&& other) noexcept;
 	PathRequestNoHuristicData& operator=(const PathRequestNoHuristicData& other) = delete;
@@ -66,9 +66,9 @@ struct PathRequestWithHuristicData
 {
 	FindPathResult result;
 	std::unique_ptr<PathRequestDepthFirst> pathRequest;
-	uint32_t spatialHash;
+	int32_t spatialHash;
 	PathRequestWithHuristicData() = default;
-	PathRequestWithHuristicData(std::unique_ptr<PathRequestDepthFirst> pr, uint32_t sh);
+	PathRequestWithHuristicData(std::unique_ptr<PathRequestDepthFirst> pr, int32_t sh);
 	PathRequestWithHuristicData(const PathRequestWithHuristicData& other) = delete;
 	PathRequestWithHuristicData(PathRequestWithHuristicData&& other) noexcept;
 	PathRequestWithHuristicData& operator=(const PathRequestWithHuristicData& other) = delete;
@@ -77,7 +77,7 @@ struct PathRequestWithHuristicData
 struct AdjacentData
 {
 	using Primitive = uint32_t;
-	BitSet<uint32_t, maxAdjacent> data;
+	BitSet<Primitive, maxAdjacent> data;
 	void set(const AdjacentIndex& index, bool value) { data.set(index.get(), value); }
 	[[nodiscard]] bool check(const AdjacentIndex& index) const { return data[index.get()]; }
 	[[nodiscard]] Primitive get() const { return data.data; }

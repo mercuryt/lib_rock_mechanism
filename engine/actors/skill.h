@@ -1,12 +1,8 @@
 #pragma once
-#include "config.h"
-#include "definitions/skillType.h"
-#include "numericTypes/types.h"
-#include "dataStructures/smallMap.h"
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <cassert>
+#include "../config/config.h"
+#include "../definitions/skillType.h"
+#include "../numericTypes/types.h"
+#include "../dataStructures/smallMap.h"
 
 class Skill final
 {

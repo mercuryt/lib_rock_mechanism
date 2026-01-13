@@ -20,8 +20,8 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> WoodCuttingProject
 	Plants& plants = m_area.getPlants();
 	Percent percentGrown = plants.getPercentGrown(plant);
 	PlantSpeciesId species = plants.getSpecies(plant);
-	uint logs = PlantSpecies::getLogsGeneratedByFellingWhenFullGrown(species).get();
-	uint branches = PlantSpecies::getBranchesGeneratedByFellingWhenFullGrown(species).get();
+	int32_t logs = PlantSpecies::getLogsGeneratedByFellingWhenFullGrown(species).get();
+	int32_t branches = PlantSpecies::getBranchesGeneratedByFellingWhenFullGrown(species).get();
 	Quantity unitsLogsGenerated = Quantity::create(util::scaleByPercent(logs, percentGrown));
 	Quantity unitsBranchesGenerated = Quantity::create(util::scaleByPercent(branches, percentGrown));
 	assert(unitsLogsGenerated != 0);
@@ -34,13 +34,14 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> WoodCuttingProject
 	};
 	return output;
 }
+SkillTypeId WoodCuttingProject::getSkill() const { static auto output = SkillType::byName("wood cutting"); return output; }
 // Static.
-uint32_t WoodCuttingProject::getWorkerWoodCuttingScore(Area& area, const ActorIndex& actor)
+int32_t WoodCuttingProject::getWorkerWoodCuttingScore(Area& area, const ActorIndex& actor)
 {
 	static SkillTypeId woodCuttingType = SkillType::byName("wood cutting");
 	Actors& actors = area.getActors();
-	uint32_t strength = actors.getStrength(actor).get();
-	uint32_t skill = actors.skill_getLevel(actor, woodCuttingType).get();
+	int32_t strength = actors.getStrength(actor).get();
+	int32_t skill = actors.skill_getLevel(actor, woodCuttingType).get();
 	return (strength * Config::woodCuttingStrengthModifier) + (skill * Config::woodCuttingSkillModifier);
 }
 void WoodCuttingProject::onComplete()
@@ -81,7 +82,7 @@ void WoodCuttingProject::offDelay()
 Step WoodCuttingProject::getDuration() const
 {
 
-	uint32_t totalScore = 0u;
+	int32_t totalScore = 0;
 	Actors& actors = m_area.getActors();
 	for(auto& pair : m_workers)
 		totalScore += getWorkerWoodCuttingScore(m_area, pair.first.getIndex(actors.m_referenceData));

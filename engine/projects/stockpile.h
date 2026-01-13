@@ -49,6 +49,8 @@ class StockPileProject final : public Project
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
+	[[nodiscard]] SkillTypeId getSkill() const { return SkillTypeId::null(); }
+	[[nodiscard]] std::string description() const;
 	std::vector<ActorReference> getActors() const;
 public:
 	StockPileProject(const FactionId& faction, Area& area, const Point3D& point, const ItemIndex& item, const Quantity& quantity, const Quantity& maxWorkers);

@@ -32,19 +32,27 @@ void Actors::vision_clearRequestIfExists(const ActorIndex& index)
 }
 void Actors::vision_setCanSee(const ActorIndex& index, const ActorReference& other)
 {
-	m_canSee[index].insert(other);
+	m_canSee[index].maybeInsert(other);
 }
 void Actors::vision_setCanBeSeenBy(const ActorIndex& index, const ActorReference& other)
 {
-	m_canBeSeenBy[index].insert(other);
+	m_canBeSeenBy[index].maybeInsert(other);
 }
 void Actors::vision_setNoLongerCanSee(const ActorIndex& index, const ActorReference& other)
 {
-	m_canSee[index].erase(other);
+	m_canSee[index].maybeErase(other);
 }
 void Actors::vision_setNoLongerCanBeSeenBy(const ActorIndex& index, const ActorReference& other)
 {
-	m_canBeSeenBy[index].erase(other);
+	m_canBeSeenBy[index].maybeErase(other);
+}
+void Actors::vision_setCanSee(const ActorIndex& index, SmallSet<ActorReference>&& others)
+{
+	m_canSee[index] = std::move(others);
+}
+void Actors::vision_setCanBeSeenBy(const ActorIndex& index, SmallSet<ActorReference>&& others)
+{
+	m_canBeSeenBy[index] = std::move(others);
 }
 void Actors::vision_clearCanSee(const ActorIndex& index)
 {
@@ -78,8 +86,4 @@ void Actors::vision_maybeUpdateLocation(const ActorIndex& index, const Point3D& 
 		if(!exists)
 			m_area.m_visionRequests.create(ref);
 	}
-}
-void Actors::vision_onSight(const ActorIndex& index, const ActorIndex& other)
-{
-	// TODO:
 }

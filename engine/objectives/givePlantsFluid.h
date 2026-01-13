@@ -49,6 +49,7 @@ public:
 	void selectPlantLocation(Area& area, const Point3D& point, const ActorIndex& actor);
 	void makePathRequest(Area& area, const ActorIndex& actor);
 	void onBeforeUnload(Area&, const ActorIndex&) override;
+	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("give plants fluid").getId(); }
 	[[nodiscard]] std::string name() const override { return "give plants fluid"; }
 	//For testing.
 	[[nodiscard]] bool hasProject() const { return m_project != nullptr; }

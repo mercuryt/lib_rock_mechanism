@@ -1,5 +1,5 @@
 #pragma once
-#include "config.h"
+#include "config/config.h"
 #include "numericTypes/types.h"
 #include "dataStructures/smallSet.h"
 #include "dataStructures/smallMap.h"

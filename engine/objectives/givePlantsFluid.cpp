@@ -1,6 +1,6 @@
 #include "givePlantsFluid.h"
 #include "../area/area.h"
-#include "../config.h"
+#include "../config/config.h"
 #include "../definitions/itemType.h"
 #include "../deserializationMemo.h"
 #include "../eventSchedule.h"

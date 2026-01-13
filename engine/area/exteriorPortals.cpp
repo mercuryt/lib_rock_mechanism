@@ -166,8 +166,8 @@ void AreaHasExteriorPortals::onCuboidCanNotTransmitTemperature(Area& area, const
 }
 TemperatureDelta AreaHasExteriorPortals::getDeltaForAmbientTemperatureAndDistance(const Temperature& ambientTemperature, const Distance& distance)
 {
-	int deltaBetweenSurfaceAndUnderground = ((int)ambientTemperature.get() - (int)Config::undergroundAmbiantTemperature.get());
-	int delta = util::scaleByInverseFraction(deltaBetweenSurfaceAndUnderground, distance.get(), Config::maxDepthExteriorPortalPenetration.get() + 1);
+	int32_t deltaBetweenSurfaceAndUnderground = ((int32_t)ambientTemperature.get() - (int32_t)Config::undergroundAmbiantTemperature.get());
+	int32_t delta = util::scaleByInverseFraction(deltaBetweenSurfaceAndUnderground, distance.get(), Config::maxDepthExteriorPortalPenetration.get() + 1);
 	return TemperatureDelta::create(delta);
 }
 bool AreaHasExteriorPortals::isPortal(const Space& space, const Point3D& point)

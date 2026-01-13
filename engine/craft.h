@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config.h"
+#include "config/config.h"
 //#include "input.h"
 #include "project.h"
 #include "reservable.h"
@@ -70,7 +70,9 @@ public:
 		Project(faction, area, location, Quantity::create(1)), m_craftStepType(cst), m_craftJob(cj) { }
 	CraftStepProject(const Json& data, DeserializationMemo& deserializationMemo, CraftJob& cj, Area& area);
 	// No toJson needed here, the base class one has everything.
-	[[nodiscard]] uint32_t getWorkerCraftScore(const ActorIndex& actor) const;
+	[[nodiscard]] int32_t getWorkerCraftScore(const ActorIndex& actor) const;
+	[[nodiscard]] SkillTypeId getSkill() const { return m_craftStepType.skillType; }
+	[[nodiscard]] std::string description() const { return m_craftStepType.name; };
 };
 struct CraftStepProjectHasShapeDishonorCallback final : public DishonorCallback
 {
@@ -109,13 +111,13 @@ struct CraftJob final
 	MaterialTypeId materialType;
 	std::vector<CraftStepType>::const_iterator stepIterator;
 	std::unique_ptr<CraftStepProject> craftStepProject;
-	uint32_t minimumSkillLevel = 0;
-	uint32_t totalSkillPoints = 0;
+	int32_t minimumSkillLevel = 0;
+	int32_t totalSkillPoints = 0;
 	Reservable reservable;
 	// If work piece is provided then this is an upgrade job.
-	CraftJob(const CraftJobTypeId& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, const ItemIndex& wp, const MaterialTypeId& mt, uint32_t msl);
+	CraftJob(const CraftJobTypeId& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, const ItemIndex& wp, const MaterialTypeId& mt, int32_t msl);
 	// No work piece provided is a create job.
-	CraftJob(const CraftJobTypeId& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, const MaterialTypeId& mt, uint32_t msl) :
+	CraftJob(const CraftJobTypeId& cjt, HasCraftingLocationsAndJobsForFaction& hclaj, const MaterialTypeId& mt, int32_t msl) :
 		craftJobType(cjt),
 		hasCraftingLocationsAndJobs(hclaj),
 		materialType(mt),
@@ -154,7 +156,7 @@ public:
 	// To be used by invalidating events such as set solid.
 	void maybeRemoveCuboid(const Cuboid& cuboid);
 	// designate something to be crafted.
-	void addJob(const CraftJobTypeId& craftJobType, const MaterialTypeId& materialType, const Quantity& quantity, uint32_t minimumSkillLevel = 0);
+	void addJob(const CraftJobTypeId& craftJobType, const MaterialTypeId& materialType, const Quantity& quantity, int32_t minimumSkillLevel = 0);
 	void cloneJob(CraftJob& craftJob);
 	// Undo an addJob order.
 	void removeJob(CraftJob& craftJob);

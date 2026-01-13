@@ -1,8 +1,8 @@
 #pragma once
 
-#include "numericTypes/types.h"
-#include "reference.h"
-#include "designations.h"
+#include "../numericTypes/types.h"
+#include "../reference.h"
+#include "../designations.h"
 
 class TerrainFacade;
 class FindPathResult;

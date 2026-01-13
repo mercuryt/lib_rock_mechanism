@@ -1,7 +1,7 @@
 #include "hasSpaceDesignations.h"
 bool AreaHasSpaceDesignationsForFaction::any(const SpaceDesignation& designation) const
 {
-	return !m_data[(uint8_t)designation].empty();
+	return !m_data[(int8_t)designation].empty();
 }
 bool AreaHasSpaceDesignationsForFaction::canPrepare() const
 {
@@ -13,13 +13,13 @@ bool AreaHasSpaceDesignationsForFaction::canPrepare() const
 std::vector<SpaceDesignation> AreaHasSpaceDesignationsForFaction::getForPoint(const Point3D& point) const
 {
 	std::vector<SpaceDesignation> output;
-	output.reserve(uint(SpaceDesignation::SPACE_DESIGNATION_MAX) / 2);
-	for(auto designation = SpaceDesignation(0); designation != SpaceDesignation::SPACE_DESIGNATION_MAX; designation = SpaceDesignation((uint)designation + 1))
+	output.reserve(int32_t(SpaceDesignation::SPACE_DESIGNATION_MAX) / 2);
+	for(auto designation = SpaceDesignation(0); designation != SpaceDesignation::SPACE_DESIGNATION_MAX; designation = SpaceDesignation((int32_t)designation + 1))
 		if(check(point, designation))
 			output.push_back(designation);
 	return output;
 }
-const RTreeBoolean& AreaHasSpaceDesignationsForFaction::getForDesignation(const SpaceDesignation& designation) const { return m_data[(uint8_t)designation]; }
+const RTreeBoolean& AreaHasSpaceDesignationsForFaction::getForDesignation(const SpaceDesignation& designation) const { return m_data[(int8_t)designation]; }
 AreaHasSpaceDesignationsForFaction& AreaHasSpaceDesignations::maybeRegisterAndGetForFaction(const FactionId& faction)
 {
 	auto found = m_data.find(faction);

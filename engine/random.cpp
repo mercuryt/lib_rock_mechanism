@@ -1,55 +1,13 @@
 #include "random.h"
 #include "geometry/cuboid.h"
-int Random::getInRange(int lowest, int highest)
-{
-	assert(lowest <= highest);
-	//TODO: should uniform distribution be static?
-	std::uniform_int_distribution<int> dist(lowest, highest);
-	return dist(rng);
-}
-long Random::getInRange(long lowest, long highest)
-{
-	assert(lowest <= highest);
-	//TODO: should uniform distribution be static?
-	std::uniform_int_distribution<long> dist(lowest, highest);
-	return dist(rng);
-}
-unsigned int Random::getInRange(unsigned int lowest, unsigned int highest)
-{
-	assert(lowest <= highest);
-	//TODO: should uniform distribution be static?
-	std::uniform_int_distribution<unsigned int> dist(lowest, highest);
-	return dist(rng);
-}
-unsigned long Random::getInRange(unsigned long lowest, unsigned long highest)
-{
-	assert(lowest <= highest);
-	//TODO: should uniform distribution be static?
-	std::uniform_int_distribution<unsigned long> dist(lowest, highest);
-	return dist(rng);
-}
-float Random::getInRange(float lowest, float highest)
-{
-	assert(lowest <= highest);
-	//TODO: should uniform distribution be static?
-	std::uniform_real_distribution<float> dist(lowest, highest);
-	return dist(rng);
-}
-double Random::getInRange(double lowest, double highest)
-{
-	assert(lowest <= highest);
-	//TODO: should uniform distribution be static?
-	std::uniform_real_distribution<double> dist(lowest, highest);
-	return dist(rng);
-}
-bool Random::percentChance(Percent percent)
+bool Random::percentChance(const Percent& percent)
 {
 	if(percent >= 100)
 		return true;
 	if(percent <= 0)
 		return false;
-	std::uniform_int_distribution<int> dist(1, 100);
-	return dist(rng) <= (int)percent.get();
+	std::uniform_int_distribution<int32_t> dist(1, 100);
+	return dist(rng) <= (int32_t)percent.get();
 }
 bool Random::chance(double chance)
 {

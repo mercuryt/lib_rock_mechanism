@@ -33,13 +33,13 @@ std::vector<bool> OpacityFacade::hasLineOfSightBatched(const std::vector<std::pa
 	const std::vector<ParamaterizedLine> lines(coords.begin(), coords.end());
 	std::vector<bool> blocked = m_fullOpacity.batchQuery(lines);
 	std::vector<ParamaterizedLine> linesNotBlockedByFullOpacity;
-	SmallMap<uint, uint> offsetInLinesByOffsetInLinesNotBlocked;
+	SmallMap<int32_t, int32_t> offsetInLinesByOffsetInLinesNotBlocked;
 	const auto& begin = blocked.begin();
 	const auto& end = blocked.end();
 	for(auto iter = begin; iter != end; ++iter)
 		if(!*iter)
 		{
-			uint offset = std::distance(begin, iter);
+			int32_t offset = std::distance(begin, iter);
 			linesNotBlockedByFullOpacity.push_back(lines[offset]);
 			offsetInLinesByOffsetInLinesNotBlocked.insert(linesNotBlockedByFullOpacity.size(), offset);
 		}
@@ -49,7 +49,7 @@ std::vector<bool> OpacityFacade::hasLineOfSightBatched(const std::vector<std::pa
 	for(auto iter = begin2; iter != end2; ++iter)
 		if(!*iter)
 		{
-			uint offset = std::distance(begin2, iter);
+			int32_t offset = std::distance(begin2, iter);
 			blocked[offsetInLinesByOffsetInLinesNotBlocked[offset]] = true;
 		}
 	// Return true for not blocked.

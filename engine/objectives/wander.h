@@ -12,7 +12,7 @@ class WanderPathRequest final : public PathRequestBreadthFirst
 {
 	WanderObjective& m_objective;
 	Point3D m_lastPoint;
-	uint16_t m_pointCounter = 0;
+	int16_t m_pointCounter = 0;
 public:
 	WanderPathRequest(Area& area, WanderObjective& objective, const ActorIndex& actor);
 	WanderPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);

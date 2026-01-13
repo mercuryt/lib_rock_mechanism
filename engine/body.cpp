@@ -1,7 +1,7 @@
 #include "body.h"
 #include "definitions/bodyType.h"
 #include "definitions/animalSpecies.h"
-#include "config.h"
+#include "config/config.h"
 #include "deserializationMemo.h"
 #include "random.h"
 #include "reference.h"
@@ -15,7 +15,7 @@
 #include "actors/actors.h"
 #include <cstdint>
 // Static method.
-Wound::Wound(Area& area, const ActorIndex& a, const WoundType wt, BodyPart& bp, Hit h, uint32_t bvr, Percent ph) :
+Wound::Wound(Area& area, const ActorIndex& a, const WoundType wt, BodyPart& bp, Hit h, int32_t bvr, Percent ph) :
 	woundType(wt), bodyPart(bp), hit(h), bleedVolumeRate(bvr), percentHealed(ph), healEvent(area.m_eventSchedule)
 {
 	AnimalSpeciesId species = area.getActors().getSpecies(a);
@@ -25,7 +25,7 @@ Wound::Wound(Area& area, const ActorIndex& a, const WoundType wt, BodyPart& bp, 
 }
 Wound::Wound(const Json& data, DeserializationMemo& deserializationMemo, BodyPart& bp) :
 	woundType(woundTypeByName(data["woundType"].get<std::string>())),
-	bodyPart(bp), hit(data["hit"]), bleedVolumeRate(data["bleedVolumeRate"].get<uint32_t>()),
+	bodyPart(bp), hit(data["hit"]), bleedVolumeRate(data["bleedVolumeRate"].get<int32_t>()),
 	percentHealed(data["percentHealed"].get<Percent>()), healEvent(deserializationMemo.m_simulation.m_eventSchedule) { }
 Json Wound::toJson() const
 {
@@ -79,14 +79,16 @@ void Body::initalize(Area& area)
 	m_volumeOfBlood = healthyBloodVolume();
 }
 Body::Body(const Json& data, DeserializationMemo& deserializationMemo, const ActorIndex& a) :
-    	m_bleedEvent(deserializationMemo.m_simulation.m_eventSchedule),
+	m_bleedEvent(deserializationMemo.m_simulation.m_eventSchedule),
 	m_woundsCloseEvent(deserializationMemo.m_simulation.m_eventSchedule),
 	m_actor(a),
 	m_solid(MaterialType::byName(data["materialType"].get<std::string>())),
 	m_totalVolume(data["totalVolume"].get<FullDisplacement>()),
 	m_impairMovePercent(data.contains("impairMovePercent") ? data["impairMovePercent"].get<Percent>() : Percent::create(0)),
 	m_impairManipulationPercent(data.contains("impairManipulationPercent") ? data["impairManipulationPercent"].get<Percent>() : Percent::create(0)),
-	m_volumeOfBlood(data["volumeOfBlood"].get<FullDisplacement>()), m_isBleeding(data["isBleeding"].get<bool>())
+	m_volumeOfBlood(data["volumeOfBlood"].get<FullDisplacement>()),
+	m_pain(data["pain"].get<PsycologyWeight>()),
+	m_isBleeding(data["isBleeding"].get<bool>())
 {
 	for(const Json& bodyPart : data["bodyParts"])
 		m_bodyParts.emplace_back(bodyPart, deserializationMemo);
@@ -102,6 +104,7 @@ Json Body::toJson() const
 		{"totalVolume", m_totalVolume},
 		{"volumeOfBlood", m_volumeOfBlood},
 		{"isBleeding", m_isBleeding},
+		{"pain", m_pain}
 	};
 	if(m_impairMovePercent != Percent::create(0))
 		data["impairMovePercent"] = m_impairMovePercent;
@@ -125,7 +128,7 @@ Json Body::toJson() const
 BodyPart& Body::pickABodyPartByVolume(Simulation& simulation)
 {
 	Random& random = simulation.m_random;
-	uint32_t roll = random.getInRange(0u, m_totalVolume.get());
+	int32_t roll = random.getInRange(0, m_totalVolume.get());
 	for(BodyPart& bodyPart : m_bodyParts)
 	{
 		FullDisplacement volume = BodyPartType::getVolume(bodyPart.bodyPartType);
@@ -152,7 +155,7 @@ void Body::getHitDepth(Hit& hit, const BodyPart& bodyPart)
 	if(piercesSkin(hit, bodyPart))
 	{
 		++hit.depth;
-		uint32_t hardnessDelta = std::max(1, (int32_t)MaterialType::getHardness(bodyPart.materialType) - (int32_t)MaterialType::getHardness(hit.materialType));
+		int32_t hardnessDelta = std::max(1, (int32_t)MaterialType::getHardness(bodyPart.materialType) - (int32_t)MaterialType::getHardness(hit.materialType));
 		Force forceDelta = Force::create(hardnessDelta * hit.area * Config::skinPierceForceCost);
 		hit.force = hit.force < forceDelta ? Force::create(0) : hit.force - forceDelta;
 		if(piercesFat(hit, bodyPart))
@@ -176,8 +179,8 @@ Wound& Body::addWound(Area& area, BodyPart& bodyPart, Hit& hit)
 	// Run Body::getHitDepth on hit before calling this method.
 	assert(hit.depth != 0);
 	Actors& actors = area.getActors();
-	uint32_t scale = AnimalSpecies::getBodyScale(actors.getSpecies(m_actor));
-	uint32_t bleedVolumeRate = WoundCalculations::getBleedVolumeRate(hit, bodyPart.bodyPartType, scale);
+	int32_t scale = AnimalSpecies::getBodyScale(actors.getSpecies(m_actor));
+	int32_t bleedVolumeRate = WoundCalculations::getBleedVolumeRate(hit, bodyPart.bodyPartType, scale);
 	Wound& wound = bodyPart.wounds.emplace_back(area, m_actor, hit.woundType, bodyPart, hit, bleedVolumeRate);
 	float ratio = (float)hit.area / (BodyPartType::getVolume(bodyPart.bodyPartType).get() * scale);
 	if(BodyPartType::getVital(bodyPart.bodyPartType) && hit.depth == 4 && ratio >= Config::hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea)
@@ -193,9 +196,12 @@ Wound& Body::addWound(Area& area, BodyPart& bodyPart, Hit& hit)
 			actors.die(m_actor, CauseOfDeath::wound);
 			return wound;
 		}
+		else
+			m_pain += Config::painWhenALimbIsSevered;
 	}
 	else
 	{
+		m_pain += hit.pain();
 		Step delayTillHeal = WoundCalculations::getStepsTillHealed(hit, bodyPart.bodyPartType, scale);
 		wound.healEvent.schedule(area.m_simulation, delayTillHeal, wound, *this);
 	}
@@ -205,6 +211,8 @@ Wound& Body::addWound(Area& area, BodyPart& bodyPart, Hit& hit)
 void Body::healWound(Area& area, Wound& wound)
 {
 	wound.bodyPart.wounds.remove(wound);
+	// TODO: reduce pain gradually in stages.
+	m_pain -= wound.hit.pain();
 	recalculateBleedAndImpairment(area);
 }
 void Body::doctorWound(Area& area, Wound& wound, Percent healSpeedPercentageChange)
@@ -249,7 +257,7 @@ void Body::sever(BodyPart& bodyPart, Wound& wound)
 }
 void Body::recalculateBleedAndImpairment(Area& area)
 {
-	uint32_t bleedVolumeRate = 0;
+	int32_t bleedVolumeRate = 0;
 	m_impairManipulationPercent = Percent::create(0);
 	m_impairMovePercent = Percent::create(0);
 	for(BodyPart& bodyPart : m_bodyParts)
@@ -316,7 +324,7 @@ void Body::recalculateBleedAndImpairment(Area& area)
 Wound& Body::getWoundWhichIsBleedingTheMost()
 {
 	Wound* output = nullptr;
-	uint32_t outputBleedRate = 0;
+	int32_t outputBleedRate = 0;
 	for(BodyPart& bodyPart : m_bodyParts)
 		for(Wound& wound : bodyPart.wounds)
 			if(wound.bleedVolumeRate >= outputBleedRate)
@@ -348,29 +356,29 @@ Step Body::getStepsTillBleedToDeath() const
 bool Body::piercesSkin(Hit hit, const BodyPart& bodyPart) const
 {
 	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
-	uint32_t pierceScore = (uint32_t)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceSkinModifier;
-	uint32_t defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
+	int32_t pierceScore = (int32_t)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceSkinModifier;
+	int32_t defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
 	return pierceScore > defenseScore;
 }
 bool Body::piercesFat(Hit hit, const BodyPart& bodyPart) const
 {
 	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
-	uint32_t pierceScore = (uint32_t)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceFatModifier;
-	uint32_t defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
+	int32_t pierceScore = (int32_t)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceFatModifier;
+	int32_t defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
 	return pierceScore > defenseScore;
 }
 bool Body::piercesMuscle(Hit hit, const BodyPart& bodyPart) const
 {
 	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
-	uint32_t pierceScore = (uint32_t)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceMuscelModifier;
-	uint32_t defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
+	int32_t pierceScore = (int32_t)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceMuscelModifier;
+	int32_t defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
 	return pierceScore > defenseScore;
 }
 bool Body::piercesBone(Hit hit, const BodyPart& bodyPart) const
 {
 	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPart.bodyPartType);
-	uint32_t pierceScore = (uint32_t)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceBoneModifier;
-	uint32_t defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
+	int32_t pierceScore = (int32_t)((float)hit.force.get() / (float)hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceBoneModifier;
+	int32_t defenseScore = Config::bodyHardnessModifier * bodyPartVolume.get() * MaterialType::getHardness(bodyPart.materialType);
 	return pierceScore > defenseScore;
 }
 FullDisplacement Body::healthyBloodVolume() const
@@ -396,6 +404,19 @@ bool Body::isInjured() const
 			return true;
 	return false;
 }
+bool Body::isSeriouslyInjured() const
+{
+	if(m_isBleeding)
+	{
+		float ratio = (float)m_volumeOfBlood.get() / (float)healthyBloodVolume().get();
+		if(ratio < Config::maximumRatioOfBloodRemainingForSeriousInjury)
+			return true;
+	}
+	for(const BodyPart& bodyPart : m_bodyParts)
+		if(getImpairPercentFor(bodyPart) > Config::minimumImpairPercentForSeriousInjury)
+			return true;
+	return false;
+}
 bool Body::hasBodyPart(const BodyPartTypeId& bodyPartType) const
 {
 	for(const BodyPart& bodyPart : m_bodyParts)
@@ -408,8 +429,14 @@ Percent Body::getImpairPercentFor(const BodyPartTypeId& bodyPartType) const
 	Percent output = Percent::create(0);
 	for(const BodyPart& bodyPart : m_bodyParts)
 		if(bodyPart.bodyPartType == bodyPartType)
-			for(const Wound& wound : bodyPart.wounds)
-				output += wound.impairPercent();
+			output += getImpairPercentFor(bodyPart);
+	return output;
+}
+Percent Body::getImpairPercentFor(const BodyPart& bodyPart) const
+{
+	Percent output = Percent::create(0);
+		for(const Wound& wound : bodyPart.wounds)
+			output += wound.impairPercent();
 	return output;
 }
 std::vector<Wound*> Body::getAllWounds()

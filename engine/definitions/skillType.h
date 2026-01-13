@@ -1,7 +1,8 @@
 #pragma once
-#include "dataStructures/strongVector.h"
-#include "numericTypes/types.h"
-#include "json.h"
+#include "../dataStructures/strongVector.h"
+#include "../numericTypes/types.h"
+#include "../json.h"
+
 struct SkillTypeParamaters final
 {
 	std::string name;

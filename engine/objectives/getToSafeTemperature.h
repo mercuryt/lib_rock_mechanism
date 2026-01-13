@@ -3,7 +3,7 @@
 #include "../numericTypes/types.h"
 #include "../objective.h"
 #include "../path/pathRequest.h"
-#include "../config.h"
+#include "../config/config.h"
 
 class Area;
 struct DeserializationMemo;
@@ -26,6 +26,7 @@ public:
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
 	void reset(Area& area, const ActorIndex& actor);
+	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("get to safe temperature").getId(); }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "get to safe temperature"; }
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::temperature; }

@@ -16,8 +16,8 @@ class OnDestroyCallBack
 {
 public:
 	OnDestroyCallBack() = default;
-	virtual void callback() = 0;
-	[[nodiscard]] virtual Json toJson() = 0;
+	virtual void callback(const ActorOrItemReference& destroyed) = 0;
+	[[nodiscard]] virtual Json toJson() const = 0;
 	virtual ~OnDestroyCallBack() = default;
 	static std::unique_ptr<OnDestroyCallBack> fromJson(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 };
@@ -31,8 +31,8 @@ class CancelObjectiveOnDestroyCallBack final : public OnDestroyCallBack
 public:
 	CancelObjectiveOnDestroyCallBack(ActorReference actor, Objective& objective, Area& area);
 	CancelObjectiveOnDestroyCallBack(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
-	void callback();
-	[[nodiscard]] Json toJson();
+	void callback(const ActorOrItemReference& destroyed) override;
+	[[nodiscard]] Json toJson() const override;
 };
 class ResetProjectOnDestroyCallBack final : public OnDestroyCallBack
 {
@@ -40,16 +40,18 @@ class ResetProjectOnDestroyCallBack final : public OnDestroyCallBack
 public:
 	ResetProjectOnDestroyCallBack(Project& project);
 	ResetProjectOnDestroyCallBack(const Json& data, DeserializationMemo& deserializationMemo);
-	void callback();
-	[[nodiscard]] Json toJson();
+	void callback(const ActorOrItemReference& destroyed) override;
+	[[nodiscard]] Json toJson() const override;
 };
 // OnDestroy must be loaded from json before HasOnDestroySubscriptions.
 class OnDestroy final
 {
 	SmallSet<HasOnDestroySubscriptions*> m_subscriptions;
+	ActorOrItemReference m_destroyed;
 public:
-	OnDestroy(const Json& data, DeserializationMemo& deserializationMemo);
-	OnDestroy() = default;
+	OnDestroy(const Json& data, DeserializationMemo& deserializationMemo, const ActorOrItemReference& destroyed);
+	OnDestroy(const ActorReference& actor) : m_destroyed(actor) { }
+	OnDestroy(const ItemReference& item) : m_destroyed(item) { }
 	void subscribe(HasOnDestroySubscriptions& hasSubscription);
 	void unsubscribe(HasOnDestroySubscriptions& hasSubscription);
 	void merge(OnDestroy& onDestroy);
@@ -70,14 +72,17 @@ public:
 	static std::mutex m_mutex;
 	HasOnDestroySubscriptions(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	HasOnDestroySubscriptions() = default;
+	HasOnDestroySubscriptions(HasOnDestroySubscriptions&&) noexcept = default;
+	HasOnDestroySubscriptions& operator=(HasOnDestroySubscriptions&&) noexcept = default;
 	void subscribe(OnDestroy& onDestroy);
 	void subscribeThreadSafe(OnDestroy& onDestroy);
 	void unsubscribe(OnDestroy& onDestroy);
 	void unsubscribeAll();
 	void maybeUnsubscribe(OnDestroy& onDestroy);
 	void setCallback(std::unique_ptr<OnDestroyCallBack>&& callback);
-	void callback();
+	void callback(const ActorOrItemReference& destroyed);
 	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] bool hasCallBack() const;
 	~HasOnDestroySubscriptions();
 	HasOnDestroySubscriptions(HasOnDestroySubscriptions&) = delete;
 };

@@ -29,7 +29,7 @@ public:
 	void eatFruitFromPlant(Area& area, const PlantIndex& plant);
 	[[nodiscard]] std::string name() const { return "eat"; }
 };
-constexpr int maxRankedEatDesire = 3;
+constexpr int32_t maxRankedEatDesire = 3;
 class EatPathRequest final : public PathRequestBreadthFirst
 {
 	std::array<Point3D, maxRankedEatDesire> m_candidates;
@@ -59,6 +59,7 @@ public:
 	void reset(Area&, const ActorIndex& actor);
 	void noFoodFound();
 	void makePathRequest(Area& area, const ActorIndex& actor);
+	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("eat").getId(); }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "eat"; }
 	[[nodiscard]] bool canEatAt(Area& area, const Point3D& point, const ActorIndex& actor) const;

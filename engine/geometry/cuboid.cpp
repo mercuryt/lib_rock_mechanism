@@ -61,7 +61,7 @@ bool Cuboid::canMerge(const Cuboid& other) const
 	auto high = other.m_high.data == m_high.data;
 	auto low = other.m_low.data == m_low.data;
 	auto sum = high && low;
-	uint32_t count = sum.count();
+	int32_t count = sum.count();
 	assert(count != 3);
 	return count == 2;
 }
@@ -142,10 +142,11 @@ Point3D Cuboid::intersectionPoint(const CuboidSet& cuboids) const
 std::pair<Point3D, Point3D> Cuboid::intersectionPoints(const ParamaterizedLine& line) const
 {
 	std::pair<Point3D, Point3D> output;
-	for(Facing6 facing = Facing6::Below; facing != Facing6::Null; facing = (Facing6)((uint)facing + 1u))
+	for(Facing6 facing = Facing6::Below; facing != Facing6::Null; facing = (Facing6)((int8_t)facing + 1))
 	{
 		const Point3D point = intersectionPointForFace(line, facing);
 		if(point.exists())
+		{
 			if(output.first.exists())
 			{
 				output.second = point;
@@ -153,7 +154,7 @@ std::pair<Point3D, Point3D> Cuboid::intersectionPoints(const ParamaterizedLine& 
 			}
 			else
 				output.first = point;
-
+		}
 	}
 	std::unreachable();
 }
@@ -283,7 +284,7 @@ void Cuboid::setFrom(const Offset3D& high, const Offset3D& low)
 void Cuboid::shift(const Facing6& direction, const Distance& distance)
 {
 	// TODO: make offsetsListDirectlyAdjacent return an Offset3D.
-	Offset3D offset = adjacentOffsets::direct[(uint)direction];
+	Offset3D offset = adjacentOffsets::direct[(int32_t)direction];
 	shift(offset, distance);
 }
 void Cuboid::shift(const Offset3D& offset, const Distance& distance)
@@ -298,7 +299,7 @@ void Cuboid::shift(const Offset3D& offset, const Distance& distance)
 void Cuboid::maybeShift(const Facing6& direction, const Distance& distance)
 {
 	// TODO: make offsetsListDirectlyAdjacent return an Offset3D.
-	Offset3D offset = adjacentOffsets::direct[(uint)direction];
+	Offset3D offset = adjacentOffsets::direct[(int32_t)direction];
 	maybeShift(offset, distance);
 }
 void Cuboid::maybeShift(const Offset3D& offset, const Distance& distance)
@@ -379,7 +380,7 @@ bool Cuboid::overlapsWithSphere(const Sphere& sphere) const
 {
 	return sphere.intersects(*this);
 }
-uint Cuboid::volume() const
+int32_t Cuboid::volume() const
 {
 	if(!m_high.exists())
 	{
@@ -604,7 +605,7 @@ Cuboid::ConstIterator& Cuboid::ConstIterator::ConstIterator::operator++()
 		setToEnd();
 	return *this;
 }
-Cuboid::ConstIterator Cuboid::ConstIterator::operator++(int)
+Cuboid::ConstIterator Cuboid::ConstIterator::operator++(int32_t)
 {
 	Cuboid::ConstIterator tmp = *this;
 	++(*this);
@@ -637,7 +638,7 @@ void CuboidSurfaceView::Iterator::setFace()
 		// Since we don't have Area here we can't skip faces where a high dimension is too high.
 		if((faceLow.data >= 0).all())
 			break;
-		facing = Facing6((uint)facing + 1);
+		facing = Facing6((int32_t)facing + 1);
 		if(facing == Facing6::Null)
 			return;
 	}
@@ -662,7 +663,7 @@ CuboidSurfaceView::Iterator& CuboidSurfaceView::Iterator::operator++()
 	}
 	else if(facing != Facing6::Above)
 	{
-		facing = (Facing6)((uint)facing + 1);
+		facing = (Facing6)((int32_t)facing + 1);
 		setFace();
 	}
 	else
@@ -671,7 +672,7 @@ CuboidSurfaceView::Iterator& CuboidSurfaceView::Iterator::operator++()
 	return *this;
 }
 void CuboidSurfaceView::Iterator::setToEnd() { facing = Facing6::Null; }
-CuboidSurfaceView::Iterator CuboidSurfaceView::Iterator::operator++(int)
+CuboidSurfaceView::Iterator CuboidSurfaceView::Iterator::operator++(int32_t)
 {
 	auto copy = *this;
 	++(*this);

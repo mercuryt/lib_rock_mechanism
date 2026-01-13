@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../config.h"
+#include "../config/config.h"
 #include "../geometry/cuboid.h"
 #include "../numericTypes/index.h"
 #include "../input.h"
@@ -27,8 +27,10 @@ class ConstructProject final : public Project
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
 	std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
+	[[nodiscard]] SkillTypeId getSkill() const;
+	[[nodiscard]] std::string description() const;
 	std::vector<ActorReference> getActors() const;
-	uint32_t getWorkerConstructScore(const ActorIndex& actor) const;
+	int32_t getWorkerConstructScore(const ActorIndex& actor) const;
 	Step getDuration() const;
 	void onComplete();
 	void onCancel();

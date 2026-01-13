@@ -65,7 +65,7 @@ void Space::farm_removeAllSowSeedsDesignations(const Point3D& point)
 }
 bool Space::farm_isSowingSeasonFor(const PlantSpeciesId& species) const
 {
-	uint16_t day = DateTime(m_area.m_simulation.m_step).day;
+	int16_t day = DateTime(m_area.m_simulation.m_step).day;
 	return day >= PlantSpecies::getDayOfYearForSowStart(species) && day <= PlantSpecies::getDayOfYearForSowEnd(species);
 }
 bool Space::farm_contains(const Point3D& point, const FactionId& faction) const

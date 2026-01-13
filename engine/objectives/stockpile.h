@@ -33,9 +33,10 @@ public:
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
 	void reset(Area& area, const ActorIndex& actor);
+	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("stockpile").getId(); }
 	[[nodiscard]] bool destinationCondition(Area& area, const Point3D& point, const ItemIndex& item, const ActorIndex& actor);
 	[[nodiscard]] Json toJson() const;
-	std::string name() const { return "stockpile"; }
+	[[nodiscard]] constexpr std::string name() const { return "stockpile"; }
 	// For debug.
 	[[nodiscard]] bool hasItem() const { return m_item.exists(); }
 	[[nodiscard]] bool hasDestination() const { return m_stockPileLocation.exists(); }

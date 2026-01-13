@@ -2,7 +2,7 @@
 #include "actors/actors.h"
 #include "definitions/animalSpecies.h"
 #include "space/space.h"
-#include "config.h"
+#include "config/config.h"
 #include "definitions/definitions.h"
 #include "deserializationMemo.h"
 #include "drama/engine.h"
@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
+#include <fstream>
 Simulation::Simulation(std::string name, Step s) :
     	m_eventSchedule(*this, nullptr), m_hourlyEvent(m_eventSchedule), m_deserializationMemo(*this), m_name(name), m_step(s)
 {
@@ -50,12 +51,13 @@ Simulation::Simulation(const Json& data) :
 	m_constructedItemTypes.load();
 	m_hourlyEvent.schedule(*this, data["hourEventStart"].get<Step>());
 	m_hasAreas = std::make_unique<SimulationHasAreas>(data["hasAreas"], m_deserializationMemo, *this);
+	data["squads"].get_to(m_hasSquads);
 }
-void Simulation::doStep(uint16_t count)
+void Simulation::doStep(int16_t count)
 {
 	assert(count);
 	bool locked = false;
-	for(uint i = 0; i < count; ++i)
+	for(int i = 0; i < count; ++i)
 	{
 		// Aquire UI read mutex on first iteration,
 		if(!locked)
@@ -221,7 +223,7 @@ void Simulation::fastForwardUntillItemIsAt(Area& area, const ItemIndex& item, co
 	std::function<bool()> predicate = [&](){ return area.getItems().getLocation(item) == destination; };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillPredicate(std::function<bool()>& predicate, uint32_t minutes)
+void Simulation::fastForwardUntillPredicate(std::function<bool()>& predicate, int32_t minutes)
 {
 	assert(!predicate());
 	[[maybe_unused]] Step lastStep = m_step + (Config::stepsPerMinute * minutes);
@@ -235,7 +237,7 @@ void Simulation::fastForwardUntillPredicate(std::function<bool()>& predicate, ui
 			break;
 	}
 }
-void Simulation::fasterForwardUntillPredicate(std::function<bool()>& predicate, uint32_t minutes)
+void Simulation::fasterForwardUntillPredicate(std::function<bool()>& predicate, int32_t minutes)
 {
 	assert(!predicate());
 	[[maybe_unused]] Step lastStep = m_step + (Config::stepsPerMinute * minutes);
@@ -248,11 +250,11 @@ void Simulation::fasterForwardUntillPredicate(std::function<bool()>& predicate, 
 			break;
 	}
 }
-void Simulation::fastForwardUntillPredicate(std::function<bool()>&& predicate, uint32_t minutes)
+void Simulation::fastForwardUntillPredicate(std::function<bool()>&& predicate, int32_t minutes)
 {
 	fastForwardUntillPredicate(predicate, minutes);
 }
-void Simulation::fasterForwardUntillPredicate(std::function<bool()>&& predicate, uint32_t minutes)
+void Simulation::fasterForwardUntillPredicate(std::function<bool()>&& predicate, int32_t minutes)
 {
 	fasterForwardUntillPredicate(predicate, minutes);
 }
@@ -276,5 +278,6 @@ Json Simulation::toJson() const
 	output["factions"] = m_hasFactions;
 	output["uniforms"] = m_hasUniforms;
 	output["constructedItemTypes"] = m_constructedItemTypes;
+	output["squads"] = m_hasSquads;
 	return output;
 }

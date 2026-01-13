@@ -3,7 +3,7 @@
 #include "../dataStructures/rtreeData.h"
 #include "../dataStructures/smallSet.h"
 #include "../geometry/point3D.h"
-#include "../config.h"
+#include "../config/config.h"
 
 class Space;
 class AreaHasExteriorPortals

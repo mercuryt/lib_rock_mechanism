@@ -51,7 +51,7 @@ void HasFarmFieldsForFaction::removeHarvestDesignation(Area& area, const PlantIn
 	Point3D location = area.getPlants().getLocation(plant);
 	area.getSpace().designation_unset(location, m_faction, SpaceDesignation::Harvest);
 }
-void HasFarmFieldsForFaction::setDayOfYear(Area& area, uint32_t dayOfYear)
+void HasFarmFieldsForFaction::setDayOfYear(Area& area, int16_t dayOfYear)
 {
 	//TODO: Add sow designation when blocking item or plant is removed.
 	for(FarmField& farmField : m_farmFields)
@@ -97,7 +97,7 @@ void HasFarmFieldsForFaction::setSpecies(Area& area, FarmField& farmField, const
 {
 	assert(farmField.m_plantSpecies.empty());
 	farmField.m_plantSpecies = plantSpecies;
-	int32_t day = DateTime(area.m_simulation.m_step).day;
+	int16_t day = DateTime(area.m_simulation.m_step).day;
 	if(day >= PlantSpecies::getDayOfYearForSowStart(plantSpecies) && day <= PlantSpecies::getDayOfYearForSowEnd(plantSpecies))
 	{
 		farmField.m_timeToSow = true;
@@ -209,7 +209,7 @@ void AreaHasFarmFields::removeAllSowSeedsDesignations(const Point3D& point)
 		if(space.designation_has(point, pair.first, SpaceDesignation::SowSeeds))
 			pair.second.removeSowSeedsDesignation(m_area, point);
 }
-void AreaHasFarmFields::setDayOfYear(uint32_t dayOfYear)
+void AreaHasFarmFields::setDayOfYear(int16_t dayOfYear)
 {
 	for(auto& pair : m_data)
 		pair.second.setDayOfYear(m_area, dayOfYear);

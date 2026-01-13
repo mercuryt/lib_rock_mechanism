@@ -144,6 +144,7 @@ CraftObjective::CraftObjective(const Json& data, DeserializationMemo& deserializ
 		for(const Json& job : data["failedJobs"])
 			m_failedJobs.insert(deserializationMemo.m_craftJobs.at(job.get<uintptr_t>()));
 }
+ObjectiveTypeId CraftObjective::getTypeId() const { return ObjectiveType::getByName("craft: " + SkillType::getName(m_skillType)).getId(); }
 Json CraftObjective::toJson() const
 {
 	Json data = Objective::toJson();

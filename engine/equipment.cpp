@@ -1,7 +1,7 @@
 #include "equipment.h"
 #include "definitions/animalSpecies.h"
 #include "area/area.h"
-#include "config.h"
+#include "config/config.h"
 #include "items/items.h"
 #include "random.h"
 #include "hit.h"
@@ -18,7 +18,7 @@
 EquipmentSet::EquipmentSet(Area& area, const Json& data)
 {
 	Items& items = area.getItems();
-	for(const Json& itemRefData : data["m_equipments"])
+	for(const Json& itemRefData : data)
 		addEquipment(area, ItemReference(itemRefData, items.m_referenceData).getIndex(items.m_referenceData));
 }
 void EquipmentSet::addEquipment(Area& area, const ItemIndex& equipment)
@@ -138,8 +138,8 @@ void EquipmentSet::modifyImpact(Area& area, Hit& hit, const BodyPartTypeId& body
 		if(std::ranges::find(bodyPartsCovered, bodyPartType) != bodyPartsCovered.end() && random.percentChance(chance))
 		{
 			auto hardness = MaterialType::getHardness(materialType);
-			uint32_t pierceScore = ((float)hit.force.get() / hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceModifier;
-			uint32_t defenseScore = ItemType::getWearable_defenseScore(itemType) * hardness;
+			int32_t pierceScore = ((float)hit.force.get() / hit.area) * MaterialType::getHardness(hit.materialType) * Config::pierceModifier;
+			int32_t defenseScore = ItemType::getWearable_defenseScore(itemType) * hardness;
 			if(pierceScore < defenseScore)
 			{
 				if(ItemType::getWearable_rigid(itemType))
@@ -274,4 +274,11 @@ ItemIndex EquipmentSet::getFirstItemWithType(const Area& area, const ItemTypeId&
 		return ItemIndex::null();
 	else
 		return found->getIndex(items.m_referenceData);
+}
+Json EquipmentSet::toJson() const
+{
+	Json output = Json::array();
+	for(const ItemReference& item : m_equipments)
+		output.push_back(item.toJson());
+	return output;
 }

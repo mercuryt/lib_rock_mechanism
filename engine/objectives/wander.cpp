@@ -2,7 +2,7 @@
 #include "../area/area.h"
 #include "../deserializationMemo.h"
 #include "../random.h"
-#include "../config.h"
+#include "../config/config.h"
 #include "../simulation/simulation.h"
 #include "../path/terrainFacade.hpp"
 #include "../actors/actors.h"

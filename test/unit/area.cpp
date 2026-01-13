@@ -9,7 +9,7 @@
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
 #include "../../engine/definitions/animalSpecies.h"
-#include "config.h"
+#include "../../engine/config/config.h"
 #include "numericTypes/types.h"
 
 TEST_CASE("Area")
@@ -240,13 +240,13 @@ TEST_CASE("multiMergeOnAdd")
 	CHECK(area.m_hasFluidGroups.getAll().size() == 1);
 	simulation.doStep();
 }
-inline void fourFluidsTestParallel(uint32_t scale, Step steps)
+inline void fourFluidsTestParallel(int scale, Step steps)
 {
-	uint32_t maxX = (scale * 2) + 2;
-	uint32_t maxY = (scale * 2) + 2;
-	uint32_t maxZ = (scale * 1) + 1;
-	uint32_t halfMaxX = maxX / 2;
-	uint32_t halfMaxY = maxY / 2;
+	int maxX = (scale * 2) + 2;
+	int maxY = (scale * 2) + 2;
+	int maxZ = (scale * 1) + 1;
+	int halfMaxX = maxX / 2;
+	int halfMaxY = maxY / 2;
 	static MaterialTypeId marble = MaterialType::byName("marble");
 	static FluidTypeId water = FluidType::byName("water");
 	static FluidTypeId CO2 = FluidType::byName("CO2");
@@ -292,9 +292,9 @@ inline void fourFluidsTestParallel(uint32_t scale, Step steps)
 		space.prepareRtrees();
 		++simulation.m_step;
 	}
-	uint32_t totalBlocks2D = (maxX - 2) * (maxY - 2);
-	uint32_t expectedHeight = ((maxZ - 2) / 4) + 1;
-	uint32_t expectedBlocks = totalBlocks2D * expectedHeight;
+	int totalBlocks2D = (maxX - 2) * (maxY - 2);
+	int expectedHeight = ((maxZ - 2) / 4) + 1;
+	int expectedBlocks = totalBlocks2D * expectedHeight;
 	fgMercury = areaBuilderUtil::getFluidGroup(area, mercury);
 	fgWater = areaBuilderUtil::getFluidGroup(area, water);
 	fgLava = areaBuilderUtil::getFluidGroup(area, lava);

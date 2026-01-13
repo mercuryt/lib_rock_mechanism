@@ -1,4 +1,5 @@
 #include "actors.h"
+#include "../config/social.h"
 
 PsycologyWeight Actors::psycology_actorCausesFear(const ActorIndex& index, const ActorIndex& other) const
 {
@@ -33,3 +34,13 @@ PsycologyWeight Actors::psycology_actorCausesFear(const ActorIndex& index, const
 }
 const Psycology& Actors::psycology_getConst(const ActorIndex& index) const { return m_psycology[index]; }
 Psycology& Actors::psycology_get(const ActorIndex& index) { return m_psycology[index]; }
+void Actors::psycology_event(const ActorIndex& index, const PsycologyEventType& type, const PsycologyAttribute& attribute, const PsycologyWeight& weight, const Step& duration, const Step& cooldown)
+{
+	PsycologyEvent psycologyEvent(type, attribute, weight);
+	m_psycology[index].apply(psycologyEvent, m_area, index, duration, cooldown);
+}
+void Actors::psycology_event(const ActorIndex& index, const PsycologyEventType& type, const PsycologyData& delta, const Step& duration, const Step& cooldown)
+{
+	PsycologyEvent psycologyEvent(type, delta);
+	m_psycology[index].apply(psycologyEvent, m_area, index, duration, cooldown);
+}

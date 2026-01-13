@@ -13,7 +13,7 @@ void ConstructedShape::addCuboidSet(Area& area, const Point3D& origin, const Fac
 		OffsetCuboid offsetCuboid = solidCuboid.difference(origin);
 		offsetCuboid.rotate2D(facing);
 		m_solid.insertOrMerge(offsetCuboid, materialType);
-		uint size = solidCuboid.volume();
+		int32_t size = solidCuboid.volume();
 		m_value += MaterialType::getValuePerUnitFullDisplacement(materialType) * size;
 		m_mass += MaterialType::getMassForSolidVolumeAsANumberOfPoints(materialType, size);
 		m_fullDisplacement += FullDisplacement::createFromCollisionVolume(Config::maxPointVolume) * size;
@@ -24,7 +24,7 @@ void ConstructedShape::addCuboidSet(Area& area, const Point3D& origin, const Fac
 		offsetCuboid.rotate2D(facing);
 		m_features.insertOrMerge(offsetCuboid, feature);
 		const auto& featureType = PointFeatureType::byId(feature.pointFeatureType);
-		uint size = featureCuboid.volume();
+		int32_t size = featureCuboid.volume();
 		if(featureType.blocksEntrance)
 			m_fullDisplacement += FullDisplacement::createFromCollisionVolume(Config::maxPointVolume) * size;
 		m_value += featureType.value * MaterialType::getValuePerUnitFullDisplacement(feature.materialType) * size;

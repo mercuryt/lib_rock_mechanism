@@ -25,7 +25,7 @@ FindPathResult SleepPathRequest::readStep(Area& area, const TerrainFacade& terra
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	assert(actors.sleep_getSpot(actorIndex).empty());
-	uint32_t desireToSleepAtCurrentLocation = m_sleepObjective.desireToSleepAt(area, actors.getLocation(actorIndex), actorIndex);
+	int32_t desireToSleepAtCurrentLocation = m_sleepObjective.desireToSleepAt(area, actors.getLocation(actorIndex), actorIndex);
 	if(desireToSleepAtCurrentLocation == 1)
 		m_outdoorCandidate = area.getActors().getLocation(actorIndex);
 	else if(desireToSleepAtCurrentLocation == 2)
@@ -43,7 +43,7 @@ FindPathResult SleepPathRequest::readStep(Area& area, const TerrainFacade& terra
 			{
 				if(designations.query(point))
 				{
-					uint32_t desire = m_sleepObjective.desireToSleepAt(area, point, actorIndex);
+					int32_t desire = m_sleepObjective.desireToSleepAt(area, point, actorIndex);
 					if(desire == 3)
 					{
 						m_maxDesireCandidate = point;
@@ -63,7 +63,7 @@ FindPathResult SleepPathRequest::readStep(Area& area, const TerrainFacade& terra
 		{
 			auto condition = [&](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
 			{
-				uint32_t desire = m_sleepObjective.desireToSleepAt(area, point, actorIndex);
+				int32_t desire = m_sleepObjective.desireToSleepAt(area, point, actorIndex);
 				if(desire == 3)
 				{
 					m_maxDesireCandidate = point;
@@ -191,7 +191,7 @@ void SleepObjective::execute(Area& area, const ActorIndex& actor)
 			execute(area, actor);
 		}
 }
-uint32_t SleepObjective::desireToSleepAt(Area& area, const Point3D& point, const ActorIndex& actor) const
+int32_t SleepObjective::desireToSleepAt(Area& area, const Point3D& point, const ActorIndex& actor) const
 {
 	Space& space = area.getSpace();
 	Actors& actors = area.getActors();

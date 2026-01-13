@@ -3,7 +3,7 @@
 #include "smallSet.h"
 #include "../concepts.h"
 template<typename T>
-SmallSet<T>::SmallSet(uint capacity) { reserve(capacity); };
+SmallSet<T>::SmallSet(int capacity) { reserve(capacity); };
 template<typename T>
 SmallSet<T>::SmallSet(std::initializer_list<T> i) : m_data(i) { }
 template<typename T>
@@ -111,7 +111,7 @@ void SmallSet<T>::maybeEraseAllWhereBothSetsAreSorted(const This& other)
     m_data.erase(new_end, m_data.end());
 }
 template<typename T>
-void SmallSet<T>::eraseIndex(const uint& index)
+void SmallSet<T>::eraseIndex(const int& index)
 {
 	erase(m_data.begin() + index);
 }
@@ -157,15 +157,15 @@ void SmallSet<T>::removeDuplicatesAndValue(const T& value)
 	}), m_data.end());
 }
 template<typename T>
-void SmallSet<T>::reserve(uint size) { m_data.reserve(size); }
+void SmallSet<T>::reserve(int size) { m_data.reserve(size); }
 template<typename T>
-void SmallSet<T>::resize(uint size) { m_data.resize(size); }
+void SmallSet<T>::resize(int size) { m_data.resize(size); }
 template<typename T>
 bool SmallSet<T>::operator==(const SmallSet<T>& other) { return &other == this; }
 template<typename T>
-const T& SmallSet<T>::operator[](const uint& index) const { return m_data[index]; }
+const T& SmallSet<T>::operator[](const int& index) const { return m_data[index]; }
 template<typename T>
-T& SmallSet<T>::operator[](const uint& index) { return m_data[index]; }
+T& SmallSet<T>::operator[](const int& index) { return m_data[index]; }
 template<typename T>
 bool SmallSet<T>::contains(const T& value) const { return std::ranges::find(m_data, value) != m_data.end(); }
 template<typename T>
@@ -178,7 +178,7 @@ bool SmallSet<T>::containsAny(const This& other) const
 	return false;
 }
 template<typename T>
-uint SmallSet<T>::indexOf(const T& value) const { assert(contains(value)); return std::distance(m_data.begin(), std::ranges::find(m_data, value)); }
+int SmallSet<T>::indexOf(const T& value) const { assert(contains(value)); return std::distance(m_data.begin(), std::ranges::find(m_data, value)); }
 template<typename T>
 T& SmallSet<T>::front() { return m_data.front(); }
 template<typename T>
@@ -190,7 +190,7 @@ const T& SmallSet<T>::back() const { return m_data.back(); }
 template<typename T>
 bool SmallSet<T>::empty() const { return m_data.empty(); }
 template<typename T>
-uint SmallSet<T>::size() const { return m_data.size(); }
+int SmallSet<T>::size() const { return m_data.size(); }
 template<typename T>
 SmallSet<T>::iterator SmallSet<T>::begin() { return {*this, 0}; }
 template<typename T>
@@ -210,7 +210,7 @@ SmallSet<T>::const_iterator SmallSet<T>::find(const T& value) const { return std
 template<typename T>
 bool SmallSet<T>::isUnique() const { auto copy = *this; copy.makeUnique(); return size() == copy.size(); }
 template<typename T>
-uint SmallSet<T>::findLastIndex(const T& value) const
+int SmallSet<T>::findLastIndex(const T& value) const
 {
 	const auto it = std::ranges::find(m_data.rbegin(), m_data.rend(), value);
 	assert(it != m_data.rend());
@@ -225,14 +225,14 @@ int SmallSet<T>::maybeFindLastIndex(const T& value) const
 	return std::distance(m_data.begin(), it.base()) - 1;
 }
 template<typename T>
-std::pair<SmallSet<T>, SmallSet<T>> SmallSet<T>::getDeltaPair(const SmallSet<T>& other) const
+std::pair<SmallSet<T>, SmallSet<T>> SmallSet<T>::getDeltaPair(SmallSet<T>& other)
 {
 	// First set is items to remove, second is items to insert, when transitioning from this to other.
 	std::pair<SmallSet<T>, SmallSet<T>> output;
 	other.sort();
 	sort();
-	std::set_difference(m_data.begin(), m_data.end(), other.begin(), other.m_data.end(), std::back_inserter(output.first));
-	std::set_difference(other.m_data.begin(), other.m_data.end(), m_data.begin(), m_data.end(), std::back_inserter(output.second));
+	std::set_difference(m_data.begin(), m_data.end(), other.m_data.begin(), other.m_data.end(), std::back_inserter(output.first.m_data));
+	std::set_difference(other.m_data.begin(), other.m_data.end(), m_data.begin(), m_data.end(), std::back_inserter(output.second.m_data));
 	return output;
 }
 template<typename T>
@@ -272,9 +272,9 @@ Json SmallSetStable<T>::toJson() const
 	return output;
 }
 template<typename T>
-void SmallSetStable<T>::insert(const std::unique_ptr<T>& value) { assert(!contains(value)); m_data.push_back(std::move(value)); }
+void SmallSetStable<T>::insert(std::unique_ptr<T>&& value) { assert(!contains(value)); m_data.push_back(std::move(value)); }
 template<typename T>
-void SmallSetStable<T>::maybeInsert(const std::unique_ptr<T>& value) { if(!contains(*value)) m_data.push_back(std::move(value)); }
+void SmallSetStable<T>::maybeInsert(std::unique_ptr<T>&& value) { if(!contains(*value)) m_data.push_back(std::move(value)); }
 template<typename T>
 void SmallSetStable<T>::insert(SmallSetStable<T>::iterator begin, SmallSetStable<T>::iterator end)
 {
@@ -304,7 +304,7 @@ void SmallSetStable<T>::erase(const SmallSetStable<T>::iterator& iter)
 {
 	assert(iter != end());
 	assert(!m_data.empty());
-	uint index = std::distance(m_data.begin(), iter.getIter());
+	int index = std::distance(m_data.begin(), iter.getIter());
 	m_data[index] = std::move(m_data.back());
 	m_data.pop_back();
 }
@@ -335,7 +335,7 @@ const T& SmallSetStable<T>::back() const { return *m_data.back(); }
 template<typename T>
 bool SmallSetStable<T>::empty() const { return m_data.empty(); }
 template<typename T>
-uint SmallSetStable<T>::size() const { return m_data.size(); }
+int SmallSetStable<T>::size() const { return m_data.size(); }
 template<typename T>
 SmallSetStable<T>::iterator SmallSetStable<T>::begin() { return {*this, 0}; }
 template<typename T>

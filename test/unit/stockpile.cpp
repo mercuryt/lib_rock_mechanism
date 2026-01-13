@@ -13,7 +13,7 @@
 #include "../../engine/definitions/itemType.h"
 #include "../../engine/definitions/animalSpecies.h"
 #include "../../engine/project.h"
-#include "../../engine/config.h"
+#include "../../engine/config/config.h"
 #include "../../engine/haul.h"
 #include "../../engine/objectives/goTo.h"
 #include "../../engine/objectives/stockpile.h"

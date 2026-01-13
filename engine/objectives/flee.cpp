@@ -2,6 +2,7 @@
 #include "../area/area.h"
 #include "../actors/actors.h"
 #include "../space/space.h"
+#include "../path/terrainFacade.hpp"
 
 // Objective.
 FleeObjective::FleeObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo) {}
@@ -42,7 +43,7 @@ FindPathResult FleePathRequest::readStep(Area& area, const TerrainFacade& terrai
 	const Point3D& enemyLocation = actors.getNearestVisibleEnemyLocation(actorIndex);
 	const Point3D& location = actors.getLocation(actorIndex);
 	Distance targetDistance = Distance::create((location.distanceToFractional(enemyLocation) * 1.5).get());
-	auto destinationCondition = [&actors, &space, actorIndex, enemyLocation, targetDistance](const Point3D& proposedDestination, const Facing4& facingAtLocation) ->std::pair<bool, Point3D>
+	auto destinationCondition = [&actors, &space, actorIndex, enemyLocation, targetDistance](const Point3D& proposedDestination, const Facing4&) -> std::pair<bool, Point3D>
 	{
 		if(proposedDestination.distanceTo(enemyLocation) >= targetDistance)
 			return std::make_pair(true, proposedDestination);

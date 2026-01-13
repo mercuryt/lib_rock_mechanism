@@ -17,8 +17,10 @@
 #include <cstdint>
 #include <memory>
 
-template<class Derived, class Index, class ReferenceIndex, bool isActors>Portables<Derived, Index, ReferenceIndex, isActors>::Portables(Area& area) : HasShapes<Derived, Index>(area) { }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::updateStoredIndicesPortables(const Index& oldIndex, const Index& newIndex)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+Portables<Derived, Index, ReferenceIndex, isActors>::Portables(Area& area) : HasShapes<Derived, Index>(area) { }
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+void Portables<Derived, Index, ReferenceIndex, isActors>::updateStoredIndicesPortables(const Index& oldIndex, const Index& newIndex)
 {
 	Actors& actors = getActors();
 	Items& items = getItems();
@@ -345,7 +347,7 @@ MapWithCuboidKeys<CollisionVolume> Portables<Derived, Index, ReferenceIndex, isA
 	const MapWithCuboidKeys<CollisionVolume>& occupied = this->m_occupiedWithVolume[index];
 	MapWithCuboidKeys<CollisionVolume> output;
 	const Area& area = getArea();
-	uint toReserve = occupied.size();
+	int32_t toReserve = occupied.size();
 	for(const ActorOrItemIndex& onDeck : m_onDeck[index])
 		toReserve += Shape::getCuboidsCount(onDeck.getShape(area));
 	output.reserve(toReserve);
@@ -360,7 +362,7 @@ CuboidSet Portables<Derived, Index, ReferenceIndex, isActors>::getOccupiedCombin
 {
 	const CuboidSet& occupied = this->m_occupied[index];
 	const Area& area = getArea();
-	uint toReserve = occupied.size();
+	int32_t toReserve = occupied.size();
 	for(const ActorOrItemIndex& onDeck : m_onDeck[index])
 		toReserve += Shape::getCuboidsCount(onDeck.getShape(area));
 	CuboidSet output;
@@ -619,7 +621,8 @@ void Portables<Derived, Index, ReferenceIndex, isActors>::onSetLocation(const In
 			setNotFloating(index);
 	}
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::updateIndexInCarrier(const Index& oldIndex, const Index& newIndex)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+void Portables<Derived, Index, ReferenceIndex, isActors>::updateIndexInCarrier(const Index& oldIndex, const Index& newIndex)
 {
 	if(m_carrier[newIndex].isActor())
 	{
@@ -662,35 +665,43 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>void Po
 		}
 	}
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_reserve(const Index& index, CanReserve& canReserve, const Quantity quantity, std::unique_ptr<DishonorCallback> callback)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_reserve(const Index& index, CanReserve& canReserve, const Quantity quantity, std::unique_ptr<DishonorCallback> callback)
 {
 	m_reservables[index]->reserveFor(canReserve, quantity, std::move(callback));
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_unreserve(const Index& index, CanReserve& canReserve, const Quantity quantity)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_unreserve(const Index& index, CanReserve& canReserve, const Quantity quantity)
 {
 	m_reservables[index]->clearReservationFor(canReserve, quantity);
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_unreserveFaction(const Index& index, const FactionId& faction)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_unreserveFaction(const Index& index, const FactionId& faction)
 {
 	m_reservables[index]->clearReservationsFor(faction);
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_maybeUnreserve(const Index& index, CanReserve& canReserve, const Quantity quantity)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_maybeUnreserve(const Index& index, CanReserve& canReserve, const Quantity quantity)
 {
 	m_reservables[index]->maybeClearReservationFor(canReserve, quantity);
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_unreserveAll(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_unreserveAll(const Index& index)
 {
 	m_reservables[index]->clearAll();
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_setDishonorCallback(const Index& index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_setDishonorCallback(const Index& index, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
 {
 	m_reservables[index]->setDishonorCallbackFor(canReserve, std::move(callback));
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_merge(const Index& index, Reservable& other)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+void Portables<Derived, Index, ReferenceIndex, isActors>::reservable_merge(const Index& index, Reservable& other)
 {
 	m_reservables[index]->merge(other);
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::load(const Json& data)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+void Portables<Derived, Index, ReferenceIndex, isActors>::load(const Json& data)
 {
 	nlohmann::from_json(data, static_cast<HasShapes<Derived, Index>&>(*this));
 	data["moveType"].get_to(m_moveType);
@@ -717,13 +728,14 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>void Po
 	for(auto iter = data["onDestroy"].begin(); iter != data["onDestroy"].end(); ++iter)
 	{
 		const Index& index = Index::create(std::stoi(iter.key()));
-		m_destroy[index] = std::make_unique<OnDestroy>(iter.value(), deserializationMemo);
+		m_destroy[index] = std::make_unique<OnDestroy>(iter.value(), deserializationMemo, ActorOrItemReference(getReference(index)));
 		uintptr_t address;
 		iter.value().get_to(address);
 		deserializationMemo.m_reservables[address] = m_reservables[index].get();
 	}
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>Json Portables<Derived, Index, ReferenceIndex, isActors>::toJson() const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+Json Portables<Derived, Index, ReferenceIndex, isActors>::toJson() const
 {
 	Json output;
 	nlohmann::to_json(output, *this);
@@ -755,52 +767,62 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>Json Po
 	}
 	return output;
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::reservable_hasAnyReservations(const Index& index) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+bool Portables<Derived, Index, ReferenceIndex, isActors>::reservable_hasAnyReservations(const Index& index) const
 {
 	return m_reservables[index]->hasAnyReservations();
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::reservable_exists(const Index& index, const FactionId& faction) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+bool Portables<Derived, Index, ReferenceIndex, isActors>::reservable_exists(const Index& index, const FactionId& faction) const
 {
 	return m_reservables[index]->hasAnyReservationsWith(faction);
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::reservable_existsFor(const Index& index, const CanReserve& canReserve) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+bool Portables<Derived, Index, ReferenceIndex, isActors>::reservable_existsFor(const Index& index, const CanReserve& canReserve) const
 {
 	return m_reservables[index]->hasAnyReservationsFor(canReserve);
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>bool Portables<Derived, Index, ReferenceIndex, isActors>::reservable_isFullyReserved(const Index& index, const FactionId& faction) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+bool Portables<Derived, Index, ReferenceIndex, isActors>::reservable_isFullyReserved(const Index& index, const FactionId& faction) const
 {
 	return m_reservables[index]->isFullyReserved(faction);
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>Quantity Portables<Derived, Index, ReferenceIndex, isActors>::reservable_getUnreservedCount(const Index& index, const FactionId& faction) const
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+Quantity Portables<Derived, Index, ReferenceIndex, isActors>::reservable_getUnreservedCount(const Index& index, const FactionId& faction) const
 {
 	return m_reservables[index]->getUnreservedCount(faction);
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::onDestroy_subscribe(const Index& index, HasOnDestroySubscriptions& hasSubscriptions)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+void Portables<Derived, Index, ReferenceIndex, isActors>::onDestroy_subscribe(const Index& index, HasOnDestroySubscriptions& hasSubscriptions)
 {
 	if(m_destroy[index] == nullptr)
-		m_destroy[index] = std::make_unique<OnDestroy>();
+		m_destroy[index] = std::make_unique<OnDestroy>(getReference(index));
 	hasSubscriptions.subscribe(*m_destroy[index].get());
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::onDestroy_subscribeThreadSafe(const Index& index, HasOnDestroySubscriptions& hasSubscriptions)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+void Portables<Derived, Index, ReferenceIndex, isActors>::onDestroy_subscribeThreadSafe(const Index& index, HasOnDestroySubscriptions& hasSubscriptions)
 {
 	std::lock_guard<std::mutex> lock(HasOnDestroySubscriptions::m_mutex);
 	onDestroy_subscribe(index, hasSubscriptions);
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::onDestroy_unsubscribe(const Index& index, HasOnDestroySubscriptions& hasSubscriptions)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+void Portables<Derived, Index, ReferenceIndex, isActors>::onDestroy_unsubscribe(const Index& index, HasOnDestroySubscriptions& hasSubscriptions)
 {
 	m_destroy[index]->unsubscribe(hasSubscriptions);
 	if(m_destroy[index]->empty())
 		m_destroy[index] = nullptr;
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::onDestroy_unsubscribeAll(const Index& index)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+void Portables<Derived, Index, ReferenceIndex, isActors>::onDestroy_unsubscribeAll(const Index& index)
 {
 	m_destroy[index]->unsubscribeAll();
 	m_destroy[index] = nullptr;
 }
-template<class Derived, class Index, class ReferenceIndex, bool isActors>void Portables<Derived, Index, ReferenceIndex, isActors>::onDestroy_merge(const Index& index, OnDestroy& other)
+template<class Derived, class Index, class ReferenceIndex, bool isActors>
+void Portables<Derived, Index, ReferenceIndex, isActors>::onDestroy_merge(const Index& index, OnDestroy& other)
 {
 	if(m_destroy[index] == nullptr)
-		m_destroy[index] = std::make_unique<OnDestroy>();
+		m_destroy[index] = std::make_unique<OnDestroy>(getReference(index));
 	m_destroy[index]->merge(other);
 }
 template<class Derived, class Index, class ReferenceIndex, bool isActors>DeckId Portables<Derived, Index, ReferenceIndex, isActors>::onDeck_createDecks(const Index& index, const CuboidSet& cuboidSet)

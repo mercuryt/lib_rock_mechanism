@@ -1,10 +1,10 @@
 #pragma once
 
-#include "json.h"
-#include "util.h"
-#include "strongInteger.h"
-#include "dataStructures/strongVector.h"
-#include "dataStructures/smallSet.h"
+#include "../json.h"
+#include "../util.h"
+#include "../strongInteger.h"
+#include "../dataStructures/strongVector.h"
+#include "../dataStructures/smallSet.h"
 #include <array>
 #include <compare>
 #include <cstddef>
@@ -19,26 +19,17 @@ class ItemIndex;
 class ActorIndex;
 class Simulation;
 class ActorOrItemIndex;
-using BlockIndexWidth = uint32_t;
-class BlockIndex : public StrongInteger<BlockIndex, BlockIndexWidth>
-{
-public:
-	struct Hash { [[nodiscard]] size_t operator()(const BlockIndex& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const BlockIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, BlockIndex& index) { index = BlockIndex::create(data.get<BlockIndexWidth>()); }
 
-//TODO: this could be narrowed to uint16_t.
-using VisionFacadeIndexWidth = uint32_t;
-class VisionFacadeIndex : public StrongInteger<VisionFacadeIndex, VisionFacadeIndexWidth> { };
-inline void to_json(Json& data, const VisionFacadeIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, VisionFacadeIndex& index) { index = VisionFacadeIndex::create(data.get<VisionFacadeIndexWidth>()); }
-//TODO: this could be narrowed to uint16_t.
-class PathRequestIndex : public StrongInteger<PathRequestIndex, uint32_t> { };
-inline void to_json(Json& data, const PathRequestIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, PathRequestIndex& index) { index = PathRequestIndex::create(data.get<uint32_t>()); }
+using VisionFacadeIndexWidth = int;
+class VisionFacadeIndex : public StrongInteger<VisionFacadeIndex, VisionFacadeIndexWidth, INT_MAX, 0> { };
+void to_json(Json& data, const VisionFacadeIndex& index);
+void from_json(const Json& data, VisionFacadeIndex& index);
+using PathRequestIndexWidth = int;
+class PathRequestIndex : public StrongInteger<PathRequestIndex, PathRequestIndexWidth, INT_MAX, 0> { };
+void to_json(Json& data, const PathRequestIndex& index);
+void from_json(const Json& data, PathRequestIndex& index);
 // TODO: This type probably isn't needed. If it is it should have it's constrctors removed so it is trivially copyable.
-class HasShapeIndex : public StrongInteger<HasShapeIndex, uint32_t>
+class HasShapeIndex : public StrongInteger<HasShapeIndex, int, INT_MAX, 0>
 {
 public:
 	HasShapeIndex() = default;
@@ -48,26 +39,26 @@ public:
 	[[nodiscard]] static HasShapeIndex cast(const PlantIndex& o);
 	[[nodiscard]] static HasShapeIndex cast(const ItemIndex& o);
 	[[nodiscard]] static HasShapeIndex cast(const ActorIndex& o);
-	[[nodiscard]] static HasShapeIndex null() { return StrongInteger<HasShapeIndex, uint32_t>::null(); }
+	[[nodiscard]] static HasShapeIndex null() { return StrongInteger<HasShapeIndex, int32_t>::null(); }
 	[[nodiscard]] PlantIndex toPlant() const;
 	[[nodiscard]] ActorIndex toActor() const;
 	[[nodiscard]] ItemIndex toItem() const;
 };
-inline void to_json(Json& data, const HasShapeIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, HasShapeIndex& index) { index = HasShapeIndex::create(data.get<uint32_t>()); }
+void to_json(Json& data, const HasShapeIndex& index);
+void from_json(const Json& data, HasShapeIndex& index);
 
-class PlantIndex final : public StrongInteger<PlantIndex, uint32_t>
+class PlantIndex final : public StrongInteger<PlantIndex, int, INT_MAX, 0>
 {
 public:
 	[[nodiscard]] HasShapeIndex toHasShape() const { return HasShapeIndex::create(get()); }
 	[[nodiscard]] static PlantIndex cast(const HasShapeIndex& index) { PlantIndex output; output.set(index.get()); return output; }
 	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const PlantIndex& index) const { return index.get(); } };
 };
-inline void to_json(Json& data, const PlantIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, PlantIndex& index) { index = PlantIndex::create(data.get<uint32_t>()); }
+void to_json(Json& data, const PlantIndex& index);
+void from_json(const Json& data, PlantIndex& index);
 
 class Area;
-class ItemIndex final : public StrongInteger<ItemIndex, uint32_t>
+class ItemIndex final : public StrongInteger<ItemIndex, int, INT_MAX, 0>
 {
 public:
 	[[nodiscard]] ActorOrItemIndex toActorOrItemIndex() const;
@@ -75,11 +66,11 @@ public:
 	[[nodiscard]] static ItemIndex cast(const HasShapeIndex& index) { ItemIndex output; output.set(index.get()); return output; }
 	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const ItemIndex& index) const { return index.get(); } };
 };
-inline void to_json(Json& data, const ItemIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, ItemIndex& index) { index = ItemIndex::create(data.get<uint32_t>()); }
-
-using ActorIndexWidth = uint16_t;
-class ActorIndex final : public StrongInteger<ActorIndex, ActorIndexWidth>
+void to_json(Json& data, const ItemIndex& index);
+void from_json(const Json& data, ItemIndex& index);
+// TODO: Check if 16 bit indices are faster then 32 bit.
+using ActorIndexWidth = int16_t;
+class ActorIndex final : public StrongInteger<ActorIndex, ActorIndexWidth, INT16_MAX, 0>
 {
 public:
 	[[nodiscard]] ActorOrItemIndex toActorOrItemIndex() const;
@@ -87,54 +78,74 @@ public:
 	[[nodiscard]] static ActorIndex cast(const HasShapeIndex& index) { ActorIndex output; output.set(index.get()); return output; }
 	struct Hash { [[nodiscard]] constexpr std::size_t operator()(const ActorIndex& index) const { return index.get(); } };
 };
-inline void to_json(Json& data, const ActorIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, ActorIndex& index) { index = ActorIndex::create(data.get<ActorIndexWidth>()); }
+void to_json(Json& data, const ActorIndex& index);
+void from_json(const Json& data, ActorIndex& index);
 
-// The offset required to lookup in one point's getAdjacentUnfiltered to find another point.
-using AdjacentIndexWidth = int8_t;
-class AdjacentIndex : public StrongInteger<AdjacentIndex, AdjacentIndexWidth>
+using AdjacentIndexWidth = int;
+class AdjacentIndex : public StrongInteger<AdjacentIndex, AdjacentIndexWidth, 27, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const AdjacentIndex& index) const { return index.get(); } };
-
 };
-inline void to_json(Json& data, const AdjacentIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, AdjacentIndex& index) { index = AdjacentIndex::create(data.get<AdjacentIndexWidth>()); }
+void to_json(Json& data, const AdjacentIndex& index);
+void from_json(const Json& data, AdjacentIndex& index);
 
-using ActorReferenceIndexWidth = uint16_t;
-class ActorReferenceIndex : public StrongInteger<ActorReferenceIndex, ActorReferenceIndexWidth>
+// TODO: Check if 16 bit indices are faster then 32 bit.
+using ActorReferenceIndexWidth = int16_t;
+class ActorReferenceIndex : public StrongInteger<ActorReferenceIndex, ActorReferenceIndexWidth, INT16_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const ActorReferenceIndex& index) const { return index.get(); } };
 };
-inline void to_json(Json& data, const ActorReferenceIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, ActorReferenceIndex& index) { index = ActorReferenceIndex::create(data.get<ActorReferenceIndexWidth>()); }
+void to_json(Json& data, const ActorReferenceIndex& index);
+void from_json(const Json& data, ActorReferenceIndex& index);
 
-using ItemReferenceIndexWidth = uint32_t;
-class ItemReferenceIndex : public StrongInteger<ItemReferenceIndex, ItemReferenceIndexWidth>
+using ItemReferenceIndexWidth = int;
+class ItemReferenceIndex : public StrongInteger<ItemReferenceIndex, ItemReferenceIndexWidth, INT_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const ItemReferenceIndex& index) const { return index.get(); } };
 };
-inline void to_json(Json& data, const ItemReferenceIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, ItemReferenceIndex& index) { index = ItemReferenceIndex::create(data.get<ItemReferenceIndexWidth>()); }
+void to_json(Json& data, const ItemReferenceIndex& index);
+void from_json(const Json& data, ItemReferenceIndex& index);
 
-
-using RTreeNodeIndexWidth = uint16_t;
-class RTreeNodeIndex final : public StrongInteger<RTreeNodeIndex, RTreeNodeIndexWidth>
+using RTreeNodeIndexWidth = int;
+class RTreeNodeIndex final : public StrongInteger<RTreeNodeIndex, RTreeNodeIndexWidth, INT_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const RTreeNodeIndex& index) const { return index.get(); } };
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(RTreeNodeIndex, data);
 };
+void to_json(Json& data, const RTreeNodeIndex& index);
+void from_json(const Json& data, RTreeNodeIndex& index);
 
-using RTreeArrayIndexWidth = uint8_t;
-class RTreeArrayIndex final : public StrongInteger<RTreeArrayIndex, RTreeArrayIndexWidth>
+// uint64 is used because that is what is returned from BitSet64::getNext().
+using RTreeArrayIndexWidth = uint64_t;
+// TODO: 65 is used rathern then Config::rtreeNodeSize to prevent include cycle, break by moving RTReeArrayIndex into a different file?
+// 66 is used as null rather then 65 as 65 is neccessary for defining a range to the end.
+// 65 is needed rather then 64 because the cuboid candidates used in insertion have a size of nodeSize + 1.
+class RTreeArrayIndex final : public StrongInteger<RTreeArrayIndex, RTreeArrayIndexWidth, 70, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const RTreeArrayIndex& index) const { return index.get(); } };
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(RTreeArrayIndex, data);
 };
+void to_json(Json& data, const RTreeArrayIndex& index);
+void from_json(const Json& data, RTreeArrayIndex& index);
+
+class SquadIndex final : public StrongInteger<SquadIndex, int, INT_MAX, 0>
+{
+public:
+	struct Hash { [[nodiscard]] size_t operator()(const SquadIndex& index) const { return index.get(); } };
+};
+void to_json(Json& data, const SquadIndex& index);
+void from_json(const Json& data, SquadIndex& index);
+
+class SquadFormationIndex final : public StrongInteger<SquadFormationIndex, int, INT_MAX, 0>
+{
+public:
+	struct Hash { [[nodiscard]] size_t operator()(const SquadFormationIndex& index) const { return index.get(); } };
+};
+void to_json(Json& data, const SquadFormationIndex& index);
+void from_json(const Json& data, SquadFormationIndex& index);
 
 inline HasShapeIndex HasShapeIndex::cast(const PlantIndex& o) { return HasShapeIndex::create(o.get()); }
 inline HasShapeIndex HasShapeIndex::cast(const ItemIndex& o) { return HasShapeIndex::create(o.get()); }

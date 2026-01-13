@@ -22,6 +22,7 @@ public:
 	void cancel(Area& area, const ActorIndex& actor);
 	void delay(Area&, const ActorIndex&) { }
 	void reset(Area& area, const ActorIndex& actor);
+	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("install item").getId(); }
 	[[nodiscard]] std::string name() const override { return "install item"; }
 	[[nodiscard]] Json toJson() const;
 	friend class InstallItemPathRequest;

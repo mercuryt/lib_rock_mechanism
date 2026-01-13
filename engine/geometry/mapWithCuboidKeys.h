@@ -22,7 +22,7 @@ struct MapWithCuboidKeysBase
 	void maybeRemove(const CuboidType& cuboid);
 	void maybeRemoveAll(const CuboidSetType& cuboids);
 	void clear();
-	void reserve(const uint16_t& capacity) { data.reserve(capacity); }
+	void reserve(const int16_t& capacity) { data.reserve(capacity); }
 	void sort();
 	[[nodiscard]] ConstIterator begin() const { return data.begin(); }
 	[[nodiscard]] ConstIterator end() const { return data.end(); }

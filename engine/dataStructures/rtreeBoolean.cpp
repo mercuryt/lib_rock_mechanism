@@ -1,22 +1,20 @@
 #include "rtreeBoolean.h"
 #include "strongVector.hpp"
 #include "../geometry/paramaterizedLine.h"
-RTreeBoolean::ArrayIndex RTreeBoolean::Node::offsetFor(const Index& index) const
+RTreeArrayIndex RTreeBoolean::Node::offsetFor(const RTreeNodeIndex& index) const
 {
-	auto found = std::ranges::find(m_childIndices.begin() + m_childBegin.get(), m_childIndices.end(), index);
-	assert(found != m_childIndices.end());
-	return ArrayIndex::create(std::distance(m_childIndices.begin(), found));
+	return RTreeArrayIndex::create(m_childIndices.indexOf(index));
 }
-uint RTreeBoolean::Node::getLeafVolume() const
+int RTreeBoolean::Node::getLeafVolume() const
 {
-	uint output = 0;
-	for(auto i = ArrayIndex::create(0); i < m_leafEnd; ++i)
+	int output = 0;
+	for(auto i = RTreeArrayIndex::create(0); i < m_leafEnd; ++i)
 		output += m_cuboids[i.get()].volume();
 	return output;
 }
-uint RTreeBoolean::Node::getNodeVolume() const
+int RTreeBoolean::Node::getNodeVolume() const
 {
-	uint output = 0;
+	int output = 0;
 	for(auto i = m_childBegin; i < nodeSize; ++i)
 		output += m_cuboids[i.get()].volume();
 	return output;
@@ -24,14 +22,18 @@ uint RTreeBoolean::Node::getNodeVolume() const
 CuboidSet RTreeBoolean::Node::getLeafCuboids() const
 {
 	CuboidSet output;
-	for(auto i = ArrayIndex::create(0); i < m_leafEnd; ++i)
+	for(auto i = RTreeArrayIndex::create(0); i < m_leafEnd; ++i)
 		output.maybeAdd(m_cuboids[i.get()]);
 	return output;
 }
-void RTreeBoolean::Node::updateChildIndex(const Index& oldIndex, const Index& newIndex)
+bool RTreeBoolean::Node::hasChildren() const
 {
-	ArrayIndex offset = offsetFor(oldIndex);
-	m_childIndices[offset.get()] = newIndex;
+	return m_childBegin != nodeSize;
+}
+void RTreeBoolean::Node::updateChildIndex(const RTreeNodeIndex& oldIndex, const RTreeNodeIndex& newIndex)
+{
+	RTreeArrayIndex offset = offsetFor(oldIndex);
+	m_childIndices[offset] = newIndex;
 }
 void RTreeBoolean::Node::insertLeaf(const Cuboid& cuboid)
 {
@@ -39,42 +41,42 @@ void RTreeBoolean::Node::insertLeaf(const Cuboid& cuboid)
 	m_cuboids.insert(m_leafEnd.get(), cuboid);
 	++m_leafEnd;
 }
-void RTreeBoolean::Node::insertBranch(const Cuboid& cuboid, const Index& index)
+void RTreeBoolean::Node::insertBranch(const Cuboid& cuboid, const RTreeNodeIndex& index)
 {
 	assert(m_leafEnd != m_childBegin);
-	uint toInsertAt = m_childBegin.get() - 1;
+	RTreeArrayIndex toInsertAt = m_childBegin - 1;
 	m_childIndices[toInsertAt] = index;
-	m_cuboids.insert(toInsertAt, cuboid);
+	m_cuboids.insert(toInsertAt.get(), cuboid);
 	--m_childBegin;
 }
-void RTreeBoolean::Node::eraseBranch(const ArrayIndex& offset)
+void RTreeBoolean::Node::eraseBranch(const RTreeArrayIndex& offset)
 {
 	assert(offset < nodeSize);
 	assert(offset >= m_childBegin);
 	if(offset != m_childBegin)
 	{
 		m_cuboids.insert(offset.get(), m_cuboids[m_childBegin.get()]);
-		m_childIndices[offset.get()] = m_childIndices[m_childBegin.get()];
+		m_childIndices[offset] = m_childIndices[m_childBegin];
 	}
 	m_cuboids.erase(m_childBegin.get());
-	m_childIndices[m_childBegin.get()].clear();
+	m_childIndices[m_childBegin].clear();
 	++m_childBegin;
 }
-void RTreeBoolean::Node::eraseLeaf(const ArrayIndex& offset)
+void RTreeBoolean::Node::eraseLeaf(const RTreeArrayIndex& offset)
 {
 	assert(offset < m_leafEnd);
-	ArrayIndex lastLeaf = m_leafEnd - 1;
+	RTreeArrayIndex lastLeaf = m_leafEnd - 1;
 	if(offset != lastLeaf)
 		m_cuboids.insert(offset.get(), m_cuboids[lastLeaf.get()]);
 	m_cuboids.erase(lastLeaf.get());
-	assert(m_childIndices[lastLeaf.get()].empty());
-	assert(m_childIndices[offset.get()].empty());
+	assert(m_childIndices[lastLeaf].empty());
+	assert(m_childIndices[offset].empty());
 	--m_leafEnd;
 }
 void RTreeBoolean::Node::eraseByMask(BitSet& mask)
 {
-	ArrayIndex leafEnd = m_leafEnd;
-	ArrayIndex childBegin = m_childBegin;
+	RTreeArrayIndex leafEnd = m_leafEnd;
+	RTreeArrayIndex childBegin = m_childBegin;
 	const auto copyCuboids = m_cuboids;
 	const auto copyChildren = m_childIndices;
 	// Flip list of indices to remove into list to keep.
@@ -83,39 +85,37 @@ void RTreeBoolean::Node::eraseByMask(BitSet& mask)
 	if(leafEnd != 0)
 	{
 		BitSet leafMask = mask;
-		if(leafEnd != nodeSize)
-			leafMask.clearAllAfterInclusive(leafEnd.get());
+		leafMask.clearAllAfterInclusive(leafEnd.get());
 		while(leafMask.any())
 		{
-			const uint8_t arrayIndex = leafMask.getNextAndClear();
-			insertLeaf(copyCuboids[arrayIndex]);
+			const RTreeArrayIndex arrayIndex{leafMask.getNextAndClear()};
+			insertLeaf(copyCuboids[arrayIndex.get()]);
 		}
 	}
 	if(childBegin != nodeSize)
 	{
-		if(childBegin != 0)
-			mask.clearAllBefore(childBegin.get());
+		mask.clearAllBefore(childBegin.get());
 		while(mask.any())
 		{
-			const uint8_t arrayIndex = mask.getNextAndClear();
-			insertBranch(copyCuboids[arrayIndex], copyChildren[arrayIndex]);
+			const RTreeArrayIndex arrayIndex{mask.getNextAndClear()};
+			insertBranch(copyCuboids[arrayIndex.get()], copyChildren[arrayIndex]);
 		}
 	}
 }
 void RTreeBoolean::Node::eraseLeavesByMask(BitSet mask)
 {
-	ArrayIndex leafEnd = m_leafEnd;
+	RTreeArrayIndex leafEnd = m_leafEnd;
 	const auto copyCuboids = m_cuboids;
 	// Overwrite from copy.
-	m_leafEnd = ArrayIndex::create(0);
+	m_leafEnd = RTreeArrayIndex::create(0);
 	// Flip from a list to remove into a list to keep.
 	mask.flip();
 	if(leafEnd != nodeSize)
 		mask.clearAllAfterInclusive(leafEnd.get());
 	while(mask.any())
 	{
-		const uint8_t arrayIndex = mask.getNextAndClear();
-		insertLeaf(copyCuboids[arrayIndex]);
+		const RTreeArrayIndex arrayIndex{mask.getNextAndClear()};
+		insertLeaf(copyCuboids[arrayIndex.get()]);
 	}
 	// Clear any remaning leaves.
 	for(auto i = m_leafEnd; i < leafEnd; ++i)
@@ -124,17 +124,17 @@ void RTreeBoolean::Node::eraseLeavesByMask(BitSet mask)
 void RTreeBoolean::Node::clear()
 {
 	m_cuboids.clear();
-	m_childIndices.fill(Index::null());
-	m_leafEnd = ArrayIndex::create(0);
-	m_childBegin = ArrayIndex::create(nodeSize);
+	m_childIndices.fill(RTreeNodeIndex::null());
+	m_leafEnd = RTreeArrayIndex::create(0);
+	m_childBegin = RTreeArrayIndex::create(nodeSize);
 }
-void RTreeBoolean::Node::updateLeaf(const ArrayIndex& offset, const Cuboid& cuboid)
+void RTreeBoolean::Node::updateLeaf(const RTreeArrayIndex& offset, const Cuboid& cuboid)
 {
 	assert(offset < m_leafEnd);
 	assert(!m_cuboids[offset.get()].empty());
 	m_cuboids.insert(offset.get(), cuboid);
 }
-void RTreeBoolean::Node::updateBranchBoundry(const ArrayIndex& offset, const Cuboid& cuboid)
+void RTreeBoolean::Node::updateBranchBoundry(const RTreeArrayIndex& offset, const Cuboid& cuboid)
 {
 	assert(offset >= m_childBegin);
 	assert(!m_cuboids[offset.get()].empty());
@@ -146,38 +146,38 @@ std::string RTreeBoolean::Node::toString()
 	if(m_leafEnd != 0)
 	{
 		output += "leaves: {";
-		for(ArrayIndex i = ArrayIndex::create(0); i < m_leafEnd; ++i)
+		for(RTreeArrayIndex i = RTreeArrayIndex::create(0); i < m_leafEnd; ++i)
 			output += "(" + m_cuboids[i.get()].toString() + "), ";
 		output += "}; ";
 	}
 	if(m_childBegin != nodeSize)
 	{
 		output += "children: {";
-		for(ArrayIndex i = m_childBegin; i < nodeSize; ++i)
-			output += "(" + m_cuboids[i.get()].toString() + ":" + m_childIndices[i.get()].toString() + "), ";
+		for(RTreeArrayIndex i = m_childBegin; i < nodeSize; ++i)
+			output += "(" + m_cuboids[i.get()].toString() + ":" + m_childIndices[i].toString() + "), ";
 		output += "}; ";
 	}
 	return output;
 }
 void RTreeBoolean::beforeJsonLoad() { m_nodes.clear(); }
-std::tuple<Cuboid, RTreeBoolean::ArrayIndex, RTreeBoolean::ArrayIndex> RTreeBoolean::findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids) const
+std::tuple<Cuboid, RTreeArrayIndex, RTreeArrayIndex> RTreeBoolean::findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids) const
 {
 	// May be negitive because resulting cuboids may intersect.
 	int resultEmptySpace = INT32_MAX;
-	uint resultSize = UINT32_MAX;
-	std::tuple<Cuboid, ArrayIndex, ArrayIndex> output;
+	int resultSize = INT32_MAX;
+	std::tuple<Cuboid, RTreeArrayIndex, RTreeArrayIndex> output;
 	const auto endInner = nodeSize + 1;
 	// Skip the final iteration of the outer loop, it would be redundant.
 	const auto endOuter = nodeSize;
-	for(ArrayIndex firstResultIndex = ArrayIndex::create(0); firstResultIndex < endOuter; ++firstResultIndex)
+	for(RTreeArrayIndex firstResultIndex = RTreeArrayIndex::create(0); firstResultIndex < endOuter; ++firstResultIndex)
 	{
-		for(ArrayIndex secondResultIndex = firstResultIndex + 1; secondResultIndex < endInner; ++secondResultIndex)
+		for(RTreeArrayIndex secondResultIndex = firstResultIndex + 1; secondResultIndex < endInner; ++secondResultIndex)
 		{
 			const Cuboid& firstCuboid = cuboids[firstResultIndex.get()];
 			const Cuboid& secondCuboid = cuboids[secondResultIndex.get()];
 			Cuboid sum = firstCuboid;
 			sum.maybeExpand(secondCuboid);
-			const uint size = sum.volume();
+			const int size = sum.volume();
 			int emptySpace = size - (firstCuboid.volume() + secondCuboid.volume());
 			// If empty space is equal hen prefer the smaller result.
 			// TODO: This may be counter productive.
@@ -191,10 +191,10 @@ std::tuple<Cuboid, RTreeBoolean::ArrayIndex, RTreeBoolean::ArrayIndex> RTreeBool
 	}
 	return output;
 }
-SmallSet<Cuboid> RTreeBoolean::gatherLeavesRecursive(const Index& parent) const
+SmallSet<Cuboid> RTreeBoolean::gatherLeavesRecursive(const RTreeNodeIndex& parent) const
 {
 	SmallSet<Cuboid> output;
-	SmallSet<Index> openList;
+	SmallSet<RTreeNodeIndex> openList;
 	openList.insert(parent);
 	while(!openList.empty())
 	{
@@ -205,25 +205,25 @@ SmallSet<Cuboid> RTreeBoolean::gatherLeavesRecursive(const Index& parent) const
 		const auto& nodeChildern = node.getChildIndices();
 		for(int i = 0; i != endLeaf; ++i)
 			output.insert(nodeCuboids[i]);
-		for(ArrayIndex i = node.offsetOfFirstChild(); i != nodeSize; ++i)
-			openList.insert(nodeChildern[i.get()]);
+		for(RTreeArrayIndex i = node.offsetOfFirstChild(); i != nodeSize; ++i)
+			openList.insert(nodeChildern[i]);
 	}
 	return output;
 }
-void RTreeBoolean::destroyWithChildren(const Index& index)
+void RTreeBoolean::destroyWithChildren(const RTreeNodeIndex& index)
 {
-	SmallSet<Index> openList;
+	SmallSet<RTreeNodeIndex> openList;
 	openList.insert(index);
 	while(!openList.empty())
 	{
-		Index current = openList.back();
+		RTreeNodeIndex current = openList.back();
 		m_emptySlots.insert(current);
 		Node& node = m_nodes[current];
 		const auto& children = node.getChildIndices();
 		openList.popBack();
 		for(auto i = node.offsetOfFirstChild(); i < nodeSize; ++i)
 		{
-			const auto& childIndex = children[i.get()];
+			const auto& childIndex = children[i];
 			assert(childIndex.exists());
 			openList.insert(childIndex);
 		}
@@ -232,7 +232,7 @@ void RTreeBoolean::destroyWithChildren(const Index& index)
 void RTreeBoolean::tryToMergeLeaves(Node& parent)
 {
 	// Iterate through leaves
-	ArrayIndex offset = ArrayIndex::create(0);
+	RTreeArrayIndex offset = RTreeArrayIndex::create(0);
 	const auto& parentCuboids = parent.getCuboids();
 	while(offset != parent.getLeafCount())
 	{
@@ -244,7 +244,7 @@ void RTreeBoolean::tryToMergeLeaves(Node& parent)
 		}
 		bool found = false;
 		const auto& leafCount = parent.getLeafCount();
-		for(ArrayIndex i = ArrayIndex::create(0); i < leafCount; ++i)
+		for(RTreeArrayIndex i = RTreeArrayIndex::create(0); i < leafCount; ++i)
 			if(mergeMask[i.get()])
 			{
 				// Found a leaf to merge with.
@@ -258,15 +258,15 @@ void RTreeBoolean::tryToMergeLeaves(Node& parent)
 			}
 		if(found)
 			// When a merge is made start over at offset 0.
-			offset = ArrayIndex::create(0);
+			offset = RTreeArrayIndex::create(0);
 	else
 			// If no merge is made increment the offset
 			++offset;
 	}
 }
-void RTreeBoolean::clearAllContained(const Index& index, const Cuboid& cuboid)
+void RTreeBoolean::clearAllContained(const RTreeNodeIndex& index, const Cuboid& cuboid)
 {
-	SmallSet<Index> openList;
+	SmallSet<RTreeNodeIndex> openList;
 	openList.insert(index);
 	while(!openList.empty())
 	{
@@ -278,23 +278,22 @@ void RTreeBoolean::clearAllContained(const Index& index, const Cuboid& cuboid)
 		if(containsMask.any())
 		{
 			// Destroy contained branches.
-			BitSet containedBitSet = BitSet::create(containsMask);
+			BitSet containedBitMask = BitSet::create(containsMask);
 			// Copy bitset before destructive iteration to pass onto node.eraseByMask.
 			// TODO: combine these two interations.
-			BitSet containedBitSet2 = containedBitSet;
-			const auto offsetOfFirstChild = node.offsetOfFirstChild();
+			const auto& offsetOfFirstChild = node.offsetOfFirstChild();
 			if(offsetOfFirstChild != nodeSize)
 			{
-				containedBitSet.clearAllBefore(offsetOfFirstChild.get());
-				while(containedBitSet.any())
+				BitSet childBitMask = containedBitMask;
+				childBitMask.clearAllBefore(offsetOfFirstChild.get());
+				while(childBitMask.any())
 				{
-					const uint8_t containedChildIndex = containedBitSet.getNextAndClear();
+					const RTreeArrayIndex containedChildIndex{childBitMask.getNextAndClear()};
 					destroyWithChildren(nodeChildIndices[containedChildIndex]);
 				}
 			}
 			// Erase contained cuboids, both leaf and branch.
-			// TODO: change eraseByMaskToAccept a bitset.
-			node.eraseByMask(containedBitSet2);
+			node.eraseByMask(containedBitMask);
 		}
 		// Gather branches intersected to add to openList.
 		// Leaves which are intersected but not contained are ignored.
@@ -303,15 +302,11 @@ void RTreeBoolean::clearAllContained(const Index& index, const Cuboid& cuboid)
 		if(intersectMask.any())
 		{
 			auto bitset = BitSet::create(intersectMask);
-			const auto& leafCount = node.getLeafCount();
-			if(leafCount != 0)
-				bitset.clearAllBefore(leafCount);
-			if(!bitset.empty())
-				addIntersectedChildrenToOpenList(node, bitset, openList);
+			addIntersectedChildrenToOpenList(node, bitset, openList);
 		}
 	}
 }
-void RTreeBoolean::addToNodeRecursive(const Index& index, const Cuboid& cuboid)
+void RTreeBoolean::addToNodeRecursive(const RTreeNodeIndex& index, const Cuboid& cuboid)
 {
 	m_toComb.maybeInsert(index);
 	Node& parent = m_nodes[index];
@@ -322,7 +317,7 @@ void RTreeBoolean::addToNodeRecursive(const Index& index, const Cuboid& cuboid)
 	{
 		// Node is full, find two cuboids to merge.
 		CuboidArray<nodeSize + 1> extended;
-		for(ArrayIndex i = ArrayIndex::create(0); i < nodeSize; ++i)
+		for(RTreeArrayIndex i = RTreeArrayIndex::create(0); i < nodeSize; ++i)
 			extended.insert(i.get(), parentCuboids[i.get()]);
 		extended.insert(nodeSize, cuboid);
 		auto [mergedCuboid, firstArrayIndex, secondArrayIndex] = findPairWithLeastNewVolumeWhenExtended(extended);
@@ -349,12 +344,12 @@ void RTreeBoolean::addToNodeRecursive(const Index& index, const Cuboid& cuboid)
 				}
 				else
 				{
-					const Index indexCopy = index;
+					const RTreeNodeIndex indexCopy = index;
 					// create a new node to hold first and second. Invalidates parent and index.
 					m_nodes.add();
 					Node& newNode = m_nodes.back();
 					newNode.setParent(indexCopy);
-					const Index newIndex = Index::create(m_nodes.size() - 1);
+					const RTreeNodeIndex newIndex = RTreeNodeIndex::create(m_nodes.size() - 1);
 					newNode.insertLeaf(extended[firstArrayIndex.get()]);
 					newNode.insertLeaf(extended[secondArrayIndex.get()]);
 					Node& parent2 = m_nodes[indexCopy];
@@ -375,7 +370,7 @@ void RTreeBoolean::addToNodeRecursive(const Index& index, const Cuboid& cuboid)
 				// Store the new cuboid in the now avalible first offset, overwriting the leaf which was merged.
 				parent.updateLeaf(firstArrayIndex, cuboid);
 				// Invalidates array indices.
-				addToNodeRecursive(parentChildIndices[secondArrayIndex.get()], extended[firstArrayIndex.get()]);
+				addToNodeRecursive(parentChildIndices[secondArrayIndex], extended[firstArrayIndex.get()]);
 			}
 		}
 		else
@@ -389,14 +384,14 @@ void RTreeBoolean::addToNodeRecursive(const Index& index, const Cuboid& cuboid)
 					// The newly inserted cuboid was not merged. Store it in now avalible second offset, overwriting the leaf which will be merged.
 					parent.updateLeaf(secondArrayIndex, cuboid);
 				// Invalidates array indices.
-				addToNodeRecursive(parentChildIndices[firstArrayIndex.get()], extended[secondArrayIndex.get()]);
+				addToNodeRecursive(parentChildIndices[firstArrayIndex], extended[secondArrayIndex.get()]);
 			}
 			else
 			{
 				// Both first and second offsets are branches, merge second into first.
-				const Index firstIndex = parentChildIndices[firstArrayIndex.get()];
-				const Index secondIndex = parentChildIndices[secondArrayIndex.get()];
-				const Index indexCopy = index;
+				const RTreeNodeIndex firstIndex = parentChildIndices[firstArrayIndex];
+				const RTreeNodeIndex secondIndex = parentChildIndices[secondArrayIndex];
+				const RTreeNodeIndex indexCopy = index;
 				// Invalidates parent and index.
 				merge(firstIndex, secondIndex);
 				Node& parent2 = m_nodes[indexCopy];
@@ -414,52 +409,55 @@ void RTreeBoolean::addToNodeRecursive(const Index& index, const Cuboid& cuboid)
 	else
 		parent.insertLeaf(cuboid);
 }
-void RTreeBoolean::removeFromNode(const Index& index, const Cuboid& cuboid, SmallSet<Index>& openList)
+void RTreeBoolean::removeFromNode(const RTreeNodeIndex& index, const Cuboid& cuboid, SmallSet<RTreeNodeIndex>& openList)
 {
-	Node& parent = m_nodes[index];
-	const auto& parentCuboids = parent.getCuboids();
-	auto intersectMask = parentCuboids.indicesOfIntersectingCuboids(cuboid);
-	if(!intersectMask.any())
-		return;
-	// Fragment all intersected leaves.
-	SmallSet<Cuboid> fragments;
-	const auto& leafEnd = parent.getLeafCount();
-	const auto& childBegin = parent.offsetOfFirstChild().get();
-	BitSet intersectBitSet = BitSet::create(intersectMask);
-	if(leafEnd != 0)
+	const RTreeNodeIndex index2 = index;
 	{
-		// Node has leaves.
-		BitSet leafIntersectBitSet = intersectBitSet;
-		if(childBegin != nodeSize)
-			leafIntersectBitSet.clearAllAfterInclusive(childBegin);
-		if(leafIntersectBitSet.any())
+		Node& parent = m_nodes[index];
+		const auto& parentCuboids = parent.getCuboids();
+		auto intersectMask = parentCuboids.indicesOfIntersectingCuboids(cuboid);
+		if(!intersectMask.any())
+			return;
+		// Fragment all intersected leaves.
+		SmallSet<Cuboid> fragments;
+		const auto& leafEnd = parent.getLeafCount();
+		const auto& childBegin = parent.offsetOfFirstChild().get();
+		BitSet intersectBitSet = BitSet::create(intersectMask);
+		if(leafEnd != 0)
 		{
-			// Copy leafIntersectBitSet to send to eraseLeavesByMask.
-			// TODO: combine two iterations.
-			BitSet leafIntersectBitSet2 = leafIntersectBitSet;
-			while(leafIntersectBitSet.any())
+			// Node has leaves.
+			BitSet leafIntersectBitSet = intersectBitSet;
+			if(childBegin != nodeSize)
+				leafIntersectBitSet.clearAllAfterInclusive(childBegin);
+			if(leafIntersectBitSet.any())
 			{
-				uint8_t arrayIndex = leafIntersectBitSet.getNextAndClear();
-				fragments.insertAll(parentCuboids[arrayIndex].getChildrenWhenSplitByCuboid(cuboid));
+				// Copy leafIntersectBitSet to send to eraseLeavesByMask.
+				// TODO: combine two iterations.
+				BitSet leafIntersectBitSet2 = leafIntersectBitSet;
+				while(leafIntersectBitSet.any())
+				{
+					RTreeArrayIndex arrayIndex{leafIntersectBitSet.getNextAndClear()};
+					fragments.insertAll(parentCuboids[arrayIndex.get()].getChildrenWhenSplitByCuboid(cuboid));
+				}
+				parent.eraseLeavesByMask(leafIntersectBitSet2);
 			}
-			parent.eraseLeavesByMask(leafIntersectBitSet2);
 		}
+		// insert fragments. Invalidates parent and cuboids, as well as index.
+		const auto end = fragments.end();
+		for(auto i = fragments.begin(); i < end; ++i)
+			addToNodeRecursive(index2, *i);
 	}
-	const Index index2 = index;
-	// insert fragments. Invalidates parent and cuboids, as well as index.
-	const auto end = fragments.end();
-	for(auto i = fragments.begin(); i < end; ++i)
-		addToNodeRecursive(index2, *i);
-	// Erasing and adding leaves has not invalidated intersect mask for branches.
-	if(leafEnd != 64)
+	// index2 remains valid. The value of "this" is no longer trustworthy due to potentially creating a new node.
+	Node& parent = m_nodes[index2];
+	if(parent.hasChildren())
 	{
-		intersectBitSet.clearAllBefore(leafEnd);
-		if(intersectBitSet.any())
-			addIntersectedChildrenToOpenList(parent, intersectBitSet, openList);
+		BitSet intersectBitSet = BitSet::create(parent.getCuboids().indicesOfIntersectingCuboids(cuboid));
+		intersectBitSet.clearAllBefore(parent.getLeafCount());
+		addIntersectedChildrenToOpenList(parent, intersectBitSet, openList);
 	}
 	m_toComb.maybeInsert(index2);
 }
-void RTreeBoolean::merge(const Index& destination, const Index& source)
+void RTreeBoolean::merge(const RTreeNodeIndex& destination, const RTreeNodeIndex& source)
 {
 	// TODO: maybe leave source nodes intact instead of striping out leaves?
 	const auto leaves = gatherLeavesRecursive(source);
@@ -478,21 +476,21 @@ void RTreeBoolean::comb()
 	{
 		auto copy = std::move(m_toComb);
 		m_toComb.clear();
-		for(const Index& index : copy)
+		for(const RTreeNodeIndex& index : copy)
 		{
 			Node& node = m_nodes[index];
 			tryToMergeLeaves(node);
 			// Try to merge child branches into this branch.
 			bool merged = false;
 			// plus one because we are removing one as well as adding.
-			uint capacity = node.unusedCapacity() + 1;
+			int capacity = node.unusedCapacity() + 1;
 			const auto& nodeChildIndices = node.getChildIndices();
-			for(ArrayIndex i = node.offsetOfFirstChild(); i < nodeSize; ++i)
+			for(RTreeArrayIndex i = node.offsetOfFirstChild(); i < nodeSize; ++i)
 			{
 				// Take copy rather then reference because the original may be erased.
-				const Index childIndex = nodeChildIndices[i.get()];
+				const RTreeNodeIndex childIndex = nodeChildIndices[i];
 				Node& childNode = m_nodes[childIndex];
-				uint childSize = childNode.getChildCount() + childNode.getLeafCount();
+				int childSize = childNode.getChildCount() + childNode.getLeafCount();
 				if(childSize <= capacity)
 				{
 					// Child can fit into parent, copy the elements and discard.
@@ -513,7 +511,7 @@ void RTreeBoolean::comb()
 			{
 				// If no node merger happens check if the parent can merge with this node.
 				// If so add it to m_toComb to be checked next iteration.
-				const Index& parentIndex = node.getParent();
+				const RTreeNodeIndex& parentIndex = node.getParent();
 				// Add one to capacity because merging will remove this branch.
 				if((m_nodes[parentIndex].unusedCapacity() + 1) >= node.getChildCount() + node.getLeafCount())
 					m_toComb.maybeInsert(parentIndex);
@@ -528,7 +526,7 @@ void RTreeBoolean::defragment()
 	assert(m_toComb.empty());
 	while(!m_emptySlots.empty())
 	{
-		const Index last = Index::create(m_nodes.size() - 1);
+		const RTreeNodeIndex last = RTreeNodeIndex::create(m_nodes.size() - 1);
 		auto found = m_emptySlots.find(last);
 		if(found != m_emptySlots.end())
 		{
@@ -537,9 +535,9 @@ void RTreeBoolean::defragment()
 			m_emptySlots.erase(found);
 			continue;
 		}
-		const Index parentIndex = m_nodes[last].getParent();
+		const RTreeNodeIndex parentIndex = m_nodes[last].getParent();
 		// Copy over the last slot in m_emptySlots.
-		const Index empty = m_emptySlots.back();
+		const RTreeNodeIndex empty = m_emptySlots.back();
 		m_emptySlots.popBack();
 		const auto& newNode = m_nodes[empty] = m_nodes[last];
 		// Discard now copied from node.
@@ -551,7 +549,7 @@ void RTreeBoolean::defragment()
 		const auto& newNodeChildren = newNode.getChildIndices();
 		for(auto i = newNode.offsetOfFirstChild(); i < nodeSize; ++i)
 		{
-			const Index& childIndex = newNodeChildren[i.get()];
+			const RTreeNodeIndex& childIndex = newNodeChildren[i];
 			if(childIndex.exists())
 			{
 				assert(m_nodes[childIndex].getParent() == last);
@@ -564,41 +562,41 @@ void RTreeBoolean::sort()
 {
 	assert(m_emptySlots.empty());
 	assert(m_toComb.empty());
-	StrongVector<Index, Index> indices;
-	StrongVector<Node, Index> sortedNodes;
+	StrongVector<RTreeNodeIndex, RTreeNodeIndex> indices;
+	StrongVector<Node, RTreeNodeIndex> sortedNodes;
 	indices.resize(m_nodes.size());
 	sortedNodes.resize(m_nodes.size());
-	std::iota(indices.begin(), indices.end(), Index::create(0));
+	std::iota(indices.begin(), indices.end(), RTreeNodeIndex::create(0));
 	// Don't sort the first element, it is always root.
-	std::ranges::sort(indices.begin() + 1, indices.end(), std::less{}, [&](const Index& index) { return m_nodes[index].sortOrder(); });
-	sortedNodes[Index::create(0)] = m_nodes.front();
+	std::ranges::sort(indices.begin() + 1, indices.end(), std::less{}, [&](const RTreeNodeIndex& index) { return m_nodes[index].sortOrder(); });
+	sortedNodes[RTreeNodeIndex::create(0)] = m_nodes.front();
 	const auto end = m_nodes.size();
 	// Copy nodes into new order.
-	for(Index oldIndex = Index::create(1); oldIndex < end; ++oldIndex)
+	for(RTreeNodeIndex oldIndex = RTreeNodeIndex::create(1); oldIndex < end; ++oldIndex)
 	{
-		const Index& newIndex = indices[oldIndex];
+		const RTreeNodeIndex& newIndex = indices[oldIndex];
 		assert(newIndex != 0);
 		sortedNodes[newIndex] = m_nodes[oldIndex];
 	}
 	// Update copied nodes' parents and children.
-	for(Index oldIndex = Index::create(1); oldIndex < end; ++oldIndex)
+	for(RTreeNodeIndex oldIndex = RTreeNodeIndex::create(1); oldIndex < end; ++oldIndex)
 	{
-		const Index& newIndex = indices[oldIndex];
+		const RTreeNodeIndex& newIndex = indices[oldIndex];
 		if(newIndex == oldIndex)
 			continue;
 		Node& newNode = sortedNodes[newIndex];
 		sortedNodes[newNode.getParent()].updateChildIndex(oldIndex, newIndex);
 		const auto& newNodeChildren = newNode.getChildIndices();
-		for(ArrayIndex i = newNode.offsetOfFirstChild(); i < nodeSize; ++i)
+		for(RTreeArrayIndex i = newNode.offsetOfFirstChild(); i < nodeSize; ++i)
 		{
-			const Index& childIndex = newNodeChildren[i.get()];
+			const RTreeNodeIndex& childIndex = newNodeChildren[i];
 			assert(sortedNodes[childIndex].getParent() == oldIndex);
 			sortedNodes[childIndex].setParent(newIndex);
 		}
 	}
 	m_nodes = std::move(sortedNodes);
 }
-void RTreeBoolean::addIntersectedChildrenToOpenList(const Node& node, BitSet& intersectMask, SmallSet<Index>& openList)
+void RTreeBoolean::addIntersectedChildrenToOpenList(const Node& node, BitSet& intersectMask, SmallSet<RTreeNodeIndex>& openList)
 {
 	[[maybe_unused]] const auto offsetOfFirstChild = node.offsetOfFirstChild();
 	// Any bits representing leaves have already been cleared.
@@ -606,22 +604,22 @@ void RTreeBoolean::addIntersectedChildrenToOpenList(const Node& node, BitSet& in
 	const auto& nodeChildren = node.getChildIndices();
 	while(!intersectMask.empty())
 	{
-		const auto index = intersectMask.getNextAndClear();
+		const RTreeArrayIndex index{intersectMask.getNextAndClear()};
 		openList.insert(nodeChildren[index]);
 	}
 }
 void RTreeBoolean::maybeInsert(const Cuboid& cuboid)
 {
-	constexpr Index zeroIndex = Index::create(0);
+	constexpr RTreeNodeIndex zeroIndex = RTreeNodeIndex::create(0);
 	addToNodeRecursive(zeroIndex, cuboid);
 }
 void RTreeBoolean::maybeRemove(const Cuboid& cuboid)
 {
 	// Erase all contained branches and leaves.
-	constexpr Index rootIndex = Index::create(0);
+	constexpr RTreeNodeIndex rootIndex = RTreeNodeIndex::create(0);
 	clearAllContained(rootIndex, cuboid);
-	SmallSet<Index> openList;
-	SmallSet<Index> toUpdateBoundryMaybe;
+	SmallSet<RTreeNodeIndex> openList;
+	SmallSet<RTreeNodeIndex> toUpdateBoundryMaybe;
 	openList.insert(rootIndex);
 	while(!openList.empty())
 	{
@@ -631,12 +629,12 @@ void RTreeBoolean::maybeRemove(const Cuboid& cuboid)
 		if(index != 0)
 			toUpdateBoundryMaybe.maybeInsert(index);
 	}
-	for(const Index& index : toUpdateBoundryMaybe)
+	for(const RTreeNodeIndex& index : toUpdateBoundryMaybe)
 	{
 		Node& node = m_nodes[index];
-		const Index& parentIndex = node.getParent();
+		const RTreeNodeIndex& parentIndex = node.getParent();
 		Node& parent = m_nodes[parentIndex];
-		const ArrayIndex offset = parent.offsetFor(index);
+		const RTreeArrayIndex offset = parent.offsetFor(index);
 		if(node.empty())
 		{
 			parent.eraseBranch(offset);
@@ -678,7 +676,7 @@ bool RTreeBoolean::query(const Point3D& begin, const Point3D& end) const { retur
 CuboidSet RTreeBoolean::toCuboidSet() const
 {
 	CuboidSet output;
-	for(Index i = Index::create(0); i < m_nodes.size(); ++i)
+	for(RTreeNodeIndex i = RTreeNodeIndex::create(0); i < m_nodes.size(); ++i)
 	{
 		if(m_emptySlots.contains(i))
 			continue;
@@ -687,10 +685,10 @@ CuboidSet RTreeBoolean::toCuboidSet() const
 	}
 	return output;
 }
-uint RTreeBoolean::leafCount() const
+int RTreeBoolean::leafCount() const
 {
-	uint output = 0;
-	for(Index i = Index::create(0); i < m_nodes.size(); ++i)
+	int output = 0;
+	for(RTreeNodeIndex i = RTreeNodeIndex::create(0); i < m_nodes.size(); ++i)
 	{
 		if(m_emptySlots.contains(i))
 			continue;
@@ -699,40 +697,40 @@ uint RTreeBoolean::leafCount() const
 	}
 	return output;
 }
-const RTreeBoolean::Node& RTreeBoolean::getNode(uint i) const { return m_nodes[Index::create(i)]; }
-const Cuboid RTreeBoolean::getNodeCuboid(uint i, uint o) const { return m_nodes[Index::create(i)].getCuboids()[o]; }
-const RTreeBoolean::Index& RTreeBoolean::getNodeChild(uint i, uint o) const { return m_nodes[Index::create(i)].getChildIndices()[o]; }
-bool RTreeBoolean::queryPoint(uint x, uint y, uint z) const { return query(Point3D::create(x,y,z)); }
-uint RTreeBoolean::totalNodeVolume() const
+const RTreeBoolean::Node& RTreeBoolean::getNode(int i) const { return m_nodes[RTreeNodeIndex::create(i)]; }
+const Cuboid RTreeBoolean::getNodeCuboid(int i, int o) const { return m_nodes[RTreeNodeIndex::create(i)].getCuboids()[o]; }
+const RTreeNodeIndex& RTreeBoolean::getNodeChild(int i, int o) const { return m_nodes[RTreeNodeIndex::create(i)].getChildIndices()[RTreeArrayIndex::create(o)]; }
+bool RTreeBoolean::queryPoint(int x, int y, int z) const { return query(Point3D::create(x,y,z)); }
+int RTreeBoolean::totalNodeVolume() const
 {
-	uint output = 0;
-	const auto end = m_nodes.size();
-	for(Index index = Index::create(0); index < end; ++index)
+	int output = 0;
+	const RTreeNodeIndex end{m_nodes.size()};
+	for(RTreeNodeIndex index = RTreeNodeIndex::create(0); index != end; ++index)
 		if(!m_emptySlots.contains(index))
 			output += m_nodes[index].getNodeVolume();
 	return output;
 }
-uint RTreeBoolean::totalLeafVolume() const
+int RTreeBoolean::totalLeafVolume() const
 {
-	uint output = 0;
-	const auto end = m_nodes.size();
-	for(Index index = Index::create(0); index < end; ++index)
+	int output = 0;
+	const RTreeNodeIndex end{m_nodes.size()};
+	for(RTreeNodeIndex index = RTreeNodeIndex::create(0); index != end; ++index)
 		if(!m_emptySlots.contains(index))
 			output += m_nodes[index].getLeafVolume();
 	return output;
 }
-uint RTreeBoolean::getNodeSize() { return nodeSize; }
+int RTreeBoolean::getNodeSize() { return nodeSize; }
 void RTreeBoolean::assertAllLeafsAreUnique() const
 {
 	// Will assert fail if any leaves are not unique.
-	[[maybe_unused]] const auto leaves = gatherLeavesRecursive(Index::create(0));
+	[[maybe_unused]] const auto leaves = gatherLeavesRecursive(RTreeNodeIndex::create(0));
 }
 // Template methods.
 template<typename ShapeT>
 bool RTreeBoolean::query(const ShapeT& shape) const
 {
-	SmallSet<Index> openList;
-	openList.insert(Index::create(0));
+	SmallSet<RTreeNodeIndex> openList;
+	openList.insert(RTreeNodeIndex::create(0));
 	while(!openList.empty())
 	{
 		auto index = openList.back();
@@ -744,7 +742,7 @@ bool RTreeBoolean::query(const ShapeT& shape) const
 		if(leafCount != 0 && intersectMask.head(leafCount).any())
 			return true;
 		const auto childCount = node.getChildCount();
-		if(childCount != 0 && intersectMask.tail(childCount).any())
+		if(node.hasChildren() && intersectMask.tail(childCount).any())
 		{
 			auto bitset = BitSet::create(intersectMask);
 			addIntersectedChildrenToOpenList(node, bitset, openList);
@@ -761,8 +759,8 @@ template bool RTreeBoolean::query(const ParamaterizedLine& shape) const;
 template<typename ShapeT>
 Cuboid RTreeBoolean::queryGetLeaf(const ShapeT& shape) const
 {
-	SmallSet<Index> openList;
-	openList.insert(Index::create(0));
+	SmallSet<RTreeNodeIndex> openList;
+	openList.insert(RTreeNodeIndex::create(0));
 	while(!openList.empty())
 	{
 		auto index = openList.back();
@@ -772,9 +770,9 @@ Cuboid RTreeBoolean::queryGetLeaf(const ShapeT& shape) const
 		BitSet intersectMask = BitSet::create(nodeCuboids.indicesOfIntersectingCuboids(shape));
 		if(intersectMask.any())
 		{
-			const auto arrayIndex = intersectMask.getNext();
+			const RTreeArrayIndex arrayIndex{intersectMask.getNext()};
 			if(arrayIndex < node.getLeafCount())
-				return nodeCuboids[arrayIndex];
+				return nodeCuboids[arrayIndex.get()];
 			addIntersectedChildrenToOpenList(node, intersectMask, openList);
 		}
 	}
@@ -788,8 +786,8 @@ template Cuboid RTreeBoolean::queryGetLeaf(const ParamaterizedLine& shape) const
 template<typename ShapeT>
 Point3D RTreeBoolean::queryGetPoint(const ShapeT& shape) const
 {
-	SmallSet<Index> openList;
-	openList.insert(Index::create(0));
+	SmallSet<RTreeNodeIndex> openList;
+	openList.insert(RTreeNodeIndex::create(0));
 	while(!openList.empty())
 	{
 		auto index = openList.back();
@@ -799,9 +797,9 @@ Point3D RTreeBoolean::queryGetPoint(const ShapeT& shape) const
 		BitSet intersectMask = BitSet::create(nodeCuboids.indicesOfIntersectingCuboids(shape));
 		if(!intersectMask.empty())
 		{
-			const auto arrayIndex = intersectMask.getNext();
+			const RTreeArrayIndex arrayIndex{intersectMask.getNext()};
 			if(arrayIndex < node.getLeafCount())
-				return node.getCuboids()[arrayIndex].intersectionPoint(shape);
+				return node.getCuboids()[arrayIndex.get()].intersectionPoint(shape);
 			addIntersectedChildrenToOpenList(node, intersectMask, openList);
 		}
 	}
@@ -814,52 +812,40 @@ std::vector<bool> RTreeBoolean::batchQuery(const ShapeT& shapes) const
 {
 	std::vector<bool> output;
 	output.resize(shapes.size());
-	SmallMap<Index, SmallSet<uint>> openlist;
-	openlist.insert(Index::create(0), {});
-	auto& rootnodecandidatelist = openlist.back().second;
-	rootnodecandidatelist.resize(shapes.size());
-	std::ranges::iota(rootnodecandidatelist.getVector(), 0);
+	SmallSet<int> topLevelCandidates;
+	topLevelCandidates.resize(shapes.size());
+	std::iota(topLevelCandidates.m_data.begin(), topLevelCandidates.m_data.end(), 0);
+	SmallMap<RTreeNodeIndex, SmallSet<int>> openlist;
+	openlist.insert(RTreeNodeIndex::create(0), std::move(topLevelCandidates));
 	while(!openlist.empty())
 	{
-		auto& [index, candidates] = openlist.back();
+		const auto& [index, candidates] = openlist.back();
 		const Node& node = m_nodes[index];
 		const auto& nodeCuboids = node.getCuboids();
 		const auto& nodeChildren = node.getChildIndices();
 		const auto offsetOfFirstChild = node.offsetOfFirstChild();
-		for(const uint& shapeIndex : candidates)
+		for(const int& shapeIndex : candidates)
 		{
 			if(output[shapeIndex])
 				// this shape has already intersected with a leaf, no need to check further.
 				continue;
-			const auto& intersectmask = nodeCuboids.indicesOfIntersectingCuboids(shapes[shapeIndex]);
-			// record a leaf intersection.
+			const auto& intersectMask = nodeCuboids.indicesOfIntersectingCuboids(shapes[shapeIndex]);
+			// record all leaf intersections.
 			const auto leafCount = node.getLeafCount();
-			if(leafCount != 0 && intersectmask.head(leafCount).any())
+			if(leafCount != 0 && intersectMask.head(leafCount).any())
 			{
 				output[shapeIndex] = true;
 				continue;
 			}
 			// record all node intersections.
-			const auto childcount = node.getChildCount();
-			if(childcount == 0 || !intersectmask.tail(childcount).any())
-				continue;
-			auto begin = intersectmask.begin();
-			const auto end = begin + nodeSize;
-			if(offsetOfFirstChild == 0)
+			BitSet intersectBitSet = BitSet::create(intersectMask);
+			intersectBitSet.clearAllBefore(offsetOfFirstChild.get());
+			while(!intersectBitSet.empty())
 			{
-				// unrollable version for nodes where every slot is a child.
-				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-					if(*iter)
-						openlist.getOrCreate(nodeChildren[iter - begin]).insert(shapeIndex);
-			}
-			else
-			{
-				for(auto iter = begin + offsetOfFirstChild.get(); iter != end; ++iter)
-					if(*iter)
-						openlist.getOrCreate(nodeChildren[iter - begin]).insert(shapeIndex);
+				const RTreeArrayIndex arrayIndex{intersectBitSet.getNext()};
+				openlist.getOrCreate(nodeChildren[arrayIndex]).insert(shapeIndex);
 			}
 		}
-		// pop back at the end so we can use candidates as a reference and not have to make a move-copy.
 		openlist.popBack();
 	}
 	return output;
@@ -871,8 +857,8 @@ template<typename ShapeT>
 CuboidSet RTreeBoolean::queryGetLeaves(const ShapeT& shape) const
 {
 	CuboidSet output;
-	SmallSet<Index> openList;
-	openList.insert(Index::create(0));
+	SmallSet<RTreeNodeIndex> openList;
+	openList.insert(RTreeNodeIndex::create(0));
 	while(!openList.empty())
 	{
 		auto index = openList.back();
@@ -890,8 +876,8 @@ CuboidSet RTreeBoolean::queryGetLeaves(const ShapeT& shape) const
 				leafIntersectMask.clearAllAfterInclusive(leafCount);
 			while(!leafIntersectMask.empty())
 			{
-				const auto arrayIndex = leafIntersectMask.getNextAndClear();
-				output.maybeAdd(nodeCuboids[arrayIndex]);
+				const RTreeArrayIndex arrayIndex{leafIntersectMask.getNextAndClear()};
+				output.maybeAdd(nodeCuboids[arrayIndex.get()]);
 			}
 		}
 		const auto& offsetOfFirstChild = node.offsetOfFirstChild();
@@ -899,9 +885,7 @@ CuboidSet RTreeBoolean::queryGetLeaves(const ShapeT& shape) const
 		{
 			// Children exist.
 			intersectMask.clearAllBefore(offsetOfFirstChild.get());
-			if(!intersectMask.empty())
-				// At least one child intersects.
-				addIntersectedChildrenToOpenList(node, intersectMask, openList);
+			addIntersectedChildrenToOpenList(node, intersectMask, openList);
 		}
 	}
 	return output;
@@ -925,3 +909,27 @@ CuboidSet RTreeBoolean::queryGetIntersection(const ShapeT& shape) const
 }
 template CuboidSet RTreeBoolean::queryGetIntersection(const Cuboid& shape) const;
 template CuboidSet RTreeBoolean::queryGetIntersection(const CuboidSet& shape) const;
+void RTreeBoolean::queryRemove(CuboidSet& set) const
+{
+	SmallSet<RTreeNodeIndex> openList;
+	openList.insert(RTreeNodeIndex::create(0));
+	while(!openList.empty())
+	{
+		auto index = openList.back();
+		openList.popBack();
+		const Node& node = m_nodes[index];
+		const auto& nodeCuboids = node.getCuboids();
+		BitSet interceptMask = BitSet64::create(nodeCuboids.indicesOfIntersectingCuboids(set));
+		const auto leafCount = node.getLeafCount();
+		while(!interceptMask.empty())
+		{
+			const RTreeArrayIndex arrayIndex{interceptMask.getNextAndClear()};
+			if(arrayIndex >= leafCount)
+				break;
+			Cuboid cuboid = nodeCuboids[arrayIndex.get()];
+			set.remove(cuboid);
+		}
+		if(!interceptMask.empty())
+			addIntersectedChildrenToOpenList(node, interceptMask, openList);
+	}
+}

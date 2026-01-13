@@ -16,7 +16,7 @@ struct SmallSet
 	class iterator;
 	class const_iterator;
 	SmallSet() = default;
-	SmallSet(uint capacity);
+	SmallSet(int capacity);
 	SmallSet(std::initializer_list<T> i);
 	SmallSet(const This& other) = default;
 	SmallSet(This&& other) noexcept = default;
@@ -59,7 +59,7 @@ struct SmallSet
 	template<typename Iterator>
 	void maybeEraseAll(Iterator begin, const Iterator& end) { for(; begin != end; ++begin) maybeErase(*begin); }
 	void maybeEraseAllWhereBothSetsAreSorted(const This& other);
-	void eraseIndex(const uint& index);
+	void eraseIndex(const int& index);
 	void popBack();
 	void clear();
 	template<typename ...Args>
@@ -80,30 +80,32 @@ struct SmallSet
 	void swap(This& other);
 	template<typename Predicate>
 	void sort(Predicate&& predicate) { std::ranges::sort(m_data, predicate); }
+	template<typename Predicate>
+	void sortUnary(Predicate&& predicate) { std::ranges::sort(m_data, {}, predicate); }
 	void sort();
 	void update(const T& oldValue, const T& newValue);
 	void updateIfExists(const T& oldValue, const T& newValue);
 	void updateIfExistsAndNewValueDoesNot(const T& oldValue, const T& newValue);
 	void makeUnique();
 	void removeDuplicatesAndValue(const T& value);
-	void reserve(uint size);
-	void resize(uint size);
+	void reserve(int size);
+	void resize(int size);
 	[[nodiscard]] bool operator==(const This& other);
 	template<typename Predicate>
-	[[nodiscard]] uint countIf(Predicate&& predicate) const  { return std::ranges::count_if(m_data, predicate); }
-	[[nodiscard]] const T& operator[](const uint& index) const;
-	[[nodiscard]] T& operator[](const uint& index);
+	[[nodiscard]] int countIf(Predicate&& predicate) const  { return std::ranges::count_if(m_data, predicate); }
+	[[nodiscard]] const T& operator[](const int& index) const;
+	[[nodiscard]] T& operator[](const int& index);
 	[[nodiscard]] bool contains(const T& value) const;
 	template<typename Predicate>
 	[[nodiscard]] bool containsAny(Predicate&& predicate) const { return std::ranges::find_if(m_data, predicate) != m_data.end(); }
 	[[nodiscard]] bool containsAny(const This& other) const;
-	[[nodiscard]] uint indexOf(const T& value) const;
+	[[nodiscard]] int indexOf(const T& value) const;
 	[[nodiscard]] T& front();
 	[[nodiscard]] const T& front() const;
 	[[nodiscard]] T& back();
 	[[nodiscard]] const T& back() const;
 	[[nodiscard]] bool empty() const;
-	[[nodiscard]] uint size() const;
+	[[nodiscard]] int size() const;
 	[[nodiscard]] This::iterator begin();
 	[[nodiscard]] This::iterator end();
 	[[nodiscard]] This::const_iterator begin() const;
@@ -113,9 +115,10 @@ struct SmallSet
 	[[nodiscard]] This::iterator find(const T& value);
 	[[nodiscard]] This::const_iterator find(const T& value) const;
 	[[nodiscard]] bool isUnique() const;
-	[[nodiscard]] uint findLastIndex(const T& value) const;
+	[[nodiscard]] int findLastIndex(const T& value) const;
 	[[nodiscard]] int maybeFindLastIndex(const T& value) const;
-	[[nodiscard]] std::pair<SmallSet<T>, SmallSet<T>> getDeltaPair(const SmallSet<T>& other) const;
+	// Not const method or argument because both will be sorted.
+	[[nodiscard]] std::pair<SmallSet<T>, SmallSet<T>> getDeltaPair(SmallSet<T>& other);
 	template<typename Predicate>
 	[[nodiscard]] This::iterator findIf(Predicate&& predicate) { return std::ranges::find_if(m_data, predicate); }
 	template<typename Predicate>
@@ -127,7 +130,7 @@ struct SmallSet
 	protected:
 		std::vector<T>::iterator m_iter;
 	public:
-		iterator(This& s, uint i) : m_iter(s.m_data.begin() + i) { }
+		iterator(This& s, int i) : m_iter(s.m_data.begin() + i) { }
 		iterator(std::vector<T>::iterator i) : m_iter(i) { }
 		iterator& operator++() { ++m_iter; return *this; }
 		iterator& operator--() { --m_iter; return *this; }
@@ -138,10 +141,10 @@ struct SmallSet
 		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
 		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] T* operator->() { return &*m_iter; }
-		[[nodiscard]] iterator operator-(const uint& index) const { return m_iter - index; }
-		[[nodiscard]] iterator operator+(const uint& index) const { return m_iter + index; }
-		[[nodiscard]] iterator& operator+=(const uint& index) { m_iter += index; return *this; }
-		[[nodiscard]] iterator& operator-=(const uint& index) { m_iter -= index; return *this; }
+		[[nodiscard]] iterator operator-(const int& index) const { return m_iter - index; }
+		[[nodiscard]] iterator operator+(const int& index) const { return m_iter + index; }
+		[[nodiscard]] iterator& operator+=(const int& index) { m_iter += index; return *this; }
+		[[nodiscard]] iterator& operator-=(const int& index) { m_iter -= index; return *this; }
 		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) const { return m_iter <=> other.m_iter; }
 		friend class const_iterator;
 	};
@@ -150,7 +153,7 @@ struct SmallSet
 	protected:
 		std::vector<T>::const_iterator m_iter;
 	public:
-		const_iterator(const This& s, uint i) : m_iter(s.m_data.begin() + i) { }
+		const_iterator(const This& s, int i) : m_iter(s.m_data.begin() + i) { }
 		const_iterator(std::vector<T>::const_iterator i) : m_iter(i) { }
 		const_iterator(const const_iterator& i) : m_iter(i.m_iter) { }
 		const_iterator(const iterator& i) : m_iter(i.m_iter) { }
@@ -164,10 +167,10 @@ struct SmallSet
 		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const T* operator->() const { return &*m_iter; }
-		[[nodiscard]] const_iterator operator-(const uint& index) { return m_iter - index; }
-		[[nodiscard]] const_iterator operator+(const uint& index) { return m_iter + index; }
-		[[nodiscard]] const_iterator& operator+=(const uint& index) { m_iter += index; return *this; }
-		[[nodiscard]] const_iterator& operator-=(const uint& index) { m_iter -= index; return *this; }
+		[[nodiscard]] const_iterator operator-(const int& index) { return m_iter - index; }
+		[[nodiscard]] const_iterator operator+(const int& index) { return m_iter + index; }
+		[[nodiscard]] const_iterator& operator+=(const int& index) { m_iter += index; return *this; }
+		[[nodiscard]] const_iterator& operator-=(const int& index) { m_iter -= index; return *this; }
 		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
 	};
 	[[nodiscard]] std::string toString() const;
@@ -193,8 +196,8 @@ public:
 	SmallSetStable(const Json& data);
 	void fromJson(const Json& data);
 	[[nodiscard]] Json toJson() const;
-	void insert(const std::unique_ptr<T>& value);
-	void maybeInsert(const std::unique_ptr<T>& value);
+	void insert(std::unique_ptr<T>&& value);
+	void maybeInsert(std::unique_ptr<T>&& value);
 	void insert(This::iterator begin, This::iterator end);
 	void erase(const std::unique_ptr<T>& value);
 	void maybeErase(const T& value);
@@ -221,7 +224,7 @@ public:
 	[[nodiscard]] T& back();
 	[[nodiscard]] const T& back() const;
 	[[nodiscard]] bool empty() const;
-	[[nodiscard]] uint size() const;
+	[[nodiscard]] int size() const;
 	[[nodiscard]] This::iterator begin();
 	[[nodiscard]] This::iterator end();
 	[[nodiscard]] This::const_iterator begin() const;
@@ -239,7 +242,7 @@ public:
 	protected:
 		std::vector<std::unique_ptr<T>>::iterator m_iter;
 	public:
-		iterator(This& s, const uint& i) : m_iter(s.m_data.begin() + i) { }
+		iterator(This& s, const int& i) : m_iter(s.m_data.begin() + i) { }
 		iterator(std::vector<std::unique_ptr<T>>::iterator i) : m_iter(i) { }
 		iterator& operator++() { ++m_iter; return *this; }
 		iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
@@ -260,7 +263,7 @@ public:
 	protected:
 		std::vector<std::unique_ptr<T>>::const_iterator m_iter;
 	public:
-		const_iterator(const This& s, const uint& i) : m_iter(s.m_data.begin() + i) { }
+		const_iterator(const This& s, const int& i) : m_iter(s.m_data.begin() + i) { }
 		const_iterator(std::vector<std::unique_ptr<T>>::const_iterator i) : m_iter(i) { }
 		const_iterator(const const_iterator& i) : m_iter(i.m_iter) { }
 		const_iterator(const iterator& i) : m_iter(i.m_iter) { }

@@ -28,7 +28,7 @@ DateTimeUI::DateTimeUI(uint8_t hours,uint16_t days, uint16_t years) : m_hours(tg
 	m_widget->addWidget(tgui::Label::create("years"), 3, 1);
 	m_widget->addWidget(m_years, 3, 2);
 	m_years->setMinimum(0);
-	m_years->setMaximum(UINT64_MAX / Config::stepsPerYear.get());
+	m_years->setMaximum(INT64_MAX / Config::stepsPerYear.get());
 	m_years->setValue(years);
 }
 DateTimeUI::DateTimeUI() : DateTimeUI(1,1,1) { }

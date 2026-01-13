@@ -10,7 +10,7 @@
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
 #include "../../engine/areaBuilderUtil.h"
-#include "../../engine/config.h"
+#include "../../engine/config/config.h"
 
 TEST_CASE("attributes")
 {

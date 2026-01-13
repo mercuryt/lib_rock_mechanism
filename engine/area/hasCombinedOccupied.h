@@ -1,3 +1,4 @@
+// TODO: unused.
 #pragma once
 #include "../dataStructures/rtreeBoolean.h"
 #include "../dataStructures/smallMap.h"

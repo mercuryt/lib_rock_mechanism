@@ -2,7 +2,7 @@
 #include "../engine.h"
 #include "../../area/area.h"
 #include "../../definitions/animalSpecies.h"
-#include "../../config.h"
+#include "../../config/config.h"
 #include "../../simulation/simulation.h"
 #include "../../simulation/hasActors.h"
 #include "../../numericTypes/types.h"
@@ -13,7 +13,9 @@
 #include <string>
 AnimalsArriveDramaArc::AnimalsArriveDramaArc(DramaEngine& engine, Area& area) :
 	DramaArc(engine, DramaArcType::AnimalsArrive, &area), m_scheduledEvent(area.m_eventSchedule)
-{ scheduleArrive(); }
+{
+	scheduleArrive();
+}
 AnimalsArriveDramaArc::AnimalsArriveDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine) :
 	DramaArc(data, deserializationMemo, dramaEngine),
 	m_isActive(data["isActive"].get<bool>()),

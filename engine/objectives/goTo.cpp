@@ -1,5 +1,5 @@
 #include "goTo.h"
-#include "../config.h"
+#include "../config/config.h"
 #include "../objective.h"
 #include "../simulation/simulation.h"
 #include "../area/area.h"

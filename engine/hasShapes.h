@@ -4,7 +4,7 @@
  */
 #pragma once
 
-#include "config.h"
+#include "config/config.h"
 #include "dataStructures/strongVector.h"
 #include "definitions/shape.h"
 #include "numericTypes/types.h"
@@ -35,7 +35,7 @@ protected:
 	Area& m_area;
 	HasShapes(Area& area);
 	void create(const Index& index, const ShapeId& shape, const FactionId& faction, bool isStatic);
-	std::vector<std::pair<uint32_t, Index>> getSortOrder(const Index& begin, const Index& end);
+	std::vector<std::pair<int32_t, Index>> getSortOrder(const Index& begin, const Index& end);
 	void resize(const Index& newSize);
 public:
 	template<typename Action>

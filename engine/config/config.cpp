@@ -1,9 +1,12 @@
-#include "config.h"
+#include "config/config.h"
 #include "numericTypes/types.h"
+#include <fstream>
 void Config::load()
 {
-	std::ifstream f("data/config.json");
+	std::ifstream f("data/config/config.json");
 	Json data = Json::parse(f);
+	data["accidentalHitLargestArea"].get_to(accidentalHitLargestArea);
+	data["accidentalHitSmallestArea"].get_to(accidentalHitSmallestArea);
 	data["stepsPerSecond"].get_to(stepsPerSecond);
 	data["secondsPerMinute"].get_to(secondsPerMinute);
 	data["minutesPerHour"].get_to(minutesPerHour);
@@ -36,8 +39,12 @@ void Config::load()
 	data["bludgeonPercentTemporaryImparmentModifier"].get_to(bludgeonPercentTemporaryImparmentModifier);
 	data["bludgeonStepsTillHealedModifier"].get_to(bludgeonStepsTillHealedModifier);
 	data["bodyHardnessModifier"].get_to(bodyHardnessModifier);
+	data["chastiseCastingCallBonusForDefenderIsFamily"].get_to(chastiseCastingCallBonusForDefenderIsFamily);
+	data["chastiseCastingCallBonusForDefenderIsFriend"].get_to(chastiseCastingCallBonusForDefenderIsFriend);
+	data["chastiseCastingCallDefenderMinimumScore"].get_to(chastiseCastingCallDefenderMinimumScore);
 	data["chanceToWaitInsteadOfWander"].get_to(chanceToWaitInsteadOfWander);
 	data["constructObjectivePriority"].get_to(constructObjectivePriority);
+	confrontationObjectiveTempoSteps = Step::create(data["confrontationObjectiveTempoSeconds"].get<float>() * stepsPerSecond.get());
 	data["constructSkillModifier"].get_to(constructSkillModifier);
 	data["constructStrengthModifier"].get_to(constructStrengthModifier);
 	data["craftObjectivePriority"].get_to(craftObjectivePriority);
@@ -46,6 +53,7 @@ void Config::load()
 	data["cutPercentTemporaryImparmentModifier"].get_to(cutPercentTemporaryImparmentModifier);
 	data["cutStepsTillHealedModifier"].get_to(cutStepsTillHealedModifier);
 	data["deepAmbiantTemperature"].get_to(deepAmbiantTemperature);
+	dialogLineDefaultDurationSteps = Step::create(data["dialogLineDefaultDurationSeconds"].get<float>() * stepsPerSecond.get());
 	digMaxSteps = Step::create(data["digMaxMinutes"].get<float>() * stepsPerMinute.get());
 	data["digObjectivePriority"].get_to(digObjectivePriority);
 	data["digSkillModifier"].get_to(digSkillModifier);
@@ -98,6 +106,7 @@ void Config::load()
 	loadDelaySteps = Step::create(data["loadDelaySeconds"].get<float>() * stepsPerSecond.get());
 	data["massCarryMaximimMovementRatio"].get_to(massCarryMaximimMovementRatio);
 	data["maxAnimalInsertLocationSearchRetries"].get_to(maxAnimalInsertLocationSearchRetries);
+	data["maxChastiseDistance"].get_to(maxChastiseDistance);
 	data["maxPointVolume"].get_to(maxPointVolume);
 	data["maxPointsToLookForBetterFood"].get_to(maxPointsToLookForBetterFood);
 	data["maxDistanceToLookForEatingLocation"].get_to(maxDistanceToLookForEatingLocation);
@@ -119,8 +128,10 @@ void Config::load()
 	data["maxWorkersForStockPileProject"].get_to(maxWorkersForStockPileProject);
 	data["maxZLevelForDeepAmbiantTemperature"].get_to(maxZLevelForDeepAmbiantTemperature);
 	data["maximumDeltaToAlterPsycologyCurrentSquared"].get_to(maximumDeltaToAlterPsycologyCurrentSquared);
+	data["maximumForceRatioToMassForNonLethalAttack"].get_to(maximumForceRatioToMassForNonLethalAttack);
 	maximumDurationToWaitInsteadOfWander = Step::create(data["maximumDurationToWaitInsteadOfWanderMinutes"].get<float>() * stepsPerMinute.get());
 	data["maximumRainIntensityModifier"].get_to(maximumRainIntensityModifier);
+	data["maximumRatioOfBloodRemainingForSeriousInjury"].get_to(maximumRatioOfBloodRemainingForSeriousInjury);
 	data["maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom"].get_to(maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom);
 	maximumStepsBetweenRainPerPercentHumidity = data["maximumDaysBetweenRainPerPercentHumidity"].get<Step>() * stepsPerDay;
 	maximumStepsRainPerPercentHumidity = Step::create(data["maximumSecondsRainPerPercentHumidity"].get<float>() * stepsPerSecond.get());
@@ -132,6 +143,7 @@ void Config::load()
 	data["minimumDeltaToAlterPsycologyBaselineSquared"].get_to(minimumDeltaToAlterPsycologyBaselineSquared);
 	minimumDurationToWaitInsteadOfWander = Step::create(data["minimumDurationToWaitInsteadOfWanderMinutes"].get<float>() * stepsPerMinute.get());
 	data["minimumHaulSpeedInital"].get_to(minimumHaulSpeedInital);
+	data["maximumRatioOfBloodRemainingForSeriousInjury"].get_to(maximumRatioOfBloodRemainingForSeriousInjury);
 	data["minimumOverloadRatio"].get_to(minimumOverloadRatio);
 	data["minimumPercentFoliageForGrow"].get_to(minimumPercentFoliageForGrow);
 	data["minimumPercentGrowthForWoodCutting"].get_to(minimumPercentGrowthForWoodCutting);
@@ -151,6 +163,7 @@ void Config::load()
 	data["octTreeSortEntropyThreshold"].get_to(octTreeSortEntropyThreshold);
 	data["objectivePrioiorityKill"].get_to(objectivePrioiorityKill);
 	data["objectivePrioritySleep"].get_to(objectivePrioritySleep);
+	data["painWhenALimbIsSevered"].get_to(painWhenALimbIsSevered);
 	data["pathHuristicConstant"].get_to(pathHuristicConstant);
 	data["pathRequestsPerThread"].get_to(pathRequestsPerThread);
 	assert(pathRequestsPerThread % 2 == 0);
@@ -172,7 +185,7 @@ void Config::load()
 	data["pointsOfCombatScorePerUnitOfDextarity"].get_to(pointsOfCombatScorePerUnitOfDextarity);
 	data["pointsOfCombatScorePerUnitOfStrength"].get_to(pointsOfCombatScorePerUnitOfStrength);
 	data["projectTryToMakeSubprojectRetriesBeforeProjectDelay"].get_to(projectTryToMakeSubprojectRetriesBeforeProjectDelay);
-	projectDelayAfterExauhstingSubprojectRetries = Step::create(data["projectDelayAfterExauhstingSubprojectRetriesSeconds"].get<uint32_t>() * stepsPerSecond.get());
+	projectDelayAfterExauhstingSubprojectRetries = Step::create(data["projectDelayAfterExauhstingSubprojectRetriesSeconds"].get<int32_t>() * stepsPerSecond.get());
 	data["projectileHitChanceFallsOffWithRangeExponent"].get_to(projectileHitChanceFallsOffWithRangeExponent);
 	data["projectileHitPercentPerPointAttackTypeCombatScore"].get_to(projectileHitPercentPerPointAttackTypeCombatScore);
 	data["projectileHitPercentPerPointDextarity"].get_to(projectileHitPercentPerPointDextarity);
@@ -186,20 +199,22 @@ void Config::load()
 	data["rainMaximumSpacing"].get_to(rainMaximumSpacing);
 	data["rainMaximumSpacing"].get_to(rainMaximumSpacing);
 	rainWriteStepFreqency = Step::create(data["rainWriteStepFreqencySeconds"].get<float>() * stepsPerSecond.get());
-	data["randomFuzzToApplyToCourageChecks"].get_to(randomFuzzToApplyToCourageChecks);
 	data["rateModifierForEvaporationPerDegreeTemperature"].get_to(rateModifierForEvaporationPerDegreeTemperature);
 	data["ratioOfHitAreaToBodyPartVolumeForSever"].get_to(ratioOfHitAreaToBodyPartVolumeForSever);
 	data["ratioOfMaximumVarianceForCourageTest"].get_to(ratioOfMaximumVarianceForCourageTest);
 	data["ratioOfTotalBodyVolumeWhichIsBlood"].get_to(ratioOfTotalBodyVolumeWhichIsBlood);
 	data["ratioOfVisionCuboidSlotsToReservePerPoint"].get_to(ratioOfVisionCuboidSlotsToReservePerPoint);
 	ratioWoundsCloseDelayToBleedVolume = data["ratioWoundsCloseDelayToBleedVolumeSeconds"].get<float>() * stepsPerSecond.get();
-	restIntervalSteps = Step::create(data["restIntervalSeconds"].get<uint32_t>() * stepsPerSecond.get());
+	restIntervalSteps = Step::create(data["restIntervalSeconds"].get<int32_t>() * stepsPerSecond.get());
 	data["reserveSizeVisionCuboidAdjacent"].get_to(reserveSizeVisionCuboidAdjacent);
 	data["rollingMassModifier"].get_to(rollingMassModifier);
 	data["floatingMassModifier"].get_to(floatingMassModifier);
 	data["rowForcePerUnitStrength"].get_to(rowForcePerUnitStrength);
 	data["scaleOfHumanBody"].get_to(scaleOfHumanBody);
 	data["skinPierceForceCost"].get_to(skinPierceForceCost);
+	data["skillPointsToAddWhenChastised"].get_to(skillPointsToAddWhenChastised);
+	data["skillPointsToAddWhenChastising"].get_to(skillPointsToAddWhenChastising);
+	data["skillPointsToAddWhenSuccessAtWork"].get_to(skillPointsToAddWhenSuccessAtWork);
 	data["sleepObjectivePriority"].get_to(sleepObjectivePriority);
 	data["sowSeedsPriority"].get_to(sowSeedsPriority);
 	sowSeedsStepsDuration = Step::create(data["sowSeedsStepsDurationSeconds"].get<float>() * stepsPerSecond.get());
@@ -207,10 +222,10 @@ void Config::load()
 	data["stationPriority"].get_to(stationPriority);
 	stepsFrequencyToLookForHaulSubprojects = Step::create(data["secondsFrequencyToLookForHaulSubprojects"].get<float>() * stepsPerSecond.get());
 	stepsFrequencyToRunRelationshipEvent = Step::create(data["minutesFrequencyToRunRelationshipEvent"].get<float>() * stepsPerMinute.get());
-	stepsTillDiePlantPriorityOveride = Step::create(data["hoursTillDiePlantPriorityOveride"].get<uint32_t>() * stepsPerHour.get());
+	stepsTillDiePlantPriorityOveride = Step::create(data["hoursTillDiePlantPriorityOveride"].get<int32_t>() * stepsPerHour.get());
 	stepsToDelayBeforeTryingAgainToCompleteAnObjective = Step::create(data["secondsToDelayBeforeTryingAgainToCompleteAnObjective"].get<float>() * stepsPerSecond.get());
 	stepsToDelayBeforeTryingAgainToFollowLeader = Step::create(data["secondsToDelayBeforeTryingAgainToFollowLeader"].get<float>() * stepsPerSecond.get());
-	stepsToDelayBeforeTryingAgainToReserveItemsAndActorsForAProject = Step::create(data["minutesToDelayBeforeTryingAgaintoReserveItemsAndActorsForAProject"].get<uint32_t>() * stepsPerMinute.get());
+	stepsToDelayBeforeTryingAgainToReserveItemsAndActorsForAProject = Step::create(data["minutesToDelayBeforeTryingAgaintoReserveItemsAndActorsForAProject"].get<int32_t>() * stepsPerMinute.get());
 	stepsToDisableStockPile = Step::create(data["minutesToDisableStockPile"].get<float>() * stepsPerMinute.get());
 	stepsToDrink = Step::create(data["secondsToDrink"].get<float>() * stepsPerSecond.get());
 	stepsToEat = Step::create(data["secondsToEat"].get<float>() * stepsPerSecond.get());
@@ -224,8 +239,6 @@ void Config::load()
 	data["unitsBodyMassPerUnitFoodConsumed"].get_to(unitsBodyMassPerUnitFoodConsumed);
 	data["unitsOfAttackForcePerUnitOfStrength"].get_to(unitsOfAttackForcePerUnitOfStrength);
 	data["unitsOfCarryMassPerUnitOfStrength"].get_to(unitsOfCarryMassPerUnitOfStrength);
-	data["unitsOfCourageToGainOnPassingFearTest"].get_to(unitsOfCourageToGainOnPassingFearTest);
-	data["unitsOfCourageToLoseOnFailingFearTest"].get_to(unitsOfCourageToLoseOnFailingFearTest);
 	data["unitsOfMoveSpeedPerUnitOfAgility"].get_to(unitsOfMoveSpeedPerUnitOfAgility);
 	data["unitsOfWoundAreaPerUnitItemScaleFactor"].get_to(unitsOfWoundAreaPerUnitItemScaleFactor);
 	data["unitsOfVolumePerUnitOfCollisionVolume"].get_to(unitsOfVolumePerUnitOfCollisionVolume);

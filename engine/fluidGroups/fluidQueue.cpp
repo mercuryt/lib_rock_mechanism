@@ -23,9 +23,9 @@ void FluidQueue<Derived>::findGroupEnd()
 		++m_groupEnd;
 }
 template<typename Derived>
-uint32_t FluidQueue<Derived>::groupVolume() const
+int32_t FluidQueue<Derived>::groupVolume() const
 {
-	uint32_t output = 0;
+	int32_t output = 0;
 	for(auto iter = m_groupStart; iter != m_groupEnd; ++iter)
 		output += iter->cuboid.volume();
 	return output;

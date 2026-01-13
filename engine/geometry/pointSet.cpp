@@ -2,15 +2,15 @@
 #include "point3D.h"
 #include "cuboid.h"
 #include "sphere.h"
-#include "../config.h"
+#include "../config/config.h"
 void Point3DSet::insert(const Point3D& point)
 {
 	if(m_size == data.size())
-		data.conservativeResize(3, std::max(8u, m_size * 2u));
+		data.conservativeResize(3, std::max(8, m_size * 2));
 	data.col(m_size) = point.data;
 	++m_size;
 }
-Point3D Point3DSet::operator[](const uint& index) const { assert(index < m_size); return Coordinates(data.col(index)); }
+Point3D Point3DSet::operator[](const int32_t& index) const { assert(index < m_size); return Coordinates(data.col(index)); }
 Cuboid Point3DSet::boundry() const
 {
 	Eigen::Array<DistanceWidth, 3, Eigen::Dynamic> truncatedData = data.block(0, 0, 3, m_size);
@@ -28,7 +28,7 @@ Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesOfContainedPoints(const
 }
 Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesOfContainedPoints(const Sphere& sphere) const
 {
-	return distancesSquare(sphere.center) <= (int)sphere.radiusSquared().get();
+	return distancesSquare(sphere.center) <= (int32_t)sphere.radiusSquared().get();
 }
 Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesOfFacedTwordsPoints(const Point3D& location, const Facing4& facing) const
 {
@@ -62,10 +62,10 @@ Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesFacingTwords(const Poin
 		(facings == Facing4::West && truncatedData.row(0) >= location.x().get())
 	);
 }
-Eigen::Array<int, 1, Eigen::Dynamic> Point3DSet::distancesSquare(const Point3D& location) const
+Eigen::Array<int32_t, 1, Eigen::Dynamic> Point3DSet::distancesSquare(const Point3D& location) const
 {
-	Eigen::Array<int, 3, Eigen::Dynamic> truncatedData = data.block(0, 0, 3, m_size).cast<int>();
-	Eigen::Array<int, 3, Eigen::Dynamic> replicatedLocation = location.data.cast<int>().replicate(1, m_size);
+	Eigen::Array<int32_t, 3, Eigen::Dynamic> truncatedData = data.block(0, 0, 3, m_size).cast<int32_t>();
+	Eigen::Array<int32_t, 3, Eigen::Dynamic> replicatedLocation = location.data.cast<int32_t>().replicate(1, m_size);
 	return (truncatedData - replicatedLocation).square().colwise().sum();
 }
 Point3D Point3DSet::ConstIterator::operator*() const { return m_set[m_index]; }

@@ -14,13 +14,13 @@ std::array<tgui::Widget::Ptr, 7> widgetUtil::makeCreateItemUI(std::function<void
 	tgui::Label::Ptr quantityOrQualityLabel = tgui::Label::create();
 	tgui::SpinControl::Ptr quantityOrQualityUI = tgui::SpinControl::create();
 	quantityOrQualityUI->setMinimum(0);
-	quantityOrQualityUI->setMaximum(UINT32_MAX);
+	quantityOrQualityUI->setMaximum(INT32_MAX);
 	quantityOrQualityUI->setValue(quantityOrQuality);
 	quantityOrQualityUI->onValueChange([](const float value){ quantityOrQuality = value; });
 	tgui::Label::Ptr wearLabel = tgui::Label::create("wear");
 	tgui::SpinControl::Ptr wearUI = tgui::SpinControl::create();
 	wearUI->setMinimum(0);
-	wearUI->setMaximum(UINT32_MAX);
+	wearUI->setMaximum(INT32_MAX);
 	wearUI->setValue(wear);
 	wearUI->onValueChange([](const float value){ wear = value; });
 	tgui::Button::Ptr confirmUI = tgui::Button::create("confirm");

@@ -14,7 +14,7 @@
 #include <vector>
 #include <utility>
 // Threshold is the maximum which can be stored before a vector is used.
-template<typename Contained, int threshold>
+template<typename Contained, int32_t threshold>
 class VerySmallSet
 {
 	using This = VerySmallSet<Contained, threshold>;
@@ -164,7 +164,7 @@ public:
 		else
 			util::removeDuplicates(data.vector);
 	}
-	void reserve(uint size)
+	void reserve(int32_t size)
 	{
 		if(isArray())
 		{
@@ -199,7 +199,7 @@ public:
 			return false;
 		return data.array[1].empty();
 	}
-	[[nodiscard]] uint16_t size() const
+	[[nodiscard]] int16_t size() const
 	{
 		if(isArray())
 			// Skip index 0 because it is a flag.
@@ -207,7 +207,7 @@ public:
 		else
 			return data.vector.size();
 	}
-	[[nodiscard]] Contained& operator[](uint16_t offset)
+	[[nodiscard]] Contained& operator[](int16_t offset)
 	{
 		assert(offset < size());
 		if(isArray())
@@ -222,7 +222,7 @@ public:
 			return data.vector[offset];
 		}
 	}
-	[[nodiscard]] const Contained& operator[](uint16_t offset) const
+	[[nodiscard]] const Contained& operator[](int16_t offset) const
 	{
 		return (const_cast<This&>(*this))[offset];
 	}
@@ -233,39 +233,39 @@ public:
 	class iterator
 	{
 		This& set;
-		uint16_t offset;
+		int16_t offset;
 	public:
-		iterator(This& d, uint16_t o) : set(d), offset(o) { }
+		iterator(This& d, int16_t o) : set(d), offset(o) { }
 		[[nodiscard]] Contained& operator*() { assert(offset < set.size()); return set[offset]; }
 		[[nodiscard]] const Contained& operator*() const { assert(offset < set.size()); return set[offset]; }
 		[[nodiscard]] Contained* operator->() { assert(offset < set.size()); return &set[offset]; }
 		iterator& operator++() { ++offset; return *this; }
-		iterator& operator++(int) { ++offset; return *this; }
+		iterator& operator++(int32_t) { ++offset; return *this; }
 		[[nodiscard]] bool operator==(const iterator& other) const { assert(&set == &other.set); return offset == other.offset; }
 		[[nodiscard]] bool operator!=(const iterator& other) const { assert(&set == &other.set); return offset != other.offset; }
 		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) const { assert(&set == &other.set); return offset <=> other.offset; }
-		[[nodiscard]] iterator operator-(const iterator& other) const { assert(&other.set == &set); assert(offset >= other.offset); return iterator(set, uint(offset - other.offset)); }
-		[[nodiscard]] iterator operator+(const iterator& other) const { assert(&other.set == &set); return iterator(set, offset + uint(other.offset)); }
-		[[nodiscard]] uint16_t getIndex() const { return offset; }
+		[[nodiscard]] iterator operator-(const iterator& other) const { assert(&other.set == &set); assert(offset >= other.offset); return iterator(set, int32_t(offset - other.offset)); }
+		[[nodiscard]] iterator operator+(const iterator& other) const { assert(&other.set == &set); return iterator(set, offset + int32_t(other.offset)); }
+		[[nodiscard]] int16_t getIndex() const { return offset; }
 	};
 	// TODO: very repetetive here.
 	class const_iterator
 	{
 		const This& set;
-		uint16_t offset;
+		int16_t offset;
 	public:
-		const_iterator(const This& d, uint16_t o) : set(d), offset(o) { }
+		const_iterator(const This& d, int16_t o) : set(d), offset(o) { }
 		[[nodiscard]] const Contained& operator*() { assert(offset < set.size()); return set[offset]; }
 		[[nodiscard]] const Contained& operator*() const { assert(offset < set.size()); return set[offset]; }
 		[[nodiscard]] const Contained* operator->() { assert(offset < set.size()); return &set[offset]; }
 		const_iterator& operator++() { ++offset; return *this; }
-		const_iterator& operator++(int) { ++offset; return *this; }
+		const_iterator& operator++(int32_t) { ++offset; return *this; }
 		[[nodiscard]] bool operator==(const const_iterator& other) const { assert(&set == &other.set); return offset == other.offset; }
 		[[nodiscard]] bool operator!=(const const_iterator& other) const { assert(&set == &other.set); return offset != other.offset; }
 		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { assert(&set == &other.set); return offset <=> other.offset; }
 		[[nodiscard]] const_iterator operator-(const const_iterator& other) const { assert(&other.set == &set); assert(offset >= other.offset); return const_iterator(set, offset - other.offset); }
 		[[nodiscard]] const_iterator operator+(const const_iterator& other) const { assert(&other.set == &set); return const_iterator(set, offset + other.offset); }
-		[[nodiscard]] uint16_t getIndex() const { return offset; }
+		[[nodiscard]] int16_t getIndex() const { return offset; }
 	};
 	[[nodiscard]] iterator begin() { return iterator(*this, 0); }
 	[[nodiscard]] iterator end() { return iterator(*this, size()); }
@@ -277,7 +277,7 @@ public:
 	[[nodiscard]] iterator find_if(Condition&& condition) { return iterator(*this, indexOf(condition)); }
 	template<typename Condition>
 	[[nodiscard]] const_iterator find_if(Condition&& condition) const { return const_iterator(*this, indexOf(condition)); }
-	[[nodiscard]] uint16_t indexOf(const Contained& value) const
+	[[nodiscard]] int16_t indexOf(const Contained& value) const
 	{
 		if(isArray())
 			return std::ranges::find(data.array.begin() + 1, data.array.end(), value) - (data.array.begin() + 1);
@@ -285,7 +285,7 @@ public:
 			return std::ranges::find(data.vector, value) - data.vector.begin();
 	}
 	template<typename Condition>
-	[[nodiscard]] uint16_t indexOf(Condition&& condition) const
+	[[nodiscard]] int16_t indexOf(Condition&& condition) const
 	{
 		if(isArray())
 		{
@@ -328,7 +328,7 @@ public:
 		return output;
 	}
 };
-template<typename Contained, int threashold>
+template<typename Contained, int32_t threashold>
 inline void to_json(Json& data, const VerySmallSet<Contained, threashold>& set) { data = set.toJson(); }
-template<typename Contained, int threashold>
+template<typename Contained, int32_t threashold>
 inline void from_json(const Json& data, VerySmallSet<Contained, threashold>& set) { set.fromJson(data); }

@@ -97,7 +97,7 @@ Items::Items(Area& area) :
 ItemIndex Items::create(ItemParamaters itemParamaters)
 {
 	ItemIndex index = ItemIndex::create(size());
-	// TODO: This 'toItem' call should not be neccessary. Why does ItemIndex + int = HasShapeIndex?
+	// TODO: This 'toItem' call should not be neccessary. Why does ItemIndex + int32_t = HasShapeIndex?
 	resize(index + 1);
 	const MoveTypeId& moveType = ItemType::getMoveType(itemParamaters.itemType);
 	ShapeId shape = ItemType::getShape(itemParamaters.itemType);
@@ -331,7 +331,7 @@ CraftJob& Items::getCraftJobForWorkPiece(const ItemIndex& index) const
 }
 Mass Items::getSingleUnitMass(const ItemIndex& index) const
 {
-	return Mass::create(std::max(1u, (ItemType::getFullDisplacement(m_itemType[index]) * MaterialType::getDensity(m_solid[index])).get()));
+	return Mass::create(std::max(1, (ItemType::getFullDisplacement(m_itemType[index]) * MaterialType::getDensity(m_solid[index])).get()));
 }
 Mass Items::getMass(const ItemIndex& index) const
 {
@@ -359,6 +359,14 @@ bool Items::canCombine(const ItemIndex& index, const ItemIndex& toMerge)
 	if(!isStatic(toMerge))
 		return false;
 	return m_area.getSpace().shape_staticCanEnterCurrentlyWithFacing(getLocation(index), getShape(toMerge), getFacing(index), {});
+}
+std::string Items::description(const ItemIndex& index)
+{
+	if(!m_name[index].empty())
+		return m_name[index];
+	if(isGeneric(index))
+		return ItemType::getName(m_itemType[index]) + "(quantity :" + m_quantity[index].toString() + ")";
+	return ItemType::getName(m_itemType[index]) + "(quality : " + m_quality[index].toString() +  ", wear : " + m_percentWear[index].toString() + "%)";
 }
 void Items::log(const ItemIndex& index) const
 {
@@ -478,7 +486,7 @@ Json Items::toJson() const
 	data["installed"] = m_installed;
 	data["onSurface"] = m_onSurface;
 	data["canBeStockPiled"] = Json::object();
-	int i = 0;
+	int32_t i = 0;
 	for(const auto& canBeStockPiled : m_canBeStockPiled)
 	{
 		if(canBeStockPiled != nullptr)

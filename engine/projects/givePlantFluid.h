@@ -22,5 +22,7 @@ public:
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const override { return {}; }
 	[[nodiscard]] std::vector<ActorReference> getActors() const override { return {}; }
 	[[nodiscard]] std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const override { return {}; }
+	[[nodiscard]] SkillTypeId getSkill() const;
+	[[nodiscard]] std::string description() const;
 	[[nodiscard]] SmallMap<FluidTypeId, CollisionVolume> getFluids() const override { return {{m_fluidType, m_volume}}; }
 };

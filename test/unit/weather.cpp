@@ -7,7 +7,7 @@
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"
 #include "../../engine/plants.h"
-#include "config.h"
+#include "../../engine/config/config.h"
 #include <iterator>
 #include <iostream>
 
@@ -26,7 +26,7 @@ TEST_CASE("weather")
 		Step duration = Config::stepsPerMinute * 2;
 		area.m_hasRain.start(Percent::create(100), duration);
 		CHECK(area.m_hasRain.isRaining());
-		for(uint i = 0; i < duration; ++i)
+		for(int i = 0; i < duration; ++i)
 			simulation.doStep();
 		simulation.doStep();
 		CHECK(!area.m_hasRain.isRaining());

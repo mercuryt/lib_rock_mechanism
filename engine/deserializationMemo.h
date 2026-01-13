@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config.h"
+#include "config/config.h"
 #include "numericTypes/index.h"
 //#include "worldforge/worldLocation.h"
 //

@@ -18,6 +18,8 @@ GivePlantFluidProject::GivePlantFluidProject(const Json& data, DeserializationMe
 	m_volume(data["volume"].get<CollisionVolume>()),
 	m_fluidType(data["fluidType"].get<FluidTypeId>())
 { }
+SkillTypeId GivePlantFluidProject::getSkill() const { static auto output = SkillType::byName("horticulture"); return output; }
+std::string GivePlantFluidProject::description() const { return "give plant " + FluidType::getName(m_fluidType); }
 void GivePlantFluidProject::setFluidTypeAndVolume()
 {
 	const Plants& plants = m_area.getPlants();

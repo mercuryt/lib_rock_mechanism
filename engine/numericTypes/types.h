@@ -4,10 +4,10 @@
 // numericTypes/index.h defines index types, which do change and must be updated.
 
 #pragma once
-#include "strongFloat.h"
-#include "strongInteger.h"
-#include "json.h"
-#include "numericTypes/idTypes.h"
+#include "../strongFloat.h"
+#include "../strongInteger.h"
+#include "../json.h"
+#include "../numericTypes/idTypes.h"
 #include <compare>
 #include <cstdint>
 #include <iostream>
@@ -19,12 +19,13 @@
     constexpr bool DEBUG = false;
 #endif
 
-enum class Facing4{North,East,South,West,Null};
-enum class Facing6{Below,North,East,South,West,Above,Null};
-enum class Facing8{North,NorthEast,East,SouthEast,South,SouthWest,West,NorthWest,Null};
-enum class SetLocationAndFacingResult{PermanantlyBlocked,TemporarilyBlocked,Success,Null};
-using StepWidth = uint64_t;
-class Step : public StrongInteger<Step, StepWidth>
+// Facing4 is stored sequentally in Portables so it's worth using an 8 bit type.
+enum class Facing4 : int8_t {North,East,South,West,Null};
+enum class Facing6 {Below,North,East,South,West,Above,Null};
+enum class Facing8 {North,NorthEast,East,SouthEast,South,SouthWest,West,NorthWest,Null};
+enum class SetLocationAndFacingResult {PermanantlyBlocked,TemporarilyBlocked,Success,Null};
+using StepWidth = int64_t;
+class Step : public StrongInteger<Step, StepWidth, INT64_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Step& index) const { return index.get(); } };
@@ -33,11 +34,12 @@ public:
 inline void to_json(Json& data, const Step& index) { data = index.get(); }
 inline void from_json(const Json& data, Step& index) { index = Step::create(data.get<StepWidth>()); }
 
+// TODO: Benchmark with int32_t.
 class TemperatureDelta;
-using TemperatureWidth = uint32_t;
-class Temperature : public StrongInteger<Temperature, TemperatureWidth>
+using TemperatureWidth = int16_t;
+class Temperature : public StrongInteger<Temperature, TemperatureWidth, INT16_MAX, 0>
 {
-	using Base = StrongInteger<Temperature, TemperatureWidth>;
+	using Base = StrongInteger<Temperature, TemperatureWidth, INT16_MAX, 0>;
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Temperature& index) const { return index.get(); } };
 	// Rather then assert failing when a TemperatureDelta addition or subtraction would cause an overflow just pin to max or min value.
@@ -61,7 +63,7 @@ public:
 inline void to_json(Json& data, const Temperature& index) { data = index.get(); }
 inline void from_json(const Json& data, Temperature& index) { index = Temperature::create(data.get<TemperatureWidth>()); }
 
-using TemperatureDeltaWidth = int32_t;
+using TemperatureDeltaWidth = int16_t;
 class TemperatureDelta : public StrongInteger<TemperatureDelta, TemperatureDeltaWidth>
 {
 public:
@@ -70,8 +72,8 @@ public:
 inline void to_json(Json& data, const TemperatureDelta& index) { data = index.get(); }
 inline void from_json(const Json& data, TemperatureDelta& index) { index = TemperatureDelta::create(data.get<TemperatureDeltaWidth>()); }
 
-using QuantityWidth = uint16_t;
-class Quantity : public StrongInteger<Quantity, QuantityWidth>
+using QuantityWidth = int32_t;
+class Quantity : public StrongInteger<Quantity, QuantityWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Quantity& index) const { return index.get(); } };
@@ -80,15 +82,16 @@ inline void to_json(Json& data, const Quantity& index) { data = index.get(); }
 inline void from_json(const Json& data, Quantity& index) { index = Quantity::create(data.get<QuantityWidth>()); }
 
 class FullDisplacement;
-using CollisionVolumeWidth = uint32_t;
-class CollisionVolume : public StrongInteger<CollisionVolume, CollisionVolumeWidth>
+using CollisionVolumeWidth = int32_t;
+class CollisionVolume : public StrongInteger<CollisionVolume, CollisionVolumeWidth, INT32_MAX, 0>
 {
 public:
 	// TODO: do we need this?
 	[[nodiscard]] FullDisplacement toVolume() const;
 	[[nodiscard]] CollisionVolume operator*(const Quantity& quantity) const { return CollisionVolume::create(data * quantity.get()); }
 	[[nodiscard]] CollisionVolume operator*(CollisionVolumeWidth other) const { return CollisionVolume::create(other * data); }
-	[[nodiscard]] CollisionVolume operator*(float other) const { return CollisionVolume::create(other * data); }
+	template<Numeric Number>
+	[[nodiscard]] CollisionVolume operator*(Number other) const { return CollisionVolume::create(other * data); }
 	struct Hash { [[nodiscard]] size_t operator()(const CollisionVolume& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const CollisionVolume& index) { data = index.get(); }
@@ -96,23 +99,23 @@ inline void from_json(const Json& data, CollisionVolume& index) { index = Collis
 
 class Mass;
 class Density;
-using VolumeWidth = uint32_t;
-class FullDisplacement : public StrongInteger<FullDisplacement, VolumeWidth>
+using FullDisplacementWidth = int32_t;
+class FullDisplacement : public StrongInteger<FullDisplacement, FullDisplacementWidth, INT32_MAX, 0>
 {
 public:
 	[[nodiscard]] FullDisplacement operator*(Quantity other) const;
 	[[nodiscard]] Mass operator*(Density density) const;
-	[[nodiscard]] FullDisplacement operator*(VolumeWidth other) const;
+	[[nodiscard]] FullDisplacement operator*(FullDisplacementWidth other) const;
 	[[nodiscard]] FullDisplacement operator*(float other) const;
 	[[nodiscard]] CollisionVolume toCollisionVolume() const;
 	[[nodiscard]] static FullDisplacement createFromCollisionVolume(const CollisionVolume& collisionvolume);
 	struct Hash { [[nodiscard]] size_t operator()(const FullDisplacement& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const FullDisplacement& index) { data = index.get(); }
-inline void from_json(const Json& data, FullDisplacement& index) { index = FullDisplacement::create(data.get<VolumeWidth>()); }
+inline void from_json(const Json& data, FullDisplacement& index) { index = FullDisplacement::create(data.get<FullDisplacementWidth>()); }
 
-using MassWidth = uint32_t;
-class Mass : public StrongInteger<Mass, MassWidth>
+using MassWidth = int32_t;
+class Mass : public StrongInteger<Mass, MassWidth, INT32_MAX, 0>
 {
 public:
 	[[nodiscard]] Mass operator*(Quantity quantity) const;
@@ -136,8 +139,8 @@ inline void to_json(Json& data, const Density& index) { data = index.get(); }
 inline void from_json(const Json& data, Density& index) { index = Density::create(data.get<float>()); }
 
 class Speed;
-using ForceWidth = uint32_t;
-class Force : public StrongInteger<Force, ForceWidth>
+using ForceWidth = int32_t;
+class Force : public StrongInteger<Force, ForceWidth, INT32_MAX, 0>
 {
 public:
 	Speed operator/(const Mass& mass) const;
@@ -146,8 +149,8 @@ public:
 inline void to_json(Json& data, const Force& index) { data = index.get(); }
 inline void from_json(const Json& data, Force& index) { index = Force::create(data.get<ForceWidth>()); }
 
-using KilometersWidth = uint32_t;
-class Kilometers : public StrongInteger<Kilometers, KilometersWidth>
+using KilometersWidth = int32_t;
+class Kilometers : public StrongInteger<Kilometers, KilometersWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Kilometers& index) const { return index.get(); } };
@@ -155,8 +158,8 @@ public:
 inline void to_json(Json& data, const Kilometers& index) { data = index.get(); }
 inline void from_json(const Json& data, Kilometers& index) { index = Kilometers::create(data.get<KilometersWidth>()); }
 
-using MetersWidth = uint32_t;
-class Meters : public StrongInteger<Meters, MetersWidth>
+using MetersWidth = int32_t;
+class Meters : public StrongInteger<Meters, MetersWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Meters& index) const { return index.get(); } };
@@ -167,7 +170,7 @@ inline void from_json(const Json& data, Meters& index) { index = Meters::create(
 class DistanceFractional;
 class Distance;
 using DistanceSquaredWidth = int32_t;
-class DistanceSquared : public StrongInteger<DistanceSquared, DistanceSquaredWidth>
+class DistanceSquared : public StrongInteger<DistanceSquared, DistanceSquaredWidth, INT32_MAX, 0>
 {
 public:
 	[[nodiscard]] constexpr DistanceFractional toFloat() const;
@@ -205,8 +208,8 @@ constexpr DistanceFractional DistanceSquared::toFloat() const { return DistanceF
 constexpr Distance DistanceSquared::unsquared() const { return Distance::create(std::sqrt(data)); }
 
 // For use by location buckets.
-using DistanceInBucketsWidth = uint32_t;
-class DistanceInBuckets : public StrongInteger<DistanceInBuckets, DistanceInBucketsWidth>
+using DistanceInBucketsWidth = int32_t;
+class DistanceInBuckets : public StrongInteger<DistanceInBuckets, DistanceInBucketsWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const DistanceInBuckets& index) const { return index.get(); } };
@@ -215,7 +218,7 @@ inline void to_json(Json& data, const DistanceInBuckets& index) { data = index.g
 inline void from_json(const Json& data, DistanceInBuckets& index) { index = DistanceInBuckets::create(data.get<DistanceInBucketsWidth>()); }
 
 using OffsetWidth = int32_t;
-class Offset : public StrongInteger<Offset, OffsetWidth>
+class Offset : public StrongInteger<Offset, OffsetWidth, INT32_MAX, INT32_MIN>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Offset& index) const { return index.get(); } };
@@ -227,8 +230,8 @@ inline void from_json(const Json& data, Offset& index) { index = Offset::create(
 //using Longitude = double;
 //using Bearing = double;
 
-using SpeedWidth = uint32_t;
-class Speed : public StrongInteger<Speed, SpeedWidth>
+using SpeedWidth = int32_t;
+class Speed : public StrongInteger<Speed, SpeedWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Speed& index) const { return index.get(); } };
@@ -236,8 +239,8 @@ public:
 inline void to_json(Json& data, const Speed& speed) { data = speed.get(); }
 inline void from_json(const Json& data, Speed& speed) { speed = Speed::create(data.get<SpeedWidth>()); }
 
-using EnergyWidth = uint32_t;
-class Energy : public StrongInteger<Energy, EnergyWidth>
+using EnergyWidth = int32_t;
+class Energy : public StrongInteger<Energy, EnergyWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Energy& index) const { return index.get(); } };
@@ -245,8 +248,8 @@ public:
 inline void to_json(Json& data, const Energy& index) { data = index.get(); }
 inline void from_json(const Json& data, Energy& index) { index = Energy::create(data.get<EnergyWidth>()); }
 
-using MoveCostWidth = uint32_t;
-class MoveCost : public StrongInteger<MoveCost, MoveCostWidth>
+using MoveCostWidth = int32_t;
+class MoveCost : public StrongInteger<MoveCost, MoveCostWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const MoveCost& index) const { return index.get(); } };
@@ -254,8 +257,8 @@ public:
 inline void to_json(Json& data, const MoveCost& index) { data = index.get(); }
 inline void from_json(const Json& data, MoveCost& index) { index = MoveCost::create(data.get<MoveCostWidth>()); }
 
-using QualityWidth = uint32_t;
-class Quality : public StrongInteger<Quality, QualityWidth>
+using QualityWidth = int32_t;
+class Quality : public StrongInteger<Quality, QualityWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Quality& index) const { return index.get(); } };
@@ -263,8 +266,8 @@ public:
 inline void to_json(Json& data, const Quality& index) { data = index.get(); }
 inline void from_json(const Json& data, Quality& index) { index = Quality::create(data.get<QualityWidth>()); }
 
-using PercentWidth = uint32_t;
-class Percent : public StrongInteger<Percent, PercentWidth>
+using PercentWidth = int32_t;
+class Percent : public StrongInteger<Percent, PercentWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Percent& index) const { return index.get(); } };
@@ -273,8 +276,8 @@ public:
 inline void to_json(Json& data, const Percent& index) { data = index.get(); }
 inline void from_json(const Json& data, Percent& index) { index = Percent::create(data.get<PercentWidth>()); }
 
-using CombatScoreWidth = uint16_t;
-class CombatScore : public StrongInteger<CombatScore, CombatScoreWidth>
+using CombatScoreWidth = int16_t;
+class CombatScore : public StrongInteger<CombatScore, CombatScoreWidth, INT16_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const CombatScore& index) const { return index.get(); } };
@@ -282,8 +285,8 @@ public:
 inline void to_json(Json& data, const CombatScore& index) { data = index.get(); }
 inline void from_json(const Json& data, CombatScore& index) { index = CombatScore::create(data.get<CombatScoreWidth>()); }
 
-using SkillLevelWidth = uint16_t;
-class SkillLevel : public StrongInteger<SkillLevel, SkillLevelWidth>
+using SkillLevelWidth = int32_t;
+class SkillLevel : public StrongInteger<SkillLevel, SkillLevelWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const SkillLevel& index) const { return index.get(); } };
@@ -291,8 +294,8 @@ public:
 inline void to_json(Json& data, const SkillLevel& index) { data = index.get(); }
 inline void from_json(const Json& data, SkillLevel& index) { index = SkillLevel::create(data.get<SkillLevelWidth>()); }
 
-using SkillExperiencePointsWidth = uint16_t;
-class SkillExperiencePoints : public StrongInteger<SkillExperiencePoints, SkillExperiencePointsWidth>
+using SkillExperiencePointsWidth = int32_t;
+class SkillExperiencePoints : public StrongInteger<SkillExperiencePoints, SkillExperiencePointsWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const SkillExperiencePoints& index) const { return index.get(); } };
@@ -300,8 +303,8 @@ public:
 inline void to_json(Json& data, const SkillExperiencePoints& index) { data = index.get(); }
 inline void from_json(const Json& data, SkillExperiencePoints& index) { index = SkillExperiencePoints::create(data.get<SkillExperiencePointsWidth>()); }
 
-using AttributeLevelWidth = uint16_t;
-class AttributeLevel : public StrongInteger<AttributeLevel, AttributeLevelWidth>
+using AttributeLevelWidth = int32_t;
+class AttributeLevel : public StrongInteger<AttributeLevel, AttributeLevelWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const AttributeLevel& index) const { return index.get(); } };
@@ -309,8 +312,8 @@ public:
 inline void to_json(Json& data, const AttributeLevel& index) { data = index.get(); }
 inline void from_json(const Json& data, AttributeLevel& index) { index = AttributeLevel::create(data.get<AttributeLevelWidth>()); }
 
-using AttributeLevelBonusOrPenaltyWidth = uint16_t;
-class AttributeLevelBonusOrPenalty : public StrongInteger<AttributeLevelBonusOrPenalty, AttributeLevelBonusOrPenaltyWidth>
+using AttributeLevelBonusOrPenaltyWidth = int32_t;
+class AttributeLevelBonusOrPenalty : public StrongInteger<AttributeLevelBonusOrPenalty, AttributeLevelBonusOrPenaltyWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const AttributeLevelBonusOrPenalty& index) const { return index.get(); } };
@@ -318,8 +321,8 @@ public:
 inline void to_json(Json& data, const AttributeLevelBonusOrPenalty& index) { data = index.get(); }
 inline void from_json(const Json& data, AttributeLevelBonusOrPenalty& index) { index = AttributeLevelBonusOrPenalty::create(data.get<AttributeLevelBonusOrPenaltyWidth>()); }
 
-using PriorityWidth = uint16_t;
-class Priority : public StrongInteger<Priority, PriorityWidth>
+using PriorityWidth = int32_t;
+class Priority : public StrongInteger<Priority, PriorityWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Priority& index) const { return index.get(); } };
@@ -327,8 +330,8 @@ public:
 inline void to_json(Json& data, const Priority& index) { data = index.get(); }
 inline void from_json(const Json& data, Priority& index) { index = Priority::create(data.get<PriorityWidth>()); }
 
-using StaminaWidth = uint16_t;
-class Stamina : public StrongInteger<Stamina, StaminaWidth>
+using StaminaWidth = int32_t;
+class Stamina : public StrongInteger<Stamina, StaminaWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Stamina& index) const { return index.get(); } };
@@ -336,32 +339,30 @@ public:
 inline void to_json(Json& data, const Stamina& index) { data = index.get(); }
 inline void from_json(const Json& data, Stamina& index) { index = Stamina::create(data.get<StaminaWidth>()); }
 
-using LongRangePathNodeIndexWidth = uint32_t;
-class LongRangePathNodeIndex : public StrongInteger<LongRangePathNodeIndex, LongRangePathNodeIndexWidth>
+using LongRangePathNodeIndexWidth = int32_t;
+class LongRangePathNodeIndex : public StrongInteger<LongRangePathNodeIndex, LongRangePathNodeIndexWidth, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const LongRangePathNodeIndex& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const LongRangePathNodeIndex& index) { data = index.get(); }
-inline void from_json(const Json& data, LongRangePathNodeIndex& index) { index = LongRangePathNodeIndex::create(data.get<uint32_t>()); }
+inline void from_json(const Json& data, LongRangePathNodeIndex& index) { index = LongRangePathNodeIndex::create(data.get<int32_t>()); }
 
-class DeckId final : public StrongInteger<DeckId, uint16_t>
+class DeckId final : public StrongInteger<DeckId, int32_t, INT32_MAX, 0>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const Step& index) const { return index.get(); } };
 };
 inline void to_json(Json& data, const DeckId& index) { data = index.get(); }
-inline void from_json(const Json& data, DeckId& index) { index = DeckId::create(data.get<uint16_t>()); }
+inline void from_json(const Json& data, DeckId& index) { index = DeckId::create(data.get<int16_t>()); }
 
-using PsycologyWeightWidth = int16_t;
-class PsycologyWeight : public StrongInteger<PsycologyWeight, PsycologyWeightWidth>
+class PsycologyWeight : public StrongFloat<PsycologyWeight>
 {
 public:
 	struct Hash { [[nodiscard]] size_t operator()(const PsycologyWeight& value) const { return value.get(); } };
 };
 inline void to_json(Json& data, const PsycologyWeight& value) { data = value.get(); }
-inline void from_json(const Json& data, PsycologyWeight& value) { value = PsycologyWeight::create(data.get<PsycologyWeightWidth>()); }
-
+inline void from_json(const Json& data, PsycologyWeight& value) { value = PsycologyWeight::create(data.get<float>()); }
 
 enum class PointFeatureTypeId
 {

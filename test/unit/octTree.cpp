@@ -31,7 +31,7 @@ TEST_CASE("octTree")
 		Area& area = simulation.m_hasAreas->createArea(10,10,10);
 		Space& space = area.getSpace();
 		Actors& actors = area.getActors();
-		uint toSpawn = Config::minimumOccupantsForOctTreeToSplit;
+		int toSpawn = Config::minimumOccupantsForOctTreeToSplit;
 		areaBuilderUtil::setSolidLayer(area, 0, granite);
 		Cuboid level = space.getZLevel(Distance::create(1));
 		for(const Point3D& point : level)
@@ -44,7 +44,7 @@ TEST_CASE("octTree")
 		CHECK(area.m_octTree.getActorCount() == Config::minimumOccupantsForOctTreeToSplit);
 		CHECK(area.m_octTree.getCount() == 9);
 		CHECK(!space.actor_empty(Point3D::create(0, 0, 1)));
-		uint toUnspawn = Config::minimumOccupantsForOctTreeToSplit - Config::maximumOccupantsForOctTreeToMerge;
+		int toUnspawn = Config::minimumOccupantsForOctTreeToSplit - Config::maximumOccupantsForOctTreeToMerge;
 		for(const Point3D& point : level)
 		{
 			if(toUnspawn == 0)

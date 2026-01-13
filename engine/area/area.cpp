@@ -7,7 +7,7 @@
 #include "../actors/actors.h"
 #include "../items/items.h"
 #include "../plants.h"
-#include "../config.h"
+#include "../config/config.h"
 #include "../deserializationMemo.h"
 #include "../fire.h"
 #include "../fluidType.h"
@@ -81,6 +81,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_hasTemperature(*this),
 	m_hasTerrainFacades(*this),
 	m_fires(*this),
+	m_hasOnSight(data["onSight"], deserializationMemo, *this),
 	m_hasFarmFields(*this),
 	m_hasDigDesignations(*this),
 	m_hasConstructionDesignations(*this),
@@ -173,6 +174,7 @@ Json Area::toJson() const
 		{"designations", m_spaceDesignations}
 	};
 	data["hasFarmFields"] = m_hasFarmFields.toJson();
+	data["onSight"] = m_hasOnSight.toJson();
 	data["hasSleepingSpots"] = m_hasSleepingSpots.toJson();
 	data["hasConstructionDesignations"] = m_hasConstructionDesignations.toJson();
 	data["hasDigDesignations"] = m_hasDigDesignations.toJson();
@@ -203,9 +205,8 @@ void Area::doStep()
 	m_hasTerrainFacades.doStep();
 	m_threadedTaskEngine.doStep(m_simulation, this);
 	m_eventSchedule.doStep(m_simulation.m_step);
+	m_hasSoldiers.doStep(*this);
 }
-/*
-*/
 void Area::updateClimate()
 {
 	//TODO: daylight.
@@ -213,7 +214,7 @@ void Area::updateClimate()
 	// Once per day.
 	if(m_simulation.m_step.modulusIsZero(Config::stepsPerDay))
 	{
-		uint16_t day = DateTime(m_simulation.m_step).day;
+		int16_t day = DateTime(m_simulation.m_step).day;
 		Plants& plants = getPlants();
 		for(auto plant : plants.getAll())
 			plants.setDayOfYear(plant, day);
