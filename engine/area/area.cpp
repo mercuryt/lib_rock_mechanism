@@ -40,7 +40,6 @@ Area::Area(AreaId id, std::string n, Simulation& s, const Distance& x, const Dis
 	m_eventSchedule(s, this),
 	m_hasTemperature(*this),
 	m_hasTerrainFacades(*this),
-	m_fires(*this),
 	m_hasFarmFields(*this),
 	m_hasDigDesignations(*this),
 	m_hasConstructionDesignations(*this),
@@ -80,7 +79,6 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_eventSchedule(simulation, this),
 	m_hasTemperature(*this),
 	m_hasTerrainFacades(*this),
-	m_fires(*this),
 	m_hasOnSight(data["onSight"], deserializationMemo, *this),
 	m_hasFarmFields(*this),
 	m_hasDigDesignations(*this),
@@ -110,7 +108,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	data["visionCuboids"].get_to(m_visionCuboids);
 	data["exteriorPortals"].get_to(m_exteriorPortals);
 	// Load fires.
-	m_fires.load(data["fires"], deserializationMemo);
+	m_fires.load(*this, data["fires"], deserializationMemo);
 	// Load plants.
 	getPlants().load(data["plants"]);
 	// Load fields.
@@ -206,6 +204,7 @@ void Area::doStep()
 	m_threadedTaskEngine.doStep(m_simulation, this);
 	m_eventSchedule.doStep(m_simulation.m_step);
 	m_hasSoldiers.doStep(*this);
+	m_fires.doStep(m_simulation.m_step, *this);
 }
 void Area::updateClimate()
 {

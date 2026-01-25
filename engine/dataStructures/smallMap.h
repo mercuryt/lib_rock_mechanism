@@ -42,6 +42,7 @@ public:
 	void popBack();
 	void clear();
 	void sort();
+	void sortDescending();
 	template<typename ...Args>
 	V& emplace(const K& key, Args&& ...args)
 	{

@@ -146,7 +146,7 @@ void Space::pointFeature_setTemperature(const Point3D& point, const Temperature&
 		if(MaterialType::getIgnitionTemperature(feature.materialType).exists() &&
 			temperature > MaterialType::getIgnitionTemperature(feature.materialType)
 		)
-			m_area.m_fires.ignite(point, feature.materialType);
+			m_area.m_fires.ignite(m_area, point, feature.materialType);
 	}
 }
 MapWithCuboidKeys<PointFeature> Space::pointFeature_getAllWithCuboidsAndRemove(const CuboidSet& cuboids)

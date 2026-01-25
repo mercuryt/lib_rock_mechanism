@@ -79,6 +79,8 @@ void SmallMap<K,V>::clear() { m_data.clear(); }
 template<typename K, MoveConstructible V>
 void SmallMap<K,V>::sort() { std::ranges::sort(m_data, {}, &std::pair<K, V>::first); }
 template<typename K, MoveConstructible V>
+void SmallMap<K,V>::sortDescending() { std::ranges::sort(m_data, std::greater{}, &std::pair<K, V>::first); }
+template<typename K, MoveConstructible V>
 void SmallMap<K,V>::swap(This& other) { m_data.swap(other.m_data); }
 template<typename K, MoveConstructible V>
 void SmallMap<K,V>::updateKey(const K& oldKey, const K& newKey)

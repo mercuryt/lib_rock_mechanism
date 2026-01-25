@@ -72,10 +72,11 @@ public:
 	// m_fluid leaves can overlap only if they have different fluid types.
 	[[nodiscard]] bool canOverlap(const PointFeature& a, const PointFeature& b) const override;
 };
+using PointHasFires = RTreeDataWrapper<SmallMap<MaterialTypeId, Fire>*, nullptr>;
 class Space
 {
 	RTreeDataIndex<std::unique_ptr<Reservable>, RTreeDataConfigs::noMergeOrOverlap> m_reservables;
-	RTreeDataIndex<SmallMapStable<MaterialTypeId, Fire>*, RTreeDataConfigs::noMergeOrOverlap> m_fires;
+	RTreeData<PointHasFires, RTreeDataConfigs::noMergeOrOverlap> m_fires;
 	RTreeData<MaterialTypeId> m_solid;
 	PointFeatureRTree m_features;
 	FluidRTree m_fluid;
@@ -382,7 +383,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	void floating_maybeFloatUp(const CuboidSet& points);
 	// -Fire
 	void fire_maybeIgnite(const Point3D& point, const MaterialTypeId& materialType);
-	void fire_setPointer(const Point3D& point, SmallMapStable<MaterialTypeId, Fire>* pointer);
+	void fire_setPointer(const Point3D& point, SmallMap<MaterialTypeId, Fire>* pointer);
 	void fire_clearPointer(const Point3D& point);
 	[[nodiscard]] bool fire_exists(const Point3D& point) const;
 	[[nodiscard]] bool fire_existsForMaterialType(const Point3D& point, const MaterialTypeId& materialType) const;

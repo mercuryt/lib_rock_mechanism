@@ -77,7 +77,7 @@ TEST_CASE("json")
 			items.create(ItemParamaters{.itemType = axe, .materialType = bronze, .location = Point3D::create(1, 2, 1), .quality = Quality::create(10), .percentWear = Percent::create(10)});
 			space.pointFeature_construct(Point3D::create(1, 8, 1), PointFeatureTypeId::Stairs, wood);
 			space.pointFeature_construct(Point3D::create(9, 1, 1), PointFeatureTypeId::Door, wood);
-			area.m_fires.ignite(Point3D::create(9, 1, 1), wood);
+			area.m_fires.ignite(area, Point3D::create(9, 1, 1), wood);
 			ItemIndex pants1 = items.create(ItemParamaters{.itemType = pants, .materialType = cotton, .quality = Quality::create(50), .percentWear = Percent::create(30)});
 			actors.equipment_add(dwarf1, pants1);
 			ItemIndex saw1 = items.create({.itemType = saw, .materialType = bronze, .quality = Quality::create(50), .percentWear = Percent::create(30)});
@@ -172,7 +172,7 @@ TEST_CASE("json")
 		Fire& fire = area2.m_fires.at(Point3D::create(9,1,1), wood);
 		CHECK(fire.m_stage == FireStage::Smouldering);
 		CHECK(fire.m_hasPeaked == false);
-		CHECK(fire.m_event.exists());
+		CHECK(area2.m_fires.containsDeltaFor(fire));
 		// Farm fields.
 		CHECK(area2.m_hasFarmFields.contains(faction2));
 		CHECK(space2.farm_contains(Point3D::create(1,6,1), faction2));
