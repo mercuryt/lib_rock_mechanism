@@ -1,5 +1,6 @@
 #pragma once
 #include "../engine/dataStructures/smallSet.h"
+#include "../engine/dataStructures/smallMap.h"
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Window/Event.hpp>
 #include <string>
@@ -45,7 +46,7 @@ namespace displayData
 	inline const sf::Color cancelColor = sf::Color::Red;
 	inline const sf::Color selectColorOverlay{255, 255, 0, 128};
 	inline const sf::Color cancelColorOverlay{255, 0, 0, 128};
-	inline constexpr uint32_t defaultScale = 32;
+	inline constexpr int32_t defaultScale = 32;
 	inline constexpr float wallTopOffsetRatio = 0.18;
 	inline constexpr float minimumFluidVolumeToSeeFromAboveLevelRatio = 0.75;
 	inline sf::Color stockPileColor{168, 127, 50, 64};
@@ -60,6 +61,6 @@ namespace displayData
 	inline sf::Mouse::Button selectMouseButton = sf::Mouse::Button::Left;
 	inline sf::Mouse::Button actionMouseButton = sf::Mouse::Button::Right;
 
-	std::wstring localizeNumber(double number);
+	std::string localizeNumber(double number);
 	void load();
 }

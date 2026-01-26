@@ -28,6 +28,9 @@ template struct std::vector<int>;
 template struct std::vector<std::pair<Cuboid, int>>;
 template struct std::vector<std::pair<OffsetCuboid, int>>;
 template struct std::vector<RTreeNodeIndex>;
+template struct std::vector<AnimalSpeciesId>;
+template struct std::vector<PlantSpeciesId>;
+template struct std::vector<MaterialTypeId>;
 
 template struct SmallSet<ActorIndex>;
 template struct SmallSet<ActorOrItemIndex>;
@@ -47,3 +50,6 @@ template struct SmallSet<int>;
 template struct SmallSet<std::pair<Cuboid, int>>;
 template struct SmallSet<std::pair<OffsetCuboid, int>>;
 template struct SmallSet<RTreeArrayIndex>;
+template struct SmallSet<AnimalSpeciesId>;
+template struct SmallSet<PlantSpeciesId>;
+template struct SmallSet<MaterialTypeId>;

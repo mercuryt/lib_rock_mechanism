@@ -6,6 +6,7 @@
 #include "../engine/plants.h"
 #include "../engine/util.h"
 #include "../engine/definitions/animalSpecies.h"
+#include "../engine/definitions/plantSpecies.h"
 #include <TGUI/Event.hpp>
 #include <TGUI/Layout.hpp>
 #include <TGUI/Widget.hpp>
@@ -35,29 +36,32 @@ void InfoPopup::display(const Point3D& point)
 	Area& area = *m_window.getArea();
 	Space& space =  area.getSpace();
 	Actors& actors = area.getActors();
-	if(space.solid_is(point))
-		m_childWindow->setTitle(L"solid " + MaterialType::getName(space.solid_get(point)));
+	if(space.solid_isAny(point))
+		m_childWindow->setTitle("solid " + MaterialType::getName(space.solid_get(point)));
 	else
 	{
-		std::wstring title;
-		auto& pointFeatures = space.pointFeature_getAll(point);
+		std::string title;
+		auto pointFeatures = space.pointFeature_getAll(point);
 		if(pointFeatures.empty())
 		{
 			const Point3D& below = point.below();
-			if(below.exists() && space.solid_is(below))
-				title = L"rough " + MaterialType::getName(space.solid_get(below)) + L" floor";
+			if(below.exists() && space.solid_isAny(below))
+				title = "rough " + MaterialType::getName(space.solid_get(below)) + " floor";
 			else
-				title = L"empty space";
+				title = "empty space";
 		}
 		else
 		{
 			const PointFeature& pointFeature = pointFeatures.front();
-			title = pointFeature.pointFeatureType->name;
+			title = PointFeatureType::byId(pointFeature.pointFeatureType).name;
 		}
 		m_childWindow->setTitle(std::move(title));
 		for(const PointFeature& pointFeature : pointFeatures)
-			add(tgui::Label::create(pointFeature.pointFeatureType->name + L" " + MaterialType::getName(pointFeature.materialType)));
-		add(tgui::Label::create(L"temperature: " + std::to_wstring(space.temperature_get(point).get())));
+		{
+			std::string name = PointFeatureType::byId(pointFeature.pointFeatureType).name;
+			add(tgui::Label::create(name + " " + MaterialType::getName(pointFeature.materialType)));
+		}
+		add(tgui::Label::create("temperature: " + std::to_string(space.temperature_get(point).get())));
 		for(const ActorIndex& actor : space.actor_getAll(point))
 		{
 			auto button = tgui::Button::create(actors.getName(actor));
@@ -81,19 +85,19 @@ void InfoPopup::display(const Point3D& point)
 		}
 		for(const FluidData& fluidData : space.fluid_getAll(point))
 		{
-			auto label = tgui::Label::create(FluidType::getName(fluidData.type) + L" : " + std::to_wstring(fluidData.volume.get()));
+			auto label = tgui::Label::create(FluidType::getName(fluidData.type) + " : " + std::to_string(fluidData.volume.get()));
 			add(label);
 		}
 		if(m_window.getArea()->m_fluidSources.contains(point))
 		{
 			const FluidSource& source = m_window.getArea()->m_fluidSources.at(point);
-			auto label = tgui::Label::create(FluidType::getName(source.fluidType) + L" source : " + std::to_wstring(source.level.get()));
+			auto label = tgui::Label::create(FluidType::getName(source.fluidType) + " source : " + std::to_string(source.level.get()));
 			add(label);
 		}
 		if(m_window.getFaction().exists() && space.farm_contains(point, m_window.getFaction()))
 		{
 			const FarmField& field = *space.farm_get(point, m_window.getFaction());
-			auto label = tgui::Label::create((field.plantSpecies.exists() ? PlantSpecies::getName(field.plantSpecies) + L" " : L"") + L"field");
+			auto label = tgui::Label::create((field.m_plantSpecies.exists() ? PlantSpecies::getName(field.m_plantSpecies) + " " : "") + "field");
 			add(label);
 		}
 	}
@@ -108,12 +112,12 @@ void InfoPopup::display(const ItemIndex& item)
 	Actors& actors = area.getActors();
 	if(ItemType::getIsGeneric(items.getItemType(item)))
 	{
-		add(tgui::Label::create(L"quantity: " + std::to_wstring(items.getQuantity(item).get())));
+		add(tgui::Label::create("quantity: " + std::to_string(items.getQuantity(item).get())));
 	}
 	else
 	{
-		add(tgui::Label::create(L"quality: " + std::to_wstring(items.getQuality(item).get())));
-		add(tgui::Label::create(L"wear: " + std::to_wstring(items.getWear(item).get()) + L"%"));
+		add(tgui::Label::create("quality: " + std::to_string(items.getQuality(item).get())));
+		add(tgui::Label::create("wear: " + std::to_string(items.getWear(item).get()) + "%"));
 	}
 	if(items.cargo_exists(item))
 	{
@@ -150,10 +154,10 @@ void InfoPopup::display(const ActorIndex& actor)
 	Actors& actors = area.getActors();
 	makeWindow();
 	m_childWindow->setTitle(actors.getName(actor));
-	std::wstring descriptionText;
+	std::string descriptionText;
 	add(tgui::Label::create(AnimalSpecies::getName(actors.getSpecies(actor))));
-	add(tgui::Label::create(L"age: " + std::to_wstring(actors.getAgeInYears(actor).get())));
-	add(tgui::Label::create(L"action: " + actors.getActionDescription(actor)));
+	add(tgui::Label::create("age: " + std::to_string(actors.getAgeInYears(actor).get())));
+	add(tgui::Label::create("action: " + actors.getActionDescription(actor)));
 	for(const ItemReference& itemRef : actors.equipment_getAll(actor))
 	{
 		const ItemIndex item = itemRef.getIndex(items.m_referenceData);
@@ -177,16 +181,16 @@ void InfoPopup::display(const ActorIndex& actor)
 		Percent tiredPercent = actors.sleep_getPercentTired(actor);
 		if(actors.sleep_isTired(actor))
 			tiredPercent += 100;
-		add(tgui::Label::create(std::to_wstring(tiredPercent.get()) + L" % tired"));
+		add(tgui::Label::create(std::to_string(tiredPercent.get()) + " % tired"));
 	}
 	Percent hungerPercent = actors.eat_getPercentStarved(actor);
 	if(actors.eat_isHungry(actor))
 		hungerPercent += 100;
-	add(tgui::Label::create(std::to_wstring(hungerPercent.get()) + L" % hunger"));
+	add(tgui::Label::create(std::to_string(hungerPercent.get()) + " % hunger"));
 	Percent thirstPercent = actors.drink_getPercentDead(actor);
 	if(actors.drink_isThirsty(actor))
 		thirstPercent += 100;
-	add(tgui::Label::create(std::to_wstring(thirstPercent.get()) + L" % thirst"));
+	add(tgui::Label::create(std::to_string(thirstPercent.get()) + " % thirst"));
 	m_update = [this, actor]{ display(actor); };
 	m_childWindow->setFocused(false);
 }
@@ -196,12 +200,12 @@ void InfoPopup::display(const PlantIndex& plant)
 	Plants& plants = area.getPlants();
 	makeWindow();
 	m_childWindow->setTitle(PlantSpecies::getName(plants.getSpecies(plant)));
-	add(tgui::Label::create(L"percent grown: " + std::to_wstring(plants.getPercentGrown(plant).get())));
-	add(tgui::Label::create(L"percent foliage: " + std::to_wstring(plants.getPercentFoliage(plant).get())));
+	add(tgui::Label::create("percent grown: " + std::to_string(plants.getPercentGrown(plant).get())));
+	add(tgui::Label::create("percent foliage: " + std::to_string(plants.getPercentFoliage(plant).get())));
 	if(plants.getVolumeFluidRequested(plant) != 0)
 	{
 		Percent thirstPercent = plants.getFluidEventPercentComplete(plant);
-		add(tgui::Label::create(std::to_wstring(thirstPercent.get()) + L" % thirst"));
+		add(tgui::Label::create(std::to_string(thirstPercent.get()) + " % thirst"));
 	}
 	m_update = [this, plant]{ display(plant); };
 }

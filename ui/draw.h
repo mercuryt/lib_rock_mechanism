@@ -10,6 +10,7 @@ class ItemIndex;
 class PlantIndex;
 class ActorIndex;
 struct Cuboid;
+struct CuboidSet;
 class Draw final
 {
 	Window& m_window;
@@ -44,8 +45,8 @@ public:
 	void selected(const Point3D& point);
 	void selected(const Cuboid& cuboid);
 	void outlineOnBlock(const Point3D& point, const sf::Color color, float thickness = 3.f);
-	void stringAtPosition(const std::wstring string, const sf::Vector2f position, const sf::Color color, float offsetX = 0.5, float offsetY = 0.0);
-	void stringOnBlock(const Point3D& point,const  std::wstring string, const sf::Color color, float offsetX = 0.5, float offsetY = 0.0);
+	void stringAtPosition(const std::string string, const sf::Vector2f position, const sf::Color color, float offsetX = 0.5, float offsetY = 0.0);
+	void stringOnBlock(const Point3D& point,const  std::string string, const sf::Color color, float offsetX = 0.5, float offsetY = 0.0);
 
 	void nonGroundCoverPlant(const Point3D& point);
 	void item(const Point3D& point);
@@ -55,7 +56,7 @@ public:
 	void singleTileActor(const ActorIndex& actor);
 	void multiTileActor(const ActorIndex& actor);
 	void actorOverlay(const ActorIndex& actor);
-	void multiTileBorder(const MapWithCuboidKeys<CollisionVolume>& blocksOccpuied, sf::Color color, float thickness);
+	void multiTileBorder(const CuboidSet& blocksOccpuied, sf::Color color, float thickness);
 	void borderSegmentOnBlock(const Point3D& point, const Facing4& facing, sf::Color color, float thickness);
 	void accessableSymbol(const Point3D& point);
 	void inaccessableSymbol(const Point3D& point);

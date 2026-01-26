@@ -38,7 +38,7 @@ void ObjectivePriorityView::draw(const ActorIndex& actor)
 {
 	Actors& actors = m_window.getArea()->getActors();
 	m_actor = actor;
-	m_title->setText(L"Set priorities for " + actors.getName(m_actor));
+	m_title->setText("Set priorities for " + actors.getName(m_actor));
 	for(auto& objectiveType : objectiveTypeData)
 	{
 		ObjectiveTypeId id = objectiveType->getId();

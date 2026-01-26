@@ -19,6 +19,14 @@ std::vector<SpaceDesignation> AreaHasSpaceDesignationsForFaction::getForPoint(co
 			output.push_back(designation);
 	return output;
 }
+SpaceDesignation AreaHasSpaceDesignationsForFaction::getDisplayDesignation(const Point3D& point) const
+{
+	for(auto designation = SpaceDesignation(0); designation != SpaceDesignation::SPACE_DESIGNATION_MAX; designation = SpaceDesignation((int)designation + 1))
+		if(check(point, designation))
+			return designation;
+	// TODO: rename to Null.
+	return SpaceDesignation::SPACE_DESIGNATION_MAX;
+}
 const RTreeBoolean& AreaHasSpaceDesignationsForFaction::getForDesignation(const SpaceDesignation& designation) const { return m_data[(int)designation]; }
 AreaHasSpaceDesignationsForFaction& AreaHasSpaceDesignations::maybeRegisterAndGetForFaction(const FactionId& faction)
 {

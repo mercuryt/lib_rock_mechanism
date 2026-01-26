@@ -16,9 +16,10 @@ void ContextMenu::drawDigControls(const Point3D& point)
 			m_root.add(cancelButton);
 			cancelButton->onClick([this, &designations, &space]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				for(const Point3D& selectedBlock : m_window.getSelectedBlocks().getView(space))
-					if(designations.check(selectedBlock, SpaceDesignation::Dig))
-						m_window.getArea()->m_hasDigDesignations.undesignate(m_window.getFaction(), selectedBlock);
+				for(const Cuboid& cuboid : m_window.getSelectedBlocks())
+					for(const Point3D& selectedBlock : cuboid)
+						if(designations.check(selectedBlock, SpaceDesignation::Dig))
+							m_window.getArea()->m_hasDigDesignations.undesignate(m_window.getFaction(), selectedBlock);
 				hide();
 			});
 		}
@@ -34,7 +35,7 @@ void ContextMenu::drawDigControls(const Point3D& point)
 			if(m_window.m_editMode)
 			{
 				space.solid_setNotCuboid(cuboid);
-				for(const Point3D& selectedBlock : cuboid.getView(space))
+				for(const Point3D& selectedBlock : cuboid)
 				{
 					if(!space.pointFeature_empty(selectedBlock))
 						space.pointFeature_removeAll(selectedBlock);
@@ -42,9 +43,9 @@ void ContextMenu::drawDigControls(const Point3D& point)
 			}
 			else
 			{
-				for(const Point3D& selectedBlock : cuboid.getView(space))
-					if(space.solid_is(selectedBlock) || !space.pointFeature_empty(selectedBlock))
-						m_window.getArea()->m_hasDigDesignations.designate(m_window.getFaction(), selectedBlock, nullptr);
+				for(const Point3D& selectedBlock : cuboid)
+					if(space.solid_isAny(selectedBlock) || !space.pointFeature_empty(selectedBlock))
+						m_window.getArea()->m_hasDigDesignations.designate(m_window.getFaction(), selectedBlock, PointFeatureTypeId::Null);
 			}
 		}
 		hide();
@@ -61,20 +62,20 @@ void ContextMenu::drawDigControls(const Point3D& point)
 			const PointFeatureType& featureType = *widgetUtil::lastSelectedPointFeatureType;
 			auto& selectedBlocks = m_window.getSelectedBlocks();
 			if(selectedBlocks.empty())
-				selectedBlocks.add(space, point);
+				selectedBlocks.add(point);
 			if(m_window.m_editMode)
 			{
 				for(const Cuboid& cuboid : selectedBlocks.getCuboids())
-					for(const Point3D& point : cuboid.getView(space))
-						if(space.solid_is(point))
-							space.pointFeature_hew(point, featureType);
+					for(const Point3D& sectedPoint : cuboid)
+						if(space.solid_isAny(sectedPoint))
+							space.pointFeature_hew(sectedPoint, PointFeatureType::getId(featureType));
 			}
 			else
 			{
 				for(const Cuboid& cuboid : selectedBlocks.getCuboids())
-					for(const Point3D& point : cuboid.getView(space))
-						if(space.solid_is(point))
-							m_window.getArea()->m_hasDigDesignations.designate(m_window.getFaction(), point, &featureType);
+					for(const Point3D& sectedPoint : cuboid)
+						if(space.solid_isAny(sectedPoint))
+							m_window.getArea()->m_hasDigDesignations.designate(m_window.getFaction(), sectedPoint, PointFeatureType::getId(featureType));
 			}
 			hide();
 		});

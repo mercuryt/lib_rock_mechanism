@@ -32,7 +32,7 @@
 struct GameView final
 {
 	Point3D center;
-	uint32_t scale;
+	int32_t scale;
 };
 enum class SelectMode{Actors, Items, Plants, Space};
 class Window final
@@ -60,9 +60,9 @@ class Window final
 	EditDramaView m_editDramaView;
 	std::unique_ptr<Simulation> m_simulation;
 	Area* m_area = nullptr;
-	uint32_t m_scale = displayData::defaultScale;
+	int32_t m_scale = displayData::defaultScale;
 	Distance m_z;
-	std::atomic<uint16_t> m_speed = 1;
+	std::atomic<int16_t> m_speed = 1;
 	SmallMap<AreaId, GameView> m_lastViewedSpotInArea;
 	CuboidSet m_selectedBlocks;
 	SmallSet<ActorIndex> m_selectedActors;
@@ -82,7 +82,7 @@ class Window final
 	static constexpr int gameMarginSize = 400;
 
 	void povFromJson(const Json& data);
-	void setZ(const uint32_t z);
+	void setZ(const int32_t z);
 	void setSpeedDisplay();
 	[[nodiscard]] Json povToJson() const;
 	[[nodiscard]] static std::chrono::milliseconds msSinceEpoch();
@@ -93,11 +93,11 @@ public:
 	Window();
 	void setPaused(bool paused);
 	void togglePaused();
-	void setSpeed(uint16_t speed);
+	void setSpeed(int16_t speed);
 	void setArea(Area& area, GameView* gameView = nullptr);
 	void startLoop();
 	void centerView(const Point3D& point);
-	void setFrameRate(uint32_t);
+	void setFrameRate(int32_t);
 	void setItemToInstall(const ItemIndex& item) { m_gameOverlay.m_itemBeingInstalled = item; }
 	void setItemToMove(const ItemIndex& item) { m_gameOverlay.m_itemBeingMoved = item; }
 	void close() { m_window.close(); }
@@ -105,7 +105,7 @@ public:
 	[[nodiscard]] sf::RenderWindow& getRenderWindow() { return m_window; }
 	[[nodiscard]] GameOverlay& getGameOverlay() { return m_gameOverlay; }
 	[[nodiscard]] SelectMode getSelectMode() const { return m_selectMode; }
-	[[nodiscard]] uint32_t getScale() const { return m_scale; }
+	[[nodiscard]] int32_t getScale() const { return m_scale; }
 	// Show panels.
 	void hideAllPanels();
 	void showMainMenu() { hideAllPanels(); m_mainMenuView.show(); }
@@ -137,7 +137,7 @@ public:
 	[[nodiscard]] Point3D getBlockUnderCursor();
 	[[nodiscard]] Point3D getBlockAtPosition(sf::Vector2i pixelPos);
 	// Filesystem.
-	void threadTask(std::function<void()> task, const std::wstring& title);
+	void threadTask(std::function<void()> task, const std::string& title);
 	void save();
 	void load(std::filesystem::path path);
 	// Accessors.
@@ -147,8 +147,8 @@ public:
 	void setSimulation(std::unique_ptr<Simulation> simulation) { m_simulation = std::move(simulation); }
 	[[nodiscard]] Area* getArea() { return m_area; }
 	// String utilities.
-	std::wstring displayNameForItem(const ItemIndex& item);
-	static std::wstring displayNameForCraftJob(CraftJob& craftJob);
-	static std::wstring facingToString(Facing4 facing);
+	std::string displayNameForItem(const ItemIndex& item);
+	static std::string displayNameForCraftJob(CraftJob& craftJob);
+	static std::string facingToString(Facing4 facing);
 	friend class Draw;
 };

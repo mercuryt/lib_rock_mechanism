@@ -921,7 +921,7 @@ Percent Actors::getPercentGrown(const ActorIndex& index) const { return m_canGro
 void Actors::log(const ActorIndex& index) const
 {
 	std::cout << m_name[index];
-	std::cout << "(L" << AnimalSpecies::getName(m_species[index]) << ")";
+	std::cout << "(" << AnimalSpecies::getName(m_species[index]) << ")";
 	Portables<Actors, ActorIndex, ActorReferenceIndex, true>::log(index);
 	if(objective_exists(index))
 		std::cout << ", current objective: " << objective_getCurrentName(index);

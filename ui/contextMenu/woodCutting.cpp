@@ -3,6 +3,7 @@
 #include "../displayData.h"
 #include "../../engine/space/space.h"
 #include "../../engine/plants.h"
+#include "../../engine/definitions/plantSpecies.h"
 bool ContextMenu::plantIsValid(const PlantIndex& plant) const
 {
 	Plants& plants = m_window.getArea()->getPlants();
@@ -23,12 +24,12 @@ void ContextMenu::drawWoodCuttingControls(const Point3D& point)
 			m_root.add(button);
 			button->onClick([this, &space, &plants, point, faction]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				auto& hasWoodCutting = m_window.getArea()->m_hasWoodCuttingDesignations;
+				auto& hasWoodCutting2 = m_window.getArea()->m_hasWoodCuttingDesignations;
 				if(m_window.getSelectedPlants().empty() && space.plant_exists(point) && plantIsValid(space.plant_get(point)))
 					m_window.selectPlant(space.plant_get(point));
 				for(const PlantIndex& selctedPlant : m_window.getSelectedPlants())
-					if(hasWoodCutting.contains(faction, plants.getLocation(selctedPlant)))
-						hasWoodCutting.undesignate(faction, plants.getLocation(selctedPlant));
+					if(hasWoodCutting2.contains(faction, plants.getLocation(selctedPlant)))
+						hasWoodCutting2.undesignate(faction, plants.getLocation(selctedPlant));
 				hide();
 			});
 		}
@@ -38,12 +39,12 @@ void ContextMenu::drawWoodCuttingControls(const Point3D& point)
 			m_root.add(button);
 			button->onClick([this, &space, &plants, point, faction]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				auto& hasWoodCutting = m_window.getArea()->m_hasWoodCuttingDesignations;
+				auto& hasWoodCutting2 = m_window.getArea()->m_hasWoodCuttingDesignations;
 				if(m_window.getSelectedPlants().empty() && space.plant_exists(point) && plantIsValid(space.plant_get(point)))
 					m_window.selectPlant(space.plant_get(point));
 				for(const PlantIndex& selctedPlant : m_window.getSelectedPlants())
 					if(plantIsValid(selctedPlant))
-						hasWoodCutting.designate(faction, plants.getLocation(selctedPlant));
+						hasWoodCutting2.designate(faction, plants.getLocation(selctedPlant));
 				hide();
 			});
 		}

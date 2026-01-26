@@ -3,6 +3,7 @@
 #include "../displayData.h"
 #include "../../engine/space/space.h"
 #include "../../engine/plants.h"
+#include "../../engine/definitions/plantSpecies.h"
 #include "../../engine/fluidType.h"
 void ContextMenu::drawPlantControls(const Point3D& point)
 {
@@ -13,7 +14,7 @@ void ContextMenu::drawPlantControls(const Point3D& point)
 	{
 		const PlantIndex& plant = space.plant_get(point);
 		const PlantSpeciesId& species = plants.getSpecies(plant);
-		std::wstring name = PlantSpecies::getName(species);
+		std::string name = PlantSpecies::getName(species);
 		auto label = tgui::Label::create();
 		label->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 		m_root.add(label);
@@ -24,17 +25,18 @@ void ContextMenu::drawPlantControls(const Point3D& point)
 			infoButton->onClick([this, point]{ m_window.getGameOverlay().drawInfoPopup(point);});
 			if(m_window.m_editMode)
 			{
-				auto removePlant = tgui::Button::create(L"remove " + name);
+				auto removePlant = tgui::Button::create("remove " + name);
 				removePlant->onClick([this, point, species, &plants, &space]{
 					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(point);
-					for(const Point3D& selectedBlock : m_window.getSelectedBlocks().getView(space))
-						if(space.plant_exists(selectedBlock) && plants.getSpecies(space.plant_get(selectedBlock)) == species)
-							plants.remove(space.plant_get(selectedBlock));
-					for(const PlantIndex& plant : m_window.getSelectedPlants())
-						if(plants.getSpecies(plant) == species)
-							plants.remove(plant);
+					for(const Cuboid& cuboid : m_window.getSelectedBlocks())
+						for(const Point3D& selectedBlock : cuboid)
+							if(space.plant_exists(selectedBlock) && plants.getSpecies(space.plant_get(selectedBlock)) == species)
+								plants.remove(space.plant_get(selectedBlock));
+					for(const PlantIndex& selectedPlant : m_window.getSelectedPlants())
+						if(plants.getSpecies(selectedPlant) == species)
+							plants.remove(selectedPlant);
 					hide();
 				});
 				submenu.add(removePlant);
@@ -70,12 +72,13 @@ void ContextMenu::drawPlantControls(const Point3D& point)
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				if(!speciesUI->getSelectedItem().empty())
 				{
-					const PlantSpeciesId& species = PlantSpecies::byName(speciesUI->getSelectedItemId().toWideString());
+					const PlantSpeciesId& species = PlantSpecies::byName(speciesUI->getSelectedItemId().toStdString());
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(point);
-					for(const Point3D& selectedBlock : m_window.getSelectedBlocks().getView(space))
-						if(!space.plant_exists(selectedBlock) && !space.solid_is(selectedBlock) && space.plant_canGrowHereEver(point, species))
-							space.plant_create(selectedBlock, species, Percent::create(percentGrownUI->getValue()));
+					for(const Cuboid& cuboid : m_window.getSelectedBlocks())
+						for(const Point3D& selectedBlock : cuboid)
+							if(!space.plant_exists(selectedBlock) && !space.solid_isAny(selectedBlock) && space.plant_canGrowHereEver(point, species))
+								space.plant_create(selectedBlock, species, Percent::create(percentGrownUI->getValue()));
 				}
 				hide();
 			});

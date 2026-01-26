@@ -20,18 +20,19 @@ void ContextMenu::drawStockPileControls(const Point3D& point)
 			submenu.add(shrinkButton);
 			shrinkButton->onClick([this, point, faction, &space]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				StockPile* stockpile = space.stockpile_getForFaction(point, faction);
+				StockPile* stockpile = space.stockpile_getOneForFaction(point, faction);
 				if(stockpile)
-					for(const Point3D& selectedBlock : m_window.getSelectedBlocks().getView(space))
-						if(stockpile->contains(selectedBlock))
-							stockpile->removePoint(selectedBlock);
+					for(const Cuboid& cuboid : m_window.getSelectedBlocks())
+						for(const Point3D& selectedBlock : cuboid)
+							if(stockpile->contains(selectedBlock))
+								stockpile->removePoint(selectedBlock);
 				hide();
 			});
 			auto editButton = tgui::Button::create("edit");
 			editButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 			submenu.add(editButton);
 			editButton->onClick([this, point, faction, &space]{
-				StockPile* stockpile = space.stockpile_getForFaction(point, faction);
+				StockPile* stockpile = space.stockpile_getOneForFaction(point, faction);
 				if(stockpile)
 					m_window.showEditStockPile(stockpile);
 				hide();

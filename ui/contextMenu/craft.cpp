@@ -8,7 +8,7 @@ void ContextMenu::drawCraftControls(const Point3D& point)
 {
 	Area& area = *m_window.getArea();
 	Space& space =  area.getSpace();
-	if(m_window.getFaction().empty() || space.solid_is(point) || !space.shape_canStandIn(point))
+	if(m_window.getFaction().empty() || space.solid_isAny(point) || !space.shape_canStandIn(point))
 		return;
 	auto craftButton = tgui::Button::create("craft");
 	m_root.add(craftButton);
@@ -23,15 +23,16 @@ void ContextMenu::drawCraftControls(const Point3D& point)
 		subMenu.add(stepTypeCategoryUI);
 		for(const CraftStepTypeCategoryId& category : categories)
 		{
-			auto button = tgui::Button::create(L"undesignate " + CraftStepTypeCategory::getName(category));
+			auto button = tgui::Button::create("undesignate " + CraftStepTypeCategory::getName(category));
 			subMenu.add(button);
 			button->onClick([this, category, point, &space]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				auto& locationsAndJobsForFaction = m_window.getArea()->m_hasCraftingLocationsAndJobs.getForFaction(m_window.getFaction());
+				auto& locationsAndJobsForFaction2 = m_window.getArea()->m_hasCraftingLocationsAndJobs.getForFaction(m_window.getFaction());
 				if(m_window.getSelectedBlocks().empty())
 					m_window.selectBlock(point);
-				for(const Point3D& selectedBlock : m_window.getSelectedBlocks().getView(space))
-					locationsAndJobsForFaction.removeLocation(category, selectedBlock);
+				for(const Cuboid& cuboid : m_window.getSelectedBlocks())
+					for(const Point3D& selectedBlock : cuboid)
+						locationsAndJobsForFaction2.removeLocation(category, selectedBlock);
 				hide();
 			});
 		}
@@ -41,8 +42,9 @@ void ContextMenu::drawCraftControls(const Point3D& point)
 		auto& locationsAndJobsForFaction = m_window.getArea()->m_hasCraftingLocationsAndJobs.getForFaction(m_window.getFaction());
 		if(m_window.getSelectedBlocks().empty())
 			m_window.selectBlock(point);
-		for(const Point3D& selectedBlock : m_window.getSelectedBlocks().getView(space))
-			locationsAndJobsForFaction.addLocation(widgetUtil::lastSelectedCraftStepTypeCategory, selectedBlock);
+		for(const Cuboid& cuboid : m_window.getSelectedBlocks())
+			for(const Point3D& selectedBlock : cuboid)
+				locationsAndJobsForFaction.addLocation(widgetUtil::lastSelectedCraftStepTypeCategory, selectedBlock);
 		hide();
 	});
 	auto productionButton = tgui::Button::create("production");

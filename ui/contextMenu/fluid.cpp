@@ -8,7 +8,7 @@ void ContextMenu::drawFluidControls(const Point3D& point)
 	Area& area = *m_window.getArea();
 	Space& space =  area.getSpace();
 	// Fluids.
-	for(FluidData& fluidData : space.fluid_getAll(point))
+	for(const FluidData& fluidData : space.fluid_getAll(point))
 	{
 		auto label = tgui::Label::create(FluidType::getName(fluidData.type));
 		label->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
@@ -19,12 +19,13 @@ void ContextMenu::drawFluidControls(const Point3D& point)
 			submenu.add(remove);
 			remove->onClick([this, fluidData, &space]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				for(const Point3D& selectedBlock : m_window.getSelectedBlocks().getView(space))
-				{
-					CollisionVolume contains = space.fluid_volumeOfTypeContains(selectedBlock, fluidData.type);
-					if(contains != 0)
-						space.fluid_removeSyncronus(selectedBlock, contains, fluidData.type);
-				}
+				for(const Cuboid& cuboid : m_window.getSelectedBlocks())
+					for(const Point3D& selectedBlock : cuboid)
+					{
+						CollisionVolume contains = space.fluid_volumeOfTypeContains(selectedBlock, fluidData.type);
+						if(contains != 0)
+							space.fluid_removeSyncronus(selectedBlock, contains, fluidData.type);
+					}
 				hide();
 			});
 			FluidGroup& group = *space.fluid_getGroup(point, fluidData.type);
@@ -36,10 +37,11 @@ void ContextMenu::drawFluidControls(const Point3D& point)
 					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					if(space.fluid_volumeOfTypeContains(point, fluidData.type) != 0)
 					{
-						FluidGroup& group = *space.fluid_getGroup(point, fluidData.type);
+						FluidGroup& group2 = *space.fluid_getGroup(point, fluidData.type);
 						m_window.deselectAll();
-						for(const Point3D& point : group.getPoints())
-							m_window.getSelectedBlocks().add(space, point);
+						for(const Cuboid& cuboid : group2.getPoints())
+							for(const Point3D& groupPoint : cuboid)
+								m_window.getSelectedBlocks().add(groupPoint);
 					}
 					hide();
 				});
@@ -75,9 +77,10 @@ void ContextMenu::drawFluidControls(const Point3D& point)
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				if(m_window.getSelectedBlocks().empty())
 					m_window.selectBlock(point);
-				for(const Point3D& selectedBlock : m_window.getSelectedBlocks().getView(space))
-					if(!space.solid_is(selectedBlock))
-						space.fluid_add(selectedBlock, fluidLevel, FluidType::byName(fluidTypeUI->getSelectedItemId().toWideString()));
+				for(const Cuboid& cuboid : m_window.getSelectedBlocks())
+					for(const Point3D& selectedBlock : cuboid)
+						if(!space.solid_isAny(selectedBlock))
+							space.fluid_add(selectedBlock, fluidLevel, FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()));
 				m_window.getArea()->m_hasFluidGroups.clearMergedFluidGroups();
 				hide();
 			});
@@ -90,12 +93,13 @@ void ContextMenu::drawFluidControls(const Point3D& point)
 					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					if(m_window.getSelectedBlocks().empty())
 						m_window.selectBlock(point);
-					for(const Point3D& selectedBlock: m_window.getSelectedBlocks().getView(space))
-						m_window.getArea()->m_fluidSources.create(
-							selectedBlock,
-							FluidType::byName(fluidTypeUI->getSelectedItemId().toWideString()),
-							fluidLevel
-						);
+					for(const Cuboid& cuboid : m_window.getSelectedBlocks())
+						for(const Point3D& selectedBlock : cuboid)
+							m_window.getArea()->m_fluidSources.create(
+								selectedBlock,
+								FluidType::byName(fluidTypeUI->getSelectedItemId().toStdString()),
+								fluidLevel
+							);
 					hide();
 				});
 			}

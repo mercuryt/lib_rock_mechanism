@@ -1,11 +1,13 @@
 #include "draw.h"
 #include "sprite.h"
 #include "window.h"
+#include "../engine/dataStructures/smallMap.h"
 #include "../engine/space/space.h"
 #include "../engine/actors/actors.h"
 #include "../engine/items/items.h"
 #include "../engine/plants.h"
-#include "../engine/geometry/cuboid.h"
+#include "../engine/geometry/cuboidSet.h"
+#include "../engine/definitions/plantSpecies.h"
 #include "displayData.h"
 #include "interpolate.h"
 #include <SFML/Graphics/Color.hpp>
@@ -26,8 +28,7 @@ void Draw::view()
 	// Render point floors, collect actors into single and multi tile groups.
 	SmallSet<Point3D> singleTileActorBlocks;
 	SmallSet<ActorIndex> multiTileActors;
-	const Cuboid cuboid = space.getZLevel(m_window.m_z);
-	const auto zLevelBlocks = cuboid.getView(space);
+	const Cuboid zLevelBlocks = space.getZLevel(m_window.m_z);
 	for(const Point3D& point : zLevelBlocks)
 	{
 		blockFloor(point);
@@ -116,22 +117,25 @@ void Draw::view()
 	else if(!m_window.m_selectedActors.empty())
 	{
 		for(const ActorIndex& actor: m_window.m_selectedActors)
-			for(const Point3D& point : actors.getOccupied(actor))
-				if(point.z() == m_window.m_z)
-					selected(point);
+			for(const Cuboid& cuboid : actors.getOccupied(actor))
+				for(const Point3D& point : cuboid)
+					if(point.z() == m_window.m_z)
+						selected(point);
 	}
 	else if(!m_window.m_selectedItems.empty())
 	{
 		for(const ItemIndex& item: m_window.m_selectedItems)
-			for(const Point3D& point : items.getOccupied(item))
-				if(point.z() == m_window.m_z)
-					selected(point);
+			for(const Cuboid& cuboid : items.getOccupied(item))
+				for(const Point3D& point : cuboid)
+					if(point.z() == m_window.m_z)
+						selected(point);
 	}
 	else if(!m_window.m_selectedPlants.empty())
 		for(const PlantIndex& plant: m_window.m_selectedPlants)
-			for(const Point3D& point : plants.getOccupied(plant))
-				if(point.z() == m_window.m_z)
-					selected(point);
+			for(const Cuboid& cuboid : plants.getOccupied(plant))
+				for(const Point3D& point : cuboid)
+					if(point.z() == m_window.m_z)
+						selected(point);
 	// Selection Box.
 	// TODO: Show which space would be added / removed.
 	if(m_window.m_firstCornerOfSelection.exists() && sf::Mouse::isButtonPressed(displayData::selectMouseButton))
@@ -159,13 +163,14 @@ void Draw::view()
 			m_window.m_gameOverlay.m_itemBeingInstalled :
 			m_window.m_gameOverlay.m_itemBeingMoved
 		);
-		auto occupiedBlocks = items.getPointsWhichWouldBeOccupiedAtLocationAndFacing(item, hoverBlock, m_window.m_gameOverlay.m_facing);
+		auto occupiedBlocks = items.getCuboidsWhichWouldBeOccupiedAtLocationAndFacing(item, hoverBlock, m_window.m_gameOverlay.m_facing);
 		bool valid = space.shape_shapeAndMoveTypeCanEnterEverWithFacing(hoverBlock, items.getShape(item), items.getMoveType(item), m_window.m_gameOverlay.m_facing);
-		for(const Point3D& point : occupiedBlocks)
-			if(!valid)
-				invalidOnBlock(point);
-			else
-				validOnBlock(point);
+		for(const Cuboid& cuboid : occupiedBlocks)
+			for(const Point3D& point : cuboid)
+				if(!valid)
+					invalidOnBlock(point);
+				else
+					validOnBlock(point);
 	}
 	// Area Border.
 	sf::RectangleShape areaBorder(sf::Vector2f((space.m_sizeX.get() * m_window.m_scale), (space.m_sizeX.get() * m_window.m_scale) ));
@@ -182,7 +187,7 @@ void Draw::view()
 void Draw::blockFloor(const Point3D& point)
 {
 	Space& space = m_window.m_area->getSpace();
-	if(space.solid_is(point))
+	if(space.solid_isAny(point))
 	{
 		for(const Point3D& adjacent : space.getDirectlyAdjacent(point))
 			if(m_window.m_editMode || space.isVisible(adjacent))
@@ -194,7 +199,7 @@ void Draw::blockFloor(const Point3D& point)
 	else if(m_window.m_editMode || space.isVisible(point))
 	{
 		const Point3D& below = point.below();
-		if(below.exists() && space.solid_is(below))
+		if(below.exists() && space.solid_isAny(below))
 		{
 			// Draw floor.
 			if(space.plant_exists(point))
@@ -212,7 +217,7 @@ void Draw::blockFloor(const Point3D& point)
 				}
 			}
 			// No ground cover plant.
-			const sf::Color* color = &displayData::materialColors[space.solid_get(point).below()];
+			const sf::Color* color = &displayData::materialColors[space.solid_get(point.below())];
 			if(space.isConstructed(below))
 			{
 				static sf::Sprite sprite = sprites::make("blockFloor").first;
@@ -250,15 +255,14 @@ void Draw::blockWallCorners(const Point3D& point)
 	const Point3D& below = point.below();
 	if(
 		(m_window.m_editMode || space.isVisible(point)) &&
-		space.solid_is(point) && west.exists() && !space.solid_is(west) && south.exists() && !space.solid_is(south)
+		space.solid_isAny(point) && west.exists() && !space.solid_isAny(west) && south.exists() && !space.solid_isAny(south)
 	)
 	{
 		const sf::Color color = displayData::materialColors[space.solid_get(point)];
 		float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 		auto pair = sprites::make(space.isConstructed(point) ? "blockWall" : "roughWall");
 		auto sprite = pair.first;
-		const Point3D coordinates = space.getCoordinates(point);
-		sprite.setPosition(((float)coordinates.x().get() - 0.21f) * (float)m_window.m_scale, ((float)coordinates.y().get() + 0.48f) * (float)m_window.m_scale);
+		sprite.setPosition(((float)point.x().get() - 0.21f) * (float)m_window.m_scale, ((float)point.y().get() + 0.48f) * (float)m_window.m_scale);
 		sprite.setScale(scaleRatio, scaleRatio);
 		sprite.setColor(color);
 		sprite.setRotation(45);
@@ -270,15 +274,14 @@ void Draw::blockWallCorners(const Point3D& point)
 		const Point3D& belowSouth = below.south();
 		if(
 			(m_window.m_editMode || space.isVisible(below)) &&
-			!space.solid_is(point) && space.solid_is(below) && belowWest.exists() && !space.solid_is(belowWest) && belowSouth.exists() && !space.solid_is(belowSouth)
+			!space.solid_isAny(point) && space.solid_isAny(below) && belowWest.exists() && !space.solid_isAny(belowWest) && belowSouth.exists() && !space.solid_isAny(belowSouth)
 		)
 		{
 			const sf::Color color = displayData::materialColors[space.solid_get(below)];
 			float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 			auto pair = sprites::make(space.isConstructed(point) ? "blockWall" : "roughWall");
 			auto sprite = pair.first;
-			const Point3D coordinates = space.getCoordinates(point);
-			sprite.setPosition(((float)coordinates.x().get() - 0.21f) * (float)m_window.m_scale, ((float)coordinates.y().get() + 0.48f) * (float)m_window.m_scale);
+			sprite.setPosition(((float)point.x().get() - 0.21f) * (float)m_window.m_scale, ((float)point.y().get() + 0.48f) * (float)m_window.m_scale);
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			sprite.setRotation(45);
@@ -289,12 +292,11 @@ void Draw::blockWallCorners(const Point3D& point)
 void Draw::blockWalls(const Point3D& point)
 {
 	Space& space = m_window.m_area->getSpace();
-	if(space.solid_is(point))
+	if(space.solid_isAny(point))
 	{
 		auto adjacentPredicate = [&](const Point3D& adjacent){
-			return adjacent.exists() && (m_window.m_editMode || space.isVisible(adjacent)) && !space.solid_is(adjacent) && !space.pointFeature_contains(adjacent, PointFeatureType::stairs) && !space.pointFeature_contains(adjacent, PointFeatureType::ramp);
+			return adjacent.exists() && (m_window.m_editMode || space.isVisible(adjacent)) && !space.solid_isAny(adjacent) && !space.pointFeature_contains(adjacent, PointFeatureTypeId::Stairs) && !space.pointFeature_contains(adjacent, PointFeatureTypeId::Ramp);
 		};
-		const Point3D coordinates = space.getCoordinates(point);
 		const Point3D& south = point.south();
 		if(adjacentPredicate(south))
 		{
@@ -302,7 +304,7 @@ void Draw::blockWalls(const Point3D& point)
 			float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 			auto pair = sprites::make(space.isConstructed(point) ? "blockWall" : "roughWall");
 			auto sprite = pair.first;
-			sprite.setPosition((float)coordinates.x().get() * m_window.m_scale, (float)(coordinates.y().get() + 1) * m_window.m_scale);
+			sprite.setPosition((float)point.x().get() * m_window.m_scale, (float)(point.y().get() + 1) * m_window.m_scale);
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			m_window.getRenderWindow().draw(sprite);
@@ -314,7 +316,7 @@ void Draw::blockWalls(const Point3D& point)
 			float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 			auto pair = sprites::make(space.isConstructed(point) ? "blockWall" : "roughWall");
 			auto sprite = pair.first;
-			sprite.setPosition((float)coordinates.x().get() * m_window.m_scale, (float)coordinates.y().get() * m_window.m_scale);
+			sprite.setPosition((float)point.x().get() * m_window.m_scale, (float)point.y().get() * m_window.m_scale);
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			sprite.setRotation(90);
@@ -325,22 +327,21 @@ void Draw::blockWalls(const Point3D& point)
 void Draw::blockWallTops(const Point3D& point)
 {
 	Space& space = m_window.m_area->getSpace();
-	if(space.solid_is(point))
+	if(space.solid_isAny(point))
 	{
 		auto adjacentPredicate = [&](const Point3D& adjacent){
-			return adjacent.exists() && (m_window.m_editMode || space.isVisible(adjacent)) && !space.solid_is(adjacent) && !space.pointFeature_contains(adjacent, PointFeatureType::stairs) && !space.pointFeature_contains(adjacent, PointFeatureType::ramp);
+			return adjacent.exists() && (m_window.m_editMode || space.isVisible(adjacent)) && !space.solid_isAny(adjacent) && !space.pointFeature_contains(adjacent, PointFeatureTypeId::Stairs) && !space.pointFeature_contains(adjacent, PointFeatureTypeId::Ramp);
 		};
 		float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 		const sf::Color color = displayData::materialColors[space.solid_get(point)];
 		float offset = displayData::wallTopOffsetRatio * m_window.m_scale;
-		const Point3D coordinates = space.getCoordinates(point);
 		const Point3D& north = point.north();
 		if(adjacentPredicate(north))
 		{
 			auto pair = sprites::make(space.isConstructed(point) ? "blockWallTop" : "roughWallTop");
 			auto sprite = pair.first;
 			sprite.setRotation(180);
-			sprite.setPosition((float)(coordinates.x().get() + 1) * m_window.m_scale, ((float)coordinates.y().get() * m_window.m_scale) + offset);
+			sprite.setPosition((float)(point.x().get() + 1) * m_window.m_scale, ((float)point.y().get() * m_window.m_scale) + offset);
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			m_window.getRenderWindow().draw(sprite);
@@ -351,7 +352,7 @@ void Draw::blockWallTops(const Point3D& point)
 			auto pair = sprites::make(space.isConstructed(point) ? "blockWallTop" : "roughWallTop");
 			auto sprite = pair.first;
 			sprite.setRotation(270);
-			sprite.setPosition((((float)coordinates.x().get() + 1) * m_window.m_scale) - offset, ((float)coordinates.y().get() + 1) * m_window.m_scale);
+			sprite.setPosition((((float)point.x().get() + 1) * m_window.m_scale) - offset, ((float)point.y().get() + 1) * m_window.m_scale);
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			m_window.getRenderWindow().draw(sprite);
@@ -362,7 +363,7 @@ void Draw::blockWallTops(const Point3D& point)
 			auto pair = sprites::make(space.isConstructed(point) ? "blockWallTop" : "roughWallTop");
 			auto sprite = pair.first;
 			sprite.setRotation(90);
-			sprite.setPosition(((float)coordinates.x().get() * m_window.m_scale) + offset, ((float)coordinates.y().get() * m_window.m_scale));
+			sprite.setPosition(((float)point.x().get() * m_window.m_scale) + offset, ((float)point.y().get() * m_window.m_scale));
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			m_window.getRenderWindow().draw(sprite);
@@ -372,7 +373,7 @@ void Draw::blockWallTops(const Point3D& point)
 		{
 			auto pair = sprites::make(space.isConstructed(point) ? "blockWallTop" : "roughWallTop");
 			auto sprite = pair.first;
-			sprite.setPosition(((float)coordinates.x().get() * m_window.m_scale), ((float)(coordinates.y().get() + 1) * m_window.m_scale) - offset);
+			sprite.setPosition(((float)point.x().get() * m_window.m_scale), ((float)(point.y().get() + 1) * m_window.m_scale) - offset);
 			sprite.setScale(scaleRatio, scaleRatio);
 			sprite.setColor(color);
 			m_window.getRenderWindow().draw(sprite);
@@ -391,17 +392,17 @@ void Draw::pointFeaturesAndFluids(const Point3D& point)
 		for(const PointFeature& pointFeature : space.pointFeature_getAll(point))
 		{
 			sf::Color* color = &displayData::materialColors[pointFeature.materialType];
-			if(pointFeature.pointFeatureType == &PointFeatureType::hatch)
+			if(pointFeature.pointFeatureType == PointFeatureTypeId::Hatch)
 			{
 				static sf::Sprite hatch = getCenteredSprite("hatch");
 				spriteOnBlockCentered(point, hatch, color);
 			}
-			else if(pointFeature.pointFeatureType == &PointFeatureType::floorGrate)
+			else if(pointFeature.pointFeatureType == PointFeatureTypeId::FloorGrate)
 			{
 				static sf::Sprite floorGrate = getCenteredSprite("floorGrate");
 				spriteOnBlockCentered(point, floorGrate, color);
 			}
-			else if(pointFeature.pointFeatureType == &PointFeatureType::stairs)
+			else if(pointFeature.pointFeatureType == PointFeatureTypeId::Stairs)
 			{
 				static sf::Sprite stairs = getCenteredSprite("stairs");
 				Facing4 facing = rampOrStairsFacing(point);
@@ -409,7 +410,7 @@ void Draw::pointFeaturesAndFluids(const Point3D& point)
 				stairs.setOrigin(16,19);
 				spriteOnBlockCentered(point, stairs, color);
 			}
-			else if(pointFeature.pointFeatureType == &PointFeatureType::ramp)
+			else if(pointFeature.pointFeatureType == PointFeatureTypeId::Ramp)
 			{
 				static sf::Sprite ramp = getCenteredSprite("ramp");
 				Facing4 facing = rampOrStairsFacing(point);
@@ -417,41 +418,41 @@ void Draw::pointFeaturesAndFluids(const Point3D& point)
 				ramp.setOrigin(16,19);
 				spriteOnBlockCentered(point, ramp, color);
 			}
-			else if(pointFeature.pointFeatureType == &PointFeatureType::floodGate)
+			else if(pointFeature.pointFeatureType == PointFeatureTypeId::FloodGate)
 			{
 				static sf::Sprite floodGate = getCenteredSprite("floodGate");
 				// Default floodGate image leads north-south, maybe rotate.
-				if(north.empty() || space.solid_is(north) || south.empty() || space.solid_is(south))
+				if(north.empty() || space.solid_isAny(north) || south.empty() || space.solid_isAny(south))
 					floodGate.setRotation(90);
 				else
 					floodGate.setRotation(0);
 				spriteOnBlockCentered(point, floodGate, color);
 			}
-			else if(pointFeature.pointFeatureType == &PointFeatureType::fortification)
+			else if(pointFeature.pointFeatureType == PointFeatureTypeId::Fortification)
 			{
 				static sf::Sprite fortification = getCenteredSprite("fortification");
 				// Default fortification image leads north-south, maybe rotate.
-				if(north.empty() || space.solid_is(north) || !space.shape_canStandIn(north) || south.empty() || space.solid_is(south) || !space.shape_canStandIn(south))
+				if(north.empty() || space.solid_isAny(north) || !space.shape_canStandIn(north) || south.empty() || space.solid_isAny(south) || !space.shape_canStandIn(south))
 					fortification.setRotation(90);
 				else
 					fortification.setRotation(0);
 				spriteOnBlockCentered(point, fortification, color);
 			}
-			else if(pointFeature.pointFeatureType == &PointFeatureType::door)
+			else if(pointFeature.pointFeatureType == PointFeatureTypeId::Door)
 			{
 				static sf::Sprite door = getCenteredSprite("door");
 				// Default door image leads north-south, maybe rotate.
-				if(north.empty() || space.solid_is(north) || !space.shape_canStandIn(north) || south.empty() || space.solid_is(south) || !space.shape_canStandIn(south))
+				if(north.empty() || space.solid_isAny(north) || !space.shape_canStandIn(north) || south.empty() || space.solid_isAny(south) || !space.shape_canStandIn(south))
 					door.setRotation(90);
 				else
 					door.setRotation(0);
 				spriteOnBlockCentered(point, door, color);
 			}
-			else if(pointFeature.pointFeatureType == &PointFeatureType::flap)
+			else if(pointFeature.pointFeatureType == PointFeatureTypeId::Flap)
 			{
 				static sf::Sprite flap = getCenteredSprite("flap");
 				// Default flap image leads north-south, maybe rotate.
-				if(north.empty() || space.solid_is(north) || !space.shape_canStandIn(north) || south.empty() || space.solid_is(south) || !space.shape_canStandIn(south))
+				if(north.empty() || space.solid_isAny(north) || !space.shape_canStandIn(north) || south.empty() || space.solid_isAny(south) || !space.shape_canStandIn(south))
 					flap.setRotation(90);
 				else
 					flap.setRotation(0);
@@ -462,12 +463,12 @@ void Draw::pointFeaturesAndFluids(const Point3D& point)
 	else
 	{
 		const Point3D& below = point.below();
-		if(below.exists() && !space.solid_is(below))
+		if(below.exists() && !space.solid_isAny(below))
 		{
 			// Show tops of stairs and ramps from next level down.
-			if(space.pointFeature_contains(below, PointFeatureType::stairs))
+			if(space.pointFeature_contains(below, PointFeatureTypeId::Stairs))
 			{
-				const PointFeature& pointFeature = *space.pointFeature_at(below, PointFeatureType::stairs);
+				const PointFeature& pointFeature = space.pointFeature_at(below, PointFeatureTypeId::Stairs);
 				sf::Color* color = &displayData::materialColors[pointFeature.materialType];
 				static sf::Sprite stairs = getCenteredSprite("stairs");
 				Facing4 facing = rampOrStairsFacing(below);
@@ -476,9 +477,9 @@ void Draw::pointFeaturesAndFluids(const Point3D& point)
 				stairs.setTextureRect({0,0,32,16});
 				spriteOnBlockCentered(point, stairs, color);
 			}
-			else if(space.pointFeature_contains(below, PointFeatureType::ramp))
+			else if(space.pointFeature_contains(below, PointFeatureTypeId::Ramp))
 			{
-				const PointFeature& pointFeature = *space.pointFeature_at(below, PointFeatureType::ramp);
+				const PointFeature& pointFeature = space.pointFeature_at(below, PointFeatureTypeId::Ramp);
 				sf::Color* color = &displayData::materialColors[pointFeature.materialType];
 				static sf::Sprite ramp = getCenteredSprite("ramp");
 				Facing4 facing = rampOrStairsFacing(below);
@@ -496,17 +497,17 @@ void Draw::pointFeaturesAndFluids(const Point3D& point)
 		CollisionVolume volume = space.fluid_volumeOfTypeContains(point, fluidType);
 		const sf::Color color = displayData::fluidColors[fluidType];
 		colorOnBlock(point, color);
-		stringOnBlock(point, std::to_wstring(volume.get()), sf::Color::Black);
+		stringOnBlock(point, std::to_string(volume.get()), sf::Color::Black);
 	}
 }
 void Draw::blockWallsFromNextLevelDown(const Point3D& point)
 {
 	Space& space = m_window.m_area->getSpace();
 	const Point3D& below = point.below();
-	if(below.empty() || !space.solid_is(below))
+	if(below.empty() || !space.solid_isAny(below))
 		return;
 	const Point3D& belowSouth = below.south();
-	if(belowSouth.exists() && !space.solid_is(belowSouth))
+	if(belowSouth.exists() && !space.solid_isAny(belowSouth))
 	{
 		sf::Sprite* sprite;
 		MaterialTypeId materialType;
@@ -526,12 +527,11 @@ void Draw::blockWallsFromNextLevelDown(const Point3D& point)
 		assert(materialType.exists());
 		assert(displayData::materialColors.contains(materialType));
 		sf::Color color = displayData::materialColors[materialType];
-		const Point3D belowSouthPosition = space.getCoordinates(belowSouth);
-		sf::Vector2f position{(((float)belowSouthPosition.x().get() + 0.5f) * (float)m_window.m_scale), (((float)belowSouthPosition.y().get() + 0.5f - displayData::wallOffset) * (float)m_window.m_scale)};
+		sf::Vector2f position{(((float)belowSouth.x().get() + 0.5f) * (float)m_window.m_scale), (((float)belowSouth.y().get() + 0.5f - displayData::wallOffset) * (float)m_window.m_scale)};
 		spriteAt(*sprite, position, &color);
 	}
 	const Point3D& belowWest = below.west();
-	if(belowWest.exists() && !space.solid_is(belowWest))
+	if(belowWest.exists() && !space.solid_isAny(belowWest))
 	{
 		static sf::Sprite* sprite;
 		MaterialTypeId materialType;
@@ -550,8 +550,7 @@ void Draw::blockWallsFromNextLevelDown(const Point3D& point)
 		sprite->setRotation(90);
 		assert(displayData::materialColors.contains(materialType));
 		sf::Color color = displayData::materialColors[materialType];
-		const Point3D belowWestPosition = space.getCoordinates(belowWest);
-		sf::Vector2f position{(((float)belowWestPosition.x().get() + 0.5f + displayData::wallOffset) * (float)m_window.m_scale), (((float)belowWestPosition.y().get() + 0.5f) * (float)m_window.m_scale)};
+		sf::Vector2f position{(((float)belowWest.x().get() + 0.5f + displayData::wallOffset) * (float)m_window.m_scale), (((float)belowWest.y().get() + 0.5f) * (float)m_window.m_scale)};
 		spriteAt(*sprite, position, &color);
 	}
 }
@@ -567,9 +566,7 @@ void Draw::colorOnBlock(const Point3D& point, const sf::Color color)
 {
 	sf::RectangleShape square(sf::Vector2f(m_window.m_scale, m_window.m_scale));
 	square.setFillColor(color);
-	Space& space = m_window.m_area->getSpace();
-	const Point3D coordinates = space.getCoordinates(point);
-	square.setPosition((float)coordinates.x().get() * m_window.m_scale, ((float)coordinates.y().get() * m_window.m_scale));
+	square.setPosition((float)point.x().get() * m_window.m_scale, ((float)point.y().get() * m_window.m_scale));
 	m_window.getRenderWindow().draw(square);
 }
 void Draw::maybeDesignated(const Point3D& point)
@@ -613,9 +610,7 @@ void Draw::spriteOnBlockWithScaleCentered(const Point3D& point, sf::Sprite& spri
 	float windowScale = m_window.m_scale;
 	scale = scale * (windowScale / (float)displayData::defaultScale);
 	sprite.setScale(scale, scale);
-	Space& space = m_window.m_area->getSpace();
-	const Point3D coordinates = space.getCoordinates(point);
-	sprite.setPosition(((float)coordinates.x().get() + 0.5f) * windowScale, ((float)coordinates.y().get() + 0.5f) * windowScale);
+	sprite.setPosition(((float)point.x().get() + 0.5f) * windowScale, ((float)point.y().get() + 0.5f) * windowScale);
 	if(color)
 		sprite.setColor(*color);
 	m_window.getRenderWindow().draw(sprite);
@@ -625,9 +620,7 @@ void Draw::spriteOnBlockWithScale(const Point3D& point, sf::Sprite& sprite, floa
 	float windowScale = m_window.m_scale;
 	scale = scale * (windowScale / (float)displayData::defaultScale);
 	sprite.setScale(scale, scale);
-	Space& space = m_window.m_area->getSpace();
-	const Point3D coordinates = space.getCoordinates(point);
-	sprite.setPosition((float)coordinates.x().get() * windowScale, (float)coordinates.y().get() * windowScale);
+	sprite.setPosition((float)point.x().get() * windowScale, (float)point.y().get() * windowScale);
 	if(color)
 		sprite.setColor(*color);
 	m_window.getRenderWindow().draw(sprite);
@@ -647,16 +640,12 @@ void Draw::spriteAtWithScale(sf::Sprite& sprite, sf::Vector2f position, float sc
 }
 void Draw::spriteOnBlock(const Point3D& point, sf::Sprite& sprite, const sf::Color* color)
 {
-	Space& space = m_window.m_area->getSpace();
-	const Point3D coordinates = space.getCoordinates(point);
-	sf::Vector2f position{(float)(coordinates.x().get()* m_window.m_scale), (float)(coordinates.y().get()* m_window.m_scale)};
+	sf::Vector2f position{(float)(point.x().get()* m_window.m_scale), (float)(point.y().get()* m_window.m_scale)};
 	spriteAt(sprite, position, color);
 }
 void Draw::spriteOnBlockCentered(const Point3D& point, sf::Sprite& sprite, const sf::Color* color)
 {
-	Space& space = m_window.m_area->getSpace();
-	const Point3D coordinates = space.getCoordinates(point);
-	sf::Vector2f position{(((float)coordinates.x().get() + 0.5f) * (float)m_window.m_scale), (((float)coordinates.y().get() + 0.5f) * (float)m_window.m_scale)};
+	sf::Vector2f position{(((float)point.x().get() + 0.5f) * (float)m_window.m_scale), (((float)point.y().get() + 0.5f) * (float)m_window.m_scale)};
 	spriteAt(sprite, position, color);
 }
 void Draw::imageOnBlock(const Point3D& point, std::string name, const sf::Color* color)
@@ -688,30 +677,28 @@ void Draw::progressBarOnBlock(const Point3D& point, Percent progress)
 	float scaledUnit = getScaledUnit();
 	sf::RectangleShape outline(sf::Vector2f(m_window.m_scale, scaledUnit * (2 + displayData::progressBarThickness)));
 	outline.setFillColor(displayData::progressBarOutlineColor);
-	Space& space = m_window.m_area->getSpace();
-	const Point3D coordinates = space.getCoordinates(point);
-	outline.setPosition((float)coordinates.x().get() * m_window.m_scale, (float)coordinates.y().get() * m_window.m_scale);
+	outline.setPosition((float)point.x().get() * m_window.m_scale, (float)point.y().get() * m_window.m_scale);
 	m_window.getRenderWindow().draw(outline);
 	float progressWidth = util::scaleByPercent(m_window.m_scale, progress) - (scaledUnit * 2);
 	sf::RectangleShape rectangle(sf::Vector2f(progressWidth, scaledUnit * displayData::progressBarThickness));
 	rectangle.setFillColor(displayData::progressBarColor);
-	rectangle.setPosition(((float)coordinates.x().get() * m_window.m_scale) + scaledUnit, ((float)coordinates.y().get() * m_window.m_scale) + scaledUnit);
+	rectangle.setPosition(((float)point.x().get() * m_window.m_scale) + scaledUnit, ((float)point.y().get() * m_window.m_scale) + scaledUnit);
 	m_window.getRenderWindow().draw(rectangle);
 }
 void Draw::selected(const Point3D& point) { outlineOnBlock(point, displayData::selectColor); }
 void Draw::selected(const Cuboid& cuboid)
 {
 	// Check if cuboid intersects with current z level
-	if(cuboid.m_lowest.z() > m_window.m_z || cuboid.m_highest.z() < m_window.m_z)
+	if(cuboid.m_low.z() > m_window.m_z || cuboid.m_high.z() < m_window.m_z)
 		return;
 	// Set Dimensions.
-	const uint xSize = (cuboid.m_highest.x() - cuboid.m_lowest.x()).get() + 1;
-	const uint ySize = (cuboid.m_highest.y() - cuboid.m_lowest.y()).get() + 1;
+	const uint xSize = (cuboid.m_high.x() - cuboid.m_low.x()).get() + 1;
+	const uint ySize = (cuboid.m_high.y() - cuboid.m_low.y()).get() + 1;
 	sf::RectangleShape rectangle(sf::Vector2f(xSize * m_window.m_scale, ySize * m_window.m_scale));
 	// Set Color.
 	rectangle.setFillColor(displayData::selectColorOverlay);
 	// Set Position.
-	rectangle.setPosition(((float)cuboid.m_lowest.x().get() * m_window.m_scale), ((float)cuboid.m_lowest.y().get() * m_window.m_scale));
+	rectangle.setPosition(((float)cuboid.m_low.x().get() * m_window.m_scale), ((float)cuboid.m_low.y().get() * m_window.m_scale));
 	m_window.getRenderWindow().draw(rectangle);
 }
 void Draw::outlineOnBlock(const Point3D& point, const sf::Color color, float thickness)
@@ -720,22 +707,18 @@ void Draw::outlineOnBlock(const Point3D& point, const sf::Color color, float thi
 	square.setFillColor(sf::Color::Transparent);
 	square.setOutlineColor(color);
 	square.setOutlineThickness(thickness);
-	Space& space = m_window.m_area->getSpace();
-	const Point3D coordinates = space.getCoordinates(point);
-	square.setPosition(((float)coordinates.x().get() * m_window.m_scale) + thickness, ((float)coordinates.y().get() * m_window.m_scale) + thickness);
+	square.setPosition(((float)point.x().get() * m_window.m_scale) + thickness, ((float)point.y().get() * m_window.m_scale) + thickness);
 	m_window.getRenderWindow().draw(square);
 }
-void Draw::stringOnBlock(const Point3D& point, std::wstring string, const sf::Color color, float offsetX, float offsetY )
+void Draw::stringOnBlock(const Point3D& point, std::string string, const sf::Color color, float offsetX, float offsetY )
 {
-	Space& space = m_window.m_area->getSpace();
-	const Point3D coordinates = space.getCoordinates(point);
 	return stringAtPosition(string, {
-		((float)coordinates.x().get() + offsetX) * m_window.m_scale,
-		((float)coordinates.y().get() + offsetY) * m_window.m_scale
+		((float)point.x().get() + offsetX) * m_window.m_scale,
+		((float)point.y().get() + offsetY) * m_window.m_scale
 	}, color);
 
 }
-void Draw::stringAtPosition(const std::wstring string, const sf::Vector2f position, const sf::Color color, float offsetX, float offsetY )
+void Draw::stringAtPosition(const std::string string, const sf::Vector2f position, const sf::Color color, float offsetX, float offsetY )
 {
 	// Don't draw text which would be too small to read comfortably.
 	if(m_window.m_scale < displayData::defaultScale)
@@ -773,10 +756,8 @@ void Draw::nonGroundCoverPlant(const Point3D& point)
 		}
 		else
 		{
-			const Point3D coordinates = space.getCoordinates(point);
 			const Point3D& plantLocation = plants.getLocation(plant);
-			const Point3D plantLocationCoordinates = space.getCoordinates(plantLocation);
-			if(coordinates.x() == plantLocationCoordinates.x() && coordinates.y() == plantLocationCoordinates.y())
+			if(point.x() == plantLocation.x() && point.y() == plantLocation.y())
 			{
 				const Point3D& above = point.above();
 				if(above.exists() && space.plant_exists(above) && space.plant_get(above) == plant)
@@ -794,7 +775,7 @@ void Draw::nonGroundCoverPlant(const Point3D& point)
 			}
 			else
 			{
-				float angle = 45.f * (uint)space.facingToSetWhenEnteringFromIncludingDiagonal(point, plantLocation);
+				float angle = 45.f * (uint)plantLocation.getFacingTwordsIncludingDiagonal(point);
 				static sf::Sprite branch = getCenteredSprite("branch");
 				branch.setRotation(angle);
 				spriteOnBlockCentered(point, branch);
@@ -840,7 +821,7 @@ void Draw::itemOverlay(const ItemIndex& item, sf::Vector2f position)
 	Items& items = m_window.m_area->getItems();
 	Quantity quantity = items.getQuantity(item);
 	if(quantity != 1)
-		stringAtPosition(std::to_wstring(quantity.get()), position, sf::Color::White);
+		stringAtPosition(std::to_string(quantity.get()), position, sf::Color::White);
 }
 void Draw::actorOverlay(const ActorIndex& actor)
 {
@@ -851,7 +832,7 @@ void Draw::actorOverlay(const ActorIndex& actor)
 	{
 		sf::Vector2f sleepTextLocation = location;
 		sleepTextLocation.y += m_window.m_scale / 3.5f;
-		stringAtPosition(L"zzz", sleepTextLocation, sf::Color::Cyan);
+		stringAtPosition("zzz", sleepTextLocation, sf::Color::Cyan);
 	}
 }
 void Draw::itemOverlay(const Point3D& point)
@@ -862,9 +843,9 @@ void Draw::itemOverlay(const Point3D& point)
 		return;
 	const ItemIndex& item = space.item_getAll(point).front();
 	if(space.item_getAll(point).size() > 1)
-		stringOnBlock(point, std::to_wstring(space.item_getAll(point).size()), sf::Color::Magenta);
+		stringOnBlock(point, std::to_string(space.item_getAll(point).size()), sf::Color::Magenta);
 	else if(items.getQuantity(item) != 1)
-		stringOnBlock(point, std::to_wstring(items.getQuantity(item).get()), sf::Color::White);
+		stringOnBlock(point, std::to_string(items.getQuantity(item).get()), sf::Color::White);
 	if(m_window.getSelectedItems().contains(item))
 		outlineOnBlock(point, displayData::selectColor);
 	if(m_window.getFaction().exists() && !items.stockpile_canBeStockPiled(item, m_window.getFaction()))
@@ -901,87 +882,83 @@ void Draw::singleTileActor(const ActorIndex& actor)
 }
 void Draw::multiTileActor(const ActorIndex& actor)
 {
-	Space& space = m_window.m_area->getSpace();
 	Actors& actors = m_window.m_area->getActors();
 	AnimalSpeciesDisplayData& display = displayData::actorData[actors.getSpecies(actor)];
 	auto [sprite, origin] = sprites::make(display.image);
-	const MapWithCuboidKeys<CollisionVolume>& occupiedBlocks = actors.getOccupied(actor);
+	const CuboidSet& occupiedBlocks = actors.getOccupied(actor);
 	// TODO: move display scale to display data.
 	if(Shape::getDisplayScale(actors.getShape(actor)) == 1)
 	{
-		const Point3D& actorLocationCoordinates = space.getCoordinates(actors.getLocation(actor));
-		const Point3D& location = m_window.m_area->getSpace().getIndex(actorLocationCoordinates.x(), actorLocationCoordinates.y(), m_window.m_z);
+		const Point3D& actorLocation = actors.getLocation(actor);
+		const Point3D location = Point3D(actorLocation.x(), actorLocation.y(), m_window.m_z);
 		spriteOnBlock(location, sprite, &display.color);
 		multiTileBorder(occupiedBlocks, displayData::actorOutlineColor, 1);
 	}
 	else
 	{
 		Point3D topLeft;
-		for(const Point3D& point : occupiedBlocks)
-		{
-			const Point3D blockCoordinates = space.getCoordinates(point);
-			if(blockCoordinates.z() == m_window.m_z)
+		for(const Cuboid& cuboid : occupiedBlocks)
+			for(const Point3D& point : cuboid)
 			{
-				if(topLeft.empty())
-					topLeft = point;
-				else
+				if(point.z() == m_window.m_z)
 				{
-					const Point3D topLeftCoordinates = space.getCoordinates(topLeft);
-					if(blockCoordinates.x() < topLeftCoordinates.x() || blockCoordinates.y() < topLeftCoordinates.y())
+					if(topLeft.empty())
 						topLeft = point;
+					else
+					{
+						if(point.x() < topLeft.x() || point.y() < topLeft.y())
+							topLeft = point;
+					}
 				}
 			}
-		}
 		spriteOnBlockWithScale(topLeft, sprite, Shape::getDisplayScale(actors.getShape(actor)), &display.color);
 	}
 }
-void Draw::multiTileBorder(const MapWithCuboidKeys<CollisionVolume>& blocksOccpuied, sf::Color color, float thickness)
+void Draw::multiTileBorder(const CuboidSet& blocksOccpuied, sf::Color color, float thickness)
 {
-	Space& space = m_window.m_area->getSpace();
-	for(const Point3D& point : blocksOccpuied)
-	{
-		for(const Point3D& adjacent : space.getAdjacentOnSameZLevelOnly(point))
-			if(!blocksOccpuied.contains(adjacent))
-			{
-				Facing4 facing = space.facingToSetWhenEnteringFrom(adjacent, point);
-				borderSegmentOnBlock(point, facing, color, thickness);
-			}
-	}
+	for(const Cuboid& cuboid : blocksOccpuied)
+		for(const Point3D& point : cuboid)
+		{
+			for(const Point3D& adjacent : point.getAllAdjacentIncludingOutOfBounds().sliceAtZ(point.z()))
+				if(!blocksOccpuied.contains(adjacent))
+				{
+					Facing4 facing = point.getFacingTwords(adjacent);
+					borderSegmentOnBlock(point, facing, color, thickness);
+				}
+		}
 }
 void Draw::borderSegmentOnBlock(const Point3D& point, const Facing4& facing, sf::Color color, float thickness)
 {
 	sf::RectangleShape square(sf::Vector2f(m_window.m_scale, thickness));
 	square.setFillColor(color);
-	Space& space = m_window.m_area->getSpace();
-	const Point3D coordinates = space.getCoordinates(point);
 	switch((uint)facing)
 	{
 		case 0:
 			// do nothing
 			square.setPosition(
-				(float)coordinates.x().get() * m_window.m_scale,
-				(float)coordinates.y().get() * m_window.m_scale
+				(float)point.x().get() * m_window.m_scale,
+				(float)point.y().get() * m_window.m_scale
 			);
 			break;
 		case 1:
 			square.setRotation(90);
 			square.setPosition(
-				(((float)coordinates.x().get() + 1.f) * m_window.m_scale) - thickness,
-				(float)(coordinates.y().get() * m_window.m_scale)
+				(((float)point.x().get() + 1.f) * m_window.m_scale) - thickness,
+				(float)(point.y().get() * m_window.m_scale)
 			);
 		break;
 		case 2:
 			square.setPosition(
-				(float)coordinates.x().get() * m_window.m_scale,
-				(((float)coordinates.y().get() + 1) * m_window.m_scale) - thickness
+				(float)point.x().get() * m_window.m_scale,
+				(((float)point.y().get() + 1) * m_window.m_scale) - thickness
 			);
 			break;
 
 		case 3:
 			square.setRotation(90);
 			square.setPosition(
-				(float)coordinates.x().get() * m_window.m_scale,
-				(float)coordinates.y().get() * m_window.m_scale
+				(float)point.x().get() * m_window.m_scale,
+				(float)point.y().get() * m_window.m_scale
 			);
 			break;
 	}
@@ -990,9 +967,9 @@ void Draw::borderSegmentOnBlock(const Point3D& point, const Facing4& facing, sf:
 Facing4 Draw::rampOrStairsFacing(const Point3D& point) const
 {
 	Space& space = m_window.m_area->getSpace();
-	static auto canConnectToAbove = [&](const Point3D& point) -> bool{
-		const Point3D& above = point.above();
-		return above.exists() && !space.pointFeature_contains(point, PointFeatureType::stairs) && !space.pointFeature_contains(point, PointFeatureType::ramp) && space.shape_canStandIn(above);
+	static auto canConnectToAbove = [&](const Point3D& otherPoint) -> bool {
+		const Point3D& above = otherPoint.above();
+		return above.exists() && !space.pointFeature_contains(otherPoint, PointFeatureTypeId::Stairs) && !space.pointFeature_contains(otherPoint, PointFeatureTypeId::Ramp) && space.shape_canStandIn(above);
 	};
 	const Point3D& above = point.above();
 	if(above.empty())
@@ -1002,9 +979,9 @@ Facing4 Draw::rampOrStairsFacing(const Point3D& point) const
 	const Point3D& south = point.south();
 	if(north.exists() && canConnectToAbove(north))
 	{
-		if(!space.solid_is(south) && space.shape_canStandIn(south) &&
-			!space.pointFeature_contains(south, PointFeatureType::stairs) &&
-			!space.pointFeature_contains(south, PointFeatureType::stairs)
+		if(!space.solid_isAny(south) && space.shape_canStandIn(south) &&
+			!space.pointFeature_contains(south, PointFeatureTypeId::Stairs) &&
+			!space.pointFeature_contains(south, PointFeatureTypeId::Stairs)
 		)
 			return Facing4::North;
 	}
@@ -1012,16 +989,16 @@ Facing4 Draw::rampOrStairsFacing(const Point3D& point) const
 	const Point3D& west = point.west();
 	if(east.exists() && canConnectToAbove(east))
 	{
-		if(!space.solid_is(west) && space.shape_canStandIn(west))
+		if(!space.solid_isAny(west) && space.shape_canStandIn(west))
 			return Facing4::East;
 		else
 			backup = Facing4::East;
 	}
 	if(south.exists() && canConnectToAbove(south))
 	{
-		if(!space.solid_is(north) && space.shape_canStandIn(north) &&
-			!space.pointFeature_contains(north, PointFeatureType::stairs) &&
-			!space.pointFeature_contains(north, PointFeatureType::stairs)
+		if(!space.solid_isAny(north) && space.shape_canStandIn(north) &&
+			!space.pointFeature_contains(north, PointFeatureTypeId::Stairs) &&
+			!space.pointFeature_contains(north, PointFeatureTypeId::Stairs)
 		)
 			return Facing4::South;
 		else
@@ -1029,7 +1006,7 @@ Facing4 Draw::rampOrStairsFacing(const Point3D& point) const
 	}
 	if(west.exists() && canConnectToAbove(west))
 	{
-		if(!space.solid_is(east) && space.shape_canStandIn(point))
+		if(!space.solid_isAny(east) && space.shape_canStandIn(point))
 			return Facing4::West;
 		else
 			backup = Facing4::West;
@@ -1038,22 +1015,18 @@ Facing4 Draw::rampOrStairsFacing(const Point3D& point) const
 }
 sf::Vector2f Draw::blockToPosition(const Point3D& point) const
 {
-	Space& space = m_window.m_area->getSpace();
-	const Point3D coordinates = space.getCoordinates(point);
-	return {((float)coordinates.x().get() * m_window.m_scale), ((float)coordinates.y().get() * m_window.m_scale)};
+	return {((float)point.x().get() * m_window.m_scale), ((float)point.y().get() * m_window.m_scale)};
 }
 sf::Vector2f Draw::blockToPositionCentered(const Point3D& point) const
 {
-	Space& space = m_window.m_area->getSpace();
-	const Point3D coordinates = space.getCoordinates(point);
-	return {((float)coordinates.x().get() + 0.5f) * m_window.m_scale, ((float)coordinates.y().get() + 0.5f) * m_window.m_scale};
+	return {((float)point.x().get() + 0.5f) * m_window.m_scale, ((float)point.y().get() + 0.5f) * m_window.m_scale};
 }
 void Draw::accessableSymbol(const Point3D& point)
 {
-	stringOnBlock(point, L"o", sf::Color::Green, 0.1, 0.6);
+	stringOnBlock(point, "o", sf::Color::Green, 0.1, 0.6);
 }
 void Draw::inaccessableSymbol(const Point3D& point)
 {
-	stringOnBlock(point, L"x", sf::Color::Red, 0.1, 0.6);
+	stringOnBlock(point, "x", sf::Color::Red, 0.1, 0.6);
 }
 float Draw::getScaledUnit() const { return float(m_window.m_scale) / float(displayData::defaultScale); }

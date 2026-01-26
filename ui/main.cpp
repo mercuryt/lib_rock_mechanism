@@ -1,7 +1,7 @@
 #include "displayData.h"
 #include "sprite.h"
 #include "window.h"
-#include "../engine/config.h"
+#include "../engine/config/config.h"
 #include "../engine/definitions/definitions.h"
 int main()
 {

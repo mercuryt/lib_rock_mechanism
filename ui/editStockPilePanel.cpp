@@ -2,7 +2,7 @@
 #include "definitions/materialType.h"
 #include "widgets.h"
 #include "window.h"
-#include "../engine/stockpile.h"
+#include "../engine/area/stockpile.h"
 #include "../engine/items/items.h"
 
 EditStockPileView::EditStockPileView(Window& window) : m_window(window), m_panel(tgui::Panel::create())
@@ -13,10 +13,10 @@ EditStockPileView::EditStockPileView(Window& window) : m_window(window), m_panel
 
 void EditStockPileView::draw(StockPile* stockpile)
 {
-	std::wstring verb = m_stockPile ? L"edit" : L"create";
+	std::string verb = m_stockPile ? "edit" : "create";
 	m_stockPile = stockpile;
 	m_panel->removeAllWidgets();
-	auto label = tgui::Label::create(verb + L" stockpile");
+	auto label = tgui::Label::create(verb + " stockpile");
 	m_panel->add(label);
 	uint index = 0;
 	auto list = tgui::Grid::create();
@@ -53,11 +53,11 @@ void EditStockPileView::draw(StockPile* stockpile)
 		{
 			const FactionId& faction = m_window.getFaction();
 			Area& area = *m_window.getArea();
-			Space& space =  area.getSpace();
 			area.m_spaceDesignations.maybeRegisterFaction(faction);
 			m_stockPile = &area.m_hasStockPiles.getForFaction(faction).addStockPile({});
-			for(const Point3D& point : m_window.getSelectedBlocks().getView(space))
-				m_stockPile->addPoint(point);
+			for(const Cuboid& cuboid : m_window.getSelectedBlocks())
+				for(const Point3D& point : cuboid)
+					m_stockPile->addPoint(point);
 		}
 		const MaterialTypeId& materialType = widgetUtil::lastSelectedMaterial;
 		const MaterialCategoryTypeId& materialTypeCategory = widgetUtil::lastSelectedMaterialCategory;

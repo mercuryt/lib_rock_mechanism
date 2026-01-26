@@ -49,7 +49,7 @@ void ContextMenu::drawActorControls(const Point3D& point)
 				destroy->onClick([this, actor, &actors, &area]{
 					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 					m_window.deselectAll();
-					actors.exit(actor);
+					actors.location_clear(actor);
 					actors.destroy(actor);
 					const ActorId& actorId = actors.getId(actor);
 					m_window.getSimulation()->m_actors.removeActor(actorId);
@@ -125,7 +125,7 @@ void ContextMenu::drawActorControls(const Point3D& point)
 			auto factionLabel = tgui::Label::create("faction");
 			factionLabel->getRenderer()->setBackgroundColor(displayData::contextMenuUnhoverableColor);
 			submenu.add(factionLabel);
-			auto factionUI = widgetUtil::makeFactionSelectUI(*m_window.getSimulation(), L"none");
+			auto factionUI = widgetUtil::makeFactionSelectUI(*m_window.getSimulation(), "none");
 			submenu.add(factionUI);
 			//TODO: generate a default name when species is selected if name is blank.
 			auto confirm = tgui::Button::create("create");
@@ -135,7 +135,7 @@ void ContextMenu::drawActorControls(const Point3D& point)
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 				const ActorIndex& actor = actors.create({
 					.species = widgetUtil::lastSelectedAnimalSpecies,
-					.name = nameUI->getText().toWideString(),
+					.name = nameUI->getText().toStdString(),
 					.location = point,
 					.faction = widgetUtil::lastSelectedFaction
 				});

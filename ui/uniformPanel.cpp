@@ -18,7 +18,7 @@ UniformCreateOrEditView::UniformCreateOrEditView(Window& window) :
 	m_confirm->onClick([&]{
 		if(m_uniform)
 		{
-			m_uniform->name = m_name->getText().toWideString();
+			m_uniform->name = m_name->getText().toStdString();
 			m_uniform->elements.swap(m_copy.elements);
 		}
 		else
@@ -37,7 +37,7 @@ void UniformCreateOrEditView::draw(Uniform* uniform)
 	}
 	else
 	{
-		m_copy.name = L"";
+		m_copy.name = "";
 		m_copy.elements.clear();
 		m_title->setText("Create Uniform");
 		m_elements->removeAllWidgets();
@@ -50,7 +50,7 @@ void UniformCreateOrEditView::drawElements()
 	std::vector<UniformElement*> elements;
 	for(const UniformElement& element : m_copy.elements)
 		elements.push_back(&const_cast<UniformElement&>(element));
-	uint32_t column = 0;
+	int column = 0;
 	for(UniformElement* element : elements)
 	{
 		auto label = tgui::Label::create(displayNameForElement(*element));
@@ -66,21 +66,21 @@ void UniformCreateOrEditView::drawElements()
 		++column;
 	}
 }
-std::wstring UniformCreateOrEditView::displayNameForElement(UniformElement& uniformElement)
+std::string UniformCreateOrEditView::displayNameForElement(UniformElement& uniformElement)
 {
 	assert(uniformElement.m_itemType.exists());
-	std::wstring output;
+	std::string output;
 	if(uniformElement.m_solid.exists())
-		output.append(MaterialType::getName(uniformElement.m_solid) + L" ");
+		output.append(MaterialType::getName(uniformElement.m_solid) + " ");
 	else if(uniformElement.m_materialCategoryType.exists())
-		output.append(MaterialTypeCategory::getName(uniformElement.m_materialCategoryType) + L" ");
+		output.append(MaterialTypeCategory::getName(uniformElement.m_materialCategoryType) + " ");
 	output.append(ItemType::getName(uniformElement.m_itemType));
 	return output;
 }
-void UniformCreateOrEditView::setElementQuantity(UniformElement& uniformElement, uint32_t quantity)
+void UniformCreateOrEditView::setElementQuantity(UniformElement& uniformElement, int quantity)
 {
-	assert(quantity <= uniformElement.m_quantity);
-	if(quantity == uniformElement.m_quantity)
+	assert(uniformElement.m_quantity >= quantity);
+	if(uniformElement.m_quantity == quantity)
 	{
 		removeElement(uniformElement);
 		return;

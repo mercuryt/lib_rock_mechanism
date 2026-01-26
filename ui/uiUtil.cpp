@@ -6,21 +6,21 @@
 
 #include <format>
 
-std::wstring UIUtil::describeItem(Area& area, const ItemIndex &item)
+std::string UIUtil::describeItem(Area& area, const ItemIndex &item)
 {
 	Items& items = area.getItems();
-	std::wstring output = MaterialType::getName(items.getMaterialType(item)) + L" " + ItemType::getName(items.getItemType(item));
+	std::string output = MaterialType::getName(items.getMaterialType(item)) + " " + ItemType::getName(items.getItemType(item));
 	if(items.getQuantity(item) > 1)
-		output += L" ( " + std::to_wstring(items.getQuantity(item).get()) + L" ) ";
+		output += " ( " + std::to_string(items.getQuantity(item).get()) + " ) ";
 	else if(!items.getName(item).empty())
-		output += L" " + items.getName(item);
+		output += " " + items.getName(item);
 	return output;
 }
-std::wstring UIUtil::floatToString(const float& input)
+std::string UIUtil::floatToString(const float& input)
 {
-	return std::format(L"{:.2f}", input);
+	return std::format("{:.2f}", input);
 }
-std::wstring UIUtil::temperatureToString(const Temperature& temperature)
+std::string UIUtil::temperatureToString(const Temperature& temperature)
 {
-	return std::to_wstring(temperature.get()) + L"°";
+	return std::to_string(temperature.get()) + "°";
 }

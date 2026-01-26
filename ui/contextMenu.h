@@ -16,7 +16,7 @@ public:
 	ContextMenuSegment(tgui::Group::Ptr overlayGroup);
 	tgui::Panel::Ptr m_panel;
 	tgui::Grid::Ptr m_grid;
-	void add(tgui::Widget::Ptr widget, std::wstring id = L"");
+	void add(tgui::Widget::Ptr widget, std::string id = "");
 	~ContextMenuSegment();
 };
 class ContextMenu final

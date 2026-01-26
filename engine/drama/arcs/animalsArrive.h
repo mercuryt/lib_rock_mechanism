@@ -41,7 +41,7 @@ private:
 	[[nodiscard]] static bool isMedium(const ShapeId& shape);
 	[[nodiscard]] static bool isLarge(const ShapeId& shape);
 	//For debug.
-	void begin();
+	void trigger() override;
 };
 class AnimalsLeaveScheduledEvent final : public ScheduledEvent
 {

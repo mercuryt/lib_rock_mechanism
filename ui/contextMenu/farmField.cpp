@@ -2,6 +2,7 @@
 #include "../window.h"
 #include "../displayData.h"
 #include "../../engine/space/space.h"
+#include "../../engine/definitions/plantSpecies.h"
 #include <mutex>
 void ContextMenu::drawFarmFieldControls(const Point3D& point)
 {
@@ -21,28 +22,27 @@ void ContextMenu::drawFarmFieldControls(const Point3D& point)
 			submenu.add(shrinkButton);
 			shrinkButton->onClick([this, &space, faction]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				for(const Point3D& selectedBlock : m_window.getSelectedBlocks().getView(space))
-					space.farm_remove(selectedBlock, faction);
+				space.farm_remove(m_window.getSelectedBlocks(), faction);
 				hide();
 			});
 			auto setFarmSpeciesButton = tgui::Button::create("set species");
 			setFarmSpeciesButton->getRenderer()->setBackgroundColor(displayData::contextMenuHoverableColor);
 			submenu.add(setFarmSpeciesButton);
 			setFarmSpeciesButton->onClick([this, point, faction, &space, &area]{
-				auto& submenu = makeSubmenu(1);
+				auto& submenu2 = makeSubmenu(1);
 				auto plantSpeciesUI = widgetUtil::makePlantSpeciesSelectUI(area, point);
-				submenu.add(plantSpeciesUI);
+				submenu2.add(plantSpeciesUI);
 				plantSpeciesUI->onItemSelect([this, point, faction, &space, &area](const tgui::String& string)
 				{
 					std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-					const PlantSpeciesId& species = PlantSpecies::byName(string.toWideString());
+					const PlantSpeciesId& species = PlantSpecies::byName(string.toStdString());
 					FarmField& field = *space.farm_get(point, faction);
-					if(species != field.plantSpecies)
+					if(species != field.m_plantSpecies)
 					{
 						auto& hasFarmFields = area.m_hasFarmFields.getForFaction(faction);
-						if(field.plantSpecies.exists())
-							hasFarmFields.clearSpecies(field);
-						hasFarmFields.setSpecies(field, species);
+						if(field.m_plantSpecies.exists())
+							hasFarmFields.clearSpecies(area, field);
+						hasFarmFields.setSpecies(area, field, species);
 						hide();
 					}
 
@@ -62,8 +62,8 @@ void ContextMenu::drawFarmFieldControls(const Point3D& point)
 				if(!m_window.getArea()->m_hasFarmFields.contains(faction))
 					m_window.getArea()->m_hasFarmFields.registerFaction(faction);
 				auto& fieldsForFaction = area.m_hasFarmFields.getForFaction(faction);
-				FarmField& field = fieldsForFaction.create(m_window.getSelectedBlocks());
-				fieldsForFaction.setSpecies(field, plantSpecies);
+				FarmField& field = fieldsForFaction.create(area, m_window.getSelectedBlocks());
+				fieldsForFaction.setSpecies(area, field, plantSpecies);
 				hide();
 			};
 			auto createButton = tgui::Button::create("create farm field");
@@ -77,7 +77,7 @@ void ContextMenu::drawFarmFieldControls(const Point3D& point)
 				auto plantSpeciesUI = widgetUtil::makePlantSpeciesSelectUI(area, point);
 				submenu.add(plantSpeciesUI);
 				plantSpeciesUI->onItemSelect([create](const tgui::String name){
-					create(PlantSpecies::byName(name.toWideString()));
+					create(PlantSpecies::byName(name.toStdString()));
 				});
 			});
 			createButton->onClick([create]{ create(widgetUtil::lastSelectedPlantSpecies); });

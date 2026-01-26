@@ -48,9 +48,9 @@ EditRealityView::EditRealityView(Window& w) : m_window(w), m_panel(tgui::Panel::
 		if(m_name->getText().empty())
 			return;
 		if(!m_window.getSimulation())
-			m_window.setSimulation(std::make_unique<Simulation>(m_name->getText().toWideString(), m_dateTime.get()));
+			m_window.setSimulation(std::make_unique<Simulation>(m_name->getText().toStdString(), m_dateTime.get()));
 		else
-			m_window.getSimulation()->m_name = m_name->getText().toWideString();
+			m_window.getSimulation()->m_name = m_name->getText().toStdString();
 		m_window.getSimulation()->save();
 		draw();
 	});
@@ -63,8 +63,8 @@ EditRealityView::EditRealityView(Window& w) : m_window(w), m_panel(tgui::Panel::
 void EditRealityView::draw()
 {
 	Simulation* simulation = m_window.getSimulation();
-	m_title->setText(simulation ? L"Edit " + simulation->m_name : L"Create reality");
-	m_name->setText(simulation ? simulation->m_name : L"");
+	m_title->setText(simulation ? "Edit " + simulation->m_name : "Create reality");
+	m_name->setText(simulation ? simulation->m_name : "");
 	m_dateTime.set(simulation ? simulation->getDateTime() : DateTime{12, 150, 1200});
 	m_areaHolder->setVisible(simulation);
 	m_confirm->setText(simulation ? "save" : "create");

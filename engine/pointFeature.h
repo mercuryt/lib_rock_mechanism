@@ -3,8 +3,8 @@
 #include "definitions/materialType.h"
 #include "numericTypes/types.h"
 #include "dataStructures/bitset.h"
-
 struct PointFeatureType
+
 {
 	const std::string name;
 	const bool canBeHewn;
@@ -20,6 +20,8 @@ struct PointFeatureType
 	bool operator==(const PointFeatureType& x) const { return this == &x; }
 	static const PointFeatureType& byName(const std::string& name);
 	static const PointFeatureType& byId(const PointFeatureTypeId& id);
+	static std::vector<PointFeatureType*> getAll();
+	static PointFeatureTypeId getId(const PointFeatureType& type);
 };
 // These must appear in the same order as in the enum.
 static std::array<PointFeatureType, 10> pointFeatureTypeData = {{

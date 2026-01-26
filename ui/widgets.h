@@ -48,9 +48,9 @@ namespace widgetUtil
 	tgui::ComboBox::Ptr makePlantSpeciesSelectUI(Area& area, const Point3D& point);
 	inline MaterialTypeId lastSelectedMaterial;
 	inline MaterialTypeId lastSelectedConstructionMaterial;
-	tgui::ComboBox::Ptr makeMaterialSelectUI(MaterialTypeId& lastSelected, std::wstring nullLabel = L"", std::function<bool(const MaterialTypeId&)> predicate = nullptr);
+	tgui::ComboBox::Ptr makeMaterialSelectUI(MaterialTypeId& lastSelected, std::string nullLabel = "", std::function<bool(const MaterialTypeId&)> predicate = nullptr);
 	inline MaterialCategoryTypeId lastSelectedMaterialCategory;
-	tgui::ComboBox::Ptr makeMaterialCategorySelectUI(std::wstring nullLabel = L"");
+	tgui::ComboBox::Ptr makeMaterialCategorySelectUI(std::string nullLabel = "");
 	inline AnimalSpeciesId lastSelectedAnimalSpecies;
 	tgui::ComboBox::Ptr makeAnimalSpeciesSelectUI();
 	inline FluidTypeId lastSelectedFluidType;
@@ -58,7 +58,7 @@ namespace widgetUtil
 	inline ItemTypeId lastSelectedItemType;
 	tgui::ComboBox::Ptr makeItemTypeSelectUI();
 	inline FactionId lastSelectedFaction;
-	tgui::ComboBox::Ptr makeFactionSelectUI(Simulation& simulation, std::wstring nullLabel = L"");
+	tgui::ComboBox::Ptr makeFactionSelectUI(Simulation& simulation, std::string nullLabel = "");
 	inline const PointFeatureType* lastSelectedPointFeatureType = nullptr;
 	tgui::ComboBox::Ptr makePointFeatureTypeSelectUI();
 	inline CraftStepTypeCategoryId lastSelectedCraftStepTypeCategory;

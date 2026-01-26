@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../engine/dataStructures/smallSet.h"
+#include "../engine/dataStructures/smallMap.h"
 
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>

@@ -26,7 +26,7 @@ private:
 	void scheduleDepart();
 	void scheduleContinue();
 	//For debug.
-	void begin();
+	void trigger() override;
 };
 class BanditsLeaveScheduledEvent final : public ScheduledEvent
 {

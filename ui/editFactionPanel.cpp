@@ -24,7 +24,7 @@ void EditFactionView::draw(const FactionId& factionId)
 	auto save = tgui::Button::create("save");
 	m_panel->add(save);
 	save->onClick([this, nameUI, factionId] () mutable {
-		auto name = nameUI->getText().toWideString();
+		auto name = nameUI->getText().toStdString();
 		assert(!name.empty());
 		FactionId factionIdCopy = factionId;
 		if(factionId.exists())
@@ -40,7 +40,7 @@ void EditFactionView::draw(const FactionId& factionId)
 	save->setEnabled(false);
 	nameUI->onTextChange([this, save, factionId](tgui::String text){
 		auto& hasFactions = m_window.getSimulation()->m_hasFactions;
-		std::wstring name = text.toWideString();
+		std::string name = text.toStdString();
 		save->setEnabled(!(name.empty() || hasFactions.containsFactionWithName(name)));
 	});
 	save->setPosition(tgui::bindLeft(nameUI), tgui::bindBottom(nameUI) + 10);
@@ -59,14 +59,14 @@ void EditFactionView::draw(const FactionId& factionId)
 		auto addEnemyLabel = tgui::Label::create("add enemy faction");
 		m_panel->add(addEnemyLabel);
 		addEnemyLabel->setPosition(tgui::bindRight(nameUI) + 10, tgui::bindTop(nameUI));
-		auto addEnemyUI = widgetUtil::makeFactionSelectUI(*m_window.getSimulation(), L"select");
+		auto addEnemyUI = widgetUtil::makeFactionSelectUI(*m_window.getSimulation(), "select");
 		addEnemyUI->setPosition(tgui::bindLeft(addEnemyLabel), tgui::bindBottom(addEnemyLabel) + 10);
 		addEnemyUI->onItemSelect([this, factionId](tgui::String id){
 			if(id != "__null")
 			{
 				Faction& faction = m_window.getSimulation()->m_hasFactions.getById(factionId);
-				const FactionId& enemyFaction = m_window.getSimulation()->m_hasFactions.byName(id.toWideString());
-				faction.enemies.add(enemyFaction);
+				const FactionId& enemyFaction = m_window.getSimulation()->m_hasFactions.byName(id.toStdString());
+				faction.enemies.insert(enemyFaction);
 				m_window.showEditFaction(factionId);
 			}
 		});
@@ -76,18 +76,18 @@ void EditFactionView::draw(const FactionId& factionId)
 		for(const FactionId& enemy : faction.enemies)
 		{
 			Faction& enemyFaction = m_window.getSimulation()->m_hasFactions.getById(enemy);
-			auto label = tgui::Label::create(enemyFaction.name);
-			label->setPosition(tgui::bindLeft(previous), tgui::bindBottom(previous) + 10);
-			m_panel->add(label);
-			previous = label;
+			auto nameLabel = tgui::Label::create(enemyFaction.name);
+			nameLabel->setPosition(tgui::bindLeft(previous), tgui::bindBottom(previous) + 10);
+			m_panel->add(nameLabel);
+			previous = nameLabel;
 			if(m_window.m_editMode)
 			{
 				auto button = tgui::Button::create("X");
-				button->setPosition(tgui::bindLeft(label) + 10, tgui::bindTop(label));
+				button->setPosition(tgui::bindLeft(nameLabel) + 10, tgui::bindTop(nameLabel));
 				m_panel->add(button);
 				button->onClick([this, factionId, enemy]{
-					Faction& faction = m_window.getSimulation()->m_hasFactions.getById(factionId);
-					faction.enemies.remove(enemy);
+					Faction& faction2 = m_window.getSimulation()->m_hasFactions.getById(factionId);
+					faction2.enemies.erase(enemy);
 					m_window.showEditFaction(factionId);
 				});
 			}
@@ -96,14 +96,14 @@ void EditFactionView::draw(const FactionId& factionId)
 		auto addAllyLabel = tgui::Label::create("add ally faction");
 		m_panel->add(addAllyLabel);
 		addAllyLabel->setPosition(tgui::bindRight(addEnemyLabel) + 10, tgui::bindTop(nameUI));
-		auto addAllyUI = widgetUtil::makeFactionSelectUI(*m_window.getSimulation(), L"select");
+		auto addAllyUI = widgetUtil::makeFactionSelectUI(*m_window.getSimulation(), "select");
 		addAllyUI->setPosition(tgui::bindLeft(addAllyLabel), tgui::bindBottom(addAllyLabel) + 10);
 		addAllyUI->onItemSelect([this, factionId](tgui::String id){
 			if(id != "__null")
 			{
-				const FactionId& allyFactionId = m_window.getSimulation()->m_hasFactions.byName(id.toWideString());
-				Faction& faction = m_window.getSimulation()->m_hasFactions.getById(factionId);
-				faction.allies.add(allyFactionId);
+				const FactionId& allyFactionId = m_window.getSimulation()->m_hasFactions.byName(id.toStdString());
+				Faction& faction2 = m_window.getSimulation()->m_hasFactions.getById(factionId);
+				faction2.allies.insert(allyFactionId);
 				m_window.showEditFaction(factionId);
 			}
 		});
@@ -111,18 +111,18 @@ void EditFactionView::draw(const FactionId& factionId)
 		for(const FactionId& allyFactionId : faction.allies)
 		{
 			Faction& ally = m_window.getSimulation()->m_hasFactions.getById(allyFactionId);
-			auto label = tgui::Label::create(ally.name);
-			label->setPosition(tgui::bindLeft(previous), tgui::bindBottom(previous) + 10);
-			m_panel->add(label);
-			previous = label;
+			auto nameLabel = tgui::Label::create(ally.name);
+			nameLabel->setPosition(tgui::bindLeft(previous), tgui::bindBottom(previous) + 10);
+			m_panel->add(nameLabel);
+			previous = nameLabel;
 			if(m_window.m_editMode)
 			{
 				auto button = tgui::Button::create("X");
-				button->setPosition(tgui::bindLeft(label) + 10, tgui::bindTop(label));
+				button->setPosition(tgui::bindLeft(nameLabel) + 10, tgui::bindTop(nameLabel));
 				m_panel->add(button);
 				button->onClick([this, factionId, allyFactionId]{
-					Faction& faction = m_window.getSimulation()->m_hasFactions.getById(factionId);
-					faction.allies.remove(allyFactionId);
+					Faction& faction2 = m_window.getSimulation()->m_hasFactions.getById(factionId);
+					faction2.allies.erase(allyFactionId);
 					m_window.showEditFaction(factionId);
 				});
 			}

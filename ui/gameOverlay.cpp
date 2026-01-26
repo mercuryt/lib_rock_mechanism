@@ -1,7 +1,7 @@
 #include "gameOverlay.h"
 #include "window.h"
 #include "uiUtil.h"
-#include "../engine/config.h"
+#include "../engine/config/config.h"
 #include <TGUI/Widgets/Panel.hpp>
 GameOverlay::GameOverlay(Window& w) : m_window(w),
 	m_group(tgui::Group::create()), m_menu(tgui::Panel::create()), m_infoPopup(w), m_contextMenu(w, m_group),
@@ -67,7 +67,7 @@ void GameOverlay::assignLocationToMoveItemTo(const Point3D& point)
 	assert(!m_window.getSelectedActors().empty());
 	m_window.getArea()->m_hasTargetedHauling.begin(
 		m_window.getSelectedActors(),
-		m_itemBeingMoved,
+		ActorOrItemIndex::createForItem(m_itemBeingMoved),
 		point
 	);
 	m_itemBeingMoved.clear();
@@ -82,16 +82,16 @@ void GameOverlay::unfocusUI()
 void GameOverlay::drawZoom()
 {
 	float ratio = (float)m_window.getScale() / 32.f;
-	std::wstringstream stream;
+	std::stringstream stream;
 	stream << std::fixed << std::setprecision(2) << ratio;
-	m_zoomUI->setText(L"zoom: " + UIUtil::floatToString(ratio));
+	m_zoomUI->setText("zoom: " + UIUtil::floatToString(ratio));
 }
 void GameOverlay::drawWeatherReport()
 {
 	Area& area = *m_window.getArea();
-	std::wstring text = UIUtil::temperatureToString(area.m_hasTemperature.getAmbientSurfaceTemperature());
+	std::string text = UIUtil::temperatureToString(area.m_hasTemperature.getAmbientSurfaceTemperature());
 	if(area.m_hasRain.isRaining())
-		text += L"rain : " + std::to_wstring(area.m_hasRain.getIntensityPercent().get()) + L"%";
+		text += "rain : " + std::to_string(area.m_hasRain.getIntensityPercent().get()) + "%";
 }
 void GameOverlay::drawTime()
 {
@@ -111,20 +111,20 @@ void GameOverlay::drawTime()
 }
 void GameOverlay::drawSelectionDescription()
 {
-	std::wstring description;
+	std::string description;
 	switch(m_window.getSelectMode())
 	{
 		case(SelectMode::Actors):
-			description = L"actors: " + std::to_wstring(m_window.getSelectedActors().size());
+			description = "actors: " + std::to_string(m_window.getSelectedActors().size());
 			break;
 		case(SelectMode::Items):
-			description = L"items: " + std::to_wstring(m_window.getSelectedItems().size());
+			description = "items: " + std::to_string(m_window.getSelectedItems().size());
 			break;
 		case(SelectMode::Plants):
-			description = L"plants: " + std::to_wstring(m_window.getSelectedPlants().size());
+			description = "plants: " + std::to_string(m_window.getSelectedPlants().size());
 			break;
 		case(SelectMode::Space):
-			description = L"space: " + std::to_wstring(m_window.getSelectedBlocks().size());
+			description = "space: " + std::to_string(m_window.getSelectedBlocks().size());
 			break;
 		default:
 			std::unreachable();

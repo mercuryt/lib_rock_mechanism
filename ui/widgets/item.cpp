@@ -56,13 +56,13 @@ std::array<tgui::Widget::Ptr, 7> widgetUtil::makeCreateItemUI(std::function<void
 	itemTypeUI->onItemSelect([populate](const tgui::String itemType){
 		if(itemType.empty())
 			return;
-		lastSelectedItemType = ItemType::byName(itemType.toWideString());
+		lastSelectedItemType = ItemType::byName(itemType.toStdString());
 		populate();
 	});
 	materialTypeUI->onItemSelect([](const tgui::String name){
 		if(name.empty())
 			return;
-		lastSelectedMaterial = MaterialType::byName(name.toWideString());
+		lastSelectedMaterial = MaterialType::byName(name.toStdString());
 	});
 	auto end = ItemType::size();
 	for(ItemTypeId itemType = ItemTypeId::create(0); itemType < end; ++itemType)

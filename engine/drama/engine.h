@@ -45,8 +45,10 @@ protected:
 	friend class DramaEngine;
 public:
 	DramaArcType m_type;
+	virtual void trigger() { assert(false); }
 	[[nodiscard]] std::string name() const { return typeToString(m_type); }
 	[[nodiscard]] Area* getArea() { return m_area; }
+	[[nodiscard]] virtual bool canTriggerFromEditor() const { return false; }
 	[[nodiscard]] static std::vector<DramaArcType> getTypes();
 	[[nodiscard]] static std::string typeToString(DramaArcType type);
 	[[nodiscard]] static DramaArcType stringToType(std::string string);

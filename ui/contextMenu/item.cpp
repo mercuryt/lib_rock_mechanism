@@ -163,15 +163,16 @@ void ContextMenu::drawItemControls(const Point3D& point)
 			std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
 			if(m_window.getSelectedBlocks().empty())
 				m_window.selectBlock(point);
-			for(const Point3D& selectedBlock : m_window.getSelectedBlocks().getView(space))
-			{
-				static const MoveTypeId& none = MoveType::byName(L"none");
-				const ShapeId& shape = ItemType::getShape(params.itemType);
-				if(!space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(selectedBlock, shape, none))
-					continue;
-				params.location = selectedBlock;
-				items.create(params);
-			}
+			for(const Cuboid& cuboid : m_window.getSelectedBlocks())
+				for(const Point3D& selectedBlock : cuboid)
+				{
+					static const MoveTypeId& none = MoveType::byName("none");
+					const ShapeId& shape = ItemType::getShape(params.itemType);
+					if(!space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(selectedBlock, shape, none))
+						continue;
+					params.location = selectedBlock;
+					items.create(params);
+				}
 			hide();
 		};
 		auto addItem = tgui::Label::create("add item");

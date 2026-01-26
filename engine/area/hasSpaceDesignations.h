@@ -23,6 +23,7 @@ public:
 	[[nodiscard]] Point3D queryPoint(const auto& shape, const SpaceDesignation& designation) const { return m_data[(int)designation].queryGetPoint(shape); }
 	[[nodiscard]] Point3D queryPointWithCondition(const auto& shape, const SpaceDesignation& designation, auto&& condition) const { return m_data[(int)designation].queryGetPointWithCondition(shape, condition); }
 	[[nodiscard]] std::vector<SpaceDesignation> getForPoint(const Point3D& point) const;
+	[[nodiscard]] SpaceDesignation getDisplayDesignation(const Point3D& point) const;
 	[[nodiscard]] const RTreeBoolean& getForDesignation(const SpaceDesignation& designation) const;
 	[[nodiscard]] Cuboid getCuboidWithDesignationAndCondition(const SpaceDesignation& designation, const auto& shape, auto&& condition)
 	{

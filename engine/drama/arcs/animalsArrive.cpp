@@ -241,7 +241,7 @@ std::vector<AnimalSpeciesId> AnimalsArriveDramaArc::getSmallHerbivors()
 			output.push_back(i);
 	return output;
 }
-void AnimalsArriveDramaArc::begin()
+void AnimalsArriveDramaArc::trigger()
 {
 	m_isActive = false;
 	callback();

@@ -648,6 +648,7 @@ public:
 	// Skills.
 	[[nodiscard]] SkillLevel skill_getLevel(const ActorIndex& index, const SkillTypeId& skillType) const;
 	[[nodiscard]] const SkillSet& skill_getSet(const ActorIndex& index) const { return m_skillSet[index]; }
+	[[nodiscard]] SkillSet& skill_getSet(const ActorIndex& index) { return m_skillSet[index]; }
 	void skill_addXp(const ActorIndex& index, const SkillTypeId& skillType, const SkillExperiencePoints& xp);
 	// Growth.
 	void grow_maybeStart(const ActorIndex& index);

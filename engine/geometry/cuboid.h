@@ -91,6 +91,7 @@ struct Cuboid
 	[[nodiscard]] OffsetCuboid translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const;
 	[[nodiscard]] OffsetCuboid offsetTo(const Point3D& point) const;
 	[[nodiscard]] SmallSet<Cuboid> sliceAtEachZ() const;
+	[[nodiscard]] Cuboid sliceAtZ(const Distance& z) const;
 	[[nodiscard]] int countIf(auto&& condition) const
 	{
 		int output = 0;

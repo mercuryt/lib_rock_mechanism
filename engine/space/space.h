@@ -305,6 +305,7 @@ public:
 	[[nodiscard]] CuboidSet pointFeature_getCuboidsIntersecting(const Cuboid& cuboid) const;
 	[[nodiscard]] CuboidSet pointFeature_queryCuboids(const Cuboid& cuboid, auto&& condition) const { return m_features.queryGetAllCuboidsWithCondition(cuboid, condition); }
 	[[nodiscard]] SmallSet<std::pair<Cuboid, PointFeature>> pointFeature_getAllWithCuboids(const Cuboid& cuboid) const;
+	[[nodiscard]] SmallSet<PointFeature> pointFeature_getAll(const auto& shape) const { return m_features.queryGetAll(shape); }
 	// -Fluids
 	void fluid_spawnMist(const Point3D& point, const FluidTypeId& fluidType, const Distance maxMistSpread = Distance::create(0));
 	void fluid_clearMist(const Point3D& point);

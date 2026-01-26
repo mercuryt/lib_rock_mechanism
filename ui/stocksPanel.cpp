@@ -22,8 +22,8 @@ void StocksView::draw()
 	{
 		for(const auto& [materialType, items] : map)
 		{
-			const uint32_t count = items.size();
-			std::wstring describe(MaterialType::getName(materialType) + L" " + ItemType::getName(itemType) + L"(" + std::to_wstring(count) + L")");
+			const int count = items.size();
+			std::string describe(MaterialType::getName(materialType) + " " + ItemType::getName(itemType) + "(" + std::to_string(count) + ")");
 			m_list->add(tgui::Label::create(describe));
 		}
 	}

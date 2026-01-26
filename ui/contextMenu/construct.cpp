@@ -21,8 +21,9 @@ void ContextMenu::drawConstructControls(const Point3D& point)
 			m_root.add(cancelButton);
 			cancelButton->onClick([this, faction, &space]{
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);
-				for(const Point3D& selectedBlock : m_window.getSelectedBlocks().getView(space))
-					m_window.getArea()->m_hasConstructionDesignations.undesignate(faction, selectedBlock);
+				for(const Cuboid& cuboid : m_window.getSelectedBlocks())
+					for(const Point3D& selectedBlock : cuboid)
+						m_window.getArea()->m_hasConstructionDesignations.undesignate(faction, selectedBlock);
 				hide();
 			});
 		}
@@ -37,7 +38,7 @@ void ContextMenu::drawConstructControls(const Point3D& point)
 		std::function<bool(const MaterialTypeId&)> predicate = nullptr;
 		if(!m_window.m_editMode)
 			predicate = [&](const MaterialTypeId& materialType)->bool{ return MaterialType::construction_getConsumed(materialType).empty(); };
-		auto materialTypeSelector = widgetUtil::makeMaterialSelectUI(widgetUtil::lastSelectedConstructionMaterial, L"", predicate);
+		auto materialTypeSelector = widgetUtil::makeMaterialSelectUI(widgetUtil::lastSelectedConstructionMaterial, "", predicate);
 		subMenu.add(materialTypeSelector);
 		if(m_window.m_editMode)
 		{
@@ -76,21 +77,21 @@ void ContextMenu::construct(const Point3D& point, bool constructed, const Materi
 				space.solid_setCuboid(cuboid, materialType, constructed);
 			else
 				// TODO: Create point features by cuboid batch.
-				for(const Point3D& selectedBlock : cuboid.getView(space))
+				for(const Point3D& selectedBlock : cuboid)
 				{
 					if(!constructed)
 					{
-						if(!space.solid_is(selectedBlock))
+						if(!space.solid_isAny(selectedBlock))
 							space.solid_set(selectedBlock, materialType, false);
-						space.pointFeature_hew(selectedBlock, *pointFeatureType);
+						space.pointFeature_hew(selectedBlock, PointFeatureType::getId(*pointFeatureType));
 					}
 					else
-						space.pointFeature_construct(selectedBlock, *pointFeatureType, materialType);
+						space.pointFeature_construct(selectedBlock, PointFeatureType::getId(*pointFeatureType), materialType);
 				}
 		}
 		else
-			for(const Point3D& selectedBlock : cuboid.getView(space))
-				m_window.getArea()->m_hasConstructionDesignations.designate(m_window.getFaction(), selectedBlock, pointFeatureType, materialType);
+			for(const Point3D& selectedBlock : cuboid)
+				m_window.getArea()->m_hasConstructionDesignations.designate(m_window.getFaction(), selectedBlock, PointFeatureType::getId(*pointFeatureType), materialType);
 	}
 	hide();
 }

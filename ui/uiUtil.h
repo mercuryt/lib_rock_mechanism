@@ -9,7 +9,7 @@ class Temperature;
 
 namespace UIUtil
 {
-	std::wstring describeItem(Area& area, const ItemIndex& item);
-	std::wstring floatToString(const float& input);
-	std::wstring temperatureToString(const Temperature& temperature);
+	std::string describeItem(Area& area, const ItemIndex& item);
+	std::string floatToString(const float& input);
+	std::string temperatureToString(const Temperature& temperature);
 }

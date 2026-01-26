@@ -57,13 +57,13 @@ void EditAreaView::draw(Area* area)
 {
 	if(area)
 	{
-		m_title->setText(L"Edit " + area->m_name);
+		m_title->setText("Edit " + area->m_name);
 		m_dimensionsHolder->setVisible(false);
 		m_area = area;
 	}
 	else
 	{
-		m_title->setText(L"Create area");
+		m_title->setText("Create area");
 		m_dimensionsHolder->setVisible(true);
 		m_area = nullptr;
 	}
@@ -77,8 +77,8 @@ void EditAreaView::confirm()
 			static constexpr bool createDrama = true;
 			m_area = &m_window.getSimulation()->m_hasAreas->createArea(m_sizeX->getValue(), m_sizeY->getValue(), m_sizeZ->getValue(), createDrama);
 		};
-		m_window.threadTask(task, L"create");
+		m_window.threadTask(task, "create");
 	}
-	m_area->m_name = m_name->getText().toWideString();
+	m_area->m_name = m_name->getText().toStdString();
 	m_window.showEditReality();
 }

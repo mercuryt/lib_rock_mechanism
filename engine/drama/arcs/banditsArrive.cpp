@@ -145,7 +145,7 @@ void BanditsArriveDramaArc::scheduleContinue()
 	Step duration = Config::stepsPerSecond;
 	m_scheduledEvent.schedule(*this, m_area->m_simulation, duration);
 }
-void BanditsArriveDramaArc::begin()
+void BanditsArriveDramaArc::trigger()
 {
 	m_isActive = false;
 	callback();

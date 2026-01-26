@@ -52,7 +52,7 @@ void SmallSet<T>::insertNonunique(const T& value) { m_data.push_back(value); }
 template<typename T>
 void SmallSet<T>::insertFrontNonunique(const T& value) { const auto copy = m_data; m_data.resize(m_data.size() + 1); std::ranges::copy(copy, m_data.begin() + 1); m_data[0] = value;}
 template<typename T>
-void SmallSet<T>::maybeInsertAll(const SmallSet<T>& other)
+void SmallSet<T>::maybeInsertAll(const This& other)
 {
 	maybeInsertAll(other.begin(), other.end());
 }
@@ -97,6 +97,12 @@ template<typename T>
 void SmallSet<T>::eraseAll(SmallSet<T>& other)
 {
 	std::erase_if(m_data, [&](const T& value){ return std::ranges::contains(other.m_data, value); });
+}
+template<typename T>
+void SmallSet<T>::maybeEraseAll(const This& other)
+{
+	for(const T& value : other)
+		maybeErase(value);
 }
 template<typename T>
 void SmallSet<T>::maybeEraseAllWhereBothSetsAreSorted(const This& other)

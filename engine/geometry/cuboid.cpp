@@ -562,6 +562,14 @@ SmallSet<Cuboid> Cuboid::sliceAtEachZ() const
 	}
 	return output;
 }
+Cuboid Cuboid::sliceAtZ(const Distance& z) const
+{
+	Point3D high = m_high;
+	high.setZ(z);
+	Point3D low = m_low;
+	low.setZ(z);
+	return {high, low};
+}
 Cuboid::ConstIterator::ConstIterator(const Point3D& lowest, const Point3D& highest)
 {
 	if(!lowest.exists())

@@ -22,7 +22,7 @@ void ActorView::draw(const ActorIndex& actor)
 	layout->setPosition("5%", "5%");
 	layout->setSize("90%", "90%");
 	layout->add(tgui::Label::create("Actor Details"));
-	layout->add(tgui::Label::create(L"name: " + actors.getName(actor)));
+	layout->add(tgui::Label::create("name: " + actors.getName(actor)));
 	layout->add(tgui::Label::create("age : " + std::to_string(actors.getAgeInYears(actor).get())));
 	// Attributes.
 	layout->add(tgui::Label::create("attributes"));
@@ -102,10 +102,10 @@ void ActorView::draw(const ActorIndex& actor)
 		if(actors.uniform_exists(m_actor))
 			uniformUI->setSelectedItem(actors.uniform_get(actor).name);
 		uniformUI->onItemSelect([&](const tgui::String& uniformName){
-			const FactionId& actorFaction = actors.getFaction(m_actor);
-			if(actorFaction.empty())
+			const FactionId& actorFaction2 = actors.getFaction(m_actor);
+			if(actorFaction2.empty())
 				return;
-			Uniform& uniform = m_window.getSimulation()->m_hasUniforms.getForFaction(actorFaction).getAll()[uniformName.toWideString()];
+			Uniform& uniform = m_window.getSimulation()->m_hasUniforms.getForFaction(actorFaction2).getAll()[uniformName.toStdString()];
 			actors.uniform_set(m_actor, uniform);
 		});
 	}

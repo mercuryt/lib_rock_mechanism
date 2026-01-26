@@ -1,25 +1,15 @@
 #include "displayData.h"
+#include "../engine/dataStructures/smallMap.h"
 #include "../engine/definitions/definitions.h"
 #include "../engine/definitions/materialType.h"
+#include "../engine/definitions/animalSpecies.h"
+#include "../engine/definitions/plantSpecies.h"
 #include "../engine/fluidType.h"
 #include "../engine/items/items.h"
 #include "../engine/plants.h"
-#include "../engine/definitions/animalSpecies.h"
 #include "../engine/pointFeature.h"
 #include <SFML/Graphics/Color.hpp>
 #include <string>
-
-std::wstring loadWString(const Json& data)
-{
-	std::wstring output;
-	if(data.is_string())
-		for(auto codePoint : data.get<std::wstring>())
-			output += codePoint;
-	else
-		for(const Json& codePoint : data)
-			output += std::to_wstring(codePoint.get<long>());
-	return output;
-}
 
 sf::Color colorFromJson(const Json& data)
 {
@@ -29,10 +19,10 @@ sf::Color colorFromJson(const Json& data)
 	auto a = data[3].get<uint8_t>();
 	return sf::Color(r, g, b, a);
 }
-std::wstring displayData::localizeNumber(double number)
+std::string displayData::localizeNumber(double number)
 {
 	static std::locale cpploc{""};
-	std::wstringstream ss;
+	std::stringstream ss;
 	ss.imbue(cpploc);
 	ss << number;
 	return ss.str();

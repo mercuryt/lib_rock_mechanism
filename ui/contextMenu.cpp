@@ -1,6 +1,6 @@
 #include "contextMenu.h"
 #include "../engine/pointFeature.h"
-#include "../engine/config.h"
+#include "../engine/config/config.h"
 #include "../engine/designations.h"
 #include "displayData.h"
 #include "../engine/plants.h"
@@ -16,7 +16,7 @@ ContextMenuSegment::ContextMenuSegment(tgui::Group::Ptr overlayGroup) :
 	m_panel->setSize(tgui::bindWidth(m_grid) + 4, tgui::bindHeight(m_grid) + 4);
 	m_grid->setPosition(2,2);
 }
-void ContextMenuSegment::add(tgui::Widget::Ptr widget, std::wstring id)
+void ContextMenuSegment::add(tgui::Widget::Ptr widget, std::string id)
 {
 	widget->setSize(width, height);
 	m_grid->add(widget, id);
@@ -43,9 +43,9 @@ void ContextMenu::draw(const Point3D& point)
 	blockInfoButton->onClick([this, point]{ m_window.getGameOverlay().drawInfoPopup(point); });
 	Space& space = m_window.getArea()->getSpace();
 	//TODO: shift to add to end of work queue.
-	if(space.solid_is(point) || !space.pointFeature_empty(point))
+	if(space.solid_isAny(point) || !space.pointFeature_empty(point))
 		drawDigControls(point);
-	if(!space.solid_is(point))
+	if(!space.solid_isAny(point))
 	{
 		drawConstructControls(point);
 		drawActorControls(point);

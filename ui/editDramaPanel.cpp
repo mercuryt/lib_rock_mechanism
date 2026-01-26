@@ -19,12 +19,15 @@ void EditDramaView::draw(Area* area)
 	for(DramaArc* arc : arcsForArea)
 	{
 		listHolder->addWidget(tgui::Label::create(arc->name()), i, 0);
-		auto start = tgui::Button::create("start");
-		listHolder->addWidget(start, i, 1);
-		start->onClick([this, arc]{
-			arc->begin();
-			m_window.showGame();
-		});
+		if(arc->canTriggerFromEditor())
+		{
+			auto start = tgui::Button::create("start");
+			listHolder->addWidget(start, i, 1);
+			start->onClick([this, arc]{
+				arc->trigger();
+				m_window.showGame();
+			});
+		}
 		auto remove = tgui::Button::create("remove");
 		listHolder->addWidget(remove, i++, 2);
 		remove->onClick([this, area, arc, dramaEngine]{
@@ -49,8 +52,8 @@ void EditDramaView::draw(Area* area)
 	newTypeSelector->onItemSelect([this, area](const tgui::String& id){
 		if(id == "none")
 			return;
-		auto& dramaEngine = m_window.getSimulation()->m_dramaEngine;
-		dramaEngine->createArcTypeForArea(DramaArc::stringToType(id.toStdString()), *area);
+		auto& dramaEngine2 = m_window.getSimulation()->m_dramaEngine;
+		dramaEngine2->createArcTypeForArea(DramaArc::stringToType(id.toStdString()), *area);
 		m_window.showEditDrama(area);
 	});
 	auto back = tgui::Button::create("close");

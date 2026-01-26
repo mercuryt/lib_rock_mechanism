@@ -1,6 +1,7 @@
 #include "load.h"
 #include "window.h"
 #include <filesystem>
+#include <fstream>
 void LoadView::draw()
 {
 	m_panel = tgui::Panel::create();
@@ -22,7 +23,7 @@ void LoadView::draw()
 		auto entryPath = entry.path();
 		std::ifstream simulationFile(entryPath/"simulation.json");
 		const Json& data = Json::parse(simulationFile);
-		std::wstring name = data["name"].get<std::wstring>();
+		std::string name = data["name"].get<std::string>();
 		auto button = tgui::Button::create(name);
 		layout->add(button);
 		button->onClick([this, entryPath]{ m_window.load(entryPath); });
