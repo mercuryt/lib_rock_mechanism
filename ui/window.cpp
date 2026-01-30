@@ -21,7 +21,7 @@ Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::S
 	m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_dialogueBoxUI(*this), m_objectivePriorityView(*this),
 	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this), //m_worldParamatersView(*this),
 	m_editRealityView(*this), m_editActorView(*this), m_editAreaView(*this), m_editFactionView(*this), m_editFactionsView(*this),
-	m_editStockPileView(*this), m_editDramaView(*this), m_minimumTimePerFrame(200),
+	m_editStockPileView(*this), m_editDramaView(*this), m_backgroundTask(*this), m_minimumTimePerFrame(200),
 	m_minimumTimePerStep((int)(1000.f / (float)Config::stepsPerSecond.get())), m_draw(*this),
 	m_simulationThread([&](){
 		while(true)
@@ -392,6 +392,8 @@ void Window::startLoop()
 		m_gui.draw();
 		// Finalize draw.
 		m_window.display();
+		// Check if background task is done.
+		m_backgroundTask.onFrame();
 		// Frame rate limit.
 		std::chrono::milliseconds delta = msSinceEpoch() - start;
 		std::chrono::milliseconds minimum = m_speed < 200 ? m_minimumTimePerFrame : m_minimumTimePerFrame * 3;
@@ -399,20 +401,9 @@ void Window::startLoop()
 			std::this_thread::sleep_for(minimum - delta);
 	}
 }
-void Window::threadTask(std::function<void()> task, [[maybe_unused]] const std::string& title)
+void Window::threadTask(std::function<void()>&& task, std::function<void()>&& callback)
 {
-	m_lockInput = true;
-	sf::Cursor cursor;
-	if(cursor.loadFromSystem(sf::Cursor::Wait))
-		m_window.setMouseCursor(cursor);
-	std::thread t([this, task]{
-		task();
-		m_lockInput = false;
-		sf::Cursor cursor2;
-		if(cursor2.loadFromSystem(sf::Cursor::Arrow))
-			m_window.setMouseCursor(cursor2);
-	});
-	t.join();
+	m_backgroundTask.create(std::move(task), std::move(callback));
 }
 void Window::save()
 {
@@ -426,25 +417,35 @@ void Window::save()
 			file << povData;
 		}
 	};
-	threadTask(task, "save");
+	threadTask(std::move(task), {});
 }
 void Window::load(std::filesystem::path path)
 {
-	std::function<void()> task = [this, path]{
-		deselectAll();
+	deselectAll();
+	Json povData;
+	bool povExists = false;
+	std::function<void()> task = [this, povData, povExists, path] mutable {
 		m_simulation = std::make_unique<Simulation>(path);
 		std::filesystem::path viewPath = m_simulation->getPath()/"pov.json";
 		if(std::filesystem::exists(viewPath))
 		{
 			std::ifstream af(viewPath);
-			Json povData = Json::parse(af);
+			povData = Json::parse(af);
+			povExists = true;
+		}
+	};
+	std::function<void()> callback = [&]
+	{
+		if(povExists)
+		{
 			povFromJson(povData);
+			assert(m_area != nullptr);
 			showGame();
 		}
 		else
 			showEditReality();
 	};
-	threadTask(task, "load");
+	threadTask(std::move(task), std::move(callback));
 }
 void Window::setPaused(const bool paused)
 {
@@ -577,4 +578,10 @@ std::string Window::facingToString(Facing4 facing)
 		return "down";
 	assert(facing == Facing4::West);
 	return "left";
+}
+void Window::setCursor(const sf::Cursor::Type& newCursor)
+{
+	sf::Cursor cursor;
+	if (cursor.loadFromSystem(newCursor))
+		m_window.setMouseCursor(cursor);
 }

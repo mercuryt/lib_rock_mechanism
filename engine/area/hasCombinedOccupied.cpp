@@ -2,6 +2,7 @@
 #include "area.h"
 #include "../actors/actors.h"
 #include "../space/space.h"
+#include "../geometry/sphere.h"
 void AreaHasCombinedOccupied::record(const ActorIndex& actor, Area& area)
 {
 	Actors& actors = area.getActors();

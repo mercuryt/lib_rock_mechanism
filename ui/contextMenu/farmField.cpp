@@ -7,10 +7,12 @@
 void ContextMenu::drawFarmFieldControls(const Point3D& point)
 {
 	const FactionId& faction = m_window.getFaction();
+	if(!faction.exists())
+		return;
 	Area& area = *m_window.getArea();
 	Space& space =  area.getSpace();
 	// Farm
-	if(faction.exists() && space.farm_contains(point, faction))
+	if(space.farm_contains(point, faction))
 	{
 		auto farmLabel = tgui::Label::create("farm");
 		m_root.add(farmLabel);
@@ -50,10 +52,10 @@ void ContextMenu::drawFarmFieldControls(const Point3D& point)
 			});
 		});
 	}
-	else
+	else if(point.z() != 0)
 	{
 		const Point3D& below = point.below();
-		if(faction.exists() && below.exists() && space.plant_anythingCanGrowHereEver(below))
+		if(space.plant_anythingCanGrowHereEver(below))
 		{
 			auto create = [this, point, faction, &area](const PlantSpeciesId& plantSpecies){
 				std::lock_guard lock(m_window.getSimulation()->m_uiReadMutex);

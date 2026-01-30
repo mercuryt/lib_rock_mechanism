@@ -67,7 +67,7 @@ Json BodyPart::toJson() const
 	return data;
 }
 Body::Body(Area& area, const ActorIndex& a) : m_bleedEvent(area.m_eventSchedule), m_woundsCloseEvent(area.m_eventSchedule), m_actor(a) { }
-void Body::initalize(Area& area)
+void Body::initialize(Area& area)
 {
 	AnimalSpeciesId species = area.getActors().getSpecies(m_actor);
 	setMaterialType(AnimalSpecies::getMaterialType(species));

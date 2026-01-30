@@ -23,9 +23,8 @@ template<typename CuboidType, typename PointType, typename CuboidSetType>
 struct CuboidSetBase
 {
 protected:
-	// Overriden by AreaHasVisionCuboids.
-	virtual void insertOrMerge(const CuboidType& cuboid);
-	virtual void destroy(const int& cuboid);
+	void insertOrMerge(const CuboidType& cuboid);
+	void destroy(const int& cuboid);
 	// For merging contained cuboids.
 	void mergeInternal(const CuboidType& absorbed, const int& absorber);
 public:
@@ -140,8 +139,7 @@ public:
 	friend struct CuboidSetConstIterator;
 	friend struct CuboidSetConstView;
 };
-// CuboidSet is not marked final because AreaHasVisionCuboids derives from it.
-struct CuboidSet : public CuboidSetBase<Cuboid, Point3D, CuboidSet>
+struct CuboidSet final : public CuboidSetBase<Cuboid, Point3D, CuboidSet>
 {
 	[[nodiscard]] static CuboidSet create(const Cuboid& cuboid);
 	[[nodiscard]] static CuboidSet create(const Point3D& point);

@@ -196,10 +196,10 @@ void Draw::blockFloor(const Point3D& point)
 				break;
 			}
 	}
-	else if(m_window.m_editMode || space.isVisible(point))
+	else if(point.z() != 0 && (m_window.m_editMode || space.isVisible(point)))
 	{
 		const Point3D& below = point.below();
-		if(below.exists() && space.solid_isAny(below))
+		if(space.solid_isAny(below))
 		{
 			// Draw floor.
 			if(space.plant_exists(point))
@@ -237,7 +237,7 @@ void Draw::blockFloor(const Point3D& point)
 			// Draw cliff edge, ramp, or stairs below floor.
 			blockWallsFromNextLevelDown(point);
 		}
-		else if(below.exists() && space.fluid_getTotalVolume(below) > Config::maxPointVolume * displayData::minimumFluidVolumeToSeeFromAboveLevelRatio)
+		else if(space.fluid_getTotalVolume(below) > Config::maxPointVolume * displayData::minimumFluidVolumeToSeeFromAboveLevelRatio)
 		{
 			const FluidTypeId& fluidType = space.fluid_getTypeWithMostVolume(below);
 			const sf::Color color = displayData::fluidColors[fluidType];
@@ -250,12 +250,9 @@ void Draw::blockFloor(const Point3D& point)
 void Draw::blockWallCorners(const Point3D& point)
 {
 	Space& space = m_window.m_area->getSpace();
-	const Point3D& west = point.west();
-	const Point3D& south = point.south();
-	const Point3D& below = point.below();
 	if(
 		(m_window.m_editMode || space.isVisible(point)) &&
-		space.solid_isAny(point) && west.exists() && !space.solid_isAny(west) && south.exists() && !space.solid_isAny(south)
+		space.solid_isAny(point) && point.x() != 0 && !space.solid_isAny(point.west()) && point.y() != 0 && !space.solid_isAny(point.south())
 	)
 	{
 		const sf::Color color = displayData::materialColors[space.solid_get(point)];
@@ -268,13 +265,14 @@ void Draw::blockWallCorners(const Point3D& point)
 		sprite.setRotation(45);
 		m_window.getRenderWindow().draw(sprite);
 	}
-	else if(below.exists())
+	else if(point.z() != 0 && point.x() != 0 && point.y() != 0)
 	{
+		const Point3D& below = point.below();
 		const Point3D& belowWest = below.west();
 		const Point3D& belowSouth = below.south();
 		if(
 			(m_window.m_editMode || space.isVisible(below)) &&
-			!space.solid_isAny(point) && space.solid_isAny(below) && belowWest.exists() && !space.solid_isAny(belowWest) && belowSouth.exists() && !space.solid_isAny(belowSouth)
+			!space.solid_isAny(point) && space.solid_isAny(below) && !space.solid_isAny(belowWest) && !space.solid_isAny(belowSouth)
 		)
 		{
 			const sf::Color color = displayData::materialColors[space.solid_get(below)];
@@ -295,32 +293,38 @@ void Draw::blockWalls(const Point3D& point)
 	if(space.solid_isAny(point))
 	{
 		auto adjacentPredicate = [&](const Point3D& adjacent){
-			return adjacent.exists() && (m_window.m_editMode || space.isVisible(adjacent)) && !space.solid_isAny(adjacent) && !space.pointFeature_contains(adjacent, PointFeatureTypeId::Stairs) && !space.pointFeature_contains(adjacent, PointFeatureTypeId::Ramp);
+			return (m_window.m_editMode || space.isVisible(adjacent)) && !space.solid_isAny(adjacent) && !space.pointFeature_contains(adjacent, PointFeatureTypeId::Stairs) && !space.pointFeature_contains(adjacent, PointFeatureTypeId::Ramp);
 		};
-		const Point3D& south = point.south();
-		if(adjacentPredicate(south))
+		if(point.y() != 0)
 		{
-			const sf::Color color = displayData::materialColors[space.solid_get(point)];
-			float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
-			auto pair = sprites::make(space.isConstructed(point) ? "blockWall" : "roughWall");
-			auto sprite = pair.first;
-			sprite.setPosition((float)point.x().get() * m_window.m_scale, (float)(point.y().get() + 1) * m_window.m_scale);
-			sprite.setScale(scaleRatio, scaleRatio);
-			sprite.setColor(color);
-			m_window.getRenderWindow().draw(sprite);
+			const Point3D& south = point.south();
+			if(adjacentPredicate(south))
+			{
+				const sf::Color color = displayData::materialColors[space.solid_get(point)];
+				float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
+				auto pair = sprites::make(space.isConstructed(point) ? "blockWall" : "roughWall");
+				auto sprite = pair.first;
+				sprite.setPosition((float)point.x().get() * m_window.m_scale, (float)(point.y().get() + 1) * m_window.m_scale);
+				sprite.setScale(scaleRatio, scaleRatio);
+				sprite.setColor(color);
+				m_window.getRenderWindow().draw(sprite);
+			}
 		}
-		const Point3D& west = point.west();
-		if(adjacentPredicate(west))
+		if(point.y() != 0)
 		{
-			const sf::Color color = displayData::materialColors[space.solid_get(point)];
-			float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
-			auto pair = sprites::make(space.isConstructed(point) ? "blockWall" : "roughWall");
-			auto sprite = pair.first;
-			sprite.setPosition((float)point.x().get() * m_window.m_scale, (float)point.y().get() * m_window.m_scale);
-			sprite.setScale(scaleRatio, scaleRatio);
-			sprite.setColor(color);
-			sprite.setRotation(90);
-			m_window.getRenderWindow().draw(sprite);
+			const Point3D& west = point.west();
+			if(adjacentPredicate(west))
+			{
+				const sf::Color color = displayData::materialColors[space.solid_get(point)];
+				float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
+				auto pair = sprites::make(space.isConstructed(point) ? "blockWall" : "roughWall");
+				auto sprite = pair.first;
+				sprite.setPosition((float)point.x().get() * m_window.m_scale, (float)point.y().get() * m_window.m_scale);
+				sprite.setScale(scaleRatio, scaleRatio);
+				sprite.setColor(color);
+				sprite.setRotation(90);
+				m_window.getRenderWindow().draw(sprite);
+			}
 		}
 	}
 }
@@ -330,53 +334,65 @@ void Draw::blockWallTops(const Point3D& point)
 	if(space.solid_isAny(point))
 	{
 		auto adjacentPredicate = [&](const Point3D& adjacent){
-			return adjacent.exists() && (m_window.m_editMode || space.isVisible(adjacent)) && !space.solid_isAny(adjacent) && !space.pointFeature_contains(adjacent, PointFeatureTypeId::Stairs) && !space.pointFeature_contains(adjacent, PointFeatureTypeId::Ramp);
+			return (m_window.m_editMode || space.isVisible(adjacent)) && !space.solid_isAny(adjacent) && !space.pointFeature_contains(adjacent, PointFeatureTypeId::Stairs) && !space.pointFeature_contains(adjacent, PointFeatureTypeId::Ramp);
 		};
 		float scaleRatio = (float)m_window.m_scale / (float)displayData::defaultScale;
 		const sf::Color color = displayData::materialColors[space.solid_get(point)];
 		float offset = displayData::wallTopOffsetRatio * m_window.m_scale;
 		const Point3D& north = point.north();
-		if(adjacentPredicate(north))
+		if(point.x() != space.m_sizeX - 1)
 		{
-			auto pair = sprites::make(space.isConstructed(point) ? "blockWallTop" : "roughWallTop");
-			auto sprite = pair.first;
-			sprite.setRotation(180);
-			sprite.setPosition((float)(point.x().get() + 1) * m_window.m_scale, ((float)point.y().get() * m_window.m_scale) + offset);
-			sprite.setScale(scaleRatio, scaleRatio);
-			sprite.setColor(color);
-			m_window.getRenderWindow().draw(sprite);
+			if(adjacentPredicate(north))
+			{
+				auto pair = sprites::make(space.isConstructed(point) ? "blockWallTop" : "roughWallTop");
+				auto sprite = pair.first;
+				sprite.setRotation(180);
+				sprite.setPosition((float)(point.x().get() + 1) * m_window.m_scale, ((float)point.y().get() * m_window.m_scale) + offset);
+				sprite.setScale(scaleRatio, scaleRatio);
+				sprite.setColor(color);
+				m_window.getRenderWindow().draw(sprite);
+			}
 		}
-		const Point3D& east = point.east();
-		if(adjacentPredicate(east))
+		if(point.y() != space.m_sizeY - 1)
 		{
-			auto pair = sprites::make(space.isConstructed(point) ? "blockWallTop" : "roughWallTop");
-			auto sprite = pair.first;
-			sprite.setRotation(270);
-			sprite.setPosition((((float)point.x().get() + 1) * m_window.m_scale) - offset, ((float)point.y().get() + 1) * m_window.m_scale);
-			sprite.setScale(scaleRatio, scaleRatio);
-			sprite.setColor(color);
-			m_window.getRenderWindow().draw(sprite);
+			const Point3D& east = point.east();
+			if(adjacentPredicate(east))
+			{
+				auto pair = sprites::make(space.isConstructed(point) ? "blockWallTop" : "roughWallTop");
+				auto sprite = pair.first;
+				sprite.setRotation(270);
+				sprite.setPosition((((float)point.x().get() + 1) * m_window.m_scale) - offset, ((float)point.y().get() + 1) * m_window.m_scale);
+				sprite.setScale(scaleRatio, scaleRatio);
+				sprite.setColor(color);
+				m_window.getRenderWindow().draw(sprite);
+			}
 		}
-		const Point3D& west = point.west();
-		if(adjacentPredicate(west))
+		if(point.x() != 0)
 		{
-			auto pair = sprites::make(space.isConstructed(point) ? "blockWallTop" : "roughWallTop");
-			auto sprite = pair.first;
-			sprite.setRotation(90);
-			sprite.setPosition(((float)point.x().get() * m_window.m_scale) + offset, ((float)point.y().get() * m_window.m_scale));
-			sprite.setScale(scaleRatio, scaleRatio);
-			sprite.setColor(color);
-			m_window.getRenderWindow().draw(sprite);
+			const Point3D& west = point.west();
+			if(adjacentPredicate(west))
+			{
+				auto pair = sprites::make(space.isConstructed(point) ? "blockWallTop" : "roughWallTop");
+				auto sprite = pair.first;
+				sprite.setRotation(90);
+				sprite.setPosition(((float)point.x().get() * m_window.m_scale) + offset, ((float)point.y().get() * m_window.m_scale));
+				sprite.setScale(scaleRatio, scaleRatio);
+				sprite.setColor(color);
+				m_window.getRenderWindow().draw(sprite);
+			}
 		}
-		const Point3D& south = point.south();
-		if(adjacentPredicate(south))
+		if(point.y() != 0)
 		{
-			auto pair = sprites::make(space.isConstructed(point) ? "blockWallTop" : "roughWallTop");
-			auto sprite = pair.first;
-			sprite.setPosition(((float)point.x().get() * m_window.m_scale), ((float)(point.y().get() + 1) * m_window.m_scale) - offset);
-			sprite.setScale(scaleRatio, scaleRatio);
-			sprite.setColor(color);
-			m_window.getRenderWindow().draw(sprite);
+			const Point3D& south = point.south();
+			if(adjacentPredicate(south))
+			{
+				auto pair = sprites::make(space.isConstructed(point) ? "blockWallTop" : "roughWallTop");
+				auto sprite = pair.first;
+				sprite.setPosition(((float)point.x().get() * m_window.m_scale), ((float)(point.y().get() + 1) * m_window.m_scale) - offset);
+				sprite.setScale(scaleRatio, scaleRatio);
+				sprite.setColor(color);
+				m_window.getRenderWindow().draw(sprite);
+			}
 		}
 	}
 }
@@ -387,8 +403,6 @@ void Draw::pointFeaturesAndFluids(const Point3D& point)
 	Space& space = m_window.m_area->getSpace();
 	if(!space.pointFeature_empty(point))
 	{
-		const Point3D& north = point.north();
-		const Point3D& south = point.south();
 		for(const PointFeature& pointFeature : space.pointFeature_getAll(point))
 		{
 			sf::Color* color = &displayData::materialColors[pointFeature.materialType];
@@ -421,6 +435,8 @@ void Draw::pointFeaturesAndFluids(const Point3D& point)
 			else if(pointFeature.pointFeatureType == PointFeatureTypeId::FloodGate)
 			{
 				static sf::Sprite floodGate = getCenteredSprite("floodGate");
+				const Point3D& north = point.y() == space.m_sizeY - 1 ? Point3D::null() : point.north();
+				const Point3D& south = point.y() == 0 ? Point3D::null() : point.south();
 				// Default floodGate image leads north-south, maybe rotate.
 				if(north.empty() || space.solid_isAny(north) || south.empty() || space.solid_isAny(south))
 					floodGate.setRotation(90);
@@ -431,6 +447,8 @@ void Draw::pointFeaturesAndFluids(const Point3D& point)
 			else if(pointFeature.pointFeatureType == PointFeatureTypeId::Fortification)
 			{
 				static sf::Sprite fortification = getCenteredSprite("fortification");
+				const Point3D& north = point.y() == space.m_sizeY - 1 ? Point3D::null() : point.north();
+				const Point3D& south = point.y() == 0 ? Point3D::null() : point.south();
 				// Default fortification image leads north-south, maybe rotate.
 				if(north.empty() || space.solid_isAny(north) || !space.shape_canStandIn(north) || south.empty() || space.solid_isAny(south) || !space.shape_canStandIn(south))
 					fortification.setRotation(90);
@@ -441,6 +459,8 @@ void Draw::pointFeaturesAndFluids(const Point3D& point)
 			else if(pointFeature.pointFeatureType == PointFeatureTypeId::Door)
 			{
 				static sf::Sprite door = getCenteredSprite("door");
+				const Point3D& north = point.y() == space.m_sizeY - 1 ? Point3D::null() : point.north();
+				const Point3D& south = point.y() == 0 ? Point3D::null() : point.south();
 				// Default door image leads north-south, maybe rotate.
 				if(north.empty() || space.solid_isAny(north) || !space.shape_canStandIn(north) || south.empty() || space.solid_isAny(south) || !space.shape_canStandIn(south))
 					door.setRotation(90);
@@ -451,6 +471,8 @@ void Draw::pointFeaturesAndFluids(const Point3D& point)
 			else if(pointFeature.pointFeatureType == PointFeatureTypeId::Flap)
 			{
 				static sf::Sprite flap = getCenteredSprite("flap");
+				const Point3D& north = point.y() == space.m_sizeY - 1 ? Point3D::null() : point.north();
+				const Point3D& south = point.y() == 0 ? Point3D::null() : point.south();
 				// Default flap image leads north-south, maybe rotate.
 				if(north.empty() || space.solid_isAny(north) || !space.shape_canStandIn(north) || south.empty() || space.solid_isAny(south) || !space.shape_canStandIn(south))
 					flap.setRotation(90);
@@ -460,10 +482,10 @@ void Draw::pointFeaturesAndFluids(const Point3D& point)
 			}
 		}
 	}
-	else
+	else if(point.z() != 0)
 	{
 		const Point3D& below = point.below();
-		if(below.exists() && !space.solid_isAny(below))
+		if(!space.solid_isAny(below))
 		{
 			// Show tops of stairs and ramps from next level down.
 			if(space.pointFeature_contains(below, PointFeatureTypeId::Stairs))
@@ -502,56 +524,64 @@ void Draw::pointFeaturesAndFluids(const Point3D& point)
 }
 void Draw::blockWallsFromNextLevelDown(const Point3D& point)
 {
+	if(point.z() == 0)
+		return;
 	Space& space = m_window.m_area->getSpace();
 	const Point3D& below = point.below();
-	if(below.empty() || !space.solid_isAny(below))
+	if(!space.solid_isAny(below))
 		return;
-	const Point3D& belowSouth = below.south();
-	if(belowSouth.exists() && !space.solid_isAny(belowSouth))
+	if(below.y() != 0)
 	{
-		sf::Sprite* sprite;
-		MaterialTypeId materialType;
-		if(space.isConstructed(point))
+		const Point3D& belowSouth = below.south();
+		if(belowSouth.exists() && !space.solid_isAny(belowSouth))
 		{
-			static sf::Sprite blockWall = getCenteredSprite("blockWall");
-			sprite = &blockWall;
-			materialType = space.solid_get(below);
+			sf::Sprite* sprite;
+			MaterialTypeId materialType;
+			if(space.isConstructed(point))
+			{
+				static sf::Sprite blockWall = getCenteredSprite("blockWall");
+				sprite = &blockWall;
+				materialType = space.solid_get(below);
+			}
+			else
+			{
+				static sf::Sprite roughWall = getCenteredSprite("roughWall");
+				sprite = &roughWall;
+				materialType = space.solid_get(below);
+			}
+			sprite->setTextureRect({0, 0, 32, 18});
+			assert(materialType.exists());
+			assert(displayData::materialColors.contains(materialType));
+			sf::Color color = displayData::materialColors[materialType];
+			sf::Vector2f position{(((float)belowSouth.x().get() + 0.5f) * (float)m_window.m_scale), (((float)belowSouth.y().get() + 0.5f - displayData::wallOffset) * (float)m_window.m_scale)};
+			spriteAt(*sprite, position, &color);
 		}
-		else
-		{
-			static sf::Sprite roughWall = getCenteredSprite("roughWall");
-			sprite = &roughWall;
-			materialType = space.solid_get(below);
-		}
-		sprite->setTextureRect({0, 0, 32, 18});
-		assert(materialType.exists());
-		assert(displayData::materialColors.contains(materialType));
-		sf::Color color = displayData::materialColors[materialType];
-		sf::Vector2f position{(((float)belowSouth.x().get() + 0.5f) * (float)m_window.m_scale), (((float)belowSouth.y().get() + 0.5f - displayData::wallOffset) * (float)m_window.m_scale)};
-		spriteAt(*sprite, position, &color);
 	}
-	const Point3D& belowWest = below.west();
-	if(belowWest.exists() && !space.solid_isAny(belowWest))
+	if(below.x() != 0)
 	{
-		static sf::Sprite* sprite;
-		MaterialTypeId materialType;
-		if(space.isConstructed(point))
+		const Point3D& belowWest = below.west();
+		if(!space.solid_isAny(belowWest))
 		{
-			static sf::Sprite blockWall = getCenteredSprite("blockWall");
-			sprite = &blockWall;
+			static sf::Sprite* sprite;
+			MaterialTypeId materialType;
+			if(space.isConstructed(point))
+			{
+				static sf::Sprite blockWall = getCenteredSprite("blockWall");
+				sprite = &blockWall;
+			}
+			else
+			{
+				static sf::Sprite roughWall = getCenteredSprite("roughWall");
+				sprite = &roughWall;
+			}
+			materialType = space.solid_get(below);
+			sprite->setTextureRect({0, 0, 32, 18});
+			sprite->setRotation(90);
+			assert(displayData::materialColors.contains(materialType));
+			sf::Color color = displayData::materialColors[materialType];
+			sf::Vector2f position{(((float)belowWest.x().get() + 0.5f + displayData::wallOffset) * (float)m_window.m_scale), (((float)belowWest.y().get() + 0.5f) * (float)m_window.m_scale)};
+			spriteAt(*sprite, position, &color);
 		}
-		else
-		{
-			static sf::Sprite roughWall = getCenteredSprite("roughWall");
-			sprite = &roughWall;
-		}
-		materialType = space.solid_get(below);
-		sprite->setTextureRect({0, 0, 32, 18});
-		sprite->setRotation(90);
-		assert(displayData::materialColors.contains(materialType));
-		sf::Color color = displayData::materialColors[materialType];
-		sf::Vector2f position{(((float)belowWest.x().get() + 0.5f + displayData::wallOffset) * (float)m_window.m_scale), (((float)belowWest.y().get() + 0.5f) * (float)m_window.m_scale)};
-		spriteAt(*sprite, position, &color);
 	}
 }
 void Draw::validOnBlock(const Point3D& point)

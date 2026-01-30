@@ -1,6 +1,5 @@
 #pragma once
 
-#include "visionCuboid.h"
 #include "../numericTypes/index.h"
 #include "../numericTypes/types.h"
 #include "../dataStructures/rtreeBoolean.h"

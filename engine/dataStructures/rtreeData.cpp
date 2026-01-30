@@ -13,7 +13,6 @@ template class RTreeData<FluidTypeId>;
 template class RTreeData<CollisionVolume, RTreeDataConfig{}, 0>;
 template class RTreeData<PlantIndex>;
 template class RTreeData<TemperatureDelta>;
-template class RTreeData<VisionCuboidId>;
 template class RTreeData<DistanceFractional>;
 template class RTreeData<RTreeDataWrapper<Project*, nullptr>>;
 template class RTreeData<RTreeDataWrapper<StockPile*, nullptr>>;

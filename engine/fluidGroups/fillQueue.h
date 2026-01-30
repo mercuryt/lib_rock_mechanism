@@ -15,7 +15,7 @@ public:
 	[[nodiscard]] static int getPriority(const FutureFlowCuboid& futureFlowPoint);
 	[[nodiscard]] static bool compare(const FutureFlowCuboid& a, const FutureFlowCuboid& b);
 	FillQueue(FluidAllocator& allocator) : FluidQueue<FillQueue>(allocator) { }
-	void initalizeForStep(Area& area, FluidGroup& fluidGroup);
+	void initializeForStep(Area& area, FluidGroup& fluidGroup);
 	void recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionVolume& volume, const CollisionVolume& flowCapacity, const CollisionVolume& flowTillNextStep);
 	void applyDelta(Area& area, FluidGroup& fluidGroup);
 	[[nodiscard]] CollisionVolume groupLevel(Area& area, FluidGroup& fluidGroup) const;

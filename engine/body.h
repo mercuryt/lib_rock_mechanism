@@ -66,7 +66,7 @@ public:
 	std::list<BodyPart> m_bodyParts;
 	Body(Area& area, const ActorIndex& a);
 	Body(const Json& data, DeserializationMemo& deserializationMemo, const ActorIndex& a);
-	void initalize(Area& area);
+	void initialize(Area& area);
 	BodyPart& pickABodyPartByVolume(Simulation& simulation);
 	BodyPart& pickABodyPartByType(const BodyPartTypeId& bodyPartType);
 	// Armor has already been applied, calculate hit depth.

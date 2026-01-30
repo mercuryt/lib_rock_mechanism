@@ -4,7 +4,7 @@
 
 #include "../space/space.h"
 #include "../definitions/moveType.h"
-void AreaHasExteriorPortals::initalize()
+void AreaHasExteriorPortals::initialize()
 {
 	m_deltas.fill(TemperatureDelta::create(0));
 	//updateAmbientSurfaceTemperature(space, area.m_hasTemperature.getAmbientSurfaceTemperature());

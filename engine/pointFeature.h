@@ -57,6 +57,7 @@ struct PointFeature
 	void setClosed(bool setTo) { hewnAndClosedAndLocked.set(1, setTo); }
 	void setLocked(bool setTo) { hewnAndClosedAndLocked.set(2, setTo); }
 	void clear();
+	[[nodiscard]] bool blocksLineOfSight() const;
 	[[nodiscard]] constexpr bool isHewn() const { return hewnAndClosedAndLocked.test(0); }
 	[[nodiscard]] constexpr bool isClosed() const { return hewnAndClosedAndLocked.test(1); }
 	[[nodiscard]] constexpr bool isLocked() const { return hewnAndClosedAndLocked.test(2); }

@@ -24,6 +24,9 @@ void LoadView::draw()
 		std::ifstream simulationFile(entryPath/"simulation.json");
 		const Json& data = Json::parse(simulationFile);
 		std::string name = data["name"].get<std::string>();
+		const Simulation* simulation = m_window.getSimulation();
+		if(simulation != nullptr && simulation->m_name == name)
+			continue;
 		auto button = tgui::Button::create(name);
 		layout->add(button);
 		button->onClick([this, entryPath]{ m_window.load(entryPath); });

@@ -143,7 +143,6 @@ namespace Config
 	inline float maximumForceRatioToMassForNonLethalAttack;
 	inline float maximumRainIntensityModifier;
 	inline float maximumRatioOfBloodRemainingForSeriousInjury;
-	inline int maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom;
 	inline Step maximumStepsBetweenRainPerPercentHumidity;
 	inline Step maximumStepsRainPerPercentHumidity;
 	inline Meters metersHeightCarvedByRivers;
@@ -215,9 +214,7 @@ namespace Config
 	inline float ratioOfHitAreaToBodyPartVolumeForSever;
 	inline float ratioOfMaximumVarianceForCourageTest;
 	inline float ratioOfTotalBodyVolumeWhichIsBlood;
-	inline float ratioOfVisionCuboidSlotsToReservePerPoint;
 	inline float ratioWoundsCloseDelayToBleedVolume;
-	inline int reserveSizeVisionCuboidAdjacent;
 	inline Step restIntervalSteps;
 	inline float rollingMassModifier;
 	inline float floatingMassModifier;

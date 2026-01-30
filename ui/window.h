@@ -27,6 +27,7 @@
 #include "editFactionPanel.h"
 #include "dialogueBox.h"
 #include "progressBar.h"
+#include "backgroundTask.h"
 #include "atomicBool.h"
 //#include "worldParamatersPanel.h"
 struct GameView final
@@ -68,6 +69,7 @@ class Window final
 	SmallSet<ActorIndex> m_selectedActors;
 	SmallSet<ItemIndex> m_selectedItems;
 	SmallSet<PlantIndex> m_selectedPlants;
+	WindowHasBackgroundTask m_backgroundTask;
 	FactionId m_faction;
 	// AtomicBool used instead of std::atomic<bool> for atomic toggle.
 	AtomicBool m_paused = true;
@@ -101,6 +103,7 @@ public:
 	void setItemToInstall(const ItemIndex& item) { m_gameOverlay.m_itemBeingInstalled = item; }
 	void setItemToMove(const ItemIndex& item) { m_gameOverlay.m_itemBeingMoved = item; }
 	void close() { m_window.close(); }
+	void setCursor(const sf::Cursor::Type& cursor);
 	[[nodiscard]] tgui::Gui& getGui() { return m_gui; }
 	[[nodiscard]] sf::RenderWindow& getRenderWindow() { return m_window; }
 	[[nodiscard]] GameOverlay& getGameOverlay() { return m_gameOverlay; }
@@ -137,7 +140,7 @@ public:
 	[[nodiscard]] Point3D getBlockUnderCursor();
 	[[nodiscard]] Point3D getBlockAtPosition(sf::Vector2i pixelPos);
 	// Filesystem.
-	void threadTask(std::function<void()> task, const std::string& title);
+	void threadTask(std::function<void()>&& task, std::function<void()>&& callback);
 	void save();
 	void load(std::filesystem::path path);
 	// Accessors.

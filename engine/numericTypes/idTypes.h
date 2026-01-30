@@ -28,15 +28,6 @@ public:
 inline void to_json(Json& data, const ActorId& index) { data = index.get(); }
 inline void from_json(const Json& data, ActorId& index) { index = ActorId::create(data.get<ActorIdWidth>()); }
 
-using VisionCuboidIdWidth = int;
-class VisionCuboidId : public StrongInteger<VisionCuboidId, VisionCuboidIdWidth, INT32_MAX, 0>
-{
-public:
-	struct Hash { [[nodiscard]] size_t operator()(const VisionCuboidId& index) const { return index.get(); } };
-};
-inline void to_json(Json& data, const VisionCuboidId& index) { data = index.get(); }
-inline void from_json(const Json& data, VisionCuboidId& index) { index = VisionCuboidId::create(data.get<VisionCuboidIdWidth>()); }
-
 using FactionIdWidth = int16_t;
 class FactionId : public StrongInteger<FactionId, FactionIdWidth, INT16_MAX, 0>
 {

@@ -33,3 +33,7 @@ std::string PointFeature::toString() const
 {
 	return "{materialType: " + MaterialType::getName(materialType) + ", : pointFeatureType:" + PointFeatureType::byId(pointFeatureType).name + ", hewn: " + std::to_string(isHewn()) + ", closed: " + std::to_string(isClosed()) + ", locked: " + std::to_string(isLocked()) + "}";
 }
+bool PointFeature::blocksLineOfSight() const
+{
+	return !MaterialType::getTransparent(materialType) && !isClosed();
+}

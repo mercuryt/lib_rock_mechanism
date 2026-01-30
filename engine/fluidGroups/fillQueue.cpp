@@ -4,7 +4,7 @@
 #include "../area/area.h"
 #include "../space/space.h"
 #include "numericTypes/types.h"
-void FillQueue::initalizeForStep(Area& area, FluidGroup& fluidGroup)
+void FillQueue::initializeForStep(Area& area, FluidGroup& fluidGroup)
 {
 	if(!m_set.empty())
 	{

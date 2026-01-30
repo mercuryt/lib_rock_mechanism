@@ -7,7 +7,6 @@
 #include "../numericTypes/types.h"
 #include "../mistDisperseEvent.h"
 #include "../geometry/cuboid.h"
-#include "../vision/visionCuboid.h"
 #include "../craft.h"
 #include "../fire.h"
 #include "../stocks.h"
@@ -106,7 +105,6 @@ public:
 	ActorOctTree m_octTree;
 	VisionRequests m_visionRequests;
 	OpacityFacade m_opacityFacade;
-	AreaHasVisionCuboids m_visionCuboids;
 	AreaHasExteriorPortals m_exteriorPortals;
 	AreaHasDecks m_decks;
 	std::string m_name;

@@ -371,8 +371,12 @@ CuboidArray<capacity>::BoolArray CuboidArray<capacity>::indicesOfIntersectingCub
 	}
 	const PointArray replicatedStart = line.begin.data.replicate(1, capacity);
 	const Float3DArray replicatedSloap = line.sloap.replicate(1, capacity);
-	const PointArray replicatedHighBoundry = line.boundry.m_high.data.replicate(1, capacity);
-	const PointArray replicatedLowBoundry = line.boundry.m_low.data.replicate(1, capacity);
+	Cuboid boundry = line.boundry;
+	// Ignore anything on the lowest Z level, it represents the floor.
+	boundry.m_low.setZ(boundry.m_low.z() + 1);
+	const PointArray replicatedHighBoundry = boundry.m_high.data.replicate(1, capacity);
+	const PointArray replicatedLowBoundry = boundry.m_low.data.replicate(1, capacity);
+	// row(2) is the Z coordinate.
 	const OffsetArray distanceFromStartToLowZFace = m_low.row(2).template cast<OffsetWidth>() - replicatedStart.row(2).template cast<OffsetWidth>();
 	const FloatArray stepsFromStartToLowZFace = distanceFromStartToLowZFace.template cast<float>() / replicatedSloap.row(2);
 	const PointArray coordinatesAtLowZ = replicatedStart + (replicatedSloap * stepsFromStartToLowZFace.replicate(3, 1)).round().template cast<DistanceWidth>();

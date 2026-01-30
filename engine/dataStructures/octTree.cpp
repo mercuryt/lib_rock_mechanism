@@ -12,17 +12,15 @@ void ActorOctTree::record(Area& area, const ActorReference& actor)
 {
 	Actors& actors = area.getActors();
 	const ActorIndex& index = actor.getIndex(actors.m_referenceData);
-	const Point3D& location = actors.getLocation(index);
 	const DistanceSquared& visionRangeSquared = actors.vision_getRangeSquared(index);
 	const Facing4& facing = actors.getFacing(index);
-	const VisionCuboidId& visionCuboid = area.m_visionCuboids.getVisionCuboidIndexForPoint(location);
 	for(const Point3D& coordinates : Point3DSet::fromCuboidSet(actors.getOccupied(index)))
 	{
 		OctTreeIndex nodeIndex = OctTreeIndex::create(0);
 		while(true)
 		{
 			OctTreeNode& node = m_nodes[nodeIndex];
-			node.contents.insert(actor, coordinates, visionCuboid, visionRangeSquared, facing);
+			node.contents.insert(actor, coordinates, visionRangeSquared, facing);
 			if(node.shouldSplit())
 			{
 				split(nodeIndex);
@@ -60,20 +58,6 @@ void ActorOctTree::erase(Area& area, const ActorReference& actor)
 				nodeIndex = node.children[octant];
 			}
 		}
-}
-void ActorOctTree::updateVisionCuboid(const Point3D& coordinates, const VisionCuboidId& cuboid)
-{
-	OctTreeIndex nodeIndex = OctTreeIndex::create(0);
-	while(true)
-	{
-		OctTreeNode& node = m_nodes[nodeIndex];
-		node.contents.updateVisionCuboidIndex(coordinates, cuboid);
-		if(!node.hasChildren())
-			break;
-		// Select new parent node at next level down.
-		int octant = getOctant(node.center, coordinates);
-		nodeIndex = node.children[octant];
-	}
 }
 void ActorOctTree::updateRange(const ActorReference& actor, const Point3D& coordinates, const DistanceSquared& visionRangeSquared)
 {

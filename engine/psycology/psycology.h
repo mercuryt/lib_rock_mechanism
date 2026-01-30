@@ -73,7 +73,7 @@ class Psycology final
 	void checkThreasholds(Area& area, const ActorIndex& actor);
 	void setExpiration(const Step& duration, Simulation& simulation, const ActorId& actor, const PsycologyEventType& eventType, const PsycologyData& eventDeltas);
 public:
-	void initalize();
+	void initialize();
 	// Record callbacks, modify current, check threasholds.
 	void apply(PsycologyEvent& event, Area& area, const ActorIndex& actor, const Step& duration = Step::null(), const Step& cooldown = Step::null());
 	void remove(const PsycologyEventType& eventType, const PsycologyData& deltas, Area& area, const ActorIndex& actor);

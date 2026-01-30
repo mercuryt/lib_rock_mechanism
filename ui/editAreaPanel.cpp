@@ -77,7 +77,7 @@ void EditAreaView::confirm()
 			static constexpr bool createDrama = true;
 			m_area = &m_window.getSimulation()->m_hasAreas->createArea(m_sizeX->getValue(), m_sizeY->getValue(), m_sizeZ->getValue(), createDrama);
 		};
-		m_window.threadTask(task, "create");
+		m_window.threadTask(std::move(task), {});
 	}
 	m_area->m_name = m_name->getText().toStdString();
 	m_window.showEditReality();

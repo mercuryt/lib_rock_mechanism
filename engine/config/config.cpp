@@ -132,7 +132,6 @@ void Config::load()
 	maximumDurationToWaitInsteadOfWander = Step::create(data["maximumDurationToWaitInsteadOfWanderMinutes"].get<float>() * stepsPerMinute.get());
 	data["maximumRainIntensityModifier"].get_to(maximumRainIntensityModifier);
 	data["maximumRatioOfBloodRemainingForSeriousInjury"].get_to(maximumRatioOfBloodRemainingForSeriousInjury);
-	data["maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom"].get_to(maximumSizeToCheckIfNewlyCreatedVisionCuboidsCanBeStolenFrom);
 	maximumStepsBetweenRainPerPercentHumidity = data["maximumDaysBetweenRainPerPercentHumidity"].get<Step>() * stepsPerDay;
 	maximumStepsRainPerPercentHumidity = Step::create(data["maximumSecondsRainPerPercentHumidity"].get<float>() * stepsPerSecond.get());
 	data["metersHeightCarvedByRivers"].get_to(metersHeightCarvedByRivers);
@@ -203,10 +202,8 @@ void Config::load()
 	data["ratioOfHitAreaToBodyPartVolumeForSever"].get_to(ratioOfHitAreaToBodyPartVolumeForSever);
 	data["ratioOfMaximumVarianceForCourageTest"].get_to(ratioOfMaximumVarianceForCourageTest);
 	data["ratioOfTotalBodyVolumeWhichIsBlood"].get_to(ratioOfTotalBodyVolumeWhichIsBlood);
-	data["ratioOfVisionCuboidSlotsToReservePerPoint"].get_to(ratioOfVisionCuboidSlotsToReservePerPoint);
 	ratioWoundsCloseDelayToBleedVolume = data["ratioWoundsCloseDelayToBleedVolumeSeconds"].get<float>() * stepsPerSecond.get();
 	restIntervalSteps = Step::create(data["restIntervalSeconds"].get<int>() * stepsPerSecond.get());
-	data["reserveSizeVisionCuboidAdjacent"].get_to(reserveSizeVisionCuboidAdjacent);
 	data["rollingMassModifier"].get_to(rollingMassModifier);
 	data["floatingMassModifier"].get_to(floatingMassModifier);
 	data["rowForcePerUnitStrength"].get_to(rowForcePerUnitStrength);

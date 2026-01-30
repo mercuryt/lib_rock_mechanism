@@ -114,7 +114,6 @@ template struct SmallMap<SkillTypeId, Skill>;
 template struct SmallMap<SkillTypeId, std::vector<CraftJob*>>;
 template struct SmallMap<StockPile*, SmallSet<ItemReference>>;
 template struct SmallMap<StockPile*, SmallSet<Point3D>>;
-template struct SmallMap<VisionCuboidId, Cuboid>;
 template struct SmallMap<std::string, Uniform>;
 template struct SmallMap<int, int>;
 

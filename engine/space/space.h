@@ -248,6 +248,7 @@ public:
 	void solid_setNotDynamic(const Point3D& point);
 	void solid_setCuboidNotDynamic(const Cuboid& cuboid);
 	void solid_prepare() { m_solid.prepare(); }
+	void solid_removeOpaque(CuboidSet& cuboids) const;
 	[[nodiscard]] bool solid_isAny(const auto& shape) const { return m_solid.queryAny(shape); }
 	[[nodiscard]] MaterialTypeId solid_get(const auto& shape) const { assert(m_solid.queryCount(shape) <= 1); return m_solid.queryGetOne(shape); }
 	[[nodiscard]] MapWithCuboidKeys<MaterialTypeId> solid_getAllWithCuboids(const auto& shape) const { return m_solid.queryGetAllWithCuboids(shape); }
@@ -275,6 +276,7 @@ public:
 	void pointFeature_close(const Point3D& point, const PointFeatureTypeId& type);
 	void pointFeature_open(const Point3D& point, const PointFeatureTypeId& type);
 	void pointFeature_setTemperature(const Point3D& point, const Temperature& temperature);
+	void pointFeature_removeOpaque(CuboidSet& cuboids) const;
 	[[nodiscard]] MapWithCuboidKeys<PointFeature> pointFeature_getAllWithCuboidsAndRemove(const CuboidSet& cuboids);
 	[[nodiscard]] const PointFeature pointFeature_at(const Cuboid& cuboid, const PointFeatureTypeId& pointFeatureType) const;
 	[[nodiscard]] const PointFeature pointFeature_at(const Point3D& point, const PointFeatureTypeId& pointFeatureType) const { return pointFeature_at({point, point}, pointFeatureType); }

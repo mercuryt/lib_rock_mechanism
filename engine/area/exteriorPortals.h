@@ -14,7 +14,7 @@ class AreaHasExteriorPortals
 	void setDistance(Space& space, const Point3D& point, const Distance& distance);
 	void unsetDistance(Space& space, const Point3D& point);
 public:
-	void initalize();
+	void initialize();
 	void add(Area& area, const Point3D& point, Distance distance = Distance::create(0));
 	void remove(Area& area, const Point3D& point);
 	void onChangeAmbiantSurfaceTemperature(Space& space, const Temperature& temperature);

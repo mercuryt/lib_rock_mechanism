@@ -210,8 +210,8 @@ void FluidGroup::readStep(Area& area)
 	m_futureNewEmptyAdjacents.clear();
 	m_futureGroups.clear();
 	m_viscosity = FluidType::getViscosity(m_fluidType);
-	m_drainQueue.initalizeForStep(area, *this);
-	m_fillQueue.initalizeForStep(area, *this);
+	m_drainQueue.initializeForStep(area, *this);
+	m_fillQueue.initializeForStep(area, *this);
 	validate(area);
 	// If there is no where to flow into there is nothing to do.
 	if(m_fillQueue.m_set.empty() ||

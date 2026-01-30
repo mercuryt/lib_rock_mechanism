@@ -54,13 +54,11 @@ Area::Area(AreaId id, std::string n, Simulation& s, const Distance& x, const Dis
 	m_hasEvaporation(*this),
 	m_octTree(Cuboid(Point3D{x, y, z}, Point3D::create(0,0,0))),
 	m_visionRequests(*this),
-	m_visionCuboids(*this),
 	m_name(n),
 	m_simulation(s),
 	m_id(id)
 {
 	setup();
-	m_visionCuboids.initalize();
 	m_hasRain.scheduleRestart();
 	m_hasEvaporation.schedule(*this);
 }
@@ -94,7 +92,6 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_hasEvaporation(*this),
 	m_octTree(Cuboid(Point3D{data["space"]["x"].get<Distance>(), data["space"]["y"].get<Distance>(), data["space"]["z"].get<Distance>()}, Point3D::create(0,0,0))),
 	m_visionRequests(*this),
-	m_visionCuboids(*this),
 	m_name(data["name"].get<std::string>()),
 	m_simulation(simulation),
 	m_id(data["id"].get<AreaId>())
@@ -103,9 +100,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_simulation.m_hasAreas->recordId(*this);
 	setup();
 	getSpace().load(data["space"], deserializationMemo);
-	m_visionCuboids.initalize();
 	m_hasFluidGroups.clearMergedFluidGroups();
-	data["visionCuboids"].get_to(m_visionCuboids);
 	data["exteriorPortals"].get_to(m_exteriorPortals);
 	// Load fires.
 	m_fires.load(*this, data["fires"], deserializationMemo);
@@ -180,7 +175,6 @@ Json Area::toJson() const
 	data["hasCraftingLocationsAndJobs"] = m_hasCraftingLocationsAndJobs.toJson();
 	data["hasStockPiles"] = m_hasStockPiles.toJson();
 	data["targetedHauling"] = m_hasTargetedHauling.toJson();
-	data["visionCuboids"] = m_visionCuboids;
 	data["exteriorPortals"] = m_exteriorPortals;
 	m_opacityFacade.validate(*this);
 	return data;

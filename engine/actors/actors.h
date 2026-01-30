@@ -301,7 +301,6 @@ public:
 	void vision_setNoLongerCanSee(const ActorIndex& index, const ActorReference& other);
 	void vision_setNoLongerCanBeSeenBy(const ActorIndex& index, const ActorReference& other);
 	void vision_clearCanSee(const ActorIndex& index);
-	void vision_maybeUpdateCuboid(const ActorIndex& index, const VisionCuboidId& newCuboid);
 	void vision_maybeUpdateRange(const ActorIndex& index, const Distance& range);
 	void vision_maybeUpdateLocation(const ActorIndex& index, const Point3D& location);
 	void vision_removeOpaqueFromCuboidSet(const CuboidSet& cuboidSet) const;

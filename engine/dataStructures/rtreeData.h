@@ -650,6 +650,21 @@ public:
 			}
 		}
 	}
+	void forEachWithCuboids(auto&& action) const
+	{
+		const int nodeEnd = m_nodes.size();
+		for(RTreeNodeIndex nodeIndex{0}; nodeIndex != nodeEnd; ++nodeIndex)
+			// If empty slots were sorted this could be done in one pass.
+			if(!m_emptySlots.contains(nodeIndex))
+			{
+				const Node& node = m_nodes[nodeIndex];
+				const auto& cuboids = node.getCuboids();
+				const auto& data = node.getDataAndChildIndices();
+				const int leafEnd = node.getChildCount();
+				for(RTreeArrayIndex arrayIndex{0}; arrayIndex != leafEnd; ++arrayIndex)
+					action(cuboids[arrayIndex.get()], T::create(data[arrayIndex].data));
+			}
+	}
 	[[nodiscard]] const SmallSet<T> queryGetAll(const auto& shape) const
 	{
 		SmallSet<T> output;

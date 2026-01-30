@@ -26,18 +26,16 @@ void LocationBucket::copyIndex(const LocationBucket& other, const LocationBucket
 	if(m_actors.size() == m_actors.capacity())
 		reserve(std::max(8ul, m_actors.capacity() * 2ul));
 	m_points.insert(Coordinates(other.m_points.data.col(otherIndex.get())));
-	m_visionCuboidIndices[index.get()] = other.m_visionCuboidIndices[otherIndex.get()];
 	m_visionRangeSquared[index.get()] = other.m_visionRangeSquared[otherIndex.get()];
 	m_facing[index.get()] = other.m_facing[otherIndex.get()];
 	m_actors.add(other.m_actors[otherIndex]);
 }
-void LocationBucket::insert(const ActorReference& actor, const Point3D& coordinates, const VisionCuboidId& cuboid, const DistanceSquared& visionRangeSquared, const Facing4& facing)
+void LocationBucket::insert(const ActorReference& actor, const Point3D& coordinates, const DistanceSquared& visionRangeSquared, const Facing4& facing)
 {
 	LocationBucketContentsIndex index = LocationBucketContentsIndex::create(m_actors.size());
 	if(m_actors.size() == m_actors.capacity())
 		reserve(std::max(8ul, m_actors.capacity() * 2ul));
 	m_points.insert(coordinates);
-	m_visionCuboidIndices[index.get()] = cuboid.get();
 	m_visionRangeSquared[index.get()] = visionRangeSquared.get();
 	m_facing[index.get()] = facing;
 	m_actors.add(actor);
@@ -59,12 +57,6 @@ void LocationBucket::updateVisionRangeSquared(const ActorReference& actor, const
 			break;
 		}
 }
-void LocationBucket::updateVisionCuboidIndex(const Point3D& coordinates, const VisionCuboidId& cuboid)
-{
-	for(auto i = LocationBucketContentsIndex::create(0); i < m_actors.size(); ++i)
-		if(m_points[i.get()] == coordinates.data)
-			m_visionCuboidIndices[i.get()] = cuboid.get();
-}
 bool LocationBucket::contains(const ActorReference& actor, const Point3D& coordinates) const
 {
 	for(auto i = LocationBucketContentsIndex::create(0); i < m_actors.size(); ++i)
@@ -79,20 +71,18 @@ void LocationBucket::prefetch() const
 void LocationBucket::reserve(int size)
 {
 	m_points.reserve(size);
-	m_visionCuboidIndices.resize(1, size);
 	m_visionRangeSquared.resize(1, size);
 	m_facing.resize(1, size);
 	m_actors.reserve(size);
 }
 const std::pair<const std::vector<ActorReference>*, Eigen::Array<bool, 2, Eigen::Dynamic>>
-LocationBucket::visionRequestQuery(const Area& area, const Point3D& position, const Facing4& facing, const DistanceSquared& visionRangeSquared, const VisionCuboidId& visionCuboid, const VisionCuboidSetSIMD& visionCuboids, const CuboidSet& occupied, const Distance& largestVisionRange) const
+LocationBucket::visionRequestQuery(const Area& area, const Point3D& position, const Facing4& facing, const DistanceSquared& visionRangeSquared, const CuboidSet& occupied, const Distance& largestVisionRange) const
 {
 	Sphere sphere(position, largestVisionRange.toFloat());
 	// Broad phase culling.
 	Eigen::Array<bool, 1, Eigen::Dynamic> intersectsShape = m_points.indicesOfContainedPoints(sphere);
 	Eigen::Array<bool, 2, Eigen::Dynamic> canSeeAndCanBeSeenBy = canSeeAndCanBeSeenByDistanceAndFacingFilter(sphere.center, facing, visionRangeSquared);
 	Eigen::Array<bool, 1, Eigen::Dynamic> candidates = intersectsShape && ( canSeeAndCanBeSeenBy.row(0) || canSeeAndCanBeSeenBy.row(1) );
-	Eigen::Array<bool, 1, Eigen::Dynamic> isInViewerCuboid = m_visionCuboidIndices == visionCuboid.get();
 	// Line of sight checks.
 	Eigen::Array<bool, 2, Eigen::Dynamic> output;
 	output.resize(2, m_actors.size());
@@ -103,12 +93,8 @@ LocationBucket::visionRequestQuery(const Area& area, const Point3D& position, co
 		if(candidates[index])
 		{
 			if(
-				isInViewerCuboid[index] ||
 				sphere.center == m_points[index] ||
-				(
-					visionCuboids.contains(m_visionCuboidIndices[index]) &&
-					area.m_opacityFacade.hasLineOfSight(sphere.center, m_points[index])
-				)
+				area.m_opacityFacade.hasLineOfSight(sphere.center, m_points[index])
 			)
 				output.col(index) = canSeeAndCanBeSeenBy.col(index);
 		}

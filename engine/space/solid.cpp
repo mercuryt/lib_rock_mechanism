@@ -58,10 +58,7 @@ void Space::solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& material
 	m_support.set(cuboid);
 	// Vision cuboid.
 	if(!MaterialType::getTransparent(materialType) && wasTransparent)
-	{
-		m_area.m_visionCuboids.cuboidIsOpaque(cuboid);
 		m_area.m_opacityFacade.maybeInsertFull(cuboid);
-	}
 	// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid point.
 	m_reservables.maybeRemove(cuboid);
 }
@@ -110,10 +107,7 @@ void Space::solid_setNotCuboid(const Cuboid& cuboid)
 	}
 	// Vision cuboid.
 	if(!wasTransparent)
-	{
-		m_area.m_visionCuboids.cuboidIsTransparent(cuboid);
 		m_area.m_opacityFacade.maybeRemoveFull(cuboid);
-	}
 	// Gravity.
 	const Point3D& aboveHighest = cuboid.m_high.above();
 	if(aboveHighest.exists())
@@ -190,14 +184,7 @@ void Space::solid_setDynamic(const Point3D& point, const MaterialTypeId& materia
 	if(constructed)
 		m_constructed.maybeInsert(point);
 	if(!MaterialType::getTransparent(materialType))
-	{
 		m_area.m_opacityFacade.update(m_area, point);
-		// TODO: add a multiple space at a time version which does this update more efficiently.
-		m_area.m_visionCuboids.pointIsOpaque(point);
-		// Opacity.
-		if(!MaterialType::getTransparent(materialType))
-			m_area.m_visionCuboids.pointIsOpaque(point);
-	}
 }
 void Space::solid_setCuboidDynamic(const Cuboid& cuboid, const MaterialTypeId& materialType, bool constructed)
 {
@@ -210,14 +197,7 @@ void Space::solid_setCuboidDynamic(const Cuboid& cuboid, const MaterialTypeId& m
 	if(constructed)
 		m_constructed.maybeInsert(cuboid);
 	if(!MaterialType::getTransparent(materialType))
-	{
 		m_area.m_opacityFacade.update(m_area, cuboid);
-		// TODO: add a multiple space at a time version which does this update more efficiently.
-		m_area.m_visionCuboids.cuboidIsOpaque(cuboid);
-		// Opacity.
-		if(!MaterialType::getTransparent(materialType))
-			m_area.m_visionCuboids.cuboidIsOpaque(cuboid);
-	}
 }
 void Space::solid_setNotDynamic(const Point3D& point)
 {
@@ -228,9 +208,12 @@ void Space::solid_setNotDynamic(const Point3D& point)
 	m_dynamic.maybeRemove(point);
 	m_constructed.maybeRemove(point);
 	if(!wasTransparent)
-	{
 		m_area.m_opacityFacade.update(m_area, point);
-		// TODO: add a multiple space at a time version which does this update more efficiently.
-		m_area.m_visionCuboids.pointIsTransparent(point);
-	}
+}
+void Space::solid_removeOpaque(CuboidSet& cuboids) const
+{
+	m_solid.forEachWithCuboids([&](const Cuboid& cuboid, const MaterialTypeId& materialType){
+		if(!MaterialType::getTransparent(materialType))
+			cuboids.remove(cuboid);
+	});
 }

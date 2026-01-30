@@ -84,7 +84,7 @@ Json PsycologyEventExpiresScheduledEvent::toJson() const
 	return {{"duration", duration()}, {"start", m_startStep}, {"deltas", m_deltas}, {"type", m_eventType}, {"actor", m_actor}};
 }
 // Psycology
-void Psycology::initalize()
+void Psycology::initialize()
 {
 	m_current.setAllToZero();
 	m_highTriggers.setAllToZero();

@@ -2,7 +2,7 @@
 #include "../space/space.h"
 #include "../area/area.h"
 #include "../area/exteriorPortals.h"
-void PointsExposedToSky::initalize(const Cuboid& cuboid)
+void PointsExposedToSky::initialize(const Cuboid& cuboid)
 {
 	m_data.maybeInsert(cuboid);
 }

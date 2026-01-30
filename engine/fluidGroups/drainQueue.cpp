@@ -5,7 +5,7 @@
 #include "../space/space.h"
 #include "numericTypes/types.h"
 #include <algorithm>
-void DrainQueue::initalizeForStep(Area& area, FluidGroup& fluidGroup)
+void DrainQueue::initializeForStep(Area& area, FluidGroup& fluidGroup)
 {
 	if(!m_set.empty())
 	{

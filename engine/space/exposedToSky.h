@@ -6,7 +6,7 @@ class PointsExposedToSky
 {
 	RTreeBoolean m_data;
 public:
-	void initalize(const Cuboid& cuboid);
+	void initialize(const Cuboid& cuboid);
 	void set(Area& area, const Point3D& point);
 	void unset(Area& area, const Point3D& point);
 	void maybeUnset(Area& area, const Cuboid& cuboid);

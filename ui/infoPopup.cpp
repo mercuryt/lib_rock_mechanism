@@ -44,11 +44,15 @@ void InfoPopup::display(const Point3D& point)
 		auto pointFeatures = space.pointFeature_getAll(point);
 		if(pointFeatures.empty())
 		{
-			const Point3D& below = point.below();
-			if(below.exists() && space.solid_isAny(below))
-				title = "rough " + MaterialType::getName(space.solid_get(below)) + " floor";
-			else
-				title = "empty space";
+			if(point.z() != 0)
+			{
+				const Point3D& below = point.below();
+				const MaterialTypeId& belowSolidMaterial = space.solid_get(below);
+				if(belowSolidMaterial.exists())
+					title = "rough " + MaterialType::getName(belowSolidMaterial) + " floor";
+				else
+					title = "empty space";
+			}
 		}
 		else
 		{

@@ -184,7 +184,7 @@ FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrain
 		return terrainFacade.findPathToEdge(memo, start, facing, shape, m_eatObjective.m_detour);
 	else
 	{
-		// initalize candidates with null values.
+		// initialize candidates with null values.
 		m_candidates.fill(Point3D::null());
 		if(area.getActors().isSentient(actorIndex))
 		{

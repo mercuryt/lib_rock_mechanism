@@ -668,7 +668,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_speedIndividual[index] = Speed::create(0);
 	m_speedActual[index] = Speed::create(0);
 	m_moveRetries[index] = 0;
-	m_psycology[index].initalize();
+	m_psycology[index].initialize();
 	assert(m_dialog[index].first == "");
 	m_onSurface.maybeUnset(index);
 	assert(m_isPilot[index] == false);
@@ -703,7 +703,7 @@ ActorIndex Actors::create(ActorParamaters params)
 }
 void Actors::sharedConstructor(const ActorIndex& index)
 {
-	m_body[index]->initalize(m_area);
+	m_body[index]->initialize(m_area);
 	combat_update(index);
 	move_updateIndividualSpeed(index);
 	m_mustDrink[index]->setFluidType(AnimalSpecies::getFluidType(m_species[index]));

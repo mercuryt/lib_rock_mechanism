@@ -11,7 +11,7 @@ void AreaHasFluidGroups::doStep(bool parallel)
 	m_unstableFluidGroups.eraseIf([](auto* fluidGroup){ return fluidGroup->m_merged; });
 	std::erase_if(m_fluidGroups, [](const FluidGroup& fluidGroup){ return fluidGroup.m_merged; });
 	// Calculate flow.
-	// unstable will be used to iterate the contents of m_unstableFluidGroups while altering it. It will be reinitalized with fresh copies several times.
+	// unstable will be used to iterate the contents of m_unstableFluidGroups while altering it. It will be reinitialized with fresh copies several times.
 	SmallSet<FluidGroup*> unstable = m_unstableFluidGroups;
 	#ifndef NDEBUG
 		for (const FluidGroup *group : unstable)
@@ -47,12 +47,12 @@ void AreaHasFluidGroups::doStep(bool parallel)
 	}
 	m_unstableFluidGroups.eraseIf([](const FluidGroup* fluidGroup){ return fluidGroup->m_merged || fluidGroup->m_disolved; });
 	// Split.
-	// Reinitalize unstable with filtered set again.
+	// Reinitialize unstable with filtered set again.
 	unstable = m_unstableFluidGroups;
 	for(FluidGroup* fluidGroup : unstable)
 		fluidGroup->splitStep(m_area);
 	// Merge.
-	// Reinitalize unstable with filtered set.
+	// Reinitialize unstable with filtered set.
 	unstable = m_unstableFluidGroups;
 	for(FluidGroup* fluidGroup : unstable)
 		fluidGroup->mergeStep(m_area);
