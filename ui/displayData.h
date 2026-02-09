@@ -46,7 +46,7 @@ namespace displayData
 	inline const sf::Color cancelColor = sf::Color::Red;
 	inline const sf::Color selectColorOverlay{255, 255, 0, 128};
 	inline const sf::Color cancelColorOverlay{255, 0, 0, 128};
-	inline constexpr int32_t defaultScale = 32;
+	inline constexpr int defaultScale = 32;
 	inline constexpr float wallTopOffsetRatio = 0.18;
 	inline constexpr float minimumFluidVolumeToSeeFromAboveLevelRatio = 0.75;
 	inline sf::Color stockPileColor{168, 127, 50, 64};
@@ -57,6 +57,7 @@ namespace displayData
 	inline sf::Color progressBarColor;
 	inline sf::Color progressBarOutlineColor;
 	inline float progressBarThickness;
+	inline float zoomIncrement = 0.1;
 	inline std::size_t maximumNumberOfItemsToDisplayInComboBox;
 	inline sf::Mouse::Button selectMouseButton = sf::Mouse::Button::Left;
 	inline sf::Mouse::Button actionMouseButton = sf::Mouse::Button::Right;

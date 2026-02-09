@@ -72,6 +72,17 @@ bool Space::farm_contains(const Point3D& point, const FactionId& faction) const
 {
 	return const_cast<Space*>(this)->farm_get(point, faction) != nullptr;
 }
+FarmField* Space::farm_get(const auto& shape, const FactionId& faction)
+{
+	auto found = m_farmFields.find(faction);
+	if(found == m_farmFields.end())
+		return nullptr;
+	return found->second.queryGetOne(shape).get();
+}
+const FarmField* Space::farm_get(const Point3D& point, const FactionId& faction) const
+{
+	return const_cast<Space*>(this)->farm_get(point, faction);
+}
 template<typename ShapeT>
 void Space::farm_remove(const ShapeT& shape, const FactionId& faction)
 {

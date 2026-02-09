@@ -93,6 +93,13 @@ void CuboidSetBase<CuboidType, PointType, CuboidSetType>::shift(const Offset3D o
 		cuboid.shift(offset, distance);
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::shifted(const Offset3D offset, const Distance& distance) const
+{
+	CuboidSetType copy(static_cast<const CuboidSetType&>(*this));
+	copy.shift(offset, distance);
+	return copy;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
 void CuboidSetBase<CuboidType, PointType, CuboidSetType>::addSet(const CuboidSetType& other)
 {
 	for(const CuboidType& cuboid : other.getCuboids())

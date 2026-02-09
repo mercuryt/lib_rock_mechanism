@@ -42,11 +42,11 @@ Point3D Point3D::max(const Point3D& other) const
 void Point3D::clear() { data.fill(Distance::null().get()); }
 bool Point3D::exists() const { return z().exists();}
 bool Point3D::empty() const { return z().empty();}
-Point3D Point3D::below() const { assert(data[2] != 0); auto output = *this; --output.data[2]; return output; }
-Point3D Point3D::north() const { assert(data[1] != 0); auto output = *this; --output.data[1]; return output; }
 Point3D Point3D::west() const { assert(data[0] != 0); auto output = *this; --output.data[0]; return output; }
+Point3D Point3D::south() const { assert(data[1] != 0); auto output = *this; --output.data[1]; return output; }
+Point3D Point3D::below() const { assert(data[2] != 0); auto output = *this; --output.data[2]; return output; }
 Point3D Point3D::east() const { auto output = *this; ++output.data[0]; return output; }
-Point3D Point3D::south() const { auto output = *this; ++output.data[1]; return output; }
+Point3D Point3D::north() const { auto output = *this; ++output.data[1]; return output; }
 Point3D Point3D::above() const { auto output = *this; ++output.data[2]; return output; }
 int Point3D::hilbertNumber() const
 {
@@ -460,11 +460,11 @@ Offset3D createOffset(const OffsetWidth& x, const OffsetWidth& y, const OffsetWi
 {
 	return Offset3D::create(x,y,z);
 }
-Offset3D Offset3D::below() const { auto output = *this; --output.data[2]; return output; }
-Offset3D Offset3D::north() const { auto output = *this; --output.data[1]; return output; }
 Offset3D Offset3D::west() const { auto output = *this; --output.data[0]; return output; }
+Offset3D Offset3D::south() const { auto output = *this; --output.data[1]; return output; }
+Offset3D Offset3D::below() const { auto output = *this; --output.data[2]; return output; }
 Offset3D Offset3D::east() const { auto output = *this; ++output.data[0]; return output; }
-Offset3D Offset3D::south() const { auto output = *this; ++output.data[1]; return output; }
+Offset3D Offset3D::north() const { auto output = *this; ++output.data[1]; return output; }
 Offset3D Offset3D::above() const { auto output = *this; ++output.data[2]; return output; }
 Offset3D Offset3D::translate(const Point3D& previousPivot, const Point3D& nextPivot, const Facing4& previousFacing, const Facing4& nextFacing) const
 {

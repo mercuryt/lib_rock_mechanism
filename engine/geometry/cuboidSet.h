@@ -72,6 +72,7 @@ public:
 	virtual void maybeRemove(const CuboidType& cuboid);
 	void clear() { m_cuboids.clear(); }
 	void shift(const Offset3D offset, const Distance& distance);
+	CuboidSetType shifted(const Offset3D offset, const Distance& distance) const;
 	// For merging with other cuboid sets.
 	void addSet(const CuboidSetType& other);
 	void rotateAroundPoint(const PointType& point, const Facing4& rotation);

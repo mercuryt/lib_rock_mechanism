@@ -17,6 +17,11 @@ public:
 	void maybeUnset(const auto& shape, const SpaceDesignation& designation) { m_data[(int)designation].maybeRemove(shape); }
 	void maybeSet(const auto& shape, const SpaceDesignation& designation) { m_data[(int)designation].maybeInsert(shape); }
 	void prepare() { for(auto& rtree : m_data) rtree.prepare(); }
+	void queryForEach(auto& shape, auto&& action) const
+	{
+		for(int designation = 0; designation != (int)SpaceDesignation::SPACE_DESIGNATION_MAX; ++designation)
+			m_data[designation].queryForEach(shape, action);
+	}
 	[[nodiscard]] bool any(const SpaceDesignation& designation) const;
 	[[nodiscard]] bool canPrepare() const;
 	[[nodiscard]] bool check(const auto& shape, const SpaceDesignation& designation) const { return m_data[(int)designation].query(shape); }
@@ -47,9 +52,16 @@ public:
 	void maybeRegisterFaction(const FactionId& faction) { if(!contains(faction)) m_data.emplace(faction); }
 	void unregisterFaction(const FactionId& faction) { m_data.erase(faction); }
 	void prepare() { for(auto& pair : m_data) pair.second.prepare(); }
+	void queryForEachForFactionIfExists(const FactionId& faction, const auto& shape, auto&& action)
+	{
+		auto found = m_data.find(faction);
+		if(found == m_data.end())
+			return;
+		found->second.queryForEach(shape, action);
+	}
 	[[nodiscard]] bool contains(const FactionId& faction) const { return m_data.contains(faction); }
 	[[nodiscard]] bool canPrepare() const;
-	[[nodiscard]] AreaHasSpaceDesignationsForFaction& getForFaction(const FactionId& faction) { return m_data[faction]; }
+	[[nodiscard]] AreaHasSpaceDesignationsForFaction& getForFaction(const FactionId& faction) { return m_data.getOrCreate(faction); }
 	[[nodiscard]] const AreaHasSpaceDesignationsForFaction& getForFaction(const FactionId& faction) const { return m_data[faction]; }
 	[[nodiscard]] AreaHasSpaceDesignationsForFaction& maybeRegisterAndGetForFaction(const FactionId& faction);
 	[[nodiscard]] const AreaHasSpaceDesignationsForFaction& maybeRegisterAndGetForFaction(const FactionId& faction) const;

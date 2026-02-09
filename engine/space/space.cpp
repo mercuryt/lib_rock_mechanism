@@ -111,13 +111,13 @@ SmallSet<Point3D> Space::getDirectlyAdjacent(const Point3D& point) const
 	if(point.x() != 0)
 		output.insert(point.west());
 	if(point.y() != 0)
-		output.insert(point.north());
+		output.insert(point.south());
 	if(point.z() != 0)
 		output.insert(point.below());
 	if(point.x() != m_sizeX - 1)
 		output.insert(point.east());
 	if(point.y() != m_sizeY - 1)
-		output.insert(point.south());
+		output.insert(point.north());
 	if(point.z() != m_sizeZ - 1)
 		output.insert(point.above());
 	return output;

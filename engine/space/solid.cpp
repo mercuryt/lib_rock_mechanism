@@ -212,7 +212,7 @@ void Space::solid_setNotDynamic(const Point3D& point)
 }
 void Space::solid_removeOpaque(CuboidSet& cuboids) const
 {
-	m_solid.forEachWithCuboids([&](const Cuboid& cuboid, const MaterialTypeId& materialType){
+	m_solid.queryForEachWithCuboids(cuboids, [&](const Cuboid& cuboid, const MaterialTypeId& materialType){
 		if(!MaterialType::getTransparent(materialType))
 			cuboids.remove(cuboid);
 	});

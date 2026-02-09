@@ -89,6 +89,30 @@ public:
 	void maybeRemove(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid); }
 	void clear();
 	void prepare();
+	void queryForEach(const auto& shape, auto&& action) const
+	{
+		SmallSet<RTreeNodeIndex> openList;
+		openList.insert(RTreeNodeIndex::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			auto intersectMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			BitSet bitset = BitSet::create(intersectMask);
+			const auto leafCount = node.getLeafCount();
+			BitSet leafBitSet = bitset;
+			leafBitSet.clearAllAfterInclusive(leafCount);
+			while(!leafBitSet.empty())
+			{
+				action(nodeCuboids[leafBitSet.getNextAndClear()]);
+			}
+			bitset.clearAllBefore(leafCount);
+			if(!bitset.empty())
+				addIntersectedChildrenToOpenList(node, bitset, openList);
+		}
+	}
 	[[nodiscard]] bool canPrepare() const;
 	[[nodiscard]] bool empty() const  { return nodeCount() == 1 && leafCount() == 0; }
 	[[nodiscard]] CuboidSet toCuboidSet() const;

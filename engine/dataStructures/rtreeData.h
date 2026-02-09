@@ -609,6 +609,14 @@ public:
 		auto wrappedAction = [&](const Cuboid&, const T& value) { action(value); };
 		queryForEachWithCuboids(shape, wrappedAction);
 	}
+	void queryForEachCollated(const auto& shape, auto&& action) const
+	{
+		SmallMap<T, CuboidSet> data;
+		auto collect = [&](const Cuboid& cuboid, const T& value) { data.getOrCreate(value).add(cuboid); };
+		queryForEachWithCuboids(shape, collect);
+		for(const auto& [value, cuboids] : data)
+			action(value, cuboids);
+	}
 	void queryForEachCuboid(const auto& shape, auto&& action) const
 	{
 		auto wrappedAction = [&](const Cuboid& cuboid, const T&) { action(cuboid); };
@@ -660,7 +668,7 @@ public:
 				const Node& node = m_nodes[nodeIndex];
 				const auto& cuboids = node.getCuboids();
 				const auto& data = node.getDataAndChildIndices();
-				const int leafEnd = node.getChildCount();
+				const int leafEnd = node.getLeafCount();
 				for(RTreeArrayIndex arrayIndex{0}; arrayIndex != leafEnd; ++arrayIndex)
 					action(cuboids[arrayIndex.get()], T::create(data[arrayIndex].data));
 			}
@@ -1060,6 +1068,12 @@ public:
 			}
 
 		}
+		return output;
+	}
+	SmallMap<T, CuboidSet> queryWithCuboidsCollated(const auto& shape) const
+	{
+		SmallMap<T, CuboidSet> output;
+		queryForEachWithCuboids(shape, [&](const Cuboid& cuboid, const T& value){ output.getOrCreate(value).insert(cuboid); });
 		return output;
 	}
 	// For test and debug.

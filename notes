@@ -1,3 +1,4 @@
+Coordinate system is the left hand rule.
 TODO:
 	check for safe temperature when detour pathing.
 To run tests:
@@ -24,5 +25,3 @@ PerAreaPerFactionData is created on demand and never destroyed.
 PerAreaPerMoveTypeData is created on demand and never destroyed.
 
 upgrade glibc version.
-
-make vision cuboids disableable for unit test speed.

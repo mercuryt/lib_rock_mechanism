@@ -81,10 +81,7 @@ void GameOverlay::unfocusUI()
 }
 void GameOverlay::drawZoom()
 {
-	float ratio = (float)m_window.getScale() / 32.f;
-	std::stringstream stream;
-	stream << std::fixed << std::setprecision(2) << ratio;
-	m_zoomUI->setText("zoom: " + UIUtil::floatToString(ratio));
+	m_zoomUI->setText("zoom: " + UIUtil::floatToString(m_window.getZoom()));
 }
 void GameOverlay::drawWeatherReport()
 {
@@ -124,7 +121,7 @@ void GameOverlay::drawSelectionDescription()
 			description = "plants: " + std::to_string(m_window.getSelectedPlants().size());
 			break;
 		case(SelectMode::Space):
-			description = "space: " + std::to_string(m_window.getSelectedBlocks().size());
+			description = "space: " + std::to_string(m_window.getSelectedBlocks().volume());
 			break;
 		default:
 			std::unreachable();

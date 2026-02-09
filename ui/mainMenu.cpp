@@ -6,6 +6,11 @@
 MainMenuView::MainMenuView(Window& w) : m_window(w), m_panel(tgui::Panel::create())
 {
 	m_window.getGui().add(m_panel);
+	update();
+}
+void MainMenuView::update()
+{
+	m_panel->removeAllWidgets();
 	auto title = tgui::Label::create("Goblin Pit");
 	title->setPosition("50%", "5%");
 	title->setOrigin(0.5, 0);
@@ -34,6 +39,13 @@ MainMenuView::MainMenuView(Window& w) : m_window(w), m_panel(tgui::Panel::create
 	auto editLoadButton = tgui::Button::create("load and edit");
 	layout->add(editLoadButton);
 	editLoadButton->onClick([&]{ m_window.m_editMode = true; m_window.showLoad(); });
+
+	if(m_window.getSimulation() != nullptr)
+	{
+		auto editButton = tgui::Button::create("edit");
+		layout->add(editButton);
+		editButton->onClick([&]{ m_window.m_editMode = true; m_window.showEditReality(); });
+	}
 
 	auto exitButton = tgui::Button::create("quit");
 	exitButton->onClick([this]{ m_window.close(); });

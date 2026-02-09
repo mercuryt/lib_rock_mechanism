@@ -100,7 +100,7 @@ public:
 	AreaHasFluidGroups m_hasFluidGroups;
 	AreaHasRain m_hasRain;
 	AreaHasEvaporation m_hasEvaporation;
-	// TODO: make to Space.
+	// TODO: move to Space.
 	AreaHasSpaceDesignations m_spaceDesignations;
 	ActorOctTree m_octTree;
 	VisionRequests m_visionRequests;

@@ -13,7 +13,8 @@ void WindowHasBackgroundTask::onFrame()
 		m_callback = nullptr;
 		m_inProgress = false;
 		m_window.m_lockInput = false;
-		callback();
+		if(callback != nullptr)
+			callback();
 	}
 }
 void WindowHasBackgroundTask::create(std::function<void()>&& action, std::function<void()>&& callback)

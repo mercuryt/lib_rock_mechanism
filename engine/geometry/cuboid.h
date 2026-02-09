@@ -92,6 +92,9 @@ struct Cuboid
 	[[nodiscard]] OffsetCuboid offsetTo(const Point3D& point) const;
 	[[nodiscard]] SmallSet<Cuboid> sliceAtEachZ() const;
 	[[nodiscard]] Cuboid sliceAtZ(const Distance& z) const;
+	[[nodiscard]] Distance sizeX() const;
+	[[nodiscard]] Distance sizeY() const;
+	[[nodiscard]] Distance sizeZ() const;
 	[[nodiscard]] int countIf(auto&& condition) const
 	{
 		int output = 0;

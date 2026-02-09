@@ -18,7 +18,8 @@
 #include <unordered_set>
 #include <fstream>
 Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::Style::Fullscreen), m_gui(m_window), m_view(m_window.getDefaultView()),
-	m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_dialogueBoxUI(*this), m_objectivePriorityView(*this),
+	m_scaledView(m_view),
+	m_simulation(nullptr), m_mainMenuView(*this), m_loadView(*this), m_gameOverlay(*this), m_dialogueBoxUI(*this), m_objectivePriorityView(*this),
 	m_productionView(*this), m_uniformView(*this), m_stocksView(*this), m_actorView(*this), //m_worldParamatersView(*this),
 	m_editRealityView(*this), m_editActorView(*this), m_editAreaView(*this), m_editFactionView(*this), m_editFactionsView(*this),
 	m_editStockPileView(*this), m_editDramaView(*this), m_backgroundTask(*this), m_minimumTimePerFrame(200),
@@ -34,7 +35,7 @@ Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::S
 			if(delta < m_minimumTimePerStep)
 				std::this_thread::sleep_for(m_minimumTimePerStep - delta);
 		}
-	}), m_editMode(false)
+	}), m_zoom(1.f), m_editMode(false)
 {
 	setPaused(true);
 	m_font.loadFromFile("lib/fonts/UbuntuMono-R.ttf");
@@ -48,20 +49,17 @@ void Window::setArea(Area& area, GameView* gameView)
 		if(m_lastViewedSpotInArea.contains(area.m_id))
 			gameView = &m_lastViewedSpotInArea[area.m_id];
 		else
-		{
 			gameView = &m_lastViewedSpotInArea.emplace(area.m_id,  area.getSpace().getCenterAtGroundLevel(), displayData::defaultScale);
-		}
 	}
 	m_area = &area;
-	m_scale = gameView->scale;
 	centerView(gameView->center);
 }
 void Window::centerView(const Point3D& point)
 {
 	m_z = point.z();
-	sf::Vector2f globalPosition(point.x().get() * m_scale, point.y().get() * m_scale);
+	sf::Vector2f globalPosition(point.x().get() * displayData::defaultScale, point.y().get() * displayData::defaultScale);
 	sf::Vector2i pixelPosition = m_window.mapCoordsToPixel(globalPosition);
-	m_view.setCenter(pixelPosition.x, pixelPosition.y);
+	m_scaledView.setCenter(pixelPosition.x, pixelPosition.y);
 }
 void Window::hideAllPanels()
 {
@@ -136,32 +134,30 @@ void Window::startLoop()
 								m_z -= 1;
 							break;
 						case sf::Keyboard::Up:
-							if(m_gameOverlay.isVisible() && m_view.getCenter().y > (m_view.getSize().y / 2.f) - gameMarginSize)
-								m_view.move(0.f, scrollSteps * -20.f);
+							if(m_gameOverlay.isVisible() && m_scaledView.getCenter().y > (m_scaledView.getSize().y / 2.f) - gameMarginSize)
+								m_scaledView.move(0.f, scrollSteps * -20.f);
 							break;
 						case sf::Keyboard::Down:
-							if(m_area != nullptr && m_gameOverlay.isVisible() && m_view.getCenter().y < m_area->getSpace().m_sizeY.get() * m_scale - (m_view.getSize().y / 2.f) + gameMarginSize)
-								m_view.move(0.f, scrollSteps * 20.f);
+							if(m_area != nullptr && m_gameOverlay.isVisible() && m_scaledView.getCenter().y < m_area->getSpace().m_sizeY.get() * displayData::defaultScale - (m_scaledView.getSize().y / 2.f) + gameMarginSize)
+								m_scaledView.move(0.f, scrollSteps * 20.f);
 							break;
 						case sf::Keyboard::Left:
-							if(m_gameOverlay.isVisible() && m_view.getCenter().x > (m_view.getSize().x / 2.f) - gameMarginSize)
-								m_view.move(scrollSteps * -20.f, 0.f);
+							if(m_gameOverlay.isVisible() && m_scaledView.getCenter().x > (m_scaledView.getSize().x / 2.f) - gameMarginSize)
+								m_scaledView.move(scrollSteps * -20.f, 0.f);
 							break;
 						case sf::Keyboard::Right:
-							if(m_area != nullptr && m_gameOverlay.isVisible() && m_view.getCenter().x < m_area->getSpace().m_sizeX.get() * m_scale - (m_view.getSize().x / 2.f) + gameMarginSize)
-								m_view.move(scrollSteps * 20.f, 0.f);
+							if(m_area != nullptr && m_gameOverlay.isVisible() && m_scaledView.getCenter().x < m_area->getSpace().m_sizeX.get() * displayData::defaultScale - (m_scaledView.getSize().x / 2.f) + gameMarginSize)
+								m_scaledView.move(scrollSteps * 20.f, 0.f);
 							break;
 						case sf::Keyboard::Delete:
-							{
-								m_scale = std::max(1, m_scale - scrollSteps);
-								m_view.move(-1.f * m_blockUnderCursor.x().get() * scrollSteps, -1.f * m_blockUnderCursor.y().get() * scrollSteps);
-							}
+								// TODO: detect passing through zoom level 1 and reset view to default to zero out errors.
+								m_zoom -= displayData::zoomIncrement;
+								m_scaledView.zoom(1.f + displayData::zoomIncrement);
 							break;
 						case sf::Keyboard::Insert:
-							{
-								m_scale += 1 * scrollSteps;
-								m_view.move(m_blockUnderCursor.x().get() * scrollSteps, m_blockUnderCursor.y().get() * scrollSteps);
-							}
+								// TODO: detect passing through zoom level 1 and reset view to default to zero out errors.
+								m_zoom += displayData::zoomIncrement;
+								m_scaledView.zoom(1.f - displayData::zoomIncrement);
 							break;
 						case sf::Keyboard::Period:
 							if(m_gameOverlay.isVisible() && m_paused)
@@ -368,11 +364,9 @@ void Window::startLoop()
 					break;
 			}
 		}
-		// Clear sprites generated for previous frame.
-		sprites::flush();
 		// Begin draw.
 		m_window.clear();
-		// Draw main m_view.
+		// Draw main m_scaledView.
 		if(m_simulation && m_area)
 		{
 			// Draw dialogueBox.
@@ -383,11 +377,12 @@ void Window::startLoop()
 			}
 			if(!m_paused && m_gameOverlay.infoPopupIsVisible())
 				m_gameOverlay.updateInfoPopup();
-			m_window.setView(m_view);
+			// Set window view to scaled view before drawing.
+			m_window.setView(m_scaledView);
 			m_draw.view();
-			// What is this? Something for TGUI?
-			m_window.setView(m_window.getDefaultView());
 		}
+		// Change window to default view before drawing GUI to prevent it being scaled or moved.
+		m_window.setView(m_view);
 		// Draw UI.
 		m_gui.draw();
 		// Finalize draw.
@@ -417,7 +412,7 @@ void Window::save()
 			file << povData;
 		}
 	};
-	threadTask(std::move(task), {});
+	threadTask(std::move(task));
 }
 void Window::load(std::filesystem::path path)
 {
@@ -474,11 +469,10 @@ void Window::povFromJson(const Json& data)
 	if(data.contains("faction"))
 		m_faction = data["faction"].get<FactionId>();
 	m_area = &m_simulation->m_hasAreas->getById(data["area"].get<AreaId>());
-	m_scale = data["scale"].get<int32_t>();
 	m_z = Distance::create(data["z"].get<int32_t>());
 	int32_t x = data["x"].get<int32_t>();
 	int32_t y = data["y"].get<int32_t>();
-	m_view.setCenter(x, y);
+	m_scaledView.setCenter(x, y);
 }
 void Window::deselectAll()
 {
@@ -515,13 +509,14 @@ Point3D Window::getBlockUnderCursor()
 }
 Point3D Window::getBlockAtPosition(sf::Vector2i pixelPos)
 {
-	sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos);
-	int32_t x = std::max(0.f, worldPos.x + m_view.getCenter().x - m_view.getSize().x / 2);
-	int32_t y = std::max(0.f, worldPos.y + m_view.getCenter().y - m_view.getSize().y / 2);
-	Space& space = m_area->getSpace();
-	x = std::min(space.m_sizeX.get() - 1, x / m_scale);
-	y = std::min(space.m_sizeY.get() - 1, y / m_scale);
-	return Point3D::create(x, y, m_z.get());
+	sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos, m_scaledView);
+    // Convert world coordinates to block coordinates
+    int32_t x = static_cast<int32_t>(worldPos.x / displayData::defaultScale);
+    int32_t y = static_cast<int32_t>(worldPos.y / displayData::defaultScale);
+    Space& space = m_area->getSpace();
+    x = std::clamp(x, 0, space.m_sizeX.get() - 1);
+    y = std::clamp(y, 0, space.m_sizeY.get() - 1);
+    return Point3D::create(x, invertY(y), m_z.get());
 }
 void Window::setFaction(const FactionId& faction)
 {
@@ -531,10 +526,9 @@ void Window::setFaction(const FactionId& faction)
 {
 	Json data{
 		{"area", m_area},
-		{"scale", m_scale},
 		{"z", m_z},
-		{"x", m_view.getCenter().x},
-		{"y", m_view.getCenter().y}
+		{"x", m_scaledView.getCenter().x},
+		{"y", m_scaledView.getCenter().y}
 	};
 	if(m_faction.exists())
 		data["faction"] = m_faction;
@@ -578,6 +572,11 @@ std::string Window::facingToString(Facing4 facing)
 		return "down";
 	assert(facing == Facing4::West);
 	return "left";
+}
+int Window::invertY(const int& distance) const
+{
+	assert(m_area != nullptr);
+	return (m_area->getSpace().m_sizeY.get() - 1) - distance;
 }
 void Window::setCursor(const sf::Cursor::Type& newCursor)
 {

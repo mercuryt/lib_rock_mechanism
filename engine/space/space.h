@@ -133,6 +133,7 @@ public:
 	[[nodiscard]] bool isAdjacentToActor(const Point3D& point, const ActorIndex& actor) const;
 	[[nodiscard]] bool isAdjacentToItem(const Point3D& point, const ItemIndex& item) const;
 	[[nodiscard]] bool isConstructed(const auto& shape) const { return m_constructed.query(shape); }
+	[[nodiscard]] CuboidSet queryConstructedGetCuboids(const auto& shape) const { return m_constructed.queryGetLeaves(shape); }
 	[[nodiscard]] bool isDynamic(const auto& shape) const { return m_dynamic.query(shape); }
 	[[nodiscard]] bool canSeeIntoFromAlways(const Point3D& point, const Point3D& other) const;
 	[[nodiscard]] bool isVisible(const auto& shape) const { return m_visible.query(shape); }
@@ -226,6 +227,13 @@ public:
 	[[nodiscard]] bool designation_has(const CuboidSet& shape, const FactionId& faction, const SpaceDesignation& designation) const;
 	[[nodiscard]] Point3D designation_hasPoint(const Cuboid& shape, const FactionId& faction, const SpaceDesignation& designation) const;
 	[[nodiscard]] Point3D designation_hasPoint(const CuboidSet& shape, const FactionId& faction, const SpaceDesignation& designation) const;
+	template<typename AreaT>
+	void designation_queryForEachForFaction(const AreaT& area, const auto& shape, const FactionId& faction, auto&& action) const
+	{
+		//TODO: use maybeGetForFaction instead of contains.
+		if(area.m_spaceDesignations.contains(faction))
+			area.m_spaceDesignations.getForFaction(faction).queryForEach(shape, action);
+	}
 	void designation_set(const Point3D& shape, const FactionId& faction, const SpaceDesignation& designation);
 	void designation_set(const Cuboid& shape, const FactionId& faction, const SpaceDesignation& designation);
 	void designation_set(const CuboidSet& shape, const FactionId& faction, const SpaceDesignation& designation);
@@ -256,6 +264,8 @@ public:
 	[[nodiscard]] Mass solid_getMass(const Point3D& point) const;
 	[[nodiscard]] Mass solid_getMass(const CuboidSet& cuboidSet) const;
 	[[nodiscard]] CuboidSet solid_queryCuboids(const auto& shape) const { return m_solid.queryGetAllCuboids(shape); }
+	void solid_queryForEach(const auto& shape, auto&& action) const { return m_solid.queryForEach(shape, action); }
+	void solid_queryForEachWithCuboids(const auto& shape, auto&& action) const { return m_solid.queryForEachWithCuboids(shape, action); }
 	Mass getMass(const auto& shape) const
 	{
 		assert(solid_isAny(shape));
@@ -277,6 +287,8 @@ public:
 	void pointFeature_open(const Point3D& point, const PointFeatureTypeId& type);
 	void pointFeature_setTemperature(const Point3D& point, const Temperature& temperature);
 	void pointFeature_removeOpaque(CuboidSet& cuboids) const;
+	void pointFeature_queryForEachWithCuboids(const auto& shape, auto&& action) const { m_features.queryForEachWithCuboids(shape, action); }
+	[[nodiscard]] SmallMap<PointFeature, CuboidSet> pointFeature_queryWithCuboidsCollated(const auto& shape) const { return m_fluid.queryWithCuboidsCollated(shape); }
 	[[nodiscard]] MapWithCuboidKeys<PointFeature> pointFeature_getAllWithCuboidsAndRemove(const CuboidSet& cuboids);
 	[[nodiscard]] const PointFeature pointFeature_at(const Cuboid& cuboid, const PointFeatureTypeId& pointFeatureType) const;
 	[[nodiscard]] const PointFeature pointFeature_at(const Point3D& point, const PointFeatureTypeId& pointFeatureType) const { return pointFeature_at({point, point}, pointFeatureType); }
@@ -340,6 +352,7 @@ public:
 	void fluid_maybeRecordFluidOnDeck(const CuboidSet& points);
 	void fluid_maybeEraseFluidOnDeck(const CuboidSet& points);
 	void fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(CuboidSet& set) const;
+	void fluid_queryForEachWithCuboids(const auto& shape, auto&& action) const { m_fluid.queryForEachWithCuboids(shape, action); }
 	[[nodiscard]] Distance fluid_getMistInverseDistanceToSource(const Point3D& point) const;
 	[[nodiscard]] FluidGroup* fluid_getGroup(const Point3D& point, const FluidTypeId& fluidType) const;
 	// To be called from FluidGroup::splitStep only.
@@ -409,6 +422,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	void actor_eraseDynamic(const MapWithCuboidKeys<CollisionVolume>& toOccupy, const ActorIndex& actor);
 	void actor_setTemperature(const Point3D& point, const Temperature& temperature);
 	void actor_updateIndex(const Cuboid& cuboid, const ActorIndex& oldIndex, const ActorIndex& newIndex);
+	void actor_queryForEach(const auto& shape, auto&& action) const { m_actors.queryForEach(shape, action); }
 	[[nodiscard]] bool actor_contains(const auto& shape, const ActorIndex& actor) const { return m_actors.queryAnyEqual(shape, actor); }
 	[[nodiscard]] bool actor_empty(const auto& shape) const { return !m_actors.queryAny(shape); }
 	[[nodiscard]] const SmallSet<ActorIndex> actor_getAll(const auto& shape) const { return m_actors.queryGetAll(shape); }
@@ -424,6 +438,8 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	void item_setTemperature(const Point3D& point, const Temperature& temperature);
 	void item_disperseAll(const Point3D& point);
 	void item_updateIndex(const Cuboid& cuboid, const ItemIndex& oldIndex, const ItemIndex& newIndex);
+	void item_queryForEach(const auto& shape, auto&& action) const { m_items.queryForEach(shape, action); }
+	void item_queryForEachCuboid(const auto& shape, auto&& action) const { m_items.queryForEachCuboid(shape, action); }
 	[[nodiscard]] ItemIndex item_addGeneric(const Point3D& point, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity);
 	//ItemIndex get(const Point3D& point, ItemType& itemType) const;
 	[[nodiscard]] Quantity item_getCount(const Point3D& point, const ItemTypeId& itemType, const MaterialTypeId& materialType) const;
@@ -451,6 +467,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 		assert(!m_plants.queryAny(shape));
 		m_plants.maybeInsert(shape, plant);
 	}
+	void plant_queryForEachWithCuboids(const auto& shape, auto&& action) { m_plants.queryForEachWithCuboids(shape, action); }
 	[[nodiscard]] PlantIndex plant_get(const auto& shape) const { return m_plants.queryGetOne(shape); }
 	[[nodiscard]] SmallSet<PlantIndex> plant_getAll(const auto& shape) const { return m_plants.queryGetAll(shape); }
 	[[nodiscard]] bool plant_canGrowHereCurrently(const Point3D& point, const PlantSpeciesId& plantSpecies) const;
@@ -527,13 +544,27 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	void farm_removeAllHarvestDesignations(const Point3D& point);
 	void farm_removeAllGiveFluidDesignations(const Point3D& point);
 	void farm_removeAllSowSeedsDesignations(const Point3D& point);
+	void farm_queryForEachCuboidForFaction(const auto& shape, const FactionId& faction, auto&& action) const
+	{
+		auto found = m_farmFields.find(faction);
+		if(found == m_farmFields.end())
+			return;
+		found->second.queryForEachCuboid(shape, action);
+	}
 	[[nodiscard]] bool farm_isSowingSeasonFor(const PlantSpeciesId& species) const;
 	[[nodiscard]] bool farm_contains(const Point3D& point, const FactionId& faction) const;
-	[[nodiscard]] FarmField* farm_get(const auto& shape, const FactionId& faction) { return m_farmFields[faction].queryGetOne(shape).get(); }
+	[[nodiscard]] FarmField* farm_get(const auto& shape, const FactionId& faction);
 	[[nodiscard]] const FarmField* farm_get(const Point3D& point, const FactionId& faction) const;
 	// -StockPile
 	void stockpile_recordMembership(const Point3D& point, StockPile& stockPile);
 	void stockpile_recordNoLongerMember(const Point3D& point, StockPile& stockPile);
+	void stockpile_queryForEachCuboidForFaction(const auto& shape, const FactionId& faction, auto&& action)
+	{
+		auto found = m_stockPiles.find(faction);
+		if(found == m_stockPiles.end())
+			return;
+		found->second.queryForEachCuboid(shape, action);
+	}
 	template<typename ShapeT>
 	[[nodiscard]] StockPile* stockpile_getOneForFaction(const ShapeT& shape, const FactionId& faction);
 	template<typename ShapeT>
@@ -548,6 +579,16 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	[[nodiscard]] Project* project_get(const Point3D& point, const FactionId& faction) const;
 	[[nodiscard]] Project* project_getIfBegun(const Point3D& point, const FactionId& faction) const;
 	[[nodiscard]] Project* project_queryGetOne(const FactionId& faction, const auto& shape, auto&& condition) const { return m_projects[faction].queryGetOneWithCondition(shape, condition).get(); }
+	void project_queryForEachWithLocation(const FactionId& faction, const auto& shape, auto&& action) const
+	{
+		auto found = m_projects.find(faction);
+		if(found == m_projects.end())
+			return;
+		found->second.queryForEachWithCuboids(shape, [&](const Cuboid& cuboid, const RTreeDataWrapper<Project*, nullptr>& project){
+			assert(cuboid.volume() == 1);
+			action(*project.get(), cuboid.m_high);
+		});
+	}
 	template<typename AreaT>
 	[[nodiscard]] Project* project_randomForFactionWithCondition(const FactionId& faction, auto&& condition, AreaT& area) const
 	{

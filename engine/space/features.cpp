@@ -248,7 +248,7 @@ bool Space::pointFeature_floorIsOpaque(const Point3D& point) const
 }
 void Space::pointFeature_removeOpaque(CuboidSet& cuboids) const
 {
-	m_features.forEachWithCuboids([&](const Cuboid& cuboid, const PointFeature& feature){
+	m_features.queryForEachWithCuboids(cuboids, [&](const Cuboid& cuboid, const PointFeature& feature){
 		if(feature.blocksLineOfSight())
 			cuboids.remove(cuboid);
 	});

@@ -72,6 +72,8 @@ public:
 	[[nodiscard]] SmallSet<K> keys() const;
 	template<typename Condition>
 	[[nodiscard]] iterator findIf(Condition&& condition) { return std::ranges::find_if(m_data, condition); }
+	template<typename Condition>
+	[[nodiscard]] const_iterator findIf(Condition&& condition) const { return std::ranges::find_if(m_data, condition); }
 	[[nodiscard]] iterator find(const K& key);
 	[[nodiscard]] const_iterator find(const K& key) const;
 	[[nodiscard]] iterator begin();

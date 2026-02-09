@@ -42,6 +42,8 @@ class Window final
 	tgui::Gui m_gui;
 	sf::Font m_font;
 	sf::View m_view;
+	sf::View m_scaledView;
+	std::unique_ptr<Simulation> m_simulation;
 	MainMenuView m_mainMenuView;
 	LoadView m_loadView;
 	GameOverlay m_gameOverlay;
@@ -59,9 +61,7 @@ class Window final
 	EditFactionsView m_editFactionsView;
 	EditStockPileView m_editStockPileView;
 	EditDramaView m_editDramaView;
-	std::unique_ptr<Simulation> m_simulation;
 	Area* m_area = nullptr;
-	int32_t m_scale = displayData::defaultScale;
 	Distance m_z;
 	std::atomic<int16_t> m_speed = 1;
 	SmallMap<AreaId, GameView> m_lastViewedSpotInArea;
@@ -80,6 +80,7 @@ class Window final
 	sf::Vector2i m_positionWhereMouseDragBegan = {0,0};
 	Point3D m_firstCornerOfSelection;
 	Point3D m_blockUnderCursor;
+	float m_zoom;
 	SelectMode m_selectMode = SelectMode::Actors;
 	static constexpr int gameMarginSize = 400;
 
@@ -108,7 +109,8 @@ public:
 	[[nodiscard]] sf::RenderWindow& getRenderWindow() { return m_window; }
 	[[nodiscard]] GameOverlay& getGameOverlay() { return m_gameOverlay; }
 	[[nodiscard]] SelectMode getSelectMode() const { return m_selectMode; }
-	[[nodiscard]] int32_t getScale() const { return m_scale; }
+	[[nodiscard]] int invertY(const int& distance) const;
+	[[nodiscard]] float getZoom() const { return m_zoom; }
 	// Show panels.
 	void hideAllPanels();
 	void showMainMenu() { hideAllPanels(); m_mainMenuView.show(); }
@@ -140,7 +142,7 @@ public:
 	[[nodiscard]] Point3D getBlockUnderCursor();
 	[[nodiscard]] Point3D getBlockAtPosition(sf::Vector2i pixelPos);
 	// Filesystem.
-	void threadTask(std::function<void()>&& task, std::function<void()>&& callback);
+	void threadTask(std::function<void()>&& task, std::function<void()>&& callback = nullptr);
 	void save();
 	void load(std::filesystem::path path);
 	// Accessors.

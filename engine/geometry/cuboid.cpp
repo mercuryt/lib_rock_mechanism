@@ -353,10 +353,10 @@ Cuboid Cuboid::getFace(const Facing6& facing) const
 			return Cuboid({m_low.x(), m_high.y(), m_high.z()}, m_low);
 		// test area has y() m_higher then this.
 		case(Facing6::South):
-			return Cuboid(m_high, {m_low.x(), m_high.y(), m_low.z()});
+			return Cuboid({m_high.x(), m_low.y(), m_high.z()}, m_low);
 		// test area has y() m_lower then this.
 		case(Facing6::North):
-			return Cuboid({m_high.x(), m_low.y(), m_high.z()}, m_low);
+			return Cuboid(m_high, {m_low.x(), m_high.y(), m_low.z()});
 		// test area has z() m_higher then this.
 		case(Facing6::Above):
 			return Cuboid(m_high, {m_low.x(), m_low.y(), m_high.z()});
@@ -570,6 +570,9 @@ Cuboid Cuboid::sliceAtZ(const Distance& z) const
 	low.setZ(z);
 	return {high, low};
 }
+Distance Cuboid::sizeX() const { return m_high.x() - m_low.x() + 1; }
+Distance Cuboid::sizeY() const { return m_high.y() - m_low.y() + 1; }
+Distance Cuboid::sizeZ() const { return m_high.z() - m_low.z() + 1; }
 Cuboid::ConstIterator::ConstIterator(const Point3D& lowest, const Point3D& highest)
 {
 	if(!lowest.exists())
