@@ -65,6 +65,7 @@ public:
 	[[nodiscard]] auto& getAboveGroundPointsByMeltingPoint() { return m_aboveGroundPointsByMeltingPoint; }
 	// For testing.
 	[[nodiscard]] auto& getPointDeltaDeltas() { return m_pointDeltaDeltas; }
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(AreaHasTemperature, m_aboveGroundPointsByMeltingPoint);
 };
 class UnsafeTemperatureEvent;
 class ActorNeedsSafeTemperature

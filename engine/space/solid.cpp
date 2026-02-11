@@ -41,8 +41,21 @@ void Space::solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& material
 	m_solid.maybeInsertOrOverwrite(cuboid, materialType);
 	if(constructed)
 		m_constructed.maybeInsert(cuboid);
-	// TODO: why?
-	m_visible.maybeInsert(cuboid);
+	// Query all visible space adjacent to cuboid, inflate and then remove from toSetUnrevealed.
+	// To get all visible space we must query all opaque space and invert it.
+	// The result is all space within cuboid which is not adjacent to visible space.
+	CuboidSet toSetUnrevealed = CuboidSet::create(cuboid);
+	CuboidSet visibleSpace = toSetUnrevealed;
+	Cuboid inflated = cuboid;
+	inflated.inflate({1});
+	m_area.m_opacityFacade.removeFromCuboidSet(visibleSpace);
+	for(Cuboid& visibleCuboid : visibleSpace)
+	{
+		visibleCuboid.inflate({1});
+		toSetUnrevealed.maybeRemove(visibleCuboid);
+	}
+	m_unrevealed.maybeInsert(toSetUnrevealed);
+	// Kill any plants.
 	Plants& plants = m_area.getPlants();
 	const auto& plantIndices = m_plants.queryGetAll(cuboid);
 	for(const PlantIndex& plant : plantIndices)
@@ -76,7 +89,7 @@ void Space::solid_setNotCuboid(const Cuboid& cuboid)
 		}
 	m_constructed.maybeRemove(cuboid);
 	// TODO: Why are we doing this? What does visible actually mean?
-	m_visible.maybeInsert(cuboid);
+	m_unrevealed.maybeRemove(cuboid);
 	// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid point.
 	m_reservables.maybeRemove(cuboid);
 	const Cuboid spaceBoundry = boundry();
@@ -87,7 +100,6 @@ void Space::solid_setNotCuboid(const Cuboid& cuboid)
 		if(m_exposedToSky.check(point) && MaterialType::canMelt(m_solid.queryGetOne(point)))
 			m_area.m_hasTemperature.maybeRemoveMeltableSolidPointAboveGround(point);
 		fluid_onPointSetNotSolid(point);
-		setBelowVisible(point);
 		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
 	}
 	m_solid.maybeRemove(cuboid);

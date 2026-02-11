@@ -347,27 +347,33 @@ Cuboid Cuboid::getFace(const Facing6& facing) const
 	{
 		// test area has x() higher then this.
 		case(Facing6::East):
-			return Cuboid(m_high, {m_high.x(), m_low.y(), m_low.z()});
+			return getFaceEast();
 		// test area has x() m_lower then this.
 		case(Facing6::West):
-			return Cuboid({m_low.x(), m_high.y(), m_high.z()}, m_low);
+			return getFaceWest();
 		// test area has y() m_higher then this.
 		case(Facing6::South):
-			return Cuboid({m_high.x(), m_low.y(), m_high.z()}, m_low);
+			return getFaceSouth();
 		// test area has y() m_lower then this.
 		case(Facing6::North):
-			return Cuboid(m_high, {m_low.x(), m_high.y(), m_low.z()});
+			return getFaceNorth();
 		// test area has z() m_higher then this.
 		case(Facing6::Above):
-			return Cuboid(m_high, {m_low.x(), m_low.y(), m_high.z()});
+			return getFaceAbove();
 		// test area has z() m_lower then this.
 		case(Facing6::Below):
-			return Cuboid({m_high.x(), m_high.y(), m_low.z()}, m_low);
+			return getFaceBelow();
 		default:
 			assert(false);
 			std::unreachable();
 	}
 }
+Cuboid Cuboid::getFaceNorth() const { return Cuboid(m_high, {m_low.x(), m_high.y(), m_low.z()}); }
+Cuboid Cuboid::getFaceSouth() const { return Cuboid({m_high.x(), m_low.y(), m_high.z()}, m_low); }
+Cuboid Cuboid::getFaceEast() const { return Cuboid(m_high, {m_high.x(), m_low.y(), m_low.z()});}
+Cuboid Cuboid::getFaceWest() const { return Cuboid({m_low.x(), m_high.y(), m_high.z()}, m_low); }
+Cuboid Cuboid::getFaceAbove() const { return Cuboid(m_high, {m_low.x(), m_low.y(), m_high.z()}); }
+Cuboid Cuboid::getFaceBelow() const { return Cuboid({m_high.x(), m_high.y(), m_low.z()}, m_low);}
 bool Cuboid::intersects(const Point3D& point) const
 {
 	return !(m_high.data < point.data || m_low.data > point.data).any();

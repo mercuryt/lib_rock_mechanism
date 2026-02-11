@@ -205,19 +205,6 @@ void Space::setExposedToSky(const Point3D& point, bool exposed)
 	else
 		m_exposedToSky.unset(m_area, point);
 }
-void Space::setBelowVisible(const Point3D& point)
-{
-	if(point.z() == 0)
-		return;
-	Point3D below = point.below();
-	while(canSeeThroughFrom(below, below.above()) && !m_visible.query(below))
-	{
-		m_visible.maybeInsert(below);
-		if(below.z() == 0)
-			break;
-		below = below.below();
-	}
-}
 bool Space::canSeeIntoFromAlways(const Point3D& to, const Point3D& from) const
 {
 	if(solid_isAny(to) && !MaterialType::getTransparent(m_solid.queryGetOne(to)))
@@ -318,9 +305,9 @@ void Space::prepareRtrees()
 		if(m_temperatureDelta.canPrepare())
 			#pragma omp task
 				m_temperatureDelta.prepare();
-		if(m_visible.canPrepare())
+		if(m_unrevealed.canPrepare())
 			#pragma omp task
-				m_visible.prepare();
+				m_unrevealed.prepare();
 		if(m_constructed.canPrepare())
 			#pragma omp task
 				m_constructed.prepare();

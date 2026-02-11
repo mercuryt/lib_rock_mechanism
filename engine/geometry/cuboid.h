@@ -66,6 +66,12 @@ struct Cuboid
 	[[nodiscard]] Point3D intersectionPointForFace(const ParamaterizedLine& line, const Facing6& face) const;
 	[[nodiscard]] OffsetCuboid above() const;
 	[[nodiscard]] Cuboid getFace(const Facing6& faceing) const;
+	[[nodiscard]] Cuboid getFaceNorth() const;
+	[[nodiscard]] Cuboid getFaceSouth() const;
+	[[nodiscard]] Cuboid getFaceEast() const;
+	[[nodiscard]] Cuboid getFaceWest() const;
+	[[nodiscard]] Cuboid getFaceAbove() const;
+	[[nodiscard]] Cuboid getFaceBelow() const;
 	[[nodiscard]] bool intersects(const Point3D& point) const;
 	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
 	[[nodiscard]] bool overlapsWithSphere(const Sphere& sphere) const;

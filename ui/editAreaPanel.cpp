@@ -22,6 +22,7 @@ EditAreaView::EditAreaView(Window& w) : m_window(w), m_panel(tgui::Panel::create
 
 
 	layout->add(tgui::Label::create("name"));
+	m_name->setTextSize(32);
 	layout->add(m_name);
 
 	layout->add(m_dimensionsHolder);
@@ -77,8 +78,11 @@ void EditAreaView::confirm()
 			static constexpr bool createDrama = true;
 			m_area = &m_window.getSimulation()->m_hasAreas->createArea(m_sizeX->getValue(), m_sizeY->getValue(), m_sizeZ->getValue(), createDrama);
 		};
-		m_window.threadTask(std::move(task), {});
+		m_window.threadTask(std::move(task), [this]{ confirm(); });
 	}
-	m_area->m_name = m_name->getText().toStdString();
-	m_window.showEditReality();
+	else
+	{
+		m_area->m_name = m_name->getText().toStdString();
+		m_window.showEditReality();
+	}
 }

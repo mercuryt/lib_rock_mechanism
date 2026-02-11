@@ -11,9 +11,6 @@
 #include "../engine/pointFeature.h"
 #include "displayData.h"
 #include "interpolate.h"
-#include <SFML/Graphics/Color.hpp>
-#include <SFML/Graphics/Sprite.hpp>
-#include <SFML/System/Vector2.hpp>
 void Draw::view()
 {
 	Space& space = m_window.m_area->getSpace();
@@ -27,15 +24,7 @@ void Draw::view()
 	// Aquire Area read mutex.
 	std::lock_guard lock(m_window.m_simulation->m_uiReadMutex);
 	// Collect actors into single and multi tile groups.
-	SmallSet<Point3D> singleTileActorBlocks;
-	SmallSet<ActorIndex> multiTileActors;
 	const Cuboid zLevelBlocks = space.getZLevel(m_window.m_z);
-	space.actor_queryForEach(zLevelBlocks, [&](const ActorIndex& actor) {
-		if(Shape::getIsMultiTile(actors.getShape(actor)))
-			multiTileActors.maybeInsert(actor);
-		else
-			singleTileActorBlocks.insert(actors.getLocation(actor));
-	});
 	if(m_window.m_z != 0)
 	{
 		// Render solid blocks on next level down as floors.
@@ -47,7 +36,7 @@ void Draw::view()
 			{
 				sf::Sprite constructedFloor = sprites::makeRepeated("blockFloor", constructedCuboid);
 				spriteFill(constructedFloor, constructedCuboid.intersection(constructedCuboid), color);
-				blockWalls(constructedCuboid, material, true, false);
+				blockWalls(constructedCuboid, material, true, true);
 			}
 			// NotConstructed isn't neccesary, we could remove each constructed from notOccluded and use the remainder instead.
 			CuboidSet notConstructed = CuboidSet::create(cuboid);
@@ -56,18 +45,18 @@ void Draw::view()
 			{
 				sf::Sprite notConstructedFloor = sprites::makeRepeated("roughFloor", notConstructedCuboid);
 				spriteFill(notConstructedFloor, notConstructedCuboid.intersection(notConstructedCuboid), color);
-				blockWalls(notConstructedCuboid, material, false, false);
+				blockWalls(notConstructedCuboid, material, false, true);
 			}
 		});
 		// Fluids on next level down.
 		space.fluid_queryForEachWithCuboids(belowLevel, [&](const Cuboid& cuboid, const FluidData& data){
 			// TODO: Give the shore line some feeling of depth somehow.
-			std::string volumeString = std::to_string(data.volume.get());
-			for(const Point3D& point : cuboid)
-				stringOnBlock(point, volumeString, sf::Color::Black);
 			static sf::Sprite sprite = sprites::makeRepeated("fluidSurface", cuboid);
 			const sf::Color color = displayData::fluidColors[data.type];
 			spriteFill(sprite, cuboid, &color);
+			std::string volumeString = std::to_string(data.volume.get());
+			for(const Point3D& point : cuboid)
+				stringOnBlock(point, volumeString, sf::Color::Black);
 		});
 	}
 	// Ground cover plants.
@@ -85,11 +74,11 @@ void Draw::view()
 			return;
 		}
 	});
-	// Floor type features.
 	SmallMap<PointFeatureTypeId, SmallMap<PointFeature, CuboidSet>> featuresOnThisZLevel;
 	space.pointFeature_queryForEachWithCuboids(zLevelBlocks, [&](const Cuboid& cuboid, const PointFeature& pointFeature){
 		featuresOnThisZLevel.getOrCreate(pointFeature.pointFeatureType).getOrCreate(pointFeature).add(cuboid);
 	});
+	// Floor type features.
 	static const sf::Texture blockFloor = sprites::textures["blockFloor"].first;
 	featureType(blockFloor, PointFeatureTypeId::Floor, featuresOnThisZLevel);
 	static const sf::Texture hatch = sprites::textures["hatch"].first;
@@ -104,180 +93,57 @@ void Draw::view()
 	space.farm_queryForEachCuboidForFaction(zLevelBlocks, m_window.getFaction(), [&](const Cuboid& cuboid){
 		colorOnCuboid(cuboid, displayData::farmFieldColor);
 	});
-	// Fluids on current level.
-	space.fluid_queryForEachWithCuboids(zLevelBlocks, [&](const Cuboid& cuboid, const FluidData& data){
-		// TODO: Give the shore line some feeling of depth somehow.
-		std::string volumeString = std::to_string(data.volume.get());
-		for(const Point3D& point : cuboid)
-			stringOnBlock(point, volumeString, sf::Color::Black);
-		const sf::Color color = displayData::fluidColors[data.type];
-		colorOnCuboid(cuboid, color);
-	});
 	// Render Solid walls.
 	space.solid_queryForEachWithCuboids(zLevelBlocks, [&](const Cuboid& cuboid, const MaterialTypeId& material) {
 		colorOnCuboid(cuboid, displayData::materialColors[material]);
 		CuboidSet notOccluded = CuboidSet::create(cuboid);
 		CuboidSet constructed = space.queryConstructedGetCuboids(notOccluded);
 		for(const Cuboid& constructedCuboid : constructed)
-			blockWalls(constructedCuboid, material, true, true);
+			blockWalls(constructedCuboid, material, true, false);
 		CuboidSet notConstructed = std::move(notOccluded);
 		notConstructed.maybeRemoveAll(constructed);
 		for(const Cuboid& notConstructedCuboid : notConstructed)
-			blockWalls(notConstructedCuboid, material, false, true);
+			blockWalls(notConstructedCuboid, material, false, false);
+	});
+	// Fluids on current level.
+	space.fluid_queryForEachWithCuboids(zLevelBlocks, [&](const Cuboid& cuboid, const FluidData& data){
+		// TODO: Give the shore line some feeling of depth somehow.
+		const sf::Color color = displayData::fluidColors[data.type];
+		colorOnCuboid(cuboid, color);
+		std::string volumeString = std::to_string(data.volume.get());
+		for(const Point3D& point : cuboid)
+			stringOnBlock(point, volumeString, sf::Color::Black);
 	});
 	// Nonfloor type features.
-	auto foundStairs = featuresOnThisZLevel.find(PointFeatureTypeId::Stairs);
-	if(foundStairs != featuresOnThisZLevel.end())
-	{
-		for(const auto& [feature, cuboids] : foundStairs->second)
-		{
-			const sf::Color color = displayData::materialColors[feature.materialType];
-			for(const Cuboid& cuboid : cuboids)
-				for(const Point3D& point : cuboid)
-				{
-					static sf::Sprite stairs = getCenteredSprite("stairs");
-					Facing4 facing = rampOrStairsFacing(point);
-					stairs.setRotation((uint)facing * 90);
-					stairs.setOrigin(16,19);
-					spriteOnBlockCentered(point, stairs, &color);
-				}
-			}
-	}
-	auto foundRamp = featuresOnThisZLevel.find(PointFeatureTypeId::Ramp);
-	if(foundRamp != featuresOnThisZLevel.end())
-	{
-		for(const auto& [feature, cuboids] : foundRamp->second)
-		{
-			const sf::Color color = displayData::materialColors[feature.materialType];
-			for(const Cuboid& cuboid : cuboids)
-				for(const Point3D& point : cuboid)
-				{
-					static sf::Sprite ramp = getCenteredSprite("ramp");
-					Facing4 facing = rampOrStairsFacing(point);
-					ramp.setRotation((uint)facing * 90);
-					ramp.setOrigin(16,19);
-					spriteOnBlockCentered(point, ramp, &color);
-				}
-		}
-	}
-	auto foundFloodGate = featuresOnThisZLevel.find(PointFeatureTypeId::FloodGate);
-	if(foundFloodGate != featuresOnThisZLevel.end())
-	{
-		for(const auto& [feature, cuboids] : foundFloodGate->second)
-		{
-			const sf::Color color = displayData::materialColors[feature.materialType];
-			for(const Cuboid& cuboid : cuboids)
-				for(const Point3D& point : cuboid)
-				{
-					static sf::Sprite floodGate = getCenteredSprite("floodGate");
-					if(point.y() == space.m_sizeY - 1 || point.x() == 0 || (!space.solid_isAny(point.north()) || !space.solid_isAny(point.south())))
-						floodGate.setRotation(0);
-					else
-						floodGate.setRotation(90);
-					spriteOnBlockCentered(point, floodGate, &color);
-				}
-		}
-	}
-	auto foundFortification = featuresOnThisZLevel.find(PointFeatureTypeId::Fortification);
-	if(foundFortification != featuresOnThisZLevel.end())
-	{
-		for(const auto& [feature, cuboids] : foundFortification->second)
-		{
-			const sf::Color color = displayData::materialColors[feature.materialType];
-			for(const Cuboid& cuboid : cuboids)
-				for(const Point3D& point : cuboid)
-				{
-					static sf::Sprite fortification = getCenteredSprite("fortification");
-					if(point.y() == space.m_sizeY - 1 || point.x() == 0 || (!space.solid_isAny(point.north()) || !space.solid_isAny(point.south())))
-						fortification.setRotation(0);
-					else
-						fortification.setRotation(90);
-					spriteOnBlockCentered(point, fortification, &color);
-				}
-		}
-	}
-	auto foundFlap = featuresOnThisZLevel.find(PointFeatureTypeId::Flap);
-	if(foundFlap != featuresOnThisZLevel.end())
-	{
-		for(const auto& [feature, cuboids] : foundFlap->second)
-		{
-			const sf::Color color = displayData::materialColors[feature.materialType];
-			for(const Cuboid& cuboid : cuboids)
-				for(const Point3D& point : cuboid)
-				{
-					static sf::Sprite flap = getCenteredSprite("flap");
-					if(point.y() == space.m_sizeY - 1 || point.x() == 0 || (!space.solid_isAny(point.north()) || !space.solid_isAny(point.south())))
-						flap.setRotation(0);
-					else
-						flap.setRotation(90);
-					spriteOnBlockCentered(point, flap, &color);
-				}
-		}
-	}
-	auto foundDoor = featuresOnThisZLevel.find(PointFeatureTypeId::Door);
-	if(foundDoor != featuresOnThisZLevel.end())
-	{
-		for(const auto& [feature, cuboids] : foundDoor->second)
-		{
-			const sf::Color color = displayData::materialColors[feature.materialType];
-			for(const Cuboid& cuboid : cuboids)
-				for(const Point3D& point : cuboid)
-				{
-					static sf::Sprite door = getCenteredSprite("door");
-					if(point.y() == space.m_sizeY - 1 || point.x() == 0 || (!space.solid_isAny(point.north()) || !space.solid_isAny(point.south())))
-						door.setRotation(0);
-					else
-						door.setRotation(90);
-					spriteOnBlockCentered(point, door, &color);
-				}
-		}
-	}
+	static sf::Sprite ramp = getCenteredSprite("ramp");
+	rampOrStairs(PointFeatureTypeId::Ramp, ramp, featuresOnThisZLevel);
+	static sf::Sprite stairs = getCenteredSprite("stairs");
+	rampOrStairs(PointFeatureTypeId::Stairs, stairs, featuresOnThisZLevel);
+	static sf::Sprite floodGate = getCenteredSprite("floodGate");
+	featureTypeRotated90IfInaccessableNorthAndSouth(PointFeatureTypeId::FloodGate, floodGate, featuresOnThisZLevel);
+	static sf::Sprite fortification = getCenteredSprite("fortification");
+	featureTypeRotated90IfInaccessableNorthAndSouth(PointFeatureTypeId::Fortification, fortification, featuresOnThisZLevel);
+	static sf::Sprite flap = getCenteredSprite("flap");
+	featureTypeRotated90IfInaccessableNorthAndSouth(PointFeatureTypeId::Flap, flap, featuresOnThisZLevel);
+	static sf::Sprite door = getCenteredSprite("door");
+	featureTypeRotated90IfInaccessableNorthAndSouth(PointFeatureTypeId::Door, door, featuresOnThisZLevel);
 	if(m_window.m_z != 0)
 	{
 		// Render stairs and ramp tops for next level down.
 		Cuboid belowLevel(Point3D(space.m_sizeX - 1, space.m_sizeY - 1, m_window.m_z - 1), Point3D::create(0, 0, m_window.m_z.get() - 1));
 		space.pointFeature_queryForEachWithCuboids(belowLevel, [&](const Cuboid& cuboid, const PointFeature& pointFeature){
-			sf::Color* color = &displayData::materialColors[pointFeature.materialType];
+			const sf::Color& color = displayData::materialColors[pointFeature.materialType];
 			if(pointFeature.pointFeatureType == PointFeatureTypeId::Stairs)
-			{
-				for(const Point3D& point : cuboid)
-				{
-					Facing4 facing = rampOrStairsFacing(point);
-					static sf::Sprite stairs = getCenteredSprite("stairs");
-					stairs.setRotation((uint)facing * 90);
-					stairs.setOrigin(16,19);
-					stairs.setTextureRect({0,0,32,16});
-					spriteOnBlockCentered(point, stairs, color);
-				}
-			}
-			if(pointFeature.pointFeatureType == PointFeatureTypeId::Ramp)
-			{
-				for(const Point3D& point : cuboid)
-				{
-					Facing4 facing = rampOrStairsFacing(point);
-					static sf::Sprite ramp = getCenteredSprite("ramp");
-					ramp.setRotation((uint)facing * 90);
-					ramp.setOrigin(16,19);
-					ramp.setTextureRect({0,0,32,16});
-					spriteOnBlockCentered(point, ramp, color);
-				}
-			}
+				rampOrStairsTopOnly(cuboid, stairs, color);
+			else if(pointFeature.pointFeatureType == PointFeatureTypeId::Ramp)
+				rampOrStairsTopOnly(cuboid, ramp, color);
 		});
 	}
 	// Non-Ground cover plants.
-	space.plant_queryForEachWithCuboids(zLevelBlocks, [&](const Cuboid& cuboid, const PlantIndex& plant){
-		const PlantSpeciesId& species = plants.getSpecies(plant);
-		const PlantSpeciesDisplayData& display = displayData::plantData[species];
+	space.plant_queryForEach(zLevelBlocks, [&](const PlantIndex& plant){
+		PlantSpeciesDisplayData& display = displayData::plantData[plants.getSpecies(plant)];
 		if(!display.groundCover)
-		{
-			//TODO: color.
-			assert(cuboid.volume() == 1);
-			const Point3D& location = cuboid.m_high;
-			imageOnBlock(location, display.image);
-			if(m_window.getSelectedPlants().contains(plant))
-				outlineOnBlock(location, displayData::selectColor);
-			return;
-		}
+			nonGroundCoverPlant(plant, display);
 	});
 	// Render items.
 	space.item_queryForEachCuboid(zLevelBlocks, [&](const Cuboid& cuboid){
@@ -285,6 +151,14 @@ void Draw::view()
 			item(point);
 	});
 	// Render Actors.
+	SmallSet<Point3D> singleTileActorBlocks;
+	SmallSet<ActorIndex> multiTileActors;
+	space.actor_queryForEach(zLevelBlocks, [&](const ActorIndex& actor) {
+		if(Shape::getIsMultiTile(actors.getShape(actor)))
+			multiTileActors.maybeInsert(actor);
+		else
+			singleTileActorBlocks.insert(actors.getLocation(actor));
+	});
 	// Multi tile actors first.
 	//TODO: what if multitile actors overlap?
 	for(const ActorIndex& actor : multiTileActors)
@@ -397,6 +271,12 @@ void Draw::view()
 				else
 					validOnBlock(point);
 	}
+	// Obscure unrevealed.
+	// TODO: prevent rendering calls which will be obscured here anyway?
+	if(!m_window.m_editMode)
+		space.unrevealed_queryForEach(zLevelBlocks, [&](const Cuboid& cuboid){
+			colorOnCuboid(cuboid, displayData::unrevealedColor);
+		});
 	// Area Border.
 	sf::RectangleShape areaBorder(sf::Vector2f((space.m_sizeX.get() * displayData::defaultScale), (space.m_sizeY.get() * displayData::defaultScale)));
 	areaBorder.setOutlineColor(sf::Color::White);
@@ -421,294 +301,79 @@ void Draw::featureType(const sf::Texture& texture, const PointFeatureTypeId& fea
 		}
 	}
 }
-void Draw::blockWallCorners(const Point3D& point)
+void Draw::blockWallCorner(const Point3D& point, const bool& constructed, const bool& nextZLevelDown)
 {
+	static const sf::Texture constructedWallTexture = sprites::makeRotatedTexture("blockWall", 45);
+	static const sf::Texture roughWallTexture = sprites::makeRotatedTexture("roughWall", 45);
+	const sf::Texture& texture = constructed ? constructedWallTexture : roughWallTexture;
 	Space& space = m_window.m_area->getSpace();
-	if(
-		(m_window.m_editMode || space.isVisible(point)) &&
-		space.solid_isAny(point) && point.x() != 0 && !space.solid_isAny(point.west()) && point.y() != 0 && !space.solid_isAny(point.south())
-	)
-	{
-		const sf::Color color = displayData::materialColors[space.solid_get(point)];
-		auto pair = sprites::make(space.isConstructed(point) ? "blockWall" : "roughWall");
-		auto sprite = pair.first;
-		sprite.setPosition(((float)point.x().get() - 0.21f) * (float)displayData::defaultScale, ((float)m_window.invertY(point.y().get()) + 0.48f) * (float)displayData::defaultScale);
-		sprite.setColor(color);
-		sprite.setRotation(45);
-		m_window.getRenderWindow().draw(sprite);
-	}
-	else if(point.z() != 0 && point.x() != 0 && point.y() != 0)
-	{
-		const Point3D& below = point.below();
-		const Point3D& belowWest = below.west();
-		const Point3D& belowSouth = below.south();
-		if(
-			(m_window.m_editMode || space.isVisible(below)) &&
-			!space.solid_isAny(point) && space.solid_isAny(below) && !space.solid_isAny(belowWest) && !space.solid_isAny(belowSouth)
-		)
-		{
-			const sf::Color color = displayData::materialColors[space.solid_get(below)];
-			auto pair = sprites::make(space.isConstructed(point) ? "blockWall" : "roughWall");
-			auto sprite = pair.first;
-			sprite.setPosition(((float)point.x().get() - 0.21f) * (float)displayData::defaultScale, ((float)m_window.invertY(point.y().get()) + 0.48f) * (float)displayData::defaultScale);
-			sprite.setColor(color);
-			sprite.setRotation(45);
-			m_window.getRenderWindow().draw(sprite);
-		}
-	}
+	const sf::Color color = displayData::materialColors[space.solid_get(point)];
+	auto sprite = sf::Sprite(texture);
+	float xOffset = nextZLevelDown ? 0.5 : 0.4;
+	float yOffset = nextZLevelDown ? 0.8 : 0.7;
+	sprite.setPosition(((float)point.x().get() - xOffset) * (float)displayData::defaultScale, ((float)m_window.invertY(point.y().get()) + yOffset) * (float)displayData::defaultScale);
+	sprite.setColor(color);
+	m_window.getRenderWindow().draw(sprite);
 }
-void Draw::pointFeaturesAndFluids(const Point3D& point)
+void Draw::blockWalls(const Cuboid& cuboid, const MaterialTypeId& materialType, const bool& constructed, const bool& nextZLevelDown)
 {
-	// Point3D Features
-	//TODO: Draw order.
-	Space& space = m_window.m_area->getSpace();
-	if(!space.pointFeature_empty(point))
-	{
-		for(const PointFeature& pointFeature : space.pointFeature_getAll(point))
-		{
-			sf::Color* color = &displayData::materialColors[pointFeature.materialType];
-			if(pointFeature.pointFeatureType == PointFeatureTypeId::Hatch)
-			{
-				static sf::Sprite hatch = getCenteredSprite("hatch");
-				spriteOnBlockCentered(point, hatch, color);
-			}
-			else if(pointFeature.pointFeatureType == PointFeatureTypeId::FloorGrate)
-			{
-				static sf::Sprite floorGrate = getCenteredSprite("floorGrate");
-				spriteOnBlockCentered(point, floorGrate, color);
-			}
-			else if(pointFeature.pointFeatureType == PointFeatureTypeId::Stairs)
-			{
-				static sf::Sprite stairs = getCenteredSprite("stairs");
-				Facing4 facing = rampOrStairsFacing(point);
-				stairs.setRotation((uint)facing * 90);
-				stairs.setOrigin(16,19);
-				spriteOnBlockCentered(point, stairs, color);
-			}
-			else if(pointFeature.pointFeatureType == PointFeatureTypeId::Ramp)
-			{
-				static sf::Sprite ramp = getCenteredSprite("ramp");
-				Facing4 facing = rampOrStairsFacing(point);
-				ramp.setRotation((uint)facing * 90);
-				ramp.setOrigin(16,19);
-				spriteOnBlockCentered(point, ramp, color);
-			}
-			else if(pointFeature.pointFeatureType == PointFeatureTypeId::FloodGate)
-			{
-				static sf::Sprite floodGate = getCenteredSprite("floodGate");
-				const Point3D& north = point.y() == space.m_sizeY - 1 ? Point3D::null() : point.north();
-				const Point3D& south = point.y() == 0 ? Point3D::null() : point.south();
-				// Default floodGate image leads north-south, maybe rotate.
-				if(north.empty() || space.solid_isAny(north) || south.empty() || space.solid_isAny(south))
-					floodGate.setRotation(90);
-				else
-					floodGate.setRotation(0);
-				spriteOnBlockCentered(point, floodGate, color);
-			}
-			else if(pointFeature.pointFeatureType == PointFeatureTypeId::Fortification)
-			{
-				static sf::Sprite fortification = getCenteredSprite("fortification");
-				const Point3D& north = point.y() == space.m_sizeY - 1 ? Point3D::null() : point.north();
-				const Point3D& south = point.y() == 0 ? Point3D::null() : point.south();
-				// Default fortification image leads north-south, maybe rotate.
-				if(north.empty() || space.solid_isAny(north) || !space.shape_canStandIn(north) || south.empty() || space.solid_isAny(south) || !space.shape_canStandIn(south))
-					fortification.setRotation(90);
-				else
-					fortification.setRotation(0);
-				spriteOnBlockCentered(point, fortification, color);
-			}
-			else if(pointFeature.pointFeatureType == PointFeatureTypeId::Door)
-			{
-				static sf::Sprite door = getCenteredSprite("door");
-				const Point3D& north = point.y() == space.m_sizeY - 1 ? Point3D::null() : point.north();
-				const Point3D& south = point.y() == 0 ? Point3D::null() : point.south();
-				// Default door image leads north-south, maybe rotate.
-				if(north.empty() || space.solid_isAny(north) || !space.shape_canStandIn(north) || south.empty() || space.solid_isAny(south) || !space.shape_canStandIn(south))
-					door.setRotation(90);
-				else
-					door.setRotation(0);
-				spriteOnBlockCentered(point, door, color);
-			}
-			else if(pointFeature.pointFeatureType == PointFeatureTypeId::Flap)
-			{
-				static sf::Sprite flap = getCenteredSprite("flap");
-				const Point3D& north = point.y() == space.m_sizeY - 1 ? Point3D::null() : point.north();
-				const Point3D& south = point.y() == 0 ? Point3D::null() : point.south();
-				// Default flap image leads north-south, maybe rotate.
-				if(north.empty() || space.solid_isAny(north) || !space.shape_canStandIn(north) || south.empty() || space.solid_isAny(south) || !space.shape_canStandIn(south))
-					flap.setRotation(90);
-				else
-					flap.setRotation(0);
-				spriteOnBlockCentered(point, flap, color);
-			}
-		}
-	}
-	else if(point.z() != 0)
-	{
-		const Point3D& below = point.below();
-		if(!space.solid_isAny(below))
-		{
-			// Show tops of stairs and ramps from next level down.
-			if(space.pointFeature_contains(below, PointFeatureTypeId::Stairs))
-			{
-				const PointFeature& pointFeature = space.pointFeature_at(below, PointFeatureTypeId::Stairs);
-				sf::Color* color = &displayData::materialColors[pointFeature.materialType];
-				static sf::Sprite stairs = getCenteredSprite("stairs");
-				Facing4 facing = rampOrStairsFacing(below);
-				stairs.setRotation((uint)facing * 90);
-				stairs.setOrigin(16,19);
-				stairs.setTextureRect({0,0,32,16});
-				spriteOnBlockCentered(point, stairs, color);
-			}
-			else if(space.pointFeature_contains(below, PointFeatureTypeId::Ramp))
-			{
-				const PointFeature& pointFeature = space.pointFeature_at(below, PointFeatureTypeId::Ramp);
-				sf::Color* color = &displayData::materialColors[pointFeature.materialType];
-				static sf::Sprite ramp = getCenteredSprite("ramp");
-				Facing4 facing = rampOrStairsFacing(below);
-				ramp.setRotation((uint)facing * 90);
-				ramp.setOrigin(16,19);
-				ramp.setTextureRect({0,0,32,16});
-				spriteOnBlockCentered(point, ramp, color);
-			}
-		}
-	}
-	// Fluids
-	if(space.fluid_getTotalVolume(point) != 0)
-	{
-		const FluidTypeId& fluidType = space.fluid_getTypeWithMostVolume(point);
-		CollisionVolume volume = space.fluid_volumeOfTypeContains(point, fluidType);
-		const sf::Color color = displayData::fluidColors[fluidType];
-		colorOnBlock(point, color);
-		stringOnBlock(point, std::to_string(volume.get()), sf::Color::Black);
-	}
-}
-void Draw::blockWalls(const Cuboid& cuboid, const MaterialTypeId& materialType, const bool& constructed, const bool& drawTops)
-{
-	const Space& space = m_window.getArea()->getSpace();
 	const sf::Color color = displayData::materialColors[materialType];
-	const Point3D southWest{cuboid.m_low.x(), cuboid.m_low.y(), m_window.m_z};
-	blockWallCorners(southWest);
-	static const sf::Texture constructedWallTextureSouthTop = sprites::textures["blockWallTop"].first;
-	static const sf::Texture constructedWallTextureWestTop = sprites::makeRotatedTexture("blockWallTop", 90);
-	static const sf::Texture constructedWallTextureNorthTop = sprites::makeRotatedTexture("blockWallTop", 180);
-	static const sf::Texture constructedWallTextureEastTop = sprites::makeRotatedTexture("blockWallTop", 270);
-	static const sf::Texture roughWallTextureSouthTop = sprites::textures["roughWallTop"].first;
-	static const sf::Texture roughWallTextureWestTop = sprites::makeRotatedTexture("roughWallTop", 90);
-	static const sf::Texture roughWallTextureNorthTop = sprites::makeRotatedTexture("roughWallTop", 180);
-	static const sf::Texture roughWallTextureEastTop = sprites::makeRotatedTexture("roughWallTop", 270);
+	if(m_window.m_z != 0 || !nextZLevelDown)
+	{
+		Point3D southWest{cuboid.m_low.x(), cuboid.m_low.y(), m_window.m_z};
+		if(nextZLevelDown)
+			southWest = southWest.below();
+		if(doDrawCorner(southWest))
+			blockWallCorner(southWest, constructed, nextZLevelDown);
+	}
 	if(cuboid.m_low.y() != 0)
 	{
 		static const sf::Texture constructedWallTextureSouth = sprites::textures["blockWall"].first;
 		static const sf::Texture roughWallTextureSouth = sprites::textures["roughWall"].first;
 		const sf::Texture& textureSouth = constructed ? constructedWallTextureSouth : roughWallTextureSouth;
-		Cuboid southFace = cuboid.getFace(Facing6::South);
-		southFace.shift(Facing6::South, {1});
-		CuboidSet south = CuboidSet::create(southFace);
-		space.solid_removeOpaque(south);
-		const int height = textureSouth.getSize().y;
-		for(const Cuboid& southCuboid : south)
-		{
-			sf::Sprite sprite(textureSouth);
-			const float x = southCuboid.m_low.x().get() * displayData::defaultScale;
-			const float y = ((float)m_window.invertY(southCuboid.m_high.y().get()) - 0.01f) * displayData::defaultScale;
-			sprite.setPosition(x, y);
-			sf::IntRect rect{0, 0, southCuboid.sizeX().get() * displayData::defaultScale, height};
-			sprite.setTextureRect(rect);
-			sprite.setColor(color);
-			m_window.getRenderWindow().draw(sprite);
-			if(drawTops)
-			{
-				const sf::Texture& textureSouthTop = constructed ? constructedWallTextureSouthTop : roughWallTextureSouthTop;
-				sf::Sprite topSprite(textureSouthTop);
-				const int topHeight = textureSouthTop.getSize().y;
-				// render wall tops directly over their solid blocks, not in the adjacent blocks like walls.
-				const float topY = ((float)m_window.invertY(cuboid.m_low.y().get()) + 0.85f) * displayData::defaultScale;
-				topSprite.setPosition(x, topY);
-				topSprite.setTextureRect({0, 0, southCuboid.sizeX().get() * displayData::defaultScale, topHeight});
-				topSprite.setColor(color);
-				m_window.getRenderWindow().draw(topSprite);
-			}
-		}
+		CuboidSet south = getWallsToDrawSouth(cuboid);
+		blockWallsSouth(south, color, textureSouth, nextZLevelDown);
 	}
 	if(cuboid.m_low.x() != 0)
 	{
 		static const sf::Texture constructedWallTextureWest = sprites::makeRotatedTexture("blockWall", 90);
 		static const sf::Texture roughWallTextureWest = sprites::makeRotatedTexture("roughWall", 90);
 		const sf::Texture& textureWest = constructed ? constructedWallTextureWest : roughWallTextureWest;
-		Cuboid westFace = cuboid.getFace(Facing6::West);
-		westFace.shift(Facing6::West, {1});
-		CuboidSet west = CuboidSet::create(westFace);
-		space.solid_removeOpaque(west);
-		const int width = textureWest.getSize().x;
-		for(const Cuboid& westCuboid : west)
-		{
-			sf::Sprite sprite(textureWest);
-			const float x = (((float)westCuboid.m_low.x().get() + 0.25f) * (float)displayData::defaultScale);
-			const float y = m_window.invertY(westCuboid.m_high.y().get()) * displayData::defaultScale;
-			// TODO: 0.22 is added here because the rotated block wall images are centered rather then aligned to the right.
-			sprite.setPosition(x, y);
-			sf::IntRect rect{0, 0, width, westCuboid.sizeY().get() * displayData::defaultScale};
-			sprite.setTextureRect(rect);
-			sprite.setColor(color);
-			m_window.getRenderWindow().draw(sprite);
-			if(drawTops)
-			{
-				const sf::Texture& textureWestTop = constructed ? constructedWallTextureWestTop : roughWallTextureWestTop;
-				sf::Sprite topSprite(textureWestTop);
-				const int topWidth = textureWestTop.getSize().x;
-				// render wall tops directly over their solid blocks, not in the adjacent blocks like walls.
-				const float topX = ((float)westCuboid.m_low.x().get() + 0.52f) * displayData::defaultScale;
-				topSprite.setPosition(topX, y);
-				topSprite.setTextureRect({0, 0, topWidth, westCuboid.sizeY().get() * displayData::defaultScale});
-				topSprite.setColor(color);
-				m_window.getRenderWindow().draw(topSprite);
-			}
-		}
+		CuboidSet west = getWallsToDrawWest(cuboid);
+		blockWallsWest(west, color, textureWest, nextZLevelDown);
 	}
-	if(drawTops)
+}
+void Draw::blockWallsSouth(const CuboidSet& cuboids, const sf::Color& color, const sf::Texture& texture, const bool& nextZLevelDown)
+{
+	const int height = texture.getSize().y;
+	float yOffset = nextZLevelDown ? 0.01 : 0.11;
+	for(const Cuboid& cuboid : cuboids)
 	{
-		const Cuboid spaceBoundry = m_window.getArea()->getSpace().boundry();
-		if(cuboid.m_high.y() != spaceBoundry.m_high.y())
-		{
-			Cuboid northFace = cuboid.getFace(Facing6::North);
-			northFace.shift(Facing6::North, {1});
-			CuboidSet north = CuboidSet::create(northFace);
-			space.solid_removeOpaque(north);
-			for(const Cuboid& northCuboid : north)
-			{
-				const sf::Texture& textureNorthTop = constructed ? constructedWallTextureNorthTop : roughWallTextureNorthTop;
-				sf::Sprite topSprite(textureNorthTop);
-				const int topHeight = textureNorthTop.getSize().y;
-				// render wall tops directly over their solid blocks, not in the adjacent blocks like walls.
-				const float x = (float)northCuboid.m_low.x().get() * displayData::defaultScale;
-				const float y = ((float)m_window.invertY(northCuboid.m_high.y().get()) + 0.9f) * displayData::defaultScale;
-				topSprite.setPosition(x, y);
-				topSprite.setTextureRect({0, 0, northCuboid.sizeX().get() * displayData::defaultScale, topHeight});
-				topSprite.setColor(color);
-				m_window.getRenderWindow().draw(topSprite);
-			}
-		}
-		if(cuboid.m_high.x() != spaceBoundry.m_high.x())
-		{
-			Cuboid eastFace = cuboid.getFace(Facing6::East);
-			eastFace.shift(Facing6::East, {1});
-			CuboidSet east = CuboidSet::create(eastFace);
-			space.solid_removeOpaque(east);
-			for(const Cuboid& eastCuboid : east)
-			{
-				const sf::Texture& textureEastTop = constructed ? constructedWallTextureEastTop : roughWallTextureEastTop;
-				sf::Sprite topSprite(textureEastTop);
-				const int topWidth = textureEastTop.getSize().x;
-				// render wall tops directly over their solid blocks, not in the adjacent blocks like walls.
-				const float x = ((float)eastCuboid.m_high.x().get() - 0.6f) * displayData::defaultScale;
-				const float y = m_window.invertY(eastCuboid.m_high.y().get()) * displayData::defaultScale;
-				topSprite.setPosition(x, y);
-				topSprite.setTextureRect({0, 0, topWidth, eastCuboid.sizeY().get() * displayData::defaultScale});
-				topSprite.setColor(color);
-				m_window.getRenderWindow().draw(topSprite);
-			}
-		}
+		sf::Sprite sprite(texture);
+		const float x = cuboid.m_low.x().get() * displayData::defaultScale;
+		const float y = ((float)m_window.invertY(cuboid.m_high.y().get()) - yOffset) * displayData::defaultScale;
+		sprite.setPosition(x, y);
+		sf::IntRect rect{0, 0, cuboid.sizeX().get() * displayData::defaultScale, height};
+		sprite.setTextureRect(rect);
+		sprite.setColor(color);
+		m_window.getRenderWindow().draw(sprite);
+	}
+}
+void Draw::blockWallsWest(const CuboidSet& cuboids, const sf::Color& color, const sf::Texture& texture, const bool& nextZLevelDown)
+{
+	const int width = texture.getSize().x;
+	float xOffset = nextZLevelDown ? 0.25 : 0.45;
+	for(const Cuboid& cuboid : cuboids)
+	{
+		sf::Sprite sprite(texture);
+		const float x = (((float)cuboid.m_low.x().get() + xOffset) * (float)displayData::defaultScale);
+		const float y = m_window.invertY(cuboid.m_high.y().get()) * displayData::defaultScale;
+		// TODO: 0.22 is added here because the rotated block wall images are centered rather then aligned to the right.
+		sprite.setPosition(x, y);
+		sf::IntRect rect{0, 0, width, cuboid.sizeY().get() * displayData::defaultScale};
+		sprite.setTextureRect(rect);
+		sprite.setColor(color);
+		m_window.getRenderWindow().draw(sprite);
 	}
 }
 void Draw::validOnBlock(const Point3D& point)
@@ -721,6 +386,8 @@ void Draw::invalidOnBlock(const Point3D& point)
 }
 void Draw::colorOnCuboid(const Cuboid& cuboid, const sf::Color& color)
 {
+	assert(cuboid.m_high.z() >= m_window.m_z);
+	assert(cuboid.m_low.z() <= m_window.m_z);
 	sf::RectangleShape toDraw(sf::Vector2f(displayData::defaultScale * cuboid.sizeX().get(), displayData::defaultScale * (float)cuboid.sizeY().get()));
 	toDraw.setFillColor(color);
 	// Swap low y and high y to invert draw direction.
@@ -730,7 +397,8 @@ void Draw::colorOnCuboid(const Cuboid& cuboid, const sf::Color& color)
 void Draw::colorOnCuboids(const std::vector<Cuboid>& cuboids, const sf::Color& color)
 {
 	for(const Cuboid& cuboid : cuboids)
-		colorOnCuboid(cuboid, color);
+		if(cuboid.m_high.z() >= m_window.m_z && cuboid.m_low.z() <= m_window.m_z)
+			colorOnCuboid(cuboid, color);
 }
 void Draw::colorOnBlock(const Point3D& point, const sf::Color& color)
 {
@@ -928,55 +596,62 @@ void Draw::stringAtPosition(const std::string string, const sf::Vector2f positio
 	m_window.getRenderWindow().draw(text);
 }
 // Plant.
-void Draw::nonGroundCoverPlant(const Point3D& point)
+void Draw::nonGroundCoverPlant(const PlantIndex& plant, const PlantSpeciesDisplayData& display)
 {
 	Space& space = m_window.m_area->getSpace();
 	Plants& plants = m_window.m_area->getPlants();
-	if(!space.plant_exists(point))
-		return;
-	const PlantIndex& plant = space.plant_get(point);
-	PlantSpeciesDisplayData& display = displayData::plantData[plants.getSpecies(plant)];
 	// Ground cover plants are drawn with floors.
-	if(display.groundCover)
-		return;
-	auto& occupiedBlocks = plants.getOccupied(plant);
-	if(PlantSpecies::getIsTree(plants.getSpecies(plant)) && occupiedBlocks.size() != 1)
+	assert(!display.groundCover);
+	const Point3D& location = plants.getLocation(plant);
+	auto& occupied = plants.getOccupied(plant);
+	if(PlantSpecies::getIsTree(plants.getSpecies(plant)) && occupied.size() != 1)
 	{
-		if(point == plants.getLocation(plant) && occupiedBlocks.size() > 2)
-		{
-			static sf::Sprite trunk = getCenteredSprite("trunk");
-			spriteOnBlockCentered(point, trunk);
-		}
-		else
-		{
-			const Point3D& plantLocation = plants.getLocation(plant);
-			if(point.x() == plantLocation.x() && point.y() == plantLocation.y())
+		for(const Cuboid& cuboid : occupied)
+			for(const Point3D& point : cuboid)
 			{
-				const Point3D& above = point.above();
-				if(above.exists() && space.plant_exists(above) && space.plant_get(above) == plant)
+				if(point == location && occupied.size() > 2)
 				{
-					static sf::Sprite trunk = getCenteredSprite("trunkWithBranches");
+					static sf::Sprite trunk = getCenteredSprite("trunk");
 					spriteOnBlockCentered(point, trunk);
-					static sf::Sprite trunkLeaves = getCenteredSprite("trunkLeaves");
-					spriteOnBlockCentered(point, trunkLeaves);
 				}
 				else
 				{
-					static sf::Sprite treeTop = getCenteredSprite(display.image);
-					spriteOnBlockCentered(point, treeTop);
+					if(point.x() == location.x() && point.y() == location.y())
+					{
+						if(point.z() == space.m_sizeZ)
+						{
+							static sf::Sprite treeTop = getCenteredSprite(display.image);
+							spriteOnBlockCentered(point, treeTop);
+						}
+						else
+						{
+							const Point3D& above = point.above();
+							if(above.exists() && space.plant_exists(above) && space.plant_get(above) == plant)
+							{
+								static sf::Sprite trunk = getCenteredSprite("trunkWithBranches");
+								spriteOnBlockCentered(point, trunk);
+								static sf::Sprite trunkLeaves = getCenteredSprite("trunkLeaves");
+								spriteOnBlockCentered(point, trunkLeaves);
+							}
+							else
+							{
+								static sf::Sprite treeTop = getCenteredSprite(display.image);
+								spriteOnBlockCentered(point, treeTop);
+							}
+						}
+					}
+					else
+					{
+						float angle = 45.f * (uint)location.getFacingTwordsIncludingDiagonal(point);
+						static sf::Sprite branch = getCenteredSprite("branch");
+						branch.setRotation(angle);
+						spriteOnBlockCentered(point, branch);
+						static sf::Sprite branchLeaves = getCenteredSprite("branchLeaves");
+						branchLeaves.setRotation(angle);
+						spriteOnBlockCentered(point, branchLeaves);
+					}
 				}
 			}
-			else
-			{
-				float angle = 45.f * (uint)plantLocation.getFacingTwordsIncludingDiagonal(point);
-				static sf::Sprite branch = getCenteredSprite("branch");
-				branch.setRotation(angle);
-				spriteOnBlockCentered(point, branch);
-				static sf::Sprite branchLeaves = getCenteredSprite("branchLeaves");
-				branchLeaves.setRotation(angle);
-				spriteOnBlockCentered(point, branchLeaves);
-			}
-		}
 	}
 	else
 	{
@@ -984,10 +659,12 @@ void Draw::nonGroundCoverPlant(const Point3D& point)
 		//TODO: color
 		pair.first.setOrigin(pair.second);
 		float scale = plants.getOccupied(plant).size() == 1 ? ((float)plants.getPercentGrown(plant).get() / 100.f) : 1;
-		spriteOnBlockWithScaleCentered(point, pair.first, scale);
-		if(m_window.getSelectedPlants().contains(plant))
-			outlineOnBlock(point, displayData::selectColor);
+		spriteOnBlockWithScaleCentered(location, pair.first, scale);
 	}
+	if(m_window.getSelectedPlants().contains(plant))
+		for(const Cuboid& cuboid : occupied)
+			for(const Point3D& point : cuboid)
+				outlineOnBlock(point, displayData::selectColor);
 }
 // Item.
 void Draw::item(const Point3D& point)
@@ -1222,4 +899,83 @@ void Draw::accessableSymbol(const Point3D& point)
 void Draw::inaccessableSymbol(const Point3D& point)
 {
 	stringOnBlock(point, "x", sf::Color::Red, 0.1, 0.6);
+}
+void Draw::rampOrStairs(const PointFeatureTypeId& type, sf::Sprite& sprite, const SmallMap<PointFeatureTypeId, SmallMap<PointFeature, CuboidSet>>& features)
+{
+	auto found = features.find(type);
+	if(found!= features.end())
+	{
+		for(const auto& [feature, cuboids] : found->second)
+		{
+			const sf::Color color = displayData::materialColors[feature.materialType];
+			for(const Cuboid& cuboid : cuboids)
+				for(const Point3D& point : cuboid)
+				{
+					Facing4 facing = rampOrStairsFacing(point);
+					sprite.setRotation((uint)facing * 90);
+					sprite.setOrigin(16,19);
+					spriteOnBlockCentered(point, sprite, &color);
+				}
+		}
+	}
+}
+void Draw::featureTypeRotated90IfInaccessableNorthAndSouth(const PointFeatureTypeId& type, sf::Sprite& sprite, const SmallMap<PointFeatureTypeId, SmallMap<PointFeature, CuboidSet>>& features)
+{
+	const Space& space = m_window.getArea()->getSpace();
+	auto found = features.find(type);
+	if(found != features.end())
+	{
+		for(const auto& [feature, cuboids] : found->second)
+		{
+			const sf::Color color = displayData::materialColors[feature.materialType];
+			for(const Cuboid& cuboid : cuboids)
+				for(const Point3D& point : cuboid)
+				{
+					if(point.y() == space.m_sizeY - 1 || point.x() == 0 || (!space.solid_isAny(point.north()) || !space.solid_isAny(point.south())))
+						sprite.setRotation(0);
+					else
+						sprite.setRotation(90);
+					spriteOnBlockCentered(point, sprite, &color);
+				}
+		}
+	}
+}
+void Draw::rampOrStairsTopOnly(const Cuboid& cuboid, sf::Sprite& sprite, const sf::Color& color)
+{
+	for(const Point3D& point : cuboid)
+	{
+		Facing4 facing = rampOrStairsFacing(point);
+		sprite.setRotation((uint)facing * 90);
+		sprite.setOrigin(16,19);
+		sprite.setTextureRect({0,0,32,16});
+		spriteOnBlockCentered(point, sprite, &color);
+	}
+}
+CuboidSet Draw::getWallsToDrawSouth(const Cuboid& cuboid)
+{
+	Space& space = m_window.getArea()->getSpace();
+	assert(cuboid.m_high.y() != 0);
+	Cuboid face = cuboid.getFaceSouth();
+	face.shift(Offset3D(0, -1 ,0), {1});
+	CuboidSet output = CuboidSet::create(face);
+	space.solid_removeOpaque(output);
+	return output;
+}
+CuboidSet Draw::getWallsToDrawWest(const Cuboid& cuboid)
+{
+	Space& space = m_window.getArea()->getSpace();
+	assert(cuboid.m_high.x() != 0);
+	Cuboid face = cuboid.getFaceWest();
+	face.shift(Offset3D(-1, 0 ,0), {1});
+	CuboidSet output = CuboidSet::create(face);
+	space.solid_removeOpaque(output);
+	return output;
+}
+bool Draw::doDrawCorner(const Point3D& point) const
+{
+	Space& space = m_window.m_area->getSpace();
+	assert(space.solid_isAny(point));
+	return
+		point.x() != 0 && !space.solid_isAny(point.west()) &&
+		point.y() != 0 && !space.solid_isAny(point.south());
 }

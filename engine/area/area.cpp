@@ -132,6 +132,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	m_hasDigDesignations.loadWorkers(data["hasDigDesignations"], deserializationMemo);
 	m_hasStockPiles.loadWorkers(data["hasStockPiles"], deserializationMemo);
 	m_hasCraftingLocationsAndJobs.loadWorkers(data["hasCraftingLocationsAndJobs"], deserializationMemo);
+	data["temperature"].get_to(m_hasTemperature);
 
 	//hasWoodCuttingDesignations.loadWorkers(data["hasWoodCuttingDesignations"], deserializationMemo);
 	//m_targetedHauling.loadWorkers(data["targetedHauling"], deserializationMemo);
@@ -164,7 +165,7 @@ Json Area::toJson() const
 		{"actors", getActors().toJson()}, {"items", getItems().toJson()}, {"space", getSpace().toJson()},
 		{"plants", getPlants().toJson()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires.toJson()},
 		{"sleepingSpots", m_hasSleepingSpots.toJson()}, {"rain", m_hasRain.toJson()},
-		{"designations", m_spaceDesignations}
+		{"designations", m_spaceDesignations}, {"temperature", m_hasTemperature}
 	};
 	data["hasFarmFields"] = m_hasFarmFields.toJson();
 	data["onSight"] = m_hasOnSight.toJson();

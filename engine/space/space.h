@@ -90,7 +90,7 @@ class Space
 	RTreeData<CollisionVolume, RTreeDataConfig{}, 0> m_dynamicVolume;
 	RTreeData<CollisionVolume, RTreeDataConfig{}, 0> m_staticVolume;
 	RTreeData<TemperatureDelta> m_temperatureDelta;
-	RTreeBoolean m_visible;
+	RTreeBoolean m_unrevealed;
 	RTreeBoolean m_constructed;
 	RTreeBoolean m_dynamic;
 	Support m_support;
@@ -136,7 +136,6 @@ public:
 	[[nodiscard]] CuboidSet queryConstructedGetCuboids(const auto& shape) const { return m_constructed.queryGetLeaves(shape); }
 	[[nodiscard]] bool isDynamic(const auto& shape) const { return m_dynamic.query(shape); }
 	[[nodiscard]] bool canSeeIntoFromAlways(const Point3D& point, const Point3D& other) const;
-	[[nodiscard]] bool isVisible(const auto& shape) const { return m_visible.query(shape); }
 	[[nodiscard]] bool canSeeThrough(const Cuboid& cuboid) const;
 	[[nodiscard]] bool canSeeThrough(const Point3D& point) const;
 	[[nodiscard]] bool canSeeThroughFloor(const Cuboid& cuboid) const;
@@ -155,7 +154,6 @@ public:
 	[[nodiscard]] Support& getSupport() { return m_support; }
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
 	void setExposedToSky(const Point3D& point, bool exposed);
-	void setBelowVisible(const Point3D& point);
 	[[nodiscard]] CuboidSet collectAdjacentsWithCondition(const Point3D& point, auto&& condition)
 	{
 		CuboidSet output;
@@ -468,6 +466,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 		m_plants.maybeInsert(shape, plant);
 	}
 	void plant_queryForEachWithCuboids(const auto& shape, auto&& action) { m_plants.queryForEachWithCuboids(shape, action); }
+	void plant_queryForEach(const auto& shape, auto&& action) { m_plants.queryForEach(shape, action); }
 	[[nodiscard]] PlantIndex plant_get(const auto& shape) const { return m_plants.queryGetOne(shape); }
 	[[nodiscard]] SmallSet<PlantIndex> plant_getAll(const auto& shape) const { return m_plants.queryGetAll(shape); }
 	[[nodiscard]] bool plant_canGrowHereCurrently(const Point3D& point, const PlantSpeciesId& plantSpecies) const;
@@ -606,6 +605,8 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	[[nodiscard]] Temperature temperature_get(const Point3D& point) const;
 	[[nodiscard]] bool temperature_transmits(const Point3D& point) const;
 	[[nodiscard]] __attribute__((noinline)) std::string toString(const Point3D& point) const;
+	// Unrevealed.
+	void unrevealed_queryForEach(const auto& shape, auto&& action) const { m_unrevealed.queryForEach(shape, action); }
 	Space(Space&) = delete;
 	Space(Space&&) = delete;
 };
