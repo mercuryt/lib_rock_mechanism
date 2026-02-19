@@ -59,7 +59,7 @@ public:
 	std::unique_ptr<DramaEngine> m_dramaEngine;
 	std::mutex m_uiReadMutex;
 
-	Simulation(std::string name = "", Step s = DateTime(12, 150, 10'000).toSteps());
+	Simulation(const std::string& name = "", const DateTime& dateTime = DateTime({0}));
 	Simulation(std::filesystem::path path);
 	Simulation(const Json& data);
 	Json toJson() const;

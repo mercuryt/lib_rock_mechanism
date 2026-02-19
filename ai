@@ -1,0 +1,227 @@
+Good — this is where most pixel-art SDL games either become fast… or completely fall apart.
+
+For a **large tile map** (thousands × thousands of tiles), you do **NOT**:
+
+* ❌ Render the whole map to a giant texture
+* ❌ Loop through every tile every frame
+* ❌ Use floating camera positions
+
+Instead you:
+
+* ✅ Render only visible tiles
+* ✅ Use integer camera
+* ✅ Keep world in tile coordinates
+* ✅ Batch using a tileset texture
+
+This scales to massive maps.
+
+---
+
+# 🧱 Basic Setup
+
+Assume:
+
+```cpp
+const int TILE_SIZE = 16;
+
+const int MAP_WIDTH  = 5000;  // tiles
+const int MAP_HEIGHT = 5000;
+
+const int VIRTUAL_WIDTH  = 320;
+const int VIRTUAL_HEIGHT = 180;
+```
+
+Your map data:
+
+```cpp
+std::vector<int> tileMap(MAP_WIDTH * MAP_HEIGHT);
+```
+
+Each entry is a tile index in your tileset.
+
+---
+
+# 🎯 Core Idea: View Frustum Culling
+
+We calculate which tiles are visible based on camera.
+
+---
+
+# 🧮 1️⃣ Calculate Visible Tile Range
+
+```cpp
+int firstTileX = camera.x / TILE_SIZE;
+int firstTileY = camera.y / TILE_SIZE;
+
+int tilesVisibleX = VIRTUAL_WIDTH  / TILE_SIZE + 2;
+int tilesVisibleY = VIRTUAL_HEIGHT / TILE_SIZE + 2;
+```
+
+Clamp:
+
+```cpp
+firstTileX = SDL_max(0, firstTileX);
+firstTileY = SDL_max(0, firstTileY);
+```
+
+---
+
+# 🧱 2️⃣ Render Only Visible Tiles
+
+```cpp
+for (int y = 0; y < tilesVisibleY; y++)
+{
+	for (int x = 0; x < tilesVisibleX; x++)
+	{
+		int mapX = firstTileX + x;
+		int mapY = firstTileY + y;
+
+		if (mapX >= MAP_WIDTH || mapY >= MAP_HEIGHT)
+			continue;
+
+		int tileIndex = tileMap[mapY * MAP_WIDTH + mapX];
+
+		if (tileIndex < 0)
+			continue;
+
+		SDL_Rect src = GetTileSourceRect(tileIndex);
+
+		SDL_FRect dest;
+		dest.x = mapX * TILE_SIZE - camera.x;
+		dest.y = mapY * TILE_SIZE - camera.y;
+		dest.w = TILE_SIZE;
+		dest.h = TILE_SIZE;
+
+		SDL_RenderCopyF(renderer, tilesetTexture, &src, &dest);
+	}
+}
+```
+
+Now you render maybe ~300 tiles instead of 25 million.
+
+---
+
+# 🧠 GetTileSourceRect()
+
+If your tileset is a grid:
+
+```cpp
+int tilesPerRow = tilesetWidth / TILE_SIZE;
+
+SDL_Rect GetTileSourceRect(int index)
+{
+	SDL_Rect r;
+	r.x = (index % tilesPerRow) * TILE_SIZE;
+	r.y = (index / tilesPerRow) * TILE_SIZE;
+	r.w = TILE_SIZE;
+	r.h = TILE_SIZE;
+	return r;
+}
+```
+
+---
+
+# ⚡ Performance Notes
+
+With this approach:
+
+If your screen is 320×180 and tiles are 16×16:
+
+```
+20 × 11 tiles visible
+= 220 draw calls
+```
+
+That is trivial for SDL.
+
+Even 1000 tiles per frame is fine.
+
+---
+
+# 🚀 Massive Map Optimization (If Needed)
+
+If your map becomes HUGE (like 100k × 100k tiles):
+
+Use chunking.
+
+---
+
+## 🧱 Chunk System
+
+Divide map into 32×32 tile chunks.
+
+Store:
+
+```
+Chunk (32x32 tiles)
+Chunk (32x32 tiles)
+Chunk (32x32 tiles)
+```
+
+Then:
+
+* Determine visible chunks
+* Only loop tiles inside visible chunks
+
+This makes infinite worlds possible.
+
+---
+
+# 🧊 Pixel-Perfect Reminder
+
+Always:
+
+```cpp
+int renderCamX = (int)camera.x;
+int renderCamY = (int)camera.y;
+```
+
+Use those for rendering.
+
+Never use fractional camera values for tile maps.
+
+---
+
+# 🎮 Multiple Layers
+
+For background + foreground:
+
+```cpp
+RenderLayer(background);
+RenderLayer(main);
+RenderLayer(foreground);
+```
+
+Each layer has its own tile map array.
+
+For parallax:
+
+```cpp
+int layerCamX = camera.x * 0.5f;
+```
+
+---
+
+# 🔥 What Most People Do Wrong
+
+* Render full map every frame
+* Use floating tile positions
+* Use SDL_RenderSetScale
+* Use huge world texture
+* Don’t clamp visible range
+* Forget +2 tile padding (causes edge pop-in)
+
+---
+
+# 🧠 Want Next-Level?
+
+I can show you:
+
+* Infinite streaming world (Minecraft-style)
+* Auto-tiling (bitmask system)
+* Texture atlas bleeding fix
+* Batching tiles to reduce draw calls further
+* Collision grid optimization
+* Isometric large map
+
+Which direction are you heading?

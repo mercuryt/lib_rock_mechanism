@@ -21,7 +21,7 @@ DateTime::DateTime(int h, int d, int y) : hour(h), day(d), year(y)
 		assert(!year);
 	}
 }
-Step DateTime::toSteps()
+Step DateTime::toSteps() const
 {
 	return toSteps(hour, day, year);
 }

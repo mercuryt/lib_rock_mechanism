@@ -21,8 +21,8 @@
 #include <filesystem>
 #include <functional>
 #include <fstream>
-Simulation::Simulation(std::string name, Step s) :
-    	m_eventSchedule(*this, nullptr), m_hourlyEvent(m_eventSchedule), m_deserializationMemo(*this), m_name(name), m_step(s)
+Simulation::Simulation(const std::string& name, const DateTime& dateTime) :
+    	m_eventSchedule(*this, nullptr), m_hourlyEvent(m_eventSchedule), m_deserializationMemo(*this), m_name(name), m_step(dateTime.toSteps())
 {
 	m_hourlyEvent.schedule(*this);
 	m_path.append("save/"+name);
