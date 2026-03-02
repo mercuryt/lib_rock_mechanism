@@ -14,7 +14,7 @@ namespace spriteCoordinates
 	inline void load()
 	{
 		{% for sprite in sprites -%}
-		data.try_emplace("{{ sprite.id }}", {{ sprite.trimmedRect.x }}, {{ sprite.trimmedRect.y }}, {{ sprite.trimmedRect.w }}, {{ sprite.trimmedRect.h }}, {{ sprite.pivot.x }}, {{ sprite.pivot.y }} );
+		data.try_emplace("{{ sprite.id }}", {{ sprite.rect.x }}, {{ sprite.rect.y }}, {{ sprite.rect.w }}, {{ sprite.rect.h }}, {{ sprite.pivot.x }}, {{ sprite.pivot.y }} );
 		{% endfor %}
 	}
 } // namespace

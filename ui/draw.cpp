@@ -171,7 +171,7 @@ void Draw::view()
 		assert(!space.actor_empty(point));
 		// Multiple actors, cycle through them over time.
 		// Use real time rather then m_step to continue cycling while paused.
-		auto& actorsInBlock = space.actor_getAll(point);
+		auto actorsInBlock = space.actor_getAll(point);
 		uint32_t count = actorsInBlock.size();
 		if(count == 1)
 			singleTileActor(actorsInBlock.front());

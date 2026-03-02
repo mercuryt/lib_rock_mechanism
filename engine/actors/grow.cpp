@@ -94,10 +94,8 @@ bool CanGrow::canGrowCurrently(Area& area) const
 		!actors.eat_isHungry(actor) && !actors.drink_isThirsty(actor) &&
 		actors.temperature_isSafeAtCurrentLocation(actor);
 }
-Percent CanGrow::growthPercent() const
-{
-	return m_percentGrown;
-}
+Percent CanGrow::growthPercent() const { return m_percentGrown; }
+Percent& CanGrow::growthPercentReference() { return m_percentGrown; }
 void CanGrow::scheduleEvent(Area& area)
 {
 	Actors& actors = area.getActors();

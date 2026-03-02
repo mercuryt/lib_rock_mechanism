@@ -6,15 +6,8 @@
 void screens::load(Window& window)
 {
 	ImGui::PushFont(nullptr, displayData::menuFontSize);
-	bool canClose = false;
-	ImGuiIO& io = ImGui::GetIO();
-	ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f,0.5f));
-	ImGui::SetNextWindowSize({400, io.DisplaySize.y * 0.9f});
-	ImGui::Begin("createSimulation", &canClose, window.m_menuWindowFlags);
-	float titleWidth = ImGui::CalcTextSize("Load").x;
 	ImVec2 windowSize = ImGui::GetContentRegionAvail();
-	ImGui::SetCursorPosX((windowSize.x - titleWidth) * 0.5);
-	ImGui::Text("Load");
+	begin(window, "Load");
 	for(const auto& [name, path] : window.m_simulationList)
 	{
 		float nameWidth = ImGui::CalcTextSize(name.c_str()).x;
@@ -25,5 +18,5 @@ void screens::load(Window& window)
 	if(ImGui::Button("Back"))
 		window.showMainMenu();
 	ImGui::PopFont();
-	ImGui::End();
+	end();
 }

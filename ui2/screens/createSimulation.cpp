@@ -10,12 +10,7 @@ void screens::createSimulation(Window& window)
 	static int hour = 1;
 	static int day = 1;
 	static int year = 1;
-	bool canClose = false;
-	ImGuiIO& io = ImGui::GetIO();
-	ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f,0.5f));
-	ImGui::SetNextWindowSize({400,400});
-	ImGui::Begin("createSimulation", &canClose, window.m_menuWindowFlags);
-	ImGui::Text("Create Simulation");
+	begin(window, "Create Simulation");
 	ImGui::InputText("Name", name, IM_ARRAYSIZE(name));
 	ImGui::PushItemWidth(100.f);
 	ImGui::InputInt("Hour", &hour);
@@ -37,4 +32,5 @@ void screens::createSimulation(Window& window)
 		window.showMainMenu();
 	ImGui::PopFont();
 	ImGui::End();
+	end();
 }

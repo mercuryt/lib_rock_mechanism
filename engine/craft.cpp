@@ -189,6 +189,17 @@ Step CraftJob::getStep() const
 {
 	return Step::create(1) + (stepIterator - CraftJobType::getStepTypes(craftJobType).begin());
 }
+std::string CraftJob::describe() const
+{
+	std::string output;
+	output.append(CraftJobType::getName(craftJobType));
+	if(materialType.exists())
+	{
+		output.append(" ");
+		output.append(MaterialType::getName(materialType));
+	}
+	return output;
+}
 // HasCraftingLocationsAndJobs
 HasCraftingLocationsAndJobsForFaction::HasCraftingLocationsAndJobsForFaction(const Json& data, DeserializationMemo& deserializationMemo, const FactionId& f) :
 	m_area(deserializationMemo.area(data["area"])),

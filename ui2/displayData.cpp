@@ -43,8 +43,10 @@ void displayData::load()
 	for(const Json& data : definitions::tryParse(path/"itemTypes.json"))
 	{
 		const ItemTypeId& itemType = ItemType::byName(data["name"].get<std::string>());
+		std::string image = data["image"].get<std::string>();
 		itemData.emplace(itemType,
-			data["image"].get<std::string>(),
+			image,
+			Sprite(image),
 			data.contains("color") ? colorFromJson(data["color"]) : SDL_Color{0,0,0,255},
 			data.contains("scale") ? data["scale"].get<float>() : 1.0f
 		);
@@ -52,8 +54,10 @@ void displayData::load()
 	for(const Json& data : definitions::tryParse(path/"plantSpecies.json"))
 	{
 		const PlantSpeciesId& plantSpecies = PlantSpecies::byName(data["name"].get<std::string>());
+		std::string image = data["image"].get<std::string>();
 		plantData.emplace(plantSpecies,
-			data["image"].get<std::string>(),
+			image,
+			Sprite(image),
 			data.contains("color") ? colorFromJson(data["color"]) : SDL_Color{0,0,0,255},
 			data.contains("scale") ? data["scale"].get<float>() : 1.0f,
 			data.contains("groundCover") && data["groundCover"].get<bool>()
@@ -62,8 +66,10 @@ void displayData::load()
 	for(const Json& data : definitions::tryParse(path/"animalSpecies.json"))
 	{
 		const AnimalSpeciesId& animalSpecies = AnimalSpecies::byName(data["name"].get<std::string>());
+		std::string image = data["image"].get<std::string>();
 		actorData.emplace(animalSpecies,
-			data["image"].get<std::string>(),
+			image,
+			Sprite(image),
 			data.contains("color") ? colorFromJson(data["color"]) : SDL_Color{0,0,0,255},
 			data.contains("scale") ? data["scale"].get<float>() : 1.0f
 		);

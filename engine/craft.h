@@ -123,12 +123,13 @@ struct CraftJob final
 	// If work piece is provided then this is an upgrade job.
 	CraftJob(const CraftJobTypeId &cjt, HasCraftingLocationsAndJobsForFaction &hclaj, const ItemIndex &wp, const MaterialTypeId &mt, int msl);
 	// No work piece provided is a create job.
-	CraftJob(const CraftJobTypeId &cjt, HasCraftingLocationsAndJobsForFaction &hclaj, const MaterialTypeId &mt, int msl) : craftJobType(cjt),
-																														   hasCraftingLocationsAndJobs(hclaj),
-																														   materialType(mt),
-																														   minimumSkillLevel(msl),
-																														   totalSkillPoints(0),
-																														   reservable(Quantity::create(1))
+	CraftJob(const CraftJobTypeId &cjt, HasCraftingLocationsAndJobsForFaction &hclaj, const MaterialTypeId &mt, int msl) :
+		craftJobType(cjt),
+		hasCraftingLocationsAndJobs(hclaj),
+		materialType(mt),
+		minimumSkillLevel(msl),
+		totalSkillPoints(0),
+		reservable(Quantity::create(1))
 	{
 		stepIterator = CraftJobType::getStepTypes(craftJobType).begin();
 	}
@@ -137,6 +138,7 @@ struct CraftJob final
 	[[nodiscard]] Quality getQuality() const;
 	[[nodiscard]] Step getStep() const;
 	[[nodiscard]] bool operator==(const CraftJob &other) { return &other == this; }
+	[[nodiscard]] std::string describe() const;
 };
 inline void to_json(Json &data, const CraftJob *const &craftJob) { data = reinterpret_cast<uintptr_t>(craftJob); }
 // To be used by Area.

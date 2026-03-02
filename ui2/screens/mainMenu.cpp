@@ -7,10 +7,10 @@ void screens::mainMenu(Window& window)
 	ImGui::PushFont(nullptr, displayData::menuFontSize);
 	bool canClose = false;
 	ImGuiIO& io = ImGui::GetIO();
-	// --- Set window size and position in logical space ---
+	// Set window size and position in logical space.
 	ImVec2 windowSize = ImVec2(400, 400);
 	ImVec2 centerPos = ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
-	// Center window using pivot (0.5,0.5)
+	// Center window using pivot (0.5,0.5).
 	ImGui::SetNextWindowSize(windowSize);
 	ImGui::SetNextWindowPos(centerPos, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 	ImGui::Begin("mainMenu", &canClose, window.m_menuWindowFlags);

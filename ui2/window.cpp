@@ -85,7 +85,6 @@ void Window::startLoop()
 }
 void Window::render()
 {
-
 	ImGui_ImplSDLRenderer2_NewFrame();
 	ImGui_ImplSDL2_NewFrame();
 	ImGuiIO& io = ImGui::GetIO();
@@ -98,10 +97,8 @@ void Window::render()
 	// Make ImGui work with high dpi
 	int winW, winH;
 	int drawableW, drawableH;
-
 	SDL_GetWindowSize(m_window, &winW, &winH);
 	SDL_GetRendererOutputSize(m_sdlRenderer, &drawableW, &drawableH);
-
 	io.DisplaySize = ImVec2((float)winW, (float)winH);
 	io.DisplayFramebufferScale = ImVec2( (float)drawableW / winW, (float)drawableH / winH);
 	// Get mouse position and scale to logical size.
@@ -112,23 +109,30 @@ void Window::render()
 	io.MousePos = ImVec2(mouseX * scaleX, mouseY * scaleY);
 	// Record logical position.
 	m_mousePosition = {(int)io.MousePos.x, (int)io.MousePos.y};
-
 	ImGui::NewFrame();
 	SDL_SetRenderDrawColor(m_sdlRenderer, 0,0,0,255);
 	SDL_RenderClear(m_sdlRenderer);
-
-	// --- Render current panel ---
+	// Render current panel.
 	switch (m_panel)
 	{
-		case PanelId::MainMenu:			screens::mainMenu(*this); break;
-		case PanelId::CreateSimulation:	screens::createSimulation(*this); break;
-		case PanelId::CreateArea:		screens::createArea(*this); break;
-		case PanelId::Load:				screens::load(*this); break;
-		case PanelId::Edit:				screens::editSimulation(*this); break;
-		case PanelId::GameView:			screens::gameView(*this); break;
+		// Normal mode.
+		case PanelId::MainMenu:				screens::mainMenu(*this); break;
+		case PanelId::Load:					screens::load(*this); break;
+		case PanelId::GameView:				screens::gameView(*this); break;
+		case PanelId::ActorDetails:			screens::actorDetails(*this, m_gameOverlay.m_detailActor); break;
+		case PanelId::ObjectivePriorities:	screens::objectivePriorities(*this, m_gameOverlay.m_detailActor); break;
+		case PanelId::EditUniform:			screens::editUniform(*this, m_gameOverlay.m_uniformToEdit); break;
+		case PanelId::Production:			screens::production(*this); break;
+		// Edit mode.
+		case PanelId::CreateSimulation:		screens::createSimulation(*this); break;
+		case PanelId::CreateArea:			screens::createArea(*this); break;
+		case PanelId::Edit:					screens::editSimulation(*this); break;
+		case PanelId::SelectFactionToEdit:	screens::selectFactionToEdit(*this); break;
+		case PanelId::EditFaction:			screens::editFaction(*this, m_gameOverlay.m_factionToEdit); break;
+		case PanelId::EditActor:			screens::editActor(*this, m_gameOverlay.m_detailActor); break;
 		default: std::unreachable();
 	}
-	// --- Render ImGui ---
+	// Render ImGui.
 	ImGui::Render();
 	ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), m_sdlRenderer);
 	SDL_RenderPresent(m_sdlRenderer);
@@ -143,91 +147,101 @@ void Window::quit()
 void Window::processEvents()
 {
 	SDL_Event event;
-	//if(m_area)
-		//m_blockUnderCursor = getBlockUnderCursor();
 	while (SDL_PollEvent(&event))
 	{
 		ImGui_ImplSDL2_ProcessEvent(&event);
+		m_shiftKey = event.key.keysym.mod & KMOD_SHIFT;
+		m_controllKey = event.key.keysym.mod & KMOD_CTRL;
 		switch(event.type)
 		{
-		case SDL_KEYDOWN:
-			switch (event.key.keysym.sym)
-			{
-				case SDLK_ESCAPE:
-					if(m_panel == PanelId::GameView)
-						m_gameOverlay.m_gameMenuIsOpen = !m_gameOverlay.m_gameMenuIsOpen;
-					break;
-				case 'f':
-					m_fullScreen = !m_fullScreen;
-					if (m_fullScreen)
-						SDL_SetWindowFullscreen(m_window, windowFlags);
-					else
-						SDL_SetWindowFullscreen(m_window, windowFlagsNotFullScreen);
-					break;
-				case ' ':
-					if(m_panel == PanelId::GameView)
-						m_paused.toggle();
-					break;
-				case SDLK_INSERT:
-					if(m_panel == PanelId::GameView)
-						zoom(1.f + displayData::zoomIncrement);
-					break;
-				case SDLK_DELETE:
-					if(m_panel == PanelId::GameView)
-						zoom(1.f - displayData::zoomIncrement);
-					break;
-				case SDLK_UP:
-					if(m_panel == PanelId::GameView)
-						pan(0.f, -displayData::panSpeed / m_pov->zoom);
-					break;
-				case SDLK_DOWN:
-					if(m_panel == PanelId::GameView)
-						pan(0.f, displayData::panSpeed / m_pov->zoom);
-					break;
-				case SDLK_LEFT:
-					if(m_panel == PanelId::GameView)
-						pan(-displayData::panSpeed / m_pov->zoom, 0);
-					break;
-				case SDLK_RIGHT:
-					if(m_panel == PanelId::GameView)
-						pan(displayData::panSpeed / m_pov->zoom, 0);
-					break;
-				case SDLK_PAGEUP:
-					if(m_panel == PanelId::GameView)
-						if(m_pov->z != m_area->getSpace().m_sizeZ - 1)
-							++m_pov->z;
-					break;
-				case SDLK_PAGEDOWN:
-					if(m_panel == PanelId::GameView)
-						if(m_pov->z != 0)
-							--m_pov->z;
-					break;
-			}
-			break;
-		case SDL_MOUSEBUTTONDOWN:
-			m_gameOverlay.m_mouseIsDown = true;
-			m_gameOverlay.m_mouseDragStart = m_mousePosition;
-			break;
-		case SDL_MOUSEBUTTONUP:
-			m_gameOverlay.m_mouseIsDown = false;
-			break;
-		case SDL_MOUSEMOTION:
-			if(m_area)
-			{
-				/*
-				m_gameOverlay.m_coordinateUI->setText(
-					std::to_string(m_blockUnderCursor.x().get()) + "," +
-					std::to_string(m_blockUnderCursor.y().get()) + "," +
-					std::to_string(m_blockUnderCursor.z().get())
-				);
-				*/
-			}
-			break;
-		case SDL_QUIT:
-			quit();
+			case SDL_KEYDOWN:
+				switch (event.key.keysym.sym)
+				{
+					case SDLK_ESCAPE:
+						if(m_panel == PanelId::GameView)
+						{
+							if(m_gameOverlay.m_contextMenuState.current == ContextMenuId::Null)
+								m_gameOverlay.m_gameMenuIsOpen = !m_gameOverlay.m_gameMenuIsOpen;
+							else
+								m_gameOverlay.m_contextMenuState.current = ContextMenuId::Null;
+						}
+						break;
+					case 'f':
+						m_fullScreen = !m_fullScreen;
+						if (m_fullScreen)
+							SDL_SetWindowFullscreen(m_window, windowFlags);
+						else
+							SDL_SetWindowFullscreen(m_window, windowFlagsNotFullScreen);
+						break;
+					case ' ':
+						if(m_panel == PanelId::GameView)
+							m_paused.toggle();
+						break;
+					case 'z':
+						if(m_panel == PanelId::GameView)
+						{
+							if(m_gameOverlay.m_selectMode == SelectMode::Plants)
+								m_gameOverlay.m_selectMode = SelectMode::Space;
+							else
+								m_gameOverlay.m_selectMode = (SelectMode)((int)m_gameOverlay.m_selectMode + 1);
+							m_gameOverlay.deselectAll();
+						}
+						break;
+					case SDLK_INSERT:
+						if(m_panel == PanelId::GameView)
+							zoom(1.f + displayData::zoomIncrement);
+						break;
+					case SDLK_DELETE:
+						if(m_panel == PanelId::GameView)
+							zoom(1.f - displayData::zoomIncrement);
+						break;
+					case SDLK_UP:
+						if(m_panel == PanelId::GameView)
+							pan(0.f, -displayData::panSpeed / m_pov->zoom);
+						break;
+					case SDLK_DOWN:
+						if(m_panel == PanelId::GameView)
+							pan(0.f, displayData::panSpeed / m_pov->zoom);
+						break;
+					case SDLK_LEFT:
+						if(m_panel == PanelId::GameView)
+							pan(-displayData::panSpeed / m_pov->zoom, 0);
+						break;
+					case SDLK_RIGHT:
+						if(m_panel == PanelId::GameView)
+							pan(displayData::panSpeed / m_pov->zoom, 0);
+						break;
+					case SDLK_PAGEUP:
+						if(m_panel == PanelId::GameView)
+							if(m_pov->z != m_area->getSpace().m_sizeZ - 1)
+								++m_pov->z;
+						break;
+					case SDLK_PAGEDOWN:
+						if(m_panel == PanelId::GameView)
+							if(m_pov->z != 0)
+								--m_pov->z;
+						break;
+				}
+				break;
+			case SDL_MOUSEBUTTONDOWN:
+				if(m_panel == PanelId::GameView)
+				{
+					m_gameOverlay.m_mouseIsDown = true;
+					m_gameOverlay.m_mouseDragStart = m_mousePosition;
+				}
+				break;
+			case SDL_MOUSEBUTTONUP:
+				if(m_panel == PanelId::GameView)
+				{
+					m_gameOverlay.m_mouseIsDown = false;
+					Cuboid cuboid = Cuboid::create(getBlockAtScreenPosition(m_mousePosition), getBlockAtScreenPosition(m_gameOverlay.m_mouseDragStart));
+					m_gameOverlay.updateSelect(*this, cuboid);
+				}
+				break;
+			case SDL_QUIT:
+				quit();
 		}
 	}
-
 }
 void Window::showMainMenu()
 {
@@ -253,7 +267,36 @@ void Window::showEdit()
 {
 	m_panel = PanelId::Edit;
 }
-void Window::createSimulation(const std::string& name, const DateTime& dateTime)
+void Window::showActorDetails(const ActorReference actor)
+{
+	m_gameOverlay.m_detailActor = actor;
+	m_panel = PanelId::ActorDetails;
+}
+void Window::showObjectivePriorities(const ActorReference actor)
+{
+	m_gameOverlay.m_detailActor = actor;
+	m_panel = PanelId::ObjectivePriorities;
+}
+void Window::showSelectFactionToEdit()
+{
+	m_panel = PanelId::SelectFactionToEdit;
+}
+void Window::showEditFaction(const FactionId faction)
+{
+	m_gameOverlay.m_factionToEdit = faction;
+	m_panel = PanelId::EditFaction;
+}
+void Window::showEditUniform(Uniform* uniform)
+{
+	m_gameOverlay.m_uniformToEdit = uniform;
+	m_panel = PanelId::EditUniform;
+}
+void Window::showEditActor(const ActorReference actor)
+{
+	m_gameOverlay.m_detailActor = actor;
+	m_panel = PanelId::EditActor;
+}
+void Window::createSimulation(const std::string& name, const DateTime dateTime)
 {
 	m_simulation = std::make_unique<Simulation>(name, dateTime);
 	m_simulation->save();
@@ -273,7 +316,7 @@ void Window::updateSimulationList()
 }
 void Window::load(const std::filesystem::path& path)
 {
-	deselectAll();
+	m_gameOverlay.deselectAll();
 	auto result = std::make_shared<LoadResult>();
 	std::function<void()> task = [path, result] mutable {
 		result->simulation = std::make_unique<Simulation>(path);
@@ -328,13 +371,6 @@ void Window::save()
 	};
 	m_backgroundTask.create(std::move(task));
 }
-void Window::deselectAll()
-{
-	m_selectedSpace.clear();
-	m_selectedActors.clear();
-	m_selectedItems.clear();
-	m_selectedPlants.clear();
-}
 void Window::setArea(Area& area)
 {
 	m_area = &area;
@@ -356,7 +392,7 @@ POV Window::makeDefaultPOV() const
 		1.f
 	};
 }
-void Window::color(const SDL_Color& color)
+void Window::color(const SDL_Color color)
 {
 	SDL_SetRenderDrawColor(m_sdlRenderer, color.r, color.g, color.b, color.a);
 }
@@ -369,24 +405,64 @@ void Window::zoom(float zoom)
 	m_pov->zoom = std::clamp(m_pov->zoom, 0.1f, 20.0f);
 	SDL_FPoint worldAfter = screenToWorld(mouseX, mouseY);
 	m_pov->x += (worldBefore.x - worldAfter.x);
-    m_pov->y += (worldBefore.y - worldAfter.y);
+	m_pov->y += (worldBefore.y - worldAfter.y);
+	clampPOV();
 }
 void Window::pan(float dx, float dy)
 {
 	m_pov->x += dx;
 	m_pov->y += dy;
+	clampPOV();
 }
-SDL_FPoint Window::screenToWorld(float sx, float sy)
+void Window::clampPOV()
+{
+	int w, h;
+	SDL_GetRendererOutputSize(m_sdlRenderer, &w, &h);
+	float viewW = w / m_pov->zoom;
+	float viewH = h / m_pov->zoom;
+	const Space& space = m_area->getSpace();
+	float worldW = space.m_sizeX.get() * displayData::defaultScale;
+	float worldH = space.m_sizeY.get() * displayData::defaultScale;
+	float maxX = worldW - viewW + 100.f;
+	float maxY = worldH - viewH + 100.f;
+	m_pov->x = std::clamp((float)m_pov->x, -100.f, maxX);
+	m_pov->y = std::clamp((float)m_pov->y, -100.f, maxY);
+}
+SDL_FPoint Window::screenToWorld(float sx, float sy) const
 {
 	SDL_FPoint p;
 	p.x = (sx / m_pov->zoom) + m_pov->x;
 	p.y = (sy / m_pov->zoom) + m_pov->y;
 	return p;
 }
-SDL_FPoint Window::worldToScreen(float wx, float wy)
+SDL_FPoint Window::worldToScreen(float wx, float wy) const
 {
 	SDL_FPoint p;
 	p.x = (wx - m_pov->x) * m_pov->zoom;
 	p.y = (wy - m_pov->y) * m_pov->zoom;
 	return p;
+}
+Point3D Window::getBlockUnderCursor() const
+{
+	int x, y;
+	SDL_GetMouseState(&x, &y);
+	return getBlockAtScreenPosition(x, y);
+}
+Point3D Window::getBlockAtScreenPosition(const int x, const int y) const
+{
+	SDL_FPoint mousePositionWorld = screenToWorld(x, y);
+	return {
+		Distance::create(mousePositionWorld.x / displayData::defaultScale),
+		Distance::create(mousePositionWorld.y / displayData::defaultScale),
+		m_pov->z
+	};
+}
+Point3D Window::getBlockAtScreenPosition(const SDL_Point point) const
+{
+	return getBlockAtScreenPosition(point.x, point.y);
+}
+Distance Window::invertY(const Distance distance) const
+{
+	assert(m_area != nullptr);
+	return (m_area->getSpace().m_sizeY - 1) - distance;
 }

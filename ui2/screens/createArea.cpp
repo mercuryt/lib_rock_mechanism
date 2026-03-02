@@ -12,12 +12,7 @@ void screens::createArea(Window& window)
 	static int sizeX = 100;
 	static int sizeY = 100;
 	static int sizeZ = 100;
-	bool canClose = false;
-	ImGuiIO& io = ImGui::GetIO();
-	ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f,0.5f));
-	ImGui::SetNextWindowSize({400,400});
-	ImGui::Begin("createArea", &canClose, window.m_menuWindowFlags);
-	ImGui::Text("Create Area");
+	begin(window, "Create Area");
 	ImGui::InputText("Name", name, IM_ARRAYSIZE(name));
 	ImGui::PushItemWidth(200.f);
 	ImGui::InputInt("X", &sizeX);
@@ -50,5 +45,5 @@ void screens::createArea(Window& window)
 	if(ImGui::Button("Back"))
 		window.showMainMenu();
 	ImGui::PopFont();
-	ImGui::End();
+	end();
 }

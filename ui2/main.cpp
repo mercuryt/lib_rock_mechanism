@@ -1,6 +1,6 @@
 #include "window.h"
 #include "displayData.h"
-//#include "sprite.h"
+#include "sprite.h"
 #include "../engine/config/config.h"
 #include "../engine/definitions/definitions.h"
 #include "../engine/objective.h"
@@ -23,8 +23,8 @@ int main ([[maybe_unused]]int argCount, [[maybe_unused]]char **args)
 	definitions::load();
 	ObjectiveType::load();
 	displayData::load();
-	//sprites::load();
 	Window window;
+	Sprite::load(window);
 	window.startLoop();
 	return 0;
 }

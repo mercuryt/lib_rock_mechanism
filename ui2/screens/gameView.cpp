@@ -1,33 +1,30 @@
 #include "screens.h"
 #include "../window.h"
 #include "../displayData.h"
+#include "../draw.h"
 #include "../../engine/simulation/simulation.h"
 #include "../../engine/area/area.h"
 #include "../../engine/space/space.h"
 
 void screens::gameView(Window& window)
 {
-	int mouseX, mouseY;
-	SDL_GetMouseState(&mouseX, &mouseY);
-	SDL_FPoint mousePositionWorld = window.screenToWorld(mouseX, mouseY);
-	window.m_blockUnderCursor.setX({(DistanceWidth)(mousePositionWorld.x)});
-	window.m_blockUnderCursor.setY({(DistanceWidth)(mousePositionWorld.y)});
-	window.m_blockUnderCursor.setZ(window.m_pov->z);
-	// Render world at full drawable resolution to m_gameView.
+	window.m_gameOverlay.m_blockUnderCursor = window.getBlockUnderCursor();
+	// Render world to m_gameView.
 	SDL_SetRenderTarget(window.m_sdlRenderer, window.m_gameView);
 	SDL_SetRenderDrawColor(window.m_sdlRenderer, 20,20,20,255);
 	SDL_RenderClear(window.m_sdlRenderer);
-	int worldWidth = window.m_area->getSpace().m_sizeX.get() * displayData::defaultScale;
-	int worldHeight = window.m_area->getSpace().m_sizeY.get() * displayData::defaultScale;
-	// Draw border around area.
-	window.color(displayData::areaOutlineColor);
-	for(int i = 0; i < 3; i++)
+	// Lock simulation mutex for vertex generation.
+	// TODO: Double buffer?
 	{
-		SDL_Rect borderSegment{i, i, worldWidth - 2*i, worldHeight - 2*i};
-		SDL_RenderDrawRect(window.m_sdlRenderer, &borderSegment);
+		std::lock_guard lock(window.m_simulation->m_uiReadMutex);
+		draw::world(window);
 	}
+	// Flush buffer.
+	window.m_renderBuffer.render(window.m_sdlRenderer);
 	// Set render target to screen.
 	SDL_SetRenderTarget(window.m_sdlRenderer, NULL);
+	int worldWidth = window.m_area->getSpace().m_sizeX.get() * displayData::defaultScale;
+	int worldHeight = window.m_area->getSpace().m_sizeY.get() * displayData::defaultScale;
 	SDL_Rect gameViewRenderDestination{
 		(int)(-window.m_pov->x * window.m_pov->zoom),
 		(int)(-window.m_pov->y * window.m_pov->zoom),

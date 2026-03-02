@@ -19,6 +19,5 @@ namespace sprites
 	sf::Sprite makeRepeated(const std::string& name, const Cuboid& cuboid);
 	sf::Sprite makeRepeated(const sf::Texture& texture, const Cuboid& cuboid);
 	sf::Texture makeRotatedTexture(const std::string& name, const int& rotation);
-	// Return rotated texture to ensure it stays in scope as long as sprite does.
 	sf::Sprite makeRepeatedRotated(const std::string& name, const Cuboid& cuboid, const int& rotation);
 };

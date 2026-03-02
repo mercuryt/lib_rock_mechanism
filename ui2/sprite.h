@@ -1,23 +1,41 @@
 #pragma once
-
-#include "../engine/dataStructures/smallMap.h"
-#include "imgui/imgui.h"
-
-#include <SDL2/SDL.h>
-#include <cassert>
-#include <filesystem>
-#include <string>
-#include <vector>
+/*
+	Sprite construction causes a hashmap lookup, each source rect should have an associated Sprite constrcuted only once, either durring load or when a method with a static Sprite stack variable.
+*/
+#include<SDL2/SDL.h>
+#include<string>
+#include "../engine/numericTypes/types.h"
+class Window;
+class CuboidSet;
 class Cuboid;
-namespace sprites
+class Point3D;
+struct Sprite
 {
-	inline const std::filesystem::path path = "img/build/sheet0.png";
-	inline SmallMap<std::string, std::pair<SDL_Texture, ImVec2>> textures;
-	void load();
-	std::pair<sf::Sprite, ImVec2> make(const std::string& name);
-	sf::Sprite makeRepeated(const std::string& name, const Cuboid& cuboid);
-	sf::Sprite makeRepeated(const SDL_Texture& texture, const Cuboid& cuboid);
-	SDL_Texture makeRotatedTexture(const std::string& name, const int& rotation);
-	// Return rotated texture to ensure it stays in scope as long as sprite does.
-	sf::Sprite makeRepeatedRotated(const std::string& name, const Cuboid& cuboid, const int& rotation);
+	SDL_Rect source;
+	float u0;
+	float v0;
+	float u1;
+	float v1;
+	static inline SDL_Texture* sheet;
+	static inline float sheetWidth;
+	static inline float sheetHeight;
+	static void load(Window& window);
+	Sprite(const std::string& name);
+	void draw(Window& window, const SDL_Rect& destination) const;
+	void draw(Window& window, const Point3D point) const;
+	void drawTinted(Window& window, const SDL_Rect& destination, const SDL_Color color) const;
+	void drawTinted(Window& window, const Point3D point, const SDL_Color color) const;
+	void drawRepeated(Window& window, const Cuboid& cuboid) const;
+	void drawRepeatedAndTinted(Window& window, const Cuboid& cuboid, const SDL_Color color) const;
+	void drawScaled(Window& window, const Cuboid& cuboid) const;
+	void drawScaledAndTinted(Window& window, const Cuboid& cuboid, const SDL_Color color) const;
+	void drawScaledAndTinted(Window& window, const Point3D Point3D, const float scale, const SDL_Color color) const;
+	void drawRepeated(Window& window, const CuboidSet& cuboids) const;
+	void drawRepeatedAndTinted(Window& window, const CuboidSet& cuboids, const SDL_Color color) const;
+	void drawScaled(Window& window, const Point3D point, const float scale) const;
+	void drawScaled(Window& window, const CuboidSet& cuboids) const;
+	void drawScaledAndTinted(Window& window, const CuboidSet& cuboids, const SDL_Color color) const;
+	void drawRotated90CWAndTinted(Window& window, const Point3D point, const SDL_Color color) const;
+	void drawRotatedAndTinted(Window& window, const Point3D point, const double angle, const SDL_Color color) const;
+	void drawFacingAndTinted(Window& window, const Point3D point, const Facing4 facing, const SDL_Color color) const;
 };

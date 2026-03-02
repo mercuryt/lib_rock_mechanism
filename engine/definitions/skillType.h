@@ -16,7 +16,7 @@ class SkillType final
 	StrongVector<SkillExperiencePoints, SkillTypeId> m_level1Xp;
 public:
 	static void create(const SkillTypeParamaters& p);
-	static SkillTypeId byName(std::string name);
+	[[nodiscard]] static SkillTypeId byName(std::string name);
 	[[nodiscard]] static std::string getName(const SkillTypeId& id);
 	[[nodiscard]] static float getXpPerLevelModifier(const SkillTypeId& id);
 	[[nodiscard]] static SkillExperiencePoints getLevel1Xp(const SkillTypeId& id);

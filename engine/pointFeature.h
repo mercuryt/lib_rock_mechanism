@@ -22,6 +22,7 @@ struct PointFeatureType
 	static const PointFeatureType& byId(const PointFeatureTypeId& id);
 	static std::vector<PointFeatureType*> getAll();
 	static PointFeatureTypeId getId(const PointFeatureType& type);
+	static int size() { return 10; }
 };
 // These must appear in the same order as in the enum.
 static std::array<PointFeatureType, 10> pointFeatureTypeData = {{

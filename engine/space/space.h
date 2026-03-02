@@ -351,6 +351,7 @@ public:
 	void fluid_maybeEraseFluidOnDeck(const CuboidSet& points);
 	void fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(CuboidSet& set) const;
 	void fluid_queryForEachWithCuboids(const auto& shape, auto&& action) const { m_fluid.queryForEachWithCuboids(shape, action); }
+	void fluid_queryTotalsForEachWithCuboids(const auto& shape, auto&& action) const { m_totalFluidVolume.queryForEachWithCuboids(shape, action); }
 	[[nodiscard]] Distance fluid_getMistInverseDistanceToSource(const Point3D& point) const;
 	[[nodiscard]] FluidGroup* fluid_getGroup(const Point3D& point, const FluidTypeId& fluidType) const;
 	// To be called from FluidGroup::splitStep only.
@@ -421,9 +422,18 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	void actor_setTemperature(const Point3D& point, const Temperature& temperature);
 	void actor_updateIndex(const Cuboid& cuboid, const ActorIndex& oldIndex, const ActorIndex& newIndex);
 	void actor_queryForEach(const auto& shape, auto&& action) const { m_actors.queryForEach(shape, action); }
+	void actor_queryForEachWithCuboid(const auto& shape, auto&& action) const { m_actors.queryForEachWithCuboids(shape, action); }
 	[[nodiscard]] bool actor_contains(const auto& shape, const ActorIndex& actor) const { return m_actors.queryAnyEqual(shape, actor); }
 	[[nodiscard]] bool actor_empty(const auto& shape) const { return !m_actors.queryAny(shape); }
-	[[nodiscard]] const SmallSet<ActorIndex> actor_getAll(const auto& shape) const { return m_actors.queryGetAll(shape); }
+	[[nodiscard]] SmallSet<ActorIndex> actor_getAll(const auto& shape) const { return m_actors.queryGetAll(shape); }
+	[[nodiscard]] SmallSet<ActorReference> actor_getAllReferences(auto& actors, const auto& shape) const
+	{
+		SmallSet<ActorReference> output;
+		m_actors.queryForEach(shape, [&](const ActorIndex& index){
+			output.insert(actors.getReference(index));
+		});
+		return output;
+	}
 	[[nodiscard]] bool actor_queryAnyWithCondition(const auto& shape, const auto& condition) { return m_actors.queryAnyWithCondition(shape, condition); }
 	[[nodiscard]] CuboidSet actor_queryCuboidsWithCondition(const auto& shape, const auto& condition) { return m_actors.queryGetAllCuboidsWithCondition(shape, condition); }
 	// -Items
@@ -438,11 +448,20 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	void item_updateIndex(const Cuboid& cuboid, const ItemIndex& oldIndex, const ItemIndex& newIndex);
 	void item_queryForEach(const auto& shape, auto&& action) const { m_items.queryForEach(shape, action); }
 	void item_queryForEachCuboid(const auto& shape, auto&& action) const { m_items.queryForEachCuboid(shape, action); }
+	void item_queryForEachWithCuboid(const auto& shape, auto&& action) const { m_items.queryForEachWithCuboids(shape, action); }
 	[[nodiscard]] ItemIndex item_addGeneric(const Point3D& point, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity);
 	//ItemIndex get(const Point3D& point, ItemType& itemType) const;
 	[[nodiscard]] Quantity item_getCount(const Point3D& point, const ItemTypeId& itemType, const MaterialTypeId& materialType) const;
 	[[nodiscard]] ItemIndex item_getGeneric(const Point3D& point, const ItemTypeId& itemType, const MaterialTypeId& materialType) const;
-	[[nodiscard]] const SmallSet<ItemIndex> item_getAll(const auto& shape) const { return m_items.queryGetAll(shape); }
+	[[nodiscard]] SmallSet<ItemIndex> item_getAll(const auto& shape) const { return m_items.queryGetAll(shape); }
+	[[nodiscard]] SmallSet<ItemReference> item_getAllReferences(auto& items, const auto& shape) const
+	{
+		SmallSet<ItemReference> output;
+		m_items.queryForEach(shape, [&](const ItemIndex& index){
+			output.insert(items.getReference(index));
+		});
+		return output;
+	}
 	[[nodiscard]] bool item_hasInstalledType(const Point3D& point, const ItemTypeId& itemType) const;
 	[[nodiscard]] bool item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(const Point3D& point, const ActorIndex& actor) const;
 	[[nodiscard]] bool item_hasContainerContainingFluidTypeCarryableBy(const Point3D& point, const ActorIndex& actor, const FluidTypeId& fluidType) const;
@@ -465,8 +484,9 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 		assert(!m_plants.queryAny(shape));
 		m_plants.maybeInsert(shape, plant);
 	}
-	void plant_queryForEachWithCuboids(const auto& shape, auto&& action) { m_plants.queryForEachWithCuboids(shape, action); }
-	void plant_queryForEach(const auto& shape, auto&& action) { m_plants.queryForEach(shape, action); }
+	void plant_queryForEachWithCuboids(const auto& shape, auto&& action) const { m_plants.queryForEachWithCuboids(shape, action); }
+	void plant_queryForEach(const auto& shape, auto&& action) const { m_plants.queryForEach(shape, action); }
+	void plant_queryForEachCuboid(const auto& shape, auto&& action) const { m_plants.queryForEachCuboid(shape, action); }
 	[[nodiscard]] PlantIndex plant_get(const auto& shape) const { return m_plants.queryGetOne(shape); }
 	[[nodiscard]] SmallSet<PlantIndex> plant_getAll(const auto& shape) const { return m_plants.queryGetAll(shape); }
 	[[nodiscard]] bool plant_canGrowHereCurrently(const Point3D& point, const PlantSpeciesId& plantSpecies) const;
@@ -557,7 +577,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D& point, const F
 	// -StockPile
 	void stockpile_recordMembership(const Point3D& point, StockPile& stockPile);
 	void stockpile_recordNoLongerMember(const Point3D& point, StockPile& stockPile);
-	void stockpile_queryForEachCuboidForFaction(const auto& shape, const FactionId& faction, auto&& action)
+	void stockpile_queryForEachCuboidForFaction(const auto& shape, const FactionId& faction, auto&& action) const
 	{
 		auto found = m_stockPiles.find(faction);
 		if(found == m_stockPiles.end())

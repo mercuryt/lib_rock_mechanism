@@ -23,6 +23,7 @@ public:
 	void unschedule();
 	[[nodiscard]] bool canGrowCurrently(Area& area) const;
 	[[nodiscard]] Percent growthPercent() const;
+	[[nodiscard]] Percent& growthPercentReference();
 	[[nodiscard]] bool isGrowing() const { return !m_event.isPaused(); }
 	friend class AnimalGrowthEvent;
 	// For test.
