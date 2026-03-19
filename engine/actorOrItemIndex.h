@@ -22,28 +22,28 @@ class ActorOrItemIndex
 {
 	HasShapeIndex m_index;
 	bool m_isActor = false;
-	ActorOrItemIndex(const HasShapeIndex& i, bool isA) : m_index(i), m_isActor(isA) { }
+	ActorOrItemIndex(const HasShapeIndex i, bool isA) : m_index(i), m_isActor(isA) { }
 	static void setActorBit(HasShapeIndex& index);
 	static void unsetActorBit(HasShapeIndex& index);
-	[[nodiscard]] static bool getActorBit(const HasShapeIndex& index);
+	[[nodiscard]] static bool getActorBit(const HasShapeIndex index);
 public:
 	ActorOrItemIndex() = default;
 	ActorOrItemIndex(const ActorOrItemIndex& other) : m_index(other.m_index), m_isActor(other.m_isActor) { }
-	ActorOrItemIndex& operator=(const ActorOrItemIndex& other) { m_index = other.m_index; m_isActor = other.m_isActor; return *this; }
-	static ActorOrItemIndex createForActor(const ActorIndex& actor) { return ActorOrItemIndex(actor, true); }
-	static ActorOrItemIndex createForItem(const ItemIndex& item) { return ActorOrItemIndex(item, false); }
-	static ActorOrItemIndex create(const ItemIndex& item) { return createForItem(item); }
-	static ActorOrItemIndex create(const ActorIndex& actor) { return createForActor(actor); }
+	ActorOrItemIndex& operator=(const ActorOrItemIndex other) { m_index = other.m_index; m_isActor = other.m_isActor; return *this; }
+	static ActorOrItemIndex createForActor(const ActorIndex actor) { return ActorOrItemIndex(actor, true); }
+	static ActorOrItemIndex createForItem(const ItemIndex item) { return ActorOrItemIndex(item, false); }
+	static ActorOrItemIndex create(const ItemIndex item) { return createForItem(item); }
+	static ActorOrItemIndex create(const ActorIndex actor) { return createForActor(actor); }
 	static ActorOrItemIndex null() { return ActorOrItemIndex(); }
 	void clear() { m_index.clear(); m_isActor = false; }
-	void updateIndex(const HasShapeIndex& index) { m_index = index; }
-	ActorOrItemIndex location_set(Area& area, const Point3D& location, const Facing4& facing) const;
+	void updateIndex(const HasShapeIndex index) { m_index = index; }
+	ActorOrItemIndex location_set(Area& area, const Point3D location, const Facing4 facing) const;
 	void location_clear(Area& area) const;
 	void location_clearStatic(Area& area) const;
 	void location_clearDynamic(Area& area) const;
-	void followActor(Area& area, const ActorIndex& actor) const;
-	void followItem(Area& area, const ItemIndex& item) const;
-	void followPolymorphic(Area& area, const ActorOrItemIndex& actorOrItem) const;
+	void followActor(Area& area, const ActorIndex actor) const;
+	void followItem(Area& area, const ItemIndex item) const;
+	void followPolymorphic(Area& area, const ActorOrItemIndex actorOrItem) const;
 	void unfollow(Area& area) const;
 	void move_updateIndividualSpeed(Area& area) const;
 	void maybeSetStatic(Area& area) const;
@@ -63,20 +63,20 @@ public:
 	[[nodiscard]] ActorOrItemIndex getFollower(Area& area) const;
 	[[nodiscard]] ActorOrItemIndex getLeader(Area& area) const;
 
-	[[nodiscard]] bool canEnterCurrentlyFrom(Area& area, const Point3D& destination, const Point3D& origin) const;
-	[[nodiscard]] bool canEnterCurrentlyFromWithOccupied(Area& area, const Point3D& destination, const Point3D& origin, const CuboidSet& occupied) const;
+	[[nodiscard]] bool canEnterCurrentlyFrom(Area& area, const Point3D destination, const Point3D origin) const;
+	[[nodiscard]] bool canEnterCurrentlyFromWithOccupied(Area& area, const Point3D destination, const Point3D origin, const CuboidSet& occupied) const;
 
 	[[nodiscard]] Point3D getLocation(const Area& area) const;
 	[[nodiscard]] const CuboidSet& getOccupied(const Area& area) const;
 	[[nodiscard]] const MapWithCuboidKeys<CollisionVolume>& getOccupiedWithVolume(const Area& area) const;
 	[[nodiscard]] CuboidSet getAdjacentCuboids(const Area& area) const;
-	[[nodiscard]] bool isAdjacent(const Area& area, const ActorOrItemIndex& other) const;
-	[[nodiscard]] bool isAdjacentToActor(const Area& area, const ActorIndex& other) const;
-	[[nodiscard]] bool isAdjacentToItem(const Area& area, const ItemIndex& item) const;
-	[[nodiscard]] bool isAdjacentToLocation(const Area& area, const Point3D& location) const;
-	[[nodiscard]] bool isIntersectingOrAdjacentTo(const Area& area, const ActorIndex& other) const;
-	[[nodiscard]] bool isIntersectingOrAdjacentTo(const Area& area, const ItemIndex& item) const;
-	[[nodiscard]] bool occupiesPoint(const Area& area, const Point3D& location) const;
+	[[nodiscard]] bool isAdjacent(const Area& area, const ActorOrItemIndex other) const;
+	[[nodiscard]] bool isAdjacentToActor(const Area& area, const ActorIndex other) const;
+	[[nodiscard]] bool isAdjacentToItem(const Area& area, const ItemIndex item) const;
+	[[nodiscard]] bool isAdjacentToLocation(const Area& area, const Point3D location) const;
+	[[nodiscard]] bool isIntersectingOrAdjacentTo(const Area& area, const ActorIndex other) const;
+	[[nodiscard]] bool isIntersectingOrAdjacentTo(const Area& area, const ItemIndex item) const;
+	[[nodiscard]] bool occupiesPoint(const Area& area, const Point3D location) const;
 
 	[[nodiscard]] ShapeId getShape(const Area& area) const;
 	[[nodiscard]] ShapeId getCompoundShape(const Area& area) const;
@@ -89,25 +89,25 @@ public:
 	[[nodiscard]] bool isGeneric(const Area& area) const;
 	[[nodiscard]] Point3D findAdjacentPointWithCondition(const Area& area, auto&& condition)
 	{
-		for(const Cuboid& cuboid : getAdjacentCuboids(area))
+		for(const Cuboid cuboid : getAdjacentCuboids(area))
 			for(const Point3D& point : cuboid)
 				if(condition(point))
 					return point;
 		return Point3D::null();
 	}
-	[[nodiscard]] std::strong_ordering operator<=>(const ActorOrItemIndex& other) const;
+	[[nodiscard]] std::strong_ordering operator<=>(const ActorOrItemIndex other) const;
 	[[nodiscard]] bool operator==(const ActorOrItemIndex& other) const = default;
 	struct Hash
 	{
-		[[nodiscard]] size_t operator()(const ActorOrItemIndex& actorOrItem) const;
+		[[nodiscard]] size_t operator()(const ActorOrItemIndex actorOrItem) const;
 	};
 	void reservable_reserve(Area& area, CanReserve& canReserve, const Quantity quantity = Quantity::create(1), std::unique_ptr<DishonorCallback> callback = nullptr) const;
 	void reservable_unreserve(Area& area, CanReserve& canReserve, const Quantity quantity = Quantity::create(1)) const;
 	void reservable_maybeUnreserve(Area& area, CanReserve& canReserve, const Quantity quantity = Quantity::create(1)) const;
-	void reservable_unreserveFaction(Area& area, const FactionId& faction) const;
+	void reservable_unreserveFaction(Area& area, const FactionId faction) const;
 	void validate(Area& area) const;
-	[[nodiscard]] Quantity reservable_getUnreservedCount(const Area& area, const FactionId& faction) const;
-	[[nodiscard]] bool reservable_exists(const Area& area, const FactionId& faction) const;
+	[[nodiscard]] Quantity reservable_getUnreservedCount(const Area& area, const FactionId faction) const;
+	[[nodiscard]] bool reservable_exists(const Area& area, const FactionId faction) const;
 	[[nodiscard]] bool reservable_hasAny(const Area& area) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ActorOrItemIndex, m_index, m_isActor);
 };

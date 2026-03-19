@@ -4,7 +4,7 @@
 #include "objective.h"
 #include "project.h"
 #include "deserializationMemo.h"
-OnDestroy::OnDestroy(const Json& data, DeserializationMemo& deserializationMemo, const ActorOrItemReference& destroyed) :
+OnDestroy::OnDestroy(const Json& data, DeserializationMemo& deserializationMemo, const ActorOrItemReference destroyed) :
 	m_destroyed(destroyed)
 {
 	deserializationMemo.m_onDestroys[data.get<uintptr_t>()] = this;
@@ -62,7 +62,7 @@ void HasOnDestroySubscriptions::unsubscribeAll()
 	m_onDestroys.clear();
 }
 void HasOnDestroySubscriptions::setCallback(std::unique_ptr<OnDestroyCallBack>&& callback) { m_callback = std::move(callback); }
-void HasOnDestroySubscriptions::callback(const ActorOrItemReference& destroyed)
+void HasOnDestroySubscriptions::callback(const ActorOrItemReference destroyed)
 {
 	assert(!hasCallBack());
 	unsubscribeAll();
@@ -101,7 +101,7 @@ CancelObjectiveOnDestroyCallBack::CancelObjectiveOnDestroyCallBack(const Json& d
 	m_objective(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())),
 	m_area(area),
 	m_actor(data["actor"], area.getActors().m_referenceData) { }
-void CancelObjectiveOnDestroyCallBack::callback(const ActorOrItemReference&)
+void CancelObjectiveOnDestroyCallBack::callback(const ActorOrItemReference)
 {
 	m_area.getActors().objective_canNotCompleteObjective(m_actor.getIndex(m_area.getActors().m_referenceData), m_objective);
 }
@@ -113,7 +113,7 @@ Json CancelObjectiveOnDestroyCallBack::toJson() const
 ResetProjectOnDestroyCallBack::ResetProjectOnDestroyCallBack(Project& project) : m_project(project) { }
 ResetProjectOnDestroyCallBack::ResetProjectOnDestroyCallBack(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_project(*deserializationMemo.m_projects.at(data["project"].get<uintptr_t>())) { }
-void ResetProjectOnDestroyCallBack::callback(const ActorOrItemReference&)
+void ResetProjectOnDestroyCallBack::callback(const ActorOrItemReference)
 {
 	m_project.reset();
 }

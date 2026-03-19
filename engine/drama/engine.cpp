@@ -119,7 +119,7 @@ void DramaArc::actorsLeave(SmallSet<ActorIndex> actorsLeaving)
 		}
 	}
 }
-Point3D DramaArc::getEntranceToArea(const ShapeId& shape, const MoveTypeId& moveType) const
+Point3D DramaArc::getEntranceToArea(const ShapeId shape, const MoveTypeId moveType) const
 {
 	SmallSet<Point3D> candidates;
 	Space& space = m_area->getSpace();
@@ -147,17 +147,17 @@ Point3D DramaArc::getEntranceToArea(const ShapeId& shape, const MoveTypeId& move
 	assert(candidate.exists());
 	return candidate;
 }
-Point3D DramaArc::findLocationOnEdgeForNear(const ShapeId& shape, const MoveTypeId& moveType, const Point3D& origin, const Distance& distance, const SmallSet<Point3D>& exclude) const
+Point3D DramaArc::findLocationOnEdgeForNear(const ShapeId shape, const MoveTypeId moveType, const Point3D origin, const Distance  distance, const SmallSet<Point3D>& exclude) const
 {
 	Facing4 facing = getFacingAwayFromEdge(origin);
 	Space& space = m_area->getSpace();
-	auto predicate = [&](const Point3D& thisPoint) -> bool {
+	auto predicate = [&](const Point3D thisPoint) -> bool {
 		if(exclude.contains(thisPoint))
 			return false;
 		// TODO: A single method doing both of these with one iteration would be faster.
 		if(!space.shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(thisPoint, shape, moveType, facing, {}))
 			return false;
-		for(const Cuboid& occupied : Shape::getCuboidsOccupiedAt(shape, space, thisPoint, facing))
+		for(const Cuboid occupied : Shape::getCuboidsOccupiedAt(shape, space, thisPoint, facing))
 			if(space.isEdge(occupied))
 				return true;
 		return false;
@@ -165,7 +165,7 @@ Point3D DramaArc::findLocationOnEdgeForNear(const ShapeId& shape, const MoveType
 	// Get point in range of origin which satisifies predicate.
 	return space.getPointInRangeWithCondition(origin, distance, predicate);
 }
-bool DramaArc::pointIsConnectedToAtLeast(const Point3D& origin, [[maybe_unused]] const ShapeId& shape, const MoveTypeId& moveType, int count) const
+bool DramaArc::pointIsConnectedToAtLeast(const Point3D origin, [[maybe_unused]] const ShapeId shape, const MoveTypeId moveType, int count) const
 {
 	SmallSet<Point3D> accumulated;
 	std::stack<Point3D> open;
@@ -188,7 +188,7 @@ bool DramaArc::pointIsConnectedToAtLeast(const Point3D& origin, [[maybe_unused]]
 	}
 	return false;
 }
-Facing4 DramaArc::getFacingAwayFromEdge(const Point3D& point) const
+Facing4 DramaArc::getFacingAwayFromEdge(const Point3D point) const
 {
 	Space& space = m_area->getSpace();
 	assert(space.isEdge(point));

@@ -24,7 +24,7 @@ class SpoilData
 	StrongVector<Quantity, SpoilsDataTypeId> m_min;
 	StrongVector<Quantity, SpoilsDataTypeId> m_max;
 public:
-	static SpoilsDataTypeId create(const MaterialTypeId& mt, const ItemTypeId& it, const Percent& c, const Quantity& mi, const Quantity& ma);
+	static SpoilsDataTypeId create(const MaterialTypeId mt, const ItemTypeId it, const Percent c, const Quantity mi, const Quantity ma);
 	[[nodiscard]] static MaterialTypeId getMaterialType(const SpoilsDataTypeId& id);
 	[[nodiscard]] static ItemTypeId getItemType(const SpoilsDataTypeId& id);
 	[[nodiscard]] static Percent getChance(const SpoilsDataTypeId& id);
@@ -92,32 +92,32 @@ class MaterialType final
 	StrongVector<TemperatureDelta, MaterialTypeId> m_flameTemperature; // Temperature given off by flames from this material. The temperature given off by burn stage is a fraction of flame stage based on a config setting.
 public:
 	static MaterialTypeId create(const MaterialTypeParamaters& p);
-	static void setConstructionParamaters(const MaterialTypeId& materialType, const MaterialTypeConstructionDataParamaters& p);
+	static void setConstructionParamaters(const MaterialTypeId materialType, const MaterialTypeConstructionDataParamaters& p);
 	[[nodiscard]] static bool empty();
 	[[nodiscard]] static MaterialTypeId size();
 	[[nodiscard]] static MaterialTypeId byName(std::string name);
-	[[nodiscard]] static std::string& getName(const MaterialTypeId& id);
-	[[nodiscard]] static Density getDensity(const MaterialTypeId& id);
-	[[nodiscard]] static int getHardness(const MaterialTypeId& id);
-	[[nodiscard]] static bool getTransparent(const MaterialTypeId& id);
-	[[nodiscard]] static int getValuePerUnitFullDisplacement(const MaterialTypeId& id);
-	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(const MaterialTypeId& id);
-	[[nodiscard]] static std::vector<SpoilsDataTypeId>& getSpoilData(const MaterialTypeId& id);
-	[[nodiscard]] static Temperature getMeltingPoint(const MaterialTypeId& id);
-	[[nodiscard]] static FluidTypeId getMeltsInto(const MaterialTypeId& id);
-	[[nodiscard]] static bool canMelt(const MaterialTypeId& id);
-	[[nodiscard]] static Mass getMassForSolidVolumeAsANumberOfPoints(const MaterialTypeId& id, int numberOfPoints);
+	[[nodiscard]] static std::string& getName(const MaterialTypeId id);
+	[[nodiscard]] static Density getDensity(const MaterialTypeId id);
+	[[nodiscard]] static int getHardness(const MaterialTypeId id);
+	[[nodiscard]] static bool getTransparent(const MaterialTypeId id);
+	[[nodiscard]] static int getValuePerUnitFullDisplacement(const MaterialTypeId id);
+	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(const MaterialTypeId id);
+	[[nodiscard]] static std::vector<SpoilsDataTypeId>& getSpoilData(const MaterialTypeId id);
+	[[nodiscard]] static Temperature getMeltingPoint(const MaterialTypeId id);
+	[[nodiscard]] static FluidTypeId getMeltsInto(const MaterialTypeId id);
+	[[nodiscard]] static bool canMelt(const MaterialTypeId id);
+	[[nodiscard]] static Mass getMassForSolidVolumeAsANumberOfPoints(const MaterialTypeId id, int numberOfPoints);
 	// Fire.
-	[[nodiscard]] static bool canBurn(const MaterialTypeId& id);
-	[[nodiscard]] static Step getBurnStageDuration(const MaterialTypeId& id);
-	[[nodiscard]] static Step getFlameStageDuration(const MaterialTypeId& id);
-	[[nodiscard]] static Temperature getIgnitionTemperature(const MaterialTypeId& id);
-	[[nodiscard]] static TemperatureDelta getFlameTemperature(const MaterialTypeId& id);
+	[[nodiscard]] static bool canBurn(const MaterialTypeId id);
+	[[nodiscard]] static Step getBurnStageDuration(const MaterialTypeId id);
+	[[nodiscard]] static Step getFlameStageDuration(const MaterialTypeId id);
+	[[nodiscard]] static Temperature getIgnitionTemperature(const MaterialTypeId id);
+	[[nodiscard]] static TemperatureDelta getFlameTemperature(const MaterialTypeId id);
 	// Construct.
-	[[nodiscard]] static std::vector<std::pair<ItemQuery, Quantity>>& construction_getConsumed(const MaterialTypeId& id);
-	[[nodiscard]] static std::vector<std::pair<ItemQuery, Quantity>>& construction_getUnconsumed(const MaterialTypeId& id);
-	[[nodiscard]] static std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>>& construction_getByproducts(const MaterialTypeId& id);
-	[[nodiscard]] static SkillTypeId construction_getSkill(const MaterialTypeId& id);
-	[[nodiscard]] static Step construction_getDuration(const MaterialTypeId& id);
+	[[nodiscard]] static std::vector<std::pair<ItemQuery, Quantity>>& construction_getConsumed(const MaterialTypeId id);
+	[[nodiscard]] static std::vector<std::pair<ItemQuery, Quantity>>& construction_getUnconsumed(const MaterialTypeId id);
+	[[nodiscard]] static std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>>& construction_getByproducts(const MaterialTypeId id);
+	[[nodiscard]] static SkillTypeId construction_getSkill(const MaterialTypeId id);
+	[[nodiscard]] static Step construction_getDuration(const MaterialTypeId id);
 };
 inline MaterialType g_materialTypeData;

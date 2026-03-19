@@ -27,8 +27,8 @@ public:
 	[[nodiscard]] bool check(const auto& shape, const SpaceDesignation& designation) const { return m_data[(int)designation].query(shape); }
 	[[nodiscard]] Point3D queryPoint(const auto& shape, const SpaceDesignation& designation) const { return m_data[(int)designation].queryGetPoint(shape); }
 	[[nodiscard]] Point3D queryPointWithCondition(const auto& shape, const SpaceDesignation& designation, auto&& condition) const { return m_data[(int)designation].queryGetPointWithCondition(shape, condition); }
-	[[nodiscard]] std::vector<SpaceDesignation> getForPoint(const Point3D& point) const;
-	[[nodiscard]] SpaceDesignation getDisplayDesignation(const Point3D& point) const;
+	[[nodiscard]] std::vector<SpaceDesignation> getForPoint(const Point3D point) const;
+	[[nodiscard]] SpaceDesignation getDisplayDesignation(const Point3D point) const;
 	[[nodiscard]] const RTreeBoolean& getForDesignation(const SpaceDesignation& designation) const;
 	[[nodiscard]] Cuboid getCuboidWithDesignationAndCondition(const SpaceDesignation& designation, const auto& shape, auto&& condition)
 	{
@@ -48,23 +48,23 @@ class AreaHasSpaceDesignations final
 {
 	SmallMap<FactionId, AreaHasSpaceDesignationsForFaction> m_data;
 public:
-	void registerFaction(const FactionId& faction) { m_data.emplace(faction); }
-	void maybeRegisterFaction(const FactionId& faction) { if(!contains(faction)) m_data.emplace(faction); }
-	void unregisterFaction(const FactionId& faction) { m_data.erase(faction); }
+	void registerFaction(const FactionId faction) { m_data.emplace(faction); }
+	void maybeRegisterFaction(const FactionId faction) { if(!contains(faction)) m_data.emplace(faction); }
+	void unregisterFaction(const FactionId faction) { m_data.erase(faction); }
 	void prepare() { for(auto& pair : m_data) pair.second.prepare(); }
-	void queryForEachForFactionIfExists(const FactionId& faction, const auto& shape, auto&& action)
+	void queryForEachForFactionIfExists(const FactionId faction, const auto& shape, auto&& action)
 	{
 		auto found = m_data.find(faction);
 		if(found == m_data.end())
 			return;
 		found->second.queryForEach(shape, action);
 	}
-	[[nodiscard]] bool contains(const FactionId& faction) const { return m_data.contains(faction); }
+	[[nodiscard]] bool contains(const FactionId faction) const { return m_data.contains(faction); }
 	[[nodiscard]] bool canPrepare() const;
-	[[nodiscard]] AreaHasSpaceDesignationsForFaction& getForFaction(const FactionId& faction) { return m_data.getOrCreate(faction); }
-	[[nodiscard]] const AreaHasSpaceDesignationsForFaction& getForFaction(const FactionId& faction) const { return m_data[faction]; }
-	[[nodiscard]] AreaHasSpaceDesignationsForFaction& maybeRegisterAndGetForFaction(const FactionId& faction);
-	[[nodiscard]] const AreaHasSpaceDesignationsForFaction& maybeRegisterAndGetForFaction(const FactionId& faction) const;
-	[[nodiscard]] std::vector<std::pair<FactionId, SpaceDesignation>> getForPoint(const Point3D& point) const;
+	[[nodiscard]] AreaHasSpaceDesignationsForFaction& getForFaction(const FactionId faction) { return m_data.getOrCreate(faction); }
+	[[nodiscard]] const AreaHasSpaceDesignationsForFaction& getForFaction(const FactionId faction) const { return m_data[faction]; }
+	[[nodiscard]] AreaHasSpaceDesignationsForFaction& maybeRegisterAndGetForFaction(const FactionId faction);
+	[[nodiscard]] const AreaHasSpaceDesignationsForFaction& maybeRegisterAndGetForFaction(const FactionId faction) const;
+	[[nodiscard]] std::vector<std::pair<FactionId, SpaceDesignation>> getForPoint(const Point3D point) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(AreaHasSpaceDesignations, m_data);
 };

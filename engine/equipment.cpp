@@ -15,13 +15,14 @@
 #include "actors/actors.h"
 #include "hasShapes.h"
 #include <cstddef>
+
 EquipmentSet::EquipmentSet(Area& area, const Json& data)
 {
 	Items& items = area.getItems();
 	for(const Json& itemRefData : data)
 		addEquipment(area, ItemReference(itemRefData, items.m_referenceData).getIndex(items.m_referenceData));
 }
-void EquipmentSet::addEquipment(Area& area, const ItemIndex& equipment)
+void EquipmentSet::addEquipment(Area& area, const ItemIndex equipment)
 {
 	Items& items = area.getItems();
 	ItemReference ref = area.getItems().getReference(equipment);
@@ -51,11 +52,11 @@ void EquipmentSet::addEquipment(Area& area, const ItemIndex& equipment)
 	}
 	//TODO: m_rangedWeaponAmmo
 }
-void EquipmentSet::addGeneric(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity)
+void EquipmentSet::addGeneric(Area& area, const ItemTypeId itemType, const MaterialTypeId materialType, const Quantity quantity)
 {
 	Items& items = area.getItems();
 	assert(!ItemType::getIsWearable(itemType));
-	auto iter = m_equipments.findIf([&](const ItemReference& ref){
+	auto iter = m_equipments.findIf([&](const ItemReference ref){
 		ItemIndex item = ref.getIndex(items.m_referenceData);
 		if(itemType != items.getItemType(item))
 			return false;
@@ -75,10 +76,10 @@ void EquipmentSet::addGeneric(Area& area, const ItemTypeId& itemType, const Mate
 	}
 	m_mass += ItemType::getFullDisplacement(itemType) * MaterialType::getDensity(materialType) * quantity;
 }
-void EquipmentSet::removeGeneric(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity)
+void EquipmentSet::removeGeneric(Area& area, const ItemTypeId itemType, const MaterialTypeId materialType, const Quantity quantity)
 {
 	Items& items = area.getItems();
-	auto iter = m_equipments.findIf([&](const ItemReference& ref){
+	auto iter = m_equipments.findIf([&](const ItemReference ref){
 		ItemIndex item = ref.getIndex(items.m_referenceData);
 		if(itemType != items.getItemType(item))
 			return false;
@@ -102,7 +103,7 @@ void EquipmentSet::removeGeneric(Area& area, const ItemTypeId& itemType, const M
 	}
 	m_mass -= ItemType::getFullDisplacement(itemType) * MaterialType::getDensity(materialType) * quantity;
 }
-void EquipmentSet::removeEquipment(Area& area, const ItemIndex& equipment)
+void EquipmentSet::removeEquipment(Area& area, const ItemIndex equipment)
 {
 	Items& items = area.getItems();
 	ItemReference equipmentRef = items.getReference(equipment);
@@ -115,13 +116,13 @@ void EquipmentSet::removeEquipment(Area& area, const ItemIndex& equipment)
 	// SmallSet does not maintain sort order on erase.
 	m_wearableIsSorted = false;
 }
-void EquipmentSet::modifyImpact(Area& area, Hit& hit, const BodyPartTypeId& bodyPartType)
+void EquipmentSet::modifyImpact(Area& area, Hit& hit, const BodyPartTypeId bodyPartType)
 {
 	Items& items = area.getItems();
 	if(!m_wearableIsSorted)
 	{
 		// Wearable priority queue is sorted by layers so we start at the outside and pierce inwards.
-		auto sort = [&area, &items](const ItemReference& a, const ItemReference& b) -> bool {
+		auto sort = [&area, &items](const ItemReference a, const ItemReference b) -> bool {
 			return ItemType::getWearable_layer(items.getItemType(a.getIndex(items.m_referenceData))) > ItemType::getWearable_layer(items.getItemType(b.getIndex(items.m_referenceData)));
 		};
 		m_wearable.sort(sort);
@@ -156,7 +157,7 @@ void EquipmentSet::modifyImpact(Area& area, Hit& hit, const BodyPartTypeId& body
 
 		}
 	}
-	m_equipments.eraseIf([&](const ItemReference& equipment){ return area.getItems().getWear(equipment.getIndex(items.m_referenceData)) == 100; });
+	m_equipments.eraseIf([&](const ItemReference equipment){ return area.getItems().getWear(equipment.getIndex(items.m_referenceData)) == 100; });
 }
 std::vector<Attack> EquipmentSet::getMeleeAttacks(Area& area)
 {
@@ -172,14 +173,14 @@ std::vector<Attack> EquipmentSet::getMeleeAttacks(Area& area)
 	}
 	return output;
 }
-bool EquipmentSet::contains(const ItemReference& item) const
+bool EquipmentSet::contains(const ItemReference item) const
 {
 	return m_equipments.contains(item);
 }
-bool EquipmentSet::containsItemType(const Area& area, const ItemTypeId& itemType) const
+bool EquipmentSet::containsItemType(const Area& area, const ItemTypeId itemType) const
 {
 	const Items& items = area.getItems();
-	return m_equipments.anyOf([&items, itemType](const ItemReference& item){ return items.getItemType(item.getIndex(items.m_referenceData)) == itemType; });
+	return m_equipments.anyOf([&items, itemType](const ItemReference item){ return items.getItemType(item.getIndex(items.m_referenceData)) == itemType; });
 }
 Step EquipmentSet::getLongestMeleeWeaponCoolDown(Area& area) const
 {
@@ -195,7 +196,7 @@ Step EquipmentSet::getLongestMeleeWeaponCoolDown(Area& area) const
 	assert(output != 0);
 	return output;
 }
-bool EquipmentSet::canEquipCurrently(Area& area, const ActorIndex& actor, const ItemIndex& equipment) const
+bool EquipmentSet::canEquipCurrently(Area& area, const ActorIndex actor, const ItemIndex equipment) const
 {
 	Items& items = area.getItems();
 	const ItemReference equipmentRef = items.m_referenceData.getReference(equipment);
@@ -217,10 +218,10 @@ bool EquipmentSet::canEquipCurrently(Area& area, const ActorIndex& actor, const 
 	}
 	return true;
 }
-ItemIndex EquipmentSet::getWeaponToAttackAtRange(Area& area, const DistanceFractional& range)
+ItemIndex EquipmentSet::getWeaponToAttackAtRange(Area& area, const DistanceFractional range)
 {
 	Items& items = area.getItems();
-	for(ItemReference item : m_rangedWeapons)
+	for(const ItemReference item : m_rangedWeapons)
 	{
 		ItemIndex itemIndex = item.getIndex(items.m_referenceData);
 		ItemTypeId itemType = items.getItemType(itemIndex);
@@ -231,7 +232,7 @@ ItemIndex EquipmentSet::getWeaponToAttackAtRange(Area& area, const DistanceFract
 	}
 	return ItemIndex::null();
 }
-ItemIndex EquipmentSet::getAmmoForRangedWeapon(Area& area, const ItemIndex& weapon)
+ItemIndex EquipmentSet::getAmmoForRangedWeapon(Area& area, const ItemIndex weapon)
 {
 	Items& items = area.getItems();
 	ItemTypeId weaponType = items.getItemType(weapon);
@@ -239,7 +240,7 @@ ItemIndex EquipmentSet::getAmmoForRangedWeapon(Area& area, const ItemIndex& weap
 	AttackTypeId attackType = ItemType::getRangedAttackType(weaponType);
 	assert(AttackType::getProjectileItemType(attackType).exists());
 	ItemTypeId ammoItemType = AttackType::getProjectileItemType(attackType);
-	for(ItemReference item : m_equipments)
+	for(const ItemReference item : m_equipments)
 	{
 		ItemIndex itemIndex = item.getIndex(items.m_referenceData);
 		if(items.getItemType(itemIndex) == ammoItemType)
@@ -247,27 +248,27 @@ ItemIndex EquipmentSet::getAmmoForRangedWeapon(Area& area, const ItemIndex& weap
 	}
 	return ItemIndex::null();
 }
-bool EquipmentSet::hasAnyEquipmentWithReservations(Area& area, const ActorIndex& actor) const
+bool EquipmentSet::hasAnyEquipmentWithReservations(Area& area, const ActorIndex actor) const
 {
 	FactionId faction = area.getActors().getFaction(actor);
 	Items& items = area.getItems();
 	if(faction.exists())
-		for(ItemReference item : m_equipments)
+		for(const ItemReference item : m_equipments)
 			if(area.getItems().reservable_isFullyReserved(item.getIndex(items.m_referenceData), faction))
 				return true;
 	return false;
 }
-void EquipmentSet::updateCarrierIndexForContents(Area& area, const ItemIndex& newIndex)
+void EquipmentSet::updateCarrierIndexForContents(Area& area, const ItemIndex newIndex)
 {
 	Items& items = area.getItems();
-	for(ItemReference item : m_equipments)
+	for(const ItemReference item : m_equipments)
 		items.updateCarrierIndex(item.getIndex(items.m_referenceData), newIndex);
 }
-ItemIndex EquipmentSet::getFirstItemWithType(const Area& area, const ItemTypeId& type) const
+ItemIndex EquipmentSet::getFirstItemWithType(const Area& area, const ItemTypeId type) const
 {
 	const Items& items = area.getItems();
-	auto found = m_equipments.findIf([&](const ItemReference& ref) -> bool {
-		const ItemIndex& index = ref.getIndex(items.m_referenceData);
+	auto found = m_equipments.findIf([&](const ItemReference ref) -> bool {
+		const ItemIndex index = ref.getIndex(items.m_referenceData);
 		return items.getItemType(index) == type;
 	});
 	if(found == m_equipments.end())
@@ -278,7 +279,7 @@ ItemIndex EquipmentSet::getFirstItemWithType(const Area& area, const ItemTypeId&
 Json EquipmentSet::toJson() const
 {
 	Json output = Json::array();
-	for(const ItemReference& item : m_equipments)
+	for(const ItemReference item : m_equipments)
 		output.push_back(item.toJson());
 	return output;
 }

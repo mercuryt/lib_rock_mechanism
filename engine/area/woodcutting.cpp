@@ -22,7 +22,7 @@ WoodCuttingLocationDishonorCallback::WoodCuttingLocationDishonorCallback(const J
 	m_area(deserializationMemo.area(data["area"])),
 	m_location(data["location"].get<Point3D>()) { }
 Json WoodCuttingLocationDishonorCallback::toJson() const { return Json({{"type", "WoodCuttingLocationDishonorCallback"}, {"faction", m_faction}, {"location", m_location}}); }
-void WoodCuttingLocationDishonorCallback::execute([[maybe_unused]] const Quantity& oldCount, [[maybe_unused]] const Quantity& newCount)
+void WoodCuttingLocationDishonorCallback::execute([[maybe_unused]] const Quantity oldCount, [[maybe_unused]] const Quantity newCount)
 {
 	m_area.m_hasWoodCuttingDesignations.undesignate(m_faction, m_location);
 }
@@ -46,7 +46,7 @@ Json HasWoodCuttingDesignationsForFaction::toJson() const
 	}
 	return data;
 }
-void HasWoodCuttingDesignationsForFaction::designate(const Point3D& point)
+void HasWoodCuttingDesignationsForFaction::designate(const Point3D point)
 {
 	Space& space = m_area.getSpace();
 	[[maybe_unused]] Plants& plants = m_area.getPlants();
@@ -59,25 +59,25 @@ void HasWoodCuttingDesignationsForFaction::designate(const Point3D& point)
 	std::unique_ptr<DishonorCallback> locationDishonorCallback = std::make_unique<WoodCuttingLocationDishonorCallback>(m_faction, m_area, point);
 	m_data.emplace(point, m_faction, m_area, point, std::move(locationDishonorCallback));
 }
-void HasWoodCuttingDesignationsForFaction::undesignate(const Point3D& point)
+void HasWoodCuttingDesignationsForFaction::undesignate(const Point3D point)
 {
 	assert(m_data.contains(point));
 	WoodCuttingProject& project = m_data[point];
 	project.cancel();
 }
-void HasWoodCuttingDesignationsForFaction::remove(const Point3D& point)
+void HasWoodCuttingDesignationsForFaction::remove(const Point3D point)
 {
 	assert(m_data.contains(point));
 	m_area.getSpace().designation_unset(point, m_faction, SpaceDesignation::WoodCutting);
 	m_data.erase(point);
 }
-void HasWoodCuttingDesignationsForFaction::removeIfExists(const Point3D& point)
+void HasWoodCuttingDesignationsForFaction::removeIfExists(const Point3D point)
 {
 	if(m_data.contains(point))
 		remove(point);
 }
 bool HasWoodCuttingDesignationsForFaction::empty() const { return m_data.empty(); }
-WoodCuttingProject& HasWoodCuttingDesignationsForFaction::getForPoint(const Point3D& point) { return m_data[point]; }
+WoodCuttingProject& HasWoodCuttingDesignationsForFaction::getForPoint(const Point3D point) { return m_data[point]; }
 // To be used by Area.
 void AreaHasWoodCuttingDesignations::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
@@ -110,23 +110,23 @@ void AreaHasWoodCuttingDesignations::removeFaction(FactionId faction)
 	m_data.erase(faction);
 }
 // If pointFeatureType is null then woodCutting out fully rather then woodCuttingging out a feature.
-void AreaHasWoodCuttingDesignations::designate(FactionId faction, const Point3D& point)
+void AreaHasWoodCuttingDesignations::designate(FactionId faction, const Point3D point)
 {
 	if(!m_data.contains(faction))
 		addFaction(faction);
 	m_data[faction].designate(point);
 }
-void AreaHasWoodCuttingDesignations::undesignate(FactionId faction, const Point3D& point)
+void AreaHasWoodCuttingDesignations::undesignate(FactionId faction, const Point3D point)
 {
 	assert(m_data.contains(faction));
 	m_data[faction].undesignate(point);
 }
-void AreaHasWoodCuttingDesignations::remove(FactionId faction, const Point3D& point)
+void AreaHasWoodCuttingDesignations::remove(FactionId faction, const Point3D point)
 {
 	assert(m_data.contains(faction));
 	m_data[faction].remove(point);
 }
-void AreaHasWoodCuttingDesignations::clearAll(const Point3D& point)
+void AreaHasWoodCuttingDesignations::clearAll(const Point3D point)
 {
 	for(auto& pair : m_data)
 		pair.second->removeIfExists(point);
@@ -143,7 +143,7 @@ bool AreaHasWoodCuttingDesignations::areThereAnyForFaction(FactionId faction) co
 		return false;
 	return !m_data[faction].empty();
 }
-bool AreaHasWoodCuttingDesignations::contains(FactionId faction, const Point3D& point) const
+bool AreaHasWoodCuttingDesignations::contains(FactionId faction, const Point3D point) const
 {
 	if(!m_data.contains(faction))
 		return false;

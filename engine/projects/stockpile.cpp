@@ -20,7 +20,7 @@
 #include <functional>
 #include <memory>
 #include <string>
-StockPileProject::StockPileProject(const FactionId& faction, Area& area, const Point3D& point, const ItemIndex& item, const Quantity& quantity, const Quantity& maxWorkers) :
+StockPileProject::StockPileProject(const FactionId faction, Area& area, const Point3D point, const ItemIndex item, const Quantity quantity, const Quantity maxWorkers) :
 	Project(faction, area, point, maxWorkers),
 	m_item(item, area.getItems().m_referenceData),
 	m_quantity(quantity),
@@ -93,12 +93,12 @@ void StockPileProject::onDelay()
 	m_area.getItems().stockpile_maybeUnsetAndScheduleReset(m_item.getIndex(items.m_referenceData), m_faction, Config::stepsToDisableStockPile);
 	cancel();
 }
-void StockPileProject::onPickUpRequired(const ActorOrItemIndex& required)
+void StockPileProject::onPickUpRequired(const ActorOrItemIndex required)
 {
 	ItemReference ref = m_area.getItems().getReference(required.getItem());
 	updateRequiredGenericReference(ref);
 }
-void StockPileProject::updateRequiredGenericReference(const ItemReference& newRef)
+void StockPileProject::updateRequiredGenericReference(const ItemReference newRef)
 {
 	if(newRef != m_item)
 	{
@@ -106,7 +106,7 @@ void StockPileProject::updateRequiredGenericReference(const ItemReference& newRe
 		m_item = newRef;
 	}
 }
-bool StockPileProject::canAddWorker(const ActorIndex& actor) const
+bool StockPileProject::canAddWorker(const ActorIndex actor) const
 {
 	if(!Project::canAddWorker(actor))
 		return false;

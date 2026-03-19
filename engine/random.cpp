@@ -1,6 +1,6 @@
 #include "random.h"
 #include "geometry/cuboid.h"
-bool Random::percentChance(const Percent& percent)
+bool Random::percentChance(const Percent percent)
 {
 	if(percent >= 100)
 		return true;
@@ -23,7 +23,7 @@ bool Random::chance(float chance)
 	std::uniform_real_distribution<float> dist(0.0, 1.0);
 	return dist(rng) <= chance;
 }
-Point3D Random::getInCuboid(const Cuboid& cuboid)
+Point3D Random::getInCuboid(const Cuboid cuboid)
 {
 	std::uniform_int_distribution<DistanceWidth> rangeX(cuboid.m_low.x().get(), cuboid.m_high.x().get());
 	std::uniform_int_distribution<DistanceWidth> rangeY(cuboid.m_low.y().get(), cuboid.m_high.y().get());

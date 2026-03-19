@@ -14,9 +14,27 @@
 constexpr uint32_t windowFlagsNotFullScreen = SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI;
 constexpr uint32_t windowFlags = windowFlagsNotFullScreen | SDL_WINDOW_FULLSCREEN_DESKTOP;
 Window::Window() :
+	m_simulationThread([&](){
+		while(true)
+		{
+			std::chrono::milliseconds start;
+			start = msSinceEpoch();
+			if(m_simulation && !m_paused)
+				m_simulation->doStep(m_speed);
+			std::chrono::milliseconds delta = msSinceEpoch() - start;
+			if(delta < m_minimumTimePerStep)
+				/* When compiling for webassebly the follwing is required for sleeping background threads:
+				 The compiler must be passed the flags "-s USE_PTHREADS=1 -s ALLOW_MEMORY_GROWTH=1 -s PTHREAD_POOL_SIZE='navigator.hardwareConcurrency'"
+				 The page must be served with the HTTP headers:
+					Cross-Origin-Opener-Policy: same-origin
+					Cross-Origin-Embedder-Policy: require-corp
+				*/
+				std::this_thread::sleep_for(m_minimumTimePerStep - delta);
+		}
+	}),
 	m_window(SDL_CreateWindow("Goblin Pit", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1000, 800, windowFlags)),
 	m_sdlRenderer(SDL_CreateRenderer(m_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)),
-	m_backgroundTask(*this)
+	m_minimumTimePerStep((int)(1000.f / (float)Config::stepsPerSecond.get()))
 {
 	// For high DPI systems.
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1"); // smooth scaling
@@ -40,13 +58,13 @@ Window::Window() :
 	ImGui_ImplSDL2_InitForSDLRenderer(m_window, m_sdlRenderer);
 	ImGui_ImplSDLRenderer2_Init(m_sdlRenderer);
 	// Get drawable size in real pixels.
-	int winW, winH;
-	SDL_GetWindowSize(m_window, &winW, &winH);
+	SDL_GetWindowSize(m_window, &m_screenWidth, &m_screenHeight);
 	int drawableW, drawableH;
 	SDL_GetRendererOutputSize(m_sdlRenderer, &drawableW, &drawableH);
-	m_dpiScaleX = (float)drawableW / (float)winW;
-	m_dpiScaleY = (float)drawableH / (float)winH;
+	m_dpiScaleX = (float)drawableW / (float)m_screenWidth;
+	m_dpiScaleY = (float)drawableH / (float)m_screenHeight;
 	updateSimulationList();
+	m_gameOverlay.m_controllsState.initalize();
 }
 void Window::startLoop()
 {
@@ -64,7 +82,7 @@ void Window::startLoop()
 				SDL_Delay(10);
 				continue;
 			}
-			m_backgroundTask.onFrame();
+			m_backgroundTask.update(*this);
 			processEvents();
 			// Delta time.
 			static Uint64 last = SDL_GetPerformanceCounter();
@@ -130,6 +148,7 @@ void Window::render()
 		case PanelId::SelectFactionToEdit:	screens::selectFactionToEdit(*this); break;
 		case PanelId::EditFaction:			screens::editFaction(*this, m_gameOverlay.m_factionToEdit); break;
 		case PanelId::EditActor:			screens::editActor(*this, m_gameOverlay.m_detailActor); break;
+		case PanelId::EditDrama:			screens::editDrama(*this, *m_area); break;
 		default: std::unreachable();
 	}
 	// Render ImGui.
@@ -149,23 +168,50 @@ void Window::processEvents()
 	SDL_Event event;
 	while (SDL_PollEvent(&event))
 	{
+		if(event.type == SDL_QUIT)
+			SDL_Quit();
+		if(m_lockInput)
+			return;
 		ImGui_ImplSDL2_ProcessEvent(&event);
-		m_shiftKey = event.key.keysym.mod & KMOD_SHIFT;
-		m_controllKey = event.key.keysym.mod & KMOD_CTRL;
+		ImGui::SetMouseCursor(m_cursor);
+		// All remaining inputs only apply to game view.
+		if(m_panel != PanelId::GameView)
+			continue;
+		if(
+			(
+				event.type == SDL_MOUSEBUTTONDOWN ||
+				event.type == SDL_MOUSEBUTTONUP ||
+				event.type == SDL_MOUSEMOTION ||
+				event.type == SDL_MOUSEWHEEL
+			) &&
+			ImGui::GetIO().WantCaptureMouse
+		)
+				continue;
+		if(event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
+		{
+			if(ImGui::GetIO().WantCaptureKeyboard)
+				continue;
+			m_shiftKey = event.key.keysym.mod & KMOD_SHIFT;
+			m_controllKey = event.key.keysym.mod & KMOD_CTRL;
+		}
 		switch(event.type)
 		{
 			case SDL_KEYDOWN:
 				switch (event.key.keysym.sym)
 				{
 					case SDLK_ESCAPE:
-						if(m_panel == PanelId::GameView)
+						if(m_gameOverlay.m_infoPopUp != InfoPopUpId::Null)
+							m_gameOverlay.m_infoPopUp = InfoPopUpId::Null;
+						else if(std::ranges::find(overlayPanels, m_panel) != std::end(overlayPanels))
+							m_panel = PanelId::GameView;
+						else
 						{
-							if(m_gameOverlay.m_contextMenuState.current == ContextMenuId::Null)
-								m_gameOverlay.m_gameMenuIsOpen = !m_gameOverlay.m_gameMenuIsOpen;
-							else
-								m_gameOverlay.m_contextMenuState.current = ContextMenuId::Null;
+							// Opening the menu pauses the game.
+							m_paused = true;
+							m_gameOverlay.m_gameMenuIsOpen = !m_gameOverlay.m_gameMenuIsOpen;
 						}
 						break;
+					/*
 					case 'f':
 						m_fullScreen = !m_fullScreen;
 						if (m_fullScreen)
@@ -173,68 +219,65 @@ void Window::processEvents()
 						else
 							SDL_SetWindowFullscreen(m_window, windowFlagsNotFullScreen);
 						break;
+					*/
 					case ' ':
-						if(m_panel == PanelId::GameView)
+						// Don't allow user to unpause while menu is open.
+						if(!m_gameOverlay.m_gameMenuIsOpen)
 							m_paused.toggle();
 						break;
+					case '.':
+						m_simulation->doStep(1);
+						break;
 					case 'z':
-						if(m_panel == PanelId::GameView)
-						{
-							if(m_gameOverlay.m_selectMode == SelectMode::Plants)
-								m_gameOverlay.m_selectMode = SelectMode::Space;
-							else
-								m_gameOverlay.m_selectMode = (SelectMode)((int)m_gameOverlay.m_selectMode + 1);
-							m_gameOverlay.deselectAll();
-						}
+						if(m_gameOverlay.m_selectMode == SelectMode::Plants)
+							m_gameOverlay.m_selectMode = SelectMode::Space;
+						else
+							m_gameOverlay.m_selectMode = (SelectMode)(((int)m_gameOverlay.m_selectMode + 1) % 4);
+						m_gameOverlay.deselectAll();
 						break;
 					case SDLK_INSERT:
-						if(m_panel == PanelId::GameView)
-							zoom(1.f + displayData::zoomIncrement);
+						zoom(1.f + displayData::zoomIncrement);
 						break;
 					case SDLK_DELETE:
-						if(m_panel == PanelId::GameView)
-							zoom(1.f - displayData::zoomIncrement);
+						zoom(1.f - displayData::zoomIncrement);
 						break;
 					case SDLK_UP:
-						if(m_panel == PanelId::GameView)
-							pan(0.f, -displayData::panSpeed / m_pov->zoom);
+						pan(0.f, -displayData::panSpeed / m_pov->zoom);
 						break;
 					case SDLK_DOWN:
-						if(m_panel == PanelId::GameView)
-							pan(0.f, displayData::panSpeed / m_pov->zoom);
+						pan(0.f, displayData::panSpeed / m_pov->zoom);
 						break;
 					case SDLK_LEFT:
-						if(m_panel == PanelId::GameView)
-							pan(-displayData::panSpeed / m_pov->zoom, 0);
+						pan(-displayData::panSpeed / m_pov->zoom, 0);
 						break;
 					case SDLK_RIGHT:
-						if(m_panel == PanelId::GameView)
-							pan(displayData::panSpeed / m_pov->zoom, 0);
+						pan(displayData::panSpeed / m_pov->zoom, 0);
 						break;
 					case SDLK_PAGEUP:
-						if(m_panel == PanelId::GameView)
-							if(m_pov->z != m_area->getSpace().m_sizeZ - 1)
-								++m_pov->z;
+						if(m_pov->z != m_area->getSpace().m_sizeZ - 1)
+							++m_pov->z;
 						break;
 					case SDLK_PAGEDOWN:
-						if(m_panel == PanelId::GameView)
-							if(m_pov->z != 0)
-								--m_pov->z;
+						if(m_pov->z != 0)
+							--m_pov->z;
 						break;
+
 				}
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				if(m_panel == PanelId::GameView)
+				// Right button is handled by ImGui, maybe left should be as well.
+				if(event.button.button == SDL_BUTTON_LEFT)
 				{
 					m_gameOverlay.m_mouseIsDown = true;
-					m_gameOverlay.m_mouseDragStart = m_mousePosition;
+					m_gameOverlay.m_mouseDragStartCoordinates = m_mousePosition;
+					m_gameOverlay.m_mouseDragStartPoint = getBlockAtScreenPosition(m_mousePosition);
 				}
 				break;
 			case SDL_MOUSEBUTTONUP:
-				if(m_panel == PanelId::GameView)
+				if(event.button.button == SDL_BUTTON_LEFT)
 				{
 					m_gameOverlay.m_mouseIsDown = false;
-					Cuboid cuboid = Cuboid::create(getBlockAtScreenPosition(m_mousePosition), getBlockAtScreenPosition(m_gameOverlay.m_mouseDragStart));
+					Cuboid cuboid = Cuboid::create(getBlockAtScreenPosition(m_mousePosition), m_gameOverlay.m_mouseDragStartPoint);
 					m_gameOverlay.updateSelect(*this, cuboid);
 				}
 				break;
@@ -339,11 +382,9 @@ void Window::load(const std::filesystem::path& path)
 		if(result->area.exists())
 		{
 			setArea(m_simulation->m_hasAreas->getById(result->area));
+			if(!m_lastViewedSpotInArea.contains(result->area))
+				m_lastViewedSpotInArea.insert(result->area, std::make_unique<POV>(makeDefaultPOV()));
 			m_pov = &m_lastViewedSpotInArea[result->area];
-		}
-		if(m_pov == nullptr && m_area != nullptr)
-		{
-			m_pov = &(m_lastViewedSpotInArea[m_area->m_id] = makeDefaultPOV());
 		}
 		if(m_editMode)
 			showEdit();
@@ -353,10 +394,13 @@ void Window::load(const std::filesystem::path& path)
 			showGame();
 		}
 	};
-	m_backgroundTask.create(std::move(task), std::move(callback));
+	m_backgroundTask.start(*this, task, callback);
 }
-void Window::save()
+void Window::save(std::function<void()>&& continuation)
 {
+	std::cout << "begin save" << std::endl;
+	// No need to lock mutex here, as long as the game is paused this is safe.
+	assert(m_paused == true);
 	assert(m_simulation != nullptr);
 	std::function<void()> task = [this]{
 		m_simulation->save();
@@ -367,9 +411,10 @@ void Window::save()
 				viewData["faction"] = m_faction;
 			std::ofstream file(m_simulation->getPath()/"view.json" );
 			file << viewData;
+			file.flush();
 		}
 	};
-	m_backgroundTask.create(std::move(task));
+	m_backgroundTask.start(*this, std::move(task), std::move(continuation));
 }
 void Window::setArea(Area& area)
 {
@@ -391,10 +436,6 @@ POV Window::makeDefaultPOV() const
 		surfaceCenter.z(),
 		1.f
 	};
-}
-void Window::color(const SDL_Color color)
-{
-	SDL_SetRenderDrawColor(m_sdlRenderer, color.r, color.g, color.b, color.a);
 }
 void Window::zoom(float zoom)
 {
@@ -430,9 +471,13 @@ void Window::clampPOV()
 }
 SDL_FPoint Window::screenToWorld(float sx, float sy) const
 {
+	assert(m_area != nullptr);
+	Space& space = m_area->getSpace();
 	SDL_FPoint p;
 	p.x = (sx / m_pov->zoom) + m_pov->x;
 	p.y = (sy / m_pov->zoom) + m_pov->y;
+	p.x = std::clamp(p.x, 0.f, (float)(space.m_sizeX.get() - 1)* displayData::defaultScale);
+	p.y = std::clamp(p.y, 0.f, (float)(space.m_sizeY.get() - 1) * displayData::defaultScale);
 	return p;
 }
 SDL_FPoint Window::worldToScreen(float wx, float wy) const
@@ -450,10 +495,10 @@ Point3D Window::getBlockUnderCursor() const
 }
 Point3D Window::getBlockAtScreenPosition(const int x, const int y) const
 {
-	SDL_FPoint mousePositionWorld = screenToWorld(x, y);
+	SDL_FPoint worldPosition = screenToWorld(x, y);
 	return {
-		Distance::create(mousePositionWorld.x / displayData::defaultScale),
-		Distance::create(mousePositionWorld.y / displayData::defaultScale),
+		Distance::create(worldPosition.x / displayData::defaultScale),
+		invertY(Distance::create(worldPosition.y / displayData::defaultScale)),
 		m_pov->z
 	};
 }
@@ -465,4 +510,9 @@ Distance Window::invertY(const Distance distance) const
 {
 	assert(m_area != nullptr);
 	return (m_area->getSpace().m_sizeY - 1) - distance;
+}
+std::chrono::milliseconds Window::msSinceEpoch()
+{
+	auto duration = std::chrono::system_clock::now().time_since_epoch();
+	return std::chrono::duration_cast<std::chrono::milliseconds>(duration);
 }

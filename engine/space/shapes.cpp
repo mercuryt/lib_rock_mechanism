@@ -4,7 +4,7 @@
 #include "../definitions/moveType.h"
 #include "../area/area.h"
 #include "../numericTypes/types.h"
-bool Space::shape_canFitEverOrCurrentlyDynamic(const Point3D& location, const ShapeId& shape, const Facing4& facing, const CuboidSet& occupied) const
+bool Space::shape_canFitEverOrCurrentlyDynamic(const Point3D location, const ShapeId shape, const Facing4 facing, const CuboidSet& occupied) const
 {
 	const Cuboid spaceBoundry = boundry();
 	const OffsetCuboid toOccupyBoundry = Shape::getOffsetCuboidBoundryWithFacing(shape, facing).relativeToPoint(location);
@@ -23,13 +23,13 @@ bool Space::shape_canFitEverOrCurrentlyDynamic(const Point3D& location, const Sh
 		return false;
 	for(const auto& [cuboid, volume] : toOccupyWithVolume)
 	{
-		const auto volumeCondition = [&](const CollisionVolume& v){ return volume + v > Config::maxPointVolume; };
+		const auto volumeCondition = [&](const CollisionVolume v){ return volume + v > Config::maxPointVolume; };
 		if(m_dynamicVolume.queryAnyWithCondition(cuboid, volumeCondition))
 			return false;
 	}
 	return true;
 }
-bool Space::shape_canFitEverOrCurrentlyStatic(const Point3D& location, const ShapeId& shape, const Facing4& facing, const CuboidSet& occupied) const
+bool Space::shape_canFitEverOrCurrentlyStatic(const Point3D location, const ShapeId shape, const Facing4 facing, const CuboidSet& occupied) const
 {
 	const Cuboid spaceBoundry = boundry();
 	MapWithCuboidKeys<CollisionVolume> toOccupyWithVolume = Shape::getCuboidsOccupiedAtWithVolume(shape, *this, location, facing);
@@ -47,13 +47,13 @@ bool Space::shape_canFitEverOrCurrentlyStatic(const Point3D& location, const Sha
 		return false;
 	for(const auto& [cuboid, volume] : toOccupyWithVolume)
 	{
-		const auto volumeCondition = [&](const CollisionVolume& v){ return volume + v > Config::maxPointVolume; };
+		const auto volumeCondition = [&](const CollisionVolume v){ return volume + v > Config::maxPointVolume; };
 		if(m_staticVolume.queryAnyWithCondition(cuboid, volumeCondition))
 			return false;
 	}
 	return true;
 }
-bool Space::shape_canFitEver(const Point3D& location, const ShapeId& shape, const Facing4& facing) const
+bool Space::shape_canFitEver(const Point3D location, const ShapeId shape, const Facing4 facing) const
 {
 	// TODO: optimize for single point shape.
 	assert(shape_anythingCanEnterEver(location));
@@ -94,33 +94,33 @@ bool Space::shape_canFitEver(const Point3D& location, const ShapeId& shape, cons
 		return false;
 	return true;
 }
-bool Space::shape_canFitCurrentlyStatic(const Point3D& location, const ShapeId& shape, const Facing4& facing, const CuboidSet& occupied) const
+bool Space::shape_canFitCurrentlyStatic(const Point3D location, const ShapeId shape, const Facing4 facing, const CuboidSet& occupied) const
 {
 	assert(shape_canFitEver(location, shape, facing));
 	MapWithCuboidKeys<CollisionVolume> toOccupy = Shape::getCuboidsOccupiedAtWithVolume(shape, *this, location, facing);
 	toOccupy.maybeRemoveAll(occupied);
 	for(const auto& [cuboid, volume] : toOccupy)
 	{
-		const auto condition = [&](const CollisionVolume& v){ return volume + v > Config::maxPointVolume; };
+		const auto condition = [&](const CollisionVolume v){ return volume + v > Config::maxPointVolume; };
 		if(m_staticVolume.queryAnyWithCondition(cuboid, condition))
 			return false;
 	}
 	return true;
 }
-bool Space::shape_canFitCurrentlyDynamic(const Point3D& location, const ShapeId& shape, const Facing4& facing, const CuboidSet& occupied) const
+bool Space::shape_canFitCurrentlyDynamic(const Point3D location, const ShapeId shape, const Facing4 facing, const CuboidSet& occupied) const
 {
 	assert(shape_canFitEver(location, shape, facing));
 	MapWithCuboidKeys<CollisionVolume> toOccupy = Shape::getCuboidsOccupiedAtWithVolume(shape, *this, location, facing);
 	toOccupy.maybeRemoveAll(occupied);
 	for(const auto& [cuboid, volume] : toOccupy)
 	{
-		const auto condition = [&](const CollisionVolume& v){ return volume + v > Config::maxPointVolume; };
+		const auto condition = [&](const CollisionVolume v){ return volume + v > Config::maxPointVolume; };
 		if(m_dynamicVolume.queryAnyWithCondition(cuboid, condition))
 			return false;
 	}
 	return true;
 }
-bool Space::shape_shapeAndMoveTypeCanEnterEverFrom(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType, const Point3D& from) const
+bool Space::shape_shapeAndMoveTypeCanEnterEverFrom(const Point3D point, const ShapeId shape, const MoveTypeId moveType, const Point3D from) const
 {
 	assert(shape_anythingCanEnterEver(from));
 	if(!shape_moveTypeCanEnterFrom(point, moveType, from))
@@ -128,14 +128,14 @@ bool Space::shape_shapeAndMoveTypeCanEnterEverFrom(const Point3D& point, const S
 	const Facing4 facing = from.getFacingTwords(point);
 	return shape_shapeAndMoveTypeCanEnterEverWithFacing(point, shape, moveType, facing);
 }
-bool Space::shape_shapeAndMoveTypeCanEnterEverAndCurrentlyFrom(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType, const Point3D& from, const CuboidSet& occupied) const
+bool Space::shape_shapeAndMoveTypeCanEnterEverAndCurrentlyFrom(const Point3D point, const ShapeId shape, const MoveTypeId moveType, const Point3D from, const CuboidSet& occupied) const
 {
 	assert(shape_anythingCanEnterEver(from));
 	if(!shape_shapeAndMoveTypeCanEnterEverFrom(point, shape, moveType, from))
 		return false;
 	return shape_canEnterCurrentlyFrom(point, shape, from, occupied);
 }
-bool Space::shape_shapeAndMoveTypeCanEnterEverWithFacing(const Point3D& location, const ShapeId& shape, const MoveTypeId& moveType, const Facing4& facing) const
+bool Space::shape_shapeAndMoveTypeCanEnterEverWithFacing(const Point3D location, const ShapeId shape, const MoveTypeId moveType, const Facing4 facing) const
 {
 	return (
 		shape_anythingCanEnterEver(location) &&
@@ -143,7 +143,7 @@ bool Space::shape_shapeAndMoveTypeCanEnterEverWithFacing(const Point3D& location
 		shape_canFitEver(location, shape, facing)
 	);
 }
-bool Space::shape_canEnterCurrentlyWithFacing(const Point3D& location, const ShapeId& shape, const Facing4& facing, const CuboidSet& occupied) const
+bool Space::shape_canEnterCurrentlyWithFacing(const Point3D location, const ShapeId shape, const Facing4 facing, const CuboidSet& occupied) const
 {
 	assert(shape_canFitEver(location, shape, facing));
 	MapWithCuboidKeys<CollisionVolume> toOccupy = Shape::getCuboidsOccupiedAtWithVolume(shape, *this, location, facing);
@@ -152,13 +152,13 @@ bool Space::shape_canEnterCurrentlyWithFacing(const Point3D& location, const Sha
 	{
 		if(!shape_anythingCanEnterCurrently(cuboid))
 			return false;
-		const auto condition = [&](const CollisionVolume& v){ return volume + v > Config::maxPointVolume; };
+		const auto condition = [&](const CollisionVolume v){ return volume + v > Config::maxPointVolume; };
 		if(m_dynamicVolume.queryAnyWithCondition(cuboid, condition))
 			return false;
 	}
 	return true;
 }
-bool Space::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const Point3D& location, const ShapeId& shape, const MoveTypeId& moveType, const Facing4& facing, const CuboidSet& occupied) const
+bool Space::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const Point3D location, const ShapeId shape, const MoveTypeId moveType, const Facing4 facing, const CuboidSet& occupied) const
 {
 	assert(shape_anythingCanEnterEver(location));
 	if(!shape_moveTypeCanEnter(location, moveType))
@@ -176,7 +176,7 @@ bool Space::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const Point3
 	{
 		if(!shape_anythingCanEnterEver(cuboid) || !shape_anythingCanEnterCurrently(cuboid))
 			return false;
-		const auto volumeCondition = [&](const CollisionVolume& v){ return volume + v > Config::maxPointVolume; };
+		const auto volumeCondition = [&](const CollisionVolume v){ return volume + v > Config::maxPointVolume; };
 		if(m_dynamicVolume.queryAnyWithCondition(cuboid, volumeCondition))
 			return false;
 		if(!isFlat && cuboid.intersects(toOccupyBoundryWithoutLowestLevel))
@@ -189,7 +189,7 @@ bool Space::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(const Point3
 	}
 	return true;
 }
-bool Space::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType, const CuboidSet& occupied) const
+bool Space::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(const Point3D point, const ShapeId shape, const MoveTypeId moveType, const CuboidSet& occupied) const
 {
 	if(Shape::getIsRadiallySymetrical(shape))
 		return shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithFacing(point, shape, moveType, Facing4::North, occupied);
@@ -198,7 +198,7 @@ bool Space::shape_shapeAndMoveTypeCanEnterEverOrCurrentlyWithAnyFacing(const Poi
 			return true;
 	return false;
 }
-bool Space::shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType) const
+bool Space::shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(const Point3D point, const ShapeId shape, const MoveTypeId moveType) const
 {
 	if(Shape::getIsRadiallySymetrical(shape))
 		return shape_shapeAndMoveTypeCanEnterEverWithFacing(point, shape, moveType, Facing4::North);
@@ -207,7 +207,7 @@ bool Space::shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(const Point3D& point
 			return true;
 	return false;
 }
-Facing4 Space::shape_canEnterEverWithAnyFacingReturnFacing(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType) const
+Facing4 Space::shape_canEnterEverWithAnyFacingReturnFacing(const Point3D point, const ShapeId shape, const MoveTypeId moveType) const
 {
 	if(shape_moveTypeCanEnter(point, moveType))
 		for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int)facing + 1))
@@ -215,7 +215,7 @@ Facing4 Space::shape_canEnterEverWithAnyFacingReturnFacing(const Point3D& point,
 				return facing;
 	return Facing4::Null;
 }
-Facing4 Space::shape_canEnterEverOrCurrentlyWithAnyFacingReturnFacing(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType, const CuboidSet& occupied) const
+Facing4 Space::shape_canEnterEverOrCurrentlyWithAnyFacingReturnFacing(const Point3D point, const ShapeId shape, const MoveTypeId moveType, const CuboidSet& occupied) const
 {
 	if(shape_moveTypeCanEnter(point, moveType))
 		for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int)facing + 1))
@@ -223,7 +223,7 @@ Facing4 Space::shape_canEnterEverOrCurrentlyWithAnyFacingReturnFacing(const Poin
 				return facing;
 	return Facing4::Null;
 }
-Facing4 Space::shape_canEnterEverOrCurrentlyWithAnyFacingReturnFacingStatic(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType, const CuboidSet& occupied) const
+Facing4 Space::shape_canEnterEverOrCurrentlyWithAnyFacingReturnFacingStatic(const Point3D point, const ShapeId shape, const MoveTypeId moveType, const CuboidSet& occupied) const
 {
 	if(shape_moveTypeCanEnter(point, moveType))
 		for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int)facing + 1))
@@ -231,7 +231,7 @@ Facing4 Space::shape_canEnterEverOrCurrentlyWithAnyFacingReturnFacingStatic(cons
 				return facing;
 	return Facing4::Null;
 }
-bool Space::shape_moveTypeCanEnterFrom(const Point3D& point, const MoveTypeId& moveType, const Point3D& from) const
+bool Space::shape_moveTypeCanEnterFrom(const Point3D point, const MoveTypeId moveType, const Point3D from) const
 {
 	assert(point.isAdjacentTo(from));
 	assert(shape_anythingCanEnterEver(point));
@@ -270,7 +270,7 @@ bool Space::shape_moveTypeCanEnterFrom(const Point3D& point, const MoveTypeId& m
 			if(pointFeature_contains(from, PointFeatureTypeId::Ramp))
 				return true;
 		}
-		const Cuboid& cuboid = from.getAllAdjacentIncludingOutOfBounds();
+		const Cuboid cuboid = from.getAllAdjacentIncludingOutOfBounds();
 		if(m_solid.queryAny(cuboid))
 		{
 			// Any point which is adjacent to a solid point is climable for a climbLevel 2.
@@ -307,7 +307,7 @@ bool Space::shape_moveTypeCanEnterFrom(const Point3D& point, const MoveTypeId& m
 			if(pointFeature_contains(point, PointFeatureTypeId::Ramp))
 				return true;
 		}
-		const Cuboid& cuboid = point.getAllAdjacentIncludingOutOfBounds();
+		const Cuboid cuboid = point.getAllAdjacentIncludingOutOfBounds();
 		if(m_solid.queryAny(cuboid))
 		{
 			// Any point which is adjacent to a solid point is climable for a climbLevel 2.
@@ -324,7 +324,7 @@ bool Space::shape_moveTypeCanEnterFrom(const Point3D& point, const MoveTypeId& m
 	}
 	return false;
 }
-bool Space::shape_moveTypeCanEnter(const Point3D& point, const MoveTypeId& moveType) const
+bool Space::shape_moveTypeCanEnter(const Point3D point, const MoveTypeId moveType) const
 {
 	assert(shape_anythingCanEnterEver(point));
 	const auto& fluidDataSet = m_fluid.queryGetAll(point);
@@ -379,7 +379,7 @@ bool Space::shape_moveTypeCanEnter(const Point3D& point, const MoveTypeId& moveT
 	}
 	return false;
 }
-bool Space::shape_moveTypeCanBreath(const Point3D& point, const MoveTypeId& moveType) const
+bool Space::shape_moveTypeCanBreath(const Point3D point, const MoveTypeId moveType) const
 {
 	if(m_totalFluidVolume.queryGetOneOr(point, {0}) < Config::maxPointVolume && !MoveType::getOnlyBreathsFluids(moveType))
 		return true;
@@ -389,7 +389,7 @@ bool Space::shape_moveTypeCanBreath(const Point3D& point, const MoveTypeId& move
 			return true;
 	return false;
 }
-MoveCost Space::shape_moveCostFrom(const Point3D& point, const MoveTypeId& moveType, const Point3D& from) const
+MoveCost Space::shape_moveCostFrom(const Point3D point, const MoveTypeId moveType, const Point3D from) const
 {
 	assert(shape_anythingCanEnterEver(point));
 	assert(shape_anythingCanEnterEver(from));
@@ -403,12 +403,12 @@ MoveCost Space::shape_moveCostFrom(const Point3D& point, const MoveTypeId& moveT
 		return Config::goUpMoveCost;
 	return Config::baseMoveCost;
 }
-bool Space::shape_canEnterCurrentlyFrom(const Point3D& point, const ShapeId& shape, const Point3D& other, const CuboidSet& occupied) const
+bool Space::shape_canEnterCurrentlyFrom(const Point3D point, const ShapeId shape, const Point3D other, const CuboidSet& occupied) const
 {
 	const Facing4 facing = other.getFacingTwords(point);
 	return shape_canEnterCurrentlyWithFacing(point, shape, facing, occupied);
 }
-bool Space::shape_canEnterCurrentlyWithAnyFacing(const Point3D& point, const ShapeId& shape, const CuboidSet& occupied) const
+bool Space::shape_canEnterCurrentlyWithAnyFacing(const Point3D point, const ShapeId shape, const CuboidSet& occupied) const
 {
 	if(Shape::getIsRadiallySymetrical(shape))
 		return shape_canEnterCurrentlyWithFacing(point, shape, Facing4::North, occupied);
@@ -417,36 +417,36 @@ bool Space::shape_canEnterCurrentlyWithAnyFacing(const Point3D& point, const Sha
 			return true;
 	return false;
 }
-Facing4 Space::shape_canEnterCurrentlyWithAnyFacingReturnFacing(const Point3D& point, const ShapeId& shape, const CuboidSet& occupied) const
+Facing4 Space::shape_canEnterCurrentlyWithAnyFacingReturnFacing(const Point3D point, const ShapeId shape, const CuboidSet& occupied) const
 {
 	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int)facing + 1))
 		if(shape_canEnterCurrentlyWithFacing(point, shape, facing, occupied))
 			return facing;
 	return Facing4::Null;
 }
-bool Space::shape_staticCanEnterCurrentlyWithFacing(const Point3D& point, const ShapeId& shape, const Facing4& facing, const CuboidSet& occupied) const
+bool Space::shape_staticCanEnterCurrentlyWithFacing(const Point3D point, const ShapeId shape, const Facing4 facing, const CuboidSet& occupied) const
 {
 	return shape_staticShapeCanEnterWithFacing(point, shape, facing, occupied);
 }
-bool Space::shape_staticCanEnterCurrentlyWithAnyFacing(const Point3D& point, const ShapeId& shape, const CuboidSet& occupied) const
+bool Space::shape_staticCanEnterCurrentlyWithAnyFacing(const Point3D point, const ShapeId shape, const CuboidSet& occupied) const
 {
 	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int)facing + 1))
 		if(shape_staticCanEnterCurrentlyWithFacing(point, shape, facing, occupied))
 			return true;
 	return false;
 }
-std::pair<bool, Facing4> Space::shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(const Point3D& point, const ShapeId& shape, const CuboidSet& occupied) const
+std::pair<bool, Facing4> Space::shape_staticCanEnterCurrentlyWithAnyFacingReturnFacing(const Point3D point, const ShapeId shape, const CuboidSet& occupied) const
 {
 	for(Facing4 facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int)facing + 1))
 		if(shape_staticCanEnterCurrentlyWithFacing(point, shape, facing, occupied))
 			return {true, facing};
 	return {false, Facing4::North};
 }
-bool Space::shape_staticShapeCanEnterWithFacing(const Point3D& location, const ShapeId& shape, const Facing4& facing, const CuboidSet& occupied) const
+bool Space::shape_staticShapeCanEnterWithFacing(const Point3D location, const ShapeId shape, const Facing4 facing, const CuboidSet& occupied) const
 {
 	return shape_canFitCurrentlyStatic(location, shape, facing, occupied);
 }
-bool Space::shape_staticShapeCanEnterWithAnyFacing(const Point3D& point, const ShapeId& shape, const CuboidSet& occupied) const
+bool Space::shape_staticShapeCanEnterWithAnyFacing(const Point3D point, const ShapeId shape, const CuboidSet& occupied) const
 {
 	if(Shape::getIsRadiallySymetrical(shape))
 		return shape_staticShapeCanEnterWithFacing(point, shape, Facing4::North, occupied);
@@ -455,24 +455,24 @@ bool Space::shape_staticShapeCanEnterWithAnyFacing(const Point3D& point, const S
 			return true;
 	return false;
 }
-CollisionVolume Space::shape_getDynamicVolume(const Point3D& point) const
+CollisionVolume Space::shape_getDynamicVolume(const Point3D point) const
 {
 	return m_dynamicVolume.queryGetOneOr(point, CollisionVolume::create(0));
 }
-CollisionVolume Space::shape_getStaticVolume(const Point3D& point) const
+CollisionVolume Space::shape_getStaticVolume(const Point3D point) const
 {
 	return m_staticVolume.queryGetOneOr(point, CollisionVolume::create(0));
 }
-Quantity Space::shape_getQuantityOfItemWhichCouldFit(const Point3D& point, const ItemTypeId& itemType) const
+Quantity Space::shape_getQuantityOfItemWhichCouldFit(const Point3D point, const ItemTypeId itemType) const
 {
 	CollisionVolume freeVolume = Config::maxPointVolume - m_staticVolume.queryGetOneOr(point, CollisionVolume::create(0));
 	return Quantity::create((freeVolume / Shape::getCollisionVolumeAtLocation(ItemType::getShape(itemType))).get());
 }
-CuboidSet Space::shape_getBelowPointsWithFacing(const Point3D& point, const ShapeId& shape, const Facing4& facing) const
+CuboidSet Space::shape_getBelowPointsWithFacing(const Point3D point, const ShapeId shape, const Facing4 facing) const
 {
 	CuboidSet toOccupy = Shape::getCuboidsOccupiedAt(shape, *this, point, facing);
 	CuboidSet output;
-	for(const Cuboid& cuboid : toOccupy)
+	for(const Cuboid cuboid : toOccupy)
 	{
 		if(cuboid.m_low.z() == 0)
 			continue;
@@ -482,7 +482,7 @@ CuboidSet Space::shape_getBelowPointsWithFacing(const Point3D& point, const Shap
 	}
 	return output;
 }
-std::pair<Point3D, Facing4> Space::shape_getNearestEnterableEverPointWithFacing(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType)
+std::pair<Point3D, Facing4> Space::shape_getNearestEnterableEverPointWithFacing(const Point3D point, const ShapeId shape, const MoveTypeId moveType)
 {
 	std::deque<Point3D> openList;
 	SmallSet<Point3D> closedList;
@@ -516,21 +516,21 @@ std::pair<Point3D, Facing4> Space::shape_getNearestEnterableEverPointWithFacing(
 	}
 	return {Point3D::null(), Facing4::Null};
 }
-bool Space::shape_cuboidCanFitCurrentlyStatic(const Cuboid& cuboid, const CollisionVolume& volume) const
+bool Space::shape_cuboidCanFitCurrentlyStatic(const Cuboid cuboid, const CollisionVolume volume) const
 {
 	if(volume == Config::maxPointVolume)
 		return !m_staticVolume.queryAny(cuboid);
-	const auto condition = [&](const CollisionVolume& v) { return v + volume <= Config::maxPointVolume; };
+	const auto condition = [&](const CollisionVolume v) { return v + volume <= Config::maxPointVolume; };
 	return m_staticVolume.queryAnyWithCondition(cuboid, condition);
 }
-bool Space::shape_cuboidCanFitCurrentlyDynamic(const Cuboid& cuboid, const CollisionVolume& volume) const
+bool Space::shape_cuboidCanFitCurrentlyDynamic(const Cuboid cuboid, const CollisionVolume volume) const
 {
 	if(volume == Config::maxPointVolume)
 		return m_dynamicVolume.queryAny(cuboid);
-	const auto condition = [&](const CollisionVolume& v) { return v + volume <= Config::maxPointVolume; };
+	const auto condition = [&](const CollisionVolume v) { return v + volume <= Config::maxPointVolume; };
 	return m_dynamicVolume.queryAnyWithCondition(cuboid, condition);
 }
-bool Space::shape_canStandIn(const Point3D& point) const
+bool Space::shape_canStandIn(const Point3D point) const
 {
 	if(point.z() == 0)
 		return false;

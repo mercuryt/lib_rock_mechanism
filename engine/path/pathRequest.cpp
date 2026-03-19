@@ -48,7 +48,7 @@ Json PathRequest::toJson() const
 		{"reserveDestination", reserveDestination},
 	};
 }
-PathRequest& PathRequest::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const MoveTypeId& moveType)
+PathRequest& PathRequest::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const MoveTypeId moveType)
 {
 	std::string type = data["type"].get<std::string>();
 	if(type == "goTo")
@@ -92,13 +92,13 @@ PathRequest& PathRequest::load(const Json& data, DeserializationMemo& deserializ
 	assert(type == "uniform");
 	return record(area, moveType, std::make_unique<UniformPathRequest>(data, area, deserializationMemo));
 }
-PathRequest& PathRequest::record(Area &area, const MoveTypeId& moveType, std::unique_ptr<PathRequestBreadthFirst> pathRequest)
+PathRequest& PathRequest::record(Area &area, const MoveTypeId moveType, std::unique_ptr<PathRequestBreadthFirst> pathRequest)
 {
 	PathRequest& output = *pathRequest;
 	area.m_hasTerrainFacades.getForMoveType(moveType).registerPathRequestNoHuristic(std::move(pathRequest));
 	return output;
 }
-PathRequest& PathRequest::record(Area &area, const MoveTypeId& moveType, std::unique_ptr<PathRequestDepthFirst> pathRequest)
+PathRequest& PathRequest::record(Area &area, const MoveTypeId moveType, std::unique_ptr<PathRequestDepthFirst> pathRequest)
 {
 	PathRequest& output = *pathRequest;
 	area.m_hasTerrainFacades.getForMoveType(moveType).registerPathRequestWithHuristic(std::move(pathRequest));
@@ -203,7 +203,7 @@ GoToFluidTypePathRequest::GoToFluidTypePathRequest(const Json& data, Area& area)
 FindPathResult GoToFluidTypePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Space& space = area.getSpace();
-	auto destinationCondition = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
+	auto destinationCondition = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
 	{
 		const Point3D point = space.fluid_containsPoint(cuboid, fluidType);
 		return {point.exists(), point};
@@ -231,7 +231,7 @@ FindPathResult GoToSpaceDesignationPathRequest::readStep(Area& area, const Terra
 	constexpr bool anyOccupiedPoint = false;
 	if(adjacent)
 	{
-		auto destinationCondition = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
+		auto destinationCondition = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
 		{
 			Point3D point = space.designation_hasPoint(cuboid, faction, designation);
 			return {point.exists(), point};
@@ -240,7 +240,7 @@ FindPathResult GoToSpaceDesignationPathRequest::readStep(Area& area, const Terra
 	}
 	else
 	{
-		auto destinationCondition = [&](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
+		auto destinationCondition = [&](const Point3D point, const Facing4) -> std::pair<bool, Point3D>
 		{
 			return {space.designation_has(point, faction, designation), point};
 		};
@@ -265,7 +265,7 @@ GoToSpaceDesignationPathRequest::GoToSpaceDesignationPathRequest(const Json& dat
 FindPathResult GoToEdgePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Space& space = area.getSpace();
-	auto destinationCondition = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
+	auto destinationCondition = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
 	{
 		return {space.isEdge(cuboid), cuboid.m_high};
 	};

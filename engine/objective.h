@@ -37,8 +37,8 @@ public:
 	static const ObjectiveType& getById(const ObjectiveTypeId& id);
 	static const ObjectiveType& getByName(std::string name);
 	ObjectiveTypeId getId() const;
-	[[nodiscard]] virtual bool canBeAssigned(Area& area, const ActorIndex& actor) const = 0;
-	[[nodiscard]] virtual std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const = 0;
+	[[nodiscard]] virtual bool canBeAssigned(Area& area, const ActorIndex actor) const = 0;
+	[[nodiscard]] virtual std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex actor) const = 0;
 	[[nodiscard]] virtual std::string name() const = 0;
 	ObjectiveType(const ObjectiveTypeId&) = delete;
 	ObjectiveType(ObjectiveType&&) = delete;
@@ -53,27 +53,27 @@ public:
 	// If detour is true then pathing will account for the positions of other actors.
 	bool m_detour = false;
 	// Reentrant state machine method.
-	virtual void execute(Area& area, const ActorIndex& actor) = 0;
+	virtual void execute(Area& area, const ActorIndex actor) = 0;
 	// Clean up references.
 	// Called when the player replaces the current objective queue with a new task.
 	// Objective will be destroyed after this call.
-	virtual void cancel(Area& area, const ActorIndex& actor) = 0;
+	virtual void cancel(Area& area, const ActorIndex actor) = 0;
 	// Clean up threaded tasks and events.
 	// Called when an objective usurps the current objective.
-	virtual void delay(Area& area, const ActorIndex& actor) = 0;
-	// Return to inital state and try again.
+	virtual void delay(Area& area, const ActorIndex actor) = 0;
+	// Return to initial state and try again.
 	// Called on cannotCompleteSubobjective
-	virtual void reset(Area& area, const ActorIndex& actor) = 0;
+	virtual void reset(Area& area, const ActorIndex actor) = 0;
 	// To be used by objectives with projects which cannot be auto destroyed.
 	// Records projects which have failed to reserve requirements so as not to retry them with this objective instance.
 	// Will be 'flushed' when this instance is destroyed and then another objective of this type is created later, after objectivePrioritySet delay ends.
-	virtual void onProjectCannotReserve(Area&, const ActorIndex&) { }
-	virtual void onBeforeUnload(Area&, const ActorIndex&) { }
+	virtual void onProjectCannotReserve(Area&, const ActorIndex) { }
+	virtual void onBeforeUnload(Area&, const ActorIndex) { }
 	// An other actor -not the one this belongs to- which is being puppeted by this has found something to do with higer priority.
-	virtual void actorGoesOffScript(Area&, [[maybe_unused]] const ActorIndex& owningActor, [[maybe_unused]] const ActorIndex& offScriptActor) { std::unreachable(); }
+	virtual void actorGoesOffScript(Area&, [[maybe_unused]] const ActorIndex owningActor, [[maybe_unused]] const ActorIndex offScriptActor) { std::unreachable(); }
 	// Returns true if the problem is resolved or false otherwise.
 	// If false is returned canNotCompleteObjective is called.
-	[[nodiscard]] virtual bool onCanNotPath(Area&, const ActorIndex&) { return false; }
+	[[nodiscard]] virtual bool onCanNotPath(Area&, const ActorIndex) { return false; }
 	[[nodiscard]] virtual bool canBeAddedToPrioritySet() { return false; }
 	[[nodiscard]] virtual std::string name() const = 0;
 	[[nodiscard]] virtual ObjectiveTypeId getTypeId() const { return ObjectiveTypeId::null(); }
@@ -83,14 +83,14 @@ public:
 	// Should be true only for objectives like Wander or Wait which are not meant to resume after interrupt because they are idle tasks.
 	[[nodiscard]] virtual bool canResume() const { return true; }
 	[[nodiscard]] virtual NeedType getNeedType() const { std::unreachable(); return NeedType::none; }
-	Objective(const Priority& priority);
+	Objective(const Priority priority);
 	// Explicit delete of copy and move constructors to ensure pointer stability.
 	Objective(const Objective&) = delete;
 	Objective(Objective&&) = delete;
 	Objective(const Json& data, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] virtual Json toJson() const;
 	bool operator==(const Objective& other) const { return &other == this; }
-	void detour(Area& area, const ActorIndex& actor) { m_detour = true; execute(area, actor); }
+	void detour(Area& area, const ActorIndex actor) { m_detour = true; execute(area, actor); }
 	virtual ~Objective() = default;
 };
 inline void to_json(Json& data, const Objective* const& objective){ data = reinterpret_cast<uintptr_t>(objective); }
@@ -108,9 +108,9 @@ class ObjectiveTypePrioritySet final
 	const ObjectivePriority& getById(const ObjectiveTypeId& objectiveTypeId) const;
 public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	void setPriority(Area& area, const ActorIndex& actor, const ObjectiveTypeId& objectiveType, const Priority& priority);
+	void setPriority(Area& area, const ActorIndex actor, const ObjectiveTypeId& objectiveType, const Priority priority);
 	void remove(const ObjectiveTypeId& objectiveType);
-	void setObjectiveFor(Area& area, const ActorIndex& actor);
+	void setObjectiveFor(Area& area, const ActorIndex actor);
 	void setDelay(Area& area, const ObjectiveTypeId& objectiveTypeId);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Priority getPriorityFor(const ObjectiveTypeId& objectiveTypeId) const;
@@ -124,8 +124,8 @@ class SupressedNeed final
 	HasScheduledEvent<SupressedNeedEvent> m_event;
 	ActorReference m_actor;
 public:
-	SupressedNeed(Area& area, std::unique_ptr<Objective> o, const ActorReference& ref);
-	SupressedNeed(Area& area, const Json& data, DeserializationMemo& deserializationMemo, const ActorReference& ref);
+	SupressedNeed(Area& area, std::unique_ptr<Objective> o, const ActorReference ref);
+	SupressedNeed(Area& area, const Json& data, DeserializationMemo& deserializationMemo, const ActorReference ref);
 	void callback(Area& area);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Step getDelayRemaining() const { return m_event.remainingSteps(); }
@@ -145,9 +145,9 @@ class CannotCompleteObjectiveDishonorCallback final : public DishonorCallback
 	Area& m_area;
 	ActorReference m_actor;
 public:
-	CannotCompleteObjectiveDishonorCallback(Area& area, const ActorReference& a) : m_area(area), m_actor(a) { }
+	CannotCompleteObjectiveDishonorCallback(Area& area, const ActorReference a) : m_area(area), m_actor(a) { }
 	CannotCompleteObjectiveDishonorCallback(Area& area, const Json& data);
-	void execute(const Quantity& oldCount, const Quantity& newCount);
+	void execute(const Quantity oldCount, const Quantity newCount);
 	[[nodiscard]] Json toJson() const;
 };
 class HasObjectives final
@@ -171,9 +171,9 @@ class HasObjectives final
 public:
 	ObjectiveTypePrioritySet m_prioritySet;
 
-	HasObjectives(const ActorIndex& a) : m_actor(a) { }
-	void updateActorIndex(const ActorIndex& actor) { m_actor = actor; }
-	void load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const ActorIndex& actor);
+	HasObjectives(const ActorIndex a) : m_actor(a) { }
+	void updateActorIndex(const ActorIndex actor) { m_actor = actor; }
+	void load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const ActorIndex actor);
 	// Assign next objective from either task queue or needs, depending on priority.
 	void getNext(Area& area);
 	//TODO: should the unique ptrs be passed by reference here?
@@ -196,7 +196,7 @@ public:
 	// Repath taking into account the locations of other actors.
 	// To be used when the path is temporarily blocked.
 	void detour(Area& area);
-	void restart(Area& area, const ActorIndex& actor) { m_currentObjective->reset(area, actor); m_currentObjective->execute(area, actor); }
+	void restart(Area& area, const ActorIndex actor) { m_currentObjective->reset(area, actor); m_currentObjective->execute(area, actor); }
 	[[nodiscard]] Objective& getCurrent();
 	[[nodiscard]] bool hasCurrent() const { return m_currentObjective != nullptr; }
 	[[nodiscard]] bool hasSupressedNeed(const NeedType& needType) const { return m_supressedNeeds.contains(needType); }

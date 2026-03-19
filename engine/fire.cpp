@@ -53,11 +53,11 @@ void Fire::nextPhase(Area& area)
 bool Fire::operator==(const Fire& fire) const { return &fire == this; }
 FireDelta Fire::createDelta() const  { return { m_location, m_materialType}; }
 // Fire.
-Fire::Fire(Area& area, const Point3D& l, const MaterialTypeId& mt, bool hasPeaked, FireStage stage) :
+Fire::Fire(Area& area, const Point3D l, const MaterialTypeId mt, bool hasPeaked, FireStage stage) :
 	m_temperatureSource(area, MaterialType::getFlameTemperature(mt) * Config::heatFractionForSmoulder, l),
 	m_location(l), m_materialType(mt), m_stage(stage), m_hasPeaked(hasPeaked)
 { }
-void AreaHasFires::doStep(const Step& step, Area& area)
+void AreaHasFires::doStep(const Step step, Area& area)
 {
 	m_deltas.sortDescending();
 	if(m_deltas.empty() || m_deltas.back().first != step)
@@ -77,11 +77,11 @@ void AreaHasFires::doStep(const Step& step, Area& area)
 		}
 	}
 }
-void AreaHasFires::scheduleNextPhase(const Step& step, const Fire& fire)
+void AreaHasFires::scheduleNextPhase(const Step step, const Fire& fire)
 {
 	m_deltas.getOrCreate(step).insert(fire.createDelta());
 }
-void AreaHasFires::ignite(Area& area, const Point3D& point, const MaterialTypeId& materialType)
+void AreaHasFires::ignite(Area& area, const Point3D point, const MaterialTypeId materialType)
 {
 	if(m_fires.contains(point))
 		assert(!m_fires.at(point).contains(materialType));
@@ -112,13 +112,13 @@ void AreaHasFires::load(Area& area, const Json& data, DeserializationMemo&)
 		}
 	data["deltas"].get_to(m_deltas);
 }
-Fire& AreaHasFires::at(const Point3D& point, const MaterialTypeId& materialType)
+Fire& AreaHasFires::at(const Point3D point, const MaterialTypeId materialType)
 {
 	assert(m_fires.contains(point));
 	assert(m_fires.at(point).contains(materialType));
 	return m_fires.at(point)[materialType];
 }
-bool AreaHasFires::contains(const Point3D& point, const MaterialTypeId& materialType)
+bool AreaHasFires::contains(const Point3D point, const MaterialTypeId materialType)
 {
 	if(!m_fires.contains(point))
 		return false;
@@ -140,7 +140,7 @@ Json AreaHasFires::toJson() const
 	return data;
 }
 
-bool AreaHasFires::containsFireAt(Fire& fire, const Point3D& point) const { return m_fires.at(point).contains(fire.m_materialType); }
+bool AreaHasFires::containsFireAt(Fire& fire, const Point3D point) const { return m_fires.at(point).contains(fire.m_materialType); }
 bool AreaHasFires::containsDeltaFor(Fire& fire) const
 {
 	const FireDelta delta = fire.createDelta();

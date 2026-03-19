@@ -425,7 +425,7 @@ TEST_CASE("constructDirtWall")
 		Point3D wallLocation = Point3D::create(3, 3, 2);
 		area.m_hasConstructionDesignations.designate(faction, wallLocation, PointFeatureTypeId::Null, dirt);
 		actors.objective_setPriority(dwarf1, constructObjectiveType.getId(), Priority::create(100));;
-		Quantity dirtPerLoad = actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(dirtPile), Config::minimumHaulSpeedInital);
+		Quantity dirtPerLoad = actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(dirtPile), Config::minimumHaulSpeedInitial);
 		// One step to find the designation, activate the project and reserve the pile.
 		simulation.doStep();
 		CHECK(actors.project_exists(dwarf1));

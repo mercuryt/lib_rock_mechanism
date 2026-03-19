@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../json.h"
+#include "../gdb.h"
 
 template<typename IntType, IntType capacity>
 struct BitSet
@@ -37,9 +38,9 @@ struct BitSet
 	[[nodiscard]] BitSet<IntType, capacity> afterInclusive(const IntType& index) const; // Make a copy, mask everything after, return.
 	[[nodiscard]] static BitSet<IntType, capacity> create(const IntType& d);
 	[[nodiscard]] static BitSet<IntType, capacity> create(const Eigen::Array<bool, 1, 64>& boolArray);
-	[[nodiscard]] __attribute__((noinline)) bool testDbg(const IntType& index) const;
-	[[nodiscard]] __attribute__((noinline)) std::string toString() const;
-	[[nodiscard]] __attribute__((noinline)) int popCount() const;
+	[[nodiscard]] GDB_CALLABLE bool testDbg(const IntType& index) const;
+	[[nodiscard]] GDB_CALLABLE std::string toString() const;
+	[[nodiscard]] GDB_CALLABLE int popCount() const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(BitSet, data);
 };
 typedef BitSet<uint64_t, 64u> BitSet64;

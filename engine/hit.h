@@ -16,7 +16,7 @@ struct Hit
 	int depth;
 	MaterialTypeId materialType;
 	WoundType woundType;
-	Hit(int a, const Force& f, const MaterialTypeId& mt, const WoundType& wt);
+	Hit(int a, const Force f, const MaterialTypeId mt, const WoundType& wt);
 	Hit(const Json& data);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] PsycologyWeight pain() const;

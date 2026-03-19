@@ -12,9 +12,9 @@ inline void ImGuiLabelText(const char* label, const std::string& value)
 {
 	ImGui::LabelText(label, "%s", value.c_str());
 }
-inline void ImGuiBeginCombo(const char* label, const std::string& value)
+inline bool ImGuiBeginCombo(const char* label, const std::string& value)
 {
-	ImGui::BeginCombo(label, value.c_str());
+	return ImGui::BeginCombo(label, value.c_str());
 }
 inline void ImGuiTextCentered(const std::string& text)
 {

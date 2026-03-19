@@ -247,7 +247,7 @@ TEST_CASE("stockpile")
 		Point3D chunkLocation = Point3D::create(1, 8, 1);
 		stockpile.addPoint(stockpileLocation1);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .location=chunkLocation, .quantity=Quantity::create(1u)});
-		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInital) == 0);
+		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInitial) == 0);
 		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
 		ActorIndex dwarf2 = actors.create({
 			.species=AnimalSpecies::byName("dwarf"),
@@ -296,7 +296,7 @@ TEST_CASE("stockpile")
 		stockpile.addPoint(stockpileLocation);
 		ItemIndex cargo = items.create({.itemType=pile, .materialType=sand, .location=cargoOrigin, .quantity=Quantity::create(100u)});
 		ItemReference cargoRef = items.getReference(cargo);
-		Quantity quantity = actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(cargo), Config::minimumHaulSpeedInital);
+		Quantity quantity = actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(cargo), Config::minimumHaulSpeedInitial);
 		CHECK(quantity == 48);
 		area.m_hasStockPiles.getForFaction(faction).addItem(cargo);
 		CHECK(objectiveType.canBeAssigned(area, dwarf1));
@@ -644,7 +644,7 @@ TEST_CASE("stockpile")
 		stockpile.addPoint(stockpileLocation);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		ItemIndex cart1 = items.create({.itemType=cart, .materialType=wood, .location=cartLocation, .quality=Quality::create(30), .percentWear=Percent::create(0)});
-		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInital) == 0);
+		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInitial) == 0);
 		area.m_hasStockPiles.getForFaction(faction).addItem(chunk1);
 		CHECK(objectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));

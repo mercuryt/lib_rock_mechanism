@@ -6,7 +6,7 @@
 #include <chrono>
 #include <cinttypes>
 #include <math.h>
-UniformElement UniformElement::create(const ItemTypeId& itemType, const Quantity& quantity, const MaterialTypeId& materialType, const MaterialCategoryTypeId& materialCategoryType, [[maybe_unused]] const Quality qualityMin)
+UniformElement UniformElement::create(const ItemTypeId itemType, const Quantity quantity, const MaterialTypeId materialType, const MaterialCategoryTypeId materialCategoryType, [[maybe_unused]] const Quality qualityMin)
 {
 	assert(itemType.exists());
 	UniformElement output{
@@ -17,12 +17,12 @@ UniformElement UniformElement::create(const ItemTypeId& itemType, const Quantity
 	};
 	return output;
 }
-bool UniformElement::query(const ItemIndex& item, const Items& items) const
+bool UniformElement::query(const ItemIndex item, const Items& items) const
 {
 	assert(m_itemType.exists());
 	if(items.getItemType(item) != m_itemType)
 		return false;
-	const MaterialTypeId& materialType = items.getMaterialType(item);
+	const MaterialTypeId materialType = items.getMaterialType(item);
 	if(m_solid.exists() && materialType != m_solid)
 		return false;
 	if(m_materialCategoryType.exists() && MaterialType::getMaterialTypeCategory(materialType) != m_materialCategoryType)
@@ -38,7 +38,7 @@ void SimulationHasUniformsForFaction::destroyUniform(Uniform& uniform)
 	m_data.erase(uniform.name);
 }
 SmallMap<std::string, Uniform>& SimulationHasUniformsForFaction::getAll(){ return m_data; }
-SimulationHasUniformsForFaction& SimulationHasUniforms::getForFaction(const FactionId& faction)
+SimulationHasUniformsForFaction& SimulationHasUniforms::getForFaction(const FactionId faction)
 {
 	if(!m_data.contains(faction))
 		registerFaction(faction);

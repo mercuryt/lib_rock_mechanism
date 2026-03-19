@@ -12,8 +12,8 @@ class CraftObjectiveType final : public ObjectiveType
 public:
 	CraftObjectiveType(SkillTypeId skillType) : m_skillType(skillType) { }
 	CraftObjectiveType(const Json& data, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] bool canBeAssigned(Area& area, const ActorIndex& actor) const;
-	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
+	[[nodiscard]] bool canBeAssigned(Area& area, const ActorIndex actor) const;
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex actor) const;
 	[[nodiscard]] std::string name() const override;
 };
 class CraftObjective final : public Objective
@@ -24,10 +24,10 @@ class CraftObjective final : public Objective
 public:
 	CraftObjective(SkillTypeId st);
 	CraftObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, const ActorIndex& actor)override;
-	void cancel(Area& area, const ActorIndex& actor)override;
-	void delay(Area& area, const ActorIndex& actor) override{ cancel(area, actor); }
-	void reset(Area& area, const ActorIndex& actor) override;
+	void execute(Area& area, const ActorIndex actor)override;
+	void cancel(Area& area, const ActorIndex actor)override;
+	void delay(Area& area, const ActorIndex actor) override{ cancel(area, actor); }
+	void reset(Area& area, const ActorIndex actor) override;
 	void recordFailedJob(CraftJob& craftJob) { assert(!m_failedJobs.contains(&craftJob)); m_failedJobs.insert(&craftJob); }
 	[[nodiscard]] ObjectiveTypeId getTypeId() const override;
 	[[nodiscard]] Json toJson() const override;
@@ -46,7 +46,7 @@ class CraftPathRequest final : public PathRequestBreadthFirst
 	CraftJob* m_craftJob = nullptr;
 	Point3D m_location;
 public:
-	CraftPathRequest(Area& area, CraftObjective& co, const ActorIndex& actor);
+	CraftPathRequest(Area& area, CraftObjective& co, const ActorIndex actorIndex);
 	CraftPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;

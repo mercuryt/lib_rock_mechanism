@@ -130,7 +130,7 @@ DigLocationDishonorCallback::DigLocationDishonorCallback(const Json& data, Deser
 	m_area(deserializationMemo.area(data["area"])),
 	m_location(data["location"].get<Point3D>()) { }
 Json DigLocationDishonorCallback::toJson() const { return Json({{"type", "DigLocationDishonorCallback"}, {"faction", m_faction}, {"location", m_location}, {"area", m_area}}); }
-void DigLocationDishonorCallback::execute([[maybe_unused]] const Quantity& oldCount, [[maybe_unused]] const Quantity& newCount)
+void DigLocationDishonorCallback::execute([[maybe_unused]] const Quantity oldCount, [[maybe_unused]] const Quantity newCount)
 {
 	m_area.m_hasDigDesignations.undesignate(m_faction, m_location);
 }

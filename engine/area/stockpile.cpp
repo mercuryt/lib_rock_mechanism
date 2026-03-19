@@ -20,7 +20,7 @@
 #include <functional>
 #include <memory>
 #include <string>
-StockPile::StockPile(std::vector<ItemQuery>& q, Area& a, const FactionId& f) :
+StockPile::StockPile(std::vector<ItemQuery>& q, Area& a, const FactionId f) :
 	m_queries(q), m_area(a), m_faction(f), m_reenableScheduledEvent(m_area.m_eventSchedule) { }
 StockPile::StockPile(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
 	m_openPoints(data["openPoints"].get<Quantity>()),
@@ -31,7 +31,7 @@ StockPile::StockPile(const Json& data, DeserializationMemo& deserializationMemo,
 	deserializationMemo.m_stockpiles[data["address"].get<uintptr_t>()] = this;
 	for(const Json& queryData : data["queries"])
 		m_queries.emplace_back(queryData, area);
-	for(const Cuboid& cuboid : data["space"].get<CuboidSet>())
+	for(const Cuboid cuboid : data["space"].get<CuboidSet>())
 		for(const Point3D& point : cuboid)
 			addPoint(point);
 }
@@ -49,14 +49,14 @@ Json StockPile::toJson() const
 		data["projectNeedingMoreWorkers"] = reinterpret_cast<uintptr_t>(m_projectNeedingMoreWorkers);
 	return data;
 }
-bool StockPile::accepts(const ItemIndex& item) const
+bool StockPile::accepts(const ItemIndex item) const
 {
 	for(const ItemQuery& itemQuery : m_queries)
 		if(itemQuery.query(m_area, item))
 			return true;
 	return false;
 }
-void StockPile::addPoint(const Point3D& point)
+void StockPile::addPoint(const Point3D point)
 {
 	Space& space = m_area.getSpace();
 	assert(!m_cuboids.contains(point));
@@ -74,7 +74,7 @@ void StockPile::addPoint(const Point3D& point)
 				m_area.m_hasStockPiles.getForFaction(m_faction).removeItem(item);
 		}
 }
-void StockPile::removePoint(const Point3D& point)
+void StockPile::removePoint(const Point3D point)
 {
 	Space& space = m_area.getSpace();
 	assert(m_cuboids.contains(point));
@@ -100,6 +100,14 @@ void StockPile::removePoint(const Point3D& point)
 		if(accepts(item))
 			m_area.m_hasStocks.getForFaction(m_faction).unrecord(m_area, item);
 }
+void StockPile::maybeRemoveAll(const Cuboid cuboid)
+{
+	// TODO: This could be optimized by combining it with removePoint, so that iterating points isn't needed.
+	const CuboidSet intersection = m_cuboids.intersection(cuboid);
+	for(const Cuboid intersectionCuboid : intersection)
+		for(const Point3D& point : intersectionCuboid)
+			removePoint(point);
+}
 void StockPile::updateQueries(std::vector<ItemQuery>& queries)
 {
 	m_queries = queries;
@@ -122,7 +130,7 @@ Simulation& StockPile::getSimulation()
 	assert(!m_cuboids.empty());
 	return m_area.m_simulation;
 }
-void StockPile::addToProjectNeedingMoreWorkers(const ActorIndex& actor, StockPileObjective& objective)
+void StockPile::addToProjectNeedingMoreWorkers(const ActorIndex actor, StockPileObjective& objective)
 {
 	assert(m_projectNeedingMoreWorkers != nullptr);
 	m_projectNeedingMoreWorkers->addWorkerCandidate(actor, objective);
@@ -130,7 +138,7 @@ void StockPile::addToProjectNeedingMoreWorkers(const ActorIndex& actor, StockPil
 void StockPile::destroy()
 {
 	auto copy = m_cuboids;
-	for(const Cuboid& cuboid : copy)
+	for(const Cuboid cuboid : copy)
 		// TODO: removeCuboid rather then removePoint.
 		for(const Point3D& point : cuboid)
 			removePoint(point);
@@ -155,7 +163,7 @@ void StockPile::removeQuery(const ItemQuery& query)
 }
 StockPileHasShapeDishonorCallback::StockPileHasShapeDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_stockPileProject(static_cast<StockPileProject&>(*deserializationMemo.m_projects.at(data["project"].get<uintptr_t>()))) { }
-void StockPileHasShapeDishonorCallback::execute([[maybe_unused]] const Quantity& oldCount, [[maybe_unused]] const Quantity& newCount) { m_stockPileProject.cancel(); }
+void StockPileHasShapeDishonorCallback::execute([[maybe_unused]] const Quantity oldCount, [[maybe_unused]] const Quantity newCount) { m_stockPileProject.cancel(); }
 StockPile& AreaHasStockPilesForFaction::addStockPile(std::vector<ItemQuery>&& queries) { return addStockPile(queries); }
 StockPile& AreaHasStockPilesForFaction::addStockPile(std::vector<ItemQuery>& queries)
 {
@@ -163,7 +171,7 @@ StockPile& AreaHasStockPilesForFaction::addStockPile(std::vector<ItemQuery>& que
 	// Do not mark avalible yet, wait for the first open point to be added.
 	return stockPile;
 }
-AreaHasStockPilesForFaction::AreaHasStockPilesForFaction(const Json& data, DeserializationMemo& deserializationMemo, Area& a, const FactionId& f) :
+AreaHasStockPilesForFaction::AreaHasStockPilesForFaction(const Json& data, DeserializationMemo& deserializationMemo, Area& a, const FactionId f) :
 	m_area(a), m_faction(f)
 {
 	Items& items = m_area.getItems();
@@ -331,7 +339,7 @@ void AreaHasStockPilesForFaction::destroyStockPile(StockPile& stockPile)
 	// Destruct.
 	m_stockPiles.remove(stockPile);
 }
-bool AreaHasStockPilesForFaction::isValidStockPileDestinationFor(const Point3D& point, const ItemIndex& item) const
+bool AreaHasStockPilesForFaction::isValidStockPileDestinationfor(const Point3D& point, const ItemIndex item) const
 {
 	Space& space = m_area.getSpace();
 	if(space.isReserved(point, m_faction))
@@ -340,7 +348,7 @@ bool AreaHasStockPilesForFaction::isValidStockPileDestinationFor(const Point3D& 
 		return false;
 	return space.stockpile_getOneForFaction(point, m_faction)->accepts(item);
 }
-void AreaHasStockPilesForFaction::addItem(const ItemIndex& item)
+void AreaHasStockPilesForFaction::addItem(const ItemIndex item)
 {
 	Items& items = m_area.getItems();
 	items.stockpile_set(item, m_faction);
@@ -355,11 +363,11 @@ void AreaHasStockPilesForFaction::addItem(const ItemIndex& item)
 		m_itemsToBeStockPiled.insert(ref);
 	}
 	AreaHasSpaceDesignationsForFaction& hasDesignations = m_area.m_spaceDesignations.getForFaction(m_faction);
-	for(const Cuboid& cuboid : items.getOccupied(item))
+	for(const Cuboid cuboid : items.getOccupied(item))
 		hasDesignations.maybeSet(cuboid, SpaceDesignation::StockPileHaulFrom);
 
 }
-void AreaHasStockPilesForFaction::maybeAddItem(const ItemIndex& item)
+void AreaHasStockPilesForFaction::maybeAddItem(const ItemIndex item)
 {
 	Items& items = m_area.getItems();
 	ItemTypeId itemType = items.getItemType(item);
@@ -372,7 +380,7 @@ void AreaHasStockPilesForFaction::maybeAddItem(const ItemIndex& item)
 	)
 		addItem(item);
 }
-void AreaHasStockPilesForFaction::removeItem(const ItemIndex& item)
+void AreaHasStockPilesForFaction::removeItem(const ItemIndex item)
 {
 	Items& items = m_area.getItems();
 	ItemTypeId itemType = m_area.getItems().getItemType(item);
@@ -401,12 +409,12 @@ void AreaHasStockPilesForFaction::removeItem(const ItemIndex& item)
 	AreaHasSpaceDesignationsForFaction& hasDesignations = m_area.m_spaceDesignations.getForFaction(m_faction);
 	Space& space = m_area.getSpace();
 	const CuboidSet& occupied = items.getOccupied(item);
-	for(const ItemIndex& itemOccupingSameSpace : space.item_getAll(occupied))
+	for(const ItemIndex itemOccupingSameSpace : space.item_getAll(occupied))
 		if(items.stockpile_canBeStockPiled(itemOccupingSameSpace, m_faction))
 			return;
 	hasDesignations.maybeUnset(occupied, SpaceDesignation::StockPileHaulFrom);
 }
-void AreaHasStockPilesForFaction::maybeRemoveFromItemsWithDestinationByStockPile(const StockPile& stockPile, const ItemIndex& item)
+void AreaHasStockPilesForFaction::maybeRemoveFromItemsWithDestinationByStockPile(const StockPile& stockPile, const ItemIndex item)
 {
 	Items& items = m_area.getItems();
 	StockPile* nonConst = const_cast<StockPile*>(&stockPile);
@@ -418,12 +426,12 @@ void AreaHasStockPilesForFaction::maybeRemoveFromItemsWithDestinationByStockPile
 		m_itemsWithDestinationsByStockPile[nonConst].maybeErase(ref);
 	}
 }
-void AreaHasStockPilesForFaction::updateItemReferenceForProject(StockPileProject& project, const ItemReference& ref)
+void AreaHasStockPilesForFaction::updateItemReferenceForProject(StockPileProject& project, const ItemReference ref)
 {
 	removeFromProjectsByItem(project);
 	m_projectsByItem.getOrCreate(ref).insert(&project);
 }
-void AreaHasStockPilesForFaction::removePoint(const Point3D& point)
+void AreaHasStockPilesForFaction::removePoint(const Point3D point)
 {
 	StockPile* stockpile = m_area.getSpace().stockpile_getOneForFaction(point, m_faction);
 	if(stockpile != nullptr)
@@ -470,7 +478,7 @@ void AreaHasStockPilesForFaction::setUnavailable(StockPile& stockPile)
 		m_itemsWithDestinationsByStockPile.erase(&stockPile);
 	}
 }
-void AreaHasStockPilesForFaction::makeProject(const ItemIndex& item, const Point3D& destination, StockPileObjective& objective, const ActorIndex& actor)
+void AreaHasStockPilesForFaction::makeProject(const ItemIndex item, const Point3D destination, StockPileObjective& objective, const ActorIndex actor)
 {
 	Space& space = m_area.getSpace();
 	Actors& actors = m_area.getActors();
@@ -480,7 +488,7 @@ void AreaHasStockPilesForFaction::makeProject(const ItemIndex& item, const Point
 	// TODO: Hauling a load of generics with tools.
 	Quantity quantity = std::min({
 		items.getQuantity(item),
-		actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(actor, items.getSingleUnitMass(item), Config::minimumHaulSpeedInital),
+		actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(actor, items.getSingleUnitMass(item), Config::minimumHaulSpeedInitial),
 		space.shape_getQuantityOfItemWhichCouldFit(destination, items.getItemType(item))
 	});
 	// Max workers is one if at least one can be hauled by hand.
@@ -538,12 +546,12 @@ void AreaHasStockPilesForFaction::removeQuery(StockPile& stockPile, const ItemQu
 	else
 		m_availableStockPilesByItemType[query.m_itemType].erase(&stockPile);
 }
-bool AreaHasStockPilesForFaction::isAnyHaulingAvailableFor([[maybe_unused]] const ActorIndex& actor) const
+bool AreaHasStockPilesForFaction::isAnyHaulingAvailableFor([[maybe_unused]] const ActorIndex actor) const
 {
 	assert(m_faction == m_area.getActors().getFaction(actor));
 	return !m_itemsToBeStockPiled.empty();
 }
-ItemIndex AreaHasStockPilesForFaction::getHaulableItemForAt(const ActorIndex& actor, const Point3D& point)
+ItemIndex AreaHasStockPilesForFaction::getHaulableItemForAt(const ActorIndex actor, const Point3D point)
 {
 	assert(m_area.getActors().getFaction(actor).exists());
 	Space& space = m_area.getSpace();
@@ -560,7 +568,7 @@ ItemIndex AreaHasStockPilesForFaction::getHaulableItemForAt(const ActorIndex& ac
 	}
 	return ItemIndex::null();
 }
-StockPile* AreaHasStockPilesForFaction::getStockPileFor(const ItemIndex& item) const
+StockPile* AreaHasStockPilesForFaction::getStockPileFor(const ItemIndex item) const
 {
 	ItemTypeId itemType = m_area.getItems().getItemType(item);
 	if(!m_availableStockPilesByItemType.contains(itemType))
@@ -570,7 +578,7 @@ StockPile* AreaHasStockPilesForFaction::getStockPileFor(const ItemIndex& item) c
 			return stockPile;
 	return nullptr;
 }
-AreaHasStockPilesForFaction& AreaHasStockPiles::getForFaction(const FactionId& faction)
+AreaHasStockPilesForFaction& AreaHasStockPiles::getForFaction(const FactionId faction)
 {
 	if(!m_data.contains(faction))
 		registerFaction(faction);
@@ -608,4 +616,11 @@ Json AreaHasStockPiles::toJson() const
 		data.push_back(jsonPair);
 	}
 	return data;
+}
+void AreaHasStockPiles::removeFromAll(const Cuboid cuboid)
+{
+	// TODO: this iterates all stockpiles for all factions. Could be optimized by querying space for only those stockpiles which intersect cuboid.
+	for(auto& [factionId, stockpilesForFaction] : m_data)
+		for(auto& stockpile : stockpilesForFaction->m_stockPiles)
+			stockpile.maybeRemoveAll(cuboid);
 }

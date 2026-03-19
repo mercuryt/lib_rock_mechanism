@@ -5,5 +5,5 @@
 
 namespace setOfPointsHelper
 {
-	[[nodiscard]] DistanceSquared distanceToClosestSquared(const SmallSet<Point3D>& pointSet, const Point3D& point);
+	[[nodiscard]] DistanceSquared distanceToClosestSquared(const SmallSet<Point3D>& pointSet, const Point3D point);
 };

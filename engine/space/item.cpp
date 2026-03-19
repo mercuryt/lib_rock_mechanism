@@ -7,7 +7,7 @@
 #include "../numericTypes/types.h"
 #include "../definitions/itemType.h"
 #include <iterator>
-void Space::item_record(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKeys, const ItemIndex& item)
+void Space::item_record(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKeys, const ItemIndex item)
 {
 	Items& items = m_area.getItems();
 	if(items.isStatic(item))
@@ -15,7 +15,7 @@ void Space::item_record(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidK
 	else
 		item_recordDynamic(mapWithCuboidKeys, item);
 }
-void Space::item_recordStatic(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKeys, const ItemIndex& item)
+void Space::item_recordStatic(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKeys, const ItemIndex item)
 {
 	Items& items = m_area.getItems();
 	assert(items.isStatic(item));
@@ -25,7 +25,7 @@ void Space::item_recordStatic(const MapWithCuboidKeys<CollisionVolume>& mapWithC
 	for(const auto& pair : mapWithCuboidKeys)
 		m_staticVolume.updateAdd(pair.first, pair.second);
 }
-void Space::item_recordDynamic(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKeys, const ItemIndex& item)
+void Space::item_recordDynamic(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKeys, const ItemIndex item)
 {
 	Items& items = m_area.getItems();
 	assert(!items.isStatic(item));
@@ -34,7 +34,7 @@ void Space::item_recordDynamic(const MapWithCuboidKeys<CollisionVolume>& mapWith
 	for(const auto& pair : mapWithCuboidKeys)
 		m_dynamicVolume.updateAdd(pair.first, pair.second);
 }
-void Space::item_erase(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKeys, const ItemIndex& item)
+void Space::item_erase(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKeys, const ItemIndex item)
 {
 	Items& items = m_area.getItems();
 	if(items.isStatic(item))
@@ -42,7 +42,7 @@ void Space::item_erase(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKe
 	else
 		item_eraseDynamic(mapWithCuboidKeys, item);
 }
-void Space::item_eraseDynamic(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKeys, const ItemIndex& item)
+void Space::item_eraseDynamic(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKeys, const ItemIndex item)
 {
 	Items& items = m_area.getItems();
 	assert(!items.isStatic(item));
@@ -52,7 +52,7 @@ void Space::item_eraseDynamic(const MapWithCuboidKeys<CollisionVolume>& mapWithC
 		m_dynamicVolume.updateSubtract(pair.first, pair.second);
 	}
 }
-void Space::item_eraseStatic(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKeys, const ItemIndex& item)
+void Space::item_eraseStatic(const MapWithCuboidKeys<CollisionVolume>& mapWithCuboidKeys, const ItemIndex item)
 {
 	Items& items = m_area.getItems();
 	assert(items.isStatic(item));
@@ -61,13 +61,13 @@ void Space::item_eraseStatic(const MapWithCuboidKeys<CollisionVolume>& mapWithCu
 	for(const auto& pair : mapWithCuboidKeys)
 		m_staticVolume.updateSubtract(pair.first, pair.second);
 }
-void Space::item_setTemperature(const Point3D& point, const Temperature& temperature)
+void Space::item_setTemperature(const Point3D point, const Temperature temperature)
 {
 	Items& items = m_area.getItems();
-	for(const ItemIndex& item : m_items.queryGetAll(point))
+	for(const ItemIndex item : m_items.queryGetAll(point))
 		items.setTemperature(item, temperature, point);
 }
-void Space::item_disperseAll(const Point3D& point)
+void Space::item_disperseAll(const Point3D point)
 {
 	auto& itemsInPoint = m_items.queryGetAll(point);
 	if(itemsInPoint.empty())
@@ -87,11 +87,11 @@ void Space::item_disperseAll(const Point3D& point)
 		items.location_setStatic(item, newLocation, facing);
 	}
 }
-void Space::item_updateIndex(const Cuboid& cuboid, const ItemIndex& oldIndex, const ItemIndex& newIndex)
+void Space::item_updateIndex(const Cuboid cuboid, const ItemIndex oldIndex, const ItemIndex newIndex)
 {
 	m_items.update(cuboid, oldIndex, newIndex);
 }
-ItemIndex Space::item_addGeneric(const Point3D& point, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity)
+ItemIndex Space::item_addGeneric(const Point3D point, const ItemTypeId itemType, const MaterialTypeId materialType, const Quantity quantity)
 {
 	assert(shape_anythingCanEnterEver(point));
 	assert(ItemType::getIsGeneric(itemType));
@@ -110,34 +110,34 @@ ItemIndex Space::item_addGeneric(const Point3D& point, const ItemTypeId& itemTyp
 		.quantity=quantity,
 	});
 }
-Quantity Space::item_getCount(const Point3D& point, const ItemTypeId& itemType, const MaterialTypeId& materialType) const
+Quantity Space::item_getCount(const Point3D point, const ItemTypeId itemType, const MaterialTypeId materialType) const
 {
 	Items& items = m_area.getItems();
-	const auto condition = [&](const ItemIndex& item){ return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType; };
+	const auto condition = [&](const ItemIndex item){ return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType; };
 	const ItemIndex item = m_items.queryGetOneWithCondition(point, condition);
 	if(item.empty())
 		return {0};
 	return m_area.getItems().getQuantity(item);
 }
-ItemIndex Space::item_getGeneric(const Point3D& point, const ItemTypeId& itemType, const MaterialTypeId& materialType) const
+ItemIndex Space::item_getGeneric(const Point3D point, const ItemTypeId itemType, const MaterialTypeId materialType) const
 {
 	assert(ItemType::getIsGeneric(itemType));
 	Items& items = m_area.getItems();
-	const auto condition = [&](const ItemIndex& item){ return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType; };
+	const auto condition = [&](const ItemIndex item){ return items.getItemType(item) == itemType && items.getMaterialType(item) == materialType; };
 	return m_items.queryGetOneWithCondition(point, condition);
 }
-bool Space::item_hasInstalledType(const Point3D& point, const ItemTypeId& itemType) const
+bool Space::item_hasInstalledType(const Point3D point, const ItemTypeId itemType) const
 {
 	assert(ItemType::getInstallable(itemType));
 	Items& items = m_area.getItems();
-	const auto condition = [&](const ItemIndex& item){ return items.getItemType(item) == itemType && items.isInstalled(item); };
+	const auto condition = [&](const ItemIndex item){ return items.getItemType(item) == itemType && items.isInstalled(item); };
 	return m_items.queryAnyWithCondition(point, condition);
 }
-bool Space::item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(const Point3D& point, const ActorIndex& actor) const
+bool Space::item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(const Point3D point, const ActorIndex actor) const
 {
 	Items& items = m_area.getItems();
 	Actors& actors = m_area.getActors();
-	const auto condition = [&](const ItemIndex& item){
+	const auto condition = [&](const ItemIndex item){
 		const ItemTypeId itemType = items.getItemType(item);
 		return(
 			ItemType::getInternalVolume(itemType) != 0 &&
@@ -147,11 +147,11 @@ bool Space::item_hasEmptyContainerWhichCanHoldFluidsCarryableBy(const Point3D& p
 	};
 	return m_items.queryAnyWithCondition(point, condition);
 }
-bool Space::item_hasContainerContainingFluidTypeCarryableBy(const Point3D& point, const ActorIndex& actor, const FluidTypeId& fluidType) const
+bool Space::item_hasContainerContainingFluidTypeCarryableBy(const Point3D point, const ActorIndex actor, const FluidTypeId fluidType) const
 {
 	Items& items = m_area.getItems();
 	Actors& actors = m_area.getActors();
-	const auto condition = [&](const ItemIndex& item){
+	const auto condition = [&](const ItemIndex item){
 		const ItemTypeId itemType = items.getItemType(item);
 		return(
 			ItemType::getInternalVolume(itemType) != 0 &&
@@ -161,8 +161,8 @@ bool Space::item_hasContainerContainingFluidTypeCarryableBy(const Point3D& point
 	};
 	return m_items.queryAnyWithCondition(point, condition);
 }
-bool Space::item_contains(const Point3D& point, const ItemIndex& item) const
+bool Space::item_contains(const Point3D point, const ItemIndex item) const
 {
-	const auto condition = [&](const ItemIndex& i){ return i == item; };
+	const auto condition = [&](const ItemIndex i){ return i == item; };
 	return m_items.queryAnyWithCondition(point, condition);
 }

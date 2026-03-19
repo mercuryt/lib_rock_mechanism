@@ -13,8 +13,8 @@ class ConstructObjectiveType final : public ObjectiveType
 public:
 	ConstructObjectiveType() = default;
 	ConstructObjectiveType(const Json&, DeserializationMemo&){ }
-	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
-	[[nodiscard]] bool canBeAssigned(Area& area, const ActorIndex& actor) const;
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex actor) const;
+	[[nodiscard]] bool canBeAssigned(Area& area, const ActorIndex actor) const;
 	[[nodiscard]] std::string name() const { return "construct"; }
 };
 class ConstructObjective final : public Objective
@@ -24,22 +24,22 @@ class ConstructObjective final : public Objective
 public:
 	ConstructObjective() : Objective(Config::constructObjectivePriority) { }
 	ConstructObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, const ActorIndex& actor);
-	void cancel(Area& area, const ActorIndex& actor);
-	void delay(Area& area, const ActorIndex& actor);
-	void reset(Area& area, const ActorIndex& actor);
-	void joinProject(ConstructProject& project, const ActorIndex& actor);
-	void onProjectCannotReserve(Area& area, const ActorIndex& actor);
+	void execute(Area& area, const ActorIndex actor);
+	void cancel(Area& area, const ActorIndex actor);
+	void delay(Area& area, const ActorIndex actor);
+	void reset(Area& area, const ActorIndex actor);
+	void joinProject(ConstructProject& project, const ActorIndex actor);
+	void onProjectCannotReserve(Area& area, const ActorIndex actor);
 	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("construct").getId(); }
 	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "construct"; }
-	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(Area& area, const Point3D& location, const Facing4& facing, const ActorIndex& actor);
-	[[nodiscard]] const ConstructProject* getProjectWhichActorCanJoinAdjacentTo(Area& area, const Point3D& location, const Facing4& facing, const ActorIndex& actor) const;
-	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(Area& area, const Cuboid& cuboid, const ActorIndex& actor);
-	[[nodiscard]] const ConstructProject* getProjectWhichActorCanJoinAt(Area& area, const Cuboid& cuboid, const ActorIndex& actor) const;
-	[[nodiscard]] Point3D joinableProjectExistsAt(Area& area, const Cuboid& cuboid, const ActorIndex& actor) const;
-	[[nodiscard]] bool canJoinProjectAdjacentToLocationAndFacing(Area& area, const Point3D& point, const Facing4& facing, const ActorIndex& actor) const;
+	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAdjacentTo(Area& area, const Point3D location, const Facing4 facing, const ActorIndex actor);
+	[[nodiscard]] const ConstructProject* getProjectWhichActorCanJoinAdjacentTo(Area& area, const Point3D location, const Facing4 facing, const ActorIndex actor) const;
+	[[nodiscard]] ConstructProject* getProjectWhichActorCanJoinAt(Area& area, const Cuboid cuboid, const ActorIndex actor);
+	[[nodiscard]] const ConstructProject* getProjectWhichActorCanJoinAt(Area& area, const Cuboid cuboid, const ActorIndex actor) const;
+	[[nodiscard]] Point3D joinableProjectExistsAt(Area& area, const Cuboid cuboid, const ActorIndex actor) const;
+	[[nodiscard]] bool canJoinProjectAdjacentToLocationAndFacing(Area& area, const Point3D point, const Facing4 facing, const ActorIndex actor) const;
 	friend class ConstructPathRequest;
 	friend class ConstructProject;
 	// For Testing.
@@ -49,7 +49,7 @@ class ConstructPathRequest final : public PathRequestBreadthFirst
 {
 	ConstructObjective& m_constructObjective;
 public:
-	ConstructPathRequest(Area& area, ConstructObjective& co, const ActorIndex& actor);
+	ConstructPathRequest(Area& area, ConstructObjective& co, const ActorIndex actorIndex);
 	ConstructPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;

@@ -1,7 +1,7 @@
 #pragma once
 #include "rtreeBoolean.h"
 template<typename ShapeT>
-Cuboid RTreeBoolean::queryGetLeafWithCondition(const ShapeT& shape, auto&& condition) const
+Cuboid RTreeBoolean::queryGetLeafWithCondition(ShapeT&& shape, auto&& condition) const
 {
 	SmallSet<RTreeNodeIndex> openList;
 	openList.insert(RTreeNodeIndex::create(0));
@@ -29,7 +29,7 @@ Cuboid RTreeBoolean::queryGetLeafWithCondition(const ShapeT& shape, auto&& condi
 	return {};
 }
 template<typename ShapeT>
-Point3D RTreeBoolean::queryGetPointWithCondition(const ShapeT& shape, auto&& condition) const
+Point3D RTreeBoolean::queryGetPointWithCondition(ShapeT&& shape, auto&& condition) const
 {
 	const Cuboid found = queryGetLeafWithCondition(shape, condition);
 	if(found.empty())

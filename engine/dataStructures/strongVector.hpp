@@ -5,9 +5,9 @@
 template<typename Contained, class Index>
 const std::vector<Contained>& StrongVector<Contained, Index>::toVector() const { return data; }
 template<typename Contained, class Index>
-Contained& StrongVector<Contained, Index>::operator[](const Index& index) { assert(index < size()); return data[index.get()]; }
+Contained& StrongVector<Contained, Index>::operator[](const Index index) { assert(index < size()); return data[index.get()]; }
 template<typename Contained, class Index>
-const Contained& StrongVector<Contained, Index>::operator[](const Index& index) const { assert(index < size()); return data[index.get()]; }
+const Contained& StrongVector<Contained, Index>::operator[](const Index index) const { assert(index < size()); return data[index.get()]; }
 template<typename Contained, class Index>
 int StrongVector<Contained, Index>::size() const { return data.size(); }
 template<typename Contained, class Index>
@@ -76,7 +76,7 @@ void StrongVector<Contained, Index>::clear() { data.clear(); }
 template<typename Contained, class Index>
 void StrongVector<Contained, Index>::popBack() { data.pop_back(); }
 template<typename Contained, class Index>
-void StrongVector<Contained, Index>::remove(const Index& index)
+void StrongVector<Contained, Index>::remove(const Index index)
 {
 	assert(index < size());
 	auto iter = data.begin() + index.get();
@@ -115,25 +115,25 @@ void StrongVector<Contained, Index>::sortRangeWithOrder(const Index& begin, cons
 	}
 }
 template<class Index>
-bool StrongBitSet<Index>::operator[](const Index& index) const { assert((size_t)index.get() < data.size()); return data[index.get()]; }
+bool StrongBitSet<Index>::operator[](const Index index) const { assert((size_t)index.get() < data.size()); return data[index.get()]; }
 template<class Index>
 size_t StrongBitSet<Index>::size() const { return data.size(); }
 template<class Index>
-void StrongBitSet<Index>::set(const Index& index) { assert(index < size()); data[index.get()] = true; }
+void StrongBitSet<Index>::set(const Index index) { assert(index < size()); data[index.get()] = true; }
 template<class Index>
-void StrongBitSet<Index>::set(const Index& index, bool status) { assert(index < size()); data[index.get()] = status; }
+void StrongBitSet<Index>::set(const Index index, bool status) { assert(index < size()); data[index.get()] = status; }
 template<class Index>
-void StrongBitSet<Index>::maybeUnset(const Index& index) { assert(index < size()); data[index.get()] = false; }
+void StrongBitSet<Index>::maybeUnset(const Index index) { assert(index < size()); data[index.get()] = false; }
 template<class Index>
-void StrongBitSet<Index>::unset(const Index& index) { assert(index < size()); assert(data[index.get()]); data[index.get()] = false; }
+void StrongBitSet<Index>::unset(const Index index) { assert(index < size()); assert(data[index.get()]); data[index.get()] = false; }
 template<class Index>
 void StrongBitSet<Index>::reserve(const size_t& size) { data.reserve(size); }
 template<class Index>
-void StrongBitSet<Index>::reserve(const Index& index) { data.reserve(index.get()); }
+void StrongBitSet<Index>::reserve(const Index index) { data.reserve(index.get()); }
 template<class Index>
 void StrongBitSet<Index>::resize(const size_t& size) { data.resize(size); }
 template<class Index>
-void StrongBitSet<Index>::resize(const Index& index) { data.resize(index.get()); }
+void StrongBitSet<Index>::resize(const Index index) { data.resize(index.get()); }
 template<class Index>
 void StrongBitSet<Index>::clear() { data.clear(); }
 template<class Index>

@@ -8,7 +8,7 @@
 #include "space/space.h"
 
 #include <memory>
-MistDisperseEvent::MistDisperseEvent(const Step& delay, Simulation& simulation, const FluidTypeId& ft, const Point3D& b) :
+MistDisperseEvent::MistDisperseEvent(const Step delay, Simulation& simulation, const FluidTypeId ft, const Point3D b) :
     	ScheduledEvent(simulation, delay), m_fluidType(ft), m_point(b) {}
 void MistDisperseEvent::execute(Simulation& simulation, Area* area)
 {
@@ -64,7 +64,7 @@ bool MistDisperseEvent::continuesToExist(Area& area) const
 			return true;
 	return false;
 }
-void MistDisperseEvent::emplace(Area& area, const Step& delay, const FluidTypeId& fluidType, const Point3D& point)
+void MistDisperseEvent::emplace(Area& area, const Step delay, const FluidTypeId fluidType, const Point3D point)
 {
 	std::unique_ptr<ScheduledEvent> event = std::make_unique<MistDisperseEvent>(delay, area.m_simulation, fluidType, point);
 	area.m_eventSchedule.schedule(std::move(event));

@@ -15,7 +15,7 @@
 #include "definitions/animalSpecies.h"
 #include <cmath>
 enum class TemperatureZone { Surface, Underground, LavaSea };
-TemperatureDelta TemperatureSource::getTemperatureDeltaForRange(const Distance& range)
+TemperatureDelta TemperatureSource::getTemperatureDeltaForRange(const Distance  range)
 {
 	if(range == 0)
 		return m_temperature;
@@ -54,13 +54,13 @@ void TemperatureSource::unapply(Area& area)
 		++range;
 	}
 }
-void TemperatureSource::setTemperature(Area& area, const TemperatureDelta& t)
+void TemperatureSource::setTemperature(Area& area, const TemperatureDelta t)
 {
 	unapply(area);
 	m_temperature = t;
 	apply(area);
 }
-void AreaHasTemperature::addTemperatureSource(const Point3D& point, const TemperatureDelta& temperature)
+void AreaHasTemperature::addTemperatureSource(const Point3D point, const TemperatureDelta temperature)
 {
 	m_sources.emplace(point, m_area, temperature, point);
 }
@@ -71,11 +71,11 @@ void AreaHasTemperature::removeTemperatureSource(TemperatureSource& temperatureS
 	m_sources[temperatureSource.m_point].unapply(m_area);
 	m_sources.erase(temperatureSource.m_point);
 }
-TemperatureSource& AreaHasTemperature::getTemperatureSourceAt(const Point3D& point)
+TemperatureSource& AreaHasTemperature::getTemperatureSourceAt(const Point3D point)
 {
 	return m_sources[point];
 }
-void AreaHasTemperature::addDelta(const Point3D& point, const TemperatureDelta& delta)
+void AreaHasTemperature::addDelta(const Point3D point, const TemperatureDelta delta)
 {
 	auto found = m_pointDeltaDeltas.find(point);
 	if(found == m_pointDeltaDeltas.end())
@@ -91,7 +91,7 @@ void AreaHasTemperature::applyDeltas()
 	for(auto& [point, deltaDelta] : oldDeltaDeltas)
 		m_area.getSpace().temperature_updateDelta(point, deltaDelta);
 }
-void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature& temperature)
+void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature temperature)
 {
 	m_ambiantSurfaceTemperature = temperature;
 	Space& space = m_area.getSpace();
@@ -103,16 +103,17 @@ void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature& tempera
 		if(meltingPoint <= temperature)
 		{
 			CuboidSet toMelt;
-			for(const Point3D& point : toMeltOnSurface)
-			{
-				// This point has been processed already as part of another point's group.
-				if(toMelt.contains(point))
-					continue;
-				const MaterialTypeId& materialType = space.solid_get(point);
-				for(const Cuboid& cuboid : space.collectAdjacentsWithCondition(point, [&](const Point3D& b){ return space.solid_get(b) == materialType; }))
-					toMelt.maybeAdd(cuboid);
-			}
-			for(const Cuboid& cuboid : toMelt)
+			for(const Cuboid cuboid : toMeltOnSurface)
+				for(const Point3D& point : cuboid)
+				{
+					// This point has been processed already as part of another point's group.
+					if(toMelt.contains(point))
+						continue;
+					const MaterialTypeId materialType = space.solid_get(point);
+					for(const Cuboid adjacent : space.collectAdjacentsWithCondition(point, [&](const Point3D b){ return space.solid_get(b) == materialType; }))
+						toMelt.maybeAdd(adjacent);
+				}
+			for(const Cuboid cuboid : toMelt)
 				for(const Point3D& point : cuboid)
 					space.temperature_melt(point);
 			m_aboveGroundPointsByMeltingPoint[meltingPoint].clear();
@@ -122,15 +123,15 @@ void AreaHasTemperature::setAmbientSurfaceTemperature(const Temperature& tempera
 	SmallMap<FluidTypeId, SmallSet<Point3D>> toFreeze;
 	for(auto& [meltingPoint, fluidGroups] : m_aboveGroundFluidGroupsByMeltingPoint)
 	{
-		const FluidTypeId& fluidType = fluidGroups.front()->m_fluidType;
+		const FluidTypeId fluidType = fluidGroups.front()->m_fluidType;
 		// TODO: replace getOrCreate with create.
 		auto& pointSet = toFreeze.getOrCreate(fluidType);
 		if(meltingPoint > temperature)
 		{
 			for(FluidGroup* fluidGroup : fluidGroups)
 			{
-				for(const Cuboid& cuboid : fluidGroup->m_drainQueue.m_set)
-					for(const Point3D point : cuboid)
+				for(const Cuboid cuboid : fluidGroup->m_drainQueue.m_set)
+					for(const Point3D& point : cuboid)
 						if(space.isExposedToSky(point))
 							pointSet.insert(point);
 				fluidGroup->m_aboveGround = false;
@@ -157,28 +158,31 @@ void AreaHasTemperature::updateAmbientSurfaceTemperature()
 	int halfDay = Config::hoursPerDay / 2;
 	setAmbientSurfaceTemperature(dailyAverage + ((maxDailySwing * (std::max(0, halfDay - hoursFromHottestHourOfDay))) / halfDay) - (maxDailySwing / 2));
 }
-void AreaHasTemperature::maybeAddMeltableSolidPointAboveGround(const Point3D& point)
+void AreaHasTemperature::maybeAddMeltableSolidPointsAboveGround(const CuboidSet& cuboids, const Temperature meltingPoint)
 {
-	Space& space = m_area.getSpace();
-	assert(space.isExposedToSky(point));
-	assert(space.solid_isAny(point));
-	m_aboveGroundPointsByMeltingPoint[MaterialType::getMeltingPoint(space.solid_get(point))].maybeInsert(point);
+	m_aboveGroundPointsByMeltingPoint[meltingPoint].maybeAddAll(cuboids);
+}
+void AreaHasTemperature::maybeAddMeltableSolidCuboidAboveGround(const Cuboid cuboid, const Temperature meltingPoint)
+{
+	m_aboveGroundPointsByMeltingPoint[meltingPoint].maybeAdd(cuboid);
 }
 // Must be run before point is set no longer solid if above ground.
-void AreaHasTemperature::maybeRemoveMeltableSolidPointAboveGround(const Point3D& point)
+void AreaHasTemperature::maybeRemoveMeltableSolidPointsAboveGround(const Cuboid cuboid, const Temperature meltingPoint)
 {
-	Space& space = m_area.getSpace();
-	assert(space.solid_isAny(point));
-	m_aboveGroundPointsByMeltingPoint.at(MaterialType::getMeltingPoint(space.solid_get(point))).maybeErase(point);
+	m_aboveGroundPointsByMeltingPoint[meltingPoint].maybeRemove(cuboid);
+}
+void AreaHasTemperature::maybeRemoveMeltableSolidPointsAboveGround(const CuboidSet& cuboids, const Temperature meltingPoint)
+{
+	m_aboveGroundPointsByMeltingPoint[meltingPoint].maybeRemoveAll(cuboids);
 }
 void AreaHasTemperature::addFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup)
 {
-	const Temperature& freezing = FluidType::getFreezingPoint(fluidGroup.m_fluidType);
+	const Temperature freezing = FluidType::getFreezingPoint(fluidGroup.m_fluidType);
 	m_aboveGroundFluidGroupsByMeltingPoint[freezing].insert(&fluidGroup);
 }
 void AreaHasTemperature::maybeRemoveFreezeableFluidGroupAboveGround(FluidGroup& fluidGroup)
 {
-	const Temperature& freezing = FluidType::getFreezingPoint(fluidGroup.m_fluidType);
+	const Temperature freezing = FluidType::getFreezingPoint(fluidGroup.m_fluidType);
 	assert(m_aboveGroundFluidGroupsByMeltingPoint.contains(freezing));
 	auto& groups = m_aboveGroundFluidGroupsByMeltingPoint[freezing];
 	m_aboveGroundFluidGroupsByMeltingPoint[freezing].maybeErase(&fluidGroup);
@@ -195,17 +199,17 @@ Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature() const
 	int daysFromSolstice = std::abs(day - (int)dayOfYearOfSolstice);
 	return yearlyColdestDailyAverage + ((yearlyHottestDailyAverage - yearlyColdestDailyAverage) * (dayOfYearOfSolstice - daysFromSolstice)) / dayOfYearOfSolstice;
 }
-UnsafeTemperatureEvent::UnsafeTemperatureEvent(Area& area, const ActorIndex& a, const Step start) :
+UnsafeTemperatureEvent::UnsafeTemperatureEvent(Area& area, const ActorIndex a, const Step start) :
 	ScheduledEvent(area.m_simulation, AnimalSpecies::getStepsTillDieInUnsafeTemperature(area.getActors().getSpecies(a)), start),
 	m_needsSafeTemperature(*area.getActors().m_needsSafeTemperature[a].get()) { }
 void UnsafeTemperatureEvent::execute(Simulation&, Area* area) { m_needsSafeTemperature.dieFromTemperature(*area); }
 void UnsafeTemperatureEvent::clearReferences(Simulation&, Area*) { m_needsSafeTemperature.m_event.clearPointer(); }
-ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Area& area, const ActorIndex& a) :
+ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(Area& area, const ActorIndex actor) :
 	m_event(area.m_eventSchedule)
 {
-	m_actor.setIndex(a, area.getActors().m_referenceData);
+	m_actor.setIndex(actor, area.getActors().m_referenceData);
 }
-ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(const Json& data, const ActorIndex& actor, Area& area) :
+ActorNeedsSafeTemperature::ActorNeedsSafeTemperature(const Json& data, const ActorIndex actor, Area& area) :
 	m_event(area.m_eventSchedule)
 {
 	m_actor.setIndex(actor, area.getActors().m_referenceData);
@@ -247,7 +251,7 @@ void ActorNeedsSafeTemperature::unschedule()
 {
 	m_event.unschedule();
 }
-bool ActorNeedsSafeTemperature::isSafe(Area& area, const Temperature& temperature) const
+bool ActorNeedsSafeTemperature::isSafe(Area& area, const Temperature temperature) const
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);

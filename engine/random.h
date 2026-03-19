@@ -45,10 +45,10 @@ public:
 		}
 		return output;
 	}
-	bool percentChance(const Percent& percent);
+	bool percentChance(const Percent percent);
 	bool chance(double chance);
 	bool chance(float chance);
-	Point3D getInCuboid(const Cuboid& cuboid);
+	Point3D getInCuboid(const Cuboid cuboid);
 	template<typename T>
 	T getInEnum()
 	{
@@ -89,7 +89,7 @@ public:
 		return output;
 	}
 	template<typename T>
-	T applyRandomFuzzPlusOrMinusPercent(const T& input, const Percent& percent)
+	T applyRandomFuzzPlusOrMinusPercent(const T& input, const Percent percent)
 	{
 		T output = input;
 		int maxPlus = percent.ratio() * (float)input.get();

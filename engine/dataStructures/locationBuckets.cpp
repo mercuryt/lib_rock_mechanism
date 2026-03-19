@@ -8,7 +8,7 @@ void sort()
 {
 	//TODO.
 }
-void LocationBucket::remove(const LocationBucketContentsIndex& index)
+void LocationBucket::remove(const LocationBucketContentsIndex index)
 {
 	int lastIndex = m_actors.size() - 1;
 	if(index != m_actors.size() - 1)
@@ -20,7 +20,7 @@ void LocationBucket::remove(const LocationBucketContentsIndex& index)
 	m_actors.popBack();
 	// Cuboid indices, vision range, and facing are implicitly truncated by m_actors.popBack().
 }
-void LocationBucket::copyIndex(const LocationBucket& other, const LocationBucketContentsIndex& otherIndex)
+void LocationBucket::copyIndex(const LocationBucket& other, const LocationBucketContentsIndex otherIndex)
 {
 	LocationBucketContentsIndex index = LocationBucketContentsIndex::create(m_actors.size());
 	if(m_actors.size() == m_actors.capacity())
@@ -30,7 +30,7 @@ void LocationBucket::copyIndex(const LocationBucket& other, const LocationBucket
 	m_facing[index.get()] = other.m_facing[otherIndex.get()];
 	m_actors.add(other.m_actors[otherIndex]);
 }
-void LocationBucket::insert(const ActorReference& actor, const Point3D& coordinates, const DistanceSquared& visionRangeSquared, const Facing4& facing)
+void LocationBucket::insert(const ActorReference actor, const Point3D coordinates, const DistanceSquared visionRangeSquared, const Facing4 facing)
 {
 	LocationBucketContentsIndex index = LocationBucketContentsIndex::create(m_actors.size());
 	if(m_actors.size() == m_actors.capacity())
@@ -41,13 +41,13 @@ void LocationBucket::insert(const ActorReference& actor, const Point3D& coordina
 	m_actors.add(actor);
 	sort();
 }
-void LocationBucket::remove(const ActorReference& actor)
+void LocationBucket::remove(const ActorReference actor)
 {
 	for(auto i = LocationBucketContentsIndex::create(0); i < m_actors.size(); ++i)
 		while(i < m_actors.size() && m_actors[i] == actor)
 			remove(i);
 }
-void LocationBucket::updateVisionRangeSquared(const ActorReference& actor, const Point3D& coordinates, const DistanceSquared& visionRangeSquared)
+void LocationBucket::updateVisionRangeSquared(const ActorReference actor, const Point3D coordinates, const DistanceSquared visionRangeSquared)
 {
 	for(auto i = LocationBucketContentsIndex::create(0); i < m_actors.size(); ++i)
 		if(m_actors[i] == actor && m_points[i.get()] == coordinates.data)
@@ -57,7 +57,7 @@ void LocationBucket::updateVisionRangeSquared(const ActorReference& actor, const
 			break;
 		}
 }
-bool LocationBucket::contains(const ActorReference& actor, const Point3D& coordinates) const
+bool LocationBucket::contains(const ActorReference actor, const Point3D coordinates) const
 {
 	for(auto i = LocationBucketContentsIndex::create(0); i < m_actors.size(); ++i)
 		if(m_actors[i] == actor && (m_points.data.col(i.get()) == coordinates.data).all())
@@ -76,7 +76,7 @@ void LocationBucket::reserve(int size)
 	m_actors.reserve(size);
 }
 const std::pair<const std::vector<ActorReference>*, Eigen::Array<bool, 2, Eigen::Dynamic>>
-LocationBucket::visionRequestQuery(const Area& area, const Point3D& position, const Facing4& facing, const DistanceSquared& visionRangeSquared, const CuboidSet& occupied, const Distance& largestVisionRange) const
+LocationBucket::visionRequestQuery(const Area& area, const Point3D position, const Facing4 facing, const DistanceSquared visionRangeSquared, const CuboidSet& occupied, const Distance  largestVisionRange) const
 {
 	Sphere sphere(position, largestVisionRange.toFloat());
 	// Broad phase culling.
@@ -110,7 +110,7 @@ LocationBucket::visionRequestQuery(const Area& area, const Point3D& position, co
 	return std::pair(&m_actors.toVector(), output);
 }
 const std::pair<const StrongVector<ActorReference, LocationBucketContentsIndex>*, Eigen::Array<bool, 1, Eigen::Dynamic>>
-LocationBucket::anyCanBeSeenQuery(const Area& area, const Cuboid& cuboid, const Point3DSet& points) const
+LocationBucket::anyCanBeSeenQuery(const Area& area, const Cuboid cuboid, const Point3DSet& points) const
 {
 	//TODO: use a template instead of an empty array.
 	static Eigen::Array<bool, 1, Eigen::Dynamic> alreadyEstablished;
@@ -119,7 +119,7 @@ LocationBucket::anyCanBeSeenQuery(const Area& area, const Cuboid& cuboid, const 
 	return anyCanBeSeenQuery(area, cuboid, points, alreadyEstablished);
 }
 const std::pair<const StrongVector<ActorReference, LocationBucketContentsIndex>*, Eigen::Array<bool, 1, Eigen::Dynamic>>
-LocationBucket::anyCanBeSeenQuery(const Area& area, const Cuboid& cuboid, const Point3DSet& points, const Eigen::Array<bool, 1, Eigen::Dynamic>& alreadyEstablished) const
+LocationBucket::anyCanBeSeenQuery(const Area& area, const Cuboid cuboid, const Point3DSet& points, const Eigen::Array<bool, 1, Eigen::Dynamic>& alreadyEstablished) const
 {
 	Eigen::Array<bool, 1, Eigen::Dynamic> intersectsShape = m_points.indicesOfContainedPoints(cuboid);
 	// TODO: if there are more points then viewers iterate the viewers instead.
@@ -151,7 +151,7 @@ LocationBucket::anyCanBeSeenQuery(const Area& area, const Cuboid& cuboid, const 
 		}
 	return {&m_actors, canBeSeenBy};
 }
-Eigen::Array<bool, 2, Eigen::Dynamic> LocationBucket::canSeeAndCanBeSeenByDistanceAndFacingFilter(const Point3D& location, const Facing4& facing, const DistanceSquared& visionRangeSquared) const
+Eigen::Array<bool, 2, Eigen::Dynamic> LocationBucket::canSeeAndCanBeSeenByDistanceAndFacingFilter(const Point3D location, const Facing4 facing, const DistanceSquared visionRangeSquared) const
 {
 	Eigen::Array<int, 1, Eigen::Dynamic> distances = m_points.distancesSquare(location);
 	Eigen::Array<Facing4, 1, Eigen::Dynamic> truncatedFacings = m_facing.block(0, 0, 1, m_actors.size());
@@ -166,7 +166,7 @@ Eigen::Array<bool, 2, Eigen::Dynamic> LocationBucket::canSeeAndCanBeSeenByDistan
 	output.row(1) = canBeSeenBy;
 	return output;
 }
-Eigen::Array<bool, 1, Eigen::Dynamic> LocationBucket::canBeSeenByDistanceAndFacingFilter(const Point3D& location) const
+Eigen::Array<bool, 1, Eigen::Dynamic> LocationBucket::canBeSeenByDistanceAndFacingFilter(const Point3D location) const
 {
 	Eigen::Array<int, 1, Eigen::Dynamic> distances = m_points.distancesSquare(location);
 	Eigen::Array<Facing4, 1, Eigen::Dynamic> truncatedFacings = m_facing.block(0, 0, 1, m_actors.size());

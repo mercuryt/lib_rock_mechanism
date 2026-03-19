@@ -58,14 +58,14 @@ public:
 	bool m_disolved = false;
 	bool m_aboveGround = false;
 
-	FluidGroup(FluidAllocator& allocator, const FluidTypeId& ft, const CuboidSet& points, Area& area, bool checkMerge = true);
+	FluidGroup(FluidAllocator& allocator, const FluidTypeId ft, const CuboidSet& points, Area& area, bool checkMerge = true);
 	FluidGroup(const FluidGroup&) = delete;
-	void addFluid(Area& area, const CollisionVolume& fluidVolume);
-	void removeFluid(Area& area, const CollisionVolume& fluidVolume);
-	void addPoint(Area& area, const Point3D& point, bool checkMerge = true);
+	void addFluid(Area& area, const CollisionVolume fluidVolume);
+	void removeFluid(Area& area, const CollisionVolume fluidVolume);
+	void addPoint(Area& area, const Point3D point, bool checkMerge = true);
 	void addPoints(Area& area, const CuboidSet& points, bool checkMerge = true);
-	void removePoint(Area& area, const Point3D& point);
-	void addMistFor(Area& area, const Point3D& point);
+	void removePoint(Area& area, const Point3D point);
+	void addMistFor(Area& area, const Point3D point);
 	// Takes a pointer to the other fluid group because we may switch them inorder to merge into the larger one.
 	// Return the larger.
 	FluidGroup* merge(Area& area, FluidGroup* fluidGroup);
@@ -79,7 +79,7 @@ public:
 	void validate(Area& area, SmallSet<FluidGroup*> toErase) const;
 	[[nodiscard]] CollisionVolume totalVolume(Area& area) const;
 	[[nodiscard]] const CuboidSet& getPoints() const { return m_drainQueue.m_set; }
-	[[nodiscard]] bool dispositionIsStable(const CollisionVolume& fillVolume, const CollisionVolume& drainVolume) const;
+	[[nodiscard]] bool dispositionIsStable(const CollisionVolume fillVolume, const CollisionVolume drainVolume) const;
 	[[nodiscard]] bool operator==(const FluidGroup& fluidGroup) const { return &fluidGroup == this; }
 	[[nodiscard]] Quantity countPointsOnSurface(const Area& area) const;
 	[[nodiscard]] int countPoints() const;

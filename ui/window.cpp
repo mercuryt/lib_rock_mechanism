@@ -33,6 +33,12 @@ Window::Window() : m_window(sf::VideoMode::getDesktopMode(), "Goblin Pit", sf::S
 				m_simulation->doStep(m_speed);
 			std::chrono::milliseconds delta = msSinceEpoch() - start;
 			if(delta < m_minimumTimePerStep)
+				/* When compiling for webassebly the follwing is required for sleeping background threads:
+				 The compiler must be passed the flags "-s USE_PTHREADS=1 -s ALLOW_MEMORY_GROWTH=1 -s PTHREAD_POOL_SIZE='navigator.hardwareConcurrency'"
+				 The page must be served with the HTTP headers:
+					Cross-Origin-Opener-Policy: same-origin
+					Cross-Origin-Embedder-Policy: require-corp
+				*/
 				std::this_thread::sleep_for(m_minimumTimePerStep - delta);
 		}
 	}), m_zoom(1.f), m_editMode(false)

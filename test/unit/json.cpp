@@ -104,6 +104,7 @@ TEST_CASE("json")
 		CHECK(space2.m_sizeX == 10);
 		CHECK(space2.solid_isAny(Point3D::create(5,5,0)));
 		CHECK(space2.solid_get(Point3D::create(5,5,0)) == dirt);
+		CHECK(space2.getSolid().nodeCount() == 1);
 		// Plant.
 		CHECK(space2.plant_exists(Point3D::create(8,8,1)));
 		PlantIndex sage2 = space2.plant_get(Point3D::create(8,8,1));

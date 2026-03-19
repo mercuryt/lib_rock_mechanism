@@ -20,14 +20,14 @@ class AreaHasDecks
 	RTreeData<DeckId> m_pointData;
 	DeckId m_nextId = DeckId::create(0);
 public:
-	void updatePoints(Area& area, const DeckId& id);
-	void clearPoints(Area& area, const DeckId& id);
-	[[nodiscard]] DeckId registerDecks(Area& area, const CuboidSet& decks, const ActorOrItemIndex& actorOrItemIndex);
-	void unregisterDecks(Area& area, const DeckId& id);
-	void shift(Area& area, const DeckId& id, const Offset3D& offset, const Distance& distance, const Point3D& origin, const Facing4& oldFacing, const Facing4& newFacing);
+	void updatePoints(Area& area, const DeckId id);
+	void clearPoints(Area& area, const DeckId id);
+	[[nodiscard]] DeckId registerDecks(Area& area, const CuboidSet& decks, const ActorOrItemIndex actorOrItemIndex);
+	void unregisterDecks(Area& area, const DeckId id);
+	void shift(Area& area, const DeckId id, const Offset3D offset, const Distance  distance, const Point3D origin, const Facing4 oldFacing, const Facing4 newFacing);
 	[[nodiscard]] bool isPartOfDeck(const auto& shape) const { return m_pointData.queryAny(shape); }
 	[[nodiscard]] DeckId queryDeckId(const auto& shape) const { return m_pointData.queryGetOne(shape); }
-	[[nodiscard]] ActorOrItemIndex getForId(const DeckId& id) { return m_data[id].actorOrItemIndex; }
+	[[nodiscard]] ActorOrItemIndex getForId(const DeckId id) { return m_data[id].actorOrItemIndex; }
 };
 // To be used to store data when moving an item with traversable decks.
 // We must remove all reservations, shapes, fluids, and projects prior to moving the item, and recreate them in their new locations after.
@@ -64,7 +64,7 @@ class DeckRotationData
 	MapWithCuboidKeys<std::pair<FluidTypeId, CollisionVolume>> m_fluids;
 	void rollback(Area& area, SmallMap<ActorOrItemIndex, DeckRotationDataSingle>::iterator begin, SmallMap<ActorOrItemIndex, DeckRotationDataSingle>::iterator end);
 public:
-	static DeckRotationData recordAndClearDependentPositions(Area& area, const ActorOrItemIndex& actorOrItem);
-	void reinstanceAtRotatedPosition(Area& area, const Point3D& previousPivot, const Point3D& newPivot, const Facing4& previousFacing, const Facing4& newFacing);
-	SetLocationAndFacingResult tryToReinstanceAtRotatedPosition(Area& area, const Point3D& previousPivot, const Point3D& newPivot, const Facing4& previousFacing, const Facing4& newFacing);
+	static DeckRotationData recordAndClearDependentPositions(Area& area, const ActorOrItemIndex actorOrItem);
+	void reinstanceAtRotatedPosition(Area& area, const Point3D previousPivot, const Point3D newPivot, const  Facing4 previousFacing, const Facing4 newFacing);
+	SetLocationAndFacingResult tryToReinstanceAtRotatedPosition(Area& area, const Point3D previousPivot, const Point3D newPivot, const  Facing4 previousFacing, const Facing4 newFacing);
 };

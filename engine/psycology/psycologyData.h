@@ -80,8 +80,8 @@ struct PsycologyData
 	void operator-=(const PsycologyData& other);
 	void operator*=(const float& scale);
 	[[nodiscard]] PsycologyData operator-(const PsycologyData& other) const;
-	void addTo(const PsycologyAttribute& attribute, const PsycologyWeight& value);
-	void set(const PsycologyAttribute& attribute, const PsycologyWeight& value);
+	void addTo(const PsycologyAttribute& attribute, const PsycologyWeight value);
+	void set(const PsycologyAttribute& attribute, const PsycologyWeight value);
 	void setAllToZero();
 	[[nodiscard]] const PsycologyWeight getValueFor(const PsycologyAttribute& attribute) const;
 	[[nodiscard]] bool anyAbove(const PsycologyData& other) const;

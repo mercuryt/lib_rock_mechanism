@@ -18,11 +18,11 @@ class SimulationHasAreas final
 public:
 	SimulationHasAreas(Simulation& simulation) : m_simulation(simulation) { }
 	SimulationHasAreas(const Json& data, DeserializationMemo& deserializationMemo, Simulation& simulation);
-	Area& createArea(const Distance& x, const Distance& y, const Distance& z, bool createDrama = false);
+	Area& createArea(const Distance  x, const Distance  y, const Distance  z, bool createDrama = false);
 	Area& createArea(int x, int y, int z, bool createDrama = false);
-	Area& loadArea(const AreaId& id, std::string name, const Distance& x, const Distance& y, const Distance& z);
+	Area& loadArea(const AreaId id, std::string name, const Distance  x, const Distance  y, const Distance  z);
 	Area& loadAreaFromJson(const Json& data, DeserializationMemo& deserializationMemo);
-	Area& loadAreaFromPath(const AreaId& id, DeserializationMemo& deserializationMemo);
+	Area& loadAreaFromPath(const AreaId id, DeserializationMemo& deserializationMemo);
 	void destroyArea(Area& area);
 	void loadAreas(const Json& data, DeserializationMemo& deserializationMemo);
 	void loadAreas(const Json& data, std::filesystem::path path);
@@ -33,7 +33,7 @@ public:
 	void recordId(Area& area);
 	[[nodiscard]] Step getNextStepToSimulate() const;
 	[[nodiscard]] Step getNextEventStep() const;
-	[[nodiscard]] Area& getById(const AreaId& id) const {return *m_areasById[id]; }
+	[[nodiscard]] Area& getById(const AreaId id) const {return *m_areasById[id]; }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] SmallMapStable<AreaId, Area>& getAll() { return m_areas; }
 };

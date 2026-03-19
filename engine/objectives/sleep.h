@@ -6,11 +6,25 @@
 class Area;
 class SleepObjective;
 class SleepPathRequest;
+enum class DesireToSleepAt
+{
+	Impossible,
+	OutsideOrOccupied,
+	Inside,
+	Designated,
+};
+NLOHMANN_JSON_SERIALIZE_ENUM(DesireToSleepAt,
+{
+	{ DesireToSleepAt::Impossible, "Impossible"},
+	{ DesireToSleepAt::OutsideOrOccupied, "OutsideOrOccupied"},
+	{ DesireToSleepAt::Inside, "Inside"},
+	{ DesireToSleepAt::Designated, "Designated"},
+})
 class SleepObjectiveType final : public ObjectiveType
 {
 public:
-	[[nodiscard]] bool canBeAssigned(Area&, const ActorIndex&) const { std::unreachable(); }
-	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, const ActorIndex&) const { std::unreachable(); }
+	[[nodiscard]] bool canBeAssigned(Area&, const ActorIndex) const { std::unreachable(); }
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, const ActorIndex) const { std::unreachable(); }
 	SleepObjectiveType() = default;
 	SleepObjectiveType(const Json&, DeserializationMemo&);
 	[[nodiscard]] std::string name() const { return "sleep"; }
@@ -21,15 +35,15 @@ class SleepObjective final : public Objective
 public:
 	SleepObjective();
 	SleepObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area&, const ActorIndex& actor);
-	void cancel(Area&, const ActorIndex& actor);
-	void delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
-	void reset(Area& area, const ActorIndex& actor);
-	void selectLocation(Area& area, const Point3D& index, const ActorIndex& actor);
-	void makePathRequest(Area& area, const ActorIndex& actor);
+	void execute(Area&, const ActorIndex actor) override;
+	void cancel(Area&, const ActorIndex actor) override;
+	void delay(Area& area, const ActorIndex actor)  override{ cancel(area, actor); }
+	void reset(Area& area, const ActorIndex actor) override;
+	void selectLocation(Area& area, const Point3D index, const ActorIndex actor);
+	void makePathRequest(Area& area, const ActorIndex actor);
 	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("sleep").getId(); }
-	[[nodiscard]] bool onCanNotPath(Area& area, const ActorIndex& actor);
-	[[nodiscard]] int desireToSleepAt(Area& area, const Point3D& point, const ActorIndex& actor) const;
+	[[nodiscard]] bool onCanNotPath(Area& area, const ActorIndex actor);
+	[[nodiscard]] DesireToSleepAt desireToSleepAt(Area& area, const Point3D point, const ActorIndex actor) const;
 	[[nodiscard]] std::string name() const { return "sleep"; }
 	[[nodiscard]] bool isNeed() const { return true; }
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::sleep; }
@@ -47,7 +61,7 @@ class SleepPathRequest final : public PathRequestBreadthFirst
 	Point3D m_maxDesireCandidate;
 	bool m_sleepAtCurrentLocation = false;
 public:
-	SleepPathRequest(Area& area, SleepObjective& so, const ActorIndex& actor);
+	SleepPathRequest(Area& area, SleepObjective& so, const ActorIndex actor);
 	SleepPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;

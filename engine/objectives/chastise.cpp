@@ -8,7 +8,7 @@
 #include "../config/psycology.h"
 #include "confrontation.h"
 #include "followScript.h"
-ChastiseObjective::ChastiseObjective(Area& area, const ActorIndex& recipient, std::string&& subject, const SkillTypeId& skill, int duration, bool angry) :
+ChastiseObjective::ChastiseObjective(Area& area, const ActorIndex recipient, std::string&& subject, const SkillTypeId skill, int duration, bool angry) :
 	Objective(Config::Social::socialPriorityHigh),
 	m_subject(std::move(subject)),
 	m_skillBeingCritisized(skill),
@@ -18,7 +18,7 @@ ChastiseObjective::ChastiseObjective(Area& area, const ActorIndex& recipient, st
 	m_recipient.setIndex(recipient, area.getActors().m_referenceData);
 	createOnDestroyCallback(area, recipient);
 }
-ChastiseObjective::ChastiseObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) :
+ChastiseObjective::ChastiseObjective(const Json& data, Area& area, const ActorIndex actor, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo)
 {
 	m_recipient.load(data["recipient"], area.getActors().m_referenceData);
@@ -30,22 +30,22 @@ Json ChastiseObjective::toJson() const
 {
 	return {{"angry", m_angry}, {"recipient", m_recipient}};
 }
-void ChastiseObjective::execute(Area& area, const ActorIndex& actor)
+void ChastiseObjective::execute(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
-	const ActorIndex& recipientIndex = m_recipient.getIndex(actors.m_referenceData);
+	const ActorIndex recipientIndex = m_recipient.getIndex(actors.m_referenceData);
 	// TODO: delay if not awake.
 	if(!actors.isAlive(recipientIndex) || !actors.sleep_isAwake(recipientIndex))
 	{
 		actors.objective_cancel(actor, *this);
 		return;
 	}
-	auto castingCall = [&](const ActorReference& ref) -> float
+	auto castingCall = [&](const ActorReference ref) -> float
 	{
 		const ActorIndex candidate = ref.getIndex(actors.m_referenceData);
 		float output = 0;
 		Psycology& psycology = actors.psycology_get(candidate);
-		const ActorId& candidateId = actors.getId(candidate);
+		const ActorId candidateId = actors.getId(candidate);
 		if(psycology.getFriends().contains(candidateId))
 			output += Config::chastiseCastingCallBonusForDefenderIsFriend;
 		if(psycology.getFamily().contains(candidateId))
@@ -74,12 +74,12 @@ void ChastiseObjective::execute(Area& area, const ActorIndex& actor)
 			{
 				// TODO: change dialog message.
 				SmallSet<ActorReference>& canBeSeenBy = actors.vision_getCanBeSeenBy(recipientIndex);
-				const ActorReference& interventionCandidate = *std::ranges::max_element(canBeSeenBy.m_data, {}, castingCall);
+				const ActorReference interventionCandidate = *std::ranges::max_element(canBeSeenBy.m_data, {}, castingCall);
 				if(interventionCandidate.exists() && castingCall(interventionCandidate) >= Config::chastiseCastingCallDefenderMinimumScore)
 				{
 					// Someone interveins on behalf of recipient.
 					m_duration = 0;
-					const ActorIndex& defender = interventionCandidate.getIndex(actors.m_referenceData);
+					const ActorIndex defender = interventionCandidate.getIndex(actors.m_referenceData);
 					std::string reasonForConfrontation = actors.getName(defender) + " defends " + recipientName + " regarding " + m_subject;
 					actors.objective_addNeed(defender, std::make_unique<ConfrontationObjective>(reasonForConfrontation, actors.getId(actor)));
 				}
@@ -115,27 +115,27 @@ void ChastiseObjective::execute(Area& area, const ActorIndex& actor)
 		}
 	}
 }
-void ChastiseObjective::cancel(Area& area, const ActorIndex& actor)
+void ChastiseObjective::cancel(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
 	if(m_event.exists())
 	{
-		const ActorIndex& recipient = m_recipient.getIndex(actors.m_referenceData);
+		const ActorIndex recipient = m_recipient.getIndex(actors.m_referenceData);
 		actors.objective_complete(recipient, actors.objective_getCurrent<FollowScriptSubObjective>(recipient));
 	}
 	actors.objective_canNotFulfillNeed(actor, *this);
 }
-void ChastiseObjective::delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
-void ChastiseObjective::reset(Area& area, const ActorIndex& actor) { cancel(area, actor); }
-void ChastiseObjective::createOnDestroyCallback(Area& area, const ActorIndex& actor)
+void ChastiseObjective::delay(Area& area, const ActorIndex actor) { cancel(area, actor); }
+void ChastiseObjective::reset(Area& area, const ActorIndex actor) { cancel(area, actor); }
+void ChastiseObjective::createOnDestroyCallback(Area& area, const ActorIndex actor)
 {
 	ActorReference actorRef = area.getActors().m_referenceData.getReference(actor);
 	m_hasOnDestroySubscriptions.setCallback(std::make_unique<CancelObjectiveOnDestroyCallBack>(actorRef, *this, area));
 	// Recipient.
 	area.getActors().onDestroy_subscribe(m_recipient.getIndex(area.getActors().m_referenceData), m_hasOnDestroySubscriptions);
 }
-ChastiseScheduledEvent::ChastiseScheduledEvent(const Step& duration, ChastiseObjective& objective, const ActorReference& actor, Simulation& simulation, const Step& start) :
+ChastiseScheduledEvent::ChastiseScheduledEvent(const Step duration, ChastiseObjective& objective, const ActorReference actor, Simulation& simulation, const Step start) :
 	ScheduledEvent(simulation, duration, start),
 	m_objective(objective),
 	m_actor(actor)

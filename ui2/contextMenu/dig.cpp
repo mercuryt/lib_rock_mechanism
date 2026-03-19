@@ -1,48 +1,57 @@
 #include "contextMenu.h"
 #include "../window.h"
 #include "../widgets/widgets.h"
+#include "../../engine/area/area.h"
+#include "../../engine/space/space.h"
 void contextMenu::controlls::dig(Window& window)
 {
 	Space& space = window.m_area->getSpace();
-	if(ImGui::Button("dig all"))
+	ControllsState& state = window.m_gameOverlay.m_controllsState;
+	if(ImGui::BeginMenu("dig"))
 	{
-		if(window.editMode)
+		if(ImGui::MenuItem("all"))
 		{
-			space.solid_unset(window.m_gameOverlay.m_selectedArea);
-			space.feature_removeAll(window.m_gameOverlay.m_selectedArea);
+			if(window.m_editMode)
+			{
+				space.solid_setNotAll(window.m_gameOverlay.m_selectedArea);
+				for(const Cuboid& cuboid : window.m_gameOverlay.m_selectedArea)
+					for(const Point3D point : cuboid)
+						space.pointFeature_removeAll(point);
+			}
+			else
+			{
+				for(const Cuboid& cuboid : window.m_gameOverlay.m_selectedArea)
+					for(const Point3D point : cuboid)
+						window.m_area->m_hasDigDesignations.designate(window.m_faction, point, PointFeatureTypeId::Null);
+			}
+			ImGui::CloseCurrentPopup();
 		}
-		else
-		{
-			for(const Cuboid& cuboid : window.m_gameOverlay.m_selectedArea)
-				for(const Point3D point : cuboid)
-					m_window.getArea()->m_hasDigDesignations.designate(m_window.m_faction, point, PointFeatureTypeId::Null);
-		}
-		state.current = ContextMenuId::Null;
-	}
-	if(space.solid_isAny(state.clickedOnPoint) && space.solid_isAny(window.m_gameOverlay.m_selectedArea))
-		if(ImGui::Button("hew feature"))
-			state.current = ContextMenuId::Dig;
-}
-void contextMenu::submenus::dig(Window& window)
-{
-	ContextMenuState& state = window.m_gameOverly.m_contextMenuState;
-	Space& space = window.m_area->getSpace();
-	auto condition = [&](const PointFeatureTypeId featureType){
-		return PointFeature::byId(featureType).canBeHewn;
-	};
-	widgets::featureType(&state.featureType, condition);
-	if(ImGui::Button("hew feature"))
-	{
-		const CuboidSet toHew = space.solid_queryCuboids(window.m_gameOverlay.m_selectedArea);
-		space.solid_removeNot(selectedCopy);
-		if(window.editMode)
-			space.pointFeature_hew(toHew, *state.featureType);
-		else
-		{
-			for(const Cuboid& cuboid : toHew)
-				for(const Point3D point : cuboid)
-					m_window.getArea()->m_hasDigDesignations.designate(m_window.m_faction, point, *state.featureType);
-		}
-		state.current = ContextMenuId::Null;
+		if(space.solid_isAny(state.clickedOnPoint) && space.solid_isAny(window.m_gameOverlay.m_selectedArea))
+			if(ImGui::BeginMenu("hew feature"))
+			{
+				auto condition = [&](const PointFeatureTypeId featureType){
+					return PointFeatureType::byId(featureType).canBeHewn;
+				};
+				widgets::featureType(&state.featureType, condition);
+				if(ImGui::MenuItem("hew feature"))
+				{
+					const CuboidSet toHew = space.solid_queryCuboids(window.m_gameOverlay.m_selectedArea);
+					if(window.m_editMode)
+					{
+						for(const Cuboid& cuboid : toHew)
+							for(const Point3D point : cuboid)
+								space.pointFeature_hew(point, state.featureType);
+					}
+					else
+					{
+						for(const Cuboid& cuboid : toHew)
+							for(const Point3D point : cuboid)
+								window.m_area->m_hasDigDesignations.designate(window.m_faction, point, state.featureType);
+					}
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::EndMenu();
+			}
+		ImGui::EndMenu();
 	}
 }

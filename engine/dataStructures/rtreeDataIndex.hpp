@@ -1,14 +1,14 @@
 #pragma once
 #include "rtreeDataIndex.h"
 template<typename T, RTreeDataConfig config>
-void RTreeDataIndex<T, config>::insert(const Cuboid& cuboid, T&& value)
+void RTreeDataIndex<T, config>::insert(const Cuboid cuboid, T&& value)
 {
 	const DataIndex index = DataIndex::create(m_data.size());
 	m_tree.maybeInsert(cuboid, index);
 	m_data.emplaceBack(std::move(value), cuboid);
 }
 template<typename T, RTreeDataConfig config>
-void RTreeDataIndex<T, config>::insertOrOverwrite(const Cuboid& cuboid, T&& value)
+void RTreeDataIndex<T, config>::insertOrOverwrite(const Cuboid cuboid, T&& value)
 {
 	const DataIndex found = m_tree.queryGetOne(cuboid);
 	if(found.exists())
@@ -24,11 +24,11 @@ void RTreeDataIndex<T, config>::insertOrOverwrite(const Cuboid& cuboid, T&& valu
 	}
 }
 template<typename T, RTreeDataConfig config>
-void RTreeDataIndex<T, config>::insert(const Point3D& point, T&& value) { insert({point, point}, std::move(value)); }
+void RTreeDataIndex<T, config>::insert(const Point3D point, T&& value) { insert({point, point}, std::move(value)); }
 template<typename T, RTreeDataConfig config>
-void RTreeDataIndex<T, config>::insertOrOverwrite(const Point3D& point, T&& value) { insertOrOverwrite({point, point}, std::move(value)); }
+void RTreeDataIndex<T, config>::insertOrOverwrite(const Point3D point, T&& value) { insertOrOverwrite({point, point}, std::move(value)); }
 template<typename T, RTreeDataConfig config>
-void RTreeDataIndex<T, config>::remove(const Point3D& point) { remove(Cuboid{point, point}); }
+void RTreeDataIndex<T, config>::remove(const Point3D point) { remove(Cuboid{point, point}); }
 template<typename T, RTreeDataConfig config>
 void RTreeDataIndex<T, config>::clear() { m_tree.clear(); m_data.clear(); }
 template<typename T, RTreeDataConfig config>

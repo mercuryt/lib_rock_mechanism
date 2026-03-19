@@ -38,7 +38,7 @@ class ReMarkItemForStockPilingEvent final : public ScheduledEvent
 	ItemCanBeStockPiled* m_canBeStockPiled = nullptr;
 public:
 	ReMarkItemForStockPilingEvent() { assert(false); std::unreachable(); }
-	ReMarkItemForStockPilingEvent(Area& area, ItemCanBeStockPiled& i, const FactionId& f, const Step& duration, const Step start = Step::null());
+	ReMarkItemForStockPilingEvent(Area& area, ItemCanBeStockPiled& i, const FactionId f, const Step duration, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -48,17 +48,17 @@ class ItemCanBeStockPiled
 {
 	SmallMap<FactionId, HasScheduledEvent<ReMarkItemForStockPilingEvent>> m_scheduledEvents;
 	SmallSet<FactionId> m_data;
-	void scheduleReset(Area& area, const FactionId& faction, const Step& duration, Step start = Step::null());
+	void scheduleReset(Area& area, const FactionId faction, const Step duration, Step start = Step::null());
 public:
 	void load(const Json& data, Area& area);
-	void set(const FactionId& faction) { assert(!m_data.contains(faction)); m_data.insert(faction); }
-	void maybeSet(const FactionId& faction) { m_data.insert(faction); }
-	void unset(const FactionId& faction) { assert(m_data.contains(faction)); m_data.erase(faction); }
-	void maybeUnset(const FactionId& faction) { m_data.erase(faction); }
-	void unsetAndScheduleReset(Area& area, const FactionId& faction, const Step& duration);
-	void maybeUnsetAndScheduleReset(Area& area, const FactionId& faction, const Step& duration);
+	void set(const FactionId faction) { assert(!m_data.contains(faction)); m_data.insert(faction); }
+	void maybeSet(const FactionId faction) { m_data.insert(faction); }
+	void unset(const FactionId faction) { assert(m_data.contains(faction)); m_data.erase(faction); }
+	void maybeUnset(const FactionId faction) { m_data.erase(faction); }
+	void unsetAndScheduleReset(Area& area, const FactionId faction, const Step duration);
+	void maybeUnsetAndScheduleReset(Area& area, const FactionId faction, const Step duration);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] bool contains(const FactionId& faction) const { return m_data.contains(faction); }
+	[[nodiscard]] bool contains(const FactionId faction) const { return m_data.contains(faction); }
 	[[nodiscard]] bool empty() const { return m_data.empty(); }
 	friend class ReMarkItemForStockPilingEvent;
 };
@@ -73,31 +73,31 @@ class ItemHasCargo final
 	Mass m_mass = Mass::create(0);
 	CollisionVolume m_fluidVolume = CollisionVolume::create(0);
 public:
-	ItemHasCargo(const ItemTypeId& itemType);
+	ItemHasCargo(const ItemTypeId itemType);
 	ItemHasCargo(const Json& data);
-	void addItem(Area& area, const ItemIndex& itemIndex);
-	void addActor(Area& area, const ActorIndex& actorIndex);
-	void addFluid(const FluidTypeId& fluidType, const CollisionVolume& volume);
-	ItemIndex addItemGeneric(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity);
-	void removeFluidVolume(const FluidTypeId& fluidType, const CollisionVolume& volume);
-	void removeActor(Area& area, const ActorIndex& actorIndex);
-	void removeItem(Area& area, const ItemIndex& item);
-	void removeItemGeneric(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity);
+	void addItem(Area& area, const ItemIndex itemIndex);
+	void addActor(Area& area, const ActorIndex actorIndex);
+	void addFluid(const FluidTypeId fluidType, const CollisionVolume volume);
+	ItemIndex addItemGeneric(Area& area, const ItemTypeId itemType, const MaterialTypeId materialType, const Quantity quantity);
+	void removeFluidVolume(const FluidTypeId fluidType, const CollisionVolume volume);
+	void removeActor(Area& area, const ActorIndex actor);
+	void removeItem(Area& area, const ItemIndex item);
+	void removeItemGeneric(Area& area, const ItemTypeId itemType, const MaterialTypeId materialType, const Quantity quantity);
 	// When an item changes index and it has cargo update the m_carrier data of the cargo.
-	void updateCarrierIndexForAllCargo(Area& area, const ItemIndex& newIndex);
-	ItemIndex unloadGenericTo(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity, const Point3D& location);
+	void updateCarrierIndexForAllCargo(Area& area, const ItemIndex newIndex);
+	ItemIndex unloadGenericTo(Area& area, const ItemTypeId itemType, const MaterialTypeId materialType, const Quantity quantity, const Point3D location);
 	[[nodiscard]] const SmallSet<ActorIndex>& getActors() const { return m_actors; }
 	[[nodiscard]] const SmallSet<ItemIndex>& getItems() const { return m_items; }
-	[[nodiscard]] bool canAddActor(Area& area, const ActorIndex& index) const;
-	[[nodiscard]] bool canAddItem(Area& area, const ItemIndex& item) const;
-	[[nodiscard]] bool canAddFluid(const FluidTypeId& fluidType) const;
+	[[nodiscard]] bool canAddActor(Area& area, const ActorIndex index) const;
+	[[nodiscard]] bool canAddItem(Area& area, const ItemIndex item) const;
+	[[nodiscard]] bool canAddFluid(const FluidTypeId fluidType) const;
 	[[nodiscard]] CollisionVolume getFluidVolume() const { return m_fluidVolume; }
 	[[nodiscard]] FluidTypeId getFluidType() const { assert(m_fluidType.exists()); return m_fluidType; }
 	[[nodiscard]] bool containsAnyFluid() const { return m_fluidType.exists(); }
-	[[nodiscard]] bool containsFluidType(const FluidTypeId& fluidType) const { return m_fluidType == fluidType; }
-	[[nodiscard]] bool containsActor(const ActorIndex& index) const { return m_actors.contains(index); }
-	[[nodiscard]] bool containsItem(const ItemIndex& index) const { return m_items.contains(index); }
-	[[nodiscard]] bool containsGeneric(Area& area, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity) const;
+	[[nodiscard]] bool containsFluidType(const FluidTypeId fluidType) const { return m_fluidType == fluidType; }
+	[[nodiscard]] bool containsActor(const ActorIndex index) const { return m_actors.contains(index); }
+	[[nodiscard]] bool containsItem(const ItemIndex index) const { return m_items.contains(index); }
+	[[nodiscard]] bool containsGeneric(Area& area, const ItemTypeId itemType, const MaterialTypeId materialType, const Quantity quantity) const;
 	[[nodiscard]] bool empty() const { return m_fluidType.empty() && m_actors.empty() && m_items.empty(); }
 	[[nodiscard]] Mass getMass() const { return m_mass; }
 	[[nodiscard]] Json toJson() const;
@@ -120,7 +120,7 @@ class Items final : public Portables<Items, ItemIndex, ItemReferenceIndex, false
 	StrongVector<Quantity, ItemIndex> m_quantity; // Always set to 1 for nongeneric types.
 	StrongVector<ActorIndex, ItemIndex> m_pilot;
 	StrongVector<std::unique_ptr<ConstructedShape>, ItemIndex> m_constructedShape;
-	void moveIndex(const ItemIndex& oldIndex, const ItemIndex& newIndex);
+	void moveIndex(const ItemIndex oldIndex, const ItemIndex newIndex);
 public:
 	Items(Area& area);
 	void load(const Json& json);
@@ -148,126 +148,127 @@ public:
 	// Returns index in case of nongeneric or generics with a type not present at the location.
 	// If a generic of the same type is found return it instead.
 	ItemIndex create(ItemParamaters paramaters);
-	void destroy(const ItemIndex& index);
-	void setName(const ItemIndex& index, std::string name);
-	void pierced(const ItemIndex& index, const FullDisplacement volume);
-	void setTemperature(const ItemIndex& index, const Temperature& temperature, const Point3D& point);
-	void addQuantity(const ItemIndex& index, const Quantity& delta);
-	void removeQuantity(const ItemIndex& index, const Quantity& delta, CanReserve* canReserve = nullptr);
-	void install(const ItemIndex& index, const Point3D& point, const Facing4& facing, const FactionId& faction);
+	void destroy(const ItemIndex index);
+	void destroyAll(const SmallSet<ItemIndex>& index);
+	void setName(const ItemIndex index, std::string name);
+	void pierced(const ItemIndex index, const FullDisplacement volume);
+	void setTemperature(const ItemIndex index, const Temperature temperature, const Point3D point);
+	void addQuantity(const ItemIndex index, const Quantity delta);
+	void removeQuantity(const ItemIndex index, const Quantity delta, CanReserve* canReserve = nullptr);
+	void install(const ItemIndex index, const Point3D point, const Facing4 facing, const FactionId faction);
 	// Returns the index of the item which was passed in as 'index', it may have changed with 'item' being destroyed due to generic merge.
-	ItemIndex merge(const ItemIndex& index, const ItemIndex& item);
-	void setQuality(const ItemIndex& index, const Quality& quality);
-	void setWear(const ItemIndex& index, const Percent& wear);
-	void setQuantity(const ItemIndex& index, const Quantity& quantity);
-	void unsetCraftJobForWorkPiece(const ItemIndex& index);
-	void takeFallDamage(const ItemIndex&, const Distance&, const MaterialTypeId&) { /* TODO */ }
-	void resetMoveType(const ItemIndex& index);
+	ItemIndex merge(const ItemIndex index, const ItemIndex item);
+	void setQuality(const ItemIndex index, const Quality quality);
+	void setWear(const ItemIndex index, const Percent wear);
+	void setQuantity(const ItemIndex index, const Quantity quantity);
+	void unsetCraftJobForWorkPiece(const ItemIndex index);
+	void takeFallDamage(const ItemIndex, const Distance , const MaterialTypeId) { /* TODO */ }
+	void resetMoveType(const ItemIndex index);
 	// Wrap HasShapes::SetStatic and unset to support constrcuted shapes setting or unsetting Space::m_dynamic instead.
-	void setStatic(const ItemIndex& index);
-	void unsetStatic(const ItemIndex& index);
+	void setStatic(const ItemIndex index);
+	void unsetStatic(const ItemIndex index);
 	[[nodiscard]] SmallSet<ItemIndex> getAll() const;
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] bool isInstalled(const ItemIndex& index) { return m_installed[index]; }
-	[[nodiscard]] Quantity getQuantity(const ItemIndex& index) const { return m_quantity[index]; }
-	[[nodiscard]] Quality getQuality(const ItemIndex& index) const { return m_quality[index]; }
-	[[nodiscard]] Percent getWear(const ItemIndex& index) const { return m_percentWear[index]; }
-	[[nodiscard]] std::string getName(const ItemIndex& index) const { return m_name[index]; }
-	[[nodiscard]] bool isGeneric(const ItemIndex& index) const;
-	[[nodiscard]] bool isPreparedMeal(const ItemIndex& index) const;
-	[[nodiscard]] bool isWorkPiece(const ItemIndex& index) const { return m_craftJobForWorkPiece[index] != nullptr; }
-	[[nodiscard]] bool canMove(const ItemIndex& index) const { return pilot_exists(index) && vehicle_getSpeed(index) != 0; }
-	[[nodiscard]] ConstructedShape& getConstructedShape(const ItemIndex& index) { return *m_constructedShape[index]; }
-	[[nodiscard]] bool hasConstructedShape(const ItemIndex& index) { return m_constructedShape[index] != nullptr; }
-	[[nodiscard]] CraftJob& getCraftJobForWorkPiece(const ItemIndex& index) const;
-	[[nodiscard]] Mass getSingleUnitMass(const ItemIndex& index) const;
-	[[nodiscard]] Mass getMass(const ItemIndex& index) const;
-	[[nodiscard]] FullDisplacement getVolume(const ItemIndex& index) const;
-	[[nodiscard]] MoveTypeId getMoveType(const ItemIndex& index) const;
-	[[nodiscard]] ItemTypeId getItemType(const ItemIndex& index) const { return m_itemType[index]; }
-	[[nodiscard]] MaterialTypeId getMaterialType(const ItemIndex& index) const { return m_solid[index]; }
-	[[nodiscard]] bool canCombine(const ItemIndex& index, const ItemIndex& toMerge);
-	[[nodiscard]] std::string description(const ItemIndex& index);
+	[[nodiscard]] bool isInstalled(const ItemIndex index) { return m_installed[index]; }
+	[[nodiscard]] Quantity getQuantity(const ItemIndex index) const { return m_quantity[index]; }
+	[[nodiscard]] Quality getQuality(const ItemIndex index) const { return m_quality[index]; }
+	[[nodiscard]] Percent getWear(const ItemIndex index) const { return m_percentWear[index]; }
+	[[nodiscard]] std::string getName(const ItemIndex index) const { return m_name[index]; }
+	[[nodiscard]] bool isGeneric(const ItemIndex index) const;
+	[[nodiscard]] bool isPreparedMeal(const ItemIndex index) const;
+	[[nodiscard]] bool isWorkPiece(const ItemIndex index) const { return m_craftJobForWorkPiece[index] != nullptr; }
+	[[nodiscard]] bool canMove(const ItemIndex index) const { return pilot_exists(index) && vehicle_getSpeed(index) != 0; }
+	[[nodiscard]] ConstructedShape& getConstructedShape(const ItemIndex index) { return *m_constructedShape[index]; }
+	[[nodiscard]] bool hasConstructedShape(const ItemIndex index) { return m_constructedShape[index] != nullptr; }
+	[[nodiscard]] CraftJob& getCraftJobForWorkPiece(const ItemIndex index) const;
+	[[nodiscard]] Mass getSingleUnitMass(const ItemIndex index) const;
+	[[nodiscard]] Mass getMass(const ItemIndex index) const;
+	[[nodiscard]] FullDisplacement getVolume(const ItemIndex index) const;
+	[[nodiscard]] MoveTypeId getMoveType(const ItemIndex index) const;
+	[[nodiscard]] ItemTypeId getItemType(const ItemIndex index) const { return m_itemType[index]; }
+	[[nodiscard]] MaterialTypeId getMaterialType(const ItemIndex index) const { return m_solid[index]; }
+	[[nodiscard]] bool canCombine(const ItemIndex index, const ItemIndex toMerge);
+	[[nodiscard]] std::string description(const ItemIndex index);
 	// - Location.
 private:
-	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetGenericStatic(const ItemIndex& index, const Point3D& location, const Facing4 facing);
-	SetLocationAndFacingResult location_tryToSetNongenericStatic(const ItemIndex& index, const Point3D& location, const Facing4 facing);
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetGenericStatic(const ItemIndex index, const Point3D location, const Facing4 facing);
+	SetLocationAndFacingResult location_tryToSetNongenericStatic(const ItemIndex index, const Point3D location, const Facing4 facing);
 public:
 	// Return an item index here because a static generic may combine and invalidat the passed in index.
-	ItemIndex location_set(const ItemIndex& index, const Point3D& location, const Facing4 facing);
-	ItemIndex location_setStatic(const ItemIndex& index, const Point3D& location, const Facing4 facing);
+	ItemIndex location_set(const ItemIndex index, const Point3D location, const Facing4 facing);
+	ItemIndex location_setStatic(const ItemIndex index, const Point3D location, const Facing4 facing);
 	// TODO: this shouldn't need to return anything.
-	ItemIndex location_setDynamic(const ItemIndex& index, const Point3D& location, const Facing4 facing);
+	ItemIndex location_setDynamic(const ItemIndex index, const Point3D location, const Facing4 facing);
 	// Used when item already has a location, rolls back position on failure.
-	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToStatic(const ItemIndex& index, const Point3D& location);
-	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToDynamic(const ItemIndex& index, const Point3D& location);
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToStatic(const ItemIndex index, const Point3D location);
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToMoveToDynamic(const ItemIndex index, const Point3D location);
 	// Used when item does not have a location.
-	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSet(const ItemIndex& index, const Point3D& location, const Facing4& facing);
-	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetStatic(const ItemIndex& index, const Point3D& location, const Facing4& facing);
-	SetLocationAndFacingResult location_tryToSetDynamic(const ItemIndex& index, const Point3D& location, const Facing4& facing);
-	void location_clear(const ItemIndex& index);
-	void location_clearStatic(const ItemIndex& index);
-	void location_clearDynamic(const ItemIndex& index);
-	[[nodiscard]] bool location_canEnterEverWithFacing(const ItemIndex& index, const Point3D& location, const Facing4& facing) const;
-	[[nodiscard]] bool location_canEnterCurrentlyWithFacing(const ItemIndex& index, const Point3D& location, const Facing4& facing) const;
-	[[nodiscard]] bool location_canEnterEverFrom(const ItemIndex& index, const Point3D& location, const Point3D& previous) const;
-	[[nodiscard]] bool location_canEnterCurrentlyFrom(const ItemIndex& index, const Point3D& location, const Point3D& previous) const;
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSet(const ItemIndex index, const Point3D location, const Facing4 facing);
+	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetStatic(const ItemIndex index, const Point3D location, const Facing4 facing);
+	SetLocationAndFacingResult location_tryToSetDynamic(const ItemIndex index, const Point3D location, const Facing4 facing);
+	void location_clear(const ItemIndex index);
+	void location_clearStatic(const ItemIndex index);
+	void location_clearDynamic(const ItemIndex index);
+	[[nodiscard]] bool location_canEnterEverWithFacing(const ItemIndex index, const Point3D location, const Facing4 facing) const;
+	[[nodiscard]] bool location_canEnterCurrentlyWithFacing(const ItemIndex index, const Point3D location, const Facing4 facing) const;
+	[[nodiscard]] bool location_canEnterEverFrom(const ItemIndex index, const Point3D location, const Point3D previous) const;
+	[[nodiscard]] bool location_canEnterCurrentlyFrom(const ItemIndex index, const Point3D location, const Point3D previous) const;
 	// -Cargo.
-	void cargo_addActor(const ItemIndex& index, const ActorIndex& actor);
-	ItemIndex cargo_addItem(const ItemIndex& index, const ItemIndex& item, const Quantity& quantity);
-	void cargo_addItemGeneric(const ItemIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity);
-	void cargo_addPolymorphic(const ItemIndex& index, const ActorOrItemIndex& actorOrItemIndex, const Quantity& quantity);
-	void cargo_addFluid(const ItemIndex& index, const FluidTypeId& fluidType, const CollisionVolume& volume);
-	void cargo_loadActor(const ItemIndex& index, const ActorIndex& actor);
-	ItemIndex cargo_loadItem(const ItemIndex& index, const ItemIndex& item, const Quantity& quantity);
-	ActorOrItemIndex cargo_loadPolymorphic(const ItemIndex& index, const ActorOrItemIndex& actorOrItem, const Quantity& quantity);
-	void cargo_loadFluidFromLocation(const ItemIndex& index, const FluidTypeId& fluidType, const CollisionVolume& volume, const Point3D& location);
-	void cargo_loadFluidFromItem(const ItemIndex& index, const FluidTypeId& fluidType, const CollisionVolume& volume, const ItemIndex& item);
-	void cargo_remove(const ItemIndex& index, const ActorOrItemIndex& actorOrItem);
-	void cargo_removeActor(const ItemIndex& index, const ActorIndex& actor);
-	void cargo_removeItem(const ItemIndex& index, const ItemIndex& item);
-	void cargo_removeItemGeneric(const ItemIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity);
-	void cargo_removeFluid(const ItemIndex& index, const CollisionVolume& volume);
+	void cargo_addActor(const ItemIndex index, const ActorIndex actor);
+	ItemIndex cargo_addItem(const ItemIndex index, const ItemIndex item, const Quantity quantity);
+	void cargo_addItemGeneric(const ItemIndex index, const ItemTypeId itemType, const MaterialTypeId materialType, const Quantity quantity);
+	void cargo_addPolymorphic(const ItemIndex index, const ActorOrItemIndex actorOrItemIndex, const Quantity quantity);
+	void cargo_addFluid(const ItemIndex index, const FluidTypeId fluidType, const CollisionVolume volume);
+	void cargo_loadActor(const ItemIndex index, const ActorIndex actor);
+	ItemIndex cargo_loadItem(const ItemIndex index, const ItemIndex item, const Quantity quantity);
+	ActorOrItemIndex cargo_loadPolymorphic(const ItemIndex index, const ActorOrItemIndex actorOrItem, const Quantity quantity);
+	void cargo_loadFluidFromLocation(const ItemIndex index, const FluidTypeId fluidType, const CollisionVolume volume, const Point3D location);
+	void cargo_loadFluidFromItem(const ItemIndex index, const FluidTypeId fluidType, const CollisionVolume volume, const ItemIndex item);
+	void cargo_remove(const ItemIndex index, const ActorOrItemIndex actorOrItem);
+	void cargo_removeActor(const ItemIndex index, const ActorIndex actor);
+	void cargo_removeItem(const ItemIndex index, const ItemIndex item);
+	void cargo_removeItemGeneric(const ItemIndex index, const ItemTypeId itemType, const MaterialTypeId materialType, const Quantity quantity);
+	void cargo_removeFluid(const ItemIndex index, const CollisionVolume volume);
 	// TODO: Check if location can hold shape.
-	void cargo_unloadActorToLocation(const ItemIndex& index, const ActorIndex& actor, const Point3D& location);
-	void cargo_unloadItemToLocation(const ItemIndex& index, const ItemIndex& item, const Point3D& location);
-	void cargo_updateItemIndex(const ItemIndex& index, const ItemIndex& oldIndex, const ItemIndex& newIndex);
-	void cargo_updateActorIndex(const ItemIndex& index, const ActorIndex& oldIndex, const ActorIndex& newIndex);
-	ItemIndex cargo_unloadGenericItemToLocation(const ItemIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Point3D& location, const Quantity& quantity);
-	ItemIndex cargo_unloadGenericItemToLocation(const ItemIndex& index, const ItemIndex& item, const Point3D& location, const Quantity& quantity);
-	ActorOrItemIndex cargo_unloadPolymorphicToLocation(const ItemIndex& index, const ActorOrItemIndex& actorOrItem, const Point3D& location, const Quantity& quantity);
-	void cargo_unloadFluidToLocation(const ItemIndex& index, const CollisionVolume& volume, const Point3D& location);
-	[[nodiscard]] bool cargo_exists(const ItemIndex& index) const;
-	[[nodiscard]] bool cargo_containsActor(const ItemIndex& index, const ActorIndex& actor) const;
-	[[nodiscard]] bool cargo_containsItem(const ItemIndex& index, const ItemIndex& item) const;
-	[[nodiscard]] bool cargo_containsItemGeneric(const ItemIndex& index, const ItemTypeId& itemType, const MaterialTypeId& materialType, const Quantity& quantity) const;
-	[[nodiscard]] bool cargo_containsPolymorphic(const ItemIndex& index, const ActorOrItemIndex& actorOrItem, const Quantity quantity = Quantity::create(1)) const;
-	[[nodiscard]] bool cargo_containsAnyFluid(const ItemIndex& index) const;
-	[[nodiscard]] bool cargo_containsFluidType(const ItemIndex& index, const FluidTypeId& fluidType) const;
-	[[nodiscard]] CollisionVolume cargo_getFluidVolume(const ItemIndex& index) const;
-	[[nodiscard]] FluidTypeId cargo_getFluidType(const ItemIndex& index) const;
-	[[nodiscard]] bool cargo_canAddActor(const ItemIndex& index, const ActorIndex& actor) const;
-	[[nodiscard]] bool cargo_canAddItem(const ItemIndex& index, const ItemIndex& item) const;
-	[[nodiscard]] Mass cargo_getMass(const ItemIndex& index) const;
-	[[nodiscard]] const SmallSet<ItemIndex>& cargo_getItems(const ItemIndex& index) const;
-	[[nodiscard]] const SmallSet<ActorIndex>& cargo_getActors(const ItemIndex& index) const;
+	void cargo_unloadActorToLocation(const ItemIndex index, const ActorIndex actor, const Point3D location);
+	void cargo_unloadItemToLocation(const ItemIndex index, const ItemIndex item, const Point3D location);
+	void cargo_updateItemIndex(const ItemIndex index, const ItemIndex oldIndex, const ItemIndex newIndex);
+	void cargo_updateActorIndex(const ItemIndex index, const ActorIndex oldIndex, const ActorIndex newIndex);
+	ItemIndex cargo_unloadGenericItemToLocation(const ItemIndex index, const ItemTypeId itemType, const MaterialTypeId materialType, const Point3D location, const Quantity quantity);
+	ItemIndex cargo_unloadGenericItemToLocation(const ItemIndex index, const ItemIndex item, const Point3D location, const Quantity quantity);
+	ActorOrItemIndex cargo_unloadPolymorphicToLocation(const ItemIndex index, const ActorOrItemIndex actorOrItem, const Point3D location, const Quantity quantity);
+	void cargo_unloadFluidToLocation(const ItemIndex index, const CollisionVolume volume, const Point3D location);
+	[[nodiscard]] bool cargo_exists(const ItemIndex index) const;
+	[[nodiscard]] bool cargo_containsActor(const ItemIndex index, const ActorIndex actor) const;
+	[[nodiscard]] bool cargo_containsItem(const ItemIndex index, const ItemIndex item) const;
+	[[nodiscard]] bool cargo_containsItemGeneric(const ItemIndex index, const ItemTypeId itemType, const MaterialTypeId materialType, const Quantity quantity) const;
+	[[nodiscard]] bool cargo_containsPolymorphic(const ItemIndex index, const ActorOrItemIndex actorOrItem, const Quantity quantity = Quantity::create(1)) const;
+	[[nodiscard]] bool cargo_containsAnyFluid(const ItemIndex index) const;
+	[[nodiscard]] bool cargo_containsFluidType(const ItemIndex index, const FluidTypeId fluidType) const;
+	[[nodiscard]] CollisionVolume cargo_getFluidVolume(const ItemIndex index) const;
+	[[nodiscard]] FluidTypeId cargo_getFluidType(const ItemIndex index) const;
+	[[nodiscard]] bool cargo_canAddActor(const ItemIndex index, const ActorIndex actor) const;
+	[[nodiscard]] bool cargo_canAddItem(const ItemIndex index, const ItemIndex item) const;
+	[[nodiscard]] Mass cargo_getMass(const ItemIndex index) const;
+	[[nodiscard]] const SmallSet<ItemIndex>& cargo_getItems(const ItemIndex index) const;
+	[[nodiscard]] const SmallSet<ActorIndex>& cargo_getActors(const ItemIndex index) const;
 	// Stockpile.
-	void stockpile_maybeUnsetAndScheduleReset(const ItemIndex& index, const FactionId& faction, const Step& duration);
-	void stockpile_set(const ItemIndex& index, const FactionId& faction);
-	void stockpile_maybeUnset(const ItemIndex& index, const FactionId& faction);
-	[[nodiscard]] bool stockpile_canBeStockPiled(const ItemIndex& index, const FactionId& faction) const;
+	void stockpile_maybeUnsetAndScheduleReset(const ItemIndex index, const FactionId faction, const Step duration);
+	void stockpile_set(const ItemIndex index, const FactionId faction);
+	void stockpile_maybeUnset(const ItemIndex index, const FactionId faction);
+	[[nodiscard]] bool stockpile_canBeStockPiled(const ItemIndex index, const FactionId faction) const;
 	// Pilot.
-	void pilot_set(const ItemIndex& item, const ActorIndex& pilot);
-	void pilot_clear(const ItemIndex& item);
-	[[nodiscard]] ActorIndex pilot_get(const ItemIndex& item) const;
-	[[nodiscard]] bool pilot_exists(const ItemIndex& item) const { return pilot_get(item).exists(); }
-	[[nodiscard]] Speed vehicle_getSpeed(const ItemIndex& item) const;
-	[[nodiscard]] Force vehicle_getMotiveForce(const ItemIndex& item) const;
+	void pilot_set(const ItemIndex item, const ActorIndex pilot);
+	void pilot_clear(const ItemIndex item);
+	[[nodiscard]] ActorIndex pilot_get(const ItemIndex item) const;
+	[[nodiscard]] bool pilot_exists(const ItemIndex item) const { return pilot_get(item).exists(); }
+	[[nodiscard]] Speed vehicle_getSpeed(const ItemIndex item) const;
+	[[nodiscard]] Force vehicle_getMotiveForce(const ItemIndex item) const;
 	// Deck.
-	[[nodiscard]] const OffsetCuboidSet& getDeckOffsets(const ItemIndex& index) const;
+	[[nodiscard]] const OffsetCuboidSet& getDeckOffsets(const ItemIndex index) const;
 	//TODO: Items leave area.
 	// For debugging.
-	void log(const ItemIndex& index) const;
+	void log(const ItemIndex index) const;
 	Items(Items&) = delete;
 	Items(Items&&) = delete;
 };

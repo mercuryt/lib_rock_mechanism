@@ -11,7 +11,7 @@
 
 struct DeserializationMemo;
 
-SowSeedsEvent::SowSeedsEvent(const Step& delay, Area& area, SowSeedsObjective& o, const ActorIndex& actor, const Step start) :
+SowSeedsEvent::SowSeedsEvent(const Step delay, Area& area, SowSeedsObjective& o, const ActorIndex actor, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_objective(o)
 {
 	m_actor.setIndex(actor, area.getActors().m_referenceData);
@@ -35,7 +35,7 @@ void SowSeedsEvent::execute(Simulation&, Area* area)
 	actors.objective_complete(actor, m_objective);
 }
 void SowSeedsEvent::clearReferences(Simulation&, Area*){ m_objective.m_event.clearPointer(); }
-bool SowSeedsObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
+bool SowSeedsObjectiveType::canBeAssigned(Area& area, const ActorIndex actor) const
 {
 	Actors& actors = area.getActors();
 	// Pilots and passengers onDeck cannot sow.
@@ -43,14 +43,14 @@ bool SowSeedsObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) c
 		return false;
 	return area.m_hasFarmFields.hasSowSeedsDesignations(area.getActors().getFaction(actor));
 }
-std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Area& area, const ActorIndex&) const
+std::unique_ptr<Objective> SowSeedsObjectiveType::makeFor(Area& area, const ActorIndex) const
 {
 	return std::make_unique<SowSeedsObjective>(area);
 }
 SowSeedsObjective::SowSeedsObjective(Area& area) :
 	Objective(Config::sowSeedsPriority),
 	m_event(area.m_eventSchedule) { }
-SowSeedsObjective::SowSeedsObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) :
+SowSeedsObjective::SowSeedsObjective(const Json& data, Area& area, const ActorIndex actor, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo),
 	m_event(area.m_eventSchedule)
 {
@@ -68,19 +68,19 @@ Json SowSeedsObjective::toJson() const
 		data["eventStart"] = m_event.getStartStep();
 	return data;
 }
-Point3D SowSeedsObjective::getPointToSowAt(Area& area, const Point3D& location, Facing4 facing, const ActorIndex& actor)
+Point3D SowSeedsObjective::getPointToSowAt(Area& area, const Point3D location, Facing4 facing, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFaction(actor);
 	AreaHasSpaceDesignationsForFaction& designations = area.m_spaceDesignations.getForFaction(faction);
 	Space& space = area.getSpace();
-	std::function<bool(const Point3D&)> predicate = [&](const Point3D& point)
+	std::function<bool(const Point3D)> predicate = [&](const Point3D point)
 	{
 		return designations.check(point, SpaceDesignation::SowSeeds) && !space.isReserved(point, faction);
 	};
 	return actors.getPointWhichIsAdjacentAtLocationWithFacingAndPredicate(actor, location, facing, predicate);
 }
-void SowSeedsObjective::execute(Area& area, const ActorIndex& actor)
+void SowSeedsObjective::execute(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	Space& space = area.getSpace();
@@ -117,7 +117,7 @@ void SowSeedsObjective::execute(Area& area, const ActorIndex& actor)
 	}
 	actors.move_pathRequestRecord(actor, std::make_unique<SowSeedsPathRequest>(area, *this, actor));
 }
-void SowSeedsObjective::cancel(Area& area, const ActorIndex& actor)
+void SowSeedsObjective::cancel(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	actors.canReserve_clearAll(actor);
@@ -135,7 +135,7 @@ void SowSeedsObjective::cancel(Area& area, const ActorIndex& actor)
 			area.m_hasFarmFields.getForFaction(faction).addSowSeedsDesignation(area, m_point);
 	}
 }
-void SowSeedsObjective::select(Area& area, const Point3D& point, const ActorIndex& actor)
+void SowSeedsObjective::select(Area& area, const Point3D point, const ActorIndex actor)
 {
 	[[maybe_unused]] Space& space = area.getSpace();
 	[[maybe_unused]] Actors& actors = area.getActors();
@@ -145,26 +145,26 @@ void SowSeedsObjective::select(Area& area, const Point3D& point, const ActorInde
 	m_point = point;
 	area.m_hasFarmFields.getForFaction(actors.getFaction(actor)).removeSowSeedsDesignation(area, point);
 }
-void SowSeedsObjective::begin(Area& area, const ActorIndex& actor)
+void SowSeedsObjective::begin(Area& area, const ActorIndex actor)
 {
 	[[maybe_unused]] Actors& actors = area.getActors();
 	assert(m_point.exists());
 	assert(actors.getLocation(actor) == m_point || actors.isAdjacentToLocation(actor, m_point));
 	m_event.schedule(Config::sowSeedsStepsDuration, area, *this, actor);
 }
-void SowSeedsObjective::reset(Area& area, const ActorIndex& actor)
+void SowSeedsObjective::reset(Area& area, const ActorIndex actor)
 {
 	cancel(area, actor);
 	m_point.clear();
 }
-bool SowSeedsObjective::canSowAt(Area& area, const Point3D& point, const ActorIndex& actor) const
+bool SowSeedsObjective::canSowAt(Area& area, const Point3D point, const ActorIndex actor) const
 {
 	Actors& actors = area.getActors();
 	FactionId faction = actors.getFaction(actor);
 	auto& space = area.getSpace();
 	return space.designation_has(point, faction, SpaceDesignation::SowSeeds) && !space.isReserved(point, faction);
 }
-SowSeedsPathRequest::SowSeedsPathRequest(Area& area, SowSeedsObjective& objective, const ActorIndex& actorIndex) :
+SowSeedsPathRequest::SowSeedsPathRequest(Area& area, SowSeedsObjective& objective, const ActorIndex actorIndex) :
 	m_objective(objective)
 {
 	Actors& actors = area.getActors();
@@ -195,8 +195,8 @@ FindPathResult SowSeedsPathRequest::readStep(Area& area, const TerrainFacade& te
 void SowSeedsPathRequest::writeStep(Area& area, FindPathResult& result)
 {
 	Actors& actors = area.getActors();
-	const ActorIndex& actorIndex = actor.getIndex(actors.m_referenceData);
-	const Point3D& sowLocation = result.pointThatPassedPredicate;
+	const ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
+	const Point3D sowLocation = result.pointThatPassedPredicate;
 	if(result.path.empty() && sowLocation.empty())
 		actors.objective_canNotCompleteObjective(actorIndex, m_objective);
 	else if(!area.m_spaceDesignations.getForFaction(faction).check(sowLocation, SpaceDesignation::SowSeeds))

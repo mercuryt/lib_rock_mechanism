@@ -34,7 +34,7 @@ struct OctTreeNode
 	// Do not initialize center here, leaving it blank is the symbol that this node has no children.
 	// Center will be set along with cuboids and children during split.
 	OctTreeNode() = default;
-	OctTreeNode(const OctTreeIndex& p, const Cuboid& c) : cuboid(c), parent(p) { }
+	OctTreeNode(const OctTreeIndex& p, const Cuboid c) : cuboid(c), parent(p) { }
 	OctTreeNode(const OctTreeNode& other) = default;
 	OctTreeNode(OctTreeNode&& other) noexcept = default;
 	void operator=(const OctTreeNode& other) {contents = other.contents; cuboids = other.cuboids; children = other.children; cuboid = other.cuboid; center = other.center; parent = other.parent; }
@@ -50,18 +50,18 @@ class ActorOctTree
 	Allocator m_allocator;
 	StrongVector<OctTreeNode, OctTreeIndex> m_nodes;
 public:
-	ActorOctTree(const Cuboid& cuboid);
-	void record(Area& area, const ActorReference& actor);
-	void erase(Area& area, const ActorReference& actor);
-	void updateRange(const ActorReference& actor, const Point3D& coordinates, const DistanceSquared& visionRangeSquared);
+	ActorOctTree(const Cuboid cuboid);
+	void record(Area& area, const ActorReference actor);
+	void erase(Area& area, const ActorReference actor);
+	void updateRange(const ActorReference actor, const Point3D coordinates, const DistanceSquared visionRangeSquared);
 	void maybeSort();
 	void split(const OctTreeIndex& node);
 	void collapse(const OctTreeIndex& node);
 	[[nodiscard]] int getCount() const { return m_nodes.size(); }
 	[[nodiscard]] int getActorCount() const;
-	[[nodiscard]] bool contains(const ActorReference& actor, const Point3D& coordinates);
-	[[nodiscard]] static int getOctant(const Point3D& center, const Point3D& coordinates);
-	[[nodiscard]] static CuboidArray<8> subdivide(const Cuboid& cuboid);
+	[[nodiscard]] bool contains(const ActorReference actor, const Point3D coordinates);
+	[[nodiscard]] static int getOctant(const Point3D center, const Point3D coordinates);
+	[[nodiscard]] static CuboidArray<8> subdivide(const Cuboid cuboid);
 	template<class Action>
 	void query(const auto& queryShape, Action&& action)
 	{

@@ -29,6 +29,6 @@ float AreaHasEvaporation::rateModifierForTemperature(Area& area) const
 	Temperature ambiantTemperature = area.m_hasTemperature.getAmbientSurfaceTemperature();
 	return ambiantTemperature.get() * Config::rateModifierForEvaporationPerDegreeTemperature;
 }
-EvaporationEvent::EvaporationEvent(Area& area, const Step& delay) : ScheduledEvent(area.m_simulation, delay), m_area(area) { }
+EvaporationEvent::EvaporationEvent(Area& area, const Step delay) : ScheduledEvent(area.m_simulation, delay), m_area(area) { }
 void EvaporationEvent::execute(Simulation&, Area* area){ area->m_hasEvaporation.execute(*area); }
 void EvaporationEvent::clearReferences(Simulation&, Area* area){ area->m_hasEvaporation.m_event.clearPointer(); }

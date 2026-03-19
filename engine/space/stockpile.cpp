@@ -4,7 +4,7 @@
 #include "items/items.h"
 #include "definitions/shape.h"
 #include "numericTypes/types.h"
-void Space::stockpile_recordMembership(const Point3D& point, StockPile& stockPile)
+void Space::stockpile_recordMembership(const Point3D point, StockPile& stockPile)
 {
 	m_stockPiles.getOrCreate(stockPile.getFaction()).insert(point, RTreeDataWrapper<StockPile*, nullptr>(&stockPile));
 	if(stockpile_isAvalible(point, stockPile.getFaction()))
@@ -15,23 +15,23 @@ void Space::stockpile_recordMembership(const Point3D& point, StockPile& stockPil
 	}
 }
 template<typename ShapeT>
-StockPile* Space::stockpile_getOneForFaction(const ShapeT& shape, const FactionId& faction)
+StockPile* Space::stockpile_getOneForFaction(const ShapeT shape, const FactionId faction)
 {
 	const auto found =  m_stockPiles.find(faction);
 	if(found == m_stockPiles.end())
 		return nullptr;
 	return found->second.queryGetOne(shape).get();
-
 }
-template StockPile* Space::stockpile_getOneForFaction(const Point3D& shape, const FactionId& faction);
-template StockPile* Space::stockpile_getOneForFaction(const Cuboid& shape, const FactionId& faction);
-template<typename ShapeT>
-const StockPile* Space::stockpile_getOneForFaction(const ShapeT& shape, const FactionId& faction) const
+template StockPile* Space::stockpile_getOneForFaction<Point3D>(Point3D shape, const FactionId faction);
+template StockPile* Space::stockpile_getOneForFaction<Cuboid>(Cuboid shape, const FactionId faction);
+StockPile* Space::stockpile_getOneForFaction(const CuboidSet& shape, const FactionId faction)
 {
-	return const_cast<Space*>(this)->stockpile_getOneForFaction(shape, faction);
+	const auto found = m_stockPiles.find(faction);
+	if(found == m_stockPiles.end())
+		return nullptr;
+	return found->second.queryGetOne(shape).get();
 }
-template const StockPile* Space::stockpile_getOneForFaction(const Cuboid& shape, const FactionId& faction) const;
-void Space::stockpile_recordNoLongerMember(const Point3D& point, StockPile& stockPile)
+void Space::stockpile_recordNoLongerMember(const Point3D point, StockPile& stockPile)
 {
 	assert(stockpile_contains(point, stockPile.getFaction()));
 	const FactionId& faction = stockPile.getFaction();
@@ -45,7 +45,7 @@ void Space::stockpile_recordNoLongerMember(const Point3D& point, StockPile& stoc
 	else
 		m_stockPiles[faction].removeAll(point);
 }
-bool Space::stockpile_isAvalible(const Point3D& index, const FactionId& faction) const
+bool Space::stockpile_isAvalible(const Point3D index, const FactionId faction) const
 {
 	assert(stockpile_contains(index, faction));
 	const auto& allItems = item_getAll(index);
@@ -60,12 +60,12 @@ bool Space::stockpile_isAvalible(const Point3D& index, const FactionId& faction)
 	StockPile& stockPile = *m_stockPiles[faction].queryGetOne(index).get();
 	if(!stockPile.accepts(toCombineWith))
 		return false;
-	const ItemTypeId& itemType = items.getItemType(toCombineWith);
-	const ShapeId& shape = ItemType::getShape(itemType);
+	const ItemTypeId itemType = items.getItemType(toCombineWith);
+	const ShapeId shape = ItemType::getShape(itemType);
 	const Facing4& facing = items.getFacing(toCombineWith);
 	return shape_staticCanEnterCurrentlyWithFacing(index, shape, facing, {});
 }
-bool Space::stockpile_contains(const Point3D& point, const FactionId& faction) const
+bool Space::stockpile_contains(const Point3D point, const FactionId faction) const
 {
 	const auto found = m_stockPiles.find(faction);
 	if(found == m_stockPiles.end())

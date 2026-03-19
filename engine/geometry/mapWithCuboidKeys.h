@@ -34,8 +34,8 @@ struct MapWithCuboidKeysBase
 	[[nodiscard]] Iterator find(const CuboidType& cuboid);
 	[[nodiscard]] CuboidType boundry() const;
 	[[nodiscard]] CuboidSetType getCuboids() const;
-	[[nodiscard]] bool contains(const Point3D& point) const;
-	[[nodiscard]] bool contains(const Offset3D& point) const;
+	[[nodiscard]] bool contains(const Point3D point) const;
+	[[nodiscard]] bool contains(const Offset3D point) const;
 	[[nodiscard]] Pair front() const { return data.front(); }
 	[[nodiscard]] CuboidSetType makeCuboidSet() const;
 	[[nodiscard]] Quantity volume() const;
@@ -48,9 +48,9 @@ template<typename T>
 struct MapWithOffsetCuboidKeys final : public MapWithCuboidKeysBase<T, OffsetCuboid, OffsetCuboidSet>
 {
 	//TODO: this is defined here rather then the base class to simplify returning the derived type, but the logic could be useful for the non offset variant as well.
-	[[nodiscard]] MapWithOffsetCuboidKeys<T> shiftAndRotateAndRemoveIntersectionWithOriginal(const Offset3D& offset, const Facing4& previousRotation, const Facing4& newRotation) const;
-	[[nodiscard]] MapWithOffsetCuboidKeys<T> applyOffset(const Offset3D& offset) const;
-	[[nodiscard]] MapWithCuboidKeys<T> relativeTo(const Point3D& location) const;
+	[[nodiscard]] MapWithOffsetCuboidKeys<T> shiftAndRotateAndRemoveIntersectionWithOriginal(const Offset3D offset, const Facing4& previousRotation, const Facing4& newRotation) const;
+	[[nodiscard]] MapWithOffsetCuboidKeys<T> applyOffset(const Offset3D offset) const;
+	[[nodiscard]] MapWithCuboidKeys<T> relativeTo(const Point3D location) const;
 };
 
 template<typename T>

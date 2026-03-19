@@ -15,13 +15,13 @@ Json MountObjective::toJson() const
 	output["pilot"] = m_pilot;
 	return output;
 }
-void MountObjective::execute(Area& area, const ActorIndex& actor)
+void MountObjective::execute(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
-	const ActorIndex& toMount = m_toMount.getIndex(actors.m_referenceData);
+	const ActorIndex toMount = m_toMount.getIndex(actors.m_referenceData);
 	if(actors.isIntersectingOrAdjacentTo(actor, toMount))
 	{
-		const Point3D& location = actors.mount_findLocationToMountOn(actor, toMount);
+		const Point3D location = actors.mount_findLocationToMountOn(actor, toMount);
 		if(location.empty())
 		{
 			// Cannot mount.

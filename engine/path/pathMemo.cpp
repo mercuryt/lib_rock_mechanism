@@ -1,7 +1,7 @@
 #include "pathMemo.h"
 #include "../numericTypes/index.h"
 #include "../geometry/cuboidSet.h"
-void PathMemoClosed::add(const Point3D& point, const Point3D& previous)
+void PathMemoClosed::add(const Point3D point, const Point3D previous)
 {
 	assert(!contains(point));
 	if(m_seen.empty())
@@ -13,13 +13,13 @@ void PathMemoClosed::add(const Point3D& point, const Point3D& previous)
 		m_cameFrom.maybeInsert(point, previous);
 	m_seen.insert(point);
 }
-Point3D PathMemoClosed::previous(const Point3D& point) const
+Point3D PathMemoClosed::previous(const Point3D point) const
 {
 	Point3D output = m_cameFrom[point];
 	assert(output.exists() && output != Point3D::max());
 	return output;
 }
-SmallSet<Point3D> PathMemoClosed::getPath(const Point3D& secondToLast, const Point3D& last, const Point3D& first) const
+SmallSet<Point3D> PathMemoClosed::getPath(const Point3D secondToLast, const Point3D last, const Point3D first) const
 {
 	assert(first != last);
 	assert(last.isAdjacentTo(secondToLast));
@@ -41,17 +41,17 @@ void PathMemoBreadthFirst::reset()
 	m_closed.clear();
 	m_open.clear();
 }
-void PathMemoBreadthFirst::setClosed(const Point3D& point, const Point3D& previous)
+void PathMemoBreadthFirst::setClosed(const Point3D point, const Point3D previous)
 {
 	assert(!m_closed.contains(point));
 	m_closed.add(point, previous);
 }
-void PathMemoBreadthFirst::setOpen(const Point3D& point)
+void PathMemoBreadthFirst::setOpen(const Point3D point)
 {
 	assert(!m_closed.contains(point));
 	m_open.push_back(point);
 }
-bool PathMemoBreadthFirst::isClosed(const Point3D& point) const
+bool PathMemoBreadthFirst::isClosed(const Point3D point) const
 {
 	return m_closed.contains(point);
 }
@@ -65,7 +65,7 @@ Point3D PathMemoBreadthFirst::next()
 	m_open.pop_front();
 	return output;
 }
-SmallSet<Point3D> PathMemoBreadthFirst::getPath(const Point3D& secondToLast, const Point3D& last, const Point3D& first) const
+SmallSet<Point3D> PathMemoBreadthFirst::getPath(const Point3D secondToLast, const Point3D last, const Point3D first) const
 {
 	return m_closed.getPath(secondToLast, last, first);
 }
@@ -76,12 +76,12 @@ void PathMemoDepthFirst::reset()
 	m_open.clear();
 	m_huristicDestination.clear();
 }
-void PathMemoDepthFirst::setClosed(const Point3D& point, const Point3D& previous)
+void PathMemoDepthFirst::setClosed(const Point3D point, const Point3D previous)
 {
 	assert(!m_closed.contains(point));
 	m_closed.add(point, previous);
 }
-void PathMemoDepthFirst::setOpen(const Point3D& point)
+void PathMemoDepthFirst::setOpen(const Point3D point)
 {
 	assert(m_huristicDestination.exists());
 	[[maybe_unused]] bool contains = m_closed.contains(point);
@@ -90,7 +90,7 @@ void PathMemoDepthFirst::setOpen(const Point3D& point)
 	DistanceSquared distance = DistanceSquared::max() - point.distanceToSquared(m_huristicDestination);
 	m_open.insertNonUnique(distance, point);
 }
-bool PathMemoDepthFirst::isClosed(const Point3D& point) const
+bool PathMemoDepthFirst::isClosed(const Point3D point) const
 {
 	return m_closed.contains(point);
 }
@@ -105,7 +105,7 @@ Point3D PathMemoDepthFirst::next()
 	m_open.pop_back();
 	return output;
 }
-SmallSet<Point3D> PathMemoDepthFirst::getPath(const Point3D& secondToLast, const Point3D& last, const Point3D& first) const
+SmallSet<Point3D> PathMemoDepthFirst::getPath(const Point3D secondToLast, const Point3D last, const Point3D first) const
 {
 	return m_closed.getPath(secondToLast, last, first);
 }

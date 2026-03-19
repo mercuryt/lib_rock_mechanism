@@ -24,17 +24,17 @@ class MustSleep final
 	bool m_isAwake = true;
 	bool m_force = false;
 public:
-	MustSleep(Area& area, const ActorIndex& a);
-	MustSleep(Area& area, const Json& data, const ActorIndex& a);
+	MustSleep(Area& area, const ActorIndex actor);
+	MustSleep(Area& area, const Json& data, const ActorIndex actor);
 	Json toJson() const;
 	void tired(Area& area);
 	void sleep(Area& area);
-	void passout(Area& area, const Step& duration);
-	void sleep(Area& area, const Step& duration, bool force = false);
+	void passout(Area& area, const Step duration);
+	void sleep(Area& area, const Step duration, bool force = false);
 	void wakeUp(Area& area);
 	void makeSleepObjective(Area& area);
 	void wakeUpEarly(Area& area);
-	void setLocation(const Point3D& point);
+	void setLocation(const Point3D point);
 	void unschedule();
 	void notTired(Area& area);
 	void scheduleTiredEvent(Area& area);
@@ -59,7 +59,7 @@ class SleepEvent final : public ScheduledEvent
 {
 	MustSleep& m_needsSleep;
 public:
-	SleepEvent(Simulation& simulation, const Step& delay, MustSleep& ns, const Step start = Step::null());
+	SleepEvent(Simulation& simulation, const Step delay, MustSleep& ns, const Step start = Step::null());
 	void execute(Simulation&, Area*);
 	void clearReferences(Simulation&, Area*);
 };
@@ -67,7 +67,7 @@ class TiredEvent final : public ScheduledEvent
 {
 	MustSleep& m_needsSleep;
 public:
-	TiredEvent(Simulation& simulation, const Step& delay, MustSleep& ns, const Step start = Step::null());
+	TiredEvent(Simulation& simulation, const Step delay, MustSleep& ns, const Step start = Step::null());
 	void execute(Simulation&, Area*);
 	void clearReferences(Simulation&, Area*);
 };

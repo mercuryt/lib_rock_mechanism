@@ -1,18 +1,14 @@
 #pragma once
 #include <functional>
-#include <future>
-
+#include <thread>
 class Window;
-
-class WindowHasBackgroundTask
+class BackgroundTask
 {
-	std::future<void> m_taskFuture;
+	std::jthread m_thread;
 	std::function<void()> m_callback;
-	Window& m_window;
-	bool m_inProgress = false;
+	std::atomic<bool> m_done = false;
 public:
-	WindowHasBackgroundTask(Window& window) : m_window(window) { }
-	void onFrame();
-	void create(std::function<void()>&& action, std::function<void()>&& callback = nullptr);
-	[[nodiscard]] bool hasTask() const { return m_inProgress; }
+	void update(Window& window);
+	void start(Window& window, std::function<void()> task, std::function<void()> callback = nullptr);
+	[[nodiscard]] bool running() const;
 };

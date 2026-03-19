@@ -8,8 +8,8 @@ template<typename T, typename Index, int capacity>
 struct StrongArray
 {
 	std::array<T, capacity> data;
-	[[nodiscard]] T& operator[](const Index& index) { return data[index.get()]; }
-	[[nodiscard]] const T& operator[](const Index& index) const { return data[index.get()]; }
+	[[nodiscard]] T& operator[](const Index index) { return data[index.get()]; }
+	[[nodiscard]] const T& operator[](const Index index) const { return data[index.get()]; }
 	[[nodiscard]] auto front() -> T& { return data.front(); }
 	[[nodiscard]] auto back() -> T& { return data.back(); }
 	[[nodiscard]] auto front() const -> const T& { return data.front(); }

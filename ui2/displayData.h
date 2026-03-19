@@ -37,6 +37,13 @@ struct ItemTypeDisplayData final
 	float scale;
 };
 
+enum class TemperatureDisplayUnits { F,C,K };
+NLOHMANN_JSON_SERIALIZE_ENUM(TemperatureDisplayUnits, {
+	{TemperatureDisplayUnits::F, "F"},
+	{TemperatureDisplayUnits::C, "C"},
+	{TemperatureDisplayUnits::K, "K"}
+});
+
 namespace displayData
 {
 	inline SmallMap<MaterialTypeId, SDL_Color> materialColors;
@@ -46,6 +53,8 @@ namespace displayData
 	inline SmallMap<AnimalSpeciesId, AnimalSpeciesDisplayData> actorData;
 	inline float ratioOfScaleToFontSize;
 	inline float wallOffset;
+	inline int offsetForWallsOnThisLevel{8};
+	inline TemperatureDisplayUnits temperatureDisplayUnits;
 	inline constexpr SDL_Color selectColor{255,255,0,255}; // Yellow
 	inline constexpr SDL_Color cancelColor{255,0,0,255}; // Red
 	inline constexpr int selectBoxThickness(2);
@@ -87,5 +96,6 @@ namespace displayData
 	inline constexpr int textSize(16);
 
 	std::string localizeNumber(double number);
+	std::string formatTemperature(Temperature temperature);
 	void load();
 }

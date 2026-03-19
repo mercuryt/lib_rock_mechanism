@@ -116,11 +116,11 @@ TEST_CASE("haul")
 		Point3D destination = Point3D::create(5, 5, 2);
 		Point3D chunkLocation = Point3D::create(1, 5, 2);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .location=chunkLocation, .quantity=Quantity::create(1u)});
-		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInital) == 0);
+		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInitial) == 0);
 		Point3D cartLocation = Point3D::create(7, 7, 2);
 		ItemIndex cart = items.create({.itemType=ItemType::byName("cart"), .materialType=MaterialType::byName("poplar wood"), .location=cartLocation, .quality=Quality::create(50u), .percentWear=Percent::create(0)});
 		ActorOrItemIndex polymorphicChunk1 = ActorOrItemIndex::createForItem(chunk1);
-		CHECK(HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(area, dwarf1, cart, polymorphicChunk1, Config::minimumHaulSpeedInital) > 0);
+		CHECK(HaulSubproject::maximumNumberWhichCanBeHauledAtMinimumSpeedWithTool(area, dwarf1, cart, polymorphicChunk1, Config::minimumHaulSpeedInitial) > 0);
 		ActorOrItemIndex cargo = ActorOrItemIndex::createForItem(chunk1);
 		TargetedHaulProject& project = area.m_hasTargetedHauling.begin(SmallSet<ActorIndex>({dwarf1}), cargo, destination);
 		// One step to activate the project and make reservations.
@@ -159,7 +159,7 @@ TEST_CASE("haul")
 		Point3D chunkLocation = Point3D::create(1, 5, 2);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		ActorOrItemIndex cargo = ActorOrItemIndex::createForItem(chunk1);
-		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInital) == 0);
+		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInitial) == 0);
 		ActorIndex dwarf2 = actors.create({
 			.species=dwarf,
 			.location=Point3D::create(1, 2, 2),
@@ -211,7 +211,7 @@ TEST_CASE("haul")
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		ActorOrItemIndex cargo = ActorOrItemIndex::createForItem(chunk1);
 		ActorOrItemReference cargoRef = cargo.toReference(area);
-		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInital) == 0);
+		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInitial) == 0);
 		Point3D donkeyLocation = Point3D::create(1, 2, 2);
 		ActorIndex donkey1 = actors.create({
 			.species=donkey,
@@ -260,7 +260,7 @@ TEST_CASE("haul")
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=gold, .location=chunkLocation, .quantity=Quantity::create(1u)});
 		ActorOrItemIndex cargo = ActorOrItemIndex::createForItem(chunk1);
 		ActorOrItemReference cargoRef = cargo.toReference(area);
-		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInital) == 0);
+		CHECK(actors.canPickUp_maximumNumberWhichCanBeCarriedWithMinimumSpeed(dwarf1, items.getSingleUnitMass(chunk1), Config::minimumHaulSpeedInitial) == 0);
 		Point3D donkeyLocation = Point3D::create(1, 3, 2);
 		ActorIndex donkey1 = actors.create({
 			.species=donkey,

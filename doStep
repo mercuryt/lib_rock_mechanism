@@ -1,0 +1,36 @@
+ui2/contextMenu/woodcutting.cpp:17:		std::lock_guard lock(window.m_simulation->m_uiReadMutex);
+ui2/window.cpp:315:	m_simulation->save();
+ui2/window.cpp:354:			setArea(m_simulation->m_hasAreas->getById(result->area));
+ui2/window.cpp:377:		m_simulation->save();
+ui2/window.cpp:383:			std::ofstream file(m_simulation->getPath()/"view.json" );
+ui2/contextMenu/fluid.cpp:15:		std::lock_guard lock(window.m_simulation->m_uiReadMutex);
+ui2/contextMenu/fluid.cpp:21:		std::lock_guard lock(window.m_simulation->m_uiReadMutex);
+ui2/contextMenu/fluid.cpp:33:			std::lock_guard lock(window.m_simulation->m_uiReadMutex);
+ui2/contextMenu/fluid.cpp:43:			std::lock_guard lock(window.m_simulation->m_uiReadMutex);
+ui2/gameOverlay.cpp:50:	const DateTime& now = window.m_simulation->getDateTime();
+ui2/gameOverlay.cpp:52:	const float fractionOfCurrentHourElapsed = window.m_simulation->m_hourlyEvent.fractionComplete();
+ui2/screens/gameView.cpp:19:		std::lock_guard lock(window.m_simulation->m_uiReadMutex);
+ui2/screens/selectUniformToEdit.cpp:9:	for(auto& pair : window.m_simulation->m_hasUniforms.getForFaction(window.m_faction).getAll())
+ui2/screens/editFaction.cpp:12:		Faction& faction = window.m_simulation->m_hasFactions.getById(factionId);
+ui2/screens/editFaction.cpp:17:			Faction& ally = window.m_simulation->m_hasFactions.getById(allyId);
+ui2/screens/editFaction.cpp:29:		for(Faction& potentialAlly : window.m_simulation->m_hasFactions.getAll())
+ui2/screens/editFaction.cpp:43:			Faction& enemy = window.m_simulation->m_hasFactions.getById(enemyId);
+ui2/screens/editFaction.cpp:55:		for(Faction& potentialEnemy : window.m_simulation->m_hasFactions.getAll())
+ui2/screens/editFaction.cpp:76:			window.m_gameOverlay.m_factionToEdit = window.m_simulation->m_hasFactions.createFaction(name);
+ui2/screens/editSimulation.cpp:13:	ImGui::InputText("Name", &window.m_simulation->m_name);
+ui2/screens/editSimulation.cpp:14:	for(const auto& [areaId, area] : window.m_simulation->m_hasAreas->getAll())
+ui2/screens/editDrama.cpp:11:	DramaEngine* dramaEngine = window.m_simulation->m_dramaEngine.get();
+ui2/screens/editDrama.cpp:35:				window.m_simulation->m_dramaEngine->createArcTypeForArea(type, area);
+ui2/screens/createArea.cpp:36:			(*result) = &window.m_simulation->m_hasAreas->createArea(sizeX, sizeY, sizeZ, createDrama);
+ui2/screens/selectFactionToEdit.cpp:9:	for(const Faction& faction : window.m_simulation->m_hasFactions.getAll())
+ui2/screens/editUnifrom.cpp:23:			window.m_simulation->m_hasUniforms.getForFaction(window.m_faction).destroyUniform(*uniform);
+ui2/screens/actorDetails.cpp:150:		for(auto& [name, uniform] : window.m_simulation->m_hasUniforms.getForFaction(window.m_faction).getAll())
+ui/widgets.cpp:80:	auto found = m_simulation->m_hasAreas->getAll().findIf([&](const Area& area){ return area.m_name == name; });
+ui/widgets.cpp:81:	assert(found != m_simulation->m_hasAreas->getAll().end());
+ui/window.cpp:33:				m_simulation->doStep(m_speed);
+ui/window.cpp:164:								m_simulation->doStep();
+ui/window.cpp:407:		m_simulation->save();
+ui/window.cpp:411:			std::ofstream file(m_simulation->getPath()/"pov.json" );
+ui/window.cpp:424:		std::filesystem::path viewPath = m_simulation->getPath()/"pov.json";
+ui/window.cpp:471:	m_area = &m_simulation->m_hasAreas->getById(data["area"].get<AreaId>());
+ui/draw.cpp:25:	std::lock_guard lock(m_window.m_simulation->m_uiReadMutex);

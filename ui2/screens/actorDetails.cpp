@@ -11,8 +11,7 @@
 
 void screens::actorDetails(Window& window, const ActorReference actorRef)
 {
-	// Indices are only valid at the current point in time.
-	assert(window.m_paused);
+	window.m_paused = true;
 	Actors& actors = window.m_area->getActors();
 	Items& items = window.m_area->getItems();
 	const ActorIndex actor = actorRef.getIndex(actors.m_referenceData);
@@ -22,26 +21,33 @@ void screens::actorDetails(Window& window, const ActorReference actorRef)
 	// Attributes.
 	ImGuiText("attributes");
 	ImGui::BeginTable("attributes", 2);
+	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	ImGuiText("strength");
 	ImGui::TableNextColumn();
 	ImGuiText(actors.getStrength(actor).toString());
 	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	ImGuiText("dextarity");
 	ImGui::TableNextColumn();
 	ImGuiText(actors.getDextarity(actor).toString());
 	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	ImGuiText("agility");
 	ImGui::TableNextColumn();
 	ImGuiText(actors.getAgility(actor).toString());
 	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	ImGuiText("unencombered carry mass");
 	ImGui::TableNextColumn();
 	ImGuiText(actors.getUnencomberedCarryMass(actor).toString());
 	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	ImGuiText("move speed");
 	ImGui::TableNextColumn();
 	ImGuiText(actors.move_getSpeed(actor).toString());
 	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	ImGuiText("base combat score");
 	ImGui::TableNextColumn();
 	ImGuiText(actors.combat_getCombatScore(actor).toString());
@@ -52,6 +58,8 @@ void screens::actorDetails(Window& window, const ActorReference actorRef)
 	{
 		ImGuiText("skills");
 		ImGui::BeginTable("skills", 3);
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
 		ImGuiText("name");
 		ImGui::TableNextColumn();
 		ImGuiText("level");
@@ -75,6 +83,8 @@ void screens::actorDetails(Window& window, const ActorReference actorRef)
 	if(!equipmentSet.getAll().empty())
 	{
 		ImGui::BeginTable("equipment", 5);
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
 		ImGuiText("type");
 		ImGui::TableNextColumn();
 		ImGuiText("material");
@@ -89,6 +99,7 @@ void screens::actorDetails(Window& window, const ActorReference actorRef)
 		ImGui::TableNextRow();
 		for(const ItemReference& itemReference : equipmentSet.getAll())
 		{
+			ImGui::TableNextColumn();
 			const ItemIndex& item = itemReference.getIndex(items.m_referenceData);
 			ImGuiText(ItemType::getName(items.getItemType(item)));
 			ImGui::TableNextColumn();
@@ -114,12 +125,15 @@ void screens::actorDetails(Window& window, const ActorReference actorRef)
 		}
 		ImGui::EndTable();
 	}
+	ImGuiText("equipment total mass: " + actors.equipment_getMass(actor).toString());
 	// Wounds.
 	const auto& wounds = actors.body_getWounds(actor);
 	if(!wounds.empty())
 	{
 		ImGuiText("wounds");
 		ImGui::BeginTable("wonunds", 4);
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
 		ImGuiText("body part");
 		ImGui::TableNextColumn();
 		ImGuiText("area");
@@ -128,6 +142,7 @@ void screens::actorDetails(Window& window, const ActorReference actorRef)
 		ImGui::TableNextColumn();
 		ImGuiText("bleed");
 		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
 		for(Wound* wound : wounds)
 		{
 			ImGuiText(BodyPartType::getName(wound->bodyPart.bodyPartType));
@@ -138,6 +153,7 @@ void screens::actorDetails(Window& window, const ActorReference actorRef)
 			ImGui::TableNextColumn();
 			ImGuiText(std::to_string(wound->bleedVolumeRate));
 			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
 		}
 		ImGui::EndTable();
 	}
@@ -146,16 +162,18 @@ void screens::actorDetails(Window& window, const ActorReference actorRef)
 	{
 
 		std::string equipedName = actors.uniform_exists(actor) ? actors.uniform_get(actor).name : "";
-		ImGuiBeginCombo("uniform", equipedName);
-		for(auto& [name, uniform] : window.m_simulation->m_hasUniforms.getForFaction(window.m_faction).getAll())
+		if(ImGui::BeginCombo("uniform", equipedName.c_str()))
 		{
-			bool isSelected = equipedName == name;
-			if(ImGuiSelectable(name, isSelected))
-				actors.uniform_set(actor, uniform);
-			if(isSelected)
-				ImGui::SetItemDefaultFocus();
+			for(auto& [name, uniform] : window.m_simulation->m_hasUniforms.getForFaction(window.m_faction).getAll())
+			{
+				bool isSelected = equipedName == name;
+				if(ImGuiSelectable(name, isSelected))
+					actors.uniform_set(actor, uniform);
+				if(isSelected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
 		}
-		ImGui::EndCombo();
 		// Objective priority button.
 		if(window.m_faction.exists() && window.m_faction == actorFaction)
 			if(ImGui::Button("Priorities"))

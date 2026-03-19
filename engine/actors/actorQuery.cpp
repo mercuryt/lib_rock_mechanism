@@ -5,7 +5,7 @@
 #include "area/area.h"
 #include "actors.h"
 // ActorQuery, to be used to search for actors.
-bool ActorQuery::query(Area& area, const ActorIndex& other) const
+bool ActorQuery::query(Area& area, const ActorIndex other) const
 {
 	Actors& actors = area.getActors();
 	if(actor.exists())
@@ -16,8 +16,8 @@ bool ActorQuery::query(Area& area, const ActorIndex& other) const
 		return false;
 	return true;
 }
-ActorQuery ActorQuery::makeFor(const ActorReference& a) { ActorQuery output; output.actor = a; return output;}
-ActorQuery ActorQuery::makeForCarryWeight(const Mass& cw) { ActorQuery output; output.carryWeight = cw; return output; }
+ActorQuery ActorQuery::makefor(const ActorReference ref) { ActorQuery output; output.actor = ref; return output;}
+ActorQuery ActorQuery::makeForCarryWeight(const Mass cw) { ActorQuery output; output.carryWeight = cw; return output; }
 ActorQuery::ActorQuery(const Json& data, Area& area)
 {
 	if(data.contains("actor"))

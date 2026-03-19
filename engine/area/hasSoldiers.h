@@ -29,18 +29,18 @@ class AreaHasSoldiers
 {
 	SmallMap<FactionId, AreaHasSoldiersForFaction> m_data;
 public:
-	void add(Area& area, const ActorIndex& actor);
-	void remove(Area& area, const ActorIndex& actor);
-	void setLocation(Area& area, const ActorIndex& actor);
+	void add(Area& area, const ActorIndex actor);
+	void remove(Area& area, const ActorIndex actor);
+	void setLocation(Area& area, const ActorIndex actor);
 	// To be used by updateSoldierCombatScore.
-	void unsetLocation(Area& area, const ActorIndex& actor, const CombatScore& combatScore);
-	void unsetLocation(Area& area, const ActorIndex& actor);
-	void updateLocation(Area& area, const ActorIndex& actor);
-	void updateSoldierIndex(Area& area, const ActorIndex& oldIndex, const ActorIndex& newIndex);
-	void updateSoldierCourage(Area& area, const ActorIndex& actor);
-	void updateSoldierCombatScore(Area& area, const ActorIndex& actor, const CombatScore& previous);
+	void unsetLocation(Area& area, const ActorIndex actor, const CombatScore combatScore);
+	void unsetLocation(Area& area, const ActorIndex actor);
+	void updateLocation(Area& area, const ActorIndex actor);
+	void updateSoldierIndex(Area& area, const ActorIndex oldIndex, const ActorIndex newIndex);
+	void updateSoldierCourage(Area& area, const ActorIndex actor);
+	void updateSoldierCombatScore(Area& area, const ActorIndex actor, const CombatScore previous);
 	void doStepThread(Area& area, const AreaHasSoldiersCourageCheckThreadData& threadData);
 	void doStep(Area& area);
-	[[nodiscard]] PsycologyWeight get(const Point3D& point, const FactionId& faction) const;
+	[[nodiscard]] PsycologyWeight get(const Point3D point, const FactionId faction) const;
 	friend struct AreaHasSoldiersCourageCheckThreadData;
 };

@@ -9,7 +9,7 @@ struct TestReservationDishonorCallback1 final : public DishonorCallback
 {
 	bool& fired;
 	TestReservationDishonorCallback1(bool& f) : fired(f) { }
-	void execute(const Quantity& o, const Quantity& n)
+	void execute(const Quantity o, const Quantity n)
 	{
 			CHECK(o == 1);
 			CHECK(n == 0);
@@ -21,7 +21,7 @@ struct TestReservationDishonorCallback2 final : public DishonorCallback
 {
 	bool& fired;
 	TestReservationDishonorCallback2(bool& f) : fired(f) { }
-	void execute(const Quantity& o, const Quantity& n)
+	void execute(const Quantity o, const Quantity n) override
 	{
 			CHECK(o == 2);
 			CHECK(n == 1);

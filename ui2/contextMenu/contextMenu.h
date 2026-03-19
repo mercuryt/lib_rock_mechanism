@@ -2,45 +2,23 @@
 #include "../../engine/numericTypes/idTypes.h"
 #include "../../engine/numericTypes/types.h"
 #include "../../engine/config/config.h"
+#include "../../engine/geometry/point3D.h"
 class Window;
-enum class ContextMenuId
-{
-	Root,
-	Dig,
-	Construct,
-	Null
-};
 namespace contextMenu
 {
 	void draw(Window& window);
-	void root(Window& window);
 	namespace controlls
 	{
 		void dig(Window& window);
 		void construct(Window& window);
+		void fluid(Window& window);
+		void plants(Window& window);
+		void items(Window& window);
+		void woodcutting(Window& window);
+		void actors(Window& window);
 	}
-	namespace submenus
+	namespace helpers
 	{
-		void dig(Window& window);
-		void construct(Window& window);
+		void construct(Window& window, bool feature);
 	}
 }
-struct ContextMenuState
-{
-	ContextMenuId current = ContextMenuId::Null;
-	Point3D clickedOnPoint;
-	MaterialTypeId materialType;
-	PointFeatureTypeId featureType;
-	FluidTypeId fluidType;
-	int fluidVolume = Config::maxPointVolume.get();
-	bool constructed = true;
-	Percent percentGrown{100};
-	PlantSpeciesId plantSpecies;
-	ItemTypeId itemType;
-	Percent wear{0};
-	Quality quality{0};
-	Quantity quantity{1};
-	Facing4 facing = Facing4::North;
-	bool installed = false;
-	std::string name;
-};

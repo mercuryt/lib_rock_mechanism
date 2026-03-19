@@ -11,7 +11,7 @@ void CuboidSetSIMD::reserve(int capacity)
 	m_low.conservativeResize(3, capacity);
 	m_capacity = capacity;
 }
-void CuboidSetSIMD::insert(const Cuboid& cuboid)
+void CuboidSetSIMD::insert(const Cuboid cuboid)
 {
 	if(m_size == m_capacity)
 		reserve(m_capacity * 2);
@@ -23,13 +23,13 @@ void CuboidSetSIMD::insert(const Cuboid& cuboid)
 	else
 		m_boundingBox.maybeExpand(cuboid);
 }
-void CuboidSetSIMD::update(const int index, const Cuboid& cuboid)
+void CuboidSetSIMD::update(const int index, const Cuboid cuboid)
 {
 	assert(!containsAsMember(cuboid));
 	m_high.col(index) = cuboid.m_high.data;
 	m_low.col(index) = cuboid.m_low.data;
 }
-void CuboidSetSIMD::erase(const Cuboid& cuboid)
+void CuboidSetSIMD::erase(const Cuboid cuboid)
 {
 	auto truncatedHighView = m_high.block(0, 0, 3, m_size);
 	auto truncatedLowView = m_low.block(0, 0, 3, m_size);
@@ -62,10 +62,10 @@ void CuboidSetSIMD::load(const std::vector<Cuboid>& contents)
 {
 	assert(empty());
 	reserve(contents.size());
-	for(const Cuboid& cuboid : contents)
+	for(const Cuboid cuboid : contents)
 		insert(cuboid);
 }
-bool CuboidSetSIMD::intersects(const Cuboid& cuboid) const
+bool CuboidSetSIMD::intersects(const Cuboid cuboid) const
 {
 	if(!cuboid.intersects(m_boundingBox))
 		return false;
@@ -77,7 +77,7 @@ bool CuboidSetSIMD::intersects(const Cuboid& cuboid) const
 		(truncatedLowView > cuboid.m_high.data.replicate(1, m_size)).any()
 	);
 }
-bool CuboidSetSIMD::containsAsMember(const Cuboid& cuboid) const
+bool CuboidSetSIMD::containsAsMember(const Cuboid cuboid) const
 {
 	auto truncatedHighView = m_high.block(0, 0, 3, m_size);
 	auto truncatedLowView = m_low.block(0, 0, 3, m_size);
@@ -86,7 +86,7 @@ bool CuboidSetSIMD::containsAsMember(const Cuboid& cuboid) const
 		(truncatedLowView == cuboid.m_low.data.replicate(1, m_size)).colwise().all()
 	).any();
 }
-Eigen::Array<bool, 1, Eigen::Dynamic> CuboidSetSIMD::indicesOfIntersectingCuboids(const Cuboid& cuboid) const
+Eigen::Array<bool, 1, Eigen::Dynamic> CuboidSetSIMD::indicesOfIntersectingCuboids(const Cuboid cuboid) const
 {
 	auto truncatedHighView = m_high.block(0, 0, 3, m_size);
 	auto truncatedLowView = m_low.block(0, 0, 3, m_size);
@@ -95,7 +95,7 @@ Eigen::Array<bool, 1, Eigen::Dynamic> CuboidSetSIMD::indicesOfIntersectingCuboid
 		(truncatedLowView <= cuboid.m_high.data.replicate(1, m_size)).colwise().all()
 	);
 }
-Eigen::Array<bool, 1, Eigen::Dynamic> CuboidSetSIMD::indicesOfContainedCuboids(const Cuboid& cuboid) const
+Eigen::Array<bool, 1, Eigen::Dynamic> CuboidSetSIMD::indicesOfContainedCuboids(const Cuboid cuboid) const
 {
 	auto truncatedHighView = m_high.block(0, 0, 3, m_size);
 	auto truncatedLowView = m_low.block(0, 0, 3, m_size);
@@ -118,7 +118,7 @@ Eigen::Array<bool, 1, Eigen::Dynamic> CuboidSetSIMD::indicesOfIntersectingCuboid
 std::vector<Cuboid> CuboidSetSIMD::toVector() const
 {
 	std::vector<Cuboid> output(m_size);
-	for(const Cuboid& cuboid : (*this))
+	for(const Cuboid cuboid : (*this))
 		output.push_back(cuboid);
 	return output;
 }

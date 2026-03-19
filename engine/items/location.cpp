@@ -4,14 +4,14 @@
 #include "../definitions/moveType.h"
 #include "../portables.h"
 
-ItemIndex Items::location_set(const ItemIndex& index, const Point3D& location, Facing4 facing)
+ItemIndex Items::location_set(const ItemIndex index, const Point3D location, Facing4 facing)
 {
 	if(isStatic(index))
 		return location_setStatic(index, location, facing);
 	else
 		return location_setDynamic(index, location, facing);
 }
-ItemIndex Items::location_setStatic(const ItemIndex& index, const Point3D& location, Facing4 facing)
+ItemIndex Items::location_setStatic(const ItemIndex index, const Point3D location, Facing4 facing)
 {
 	Space& space = m_area.getSpace();
 	#ifndef NDEBUG
@@ -54,7 +54,7 @@ ItemIndex Items::location_setStatic(const ItemIndex& index, const Point3D& locat
 	onSetLocation(index, previousLocation, previousFacing);
 	return index;
 }
-ItemIndex Items::location_setDynamic(const ItemIndex& index, const Point3D& location, Facing4 facing)
+ItemIndex Items::location_setDynamic(const ItemIndex index, const Point3D location, Facing4 facing)
 {
 	assert(index.exists());
 	assert(!isStatic(index));
@@ -86,14 +86,14 @@ ItemIndex Items::location_setDynamic(const ItemIndex& index, const Point3D& loca
 	onSetLocation(index, previousLocation, previousFacing);
 	return index;
 }
-SetLocationAndFacingResult Items::location_tryToSetNongenericStatic(const ItemIndex& index, const Point3D& location, const Facing4 facing)
+SetLocationAndFacingResult Items::location_tryToSetNongenericStatic(const ItemIndex index, const Point3D location, const Facing4 facing)
 {
 	assert(!ItemType::getIsGeneric(m_itemType[index]));
 	assert(isStatic(index));
 	Space& space = m_area.getSpace();
-	const Point3D& previousLocation = getLocation(index);
+	const Point3D previousLocation = getLocation(index);
 	const Offset3D offset = previousLocation.offsetTo(location);
-	const Facing4& previousFacing = getFacing(index);
+	const  Facing4 previousFacing = getFacing(index);
 	// Apply the same shift to the offsets as the offset from the previous location to the new one and subtract the unshifted position.
 	MapWithOffsetCuboidKeys<CollisionVolume> offsetCuboidsAndVolumesDelta = Shape::applyOffsetAndRotationAndSubtractOriginal(m_compoundShape[index], offset, previousFacing, facing);
 	// Apply the new location to the offsets.
@@ -108,11 +108,11 @@ SetLocationAndFacingResult Items::location_tryToSetNongenericStatic(const ItemIn
 	location_setStatic(index, location, facing);
 	return SetLocationAndFacingResult::Success;
 }
-std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetGenericStatic(const ItemIndex& index, const Point3D& location, const Facing4 facing)
+std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetGenericStatic(const ItemIndex index, const Point3D location, const Facing4 facing)
 {
 	assert(ItemType::getIsGeneric(m_itemType[index]));
 	assert(isStatic(index));
-	const ItemTypeId& itemType = m_itemType[index];
+	const ItemTypeId itemType = m_itemType[index];
 	Space& space = m_area.getSpace();
 	Offset3D rollBackFrom;
 	ItemIndex toCombine = space.item_getGeneric(location, itemType, m_solid[index]);
@@ -121,9 +121,9 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetGeneric
 		toCombine = merge(toCombine, index);
 		return {toCombine, SetLocationAndFacingResult::Success};
 	}
-	const Point3D& previousLocation = getLocation(index);
+	const Point3D previousLocation = getLocation(index);
 	const Offset3D offset = previousLocation.offsetTo(location);
-	const Facing4& previousFacing = getFacing(index);
+	const  Facing4 previousFacing = getFacing(index);
 	// Apply the same shift to the offsets as the offset from the previous location to the new one and subtract the unshifted position.
 	MapWithOffsetCuboidKeys<CollisionVolume> offsetCuboidsAndVolumesDelta = Shape::applyOffsetAndRotationAndSubtractOriginal(m_compoundShape[index], offset, previousFacing, facing);
 	// Apply the new location to the offsets.
@@ -138,15 +138,15 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetGeneric
 	location_setStatic(index, location, facing);
 	return {index, SetLocationAndFacingResult::Success};
 }
-SetLocationAndFacingResult Items::location_tryToSetDynamic(const ItemIndex& index, const Point3D& location, const Facing4& facing)
+SetLocationAndFacingResult Items::location_tryToSetDynamic(const ItemIndex index, const Point3D location, const Facing4 facing)
 {
 	assert(!isStatic(index));
 	assert(!ItemType::getIsGeneric(m_itemType[index]));
 	Space& space = m_area.getSpace();
 	// Apply the same shift to the offsets as the offset from the previous location to the new one and subtract the unshifted position.
-	const Point3D& previousLocation = getLocation(index);
+	const Point3D previousLocation = getLocation(index);
 	const Offset3D offset = previousLocation.offsetTo(location);
-	const Facing4& previousFacing = getFacing(index);
+	const  Facing4 previousFacing = getFacing(index);
 	// Apply the same shift to the offsets as the offset from the previous location to the new one and subtract the unshifted position.
 	MapWithOffsetCuboidKeys<CollisionVolume> offsetCuboidsAndVolumesDelta = Shape::applyOffsetAndRotationAndSubtractOriginal(m_compoundShape[index], offset, previousFacing, facing);
 	// Apply the new location to the offsets.
@@ -161,7 +161,7 @@ SetLocationAndFacingResult Items::location_tryToSetDynamic(const ItemIndex& inde
 	location_setDynamic(index, location, facing);
 	return SetLocationAndFacingResult::Success;
 }
-std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetStatic(const ItemIndex& index, const Point3D& location, const Facing4& facing)
+std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetStatic(const ItemIndex index, const Point3D location, const Facing4 facing)
 {
 	std::pair<ItemIndex, SetLocationAndFacingResult> output;
 	if(isGeneric(index))
@@ -172,14 +172,14 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSetStatic(
 		output = {index, location_tryToSetNongenericStatic(index, location, facing)};
 	return output;
 }
-std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSet(const ItemIndex& index, const Point3D& location, const Facing4& facing)
+std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToSet(const ItemIndex index, const Point3D location, const Facing4 facing)
 {
 	if(isStatic(index))
 		return location_tryToSetStatic(index, location, facing);
 	else
 		return {index, location_tryToSetDynamic(index, location, facing)};
 }
-std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToMoveToStatic(const ItemIndex& index, const Point3D& location)
+std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToMoveToStatic(const ItemIndex index, const Point3D location)
 {
 	assert(hasLocation(index));
 	assert(isStatic(index));
@@ -193,7 +193,7 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToMoveToStat
 		// Static nongeneric.
 		return {index, location_tryToSetNongenericStatic(index, location, facing)};
 }
-std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToMoveToDynamic(const ItemIndex& index, const Point3D& location)
+std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToMoveToDynamic(const ItemIndex index, const Point3D location)
 {
 	assert(hasLocation(index));
 	assert(!isStatic(index));
@@ -202,14 +202,14 @@ std::pair<ItemIndex, SetLocationAndFacingResult> Items::location_tryToMoveToDyna
 	const Facing4 facing = previousLocation.getFacingTwords(location);
 	return {index, location_tryToSetDynamic(index, location, facing)};
 }
-void Items::location_clear(const ItemIndex& index)
+void Items::location_clear(const ItemIndex index)
 {
 	if(isStatic(index))
 		location_clearStatic(index);
 	else
 		location_clearDynamic(index);
 }
-void Items::location_clearStatic(const ItemIndex& index)
+void Items::location_clearStatic(const ItemIndex index)
 {
 	assert(isStatic(index));
 	assert(m_location[index].exists());
@@ -226,7 +226,7 @@ void Items::location_clearStatic(const ItemIndex& index)
 	if(space.isExposedToSky(location))
 		m_onSurface.maybeUnset(index);
 }
-void Items::location_clearDynamic(const ItemIndex& index)
+void Items::location_clearDynamic(const ItemIndex index)
 {
 	assert(!isStatic(index));
 	assert(m_location[index].exists());
@@ -243,19 +243,19 @@ void Items::location_clearDynamic(const ItemIndex& index)
 	if(space.isExposedToSky(location))
 		m_onSurface.maybeUnset(index);
 }
-bool Items::location_canEnterEverWithFacing(const ItemIndex& index, const Point3D& location, const Facing4& facing) const
+bool Items::location_canEnterEverWithFacing(const ItemIndex index, const Point3D location, const Facing4 facing) const
 {
 	return m_area.getSpace().shape_shapeAndMoveTypeCanEnterEverWithFacing(location, m_compoundShape[index], m_moveType[index], facing);
 }
-bool Items::location_canEnterCurrentlyWithFacing(const ItemIndex& index, const Point3D& location, const Facing4& facing) const
+bool Items::location_canEnterCurrentlyWithFacing(const ItemIndex index, const Point3D location, const Facing4 facing) const
 {
 	return m_area.getSpace().shape_canEnterCurrentlyWithFacing(location, m_compoundShape[index], facing, m_occupied[index]);
 }
-bool Items::location_canEnterEverFrom(const ItemIndex& index, const Point3D& location, const Point3D& previous) const
+bool Items::location_canEnterEverFrom(const ItemIndex index, const Point3D location, const Point3D previous) const
 {
 	return m_area.getSpace().shape_shapeAndMoveTypeCanEnterEverFrom(location, m_compoundShape[index], m_moveType[index], previous);
 }
-bool Items::location_canEnterCurrentlyFrom(const ItemIndex& index, const Point3D& location, const Point3D& previous) const
+bool Items::location_canEnterCurrentlyFrom(const ItemIndex index, const Point3D location, const Point3D previous) const
 {
 	return m_area.getSpace().shape_canEnterCurrentlyFrom(location, m_compoundShape[index], previous, m_occupied[index]);
 }

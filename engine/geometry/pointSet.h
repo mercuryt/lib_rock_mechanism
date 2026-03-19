@@ -21,18 +21,18 @@ public:
 	Point3DSet(const int& capacity) { assert(capacity != 0); reserve(capacity); }
 	void reserve(const int& capacity) { data.conservativeResize(3, capacity); }
 	void resize(const int& capacity) { if(m_size < capacity) reserve(capacity); m_size = capacity; }
-	void insert(const Point3D& point);
+	void insert(const Point3D point);
 	void clear() { m_size = 0; };
 	[[nodiscard]] Point3D operator[](const int& index) const;
 	[[nodiscard]] int size() const { return m_size; }
 	[[nodiscard]] int capacity() const { return data.size(); }
 	[[nodiscard]] Cuboid boundry() const;
-	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfContainedPoints(const Cuboid& cuboid) const;
+	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfContainedPoints(const Cuboid cuboid) const;
 	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfContainedPoints(const Sphere& sphere) const;
-	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfFacedTwordsPoints(const Point3D& location, const Facing4& facing) const;
-	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesFacingTwords(const Point3D& location, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& facings) const;
-	[[nodiscard]] Eigen::Array<int, 1, Eigen::Dynamic> distancesSquare(const Point3D& location) const;
-	[[nodiscard]] Eigen::Array<bool, 2, Eigen::Dynamic> canSeeAndCanBeSeenByDistanceAndFacingFilter(const Point3D& location, const Facing4& facing, const DistanceSquared& visionRangeSquared, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& facings, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& visionRangesSquared) const;
+	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfFacedTwordsPoints(const Point3D location, const Facing4 facing) const;
+	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesFacingTwords(const Point3D location, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& facings) const;
+	[[nodiscard]] Eigen::Array<int, 1, Eigen::Dynamic> distancesSquare(const Point3D location) const;
+	[[nodiscard]] Eigen::Array<bool, 2, Eigen::Dynamic> canSeeAndCanBeSeenByDistanceAndFacingFilter(const Point3D location, const Facing4 facing, const DistanceSquared visionRangeSquared, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& facings, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& visionRangesSquared) const;
 	[[nodiscard]] static Point3DSet fromPointSet(const auto& points)
 	{
 		Point3DSet output;
@@ -43,7 +43,7 @@ public:
 	[[nodiscard]] static Point3DSet fromCuboidSet(const auto& cuboids)
 	{
 		Point3DSet output;
-		for(const Cuboid& cuboid : cuboids)
+		for(const Cuboid cuboid : cuboids)
 			for(const Point3D& point : cuboid)
 				output.insert(point);
 		return output;

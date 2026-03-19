@@ -3,19 +3,19 @@
 #include "../space/space.h"
 #include "../numericTypes/index.h"
 #include <cmath>
-bool Sphere::contains(const Point3D& point) const
+bool Sphere::contains(const Point3D point) const
 {
 	return point.distanceToSquared(center).toFloat() < (radius * radius);
 }
-bool Sphere::contains(const Cuboid& cuboid) const
+bool Sphere::contains(const Cuboid cuboid) const
 {
 	return contains(cuboid.m_high) && contains(cuboid.m_low);
 }
-bool Sphere::intersects(const Cuboid& cuboid) const
+bool Sphere::intersects(const Cuboid cuboid) const
 {
 	return doesCuboidIntersectSphere(cuboid.m_high, cuboid.m_low, *this);
 }
-bool Sphere::doesCuboidIntersectSphere(const Point3D& highest, const Point3D& lowest, const Sphere& sphere)
+bool Sphere::doesCuboidIntersectSphere(const Point3D highest, const Point3D lowest, const Sphere& sphere)
 {
 	int radius = sphere.radius.get();
 	const Eigen::Array<int, 1, 3>& high = highest.toOffset().data;

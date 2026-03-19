@@ -30,7 +30,7 @@ class ConstructProject final : public Project
 	[[nodiscard]] SkillTypeId getSkill() const;
 	[[nodiscard]] std::string description() const;
 	std::vector<ActorReference> getActors() const;
-	int getWorkerConstructScore(const ActorIndex& actor) const;
+	int getWorkerConstructScore(const ActorIndex actor) const;
 	Step getDuration() const;
 	void onComplete();
 	void onCancel();
@@ -38,7 +38,7 @@ class ConstructProject final : public Project
 	void offDelay();
 public:
 	// PointFeatureType can be null, meaning the point is to be filled with a constructed wall.
-	ConstructProject(const FactionId& faction, Area& a, const Point3D& b, const PointFeatureTypeId bft, const MaterialTypeId& mt, std::unique_ptr<DishonorCallback> dishonorCallback) :
+	ConstructProject(const FactionId faction, Area& a, const Point3D b, const PointFeatureTypeId bft, const MaterialTypeId mt, std::unique_ptr<DishonorCallback> dishonorCallback) :
 		Project(faction, a, b, Config::maxNumberOfWorkersForConstructionProject, std::move(dishonorCallback)), m_pointFeatureType(bft), m_solid(mt) { }
 	ConstructProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	[[nodiscard]] Json toJson() const;
@@ -52,8 +52,8 @@ struct ConstructionLocationDishonorCallback final : public DishonorCallback
 	FactionId m_faction;
 	Area& m_area;
 	Point3D m_location;
-	ConstructionLocationDishonorCallback(const FactionId& f, Area& a, const Point3D& l) : m_faction(f), m_area(a), m_location(l) { }
+	ConstructionLocationDishonorCallback(const FactionId f, Area& a, const Point3D l) : m_faction(f), m_area(a), m_location(l) { }
 	ConstructionLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-	void execute(const Quantity& oldCount, const Quantity& newCount);
+	void execute(const Quantity oldCount, const Quantity newCount);
 };

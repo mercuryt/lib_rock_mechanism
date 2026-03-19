@@ -30,12 +30,20 @@ void SimulationHasAreas::save()
 	for(auto& [areaId, area] : m_areas)
 	{
 		std::ofstream af(m_simulation.m_path/"area"/(std::to_string(areaId.get()) + ".json"));
+		assert(af.is_open());
 		// Ensure spatial compression prior to serialization.
 		area->getSpace().prepareRtrees();
-		af << area->toJson();
+		const Json json = area->toJson();
+		assert(!json.is_null());
+		auto text = json.dump();
+		assert(!text.empty());
+		af << text;
+		af.flush();
+		assert(af);
+		std::cout << "Wrote " << text.size() << " bytes to " << m_simulation.m_path/"area"/(std::to_string(areaId.get()) + ".json") << std::endl;
 	}
 }
-Area& SimulationHasAreas::createArea(const Distance& x, const Distance& y, const Distance& z, bool createDrama)
+Area& SimulationHasAreas::createArea(const Distance  x, const Distance  y, const Distance  z, bool createDrama)
 {
 	AreaId id = ++m_nextId;
 	Area& output = loadArea(id, "unnamed area " + std::to_string(id.get()), x, y, z);
@@ -47,7 +55,7 @@ Area& SimulationHasAreas::createArea(int x, int y, int z, bool createDrama)
 {
 	return createArea(Distance::create(x), Distance::create(y), Distance::create(z), createDrama);
 }
-Area& SimulationHasAreas::loadArea(const AreaId& id, std::string name, const Distance& x, const Distance& y, const Distance& z)
+Area& SimulationHasAreas::loadArea(const AreaId id, std::string name, const Distance  x, const Distance  y, const Distance  z)
 {
 	Area& area = m_areas.emplace(id, id, name, m_simulation, x, y, z);
 	m_areasById.insert(id, &area);
@@ -67,7 +75,7 @@ Area& SimulationHasAreas::loadAreaFromJson(const Json& data, DeserializationMemo
 	const AreaId id = AreaId::create(data["id"].get<int>());
 	return m_areas.insert(id, std::make_unique<Area>(data, deserializationMemo, m_simulation));
 }
-Area& SimulationHasAreas::loadAreaFromPath(const AreaId& id, DeserializationMemo& deserializationMemo)
+Area& SimulationHasAreas::loadAreaFromPath(const AreaId id, DeserializationMemo& deserializationMemo)
 {
 	std::ifstream af(m_simulation.m_path/"area"/(std::to_string(id.get()) + ".json"));
 	Json areaData = Json::parse(af);

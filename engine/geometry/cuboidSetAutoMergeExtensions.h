@@ -10,11 +10,11 @@ protected:
 	std::vector<Key> m_keys;
 	Key nextKey = Key::create(0);
 public:
-	virtual std::vector<std::pair<Key, Cuboid>> getAdjacentCandidates(const Cuboid&) { return std::ranges::zip(m_keys, m_cuboids); }
-	virtual void onCreate(const int&, const Key&, const Cuboid&) { }
-	virtual void onDestroy(const int&, const Key&, const Cuboid&) { }
-	[[nodiscard]] virtual bool canMerge(const Cuboid&, const Cuboid&) { return true; }
-	void add(const Cuboid& cuboid) override
+	virtual std::vector<std::pair<Key, Cuboid>> getAdjacentCandidates(const Cuboid) { return std::ranges::zip(m_keys, m_cuboids); }
+	virtual void onCreate(const int&, const Key&, const Cuboid) { }
+	virtual void onDestroy(const int&, const Key&, const Cuboid) { }
+	[[nodiscard]] virtual bool canMerge(const Cuboid, const Cuboid) { return true; }
+	void add(const Cuboid cuboid) override
 	{
 		remove(cuboid);
 		for(const auto& [adjacentKey, adjacentCuboid] : getAdjacentCandidates(cuboid))
@@ -31,7 +31,7 @@ public:
 		++nextKey;
 		onCreate(nextKey - 1, m_keys.back(), cuboid);
 	}
-	void remove(const Cuboid& cuboid) override
+	void remove(const Cuboid cuboid) override
 	{
 		//TODO: partition instead of toSplit.
 		// Record key and cuboid instead of index because index may change as keys and cuboids are destroyed.
@@ -49,10 +49,10 @@ public:
 			m_cuboids.erase(cuboid);
 		}
 		for(const auto& pair : toSplit)
-			for(const Cuboid& splitResult : toSplitCuboid.getChildrenWhenSplitByCuboid(pair.second))
+			for(const Cuboid splitResult : toSplitCuboid.getChildrenWhenSplitByCuboid(pair.second))
 				create(splitResult);
 	}
-	virtual void sliceBelow(const Cuboid& cuboid)
+	virtual void sliceBelow(const Cuboid cuboid)
 	{
 		assert(cuboid.dimensionForFacing(Facing6::Above) == 1);
 		// Record key and cuboid instead of index because index may change as keys and cuboids are destroyed.
@@ -70,7 +70,7 @@ public:
 			m_cuboids.erase(cuboid);
 		}
 		for(const auto& pair : toSplit)
-			for(const Cuboid& splitResult : toSplitCuboid.getChildrenWhenSplitBelowCuboid(pair.second))
+			for(const Cuboid splitResult : toSplitCuboid.getChildrenWhenSplitBelowCuboid(pair.second))
 				create(splitResult);
 	}
 	[[nodiscard]] Cuboid operator[](const Key& key)
@@ -91,7 +91,7 @@ struct CuboidSetAutoMergeMapWithPointLookup : public CuboidSetAutoMergeMap<Key>
 protected:
 	Area& m_area;
 	RTreeData<Key> m_pointLookup;
-	std::vector<std::pair<Key, Cuboid>> getAdjacentCandidates(const Cuboid& cuboid) override
+	std::vector<std::pair<Key, Cuboid>> getAdjacentCandidates(const Cuboid cuboid) override
 	{
 		Space& space = m_area.getSpace();
 		std::vector<std::pair<Key,Cuboid>> output;
@@ -115,7 +115,7 @@ protected:
 			}
 		return output;
 	};
-	void onCreate(const int&, const Key& key, const Cuboid& cuboid) override
+	void onCreate(const int&, const Key& key, const Cuboid cuboid) override
 	{
 		for(const Point3D& point : cuboid)
 		{
@@ -123,7 +123,7 @@ protected:
 			m_pointLookup[point] = key;
 		}
 	}
-	void onDestroy(const int&, const Key& key, const Cuboid& cuboid) override
+	void onDestroy(const int&, const Key& key, const Cuboid cuboid) override
 	{
 		for(const Point3D& point : cuboid)
 		{
@@ -131,8 +131,8 @@ protected:
 			m_pointLookup[point].clear();
 		}
 	}
-	virtual void onKeySetForPoint(const Key&, const Point3D&) { }
-	virtual void onKeyClearForPoint(const Key&, const Point3D&) { }
+	virtual void onKeySetForPoint(const Key&, const Point3D) { }
+	virtual void onKeyClearForPoint(const Key&, const Point3D) { }
 public:
 	CuboidSetAutoMergeMapWithPointLookup(Area& area) :
 		m_area(area)
@@ -140,7 +140,7 @@ public:
 		m_pointLookup.reserve( area.getSpace().size());
 	}
 	// To be used when setting vision cuboid in vision request and location bucket.
-	[[nodiscard]] Key getKeyAt(const Point3D& point) { return m_pointLookup[point]; }
+	[[nodiscard]] Key getKeyAt(const Point3D point) { return m_pointLookup[point]; }
 };
 
 #include "cuboidMap.h"
@@ -152,7 +152,7 @@ protected:
 	std::vector<CuboidMap<Key>> m_adjacent;
 public:
 	CuboidSetAutoMergeMapWithAdjacent(Area& area) : CuboidSetAutoMergeMapWithPointLookup(area) { }
-	void onCreate(const int& index, const Key& key, const Cuboid& cuboid) override
+	void onCreate(const int& index, const Key& key, const Cuboid cuboid) override
 	{
 		CuboidSetAutoMergeMapWithPointLookup<Key>::onCreate(key, cuboid);
 		const Space& space = m_area.getSpace();
@@ -161,7 +161,7 @@ public:
 		auto& adjacent = m_adjacent.back();
 		for(const auto& [point, facing] : cuboid.getSurfaceView(space))
 		{
-			const Point3D& outside = space.getPointAtFacing(point, facing);
+			const Point3D outside = space.getPointAtFacing(point, facing);
 			Key outsideKey = m_pointLookup[outside];
 			if(outsideKey.exists() && !adjacent.contains(outsideKey))
 			{
@@ -171,7 +171,7 @@ public:
 			}
 		}
 	}
-	void onDestroy(const int& index, const Key& key, const Cuboid& cuboid) override
+	void onDestroy(const int& index, const Key& key, const Cuboid cuboid) override
 	{
 		CuboidSetAutoMergeMapWithPointLookup<Key>::onDestroy(key, cuboid);
 		for(const auto& [otherKey, otherCuboid] : m_adjacent[key])
@@ -196,7 +196,7 @@ public:
 			key = openList.back();
 			openList.popBack();
 			int index = getIndexForKey(key);
-			const Cuboid& cuboid = CuboidSet::m_cuboids[index];
+			const Cuboid cuboid = CuboidSet::m_cuboids[index];
 			action(key, cuboid);
 			const auto& adjacent = m_adjacent[index];
 			for(const Key& key : adjacent.query(queryShape))
@@ -209,9 +209,9 @@ public:
 			}
 		}
 	}
-	[[nodiscard]] Key getKeyAt(const Point3D& point) const { return CuboidSetAutoMergeMapWithPointLookup<Key>::m_pointLookup[point]; }
+	[[nodiscard]] Key getKeyAt(const Point3D point) const { return CuboidSetAutoMergeMapWithPointLookup<Key>::m_pointLookup[point]; }
 	[[nodiscard]] int size() const { return CuboidSetAutoMergeMap<Key>::m_keys.size(); }
 	[[nodiscard]] Area& getArea() { return m_area; }
 
-	virtual void onKeySetForPoint(const Key& key, const Point3D& index) override { CuboidSetAutoMergeMapWithPointLookup<Key>::onSetKeyForPoint(key, index); }
+	virtual void onKeySetForPoint(const Key& key, const Point3D index) override { CuboidSetAutoMergeMapWithPointLookup<Key>::onSetKeyForPoint(key, index); }
 };

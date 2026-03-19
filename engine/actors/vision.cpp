@@ -5,63 +5,63 @@
 #include "../vision/visionRequests.h"
 #include "../area/area.h"
 #include "../space/space.h"
-bool Actors::vision_canSeeAnything(const ActorIndex& index) const
+bool Actors::vision_canSeeAnything(const ActorIndex index) const
 {
 	return isAlive(index) && sleep_isAwake(index);
 }
-bool Actors::vision_canSeeEnemy(const ActorIndex& index) const
+bool Actors::vision_canSeeEnemy(const ActorIndex index) const
 {
-	for(const ActorReference& actor : m_canSee[index])
+	for(const ActorReference actor : m_canSee[index])
 		if(isEnemy(index, actor.getIndex(m_referenceData)))
 			return true;
 	return false;
 }
-bool Actors::vision_canSeeActor(const ActorIndex& index, const ActorIndex& actor) const
+bool Actors::vision_canSeeActor(const ActorIndex index, const ActorIndex actor) const
 {
 	ActorReference ref = m_area.getActors().getReference(actor);
 	return m_canSee[index].contains(ref);
 }
-void Actors::vision_createRequestIfCanSee(const ActorIndex& index)
+void Actors::vision_createRequestIfCanSee(const ActorIndex index)
 {
 	if(vision_canSeeAnything(index))
 		m_area.m_visionRequests.create(m_area.getActors().getReference(index));
 }
-void Actors::vision_clearRequestIfExists(const ActorIndex& index)
+void Actors::vision_clearRequestIfExists(const ActorIndex index)
 {
 	m_area.m_visionRequests.cancelIfExists(m_area.getActors().getReference(index));
 }
-void Actors::vision_setCanSee(const ActorIndex& index, const ActorReference& other)
+void Actors::vision_setCanSee(const ActorIndex index, const ActorReference other)
 {
 	m_canSee[index].maybeInsert(other);
 }
-void Actors::vision_setCanBeSeenBy(const ActorIndex& index, const ActorReference& other)
+void Actors::vision_setCanBeSeenBy(const ActorIndex index, const ActorReference other)
 {
 	m_canBeSeenBy[index].maybeInsert(other);
 }
-void Actors::vision_setNoLongerCanSee(const ActorIndex& index, const ActorReference& other)
+void Actors::vision_setNoLongerCanSee(const ActorIndex index, const ActorReference other)
 {
 	m_canSee[index].maybeErase(other);
 }
-void Actors::vision_setNoLongerCanBeSeenBy(const ActorIndex& index, const ActorReference& other)
+void Actors::vision_setNoLongerCanBeSeenBy(const ActorIndex index, const ActorReference other)
 {
 	m_canBeSeenBy[index].maybeErase(other);
 }
-void Actors::vision_setCanSee(const ActorIndex& index, SmallSet<ActorReference>&& others)
+void Actors::vision_setCanSee(const ActorIndex index, SmallSet<ActorReference>&& others)
 {
 	m_canSee[index] = std::move(others);
 }
-void Actors::vision_setCanBeSeenBy(const ActorIndex& index, SmallSet<ActorReference>&& others)
+void Actors::vision_setCanBeSeenBy(const ActorIndex index, SmallSet<ActorReference>&& others)
 {
 	m_canBeSeenBy[index] = std::move(others);
 }
-void Actors::vision_clearCanSee(const ActorIndex& index)
+void Actors::vision_clearCanSee(const ActorIndex index)
 {
 	ActorReference ref = m_area.getActors().getReference(index);
 	for(ActorReference other : m_canSee[index])
 		m_canBeSeenBy[other.getIndex(m_referenceData)].erase(ref);
 	m_canSee[index].clear();
 }
-void Actors::vision_maybeUpdateRange(const ActorIndex& index, const Distance& range)
+void Actors::vision_maybeUpdateRange(const ActorIndex index, const Distance  range)
 {
 	if(vision_canSeeAnything(index) && hasLocation(index))
 	{
@@ -72,7 +72,7 @@ void Actors::vision_maybeUpdateRange(const ActorIndex& index, const Distance& ra
 		m_area.m_octTree.updateRange(ref, m_area.getActors().getLocation(index), range.squared());
 	}
 }
-void Actors::vision_maybeUpdateLocation(const ActorIndex& index, const Point3D& location)
+void Actors::vision_maybeUpdateLocation(const ActorIndex index, const Point3D location)
 {
 	if(vision_canSeeAnything(index))
 	{

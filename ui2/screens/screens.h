@@ -3,9 +3,10 @@ class Window;
 #include "../../engine/reference.h"
 class StockPile;
 class Uniform;
+struct ImVec2;
 namespace screens
 {
-	void begin(Window& window, const std::string& title);
+	void begin(Window& window, const std::string& title, const ImVec2* windowSize = nullptr);
 	void end();
 	void mainMenu(Window& window);
 	void load(Window& window);

@@ -14,8 +14,8 @@ struct ActorQuery
 	bool sentient = false;
 	ActorQuery() = default;
 	ActorQuery(const Json& data, Area& area);
-	[[nodiscard]] bool query(Area& area, const ActorIndex& actor) const;
-	[[nodiscard]] static ActorQuery makeFor(const ActorReference& a);
-	[[nodiscard]] static ActorQuery makeForCarryWeight(const Mass& cw);
+	[[nodiscard]] bool query(Area& area, const ActorIndex actor) const;
+	[[nodiscard]] static ActorQuery makefor(const ActorReference ref);
+	[[nodiscard]] static ActorQuery makeForCarryWeight(const Mass cw);
 	[[nodiscard]] Json toJson() const;
 };

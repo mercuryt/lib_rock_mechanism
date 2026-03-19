@@ -27,9 +27,9 @@ struct PathRequest
 	PathRequest() = default;
 	PathRequest(const Json& data, Area& area);
 	[[nodiscard]] virtual Json toJson() const;
-	[[nodiscard]] static PathRequest& load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const MoveTypeId& moveType);
-	[[nodiscard]] static PathRequest& record(Area &area, const MoveTypeId& moveType, std::unique_ptr<PathRequestBreadthFirst> pathRequest);
-	[[nodiscard]] static PathRequest& record(Area &area, const MoveTypeId& moveType, std::unique_ptr<PathRequestDepthFirst> pathRequest);
+	[[nodiscard]] static PathRequest& load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const MoveTypeId moveType);
+	[[nodiscard]] static PathRequest& record(Area &area, const MoveTypeId moveType, std::unique_ptr<PathRequestBreadthFirst> pathRequest);
+	[[nodiscard]] static PathRequest& record(Area &area, const MoveTypeId moveType, std::unique_ptr<PathRequestDepthFirst> pathRequest);
 	virtual void writeStep(Area& area, FindPathResult& result);
 	virtual void cancel(Area& area) = 0;
 	virtual ~PathRequest() = default;

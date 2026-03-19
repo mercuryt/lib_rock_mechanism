@@ -15,13 +15,13 @@ class ChastiseObjective final : public Objective
 	int m_duration;
 	bool m_angry;
 public:
-	ChastiseObjective(Area& area, const ActorIndex& receipent, std::string&& subject, const SkillTypeId& skill, int duration, bool m_angry);
-	ChastiseObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, const ActorIndex& actor) override;
-	void cancel(Area& area, const ActorIndex& actor) override;
-	void delay(Area& area, const ActorIndex& actor) override;
-	void reset(Area& area, const ActorIndex& actor) override;
-	void createOnDestroyCallback(Area& area, const ActorIndex& actor);
+	ChastiseObjective(Area& area, const ActorIndex receipent, std::string&& subject, const SkillTypeId skill, int duration, bool m_angry);
+	ChastiseObjective(const Json& data, Area& area, const ActorIndex actor, DeserializationMemo& deserializationMemo);
+	void execute(Area& area, const ActorIndex actor) override;
+	void cancel(Area& area, const ActorIndex actor) override;
+	void delay(Area& area, const ActorIndex actor) override;
+	void reset(Area& area, const ActorIndex actor) override;
+	void createOnDestroyCallback(Area& area, const ActorIndex actor);
 	[[nodiscard]] std::string name() const { return "chastise"; }
 	[[nodiscard]] Json toJson() const;
 	friend class ChastiseScheduledEvent;
@@ -31,7 +31,7 @@ class ChastiseScheduledEvent final : public ScheduledEvent
 	ChastiseObjective& m_objective;
 	ActorReference m_actor;
 public:
-	ChastiseScheduledEvent(const Step& duration, ChastiseObjective& objective, const ActorReference& actor, Simulation& simulation, const Step& start = Step::null());
+	ChastiseScheduledEvent(const Step duration, ChastiseObjective& objective, const ActorReference actor, Simulation& simulation, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };

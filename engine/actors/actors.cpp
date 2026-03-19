@@ -37,7 +37,8 @@ Percent ActorParamaters::getPercentGrown(Simulation& simulation)
 		// Don't generate actors in the last 15% of their possible life span, they don't get out much.
 		Step adjustedMax = Step::create(util::scaleByPercent(AnimalSpecies::getDeathAgeSteps(species)[0].get(), Percent::create(85)));
 		// Using util::scaleByPercent and util::fractionToPercent give the wrong result here for some reason.
-		Step ageSteps = Step::create(((float)adjustedMax.get() / (float)percentLifeTime.get()) * 100.f);
+		Step ageSteps = Step::create(util::scaleByPercent(adjustedMax.get(), percentLifeTime));
+		//Step ageSteps = Step::create(((float)adjustedMax.get() / (float)percentLifeTime.get()) * 100.f);
 		percentGrown = Percent::create(std::min(100, (int)(((float)ageSteps.get() / (float)AnimalSpecies::getStepsTillFullyGrown(species).get()) * 100.f)));
 		birthStep = simulation.m_step - ageSteps;
 	}
@@ -101,7 +102,7 @@ Percent ActorParamaters::getPercentTired(Simulation& simulation)
 	}
 	return percentTired;
 }
-void ActorParamaters::generateEquipment(Area& area, const ActorIndex& actor)
+void ActorParamaters::generateEquipment(Area& area, const ActorIndex actor)
 {
 	static MaterialTypeId leather = MaterialType::byName("leather");
 	static MaterialTypeId cotton = MaterialType::byName("cotton");
@@ -112,7 +113,7 @@ void ActorParamaters::generateEquipment(Area& area, const ActorIndex& actor)
 	if(!actors.isSentient(actor))
 		return;
 	auto& random = area.m_simulation.m_random;
-	auto generate = [&](ItemTypeId itemType, const MaterialTypeId& materialType){
+	auto generate = [&](ItemTypeId itemType, const MaterialTypeId materialType){
 		Quality quality = Quality::create(random.getInRange(10, 50));
 		Percent wear = Percent::create(random.getInRange(10, 60));
 		ItemIndex item = area.getItems().create({
@@ -306,7 +307,7 @@ void Actors::load(const Json& data)
 	auto& deserializationMemo = m_area.m_simulation.getDeserializationMemo();
 	m_moveType.resize(size);
 	ActorIndex i = ActorIndex::create(0);
-	for(const MoveTypeId& moveType : m_moveType)
+	for(const MoveTypeId moveType : m_moveType)
 		m_area.m_hasTerrainFacades.maybeRegisterMoveType(moveType);
 	m_body.resize(size);
 	assert(data.contains("body") && data["body"].contains("data"));
@@ -533,7 +534,7 @@ Json Actors::toJson() const
 	output.update(Portables<Actors, ActorIndex, ActorReferenceIndex, true>::toJson());
 	return output;
 }
-void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
+void Actors::moveIndex(const ActorIndex oldIndex, const ActorIndex newIndex)
 {
 	forEachData([&](auto& data){ data.moveIndex(oldIndex, newIndex); });
 	updateStoredIndicesPortables(oldIndex, newIndex);
@@ -558,7 +559,7 @@ void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
 	if(hasLocation(newIndex))
 	{
 		Space& space = m_area.getSpace();
-		for(const Cuboid& cuboid : m_occupied[newIndex])
+		for(const Cuboid cuboid : m_occupied[newIndex])
 			space.actor_updateIndex(cuboid, oldIndex, newIndex);
 	}
 	if(m_soldier[newIndex].squad.exists())
@@ -567,7 +568,7 @@ void Actors::moveIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex)
 		m_area.m_hasSoldiers.updateSoldierIndex(m_area, oldIndex, newIndex);
 	}
 }
-void Actors::destroy(const ActorIndex& index)
+void Actors::destroy(const ActorIndex index)
 {
 	// No need to explicitly unschedule events here, destorying the event holder will do it.
 	if(hasLocation(index))
@@ -595,7 +596,7 @@ SmallSet<ActorIndex> Actors::getAll() const
 }
 void Actors::onChangeAmbiantSurfaceTemperature()
 {
-	m_onSurface.forEach([this](const ActorIndex& index) { m_needsSafeTemperature[index]->onChange(m_area); });
+	m_onSurface.forEach([this](const ActorIndex index) { m_needsSafeTemperature[index]->onChange(m_area); });
 }
 ActorIndex Actors::create(ActorParamaters params)
 {
@@ -688,7 +689,7 @@ ActorIndex Actors::create(ActorParamaters params)
 		auto& decks = m_area.m_decks;
 		ActorOrItemIndex isPiloting = decks.getForId(decks.queryDeckId(params.location));
 		assert(isPiloting.isItem());
-		const ItemIndex& vehicle = isPiloting.getItem();
+		const ItemIndex vehicle = isPiloting.getItem();
 		location_set(index, params.location, isPiloting.getFacing(m_area));
 		pilotItem_set(index, vehicle);
 	}
@@ -701,14 +702,14 @@ ActorIndex Actors::create(ActorParamaters params)
 	m_onSight[index].setOwner(getReference(index), m_area);
 	return index;
 }
-void Actors::sharedConstructor(const ActorIndex& index)
+void Actors::sharedConstructor(const ActorIndex index)
 {
 	m_body[index]->initialize(m_area);
 	combat_update(index);
 	move_updateIndividualSpeed(index);
 	m_mustDrink[index]->setFluidType(AnimalSpecies::getFluidType(m_species[index]));
 }
-void Actors::scheduleNeeds(const ActorIndex& index)
+void Actors::scheduleNeeds(const ActorIndex index)
 {
 	assert(m_mustSleep[index] != nullptr);
 	assert(m_mustDrink[index] != nullptr);
@@ -720,13 +721,13 @@ void Actors::scheduleNeeds(const ActorIndex& index)
 	// TODO: check for safe temperature, create a get to safe temperature objective?
 	m_canGrow[index]->updateGrowingStatus(m_area);
 }
-void Actors::resetNeeds(const ActorIndex& index)
+void Actors::resetNeeds(const ActorIndex index)
 {
 	m_mustSleep[index]->notTired(m_area);
 	m_mustDrink[index]->notThirsty(m_area);
 	m_mustEat[index]->notHungry(m_area);
 }
-void Actors::removeMassFromCorpse(const ActorIndex& index, const Mass& mass)
+void Actors::removeMassFromCorpse(const ActorIndex index, const Mass mass)
 {
 	assert(!isAlive(index));
 	assert(mass <= m_mass[index]);
@@ -734,16 +735,16 @@ void Actors::removeMassFromCorpse(const ActorIndex& index, const Mass& mass)
 	if(m_mass[index] == 0)
 		leaveArea(index);
 }
-bool Actors::isEnemy(const ActorIndex& index, const ActorIndex& other) const
+bool Actors::isEnemy(const ActorIndex index, const ActorIndex other) const
 {
 	return m_area.m_simulation.m_hasFactions.isEnemy(getFaction(index), getFaction(other));
 }
-Point3D Actors::getNearestVisibleEnemyLocation(const ActorIndex& actor) const
+Point3D Actors::getNearestVisibleEnemyLocation(const ActorIndex actor) const
 {
 	Point3D output;
 	DistanceSquared outputDistance;
-	const Point3D& location = m_location[actor];
-	for(const ActorReference& ref : m_canSee[actor])
+	const Point3D location = m_location[actor];
+	for(const ActorReference ref : m_canSee[actor])
 	{
 		const ActorIndex enemy = ref.getIndex(m_referenceData);
 		const Point3D enemyLocation = m_location[enemy];
@@ -756,17 +757,17 @@ Point3D Actors::getNearestVisibleEnemyLocation(const ActorIndex& actor) const
 	}
 	return output;
 }
-bool Actors::isAlly(const ActorIndex& index, const ActorIndex& other) const
+bool Actors::isAlly(const ActorIndex index, const ActorIndex other) const
 {
 	return m_area.m_simulation.m_hasFactions.isAlly(getFaction(index), getFaction(other));
 }
 //TODO: Zombies are not sentient.
-bool Actors::isSentient(const ActorIndex& index) const { return AnimalSpecies::getSentient(m_species[index]); }
-bool Actors::canMove(const ActorIndex& index) const
+bool Actors::isSentient(const ActorIndex index) const { return AnimalSpecies::getSentient(m_species[index]); }
+bool Actors::canMove(const ActorIndex index) const
 {
 	return isAlive(index) && sleep_isAwake(index) && move_getSpeed(index) != 0;
 }
-void Actors::die(const ActorIndex& index, CauseOfDeath causeOfDeath)
+void Actors::die(const ActorIndex index, CauseOfDeath causeOfDeath)
 {
 	m_deathStep[index] = m_area.m_simulation.m_step;
 	m_causeOfDeath[index] = causeOfDeath;
@@ -785,13 +786,13 @@ void Actors::die(const ActorIndex& index, CauseOfDeath causeOfDeath)
 		m_area.m_hasHaulTools.unregisterYokeableActor(m_area, index);
 	onRemove(index);
 }
-void Actors::passout(const ActorIndex& index, const Step&)
+void Actors::passout(const ActorIndex index, const Step)
 {
 	//TODO
 	if(soldier_is(index))
 		soldier_removeFromMaliceMap(index);
 }
-void Actors::leaveArea(const ActorIndex& index)
+void Actors::leaveArea(const ActorIndex index)
 {
 	combat_onLeaveArea(index);
 	move_onLeaveArea(index);
@@ -800,18 +801,18 @@ void Actors::leaveArea(const ActorIndex& index)
 	onRemove(index);
 	location_clear(index);
 }
-void Actors::wait(const ActorIndex& index, const Step& duration)
+void Actors::wait(const ActorIndex index, const Step duration)
 {
 	m_hasObjectives[index]->addTaskToStart(m_area, std::make_unique<WaitObjective>(m_area, duration, index));
 }
-void Actors::takeHit(const ActorIndex& index, Hit& hit, BodyPart& bodyPart)
+void Actors::takeHit(const ActorIndex index, Hit& hit, BodyPart& bodyPart)
 {
 	m_equipmentSet[index]->modifyImpact(m_area, hit, bodyPart.bodyPartType);
 	m_body[index]->getHitDepth(hit, bodyPart);
 	if(hit.depth != 0)
 		m_body[index]->addWound(m_area, bodyPart, hit);
 }
-void Actors::setFaction(const ActorIndex& index, const FactionId& faction)
+void Actors::setFaction(const ActorIndex index, const FactionId faction)
 {
 	m_faction[index] = faction;
 	if(faction.empty())
@@ -821,15 +822,15 @@ void Actors::setFaction(const ActorIndex& index, const FactionId& faction)
 	else
 		m_canReserve[index]->setFaction(faction);
 }
-Mass Actors::getMass(const ActorIndex& index) const
+Mass Actors::getMass(const ActorIndex index) const
 {
 	return getIntrinsicMass(index) + m_equipmentSet[index]->getMass() + canPickUp_getMass(index) + onDeck_getMass(index);
 }
-FullDisplacement Actors::getVolume(const ActorIndex& index) const
+FullDisplacement Actors::getVolume(const ActorIndex index) const
 {
 	return m_body[index]->getVolume(m_area);
 }
-Quantity Actors::getAgeInYears(const ActorIndex& index) const
+Quantity Actors::getAgeInYears(const ActorIndex index) const
 {
 	DateTime now(m_area.m_simulation.m_step);
 	DateTime birthDate(m_birthStep[index]);
@@ -838,30 +839,30 @@ Quantity Actors::getAgeInYears(const ActorIndex& index) const
 		++differenceYears;
 	return differenceYears;
 }
-Step Actors::getAge(const ActorIndex& index) const
+Step Actors::getAge(const ActorIndex index) const
 {
 	return m_area.m_simulation.m_step - m_birthStep[index];
 }
-std::string Actors::getActionDescription(const ActorIndex& index) const
+std::string Actors::getActionDescription(const ActorIndex index) const
 {
 	if(m_hasObjectives[index]->hasCurrent())
 		return const_cast<HasObjectives&>(*m_hasObjectives[index].get()).getCurrent().name();
 	return "no action";
 }
-Point3D Actors::getCombinedLocation(const ActorIndex& index) const
+Point3D Actors::getCombinedLocation(const ActorIndex index) const
 {
 	if(!m_isPilot[index])
 		return getLocation(index);
 	else
 	{
-		const ActorOrItemIndex& isOnDeckOf = m_isOnDeckOf[index];
+		const ActorOrItemIndex isOnDeckOf = m_isOnDeckOf[index];
 		if(isOnDeckOf.isActor())
 			return getCombinedLocation(isOnDeckOf.getActor());
 		else
 		{
-			const ItemIndex& vehicle = isOnDeckOf.getItem();
+			const ItemIndex vehicle = isOnDeckOf.getItem();
 			Items& items = m_area.getItems();
-			const ActorOrItemIndex& leader = items.getLeader(vehicle);
+			const ActorOrItemIndex leader = items.getLeader(vehicle);
 			if(leader.exists())
 				// Horse drawn chariot or such.
 				return leader.getLocation(m_area);
@@ -871,21 +872,21 @@ Point3D Actors::getCombinedLocation(const ActorIndex& index) const
 		}
 	}
 }
-ActorOrItemIndex Actors::getIsPiloting(const ActorIndex& index) const
+ActorOrItemIndex Actors::getIsPiloting(const ActorIndex index) const
 {
 	ActorOrItemIndex output;
 	if(!m_isPilot[index])
 		return ActorOrItemIndex::null();
 	return m_isOnDeckOf[index];
 }
-void Actors::setBirthStep(const ActorIndex& index, const Step& step)
+void Actors::setBirthStep(const ActorIndex index, const Step step)
 {
 	m_birthStep[index] = step;
 	m_canGrow[index]->updateGrowingStatus(m_area);
 }
-void Actors::takeFallDamage(const ActorIndex& index, const Distance& distance, const MaterialTypeId& materialType)
+void Actors::takeFallDamage(const ActorIndex index, const Distance  distance, const MaterialTypeId materialType)
 {
-	const Force& force = Force::create(distance.get() * getMass(index).get() * Config::modifierToTurnMassTimesFallDistanceIntoForce / Config::hitsToDivideActorFallDamageInto);
+	const Force force = Force::create(distance.get() * getMass(index).get() * Config::modifierToTurnMassTimesFallDistanceIntoForce / Config::hitsToDivideActorFallDamageInto);
 	for(int i = 0; i < Config::hitsToDivideActorFallDamageInto; ++i)
 	{
 		auto& body = *m_body[index];
@@ -896,15 +897,15 @@ void Actors::takeFallDamage(const ActorIndex& index, const Distance& distance, c
 		takeHit(index, hit, hitPart);
 	}
 }
-void Actors::resetMoveType(const ActorIndex& index)
+void Actors::resetMoveType(const ActorIndex index)
 {
 	m_moveType[index] = AnimalSpecies::getMoveType(getSpecies(index));
 	//TODO: add extra move types granted by skills and equipment.
 }
-bool Actors::tryToMoveSoAsNotOccuping(const ActorIndex& index, const Point3D& point)
+bool Actors::tryToMoveSoAsNotOccuping(const ActorIndex index, const Point3D point)
 {
 	Space& space = m_area.getSpace();
-	const Point3D& location = m_location[index];
+	const Point3D location = m_location[index];
 	for(const Point3D& adjacent : space.getAdjacentWithEdgeAndCornerAdjacent(location))
 		if(space.shape_anythingCanEnterEver(adjacent))
 		{
@@ -917,8 +918,8 @@ bool Actors::tryToMoveSoAsNotOccuping(const ActorIndex& index, const Point3D& po
 		}
 	return false;
 }
-Percent Actors::getPercentGrown(const ActorIndex& index) const { return m_canGrow[index]->growthPercent(); }
-void Actors::log(const ActorIndex& index) const
+Percent Actors::getPercentGrown(const ActorIndex index) const { return m_canGrow[index]->growthPercent(); }
+void Actors::log(const ActorIndex index) const
 {
 	std::cout << m_name[index];
 	std::cout << "(" << AnimalSpecies::getName(m_species[index]) << ")";
@@ -951,7 +952,7 @@ void Actors::log(const ActorIndex& index) const
 	}
 	std::cout << std::endl;
 }
-void Actors::satisfyNeeds(const ActorIndex& index)
+void Actors::satisfyNeeds(const ActorIndex index)
 {
 	// Wake up if asleep.
 	if(!m_mustSleep[index]->isAwake())
@@ -966,22 +967,22 @@ void Actors::satisfyNeeds(const ActorIndex& index)
 		m_mustEat[index]->eat(m_area, m_mustEat[index]->getMassFoodRequested());
 }
 // Sleep.
-void Actors::sleep_do(const ActorIndex& index) { m_mustSleep[index]->sleep(m_area); }
-void Actors::sleep_wakeUp(const ActorIndex& index){ m_mustSleep[index]->wakeUp(m_area); }
-void Actors::sleep_wakeUpEarly(const ActorIndex& index){ m_mustSleep[index]->wakeUpEarly(m_area); }
-void Actors::sleep_setSpot(const ActorIndex& index, const Point3D& location) { m_mustSleep[index]->setLocation(location); }
-void Actors::sleep_makeTired(const ActorIndex& index) { m_mustSleep[index]->tired(m_area); }
-void Actors::sleep_clearObjective(const ActorIndex& index) { m_mustSleep[index]->clearObjective(); }
-void Actors::sleep_maybeClearSpot(const ActorIndex& index) { return m_mustSleep[index]->clearSleepSpot(); }
-bool Actors::sleep_isAwake(const ActorIndex& index) const { return m_mustSleep[index]->isAwake(); }
-bool Actors::sleep_isTired(const ActorIndex& index) const { return m_mustSleep[index]->isTired();}
-Percent Actors::sleep_getPercentDoneSleeping(const ActorIndex& index) const { return m_mustSleep[index]->getSleepPercent(); }
-Percent Actors::sleep_getPercentTired(const ActorIndex& index) const { return m_mustSleep[index]->getTiredPercent(); }
-Point3D Actors::sleep_getSpot(const ActorIndex& index) const { return m_mustSleep[index]->getLocation(); }
-bool Actors::sleep_hasTiredEvent(const ActorIndex& index) const { return m_mustSleep[index]->hasTiredEvent(); }
+void Actors::sleep_do(const ActorIndex index) { m_mustSleep[index]->sleep(m_area); }
+void Actors::sleep_wakeUp(const ActorIndex index){ m_mustSleep[index]->wakeUp(m_area); }
+void Actors::sleep_wakeUpEarly(const ActorIndex index){ m_mustSleep[index]->wakeUpEarly(m_area); }
+void Actors::sleep_setSpot(const ActorIndex index, const Point3D location) { m_mustSleep[index]->setLocation(location); }
+void Actors::sleep_makeTired(const ActorIndex index) { m_mustSleep[index]->tired(m_area); }
+void Actors::sleep_clearObjective(const ActorIndex index) { m_mustSleep[index]->clearObjective(); }
+void Actors::sleep_maybeClearSpot(const ActorIndex index) { return m_mustSleep[index]->clearSleepSpot(); }
+bool Actors::sleep_isAwake(const ActorIndex index) const { return m_mustSleep[index]->isAwake(); }
+bool Actors::sleep_isTired(const ActorIndex index) const { return m_mustSleep[index]->isTired();}
+Percent Actors::sleep_getPercentDoneSleeping(const ActorIndex index) const { return m_mustSleep[index]->getSleepPercent(); }
+Percent Actors::sleep_getPercentTired(const ActorIndex index) const { return m_mustSleep[index]->getTiredPercent(); }
+Point3D Actors::sleep_getSpot(const ActorIndex index) const { return m_mustSleep[index]->getLocation(); }
+bool Actors::sleep_hasTiredEvent(const ActorIndex index) const { return m_mustSleep[index]->hasTiredEvent(); }
 // Skills.
-[[nodiscard]] SkillLevel Actors::skill_getLevel(const ActorIndex& index, const SkillTypeId& skillType) const { return m_skillSet[index].get(skillType); }
-void Actors::skill_addXp(const ActorIndex& index, const SkillTypeId& skillType, const SkillExperiencePoints& xp) { m_skillSet[index].addXp(skillType, xp); }
+[[nodiscard]] SkillLevel Actors::skill_getLevel(const ActorIndex index, const SkillTypeId skillType) const { return m_skillSet[index].get(skillType); }
+void Actors::skill_addXp(const ActorIndex index, const SkillTypeId skillType, const SkillExperiencePoints xp) { m_skillSet[index].addXp(skillType, xp); }
 // CoolDownEvent.
 AttackCoolDownEvent::AttackCoolDownEvent(Simulation& simulation, const Json& data) :
 	ScheduledEvent(simulation, data["delay"].get<Step>(), data["start"].get<Step>())

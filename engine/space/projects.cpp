@@ -1,14 +1,14 @@
 #include "space.h"
 
-void Space::project_add(const Point3D& point, Project& project)
+void Space::project_add(const Point3D point, Project& project)
 {
 	m_projects.getOrCreate(project.getFaction()).insert(point, RTreeDataWrapper<Project*, nullptr>(&project));
 }
-void Space::project_remove(const Point3D& point, Project& project)
+void Space::project_remove(const Point3D point, Project& project)
 {
 	m_projects[project.getFaction()].remove(point, RTreeDataWrapper<Project*, nullptr>(&project));
 }
-Percent Space::project_getPercentComplete(const Point3D& point, const FactionId& faction) const
+Percent Space::project_getPercentComplete(const Point3D point, const FactionId faction) const
 {
 	const auto found = m_projects.find(faction);
 	if(found == m_projects.end())
@@ -23,7 +23,7 @@ Percent Space::project_getPercentComplete(const Point3D& point, const FactionId&
 	}
 	return {0};
 }
-Project* Space::project_get(const Point3D& point, const FactionId& faction) const
+Project* Space::project_get(const Point3D point, const FactionId faction) const
 {
 	const auto found = m_projects.find(faction);
 	if(found == m_projects.end())
@@ -31,7 +31,7 @@ Project* Space::project_get(const Point3D& point, const FactionId& faction) cons
 	auto& projects = found.second();
 	return projects.queryGetFirst(point).get();
 }
-Project* Space::project_getIfBegun(const Point3D& point, const FactionId& faction) const
+Project* Space::project_getIfBegun(const Point3D point, const FactionId faction) const
 {
 	const auto found = m_projects.find(faction);
 	if(found == m_projects.end())

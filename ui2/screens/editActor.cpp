@@ -10,8 +10,8 @@
 
 void screens::editActor(Window& window, const ActorReference actorRef)
 {
-
 	assert(window.m_editMode);
+	window.m_paused = true;
 	Area& area = *window.m_area;
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
@@ -50,6 +50,7 @@ void screens::editActor(Window& window, const ActorReference actorRef)
 		actors.setFaction(actor, faction);
 	// Attributes.
 	ImGui::BeginTable("attributes", 4);
+	ImGui::TableNextRow();
 	ImGui::TableNextColumn();
 	ImGuiText("value");
 	ImGui::TableNextColumn();
@@ -57,86 +58,102 @@ void screens::editActor(Window& window, const ActorReference actorRef)
 	ImGui::TableNextColumn();
 	ImGuiText("modifier");
 	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	ImGuiText("strength");
 	ImGui::TableNextColumn();
 	ImGuiText(actors.getStrength(actor).toString());
 	ImGui::TableNextColumn();
-	if(ImGui::InputInt("", &strengthBonus))
+	if(ImGui::InputInt("##strengthBonus", &strengthBonus))
 		actors.setStrengthBonusOrPenalty(actor, {strengthBonus});
 	ImGui::TableNextColumn();
-	if(ImGui::InputFloat("", &strengthModifier))
+	if(ImGui::InputFloat("##strengthModifier", &strengthModifier))
 		actors.setStrengthModifier(actor, strengthModifier);
 	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	ImGuiText("agility");
 	ImGui::TableNextColumn();
 	ImGuiText(actors.getAgility(actor).toString());
 	ImGui::TableNextColumn();
-	if(ImGui::InputInt("", &agilityBonus))
+	if(ImGui::InputInt("##agilityBonus", &agilityBonus))
 		actors.setAgilityBonusOrPenalty(actor, {agilityBonus});
 	ImGui::TableNextColumn();
-	if(ImGui::InputFloat("", &agilityModifier))
+	if(ImGui::InputFloat("##agilityModifier", &agilityModifier))
 		actors.setAgilityModifier(actor, agilityModifier);
 	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	ImGuiText("dextarity");
 	ImGui::TableNextColumn();
 	ImGuiText(actors.getDextarity(actor).toString());
 	ImGui::TableNextColumn();
-	if(ImGui::InputInt("", &dextarityBonus))
+	if(ImGui::InputInt("##dextarityBonus", &dextarityBonus))
 		actors.setDextarityBonusOrPenalty(actor, {dextarityBonus});
 	ImGui::TableNextColumn();
-	if(ImGui::InputFloat("", &dextarityModifier))
+	if(ImGui::InputFloat("##dextarityModifier", &dextarityModifier))
 		actors.setDextarityModifier(actor, dextarityModifier);
 	ImGui::EndTable();
 	ImGui::BeginTable("derivedAttributes", 2);
+	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	ImGuiText("unencombered carry weight");
 	ImGui::TableNextColumn();
 	ImGuiText(actors.getUnencomberedCarryMass(actor).toString());
 	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	ImGuiText("move speed");
 	ImGui::TableNextColumn();
 	ImGuiText(actors.attributes_getMoveSpeed(actor).toString());
 	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	ImGuiText("base combat score");
 	ImGui::TableNextColumn();
 	ImGuiText(actors.attributes_getCombatScore(actor).toString());
 	ImGui::EndTable();
 	// Skills.
 	ImGui::BeginTable("skills", 4);
+	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	ImGuiText("name");
 	ImGui::TableNextColumn();
 	ImGuiText("level");
 	ImGui::TableNextColumn();
 	ImGuiText("xp");
 	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	SkillSet& skillSet = actors.skill_getSet(actor);
 	for(auto& [skillType, skill] : skillSet.getSkills())
 	{
 		skillLevels[skillType] = skill.m_level.get();
-		ImGuiText(SkillType::getName(skillType));
+		std::string skillName = SkillType::getName(skillType);
+		ImGuiText(skillName);
 		ImGui::TableNextColumn();
-		ImGui::InputInt("", &skillLevels[skillType]);
+		ImGui::InputInt(("##level" + skillName).c_str(), &skillLevels[skillType]);
 		ImGui::TableNextColumn();
 		auto xpText = std::to_string(skill.m_xp.get()) + "/" + std::to_string(skill.m_xpForNextLevel.get());
 		ImGuiText(xpText);
 		ImGui::TableNextColumn();
-		if(ImGui::Button("x"))
+		if(ImGuiButton("x##remove" + skillName))
 			skillSet.getSkills().erase(skillType);
 		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
 	}
 	ImGui::EndTable();
-	ImGui::BeginCombo("add skill", "add skill");
-	for(const auto& skillName : SkillType::getNames())
+	if(ImGui::BeginCombo("add skill", "add skill"))
 	{
-		if(ImGuiSelectable(skillName, false))
+		for(const auto& skillName : SkillType::getNames())
 		{
-			SkillSet& skillSet2 = actors.skill_getSet(actor);
-			const SkillTypeId& skillType = SkillType::byName(skillName);
-			skillSet2.addXp(skillType, SkillExperiencePoints::create(1));
+			if(ImGuiSelectable(skillName, false))
+			{
+				SkillSet& skillSet2 = actors.skill_getSet(actor);
+				const SkillTypeId& skillType = SkillType::byName(skillName);
+				skillSet2.addXp(skillType, SkillExperiencePoints::create(1));
+			}
 		}
+		ImGui::EndCombo();
 	}
-	ImGui::EndCombo();
 	// List equipment.
 	ImGui::BeginTable("equipment", 6);
+	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	ImGuiText("type");
 	ImGui::TableNextColumn();
 	ImGuiText("material");
@@ -147,6 +164,7 @@ void screens::editActor(Window& window, const ActorReference actorRef)
 	ImGui::TableNextColumn();
 	ImGuiText("mass");
 	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	EquipmentSet& equipmentSet = actors.equipment_getSet(actor);
 	for(const ItemReference& itemReference : equipmentSet.getAll())
 	{
@@ -163,35 +181,50 @@ void screens::editActor(Window& window, const ActorReference actorRef)
 		ImGui::TableNextColumn();
 		ImGuiText(items.getMass(item).toString());
 		ImGui::TableNextColumn();
-		if(ImGui::Button("x"))
+		if(ImGuiButton("x##" + item.toString()))
 			equipmentSet.removeEquipment(area, item);
 		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
 	}
 	ImGui::EndTable();
 	// New Equipment
-	ItemTypeId equipmentTypeId;
-	MaterialTypeId materialTypeId;
-	int qualityOrQuantity;
-	int wear = Percent::null().get();
-	widgets::itemType(&equipmentTypeId);
-	widgets::materialType(&materialTypeId);
-	bool isGeneric = ItemType::getIsGeneric(equipmentTypeId);
-	ImGui::InputInt(isGeneric ? "quantity" : "quality", &qualityOrQuantity);
-	if(!isGeneric)
-		ImGui::InputInt("wear", &wear);
+	// This is nearly identical to the code in the item create segment of the context menu.
+	ControllsState& state = window.m_gameOverlay.m_controllsState;
+	widgets::itemType(&state.itemType);
+	widgets::materialType(&state.materialType);
+	bool isGeneric = ItemType::getIsGeneric(state.itemType);
+	if(isGeneric)
+		ImGui::InputInt("quantity", &state.quantity.getReference());
+	else
+	{
+		ImGui::InputInt("quality", &state.quality.getReference());
+		ImGui::InputInt("wear", &state.wear.getReference());
+	}
 	if(ImGui::Button("add equipment"))
 	{
-		const ItemIndex& newItem = area.getItems().create({
-			.itemType = equipmentTypeId,
-			.materialType = materialTypeId,
-			.quantity = {isGeneric ? 1 : qualityOrQuantity},
-			.quality = {isGeneric ? qualityOrQuantity : 1},
-			.percentWear = wear
-		});
+		ItemParamaters params{
+			.itemType=state.itemType,
+			.materialType=state.materialType,
+			.faction=window.m_faction,
+			.location=state.clickedOnPoint,
+			.facing=state.facing,
+		};
+		if(ItemType::getIsGeneric(state.itemType))
+			params.quantity = state.quantity;
+		else
+		{
+			params.quality = state.quality;
+			params.percentWear = state.wear;
+			params.installed = state.installed;
+			params.name = state.name;
+		}
+		ItemIndex newItem = window.m_area->getItems().create(params);
 		equipmentSet.addEquipment(area, newItem);
 	}
 	// Wounds.
 	ImGui::BeginTable("wounds", 5);
+	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	ImGuiText("body part");
 	ImGui::TableNextColumn();
 	ImGuiText("area");
@@ -200,12 +233,18 @@ void screens::editActor(Window& window, const ActorReference actorRef)
 	ImGui::TableNextColumn();
 	ImGuiText("bleed");
 	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	for(Wound* wound : actors.body_getWounds(actor))
 	{
 		ImGuiText(BodyPartType::getName(wound->bodyPart.bodyPartType));
+		ImGui::TableNextColumn();
 		ImGuiText(std::to_string(wound->hit.area));
+		ImGui::TableNextColumn();
 		ImGuiText(std::to_string(wound->hit.depth));
+		ImGui::TableNextColumn();
 		ImGuiText(std::to_string(wound->bleedVolumeRate));
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
 	}
 	ImGui::EndTable();
 	if(ImGui::Button("reset needs"))

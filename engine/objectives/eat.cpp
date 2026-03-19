@@ -11,7 +11,7 @@
 #include "../numericTypes/types.h"
 #include "kill.h"
 
-EatEvent::EatEvent(Area& area, const Step& delay, EatObjective& eo, const ActorIndex& actor, const Step start) : ScheduledEvent(area.m_simulation, delay, start), m_eatObjective(eo)
+EatEvent::EatEvent(Area& area, const Step delay, EatObjective& eo, const ActorIndex actor, const Step start) : ScheduledEvent(area.m_simulation, delay, start), m_eatObjective(eo)
 {
 	assert(area.getActors().eat_hasObjective(actor));
 	m_actor.setIndex(actor, area.getActors().m_referenceData);
@@ -64,20 +64,20 @@ void EatEvent::execute(Simulation&, Area *area)
 	}
 }
 void EatEvent::clearReferences(Simulation &, Area *) { m_eatObjective.m_eatEvent.clearPointer(); }
-void EatEvent::eatPreparedMeal(Area &area, const ItemIndex &item)
+void EatEvent::eatPreparedMeal(Area &area, const ItemIndex item)
 {
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
-	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
-	assert(actors.eat_canEatItem(actor, item));
+	ActorIndex actorIndex = m_actor.getIndex(actors.m_referenceData);
+	assert(actors.eat_canEatItem(actorIndex, item));
 	assert(items.isPreparedMeal(item));
-	MustEat &mustEat = *area.getActors().m_mustEat[actor].get();
+	MustEat &mustEat = *area.getActors().m_mustEat[actorIndex].get();
 	Mass massEaten = std::min(mustEat.getMassFoodRequested(), items.getMass(item));
 	assert(massEaten != 0);
 	mustEat.eat(area, massEaten);
 	items.destroy(item);
 }
-void EatEvent::eatGenericItem(Area &area, const ItemIndex &item)
+void EatEvent::eatGenericItem(Area &area, const ItemIndex item)
 {
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
@@ -94,7 +94,7 @@ void EatEvent::eatGenericItem(Area &area, const ItemIndex &item)
 	if(items.getQuantity(item) == 0)
 		items.destroy(item);
 }
-void EatEvent::eatActor(Area &area, const ActorIndex &actor)
+void EatEvent::eatActor(Area &area, const ActorIndex actor)
 {
 	Actors &actors = area.getActors();
 	assert(!actors.isAlive(actor));
@@ -105,7 +105,7 @@ void EatEvent::eatActor(Area &area, const ActorIndex &actor)
 	mustEat.eat(area, massEaten);
 	actors.removeMassFromCorpse(actor, massEaten);
 }
-void EatEvent::eatPlantLeaves(Area &area, const PlantIndex &plant)
+void EatEvent::eatPlantLeaves(Area &area, const PlantIndex plant)
 {
 	Plants &plants = area.getPlants();
 	Actors &actors = area.getActors();
@@ -115,7 +115,7 @@ void EatEvent::eatPlantLeaves(Area &area, const PlantIndex &plant)
 	mustEat.eat(area, massEaten);
 	plants.removeFoliageMass(plant, massEaten);
 }
-void EatEvent::eatFruitFromPlant(Area &area, const PlantIndex &plant)
+void EatEvent::eatFruitFromPlant(Area &area, const PlantIndex plant)
 {
 	Plants &plants = area.getPlants();
 	Actors &actors = area.getActors();
@@ -133,7 +133,7 @@ EatPathRequest::EatPathRequest(const Json &data, Area& area, DeserializationMemo
 	PathRequestBreadthFirst(data, area),
 	m_eatObjective(static_cast<EatObjective &>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
 { }
-EatPathRequest::EatPathRequest(Area &area, EatObjective &eo, const ActorIndex &actorIndex) :
+EatPathRequest::EatPathRequest(Area &area, EatObjective &eo, const ActorIndex actorIndex) :
 	m_eatObjective(eo)
 {
 	Actors& actors = area.getActors();
@@ -156,13 +156,13 @@ FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrain
 	if(m_eatObjective.m_tryToHunt)
 	{
 		// Hunt.
-		auto destinationCondition = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
+		auto destinationCondition = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
 		{
-			for(const ActorIndex& prey : space.actor_getAll(cuboid))
+			for(const ActorIndex prey : space.actor_getAll(cuboid))
 				if(mustEat.canEatActor(area, prey))
 				{
 					m_huntResult.setIndex(prey, actors.m_referenceData);
-					const Point3D& preyLocation = actors.getLocation(prey);
+					const Point3D preyLocation = actors.getLocation(prey);
 					if(cuboid.contains(preyLocation))
 						return {true, preyLocation};
 					else
@@ -192,7 +192,7 @@ FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrain
 			// Otherwise they will store candidates ranked by desire.
 			// EatPathRequest::callback may use one of those candidates, if the actorIndex is hungry enough.
 			auto minimum = mustEat.getMinimumAcceptableDesire(area);
-			auto destinationCondition = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
+			auto destinationCondition = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
 			{
 				const auto [foodLocation, eatDesire] = mustEat.getDesireToEatSomethingAt(area, cuboid);
 				if(eatDesire < minimum)
@@ -211,7 +211,7 @@ FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrain
 		{
 			// Nonsentients will eat whatever they come across first.
 			// Having preference would be nice but this is better for performance.
-			auto destinationCondition = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
+			auto destinationCondition = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
 			{
 				const auto [foodLocation, eatDesire] = mustEat.getDesireToEatSomethingAt(area, cuboid);
 				if(eatDesire != 0)
@@ -319,7 +319,7 @@ EatObjective::EatObjective(Area &area) :
 	Objective(Config::eatPriority),
 	m_eatEvent(area.m_eventSchedule)
 {}
-EatObjective::EatObjective(const Json &data, DeserializationMemo &deserializationMemo, Area &area, const ActorIndex &actor) :
+EatObjective::EatObjective(const Json &data, DeserializationMemo &deserializationMemo, Area &area, const ActorIndex actor) :
 	Objective(data, deserializationMemo),
 	m_eatEvent(deserializationMemo.m_simulation.m_eventSchedule),
 	m_noFoodFound(data["noFoodFound"].get<bool>())
@@ -339,7 +339,7 @@ Json EatObjective::toJson() const
 		data["eatStart"] = m_eatEvent.getStartStep();
 	return data;
 }
-void EatObjective::execute(Area &area, const ActorIndex &actor)
+void EatObjective::execute(Area &area, const ActorIndex actor)
 {
 	Actors &actors = area.getActors();
 	MustEat &mustEat = *area.getActors().m_mustEat[actor].get();
@@ -407,19 +407,19 @@ void EatObjective::execute(Area &area, const ActorIndex &actor)
 		}
 	}
 }
-void EatObjective::cancel(Area &area, const ActorIndex &actor)
+void EatObjective::cancel(Area &area, const ActorIndex actor)
 {
 	Actors &actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
 	m_eatEvent.maybeUnschedule();
 	actors.m_mustEat[actor]->m_eatObjective = nullptr;
 }
-void EatObjective::delay(Area &area, const ActorIndex &actor)
+void EatObjective::delay(Area &area, const ActorIndex actor)
 {
 	area.getActors().move_pathRequestMaybeCancel(actor);
 	m_eatEvent.maybeUnschedule();
 }
-void EatObjective::reset(Area &area, const ActorIndex &actor)
+void EatObjective::reset(Area &area, const ActorIndex actor)
 {
 	delay(area, actor);
 	m_location.clear();
@@ -427,7 +427,7 @@ void EatObjective::reset(Area &area, const ActorIndex &actor)
 	m_tryToHunt = false;
 	area.getActors().canReserve_clearAll(actor);
 }
-void EatObjective::makePathRequest(Area &area, const ActorIndex &actor)
+void EatObjective::makePathRequest(Area &area, const ActorIndex actor)
 {
 	area.getActors().move_pathRequestRecord(actor, std::make_unique<EatPathRequest>(area, *this, actor));
 }
@@ -435,12 +435,12 @@ void EatObjective::noFoodFound()
 {
 	m_noFoodFound = true;
 }
-bool EatObjective::canEatAt(Area& area, const Point3D& point, const ActorIndex& actor) const
+bool EatObjective::canEatAt(Area& area, const Point3D point, const ActorIndex actor) const
 {
 	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
-	const auto itemCondition = [&](const ItemIndex& item)
+	const auto itemCondition = [&](const ItemIndex item)
 	{
 		if(actors.eat_canEatItem(actor, item))
 			return true;
@@ -452,18 +452,18 @@ bool EatObjective::canEatAt(Area& area, const Point3D& point, const ActorIndex& 
 	};
 	if(space.item_queryAnyWithCondition(point, itemCondition))
 		return true;
-	const AnimalSpeciesId& species = actors.getSpecies(actor);
-	const FluidTypeId& fluidType = AnimalSpecies::getFluidType(species);
+	const AnimalSpeciesId species = actors.getSpecies(actor);
+	const FluidTypeId fluidType = AnimalSpecies::getFluidType(species);
 	if(AnimalSpecies::getEatsMeat(species))
 	{
-		const auto scavengeCondition = [&](const ActorIndex& prey)
+		const auto scavengeCondition = [&](const ActorIndex prey)
 		{
 			return !actors.isAlive(prey) && fluidType == AnimalSpecies::getFluidType(actors.getSpecies(prey));
 		};
 		if(space.actor_queryAnyWithCondition(point, scavengeCondition))
 			return true;
 	}
-	const PlantIndex& plant = space.plant_get(point);
+	const PlantIndex plant = space.plant_get(point);
 	if(plant.exists())
 	{
 		if(AnimalSpecies::getEatsFruit(species) && PlantSpecies::getFluidType(area.getPlants().getSpecies(plant)) == fluidType)

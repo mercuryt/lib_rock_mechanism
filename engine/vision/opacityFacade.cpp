@@ -5,7 +5,28 @@
 #include "../space/space.h"
 #include "../geometry/paramaterizedLine.h"
 
-void OpacityFacade::update(const Area& area, const Cuboid& cuboid)
+void OpacityFacade::rebuildAfterLoad(const Area& area)
+{
+	const Space& space = area.getSpace();
+	const Cuboid boundry = space.boundry();
+	space.solid_queryForEachWithCuboids(boundry, [&](const Cuboid cuboid, const MaterialTypeId materialType){
+		if(!MaterialType::getTransparent(materialType))
+			m_fullOpacity.insert(cuboid);
+	});
+	space.pointFeature_queryForEachWithCuboids(boundry, [&](const Cuboid cuboid, const PointFeature pointFeature){
+		if(pointFeature.blocksLineOfSight())
+		{
+			if(
+				pointFeature.pointFeatureType == PointFeatureTypeId::Floor ||
+				pointFeature.pointFeatureType == PointFeatureTypeId::Hatch
+			)
+				m_floorOpacity.maybeInsert(cuboid);
+			else
+				m_fullOpacity.insert(cuboid);
+		}
+	});
+}
+void OpacityFacade::update(const Area& area, const Cuboid cuboid)
 {
 	const Space& space = area.getSpace();
 	if(space.canSeeThrough(cuboid))
@@ -17,9 +38,9 @@ void OpacityFacade::update(const Area& area, const Cuboid& cuboid)
 	else
 		m_floorOpacity.maybeInsert(cuboid);
 }
-void OpacityFacade::maybeInsertFull(const Cuboid& cuboid) { m_fullOpacity.maybeInsert(cuboid); }
-void OpacityFacade::maybeRemoveFull(const Cuboid& cuboid) { m_fullOpacity.maybeRemove(cuboid); }
-bool OpacityFacade::hasLineOfSight(const Point3D& fromCoords, const Point3D& toCoords) const
+void OpacityFacade::maybeInsertFull(const Cuboid cuboid) { m_fullOpacity.maybeInsert(cuboid); }
+void OpacityFacade::maybeRemoveFull(const Cuboid cuboid) { m_fullOpacity.maybeRemove(cuboid); }
+bool OpacityFacade::hasLineOfSight(const Point3D fromCoords, const Point3D toCoords) const
 {
 	ParamaterizedLine line(fromCoords, toCoords);
 	if(m_fullOpacity.query(line))

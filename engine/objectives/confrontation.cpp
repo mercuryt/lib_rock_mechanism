@@ -5,12 +5,12 @@
 #include "../config/social.h"
 #include "../config/psycology.h"
 #include "followScript.h"
-ConfrontationObjective::ConfrontationObjective(const std::string& reason, const ActorId& target) :
+ConfrontationObjective::ConfrontationObjective(const std::string& reason, const ActorId target) :
 	Objective(Config::Social::socialPriorityHigh),
 	m_reason(reason),
 	m_target(target)
 { }
-ConfrontationObjective::ConfrontationObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) :
+ConfrontationObjective::ConfrontationObjective(const Json& data, Area& area, const ActorIndex actor, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo)
 {
 	data["target"].get_to(m_target);
@@ -51,7 +51,7 @@ Json ConfrontationObjective::toJson() const
 	};
 	return output;
 }
-void ConfrontationObjective::execute(Area& area, const ActorIndex& actor)
+void ConfrontationObjective::execute(Area& area, const ActorIndex actor)
 {
 	const auto& [actorsAtTargetArea, targetIndex] = area.m_simulation.m_actors.getDataLocation(m_target);
 	Actors& actors = area.getActors();
@@ -164,19 +164,19 @@ void ConfrontationObjective::execute(Area& area, const ActorIndex& actor)
 		actors.objective_canNotFulfillNeed(actor, *this);
 	}
 }
-void ConfrontationObjective::cancel(Area& area, const ActorIndex& actor)
+void ConfrontationObjective::cancel(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
 	if(m_targetHasBeenCast)
 	{
-		const ActorIndex& target = area.m_simulation.m_actors.getIndexForId(m_target);
+		const ActorIndex target = area.m_simulation.m_actors.getIndexForId(m_target);
 		actors.objective_complete(target, actors.objective_getCurrent<FollowScriptSubObjective>(target));
 	}
 }
-void ConfrontationObjective::delay(Area& area, const ActorIndex& actor) { cancel(area, actor); }
-void ConfrontationObjective::reset(Area& area, const ActorIndex& actor) { cancel(area, actor); }
-void ConfrontationObjective::onCoolDown(const ActorReference& actorRef, const ActorIndex& thisActor, Area& area)
+void ConfrontationObjective::delay(Area& area, const ActorIndex actor) { cancel(area, actor); }
+void ConfrontationObjective::reset(Area& area, const ActorIndex actor) { cancel(area, actor); }
+void ConfrontationObjective::onCoolDown(const ActorReference actorRef, const ActorIndex thisActor, Area& area)
 {
 	const auto& [actorsPtr, target] = area.m_simulation.m_actors.getDataLocation(m_target);
 	if(actorsPtr != &area.getActors())
@@ -226,7 +226,7 @@ void ConfrontationObjective::onCoolDown(const ActorReference& actorRef, const Ac
 		}
 	}
 }
-void ConfrontationObjective::onActorCoolDown(const ActorReference& ref, Area& area)
+void ConfrontationObjective::onActorCoolDown(const ActorReference ref, Area& area)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actor =  ref.getIndex(actors.m_referenceData);
@@ -248,14 +248,14 @@ void ConfrontationObjective::onActorCoolDown(const ActorReference& ref, Area& ar
 	if(finished)
 		finalize(area, actor);
 }
-void ConfrontationObjective::onTargetCoolDown(const ActorReference& actor, Area& area)
+void ConfrontationObjective::onTargetCoolDown(const ActorReference actor, Area& area)
 {
 	const auto& [actorsPtr, target] = area.m_simulation.m_actors.getDataLocation(m_target);
 	assert(actorsPtr->getArea().m_id == area.m_id);
 	onCoolDown(actor, target, area);
 	bool finished = false;
 	Actors& actors = *actorsPtr;
-	const ActorIndex& actorIndex = actor.getIndex(actors.m_referenceData);
+	const ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	if(!actors.isAlive(actorIndex))
 	{
 		m_targetIsWinner = true;
@@ -271,7 +271,7 @@ void ConfrontationObjective::onTargetCoolDown(const ActorReference& actor, Area&
 	if(finished)
 		finalize(area, actorIndex);
 }
-void ConfrontationObjective::finalize(Area& area, const ActorIndex& actor)
+void ConfrontationObjective::finalize(Area& area, const ActorIndex actor)
 {
 	m_phaseEvent.maybeUnschedule();
 	m_actorCoolDownEvent.maybeUnschedule();
@@ -314,11 +314,11 @@ void ConfrontationObjective::finalize(Area& area, const ActorIndex& actor)
 	actors.objective_complete(target, actors.objective_getCurrent<FollowScriptSubObjective>(target));
 	actors.objective_complete(actor, *this);
 }
-void ConfrontationObjective::actorGoesOffScript(Area& area, const ActorIndex& owningActor, const ActorIndex&)
+void ConfrontationObjective::actorGoesOffScript(Area& area, const ActorIndex owningActor, const ActorIndex)
 {
 	area.getActors().objective_canNotFulfillNeed(owningActor, *this);
 }
-bool ConfrontationObjective::targetYields(Area& area, const ActorIndex& actor) const
+bool ConfrontationObjective::targetYields(Area& area, const ActorIndex actor) const
 {
 	const auto& [actorsAtTargetArea, targetIndex] = area.m_simulation.m_actors.getDataLocation(m_target);
 	assert(actorsAtTargetArea->getArea().m_id == area.m_id);
@@ -326,17 +326,17 @@ bool ConfrontationObjective::targetYields(Area& area, const ActorIndex& actor) c
 	if(actorsAtTargetArea->stamina_empty(actor))
 		return true;
 	const Psycology& psycology = actorsAtTargetArea->psycology_getConst(targetIndex);
-	const PsycologyWeight& pain = actorsAtTargetArea->body_getPain(targetIndex);
+	const PsycologyWeight pain = actorsAtTargetArea->body_getPain(targetIndex);
 	return psycology.getValueFor(PsycologyAttribute::Courage) + psycology.getValueFor(PsycologyAttribute::Anger) > pain;
 }
-bool ConfrontationObjective::actorYields(Area& area, const ActorIndex& actor) const
+bool ConfrontationObjective::actorYields(Area& area, const ActorIndex actor) const
 {
 	Actors& actors = area.getActors();
 	const Psycology& psycology = actors.psycology_getConst(actor);
-	const PsycologyWeight& pain = actors.body_getPain(actor);
+	const PsycologyWeight pain = actors.body_getPain(actor);
 	return psycology.getValueFor(PsycologyAttribute::Courage) + psycology.getValueFor(PsycologyAttribute::Anger) > pain;
 }
-ConfrontationPhaseScheduledEvent::ConfrontationPhaseScheduledEvent(const Step& duration, ConfrontationObjective& objective, const ActorReference& actor, Simulation& simulation, const Step& start) :
+ConfrontationPhaseScheduledEvent::ConfrontationPhaseScheduledEvent(const Step duration, ConfrontationObjective& objective, const ActorReference actor, Simulation& simulation, const Step start) :
 	ScheduledEvent(simulation, duration, start),
 	m_objective(objective),
 	m_actor(actor)
@@ -349,7 +349,7 @@ void ConfrontationPhaseScheduledEvent::clearReferences(Simulation&, Area*)
 {
 	m_objective.m_phaseEvent.clearPointer();
 }
-ConfrontationCoolDownActorScheduledEvent::ConfrontationCoolDownActorScheduledEvent(const Step& duration, ConfrontationObjective& objective, const ActorReference& actor, Simulation& simulation, const Step& start) :
+ConfrontationCoolDownActorScheduledEvent::ConfrontationCoolDownActorScheduledEvent(const Step duration, ConfrontationObjective& objective, const ActorReference actor, Simulation& simulation, const Step start) :
 	ScheduledEvent(simulation, duration, start),
 	m_objective(objective),
 	m_actor(actor)
@@ -362,7 +362,7 @@ void ConfrontationCoolDownActorScheduledEvent::clearReferences(Simulation&, Area
 {
 	m_objective.m_actorCoolDownEvent.clearPointer();
 }
-ConfrontationCoolDownTargetScheduledEvent::ConfrontationCoolDownTargetScheduledEvent(const Step& duration, ConfrontationObjective& objective, const ActorReference& actor, Simulation& simulation, const Step& start) :
+ConfrontationCoolDownTargetScheduledEvent::ConfrontationCoolDownTargetScheduledEvent(const Step duration, ConfrontationObjective& objective, const ActorReference actor, Simulation& simulation, const Step start) :
 	ScheduledEvent(simulation, duration, start),
 	m_objective(objective),
 	m_actor(actor)

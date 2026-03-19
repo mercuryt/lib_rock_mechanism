@@ -35,10 +35,10 @@ protected:
 	DramaArc(DramaEngine& engine, DramaArcType type, Area* area = nullptr) : m_engine(engine), m_area(area), m_type(type) { }
 	DramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);
 	void actorsLeave(SmallSet<ActorIndex> actors);
-	[[nodiscard]] Point3D getEntranceToArea(const ShapeId& shape, const MoveTypeId& moveType) const;
-	[[nodiscard]] Point3D findLocationOnEdgeForNear(const ShapeId& shape, const MoveTypeId& moveType, const Point3D& origin, const Distance& distance, const SmallSet<Point3D>& exclude) const;
-	[[nodiscard]] bool pointIsConnectedToAtLeast(const Point3D& point, const ShapeId& shape, const MoveTypeId& moveType, int count) const;
-	[[nodiscard]] Facing4 getFacingAwayFromEdge(const Point3D& point) const;
+	[[nodiscard]] Point3D getEntranceToArea(const ShapeId shape, const MoveTypeId moveType) const;
+	[[nodiscard]] Point3D findLocationOnEdgeForNear(const ShapeId shape, const MoveTypeId moveType, const Point3D origin, const Distance  distance, const SmallSet<Point3D>& exclude) const;
+	[[nodiscard]] bool pointIsConnectedToAtLeast(const Point3D point, const ShapeId shape, const MoveTypeId moveType, int count) const;
+	[[nodiscard]] Facing4 getFacingAwayFromEdge(const Point3D point) const;
 	[[nodiscard]] std::vector<AnimalSpeciesId> getSentientSpecies() const;
 	[[nodiscard]] virtual Json toJson() const;
 	static std::unique_ptr<DramaArc> load(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);
@@ -53,7 +53,7 @@ public:
 	[[nodiscard]] static std::string typeToString(DramaArcType type);
 	[[nodiscard]] static DramaArcType stringToType(std::string string);
 	// This method doesn't have to be defined but if it isn't then it should never be called.
-	virtual void actorGoesOffScript(Area&, const ActorIndex&) { std::unreachable(); }
+	virtual void actorGoesOffScript(Area&, const ActorIndex) { std::unreachable(); }
 	virtual ~DramaArc() = default;
 };
 class DramaEngine final

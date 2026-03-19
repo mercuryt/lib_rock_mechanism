@@ -42,7 +42,7 @@ Json AreaHasRain::toJson() const
 	data["humdityBySeason"] = m_humidityBySeason;
 	return data;
 }
-void AreaHasRain::start(const FluidTypeId& fluidType, const Percent& intensityPercent, const Step& stepsDuration)
+void AreaHasRain::start(const FluidTypeId fluidType, const Percent intensityPercent, const Step stepsDuration)
 {
 	assert(intensityPercent <= 100);
 	assert(intensityPercent > 0);
@@ -112,7 +112,7 @@ void AreaHasRain::disable()
 	m_event.unschedule();
 }
 Percent AreaHasRain::humidityForSeason() { return m_humidityBySeason[DateTime::toSeason(m_area.m_simulation.m_step)]; }
-RainEvent::RainEvent(const Step& delay, Simulation& simulation, const Step start) : ScheduledEvent(simulation, delay, start) { }
+RainEvent::RainEvent(const Step delay, Simulation& simulation, const Step start) : ScheduledEvent(simulation, delay, start) { }
 void RainEvent::execute(Simulation&, Area* area)
 {
 	if(area->m_hasRain.isRaining())

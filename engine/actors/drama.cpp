@@ -3,7 +3,7 @@
 #include "../simulation/simulation.h"
 #include "../objectives/followScript.h"
 
-void Actors::drama_setDialog(const ActorIndex& index, const std::string& line, const Step& duration)
+void Actors::drama_setDialog(const ActorIndex index, const std::string& line, const Step duration)
 {
 	m_dialog[index].first = line;
 	if(duration.exists())
@@ -11,11 +11,11 @@ void Actors::drama_setDialog(const ActorIndex& index, const std::string& line, c
 	else
 		m_dialog[index].second.clear();
 }
-void Actors::drama_clearDialog(const ActorIndex& index)
+void Actors::drama_clearDialog(const ActorIndex index)
 {
 	m_dialog[index].first.clear();
 }
-void Actors::drama_castForRole(const ActorIndex& index, Objective& objective, const ActorIndex& objectiveOwner)
+void Actors::drama_castForRole(const ActorIndex index, Objective& objective, const ActorIndex objectiveOwner)
 {
 	assert(m_hasObjectives[index]->getCurrent().m_priority < objective.m_priority);
 	assert(index != objectiveOwner);

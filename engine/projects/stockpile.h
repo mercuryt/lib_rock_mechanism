@@ -42,8 +42,8 @@ class StockPileProject final : public Project
 	// TODO: geometric progresson of disable duration.
 	void onDelay() override;
 	void offDelay() override { std::unreachable(); }
-	void onPickUpRequired(const ActorOrItemIndex& required) override;
-	void updateRequiredGenericReference(const ItemReference& newRef) override;
+	void onPickUpRequired(const ActorOrItemIndex required) override;
+	void updateRequiredGenericReference(const ItemReference newRef) override;
 	[[nodiscard]] bool canReset() const { return false; }
 	[[nodiscard]] Step getDuration() const { return Config::addToStockPileDelaySteps; }
 	std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
@@ -53,10 +53,10 @@ class StockPileProject final : public Project
 	[[nodiscard]] std::string description() const;
 	std::vector<ActorReference> getActors() const;
 public:
-	StockPileProject(const FactionId& faction, Area& area, const Point3D& point, const ItemIndex& item, const Quantity& quantity, const Quantity& maxWorkers);
+	StockPileProject(const FactionId faction, Area& area, const Point3D point, const ItemIndex item, const Quantity quantity, const Quantity maxWorkers);
 	StockPileProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] bool canAddWorker(const ActorIndex& actor) const;
+	[[nodiscard]] bool canAddWorker(const ActorIndex actor) const;
 	// Don't recruit more workers then are needed for hauling.
 	[[nodiscard]] bool canRecruitHaulingWorkersOnly() const { return true; }
 	friend class AreaHasStockPilesForFaction;

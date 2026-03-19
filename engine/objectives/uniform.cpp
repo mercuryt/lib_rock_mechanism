@@ -6,7 +6,7 @@
 #include "../path/terrainFacade.hpp"
 #include "../numericTypes/types.h"
 // Equip uniform.
-UniformPathRequest::UniformPathRequest(Area& area, UniformObjective& objective, const ActorIndex& actorIndex) :
+UniformPathRequest::UniformPathRequest(Area& area, UniformObjective& objective, const ActorIndex actorIndex) :
 	m_objective(objective)
 {
 	Actors& actors = area.getActors();
@@ -27,9 +27,9 @@ UniformPathRequest::UniformPathRequest(const Json& data, Area& area, Deserializa
 { }
 FindPathResult UniformPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
-	auto destinationCondition = [&area, this](const Cuboid& cuboid) -> std::pair<bool, Point3D>
+	auto destinationCondition = [&area, this](const Cuboid cuboid) -> std::pair<bool, Point3D>
 	{
-		const Point3D& point = m_objective.getLocationOfItemInCuboid(area, cuboid);
+		const Point3D point = m_objective.getLocationOfItemInCuboid(area, cuboid);
 		return {point.exists(), point};
 	};
 	constexpr bool useAnyOccupiedPoint = false;
@@ -93,12 +93,12 @@ Json UniformPathRequest::toJson() const
 	return output;
 }
 // UniformObjective
-UniformObjective::UniformObjective(Area& area, const ActorIndex& actor) :
+UniformObjective::UniformObjective(Area& area, const ActorIndex actor) :
 	Objective(Config::equipPriority), m_elementsCopy(area.getActors().uniform_get(actor).elements)
 {
 	assert(area.getActors().uniform_exists(actor));
 }
-UniformObjective::UniformObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) :
+UniformObjective::UniformObjective(const Json& data, Area& area, const ActorIndex actor, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo)
 {
 	area.getActors().m_hasUniform[actor]->recordObjective(*this);
@@ -109,7 +109,7 @@ Json UniformObjective::toJson() const
 	data["item"] = m_item;
 	return data;
 }
-void UniformObjective::execute(Area& area, const ActorIndex& actor)
+void UniformObjective::execute(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();
@@ -133,7 +133,7 @@ void UniformObjective::execute(Area& area, const ActorIndex& actor)
 	{
 		CuboidSet adjacent = actors.getAdjacentCuboids(actor);
 		// Collect any which are adjacent at location.
-		for(const Cuboid& cuboid : adjacent)
+		for(const Cuboid cuboid : adjacent)
 		{
 			const ItemIndex item = getItemAtLocation(area, cuboid);
 			if(item.exists())
@@ -146,27 +146,27 @@ void UniformObjective::execute(Area& area, const ActorIndex& actor)
 		actors.move_pathRequestRecord(actor, std::make_unique<UniformPathRequest>(area, *this, actor));
 	}
 }
-void UniformObjective::cancel(Area& area, const ActorIndex& actor)
+void UniformObjective::cancel(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	actors.move_pathRequestMaybeCancel(actor);
 }
-void UniformObjective::reset(Area& area, const ActorIndex& actor)
+void UniformObjective::reset(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	actors.canReserve_clearAll(actor);
 	actors.move_pathRequestMaybeCancel(actor);
 	m_item.clear();
 }
-Point3D UniformObjective::getLocationOfItemInCuboid(Area& area, const Cuboid& cuboid) const
+Point3D UniformObjective::getLocationOfItemInCuboid(Area& area, const Cuboid cuboid) const
 {
-	const ItemIndex& item = const_cast<UniformObjective*>(this)->getItemAtLocation(area, cuboid);
+	const ItemIndex item = const_cast<UniformObjective*>(this)->getItemAtLocation(area, cuboid);
 	return item.empty() ? Point3D::null() : area.getItems().getLocation(item);
 }
-ItemIndex UniformObjective::getItemAtLocation(Area& area, const Cuboid& cuboid)
+ItemIndex UniformObjective::getItemAtLocation(Area& area, const Cuboid cuboid)
 {
 	Items& items = area.getItems();
-	const auto condition = [&](const ItemIndex& item)
+	const auto condition = [&](const ItemIndex item)
 	{
 		for(auto& element : m_elementsCopy)
 			if(element.query(item, items))
@@ -175,8 +175,8 @@ ItemIndex UniformObjective::getItemAtLocation(Area& area, const Cuboid& cuboid)
 	};
 	return area.getSpace().item_getOneWithCondition(cuboid, condition);
 }
-void UniformObjective::select(Area& area, const ItemIndex& item) { m_item.setIndex(item, area.getItems().m_referenceData); }
-void UniformObjective::equip(Area& area, const ItemIndex& item, const ActorIndex& actor)
+void UniformObjective::select(Area& area, const ItemIndex item) { m_item.setIndex(item, area.getItems().m_referenceData); }
+void UniformObjective::equip(Area& area, const ItemIndex item, const ActorIndex actor)
 {
 	Items& items = area.getItems();
 	for(auto& element : m_elementsCopy)

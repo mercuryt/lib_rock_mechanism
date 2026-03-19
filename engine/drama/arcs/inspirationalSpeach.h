@@ -19,6 +19,6 @@ public:
 	InspirationalSpeachDramaArc(DramaEngine& engine, Area& area) : DramaArc(engine, DramaArcType::InspirationalSpeach, &area) { }
 	InspirationalSpeachDramaArc(const Json& data, DeserializationMemo& deserializationMemo, DramaEngine& dramaEngine);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] bool ready(const FactionId& faction) const;
-	void begin(const ActorIndex& actor);
+	[[nodiscard]] bool ready(const FactionId faction) const;
+	void begin(const ActorIndex actor);
 };

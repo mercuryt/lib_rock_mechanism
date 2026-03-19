@@ -5,7 +5,7 @@
 #include "../path/pathRequest.h"
 #include "../path/terrainFacade.hpp"
 //TODO: Detour locked to true for emergency moves.
-GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& objective, const ActorIndex& actorIndex) :
+GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& objective, const ActorIndex actorIndex) :
 	m_objective(objective)
 {
 	Actors& actors = area.getActors();
@@ -26,9 +26,9 @@ FindPathResult GetToSafeTemperaturePathRequest::readStep(Area& area, const Terra
 	Actors& actors = area.getActors();
 	Space& space = area.getSpace();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	auto condition = [&actors, &space, actorIndex](const Point3D& location, const Facing4& facingAtLocation) ->std::pair<bool, Point3D>
+	auto condition = [&actors, &space, actorIndex](const Point3D location, const Facing4 facingAtLocation) ->std::pair<bool, Point3D>
 	{
-		for(const Cuboid& occupied : actors.getCuboidsWhichWouldBeOccupiedAtLocationAndFacing(actorIndex, location, facingAtLocation))
+		for(const Cuboid occupied : actors.getCuboidsWhichWouldBeOccupiedAtLocationAndFacing(actorIndex, location, facingAtLocation))
 			for(const Point3D& point : occupied)
 				//TODO: temperature_getMax(const CuboidSet& cuboids)
 				if(!actors.temperature_isSafe(actorIndex, space.temperature_get(point)))
@@ -81,13 +81,13 @@ Json GetToSafeTemperatureObjective::toJson() const
 	data["noWhereSafeFound"] = m_noWhereWithSafeTemperatureFound;
 	return data;
 }
-void GetToSafeTemperatureObjective::execute(Area& area, const ActorIndex& actor)
+void GetToSafeTemperatureObjective::execute(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	if(m_noWhereWithSafeTemperatureFound)
 	{
 		Space& space = area.getSpace();
-		if(actors.predicateForAnyOccupiedCuboid(actor, [&space](const Cuboid& cuboid){ return space.isEdge(cuboid); }))
+		if(actors.predicateForAnyOccupiedCuboid(actor, [&space](const Cuboid cuboid){ return space.isEdge(cuboid); }))
 			// We are at the edge and can leave.
 			actors.leaveArea(actor);
 		else
@@ -100,8 +100,8 @@ void GetToSafeTemperatureObjective::execute(Area& area, const ActorIndex& actor)
 	else
 		actors.move_pathRequestRecord(actor, std::make_unique<GetToSafeTemperaturePathRequest>(area, *this, actor));
 }
-void GetToSafeTemperatureObjective::cancel(Area& area, const ActorIndex& actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
-void GetToSafeTemperatureObjective::reset(Area& area, const ActorIndex& actor)
+void GetToSafeTemperatureObjective::cancel(Area& area, const ActorIndex actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
+void GetToSafeTemperatureObjective::reset(Area& area, const ActorIndex actor)
 {
 	cancel(area, actor);
 	m_noWhereWithSafeTemperatureFound = false;

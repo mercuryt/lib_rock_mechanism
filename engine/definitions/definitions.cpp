@@ -50,7 +50,7 @@ void definitions::loadFluidTypes()
 			.viscosity=data["viscosity"].get<int>(),
 			.density=data["density"].get<Density>(),
 			//TODO: Store as seconds rather then steps.
-			//TODO: Initalize to null rather then 0.
+			//TODO: initialize to null rather then 0.
 			.mistDuration=data.contains("mistDuration") ? data["mistDuration"].get<Step>() : Step::create(0),
 			.maxMistSpread=data.contains("mistDuration") ? data["maxMistSpread"].get<Distance>() : Distance::create(0),
 			.evaporationRate=data.contains("evaporationRate") ? data["evaporationRate"].get<float>() : 0.f,
@@ -142,7 +142,7 @@ void definitions::loadSkillTypes()
 		SkillType::create(p);
 	}
 }
-AttackTypeId definitions::loadAttackType(const Json& data, const SkillTypeId& defaultSkill)
+AttackTypeId definitions::loadAttackType(const Json& data, const SkillTypeId defaultSkill)
 {
 	AttackTypeParamaters p{
 		.name=(data["name"].get<std::string>()),

@@ -33,7 +33,7 @@ class TargetedHaulProject final : public Project
 	ActorOrItemReference m_target;
 	//TODO: facing.
 	void onComplete() override;
-	void onDelivered(const ActorOrItemIndex& delivered) override;
+	void onDelivered(const ActorOrItemIndex delivered) override;
 	// Most projects which are directly created by the user ( dig, construct ) wait a while and then retry if they fail.
 	// Despite being directly created it doesn't make sense to retry targeted hauling, so instead we cancel it with a log message.
 	// TODO: log message.
@@ -41,7 +41,7 @@ class TargetedHaulProject final : public Project
 	void offDelay() { std::unreachable(); }
 	Step getDuration() const { return Config::addToStockPileDelaySteps; }
 public:
-	TargetedHaulProject(const FactionId& f, Area& a, const Point3D& l, const ActorOrItemReference& t) :
+	TargetedHaulProject(const FactionId f, Area& a, const Point3D l, const ActorOrItemReference t) :
 		Project(f, a, l, maxWorkersForTargetedHaul),
 		m_target(t)
 	{ }

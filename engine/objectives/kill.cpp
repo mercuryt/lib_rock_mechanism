@@ -11,7 +11,7 @@ KillObjective::KillObjective(ActorReference t) : Objective(Config::killPriority)
 KillObjective::KillObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area) :
 	Objective(data, deserializationMemo),
 	m_target(data["target"], area.getActors().m_referenceData) { }
-void KillObjective::execute(Area& area, const ActorIndex& actor)
+void KillObjective::execute(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	ActorIndex target = m_target.getIndex(actors.m_referenceData);
@@ -37,11 +37,11 @@ void KillObjective::execute(Area& area, const ActorIndex& actor)
 		if(!actors.combat_isOnCoolDown(actor))
 			actors.combat_attackMeleeRange(actor, target);
 }
-void KillObjective::cancel(Area& area, const ActorIndex& actor)
+void KillObjective::cancel(Area& area, const ActorIndex actor)
 {
 	area.getActors().move_pathRequestMaybeCancel(actor);
 }
-void KillObjective::reset(Area& area, const ActorIndex& actor)
+void KillObjective::reset(Area& area, const ActorIndex actor)
 {
 	cancel(area, actor);
 	area.getActors().canReserve_clearAll(actor);

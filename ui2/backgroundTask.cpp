@@ -1,30 +1,40 @@
 #include "backgroundTask.h"
 #include "window.h"
-void WindowHasBackgroundTask::onFrame()
+bool BackgroundTask::running() const { return !m_done && m_thread.joinable(); }
+void BackgroundTask::start(Window& window, std::function<void()> task, std::function<void()> callback)
 {
-	if(!m_inProgress)
-		return;
-	auto status = m_taskFuture.wait_for(std::chrono::milliseconds(0));
-	if(status == std::future_status::ready)
-	{
-		m_taskFuture.get();
-		m_window.m_cursor = ImGuiMouseCursor_Arrow;
-		auto callback = std::move(m_callback);
-		m_callback = nullptr;
-		m_inProgress = false;
-		m_window.m_lockInput = false;
-		if(callback != nullptr)
-			callback();
-	}
-}
-void WindowHasBackgroundTask::create(std::function<void()>&& action, std::function<void()>&& callback)
-{
-	assert(!m_inProgress);
-	m_inProgress = true;
-	m_window.m_lockInput = true;
-	m_window.m_cursor = ImGuiMouseCursor_Wait;
+	assert(!running());
+	window.m_lockInput = true;
+	window.m_cursor = ImGuiMouseCursor_Wait;
+	m_done = false;
 	m_callback = std::move(callback);
-	m_taskFuture = std::async(std::launch::async, [action = std::move(action)] {
-		action();
+	m_thread = std::jthread(
+	[this, task = std::move(task)](std::stop_token)
+	{
+		try
+		{
+			task();
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << e.what() << std::endl;
+		}
+		m_done = true;
 	});
+}
+
+void BackgroundTask::update(Window& window)
+{
+	if(m_done && m_thread.joinable())
+	{
+		m_thread.join();
+		if(m_callback != nullptr)
+		{
+			auto cb = std::move(m_callback);
+			m_callback = nullptr;
+			cb();
+			window.m_lockInput = false;
+			window.m_cursor = ImGuiMouseCursor_Arrow;
+		}
+	}
 }

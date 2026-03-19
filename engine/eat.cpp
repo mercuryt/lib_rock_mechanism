@@ -14,7 +14,7 @@
 #include "plants.h"
 #include "items/items.h"
 #include "space/space.h"
-HungerEvent::HungerEvent(Area& area, const Step& delay, const ActorIndex& a, const Step start) :
+HungerEvent::HungerEvent(Area& area, const Step delay, const ActorIndex a, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_actor(a) { }
 void HungerEvent::execute(Simulation&, Area* area)
 {
@@ -24,7 +24,7 @@ void HungerEvent::clearReferences(Simulation&, Area* area)
 {
 	area->getActors().m_mustEat[m_actor].get()->m_hungerEvent.clearPointer();
 }
-MustEat::MustEat(Area& area, const ActorIndex& a) :
+MustEat::MustEat(Area& area, const ActorIndex a) :
 	m_hungerEvent(area.m_eventSchedule)
 {
 	m_actor.setIndex(a, area.getActors().m_referenceData);
@@ -35,7 +35,7 @@ void MustEat::scheduleHungerEvent(Area& area)
 	Step eatFrequency = AnimalSpecies::getStepsEatFrequency(area.getActors().getSpecies(m_actor.getIndex(referenceData)));
 	m_hungerEvent.schedule(area, eatFrequency, m_actor.getIndex(referenceData));
 }
-MustEat::MustEat(Area& area, const Json& data, const ActorIndex& actor, AnimalSpeciesId species) :
+MustEat::MustEat(Area& area, const Json& data, const ActorIndex actor, AnimalSpeciesId species) :
 	m_hungerEvent(area.m_eventSchedule), m_massFoodRequested(data["massFoodRequested"].get<Mass>())
 {
 	m_actor.setIndex(actor, area.getActors().m_referenceData);
@@ -56,7 +56,7 @@ Json MustEat::toJson() const
 	data["hungerEventStart"] = m_hungerEvent.getStartStep();
 	return data;
 }
-bool MustEat::canEatActor(Area& area, const ActorIndex& actor) const
+bool MustEat::canEatActor(Area& area, const ActorIndex actor) const
 {
 	Actors& actors = area.getActors();
 	if(actors.isAlive(actor))
@@ -68,7 +68,7 @@ bool MustEat::canEatActor(Area& area, const ActorIndex& actor) const
 		return false;
 	return true;
 }
-bool MustEat::canEatPlant(Area& area, const PlantIndex& plant) const
+bool MustEat::canEatPlant(Area& area, const PlantIndex plant) const
 {
 	const ActorReferenceData &referenceData = area.getActors().m_referenceData;
 	AnimalSpeciesId species = area.getActors().getSpecies(m_actor.getIndex(referenceData));
@@ -79,7 +79,7 @@ bool MustEat::canEatPlant(Area& area, const PlantIndex& plant) const
 		return true;
 	return false;
 }
-bool MustEat::canEatItem(Area& area, const ItemIndex& item) const
+bool MustEat::canEatItem(Area& area, const ItemIndex item) const
 {
 	const ActorReferenceData &referenceData = area.getActors().m_referenceData;
 	return ItemType::getEdibleForDrinkersOf(area.getItems().getItemType(item)) == area.getActors().drink_getFluidType(m_actor.getIndex(referenceData));
@@ -155,7 +155,7 @@ Percent MustEat::getPercentStarved() const
 		return Percent::create(0);
 	return m_hungerEvent.percentComplete();
 }
-std::pair<Point3D, int> MustEat::getDesireToEatSomethingAt(Area& area, const Cuboid& cuboid) const
+std::pair<Point3D, int> MustEat::getDesireToEatSomethingAt(Area& area, const Cuboid cuboid) const
 {
 	Space& space = area.getSpace();
 	Items& items = area.getItems();
@@ -164,8 +164,8 @@ std::pair<Point3D, int> MustEat::getDesireToEatSomethingAt(Area& area, const Cub
 	const ActorReferenceData &referenceData = area.getActors().m_referenceData;
 	const ActorIndex actor = m_actor.getIndex(referenceData);
 	assert(actors.isAlive(actor));
-	const AnimalSpeciesId& species = actors.getSpecies(actor);
-	const FluidTypeId& fluidType = AnimalSpecies::getFluidType(species);
+	const AnimalSpeciesId species = actors.getSpecies(actor);
+	const FluidTypeId fluidType = AnimalSpecies::getFluidType(species);
 	for(ItemIndex item : space.item_getAll(cuboid))
 	{
 		if(items.isPreparedMeal(item))
@@ -176,7 +176,7 @@ std::pair<Point3D, int> MustEat::getDesireToEatSomethingAt(Area& area, const Cub
 	if(AnimalSpecies::getEatsFruit(species))
 	{
 		const SmallSet<PlantIndex> adjacentPlants = space.plant_getAll(cuboid);
-		for(const PlantIndex& plant : adjacentPlants)
+		for(const PlantIndex plant : adjacentPlants)
 			if(area.getPlants().getFruitMass(plant) != 0)
 				return {plants.getLocation(plant), 2};
 	}
@@ -187,7 +187,7 @@ std::pair<Point3D, int> MustEat::getDesireToEatSomethingAt(Area& area, const Cub
 				return {area.getActors().getLocation(toScavenge), 1};
 	}
 	if(AnimalSpecies::getEatsLeaves(species))
-		for(const PlantIndex& plant : space.plant_getAll(cuboid))
+		for(const PlantIndex plant : space.plant_getAll(cuboid))
 			if(plants.getPercentFoliage(plant) != 0)
 				return {plants.getLocation(plant), 3};
 	return {Point3D::null(), 0};
@@ -218,7 +218,7 @@ Point3D MustEat::getOccupiedOrAdjacentPointWithHighestDesireFoodOfAcceptableDesi
 	Point3D output;
 	const Actors& actors = area.getActors();
 	ActorIndex actor = m_actor.getIndex(actors.m_referenceData);
-	for(const Cuboid& adjacent : actors.getOccupiedAndAdjacentCuboids(actor))
+	for(const Cuboid adjacent : actors.getOccupiedAndAdjacentCuboids(actor))
 	{
 		const auto [point, desire] = getDesireToEatSomethingAt(area, adjacent);
 		if(desire != 0 && desire < minEatDesire)

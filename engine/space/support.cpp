@@ -9,7 +9,7 @@ void Support::doStep(Area& area)
 {
 	Items& items = area.getItems();
 	const auto copy = m_maybeFall;
-	for(const Cuboid& cuboid : copy)
+	for(const Cuboid cuboid : copy)
 	{
 		const CuboidSet unsupported = getUnsupported(area, cuboid);
 		if(!unsupported.empty())
@@ -25,7 +25,7 @@ void Support::doStep(Area& area)
 	// Points in maybeFall which have not fallen due to being empty must be cleared.
 	m_maybeFall.clear();
 }
-CuboidSet Support::getUnsupported(const Area& area, const Cuboid& cuboid) const
+CuboidSet Support::getUnsupported(const Area& area, const Cuboid cuboid) const
 {
 	const Cuboid boundry = area.getSpace().boundry();
 	assert(boundry.contains(cuboid));
@@ -45,7 +45,7 @@ CuboidSet Support::getUnsupported(const Area& area, const Cuboid& cuboid) const
 			return {};
 		Cuboid adjacentCuboid = candidate;
 		adjacentCuboid.inflate({1});
-		for(const Cuboid& adjacentToCandidiate : space.solid_queryCuboids(adjacentCuboid))
+		for(const Cuboid adjacentToCandidiate : space.solid_queryCuboids(adjacentCuboid))
 			if(candidate != adjacentToCandidiate && candidate.isTouchingFace(adjacentToCandidiate) && !closedList.contains(adjacentToCandidiate))
 			{
 				closedList.maybeAdd(adjacentToCandidiate);

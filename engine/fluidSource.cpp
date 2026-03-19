@@ -32,7 +32,7 @@ void AreaHasFluidSources::create(Point3D point, FluidTypeId fluidType, Collision
 void AreaHasFluidSources::destroy(Point3D point)
 {
 	assert(std::ranges::find(m_data, point, &FluidSource::point) != m_data.end());
-	std::ranges::remove(m_data, point, &FluidSource::point);
+	m_data.erase(std::ranges::remove(m_data, point, &FluidSource::point).begin(), m_data.end());
 }
 void AreaHasFluidSources::load(const Json& data, DeserializationMemo& deserializationMemo)
 {

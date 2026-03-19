@@ -14,7 +14,7 @@ public:
 	AreaHasSleepingSpots(Area& a) : m_area(a) { }
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
 	Json toJson() const;
-	void designate(const FactionId& faction, const Point3D& point);
-	void undesignate(const FactionId& faction, const Point3D& point);
-	bool containsUnassigned(const Point3D& point) const { return m_unassigned.contains(point); }
+	void designate(const FactionId faction, const Point3D point);
+	void undesignate(const FactionId faction, const Point3D point);
+	bool containsUnassigned(const Point3D point) const { return m_unassigned.contains(point); }
 };

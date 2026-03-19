@@ -11,10 +11,10 @@ void DrainQueue::initializeForStep(Area& area, FluidGroup& fluidGroup)
 	{
 		m_queue.clear();
 		const Space& space = area.getSpace();
-		auto action = [&](const Cuboid& cuboid, const FluidData& data)
+		auto action = [&](const Cuboid cuboid, const FluidData& data)
 		{
 			if(data.group == &fluidGroup)
-				for(const Cuboid& flatCuboid : cuboid.sliceAtEachZ())
+				for(const Cuboid flatCuboid : cuboid.sliceAtEachZ())
 					m_queue.emplace_back(flatCuboid, data.volume, CollisionVolume::create(0));
 		};
 		space.fluid_forEachWithCuboid(m_set, action);
@@ -29,7 +29,7 @@ void DrainQueue::initializeForStep(Area& area, FluidGroup& fluidGroup)
 	m_futureEmpty.clear();
 	m_futureNoLongerFull.clear();
 }
-void DrainQueue::recordDelta(Area& area, const CollisionVolume& volume, const CollisionVolume& flowCapacity, const CollisionVolume& flowTillNextStep)
+void DrainQueue::recordDelta(Area& area, const CollisionVolume volume, const CollisionVolume flowCapacity, const CollisionVolume flowTillNextStep)
 {
 	assert(volume != 0);
 	assert((m_groupStart != m_groupEnd));

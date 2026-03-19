@@ -19,7 +19,7 @@ struct OffsetSetSIMD
 	using IndexData = Eigen::Array<int, 1, Eigen::Dynamic>;
 	IndexData m_indexData;
 	int m_nextIndex = 0;
-	void insert(const Space& space, const Offset3D& offset);
+	void insert(const Space& space, const Offset3D offset);
 	[[nodiscard]] int size() const;
 };
 template<int size>
@@ -32,7 +32,7 @@ struct OffsetArraySIMD
 	IndexData m_indexData;
 	int m_nextIndex = 0;
 	template<class Space>
-	void insert(const Space& space, const Offset3D& offset)
+	void insert(const Space& space, const Offset3D offset)
 	{
 		assert(m_nextIndex < size);
 		Eigen::Array<int, 3, 1> offsetConversionMulitpliers = space.m_pointToIndexConversionMultipliers.template cast<int>();

@@ -6,7 +6,7 @@
 
 LeaveAreaObjective::LeaveAreaObjective(Priority priority) :
 	Objective(priority) { }
-void LeaveAreaObjective::execute(Area& area, const ActorIndex& actor)
+void LeaveAreaObjective::execute(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	if(actors.isOnEdge(actor))
@@ -15,7 +15,7 @@ void LeaveAreaObjective::execute(Area& area, const ActorIndex& actor)
 	else
 		actors.move_pathRequestRecord(actor, std::make_unique<LeaveAreaPathRequest>(area, *this, actor));
 }
-LeaveAreaPathRequest::LeaveAreaPathRequest(Area& area, LeaveAreaObjective& objective, const ActorIndex& actorIndex) :
+LeaveAreaPathRequest::LeaveAreaPathRequest(Area& area, LeaveAreaObjective& objective, const ActorIndex actorIndex) :
 	m_objective(objective)
 {
 	Actors& actors = area.getActors();

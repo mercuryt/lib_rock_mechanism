@@ -12,12 +12,12 @@ struct SquadFormation
 	std::string m_name;
 	ShapeId m_shapeId;
 	[[nodiscard]] const std::string& getName() const;
-	[[nodiscard]] const ShapeId& getShapeId() const;
-	[[nodiscard]] const Offset3D getOffsetFor(const ActorId& reference) const;
+	[[nodiscard]] const ShapeId getShapeId() const;
+	[[nodiscard]] const Offset3D getOffsetFor(const ActorId id) const;
 	void setName(const std::string& name);
 	// 'setOffset' and 'remove' both call buildShape.
-	void setOffset(const ActorId& actor, const Offset3D& offset);
-	void remove(const ActorId& actor);
+	void setOffset(const ActorId actor, const Offset3D offset);
+	void remove(const ActorId actor);
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SquadFormation, m_locations, m_name, m_shapeId);
 };
 class Squad
@@ -35,18 +35,18 @@ class Squad
 	// When m_currentFormation is empty or an actor doesn't have an offset in the set formation set their destination to be the commander's destination.
 	SquadFormationIndex m_currentFormationIndex;
 public:
-	void setCommander(const ActorId& commander);
-	void addActor(const ActorId& actor);
+	void setCommander(const ActorId commander);
+	void addActor(const ActorId actor);
 	// Remove from all formations.
-	void removeActor(const ActorId& actor);
-	void setOffsetOfActorInCurrentFormation(const ActorId& actor, const Offset3D& offset);
+	void removeActor(const ActorId actor);
+	void setOffsetOfActorInCurrentFormation(const ActorId actor, const Offset3D offset);
 	void setName(const std::string& name);
 	void createFormationWithCurrentPositions(const std::string& name, Area& area);
-	void updateActorIndex(const ActorIndex& oldIndex, const ActorIndex& newIndex);
+	void updateActorIndex(const ActorIndex oldIndex, const ActorIndex newIndex);
 	void setCurrentArea(const Area& area);
 	[[nodiscard]] const std::string& getName() const;
 	[[nodiscard]] ActorId& getCommander();
-	[[nodiscard]] const ActorId& getCommander() const;
+	[[nodiscard]] const ActorId getCommander() const;
 	[[nodiscard]] const SmallSet<ActorId>& getAll() const;
 	[[nodiscard]] SquadFormation* getFormation();
 	[[nodiscard]] const SquadFormation* getFormation() const;
@@ -56,6 +56,6 @@ public:
 	// Creates a squad with actor as commander and sole member.
 	// m_formations is left empty and current formation is set to null.
 	// m_name is set to the name of the actor with "'s squad" appended to the end.
-	[[nodiscard]] static Squad create(const ActorId& commanderId, const std::string& name);
+	[[nodiscard]] static Squad create(const ActorId commanderId, const std::string& name);
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Squad, m_actors, m_formations, m_currentFormationLocationsAsIndices, m_name, m_commander, m_currentFormationIndex);
 };

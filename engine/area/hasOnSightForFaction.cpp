@@ -7,7 +7,7 @@ AreaHasOnSightForFaction::AreaHasOnSightForFaction(const Json& data, Deserializa
 		m_data.emplace(faction, pair[1], deserializationMemo, area);
 	}
 }
-void AreaHasOnSightForFaction::maybeExecute(const FactionId& faction, Area& area, const ActorReference& canSee, const SmallSet<ActorReference>& canNowBeSeen)
+void AreaHasOnSightForFaction::maybeExecute(const FactionId faction, Area& area, const ActorReference canSee, const SmallSet<ActorReference>& canNowBeSeen)
 {
 	if(canNowBeSeen.empty())
 		return;
@@ -16,15 +16,15 @@ void AreaHasOnSightForFaction::maybeExecute(const FactionId& faction, Area& area
 		return;
 	found->second.execute(area, canSee, canNowBeSeen);
 }
-void AreaHasOnSightForFaction::maybeExecute(const FactionId& faction, Area& area, const ActorReference& canSee, const ActorReference& canNowBeSeen)
+void AreaHasOnSightForFaction::maybeExecute(const FactionId faction, Area& area, const ActorReference canSee, const ActorReference canNowBeSeen)
 {
 	auto found = m_data.find(faction);
 	if(found == m_data.end())
 		return;
 	found->second.execute(area, canSee, canNowBeSeen);
 }
-HasOnSight& AreaHasOnSightForFaction::get(const FactionId& faction) { return m_data[faction]; }
-const HasOnSight& AreaHasOnSightForFaction::get(const FactionId& faction) const { return m_data[faction]; }
+HasOnSight& AreaHasOnSightForFaction::get(const FactionId faction) { return m_data[faction]; }
+const HasOnSight& AreaHasOnSightForFaction::get(const FactionId faction) const { return m_data[faction]; }
 Json AreaHasOnSightForFaction::toJson() const
 {
 	Json output{{"data", Json::array()}};

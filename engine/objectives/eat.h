@@ -9,8 +9,8 @@ class EatObjective;
 class EatObjectiveType final : public ObjectiveType
 {
 public:
-	[[nodiscard]] bool canBeAssigned(Area&, const ActorIndex&) const { std::unreachable(); }
-	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, const ActorIndex&) const { std::unreachable(); }
+	[[nodiscard]] bool canBeAssigned(Area&, const ActorIndex) const { std::unreachable(); }
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area&, const ActorIndex) const { std::unreachable(); }
 	EatObjectiveType() = default;
 	[[nodiscard]] std::string name() const { return "eat"; }
 };
@@ -19,14 +19,14 @@ class EatEvent final : public ScheduledEvent
 	ActorReference m_actor;
 	EatObjective& m_eatObjective;
 public:
-	EatEvent(Area& area, const Step& delay, EatObjective& eo, const ActorIndex& actor, const Step start = Step::null());
+	EatEvent(Area& area, const Step delay, EatObjective& eo, const ActorIndex actor, const Step start = Step::null());
 	void execute(Simulation&, Area*);
 	void clearReferences(Simulation&, Area*);
-	void eatPreparedMeal(Area& area, const ItemIndex& item);
-	void eatGenericItem(Area& area, const ItemIndex& item);
-	void eatActor(Area& area, const ActorIndex& actor);
-	void eatPlantLeaves(Area& area, const PlantIndex& plant);
-	void eatFruitFromPlant(Area& area, const PlantIndex& plant);
+	void eatPreparedMeal(Area& area, const ItemIndex item);
+	void eatGenericItem(Area& area, const ItemIndex item);
+	void eatActor(Area& area, const ActorIndex actor);
+	void eatPlantLeaves(Area& area, const PlantIndex plant);
+	void eatFruitFromPlant(Area& area, const PlantIndex plant);
 	[[nodiscard]] std::string name() const { return "eat"; }
 };
 constexpr int maxRankedEatDesire = 3;
@@ -36,7 +36,7 @@ class EatPathRequest final : public PathRequestBreadthFirst
 	EatObjective& m_eatObjective;
 	ActorReference m_huntResult;
 public:
-	EatPathRequest(Area& area, EatObjective& eo, const ActorIndex& actor);
+	EatPathRequest(Area& area, EatObjective& eo, const ActorIndex actorIndex);
 	EatPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
@@ -52,17 +52,17 @@ class EatObjective final : public Objective
 	bool m_tryToHunt = false;
 public:
 	EatObjective(Area& area);
-	EatObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const ActorIndex& actor);
-	void execute(Area&, const ActorIndex& actor);
-	void cancel(Area&, const ActorIndex& actor);
-	void delay(Area&, const ActorIndex& actor);
-	void reset(Area&, const ActorIndex& actor);
+	EatObjective(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const ActorIndex actor);
+	void execute(Area&, const ActorIndex actor);
+	void cancel(Area&, const ActorIndex actor);
+	void delay(Area&, const ActorIndex actor);
+	void reset(Area&, const ActorIndex actor);
 	void noFoodFound();
-	void makePathRequest(Area& area, const ActorIndex& actor);
+	void makePathRequest(Area& area, const ActorIndex actor);
 	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("eat").getId(); }
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "eat"; }
-	[[nodiscard]] bool canEatAt(Area& area, const Point3D& point, const ActorIndex& actor) const;
+	[[nodiscard]] bool canEatAt(Area& area, const Point3D point, const ActorIndex actor) const;
 	[[nodiscard]] bool isNeed() const { return true; }
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::eat; }
 	friend class EatEvent;

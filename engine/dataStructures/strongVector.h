@@ -12,8 +12,8 @@ public:
 	using const_iterator = std::vector<Contained>::const_iterator;
 	using const_reverse_iterator = std::vector<Contained>::const_reverse_iterator;
 	[[nodiscard]] const std::vector<Contained>& toVector() const;
-	[[nodiscard]] Contained& operator[](const Index& index);
-	[[nodiscard]] const Contained& operator[](const Index& index) const;
+	[[nodiscard]] Contained& operator[](const Index index);
+	[[nodiscard]] const Contained& operator[](const Index index) const;
 	[[nodiscard]] int size() const;
 	[[nodiscard]] int capacity() const;
 	[[nodiscard]] iterator begin();
@@ -50,7 +50,7 @@ public:
 	void emplaceBack(Args&& ...args) { data.emplace_back(std::forward<Args>(args)...); }
 	void clear();
 	void popBack();
-	void remove(const Index& index);
+	void remove(const Index index);
 	void remove(iterator iter);
 	void remove(iterator iterStart, iterator iterEnd);
 	// Erase is a synonm for remove for conformity with vector.
@@ -73,16 +73,16 @@ class StrongBitSet
 {
 	std::vector<bool> data;
 public:
-	[[nodiscard]] bool operator[](const Index& index) const;
+	[[nodiscard]] bool operator[](const Index index) const;
 	[[nodiscard]] size_t size() const;
-	void set(const Index& index);
-	void set(const Index& index, bool status);
-	void maybeUnset(const Index& index);
-	void unset(const Index& index);
+	void set(const Index index);
+	void set(const Index index, bool status);
+	void maybeUnset(const Index index);
+	void unset(const Index index);
 	void reserve(const size_t& size);
-	void reserve(const Index& index);
+	void reserve(const Index index);
 	void resize(const size_t& size);
-	void resize(const Index& index);
+	void resize(const Index index);
 	void clear();
 	void add(const bool& status);
 	void moveIndex(const Index& oldIndex, const Index& newIndex);

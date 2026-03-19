@@ -7,6 +7,7 @@
 void screens::editDrama(Window& window, Area& area)
 {
 	assert(window.m_editMode);
+	window.m_paused = true;
 	begin(window, "Edit Drama");
 	DramaEngine* dramaEngine = window.m_simulation->m_dramaEngine.get();
 	std::vector<DramaArc*> arcsForArea = dramaEngine->getArcsForArea(area);
@@ -14,6 +15,8 @@ void screens::editDrama(Window& window, Area& area)
 	ImGui::BeginTable("arcs", 3);
 	for(DramaArc* arc : arcsForArea)
 	{
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
 		ImGuiText(arc->name());
 		ImGui::TableNextColumn();
 		if(ImGui::Button("start"))
@@ -27,14 +30,16 @@ void screens::editDrama(Window& window, Area& area)
 		typesForArea.insert(arc->m_type);
 	}
 	ImGui::EndTable();
-	ImGui::BeginCombo("new arc type", "new arc type");
-	for(const DramaArcType type : DramaArc::getTypes())
+	if(ImGui::BeginCombo("new arc type", "new arc type"))
 	{
-		if(!typesForArea.contains(type))
-			if(ImGuiSelectable(DramaArc::typeToString(type), false))
-				window.m_simulation->m_dramaEngine->createArcTypeForArea(type, area);
+		for(const DramaArcType type : DramaArc::getTypes())
+		{
+			if(!typesForArea.contains(type))
+				if(ImGuiSelectable(DramaArc::typeToString(type), false))
+					window.m_simulation->m_dramaEngine->createArcTypeForArea(type, area);
+		}
+		ImGui::EndCombo();
 	}
-	ImGui::EndCombo();
 	if(ImGui::Button("close"))
 		window.showGame();
 	end();

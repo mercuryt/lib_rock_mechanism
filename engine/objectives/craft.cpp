@@ -4,7 +4,7 @@
 #include "../space/space.h"
 #include "../area/area.h"
 #include "../path/terrainFacade.hpp"
-CraftPathRequest::CraftPathRequest(Area& area, CraftObjective& co, const ActorIndex& actorIndex) :
+CraftPathRequest::CraftPathRequest(Area& area, CraftObjective& co, const ActorIndex actorIndex) :
 	m_craftObjective(co)
 {
 	assert(m_craftObjective.m_craftJob == nullptr);
@@ -29,14 +29,14 @@ CraftPathRequest::CraftPathRequest(const Json& data, Area& area, Deserialization
 FindPathResult CraftPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
 {
 	Actors& actors = area.getActors();
-	const ActorIndex& actorIndex = actor.getIndex(actors.m_referenceData);
+	const ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	HasCraftingLocationsAndJobsForFaction& hasCrafting = area.m_hasCraftingLocationsAndJobs.getForFaction(faction);
 	Space& space = area.getSpace();
-	const SkillTypeId& skillType = m_craftObjective.m_skillType;
+	const SkillTypeId skillType = m_craftObjective.m_skillType;
 	auto& excludeJobs = m_craftObjective.getFailedJobs();
 	// TODO: really?
 	const auto captureFaction = faction;
-	auto predicate = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
+	auto predicate = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
 	{
 		//TODO: use cuboids instead of factions
 		for(const Point3D& point : cuboid)
@@ -74,8 +74,8 @@ void CraftPathRequest::writeStep(Area& area, FindPathResult& result)
 		actors.objective_canNotCompleteSubobjective(actorIndex);
 		return;
 	}
-	const Point3D& point = result.pointThatPassedPredicate;
-	const SkillTypeId& skillType = m_craftObjective.m_skillType;
+	const Point3D point = result.pointThatPassedPredicate;
+	const SkillTypeId skillType = m_craftObjective.m_skillType;
 	auto pair = std::make_pair(area.m_hasCraftingLocationsAndJobs.getForFaction(faction).getJobForAtLocation(actorIndex, skillType, point, m_craftObjective.getFailedJobs()), point);
 	m_craftJob = pair.first;
 	m_location = pair.second;
@@ -109,7 +109,7 @@ Json CraftPathRequest::toJson() const
 }
 // ObjectiveType.
 CraftObjectiveType::CraftObjectiveType(const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo) : m_skillType(data["skillType"].get<SkillTypeId>()) { }
-bool CraftObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
+bool CraftObjectiveType::canBeAssigned(Area& area, const ActorIndex actor) const
 {
 	Actors& actors = area.getActors();
 	// Pilots and passengers onDeck cannot craft.
@@ -130,7 +130,7 @@ bool CraftObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) cons
 	}
 	return false;
 }
-std::unique_ptr<Objective> CraftObjectiveType::makeFor(Area&, const ActorIndex&) const
+std::unique_ptr<Objective> CraftObjectiveType::makeFor(Area&, const ActorIndex) const
 {
 	return std::make_unique<CraftObjective>(m_skillType);
 }
@@ -159,20 +159,20 @@ Json CraftObjective::toJson() const
 	return data;
 }
 std::string CraftObjective::name() const { return "craft: " + SkillType::getName(m_skillType); }
-void CraftObjective::execute(Area& area, const ActorIndex& actor)
+void CraftObjective::execute(Area& area, const ActorIndex actor)
 {
 	if(m_craftJob)
 		m_craftJob->craftStepProject->commandWorker(actor);
 	else
 		area.getActors().move_pathRequestRecord(actor, std::make_unique<CraftPathRequest>(area, *this, actor));
 }
-void CraftObjective::cancel(Area& area, const ActorIndex& actor)
+void CraftObjective::cancel(Area& area, const ActorIndex actor)
 {
 	area.getActors().move_pathRequestMaybeCancel(actor);
 	if(m_craftJob && m_craftJob->craftStepProject)
 		m_craftJob->craftStepProject->cancel();
 }
-void CraftObjective::reset(Area& area, const ActorIndex& actor)
+void CraftObjective::reset(Area& area, const ActorIndex actor)
 {
 	area.getActors().canReserve_clearAll(actor);
 	m_craftJob = nullptr;

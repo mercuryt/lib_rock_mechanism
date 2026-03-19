@@ -25,7 +25,7 @@
 #include <string>
 #include <sys/types.h>
 
-Area::Area(AreaId id, std::string n, Simulation& s, const Distance& x, const Distance& y, const Distance& z) :
+Area::Area(AreaId id, std::string n, Simulation& s, const Distance  x, const Distance  y, const Distance  z) :
 	#ifndef NDEBUG
 		m_space(std::make_unique<Space>(*this, x, y, z)),
 		m_actors(std::make_unique<Actors>(*this)),
@@ -154,7 +154,7 @@ Area::~Area()
 	m_hasTerrainFacades.clearPathRequests();
 	// Call onBeforeUnload on all objectives. Currently only used to clear GivePlantFluid.
 	Actors& actors = getActors();
-	for(const ActorIndex& actor : actors.getAll())
+	for(const ActorIndex actor : actors.getAll())
 		if(actors.objective_exists(actor))
 			actors.objective_getCurrent<Objective>(actor).onBeforeUnload(*this, actor);
 }
@@ -169,7 +169,6 @@ Json Area::toJson() const
 	};
 	data["hasFarmFields"] = m_hasFarmFields.toJson();
 	data["onSight"] = m_hasOnSight.toJson();
-	data["hasSleepingSpots"] = m_hasSleepingSpots.toJson();
 	data["hasConstructionDesignations"] = m_hasConstructionDesignations.toJson();
 	data["hasDigDesignations"] = m_hasDigDesignations.toJson();
 	data["hasWoodCuttingDesignations"] = m_hasWoodCuttingDesignations.toJson();
@@ -177,7 +176,6 @@ Json Area::toJson() const
 	data["hasStockPiles"] = m_hasStockPiles.toJson();
 	data["targetedHauling"] = m_hasTargetedHauling.toJson();
 	data["exteriorPortals"] = m_exteriorPortals;
-	m_opacityFacade.validate(*this);
 	return data;
 }
 void Area::setup()
@@ -223,16 +221,16 @@ void Area::logActorsAndItems() const
 {
 	const Actors& actors = getActors();
 	const Items& items = getItems();
-	for(const ActorIndex& actor : actors.getAll())
+	for(const ActorIndex actor : actors.getAll())
 		actors.log(actor);
-	for(const ItemIndex& item : items.getAll())
+	for(const ItemIndex item : items.getAll())
 		items.log(item);
 }
-Quantity Area::getTotalCountOfItemTypeOnSurface(const ItemTypeId& itemType) const
+Quantity Area::getTotalCountOfItemTypeOnSurface(const ItemTypeId itemType) const
 {
 	const Items& items = getItems();
 	Quantity output = Quantity::create(0);
-	for(const ItemIndex& item : items.getOnSurface())
+	for(const ItemIndex item : items.getOnSurface())
 		if(itemType == items.getItemType(item))
 			output += items.getQuantity(item);
 	return output;

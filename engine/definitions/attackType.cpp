@@ -20,13 +20,13 @@ AttackTypeId AttackType::byName(std::string name)
 	assert(found != g_attackTypeData.m_name.end());
 	return AttackTypeId::create(found - g_attackTypeData.m_name.begin());
 }
-std::string AttackType::getName(const AttackTypeId& id) { return g_attackTypeData.m_name[id]; };
-int AttackType::getArea(const AttackTypeId& id) { return g_attackTypeData.m_area[id]; };
-Force AttackType::getBaseForce(const AttackTypeId& id) { return g_attackTypeData.m_baseForce[id]; };
-DistanceFractional AttackType::getRange(const AttackTypeId& id) { return g_attackTypeData.m_range[id]; };
-CombatScore AttackType::getCombatScore(const AttackTypeId& id) { return g_attackTypeData.m_combatScore[id]; };
-Step AttackType::getCoolDown(const AttackTypeId& id) { return g_attackTypeData.m_coolDown[id]; };
-bool AttackType::getProjectile(const AttackTypeId& id) { return g_attackTypeData.m_projectile[id]; };
-WoundType AttackType::getWoundType(const AttackTypeId& id) { return g_attackTypeData.m_woundType[id]; };
-SkillTypeId AttackType::getSkillType(const AttackTypeId& id) { return g_attackTypeData.m_skillType[id]; };
-ItemTypeId AttackType::getProjectileItemType(const AttackTypeId& id) { return g_attackTypeData.m_projectileItemType[id]; };
+std::string AttackType::getName(const AttackTypeId id) { return g_attackTypeData.m_name[id]; };
+int AttackType::getArea(const AttackTypeId id) { return g_attackTypeData.m_area[id]; };
+Force AttackType::getBaseForce(const AttackTypeId id) { return g_attackTypeData.m_baseForce[id]; };
+DistanceFractional AttackType::getRange(const AttackTypeId id) { return g_attackTypeData.m_range[id]; };
+CombatScore AttackType::getCombatScore(const AttackTypeId id) { return g_attackTypeData.m_combatScore[id]; };
+Step AttackType::getCoolDown(const AttackTypeId id) { return g_attackTypeData.m_coolDown[id]; };
+bool AttackType::getProjectile(const AttackTypeId id) { return g_attackTypeData.m_projectile[id]; };
+WoundType AttackType::getWoundType(const AttackTypeId id) { return g_attackTypeData.m_woundType[id]; };
+SkillTypeId AttackType::getSkillType(const AttackTypeId id) { return g_attackTypeData.m_skillType[id]; };
+ItemTypeId AttackType::getProjectileItemType(const AttackTypeId id) { return g_attackTypeData.m_projectileItemType[id]; };

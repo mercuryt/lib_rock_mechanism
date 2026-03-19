@@ -22,8 +22,8 @@ public:
 private:
 	Mass m_massFoodRequested = Mass::create(0);
 public:
-	MustEat(Area& area, const ActorIndex& a);
-	MustEat(Area& area, const Json& data, const ActorIndex& a, AnimalSpeciesId species);
+	MustEat(Area& area, const ActorIndex a);
+	MustEat(Area& area, const Json& data, const ActorIndex a, AnimalSpeciesId species);
 	[[nodiscard]]Json toJson() const;
 	void scheduleHungerEvent(Area& area);
 	void eat(Area& area, Mass mass);
@@ -31,17 +31,17 @@ public:
 	void setNeedsFood(Area& area);
 	void unschedule();
 	void setObjective(EatObjective& objective);
-	void setPercentStarved(const Percent& percent);
+	void setPercentStarved(const Percent percent);
 	[[nodiscard]] bool needsFood() const;
 	[[nodiscard]] Mass massFoodForBodyMass(Area& area) const;
 	[[nodiscard]] Mass getMassFoodRequested() const;
 	[[nodiscard]] Percent getPercentStarved() const;
-	[[nodiscard]] std::pair<Point3D, int> getDesireToEatSomethingAt(Area& area, const Cuboid& cuboid) const;
+	[[nodiscard]] std::pair<Point3D, int> getDesireToEatSomethingAt(Area& area, const Cuboid cuboid) const;
 	[[nodiscard]] int getMinimumAcceptableDesire(Area& area) const;
 	[[nodiscard]] Point3D getOccupiedOrAdjacentPointWithHighestDesireFoodOfAcceptableDesireability(Area& area);
-	[[nodiscard]] bool canEatActor(Area& area, const ActorIndex& actor) const;
-	[[nodiscard]] bool canEatPlant(Area& area, const PlantIndex& plant) const;
-	[[nodiscard]] bool canEatItem(Area& area, const ItemIndex& item) const;
+	[[nodiscard]] bool canEatActor(Area& area, const ActorIndex actor) const;
+	[[nodiscard]] bool canEatPlant(Area& area, const PlantIndex plant) const;
+	[[nodiscard]] bool canEatItem(Area& area, const ItemIndex item) const;
 	friend class HungerEvent;
 	friend class EatObjective;
 	// For testing.
@@ -53,7 +53,7 @@ class HungerEvent final : public ScheduledEvent
 {
 	ActorIndex m_actor;
 public:
-	HungerEvent(Area& area, const Step& delay, const ActorIndex& a, const Step start = Step::null());
+	HungerEvent(Area& area, const Step delay, const ActorIndex a, const Step start = Step::null());
 	void execute(Simulation&, Area*);
 	void clearReferences(Simulation&, Area*);
 };

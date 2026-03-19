@@ -39,9 +39,9 @@ public:
 	void deleteAllWithoutCallback();
 	void setFaction(FactionId faction);
 	// Returns true if all new positions could be reserved.
-	[[nodiscard]] bool translateAndReservePositions(Space& space, SmallMap<Point3D, std::unique_ptr<DishonorCallback>>&& previouslyReserved, const Point3D& previousLocation, const Point3D& newLocation, const Facing4& previousFacing, const Facing4& newFacing);
-	void recordReservedPoint(const Point3D& point, Reservable* reservable);
-	void eraseReservedPoint(const Point3D& point);
+	[[nodiscard]] bool translateAndReservePositions(Space& space, SmallMap<Point3D, std::unique_ptr<DishonorCallback>>&& previouslyReserved, const Point3D previousLocation, const Point3D newLocation, const  Facing4 previousFacing, const Facing4 newFacing);
+	void recordReservedPoint(const Point3D point, Reservable* reservable);
+	void eraseReservedPoint(const Point3D point);
 	void deleteAllPointReservationsWithoutCallback();
 	template<typename Condition>
 	[[nodiscard]] SmallMap<Point3D, std::unique_ptr<DishonorCallback>> unreserveAndReturnPointsAndCallbacksWithCondition(Condition&& condition);

@@ -17,7 +17,7 @@ public:
 	[[nodiscard]] static bool compare(const FutureFlowCuboid& a, const FutureFlowCuboid& b);
 	DrainQueue(FluidAllocator& allocator) : FluidQueue<DrainQueue>(allocator) { }
 	void initializeForStep(Area& area, FluidGroup& fluidGroup);
-	void recordDelta(Area& area, const CollisionVolume& volume, const CollisionVolume& flowCapacity, const CollisionVolume& flowTillNextStep);
+	void recordDelta(Area& area, const CollisionVolume volume, const CollisionVolume flowCapacity, const CollisionVolume flowTillNextStep);
 	void applyDelta(Area& area, FluidGroup& fluidGroup);
 	[[nodiscard]] CollisionVolume groupLevel(Area& area, FluidGroup& fluidGroup) const;
 };

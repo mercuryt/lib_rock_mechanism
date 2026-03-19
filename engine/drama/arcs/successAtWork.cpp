@@ -46,14 +46,14 @@ std::string SuccessAtWorkDramaArc::doSwitch(const SuccessAtWorkType& successType
 			break;
 		case SuccessAtWorkType::SavedInputItems:
 		{
-			const ItemReference& ref = items.getReference(project.getRandomItemToConsume());
+			const ItemReference ref = items.getReference(project.getRandomItemToConsume());
 			// No consumable items.
 			if(ref.empty())
 				doSwitch(SuccessAtWorkType::SavedTime, project);
 			else
 			{
 				project.removeItemFromConsumed(ref);
-				const ItemIndex& item = ref.getIndex(items.m_referenceData);
+				const ItemIndex item = ref.getIndex(items.m_referenceData);
 				description += "saved a " + ItemType::getName(items.getItemType(item));
 			}
 			break;
@@ -90,7 +90,7 @@ void SuccessAtWorkDramaArc::callback()
 			continue;
 		std::string description;
 		Project& project = *m_area->m_simulation.m_random.getInVector(projects.m_data).get();
-		const ActorIndex& worker = m_area->m_simulation.m_random.getInVector(project.getWorkers().m_data).first.getIndex(actors.m_referenceData);
+		const ActorIndex worker = m_area->m_simulation.m_random.getInVector(project.getWorkers().m_data).first.getIndex(actors.m_referenceData);
 		description += actors.getName(worker) + " made a success while working on " + project.description() + " resulting in ";
 		SuccessAtWorkType successType = m_area->m_simulation.m_random.getInEnum<SuccessAtWorkType>();
 		// Make a copy before maybe completing the project.
@@ -106,7 +106,7 @@ void SuccessAtWorkDramaArc::callback()
 		// Maybe find someone to praise worker later.
 		ActorIndex praiser;
 		// Start by searching coworkers, if no one suitable is found search canBeSeenBy.
-		auto castingCall = [&](const ActorIndex& index) -> float
+		auto castingCall = [&](const ActorIndex index) -> float
 		{
 			if(actors.objective_getCurrent<Objective>(index).m_priority >= Config::Social::socialPriorityHigh)
 				return FLT_MIN;
@@ -118,18 +118,18 @@ void SuccessAtWorkDramaArc::callback()
 				return 0;
 			return relationship->positivity.get();
 		};
-		auto castingCallRef = [&](const ActorReference& ref) -> float
+		auto castingCallRef = [&](const ActorReference ref) -> float
 		{
-			const ActorIndex& candidate = ref.getIndex(actors.m_referenceData);
+			const ActorIndex candidate = ref.getIndex(actors.m_referenceData);
 			return castingCall(candidate);
 		};
-		const ActorIndex& bestCoworkerCandidate = *std::ranges::max_element(coworkers.m_data, {}, castingCall);
+		const ActorIndex bestCoworkerCandidate = *std::ranges::max_element(coworkers.m_data, {}, castingCall);
 		if(castingCall(bestCoworkerCandidate) >= Config::Social::minimumCastingScoreForPraiseSuccessAtWork)
 			praiser = bestCoworkerCandidate;
 		else
 		{
 			SmallSet<ActorReference> canBeSeenBy = actors.vision_getCanBeSeenBy(worker);
-			const ActorReference& bestCanBeSeenByCandidiate = *std::ranges::max_element(canBeSeenBy.m_data, {}, castingCallRef);
+			const ActorReference bestCanBeSeenByCandidiate = *std::ranges::max_element(canBeSeenBy.m_data, {}, castingCallRef);
 			if(castingCallRef(bestCanBeSeenByCandidiate) >= Config::Social::minimumCastingScoreForPraiseSuccessAtWork)
 				praiser = bestCanBeSeenByCandidiate.getIndex(actors.m_referenceData);
 		}

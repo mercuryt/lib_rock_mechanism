@@ -1,7 +1,7 @@
 #include "rtreeBoolean.h"
 #include "strongVector.hpp"
 #include "../geometry/paramaterizedLine.h"
-RTreeArrayIndex RTreeBoolean::Node::offsetFor(const RTreeNodeIndex& index) const
+RTreeArrayIndex RTreeBoolean::Node::offsetFor(const RTreeNodeIndex index) const
 {
 	return RTreeArrayIndex::create(m_childIndices.indexOf(index));
 }
@@ -30,18 +30,18 @@ bool RTreeBoolean::Node::hasChildren() const
 {
 	return m_childBegin != nodeSize;
 }
-void RTreeBoolean::Node::updateChildIndex(const RTreeNodeIndex& oldIndex, const RTreeNodeIndex& newIndex)
+void RTreeBoolean::Node::updateChildIndex(const RTreeNodeIndex oldIndex, const RTreeNodeIndex newIndex)
 {
 	RTreeArrayIndex offset = offsetFor(oldIndex);
 	m_childIndices[offset] = newIndex;
 }
-void RTreeBoolean::Node::insertLeaf(const Cuboid& cuboid)
+void RTreeBoolean::Node::insertLeaf(const Cuboid cuboid)
 {
 	assert(m_leafEnd != m_childBegin);
 	m_cuboids.insert(m_leafEnd.get(), cuboid);
 	++m_leafEnd;
 }
-void RTreeBoolean::Node::insertBranch(const Cuboid& cuboid, const RTreeNodeIndex& index)
+void RTreeBoolean::Node::insertBranch(const Cuboid cuboid, const RTreeNodeIndex index)
 {
 	assert(m_leafEnd != m_childBegin);
 	RTreeArrayIndex toInsertAt = m_childBegin - 1;
@@ -49,7 +49,7 @@ void RTreeBoolean::Node::insertBranch(const Cuboid& cuboid, const RTreeNodeIndex
 	m_cuboids.insert(toInsertAt.get(), cuboid);
 	--m_childBegin;
 }
-void RTreeBoolean::Node::eraseBranch(const RTreeArrayIndex& offset)
+void RTreeBoolean::Node::eraseBranch(const RTreeArrayIndex offset)
 {
 	assert(offset < nodeSize);
 	assert(offset >= m_childBegin);
@@ -62,7 +62,7 @@ void RTreeBoolean::Node::eraseBranch(const RTreeArrayIndex& offset)
 	m_childIndices[m_childBegin].clear();
 	++m_childBegin;
 }
-void RTreeBoolean::Node::eraseLeaf(const RTreeArrayIndex& offset)
+void RTreeBoolean::Node::eraseLeaf(const RTreeArrayIndex offset)
 {
 	assert(offset < m_leafEnd);
 	RTreeArrayIndex lastLeaf = m_leafEnd - 1;
@@ -128,13 +128,13 @@ void RTreeBoolean::Node::clear()
 	m_leafEnd = RTreeArrayIndex::create(0);
 	m_childBegin = RTreeArrayIndex::create(nodeSize);
 }
-void RTreeBoolean::Node::updateLeaf(const RTreeArrayIndex& offset, const Cuboid& cuboid)
+void RTreeBoolean::Node::updateLeaf(const RTreeArrayIndex offset, const Cuboid cuboid)
 {
 	assert(offset < m_leafEnd);
 	assert(!m_cuboids[offset.get()].empty());
 	m_cuboids.insert(offset.get(), cuboid);
 }
-void RTreeBoolean::Node::updateBranchBoundry(const RTreeArrayIndex& offset, const Cuboid& cuboid)
+void RTreeBoolean::Node::updateBranchBoundry(const RTreeArrayIndex offset, const Cuboid cuboid)
 {
 	assert(offset >= m_childBegin);
 	assert(!m_cuboids[offset.get()].empty());
@@ -173,8 +173,8 @@ std::tuple<Cuboid, RTreeArrayIndex, RTreeArrayIndex> RTreeBoolean::findPairWithL
 	{
 		for(RTreeArrayIndex secondResultIndex = firstResultIndex + 1; secondResultIndex < endInner; ++secondResultIndex)
 		{
-			const Cuboid& firstCuboid = cuboids[firstResultIndex.get()];
-			const Cuboid& secondCuboid = cuboids[secondResultIndex.get()];
+			const Cuboid firstCuboid = cuboids[firstResultIndex.get()];
+			const Cuboid secondCuboid = cuboids[secondResultIndex.get()];
 			Cuboid sum = firstCuboid;
 			sum.maybeExpand(secondCuboid);
 			const int size = sum.volume();
@@ -191,7 +191,7 @@ std::tuple<Cuboid, RTreeArrayIndex, RTreeArrayIndex> RTreeBoolean::findPairWithL
 	}
 	return output;
 }
-SmallSet<Cuboid> RTreeBoolean::gatherLeavesRecursive(const RTreeNodeIndex& parent) const
+SmallSet<Cuboid> RTreeBoolean::gatherLeavesRecursive(const RTreeNodeIndex parent) const
 {
 	SmallSet<Cuboid> output;
 	SmallSet<RTreeNodeIndex> openList;
@@ -210,7 +210,7 @@ SmallSet<Cuboid> RTreeBoolean::gatherLeavesRecursive(const RTreeNodeIndex& paren
 	}
 	return output;
 }
-void RTreeBoolean::destroyWithChildren(const RTreeNodeIndex& index)
+void RTreeBoolean::destroyWithChildren(const RTreeNodeIndex index)
 {
 	SmallSet<RTreeNodeIndex> openList;
 	openList.insert(index);
@@ -264,7 +264,7 @@ void RTreeBoolean::tryToMergeLeaves(Node& parent)
 			++offset;
 	}
 }
-void RTreeBoolean::clearAllContained(const RTreeNodeIndex& index, const Cuboid& cuboid)
+void RTreeBoolean::clearAllContained(const RTreeNodeIndex index, const Cuboid cuboid)
 {
 	SmallSet<RTreeNodeIndex> openList;
 	openList.insert(index);
@@ -306,7 +306,7 @@ void RTreeBoolean::clearAllContained(const RTreeNodeIndex& index, const Cuboid& 
 		}
 	}
 }
-void RTreeBoolean::addToNodeRecursive(const RTreeNodeIndex& index, const Cuboid& cuboid)
+void RTreeBoolean::addToNodeRecursive(const RTreeNodeIndex index, const Cuboid cuboid)
 {
 	m_toComb.maybeInsert(index);
 	Node& parent = m_nodes[index];
@@ -409,7 +409,7 @@ void RTreeBoolean::addToNodeRecursive(const RTreeNodeIndex& index, const Cuboid&
 	else
 		parent.insertLeaf(cuboid);
 }
-void RTreeBoolean::removeFromNode(const RTreeNodeIndex& index, const Cuboid& cuboid, SmallSet<RTreeNodeIndex>& openList)
+void RTreeBoolean::removeFromNode(const RTreeNodeIndex index, const Cuboid cuboid, SmallSet<RTreeNodeIndex>& openList)
 {
 	const RTreeNodeIndex index2 = index;
 	{
@@ -457,11 +457,11 @@ void RTreeBoolean::removeFromNode(const RTreeNodeIndex& index, const Cuboid& cub
 	}
 	m_toComb.maybeInsert(index2);
 }
-void RTreeBoolean::merge(const RTreeNodeIndex& destination, const RTreeNodeIndex& source)
+void RTreeBoolean::merge(const RTreeNodeIndex destination, const RTreeNodeIndex source)
 {
 	// TODO: maybe leave source nodes intact instead of striping out leaves?
 	const auto leaves = gatherLeavesRecursive(source);
-	for(const Cuboid& leaf : leaves)
+	for(const Cuboid leaf : leaves)
 		addToNodeRecursive(destination, leaf);
 }
 void RTreeBoolean::comb()
@@ -476,7 +476,7 @@ void RTreeBoolean::comb()
 	{
 		auto copy = std::move(m_toComb);
 		m_toComb.clear();
-		for(const RTreeNodeIndex& index : copy)
+		for(const RTreeNodeIndex index : copy)
 		{
 			Node& node = m_nodes[index];
 			tryToMergeLeaves(node);
@@ -511,7 +511,7 @@ void RTreeBoolean::comb()
 			{
 				// If no node merger happens check if the parent can merge with this node.
 				// If so add it to m_toComb to be checked next iteration.
-				const RTreeNodeIndex& parentIndex = node.getParent();
+				const RTreeNodeIndex parentIndex = node.getParent();
 				// Add one to capacity because merging will remove this branch.
 				if((m_nodes[parentIndex].unusedCapacity() + 1) >= node.getChildCount() + node.getLeafCount())
 					m_toComb.maybeInsert(parentIndex);
@@ -549,7 +549,7 @@ void RTreeBoolean::defragment()
 		const auto& newNodeChildren = newNode.getChildIndices();
 		for(auto i = newNode.offsetOfFirstChild(); i < nodeSize; ++i)
 		{
-			const RTreeNodeIndex& childIndex = newNodeChildren[i];
+			const RTreeNodeIndex childIndex = newNodeChildren[i];
 			if(childIndex.exists())
 			{
 				assert(m_nodes[childIndex].getParent() == last);
@@ -568,20 +568,20 @@ void RTreeBoolean::sort()
 	sortedNodes.resize(m_nodes.size());
 	std::iota(indices.begin(), indices.end(), RTreeNodeIndex::create(0));
 	// Don't sort the first element, it is always root.
-	std::ranges::sort(indices.begin() + 1, indices.end(), std::less{}, [&](const RTreeNodeIndex& index) { return m_nodes[index].sortOrder(); });
+	std::ranges::sort(indices.begin() + 1, indices.end(), std::less{}, [&](const RTreeNodeIndex index) { return m_nodes[index].sortOrder(); });
 	sortedNodes[RTreeNodeIndex::create(0)] = m_nodes.front();
 	const auto end = m_nodes.size();
 	// Copy nodes into new order.
 	for(RTreeNodeIndex oldIndex = RTreeNodeIndex::create(1); oldIndex < end; ++oldIndex)
 	{
-		const RTreeNodeIndex& newIndex = indices[oldIndex];
+		const RTreeNodeIndex newIndex = indices[oldIndex];
 		assert(newIndex != 0);
 		sortedNodes[newIndex] = m_nodes[oldIndex];
 	}
 	// Update copied nodes' parents and children.
 	for(RTreeNodeIndex oldIndex = RTreeNodeIndex::create(1); oldIndex < end; ++oldIndex)
 	{
-		const RTreeNodeIndex& newIndex = indices[oldIndex];
+		const RTreeNodeIndex newIndex = indices[oldIndex];
 		if(newIndex == oldIndex)
 			continue;
 		Node& newNode = sortedNodes[newIndex];
@@ -589,7 +589,7 @@ void RTreeBoolean::sort()
 		const auto& newNodeChildren = newNode.getChildIndices();
 		for(RTreeArrayIndex i = newNode.offsetOfFirstChild(); i < nodeSize; ++i)
 		{
-			const RTreeNodeIndex& childIndex = newNodeChildren[i];
+			const RTreeNodeIndex childIndex = newNodeChildren[i];
 			assert(sortedNodes[childIndex].getParent() == oldIndex);
 			sortedNodes[childIndex].setParent(newIndex);
 		}
@@ -608,12 +608,12 @@ void RTreeBoolean::addIntersectedChildrenToOpenList(const Node& node, BitSet& in
 		openList.insert(nodeChildren[index]);
 	}
 }
-void RTreeBoolean::maybeInsert(const Cuboid& cuboid)
+void RTreeBoolean::maybeInsert(const Cuboid cuboid)
 {
 	constexpr RTreeNodeIndex zeroIndex = RTreeNodeIndex::create(0);
 	addToNodeRecursive(zeroIndex, cuboid);
 }
-void RTreeBoolean::maybeRemove(const Cuboid& cuboid)
+void RTreeBoolean::maybeRemove(const Cuboid cuboid)
 {
 	// Erase all contained branches and leaves.
 	constexpr RTreeNodeIndex rootIndex = RTreeNodeIndex::create(0);
@@ -629,10 +629,10 @@ void RTreeBoolean::maybeRemove(const Cuboid& cuboid)
 		if(index != 0)
 			toUpdateBoundryMaybe.maybeInsert(index);
 	}
-	for(const RTreeNodeIndex& index : toUpdateBoundryMaybe)
+	for(const RTreeNodeIndex index : toUpdateBoundryMaybe)
 	{
 		Node& node = m_nodes[index];
-		const RTreeNodeIndex& parentIndex = node.getParent();
+		const RTreeNodeIndex parentIndex = node.getParent();
 		Node& parent = m_nodes[parentIndex];
 		const RTreeArrayIndex offset = parent.offsetFor(index);
 		if(node.empty())
@@ -672,7 +672,6 @@ bool RTreeBoolean::canPrepare() const
 {
 	return !m_toComb.empty() || !m_emptySlots.empty();
 }
-bool RTreeBoolean::query(const Point3D& begin, const Point3D& end) const { return query(ParamaterizedLine(begin, end)); }
 CuboidSet RTreeBoolean::toCuboidSet() const
 {
 	CuboidSet output;
@@ -699,7 +698,7 @@ int RTreeBoolean::leafCount() const
 }
 const RTreeBoolean::Node& RTreeBoolean::getNode(int i) const { return m_nodes[RTreeNodeIndex::create(i)]; }
 const Cuboid RTreeBoolean::getNodeCuboid(int i, int o) const { return m_nodes[RTreeNodeIndex::create(i)].getCuboids()[o]; }
-const RTreeNodeIndex& RTreeBoolean::getNodeChild(int i, int o) const { return m_nodes[RTreeNodeIndex::create(i)].getChildIndices()[RTreeArrayIndex::create(o)]; }
+const RTreeNodeIndex RTreeBoolean::getNodeChild(int i, int o) const { return m_nodes[RTreeNodeIndex::create(i)].getChildIndices()[RTreeArrayIndex::create(o)]; }
 bool RTreeBoolean::queryPoint(int x, int y, int z) const { return query(Point3D::create(x,y,z)); }
 int RTreeBoolean::totalNodeVolume() const
 {
@@ -727,7 +726,7 @@ void RTreeBoolean::assertAllLeafsAreUnique() const
 }
 // Template methods.
 template<typename ShapeT>
-bool RTreeBoolean::query(const ShapeT& shape) const
+bool RTreeBoolean::queryBody(const ShapeT shape) const
 {
 	SmallSet<RTreeNodeIndex> openList;
 	openList.insert(RTreeNodeIndex::create(0));
@@ -735,7 +734,7 @@ bool RTreeBoolean::query(const ShapeT& shape) const
 	{
 		auto index = openList.back();
 		openList.popBack();
-		const Node& node = m_nodes[index];
+		const RTreeBoolean::Node& node = m_nodes[index];
 		const auto& nodeCuboids = node.getCuboids();
 		auto intersectMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
 		const auto leafCount = node.getLeafCount();
@@ -750,14 +749,13 @@ bool RTreeBoolean::query(const ShapeT& shape) const
 	}
 	return false;
 }
-template bool RTreeBoolean::query(const Point3D& shape) const;
-template bool RTreeBoolean::query(const Cuboid& shape) const;
-template bool RTreeBoolean::query(const CuboidSet& shape) const;
-template bool RTreeBoolean::query(const Sphere& shape) const;
-template bool RTreeBoolean::query(const ParamaterizedLine& shape) const;
-
+bool RTreeBoolean::query(const Point3D shape) const { return queryBody<Point3D>(shape); }
+bool RTreeBoolean::query(const Cuboid shape) const { return queryBody<Cuboid>(shape); }
+bool RTreeBoolean::query(const CuboidSet& shape) const { return queryBody<const CuboidSet&>(shape); }
+bool RTreeBoolean::query(const ParamaterizedLine& shape) const { return queryBody<const ParamaterizedLine&>(shape); }
+bool RTreeBoolean::query(const Point3D begin, const Point3D end) const { return queryBody<const ParamaterizedLine&>(ParamaterizedLine(begin, end)); }
 template<typename ShapeT>
-Cuboid RTreeBoolean::queryGetLeaf(const ShapeT& shape) const
+Cuboid RTreeBoolean::queryGetLeaf(ShapeT&& shape) const
 {
 	SmallSet<RTreeNodeIndex> openList;
 	openList.insert(RTreeNodeIndex::create(0));
@@ -779,12 +777,16 @@ Cuboid RTreeBoolean::queryGetLeaf(const ShapeT& shape) const
 	return {};
 }
 template Cuboid RTreeBoolean::queryGetLeaf(const Point3D& shape) const;
+template Cuboid RTreeBoolean::queryGetLeaf(Point3D&& shape) const;
 template Cuboid RTreeBoolean::queryGetLeaf(const Cuboid& shape) const;
+template Cuboid RTreeBoolean::queryGetLeaf(Cuboid&& shape) const;
 template Cuboid RTreeBoolean::queryGetLeaf(const CuboidSet& shape) const;
 template Cuboid RTreeBoolean::queryGetLeaf(const Sphere& shape) const;
+template Cuboid RTreeBoolean::queryGetLeaf(Sphere&& shape) const;
 template Cuboid RTreeBoolean::queryGetLeaf(const ParamaterizedLine& shape) const;
+template Cuboid RTreeBoolean::queryGetLeaf(ParamaterizedLine&& shape) const;
 template<typename ShapeT>
-Point3D RTreeBoolean::queryGetPoint(const ShapeT& shape) const
+Point3D RTreeBoolean::queryGetPoint(ShapeT&& shape) const
 {
 	SmallSet<RTreeNodeIndex> openList;
 	openList.insert(RTreeNodeIndex::create(0));
@@ -806,6 +808,7 @@ Point3D RTreeBoolean::queryGetPoint(const ShapeT& shape) const
 	return Point3D::null();
 }
 template Point3D RTreeBoolean::queryGetPoint(const Cuboid& shape) const;
+template Point3D RTreeBoolean::queryGetPoint(Cuboid&& shape) const;
 template Point3D RTreeBoolean::queryGetPoint(const CuboidSet& shape) const;
 template<typename ShapeT>
 std::vector<bool> RTreeBoolean::batchQuery(const ShapeT& shapes) const
@@ -854,7 +857,7 @@ template std::vector<bool> RTreeBoolean::batchQuery(const SmallSet<Point3D>& sha
 template std::vector<bool> RTreeBoolean::batchQuery(const CuboidSet& shapes) const;
 template std::vector<bool> RTreeBoolean::batchQuery(const std::vector<ParamaterizedLine>& shapes) const;
 template<typename ShapeT>
-CuboidSet RTreeBoolean::queryGetLeaves(const ShapeT& shape) const
+CuboidSet RTreeBoolean::queryGetLeaves(ShapeT&& shape) const
 {
 	CuboidSet output;
 	SmallSet<RTreeNodeIndex> openList;
@@ -891,24 +894,26 @@ CuboidSet RTreeBoolean::queryGetLeaves(const ShapeT& shape) const
 	return output;
 }
 template CuboidSet RTreeBoolean::queryGetLeaves(const Cuboid& shape) const;
+template CuboidSet RTreeBoolean::queryGetLeaves(Cuboid&& shape) const;
 template CuboidSet RTreeBoolean::queryGetLeaves(const CuboidSet& shape) const;
 template<typename ShapeT>
-CuboidSet RTreeBoolean::queryGetIntersection(const ShapeT& shape) const
+CuboidSet RTreeBoolean::queryGetIntersection(ShapeT&& shape) const
 {
 	CuboidSet output;
 	if constexpr(std::is_same_v<ShapeT, CuboidSet>)
 	{
 		for(const auto& subShape : shape)
-			for(const Cuboid& leaf : queryGetLeaves(subShape))
+			for(const Cuboid leaf : queryGetLeaves(subShape))
 				output.maybeAdd(leaf.intersection(subShape));
 	}
 	else
-		for(const Cuboid& leaf : queryGetLeaves(shape))
-			output.maybeAdd(leaf.intersection(shape));
+		for(const Cuboid leaf : queryGetLeaves(shape))
+			output.maybeAdd(shape.intersection(leaf));
 	return output;
 }
-template CuboidSet RTreeBoolean::queryGetIntersection(const Cuboid& shape) const;
-template CuboidSet RTreeBoolean::queryGetIntersection(const CuboidSet& shape) const;
+template CuboidSet RTreeBoolean::queryGetIntersection<Cuboid>(Cuboid&& shape) const;
+template CuboidSet RTreeBoolean::queryGetIntersection<Cuboid&>(Cuboid& shape) const;
+template CuboidSet RTreeBoolean::queryGetIntersection<const CuboidSet&>(const CuboidSet& shape) const;
 void RTreeBoolean::queryRemove(CuboidSet& set) const
 {
 	SmallSet<RTreeNodeIndex> openList;

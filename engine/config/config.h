@@ -15,7 +15,7 @@ namespace Config
 	inline constexpr int bytesPerCacheLine = 64;
 	inline constexpr bool fluidPiston = false;
 	inline constexpr float dataStoreVectorResizeFactor = 1.5;
-	inline constexpr float dataStoreVectorInitalSize = 10;
+	inline constexpr float dataStoreVectorinitialSize = 10;
 	inline constexpr float goldenRatio = 1.61834f;
 	inline constexpr int maxActorsPerPoint = 4;
 	inline constexpr int maxItemsPerPoint = 4;
@@ -152,7 +152,7 @@ namespace Config
 	inline float minimumCombatScoreDifferenceToFeelFear;
 	inline PsycologyWeight minimumDeltaToAlterPsycologyBaselineSquared;
 	inline Step minimumDurationToWaitInsteadOfWander;
-	inline Speed minimumHaulSpeedInital;
+	inline Speed minimumHaulSpeedInitial;
 	inline Percent minimumImpairPercentForSeriousInjury;
 	inline float minimumOverloadRatio;
 	inline Percent minimumPercentFoliageForGrow;

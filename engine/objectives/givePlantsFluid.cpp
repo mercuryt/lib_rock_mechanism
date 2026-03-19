@@ -16,7 +16,7 @@
 #include "../path/terrainFacade.hpp"
 
 // Path Request.
-GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective, const ActorIndex& actorIndex) :
+GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective, const ActorIndex actorIndex) :
 	m_objective(objective)
 {
 	Actors& actors = area.getActors();
@@ -67,7 +67,7 @@ Json GivePlantsFluidPathRequest::toJson() const
 	output["type"] = "give plants fluid";
 	return output;
 }
-bool GivePlantsFluidObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
+bool GivePlantsFluidObjectiveType::canBeAssigned(Area& area, const ActorIndex actor) const
 {
 	Actors& actors = area.getActors();
 	assert(actors.getLocation(actor).exists());
@@ -76,7 +76,7 @@ bool GivePlantsFluidObjectiveType::canBeAssigned(Area& area, const ActorIndex& a
 		return false;
 	return area.m_hasFarmFields.hasGivePlantsFluidDesignations(actors.getFaction(actor));
 }
-std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Area&, const ActorIndex&) const
+std::unique_ptr<Objective> GivePlantsFluidObjectiveType::makeFor(Area&, const ActorIndex) const
 {
 	return std::make_unique<GivePlantsFluidObjective>();
 }
@@ -97,14 +97,14 @@ Json GivePlantsFluidObjective::toJson() const
 // Either get plant from Area::m_hasFarmFields or get the the nearest candidate.
 // This method and GivePlantsFluidThreadedTask are complimentary state machines, with this one handling syncronus tasks.
 // TODO: multi point actors.
-void GivePlantsFluidObjective::execute(Area& area, const ActorIndex& actor)
+void GivePlantsFluidObjective::execute(Area& area, const ActorIndex actor)
 {
 	if(m_project != nullptr)
 		m_project->commandWorker(actor);
 	else
 		makePathRequest(area, actor);
 }
-void GivePlantsFluidObjective::cancel(Area&, const ActorIndex&)
+void GivePlantsFluidObjective::cancel(Area&, const ActorIndex)
 {
 	if(m_project != nullptr)
 	{
@@ -112,26 +112,26 @@ void GivePlantsFluidObjective::cancel(Area&, const ActorIndex&)
 		m_project = nullptr;
 	}
 }
-void GivePlantsFluidObjective::selectPlantLocation(Area& area, const Point3D& point, const ActorIndex& actor)
+void GivePlantsFluidObjective::selectPlantLocation(Area& area, const Point3D point, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	const FactionId& faction = actors.getFaction(actor);
 	m_project = std::make_unique<GivePlantFluidProject>(point, area, faction);
 	m_project->addWorkerCandidate(actor, *this);
 }
-void GivePlantsFluidObjective::reset(Area& area, const ActorIndex& actor)
+void GivePlantsFluidObjective::reset(Area& area, const ActorIndex actor)
 {
 	cancel(area, actor);
 }
-void GivePlantsFluidObjective::delay(Area& area, const ActorIndex& actor)
+void GivePlantsFluidObjective::delay(Area& area, const ActorIndex actor)
 {
 	cancel(area, actor);
 }
-void GivePlantsFluidObjective::makePathRequest(Area& area, const ActorIndex& actor)
+void GivePlantsFluidObjective::makePathRequest(Area& area, const ActorIndex actor)
 {
 	area.getActors().move_pathRequestRecord(actor, std::make_unique<GivePlantsFluidPathRequest>(area, *this, actor));
 }
-void GivePlantsFluidObjective::onBeforeUnload(Area&, const ActorIndex&)
+void GivePlantsFluidObjective::onBeforeUnload(Area&, const ActorIndex)
 {
 	if(m_project != nullptr)
 		m_project->clearReservations();

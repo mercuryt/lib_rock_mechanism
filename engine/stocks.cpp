@@ -6,16 +6,16 @@
 void AreaHasStocksForFaction::record(Area& area, ItemIndex item)
 {
 	Items& items = area.getItems();
-	const ItemTypeId& itemType = items.getItemType(item);
-	const MaterialTypeId& materialType = items.getMaterialType(item);
+	const ItemTypeId itemType = items.getItemType(item);
+	const MaterialTypeId materialType = items.getMaterialType(item);
 	assert(!m_data.contains(itemType) || !m_data[itemType].contains(materialType) || !m_data[itemType][materialType].contains(item));
 	m_data.getOrCreate(itemType).getOrCreate(materialType).insert(item);
 }
 void AreaHasStocksForFaction::maybeRecord(Area& area, ItemIndex item)
 {
 	Items& items = area.getItems();
-	const ItemTypeId& itemType = items.getItemType(item);
-	const MaterialTypeId& materialType = items.getMaterialType(item);
+	const ItemTypeId itemType = items.getItemType(item);
+	const MaterialTypeId materialType = items.getMaterialType(item);
 	if(!m_data.contains(itemType) || !m_data[itemType].contains(materialType) || !m_data[itemType][materialType].contains(item))
 		m_data.getOrCreate(itemType).getOrCreate(materialType).insert(item);
 

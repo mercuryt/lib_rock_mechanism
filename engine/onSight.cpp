@@ -1,7 +1,7 @@
 #include "onSight.h"
 #include "actors/actors.h"
 #include "area/area.h"
-HasOnSight::HasOnSight(const ActorReference& canSee, Area& area)
+HasOnSight::HasOnSight(const ActorReference canSee, Area& area)
 {
 	setOwner(canSee, area);
 }
@@ -19,12 +19,12 @@ HasOnSight::HasOnSight(const Json& data, DeserializationMemo& deserializationMem
 	}
 		*/
 }
-void HasOnSight::setOwner(const ActorReference& canSee, Area& area)
+void HasOnSight::setOwner(const ActorReference canSee, Area& area)
 {
 	// When an actor referenced here is destroyed call the OnSightOnDestoryCallBack. It will use the stored canSee and area to remove the callback for the provided actor.
 	m_onDestroy.setCallback(std::make_unique<OnSightOnDestroyCallBack>(canSee, area));
 }
-void HasOnSight::addForActor(const ActorReference& canBeSeen, std::unique_ptr<OnSightCallBack>&& callback, Area& area)
+void HasOnSight::addForActor(const ActorReference canBeSeen, std::unique_ptr<OnSightCallBack>&& callback, Area& area)
 {
 	Actors& actors = area.getActors();
 	// Pass m_onDestoy to Actors to record the relationship with canBeSeen.
@@ -32,7 +32,7 @@ void HasOnSight::addForActor(const ActorReference& canBeSeen, std::unique_ptr<On
 	// Store the callback.
 	m_actors.emplace_back(canBeSeen, std::move(callback));
 }
-void HasOnSight::addForFaction(const FactionId& faction, std::unique_ptr<OnSightCallBack>&& callback)
+void HasOnSight::addForFaction(const FactionId faction, std::unique_ptr<OnSightCallBack>&& callback)
 {
 	m_factions.emplace_back(faction, std::move(callback));
 }
@@ -44,15 +44,15 @@ void HasOnSight::removeForFaction(OnSightCallBack& callback)
 {
 	m_factions.erase(std::ranges::find_if(m_factions, [&](const auto& pair){ return pair.second.get() == &callback; }));
 }
-void HasOnSight::removeAllForActor(const ActorReference& canBeSeen)
+void HasOnSight::removeAllForActor(const ActorReference canBeSeen)
 {
-	std::ranges::remove_if(m_actors, [&](const HasOnSightActorData& data) { return data.actor == canBeSeen; });
+	std::erase_if(m_actors, [&](const HasOnSightActorData& data) { return data.actor == canBeSeen; });
 }
-void HasOnSight::removeAllForFaction(const FactionId& faction)
+void HasOnSight::removeAllForFaction(const FactionId faction)
 {
-	std::ranges::remove_if(m_factions, [&](const auto& pair) { return pair.first == faction; });
+	std::erase_if(m_factions, [&](const auto& pair) { return pair.first == faction; });
 }
-void HasOnSight::execute(Area& area, const ActorReference& canSee, const ActorReference& canNowBeSeen)
+void HasOnSight::execute(Area& area, const ActorReference canSee, const ActorReference canNowBeSeen)
 {
 	// TODO: optimize this.
 	execute(area, canSee, SmallSet<ActorReference>({canNowBeSeen}));
@@ -66,7 +66,7 @@ Json HasOnSight::toJson() const
 		output["factions"].push_back({pair.first, pair.second->toJson()});
 	return output;
 }
-void HasOnSight::execute(Area& area, const ActorReference& canSee, const SmallSet<ActorReference>& canNowBeSeen)
+void HasOnSight::execute(Area& area, const ActorReference canSee, const SmallSet<ActorReference>& canNowBeSeen)
 {
 	assert(!canNowBeSeen.empty());
 	SmallSet<OnSightCallBack*> toRemove;
@@ -84,11 +84,11 @@ void HasOnSight::execute(Area& area, const ActorReference& canSee, const SmallSe
 	toRemove.clear();
 	Actors& actors = area.getActors();
 	SmallSet<FactionId> visibleFactions;
-	for(const ActorReference& canBeSeen : canNowBeSeen)
+	for(const ActorReference canBeSeen : canNowBeSeen)
 		visibleFactions.maybeInsert(actors.getFaction(canBeSeen.getIndex(actors.m_referenceData)));
 	for(const auto& [faction, callback] : m_factions)
 	{
-		for(const ActorReference& canBeSeen : canNowBeSeen)
+		for(const ActorReference canBeSeen : canNowBeSeen)
 		{
 			if(actors.getFaction(canBeSeen.getIndex(actors.m_referenceData)) == faction)
 			{
@@ -103,7 +103,7 @@ void HasOnSight::execute(Area& area, const ActorReference& canSee, const SmallSe
 		removeForFaction(*callback);
 }
 bool HasOnSight::empty() const { return m_actors.empty() && m_factions.empty(); }
-OnSightOnDestroyCallBack::OnSightOnDestroyCallBack(const ActorReference& canSee, Area& area) :
+OnSightOnDestroyCallBack::OnSightOnDestroyCallBack(const ActorReference canSee, Area& area) :
 	m_area(area),
 	m_canSee(canSee)
 { }
@@ -111,7 +111,7 @@ OnSightOnDestroyCallBack::OnSightOnDestroyCallBack(const Json& data, Deserializa
 	m_area(area),
 	m_canSee(data["canSee"], area.getActors().m_referenceData)
 { }
-void OnSightOnDestroyCallBack::callback(const ActorOrItemReference& destroyed)
+void OnSightOnDestroyCallBack::callback(const ActorOrItemReference destroyed)
 {
 	Actors& actors = m_area.getActors();
 	actors.onSight_get(m_canSee.getIndex(actors.m_referenceData)).removeAllForActor(destroyed.toActorReference());

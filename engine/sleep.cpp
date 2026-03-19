@@ -9,20 +9,20 @@
 #include "objectives/sleep.h"
 #include <cassert>
 // Sleep Event.
-SleepEvent::SleepEvent(Simulation& simulation, const Step& step, MustSleep& ns, const Step start) :
+SleepEvent::SleepEvent(Simulation& simulation, const Step step, MustSleep& ns, const Step start) :
 	ScheduledEvent(simulation, step, start), m_needsSleep(ns) { }
 void SleepEvent::execute(Simulation&, Area* area){ m_needsSleep.wakeUp(*area); }
 void SleepEvent::clearReferences(Simulation&, Area*){ m_needsSleep.m_sleepEvent.clearPointer(); }
 // Tired Event.
-TiredEvent::TiredEvent(Simulation& simulation, const Step& step, MustSleep& ns, const Step start) :
+TiredEvent::TiredEvent(Simulation& simulation, const Step step, MustSleep& ns, const Step start) :
 	ScheduledEvent(simulation, step, start), m_needsSleep(ns) { }
 void TiredEvent::execute(Simulation&, Area* area){ m_needsSleep.tired(*area); }
 void TiredEvent::clearReferences(Simulation&, Area*){ m_needsSleep.m_tiredEvent.clearPointer(); }
 // Needs Sleep.
-MustSleep::MustSleep(Area& area, const ActorIndex& a) :
+MustSleep::MustSleep(Area& area, const ActorIndex actor) :
 	m_sleepEvent(area.m_eventSchedule), m_tiredEvent(area.m_eventSchedule)
 {
-	m_actor.setIndex(a, area.getActors().m_referenceData);
+	m_actor.setIndex(actor, area.getActors().m_referenceData);
 }
 void MustSleep::scheduleTiredEvent(Area& area)
 {
@@ -30,12 +30,12 @@ void MustSleep::scheduleTiredEvent(Area& area)
 	Step frequency = AnimalSpecies::getStepsSleepFrequency(area.getActors().getSpecies(m_actor.getIndex(actors.m_referenceData)));
 	m_tiredEvent.schedule(area.m_simulation, frequency, *this);
 }
-MustSleep::MustSleep(Area& area, const Json& data, const ActorIndex& a) :
+MustSleep::MustSleep(Area& area, const Json& data, const ActorIndex actor) :
 	m_sleepEvent(area.m_eventSchedule), m_tiredEvent(area.m_eventSchedule),
 	m_location(data.contains("location") ? data["location"].get<Point3D>() : Point3D::null()),
 	m_needsSleep(data["needsSleep"].get<bool>()), m_isAwake(data["isAwake"].get<bool>())
 {
-	m_actor.setIndex(a, area.getActors().m_referenceData);
+	m_actor.setIndex(actor, area.getActors().m_referenceData);
 	if(data.contains("sleepEventStart"))
 		m_sleepEvent.schedule(area.m_simulation, data["sleepEventDuration"].get<Step>(), *this, data["sleepEventStart"].get<Step>());
 	if(data.contains("tiredEventStart"))
@@ -99,8 +99,8 @@ void MustSleep::sleep(Area& area)
 	sleep(area, duration);
 }
 // Involuntary sleep.
-void MustSleep::passout(Area& area, const Step& duration) { sleep(area, duration, true); }
-void MustSleep::sleep(Area& area, const Step& duration, bool force)
+void MustSleep::passout(Area& area, const Step duration) { sleep(area, duration, true); }
+void MustSleep::sleep(Area& area, const Step duration, bool force)
 {
 	assert(m_isAwake);
 	Actors& actors = area.getActors();
@@ -155,7 +155,7 @@ void MustSleep::wakeUpEarly(Area& area)
 	actors.vision_createRequestIfCanSee(index);
 	//TODO: partial stamina recovery.
 }
-void MustSleep::setLocation(const Point3D& point)
+void MustSleep::setLocation(const Point3D point)
 {
 	m_location = point;
 }

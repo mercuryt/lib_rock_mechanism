@@ -16,7 +16,7 @@ struct ParamaterizedLine
 	Point3D begin;
 	Point3D end;
 
-	ParamaterizedLine(const Point3D& b, const Point3D& e) :
+	ParamaterizedLine(const Point3D b, const Point3D e) :
 		begin(b),
 		end(e)
 	{

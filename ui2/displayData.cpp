@@ -27,6 +27,20 @@ std::string displayData::localizeNumber(double number)
 	ss << number;
 	return ss.str();
 }
+std::string displayData::formatTemperature(Temperature temperature)
+{
+	switch(temperatureDisplayUnits)
+	{
+		case TemperatureDisplayUnits::K:
+			return temperature.toString() + "K";
+		case TemperatureDisplayUnits::C:
+			return std::to_string((int)temperature.get() - 273) + "C";
+		case TemperatureDisplayUnits::F:
+			return std::to_string((int)(((float)temperature.get() - 273.15f) * (9.0f / 5.0f)) + 32) + "F";
+		default:
+			std::unreachable();
+	}
+}
 void displayData::load()
 {
 	std::filesystem::path path = definitions::path/"display";
@@ -44,10 +58,11 @@ void displayData::load()
 	{
 		const ItemTypeId& itemType = ItemType::byName(data["name"].get<std::string>());
 		std::string image = data["image"].get<std::string>();
-		itemData.emplace(itemType,
+		itemData.emplace(
+			itemType,
 			image,
 			Sprite(image),
-			data.contains("color") ? colorFromJson(data["color"]) : SDL_Color{0,0,0,255},
+			data.contains("color") ? colorFromJson(data["color"]) : SDL_Color{255,255,255,255},
 			data.contains("scale") ? data["scale"].get<float>() : 1.0f
 		);
 	}
@@ -55,10 +70,11 @@ void displayData::load()
 	{
 		const PlantSpeciesId& plantSpecies = PlantSpecies::byName(data["name"].get<std::string>());
 		std::string image = data["image"].get<std::string>();
-		plantData.emplace(plantSpecies,
+		plantData.emplace(
+			plantSpecies,
 			image,
 			Sprite(image),
-			data.contains("color") ? colorFromJson(data["color"]) : SDL_Color{0,0,0,255},
+			data.contains("color") ? colorFromJson(data["color"]) : SDL_Color{255,255,255,255},
 			data.contains("scale") ? data["scale"].get<float>() : 1.0f,
 			data.contains("groundCover") && data["groundCover"].get<bool>()
 		);
@@ -70,7 +86,7 @@ void displayData::load()
 		actorData.emplace(animalSpecies,
 			image,
 			Sprite(image),
-			data.contains("color") ? colorFromJson(data["color"]) : SDL_Color{0,0,0,255},
+			data.contains("color") ? colorFromJson(data["color"]) : SDL_Color{255,255,255,255},
 			data.contains("scale") ? data["scale"].get<float>() : 1.0f
 		);
 	}
@@ -78,4 +94,5 @@ void displayData::load()
 	ratioOfScaleToFontSize = data["ratioOfScaleToFontSize"].get<float>();
 	wallOffset = data["wallOffset"].get<float>();
 	maximumNumberOfItemsToDisplayInComboBox = data["maximumNumberOfItemsToDisplayInComboBox"].get<std::size_t>();
+	data["temperatureDisplayUnits"].get_to(temperatureDisplayUnits);
 }

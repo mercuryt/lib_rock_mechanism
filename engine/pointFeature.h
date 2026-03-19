@@ -53,7 +53,7 @@ struct PointFeature
 	MaterialTypeId materialType;
 	PointFeatureTypeId pointFeatureType = PointFeatureTypeId::Null;
 	// TODO: Replace hewn with ItemTypeId to differentiate between walls made of carved space from those made from uncut stone or between wood planks and logs?
-	// Initalize hewn as false, closed as true, and locked as false.
+	// initialize hewn as false, closed as true, and locked as false.
 	BitSet<uint8_t, 3> hewnAndClosedAndLocked;
 	void setClosed(bool setTo) { hewnAndClosedAndLocked.set(1, setTo); }
 	void setLocked(bool setTo) { hewnAndClosedAndLocked.set(2, setTo); }
@@ -70,7 +70,7 @@ struct PointFeature
 	[[nodiscard]] constexpr static PointFeature null() { return {}; }
 	[[nodiscard]] constexpr static Primitive nullPrimitive() { return {.materialType=MaterialTypeId::nullPrimitive(), .pointFeatureType=PointFeatureTypeId::Null, .hewnAndClosedAndLocked=0}; }
 	[[nodiscard]] constexpr static PointFeature create(const Primitive& primitive) { return {MaterialTypeId::create(primitive.materialType), primitive.pointFeatureType, BitSet<uint8_t, 3>::create(primitive.hewnAndClosedAndLocked)}; }
-	[[nodiscard]] constexpr static PointFeature create(const MaterialTypeId& materialType, const PointFeatureTypeId& pointFeatureType, bool hewn = false, bool closed = true, bool locked = false)
+	[[nodiscard]] constexpr static PointFeature create(const MaterialTypeId materialType, const PointFeatureTypeId& pointFeatureType, bool hewn = false, bool closed = true, bool locked = false)
 	{
 		BitSet<uint8_t, 3> hewnAndClosedAndLocked;
 		hewnAndClosedAndLocked.set(0, hewn);

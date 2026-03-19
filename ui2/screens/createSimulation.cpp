@@ -1,18 +1,20 @@
 #include "screens.h"
 #include "../window.h"
 #include "../displayData.h"
+#include "../imguiHelpers.h"
+#include "../imgui/imgui_stdlib.h"
 #include "../../engine/simulation/simulation.h"
 
 void screens::createSimulation(Window& window)
 {
-	ImGui::PushFont(nullptr, displayData::menuFontSize);
+	ImVec2 windowSize{400, 600};
+	begin(window, "Create Simulation", &windowSize);
 	static char name[128];
-	static int hour = 1;
-	static int day = 1;
-	static int year = 1;
-	begin(window, "Create Simulation");
+	static int hour = 12;
+	static int day = 180;
+	static int year = 10000;
 	ImGui::InputText("Name", name, IM_ARRAYSIZE(name));
-	ImGui::PushItemWidth(100.f);
+	ImGui::PushItemWidth(300.f);
 	ImGui::InputInt("Hour", &hour);
 	ImGui::InputInt("Day Of Year", &day);
 	ImGui::InputInt("Year", &year);
@@ -22,15 +24,12 @@ void screens::createSimulation(Window& window)
 	if(year < 1) year = 1;
 	if(hour > 24) hour = 24;
 	if(day > 31) day = 31;
-	if(ImGui::Button("Create") && name[0] != '\0')
+	if(imguiButtonCentered("Create") && name[0] != '\0')
 	{
 		window.createSimulation(std::string(name), DateTime(hour, day, year));
 		window.showMainMenu();
 	}
-	ImGui::SameLine();
-	if(ImGui::Button("Back"))
+	if(imguiButtonCentered("Back"))
 		window.showMainMenu();
-	ImGui::PopFont();
-	ImGui::End();
 	end();
 }

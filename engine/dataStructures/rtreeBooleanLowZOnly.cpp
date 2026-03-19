@@ -1,6 +1,6 @@
 #include "rtreeBooleanLowZOnly.h"
 #include "strongVector.hpp"
-RTreeBooleanLowZOnly::ArrayIndex RTreeBooleanLowZOnly::Node::offsetFor(const Index& index) const
+RTreeBooleanLowZOnly::ArrayIndex RTreeBooleanLowZOnly::Node::offsetFor(const Index index) const
 {
 	auto found = std::ranges::find(m_childIndices.begin() + m_childBegin.get(), m_childIndices.end(), index);
 	assert(found != m_childIndices.end());
@@ -25,13 +25,13 @@ void RTreeBooleanLowZOnly::Node::updateChildIndex(const Index& oldIndex, const I
 	ArrayIndex offset = offsetFor(oldIndex);
 	m_childIndices[offset.get()] = newIndex;
 }
-void RTreeBooleanLowZOnly::Node::insertLeaf(const Cuboid& cuboid)
+void RTreeBooleanLowZOnly::Node::insertLeaf(const Cuboid cuboid)
 {
 	assert(m_leafEnd != m_childBegin);
 	m_cuboids.insert(m_leafEnd.get(), cuboid);
 	++m_leafEnd;
 }
-void RTreeBooleanLowZOnly::Node::insertBranch(const Cuboid& cuboid, const Index& index)
+void RTreeBooleanLowZOnly::Node::insertBranch(const Cuboid cuboid, const Index index)
 {
 	assert(m_leafEnd != m_childBegin);
 	int toInsertAt = m_childBegin.get() - 1;
@@ -97,13 +97,13 @@ void RTreeBooleanLowZOnly::Node::clear()
 	m_leafEnd = ArrayIndex::create(0);
 	m_childBegin = ArrayIndex::create(nodeSize);
 }
-void RTreeBooleanLowZOnly::Node::updateLeaf(const ArrayIndex& offset, const Cuboid& cuboid)
+void RTreeBooleanLowZOnly::Node::updateLeaf(const ArrayIndex& offset, const Cuboid cuboid)
 {
 	assert(offset < m_leafEnd);
 	assert(!m_cuboids[offset.get()].empty());
 	m_cuboids.insert(offset.get(), cuboid);
 }
-void RTreeBooleanLowZOnly::Node::updateBranchBoundry(const ArrayIndex& offset, const Cuboid& cuboid)
+void RTreeBooleanLowZOnly::Node::updateBranchBoundry(const ArrayIndex& offset, const Cuboid cuboid)
 {
 	assert(offset >= m_childBegin);
 	assert(!m_cuboids[offset.get()].empty());
@@ -141,8 +141,8 @@ std::tuple<Cuboid, RTreeBooleanLowZOnly::ArrayIndex, RTreeBooleanLowZOnly::Array
 	{
 		for(ArrayIndex secondResultIndex = firstResultIndex + 1; secondResultIndex < endInner; ++secondResultIndex)
 		{
-			const Cuboid& firstCuboid = cuboids[firstResultIndex.get()];
-			const Cuboid& secondCuboid = cuboids[secondResultIndex.get()];
+			const Cuboid firstCuboid = cuboids[firstResultIndex.get()];
+			const Cuboid secondCuboid = cuboids[secondResultIndex.get()];
 			Cuboid sum = firstCuboid;
 			sum.maybeExpand(secondCuboid);
 			const int size = sum.volume();
@@ -178,7 +178,7 @@ SmallSet<Cuboid> RTreeBooleanLowZOnly::gatherLeavesRecursive(const Index& parent
 	}
 	return output;
 }
-void RTreeBooleanLowZOnly::destroyWithChildren(const Index& index)
+void RTreeBooleanLowZOnly::destroyWithChildren(const Index index)
 {
 	SmallSet<Index> openList;
 	openList.insert(index);
@@ -235,7 +235,7 @@ void RTreeBooleanLowZOnly::tryToMergeLeaves(Node& parent)
 			++offset;
 	}
 }
-void RTreeBooleanLowZOnly::clearAllContained(const Index& index, const Cuboid& cuboid)
+void RTreeBooleanLowZOnly::clearAllContained(const Index index, const Cuboid cuboid)
 {
 	SmallSet<Index> openList;
 	openList.insert(index);
@@ -267,7 +267,7 @@ void RTreeBooleanLowZOnly::clearAllContained(const Index& index, const Cuboid& c
 		}
 	}
 }
-void RTreeBooleanLowZOnly::addToNodeRecursive(const Index& index, const Cuboid& cuboid)
+void RTreeBooleanLowZOnly::addToNodeRecursive(const Index index, const Cuboid cuboid)
 {
 	m_toComb.maybeInsert(index);
 	Node& parent = m_nodes[index];
@@ -373,7 +373,7 @@ void RTreeBooleanLowZOnly::addToNodeRecursive(const Index& index, const Cuboid& 
 	else
 		parent.insertLeaf(cuboid);
 }
-void RTreeBooleanLowZOnly::removeFromNode(const Index& index, const Cuboid& cuboid, SmallSet<Index>& openList)
+void RTreeBooleanLowZOnly::removeFromNode(const Index index, const Cuboid cuboid, SmallSet<Index>& openList)
 {
 	Node& parent = m_nodes[index];
 	const auto& parentCuboids = parent.getCuboids();
@@ -412,7 +412,7 @@ void RTreeBooleanLowZOnly::merge(const Index& destination, const Index& source)
 {
 	// TODO: maybe leave source nodes intact instead of striping out leaves?
 	const auto leaves = gatherLeavesRecursive(source);
-	for(const Cuboid& leaf : leaves)
+	for(const Cuboid leaf : leaves)
 		addToNodeRecursive(destination, leaf);
 }
 void RTreeBooleanLowZOnly::comb()
@@ -423,7 +423,7 @@ void RTreeBooleanLowZOnly::comb()
 	{
 		auto copy = std::move(m_toComb);
 		m_toComb.clear();
-		for(const Index& index : copy)
+		for(const Index index : copy)
 		{
 			Node& node = m_nodes[index];
 			tryToMergeLeaves(node);
@@ -515,7 +515,7 @@ void RTreeBooleanLowZOnly::sort()
 	sortedNodes.resize(m_nodes.size());
 	std::iota(indices.begin(), indices.end(), Index::create(0));
 	// Don't sort the first element, it is always root.
-	std::ranges::sort(indices.begin() + 1, indices.end(), std::less{}, [&](const Index& index) { return m_nodes[index].sortOrder(); });
+	std::ranges::sort(indices.begin() + 1, indices.end(), std::less{}, [&](const Index index) { return m_nodes[index].sortOrder(); });
 	sortedNodes[Index::create(0)] = m_nodes.front();
 	const auto end = m_nodes.size();
 	// Copy nodes into new order.
@@ -543,12 +543,12 @@ void RTreeBooleanLowZOnly::sort()
 	}
 	m_nodes = std::move(sortedNodes);
 }
-void RTreeBooleanLowZOnly::maybeInsert(const Cuboid& cuboid)
+void RTreeBooleanLowZOnly::maybeInsert(const Cuboid cuboid)
 {
 	constexpr Index zeroIndex = Index::create(0);
 	addToNodeRecursive(zeroIndex, cuboid);
 }
-void RTreeBooleanLowZOnly::maybeRemove(const Cuboid& cuboid)
+void RTreeBooleanLowZOnly::maybeRemove(const Cuboid cuboid)
 {
 	// Erase all contained branches and leaves.
 	constexpr Index rootIndex = Index::create(0);
@@ -564,7 +564,7 @@ void RTreeBooleanLowZOnly::maybeRemove(const Cuboid& cuboid)
 		if(index != 0)
 			toUpdateBoundryMaybe.maybeInsert(index);
 	}
-	for(const Index& index : toUpdateBoundryMaybe)
+	for(const Index index : toUpdateBoundryMaybe)
 	{
 		Node& node = m_nodes[index];
 		const Index& parentIndex = node.getParent();

@@ -18,11 +18,11 @@ void StationInputAction::execute()
 // Objective
 StationObjective::StationObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo),
 	m_location(data["point"].get<Point3D>()) { }
-void StationObjective::execute(Area& area, const ActorIndex& actor)
+void StationObjective::execute(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	if(actors.getCombinedLocation(actor) != m_location)
 		// Point3D, detour, adjacent, unreserved, reserve
 		actors.move_setDestination(actor, m_location, m_detour, false, false, false);
 }
-void StationObjective::reset(Area& area, const ActorIndex& actor) { area.getActors().canReserve_clearAll(actor); }
+void StationObjective::reset(Area& area, const ActorIndex actor) { area.getActors().canReserve_clearAll(actor); }

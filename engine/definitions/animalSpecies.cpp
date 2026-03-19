@@ -1,5 +1,5 @@
 #include "definitions/animalSpecies.h"
-ShapeId AnimalSpecies::shapeForPercentGrown(const AnimalSpeciesId& id, const Percent& percentGrown)
+ShapeId AnimalSpecies::shapeForPercentGrown(const AnimalSpeciesId id, const Percent percentGrown)
 {
 	int index = util::scaleByPercentRange(0, g_animalSpeciesData.m_shapes[id].size() - 1, percentGrown);
 	return g_animalSpeciesData.m_shapes[id][index];
@@ -45,34 +45,34 @@ AnimalSpeciesId AnimalSpecies::create(AnimalSpeciesParamaters p)
 	g_animalSpeciesData.m_shapes.add(p.shapes);
 	return AnimalSpeciesId::create(g_animalSpeciesData.m_name.size());
 }
-std::string AnimalSpecies::getName(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_name[id]; };
-bool AnimalSpecies::getSentient(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_sentient[id]; };
-std::array<AttributeLevel, 3> AnimalSpecies::getStrength(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_strength[id]; };
-std::array<AttributeLevel, 3> AnimalSpecies::getDextarity(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_dextarity[id]; };
-std::array<AttributeLevel, 3> AnimalSpecies::getAgility(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_agility[id]; };
-std::array<Mass, 3> AnimalSpecies::getMass(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_mass[id]; };
-std::array<int, 3> AnimalSpecies::getHeight(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_height[id]; };
-std::array<Step, 2> AnimalSpecies::getDeathAgeSteps(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_deathAgeSteps[id]; };
-Step AnimalSpecies::getStepsTillFullyGrown(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_stepsTillFullyGrown[id]; };
-Step AnimalSpecies::getStepsTillDieWithoutFood(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_stepsTillDieWithoutFood[id]; };
-Step AnimalSpecies::getStepsEatFrequency(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_stepsEatFrequency[id]; };
-Step AnimalSpecies::getStepsTillDieWithoutFluid(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_stepsTillDieWithoutFluid[id]; };
-Step AnimalSpecies::getStepsFluidDrinkFrequency(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_stepsFluidDrinkFrequency[id]; };
-Step AnimalSpecies::getStepsTillDieInUnsafeTemperature(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_stepsTillDieInUnsafeTemperature[id]; };
-Temperature AnimalSpecies::getMinimumSafeTemperature(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_minimumSafeTemperature[id]; };
-Temperature AnimalSpecies::getMaximumSafeTemperature(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_maximumSafeTemperature[id]; };
-Step AnimalSpecies::getStepsSleepFrequency(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_stepsSleepFrequency[id]; };
-Step AnimalSpecies::getStepsTillSleepOveride(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_stepsTillSleepOveride[id]; };
-Step AnimalSpecies::getStepsSleepDuration(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_stepsSleepDuration[id]; };
-bool AnimalSpecies::getNocturnal(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_nocturnal[id]; };
-bool AnimalSpecies::getEatsMeat(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_eatsMeat[id]; };
-bool AnimalSpecies::getEatsLeaves(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_eatsLeaves[id]; };
-bool AnimalSpecies::getEatsFruit(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_eatsFruit[id]; };
-Distance AnimalSpecies::getVisionRange(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_visionRange[id]; };
-int AnimalSpecies::getBodyScale(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_bodyScale[id]; };
-MaterialTypeId AnimalSpecies::getMaterialType(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_solid[id]; };
-MoveTypeId AnimalSpecies::getMoveType(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_moveType[id]; };
-FluidTypeId AnimalSpecies::getFluidType(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_fluidType[id]; };
-BodyTypeId AnimalSpecies::getBodyType(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_bodyType[id]; };
-std::vector<ShapeId> AnimalSpecies::getShapes(const AnimalSpeciesId& id) { return g_animalSpeciesData.m_shapes[id]; };
+std::string AnimalSpecies::getName(const AnimalSpeciesId id) { return g_animalSpeciesData.m_name[id]; };
+bool AnimalSpecies::getSentient(const AnimalSpeciesId id) { return g_animalSpeciesData.m_sentient[id]; };
+std::array<AttributeLevel, 3> AnimalSpecies::getStrength(const AnimalSpeciesId id) { return g_animalSpeciesData.m_strength[id]; };
+std::array<AttributeLevel, 3> AnimalSpecies::getDextarity(const AnimalSpeciesId id) { return g_animalSpeciesData.m_dextarity[id]; };
+std::array<AttributeLevel, 3> AnimalSpecies::getAgility(const AnimalSpeciesId id) { return g_animalSpeciesData.m_agility[id]; };
+std::array<Mass, 3> AnimalSpecies::getMass(const AnimalSpeciesId id) { return g_animalSpeciesData.m_mass[id]; };
+std::array<int, 3> AnimalSpecies::getHeight(const AnimalSpeciesId id) { return g_animalSpeciesData.m_height[id]; };
+std::array<Step, 2> AnimalSpecies::getDeathAgeSteps(const AnimalSpeciesId id) { return g_animalSpeciesData.m_deathAgeSteps[id]; };
+Step AnimalSpecies::getStepsTillFullyGrown(const AnimalSpeciesId id) { return g_animalSpeciesData.m_stepsTillFullyGrown[id]; };
+Step AnimalSpecies::getStepsTillDieWithoutFood(const AnimalSpeciesId id) { return g_animalSpeciesData.m_stepsTillDieWithoutFood[id]; };
+Step AnimalSpecies::getStepsEatFrequency(const AnimalSpeciesId id) { return g_animalSpeciesData.m_stepsEatFrequency[id]; };
+Step AnimalSpecies::getStepsTillDieWithoutFluid(const AnimalSpeciesId id) { return g_animalSpeciesData.m_stepsTillDieWithoutFluid[id]; };
+Step AnimalSpecies::getStepsFluidDrinkFrequency(const AnimalSpeciesId id) { return g_animalSpeciesData.m_stepsFluidDrinkFrequency[id]; };
+Step AnimalSpecies::getStepsTillDieInUnsafeTemperature(const AnimalSpeciesId id) { return g_animalSpeciesData.m_stepsTillDieInUnsafeTemperature[id]; };
+Temperature AnimalSpecies::getMinimumSafeTemperature(const AnimalSpeciesId id) { return g_animalSpeciesData.m_minimumSafeTemperature[id]; };
+Temperature AnimalSpecies::getMaximumSafeTemperature(const AnimalSpeciesId id) { return g_animalSpeciesData.m_maximumSafeTemperature[id]; };
+Step AnimalSpecies::getStepsSleepFrequency(const AnimalSpeciesId id) { return g_animalSpeciesData.m_stepsSleepFrequency[id]; };
+Step AnimalSpecies::getStepsTillSleepOveride(const AnimalSpeciesId id) { return g_animalSpeciesData.m_stepsTillSleepOveride[id]; };
+Step AnimalSpecies::getStepsSleepDuration(const AnimalSpeciesId id) { return g_animalSpeciesData.m_stepsSleepDuration[id]; };
+bool AnimalSpecies::getNocturnal(const AnimalSpeciesId id) { return g_animalSpeciesData.m_nocturnal[id]; };
+bool AnimalSpecies::getEatsMeat(const AnimalSpeciesId id) { return g_animalSpeciesData.m_eatsMeat[id]; };
+bool AnimalSpecies::getEatsLeaves(const AnimalSpeciesId id) { return g_animalSpeciesData.m_eatsLeaves[id]; };
+bool AnimalSpecies::getEatsFruit(const AnimalSpeciesId id) { return g_animalSpeciesData.m_eatsFruit[id]; };
+Distance AnimalSpecies::getVisionRange(const AnimalSpeciesId id) { return g_animalSpeciesData.m_visionRange[id]; };
+int AnimalSpecies::getBodyScale(const AnimalSpeciesId id) { return g_animalSpeciesData.m_bodyScale[id]; };
+MaterialTypeId AnimalSpecies::getMaterialType(const AnimalSpeciesId id) { return g_animalSpeciesData.m_solid[id]; };
+MoveTypeId AnimalSpecies::getMoveType(const AnimalSpeciesId id) { return g_animalSpeciesData.m_moveType[id]; };
+FluidTypeId AnimalSpecies::getFluidType(const AnimalSpeciesId id) { return g_animalSpeciesData.m_fluidType[id]; };
+BodyTypeId AnimalSpecies::getBodyType(const AnimalSpeciesId id) { return g_animalSpeciesData.m_bodyType[id]; };
+std::vector<ShapeId> AnimalSpecies::getShapes(const AnimalSpeciesId id) { return g_animalSpeciesData.m_shapes[id]; };
 AnimalSpeciesId AnimalSpecies::size() { return AnimalSpeciesId::create(g_animalSpeciesData.m_name.size()); }

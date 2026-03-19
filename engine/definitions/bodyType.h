@@ -24,12 +24,12 @@ class BodyPartType final
 public:
 	static void create(BodyPartTypeParamaters& p);
 	[[nodiscard]] static BodyPartTypeId byName(std::string name);
-	[[nodiscard]] static std::string& getName(const BodyPartTypeId& id);
-	[[nodiscard]] static FullDisplacement getVolume(const BodyPartTypeId& id);
-	[[nodiscard]] static bool getDoesLocamotion(const BodyPartTypeId& id);
-	[[nodiscard]] static bool getDoesManipulation(const BodyPartTypeId& id);
-	[[nodiscard]] static bool getVital(const BodyPartTypeId& id);
-	[[nodiscard]] static std::vector<std::pair<AttackTypeId, MaterialTypeId>>& getAttackTypesAndMaterials(const BodyPartTypeId& id);
+	[[nodiscard]] static std::string& getName(const BodyPartTypeId id);
+	[[nodiscard]] static FullDisplacement getVolume(const BodyPartTypeId id);
+	[[nodiscard]] static bool getDoesLocamotion(const BodyPartTypeId id);
+	[[nodiscard]] static bool getDoesManipulation(const BodyPartTypeId id);
+	[[nodiscard]] static bool getVital(const BodyPartTypeId id);
+	[[nodiscard]] static std::vector<std::pair<AttackTypeId, MaterialTypeId>>& getAttackTypesAndMaterials(const BodyPartTypeId id);
 };
 inline BodyPartType bodyPartTypeData;
 // For example biped, quadraped, bird, etc.
@@ -38,7 +38,7 @@ class BodyType final
 	StrongVector<std::string, BodyTypeId> m_name;
 	StrongVector<std::vector<BodyPartTypeId>, BodyTypeId> m_bodyPartTypes;
 public:
-	static bool hasBodyPart(const BodyTypeId& id, const BodyPartTypeId& bodyPartType);
+	static bool hasBodyPart(const BodyTypeId& id, const BodyPartTypeId bodyPartType);
 	static void create(std::string name, std::vector<BodyPartTypeId>& bodyPartTypes);
 	[[nodiscard]] static std::vector<std::pair<AttackTypeId, MaterialTypeId>> collectAttacks(const BodyTypeId& id);
 	[[nodiscard]] static BodyTypeId byName(std::string name);

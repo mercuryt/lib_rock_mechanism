@@ -11,11 +11,11 @@ struct UniformElement final
 	MaterialCategoryTypeId m_materialCategoryType;
 	MaterialTypeId m_solid;
 	Quantity m_quantity;
-	[[nodiscard]] bool operator==(const UniformElement& other) const { return &other == this; }
-	[[nodiscard]] bool query(const ItemIndex& item, const Items& items) const;
+	[[nodiscard]] bool operator==(const UniformElement other) const { return &other == this; }
+	[[nodiscard]] bool query(const ItemIndex item, const Items& items) const;
 	static UniformElement create(
-		const ItemTypeId& itemType, const Quantity& quantity = Quantity::create(1), const MaterialTypeId& materialType = MaterialTypeId::null(),
-		const MaterialCategoryTypeId& materialCageoryType = MaterialCategoryTypeId::null(), const Quality qualityMin = Quality::create(0)
+		const ItemTypeId itemType, const Quantity quantity = Quantity::create(1), const MaterialTypeId materialType = MaterialTypeId::null(),
+		const MaterialCategoryTypeId materialCageoryType = MaterialCategoryTypeId::null(), const Quality qualityMin = Quality::create(0)
 	);
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(UniformElement, m_itemType, m_materialCategoryType, m_solid, m_quantity);
 };
@@ -44,8 +44,8 @@ class SimulationHasUniforms final
 {
 	SmallMap<FactionId, SimulationHasUniformsForFaction> m_data;
 public:
-	void registerFaction(const FactionId& faction) { m_data.emplace(faction, faction); }
-	void unregisterFaction(const FactionId& faction) { m_data.erase(faction); }
-	SimulationHasUniformsForFaction& getForFaction(const FactionId& faction);
+	void registerFaction(const FactionId faction) { m_data.emplace(faction, faction); }
+	void unregisterFaction(const FactionId faction) { m_data.erase(faction); }
+	SimulationHasUniformsForFaction& getForFaction(const FactionId faction);
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SimulationHasUniforms, m_data);
 };

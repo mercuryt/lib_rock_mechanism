@@ -4,8 +4,8 @@ void PsycologyData::operator+=(const PsycologyData& other) { m_data += other.m_d
 void PsycologyData::operator-=(const PsycologyData& other) { m_data -= other.m_data; }
 void PsycologyData::operator*=(const float& scale) { m_data = m_data.cast<float>() * scale; }
 PsycologyData PsycologyData::operator-(const PsycologyData& other) const { return PsycologyData(m_data - other.m_data); }
-void PsycologyData::addTo(const PsycologyAttribute& attribute, const PsycologyWeight& value) { m_data[(int)attribute] += value.get(); }
-void PsycologyData::set(const PsycologyAttribute& attribute, const PsycologyWeight& value) { m_data[(int)attribute] = value.get(); }
+void PsycologyData::addTo(const PsycologyAttribute& attribute, const PsycologyWeight value) { m_data[(int)attribute] += value.get(); }
+void PsycologyData::set(const PsycologyAttribute& attribute, const PsycologyWeight value) { m_data[(int)attribute] = value.get(); }
 void PsycologyData::setAllToZero() { m_data = 0; }
 const PsycologyWeight PsycologyData::getValueFor(const PsycologyAttribute& attribute) const { return {m_data[(int)attribute]}; }
 bool PsycologyData::anyAbove(const PsycologyData& other) const { return (m_data > other.m_data).any(); }

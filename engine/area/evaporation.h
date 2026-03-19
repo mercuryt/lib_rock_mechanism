@@ -17,7 +17,7 @@ class EvaporationEvent final : public ScheduledEvent
 {
 	Area& m_area;
 public:
-	EvaporationEvent(Area& a, const Step& delay);
+	EvaporationEvent(Area& a, const Step delay);
 	void execute(Simulation& simulation, Area* area) override;
 	void clearReferences(Simulation& simulation, Area* area) override;
 };

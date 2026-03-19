@@ -40,7 +40,7 @@ struct ProjectRequirementCounts final
 	Quantity delivered = Quantity::create(0);
 	Quantity reserved = Quantity::create(0);
 	bool consumed;
-	ProjectRequirementCounts(const Quantity& r, bool c) : required(r), consumed(c) { }
+	ProjectRequirementCounts(const Quantity r, bool c) : required(r), consumed(c) { }
 	ProjectRequirementCounts() = default;
 	ProjectRequirementCounts(const ProjectRequirementCounts& other) = default;
 	ProjectRequirementCounts& operator=(const ProjectRequirementCounts& other) = default;
@@ -54,7 +54,7 @@ struct FluidRequirementData final
 	CollisionVolume volumeRequired;
 	CollisionVolume volumeFound = CollisionVolume::create(0);
 	FluidRequirementData() = default;
-	FluidRequirementData(const CollisionVolume& v) :
+	FluidRequirementData(const CollisionVolume v) :
 		counts(Quantity::create(v.get()), true),
 		volumeRequired(v)
 	{ }
@@ -80,7 +80,7 @@ struct ProjectRequiredShapeDishonoredCallback final : public DishonorCallback
 	Project& m_project;
 	ProjectRequiredShapeDishonoredCallback(Project& p) : m_project(p) { }
 	ProjectRequiredShapeDishonoredCallback(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(const Quantity&, const Quantity&);
+	void execute(const Quantity, const Quantity);
 	[[nodiscard]] Json toJson() const;
 };
 // Derived classes are expected to provide getDelay, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete. onDelivered is optional.
@@ -116,7 +116,7 @@ class Project
 	SmallSet<ActorReference> m_actorsToPickup;
 	SmallSet<ItemReference> m_fluidContainersToPickup;
 	// To be called by addWorkerThreadedTask, after validating the worker has access to the project location.
-	void addWorker(const ActorIndex& actor, Objective& objective);
+	void addWorker(const ActorIndex actor, Objective& objective);
 	// Load requirements from child class.
 	void recordRequiredActorsAndItemsAndFluids();
 protected:
@@ -145,7 +145,7 @@ protected:
 	FactionId m_faction;
 	// Where the materials are delivered to and where the work gets done.
 	Point3D m_location;
-	Project(const FactionId& faction, Area& area, const Point3D& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr, const CuboidSet& additionalPointsToReserve = {});
+	Project(const FactionId faction, Area& area, const Point3D location, const Quantity maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback = nullptr, const CuboidSet& additionalPointsToReserve = {});
 	Project(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 private:
 	// Count how many times we have attempted to create a haul subproject.
@@ -163,14 +163,14 @@ public:
 	bool m_qualityBonus = false;
 	// Seperated from primary Json constructor because must be run after objectives are created.
 	void loadWorkers(const Json& data, DeserializationMemo& deserializationMemo);
-	void addWorkerCandidate(const ActorIndex& actor, Objective& objective);
-	void removeWorkerCandidate(const ActorIndex& actor);
+	void addWorkerCandidate(const ActorIndex actor, Objective& objective);
+	void removeWorkerCandidate(const ActorIndex actor);
 	// To be called by Objective::execute.
-	void commandWorker(const ActorIndex& actor);
+	void commandWorker(const ActorIndex actor);
 	// To be called by Objective::interupt.
-	void removeWorker(const ActorIndex& actor);
-	void addToMaking(const ActorIndex& actor);
-	void removeFromMaking(const ActorIndex& actor);
+	void removeWorker(const ActorIndex actor);
+	void addToMaking(const ActorIndex actor);
+	void removeFromMaking(const ActorIndex actor);
 	void complete();
 	// To be called by the player for manually created project types or in place of reset otherwise.
 	void cancel();
@@ -185,23 +185,23 @@ public:
 	// Calls offDelay.
 	void setDelayOff();
 	// Record reserved shapes which need haul subprojects dispatched for them.
-	void addActorToPickup(const ActorIndex& actor);
-	void addItemToPickup(const ItemIndex& item, ProjectRequirementCounts& counts, const Quantity& quantity);
-	void removeActorToPickup(const ActorReference& actor);
-	void removeFluidContainerToPickup(const ItemReference& item);
-	void removeItemToPickup(const ItemReference& item, const Quantity& quantity);
+	void addActorToPickup(const ActorIndex actor);
+	void addItemToPickup(const ItemIndex item, ProjectRequirementCounts& counts, const Quantity quantity);
+	void removeActorToPickup(const ActorReference actor);
+	void removeFluidContainerToPickup(const ItemReference item);
+	void removeItemToPickup(const ItemReference item, const Quantity quantity);
 	// To be called when the last worker is removed, when a haul subproject repetidly fails, or when a required reservation is dishonored, resets to pre-reservations status.
 	void reset();
 	void resetOrCancel() { if(canReset()) reset(); else cancel(); }
 	// Before unload when shutting down or hibernating.
 	void clearReservations();
 	// In HaulSubproject::complete, before merging generics.
-	void clearReferenceFromRequiredItems(const ItemReference& ref);
+	void clearReferenceFromRequiredItems(const ItemReference ref);
 	// These two are to be used when a project is on a moving vehicle.
 	void clearLocation();
-	void setLocation(const Point3D& point);
-	void addBonusProduction(const Percent& bonus);
-	void removeItemFromConsumed(const ItemReference& item);
+	void setLocation(const Point3D point);
+	void addBonusProduction(const Percent bonus);
+	void removeItemFromConsumed(const ItemReference item);
 	void setQualityBonus();
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] FactionId getFaction() { return m_faction; }
@@ -212,8 +212,8 @@ public:
 	[[nodiscard]] bool isOnDelay() { return m_delay; }
 	// point where the work will be done.
 	[[nodiscard]] Point3D getLocation() const { return m_location; }
-	[[nodiscard]] bool hasCandidate(const ActorIndex& actor) const;
-	[[nodiscard]] bool hasWorker(const ActorIndex& actor) const;
+	[[nodiscard]] bool hasCandidate(const ActorIndex actor) const;
+	[[nodiscard]] bool hasWorker(const ActorIndex actor) const;
 	[[nodiscard]] bool hasWorkers() const;
 	[[nodiscard]] bool inProgress() const;
 	[[nodiscard]] ItemIndex getRandomItemToConsume() const;
@@ -224,7 +224,7 @@ public:
 	[[nodiscard]] SmallSet<ActorIndex> getWorkersAndCandidates();
 	[[nodiscard]] std::vector<std::pair<ActorIndex, Objective*>> getWorkersAndCandidatesWithObjectives();
 	[[nodiscard]] Percent getPercentComplete() const { return m_finishEvent.exists() ? m_finishEvent.percentComplete() : Percent::create(0); }
-	[[nodiscard]] virtual bool canAddWorker(const ActorIndex& actor) const;
+	[[nodiscard]] virtual bool canAddWorker(const ActorIndex actor) const;
 	// What would the total delay time be if we started from scratch now with current workers?
 	[[nodiscard]] virtual Step getDuration() const = 0;
 	// True for stockpile because there is no 'work' to do after the hauling is done.
@@ -233,15 +233,15 @@ public:
 	virtual void onComplete() = 0;
 	virtual void onReserve() { }
 	virtual void onCancel() { }
-	virtual void onAddToMaking(const ActorIndex&) { }
-	virtual void onDelivered(const ActorOrItemIndex&) { }
+	virtual void onAddToMaking(const ActorIndex) { }
+	virtual void onDelivered(const ActorOrItemIndex) { }
 	virtual void onSubprojectCreated(HaulSubproject& subproject) { (void)subproject; }
 	virtual void onActorOrItemReservationDishonored() { if(canReset()) reset(); else cancel(); }
-	virtual void onPickUpRequired(const ActorOrItemIndex&) { }
+	virtual void onPickUpRequired(const ActorOrItemIndex) { }
 	// Projects which are initiated by the users, such as dig or construct, must be delayed when they cannot be completed. Projectes which are initiated automatically, such as Stockpile or Craft, can be canceled.
 	virtual void onDelay() = 0;
 	virtual void offDelay() = 0;
-	virtual void updateRequiredGenericReference(const ItemReference&) { }
+	virtual void updateRequiredGenericReference(const ItemReference) { }
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
 	[[nodiscard]] virtual std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const = 0;
 	[[nodiscard]] virtual std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const = 0;
@@ -251,9 +251,9 @@ public:
 	[[nodiscard]] virtual SkillTypeId getSkill() const = 0;
 	[[nodiscard]] virtual std::string description() const = 0;
 	[[nodiscard]] virtual bool hasQuality() const { return false; }
-	[[nodiscard]] bool itemIsFluidContainer(const ItemReference& item) const;
-	[[nodiscard]] FluidTypeId getFluidTypeForContainer(const ItemReference& item) const;
-	[[nodiscard]] CollisionVolume getFluidVolumeForContainer(const ItemReference& item) const;
+	[[nodiscard]] bool itemIsFluidContainer(const ItemReference item) const;
+	[[nodiscard]] FluidTypeId getFluidTypeForContainer(const ItemReference item) const;
+	[[nodiscard]] CollisionVolume getFluidVolumeForContainer(const ItemReference item) const;
 	[[nodiscard]] bool operator==(const Project& other) const { return &other == this; }
 	virtual ~Project() = default;
 	// For testing.
@@ -283,7 +283,7 @@ class ProjectFinishEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:
-	ProjectFinishEvent(const Step& delay, Project& p, const Step start = Step::null());
+	ProjectFinishEvent(const Step delay, Project& p, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -291,7 +291,7 @@ class ProjectTryToHaulEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:
-	ProjectTryToHaulEvent(const Step& delay, Project& p, const Step start = Step::null());
+	ProjectTryToHaulEvent(const Step delay, Project& p, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -299,7 +299,7 @@ class ProjectTryToReserveEvent final : public ScheduledEvent
 {
 	Project& m_project;
 public:
-	ProjectTryToReserveEvent(const Step& delay, Project& p, const Step start = Step::null());
+	ProjectTryToReserveEvent(const Step delay, Project& p, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -312,7 +312,7 @@ public:
 	void readStep(Simulation& simulation, Area* area);
 	void writeStep(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
-	[[nodiscard]] Point3D containsDesiredItemOrActor(const Cuboid& cuboid, const ActorIndex& hauler);
+	[[nodiscard]] Point3D containsDesiredItemOrActor(const Cuboid cuboid, const ActorIndex hauler);
 };
 class ProjectTryToAddWorkersThreadedTask final : public ThreadedTask
 {

@@ -8,7 +8,7 @@ void SimulationHasConstructedItemTypes::load()
 	for(const auto& [itemTypeId, itemTypeParamaters] : m_data)
 		ItemType::create(itemTypeId, itemTypeParamaters);
 }
-ItemIndex SimulationHasConstructedItemTypes::createShip(Area& area, const Point3D& point, const Facing4& facing, const std::string& name, const FactionId& faction)
+ItemIndex SimulationHasConstructedItemTypes::createShip(Area& area, const Point3D point, const Facing4 facing, const std::string& name, const FactionId faction)
 {
 	static const MoveTypeId moveTypeNone = MoveType::byName("none");
 	auto [constructedShape, location] = ConstructedShape::makeForKeelPoint(area, point, facing);
@@ -40,7 +40,7 @@ ItemIndex SimulationHasConstructedItemTypes::createShip(Area& area, const Point3
 	};
 	return area.getItems().create(itemParams);
 }
-ItemIndex SimulationHasConstructedItemTypes::createPlatform(Area& area, const CuboidSet& cuboids, const Facing4& facing, const std::string& name, const FactionId& faction)
+ItemIndex SimulationHasConstructedItemTypes::createPlatform(Area& area, const CuboidSet& cuboids, const Facing4 facing, const std::string& name, const FactionId faction)
 {
 	static const MoveTypeId moveTypeNone = MoveType::byName("none");
 	auto [constructedShape, location] = ConstructedShape::makeForPlatform(area, cuboids, facing);

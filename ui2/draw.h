@@ -26,7 +26,7 @@ namespace draw
 	void actorAtLocation(Window& window, const ActorIndex actor);
 	void itemAtLocation(Window& window, const ItemIndex item);
 	void itemBeingCarried(Window& window, const ItemIndex item, const Point3D point);
-	void selectionBoxes(Window& window);
+	void selectedBoxes(Window& window);
 	void itemOverlay(Window& window, const Point3D point);
 	void actorOverlay(Window& window, const Point3D point);
 	void accessableSymbol(Window& window, const Point3D point);

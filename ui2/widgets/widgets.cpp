@@ -3,6 +3,7 @@
 #include "../../engine/definitions/materialType.h"
 #include "../../engine/fluidType.h"
 #include "../../engine/definitions/plantSpecies.h"
+#include "../../engine/definitions/animalSpecies.h"
 #include "../../engine/pointFeature.h"
 #include "../../engine/numericTypes/types.h"
 #include "../../engine/numericTypes/idTypes.h"
@@ -12,167 +13,211 @@
 bool widgets::materialType(MaterialTypeId* result, std::function<bool(const MaterialTypeId)>&& condition)
 {
 	bool output = false;
-	ImGui::BeginCombo("Material", MaterialType::getName(*result).c_str());
-	auto end = MaterialType::size();
-	for(MaterialTypeId materialTypeId{0}; materialTypeId != end; ++materialTypeId)
+	if(ImGui::BeginCombo("Material", MaterialType::getName(*result).c_str()))
 	{
-		if(condition != nullptr && !condition(materialTypeId))
-			continue;
-		bool isSelected = result != nullptr && *result == materialTypeId;
-		if(ImGui::Selectable(MaterialType::getName(materialTypeId).c_str(), isSelected))
+		auto end = MaterialType::size();
+		for(MaterialTypeId materialTypeId{0}; materialTypeId != end; ++materialTypeId)
 		{
-			(*result) = materialTypeId;
-			output = true;
+			if(condition != nullptr && !condition(materialTypeId))
+				continue;
+			bool isSelected = result != nullptr && *result == materialTypeId;
+			if(ImGui::Selectable(MaterialType::getName(materialTypeId).c_str(), isSelected))
+			{
+				(*result) = materialTypeId;
+				output = true;
+			}
+			if(isSelected)
+				ImGui::SetItemDefaultFocus();
 		}
-		if(isSelected)
-			ImGui::SetItemDefaultFocus();
+		ImGui::EndCombo();
 	}
-	ImGui::EndCombo();
 	return output;
 }
 bool widgets::materialCategoryType(MaterialCategoryTypeId* result, std::function<bool(const MaterialCategoryTypeId)>&& condition)
 {
 	bool output = false;
-	ImGui::BeginCombo("Material", MaterialTypeCategory::getName(*result).c_str());
-	for(MaterialCategoryTypeId id{0}; id < MaterialTypeCategory::size(); ++id)
+	if(ImGui::BeginCombo("Material", MaterialTypeCategory::getName(*result).c_str()))
 	{
-		if(condition != nullptr && !condition(id))
-			continue;
-		std::string name = MaterialTypeCategory::getName(id);
-		bool isSelected = id == *result;
-		if(ImGui::Selectable(name.c_str(), isSelected))
+		for(MaterialCategoryTypeId id{0}; id < MaterialTypeCategory::size(); ++id)
 		{
-			(*result) = id;
-			output = true;
+			if(condition != nullptr && !condition(id))
+				continue;
+			std::string name = MaterialTypeCategory::getName(id);
+			bool isSelected = id == *result;
+			if(ImGui::Selectable(name.c_str(), isSelected))
+			{
+				(*result) = id;
+				output = true;
+			}
+			if(isSelected)
+				ImGui::SetItemDefaultFocus();
 		}
-		if(isSelected)
-			ImGui::SetItemDefaultFocus();
+		ImGui::EndCombo();
 	}
-	ImGui::EndCombo();
 	return output;
 }
 bool widgets::featureType(PointFeatureTypeId* result, std::function<bool(const PointFeatureTypeId)>&& condition)
 {
 	bool output = false;
-	ImGui::BeginCombo("", PointFeatureType::byId(*result).name.c_str());
-	for(const PointFeatureType* pointFeatureType : PointFeatureType::getAll())
+	if(ImGui::BeginCombo("featureType", PointFeatureType::byId(*result).name.c_str()))
 	{
-		PointFeatureTypeId id = PointFeatureType::getId(*pointFeatureType);
-		if(condition != nullptr && !condition(id))
-			continue;
-		bool isSelected = result != nullptr && *result == id;
-		if(ImGui::Selectable(pointFeatureType->name.c_str(), isSelected))
+		for(const PointFeatureType* pointFeatureType : PointFeatureType::getAll())
 		{
-			(*result) = id;
-			output = true;
+			PointFeatureTypeId id = PointFeatureType::getId(*pointFeatureType);
+			if(condition != nullptr && !condition(id))
+				continue;
+			bool isSelected = result != nullptr && *result == id;
+			if(ImGui::Selectable(pointFeatureType->name.c_str(), isSelected))
+			{
+				(*result) = id;
+				output = true;
+			}
+			if(isSelected)
+				ImGui::SetItemDefaultFocus();
 		}
-		if(isSelected)
-			ImGui::SetItemDefaultFocus();
+		ImGui::EndCombo();
 	}
-	ImGui::EndCombo();
 	return output;
 }
 bool widgets::fluidType(FluidTypeId* result, std::function<bool(const FluidTypeId)>&& condition)
 {
 	bool output = false;
-	ImGui::BeginCombo("fluid", FluidType::getName(*result).c_str());
-	auto end = FluidType::size();
-	for(FluidTypeId fluidTypeId{0}; fluidTypeId != end; ++fluidTypeId)
+	if(ImGui::BeginCombo("fluid", FluidType::getName(*result).c_str()))
 	{
-		if(condition != nullptr && !condition(fluidTypeId))
-			continue;
-		bool isSelected = result != nullptr && *result == fluidTypeId;
-		if(ImGui::Selectable(FluidType::getName(fluidTypeId).c_str(), isSelected))
+		auto end = FluidType::size();
+		for(FluidTypeId fluidTypeId{0}; fluidTypeId != end; ++fluidTypeId)
 		{
-			(*result) = fluidTypeId;
-			output = true;
+			if(condition != nullptr && !condition(fluidTypeId))
+				continue;
+			bool isSelected = result != nullptr && *result == fluidTypeId;
+			if(ImGui::Selectable(FluidType::getName(fluidTypeId).c_str(), isSelected))
+			{
+				(*result) = fluidTypeId;
+				output = true;
+			}
+			if(isSelected)
+				ImGui::SetItemDefaultFocus();
 		}
-		if(isSelected)
-			ImGui::SetItemDefaultFocus();
+		ImGui::EndCombo();
 	}
-	ImGui::EndCombo();
+	return output;
+}
+bool widgets::animalSpecies(AnimalSpeciesId* result, std::function<bool(const AnimalSpeciesId)>&& condition)
+{
+	bool output = false;
+	if(ImGui::BeginCombo("animal species", AnimalSpecies::getName(*result).c_str()))
+	{
+		auto end = AnimalSpecies::size();
+		for(AnimalSpeciesId animalSpeciesId{0}; animalSpeciesId != end; ++animalSpeciesId)
+		{
+			if(condition != nullptr && !condition(animalSpeciesId))
+				continue;
+			bool isSelected = result != nullptr && *result == animalSpeciesId;
+			if(ImGui::Selectable(AnimalSpecies::getName(animalSpeciesId).c_str(), isSelected))
+			{
+				(*result) = animalSpeciesId;
+				output = true;
+			}
+			if(isSelected)
+				ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndCombo();
+	}
 	return output;
 }
 bool widgets::plantSpecies(PlantSpeciesId* result, std::function<bool(const PlantSpeciesId)>&& condition)
 {
 	bool output = false;
-	ImGui::BeginCombo("plant species", PlantSpecies::getName(*result).c_str());
-	auto end = PlantSpecies::size();
-	for(PlantSpeciesId plantSpeciesId{0}; plantSpeciesId != end; ++plantSpeciesId)
+	if(ImGui::BeginCombo("plant species", PlantSpecies::getName(*result).c_str()))
 	{
-		if(condition != nullptr && !condition(plantSpeciesId))
-			continue;
-		bool isSelected = result != nullptr && *result == plantSpeciesId;
-		if(ImGui::Selectable(PlantSpecies::getName(plantSpeciesId).c_str(), isSelected))
+		auto end = PlantSpecies::size();
+		for(PlantSpeciesId plantSpeciesId{0}; plantSpeciesId != end; ++plantSpeciesId)
 		{
-			(*result) = plantSpeciesId;
-			output = true;
+			if(condition != nullptr && !condition(plantSpeciesId))
+				continue;
+			bool isSelected = result != nullptr && *result == plantSpeciesId;
+			if(ImGui::Selectable(PlantSpecies::getName(plantSpeciesId).c_str(), isSelected))
+			{
+				(*result) = plantSpeciesId;
+				output = true;
+			}
+			if(isSelected)
+				ImGui::SetItemDefaultFocus();
 		}
-		if(isSelected)
-			ImGui::SetItemDefaultFocus();
+		ImGui::EndCombo();
 	}
-	ImGui::EndCombo();
 	return output;
 }
 bool widgets::itemType(ItemTypeId* result, std::function<bool(const ItemTypeId)>&& condition)
 {
 	bool output = false;
-	ImGui::BeginCombo("item type", ItemType::getName(*result).c_str());
-	auto end = ItemType::size();
-	for(ItemTypeId itemType{0}; itemType != end; ++itemType)
+	if(ImGui::BeginCombo("item type", ItemType::getName(*result).c_str()))
 	{
-		if(condition != nullptr && !condition(itemType))
-			continue;
-		bool isSelected = result != nullptr && *result == itemType;
-		if(ImGui::Selectable(ItemType::getName(itemType).c_str(), isSelected))
+		auto end = ItemType::size();
+		for(ItemTypeId itemType{0}; itemType != end; ++itemType)
 		{
-			(*result) = itemType;
-			output = true;
+			if(condition != nullptr && !condition(itemType))
+				continue;
+			bool isSelected = result != nullptr && *result == itemType;
+			if(ImGui::Selectable(ItemType::getName(itemType).c_str(), isSelected))
+			{
+				(*result) = itemType;
+				output = true;
+			}
+			if(isSelected)
+				ImGui::SetItemDefaultFocus();
 		}
-		if(isSelected)
-			ImGui::SetItemDefaultFocus();
+		ImGui::EndCombo();
 	}
-	ImGui::EndCombo();
 	return output;
 }
 bool widgets::faction(FactionId* result, const Simulation& simulation, std::function<bool(const FactionId)>&& condition)
 {
 	bool output = false;
-	std::string text = result == nullptr ? "" : simulation.m_hasFactions.getById(*result).name;
-	ImGui::BeginCombo("faction", text.c_str());
-	for(const Faction& faction : simulation.m_hasFactions.getAll())
+	std::string text = result->empty() ? "" : simulation.m_hasFactions.getById(*result).name;
+	if(ImGui::BeginCombo("faction", text.c_str()))
 	{
-		if(condition != nullptr && !condition(faction.id))
-			continue;
-		bool isSelected = result != nullptr && *result == faction.id;
-		if(ImGui::Selectable(faction.name.c_str(), isSelected))
-		{
-			(*result) = faction.id;
-			output = true;
-		}
-		if(isSelected)
+		bool noneIsSelected = result->empty();
+		if(ImGui::Selectable("none"), noneIsSelected)
+			(*result) = FactionId::null();
+		if(noneIsSelected)
 			ImGui::SetItemDefaultFocus();
+		for(const Faction& faction : simulation.m_hasFactions.getAll())
+		{
+			if(condition != nullptr && !condition(faction.id))
+				continue;
+			bool isSelected = result != nullptr && *result == faction.id;
+			if(ImGui::Selectable(faction.name.c_str(), isSelected))
+			{
+				(*result) = faction.id;
+				output = true;
+			}
+			if(isSelected)
+				ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndCombo();
 	}
-	ImGui::EndCombo();
 	return output;
 }
 bool widgets::facing(Facing4* result)
 {
 	bool output = false;
 	const char* options[] = {"north", "east", "south", "west"};
-	ImGui::BeginCombo("item type", options[(int)*result]);
-	for(int i{0}; i != 4; ++i)
+	if(ImGui::BeginCombo("facing", options[(int)*result]))
 	{
-		bool isSelected = result != nullptr && (int)*result == i;
-		if(ImGui::Selectable(options[i], isSelected))
+		for(int i{0}; i != 4; ++i)
 		{
-			(*result) = (Facing4)i;
-			output = true;
+			bool isSelected = result != nullptr && (int)*result == i;
+			if(ImGui::Selectable(options[i], isSelected))
+			{
+				(*result) = (Facing4)i;
+				output = true;
+			}
+			if(isSelected)
+				ImGui::SetItemDefaultFocus();
 		}
-		if(isSelected)
-			ImGui::SetItemDefaultFocus();
+		ImGui::EndCombo();
 	}
-	ImGui::EndCombo();
 	return output;
 }
 bool widgets::itemTypeAndMaterialTypeOrCategory(ItemTypeId* itemType, MaterialTypeId* materialType, MaterialCategoryTypeId* categoryType, std::function<bool(const ItemTypeId)>&& condition)
@@ -197,19 +242,21 @@ bool widgets::craftJobType(CraftJobTypeId* result)
 {
 	bool output = false;
 	std::string selectedName = CraftJobType::getName(*result);
-	ImGui::BeginCombo("craftJobType", selectedName.c_str());
-	for(auto craftJobTypeId = CraftJobTypeId::create(0); craftJobTypeId < CraftJobType::size(); ++craftJobTypeId)
+	if(ImGui::BeginCombo("craftJobType", selectedName.c_str()))
 	{
-		std::string name = CraftJobType::getName(craftJobTypeId);
-		bool selected = name == selectedName;
-		if(ImGui::Selectable(name.c_str(), selected))
+		for(auto craftJobTypeId = CraftJobTypeId::create(0); craftJobTypeId < CraftJobType::size(); ++craftJobTypeId)
 		{
-			(*result) = CraftJobType::byName(name);
-			output = true;
+			std::string name = CraftJobType::getName(craftJobTypeId);
+			bool selected = name == selectedName;
+			if(ImGui::Selectable(name.c_str(), selected))
+			{
+				(*result) = CraftJobType::byName(name);
+				output = true;
+			}
+			if(selected)
+				ImGui::SetItemDefaultFocus();
 		}
-		if(selected)
-			ImGui::SetItemDefaultFocus();
+		ImGui::EndCombo();
 	}
-	ImGui::EndCombo();
 	return output;
 }

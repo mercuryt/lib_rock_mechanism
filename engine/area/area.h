@@ -114,7 +114,7 @@ public:
 	//WorldLocation* m_worldLocation;
 
 	// Create space and store adjacent
-	Area(AreaId id, std::string n, Simulation& s, const Distance& x, const Distance& y, const Distance& z);
+	Area(AreaId id, std::string n, Simulation& s, const Distance  x, const Distance  y, const Distance  z);
 	Area(const Json& data, DeserializationMemo& deserializationMemo, Simulation& s);
 	Area(const Area& area) = delete;
 	Area(const Area&& area) = delete;
@@ -153,7 +153,7 @@ public:
 	[[nodiscard]] bool operator==(const Area& other) const { return this == &other; }
 	// For testing.
 	[[maybe_unused]] void logActorsAndItems() const;
-	[[nodiscard]] Quantity getTotalCountOfItemTypeOnSurface(const ItemTypeId& itemType) const;
+	[[nodiscard]] Quantity getTotalCountOfItemTypeOnSurface(const ItemTypeId itemType) const;
 };
 inline void to_json(Json& data, const Area* const& area){ data = area->m_id; }
 inline void to_json(Json& data, const Area& area){ data = area.m_id; }

@@ -3,14 +3,14 @@
 #include "../space/space.h"
 #include "../portables.h"
 
-void Actors::location_set(const ActorIndex& index, const Point3D& location, const Facing4 facing)
+void Actors::location_set(const ActorIndex index, const Point3D location, const Facing4 facing)
 {
 	if(isStatic(index))
 		location_setStatic(index, location, facing);
 	else
 		location_setDynamic(index, location, facing);
 }
-void Actors::location_setStatic(const ActorIndex& index, const Point3D& location, const Facing4 facing)
+void Actors::location_setStatic(const ActorIndex index, const Point3D location, const Facing4 facing)
 {
 	assert(location.exists());
 	assert(facing != Facing4::Null);
@@ -39,7 +39,7 @@ void Actors::location_setStatic(const ActorIndex& index, const Point3D& location
 	deckRotationData.reinstanceAtRotatedPosition(m_area, previousLocation, location, previousFacing, facing);
 	onSetLocation(index, previousLocation, previousFacing);
 }
-void Actors::location_setDynamic(const ActorIndex& index, const Point3D& location, const Facing4 facing)
+void Actors::location_setDynamic(const ActorIndex index, const Point3D location, const Facing4 facing)
 {
 	assert(location.exists());
 	assert(facing != Facing4::Null);
@@ -71,7 +71,7 @@ void Actors::location_setDynamic(const ActorIndex& index, const Point3D& locatio
 	onSetLocation(index, previousLocation, previousFacing);
 }
 // Used when item already has a location, rolls back position on failure.
-SetLocationAndFacingResult Actors::location_tryToMoveToStatic(const ActorIndex& index, const Point3D& location)
+SetLocationAndFacingResult Actors::location_tryToMoveToStatic(const ActorIndex index, const Point3D location)
 {
 	assert(hasLocation(index));
 	assert(isStatic(index));
@@ -80,7 +80,7 @@ SetLocationAndFacingResult Actors::location_tryToMoveToStatic(const ActorIndex& 
 	const Facing4 facing = previousLocation.getFacingTwords(location);
 	return location_tryToSetStatic(index, location, facing);
 }
-SetLocationAndFacingResult Actors::location_tryToMoveToDynamic(const ActorIndex& index, const Point3D& location)
+SetLocationAndFacingResult Actors::location_tryToMoveToDynamic(const ActorIndex index, const Point3D location)
 {
 	assert(hasLocation(index));
 	assert(!isStatic(index));
@@ -90,20 +90,20 @@ SetLocationAndFacingResult Actors::location_tryToMoveToDynamic(const ActorIndex&
 	return location_tryToSetDynamic(index, location, facing);
 }
 // Used when item does not have a location.
-SetLocationAndFacingResult Actors::location_tryToSet(const ActorIndex& index, const Point3D& location, const Facing4& facing)
+SetLocationAndFacingResult Actors::location_tryToSet(const ActorIndex index, const Point3D location, const Facing4 facing)
 {
 	if(isStatic(index))
 		return location_tryToSetStatic(index, location, facing);
 	else
 		return location_tryToSetDynamic(index, location, facing);
 }
-SetLocationAndFacingResult Actors::location_tryToSetStatic(const ActorIndex& index, const Point3D& location, const Facing4& facing)
+SetLocationAndFacingResult Actors::location_tryToSetStatic(const ActorIndex index, const Point3D location, const Facing4 facing)
 {
 	assert(isStatic(index));
 	Space& space = m_area.getSpace();
-	const Point3D& previousLocation = getCombinedLocation(index);
+	const Point3D previousLocation = getCombinedLocation(index);
 	const Offset3D offset = previousLocation.offsetTo(location);
-	const Facing4& previousFacing = getFacing(index);
+	const  Facing4 previousFacing = getFacing(index);
 	// Apply the same shift to the offsets as the offset from the previous location to the new one and subtract the unshifted position.
 	const MapWithOffsetCuboidKeys<CollisionVolume> offsetCuboidsAndVolumesDelta = Shape::applyOffsetAndRotationAndSubtractOriginal(m_compoundShape[index], offset, previousFacing, facing);
 	// Apply the new location to the offsets.
@@ -118,14 +118,14 @@ SetLocationAndFacingResult Actors::location_tryToSetStatic(const ActorIndex& ind
 	location_setStatic(index, location, facing);
 	return SetLocationAndFacingResult::Success;
 }
-SetLocationAndFacingResult Actors::location_tryToSetDynamic(const ActorIndex& index, const Point3D& location, const Facing4& facing)
+SetLocationAndFacingResult Actors::location_tryToSetDynamic(const ActorIndex index, const Point3D location, const Facing4 facing)
 {
 	assert(!isStatic(index));
 	Space& space = m_area.getSpace();
 	// Get offsets and volumes for facing. Use compound shape to include anything on deck.
-	const Point3D& previousLocation = getCombinedLocation(index);
+	const Point3D previousLocation = getCombinedLocation(index);
 	const Offset3D offset = previousLocation.offsetTo(location);
-	const Facing4& previousFacing = getFacing(index);
+	const  Facing4 previousFacing = getFacing(index);
 	// Apply the same shift to the offsets as the offset from the previous location to the new one and subtract the unshifted position.
 	MapWithOffsetCuboidKeys<CollisionVolume> offsetCuboidsAndVolumesDelta = Shape::applyOffsetAndRotationAndSubtractOriginal(m_compoundShape[index], offset, previousFacing, facing);
 	// Apply the new location to the offsets.
@@ -146,14 +146,14 @@ SetLocationAndFacingResult Actors::location_tryToSetDynamic(const ActorIndex& in
 	location_setDynamic(index, location, facing);
 	return SetLocationAndFacingResult::Success;
 }
-void Actors::location_clear(const ActorIndex& index)
+void Actors::location_clear(const ActorIndex index)
 {
 	if(isStatic(index))
 		location_clearStatic(index);
 	else
 		location_clearDynamic(index);
 }
-void Actors::location_clearStatic(const ActorIndex& index)
+void Actors::location_clearStatic(const ActorIndex index)
 {
 	assert(isStatic(index));
 	assert(m_location[index].exists());
@@ -169,7 +169,7 @@ void Actors::location_clearStatic(const ActorIndex& index)
 		m_onSurface.maybeUnset(index);
 	move_pathRequestMaybeCancel(index);
 }
-void Actors::location_clearDynamic(const ActorIndex& index)
+void Actors::location_clearDynamic(const ActorIndex index)
 {
 	assert(!isStatic(index));
 	assert(m_location[index].exists());
@@ -187,15 +187,15 @@ void Actors::location_clearDynamic(const ActorIndex& index)
 	if(soldier_is(index))
 		soldier_removeFromMaliceMap(index);
 }
-bool Actors::location_canEnterEverWithFacing(const ActorIndex& index, const Point3D& point, const Facing4& facing)
+bool Actors::location_canEnterEverWithFacing(const ActorIndex index, const Point3D point, const Facing4 facing)
 {
 	return m_area.getSpace().shape_shapeAndMoveTypeCanEnterEverWithFacing(point, m_compoundShape[index], m_moveType[index], facing);
 }
-bool Actors::location_canEnterEverWithAnyFacing(const ActorIndex& index, const Point3D& point)
+bool Actors::location_canEnterEverWithAnyFacing(const ActorIndex index, const Point3D point)
 {
 	return location_canEnterEverWithAnyFacingReturnFacing(index, point) != Facing4::Null;
 }
-Facing4 Actors::location_canEnterEverWithAnyFacingReturnFacing(const ActorIndex& index, const Point3D& point)
+Facing4 Actors::location_canEnterEverWithAnyFacingReturnFacing(const ActorIndex index, const Point3D point)
 {
 	for(auto facing = Facing4::North; facing != Facing4::Null; facing = Facing4((int)facing + 1))
 		if(location_canEnterEverWithFacing(index, point, facing))

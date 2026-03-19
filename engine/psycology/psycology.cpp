@@ -58,7 +58,7 @@ PsycologyEvent::PsycologyEvent(const Json& data, Simulation& simulation)
 	return output;
 }
 // PsycologyEventExpiresScheduledEvent
-PsycologyEventExpiresScheduledEvent::PsycologyEventExpiresScheduledEvent(const Step& delay, const PsycologyEventType& eventType, const PsycologyData& deltas, const ActorId& actor, Simulation& simulation, const Step& start) :
+PsycologyEventExpiresScheduledEvent::PsycologyEventExpiresScheduledEvent(const Step delay, const PsycologyEventType& eventType, const PsycologyData& deltas, const ActorId actor, Simulation& simulation, const Step start) :
 	ScheduledEvent(simulation, delay, start),
 	m_deltas(deltas),
 	m_actor(actor),
@@ -90,7 +90,7 @@ void Psycology::initialize()
 	m_highTriggers.setAllToZero();
 	m_lowTriggers.setAllToZero();
 }
-void Psycology::checkThreasholds(Area& area, const ActorIndex& actor)
+void Psycology::checkThreasholds(Area& area, const ActorIndex actor)
 {
 	if(m_current.anyAbove(m_highTriggers))
 	{
@@ -141,13 +141,13 @@ void Psycology::checkThreasholds(Area& area, const ActorIndex& actor)
 		}
 	}
 }
-void Psycology::setExpiration(const Step& duration, Simulation& simulation, const ActorId& actor, const PsycologyEventType& eventType, const PsycologyData& eventDeltas)
+void Psycology::setExpiration(const Step duration, Simulation& simulation, const ActorId actor, const PsycologyEventType& eventType, const PsycologyData& eventDeltas)
 {
 		std::unique_ptr<HasScheduledEvent<PsycologyEventExpiresScheduledEvent>> holder = std::make_unique<HasScheduledEvent<PsycologyEventExpiresScheduledEvent>>(simulation.m_eventSchedule);
 		holder->schedule(duration, eventType, eventDeltas, actor, simulation);
 		m_expirationEvents.insert(std::move(holder));
 }
-void Psycology::apply(PsycologyEvent& event, Area& area, const ActorIndex& actor, const Step& duration, const Step& cooldown)
+void Psycology::apply(PsycologyEvent& event, Area& area, const ActorIndex actor, const Step duration, const Step cooldown)
 {
 	auto found = m_cooldowns.find(event.type);
 	if(found != m_cooldowns.end() && found->second < area.m_simulation.m_step)
@@ -178,7 +178,7 @@ void Psycology::apply(PsycologyEvent& event, Area& area, const ActorIndex& actor
 		// Do not allow another event of the same same type for at least duration, we don't have the infastructure to expire them seperately.
 		m_cooldowns.getOrCreate(event.type) = duration;
 }
-void Psycology::remove(const PsycologyEventType& eventType, const PsycologyData& deltas, Area& area, const ActorIndex& actor)
+void Psycology::remove(const PsycologyEventType& eventType, const PsycologyData& deltas, Area& area, const ActorIndex actor)
 {
 	SmallSet<PsycologyAttribute> attributesToUpdateThreasholds;
 	for(int i = 0; i != (int)PsycologyAttribute::Null; ++i)
@@ -261,9 +261,9 @@ void Psycology::unregisterLowCallback(const PsycologyAttribute& attribute, Psyco
 		m_lowTriggers.set(attribute, (*max)->threshold);
 	}
 }
-void Psycology::addFriend(const ActorId& actor) { m_friends.insert(actor); }
-void Psycology::removeFriend(const ActorId& actor) { m_friends.erase(actor); }
-void Psycology::addFamily(const ActorId& actor, const FamilyRelationship& relationship) { m_family.insert(actor, relationship);}
+void Psycology::addFriend(const ActorId actor) { m_friends.insert(actor); }
+void Psycology::removeFriend(const ActorId actor) { m_friends.erase(actor); }
+void Psycology::addFamily(const ActorId actor, const FamilyRelationship& relationship) { m_family.insert(actor, relationship);}
 PsycologyWeight Psycology::getValueFor(const PsycologyAttribute& attribute) const { return m_current.getValueFor(attribute); }
 Json Psycology::toJson() const
 {

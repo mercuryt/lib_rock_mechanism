@@ -1,6 +1,6 @@
 #include "octTree2.h"
 template<typename NodeData, int splitThreashold, int mergeThreadshold>
-void Bool3D<NodeData, splitThreashold, mergeThreadshold>::split(Node& node, const Cuboid& cuboid)
+void Bool3D<NodeData, splitThreashold, mergeThreadshold>::split(Node& node, const Cuboid cuboid)
 {
 	auto splitData = node.data.splitIntoOctants();
 	node.childData = Index::create(m_nodes.size());
@@ -30,7 +30,7 @@ void Bool3D<NodeData, splitThreashold, mergeThreadshold>::merge(Node& node)
 	node.childData.clear();
 }
 template<typename NodeData, int splitThreashold, int mergeThreadshold>
-void Bool3D<NodeData, splitThreashold, mergeThreadshold>::maybeSetPoint(const Point3D& coordinates)
+void Bool3D<NodeData, splitThreashold, mergeThreadshold>::maybeSetPoint(const Point3D coordinates)
 {
 	// There is no single top level node, instead we start with the first set of eight.
 	Octant octant = getOctant(m_center, coordinates);
@@ -54,7 +54,7 @@ void Bool3D<NodeData, splitThreashold, mergeThreadshold>::maybeSetPoint(const Po
 	}
 }
 template<typename NodeData, int splitThreashold, int mergeThreadshold>
-void Bool3D<NodeData, splitThreashold, mergeThreadshold>::maybeUnsetPoint(const Point3D& coordinates)
+void Bool3D<NodeData, splitThreashold, mergeThreadshold>::maybeUnsetPoint(const Point3D coordinates)
 {
 	// There is no single top level node, instead we start with the first set of eight.
 	Octant octant = getOctant(m_center, coordinates);
@@ -78,7 +78,7 @@ void Bool3D<NodeData, splitThreashold, mergeThreadshold>::maybeUnsetPoint(const 
 	}
 }
 template<typename NodeData, int splitThreashold, int mergeThreadshold>
-void Bool3D<NodeData, splitThreashold, mergeThreadshold>::maybeSetCuboid(const Cuboid& cuboid)
+void Bool3D<NodeData, splitThreashold, mergeThreadshold>::maybeSetCuboid(const Cuboid cuboid)
 {
 	SmallSet<Index> openList;
 	// There is no single top level node, instead we start with the first set of eight.
@@ -107,7 +107,7 @@ void Bool3D<NodeData, splitThreashold, mergeThreadshold>::maybeSetCuboid(const C
 	}
 }
 template<typename NodeData, int splitThreashold, int mergeThreadshold>
-void Bool3D<NodeData, splitThreashold, mergeThreadshold>::maybeUnsetCuboid(const Cuboid& cuboid)
+void Bool3D<NodeData, splitThreashold, mergeThreadshold>::maybeUnsetCuboid(const Cuboid cuboid)
 {
 	SmallSet<Index> openList;
 	SmallSet<std::pair<Index, Octant>> toMerge;
@@ -163,7 +163,7 @@ void Bool3D<NodeData, splitThreashold, mergeThreadshold>::maybeUnsetCuboid(const
 	merge(m_nodes[index].nodes[octant]);
 }
 template<typename NodeData, int splitThreashold, int mergeThreadshold>
-bool Bool3D<NodeData, splitThreashold, mergeThreadshold>::queryPoint(const Point3D& point)
+bool Bool3D<NodeData, splitThreashold, mergeThreadshold>::queryPoint(const Point3D point)
 {
 	// There is no single top level node, instead we start with the first set of eight.
 	Octant octant = getOctant(m_center, coordinates);
@@ -179,7 +179,7 @@ bool Bool3D<NodeData, splitThreashold, mergeThreadshold>::queryPoint(const Point
 	}
 }
 template<typename NodeData, int splitThreashold, int mergeThreadshold>
-bool Bool3D<NodeData, splitThreashold, mergeThreadshold>::queryCuboidAny(const Cuboid& cuboid)
+bool Bool3D<NodeData, splitThreashold, mergeThreadshold>::queryCuboidAny(const Cuboid cuboid)
 {
 	SmallSet<Index> openList;
 	// There is no single top level node, instead we start with the first set of eight.
@@ -207,7 +207,7 @@ bool Bool3D<NodeData, splitThreashold, mergeThreadshold>::queryCuboidAny(const C
 	}
 }
 template<typename NodeData, int splitThreashold, int mergeThreadshold>
-Octant Bool3D<NodeData, splitThreashold, mergeThreadshold>::getOctant(const Point3D& center, const Point3D& point)
+Octant Bool3D<NodeData, splitThreashold, mergeThreadshold>::getOctant(const Point3D center, const Point3D point)
 {
 	// Boolean values implicitly convert to either 1 or 0, then get bit shifted to the correct location, then merged with bitwise or.
 	return (point.x() > center.x()) << 2 | (point.y() > center.y()) << 1 | (point.z() > center.z());

@@ -15,7 +15,7 @@
 #include "../items/items.h"
 #include "../path/terrainFacade.h"
 #include <ranges>
-Speed Actors::move_getIndividualSpeedWithAddedMass(const ActorIndex& index, const Mass& mass) const
+Speed Actors::move_getIndividualSpeedWithAddedMass(const ActorIndex index, const Mass mass) const
 {
 	Speed output = Speed::create(m_agility[index].get() * Config::unitsOfMoveSpeedPerUnitOfAgility);
 	Mass carryMass = m_equipmentSet[index]->getMass() + canPickUp_getMass(index) + onDeck_getMass(index) + mass;
@@ -30,7 +30,7 @@ Speed Actors::move_getIndividualSpeedWithAddedMass(const ActorIndex& index, cons
 	output = Speed::create(util::scaleByInversePercent(output.get(), m_body[index]->getImpairMovePercent()));
 	return Speed::create(std::ceil(output.get()));
 }
-void Actors::move_updateIndividualSpeed(const ActorIndex& index)
+void Actors::move_updateIndividualSpeed(const ActorIndex index)
 {
 	m_speedIndividual[index] = move_getIndividualSpeedWithAddedMass(index, Mass::create(0));
 	move_updateActualSpeed(index);
@@ -38,11 +38,11 @@ void Actors::move_updateIndividualSpeed(const ActorIndex& index)
 	if(m_isOnDeckOf[index].exists())
 		m_isOnDeckOf[index].move_updateIndividualSpeed(m_area);
 }
-void Actors::move_updateActualSpeed(const ActorIndex& index)
+void Actors::move_updateActualSpeed(const ActorIndex index)
 {
 	move_setMoveSpeedActual(index, isLeading(index) ? lead_getSpeed(index) : m_speedIndividual[index]);
 }
-void Actors::move_setPath(const ActorIndex& index, const SmallSet<Point3D>& path)
+void Actors::move_setPath(const ActorIndex index, const SmallSet<Point3D>& path)
 {
 	assert(!path.empty());
 	if(!m_isPilot[index])
@@ -52,42 +52,42 @@ void Actors::move_setPath(const ActorIndex& index, const SmallSet<Point3D>& path
 	move_clearAllEventsAndTasks(index);
 	move_schedule(index, m_location[index]);
 }
-void Actors::move_setType(const ActorIndex& index, const MoveTypeId& moveType)
+void Actors::move_setType(const ActorIndex index, const MoveTypeId moveType)
 {
 	setMoveType(index, moveType);
 	PathRequest* pathRequest = m_pathRequest[index];
 	if(pathRequest != nullptr)
 		pathRequest->moveType = moveType;
 }
-void Actors::move_setMoveSpeedActual(const ActorIndex& index, Speed speed)
+void Actors::move_setMoveSpeedActual(const ActorIndex index, Speed speed)
 {
 	m_speedActual[index] = speed;
 	// TODO: if there is a move event then reschedule it?
 }
-void Actors::move_clearPath(const ActorIndex& index)
+void Actors::move_clearPath(const ActorIndex index)
 {
 	m_path[index].clear();
 	move_clearAllEventsAndTasks(index);
 }
-void Actors::move_callback(const ActorIndex& index)
+void Actors::move_callback(const ActorIndex index)
 {
 	assert(!m_path[index].empty());
 	assert(m_destination[index].exists());
 	assert(!isFollowing(index));
-	const Point3D& newLocation = m_path[index].back();
+	const Point3D newLocation = m_path[index].back();
 	const Point3D previousLocation = getCombinedLocation(index);
 	const Facing4 previousFacing = getFacing(index);
 	Items& items = getItems();
 	SetLocationAndFacingResult result;
-	const Point3D& destination = move_getDestination(index);
+	const Point3D destination = move_getDestination(index);
 	const Space& space = m_area.getSpace();
-	const ShapeId& shape = getCompoundShape(index);
-	const MoveTypeId& moveType = getMoveType(index);
+	const ShapeId shape = getCompoundShape(index);
+	const MoveTypeId moveType = getMoveType(index);
 	if(m_isPilot[index])
 	{
 		// If piloting then move the vehicle instead of the actor.
 		// When piloting a mounted actor the mount should recive the move_callback so we assume that we are piloting a vehicle.
-		const ItemIndex& isPiloting = m_isOnDeckOf[index].getItem();
+		const ItemIndex isPiloting = m_isOnDeckOf[index].getItem();
 		const auto itemAndResult = items.location_tryToMoveToDynamic(isPiloting, newLocation);
 		result = itemAndResult.second;
 	}
@@ -158,7 +158,7 @@ void Actors::move_callback(const ActorIndex& index)
 			if(pilot.empty())
 			{
 				// If there is no rider piloting check if we are towing an item with a pilot.
-				const ActorOrItemIndex& follower = getFollower(index);
+				const ActorOrItemIndex follower = getFollower(index);
 				if(follower.exists() && follower.isItem())
 					pilot = items.pilot_get(follower.getItem());
 			}
@@ -171,7 +171,7 @@ void Actors::move_callback(const ActorIndex& index)
 		{
 			assert(m_path[index].size() != 1);
 			m_path[index].popBack();
-			const Point3D& nextLocation = m_path[index].back();
+			const Point3D nextLocation = m_path[index].back();
 			if(
 				space.shape_anythingCanEnterEver(nextLocation) &&
 				space.shape_shapeAndMoveTypeCanEnterEverFrom(nextLocation, shape, moveType, newLocation)
@@ -187,14 +187,14 @@ void Actors::move_callback(const ActorIndex& index)
 		}
 	}
 }
-void Actors::move_schedule(const ActorIndex& index, const Point3D& moveFrom)
+void Actors::move_schedule(const ActorIndex index, const Point3D moveFrom)
 {
 	assert(!isFollowing(index));
 	assert(moveFrom != m_destination[index]);
-	const Point3D& moveTo = m_path[index].back();
+	const Point3D moveTo = m_path[index].back();
 	m_moveEvent.schedule(index, move_delayToMoveInto(index, moveFrom, moveTo), m_area, index);
 }
-void Actors::move_setDestination(const ActorIndex& index, const Point3D& destination, bool detour, bool adjacent, bool unreserved, bool reserve)
+void Actors::move_setDestination(const ActorIndex index, const Point3D destination, bool detour, bool adjacent, bool unreserved, bool reserve)
 {
 	// location is either for the actor it's self or the vehicle it's piloting.
 	Point3D location;
@@ -209,8 +209,8 @@ void Actors::move_setDestination(const ActorIndex& index, const Point3D& destina
 		}
 		// Is piloting an item.
 		Items& items = m_area.getItems();
-		const ItemIndex& item = isOnDeckOf.getItem();
-		const ActorOrItemIndex& leader = items.getLeader(item);
+		const ItemIndex item = isOnDeckOf.getItem();
+		const ActorOrItemIndex leader = items.getLeader(item);
 		if(leader.exists())
 		{
 			// Is piloting an item which is being towed by an animal, proxy setDestination to that animal.
@@ -226,6 +226,7 @@ void Actors::move_setDestination(const ActorIndex& index, const Point3D& destina
 		assert(unreserved);
 	move_clearPath(index);
 	Space& space = m_area.getSpace();
+	assert(space.shape_canEnterCurrentlyWithAnyFacing(destination, getShape(index), getOccupied(index)));
 	// If adjacent path then destination isn't known until it's completed.
 	if(!adjacent)
 	{
@@ -245,15 +246,15 @@ void Actors::move_setDestination(const ActorIndex& index, const Point3D& destina
 	if(unreserved)
 		faction = m_faction[index];
 	assert(m_pathRequest[index] == nullptr);
-	const ShapeId& shape = getCompoundShape(index);
-	const MoveTypeId& moveType = getMoveType(index);
+	const ShapeId shape = getCompoundShape(index);
+	const MoveTypeId moveType = getMoveType(index);
 	move_pathRequestRecord(index, std::make_unique<GoToPathRequest>(location, Distance::max(), getReference(index), shape, faction, moveType, m_facing[index], detour, adjacent, reserve, destination));
 }
-void Actors::move_setDestinationAdjacentToLocation(const ActorIndex& index, const Point3D& destination, bool detour, bool unreserved, bool reserve)
+void Actors::move_setDestinationAdjacentToLocation(const ActorIndex index, const Point3D destination, bool detour, bool unreserved, bool reserve)
 {
 	move_setDestination(index, destination, detour, true, unreserved, reserve);
 }
-void Actors::move_setDestinationToAny(const ActorIndex& index, const CuboidSet& candidates, bool detour, bool unreserved, bool reserve, const Point3D& huristicDestination)
+void Actors::move_setDestinationToAny(const ActorIndex index, const CuboidSet& candidates, bool detour, bool unreserved, bool reserve, const Point3D huristicDestination)
 {
 	FactionId faction;
 	if(unreserved)
@@ -261,15 +262,15 @@ void Actors::move_setDestinationToAny(const ActorIndex& index, const CuboidSet& 
 	constexpr bool adjacent = false;
 	move_pathRequestRecord(index, std::make_unique<GoToAnyPathRequest>(m_location[index], Distance::max(), getReference(index), m_compoundShape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, huristicDestination, candidates));
 }
-void Actors::move_setDestinationAdjacentToActor(const ActorIndex& index, const ActorIndex& other, bool detour, bool unreserved, bool reserve)
+void Actors::move_setDestinationAdjacentToActor(const ActorIndex index, const ActorIndex other, bool detour, bool unreserved, bool reserve)
 {
 	assert(!isAdjacentToActor(index, other));
-	const Point3D& otherLocation = m_location[other];
+	const Point3D otherLocation = m_location[other];
 	assert(!isAdjacentToLocation(index, otherLocation));
 	Space& space = m_area.getSpace();
 	assert(m_pathRequest[index] == nullptr);
 	CuboidSet candidates;
-	for(const Cuboid& cuboid : getAdjacentCuboids(other))
+	for(const Cuboid cuboid : getAdjacentCuboids(other))
 		for(const Point3D& adjacent : cuboid)
 			if(
 				space.shape_anythingCanEnterEver(adjacent) &&
@@ -278,7 +279,7 @@ void Actors::move_setDestinationAdjacentToActor(const ActorIndex& index, const A
 				candidates.maybeAdd(adjacent);
 	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, otherLocation);
 }
-void Actors::move_setDestinationAdjacentToItem(const ActorIndex& index, const ItemIndex& item, bool detour, bool unreserved, bool reserve)
+void Actors::move_setDestinationAdjacentToItem(const ActorIndex index, const ItemIndex item, bool detour, bool unreserved, bool reserve)
 {
 	assert(!isIntersectingOrAdjacentTo(index, item));
 	assert(!isAdjacentToLocation(index, m_area.getItems().getLocation(item)));
@@ -287,7 +288,7 @@ void Actors::move_setDestinationAdjacentToItem(const ActorIndex& index, const It
 	Items& items = m_area.getItems();
 	assert(m_pathRequest[index] == nullptr);
 	CuboidSet candidates;
-	for(const Cuboid& cuboid : items.getAdjacentCuboids(item))
+	for(const Cuboid cuboid : items.getAdjacentCuboids(item))
 		for(const Point3D& adjacent : cuboid)
 			if(
 				space.shape_anythingCanEnterEver(adjacent) &&
@@ -296,7 +297,7 @@ void Actors::move_setDestinationAdjacentToItem(const ActorIndex& index, const It
 				candidates.maybeAdd(adjacent);
 	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, items.getLocation(item));
 }
-void Actors::move_setDestinationAdjacentToPlant(const ActorIndex& index, const PlantIndex& plant, bool detour, bool unreserved, bool reserve)
+void Actors::move_setDestinationAdjacentToPlant(const ActorIndex index, const PlantIndex plant, bool detour, bool unreserved, bool reserve)
 {
 	assert(!isAdjacentToPlant(index, plant));
 	assert(m_pathRequest[index] == nullptr);
@@ -304,7 +305,7 @@ void Actors::move_setDestinationAdjacentToPlant(const ActorIndex& index, const P
 	Plants& plants = m_area.getPlants();
 	assert(m_pathRequest[index] == nullptr);
 	CuboidSet candidates;
-	for(const Cuboid& cuboid : plants.getAdjacentCuboids(plant))
+	for(const Cuboid cuboid : plants.getAdjacentCuboids(plant))
 		for(const Point3D& adjacent : cuboid)
 			if(
 				space.shape_anythingCanEnterEver(adjacent) &&
@@ -313,7 +314,7 @@ void Actors::move_setDestinationAdjacentToPlant(const ActorIndex& index, const P
 				candidates.maybeAdd(adjacent);
 	move_setDestinationToAny(index, candidates, detour, unreserved, reserve, plants.getLocation(plant));
 }
-void Actors::move_setDestinationAdjacentToPolymorphic(const ActorIndex& index, ActorOrItemIndex actorOrItemIndex, bool detour, bool unreserved, bool reserve)
+void Actors::move_setDestinationAdjacentToPolymorphic(const ActorIndex index, ActorOrItemIndex actorOrItemIndex, bool detour, bool unreserved, bool reserve)
 {
 	assert(actorOrItemIndex.exists());
 	if(actorOrItemIndex.isActor())
@@ -321,7 +322,7 @@ void Actors::move_setDestinationAdjacentToPolymorphic(const ActorIndex& index, A
 	else
 		move_setDestinationAdjacentToItem(index, actorOrItemIndex.getItem(), detour, unreserved, reserve);
 }
-void Actors::move_setDestinationAdjacentToFluidType(const ActorIndex& index, const FluidTypeId& fluidType, bool detour, bool unreserved, bool reserve, Distance maxRange)
+void Actors::move_setDestinationAdjacentToFluidType(const ActorIndex index, const FluidTypeId fluidType, bool detour, bool unreserved, bool reserve, Distance maxRange)
 {
 	assert(m_pathRequest[index] == nullptr);
 	constexpr bool adjacent = true;
@@ -330,7 +331,7 @@ void Actors::move_setDestinationAdjacentToFluidType(const ActorIndex& index, con
 		faction = m_faction[index];
 	move_pathRequestRecord(index, std::make_unique<GoToFluidTypePathRequest>(m_location[index], maxRange, getReference(index), m_compoundShape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, fluidType));
 }
-void Actors::move_setDestinationAdjacentToDesignation(const ActorIndex& index, const SpaceDesignation& designation, bool detour, bool unreserved, bool reserve, Distance maxRange)
+void Actors::move_setDestinationAdjacentToDesignation(const ActorIndex index, const SpaceDesignation& designation, bool detour, bool unreserved, bool reserve, Distance maxRange)
 {
 	assert(m_pathRequest[index] == nullptr);
 	FactionId faction;
@@ -339,21 +340,21 @@ void Actors::move_setDestinationAdjacentToDesignation(const ActorIndex& index, c
 	constexpr bool adjacent = true;
 	move_pathRequestRecord(index, std::make_unique<GoToSpaceDesignationPathRequest>(m_location[index], maxRange, getReference(index), m_compoundShape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, designation));
 }
-void Actors::move_setDestinationToEdge(const ActorIndex& index, bool detour)
+void Actors::move_setDestinationToEdge(const ActorIndex index, bool detour)
 {
 	assert(m_pathRequest[index] == nullptr);
 	constexpr bool adjacent = false;
 	constexpr bool reserveDestination = false;
 	move_pathRequestRecord(index, std::make_unique<GoToEdgePathRequest>(m_location[index], Distance::max(), getReference(index), m_compoundShape[index], m_moveType[index], m_facing[index], detour, adjacent, reserveDestination));
 }
-void Actors::move_clearAllEventsAndTasks(const ActorIndex& index)
+void Actors::move_clearAllEventsAndTasks(const ActorIndex index)
 {
 	m_moveEvent.maybeUnschedule(index);
 	move_pathRequestMaybeCancel(index);
 }
-void Actors::move_onLeaveArea(const ActorIndex& index) { move_clearAllEventsAndTasks(index); }
-void Actors::move_onDeath(const ActorIndex& index) { move_clearAllEventsAndTasks(index); }
-bool Actors::move_tryToReserveProposedDestination(const ActorIndex& index, const SmallSet<Point3D>& path)
+void Actors::move_onLeaveArea(const ActorIndex index) { move_clearAllEventsAndTasks(index); }
+void Actors::move_onDeath(const ActorIndex index) { move_clearAllEventsAndTasks(index); }
+bool Actors::move_tryToReserveProposedDestination(const ActorIndex index, const SmallSet<Point3D>& path)
 {
 	ShapeId shape = getShape(index);
 	CanReserve& canReserve = canReserve_get(index);
@@ -368,7 +369,7 @@ bool Actors::move_tryToReserveProposedDestination(const ActorIndex& index, const
 		auto occupiedCuboids = Shape::getCuboidsOccupiedAt(shape, space, location, facing);
 		if(space.isReservedAny(occupiedCuboids, faction))
 			return false;
-		for(const Cuboid& cuboid : occupiedCuboids)
+		for(const Cuboid cuboid : occupiedCuboids)
 			for(const Point3D& point : cuboid)
 				space.reserve(point, canReserve);
 	}
@@ -380,12 +381,12 @@ bool Actors::move_tryToReserveProposedDestination(const ActorIndex& index, const
 	}
 	return true;
 }
-bool Actors::move_tryToReserveOccupied(const ActorIndex& index)
+bool Actors::move_tryToReserveOccupied(const ActorIndex index)
 {
 	ShapeId shape = getShape(index);
 	CanReserve& canReserve = canReserve_get(index);
 	Space& space = m_area.getSpace();
-	const Point3D& location = getLocation(index);
+	const Point3D location = getLocation(index);
 	const Facing4& facing = getFacing(index);
 	const FactionId& faction = getFaction(index);
 	if(Shape::getIsMultiTile(shape))
@@ -394,7 +395,7 @@ bool Actors::move_tryToReserveOccupied(const ActorIndex& index)
 		auto occupiedCuboids = Shape::getCuboidsOccupiedAt(shape, space, location, facing);
 		if(space.isReservedAny(occupiedCuboids, faction))
 			return false;
-		for(const Cuboid& cuboid : occupiedCuboids)
+		for(const Cuboid cuboid : occupiedCuboids)
 			for(const Point3D& point : cuboid)
 				space.reserve(point, canReserve);
 	}
@@ -406,12 +407,12 @@ bool Actors::move_tryToReserveOccupied(const ActorIndex& index)
 	}
 	return true;
 }
-bool Actors::move_destinationIsAdjacentToLocation(const ActorIndex& index, const Point3D& location)
+bool Actors::move_destinationIsAdjacentToLocation(const ActorIndex index, const Point3D location)
 {
 	assert(m_destination[index].exists());
 	return location.isAdjacentTo(m_destination[index]);
 }
-void Actors::move_pathRequestCallback(const ActorIndex& index, SmallSet<Point3D> path, bool useCurrentLocation, bool reserveDestination)
+void Actors::move_pathRequestCallback(const ActorIndex index, SmallSet<Point3D> path, bool useCurrentLocation, bool reserveDestination)
 {
 	if(path.empty() || (reserveDestination && !move_tryToReserveProposedDestination(index, path)))
 	{
@@ -446,7 +447,7 @@ void Actors::move_pathRequestCallback(const ActorIndex& index, SmallSet<Point3D>
 	else
 		move_setPath(index, path);
 }
-void Actors::move_pathRequestMaybeCancel(const ActorIndex& index)
+void Actors::move_pathRequestMaybeCancel(const ActorIndex index)
 {
 	if(m_pathRequest[index] != nullptr)
 	{
@@ -454,30 +455,30 @@ void Actors::move_pathRequestMaybeCancel(const ActorIndex& index)
 		m_pathRequest[index] = nullptr;
 	}
 }
-void Actors::move_pathRequestClear(const ActorIndex& index)
+void Actors::move_pathRequestClear(const ActorIndex index)
 {
 	assert(m_pathRequest[index]!= nullptr);
 	m_pathRequest[index] = nullptr;
 }
-void Actors::move_pathRequestRecord(const ActorIndex& index, std::unique_ptr<PathRequestDepthFirst> pathRequest)
+void Actors::move_pathRequestRecord(const ActorIndex index, std::unique_ptr<PathRequestDepthFirst> pathRequest)
 {
 	assert(m_pathRequest[index] == nullptr);
 	m_pathRequest[index] = pathRequest.get();
 	m_area.m_hasTerrainFacades.getForMoveType(pathRequest->moveType).registerPathRequestWithHuristic(std::move(pathRequest));
 }
-void Actors::move_pathRequestRecord(const ActorIndex& index, std::unique_ptr<PathRequestBreadthFirst> pathRequest)
+void Actors::move_pathRequestRecord(const ActorIndex index, std::unique_ptr<PathRequestBreadthFirst> pathRequest)
 {
 	assert(m_pathRequest[index] == nullptr);
 	m_pathRequest[index] = pathRequest.get();
 	m_area.m_hasTerrainFacades.getForMoveType(m_moveType[index]).registerPathRequestNoHuristic(std::move(pathRequest));
 }
-bool Actors::move_canMove(const ActorIndex& index) const
+bool Actors::move_canMove(const ActorIndex index) const
 {
 	if(!isAlive(index) || m_speedIndividual[index] == 0)
 		return false;
 	return true;
 }
-Step Actors::move_delayToMoveInto(const ActorIndex& index, const Point3D& from, const Point3D& to) const
+Step Actors::move_delayToMoveInto(const ActorIndex index, const Point3D from, const Point3D to) const
 {
 	assert(from != to);
 	Space& space = m_area.getSpace();
@@ -497,7 +498,7 @@ Step Actors::move_delayToMoveInto(const ActorIndex& index, const Point3D& from, 
 	assert(cost != 0);
 	return Step::create(std::max(1, int(std::round(float(stepsPerSecond.get() * cost.get()) / float(speed.get())))));
 }
-SmallSet<Point3D> Actors::move_makePathTo(const ActorIndex& index, const Point3D& destination) const
+SmallSet<Point3D> Actors::move_makePathTo(const ActorIndex index, const Point3D destination) const
 {
 	assert(destination != m_location[index]);
 	const FindPathResult result = m_area.m_hasTerrainFacades.getForMoveType(
@@ -506,22 +507,22 @@ SmallSet<Point3D> Actors::move_makePathTo(const ActorIndex& index, const Point3D
 	assert(!result.useCurrentPosition);
 	return result.path;
 }
-Step Actors::move_stepsTillNextMoveEvent(const ActorIndex& index) const
+Step Actors::move_stepsTillNextMoveEvent(const ActorIndex index) const
 {
 	// Add 1 because we increment step number at the end of the step.
 	return Step::create(1) + m_moveEvent.getStep(index) - m_area.m_simulation.m_step;
 }
-bool Actors::move_canPathTo(const ActorIndex& index, const Point3D& destination)
+bool Actors::move_canPathTo(const ActorIndex index, const Point3D destination)
 {
 	return move_canPathFromTo(index, m_location[index], m_facing[index], destination);
 }
-bool Actors::move_canPathFromTo(const ActorIndex& index, const Point3D& start, const Facing4& startFacing, const Point3D& destination)
+bool Actors::move_canPathFromTo(const ActorIndex index, const Point3D start, const Facing4 startFacing, const Point3D destination)
 {
 	TerrainFacade& terrainFacade = m_area.m_hasTerrainFacades.getForMoveType(m_moveType[index]);
 	return terrainFacade.accessable(start, startFacing, destination, index);
 }
 // MoveEvent
-MoveEvent::MoveEvent(const Step& delay, Area& area, const ActorIndex& actor, const Step start) :
+MoveEvent::MoveEvent(const Step delay, Area& area, const ActorIndex actor, const Step start) :
 	ScheduledEvent(area.m_simulation, delay, start), m_actor(actor) { }
 MoveEvent::MoveEvent(Simulation& simulation, const Json& data) :
 	ScheduledEvent(simulation, data["delay"].get<Step>(), data["start"].get<Step>())

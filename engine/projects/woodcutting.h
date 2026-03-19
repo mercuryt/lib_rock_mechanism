@@ -17,11 +17,11 @@ class WoodCuttingProject final : public Project
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
 	[[nodiscard]] SkillTypeId getSkill() const;
 	[[nodiscard]] std::string description() const { return "woodcutting"; }
-	static int getWorkerWoodCuttingScore(Area& area, const ActorIndex& actor);
+	static int getWorkerWoodCuttingScore(Area& area, const ActorIndex actor);
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
 	// PointFeatureType can be null, meaning the point is to be fully excavated.
-	WoodCuttingProject(FactionId faction, Area& area, const Point3D& point, std::unique_ptr<DishonorCallback> locationDishonorCallback) :
+	WoodCuttingProject(FactionId faction, Area& area, const Point3D point, std::unique_ptr<DishonorCallback> locationDishonorCallback) :
 		Project(faction, area, point, Config::maxNumberOfWorkersForWoodCuttingProject, std::move(locationDishonorCallback)) { }
 	WoodCuttingProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	// No toJson is needed here.

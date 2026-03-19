@@ -27,16 +27,16 @@ class RTreeDataIndex
 		m_tree.maybeRemove(shape);
 	}
 public:
-	void insert(const Cuboid& cuboid, T&& value);
-	void insertOrOverwrite(const Cuboid& cuboid, T&& value);
-	void insert(const Point3D& point, T&& value);
-	void insertOrOverwrite(const Point3D& point, T&& value);
+	void insert(const Cuboid cuboid, T&& value);
+	void insertOrOverwrite(const Cuboid cuboid, T&& value);
+	void insert(const Point3D point, T&& value);
+	void insertOrOverwrite(const Point3D point, T&& value);
 	void remove(const auto& shape)
 	{
 		const DataIndex index = m_tree.queryGetOne(shape);
 		removeInternal(shape, index);
 	}
-	void remove(const Point3D& point);
+	void remove(const Point3D point);
 	void maybeRemove(const auto& shape)
 	{
 		const DataIndex index = m_tree.queryGetOne(shape);

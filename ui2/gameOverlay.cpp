@@ -8,26 +8,33 @@
 #include "../engine/actors/actors.h"
 #include "../engine/items/items.h"
 #include "../engine/plants.h"
+#include "../engine/definitions/plantSpecies.h"
+#include "../engine/definitions/animalSpecies.h"
 void GameOverlay::draw(Window& window)
 {
 	drawSelectionBox(window);
 	drawTopBar(window);
+	drawInfoPopUp(window);
+	contextMenu::draw(window);
 	if(m_gameMenuIsOpen)
 		drawMenu(window);
 }
 void GameOverlay::drawSelectionBox(Window& window)
 {
-	if(!m_mouseIsDown)
+	if(!window.m_gameOverlay.m_mouseIsDown)
 		return;
 	SDL_Rect rect;
-	rect.x = std::min(m_mouseDragStart.x, window.m_mousePosition.x);
-	rect.y = std::min(m_mouseDragStart.y, window.m_mousePosition.y);
-	rect.w = std::abs(window.m_mousePosition.x - m_mouseDragStart.x);
-	rect.h = std::abs(window.m_mousePosition.y - m_mouseDragStart.y);
+	rect.x = std::min(m_mouseDragStartCoordinates.x, window.m_mousePosition.x);
+	rect.y = std::min(m_mouseDragStartCoordinates.y, window.m_mousePosition.y);
+	rect.w = std::abs(window.m_mousePosition.x - m_mouseDragStartCoordinates.x);
+	rect.h = std::abs(window.m_mousePosition.y - m_mouseDragStartCoordinates.y);
 	if(rect.w > displayData::selectBoxThickness * 2 && rect.h > displayData::selectBoxThickness * 2)
 	{
 		SDL_Color color = window.m_controllKey? displayData::cancelColor : displayData::selectColor;
-		window.m_renderBuffer.addOutline(rect, color, displayData::selectBoxThickness);
+		SDL_SetRenderDrawColor(window.m_sdlRenderer, color.r, color.g, color.b, color.a);
+		// This issues an extra draw call but is kept seperate from the RenderBuffer because it is not scaled or panned.
+		SDL_RenderDrawRect(window.m_sdlRenderer, &rect);
+		SDL_SetRenderDrawColor(window.m_sdlRenderer, 255, 255, 255, 255);
 	}
 }
 void GameOverlay::drawTopBar(Window& window)
@@ -58,12 +65,9 @@ void GameOverlay::drawTopBar(Window& window)
 	ImGui::SetCursorScreenPos({windowWidth / 3.f, yPos});
 	ImGui::Text(window.m_paused ? "paused" : "speed: %.2f", window.m_speed.load());
 	ImGui::SameLine();
-	if(window.m_area->getSpace().boundry().contains(m_blockUnderCursor))
-	{
-		ImGui::SetCursorScreenPos({windowWidth * 6 / 10.f, yPos});
-		ImGui::Text("%i, %i, %i", m_blockUnderCursor.x().get(), m_blockUnderCursor.y().get(), m_blockUnderCursor.z().get());
-		ImGui::SameLine();
-	}
+	ImGui::SetCursorScreenPos({windowWidth * 6 / 10.f, yPos});
+	ImGui::Text("%i, %i, %i", m_blockUnderCursor.x().get(), m_blockUnderCursor.y().get(), m_blockUnderCursor.z().get());
+	ImGui::SameLine();
 	ImGui::SetCursorScreenPos({windowWidth * 8 / 10.f, yPos});
 	std::string selectModeName;
 	int selectedCount;
@@ -71,7 +75,7 @@ void GameOverlay::drawTopBar(Window& window)
 	{
 		case SelectMode::Space:
 			selectModeName = "space";
-			selectedCount = m_selectedSpace.volume();
+			selectedCount = m_selectedArea.volume();
 			break;
 		case SelectMode::Actors:
 			selectModeName = "actors";
@@ -83,7 +87,7 @@ void GameOverlay::drawTopBar(Window& window)
 			break;
 		case SelectMode::Plants:
 			selectModeName = "plants";
-			selectedCount = m_selectedSpace.volume();
+			selectedCount = window.m_area->getSpace().plant_count(m_selectedArea);
 			break;
 	}
 	ImGui::Text("selecting: %s, selected : %i", selectModeName.c_str(), selectedCount);
@@ -96,7 +100,7 @@ void GameOverlay::drawMenu(Window& window)
 	ImGui::PushFont(nullptr, displayData::menuFontSize);
 	bool canClose = false;
 	ImGuiIO& io = ImGui::GetIO();
-	// --- Set window size and position in logical space ---
+	// Set window size and position in logical space.
 	ImVec2 windowSize = ImVec2(400, 400);
 	ImVec2 centerPos = ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
 	// Center window using pivot (0.5,0.5)
@@ -110,38 +114,15 @@ void GameOverlay::drawMenu(Window& window)
 			if(ImGui::Button(label, ImVec2(buttonWidth, 0)))
 					callback();
 	};
-	centerButton("Menu", [&]{ window.showMainMenu(); });
+	centerButton("Menu", [&]{ m_gameMenuIsOpen = false; window.showMainMenu(); });
+	ImGui::BeginDisabled(window.m_backgroundTask.running());
 	centerButton("Save", [&]{ window.save(); });
-	centerButton("Save And Quit", [&]{ window.save(); window.quit();});
+	auto quitContinuation = [&]{ window.save([windowPtr = &window]{ windowPtr->quit(); }); };
+	centerButton("Save And Quit", std::move(quitContinuation));
 	centerButton("Close", [&]{ m_gameMenuIsOpen = false; });
+	ImGui::EndDisabled();
 	ImGui::PopFont();
 	ImGui::End();
-}
-void GameOverlay::drawSelection(Window& window)
-{
-	switch(m_selectMode)
-	{
-		case SelectMode::Space:
-			draw::colorOnArea(window, m_selectedSpace, displayData::selectColorOverlay);
-			break;
-		case SelectMode::Plants:
-			draw::colorOutlineArea(window, m_selectedSpace, displayData::selectColor, displayData::selectThickness);
-			break;
-		case SelectMode::Actors:
-		{
-			const Actors& actors = window.m_area->getActors();
-			for(const ActorReference& ref : m_selectedActors)
-				draw::colorOutlineCuboid(window, actors.boundry(ref.getIndex(actors.m_referenceData)), displayData::selectColor, displayData::selectThickness);
-			break;
-		}
-		case SelectMode::Items:
-		{
-			const Items& items = window.m_area->getItems();
-			for(const ItemReference& ref : m_selectedItems)
-				draw::colorOutlineCuboid(window, items.boundry(ref.getIndex(items.m_referenceData)), displayData::selectColor, displayData::selectThickness);
-			break;
-		}
-	}
 }
 void GameOverlay::deselectAll()
 {
@@ -159,13 +140,13 @@ void GameOverlay::updateSelect(Window& window, const Cuboid cuboid)
 		case SelectMode::Space:
 			{
 				if(window.m_controllKey)
-					m_selectedSpace.maybeRemove(cuboid);
+					m_selectedArea.maybeRemove(cuboid);
 				else
 				{
 					if(!window.m_shiftKey)
-						m_selectedSpace.clear();
+						m_selectedArea.clear();
 					// TODO: Only being able to select revealed would be very anoying for digging out exploritory shafts. Create a m_provisionalDig rtree which is added to when unrevealed are selected for digging and which is removed from when revealed, possibly creating a dig designation.
-					m_selectedSpace.maybeAddAll(revealedPartOfSelection);
+					m_selectedArea.maybeAddAll(revealedPartOfSelection);
 				}
 			}
 			break;
@@ -202,12 +183,12 @@ void GameOverlay::updateSelect(Window& window, const Cuboid cuboid)
 					areaContainingPlants.maybeAdd(occupied);
 				});
 				if(window.m_controllKey)
-					m_selectedSpace.maybeRemoveAll(areaContainingPlants);
+					m_selectedArea.maybeRemoveAll(areaContainingPlants);
 				else
 				{
 					if(!window.m_shiftKey)
-						m_selectedSpace.clear();
-					m_selectedSpace.maybeAddAll(areaContainingPlants);
+						m_selectedArea.clear();
+					m_selectedArea.maybeAddAll(areaContainingPlants);
 				}
 			}
 			break;
@@ -252,4 +233,12 @@ void GameOverlay::showInfoPopUpPlant(const Point3D point)
 {
 	m_infoPopUp = InfoPopUpId::Plant;
 	m_detailPoint = point;
+}
+void ControllsState::initalize()
+{
+	materialType = MaterialType::byName("dirt");
+	fluidType = FluidType::byName("water");
+	plantSpecies = PlantSpecies::byName("wheat grass");
+	animalSpecies = AnimalSpecies::byName("goblin");
+	itemType = ItemType::byName("pile");
 }

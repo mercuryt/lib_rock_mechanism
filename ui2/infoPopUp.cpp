@@ -1,5 +1,6 @@
 #include "infoPopUp.h"
 #include "window.h"
+#include "displayData.h"
 #include "../engine/area/area.h"
 #include "../engine/items/items.h"
 #include "../engine/actors/actors.h"
@@ -14,14 +15,17 @@ void drawInfoPopUp::begin(const std::string& title)
 	ImGuiIO& io = ImGui::GetIO();
 	ImVec2 centerPos = ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
 	ImGui::SetNextWindowPos(centerPos, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-	ImGui::Begin("infoPopUp", &canClose, windowFlags);
 	float titleWidth = ImGuiCalcTextSize(title).x;
+	ImGui::Begin("infoPopUp", &canClose, windowFlags);
+	ImGui::Dummy(ImVec2(titleWidth + (ImGui::GetStyle().WindowPadding.x * 2), 0));
 	ImVec2 windowSize = ImGui::GetContentRegionAvail();
 	ImGui::SetCursorPosX((windowSize.x - titleWidth) * 0.5);
 	ImGuiText(title);
 }
-void drawInfoPopUp::end()
+void drawInfoPopUp::end(Window& window)
 {
+	if(ImGui::Button("close"))
+		window.m_gameOverlay.m_infoPopUp = InfoPopUpId::Null;
 	ImGui::End();
 }
 void drawInfoPopUp::actor(Window& window)
@@ -53,22 +57,35 @@ void drawInfoPopUp::actor(Window& window)
 		window.showObjectivePriorities(actorRef);
 	if(!actors.sleep_isAwake(actor))
 		ImGuiText("sleeping");
-	else
+	else if(actors.sleep_isTired(actor))
 	{
-		Percent tiredPercent = actors.sleep_getPercentTired(actor);
-		if(actors.sleep_isTired(actor))
+			Percent tiredPercent = actors.sleep_getPercentTired(actor);
 			tiredPercent += 100;
-		ImGuiText((tiredPercent.toString() + " % tired"));
+			ImGuiText((tiredPercent.toString() + " % tired"));
 	}
-	Percent hungerPercent = actors.eat_getPercentStarved(actor);
 	if(actors.eat_isHungry(actor))
+	{
+		Percent hungerPercent = actors.eat_getPercentStarved(actor);
 		hungerPercent += 100;
-	ImGuiText((hungerPercent.toString() + " % hunger"));
-	Percent thirstPercent = actors.drink_getPercentDead(actor);
+		ImGuiText((hungerPercent.toString() + " % hunger"));
+	}
 	if(actors.drink_isThirsty(actor))
-		thirstPercent += 100;
-	ImGuiText((thirstPercent.toString() + " % thirst"));
-	end();
+	{
+		Percent thirstPercent = actors.drink_getPercentDead(actor);
+		ImGuiText((thirstPercent.toString() + " % thirst"));
+	}
+	if(ImGui::Button("details"))
+	{
+		window.m_panel = PanelId::ActorDetails;
+		window.m_gameOverlay.m_infoPopUp = InfoPopUpId::Null;
+	}
+	if(window.m_editMode)
+		if(ImGui::Button("edit"))
+		{
+			window.m_panel = PanelId::EditActor;
+			window.m_gameOverlay.m_infoPopUp = InfoPopUpId::Null;
+		}
+	end(window);
 }
 void drawInfoPopUp::item(Window& window)
 {
@@ -76,8 +93,11 @@ void drawInfoPopUp::item(Window& window)
 	Actors& actors = window.m_area->getActors();
 	const ItemReference itemRef = window.m_gameOverlay.m_detailItem;
 	const ItemIndex item = itemRef.getIndex(items.m_referenceData);
-	begin(items.description(item));
-	ImGui::BeginTable("basic info", 2);
+	std::string title = MaterialType::getName(items.getMaterialType(item)) + ItemType::getName(items.getItemType(item));
+	drawInfoPopUp::begin(title);
+	ImGui::BeginTable("basicInfo", 2);
+	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
 	if(ItemType::getIsGeneric(items.getItemType(item)))
 	{
 		ImGuiText("quantity");
@@ -90,6 +110,7 @@ void drawInfoPopUp::item(Window& window)
 		ImGui::TableNextColumn();
  		ImGuiText(items.getQuality(item).toString());
 		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
 		ImGuiText("wear");
 		ImGui::TableNextColumn();
  		ImGuiText(items.getWear(item).toString());
@@ -98,8 +119,10 @@ void drawInfoPopUp::item(Window& window)
 	if(items.cargo_exists(item))
 	{
 		ImGui::BeginTable("item cargo", window.m_editMode? 2 : 1);
-		for(const ItemIndex& cargoItem : items.cargo_getItems(item))
+		for(const ItemIndex cargoItem : items.cargo_getItems(item))
 		{
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
 			if(ImGuiButton(items.description(cargoItem)))
 				window.m_gameOverlay.showInfoPopUpForItem(items.getReference(cargoItem));
 			if(window.m_editMode)
@@ -113,14 +136,13 @@ void drawInfoPopUp::item(Window& window)
 			}
 		}
 		ImGui::EndTable();
-		ImGui::BeginTable("actor cargo", window.m_editMode? 2 : 1);
-		for(const ActorIndex& actor : items.cargo_getActors(item))
+		for(const ActorIndex actor : items.cargo_getActors(item))
 		{
 			if(ImGuiButton(actors.getName(actor)))
 				window.m_gameOverlay.showInfoPopUpForActor(actors.getReference(actor));
 		}
 	}
-	end();
+	end(window);
 }
 void drawInfoPopUp::point(Window& window)
 {
@@ -128,7 +150,8 @@ void drawInfoPopUp::point(Window& window)
 	Actors& actors = window.m_area->getActors();
 	Point3D point = window.m_gameOverlay.m_detailPoint;
 	Space& space = window.m_area->getSpace();
-	begin(point.toString());
+	std::string coordinates = point.x().toString() + "," + point.y().toString() + "," + point.z().toString();
+	drawInfoPopUp::begin(coordinates);
 	if(space.solid_isAny(point))
 		ImGuiText(("solid " + MaterialType::getName(space.solid_get(point))));
 	else
@@ -154,16 +177,15 @@ void drawInfoPopUp::point(Window& window)
 				ImGuiText((name + " " + MaterialType::getName(pointFeature.materialType)));
 			}
 		}
-		ImGuiText(("temperature: " + std::to_string(space.temperature_get(point).get())));
-		for(const ActorIndex& actor : space.actor_getAll(point))
+		for(const ActorIndex actor : space.actor_getAll(point))
 			if(ImGuiButton(actors.getName(actor)))
 				window.m_gameOverlay.showInfoPopUpForActor(actors.getReference(actor));
-		for(const ItemIndex& item : space.item_getAll(point))
+		for(const ItemIndex item : space.item_getAll(point))
 			if(ImGuiButton(items.description(item)))
 				window.m_gameOverlay.showInfoPopUpForItem(items.getReference(item));
 		if(space.plant_exists(point))
 		{
-			const PlantIndex& plant = space.plant_get(point);
+			const PlantIndex plant = space.plant_get(point);
 			const Plants& plants = window.m_area->getPlants();
 			if(ImGuiButton(PlantSpecies::getName(plants.getSpecies(plant))))
 				window.m_gameOverlay.showInfoPopUpPlant(point);
@@ -188,8 +210,11 @@ void drawInfoPopUp::point(Window& window)
 			const FarmField& field = *space.farm_get(point, window.m_faction);
 			ImGuiText(((field.m_plantSpecies.exists() ? PlantSpecies::getName(field.m_plantSpecies) + " " : "") + "field"));
 		}
+		if(space.isExposedToSky(window.m_gameOverlay.m_detailPoint))
+			ImGuiText("exposed to sky");
 	}
-	end();
+	ImGuiText(("temperature: " + displayData::formatTemperature(space.temperature_get(point))));
+	end(window);
 }
 void drawInfoPopUp::plant(Window& window)
 {
@@ -207,5 +232,6 @@ void drawInfoPopUp::plant(Window& window)
 	}
 	if(plants.readyToHarvest(plant))
 		ImGuiText((plants.getQuantityToHarvest(plant).toString() + " harvestable fruit"));
-	end();
+	ImGuiText(std::string(plants.isGrowing(plant) ? "C" : "Not c") + "urrently growing");
+	end(window);
 }

@@ -53,53 +53,54 @@ class RTreeData
 		[[nodiscard]] int getChildCount() const { return nodeSize - m_childBegin.get(); }
 		[[nodiscard]] int unusedCapacity() const { return (m_childBegin - m_leafEnd).get(); }
 		[[nodiscard]] int sortOrder() const { return m_cuboids.boundry().getCenter().hilbertNumber(); };
-		[[nodiscard]] RTreeArrayIndex offsetFor(const RTreeNodeIndex& index) const;
+		[[nodiscard]] RTreeArrayIndex offsetFor(const RTreeNodeIndex index) const;
 		[[nodiscard]] RTreeArrayIndex offsetOfFirstChild() const { return m_childBegin; }
 		[[nodiscard]] bool empty() const { return unusedCapacity() == nodeSize; }
 		[[nodiscard]] int getLeafVolume() const;
 		[[nodiscard]] int getNodeVolume() const;
 		[[nodiscard]] Json toJson() const;
-		[[nodiscard]] bool containsLeaf(const Cuboid& cuboid, const T& value) const;
+		[[nodiscard]] bool containsLeaf(const Cuboid cuboid, const T& value) const;
 		[[nodiscard]] bool hasChildren() const ;
 		[[nodiscard]] bool operator==(const Node& other) const = default;
 		void load(const Json& data);
-		void updateChildIndex(const RTreeNodeIndex& oldIndex, const RTreeNodeIndex& newIndex);
-		void insertLeaf(const Cuboid& cuboid, const T& value);
-		void insertLeaf(const Point3D& point, const T& value) { insertLeaf(Cuboid{point, point}, value); }
-		void insertBranch(const Cuboid& cuboid, const RTreeNodeIndex& index);
-		void eraseBranch(const RTreeArrayIndex& offset);
-		void eraseLeaf(const RTreeArrayIndex& offset);
+		void updateChildIndex(const RTreeNodeIndex oldIndex, const RTreeNodeIndex newIndex);
+		void insertLeaf(const Cuboid cuboid, const T& value);
+		void insertLeaf(const Point3D point, const T& value) { insertLeaf(Cuboid{point, point}, value); }
+		void insertBranch(const Cuboid cuboid, const RTreeNodeIndex index);
+		void eraseBranch(const RTreeArrayIndex offset);
+		void eraseLeaf(const RTreeArrayIndex offset);
 		void eraseByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
 		void eraseByMask(BitSet mask);
 		void eraseLeavesByMask(BitSet mask);
 		void eraseLeavesByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
 		void clear();
-		void setParent(const RTreeNodeIndex& index) { m_parent = index; }
-		void updateLeaf(const RTreeArrayIndex& offset, const Cuboid& cuboid);
-		void updateValue(const RTreeArrayIndex& offset, const T& value);
-		void updateLeafWithValue(const RTreeArrayIndex& offset, const Cuboid& cuboid, const T& value);
-		void maybeUpdateLeafWithValue(const RTreeArrayIndex& offset, const Cuboid& cuboid, const T& value);
-		void updateLeafWithValue(const RTreeArrayIndex& offset, const Point3D& point, const T& value) { updateLeafWithValue(offset, Cuboid{point, point}, value); }
-		void updateBranchBoundry(const RTreeArrayIndex& offset, const Cuboid& cuboid);
-		[[nodiscard]] __attribute__((noinline)) std::string toString();
+		void setParent(const RTreeNodeIndex index) { m_parent = index; }
+		void updateLeaf(const RTreeArrayIndex offset, const Cuboid cuboid);
+		void updateValue(const RTreeArrayIndex offset, const T& value);
+		void updateLeafWithValue(const RTreeArrayIndex offset, const Cuboid cuboid, const T& value);
+		void maybeUpdateLeafWithValue(const RTreeArrayIndex offset, const Cuboid cuboid, const T& value);
+		void updateLeafWithValue(const RTreeArrayIndex offset, const Point3D point, const T& value) { updateLeafWithValue(offset, Cuboid{point, point}, value); }
+		void updateBranchBoundry(const RTreeArrayIndex offset, const Cuboid cuboid);
+		GDB_CALLABLE void log() const;
+		[[nodiscard]] GDB_CALLABLE std::string toString() const;
 	};
 	StrongVector<Node, RTreeNodeIndex> m_nodes;
 	SmallSet<RTreeNodeIndex> m_emptySlots;
 	SmallSet<RTreeNodeIndex> m_toComb;
 	[[nodiscard]] std::tuple<Cuboid, RTreeArrayIndex, RTreeArrayIndex> findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids) const;
-	[[nodiscard]] SmallSet<std::pair<Cuboid, T>> gatherLeavesRecursive(const RTreeNodeIndex& parent) const;
-	void destroyWithChildren(const RTreeNodeIndex& index);
+	[[nodiscard]] SmallSet<std::pair<Cuboid, T>> gatherLeavesRecursive(const RTreeNodeIndex parent) const;
+	void destroyWithChildren(const RTreeNodeIndex index);
 	void tryToMergeLeaves(Node& parent);
-	void clearAllContained(const RTreeNodeIndex& index, const Cuboid& cuboid);
-	void clearAllContainedWithValueRecursive(Node& parent, const Cuboid& cuboid, const T& value);
-	void addToNodeRecursive(const RTreeNodeIndex& index, const Cuboid& cuboid, const T& value);
+	void clearAllContained(const RTreeNodeIndex index, const Cuboid cuboid);
+	void clearAllContainedWithValueRecursive(Node& parent, const Cuboid cuboid, const T& value);
+	void addToNodeRecursive(const RTreeNodeIndex index, const Cuboid cuboid, const T& value);
 	// Removes intersecting leaves and contained branches. Intersecting branches are added to openList.
-	void removeFromNode(const RTreeNodeIndex& index, const Cuboid& cuboid, SmallSet<RTreeNodeIndex>& openList);
-	void removeFromNodeWithValue(const RTreeNodeIndex& index, const Cuboid& cuboid, SmallSet<RTreeNodeIndex>& openList, const T& value);
+	void removeFromNode(const RTreeNodeIndex index, const Cuboid cuboid, SmallSet<RTreeNodeIndex>& openList);
+	void removeFromNodeWithValue(const RTreeNodeIndex index, const Cuboid cuboid, SmallSet<RTreeNodeIndex>& openList, const T& value);
 	void removeFromNodeByMask(Node& node, const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
 	void removeFromNodeByMask(Node& node, BitSet mask);
 	void updateBoundriesMaybe(const SmallSet<RTreeNodeIndex>& indices);
-	void merge(const RTreeNodeIndex& destination, const RTreeNodeIndex& source);
+	void merge(const RTreeNodeIndex destination, const RTreeNodeIndex source);
 	// Iterate m_toComb and try to recursively merge leaves.
 	// Then check for single child nodes and splice them out. If the child is a leaf re-add the parent to m_toComb.
 	// Finally check for child branches that can be merged upwards. If any are merged re-add parent to m_toComb.
@@ -113,16 +114,16 @@ class RTreeData
 public:
 	RTreeData();
 	void beforeJsonLoad();
-	void maybeInsert(const Cuboid& cuboid, const T& value);
-	void maybeRemove(const Cuboid& cuboid, const T& value);
-	void maybeRemove(const Cuboid& cuboid);
+	void maybeInsert(const Cuboid cuboid, const T& value);
+	void maybeRemove(const Cuboid cuboid, const T& value);
+	void maybeRemove(const Cuboid cuboid);
 	void maybeInsert(const CuboidSet& cuboids, const T& value);
 	void maybeRemove(const CuboidSet& cuboids);
-	void maybeInsert(const Point3D& point, const T& value) { const Cuboid cuboid = Cuboid(point, point); maybeInsert(cuboid, value); }
-	void maybeRemove(const Point3D& point, const T& value) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid, value); }
-	void maybeRemove(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid); }
-	void maybeInsertOrOverwrite(const Point3D& point, const T& value);
-	void maybeInsertOrOverwrite(const Cuboid& cuboid, const T& value);
+	void maybeInsert(const Point3D point, const T& value) { const Cuboid cuboid = Cuboid(point, point); maybeInsert(cuboid, value); }
+	void maybeRemove(const Point3D point, const T& value) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid, value); }
+	void maybeRemove(const Point3D point) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid); }
+	void maybeInsertOrOverwrite(const Point3D point, const T& value);
+	void maybeInsertOrOverwrite(const Cuboid cuboid, const T& value);
 	void insert(const auto& shape, const T& value)
 	{
 		if constexpr(config.leavesCanOverlap)
@@ -146,9 +147,9 @@ public:
 	void prepare();
 	void clear();
 	[[nodiscard]] bool canPrepare() const;
-	[[nodiscard]] __attribute__((noinline)) static T nullValue() { return T::create(nullPrimitive); }
+	[[nodiscard]] GDB_CALLABLE static T nullValue() { return T::create(nullPrimitive); }
 	[[nodiscard]] bool empty() const { return leafCount() == 0; }
-	[[nodiscard]] __attribute__((noinline)) bool anyLeafOverlapsAnother() const;
+	[[nodiscard]] GDB_CALLABLE bool anyLeafOverlapsAnother() const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] CuboidSet getLeafCuboids() const;
 	[[nodiscard]] SmallSet<T> getAllWithCondition(auto&& condition) const
@@ -206,7 +207,7 @@ public:
 	template<UpdateActionConfig queryConfig>
 	void updateActionWithCondition(const CuboidSet& cuboidSet, auto&& action, const auto& condition)
 	{
-		for(const Cuboid& cuboid : cuboidSet)
+		for(const Cuboid cuboid : cuboidSet)
 			updateActionWithCondition<queryConfig>(cuboid, action, condition);
 	}
 	template<UpdateActionConfig queryConfig>
@@ -247,9 +248,9 @@ public:
 					const RTreeArrayIndex arrayIndex{leafBitSet.getNextAndClear()};
 					Cuboid leafCuboid = nodeCuboids[arrayIndex.get()];
 					// inflate from primitive temporarily for callback.
-					T initalValue = T::create(nodeDataAndChildIndices[arrayIndex].data);
-					assert(initalValue != T::create(nullPrimitive));
-					T value = initalValue;
+					T initialValue = T::create(nodeDataAndChildIndices[arrayIndex].data);
+					assert(initialValue != T::create(nullPrimitive));
+					T value = initialValue;
 					if(!condition(value))
 						continue;
 					action(value);
@@ -257,7 +258,7 @@ public:
 					if constexpr(queryConfig.create)
 						emptySpaceInShape.maybeRemove(leafCuboid.intersection(shape));
 					found = true;
-					if(value == initalValue)
+					if(value == initialValue)
 					{
 						// Action did not change the value.
 						assert(queryConfig.allowNotChanged);
@@ -284,8 +285,8 @@ public:
 						// Shape does not contain leaf. Record fragments and note index for boundry update.
 						if(index != 0)
 							toUpdateBoundryMaybe.maybeInsert(index);
-						for(const Cuboid& cuboid : leafCuboid.getChildrenWhenSplitBy(shape))
-							fragmentsToReAdd.insert(cuboid, initalValue);
+						for(const Cuboid cuboid : leafCuboid.getChildrenWhenSplitBy(shape))
+							fragmentsToReAdd.insert(cuboid, initialValue);
 						if(value == T::create(nullPrimitive))
 						{
 							// Action changed value to null.
@@ -606,20 +607,20 @@ public:
 	}
 	void queryForEach(const auto& shape, auto&& action) const
 	{
-		auto wrappedAction = [&](const Cuboid&, const T& value) { action(value); };
+		auto wrappedAction = [&](const Cuboid, const T& value) { action(value); };
 		queryForEachWithCuboids(shape, wrappedAction);
 	}
 	void queryForEachCollated(const auto& shape, auto&& action) const
 	{
 		SmallMap<T, CuboidSet> data;
-		auto collect = [&](const Cuboid& cuboid, const T& value) { data.getOrCreate(value).add(cuboid); };
+		auto collect = [&](const Cuboid cuboid, const T& value) { data.getOrCreate(value).add(cuboid); };
 		queryForEachWithCuboids(shape, collect);
 		for(const auto& [value, cuboids] : data)
 			action(value, cuboids);
 	}
 	void queryForEachCuboid(const auto& shape, auto&& action) const
 	{
-		auto wrappedAction = [&](const Cuboid& cuboid, const T&) { action(cuboid); };
+		auto wrappedAction = [&](const Cuboid cuboid, const T&) { action(cuboid); };
 		queryForEachWithCuboids(shape, wrappedAction);
 	}
 	void queryForEachWithCuboids(const auto& shape, auto&& action) const
@@ -684,21 +685,21 @@ public:
 	[[nodiscard]] const SmallSet<std::pair<Cuboid, T>> queryGetAllWithCuboids(const auto& shape) const
 	{
 		SmallSet<std::pair<Cuboid, T>> output;
-		auto action = [&](const Cuboid& cuboid, const T& value) { output.emplace(cuboid, value); };
+		auto action = [&](const Cuboid cuboid, const T& value) { output.emplace(cuboid, value); };
 		queryForEachWithCuboids(shape, action);
 		return output;
 	}
 	[[nodiscard]] CuboidSet queryGetAllCuboids(const auto& shape) const
 	{
 		CuboidSet output;
-		auto action = [&](const Cuboid& cuboid) { output.maybeAdd(cuboid); };
+		auto action = [&](const Cuboid cuboid) { output.maybeAdd(cuboid); };
 		queryForEachCuboid(shape, action);
 		return output;
 	}
 	[[nodiscard]] CuboidSet queryGetAllCuboidsWithCondition(const auto& shape, const auto& condition) const
 	{
 		CuboidSet output;
-		auto action = [&](const Cuboid& cuboid, const T& value) { if(condition(value)) output.maybeAdd(cuboid); };
+		auto action = [&](const Cuboid cuboid, const T& value) { if(condition(value)) output.maybeAdd(cuboid); };
 		queryForEachWithCuboids(shape, action);
 		return output;
 	}
@@ -713,7 +714,7 @@ public:
 	[[nodiscard]] const std::vector<std::pair<Cuboid, T>> queryGetAllWithCuboidsAndCondition(const auto& shape, const auto& condition) const
 	{
 		std::vector<std::pair<Cuboid, T>> output;
-		auto action = [&](const Cuboid& cuboid, const T& value) { if(condition(value)) output.emplace_back(cuboid, value); };
+		auto action = [&](const Cuboid cuboid, const T& value) { if(condition(value)) output.emplace_back(cuboid, value); };
 		queryForEachWithCuboids(shape, action);
 		std::ranges::sort(output);
 		// TODO: std::ranges::unique
@@ -849,7 +850,7 @@ public:
 	{
 		std::vector<T> output;
 		output.resize(shapes.size());
-		auto action = [&](const T& value, const Cuboid&, const int& shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex] = value; };
+		auto action = [&](const T& value, const Cuboid, const int& shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex] = value; };
 		batchQueryForEachWithCondition(shapes, action, condition);
 		return output;
 	}
@@ -857,7 +858,7 @@ public:
 	{
 		std::vector<SmallSet<T>> output;
 		output.resize(shapes.size());
-		auto action = [&](const T& value, const Cuboid&, const int& shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].maybeInsert(value); };
+		auto action = [&](const T& value, const Cuboid, const int& shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].maybeInsert(value); };
 		batchQueryForEachWithCondition(shapes, action, condition);
 		return output;
 	}
@@ -865,7 +866,7 @@ public:
 	{
 		std::vector<CuboidSet> output;
 		output.resize(shapes.size());
-		auto action = [&](const T&, const Cuboid& cuboid, const int& shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].add(cuboid); };
+		auto action = [&](const T&, const Cuboid cuboid, const int& shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].add(cuboid); };
 		batchQueryForEachWithCondition(shapes, action, condition);
 		return output;
 	}
@@ -873,7 +874,7 @@ public:
 	{
 		std::vector<MapWithCuboidKeys<T>> output;
 		output.resize(shapes.size());
-		auto action = [&](const T& value, const Cuboid& cuboid, const int& shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].insert({cuboid, value}); };
+		auto action = [&](const T& value, const Cuboid cuboid, const int& shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].insert({cuboid, value}); };
 		batchQueryForEachWithCondition(shapes, action, condition);
 		return output;
 	}
@@ -896,80 +897,23 @@ public:
 	{
 		const CuboidSet leaves = queryGetAllCuboids(shape);
 		CuboidSet output;
-		for(const Cuboid& leaf : leaves)
+		for(const Cuboid leaf : leaves)
 			output.maybeAdd(leaf.intersection(shape));
 		return output;
 	}
 	void queryRemove(CuboidSet& cuboids) const
 	{
 		Cuboid boundry = cuboids.boundry();
-		for(const Cuboid& cuboid : queryGetAllCuboids(boundry))
+		for(const Cuboid cuboid : queryGetAllCuboids(boundry))
 			cuboids.maybeRemove(cuboid);
 	}
 	[[nodiscard]] int queryCount(const auto& shape) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
-		int output = 0;
-		openList.insert(RTreeNodeIndex::create(0));
-		while(!openList.empty())
-		{
-			auto index = openList.back();
-			openList.popBack();
-			const Node& node = m_nodes[index];
-			const auto& nodeCuboids = node.getCuboids();
-			const auto& intersectMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
-			if(!intersectMask.any())
-				continue;
-			const auto leafCount = node.getLeafCount();
-			output += intersectMask.head(leafCount).count();
-			if(node.hasChildren())
-			{
-				BitSet intersectBitSet = BitSet::create(intersectMask);
-				intersectBitSet.clearAllBefore(leafCount);
-				if(intersectBitSet.any())
-					addIntersectedChildrenToOpenList(node, intersectBitSet, openList);
-			}
-		}
-		return output;
+		return queryGetAll(shape).size();
 	}
 	[[nodiscard]] int queryCountWithCondition(const auto& shape, const auto& condition) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
-		int output = 0;
-		openList.insert(RTreeNodeIndex::create(0));
-		while(!openList.empty())
-		{
-			auto index = openList.back();
-			openList.popBack();
-			const Node& node = m_nodes[index];
-			const auto& nodeCuboids = node.getCuboids();
-			const auto& intersectMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
-			if(!intersectMask.any())
-				continue;
-			BitSet intersectBitSet = BitSet::create(intersectMask);
-			const auto leafCount = node.getLeafCount();
-			const auto offsetOfFirstChild = node.offsetOfFirstChild();
-			if(leafCount != 0 && intersectMask.head(leafCount).any())
-			{
-				const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-				BitSet leafBitSet = intersectBitSet;
-				if(offsetOfFirstChild != nodeSize)
-					leafBitSet.clearAllAfterInclusive(offsetOfFirstChild.get());
-				while(leafBitSet.any())
-				{
-					const RTreeArrayIndex arrayIndex{leafBitSet.getNextAndClear()};
-					T value = T::create(nodeDataAndChildIndices[arrayIndex].data);
-					if(condition(value))
-						++output;
-				}
-			}
-			if(node.hasChildren())
-			{
-				intersectBitSet.clearAllBefore(leafCount);
-				addIntersectedChildrenToOpenList(node, intersectBitSet, openList);
-			}
-		}
-		return output;
+		return queryGetAllWithCondition(shape, condition).size();
 	}
 	template<typename Result, auto predicate>
 	[[nodiscard]] std::pair<T, Result> queryGetHighestReturnWithPredicateOutput(const auto& shape) const
@@ -1010,7 +954,7 @@ public:
 		Point3D output;
 		T outputValue;
 		bool first = true;
-		auto action = [&](const Cuboid& cuboid, const T& value)
+		auto action = [&](const Cuboid cuboid, const T& value)
 		{
 			if(first || value < outputValue)
 			{
@@ -1022,7 +966,7 @@ public:
 		queryForEach(shape, action);
 		return output;
 	}
-	[[nodiscard]] T queryNearestWithCondition(const auto& shape, const Point3D& location, auto&& condition) const
+	[[nodiscard]] T queryNearestWithCondition(const auto& shape, const Point3D location, auto&& condition) const
 	{
 		SmallSet<RTreeNodeIndex> openList;
 		openList.insert(RTreeNodeIndex::create(0));
@@ -1073,32 +1017,32 @@ public:
 	SmallMap<T, CuboidSet> queryWithCuboidsCollated(const auto& shape) const
 	{
 		SmallMap<T, CuboidSet> output;
-		queryForEachWithCuboids(shape, [&](const Cuboid& cuboid, const T& value){ output.getOrCreate(value).insert(cuboid); });
+		queryForEachWithCuboids(shape, [&](const Cuboid cuboid, const T& value){ output.getOrCreate(value).insert(cuboid); });
 		return output;
 	}
 	// For test and debug.
-	[[nodiscard]] __attribute__((noinline)) int nodeCount() const;
-	[[nodiscard]] __attribute__((noinline)) int leafCount() const;
-	[[nodiscard]] __attribute__((noinline)) const Node& getNode(int i) const;
-	[[nodiscard]] __attribute__((noinline)) const Cuboid getNodeCuboid(int i, int o) const;
-	[[nodiscard]] __attribute__((noinline)) RTreeNodeIndex getNodeChild(int i, int o) const;
-	[[nodiscard]] __attribute__((noinline)) T queryPointOne(int x, int y, int z) const;
-	[[nodiscard]] __attribute__((noinline)) T queryPointFirst(int x, int y, int z) const;
-	[[nodiscard]] __attribute__((noinline)) SmallSet<T> queryPointAll(int x, int y, int z) const;
-	[[nodiscard]] __attribute__((noinline)) bool queryPoint(int x, int y, int z, const T& value) const;
-	[[nodiscard]] __attribute__((noinline)) int queryPointCount(int x, int y, int z) const;
-	[[nodiscard]] __attribute__((noinline)) Cuboid queryPointCuboid(int x, int y, int z) const;
-	[[nodiscard]] __attribute__((noinline)) int totalLeafVolume() const;
-	[[nodiscard]] __attribute__((noinline)) int totalNodeVolume() const;
-	__attribute__((noinline)) void assertAllLeafsAreUnique() const;
-	[[nodiscard]] static __attribute__((noinline)) int getNodeSize();
-	__attribute__((noinline)) std::string toString(int x, int y, int z) const;
+	[[nodiscard]] GDB_CALLABLE int nodeCount() const;
+	[[nodiscard]] GDB_CALLABLE int leafCount() const;
+	[[nodiscard]] GDB_CALLABLE const Node& getNode(int i) const;
+	[[nodiscard]] GDB_CALLABLE const Cuboid getNodeCuboid(int i, int o) const;
+	[[nodiscard]] GDB_CALLABLE RTreeNodeIndex getNodeChild(int i, int o) const;
+	[[nodiscard]] GDB_CALLABLE T queryPointOne(int x, int y, int z) const;
+	[[nodiscard]] GDB_CALLABLE T queryPointFirst(int x, int y, int z) const;
+	[[nodiscard]] GDB_CALLABLE SmallSet<T> queryPointAll(int x, int y, int z) const;
+	[[nodiscard]] GDB_CALLABLE bool queryPoint(int x, int y, int z, const T& value) const;
+	[[nodiscard]] GDB_CALLABLE int queryPointCount(int x, int y, int z) const;
+	[[nodiscard]] GDB_CALLABLE Cuboid queryPointCuboid(int x, int y, int z) const;
+	[[nodiscard]] GDB_CALLABLE int totalLeafVolume() const;
+	[[nodiscard]] GDB_CALLABLE int totalNodeVolume() const;
+	GDB_CALLABLE void assertAllLeafsAreUnique() const;
+	[[nodiscard]] static GDB_CALLABLE int getNodeSize();
+	GDB_CALLABLE std::string toString(int x, int y, int z) const;
+	GDB_CALLABLE void log() const;
 };
 template<Sortable T, RTreeDataConfig config>
 void to_json(Json& data, const RTreeData<T, config>& tree) { data = tree.toJson(); }
 template<Sortable T, RTreeDataConfig config>
 void from_json(const Json& data, RTreeData<T, config>& tree) { tree.load(data); }
-
 // Wraps data to have the parts that RTreeData expects, such as ::Primitive.
 template<typename T, T defaultValue>
 struct RTreeDataWrapper

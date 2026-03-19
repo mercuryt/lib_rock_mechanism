@@ -3,7 +3,7 @@
 #include "cuboid.h"
 #include "sphere.h"
 #include "../config/config.h"
-void Point3DSet::insert(const Point3D& point)
+void Point3DSet::insert(const Point3D point)
 {
 	if(m_size == data.size())
 		data.conservativeResize(3, std::max(8, m_size * 2));
@@ -18,7 +18,7 @@ Cuboid Point3DSet::boundry() const
 	Point3D min(truncatedData.rowwise().minCoeff());
 	return {max, min};
 }
-Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesOfContainedPoints(const Cuboid& cuboid) const
+Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesOfContainedPoints(const Cuboid cuboid) const
 {
 	Eigen::Array<DistanceWidth, 3, Eigen::Dynamic> truncatedData = data.block(0, 0, 3, m_size);
 	return (
@@ -30,7 +30,7 @@ Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesOfContainedPoints(const
 {
 	return distancesSquare(sphere.center) <= (int)sphere.radiusSquared().get();
 }
-Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesOfFacedTwordsPoints(const Point3D& location, const Facing4& facing) const
+Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesOfFacedTwordsPoints(const Point3D location, const Facing4 facing) const
 {
 	Eigen::Array<DistanceWidth, 3, Eigen::Dynamic> truncatedData = data.block(0, 0, 3, m_size);
 	switch(facing)
@@ -51,7 +51,7 @@ Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesOfFacedTwordsPoints(con
 			std::unreachable();
 	}
 }
-Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesFacingTwords(const Point3D& location, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& facings) const
+Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesFacingTwords(const Point3D location, const Eigen::Array<Facing4, 1, Eigen::Dynamic>& facings) const
 {
 	assert(facings.size() == m_size);
 	Eigen::Array<DistanceWidth, 3, Eigen::Dynamic> truncatedData = data.block(0, 0, 3, m_size);
@@ -62,7 +62,7 @@ Eigen::Array<bool, 1, Eigen::Dynamic> Point3DSet::indicesFacingTwords(const Poin
 		(facings == Facing4::West && truncatedData.row(0) >= location.x().get())
 	);
 }
-Eigen::Array<int, 1, Eigen::Dynamic> Point3DSet::distancesSquare(const Point3D& location) const
+Eigen::Array<int, 1, Eigen::Dynamic> Point3DSet::distancesSquare(const Point3D location) const
 {
 	Eigen::Array<int, 3, Eigen::Dynamic> truncatedData = data.block(0, 0, 3, m_size).cast<int>();
 	Eigen::Array<int, 3, Eigen::Dynamic> replicatedLocation = location.data.cast<int>().replicate(1, m_size);

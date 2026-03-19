@@ -8,7 +8,7 @@
 #include "../actors/actors.h"
 #include "../numericTypes/types.h"
 // PathRequest
-WanderPathRequest::WanderPathRequest(Area& area, WanderObjective& objective, const ActorIndex& actorIndex) :
+WanderPathRequest::WanderPathRequest(Area& area, WanderObjective& objective, const ActorIndex actorIndex) :
 	m_objective(objective)
 {
 	Actors& actors = area.getActors();
@@ -27,7 +27,7 @@ FindPathResult WanderPathRequest::readStep(Area& area, const TerrainFacade& terr
 {
 	Random& random = area.m_simulation.m_random;
 	m_pointCounter = random.getInRange(Config::wanderMinimimNumberOfPoints, Config::wanderMaximumNumberOfPoints);
-	auto destinationCondition = [this](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
+	auto destinationCondition = [this](const Point3D point, const Facing4) -> std::pair<bool, Point3D>
 	{
 		if(!m_pointCounter)
 			return std::pair(true, point);
@@ -35,7 +35,7 @@ FindPathResult WanderPathRequest::readStep(Area& area, const TerrainFacade& terr
 		return std::pair(false, Point3D::null());
 	};
 	Actors& actors = area.getActors();
-	const ActorIndex& actorIndex = actor.getIndex(actors.m_referenceData);
+	const ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	constexpr bool anyOccupiedPoint = false;
 	constexpr bool useAdjacent = false;
 	return terrainFacade.findPathToConditionBreadthFirst<decltype(destinationCondition), anyOccupiedPoint, useAdjacent>(destinationCondition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), detour);
@@ -78,7 +78,7 @@ Json WanderObjective::toJson() const
 		data["destination"] = m_destination;
 	return data;
 }
-void WanderObjective::execute(Area& area, const ActorIndex& actor)
+void WanderObjective::execute(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	if(m_destination.exists())
@@ -91,9 +91,9 @@ void WanderObjective::execute(Area& area, const ActorIndex& actor)
 	else
 		area.getActors().move_pathRequestRecord(actor, std::make_unique<WanderPathRequest>(area, *this, actor));
 }
-void WanderObjective::cancel(Area& area, const ActorIndex& actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
-bool WanderObjective::hasPathRequest(const Area& area, const ActorIndex& actor) const { return area.getActors().move_hasPathRequest(actor); }
-void WanderObjective::reset(Area& area, const ActorIndex& actor)
+void WanderObjective::cancel(Area& area, const ActorIndex actor) { area.getActors().move_pathRequestMaybeCancel(actor); }
+bool WanderObjective::hasPathRequest(const Area& area, const ActorIndex actor) const { return area.getActors().move_hasPathRequest(actor); }
+void WanderObjective::reset(Area& area, const ActorIndex actor)
 {
 	cancel(area, actor);
 	area.getActors().canReserve_clearAll(actor);

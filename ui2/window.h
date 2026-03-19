@@ -22,6 +22,8 @@ _Pragma("GCC diagnostic pop")
 #endif
 #include <memory>
 #include <fstream>
+#include <functional>
+#include <chrono>
 #include "backgroundTask.h"
 #include "gameOverlay.h"
 #include "atomicBool.h"
@@ -49,7 +51,18 @@ enum class PanelId
 	Production,
 	SelectFactionToEdit,
 	EditFaction,
-	EditActor
+	EditActor,
+	EditDrama
+};
+constexpr PanelId overlayPanels[] = {
+	PanelId::ActorDetails,
+	PanelId::ObjectivePriorities,
+	PanelId::EditUniform,
+	PanelId::Production,
+	PanelId::SelectFactionToEdit,
+	PanelId::EditFaction,
+	PanelId::EditActor,
+	PanelId::EditDrama,
 };
 struct POV final
 {
@@ -72,12 +85,14 @@ public:
 	RenderBuffer m_renderBuffer;
 	// Stable because we store a pointer to POV in window.
 	SmallMapStable<AreaId, POV> m_lastViewedSpotInArea;
-	SDL_Point m_mousePosition;
-	SDL_Window* m_window;
-	SDL_Renderer* m_sdlRenderer;
-	SDL_Texture* m_gameView;
+	std::thread m_simulationThread;
+	SDL_Window* m_window = nullptr;
+	SDL_Renderer* m_sdlRenderer = nullptr;
+	SDL_Texture* m_gameView = nullptr;
 	Area* m_area = nullptr;
-	POV* m_pov;
+	POV* m_pov = nullptr;
+	std::chrono::milliseconds m_minimumTimePerStep;
+	SDL_Point m_mousePosition;
 	std::atomic<float> m_speed = 1.0;
 	float m_mainScale = ImGui_ImplSDL2_GetContentScaleForDisplay(0);
 	AtomicBool m_paused;
@@ -86,25 +101,26 @@ public:
 	bool m_shiftKey = false;
 	bool m_controllKey = false;
 	void updateSimulationList();
-	[[nodiscard]] static std::chrono::milliseconds msSinceEpoch();
 	std::vector<std::pair<std::string, std::filesystem::path>> m_simulationList;
-	WindowHasBackgroundTask m_backgroundTask;
+	BackgroundTask m_backgroundTask;
 	ImGuiMouseCursor m_cursor = ImGuiMouseCursor_Arrow;
 	PanelId m_panel = PanelId::MainMenu;
 	std::unique_ptr<Simulation> m_simulation = nullptr;
+	int m_screenWidth;
+	int m_screenHeight;
 	float m_dpiScaleX;
 	float m_dpiScaleY;
 	FactionId m_faction;
 	bool m_editMode = false;
-	bool m_lockInput = false;
-	constexpr static ImGuiWindowFlags m_menuWindowFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground;
+	std::atomic<bool> m_lockInput = false;
+	constexpr static ImGuiWindowFlags m_menuWindowFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBackground;
 	Window();
 	void startLoop();
 	void render();
 	void quit();
 	void processEvents();
 	void createSimulation(const std::string& name, const DateTime);
-	void save();
+	void save(std::function<void()>&& continuation = nullptr);
 	void load(const std::filesystem::path& path);
 	void showMainMenu();
 	void showCreateSimulation();
@@ -119,7 +135,6 @@ public:
 	void showEditUniform(Uniform* uniform);
 	void showEditActor(const ActorReference actor);
 	void setArea(Area& area);
-	void color(const SDL_Color color);
 	void zoom(float zoomDelta);
 	void pan(float dx, float dy);
 	void clampPOV();
@@ -132,4 +147,5 @@ public:
 	[[nodiscard]] Point3D getBlockAtScreenPosition(const int x, const int y) const;
 	[[nodiscard]] Point3D getBlockAtScreenPosition(const SDL_Point point) const;
 	[[nodiscard]] Distance invertY(const Distance distance) const;
+	[[nodiscard]] static std::chrono::milliseconds msSinceEpoch();
 };

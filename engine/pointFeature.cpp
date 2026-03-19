@@ -35,5 +35,5 @@ std::string PointFeature::toString() const
 }
 bool PointFeature::blocksLineOfSight() const
 {
-	return !MaterialType::getTransparent(materialType) && !isClosed();
+	return !MaterialType::getTransparent(materialType) && PointFeatureType::byId(pointFeatureType).opaque && isClosed();
 }

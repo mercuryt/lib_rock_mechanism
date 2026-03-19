@@ -32,27 +32,27 @@ class HasFarmFieldsForFaction
 	bool m_plantsNeedingFluidIsSorted = false;
 public:
 	HasFarmFieldsForFaction() = default;
-	HasFarmFieldsForFaction(const FactionId& f) : m_faction(f) { }
+	HasFarmFieldsForFaction(const FactionId f) : m_faction(f) { }
 	HasFarmFieldsForFaction(HasFarmFieldsForFaction&& other) noexcept = default;
 	HasFarmFieldsForFaction(const HasFarmFieldsForFaction&) { assert(false); std::unreachable(); }
 	HasFarmFieldsForFaction& operator=(HasFarmFieldsForFaction&& other) noexcept = default;
 	HasFarmFieldsForFaction& operator=(const HasFarmFieldsForFaction&) { assert(false); std::unreachable(); }
 	template<typename ShapeT>
-	void addGivePlantFluidDesignation(Area& area, const ShapeT& shape);
+	void addGivePlantFluidDesignation(Area& area, ShapeT&& shape);
 	void removeGivePlantFluidDesignation(auto& area, const auto& shape) { area.getSpace().designation_unset(shape, m_faction, SpaceDesignation::GivePlantFluid); }
 	void maybeRemoveGivePlantFluidDesignation(auto& area, const auto& shape) { area.getSpace().designation_maybeUnset(shape, m_faction, SpaceDesignation::GivePlantFluid); }
 	void addSowSeedsDesignation(auto& area, const auto& shape) { area.getSpace().designation_set(shape, m_faction, SpaceDesignation::SowSeeds); }
 	void removeSowSeedsDesignation(auto& area, const auto& shape) { area.getSpace().designation_unset(shape, m_faction, SpaceDesignation::SowSeeds); }
 	void maybeRemoveSowSeedsDesignation(auto& area, const auto& shape) { area.getSpace().designation_maybeUnset(shape, m_faction, SpaceDesignation::SowSeeds); }
-	void addHarvestDesignation(Area& area, const PlantIndex& plant);
-	void removeHarvestDesignation(Area& area, const PlantIndex& plant);
+	void addHarvestDesignation(Area& area, const PlantIndex plant);
+	void removeHarvestDesignation(Area& area, const PlantIndex plant);
 	void maybeRemoveHarvestDesignation(auto& area, const auto& shape) { area.getSpace().designation_maybeUnset(shape, m_faction, SpaceDesignation::Harvest); }
 	void setDayOfYear(Area& area, int dayOfYear);
 	[[nodiscard]] FarmField& create(Area& area, CuboidSet&& cuboids);
 	[[nodiscard]] FarmField& create(Area& area, const CuboidSet& cuboids);
-	[[nodiscard]] FarmField& create(Area& area, const Cuboid& cuboid);
+	[[nodiscard]] FarmField& create(Area& area, const Cuboid cuboid);
 	void extend(Area& area, FarmField& farmField, CuboidSet& cuboids);
-	void setSpecies(Area& area, FarmField& farmField, const PlantSpeciesId& plantSpecies);
+	void setSpecies(Area& area, FarmField& farmField, const PlantSpeciesId plantSpecies);
 	void clearSpecies(Area& area, FarmField& farmField);
 	void designatePoints(Area& area, FarmField& farmField, CuboidSet& cuboids);
 	void shrink(Area& area, FarmField& farmField, CuboidSet& cuboids);
@@ -74,16 +74,16 @@ public:
 	AreaHasFarmFields(Area& a) : m_area(a) { }
 	void load(const Json& data);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] HasFarmFieldsForFaction& getForFaction(const FactionId& faction);
-	void registerFaction(const FactionId& faction);
-	void unregisterFaction(const FactionId& faction);
-	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid(const FactionId& faction);
-	void removeAllSowSeedsDesignations(const Point3D& point);
+	[[nodiscard]] HasFarmFieldsForFaction& getForFaction(const FactionId faction);
+	void registerFaction(const FactionId faction);
+	void unregisterFaction(const FactionId faction);
+	[[nodiscard]] PlantIndex getHighestPriorityPlantForGiveFluid(const FactionId faction);
+	void removeAllSowSeedsDesignations(const Point3D point);
 	void setDayOfYear(int dayOfYear);
-	[[nodiscard]] bool hasGivePlantsFluidDesignations(const FactionId& faction) const;
-	[[nodiscard]] bool hasHarvestDesignations(const FactionId& faction) const;
-	[[nodiscard]] bool hasSowSeedsDesignations(const FactionId& faction) const;
-	[[nodiscard]] PlantSpeciesId getPlantSpeciesFor(const FactionId& faction, const Point3D& location) const;
+	[[nodiscard]] bool hasGivePlantsFluidDesignations(const FactionId faction) const;
+	[[nodiscard]] bool hasHarvestDesignations(const FactionId faction) const;
+	[[nodiscard]] bool hasSowSeedsDesignations(const FactionId faction) const;
+	[[nodiscard]] PlantSpeciesId getPlantSpeciesFor(const FactionId faction, const Point3D location) const;
 	// For testing.
-	[[maybe_unused, nodiscard]] bool contains(const FactionId& faction) { return m_data.contains(faction); }
+	[[maybe_unused, nodiscard]] bool contains(const FactionId faction) { return m_data.contains(faction); }
 };

@@ -12,17 +12,17 @@ Json UnmountObjective::toJson() const
 	data["location"] = m_location;
 	return data;
 }
-void UnmountObjective::execute(Area& area, const ActorIndex& actor)
+void UnmountObjective::execute(Area& area, const ActorIndex actor)
 {
 	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	assert(actors.onDeck_getIsOnDeckOf(actor).isActor());
-	const ActorIndex& mount = actors.onDeck_getIsOnDeckOf(actor).getActor();
-	const ShapeId& shape = actors.getCompoundShape(actor);
-	const Point3D& startingLocation = actors.getLocation(actor);
+	const ActorIndex mount = actors.onDeck_getIsOnDeckOf(actor).getActor();
+	const ShapeId shape = actors.getCompoundShape(actor);
+	const Point3D startingLocation = actors.getLocation(actor);
 	if(m_location.empty())
 	{
-		for(const Cuboid& cuboid : actors.getAdjacentCuboids(mount))
+		for(const Cuboid cuboid : actors.getAdjacentCuboids(mount))
 			for(const Point3D& point : cuboid)
 			{
 				if(space.shape_canEnterCurrentlyFrom(m_location, shape, startingLocation, actors.getOccupied(actor)))

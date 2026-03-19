@@ -73,24 +73,24 @@ class ActorHasRelationships
 	std::vector<RelationshipWithItem> m_items;
 	std::vector<RelationshipWithPlant> m_plants;
 public:
-	RelationshipBetweenActors& create(const ActorId& actor);
-	RelationshipWithItem& create(const ItemId& item);
-	RelationshipWithPlant& create(const Point3D& location, const PlantSpeciesId& species, const AreaId& area);
-	RelationshipBetweenActors& getOrCreate(const ActorId& actor);
-	RelationshipWithItem&  getOrCreate(const ItemId& item);
-	RelationshipWithPlant& getOrCreate(const Point3D& location, const PlantSpeciesId& species, const AreaId& area);
+	RelationshipBetweenActors& create(const ActorId actor);
+	RelationshipWithItem& create(const ItemId item);
+	RelationshipWithPlant& create(const Point3D location, const PlantSpeciesId species, const AreaId area);
+	RelationshipBetweenActors& getOrCreate(const ActorId actor);
+	RelationshipWithItem&  getOrCreate(const ItemId item);
+	RelationshipWithPlant& getOrCreate(const Point3D location, const PlantSpeciesId species, const AreaId area);
 	void destroy(const RelationshipBetweenActors& relationship);
 	void destroy(const RelationshipWithItem& relationship);
 	void destroy(const RelationshipWithPlant& relationship);
-	void addToRelationship(const ActorId& actor, const PsycologyAttribute& attribute, const PsycologyWeight& weight);
-	void addToRelationship(const ItemId& actor, const PsycologyAttribute& attribute, const PsycologyWeight& weight);
-	void addToRelationship(const PlantIndex& plant, Area& area, const PsycologyAttribute& attribute, const PsycologyWeight& weight);
-	[[nodiscard]] RelationshipBetweenActors* maybeGetForActor(const ActorId& actor);
-	[[nodiscard]] RelationshipWithItem* maybeGetForItem(const ItemId& item);
-	[[nodiscard]] RelationshipWithPlant* maybeGetForPlant(const Point3D& location, const PlantSpeciesId& species, const AreaId& area);
-	[[nodiscard]] const RelationshipBetweenActors* maybeGetForActor(const ActorId& actor) const;
-	[[nodiscard]] const RelationshipWithItem* maybeGetForItem(const ItemId& item) const;
-	[[nodiscard]] const RelationshipWithPlant* maybeGetForPlant(const Point3D& location, const PlantSpeciesId& species, const AreaId& area) const;
+	void addToRelationship(const ActorId actor, const PsycologyAttribute& attribute, const PsycologyWeight weight);
+	void addToRelationship(const ItemId actor, const PsycologyAttribute& attribute, const PsycologyWeight weight);
+	void addToRelationship(const PlantIndex plant, Area& area, const PsycologyAttribute& attribute, const PsycologyWeight weight);
+	[[nodiscard]] RelationshipBetweenActors* maybeGetForActor(const ActorId actor);
+	[[nodiscard]] RelationshipWithItem* maybeGetForItem(const ItemId item);
+	[[nodiscard]] RelationshipWithPlant* maybeGetForPlant(const Point3D location, const PlantSpeciesId species, const AreaId area);
+	[[nodiscard]] const RelationshipBetweenActors* maybeGetForActor(const ActorId actor) const;
+	[[nodiscard]] const RelationshipWithItem* maybeGetForItem(const ItemId item) const;
+	[[nodiscard]] const RelationshipWithPlant* maybeGetForPlant(const Point3D location, const PlantSpeciesId species, const AreaId area) const;
 	[[nodiscard]] RelationshipBetweenActors* maybeGetForActorWithCondition(auto&& condition)
 	{
 		const auto found = std::ranges::find_if(m_actors, condition);

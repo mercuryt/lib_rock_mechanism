@@ -14,14 +14,14 @@ BodyPartTypeId BodyPartType::byName(std::string name)
 	assert(found != bodyPartTypeData.m_name.end());
 	return BodyPartTypeId::create(found - bodyPartTypeData.m_name.begin());
 }
-std::string& BodyPartType::getName(const BodyPartTypeId& id) { return bodyPartTypeData.m_name[id]; };
-FullDisplacement BodyPartType::getVolume(const BodyPartTypeId& id) { return bodyPartTypeData.m_volume[id]; };
-bool BodyPartType::getDoesLocamotion(const BodyPartTypeId& id) { return bodyPartTypeData.m_doesLocamotion[id]; };
-bool BodyPartType::getDoesManipulation(const BodyPartTypeId& id) { return bodyPartTypeData.m_doesManipulation[id]; };
-bool BodyPartType::getVital(const BodyPartTypeId& id) { return bodyPartTypeData.m_vital[id]; };
-std::vector<std::pair<AttackTypeId, MaterialTypeId>>& BodyPartType::getAttackTypesAndMaterials(const BodyPartTypeId& id) { return bodyPartTypeData.m_attackTypesAndMaterials[id]; };
+std::string& BodyPartType::getName(const BodyPartTypeId id) { return bodyPartTypeData.m_name[id]; };
+FullDisplacement BodyPartType::getVolume(const BodyPartTypeId id) { return bodyPartTypeData.m_volume[id]; };
+bool BodyPartType::getDoesLocamotion(const BodyPartTypeId id) { return bodyPartTypeData.m_doesLocamotion[id]; };
+bool BodyPartType::getDoesManipulation(const BodyPartTypeId id) { return bodyPartTypeData.m_doesManipulation[id]; };
+bool BodyPartType::getVital(const BodyPartTypeId id) { return bodyPartTypeData.m_vital[id]; };
+std::vector<std::pair<AttackTypeId, MaterialTypeId>>& BodyPartType::getAttackTypesAndMaterials(const BodyPartTypeId id) { return bodyPartTypeData.m_attackTypesAndMaterials[id]; };
 
-bool BodyType::hasBodyPart(const BodyTypeId& id, const BodyPartTypeId& bodyPartType)
+bool BodyType::hasBodyPart(const BodyTypeId& id, const BodyPartTypeId bodyPartType)
 {
 	return std::ranges::find(g_bodyTypeData.m_bodyPartTypes[id], bodyPartType) != g_bodyTypeData.m_bodyPartTypes[id].end();
 }
@@ -33,7 +33,7 @@ void BodyType::create(std::string name, std::vector<BodyPartTypeId>& bodyPartTyp
 std::vector<std::pair<AttackTypeId, MaterialTypeId>> BodyType::collectAttacks(const BodyTypeId& id)
 {
 	std::vector<std::pair<AttackTypeId, MaterialTypeId>> output;
-	for(const BodyPartTypeId& part : BodyType::getBodyPartTypes(id))
+	for(const BodyPartTypeId part : BodyType::getBodyPartTypes(id))
 		std::ranges::copy(BodyPartType::getAttackTypesAndMaterials(part), std::back_inserter(output));
 	return output;
 }

@@ -7,7 +7,7 @@
 #include "../numericTypes/types.h"
 #include "../path/terrainFacade.hpp"
 // PathRequest.
-InstallItemPathRequest::InstallItemPathRequest(Area& area, InstallItemObjective& iio, const ActorIndex& actorIndex) :
+InstallItemPathRequest::InstallItemPathRequest(Area& area, InstallItemObjective& iio, const ActorIndex actorIndex) :
 	m_installItemObjective(iio)
 {
 	Actors& actors = area.getActors();
@@ -39,14 +39,14 @@ FindPathResult InstallItemPathRequest::readStep(Area& area, const TerrainFacade&
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	FactionId actorFaction = actors.getFaction(actorIndex);
 	const auto& forFaction = area.m_hasInstallItemDesignations.getForFaction(actorFaction);
-	auto destinationCondition = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
+	auto destinationCondition = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
 	{
 		const Point3D point = forFaction.getPointInCuboid(cuboid);
 		return {point.exists(), point};
 	};
 	constexpr bool useAnyPoint = true;
 	constexpr bool useAdjacent = false;
-	const Point3D& projectLocation = m_installItemObjective.m_project->getLocation();
+	const Point3D projectLocation = m_installItemObjective.m_project->getLocation();
 	return terrainFacade.findPathToConditionDepthFirst<decltype(destinationCondition), useAnyPoint, useAdjacent>(destinationCondition, memo, start, facing, shape, projectLocation, m_installItemObjective.m_detour);
 }
 void InstallItemPathRequest::writeStep(Area& area, FindPathResult& result)
@@ -82,21 +82,21 @@ Json InstallItemObjective::toJson() const
 		data["project"] = m_project;
 	return data;
 }
-void InstallItemObjective::execute(Area& area, const ActorIndex& actor)
+void InstallItemObjective::execute(Area& area, const ActorIndex actor)
 {
 	if(m_project)
 		m_project->commandWorker(actor);
 	else
 		area.getActors().move_pathRequestRecord(actor, std::make_unique<InstallItemPathRequest>(area, *this, actor));
 }
-void InstallItemObjective::cancel(Area& area, const ActorIndex& actor) { area.getActors().move_pathRequestMaybeCancel(actor); m_project->removeWorker(actor); }
-bool InstallItemObjectiveType::canBeAssigned(Area& area, const ActorIndex& actor) const
+void InstallItemObjective::cancel(Area& area, const ActorIndex actor) { area.getActors().move_pathRequestMaybeCancel(actor); m_project->removeWorker(actor); }
+bool InstallItemObjectiveType::canBeAssigned(Area& area, const ActorIndex actor) const
 {
 	return !area.m_hasInstallItemDesignations.getForFaction(area.getActors().getFaction(actor)).empty();
 }
-std::unique_ptr<Objective> InstallItemObjectiveType::makeFor(Area&, const ActorIndex&) const
+std::unique_ptr<Objective> InstallItemObjectiveType::makeFor(Area&, const ActorIndex) const
 {
 	std::unique_ptr<Objective> objective = std::make_unique<InstallItemObjective>();
 	return objective;
 }
-void InstallItemObjective::reset(Area& area, const ActorIndex& actor) { area.getActors().canReserve_clearAll(actor); m_project = nullptr; }
+void InstallItemObjective::reset(Area& area, const ActorIndex actor) { area.getActors().canReserve_clearAll(actor); m_project = nullptr; }

@@ -6,7 +6,7 @@
 #include "definitions/materialType.h"
 #include "numericTypes/types.h"
 #include "area/area.h"
-bool ItemQuery::query(Area& area, const ItemIndex& item) const
+bool ItemQuery::query(Area& area, const ItemIndex item) const
 {
 	if(m_item.exists())
 		return item == m_item.getIndex(area.getItems().m_referenceData);
@@ -24,7 +24,7 @@ bool ItemQuery::operator==(const ItemQuery& itemQuery) const
 	return m_item == itemQuery.m_item && m_itemType == itemQuery.m_itemType &&
 		m_solidCategory == itemQuery.m_solidCategory && m_solid == itemQuery.m_solid;
 }
-void ItemQuery::specalize(Area& area, const ItemIndex& item)
+void ItemQuery::specalize(Area& area, const ItemIndex item)
 {
 	assert(m_itemType.exists() && m_item.empty() && area.getItems().getItemType(item) == m_itemType);
 	m_item.setIndex(item, area.getItems().m_referenceData);
@@ -32,7 +32,7 @@ void ItemQuery::specalize(Area& area, const ItemIndex& item)
 	m_solid.clear();
 	m_solidCategory.clear();
 }
-void ItemQuery::specalize(const MaterialTypeId& materialType)
+void ItemQuery::specalize(const MaterialTypeId materialType)
 {
 	assert(m_solidCategory.empty() || MaterialType::getMaterialTypeCategory(materialType) == m_solidCategory);
 	assert(m_solid.empty());
@@ -40,7 +40,7 @@ void ItemQuery::specalize(const MaterialTypeId& materialType)
 	m_solid = materialType;
 	m_solidCategory.clear();
 }
-void ItemQuery::maybeSpecalize(const MaterialTypeId& materialType)
+void ItemQuery::maybeSpecalize(const MaterialTypeId materialType)
 {
 	if(m_item.empty() && m_solid.empty())
 		specalize(materialType);

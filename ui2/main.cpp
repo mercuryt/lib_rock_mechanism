@@ -22,9 +22,9 @@ int main ([[maybe_unused]]int argCount, [[maybe_unused]]char **args)
 	Config::load();
 	definitions::load();
 	ObjectiveType::load();
-	displayData::load();
 	Window window;
 	Sprite::load(window);
+	displayData::load();
 	window.startLoop();
 	return 0;
 }

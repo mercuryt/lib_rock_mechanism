@@ -8,7 +8,7 @@
 #include "definitions/moveType.h"
 
 // HasDesignations.
-void HasInstallItemDesignationsForFaction::add(Area& area, const Point3D& point, const ItemIndex& item, const Facing4& facing, const FactionId& faction)
+void HasInstallItemDesignationsForFaction::add(Area& area, const Point3D point, const ItemIndex item, const Facing4 facing, const FactionId faction)
 {
 	assert(!m_designations.contains(point));
 	Items& items = area.getItems();
@@ -21,12 +21,12 @@ void AreaHasInstallItemDesignations::clearReservations()
 		for(auto& pair2 : pair.second.m_designations)
 			pair2.second->clearReservations();
 }
-void HasInstallItemDesignationsForFaction::remove(Area& area, const ItemIndex& item)
+void HasInstallItemDesignationsForFaction::remove(Area& area, const ItemIndex item)
 {
 	assert(m_designations.contains(area.getItems().getLocation(item)));
 	m_designations.erase(area.getItems().getLocation(item));
 }
-Point3D HasInstallItemDesignationsForFaction::getPointInCuboid(const Cuboid& cuboid) const
+Point3D HasInstallItemDesignationsForFaction::getPointInCuboid(const Cuboid cuboid) const
 {
 	for(const auto& [point, project]  : m_designations)
 		if(cuboid.contains(point))

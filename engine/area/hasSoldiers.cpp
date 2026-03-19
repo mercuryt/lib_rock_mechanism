@@ -17,7 +17,7 @@ void AreaHasSoldiersCourageCheckThreadData::prefetchToL1(const AreaHasSoldiers& 
 	util::prefetchL1ReadModeSegment(forFaction.soldierLocations, start, count);
 	util::prefetchL1ReadModeSegment(forFaction.courage, start, count);
 }
-void AreaHasSoldiers::add(Area& area, const ActorIndex& actor)
+void AreaHasSoldiers::add(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	const FactionId& faction = actors.getFaction(actor);
@@ -27,7 +27,7 @@ void AreaHasSoldiers::add(Area& area, const ActorIndex& actor)
 	forFaction.soldiers.push_back(actor);
 	forFaction.courage.push_back(actors.psycology_get(actor).getValueFor(PsycologyAttribute::Courage));
 }
-void AreaHasSoldiers::remove(Area& area, const ActorIndex& actor)
+void AreaHasSoldiers::remove(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	const FactionId& faction = actors.getFaction(actor);
@@ -43,12 +43,12 @@ void AreaHasSoldiers::remove(Area& area, const ActorIndex& actor)
 	courage[index] = courage.back();
 	courage.pop_back();
 }
-void AreaHasSoldiers::setLocation(Area& area, const ActorIndex& actor)
+void AreaHasSoldiers::setLocation(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	const FactionId& faction = actors.getFaction(actor);
 	const CuboidSet& malicePoints = actors.combat_makeMalicePoints(actor);
-	const CombatScore& combatScore = actors.combat_getCombatScore(actor);
+	const CombatScore combatScore = actors.combat_getCombatScore(actor);
 	const PsycologyWeight combatScoreAsWeight{(float)combatScore.get()};
 	actors.soldier_getRecordedMalicePoints(actor) = malicePoints;
 	auto& forFaction = m_data[faction];
@@ -60,12 +60,12 @@ void AreaHasSoldiers::setLocation(Area& area, const ActorIndex& actor)
 	for(const FactionId& enemy : area.m_simulation.m_hasFactions.getEnemies(faction))
 		m_data[enemy].maliceMap.updateSubtract(malicePoints, combatScoreAsWeight);
 }
-void AreaHasSoldiers::unsetLocation(Area& area, const ActorIndex& actor)
+void AreaHasSoldiers::unsetLocation(Area& area, const ActorIndex actor)
 {
-	const CombatScore& combatScore = area.getActors().combat_getCombatScore(actor);
+	const CombatScore combatScore = area.getActors().combat_getCombatScore(actor);
 	unsetLocation(area, actor, combatScore);
 }
-void AreaHasSoldiers::unsetLocation(Area& area, const ActorIndex& actor, const CombatScore& combatScore)
+void AreaHasSoldiers::unsetLocation(Area& area, const ActorIndex actor, const CombatScore combatScore)
 {
 	Actors& actors = area.getActors();
 	const FactionId& faction = actors.getFaction(actor);
@@ -83,7 +83,7 @@ void AreaHasSoldiers::unsetLocation(Area& area, const ActorIndex& actor, const C
 	auto& locations = forFaction.soldierLocations;
 	locations[index].clear();
 }
-void AreaHasSoldiers::updateLocation(Area& area, const ActorIndex& actor)
+void AreaHasSoldiers::updateLocation(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	CuboidSet& previousMalicePoints =  actors.soldier_getRecordedMalicePoints(actor);
@@ -91,7 +91,7 @@ void AreaHasSoldiers::updateLocation(Area& area, const ActorIndex& actor)
 	const CuboidSet newMalicePoints = actors.combat_makeMalicePoints(actor);
 	const FactionId& faction = actors.getFaction(actor);
 	auto& forFaction = m_data[faction];
-	const CombatScore& combatScore = actors.combat_getCombatScore(actor);
+	const CombatScore combatScore = actors.combat_getCombatScore(actor);
 	const PsycologyWeight combatScoreAsWeight{(float)combatScore.get()};
 	forFaction.maliceMap.updateSubtract(previousMalicePoints, combatScoreAsWeight);
 	forFaction.maliceMap.updateAdd(newMalicePoints, combatScoreAsWeight);
@@ -107,11 +107,11 @@ void AreaHasSoldiers::updateLocation(Area& area, const ActorIndex& actor)
 	}
 	previousMalicePoints = newMalicePoints;
 }
-PsycologyWeight AreaHasSoldiers::get(const Point3D& point, const FactionId& faction) const
+PsycologyWeight AreaHasSoldiers::get(const Point3D point, const FactionId faction) const
 {
 	return m_data[faction].maliceMap.queryGetOne(point);
 }
-void AreaHasSoldiers::updateSoldierIndex(Area& area, const ActorIndex& oldIndex, const ActorIndex& newIndex)
+void AreaHasSoldiers::updateSoldierIndex(Area& area, const ActorIndex oldIndex, const ActorIndex newIndex)
 {
 	Actors& actors = area.getActors();
 	const FactionId& faction = actors.getFaction(newIndex);
@@ -120,7 +120,7 @@ void AreaHasSoldiers::updateSoldierIndex(Area& area, const ActorIndex& oldIndex,
 	auto found = std::ranges::find(soldiers, oldIndex);
 	(*found) = newIndex;
 }
-void AreaHasSoldiers::updateSoldierCourage(Area& area, const ActorIndex& actor)
+void AreaHasSoldiers::updateSoldierCourage(Area& area, const ActorIndex actor)
 {
 	Actors& actors = area.getActors();
 	const FactionId& faction = actors.getFaction(actor);
@@ -131,7 +131,7 @@ void AreaHasSoldiers::updateSoldierCourage(Area& area, const ActorIndex& actor)
 	PsycologyWeight courage = actors.psycology_get(actor).getValueFor(PsycologyAttribute::Courage);
 	forFaction.courage[index] = {courage.get()};
 }
-void AreaHasSoldiers::updateSoldierCombatScore(Area& area, const ActorIndex& actor, const CombatScore& previous)
+void AreaHasSoldiers::updateSoldierCombatScore(Area& area, const ActorIndex actor, const CombatScore previous)
 {
 	// TODO: redundant lookups and soldierLocation setting.
 	unsetLocation(area, actor, previous);
@@ -149,7 +149,7 @@ void AreaHasSoldiers::doStepThread(Area& area, const AreaHasSoldiersCourageCheck
 	// Wolud it be better to pass a view rather then copy the soldiers locations into a smaller vector?
 	for(int i = threadData.start; i != end; ++i)
 		soldierLocationsForThisThread.push_back(forFaction.soldierLocations[i]);
-	forFaction.maliceMap.batchQueryForEach(soldierLocationsForThisThread, [&](const PsycologyWeight maliceDelta, const Cuboid&, const int& index){
+	forFaction.maliceMap.batchQueryForEach(soldierLocationsForThisThread, [&](const PsycologyWeight maliceDelta, const Cuboid, const int& index){
 		const int adjustedIndex = index + threadData.start;
 		if(maliceDelta + courage[adjustedIndex] < Config::Psycology::minimumMaliceDeltaPlusCourageToHoldFirmWithoutTest)
 			actorsNeedingToTestCourage.insert(adjustedIndex, maliceDelta);

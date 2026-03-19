@@ -216,8 +216,6 @@ TEST_CASE("basicNeedsNonsentient")
 		actors.eat_setNeverHungry(actor);
 		actors.stamina_spend(actor, Stamina::create(1));
 		CHECK(!actors.stamina_isFull(actor));
-		if(actors.eat_getMassFoodRequested(actor) != 0)
-			actors.eat_do(actor, actors.eat_getMassFoodRequested(actor));
 		CHECK(actors.objective_getCurrentName(actor) == "sleep");
 		CHECK(actors.sleep_isAwake(actor));
 		// Look for sleeping spot.

@@ -1,17 +1,17 @@
 #include "screens.h"
 #include "../window.h"
 #include "../displayData.h"
+#include "../imguiHelpers.h"
 #include "../../engine/simulation/simulation.h"
 #include "../../engine/simulation/hasAreas.h"
 #include "../../engine/area/area.h"
 
 void screens::editSimulation(Window& window)
 {
+	ImVec2 windowSize{400, 600};
+	begin(window, "Edit Simulation", &windowSize);
 	ImGui::PushFont(nullptr, displayData::menuFontSize);
-	begin(window, "Edit Simulation");
 	ImGui::InputText("Name", &window.m_simulation->m_name);
-	ImGui::SetNextWindowSize({400,400});
-	ImGui::BeginChild("areas");
 	for(const auto& [areaId, area] : window.m_simulation->m_hasAreas->getAll())
 	{
 		if(ImGuiButton(area->m_name))
@@ -21,10 +21,9 @@ void screens::editSimulation(Window& window)
 			window.showGame();
 		}
 	}
-	ImGui::EndChild();
-	if(ImGui::Button("Create Area"))
+	if(imguiButtonCentered("Create Area"))
 		window.showCreateArea();
-	if(ImGui::Button("Back"))
+	if(imguiButtonCentered("Back"))
 		window.showMainMenu();
 	ImGui::PopFont();
 	end();

@@ -20,14 +20,14 @@ void MoveType::create(const MoveTypeParamaters& p)
 	g_moveTypeData.m_floating.add(p.floating);
 	g_moveTypeData.m_paramaters.add(p);
 }
-std::string MoveType::getName(const MoveTypeId& id) { return g_moveTypeData.m_name[id]; }
-bool MoveType::getSurface(const MoveTypeId& id) { return g_moveTypeData.m_surface[id]; }
-bool MoveType::getStairs(const MoveTypeId& id) { return g_moveTypeData.m_stairs[id]; }
-int MoveType::getClimb(const MoveTypeId& id) { return g_moveTypeData.m_climb[id]; }
-bool MoveType::getJumpDown(const MoveTypeId& id) { return g_moveTypeData.m_jumpDown[id]; }
-bool MoveType::getFly(const MoveTypeId& id) { return g_moveTypeData.m_fly[id]; }
-bool MoveType::getBreathless(const MoveTypeId& id) { return g_moveTypeData.m_breathless[id]; }
-bool MoveType::getOnlyBreathsFluids(const MoveTypeId& id) { return g_moveTypeData.m_onlyBreathsFluids[id]; }
-bool MoveType::getFloating(const MoveTypeId& id) { return g_moveTypeData.m_floating[id]; }
-SmallMap<FluidTypeId, CollisionVolume>& MoveType::getSwim(const MoveTypeId& id) { return g_moveTypeData.m_swim[id]; }
-SmallSet<FluidTypeId>& MoveType::getBreathableFluids(const MoveTypeId& id) { return g_moveTypeData.m_breathableFluids[id]; }
+std::string MoveType::getName(const MoveTypeId id) { return g_moveTypeData.m_name[id]; }
+bool MoveType::getSurface(const MoveTypeId id) { return g_moveTypeData.m_surface[id]; }
+bool MoveType::getStairs(const MoveTypeId id) { return g_moveTypeData.m_stairs[id]; }
+int MoveType::getClimb(const MoveTypeId id) { return g_moveTypeData.m_climb[id]; }
+bool MoveType::getJumpDown(const MoveTypeId id) { return g_moveTypeData.m_jumpDown[id]; }
+bool MoveType::getFly(const MoveTypeId id) { return g_moveTypeData.m_fly[id]; }
+bool MoveType::getBreathless(const MoveTypeId id) { return g_moveTypeData.m_breathless[id]; }
+bool MoveType::getOnlyBreathsFluids(const MoveTypeId id) { return g_moveTypeData.m_onlyBreathsFluids[id]; }
+bool MoveType::getFloating(const MoveTypeId id) { return g_moveTypeData.m_floating[id]; }
+SmallMap<FluidTypeId, CollisionVolume>& MoveType::getSwim(const MoveTypeId id) { return g_moveTypeData.m_swim[id]; }
+SmallSet<FluidTypeId>& MoveType::getBreathableFluids(const MoveTypeId id) { return g_moveTypeData.m_breathableFluids[id]; }

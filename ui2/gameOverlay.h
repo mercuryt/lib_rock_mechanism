@@ -18,15 +18,38 @@ class Window;
 class Uniform;
 enum class SelectMode{Space, Actors, Items, Plants};
 enum class InfoPopUpId { Point, Actor, Item, Plant, Null };
+
+struct ControllsState final
+{
+	Point3D clickedOnPoint;
+	MaterialTypeId materialType;
+	PointFeatureTypeId featureType = PointFeatureTypeId::Ramp;
+	FluidTypeId fluidType;
+	int fluidVolume = Config::maxPointVolume.get();
+	bool constructed = true;
+	Percent percentGrown{100};
+	PlantSpeciesId plantSpecies;
+	AnimalSpeciesId animalSpecies;
+	ItemTypeId itemType;
+	FactionId faction;
+	Percent wear{0};
+	Quality quality{0};
+	Quantity quantity{1};
+	Facing4 facing = Facing4::North;
+	bool installed = false;
+	std::string name;
+	void initalize();
+};
+
 class GameOverlay final
 {
 public:
-	SDL_Point m_mouseDragStart;
+	// Coordinates as float in 2d for drawing selection box, point is 3d for creating selected cuboids.
+	SDL_Point m_mouseDragStartCoordinates;
+	Point3D m_mouseDragStartPoint;
 	CuboidSet m_selectedArea;
 	SmallSet<ActorReference> m_selectedActors;
 	SmallSet<ItemReference> m_selectedItems;
-	// No set for plants, instead use selectedArea;
-	CuboidSet m_selectedSpace;
 	Uniform* m_uniformToEdit;
 	Point3D m_blockUnderCursor;
 	ActorReference m_detailActor;
@@ -38,7 +61,7 @@ public:
 	Facing4 m_facing;
 	InfoPopUpId m_infoPopUp = InfoPopUpId::Null;
 	SelectMode m_selectMode = SelectMode::Space;
-	ContextMenuState m_contextMenuState;
+	ControllsState m_controllsState;
 	FactionId m_factionToEdit;
 	bool m_mouseIsDown = false;
 	bool m_gameMenuIsOpen = false;
@@ -46,7 +69,6 @@ public:
 	void drawSelectionBox(Window& window);
 	void drawTopBar(Window& window);
 	void drawMenu(Window& window);
-	void drawSelection(Window& window);
 	void deselectAll();
 	void updateSelect(Window& window, const Cuboid cuboid);
 	void drawInfoPopUp(Window& window);
@@ -55,30 +77,4 @@ public:
 	void showInfoPopUpForPoint(const Point3D point);
 	// Plant is referenced by location.
 	void showInfoPopUpPlant(const Point3D point);
-	/*
-	void show() { m_group->setVisible(true); }
-	void hide() { m_group->setVisible(false); }
-	void drawContextMenu(const Point3D& point) { m_contextMenu.draw(point); }
-	void closeContextMenu() { m_contextMenu.hide(); }
-	void drawMenu();
-	void closeMenu() { m_menu->setVisible(false); }
-	void drawInfoPopup(const Point3D& point) { m_infoPopup.display(point); }
-	void drawInfoPopup(const ItemIndex& item) { m_infoPopup.display(item); }
-	void drawInfoPopup(const PlantIndex& plant) { m_infoPopup.display(plant); }
-	void drawInfoPopup(const ActorIndex& actor) { m_infoPopup.display(actor); }
-	void closeInfoPopup() { m_infoPopup.hide(); };
-	void assignLocationToInstallItem(const Point3D& point);
-	void assignLocationToMoveItemTo(const Point3D& point);
-	void unfocusUI();
-	void drawTime();
-	void drawZoom();
-	void drawWeatherReport();
-	void updateInfoPopup() { m_infoPopup.update(); }
-	void drawSelectionDescription();
-	[[nodiscard]] bool isVisible() const { return m_group->isVisible(); }
-	[[nodiscard]] bool menuIsVisible() const { return m_menu->isVisible(); }
-	[[nodiscard]] bool contextMenuIsVisible() const { return m_contextMenu.isVisible(); }
-	[[nodiscard]] bool infoPopupIsVisible() const { return m_infoPopup.isVisible(); }
-	[[nodiscard]] tgui::Group::Ptr getGroup() const { return m_group; }
-	*/
 };

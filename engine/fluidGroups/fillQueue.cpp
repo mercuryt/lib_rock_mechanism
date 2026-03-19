@@ -12,15 +12,15 @@ void FillQueue::initializeForStep(Area& area, FluidGroup& fluidGroup)
 		RTreeData<CollisionVolume> capacity;
 		capacity.insert(m_set, Config::maxPointVolume);
 		Density density = FluidType::getDensity(fluidGroup.m_fluidType);
-		auto actionSubtract = [&](const Cuboid& cuboid, const FluidData& data) mutable {
+		auto actionSubtract = [&](const Cuboid cuboid, const FluidData& data) mutable {
 			if(FluidType::getDensity(data.type) >= density)
 				capacity.updateSubtract(cuboid, data.volume);
 		};
 		space.fluid_forEachWithCuboid(m_set, actionSubtract);
 		m_queue.clear();
-		auto actionEmplace = [&](const Cuboid& cuboid, const CollisionVolume& volume)
+		auto actionEmplace = [&](const Cuboid cuboid, const CollisionVolume volume)
 		{
-			for(const Cuboid& flatCuboid : cuboid.sliceAtEachZ())
+			for(const Cuboid flatCuboid : cuboid.sliceAtEachZ())
 				m_queue.emplace_back(flatCuboid, volume, CollisionVolume::create(0));
 		};
 		capacity.queryForEachWithCuboids(space.boundry(), actionEmplace);
@@ -37,7 +37,7 @@ void FillQueue::initializeForStep(Area& area, FluidGroup& fluidGroup)
 	m_overfull.clear();
 	validate();
 }
-void FillQueue::recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionVolume& volume, const CollisionVolume& flowCapacity, const CollisionVolume& flowTillNextStep)
+void FillQueue::recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionVolume volume, const CollisionVolume flowCapacity, const CollisionVolume flowTillNextStep)
 {
 	assert((m_groupStart->capacity >= volume));
 	assert(volume != 0);
@@ -51,7 +51,7 @@ void FillQueue::recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionV
 		if(iter->delta == 0)
 		{
 			CuboidSet toAddToFutureNoLongerEmpty = CuboidSet::create(iter->cuboid);
-			space.fluid_forEachWithCuboid(toAddToFutureNoLongerEmpty, [&](const Cuboid& cuboid, const FluidData& data) mutable
+			space.fluid_forEachWithCuboid(toAddToFutureNoLongerEmpty, [&](const Cuboid cuboid, const FluidData& data) mutable
 			{
 				if(data.type == fluidGroup.m_fluidType)
 					toAddToFutureNoLongerEmpty.maybeRemove(cuboid);
@@ -77,7 +77,7 @@ void FillQueue::recordDelta(Area& area, FluidGroup& fluidGroup, const CollisionV
 				m_futureFull.add(iter->cuboid);
 			else
 			{
-				space.fluid_forEachWithCuboid(iter->cuboid, [&](const Cuboid& cuboid, const FluidData& data){
+				space.fluid_forEachWithCuboid(iter->cuboid, [&](const Cuboid cuboid, const FluidData& data){
 					if(
 						data.type == fluidGroup.m_fluidType &&
 						data.volume + iter->delta == Config::maxPointVolume

@@ -30,9 +30,9 @@ inline std::string getWoundTypeName(const WoundType& woundType)
 }
 namespace WoundCalculations
 {
-	Step getStepsTillHealed(const Hit& hit, const BodyPartTypeId& bodyPartType, int scale);
-	int getBleedVolumeRate(const Hit& hit, const BodyPartTypeId& bodyPartType, int scale);
-	Percent getPercentTemporaryImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, int scale);
-	Percent getPercentPermanentImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, int scale);
+	Step getStepsTillHealed(const Hit& hit, const BodyPartTypeId bodyPartType, int scale);
+	int getBleedVolumeRate(const Hit& hit, const BodyPartTypeId bodyPartType, int scale);
+	Percent getPercentTemporaryImpairment(const Hit& hit, const BodyPartTypeId bodyPartType, int scale);
+	Percent getPercentPermanentImpairment(const Hit& hit, const BodyPartTypeId bodyPartType, int scale);
 	WoundType byName(std::string name);
 }

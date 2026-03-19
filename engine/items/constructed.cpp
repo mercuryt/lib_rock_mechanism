@@ -5,7 +5,7 @@
 #include "../pointFeature.h"
 #include "../numericTypes/types.h"
 ConstructedShape::ConstructedShape(const Json& data) { nlohmann::from_json(data, *this); }
-void ConstructedShape::addCuboidSet(Area& area, const Point3D& origin, const Facing4& facing, const CuboidSet& cuboids)
+void ConstructedShape::addCuboidSet(Area& area, const Point3D origin, const Facing4 facing, const CuboidSet& cuboids)
 {
 	Space& space = area.getSpace();
 	for(const auto& [solidCuboid, materialType] : space.solid_getAllWithCuboidsAndRemove(cuboids))
@@ -66,7 +66,7 @@ void ConstructedShape::constructDecks()
 			m_decks.maybeRemove(pair.first);
 	}
 }
-void ConstructedShape::recordAndClearDynamic(Area& area, const CuboidSet& occupied, const Point3D& location)
+void ConstructedShape::recordAndClearDynamic(Area& area, const CuboidSet& occupied, const Point3D location)
 {
 	Space& space = area.getSpace();
 	for(const auto& [solidCuboid, materialType] : space.solid_getAllWithCuboidsAndRemove(occupied))
@@ -76,11 +76,11 @@ void ConstructedShape::recordAndClearDynamic(Area& area, const CuboidSet& occupi
 	for(const auto& [featureCuboid, feature] : space.pointFeature_getAllWithCuboidsAndRemove(occupied))
 		m_features.insertOrMerge(featureCuboid.offsetTo(location), feature);
 	//TODO: combine with other loop at 72? Use cuboids rather then points.
-	for(const Cuboid& cuboid : occupied)
+	for(const Cuboid cuboid : occupied)
 		for(const Point3D& point : cuboid)
 			space.pointFeature_removeAll(point);
 }
-void ConstructedShape::recordAndClearStatic(Area& area, const CuboidSet& occupied, const Point3D& location)
+void ConstructedShape::recordAndClearStatic(Area& area, const CuboidSet& occupied, const Point3D location)
 {
 	Space& space = area.getSpace();
 	for(const auto& [solidCuboid, materialType] : space.solid_getAllWithCuboidsAndRemove(occupied))
@@ -88,11 +88,11 @@ void ConstructedShape::recordAndClearStatic(Area& area, const CuboidSet& occupie
 	m_features.clear();
 	for(const auto& [featureCuboid, feature] : space.pointFeature_getAllWithCuboidsAndRemove(occupied))
 		m_features.insertOrMerge(featureCuboid.offsetTo(location), feature);
-	for(const Cuboid& cuboid : occupied)
+	for(const Cuboid cuboid : occupied)
 		for(const Point3D& point : cuboid)
 			space.pointFeature_removeAll(point);
 }
-void ConstructedShape::setLocationAndFacingDynamic(Area& area, const Facing4& currentFacing, const Point3D& newLocation, const Facing4& newFacing, CuboidSet& occupied)
+void ConstructedShape::setLocationAndFacingDynamic(Area& area, const Facing4& currentFacing, const Point3D newLocation, const Facing4 newFacing, CuboidSet& occupied)
 {
 	Space& space = area.getSpace();
 	if(newFacing != currentFacing)
@@ -124,7 +124,7 @@ void ConstructedShape::setLocationAndFacingDynamic(Area& area, const Facing4& cu
 		occupied.maybeAdd(cuboid);
 	}
 }
-void ConstructedShape::setLocationAndFacingStatic(Area& area, const Facing4& currentFacing, const Point3D& newLocation, const Facing4& newFacing, CuboidSet& occupied)
+void ConstructedShape::setLocationAndFacingStatic(Area& area, const Facing4& currentFacing, const Point3D newLocation, const Facing4 newFacing, CuboidSet& occupied)
 {
 	Space& space = area.getSpace();
 	if(newFacing != currentFacing)
@@ -155,7 +155,7 @@ void ConstructedShape::setLocationAndFacingStatic(Area& area, const Facing4& cur
 		occupied.maybeAdd(cuboid);
 	}
 }
-SmallSet<MaterialTypeId> ConstructedShape::getMaterialTypesAt(const Point3D& location, const Facing4& facing, const Point3D& point) const
+SmallSet<MaterialTypeId> ConstructedShape::getMaterialTypesAt(const Point3D location, const Facing4 facing, const Point3D point) const
 {
 	SmallSet<MaterialTypeId> output;
 	Offset3D offset = location.offsetTo(point);
@@ -169,25 +169,25 @@ SmallSet<MaterialTypeId> ConstructedShape::getMaterialTypesAt(const Point3D& loc
 			output.insert(feature.materialType);
 	return output;
 }
-std::pair<ConstructedShape, Point3D> ConstructedShape::makeForKeelPoint(Area& area, const Point3D& point, const Facing4& facing)
+std::pair<ConstructedShape, Point3D> ConstructedShape::makeForKeelPoint(Area& area, const Point3D point, const Facing4 facing)
 {
 	ConstructedShape output;
 	Space& space = area.getSpace();
-	auto keelCondition = [&](const Point3D& p) { return space.pointFeature_contains(p, PointFeatureTypeId::Keel); };
+	auto keelCondition = [&](const Point3D p) { return space.pointFeature_contains(p, PointFeatureTypeId::Keel); };
 	assert(keelCondition(point));
 	CuboidSet keelCuboids = space.collectAdjacentsWithCondition(point, keelCondition);
 	assert(!keelCuboids.empty());
 	Offset3D sum = Offset3D::create(0,0,0);
-	for(const Cuboid& cuboid : keelCuboids)
+	for(const Cuboid cuboid : keelCuboids)
 		sum += cuboid.getCenter().toOffset();
 	Point3D center = keelCuboids.center();
 	Distance lowestZ = keelCuboids.lowestZ();
 	center.setZ(lowestZ);
 	output.addCuboidSet(area, center, facing, keelCuboids);
-	auto occupiedCondition = [&](const Cuboid& cuboid) -> CuboidSet
+	auto occupiedCondition = [&](const Cuboid cuboid) -> CuboidSet
 	{
 		CuboidSet conditionOutput;
-		for(const Cuboid& solidCuboid : space.solid_queryCuboids(cuboid))
+		for(const Cuboid solidCuboid : space.solid_queryCuboids(cuboid))
 			// Only keel space are allowed on same level as center.
 			if(solidCuboid.m_low.z() > 0)
 				conditionOutput.maybeAdd(solidCuboid);
@@ -205,7 +205,7 @@ std::pair<ConstructedShape, Point3D> ConstructedShape::makeForKeelPoint(Area& ar
 	output.constructDecks();
 	return {output, center};
 }
-std::pair<ConstructedShape, Point3D> ConstructedShape::makeForPlatform(Area& area, const CuboidSet& cuboids, const Facing4& facing)
+std::pair<ConstructedShape, Point3D> ConstructedShape::makeForPlatform(Area& area, const CuboidSet& cuboids, const Facing4 facing)
 {
 	ConstructedShape output;
 	Point3D center = cuboids.getLowest();

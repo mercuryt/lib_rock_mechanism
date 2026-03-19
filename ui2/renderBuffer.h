@@ -7,8 +7,12 @@ struct Sprite;
 
 struct RenderBuffer
 {
-	std::vector<SDL_Vertex> m_verticies;
-	std::vector<int32_t> m_indicies;
+	std::vector<SDL_Vertex> m_vertices;
+	//TODO: use 98'298 int16_t indices and batch UINT16_MAX vertices for 16'383 sprites.
+	std::vector<int32_t> m_indices;
+	int m_indicesUsed{0};
+	RenderBuffer();
+	void buildIndices(const int spriteCount);
 	void add(const SDL_Rect& destination, const SDL_Color color);
 	void addOutline(const SDL_Rect& destination, const SDL_Color color, int thickness);
 	void add(const Sprite& sprite, const SDL_Rect& destination, const SDL_Color color = {255, 255, 255, 255});

@@ -11,7 +11,7 @@
 
 namespace areaBuilderUtil
 {
-	inline void setSolidLayer(Area& area, const Distance& z, const MaterialTypeId& materialType)
+	inline void setSolidLayer(Area& area, const Distance z, const MaterialTypeId materialType)
 	{
 		Space& space = area.getSpace();
 		Cuboid cuboid(
@@ -20,28 +20,31 @@ namespace areaBuilderUtil
 		);
 		space.solid_setCuboid(cuboid, materialType, false);
 	}
-	inline void setSolidLayer(Area& area, int z, const MaterialTypeId& materialType)
+	inline void setSolidLayer(Area& area, int z, const MaterialTypeId materialType)
 	{
 		setSolidLayer(area, Distance::create(z), materialType);
 	}
-	inline void setSolidLayers(Area& area, Distance zbegin, const Distance& zend, const MaterialTypeId& materialType)
+	inline void setSolidLayers(Area& area, Distance zbegin, const Distance zend, const MaterialTypeId materialType)
 	{
-		for(;zbegin <= zend; ++zbegin)
-			setSolidLayer(area, zbegin, materialType);
-		area.getSpace().solid_prepare();
+		Space& space = area.getSpace();
+		Cuboid cuboid(
+			{space.m_sizeX - 1, space.m_sizeY - 1, zend},
+			{Distance::create(0), Distance::create(0), zbegin}
+		);
+		space.solid_setCuboid(cuboid, materialType, false);
 	}
-	inline void setSolidLayers(Area& area, int zbegin, int zend, const MaterialTypeId& materialType)
+	inline void setSolidLayers(Area& area, int zbegin, int zend, const MaterialTypeId materialType)
 	{
 		setSolidLayers(area, Distance::create(zbegin), Distance::create(zend), materialType);
 	}
-	inline void setSolidWall(Area& area, const Point3D& start, const Point3D& end, const MaterialTypeId& materialType)
+	inline void setSolidWall(Area& area, const Point3D start, const Point3D end, const MaterialTypeId materialType)
 	{
 		Space& space = area.getSpace();
 		Cuboid cuboid(end, start);
 		space.solid_setCuboid(cuboid, materialType, false);
 		space.solid_prepare();
 	}
-	inline void setSolidWalls(Area& area, const Distance& height, const MaterialTypeId& materialType)
+	inline void setSolidWalls(Area& area, const Distance height, const MaterialTypeId materialType)
 	{
 		Space& space = area.getSpace();
 		static constexpr Distance zero = Distance::create(0);
@@ -55,11 +58,11 @@ namespace areaBuilderUtil
 		space.solid_setCuboid(cuboid, materialType, false);
 		space.solid_prepare();
 	}
-	inline void setSolidWalls(Area& area, int height, const MaterialTypeId& materialType)
+	inline void setSolidWalls(Area& area, int height, const MaterialTypeId materialType)
 	{
 		setSolidWalls(area, Distance::create(height), materialType);
 	}
-	inline void makeBuilding(Area& area, Cuboid cuboid, const MaterialTypeId& materialType)
+	inline void makeBuilding(Area& area, Cuboid cuboid, const MaterialTypeId materialType)
 	{
 		Space& space = area.getSpace();
 		Point3D highCoordinates = cuboid.m_high;
@@ -81,7 +84,7 @@ namespace areaBuilderUtil
 				space.pointFeature_construct({x, y, highCoordinates.z() + 1}, PointFeatureTypeId::Floor, materialType);
 	}
 	// TODO: low and high should be inverted.
-	inline void setFullFluidCuboid(Area& area, const Point3D& low, const Point3D& high, FluidTypeId fluidType)
+	inline void setFullFluidCuboid(Area& area, const Point3D low, const Point3D high, FluidTypeId fluidType)
 	{
 		Space& space = area.getSpace();
 		assert(space.fluid_getTotalVolume(low) == 0);

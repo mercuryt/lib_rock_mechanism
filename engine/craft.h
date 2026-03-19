@@ -63,7 +63,7 @@ class CraftStepProject final : public Project
 	void onCancel();
 	void onDelay() { cancel(); }
 	void offDelay() { std::unreachable(); }
-	void onAddToMaking(const ActorIndex &actor);
+	void onAddToMaking(const ActorIndex actor);
 	[[nodiscard]] bool canReset() const { return false; }
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
 	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
@@ -72,10 +72,10 @@ class CraftStepProject final : public Project
 	[[nodiscard]] std::vector<ActorReference> getActors() const { return {}; }
 
 public:
-	CraftStepProject(const FactionId &faction, Area &area, const Point3D &location, const CraftStepType &cst, CraftJob &cj) : Project(faction, area, location, Quantity::create(1)), m_craftStepType(cst), m_craftJob(cj) {}
+	CraftStepProject(const FactionId faction, Area &area, const Point3D location, const CraftStepType &cst, CraftJob &cj) : Project(faction, area, location, Quantity::create(1)), m_craftStepType(cst), m_craftJob(cj) {}
 	CraftStepProject(const Json &data, DeserializationMemo &deserializationMemo, CraftJob &cj, Area &area);
 	// No toJson needed here, the base class one has everything.
-	[[nodiscard]] int getWorkerCraftScore(const ActorIndex &actor) const;
+	[[nodiscard]] int getWorkerCraftScore(const ActorIndex actor) const;
 	[[nodiscard]] SkillTypeId getSkill() const { return m_craftStepType.skillType; }
 	[[nodiscard]] std::string description() const { return m_craftStepType.name; };
 };
@@ -86,7 +86,7 @@ struct CraftStepProjectHasShapeDishonorCallback final : public DishonorCallback
 	CraftStepProjectHasShapeDishonorCallback(const Json &data, DeserializationMemo &deserializationMemo);
 	[[nodiscard]] Json toJson() const { return Json({{"type", "CraftStepProjectHasShapeDishonorCallback"}, {"project", reinterpret_cast<uintptr_t>(&m_craftStepProject)}}); }
 	// Craft step project cannot reset so cancel instead and allow to be recreated later.
-	void execute([[maybe_unused]] const Quantity &oldCount, [[maybe_unused]] const Quantity &newCount) { m_craftStepProject.cancel(); }
+	void execute([[maybe_unused]] const Quantity oldCount, [[maybe_unused]] const Quantity newCount) { m_craftStepProject.cancel(); }
 };
 // Data about making a specific product type.
 class CraftJobType final
@@ -98,14 +98,14 @@ class CraftJobType final
 	StrongVector<std::vector<CraftStepType>, CraftJobTypeId> m_stepTypes;
 
 public:
-	static void create(std::string name, ItemTypeId productType, const Quantity &productQuantity, MaterialCategoryTypeId category, std::vector<CraftStepType> stepTypes);
+	static void create(std::string name, ItemTypeId productType, const Quantity productQuantity, MaterialCategoryTypeId category, std::vector<CraftStepType> stepTypes);
 	[[nodiscard]] static CraftJobTypeId size();
 	[[nodiscard]] static CraftJobTypeId byName(const std::string name);
-	[[nodiscard]] static std::string getName(const CraftJobTypeId &id);
-	[[nodiscard]] static ItemTypeId getProductType(const CraftJobTypeId &id);
-	[[nodiscard]] static Quantity getProductQuantity(const CraftJobTypeId &id);
-	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(const CraftJobTypeId &id);
-	[[nodiscard]] static std::vector<CraftStepType> &getStepTypes(const CraftJobTypeId &id);
+	[[nodiscard]] static std::string getName(const CraftJobTypeId id);
+	[[nodiscard]] static ItemTypeId getProductType(const CraftJobTypeId id);
+	[[nodiscard]] static Quantity getProductQuantity(const CraftJobTypeId id);
+	[[nodiscard]] static MaterialCategoryTypeId getMaterialTypeCategory(const CraftJobTypeId id);
+	[[nodiscard]] static std::vector<CraftStepType> &getStepTypes(const CraftJobTypeId id);
 };
 inline CraftJobType craftJobTypeData;
 // Make a specific product.
@@ -121,9 +121,9 @@ struct CraftJob final
 	int totalSkillPoints = 0;
 	Reservable reservable;
 	// If work piece is provided then this is an upgrade job.
-	CraftJob(const CraftJobTypeId &cjt, HasCraftingLocationsAndJobsForFaction &hclaj, const ItemIndex &wp, const MaterialTypeId &mt, int msl);
+	CraftJob(const CraftJobTypeId cjt, HasCraftingLocationsAndJobsForFaction &hclaj, const ItemIndex wp, const MaterialTypeId mt, int msl);
 	// No work piece provided is a create job.
-	CraftJob(const CraftJobTypeId &cjt, HasCraftingLocationsAndJobsForFaction &hclaj, const MaterialTypeId &mt, int msl) :
+	CraftJob(const CraftJobTypeId cjt, HasCraftingLocationsAndJobsForFaction &hclaj, const MaterialTypeId mt, int msl) :
 		craftJobType(cjt),
 		hasCraftingLocationsAndJobs(hclaj),
 		materialType(mt),
@@ -154,34 +154,34 @@ class HasCraftingLocationsAndJobsForFaction final
 	FactionId m_faction;
 
 public:
-	HasCraftingLocationsAndJobsForFaction(const FactionId &f, Area &a) : m_area(a), m_faction(f) {}
-	HasCraftingLocationsAndJobsForFaction(const Json &data, DeserializationMemo &deserializationMemo, const FactionId &f);
-	void loadWorkers(const Json &data, DeserializationMemo &deserializationMemo);
+	HasCraftingLocationsAndJobsForFaction(const FactionId f, Area &a) : m_area(a), m_faction(f) {}
+	HasCraftingLocationsAndJobsForFaction(const Json &data, DeserializationMemo &deserializationMemo, const FactionId f);
+	void loadWorkers(const Json& data, DeserializationMemo &deserializationMemo);
 	[[nodiscard]] Json toJson() const;
 	// To be used by the player.
-	void addLocation(CraftStepTypeCategoryId craftStepTypeCategory, const Point3D &point);
+	void addLocation(CraftStepTypeCategoryId craftStepTypeCategory, const Point3D point);
 	// To be used by the player.
-	void removeLocation(CraftStepTypeCategoryId craftStepTypeCategory, const Point3D &point);
+	void removeLocation(CraftStepTypeCategoryId craftStepTypeCategory, const Point3D point);
 	// To be used by invalidating events such as set solid.
-	void maybeRemoveCuboid(const Cuboid &cuboid);
+	void maybeRemoveCuboid(const Cuboid cuboid);
 	// designate something to be crafted.
-	void addJob(const CraftJobTypeId &craftJobType, const MaterialTypeId &materialType, const Quantity &quantity, int minimumSkillLevel = 0);
-	void cloneJob(CraftJob &craftJob);
+	void addJob(const CraftJobTypeId craftJobType, const MaterialTypeId materialType, const Quantity quantity, int minimumSkillLevel = 0);
+	void cloneJob(CraftJob& craftJob);
 	// Undo an addJob order.
-	void removeJob(CraftJob &craftJob);
+	void removeJob(CraftJob& craftJob);
 	// To be called by CraftStepProject::onComplete.
-	void stepComplete(CraftJob &craftJob, const ActorIndex &actor);
+	void stepComplete(CraftJob& craftJob, const ActorIndex actor);
 	// To be called by CraftStepProject::onCancel.
-	void stepDestroy(CraftJob &craftJob);
+	void stepDestroy(CraftJob& craftJob);
 	// List a project as being in need of workers.
-	void indexUnassigned(CraftJob &craftJob);
+	void indexUnassigned(CraftJob& craftJob);
 	// Unlist a project.
-	void unindexUnassigned(CraftJob &craftJob);
-	void maybeUnindexUnassigned(CraftJob &craftJob);
+	void unindexUnassigned(CraftJob& craftJob);
+	void maybeUnindexUnassigned(CraftJob& craftJob);
 	// To be called when all steps are complete.
-	void jobComplete(CraftJob &craftJob, const Point3D &location);
+	void jobComplete(CraftJob& craftJob, const Point3D location);
 	// Generate a project step for craftJob and dispatch the worker from objective.
-	void makeAndAssignStepProject(CraftJob &craftJob, const Point3D &location, CraftObjective &objective, const ActorIndex &actor);
+	void makeAndAssignStepProject(CraftJob& craftJob, const Point3D location, CraftObjective& objective, const ActorIndex actor);
 	// To be used by the UI.
 	void forEachPoint(auto&& action)
 	{
@@ -189,13 +189,13 @@ public:
 			for(const Point3D& point : pair.second)
 				action(point);
 	}
-	[[nodiscard]] bool hasLocationsFor(const CraftJobTypeId &craftJobType) const;
-	[[nodiscard]] std::list<CraftJob> &getAllJobs() { return m_jobs; }
-	[[nodiscard]] std::vector<CraftStepTypeCategoryId> &getStepTypeCategoriesForLocation(const Point3D &location);
-	[[nodiscard]] CraftStepTypeCategoryId getDisplayStepTypeCategoryForLocation(const Point3D &location);
-	[[nodiscard]] SmallSet<Point3D>& getLocationsForCategoryType(const CraftStepTypeCategoryId &category) { return m_locationsByCategory[category]; }
+	[[nodiscard]] bool hasLocationsFor(const CraftJobTypeId craftJobType) const;
+	[[nodiscard]] std::list<CraftJob>& getAllJobs() { return m_jobs; }
+	[[nodiscard]] std::vector<CraftStepTypeCategoryId> &getStepTypeCategoriesForLocation(const Point3D location);
+	[[nodiscard]] CraftStepTypeCategoryId getDisplayStepTypeCategoryForLocation(const Point3D location);
+	[[nodiscard]] SmallSet<Point3D>& getLocationsForCategoryType(const CraftStepTypeCategoryId category) { return m_locationsByCategory[category]; }
 	// May return nullptr;
-	[[nodiscard]] CraftJob *getJobForAtLocation(const ActorIndex &actor, const SkillTypeId &skillType, const Point3D &point, const SmallSet<CraftJob *> &excludeJobs);
+	[[nodiscard]] CraftJob *getJobForAtLocation(const ActorIndex actor, const SkillTypeId skillType, const Point3D point, const SmallSet<CraftJob *> &excludeJobs);
 	friend class CraftObjectiveType;
 	friend class AreaHasCraftingLocationsAndJobs;
 	friend struct CraftJob;
@@ -215,13 +215,13 @@ public:
 	void load(const Json &data, DeserializationMemo &deserializationMemo);
 	void loadWorkers(const Json &data, DeserializationMemo &deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	void addFaction(const FactionId &faction) { m_data.try_emplace(faction, faction, m_area); }
-	void removeFaction(const FactionId &faction) { m_data.erase(faction); }
-	void maybeRemoveCuboid(const Cuboid &cuboid)
+	void addFaction(const FactionId faction) { m_data.try_emplace(faction, faction, m_area); }
+	void removeFaction(const FactionId faction) { m_data.erase(faction); }
+	void maybeRemoveCuboid(const Cuboid cuboid)
 	{
 		for (auto &pair : m_data)
 			pair.second.maybeRemoveCuboid(cuboid);
 	}
 	void clearReservations();
-	[[nodiscard]] HasCraftingLocationsAndJobsForFaction& getForFaction(const FactionId &faction);
+	[[nodiscard]] HasCraftingLocationsAndJobsForFaction& getForFaction(const FactionId faction);
 };

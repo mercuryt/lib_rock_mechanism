@@ -15,7 +15,7 @@ class Bool3D
 	{
 	public:
 		Index() = default;
-		struct Hash { [[nodiscard]] size_t operator()(const Index& index) const { return index.get(); } };
+		struct Hash { [[nodiscard]] size_t operator()(const Index index) const { return index.get(); } };
 	};
 	struct Node
 	{
@@ -32,14 +32,14 @@ class Bool3D
 	StrongVector<Node*, Index> m_parents;
 	Index m_nextIndex = Index::create(0);
 	Point3D m_center;
-	void split(Node& node, const Cuboid& cuboid);
+	void split(Node& node, const Cuboid cuboid);
 	void merge(Node& node);
 public:
-	void maybeSetPoint(const Point3D& point);
-	void maybeUnsetPoint(const Point3D& point);
-	void maybeSetCuboid(const Cuboid& cuboid);
-	void maybeUnsetCuboid(const Cuboid& cuboid);
-	[[nodiscard]] bool queryPoint(const Point3D& point);
-	[[nodiscard]] bool queryCuboidAny(const Cuboid& cuboid);
-	[[nodiscard]] static Octant getOctant(const Point3D& center, const Point3D& point);
+	void maybeSetPoint(const Point3D point);
+	void maybeUnsetPoint(const Point3D point);
+	void maybeSetCuboid(const Cuboid cuboid);
+	void maybeUnsetCuboid(const Cuboid cuboid);
+	[[nodiscard]] bool queryPoint(const Point3D point);
+	[[nodiscard]] bool queryCuboidAny(const Cuboid cuboid);
+	[[nodiscard]] static Octant getOctant(const Point3D center, const Point3D point);
 };

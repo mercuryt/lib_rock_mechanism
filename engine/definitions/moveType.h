@@ -40,16 +40,16 @@ class MoveType
 public:
 	static void create(const MoveTypeParamaters& paramaters);
 	[[nodiscard]] static MoveTypeId byName(const std::string& name);
-	[[nodiscard]] static std::string getName(const MoveTypeId& id);
-	[[nodiscard]] static bool getSurface(const MoveTypeId& id);
-	[[nodiscard]] static bool getStairs(const MoveTypeId& id);
-	[[nodiscard]] static int getClimb(const MoveTypeId& id);
-	[[nodiscard]] static bool getJumpDown(const MoveTypeId& id);
-	[[nodiscard]] static bool getFly(const MoveTypeId& id);
-	[[nodiscard]] static bool getBreathless(const MoveTypeId& id);
-	[[nodiscard]] static bool getOnlyBreathsFluids(const MoveTypeId& id);
-	[[nodiscard]] static bool getFloating(const MoveTypeId& id);
-	[[nodiscard]] static SmallMap<FluidTypeId, CollisionVolume>& getSwim(const MoveTypeId& id);
-	[[nodiscard]] static SmallSet<FluidTypeId>& getBreathableFluids(const MoveTypeId& id);
+	[[nodiscard]] static std::string getName(const MoveTypeId id);
+	[[nodiscard]] static bool getSurface(const MoveTypeId id);
+	[[nodiscard]] static bool getStairs(const MoveTypeId id);
+	[[nodiscard]] static int getClimb(const MoveTypeId id);
+	[[nodiscard]] static bool getJumpDown(const MoveTypeId id);
+	[[nodiscard]] static bool getFly(const MoveTypeId id);
+	[[nodiscard]] static bool getBreathless(const MoveTypeId id);
+	[[nodiscard]] static bool getOnlyBreathsFluids(const MoveTypeId id);
+	[[nodiscard]] static bool getFloating(const MoveTypeId id);
+	[[nodiscard]] static SmallMap<FluidTypeId, CollisionVolume>& getSwim(const MoveTypeId id);
+	[[nodiscard]] static SmallSet<FluidTypeId>& getBreathableFluids(const MoveTypeId id);
 };
 inline MoveType g_moveTypeData;

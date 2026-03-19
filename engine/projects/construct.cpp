@@ -48,7 +48,7 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> ConstructProject::
 	return MaterialType::construction_getByproducts(m_solid);
 }
 SkillTypeId ConstructProject::getSkill() const { return MaterialType::construction_getSkill(m_solid); }
-int ConstructProject::getWorkerConstructScore(const ActorIndex& actor) const
+int ConstructProject::getWorkerConstructScore(const ActorIndex actor) const
 {
 	Actors& actors = m_area.getActors();
 	return (actors.getStrength(actor).get() * Config::constructStrengthModifier) +
@@ -112,7 +112,7 @@ ConstructionLocationDishonorCallback::ConstructionLocationDishonorCallback(const
 	m_area(deserializationMemo.area(data["area"])),
 	m_location(data["location"].get<Point3D>()) { }
 Json ConstructionLocationDishonorCallback::toJson() const { return Json({{"type", "ConstructionLocationDishonorCallback"}, {"faction", m_faction}, {"location", m_location}}); }
-void ConstructionLocationDishonorCallback::execute([[maybe_unused]] const Quantity& oldCount, [[maybe_unused]] const Quantity& newCount)
+void ConstructionLocationDishonorCallback::execute([[maybe_unused]] const Quantity oldCount, [[maybe_unused]] const Quantity newCount)
 {
 	m_area.m_hasConstructionDesignations.getForFaction(m_faction).undesignate(m_location);
 }

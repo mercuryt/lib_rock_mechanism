@@ -4,7 +4,7 @@
 #include "../definitions/itemType.h"
 #include "../definitions/materialType.h"
 #include "../numericTypes/types.h"
-void Space::temperature_updateDelta(const Point3D& point, const TemperatureDelta& deltaDelta)
+void Space::temperature_updateDelta(const Point3D point, const TemperatureDelta deltaDelta)
 {
 	assert(deltaDelta != 0);
 	TemperatureDelta delta = m_temperatureDelta.queryGetOneOr(point, TemperatureDelta::create(0));
@@ -14,7 +14,7 @@ void Space::temperature_updateDelta(const Point3D& point, const TemperatureDelta
 	else
 		m_temperatureDelta.maybeInsertOrOverwrite(point, delta);
 	Temperature temperature = temperature_getAmbient(point) + delta;
-	const MaterialTypeId& solidMaterial = solid_get(point);
+	const MaterialTypeId solidMaterial = solid_get(point);
 	if(solidMaterial.exists())
 	{
 		if(
@@ -37,7 +37,7 @@ void Space::temperature_updateDelta(const Point3D& point, const TemperatureDelta
 		//TODO: FluidGroups.
 	}
 }
-void Space::temperature_freeze(const Point3D& point, const FluidTypeId& fluidType)
+void Space::temperature_freeze(const Point3D point, const FluidTypeId fluidType)
 {
 	assert(FluidType::getFreezesInto(fluidType).exists());
 	static ItemTypeId chunk = ItemType::byName("chunk");
@@ -72,7 +72,7 @@ void Space::temperature_freeze(const Point3D& point, const FluidTypeId& fluidTyp
 		assert(fluidVolume == createPileQuantity.get() * pileVolumeSingle.get());
 	}
 }
-void Space::temperature_melt(const Point3D& point)
+void Space::temperature_melt(const Point3D point)
 {
 	assert(solid_isAny(point));
 	assert(MaterialType::getMeltsInto(solid_get(point)).exists());
@@ -81,7 +81,7 @@ void Space::temperature_melt(const Point3D& point)
 	fluid_add(point, Config::maxPointVolume, fluidType);
 	m_area.m_hasFluidGroups.clearMergedFluidGroups();
 }
-const Temperature& Space::temperature_getAmbient(const Point3D& point) const
+const Temperature Space::temperature_getAmbient(const Point3D point) const
 {
 	if(!m_exposedToSky.check(point))
 	{
@@ -92,7 +92,7 @@ const Temperature& Space::temperature_getAmbient(const Point3D& point) const
 	}
 	return m_area.m_hasTemperature.getAmbientSurfaceTemperature();
 }
-Temperature Space::temperature_getDailyAverageAmbient(const Point3D& point) const
+Temperature Space::temperature_getDailyAverageAmbient(const Point3D point) const
 {
 	if(!m_exposedToSky.check(point))
 	{
@@ -103,7 +103,7 @@ Temperature Space::temperature_getDailyAverageAmbient(const Point3D& point) cons
 	}
 	return m_area.m_hasTemperature.getDailyAverageAmbientSurfaceTemperature();
 }
-Temperature Space::temperature_get(const Point3D& point) const
+Temperature Space::temperature_get(const Point3D point) const
 {
 	Temperature ambiant = temperature_getAmbient(point);
 	TemperatureDelta delta = m_temperatureDelta.queryGetOne(point);
@@ -113,7 +113,7 @@ Temperature Space::temperature_get(const Point3D& point) const
 		return Temperature::create(0);
 	return Temperature::create(ambiant.get() + delta.get());
 }
-bool Space::temperature_transmits(const Point3D& point) const
+bool Space::temperature_transmits(const Point3D point) const
 {
 	if(solid_isAny(point))
 		return false;
@@ -127,4 +127,23 @@ bool Space::temperature_transmits(const Point3D& point) const
 	if(hatch.exists() && hatch.isClosed())
 		return false;
 	return true;
+}
+CuboidSet Space::temperature_queryTransmitsCuboidsIntersection(const CuboidSet& cuboids) const
+{
+	CuboidSet output = cuboids;
+	m_solid.queryForEachCuboid(cuboids, [&](const Cuboid solidCuboid){
+		output.maybeRemove(solidCuboid);
+	});
+	m_features.queryForEachWithCuboids(output, [&](const Cuboid featureCuboid, const PointFeature feature){
+		if(feature.isClosed())
+			output.maybeRemove(featureCuboid);
+		else
+			assert(
+				feature.pointFeatureType == PointFeatureTypeId::Door ||
+				feature.pointFeatureType == PointFeatureTypeId::Flap ||
+				feature.pointFeatureType == PointFeatureTypeId::Hatch
+			);
+
+	});
+	return output;
 }

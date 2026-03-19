@@ -45,19 +45,19 @@ Json ProjectRequiredShapeDishonoredCallback::toJson() const
 		{"project", reinterpret_cast<uintptr_t>(&m_project)}
 	};
 }
-void ProjectRequiredShapeDishonoredCallback::execute(const Quantity&, const Quantity&)
+void ProjectRequiredShapeDishonoredCallback::execute(const Quantity, const Quantity)
 {
 	m_project.onActorOrItemReservationDishonored();
 }
-ProjectFinishEvent::ProjectFinishEvent(const Step& delay, Project& p, const Step start) :
+ProjectFinishEvent::ProjectFinishEvent(const Step delay, Project& p, const Step start) :
 	ScheduledEvent(p.m_area.m_simulation, delay, start), m_project(p) { }
 void ProjectFinishEvent::execute(Simulation&, Area*) { m_project.complete(); }
 void ProjectFinishEvent::clearReferences(Simulation&, Area*) { m_project.m_finishEvent.clearPointer(); }
-ProjectTryToHaulEvent::ProjectTryToHaulEvent(const Step& delay, Project& p, const Step start) :
+ProjectTryToHaulEvent::ProjectTryToHaulEvent(const Step delay, Project& p, const Step start) :
 	ScheduledEvent(p.m_area.m_simulation, delay, start), m_project(p) { }
 void ProjectTryToHaulEvent::execute(Simulation&, Area*) { m_project.m_tryToHaulThreadedTask.create(m_project); }
 void ProjectTryToHaulEvent::clearReferences(Simulation&, Area*) { m_project.m_tryToHaulEvent.clearPointer(); }
-ProjectTryToReserveEvent::ProjectTryToReserveEvent(const Step& delay, Project& p, const Step start) :
+ProjectTryToReserveEvent::ProjectTryToReserveEvent(const Step delay, Project& p, const Step start) :
 	ScheduledEvent(p.m_area.m_simulation, delay, start), m_project(p) { }
 void ProjectTryToReserveEvent::execute(Simulation&, Area*)
 {
@@ -89,7 +89,7 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep(Simulation&, Area*)
 		if(projectWorker.haulSubproject != nullptr)
 			continue;
 		ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-		auto destinationConditon = [this, actorIndex](const Cuboid& cuboid) -> std::pair<bool, Point3D>
+		auto destinationConditon = [this, actorIndex](const Cuboid cuboid) -> std::pair<bool, Point3D>
 		{
 			const Point3D point = containsDesiredItemOrActor(cuboid, actorIndex);
 			return {point.exists(), point};
@@ -194,12 +194,12 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep(Simulation&, Area* ar
 	}
 }
 void ProjectTryToMakeHaulSubprojectThreadedTask::clearReferences(Simulation&, Area*) { m_project.m_tryToHaulThreadedTask.clearPointer(); }
-Point3D ProjectTryToMakeHaulSubprojectThreadedTask::containsDesiredItemOrActor(const Cuboid& cuboid, const ActorIndex& actor)
+Point3D ProjectTryToMakeHaulSubprojectThreadedTask::containsDesiredItemOrActor(const Cuboid cuboid, const ActorIndex actor)
 {
 	auto& space = m_project.m_area.getSpace();
 	Actors& actors = m_project.m_area.getActors();
 	Items& items = m_project.m_area.getItems();
-	for(const ItemIndex& item : space.item_getAll(cuboid))
+	for(const ItemIndex item : space.item_getAll(cuboid))
 	{
 		ItemReference itemRef = items.m_referenceData.getReference(item);
 		if(m_project.m_itemsToPickup.contains(itemRef))
@@ -219,7 +219,7 @@ Point3D ProjectTryToMakeHaulSubprojectThreadedTask::containsDesiredItemOrActor(c
 				return cuboid.m_high;
 		}
 	}
-	for(const ActorIndex& targetActor : space.actor_getAll(cuboid))
+	for(const ActorIndex targetActor : space.actor_getAll(cuboid))
 	{
 		ActorReference actorRef = actors.getReference(targetActor);
 		if(m_project.m_actorsToPickup.contains(actorRef))
@@ -285,7 +285,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 					m_reservedEquipment.getOrCreate(candidate).insert(&projectRequirementCounts, itemRef);
 				}
 			// capture by reference is used here because the pathing is being done immideatly instead of batched.
-			auto recordItemOnGround = [&](const ItemIndex& item, ProjectRequirementCounts& counts)
+			auto recordItemOnGround = [&](const ItemIndex item, ProjectRequirementCounts& counts)
 			{
 				recordedItems.insert(item);
 				Quantity desiredQuantity = counts.required - counts.reserved;
@@ -311,7 +311,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 					// TODO: project shoud be read only here, requires tracking reservationsComplete seperately for task.
 					m_project.addItemToPickup(item, counts, quantity);
 			};
-			auto recordActorOnGround = [&](const ActorIndex& actor)
+			auto recordActorOnGround = [&](const ActorIndex actor)
 			{
 				recordedActors.insert(actor);
 				ActorReference actorRef = actors.getReference(actor);
@@ -325,7 +325,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 					// TODO: project shoud be read only here, requires tracking reservationsComplete seperately for task.
 					m_project.addActorToPickup(actor);
 			};
-			auto recordContainerOnGround = [&](const ItemIndex& item, const FluidTypeId& fluidType)
+			auto recordContainerOnGround = [&](const ItemIndex item, const FluidTypeId fluidType)
 			{
 				// Remove volume from m_requiredFluids and tranfer it to m_requiredFluidContainers.
 				// Once m_requiredFluids is empty all containers needed will have been assigned and reserved.
@@ -336,7 +336,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 				requirementCounts.reserved += volume.get();
 				ItemReference ref = items.getReference(item);
 				fluidData.containersAndVolumes.insert(ref, volume);
-				const CollisionVolume& contains = items.cargo_getFluidVolume(item);
+				const CollisionVolume contains = items.cargo_getFluidVolume(item);
 				if(contains != 0)
 					fluidData.volumeFound += contains;
 				if(
@@ -354,7 +354,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 				else
 					m_project.m_fluidContainersToPickup.insert(ref);
 			};
-			auto recordFluidOnGround = [&](const FluidTypeId& fluidType, const Point3D& point)
+			auto recordFluidOnGround = [&](const FluidTypeId fluidType, const Point3D point)
 			{
 				auto& fluidData = m_project.m_requiredFluids[fluidType];
 				if(fluidData.foundPoints.contains(point))
@@ -367,7 +367,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 			// Verfy the worker can path to the required materials. Cumulative for all candidates in this step but reset if not satisfied.
 			// capture by reference is used here because the pathing is being done immideatly instead of batched.
 			SmallSet<ItemIndex> itemsWhichHaveBeenProcessedAlready;
-			auto destinationCondition = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
+			auto destinationCondition = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
 			{
 				for(ItemIndex item : space.item_getAll(cuboid))
 				{
@@ -396,7 +396,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 				for(ActorIndex actor : space.actor_getAll(cuboid))
 				{
 					ActorReference actorRef = actors.getReference(actor);
-					for(const ActorReference& otherRef : m_project.m_requiredActors)
+					for(const ActorReference otherRef : m_project.m_requiredActors)
 					{
 						if(actorRef != otherRef)
 							continue;
@@ -417,9 +417,9 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 						if(requiredData.volumeFound < requiredData.volumeRequired)
 						{
 							// TODO: change group to use cuboid set.
-							for(const Cuboid& fluidGroupCuboid : fluidData.group->getPoints())
+							for(const Cuboid fluidGroupCuboid : fluidData.group->getPoints())
 							{
-								for(const Point3D point : fluidGroupCuboid)
+								for(const Point3D& point : fluidGroupCuboid)
 									if(cuboid.contains(point))
 									{
 										recordFluidOnGround(fluidData.type, point);
@@ -457,11 +457,11 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 				items.onDestroy_subscribe(pair2.second.getIndex(items.m_referenceData), m_hasOnDestroy);
 		for(const auto& [item, quantity] : m_itemAlreadyAtSite)
 			items.onDestroy_subscribe(item.getIndex(items.m_referenceData), m_hasOnDestroy);
-		for(const ActorReference& actor : m_actorAlreadyAtSite)
+		for(const ActorReference actor : m_actorAlreadyAtSite)
 			actors.onDestroy_subscribe(actor.getIndex(actors.m_referenceData), m_hasOnDestroy);
 		for(const auto& [item, quantity] : m_project.m_itemsToPickup)
 			items.onDestroy_subscribe(item.getIndex(items.m_referenceData), m_hasOnDestroy);
-		for(const ActorReference& actor : m_project.m_actorsToPickup)
+		for(const ActorReference actor : m_project.m_actorsToPickup)
 			actors.onDestroy_subscribe(actor.getIndex(actors.m_referenceData), m_hasOnDestroy);
 		for(const auto& [fluidType, fluidData] : m_project.m_requiredFluids)
 			for(const auto& [container, volume] : fluidData.containersAndVolumes)
@@ -498,7 +498,7 @@ void ProjectTryToAddWorkersThreadedTask::writeStep(Simulation&, Area*)
 				ItemIndex index = item.getIndex(items.m_referenceData);
 				items.reservable_reserve(index, m_project.m_canReserve, pair.second, std::move(dishonorCallback));
 			}
-			for(const ActorReference& actor : m_project.m_actorsToPickup)
+			for(const ActorReference actor : m_project.m_actorsToPickup)
 			{
 				std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(m_project);
 				ActorIndex index = actor.getIndex(actors.m_referenceData);
@@ -510,7 +510,7 @@ void ProjectTryToAddWorkersThreadedTask::writeStep(Simulation&, Area*)
 				ItemIndex index = item.getIndex(items.m_referenceData);
 				items.reservable_reserve(index, m_project.m_canReserve, quantity, std::move(dishonorCallback));
 			}
-			for(const ActorReference& actor : m_actorAlreadyAtSite)
+			for(const ActorReference actor : m_actorAlreadyAtSite)
 			{
 				std::unique_ptr<DishonorCallback> dishonorCallback = std::make_unique<ProjectRequiredShapeDishonoredCallback>(m_project);
 				ActorIndex index = actor.getIndex(actors.m_referenceData);
@@ -575,7 +575,7 @@ void ProjectTryToAddWorkersThreadedTask::writeStep(Simulation&, Area*)
 			m_project.cancel();
 	}
 	// These workers are not allowed to attempt to rejoin this project for a period, they may not be able to path to it or reserved required items.
-	for(const ActorReference& actor : toReleaseWithProjectDelay)
+	for(const ActorReference actor : toReleaseWithProjectDelay)
 		actors.objective_projectCannotReserve(actor.getIndex(actors.m_referenceData));
 }
 void ProjectTryToAddWorkersThreadedTask::clearReferences(Simulation&, Area*) { m_project.m_tryToAddWorkersThreadedTask.clearPointer(); }
@@ -589,21 +589,21 @@ bool ProjectTryToAddWorkersThreadedTask::validate()
 	// Ensure all items selected to be picked up are still reservable.
 	for(const auto& [item, pair] : m_project.m_itemsToPickup)
 	{
-		const ItemIndex& index = item.getIndex(items.m_referenceData);
+		const ItemIndex index = item.getIndex(items.m_referenceData);
 		if(items.reservable_getUnreservedCount(index, m_project.m_faction) < pair.second)
 			return false;
 	}
 	// Ensure all actors selected to be picked up are still reservable.
-	for(const ActorReference& actor : m_project.m_actorsToPickup)
+	for(const ActorReference actor : m_project.m_actorsToPickup)
 	{
-		const ActorIndex& index = actor.getIndex(actors.m_referenceData);
+		const ActorIndex index = actor.getIndex(actors.m_referenceData);
 		if(actors.reservable_isFullyReserved(index, m_project.m_faction))
 			return false;
 	}
 	// Ensure all items at the site are still reservable.
 	for(const auto& [item, quantity] : m_itemAlreadyAtSite)
 	{
-		const ItemIndex& index = item.getIndex(items.m_referenceData);
+		const ItemIndex index = item.getIndex(items.m_referenceData);
 		if(items.reservable_getUnreservedCount(index, m_project.m_faction) < quantity)
 			return false;
 	}
@@ -640,7 +640,7 @@ void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 	m_project.m_requiredFluids.clear();
 }
 // Derived classes are expected to provide getDuration, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete.
-Project::Project(const FactionId& faction, Area& area, const Point3D& location, const Quantity& maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback, const CuboidSet& additionalPointsToReserve) :
+Project::Project(const FactionId faction, Area& area, const Point3D location, const Quantity maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback, const CuboidSet& additionalPointsToReserve) :
 	m_finishEvent(area.m_eventSchedule),
 	m_tryToHaulEvent(area.m_eventSchedule),
 	m_tryToReserveEvent(area.m_eventSchedule),
@@ -650,12 +650,12 @@ Project::Project(const FactionId& faction, Area& area, const Point3D& location, 
 	m_area(area),
 	m_faction(faction),
 	m_location(location),
-	m_minimumMoveSpeed(Config::minimumHaulSpeedInital),
+	m_minimumMoveSpeed(Config::minimumHaulSpeedInitial),
 	m_maxWorkers(maxWorkers)
 {
 	Space& space = m_area.getSpace();
 	space.reserve(m_location, m_canReserve, std::move(locationDishonorCallback));
-	for(const Cuboid& cuboid : additionalPointsToReserve)
+	for(const Cuboid cuboid : additionalPointsToReserve)
 		for(const Point3D& point : cuboid)
 			// This isn't what required shape callback was meant for but the code would be the same. Rename it maybe?
 			space.reserve(point, m_canReserve, std::make_unique<ProjectRequiredShapeDishonoredCallback>(*this));
@@ -853,7 +853,7 @@ Json Project::toJson() const
 	if(!m_actorAlreadyAtSite.empty())
 	{
 		data["actorAlreadyAtSite"] = Json::array();
-		for(const ActorReference& actor : m_actorAlreadyAtSite)
+		for(const ActorReference actor : m_actorAlreadyAtSite)
 			data["actorAlreadyAtSite"].push_back(actor);
 	}
 	if(!m_haulSubprojects.empty())
@@ -919,22 +919,22 @@ void Project::recordRequiredActorsAndItemsAndFluids()
 		ProjectRequirementCounts projectRequirementCounts(quantity, false);
 		m_requiredItems.emplace_back(itemQuery, std::move(projectRequirementCounts));
 	}
-	for(const ActorReference& actorRef : getActors())
+	for(const ActorReference actorRef : getActors())
 		m_requiredActors.push_back(actorRef);
 	for(const auto& [fluidType, volume] : getFluids())
 		m_requiredFluids.insert(fluidType, volume);
 }
-void Project::addWorker(const ActorIndex& actor, Objective& objective)
+void Project::addWorker(const ActorIndex actor, Objective& objective)
 {
 	assert(!m_workers.contains(m_area.getActors().getReference(actor)));
 	assert(m_area.getActors().isSentient(actor));
 	assert(canAddWorker(actor));
-	// Initalize a ProjectWorker for this worker.
+	// initialize a ProjectWorker for this worker.
 	ActorReference ref = m_area.getActors().getReference(actor);
 	m_workers.emplace(ref, objective);
 	commandWorker(actor);
 }
-void Project::addWorkerCandidate(const ActorIndex& actor, Objective& objective)
+void Project::addWorkerCandidate(const ActorIndex actor, Objective& objective)
 {
 	assert(!hasCandidate(actor));
 	assert(canAddWorker(actor));
@@ -948,7 +948,7 @@ void Project::addWorkerCandidate(const ActorIndex& actor, Objective& objective)
 	if(!m_tryToAddWorkersThreadedTask.exists())
 		m_tryToAddWorkersThreadedTask.create(*this);
 }
-void Project::removeWorkerCandidate(const ActorIndex& actor)
+void Project::removeWorkerCandidate(const ActorIndex actor)
 {
 	Actors& actors = m_area.getActors();
 	ActorReference actorRef = actors.getReference(actor);
@@ -957,7 +957,7 @@ void Project::removeWorkerCandidate(const ActorIndex& actor)
 	m_workerCandidatesAndTheirObjectives.erase(iter);
 }
 // To be called by Objective::execute.
-void Project::commandWorker(const ActorIndex& actor)
+void Project::commandWorker(const ActorIndex actor)
 {
 	Actors& actors = m_area.getActors();
 	ActorReference actorRef = actors.getReference(actor);
@@ -1025,7 +1025,7 @@ void Project::commandWorker(const ActorIndex& actor)
 	}
 }
 // To be called by Objective::cancel, Objective::delay.
-void Project::removeWorker(const ActorIndex& actor)
+void Project::removeWorker(const ActorIndex actor)
 {
 	Actors& actors = m_area.getActors();
 	ActorReference actorRef = actors.getReference(actor);
@@ -1061,7 +1061,7 @@ void Project::removeWorker(const ActorIndex& actor)
 			cancel();
 	}
 }
-void Project::addToMaking(const ActorIndex& actor)
+void Project::addToMaking(const ActorIndex actor)
 {
 	Actors& actors = m_area.getActors();
 	ActorReference actorRef = actors.getReference(actor);
@@ -1071,7 +1071,7 @@ void Project::addToMaking(const ActorIndex& actor)
 	onAddToMaking(actor);
 	scheduleFinishEvent();
 }
-void Project::removeFromMaking(const ActorIndex& actor)
+void Project::removeFromMaking(const ActorIndex actor)
 {
 	Actors& actors = m_area.getActors();
 	ActorReference actorRef = actors.getReference(actor);
@@ -1108,7 +1108,7 @@ void Project::complete()
 		m_area.m_hasStockPiles.registerFaction(m_faction);
 	for(auto& [itemType, materialType, quantity] : getByproducts())
 	{
-		const MoveTypeId& moveType = ItemType::getMoveType(itemType);
+		const MoveTypeId moveType = ItemType::getMoveType(itemType);
 		ShapeId shape = ItemType::getShape(itemType);
 		if(quantity != 0)
 			shape = Shape::mutateMultiplyVolume(shape, quantity);
@@ -1213,7 +1213,7 @@ void Project::setDelayOff()
 	m_delay = false;
 	offDelay();
 }
-void Project::addItemToPickup(const ItemIndex& item, ProjectRequirementCounts& counts, const Quantity& quantity)
+void Project::addItemToPickup(const ItemIndex item, ProjectRequirementCounts& counts, const Quantity quantity)
 {
 	ItemReference ref = m_area.getItems().getReference(item);
 	if(m_itemsToPickup.contains(ref))
@@ -1221,23 +1221,23 @@ void Project::addItemToPickup(const ItemIndex& item, ProjectRequirementCounts& c
 	else
 		m_itemsToPickup.emplace(ref, &counts, quantity);
 }
-void Project::addActorToPickup(const ActorIndex& actor)
+void Project::addActorToPickup(const ActorIndex actor)
 {
 	ActorReference ref = m_area.getActors().getReference(actor);
 	m_actorsToPickup.insert(ref);
 }
-void Project::removeItemToPickup(const ItemReference& item, const Quantity& quantity)
+void Project::removeItemToPickup(const ItemReference item, const Quantity quantity)
 {
 	if(m_itemsToPickup[item].second == quantity)
 		m_itemsToPickup.erase(item);
 	else
 		m_itemsToPickup[item].second -= quantity;
 }
-void Project::removeActorToPickup(const ActorReference& actor)
+void Project::removeActorToPickup(const ActorReference actor)
 {
 	m_actorsToPickup.erase(actor);
 }
-void Project::removeFluidContainerToPickup(const ItemReference& item)
+void Project::removeFluidContainerToPickup(const ItemReference item)
 {
 	m_fluidContainersToPickup.erase(item);
 }
@@ -1271,28 +1271,28 @@ void Project::reset()
 		actors.objective_canNotCompleteSubobjective(actor);
 	}
 }
-bool Project::canAddWorker(const ActorIndex& actor) const
+bool Project::canAddWorker(const ActorIndex actor) const
 {
 	ActorReference ref = m_area.getActors().getReference(actor);
 	assert(!m_making.contains(ref));
 	assert(!m_workers.contains(ref));
 	return m_maxWorkers > m_workers.size();
 }
-bool Project::itemIsFluidContainer(const ItemReference& item) const
+bool Project::itemIsFluidContainer(const ItemReference item) const
 {
 	for(const auto& [fluidType, fluidData] : m_requiredFluids)
 		if(fluidData.containersAndVolumes.contains(item))
 			return true;
 	return false;
 }
-FluidTypeId Project::getFluidTypeForContainer(const ItemReference& item) const
+FluidTypeId Project::getFluidTypeForContainer(const ItemReference item) const
 {
 	for(const auto& [fluidType, fluidData] : m_requiredFluids)
 		if(fluidData.containersAndVolumes.contains(item))
 			return fluidType;
 	std::unreachable();
 }
-CollisionVolume Project::getFluidVolumeForContainer(const ItemReference& item) const
+CollisionVolume Project::getFluidVolumeForContainer(const ItemReference item) const
 {
 	for(const auto& [fluidType, fluidData] : m_requiredFluids)
 		if(fluidData.containersAndVolumes.contains(item))
@@ -1303,7 +1303,7 @@ void Project::clearReservations()
 {
 	m_canReserve.deleteAllWithoutCallback();
 }
-void Project::clearReferenceFromRequiredItems(const ItemReference& ref)
+void Project::clearReferenceFromRequiredItems(const ItemReference ref)
 {
 	std::erase_if(m_requiredItems, [&](const auto& pair){ return pair.first.m_item.exists() && pair.first.m_item == ref; });
 }
@@ -1312,18 +1312,18 @@ void Project::clearLocation()
 	m_area.getSpace().project_remove(m_location, *this);
 	m_location.clear();
 }
-void Project::setLocation(const Point3D& point)
+void Project::setLocation(const Point3D point)
 {
 	m_area.getSpace().project_add(point, *this);
 	m_location = point;
 }
 // For SuccessAtWorkDramaArc.
-void Project::addBonusProduction(const Percent& bonus)
+void Project::addBonusProduction(const Percent bonus)
 {
 	m_finishEvent.bonusPercent(bonus, m_area.m_simulation.m_step);
 }
 // For SuccessAtWorkDramaArc.
-void Project::removeItemFromConsumed(const ItemReference& item)
+void Project::removeItemFromConsumed(const ItemReference item)
 {
 	assert(m_toConsume.contains(item));
 	auto found = m_toConsume.find(item);
@@ -1334,12 +1334,12 @@ void Project::removeItemFromConsumed(const ItemReference& item)
 		--found->second;
 }
 // For testing.
-bool Project::hasCandidate(const ActorIndex& actor) const
+bool Project::hasCandidate(const ActorIndex actor) const
 {
 	ActorReference ref = m_area.getActors().getReference(actor);
 	return std::ranges::find(m_workerCandidatesAndTheirObjectives, ref, &std::pair<ActorReference, Objective*>::first) != m_workerCandidatesAndTheirObjectives.end();
 }
-bool Project::hasWorker(const ActorIndex& actor) const
+bool Project::hasWorker(const ActorIndex actor) const
 {
 	ActorReference ref = m_area.getActors().getReference(actor);
 	return m_workers.contains(ref);
@@ -1356,14 +1356,14 @@ ItemIndex Project::getRandomItemToConsume() const
 {
 	if(m_toConsume.empty())
 		return ItemIndex::null();
-	const ItemReference& ref = m_area.m_simulation.m_random.getInVector(m_toConsume.m_data).first;
+	const ItemReference ref = m_area.m_simulation.m_random.getInVector(m_toConsume.m_data).first;
 	return ref.getIndex(m_area.getItems().m_referenceData);
 }
 ItemIndex Project::getRandomUnconsumedItem() const
 {
 	if(m_unconsumed.empty())
 		return ItemIndex::null();
-	const ItemReference& ref = m_area.m_simulation.m_random.getInVector(m_unconsumed.m_data);
+	const ItemReference ref = m_area.m_simulation.m_random.getInVector(m_unconsumed.m_data);
 	return ref.getIndex(m_area.getItems().m_referenceData);
 }
 SmallSet<ActorIndex> Project::getWorkersAndCandidates()

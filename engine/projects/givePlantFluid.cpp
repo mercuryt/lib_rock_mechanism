@@ -5,7 +5,7 @@
 #include "../actors/actors.h"
 #include "../definitions/plantSpecies.h"
 
-GivePlantFluidProject::GivePlantFluidProject(const Point3D& location, Area& area, const FactionId& faction) :
+GivePlantFluidProject::GivePlantFluidProject(const Point3D location, Area& area, const FactionId faction) :
 	Project(faction, area, location, Quantity::create(1)),
 	m_plantLocation(location)
 {
@@ -24,9 +24,9 @@ void GivePlantFluidProject::setFluidTypeAndVolume()
 {
 	const Plants& plants = m_area.getPlants();
 	const Space& space = m_area.getSpace();
-	const PlantIndex& plant = space.plant_get(m_location);
+	const PlantIndex plant = space.plant_get(m_location);
 	assert(plant.exists());
-	const PlantSpeciesId& species = plants.getSpecies(plant);
+	const PlantSpeciesId species = plants.getSpecies(plant);
 	m_fluidType = PlantSpecies::getFluidType(species);
 	m_volume = plants.getVolumeFluidRequested(plant);
 }
@@ -35,7 +35,7 @@ void GivePlantFluidProject::onComplete()
 	Plants& plants = m_area.getPlants();
 	Actors& actors = m_area.getActors();
 	const Space& space = m_area.getSpace();
-	const PlantIndex& plant = space.plant_get(m_location);
+	const PlantIndex plant = space.plant_get(m_location);
 	if(plant.exists())
 		plants.addFluid(plant, m_volume, m_fluidType);
 	for(auto& [actor, projectWorker] : m_workers)

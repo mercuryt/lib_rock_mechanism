@@ -10,7 +10,7 @@ bool AreaHasSpaceDesignationsForFaction::canPrepare() const
 			return true;
 	return false;
 }
-std::vector<SpaceDesignation> AreaHasSpaceDesignationsForFaction::getForPoint(const Point3D& point) const
+std::vector<SpaceDesignation> AreaHasSpaceDesignationsForFaction::getForPoint(const Point3D point) const
 {
 	std::vector<SpaceDesignation> output;
 	output.reserve(int(SpaceDesignation::SPACE_DESIGNATION_MAX) / 2);
@@ -19,7 +19,7 @@ std::vector<SpaceDesignation> AreaHasSpaceDesignationsForFaction::getForPoint(co
 			output.push_back(designation);
 	return output;
 }
-SpaceDesignation AreaHasSpaceDesignationsForFaction::getDisplayDesignation(const Point3D& point) const
+SpaceDesignation AreaHasSpaceDesignationsForFaction::getDisplayDesignation(const Point3D point) const
 {
 	for(auto designation = SpaceDesignation(0); designation != SpaceDesignation::SPACE_DESIGNATION_MAX; designation = SpaceDesignation((int)designation + 1))
 		if(check(point, designation))
@@ -28,7 +28,7 @@ SpaceDesignation AreaHasSpaceDesignationsForFaction::getDisplayDesignation(const
 	return SpaceDesignation::SPACE_DESIGNATION_MAX;
 }
 const RTreeBoolean& AreaHasSpaceDesignationsForFaction::getForDesignation(const SpaceDesignation& designation) const { return m_data[(int)designation]; }
-AreaHasSpaceDesignationsForFaction& AreaHasSpaceDesignations::maybeRegisterAndGetForFaction(const FactionId& faction)
+AreaHasSpaceDesignationsForFaction& AreaHasSpaceDesignations::maybeRegisterAndGetForFaction(const FactionId faction)
 {
 	auto found = m_data.find(faction);
 	if(found != m_data.end())
@@ -36,11 +36,11 @@ AreaHasSpaceDesignationsForFaction& AreaHasSpaceDesignations::maybeRegisterAndGe
 	registerFaction(faction);
 	return m_data[faction];
 }
-const AreaHasSpaceDesignationsForFaction& AreaHasSpaceDesignations::maybeRegisterAndGetForFaction(const FactionId& faction) const
+const AreaHasSpaceDesignationsForFaction& AreaHasSpaceDesignations::maybeRegisterAndGetForFaction(const FactionId faction) const
 {
 	return const_cast<AreaHasSpaceDesignations&>(*this).maybeRegisterAndGetForFaction(faction);
 }
-std::vector<std::pair<FactionId, SpaceDesignation>> AreaHasSpaceDesignations::getForPoint(const Point3D& point) const
+std::vector<std::pair<FactionId, SpaceDesignation>> AreaHasSpaceDesignations::getForPoint(const Point3D point) const
 {
 	std::vector<std::pair<FactionId, SpaceDesignation>> output;
 	for(const auto& [faction, forFaction] : m_data)

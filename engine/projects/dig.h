@@ -32,7 +32,7 @@ class DigProject final : public Project
 	// What would the total delay time be if we started from scratch now with current workers?
 public:
 	// PointFeatureType can be null, meaning the point is to be fully excavated.
-	DigProject(const FactionId& faction, Area& area, const Point3D& point, const PointFeatureTypeId bft, std::unique_ptr<DishonorCallback> locationDishonorCallback) :
+	DigProject(const FactionId faction, Area& area, const Point3D point, const PointFeatureTypeId bft, std::unique_ptr<DishonorCallback> locationDishonorCallback) :
 		Project(faction, area, point, Config::maxNumberOfWorkersForDigProject, std::move(locationDishonorCallback)), m_pointFeatureType(bft) { }
 	DigProject(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	[[nodiscard]] Step getDuration() const;
@@ -44,8 +44,8 @@ struct DigLocationDishonorCallback final : public DishonorCallback
 	FactionId m_faction;
 	Area& m_area;
 	Point3D m_location;
-	DigLocationDishonorCallback(const FactionId& f, Area& a, const Point3D& l) : m_faction(f), m_area(a), m_location(l) { }
+	DigLocationDishonorCallback(const FactionId f, Area& a, const Point3D l) : m_faction(f), m_area(a), m_location(l) { }
 	DigLocationDishonorCallback(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(const Quantity& oldCount, const Quantity& newCount);
+	void execute(const Quantity oldCount, const Quantity newCount);
 	[[nodiscard]] Json toJson() const;
 };

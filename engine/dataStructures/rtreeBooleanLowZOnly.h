@@ -18,7 +18,7 @@ class RTreeBooleanLowZOnly
 	class Index : public StrongInteger<Index, IndexWidth, INT_MAX, 0>
 	{
 	public:
-		struct Hash { [[nodiscard]] size_t operator()(const Index& index) const { return index.get(); } };
+		struct Hash { [[nodiscard]] size_t operator()(const Index index) const { return index.get(); } };
 	};
 	using ArrayIndexWidth = int;
 	class ArrayIndex : public StrongInteger<ArrayIndex, ArrayIndexWidth, nodeSize + 1, 0>
@@ -42,35 +42,35 @@ class RTreeBooleanLowZOnly
 		[[nodiscard]] int getChildCount() const { return nodeSize - m_childBegin.get(); }
 		[[nodiscard]] int unusedCapacity() const { return (m_childBegin - m_leafEnd).get(); }
 		[[nodiscard]] int sortOrder() const { return m_cuboids.boundry().getCenter().hilbertNumber(); };
-		[[nodiscard]] ArrayIndex offsetFor(const Index& index) const;
+		[[nodiscard]] ArrayIndex offsetFor(const Index index) const;
 		[[nodiscard]] ArrayIndex offsetOfFirstChild() const { return m_childBegin; }
 		[[nodiscard]] bool empty() const { return unusedCapacity() == nodeSize; }
 		[[nodiscard]] int getLeafVolume() const;
 		[[nodiscard]] int getNodeVolume() const;
 		void updateChildIndex(const Index& oldIndex, const Index& newIndex);
-		void insertLeaf(const Cuboid& cuboid);
-		void insertBranch(const Cuboid& cuboid, const Index& index);
+		void insertLeaf(const Cuboid cuboid);
+		void insertBranch(const Cuboid cuboid, const Index index);
 		void eraseBranch(const ArrayIndex& offset);
 		void eraseLeaf(const ArrayIndex& offset);
 		void eraseByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
 		void eraseLeavesByMask(const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
 		void clear();
-		void setParent(const Index& index) { m_parent = index; }
-		void updateLeaf(const ArrayIndex& offset, const Cuboid& cuboid);
-		void updateBranchBoundry(const ArrayIndex& offset, const Cuboid& cuboid);
-		[[nodiscard]] __attribute__((noinline)) std::string toString();
+		void setParent(const Index index) { m_parent = index; }
+		void updateLeaf(const ArrayIndex& offset, const Cuboid cuboid);
+		void updateBranchBoundry(const ArrayIndex& offset, const Cuboid cuboid);
+		[[nodiscard]] GDB_CALLABLE std::string toString();
 	};
 	StrongVector<Node, Index> m_nodes;
 	SmallSet<Index> m_emptySlots;
 	SmallSet<Index> m_toComb;
 	[[nodiscard]] std::tuple<Cuboid, ArrayIndex, ArrayIndex> findPairWithLeastNewVolumeWhenExtended(const CuboidArray<nodeSize + 1>& cuboids) const;
 	[[nodiscard]] SmallSet<Cuboid> gatherLeavesRecursive(const Index& parent) const;
-	void destroyWithChildren(const Index& index);
+	void destroyWithChildren(const Index index);
 	void tryToMergeLeaves(Node& parent);
-	void clearAllContained(const Index& index, const Cuboid& cuboid);
-	void addToNodeRecursive(const Index& index, const Cuboid& cuboid);
+	void clearAllContained(const Index index, const Cuboid cuboid);
+	void addToNodeRecursive(const Index index, const Cuboid cuboid);
 	// Removes intercepting leaves and contained branches. Intercepting branches are added to openList.
-	void removeFromNode(const Index& index, const Cuboid& cuboid, SmallSet<Index>& openList);
+	void removeFromNode(const Index index, const Cuboid cuboid, SmallSet<Index>& openList);
 	void merge(const Index& destination, const Index& source);
 	// Iterate m_toComb and try to recursively merge leaves.
 	// Then check for single child nodes and splice them out. If the child is a leaf re-add the parent to m_toComb.
@@ -82,14 +82,14 @@ class RTreeBooleanLowZOnly
 	void sort();
 public:
 	RTreeBooleanLowZOnly() { m_nodes.add(); m_nodes.back().setParent(Index::null()); }
-	void maybeInsert(const Cuboid& cuboid);
-	void maybeRemove(const Cuboid& cuboid);
+	void maybeInsert(const Cuboid cuboid);
+	void maybeRemove(const Cuboid cuboid);
 	void maybeInsert(Cuboid&& cuboid) { const Cuboid copy = cuboid; maybeInsert(copy); }
 	void maybeRemove(Cuboid&& cuboid) { const Cuboid copy = cuboid; maybeRemove(copy); }
-	void maybeInsert(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeInsert(cuboid); }
-	void maybeRemove(const Point3D& point) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid); }
+	void maybeInsert(const Point3D point) { const Cuboid cuboid = Cuboid(point, point); maybeInsert(cuboid); }
+	void maybeRemove(const Point3D point) { const Cuboid cuboid = Cuboid(point, point); maybeRemove(cuboid); }
 	void prepare();
-	[[nodiscard]] bool query(const Point3D& begin, const Point3D& end) const { return query(ParamaterizedLine(begin, end)); }
+	[[nodiscard]] bool query(const Point3D begin, const Point3D end) const { return query(ParamaterizedLine(begin, end)); }
 	[[nodiscard]] bool query(const auto& shape) const
 	{
 		SmallSet<Index> openList;
@@ -188,14 +188,14 @@ public:
 		return output;
 	}
 	// For test and debug.
-	[[nodiscard]] __attribute__((noinline)) int nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
-	[[nodiscard]] __attribute__((noinline)) int leafCount() const;
-	[[nodiscard]] __attribute__((noinline)) const Node& getNode(int i) const;
-	[[nodiscard]] __attribute__((noinline)) const Cuboid getNodeCuboid(int i, int o) const;
-	[[nodiscard]] __attribute__((noinline)) const Index& getNodeChild(int i, int o) const;
-	[[nodiscard]] __attribute__((noinline)) bool queryPoint(int x, int y, int z) const;
-	[[nodiscard]] __attribute__((noinline)) int totalLeafVolume() const;
-	[[nodiscard]] __attribute__((noinline)) int totalNodeVolume() const;
-	__attribute__((noinline)) void assertAllLeafsAreUnique() const;
-	[[nodiscard]] static __attribute__((noinline)) int getNodeSize();
+	[[nodiscard]] GDB_CALLABLE int nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
+	[[nodiscard]] GDB_CALLABLE int leafCount() const;
+	[[nodiscard]] GDB_CALLABLE const Node& getNode(int i) const;
+	[[nodiscard]] GDB_CALLABLE const Cuboid getNodeCuboid(int i, int o) const;
+	[[nodiscard]] GDB_CALLABLE const Index& getNodeChild(int i, int o) const;
+	[[nodiscard]] GDB_CALLABLE bool queryPoint(int x, int y, int z) const;
+	[[nodiscard]] GDB_CALLABLE int totalLeafVolume() const;
+	[[nodiscard]] GDB_CALLABLE int totalNodeVolume() const;
+	GDB_CALLABLE void assertAllLeafsAreUnique() const;
+	[[nodiscard]] static GDB_CALLABLE int getNodeSize();
 };

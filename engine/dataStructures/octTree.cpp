@@ -3,16 +3,16 @@
 #include "../area/area.h"
 #include "../reference.h"
 #include "../partitionNotify.h"
-ActorOctTree::ActorOctTree(const Cuboid& cuboid)
+ActorOctTree::ActorOctTree(const Cuboid cuboid)
 {
-	// Initalize root node;
+	// initialize root node;
 	m_nodes.add({OctTreeIndex::null(), cuboid});
 }
-void ActorOctTree::record(Area& area, const ActorReference& actor)
+void ActorOctTree::record(Area& area, const ActorReference actor)
 {
 	Actors& actors = area.getActors();
-	const ActorIndex& index = actor.getIndex(actors.m_referenceData);
-	const DistanceSquared& visionRangeSquared = actors.vision_getRangeSquared(index);
+	const ActorIndex index = actor.getIndex(actors.m_referenceData);
+	const DistanceSquared visionRangeSquared = actors.vision_getRangeSquared(index);
 	const Facing4& facing = actors.getFacing(index);
 	for(const Point3D& coordinates : Point3DSet::fromCuboidSet(actors.getOccupied(index)))
 	{
@@ -34,11 +34,11 @@ void ActorOctTree::record(Area& area, const ActorReference& actor)
 		}
 	}
 }
-void ActorOctTree::erase(Area& area, const ActorReference& actor)
+void ActorOctTree::erase(Area& area, const ActorReference actor)
 {
 	Actors& actors = area.getActors();
-	const ActorIndex& index = actor.getIndex(actors.m_referenceData);
-	for(const Cuboid& cuboid : actors.getOccupied(index))
+	const ActorIndex index = actor.getIndex(actors.m_referenceData);
+	for(const Cuboid cuboid : actors.getOccupied(index))
 		for(const Point3D& coordinates : cuboid)
 		{
 			OctTreeIndex nodeIndex = OctTreeIndex::create(0);
@@ -59,7 +59,7 @@ void ActorOctTree::erase(Area& area, const ActorReference& actor)
 			}
 		}
 }
-void ActorOctTree::updateRange(const ActorReference& actor, const Point3D& coordinates, const DistanceSquared& visionRangeSquared)
+void ActorOctTree::updateRange(const ActorReference actor, const Point3D coordinates, const DistanceSquared visionRangeSquared)
 {
 	OctTreeIndex nodeIndex = OctTreeIndex::create(0);
 	while(true)
@@ -127,7 +127,7 @@ void ActorOctTree::collapse(const OctTreeIndex& nodeIndex)
 		}
 	);
 }
-[[nodiscard]] bool ActorOctTree::contains(const ActorReference& actor, const Point3D& coordinates)
+[[nodiscard]] bool ActorOctTree::contains(const ActorReference actor, const Point3D coordinates)
 {
 	return m_nodes[OctTreeIndex::create(0)].contents.contains(actor, coordinates);
 }
@@ -135,7 +135,7 @@ int ActorOctTree::getActorCount() const
 {
 	return m_nodes[OctTreeIndex::create(0)].contents.size();
 }
-CuboidArray<8> ActorOctTree::subdivide(const Cuboid& cuboid)
+CuboidArray<8> ActorOctTree::subdivide(const Cuboid cuboid)
 {
 	// AnyFacing will do since it is a cube.
 	Distance quarterWidth = cuboid.dimensionForFacing(Facing6::Above) / 4;
@@ -157,7 +157,7 @@ CuboidArray<8> ActorOctTree::subdivide(const Cuboid& cuboid)
 	output.insert(7, Cuboid::createCube({maxX, maxY, maxZ}, quarterWidth));
 	return output;
 }
-int ActorOctTree::getOctant(const Point3D& center, const Point3D& coordinates)
+int ActorOctTree::getOctant(const Point3D center, const Point3D coordinates)
 {
 	return (coordinates.x() > center.x()) << 2 | (coordinates.y() > center.y()) << 1 | (coordinates.z() > center.z());
 }

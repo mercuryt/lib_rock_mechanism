@@ -5,7 +5,7 @@
 #include "config/config.h"
 #include "numericTypes/types.h"
 #include <algorithm>
-Step WoundCalculations::getStepsTillHealed(const Hit& hit, const BodyPartTypeId& bodyPartType, int scale)
+Step WoundCalculations::getStepsTillHealed(const Hit& hit, const BodyPartTypeId bodyPartType, int scale)
 {
 	assert(hit.depth !=0 );
 	FullDisplacement hitVolume = FullDisplacement::create(hit.depth * hit.area * Config::hitScaleModifier);
@@ -25,7 +25,7 @@ Step WoundCalculations::getStepsTillHealed(const Hit& hit, const BodyPartTypeId&
 			return Step::create(0);
 	}
 }
-int WoundCalculations::getBleedVolumeRate(const Hit& hit, const BodyPartTypeId& bodyPartType, int scale)
+int WoundCalculations::getBleedVolumeRate(const Hit& hit, const BodyPartTypeId bodyPartType, int scale)
 {
 	if(hit.depth == 0)
 		return 0;
@@ -46,7 +46,7 @@ int WoundCalculations::getBleedVolumeRate(const Hit& hit, const BodyPartTypeId& 
 			return 0;
 	}
 }
-Percent WoundCalculations::getPercentTemporaryImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, int scale)
+Percent WoundCalculations::getPercentTemporaryImpairment(const Hit& hit, const BodyPartTypeId bodyPartType, int scale)
 {
 	FullDisplacement hitVolume = FullDisplacement::create(hit.depth * hit.area * Config::hitScaleModifier);
 	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPartType) * scale;
@@ -64,7 +64,7 @@ Percent WoundCalculations::getPercentTemporaryImpairment(const Hit& hit, const B
 			return Percent::create(0);
 	}
 }
-Percent WoundCalculations::getPercentPermanentImpairment(const Hit& hit, const BodyPartTypeId& bodyPartType, int scale)
+Percent WoundCalculations::getPercentPermanentImpairment(const Hit& hit, const BodyPartTypeId bodyPartType, int scale)
 {
 	FullDisplacement hitVolume = FullDisplacement::create(hit.depth * hit.area * Config::hitScaleModifier);
 	FullDisplacement bodyPartVolume = BodyPartType::getVolume(bodyPartType) * scale;

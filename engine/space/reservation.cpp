@@ -1,6 +1,6 @@
 #include "space.h"
 #include "../reservable.h"
-void Space::reserve(const Point3D& point, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
+void Space::reserve(const Point3D point, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
 {
 	const auto action = [&](std::unique_ptr<Reservable>& reservable)
 	{
@@ -10,7 +10,7 @@ void Space::reserve(const Point3D& point, CanReserve& canReserve, std::unique_pt
 	};
 	m_reservables.updateOrInsertOne(point, action);
 }
-void Space::unreserve(const Point3D& point, CanReserve& canReserve)
+void Space::unreserve(const Point3D point, CanReserve& canReserve)
 {
 	assert(m_reservables.queryAny(point));
 	auto& reservable = *m_reservables.queryGetOneMutable(point);
@@ -20,29 +20,29 @@ void Space::unreserve(const Point3D& point, CanReserve& canReserve)
 		m_reservables.remove(point);
 	canReserve.eraseReservedPoint(point);
 }
-void Space::dishonorAllReservations(const Point3D& point)
+void Space::dishonorAllReservations(const Point3D point)
 {
 	assert(m_reservables.queryGetOne(point) != nullptr);
 	m_reservables.remove(point);
 }
-void Space::setReservationDishonorCallback(const Point3D& point, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
+void Space::setReservationDishonorCallback(const Point3D point, CanReserve& canReserve, std::unique_ptr<DishonorCallback> callback)
 {
 	assert(m_reservables.queryGetOne(point) != nullptr);
 	m_reservables.queryGetOne(point)->setDishonorCallbackFor(canReserve, std::move(callback));
 }
-bool Space::isReserved(const Point3D& point, const FactionId& faction) const
+bool Space::isReserved(const Point3D point, const FactionId faction) const
 {
 	return isReservedAny(Cuboid(point, point), faction);
 }
-bool Space::isReservedAny(const Cuboid& cuboid, const FactionId& faction) const
+bool Space::isReservedAny(const Cuboid cuboid, const FactionId faction) const
 {
 	const auto condition = [&](const std::unique_ptr<Reservable>& reservable){ return reservable->hasAnyReservationsWith(faction); };
 	return m_reservables.queryAnyWithCondition(cuboid, condition);
 }
-bool Space::isReservedAny(const CuboidSet& cuboids, const FactionId& faction) const
+bool Space::isReservedAny(const CuboidSet& cuboids, const FactionId faction) const
 {
 	const auto condition = [&](const std::unique_ptr<Reservable>& reservable){ return reservable->hasAnyReservationsWith(faction); };
 	return m_reservables.batchQueryAnyWithCondition(cuboids, condition);
 }
-Reservable& Space::getReservable(const Point3D& point) { return *m_reservables.queryGetOne(point); }
+Reservable& Space::getReservable(const Point3D point) { return *m_reservables.queryGetOne(point); }
 

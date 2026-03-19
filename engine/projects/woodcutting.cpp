@@ -36,7 +36,7 @@ std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> WoodCuttingProject
 }
 SkillTypeId WoodCuttingProject::getSkill() const { static auto output = SkillType::byName("wood cutting"); return output; }
 // Static.
-int WoodCuttingProject::getWorkerWoodCuttingScore(Area& area, const ActorIndex& actor)
+int WoodCuttingProject::getWorkerWoodCuttingScore(Area& area, const ActorIndex actor)
 {
 	static SkillTypeId woodCuttingType = SkillType::byName("wood cutting");
 	Actors& actors = area.getActors();

@@ -30,22 +30,22 @@ class ConfrontationObjective final : public Objective
 	bool m_fatal = false;
 	bool m_violent = false;
 	// ThisActor is the one with the cooldown. The other actor is the one confronting target. They may be the same actor.
-	void onCoolDown(const ActorReference& actor, const ActorIndex& thisActor, Area& area);
+	void onCoolDown(const ActorReference actor, const ActorIndex thisActor, Area& area);
 public:
-	ConfrontationObjective(const std::string& reason, const ActorId& target);
-	ConfrontationObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo);
+	ConfrontationObjective(const std::string& reason, const ActorId target);
+	ConfrontationObjective(const Json& data, Area& area, const ActorIndex actor, DeserializationMemo& deserializationMemo);
 	[[nodiscard]] Json toJson() const;
-	void execute(Area& area, const ActorIndex& actor) override;
-	void cancel(Area& area, const ActorIndex& actor) override;
-	void delay(Area& area, const ActorIndex& actor) override;
-	void reset(Area& area, const ActorIndex& actor) override;
-	void onActorCoolDown(const ActorReference& actor, Area& area);
-	void onTargetCoolDown(const ActorReference& actor, Area& area);
+	void execute(Area& area, const ActorIndex actor) override;
+	void cancel(Area& area, const ActorIndex actor) override;
+	void delay(Area& area, const ActorIndex actor) override;
+	void reset(Area& area, const ActorIndex actor) override;
+	void onActorCoolDown(const ActorReference actor, Area& area);
+	void onTargetCoolDown(const ActorReference actor, Area& area);
 	// Set changes to psycology and possibly spawn a new DramaArc like AccidentalHomicide or Reconciliation.
-	void finalize(Area& area, const ActorIndex& actor);
-	void actorGoesOffScript(Area& area, const ActorIndex& owningActor, const ActorIndex& offScriptActor) override;
-	[[nodiscard]] bool targetYields(Area& area, const ActorIndex& actor) const;
-	[[nodiscard]] bool actorYields(Area& area, const ActorIndex& actor) const;
+	void finalize(Area& area, const ActorIndex actor);
+	void actorGoesOffScript(Area& area, const ActorIndex owningActor, const ActorIndex offScriptActor) override;
+	[[nodiscard]] bool targetYields(Area& area, const ActorIndex actor) const;
+	[[nodiscard]] bool actorYields(Area& area, const ActorIndex actor) const;
 	[[nodiscard]] std::string name() const override { return "confront"; }
 	friend class ConfrontationPhaseScheduledEvent;
 	friend class ConfrontationCoolDownActorScheduledEvent;
@@ -57,7 +57,7 @@ class ConfrontationPhaseScheduledEvent final : public ScheduledEvent
 	ConfrontationObjective& m_objective;
 	ActorReference m_actor;
 public:
-	ConfrontationPhaseScheduledEvent(const Step& duration, ConfrontationObjective& objective, const ActorReference& actor, Simulation& simulation, const Step& start = Step::null());
+	ConfrontationPhaseScheduledEvent(const Step duration, ConfrontationObjective& objective, const ActorReference actor, Simulation& simulation, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area) override;
 	void clearReferences(Simulation& simulation, Area* area) override;
 };
@@ -66,7 +66,7 @@ class ConfrontationCoolDownActorScheduledEvent final : public ScheduledEvent
 	ConfrontationObjective& m_objective;
 	ActorReference m_actor;
 public:
-	ConfrontationCoolDownActorScheduledEvent(const Step& duration, ConfrontationObjective& objective, const ActorReference& actor, Simulation& simulation, const Step& start = Step::null());
+	ConfrontationCoolDownActorScheduledEvent(const Step duration, ConfrontationObjective& objective, const ActorReference actor, Simulation& simulation, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
@@ -75,7 +75,7 @@ class ConfrontationCoolDownTargetScheduledEvent final : public ScheduledEvent
 	ConfrontationObjective& m_objective;
 	ActorReference m_actor;
 public:
-	ConfrontationCoolDownTargetScheduledEvent(const Step& duration, ConfrontationObjective& objective, const ActorReference& actor, Simulation& simulation, const Step& start = Step::null());
+	ConfrontationCoolDownTargetScheduledEvent(const Step duration, ConfrontationObjective& objective, const ActorReference actor, Simulation& simulation, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area) override;
 	void clearReferences(Simulation& simulation, Area* area) override;
 };

@@ -42,4 +42,24 @@ namespace nlohmann {
 				v[i] = j[i];
 		}
 	};
+	// Eigen array holding a series of 3 distances.
+	using DistanceWidth = int16_t;
+	template <int capacity>
+	struct adl_serializer<Eigen::Array<DistanceWidth, 3, capacity>>
+	{
+		static void to_json(Json& json, const Eigen::Array<DistanceWidth, 3, capacity>& v)
+		{
+			json = Json::array();
+			json.get_ref<Json::array_t&>().assign(v.data(), v.data() + v.size());
+		}
+		static void from_json(const Json& json, Eigen::Array<DistanceWidth, 3, capacity>& v)
+		{
+			assert(json.size() == capacity * 3);
+			std::transform(
+				json.begin(), json.end(),
+				v.data(),
+				[](const Json& jsonValue){ return jsonValue.get<DistanceWidth>(); }
+			);
+		}
+	};
 }

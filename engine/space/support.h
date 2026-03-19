@@ -13,9 +13,9 @@ public:
 	void doStep(Area& area);
 	void set(const auto& shape) { m_support.maybeInsert(shape); }
 	void unset(const auto& shape) { m_support.maybeRemove(shape); }
-	void maybeFall(const Cuboid& cuboid) { m_maybeFall.maybeAdd(cuboid); }
+	void maybeFall(const Cuboid cuboid) { m_maybeFall.maybeAdd(cuboid); }
 	void prepare();
-	[[nodiscard]] CuboidSet getUnsupported(const Area& area, const Cuboid& cuboid) const;
+	[[nodiscard]] CuboidSet getUnsupported(const Area& area, const Cuboid cuboid) const;
 	[[nodiscard]] int maybeFallVolume() const { return m_maybeFall.volume(); }
 	[[nodiscard]] bool canPrepare() const { return m_support.canPrepare(); }
 };

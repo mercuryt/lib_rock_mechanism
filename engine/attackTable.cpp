@@ -2,7 +2,7 @@
 #include "definitions/attackType.h"
 #include "definitions/materialType.h"
 #include "definitions/animalSpecies.h"
-bool Attack::isNonLethalAgainst(const AnimalSpeciesId& species)
+bool Attack::isNonLethalAgainst(const AnimalSpeciesId species)
 {
 	const WoundType& woundType = AttackType::getWoundType(attackType);
 	if(woundType != WoundType::Bludgeon)
@@ -14,7 +14,7 @@ bool Attack::isNonLethalAgainst(const AnimalSpeciesId& species)
 		return false;
 	return true;
 }
-void AttackTable::add(const CombatScore& score, const Attack& attack)
+void AttackTable::add(const CombatScore score, const Attack& attack)
 {
 	m_data.emplace_back(score, attack);
 }
@@ -45,7 +45,7 @@ std::pair<CombatScore, DistanceFractional> AttackTable::build()
 	}
 	return output;
 }
-const Attack& AttackTable::getForCombatScoreDifference(const CombatScore& difference) const
+const Attack& AttackTable::getForCombatScoreDifference(const CombatScore difference) const
 {
 	for(auto& pair : m_data)
 		if(pair.first > difference)

@@ -64,7 +64,7 @@ PathRequestWithHuristicData& PathRequestWithHuristicData::operator=(PathRequestW
 	spatialHash = other.spatialHash;
 	return *this;
 }
-TerrainFacade::TerrainFacade(Area& area, const MoveTypeId& moveType) : m_area(area), m_moveType(moveType)
+TerrainFacade::TerrainFacade(Area& area, const MoveTypeId moveType) : m_area(area), m_moveType(moveType)
 {
 	Space& space = m_area.getSpace();
 	const auto swim = MoveType::getSwim(moveType);
@@ -75,7 +75,7 @@ TerrainFacade::TerrainFacade(Area& area, const MoveTypeId& moveType) : m_area(ar
 		Distance maxZ = space.m_sizeZ - 1;
 		// Solid.
 		const CuboidSet solidLeaves = space.getSolid().getLeafCuboids();
-		for(const Cuboid& cuboid : solidLeaves)
+		for(const Cuboid cuboid : solidLeaves)
 			if(cuboid.m_high.z() != maxZ)
 			{
 				Cuboid above = cuboid.getFace(Facing6::Above);
@@ -104,7 +104,7 @@ TerrainFacade::TerrainFacade(Area& area, const MoveTypeId& moveType) : m_area(ar
 			const CuboidSet fluidGroups = space.fluid_queryGetCuboidsWithCondition(space.boundry(), condition);
 			candidates.maybeAddAll(fluidGroups);
 		}
-		for(const Cuboid& cuboid : candidates)
+		for(const Cuboid cuboid : candidates)
 			update(cuboid, candidates);
 	}
 	else if(!swim.empty() && !MoveType::getFly(moveType))
@@ -112,7 +112,7 @@ TerrainFacade::TerrainFacade(Area& area, const MoveTypeId& moveType) : m_area(ar
 		// Swim and not fly.
 		const auto condition = [&](const FluidData& fluidData) { return swim.contains(fluidData.type); };
 		const CuboidSet fluidGroups = space.fluid_queryGetCuboidsWithCondition(space.boundry(), condition);
-		for(const Cuboid& cuboid : fluidGroups)
+		for(const Cuboid cuboid : fluidGroups)
 			update(cuboid, fluidGroups);
 	}
 	else
@@ -128,10 +128,9 @@ TerrainFacade::TerrainFacade(Area& area, const MoveTypeId& moveType) : m_area(ar
 		// Note that despite this deck space is 'permanantly' passible.
 		cannotEnter.maybeRemoveAll(allDynamic);
 		candidates.maybeRemoveAll(cannotEnter);
-		for(const Cuboid& cuboid : candidates)
+		for(const Cuboid cuboid : candidates)
 			update(cuboid, candidates);
 	}
-	m_pointToIndexConversionMultipliers = {space.m_sizeX * space.m_sizeY * 26, space.m_sizeX * 26, Distance::create(26)};
 	m_enterable.prepare();
 	// Two results fit on a cache line, by ensuring that the number of tasks per thread is a multiple of 2 we prevent false shareing.
 	assert(Config::pathRequestsPerThread % 2 == 0);
@@ -226,7 +225,7 @@ void TerrainFacade::clearPathRequests()
 	m_pathRequestsNoHuristic.clear();
 	m_pathRequestsWithHuristic.clear();
 }
-bool TerrainFacade::getValue(const Point3D& to, const Point3D& from) const
+bool TerrainFacade::getValue(const Point3D to, const Point3D from) const
 {
 	Space& space = m_area.getSpace();
 	return
@@ -254,7 +253,7 @@ void TerrainFacade::registerPathRequestWithHuristic(std::unique_ptr<PathRequestD
 {
 	m_pathRequestsWithHuristic.emplaceBack(std::move(pathRequest), pathRequest->start.hilbertNumber());
 }
-AdjacentData TerrainFacade::makeDataForPoint(const Point3D& point) const
+AdjacentData TerrainFacade::makeDataForPoint(const Point3D point) const
 {
 	[[maybe_unused]] Point3D debugPoint = Point3D::create(0,4,1);
 	const Space& space = m_area.getSpace();
@@ -281,7 +280,7 @@ AdjacentData TerrainFacade::makeDataForPoint(const Point3D& point) const
 	}
 	return data;
 }
-AdjacentData TerrainFacade::makeDataForPoint(const Point3D& point, const CuboidSet& candidates) const
+AdjacentData TerrainFacade::makeDataForPoint(const Point3D point, const CuboidSet& candidates) const
 {
 	[[maybe_unused]] Point3D debugPoint = Point3D::create(6,6,0);
 	const Space& space = m_area.getSpace();
@@ -308,7 +307,7 @@ AdjacentData TerrainFacade::makeDataForPoint(const Point3D& point, const CuboidS
 	}
 	return data;
 }
-void TerrainFacade::update(const Cuboid& cuboid)
+void TerrainFacade::update(const Cuboid cuboid)
 {
 	const Space& space = m_area.getSpace();
 	assert(space.boundry().intersects(cuboid));
@@ -324,7 +323,7 @@ void TerrainFacade::update(const Cuboid& cuboid)
 				m_enterable.maybeInsert(point, data);
 		}
 }
-void TerrainFacade::update(const Cuboid& cuboid, const CuboidSet& candidates)
+void TerrainFacade::update(const Cuboid cuboid, const CuboidSet& candidates)
 {
 
 	const Space& space = m_area.getSpace();
@@ -341,7 +340,7 @@ void TerrainFacade::update(const Cuboid& cuboid, const CuboidSet& candidates)
 				m_enterable.maybeInsert(point, data);
 		}
 }
-void TerrainFacade::maybeSetImpassable(const Cuboid& cuboid)
+void TerrainFacade::maybeSetImpassable(const Cuboid cuboid)
 {
 	m_enterable.maybeRemove(cuboid);
 	// Inflate the cuboid to update the points which were previously touching it.
@@ -359,7 +358,7 @@ void TerrainFacade::movePathRequestWithHuristic(PathRequestIndex oldIndex, PathR
 	assert(oldIndex != newIndex);
 	m_pathRequestsWithHuristic[newIndex] = std::move(m_pathRequestsWithHuristic[oldIndex]);
 }
-void TerrainFacade::updatePoint(const Point3D& point)
+void TerrainFacade::updatePoint(const Point3D point)
 {
 	const Space& space = m_area.getSpace();
 	if(!space.shape_anythingCanEnterEver(point))
@@ -381,44 +380,44 @@ void TerrainFacade::unregisterWithHuristic(PathRequest& pathRequest)
 	assert(found != m_pathRequestsWithHuristic.end());
 	m_pathRequestsWithHuristic.remove(found);
 }
-FindPathResult TerrainFacade::findPathTo(PathMemoDepthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& target, bool detour, bool adjacent, const FactionId& faction) const
+FindPathResult TerrainFacade::findPathTo(PathMemoDepthFirst& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, const Point3D target, bool detour, bool adjacent, const FactionId faction) const
 {
 	constexpr bool anyOccupiedPoint = false;
 	memo.setDestination(target);
 	if(adjacent)
 	{
-		auto destinationCondition = [target](const Cuboid& cuboid) -> std::pair<bool, Point3D> { return {cuboid.contains(target), target}; };
+		auto destinationCondition = [target](const Cuboid cuboid) -> std::pair<bool, Point3D> { return {cuboid.contains(target), target}; };
 		return PathInnerLoops::findPathAdjacentTo<PathMemoDepthFirst, decltype(destinationCondition), anyOccupiedPoint>(destinationCondition, m_area, *this, memo, shape, m_moveType, start, startFacing, detour, faction, Distance::max());
 	}
 	else
 	{
-		auto destinationCondition = [target](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D> { return {point == target, point}; };
+		auto destinationCondition = [target](const Point3D point, const Facing4) -> std::pair<bool, Point3D> { return {point == target, point}; };
 		return PathInnerLoops::findPath<PathMemoDepthFirst, anyOccupiedPoint>(destinationCondition, m_area, *this, memo, shape, m_moveType, start, startFacing, detour, faction, Distance::max());
 	}
 }
 template<bool anyOccupiedPoint, bool adjacent>
-FindPathResult TerrainFacade::findPathToWithoutMemo(const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& target, bool detour, const FactionId& faction) const
+FindPathResult TerrainFacade::findPathToWithoutMemo(const Point3D start, const Facing4 startFacing, const ShapeId shape, const Point3D target, bool detour, const FactionId faction) const
 {
 	if constexpr(adjacent || anyOccupiedPoint)
 	{
-		auto destinationCondition = [target](const Cuboid& cuboid) -> std::pair<bool, Point3D> { return {cuboid.contains(target), target}; };
+		auto destinationCondition = [target](const Cuboid cuboid) -> std::pair<bool, Point3D> { return {cuboid.contains(target), target}; };
 		return findPathDepthFirstWithoutMemo<decltype(destinationCondition), anyOccupiedPoint, adjacent>(start, startFacing, destinationCondition, target, shape, m_moveType, detour, faction, Distance::max());
 	}
 	else
 	{
-		auto destinationCondition = [target](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D> { return {point == target, point}; };
+		auto destinationCondition = [target](const Point3D point, const Facing4) -> std::pair<bool, Point3D> { return {point == target, point}; };
 		return findPathDepthFirstWithoutMemo<decltype(destinationCondition), false, false>(start, startFacing, destinationCondition, target, shape, m_moveType, detour, faction, Distance::max());
 	}
 }
-template FindPathResult TerrainFacade::findPathToWithoutMemo<false, true>(const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& target, bool detour, const FactionId& faction) const;
-template FindPathResult TerrainFacade::findPathToWithoutMemo<true, false>(const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& target, bool detour, const FactionId& faction) const;
+template FindPathResult TerrainFacade::findPathToWithoutMemo<false, true>(const Point3D start, const Facing4 startFacing, const ShapeId shape, const Point3D target, bool detour, const FactionId faction) const;
+template FindPathResult TerrainFacade::findPathToWithoutMemo<true, false>(const Point3D start, const Facing4 startFacing, const ShapeId shape, const Point3D target, bool detour, const FactionId faction) const;
 template<bool anyOccupiedPoint, bool adjacent>
-FindPathResult TerrainFacade::findPathToAnyOf(PathMemoDepthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const CuboidSet& points, const Point3D huristicDestination, bool detour, const FactionId& faction) const
+FindPathResult TerrainFacade::findPathToAnyOf(PathMemoDepthFirst& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, const CuboidSet& points, const Point3D huristicDestination, bool detour, const FactionId faction) const
 {
 	memo.setDestination(huristicDestination);
 	if constexpr(adjacent)
 	{
-		auto destinationCondition = [points](const Cuboid& cuboid) -> std::pair<bool, Point3D>
+		auto destinationCondition = [points](const Cuboid cuboid) -> std::pair<bool, Point3D>
 		{
 			if(points.intersects(cuboid))
 				return {true, points.intersectionPoint(cuboid)};
@@ -428,17 +427,17 @@ FindPathResult TerrainFacade::findPathToAnyOf(PathMemoDepthFirst& memo, const Po
 	}
 	else
 	{
-		auto destinationCondition = [points](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D> { return {points.contains(point), point}; };
+		auto destinationCondition = [points](const Point3D point, const Facing4) -> std::pair<bool, Point3D> { return {points.contains(point), point}; };
 		return PathInnerLoops::findPath<PathMemoDepthFirst, anyOccupiedPoint, decltype(destinationCondition)>(destinationCondition, m_area, *this, memo, shape, m_moveType, start, startFacing, detour, faction, Distance::max());
 	}
 }
-template FindPathResult TerrainFacade::findPathToAnyOf<false, false>(PathMemoDepthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const CuboidSet& points, const Point3D huristicDestination, bool detour, const FactionId& faction) const;
-template FindPathResult TerrainFacade::findPathToAnyOf<false, true>(PathMemoDepthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const CuboidSet& points, const Point3D huristicDestination, bool detour, const FactionId& faction) const;
-FindPathResult TerrainFacade::findPathToAnyOfWithoutMemo(const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const CuboidSet& points, const Point3D huristicDestination, bool detour, const FactionId& faction) const
+template FindPathResult TerrainFacade::findPathToAnyOf<false, false>(PathMemoDepthFirst& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, const CuboidSet& points, const Point3D huristicDestination, bool detour, const FactionId faction) const;
+template FindPathResult TerrainFacade::findPathToAnyOf<false, true>(PathMemoDepthFirst& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, const CuboidSet& points, const Point3D huristicDestination, bool detour, const FactionId faction) const;
+FindPathResult TerrainFacade::findPathToAnyOfWithoutMemo(const Point3D start, const Facing4 startFacing, const ShapeId shape, const CuboidSet& points, const Point3D huristicDestination, bool detour, const FactionId faction) const
 {
-	auto destinationCondition = [huristicDestination, points](const Cuboid& cuboid) -> std::pair<bool, Point3D>
+	auto destinationCondition = [huristicDestination, points](const Cuboid cuboid) -> std::pair<bool, Point3D>
 	{
-		for(const Cuboid& otherCuboid : points)
+		for(const Cuboid otherCuboid : points)
 			if(cuboid.intersects(otherCuboid))
 				return {true, cuboid.intersection(otherCuboid).m_high};
 		return {false, Point3D::null()};
@@ -448,21 +447,21 @@ FindPathResult TerrainFacade::findPathToAnyOfWithoutMemo(const Point3D& start, c
 	return findPathDepthFirstWithoutMemo<decltype(destinationCondition), anyOccupiedPoint, adjacent>(start, startFacing, destinationCondition, huristicDestination, shape, m_moveType, detour, faction, Distance::max());
 }
 template<bool anyOccupiedPoint, bool adjacent>
-FindPathResult TerrainFacade::findPathToSpaceDesignation(PathMemoBreadthFirst& memo, const SpaceDesignation designation, const FactionId& faction, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, bool detour, bool unreserved, const Distance& maxRange) const
+FindPathResult TerrainFacade::findPathToSpaceDesignation(PathMemoBreadthFirst& memo, const SpaceDesignation designation, const FactionId faction, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour, bool unreserved, const Distance maxRange) const
 {
 	assert(faction.exists());
-	auto destinationCondition = [](const Cuboid&) -> bool { return true; };
+	auto destinationCondition = [](const Cuboid) -> bool { return true; };
 	return findPathToSpaceDesignationAndCondition<decltype(destinationCondition), anyOccupiedPoint, adjacent>(destinationCondition, memo, designation, faction, start, startFacing, shape, detour, unreserved, maxRange);
 }
-template FindPathResult TerrainFacade::findPathToSpaceDesignation<false, false>(PathMemoBreadthFirst& memo, const SpaceDesignation designation, const FactionId& faction, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, bool detour, bool unreserved, const Distance& maxRange) const;
-template FindPathResult TerrainFacade::findPathToSpaceDesignation<false, true>(PathMemoBreadthFirst& memo, const SpaceDesignation designation, const FactionId& faction, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, bool detour, bool unreserved, const Distance& maxRange) const;
+template FindPathResult TerrainFacade::findPathToSpaceDesignation<false, false>(PathMemoBreadthFirst& memo, const SpaceDesignation designation, const FactionId faction, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour, bool unreserved, const Distance maxRange) const;
+template FindPathResult TerrainFacade::findPathToSpaceDesignation<false, true>(PathMemoBreadthFirst& memo, const SpaceDesignation designation, const FactionId faction, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour, bool unreserved, const Distance maxRange) const;
 //TODO: this could dispatch to specific actor / item variants rather then checking actor or item twice.
-FindPathResult TerrainFacade::findPathAdjacentToPolymorphicWithoutMemo(const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const ActorOrItemIndex& actorOrItem, bool detour) const
+FindPathResult TerrainFacade::findPathAdjacentToPolymorphicWithoutMemo(const Point3D start, const Facing4 startFacing, const ShapeId shape, const ActorOrItemIndex actorOrItem, bool detour) const
 {
 	CuboidSet targets;
 	Space& space = m_area.getSpace();
 	auto source = actorOrItem.getAdjacentCuboids(m_area);
-	for(const Cuboid& cuboid : source)
+	for(const Cuboid cuboid : source)
 		for(const Point3D& point : cuboid)
 			if(
 				space.shape_anythingCanEnterEver(point) &&
@@ -474,10 +473,10 @@ FindPathResult TerrainFacade::findPathAdjacentToPolymorphicWithoutMemo(const Poi
 		return { };
 	return findPathToAnyOfWithoutMemo(start, startFacing, shape, targets, actorOrItem.getLocation(m_area), detour);
 }
-FindPathResult TerrainFacade::findPathToEdge(PathMemoBreadthFirst& memo, const Point3D &start, const Facing4 &startFacing, const ShapeId &shape, bool detour) const
+FindPathResult TerrainFacade::findPathToEdge(PathMemoBreadthFirst& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour) const
 {
 	Space& space = m_area.getSpace();
-	auto destinationCondition = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
+	auto destinationCondition = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
 	{
 		// TODO: get a point from the cuboid at the edge rather then iterating.
 		if(!space.isEdge(cuboid))
@@ -491,7 +490,7 @@ FindPathResult TerrainFacade::findPathToEdge(PathMemoBreadthFirst& memo, const P
 	constexpr FactionId faction;
 	return findPathToConditionBreadthFirst<decltype(destinationCondition), useAnyOccupiedPoint, adjacent>(destinationCondition, memo, start, startFacing, shape, detour, faction, Distance::max());
 }
-bool TerrainFacade::accessable(const Point3D& start, const Facing4& startFacing, const Point3D& to, const ActorIndex& actor) const
+bool TerrainFacade::accessable(const Point3D start, const Facing4 startFacing, const Point3D to, const ActorIndex actor) const
 {
 	Actors& actors = m_area.getActors();
 	constexpr bool useAnyOccupiedPoint = false;
@@ -504,22 +503,22 @@ void AreaHasTerrainFacades::doStep()
 	for(auto& pair : m_data)
 		pair.second.doStep();
 }
-void AreaHasTerrainFacades::update(const Cuboid& cuboid)
+void AreaHasTerrainFacades::update(const Cuboid cuboid)
 {
 	for(auto& pair : m_data)
 		pair.second.update(cuboid);
 }
 void AreaHasTerrainFacades::update(const CuboidSet& cuboids)
 {
-	for(const Cuboid& cuboid : cuboids)
+	for(const Cuboid cuboid : cuboids)
 		update(cuboid);
 }
-void AreaHasTerrainFacades::maybeSetImpassable(const Cuboid& cuboid)
+void AreaHasTerrainFacades::maybeSetImpassable(const Cuboid cuboid)
 {
 	for(auto& pair : m_data)
 		pair.second.maybeSetImpassable(cuboid);
 }
-void AreaHasTerrainFacades::maybeRegisterMoveType(const MoveTypeId& moveType)
+void AreaHasTerrainFacades::maybeRegisterMoveType(const MoveTypeId moveType)
 {
 	//TODO: generate terrain facade in thread.
 	auto found = m_data.find(moveType);
@@ -531,12 +530,12 @@ void AreaHasTerrainFacades::clearPathRequests()
 	for(auto& pair : m_data)
 		pair.second.clearPathRequests();
 }
-TerrainFacade& AreaHasTerrainFacades::getForMoveType(const MoveTypeId& moveType)
+TerrainFacade& AreaHasTerrainFacades::getForMoveType(const MoveTypeId moveType)
 {
 	assert(m_data.contains(moveType));
 	return m_data[moveType];
 }
-TerrainFacade& AreaHasTerrainFacades::getOrCreateForMoveType(const MoveTypeId& moveType)
+TerrainFacade& AreaHasTerrainFacades::getOrCreateForMoveType(const MoveTypeId moveType)
 {
 	//TODO: generate terrain facade in thread.
 	auto found = m_data.find(moveType);

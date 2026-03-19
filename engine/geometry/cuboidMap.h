@@ -20,7 +20,7 @@ public:
 	CuboidMap(CuboidMap&&) = default;
 	void operator=(const CuboidMap& other) { m_cuboids = other.m_cuboids; m_keys = other.m_keys; }
 	void operator=(CuboidMap&& other) { m_cuboids = std::move(other.m_cuboids); m_keys = std::move(other.m_keys); }
-	void insert(const Key& key, const Cuboid& cuboid)
+	void insert(const Key& key, const Cuboid cuboid)
 	{
 		assert(key.exists());
 		assert(cuboid.exists());
@@ -50,7 +50,7 @@ public:
 			m_cuboids.erase(index);
 		}
 	}
-	void update(const Key& oldKey, const Key& newKey, const Cuboid& cuboid)
+	void update(const Key& oldKey, const Key& newKey, const Cuboid cuboid)
 	{
 		assert(newKey.exists());
 		assert(cuboid.exists());
@@ -60,7 +60,7 @@ public:
 		assert(m_cuboids[index] == cuboid);
 		(*found) = newKey;
 	}
-	void update(const Key& key, const Cuboid& cuboid)
+	void update(const Key& key, const Cuboid cuboid)
 	{
 		assert(key.exists());
 		assert(cuboid.exists());
@@ -76,7 +76,7 @@ public:
 	}
 	[[nodiscard]] CuboidSetSIMD& cuboids() { return m_cuboids; }
 	[[nodiscard]] bool contains(const Key& key) const { return std::ranges::contains(m_keys, key); }
-	[[nodiscard]] bool containsAsMember(const Cuboid& cuboid) const { return m_cuboids.containsAsMember(cuboid); }
+	[[nodiscard]] bool containsAsMember(const Cuboid cuboid) const { return m_cuboids.containsAsMember(cuboid); }
 	[[nodiscard]] bool empty() const { return m_keys.empty(); }
 	[[nodiscard]] int size() const { return m_keys.size(); }
 	[[nodiscard]] const auto& keys() const { return  m_keys; }

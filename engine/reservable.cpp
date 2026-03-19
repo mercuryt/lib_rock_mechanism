@@ -38,7 +38,7 @@ void CanReserve::setFaction(FactionId faction)
 		reservable->updateFactionFor(*this, m_faction, faction);
 	m_faction = faction;
 }
-bool CanReserve::translateAndReservePositions(Space& space, SmallMap<Point3D, std::unique_ptr<DishonorCallback>>&& previouslyReserved, const Point3D& previousPivot, const Point3D& newPivot, const Facing4& previousFacing, const Facing4& newFacing)
+bool CanReserve::translateAndReservePositions(Space& space, SmallMap<Point3D, std::unique_ptr<DishonorCallback>>&& previouslyReserved, const Point3D previousPivot, const Point3D newPivot, const  Facing4 previousFacing, const Facing4 newFacing)
 {
 	for(auto& [point, dishonorCallback] : previouslyReserved)
 	{
@@ -52,11 +52,11 @@ bool CanReserve::translateAndReservePositions(Space& space, SmallMap<Point3D, st
 	}
 	return true;
 }
-void CanReserve::recordReservedPoint(const Point3D& point, Reservable* reservable)
+void CanReserve::recordReservedPoint(const Point3D point, Reservable* reservable)
 {
 	m_points.insert(point, reservable);
 }
-void CanReserve::eraseReservedPoint(const Point3D& point)
+void CanReserve::eraseReservedPoint(const Point3D point)
 {
 	m_points.erase(point);
 }

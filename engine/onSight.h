@@ -14,7 +14,7 @@ enum class OnSightCallBackType
 struct OnSightCallBack
 {
 	// Return true from action to remove the callback after running.
-	[[nodiscard]] virtual bool execute(const ActorReference& canSee, const ActorReference& canBeSeen) = 0;
+	[[nodiscard]] virtual bool execute(const ActorReference canSee, const ActorReference canBeSeen) = 0;
 	// toJson must provide an OnSightCallBackType to be used by HasOnSight json constructor to select the correct callback type to load.
 	[[nodiscard]] virtual Json toJson() const = 0;
 	virtual void fromJson(const Json& data, DeserializationMemo& deserializationMemo, Area& area) const = 0;
@@ -38,21 +38,21 @@ class HasOnSight
 	HasOnDestroySubscriptions m_onDestroy;
 public:
 	HasOnSight() = default;
-	HasOnSight(const ActorReference& canSee, Area& area);
+	HasOnSight(const ActorReference canSee, Area& area);
 	HasOnSight(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
 	HasOnSight(HasOnSight&& other) noexcept = default;
 	HasOnSight(const HasOnSight&) { assert(false); std::unreachable(); }
 	HasOnSight& operator=(HasOnSight&& other) noexcept = default;
 	HasOnSight& operator=(const HasOnSight&) { assert(false); std::unreachable(); }
-	void setOwner(const ActorReference& canSee, Area& area);
-	void addForActor(const ActorReference& canBeSeen, std::unique_ptr<OnSightCallBack>&& callback, Area& area);
-	void addForFaction(const FactionId& faction, std::unique_ptr<OnSightCallBack>&& callback);
+	void setOwner(const ActorReference canSee, Area& area);
+	void addForActor(const ActorReference canBeSeen, std::unique_ptr<OnSightCallBack>&& callback, Area& area);
+	void addForFaction(const FactionId faction, std::unique_ptr<OnSightCallBack>&& callback);
 	void removeForActor(OnSightCallBack& callback);
 	void removeForFaction(OnSightCallBack& callback);
-	void removeAllForActor(const ActorReference& canBeSeen);
-	void removeAllForFaction(const FactionId& faction);
-	void execute(Area& area, const ActorReference& canSee, const SmallSet<ActorReference>& canNowBeSeen);
-	void execute(Area& area, const ActorReference& canSee, const ActorReference& canNowBeSeen);
+	void removeAllForActor(const ActorReference canBeSeen);
+	void removeAllForFaction(const FactionId faction);
+	void execute(Area& area, const ActorReference canSee, const SmallSet<ActorReference>& canNowBeSeen);
+	void execute(Area& area, const ActorReference canSee, const ActorReference canNowBeSeen);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool empty() const;
 };
@@ -63,8 +63,8 @@ class OnSightOnDestroyCallBack final : public OnDestroyCallBack
 	Area& m_area;
 	ActorReference m_canSee;
 public:
-	OnSightOnDestroyCallBack(const ActorReference& canSee, Area& area);
+	OnSightOnDestroyCallBack(const ActorReference canSee, Area& area);
 	OnSightOnDestroyCallBack(const Json& data, DeserializationMemo& deserializationMemo, Area& area);
-	void callback(const ActorOrItemReference& destroyed);
+	void callback(const ActorOrItemReference destroyed);
 	[[nodiscard]] Json toJson() const;
 };

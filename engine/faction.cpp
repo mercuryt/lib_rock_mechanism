@@ -1,9 +1,9 @@
 #include "faction.h"
-Faction& SimulationHasFactions::getById(const FactionId& id)
+Faction& SimulationHasFactions::getById(const FactionId id)
 {
 	return m_factions[id];
 }
-const Faction& SimulationHasFactions::getById(const FactionId& id) const
+const Faction& SimulationHasFactions::getById(const FactionId id) const
 {
 	return m_factions[id];
 }
@@ -19,11 +19,11 @@ FactionId SimulationHasFactions::byName(std::string name)
 	assert(found != m_factions.end());
 	return found->id;
 }
-bool SimulationHasFactions::isAlly(const FactionId& a, const FactionId& b) const
+bool SimulationHasFactions::isAlly(const FactionId a, const FactionId b) const
 {
 	return getById(a).allies.contains(b);
 }
-bool SimulationHasFactions::isEnemy(const FactionId& a, const FactionId& b) const
+bool SimulationHasFactions::isEnemy(const FactionId a, const FactionId b) const
 {
 	return getById(a).enemies.contains(b);
 }

@@ -46,7 +46,7 @@ void TargetedHaulProject::onComplete()
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);
 }
-void TargetedHaulProject::onDelivered(const ActorOrItemIndex& delivered)
+void TargetedHaulProject::onDelivered(const ActorOrItemIndex delivered)
 {
 	delivered.location_set(m_area, m_location, Facing4::North);
 }

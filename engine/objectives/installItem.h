@@ -8,8 +8,8 @@ class InstallItemProject;
 class InstallItemObjectiveType final : public ObjectiveType
 {
 public:
-	bool canBeAssigned(Area& area, const ActorIndex& actor) const;
-	std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
+	bool canBeAssigned(Area& area, const ActorIndex actor) const;
+	std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex actor) const;
 	std::string name() const override { return "install Item"; }
 };
 class InstallItemObjective final : public Objective
@@ -18,10 +18,10 @@ class InstallItemObjective final : public Objective
 public:
 	InstallItemObjective();
 	InstallItemObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, const ActorIndex& actor);
-	void cancel(Area& area, const ActorIndex& actor);
-	void delay(Area&, const ActorIndex&) { }
-	void reset(Area& area, const ActorIndex& actor);
+	void execute(Area& area, const ActorIndex actor);
+	void cancel(Area& area, const ActorIndex actor);
+	void delay(Area&, const ActorIndex) { }
+	void reset(Area& area, const ActorIndex actor);
 	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("install item").getId(); }
 	[[nodiscard]] std::string name() const override { return "install item"; }
 	[[nodiscard]] Json toJson() const;
@@ -32,7 +32,7 @@ class InstallItemPathRequest final : public PathRequestDepthFirst
 {
 	InstallItemObjective& m_installItemObjective;
 public:
-	InstallItemPathRequest(Area& area, InstallItemObjective& iio, const ActorIndex& actor);
+	InstallItemPathRequest(Area& area, InstallItemObjective& iio, const ActorIndex actorIndex);
 	InstallItemPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;

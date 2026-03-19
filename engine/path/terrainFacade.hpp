@@ -7,7 +7,7 @@
 #include "findPathInnerLoops.h"
 
 template<typename DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
-FindPathResult TerrainFacade::findPathBreadthFirstWithoutMemo(const Point3D& start, const Facing4& startFacing, DestinationConditionT& destinationCondition, const ShapeId& shape, const MoveTypeId& moveType, bool detour, const FactionId& faction, const Distance& maxRange) const
+FindPathResult TerrainFacade::findPathBreadthFirstWithoutMemo(const Point3D start, const Facing4 startFacing, DestinationConditionT& destinationCondition, const ShapeId shape, const MoveTypeId moveType, bool detour, const FactionId faction, const Distance  maxRange) const
 {
 	auto& hasMemos = m_area.m_simulation.m_hasPathMemos;
 	auto pair = hasMemos.getBreadthFirst();
@@ -23,7 +23,7 @@ FindPathResult TerrainFacade::findPathBreadthFirstWithoutMemo(const Point3D& sta
 	return output;
 }
 template<typename DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
-FindPathResult TerrainFacade::findPathDepthFirstWithoutMemo(const Point3D& from, const Facing4& startFacing, DestinationConditionT& destinationCondition, const Point3D& huristicDestination, const ShapeId& shape, const MoveTypeId& moveType, bool detour, const FactionId& faction, const Distance& maxRange) const
+FindPathResult TerrainFacade::findPathDepthFirstWithoutMemo(const Point3D from, const Facing4 startFacing, DestinationConditionT& destinationCondition, const Point3D huristicDestination, const ShapeId shape, const MoveTypeId moveType, bool detour, const FactionId faction, const Distance  maxRange) const
 {
 	auto& hasMemos = m_area.m_simulation.m_hasPathMemos;
 	auto pair = hasMemos.getDepthFirst();
@@ -40,7 +40,7 @@ FindPathResult TerrainFacade::findPathDepthFirstWithoutMemo(const Point3D& from,
 	return output;
 }
 template<typename DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
-FindPathResult TerrainFacade::findPathToConditionDepthFirst(DestinationConditionT& destinationCondition, PathMemoDepthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& huristicDestination, bool detour, const FactionId& faction, const Distance& maxRange) const
+FindPathResult TerrainFacade::findPathToConditionDepthFirst(DestinationConditionT& destinationCondition, PathMemoDepthFirst& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, const Point3D huristicDestination, bool detour, const FactionId faction, const Distance  maxRange) const
 {
 	memo.setDestination(huristicDestination);
 	if constexpr(adjacent)
@@ -49,12 +49,12 @@ FindPathResult TerrainFacade::findPathToConditionDepthFirst(DestinationCondition
 		return PathInnerLoops::findPath<PathMemoDepthFirst, anyOccupiedPoint, DestinationConditionT>(destinationCondition, m_area, *this, memo, shape, m_moveType, start, startFacing, detour, faction, maxRange);
 }
 template<bool anyOccupiedPoint, DestinationCondition DestinationConditionT, bool adjacent>
-FindPathResult TerrainFacade::findPathToConditionDepthFirstWithoutMemo(DestinationConditionT& destinationCondition, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, const Point3D& huristicDestination, bool detour, const FactionId& faction, const Distance& maxRange) const
+FindPathResult TerrainFacade::findPathToConditionDepthFirstWithoutMemo(DestinationConditionT& destinationCondition, const Point3D start, const Facing4 startFacing, const ShapeId shape, const Point3D huristicDestination, bool detour, const FactionId faction, const Distance  maxRange) const
 {
 	return findPathDepthFirstWithoutMemo<decltype(destinationCondition), anyOccupiedPoint, adjacent>(start, startFacing, destinationCondition, huristicDestination, shape, m_moveType, detour, faction, maxRange);
 }
 template<typename DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
-FindPathResult TerrainFacade::findPathToConditionBreadthFirst(DestinationConditionT destinationCondition, PathMemoBreadthFirst& memo, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, bool detour, const FactionId& faction, const Distance& maxRange) const
+FindPathResult TerrainFacade::findPathToConditionBreadthFirst(DestinationConditionT destinationCondition, PathMemoBreadthFirst& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour, const FactionId faction, const Distance  maxRange) const
 {
 	if constexpr(adjacent)
 	{
@@ -65,17 +65,17 @@ FindPathResult TerrainFacade::findPathToConditionBreadthFirst(DestinationConditi
 		return PathInnerLoops::findPath<PathMemoBreadthFirst, anyOccupiedPoint, DestinationConditionT>(destinationCondition, m_area, *this, memo, shape, m_moveType, start, startFacing, detour, faction, maxRange);
 }
 template<typename DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
-FindPathResult TerrainFacade::findPathToConditionBreadthFirstWithoutMemo(DestinationConditionT& destinationCondition, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, bool detour, const FactionId& faction, const Distance& maxRange) const
+FindPathResult TerrainFacade::findPathToConditionBreadthFirstWithoutMemo(DestinationConditionT& destinationCondition, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour, const FactionId faction, const Distance  maxRange) const
 {
 	return findPathBreadthFirstWithoutMemo<DestinationConditionT, anyOccupiedPoint, adjacent>(start, startFacing, destinationCondition, shape, m_moveType, detour, faction, maxRange);
 }
 template<CuboidToBool DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
-FindPathResult TerrainFacade::findPathToSpaceDesignationAndCondition(DestinationConditionT& destinationCondition, PathMemoBreadthFirst& memo, const SpaceDesignation designation, FactionId faction, const Point3D& start, const Facing4& startFacing, const ShapeId& shape, bool detour, bool unreserved, const Distance& maxRange) const
+FindPathResult TerrainFacade::findPathToSpaceDesignationAndCondition(DestinationConditionT& destinationCondition, PathMemoBreadthFirst& memo, const SpaceDesignation designation, FactionId faction, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour, bool unreserved, const Distance  maxRange) const
 {
 	const AreaHasSpaceDesignationsForFaction& hasSpaceDesignationsForFaction = m_area.m_spaceDesignations.getForFaction(faction);
 	if constexpr(adjacent || anyOccupiedPoint)
 	{
-		const auto designationCondition = [&](const Cuboid& cuboid) -> std::pair<bool, Point3D>
+		const auto designationCondition = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
 		{
 			const Point3D point = hasSpaceDesignationsForFaction.queryPointWithCondition(cuboid, designation, destinationCondition);
 			return {point.exists(), point};
@@ -91,7 +91,7 @@ FindPathResult TerrainFacade::findPathToSpaceDesignationAndCondition(Destination
 			return findPathToConditionBreadthFirst<DestinationConditionT, false, false>(destinationCondition, memo, start, startFacing, shape, detour, faction, maxRange);
 		else
 		{
-			auto designationCondition = [&](const Point3D& point, const Facing4&) -> std::pair<bool, Point3D>
+			auto designationCondition = [&](const Point3D point, const Facing4) -> std::pair<bool, Point3D>
 			{
 				const Point3D result = hasSpaceDesignationsForFaction.queryPointWithCondition(point, designation, destinationCondition);
 				return {result.exists(), result};

@@ -12,13 +12,13 @@ class ShardedBitSet
 {
 	Eigen::Array<DistanceWidth, 3> m_convertToIndex;
 	std::vector<bool> m_data;
-	ShardedBitSet(const Distance& x, const Distance& y, const Distance& z)
+	ShardedBitSet(const Distance  x, const Distance  y, const Distance  z)
 	{
 		m_data.resize((x * y * z).get());
 		const int shard = x / shardWidth;
 		m_convertToIndex = {(x * y).get() , x.get(), 1};
 	}
-	int convertPoint(const Point3D& point)
+	int convertPoint(const Point3D point)
 	{
 		const int shard = point.x() / shardWidth;
 		auto copy = point.data;
@@ -28,9 +28,9 @@ class ShardedBitSet
 		return (copy * m_convertToIndex).sum();
 	}
 public:
-	void maybeSet(const Point3D& point) { m_data[convertPoint(point)] = true; }
-	void maybeUnset(const Point3D& point) { m_data[convertPoint(point)] = false; }
-	void set(const Point3D& point) { assert(!check(point)); maybeSet(point); }
-	void unset(const Point3D& point) { assert(check(point)); maybeUnset(point); }
-	[[nodiscard]] bool check(const Point3D& point) { return m_data[convertPoint(point)]; }
+	void maybeSet(const Point3D point) { m_data[convertPoint(point)] = true; }
+	void maybeUnset(const Point3D point) { m_data[convertPoint(point)] = false; }
+	void set(const Point3D point) { assert(!check(point)); maybeSet(point); }
+	void unset(const Point3D point) { assert(check(point)); maybeUnset(point); }
+	[[nodiscard]] bool check(const Point3D point) { return m_data[convertPoint(point)]; }
 };

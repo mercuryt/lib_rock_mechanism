@@ -27,25 +27,25 @@ public:
 	void operator=(const CuboidSetSIMD& other) { m_high = other.m_high; m_low = other.m_low; m_boundingBox = other.m_boundingBox; m_size = other.m_size; m_capacity = other.m_capacity; }
 	void operator=(CuboidSetSIMD&& other) { m_high = std::move(other.m_high); m_low = std::move(other.m_low); m_boundingBox = other.m_boundingBox; m_size = other.m_size; m_capacity = other.m_capacity; }
 	void reserve(int capacity);
-	void insert(const Cuboid& cuboid);
-	void update(const int index, const Cuboid& cuboid);
-	void erase(const Cuboid& cuboid);
+	void insert(const Cuboid cuboid);
+	void update(const int index, const Cuboid cuboid);
+	void erase(const Cuboid cuboid);
 	void erase(int index);
 	void clear();
 	void load(const std::vector<Cuboid>& contents);
 	template<int capacity>
-	void load(const CuboidArray<capacity>& contents) { assert(empty()); reserve(contents.capacity); for(const Cuboid& cuboid : contents) insert(cuboid); }
+	void load(const CuboidArray<capacity>& contents) { assert(empty()); reserve(contents.capacity); for(const Cuboid cuboid : contents) insert(cuboid); }
 	[[nodiscard]] Cuboid operator[](const int& index) const { return {Coordinates(m_high.col(index)), Coordinates(m_low.col(index)) }; }
-	[[nodiscard]] bool intersects(const Cuboid& cuboid) const;
-	[[nodiscard]] bool containsAsMember(const Cuboid& cuboid) const;
+	[[nodiscard]] bool intersects(const Cuboid cuboid) const;
+	[[nodiscard]] bool containsAsMember(const Cuboid cuboid) const;
 	[[nodiscard]] bool empty() const { return m_size == 0; }
 	[[nodiscard]] int size() const { return m_size; }
 	[[nodiscard]] int capacity() const { return m_capacity; }
-	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfIntersectingCuboids(const Cuboid& cuboid) const;
-	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfContainedCuboids(const Cuboid& cuboid) const;
+	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfIntersectingCuboids(const Cuboid cuboid) const;
+	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfContainedCuboids(const Cuboid cuboid) const;
 	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfIntersectingCuboids(const Sphere& sphere) const;
 	[[nodiscard]] Eigen::Array<bool, 1, Eigen::Dynamic> indicesOfContainedCuboids(const Sphere& sphere) const;
-	[[nodiscard]] const Cuboid& boundry() const { return m_boundingBox; }
+	[[nodiscard]] const Cuboid boundry() const { return m_boundingBox; }
 	[[nodiscard]] std::vector<Cuboid> toVector() const;
 	class ConstIterator
 	{

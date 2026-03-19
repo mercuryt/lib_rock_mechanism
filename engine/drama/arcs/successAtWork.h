@@ -33,7 +33,7 @@ class SuccessAtWorkScheduledEvent final : public ScheduledEvent
 {
 	SuccessAtWorkDramaArc& m_dramaticArc;
 public:
-	SuccessAtWorkScheduledEvent(const Step& duration, SuccessAtWorkDramaArc& event, Simulation& simulation, const Step start = Step::null()) :
+	SuccessAtWorkScheduledEvent(const Step duration, SuccessAtWorkDramaArc& event, Simulation& simulation, const Step start = Step::null()) :
 		ScheduledEvent(simulation, duration, start),
 		m_dramaticArc(event)
 	{ }

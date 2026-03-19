@@ -141,7 +141,7 @@ void Config::load()
 	data["minimumCombatScoreDifferenceToFeelFear"].get_to(minimumCombatScoreDifferenceToFeelFear);
 	data["minimumDeltaToAlterPsycologyBaselineSquared"].get_to(minimumDeltaToAlterPsycologyBaselineSquared);
 	minimumDurationToWaitInsteadOfWander = Step::create(data["minimumDurationToWaitInsteadOfWanderMinutes"].get<float>() * stepsPerMinute.get());
-	data["minimumHaulSpeedInital"].get_to(minimumHaulSpeedInital);
+	data["minimumHaulSpeedInitial"].get_to(minimumHaulSpeedInitial);
 	data["maximumRatioOfBloodRemainingForSeriousInjury"].get_to(maximumRatioOfBloodRemainingForSeriousInjury);
 	data["minimumOverloadRatio"].get_to(minimumOverloadRatio);
 	data["minimumPercentFoliageForGrow"].get_to(minimumPercentFoliageForGrow);

@@ -20,7 +20,7 @@ struct PsycologyCallback
 {
 	PsycologyWeight threshold;
 	virtual PsycologyEventType eventType() const = 0;
-	virtual void action(const ActorIndex& actor, Area& area, Psycology& psycology, const PsycologyWeight& level) = 0;
+	virtual void action(const ActorIndex actor, Area& area, Psycology& psycology, const PsycologyWeight level) = 0;
 	[[nodiscard]] virtual PsycologyCallbackType getType() const = 0;
 	[[nodiscard]] virtual Json toJson() const;
 	[[nodiscard]] static std::unique_ptr<PsycologyCallback> load(const Json& data, Simulation& simulation);
@@ -35,7 +35,7 @@ struct PsycologyEvent final
 	PsycologyEventType type;
 	PsycologyEvent(const PsycologyEventType& t) : type(t) { deltas.setAllToZero(); }
 	PsycologyEvent(const PsycologyEventType& t, const PsycologyData& d) : deltas(d), type(t) { }
-	PsycologyEvent(const PsycologyEventType& t, const PsycologyAttribute& attribute, const PsycologyWeight& weight) :
+	PsycologyEvent(const PsycologyEventType& t, const PsycologyAttribute& attribute, const PsycologyWeight weight) :
 		PsycologyEvent(t)
 	{
 		deltas.addTo(attribute, weight);
@@ -51,7 +51,7 @@ class PsycologyEventExpiresScheduledEvent final : public ScheduledEvent
 	ActorId m_actor;
 	PsycologyEventType m_eventType;
 public:
-	PsycologyEventExpiresScheduledEvent(const Step& delay, const PsycologyEventType& eventType, const PsycologyData& deltas, const ActorId& actor, Simulation& simulation, const Step& start = Step::null());
+	PsycologyEventExpiresScheduledEvent(const Step delay, const PsycologyEventType& eventType, const PsycologyData& deltas, const ActorId actor, Simulation& simulation, const Step start = Step::null());
 	void execute(Simulation& simulation, Area* area) override;
 	void clearReferences(Simulation& simulation, Area* area) override;
 	[[nodiscard]] Json toJson() const;
@@ -70,20 +70,20 @@ class Psycology final
 	SmallSetStable<HasScheduledEvent<PsycologyEventExpiresScheduledEvent>> m_expirationEvents;
 	SmallMap<PsycologyEventType, Step> m_cooldowns;
 	// Possibly trigger callbacks.
-	void checkThreasholds(Area& area, const ActorIndex& actor);
-	void setExpiration(const Step& duration, Simulation& simulation, const ActorId& actor, const PsycologyEventType& eventType, const PsycologyData& eventDeltas);
+	void checkThreasholds(Area& area, const ActorIndex actor);
+	void setExpiration(const Step duration, Simulation& simulation, const ActorId actor, const PsycologyEventType& eventType, const PsycologyData& eventDeltas);
 public:
 	void initialize();
 	// Record callbacks, modify current, check threasholds.
-	void apply(PsycologyEvent& event, Area& area, const ActorIndex& actor, const Step& duration = Step::null(), const Step& cooldown = Step::null());
-	void remove(const PsycologyEventType& eventType, const PsycologyData& deltas, Area& area, const ActorIndex& actor);
+	void apply(PsycologyEvent& event, Area& area, const ActorIndex actor, const Step duration = Step::null(), const Step cooldown = Step::null());
+	void remove(const PsycologyEventType& eventType, const PsycologyData& deltas, Area& area, const ActorIndex actor);
 	void registerHighCallback(const PsycologyAttribute& attribute, std::unique_ptr<PsycologyCallback>&& callback);
 	void registerLowCallback(const PsycologyAttribute& attribute, std::unique_ptr<PsycologyCallback>&& callback);
 	void unregisterHighCallback(const PsycologyAttribute& attribute, PsycologyCallback& callback);
 	void unregisterLowCallback(const PsycologyAttribute& attribute, PsycologyCallback& callback);
-	void addFriend(const ActorId& actor);
-	void removeFriend(const ActorId& actor);
-	void addFamily(const ActorId& actor, const FamilyRelationship& relationship);
+	void addFriend(const ActorId actor);
+	void removeFriend(const ActorId actor);
+	void addFamily(const ActorId actor, const FamilyRelationship& relationship);
 	[[nodiscard]] ActorHasRelationships& getRelationships() { return m_relationships; };
 	[[nodiscard]] const ActorHasRelationships& getRelationships() const { return m_relationships; };
 	[[nodiscard]] const SmallSet<ActorId>& getFriends() const { return m_friends; }

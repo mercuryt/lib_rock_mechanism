@@ -87,17 +87,31 @@ void CuboidSetBase<CuboidType, PointType, CuboidSetType>::maybeAdd(const CuboidT
 	insertOrMerge(cuboid);
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-void CuboidSetBase<CuboidType, PointType, CuboidSetType>::shift(const Offset3D offset, const Distance& distance)
+void CuboidSetBase<CuboidType, PointType, CuboidSetType>::shift(const Offset3D offset, const Distance  distance)
 {
 	for(CuboidType& cuboid : m_cuboids)
 		cuboid.shift(offset, distance);
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::shifted(const Offset3D offset, const Distance& distance) const
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::shifted(const Offset3D offset, const Distance  distance) const
 {
 	CuboidSetType copy(static_cast<const CuboidSetType&>(*this));
 	copy.shift(offset, distance);
 	return copy;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+void CuboidSetBase<CuboidType, PointType, CuboidSetType>::shiftWest(const Distance distance)
+{
+	assert(boundry().m_low.x() != 0);
+	Offset3D offset{-1, 0, 0};
+	shift(offset, distance);
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
+void CuboidSetBase<CuboidType, PointType, CuboidSetType>::shiftSouth(const Distance distance)
+{
+	assert(boundry().m_low.y() != 0);
+	Offset3D offset{0, -1, 0};
+	shift(offset, distance);
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
 void CuboidSetBase<CuboidType, PointType, CuboidSetType>::addSet(const CuboidSetType& other)
@@ -116,7 +130,7 @@ void CuboidSetBase<CuboidType, PointType, CuboidSetType>::swap(CuboidSetType& ot
 template<typename CuboidType, typename PointType, typename CuboidSetType>
 void CuboidSetBase<CuboidType, PointType, CuboidSetType>::popBack() { m_cuboids.popBack(); }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-void CuboidSetBase<CuboidType, PointType, CuboidSetType>::inflate(const Distance& distance)
+void CuboidSetBase<CuboidType, PointType, CuboidSetType>::inflate(const Distance  distance)
 {
 	auto copy = m_cuboids;
 	clear();
@@ -190,7 +204,7 @@ int CuboidSetBase<CuboidType, PointType, CuboidSetType>::volume() const
 	return output;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::contains(const Point3D& point) const
+bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::contains(const Point3D point) const
 {
 	for(const CuboidType& cuboid : m_cuboids)
 		if(cuboid.contains(point))
@@ -198,7 +212,7 @@ bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::contains(const Point3D
 	return false;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::contains(const Offset3D& point) const
+bool CuboidSetBase<CuboidType, PointType, CuboidSetType>::contains(const Offset3D point) const
 {
 	for(const CuboidType& cuboid : m_cuboids)
 		if(cuboid.contains(point))
@@ -392,7 +406,7 @@ CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::getAdjacent()
 	return inflated;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::getDirectlyAdjacent(const Distance& distance) const
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::getDirectlyAdjacent(const Distance  distance) const
 {
 	assert(!empty());
 	CuboidSetType output;
@@ -406,7 +420,7 @@ CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::getDirectlyAd
 	return output;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
-CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::inflateFaces(const Distance& distance) const
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::inflateFaces(const Distance  distance) const
 {
 	assert(!empty());
 	CuboidSetType output;
@@ -421,6 +435,21 @@ CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::inflateFaces(
 	return output;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::slicedAtZ(const PointType::DimensionType& zLevel) const
+{
+	CuboidSetType output;
+	// Iterate copies.
+	for(CuboidType cuboid : m_cuboids)
+	{
+		if(cuboid.m_high.z() < zLevel || cuboid.m_low.z() > zLevel)
+			continue;
+		cuboid.m_high.setZ(zLevel);
+		cuboid.m_low.setZ(zLevel);
+		output.maybeAdd(cuboid);
+	}
+	return output;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
 CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::adjacentSlicedAtZ(const PointType::DimensionType& zLevel) const
 {
 	assert(boundry().m_high.z() >= zLevel);
@@ -429,7 +458,7 @@ CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::adjacentSlice
 	// Iterate copies.
 	for(CuboidType cuboid : m_cuboids)
 	{
-		if(cuboid.m_high.z() > zLevel || cuboid.m_low.z() < zLevel)
+		if(cuboid.m_high.z() < zLevel || cuboid.m_low.z() > zLevel)
 			continue;
 		//TODO: Cuboid::inflateXAndY
 		cuboid.inflate({1});

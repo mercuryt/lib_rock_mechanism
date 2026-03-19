@@ -5,9 +5,9 @@
 #include "../deserializationMemo.h"
 #include "space/space.h"
 #include "numericTypes/types.h"
-ExterminateObjective::ExterminateObjective(Area& area, const Point3D& destination) :
+ExterminateObjective::ExterminateObjective(Area& area, const Point3D destination) :
 	Objective(Config::exterminatePriority), m_destination(destination), m_event(area.m_eventSchedule) { }
-ExterminateObjective::ExterminateObjective(const Json& data, Area& area, const ActorIndex& actor, DeserializationMemo& deserializationMemo) :
+ExterminateObjective::ExterminateObjective(const Json& data, Area& area, const ActorIndex actor, DeserializationMemo& deserializationMemo) :
 	Objective(data, deserializationMemo),
 	m_destination(data["destination"].get<Point3D>()),
 	m_event(area.m_eventSchedule)
@@ -23,13 +23,13 @@ Json ExterminateObjective::toJson() const
 		output["eventStart"] = m_event.getStartStep();
 	return output;
 }
-void ExterminateObjective::execute(Area& area, const ActorIndex& actor)
+void ExterminateObjective::execute(Area& area, const ActorIndex actor)
 {
 	ActorIndex closest;
 	Actors& actors = area.getActors();
 	Point3D thisActorLocation = actors.getLocation(actor);
 	Point3D closestActorLocation;
-	for(const ActorReference& other : actors.vision_getCanSee(actor))
+	for(const ActorReference other : actors.vision_getCanSee(actor))
 	{
 		ActorIndex otherIndex = other.getIndex(actors.m_referenceData);
 		Point3D otherLocation = actors.getLocation(otherIndex);
@@ -53,7 +53,7 @@ void ExterminateObjective::execute(Area& area, const ActorIndex& actor)
 		m_event.schedule(area, *this, actor);
 	}
 }
-ExterminateObjectiveScheduledEvent::ExterminateObjectiveScheduledEvent(Area& area, ExterminateObjective& o, const ActorIndex& actor, const Step start) :
+ExterminateObjectiveScheduledEvent::ExterminateObjectiveScheduledEvent(Area& area, ExterminateObjective& o, const ActorIndex actor, const Step start) :
 	ScheduledEvent(area.m_simulation, Config::exterminateCheckFrequency, start),
 	m_objective(o)
 {

@@ -14,8 +14,8 @@ Json InspirationalSpeachDramaArc::toJson() const
 	output["cooldowns"] = m_cooldowns;
 	return output;
 }
-bool InspirationalSpeachDramaArc::ready(const FactionId& faction) const { return m_cooldowns[faction] < m_area->m_simulation.m_step; }
-void InspirationalSpeachDramaArc::begin(const ActorIndex& actor)
+bool InspirationalSpeachDramaArc::ready(const FactionId faction) const { return m_cooldowns[faction] < m_area->m_simulation.m_step; }
+void InspirationalSpeachDramaArc::begin(const ActorIndex actor)
 {
 	Actors& actors = m_area->getActors();
 	const FactionId& faction = actors.getFaction(actor);

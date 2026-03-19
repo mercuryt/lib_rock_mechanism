@@ -60,7 +60,7 @@ const ObjectivePriority& ObjectiveTypePrioritySet::getById(const ObjectiveTypeId
 {
 	return const_cast<ObjectiveTypePrioritySet*>(this)->getById(objectiveTypeId);
 }
-void ObjectiveTypePrioritySet::setPriority(Area& area, const ActorIndex& actor, const ObjectiveTypeId& objectiveTypeId, const Priority& priority)
+void ObjectiveTypePrioritySet::setPriority(Area& area, const ActorIndex actor, const ObjectiveTypeId& objectiveTypeId, const Priority priority)
 {
 	auto found = std::ranges::find_if(m_data, [&](ObjectivePriority& x) { return x.objectiveType == objectiveTypeId; });
 	if(found == m_data.end())
@@ -74,7 +74,7 @@ void ObjectiveTypePrioritySet::remove(const ObjectiveTypeId& objectiveType)
 {
 	std::erase_if(m_data, [&](const ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType == objectiveType; });
 }
-void ObjectiveTypePrioritySet::setObjectiveFor(Area& area, const ActorIndex& actor)
+void ObjectiveTypePrioritySet::setObjectiveFor(Area& area, const ActorIndex actor)
 {
 	assert(!area.getActors().objective_exists(actor));
 	Step currentStep = area.m_simulation.m_step;
@@ -119,12 +119,12 @@ Step ObjectiveTypePrioritySet::getDelayEndFor(const ObjectiveTypeId& objectiveTy
 	return objectivePriority.doNotAssignAgainUntil;
 }
 // SupressedNeed
-SupressedNeed::SupressedNeed(Area& area, std::unique_ptr<Objective> o, const ActorReference& ref) :
+SupressedNeed::SupressedNeed(Area& area, std::unique_ptr<Objective> o, const ActorReference ref) :
 	m_objective(std::move(o)), m_event(area.m_eventSchedule), m_actor(ref)
 {
 	m_event.schedule(area, *this);
 }
-SupressedNeed::SupressedNeed(Area& area, const Json& data, DeserializationMemo& deserializationMemo, const ActorReference& ref) :
+SupressedNeed::SupressedNeed(Area& area, const Json& data, DeserializationMemo& deserializationMemo, const ActorReference ref) :
 	m_event(area.m_eventSchedule), m_actor(ref)
 {
 	m_objective = deserializationMemo.loadObjective(data["objective"], area, m_actor.getIndex(area.getActors().m_referenceData));
@@ -197,7 +197,7 @@ ObjectiveTypeId ObjectiveType::getId() const
 	return ObjectiveTypeId::create(distance);
 }
 // Objective.
-Objective::Objective(const Priority& priority) : m_priority(priority) { }
+Objective::Objective(const Priority priority) : m_priority(priority) { }
 Objective::Objective(const Json& data, DeserializationMemo& deserializationMemo) :
 	m_priority(data["priority"].get<Priority>()),
 	m_detour(data["detour"].get<bool>())
@@ -217,12 +217,12 @@ Json CannotCompleteObjectiveDishonorCallback::toJson() const
 {
 	return {{"actor", m_actor}};
 }
-void CannotCompleteObjectiveDishonorCallback::execute(const Quantity&, const Quantity&)
+void CannotCompleteObjectiveDishonorCallback::execute(const Quantity, const Quantity)
 {
 	Actors& actors = m_area.getActors();
 	actors.objective_canNotCompleteSubobjective(m_actor.getIndex(actors.m_referenceData)); }
 // HasObjectives.
-void HasObjectives::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const ActorIndex& actor)
+void HasObjectives::load(const Json& data, DeserializationMemo& deserializationMemo, Area& area, const ActorIndex actor)
 {
 	for(const Json& objective : data["needsQueue"])
 	{

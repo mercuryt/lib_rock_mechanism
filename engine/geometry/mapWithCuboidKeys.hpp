@@ -82,7 +82,7 @@ CuboidSetType MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::getCuboids() 
 	return output;
 }
 template<typename T, typename CuboidType, typename CuboidSetType>
-bool MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::contains(const Point3D& point) const
+bool MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::contains(const Point3D point) const
 {
 	for(const Pair& pair : data)
 		if(pair.first.contains(point))
@@ -90,7 +90,7 @@ bool MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::contains(const Point3D
 	return false;
 }
 template<typename T, typename CuboidType, typename CuboidSetType>
-bool MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::contains(const Offset3D& point) const
+bool MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::contains(const Offset3D point) const
 {
 	for(const Pair& pair : data)
 		if(pair.first.contains(point))
@@ -133,7 +133,7 @@ std::string MapWithCuboidKeysBase<T, CuboidType, CuboidSetType>::toString() cons
 	return output;
 }
 template<typename T>
-MapWithOffsetCuboidKeys<T> MapWithOffsetCuboidKeys<T>::applyOffset(const Offset3D& offset) const
+MapWithOffsetCuboidKeys<T> MapWithOffsetCuboidKeys<T>::applyOffset(const Offset3D offset) const
 {
 	auto output = *this;
 	for(auto& [cuboid, value] : output)
@@ -141,7 +141,7 @@ MapWithOffsetCuboidKeys<T> MapWithOffsetCuboidKeys<T>::applyOffset(const Offset3
 	return output;
 }
 template<typename T>
-MapWithOffsetCuboidKeys<T> MapWithOffsetCuboidKeys<T>::shiftAndRotateAndRemoveIntersectionWithOriginal(const Offset3D& offset, const Facing4& previousRotation, const Facing4& newRotation) const
+MapWithOffsetCuboidKeys<T> MapWithOffsetCuboidKeys<T>::shiftAndRotateAndRemoveIntersectionWithOriginal(const Offset3D offset, const Facing4& previousRotation, const Facing4& newRotation) const
 {
 	MapWithOffsetCuboidKeys<T> output;
 	for(const auto& [cuboid, value] : this->data)
@@ -156,7 +156,7 @@ MapWithOffsetCuboidKeys<T> MapWithOffsetCuboidKeys<T>::shiftAndRotateAndRemoveIn
 	return output;
 }
 template<typename T>
-MapWithCuboidKeys<T> MapWithOffsetCuboidKeys<T>::relativeTo(const Point3D& location) const
+MapWithCuboidKeys<T> MapWithOffsetCuboidKeys<T>::relativeTo(const Point3D location) const
 {
 	MapWithCuboidKeys<T> output;
 	for(const auto& [cuboid, value] : this->data)

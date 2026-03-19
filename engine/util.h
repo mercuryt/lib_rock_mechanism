@@ -53,7 +53,7 @@ namespace util
 	}
 	//template<typename T>
 	//struct AddressEquivalence{ bool operator()(T& other){ return &other == this; } };
-	inline std::array<int, 3> rotateOffsetToFacing(const std::array<int, 3>& position, const Facing4& facing)
+	inline std::array<int, 3> rotateOffsetToFacing(const std::array<int, 3>& position, const Facing4 facing)
 	{
 		auto [x, y, z] = position;
 		switch(facing)
@@ -181,7 +181,7 @@ namespace util
 		ss << eigenArrayOrMatrix;
 		return ss.str();
 	}
-	inline Facing4 rotateFacingByDifference(const Facing4& facing, const Facing4& previousFacing, const Facing4& newFacing)
+	inline Facing4 rotateFacingByDifference(const Facing4 facing, const  Facing4 previousFacing, const Facing4 newFacing)
 	{
 		int difference = (int)newFacing - (int)previousFacing;
 		if(difference < 0)

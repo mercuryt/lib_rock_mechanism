@@ -131,7 +131,7 @@
 	"minimumDeltaToAlterPsycologyBaselineSquared": 10000,
 	"minimumDaysBetweenRainPerPercentHumidity": 0.5,
 	"minimumDurationToWaitInsteadOfWanderMinutes": 0.5,
-	"minimumHaulSpeedInital": 60,
+	"minimumHaulSpeedInitial": 60,
 	"minimumImpairPercentForSeriousInjury": 30,
 	"minimumOverloadRatio": 0.33,
 	"minimumPercentFoliageForGrow": 90,

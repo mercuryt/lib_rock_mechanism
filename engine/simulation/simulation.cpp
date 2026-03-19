@@ -21,14 +21,19 @@
 #include <filesystem>
 #include <functional>
 #include <fstream>
-Simulation::Simulation(const std::string& name, const DateTime& dateTime) :
-    	m_eventSchedule(*this, nullptr), m_hourlyEvent(m_eventSchedule), m_deserializationMemo(*this), m_name(name), m_step(dateTime.toSteps())
+Simulation::Simulation(const std::string& name, const Step step) :
+	m_eventSchedule(*this, nullptr),
+	m_hourlyEvent(m_eventSchedule),
+	m_deserializationMemo(*this),
+	m_name(name),
+	m_step(step)
 {
 	m_hourlyEvent.schedule(*this);
 	m_path.append("save/"+name);
 	m_dramaEngine = std::make_unique<DramaEngine>(*this);
 	m_hasAreas = std::make_unique<SimulationHasAreas>(*this);
 }
+Simulation::Simulation(const std::string& name, const DateTime& dateTime) : Simulation(name, dateTime.toSteps()) { }
 Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std::ifstream{path/"simulation.json"}))
 {
 	m_path = path;
@@ -39,7 +44,9 @@ Simulation::Simulation(std::filesystem::path path) : Simulation(Json::parse(std:
 	m_dramaEngine = std::make_unique<DramaEngine>(data["drama"], m_deserializationMemo, *this);
 }
 Simulation::Simulation(const Json& data) :
-	m_eventSchedule(*this, nullptr), m_hourlyEvent(m_eventSchedule), m_deserializationMemo(*this)
+	m_eventSchedule(*this, nullptr),
+	m_hourlyEvent(m_eventSchedule),
+	m_deserializationMemo(*this)
 {
 	data["name"].get_to(m_name);
 	data["step"].get_to(m_step);
@@ -81,10 +88,10 @@ void Simulation::incrementHour()
 }
 void Simulation::save()
 {
-	std::filesystem::create_directory(m_path);
+	std::filesystem::create_directories(m_path);
 	std::ofstream f(m_path/"simulation.json");
 	f << toJson();
-	std::filesystem::create_directory(m_path/"area");
+	std::filesystem::create_directories(m_path/"area");
 	m_hasAreas->save();
 }
 FactionId Simulation::createFaction(std::string name) { return m_hasFactions.createFaction(name); }
@@ -96,7 +103,7 @@ Step Simulation::getNextEventStep() const
 		return m_eventSchedule.getNextEventStep();
 	return std::min(m_eventSchedule.getNextEventStep(), nextAreaStep);
 }
-Step Simulation::getDelayUntillNextTimeOfDay(const Step& timeOfDay) const
+Step Simulation::getDelayUntillNextTimeOfDay(const Step timeOfDay) const
 {
 	Step timeNow = m_step % Config::stepsPerDay;
 	if(timeNow < timeOfDay)
@@ -165,60 +172,60 @@ void Simulation::fastForwardUntill(DateTime dateTime)
 	assert(dateTime.toSteps() > m_step);
 	fastForward(dateTime.toSteps() - m_step);
 }
-void Simulation::fastForwardUntillActorIsAtDestination(Area& area, const ActorIndex& actor, const Point3D& destination)
+void Simulation::fastForwardUntillActorIsAtDestination(Area& area, const ActorIndex actor, const Point3D destination)
 {
 	assert(area.getActors().move_getDestination(actor) == destination);
 	fastForwardUntillActorIsAt(area, actor, destination);
 }
-void Simulation::fastForwardUntillActorIsAt(Area& area, const ActorIndex& actor, const Point3D& destination)
+void Simulation::fastForwardUntillActorIsAt(Area& area, const ActorIndex actor, const Point3D destination)
 {
 	std::function<bool()> predicate = [&](){ return area.getActors().getLocation(actor) == destination; };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorIsAdjacentToDestination(Area& area, const ActorIndex& actor, const Point3D& destination)
+void Simulation::fastForwardUntillActorIsAdjacentToDestination(Area& area, const ActorIndex actor, const Point3D destination)
 {
 	Actors& actors = area.getActors();
 	#ifndef NDEBUG
 		assert(!actors.move_getPath(actor).empty());
-		const Point3D& adjacentDestination = actors.move_getPath(actor).front();
+		const Point3D adjacentDestination = actors.move_getPath(actor).front();
 		if(actors.getOccupied(actor).volume() == 1)
 			assert(adjacentDestination.isAdjacentTo(destination));
 	#endif
 	std::function<bool()> predicate = [&](){ return actors.isAdjacentToLocation(actor, destination); };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorIsAdjacentToLocation(Area& area, const ActorIndex& actor, const Point3D& point)
+void Simulation::fastForwardUntillActorIsAdjacentToLocation(Area& area, const ActorIndex actor, const Point3D point)
 {
 	std::function<bool()> predicate = [&](){ return area.getActors().isAdjacentToLocation(actor, point); };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorIsAdjacentToActor(Area& area, const ActorIndex& actor, const ActorIndex& other)
+void Simulation::fastForwardUntillActorIsAdjacentToActor(Area& area, const ActorIndex actor, const ActorIndex other)
 {
 	std::function<bool()> predicate = [&](){ return area.getActors().isAdjacentToActor(actor, other); };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorIsAdjacentToPolymorphic(Area& area, const ActorIndex& actor, const ActorOrItemIndex& target)
+void Simulation::fastForwardUntillActorIsAdjacentToPolymorphic(Area& area, const ActorIndex actor, const ActorOrItemIndex target)
 {
 	std::function<bool()> predicate = [&](){ return target.isAdjacentToActor(area, actor); };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorIsAdjacentToItem(Area& area, const ActorIndex& actor, const ItemIndex& item)
+void Simulation::fastForwardUntillActorIsAdjacentToItem(Area& area, const ActorIndex actor, const ItemIndex item)
 {
 	std::function<bool()> predicate = [&](){ return area.getActors().isAdjacentToItem(actor, item); };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorHasNoDestination(Area& area, const ActorIndex& actor)
+void Simulation::fastForwardUntillActorHasNoDestination(Area& area, const ActorIndex actor)
 {
 	std::function<bool()> predicate = [&](){ return area.getActors().move_getDestination(actor).empty(); };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillActorHasEquipment(Area& area, const ActorIndex& actor, const ItemIndex& item)
+void Simulation::fastForwardUntillActorHasEquipment(Area& area, const ActorIndex actor, const ItemIndex item)
 {
 	Actors& actors = area.getActors();
 	std::function<bool()> predicate = [&](){ return actors.equipment_containsItem(actor, item); };
 	fastForwardUntillPredicate(predicate);
 }
-void Simulation::fastForwardUntillItemIsAt(Area& area, const ItemIndex& item, const Point3D& destination)
+void Simulation::fastForwardUntillItemIsAt(Area& area, const ItemIndex item, const Point3D destination)
 {
 	std::function<bool()> predicate = [&](){ return area.getItems().getLocation(item) == destination; };
 	fastForwardUntillPredicate(predicate);

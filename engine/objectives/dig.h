@@ -11,8 +11,8 @@ class DigProject;
 class DigObjectiveType final : public ObjectiveType
 {
 public:
-	[[nodiscard]] bool canBeAssigned(Area& area, const ActorIndex& actor) const;
-	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex& actor) const;
+	[[nodiscard]] bool canBeAssigned(Area& area, const ActorIndex actor) const;
+	[[nodiscard]] std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex actor) const;
 	DigObjectiveType() = default;
 	DigObjectiveType([[maybe_unused]] const Json& data, [[maybe_unused]] DeserializationMemo& deserializationMemo){ }
 	[[nodiscard]] std::string name() const { return "dig"; }
@@ -24,19 +24,19 @@ class DigObjective final : public Objective
 public:
 	DigObjective() : Objective(Config::digObjectivePriority) { }
 	DigObjective(const Json& data, DeserializationMemo& deserializationMemo);
-	void execute(Area& area, const ActorIndex& actor);
-	void cancel(Area& area, const ActorIndex& actor);
-	void delay(Area& area, const ActorIndex& actor);
-	void reset(Area& area, const ActorIndex& actor);
-	void onProjectCannotReserve(Area& area, const ActorIndex& actor);
-	void joinProject(DigProject& project, const ActorIndex& actor);
+	void execute(Area& area, const ActorIndex actor);
+	void cancel(Area& area, const ActorIndex actor);
+	void delay(Area& area, const ActorIndex actor);
+	void reset(Area& area, const ActorIndex actor);
+	void onProjectCannotReserve(Area& area, const ActorIndex actor);
+	void joinProject(DigProject& project, const ActorIndex actor);
 	[[nodiscard]] ObjectiveTypeId getTypeId() const override { return ObjectiveType::getByName("dig").getId(); }
 	[[nodiscard]] bool canBeAddedToPrioritySet() { return true; }
 	[[nodiscard]] Json toJson() const;
 	template<typename ShapeT>
-	[[nodiscard]] DigProject* getJoinableProjectAt(Area& area, const ShapeT& shape, const ActorIndex& actor);
+	[[nodiscard]] DigProject* getJoinableProjectAt(Area& area, ShapeT&& shape, const ActorIndex actor);
 	// To be used for pathing.
-	[[nodiscard]] Point3D joinableProjectExistsAt(Area& area, const Cuboid& cuboid, const ActorIndex& actor) const;
+	[[nodiscard]] Point3D joinableProjectExistsAt(Area& area, const Cuboid cuboid, const ActorIndex actor) const;
 	[[nodiscard]] std::string name() const { return "dig"; }
 	friend class DigPathRequest;
 	friend class DigProject;
@@ -48,7 +48,7 @@ class DigPathRequest final : public PathRequestBreadthFirst
 {
 	DigObjective& m_digObjective;
 public:
-	DigPathRequest(Area& area, DigObjective& digObjective, const ActorIndex& actor);
+	DigPathRequest(Area& area, DigObjective& digObjective, const ActorIndex actorIndex);
 	DigPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
 	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;

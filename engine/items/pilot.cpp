@@ -4,24 +4,24 @@
 #include "../area/area.h"
 #include "../actors/actors.h"
 #include "../fluidType.h"
-void Items::pilot_set(const ItemIndex& item, const ActorIndex& pilot)
+void Items::pilot_set(const ItemIndex item, const ActorIndex pilot)
 {
 	assert(m_pilot[item].empty());
 	assert(m_onDeck[item].contains(ActorOrItemIndex::createForActor(pilot)));
 	m_pilot[item] = pilot;
 	unsetStatic(item);
 }
-void Items::pilot_clear(const ItemIndex& item)
+void Items::pilot_clear(const ItemIndex item)
 {
 	assert(m_pilot[item].exists());
 	m_pilot[item].clear();
 	setStatic(item);
 }
-ActorIndex Items::pilot_get(const ItemIndex& item) const
+ActorIndex Items::pilot_get(const ItemIndex item) const
 {
 	return m_pilot[item];
 }
-Force Items::vehicle_getMotiveForce(const ItemIndex& item) const
+Force Items::vehicle_getMotiveForce(const ItemIndex item) const
 {
 	// Force from engine / sails / etc.
 	Force builtInMotiveForce = ItemType::getMotiveForce(m_itemType[item]);
@@ -41,14 +41,14 @@ Force Items::vehicle_getMotiveForce(const ItemIndex& item) const
 	}
 	return Force::create(0);
 }
-Speed Items::vehicle_getSpeed(const ItemIndex& item) const
+Speed Items::vehicle_getSpeed(const ItemIndex item) const
 {
 	Force motiveForce = vehicle_getMotiveForce(item);
 	Speed baseSpeed = motiveForce / getMass(item);
-	const FluidTypeId& floatingInFluidType = m_floating[item];
+	const FluidTypeId floatingInFluidType = m_floating[item];
 	if(floatingInFluidType.exists())
 	{
-		const ShapeId& shape = getShape(item);
+		const ShapeId shape = getShape(item);
 		const auto& level = floatsInAtDepth(item, floatingInFluidType);
 		Quantity numberOfPointsOnLeadingFaceAtOrBelowFloatLevel = Shape::getNumberOfPointsOnLeadingFaceAtOrBelowLevel(shape, level);
 		Speed drag = Speed::create(
@@ -61,4 +61,4 @@ Speed Items::vehicle_getSpeed(const ItemIndex& item) const
 	}
 	return baseSpeed;
 }
-const OffsetCuboidSet& Items::getDeckOffsets(const ItemIndex& index) const { return ItemType::getDecks(m_itemType[index]); }
+const OffsetCuboidSet& Items::getDeckOffsets(const ItemIndex index) const { return ItemType::getDecks(m_itemType[index]); }

@@ -10,33 +10,21 @@
 #include "../plants.h"
 #include "../portables.h"
 
-void Space::solid_setShared(const Point3D& point, const MaterialTypeId& materialType, bool wasEmpty)
-{
-	assert(!m_items.queryAny(point));
-	if(wasEmpty)
-		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
-	fluid_onPointSetSolid(point);
-	// Space below are no longer exposed to sky.
-	if(point.z() != 0)
-	{
-		const Point3D& below = point.below();
-		if(m_exposedToSky.check(below))
-			m_exposedToSky.unset(m_area, below);
-	}
-	// Record as meltable.
-	if(m_exposedToSky.check(point) && MaterialType::canMelt(materialType))
-		m_area.m_hasTemperature.maybeAddMeltableSolidPointAboveGround(point);
-	// Remove from stockpiles.
-	m_area.m_hasStockPiles.removePointFromAllFactions(point);
-}
-void Space::solid_set(const Point3D& point, const MaterialTypeId& materialType, bool constructed)
+void Space::solid_set(const Point3D point, const MaterialTypeId materialType, bool constructed)
 {
 	solid_setCuboid({point, point}, materialType, constructed);
 }
-void Space::solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& materialType, bool constructed)
+void Space::solid_setAll(const CuboidSet& cuboids, const MaterialTypeId materialType, bool constructed)
 {
+	assert(!cuboids.empty());
+	for(const Cuboid cuboid : cuboids)
+		solid_setCuboid(cuboid, materialType, constructed);
+}
+void Space::solid_setCuboid(const Cuboid cuboid, const MaterialTypeId materialType, bool constructed)
+{
+	assert(!m_items.queryAny(cuboid));
 	// TODO: This assumes previous is all one type.
-	const MaterialTypeId& previous = m_solid.queryGetOne(cuboid);
+	const MaterialTypeId previous = m_solid.queryGetOne(cuboid);
 	bool wasTransparent = (previous.empty() || MaterialType::getTransparent(previous));
 	m_solid.maybeInsertOrOverwrite(cuboid, materialType);
 	if(constructed)
@@ -49,7 +37,7 @@ void Space::solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& material
 	Cuboid inflated = cuboid;
 	inflated.inflate({1});
 	m_area.m_opacityFacade.removeFromCuboidSet(visibleSpace);
-	for(Cuboid& visibleCuboid : visibleSpace)
+	for(Cuboid visibleCuboid : visibleSpace)
 	{
 		visibleCuboid.inflate({1});
 		toSetUnrevealed.maybeRemove(visibleCuboid);
@@ -57,17 +45,34 @@ void Space::solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& material
 	m_unrevealed.maybeInsert(toSetUnrevealed);
 	// Kill any plants.
 	Plants& plants = m_area.getPlants();
-	const auto& plantIndices = m_plants.queryGetAll(cuboid);
-	for(const PlantIndex& plant : plantIndices)
-	{
-		assert(!PlantSpecies::getIsTree(plants.getSpecies(plant)));
-		plants.die(plant);
-	}
+	// TODO: should this be kill all or destroy all?
+	plants.destroyAll(cuboid);
 	m_area.m_hasTerrainFacades.maybeSetImpassable(cuboid);
 	m_area.m_exteriorPortals.onCuboidCanNotTransmitTemperature(m_area, cuboid);
 	m_area.m_hasCraftingLocationsAndJobs.maybeRemoveCuboid(cuboid);
-	for(const Point3D& point : cuboid)
-		solid_setShared(point, materialType, previous.empty());
+	if(previous.empty())
+		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(cuboid);
+	const Temperature meltingPoint = MaterialType::getMeltingPoint(materialType);
+	if(meltingPoint.exists())
+	{
+		Cuboid topFace = cuboid.getFaceAbove();
+		if(cuboid.m_high.z() != m_sizeZ - 1)
+		{
+			topFace.shift({0, 0, 1}, {1});
+			CuboidSet above = CuboidSet::create(topFace);
+			// Any that are below a solid, feature, or something not exposed to sky are not added to meltable above ground.
+			above.maybeRemoveAll(solid_queryCuboids(topFace));
+			above.maybeRemoveAll(pointFeature_queryCuboids(topFace));
+			CuboidSet exposedAndNotSolidOrFeature = m_exposedToSky.removeNotExposedFrom(above);
+			exposedAndNotSolidOrFeature.shift({0, 0, -1}, {1});
+			m_area.m_hasTemperature.maybeAddMeltableSolidPointsAboveGround(exposedAndNotSolidOrFeature, meltingPoint);
+		}
+	}
+	// Remove from stockpiles.
+	m_area.m_hasStockPiles.removeFromAll(cuboid);
+	// Remove fluids and shift them elsewhere.
+	fluid_onCuboidSetSolid(cuboid);
+	m_exposedToSky.maybeUnset(m_area, cuboid);
 	m_support.set(cuboid);
 	// Vision cuboid.
 	if(!MaterialType::getTransparent(materialType) && wasTransparent)
@@ -75,13 +80,18 @@ void Space::solid_setCuboid(const Cuboid& cuboid, const MaterialTypeId& material
 	// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid point.
 	m_reservables.maybeRemove(cuboid);
 }
-void Space::solid_setNotCuboid(const Cuboid& cuboid)
+void Space::solid_setNotAll(const CuboidSet& cuboidSet)
+{
+	for(const Cuboid cuboid : cuboidSet)
+		solid_setNotCuboid(cuboid);
+}
+void Space::solid_setNotCuboid(const Cuboid cuboid)
 {
 	const auto& previous = m_solid.queryGetAll(cuboid);
 	if(previous.empty())
 		return;
 	bool wasTransparent = true;
-	for(const MaterialTypeId& material : previous)
+	for(const MaterialTypeId material : previous)
 		if(!MaterialType::getTransparent(material))
 		{
 			wasTransparent = false;
@@ -92,36 +102,27 @@ void Space::solid_setNotCuboid(const Cuboid& cuboid)
 	m_unrevealed.maybeRemove(cuboid);
 	// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid point.
 	m_reservables.maybeRemove(cuboid);
-	const Cuboid spaceBoundry = boundry();
-	for(const Point3D& point : cuboid)
-	{
-		if(!solid_isAny(point))
-			continue;
-		if(m_exposedToSky.check(point) && MaterialType::canMelt(m_solid.queryGetOne(point)))
-			m_area.m_hasTemperature.maybeRemoveMeltableSolidPointAboveGround(point);
-		fluid_onPointSetNotSolid(point);
-		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(point);
-	}
+	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(cuboid);
+	const Temperature meltingPoint = MaterialType::getMeltingPoint(m_solid.queryGetOne(cuboid));
+	if(meltingPoint.exists())
+			m_area.m_hasTemperature.maybeRemoveMeltableSolidPointsAboveGround(cuboid, meltingPoint);
 	m_solid.maybeRemove(cuboid);
 	m_support.unset(cuboid);
 	Cuboid inflated = cuboid;
 	inflated.inflate({1});
+	const Cuboid spaceBoundry = boundry();
 	m_area.m_hasTerrainFacades.update(spaceBoundry.intersection(inflated));
+	m_exposedToSky.maybeSetCuboid(m_area, cuboid);
 	for(const Point3D& point : cuboid)
 	{
 		m_area.m_exteriorPortals.onPointCanTransmitTemperature(m_area, point);
-		if(point.z() != 0 && m_exposedToSky.check(point))
-		{
-			const Point3D& below = point.below();
-			if(spaceBoundry.contains(below) && !m_exposedToSky.check(below))
-				m_exposedToSky.set(m_area, below);
-		}
+		fluid_onPointSetNotSolid(point);
 	}
 	// Vision cuboid.
 	if(!wasTransparent)
 		m_area.m_opacityFacade.maybeRemoveFull(cuboid);
 	// Gravity.
-	const Point3D& aboveHighest = cuboid.m_high.above();
+	const Point3D aboveHighest = cuboid.m_high.above();
 	if(aboveHighest.exists())
 	{
 		Cuboid aboveCuboid = cuboid.getFace(Facing6::Above);
@@ -133,15 +134,15 @@ void Space::solid_setNotCuboid(const Cuboid& cuboid)
 MapWithCuboidKeys<MaterialTypeId> Space::solid_getAllWithCuboidsAndRemove(const CuboidSet& cuboids)
 {
 	MapWithCuboidKeys<MaterialTypeId> output;
-	for(const Cuboid& cuboid : cuboids)
+	for(const Cuboid cuboid : cuboids)
 		for(const auto& [materialCuboid, materialType] : m_solid.queryGetAllWithCuboids(cuboid))
 			output.insertOrMerge(materialCuboid, materialType);
 	m_solid.maybeRemove(cuboids);
 	return output;
 }
-Mass Space::solid_getMass(const Point3D& point) const
+Mass Space::solid_getMass(const Point3D point) const
 {
-	const MaterialTypeId& materialType = m_solid.queryGetOne(point);
+	const MaterialTypeId materialType = m_solid.queryGetOne(point);
 	assert(!materialType.empty());
 	return Config::maxPointVolume.toVolume() * MaterialType::getDensity(materialType);
 }
@@ -149,7 +150,7 @@ Mass Space::solid_getMass(const CuboidSet& cuboidSet) const
 {
 	// TODO: use m_solid.queryCount(cuboidSet).
 	Mass output;
-	for(const Cuboid& cuboid : cuboidSet)
+	for(const Cuboid cuboid : cuboidSet)
 		for(const Point3D& point : cuboid)
 			output += solid_getMass(point);
 	return output;
@@ -157,10 +158,10 @@ Mass Space::solid_getMass(const CuboidSet& cuboidSet) const
 std::pair<MaterialTypeId, int> Space::solid_getHardest(const CuboidSet& cuboids)
 {
 	// Check Solid first.
-	const auto predicateSolid = [&](const MaterialTypeId& materialType) { return MaterialType::getHardness(materialType); };
+	const auto predicateSolid = [&](const MaterialTypeId materialType) { return MaterialType::getHardness(materialType); };
 	MaterialTypeId output;
 	int hardness = 0;
-	for(const Cuboid& cuboid : cuboids)
+	for(const Cuboid cuboid : cuboids)
 	{
 		const auto [materialType, cuboidHardness] = m_solid.queryGetHighestReturnWithPredicateOutput<int, predicateSolid>(cuboid);
 		if(cuboidHardness > hardness)
@@ -173,7 +174,7 @@ std::pair<MaterialTypeId, int> Space::solid_getHardest(const CuboidSet& cuboids)
 		return {output, hardness};
 	// No solid found, check features.
 	const auto predicateFeature = [&](const PointFeature& feature) { return MaterialType::getHardness(feature.materialType); };
-	for(const Cuboid& cuboid : cuboids)
+	for(const Cuboid cuboid : cuboids)
 	{
 		const auto [feature, cuboidHardness] = m_features.queryGetHighestReturnWithPredicateOutput<int, predicateFeature>(cuboid);
 		if(cuboidHardness > hardness)
@@ -184,7 +185,7 @@ std::pair<MaterialTypeId, int> Space::solid_getHardest(const CuboidSet& cuboids)
 	}
 	return {output, hardness};
 }
-void Space::solid_setDynamic(const Point3D& point, const MaterialTypeId& materialType, bool constructed)
+void Space::solid_setDynamic(const Point3D point, const MaterialTypeId materialType, bool constructed)
 {
 	assert(!m_solid.queryAny(point));
 	assert(!m_dynamic.query(point));
@@ -198,7 +199,7 @@ void Space::solid_setDynamic(const Point3D& point, const MaterialTypeId& materia
 	if(!MaterialType::getTransparent(materialType))
 		m_area.m_opacityFacade.update(m_area, point);
 }
-void Space::solid_setCuboidDynamic(const Cuboid& cuboid, const MaterialTypeId& materialType, bool constructed)
+void Space::solid_setCuboidDynamic(const Cuboid cuboid, const MaterialTypeId materialType, bool constructed)
 {
 	assert(!m_dynamic.query(cuboid));
 	assert(!m_plants.queryAny(cuboid));
@@ -211,7 +212,7 @@ void Space::solid_setCuboidDynamic(const Cuboid& cuboid, const MaterialTypeId& m
 	if(!MaterialType::getTransparent(materialType))
 		m_area.m_opacityFacade.update(m_area, cuboid);
 }
-void Space::solid_setNotDynamic(const Point3D& point)
+void Space::solid_setNotDynamic(const Point3D point)
 {
 	assert(m_dynamic.query(point));
 	const MaterialTypeId material = m_solid.queryGetOne(point);
@@ -224,7 +225,7 @@ void Space::solid_setNotDynamic(const Point3D& point)
 }
 void Space::solid_removeOpaque(CuboidSet& cuboids) const
 {
-	m_solid.queryForEachWithCuboids(cuboids, [&](const Cuboid& cuboid, const MaterialTypeId& materialType){
+	m_solid.queryForEachWithCuboids(cuboids, [&](const Cuboid cuboid, const MaterialTypeId materialType){
 		if(!MaterialType::getTransparent(materialType))
 			cuboids.remove(cuboid);
 	});

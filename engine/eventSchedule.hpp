@@ -9,7 +9,7 @@ template<class EventType>
 class HasScheduledEvent
 {
 protected:
-	// m_schedule is pointer rather then a reference so it can be moved.
+	// m_schedule is pointer rather then a reference so HasScheduledEvent can be moved.
 	EventSchedule* m_schedule = nullptr;
 	ScheduledEvent* m_event = nullptr;
 public:
@@ -38,7 +38,7 @@ public:
 			unschedule();
 	}
 	void clearPointer() { assert(exists()); m_event = nullptr; }
-	void updateStep(const Step& to)
+	void updateStep(const Step to)
 	{
 		// It is safe to move events from one step to another because they are refered to only via their addresses, which are not changing as their unique_ptr handles are moved,
 		assert(exists());
@@ -57,7 +57,7 @@ public:
 		(*found) = std::move(fromVector.back());
 		fromVector.pop_back();
 	}
-	void bonusPercent(const Percent& percent, const Step& currentStep)
+	void bonusPercent(const Percent percent, const Step currentStep)
 	{
 		Step bonusSteps = Step::create(util::scaleByPercent(m_event->duration().get(), percent));
 		Step to = currentStep + bonusSteps;
@@ -79,7 +79,7 @@ public:
 	[[nodiscard]] Percent percentComplete() const { assert(exists()); return m_event->percentComplete(m_schedule->getSimulation()); }
 	[[nodiscard]] float fractionComplete() const { assert(exists()); return m_event->fractionComplete(m_schedule->getSimulation()); }
 	[[nodiscard]] bool exists() const { return m_event != nullptr; }
-	[[nodiscard]] const Step& getStep() const { assert(exists()); return m_event->m_step; }
+	[[nodiscard]] const Step getStep() const { assert(exists()); return m_event->m_step; }
 	[[nodiscard]] Step getStartStep() const { assert(exists()); return m_event->m_startStep; }
 	[[nodiscard]] Step remainingSteps() const { assert(exists()); return m_event->remaningSteps(m_schedule->getSimulation()); }
 	[[nodiscard]] Step elapsedSteps() const { assert(exists()); return m_event->elapsedSteps(m_schedule->getSimulation()); }
@@ -145,7 +145,7 @@ public:
 		m_events.resize(size);
 		for(auto iter = data.begin(); iter != data.end(); ++iter)
 		{
-			const Index& index = Index::create(std::stoi(iter.key()));
+			const Index index = Index::create(std::stoi(iter.key()));
 			auto event = std::make_unique<EventType>(simulation, iter.value());
 			m_events[index] = event.get();
 			m_schedule.schedule(std::move(event));
@@ -156,7 +156,7 @@ public:
 		m_events.resize(size);
 	}
 	template<typename ...Args>
-	void schedule(const Index& index, Args&& ...args)
+	void schedule(const Index index, Args&& ...args)
 	{
 		assert(m_events.size() > index.get());
 		assert(m_events[index] == nullptr);
@@ -164,18 +164,18 @@ public:
 		m_events[index] = static_cast<EventType*>(event.get());
 		m_schedule.schedule(std::move(event));
 	}
-	void unschedule(const Index& index)
+	void unschedule(const Index index)
 	{
 		assert(m_events[index] != nullptr);
 		m_events[index]->cancel(m_schedule.getSimulation(), m_schedule.getArea());
 		m_events[index] = nullptr;
 	}
-	void maybeUnschedule(const Index& index)
+	void maybeUnschedule(const Index index)
 	{
 		if(m_events[index] != nullptr)
 			unschedule(index);
 	}
-	void clearPointer(const Index& index)
+	void clearPointer(const Index index)
 	{
 		assert(m_events[index] != nullptr);
 		m_events[index] = nullptr;
@@ -189,30 +189,30 @@ public:
 	{
 		m_events.sortRangeWithOrder(begin, end, sortOrder);
 	}
-	[[nodiscard]] bool contains(const Index& index) { return m_events[index] != nullptr; }
-	[[nodiscard]] auto at(const Index& index) -> EventType& { return *m_events[index]; }
-	[[nodiscard]] auto operator[](const Index& index) -> EventType& { return at(index); }
-	[[nodiscard]] Percent percentComplete(const Index& index) const
+	[[nodiscard]] bool contains(const Index index) { return m_events[index] != nullptr; }
+	[[nodiscard]] auto at(const Index index) -> EventType& { return *m_events[index]; }
+	[[nodiscard]] auto operator[](const Index index) -> EventType& { return at(index); }
+	[[nodiscard]] Percent percentComplete(const Index index) const
 	{
 		assert(m_events[index] != nullptr);
 		return m_events[index]->percentComplete(m_schedule.getSimulation());
 	}
-	[[nodiscard]] float fractionComplete(const Index& index) const
+	[[nodiscard]] float fractionComplete(const Index index) const
 	{
 		assert(m_events[index] != nullptr);
 		return m_events[index]->fractionComplete(m_schedule.getSimulation());
 	}
-	[[nodiscard]] bool exists(const Index& index) const { return m_events[index] != nullptr; }
-	[[nodiscard]] const Step& getStep(const Index& index) const
+	[[nodiscard]] bool exists(const Index index) const { return m_events[index] != nullptr; }
+	[[nodiscard]] const Step getStep(const Index index) const
 	{
 		assert(m_events[index] != nullptr);
 		return m_events[index]->m_step;
 	}
-	[[nodiscard]] Step getStartStep(const Index& index) const { return m_events[index]->m_startStep; }
-	[[nodiscard]] Step remainingSteps(const Index& index) const { return m_events[index]->remaningSteps(m_schedule.getSimulation()); }
-	[[nodiscard]] Step elapsedSteps(const Index& index) const { return m_events[index]->elapsedSteps(m_schedule.getSimulation()); }
-	[[nodiscard]] Step duration(const Index& index) const { return m_events[index]->duration(); }
-	[[nodiscard]] ScheduledEvent* getEvent(const Index& index) { return m_events[index]; }
+	[[nodiscard]] Step getStartStep(const Index index) const { return m_events[index]->m_startStep; }
+	[[nodiscard]] Step remainingSteps(const Index index) const { return m_events[index]->remaningSteps(m_schedule.getSimulation()); }
+	[[nodiscard]] Step elapsedSteps(const Index index) const { return m_events[index]->elapsedSteps(m_schedule.getSimulation()); }
+	[[nodiscard]] Step duration(const Index index) const { return m_events[index]->duration(); }
+	[[nodiscard]] ScheduledEvent* getEvent(const Index index) { return m_events[index]; }
 	[[nodiscard]] Json toJson() const
 	{
 		Json output = Json::object();

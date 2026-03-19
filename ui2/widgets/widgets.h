@@ -15,6 +15,7 @@ namespace widgets
 	bool featureType(PointFeatureTypeId* result, std::function<bool(const PointFeatureTypeId)>&& predicate = {});
 	bool fluidType(FluidTypeId* result, std::function<bool(const FluidTypeId)>&& predicate = {});
 	bool plantSpecies(PlantSpeciesId* result, std::function<bool(const PlantSpeciesId)>&& condition = {});
+	bool animalSpecies(AnimalSpeciesId* result, std::function<bool(const AnimalSpeciesId)>&& condition = {});
 	bool itemType(ItemTypeId* result, std::function<bool(const ItemTypeId)>&& condition = {});
 	bool faction(FactionId* result, const Simulation& simulation, std::function<bool(const FactionId)>&& condition = {});
 	bool facing(Facing4* result);

@@ -1,6 +1,6 @@
 #include "offsetSetSIMD.h"
 #include "../space/space.h"
-void OffsetSetSIMD::insert(const Space& space, const Offset3D& offset)
+void OffsetSetSIMD::insert(const Space& space, const Offset3D offset)
 {
 	if(m_nextIndex == m_offsetData.cols())
 	{

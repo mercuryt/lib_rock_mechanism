@@ -10,11 +10,11 @@ Json TargetedHaulObjective::toJson() const
 {
 	return {{"project", reinterpret_cast<uintptr_t>(&m_project)}};
 }
-void TargetedHaulObjective::execute(Area& area, const ActorIndex& actor)
+void TargetedHaulObjective::execute(Area& area, const ActorIndex actor)
 {
 	// Add worker here rather then constructor because set current objective clears the project.
 	if(!area.getActors().project_exists(actor))
 		m_project.addWorkerCandidate(actor, *this);
 	m_project.commandWorker(actor);
 }
-void TargetedHaulObjective::cancel(Area&, const ActorIndex& actor) { m_project.removeWorker(actor); }
+void TargetedHaulObjective::cancel(Area&, const ActorIndex actor) { m_project.removeWorker(actor); }
