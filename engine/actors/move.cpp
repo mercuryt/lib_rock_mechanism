@@ -226,7 +226,6 @@ void Actors::move_setDestination(const ActorIndex index, const Point3D destinati
 		assert(unreserved);
 	move_clearPath(index);
 	Space& space = m_area.getSpace();
-	assert(space.shape_canEnterCurrentlyWithAnyFacing(destination, getShape(index), getOccupied(index)));
 	// If adjacent path then destination isn't known until it's completed.
 	if(!adjacent)
 	{
@@ -271,7 +270,7 @@ void Actors::move_setDestinationAdjacentToActor(const ActorIndex index, const Ac
 	assert(m_pathRequest[index] == nullptr);
 	CuboidSet candidates;
 	for(const Cuboid cuboid : getAdjacentCuboids(other))
-		for(const Point3D& adjacent : cuboid)
+		for(const Point3D adjacent : cuboid)
 			if(
 				space.shape_anythingCanEnterEver(adjacent) &&
 				space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
@@ -289,7 +288,7 @@ void Actors::move_setDestinationAdjacentToItem(const ActorIndex index, const Ite
 	assert(m_pathRequest[index] == nullptr);
 	CuboidSet candidates;
 	for(const Cuboid cuboid : items.getAdjacentCuboids(item))
-		for(const Point3D& adjacent : cuboid)
+		for(const Point3D adjacent : cuboid)
 			if(
 				space.shape_anythingCanEnterEver(adjacent) &&
 				space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
@@ -306,7 +305,7 @@ void Actors::move_setDestinationAdjacentToPlant(const ActorIndex index, const Pl
 	assert(m_pathRequest[index] == nullptr);
 	CuboidSet candidates;
 	for(const Cuboid cuboid : plants.getAdjacentCuboids(plant))
-		for(const Point3D& adjacent : cuboid)
+		for(const Point3D adjacent : cuboid)
 			if(
 				space.shape_anythingCanEnterEver(adjacent) &&
 				space.shape_shapeAndMoveTypeCanEnterEverWithAnyFacing(adjacent, m_compoundShape[index], m_moveType[index])
@@ -370,7 +369,7 @@ bool Actors::move_tryToReserveProposedDestination(const ActorIndex index, const 
 		if(space.isReservedAny(occupiedCuboids, faction))
 			return false;
 		for(const Cuboid cuboid : occupiedCuboids)
-			for(const Point3D& point : cuboid)
+			for(const Point3D point : cuboid)
 				space.reserve(point, canReserve);
 	}
 	else
@@ -396,7 +395,7 @@ bool Actors::move_tryToReserveOccupied(const ActorIndex index)
 		if(space.isReservedAny(occupiedCuboids, faction))
 			return false;
 		for(const Cuboid cuboid : occupiedCuboids)
-			for(const Point3D& point : cuboid)
+			for(const Point3D point : cuboid)
 				space.reserve(point, canReserve);
 	}
 	else

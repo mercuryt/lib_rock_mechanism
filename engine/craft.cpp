@@ -311,7 +311,7 @@ void HasCraftingLocationsAndJobsForFaction::removeLocation(CraftStepTypeCategory
 }
 void HasCraftingLocationsAndJobsForFaction::maybeRemoveCuboid(const Cuboid cuboid)
 {
-	for(const Point3D& point : cuboid)
+	for(const Point3D point : cuboid)
 		if(m_stepTypeCategoriesByLocation.contains(point))
 		{
 			std::vector<CraftStepTypeCategoryId> categories(m_stepTypeCategoriesByLocation[point].begin(), m_stepTypeCategoriesByLocation[point].end());

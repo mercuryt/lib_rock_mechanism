@@ -1,6 +1,7 @@
 #include "rtreeBoolean.h"
 #include "strongVector.hpp"
 #include "../geometry/paramaterizedLine.h"
+#include "../geometry/sphere.h"
 RTreeArrayIndex RTreeBoolean::Node::offsetFor(const RTreeNodeIndex index) const
 {
 	return RTreeArrayIndex::create(m_childIndices.indexOf(index));
@@ -827,7 +828,7 @@ std::vector<bool> RTreeBoolean::batchQuery(const ShapeT& shapes) const
 		const auto& nodeCuboids = node.getCuboids();
 		const auto& nodeChildren = node.getChildIndices();
 		const auto offsetOfFirstChild = node.offsetOfFirstChild();
-		for(const int& shapeIndex : candidates)
+		for(const int shapeIndex : candidates)
 		{
 			if(output[shapeIndex])
 				// this shape has already intersected with a leaf, no need to check further.
@@ -857,7 +858,7 @@ template std::vector<bool> RTreeBoolean::batchQuery(const SmallSet<Point3D>& sha
 template std::vector<bool> RTreeBoolean::batchQuery(const CuboidSet& shapes) const;
 template std::vector<bool> RTreeBoolean::batchQuery(const std::vector<ParamaterizedLine>& shapes) const;
 template<typename ShapeT>
-CuboidSet RTreeBoolean::queryGetLeaves(ShapeT&& shape) const
+CuboidSet RTreeBoolean::queryGetLeavesBody(ShapeT shape) const
 {
 	CuboidSet output;
 	SmallSet<RTreeNodeIndex> openList;
@@ -893,27 +894,20 @@ CuboidSet RTreeBoolean::queryGetLeaves(ShapeT&& shape) const
 	}
 	return output;
 }
-template CuboidSet RTreeBoolean::queryGetLeaves(const Cuboid& shape) const;
-template CuboidSet RTreeBoolean::queryGetLeaves(Cuboid&& shape) const;
-template CuboidSet RTreeBoolean::queryGetLeaves(const CuboidSet& shape) const;
+CuboidSet RTreeBoolean::queryGetLeaves(const CuboidSet& cuboids) const { return queryGetLeavesBody(cuboids); }
+CuboidSet RTreeBoolean::queryGetLeaves(const Cuboid cuboid) const { return queryGetLeavesBody(cuboid); }
+CuboidSet RTreeBoolean::queryGetLeaves(const Sphere sphere) const { return queryGetLeavesBody(sphere); }
 template<typename ShapeT>
-CuboidSet RTreeBoolean::queryGetIntersection(ShapeT&& shape) const
+CuboidSet RTreeBoolean::queryGetIntersectionBody(ShapeT shape) const
 {
 	CuboidSet output;
-	if constexpr(std::is_same_v<ShapeT, CuboidSet>)
-	{
-		for(const auto& subShape : shape)
-			for(const Cuboid leaf : queryGetLeaves(subShape))
-				output.maybeAdd(leaf.intersection(subShape));
-	}
-	else
-		for(const Cuboid leaf : queryGetLeaves(shape))
-			output.maybeAdd(shape.intersection(leaf));
-	return output;
+	queryForEach(shape, [&](const Cuboid cuboid){
+		output.maybeAdd(cuboid);
+	});
+	return output.intersection(shape);
 }
-template CuboidSet RTreeBoolean::queryGetIntersection<Cuboid>(Cuboid&& shape) const;
-template CuboidSet RTreeBoolean::queryGetIntersection<Cuboid&>(Cuboid& shape) const;
-template CuboidSet RTreeBoolean::queryGetIntersection<const CuboidSet&>(const CuboidSet& shape) const;
+CuboidSet RTreeBoolean::queryGetIntersection(const CuboidSet& cuboids) const { return queryGetIntersectionBody(cuboids); }
+CuboidSet RTreeBoolean::queryGetIntersection(const Cuboid cuboid) const { return queryGetIntersectionBody(cuboid); }
 void RTreeBoolean::queryRemove(CuboidSet& set) const
 {
 	SmallSet<RTreeNodeIndex> openList;

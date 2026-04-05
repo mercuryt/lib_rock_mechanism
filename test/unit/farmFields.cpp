@@ -327,6 +327,7 @@ TEST_CASE("givePlantFluid")
 	Simulation simulation("", DateTime(1, PlantSpecies::getDayOfYearToStartHarvest(wheatGrass) - 1, 1200).toSteps());
 	FactionId faction = simulation.createFaction("Tower Of Power");
 	Area& area = simulation.m_hasAreas->createArea(10,10,10);
+	static FluidTypeId water = FluidType::byName("water");
 	area.m_hasRain.disable();
 	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
@@ -334,6 +335,8 @@ TEST_CASE("givePlantFluid")
 	Items& items = area.getItems();
 	area.m_spaceDesignations.registerFaction(faction);
 	Point3D block = Point3D::create(4, 4, 2);
+	// Prevent water freezing.
+	area.m_hasTemperature.setAmbient(area, FluidType::getFreezingPoint(water) + 1);
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
 	area.m_hasFarmFields.registerFaction(faction);
 	Cuboid cuboid(block, block);
@@ -346,7 +349,6 @@ TEST_CASE("givePlantFluid")
 	ActorReference actorRef = actors.getReference(actor);
 	SUBCASE("give plants fluid")
 	{
-		static FluidTypeId water = FluidType::byName("water");
 		area.m_hasFarmFields.getForFaction(faction).setSpecies(area, field, wheatGrass);
 		space.plant_create(block, wheatGrass, Percent::create(50));
 		PlantIndex plant = space.plant_get(block);

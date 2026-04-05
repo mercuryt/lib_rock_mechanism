@@ -34,17 +34,17 @@ public:
 	ObjectiveType() = default;
 	static void load();
 	static ObjectiveTypeId getIdByName(std::string name);
-	static const ObjectiveType& getById(const ObjectiveTypeId& id);
+	static const ObjectiveType& getById(const ObjectiveTypeId id);
 	static const ObjectiveType& getByName(std::string name);
 	ObjectiveTypeId getId() const;
 	[[nodiscard]] virtual bool canBeAssigned(Area& area, const ActorIndex actor) const = 0;
 	[[nodiscard]] virtual std::unique_ptr<Objective> makeFor(Area& area, const ActorIndex actor) const = 0;
 	[[nodiscard]] virtual std::string name() const = 0;
-	ObjectiveType(const ObjectiveTypeId&) = delete;
+	ObjectiveType(const ObjectiveTypeId) = delete;
 	ObjectiveType(ObjectiveType&&) = delete;
 	virtual ~ObjectiveType() = default;
 };
-inline StrongVector<std::unique_ptr<ObjectiveType>, const ObjectiveTypeId&> objectiveTypeData;
+inline StrongVector<std::unique_ptr<ObjectiveType>, const ObjectiveTypeId> objectiveTypeData;
 class Objective
 {
 public:
@@ -104,19 +104,19 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ObjectivePriority, objectiveType, priority, d
 class ObjectiveTypePrioritySet final
 {
 	std::vector<ObjectivePriority> m_data;
-	ObjectivePriority& getById(const ObjectiveTypeId& objectiveTypeId);
-	const ObjectivePriority& getById(const ObjectiveTypeId& objectiveTypeId) const;
+	ObjectivePriority& getById(const ObjectiveTypeId objectiveTypeId);
+	const ObjectivePriority& getById(const ObjectiveTypeId objectiveTypeId) const;
 public:
 	void load(const Json& data, DeserializationMemo& deserializationMemo);
-	void setPriority(Area& area, const ActorIndex actor, const ObjectiveTypeId& objectiveType, const Priority priority);
-	void remove(const ObjectiveTypeId& objectiveType);
+	void setPriority(Area& area, const ActorIndex actor, const ObjectiveTypeId objectiveType, const Priority priority);
+	void remove(const ObjectiveTypeId objectiveType);
 	void setObjectiveFor(Area& area, const ActorIndex actor);
-	void setDelay(Area& area, const ObjectiveTypeId& objectiveTypeId);
+	void setDelay(Area& area, const ObjectiveTypeId objectiveTypeId);
 	[[nodiscard]] Json toJson() const;
-	[[nodiscard]] Priority getPriorityFor(const ObjectiveTypeId& objectiveTypeId) const;
+	[[nodiscard]] Priority getPriorityFor(const ObjectiveTypeId objectiveTypeId) const;
 	// For testing.
-	[[nodiscard]] bool isOnDelay(Area& area, const ObjectiveTypeId& objectiveTypeId) const;
-	[[nodiscard]] Step getDelayEndFor(const ObjectiveTypeId& objectiveTypeId) const;
+	[[nodiscard]] bool isOnDelay(Area& area, const ObjectiveTypeId objectiveTypeId) const;
+	[[nodiscard]] Step getDelayEndFor(const ObjectiveTypeId objectiveTypeId) const;
 };
 class SupressedNeed final
 {
@@ -126,6 +126,7 @@ class SupressedNeed final
 public:
 	SupressedNeed(Area& area, std::unique_ptr<Objective> o, const ActorReference ref);
 	SupressedNeed(Area& area, const Json& data, DeserializationMemo& deserializationMemo, const ActorReference ref);
+	// When need can no longer be supressed.
 	void callback(Area& area);
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Step getDelayRemaining() const { return m_event.remainingSteps(); }
@@ -201,7 +202,7 @@ public:
 	[[nodiscard]] bool hasCurrent() const { return m_currentObjective != nullptr; }
 	[[nodiscard]] bool hasSupressedNeed(const NeedType& needType) const { return m_supressedNeeds.contains(needType); }
 	[[nodiscard]] bool queuesAreEmpty() const;
-	[[nodiscard]] bool hasTask(const ObjectiveTypeId& objectiveTypeId) const;
+	[[nodiscard]] bool hasTask(const ObjectiveTypeId objectiveTypeId) const;
 	[[nodiscard]] bool hasNeed(const NeedType& objectiveTypeId) const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Step getNeedDelayRemaining(NeedType needType) const;

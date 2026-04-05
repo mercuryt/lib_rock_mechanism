@@ -262,6 +262,8 @@ TEST_CASE("route_5_5_3")
 	static FluidTypeId water = FluidType::byName("water");
 	static MoveTypeId twoLegsAndSwimInWater = MoveType::byName("two legs and swim in water");
 	static MoveTypeId twoLegs = MoveType::byName("two legs");
+	// Prevent water freezing.
+	area.m_hasTemperature.setAmbient(area, FluidType::getFreezingPoint(water) + 1);
 	SUBCASE("swimming path blocked")
 	{
 		areaBuilderUtil::setSolidLayer(area, 0, marble);
@@ -419,6 +421,7 @@ TEST_CASE("route_5_5_5")
 		CHECK(actors.move_getPath(actor).empty());
 		space.pointFeature_construct(rampLocation, ramp, marble);
 		CHECK(space.shape_shapeAndMoveTypeCanEnterEverFrom(rampLocation, actors.getShape(actor), actors.getMoveType(actor), adjacentToRamp));
+		CHECK(space.shape_shapeAndMoveTypeCanEnterEverFrom(destination, actors.getShape(actor), actors.getMoveType(actor), rampLocation));
 		CHECK(space.getAdjacentWithEdgeAndCornerAdjacent(adjacentToRamp).contains(rampLocation));
 		auto& facade = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor));
 		CHECK(facade.getValue(adjacentToRamp, rampLocation));

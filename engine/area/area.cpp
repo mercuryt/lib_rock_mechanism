@@ -38,7 +38,6 @@ Area::Area(AreaId id, std::string n, Simulation& s, const Distance  x, const Dis
 		m_items(*this),
 	#endif
 	m_eventSchedule(s, this),
-	m_hasTemperature(*this),
 	m_hasTerrainFacades(*this),
 	m_hasFarmFields(*this),
 	m_hasDigDesignations(*this),
@@ -75,8 +74,8 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 		m_items(*this),
 	#endif
 	m_eventSchedule(simulation, this),
-	m_hasTemperature(*this),
 	m_hasTerrainFacades(*this),
+	m_fires(data["fires"]),
 	m_hasOnSight(data["onSight"], deserializationMemo, *this),
 	m_hasFarmFields(*this),
 	m_hasDigDesignations(*this),
@@ -101,9 +100,6 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	setup();
 	getSpace().load(data["space"], deserializationMemo);
 	m_hasFluidGroups.clearMergedFluidGroups();
-	data["exteriorPortals"].get_to(m_exteriorPortals);
-	// Load fires.
-	m_fires.load(*this, data["fires"], deserializationMemo);
 	// Load plants.
 	getPlants().load(data["plants"]);
 	// Load fields.
@@ -143,6 +139,7 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 	if(data.contains("rain"))
 		m_hasRain.load(data["rain"], deserializationMemo);
 	m_hasEvaporation.schedule(*this);
+	m_hasTemperature.afterLoad(*this);
 }
 Area::~Area()
 {
@@ -163,7 +160,7 @@ Json Area::toJson() const
 	Json data{
 		{"id", m_id}, {"name", m_name},
 		{"actors", getActors().toJson()}, {"items", getItems().toJson()}, {"space", getSpace().toJson()},
-		{"plants", getPlants().toJson()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires.toJson()},
+		{"plants", getPlants().toJson()}, {"fluidSources", m_fluidSources.toJson()}, {"fires", m_fires},
 		{"sleepingSpots", m_hasSleepingSpots.toJson()}, {"rain", m_hasRain.toJson()},
 		{"designations", m_spaceDesignations}, {"temperature", m_hasTemperature}
 	};
@@ -175,7 +172,6 @@ Json Area::toJson() const
 	data["hasCraftingLocationsAndJobs"] = m_hasCraftingLocationsAndJobs.toJson();
 	data["hasStockPiles"] = m_hasStockPiles.toJson();
 	data["targetedHauling"] = m_hasTargetedHauling.toJson();
-	data["exteriorPortals"] = m_exteriorPortals;
 	return data;
 }
 void Area::setup()
@@ -188,7 +184,7 @@ void Area::doStep()
 	Space& space = getSpace();
 	space.prepareRtrees();
 	space.doSupportStep();
-	m_hasTemperature.doStep();
+	m_hasTemperature.doStep(*this);
 	if(m_hasRain.isRaining() && m_simulation.m_step.modulusIsZero(Config::rainWriteStepFreqency))
 		m_hasRain.doStep();
 	m_fluidSources.doStep();
@@ -202,7 +198,7 @@ void Area::doStep()
 void Area::updateClimate()
 {
 	//TODO: daylight.
-	m_hasTemperature.updateAmbientSurfaceTemperature();
+	m_hasTemperature.updateAmbientSurfaceTemperature(*this);
 	// Once per day.
 	if(m_simulation.m_step.modulusIsZero(Config::stepsPerDay))
 	{

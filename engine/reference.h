@@ -12,6 +12,10 @@
 	//#define TRACK_REFERENCES;
 #endif
 
+/*
+	References remain stable for the holder's life time. There must be no active references when a reference index is released.
+*/
+
 template<typename Index, typename ReferenceIndex>
 class ReferenceData;
 template<typename Index, typename ReferenceIndex>
@@ -163,7 +167,7 @@ public:
 		#endif
 		return other.m_referenceIndex == m_referenceIndex;
 	}
-	[[nodiscard]] std::strong_ordering operator<=>(const Reference& other) const
+	[[nodiscard]] std::strong_ordering operator<=>(const Reference other) const
 	{
 		#ifdef TRACK_REFERENCES
 			assert(m_data == other.m_data);
@@ -353,7 +357,7 @@ public:
 			return other.toItemReference() <=> toItemReference();
 		}
 	}
-	[[nodiscard]] bool operator==(const ActorOrItemReference ref) const { return ref.m_reference == m_reference; }
+	[[nodiscard]] bool operator==(const ActorOrItemReference& ref) const { return ref.m_reference == m_reference; }
 	[[nodiscard]] HasShapeIndex getIndex(const ActorReferenceData& actorData, const ItemReferenceData& itemData) const
 	{
 		assert(exists());
@@ -406,4 +410,4 @@ public:
 		}
 	};
 };
-inline void to_json(Json& data, const ActorOrItemReference ref) { data = ref.toJson(); }
+inline void to_json(Json& data, const ActorOrItemReference& ref) { data = ref.toJson(); }

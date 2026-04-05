@@ -94,6 +94,13 @@ bool Space::shape_canFitEver(const Point3D location, const ShapeId shape, const 
 		return false;
 	return true;
 }
+bool Space::shape_canFitEverWithAnyFacing(const Point3D location, const ShapeId shape) const
+{
+	for(int i = 0; i != 4; ++i)
+		if(shape_canFitEver(location, shape, (Facing4)i))
+			return true;
+	return false;
+}
 bool Space::shape_canFitCurrentlyStatic(const Point3D location, const ShapeId shape, const Facing4 facing, const CuboidSet& occupied) const
 {
 	assert(shape_canFitEver(location, shape, facing));
@@ -491,7 +498,7 @@ std::pair<Point3D, Facing4> Space::shape_getNearestEnterableEverPointWithFacing(
 		openList.push_back(point);
 	else
 	{
-		for(const Point3D& adjacent : getAdjacentWithEdgeAndCornerAdjacent(point))
+		for(const Point3D adjacent : getAdjacentWithEdgeAndCornerAdjacent(point))
 			if(shape_anythingCanEnterEver(adjacent))
 			{
 				openList.push_back(adjacent);
@@ -507,7 +514,7 @@ std::pair<Point3D, Facing4> Space::shape_getNearestEnterableEverPointWithFacing(
 		const Facing4 facing = shape_canEnterEverWithAnyFacingReturnFacing(candidate, shape, moveType);
 		if(facing != Facing4::Null)
 			return {candidate, facing};
-		for(const Point3D& adjacent : getAdjacentWithEdgeAndCornerAdjacent(candidate))
+		for(const Point3D adjacent : getAdjacentWithEdgeAndCornerAdjacent(candidate))
 			if(shape_anythingCanEnterEver(adjacent) && !closedList.contains(adjacent))
 			{
 				openList.push_back(adjacent);

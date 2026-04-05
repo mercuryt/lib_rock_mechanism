@@ -149,7 +149,7 @@ void AreaHasSoldiers::doStepThread(Area& area, const AreaHasSoldiersCourageCheck
 	// Wolud it be better to pass a view rather then copy the soldiers locations into a smaller vector?
 	for(int i = threadData.start; i != end; ++i)
 		soldierLocationsForThisThread.push_back(forFaction.soldierLocations[i]);
-	forFaction.maliceMap.batchQueryForEach(soldierLocationsForThisThread, [&](const PsycologyWeight maliceDelta, const Cuboid, const int& index){
+	forFaction.maliceMap.batchQueryForEach(soldierLocationsForThisThread, [&](const PsycologyWeight maliceDelta, const Cuboid, const int index){
 		const int adjustedIndex = index + threadData.start;
 		if(maliceDelta + courage[adjustedIndex] < Config::Psycology::minimumMaliceDeltaPlusCourageToHoldFirmWithoutTest)
 			actorsNeedingToTestCourage.insert(adjustedIndex, maliceDelta);

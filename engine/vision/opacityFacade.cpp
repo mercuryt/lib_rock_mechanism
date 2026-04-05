@@ -81,7 +81,7 @@ void OpacityFacade::validate(const Area& area) const
 {
 	const Space& space = area.getSpace();
 	Cuboid cuboid = space.boundry();
-	for(const Point3D& point : cuboid)
+	for(const Point3D point : cuboid)
 	{
 		assert(space.canSeeThrough({point, point}) != m_fullOpacity.query(point));
 		assert(space.canSeeThroughFloor({point, point}) != m_floorOpacity.query(point));

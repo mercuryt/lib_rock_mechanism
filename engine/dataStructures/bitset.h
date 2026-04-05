@@ -38,9 +38,9 @@ struct BitSet
 	[[nodiscard]] BitSet<IntType, capacity> afterInclusive(const IntType& index) const; // Make a copy, mask everything after, return.
 	[[nodiscard]] static BitSet<IntType, capacity> create(const IntType& d);
 	[[nodiscard]] static BitSet<IntType, capacity> create(const Eigen::Array<bool, 1, 64>& boolArray);
-	[[nodiscard]] GDB_CALLABLE bool testDbg(const IntType& index) const;
-	[[nodiscard]] GDB_CALLABLE std::string toString() const;
-	[[nodiscard]] GDB_CALLABLE int popCount() const;
+	GDB_CALLABLE bool testDbg(const IntType& index) const;
+	GDB_CALLABLE std::string toString() const;
+	GDB_CALLABLE int popCount() const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(BitSet, data);
 };
 typedef BitSet<uint64_t, 64u> BitSet64;

@@ -74,7 +74,7 @@ void AreaHasRain::doStep()
 	Distance i = Distance::create(0);
 	Space& space = m_area.getSpace();
 	Cuboid cuboid = space.boundry().getFace(Facing6::Above);
-	for(const Point3D& point : cuboid)
+	for(const Point3D point : cuboid)
 	{
 		if(offset != 0)
 			--offset;

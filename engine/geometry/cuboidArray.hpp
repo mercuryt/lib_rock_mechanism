@@ -8,13 +8,13 @@
 template<int capacity>
 CuboidArray<capacity>::CuboidArray() : m_high(Distance::null().get()), m_low(Distance::null().get()) { }
 template<int capacity>
-void CuboidArray<capacity>::insert(const int& index, const Cuboid cuboid)
+void CuboidArray<capacity>::insert(const int index, const Cuboid cuboid)
 {
 	m_high.col(index) = cuboid.m_high.data;
 	m_low.col(index) = cuboid.m_low.data;
 }
 template<int capacity>
-void CuboidArray<capacity>::erase(const int& index)
+void CuboidArray<capacity>::erase(const int index)
 {
 	m_high.col(index) = Distance::null().get();
 	m_low.col(index) = Distance::null().get();
@@ -41,7 +41,7 @@ bool CuboidArray<capacity>::contains(const Cuboid cuboid) const
 template<int capacity>
 int CuboidArray<capacity>::getCapacity() const { return capacity; }
 template<int capacity>
-const Cuboid CuboidArray<capacity>::operator[](const int& index) const { return {Coordinates(m_high.col(index)), Coordinates(m_low.col(index)) }; }
+const Cuboid CuboidArray<capacity>::operator[](const int index) const { return {Coordinates(m_high.col(index)), Coordinates(m_low.col(index)) }; }
 template<int capacity>
 Cuboid CuboidArray<capacity>::boundry() const
 {

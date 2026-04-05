@@ -20,6 +20,8 @@ TEST_CASE("Area")
 	Simulation simulation("", Step::create(1));
 	Area& area = simulation.m_hasAreas->createArea(10, 10, 10);
 	area.m_hasRain.disable();
+	// Prevent water freezing.
+	area.m_hasTemperature.setAmbient(area, FluidType::getFreezingPoint(water) + 1);
 	Space& space = area.getSpace();
 	Actors& actors = area.getActors();
 	SUBCASE("Make Area")

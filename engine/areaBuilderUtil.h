@@ -100,7 +100,7 @@ namespace areaBuilderUtil
 	{
 		Space& space = area.getSpace();
 		Cuboid cuboid = space.boundry();
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 			for([[maybe_unused]] auto& [group, fluidType, volume] : space.fluid_getAll(point))
 				assert(group->m_fluidType == fluidType);
 	}

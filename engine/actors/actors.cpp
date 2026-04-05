@@ -594,9 +594,13 @@ SmallSet<ActorIndex> Actors::getAll() const
 		output.insert(i);
 	return output;
 }
-void Actors::onChangeAmbiantSurfaceTemperature()
+void Actors::onChangeAmbiantSurfaceTemperature(Temperature newAmbiant, const CuboidSet& exclude)
 {
-	m_onSurface.forEach([this](const ActorIndex index) { m_needsSafeTemperature[index]->onChange(m_area); });
+	m_onSurface.forEach([this, newAmbiant, &exclude](const ActorIndex index) {
+		const Point3D location = m_location[index];
+		if(!exclude.contains(location))
+			m_needsSafeTemperature[index]->setTemperature(m_area, newAmbiant);
+	});
 }
 ActorIndex Actors::create(ActorParamaters params)
 {
@@ -906,7 +910,7 @@ bool Actors::tryToMoveSoAsNotOccuping(const ActorIndex index, const Point3D poin
 {
 	Space& space = m_area.getSpace();
 	const Point3D location = m_location[index];
-	for(const Point3D& adjacent : space.getAdjacentWithEdgeAndCornerAdjacent(location))
+	for(const Point3D adjacent : space.getAdjacentWithEdgeAndCornerAdjacent(location))
 		if(space.shape_anythingCanEnterEver(adjacent))
 		{
 			const Facing4& facing = point.getFacingTwords(adjacent);

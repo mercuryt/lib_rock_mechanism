@@ -36,8 +36,14 @@ CuboidSet CuboidSet::create([[maybe_unused]]const OffsetCuboid spaceBoundry, con
 CuboidSet CuboidSet::create(const SmallSet<Point3D>& points)
 {
 	CuboidSet output;
-	for(const Point3D& point : points)
+	for(const Point3D point : points)
 		output.add(point);
+	return output;
+}
+CuboidSet CuboidSet::create(const SmallSet<Cuboid>& cuboids)
+{
+	CuboidSet output;
+	output.m_cuboids = cuboids;
 	return output;
 }
 OffsetCuboidSet OffsetCuboidSet::create(const OffsetCuboid cuboid)

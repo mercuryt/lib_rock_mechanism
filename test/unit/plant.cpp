@@ -39,16 +39,19 @@ TEST_CASE("plant")
 	area.m_hasRain.start(water, Percent::create(1), Step::create(100));
 	CHECK(plants.getVolumeFluidRequested(plant) == 0);
 	CHECK(plants.isGrowing(plant));
-	area.m_hasTemperature.setAmbientSurfaceTemperature(PlantSpecies::getMinimumGrowingTemperature(wheatGrass) - 1);
+	area.m_hasTemperature.setAmbient(area, PlantSpecies::getMinimumGrowingTemperature(wheatGrass) - 1);
 	CHECK(!plants.isGrowing(plant));
 	CHECK(plants.temperatureEventExists(plant));
-	area.m_hasTemperature.setAmbientSurfaceTemperature(PlantSpecies::getMinimumGrowingTemperature(wheatGrass));
+	area.m_hasTemperature.setAmbient(area, PlantSpecies::getMinimumGrowingTemperature(wheatGrass));
 	CHECK(plants.isGrowing(plant));
 	CHECK(!plants.temperatureEventExists(plant));
 	Point3D above = location.above();
 	space.solid_set(above, marble, false);
+	// Do step to update plant is growing.
+	area.m_hasTemperature.doStep(area);
 	CHECK(!plants.isGrowing(plant));
 	space.solid_setNot(above);
+	area.m_hasTemperature.doStep(area);
 	CHECK(plants.isGrowing(plant));
 	plants.die(plant);
 }

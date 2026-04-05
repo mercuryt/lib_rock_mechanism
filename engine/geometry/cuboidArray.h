@@ -26,12 +26,12 @@ public:
 	CuboidArray(CuboidArray&&) = default;
 	CuboidArray& operator=(const CuboidArray&) = default;
 	CuboidArray& operator=(CuboidArray&&) = default;
-	void insert(const int& index, const Cuboid cuboid);
-	void erase(const int& index);
+	void insert(const int index, const Cuboid cuboid);
+	void erase(const int index);
 	void clear();
 	[[nodiscard]] bool operator==(const CuboidArray&) const;
 	[[nodiscard]] int getCapacity() const;
-	[[nodiscard]] const Cuboid operator[](const int& index) const;
+	[[nodiscard]] const Cuboid operator[](const int index) const;
 	[[nodiscard]] Cuboid boundry() const;
 	[[nodiscard]] bool intersects(const Cuboid cuboid) const;
 	[[nodiscard]] BoolArray indicesOfIntersectingCuboids(const Point3D point) const;
@@ -55,9 +55,9 @@ public:
 	[[nodiscard]] BoolArray indicesOfTouchingCuboids(const CuboidSet& cuboids) const;
 	[[nodiscard]] int indexOfCuboid(const Cuboid cuboid) const;
 	[[nodiscard]] bool anyOverlap() const;
-	[[nodiscard]] GDB_CALLABLE std::string toString() const;
-	[[nodiscard]] GDB_CALLABLE Cuboid at(int i) const;
-	[[nodiscard]] GDB_CALLABLE bool contains(const Cuboid cuboid) const;
+	GDB_CALLABLE std::string toString() const;
+	GDB_CALLABLE Cuboid at(int i) const;
+	GDB_CALLABLE bool contains(const Cuboid cuboid) const;
 	static CuboidArray<capacity> create(const auto& source)
 	{
 		CuboidArray<capacity> output;
@@ -74,7 +74,7 @@ public:
 		const CuboidArray& m_set;
 		int m_index;
 	public:
-		ConstIterator(const CuboidArray& set, const int& index) : m_set(set), m_index(index) { }
+		ConstIterator(const CuboidArray& set, const int index) : m_set(set), m_index(index) { }
 		ConstIterator operator++() { ++m_index; return *this; }
 		[[nodiscard]] ConstIterator operator++(int) { auto output = *this; ++(*this); return output; }
 		ConstIterator operator--() { assert(m_index > 0); --m_index; return *this; }
@@ -84,8 +84,8 @@ public:
 		[[nodiscard]] bool operator!=(const ConstIterator& other) const { assert(&m_set == &other.m_set); return m_index != other.m_index; }
 		[[nodiscard]] ConstIterator operator-(const ConstIterator& other) const { assert(&m_set == &other.m_set); return (*this) - other.m_index; }
 		[[nodiscard]] ConstIterator operator+(const ConstIterator& other) const { assert(&m_set == &other.m_set); return (*this) + other.m_index; }
-		[[nodiscard]] ConstIterator operator-(const int& value) const { assert(m_index >= value); auto copy = *this; copy.m_index -= value; return copy; }
-		[[nodiscard]] ConstIterator operator+(const int& value) const { auto copy = *this; copy.m_index += value; return copy; }
+		[[nodiscard]] ConstIterator operator-(const int value) const { assert(m_index >= value); auto copy = *this; copy.m_index -= value; return copy; }
+		[[nodiscard]] ConstIterator operator+(const int value) const { auto copy = *this; copy.m_index += value; return copy; }
 		[[nodiscard]] std::strong_ordering operator<=>(const ConstIterator& other) const { assert(&m_set == &other.m_set); return m_index <=> other.m_index; }
 	};
 	ConstIterator begin() const { return ConstIterator(*this, 0); }

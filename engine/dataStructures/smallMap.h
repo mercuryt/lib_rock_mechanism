@@ -27,24 +27,23 @@ public:
 	SmallMap(SmallMap&& other) noexcept = default;
 	SmallMap& operator=(const SmallMap& other) = default;
 	SmallMap& operator=(SmallMap&& other) noexcept = default;
-	void insert(const K& key, const V& value);
-	void insert(const K& key, V&& value);
-	void maybeInsert(const K& key, const V& value);
-	void maybeInsert(const K& key, V&& value);
-	void insertNonUnique(const K& key, const V& value);
-	void erase(const K& key);
-	void erase(iterator& iter);
-	void erase(iterator&& iter);
+	void insert(const K key, const V& value);
+	void insert(const K key, V&& value);
+	void maybeInsert(const K key, const V& value);
+	void maybeInsert(const K key, V&& value);
+	void insertNonUnique(const K key, const V& value);
+	void erase(const K key);
+	void erase(iterator iter);
 	template<typename Predicate>
 	void eraseIf(Predicate&& predicate) { std::erase_if(m_data, predicate); }
-	void maybeErase(const K& key);
-	bool maybeEraseNotify(const K& key);
+	void maybeErase(const K key);
+	bool maybeEraseNotify(const K key);
 	void popBack();
 	void clear();
 	void sort();
 	void sortDescending();
 	template<typename ...Args>
-	V& emplace(const K& key, Args&& ...args)
+	V& emplace(const K key, Args&& ...args)
 	{
 		assert(!contains(key));
 		return m_data.emplace_back(key, V{std::forward<Args>(args)...}).second;
@@ -56,26 +55,26 @@ public:
 		std::ranges::sort(m_data, pairCondition);
 	}
 	void swap(This& other);
-	void updateKey(const K& oldKey, const K& newKey);
+	void updateKey(const K oldKey, const K newKey);
 	[[nodiscard]] int size() const;
 	[[nodiscard]] bool empty() const;
-	[[nodiscard]] bool contains(const K& key) const;
+	[[nodiscard]] bool contains(const K key) const;
 	[[nodiscard]] bool containsAny(const SmallSet<K>& keys) const;
 	[[nodiscard]] Pair& front();
 	[[nodiscard]] const Pair& front() const;
 	[[nodiscard]] Pair& back();
 	[[nodiscard]] const Pair& back() const;
-	[[nodiscard]] V& operator[](const K& key);
-	[[nodiscard]] const V& operator[](const K& key) const;
-	[[nodiscard]] V& getOrInsert(const K& key, V&& value);
-	[[nodiscard]] V& getOrCreate(const K& key);
+	[[nodiscard]] V& operator[](const K key);
+	[[nodiscard]] const V& operator[](const K key) const;
+	[[nodiscard]] V& getOrInsert(const K key, V&& value);
+	[[nodiscard]] V& getOrCreate(const K key);
 	[[nodiscard]] SmallSet<K> keys() const;
 	template<typename Condition>
 	[[nodiscard]] iterator findIf(Condition&& condition) { return std::ranges::find_if(m_data, condition); }
 	template<typename Condition>
 	[[nodiscard]] const_iterator findIf(Condition&& condition) const { return std::ranges::find_if(m_data, condition); }
-	[[nodiscard]] iterator find(const K& key);
-	[[nodiscard]] const_iterator find(const K& key) const;
+	[[nodiscard]] iterator find(const K key);
+	[[nodiscard]] const_iterator find(const K key) const;
 	[[nodiscard]] iterator begin();
 	[[nodiscard]] iterator end();
 	[[nodiscard]] const_iterator begin() const;
@@ -85,7 +84,6 @@ public:
 		std::vector<Pair>::iterator m_iter;
 	public:
 		iterator(This& map, int i) : m_iter(map.m_data.begin() + i) { }
-		iterator(std::vector<Pair>::iterator& iter) : m_iter(iter) { }
 		iterator(std::vector<Pair>::iterator iter) : m_iter(iter) { }
 		iterator& operator++() { ++m_iter; return *this; }
 		[[nodiscard]] iterator operator+(int steps) { return m_iter + steps; }
@@ -93,34 +91,33 @@ public:
 		[[nodiscard]] iterator operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] Pair& operator*() { return *m_iter; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
-		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
-		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
+		[[nodiscard]] bool operator==(const iterator other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator!=(const iterator other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const K& first() { return m_iter->first; }
 		[[nodiscard]] const K& first() const { return m_iter->first; }
 		[[nodiscard]] V& second() { return m_iter->second; }
 		[[nodiscard]] const V& second() const { return m_iter->second; }
 		[[nodiscard]] Pair* operator->() { return &*m_iter; }
 		[[nodiscard]] const Pair* operator->() const { return &*m_iter; }
-		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) const { return m_iter <=> other.m_iter; }
+		[[nodiscard]] std::strong_ordering operator<=>(const iterator other) const { return m_iter <=> other.m_iter; }
 	};
 	class const_iterator
 	{
 		std::vector<Pair>::const_iterator m_iter;
 	public:
 		const_iterator(const This& map, int i) : m_iter(map.m_data.begin() + i) { }
-		const_iterator(std::vector<Pair>::const_iterator& iter) : m_iter(iter) { }
 		const_iterator(std::vector<Pair>::const_iterator iter) : m_iter(iter) { }
 		const_iterator& operator++() { ++m_iter; return *this; }
 		[[nodiscard]] const_iterator operator+(int steps) { return m_iter + steps; }
 		[[nodiscard]] const_iterator operator-(int steps) { return m_iter - steps; }
 		[[nodiscard]] const_iterator operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
-		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
-		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
+		[[nodiscard]] bool operator==(const const_iterator other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator!=(const const_iterator other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const K& first() const { return m_iter->first; }
 		[[nodiscard]] const V& second() const { return m_iter->second; }
 		[[nodiscard]] const Pair* operator->() const { return &*m_iter; }
-		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
+		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator other) const { return m_iter <=> other.m_iter; }
 	};
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SmallMap, m_data);
 };
@@ -141,45 +138,44 @@ public:
 	SmallMapStable(const Json& data);
 	void fromJson(const Json& data);
 	[[nodiscard]] Json toJson() const;
-	V& insert(const K& key, std::unique_ptr<V>&& value);
-	void erase(const K& key);
-	void erase(iterator& key);
+	V& insert(const K key, std::unique_ptr<V>&& value);
+	void erase(const K key);
+	void erase(iterator key);
 	void clear();
 	template<typename ...Args>
-	V& emplace(const K& key, Args&& ...args) { return *m_data.emplace(key, std::make_unique<V>(std::forward<Args>(args)...)).get(); }
+	V& emplace(const K key, Args&& ...args) { return *m_data.emplace(key, std::make_unique<V>(std::forward<Args>(args)...)).get(); }
 	void swap(This& other);
 	[[nodiscard]] int size() const;
 	[[nodiscard]] bool empty() const;
-	[[nodiscard]] bool contains(const K& key) const;
+	[[nodiscard]] bool contains(const K key) const;
 	[[nodiscard]] Pair& front();
 	[[nodiscard]] const Pair& front() const;
 	[[nodiscard]] Pair& back();
 	[[nodiscard]] const Pair& back() const;
-	[[nodiscard]] auto operator[](const K& key) -> V&;
-	[[nodiscard]] auto operator[](const K& key) const -> const V&;
+	[[nodiscard]] auto operator[](const K key) -> V&;
+	[[nodiscard]] auto operator[](const K key) const -> const V&;
 	template<typename Condition>
 	[[nodiscard]] iterator findIf(Condition&& condition) { return m_data.findIf([&](const Pair& pair){ return condition(*pair.second); }); }
-	[[nodiscard]] iterator find(const K& key);
-	[[nodiscard]] const_iterator find(const K& key) const;
+	[[nodiscard]] iterator find(const K key);
+	[[nodiscard]] const_iterator find(const K key) const;
 	[[nodiscard]] iterator begin();
 	[[nodiscard]] iterator end();
 	[[nodiscard]] const_iterator begin() const;
 	[[nodiscard]] const_iterator end() const;
-	[[nodiscard]] V& getOrCreate(const K& key);
+	[[nodiscard]] V& getOrCreate(const K key);
 	class iterator
 	{
 		Data::iterator m_iter;
 	public:
 		iterator(This& map, int i) : m_iter(map.m_data.begin() + i) { }
-		iterator(Data::iterator& iter) : m_iter(iter) { }
 		iterator(Data::iterator iter) : m_iter(iter) { }
 		[[nodiscard]] Data::iterator get() { return m_iter; }
 		iterator& operator++() { ++m_iter; return *this; }
 		[[nodiscard]] iterator operator++(int) { iterator copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] Pair& operator*() { return *m_iter; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
-		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
-		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
+		[[nodiscard]] bool operator==(const iterator other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator!=(const iterator other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const K& first() { return m_iter->first; }
 		[[nodiscard]] const K& first() const { return m_iter->first; }
 		[[nodiscard]] V& second() { return *m_iter->second; }
@@ -201,14 +197,14 @@ public:
 		const_iterator& operator++() { ++m_iter; return *this; }
 		[[nodiscard]] const_iterator operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] const Pair& operator*() const { return *m_iter; }
-		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
-		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
+		[[nodiscard]] bool operator==(const const_iterator other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator!=(const const_iterator other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const K& first() const { return m_iter->first; }
 		[[nodiscard]] const V& second() const { return *m_iter->second.get(); }
 		[[nodiscard]] const Pair* operator->() const { return &*m_iter; }
 		[[nodiscard]] const_iterator operator+(int steps) { return m_iter + steps; }
 		[[nodiscard]] const_iterator operator-(int steps) { return m_iter - steps; }
-		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
+		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator other) const { return m_iter <=> other.m_iter; }
 	};
 };
 // Define custom serialization / deserialization instead of using intrusive because nlohmann doesn't handle unique ptr.

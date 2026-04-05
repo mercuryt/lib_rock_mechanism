@@ -96,7 +96,7 @@ public:
 		return input + getInRange(-maxPlus, maxPlus);
 	}
 	template<typename T>
-	T applyRandomFuzzPlusOrMinusRatio(const T& input, const float& ratio)
+	T applyRandomFuzzPlusOrMinusRatio(const T& input, const float ratio)
 	{
 		int maxPlus = ratio * (float)input.get();
 		return input + getInRange(-maxPlus, maxPlus);

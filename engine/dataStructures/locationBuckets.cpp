@@ -126,7 +126,7 @@ LocationBucket::anyCanBeSeenQuery(const Area& area, const Cuboid cuboid, const P
 	Eigen::Array<bool, 1, Eigen::Dynamic> canBeSeenBy;
 	canBeSeenBy.resize(1, m_actors.size());
 	canBeSeenBy.fill(false);
-	for(const Point3D& point : points)
+	for(const Point3D point : points)
 	{
 		canBeSeenBy += canBeSeenByDistanceAndFacingFilter(point);
 		// TODO: profile this branch.

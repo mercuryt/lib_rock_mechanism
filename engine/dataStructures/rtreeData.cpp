@@ -1,7 +1,10 @@
 #include "rtreeData.hpp"
 #include "../path/terrainFacade.h"
 #include "../space/space.h"
+#include "../temperature/temperatureSource.h"
 
+template class RTreeData<Point3D>;
+template class RTreeData<Cuboid>;
 template class RTreeData<DeckId>;
 template class RTreeData<Distance>;
 template class RTreeData<DistanceSquared>;
@@ -13,6 +16,7 @@ template class RTreeData<FluidTypeId>;
 template class RTreeData<CollisionVolume, RTreeDataConfig{}, 0>;
 template class RTreeData<PlantIndex>;
 template class RTreeData<TemperatureDelta>;
+template class RTreeData<TemperatureSource2, RTreeDataConfigs::noMerge>;
 template class RTreeData<DistanceFractional>;
 template class RTreeData<RTreeDataWrapper<Project*, nullptr>>;
 template class RTreeData<RTreeDataWrapper<StockPile*, nullptr>>;

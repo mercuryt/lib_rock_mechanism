@@ -24,9 +24,9 @@ struct CuboidSetBase
 {
 protected:
 	void insertOrMerge(const CuboidType& cuboid);
-	void destroy(const int& cuboid);
+	void destroy(const int cuboid);
 	// For merging contained cuboids.
-	void mergeInternal(const CuboidType& absorbed, const int& absorber);
+	void mergeInternal(const CuboidType& absorbed, const int absorber);
 public:
 	SmallSet<CuboidType> m_cuboids;
 	CuboidSetBase() = default;
@@ -79,12 +79,12 @@ public:
 	// For merging with other cuboid sets.
 	void addSet(const CuboidSetType& other);
 	void rotateAroundPoint(const PointType& point, const Facing4& rotation);
-	void reserve(const int& capacity) { m_cuboids.reserve(capacity); }
+	void reserve(const int capacity) { m_cuboids.reserve(capacity); }
 	void swap(CuboidSetType& other);
 	void popBack();
 	void inflate(const Distance  distance);
-	[[nodiscard]] const CuboidType& operator[](const int& index) const { return m_cuboids[index]; }
-	[[nodiscard]] CuboidType& operator[](const int& index){ return m_cuboids[index]; }
+	[[nodiscard]] const CuboidType& operator[](const int index) const { return m_cuboids[index]; }
+	[[nodiscard]] CuboidType& operator[](const int index){ return m_cuboids[index]; }
 	[[nodiscard]] PointType center() const;
 	[[nodiscard]] PointType::DimensionType lowestZ() const;
 	[[nodiscard]] PointType::DimensionType highestZ() const;
@@ -94,41 +94,53 @@ public:
 	[[nodiscard]] int volume() const;
 	[[nodiscard]] bool contains(const Point3D point) const;
 	[[nodiscard]] bool contains(const Offset3D point) const;
-	[[nodiscard]] bool contains(const CuboidType& cuboid) const;
+	[[nodiscard]] bool contains(const CuboidType cuboid) const;
 	[[nodiscard]] bool contains(const CuboidSetType& cuboid) const;
 	[[nodiscard]] const auto& getCuboids() const { return m_cuboids; }
 	[[nodiscard]] SmallSet<PointType> toPointSet() const;
-	[[nodiscard]] bool isAdjacent(const PointType& cuboid) const;
-	[[nodiscard]] bool isAdjacent(const CuboidType& cuboid) const;
+	[[nodiscard]] bool isAdjacent(const PointType cuboid) const;
+	[[nodiscard]] bool isAdjacent(const CuboidType cuboid) const;
 	[[nodiscard]] CuboidType boundry() const;
 	[[nodiscard]] PointType getLowest() const;
-	[[nodiscard]] const CuboidType& front() const { return m_cuboids.front(); }
-	[[nodiscard]] const CuboidType& back() const { return m_cuboids.back(); }
+	[[nodiscard]] const CuboidType front() const { return m_cuboids.front(); }
+	[[nodiscard]] const CuboidType back() const { return m_cuboids.back(); }
 	[[nodiscard]] auto begin() { return m_cuboids.begin(); }
 	[[nodiscard]] auto end() { return m_cuboids.end(); }
 	[[nodiscard]] auto begin() const { return m_cuboids.begin(); }
 	[[nodiscard]] auto end() const { return m_cuboids.end(); }
-	[[nodiscard]] CuboidSetType intersection(const CuboidType& cuboid) const;
+	[[nodiscard]] CuboidSetType intersection(const CuboidType cuboid) const;
 	[[nodiscard]] CuboidSetType intersection(const CuboidSetType& cuboid) const;
-	[[nodiscard]] PointType intersectionPoint(const CuboidType& cuboid) const;
-	[[nodiscard]] bool intersects(const PointType& point) const;
-	[[nodiscard]] bool intersects(const CuboidType& cuboid) const;
+	[[nodiscard]] PointType intersectionPoint(const CuboidType cuboid) const;
+	[[nodiscard]] bool intersects(const PointType point) const;
+	[[nodiscard]] bool intersects(const CuboidType cuboid) const;
 	[[nodiscard]] bool intersects(const CuboidSetType& cuboid) const;
-	[[nodiscard]] bool isTouching(const CuboidType& cuboid) const;
-	[[nodiscard]] bool isTouchingFace(const CuboidType& cuboid) const;
-	[[nodiscard]] bool isTouchingFaceFromInside(const CuboidType& cuboid) const;
+	[[nodiscard]] bool isTouching(const CuboidType cuboid) const;
+	[[nodiscard]] bool isTouchingFace(const CuboidType cuboid) const;
+	[[nodiscard]] bool isTouchingFaceFromInside(const CuboidType cuboid) const;
 	[[nodiscard]] bool isTouching(const CuboidSetType& cuboids) const;
 	[[nodiscard]] bool isIntersectingOrAdjacentTo(const CuboidSetType& cuboids) const;
-	[[nodiscard]] bool isIntersectingOrAdjacentTo(const CuboidType& cuboid) const;
-	[[nodiscard]] const CuboidType& getCuboidContaining(const PointType& point) const;
+	[[nodiscard]] bool isIntersectingOrAdjacentTo(const CuboidType cuboid) const;
+	[[nodiscard]] const CuboidType& getCuboidContaining(const PointType point) const;
 	[[nodiscard]] CuboidSetType getAdjacent() const;
-	[[nodiscard]] CuboidSetType getDirectlyAdjacent(const Distance  distance) const;
-	[[nodiscard]] CuboidSetType inflateFaces(const Distance  distance) const;
-	[[nodiscard]] CuboidSetType inflated(const Distance  distance) const;
-	[[nodiscard]] CuboidSetType slicedAtZ(const PointType::DimensionType& zLevel) const;
-	[[nodiscard]] CuboidSetType adjacentSlicedAtZ(const PointType::DimensionType& zLevel) const;
-	[[nodiscard]] CuboidSetType flattened(const PointType::DimensionType& zLevel) const;
-	[[nodiscard]] CuboidSetType adjacentRecursive(const PointType& point) const;
+	[[nodiscard]] CuboidSetType getDirectlyAdjacent(const Distance distance) const;
+	[[nodiscard]] CuboidSetType inflateFaces(const Distance distance) const;
+	[[nodiscard]] CuboidSetType inflated(const Distance distance) const;
+	[[nodiscard]] CuboidSetType slicedAtZ(const PointType::DimensionType zLevel) const;
+	[[nodiscard]] CuboidSetType adjacentSlicedAtZ(const PointType::DimensionType zLevel) const;
+	[[nodiscard]] CuboidSetType flattened(const PointType::DimensionType zLevel) const;
+	[[nodiscard]] CuboidSetType getFace(const Facing6 faceing) const;
+	[[nodiscard]] CuboidSetType getFaceNorth() const;
+	[[nodiscard]] CuboidSetType getFaceSouth() const;
+	[[nodiscard]] CuboidSetType getFaceEast() const;
+	[[nodiscard]] CuboidSetType getFaceWest() const;
+	[[nodiscard]] CuboidSetType getFaceAbove() const;
+	[[nodiscard]] CuboidSetType getFaceBelow() const;
+	private:
+	template<typename ShapeT>
+	[[nodiscard]] CuboidSetType adjacentRecursiveBody(const ShapeT& shape) const;
+	public:
+	[[nodiscard]] CuboidSetType adjacentRecursive(const CuboidType shape) const;
+	[[nodiscard]] CuboidSetType adjacentRecursive(const PointType shape) const;
 	[[nodiscard]] int countIf(auto&& condition) const
 	{
 		int output = 0;
@@ -136,7 +148,7 @@ public:
 			output += cuboid.countIf(condition);
 		return output;
 	}
-	[[nodiscard]] GDB_CALLABLE std::string toString() const;
+	GDB_CALLABLE std::string toString() const;
 	[[nodiscard]] static CuboidSetType create(const SmallSet<PointType>& space);
 	[[nodiscard]] static CuboidSetType create(const CuboidSetType& set);
 	[[nodiscard]] static CuboidSetType create(const CuboidType& cuboid);
@@ -150,6 +162,7 @@ struct CuboidSet final : public CuboidSetBase<Cuboid, Point3D, CuboidSet>
 	[[nodiscard]] static CuboidSet create(const Point3D point);
 	[[nodiscard]] static CuboidSet create([[maybe_unused]]const OffsetCuboid spaceBoundry, const Point3D pivot, const Facing4 newFacing, const OffsetCuboidSet& cuboids);
 	[[nodiscard]] static CuboidSet create(const SmallSet<Point3D>& points);
+	[[nodiscard]] static CuboidSet create(const SmallSet<Cuboid>& points);
 };
 struct OffsetCuboidSet final : public CuboidSetBase<OffsetCuboid, Offset3D, OffsetCuboidSet>
 {

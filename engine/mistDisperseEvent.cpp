@@ -24,7 +24,7 @@ void MistDisperseEvent::execute(Simulation& simulation, Area* area)
 	{
 		// Possibly spread.
 		if(space.fluid_getMistInverseDistanceToSource(m_point) > 0)
-			for(const Point3D& adjacent : space.getDirectlyAdjacent(m_point))
+			for(const Point3D adjacent : space.getDirectlyAdjacent(m_point))
 				if(space.fluid_canEnterEver(adjacent) &&
 						(
 							space.fluid_getMist(adjacent).empty() ||
@@ -56,7 +56,7 @@ bool MistDisperseEvent::continuesToExist(Area& area) const
 			if(!space.solid_isAny(belowAdjacent))
 				return true;
 		}
-	for(const Point3D& adjacent : space.getDirectlyAdjacent(m_point))
+	for(const Point3D adjacent : space.getDirectlyAdjacent(m_point))
 		// if adjacent to point with mist with lower distance to source.
 		if(space.fluid_getMist(adjacent).exists() &&
 			space.fluid_getMistInverseDistanceToSource(adjacent) > space.fluid_getMistInverseDistanceToSource(adjacent)

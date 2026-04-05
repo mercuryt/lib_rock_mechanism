@@ -312,7 +312,7 @@ void TerrainFacade::update(const Cuboid cuboid)
 	const Space& space = m_area.getSpace();
 	assert(space.boundry().intersects(cuboid));
 	m_enterable.maybeRemove(cuboid);
-	for(const Point3D& point : cuboid)
+	for(const Point3D point : cuboid)
 		if(
 			space.shape_anythingCanEnterEver(point) &&
 			space.shape_moveTypeCanEnter(point, m_moveType)
@@ -329,7 +329,7 @@ void TerrainFacade::update(const Cuboid cuboid, const CuboidSet& candidates)
 	const Space& space = m_area.getSpace();
 	assert(space.boundry().contains(cuboid));
 	m_enterable.maybeRemove(cuboid);
-	for(const Point3D& point : cuboid)
+	for(const Point3D point : cuboid)
 		if(
 			space.shape_anythingCanEnterEver(point) &&
 			space.shape_moveTypeCanEnter(point, m_moveType)
@@ -462,7 +462,7 @@ FindPathResult TerrainFacade::findPathAdjacentToPolymorphicWithoutMemo(const Poi
 	Space& space = m_area.getSpace();
 	auto source = actorOrItem.getAdjacentCuboids(m_area);
 	for(const Cuboid cuboid : source)
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 			if(
 				space.shape_anythingCanEnterEver(point) &&
 				space.shape_moveTypeCanEnter(point, m_moveType) &&
@@ -481,7 +481,7 @@ FindPathResult TerrainFacade::findPathToEdge(PathMemoBreadthFirst& memo, const P
 		// TODO: get a point from the cuboid at the edge rather then iterating.
 		if(!space.isEdge(cuboid))
 			return {false, Point3D::null()};
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 			return {space.isEdge(point), point};
 		std::unreachable();
 	};

@@ -135,7 +135,7 @@ void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const Point3D pre
 			if(!path.empty())
 			{
 				int i = 0;
-				for(const Point3D& point : path)
+				for(const Point3D point : path)
 				{
 					const Offset3D offset = point.translate(previousPivot, newPivot, previousFacing, newFacing);
 					assert(boundry.contains(offset));
@@ -144,7 +144,7 @@ void DeckRotationData::reinstanceAtRotatedPosition(Area& area, const Point3D pre
 				}
 			}
 			// Update destination.
-			const Point3D& destination = actors.move_getDestination(actor);
+			const Point3D destination = actors.move_getDestination(actor);
 			if(destination.exists())
 			{
 				const Offset3D offset = destination.translate(previousPivot, newPivot, previousFacing, newFacing);
@@ -229,7 +229,7 @@ SetLocationAndFacingResult DeckRotationData::tryToReinstanceAtRotatedPosition(Ar
 			if(!path.empty())
 			{
 				int i = 0;
-				for(const Point3D& point : path)
+				for(const Point3D point : path)
 				{
 					const Offset3D pathOffset = point.translate(previousPivot, newPivot, previousFacing, newFacing);
 					assert(boundry.contains(pathOffset));

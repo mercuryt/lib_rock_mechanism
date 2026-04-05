@@ -125,7 +125,6 @@ public:
 	Items(Area& area);
 	void load(const Json& json);
 	void loadCargoAndCraftJobs(const Json& json);
-	void onChangeAmbiantSurfaceTemperature();
 	template<typename Action>
 	void forEachData(Action&& action)
 	{
@@ -167,6 +166,7 @@ public:
 	// Wrap HasShapes::SetStatic and unset to support constrcuted shapes setting or unsetting Space::m_dynamic instead.
 	void setStatic(const ItemIndex index);
 	void unsetStatic(const ItemIndex index);
+	void setOnSurface(const ItemIndex index, const bool value);
 	[[nodiscard]] SmallSet<ItemIndex> getAll() const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool isInstalled(const ItemIndex index) { return m_installed[index]; }
@@ -187,8 +187,9 @@ public:
 	[[nodiscard]] MoveTypeId getMoveType(const ItemIndex index) const;
 	[[nodiscard]] ItemTypeId getItemType(const ItemIndex index) const { return m_itemType[index]; }
 	[[nodiscard]] MaterialTypeId getMaterialType(const ItemIndex index) const { return m_solid[index]; }
-	[[nodiscard]] bool canCombine(const ItemIndex index, const ItemIndex toMerge);
-	[[nodiscard]] std::string description(const ItemIndex index);
+	[[nodiscard]] bool canCombine(const ItemIndex index, const ItemIndex toMerge) const;
+	[[nodiscard]] bool canMelt(const ItemIndex index) const;
+	[[nodiscard]] GDB_CALLABLE std::string description(const ItemIndex index);
 	// - Location.
 private:
 	std::pair<ItemIndex, SetLocationAndFacingResult> location_tryToSetGenericStatic(const ItemIndex index, const Point3D location, const Facing4 facing);

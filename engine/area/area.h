@@ -22,6 +22,7 @@
 #include "../actors/grow.h"
 #include "../deck.h"
 #include "../onSight.h"
+#include "../temperature/areaHasTemperatures.h"
 #include "installItem.h"
 #include "woodcutting.h"
 #include "stockpile.h"
@@ -30,7 +31,6 @@
 #include "hasSleepingSpots.h"
 #include "hasSpaceDesignations.h"
 #include "evaporation.h"
-#include "exteriorPortals.h"
 #include "hasTargetedHauling.h"
 #include "hasDigDesignations.h"
 #include "hasConstructionDesignations.h"
@@ -76,7 +76,7 @@ class Area final
 public:
 	EventSchedule m_eventSchedule;
 	ThreadedTaskEngine m_threadedTaskEngine;
-	AreaHasTemperature m_hasTemperature;
+	AreaHasTemperature2 m_hasTemperature;
 	AreaHasTerrainFacades m_hasTerrainFacades;
 	AreaHasFires m_fires;
 	// To be updated when an actor becomes a soldier, stops being a soldier, or moves while being a soldier.
@@ -105,7 +105,6 @@ public:
 	ActorOctTree m_octTree;
 	VisionRequests m_visionRequests;
 	OpacityFacade m_opacityFacade;
-	AreaHasExteriorPortals m_exteriorPortals;
 	AreaHasDecks m_decks;
 	std::string m_name;
 	Simulation& m_simulation;

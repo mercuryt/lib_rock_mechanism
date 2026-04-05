@@ -48,31 +48,16 @@ void Space::solid_setCuboid(const Cuboid cuboid, const MaterialTypeId materialTy
 	// TODO: should this be kill all or destroy all?
 	plants.destroyAll(cuboid);
 	m_area.m_hasTerrainFacades.maybeSetImpassable(cuboid);
-	m_area.m_exteriorPortals.onCuboidCanNotTransmitTemperature(m_area, cuboid);
+	m_area.m_hasTemperature.onTemperatureCanNoLongerTransmit(m_area, CuboidSet::create(cuboid));
 	m_area.m_hasCraftingLocationsAndJobs.maybeRemoveCuboid(cuboid);
 	if(previous.empty())
 		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(cuboid);
-	const Temperature meltingPoint = MaterialType::getMeltingPoint(materialType);
-	if(meltingPoint.exists())
-	{
-		Cuboid topFace = cuboid.getFaceAbove();
-		if(cuboid.m_high.z() != m_sizeZ - 1)
-		{
-			topFace.shift({0, 0, 1}, {1});
-			CuboidSet above = CuboidSet::create(topFace);
-			// Any that are below a solid, feature, or something not exposed to sky are not added to meltable above ground.
-			above.maybeRemoveAll(solid_queryCuboids(topFace));
-			above.maybeRemoveAll(pointFeature_queryCuboids(topFace));
-			CuboidSet exposedAndNotSolidOrFeature = m_exposedToSky.removeNotExposedFrom(above);
-			exposedAndNotSolidOrFeature.shift({0, 0, -1}, {1});
-			m_area.m_hasTemperature.maybeAddMeltableSolidPointsAboveGround(exposedAndNotSolidOrFeature, meltingPoint);
-		}
-	}
+	m_area.m_hasTemperature.onSetSolid(m_area, CuboidSet::create(cuboid), materialType);
 	// Remove from stockpiles.
 	m_area.m_hasStockPiles.removeFromAll(cuboid);
 	// Remove fluids and shift them elsewhere.
 	fluid_onCuboidSetSolid(cuboid);
-	m_exposedToSky.maybeUnset(m_area, cuboid);
+	m_exposedToSky.maybeUnsetBeneathTopLayer(m_area, cuboid);
 	m_support.set(cuboid);
 	// Vision cuboid.
 	if(!MaterialType::getTransparent(materialType) && wasTransparent)
@@ -103,9 +88,7 @@ void Space::solid_setNotCuboid(const Cuboid cuboid)
 	// Dishonor all reservations: there are no reservations which can exist on both a solid and not solid point.
 	m_reservables.maybeRemove(cuboid);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(cuboid);
-	const Temperature meltingPoint = MaterialType::getMeltingPoint(m_solid.queryGetOne(cuboid));
-	if(meltingPoint.exists())
-			m_area.m_hasTemperature.maybeRemoveMeltableSolidPointsAboveGround(cuboid, meltingPoint);
+	const MaterialTypeId materialType = m_solid.queryGetOne(cuboid);
 	m_solid.maybeRemove(cuboid);
 	m_support.unset(cuboid);
 	Cuboid inflated = cuboid;
@@ -113,11 +96,9 @@ void Space::solid_setNotCuboid(const Cuboid cuboid)
 	const Cuboid spaceBoundry = boundry();
 	m_area.m_hasTerrainFacades.update(spaceBoundry.intersection(inflated));
 	m_exposedToSky.maybeSetCuboid(m_area, cuboid);
-	for(const Point3D& point : cuboid)
-	{
-		m_area.m_exteriorPortals.onPointCanTransmitTemperature(m_area, point);
+	m_area.m_hasTemperature.onSetNotSolid(m_area, CuboidSet::create(cuboid), materialType);
+	for(const Point3D point : cuboid)
 		fluid_onPointSetNotSolid(point);
-	}
 	// Vision cuboid.
 	if(!wasTransparent)
 		m_area.m_opacityFacade.maybeRemoveFull(cuboid);
@@ -127,7 +108,7 @@ void Space::solid_setNotCuboid(const Cuboid cuboid)
 	{
 		Cuboid aboveCuboid = cuboid.getFace(Facing6::Above);
 		aboveCuboid.shift(Facing6::Above, Distance::create(1));
-		for(const Point3D& above : aboveCuboid)
+		for(const Point3D above : aboveCuboid)
 			maybeContentsFalls(above);
 	}
 }
@@ -151,7 +132,7 @@ Mass Space::solid_getMass(const CuboidSet& cuboidSet) const
 	// TODO: use m_solid.queryCount(cuboidSet).
 	Mass output;
 	for(const Cuboid cuboid : cuboidSet)
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 			output += solid_getMass(point);
 	return output;
 }
@@ -229,4 +210,9 @@ void Space::solid_removeOpaque(CuboidSet& cuboids) const
 		if(!MaterialType::getTransparent(materialType))
 			cuboids.remove(cuboid);
 	});
+}
+void Space::solid_removeAllFrom(CuboidSet& cuboids) const
+{
+	auto copy = cuboids;
+	m_solid.queryForEachCuboid(copy, [&](const Cuboid cuboid) { cuboids.maybeRemove(cuboid); });
 }

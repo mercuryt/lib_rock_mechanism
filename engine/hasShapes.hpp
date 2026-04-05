@@ -373,3 +373,8 @@ CuboidSet HasShapes<Derived, Index>::getCuboidsAbove(const Index index) const
 	}
 	return output;
 }
+template<class Derived, class Index>
+void HasShapes<Derived, Index>::setOnSurface(const Index index, const bool value)
+{
+	m_onSurface.set(index, value);
+}

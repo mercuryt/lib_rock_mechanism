@@ -47,7 +47,7 @@ struct CraftStepType final
 	std::vector<std::pair<ItemQuery, Quantity>> unconsumed;
 	std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> byproducts;
 	// Dummy method to make explicit instantiation of StrongVector happy.
-	bool operator==(const CraftStepType &) const
+	bool operator==(const CraftStepType&) const
 	{
 		assert(false);
 		return false;
@@ -137,7 +137,7 @@ struct CraftJob final
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] Quality getQuality() const;
 	[[nodiscard]] Step getStep() const;
-	[[nodiscard]] bool operator==(const CraftJob &other) { return &other == this; }
+	[[nodiscard]] bool operator==(const CraftJob& other) { return &other == this; }
 	[[nodiscard]] std::string describe() const;
 };
 inline void to_json(Json &data, const CraftJob *const &craftJob) { data = reinterpret_cast<uintptr_t>(craftJob); }
@@ -186,7 +186,7 @@ public:
 	void forEachPoint(auto&& action)
 	{
 		for(const auto& pair : m_locationsByCategory)
-			for(const Point3D& point : pair.second)
+			for(const Point3D point : pair.second)
 				action(point);
 	}
 	[[nodiscard]] bool hasLocationsFor(const CraftJobTypeId craftJobType) const;

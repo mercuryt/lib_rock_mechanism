@@ -44,7 +44,7 @@ void VisionRequests::cancelIfExists(const ActorReference actor)
 	else if(largestRange)
 		m_largestRange = std::max_element(m_data.begin(), m_data.end(), [](const VisionRequest& a, const VisionRequest& b) { return a.actor < b.actor; })->range;
 }
-void VisionRequests::readStepSegment(const int& begin, const int& end)
+void VisionRequests::readStepSegment(const int begin, const int end)
 {
 	for(auto iter = m_data.begin() + begin; iter != m_data.begin() + end; ++iter)
 	{
@@ -195,3 +195,4 @@ bool VisionRequests::maybeUpdateLocation(const ActorReference actor, const Point
 	iter->location = location;
 	return true;
 }
+size_t VisionRequests::size() const { return m_data.size(); }

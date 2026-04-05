@@ -75,7 +75,7 @@ void FluidGroup::addPoints(Area& area, const CuboidSet& points, bool checkMerge)
 				larger = larger->merge(area, oldGroupToMergeWith);
 	}
 	for(const Cuboid cuboid : toAdd)
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 			larger->addMistFor(area, point);
 }
 void FluidGroup::addPoint(Area& area, const Point3D point, bool checkMerge)
@@ -101,7 +101,7 @@ void FluidGroup::addPoint(Area& area, const Point3D point, bool checkMerge)
 	m_drainQueue.m_set.maybeAdd(point);
 	// Add adjacent if fluid can enter.
 	SmallSet<FluidGroup*> toMerge;
-	for(const Point3D& adjacent : area.getSpace().getAdjacentWithEdgeAndCornerAdjacent(point))
+	for(const Point3D adjacent : area.getSpace().getAdjacentWithEdgeAndCornerAdjacent(point))
 	{
 		if(!area.getSpace().fluid_canEnterEver(adjacent))
 			continue;
@@ -130,7 +130,7 @@ void FluidGroup::removePoint(Area& area, const Point3D point)
 	setUnstable(area);
 	m_drainQueue.m_set.maybeRemove(point);
 	m_potentiallyNoLongerAdjacentFromSyncronusStep.maybeAdd(point);
-	for(const Point3D& adjacent : area.getSpace().getAdjacentWithEdgeAndCornerAdjacent(point))
+	for(const Point3D adjacent : area.getSpace().getAdjacentWithEdgeAndCornerAdjacent(point))
 		if(area.getSpace().fluid_canEnterEver(adjacent))
 		{
 			//Check for group split.
@@ -160,7 +160,7 @@ void FluidGroup::addMistFor(Area& area, const Point3D point)
 		CuboidSet toSpawnMist = CuboidSet::create(space.getDirectlyAdjacentOnSameZLevelOnly(point));
 		space.fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(toSpawnMist);
 		for(const Cuboid cuboid : toSpawnMist)
-			for(const Point3D& adjacent : cuboid)
+			for(const Point3D adjacent : cuboid)
 				space.fluid_spawnMist(adjacent, m_fluidType);
 	}
 }
@@ -409,7 +409,7 @@ void FluidGroup::readStep(Area& area)
 		CuboidSet closed;
 		//closed.reserve(futurePoints.size());
 		for(const Cuboid cuboid : potentialNewGroups)
-			for(const Point3D& point : cuboid)
+			for(const Point3D point : cuboid)
 			{
 				if(closed.contains(point))
 					continue;
@@ -483,7 +483,7 @@ void FluidGroup::writeStep(Area& area)
 		m_futureAddToDrainQueue.removeAll(toRemoveFromFutureAddToDrainQueue);
 	assert(!m_futureAddToDrainQueue.intersects(m_futureRemoveFromDrainQueue));
 	for(const Cuboid cuboid : m_futureRemoveFromFillQueue)
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 		{
 			bool tests = (
 				space.fluid_contains(point, m_fluidType) ||
@@ -504,7 +504,7 @@ void FluidGroup::writeStep(Area& area)
 			}
 		}
 	for(const Cuboid cuboid : m_futureRemoveFromDrainQueue)
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 		{
 			bool tests = (
 				!space.fluid_contains(point, m_fluidType) ||
@@ -544,12 +544,12 @@ void FluidGroup::afterWriteStep(Area& area)
 		// Check that points maked as overfull are still overfull.
 		overfull = space.fluid_queryGetCuboidsOverfull(overfull.boundry()).intersection(overfull);
 		for(const Cuboid cuboid : overfull)
-				for(const Point3D& point : cuboid)
+				for(const Point3D point : cuboid)
 					space.fluid_resolveOverfull(point);
 	}
 	// Create mist.
 	for(const Cuboid cuboid : m_fillQueue.m_futureNoLongerEmpty)
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 			addMistFor(area, point);
 	validate(area);
 }
@@ -572,7 +572,7 @@ void FluidGroup::splitStep(Area& area)
 		// Find a point in the fill queue to add the disolved fluid.
 		for(const Cuboid cuboid : m_fillQueue.m_set)
 		{
-			for(const Point3D& point : cuboid)
+			for(const Point3D point : cuboid)
 				if(space.fluid_undisolveInternal(point, *disolvedFluidGroup))
 				{
 					dispersed.push_back(fluidType);
@@ -630,7 +630,7 @@ void FluidGroup::mergeStep(Area& area)
 	/*
 	// Record merge. First group consumes subsequent groups.
 	for(const Cuboid cuboid : m_futureNewEmptyAdjacents)
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 		{
 			// Fluid groups may be marked merged during merge iteration.
 			if(m_merged)

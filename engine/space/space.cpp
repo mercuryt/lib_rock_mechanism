@@ -126,7 +126,7 @@ SmallSet<Point3D> Space::getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAbove
 	output.reserve(24);
 	Cuboid cuboid = {Point3D(point.data + 1), point.subtractWithMinimum(Distance::create(1))};
 	cuboid = cuboid.intersection(boundry());
-	for(const Point3D& adjacent : cuboid)
+	for(const Point3D adjacent : cuboid)
 		if(adjacent.x() != point.x() || adjacent.y() != point.x())
 			output.insert(adjacent);
 	return output;
@@ -194,13 +194,6 @@ bool Space::isAdjacentToItem(const Point3D point, const ItemIndex item) const
 	const Cuboid adjacent = point.getAllAdjacentIncludingOutOfBounds();
 	const auto condition = [&](const ItemIndex i){ return i == item; };
 	return m_items.queryAnyWithCondition(adjacent, condition);
-}
-void Space::setExposedToSky(const Point3D point, bool exposed)
-{
-	if(exposed)
-		m_exposedToSky.set(m_area, point);
-	else
-		m_exposedToSky.unset(m_area, point);
 }
 bool Space::canSeeIntoFromAlways(const Point3D to, const Point3D from) const
 {
@@ -299,9 +292,6 @@ void Space::prepareRtrees()
 		if(m_staticVolume.canPrepare())
 			#pragma omp task
 				m_staticVolume.prepare();
-		if(m_temperatureDelta.canPrepare())
-			#pragma omp task
-				m_temperatureDelta.prepare();
 		if(m_unrevealed.canPrepare())
 			#pragma omp task
 				m_unrevealed.prepare();

@@ -177,7 +177,7 @@ Point3D Shape::getPointWhichWouldBeOccupiedAtWithPredicate(const ShapeId id, con
 		OffsetCuboid relativeOffsetCuboid = offsetCuboid.relativeToPoint(location);
 		assert(offsetBoundry.contains(relativeOffsetCuboid));
 		const Cuboid cuboid = Cuboid::create(relativeOffsetCuboid);
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 			if(predicate(point))
 				return point;
 	}
@@ -192,7 +192,7 @@ Point3D Shape::getPointWhichWouldBeAdjacentAtWithPredicate(const ShapeId id, con
 		if(!offsetBoundry.intersects(relativeOffsetCuboid))
 			continue;
 		const Cuboid cuboid = Cuboid::create(offsetBoundry.intersection(relativeOffsetCuboid));
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 			if(predicate(point))
 				return point;
 	}

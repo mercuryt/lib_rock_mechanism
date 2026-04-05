@@ -354,10 +354,12 @@ TEST_CASE("basicNeedsNonsentient")
 	{
 		CHECK(actors.grow_isGrowing(actor));
 		Point3D temperatureSourceLocation = Point3D::create(1, 1, 3);
-		area.m_hasTemperature.addTemperatureSource(temperatureSourceLocation, TemperatureDelta::create(200));
+		Point3D safeLocation = Point3D::create(9, 9, 2);
+		[[maybe_unused]] auto temperatureSourceId = area.m_hasTemperature.m_sources.addTemperatureSource(area, temperatureSourceLocation, TemperatureDelta::create(200));
 		simulation.doStep();
 		CHECK(!actors.temperature_isSafeAtCurrentLocation(actor));
 		CHECK(space.temperature_get(actors.getLocation(actor)) > AnimalSpecies::getMaximumSafeTemperature(actors.getSpecies(actor)));
+		CHECK(space.temperature_get(safeLocation) < AnimalSpecies::getMaximumSafeTemperature(actors.getSpecies(actor)));
 		CHECK(actors.objective_getCurrentName(actor) == "get to safe temperature");
 		CHECK(!actors.grow_isGrowing(actor));
 	}
@@ -482,7 +484,7 @@ TEST_CASE("death-temperature")
 	area.m_hasRain.disable();
 	Space& space = area.getSpace();
 	areaBuilderUtil::setSolidLayers(area, 0, 1, dirt);
-	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName("marble"));
+	areaBuilderUtil::setSolidWalls(area, 5, MaterialType::byName("dirt"));
 	Actors& actors = area.getActors();
 	Point3D actorLocation = Point3D::create(1, 1, 2);
 	ActorIndex actor = actors.create(ActorParamaters{
@@ -502,14 +504,16 @@ TEST_CASE("death-temperature")
 		Point3D b2 = Point3D::create(3, 2, 2);
 		Point3D b3 = Point3D::create(3, 1, 2);
 		Point3D b4 = Point3D::create(2, 1, 2);
-		area.m_hasTemperature.addTemperatureSource(temperatureSourceLocation, TemperatureDelta::create(6000));
+		Point3D b5 = Point3D::create(5, 5, 5);
 		CHECK(actors.temperature_isSafeAtCurrentLocation(actor));
+		[[maybe_unused]] auto temperatureSourceId = area.m_hasTemperature.m_sources.addTemperatureSource(area, temperatureSourceLocation, TemperatureDelta::create(6000));
 		// One step to propigate temperature and create death event.
 		simulation.doStep();
 		CHECK(space.temperature_get(b1) == space.temperature_get(temperatureSourceLocation));
 		CHECK(space.temperature_get(b2) < space.temperature_get(b1));
 		CHECK(space.temperature_get(b3) < space.temperature_get(b2));
 		CHECK(space.temperature_get(b4) < space.temperature_get(b3));
+		CHECK(space.temperature_get(b5) < space.temperature_get(b4));
 		CHECK(space.temperature_get(actorLocation) < space.temperature_get(b4));
 		CHECK(!actors.temperature_isSafeAtCurrentLocation(actor));
 		// TODO: Why - 2 and not - 1?

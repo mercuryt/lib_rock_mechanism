@@ -2,7 +2,7 @@
 DistanceSquared setOfPointsHelper::distanceToClosestSquared(const SmallSet<Point3D>& pointSet, const Point3D point)
 {
 	DistanceSquared output = DistanceSquared::max();
-	for(const Point3D& otherPoint : pointSet)
+	for(const Point3D otherPoint : pointSet)
 	{
 		DistanceSquared distance = point.distanceToSquared(otherPoint);
 		if(distance == 0)

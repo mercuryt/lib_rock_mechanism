@@ -82,7 +82,7 @@ class RTreeData
 		void updateLeafWithValue(const RTreeArrayIndex offset, const Point3D point, const T& value) { updateLeafWithValue(offset, Cuboid{point, point}, value); }
 		void updateBranchBoundry(const RTreeArrayIndex offset, const Cuboid cuboid);
 		GDB_CALLABLE void log() const;
-		[[nodiscard]] GDB_CALLABLE std::string toString() const;
+		GDB_CALLABLE std::string toString() const;
 	};
 	StrongVector<Node, RTreeNodeIndex> m_nodes;
 	SmallSet<RTreeNodeIndex> m_emptySlots;
@@ -147,9 +147,9 @@ public:
 	void prepare();
 	void clear();
 	[[nodiscard]] bool canPrepare() const;
-	[[nodiscard]] GDB_CALLABLE static T nullValue() { return T::create(nullPrimitive); }
+	GDB_CALLABLE static T nullValue() { return T::create(nullPrimitive); }
 	[[nodiscard]] bool empty() const { return leafCount() == 0; }
-	[[nodiscard]] GDB_CALLABLE bool anyLeafOverlapsAnother() const;
+	GDB_CALLABLE bool anyLeafOverlapsAnother() const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] CuboidSet getLeafCuboids() const;
 	[[nodiscard]] SmallSet<T> getAllWithCondition(auto&& condition) const
@@ -234,7 +234,7 @@ public:
 			if(!intersectMask.any())
 				continue;
 			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			const int& leafCount = node.getLeafCount();
+			const int leafCount = node.getLeafCount();
 			BitSet intersectBitSet = BitSet::create(intersectMask);
 			if(intersectMask.head(leafCount).any())
 			{
@@ -736,7 +736,7 @@ public:
 			const Node& node = m_nodes[index];
 			const auto& nodeCuboids = node.getCuboids();
 			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			for(const int& shapeIndex : candidates)
+			for(const int shapeIndex : candidates)
 			{
 				if(output[shapeIndex])
 					// This shape has already intersected with a leaf, no need to check further.
@@ -773,7 +773,7 @@ public:
 			const auto& [index, candidates] = openList.back();
 			const Node& node = m_nodes[index];
 			const auto& nodeCuboids = node.getCuboids();
-			for(const int& shapeIndex : candidates)
+			for(const int shapeIndex : candidates)
 			{
 				if(output[shapeIndex])
 					// This shape has already intersected with a leaf, no need to check further.
@@ -816,7 +816,7 @@ public:
 			const Node& node = m_nodes[index];
 			const auto& nodeCuboids = node.getCuboids();
 			const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
-			for(const int& shapeIndex : candidates)
+			for(const int shapeIndex : candidates)
 			{
 				BitSet intersectMask = BitSet::create(nodeCuboids.indicesOfIntersectingCuboids(shapes[shapeIndex]));
 				BitSet leafMask = intersectMask;
@@ -850,7 +850,7 @@ public:
 	{
 		std::vector<T> output;
 		output.resize(shapes.size());
-		auto action = [&](const T& value, const Cuboid, const int& shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex] = value; };
+		auto action = [&](const T& value, const Cuboid, const int shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex] = value; };
 		batchQueryForEachWithCondition(shapes, action, condition);
 		return output;
 	}
@@ -858,7 +858,7 @@ public:
 	{
 		std::vector<SmallSet<T>> output;
 		output.resize(shapes.size());
-		auto action = [&](const T& value, const Cuboid, const int& shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].maybeInsert(value); };
+		auto action = [&](const T& value, const Cuboid, const int shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].maybeInsert(value); };
 		batchQueryForEachWithCondition(shapes, action, condition);
 		return output;
 	}
@@ -866,7 +866,7 @@ public:
 	{
 		std::vector<CuboidSet> output;
 		output.resize(shapes.size());
-		auto action = [&](const T&, const Cuboid cuboid, const int& shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].add(cuboid); };
+		auto action = [&](const T&, const Cuboid cuboid, const int shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].add(cuboid); };
 		batchQueryForEachWithCondition(shapes, action, condition);
 		return output;
 	}
@@ -874,7 +874,7 @@ public:
 	{
 		std::vector<MapWithCuboidKeys<T>> output;
 		output.resize(shapes.size());
-		auto action = [&](const T& value, const Cuboid cuboid, const int& shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].insert({cuboid, value}); };
+		auto action = [&](const T& value, const Cuboid cuboid, const int shapeIndex) mutable { assert(output[shapeIndex].empty()); output[shapeIndex].insert({cuboid, value}); };
 		batchQueryForEachWithCondition(shapes, action, condition);
 		return output;
 	}
@@ -1021,19 +1021,19 @@ public:
 		return output;
 	}
 	// For test and debug.
-	[[nodiscard]] GDB_CALLABLE int nodeCount() const;
-	[[nodiscard]] GDB_CALLABLE int leafCount() const;
-	[[nodiscard]] GDB_CALLABLE const Node& getNode(int i) const;
-	[[nodiscard]] GDB_CALLABLE const Cuboid getNodeCuboid(int i, int o) const;
-	[[nodiscard]] GDB_CALLABLE RTreeNodeIndex getNodeChild(int i, int o) const;
-	[[nodiscard]] GDB_CALLABLE T queryPointOne(int x, int y, int z) const;
-	[[nodiscard]] GDB_CALLABLE T queryPointFirst(int x, int y, int z) const;
-	[[nodiscard]] GDB_CALLABLE SmallSet<T> queryPointAll(int x, int y, int z) const;
-	[[nodiscard]] GDB_CALLABLE bool queryPoint(int x, int y, int z, const T& value) const;
-	[[nodiscard]] GDB_CALLABLE int queryPointCount(int x, int y, int z) const;
-	[[nodiscard]] GDB_CALLABLE Cuboid queryPointCuboid(int x, int y, int z) const;
-	[[nodiscard]] GDB_CALLABLE int totalLeafVolume() const;
-	[[nodiscard]] GDB_CALLABLE int totalNodeVolume() const;
+	GDB_CALLABLE int nodeCount() const;
+	GDB_CALLABLE int leafCount() const;
+	GDB_CALLABLE const Node& getNode(int i) const;
+	GDB_CALLABLE const Cuboid getNodeCuboid(int i, int o) const;
+	GDB_CALLABLE RTreeNodeIndex getNodeChild(int i, int o) const;
+	GDB_CALLABLE T queryPointOne(int x, int y, int z) const;
+	GDB_CALLABLE T queryPointFirst(int x, int y, int z) const;
+	GDB_CALLABLE SmallSet<T> queryPointAll(int x, int y, int z) const;
+	GDB_CALLABLE bool queryPoint(int x, int y, int z, const T& value) const;
+	GDB_CALLABLE int queryPointCount(int x, int y, int z) const;
+	GDB_CALLABLE Cuboid queryPointCuboid(int x, int y, int z) const;
+	GDB_CALLABLE int totalLeafVolume() const;
+	GDB_CALLABLE int totalNodeVolume() const;
 	GDB_CALLABLE void assertAllLeafsAreUnique() const;
 	[[nodiscard]] static GDB_CALLABLE int getNodeSize();
 	GDB_CALLABLE std::string toString(int x, int y, int z) const;

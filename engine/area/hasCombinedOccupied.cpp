@@ -31,7 +31,7 @@ bool AreaHasCombinedOccupied::queryAnyEnemyInLineOfSight(const ActorIndex actor,
 		if(hasFactions.isEnemy(faction, otherFaction))
 			for(const Cuboid cuboid : rtree.queryGetLeaves(visionRange))
 				// TODO: Batch query?
-				for(const Point3D& point : cuboid)
+				for(const Point3D point : cuboid)
 					if(rtree.query(ParamaterizedLine(location, point)))
 						return true;
 	return false;

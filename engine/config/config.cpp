@@ -1,5 +1,7 @@
-#include "config/config.h"
-#include "numericTypes/types.h"
+#include "config.h"
+#include "../numericTypes/types.h"
+#include "physics.h"
+#include "social.h"
 #include <fstream>
 void Config::load()
 {
@@ -59,7 +61,9 @@ void Config::load()
 	data["digSkillModifier"].get_to(digSkillModifier);
 	data["digStrengthModifier"].get_to(digStrengthModifier);
 	data["drinkPriority"].get_to(drinkPriority);
+	assert(data.contains("eatPriority"));
 	data["eatPriority"].get_to(eatPriority);
+	assert(eatPriority.exists());
 	data["energyGeneratedByOneUnitMassFallingOneDistance"].get_to(energyGeneratedByOneUnitMassFallingOneDistance);
 	data["equipPriority"].get_to(equipPriority);
 	exterminateCheckFrequency = Step::create(data["exterminateCheckFrequencySeconds"].get<float>() * stepsPerSecond.get());
@@ -82,11 +86,8 @@ void Config::load()
 	data["goUpMoveCost"].get_to(goUpMoveCost);
 	harvestEventDuration = Step::create(data["harvestEventDurationSeconds"].get<float>() * stepsPerSecond.get());
 	data["harvestPriority"].get_to(harvestPriority);
-	data["heatDisipatesAtDistanceExponent"].get_to(heatDisipatesAtDistanceExponent);
 	data["heatFractionForBurn"].get_to(heatFractionForBurn);
 	data["heatFractionForSmoulder"].get_to(heatFractionForSmoulder);
-	data["heatDistanceMaximum"].get_to(heatDistanceMaximum);
-	data["heatRadianceMinimum"].get_to(heatRadianceMinimum);
 	data["hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea"].get_to(hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea);
 	data["hitScaleModifier"].get_to(hitScaleModifier);
 	data["hitsToDivideActorFallDamageInto"].get_to(hitsToDivideActorFallDamageInto);
@@ -249,4 +250,6 @@ void Config::load()
 	data["woodCuttingSkillModifier"].get_to(woodCuttingSkillModifier);
 	data["woodCuttingStrengthModifier"].get_to(woodCuttingStrengthModifier);
 	yokeDelaySteps = Step::create(data["yokeDelaySeconds"].get<float>() * stepsPerSecond.get());
+	Social::load();
+	Physics::load();
 }

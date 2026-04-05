@@ -79,18 +79,6 @@ void ItemCanBeStockPiled::maybeUnsetAndScheduleReset(Area& area, const FactionId
 	maybeUnset(faction);
 	scheduleReset(area, faction, duration);
 }
-// Item
-void Items::onChangeAmbiantSurfaceTemperature()
-{
-	Space& space = m_area.getSpace();
-	m_onSurface.forEach([&](const ItemIndex index){
-		assert(m_location[index].exists());
-		Temperature temperature = space.temperature_get(m_location[index]);
-		for(const Cuboid cuboid : getOccupied(index))
-			for(const Point3D& point : cuboid)
-				setTemperature(index, temperature, point);
-	});
-}
 Items::Items(Area& area) :
 	Portables(area)
 { }
@@ -147,6 +135,7 @@ void Items::moveIndex(const ItemIndex oldIndex, const ItemIndex newIndex)
 		m_hasCargo[newIndex]->updateCarrierIndexForAllCargo(m_area, newIndex);
 	if(m_onSurface[oldIndex])
 	{
+		// No need to update Area::m_hasTemperatures here, just bookkeeping.
 		m_onSurface.maybeUnset(oldIndex);
 		m_onSurface.set(newIndex);
 	}
@@ -301,8 +290,19 @@ void Items::unsetStatic(const ItemIndex index)
 	else
 		HasShapes<Items, ItemIndex>::unsetStatic(index);
 }
+void Items::setOnSurface(const ItemIndex index, const bool value)
+{
+	HasShapes::setOnSurface(index, value);
+	if(value)
+		m_area.m_hasTemperature.addItemAboveGround(m_area, index);
+	else
+		m_area.m_hasTemperature.removeItemAboveGround(m_area, index);
+}
 void Items::destroy(const ItemIndex index)
 {
+	// Remove from Area::AreaHasTemperatures meltable item tracker.
+	if(isOnSurface(index))
+		setOnSurface(index, false);
 	// No need to explicitly unschedule events here, destorying the event holder will do it.
 	if(hasLocation(index))
 		location_clear(index);
@@ -366,11 +366,20 @@ MoveTypeId Items::getMoveType(const ItemIndex index) const
 {
 	return m_moveType[index];
 }
-bool Items::canCombine(const ItemIndex index, const ItemIndex toMerge)
+bool Items::canCombine(const ItemIndex index, const ItemIndex toMerge) const
 {
 	if(!isStatic(toMerge))
 		return false;
 	return m_area.getSpace().shape_staticCanEnterCurrentlyWithFacing(getLocation(index), getShape(toMerge), getFacing(index), {});
+}
+bool Items::canMelt(const ItemIndex index) const
+{
+	MaterialTypeId materialType = getMaterialType(index);
+	if(materialType.exists())
+		return MaterialType::canMelt(materialType);
+	else
+		// Is constructed shape.
+		return m_constructedShape[index]->canMelt();
 }
 std::string Items::description(const ItemIndex index)
 {

@@ -39,6 +39,12 @@ struct OffsetCuboid
 	[[nodiscard]] OffsetCuboid relativeToOffset(const Offset3D point) const;
 	[[nodiscard]] OffsetCuboid above() const;
 	[[nodiscard]] OffsetCuboid getFace(const Facing6 facing) const;
+	[[nodiscard]] OffsetCuboid getFaceNorth() const;
+	[[nodiscard]] OffsetCuboid getFaceSouth() const;
+	[[nodiscard]] OffsetCuboid getFaceEast() const;
+	[[nodiscard]] OffsetCuboid getFaceWest() const;
+	[[nodiscard]] OffsetCuboid getFaceAbove() const;
+	[[nodiscard]] OffsetCuboid getFaceBelow() const;
 	[[nodiscard]] bool hasAnyNegativeCoordinates() const;
 	[[nodiscard]] OffsetCuboid sum(const OffsetCuboid other) const;
 	[[nodiscard]] OffsetCuboid difference(const Offset3D other) const;
@@ -76,5 +82,5 @@ struct OffsetCuboid
 	static OffsetCuboid create(const Cuboid cuboid);
 	static OffsetCuboid create(const Offset3D a, const Offset3D b);
 };
-inline void to_json(Json& data, const OffsetCuboid cuboid) { data = cuboid.toJson(); }
+inline void to_json(Json& data, const OffsetCuboid& cuboid) { data = cuboid.toJson(); }
 inline void from_json(const Json& data, OffsetCuboid& cuboid) { cuboid.load(data); }

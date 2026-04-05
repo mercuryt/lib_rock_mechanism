@@ -426,7 +426,7 @@ void RTreeData<T, config, nullPrimitive>::tryToMergeLeaves(Node& parent)
 			continue;
 		}
 		bool found = false;
-		const int& leafCount = parent.getLeafCount();
+		const int leafCount = parent.getLeafCount();
 		for(RTreeArrayIndex i = RTreeArrayIndex::create(0); i < leafCount; ++i)
 			if(mergeMask[i.get()] && parentDataAndChildIndices[i].data == parentDataAndChildIndices[offset].data)
 			{
@@ -483,7 +483,7 @@ void RTreeData<T, config, nullPrimitive>::clearAllContainedWithValueRecursive(No
 	const auto& parentCuboids = parent.getCuboids();
 	const auto& parentDataAndChildIndices = parent.getDataAndChildIndices();
 	auto containsMask = parentCuboids.indicesOfContainedCuboids(cuboid);
-	const int& leafCount = parent.getLeafCount();
+	const int leafCount = parent.getLeafCount();
 	if(!containsMask.any())
 		return;
 	for(RTreeArrayIndex i = RTreeArrayIndex::create(0); i < leafCount; ++i)
@@ -524,7 +524,7 @@ void RTreeData<T, config, nullPrimitive>::addToNodeRecursive(const RTreeNodeInde
 		assert(secondArrayIndex >= 1);
 		assert(secondArrayIndex <= nodeSize);
 		assert(secondArrayIndex < parent.getLeafCount() || secondArrayIndex >= parent.offsetOfFirstChild());
-		const int& leafCount = parent.getLeafCount();
+		const int leafCount = parent.getLeafCount();
 		const bool secondArrayIndexIsNewCuboid = secondArrayIndex == nodeSize;
 		if(firstArrayIndex < leafCount)
 		{
@@ -643,7 +643,7 @@ void RTreeData<T, config, nullPrimitive>::removeFromNode(const RTreeNodeIndex in
 		const auto& parentDataAndChildIndices = parent.getDataAndChildIndices();
 		CuboidArray<nodeSize>::BoolArray interceptMask = parentCuboids.indicesOfIntersectingCuboids(cuboid);
 		BitSet interceptBitSet = BitSet::create(interceptMask);
-		const int& leafCount = parent.getLeafCount();
+		const int leafCount = parent.getLeafCount();
 		if(leafCount != 0)
 		{
 			SmallSet<std::pair<Cuboid, T>> fragments;
@@ -688,7 +688,7 @@ void RTreeData<T, config, nullPrimitive>::removeFromNodeWithValue(const RTreeNod
 	// A scope is used to ensure they are not used after they are invalidated.
 	{
 		Node& parent = m_nodes[indexCopy];
-		const int& leafCount = parent.getLeafCount();
+		const int leafCount = parent.getLeafCount();
 		if(leafCount != 0)
 		{
 			const auto& parentCuboids = parent.getCuboids();
@@ -931,7 +931,7 @@ void RTreeData<T, config, nullPrimitive>::sort()
 			const auto& parentCuboids = parent.getCuboids();
 			// Check that cuboid recorded in parent matches boundry of cuboids recorded in child.
 			assert(parentCuboids[offset.get()] == node.getCuboids().boundry());
-			const int& leafCount = node.getLeafCount();
+			const int leafCount = node.getLeafCount();
 			const RTreeNodeIndex oldIndex = indices.indexFor(index);
 			const auto& oldDataAndChildren = m_nodes[oldIndex].getDataAndChildIndices();
 			const auto& newDataAndChildren = node.getDataAndChildIndices();
@@ -1104,7 +1104,7 @@ CuboidSet RTreeData<T, config, nullPrimitive>::getLeafCuboids() const
 	CuboidSet output;
 	for(const Node& node : m_nodes)
 	{
-		const int& leafCount = node.getLeafCount();
+		const int leafCount = node.getLeafCount();
 		const auto& cuboids = node.getCuboids();
 		for(RTreeArrayIndex i{0}; i < leafCount; ++i)
 			output.maybeAdd(cuboids[i.get()]);
@@ -1142,7 +1142,7 @@ void RTreeData<T, config, nullPrimitive>::validate() const
 			assert(parentCuboids[offset.get()] == cuboids.boundry());
 		}
 		// Check that leaves don't overlap unless allowed.
-		const int& leafCount = node.getLeafCount();
+		const int leafCount = node.getLeafCount();
 		if constexpr(!config.leavesCanOverlap)
 			for(RTreeArrayIndex i = {0}; i < leafCount; ++i)
 				assert(queryCount(cuboids[i.get()]) == 1);

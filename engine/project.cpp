@@ -419,7 +419,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 							// TODO: change group to use cuboid set.
 							for(const Cuboid fluidGroupCuboid : fluidData.group->getPoints())
 							{
-								for(const Point3D& point : fluidGroupCuboid)
+								for(const Point3D point : fluidGroupCuboid)
 									if(cuboid.contains(point))
 									{
 										recordFluidOnGround(fluidData.type, point);
@@ -656,7 +656,7 @@ Project::Project(const FactionId faction, Area& area, const Point3D location, co
 	Space& space = m_area.getSpace();
 	space.reserve(m_location, m_canReserve, std::move(locationDishonorCallback));
 	for(const Cuboid cuboid : additionalPointsToReserve)
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 			// This isn't what required shape callback was meant for but the code would be the same. Rename it maybe?
 			space.reserve(point, m_canReserve, std::make_unique<ProjectRequiredShapeDishonoredCallback>(*this));
 	space.project_add(m_location, *this);

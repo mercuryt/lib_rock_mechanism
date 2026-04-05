@@ -11,8 +11,8 @@ protected:
 	Key nextKey = Key::create(0);
 public:
 	virtual std::vector<std::pair<Key, Cuboid>> getAdjacentCandidates(const Cuboid) { return std::ranges::zip(m_keys, m_cuboids); }
-	virtual void onCreate(const int&, const Key&, const Cuboid) { }
-	virtual void onDestroy(const int&, const Key&, const Cuboid) { }
+	virtual void onCreate(const int, const Key&, const Cuboid) { }
+	virtual void onDestroy(const int, const Key&, const Cuboid) { }
 	[[nodiscard]] virtual bool canMerge(const Cuboid, const Cuboid) { return true; }
 	void add(const Cuboid cuboid) override
 	{
@@ -106,7 +106,7 @@ protected:
 			candidatePoints[4] = cuboid.m_low.north();
 		if(cuboid.m_low.z() != 0)
 			candidatePoints[5] = cuboid.m_low.west();
-		for(const Point3D& point : candidatePoints)
+		for(const Point3D point : candidatePoints)
 			if(point.exists())
 			{
 				const Key& key = m_pointLookup[point];
@@ -115,17 +115,17 @@ protected:
 			}
 		return output;
 	};
-	void onCreate(const int&, const Key& key, const Cuboid cuboid) override
+	void onCreate(const int, const Key& key, const Cuboid cuboid) override
 	{
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 		{
 			onKeySetForPoint(key, point);
 			m_pointLookup[point] = key;
 		}
 	}
-	void onDestroy(const int&, const Key& key, const Cuboid cuboid) override
+	void onDestroy(const int, const Key& key, const Cuboid cuboid) override
 	{
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 		{
 			onKeyClearForPoint(m_pointLookup[point], point);
 			m_pointLookup[point].clear();
@@ -152,7 +152,7 @@ protected:
 	std::vector<CuboidMap<Key>> m_adjacent;
 public:
 	CuboidSetAutoMergeMapWithAdjacent(Area& area) : CuboidSetAutoMergeMapWithPointLookup(area) { }
-	void onCreate(const int& index, const Key& key, const Cuboid cuboid) override
+	void onCreate(const int index, const Key& key, const Cuboid cuboid) override
 	{
 		CuboidSetAutoMergeMapWithPointLookup<Key>::onCreate(key, cuboid);
 		const Space& space = m_area.getSpace();
@@ -171,7 +171,7 @@ public:
 			}
 		}
 	}
-	void onDestroy(const int& index, const Key& key, const Cuboid cuboid) override
+	void onDestroy(const int index, const Key& key, const Cuboid cuboid) override
 	{
 		CuboidSetAutoMergeMapWithPointLookup<Key>::onDestroy(key, cuboid);
 		for(const auto& [otherKey, otherCuboid] : m_adjacent[key])

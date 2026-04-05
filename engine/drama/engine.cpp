@@ -125,7 +125,7 @@ Point3D DramaArc::getEntranceToArea(const ShapeId shape, const MoveTypeId moveTy
 	Space& space = m_area->getSpace();
 	// TODO: optimize this: only check faces of getAll() cuboid.
 	Cuboid cuboid = space.boundry();
-	for(const Point3D& point : cuboid)
+	for(const Point3D point : cuboid)
 	{
 		if(space.shape_moveTypeCanEnter(point, moveType) && space.isEdge(point) && space.isExposedToSky(point))
 			candidates.insert(point);
@@ -180,7 +180,7 @@ bool DramaArc::pointIsConnectedToAtLeast(const Point3D origin, [[maybe_unused]] 
 			accumulated.insert(candidate);
 			if(accumulated.size() == count)
 				return true;
-			for(const Point3D& adjacent : space.getDirectlyAdjacent(candidate))
+			for(const Point3D adjacent : space.getDirectlyAdjacent(candidate))
 				//TODO: check if shape can fit into point with any facing.
 				if(!space.solid_isAny(adjacent) && space.shape_moveTypeCanEnter(adjacent, moveType))
 					open.push(adjacent);

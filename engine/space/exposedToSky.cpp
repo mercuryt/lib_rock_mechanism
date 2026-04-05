@@ -1,7 +1,9 @@
 #include "exposedToSky.h"
 #include "../space/space.h"
 #include "../area/area.h"
-#include "../area/exteriorPortals.h"
+#include "../actors/actors.h"
+#include "../items/items.h"
+#include "../area/area.h"
 void PointsExposedToSky::initialize(const Cuboid cuboid)
 {
 	m_data.maybeInsert(cuboid);
@@ -15,11 +17,9 @@ void PointsExposedToSky::maybeSetCuboid(Area& area, const Cuboid cuboid)
 	*/
 	// Get exposed blocks on the top face of the cuboid.
 	Cuboid above = cuboid.getFaceAbove();
-	CuboidSet exposed;
-	if(cuboid.m_high.z() == area.getSpace().m_sizeZ - 1)
-		exposed = CuboidSet::create(above);
-	else
-		exposed = m_data.queryGetLeaves(above).intersection(above);
+	CuboidSet exposed = m_data.queryGetLeaves(above).intersection(above);
+	if(exposed.empty())
+		return;
 	// Extend exposed to the bottom of the space.
 	for(Cuboid& exposedCuboid : exposed)
 		exposedCuboid.m_low.setZ({0});
@@ -30,6 +30,8 @@ void PointsExposedToSky::maybeSetCuboid(Area& area, const Cuboid cuboid)
 		cuboidShadow.m_low.setZ({0});
 		exposed.maybeRemove(cuboidShadow);
 	});
+	if(exposed.empty())
+		return;
 	// Remove features and below.
 	space.pointFeature_queryForEachWithCuboids(exposed.boundry(), [&](const Cuboid featureCuboid, const PointFeature feature){
 		if(feature.pointFeatureType != PointFeatureTypeId::FloorGrate )
@@ -39,100 +41,82 @@ void PointsExposedToSky::maybeSetCuboid(Area& area, const Cuboid cuboid)
 			exposed.maybeRemove(shadow);
 		}
 	});
+	if(exposed.empty())
+		return;
+	space.plant_updateGrowingStatus(exposed);
 	// Include the top layer of solid ground or floor.
 	for(Cuboid& exposedCuboid : exposed)
-		if(exposedCuboid.m_high.z() != 0)
-			exposedCuboid.m_high.setZ(cuboid.m_high.z() - 1);
+		if(exposedCuboid.m_low.z() != 0)
+			exposedCuboid.m_low.setZ(exposedCuboid.m_low.z() - 1);
 	m_data.maybeInsert(exposed);
 	// record meltable.
 	space.solid_queryForEachWithCuboids(exposed, [&](const Cuboid materialCuboid, const MaterialTypeId materialType){
 		const Temperature meltingPoint = MaterialType::getMeltingPoint(materialType);
 		if(meltingPoint.exists())
-			area.m_hasTemperature.maybeAddMeltableSolidPointsAboveGround(exposed.intersection(materialCuboid), meltingPoint);
+			area.m_hasTemperature.onSetSolid(area, exposed.intersection(materialCuboid), materialType);
 	});
-	space.plant_updateGrowingStatus(exposed);
+	// record freezable.
+	space.fluid_queryForEachWithCuboids(exposed, [&](const Cuboid fluidCuboid, const FluidData fluidData){
+		const Temperature freezingPoint = FluidType::getFreezingPoint(fluidData.type);
+		if(freezingPoint.exists())
+			area.m_hasTemperature.onFluidEnters(area, CuboidSet::create(fluidCuboid), *fluidData.group);
+	});
 	// Check for overhangs to mark as portals.
 	CuboidSet adjacentToExposed = exposed.getAdjacent();
 	adjacentToExposed = space.temperature_queryTransmitsCuboidsIntersection(adjacentToExposed);
-	area.m_exteriorPortals.maybeAddAll(area, adjacentToExposed);
+	area.m_hasTemperature.m_portals.maybeAdd(area, adjacentToExposed);
+	area.m_hasTemperature.m_portals.maybeRemove(area, exposed);
+	area.m_hasTemperature.markToUpdate(exposed);
+	// Mark actors and items as being on surface.
+	Actors& actors = area.getActors();
+	space.actor_queryForEach(exposed, [&](const ActorIndex actor){
+		actors.setOnSurface(actor, true);
+	});
+	Items& items = area.getItems();
+	space.item_queryForEach(exposed, [&](const ItemIndex item){
+		items.setOnSurface(item, true);
+	});
 }
 void PointsExposedToSky::set(Area& area, const Point3D point)
 {
 	return maybeSetCuboid(area, Cuboid::create(point, point));
-	Point3D current = point;
-	Space& space = area.getSpace();
-	while(true)
-	{
-		m_data.maybeInsert(current);
-		if(space.solid_isAny(current))
-		{
-			const MaterialTypeId materialType = space.solid_get(current);
-			const Temperature meltingPoint = MaterialType::getMeltingPoint(materialType);
-			if(meltingPoint.exists())
-				area.m_hasTemperature.maybeAddMeltableSolidPointsAboveGround(CuboidSet::create(current), meltingPoint);
-			break;
-		}
-		// Check for adjacent which are now portals because they are adjacent to a point exposed to sky.
-		for(const Point3D& adjacent : space.getAdjacentWithEdgeAndCornerAdjacentExceptDirectlyAboveAndBelow(current))
-			if(
-				space.temperature_transmits(adjacent) &&
-				AreaHasExteriorPortals::isPortal(space, adjacent) &&
-				!area.m_exteriorPortals.isRecordedAsPortal(adjacent)
-			)
-				area.m_exteriorPortals.add(area, adjacent);
-		// Check if this point is no longer a portal.
-		if(area.m_exteriorPortals.isRecordedAsPortal(current))
-			area.m_exteriorPortals.remove(area, current);
-		space.plant_updateGrowingStatus(current);
-		if(current.z() == 0)
-			break;
-		current = current.below();
-	}
 }
 void PointsExposedToSky::unset(Area& area, const Point3D point)
 {
-	return maybeUnset(area, Cuboid::create(point, point));
-	Point3D current = point;
-	Space& space = area.getSpace();
-	while(check(current))
-	{
-		m_data.maybeRemove(current);
-		// Check for adjacent which are no longer portals because they are no longer adjacent to a point exposed to sky.
-		for(const Point3D& adjacent : space.getAdjacentWithEdgeAndCornerAdjacent(current))
-			if(area.m_exteriorPortals.isRecordedAsPortal(adjacent) && (!space.temperature_transmits(adjacent) || !AreaHasExteriorPortals::isPortal(space, adjacent)))
-				area.m_exteriorPortals.remove(area, adjacent);
-		if(space.solid_isAny(current))
-		{
-			const MaterialTypeId materialType = space.solid_get(current);
-			const Temperature meltingPoint = MaterialType::getMeltingPoint(materialType);
-			if(meltingPoint.exists())
-				area.m_hasTemperature.maybeRemoveMeltableSolidPointsAboveGround(Cuboid::create(current, current), meltingPoint);
-			break;
-		}
-		// Check if this point is now a portal.
-		if(space.temperature_transmits(current) && AreaHasExteriorPortals::isPortal(space, current))
-			area.m_exteriorPortals.add(area, current);
-		space.plant_updateGrowingStatus(current);
-		if(current.z() == 0)
-			break;
-		current = current.below();
-	}
+	return maybeUnsetBeneathTopLayer(area, Cuboid::create(point, point));
 }
-void PointsExposedToSky::maybeUnset(Area& area, const Cuboid cuboid)
+void PointsExposedToSky::maybeUnsetBeneathTopLayer(Area& area, const Cuboid cuboid)
 {
+	// Nothing below to unset.
+	if(cuboid.m_high.z() == 0)
+		return;
 	Cuboid shadow = cuboid;
 	shadow.m_low.setZ({0});
+	shadow.m_high.setZ(shadow.m_high.z() - 1);
 	Space& space = area.getSpace();
-	CuboidSet setInShadow = m_data.queryGetLeaves(shadow).intersection(shadow);
+	CuboidSet setInShadow = m_data.queryGetLeaves(shadow);
+	if(setInShadow.empty())
+		return;
+	setInShadow = setInShadow.intersection(shadow);
 	m_data.maybeRemove(shadow);
 	CuboidSet adjacentToSetInShadow = setInShadow.getAdjacent();
-	area.m_exteriorPortals.maybeRemoveAll(area, adjacentToSetInShadow);
-	area.m_exteriorPortals.maybeAddAll(area, setInShadow);
+	area.m_hasTemperature.m_portals.maybeRemove(area, adjacentToSetInShadow);
+	area.m_hasTemperature.m_portals.maybeAdd(area, setInShadow);
+	area.m_hasTemperature.markToUpdate(shadow);
 	space.plant_updateGrowingStatus(setInShadow);
 	space.solid_queryForEachWithCuboids(setInShadow, [&](const Cuboid solidCuboid, const MaterialTypeId materialType){
-			const Temperature meltingPoint = MaterialType::getMeltingPoint(materialType);
-			if(meltingPoint.exists())
-				area.m_hasTemperature.maybeRemoveMeltableSolidPointsAboveGround(setInShadow.intersection(solidCuboid), meltingPoint);
+		const Temperature meltingPoint = MaterialType::getMeltingPoint(materialType);
+		if(meltingPoint.exists())
+			area.m_hasTemperature.onSetNotSolid(area, setInShadow.intersection(solidCuboid), materialType);
+	});
+	// unmark actors and items as being on surface.
+	Actors& actors = area.getActors();
+	space.actor_queryForEach(shadow, [&](const ActorIndex actor){
+		actors.setOnSurface(actor, false);
+	});
+	Items& items = area.getItems();
+	space.item_queryForEach(shadow, [&](const ItemIndex item){
+		items.setOnSurface(item, false);
 	});
 }
 bool PointsExposedToSky::check(const CuboidSet& cuboids) const { return m_data.query(cuboids); }

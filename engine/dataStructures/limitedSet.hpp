@@ -101,7 +101,7 @@ void LimitedSet<T, capacity>::eraseAll(LimitedSet<T, capacity>& other)
 			insert(*iter);
 }
 template<typename T, int capacity>
-void LimitedSet<T, capacity>::eraseIndex(const int& index) { erase(begin() + index); }
+void LimitedSet<T, capacity>::eraseIndex(const int index) { erase(begin() + index); }
 template<typename T, int capacity>
 void LimitedSet<T, capacity>::popBack() { --m_size; }
 template<typename T, int capacity>
@@ -169,9 +169,9 @@ void LimitedSet<T, capacity>::removeDuplicatesAndValue(const T& value)
 template<typename T, int capacity>
 bool LimitedSet<T, capacity>::operator==(const LimitedSet<T, capacity>& other) { return &other == this; }
 template<typename T, int capacity>
-const T& LimitedSet<T, capacity>::operator[](const int& index) const { assert(index < m_size); return m_data[index]; }
+const T& LimitedSet<T, capacity>::operator[](const int index) const { assert(index < m_size); return m_data[index]; }
 template<typename T, int capacity>
-T& LimitedSet<T, capacity>::operator[](const int& index) { assert(index < m_size); return m_data[index]; }
+T& LimitedSet<T, capacity>::operator[](const int index) { assert(index < m_size); return m_data[index]; }
 template<typename T, int capacity>
 bool LimitedSet<T, capacity>::contains(const T& value) const
 {

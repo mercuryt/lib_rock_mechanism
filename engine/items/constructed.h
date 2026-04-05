@@ -47,6 +47,8 @@ public:
 	// TODO: this would be better as a view.
 	[[nodiscard]] SmallSet<MaterialTypeId> getMaterialTypesAt(const Point3D location, const Facing4 facing, const Point3D point) const;
 	[[nodiscard]] Json toJson() const;
+	[[nodiscard]] bool canMelt() const;
+	[[nodiscard]] MaterialTypeId getMaterialWithTheLowestMeltingPoint() const;
 	[[nodiscard]] static std::pair<ConstructedShape, Point3D> makeForKeelPoint(Area& area, const Point3D point, const Facing4 facing);
 	[[nodiscard]] static std::pair<ConstructedShape, Point3D> makeForPlatform(Area& area, const CuboidSet& cuboids, const Facing4 facing);
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(ConstructedShape, m_solid, m_features, m_decks, m_motiveForce, m_fullDisplacement, m_value, m_mass);

@@ -1,5 +1,5 @@
 #include "drama.h"
-#include "config.h"
+#include "../config/config.h"
 #include <fstream>
 void Config::Drama::load()
 {

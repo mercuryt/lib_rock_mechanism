@@ -78,7 +78,7 @@ struct PsycologyData
 	Eigen::Array<float, 1, capacity> m_data;
 	void operator+=(const PsycologyData& other);
 	void operator-=(const PsycologyData& other);
-	void operator*=(const float& scale);
+	void operator*=(const float scale);
 	[[nodiscard]] PsycologyData operator-(const PsycologyData& other) const;
 	void addTo(const PsycologyAttribute& attribute, const PsycologyWeight value);
 	void set(const PsycologyAttribute& attribute, const PsycologyWeight value);
@@ -92,6 +92,6 @@ struct PsycologyData
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(PsycologyData, m_data);
 };
 /*
-inline void to_json(Json& data, const PsycologyData& pData) { std::vector<float> vector; vector.reserve(PsycologyData::capacity); for(const float& weight : pData.m_data) vector.push_back(weight); data = vector; }
+inline void to_json(Json& data, const PsycologyData& pData) { std::vector<float> vector; vector.reserve(PsycologyData::capacity); for(const float weight : pData.m_data) vector.push_back(weight); data = vector; }
 inline void from_json(const Json& data, PsycologyData& pData) { auto vector = data.get<std::vector<float>>(); for(int i = 0; i != PsycologyData::capacity; ++i) pData.m_data[i] = vector[i]; }
 */

@@ -34,13 +34,13 @@ public:
 	void create(const ActorReference actor);
 	void maybeCreate(const ActorReference actor);
 	void cancelIfExists(const ActorReference actor);
-	void readStepSegment(const int& begin, const int& end);
+	void readStepSegment(const int begin, const int end);
 	void doStep();
 	void readStep();
 	void writeStep();
 	void clear();
 	void maybeGenerateRequestsForAllWithLineOfSightTo(const Cuboid cuboid);
-	[[nodiscard]] bool maybeUpdateRange(const ActorReference actor, const Distance  range);
+	[[nodiscard]] bool maybeUpdateRange(const ActorReference actor, const Distance range);
 	bool maybeUpdateLocation(const ActorReference actor, const Point3D location);
-	[[nodiscard]] size_t size() const { return m_data.size(); }
+	GDB_CALLABLE size_t size() const;
 };

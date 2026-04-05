@@ -2,6 +2,7 @@
 
 #include "../actorOrItemIndex.h"
 #include "../body.h"
+#include "../temperature.h"
 #include "../dataStructures/strongVector.h"
 #include "../datetime.h"
 #include "../definitions/attackType.h"
@@ -151,7 +152,7 @@ public:
 	Actors(Area& area);
 	void load(const Json& data);
 	void loadObjectivesAndReservations(const Json& data);
-	void onChangeAmbiantSurfaceTemperature();
+	void onChangeAmbiantSurfaceTemperature(Temperature newAmbiant, const CuboidSet& exclude);
 	template<typename Action>
 	void forEachData(Action&& action)
 	{
@@ -484,7 +485,7 @@ public:
 	void objective_canNotCompleteObjective(const ActorIndex index, Objective& objective);
 	void objective_canNotFulfillNeed(const ActorIndex index, Objective& objective);
 	void objective_maybeDoNext(const ActorIndex index);
-	void objective_setPriority(const ActorIndex index, const ObjectiveTypeId& objectiveType, Priority priority);
+	void objective_setPriority(const ActorIndex index, const ObjectiveTypeId objectiveType, Priority priority);
 	void objective_reset(const ActorIndex index);
 	void objective_projectCannotReserve(const ActorIndex index);
 	void objective_complete(const ActorIndex index, Objective& objective);
@@ -492,10 +493,10 @@ public:
 	void objective_cancel(const ActorIndex index, Objective& objective);
 	void objective_execute(const ActorIndex index);
 	[[nodiscard]] bool objective_exists(const ActorIndex index) const;
-	[[nodiscard]] bool objective_hasTask(const ActorIndex index, const ObjectiveTypeId& objectiveTypeId) const;
+	[[nodiscard]] bool objective_hasTask(const ActorIndex index, const ObjectiveTypeId objectiveTypeId) const;
 	[[nodiscard]] bool objective_hasNeed(const ActorIndex index, NeedType needType) const;
 	[[nodiscard]] bool objective_hasSupressedNeed(const ActorIndex index, NeedType needType) const;
-	[[nodiscard]] Priority objective_getPriorityFor(const ActorIndex index, const ObjectiveTypeId& objectiveType) const;
+	[[nodiscard]] Priority objective_getPriorityFor(const ActorIndex index, const ObjectiveTypeId objectiveType) const;
 	[[nodiscard]] std::string objective_getCurrentName(const ActorIndex index) const;
 	[[nodiscard]] ObjectiveTypeId objective_getCurrentTypeId(const ActorIndex index) const;
 	template<typename T>
@@ -504,8 +505,8 @@ public:
 	const T& objective_getCurrent(const ActorIndex index) const { return static_cast<T&>(m_hasObjectives[index]->getCurrent()); }
 	// For testing.
 	[[nodiscard]] bool objective_queuesAreEmpty(const ActorIndex index) const;
-	[[nodiscard]] bool objective_isOnDelay(const ActorIndex index, const ObjectiveTypeId& objectiveTypeId) const;
-	[[nodiscard]] Step objective_getDelayEndFor(const ActorIndex index, const ObjectiveTypeId& objectiveTypeId) const;
+	[[nodiscard]] bool objective_isOnDelay(const ActorIndex index, const ObjectiveTypeId objectiveTypeId) const;
+	[[nodiscard]] Step objective_getDelayEndFor(const ActorIndex index, const ObjectiveTypeId objectiveTypeId) const;
 	[[nodiscard]] Step objective_getNeedDelayRemaining(const ActorIndex index, NeedType objectiveTypeId) const;
 	// CanReserve.
 	void canReserve_clearAll(const ActorIndex index);

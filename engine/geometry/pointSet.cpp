@@ -10,7 +10,7 @@ void Point3DSet::insert(const Point3D point)
 	data.col(m_size) = point.data;
 	++m_size;
 }
-Point3D Point3DSet::operator[](const int& index) const { assert(index < m_size); return Coordinates(data.col(index)); }
+Point3D Point3DSet::operator[](const int index) const { assert(index < m_size); return Coordinates(data.col(index)); }
 Cuboid Point3DSet::boundry() const
 {
 	Eigen::Array<DistanceWidth, 3, Eigen::Dynamic> truncatedData = data.block(0, 0, 3, m_size);

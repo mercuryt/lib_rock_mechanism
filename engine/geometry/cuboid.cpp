@@ -21,7 +21,7 @@ Cuboid::Cuboid(const Point3D highest, const Point3D lowest) : m_high(highest), m
 SmallSet<Point3D> Cuboid::toSet() const
 {
 	SmallSet<Point3D> output;
-	for(const Point3D& point : (*this))
+	for(const Point3D point : (*this))
 		output.insert(point);
 	return output;
 }
@@ -281,13 +281,13 @@ void Cuboid::setFrom(const Offset3D high, const Offset3D low)
 	assert((low.data >= 0).all());
 	(*this) = fromPointPair(Point3D::create(high), Point3D::create(low));
 }
-void Cuboid::shift(const Facing6 direction, const Distance  distance)
+void Cuboid::shift(const Facing6 direction, const Distance distance)
 {
 	// TODO: make offsetsListDirectlyAdjacent return an Offset3D.
 	Offset3D offset = adjacentOffsets::direct[(int)direction];
 	shift(offset, distance);
 }
-void Cuboid::shift(const Offset3D offset, const Distance  distance)
+void Cuboid::shift(const Offset3D offset, const Distance distance)
 {
 	assert(distance != 0);
 	auto offsetModified = offset;
@@ -296,13 +296,13 @@ void Cuboid::shift(const Offset3D offset, const Distance  distance)
 	m_high += offsetModified;
 	m_low += offsetModified;
 }
-void Cuboid::maybeShift(const Facing6 direction, const Distance  distance)
+void Cuboid::maybeShift(const Facing6 direction, const Distance distance)
 {
 	// TODO: make offsetsListDirectlyAdjacent return an Offset3D.
 	Offset3D offset = adjacentOffsets::direct[(int)direction];
 	maybeShift(offset, distance);
 }
-void Cuboid::maybeShift(const Offset3D offset, const Distance  distance)
+void Cuboid::maybeShift(const Offset3D offset, const Distance distance)
 {
 	assert(distance != 0);
 	auto offsetModified = offset;
@@ -314,13 +314,17 @@ void Cuboid::maybeShift(const Offset3D offset, const Distance  distance)
 }
 void Cuboid::rotateAroundPoint(const Point3D point, const Facing4 facing)
 {
-	Offset3D lowOffset = point - m_low;
-	Offset3D highOffset = point - m_high;
-	const Offset3D newLow = point.offsetRotated(lowOffset, facing);
-	const Offset3D newHigh = point.offsetRotated(highOffset, facing);
+	// Make a copy to normalize z;
+	Point3D copyOfPoint = point;
+	copyOfPoint.setZ(Distance::create(m_low.z().get()));
+	Offset3D lowOffset = copyOfPoint - m_low;
+	const Offset3D newLow = copyOfPoint.offsetRotated(lowOffset, facing);
+	copyOfPoint.setZ(Distance::create(m_high.z().get()));
+	Offset3D highOffset = copyOfPoint - m_high;
+	const Offset3D newHigh = copyOfPoint.offsetRotated(highOffset, facing);
 	setFrom(newLow, newHigh);
 }
-void Cuboid::setMaxZ(const Distance  distance)
+void Cuboid::setMaxZ(const Distance distance)
 {
 	if(m_high.z() > distance)
 		m_high.data[2] = distance.get();
@@ -335,32 +339,32 @@ void Cuboid::maybeExpand(const Point3D other)
 	m_high.data = m_high.data.max(other.data);
 	m_low.data = m_low.data.min(other.data);
 }
-void Cuboid::inflate(const Distance  distance)
+void Cuboid::inflate(const Distance distance)
 {
 	m_high.data += distance.data;
 	m_low = m_low.subtractWithMinimum(distance);
+}
+Cuboid Cuboid::inflated(const Distance distance) const
+{
+	Cuboid output = *this;
+	output.inflate(distance);
+	return output;
 }
 void Cuboid::clear() { m_low.clear(); m_high.clear(); }
 Cuboid Cuboid::getFace(const Facing6 facing) const
 {
 	switch(facing)
 	{
-		// test area has x() higher then this.
 		case(Facing6::East):
 			return getFaceEast();
-		// test area has x() m_lower then this.
 		case(Facing6::West):
 			return getFaceWest();
-		// test area has y() m_higher then this.
 		case(Facing6::South):
 			return getFaceSouth();
-		// test area has y() m_lower then this.
 		case(Facing6::North):
 			return getFaceNorth();
-		// test area has z() m_higher then this.
 		case(Facing6::Above):
 			return getFaceAbove();
-		// test area has z() m_lower then this.
 		case(Facing6::Below):
 			return getFaceBelow();
 		default:
@@ -410,7 +414,7 @@ Cuboid fromPointSet(const SmallSet<Point3D>& set)
 	const Point3DSet points = Point3DSet::fromPointSet(set);
 	return points.boundry();
 }
-Cuboid Cuboid::createCube(const Point3D center, const Distance  width)
+Cuboid Cuboid::createCube(const Point3D center, const Distance width)
 {
 	return {{center.data + width.get()}, {center.data - width.get()}};
 }
@@ -418,6 +422,10 @@ Cuboid Cuboid::create(const OffsetCuboid cuboid)
 {
 	assert((cuboid.m_low.data >= 0).all());
 	return {Point3D(cuboid.m_high.data.cast<DistanceWidth>()), Point3D(cuboid.m_low.data.cast<DistanceWidth>())};
+}
+Cuboid Cuboid::create(const Primitive primitive)
+{
+	return Cuboid::create(Point3D::create(primitive.data[0], primitive.data[1], primitive.data[2]), Point3D::create(primitive.data[3], primitive.data[4], primitive.data[5]));
 }
 bool Cuboid::operator==(const Cuboid cuboid) const
 {
@@ -533,7 +541,7 @@ std::pair<Cuboid, Cuboid> Cuboid::getChildrenWhenSplitBelowCuboid(const Cuboid c
 	if(m_high.z() >= splitHighest.z())
 		output.first = Cuboid(m_high, Point3D(m_low.x(), m_low.y(), splitHighest.z()));
 	// Split off group below.
-	if(m_low.z() < splitLowest.z())
+	if (m_low.z() < splitLowest.z())
 		output.second = Cuboid(Point3D(m_high.x(), m_high.y(), splitLowest.z() - 1), m_low);
 	return output;
 }
@@ -545,7 +553,7 @@ bool Cuboid::isTouching(const Point3D point) const
 {
 	return !((m_high.data + 1) < point.data || m_low.data > (point.data + 1)).any();
 }
-OffsetCuboid Cuboid::translate(const Point3D previousPivot, const Point3D nextPivot, const  Facing4 previousFacing, const Facing4 nextFacing) const
+OffsetCuboid Cuboid::translate(const Point3D previousPivot, const Point3D nextPivot, const Facing4 previousFacing, const Facing4 nextFacing) const
 {
 	return OffsetCuboid::create(m_high.translate(previousPivot, nextPivot, previousFacing, nextFacing), m_low.translate(previousPivot, nextPivot, previousFacing, nextFacing));
 }
@@ -558,7 +566,7 @@ SmallSet<Cuboid> Cuboid::sliceAtEachZ() const
 {
 	SmallSet<Cuboid> output;
 	output.reserve(m_high.z().get() - m_low.z().get() + 1);
-	for(Distance z = m_low.z(); z <= m_high.z(); ++z)
+	for (Distance z = m_low.z(); z <= m_high.z(); ++z)
 	{
 		Point3D lowCopy = m_low;
 		Point3D highCopy = m_high;
@@ -568,7 +576,7 @@ SmallSet<Cuboid> Cuboid::sliceAtEachZ() const
 	}
 	return output;
 }
-Cuboid Cuboid::sliceAtZ(const Distance  z) const
+Cuboid Cuboid::sliceAtZ(const Distance z) const
 {
 	Point3D high = m_high;
 	high.setZ(z);
@@ -579,9 +587,17 @@ Cuboid Cuboid::sliceAtZ(const Distance  z) const
 Distance Cuboid::sizeX() const { return m_high.x() - m_low.x() + 1; }
 Distance Cuboid::sizeY() const { return m_high.y() - m_low.y() + 1; }
 Distance Cuboid::sizeZ() const { return m_high.z() - m_low.z() + 1; }
+Point3D Cuboid::clamp(const Point3D point) const
+{
+	return {
+		std::clamp(point.x(), m_low.x(), m_high.x()),
+		std::clamp(point.y(), m_low.y(), m_high.y()),
+		std::clamp(point.z(), m_low.z(), m_high.z())
+	};
+}
 Cuboid::ConstIterator::ConstIterator(const Point3D lowest, const Point3D highest)
 {
-	if(!lowest.exists())
+	if (!lowest.exists())
 	{
 		assert(!highest.exists());
 		setToEnd();

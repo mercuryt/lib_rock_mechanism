@@ -30,25 +30,20 @@ TEST_CASE("temperature")
 		space.solid_set(toBurn, wood, false);
 		space.solid_set(toNotBurn, marble, false);
 		Temperature temperatureBeforeHeatSource = space.temperature_get(origin);
-		area.m_hasTemperature.addTemperatureSource(origin, TemperatureDelta::create(1000));
-		area.m_hasTemperature.applyDeltas();
-		CHECK(space.temperature_get(origin) == temperatureBeforeHeatSource + 1000);
-		CHECK(space.temperature_get(b1) == temperatureBeforeHeatSource + 1000);
-		CHECK(space.temperature_get(b2) == 462);
+		[[maybe_unused]] TemperatureSourceId temperatureSourceId = area.m_hasTemperature.m_sources.addTemperatureSource(area, origin, TemperatureDelta::create(1000));
+		area.m_hasTemperature.doStep(area);
+		// ToBurn ignites, adding more temperature on top of the 1000 delta at origin.
+		CHECK(space.temperature_get(origin) > temperatureBeforeHeatSource + 1000);
+		CHECK(space.fire_exists(toBurn));
+		CHECK(!space.fire_exists(toNotBurn));
+		CHECK(space.temperature_get(b1) > temperatureBeforeHeatSource + 1000);
+		CHECK(space.temperature_get(b2) < temperatureBeforeHeatSource + 262);
 		CHECK(space.temperature_get(b4) == space.temperature_get(b2));
 		CHECK(space.temperature_get(b4) < space.temperature_get(b1));
-		CHECK(space.temperature_get(b3) == temperatureBeforeHeatSource);
-		CHECK(space.temperature_get(toBurn) == temperatureBeforeHeatSource + 1000);
-		CHECK(space.temperature_get(toNotBurn) == temperatureBeforeHeatSource + 1000);
-		CHECK(space.fire_exists(toBurn));
-		// Fire exists but the new deltas it has created have not been applied
-		CHECK(space.temperature_get(toBurn) == temperatureBeforeHeatSource + 1000);
-		CHECK(!space.fire_exists(toNotBurn));
-		CHECK(space.temperature_get(toNotBurn) == temperatureBeforeHeatSource + 1000);
-		CHECK(!simulation.m_eventSchedule.m_data.empty());
-		area.m_hasTemperature.applyDeltas();
+		CHECK(space.temperature_get(b3) == temperatureBeforeHeatSource + 20);
 		CHECK(space.temperature_get(toBurn) > temperatureBeforeHeatSource + 1000);
-		CHECK(space.temperature_get(toNotBurn) > temperatureBeforeHeatSource + 1000);
+		CHECK(space.temperature_get(toNotBurn) == temperatureBeforeHeatSource + 1014);
+		CHECK(!simulation.m_eventSchedule.m_data.empty());
 	}
 	SUBCASE("burnt to ash")
 	{
@@ -56,11 +51,11 @@ TEST_CASE("temperature")
 		Point3D toBurn = Point3D::create(6, 5, 5);
 		auto wood = MaterialType::byName("poplar wood");
 		space.solid_set(toBurn, wood, false);
-		area.m_hasTemperature.addTemperatureSource(origin, TemperatureDelta::create(1000));
+		[[maybe_unused]] TemperatureSourceId temperatureSourceId = area.m_hasTemperature.m_sources.addTemperatureSource(area, origin, TemperatureDelta::create(1000));
+		CHECK(!space.fire_exists(toBurn));
 		simulation.doStep();
 		CHECK(space.fire_exists(toBurn));
 		Fire& fire = space.fire_get(toBurn, wood);
-		CHECK(area.m_fires.containsFireAt(fire, toBurn));
 		CHECK(fire.m_stage == FireStage::Smouldering);
 		simulation.fastForward(MaterialType::getBurnStageDuration(wood) - 1);
 		CHECK(fire.m_stage == FireStage::Burning);

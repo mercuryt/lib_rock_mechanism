@@ -37,8 +37,13 @@ public:
 	HasFarmFieldsForFaction(const HasFarmFieldsForFaction&) { assert(false); std::unreachable(); }
 	HasFarmFieldsForFaction& operator=(HasFarmFieldsForFaction&& other) noexcept = default;
 	HasFarmFieldsForFaction& operator=(const HasFarmFieldsForFaction&) { assert(false); std::unreachable(); }
+private:
 	template<typename ShapeT>
-	void addGivePlantFluidDesignation(Area& area, ShapeT&& shape);
+	void addGivePlantFluidDesignationBody(Area& area, ShapeT shape);
+public:
+	void addGivePlantFluidDesignation(Area& area, Point3D point);
+	void addGivePlantFluidDesignation(Area& area, Cuboid cuboid);
+	void addGivePlantFluidDesignation(Area& area, const CuboidSet& cuboid);
 	void removeGivePlantFluidDesignation(auto& area, const auto& shape) { area.getSpace().designation_unset(shape, m_faction, SpaceDesignation::GivePlantFluid); }
 	void maybeRemoveGivePlantFluidDesignation(auto& area, const auto& shape) { area.getSpace().designation_maybeUnset(shape, m_faction, SpaceDesignation::GivePlantFluid); }
 	void addSowSeedsDesignation(auto& area, const auto& shape) { area.getSpace().designation_set(shape, m_faction, SpaceDesignation::SowSeeds); }
@@ -63,7 +68,7 @@ public:
 	[[nodiscard]] bool hasGivePlantsFluidDesignations() const;
 	[[nodiscard]] bool hasHarvestDesignations(Area& area) const;
 	[[nodiscard]] bool hasSowSeedsDesignations(Area& area) const;
-	[[nodiscard]] PlantSpeciesId getPlantSpeciesFor(const Point3D& point) const;
+	[[nodiscard]] PlantSpeciesId getPlantSpeciesFor(const Point3D point) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(HasFarmFieldsForFaction, m_faction, m_farmFields, m_plantsNeedingFluid, m_plantsNeedingFluidIsSorted);
 };
 class AreaHasFarmFields

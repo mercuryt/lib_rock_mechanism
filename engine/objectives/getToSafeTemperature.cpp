@@ -29,7 +29,7 @@ FindPathResult GetToSafeTemperaturePathRequest::readStep(Area& area, const Terra
 	auto condition = [&actors, &space, actorIndex](const Point3D location, const Facing4 facingAtLocation) ->std::pair<bool, Point3D>
 	{
 		for(const Cuboid occupied : actors.getCuboidsWhichWouldBeOccupiedAtLocationAndFacing(actorIndex, location, facingAtLocation))
-			for(const Point3D& point : occupied)
+			for(const Point3D point : occupied)
 				//TODO: temperature_getMax(const CuboidSet& cuboids)
 				if(!actors.temperature_isSafe(actorIndex, space.temperature_get(point)))
 					return std::make_pair(false, Point3D::null());

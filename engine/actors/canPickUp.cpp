@@ -396,7 +396,7 @@ void Actors::canPickUp_addFluidToContainerFromAdjacentPointsIncludingOtherContai
 	{
 		// TODO: rewrite as querying point in cuboid rather then iterating points.
 		if(space.fluid_contains(cuboid, fluidType))
-			for(const Point3D& point : cuboid)
+			for(const Point3D point : cuboid)
 			{
 				const CollisionVolume avalible = space.fluid_volumeOfTypeContains(point, fluidType);
 				if(avalible == 0)

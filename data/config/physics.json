@@ -1,0 +1,9 @@
+{
+	"maxBaseVolumeCubeRootForTemperatureDelta": 0.001,
+	"volumeOfFluidToGenerateWhenAPointFeatureMelts": 10,
+	"radiantHeatDisipatesAtDistanceExponent": 2,
+	"minimumHeatDeltaToTrackAffectedArea": 2,
+	"rangeOfInfluenceForPortalsBetweenOutsideAndInside": 10,
+	"maxVolumeOfInfluenceForPortalsBetweenOutsideAndInside": 1000,
+	"ambiantTemperatureDeltaDecay": 2
+}

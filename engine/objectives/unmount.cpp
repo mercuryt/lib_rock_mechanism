@@ -23,7 +23,7 @@ void UnmountObjective::execute(Area& area, const ActorIndex actor)
 	if(m_location.empty())
 	{
 		for(const Cuboid cuboid : actors.getAdjacentCuboids(mount))
-			for(const Point3D& point : cuboid)
+			for(const Point3D point : cuboid)
 			{
 				if(space.shape_canEnterCurrentlyFrom(m_location, shape, startingLocation, actors.getOccupied(actor)))
 				{

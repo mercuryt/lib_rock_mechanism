@@ -89,7 +89,6 @@ class Space
 	RTreeData<PlantIndex> m_plants;
 	RTreeData<CollisionVolume, RTreeDataConfig{}, 0> m_dynamicVolume;
 	RTreeData<CollisionVolume, RTreeDataConfig{}, 0> m_staticVolume;
-	RTreeData<TemperatureDelta> m_temperatureDelta;
 	RTreeBoolean m_unrevealed;
 	RTreeBoolean m_constructed;
 	RTreeBoolean m_dynamic;
@@ -153,7 +152,6 @@ public:
 	[[nodiscard]] const Support& getSupport() const { return m_support; }
 	[[nodiscard]] Support& getSupport() { return m_support; }
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
-	void setExposedToSky(const Point3D point, bool exposed);
 	[[nodiscard]] CuboidSet collectAdjacentsWithCondition(const Point3D point, auto&& condition)
 	{
 		CuboidSet output;
@@ -164,7 +162,7 @@ public:
 		{
 			Point3D current = openList.top();
 			openList.pop();
-			for(const Point3D& adjacent : getDirectlyAdjacent(current))
+			for(const Point3D adjacent : getDirectlyAdjacent(current))
 				if(condition(adjacent) && !output.contains(adjacent))
 				{
 					output.maybeAdd(adjacent);
@@ -208,7 +206,7 @@ public:
 			if(condition(current))
 				return current;
 			open.pop();
-			for(const Point3D& adjacent : getDirectlyAdjacent(current))
+			for(const Point3D adjacent : getDirectlyAdjacent(current))
 				if(current.taxiDistanceTo(adjacent) <= range && !closed.contains(adjacent))
 				{
 					closed.insert(adjacent);
@@ -255,6 +253,7 @@ public:
 	void solid_setCuboidNotDynamic(const Cuboid cuboid);
 	void solid_prepare() { m_solid.prepare(); }
 	void solid_removeOpaque(CuboidSet& cuboids) const;
+	void solid_removeAllFrom(CuboidSet& cuboids) const;
 	[[nodiscard]] bool solid_isAny(const auto& shape) const { return m_solid.queryAny(shape); }
 	[[nodiscard]] MaterialTypeId solid_get(const auto& shape) const { assert(m_solid.queryCount(shape) <= 1); return m_solid.queryGetOne(shape); }
 	[[nodiscard]] MapWithCuboidKeys<MaterialTypeId> solid_getAllWithCuboids(const auto& shape) const { return m_solid.queryGetAllWithCuboids(shape); }
@@ -280,6 +279,19 @@ public:
 	void pointFeature_hew(const Point3D point, const PointFeatureTypeId& featureType);
 	void pointFeature_remove(const Point3D point, const PointFeatureTypeId& type);
 	void pointFeature_removeAll(const Point3D point);
+	void pointFeature_removeAllWithCondition(const auto& shape, auto&& condition)
+	{
+		while(true)
+		{
+			auto [feature, cuboid] = m_features.queryGetOneWithCuboidAndCondition(shape, condition);
+			if(feature == PointFeature::null())
+				break;
+			CuboidSet intersection = CuboidSet::create(cuboid).intersection(shape);
+			for(const Cuboid intersectionCuboid : intersection)
+				for(const Point3D point : intersectionCuboid)
+					pointFeature_remove(point, feature.pointFeatureType);
+		}
+	}
 	void pointFeature_lock(const Point3D point, const PointFeatureTypeId& type);
 	void pointFeature_unlock(const Point3D point, const PointFeatureTypeId& type);
 	void pointFeature_close(const Point3D point, const PointFeatureTypeId& type);
@@ -343,7 +355,7 @@ public:
 	// Exposing these two methods breaks encapusalition a bit but allows better performance from fluidGroup.
 	void fluid_setAllUnstableExcept(const CuboidSet& points, const FluidTypeId fluidType);
 	// To be used by DrainQueue / FillQueue.
-	void fluid_drainInternal(const Cuboid cuboid, const CollisionVolume volume, const FluidTypeId fluidType);
+	void fluid_drainInternal(const Cuboid cuboid, const CollisionVolume volume, FluidGroup& Group);
 	void fluid_fillInternal(const Cuboid cuboid, const CollisionVolume volume, FluidGroup& fluidGroup);
 	// To be used by fluid group split, so the space which will be in soon to be created groups can briefly have fluid without having a fluidGroup.
 	// Fluid group will be set again in addPoint within the new group's constructor.
@@ -355,6 +367,7 @@ public:
 	void fluid_maybeEraseFluidOnDeck(const CuboidSet& points);
 	void fluid_removePointsWhichCannotBeEnteredEverFromCuboidSet(CuboidSet& set) const;
 	void fluid_queryForEachWithCuboids(const auto& shape, auto&& action) const { m_fluid.queryForEachWithCuboids(shape, action); }
+	void fluid_queryForEach(const auto& shape, auto&& action) const { m_fluid.queryForEach(shape, action); }
 	void fluid_queryTotalsForEachWithCuboids(const auto& shape, auto&& action) const { m_totalFluidVolume.queryForEachWithCuboids(shape, action); }
 	[[nodiscard]] Distance fluid_getMistInverseDistanceToSource(const Point3D point) const;
 	[[nodiscard]] FluidGroup* fluid_getGroup(const Point3D point, const FluidTypeId fluidType) const;
@@ -523,6 +536,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D point, const Fl
 	[[nodiscard]] bool shape_canFitEverOrCurrentlyDynamic(const Point3D location, const ShapeId shape, const Facing4 facing, const CuboidSet& occupied) const;
 	[[nodiscard]] bool shape_canFitEverOrCurrentlyStatic(const Point3D location, const ShapeId shape, const Facing4 facing, const CuboidSet& occupied) const;
 	[[nodiscard]] bool shape_canFitEver(const Point3D location, const ShapeId shape, const Facing4 facing) const;
+	[[nodiscard]] bool shape_canFitEverWithAnyFacing(const Point3D location, const ShapeId shape) const;
 	[[nodiscard]] bool shape_canFitCurrentlyStatic(const Point3D location, const ShapeId shape, const Facing4 facing, const CuboidSet& occupied) const;
 	[[nodiscard]] bool shape_canFitCurrentlyDynamic(const Point3D location, const ShapeId shape, const Facing4 facing, const CuboidSet& occupied) const;
 	[[nodiscard]] bool shape_shapeAndMoveTypeCanEnterEverFrom(const Point3D location, const ShapeId shape, const MoveTypeId moveType, const Point3D from) const;
@@ -625,15 +639,18 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D point, const Fl
 	[[nodiscard]] const auto& project_getAll() const { return m_projects; }
 	// -Temperature
 	void temperature_freeze(const Point3D point, const FluidTypeId fluidType);
-	void temperature_melt(const Point3D point);
-	void temperature_apply(const Point3D point, const Temperature temperature, const TemperatureDelta delta);
-	void temperature_updateDelta(const Point3D point, const TemperatureDelta delta);
+	void temperature_freeze(const CuboidSet& cuboids, const FluidTypeId fluidType);
+	void temperature_meltSolid(const Point3D point);
+	void temperature_meltSolid(const CuboidSet& cuboids, const MaterialTypeId materialType);
+	void temperature_meltFeature(const Point3D point, const MaterialTypeId materialType, const PointFeatureTypeId featureType);
+	void temperature_meltFeatures(const CuboidSet& cuboids, const MaterialTypeId materialType);
+	void temperature_meltItems(const CuboidSet& cuboids, const MaterialTypeId materialType);
 	[[nodiscard]] const Temperature temperature_getAmbient(const Point3D point) const;
 	[[nodiscard]] Temperature temperature_getDailyAverageAmbient(const Point3D point) const;
 	[[nodiscard]] Temperature temperature_get(const Point3D point) const;
 	[[nodiscard]] bool temperature_transmits(const Point3D point) const;
 	[[nodiscard]] CuboidSet temperature_queryTransmitsCuboidsIntersection(const CuboidSet& cuboids) const;
-	[[nodiscard]] GDB_CALLABLE std::string toString(const Point3D point) const;
+	GDB_CALLABLE std::string toString(const Point3D point) const;
 	// Unrevealed.
 	void unrevealed_queryForEach(const auto& shape, auto&& action) const { m_unrevealed.queryForEach(shape, action); }
 	Space(Space&) = delete;

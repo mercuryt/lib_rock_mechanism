@@ -1,5 +1,6 @@
 #include "numericTypes/types.h"
 #include "config/config.h"
+#include "config/physics.h"
 #include "geometry/cuboid.h"
 Step Step::createDbg(const StepWidth& value) { return Step::create(value); }
 Speed Force::operator/(const Mass mass) const { return Speed::create((float)data / (float)mass.get()); }
@@ -41,4 +42,32 @@ Temperature Temperature::operator-(const TemperatureDelta delta) const
 	auto copy = *this;
 	copy += delta;
 	return copy;
+}
+TemperatureDelta TemperatureDelta::reduceForDistanceAmbiant(const DistanceFractional distance) const
+{
+	if(distance == 0)
+		return *this;
+	return TemperatureDelta::create((float)data / (distance.get() * Config::Physics::ambiantTemperatureDeltaDecay));
+}
+Distance TemperatureDelta::effectDistanceAmbiant() const
+{
+	// td1 = td0 / (d * R)
+	// td1 * ( d * R) = td0
+	// d * R = td0 / td1
+	// d = (td0/td1)/R
+	return Distance::create(std::round(((float)data / (float)Config::Physics::minimumHeatDeltaToTrackAffectedArea.get()) / Config::Physics::ambiantTemperatureDeltaDecay));
+}
+TemperatureDelta TemperatureDelta::reduceForDistanceRadiant(const DistanceFractional distance) const
+{
+	if(distance == 0)
+		return *this;
+	return TemperatureDelta::create((float)data / std::pow(distance.get(), Config::Physics::radiantHeatDisipatesAtDistanceExponent));
+}
+Distance TemperatureDelta::effectDistanceRadiant() const
+{
+	// td1 = td0/(d^E)
+	// td1 * (d ^ E) = td0
+	// (d^E)=td0/td1
+	// d = root(td0 / td1, E)
+	return Distance::create(std::round(std::pow((float)data / (float)Config::Physics::minimumHeatDeltaToTrackAffectedArea.get(), 1.f / Config::Physics::radiantHeatDisipatesAtDistanceExponent)));
 }

@@ -35,7 +35,7 @@ public:
 	void load(const std::vector<Cuboid>& contents);
 	template<int capacity>
 	void load(const CuboidArray<capacity>& contents) { assert(empty()); reserve(contents.capacity); for(const Cuboid cuboid : contents) insert(cuboid); }
-	[[nodiscard]] Cuboid operator[](const int& index) const { return {Coordinates(m_high.col(index)), Coordinates(m_low.col(index)) }; }
+	[[nodiscard]] Cuboid operator[](const int index) const { return {Coordinates(m_high.col(index)), Coordinates(m_low.col(index)) }; }
 	[[nodiscard]] bool intersects(const Cuboid cuboid) const;
 	[[nodiscard]] bool containsAsMember(const Cuboid cuboid) const;
 	[[nodiscard]] bool empty() const { return m_size == 0; }

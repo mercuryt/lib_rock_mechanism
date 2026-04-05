@@ -224,7 +224,7 @@ void Items::location_clearStatic(const ItemIndex index)
 	m_occupied[index].clear();
 	m_occupiedWithVolume[index].clear();
 	if(space.isExposedToSky(location))
-		m_onSurface.maybeUnset(index);
+		setOnSurface(index, false);
 }
 void Items::location_clearDynamic(const ItemIndex index)
 {
@@ -241,7 +241,7 @@ void Items::location_clearDynamic(const ItemIndex index)
 	m_occupied[index].clear();
 	m_occupiedWithVolume[index].clear();
 	if(space.isExposedToSky(location))
-		m_onSurface.maybeUnset(index);
+		setOnSurface(index, false);
 }
 bool Items::location_canEnterEverWithFacing(const ItemIndex index, const Point3D location, const Facing4 facing) const
 {

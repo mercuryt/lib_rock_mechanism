@@ -18,12 +18,12 @@ private:
 	int m_size = 0;
 public:
 	Point3DSet() = default;
-	Point3DSet(const int& capacity) { assert(capacity != 0); reserve(capacity); }
-	void reserve(const int& capacity) { data.conservativeResize(3, capacity); }
-	void resize(const int& capacity) { if(m_size < capacity) reserve(capacity); m_size = capacity; }
+	Point3DSet(const int capacity) { assert(capacity != 0); reserve(capacity); }
+	void reserve(const int capacity) { data.conservativeResize(3, capacity); }
+	void resize(const int capacity) { if(m_size < capacity) reserve(capacity); m_size = capacity; }
 	void insert(const Point3D point);
 	void clear() { m_size = 0; };
-	[[nodiscard]] Point3D operator[](const int& index) const;
+	[[nodiscard]] Point3D operator[](const int index) const;
 	[[nodiscard]] int size() const { return m_size; }
 	[[nodiscard]] int capacity() const { return data.size(); }
 	[[nodiscard]] Cuboid boundry() const;
@@ -36,7 +36,7 @@ public:
 	[[nodiscard]] static Point3DSet fromPointSet(const auto& points)
 	{
 		Point3DSet output;
-		for(const Point3D& point : points)
+		for(const Point3D point : points)
 			output.insert(point);
 		return output;
 	}
@@ -44,7 +44,7 @@ public:
 	{
 		Point3DSet output;
 		for(const Cuboid cuboid : cuboids)
-			for(const Point3D& point : cuboid)
+			for(const Point3D point : cuboid)
 				output.insert(point);
 		return output;
 	}
@@ -53,7 +53,7 @@ public:
 		const Point3DSet& m_set;
 		int m_index;
 	public:
-		ConstIterator(const Point3DSet& set, const int& index) : m_set(set), m_index(index) { }
+		ConstIterator(const Point3DSet& set, const int index) : m_set(set), m_index(index) { }
 		void operator++() { ++m_index; }
 		[[nodiscard]] ConstIterator operator++(int) { auto copy = *this; ++(*this); return copy; }
 		[[nodiscard]] Point3D operator*() const;

@@ -61,6 +61,7 @@ public:
 	void addShapeToCompoundShape(const Index index, const ShapeId id, const Point3D location, const Facing4 facing);
 	void removeShapeFromCompoundShape(const Index index, const ShapeId id, const Point3D location, const Facing4 facing);
 	void log(const Index index) const;
+	void setOnSurface(const Index index, const bool value);
 	[[nodiscard]] size_t size() const { return m_shape.size(); }
 	[[nodiscard]] ShapeId getShape(const Index index) const { return m_shape[index]; }
 	[[nodiscard]] ShapeId getCompoundShape(const Index index) const { return m_compoundShape[index]; }

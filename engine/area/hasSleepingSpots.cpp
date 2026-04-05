@@ -12,7 +12,7 @@ void AreaHasSleepingSpots::load(const Json& data, DeserializationMemo&)
 Json AreaHasSleepingSpots::toJson() const
 {
 	Json data{{"unassigned", Json::array()}};
-	for(const Point3D& point : m_unassigned)
+	for(const Point3D point : m_unassigned)
 		data["unassigned"].push_back(point);
 	return data;
 }

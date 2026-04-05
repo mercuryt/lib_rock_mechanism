@@ -33,7 +33,7 @@ PlantIndex HasFarmFieldsForFaction::getHighestPriorityPlantForGiveFluid()
 	}
 	return m_plantsNeedingFluid.front().second;
 }
-PlantSpeciesId HasFarmFieldsForFaction::getPlantSpeciesFor(const Point3D& point) const
+PlantSpeciesId HasFarmFieldsForFaction::getPlantSpeciesFor(const Point3D point) const
 {
 	for(const FarmField& farmField : m_farmFields)
 		if(farmField.m_cuboids.contains(point))
@@ -151,7 +151,7 @@ void HasFarmFieldsForFaction::setPointData(Area& area)
 		space.farm_insert(field.m_cuboids, m_faction, field);
 }
 template<typename ShapeT>
-void HasFarmFieldsForFaction::addGivePlantFluidDesignation(Area& area, ShapeT&& shape)
+void HasFarmFieldsForFaction::addGivePlantFluidDesignationBody(Area& area, ShapeT shape)
 {
 	m_plantsNeedingFluidIsSorted = false;
 	const Plants& plants = area.getPlants();
@@ -159,12 +159,9 @@ void HasFarmFieldsForFaction::addGivePlantFluidDesignation(Area& area, ShapeT&& 
 		m_plantsNeedingFluid.insert({plants.getStepAtWhichPlantWillDieFromLackOfFluid(plant), plant});
 	area.getSpace().designation_set(shape, m_faction, SpaceDesignation::GivePlantFluid);
 }
-template void HasFarmFieldsForFaction::addGivePlantFluidDesignation<Point3D>(Area& area, Point3D&& shape);
-template void HasFarmFieldsForFaction::addGivePlantFluidDesignation<const Point3D&>(Area& area, const Point3D& shape);
-template void HasFarmFieldsForFaction::addGivePlantFluidDesignation<Point3D&>(Area& area, Point3D& shape);
-template void HasFarmFieldsForFaction::addGivePlantFluidDesignation<Cuboid>(Area& area, Cuboid&& shape);
-template void HasFarmFieldsForFaction::addGivePlantFluidDesignation<const Cuboid&>(Area& area, const Cuboid& shape);
-template void HasFarmFieldsForFaction::addGivePlantFluidDesignation<const CuboidSet&>(Area& area, const CuboidSet& shape);
+void HasFarmFieldsForFaction::addGivePlantFluidDesignation(Area& area, Point3D point) { addGivePlantFluidDesignationBody(area, point); }
+void HasFarmFieldsForFaction::addGivePlantFluidDesignation(Area& area, Cuboid cuboid) { addGivePlantFluidDesignationBody(area, cuboid); }
+void HasFarmFieldsForFaction::addGivePlantFluidDesignation(Area& area, const CuboidSet& cuboids) { addGivePlantFluidDesignationBody<const CuboidSet&>(area, cuboids); }
 HasFarmFieldsForFaction& AreaHasFarmFields::getForFaction(const FactionId faction)
 {
 	if(!m_data.contains(faction))

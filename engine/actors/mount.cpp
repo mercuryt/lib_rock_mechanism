@@ -9,7 +9,7 @@ Point3D Actors::mount_findLocationToMountOn(const ActorIndex index, const ActorI
 	const Facing4& facing = getFacing(toMount);
 	const auto& occupied = getOccupied(index);
 	for(const Cuboid cuboid : getCuboidsAbove(toMount))
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 			// Should riders be dynamic or static?
 			if(space.shape_canFitEverOrCurrentlyDynamic(point, shape, facing, occupied))
 				return point;

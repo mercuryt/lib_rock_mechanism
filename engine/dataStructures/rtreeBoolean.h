@@ -2,6 +2,7 @@
 #include "../geometry/cuboid.h"
 #include "../geometry/cuboidArray.h"
 #include "../geometry/cuboidSet.h"
+#include "../geometry/cuboidSet.h"
 #include "../strongInteger.h"
 #include "../json.h"
 #include "../config/config.h"
@@ -50,7 +51,7 @@ class RTreeBoolean
 		void updateLeaf(const RTreeArrayIndex offset, const Cuboid cuboid);
 		void updateBranchBoundry(const RTreeArrayIndex offset, const Cuboid cuboid);
 		void log() const;
-		[[nodiscard]] GDB_CALLABLE std::string toString();
+		GDB_CALLABLE std::string toString();
 		NLOHMANN_DEFINE_TYPE_INTRUSIVE(Node, m_cuboids, m_childIndices, m_parent, m_leafEnd, m_childBegin);
 	};
 	StrongVector<Node, RTreeNodeIndex> m_nodes;
@@ -112,6 +113,20 @@ public:
 				addIntersectedChildrenToOpenList(node, bitset, openList);
 		}
 	}
+	void forEach(auto&& action) const
+	{
+		const int nodeEnd = m_nodes.size();
+		for(RTreeNodeIndex nodeIndex{0}; nodeIndex != nodeEnd; ++nodeIndex)
+			// If empty slots were sorted this could be done in one pass.
+			if(!m_emptySlots.contains(nodeIndex))
+			{
+				const Node& node = m_nodes[nodeIndex];
+				const auto& cuboids = node.getCuboids();
+				const int leafEnd = node.getLeafCount();
+				for(RTreeArrayIndex arrayIndex{0}; arrayIndex != leafEnd; ++arrayIndex)
+					action(cuboids[arrayIndex.get()]);
+			}
+	}
 	[[nodiscard]] bool canPrepare() const;
 	[[nodiscard]] bool empty() const  { return nodeCount() == 1 && leafCount() == 0; }
 	[[nodiscard]] CuboidSet toCuboidSet() const;
@@ -132,24 +147,35 @@ public:
 	// Returns a bitset with 1 set for each shape which intersects something.
 	template<typename ShapeT>
 	[[nodiscard]] std::vector<bool> batchQuery(const ShapeT& shapes) const;
+private:
 	template<typename ShapeT>
-	[[nodiscard]] CuboidSet queryGetLeaves(ShapeT&& shape) const;
+	[[nodiscard]] CuboidSet queryGetLeavesBody(ShapeT shape) const;
+public:
+	[[nodiscard]] CuboidSet queryGetLeaves(const CuboidSet& cuboids) const;
+	[[nodiscard]] CuboidSet queryGetLeaves(const Cuboid cuboid) const;
+	[[nodiscard]] CuboidSet queryGetLeaves(const Sphere sphere) const;
+private:
 	template<typename ShapeT>
-	[[nodiscard]] CuboidSet queryGetIntersection(ShapeT&& shape) const;
+	[[nodiscard]] CuboidSet queryGetIntersectionBody(ShapeT shape) const;
+public:
+	[[nodiscard]] CuboidSet queryGetIntersection(const CuboidSet& cuboids) const;
+	[[nodiscard]] CuboidSet queryGetIntersection(const Cuboid cuboid) const;
 	template<typename ShapeT>
 	[[nodiscard]] Cuboid queryGetLeafWithCondition(ShapeT&& shape, auto&& condition) const;
 	template<typename ShapeT>
 	[[nodiscard]] Point3D queryGetPointWithCondition(ShapeT&& shape, auto&& condition) const;
 	void queryRemove(CuboidSet& set) const;
+	template<typename ActionT>
+	void forEachCuboid(ActionT&& action) const;
 	// For test and debug.
-	[[nodiscard]] GDB_CALLABLE int nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
-	[[nodiscard]] GDB_CALLABLE int leafCount() const;
-	[[nodiscard]] GDB_CALLABLE const Node& getNode(int i) const;
-	[[nodiscard]] GDB_CALLABLE const Cuboid getNodeCuboid(int i, int o) const;
-	[[nodiscard]] GDB_CALLABLE const RTreeNodeIndex getNodeChild(int i, int o) const;
-	[[nodiscard]] GDB_CALLABLE bool queryPoint(int x, int y, int z) const;
-	[[nodiscard]] GDB_CALLABLE int totalLeafVolume() const;
-	[[nodiscard]] GDB_CALLABLE int totalNodeVolume() const;
+	GDB_CALLABLE int nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
+	GDB_CALLABLE int leafCount() const;
+	GDB_CALLABLE const Node& getNode(int i) const;
+	GDB_CALLABLE const Cuboid getNodeCuboid(int i, int o) const;
+	GDB_CALLABLE const RTreeNodeIndex getNodeChild(int i, int o) const;
+	GDB_CALLABLE bool queryPoint(int x, int y, int z) const;
+	GDB_CALLABLE int totalLeafVolume() const;
+	GDB_CALLABLE int totalNodeVolume() const;
 	GDB_CALLABLE void assertAllLeafsAreUnique() const;
 	[[nodiscard]] static GDB_CALLABLE int getNodeSize();
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(RTreeBoolean, m_nodes, m_emptySlots, m_toComb);

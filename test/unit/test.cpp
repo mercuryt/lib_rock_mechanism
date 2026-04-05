@@ -2,6 +2,7 @@
 #include "../../lib/doctest.h"
 #include "../../engine/config/config.h"
 #include "../../engine/config/social.h"
+#include "../../engine/config/physics.h"
 #include "../../engine/definitions/definitions.h"
 #include "../../engine/objective.h"
 
@@ -16,7 +17,6 @@ int main(int argc, char** argv) {
 
 	// Config must be loaded before definitions.
 	Config::load();
-	Config::Social::load();
 	definitions::load();
 	ObjectiveType::load();
 

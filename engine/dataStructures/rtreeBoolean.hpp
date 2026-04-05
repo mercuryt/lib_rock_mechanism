@@ -36,3 +36,10 @@ Point3D RTreeBoolean::queryGetPointWithCondition(ShapeT&& shape, auto&& conditio
 		return Point3D::null();
 	return found.intersectionPoint(shape);
 }
+template<typename ActionT>
+void RTreeBoolean::forEachCuboid(ActionT&& action) const
+{
+	for(const Node& node : m_nodes)
+		for(const Cuboid cuboid : node.getCuboids())
+			action(cuboid);
+}

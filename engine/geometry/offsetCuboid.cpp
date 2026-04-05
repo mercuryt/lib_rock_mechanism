@@ -126,29 +126,29 @@ OffsetCuboid OffsetCuboid::getFace(const Facing6 facing) const
 {
 	switch(facing)
 	{
-		// test area has x() higher then this.
 		case(Facing6::East):
-			return OffsetCuboid(m_high, {m_high.x(), m_low.y(), m_low.z()});
-		// test area has x() m_lower then this.
+			return getFaceEast();
 		case(Facing6::West):
-			return OffsetCuboid({m_low.x(), m_high.y(), m_high.z()}, m_low);
-		// test area has y() m_higher then this.
+			return getFaceWest();
 		case(Facing6::South):
-			return OffsetCuboid(m_high, {m_low.x(), m_high.y(), m_low.z()});
-		// test area has y() m_lower then this.
+			return getFaceSouth();
 		case(Facing6::North):
-			return OffsetCuboid({m_high.x(), m_low.y(), m_high.z()}, m_low);
-		// test area has z() m_higher then this.
+			return getFaceNorth();
 		case(Facing6::Above):
-			return OffsetCuboid(m_high, {m_low.x(), m_low.y(), m_high.z()});
-		// test area has z() m_lower then this.
+			return getFaceAbove();
 		case(Facing6::Below):
-			return OffsetCuboid({m_high.x(), m_high.y(), m_low.z()}, m_low);
+			return getFaceBelow();
 		default:
 			assert(false);
 			std::unreachable();
 	}
 }
+OffsetCuboid OffsetCuboid::getFaceNorth() const { return OffsetCuboid(m_high, {m_low.x(), m_high.y(), m_low.z()}); }
+OffsetCuboid OffsetCuboid::getFaceSouth() const { return OffsetCuboid({m_high.x(), m_low.y(), m_high.z()}, m_low); }
+OffsetCuboid OffsetCuboid::getFaceEast() const { return OffsetCuboid(m_high, {m_high.x(), m_low.y(), m_low.z()});}
+OffsetCuboid OffsetCuboid::getFaceWest() const { return OffsetCuboid({m_low.x(), m_high.y(), m_high.z()}, m_low); }
+OffsetCuboid OffsetCuboid::getFaceAbove() const { return OffsetCuboid(m_high, {m_low.x(), m_low.y(), m_high.z()}); }
+OffsetCuboid OffsetCuboid::getFaceBelow() const { return OffsetCuboid({m_high.x(), m_high.y(), m_low.z()}, m_low);}
 bool OffsetCuboid::hasAnyNegativeCoordinates() const
 {
 	return (m_low.data >=0).all();

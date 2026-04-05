@@ -76,7 +76,7 @@ void DrainQueue::applyDelta(Area& area, FluidGroup& fluidGroup)
 		assert(iter->cuboid.exists());
 		assert(iter->delta.exists());
 		assert(space.fluid_getTotalVolume(iter->cuboid.m_high) >= iter->delta);
-		space.fluid_drainInternal(iter->cuboid, iter->delta, fluidGroup.m_fluidType);
+		space.fluid_drainInternal(iter->cuboid, iter->delta, fluidGroup);
 		// Record space to set fluid groups unstable.
 		drainedFromAndAdjacent.maybeAdd(iter->cuboid);
 		CuboidSet adjacent;

@@ -33,7 +33,7 @@ namespace nlohmann {
 		{
 			j = Json::array();
 			j.get_ptr<json::array_t*>()->reserve(capacity);
-			for(const float& f : v)
+			for(const float f : v)
 				j.push_back(f);
 		}
 		static void from_json(const Json& j, Eigen::Array<float, 1, capacity>& v)

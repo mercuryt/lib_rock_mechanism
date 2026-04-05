@@ -334,7 +334,7 @@ void HaulSubproject::commandWorker(const ActorIndex actor)
 					// No lift point exists for this actor, find one.
 					// TODO: move this logic to tryToSetHaulStrategy?
 					for(const Cuboid cuboid : toHaul.getAdjacentCuboids(area))
-						for(const Point3D& point : cuboid)
+						for(const Point3D point : cuboid)
 						{
 							Facing4 facing = point.getFacingTwords(m_project.m_location);
 							if(space.shape_shapeAndMoveTypeCanEnterEverWithFacing(point, actors.getShape(actor), actors.getMoveType(actor), facing) && !space.isReserved(point, faction))

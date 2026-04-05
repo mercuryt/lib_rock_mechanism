@@ -27,11 +27,12 @@ int FluidType::getViscosity(const FluidTypeId id) { assert(id.exists()); return 
 Density FluidType::getDensity(const FluidTypeId id) { assert(id.exists()); return fluidTypeData.m_density[id]; };
 Step FluidType::getMistDuration(const FluidTypeId id) { assert(id.exists()); return fluidTypeData.m_mistDuration[id]; };
 Distance FluidType::getMaxMistSpread(const FluidTypeId id) { assert(id.exists()); return fluidTypeData.m_maxMistSpread[id]; };
+bool FluidType::canFreeze(const FluidTypeId id) { assert(id.exists()); return fluidTypeData.m_freezesInto[id].exists(); };
 MaterialTypeId FluidType::getFreezesInto(const FluidTypeId id) { assert(id.exists()); return fluidTypeData.m_freezesInto[id]; };
-float FluidType::getEvaporationRate(const FluidTypeId id) { assert(id.exists()); return fluidTypeData.m_evaporationRate[id]; };
 Temperature FluidType::getFreezingPoint(const FluidTypeId id)
 {
 	assert(id.exists());
 	const MaterialTypeId solid = getFreezesInto(id);
-	return MaterialType::getMeltingPoint(solid);
+	return MaterialType::getMeltingPoint(solid) - 1;
 }
+float FluidType::getEvaporationRate(const FluidTypeId id) { assert(id.exists()); return fluidTypeData.m_evaporationRate[id]; };

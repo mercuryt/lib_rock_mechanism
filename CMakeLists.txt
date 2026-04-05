@@ -21,6 +21,7 @@ else()
 	#-Wdouble-promotion
 	# Disabled due to false positives around const ObjectiveType& types
 	-Wno-dangling-reference
+	-ftemplate-backtrace-limit=0
 	)
 	# Causes wierd errors...
 	#-Wnull-dereference -D_GLIBCXX_SANITIZE_VECTOR
@@ -28,13 +29,15 @@ else()
 	#add_compile_options(-D_GLIBCXX_DEBUG)
 endif()
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g2 -ggdb -fno-inline -Wno-range-loop-construct")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -ggdb -gsplit-dwarf -fno-inline -Wno-range-loop-construct")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -flto=auto -ltcmalloc -fno-rtti")
 if(NOT CMAKE_BUILD_TYPE EQUAL "Release")
 	#add_compile_options(-fsanitize=address)
 	#add_link_options(-fsanitize=address)
 	#add_compile_options(-fsanitize=undefined)
 	#add_link_options(-fsanitize=undefined)
+	# Build and index of the debug info for gdb.
+	add_link_options(-Wl,--gdb-index)
 endif()
 
 add_subdirectory(engine)

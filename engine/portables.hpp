@@ -153,7 +153,7 @@ template<class Derived, class Index, class ReferenceIndex, bool isActors>void Po
 	{
 		std::cout << ", location: " << location.toString();
 		for(const Cuboid cuboid : this->m_occupied[index])
-			for(const Point3D& occupied : cuboid)
+			for(const Point3D occupied : cuboid)
 				if(occupied != location)
 					std::cout << "-" << occupied.toString();
 	}
@@ -570,9 +570,9 @@ void Portables<Derived, Index, ReferenceIndex, isActors>::onSetLocation(const In
 	assert(newLocation.exists());
 	const Facing4 newFacing = getFacing(index);
 	if(space.isExposedToSky(newLocation))
-		this->m_onSurface.set(index);
+		static_cast<Derived*>(this)->setOnSurface(index, true);
 	else
-		this->m_onSurface.maybeUnset(index);
+		static_cast<Derived*>(this)->setOnSurface(index, false);
 	// Move decks attached to this portable.
 	const DeckId deckId = m_hasDecks[index];
 	if(deckId.exists())

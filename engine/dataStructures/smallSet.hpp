@@ -117,7 +117,7 @@ void SmallSet<T>::maybeEraseAllWhereBothSetsAreSorted(const This& other)
     m_data.erase(new_end, m_data.end());
 }
 template<typename T>
-void SmallSet<T>::eraseIndex(const int& index)
+void SmallSet<T>::eraseIndex(const int index)
 {
 	erase(m_data.begin() + index);
 }
@@ -169,9 +169,9 @@ void SmallSet<T>::resize(int size) { m_data.resize(size); }
 template<typename T>
 bool SmallSet<T>::operator==(const SmallSet<T>& other) { return &other == this; }
 template<typename T>
-const T& SmallSet<T>::operator[](const int& index) const { return m_data[index]; }
+const T& SmallSet<T>::operator[](const int index) const { return m_data[index]; }
 template<typename T>
-T& SmallSet<T>::operator[](const int& index) { return m_data[index]; }
+T& SmallSet<T>::operator[](const int index) { return m_data[index]; }
 template<typename T>
 bool SmallSet<T>::contains(const T& value) const { return std::ranges::find(m_data, value) != m_data.end(); }
 template<typename T>
@@ -306,7 +306,7 @@ void SmallSetStable<T>::maybeErase(const T& value)
 	}
 }
 template<typename T>
-void SmallSetStable<T>::erase(const SmallSetStable<T>::iterator& iter)
+void SmallSetStable<T>::erase(const This::iterator iter)
 {
 	assert(iter != end());
 	assert(!m_data.empty());

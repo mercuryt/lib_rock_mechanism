@@ -26,14 +26,11 @@ void Plants::moveIndex(const PlantIndex oldIndex, const PlantIndex newIndex)
 	Space& space = m_area.getSpace();
 	space.plant_updateIndex(this->boundry(newIndex), oldIndex, newIndex);
 }
-void Plants::onChangeAmbiantSurfaceTemperature()
+void Plants::onChangeAmbiantSurfaceTemperature(Temperature newAmbiant, const CuboidSet& exclude)
 {
-	Space& space = m_area.getSpace();
 	for(const PlantIndex index : m_onSurface)
-	{
-		Temperature temperature = space.temperature_get(m_location[index]);
-		setTemperature(PlantIndex::cast(index), temperature);
-	}
+		if(!exclude.contains(m_location[index]))
+			setTemperature(index, newAmbiant);
 }
 PlantIndex Plants::create(PlantParamaters paramaters)
 {
@@ -185,7 +182,7 @@ bool Plants::hasFluidSource(const PlantIndex index)
 		return true;
 	m_fluidSource[index].clear();
 	for(const Cuboid cuboid : space.collectAdjacentsInRange(m_location[index], getRootRange(index)))
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 			if(space.fluid_contains(point, PlantSpecies::getFluidType(species)))
 			{
 				m_fluidSource[index] = point;
@@ -347,7 +344,7 @@ void Plants::doWildGrowth(const PlantIndex index, int count)
 		count--;
 		std::vector<Point3D> candidates;
 		for(const Cuboid cuboid : getAdjacentCuboids(index))
-			for(const Point3D& point : cuboid)
+			for(const Point3D point : cuboid)
 				if(
 					space.shape_anythingCanEnterEver(point) &&
 					space.shape_getDynamicVolume(point) == 0 &&

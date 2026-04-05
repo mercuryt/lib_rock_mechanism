@@ -70,14 +70,14 @@ void ConstructedShape::recordAndClearDynamic(Area& area, const CuboidSet& occupi
 {
 	Space& space = area.getSpace();
 	for(const auto& [solidCuboid, materialType] : space.solid_getAllWithCuboidsAndRemove(occupied))
-		for(const Point3D& point : solidCuboid)
+		for(const Point3D point : solidCuboid)
 			space.solid_setNotDynamic(point);
 	m_features.clear();
 	for(const auto& [featureCuboid, feature] : space.pointFeature_getAllWithCuboidsAndRemove(occupied))
 		m_features.insertOrMerge(featureCuboid.offsetTo(location), feature);
 	//TODO: combine with other loop at 72? Use cuboids rather then points.
 	for(const Cuboid cuboid : occupied)
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 			space.pointFeature_removeAll(point);
 }
 void ConstructedShape::recordAndClearStatic(Area& area, const CuboidSet& occupied, const Point3D location)
@@ -89,7 +89,7 @@ void ConstructedShape::recordAndClearStatic(Area& area, const CuboidSet& occupie
 	for(const auto& [featureCuboid, feature] : space.pointFeature_getAllWithCuboidsAndRemove(occupied))
 		m_features.insertOrMerge(featureCuboid.offsetTo(location), feature);
 	for(const Cuboid cuboid : occupied)
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 			space.pointFeature_removeAll(point);
 }
 void ConstructedShape::setLocationAndFacingDynamic(Area& area, const Facing4& currentFacing, const Point3D newLocation, const Facing4 newFacing, CuboidSet& occupied)
@@ -217,4 +217,23 @@ std::pair<ConstructedShape, Point3D> ConstructedShape::makeForPlatform(Area& are
 Json ConstructedShape::toJson() const
 {
 	return *this;
+}
+bool ConstructedShape::canMelt() const
+{
+	for(const auto& pair : m_solid)
+		if(MaterialType::canMelt(pair.second))
+			return true;
+	return false;
+}
+MaterialTypeId ConstructedShape::getMaterialWithTheLowestMeltingPoint() const
+{
+	MaterialTypeId output;
+	Temperature lowestMeltingPoint = Temperature::max();
+	for(const auto& pair : m_solid)
+	{
+		Temperature meltingPoint = MaterialType::getMeltingPoint(pair.second);
+		if(meltingPoint < lowestMeltingPoint)
+			output = pair.second;
+	}
+	return output;
 }

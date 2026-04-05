@@ -10,26 +10,26 @@ SmallMap<K,V>::SmallMap(const std::initializer_list<Pair>& i)
 		assert(false);
 }
 template<typename K, MoveConstructible V>
-void SmallMap<K,V>::insert(const K& key, const V& value)
+void SmallMap<K,V>::insert(const K key, const V& value)
 {
 	assert(!contains(key));
 	insertNonUnique(key, value);
 }
 template<typename K, MoveConstructible V>
-void SmallMap<K,V>::insert(const K& key, V&& value)
+void SmallMap<K,V>::insert(const K key, V&& value)
 {
 	assert(!contains(key));
 	m_data.emplace_back(key, std::move(value));
 }
 template<typename K, MoveConstructible V>
-void SmallMap<K,V>::maybeInsert(const K& key, const V& value)
+void SmallMap<K,V>::maybeInsert(const K key, const V& value)
 {
 	if(!contains(key)) insert(key, value);
 }
 template<typename K, MoveConstructible V>
-void SmallMap<K,V>::maybeInsert(const K& key, V&& value) { if(!contains(key)) insert(key, std::forward<V>(value)); }
+void SmallMap<K,V>::maybeInsert(const K key, V&& value) { if(!contains(key)) insert(key, std::forward<V>(value)); }
 template<typename K, MoveConstructible V>
-void SmallMap<K,V>::insertNonUnique(const K& key, const V& value)
+void SmallMap<K,V>::insertNonUnique(const K key, const V& value)
 {
 	if constexpr (std::is_copy_constructible_v<V>)
 		m_data.emplace_back(key, value);
@@ -37,12 +37,12 @@ void SmallMap<K,V>::insertNonUnique(const K& key, const V& value)
 		assert(false);
 }
 template<typename K, MoveConstructible V>
-void SmallMap<K,V>::erase(const K& key)
+void SmallMap<K,V>::erase(const K key)
 {
 	erase(std::ranges::find(m_data, key, &Pair::first));
 }
 template<typename K, MoveConstructible V>
-void SmallMap<K,V>::erase(iterator& iter)
+void SmallMap<K,V>::erase(iterator iter)
 {
 	assert(iter != m_data.end());
 	if(iter != m_data.end() - 1)
@@ -53,16 +53,14 @@ void SmallMap<K,V>::erase(iterator& iter)
 	m_data.pop_back();
 }
 template<typename K, MoveConstructible V>
-void SmallMap<K,V>::erase(iterator&& iter) { erase(iter); }
-template<typename K, MoveConstructible V>
-void SmallMap<K,V>::maybeErase(const K& key)
+void SmallMap<K,V>::maybeErase(const K key)
 {
 	typename Data::iterator iter = std::ranges::find(m_data, key, &Pair::first);
 	if(iter != m_data.end())
 		m_data.erase(iter);
 }
 template<typename K, MoveConstructible V>
-bool SmallMap<K,V>::maybeEraseNotify(const K& key)
+bool SmallMap<K,V>::maybeEraseNotify(const K key)
 {
 	typename Data::iterator iter = std::ranges::find(m_data, key, &Pair::first);
 	if(iter != m_data.end())
@@ -83,7 +81,7 @@ void SmallMap<K,V>::sortDescending() { std::ranges::sort(m_data, std::greater{},
 template<typename K, MoveConstructible V>
 void SmallMap<K,V>::swap(This& other) { m_data.swap(other.m_data); }
 template<typename K, MoveConstructible V>
-void SmallMap<K,V>::updateKey(const K& oldKey, const K& newKey)
+void SmallMap<K,V>::updateKey(const K oldKey, const K newKey)
 {
 	for(auto& [key, value] : *this)
 		if(key == oldKey)
@@ -97,7 +95,7 @@ int SmallMap<K,V>::size() const { return m_data.size(); }
 template<typename K, MoveConstructible V>
 bool SmallMap<K,V>::empty() const { return m_data.empty(); }
 template<typename K, MoveConstructible V>
-bool SmallMap<K,V>::contains(const K& key) const { return std::ranges::find(m_data, key, &Pair::first) != m_data.end(); }
+bool SmallMap<K,V>::contains(const K key) const { return std::ranges::find(m_data, key, &Pair::first) != m_data.end(); }
 template<typename K, MoveConstructible V>
 bool SmallMap<K,V>::containsAny(const SmallSet<K>& keys) const { for(const K& key : keys) if(contains(key)) return true; return false; }
 template<typename K, MoveConstructible V>
@@ -109,16 +107,16 @@ SmallMap<K,V>::Pair& SmallMap<K,V>::back() { return m_data.back(); }
 template<typename K, MoveConstructible V>
 const SmallMap<K,V>::Pair& SmallMap<K,V>::back() const { return m_data.back(); }
 template<typename K, MoveConstructible V>
-V& SmallMap<K,V>::operator[](const K& key)
+V& SmallMap<K,V>::operator[](const K key)
 {
 	auto iter = std::ranges::find(m_data, key, &Pair::first);
 	assert(iter != m_data.end());
 	return iter->second;
 }
 template<typename K, MoveConstructible V>
-const V& SmallMap<K,V>::operator[](const K& key) const { return const_cast<This&>(*this)[key]; }
+const V& SmallMap<K,V>::operator[](const K key) const { return const_cast<This&>(*this)[key]; }
 template<typename K, MoveConstructible V>
-V& SmallMap<K,V>::getOrInsert(const K& key, V&& value)
+V& SmallMap<K,V>::getOrInsert(const K key, V&& value)
 {
 	auto iter = std::ranges::find(m_data, key, &Pair::first);
 	if(iter == m_data.end())
@@ -129,7 +127,7 @@ V& SmallMap<K,V>::getOrInsert(const K& key, V&& value)
 	return iter->second;
 }
 template<typename K, MoveConstructible V>
-V& SmallMap<K,V>::getOrCreate(const K& key)
+V& SmallMap<K,V>::getOrCreate(const K key)
 {
 	auto iter = std::ranges::find(m_data, key, &Pair::first);
 	if(iter == m_data.end())
@@ -149,9 +147,9 @@ SmallSet<K> SmallMap<K,V>::keys() const
 	return output;
 }
 template<typename K, MoveConstructible V>
-SmallMap<K,V>::iterator SmallMap<K,V>::find(const K& key) { return std::ranges::find(m_data, key, &Pair::first); }
+SmallMap<K,V>::iterator SmallMap<K,V>::find(const K key) { return std::ranges::find(m_data, key, &Pair::first); }
 template<typename K, MoveConstructible V>
-SmallMap<K,V>::const_iterator SmallMap<K,V>::find(const K& key) const { return std::ranges::find(m_data, key, &Pair::first); }
+SmallMap<K,V>::const_iterator SmallMap<K,V>::find(const K key) const { return std::ranges::find(m_data, key, &Pair::first); }
 template<typename K, MoveConstructible V>
 SmallMap<K,V>::iterator SmallMap<K,V>::begin() { return {*this, 0}; }
 template<typename K, MoveConstructible V>
@@ -201,11 +199,11 @@ Json SmallMapStable<K,V>::toJson() const
 	}
 }
 template<typename K, typename V>
-auto SmallMapStable<K,V>::insert(const K& key, std::unique_ptr<V>&& value) -> V& { m_data.insert(key, std::move(value)); return *m_data[key]; }
+auto SmallMapStable<K,V>::insert(const K key, std::unique_ptr<V>&& value) -> V& { m_data.insert(key, std::move(value)); return *m_data[key]; }
 template<typename K, typename V>
-void SmallMapStable<K,V>::erase(const K& key) { m_data.erase(key); }
+void SmallMapStable<K,V>::erase(const K key) { m_data.erase(key); }
 template<typename K, typename V>
-void SmallMapStable<K,V>::erase(iterator& iter) { m_data.erase(iter.get()); }
+void SmallMapStable<K,V>::erase(iterator iter) { m_data.erase(iter.get()); }
 template<typename K, typename V>
 void SmallMapStable<K,V>::clear() { m_data.clear(); }
 template<typename K, typename V>
@@ -215,7 +213,7 @@ int SmallMapStable<K,V>::size() const { return m_data.size(); }
 template<typename K, typename V>
 bool SmallMapStable<K,V>::empty() const { return m_data.empty(); }
 template<typename K, typename V>
-bool SmallMapStable<K,V>::contains(const K& key) const { return m_data.contains(key); }
+bool SmallMapStable<K,V>::contains(const K key) const { return m_data.contains(key); }
 template<typename K, typename V>
 SmallMapStable<K,V>::Pair& SmallMapStable<K,V>::front() { return m_data.front(); }
 template<typename K, typename V>
@@ -225,13 +223,13 @@ SmallMapStable<K,V>::Pair& SmallMapStable<K,V>::back() { return m_data.back(); }
 template<typename K, typename V>
 const SmallMapStable<K,V>::Pair& SmallMapStable<K,V>::back() const { return m_data.back(); }
 template<typename K, typename V>
-auto SmallMapStable<K,V>::operator[](const K& key) -> V& { return *m_data[key].get(); }
+auto SmallMapStable<K,V>::operator[](const K key) -> V& { return *m_data[key].get(); }
 template<typename K, typename V>
-auto SmallMapStable<K,V>::operator[](const K& key) const -> const V& { return const_cast<This&>(*this)[key]; }
+auto SmallMapStable<K,V>::operator[](const K key) const -> const V& { return const_cast<This&>(*this)[key]; }
 template<typename K, typename V>
-SmallMapStable<K,V>::iterator SmallMapStable<K,V>::find(const K& key) { return m_data.find(key); }
+SmallMapStable<K,V>::iterator SmallMapStable<K,V>::find(const K key) { return m_data.find(key); }
 template<typename K, typename V>
-SmallMapStable<K,V>::const_iterator SmallMapStable<K,V>::find(const K& key) const { return findData(key); }
+SmallMapStable<K,V>::const_iterator SmallMapStable<K,V>::find(const K key) const { return findData(key); }
 template<typename K, typename V>
 SmallMapStable<K,V>::iterator SmallMapStable<K,V>::begin() { return {*this, 0} ; }
 template<typename K, typename V>
@@ -241,7 +239,7 @@ SmallMapStable<K,V>::const_iterator SmallMapStable<K,V>::begin() const { return 
 template<typename K, typename V>
 SmallMapStable<K,V>::const_iterator SmallMapStable<K,V>::end() const { return {*this, size()}; }
 template<typename K, typename V>
-auto SmallMapStable<K,V>::getOrCreate(const K& key) -> V&
+auto SmallMapStable<K,V>::getOrCreate(const K key) -> V&
 {
 	typename Data::iterator iter = findData(key);
 	if(iter == m_data.end())

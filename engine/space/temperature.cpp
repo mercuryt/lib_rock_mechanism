@@ -1,41 +1,16 @@
 #include "space.h"
 #include "../area/area.h"
+#include "../items/items.h"
 #include "../fluidType.h"
 #include "../definitions/itemType.h"
 #include "../definitions/materialType.h"
 #include "../numericTypes/types.h"
-void Space::temperature_updateDelta(const Point3D point, const TemperatureDelta deltaDelta)
+#include "../config/physics.h"
+void Space::temperature_freeze(const CuboidSet& cuboids, const FluidTypeId fluidType)
 {
-	assert(deltaDelta != 0);
-	TemperatureDelta delta = m_temperatureDelta.queryGetOneOr(point, TemperatureDelta::create(0));
-	delta += deltaDelta;
-	if(delta == 0)
-		m_temperatureDelta.maybeRemove(point);
-	else
-		m_temperatureDelta.maybeInsertOrOverwrite(point, delta);
-	Temperature temperature = temperature_getAmbient(point) + delta;
-	const MaterialTypeId solidMaterial = solid_get(point);
-	if(solidMaterial.exists())
-	{
-		if(
-			MaterialType::canBurn(solidMaterial) &&
-			MaterialType::getIgnitionTemperature(solidMaterial) <= temperature
-		)
-			fire_maybeIgnite(point, solidMaterial);
-		else if(
-			MaterialType::getMeltingPoint(solidMaterial).exists() &&
-			MaterialType::getMeltingPoint(solidMaterial) <= temperature
-		)
-			temperature_melt(point);
-	}
-	else
-	{
-		plant_setTemperature(point, temperature);
-		pointFeature_setTemperature(point, temperature);
-		actor_setTemperature(point, temperature);
-		item_setTemperature(point, temperature);
-		//TODO: FluidGroups.
-	}
+	for(const Cuboid cuboid : cuboids)
+		for(const Point3D point : cuboid)
+			temperature_freeze(point, fluidType);
 }
 void Space::temperature_freeze(const Point3D point, const FluidTypeId fluidType)
 {
@@ -72,13 +47,60 @@ void Space::temperature_freeze(const Point3D point, const FluidTypeId fluidType)
 		assert(fluidVolume == createPileQuantity.get() * pileVolumeSingle.get());
 	}
 }
-void Space::temperature_melt(const Point3D point)
+void Space::temperature_meltSolid(const Point3D point)
 {
 	assert(solid_isAny(point));
 	assert(MaterialType::getMeltsInto(solid_get(point)).exists());
 	FluidTypeId fluidType = MaterialType::getMeltsInto(solid_get(point));
 	solid_setNot(point);
 	fluid_add(point, Config::maxPointVolume, fluidType);
+	m_area.m_hasFluidGroups.clearMergedFluidGroups();
+}
+void Space::temperature_meltSolid(const CuboidSet& cuboids, const MaterialTypeId materialType)
+{
+	assert(solid_get(cuboids) == materialType);
+	solid_setNotAll(cuboids);
+	FluidTypeId fluidType = MaterialType::getMeltsInto(materialType);
+	fluid_add(cuboids, Config::maxPointVolume, fluidType);
+	m_area.m_hasFluidGroups.clearMergedFluidGroups();
+}
+void Space::temperature_meltFeature(const Point3D point, const MaterialTypeId materialType, const PointFeatureTypeId featureType)
+{
+	assert(pointFeature_getMaterialType(point, featureType) == materialType);
+	FluidTypeId fluidType = MaterialType::getMeltsInto(materialType);
+	pointFeature_remove(point, featureType);
+	fluid_add(point, Config::Physics::volumeOfFluidToGenerateWhenAPointFeatureMelts, fluidType);
+	m_area.m_hasFluidGroups.clearMergedFluidGroups();
+}
+void Space::temperature_meltFeatures(const CuboidSet& cuboids, const MaterialTypeId materialType)
+{
+	FluidTypeId fluidType = MaterialType::getMeltsInto(materialType);
+	pointFeature_removeAllWithCondition(cuboids, [&](const PointFeature feature) { return feature.materialType == materialType; });
+	fluid_add(cuboids, Config::Physics::volumeOfFluidToGenerateWhenAPointFeatureMelts, fluidType);
+	m_area.m_hasFluidGroups.clearMergedFluidGroups();
+}
+void Space::temperature_meltItems(const CuboidSet& cuboids, const MaterialTypeId materialType)
+{
+	FluidTypeId fluidType = MaterialType::getMeltsInto(materialType);
+	Items& items = m_area.getItems();
+	SmallMap<Point3D, CollisionVolume> volumeMelted;
+	SmallSet<ItemIndex> itemsToMelt = m_items.queryGetAllWithCondition(cuboids, [&](const ItemIndex item){ return items.getMaterialType(item) == materialType; });
+	SmallSet<ItemReference> itemReferences;
+	itemReferences.reserve(itemsToMelt.size());
+	for(const ItemIndex item : itemsToMelt)
+		itemReferences.insert(items.getReference(item));
+	for(const ItemReference ref : itemReferences)
+	{
+		const ItemIndex item = ref.getIndex(items.m_referenceData);
+		const CuboidSet& occupied = items.getOccupied(item);
+		const CollisionVolume volume = Shape::getTotalCollisionVolume(items.getShape(item)) / occupied.volume();
+		for(const Cuboid cuboid : occupied)
+			for(const Point3D point : cuboid)
+				volumeMelted.getOrInsert(point, {0}) += volume;
+		items.destroy(item);
+	}
+	for(const auto& [point, volume] : volumeMelted)
+		fluid_add(point, volume, fluidType);
 	m_area.m_hasFluidGroups.clearMergedFluidGroups();
 }
 const Temperature Space::temperature_getAmbient(const Point3D point) const
@@ -90,7 +112,7 @@ const Temperature Space::temperature_getAmbient(const Point3D point) const
 		else
 			return Config::undergroundAmbiantTemperature;
 	}
-	return m_area.m_hasTemperature.getAmbientSurfaceTemperature();
+	return m_area.m_hasTemperature.m_ambiant;
 }
 Temperature Space::temperature_getDailyAverageAmbient(const Point3D point) const
 {
@@ -101,17 +123,11 @@ Temperature Space::temperature_getDailyAverageAmbient(const Point3D point) const
 		else
 			return Config::undergroundAmbiantTemperature;
 	}
-	return m_area.m_hasTemperature.getDailyAverageAmbientSurfaceTemperature();
+	return m_area.m_hasTemperature.getDailyAverageAmbientSurfaceTemperature(m_area);
 }
 Temperature Space::temperature_get(const Point3D point) const
 {
-	Temperature ambiant = temperature_getAmbient(point);
-	TemperatureDelta delta = m_temperatureDelta.queryGetOne(point);
-	if(!delta.exists())
-		delta = TemperatureDelta::create(0);
-	if(delta < 0 && (int)delta.absoluteValue().get() > ambiant.get())
-		return Temperature::create(0);
-	return Temperature::create(ambiant.get() + delta.get());
+	return m_area.m_hasTemperature.get(m_area, point);
 }
 bool Space::temperature_transmits(const Point3D point) const
 {
@@ -143,7 +159,6 @@ CuboidSet Space::temperature_queryTransmitsCuboidsIntersection(const CuboidSet& 
 				feature.pointFeatureType == PointFeatureTypeId::Flap ||
 				feature.pointFeatureType == PointFeatureTypeId::Hatch
 			);
-
 	});
 	return output;
 }

@@ -90,7 +90,7 @@ public:
 	[[nodiscard]] Point3D findAdjacentPointWithCondition(const Area& area, auto&& condition)
 	{
 		for(const Cuboid cuboid : getAdjacentCuboids(area))
-			for(const Point3D& point : cuboid)
+			for(const Point3D point : cuboid)
 				if(condition(point))
 					return point;
 		return Point3D::null();

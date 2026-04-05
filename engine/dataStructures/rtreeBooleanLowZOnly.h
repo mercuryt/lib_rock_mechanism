@@ -58,7 +58,7 @@ class RTreeBooleanLowZOnly
 		void setParent(const Index index) { m_parent = index; }
 		void updateLeaf(const ArrayIndex& offset, const Cuboid cuboid);
 		void updateBranchBoundry(const ArrayIndex& offset, const Cuboid cuboid);
-		[[nodiscard]] GDB_CALLABLE std::string toString();
+		GDB_CALLABLE std::string toString();
 	};
 	StrongVector<Node, Index> m_nodes;
 	SmallSet<Index> m_emptySlots;
@@ -147,7 +147,7 @@ public:
 			const auto& nodeCuboids = node.getCuboids();
 			const auto& nodeChildren = node.getChildIndices();
 			const auto offsetOfFirstChild = node.offsetOfFirstChild();
-			for(const int& shapeIndex : candidates)
+			for(const int shapeIndex : candidates)
 			{
 				if(output[shapeIndex])
 					// This shape has already intersected with a leaf, no need to check further.
@@ -188,14 +188,14 @@ public:
 		return output;
 	}
 	// For test and debug.
-	[[nodiscard]] GDB_CALLABLE int nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
-	[[nodiscard]] GDB_CALLABLE int leafCount() const;
-	[[nodiscard]] GDB_CALLABLE const Node& getNode(int i) const;
-	[[nodiscard]] GDB_CALLABLE const Cuboid getNodeCuboid(int i, int o) const;
-	[[nodiscard]] GDB_CALLABLE const Index& getNodeChild(int i, int o) const;
-	[[nodiscard]] GDB_CALLABLE bool queryPoint(int x, int y, int z) const;
-	[[nodiscard]] GDB_CALLABLE int totalLeafVolume() const;
-	[[nodiscard]] GDB_CALLABLE int totalNodeVolume() const;
+	GDB_CALLABLE int nodeCount() const { return m_nodes.size() - m_emptySlots.size(); }
+	GDB_CALLABLE int leafCount() const;
+	GDB_CALLABLE const Node& getNode(int i) const;
+	GDB_CALLABLE const Cuboid getNodeCuboid(int i, int o) const;
+	GDB_CALLABLE const Index& getNodeChild(int i, int o) const;
+	GDB_CALLABLE bool queryPoint(int x, int y, int z) const;
+	GDB_CALLABLE int totalLeafVolume() const;
+	GDB_CALLABLE int totalNodeVolume() const;
 	GDB_CALLABLE void assertAllLeafsAreUnique() const;
 	[[nodiscard]] static GDB_CALLABLE int getNodeSize();
 };

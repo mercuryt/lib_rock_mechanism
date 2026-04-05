@@ -36,7 +36,7 @@ void Actors::objective_maybeDoNext(const ActorIndex index)
 	if(!hasObjectives.hasCurrent())
 		hasObjectives.getNext(m_area);
 }
-void Actors::objective_setPriority(const ActorIndex index, const ObjectiveTypeId& objectiveType, Priority priority)
+void Actors::objective_setPriority(const ActorIndex index, const ObjectiveTypeId objectiveType, Priority priority)
 {
 	m_hasObjectives[index]->m_prioritySet.setPriority(m_area, index, objectiveType, priority);
 }
@@ -83,7 +83,7 @@ ObjectiveTypeId Actors::objective_getCurrentTypeId(const ActorIndex index) const
 	else
 		return ObjectiveTypeId::null();
 }
-Priority Actors::objective_getPriorityFor(const ActorIndex index, const ObjectiveTypeId& objectiveType) const
+Priority Actors::objective_getPriorityFor(const ActorIndex index, const ObjectiveTypeId objectiveType) const
 {
 	return m_hasObjectives[index]->m_prioritySet.getPriorityFor(objectiveType);
 }
@@ -92,11 +92,11 @@ bool Actors::objective_queuesAreEmpty(const ActorIndex index) const
 {
 	return m_hasObjectives[index]->queuesAreEmpty();
 }
-bool Actors::objective_isOnDelay(const ActorIndex index, const ObjectiveTypeId& objectiveTypeId) const
+bool Actors::objective_isOnDelay(const ActorIndex index, const ObjectiveTypeId objectiveTypeId) const
 {
 	return m_hasObjectives[index]->m_prioritySet.isOnDelay(m_area, objectiveTypeId);
 }
-Step Actors::objective_getDelayEndFor(const ActorIndex index, const ObjectiveTypeId& objectiveTypeId) const
+Step Actors::objective_getDelayEndFor(const ActorIndex index, const ObjectiveTypeId objectiveTypeId) const
 {
 	return m_hasObjectives[index]->m_prioritySet.getDelayEndFor(objectiveTypeId);
 }

@@ -97,7 +97,7 @@ std::pair<Point3D, Facing4> Actors::lineLead_followerGetNextStep(const ActorOrIt
 			DistanceSquared closestToPathDistanceSquared = DistanceSquared::max();
 			std::pair<Point3D, Facing4> output;
 			// Iterate candidates lookin for one which the follower can enter, where it would be touching the current leader, and find the one nearest to any point on the path.
-			for(const Point3D& candidate : candidates)
+			for(const Point3D candidate : candidates)
 				if(
 					!exclude.contains(candidate) &&
 					space.shape_anythingCanEnterEver(candidate)

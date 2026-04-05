@@ -29,7 +29,8 @@ void Space::pointFeature_remove(const Point3D point, const PointFeatureTypeId& p
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(Cuboid::create(point, point));
 	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
 	if(!transmitedTemperaturePreviously && temperature_transmits(point))
-		m_area.m_exteriorPortals.onPointCanTransmitTemperature(m_area, point);
+		m_area.m_hasTemperature.onTemperatureCanNowTransmit(m_area, CuboidSet::create(point));
+	m_exposedToSky.maybeSetCuboid(m_area, {point, point});
 }
 void Space::pointFeature_removeAll(const Point3D point)
 {
@@ -40,11 +41,12 @@ void Space::pointFeature_removeAll(const Point3D point)
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(Cuboid::create(point, point));
 	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
 	if(!transmitedTemperaturePreviously && temperature_transmits(point))
-		m_area.m_exteriorPortals.onPointCanTransmitTemperature(m_area, point);
+		m_area.m_hasTemperature.onTemperatureCanNowTransmit(m_area, CuboidSet::create(point));
+	m_exposedToSky.maybeSetCuboid(m_area, {point, point});
 }
 void Space::pointFeature_add(const Cuboid cuboid, const PointFeature& feature)
 {
-	for(const Point3D& point : cuboid)
+	for(const Point3D point : cuboid)
 		pointFeature_add(point, feature);
 }
 void Space::pointFeature_add(const Point3D point, const PointFeature& feature)
@@ -59,19 +61,16 @@ void Space::pointFeature_add(const Point3D point, const PointFeature& feature)
 	}
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(Cuboid::create(point, point));
 	m_features.insert(point, feature);
-	const bool isFloorOrHatch = (feature.pointFeatureType == PointFeatureTypeId::Floor || feature.pointFeatureType == PointFeatureTypeId::Hatch);
 	const bool materialTypeIsTransparent = MaterialType::getTransparent(feature.materialType);
-	if(isFloorOrHatch && !materialTypeIsTransparent)
+	if(PointFeatureType::byId(feature.pointFeatureType).opaque && !materialTypeIsTransparent)
 	{
 		if(point.z() != 0)
-			m_exposedToSky.unset(m_area, point.below());
+			m_exposedToSky.maybeUnsetBeneathTopLayer(m_area, Cuboid::create(point, point));
 	}
-	else if(PointFeatureType::byId(feature.pointFeatureType).opaque && !materialTypeIsTransparent)
-		m_exposedToSky.unset(m_area, point);
 	m_area.m_opacityFacade.update(m_area, point);
 	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
 	if(!temperature_transmits(point))
-		m_area.m_exteriorPortals.onCuboidCanNotTransmitTemperature(m_area, {point, point});
+		m_area.m_hasTemperature.onTemperatureCanNoLongerTransmit(m_area, CuboidSet::create(point));
 }
 void Space::pointFeature_construct(const Point3D point, const PointFeatureTypeId& pointFeatureType, const MaterialTypeId materialType)
 {
@@ -86,22 +85,22 @@ void Space::pointFeature_construct(const Point3D point, const PointFeatureTypeId
 	}
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(Cuboid::create(point, point));
 	m_features.insert(point, PointFeature::create(materialType, pointFeatureType));
-	const bool isFloorOrHatch = (pointFeatureType == PointFeatureTypeId::Floor || pointFeatureType == PointFeatureTypeId::Hatch);
-	if(isFloorOrHatch && !MaterialType::getTransparent(materialType))
-		m_exposedToSky.unset(m_area, point);
-	else if(PointFeatureType::byId(pointFeatureType).opaque && !materialTypeIsTransparent)
-		m_exposedToSky.unset(m_area, point);
 	m_area.m_opacityFacade.update(m_area, point);
+	if(PointFeatureType::byId(pointFeatureType).opaque && !materialTypeIsTransparent)
+	{
+		if(point.z() != 0)
+			m_exposedToSky.maybeUnsetBeneathTopLayer(m_area, Cuboid::create(point, point));
+	}
 	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
 	if(transmitedTemperaturePreviously && !temperature_transmits(point))
-		m_area.m_exteriorPortals.onCuboidCanNotTransmitTemperature(m_area, {point, point});
+		m_area.m_hasTemperature.onTemperatureCanNoLongerTransmit(m_area, CuboidSet::create(point));
 }
 void Space::pointFeature_hew(const Point3D point, const PointFeatureTypeId& pointFeatureType)
 {
 	assert(solid_isAny(point));
 	const MaterialTypeId materialType = solid_get(point);
 	m_features.insert(point, PointFeature::create(materialType, pointFeatureType, true));
-	// Solid_setNot will handle calling m_exteriorPortals.onPointCanTransmitTemperature.
+	// Solid_setNot will handle calling AreaHasTemperatures::onCuboidCanTransmitTemperature.
 	// TODO: There is no support for hewing hatches or flaps. This is ok because those things can't be hewn. Could be fixed anyway?
 	const Point3D above = point.above();
 	auto actorsCopy = actor_getAll(above);
@@ -115,13 +114,18 @@ void Space::pointFeature_hew(const Point3D point, const PointFeatureTypeId& poin
 }
 void Space::pointFeature_setTemperature(const Point3D point, const Temperature temperature)
 {
+	SmallSet<PointFeature> toMelt;
 	for(const PointFeature& feature : m_features.queryGetAll(point))
 	{
-		if(MaterialType::getIgnitionTemperature(feature.materialType).exists() &&
-			temperature > MaterialType::getIgnitionTemperature(feature.materialType)
-		)
+		const Temperature ignitionPoint = MaterialType::getIgnitionTemperature(feature.materialType);
+		if(ignitionPoint.exists() && temperature >= ignitionPoint)
 			m_area.m_fires.ignite(m_area, point, feature.materialType);
+		const Temperature meltingPoint = MaterialType::getMeltingPoint(feature.materialType);
+		if(meltingPoint.exists() && temperature >= meltingPoint)
+			toMelt.insert(feature);
 	}
+	for(const PointFeature feature : toMelt)
+		temperature_meltFeature(point, feature.materialType, feature.pointFeatureType);
 }
 MapWithCuboidKeys<PointFeature> Space::pointFeature_getAllWithCuboidsAndRemove(const CuboidSet& cuboids)
 {
@@ -158,7 +162,7 @@ void Space::pointFeature_close(const Point3D point, const PointFeatureTypeId& po
 	auto action = [&isTransparent](PointFeature& feature) mutable { isTransparent = MaterialType::getTransparent(feature.materialType); feature.setClosed(true); };
 	m_features.updateActionWithConditionOne(point, action, condition);
 	m_area.m_opacityFacade.update(m_area, point);
-	m_area.m_exteriorPortals.onCuboidCanNotTransmitTemperature(m_area, {point, point});
+	m_area.m_hasTemperature.onTemperatureCanNoLongerTransmit(m_area, CuboidSet::create(point));
 	if(!isTransparent)
 		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(Cuboid::create(point, point));
 }
@@ -170,7 +174,7 @@ void Space::pointFeature_open(const Point3D point, const PointFeatureTypeId& poi
 	auto action = [&isTransparent](PointFeature& feature) mutable { isTransparent = MaterialType::getTransparent(feature.materialType); feature.setClosed(false); };
 	m_features.updateActionWithConditionOne(point, action, condition);
 	m_area.m_opacityFacade.update(m_area, point);
-	m_area.m_exteriorPortals.onPointCanTransmitTemperature(m_area, point);
+	m_area.m_hasTemperature.onTemperatureCanNowTransmit(m_area, CuboidSet::create(point));
 	if(!isTransparent)
 		m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(Cuboid::create(point, point));
 }

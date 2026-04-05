@@ -5,6 +5,7 @@
 #include <cmath> // for fmod
 Point3D Point3D::operator-(const Distance  distance) const
 {
+	assert((data >= distance.get()).all());
 	return (*this) - distance.get();
 }
 Point3D Point3D::operator+(const Distance  distance) const
@@ -137,10 +138,24 @@ Distance Point3D::distanceTo(const Point3D other) const
 	DistanceSquared squared = distanceToSquared(other);
 	return squared.unsquared();
 }
+Distance Point3D::distanceTo(const Cuboid cuboid) const
+{
+	int32_t dx = std::max(0, std::max(cuboid.m_low.x().get() - x().get(), x().get() - cuboid.m_high.x().get()));
+	int32_t dy = std::max(0, std::max(cuboid.m_low.y().get() - y().get(), y().get() - cuboid.m_high.y().get()));
+	int32_t dz = std::max(0, std::max(cuboid.m_low.z().get() - z().get(), z().get() - cuboid.m_high.z().get()));
+	return Distance::create(std::sqrt(dx*dx + dy*dy + dz*dz));
+}
 DistanceFractional Point3D::distanceToFractional(const Point3D other) const
 {
 	DistanceSquared squared = distanceToSquared(other);
 	return DistanceFractional::create(pow((double)squared.get(), 0.5));
+}
+DistanceFractional Point3D::distanceToFractional(const Cuboid cuboid) const
+{
+	float dx = std::max(0, std::max(cuboid.m_low.x().get() - x().get(), x().get() - cuboid.m_high.x().get()));
+	float dy = std::max(0, std::max(cuboid.m_low.y().get() - y().get(), y().get() - cuboid.m_high.y().get()));
+	float dz = std::max(0, std::max(cuboid.m_low.z().get() - z().get(), z().get() - cuboid.m_high.z().get()));
+	return DistanceFractional::create(std::sqrt(dx*dx + dy*dy + dz*dz));
 }
 DistanceSquared Point3D::distanceToSquared(const Point3D other) const
 {
@@ -229,6 +244,7 @@ Point3D& Point3D::operator+=(const Offset3D other)
 }
 Point3D& Point3D::operator-=(const Offset3D other)
 {
+	assert((data.cast<OffsetWidth>() >= other.data).all());
 	data -= other.data.cast<DistanceWidth>();
 	return *this;
 }
@@ -238,9 +254,10 @@ Point3D Point3D::operator+(const Offset3D other) const
 }
 Point3D Point3D::operator-(const Offset3D other) const
 {
+	assert((data.cast<OffsetWidth>() >= other.data).all());
 	return Point3D(data - other.data.cast<DistanceWidth>());
 }
-Point3D Point3D::operator/(const int& other) const
+Point3D Point3D::operator/(const int other) const
 {
 	return Point3D(data / other);
 }
@@ -248,7 +265,7 @@ void Point3D::log() const
 {
 	std::cout << toString() << std::endl;
 }
-Point3D Point3D::create(const DistanceWidth& x, const DistanceWidth& y, const DistanceWidth& z)
+Point3D Point3D::create(const DistanceWidth x, const DistanceWidth y, const DistanceWidth z)
 {
 	return Point3D(Distance::create(x), Distance::create(y), Distance::create(z));
 }
@@ -256,7 +273,7 @@ Point3D Point3D::create(const Offset x, const Offset y, const Offset z)
 {
 	return create(Offset3D{x, y, z});
 }
-Point3D Point3D::createDbg(const DistanceWidth& x, const DistanceWidth& y, const DistanceWidth& z)
+Point3D Point3D::createDbg(const DistanceWidth x, const DistanceWidth y, const DistanceWidth z)
 {
 	return Point3D::create(x, y, z);
 }
@@ -267,12 +284,12 @@ Point3D Point3D::create(const Offset3D offset)
 	assert(offset.z() >= 0);
 	return Point3D(Distance::create(offset.x().get()), Distance::create(offset.y().get()), Distance::create(offset.z().get()));
 }
-Point3D Point3D::create(const Offsets& offsets)
+Point3D Point3D::create(const Offsets offsets)
 {
 	Offset3D offset(offsets);
 	return create(offset);
 }
-Point3D Point3D::create(const Coordinates& coordinates)
+Point3D Point3D::create(const Coordinates coordinates)
 {
 	return Point3D(coordinates);
 }
@@ -355,12 +372,15 @@ Offset3D Point3D::atAdjacentIndex(const AdjacentIndex index) const
 // TODO: Shouldn't this return an offsetCuboid?
 Cuboid Point3D::getAllAdjacentIncludingOutOfBounds() const
 {
+	return inflated({1});
+}
+Cuboid Point3D::inflated(Distance distance) const
+{
 	Cuboid output{*this, *this};
-	output.inflate(Distance::create(1));
+	output.inflate(distance);
 	return output;
 }
 Cuboid Point3D::boundry() const { return {*this, *this}; }
-Point3D Point3D::null() { return {Distance::null(), Distance::null(), Distance::null()}; }
 Point3D Point3D::max() { return { Distance::max(), Distance::max(), Distance::max()}; }
 Point3D Point3D::min() { return { Distance::min(), Distance::min(), Distance::min()}; }
 
@@ -381,10 +401,10 @@ Offset3D Offset3D::operator+(const Offset3D other) const { return Offsets(data +
 Offset3D Offset3D::operator-(const Offset3D other) const { return Offsets(data - other.data); }
 Offset3D Offset3D::operator*(const Offset3D other) const { return Offsets(data * other.data); }
 Offset3D Offset3D::operator/(const Offset3D other) const { return Offsets(data / other.data); }
-Offset3D Offset3D::operator+(const int& other) const { return Offsets(data + other); }
-Offset3D Offset3D::operator-(const int& other) const { return Offsets(data - other); }
-Offset3D Offset3D::operator*(const int& other) const { return Offsets(data * other); }
-Offset3D Offset3D::operator/(const int& other) const { return Offsets(data / other); }
+Offset3D Offset3D::operator+(const int other) const { return Offsets(data + other); }
+Offset3D Offset3D::operator-(const int other) const { return Offsets(data - other); }
+Offset3D Offset3D::operator*(const int other) const { return Offsets(data * other); }
+Offset3D Offset3D::operator/(const int other) const { return Offsets(data / other); }
 std::string Offset3D::toString() const
 {
 	return "(" + x().toString() + "," + y().toString() + "," + z().toString() + ")";

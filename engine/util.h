@@ -120,7 +120,7 @@ namespace util
 		*last = T::null();
 	}
 	template<typename T, int size>
-	inline void removeFromArrayByIndexUnordered(std::array<T, size>& array, const int& index)
+	inline void removeFromArrayByIndexUnordered(std::array<T, size>& array, const int index)
 	{
 		auto lastIndex = (std::ranges::find(array, T::null()) - 1) - array.begin();
 		array[index] = array[lastIndex];

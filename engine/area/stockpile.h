@@ -144,7 +144,7 @@ public:
 	void removeQuery(StockPile& stockPile, const ItemQuery& query);
 	void maybeRemoveFromItemsWithDestinationByStockPile(const StockPile& stockpile, const ItemIndex item);
 	void updateItemReferenceForProject(StockPileProject& project, const ItemReference ref);
-	[[nodiscard]] bool isValidStockPileDestinationfor(const Point3D& point, const ItemIndex item) const;
+	[[nodiscard]] bool isValidStockPileDestinationfor(const Point3D point, const ItemIndex item) const;
 	[[nodiscard]] bool isAnyHaulingAvailableFor(const ActorIndex actor) const;
 	[[nodiscard]] ItemIndex getHaulableItemForAt(const ActorIndex actor, const Point3D point);
 	[[nodiscard]] StockPile* getStockPileFor(const ItemIndex item) const;

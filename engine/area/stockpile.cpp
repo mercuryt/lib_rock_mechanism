@@ -32,7 +32,7 @@ StockPile::StockPile(const Json& data, DeserializationMemo& deserializationMemo,
 	for(const Json& queryData : data["queries"])
 		m_queries.emplace_back(queryData, area);
 	for(const Cuboid cuboid : data["space"].get<CuboidSet>())
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 			addPoint(point);
 }
 Json StockPile::toJson() const
@@ -105,7 +105,7 @@ void StockPile::maybeRemoveAll(const Cuboid cuboid)
 	// TODO: This could be optimized by combining it with removePoint, so that iterating points isn't needed.
 	const CuboidSet intersection = m_cuboids.intersection(cuboid);
 	for(const Cuboid intersectionCuboid : intersection)
-		for(const Point3D& point : intersectionCuboid)
+		for(const Point3D point : intersectionCuboid)
 			removePoint(point);
 }
 void StockPile::updateQueries(std::vector<ItemQuery>& queries)
@@ -140,7 +140,7 @@ void StockPile::destroy()
 	auto copy = m_cuboids;
 	for(const Cuboid cuboid : copy)
 		// TODO: removeCuboid rather then removePoint.
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 			removePoint(point);
 }
 bool StockPile::contains(ItemQuery& query) const
@@ -339,7 +339,7 @@ void AreaHasStockPilesForFaction::destroyStockPile(StockPile& stockPile)
 	// Destruct.
 	m_stockPiles.remove(stockPile);
 }
-bool AreaHasStockPilesForFaction::isValidStockPileDestinationfor(const Point3D& point, const ItemIndex item) const
+bool AreaHasStockPilesForFaction::isValidStockPileDestinationfor(const Point3D point, const ItemIndex item) const
 {
 	Space& space = m_area.getSpace();
 	if(space.isReserved(point, m_faction))

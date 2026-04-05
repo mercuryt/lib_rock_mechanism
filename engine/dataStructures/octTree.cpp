@@ -14,7 +14,7 @@ void ActorOctTree::record(Area& area, const ActorReference actor)
 	const ActorIndex index = actor.getIndex(actors.m_referenceData);
 	const DistanceSquared visionRangeSquared = actors.vision_getRangeSquared(index);
 	const Facing4& facing = actors.getFacing(index);
-	for(const Point3D& coordinates : Point3DSet::fromCuboidSet(actors.getOccupied(index)))
+	for(const Point3D coordinates : Point3DSet::fromCuboidSet(actors.getOccupied(index)))
 	{
 		OctTreeIndex nodeIndex = OctTreeIndex::create(0);
 		while(true)
@@ -39,7 +39,7 @@ void ActorOctTree::erase(Area& area, const ActorReference actor)
 	Actors& actors = area.getActors();
 	const ActorIndex index = actor.getIndex(actors.m_referenceData);
 	for(const Cuboid cuboid : actors.getOccupied(index))
-		for(const Point3D& coordinates : cuboid)
+		for(const Point3D coordinates : cuboid)
 		{
 			OctTreeIndex nodeIndex = OctTreeIndex::create(0);
 			while(true)
@@ -97,7 +97,7 @@ void ActorOctTree::split(const OctTreeIndex& nodeIndex)
 	auto locationBucketIndex = LocationBucketContentsIndex::create(0);
 	// Get a fresh reference to node as the previous was invalidated by emplaceBack.
 	OctTreeNode& node2 = m_nodes[nodeIndex];
-	for(const Point3D& position : node2.contents.getPoints())
+	for(const Point3D position : node2.contents.getPoints())
 	{
 		int octant = getOctant(node2.center, position);
 		// Copy whole record.

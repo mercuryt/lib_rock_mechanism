@@ -11,7 +11,7 @@ struct UniformElement final
 	MaterialCategoryTypeId m_materialCategoryType;
 	MaterialTypeId m_solid;
 	Quantity m_quantity;
-	[[nodiscard]] bool operator==(const UniformElement other) const { return &other == this; }
+	[[nodiscard]] bool operator==(const UniformElement& other) const { return &other == this; }
 	[[nodiscard]] bool query(const ItemIndex item, const Items& items) const;
 	static UniformElement create(
 		const ItemTypeId itemType, const Quantity quantity = Quantity::create(1), const MaterialTypeId materialType = MaterialTypeId::null(),

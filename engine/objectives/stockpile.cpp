@@ -163,7 +163,7 @@ FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& t
 				{
 					// Item can be stockpiled, check if any of the stockpiles we have seen so far will accept it.
 					for (const auto& [stockpile, points] : m_pointsByStockPile)
-						for(const Point3D& stockpilePoint : points)
+						for(const Point3D stockpilePoint : points)
 							if (stockpile->accepts(item) && checkDestination(area, item, stockpilePoint))
 							{
 								// Success
@@ -184,7 +184,7 @@ FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& t
 				CuboidSet intersection = stockPile->getCuboids().intersection(cuboid);
 				for(const Cuboid intersectingCuboid : intersection)
 				{
-					for(const Point3D& point : intersectingCuboid)
+					for(const Point3D point : intersectingCuboid)
 					{
 						if(!m_pointsByStockPile.contains(stockPile) || !m_pointsByStockPile[stockPile].contains(point))
 						{
@@ -259,7 +259,7 @@ void StockPilePathRequest::writeStep(Area& area, FindPathResult& result)
 				m_objective.m_pickUpFacing = actors.getFacing(actorIndex);
 			else
 			{
-				const Point3D& secondToLast = result.path.size() > 1 ? *(result.path.end() - 2) : actors.getLocation(actorIndex);
+				const Point3D secondToLast = result.path.size() > 1 ? *(result.path.end() - 2) : actors.getLocation(actorIndex);
 				m_objective.m_pickUpFacing = secondToLast.getFacingTwords(result.path.back());
 			}
 			m_objective.execute(area, actorIndex);
@@ -324,7 +324,7 @@ FindPathResult StockPileDestinationPathRequest::readStep(Area& area, const Terra
 	const FactionId& actorFaction = actors.getFaction(actorIndex);
 	const auto predicate = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
 	{
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 			// TODO: use cuboids instead of points to query here.
 			if(m_objective.destinationCondition(area, point, m_objective.m_item.getIndex(items.m_referenceData), actorIndex))
 				return {true, point};

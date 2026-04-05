@@ -58,7 +58,7 @@ class Plants final : public HasShapes<Plants, PlantIndex>
 public:
 	Plants(Area& area);
 	void load(const Json& data);
-	void onChangeAmbiantSurfaceTemperature();
+	void onChangeAmbiantSurfaceTemperature(Temperature newAmbiant, const CuboidSet& exclude);
 	template<typename Action>
 	void forEachData(Action&& action)
 	{

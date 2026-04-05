@@ -17,6 +17,13 @@ struct ParamaterizedLine;
 struct Cuboid
 {
 	using PointType = Point3D;
+	struct Primitive
+	{
+		std::array<DistanceWidth, 6> data;
+		bool operator<=>(const Primitive&) const = default;
+		bool operator==(const Primitive&) const = default;
+		NLOHMANN_DEFINE_TYPE_INTRUSIVE(Primitive, data);
+	};
 	Point3D m_high;
 	Point3D m_low;
 	Cuboid() = default;
@@ -38,6 +45,9 @@ struct Cuboid
 	void maybeExpand(const Cuboid other);
 	void maybeExpand(const Point3D point);
 	void inflate(const Distance  distance);
+	[[nodiscard]] Cuboid inflated(const Distance  distance) const;
+	[[nodiscard]] constexpr Primitive get() const { return {.data={m_high.x().get(), m_high.y().get(), m_high.z().get(), m_low.x().get(), m_low.y().get(), m_low.z().get()}}; }
+	[[nodiscard]] constexpr static Primitive nullPrimitive() { auto d = Distance::null().get(); return {.data={d, d, d, d, d, d}}; }
 	[[nodiscard]] Cuboid boundry() const { return *this; }
 	[[nodiscard]] SmallSet<Point3D> toSet() const;
 	[[nodiscard]] bool contains(const Point3D point) const;
@@ -46,7 +56,7 @@ struct Cuboid
 	[[nodiscard]] bool contains(const OffsetCuboid cuboid) const;
 	[[nodiscard]] bool containsAnyPoints(const auto& points) const
 	{
-		for(const Point3D& point : points)
+		for(const Point3D point : points)
 			if(contains(point))
 				return true;
 		return false;
@@ -101,10 +111,11 @@ struct Cuboid
 	[[nodiscard]] Distance sizeX() const;
 	[[nodiscard]] Distance sizeY() const;
 	[[nodiscard]] Distance sizeZ() const;
+	[[nodiscard]] Point3D clamp(const Point3D point) const;
 	[[nodiscard]] int countIf(auto&& condition) const
 	{
 		int output = 0;
-		for(const Point3D& point : *this)
+		for(const Point3D point : *this)
 			if(condition(point))
 				++output;
 		return output;
@@ -114,6 +125,7 @@ struct Cuboid
 	[[nodiscard]] static Cuboid fromPointSet(const SmallSet<Point3D>& set);
 	[[nodiscard]] static Cuboid createCube(const Point3D center, const Distance  width);
 	[[nodiscard]] static Cuboid create(const OffsetCuboid cuboid);
+	[[nodiscard]] static Cuboid create(const Primitive primitive);
 	class ConstIterator
 	{
 	private:

@@ -39,7 +39,7 @@ FindPathResult CraftPathRequest::readStep(Area& area, const TerrainFacade& terra
 	auto predicate = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
 	{
 		//TODO: use cuboids instead of factions
-		for(const Point3D& point : cuboid)
+		for(const Point3D point : cuboid)
 		{
 			bool result = !space.isReserved(point, captureFaction) && hasCrafting.getJobForAtLocation(actorIndex, skillType, point, excludeJobs) != nullptr;
 			if(result)

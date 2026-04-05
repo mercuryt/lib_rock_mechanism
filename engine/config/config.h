@@ -92,11 +92,8 @@ namespace Config
 	inline MoveCost goUpMoveCost;
 	inline Step harvestEventDuration;
 	inline Priority harvestPriority;
-	inline float heatDisipatesAtDistanceExponent;
 	inline float heatFractionForBurn;
 	inline float heatFractionForSmoulder;
-	inline Distance heatDistanceMaximum;
-	inline TemperatureDelta heatRadianceMinimum;
 	inline int hitAreaToBodyPartVolumeRatioForFatalStrikeToVitalArea;
 	inline int hitScaleModifier;
 	inline int hitsToDivideActorFallDamageInto;

@@ -50,17 +50,17 @@ Json ObjectiveTypePrioritySet::toJson() const
 {
 	return Json{{"data", m_data}};
 }
-ObjectivePriority& ObjectiveTypePrioritySet::getById(const ObjectiveTypeId& objectiveTypeId)
+ObjectivePriority& ObjectiveTypePrioritySet::getById(const ObjectiveTypeId objectiveTypeId)
 {
 	auto found = std::ranges::find_if(m_data, [&](const ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType == objectiveTypeId; });
 	assert(found != m_data.end());
 	return *found;
 }
-const ObjectivePriority& ObjectiveTypePrioritySet::getById(const ObjectiveTypeId& objectiveTypeId) const
+const ObjectivePriority& ObjectiveTypePrioritySet::getById(const ObjectiveTypeId objectiveTypeId) const
 {
 	return const_cast<ObjectiveTypePrioritySet*>(this)->getById(objectiveTypeId);
 }
-void ObjectiveTypePrioritySet::setPriority(Area& area, const ActorIndex actor, const ObjectiveTypeId& objectiveTypeId, const Priority priority)
+void ObjectiveTypePrioritySet::setPriority(Area& area, const ActorIndex actor, const ObjectiveTypeId objectiveTypeId, const Priority priority)
 {
 	auto found = std::ranges::find_if(m_data, [&](ObjectivePriority& x) { return x.objectiveType == objectiveTypeId; });
 	if(found == m_data.end())
@@ -70,7 +70,7 @@ void ObjectiveTypePrioritySet::setPriority(Area& area, const ActorIndex actor, c
 	std::ranges::sort(m_data, std::ranges::greater{}, &ObjectivePriority::priority);
 	area.getActors().objective_maybeDoNext(actor);
 }
-void ObjectiveTypePrioritySet::remove(const ObjectiveTypeId& objectiveType)
+void ObjectiveTypePrioritySet::remove(const ObjectiveTypeId objectiveType)
 {
 	std::erase_if(m_data, [&](const ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType == objectiveType; });
 }
@@ -93,27 +93,27 @@ void ObjectiveTypePrioritySet::setObjectiveFor(Area& area, const ActorIndex acto
 	else
 		area.getActors().objective_addTaskToStart(actor, std::make_unique<WanderObjective>());
 }
-void ObjectiveTypePrioritySet::setDelay(Area& area, const ObjectiveTypeId& objectiveTypeId)
+void ObjectiveTypePrioritySet::setDelay(Area& area, const ObjectiveTypeId objectiveTypeId)
 {
 	auto found = std::ranges::find_if(m_data, [&](const ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType == objectiveTypeId; });
 	// If found is not in data it was assigned by some other means (such as player interaction) so we don't need a delay.
 	if(found != m_data.end())
 		found->doNotAssignAgainUntil = area.m_simulation.m_step + Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective;
 }
-Priority ObjectiveTypePrioritySet::getPriorityFor(const ObjectiveTypeId& objectiveTypeId) const
+Priority ObjectiveTypePrioritySet::getPriorityFor(const ObjectiveTypeId objectiveTypeId) const
 {
 	const auto found = std::ranges::find_if(m_data, [&](const ObjectivePriority& objectivePriority){ return objectivePriority.objectiveType == objectiveTypeId; });
 	if(found == m_data.end())
 		return Priority::create(0);
 	return found->priority;
 }
-bool ObjectiveTypePrioritySet::isOnDelay(Area& area, const ObjectiveTypeId& objectiveTypeId) const
+bool ObjectiveTypePrioritySet::isOnDelay(Area& area, const ObjectiveTypeId objectiveTypeId) const
 {
 	const ObjectivePriority& objectivePriority = getById(objectiveTypeId);
 	return objectivePriority.doNotAssignAgainUntil > area.m_simulation.m_step;
 }
 
-Step ObjectiveTypePrioritySet::getDelayEndFor(const ObjectiveTypeId& objectiveTypeId) const
+Step ObjectiveTypePrioritySet::getDelayEndFor(const ObjectiveTypeId objectiveTypeId) const
 {
 	const ObjectivePriority& objectivePriority = getById(objectiveTypeId);
 	return objectivePriority.doNotAssignAgainUntil;
@@ -123,6 +123,7 @@ SupressedNeed::SupressedNeed(Area& area, std::unique_ptr<Objective> o, const Act
 	m_objective(std::move(o)), m_event(area.m_eventSchedule), m_actor(ref)
 {
 	m_event.schedule(area, *this);
+	assert(m_objective->m_priority.exists());
 }
 SupressedNeed::SupressedNeed(Area& area, const Json& data, DeserializationMemo& deserializationMemo, const ActorReference ref) :
 	m_event(area.m_eventSchedule), m_actor(ref)
@@ -141,6 +142,7 @@ Json SupressedNeed::toJson() const
 void SupressedNeed::callback(Area& area)
 {
 	ActorIndex actor = m_actor.getIndex(area.getActors().m_referenceData);
+	// Supressed need is being destroyed here but objective is being passed on to HasObjectives.
 	auto objective = std::move(m_objective);
 	HasObjectives& hasObjectives = *area.getActors().m_hasObjectives[actor];
 	hasObjectives.m_supressedNeeds.erase(objective->getNeedType());
@@ -188,7 +190,7 @@ const ObjectiveType& ObjectiveType::getByName(std::string name)
 	return *found->get();
 }
 // Static method.
-const ObjectiveType& ObjectiveType::getById(const ObjectiveTypeId& id) { return *objectiveTypeData[id].get(); }
+const ObjectiveType& ObjectiveType::getById(const ObjectiveTypeId id) { return *objectiveTypeData[id].get(); }
 ObjectiveTypeId ObjectiveType::getId() const
 {
 	auto iter = objectiveTypeData.find_if([&](const std::unique_ptr<ObjectiveType>& type) { return type.get() == this; });
@@ -448,7 +450,7 @@ bool HasObjectives::queuesAreEmpty() const
 {
 	return m_tasksQueue.empty() && m_needsQueue.empty();
 }
-bool HasObjectives::hasTask(const ObjectiveTypeId& objectiveTypeId) const
+bool HasObjectives::hasTask(const ObjectiveTypeId objectiveTypeId) const
 {
 	return std::ranges::find(m_tasksQueue, objectiveTypeId, [](const auto& objective){ return objective->getTypeId(); }) != m_tasksQueue.end();
 }

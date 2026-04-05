@@ -12,7 +12,6 @@
 #include "../project.h"
 #include "../stocks.h"
 #include "../farmFields.h"
-#include "../temperature.h"
 #include "../area/area.h"
 #include "../area/hasSpaceDesignations.h"
 #include "../area/stockpile.h"
@@ -62,6 +61,9 @@ template class std::vector<std::pair<FactionId, SimulationHasUniformsForFaction>
 template class std::vector<std::pair<FactionId, SmallMap<SpaceDesignation, Quantity>>>;
 template class std::vector<std::pair<FactionId, StrongVector<Squad, SquadIndex>>>;
 //template class std::vector<std::pair<FactionId, HasOnSight>>;
+template class std::vector<std::pair<Point3D, TemperatureSourceId>>;
+template class std::vector<std::pair<MaterialTypeId, Fire>>;
+template class std::vector<std::pair<Step, SmallSet<FireDelta>>>;
 
 //template struct SmallMap<FactionId, RTreeDataIndex<SmallSet<Project*>, int, noMerge>>;
 template struct SmallMap<ActorOrItemIndex, DeckRotationDataSingle>;
@@ -105,7 +107,7 @@ template struct SmallMap<Point3D, SmallMap<FactionId, FarmField*>>;
 template struct SmallMap<Point3D, SmallMap<FactionId, PointIsPartOfStockPile>>;
 template struct SmallMap<Point3D, SmallMap<FluidTypeId, CollisionVolume>>;
 template struct SmallMap<Point3D, TemperatureDelta>;
-template struct SmallMap<Point3D, TemperatureSource>;
+template struct SmallMap<Point3D, TemperatureSourceId>;
 template struct SmallMap<Point3D, std::unique_ptr<DishonorCallback>>;
 template struct SmallMap<Point3D, std::vector<CraftStepTypeCategoryId>>;
 template struct SmallMap<Project*, DeckRotationDataSingle>;
@@ -116,14 +118,15 @@ template struct SmallMap<StockPile*, SmallSet<ItemReference>>;
 template struct SmallMap<StockPile*, SmallSet<Point3D>>;
 template struct SmallMap<std::string, Uniform>;
 template struct SmallMap<int, int>;
+template struct SmallMap<MaterialTypeId, Fire>;
+template struct SmallMap<Step, SmallSet<FireDelta>>;
+
 
 template struct SmallMapStable<AreaId, Area>;
 template struct SmallMapStable<FactionId, AreaHasStockPilesForFaction>;
 template struct SmallMapStable<FactionId, HasConstructionDesignationsForFaction>;
 template struct SmallMapStable<FactionId, HasDigDesignationsForFaction>;
 template struct SmallMapStable<FactionId, HasWoodCuttingDesignationsForFaction>;
-template struct SmallMapStable<MaterialTypeId, Fire*>;
-template struct SmallMapStable<MaterialTypeId, Fire>;
 template struct SmallMapStable<NeedType, SupressedNeed>;
 template struct SmallMapStable<Point3D, DigProject>;
 template struct SmallMapStable<Point3D, InstallItemProject>;

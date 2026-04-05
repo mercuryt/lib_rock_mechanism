@@ -60,7 +60,7 @@ struct SmallSet
 	void maybeEraseAll(Iterator begin, const Iterator& end) { for(; begin != end; ++begin) maybeErase(*begin); }
 	void maybeEraseAll(const This& other);
 	void maybeEraseAllWhereBothSetsAreSorted(const This& other);
-	void eraseIndex(const int& index);
+	void eraseIndex(const int index);
 	void popBack();
 	void clear();
 	template<typename ...Args>
@@ -94,8 +94,8 @@ struct SmallSet
 	[[nodiscard]] bool operator==(const This& other);
 	template<typename Predicate>
 	[[nodiscard]] int countIf(Predicate&& predicate) const  { return std::ranges::count_if(m_data, predicate); }
-	[[nodiscard]] const T& operator[](const int& index) const;
-	[[nodiscard]] T& operator[](const int& index);
+	[[nodiscard]] const T& operator[](const int index) const;
+	[[nodiscard]] T& operator[](const int index);
 	[[nodiscard]] bool contains(const T& value) const;
 	template<typename Predicate>
 	[[nodiscard]] bool containsAny(Predicate&& predicate) const { return std::ranges::find_if(m_data, predicate) != m_data.end(); }
@@ -133,20 +133,20 @@ struct SmallSet
 	public:
 		iterator(This& s, int i) : m_iter(s.m_data.begin() + i) { }
 		iterator(std::vector<T>::iterator i) : m_iter(i) { }
-		iterator& operator++() { ++m_iter; return *this; }
-		iterator& operator--() { --m_iter; return *this; }
+		iterator operator++() { ++m_iter; return *this; }
+		iterator operator--() { --m_iter; return *this; }
 		[[nodiscard]] iterator operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] iterator operator--(int) { auto copy = *this; --m_iter; return copy; }
 		[[nodiscard]] T& operator*() { return *m_iter; }
 		[[nodiscard]] const T& operator*() const { return *m_iter; }
-		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
-		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
+		[[nodiscard]] bool operator==(const iterator other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator!=(const iterator other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] T* operator->() { return &*m_iter; }
-		[[nodiscard]] iterator operator-(const int& index) const { return m_iter - index; }
-		[[nodiscard]] iterator operator+(const int& index) const { return m_iter + index; }
-		[[nodiscard]] iterator& operator+=(const int& index) { m_iter += index; return *this; }
-		[[nodiscard]] iterator& operator-=(const int& index) { m_iter -= index; return *this; }
-		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) const { return m_iter <=> other.m_iter; }
+		[[nodiscard]] iterator operator-(const int index) const { return m_iter - index; }
+		[[nodiscard]] iterator operator+(const int index) const { return m_iter + index; }
+		[[nodiscard]] iterator operator+=(const int index) { m_iter += index; return *this; }
+		[[nodiscard]] iterator operator-=(const int index) { m_iter -= index; return *this; }
+		[[nodiscard]] std::strong_ordering operator<=>(const iterator other) const { return m_iter <=> other.m_iter; }
 		friend class const_iterator;
 	};
 	class const_iterator
@@ -158,21 +158,21 @@ struct SmallSet
 		const_iterator(std::vector<T>::const_iterator i) : m_iter(i) { }
 		const_iterator(const const_iterator& i) : m_iter(i.m_iter) { }
 		const_iterator(const iterator& i) : m_iter(i.m_iter) { }
-		const_iterator& operator++() { ++m_iter; return *this; }
-		const_iterator& operator--() { --m_iter; return *this; }
+		const_iterator operator++() { ++m_iter; return *this; }
+		const_iterator operator--() { --m_iter; return *this; }
 		const_iterator operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		const_iterator operator--(int) { auto copy = *this; --m_iter; return copy; }
 		[[nodiscard]] const T& operator*() const { return *m_iter; }
-		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
-		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
-		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
-		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
+		[[nodiscard]] bool operator==(const const_iterator other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator==(const iterator other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator!=(const const_iterator other) const { return m_iter != other.m_iter; }
+		[[nodiscard]] bool operator!=(const iterator other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const T* operator->() const { return &*m_iter; }
-		[[nodiscard]] const_iterator operator-(const int& index) { return m_iter - index; }
-		[[nodiscard]] const_iterator operator+(const int& index) { return m_iter + index; }
-		[[nodiscard]] const_iterator& operator+=(const int& index) { m_iter += index; return *this; }
-		[[nodiscard]] const_iterator& operator-=(const int& index) { m_iter -= index; return *this; }
-		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
+		[[nodiscard]] const_iterator operator-(const int index) { return m_iter - index; }
+		[[nodiscard]] const_iterator operator+(const int index) { return m_iter + index; }
+		[[nodiscard]] const_iterator operator+=(const int index) { m_iter += index; return *this; }
+		[[nodiscard]] const_iterator operator-=(const int index) { m_iter -= index; return *this; }
+		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator other) const { return m_iter <=> other.m_iter; }
 	};
 	[[nodiscard]] std::string toString() const;
 	static SmallSet<T> create(const auto& source) { SmallSet<T> output; for(const T& value : source) output.insert(value); return output; }
@@ -202,7 +202,7 @@ public:
 	void insert(This::iterator begin, This::iterator end);
 	void erase(const std::unique_ptr<T>& value);
 	void maybeErase(const T& value);
-	void erase(const This::iterator& iter);
+	void erase(const This::iterator iter);
 	void erase(const T& value);
 	template<typename Predicate>
 	void eraseIf(Predicate&& predicate) { std::erase_if(m_data, [&](const std::unique_ptr<T>& value){ return predicate(*value); }); }
@@ -243,19 +243,19 @@ public:
 	protected:
 		std::vector<std::unique_ptr<T>>::iterator m_iter;
 	public:
-		iterator(This& s, const int& i) : m_iter(s.m_data.begin() + i) { }
+		iterator(This& s, const int i) : m_iter(s.m_data.begin() + i) { }
 		iterator(std::vector<std::unique_ptr<T>>::iterator i) : m_iter(i) { }
 		iterator& operator++() { ++m_iter; return *this; }
 		iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
 		[[nodiscard]] T& operator*() { return **m_iter; }
 		[[nodiscard]] const T& operator*() const { return **m_iter; }
-		[[nodiscard]] bool operator==(const iterator& other) const { return m_iter == other.m_iter; }
-		[[nodiscard]] bool operator!=(const iterator& other) const { return m_iter != other.m_iter; }
+		[[nodiscard]] bool operator==(const iterator other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator!=(const iterator other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] T* operator->() { return &*m_iter; }
-		[[nodiscard]] iterator operator-(const iterator& other) { return m_iter - other.m_iter; }
-		[[nodiscard]] iterator operator+(const iterator& other) { return m_iter - other.m_iter; }
-		[[nodiscard]] iterator& operator+=(const iterator& other) { m_iter += other.m_iter; return *this; }
-		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) { return m_iter <=> other.m_iter; }
+		[[nodiscard]] iterator operator-(const iterator other) { return m_iter - other.m_iter; }
+		[[nodiscard]] iterator operator+(const iterator other) { return m_iter - other.m_iter; }
+		[[nodiscard]] iterator& operator+=(const iterator other) { m_iter += other.m_iter; return *this; }
+		[[nodiscard]] std::strong_ordering operator<=>(const iterator other) { return m_iter <=> other.m_iter; }
 		[[nodiscard]] const auto& getIter() const { return m_iter; }
 		friend class const_iterator;
 	};
@@ -264,20 +264,20 @@ public:
 	protected:
 		std::vector<std::unique_ptr<T>>::const_iterator m_iter;
 	public:
-		const_iterator(const This& s, const int& i) : m_iter(s.m_data.begin() + i) { }
+		const_iterator(const This& s, const int i) : m_iter(s.m_data.begin() + i) { }
 		const_iterator(std::vector<std::unique_ptr<T>>::const_iterator i) : m_iter(i) { }
 		const_iterator(const const_iterator& i) : m_iter(i.m_iter) { }
 		const_iterator(const iterator& i) : m_iter(i.m_iter) { }
 		const_iterator& operator++() { ++m_iter; return *this; }
 		const_iterator& operator++(int) { auto copy = *this; ++m_iter; return copy; }
-		iterator& operator+=(const const_iterator& other) { m_iter += other.m_iter; return *this; }
+		iterator& operator+=(const const_iterator other) { m_iter += other.m_iter; return *this; }
 		[[nodiscard]] const T& operator*() const { return **m_iter; }
-		[[nodiscard]] bool operator==(const const_iterator& other) const { return m_iter == other.m_iter; }
-		[[nodiscard]] bool operator!=(const const_iterator& other) const { return m_iter != other.m_iter; }
+		[[nodiscard]] bool operator==(const const_iterator other) const { return m_iter == other.m_iter; }
+		[[nodiscard]] bool operator!=(const const_iterator other) const { return m_iter != other.m_iter; }
 		[[nodiscard]] const T* operator->() const { return &**m_iter; }
-		[[nodiscard]] iterator operator-(const const_iterator& other) { return m_iter - other.m_iter; }
-		[[nodiscard]] iterator operator+(const const_iterator& other) const { return m_iter + other.m_iter; }
-		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator& other) const { return m_iter <=> other.m_iter; }
+		[[nodiscard]] iterator operator-(const const_iterator other) { return m_iter - other.m_iter; }
+		[[nodiscard]] iterator operator+(const const_iterator other) const { return m_iter + other.m_iter; }
+		[[nodiscard]] std::strong_ordering operator<=>(const const_iterator other) const { return m_iter <=> other.m_iter; }
 		[[nodiscard]] const auto& getIter() const { return m_iter; }
 	};
 };
