@@ -26,7 +26,7 @@ ConstructPathRequest::ConstructPathRequest(const Json& data, Area& area, Deseria
 	PathRequestBreadthFirst(data, area),
 	m_constructObjective(static_cast<ConstructObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
 { }
-FindPathResult ConstructPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult ConstructPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	ActorIndex actorIndex = actor.getIndex(area.getActors().m_referenceData);
 	auto predicate = [&area, this, actorIndex](const Cuboid cuboid) -> bool { return m_constructObjective.joinableProjectExistsAt(area, cuboid, actorIndex).exists(); };

@@ -35,7 +35,7 @@ class UniformPathRequest final : public PathRequestBreadthFirst
 public:
 	UniformPathRequest(Area& area, UniformObjective& objective, const ActorIndex actor);
 	UniformPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "uniform"; }

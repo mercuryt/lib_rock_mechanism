@@ -1,5 +1,4 @@
 #include "../../lib/doctest.h"
-#include "../../engine/temperature.h"
 #include "../../engine/area/area.h"
 #include "../../engine/actors/actors.h"
 #include "../../engine/items/items.h"

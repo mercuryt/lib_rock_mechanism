@@ -213,6 +213,23 @@ void OffsetCuboid::rotate2D(const Facing4 oldFacing, const Facing4 newFacing)
 		rotation += 4;
 	rotate2D((Facing4)rotation);
 }
+Offset3D OffsetCuboid::clamp(const Offset3D point) const
+{
+	return {
+		std::clamp(point.x(), m_low.x(), m_high.x()),
+		std::clamp(point.y(), m_low.y(), m_high.y()),
+		std::clamp(point.z(), m_low.z(), m_high.z())
+	};
+}
+Offset3D OffsetCuboid::nearestPointTo(const OffsetCuboid other) const
+{
+	// Any point in other would work, there is no significance to using m_high in particular.
+	return clamp(other.m_high);
+}
+Offset OffsetCuboid::distanceTo(const OffsetCuboid other) const
+{
+	return nearestPointTo(other).distanceTo(*this);
+}
 void OffsetCuboid::clear()
 {
 	m_low.clear();

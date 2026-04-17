@@ -23,23 +23,23 @@ template<typename CuboidType, typename PointType, typename CuboidSetType>
 struct CuboidSetBase
 {
 protected:
-	void insertOrMerge(const CuboidType& cuboid);
+	void insertOrMerge(const CuboidType cuboid);
 	void destroy(const int cuboid);
 	// For merging contained cuboids.
-	void mergeInternal(const CuboidType& absorbed, const int absorber);
+	void mergeInternal(const CuboidType absorbed, const int absorber);
 public:
 	SmallSet<CuboidType> m_cuboids;
 	CuboidSetBase() = default;
 	CuboidSetBase(const CuboidSetType& other) : m_cuboids(other.m_cuboids) { }
 	CuboidSetBase(CuboidSetType&& other) noexcept : m_cuboids(std::move(other.m_cuboids)) { }
-	CuboidSetBase(const PointType& location, const Facing4& rotation, const OffsetCuboidSet& offsetPairs);
+	CuboidSetBase(const PointType location, const Facing4 rotation, const OffsetCuboidSet& offsetPairs);
 	CuboidSetBase(const std::initializer_list<CuboidType>& cuboids);
-	CuboidSetBase(const CuboidType& cuboid) : m_cuboids({cuboid}) { }
+	CuboidSetBase(const CuboidType cuboid) : m_cuboids({cuboid}) { }
 	CuboidSetBase(const SmallSet<CuboidType>& cuboids) : m_cuboids(cuboids) { }
-	CuboidSetBase(const SmallSet<PointType>& points) { for(const PointType& point : points) add(point); }
+	CuboidSetBase(const SmallSet<PointType>& points) { for(const PointType point : points) add(point); }
 	CuboidSetType& operator=(CuboidSetType&& other) noexcept { m_cuboids = std::move(other.m_cuboids); return static_cast<CuboidSetType&>(*this); }
 	CuboidSetType& operator=(const CuboidSetType& other) { m_cuboids = other.m_cuboids; return static_cast<CuboidSetType&>(*this); }
-	void maybeAdd(const PointType& point);
+	void maybeAdd(const PointType point);
 	void maybeAddAll(const CuboidSetType& other);
 	void maybeAdd(const CuboidSetType& other) { maybeAddAll(other); }
 	void add(const auto& shape)
@@ -54,8 +54,8 @@ public:
 		assert(!intersects(shape));
 		maybeAddAll(shape);
 	}
-	void maybeRemove(const PointType& point);
-	void maybeRemoveAll(const auto& cuboids) { for(const CuboidType& cuboid : cuboids) maybeRemove(cuboid); }
+	void maybeRemove(const PointType point);
+	void maybeRemoveAll(const auto& cuboids) { for(const CuboidType cuboid : cuboids) maybeRemove(cuboid); }
 	void remove(const auto& shape)
 	{
 		assert(!shape.empty());
@@ -69,8 +69,8 @@ public:
 		maybeRemoveAll(shape);
 	}
 	// TODO: why virtual?
-	virtual void maybeAdd(const CuboidType& cuboid);
-	virtual void maybeRemove(const CuboidType& cuboid);
+	virtual void maybeAdd(const CuboidType cuboid);
+	virtual void maybeRemove(const CuboidType cuboid);
 	void clear() { m_cuboids.clear(); }
 	void shift(const Offset3D offset, const Distance  distance);
 	CuboidSetType shifted(const Offset3D offset, const Distance  distance) const;
@@ -78,13 +78,13 @@ public:
 	void shiftSouth(const Distance distance = {1});
 	// For merging with other cuboid sets.
 	void addSet(const CuboidSetType& other);
-	void rotateAroundPoint(const PointType& point, const Facing4& rotation);
+	void rotateAroundPoint(const PointType point, const Facing4 rotation);
 	void reserve(const int capacity) { m_cuboids.reserve(capacity); }
 	void swap(CuboidSetType& other);
 	void popBack();
 	void inflate(const Distance  distance);
-	[[nodiscard]] const CuboidType& operator[](const int index) const { return m_cuboids[index]; }
-	[[nodiscard]] CuboidType& operator[](const int index){ return m_cuboids[index]; }
+	[[nodiscard]] const CuboidType operator[](const int index) const { return m_cuboids[index]; }
+	[[nodiscard]] CuboidType operator[](const int index){ return m_cuboids[index]; }
 	[[nodiscard]] PointType center() const;
 	[[nodiscard]] PointType::DimensionType lowestZ() const;
 	[[nodiscard]] PointType::DimensionType highestZ() const;
@@ -120,7 +120,7 @@ public:
 	[[nodiscard]] bool isTouching(const CuboidSetType& cuboids) const;
 	[[nodiscard]] bool isIntersectingOrAdjacentTo(const CuboidSetType& cuboids) const;
 	[[nodiscard]] bool isIntersectingOrAdjacentTo(const CuboidType cuboid) const;
-	[[nodiscard]] const CuboidType& getCuboidContaining(const PointType point) const;
+	[[nodiscard]] const CuboidType getCuboidContaining(const PointType point) const;
 	[[nodiscard]] CuboidSetType getAdjacent() const;
 	[[nodiscard]] CuboidSetType getDirectlyAdjacent(const Distance distance) const;
 	[[nodiscard]] CuboidSetType inflateFaces(const Distance distance) const;
@@ -128,16 +128,17 @@ public:
 	[[nodiscard]] CuboidSetType slicedAtZ(const PointType::DimensionType zLevel) const;
 	[[nodiscard]] CuboidSetType adjacentSlicedAtZ(const PointType::DimensionType zLevel) const;
 	[[nodiscard]] CuboidSetType flattened(const PointType::DimensionType zLevel) const;
-	[[nodiscard]] CuboidSetType getFace(const Facing6 faceing) const;
+	[[nodiscard]] CuboidSetType getFace(const Facing6 facing) const;
 	[[nodiscard]] CuboidSetType getFaceNorth() const;
 	[[nodiscard]] CuboidSetType getFaceSouth() const;
 	[[nodiscard]] CuboidSetType getFaceEast() const;
 	[[nodiscard]] CuboidSetType getFaceWest() const;
 	[[nodiscard]] CuboidSetType getFaceAbove() const;
 	[[nodiscard]] CuboidSetType getFaceBelow() const;
+	[[nodiscard]] PointType nearestPointTo(const CuboidType cuboid) const;
 	private:
 	template<typename ShapeT>
-	[[nodiscard]] CuboidSetType adjacentRecursiveBody(const ShapeT& shape) const;
+	[[nodiscard]] CuboidSetType adjacentRecursiveBody(const ShapeT shape) const;
 	public:
 	[[nodiscard]] CuboidSetType adjacentRecursive(const CuboidType shape) const;
 	[[nodiscard]] CuboidSetType adjacentRecursive(const PointType shape) const;
@@ -151,8 +152,8 @@ public:
 	GDB_CALLABLE std::string toString() const;
 	[[nodiscard]] static CuboidSetType create(const SmallSet<PointType>& space);
 	[[nodiscard]] static CuboidSetType create(const CuboidSetType& set);
-	[[nodiscard]] static CuboidSetType create(const CuboidType& cuboid);
-	[[nodiscard]] static CuboidSetType create(const PointType& point);
+	[[nodiscard]] static CuboidSetType create(const CuboidType cuboid);
+	[[nodiscard]] static CuboidSetType create(const PointType point);
 	friend struct CuboidSetConstIterator;
 	friend struct CuboidSetConstView;
 };

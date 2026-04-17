@@ -25,7 +25,7 @@ UniformPathRequest::UniformPathRequest(const Json& data, Area& area, Deserializa
 	PathRequestBreadthFirst(data, area),
 	m_objective(static_cast<UniformObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
 { }
-FindPathResult UniformPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult UniformPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	auto destinationCondition = [&area, this](const Cuboid cuboid) -> std::pair<bool, Point3D>
 	{

@@ -14,6 +14,7 @@ class Offset3D;
 struct OffsetCuboid;
 struct CuboidSet;
 struct ParamaterizedLine;
+struct CuboidSet;
 struct Cuboid
 {
 	using PointType = Point3D;
@@ -75,7 +76,7 @@ struct Cuboid
 	[[nodiscard]] std::pair<Point3D, Point3D> intersectionPoints(const ParamaterizedLine& line) const;
 	[[nodiscard]] Point3D intersectionPointForFace(const ParamaterizedLine& line, const Facing6 face) const;
 	[[nodiscard]] OffsetCuboid above() const;
-	[[nodiscard]] Cuboid getFace(const Facing6 faceing) const;
+	[[nodiscard]] Cuboid getFace(const Facing6 facing) const;
 	[[nodiscard]] Cuboid getFaceNorth() const;
 	[[nodiscard]] Cuboid getFaceSouth() const;
 	[[nodiscard]] Cuboid getFaceEast() const;
@@ -84,6 +85,7 @@ struct Cuboid
 	[[nodiscard]] Cuboid getFaceBelow() const;
 	[[nodiscard]] bool intersects(const Point3D point) const;
 	[[nodiscard]] bool intersects(const Cuboid cuboid) const;
+	[[nodiscard]] bool intersects(const CuboidSet& cuboid) const;
 	[[nodiscard]] bool overlapsWithSphere(const Sphere& sphere) const;
 	[[nodiscard]] int volume() const;
 	[[nodiscard]] bool empty() const { return m_high.empty(); }
@@ -112,6 +114,8 @@ struct Cuboid
 	[[nodiscard]] Distance sizeY() const;
 	[[nodiscard]] Distance sizeZ() const;
 	[[nodiscard]] Point3D clamp(const Point3D point) const;
+	[[nodiscard]] Point3D nearestPointTo(const Cuboid other) const;
+	[[nodiscard]] Distance distanceTo(const Cuboid other) const;
 	[[nodiscard]] int countIf(auto&& condition) const
 	{
 		int output = 0;

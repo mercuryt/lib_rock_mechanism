@@ -158,7 +158,7 @@ GoToPathRequest::GoToPathRequest(const Json& data, Area& area) :
 	PathRequestDepthFirst(data, area),
 	destination(data["destination"].get<Point3D>())
 { }
-FindPathResult GoToPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo)
+FindPathResult GoToPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	return terrainFacade.findPathTo(memo, start, facing, shape, destination, detour, adjacent, faction);
 }
@@ -178,7 +178,7 @@ GoToAnyPathRequest::GoToAnyPathRequest(const Json& data, Area& area) :
 {
 	data["destinations"].get_to(destinations);
 }
-FindPathResult GoToAnyPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo)
+FindPathResult GoToAnyPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	if(adjacent)
 		return terrainFacade.findPathToAnyOf<false, true>(memo, start, facing, shape, destinations, huristicDestination, detour, faction);
@@ -200,17 +200,14 @@ GoToFluidTypePathRequest::GoToFluidTypePathRequest(const Json& data, Area& area)
 	PathRequestBreadthFirst(data, area),
 	fluidType(data["fluidType"].get<FluidTypeId>())
 { }
-FindPathResult GoToFluidTypePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult GoToFluidTypePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	Space& space = area.getSpace();
-	auto destinationCondition = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
-	{
-		const Point3D point = space.fluid_containsPoint(cuboid, fluidType);
-		return {point.exists(), point};
-	};
+	auto shortRangeCondition = [&](const Cuboid cuboid) -> Point3D { return space.fluid_containsPoint(cuboid, fluidType); };
+	auto longRangeCondition = [&](const Cuboid cuboid) -> bool { return shortRangeCondition(cuboid) != Point3D::null(); };
 	constexpr bool anyOccupiedPoint = false;
-	constexpr bool useAdjacent = true;
-	return terrainFacade.findPathToConditionBreadthFirst<decltype(destinationCondition), anyOccupiedPoint, useAdjacent>(destinationCondition, memo, start, facing, shape, detour, faction, maxRange);
+	constexpr bool adjacent = true;
+	return terrainFacade.findPathToConditionBreadthFirst<anyOccupiedPoint, adjacent>(longRangeCondition, shortRangeCondition, memo, start, facing, shape, detour, faction, maxRange);
 }
 Json GoToFluidTypePathRequest::toJson() const
 {
@@ -225,27 +222,13 @@ GoToSpaceDesignationPathRequest::GoToSpaceDesignationPathRequest(Point3D _start,
 {
 	assert(faction.exists());
 }
-FindPathResult GoToSpaceDesignationPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult GoToSpaceDesignationPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	Space& space = area.getSpace();
 	constexpr bool anyOccupiedPoint = false;
-	if(adjacent)
-	{
-		auto destinationCondition = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
-		{
-			Point3D point = space.designation_hasPoint(cuboid, faction, designation);
-			return {point.exists(), point};
-		};
-		return terrainFacade.findPathToConditionBreadthFirst<decltype(destinationCondition), anyOccupiedPoint, true>(destinationCondition, memo, start, facing, shape, detour, faction, maxRange);
-	}
-	else
-	{
-		auto destinationCondition = [&](const Point3D point, const Facing4) -> std::pair<bool, Point3D>
-		{
-			return {space.designation_has(point, faction, designation), point};
-		};
-		return terrainFacade.findPathToConditionBreadthFirst<decltype(destinationCondition), anyOccupiedPoint, false>(destinationCondition, memo, start, facing, shape, detour, faction, maxRange);
-	}
+	auto shortRangeCondition = [&](const Cuboid cuboid) -> Point3D { return space.designation_hasPoint(cuboid, faction, designation); };
+	auto longRangeCondition = [&](const Cuboid cuboid) -> bool { return shortRangeCondition(cuboid) != Point3D::null(); };
+	return terrainFacade.findPathToConditionBreadthFirst<anyOccupiedPoint, adjacent>(longRangeCondition, shortRangeCondition, memo, start, facing, shape, detour, faction, maxRange);
 }
 Json GoToSpaceDesignationPathRequest::toJson() const
 {
@@ -262,16 +245,9 @@ GoToSpaceDesignationPathRequest::GoToSpaceDesignationPathRequest(const Json& dat
 	PathRequestBreadthFirst(data, area),
 	designation(data["designation"].get<SpaceDesignation>())
 { }
-FindPathResult GoToEdgePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult GoToEdgePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
-	Space& space = area.getSpace();
-	auto destinationCondition = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
-	{
-		return {space.isEdge(cuboid), cuboid.m_high};
-	};
-	constexpr bool anyOccupiedPoint = true;
-	constexpr bool anyAdjacent = false;
-	return terrainFacade.findPathToConditionBreadthFirst<decltype(destinationCondition), anyOccupiedPoint, anyAdjacent>(destinationCondition, memo, start, facing, shape, detour, faction, maxRange);
+	return terrainFacade.findPathToEdge(memo, start, facing, shape, detour);
 }
 Json GoToEdgePathRequest::toJson() const
 {

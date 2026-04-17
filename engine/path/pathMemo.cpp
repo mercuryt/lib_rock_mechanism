@@ -70,18 +70,18 @@ SmallSet<Point3D> PathMemoBreadthFirst::getPath(const Point3D secondToLast, cons
 	return m_closed.getPath(secondToLast, last, first);
 }
 // Depth First.
-void PathMemoDepthFirst::reset()
+void longRangePath::LongRangeMemo::reset()
 {
 	m_closed.clear();
 	m_open.clear();
 	m_huristicDestination.clear();
 }
-void PathMemoDepthFirst::setClosed(const Point3D point, const Point3D previous)
+void longRangePath::LongRangeMemo::setClosed(const Point3D point, const Point3D previous)
 {
 	assert(!m_closed.contains(point));
 	m_closed.add(point, previous);
 }
-void PathMemoDepthFirst::setOpen(const Point3D point)
+void longRangePath::LongRangeMemo::setOpen(const Point3D point)
 {
 	assert(m_huristicDestination.exists());
 	[[maybe_unused]] bool contains = m_closed.contains(point);
@@ -90,22 +90,22 @@ void PathMemoDepthFirst::setOpen(const Point3D point)
 	DistanceSquared distance = DistanceSquared::max() - point.distanceToSquared(m_huristicDestination);
 	m_open.insertNonUnique(distance, point);
 }
-bool PathMemoDepthFirst::isClosed(const Point3D point) const
+bool longRangePath::LongRangeMemo::isClosed(const Point3D point) const
 {
 	return m_closed.contains(point);
 }
-bool PathMemoDepthFirst::empty() const
+bool longRangePath::LongRangeMemo::empty() const
 {
 	return m_closed.empty() && m_open.empty();
 }
-Point3D PathMemoDepthFirst::next()
+Point3D longRangePath::LongRangeMemo::next()
 {
 	assert(!m_open.empty());
 	Point3D output = m_open.back().second;
 	m_open.pop_back();
 	return output;
 }
-SmallSet<Point3D> PathMemoDepthFirst::getPath(const Point3D secondToLast, const Point3D last, const Point3D first) const
+SmallSet<Point3D> longRangePath::LongRangeMemo::getPath(const Point3D secondToLast, const Point3D last, const Point3D first) const
 {
 	return m_closed.getPath(secondToLast, last, first);
 }
@@ -126,7 +126,7 @@ std::pair<PathMemoBreadthFirst*, int> SimulationHasPathMemos::getBreadthFirst()
 	m_reservedBreadthFirst[offset] = true;
 	return {&m_breadthFirst[offset], offset};
 }
-std::pair<PathMemoDepthFirst*, int> SimulationHasPathMemos::getDepthFirst()
+std::pair<longRangePath::LongRangeMemo*, int> SimulationHasPathMemos::getDepthFirst()
 {
 	std::lock_guard lock(m_mutex);
 	// Find an unreserved memo to use.

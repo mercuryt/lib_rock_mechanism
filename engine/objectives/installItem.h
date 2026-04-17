@@ -34,7 +34,7 @@ class InstallItemPathRequest final : public PathRequestDepthFirst
 public:
 	InstallItemPathRequest(Area& area, InstallItemObjective& iio, const ActorIndex actorIndex);
 	InstallItemPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] std::string name() const { return "install item"; }
 	[[nodiscard]] Json toJson() const;

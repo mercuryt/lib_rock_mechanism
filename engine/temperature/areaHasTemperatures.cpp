@@ -7,9 +7,9 @@
 #include "../plants.h"
 #include "../fluidGroups/fluidGroup.h"
 #include "../config/physics.h"
-void AreaHasTemperature2::markToUpdate(const CuboidSet& cuboids) { m_toUpdate.maybeAddAll(cuboids); }
-void AreaHasTemperature2::markToUpdate(const Cuboid cuboid) { m_toUpdate.maybeAdd(cuboid); }
-void AreaHasTemperature2::doStep(Area& area)
+void AreaHasTemperature::markToUpdate(const CuboidSet& cuboids) { m_toUpdate.maybeAddAll(cuboids); }
+void AreaHasTemperature::markToUpdate(const Cuboid cuboid) { m_toUpdate.maybeAdd(cuboid); }
+void AreaHasTemperature::doStep(Area& area)
 {
 	m_portals.doStep(area);
 	m_sources.doStep(area);
@@ -129,7 +129,7 @@ void AreaHasTemperature2::doStep(Area& area)
 				area.m_fires.ignite(area, point, materialType);
 	m_toUpdate.clear();
 }
-void AreaHasTemperature2::setAmbient(Area& area, const Temperature newAmbiant)
+void AreaHasTemperature::setAmbient(Area& area, const Temperature newAmbiant)
 {
 	m_ambiant = newAmbiant;
 	// Ignite is skipped, it is assumed that sunlight cannot cause ignition.
@@ -173,17 +173,17 @@ void AreaHasTemperature2::setAmbient(Area& area, const Temperature newAmbiant)
 			space.temperature_meltSolid(onSurfaceData.solid, materialType);
 	}
 }
-void AreaHasTemperature2::onTemperatureCanNoLongerTransmit(Area& area, const CuboidSet& cuboids)
+void AreaHasTemperature::onTemperatureCanNoLongerTransmit(Area& area, const CuboidSet& cuboids)
 {
 	m_portals.onTemperatureCanNoLongerTransmit(area, cuboids);
 	m_sources.onTemperatureCanNoLongerTransmit(cuboids);
 }
-void AreaHasTemperature2::onTemperatureCanNowTransmit(Area& area, const CuboidSet& cuboids)
+void AreaHasTemperature::onTemperatureCanNowTransmit(Area& area, const CuboidSet& cuboids)
 {
 	m_portals.onTemperatureCanNowTransmit(area, cuboids);
 	m_sources.onTemperatureCanNowTransmit(cuboids);
 }
-Temperature AreaHasTemperature2::get(Area& area,const Point3D point)
+Temperature AreaHasTemperature::get(Area& area,const Point3D point)
 {
 	Space& space = area.getSpace();
 	bool isExposedToSky = space.m_exposedToSky.check(point);
@@ -192,7 +192,7 @@ Temperature AreaHasTemperature2::get(Area& area,const Point3D point)
 		Config::undergroundAmbiantTemperature;
 	return ambiant + m_sources.getDelta(point) + m_portals.getDelta(area, point);
 }
-void AreaHasTemperature2::onSetSolid(Area& area, const CuboidSet& cuboids, const MaterialTypeId materialType)
+void AreaHasTemperature::onSetSolid(Area& area, const CuboidSet& cuboids, const MaterialTypeId materialType)
 {
 	Space& space = area.getSpace();
 	onTemperatureCanNoLongerTransmit(area, cuboids);
@@ -203,7 +203,7 @@ void AreaHasTemperature2::onSetSolid(Area& area, const CuboidSet& cuboids, const
 			m_meltableMaterialTypeOnSurface.getOrCreate(materialType).solid.maybeAdd(intersection);
 	}
 }
-void AreaHasTemperature2::onSetNotSolid(Area& area, const CuboidSet& cuboids, const MaterialTypeId materialType)
+void AreaHasTemperature::onSetNotSolid(Area& area, const CuboidSet& cuboids, const MaterialTypeId materialType)
 {
 	onTemperatureCanNowTransmit(area, cuboids);
 	if(MaterialType::canMelt(materialType))
@@ -214,7 +214,7 @@ void AreaHasTemperature2::onSetNotSolid(Area& area, const CuboidSet& cuboids, co
 	}
 	// Gather space underneath to add to onSurface data.
 }
-void AreaHasTemperature2::onSetFeature(Area& area, const Point3D point, const MaterialTypeId materialType)
+void AreaHasTemperature::onSetFeature(Area& area, const Point3D point, const MaterialTypeId materialType)
 {
 	if(MaterialType::canMelt(materialType))
 	{
@@ -223,14 +223,14 @@ void AreaHasTemperature2::onSetFeature(Area& area, const Point3D point, const Ma
 			m_meltableMaterialTypeOnSurface.getOrCreate(materialType).features.maybeAdd(point);
 	}
 }
-void AreaHasTemperature2::onUnsetFeature(const Point3D point, const MaterialTypeId materialType)
+void AreaHasTemperature::onUnsetFeature(const Point3D point, const MaterialTypeId materialType)
 {
 	// Count features with material type at point.
 	auto found = m_meltableMaterialTypeOnSurface.find(materialType);
 	if(found != m_meltableMaterialTypeOnSurface.end())
 		found->second.features.maybeRemove(point);
 }
-void AreaHasTemperature2::onFluidEnters(Area& area, const CuboidSet& cuboids, FluidGroup& group)
+void AreaHasTemperature::onFluidEnters(Area& area, const CuboidSet& cuboids, FluidGroup& group)
 {
 	if(FluidType::canFreeze(group.m_fluidType))
 	{
@@ -241,7 +241,7 @@ void AreaHasTemperature2::onFluidEnters(Area& area, const CuboidSet& cuboids, Fl
 			m_freezableFluidTypeOnSurface.getOrCreate(group.m_fluidType).insert(&group);
 	}
 }
-void AreaHasTemperature2::onFluidExits(Area& area, const CuboidSet& cuboids, FluidGroup& group)
+void AreaHasTemperature::onFluidExits(Area& area, const CuboidSet& cuboids, FluidGroup& group)
 {
 	if(FluidType::canFreeze(group.m_fluidType))
 	{
@@ -253,13 +253,13 @@ void AreaHasTemperature2::onFluidExits(Area& area, const CuboidSet& cuboids, Flu
 			m_freezableFluidTypeOnSurface[group.m_fluidType].erase(&group);
 	}
 }
-void AreaHasTemperature2::maybeRemoveFreezeableFluidGroupAboveGround(FluidGroup& group)
+void AreaHasTemperature::maybeRemoveFreezeableFluidGroupAboveGround(FluidGroup& group)
 {
 	if(!m_freezableFluidTypeOnSurface.contains(group.m_fluidType))
 		return;
 	m_freezableFluidTypeOnSurface[group.m_fluidType].maybeErase(&group);
 }
-void AreaHasTemperature2::addItemAboveGround(Area& area, const ItemIndex item)
+void AreaHasTemperature::addItemAboveGround(Area& area, const ItemIndex item)
 {
 	Items& items = area.getItems();
 	MaterialTypeId materialType = items.getMaterialType(item);
@@ -269,7 +269,7 @@ void AreaHasTemperature2::addItemAboveGround(Area& area, const ItemIndex item)
 	if(materialType.exists() && MaterialType::canMelt(materialType))
 		m_meltableMaterialTypeOnSurface.getOrCreate(materialType).items.maybeAddAll(items.getOccupied(item));
 }
-void AreaHasTemperature2::removeItemAboveGround(Area& area, const ItemIndex item)
+void AreaHasTemperature::removeItemAboveGround(Area& area, const ItemIndex item)
 {
 	Items& items = area.getItems();
 	MaterialTypeId materialType = items.getMaterialType(item);
@@ -283,14 +283,14 @@ void AreaHasTemperature2::removeItemAboveGround(Area& area, const ItemIndex item
 		found->second.items.maybeRemoveAll(items.getOccupied(item));
 	}
 }
-void AreaHasTemperature2::afterLoad(Area& area)
+void AreaHasTemperature::afterLoad(Area& area)
 {
 	Space& space = area.getSpace();
 	space.m_exposedToSky.get().forEach([&](const Cuboid exposedCuboid){
 		space.fluid_queryForEach(exposedCuboid, [&](const FluidData data){ m_freezableFluidTypeOnSurface.getOrCreate(data.type).maybeInsert(data.group); });
 	});
 }
-void AreaHasTemperature2::updateAmbientSurfaceTemperature(Area& area)
+void AreaHasTemperature::updateAmbientSurfaceTemperature(Area& area)
 {
 	// TODO: Latitude and altitude.
 	Temperature dailyAverage = getDailyAverageAmbientSurfaceTemperature(area);
@@ -301,7 +301,7 @@ void AreaHasTemperature2::updateAmbientSurfaceTemperature(Area& area)
 	int halfDay = Config::hoursPerDay / 2;
 	setAmbient(area, dailyAverage + ((maxDailySwing * (std::max(0, halfDay - hoursFromHottestHourOfDay))) / halfDay) - (maxDailySwing / 2));
 }
-Temperature AreaHasTemperature2::getDailyAverageAmbientSurfaceTemperature(Area& area) const
+Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature(Area& area) const
 {
 	// TODO: Latitude and altitude.
 	static Temperature yearlyHottestDailyAverage = Temperature::create(290);

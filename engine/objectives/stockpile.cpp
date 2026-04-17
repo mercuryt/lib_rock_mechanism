@@ -137,7 +137,7 @@ StockPilePathRequest::StockPilePathRequest(Area& area, StockPileObjective& spo, 
 	adjacent = true;
 	reserveDestination = true;
 }
-FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	Actors& actors = area.getActors();
 	Space& space = area.getSpace();
@@ -147,7 +147,7 @@ FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& t
 	const FactionId& actorFaction = actors.getFaction(actorIndex);
 	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(actorFaction);
 	AreaHasSpaceDesignationsForFaction& designationsForFaction = area.m_spaceDesignations.getForFaction(actorFaction);
-	auto predicate = [this, actorIndex, actorFaction, &hasStockPiles, &space, &items, &area, &designationsForFaction](const Cuboid cuboid) -> std::pair<bool, Point3D>
+	auto shortRangeCondition = [this, actorIndex, actorFaction, &hasStockPiles, &space, &items, &area, &designationsForFaction](const Cuboid cuboid) -> Point3D
 	{
 		if(designationsForFaction.check(cuboid, SpaceDesignation::StockPileHaulFrom)) [[unlikely]]
 		{
@@ -169,7 +169,7 @@ FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& t
 								// Success
 								m_objective.m_item = area.getItems().m_referenceData.getReference(item);
 								m_objective.m_stockPileLocation = stockpilePoint;
-								return {true, stockpilePoint};
+								return stockpilePoint;
 							}
 					// Item does not match any stockpile seen so far, store it to compare against future stockpiles.
 					m_items.insert(item);
@@ -189,19 +189,19 @@ FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& t
 						if(!m_pointsByStockPile.contains(stockPile) || !m_pointsByStockPile[stockPile].contains(point))
 						{
 							if(space.isReserved(point, actorFaction))
-								return {false, point};
+								return point;
 							if(!space.item_empty(point))
 							{
 								// Point static volume is full, don't stockpile here.
 								if(space.shape_getStaticVolume(point) >= Config::maxPointVolume)
-									return {false, point};
+									return Point3D::null();
 								// There is more then one item type in this point, don't stockpile anything here.
 								if(space.item_getAll(point).size() != 1)
-									return {false, point};
+									return Point3D::null();
 								// Non generics don't stack, don't stockpile anything here if there is a non generic present.
 								ItemTypeId itemType = items.getItemType(space.item_getAll(point).front());
 								if(!ItemType::getIsGeneric(itemType))
-									return {false, point};
+									return Point3D::null();
 							}
 							for(ItemIndex item : m_items)
 								if(stockPile->accepts(item) && checkDestination(area, item, point))
@@ -209,7 +209,7 @@ FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& t
 									// Success
 									m_objective.m_item = area.getItems().m_referenceData.getReference(item);
 									m_objective.m_stockPileLocation = point;
-									return {true, point};
+									return point;
 								}
 							// No item seen so far matches the found stockpile, store it to check against future items.
 							m_pointsByStockPile.getOrCreate(stockPile).insert(point);
@@ -218,7 +218,7 @@ FindPathResult StockPilePathRequest::readStep(Area& area, const TerrainFacade& t
 				}
 			}
 		}
-		return {false, Point3D::null()};
+		return Point3D::null();
 	};
 	//TODO: Optimization oppurtunity: path is unused.
 	constexpr bool anyOccupied = false;
@@ -315,7 +315,7 @@ StockPileDestinationPathRequest::StockPileDestinationPathRequest(Area& area, Sto
 	adjacent = true;
 	reserveDestination = false;
 }
-FindPathResult StockPileDestinationPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult StockPileDestinationPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	Actors& actors = area.getActors();
 	Items& items = area.getItems();

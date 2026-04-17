@@ -7,12 +7,6 @@ LinePath LinePath::create(Point3D start, Point3D end)
 	output.m_points.push_back(end);
 	return output;
 }
-void LinePath::addWayPoint(Point3D newPoint, Point3D nextPoint)
-{
-	auto iter = std::ranges::find(m_points, nextPoint);
-	assert(iter != m_points.end());
-	m_points.insert(iter, newPoint);
-}
 SmallSet<Point3D> LinePath::toPoints() const
 {
 	Distance totalDistance{0};

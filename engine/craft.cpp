@@ -489,6 +489,14 @@ CraftJob* HasCraftingLocationsAndJobsForFaction::getJobForAtLocation(const Actor
 					return craftJob;
 	return nullptr;
 }
+bool HasCraftingLocationsAndJobsForFaction::queryAny(const Cuboid cuboid)
+{
+	for(const auto& [category, locations] : m_locationsByCategory)
+		for(const Point3D point : locations)
+			if(cuboid.contains(point))
+				return true;
+	return false;
+}
 void AreaHasCraftingLocationsAndJobs::load(const Json& data, DeserializationMemo& deserializationMemo)
 {
 	for(const Json& pair : data["projects"])

@@ -249,8 +249,12 @@ public:
 	void solid_setNotCuboid(const Cuboid cuboid);
 	void solid_setDynamic(const Point3D point, const MaterialTypeId materialType, bool constructed);
 	void solid_setCuboidDynamic(const Cuboid cuboid, const MaterialTypeId materialType, bool constructed);
-	void solid_setNotDynamic(const Point3D point);
-	void solid_setCuboidNotDynamic(const Cuboid cuboid);
+private:
+	template<typename ShapeT>
+	void solid_setNotDynamicBody(const ShapeT cuboids);
+public:
+	void solid_setNotDynamic(const CuboidSet& cuboids);
+	void solid_setNotDynamic(const Cuboid cuboid);
 	void solid_prepare() { m_solid.prepare(); }
 	void solid_removeOpaque(CuboidSet& cuboids) const;
 	void solid_removeAllFrom(CuboidSet& cuboids) const;

@@ -38,7 +38,7 @@ class EatPathRequest final : public PathRequestBreadthFirst
 public:
 	EatPathRequest(Area& area, EatObjective& eo, const ActorIndex actorIndex);
 	EatPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() { return "eat"; }

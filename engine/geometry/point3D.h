@@ -218,6 +218,8 @@ struct Offset3D
 	[[nodiscard]] Offset3D moveInDirection(const Facing6 facing, const Distance distance) const;
 	[[nodiscard]] Offset3D min(const Offset3D other) const;
 	[[nodiscard]] Offset3D max(const Offset3D other) const;
+	[[nodiscard]] Offset distanceTo(const Offset3D other) const;
+	[[nodiscard]] Offset distanceTo(const OffsetCuboid cuboid) const;
 	[[nodiscard]] static Offset3D null();
 	[[nodiscard]] static Offset3D min();
 	[[nodiscard]] static Offset3D max();

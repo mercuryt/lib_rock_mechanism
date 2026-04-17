@@ -35,7 +35,7 @@ GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(const Json& data, Area& a
 	PathRequestBreadthFirst(data, area),
 	m_objective(static_cast<GivePlantsFluidObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
 { }
-FindPathResult GivePlantsFluidPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult GivePlantsFluidPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	assert(m_objective.m_project == nullptr);
 	constexpr bool anyOccupied = false;

@@ -58,6 +58,7 @@ public:
 	[[nodiscard]] static int getCuboidsCount(const ShapeId id);
 	[[nodiscard]] static const MapWithOffsetCuboidKeys<CollisionVolume>& getOffsetCuboidsWithVolume(const ShapeId id);
 	[[nodiscard]] static const OffsetCuboid getOffsetCuboidBoundryWithFacing(const ShapeId id, const Facing4 facing);
+	[[nodiscard]] static const Cuboid getBoundryAtWithFacing(const ShapeId id, const Space& space, const Point3D location, const Facing4 facing);
 	[[nodiscard]] static std::string getName(const ShapeId id);
 	[[nodiscard]] static int getDisplayScale(const ShapeId id);
 	[[nodiscard]] static bool getIsMultiTile(const ShapeId id);

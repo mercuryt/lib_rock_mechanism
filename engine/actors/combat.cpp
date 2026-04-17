@@ -1,6 +1,7 @@
 #include "actors.h"
 
 #include "../area/area.h"
+#include "../space/space.h"
 #include "../definitions/attackType.h"
 #include "../definitions/itemType.h"
 #include "../simulation/simulation.h"
@@ -346,12 +347,12 @@ float Actors::combat_getQualityModifier(const ActorIndex, const Quality quality)
 	int adjusted = (int)quality.get() - (int)Config::averageItemQuality.get();
 	return 1.f + (adjusted * Config::itemQualityCombatModifier);
 }
-bool Actors::combat_positionIsValid(const ActorIndex index, const Point3D point, const DistanceFractional attackRangeSquared) const
+bool Actors::combat_positionIsValid(const ActorIndex target, const Point3D point, const DistanceFractional attackRangeSquared) const
 {
-	if(getOccupied(m_target[index]).contains(point))
+	if(getOccupied(target).contains(point))
 		return true;
 	Space& space = m_area.getSpace();
-	Point3D targetLocation = m_location[m_target[index]];
+	Point3D targetLocation = m_location[target];
 	if(point.squareOfDistanceIsGreaterThen(targetLocation, attackRangeSquared))
 		return false;
 	return space.hasLineOfSightTo(point, targetLocation);
@@ -406,16 +407,17 @@ Step Actors::combat_getCoolDown(const ActorIndex index, const Attack& attack) co
 AttackCoolDownEvent::AttackCoolDownEvent(Area& area, const ActorIndex actor, const Step duration, const Step start) :
 	ScheduledEvent(area.m_simulation, duration, start), m_actor(actor) { }
 
-GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, const ActorIndex actorIndex, const ActorIndex targetIndex, const DistanceFractional ar) :
-	attackRangeSquared(ar * ar)
+GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, const ActorIndex attacker, const ActorIndex targetIndex, const DistanceFractional attackRangeFractional) :
+	attackRangeSquared(attackRangeFractional * attackRangeFractional),
+	attackRangeInteger(Distance::create(std::ceil(attackRangeFractional.get())))
 {
 	Actors& actors = area.getActors();
-	start = actors.getLocation(actorIndex);
+	start = actors.getLocation(attacker);
 	maxRange = Distance::max();
-	actor = actors.getReference(actorIndex);
-	shape = actors.getShape(actorIndex);
-	moveType = actors.getMoveType(actorIndex);
-	facing = actors.getFacing(actorIndex);
+	actor = actors.getReference(attacker);
+	shape = actors.getShape(attacker);
+	moveType = actors.getMoveType(attacker);
+	facing = actors.getFacing(attacker);
 	detour = true;
 	adjacent = false;
 	target.setIndex(targetIndex, area.getActors().m_referenceData);
@@ -425,19 +427,27 @@ GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(const Json& d
 	target(data["target"], area.getActors().m_referenceData),
 	attackRangeSquared(data["attackRangeSquared"].get<DistanceFractional>())
 { }
-FindPathResult GetIntoAttackPositionPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo)
+FindPathResult GetIntoAttackPositionPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	Actors& actors = area.getActors();
-	auto destinationCondition = [&actors, this](const Point3D location, const Facing4) ->std::pair<bool, Point3D>
+	ActorIndex attacker = actor.getIndex(actors.m_referenceData);
+	ActorIndex targetIndex = target.getIndex(actors.m_referenceData);
+	const CuboidSet& targetOccupied = actors.getOccupied(targetIndex);
+	auto shortRangeCondition = [&actors, this, targetIndex](const Point3D location, const Facing4) -> Point3D
 	{
-		if(actors.combat_positionIsValid(actor.getIndex(actors.m_referenceData), location, attackRangeSquared))
-			return std::make_pair(true, location);
-		return std::make_pair(false, Point3D::null());
+		if(actors.combat_positionIsValid(targetIndex, location, attackRangeSquared))
+			return location;
+		return Point3D::null();
+	};
+	auto longRangeCondition = [this, &targetOccupied](const Cuboid cuboid) -> bool
+	{
+		return cuboid.inflated(attackRangeInteger).intersects(targetOccupied);
 	};
 	// TODO: Range attack actors should use a different path priority condition to avoid getting too close.
 	constexpr bool useAnyPoint = false;
-	const Point3D targetLocation = actors.getLocation(target.getIndex(actors.m_referenceData));
-	return terrainFacade.findPathToConditionDepthFirst<decltype(destinationCondition), useAnyPoint, false>(destinationCondition, memo, start, facing, shape, targetLocation, detour, faction, maxRange);
+	constexpr bool adjacent = false;
+	const Point3D targetLocation = actors.getLocation(targetIndex);
+	return terrainFacade.findPathToConditionDepthFirst<useAnyPoint, adjacent>(longRangeCondition, shortRangeCondition, memo, start, facing, shape, targetLocation, detour, faction, maxRange);
 }
 void GetIntoAttackPositionPathRequest::writeStep(Area& area, FindPathResult& result)
 {

@@ -40,7 +40,7 @@ public:
 	[[nodiscard]] SmallSet<Point3D> getPath(const Point3D secondToLast, const Point3D last, const Point3D first) const;
 	[[nodiscard]] CuboidSet getClosedIntersecting(const auto& shape) const { return m_closed.getIntersecting(shape); }
 };
-class PathMemoDepthFirst final
+class longRangePath::LongRangeMemo final
 {
 	MediumMap<DistanceSquared, Point3D> m_open;
 	PathMemoClosed m_closed;
@@ -60,13 +60,13 @@ public:
 class SimulationHasPathMemos final
 {
 	std::deque<PathMemoBreadthFirst> m_breadthFirst;
-	std::deque<PathMemoDepthFirst> m_depthFirst;
+	std::deque<longRangePath::LongRangeMemo> m_depthFirst;
 	std::vector<bool> m_reservedBreadthFirst;
 	std::vector<bool> m_reservedDepthFirst;
 	std::mutex m_mutex;
 public:
 	std::pair<PathMemoBreadthFirst*, int> getBreadthFirst();
-	std::pair<PathMemoDepthFirst*, int> getDepthFirst();
+	std::pair<longRangePath::LongRangeMemo*, int> getDepthFirst();
 	void releaseBreadthFirst(int index);
 	void releaseDepthFirst(int index);
 };

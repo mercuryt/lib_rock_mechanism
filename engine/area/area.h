@@ -76,7 +76,7 @@ class Area final
 public:
 	EventSchedule m_eventSchedule;
 	ThreadedTaskEngine m_threadedTaskEngine;
-	AreaHasTemperature2 m_hasTemperature;
+	AreaHasTemperature m_hasTemperature;
 	AreaHasTerrainFacades m_hasTerrainFacades;
 	AreaHasFires m_fires;
 	// To be updated when an actor becomes a soldier, stops being a soldier, or moves while being a soldier.

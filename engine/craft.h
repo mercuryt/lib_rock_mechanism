@@ -17,7 +17,6 @@
 
 struct CraftJob;
 class HasCraftingLocationsAndJobsForFaction;
-class CraftPathRequest;
 class CraftStepProject;
 class Area;
 struct DeserializationMemo;
@@ -196,6 +195,7 @@ public:
 	[[nodiscard]] SmallSet<Point3D>& getLocationsForCategoryType(const CraftStepTypeCategoryId category) { return m_locationsByCategory[category]; }
 	// May return nullptr;
 	[[nodiscard]] CraftJob *getJobForAtLocation(const ActorIndex actor, const SkillTypeId skillType, const Point3D point, const SmallSet<CraftJob *> &excludeJobs);
+	[[nodiscard]] bool queryAny(const Cuboid cuboid);
 	friend class CraftObjectiveType;
 	friend class AreaHasCraftingLocationsAndJobs;
 	friend struct CraftJob;

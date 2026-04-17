@@ -35,7 +35,7 @@ FleePathRequest::FleePathRequest(const Json& data, Area& area, DeserializationMe
 	PathRequestBreadthFirst(data, area),
 	m_objective(static_cast<FleeObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
 { }
-FindPathResult FleePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult FleePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	Actors& actors = area.getActors();
 	Space& space = area.getSpace();

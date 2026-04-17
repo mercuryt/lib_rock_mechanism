@@ -26,7 +26,7 @@ CraftPathRequest::CraftPathRequest(const Json& data, Area& area, Deserialization
 	m_craftObjective(static_cast<CraftObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))),
 	m_craftJob(deserializationMemo.m_craftJobs.at(data["craftJob"].get<uintptr_t>())),
 	m_location(data["location"].get<Point3D>()) { }
-FindPathResult CraftPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult CraftPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	Actors& actors = area.getActors();
 	const ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
@@ -34,22 +34,17 @@ FindPathResult CraftPathRequest::readStep(Area& area, const TerrainFacade& terra
 	Space& space = area.getSpace();
 	const SkillTypeId skillType = m_craftObjective.m_skillType;
 	auto& excludeJobs = m_craftObjective.getFailedJobs();
-	// TODO: really?
-	const auto captureFaction = faction;
-	auto predicate = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
+	auto shortRangeCondition = [&](const Cuboid cuboid) -> Point3D
 	{
-		//TODO: use cuboids instead of factions
 		for(const Point3D point : cuboid)
-		{
-			bool result = !space.isReserved(point, captureFaction) && hasCrafting.getJobForAtLocation(actorIndex, skillType, point, excludeJobs) != nullptr;
-			if(result)
-				return std::make_pair(true, point);
-		}
-		return std::make_pair(false, Point3D::null());
+			if(hasCrafting.getJobForAtLocation(actorIndex, skillType, point, excludeJobs) != nullptr)
+				return point;
+		return Point3D::null();
 	};
+	auto longRangeCondition = [&](const Cuboid cuboid) -> bool { return hasCrafting.queryAny(cuboid); };
 	constexpr bool anyOccupied = true;
 	constexpr bool useAdjacent = false;
-	return terrainFacade.findPathToConditionBreadthFirst<decltype(predicate), anyOccupied, useAdjacent>(predicate, memo, start, facing, shape, detour, faction, maxRange);
+	return terrainFacade.findPathToConditionBreadthFirst<anyOccupied, useAdjacent>(longRangeCondition, shortRangeCondition, memo, start, facing, shape, detour, faction, maxRange);
 }
 void CraftPathRequest::writeStep(Area& area, FindPathResult& result)
 {

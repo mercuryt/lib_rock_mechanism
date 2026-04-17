@@ -386,6 +386,10 @@ bool Cuboid::intersects(const Cuboid other) const
 {
 	return !(m_high.data < other.m_low.data || m_low.data > other.m_high.data).any();
 }
+bool Cuboid::intersects(const CuboidSet& other) const
+{
+	return other.intersects(*this);
+}
 bool Cuboid::overlapsWithSphere(const Sphere& sphere) const
 {
 	return sphere.intersects(*this);
@@ -594,6 +598,15 @@ Point3D Cuboid::clamp(const Point3D point) const
 		std::clamp(point.y(), m_low.y(), m_high.y()),
 		std::clamp(point.z(), m_low.z(), m_high.z())
 	};
+}
+Point3D Cuboid::nearestPointTo(const Cuboid other) const
+{
+	// Any point in other would work, there is no significance to using m_high in particular.
+	return clamp(other.m_high);
+}
+Distance Cuboid::distanceTo(const Cuboid other) const
+{
+	return nearestPointTo(other).distanceTo(*this);
 }
 Cuboid::ConstIterator::ConstIterator(const Point3D lowest, const Point3D highest)
 {

@@ -9,7 +9,7 @@
  #include "../plants.h"
  #include "../pointFeature.h"
  #include<cmath>
-std::string TemperatureSource2::toString() const
+std::string TemperatureSource::toString() const
 {
 	return "location: " + m_location.toString() + " id: " + m_id.toString() + " delta: " + m_delta.toString();
 }
@@ -31,10 +31,10 @@ CuboidSet AreaHasTemperatureSources::getAffectedArea(Area& area, const Point3D l
 void AreaHasTemperatureSources::updateTemperatureSourceDelta(Area& area, const Point3D location, const TemperatureDelta oldDelta, const TemperatureSourceId id, const TemperatureDelta newDelta)
 {
 	assert(newDelta != oldDelta);
-	auto condition = [&](const TemperatureSource2 other){ return other.m_id == id; };
+	auto condition = [&](const TemperatureSource other){ return other.m_id == id; };
 	CuboidSet removed = RTreeHelpers::deleteAdjacentWithConditionRecursive(m_data, location, condition);
 	CuboidSet toAdd = getAffectedArea(area, location, newDelta);
-	TemperatureSource2 source = TemperatureSource2::create(location, id, newDelta);
+	TemperatureSource source = TemperatureSource::create(location, id, newDelta);
 	m_data.insert(toAdd, source);
 	toAdd.maybeAddAll(removed);
 	area.m_hasTemperature.markToUpdate(toAdd);
@@ -42,7 +42,7 @@ void AreaHasTemperatureSources::updateTemperatureSourceDelta(Area& area, const P
 TemperatureSourceId AreaHasTemperatureSources::addTemperatureSource(Area& area, const Point3D location, const TemperatureDelta delta)
 {
 	TemperatureSourceId id = getNextId();
-	TemperatureSource2 source = TemperatureSource2::create(location, id, delta);
+	TemperatureSource source = TemperatureSource::create(location, id, delta);
 	CuboidSet affectedArea = getAffectedArea(area, location, delta);
 	m_data.insert(affectedArea, source);
 	area.m_hasTemperature.markToUpdate(affectedArea);
@@ -50,7 +50,7 @@ TemperatureSourceId AreaHasTemperatureSources::addTemperatureSource(Area& area, 
 }
 void AreaHasTemperatureSources::removeTemperatureSource(Area& area, const Point3D location, TemperatureSourceId id)
 {
-	auto condition = [&](const TemperatureSource2 other){ return other.m_id == id; };
+	auto condition = [&](const TemperatureSource other){ return other.m_id == id; };
 	CuboidSet recordedArea = RTreeHelpers::deleteAdjacentWithConditionRecursive(m_data, location, condition);
 	area.m_hasTemperature.markToUpdate(recordedArea);
 }
@@ -64,8 +64,8 @@ void AreaHasTemperatureSources::doStep(Area& area)
 {
 	for(const auto [point, temperatueSourceId] : m_sourcesToUpdate)
 	{
-		auto condition = [&](const TemperatureSource2 other) { return other.m_id == temperatueSourceId; };
-		TemperatureSource2 source = m_data.queryGetOneWithCondition(point, condition);
+		auto condition = [&](const TemperatureSource other) { return other.m_id == temperatueSourceId; };
+		TemperatureSource source = m_data.queryGetOneWithCondition(point, condition);
 		CuboidSet recordedArea = RTreeHelpers::getAdjacentWithConditionRecursive(m_data, point, condition);
 		m_data.removeWithCondition(recordedArea, condition);
 		CuboidSet affectedArea = getAffectedArea(area, point, source.m_delta);
@@ -78,7 +78,7 @@ void AreaHasTemperatureSources::doStep(Area& area)
 TemperatureDelta AreaHasTemperatureSources::getDelta(const Point3D point)
 {
 	TemperatureDelta output{0};
-	m_data.queryForEach(point, [&](const TemperatureSource2 temperatureSource){
+	m_data.queryForEach(point, [&](const TemperatureSource temperatureSource){
 		if(point == temperatureSource.m_location)
 			output += temperatureSource.m_delta;
 		else
@@ -132,7 +132,7 @@ CuboidSet AreaHasTemperatureSources::getPointsIntersectingExposedToSky(Area& are
 std::string AreaHasTemperatureSources::toString(Area& area, int x, int y, int z)
 {
 	Point3D location = Point3D::create(x, y, z);
-	TemperatureSource2 source = m_data.queryGetOneWithCondition(location, [&](const TemperatureSource2 otherSource) { return otherSource.m_location == location; });
+	TemperatureSource source = m_data.queryGetOneWithCondition(location, [&](const TemperatureSource otherSource) { return otherSource.m_location == location; });
 	CuboidSet affectedArea = getAffectedArea(area, location, source.m_delta);
 	return source.toString() + " affecting: " + affectedArea.toString();
 }

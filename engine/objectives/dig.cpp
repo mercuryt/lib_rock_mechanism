@@ -22,7 +22,7 @@ DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, const Act
 	adjacent = true;
 	reserveDestination = true;
 }
-FindPathResult DigPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult DigPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	ActorIndex actorIndex = actor.getIndex(area.getActors().m_referenceData);
 	auto predicate = [&area, this, actorIndex](const Cuboid cuboid) -> bool

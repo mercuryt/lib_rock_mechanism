@@ -23,7 +23,7 @@ WanderPathRequest::WanderPathRequest(const Json& data, Area& area, Deserializati
 	m_objective(static_cast<WanderObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))),
 	m_lastPoint(data["lastPoint"].get<Point3D>())
 { }
-FindPathResult WanderPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult WanderPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	Random& random = area.m_simulation.m_random;
 	m_pointCounter = random.getInRange(Config::wanderMinimimNumberOfPoints, Config::wanderMaximumNumberOfPoints);

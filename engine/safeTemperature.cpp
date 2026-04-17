@@ -1,4 +1,4 @@
-#include "temperature.h"
+#include "safeTemperature.h"
 #include "actors/actors.h"
 #include "area/area.h"
 #include "definitions/animalSpecies.h"

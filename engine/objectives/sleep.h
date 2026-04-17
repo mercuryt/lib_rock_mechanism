@@ -63,7 +63,7 @@ class SleepPathRequest final : public PathRequestBreadthFirst
 public:
 	SleepPathRequest(Area& area, SleepObjective& so, const ActorIndex actor);
 	SleepPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	std::string name() const { return "sleep"; }
 	[[nodiscard]] Json toJson() const;

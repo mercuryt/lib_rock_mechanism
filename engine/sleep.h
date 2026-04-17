@@ -46,7 +46,6 @@ public:
 	[[nodiscard]] Point3D getLocation() const { return m_location; }
 	friend class SleepEvent;
 	friend class TiredEvent;
-	friend class SleepPathRequest;
 	friend class SleepObjective;
 	// For UI.
 	[[nodiscard]] Percent getSleepPercent() const { return m_isAwake ? Percent::create(0) : m_sleepEvent.percentComplete(); }

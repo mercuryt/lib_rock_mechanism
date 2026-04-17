@@ -25,7 +25,7 @@ WoodCuttingPathRequest::WoodCuttingPathRequest(const Json& data, Area& area, Des
 	PathRequestBreadthFirst(data, area),
 	m_woodCuttingObjective(static_cast<WoodCuttingObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
 { }
-FindPathResult WoodCuttingPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult WoodCuttingPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	ActorIndex actorIndex = actor.getIndex(area.getActors().m_referenceData);
 	auto predicate = [this, &area, actorIndex](const Cuboid cuboid) -> bool { return m_woodCuttingObjective.joinableProjectExistsAt(area, cuboid, actorIndex).exists(); };

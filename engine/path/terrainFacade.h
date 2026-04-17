@@ -1,10 +1,7 @@
 /*
  * TerrainFacade:
- * Stores enterability data for a specific move type for pair of space in a binary format.
- * Also stores path requests in a series of vectors divided by presence or absence of destination huristic.
- * This divide is done for instruction cache locality.
- * TODO: try replacing std::function accessCondition and destinationCondition with a single findPath std::function member which calls a static class method in the class derived from PathRequest which calls a findPath template function.
- *
+ * Stores enterability data for a specific move type.
+ * Also stores path requests in two vectors divided by presence or absence of destination huristic.
  */
 #pragma once
 
@@ -18,8 +15,8 @@
 #include "../dataStructures/smallMap.h"
 #include "../dataStructures/rtreeData.h"
 #include "../dataStructures/bitset.h"
-#include "pathMemo.h"
 #include "pathRequest.h"
+#include "longRange.h"
 
 struct MoveType;
 struct Shape;
@@ -28,8 +25,6 @@ class Area;
 class TerrainFacade;
 class ActorOrItemIndex;
 class PathRequest;
-class PathMemoBreadthFirst;
-class PathMemoDepthFirst;
 class TerrainFacade;
 class PathRequestBreadthFirst;
 class PathRequestDepthFirst;
@@ -110,10 +105,10 @@ class TerrainFacade final
 	Area& m_area;
 	MoveTypeId m_moveType;
 	// Non batched pathing uses the WithoutMemo variants.
-	template <typename DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
-	[[nodiscard]] FindPathResult findPathBreadthFirstWithoutMemo(const Point3D start, const Facing4 startFacing, DestinationConditionT &destinationCondition, const ShapeId shape, const MoveTypeId moveType, bool detour, const FactionId faction, const Distance maxRange) const;
-	template<typename DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
-	[[nodiscard]] FindPathResult findPathDepthFirstWithoutMemo(const Point3D from, const Facing4 startFacing, DestinationConditionT& destinationCondition, const Point3D huristicDestination, const ShapeId shape, const MoveTypeId moveType, bool detour, const FactionId faction, const Distance  maxRange) const;
+	template <bool anyOccupiedPoint, bool adjacent, longRangePath::LongRangeCondition LongRangeConditionT, longRangePath::ShortRangeConditionPointOrCuboid ShortRangeConditionT>
+	[[nodiscard]] FindPathResult findPathBreadthFirstWithoutMemo(const Point3D start, const Facing4 startFacing, LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, const ShapeId shape, bool detour, const FactionId faction, const Distance maxRange) const;
+	template<bool anyOccupiedPoint, bool adjacent, longRangePath::LongRangeCondition LongRangeConditionT, longRangePath::ShortRangeConditionPointOrCuboid ShortRangeConditionT>
+	[[nodiscard]] FindPathResult findPathDepthFirstWithoutMemo(const Point3D from, const Facing4 startFacing, LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, const Point3D huristicDestination, const ShapeId shape, bool detour, const FactionId faction, const Distance maxRange) const;
 	[[nodiscard]] PathRequestIndex getPathRequestIndexNoHuristic();
 	[[nodiscard]] PathRequestIndex getPathRequestIndexWithHuristic();
 	[[nodiscard]] AdjacentData makeDataForPoint(const Point3D point) const;
@@ -137,33 +132,29 @@ public:
 	[[nodiscard]] MoveTypeId getMoveType() const { return m_moveType; }
 	[[nodiscard]] const AdjacentData getAdjacentData(const Point3D point) const { return m_enterable.queryGetOne(point); }
 	[[nodiscard]] bool getValue(const Point3D to, const Point3D from) const;
-	[[nodiscard]] FindPathResult findPathTo(PathMemoDepthFirst& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, const Point3D target, bool detour = false, bool adjacent = false, const FactionId faction = FactionId::null()) const;
+	[[nodiscard]] FindPathResult findPathTo(longRangePath::LongRangeMemo& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, const Point3D target, bool detour = false, bool adjacent = false, const FactionId faction = FactionId::null()) const;
 	template<bool anyOccupiedPoint, bool adjacent>
 	[[nodiscard]] FindPathResult findPathToWithoutMemo(const Point3D start, const Facing4 startFacing, const ShapeId shape, const Point3D target, bool detour = false, const FactionId faction = FactionId::null()) const;
 	template<bool anyOccupiedPoint, bool adjacent>
-	[[nodiscard]] FindPathResult findPathToAnyOf(PathMemoDepthFirst& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, const CuboidSet& indecies, const Point3D huristicDestination, bool detour = false, const FactionId faction = FactionId::null()) const;
+	[[nodiscard]] FindPathResult findPathToAnyOf(longRangePath::LongRangeMemo& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, const CuboidSet& indecies, const Point3D huristicDestination, bool detour = false, const FactionId faction = FactionId::null()) const;
 	[[nodiscard]] FindPathResult findPathToAnyOfWithoutMemo(const Point3D start, const Facing4 startFacing, const ShapeId shape, const CuboidSet& indecies, const Point3D huristicDestination, bool detour = false, const FactionId faction = FactionId::null()) const;
 
-	template<typename DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
-	[[nodiscard]] FindPathResult findPathToConditionDepthFirst(DestinationConditionT& destinationCondition, PathMemoDepthFirst& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, const Point3D huristicDestination, bool detour = false, const FactionId faction = FactionId::null(), const Distance  maxRange = Distance::max()) const;
+	template<bool anyOccupiedPoint, bool adjacent, longRangePath::LongRangeCondition LongRangeConditionT, longRangePath::ShortRangeConditionPointOrCuboid ShortRangeConditionT>
+	[[nodiscard]] FindPathResult findPathToConditionDepthFirst(LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, longRangePath::LongRangeMemo& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, const Point3D huristicDestination, bool detour = false, const FactionId faction = FactionId::null(), const Distance maxRange = Distance::max()) const;
 
-	template<bool anyOccupiedPoint, DestinationCondition DestinationConditionT, bool adjacent>
-	[[nodiscard]] FindPathResult findPathToConditionDepthFirstWithoutMemo(DestinationConditionT& destinationCondition, const Point3D start, const Facing4 startFacing, const ShapeId shape, const Point3D huristicDestination, bool detour = false, const FactionId faction = FactionId::null(), const Distance  maxRange = Distance::max()) const;
+	template<bool anyOccupiedPoint, bool adjacent, longRangePath::LongRangeCondition LongRangeConditionT, longRangePath::ShortRangeConditionPointOrCuboid ShortRangeConditionT>
+	[[nodiscard]] FindPathResult findPathToConditionBreadthFirst(LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, longRangePath::LongRangeMemo& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour = false, const FactionId faction = FactionId::null(), const Distance maxRange = Distance::max()) const;
 
-	template<typename DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
-	[[nodiscard]] FindPathResult findPathToConditionBreadthFirst(DestinationConditionT destinationCondition, PathMemoBreadthFirst& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour = false, const FactionId faction = FactionId::null(), const Distance  maxRange = Distance::max()) const;
-
-	template<typename DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
-	[[nodiscard]] FindPathResult findPathToConditionBreadthFirstWithoutMemo(DestinationConditionT& destinationCondition, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour = false, const FactionId faction = FactionId::null(), const Distance  maxRange = Distance::max()) const;
+	template<bool anyOccupiedPoint, bool adjacent, longRangePath::LongRangeCondition LongRangeConditionT, longRangePath::ShortRangeConditionPointOrCuboid ShortRangeConditionT>
+	[[nodiscard]] FindPathResult findPathToConditionBreadthFirstWithoutMemo(LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour = false, const FactionId faction = FactionId::null(), const Distance maxRange = Distance::max()) const;
 
 	template<bool anyOccupiedPoint, bool adjacent>
-	[[nodiscard]] FindPathResult findPathToSpaceDesignation(PathMemoBreadthFirst &memo, const SpaceDesignation designation, const FactionId faction, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour, bool unreserved, const Distance maxRange) const;
+	[[nodiscard]] FindPathResult findPathToSpaceDesignation(longRangePath::LongRangeMemo& memo, const SpaceDesignation designation, const FactionId faction, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour, bool unreserved, const Distance maxRange) const;
 
-	// Faction is sent by value on pupose.
-	template<CuboidToBool DestinationConditionT, bool anyOccupiedPoint, bool adjacent>
-	[[nodiscard]] FindPathResult findPathToSpaceDesignationAndCondition(DestinationConditionT& destinationCondition, PathMemoBreadthFirst &memo, const SpaceDesignation designation, FactionId faction, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour, bool unreserved, const Distance maxRange) const;
+	template<bool anyOccupiedPoint, bool adjacent, longRangePath::LongRangeCondition LongRangeConditionT, longRangePath::ShortRangeConditionPointOrCuboid ShortRangeConditionT>
+	[[nodiscard]] FindPathResult findPathToSpaceDesignationAndCondition(LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, longRangePath::LongRangeMemo& memo, const SpaceDesignation designation, FactionId faction, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour, bool unreserved, const Distance maxRange) const;
 
-	[[nodiscard]] FindPathResult findPathToEdge(PathMemoBreadthFirst& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour = false) const;
+	[[nodiscard]] FindPathResult findPathToEdge(longRangePath::LongRangeMemo& memo, const Point3D start, const Facing4 startFacing, const ShapeId shape, bool detour = false) const;
 	[[nodiscard]] FindPathResult findPathAdjacentToPolymorphicWithoutMemo(const Point3D start, const Facing4 startFacing, const ShapeId shape, const ActorOrItemIndex actorOrItem, bool detour = false) const;
 	[[nodiscard]] auto& getArea() { return m_area; }
 	[[nodiscard]] const auto& getArea() const { return m_area; }

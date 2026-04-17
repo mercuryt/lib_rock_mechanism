@@ -35,8 +35,8 @@ public:
 	// Remove this shape from space and update the status of the features.
 	void recordAndClearDynamic(Area& area, const CuboidSet& occupied, const Point3D location);
 	void recordAndClearStatic(Area& area, const CuboidSet& occupied, const Point3D location);
-	void setLocationAndFacingDynamic(Area& area, const Facing4& currentFacing, const Point3D newLocation, const Facing4 newFacing, CuboidSet& occupied);
-	void setLocationAndFacingStatic(Area& area, const Facing4& currentFacing, const Point3D newLocation, const Facing4 newFacing, CuboidSet& occupied);
+	void setLocationAndFacingDynamic(Area& area, const Facing4 currentFacing, const Point3D newLocation, const Facing4 newFacing, CuboidSet& occupied);
+	void setLocationAndFacingStatic(Area& area, const Facing4 currentFacing, const Point3D newLocation, const Facing4 newFacing, CuboidSet& occupied);
 	[[nodiscard]] ShapeId getShape() const { return m_shape; }
 	[[nodiscard]] ShapeId getShapeIncludingDecks() const { return m_shapeIncludingDecks; }
 	[[nodiscard]] const OffsetCuboidSet& getDecks() const { return m_decks; }

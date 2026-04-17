@@ -33,7 +33,7 @@ Json InstallItemPathRequest::toJson() const
 	output["type"] = "install item";
 	return output;
 }
-FindPathResult InstallItemPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo)
+FindPathResult InstallItemPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);

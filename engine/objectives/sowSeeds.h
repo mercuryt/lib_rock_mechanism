@@ -60,7 +60,7 @@ class SowSeedsPathRequest final : public PathRequestBreadthFirst
 public:
 	SowSeedsPathRequest(Area& area, SowSeedsObjective& objective, const ActorIndex actor);
 	SowSeedsPathRequest(const Json& data, Area& area, DeserializationMemo& DeserializationMemo);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] std::string name() const { return "sow seeds"; }
 	[[nodiscard]] Json toJson() const;

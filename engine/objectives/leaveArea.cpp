@@ -28,7 +28,7 @@ LeaveAreaPathRequest::LeaveAreaPathRequest(Area& area, LeaveAreaObjective& objec
 	detour = m_objective.m_detour;
 	adjacent = true;
 }
-FindPathResult LeaveAreaPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult LeaveAreaPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	return terrainFacade.findPathToEdge(memo, start, facing, shape, m_objective.m_detour);
 }

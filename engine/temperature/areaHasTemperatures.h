@@ -14,7 +14,7 @@ struct OnSurfaceData
 	bool empty() const { return solid.empty() && features.empty() && items.empty(); }
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(OnSurfaceData, solid, features, items);
 };
-struct AreaHasTemperature2
+struct AreaHasTemperature
 {
 	AreaHasPortalsBetweenOutSideAndInside m_portals;
 	AreaHasTemperatureSources m_sources;
@@ -42,5 +42,5 @@ struct AreaHasTemperature2
 	// Current temperature.
 	[[nodiscard]] Temperature get(Area& area, const Point3D point);
 	[[nodiscard]] Temperature getDailyAverageAmbientSurfaceTemperature(Area& area) const;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(AreaHasTemperature2, m_portals, m_sources, m_meltableMaterialTypeOnSurface, m_toUpdate, m_ambiant);
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(AreaHasTemperature, m_portals, m_sources, m_meltableMaterialTypeOnSurface, m_toUpdate, m_ambiant);
 };

@@ -1,5 +1,5 @@
 #include "actors.h"
-#include "../temperature.h"
+#include "../safeTemperature.h"
 void Actors::temperature_onChange(const ActorIndex index)
 {
 	m_needsSafeTemperature[index]->onChange(m_area);

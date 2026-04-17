@@ -57,7 +57,7 @@ class StockPilePathRequest final : public PathRequestBreadthFirst
 public:
 	StockPilePathRequest(Area& area, StockPileObjective& spo, const ActorIndex actor);
 	StockPilePathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] bool checkDestination(const Area& area, const ItemIndex item, const Point3D point) const;
 	[[nodiscard]] std::string name() const { return "stockpile"; }
@@ -72,7 +72,7 @@ class StockPileDestinationPathRequest final : public PathRequestBreadthFirst
 public:
 	StockPileDestinationPathRequest(Area& area, StockPileObjective& spo, const ActorIndex actor);
 	StockPileDestinationPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] std::string name() const { return "stockpile destination"; }
 	[[nodiscard]] Json toJson() const;

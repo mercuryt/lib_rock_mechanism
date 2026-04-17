@@ -5,7 +5,7 @@
 #include "../dataStructures/rtreeData.h"
 #include "../json.h"
 class Area;
-struct TemperatureSource2
+struct TemperatureSource
 {
 	struct Primitive
 	{
@@ -21,18 +21,18 @@ struct TemperatureSource2
 	TemperatureDelta m_delta;
 	void updateDelta(Area& area, TemperatureDelta newValue);
 	void clear() { m_location.clear(); m_id.clear(); m_delta.clear(); }
-	[[nodiscard]] std::strong_ordering operator<=>(const TemperatureSource2& other) const = default;
+	[[nodiscard]] std::strong_ordering operator<=>(const TemperatureSource& other) const = default;
 	[[nodiscard]] Primitive get() const { return {m_location.get(), m_id.get(), m_delta.get()}; }
-	[[nodiscard]] constexpr static TemperatureSource2 null() { return {}; }
+	[[nodiscard]] constexpr static TemperatureSource null() { return {}; }
 	[[nodiscard]] constexpr static Primitive nullPrimitive() { return {Point3D::nullPrimitive(), TemperatureSourceId::nullPrimitive(), TemperatureDelta::nullPrimitive()}; }
-	[[nodiscard]] constexpr static TemperatureSource2 create(const Primitive& primitive) { return {Point3D::create(primitive.location), TemperatureSourceId::create(primitive.id), TemperatureDelta::create(primitive.delta)}; }
-	[[nodiscard]] constexpr static TemperatureSource2 create(Point3D location, TemperatureSourceId id, TemperatureDelta delta) { return {location, id, delta}; }
+	[[nodiscard]] constexpr static TemperatureSource create(const Primitive& primitive) { return {Point3D::create(primitive.location), TemperatureSourceId::create(primitive.id), TemperatureDelta::create(primitive.delta)}; }
+	[[nodiscard]] constexpr static TemperatureSource create(Point3D location, TemperatureSourceId id, TemperatureDelta delta) { return {location, id, delta}; }
 	[[nodiscard]] std::string toString() const;
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(TemperatureSource2, m_location, m_id, m_delta);
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE(TemperatureSource, m_location, m_id, m_delta);
 };
 class AreaHasTemperatureSources
 {
-	RTreeData<TemperatureSource2, RTreeDataConfigs::canOverlapNoMerge> m_data;
+	RTreeData<TemperatureSource, RTreeDataConfigs::canOverlapNoMerge> m_data;
 	std::vector<std::pair<Point3D, TemperatureSourceId>> m_sourcesToUpdate;
 	TemperatureSourceId m_nextId{0};
 	std::vector<TemperatureSourceId> m_unusedIds;

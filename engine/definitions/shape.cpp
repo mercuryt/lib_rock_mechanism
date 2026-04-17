@@ -223,6 +223,12 @@ const OffsetCuboid Shape::getOffsetCuboidBoundryWithFacing(const ShapeId id, con
 {
 	return g_shapeData.m_boundryOffsetCache[id][(int)facing];
 }
+const Cuboid Shape::getBoundryAtWithFacing(const ShapeId id, const Space& space, const Point3D location, const Facing4 facing)
+{
+	OffsetCuboid offset = getOffsetCuboidBoundryWithFacing(id, facing).relativeToPoint(location);
+	assert(space.offsetBoundry().contains(offset));
+	return Cuboid::create(offset);
+}
 ShapeId Shape::byName(const std::string& name)
 {
 	auto found = g_shapeData.m_name.find(name);

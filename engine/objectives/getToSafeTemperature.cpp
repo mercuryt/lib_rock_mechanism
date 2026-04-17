@@ -21,7 +21,7 @@ GetToSafeTemperaturePathRequest::GetToSafeTemperaturePathRequest(const Json& dat
 	PathRequestBreadthFirst(data, area),
 	m_objective(static_cast<GetToSafeTemperatureObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
 { }
-FindPathResult GetToSafeTemperaturePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult GetToSafeTemperaturePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	Actors& actors = area.getActors();
 	Space& space = area.getSpace();

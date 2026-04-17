@@ -183,7 +183,7 @@ SowSeedsPathRequest::SowSeedsPathRequest(const Json& data, Area& area, Deseriali
 	PathRequestBreadthFirst(data, area),
 	m_objective(static_cast<SowSeedsObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
 { }
-FindPathResult SowSeedsPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult SowSeedsPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);

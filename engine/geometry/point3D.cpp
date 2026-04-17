@@ -531,6 +531,17 @@ Offset3D Offset3D::max(const Offset3D other) const
 }
 Offset3D Offset3D::min() { return {Offset::min(), Offset::min(), Offset::min()}; }
 Offset3D Offset3D::max() { return {Offset::max(), Offset::max(), Offset::max()}; }
+Offset Offset3D::distanceTo(const Offset3D other) const
+{
+	return Offset::create(std::pow((float)(data - other.data).square().sum(), 0.5f));
+}
+Offset Offset3D::distanceTo(const OffsetCuboid cuboid) const
+{
+	int32_t dx = std::max(0, std::max(cuboid.m_low.x().get() - x().get(), x().get() - cuboid.m_high.x().get()));
+	int32_t dy = std::max(0, std::max(cuboid.m_low.y().get() - y().get(), y().get() - cuboid.m_high.y().get()));
+	int32_t dz = std::max(0, std::max(cuboid.m_low.z().get() - z().get(), z().get() - cuboid.m_high.z().get()));
+	return Offset::create(std::sqrt(dx*dx + dy*dy + dz*dz));
+}
 Offset3D Offset3D::null() { return {}; }
 int Offset3D::hilbertNumber() const
 {

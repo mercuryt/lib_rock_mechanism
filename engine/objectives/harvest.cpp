@@ -176,7 +176,7 @@ HarvestPathRequest::HarvestPathRequest(const Json& data, Area& area, Deserializa
 	PathRequestBreadthFirst(data, area),
 	m_objective(static_cast<HarvestObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
 { }
-FindPathResult HarvestPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult HarvestPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	constexpr bool unreserved = false;
 	constexpr bool anyOccupiedPoint = false;

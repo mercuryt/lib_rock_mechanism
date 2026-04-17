@@ -8,7 +8,6 @@
 #include <vector>
 
 class Simulation;
-class DrinkPathRequest;
 class DrinkEvent;
 class ThirstEvent;
 class DrinkObjective;

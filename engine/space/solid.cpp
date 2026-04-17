@@ -193,17 +193,17 @@ void Space::solid_setCuboidDynamic(const Cuboid cuboid, const MaterialTypeId mat
 	if(!MaterialType::getTransparent(materialType))
 		m_area.m_opacityFacade.update(m_area, cuboid);
 }
-void Space::solid_setNotDynamic(const Point3D point)
+template<typename ShapeT>
+void Space::solid_setNotDynamicBody(const ShapeT shape)
 {
-	assert(m_dynamic.query(point));
-	const MaterialTypeId material = m_solid.queryGetOne(point);
-	bool wasTransparent = material.empty() ? false : MaterialType::getTransparent(material);
-	m_solid.maybeRemove(point);
-	m_dynamic.maybeRemove(point);
-	m_constructed.maybeRemove(point);
-	if(!wasTransparent)
-		m_area.m_opacityFacade.update(m_area, point);
+	assert(m_dynamic.query(shape));
+	m_solid.maybeRemove(shape);
+	m_dynamic.maybeRemove(shape);
+	m_constructed.maybeRemove(shape);
+	m_area.m_opacityFacade.update(m_area, shape);
 }
+void Space::solid_setNotDynamic(const CuboidSet& cuboids) { solid_setNotDynamicBody<const CuboidSet&>(cuboids); }
+void Space::solid_setNotDynamic(const Cuboid cuboid) { solid_setNotDynamicBody<const Cuboid>(cuboid); }
 void Space::solid_removeOpaque(CuboidSet& cuboids) const
 {
 	m_solid.queryForEachWithCuboids(cuboids, [&](const Cuboid cuboid, const MaterialTypeId materialType){

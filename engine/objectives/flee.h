@@ -37,7 +37,7 @@ class FleePathRequest final : public PathRequestBreadthFirst
 public:
 	FleePathRequest(Area& area, FleeObjective& objective, const ActorIndex actorIndex);
 	FleePathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] std::string name() const { return "get to safe temperature"; }
 	[[nodiscard]] Json toJson() const;

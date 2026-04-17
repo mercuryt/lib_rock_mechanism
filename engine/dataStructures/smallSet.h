@@ -83,6 +83,8 @@ struct SmallSet
 	void sort(Predicate&& predicate) { std::ranges::sort(m_data, predicate); }
 	template<typename Predicate>
 	void sortUnary(Predicate&& predicate) { std::ranges::sort(m_data, {}, predicate); }
+	template<typename Predicate>
+	void sortUnaryDescending(Predicate&& predicate) { std::ranges::sort(m_data, std::greater{}, predicate); }
 	void sort();
 	void update(const T& oldValue, const T& newValue);
 	void updateIfExists(const T& oldValue, const T& newValue);

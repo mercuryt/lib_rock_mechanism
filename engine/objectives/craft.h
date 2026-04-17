@@ -48,7 +48,7 @@ class CraftPathRequest final : public PathRequestBreadthFirst
 public:
 	CraftPathRequest(Area& area, CraftObjective& co, const ActorIndex actorIndex);
 	CraftPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() { return m_craftObjective.name(); }

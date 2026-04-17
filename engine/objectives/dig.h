@@ -50,7 +50,7 @@ class DigPathRequest final : public PathRequestBreadthFirst
 public:
 	DigPathRequest(Area& area, DigObjective& digObjective, const ActorIndex actorIndex);
 	DigPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() { return "dig"; }

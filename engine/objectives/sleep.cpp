@@ -20,7 +20,7 @@ SleepPathRequest::SleepPathRequest(Area&area, SleepObjective &so, const ActorInd
 	adjacent = false;
 	reserveDestination = true;
 }
-FindPathResult SleepPathRequest::readStep(Area&area, const TerrainFacade &terrainFacade, PathMemoBreadthFirst &memo)
+FindPathResult SleepPathRequest::readStep(Area&area, const TerrainFacade &terrainFacade, longRangePath::LongRangeMemo &memo)
 {
 	Actors &actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);

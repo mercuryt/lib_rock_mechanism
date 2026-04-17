@@ -51,11 +51,13 @@ void ConstructedShape::constructDecks()
 		m_decks.maybeAdd(pair.first.above());
 	for(const auto& [cuboid, feature] : m_features)
 	{
-		const OffsetCuboid above = cuboid.above();
-		if(PointFeatureType::byId(feature.pointFeatureType).canStandAbove)
-			for(const Offset3D& point : above)
-				if(!m_solid.contains(point))
-					m_decks.maybeAdd(point);
+		if(!PointFeatureType::byId(feature.pointFeatureType).canStandAbove)
+			continue;
+		OffsetCuboidSet above = OffsetCuboidSet::create(cuboid.above());
+		// Exclude any solid.
+		for(const auto& pair : m_solid)
+			above.maybeRemove(pair.first);
+		m_decks.maybeAddAll(above);
 	}
 	for(const auto& pair : m_solid)
 		m_decks.maybeRemove(pair.first);
@@ -70,8 +72,7 @@ void ConstructedShape::recordAndClearDynamic(Area& area, const CuboidSet& occupi
 {
 	Space& space = area.getSpace();
 	for(const auto& [solidCuboid, materialType] : space.solid_getAllWithCuboidsAndRemove(occupied))
-		for(const Point3D point : solidCuboid)
-			space.solid_setNotDynamic(point);
+			space.solid_setNotDynamic(solidCuboid);
 	m_features.clear();
 	for(const auto& [featureCuboid, feature] : space.pointFeature_getAllWithCuboidsAndRemove(occupied))
 		m_features.insertOrMerge(featureCuboid.offsetTo(location), feature);
@@ -92,7 +93,7 @@ void ConstructedShape::recordAndClearStatic(Area& area, const CuboidSet& occupie
 		for(const Point3D point : cuboid)
 			space.pointFeature_removeAll(point);
 }
-void ConstructedShape::setLocationAndFacingDynamic(Area& area, const Facing4& currentFacing, const Point3D newLocation, const Facing4 newFacing, CuboidSet& occupied)
+void ConstructedShape::setLocationAndFacingDynamic(Area& area, const Facing4 currentFacing, const Point3D newLocation, const Facing4 newFacing, CuboidSet& occupied)
 {
 	Space& space = area.getSpace();
 	if(newFacing != currentFacing)
@@ -124,7 +125,7 @@ void ConstructedShape::setLocationAndFacingDynamic(Area& area, const Facing4& cu
 		occupied.maybeAdd(cuboid);
 	}
 }
-void ConstructedShape::setLocationAndFacingStatic(Area& area, const Facing4& currentFacing, const Point3D newLocation, const Facing4 newFacing, CuboidSet& occupied)
+void ConstructedShape::setLocationAndFacingStatic(Area& area, const Facing4 currentFacing, const Point3D newLocation, const Facing4 newFacing, CuboidSet& occupied)
 {
 	Space& space = area.getSpace();
 	if(newFacing != currentFacing)
@@ -232,7 +233,7 @@ MaterialTypeId ConstructedShape::getMaterialWithTheLowestMeltingPoint() const
 	for(const auto& pair : m_solid)
 	{
 		Temperature meltingPoint = MaterialType::getMeltingPoint(pair.second);
-		if(meltingPoint < lowestMeltingPoint)
+		if(meltingPoint.exists() && meltingPoint < lowestMeltingPoint)
 			output = pair.second;
 	}
 	return output;

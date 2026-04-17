@@ -2,7 +2,7 @@
 
 #include "../actorOrItemIndex.h"
 #include "../body.h"
-#include "../temperature.h"
+#include "../safeTemperature.h"
 #include "../dataStructures/strongVector.h"
 #include "../datetime.h"
 #include "../definitions/attackType.h"
@@ -751,11 +751,12 @@ public:
 class GetIntoAttackPositionPathRequest final : public PathRequestDepthFirst
 {
 	ActorReference target;
-	DistanceFractional attackRangeSquared = DistanceFractional::null();
+	DistanceFractional attackRangeSquared;
+	Distance attackRangeInteger;
 public:
-	GetIntoAttackPositionPathRequest(Area& area, const ActorIndex a, const ActorIndex t, const DistanceFractional ar);
+	GetIntoAttackPositionPathRequest(Area& area, const ActorIndex attacker, const ActorIndex target, const DistanceFractional attackRangeFractional);
 	GetIntoAttackPositionPathRequest(const Json& data, Area& area);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoDepthFirst& memo) override;
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() { return "attack"; }

@@ -20,7 +20,7 @@ DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, const Actor
 	detour = m_drinkObjective.m_detour;
 	adjacent = true;
 }
-FindPathResult DrinkPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult DrinkPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	Actors& actors = area.getActors();
 	const ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);

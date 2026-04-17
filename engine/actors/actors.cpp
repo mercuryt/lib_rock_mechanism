@@ -19,12 +19,12 @@
 #include "../sleep.h"
 #include "../util.h"
 #include "../numericTypes/index.h"
+#include "../eventSchedule.h"
+#include "../hasShapes.h"
+#include "../objective.h"
+#include "../safeTemperature.h"
 #include "equipment.h"
-#include "eventSchedule.h"
 #include "grow.h"
-#include "hasShapes.h"
-#include "objective.h"
-#include "temperature.h"
 
 #include <algorithm>
 #include <cstddef>

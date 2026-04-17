@@ -14,6 +14,7 @@ void AreaHasDecks::updatePoints(Area& area, const DeckId id)
 }
 void AreaHasDecks::clearPoints(Area& area, const DeckId id)
 {
+	assert(!m_data[id].cuboidSet.empty());
 	for(const Cuboid cuboid : m_data[id].cuboidSet)
 	{
 		m_pointData.maybeRemove(cuboid);

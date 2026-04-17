@@ -49,6 +49,9 @@ struct OffsetCuboid
 	[[nodiscard]] OffsetCuboid sum(const OffsetCuboid other) const;
 	[[nodiscard]] OffsetCuboid difference(const Offset3D other) const;
 	[[nodiscard]] Offset3D getCenter() const;
+	[[nodiscard]] Offset3D clamp(const Offset3D point) const;
+	[[nodiscard]] Offset3D nearestPointTo(const OffsetCuboid other) const;
+	[[nodiscard]] Offset distanceTo(const OffsetCuboid other) const;
 	void maybeExpand(const OffsetCuboid other);
 	void inflate(const Distance  distance);
 	void shift(const Facing6 direction, const Distance  distance);

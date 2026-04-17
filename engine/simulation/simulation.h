@@ -12,7 +12,6 @@
 #include "../uniform.h"
 #include "../definitions/shape.h"
 #include "../numericTypes/types.h"
-#include "../path/pathMemo.h"
 #include "hasActors.h"
 #include "hasItems.h"
 #include "hasConstructedItemTypes.h"
@@ -41,7 +40,6 @@ public:
 	SimulationHasActors m_actors;
 	SimulationHasItems m_items;
 	SimulationHasConstructedItemTypes m_constructedItemTypes;
-	SimulationHasPathMemos m_hasPathMemos;
 	SimulationHasSquads m_hasSquads;
 	DialogueBoxQueue m_hasDialogues;
 private:

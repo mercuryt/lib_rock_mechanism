@@ -14,6 +14,7 @@ class OpacityFacade final
 public:
 	void rebuildAfterLoad(const Area& area);
 	void update(const Area& area, const Cuboid cuboid);
+	void update(const Area& area, const CuboidSet& cuboids);
 	void update(const Area& area, const Point3D point) { update(area, {point, point}); }
 	void maybeInsertFull(const Cuboid cuboid);
 	void maybeRemoveFull(const Cuboid cuboid);

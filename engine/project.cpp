@@ -89,17 +89,15 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep(Simulation&, Area*)
 		if(projectWorker.haulSubproject != nullptr)
 			continue;
 		ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-		auto destinationConditon = [this, actorIndex](const Cuboid cuboid) -> std::pair<bool, Point3D>
-		{
-			const Point3D point = containsDesiredItemOrActor(cuboid, actorIndex);
-			return {point.exists(), point};
-		};
+		auto shortRangeCondition = [&](const Cuboid cuboid) -> Point3D { return containsDesiredItemOrActor(cuboid, actorIndex); };
+		auto longRangeCondition = [&](const Cuboid cuboid) -> bool { return containsDesiredItemOrActor(cuboid, actorIndex).exists(); };
 		// Path result is unused, running only for condition side effect.
 		constexpr bool anyOccupiedPoint = true;
 		constexpr bool adjacent = true;
 		[[maybe_unused]] FindPathResult result = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actorIndex)).
-			findPathToConditionBreadthFirstWithoutMemo<decltype(destinationConditon), anyOccupiedPoint, adjacent>(
-				destinationConditon,
+			findPathToConditionBreadthFirstWithoutMemo<anyOccupiedPoint, adjacent>(
+				longRangeCondition,
+				shortRangeCondition,
 				actors.getLocation(actorIndex),
 				actors.getFacing(actorIndex),
 				actors.getShape(actorIndex),
@@ -367,7 +365,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 			// Verfy the worker can path to the required materials. Cumulative for all candidates in this step but reset if not satisfied.
 			// capture by reference is used here because the pathing is being done immideatly instead of batched.
 			SmallSet<ItemIndex> itemsWhichHaveBeenProcessedAlready;
-			auto destinationCondition = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
+			auto shortRangeCondition = [&](const Cuboid cuboid) -> Point3D
 			{
 				for(ItemIndex item : space.item_getAll(cuboid))
 				{
@@ -386,7 +384,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 							continue;
 						recordItemOnGround(item, projectRequirementCounts);
 						if(m_project.reservationsComplete())
-							return std::make_pair(true, items.getLocation(item));
+							return items.getLocation(item);
 					}
 					if(ItemType::getCanHoldFluids(items.getItemType(item)) && !m_project.m_requiredFluids.empty())
 					{
@@ -406,7 +404,7 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 							continue;
 						recordActorOnGround(actor);
 						if(m_project.reservationsComplete())
-							return std::make_pair(true, actors.getLocation(actor));
+							return actors.getLocation(actor);
 					}
 				}
 				for(const FluidData& fluidData : space.fluid_getAll(cuboid))
@@ -424,20 +422,21 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 									{
 										recordFluidOnGround(fluidData.type, point);
 										if(m_project.reservationsComplete())
-											return std::make_pair(true, point);
+											return point;
 									}
 							}
 						}
 					}
 				}
-				return std::make_pair(false, Point3D::null());
+				return Point3D::null();
 			};
+			auto longRangeCondition = [&](const Cuboid cuboid) -> bool { return shortRangeCondition(cuboid).exists(); };
 			// TODO: Path is not used, find path is run for side effects of predicate.
 			TerrainFacade& terrainFacade = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(candidateIndex));
 			constexpr bool anyOccupiedPoint = true;
 			constexpr bool detour = false;
 			constexpr bool adjacent = true;
-			[[maybe_unused]] FindPathResult result = terrainFacade.findPathToConditionBreadthFirstWithoutMemo<decltype(destinationCondition), anyOccupiedPoint, adjacent>(destinationCondition, actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), detour);
+			[[maybe_unused]] auto result = terrainFacade.findPathToConditionBreadthFirstWithoutMemo<anyOccupiedPoint, adjacent>(longRangeCondition, shortRangeCondition, actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), detour);
 		}
 	}
 	if(!m_project.reservationsComplete())

@@ -38,6 +38,7 @@ void OpacityFacade::update(const Area& area, const Cuboid cuboid)
 	else
 		m_floorOpacity.maybeInsert(cuboid);
 }
+void OpacityFacade::update(const Area& area, const CuboidSet& cuboids) { for(const Cuboid cuboid : cuboids) update(area, cuboid); }
 void OpacityFacade::maybeInsertFull(const Cuboid cuboid) { m_fullOpacity.maybeInsert(cuboid); }
 void OpacityFacade::maybeRemoveFull(const Cuboid cuboid) { m_fullOpacity.maybeRemove(cuboid); }
 bool OpacityFacade::hasLineOfSight(const Point3D fromCoords, const Point3D toCoords) const

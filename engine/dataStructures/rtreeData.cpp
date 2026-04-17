@@ -16,7 +16,7 @@ template class RTreeData<FluidTypeId>;
 template class RTreeData<CollisionVolume, RTreeDataConfig{}, 0>;
 template class RTreeData<PlantIndex>;
 template class RTreeData<TemperatureDelta>;
-template class RTreeData<TemperatureSource2, RTreeDataConfigs::noMerge>;
+template class RTreeData<TemperatureSource, RTreeDataConfigs::noMerge>;
 template class RTreeData<DistanceFractional>;
 template class RTreeData<RTreeDataWrapper<Project*, nullptr>>;
 template class RTreeData<RTreeDataWrapper<StockPile*, nullptr>>;

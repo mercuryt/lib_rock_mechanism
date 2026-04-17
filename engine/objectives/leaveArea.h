@@ -22,7 +22,7 @@ class LeaveAreaPathRequest final : public PathRequestBreadthFirst
 public:
 	LeaveAreaPathRequest(Area& area, LeaveAreaObjective& objective, const ActorIndex actor);
 	LeaveAreaPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo) override;
+	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
 	void writeStep(Area& area, FindPathResult& result) override;
 	[[nodiscard]] std::string name() const { return "leave area"; }
 	[[nodiscard]] Json toJson() const;

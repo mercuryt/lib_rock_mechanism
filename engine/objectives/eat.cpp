@@ -146,7 +146,7 @@ EatPathRequest::EatPathRequest(Area &area, EatObjective &eo, const ActorIndex ac
 	detour = m_eatObjective.m_detour;
 	adjacent = true;
 }
-FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, PathMemoBreadthFirst& memo)
+FindPathResult EatPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
 {
 	assert(m_eatObjective.m_location.empty());
 	Space& space = area.getSpace();
