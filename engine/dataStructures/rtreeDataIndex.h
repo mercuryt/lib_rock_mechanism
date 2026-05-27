@@ -110,6 +110,20 @@ public:
 		assert(index.exists());
 		return m_data[index].first;
 	}
+	[[nodiscard]] CuboidSet queryGetCuboidsWithCondition(auto&& shape, auto&& condition) const
+	{
+		CuboidSet output;
+		for(const auto [cuboid, dataIndex] : m_tree.queryGetAllWithCuboids(shape))
+			if(condition(m_data[dataIndex]))
+				output.add(cuboid);
+		return output;
+	}
+	void queryRemoveFromWithCondition(CuboidSet& cuboids, auto&& condition) const
+	{
+		for(const auto [cuboid, dataIndex] : m_tree.queryGetAllWithCuboids(cuboids.boundry()))
+			if(condition(m_data[dataIndex].first))
+				cuboids.maybeRemove(cuboid);
+	}
 
 	struct ConstIterator
 	{

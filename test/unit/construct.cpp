@@ -83,8 +83,17 @@ TEST_CASE("construct")
 		CHECK(actors.objective_getCurrentName(dwarf1) == "construct");
 		ConstructObjective& objective = actors.objective_getCurrent<ConstructObjective>(dwarf1);
 		CHECK(objective.joinableProjectExistsAt(area, {wallLocation,wallLocation}, dwarf1).exists());
-		const auto& terrainFacade = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(dwarf1));
-		CHECK(terrainFacade.accessable(dwarf1Start, actors.getFacing(dwarf1), wallLocation, dwarf1));
+		const auto& hasPaths = area.m_hasPaths.get(actors.getMoveType(dwarf1));
+		CHECK(hasPaths.accessable(PathParamaters({
+			.area = area,
+			.start = dwarf1Start,
+			.huristicDestination = wallLocation,
+			.shape = actors.getShape(dwarf1),
+			.moveType = actors.getMoveType(dwarf1),
+			.startFacing = actors.getFacing(dwarf1),
+			.depthFirst = true,
+			.returnPath = false
+		})));
 		// Search for accessable project, activete project and reserve all required.
 		simulation.doStep();
 		CHECK(actors.project_get(dwarf1) == &project);

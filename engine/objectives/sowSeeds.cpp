@@ -3,7 +3,7 @@
 #include "../config/config.h"
 #include "../farmFields.h"
 #include "../simulation/simulation.h"
-#include "../path/terrainFacade.hpp"
+#include "../path/areaHasPaths.hpp"
 #include "../actors/actors.h"
 #include "../space/space.h"
 #include "../designations.h"
@@ -180,37 +180,34 @@ SowSeedsPathRequest::SowSeedsPathRequest(Area& area, SowSeedsObjective& objectiv
 	reserveDestination = true;
 }
 SowSeedsPathRequest::SowSeedsPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
-	PathRequestBreadthFirst(data, area),
+	PathRequest(data, area),
 	m_objective(static_cast<SowSeedsObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
 { }
-FindPathResult SowSeedsPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
+PathResult SowSeedsPathRequest::readStep(Area& area, const AreaHasPathsForMoveType& hasPaths)
 {
-	Actors& actors = area.getActors();
-	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	constexpr bool unreserved = false;
-	constexpr bool useAnyPoint = false;
-	constexpr bool useAdjacent = false;
-	return terrainFacade.findPathToSpaceDesignation<useAnyPoint, useAdjacent>(memo, SpaceDesignation::SowSeeds, actors.getFaction(actorIndex), actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_objective.m_detour, unreserved, Config::maxRangeToSearchForHorticultureDesignations);
+	return hasPaths.pathToDesignation(SpaceDesignation::SowSeeds, toParamaters(area));
 }
-void SowSeedsPathRequest::writeStep(Area& area, FindPathResult& result)
+void SowSeedsPathRequest::writeStep(Area& area, bool useCurrentLocation)
 {
 	Actors& actors = area.getActors();
 	const ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	const Point3D sowLocation = result.pointThatPassedPredicate;
-	if(result.path.empty() && sowLocation.empty())
+	if(path.empty() && target.empty())
 		actors.objective_canNotCompleteObjective(actorIndex, m_objective);
-	else if(!area.m_spaceDesignations.getForFaction(faction).check(sowLocation, SpaceDesignation::SowSeeds))
+	else if(!area.m_spaceDesignations.getForFaction(faction).check(target, SpaceDesignation::SowSeeds))
 		// Retry. The location is no longer designated.
 		actors.objective_canNotCompleteSubobjective(actorIndex);
 	else
 	{
-		m_objective.select(area, result.pointThatPassedPredicate, actorIndex);
-		actors.move_setPath(actorIndex, result.path);
+		m_objective.select(area, target, actorIndex);
+		if(useCurrentLocation)
+			m_objective.execute(area, actorIndex);
+		else
+			actors.move_setPath(actorIndex, path);
 	}
 }
 Json SowSeedsPathRequest::toJson() const
 {
-	Json output = PathRequestBreadthFirst::toJson();
+	Json output = PathRequest::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
 	output["type"] = name();
 	return output;

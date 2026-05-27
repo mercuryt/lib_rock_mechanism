@@ -1,5 +1,4 @@
 #include "rtreeData.hpp"
-#include "../path/terrainFacade.h"
 #include "../space/space.h"
 #include "../temperature/temperatureSource.h"
 
@@ -8,9 +7,7 @@ template class RTreeData<Cuboid>;
 template class RTreeData<DeckId>;
 template class RTreeData<Distance>;
 template class RTreeData<DistanceSquared>;
-template class RTreeData<LongRangePathNodeIndex>;
 template class RTreeData<Priority>;
-template class RTreeData<AdjacentData>;
 template class RTreeData<MaterialTypeId>;
 template class RTreeData<FluidTypeId>;
 template class RTreeData<CollisionVolume, RTreeDataConfig{}, 0>;

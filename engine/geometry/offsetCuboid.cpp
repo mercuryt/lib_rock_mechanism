@@ -235,6 +235,9 @@ void OffsetCuboid::clear()
 	m_low.clear();
 	m_high.clear();
 }
+Offset OffsetCuboid::sizeX() const { return m_high.x() - m_low.x() + 1; }
+Offset OffsetCuboid::sizeY() const { return m_high.y() - m_low.y() + 1; }
+Offset OffsetCuboid::sizeZ() const { return m_high.z() - m_low.z() + 1; }
 OffsetCuboid::ConstIterator::ConstIterator(const OffsetCuboid cuboid, const Offset3D position) :
 	m_cuboid(const_cast<OffsetCuboid*>(&cuboid)),
 	m_current(position)

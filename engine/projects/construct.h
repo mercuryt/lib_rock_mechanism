@@ -18,7 +18,7 @@ class ConstructProject;
 class HasConstructionDesignationsForFaction;
 struct DeserializationMemo;
 struct MaterialType;
-struct FindPathResult;
+struct PathResult;
 
 class ConstructProject final : public Project
 {

@@ -3,7 +3,7 @@
 #include "../area/area.h"
 #include "../actors/actors.h"
 #include "../space/space.h"
-#include "../path/terrainFacade.hpp"
+#include "../path/areaHasPaths.hpp"
 #include "../reference.h"
 #include "../numericTypes/types.h"
 #include "../path/pathRequest.h"
@@ -21,32 +21,32 @@ DigPathRequest::DigPathRequest(Area& area, DigObjective& digObjective, const Act
 	detour = m_digObjective.m_detour;
 	adjacent = true;
 	reserveDestination = true;
+	returnPath = true;
 }
-FindPathResult DigPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
+PathResult DigPathRequest::readStep(Area& area, const AreaHasPathsForMoveType& hasPaths)
 {
 	ActorIndex actorIndex = actor.getIndex(area.getActors().m_referenceData);
-	auto predicate = [&area, this, actorIndex](const Cuboid cuboid) -> bool
+	auto shortRangeCondition = [&area, &constThis = std::as_const(*this), actorIndex](const Cuboid cuboid) -> Point3D
 	{
-		return m_digObjective.joinableProjectExistsAt(area, cuboid, actorIndex).exists();
+		return constThis.m_digObjective.joinableProjectExistsAt(area, cuboid, actorIndex);
 	};
+	auto longRangeCondition = [&shortRangeCondition](const Cuboid cuboid) -> bool { return shortRangeCondition(cuboid).exists(); };
 	constexpr bool useAnyPoint = false;
 	constexpr bool useAdjacent = true;
-	constexpr bool unreserved = false;
-	return terrainFacade.findPathToSpaceDesignationAndCondition<decltype(predicate), useAnyPoint, useAdjacent>(predicate, memo, SpaceDesignation::Dig, faction, start, facing, shape, detour, unreserved, maxRange);
+	return hasPaths.pathToConditionWithDesignation<useAdjacent, useAnyPoint>(SpaceDesignation::Dig, longRangeCondition, shortRangeCondition, toParamaters(area));
 }
 DigPathRequest::DigPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
-	PathRequestBreadthFirst(data, area),
+	PathRequest(data, area),
 	m_digObjective(static_cast<DigObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))){ }
-void DigPathRequest::writeStep(Area& area, FindPathResult& result)
+void DigPathRequest::writeStep(Area& area, bool useCurrentLocation)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	if(result.path.empty() && !result.useCurrentPosition)
+	if(path.empty() && !useCurrentLocation)
 		actors.objective_canNotCompleteObjective(actorIndex, m_digObjective);
 	else
 	{
 		// No need to reserve here, we are just checking for access.
-		Point3D target = result.pointThatPassedPredicate;
 		DigProject& project = area.m_hasDigDesignations.getForFactionAndPoint(actors.getFaction(actorIndex), target);
 		if(project.canAddWorker(actorIndex))
 			m_digObjective.joinProject(project, actorIndex);
@@ -60,7 +60,7 @@ void DigPathRequest::writeStep(Area& area, FindPathResult& result)
 }
 Json DigPathRequest::toJson() const
 {
-	Json output = PathRequestBreadthFirst::toJson();
+	Json output = PathRequest::toJson();
 	output["objective"] = &m_digObjective;
 	output["type"] = "dig";
 	return output;

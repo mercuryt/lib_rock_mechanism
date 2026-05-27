@@ -30,10 +30,11 @@ namespace RTreeDataConfigs
 
 // TODO: create concept checking if T verifies the other template requirements.
 
-template<Sortable T, RTreeDataConfig config = RTreeDataConfig(), typename T::Primitive nullPrimitive = T::nullPrimitive()>
+template<Sortable T, RTreeDataConfig config_ = RTreeDataConfig(), typename T::Primitive nullPrimitive = T::nullPrimitive()>
 class RTreeData
 {
 	static constexpr int nodeSize = Config::rtreeNodeSize;
+	static constexpr RTreeDataConfig config = config_;
 	using BitSet = BitSet64;
 	union DataOrChild { T::Primitive data; RTreeNodeIndex::Primitive child; };
 	class Node
@@ -126,7 +127,7 @@ public:
 	void maybeInsertOrOverwrite(const Cuboid cuboid, const T& value);
 	void insert(const auto& shape, const T& value)
 	{
-		if constexpr(config.leavesCanOverlap)
+		if constexpr(config_.leavesCanOverlap)
 			assert(!queryAnyEqual(shape, value));
 		else
 			assert(!queryAny(shape));
@@ -200,7 +201,7 @@ public:
 	{
 		// stopAfterOne is only safe to use for non-overlaping leaves, otherwise the result would be hard to predict.
 		if(queryConfig.stopAfterOne)
-			assert(!config.leavesCanOverlap && !config.splitAndMerge);
+			assert(!config_.leavesCanOverlap && !config_.splitAndMerge);
 		auto condition = [](const T&){ return true; };
 		updateActionWithCondition<queryConfig>(shape, action, condition);
 	}
@@ -538,7 +539,7 @@ public:
 	}
 	[[nodiscard]] const T queryGetOne(const auto& shape) const
 	{
-		assert(!config.leavesCanOverlap);
+		assert(!config_.leavesCanOverlap);
 		return queryGetFirst(shape);
 	}
 	[[nodiscard]] std::pair<T, Cuboid> queryGetOneWithCuboidAndCondition(const auto& shape, const auto& condition) const
@@ -901,11 +902,14 @@ public:
 			output.maybeAdd(leaf.intersection(shape));
 		return output;
 	}
-	void queryRemove(CuboidSet& cuboids) const
+	void queryRemove(CuboidSet& cuboids) const { queryRemoveWithCondition(cuboids, [](const T&){ return true; }); }
+	void queryRemoveWithCondition(CuboidSet& cuboids, auto&& condition) const
 	{
 		Cuboid boundry = cuboids.boundry();
-		for(const Cuboid cuboid : queryGetAllCuboids(boundry))
-			cuboids.maybeRemove(cuboid);
+		queryForEachWithCuboids(boundry, [&condition, &cuboids](const Cuboid cuboid, const T& value){
+			if(condition(value))
+				cuboids.maybeRemove(cuboid);
+		});
 	}
 	[[nodiscard]] int queryCount(const auto& shape) const
 	{
@@ -1039,10 +1043,10 @@ public:
 	GDB_CALLABLE std::string toString(int x, int y, int z) const;
 	GDB_CALLABLE void log() const;
 };
-template<Sortable T, RTreeDataConfig config>
-void to_json(Json& data, const RTreeData<T, config>& tree) { data = tree.toJson(); }
-template<Sortable T, RTreeDataConfig config>
-void from_json(const Json& data, RTreeData<T, config>& tree) { tree.load(data); }
+template<Sortable T, RTreeDataConfig config_>
+void to_json(Json& data, const RTreeData<T, config_>& tree) { data = tree.toJson(); }
+template<Sortable T, RTreeDataConfig config_>
+void from_json(const Json& data, RTreeData<T, config_>& tree) { tree.load(data); }
 // Wraps data to have the parts that RTreeData expects, such as ::Primitive.
 template<typename T, T defaultValue>
 struct RTreeDataWrapper

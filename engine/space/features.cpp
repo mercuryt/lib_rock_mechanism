@@ -1,3 +1,4 @@
+// TODO: change from points to cuboids in create / destroy.
 #include "space.h"
 #include "../area/area.h"
 #include "../pointFeature.h"
@@ -27,7 +28,7 @@ void Space::pointFeature_remove(const Point3D point, const PointFeatureTypeId& p
 	m_features.maybeRemoveWithConditionOne(point, condition);
 	m_area.m_opacityFacade.update(m_area, point);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(Cuboid::create(point, point));
-	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
+	m_area.m_hasPaths.update(m_area, getAdjacentWithEdgeAndCornerAdjacent(point));
 	if(!transmitedTemperaturePreviously && temperature_transmits(point))
 		m_area.m_hasTemperature.onTemperatureCanNowTransmit(m_area, CuboidSet::create(point));
 	m_exposedToSky.maybeSetCuboid(m_area, {point, point});
@@ -39,7 +40,7 @@ void Space::pointFeature_removeAll(const Point3D point)
 	m_features.maybeRemove(point);
 	m_area.m_opacityFacade.update(m_area, point);
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(Cuboid::create(point, point));
-	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
+	m_area.m_hasPaths.update(m_area, getAdjacentWithEdgeAndCornerAdjacent(point));
 	if(!transmitedTemperaturePreviously && temperature_transmits(point))
 		m_area.m_hasTemperature.onTemperatureCanNowTransmit(m_area, CuboidSet::create(point));
 	m_exposedToSky.maybeSetCuboid(m_area, {point, point});
@@ -51,6 +52,9 @@ void Space::pointFeature_add(const Cuboid cuboid, const PointFeature& feature)
 }
 void Space::pointFeature_add(const Point3D point, const PointFeature& feature)
 {
+	// Floors, floor grates, and hatches cannot overlap.
+	if(feature.blocksVerticalTravel())
+		assert(!m_features.queryAnyWithCondition(point, [&](const PointFeature existingFeature){ return existingFeature.blocksVerticalTravelEver(); }));
 	assert(!solid_isAny(point));
 	assert(pointFeature_empty(point));
 	Plants& plants = m_area.getPlants();
@@ -68,7 +72,7 @@ void Space::pointFeature_add(const Point3D point, const PointFeature& feature)
 			m_exposedToSky.maybeUnsetBeneathTopLayer(m_area, Cuboid::create(point, point));
 	}
 	m_area.m_opacityFacade.update(m_area, point);
-	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
+	m_area.m_hasPaths.update(m_area, getAdjacentWithEdgeAndCornerAdjacent(point));
 	if(!temperature_transmits(point))
 		m_area.m_hasTemperature.onTemperatureCanNoLongerTransmit(m_area, CuboidSet::create(point));
 }
@@ -84,14 +88,18 @@ void Space::pointFeature_construct(const Point3D point, const PointFeatureTypeId
 		plant_erase(point);
 	}
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(Cuboid::create(point, point));
-	m_features.insert(point, PointFeature::create(materialType, pointFeatureType));
+	PointFeature feature = PointFeature::create(materialType, pointFeatureType);
+	// Floors, floor grates, and hatches cannot overlap.
+	if(feature.blocksVerticalTravel())
+		assert(!m_features.queryAnyWithCondition(point, [&](const PointFeature existingFeature){ return existingFeature.blocksVerticalTravelEver(); }));
+	m_features.insert(point, feature);
 	m_area.m_opacityFacade.update(m_area, point);
 	if(PointFeatureType::byId(pointFeatureType).opaque && !materialTypeIsTransparent)
 	{
 		if(point.z() != 0)
 			m_exposedToSky.maybeUnsetBeneathTopLayer(m_area, Cuboid::create(point, point));
 	}
-	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
+	m_area.m_hasPaths.update(m_area, getAdjacentWithEdgeAndCornerAdjacent(point));
 	if(transmitedTemperaturePreviously && !temperature_transmits(point))
 		m_area.m_hasTemperature.onTemperatureCanNoLongerTransmit(m_area, CuboidSet::create(point));
 }
@@ -99,7 +107,11 @@ void Space::pointFeature_hew(const Point3D point, const PointFeatureTypeId& poin
 {
 	assert(solid_isAny(point));
 	const MaterialTypeId materialType = solid_get(point);
-	m_features.insert(point, PointFeature::create(materialType, pointFeatureType, true));
+	PointFeature feature = PointFeature::create(materialType, pointFeatureType, true);
+	// Floors, floor grates, and hatches cannot overlap.
+	if(feature.blocksVerticalTravel())
+		assert(!m_features.queryAnyWithCondition(point, [&](const PointFeature existingFeature){ return existingFeature.blocksVerticalTravelEver(); }));
+	m_features.insert(point, feature);
 	// Solid_setNot will handle calling AreaHasTemperatures::onCuboidCanTransmitTemperature.
 	// TODO: There is no support for hewing hatches or flaps. This is ok because those things can't be hewn. Could be fixed anyway?
 	const Point3D above = point.above();
@@ -110,7 +122,7 @@ void Space::pointFeature_hew(const Point3D point, const PointFeatureTypeId& poin
 	m_area.m_opacityFacade.update(m_area, point);
 	// The point has been set to transparent by solid_setNot but may need to be set to opaque again depending on the feature  and material types.
 	m_area.m_visionRequests.maybeGenerateRequestsForAllWithLineOfSightTo(Cuboid::create(point, point));
-	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
+	m_area.m_hasPaths.update(m_area, getAdjacentWithEdgeAndCornerAdjacent(point));
 }
 void Space::pointFeature_setTemperature(const Point3D point, const Temperature temperature)
 {
@@ -143,7 +155,7 @@ void Space::pointFeature_lock(const Point3D point, const PointFeatureTypeId& poi
 	const auto condition = [&](const PointFeature& feature){ return feature.pointFeatureType == pointFeatureType; };
 	const auto action = [&](PointFeature& feature){ feature.setLocked(true); };
 	m_features.updateActionWithConditionOne(point, action, condition);
-	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
+	m_area.m_hasPaths.update(m_area, getAdjacentWithEdgeAndCornerAdjacent(point));
 
 }
 void Space::pointFeature_unlock(const Point3D point, const PointFeatureTypeId& pointFeatureType)
@@ -152,7 +164,7 @@ void Space::pointFeature_unlock(const Point3D point, const PointFeatureTypeId& p
 	const auto condition = [&](const PointFeature& feature){ return feature.pointFeatureType == pointFeatureType; };
 	const auto action = [&](PointFeature& feature){ feature.setLocked(false); };
 	m_features.updateActionWithConditionOne(point, action, condition);
-	m_area.m_hasTerrainFacades.update(getAdjacentWithEdgeAndCornerAdjacent(point));
+	m_area.m_hasPaths.update(m_area, getAdjacentWithEdgeAndCornerAdjacent(point));
 }
 void Space::pointFeature_close(const Point3D point, const PointFeatureTypeId& pointFeatureType)
 {
@@ -209,9 +221,27 @@ bool Space::pointFeature_canEnterFromAbove([[maybe_unused]] const Point3D point,
 	assert(shape_anythingCanEnterEver(point));
 	return pointFeature_canEnterFromBelow(from);
 }
+bool Space::pointFeature_canEnterFromBelowAll(const CuboidSet& cuboids) const
+{
+	return !m_features.queryAnyWithCondition(cuboids, [&](const PointFeature feature) { return feature.blocksVerticalTravel(); });
+}
+bool Space::pointFeature_canEnterFromBelowAll(const Cuboid cuboid) const
+{
+	return !m_features.queryAnyWithCondition(cuboid, [&](const PointFeature feature) { return feature.blocksVerticalTravel(); });
+}
+bool Space::pointFeature_canEnterFromBelowAny(const Cuboid cuboid) const
+{
+	int volume = cuboid.volume();
+	m_features.queryForEachWithCuboids(cuboid, [&volume, cuboid](const Cuboid featureCuboid, const PointFeature feature){
+		if(feature.blocksVerticalTravel())
+			volume -= cuboid.intersection(featureCuboid).volume();
+	});
+	assert(volume >= 0);
+	return volume != 0;
+}
 MaterialTypeId Space::pointFeature_getMaterialType(const Point3D point, const PointFeatureTypeId& featureType) const
 {
-	const auto condition = [&](const PointFeature& feature){ return feature.pointFeatureType == featureType; };
+	const auto condition = [featureType](const PointFeature& feature){ return feature.pointFeatureType == featureType; };
 	const PointFeature& feature = m_features.queryGetOneWithCondition(point, condition);
 	return feature.materialType;
 }
@@ -227,6 +257,11 @@ bool Space::pointFeature_multiTileCanEnterAtNonZeroZOffset(const Point3D point) 
 {
 	const auto condition = [&](const PointFeature& feature) { return PointFeatureType::byId(feature.pointFeatureType).blocksMultiTileShapesIfNotAtZeroZOffset; };
 	return m_features.queryAnyWithCondition(point, condition);
+}
+bool Space::pointFeature_multiTileCanEnterAtNonZeroZOffset(const CuboidSet& cuboids) const
+{
+	const auto condition = [&](const PointFeature& feature) { return PointFeatureType::byId(feature.pointFeatureType).blocksMultiTileShapesIfNotAtZeroZOffset; };
+	return !m_features.queryAnyWithCondition(cuboids, condition);
 }
 bool Space::pointFeature_isOpaque(const Point3D point) const
 {

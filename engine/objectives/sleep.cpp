@@ -3,7 +3,7 @@
 #include "../numericTypes/types.h"
 #include "../actors/actors.h"
 #include "../space/space.h"
-#include "../path/terrainFacade.hpp"
+#include "../path/areaHasPaths.hpp"
 #include "../definitions/moveType.h"
 // Path Request.
 SleepPathRequest::SleepPathRequest(Area&area, SleepObjective &so, const ActorIndex actorIndex) : m_sleepObjective(so)
@@ -17,10 +17,9 @@ SleepPathRequest::SleepPathRequest(Area&area, SleepObjective &so, const ActorInd
 	moveType = actors.getMoveType(actorIndex);
 	facing = actors.getFacing(actorIndex);
 	detour = m_sleepObjective.m_detour;
-	adjacent = false;
 	reserveDestination = true;
 }
-FindPathResult SleepPathRequest::readStep(Area&area, const TerrainFacade &terrainFacade, longRangePath::LongRangeMemo &memo)
+PathResult SleepPathRequest::readStep(Area& area, const AreaHasPathsForMoveType& hasPaths)
 {
 	Actors &actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
@@ -35,42 +34,44 @@ FindPathResult SleepPathRequest::readStep(Area&area, const TerrainFacade &terrai
 	if (m_maxDesireCandidate.empty())
 	{
 		Space& space = area.getSpace();
-		constexpr bool anyOccupiedPoint = false;
+		constexpr bool useAnyOccupiedPoint = false;
 		constexpr bool useAdjacent = false;
-		auto condition = [&](const Point3D point, const Facing4 facingForPoint) -> std::pair<bool, Point3D>
+		auto shortRangeCondition = [&](const Point3D point, const Facing4 facingForPoint) -> Point3D
 		{
 			if(!space.shape_shapeAndMoveTypeCanEnterEverWithFacing(point, shape, moveType, facingForPoint))
-				return {false, Point3D::null()};
+				return Point3D::null();
 			DesireToSleepAt desire = m_sleepObjective.desireToSleepAt(area, point, actorIndex);
 			if (desire == DesireToSleepAt::Designated)
 			{
 				m_maxDesireCandidate = point;
-				return {true, point};
+				return point;
 			}
 			else if (m_indoorCandidate.empty() && desire == DesireToSleepAt::Inside)
 				m_indoorCandidate = point;
 			else if (m_outdoorCandidate.empty() && desire == DesireToSleepAt::OutsideOrOccupied)
 				m_outdoorCandidate = point;
-			return {false, Point3D::null()};
+			return Point3D::null();
 		};
-		return terrainFacade.findPathToConditionBreadthFirst<decltype(condition), anyOccupiedPoint, useAdjacent>(condition, memo, start, facing, shape, m_sleepObjective.m_detour, faction, Distance::max());
+		// TODO:(optimization) make some filter for long range condition here. Check safe temperature at least.
+		auto longRangeCondition = [](const Cuboid) -> bool { return true; };
+		return hasPaths.pathToCondition<useAdjacent, useAnyOccupiedPoint>(longRangeCondition, shortRangeCondition, toParamaters(area));
 	}
 	else
 	{
 		m_sleepAtCurrentLocation = true;
-		return {{}, Point3D::null(), true};
+		return {{}, Point3D::null()};
 	}
 }
-void SleepPathRequest::writeStep(Area&area, FindPathResult &result)
+void SleepPathRequest::writeStep(Area&area, bool useCurrentLocation)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	if (actors.sleep_getSpot(actorIndex).exists())
 	{
-		if (result.useCurrentPosition)
+		if (useCurrentLocation)
 			// Already at sleep spot somehow.
 			m_sleepObjective.execute(area, actorIndex);
-		else if (result.path.empty())
+		else if (path.empty())
 		{
 			// Cannot path to spot, clear it and search for another place to sleep.
 			actors.sleep_setSpot(actorIndex, Point3D::null());
@@ -78,7 +79,7 @@ void SleepPathRequest::writeStep(Area&area, FindPathResult &result)
 		}
 		else
 			// Path found.
-			actors.move_setPath(actorIndex, result.path);
+			actors.move_setPath(actorIndex, path);
 		return;
 	}
 	// If the current location is the max desired then set sleep at current to true.
@@ -99,12 +100,12 @@ void SleepPathRequest::writeStep(Area&area, FindPathResult &result)
 	}
 }
 SleepPathRequest::SleepPathRequest(const Json &data, Area&area, DeserializationMemo &deserializationMemo):
-	PathRequestBreadthFirst(data, area),
+	PathRequest(data, area),
 	m_sleepObjective(static_cast<SleepObjective &>(*deserializationMemo.m_objectives[data["objective"]]))
 { }
 Json SleepPathRequest::toJson() const
 {
-	Json output = PathRequestBreadthFirst::toJson();
+	Json output = PathRequest::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_sleepObjective);
 	output["type"] = "sleep";
 	return output;
@@ -175,7 +176,7 @@ DesireToSleepAt SleepObjective::desireToSleepAt(Area& area, const Point3D point,
 	if (
 		(faction.exists() && space.isReserved(point, faction)) ||
 		!actors.temperature_isSafe(actor, space.temperature_get(point)) ||
-		// Anything which can travel on land or fly prefers will not sleep in fluid.
+		// Anything which can travel on land or fly will not sleep in fluid.
 		// TODO: Make this overridable by species for amphibious animals.
 		(space.fluid_any(point) && (MoveType::getSurface(moveType) || MoveType::getFly(moveType)))
 	)

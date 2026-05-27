@@ -64,7 +64,8 @@ public:
 	[[nodiscard]] static bool getIsMultiTile(const ShapeId id);
 	[[nodiscard]] static bool getIsRadiallySymetrical(const ShapeId id);
 	[[nodiscard]] static Offset getZSize(const ShapeId id);
-	[[nodiscard]] static Quantity getNumberOfPointsOnLeadingFaceAtOrBelowLevel(const ShapeId id, const Distance  zLevel);
+	[[nodiscard]] static Quantity getNumberOfPointsOnLeadingFaceAtOrBelowLevel(const ShapeId id, const Distance zLevel);
+	[[nodiscard]] static bool isInBoundsAt(ShapeId id, const Space& space, Point3D location, Facing4 facing);
 	// If provided name is not found it is decoded into a custom shape.
 	[[nodiscard]] static ShapeId byName(const std::string& name);
 	[[nodiscard]] static bool hasShape(const std::string& name);
@@ -75,6 +76,7 @@ public:
 	[[nodiscard]] static ShapeId mutateRemove(const ShapeId id, const std::pair<OffsetCuboid, CollisionVolume>& cuboid);
 	[[nodiscard]] static ShapeId mutateRemoveMultiple(const ShapeId id, const MapWithOffsetCuboidKeys<CollisionVolume>& cuboidsWithVolume);
 	[[nodiscard]] static ShapeId mutateMultiplyVolume(const ShapeId id, const Quantity quantity);
+	[[nodiscard]] static Distance getRadius(const ShapeId id);
 	[[nodiscard]] static std::string makeName(const MapWithOffsetCuboidKeys<CollisionVolume>& positions);
 	[[nodiscard]] static ShapeId loadFromName(std::string name);
 	[[nodiscard]] static ShapeId createCustom(MapWithOffsetCuboidKeys<CollisionVolume>&& positions);

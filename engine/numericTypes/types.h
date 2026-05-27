@@ -52,6 +52,7 @@ public:
 	Temperature& operator-=(const Temperature other) { return Base::operator-=(other); }
 	Temperature operator+(const Temperature other) const { return Base::operator+(other); }
 	Temperature operator-(const Temperature other) const { return Base::operator-(other); }
+	TemperatureDelta delta() const;
 	template<Numeric Other>
 	Temperature& operator+=(const Other& other) { return Base::operator+=(other); }
 	template<Numeric Other>
@@ -401,3 +402,4 @@ NLOHMANN_JSON_SERIALIZE_ENUM(PointFeatureTypeId,
 });
 
 enum class Dimensions {X,Y,Z};
+enum class Trilean {False, Maybe, True};

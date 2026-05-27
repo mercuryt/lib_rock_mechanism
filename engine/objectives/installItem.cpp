@@ -5,7 +5,7 @@
 #include "../plants.h"
 #include "../items/items.h"
 #include "../numericTypes/types.h"
-#include "../path/terrainFacade.hpp"
+#include "../path/areaHasPaths.hpp"
 // PathRequest.
 InstallItemPathRequest::InstallItemPathRequest(Area& area, InstallItemObjective& iio, const ActorIndex actorIndex) :
 	m_installItemObjective(iio)
@@ -23,47 +23,44 @@ InstallItemPathRequest::InstallItemPathRequest(Area& area, InstallItemObjective&
 	reserveDestination = true;
 }
 InstallItemPathRequest::InstallItemPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
-	PathRequestDepthFirst(data, area),
+	PathRequest(data, area),
 	m_installItemObjective(static_cast<InstallItemObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
 { }
 Json InstallItemPathRequest::toJson() const
 {
-	Json output = PathRequestDepthFirst::toJson();
+	Json output = PathRequest::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_installItemObjective);
 	output["type"] = "install item";
 	return output;
 }
-FindPathResult InstallItemPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
+PathResult InstallItemPathRequest::readStep(Area& area, const AreaHasPathsForMoveType& hasPaths)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	FactionId actorFaction = actors.getFaction(actorIndex);
 	const auto& forFaction = area.m_hasInstallItemDesignations.getForFaction(actorFaction);
-	auto destinationCondition = [&](const Cuboid cuboid) -> std::pair<bool, Point3D>
-	{
-		const Point3D point = forFaction.getPointInCuboid(cuboid);
-		return {point.exists(), point};
-	};
+	auto shortRangeCondition = [&forFaction](const Cuboid cuboid) -> Point3D { return forFaction.getPointInCuboid(cuboid); };
+	auto longRangeCondition = [&shortRangeCondition](const Cuboid cuboid) -> bool { return shortRangeCondition(cuboid).exists(); };
 	constexpr bool useAnyPoint = true;
 	constexpr bool useAdjacent = false;
-	const Point3D projectLocation = m_installItemObjective.m_project->getLocation();
-	return terrainFacade.findPathToConditionDepthFirst<decltype(destinationCondition), useAnyPoint, useAdjacent>(destinationCondition, memo, start, facing, shape, projectLocation, m_installItemObjective.m_detour);
+	if(m_installItemObjective.m_project != nullptr)
+		huristicDestination = m_installItemObjective.m_project->getLocation();
+	return hasPaths.pathToCondition<useAdjacent, useAnyPoint>(longRangeCondition, shortRangeCondition, toParamaters(area));
 }
-void InstallItemPathRequest::writeStep(Area& area, FindPathResult& result)
+void InstallItemPathRequest::writeStep(Area& area, bool useCurrentLocation)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	if(result.path.empty() && !result.useCurrentPosition)
+	if(path.empty() && !useCurrentLocation)
 		actors.objective_canNotCompleteObjective(actorIndex, m_installItemObjective);
 	else
 	{
-		Point3D point = result.pointThatPassedPredicate;
 		auto& hasInstallItemDesignations = area.m_hasInstallItemDesignations.getForFaction(actors.getFaction(actorIndex));
-		if(!hasInstallItemDesignations.contains(point) || !hasInstallItemDesignations.getForPoint(point).canAddWorker(actorIndex))
+		if(!hasInstallItemDesignations.contains(target) || !hasInstallItemDesignations.getForPoint(target).canAddWorker(actorIndex))
 			// Canceled or reserved, try again.
 			m_installItemObjective.execute(area, actorIndex);
 		else
-			hasInstallItemDesignations.getForPoint(point).addWorkerCandidate(actorIndex, m_installItemObjective);
+			hasInstallItemDesignations.getForPoint(target).addWorkerCandidate(actorIndex, m_installItemObjective);
 	}
 
 }

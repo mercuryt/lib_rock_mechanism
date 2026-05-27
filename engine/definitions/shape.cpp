@@ -252,9 +252,9 @@ Offset Shape::getZSize(const ShapeId id)
 		high = std::max(high, offsetCuboid.m_high.z());
 		low = std::min(low, offsetCuboid.m_low.z());
 	}
-	return high - low;
+	return high - low + 1;
 }
-Quantity Shape::getNumberOfPointsOnLeadingFaceAtOrBelowLevel(const ShapeId id, const Distance  zLevel)
+Quantity Shape::getNumberOfPointsOnLeadingFaceAtOrBelowLevel(const ShapeId id, const Distance zLevel)
 {
 	Quantity output = {0};
 	Offset zLevelOffset = Offset::create(zLevel.get());
@@ -271,6 +271,15 @@ Quantity Shape::getNumberOfPointsOnLeadingFaceAtOrBelowLevel(const ShapeId id, c
 		}
 	}
 	return output;
+}
+bool Shape::isInBoundsAt(ShapeId id, const Space& space, Point3D location, Facing4 facing)
+{
+	OffsetCuboid bounds = space.offsetBoundry();
+	OffsetCuboid offsetBounds = getOffsetCuboidBoundryWithFacing(id, facing);
+	return !(
+		((offsetBounds.m_high.data + location.data.cast<OffsetWidth>()) > bounds.m_high.data).any() ||
+		((offsetBounds.m_low.data + location.data.cast<OffsetWidth>()) < 0).any()
+	);
 }
 bool Shape::hasShape(const std::string& name)
 {
@@ -342,6 +351,13 @@ ShapeId Shape::mutateMultiplyVolume(const ShapeId id, const Quantity quantity)
 	for(auto& [offsetCuboid, volume]  : copy)
 		volume *= quantity.get();
 	return createCustom(std::move(copy));
+}
+Distance Shape::getRadius(const ShapeId id)
+{
+	// TODO:(optimization) cache this.
+	OffsetCuboid boundry = getOffsetCuboidBoundryWithFacing(id, Facing4::North);
+	int maxDimension = std::max({boundry.sizeX().get(), boundry.sizeY().get(), boundry.sizeZ().get()});
+	return Distance::create(maxDimension / 2);
 }
 std::string Shape::makeName(const MapWithOffsetCuboidKeys<CollisionVolume>& positions)
 {

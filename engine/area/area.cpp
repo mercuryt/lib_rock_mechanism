@@ -38,7 +38,6 @@ Area::Area(AreaId id, std::string n, Simulation& s, const Distance  x, const Dis
 		m_items(*this),
 	#endif
 	m_eventSchedule(s, this),
-	m_hasTerrainFacades(*this),
 	m_hasFarmFields(*this),
 	m_hasDigDesignations(*this),
 	m_hasConstructionDesignations(*this),
@@ -74,7 +73,6 @@ Area::Area(const Json& data, DeserializationMemo& deserializationMemo, Simulatio
 		m_items(*this),
 	#endif
 	m_eventSchedule(simulation, this),
-	m_hasTerrainFacades(*this),
 	m_fires(data["fires"]),
 	m_hasOnSight(data["onSight"], deserializationMemo, *this),
 	m_hasFarmFields(*this),
@@ -148,7 +146,8 @@ Area::~Area()
 	m_eventSchedule.clear();
 	// Threaded task engine needs to have simulation and area passed while event schedule does not because event schedule stores those references.
 	m_threadedTaskEngine.clear(m_simulation, this);
-	m_hasTerrainFacades.clearPathRequests();
+	// TODO: Why?
+	m_hasPaths.clearPathRequests();
 	// Call onBeforeUnload on all objectives. Currently only used to clear GivePlantFluid.
 	Actors& actors = getActors();
 	for(const ActorIndex actor : actors.getAll())
@@ -189,7 +188,7 @@ void Area::doStep()
 		m_hasRain.doStep();
 	m_fluidSources.doStep();
 	m_visionRequests.doStep();
-	m_hasTerrainFacades.doStep();
+	m_hasPaths.doStep(*this);
 	m_threadedTaskEngine.doStep(m_simulation, this);
 	m_eventSchedule.doStep(m_simulation.m_step);
 	m_hasSoldiers.doStep(*this);

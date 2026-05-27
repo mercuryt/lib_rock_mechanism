@@ -4,7 +4,7 @@
 #include "deserializationMemo.h"
 #include "items/items.h"
 #include "reference.h"
-#include "path/terrainFacade.h"
+#include "path/areaHasPaths.h"
 #include "definitions/moveType.h"
 
 // HasDesignations.

@@ -2,7 +2,7 @@
 #include "deserializationMemo.h"
 #include "area/area.h"
 #include "reservable.h"
-#include "path/terrainFacade.h"
+#include "path/areaHasPaths.h"
 #include "numericTypes/types.h"
 #include "util.h"
 #include "pointFeature.h"

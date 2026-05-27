@@ -18,10 +18,9 @@ Speed PortablesHelpers::getMoveSpeedForGroupWithAddedMass(const Area& area, std:
 	const Items& items = area.getItems();
 	const Actors& actors = area.getActors();
 	static MoveTypeId roll = MoveType::byName("roll");
-	static MoveTypeId floating = MoveType::byName("floating");
 	auto recordMass = [&](const MoveTypeId moveType, const Mass mass) {
 
-				if(moveType == floating)
+				if(MoveType::getFloating(moveType).first.exists())
 					floatingMass += mass;
 				else if(moveType == roll)
 					rollingMass += mass;

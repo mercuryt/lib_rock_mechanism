@@ -64,6 +64,8 @@ template class std::vector<std::pair<FactionId, StrongVector<Squad, SquadIndex>>
 template class std::vector<std::pair<Point3D, TemperatureSourceId>>;
 template class std::vector<std::pair<MaterialTypeId, Fire>>;
 template class std::vector<std::pair<Step, SmallSet<FireDelta>>>;
+template class std::vector<std::pair<Cuboid, std::vector<std::pair<Cuboid, int>>>>;
+template class std::vector<std::pair<Point3D, BitSet<uint8_t, 4>>>;
 
 //template struct SmallMap<FactionId, RTreeDataIndex<SmallSet<Project*>, int, noMerge>>;
 template struct SmallMap<ActorOrItemIndex, DeckRotationDataSingle>;
@@ -120,6 +122,8 @@ template struct SmallMap<std::string, Uniform>;
 template struct SmallMap<int, int>;
 template struct SmallMap<MaterialTypeId, Fire>;
 template struct SmallMap<Step, SmallSet<FireDelta>>;
+template struct SmallMap<Cuboid, SmallMap<Cuboid, int>>;
+template struct SmallMap<Point3D, BitSet<uint8_t, 4>>;
 
 
 template struct SmallMapStable<AreaId, Area>;

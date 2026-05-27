@@ -4,7 +4,7 @@
 #include "reference.h"
 #include "simulation/simulation.h"
 #include "eventSchedule.hpp"
-#include "path/terrainFacade.h"
+#include "path/areaHasPaths.h"
 #include "numericTypes/types.h"
 
 class EatObjective;

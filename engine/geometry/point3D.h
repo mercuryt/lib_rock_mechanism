@@ -54,6 +54,7 @@ struct Point3D
 	[[nodiscard]] Distance x() const { return Distance::create(data[0]); }
 	[[nodiscard]] Distance y() const { return Distance::create(data[1]); }
 	[[nodiscard]] Distance z() const { return Distance::create(data[2]); }
+	[[nodiscard]] Distance getDimension(Dimensions dimension) const;
 	[[nodiscard]] Point3D operator-(const Distance distance) const;
 	[[nodiscard]] Point3D operator+(const Distance distance) const;
 	[[nodiscard]] Point3D operator-(const DistanceWidth& distance) const;
@@ -220,6 +221,7 @@ struct Offset3D
 	[[nodiscard]] Offset3D max(const Offset3D other) const;
 	[[nodiscard]] Offset distanceTo(const Offset3D other) const;
 	[[nodiscard]] Offset distanceTo(const OffsetCuboid cuboid) const;
+	[[nodiscard]] Offset3D rotated2D(const Facing4 oldFacing, const Facing4 newFacing);
 	[[nodiscard]] static Offset3D null();
 	[[nodiscard]] static Offset3D min();
 	[[nodiscard]] static Offset3D max();

@@ -7,7 +7,7 @@
 
 class Area;
 struct DeserializationMemo;
-struct FindPathResult;
+struct PathResult;
 class GetToSafeTemperatureObjectiveType final : public ObjectiveType
 {
 public:
@@ -32,14 +32,14 @@ public:
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::temperature; }
 	friend class GetToSafeTemperaturePathRequest;
 };
-class GetToSafeTemperaturePathRequest final : public PathRequestBreadthFirst
+class GetToSafeTemperaturePathRequest final : public PathRequest
 {
 	GetToSafeTemperatureObjective& m_objective;
 public:
 	GetToSafeTemperaturePathRequest(Area& area, GetToSafeTemperatureObjective& objective, const ActorIndex actorIndex);
 	GetToSafeTemperaturePathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
-	void writeStep(Area& area, FindPathResult& result) override;
+	[[nodiscard]] PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
+	void writeStep(Area& area, bool useCurrentLocation) override;
 	[[nodiscard]] std::string name() const { return "get to safe temperature"; }
 	[[nodiscard]] Json toJson() const;
 };

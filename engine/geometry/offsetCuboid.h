@@ -52,6 +52,9 @@ struct OffsetCuboid
 	[[nodiscard]] Offset3D clamp(const Offset3D point) const;
 	[[nodiscard]] Offset3D nearestPointTo(const OffsetCuboid other) const;
 	[[nodiscard]] Offset distanceTo(const OffsetCuboid other) const;
+	[[nodiscard]] Offset sizeX() const;
+	[[nodiscard]] Offset sizeY() const;
+	[[nodiscard]] Offset sizeZ() const;
 	void maybeExpand(const OffsetCuboid other);
 	void inflate(const Distance  distance);
 	void shift(const Facing6 direction, const Distance  distance);

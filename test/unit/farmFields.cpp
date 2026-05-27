@@ -19,7 +19,6 @@
 #include "../../engine/numericTypes/types.h"
 #include "../../engine/designations.h"
 #include "../../engine/objectives/wait.h"
-#include "../../engine/path/terrainFacade.h"
 #include "../../engine/definitions/itemType.h"
 #include "../../engine/definitions/animalSpecies.h"
 #include "../../engine/definitions/plantSpecies.h"
@@ -76,8 +75,17 @@ TEST_CASE("sow")
 		CHECK(actors.objective_getCurrentName(actor) == "sow seeds");
 		CHECK(actors.move_hasPathRequest(actor));
 		CHECK(actors.objective_getCurrent<SowSeedsObjective>(actor).canSowAt(area, fieldLocation, actor));
-		constexpr bool detour = false;
-		CHECK(!area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor)).findPathToWithoutMemo<false, false>(actors.getLocation(actor), actors.getFacing(actor), actors.getShape(actor), fieldLocation, detour, faction).path.empty());
+		PathResult result = area.m_hasPaths.get(actors.getMoveType(actor)).pathTo(PathParamaters({
+			.area = area,
+			.start = actors.getLocation(actor),
+			.huristicDestination = fieldLocation,
+			.shape = actors.getShape(actor),
+			.faction = faction,
+			.moveType = actors.getMoveType(actor),
+			.startFacing = actors.getFacing(actor),
+			.depthFirst = true,
+		}));
+		CHECK(!result.m_path.empty());
 		simulation.doStep();
 		CHECK(!space.designation_has(fieldLocation, faction, SpaceDesignation::SowSeeds));
 		CHECK(!actors.move_getPath(actor).empty());
@@ -130,7 +138,6 @@ TEST_CASE("sow")
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, actor, fieldLocation);
 		// No alternative route or location found, cannot complete objective.
 		CHECK(!area.m_hasFarmFields.hasSowSeedsDesignations(faction));
-		simulation.fastForwardUntillActorHasNoDestination(area, actor);
 		CHECK(actors.objective_getCurrentName(actor) == "sow seeds");
 		CHECK(actors.move_hasPathRequest(actor));
 		simulation.doStep();
@@ -145,8 +152,9 @@ TEST_CASE("sow")
 		CHECK(!actors.move_getPath(actor).empty());
 		area.m_hasFarmFields.getForFaction(faction).remove(area, field);
 		simulation.fastForwardUntillActorIsAdjacentToLocation(area, actor, fieldLocation);
-		simulation.fastForwardUntillActorHasNoDestination(area, actor);
 		// Point3D is not select to grow anymore, cannot complete task, search for another route / another location to sow.
+		CHECK(actors.objective_getCurrentName(actor) == "sow seeds");
+		CHECK(actors.move_hasPathRequest(actor));
 		simulation.doStep();
 		CHECK(actors.objective_getCurrentName(actor) != "sow seeds");
 	}

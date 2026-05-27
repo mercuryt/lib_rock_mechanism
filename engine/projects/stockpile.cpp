@@ -11,7 +11,7 @@
 #include "../reservable.h"
 #include "../simulation/simulation.h"
 #include "../stocks.h"
-#include "../path/terrainFacade.h"
+#include "../path/areaHasPaths.h"
 #include "../numericTypes/types.h"
 #include "../definitions/itemType.h"
 #include "../util.h"
@@ -49,18 +49,27 @@ void StockPileProject::onComplete()
 	Actors& actors = m_area.getActors();
 	Items& items = m_area.getItems();
 	assert(m_deliveredItems.size() == 1 || m_itemAlreadyAtSite.size() == 1);
-	ItemIndex index = m_item.getIndex(items.m_referenceData);
+	// m_item may no longer be correct due to generic split / merge, use either delivered items or item already at site.
+	ItemIndex cargo = (m_deliveredItems.empty() ? m_itemAlreadyAtSite.front() : m_deliveredItems.front()).first.getIndex(items.m_referenceData);
 	auto workers = std::move(m_workers);
 	FactionId faction = m_stockpile.m_faction;
 	Area& area = m_area;
 	auto& hasStockPiles = area.m_hasStockPiles.getForFaction(faction);
 	Point3D location = m_location;
-	hasStockPiles.maybeRemoveFromItemsWithDestinationByStockPile(m_stockpile, index);
+	Quantity quantity = m_quantity;
 	hasStockPiles.destroyProject(*this);
-	items.location_clearStatic(index);
 	// TODO: ensure shape can fit here, provide correct facing.
-	index = items.location_set(index, location, Facing4::North);
-	area.m_hasStocks.getForFaction(faction).maybeRecord(area, index);
+	ItemTypeId itemType = items.getItemType(cargo);
+	if(ItemType::getIsGeneric(itemType) && items.getQuantity(cargo) > quantity)
+		items.moveQuantity(cargo, quantity, location);
+	else
+	{
+		items.location_clearStatic(cargo);
+		cargo = items.location_set(cargo, location, Facing4::North);
+		hasStockPiles.maybeRemoveFromItemsWithDestinationByStockPile(m_stockpile, cargo);
+	}
+	// TODO: Does this need to change for generic?
+	area.m_hasStocks.getForFaction(faction).maybeRecord(area, cargo);
 	for(auto& [actor, projectWorker] : workers)
 		actors.objective_complete(actor.getIndex(actors.m_referenceData), *projectWorker.objective);
 }

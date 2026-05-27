@@ -98,7 +98,7 @@ public:
 	void maybeFall(const Index index);
 	void onSetLocation(const Index index, const Point3D previousLocation, const  Facing4 previousFacing);
 	void onRemove(const Index index);
-	void setFloating(const Index index, const FluidTypeId fluidType);
+	void setFloating(const Index index, const FluidTypeId fluidType, Distance depth);
 	void unsetFloating(const Index index);
 	void setMoveType(const Index index, const MoveTypeId moveType);
 	[[nodiscard]] ActorIndex getLineLeader(const Index index);

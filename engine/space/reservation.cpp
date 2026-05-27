@@ -45,4 +45,8 @@ bool Space::isReservedAny(const CuboidSet& cuboids, const FactionId faction) con
 	return m_reservables.batchQueryAnyWithCondition(cuboids, condition);
 }
 Reservable& Space::getReservable(const Point3D point) { return *m_reservables.queryGetOne(point); }
-
+void Space::reservation_removeFromForFaction(CuboidSet& cuboids, FactionId faction) const
+{
+	const auto condition = [&](const std::unique_ptr<Reservable>& reservable){ return reservable->hasAnyReservationsWith(faction); };
+	m_reservables.queryRemoveFromWithCondition(cuboids, condition);
+}

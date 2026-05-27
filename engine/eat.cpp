@@ -5,7 +5,7 @@
 #include "definitions/itemType.h"
 #include "objective.h"
 #include "area/area.h"
-#include "path/terrainFacade.h"
+#include "path/areaHasPaths.h"
 #include "numericTypes/types.h"
 #include "util.h"
 #include "simulation/simulation.h"

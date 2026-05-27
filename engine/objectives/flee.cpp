@@ -2,7 +2,7 @@
 #include "../area/area.h"
 #include "../actors/actors.h"
 #include "../space/space.h"
-#include "../path/terrainFacade.hpp"
+#include "../path/areaHasPaths.hpp"
 
 // Objective.
 FleeObjective::FleeObjective(const Json& data, DeserializationMemo& deserializationMemo) : Objective(data, deserializationMemo) {}
@@ -32,49 +32,51 @@ FleePathRequest::FleePathRequest(Area& area, FleeObjective& objective, const Act
 	detour = m_objective.m_detour;
 }
 FleePathRequest::FleePathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
-	PathRequestBreadthFirst(data, area),
+	PathRequest(data, area),
 	m_objective(static_cast<FleeObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
 { }
-FindPathResult FleePathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
+PathResult FleePathRequest::readStep(Area& area, const AreaHasPathsForMoveType& hasPaths)
 {
 	Actors& actors = area.getActors();
 	Space& space = area.getSpace();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	const Point3D enemyLocation = actors.getNearestVisibleEnemyLocation(actorIndex);
-	const Point3D location = actors.getLocation(actorIndex);
-	Distance targetDistance = Distance::create((location.distanceToFractional(enemyLocation) * 1.5).get());
-	auto destinationCondition = [&actors, &space, actorIndex, enemyLocation, targetDistance](const Point3D proposedDestination, const Facing4) -> std::pair<bool, Point3D>
+	const Point3D actorLocation = actors.getLocation(actorIndex);
+	Distance targetDistance = Distance::create((actorLocation.distanceToFractional(enemyLocation) * 1.5).get());
+	auto shortRangeCondition = [&actors, &space, actorIndex, enemyLocation, targetDistance](const Point3D proposedDestination, const Facing4) -> Point3D
 	{
 		if(proposedDestination.distanceTo(enemyLocation) >= targetDistance)
-			return std::make_pair(true, proposedDestination);
+			return proposedDestination;
 		else
-			return std::make_pair(false, Point3D::null());
+			return Point3D::null();
 	};
-	const auto [startResult, startPoint] = destinationCondition(actors.getLocation(actorIndex), actors.getFacing(actorIndex));
-	if(startResult)
-		return {{}, startPoint, true};
+	auto longRangeCondition = [enemyLocation, targetDistance](const Cuboid cuboid) -> bool
+	{
+		Point3D farthestFromEnemyInCuboid = cuboid.furthestPointFrom(enemyLocation);
+		return farthestFromEnemyInCuboid.distanceTo(enemyLocation) >= targetDistance;
+	};
 	constexpr bool useAnyOccupiedPoint = false;
 	constexpr bool useAdjacent = false;
-	return terrainFacade.findPathToConditionBreadthFirst<decltype(destinationCondition), useAnyOccupiedPoint, useAdjacent>(destinationCondition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_objective.m_detour, FactionId::null(), maxRange);
+	return hasPaths.pathToCondition<useAdjacent, useAnyOccupiedPoint>(longRangeCondition, shortRangeCondition, toParamaters(area));
 }
-void FleePathRequest::writeStep(Area& area, FindPathResult& result)
+void FleePathRequest::writeStep(Area& area, bool useCurrentLocation)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	if(result.path.empty() && !result.useCurrentPosition)
+	if(path.empty() && !useCurrentLocation)
 		// No escape.
 		// TODO: freeze in place and set a callback to run FleeObjective::execute again.
 		actors.objective_canNotFulfillNeed(actorIndex, m_objective);
-	else if(result.useCurrentPosition)
+	else if(useCurrentLocation)
 		// Current position is now safe.
 		actors.objective_complete(actorIndex, m_objective);
 	else
 		// Safe position found, go there.
-		actors.move_setPath(actorIndex, result.path);
+		actors.move_setPath(actorIndex, path);
 }
 Json FleePathRequest::toJson() const
 {
-	Json output = PathRequestBreadthFirst::toJson();
+	Json output = PathRequest::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
 	output["type"] = "flee";
 	return output;

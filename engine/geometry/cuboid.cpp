@@ -69,7 +69,7 @@ Cuboid Cuboid::canMergeSteal(const Cuboid other) const
 {
 	// Can merge requires that the two cuboids share 2 out of 3 axies of symetry.
 	// can merge steal allows the stolen from cuboid (other) to be larger then the face presented to it by the expanding cuboid.
-	Facing6 facing = getFacingTwordsOtherCuboid(other);
+	Facing6 facing = getFacing6TwordsOtherCuboid(other);
 	// Get face adjacent to other.
 	Cuboid face = getFace(facing);
 	// Shift the face one unit into other.
@@ -125,6 +125,7 @@ Cuboid Cuboid::intersection(const Point3D point) const
 	else
 		return {};
 }
+CuboidSet Cuboid::intersection(const CuboidSet& cuboids) const { return cuboids.intersection(*this); }
 Point3D Cuboid::intersectionPoint(const Point3D point) const { return contains(point) ? point : Point3D::null(); }
 Point3D Cuboid::intersectionPoint(const Cuboid cuboid) const
 {
@@ -344,10 +345,36 @@ void Cuboid::inflate(const Distance distance)
 	m_high.data += distance.data;
 	m_low = m_low.subtractWithMinimum(distance);
 }
+void Cuboid::inflateHorizontal(const Distance distance)
+{
+	Distance highZ = m_high.z();
+	Distance lowZ = m_low.z();
+	inflate(distance);
+	m_high.setZ(highZ);
+	m_low.setZ(lowZ);
+}
+Cuboid Cuboid::shifted(const Facing6 facing, const Distance distance) const
+{
+	Cuboid output = *this;
+	output.shift(facing, distance);
+	return output;
+}
+Cuboid Cuboid::maybeShifted(const Facing6 facing, const Distance distance) const
+{
+	Cuboid output = *this;
+	output.maybeShift(facing, distance);
+	return output;
+}
 Cuboid Cuboid::inflated(const Distance distance) const
 {
 	Cuboid output = *this;
 	output.inflate(distance);
+	return output;
+}
+Cuboid Cuboid::inflatedHorizontal(const Distance distance) const
+{
+	Cuboid output = *this;
+	output.inflateHorizontal(distance);
 	return output;
 }
 void Cuboid::clear() { m_low.clear(); m_high.clear(); }
@@ -393,6 +420,18 @@ bool Cuboid::intersects(const CuboidSet& other) const
 bool Cuboid::overlapsWithSphere(const Sphere& sphere) const
 {
 	return sphere.intersects(*this);
+}
+bool Cuboid::overlapX(const Cuboid other) const
+{
+	return m_low.x() <= other.m_high.x() && m_high.x() >= other.m_high.x();
+}
+bool Cuboid::overlapY(const Cuboid other) const
+{
+	return m_low.y() <= other.m_high.y() && m_high.y() >= other.m_high.y();
+}
+bool Cuboid::overlapZ(const Cuboid other) const
+{
+	return m_low.z() <= other.m_high.z() && m_high.z() >= other.m_high.z();
 }
 int Cuboid::volume() const
 {
@@ -457,7 +496,7 @@ Distance Cuboid::dimensionForFacing(const Facing6 facing) const
 			std::unreachable();
 	}
 }
-Facing6 Cuboid::getFacingTwordsOtherCuboid(const Cuboid other) const
+Facing6 Cuboid::getFacing6TwordsOtherCuboid(const Cuboid other) const
 {
 	assert(!intersects(other));
 	if(other.m_high.z() < m_low.z())
@@ -473,6 +512,10 @@ Facing6 Cuboid::getFacingTwordsOtherCuboid(const Cuboid other) const
 	assert(other.m_low.x() > m_high.x());
 	return Facing6::East;
 }
+Facing4 Cuboid::getFacing4TwordsOtherCuboid(const Cuboid other) const
+{
+	return getCenter().getFacingTwords(other.getCenter());
+}
 bool Cuboid::isSomeWhatInFrontOf(const Point3D point, const Facing4 facing) const
 {
 	return m_high.isInFrontOf(point, facing) || m_low.isInFrontOf(point, facing);
@@ -485,17 +528,7 @@ bool Cuboid::isTouchingFace(const Cuboid cuboid) const
 	bool overlapX = (cuboid.m_low.x() <= m_high.x() && cuboid.m_high.x() >= m_low.x());
 	bool overlapY = (cuboid.m_low.y() <= m_high.y() && cuboid.m_high.y() >= m_low.y());
 	bool overlapZ = (cuboid.m_low.z() <= m_high.z() && cuboid.m_high.z() >= m_low.z());
-	// X
-	if (overlapY && overlapZ && (cuboid.m_high.x() == m_low.x() || cuboid.m_low.x() == m_high.x()))
-		return true;
-	// Y
-	if (overlapX && overlapZ && (cuboid.m_high.y() == m_low.y() || cuboid.m_low.y() == m_high.y()))
-		return true;
-	// Z
-	if (overlapX && overlapY && (cuboid.m_high.z() == m_low.z() || cuboid.m_low.z() == m_high.z()))
-		return true;
-
-	return false;
+	return (int)overlapX + (int)overlapY + (int)overlapZ > 1;
 }
 bool Cuboid::isTouchingFaceFromInside(const Cuboid cuboid) const
 {
@@ -512,7 +545,7 @@ SmallSet<Cuboid> Cuboid::getChildrenWhenSplitByCuboid(const Cuboid cuboid) const
 	// Clamp split high and low to this so split highest cannot be higher then m_high and split lowest cannot be lower then m_low.
 	splitHighest.clampHigh(m_high);
 	splitLowest.clampLow(m_low);
-	SmallSet<Cuboid> output;
+	SmallSet<Cuboid> output(6);
 	// Split off group above.
 	if(m_high.z() > splitHighest.z())
 		output.emplace(m_high, Point3D(m_low.x(), m_low.y(), splitHighest.z() + 1));
@@ -604,9 +637,44 @@ Point3D Cuboid::nearestPointTo(const Cuboid other) const
 	// Any point in other would work, there is no significance to using m_high in particular.
 	return clamp(other.m_high);
 }
+Point3D Cuboid::furthestPointFrom(const Point3D point) const
+{
+	int pointx = point.x().get();
+	int pointy = point.y().get();
+	int pointz = point.z().get();
+	int highx = m_high.x().get();
+	int highy = m_high.y().get();
+	int highz = m_high.z().get();
+	int lowx = m_low.x().get();
+	int lowy = m_low.y().get();
+	int lowz = m_low.z().get();
+	return Point3D::create(
+		std::abs(pointx - lowx) > std::abs(pointx - highx) ? lowx : highx,
+		std::abs(pointy - lowy) > std::abs(pointy - highy) ? lowy : highy,
+		std::abs(pointz - lowz) > std::abs(pointz - highz) ? lowz : highz
+	);
+}
+Point3D Cuboid::furthestPointFrom(const Cuboid other) const
+{
+	return {
+		(std::max((other.m_low.x() - m_low.x()).absoluteValue(), (other.m_high.x() - m_low.x()).absoluteValue()) >
+		 std::max((other.m_low.x() - m_high.x()).absoluteValue(), (other.m_high.x() - m_high.x()).absoluteValue()))
+			? m_low.x() : m_high.x(),
+		(std::max((other.m_low.y() - m_low.y()).absoluteValue(), (other.m_high.y() - m_low.y()).absoluteValue()) >
+		 std::max((other.m_low.y() - m_high.y()).absoluteValue(), (other.m_high.y() - m_high.y()).absoluteValue()))
+			? m_low.y() : m_high.y(),
+		(std::max((other.m_low.z() - m_low.z()).absoluteValue(), (other.m_high.z() - m_low.z()).absoluteValue()) >
+		 std::max((other.m_low.z() - m_high.z()).absoluteValue(), (other.m_high.z() - m_high.z()).absoluteValue()))
+			? m_low.z() : m_high.z()
+	};
+}
 Distance Cuboid::distanceTo(const Cuboid other) const
 {
 	return nearestPointTo(other).distanceTo(*this);
+}
+Distance Cuboid::distanceTo(const Point3D point) const
+{
+	return point.distanceTo(*this);
 }
 Cuboid::ConstIterator::ConstIterator(const Point3D lowest, const Point3D highest)
 {

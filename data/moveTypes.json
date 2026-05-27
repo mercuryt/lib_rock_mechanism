@@ -6,8 +6,7 @@
     "swim": null,
     "climb": 0,
     "jumpDown": false,
-    "fly": false,
-    "floating": false
+    "fly": false
   },{
     "name": "four legs",
     "surface": true,
@@ -15,8 +14,7 @@
     "swim": null,
     "climb": 0,
     "jumpDown": false,
-    "fly": false,
-    "floating": false
+    "fly": false
   },{
     "name": "fly",
     "surface": false,
@@ -24,8 +22,7 @@
     "swim": null,
     "climb": 0,
     "jumpDown": false,
-    "fly": true,
-    "floating": false
+    "fly": true
   },{
     "name": "swim in water",
     "surface": false,
@@ -37,8 +34,7 @@
     "onlyBreathsFluids": true,
     "climb": 0,
     "jumpDown": false,
-    "fly": false,
-    "floating": false
+    "fly": false
   },{
     "name": "two legs and swim in water",
     "surface": true,
@@ -48,8 +44,7 @@
     },
     "climb": 0,
     "jumpDown": false,
-    "fly": false,
-    "floating": false
+    "fly": false
   },{
     "name": "four legs and swim in water",
     "surface": true,
@@ -59,8 +54,7 @@
     },
     "climb": 0,
     "jumpDown": false,
-    "fly": false,
-    "floating": false
+    "fly": false
   },{
     "name": "swim in mercury",
     "surface": false,
@@ -71,8 +65,7 @@
     "breathableFluids": [ "mercury" ],
     "climb": 0,
     "jumpDown": false,
-    "fly": false,
-    "floating": false
+    "fly": false
   },{
     "name": "two legs and swim in mercury",
     "surface": true,
@@ -82,8 +75,7 @@
     },
     "climb": 0,
     "jumpDown": false,
-    "fly": false,
-    "floating": false
+    "fly": false
   },{
     "name": "two legs and climb 1",
     "surface": true,
@@ -91,8 +83,7 @@
     "swim": null,
     "climb": 1,
     "jumpDown": false,
-    "fly": false,
-    "floating": false
+    "fly": false
   },{
     "name": "two legs and climb 2",
     "surface": true,
@@ -100,8 +91,7 @@
     "swim": null,
     "climb": 2,
     "jumpDown": false,
-    "fly": false,
-    "floating": false
+    "fly": false
   },{
     "name": "roll",
     "surface": true,
@@ -110,18 +100,7 @@
     "breathless": "true",
     "climb": 0,
     "jumpDown": false,
-    "fly": false,
-    "floating": false
-  },{
-    "name": "floating",
-    "surface": false,
-    "stairs": true,
-    "swim": null,
-    "breathless": "true",
-    "climb": 0,
-    "jumpDown": false,
-    "fly": false,
-    "floating": true
+    "fly": false
   },{
     "name": "none",
     "surface": true,
@@ -130,7 +109,6 @@
     "breathless": "true",
     "climb": 0,
     "jumpDown": false,
-    "fly": false,
-    "floating": false
+    "fly": false
   }
 ]

@@ -52,7 +52,7 @@ public:
 	friend class MustSleep;
 };
 // Find a place to sleep.
-class SleepPathRequest final : public PathRequestBreadthFirst
+class SleepPathRequest final : public PathRequest
 {
 	SleepObjective& m_sleepObjective;
 	// These variables area used from messaging from parallel code, no need to serialize.
@@ -63,8 +63,8 @@ class SleepPathRequest final : public PathRequestBreadthFirst
 public:
 	SleepPathRequest(Area& area, SleepObjective& so, const ActorIndex actor);
 	SleepPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
-	void writeStep(Area& area, FindPathResult& result) override;
+	[[nodiscard]] PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
+	void writeStep(Area& area, bool useCurrentLocation) override;
 	std::string name() const { return "sleep"; }
 	[[nodiscard]] Json toJson() const;
 };

@@ -6,7 +6,7 @@
 #include "deserializationMemo.h"
 #include "definitions/materialType.h"
 #include "path/pathRequest.h"
-#include "path/terrainFacade.h"
+#include "path/areaHasPaths.h"
 #include "objectives/dig.h"
 #include "numericTypes/types.h"
 #include "util.h"
@@ -465,29 +465,34 @@ std::vector<CraftStepTypeCategoryId>& HasCraftingLocationsAndJobsForFaction::get
 	}
 	return m_stepTypeCategoriesByLocation[location];
 }
-CraftStepTypeCategoryId HasCraftingLocationsAndJobsForFaction::getDisplayStepTypeCategoryForLocation(const Point3D location)
+CraftStepTypeCategoryId HasCraftingLocationsAndJobsForFaction::getDisplayStepTypeCategoryForLocation(const Point3D location) const
 {
 	if(!m_stepTypeCategoriesByLocation.contains(location))
 		return CraftStepTypeCategoryId::null();
 	return *m_stepTypeCategoriesByLocation[location].begin();
 }
 // May return nullptr;
-CraftJob* HasCraftingLocationsAndJobsForFaction::getJobForAtLocation(const ActorIndex actor, const SkillTypeId skillType, const Point3D point, const SmallSet<CraftJob*>& excludeJobs)
+std::pair<CraftJob*, Point3D> HasCraftingLocationsAndJobsForFaction::getJobForAt(const ActorIndex actor, const SkillTypeId skillType, const Cuboid cuboid, const SmallSet<CraftJob*>& excludeJobs) const
 {
 	Actors& actors = m_area.getActors();
-	assert(!m_area.getSpace().isReserved(point, actors.getFaction(actor)));
-	if(!m_stepTypeCategoriesByLocation.contains(point))
-		return nullptr;
-	for(CraftStepTypeCategoryId category : m_stepTypeCategoriesByLocation[point])
-		if(m_unassignedProjectsByStepTypeCategory.contains(category))
-			for(CraftJob* craftJob : m_unassignedProjectsByStepTypeCategory[category])
-				if(
-					!excludeJobs.contains(craftJob) &&
-					craftJob->stepIterator->skillType == skillType &&
-					actors.skill_getLevel(actor, skillType) >= craftJob->minimumSkillLevel
-				)
-					return craftJob;
-	return nullptr;
+	SmallSet<CraftStepTypeCategoryId> closedCategories;
+	for(const auto [location, categoriesAtLocation] : m_stepTypeCategoriesByLocation)
+		if(cuboid.contains(location))
+			for(const CraftStepTypeCategoryId category : categoriesAtLocation)
+				if(!closedCategories.contains(category))
+				{
+					closedCategories.insert(category);
+					auto found = m_unassignedProjectsByStepTypeCategory.find(category);
+					if(found != m_unassignedProjectsByStepTypeCategory.end())
+						for(CraftJob* craftJob : found->second)
+							if(
+								!excludeJobs.contains(craftJob) &&
+								craftJob->stepIterator->skillType == skillType &&
+								actors.skill_getLevel(actor, skillType) >= craftJob->minimumSkillLevel
+							)
+								return {craftJob, location};
+				}
+	return {nullptr, Point3D::null()};
 }
 bool HasCraftingLocationsAndJobsForFaction::queryAny(const Cuboid cuboid)
 {

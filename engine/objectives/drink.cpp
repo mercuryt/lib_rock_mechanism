@@ -4,7 +4,7 @@
 #include "../actors/actors.h"
 #include "../items/items.h"
 #include "../plants.h"
-#include "../path/terrainFacade.hpp"
+#include "../path/areaHasPaths.hpp"
 
 // Drink Threaded Task.
 DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, const ActorIndex actorIndex) :
@@ -20,31 +20,28 @@ DrinkPathRequest::DrinkPathRequest(Area& area, DrinkObjective& drob, const Actor
 	detour = m_drinkObjective.m_detour;
 	adjacent = true;
 }
-FindPathResult DrinkPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
+PathResult DrinkPathRequest::readStep(Area& area, const AreaHasPathsForMoveType& hasPaths)
 {
 	Actors& actors = area.getActors();
 	const ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	if(m_drinkObjective.m_noDrinkFound)
-		return terrainFacade.findPathToEdge(memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_drinkObjective.m_detour);
-	auto destinationCondition = [this, &area, actorIndex](const Cuboid cuboid) -> std::pair<bool, Point3D>
-	{
-		const Point3D point = m_drinkObjective.containsSomethingDrinkable(area, cuboid, actorIndex);
-		return {point.exists(), point};
-	};
-	constexpr bool useAnyPoint = false;
+		return hasPaths.pathToEdge(toParamaters(area));
+	auto shortRangeCondition = [&constThis = std::as_const(*this), &area, actorIndex](const Cuboid cuboid) -> Point3D { return constThis.m_drinkObjective.containsSomethingDrinkable(area, cuboid, actorIndex); };
+	auto longRangeCondition = [&](const Cuboid cuboid) -> bool { return shortRangeCondition(cuboid).exists(); };
+	constexpr bool anyPoint = false;
 	constexpr bool useAdjacent = true;
-	return terrainFacade.findPathToConditionBreadthFirst<decltype(destinationCondition), useAnyPoint, useAdjacent>(destinationCondition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), m_drinkObjective.m_detour, actors.getFaction(actorIndex), Distance::max());
+	return hasPaths.pathToCondition<useAdjacent, anyPoint>(longRangeCondition, shortRangeCondition, toParamaters(area));
 }
 DrinkPathRequest::DrinkPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
-	PathRequestBreadthFirst(data, area),
+	PathRequest(data, area),
 	m_drinkObjective(static_cast<DrinkObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))) { }
-void DrinkPathRequest::writeStep(Area& area, FindPathResult& result)
+void DrinkPathRequest::writeStep(Area& area, bool useCurrentLocation)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	if(result.path.empty())
+	if(path.empty())
 	{
-		if(!result.useCurrentPosition)
+		if(!useCurrentLocation)
 		{
 			if(m_drinkObjective.m_noDrinkFound)
 				actors.objective_canNotFulfillNeed(actorIndex, m_drinkObjective);
@@ -63,11 +60,11 @@ void DrinkPathRequest::writeStep(Area& area, FindPathResult& result)
 		}
 	}
 	else
-		actors.move_setPath(actorIndex, result.path);
+		actors.move_setPath(actorIndex, path);
 }
 Json DrinkPathRequest::toJson() const
 {
-	Json output = PathRequestBreadthFirst::toJson();
+	Json output = PathRequest::toJson();
 	output["objective"] = &m_drinkObjective;
 	output["type"] = "drink";
 	return output;

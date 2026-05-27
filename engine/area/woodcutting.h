@@ -6,7 +6,7 @@
 #include "../objective.h"
 #include "../project.h"
 #include "../path/pathRequest.h"
-#include "../path/terrainFacade.h"
+#include "../path/areaHasPaths.h"
 #include "../numericTypes/types.h"
 #include "../projects/woodcutting.h"
 #include <memory>

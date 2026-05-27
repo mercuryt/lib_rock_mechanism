@@ -1,5 +1,5 @@
 #include "hasSpaceDesignations.h"
-bool AreaHasSpaceDesignationsForFaction::any(const SpaceDesignation& designation) const
+bool AreaHasSpaceDesignationsForFaction::any(const SpaceDesignation designation) const
 {
 	return !m_data[(int)designation].empty();
 }
@@ -13,21 +13,25 @@ bool AreaHasSpaceDesignationsForFaction::canPrepare() const
 std::vector<SpaceDesignation> AreaHasSpaceDesignationsForFaction::getForPoint(const Point3D point) const
 {
 	std::vector<SpaceDesignation> output;
-	output.reserve(int(SpaceDesignation::SPACE_DESIGNATION_MAX) / 2);
-	for(auto designation = SpaceDesignation(0); designation != SpaceDesignation::SPACE_DESIGNATION_MAX; designation = SpaceDesignation((int)designation + 1))
+	output.reserve(int(SpaceDesignation::Null) / 2);
+	for(auto designation = SpaceDesignation(0); designation != SpaceDesignation::Null; designation = SpaceDesignation((int)designation + 1))
 		if(check(point, designation))
 			output.push_back(designation);
 	return output;
 }
 SpaceDesignation AreaHasSpaceDesignationsForFaction::getDisplayDesignation(const Point3D point) const
 {
-	for(auto designation = SpaceDesignation(0); designation != SpaceDesignation::SPACE_DESIGNATION_MAX; designation = SpaceDesignation((int)designation + 1))
+	for(auto designation = SpaceDesignation(0); designation != SpaceDesignation::Null; designation = SpaceDesignation((int)designation + 1))
 		if(check(point, designation))
 			return designation;
 	// TODO: rename to Null.
-	return SpaceDesignation::SPACE_DESIGNATION_MAX;
+	return SpaceDesignation::Null;
 }
-const RTreeBoolean& AreaHasSpaceDesignationsForFaction::getForDesignation(const SpaceDesignation& designation) const { return m_data[(int)designation]; }
+const RTreeBoolean& AreaHasSpaceDesignationsForFaction::getForDesignation(const SpaceDesignation designation) const { return m_data[(int)designation]; }
+CuboidSet AreaHasSpaceDesignationsForFaction::queryGetIntersection(const Cuboid cuboid, const SpaceDesignation designation) const
+{
+	return getForDesignation(designation).queryGetIntersection(cuboid);
+}
 AreaHasSpaceDesignationsForFaction& AreaHasSpaceDesignations::maybeRegisterAndGetForFaction(const FactionId faction)
 {
 	auto found = m_data.find(faction);

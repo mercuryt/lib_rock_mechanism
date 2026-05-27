@@ -1,23 +1,31 @@
 #include "longRange.h"
 #include "../area/area.h"
 #include "../space/space.h"
-Point3D longRangePath::findCrossingPointNearestForShape(Area& area, RectangleWithFacing portal, Point3D huristic, ShapeId shape, ShortRangeMemo& memo)
+#include "../threads.h"
+#include <omp.h>
+void longRangePath::init()
+{
+	assert(memos.empty());
+	memos.resize(threads::max);
+}
+Point3D longRangePath::findCrossingPointNearestForShape(const Area& area, RectangleWithFacing portal, Point3D huristic, ShapeId shape, ShortRangeMemo& memo)
 {
 	Cuboid nearSideOfPortal = portal.m_cuboid;
 	nearSideOfPortal.shift(portal.m_facing, {1});
-	SmallSet<Point3D>& openList = memo.openList;
+	std::vector<Point3D>& openList = memo.openList;
 	openList.clear();
 	Point3D start = nearSideOfPortal.clamp(huristic);
-	openList.insert(start);
+	openList.push_back(start);
 	CuboidSet& closedList = memo.closedList;
 	closedList.clear();
 	closedList.add(start);
-	Space& space = area.getSpace();
+	const Space& space = area.getSpace();
 	while(!openList.empty())
 	{
-		openList.sortUnaryDescending([&](const Point3D point) { return point.distanceTo(start); });
-		Point3D current = openList.back();
-		openList.popBack();
+		auto iter = std::ranges::min_element(openList, {}, [&](const Point3D point) { return point.distanceTo(start); });
+		Point3D current = (*iter);
+		(*iter) = openList.back();
+		openList.pop_back();
 		Cuboid adjacent = current.getAllAdjacentIncludingOutOfBounds().intersection(nearSideOfPortal);
 		if(space.shape_canFitEverWithAnyFacing(current, shape))
 		{
@@ -26,83 +34,81 @@ Point3D longRangePath::findCrossingPointNearestForShape(Area& area, RectangleWit
 				if(space.shape_canFitEver(point, shape, current.getFacingTwords(point)))
 					return current;
 		}
-		for(const Point3D point : adjacent)
-		{
-			if(point == current)
-				continue;
-			if(closedList.contains(point))
-				continue;
-			closedList.add(point);
-			openList.insert(point);
-		}
+		CuboidSet filteredAdjacent = CuboidSet::create(adjacent);
+		filteredAdjacent.maybeRemoveAll(closedList);
+		closedList.maybeAddAll(filteredAdjacent);
+		for(const Cuboid cuboid : filteredAdjacent)
+			for(const Point3D point : cuboid)
+				openList.push_back(point);
 	}
 	// There must be some point where we can cross because it was already checked when finding cuboids.
 	assert(false);
 }
-bool longRangePath::checkCuboidNotFreelyNavigable(const Cuboid cuboid, const int width, const int length, const int height)
+bool longRangePath::checkCuboidNotFreelyNavigable(const Cuboid cuboid, const PathParamaters& params)
 {
 	// Check if cuboid is too small to freely navigate.
 	Distance narrowestDimension = std::min(cuboid.sizeX(), cuboid.sizeY());
-	return narrowestDimension < width || narrowestDimension < length || cuboid.sizeZ() < height;
+	return narrowestDimension < params.width || narrowestDimension < params.length || cuboid.sizeZ() < params.height;
 }
-bool longRangePath::checkPortalSize(const Cuboid to, const Cuboid from, const int width, const int length, const int height)
+bool longRangePath::checkPortalSize(const Cuboid to, const Cuboid from, const PathParamaters& params)
 {
+	assert(to.isTouchingFace(from));
 	// Check if shape fits through portal.
+	Distance overlapX;
+	Distance overlapY;
+	Distance overlapZ;
 	const Distance lowestHighZ = std::min(from.m_high.z(), to.m_high.z());
 	const Distance highestLowZ = std::max(from.m_low.z(), to.m_low.z());
-	const Distance differenceZ = lowestHighZ - highestLowZ;
+	if(highestLowZ <= lowestHighZ)
+		overlapZ = lowestHighZ - highestLowZ;
 	const Distance lowestHighX = std::min(from.m_high.x(), to.m_high.x());
 	const Distance highestLowX = std::max(from.m_low.x(), to.m_low.x());
-	const Distance differenceX = lowestHighX - highestLowX;
+	if(highestLowX <= lowestHighX)
+		overlapX = lowestHighX - highestLowX;
 	const Distance lowestHighY = std::min(from.m_high.y(), to.m_high.y());
 	const Distance highestLowY = std::max(from.m_low.y(), to.m_low.y());
-	const Distance differenceY = lowestHighY - highestLowY;
-	if(differenceZ == 0)
+	if(highestLowY <= lowestHighY)
+		overlapY = lowestHighY - highestLowY;
+	if(overlapZ.empty())
 	{
+		Cuboid above = Cuboid::create(Point3D(lowestHighX, lowestHighY, lowestHighZ), Point3D(highestLowX, highestLowY, lowestHighZ));
+		const Space& space = params.area.getSpace();
+		if(!space.pointFeature_canEnterFromBelowAll(above))
+			// There is a horizontal partition blocking some part of the portal, return false and do the slow check.
+				return false;
 		// Above or below.
-		if(differenceX == 0 || differenceY == 0)
-		{
-			if(differenceX == 0 && differenceY == 0)
-				// Corner.
-				return width == 1 && height == 1;
-			else if(differenceY == 0)
-				return height == 1 && width <= differenceX;
-			else
-				return height == 1 && width <= differenceY;
-		}
 		return (
-			(width <= differenceX && length <= differenceY) ||
-			(width <= differenceY && length <= differenceX)
+			(params.width <= overlapX && params.length <= overlapY) ||
+			(params.width <= overlapY && params.length <= overlapX)
 		);
 	}
-	if(differenceZ < height)
+	if(overlapZ < params.height)
 		return false;
-	if(differenceX != 0)
+	if(overlapX.exists())
 		// East or west.
-		return width <= differenceX;
-	if(differenceY != 0)
-		// North or south.
-		return width <= differenceY;
-	// edge.
-	return width == 1;
+		return params.width <= overlapX;
+	assert(overlapY.exists());
+	// North or south.
+	return params.width <= overlapY;
 }
-SmallSet<Point3D> longRangePath::cuboidPathToPointPathStringPulling(Area& area, ShapeId shape, const SmallSet<Cuboid> cuboids, Point3D start, Point3D end, Point3D pointBeforeEnd, ShortRangeMemo& memo)
+SmallSet<Point3D> longRangePath::cuboidPathToPointPathStringPulling(const Area& area, ShapeId shape, const std::vector<Cuboid> cuboids, Point3D start, Point3D end, Point3D pointBeforeEnd, ShortRangeMemo& memo)
 {
 	std::vector<RectangleWithFacing> portals;
 	portals.reserve(cuboids.size() - 1);
-	for(int i = 1; i != cuboids.size(); ++i)
+	const int cuboidsCount = cuboids.size();
+	for(int i = 1; i != cuboidsCount; ++i)
 	{
 		Cuboid previous = cuboids[i - 1];
 		Cuboid current = cuboids[i];
-		Facing6 facingFromPreviousToCurrent = previous.getFacingTwordsOtherCuboid(current);
+		Facing6 facingFromPreviousToCurrent = previous.getFacing6TwordsOtherCuboid(current);
 		previous.shift(facingFromPreviousToCurrent, {1});
-		portals.emplace_back(previous.intersection(current), current.getFacingTwordsOtherCuboid(previous));
+		portals.emplace_back(previous.intersection(current), current.getFacing6TwordsOtherCuboid(previous));
 	}
 	SmallSet<Point3D> output = generateSegmentStringPulling(area, shape, start, pointBeforeEnd, portals.begin(), portals.end(), memo);
 	output.insert(end);
 	return output;
 }
-SmallSet<Point3D> longRangePath::generateSegmentStringPulling(Area& area, ShapeId shape, Point3D start, Point3D end, std::vector<RectangleWithFacing>::iterator startPortal, std::vector<RectangleWithFacing>::iterator endPortal, longRangePath::ShortRangeMemo& memo)
+SmallSet<Point3D> longRangePath::generateSegmentStringPulling(const Area& area, ShapeId shape, Point3D start, Point3D end, std::vector<RectangleWithFacing>::iterator startPortal, std::vector<RectangleWithFacing>::iterator endPortal, longRangePath::ShortRangeMemo& memo)
 {
 	LinePath linePath = LinePath::create(start, end);
 	std::vector<RectangleWithFacing>::iterator portalWhichCorrespondsToLastWaypoint = startPortal;
@@ -128,31 +134,4 @@ SmallSet<Point3D> longRangePath::generateSegmentStringPulling(Area& area, ShapeI
 		}
 	}
 	return linePath.toPoints();
-}
-longRangePath::LongRangeMemo& longRangePath::checkOutMemo()
-{
-	std::lock_guard<std::mutex> lock(memoMutex);
-	int end = memos.size();
-	for(int i = 0; i != end; ++i)
-		if(!memoCheckedOut[i])
-		{
-			memoCheckedOut[i] = true;
-			return *memos[i];
-		}
-	// All Memos are checked out, create new.
-	memos.emplace_back(std::make_unique<LongRangeMemo>());
-	memoCheckedOut.emplace_back(true);
-	return *memos.back();
-}
-void longRangePath::returnMemo(LongRangeMemo& memo)
-{
-	std::lock_guard<std::mutex> lock(memoMutex);
-	int end = memos.size();
-	for(int i = 0; i != end; ++i)
-		if(memos[i].get() == &memo)
-		{
-			memoCheckedOut[i] = false;
-			return;
-		}
-	assert(false);
 }

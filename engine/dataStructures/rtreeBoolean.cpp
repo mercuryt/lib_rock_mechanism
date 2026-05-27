@@ -246,7 +246,7 @@ void RTreeBoolean::tryToMergeLeaves(Node& parent)
 		bool found = false;
 		const auto& leafCount = parent.getLeafCount();
 		for(RTreeArrayIndex i = RTreeArrayIndex::create(0); i < leafCount; ++i)
-			if(mergeMask[i.get()])
+			if(mergeMask[i.get()] && this->canMerge(parentCuboids[i.get()], parentCuboids[offset.get()]))
 			{
 				// Found a leaf to merge with.
 				auto merged = parentCuboids[i.get()];
@@ -335,7 +335,9 @@ void RTreeBoolean::addToNodeRecursive(const RTreeNodeIndex index, const Cuboid c
 			if(newCuboidIsSecondIndex || secondArrayIndex < leafCount)
 			{
 				// Both first and second cuboids are leaves.
-				if(mergedCuboid.volume() == extended[firstArrayIndex.get()].volume() + extended[secondArrayIndex.get()].volume())
+				Cuboid first = extended[firstArrayIndex.get()];
+				Cuboid second = extended[secondArrayIndex.get()];
+				if(mergedCuboid.volume() == first.volume() + second.volume() && this->canMerge(first, second))
 				{
 					// Can merge into a single leaf.
 					parent.updateLeaf(firstArrayIndex, mergedCuboid);
@@ -756,7 +758,7 @@ bool RTreeBoolean::query(const CuboidSet& shape) const { return queryBody<const 
 bool RTreeBoolean::query(const ParamaterizedLine& shape) const { return queryBody<const ParamaterizedLine&>(shape); }
 bool RTreeBoolean::query(const Point3D begin, const Point3D end) const { return queryBody<const ParamaterizedLine&>(ParamaterizedLine(begin, end)); }
 template<typename ShapeT>
-Cuboid RTreeBoolean::queryGetLeaf(ShapeT&& shape) const
+Cuboid RTreeBoolean::queryGetLeafBody(ShapeT shape) const
 {
 	SmallSet<RTreeNodeIndex> openList;
 	openList.insert(RTreeNodeIndex::create(0));
@@ -777,15 +779,9 @@ Cuboid RTreeBoolean::queryGetLeaf(ShapeT&& shape) const
 	}
 	return {};
 }
-template Cuboid RTreeBoolean::queryGetLeaf(const Point3D& shape) const;
-template Cuboid RTreeBoolean::queryGetLeaf(Point3D&& shape) const;
-template Cuboid RTreeBoolean::queryGetLeaf(const Cuboid& shape) const;
-template Cuboid RTreeBoolean::queryGetLeaf(Cuboid&& shape) const;
-template Cuboid RTreeBoolean::queryGetLeaf(const CuboidSet& shape) const;
-template Cuboid RTreeBoolean::queryGetLeaf(const Sphere& shape) const;
-template Cuboid RTreeBoolean::queryGetLeaf(Sphere&& shape) const;
-template Cuboid RTreeBoolean::queryGetLeaf(const ParamaterizedLine& shape) const;
-template Cuboid RTreeBoolean::queryGetLeaf(ParamaterizedLine&& shape) const;
+Cuboid RTreeBoolean::queryGetLeaf(Point3D point) const { return queryGetLeafBody<Point3D>(point); }
+Cuboid RTreeBoolean::queryGetLeaf(Cuboid cuboid) const { return queryGetLeafBody<Cuboid>(cuboid); }
+Cuboid RTreeBoolean::queryGetLeaf(const CuboidSet& cuboids) const { return queryGetLeafBody<const CuboidSet&>(cuboids); }
 template<typename ShapeT>
 Point3D RTreeBoolean::queryGetPoint(ShapeT&& shape) const
 {
@@ -908,6 +904,7 @@ CuboidSet RTreeBoolean::queryGetIntersectionBody(ShapeT shape) const
 }
 CuboidSet RTreeBoolean::queryGetIntersection(const CuboidSet& cuboids) const { return queryGetIntersectionBody(cuboids); }
 CuboidSet RTreeBoolean::queryGetIntersection(const Cuboid cuboid) const { return queryGetIntersectionBody(cuboid); }
+// Remove any part of set which intersects the rtree.
 void RTreeBoolean::queryRemove(CuboidSet& set) const
 {
 	SmallSet<RTreeNodeIndex> openList;

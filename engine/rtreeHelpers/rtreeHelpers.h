@@ -107,4 +107,15 @@ namespace RTreeHelpers
 		rtree.removeWithCondition(toRemove, [&](const auto& value){ return condition(value); });
 		return toRemove;
 	}
+	bool queryAnyNotWithConditionNonOverlaping(const auto& rtree, const auto& shape, auto&& condition)
+	{
+		int volume = shape.volume();
+		rtree.queryForEachWithCuboids(shape, [&](const Cuboid cuboid, const auto& value){
+			if(condition(value))
+				volume -= shape.intersection(cuboid).volume();
+		});
+		// A volume less then zero means overlaping results.
+		assert(volume >= 0);
+		return volume != 0;
+	}
 };

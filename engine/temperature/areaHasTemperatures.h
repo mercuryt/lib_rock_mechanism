@@ -42,5 +42,8 @@ struct AreaHasTemperature
 	// Current temperature.
 	[[nodiscard]] Temperature get(Area& area, const Point3D point);
 	[[nodiscard]] Temperature getDailyAverageAmbientSurfaceTemperature(Area& area) const;
+	// Find the lowest temperature that might exist in cuboid. Does not guarantee that it does exist.
+	[[nodiscard]] Temperature lowerBound(Area& area, const Cuboid cuboid);
+	[[nodiscard]] std::pair<Temperature, Temperature> upperAndLowerBounds(Area& area, const Cuboid cuboid) const;
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(AreaHasTemperature, m_portals, m_sources, m_meltableMaterialTypeOnSurface, m_toUpdate, m_ambiant);
 };

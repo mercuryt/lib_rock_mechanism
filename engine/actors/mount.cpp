@@ -76,7 +76,7 @@ void Actors::pilotItem_set(const ActorIndex index, const ItemIndex item)
 	move_setMoveSpeedActual(index, items.vehicle_getSpeed(item));
 	m_compoundShape[index] = items.getShape(item);
 	m_moveType[index] = items.getMoveType(item);
-	m_area.m_hasTerrainFacades.maybeRegisterMoveType(m_moveType[index]);
+	m_area.m_hasPaths.maybeRegisterMoveType(m_area, m_moveType[index]);
 	items.maybeUnsetStatic(item);
 }
 void Actors::pilotItem_unset(const ActorIndex index)

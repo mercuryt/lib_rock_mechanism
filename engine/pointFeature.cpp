@@ -37,3 +37,16 @@ bool PointFeature::blocksLineOfSight() const
 {
 	return !MaterialType::getTransparent(materialType) && PointFeatureType::byId(pointFeatureType).opaque && isClosed();
 }
+bool PointFeature::blocksVerticalTravel() const
+{
+	return pointFeatureType == PointFeatureTypeId::Floor || pointFeatureType == PointFeatureTypeId::FloorGrate || (pointFeatureType == PointFeatureTypeId::Hatch && isLocked());
+}
+bool PointFeature::blocksVerticalTravelEver() const
+{
+	return pointFeatureType == PointFeatureTypeId::Floor || pointFeatureType == PointFeatureTypeId::FloorGrate || pointFeatureType == PointFeatureTypeId::Hatch;
+}
+bool PointFeature::blocksEntrance() const
+{
+	return PointFeatureType::byId(pointFeatureType).blocksEntrance || (pointFeatureType == PointFeatureTypeId::Door && isLocked());
+}
+

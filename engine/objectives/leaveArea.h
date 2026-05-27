@@ -4,7 +4,7 @@
 #include "path/pathRequest.h"
 struct DeserializationMemo;
 class LeaveAreaPathRequest;
-struct FindPathResult;
+struct PathResult;
 class LeaveAreaObjective final : public Objective
 {
 public:
@@ -16,14 +16,14 @@ public:
 	void reset(Area&, const ActorIndex) { }
 	[[nodiscard]] std::string name() const { return "leave area"; }
 };
-class LeaveAreaPathRequest final : public PathRequestBreadthFirst
+class LeaveAreaPathRequest final : public PathRequest
 {
 	LeaveAreaObjective& m_objective;
 public:
 	LeaveAreaPathRequest(Area& area, LeaveAreaObjective& objective, const ActorIndex actor);
 	LeaveAreaPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
-	void writeStep(Area& area, FindPathResult& result) override;
+	PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
+	void writeStep(Area& area, bool useCurrentLocation) override;
 	[[nodiscard]] std::string name() const { return "leave area"; }
 	[[nodiscard]] Json toJson() const;
 };

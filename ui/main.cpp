@@ -3,6 +3,7 @@
 #include "window.h"
 #include "../engine/config/config.h"
 #include "../engine/definitions/definitions.h"
+#include "../engine/path/longRange.h"
 int main()
 {
 	Config::load();

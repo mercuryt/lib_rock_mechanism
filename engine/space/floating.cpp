@@ -30,7 +30,11 @@ void Space::floating_maybeFloatUp(const CuboidSet& points)
 		{
 			const FluidTypeId fluidType = items.getFluidTypeCanFloatInAt(item, location, facing);
 			if(fluidType.exists())
-				items.setFloating(item, fluidType);
+			{
+				//TODO:(optimization) This call is redundant.
+				Distance depth = items.floatsInAtDepth(item, fluidType);
+				items.setFloating(item, fluidType, depth);
+			}
 		}
 		if(items.isFloating(item))
 		{

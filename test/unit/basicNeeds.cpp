@@ -240,20 +240,18 @@ TEST_CASE("basicNeedsNonsentient")
 		CHECK(actors.objective_getCurrentName(actor) == "eat");
 		CHECK(actors.eat_isHungry(actor));
 		CHECK(plants.getPercentFoliage(grass) == 100);
-		// The deer is wandering randomly while we fast forward until it is hungry, it might or might not already be next to the grass.
-		if(!actors.isAdjacentToLocation(actor, grassLocation))
-		{
-			// Find grass.
-			CHECK(actors.move_hasPathRequest(actor));
-			simulation.doStep();
-			CHECK(!actors.move_hasPathRequest(actor));
-			CHECK(actors.objective_getCurrentName(actor) == "eat");
-			Point3D destination = actors.move_getDestination(actor);
-			CHECK(destination.exists());
-			CHECK(destination.isAdjacentTo(grassLocation));
-			// Go to grass.
-			simulation.fastForwardUntillActorIsAdjacentToDestination(area, actor, grassLocation);
-		}
+		// Find grass.
+		CHECK(actors.move_hasPathRequest(actor));
+		simulation.doStep();
+		CHECK(!actors.move_hasPathRequest(actor));
+		CHECK(actors.objective_getCurrentName(actor) == "eat");
+		Point3D destination = actors.move_getDestination(actor);
+		CHECK(destination.exists());
+		CHECK(destination.isAdjacentTo(grassLocation));
+		// Go to grass.
+		simulation.fastForwardUntillActorIsAdjacentToDestination(area, actor, grassLocation);
+		CHECK(actors.objective_getCurrentName(actor) == "eat");
+		CHECK(plants.getPercentFoliage(grass) == 100);
 		// Eat grass.
 		simulation.fastForward(Config::stepsToEat);
 		CHECK(!actors.eat_isHungry(actor));
@@ -331,8 +329,16 @@ TEST_CASE("basicNeedsNonsentient")
 		CHECK(actors.eat_getMassFoodRequested(bear) != 0);
 		CHECK(actors.objective_getCurrentName(bear) == "eat");
 		CHECK(actors.move_hasPathRequest(bear));
-		FindPathResult result = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(bear)).findPathToWithoutMemo<false, false>(actors.getLocation(bear), actors.getFacing(bear), actors.getShape(bear), actors.getLocation(deer));
-		CHECK(!result.path.empty());
+		PathResult result = area.m_hasPaths.get(actors.getMoveType(bear)).pathTo(PathParamaters({
+			.area = area,
+			.start = actors.getLocation(bear),
+			.huristicDestination = actors.getLocation(deer),
+			.shape = actors.getShape(bear),
+			.moveType = actors.getMoveType(bear),
+			.startFacing = actors.getFacing(bear),
+			.depthFirst = true,
+		}));
+		CHECK(!result.m_path.empty());
 		EatObjective& objective = actors.objective_getCurrent<EatObjective>(bear);
 		CHECK(!objective.hasLocation());
 		// Bear goes to deer corpse.

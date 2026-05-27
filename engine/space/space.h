@@ -217,12 +217,13 @@ public:
 	}
 	[[nodiscard]] CuboidSet collectAdjacentsInRange(const Point3D point, const Distance  range);
 	// -Designation
-	[[nodiscard]] bool designation_anyForFaction(const FactionId faction, const SpaceDesignation& designation) const;
-	[[nodiscard]] bool designation_has(const Point3D shape, const FactionId faction, const SpaceDesignation& designation) const;
-	[[nodiscard]] bool designation_has(const Cuboid shape, const FactionId faction, const SpaceDesignation& designation) const;
-	[[nodiscard]] bool designation_has(const CuboidSet& shape, const FactionId faction, const SpaceDesignation& designation) const;
-	[[nodiscard]] Point3D designation_hasPoint(const Cuboid shape, const FactionId faction, const SpaceDesignation& designation) const;
-	[[nodiscard]] Point3D designation_hasPoint(const CuboidSet& shape, const FactionId faction, const SpaceDesignation& designation) const;
+	[[nodiscard]] bool designation_anyForFaction(const FactionId faction, const SpaceDesignation designation) const;
+	[[nodiscard]] bool designation_has(const Point3D shape, const FactionId faction, const SpaceDesignation designation) const;
+	[[nodiscard]] bool designation_has(const Cuboid shape, const FactionId faction, const SpaceDesignation designation) const;
+	[[nodiscard]] bool designation_has(const CuboidSet& shape, const FactionId faction, const SpaceDesignation designation) const;
+	[[nodiscard]] Point3D designation_hasPoint(const Cuboid shape, const FactionId faction, const SpaceDesignation designation) const;
+	[[nodiscard]] Point3D designation_hasPoint(const CuboidSet& shape, const FactionId faction, const SpaceDesignation designation) const;
+	[[nodiscard]] CuboidSet designation_queryForFaction(const Cuboid cuboid, const FactionId faction, const SpaceDesignation designation) const;
 	template<typename AreaT>
 	void designation_queryForEachForFaction(const AreaT& area, const auto& shape, const FactionId faction, auto&& action) const
 	{
@@ -230,17 +231,16 @@ public:
 		if(area.m_spaceDesignations.contains(faction))
 			area.m_spaceDesignations.getForFaction(faction).queryForEach(shape, action);
 	}
-	void designation_set(const Point3D shape, const FactionId faction, const SpaceDesignation& designation);
-	void designation_set(const Cuboid shape, const FactionId faction, const SpaceDesignation& designation);
-	void designation_set(const CuboidSet& shape, const FactionId faction, const SpaceDesignation& designation);
-	void designation_unset(const Point3D shape, const FactionId faction, const SpaceDesignation& designation);
-	void designation_unset(const Cuboid shape, const FactionId faction, const SpaceDesignation& designation);
-	void designation_unset(const CuboidSet& shape, const FactionId faction, const SpaceDesignation& designation);
-	void designation_maybeUnset(const Point3D shape, const FactionId faction, const SpaceDesignation& designation);
-	void designation_maybeUnset(const Cuboid shape, const FactionId faction, const SpaceDesignation& designation);
-	void designation_maybeUnset(const CuboidSet& shape, const FactionId faction, const SpaceDesignation& designation);
+	void designation_set(const Point3D shape, const FactionId faction, const SpaceDesignation designation);
+	void designation_set(const Cuboid shape, const FactionId faction, const SpaceDesignation designation);
+	void designation_set(const CuboidSet& shape, const FactionId faction, const SpaceDesignation designation);
+	void designation_unset(const Point3D shape, const FactionId faction, const SpaceDesignation designation);
+	void designation_unset(const Cuboid shape, const FactionId faction, const SpaceDesignation designation);
+	void designation_unset(const CuboidSet& shape, const FactionId faction, const SpaceDesignation designation);
+	void designation_maybeUnset(const Point3D shape, const FactionId faction, const SpaceDesignation designation);
+	void designation_maybeUnset(const Cuboid shape, const FactionId faction, const SpaceDesignation designation);
+	void designation_maybeUnset(const CuboidSet& shape, const FactionId faction, const SpaceDesignation designation);
 	// -Solid.
-public:
 	void solid_set(const Point3D point, const MaterialTypeId materialType, bool constructed);
 	void solid_setAll(const CuboidSet& cuboidSet, const MaterialTypeId materialType, bool constructed);
 	void solid_setNot(const Point3D point) { solid_setNotCuboid({point, point}); }
@@ -327,7 +327,11 @@ public:
 	[[nodiscard]] bool pointFeature_isSupport(const Point3D point) const;
 	[[nodiscard]] bool pointFeature_canEnterFromBelow(const Point3D point) const;
 	[[nodiscard]] bool pointFeature_canEnterFromAbove(const Point3D point, const Point3D from) const;
+	[[nodiscard]] bool pointFeature_canEnterFromBelowAll(const CuboidSet& cuboids) const;
+	[[nodiscard]] bool pointFeature_canEnterFromBelowAll(const Cuboid cuboid) const;
+	[[nodiscard]] bool pointFeature_canEnterFromBelowAny(const Cuboid cuboid) const;
 	[[nodiscard]] bool pointFeature_multiTileCanEnterAtNonZeroZOffset(const Point3D point) const;
+	[[nodiscard]] bool pointFeature_multiTileCanEnterAtNonZeroZOffset(const CuboidSet& point) const;
 	[[nodiscard]] bool pointFeature_isOpaque(const Point3D point) const;
 	[[nodiscard]] bool pointFeature_floorIsOpaque(const Point3D point) const;
 	[[nodiscard]] MaterialTypeId pointFeature_getMaterialType(const Point3D point, const PointFeatureTypeId& pointFeatureType) const;
@@ -373,6 +377,7 @@ public:
 	void fluid_queryForEachWithCuboids(const auto& shape, auto&& action) const { m_fluid.queryForEachWithCuboids(shape, action); }
 	void fluid_queryForEach(const auto& shape, auto&& action) const { m_fluid.queryForEach(shape, action); }
 	void fluid_queryTotalsForEachWithCuboids(const auto& shape, auto&& action) const { m_totalFluidVolume.queryForEachWithCuboids(shape, action); }
+	void fluid_removeAllFrom(CuboidSet& cuboids) const { m_totalFluidVolume.queryRemove(cuboids); }
 	[[nodiscard]] Distance fluid_getMistInverseDistanceToSource(const Point3D point) const;
 	[[nodiscard]] FluidGroup* fluid_getGroup(const Point3D point, const FluidTypeId fluidType) const;
 	// To be called from FluidGroup::splitStep only.
@@ -436,6 +441,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D point, const Fl
 	[[nodiscard]] bool isReservedAny(const CuboidSet& cuboids, const FactionId faction) const;
 	// To be used by CanReserve::translateAndReservePositions.
 	[[nodiscard]] Reservable& getReservable(const Point3D point);
+	void reservation_removeFromForFaction(CuboidSet& cuboids, FactionId faction) const;
 	// -Actors
 	void actor_recordStatic(const MapWithCuboidKeys<CollisionVolume>& toOccupy, const ActorIndex actor);
 	void actor_recordDynamic(const MapWithCuboidKeys<CollisionVolume>& toOccupy, const ActorIndex actor);
@@ -489,8 +495,8 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D point, const Fl
 	[[nodiscard]] bool item_hasContainerContainingFluidTypeCarryableBy(const Point3D point, const ActorIndex actor, const FluidTypeId fluidType) const;
 	[[nodiscard]] bool item_empty(const auto& shape) const { return !m_items.queryAny(shape); }
 	[[nodiscard]] bool item_contains(const Point3D point, const ItemIndex item) const;
-	[[nodiscard]] bool item_queryAnyWithCondition(const auto& shape, const auto& condition) { return m_items.queryAnyWithCondition(shape, condition); }
-	[[nodiscard]] ItemIndex item_getOneWithCondition(const auto& shape, const auto& condition) { return m_items.queryGetOneWithCondition(shape, condition); }
+	[[nodiscard]] bool item_queryAnyWithCondition(const auto& shape, const auto& condition) const { return m_items.queryAnyWithCondition(shape, condition); }
+	[[nodiscard]] ItemIndex item_getOneWithCondition(const auto& shape, const auto& condition) const { return m_items.queryGetOneWithCondition(shape, condition); }
 	// -Plant
 	PlantIndex plant_create(const Point3D point, const PlantSpeciesId plantSpecies, Percent growthPercent = Percent::null());
 	void plant_updateGrowingStatus(const Point3D point);
@@ -524,6 +530,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D point, const Fl
 	void shape_removeStaticVolume(const MapWithCuboidKeys<CollisionVolume>& cuboidsAndVolumes);
 	void shape_addDynamicVolume(const MapWithCuboidKeys<CollisionVolume>& cuboidsAndVolumes);
 	void shape_removeDynamicVolume(const MapWithCuboidKeys<CollisionVolume>& cuboidsAndVolumes);
+	void shape_queryStaticVolumeForEachWithCuboids(const auto& shape, auto&& action) const { m_staticVolume.queryForEachWithCuboids(shape, action); }
 	[[nodiscard]] bool shape_anythingCanEnterEver(const auto& shape) const
 	{
 		if(m_dynamic.query(shape))
@@ -578,6 +585,15 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D point, const Fl
 	[[nodiscard]] std::pair<Point3D, Facing4> shape_getNearestEnterableEverOrCurrentlyPointWithFacing(const Point3D point, const ShapeId shape, const MoveTypeId moveType);
 	[[nodiscard]] bool shape_cuboidCanFitCurrentlyStatic(const Cuboid cuboid, const CollisionVolume volume) const;
 	[[nodiscard]] bool shape_cuboidCanFitCurrentlyDynamic(const Cuboid cuboid, const CollisionVolume volume) const;
+	[[nodiscard]] bool shape_queryAnyDynamic(const Cuboid cuboid) const;
+	void shape_queryRemoveFromDynamic(CuboidSet& cuboids) const;
+	// -Movement and pathing.
+	// TODO: Some methods from shape probably belong here instead.
+	[[nodiscard]] SmallSet<Cuboid> move_splitCuboidByPartitions(const Cuboid cuboid) const;
+	[[nodiscard]] CuboidSet move_queryPathable(const Cuboid cuboid, const MoveTypeId moveType) const;
+	[[nodiscard]] bool move_cuboidCanBeEnteredFrom(const Cuboid from, const Cuboid to, const MoveTypeId moveType) const;
+	[[nodiscard]] bool move_partitionExistsBetween(const Cuboid a, const Cuboid b) const;
+	[[nodiscard]] bool move_canSwimInAny(const Cuboid cuboid, const MoveTypeId moveType) const;
 	// -FarmField
 	void farm_insert(const auto& shape, const FactionId faction, FarmField& farmField) { m_farmFields.getOrCreate(faction).insert(shape, RTreeDataWrapper<FarmField*, nullptr>(&farmField)); }
 	template<typename ShapeT>
@@ -609,12 +625,15 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D point, const Fl
 			return;
 		found->second.queryForEachCuboid(shape, action);
 	}
+private:
 	template<typename ShapeT>
-	[[nodiscard]] StockPile* stockpile_getOneForFaction(const ShapeT shape, const FactionId faction);
+	[[nodiscard]] StockPile* stockpile_getOneForFactionBody(const ShapeT shape, const FactionId faction);
+public:
+	[[nodiscard]] StockPile* stockpile_getOneForFaction(const Point3D point, const FactionId faction);
+	[[nodiscard]] const StockPile* stockpile_getOneForFaction(const Point3D point, const FactionId faction) const;
+	[[nodiscard]] StockPile* stockpile_getOneForFaction(const Cuboid cuboid, const FactionId faction);
 	[[nodiscard]] StockPile* stockpile_getOneForFaction(const CuboidSet& shape, const FactionId faction);
-	template<typename ShapeT>
-	[[nodiscard]] const StockPile* stockpile_getOneForFaction(ShapeT&& shape, const FactionId faction) const;
-	[[nodiscard]] SmallSet<RTreeDataWrapper<StockPile*, nullptr>> stockpile_getAllForFaction(const auto& shape, const FactionId faction) { return m_stockPiles[faction].queryGetAll(shape); }
+	[[nodiscard]] SmallSet<RTreeDataWrapper<StockPile*, nullptr>> stockpile_getAllForFaction(const auto& shape, const FactionId faction) const { return m_stockPiles[faction].queryGetAll(shape); }
 	[[nodiscard]] bool stockpile_contains(const Point3D point, const FactionId faction) const;
 	[[nodiscard]] bool stockpile_isAvalible(const Point3D point, const FactionId faction) const;
 	// -Project

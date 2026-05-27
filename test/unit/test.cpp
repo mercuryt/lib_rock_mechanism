@@ -5,6 +5,8 @@
 #include "../../engine/config/physics.h"
 #include "../../engine/definitions/definitions.h"
 #include "../../engine/objective.h"
+#include "../../engine/path/longRange.h"
+#include "../../engine/threads.h"
 
 int main(int argc, char** argv) {
 	doctest::Context context;
@@ -19,6 +21,7 @@ int main(int argc, char** argv) {
 	Config::load();
 	definitions::load();
 	ObjectiveType::load();
+	threads::init();
 
 	int res = context.run(); // run
 

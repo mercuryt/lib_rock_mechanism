@@ -5,7 +5,7 @@
 #include "../space/space.h"
 #include "../reference.h"
 #include "../numericTypes/types.h"
-#include "../path/terrainFacade.hpp"
+#include "../path/areaHasPaths.hpp"
 WoodCuttingPathRequest::WoodCuttingPathRequest(Area& area, WoodCuttingObjective& woodCuttingObjective, const ActorIndex actorIndex) :
 	m_woodCuttingObjective(woodCuttingObjective)
 {
@@ -22,27 +22,27 @@ WoodCuttingPathRequest::WoodCuttingPathRequest(Area& area, WoodCuttingObjective&
 	reserveDestination = true;
 }
 WoodCuttingPathRequest::WoodCuttingPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
-	PathRequestBreadthFirst(data, area),
+	PathRequest(data, area),
 	m_woodCuttingObjective(static_cast<WoodCuttingObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
 { }
-FindPathResult WoodCuttingPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
+PathResult WoodCuttingPathRequest::readStep(Area& area, const AreaHasPathsForMoveType& hasPaths)
 {
 	ActorIndex actorIndex = actor.getIndex(area.getActors().m_referenceData);
-	auto predicate = [this, &area, actorIndex](const Cuboid cuboid) -> bool { return m_woodCuttingObjective.joinableProjectExistsAt(area, cuboid, actorIndex).exists(); };
+	auto shortRangePath = [this, &area, actorIndex](const Cuboid cuboid) -> Point3D { return m_woodCuttingObjective.joinableProjectExistsAt(area, cuboid, actorIndex); };
+	auto longRangePath = [&shortRangePath](const Cuboid cuboid) -> bool { return shortRangePath(cuboid).exists(); };
 	constexpr bool useAnyOccupiedPoint = false;
 	constexpr bool useAdjacent = true;
-	constexpr bool unreserved = false;
-	return terrainFacade.findPathToSpaceDesignationAndCondition<decltype(predicate), useAnyOccupiedPoint, useAdjacent>(predicate, memo, SpaceDesignation::WoodCutting, faction, start, facing, shape, detour, unreserved, maxRange);
+	return hasPaths.pathToConditionWithDesignation<useAdjacent, useAnyOccupiedPoint>(SpaceDesignation::WoodCutting, longRangePath, shortRangePath, toParamaters(area));
 }
-void WoodCuttingPathRequest::writeStep(Area& area, FindPathResult& result)
+void WoodCuttingPathRequest::writeStep(Area& area, bool useCurrentLocation)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	if(result.path.empty() && !result.useCurrentPosition)
+	if(path.empty() && !useCurrentLocation)
 		actors.objective_canNotCompleteObjective(actorIndex, m_woodCuttingObjective);
 	else
 	{
-		if(result.useCurrentPosition)
+		if(useCurrentLocation)
 		{
 			if(!actors.move_tryToReserveOccupied(actorIndex))
 			{
@@ -50,12 +50,11 @@ void WoodCuttingPathRequest::writeStep(Area& area, FindPathResult& result)
 				return;
 			}
 		}
-		else if(!actors.move_tryToReserveProposedDestination(actorIndex, result.path))
+		else if(!actors.move_tryToReserveProposedDestination(actorIndex, path))
 		{
 			actors.objective_canNotCompleteSubobjective(actorIndex);
 			return;
 		}
-		Point3D target = result.pointThatPassedPredicate;
 		WoodCuttingProject& project = area.m_hasWoodCuttingDesignations.getForFaction(actors.getFaction(actorIndex)).getForPoint(target);
 		if(project.canAddWorker(actorIndex))
 			m_woodCuttingObjective.joinProject(project, actorIndex);
@@ -69,7 +68,7 @@ void WoodCuttingPathRequest::writeStep(Area& area, FindPathResult& result)
 }
 Json WoodCuttingPathRequest::toJson() const
 {
-	Json output = PathRequestBreadthFirst::toJson();
+	Json output = PathRequest::toJson();
 	output["objective"] = &m_woodCuttingObjective;
 	return output;
 }

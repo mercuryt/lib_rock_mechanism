@@ -4,6 +4,7 @@
 #include "../engine/config/config.h"
 #include "../engine/definitions/definitions.h"
 #include "../engine/objective.h"
+#include "../engine/threads.h"
 
 int main ([[maybe_unused]]int argCount, [[maybe_unused]]char **args)
 {
@@ -22,6 +23,7 @@ int main ([[maybe_unused]]int argCount, [[maybe_unused]]char **args)
 	Config::load();
 	definitions::load();
 	ObjectiveType::load();
+	threads::init();
 	Window window;
 	Sprite::load(window);
 	displayData::load();

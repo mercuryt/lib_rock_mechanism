@@ -46,7 +46,11 @@ struct Cuboid
 	void maybeExpand(const Cuboid other);
 	void maybeExpand(const Point3D point);
 	void inflate(const Distance  distance);
+	void inflateHorizontal(const Distance  distance);
+	[[nodiscard]] Cuboid shifted(const Facing6 facing, const Distance distance = {1}) const;
+	[[nodiscard]] Cuboid maybeShifted(const Facing6 facing, const Distance distance = {1}) const;
 	[[nodiscard]] Cuboid inflated(const Distance  distance) const;
+	[[nodiscard]] Cuboid inflatedHorizontal(const Distance distance) const;
 	[[nodiscard]] constexpr Primitive get() const { return {.data={m_high.x().get(), m_high.y().get(), m_high.z().get(), m_low.x().get(), m_low.y().get(), m_low.z().get()}}; }
 	[[nodiscard]] constexpr static Primitive nullPrimitive() { auto d = Distance::null().get(); return {.data={d, d, d, d, d, d}}; }
 	[[nodiscard]] Cuboid boundry() const { return *this; }
@@ -68,6 +72,7 @@ struct Cuboid
 	[[nodiscard]] Cuboid sum(const Cuboid cuboid) const;
 	[[nodiscard]] OffsetCuboid difference(const Point3D other) const;
 	[[nodiscard]] Cuboid intersection(const Cuboid cuboid) const;
+	[[nodiscard]] CuboidSet intersection(const CuboidSet& cuboids) const;
 	[[nodiscard]] Cuboid intersection(const OffsetCuboid cuboid) const;
 	[[nodiscard]] Cuboid intersection(const Point3D point) const;
 	[[nodiscard]] Point3D intersectionPoint(const Point3D point) const;
@@ -87,13 +92,17 @@ struct Cuboid
 	[[nodiscard]] bool intersects(const Cuboid cuboid) const;
 	[[nodiscard]] bool intersects(const CuboidSet& cuboid) const;
 	[[nodiscard]] bool overlapsWithSphere(const Sphere& sphere) const;
+	[[nodiscard]] bool overlapX(const Cuboid other) const;
+	[[nodiscard]] bool overlapY(const Cuboid other) const;
+	[[nodiscard]] bool overlapZ(const Cuboid other) const;
 	[[nodiscard]] int volume() const;
 	[[nodiscard]] bool empty() const { return m_high.empty(); }
 	[[nodiscard]] bool exists() const { return m_high.exists(); }
 	[[nodiscard]] bool operator==(const Cuboid cuboid) const;
 	[[nodiscard]] Point3D getCenter() const;
 	[[nodiscard]] Distance dimensionForFacing(const Facing6 facing) const;
-	[[nodiscard]] Facing6 getFacingTwordsOtherCuboid(const Cuboid cuboid) const;
+	[[nodiscard]] Facing6 getFacing6TwordsOtherCuboid(const Cuboid cuboid) const;
+	[[nodiscard]] Facing4 getFacing4TwordsOtherCuboid(const Cuboid cuboid) const;
 	[[nodiscard]] bool isSomeWhatInFrontOf(const Point3D position, const Facing4 facing) const;
 	[[nodiscard]] bool isTouching(const Cuboid cuboid) const;
 	[[nodiscard]] bool isTouching(const Point3D point) const;
@@ -115,7 +124,10 @@ struct Cuboid
 	[[nodiscard]] Distance sizeZ() const;
 	[[nodiscard]] Point3D clamp(const Point3D point) const;
 	[[nodiscard]] Point3D nearestPointTo(const Cuboid other) const;
+	[[nodiscard]] Point3D furthestPointFrom(const Point3D point) const;
+	[[nodiscard]] Point3D furthestPointFrom(const Cuboid cuboid) const;
 	[[nodiscard]] Distance distanceTo(const Cuboid other) const;
+	[[nodiscard]] Distance distanceTo(const Point3D point) const;
 	[[nodiscard]] int countIf(auto&& condition) const
 	{
 		int output = 0;
@@ -159,6 +171,7 @@ struct Cuboid
 	static Cuboid null() { return Cuboid(); }
 	static Cuboid create(const Offset3D high, const Offset3D low) { assert(low.z() >= 0); return {Point3D::create(high), Point3D::create(low)}; }
 	static Cuboid create(const Point3D high, const Point3D low);
+	static Cuboid create(const Point3D point) { return create(point, point); }
 	struct Hash{
 		[[nodiscard]] size_t operator()(const Cuboid cuboid) { return Point3D::Hash()(cuboid.m_high); }
 	};

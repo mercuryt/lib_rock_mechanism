@@ -2,7 +2,7 @@
 #include "../area/area.h"
 #include "../simulation/simulation.h"
 #include "../actors/actors.h"
-#include "../path/terrainFacade.hpp"
+#include "../path/areaHasPaths.hpp"
 
 LeaveAreaObjective::LeaveAreaObjective(Priority priority) :
 	Objective(priority) { }
@@ -28,27 +28,30 @@ LeaveAreaPathRequest::LeaveAreaPathRequest(Area& area, LeaveAreaObjective& objec
 	detour = m_objective.m_detour;
 	adjacent = true;
 }
-FindPathResult LeaveAreaPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
+PathResult LeaveAreaPathRequest::readStep(Area& area, const AreaHasPathsForMoveType& hasPaths)
 {
-	return terrainFacade.findPathToEdge(memo, start, facing, shape, m_objective.m_detour);
+	return hasPaths.pathToEdge(toParamaters(area));
 }
-void LeaveAreaPathRequest::writeStep(Area& area, FindPathResult& result)
+void LeaveAreaPathRequest::writeStep(Area& area, bool useCurrentLocation)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	if(!result.path.empty())
-		actors.move_setPath(actorIndex, result.path);
-	else if(actors.isOnEdge(actorIndex))
+	if(!path.empty())
+		actors.move_setPath(actorIndex, path);
+	else if(useCurrentLocation)
+	{
+		assert(actors.isOnEdge(actorIndex));
 		actors.leaveArea(actorIndex);
+	}
 	else
 		actors.objective_canNotCompleteObjective(actorIndex, m_objective);
 }
 LeaveAreaPathRequest::LeaveAreaPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
-	PathRequestBreadthFirst(data, area),
+	PathRequest(data, area),
 	m_objective(static_cast<LeaveAreaObjective&>(*deserializationMemo.m_objectives[data["objective"]])) { }
 Json LeaveAreaPathRequest::toJson() const
 {
-	Json output = PathRequestBreadthFirst::toJson();
+	Json output = PathRequest::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
 	output["type"] = "leave area";
 	return output;

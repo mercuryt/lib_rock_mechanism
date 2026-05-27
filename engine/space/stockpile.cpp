@@ -15,22 +15,17 @@ void Space::stockpile_recordMembership(const Point3D point, StockPile& stockPile
 	}
 }
 template<typename ShapeT>
-StockPile* Space::stockpile_getOneForFaction(const ShapeT shape, const FactionId faction)
+StockPile* Space::stockpile_getOneForFactionBody(const ShapeT shape, const FactionId faction)
 {
 	const auto found =  m_stockPiles.find(faction);
 	if(found == m_stockPiles.end())
 		return nullptr;
 	return found->second.queryGetOne(shape).get();
 }
-template StockPile* Space::stockpile_getOneForFaction<Point3D>(Point3D shape, const FactionId faction);
-template StockPile* Space::stockpile_getOneForFaction<Cuboid>(Cuboid shape, const FactionId faction);
-StockPile* Space::stockpile_getOneForFaction(const CuboidSet& shape, const FactionId faction)
-{
-	const auto found = m_stockPiles.find(faction);
-	if(found == m_stockPiles.end())
-		return nullptr;
-	return found->second.queryGetOne(shape).get();
-}
+StockPile* Space::stockpile_getOneForFaction(const Point3D shape, const FactionId faction) { return stockpile_getOneForFactionBody<Point3D>(shape, faction); }
+const StockPile* Space::stockpile_getOneForFaction(const Point3D shape, const FactionId faction) const { return const_cast<Space*>(this)->stockpile_getOneForFactionBody<Point3D>(shape, faction); }
+StockPile* Space::stockpile_getOneForFaction(const Cuboid shape, const FactionId faction) { return stockpile_getOneForFactionBody<Cuboid>(shape, faction); }
+StockPile* Space::stockpile_getOneForFaction(const CuboidSet& shape, const FactionId faction) { return stockpile_getOneForFactionBody<const CuboidSet&>(shape, faction); }
 void Space::stockpile_recordNoLongerMember(const Point3D point, StockPile& stockPile)
 {
 	assert(stockpile_contains(point, stockPile.getFaction()));

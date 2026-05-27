@@ -19,6 +19,7 @@ struct BitSet
 	[[nodiscard]] bool test(const IntType& index) const;
 	[[nodiscard]] bool empty() const;
 	[[nodiscard]] bool any() const;
+	[[nodiscard]] bool all() const;
 	[[nodiscard]] bool operator==(const BitSet<IntType, capacity>& other) const = default;
 	[[nodiscard]] std::strong_ordering operator<=>(const BitSet<IntType, capacity>& other) const = default;
 	void set(const IntType& index);

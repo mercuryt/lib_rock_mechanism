@@ -112,7 +112,7 @@ TEST_CASE("craft")
 		actors.objective_setPriority(dwarf1, craftObjectiveTypeWoodWorking.getId(), Priority::create(100));
 		actors.objective_setPriority(dwarf1, craftObjectiveTypeAssembling.getId(), Priority::create(100));
 		CHECK(actors.objective_getCurrentName(dwarf1) == "craft: wood working");
-		CraftJob* job = area.m_hasCraftingLocationsAndJobs.getForFaction(faction).getJobForAtLocation(dwarf1, woodWorking, sawingLocation, emptyJobSet);
+		CraftJob* job = area.m_hasCraftingLocationsAndJobs.getForFaction(faction).getJobForAt(dwarf1, woodWorking, Cuboid::create(sawingLocation), emptyJobSet).first;
 		CHECK(job != nullptr);
 		CHECK(job->getStep() == 1);
 		// Find a project to join, reserve, and activate

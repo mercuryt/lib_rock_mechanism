@@ -59,6 +59,7 @@ template class std::vector<std::vector<std::pair<AttackTypeId, MaterialTypeId>>>
 template class std::vector<std::vector<std::pair<ItemQuery, Quantity>>>;
 template class std::vector<std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>>>;
 template class std::vector<int>;
+template class std::vector<std::pair<FluidTypeId, Distance>>;
 
 template class StrongVector<BodyTypeId, AnimalSpeciesId>;
 template class StrongVector<CombatScore, AttackTypeId>;
@@ -163,6 +164,7 @@ template class StrongVector<int, ShapeId>;
 template class StrongVector<int, MoveTypeId>;
 template class StrongVector<RTreeNodeIndex, RTreeArrayIndex>;
 template class StrongVector<RTreeBooleanLowZOnly::Node, RTreeBooleanLowZOnly::Index>;
+template class StrongVector<std::pair<FluidTypeId, Distance>, MoveTypeId>;
 
 /*
 TODO: These are commented out because std::array reports a false positive to std::equality_comparable.

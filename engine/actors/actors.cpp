@@ -308,7 +308,7 @@ void Actors::load(const Json& data)
 	m_moveType.resize(size);
 	ActorIndex i = ActorIndex::create(0);
 	for(const MoveTypeId moveType : m_moveType)
-		m_area.m_hasTerrainFacades.maybeRegisterMoveType(moveType);
+		m_area.m_hasPaths.maybeRegisterMoveType(m_area, moveType);
 	m_body.resize(size);
 	assert(data.contains("body") && data["body"].contains("data"));
 	i = ActorIndex::create(0);
@@ -608,7 +608,7 @@ ActorIndex Actors::create(ActorParamaters params)
 	resize(index + 1);
 	bool isStatic = false;
 	MoveTypeId moveType = AnimalSpecies::getMoveType(params.species);
-	m_area.m_hasTerrainFacades.maybeRegisterMoveType(moveType);
+	m_area.m_hasPaths.maybeRegisterMoveType(m_area, moveType);
 	ShapeId shape = AnimalSpecies::shapeForPercentGrown(params.species, params.getPercentGrown(m_area.m_simulation));
 	Portables<Actors, ActorIndex, ActorReferenceIndex, true>::create(index, moveType, shape, params.faction, isStatic, Quantity::create(1));
 	Simulation& simulation = m_area.m_simulation;

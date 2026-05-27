@@ -3,7 +3,7 @@
 #include "../objective.h"
 #include "../simulation/simulation.h"
 #include "../area/area.h"
-#include "../path/terrainFacade.hpp"
+#include "../path/areaHasPaths.hpp"
 #include "../actors/actors.h"
 #include "../numericTypes/types.h"
 GoToObjective::GoToObjective(const Json& data, DeserializationMemo& deserializationMemo) :

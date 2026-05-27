@@ -75,6 +75,8 @@ class RTreeBoolean
 	// Sort m_nodes by hilbert order of center. The node in position 0 is the top level and never moves.
 	void sort();
 	static void addIntersectedChildrenToOpenList(const Node& node, BitSet& intersecting, SmallSet<RTreeNodeIndex>& openList);
+	// Customization point.
+	[[nodiscard]] bool canMerge(const Cuboid, const Cuboid) const { return true; }
 public:
 	RTreeBoolean() { m_nodes.add(); m_nodes.back().setParent(RTreeNodeIndex::null()); }
 	void beforeJsonLoad();
@@ -130,17 +132,22 @@ public:
 	[[nodiscard]] bool canPrepare() const;
 	[[nodiscard]] bool empty() const  { return nodeCount() == 1 && leafCount() == 0; }
 	[[nodiscard]] CuboidSet toCuboidSet() const;
-	private:
+private:
 	template<typename ShapeT>
 	[[nodiscard]] bool queryBody(const ShapeT shape) const;
-	public:
+public:
 	[[nodiscard]] bool query(const Point3D begin, const Point3D end) const;
 	[[nodiscard]] bool query(const Point3D shape) const;
 	[[nodiscard]] bool query(const Cuboid shape) const;
 	[[nodiscard]] bool query(const CuboidSet& shape) const;
 	[[nodiscard]] bool query(const ParamaterizedLine& shape) const;
+private:
 	template<typename ShapeT>
-	[[nodiscard]] Cuboid queryGetLeaf(ShapeT&& shape) const;
+	[[nodiscard]] Cuboid queryGetLeafBody(ShapeT shape) const;
+public:
+	Cuboid queryGetLeaf(Point3D point) const;
+	Cuboid queryGetLeaf(Cuboid cuboid) const;
+	Cuboid queryGetLeaf(const CuboidSet& cuboids) const;
 	template<typename ShapeT>
 	[[nodiscard]] Point3D queryGetPoint(ShapeT&& shape) const;
 	// Shapes should be an iterable collection supported by CuboidArray's intersection check.

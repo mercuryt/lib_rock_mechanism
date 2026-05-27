@@ -1,7 +1,7 @@
 #pragma once
 #include "../objective.h"
 #include "../path/pathRequest.h"
-#include "../path/terrainFacade.h"
+#include "../path/areaHasPaths.h"
 #include "../eventSchedule.hpp"
 #include "../config/config.h"
 #include "../numericTypes/types.h"
@@ -54,14 +54,14 @@ public:
 	void execute(Simulation& simulation, Area* area);
 	void clearReferences(Simulation& simulation, Area* area);
 };
-class SowSeedsPathRequest final : public PathRequestBreadthFirst
+class SowSeedsPathRequest final : public PathRequest
 {
 	SowSeedsObjective& m_objective;
 public:
 	SowSeedsPathRequest(Area& area, SowSeedsObjective& objective, const ActorIndex actor);
 	SowSeedsPathRequest(const Json& data, Area& area, DeserializationMemo& DeserializationMemo);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
-	void writeStep(Area& area, FindPathResult& result) override;
+	PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
+	void writeStep(Area& area, bool useCurrentLocation) override;
 	[[nodiscard]] std::string name() const { return "sow seeds"; }
 	[[nodiscard]] Json toJson() const;
 };

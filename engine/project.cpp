@@ -11,10 +11,14 @@
 #include "actors/actors.h"
 #include "items/items.h"
 #include "space/space.h"
-#include "path/terrainFacade.hpp"
+#include "path/areaHasPaths.hpp"
+#include "path/longRange.h"
 #include "numericTypes/types.h"
 #include "objectives/wander.h"
 #include "portables.h"
+#include "dataStructures/smallSet.h"
+#include "geometry/point3D.h"
+#include <utility>
 #include <algorithm>
 #include <memory>
 // Project worker.
@@ -78,10 +82,8 @@ FluidRequirementData::FluidRequirementData(const Json& data, DeserializationMemo
 		containersAndVolumes.insert(ref, pair[1].get<CollisionVolume>());
 	}
 }
-
-
 ProjectTryToMakeHaulSubprojectThreadedTask::ProjectTryToMakeHaulSubprojectThreadedTask(Project& p) : m_project(p) { }
-void ProjectTryToMakeHaulSubprojectThreadedTask::readStep(Simulation&, Area*)
+void ProjectTryToMakeHaulSubprojectThreadedTask::readStep(Simulation&, Area* area)
 {
 	Actors& actors = m_project.m_area.getActors();
 	for(auto& [actor, projectWorker] : m_project.m_workers)
@@ -89,25 +91,39 @@ void ProjectTryToMakeHaulSubprojectThreadedTask::readStep(Simulation&, Area*)
 		if(projectWorker.haulSubproject != nullptr)
 			continue;
 		ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-		auto shortRangeCondition = [&](const Cuboid cuboid) -> Point3D { return containsDesiredItemOrActor(cuboid, actorIndex); };
-		auto longRangeCondition = [&](const Cuboid cuboid) -> bool { return containsDesiredItemOrActor(cuboid, actorIndex).exists(); };
+		auto shortRangeCondition = [this, actorIndex](const Cuboid cuboid) -> Point3D { return containsDesiredItemOrActor(cuboid, actorIndex); };
+		auto longRangeCondition = [capturedLocations = std::move(m_project.getOccupiedByToPickup())](const Cuboid cuboid) -> bool
+		{
+			return capturedLocations.intersects(cuboid);
+		};
 		// Path result is unused, running only for condition side effect.
-		constexpr bool anyOccupiedPoint = true;
-		constexpr bool adjacent = true;
-		[[maybe_unused]] FindPathResult result = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actorIndex)).
-			findPathToConditionBreadthFirstWithoutMemo<anyOccupiedPoint, adjacent>(
+		constexpr bool anyOccupiedPoint = false;
+		constexpr bool anyAdjacent = true;
+		PathParamaters params({
+			.area = *area,
+			.start = actors.getLocation(actorIndex),
+			.shape = actors.getShape(actorIndex),
+			.faction = actors.getFaction(actorIndex),
+			.moveType = actors.getMoveType(actorIndex),
+			.startFacing = actors.getFacing(actorIndex),
+			.detour = projectWorker.objective->m_detour,
+			.returnPath = false,
+		});
+		if(params.detour)
+			params.occupied = actors.getOccupied(actorIndex);
+		Point3D found = m_project.m_area.m_hasPaths.get(actors.getMoveType(actorIndex)).
+			accessableCondition<anyAdjacent, anyOccupiedPoint>(
 				longRangeCondition,
 				shortRangeCondition,
-				actors.getLocation(actorIndex),
-				actors.getFacing(actorIndex),
-				actors.getShape(actorIndex),
-				projectWorker.objective->m_detour,
-				actors.getFaction(actorIndex)
+				std::move(params)
 			);
 		// Only make at most one per step.
 		// TODO: Would it be better to do them all at once instead of one per step? Better temporal locality, higher risk of lag spike.
 		if(m_haulProjectParamaters.strategy != HaulStrategy::None)
+		{
+			assert(found.exists());
 			return;
+		}
 	}
 }
 void ProjectTryToMakeHaulSubprojectThreadedTask::writeStep(Simulation&, Area* area)
@@ -202,18 +218,25 @@ Point3D ProjectTryToMakeHaulSubprojectThreadedTask::containsDesiredItemOrActor(c
 		ItemReference itemRef = items.m_referenceData.getReference(item);
 		if(m_project.m_itemsToPickup.contains(itemRef))
 		{
+			// An item has been found which the project requires be hauled to the job site.
 			ActorOrItemReference ref = ActorOrItemReference::createForItem(itemRef);
+			// Check if this actor can take it there.
 			m_haulProjectParamaters = HaulSubproject::tryToSetHaulStrategy(m_project, ref, actor, FluidTypeId::null(), CollisionVolume::null());
 			if(m_haulProjectParamaters.strategy != HaulStrategy::None)
+				// Return the cuboid high point rather then the location of the item because it won't be used, it just needs to exist.
 				return cuboid.m_high;
 		}
+		// TODO: Should this be else if?
 		if(m_project.m_fluidContainersToPickup.contains(itemRef))
 		{
+			// A continer filled with a reqired fluid has been found.
 			ActorOrItemReference ref = ActorOrItemReference::createForItem(itemRef);
 			FluidTypeId fluidType = m_project.getFluidTypeForContainer(itemRef);
 			CollisionVolume volume = m_project.getFluidVolumeForContainer(itemRef);
+			// Check if this actor can take it there.
 			m_haulProjectParamaters = HaulSubproject::tryToSetHaulStrategy(m_project, ref, actor, fluidType, volume);
 			if(m_haulProjectParamaters.strategy != HaulStrategy::None)
+				// Return the cuboid high point rather then the location of the container because it won't be used, it just needs to exist.
 				return cuboid.m_high;
 		}
 	}
@@ -225,6 +248,7 @@ Point3D ProjectTryToMakeHaulSubprojectThreadedTask::containsDesiredItemOrActor(c
 			ActorOrItemReference ref = ActorOrItemReference::createForActor(actorRef);
 			m_haulProjectParamaters = HaulSubproject::tryToSetHaulStrategy(m_project, ref, actor, FluidTypeId::null(), CollisionVolume::null());
 			if(m_haulProjectParamaters.strategy != HaulStrategy::None)
+				// Return the cuboid high point rather then the location of the actor because it won't be used, it just needs to exist.
 				return cuboid.m_high;
 		}
 	}
@@ -251,11 +275,25 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 		if(!actors.isAdjacentToLocation(candidateIndex, m_project.m_location))
 		{
 			// Verify the worker can path to the job site.
-			TerrainFacade& terrainFacade = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(candidateIndex));
+			AreaHasPathsForMoveType& areaHasPathsForMoveType = m_project.m_area.m_hasPaths.get(actors.getMoveType(candidateIndex));
 			constexpr bool anyOccupiedPoint = false;
 			constexpr bool adjacent = true;
-			FindPathResult result = terrainFacade.findPathToWithoutMemo<anyOccupiedPoint, adjacent>(actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), m_project.m_location, objective->m_detour);
-			if(result.path.empty() && !result.useCurrentPosition)
+			PathParamaters params({
+				.area = m_project.m_area,
+				.start = actors.getLocation(candidateIndex),
+				.huristicDestination = m_project.m_location,
+				.shape = actors.getShape(candidateIndex),
+				.moveType = actors.getMoveType(candidateIndex),
+				.startFacing = actors.getFacing(candidateIndex),
+				.depthFirst = true,
+				.detour = objective->m_detour,
+				.adjacent = adjacent,
+				.anyOccupiedPoint = anyOccupiedPoint,
+				.returnPath = false,
+			});
+			if(params.detour)
+				params.occupied = actors.getOccupied(candidateIndex);
+			if(!areaHasPathsForMoveType.accessable(params))
 			{
 				m_cannotPathToJobSite.insert(candidate);
 				continue;
@@ -282,7 +320,6 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 					ItemReference itemRef = items.getReference(itemIndex);
 					m_reservedEquipment.getOrCreate(candidate).insert(&projectRequirementCounts, itemRef);
 				}
-			// capture by reference is used here because the pathing is being done immideatly instead of batched.
 			auto recordItemOnGround = [&](const ItemIndex item, ProjectRequirementCounts& counts)
 			{
 				recordedItems.insert(item);
@@ -302,8 +339,11 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 					assert(counts.delivered <= counts.reserved);
 					assert(!m_itemAlreadyAtSite.contains(itemRef));
 					m_itemAlreadyAtSite.insert(itemRef, quantity);
-					// TODO: project shoud be read only here, requires tracking reservationsComplete seperately for task.
-					m_project.m_unconsumed.insert(itemRef);
+					// TODO: project shoud be read only here, requires tracking reservationsComplete seperately for task[object Object].
+					if(counts.consumed)
+						m_project.m_toConsume.insert(itemRef, quantity);
+					else
+						m_project.m_unconsumed.insert(itemRef);
 				}
 				else
 					// TODO: project shoud be read only here, requires tracking reservationsComplete seperately for task.
@@ -430,13 +470,61 @@ void ProjectTryToAddWorkersThreadedTask::readStep(Simulation&, Area*)
 				}
 				return Point3D::null();
 			};
-			auto longRangeCondition = [&](const Cuboid cuboid) -> bool { return shortRangeCondition(cuboid).exists(); };
+			auto longRangeCondition = [&project = std::as_const(m_project), &space, &items, &actors](const Cuboid cuboid) -> bool {
+				if(!project.m_requiredItems.empty() || !project.m_requiredFluids.empty())
+					for(ItemIndex item : space.item_getAll(cuboid))
+					{
+						if(items.reservable_isFullyReserved(item, project.m_faction))
+							continue;
+						for(auto& [itemQuery, projectRequirementCounts] : project.m_requiredItems)
+						{
+							if(
+								projectRequirementCounts.required != projectRequirementCounts.reserved &&
+								itemQuery.query(project.m_area, item)
+							)
+								return true;
+						}
+						if(ItemType::getCanHoldFluids(items.getItemType(item)) && !project.m_requiredFluids.empty())
+						{
+							return true;
+						}
+					}
+				if(!project.m_requiredActors.empty())
+					for(ActorIndex actor : space.actor_getAll(cuboid))
+					{
+						ActorReference actorRef = actors.getReference(actor);
+						if(
+							!actors.reservable_isFullyReserved(actor, project.m_faction) &&
+							std::ranges::contains(project.m_requiredActors, actorRef)
+						)
+							return true;
+					}
+				if(!project.m_requiredFluids.empty())
+					for(const FluidData& fluidData : space.fluid_getAll(cuboid))
+					{
+						if(project.m_requiredFluids.contains(fluidData.type))
+							return true;
+					}
+				return false;
+			};
 			// TODO: Path is not used, find path is run for side effects of predicate.
-			TerrainFacade& terrainFacade = m_project.m_area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(candidateIndex));
+			AreaHasPathsForMoveType& hasPaths = m_project.m_area.m_hasPaths.get(actors.getMoveType(candidateIndex));
 			constexpr bool anyOccupiedPoint = true;
 			constexpr bool detour = false;
 			constexpr bool adjacent = true;
-			[[maybe_unused]] auto result = terrainFacade.findPathToConditionBreadthFirstWithoutMemo<anyOccupiedPoint, adjacent>(longRangeCondition, shortRangeCondition, actors.getLocation(candidateIndex), actors.getFacing(candidateIndex), actors.getShape(candidateIndex), detour);
+			PathParamaters params({
+				.area = m_project.m_area,
+				.start = actors.getLocation(candidateIndex),
+				.shape = actors.getShape(candidateIndex),
+				.moveType = actors.getMoveType(candidateIndex),
+				.startFacing = actors.getFacing(candidateIndex),
+				.detour = detour,
+				.adjacent = true,
+				.returnPath = false,
+			});
+			if(params.detour)
+				params.occupied = actors.getOccupied(candidateIndex);
+			[[maybe_unused]] Point3D result = hasPaths.accessableCondition<adjacent, anyOccupiedPoint>(longRangeCondition, shortRangeCondition, std::move(params));
 		}
 	}
 	if(!m_project.reservationsComplete())
@@ -636,7 +724,8 @@ void ProjectTryToAddWorkersThreadedTask::resetProjectCounts()
 	m_project.m_fluidContainersToPickup.clear();
 	m_project.m_itemAlreadyAtSite.clear();
 	m_project.m_actorAlreadyAtSite.clear();
-	m_project.m_requiredFluids.clear();
+	m_project.m_unconsumed.clear();
+	m_project.m_toConsume.clear();
 }
 // Derived classes are expected to provide getDuration, getConsumedItems, getUnconsumedItems, getByproducts, onDelay, offDelay, and onComplete.
 Project::Project(const FactionId faction, Area& area, const Point3D location, const Quantity maxWorkers, std::unique_ptr<DishonorCallback> locationDishonorCallback, const CuboidSet& additionalPointsToReserve) :
@@ -1276,6 +1365,19 @@ bool Project::canAddWorker(const ActorIndex actor) const
 	assert(!m_making.contains(ref));
 	assert(!m_workers.contains(ref));
 	return m_maxWorkers > m_workers.size();
+}
+CuboidSet Project::getOccupiedByToPickup() const
+{
+	CuboidSet output;
+	Items& items = m_area.getItems();
+	for(const auto [ref, quantity] : m_itemsToPickup)
+		output.maybeAdd(items.getOccupied(ref.getIndex(items.m_referenceData)));
+	for(const ItemReference ref : m_fluidContainersToPickup)
+		output.maybeAdd(items.getOccupied(ref.getIndex(items.m_referenceData)));
+	Actors& actors = m_area.getActors();
+	for(const ActorReference ref  : m_actorsToPickup)
+		output.maybeAdd(actors.getOccupied(ref.getIndex(actors.m_referenceData)));
+	return output;
 }
 bool Project::itemIsFluidContainer(const ItemReference item) const
 {

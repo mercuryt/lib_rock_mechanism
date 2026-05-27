@@ -7,7 +7,7 @@
 
 class Area;
 struct DeserializationMemo;
-struct FindPathResult;
+struct PathResult;
 class FleeObjectiveType final : public ObjectiveType
 {
 public:
@@ -31,14 +31,14 @@ public:
 	[[nodiscard]] NeedType getNeedType() const { return NeedType::flee; }
 	friend class FleePathRequest;
 };
-class FleePathRequest final : public PathRequestBreadthFirst
+class FleePathRequest final : public PathRequest
 {
 	FleeObjective& m_objective;
 public:
 	FleePathRequest(Area& area, FleeObjective& objective, const ActorIndex actorIndex);
 	FleePathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
-	void writeStep(Area& area, FindPathResult& result) override;
+	[[nodiscard]] PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
+	void writeStep(Area& area, bool useCurrentLocation) override;
 	[[nodiscard]] std::string name() const { return "get to safe temperature"; }
 	[[nodiscard]] Json toJson() const;
 };

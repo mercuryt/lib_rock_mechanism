@@ -57,17 +57,17 @@ class CraftStepProject final : public Project
 {
 	const CraftStepType &m_craftStepType;
 	CraftJob &m_craftJob;
-	Step getDuration() const;
-	void onComplete();
-	void onCancel();
-	void onDelay() { cancel(); }
-	void offDelay() { std::unreachable(); }
+	Step getDuration() const override;
+	void onComplete() override;
+	void onCancel() override;
+	void onDelay() override { cancel(); }
+	void offDelay() override { std::unreachable(); }
 	void onAddToMaking(const ActorIndex actor);
-	[[nodiscard]] bool canReset() const { return false; }
+	[[nodiscard]] bool canReset() const  override{ return false; }
 	// Use copies rather then references for return types to allow specalization of Queries as well as byproduct material type.
-	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const;
-	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const;
-	[[nodiscard]] std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const;
+	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getConsumed() const override;
+	[[nodiscard]] std::vector<std::pair<ItemQuery, Quantity>> getUnconsumed() const override;
+	[[nodiscard]] std::vector<std::tuple<ItemTypeId, MaterialTypeId, Quantity>> getByproducts() const override;
 	[[nodiscard]] std::vector<ActorReference> getActors() const { return {}; }
 
 public:
@@ -190,12 +190,13 @@ public:
 	}
 	[[nodiscard]] bool hasLocationsFor(const CraftJobTypeId craftJobType) const;
 	[[nodiscard]] std::list<CraftJob>& getAllJobs() { return m_jobs; }
-	[[nodiscard]] std::vector<CraftStepTypeCategoryId> &getStepTypeCategoriesForLocation(const Point3D location);
-	[[nodiscard]] CraftStepTypeCategoryId getDisplayStepTypeCategoryForLocation(const Point3D location);
+	[[nodiscard]] std::vector<CraftStepTypeCategoryId>& getStepTypeCategoriesForLocation(const Point3D location);
+	[[nodiscard]] CraftStepTypeCategoryId getDisplayStepTypeCategoryForLocation(const Point3D location) const;
 	[[nodiscard]] SmallSet<Point3D>& getLocationsForCategoryType(const CraftStepTypeCategoryId category) { return m_locationsByCategory[category]; }
 	// May return nullptr;
-	[[nodiscard]] CraftJob *getJobForAtLocation(const ActorIndex actor, const SkillTypeId skillType, const Point3D point, const SmallSet<CraftJob *> &excludeJobs);
+	[[nodiscard]] std::pair<CraftJob*, Point3D> getJobForAt(const ActorIndex actor, const SkillTypeId skillType, const Cuboid cuboid, const SmallSet<CraftJob *> &excludeJobs) const;
 	[[nodiscard]] bool queryAny(const Cuboid cuboid);
+	[[nodiscard]] Point3D queryOne(const Cuboid cuboid, const SkillTypeId skillType, const SkillLevel skillLevel, const FactionId faction, const SmallSet<CraftJob *> &excludeJobs);
 	friend class CraftObjectiveType;
 	friend class AreaHasCraftingLocationsAndJobs;
 	friend struct CraftJob;

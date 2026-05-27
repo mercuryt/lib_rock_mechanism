@@ -1,6 +1,6 @@
 #pragma once
 #include "../objective.h"
-#include "../path/terrainFacade.h"
+#include "../path/areaHasPaths.h"
 #include "../path/pathRequest.h"
 #include "../numericTypes/types.h"
 
@@ -8,7 +8,7 @@ struct DeserializationMemo;
 class Area;
 class WanderObjective;
 
-class WanderPathRequest final : public PathRequestBreadthFirst
+class WanderPathRequest final : public PathRequest
 {
 	WanderObjective& m_objective;
 	Point3D m_lastPoint;
@@ -16,8 +16,8 @@ class WanderPathRequest final : public PathRequestBreadthFirst
 public:
 	WanderPathRequest(Area& area, WanderObjective& objective, const ActorIndex actor);
 	WanderPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
-	void writeStep(Area& area, FindPathResult& result) override;
+	PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
+	void writeStep(Area& area, bool useCurrentLocation) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "wander"; }
 };

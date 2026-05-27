@@ -48,6 +48,7 @@ namespace Config
 	inline int bludgeonPercentTemporaryImparmentModifier;
 	inline int bludgeonStepsTillHealedModifier;
 	inline float bodyHardnessModifier;
+	inline int capacityToReserveForRTreeOpenListBufferPerThread;
 	inline float chastiseCastingCallBonusForDefenderIsFamily;
 	inline float chastiseCastingCallBonusForDefenderIsFriend;
 	inline float chastiseCastingCallDefenderMinimumScore;

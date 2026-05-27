@@ -13,7 +13,7 @@
 #include "../random.h"
 #include "../items/items.h"
 #include "../reference.h"
-#include "../path/terrainFacade.hpp"
+#include "../path/areaHasPaths.hpp"
 #include "../objectives/flee.h"
 #include "skill.h"
 
@@ -374,8 +374,9 @@ CuboidSet Actors::combat_makeMalicePoints(const ActorIndex index) const
 	Cuboid zone = Cuboid::create(location, location);
 	zone.inflate(Distance::create((float)m_speedActual[index].get() * Config::fractionOfMoveSpeedToMakeDistanceHuristicForCanMoveToSoon));
 	// Get points in zone which are enterable by this move type.
-	CuboidSet set = m_area.m_hasTerrainFacades.getForMoveType(m_moveType[index]).getEnterableIntersection(zone);
+	CuboidSet set = m_area.m_hasPaths.get(m_moveType[index]).m_enterable.queryGetLeaves(zone);
 	// Trim parts of set which could be entered by this move type somewhere but are not directly connected to location.
+	// TODO:(bug) does not respect zero thickness partitions such as floor.
 	set = set.adjacentRecursive(location);
 	// Expand set with weapon range.
 	set.inflate(Distance::create(combat_getMaxRange(index).get()));
@@ -420,17 +421,18 @@ GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(Area& area, c
 	facing = actors.getFacing(attacker);
 	detour = true;
 	adjacent = false;
+	anyOccupiedPoint = false;
+	faction = FactionId::null();
 	target.setIndex(targetIndex, area.getActors().m_referenceData);
 }
 GetIntoAttackPositionPathRequest::GetIntoAttackPositionPathRequest(const Json& data, Area& area) :
-	PathRequestDepthFirst(data, area),
+	PathRequest(data, area),
 	target(data["target"], area.getActors().m_referenceData),
 	attackRangeSquared(data["attackRangeSquared"].get<DistanceFractional>())
 { }
-FindPathResult GetIntoAttackPositionPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
+PathResult GetIntoAttackPositionPathRequest::readStep(Area& area, const AreaHasPathsForMoveType& hasPaths)
 {
 	Actors& actors = area.getActors();
-	ActorIndex attacker = actor.getIndex(actors.m_referenceData);
 	ActorIndex targetIndex = target.getIndex(actors.m_referenceData);
 	const CuboidSet& targetOccupied = actors.getOccupied(targetIndex);
 	auto shortRangeCondition = [&actors, this, targetIndex](const Point3D location, const Facing4) -> Point3D
@@ -439,23 +441,24 @@ FindPathResult GetIntoAttackPositionPathRequest::readStep(Area& area, const Terr
 			return location;
 		return Point3D::null();
 	};
-	auto longRangeCondition = [this, &targetOccupied](const Cuboid cuboid) -> bool
+	auto longRangeCondition = [&targetOccupied, attackRangeInteger = this->attackRangeInteger](const Cuboid cuboid) -> bool
 	{
 		return cuboid.inflated(attackRangeInteger).intersects(targetOccupied);
 	};
 	// TODO: Range attack actors should use a different path priority condition to avoid getting too close.
-	constexpr bool useAnyPoint = false;
-	constexpr bool adjacent = false;
-	const Point3D targetLocation = actors.getLocation(targetIndex);
-	return terrainFacade.findPathToConditionDepthFirst<useAnyPoint, adjacent>(longRangeCondition, shortRangeCondition, memo, start, facing, shape, targetLocation, detour, faction, maxRange);
+	huristicDestination = actors.getLocation(targetIndex);
+	constexpr bool useAdjacent = false;
+	constexpr bool useAnyOccupied = false;
+	PathParamaters params = toParamaters(area);
+	return hasPaths.pathToCondition<useAdjacent, useAnyOccupied>(longRangeCondition, shortRangeCondition, params);
 }
-void GetIntoAttackPositionPathRequest::writeStep(Area& area, FindPathResult& result)
+void GetIntoAttackPositionPathRequest::writeStep(Area& area, bool useCurrentLocation)
 {
 	Actors& actors = area.getActors();
 	const ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	if(result.path.empty())
+	if(path.empty())
 	{
-		if(result.useCurrentPosition)
+		if(useCurrentLocation)
 		{
 			if(!actors.combat_isOnCoolDown(actorIndex))
 			{
@@ -478,11 +481,11 @@ void GetIntoAttackPositionPathRequest::writeStep(Area& area, FindPathResult& res
 			actors.objective_canNotCompleteSubobjective(actorIndex);
 	}
 	else
-		actors.move_setPath(actorIndex, result.path);
+		actors.move_setPath(actorIndex, path);
 }
 Json GetIntoAttackPositionPathRequest::toJson() const
 {
-	Json output = static_cast<const PathRequestDepthFirst&>(*this);
+	Json output = static_cast<const PathRequest&>(*this);
 	output.update({
 		{"target", target},
 		{"attackRangeSquared", attackRangeSquared},

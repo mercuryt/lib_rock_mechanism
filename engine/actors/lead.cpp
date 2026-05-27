@@ -244,14 +244,24 @@ void Actors::lineLead_appendToPath(const ActorIndex index, const Point3D point, 
 		m_leadFollowPath[index].insert(point);
 	else
 	{
-		constexpr bool anyOccupied = true;
-		constexpr bool adjacent = false;
-		auto path = m_area.m_hasTerrainFacades.getForMoveType(moveType).findPathToWithoutMemo<anyOccupied, adjacent>(point, facing, shape, back);
+		PathParamaters params({
+			.area = m_area,
+			.start = point,
+			.huristicDestination = back,
+			.shape = shape,
+			.moveType = moveType,
+			.startFacing = facing,
+			.depthFirst = true,
+			.anyOccupiedPoint = true
+		});
+		if(params.detour)
+			params.occupied = getOccupied(index);
+		PathResult pathResult = m_area.m_hasPaths.get(moveType).pathTo(std::move(params));
 		// TODO: Can this fail?
-		assert(!path.path.empty());
-		assert(!path.path.contains(point));
-		path.path.insert(point);
-		m_leadFollowPath[index].insertAllNonunique(path.path);
+		assert(!pathResult.m_path.empty());
+		assert(!pathResult.m_path.contains(point));
+		pathResult.m_path.insert(point);
+		m_leadFollowPath[index].insertAllNonunique(pathResult.m_path);
 	}
 }
 // TODO: very redundant with can move.

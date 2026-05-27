@@ -3,6 +3,16 @@
 #include "cuboid.h"
 #include "offsetCuboid.h"
 #include <cmath> // for fmod
+Distance Point3D::getDimension(Dimensions dimension) const
+{
+	switch(dimension)
+	{
+		case(Dimensions::X) : return x();
+		case(Dimensions::Y) : return y();
+		case(Dimensions::Z) : return z();
+		default: std::unreachable();
+	}
+}
 Point3D Point3D::operator-(const Distance  distance) const
 {
 	assert((data >= distance.get()).all());
@@ -604,4 +614,10 @@ int Offset3D::hilbertNumber() const
 		}
 	}
 	return index;
+}
+Offset3D Offset3D::rotated2D(const Facing4 oldFacing, const Facing4 newFacing)
+{
+	Offset3D output = *this;
+	output.rotate2D(oldFacing, newFacing);
+	return output;
 }

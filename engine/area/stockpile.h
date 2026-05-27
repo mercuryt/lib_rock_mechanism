@@ -25,7 +25,7 @@ class StockPile;
 class PointIsPartOfStockPiles;
 struct DeserializationMemo;
 struct MaterialType;
-struct FindPathResult;
+struct PathResult;
 class Area;
 class StockPileObjective;
 class StockPile
@@ -109,7 +109,7 @@ class AreaHasStockPilesForFaction
 	SmallMap<ItemTypeId, SmallSet<StockPile*>> m_availableStockPilesByItemType;
 	// These items are checked whenever a new stockpile is created to see if they should be move to items with destinations.
 	SmallMap<ItemTypeId, SmallSet<ItemReference>> m_itemsWithoutDestinationsByItemType;
-	// Only when an item is added here does it get designated for stockpileing.
+	// Only when an item is added here does it get designated for stockpiling.
 	SmallSet<ItemReference> m_itemsToBeStockPiled;
 	//TODO: Replace these SmallMaps with medium maps?
 	// The stockpile used as index here is not neccesarily where the item will go, it is used to prove that there is somewhere the item could go.

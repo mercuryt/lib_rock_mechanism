@@ -13,7 +13,7 @@
 #include "../config/config.h"
 #include "../eventSchedule.h"
 #include "../items/items.h"
-#include "../path/terrainFacade.h"
+#include "../path/areaHasPaths.h"
 #include <ranges>
 Speed Actors::move_getIndividualSpeedWithAddedMass(const ActorIndex index, const Mass mass) const
 {
@@ -247,7 +247,8 @@ void Actors::move_setDestination(const ActorIndex index, const Point3D destinati
 	assert(m_pathRequest[index] == nullptr);
 	const ShapeId shape = getCompoundShape(index);
 	const MoveTypeId moveType = getMoveType(index);
-	move_pathRequestRecord(index, std::make_unique<GoToPathRequest>(location, Distance::max(), getReference(index), shape, faction, moveType, m_facing[index], detour, adjacent, reserve, destination));
+	constexpr bool anyOccupiedPoint = false; // TODO: this should be exposed as a paramater.
+	move_pathRequestRecord(index, std::make_unique<GoToPathRequest>(location, Distance::max(), getReference(index), shape, faction, moveType, m_facing[index], detour, adjacent, anyOccupiedPoint, reserve, destination));
 }
 void Actors::move_setDestinationAdjacentToLocation(const ActorIndex index, const Point3D destination, bool detour, bool unreserved, bool reserve)
 {
@@ -259,7 +260,8 @@ void Actors::move_setDestinationToAny(const ActorIndex index, const CuboidSet& c
 	if(unreserved)
 		faction = m_faction[index];
 	constexpr bool adjacent = false;
-	move_pathRequestRecord(index, std::make_unique<GoToAnyPathRequest>(m_location[index], Distance::max(), getReference(index), m_compoundShape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, huristicDestination, candidates));
+	constexpr bool anyOccupied = false;
+	move_pathRequestRecord(index, std::make_unique<GoToAnyPathRequest>(m_location[index], Distance::max(), getReference(index), m_compoundShape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, anyOccupied, reserve, huristicDestination, candidates));
 }
 void Actors::move_setDestinationAdjacentToActor(const ActorIndex index, const ActorIndex other, bool detour, bool unreserved, bool reserve)
 {
@@ -337,14 +339,13 @@ void Actors::move_setDestinationAdjacentToDesignation(const ActorIndex index, co
 	if(unreserved)
 		faction = m_faction[index];
 	constexpr bool adjacent = true;
-	move_pathRequestRecord(index, std::make_unique<GoToSpaceDesignationPathRequest>(m_location[index], maxRange, getReference(index), m_compoundShape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, reserve, designation));
+	constexpr bool anyOccupied = false;
+	move_pathRequestRecord(index, std::make_unique<GoToSpaceDesignationPathRequest>(m_location[index], maxRange, getReference(index), m_compoundShape[index], faction, m_moveType[index], m_facing[index], detour, adjacent, anyOccupied, reserve, designation));
 }
 void Actors::move_setDestinationToEdge(const ActorIndex index, bool detour)
 {
 	assert(m_pathRequest[index] == nullptr);
-	constexpr bool adjacent = false;
-	constexpr bool reserveDestination = false;
-	move_pathRequestRecord(index, std::make_unique<GoToEdgePathRequest>(m_location[index], Distance::max(), getReference(index), m_compoundShape[index], m_moveType[index], m_facing[index], detour, adjacent, reserveDestination));
+	move_pathRequestRecord(index, std::make_unique<GoToEdgePathRequest>(m_location[index], Distance::max(), getReference(index), m_compoundShape[index], m_moveType[index], m_facing[index], detour));
 }
 void Actors::move_clearAllEventsAndTasks(const ActorIndex index)
 {
@@ -459,17 +460,15 @@ void Actors::move_pathRequestClear(const ActorIndex index)
 	assert(m_pathRequest[index]!= nullptr);
 	m_pathRequest[index] = nullptr;
 }
-void Actors::move_pathRequestRecord(const ActorIndex index, std::unique_ptr<PathRequestDepthFirst> pathRequest)
+void Actors::move_clearAllPathRequests()
 {
-	assert(m_pathRequest[index] == nullptr);
-	m_pathRequest[index] = pathRequest.get();
-	m_area.m_hasTerrainFacades.getForMoveType(pathRequest->moveType).registerPathRequestWithHuristic(std::move(pathRequest));
+	std::fill(m_pathRequest.begin(), m_pathRequest.end(), nullptr);
 }
-void Actors::move_pathRequestRecord(const ActorIndex index, std::unique_ptr<PathRequestBreadthFirst> pathRequest)
+void Actors::move_pathRequestRecord(const ActorIndex index, std::unique_ptr<PathRequest> pathRequest)
 {
 	assert(m_pathRequest[index] == nullptr);
 	m_pathRequest[index] = pathRequest.get();
-	m_area.m_hasTerrainFacades.getForMoveType(m_moveType[index]).registerPathRequestNoHuristic(std::move(pathRequest));
+	m_area.m_hasPaths.get(pathRequest->moveType).recordPathRequest(std::move(pathRequest));
 }
 bool Actors::move_canMove(const ActorIndex index) const
 {
@@ -499,12 +498,22 @@ Step Actors::move_delayToMoveInto(const ActorIndex index, const Point3D from, co
 }
 SmallSet<Point3D> Actors::move_makePathTo(const ActorIndex index, const Point3D destination) const
 {
+	MoveTypeId moveType = m_moveType[index];
 	assert(destination != m_location[index]);
-	const FindPathResult result = m_area.m_hasTerrainFacades.getForMoveType(
-		m_moveType[index]).findPathToWithoutMemo<false, false>(m_location[index], m_facing[index], m_compoundShape[index], destination
-	);
-	assert(!result.useCurrentPosition);
-	return result.path;
+	PathParamaters params({
+		.area = m_area,
+		.start = m_location[index],
+		.huristicDestination = destination,
+		.shape = m_compoundShape[index],
+		.moveType = moveType,
+		.startFacing = m_facing[index],
+		.depthFirst = true,
+	});
+	if(params.detour)
+		params.occupied = getOccupied(index);
+	const PathResult result = m_area.m_hasPaths.get(moveType).pathTo(params);
+	assert(!result.useCurrentLocation());
+	return result.m_path;
 }
 Step Actors::move_stepsTillNextMoveEvent(const ActorIndex index) const
 {
@@ -517,8 +526,19 @@ bool Actors::move_canPathTo(const ActorIndex index, const Point3D destination)
 }
 bool Actors::move_canPathFromTo(const ActorIndex index, const Point3D start, const Facing4 startFacing, const Point3D destination)
 {
-	TerrainFacade& terrainFacade = m_area.m_hasTerrainFacades.getForMoveType(m_moveType[index]);
-	return terrainFacade.accessable(start, startFacing, destination, index);
+	MoveTypeId moveType = m_moveType[index];
+	AreaHasPathsForMoveType& hasPaths = m_area.m_hasPaths.get(moveType);
+	PathParamaters params({
+		.area = m_area,
+		.start = start,
+		.huristicDestination = destination,
+		.shape = m_shape[index],
+		.moveType = moveType,
+		.startFacing = startFacing,
+		.depthFirst = true,
+		.returnPath = false
+	});
+	return hasPaths.accessable(params);
 }
 // MoveEvent
 MoveEvent::MoveEvent(const Step delay, Area& area, const ActorIndex actor, const Step start) :

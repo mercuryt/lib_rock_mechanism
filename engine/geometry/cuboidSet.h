@@ -68,9 +68,8 @@ public:
 		assert(intersects(shape));
 		maybeRemoveAll(shape);
 	}
-	// TODO: why virtual?
-	virtual void maybeAdd(const CuboidType cuboid);
-	virtual void maybeRemove(const CuboidType cuboid);
+	void maybeAdd(const CuboidType cuboid);
+	void maybeRemove(const CuboidType cuboid);
 	void clear() { m_cuboids.clear(); }
 	void shift(const Offset3D offset, const Distance  distance);
 	CuboidSetType shifted(const Offset3D offset, const Distance  distance) const;
@@ -135,6 +134,7 @@ public:
 	[[nodiscard]] CuboidSetType getFaceWest() const;
 	[[nodiscard]] CuboidSetType getFaceAbove() const;
 	[[nodiscard]] CuboidSetType getFaceBelow() const;
+	[[nodiscard]] CuboidSetType inverted() const;
 	[[nodiscard]] PointType nearestPointTo(const CuboidType cuboid) const;
 	private:
 	template<typename ShapeT>

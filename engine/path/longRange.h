@@ -1,9 +1,21 @@
+/*
+	getPath->getPathUnreserved->getPathMaxRange->getPathDepthFirst->getPathSingleTile->getPathDetour->getPathInnerLoop
+	getPathAdjacent->getPath
+	getPathAnyOccupied->getPath
+*/
 #pragma once
 #include "../numericTypes/types.h"
 #include "../geometry/cuboidSet.h"
 #include "../geometry/linePath.h"
 #include "../geometry/rectangle.h"
+#include "../dataStructures/smallMap.h"
+#include "result.h"
+#include "paramaters.h"
+#include "closedListWithFacing.h"
+#include "closedListLongRange.h"
+#include <omp.h>
 class Area;
+class Enterable;
 namespace longRangePath
 {
 	// Check if a target is somewhere in the provided cuboid.
@@ -35,66 +47,91 @@ namespace longRangePath
 	// Memos cannot be moved or copied.
 	struct ShortRangeMemo
 	{
-		SmallSet<Point3D> openList;
+		std::vector<Point3D> openList;
+		std::vector<std::pair<Point3D, int>> openListWithCuboidIndex;
 		CuboidSet closedList;
+		std::vector<std::pair<Point3D, Point3D>> history;
+		ClosedListWithFacing closedListWithFacing;
 		ShortRangeMemo() = default;
 	};
-	struct LongRangeMemo
+	// Four cache lines per memo to prevent false sharing.
+	struct alignas(std::hardware_destructive_interference_size * 4) LongRangeMemo
 	{
 		ShortRangeMemo shortRangeMemo;
 		std::vector<OpenListData> openList;
-		SmallMap<Cuboid, SmallMap<Cuboid, int>> closedListToFromWithAccumulatedCost;
+		ClosedListLongRange closedListToFrom;
 		LongRangeMemo() = default;
 	};
-	inline std::vector<std::unique_ptr<LongRangeMemo>> memos;
-	inline std::vector<bool> memoCheckedOut;
-	inline std::mutex memoMutex;
+	// This vector is allocated during initalization and then never changed. Addresses within it are stable.
+	inline std::vector<LongRangeMemo> memos;
+	void init();
+	inline LongRangeMemo& getMemo() { return memos[omp_get_thread_num()]; }
+	// Pass IntermediateResult out from inner templates to make testing easier.
+	struct IntermediateResult
+	{
+		std::vector<Cuboid> cuboids;
+		Point3D target;
+	};
 	// Entry point.
-	// ShortRangeConditionT is not constrained by the ShortRangeCondition concept here because we don't know if it takes a cuboid or a point and facing as argument(s).
+	// Convinence wrapper to convert adjacent condition to location + facing condition.
+	template<LongRangeCondition LongRangeConditionT, ShortRangeCuboidCondition ShortRangeConditionT>
+	[[nodiscard]] PathResult getPathAdjacent(const Enterable& rtree,LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, const PathParamaters& params);
+	// Entry point.
+	// Convinence wrapper to convert anyOccupied condition to location + facing condition.
+	template<LongRangeCondition LongRangeConditionT, ShortRangeCuboidCondition ShortRangeConditionT>
+	[[nodiscard]] PathResult getPathAnyOccupied(const Enterable& rtree,LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, const PathParamaters& params);
+	// Entry point.
+	// Destination is passed as PathParamaters::huristicDestination
+	template<LongRangeCondition LongRangeConditionT, ShortRangeCondition ShortRangeConditionT>
+	[[nodiscard]] PathResult getPath(const Enterable& rtree, LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, const PathParamaters& params);
 	// Wraps condition for unreserved by faction, if any faction is supplied.
-	template<LongRangeCondition LongRangeConditionT, ShortRangeConditionPointOrCuboid ShortRangeConditionT>
-	[[nodiscard]] std::pair<SmallSet<Point3D>, Point3D> getPath(const Area& area, const auto& rtree, const Point3D start, const Facing4 startFacing, const ShapeId shape, const CuboidSet& occupied, LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, LongRangeMemo& memo, const FactionId faction, const bool depthFirst, const bool singleTile, const bool detour, const bool adjacent, const bool anyOccupied, const Distance maxRange = Distance::null(), const Point3D huristicDestination = {});
-	// Maybe apply adjacent or occupied.
-	// After this template ShortRangeCondition is always (Point, Facing4) -> Point, not (Cuboid) -> Point.
-	template<LongRangeCondition LongRangeConditionT, ShortRangeConditionPointOrCuboid ShortRangeConditionT>
-	[[nodiscard]] std::pair<SmallSet<Point3D>, Point3D> getPathAdjacent(const Area& area, const auto& rtree, const Point3D start, const Facing4 startFacing, const ShapeId shape, const CuboidSet& occupied, LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, LongRangeMemo& memo, const bool depthFirst, const bool singleTile, const bool detour, const bool adjacent, const bool anyOccupied, const Distance maxRange, const Point3D huristicDestination);
+	template<LongRangeCondition LongRangeConditionT, ShortRangeCondition ShortRangeConditionT>
+	[[nodiscard]] IntermediateResult getPathUnreserved(const Enterable& rtree,LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, const PathParamaters& params);
 	// Maybe apply maxRange.
 	template<LongRangeCondition LongRangeConditionT, ShortRangeCondition ShortRangeConditionT>
-	[[nodiscard]] std::pair<SmallSet<Point3D>, Point3D> getPathMaxRange(const Area& area, const auto& rtree, const Point3D start, const Facing4 startFacing, const ShapeId shape, const CuboidSet& occupied, LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, LongRangeMemo& memo, const bool depthFirst, const bool singleTile, const bool detour, const bool adjacent, const bool anyOccupied, const Distance maxRange, const Point3D huristicDestination);
+	[[nodiscard]] IntermediateResult getPathMaxRange(const Enterable& rtree,LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, const PathParamaters& params);
 	// Returns path and target block which passed condition.
-	template<LongRangeCondition LongRangeConditionT, ShortRangeCondition ShortRangeConditionT, bool depthFirst, bool singleTile, bool detour>
-	[[nodiscard]] std::pair<SmallSet<Point3D>, Point3D> getPathInnerLoop(const Area& area, const auto& rtree, const Point3D start, const Facing4 startFacing, const ShapeId shape, const CuboidSet& occupied, LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, LongRangeMemo& memo, const Point3D huristicDestination = {});
+	template<bool depthFirst, bool singleTile, bool detour, LongRangeCondition LongRangeConditionT, ShortRangeCondition ShortRangeConditionT>
+	[[nodiscard]] IntermediateResult getPathInnerLoop(const Enterable& rtree,LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, const PathParamaters& params);
 	// A helper for getPath.
-	template<LongRangeCondition LongRangeConditionT, ShortRangeCondition ShortRangeConditionT, bool depthFirst, bool singleTile, bool detour>
-	[[nodiscard]] std::tuple<SmallSet<Cuboid>, Point3D, Point3D, Point3D> withEachCuboid(const Area& area, const auto& rtree, const Cuboid cuboid, const Cuboid previous, const Cuboid startCuboid, const Point3D start, const ShapeId shape, const int width, const int length, const int height, const CuboidSet& occupied, LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, const int cost, LongRangeMemo& memo, const Point3D huristicDestination);
+	template<bool depthFirst, bool singleTile, bool detour>
+	void withEachAdjacentCuboid(const Cuboid cuboid, const Cuboid previous, const int cost, const bool useShortRange, LongRangeMemo& memo, const PathParamaters& params);
+	// A helper for getPath.
 	// Find which cuboids adjacent to current can be entered. Short range pathing to be used when Cuboid is not freely navigable or shape enters through a constrained portal.
-	template<bool detour>
-	[[nodiscard]] SmallSet<Cuboid> getAccessableCuboids(const Area& area, const auto& rtree, const Cuboid current, const Cuboid previous, const ShapeId shape, const CuboidSet& occupied, ShortRangeMemo& memo);
-	// Returns destination, point before destinaiton, and target. Returning point before allows the cuboid path to point path converter to path to the point before and then append the destinaiton, thus preserving the facing which was being used when finding the target.
-	template<ShortRangeCondition ConditionT, bool detour>
-	std::tuple<Point3D, Point3D, Point3D> getAccessableDestination(const Area& area, const auto& rtree, const Cuboid cuboid, const Cuboid previous, const ShapeId shape, ConditionT&& condition, ShortRangeMemo& memo, const CuboidSet& occupied);
+	template<bool singleTile, bool detour>
+	[[nodiscard]] SmallMap<Cuboid, bool> getAccessableCuboidsShortRange(const Enterable& rtree,const Cuboid current, const Cuboid previous, const PathParamaters& params, ShortRangeMemo& memo);
+	template<bool singleTile, bool detour>
+	[[nodiscard]] SmallMap<Cuboid, bool> getAccessableCuboidsLongRange(const Enterable& rtree,const Cuboid current, const PathParamaters& params);
+	// A helper for getPath.
+	// Returns target to be used as huristic destination when generating the final path.
+	template<bool singleTile, bool detour, ShortRangeCondition ConditionT>
+	Point3D getAccessableDestination(const Cuboid cuboid, const Cuboid previous, ConditionT&& condition, ShortRangeMemo& memo, const PathParamaters& params);
 	// These three functions dispatch to different template specializations depending on run time bool arguments.
 	template<bool depthFirst, bool singleTile, LongRangeCondition LongRangeConditionT, ShortRangeCondition ShortRangeConditionT>
-	[[nodiscard]] std::pair<SmallSet<Point3D>, Point3D>  getPathDetour(const Area& area, const auto& rtree, const Point3D start, const Facing4 startFacing, const ShapeId shape, const CuboidSet& occupied, LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition,  LongRangeMemo& memo, const bool detour, const Point3D huristicDestination);
+	[[nodiscard]] IntermediateResult getPathDetour(const Enterable& rtree,LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, const PathParamaters& paramaters);
 	template<bool depthFirst, LongRangeCondition LongRangeConditionT, ShortRangeCondition ShortRangeConditionT>
-	[[nodiscard]] std::pair<SmallSet<Point3D>, Point3D>  getPathSingleTile(const Area& area, const auto& rtree, const Point3D start, const Facing4 startFacing, const ShapeId shape, const CuboidSet& occupied, LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition,  LongRangeMemo& memo, const bool singleTile, const bool detour, const Point3D huristicDestination);
+	[[nodiscard]] IntermediateResult getPathSingleTile(const Enterable& rtree,LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, const PathParamaters& paramaters);
 	template<LongRangeCondition LongRangeConditionT, ShortRangeCondition ShortRangeConditionT>
-	[[nodiscard]] std::pair<SmallSet<Point3D>, Point3D>  getPathDepthFirst(const Area& area, const auto& rtree, const Point3D start, const Facing4 startFacing, const ShapeId shape, const CuboidSet& occupied, LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition,  LongRangeMemo& memo, const bool depthFirst, const bool singleTile, const bool detour, const Point3D huristicDestination);
+	[[nodiscard]] IntermediateResult getPathDepthFirst(const Enterable& rtree,LongRangeConditionT&& longRangeCondition, ShortRangeConditionT&& shortRangeCondition, const PathParamaters& paramaters);
 	// Get deflection point for portal.
-	[[nodiscard]] Point3D findCrossingPointNearestForShape(Area& area, RectangleWithFacing portal, Point3D huristic, ShapeId shape, ShortRangeMemo& memo);
+	[[nodiscard]] Point3D findCrossingPointNearestForShape(const Area& area, RectangleWithFacing portal, Point3D huristic, ShapeId shape, ShortRangeMemo& memo);
 	// Check if a cuboid is small enough that short range pathing is needed. Checking if shape can turn and if vertical clearence is enough for height everywhere in the cuboid.
-	[[nodiscard]] bool checkCuboidNotFreelyNavigable(const Cuboid cuboid, const int width, const int length, const int height);
+	[[nodiscard]] bool checkCuboidNotFreelyNavigable(const Cuboid cuboid, const PathParamaters& params);
 	// Check if a shape can pass freely between two adjacent cuboids or if we must do a detailed check to see that the shape fits. Return true for freely pathable.
-	[[nodiscard]] bool checkPortalSize(const Cuboid to, const Cuboid from, const int width, const int length, const int height);
+	// May return a false negitive.
+	[[nodiscard]] bool checkPortalSize(const Cuboid to, const Cuboid from, const PathParamaters& params);
+	// If check portal size returns false then we go on to checkPortalPathability to confirm.
+	template<bool detour, bool singleTile>
+	[[nodiscard]] bool checkPortalPathabality(const Cuboid to, const Cuboid from, const PathParamaters& params);
 	// Pass both end and point before end so that point before can be used for building the path and end can be appended to the back, thus preserving the facing of end which was used when the short range condition found the target.
-	[[nodiscard]] SmallSet<Point3D> cuboidPathToPointPathStringPulling(Area& area, ShapeId shape, const SmallSet<Cuboid> cuboids, Point3D start, Point3D end, Point3D pointBeforeEnd, ShortRangeMemo& memo);
+	[[nodiscard]] SmallSet<Point3D> cuboidPathToPointPathStringPulling(const Area& area, ShapeId shape, const std::vector<Cuboid> cuboids, Point3D start, Point3D end, Point3D pointBeforeEnd, ShortRangeMemo& memo);
 	// A helper for cuboidPathToPointPathStringPulling.
-	[[nodiscard]] SmallSet<Point3D> generateSegmentStringPulling(Area& area, ShapeId shape, Point3D start, Point3D end, std::vector<RectangleWithFacing>::iterator startPortal, std::vector<RectangleWithFacing>::iterator endPortal, ShortRangeMemo& memo);
+	[[nodiscard]] SmallSet<Point3D> generateSegmentStringPulling(const Area& area, ShapeId shape, Point3D start, Point3D end, std::vector<RectangleWithFacing>::iterator startPortal, std::vector<RectangleWithFacing>::iterator endPortal, ShortRangeMemo& memo);
 	// Constructs whole path point by point while using cuboids to constrain search space.
-	// TODO: would it be better to just make the detour path without involving cuboids / long range at all?
-	template<bool detour>
-	[[nodiscard]] SmallSet<Point3D> cuboidPathToPointPath(Area& area, ShapeId shape, const CuboidSet& occupied, const SmallSet<Cuboid> cuboids, Point3D start, Point3D end, Point3D pointBeforeEnd, ShortRangeMemo& memo);
-	// Manage memos, thread safe.
-	[[nodiscard]] LongRangeMemo& checkOutMemo();
-	void returnMemo(LongRangeMemo& memo);
+	template<bool detour, ShortRangeCondition ShortRangeConditionT>
+	[[nodiscard]] SmallSet<Point3D> cuboidPathToPointPath(ShortRangeConditionT&& shortRangeCondition, const PathParamaters& params, const IntermediateResult& intermediateResult, ShortRangeMemo& memo);
+	template<bool detour, bool singleTile>
+	[[nodiscard]] bool shapeCanEnterFrom(const Point3D to, const Point3D from, const PathParamaters& params);
+	template<bool detour, bool singleTile>
+	[[nodiscard]] bool shapeCanEnterWithFacing(const Point3D to, const Facing4 facing, const PathParamaters& params);
 }

@@ -47,7 +47,7 @@ void Space::solid_setCuboid(const Cuboid cuboid, const MaterialTypeId materialTy
 	Plants& plants = m_area.getPlants();
 	// TODO: should this be kill all or destroy all?
 	plants.destroyAll(cuboid);
-	m_area.m_hasTerrainFacades.maybeSetImpassable(cuboid);
+	m_area.m_hasPaths.maybeSetImpassable(cuboid);
 	m_area.m_hasTemperature.onTemperatureCanNoLongerTransmit(m_area, CuboidSet::create(cuboid));
 	m_area.m_hasCraftingLocationsAndJobs.maybeRemoveCuboid(cuboid);
 	if(previous.empty())
@@ -94,7 +94,7 @@ void Space::solid_setNotCuboid(const Cuboid cuboid)
 	Cuboid inflated = cuboid;
 	inflated.inflate({1});
 	const Cuboid spaceBoundry = boundry();
-	m_area.m_hasTerrainFacades.update(spaceBoundry.intersection(inflated));
+	m_area.m_hasPaths.update(m_area, spaceBoundry.intersection(inflated));
 	m_exposedToSky.maybeSetCuboid(m_area, cuboid);
 	m_area.m_hasTemperature.onSetNotSolid(m_area, CuboidSet::create(cuboid), materialType);
 	for(const Point3D point : cuboid)

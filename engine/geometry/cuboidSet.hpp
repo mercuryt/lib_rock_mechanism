@@ -562,6 +562,13 @@ CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::getFaceBelow(
 	return output;
 }
 template<typename CuboidType, typename PointType, typename CuboidSetType>
+CuboidSetType CuboidSetBase<CuboidType, PointType, CuboidSetType>::inverted() const
+{
+	CuboidSetType output = CuboidSetType::create(boundry());
+	output.maybeRemoveAll(*this);
+	return output;
+}
+template<typename CuboidType, typename PointType, typename CuboidSetType>
 PointType CuboidSetBase<CuboidType, PointType, CuboidSetType>::nearestPointTo(const CuboidType other) const
 {
 	assert(!empty());

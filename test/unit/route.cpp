@@ -56,9 +56,13 @@ TEST_CASE("route_10_10_10")
 			.species=dwarf,
 			.location=origin,
 		});
+		MoveTypeId moveType =  actors.getMoveType(actor);
+		Cuboid startingEnterable = area.m_hasPaths.get(moveType).m_enterable.queryGetLeaf(origin);
+		Cuboid topOfWallEnterable = area.m_hasPaths.get(moveType).m_enterable.queryGetLeaf(block1.above());
+		CHECK(!space.move_cuboidCanBeEnteredFrom(startingEnterable, topOfWallEnterable, moveType));
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
-		CHECK(actors.move_getPath(actor).size() > 4);
+		CHECK(actors.move_getPath(actor).size() > 5);
 	}
 	SUBCASE("No route found")
 	{
@@ -182,6 +186,14 @@ TEST_CASE("route_10_10_10")
 		CHECK(actors.move_getPath(actor).empty());
 		space.solid_setNot(wallStart);
 		actors.move_setDestination(actor, destination);
+		MoveTypeId moveType = actors.getMoveType(actor);
+		Enterable& enterable = area.m_hasPaths.get(moveType).m_enterable;
+		enterable.prepare();
+		Cuboid from = enterable.queryGetLeaf(origin);
+		Cuboid to = enterable.queryGetLeaf(wallStart);
+		CHECK(space.move_cuboidCanBeEnteredFrom(from, to, moveType));
+		Cuboid then = enterable.queryGetLeaf(destination);
+		CHECK(space.move_cuboidCanBeEnteredFrom(to, then, moveType));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
 	}
@@ -312,6 +324,12 @@ TEST_CASE("route_5_5_3")
 		actors.move_setType(actor, twoLegsAndSwimInWater);
 		actors.move_setDestination(actor, destination);
 		CHECK(space.shape_moveTypeCanEnter(midpoint, actors.getMoveType(actor)));
+		const Enterable& enterable = area.m_hasPaths.get(twoLegsAndSwimInWater).m_enterable;
+		Cuboid from = enterable.queryGetLeaf(origin);
+		Cuboid to = enterable.queryGetLeaf(midpoint);
+		CHECK(space.move_cuboidCanBeEnteredFrom(from, to, twoLegsAndSwimInWater));
+		Cuboid then = enterable.queryGetLeaf(destination);
+		CHECK(space.move_cuboidCanBeEnteredFrom(to, then, twoLegsAndSwimInWater));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
 	}
@@ -372,8 +390,12 @@ TEST_CASE("route_5_5_5")
 		CHECK(test);
 		test = space.shape_moveTypeCanEnterFrom(destination, twoLegsAndClimb2, belowDestination);
 		CHECK(test);
-		AdjacentData adjacentData = area.m_hasTerrainFacades.getForMoveType(twoLegsAndClimb2).getAdjacentData(start);
-		CHECK(adjacentData.check({21}));
+		const Enterable& enterable = area.m_hasPaths.get(twoLegsAndClimb2).m_enterable;
+		Cuboid from = enterable.queryGetLeaf(start);
+		Cuboid to = enterable.queryGetLeaf(belowDestination);
+		CHECK(space.move_cuboidCanBeEnteredFrom(from, to, twoLegsAndClimb2));
+		Cuboid then = enterable.queryGetLeaf(destination);
+		CHECK(space.move_cuboidCanBeEnteredFrom(to, then, twoLegsAndClimb2));
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
@@ -399,8 +421,10 @@ TEST_CASE("route_5_5_5")
 			.location=origin,
 		});
 		CHECK(actors.getMoveType(actor) == twoLegsAndSwimInWater);
-		AdjacentData adjacentData = area.m_hasTerrainFacades.getForMoveType(twoLegsAndSwimInWater).getAdjacentData(origin);
-		CHECK(adjacentData.check({21}));
+		const Enterable& enterable = area.m_hasPaths.get(twoLegsAndSwimInWater).m_enterable;
+		Cuboid from = enterable.queryGetLeaf(origin);
+		Cuboid to = enterable.queryGetLeaf(middle);
+		CHECK(space.move_cuboidCanBeEnteredFrom(from, to, twoLegsAndSwimInWater));
 		actors.move_setDestination(actor, Point3D::create(0, 0, 4));
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
@@ -420,11 +444,14 @@ TEST_CASE("route_5_5_5")
 		simulation.doStep();
 		CHECK(actors.move_getPath(actor).empty());
 		space.pointFeature_construct(rampLocation, ramp, marble);
-		CHECK(space.shape_shapeAndMoveTypeCanEnterEverFrom(rampLocation, actors.getShape(actor), actors.getMoveType(actor), adjacentToRamp));
-		CHECK(space.shape_shapeAndMoveTypeCanEnterEverFrom(destination, actors.getShape(actor), actors.getMoveType(actor), rampLocation));
+		MoveTypeId moveType = actors.getMoveType(actor);
+		CHECK(space.shape_shapeAndMoveTypeCanEnterEverFrom(rampLocation, actors.getShape(actor), moveType, adjacentToRamp));
+		CHECK(space.shape_shapeAndMoveTypeCanEnterEverFrom(destination, actors.getShape(actor), moveType, rampLocation));
 		CHECK(space.getAdjacentWithEdgeAndCornerAdjacent(adjacentToRamp).contains(rampLocation));
-		auto& facade = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(actor));
-		CHECK(facade.getValue(adjacentToRamp, rampLocation));
+		const Enterable& enterable = area.m_hasPaths.get(moveType).m_enterable;
+		Cuboid from = enterable.queryGetLeaf(adjacentToRamp);
+		Cuboid to = enterable.queryGetLeaf(rampLocation);
+		CHECK(space.move_cuboidCanBeEnteredFrom(from, to, moveType));
 		actors.move_setDestination(actor, destination);
 		simulation.doStep();
 		CHECK(!actors.move_getPath(actor).empty());
@@ -657,14 +684,15 @@ TEST_CASE("route_5_5_5")
 		areaBuilderUtil::setSolidLayers(area, 0, 3, marble);
 		Point3D surface = Point3D::create(3,3,3);
 		Point3D deep = Point3D::create(3,3,2);
-		space.solid_setNot(surface);
-		space.solid_setNot(deep);
-		space.fluid_add(surface, Config::maxPointVolume, water);
-		space.fluid_add(deep, Config::maxPointVolume, water);
+		Cuboid pit{surface, deep};
+		space.solid_setNotCuboid(pit);
+		space.fluid_add(pit, Config::maxPointVolume, water);
 		ActorIndex actor = actors.create({
 			.species=dwarf,
 			.location=Point3D::create(1,1,4),
 		});
+		CHECK(!MoveType::getBreathableFluids(actors.getMoveType(actor)).contains(water));
+		CHECK(actors.move_canPathTo(actor, surface));
 		CHECK(!actors.move_canPathTo(actor, deep));
 	}
 }

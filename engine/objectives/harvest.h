@@ -53,14 +53,14 @@ public:
 	void clearReferences(Simulation& simulation, Area* area);
 	PlantIndex getPlant();
 };
-class HarvestPathRequest final : public PathRequestBreadthFirst
+class HarvestPathRequest final : public PathRequest
 {
 	HarvestObjective& m_objective;
 public:
 	HarvestPathRequest(Area& area, HarvestObjective& objective, const ActorIndex actorIndex);
 	HarvestPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
-	void writeStep(Area& area, FindPathResult& result) override;
+	PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
+	void writeStep(Area& area, bool useCurrentLocation) override;
 	[[nodiscard]] std::string name() { return "harvest"; }
 	[[nodiscard]] Json toJson() const override;
 };

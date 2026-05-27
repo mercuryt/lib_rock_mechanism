@@ -4,7 +4,7 @@
 #include "../random.h"
 #include "../config/config.h"
 #include "../simulation/simulation.h"
-#include "../path/terrainFacade.hpp"
+#include "../path/areaHasPaths.hpp"
 #include "../actors/actors.h"
 #include "../numericTypes/types.h"
 // PathRequest
@@ -13,40 +13,41 @@ WanderPathRequest::WanderPathRequest(Area& area, WanderObjective& objective, con
 {
 	Actors& actors = area.getActors();
 	start = actors.getLocation(actorIndex);
+	facing = actors.getFacing(actorIndex);
 	maxRange = Config::maxRangeToSearchForHorticultureDesignations;
 	actor = actors.getReference(actorIndex);
 	shape = actors.getShape(actorIndex);
 	moveType = actors.getMoveType(actorIndex);
 }
 WanderPathRequest::WanderPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
-	PathRequestBreadthFirst(data, area),
+	PathRequest(data, area),
 	m_objective(static_cast<WanderObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))),
 	m_lastPoint(data["lastPoint"].get<Point3D>())
 { }
-FindPathResult WanderPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
+PathResult WanderPathRequest::readStep(Area& area, const AreaHasPathsForMoveType& hasPaths)
 {
 	Random& random = area.m_simulation.m_random;
 	m_pointCounter = random.getInRange(Config::wanderMinimimNumberOfPoints, Config::wanderMaximumNumberOfPoints);
-	auto destinationCondition = [this](const Point3D point, const Facing4) -> std::pair<bool, Point3D>
+	auto shortRangeCondition = [this](const Point3D point, const Facing4) -> Point3D
 	{
 		if(!m_pointCounter)
-			return std::pair(true, point);
+			return point;
 		m_lastPoint = point;
-		return std::pair(false, Point3D::null());
+		return Point3D::null();
 	};
-	Actors& actors = area.getActors();
-	const ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	constexpr bool anyOccupiedPoint = false;
+	// TODO:(optimization) I don't see a way to write a long range condition here, the whole method should probably be rewritten.
+	auto longRangeCondition = [](const Cuboid) -> bool { return true; };
+	constexpr bool useAnyOccupiedPoint = false;
 	constexpr bool useAdjacent = false;
-	return terrainFacade.findPathToConditionBreadthFirst<decltype(destinationCondition), anyOccupiedPoint, useAdjacent>(destinationCondition, memo, actors.getLocation(actorIndex), actors.getFacing(actorIndex), actors.getShape(actorIndex), detour);
+	return hasPaths.pathToCondition<useAdjacent, useAnyOccupiedPoint>(longRangeCondition, shortRangeCondition, toParamaters(area));
 }
-void WanderPathRequest::writeStep(Area& area, FindPathResult& result)
+void WanderPathRequest::writeStep(Area& area, bool useCurrentLocation)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	if(result.path.empty())
+	if(path.empty())
 	{
-		if(m_lastPoint.empty())
+		if(m_lastPoint == actors.getLocation(actorIndex) || useCurrentLocation)
 			actors.wait(actorIndex, Config::stepsToDelayBeforeTryingAgainToCompleteAnObjective);
 		else
 		{
@@ -56,13 +57,13 @@ void WanderPathRequest::writeStep(Area& area, FindPathResult& result)
 	}
 	else
 	{
-		m_objective.m_destination = result.path.back();
-		actors.move_setPath(actorIndex, result.path);
+		m_objective.m_destination = path.back();
+		actors.move_setPath(actorIndex, path);
 	}
 }
 Json WanderPathRequest::toJson() const
 {
-	Json output = PathRequestBreadthFirst::toJson();
+	Json output = PathRequest::toJson();
 	output["objective"] = &m_objective;
 	output["lastPoint"] = m_lastPoint;
 	output["type"] = "wander";

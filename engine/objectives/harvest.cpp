@@ -7,7 +7,7 @@
 #include "../actors/actors.h"
 #include "../space/space.h"
 #include "../plants.h"
-#include "../path/terrainFacade.hpp"
+#include "../path/areaHasPaths.hpp"
 #include "../path/pathRequest.h"
 #include "../definitions/plantSpecies.h"
 // Event.
@@ -170,38 +170,38 @@ HarvestPathRequest::HarvestPathRequest(Area& area, HarvestObjective& objective, 
 	facing = actors.getFacing(actorIndex);
 	detour = m_objective.m_detour;
 	adjacent = true;
+	anyOccupiedPoint = false;
 	reserveDestination = true;
 }
 HarvestPathRequest::HarvestPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
-	PathRequestBreadthFirst(data, area),
+	PathRequest(data, area),
 	m_objective(static_cast<HarvestObjective&>(*deserializationMemo.m_objectives[data["objective"]]))
 { }
-FindPathResult HarvestPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
+PathResult HarvestPathRequest::readStep(Area& area, const AreaHasPathsForMoveType& hasPaths)
 {
-	constexpr bool unreserved = false;
-	constexpr bool anyOccupiedPoint = false;
-	constexpr bool useAdjacent = true;
-	return terrainFacade.findPathToSpaceDesignation<anyOccupiedPoint, useAdjacent>(memo, SpaceDesignation::Harvest, faction, start, facing, shape, m_objective.m_detour, unreserved, Config::maxRangeToSearchForHorticultureDesignations);
+	return hasPaths.pathToDesignation(SpaceDesignation::Harvest, toParamaters(area));
 }
-void HarvestPathRequest::writeStep(Area& area, FindPathResult& result)
+void HarvestPathRequest::writeStep(Area& area, bool useCurrentLocation)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	const Point3D harvestLocation = result.pointThatPassedPredicate;
-	if(result.path.empty() && result.pointThatPassedPredicate.empty())
+	if(path.empty() && target.empty())
 		actors.objective_canNotCompleteObjective(actorIndex, m_objective);
-	else if(!area.m_spaceDesignations.getForFaction(faction).check(harvestLocation, SpaceDesignation::Harvest))
+	else if(!area.m_spaceDesignations.getForFaction(faction).check(target, SpaceDesignation::Harvest))
 		// Retry.
 		actors.objective_canNotCompleteSubobjective(actorIndex);
 	else
 	{
-		m_objective.select(area, result.pointThatPassedPredicate, actorIndex);
-		actors.move_setPath(actorIndex, result.path);
+		m_objective.select(area, target, actorIndex);
+		if(useCurrentLocation)
+			m_objective.execute(area, actorIndex);
+		else
+			actors.move_setPath(actorIndex, path);
 	}
 }
 Json HarvestPathRequest::toJson() const
 {
-	Json output = PathRequestBreadthFirst::toJson();
+	Json output = PathRequest::toJson();
 	output["objective"] = reinterpret_cast<uintptr_t>(&m_objective);
 	output["type"] = "harvest";
 	return output;

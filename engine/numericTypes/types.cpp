@@ -43,6 +43,7 @@ Temperature Temperature::operator-(const TemperatureDelta delta) const
 	copy += delta;
 	return copy;
 }
+TemperatureDelta Temperature::delta() const { return TemperatureDelta::create(data); }
 TemperatureDelta TemperatureDelta::reduceForDistanceAmbiant(const DistanceFractional distance) const
 {
 	if(distance == 0)

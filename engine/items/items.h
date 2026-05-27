@@ -167,6 +167,7 @@ public:
 	void setStatic(const ItemIndex index);
 	void unsetStatic(const ItemIndex index);
 	void setOnSurface(const ItemIndex index, const bool value);
+	void moveQuantity(const ItemIndex index, const Quantity quantity, const Point3D destaination);
 	[[nodiscard]] SmallSet<ItemIndex> getAll() const;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] bool isInstalled(const ItemIndex index) { return m_installed[index]; }

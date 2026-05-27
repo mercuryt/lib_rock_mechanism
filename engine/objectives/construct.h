@@ -6,7 +6,7 @@
 class Project;
 class Area;
 class ConstructProject;
-struct FindPathResult;
+struct PathResult;
 // TODO: specalize construct objective into carpentry, masonry, etc.
 class ConstructObjectiveType final : public ObjectiveType
 {
@@ -45,14 +45,14 @@ public:
 	// For Testing.
 	[[nodiscard, maybe_unused]] Project* getProject() { return m_project; }
 };
-class ConstructPathRequest final : public PathRequestBreadthFirst
+class ConstructPathRequest final : public PathRequest
 {
 	ConstructObjective& m_constructObjective;
 public:
 	ConstructPathRequest(Area& area, ConstructObjective& co, const ActorIndex actorIndex);
 	ConstructPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
-	void writeStep(Area& area, FindPathResult& result) override;
+	PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
+	void writeStep(Area& area, bool useCurrentLocation) override;
 	[[nodiscard]] Json toJson() const override;
 	[[nodiscard]] std::string name() { return "construct"; }
 };

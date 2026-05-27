@@ -4,7 +4,7 @@
 #include "../eventSchedule.hpp"
 #include "../path/pathRequest.h"
 #include "../reservable.h"
-#include "../path/terrainFacade.h"
+#include "../path/areaHasPaths.h"
 #include "../numericTypes/types.h"
 #include "../projects/givePlantFluid.h"
 
@@ -12,17 +12,17 @@
 
 class GivePlantsFluidObjective;
 struct DeserializationMemo;
-struct FindPathResult;
+struct PathResult;
 
 // Path to an empty water proof container or somewhere to fill an empty container or a container with the correct type of fluid or a plant which needs fluid.
-class GivePlantsFluidPathRequest final : public PathRequestBreadthFirst
+class GivePlantsFluidPathRequest final : public PathRequest
 {
 	GivePlantsFluidObjective& m_objective;
 public:
 	GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective, const ActorIndex actorIndex);
 	GivePlantsFluidPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
-	void writeStep(Area& area, FindPathResult& result) override;
+	PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
+	void writeStep(Area& area, bool useCurrentLocation) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "give plants fluid"; }
 };

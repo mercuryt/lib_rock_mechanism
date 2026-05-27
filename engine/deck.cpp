@@ -8,7 +8,7 @@ void AreaHasDecks::updatePoints(Area& area, const DeckId id)
 {
 	for(const Cuboid cuboid : m_data[id].cuboidSet)
 	{
-		area.m_hasTerrainFacades.update(cuboid);
+		area.m_hasPaths.update(area, cuboid);
 		m_pointData.maybeInsert(cuboid, id);
 	}
 }
@@ -18,7 +18,7 @@ void AreaHasDecks::clearPoints(Area& area, const DeckId id)
 	for(const Cuboid cuboid : m_data[id].cuboidSet)
 	{
 		m_pointData.maybeRemove(cuboid);
-		area.m_hasTerrainFacades.update(cuboid);
+		area.m_hasPaths.update(area, cuboid);
 	}
 }
 [[nodiscard]] DeckId AreaHasDecks::registerDecks(Area& area, const CuboidSet& decks, const ActorOrItemIndex actorOrItemIndex)

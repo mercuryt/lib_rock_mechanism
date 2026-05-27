@@ -11,7 +11,7 @@
 #include "../fire.h"
 #include "../stocks.h"
 #include "../fluidSource.h"
-#include "../path/terrainFacade.h"
+#include "../path/areaHasPaths.h"
 #include "../dataStructures/octTree.h"
 #include "../vision/opacityFacade.h"
 #include "../vision/visionRequests.h"
@@ -77,7 +77,7 @@ public:
 	EventSchedule m_eventSchedule;
 	ThreadedTaskEngine m_threadedTaskEngine;
 	AreaHasTemperature m_hasTemperature;
-	AreaHasTerrainFacades m_hasTerrainFacades;
+	AreaHasPaths m_hasPaths;
 	AreaHasFires m_fires;
 	// To be updated when an actor becomes a soldier, stops being a soldier, or moves while being a soldier.
 	// Used by summing for all enemy factions for point or path and comparing delta to PsycologyAttribute::Courage.

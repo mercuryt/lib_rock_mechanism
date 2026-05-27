@@ -41,6 +41,7 @@ void Config::load()
 	data["bludgeonPercentTemporaryImparmentModifier"].get_to(bludgeonPercentTemporaryImparmentModifier);
 	data["bludgeonStepsTillHealedModifier"].get_to(bludgeonStepsTillHealedModifier);
 	data["bodyHardnessModifier"].get_to(bodyHardnessModifier);
+	data["capacityToReserveForRTreeOpenListBufferPerThread"].get_to(capacityToReserveForRTreeOpenListBufferPerThread);
 	data["chastiseCastingCallBonusForDefenderIsFamily"].get_to(chastiseCastingCallBonusForDefenderIsFamily);
 	data["chastiseCastingCallBonusForDefenderIsFriend"].get_to(chastiseCastingCallBonusForDefenderIsFriend);
 	data["chastiseCastingCallDefenderMinimumScore"].get_to(chastiseCastingCallDefenderMinimumScore);

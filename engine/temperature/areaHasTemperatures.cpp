@@ -311,3 +311,62 @@ Temperature AreaHasTemperature::getDailyAverageAmbientSurfaceTemperature(Area& a
 	int daysFromSolstice = std::abs(day - (int)dayOfYearOfSolstice);
 	return yearlyColdestDailyAverage + ((yearlyHottestDailyAverage - yearlyColdestDailyAverage) * (dayOfYearOfSolstice - daysFromSolstice)) / dayOfYearOfSolstice;
 }
+Temperature AreaHasTemperature::lowerBound(Area& area, const Cuboid cuboid)
+{
+	TemperatureDelta sumDelta{0};
+	m_sources.queryForEach(cuboid, [&](const TemperatureSource source){
+		Distance distance = source.m_delta > 0 ?
+			// Delta is positive, distance is farthest possible.
+			cuboid.furthestPointFrom(source.m_location).distanceTo(source.m_location) :
+			// Delta is negitive, distance is closes possible.
+			source.m_location.distanceTo(cuboid);
+		TemperatureDelta delta = source.m_delta.reduceForDistanceRadiant(distance.toFloat());
+		sumDelta += delta;
+	});
+	TemperatureDelta deltaBetweenExposedAndNotExposed = TemperatureDelta::create((m_ambiant - Config::undergroundAmbiantTemperature).get());
+	m_portals.queryForEach(cuboid, [&](const Cuboid portal){
+		// Portals are always cooling sources rather then heat sources.
+		Distance distance = portal.distanceTo(cuboid);
+		TemperatureDelta delta = deltaBetweenExposedAndNotExposed.reduceForDistanceAmbiant(distance.toFloat());
+		sumDelta += delta;
+	});
+	if(area.getSpace().m_exposedToSky.get().query(cuboid))
+		// At least some part of cuboid is exposed to sky.
+		return std::min(m_ambiant, Config::undergroundAmbiantTemperature) + sumDelta;
+	return Config::undergroundAmbiantTemperature + sumDelta;
+}
+std::pair<Temperature, Temperature> AreaHasTemperature::upperAndLowerBounds(Area& area, const Cuboid cuboid) const
+{
+	TemperatureDelta highDelta{0};
+	TemperatureDelta lowDelta{0};
+	m_sources.queryForEach(cuboid, [&](const TemperatureSource source){
+		Distance distanceLow = source.m_delta > 0 ?
+			// Delta is positive, distance is farthest possible.
+			cuboid.furthestPointFrom(source.m_location).distanceTo(source.m_location) :
+			// Delta is negitive, distance is closest possible.
+			source.m_location.distanceTo(cuboid);
+		TemperatureDelta deltaLow = source.m_delta.reduceForDistanceRadiant(distanceLow.toFloat());
+		lowDelta += deltaLow;
+		Distance distanceHigh = source.m_delta < 0 ?
+			// Delta is positive, distance is closest possible.
+			cuboid.furthestPointFrom(source.m_location).distanceTo(source.m_location) :
+			// Delta is negitive, distance is farthest possible.
+			source.m_location.distanceTo(cuboid);
+		TemperatureDelta deltaHigh = source.m_delta.reduceForDistanceRadiant(distanceHigh.toFloat());
+		highDelta += deltaHigh;
+	});
+	TemperatureDelta deltaBetweenExposedAndNotExposed = m_ambiant.delta() - Config::undergroundAmbiantTemperature.delta();
+	m_portals.queryForEach(cuboid, [&](const Cuboid portal){
+		// Portals are always cooling sources rather then heat sources.
+		Distance distance = portal.distanceTo(cuboid);
+		TemperatureDelta delta = deltaBetweenExposedAndNotExposed.reduceForDistanceAmbiant(distance.toFloat());
+		lowDelta += delta;
+	});
+	if(area.getSpace().m_exposedToSky.get().query(cuboid))
+		// At least some part of cuboid is exposed to sky.
+		return {
+			std::max(m_ambiant, Config::undergroundAmbiantTemperature) + highDelta,
+			std::min(m_ambiant, Config::undergroundAmbiantTemperature) + lowDelta
+		};
+	return {Config::undergroundAmbiantTemperature + highDelta, Config::undergroundAmbiantTemperature + lowDelta};
+}

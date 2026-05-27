@@ -13,7 +13,7 @@
 #include "../items/items.h"
 #include "../numericTypes/types.h"
 #include "../plants.h"
-#include "../path/terrainFacade.hpp"
+#include "../path/areaHasPaths.hpp"
 
 // Path Request.
 GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(Area& area, GivePlantsFluidObjective& objective, const ActorIndex actorIndex) :
@@ -32,37 +32,31 @@ GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(Area& area, GivePlantsFlu
 	reserveDestination = true;
 }
 GivePlantsFluidPathRequest::GivePlantsFluidPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
-	PathRequestBreadthFirst(data, area),
+	PathRequest(data, area),
 	m_objective(static_cast<GivePlantsFluidObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
 { }
-FindPathResult GivePlantsFluidPathRequest::readStep(Area&, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
+PathResult GivePlantsFluidPathRequest::readStep(Area& area, const AreaHasPathsForMoveType& hasPaths)
 {
 	assert(m_objective.m_project == nullptr);
-	constexpr bool anyOccupied = false;
-	constexpr bool useAdjacent = true;
-	constexpr bool unreserved = false;
-	return terrainFacade.findPathToSpaceDesignation<anyOccupied, useAdjacent>(
-		memo, SpaceDesignation::GivePlantFluid, faction, start, facing, shape,
-		m_objective.m_detour, unreserved, Config::maxRangeToSearchForHorticultureDesignations
-	);
+	return hasPaths.pathToDesignation(SpaceDesignation::GivePlantFluid, toParamaters(area));
 }
-void GivePlantsFluidPathRequest::writeStep(Area& area, FindPathResult& result)
+void GivePlantsFluidPathRequest::writeStep(Area& area, bool useCurrentLocation)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	if(result.path.empty() && !result.useCurrentPosition)
+	if(path.empty() && !useCurrentLocation)
 	{
 		actors.objective_canNotCompleteObjective(actorIndex, m_objective);
 		return;
 	}
-	if(area.m_spaceDesignations.getForFaction(faction).check(result.pointThatPassedPredicate, SpaceDesignation::GivePlantFluid))
-		m_objective.selectPlantLocation(area, result.pointThatPassedPredicate, actorIndex);
+	if(area.m_spaceDesignations.getForFaction(faction).check(target, SpaceDesignation::GivePlantFluid))
+		m_objective.selectPlantLocation(area, target, actorIndex);
 	else
 		actors.objective_canNotCompleteSubobjective(actorIndex);
 }
 Json GivePlantsFluidPathRequest::toJson() const
 {
-	Json output = PathRequestBreadthFirst::toJson();
+	Json output = PathRequest::toJson();
 	output["objective"] = &m_objective;
 	output["type"] = "give plants fluid";
 	return output;

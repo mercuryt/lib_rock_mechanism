@@ -3,7 +3,7 @@
 #include "../area/area.h"
 #include "../space/space.h"
 #include "../items/items.h"
-#include "../path/terrainFacade.hpp"
+#include "../path/longRange.hpp"
 #include "../numericTypes/types.h"
 // Equip uniform.
 UniformPathRequest::UniformPathRequest(Area& area, UniformObjective& objective, const ActorIndex actorIndex) :
@@ -18,31 +18,31 @@ UniformPathRequest::UniformPathRequest(Area& area, UniformObjective& objective, 
 	moveType = actors.getMoveType(actorIndex);
 	facing = actors.getFacing(actorIndex);
 	detour = m_objective.m_detour;
-	adjacent = true;
 	reserveDestination = true;
 }
 UniformPathRequest::UniformPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
-	PathRequestBreadthFirst(data, area),
+	PathRequest(data, area),
 	m_objective(static_cast<UniformObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
 { }
-FindPathResult UniformPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
+PathResult UniformPathRequest::readStep(Area& area, const AreaHasPathsForMoveType& hasPaths)
 {
-	auto destinationCondition = [&area, this](const Cuboid cuboid) -> std::pair<bool, Point3D>
+	auto shortRangeCondition = [&area, this](const Cuboid cuboid) -> Point3D
 	{
-		const Point3D point = m_objective.getLocationOfItemInCuboid(area, cuboid);
-		return {point.exists(), point};
+		return  m_objective.getLocationOfItemInCuboid(area, cuboid);
 	};
-	constexpr bool useAnyOccupiedPoint = false;
-	constexpr bool useAdjacent = true;
-	return terrainFacade.findPathToConditionBreadthFirst<decltype(destinationCondition), useAnyOccupiedPoint, useAdjacent>(destinationCondition, memo, start, facing, shape, detour, faction, maxRange);
+	auto longRangeCondition = [&shortRangeCondition](const Cuboid cuboid) -> bool
+	{
+		return shortRangeCondition(cuboid) != Point3D::null();
+	};
+	return longRangePath::getPathAdjacent(hasPaths.m_enterable, longRangeCondition, shortRangeCondition, toParamaters(area));
 }
-void UniformPathRequest::writeStep(Area& area, FindPathResult& result)
+void UniformPathRequest::writeStep(Area& area, bool useCurrentLocation)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	if(!result.path.empty())
+	if(!path.empty())
 	{
-		if(!actors.move_tryToReserveProposedDestination(actorIndex, result.path))
+		if(!actors.move_tryToReserveProposedDestination(actorIndex, path))
 		{
 			// Cannot reserve location, try again.
 			m_objective.reset(area, actorIndex);
@@ -50,8 +50,7 @@ void UniformPathRequest::writeStep(Area& area, FindPathResult& result)
 		}
 		else
 		{
-			Point3D point = result.pointThatPassedPredicate;
-			ItemIndex item = m_objective.getItemAtLocation(area, {point, point});
+			ItemIndex item = m_objective.getItemAtLocation(area, {target, target});
 			if(item.empty())
 			{
 				// Destination no longer suitable.
@@ -61,15 +60,15 @@ void UniformPathRequest::writeStep(Area& area, FindPathResult& result)
 			else
 			{
 				m_objective.select(area, item);
-				actors.move_setPath(actorIndex, result.path);
+				actors.move_setPath(actorIndex, path);
 			}
 		}
 	}
 	else
 	{
-		if(result.useCurrentPosition)
+		if(useCurrentLocation)
 		{
-			ItemIndex item = m_objective.getItemAtLocation(area, {result.pointThatPassedPredicate, result.pointThatPassedPredicate});
+			ItemIndex item = m_objective.getItemAtLocation(area, {target, target});
 			if(item.empty())
 			{
 				m_objective.reset(area, actorIndex);
@@ -87,7 +86,7 @@ void UniformPathRequest::writeStep(Area& area, FindPathResult& result)
 }
 Json UniformPathRequest::toJson() const
 {
-	Json output = PathRequestBreadthFirst::toJson();
+	Json output = PathRequest::toJson();
 	output["objective"] = &m_objective;
 	output["type"] = "uniform";
 	return output;

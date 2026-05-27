@@ -23,7 +23,7 @@ class StockPile;
 class PointIsPartOfStockPiles;
 struct DeserializationMemo;
 struct MaterialType;
-struct FindPathResult;
+struct PathResult;
 class Area;
 class StockPileObjective;
 

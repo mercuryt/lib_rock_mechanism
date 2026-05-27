@@ -237,13 +237,13 @@ void Space::moveContentsTo(const Point3D from, const Point3D to)
 void Space::maybeContentsFalls(const Point3D point)
 {
 	Items& items = m_area.getItems();
-	auto itemsCopy = item_getAll(point);
-	for(const ItemIndex item : itemsCopy)
-		items.fall(item);
+	auto itemsCopy = item_getAllReferences(items, point);
+	for(const ItemReference item : itemsCopy)
+		items.maybeFall(item.getIndex(items.m_referenceData));
 	Actors& actors = m_area.getActors();
-	auto actorsCopy = actor_getAll(point);
-	for(const ActorIndex actor : actorsCopy)
-		actors.fall(actor);
+	auto actorsCopy = actor_getAllReferences(actors, point);
+	for(const ActorReference actor : actorsCopy)
+		actors.maybeFall(actor.getIndex(actors.m_referenceData));
 }
 void Space::prepareRtrees()
 {
@@ -385,23 +385,5 @@ CuboidSet Space::collectAdjacentsInRange(const Point3D point, const Distance  ra
 	auto condition = [&](const Point3D b){ return b.taxiDistanceTo(point) <= range; };
 	return collectAdjacentsWithCondition(point, condition);
 }
-bool Space::designation_anyForFaction(const FactionId faction, const SpaceDesignation& designation) const
-{
-	return m_area.m_spaceDesignations.getForFaction(faction).any(designation);
-}
-bool Space::designation_has(const Point3D shape, const FactionId faction, const SpaceDesignation& designation) const { return m_area.m_spaceDesignations.getForFaction(faction).check(shape, designation); }
-bool Space::designation_has(const Cuboid shape, const FactionId faction, const SpaceDesignation& designation) const { return m_area.m_spaceDesignations.getForFaction(faction).check(shape, designation); }
-bool Space::designation_has(const CuboidSet& shape, const FactionId faction, const SpaceDesignation& designation) const { return m_area.m_spaceDesignations.getForFaction(faction).check(shape, designation); }
-Point3D Space::designation_hasPoint(const Cuboid shape, const FactionId faction, const SpaceDesignation& designation) const { return m_area.m_spaceDesignations.getForFaction(faction).queryPoint(shape, designation); }
-Point3D Space::designation_hasPoint(const CuboidSet& shape, const FactionId faction, const SpaceDesignation& designation) const { return m_area.m_spaceDesignations.getForFaction(faction).queryPoint(shape, designation); }
-void Space::designation_set(const Point3D shape, const FactionId faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).set(shape, designation); }
-void Space::designation_set(const Cuboid shape, const FactionId faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).set(shape, designation); }
-void Space::designation_set(const CuboidSet& shape, const FactionId faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).set(shape, designation); }
-void Space::designation_unset(const Point3D shape, const FactionId faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).unset(shape, designation); }
-void Space::designation_unset(const Cuboid shape, const FactionId faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).unset(shape, designation); }
-void Space::designation_unset(const CuboidSet& shape, const FactionId faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).unset(shape, designation); }
-void Space::designation_maybeUnset(const Point3D shape, const FactionId faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).maybeUnset(shape, designation); }
-void Space::designation_maybeUnset(const Cuboid shape, const FactionId faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).maybeUnset(shape, designation); }
-void Space::designation_maybeUnset(const CuboidSet& shape, const FactionId faction, const SpaceDesignation& designation) { m_area.m_spaceDesignations.getForFaction(faction).maybeUnset(shape, designation); }
 bool FluidRTree::canOverlap(const FluidData& a, const FluidData& b) const { return a.type != b.type; }
 bool PointFeatureRTree::canOverlap(const PointFeature& a, const PointFeature& b) const { return a.pointFeatureType != b.pointFeatureType; }

@@ -12,7 +12,7 @@
 #include "../numericTypes/types.h"
 #include "../objective.h"
 #include "../path/pathRequest.h"
-#include "../path/terrainFacade.h"
+#include "../path/areaHasPaths.h"
 #include "../portables.h"
 #include "../reference.h"
 #include "../uniform.h"
@@ -408,9 +408,9 @@ public:
 	void move_onLeaveArea(const ActorIndex index);
 	void move_pathRequestCallback(const ActorIndex index, SmallSet<Point3D> path, bool useCurrentLocation, bool reserveDestination);
 	void move_pathRequestMaybeCancel(const ActorIndex index);
-	void move_pathRequestRecord(const ActorIndex index, std::unique_ptr<PathRequestDepthFirst> pathRequest);
-	void move_pathRequestRecord(const ActorIndex index, std::unique_ptr<PathRequestBreadthFirst> pathRequest);
+	void move_pathRequestRecord(const ActorIndex index, std::unique_ptr<PathRequest> pathRequest);
 	void move_pathRequestClear(const ActorIndex index);
+	void move_clearAllPathRequests();
 	[[nodiscard]] bool move_destinationIsAdjacentToLocation(const ActorIndex index, const Point3D location);
 	[[nodiscard]] bool move_tryToReserveProposedDestination(const ActorIndex index, const SmallSet<Point3D>& path);
 	[[nodiscard]] bool move_tryToReserveOccupied(const ActorIndex index);
@@ -605,6 +605,8 @@ public:
 	void temperature_onChange(const ActorIndex index);
 	[[nodiscard]] bool temperature_isSafe(const ActorIndex index, const Temperature temperature) const;
 	[[nodiscard]] bool temperature_isSafeAtCurrentLocation(const ActorIndex index) const;
+	[[nodiscard]] Temperature temperature_getMaxSafe(const ActorIndex index) const;
+	[[nodiscard]] Temperature temperature_getMinSafe(const ActorIndex index) const;
 	// Attributes.
 	void attributes_onUpdateGrowthPercent(const ActorIndex index);
 	void addStrengthBonusOrPenalty(const ActorIndex index, const AttributeLevelBonusOrPenalty bonusOrPenalty);
@@ -748,7 +750,7 @@ public:
 	void onMoveIndex([[maybe_unused]] const HasShapeIndex oldIndex, const HasShapeIndex newIndex) { assert(m_actor == oldIndex.toActor()); m_actor = ActorIndex::create(newIndex.get()); }
 	[[nodiscard]] Json toJson() const;
 };
-class GetIntoAttackPositionPathRequest final : public PathRequestDepthFirst
+class GetIntoAttackPositionPathRequest final : public PathRequest
 {
 	ActorReference target;
 	DistanceFractional attackRangeSquared;
@@ -756,8 +758,8 @@ class GetIntoAttackPositionPathRequest final : public PathRequestDepthFirst
 public:
 	GetIntoAttackPositionPathRequest(Area& area, const ActorIndex attacker, const ActorIndex target, const DistanceFractional attackRangeFractional);
 	GetIntoAttackPositionPathRequest(const Json& data, Area& area);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
-	void writeStep(Area& area, FindPathResult& result) override;
+	PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
+	void writeStep(Area& area, bool useCurrentLocation) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() { return "attack"; }
 };

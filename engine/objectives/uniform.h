@@ -5,6 +5,7 @@
 #include "../reference.h"
 class Area;
 class UniformObjective;
+class RTreeBoolean;
 
 class UniformObjective final : public Objective
 {
@@ -29,14 +30,14 @@ public:
 	friend class UniformThreadedTask;
 
 };
-class UniformPathRequest final : public PathRequestBreadthFirst
+class UniformPathRequest final : public PathRequest
 {
 	UniformObjective& m_objective;
 public:
 	UniformPathRequest(Area& area, UniformObjective& objective, const ActorIndex actor);
 	UniformPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
-	void writeStep(Area& area, FindPathResult& result) override;
+	[[nodiscard]] PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
+	void writeStep(Area& area, bool useCurrentLocation) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() const { return "uniform"; }
 };

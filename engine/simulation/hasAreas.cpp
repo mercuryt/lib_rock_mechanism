@@ -108,7 +108,7 @@ Step SimulationHasAreas::getNextStepToSimulate() const
 	for(const auto& pair : m_areas)
 	{
 		const Area& area = *pair.second;
-		if(!area.m_hasTerrainFacades.empty() || !area.m_hasFluidGroups.getUnstable().empty() || !area.m_threadedTaskEngine.empty() || area.m_fires.containsDeltas())
+		if(!area.m_hasPaths.empty() || !area.m_hasFluidGroups.getUnstable().empty() || !area.m_threadedTaskEngine.empty() || area.m_fires.containsDeltas())
 			return m_simulation.m_step;
 		Step step = area.m_eventSchedule.getNextEventStep();
 		if(output.empty() || step < output)

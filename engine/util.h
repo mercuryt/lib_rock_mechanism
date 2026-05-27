@@ -45,6 +45,7 @@ namespace util
 	{
 		return Percent::create(std::round(((float)numerator / (float)denominator) * 100.f));
 	}
+	Dimensions dimensionForFacing(Facing6 facing);
 	template<typename T>
 	inline bool sortedVectorContainsDuplicates(const std::vector<T>& vector)
 	{

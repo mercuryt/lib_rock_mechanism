@@ -1,7 +1,7 @@
 #include "construct.h"
 #include "../area/area.h"
 #include "../projects/construct.h"
-#include "../path/terrainFacade.hpp"
+#include "../path/areaHasPaths.hpp"
 #include "../actors/actors.h"
 #include "../space/space.h"
 #include "../reference.h"
@@ -23,28 +23,27 @@ ConstructPathRequest::ConstructPathRequest(Area& area, ConstructObjective& co, c
 	reserveDestination = true;
 }
 ConstructPathRequest::ConstructPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
-	PathRequestBreadthFirst(data, area),
+	PathRequest(data, area),
 	m_constructObjective(static_cast<ConstructObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>())))
 { }
-FindPathResult ConstructPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
+PathResult ConstructPathRequest::readStep(Area& area, const AreaHasPathsForMoveType& hasPaths)
 {
 	ActorIndex actorIndex = actor.getIndex(area.getActors().m_referenceData);
-	auto predicate = [&area, this, actorIndex](const Cuboid cuboid) -> bool { return m_constructObjective.joinableProjectExistsAt(area, cuboid, actorIndex).exists(); };
+	auto shortRangeCondition = [&area, &constThis = std::as_const(*this), actorIndex](const Cuboid cuboid) -> Point3D { return constThis.m_constructObjective.joinableProjectExistsAt(area, cuboid, actorIndex); };
+	auto longRangeCondition = [&shortRangeCondition](const Cuboid cuboid) -> bool { return shortRangeCondition(cuboid).exists(); };
+	constexpr bool useAdjacent = true;
 	constexpr bool useAnyPoint = false;
-	constexpr bool findAdjacent = true;
-	constexpr bool unreserved = false;
-	return terrainFacade.findPathToSpaceDesignationAndCondition<decltype(predicate), useAnyPoint, findAdjacent>(predicate, memo, SpaceDesignation::Construct, faction, start, facing, shape, detour, unreserved, maxRange);
+	return hasPaths.pathToConditionWithDesignation<useAdjacent, useAnyPoint>(SpaceDesignation::Construct, longRangeCondition, shortRangeCondition, toParamaters(area));
 }
-void ConstructPathRequest::writeStep(Area& area, FindPathResult& result)
+void ConstructPathRequest::writeStep(Area& area, bool useCurrentLocation)
 {
 	Actors& actors = area.getActors();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	if(result.path.empty() && !result.useCurrentPosition)
+	if(path.empty() && !useCurrentLocation)
 		actors.objective_canNotCompleteObjective(actorIndex, m_constructObjective);
 	else
 	{
 		// No need to reserve here, we are just checking for access.
-		Point3D target = result.pointThatPassedPredicate;
 		ConstructProject& project = area.m_hasConstructionDesignations.getProject(actors.getFaction(actorIndex), target);
 		if(project.canAddWorker(actorIndex))
 			m_constructObjective.joinProject(project, actorIndex);
@@ -55,7 +54,7 @@ void ConstructPathRequest::writeStep(Area& area, FindPathResult& result)
 }
 Json ConstructPathRequest::toJson() const
 {
-	Json output = PathRequestBreadthFirst::toJson();
+	Json output = PathRequest::toJson();
 	output["objective"] = &m_constructObjective;
 	output["type"] = "construct";
 	return output;
@@ -145,7 +144,7 @@ const ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAdjacentT
 }
 ConstructProject* ConstructObjective::getProjectWhichActorCanJoinAt(Area& area, const Cuboid cuboid, const ActorIndex actor)
 {
-	Actors& actors = area.getActors();
+	const Actors& actors = area.getActors();
 	const auto condition = [&](const ConstructProject& project)
 	{
 		if(!project.reservationsComplete() && m_cannotJoinWhileReservationsAreNotComplete.contains((Project*)&project))

@@ -15,6 +15,7 @@ struct AreaHasPortalsBetweenOutSideAndInside
 	void doStep(Area& area);
 	void maybeAdd(Area& area, const CuboidSet& cuboids);
 	void maybeRemove(Area& area, const CuboidSet& cuboids);
+	void queryForEach(const auto& shape, auto&& action) const  { return m_data.queryForEach(shape, action); }
 	[[nodiscard]] bool isRecordedAsPortal(const Point3D& point) const;
 	[[nodiscard]] CuboidSet getAffectedArea(const Area& area, const Cuboid cuboid);
 	[[nodiscard]] DistanceFractional queryDistanceToNearest(const Point3D point);

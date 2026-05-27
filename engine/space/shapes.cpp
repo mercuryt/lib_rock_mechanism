@@ -336,7 +336,7 @@ bool Space::shape_moveTypeCanEnter(const Point3D point, const MoveTypeId moveTyp
 	assert(shape_anythingCanEnterEver(point));
 	const auto& fluidDataSet = m_fluid.queryGetAll(point);
 	// Floating.
-	if(MoveType::getFloating(moveType) && !fluidDataSet.empty())
+	if(MoveType::getFloating(moveType).first.exists() && !fluidDataSet.empty())
 		// Any floating move type can potentailly float in any amount of any type of fluid.
 		return true;
 	// Swiming.
@@ -537,6 +537,11 @@ bool Space::shape_cuboidCanFitCurrentlyDynamic(const Cuboid cuboid, const Collis
 	const auto condition = [&](const CollisionVolume v) { return v + volume <= Config::maxPointVolume; };
 	return m_dynamicVolume.queryAnyWithCondition(cuboid, condition);
 }
+bool Space::shape_queryAnyDynamic(const Cuboid cuboid) const
+{
+	return m_dynamicVolume.queryAny(cuboid);
+}
+void Space::shape_queryRemoveFromDynamic(CuboidSet& cuboids) const { m_dynamic.queryRemove(cuboids); }
 bool Space::shape_canStandIn(const Point3D point) const
 {
 	if(point.z() == 0)

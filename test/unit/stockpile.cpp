@@ -98,6 +98,7 @@ TEST_CASE("stockpile")
 		CHECK(!actors.project_exists(dwarf1));
 		CHECK(!objectiveType.canBeAssigned(area, dwarf1));
 		CHECK(actors.objective_getCurrentName(dwarf1) != "stockpile");
+		CHECK(!items.stockpile_canBeStockPiled(chunk1, faction));
 	}
 	SUBCASE("one worker hauls two items")
 	{
@@ -107,7 +108,7 @@ TEST_CASE("stockpile")
 		Point3D stockpileLocation1 = Point3D::create(5, 5, 1);
 		Point3D stockpileLocation2 = Point3D::create(5, 6, 1);
 		Point3D chunkLocation1 = Point3D::create(5, 0, 1);
-		Point3D chunkLocation2 = Point3D::create(5, 9, 1);
+		Point3D chunkLocation2 = Point3D::create(9, 9, 1);
 		stockpile.addPoint(stockpileLocation1);
 		stockpile.addPoint(stockpileLocation2);
 		ItemIndex chunk1 = items.create({.itemType=chunk, .materialType=wood, .location=chunkLocation1, .quantity=Quantity::create(1u)});
@@ -132,7 +133,7 @@ TEST_CASE("stockpile")
 		CHECK(actors.objective_getCurrentName(dwarf1) == "stockpile");
 		StockPileObjective& objective = actors.objective_getCurrent<StockPileObjective>(dwarf1);
 		CHECK(objective.getDestination() == stockpileLocation2);
-		CHECK(objective.getItem() == area.getItems().m_referenceData.getReference(chunk2));
+		CHECK(objective.getItem(area, dwarf1) == chunk2);
 		// Verify spot, create project, reserve and activate.
 		simulation.doStep();
 		CHECK(actors.project_get(dwarf1)->getLocation() == stockpileLocation2);
@@ -169,7 +170,7 @@ TEST_CASE("stockpile")
 		simulation.doStep();
 		// Destination is confirmed for both. Project is created, reserves and activates.
 		simulation.doStep();
-		// The worker which resered the project becomes dwarf1 (if not already) and the other dwarf2 and the other dwarf2.
+		// The worker which reserved the project becomes dwarf1 (if not already) and the other dwarf2.
 		if(!actors.project_exists(dwarf1))
 		{
 			std::swap(dwarf1, dwarf2);
@@ -344,7 +345,7 @@ TEST_CASE("stockpile")
 		CHECK(actors.objective_getCurrentName(dwarf1) == "stockpile");
 		CHECK(objective.hasItem());
 		CHECK(objective.hasDestination());
-		CHECK(objective.getItem().getIndex(items.m_referenceData) == cargo);
+		CHECK(objective.getItem(area, dwarf1) == cargo);
 		CHECK(objective.getDestination() == stockpileLocation);
 		CHECK(blockDesignations.check(cargoOrigin, SpaceDesignation::StockPileHaulFrom));
 		CHECK(blockDesignations.check(stockpileLocation, SpaceDesignation::StockPileHaulTo));
@@ -448,7 +449,7 @@ TEST_CASE("stockpile")
 		Point3D stockpileLocation1 = Point3D::create(5, 5, 1);
 		Point3D stockpileLocation2 = Point3D::create(6, 5, 1);
 		Point3D cargoOrigin1 = Point3D::create(1, 8, 1);
-		Point3D cargoOrigin2 = Point3D::create(2, 8, 1);
+		Point3D cargoOrigin2 = Point3D::create(2, 9, 1);
 		stockpile.addPoint(stockpileLocation1);
 		stockpile.addPoint(stockpileLocation2);
 		ItemIndex cargo1 = items.create({.itemType=pile, .materialType=sand, .location=cargoOrigin1, .quantity=Quantity::create(100u)});
@@ -456,13 +457,37 @@ TEST_CASE("stockpile")
 		area.m_hasStockPiles.getForFaction(faction).addItem(cargo1);
 		area.m_hasStockPiles.getForFaction(faction).addItem(cargo2);
 		actors.objective_setPriority(dwarf1, objectiveType.getId(), Priority::create(100));
-		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, cargoOrigin1);
-		CHECK(space.item_getCount(cargoOrigin1, pile, sand) < 100);
-		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, stockpileLocation1);
-		simulation.fastForwardUntillActorIsAdjacentToLocation(area, dwarf1, cargoOrigin1);
-		CHECK(actors.project_exists(dwarf1));
-		auto predicate = [&]{ return space.item_getCount(stockpileLocation1, pile, sand) == 100 && space.item_getCount(stockpileLocation2, pile, sand) == 100; };
-		simulation.fastForwardUntillPredicate(predicate);
+		simulation.doStep();
+		auto condition1 = [&]() -> bool {
+			return
+					space.item_getCount(stockpileLocation1, pile, sand) == 100 ||
+					space.item_getCount(stockpileLocation2, pile, sand) == 100;
+
+		};
+		simulation.fastForwardUntillPredicate(condition1);
+		Point3D fullDestination = space.item_getCount(stockpileLocation1, pile, sand) == 100 ? stockpileLocation1 : stockpileLocation2;
+		Point3D notFullDestination = fullDestination == stockpileLocation1 ? stockpileLocation2 : stockpileLocation1;
+		CHECK(space.item_getCount(notFullDestination, pile, sand) == 0);
+		auto waitForProject = [&]() -> bool { return actors.project_exists(dwarf1); };
+		simulation.fastForwardUntillPredicate(waitForProject);
+		StockPileProject* project = static_cast<StockPileProject*>(actors.project_get(dwarf1));
+		CHECK(project->getLocation() == notFullDestination);
+		CHECK(space.item_getCount(notFullDestination, pile, sand) == 0);
+		Point3D itemStart = items.getLocation(project->getItem().getIndex(items.m_referenceData));
+		CHECK((itemStart == cargoOrigin1 || itemStart == cargoOrigin2));
+		CHECK(space.item_getCount(fullDestination, pile, sand) == 100);
+		auto condition3 = [&]() -> bool { return space.item_getCount(notFullDestination, pile, sand) != 0; };
+		simulation.fastForwardUntillPredicate(condition3);
+		CHECK(space.item_getCount(fullDestination, pile, sand) == 100);
+		simulation.fastForwardUntillPredicate(waitForProject);
+		project = static_cast<StockPileProject*>(actors.project_get(dwarf1));
+		CHECK(project->getLocation() == notFullDestination);
+		auto endCondition = [&]() -> bool {
+			return
+					space.item_getCount(stockpileLocation1, pile, sand) == 100 &&
+					space.item_getCount(stockpileLocation2, pile, sand) == 100;
+		};
+		simulation.fastForwardUntillPredicate(endCondition);
 	}
 	SUBCASE("haul generic stockpile is adjacent to cargo")
 	{

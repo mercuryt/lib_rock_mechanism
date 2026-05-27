@@ -1,4 +1,5 @@
 #include "rectangle.h"
+#include "plane.h"
 #include "paramaterizedLine.h"
 template<Dimensions dimension>
 bool Rectangle<dimension>::intercepts(const ParamaterizedLine& line)
@@ -34,4 +35,10 @@ bool Rectangle<dimension>::intercepts(const ParamaterizedLine& line)
 			*/
 	return false;
 
+}
+Plane RectangleWithFacing::getPlane() const
+{
+	Dimensions dimension = util::dimensionForFacing(m_facing);
+	Distance distance = m_cuboid.getFace(m_facing).m_high.getDimension(dimension);
+	return {distance, dimension};
 }

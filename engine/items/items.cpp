@@ -84,6 +84,25 @@ Items::Items(Area& area) :
 { }
 ItemIndex Items::create(ItemParamaters itemParamaters)
 {
+	// Detect stacks combining, add to quantity and bail without creating a new item.
+	if(ItemType::getGeneric(itemParamaters.itemType))
+	{
+		assert(itemParamaters.quality.empty());
+		assert(itemParamaters.percentWear.empty());
+		if(itemParamaters.location.exists())
+		{
+			ItemIndex toCombineWith = m_area.getSpace().item_getOneWithCondition(itemParamaters.location, [this, &itemParamaters](ItemIndex item){
+				return getItemType(item) == itemParamaters.itemType && getMaterialType(item) == itemParamaters.materialType;
+			});
+			if(toCombineWith.exists())
+			{
+				addQuantity(toCombineWith, itemParamaters.quantity);
+				return toCombineWith;
+			}
+		}
+	}
+	else
+		assert(itemParamaters.quantity == 1);
 	ItemIndex index = ItemIndex::create(size());
 	// TODO: This 'toItem' call should not be neccessary. Why does ItemIndex + int = HasShapeIndex?
 	resize(index + 1);
@@ -111,13 +130,6 @@ ItemIndex Items::create(ItemParamaters itemParamaters)
 		// Include decks for pathing purposes.
 		m_compoundShape[index] = m_constructedShape[index]->getShapeIncludingDecks();
 	}
-	if(ItemType::getGeneric(itemType))
-	{
-		assert(m_quality[index].empty());
-		assert(m_percentWear[index].empty());
-	}
-	else
-		assert(m_quantity[index] == 1);
 	if(itemParamaters.location.exists())
 		// A generic item type might merge with an existing stack on creation, in that case return the index of the existing stack.
 		index = location_set(index, itemParamaters.location, itemParamaters.facing);
@@ -203,10 +215,15 @@ void Items::removeQuantity(const ItemIndex index, const Quantity delta, CanReser
 		assert(delta < m_quantity[index]);
 		// TODO: Update in place rather then exit, update, enter.
 		Point3D location = m_location[index];
-		Facing4 facing = m_facing[index];
-		location_clearStatic(index);
-		setQuantity(index, getQuantity(index) - delta);
-		location_setStatic(index, location, facing);
+		if(location.exists())
+		{
+			Facing4 facing = m_facing[index];
+			location_clearStatic(index);
+			setQuantity(index, getQuantity(index) - delta);
+			location_setStatic(index, location, facing);
+		}
+		else
+			setQuantity(index, getQuantity(index) - delta);
 		if(m_reservables[index] != nullptr)
 			m_reservables[index]->setMaxReservations(m_quantity[index]);
 	}
@@ -298,6 +315,21 @@ void Items::setOnSurface(const ItemIndex index, const bool value)
 	else
 		m_area.m_hasTemperature.removeItemAboveGround(m_area, index);
 }
+void Items::moveQuantity(const ItemIndex index, const Quantity quantity, const Point3D destination)
+{
+	if(m_quantity[index] == quantity)
+	{
+		location_set(index, destination, m_facing[index]);
+		return;
+	}
+	removeQuantity(index, quantity);
+	create({
+		.itemType = m_itemType[index],
+		.materialType = m_solid[index],
+		.location = destination,
+		.quantity = quantity,
+	});
+}
 void Items::destroy(const ItemIndex index)
 {
 	// Remove from Area::AreaHasTemperatures meltable item tracker.
@@ -386,8 +418,8 @@ std::string Items::description(const ItemIndex index)
 	if(!m_name[index].empty())
 		return m_name[index];
 	if(isGeneric(index))
-		return ItemType::getName(m_itemType[index]) + "(quantity :" + m_quantity[index].toString() + ")";
-	return ItemType::getName(m_itemType[index]) + "(quality : " + m_quality[index].toString() +  ", wear : " + m_percentWear[index].toString() + "%)";
+		return ItemType::getName(m_itemType[index]) + "(quantity: " + m_quantity[index].toString() + ")";
+	return ItemType::getName(m_itemType[index]) + "(quality: " + m_quality[index].toString() +  ", wear: " + m_percentWear[index].toString() + "%)";
 }
 void Items::log(const ItemIndex index) const
 {

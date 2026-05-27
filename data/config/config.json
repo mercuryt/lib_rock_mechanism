@@ -21,6 +21,7 @@
 	"bludgeonPercentTemporaryImparmentModifier": 1,
 	"bludgeonStepsTillHealedModifier": 400,
 	"bodyHardnessModifier": 1,
+	"capacityToReserveForRTreeOpenListBufferPerThread": 128,
 	"chastiseCastingCallBonusForDefenderIsFamily": 10,
 	"chastiseCastingCallBonusForDefenderIsFriend": 10,
 	"chastiseCastingCallDefenderMinimumScore": 5,

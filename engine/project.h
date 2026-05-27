@@ -119,6 +119,7 @@ class Project
 	void addWorker(const ActorIndex actor, Objective& objective);
 	// Load requirements from child class.
 	void recordRequiredActorsAndItemsAndFluids();
+	void disperseContained();
 protected:
 	// Workers who have passed the candidate screening and ProjectWorker, which holds a reference to the worker's objective and a pointer to it's haul subproject.
 	SmallMap<ActorReference, ProjectWorker> m_workers;
@@ -251,6 +252,7 @@ public:
 	[[nodiscard]] virtual SkillTypeId getSkill() const = 0;
 	[[nodiscard]] virtual std::string description() const = 0;
 	[[nodiscard]] virtual bool hasQuality() const { return false; }
+	[[nodiscard]] CuboidSet getOccupiedByToPickup() const;
 	[[nodiscard]] bool itemIsFluidContainer(const ItemReference item) const;
 	[[nodiscard]] FluidTypeId getFluidTypeForContainer(const ItemReference item) const;
 	[[nodiscard]] CollisionVolume getFluidVolumeForContainer(const ItemReference item) const;

@@ -30,6 +30,8 @@ bool BitSet<IntType, capacity>::empty() const { return data == zero; }
 template<typename IntType, IntType capacity>
 bool BitSet<IntType, capacity>::any() const { return data != zero; }
 template<typename IntType, IntType capacity>
+bool BitSet<IntType, capacity>::all() const { return data == std::pow((IntType)2, capacity); }
+template<typename IntType, IntType capacity>
 void BitSet<IntType, capacity>::set(const IntType& index) { assert(index < capacity); data |= (one << index); }
 template<typename IntType, IntType capacity>
 void BitSet<IntType, capacity>::set(const IntType& index, bool value) { assert(index < capacity); if(value) set(index); else unset(index); }

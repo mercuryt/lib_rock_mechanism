@@ -11,7 +11,7 @@
 #include "../reservable.h"
 #include "../simulation/simulation.h"
 #include "../stocks.h"
-#include "../path/terrainFacade.h"
+#include "../path/areaHasPaths.h"
 #include "../numericTypes/types.h"
 #include "../definitions/itemType.h"
 #include "../util.h"
@@ -418,12 +418,15 @@ void AreaHasStockPilesForFaction::maybeRemoveFromItemsWithDestinationByStockPile
 {
 	Items& items = m_area.getItems();
 	StockPile* nonConst = const_cast<StockPile*>(&stockPile);
-	if(m_itemsWithDestinationsByStockPile[nonConst].size() == 1 && m_itemsWithDestinationsByStockPile[nonConst].front().getIndex(items.m_referenceData) == item)
-		m_itemsWithDestinationsByStockPile.erase(nonConst);
+	auto found = m_itemsWithDestinationsByStockPile.find(nonConst);
+	if(found == m_itemsWithDestinationsByStockPile.end())
+		return;
+	if(found->second.size() == 1 && found->second.front().getIndex(items.m_referenceData) == item)
+		m_itemsWithDestinationsByStockPile.erase(found);
 	else
 	{
 		ItemReference ref = m_area.getItems().getReference(item);
-		m_itemsWithDestinationsByStockPile[nonConst].maybeErase(ref);
+		found->second.maybeErase(ref);
 	}
 }
 void AreaHasStockPilesForFaction::updateItemReferenceForProject(StockPileProject& project, const ItemReference ref)

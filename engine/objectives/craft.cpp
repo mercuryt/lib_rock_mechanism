@@ -3,7 +3,7 @@
 #include "../actors/actors.h"
 #include "../space/space.h"
 #include "../area/area.h"
-#include "../path/terrainFacade.hpp"
+#include "../path/areaHasPaths.hpp"
 CraftPathRequest::CraftPathRequest(Area& area, CraftObjective& co, const ActorIndex actorIndex) :
 	m_craftObjective(co)
 {
@@ -22,41 +22,38 @@ CraftPathRequest::CraftPathRequest(Area& area, CraftObjective& co, const ActorIn
 	reserveDestination = true;
 }
 CraftPathRequest::CraftPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo) :
-	PathRequestBreadthFirst(data, area),
+	PathRequest(data, area),
 	m_craftObjective(static_cast<CraftObjective&>(*deserializationMemo.m_objectives.at(data["objective"].get<uintptr_t>()))),
 	m_craftJob(deserializationMemo.m_craftJobs.at(data["craftJob"].get<uintptr_t>())),
 	m_location(data["location"].get<Point3D>()) { }
-FindPathResult CraftPathRequest::readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo)
+PathResult CraftPathRequest::readStep(Area& area, const AreaHasPathsForMoveType& hasPaths)
 {
 	Actors& actors = area.getActors();
 	const ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
 	HasCraftingLocationsAndJobsForFaction& hasCrafting = area.m_hasCraftingLocationsAndJobs.getForFaction(faction);
-	Space& space = area.getSpace();
 	const SkillTypeId skillType = m_craftObjective.m_skillType;
 	auto& excludeJobs = m_craftObjective.getFailedJobs();
-	auto shortRangeCondition = [&](const Cuboid cuboid) -> Point3D
+	auto shortRangeCondition = [&hasCrafting, actorIndex, skillType, &excludeJobs](const Cuboid cuboid) -> Point3D
 	{
-		for(const Point3D point : cuboid)
-			if(hasCrafting.getJobForAtLocation(actorIndex, skillType, point, excludeJobs) != nullptr)
-				return point;
-		return Point3D::null();
+		auto [job, location] = hasCrafting.getJobForAt(actorIndex, skillType, cuboid, excludeJobs);
+		return job == nullptr ? Point3D::null() : location;
 	};
-	auto longRangeCondition = [&](const Cuboid cuboid) -> bool { return hasCrafting.queryAny(cuboid); };
+	auto longRangeCondition = [&shortRangeCondition](const Cuboid cuboid) -> bool { return shortRangeCondition(cuboid).exists(); };
 	constexpr bool anyOccupied = true;
 	constexpr bool useAdjacent = false;
-	return terrainFacade.findPathToConditionBreadthFirst<anyOccupied, useAdjacent>(longRangeCondition, shortRangeCondition, memo, start, facing, shape, detour, faction, maxRange);
+	return hasPaths.pathToCondition<useAdjacent, anyOccupied>(longRangeCondition, shortRangeCondition, toParamaters(area));
 }
-void CraftPathRequest::writeStep(Area& area, FindPathResult& result)
+void CraftPathRequest::writeStep(Area& area, bool useCurrentLocation)
 {
 	Actors& actors = area.getActors();
 	Space& space = area.getSpace();
 	ActorIndex actorIndex = actor.getIndex(actors.m_referenceData);
-	if(result.path.empty() && !result.useCurrentPosition)
+	if(path.empty() && !useCurrentLocation)
 	{
 		actors.objective_canNotCompleteObjective(actorIndex, m_craftObjective);
 		return;
 	}
-	if(result.useCurrentPosition)
+	if(useCurrentLocation)
 	{
 		if(space.isReserved(actors.getLocation(actorIndex), faction))
 		{
@@ -64,14 +61,13 @@ void CraftPathRequest::writeStep(Area& area, FindPathResult& result)
 				return;
 		}
 	}
-	else if(space.isReserved(result.pointThatPassedPredicate, faction))
+	else if(space.isReserved(target, faction))
 	{
 		actors.objective_canNotCompleteSubobjective(actorIndex);
 		return;
 	}
-	const Point3D point = result.pointThatPassedPredicate;
 	const SkillTypeId skillType = m_craftObjective.m_skillType;
-	auto pair = std::make_pair(area.m_hasCraftingLocationsAndJobs.getForFaction(faction).getJobForAtLocation(actorIndex, skillType, point, m_craftObjective.getFailedJobs()), point);
+	auto pair = area.m_hasCraftingLocationsAndJobs.getForFaction(faction).getJobForAt(actorIndex, skillType, Cuboid::create(target), m_craftObjective.getFailedJobs());
 	m_craftJob = pair.first;
 	m_location = pair.second;
 
@@ -95,7 +91,7 @@ void CraftPathRequest::writeStep(Area& area, FindPathResult& result)
 }
 Json CraftPathRequest::toJson() const
 {
-	Json output = PathRequestBreadthFirst::toJson();
+	Json output = PathRequest::toJson();
 	output["objective"] = &m_craftObjective;
 	output["job"] = m_craftJob;
 	output["location"] = m_location;

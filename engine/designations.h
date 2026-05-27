@@ -8,7 +8,7 @@
 #include "faction.h"
 #include <cassert>
 
-enum class SpaceDesignation { Dig, Construct, SowSeeds, GivePlantFluid, Harvest, StockPileHaulFrom, StockPileHaulTo, Sleep, Rescue, FluidSource, WoodCutting, SPACE_DESIGNATION_MAX };
+enum class SpaceDesignation { Dig, Construct, SowSeeds, GivePlantFluid, Harvest, StockPileHaulFrom, StockPileHaulTo, Sleep, Rescue, FluidSource, WoodCutting, Null };
 NLOHMANN_JSON_SERIALIZE_ENUM(SpaceDesignation, {
 		{SpaceDesignation::Dig, "Dig"},
 		{SpaceDesignation::Construct, "Construct"},
@@ -21,4 +21,5 @@ NLOHMANN_JSON_SERIALIZE_ENUM(SpaceDesignation, {
 		{SpaceDesignation::Rescue, "Rescue"},
 		{SpaceDesignation::FluidSource, "FluidSource"},
 		{SpaceDesignation::WoodCutting, "WoodCutting"},
+		{SpaceDesignation::Null, "Null"},
 });

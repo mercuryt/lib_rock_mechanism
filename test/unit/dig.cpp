@@ -53,6 +53,7 @@ TEST_CASE("dig")
 		CHECK(digObjectiveType.canBeAssigned(area, dwarf1));
 		actors.objective_setPriority(dwarf1, digObjectiveType.getId(), Priority::create(100));
 		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
+		CHECK(actors.objective_getCurrent<DigObjective>(dwarf1).joinableProjectExistsAt(area, Cuboid::create(holeLocation), dwarf1).exists());
 		// One step to find the designation, activate the project, and reserve the pick.
 		simulation.doStep();
 		CHECK(project.reservationsComplete());
@@ -114,10 +115,30 @@ TEST_CASE("dig")
 		CHECK(objective.getProject() == nullptr);
 		CHECK(space.pointFeature_contains(stairsLocation1, PointFeatureTypeId::Stairs));
 		CHECK(space.shape_shapeAndMoveTypeCanEnterEverFrom(stairsLocation1, actors.getShape(dwarf1), actors.getMoveType(dwarf1), aboveStairs));
-		const auto& terrainFacade = area.m_hasTerrainFacades.getForMoveType(actors.getMoveType(dwarf1));
-		CHECK(terrainFacade.accessable(aboveStairs, actors.getFacing(dwarf1), stairsLocation1, dwarf1));
+		const auto& hasPaths = area.m_hasPaths.get(actors.getMoveType(dwarf1));
+		CHECK(hasPaths.accessable(PathParamaters({
+			.area = area,
+			.start = aboveStairs,
+			.huristicDestination = stairsLocation1,
+			.shape = actors.getShape(dwarf1),
+			.moveType = actors.getMoveType(dwarf1),
+			.startFacing = actors.getFacing(dwarf1),
+			.depthFirst = true,
+			.returnPath = false
+		})));
 		CHECK(actors.move_hasPathRequest(dwarf1));
 		CHECK(!space.isReserved(stairsLocation1, faction));
+		MoveTypeId moveType = actors.getMoveType(dwarf1);
+		Cuboid startingEnterable = area.m_hasPaths.get(moveType).m_enterable.queryGetLeaf(actors.getLocation(dwarf1));
+		Cuboid stairsEnterable = area.m_hasPaths.get(moveType).m_enterable.queryGetLeaf(stairsLocation1.above());
+		CHECK(space.move_cuboidCanBeEnteredFrom(startingEnterable, stairsEnterable, moveType));
+		CHECK(longRangePath::shapeCanEnterFrom<false, true>(stairsLocation1, aboveStairs, PathParamaters({
+			.area = area,
+			.start = stairsLocation1,
+			.shape = actors.getShape(dwarf1),
+			.moveType = actors.getMoveType(dwarf1),
+			.startFacing = actors.getFacing(dwarf1)
+		})));
 		// Find next project, make reservations, and activate.
 		simulation.doStep();
 		CHECK(&actors.objective_getCurrent<DigObjective>(dwarf1) == &objective);
@@ -130,22 +151,16 @@ TEST_CASE("dig")
 		// Path to locaton.
 		simulation.doStep();
 		CHECK(&actors.objective_getCurrent<DigObjective>(dwarf1) == &objective);
-		std::function<bool()> predicate2 = [&]() { return !space.solid_isAny(tunnelStart); };
+		std::function<bool()> predicate2 = [&]() { return !space.solid_isAny(tunnelStart) || !space.solid_isAny(stairsLocation2); };
 		simulation.fastForwardUntillPredicate(predicate2, 180);
 		actors.satisfyNeeds(dwarf1);
-		// We are already adjacent to the next target, no need to path.
-		DigProject& project2 = *static_cast<DigProject*>(space.project_get(stairsLocation2, faction));
-		CHECK(actors.objective_getCurrentName(dwarf1) == "dig");
-		DigObjective& objective2 = actors.objective_getCurrent<DigObjective>(dwarf1);
-		CHECK(objective2.getProject() != nullptr);
-		CHECK(objective2.getProject() == &project2);
-		// Aready adjacent, no pathing required.
-		CHECK(!actors.move_hasPathRequest(dwarf1));
-		CHECK(!project2.reservationsComplete());
+		CHECK(&actors.objective_getCurrent<DigObjective>(dwarf1) == &objective);
+		CHECK(objective.getProject() != nullptr);
+		DigProject& project2 = *objective.getProject();
+		CHECK(project2.hasCandidate(dwarf1));
 		simulation.doStep();
-		CHECK(project2.reservationsComplete());
-		CHECK(!actors.move_hasPathRequest(dwarf1));
-		std::function<bool()> predicate3 = [&]() { return !space.solid_isAny(stairsLocation2); };
+		CHECK(project2.hasWorker(dwarf1));
+		std::function<bool()> predicate3 = [&]() { return !space.solid_isAny(tunnelStart) && !space.solid_isAny(stairsLocation2); };
 		simulation.fastForwardUntillPredicate(predicate3, 180);
 		actors.satisfyNeeds(dwarf1);
 		CHECK(objective.name() == "dig");

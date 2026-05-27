@@ -46,6 +46,7 @@ public:
 	void releaseId(TemperatureSourceId id);
 	void onTemperatureCanNoLongerTransmit(const CuboidSet& cuboids);
 	void onTemperatureCanNowTransmit(const CuboidSet& cuboids);
+	void queryForEach(const auto& shape, auto&& action) const  { return m_data.queryForEach(shape, action); }
 	[[nodiscard]] TemperatureDelta getDelta(const Point3D point);
 	[[nodiscard]] TemperatureSourceId getNextId();
 	[[nodiscard]] CuboidSet getPointsIntersectingExposedToSky(Area& area) const;

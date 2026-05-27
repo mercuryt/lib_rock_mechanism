@@ -72,13 +72,14 @@ void definitions::loadMoveTypes()
 			.fly=data["fly"].get<bool>(),
 			.breathless=data.contains("breathless"),
 			.onlyBreathsFluids=data.contains("onlyBreathsFluids"),
-			.floating=(data.contains("floating") && data["floating"])
+			.floating={},
 		};
 		for(auto& pair : data["swim"].items())
 			p.swim.insert(FluidType::byName(pair.key()), pair.value().get<CollisionVolume>());
 		if(data.contains("breathableFluids"))
 			for(const Json& name : data["breathableFluids"])
 				p.breathableFluids.insert(FluidType::byName(name));
+		// Floating move types are created dynamically as needed.
 		MoveType::create(p);
 	}
 }

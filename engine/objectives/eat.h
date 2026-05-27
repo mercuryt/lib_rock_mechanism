@@ -30,7 +30,7 @@ public:
 	[[nodiscard]] std::string name() const { return "eat"; }
 };
 constexpr int maxRankedEatDesire = 3;
-class EatPathRequest final : public PathRequestBreadthFirst
+class EatPathRequest final : public PathRequest
 {
 	std::array<Point3D, maxRankedEatDesire> m_candidates;
 	EatObjective& m_eatObjective;
@@ -38,8 +38,8 @@ class EatPathRequest final : public PathRequestBreadthFirst
 public:
 	EatPathRequest(Area& area, EatObjective& eo, const ActorIndex actorIndex);
 	EatPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	[[nodiscard]] FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
-	void writeStep(Area& area, FindPathResult& result) override;
+	[[nodiscard]] PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
+	void writeStep(Area& area, bool useCurrentLocation) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() { return "eat"; }
 };

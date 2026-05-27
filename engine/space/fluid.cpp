@@ -115,7 +115,7 @@ void Space::fluid_add(const CuboidSet& points, const CollisionVolume volume, con
 	CuboidSet inflated = points;
 	inflated.inflate({1});
 	for(const Cuboid cuboid : points)
-		m_area.m_hasTerrainFacades.update(cuboid);
+		m_area.m_hasPaths.update(m_area, cuboid);
 }
 void Space::fluid_add(const Cuboid cuboid, const CollisionVolume volume, const FluidTypeId fluidType)
 {
@@ -159,7 +159,7 @@ void Space::fluid_add(const Point3D point, const CollisionVolume volume, const F
 	// Shift less dense fluids to excessVolume.
 	if(totalFluidVolume > Config::maxPointVolume)
 		fluid_resolveOverfull(point);
-	m_area.m_hasTerrainFacades.update(adjacent);
+	m_area.m_hasPaths.update(m_area, adjacent);
 	if(!group->m_aboveGround && isExposedToSky(point))
 	{
 		group->m_aboveGround = true;
@@ -176,7 +176,11 @@ void Space::fluid_add(const Point3D point, const CollisionVolume volume, const F
 		if(!items.isFloating(item))
 		{
 			if(items.canFloatAt(item, location, facing))
-				items.setFloating(item, fluidType);
+			{
+				//TODO:(optimization) This call is redundant.
+				Distance depth = items.floatsInAtDepth(item, fluidType);
+				items.setFloating(item, fluidType, depth);
+			}
 		}
 		else
 		{
@@ -211,7 +215,7 @@ void Space::fluid_drainInternal(const Cuboid cuboid, const CollisionVolume volum
 	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
 	Cuboid adjacent = cuboid;
 	adjacent.inflate({1});
-	m_area.m_hasTerrainFacades.update(adjacent);
+	m_area.m_hasPaths.update(m_area, adjacent);
 	floating_maybeSink(CuboidSet::create(cuboid));
 	// TODO: replace wrapping in CuboidSet with use of templated method.
 	fluid_maybeEraseFluidOnDeck(CuboidSet::create(cuboid));
@@ -237,7 +241,7 @@ void Space::fluid_fillInternal(const Cuboid cuboid, const CollisionVolume volume
 	//TODO: this could be run mulitple times per step where two fluid groups of different types are mixing, move to FluidGroup writeStep.
 	Cuboid adjacent = cuboid;
 	adjacent.inflate({1});
-	m_area.m_hasTerrainFacades.update(adjacent);
+	m_area.m_hasPaths.update(m_area, adjacent);
 	fluid_maybeRecordFluidOnDeck(wasEmpty);
 	floating_maybeFloatUp(wasEmpty);
 	m_area.m_hasTemperature.onFluidEnters(m_area, CuboidSet::create(cuboid), fluidGroup);
@@ -279,7 +283,7 @@ bool Space::fluid_undisolveInternal(const Point3D point, FluidGroup& fluidGroup)
 		fluidGroup.m_excessVolume -= flow.get();
 		m_totalFluidVolume.updateAdd(point, flow);
 		fluid_validateTotalForPoint(point);
-		m_area.m_hasTerrainFacades.update(point.getAllAdjacentIncludingOutOfBounds());
+		m_area.m_hasPaths.update(m_area, point.inflated({1}));
 		return true;
 	}
 	return false;
@@ -311,7 +315,7 @@ void Space::fluid_removeSyncronus(const Point3D point, const CollisionVolume vol
 	m_fluid.updateOrDestroyActionWithConditionOne(point, action, condition);
 	m_totalFluidVolume.updateSubtract(point, volume);
 	fluid_validateTotalForPoint(point);
-	m_area.m_hasTerrainFacades.update(point.getAllAdjacentIncludingOutOfBounds());
+	m_area.m_hasPaths.update(m_area, point.inflated({1}));
 	floating_maybeSink(CuboidSet::create(point));
 	fluid_maybeEraseFluidOnDeck(CuboidSet::create(point));
 }
@@ -437,7 +441,7 @@ void Space::fluid_resolveOverfull(const Point3D point)
 		}
 	}
 	fluid_validateTotalForPoint(point);
-	m_area.m_hasTerrainFacades.update(point.getAllAdjacentIncludingOutOfBounds());
+	m_area.m_hasPaths.update(m_area, point.inflated({1}));
 }
 void Space::fluid_onPointSetSolid(const Point3D point)
 {

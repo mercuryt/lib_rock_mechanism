@@ -44,14 +44,14 @@ public:
 	[[nodiscard]] DigProject* getProject() { return m_project; }
 };
 // Find a place to dig.
-class DigPathRequest final : public PathRequestBreadthFirst
+class DigPathRequest final : public PathRequest
 {
 	DigObjective& m_digObjective;
 public:
 	DigPathRequest(Area& area, DigObjective& digObjective, const ActorIndex actorIndex);
 	DigPathRequest(const Json& data, Area& area, DeserializationMemo& deserializationMemo);
-	FindPathResult readStep(Area& area, const TerrainFacade& terrainFacade, longRangePath::LongRangeMemo& memo) override;
-	void writeStep(Area& area, FindPathResult& result) override;
+	PathResult readStep(Area& area, const AreaHasPathsForMoveType& hasPaths) override;
+	void writeStep(Area& area, bool useCurrentLocation) override;
 	[[nodiscard]] Json toJson() const;
 	[[nodiscard]] std::string name() { return "dig"; }
 };

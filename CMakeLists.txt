@@ -37,7 +37,7 @@ if(NOT CMAKE_BUILD_TYPE EQUAL "Release")
 	#add_compile_options(-fsanitize=undefined)
 	#add_link_options(-fsanitize=undefined)
 	# Build and index of the debug info for gdb.
-	add_link_options(-Wl,--gdb-index)
+	add_link_options(-Wl,--thread-count=8,--gdb-index)
 endif()
 
 add_subdirectory(engine)
