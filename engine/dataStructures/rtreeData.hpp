@@ -428,17 +428,40 @@ void RTreeData<T, config_, nullPrimitive>::tryToMergeLeaves(Node& parent)
 		bool found = false;
 		const int leafCount = parent.getLeafCount();
 		for(RTreeArrayIndex i = RTreeArrayIndex::create(0); i < leafCount; ++i)
-			if(mergeMask[i.get()] && parentDataAndChildIndices[i].data == parentDataAndChildIndices[offset].data)
+		{
+			if(
+				mergeMask[i.get()] &&
+				(
+					Mergable<T> ||
+					parentDataAndChildIndices[i].data == parentDataAndChildIndices[offset].data
+				) &&
+				this->canMerge(parentCuboids[i.get()], parentCuboids[offset.get()])
+			)
 			{
 				// Found a leaf to merge with.
 				auto merged = parentCuboids[i.get()];
 				merged.maybeExpand(parentCuboids[offset.get()]);
-				parent.updateLeaf(i, merged);
+				if constexpr(Mergable<T>)
+				{
+					T valueAtI = T::create(parentDataAndChildIndices[i].data);
+					T valueAtOffset = T::create(parentDataAndChildIndices[offset].data);
+					if(valueAtI != valueAtOffset)
+						parent.updateLeafWithValue(i, merged, valueAtI.merge(valueAtOffset));
+					else
+						parent.updateLeaf(i, merged);
+				}
+				else
+				{
+					// T is not mergable so values must be equal.
+					assert(parentDataAndChildIndices[i].data == parentDataAndChildIndices[offset].data);
+					parent.updateLeaf(i, merged);
+				}
 				parent.eraseLeaf(offset);
 				// Eraseing offset invalidates mergeMask. Break for now and return with next outer loop iteration.
 				found = true;
 				break;
 			}
+		}
 		if(found)
 			// When a merge is made start over at offset 0.
 			offset = RTreeArrayIndex::create(0);
@@ -532,28 +555,49 @@ void RTreeData<T, config_, nullPrimitive>::addToNodeRecursive(const RTreeNodeInd
 			{
 				// Both first and second cuboids are leaves.
 				bool merge = false;
+				Cuboid firstCuboid = extended[firstArrayIndex.get()];
+				Cuboid secondCuboid = extended[secondArrayIndex.get()];
 				if constexpr (config_.splitAndMerge)
 				{
 					merge = (
-						(mergedCuboid.volume() == extended[firstArrayIndex.get()].volume() + extended[secondArrayIndex.get()].volume()) &&
+						mergedCuboid.volume() == firstCuboid.volume() + secondCuboid.volume() &&
 						(
-							// Can merge if second index is the newly added cuboid and first index has the same value.
-							(parentDataAndChildIndices[firstArrayIndex].data == value.get() && secondArrayIndexIsNewCuboid) ||
-							// Can merge if first and second array indices have the same value.
-							(!secondArrayIndexIsNewCuboid && parentDataAndChildIndices[firstArrayIndex].data == parentDataAndChildIndices[secondArrayIndex].data)
-						)
+							// If T provides a merge method then values are always mergeable. Otherwise they must evaluate equal.
+							Mergable<T> ||
+							(
+								// Can merge if second index is the newly added cuboid and first index has the same value.
+								(parentDataAndChildIndices[firstArrayIndex].data == value.get() && secondArrayIndexIsNewCuboid) ||
+								// Can merge if first and second array indices have the same value.
+								(!secondArrayIndexIsNewCuboid && parentDataAndChildIndices[firstArrayIndex].data == parentDataAndChildIndices[secondArrayIndex].data)
+							)
+						) &&
+						this->canMerge(firstCuboid, secondCuboid)
 					);
 				}
 				if(merge)
 				{
 					// Can merge into a single leaf.
-					parent.updateLeaf(firstArrayIndex, mergedCuboid);
+					if constexpr(Mergable<T>)
+					{
+						// T is mergable, check if values are equal and insert merged if not.
+						T existing = T::create(parentDataAndChildIndices[firstArrayIndex].data);
+						if(existing == value)
+							parent.updateLeaf(firstArrayIndex, mergedCuboid);
+						else
+							parent.updateLeafWithValue(firstArrayIndex, mergedCuboid, existing.merge(value));
+					}
+					else
+					{
+						// T is not mergable so values must be equal.
+						parent.updateLeaf(firstArrayIndex, mergedCuboid);
+					}
 					if(secondArrayIndex != nodeSize)
 						// The newly inserted cuboid was not merged. Store it in now avalible second offset, overwriting the leaf which was merged.
 						parent.updateLeafWithValue(secondArrayIndex, cuboid, value);
 				}
 				else
 				{
+					// Cannot merge into a single leaf, create a branch to hold both, with mergedCuboid as its boundry.
 					const RTreeNodeIndex indexCopy = index;
 					// create a new node to hold first and second. Invalidates parent and index.
 					m_nodes.add();
@@ -969,7 +1013,7 @@ void RTreeData<T, config_, nullPrimitive>::maybeInsert(const Cuboid cuboid, cons
 		assert(!queryAny(cuboid));
 	else
 		for(const T& v : queryGetAll(cuboid))
-			assert(canOverlap(v, value));
+			assert(this->canOverlap(v, value));
 	constexpr RTreeNodeIndex zeroIndex = RTreeNodeIndex::create(0);
 	[[maybe_unused]] bool breakIf = cuboid.volume() == 1 && cuboid.m_high == Point3D::create(20, 1, 1);
 	addToNodeRecursive(zeroIndex, cuboid, value);

@@ -63,14 +63,14 @@ class FluidRTree final : public FluidBase
 {
 public:
 	// m_fluid leaves can overlap only if they have different fluid types.
-	[[nodiscard]] bool canOverlap(const FluidData& a, const FluidData& b) const override;
+	[[nodiscard]] bool canOverlap(const FluidData& a, const FluidData& b) const;
 };
 using PointFeatureBase = RTreeData<PointFeature, RTreeDataConfigs::canOverlapAndMerge>;
 class PointFeatureRTree final : public PointFeatureBase
 {
 public:
-	// m_fluid leaves can overlap only if they have different fluid types.
-	[[nodiscard]] bool canOverlap(const PointFeature& a, const PointFeature& b) const override;
+	// feature leaves can overlap only if they have different feature types, none block entrance, and only one blocks horizontal movement.
+	[[nodiscard]] bool canOverlap(const PointFeature& a, const PointFeature& b) const;
 };
 using PointHasFires = RTreeDataWrapper<SmallMap<MaterialTypeId, Fire>*, nullptr>;
 class Space
@@ -151,6 +151,7 @@ public:
 	[[nodiscard]] const auto& getPointFeatures() const { return m_features; }
 	[[nodiscard]] const Support& getSupport() const { return m_support; }
 	[[nodiscard]] Support& getSupport() { return m_support; }
+	[[nodiscard]] Distance getVerticalClearance(Cuboid cuboid) const;
 	// Called from setSolid / setNotSolid as well as from user code such as construct / remove floor.
 	[[nodiscard]] CuboidSet collectAdjacentsWithCondition(const Point3D point, auto&& condition)
 	{
@@ -589,6 +590,7 @@ public: [[nodiscard]] bool fluid_canEnterCurrently(const Point3D point, const Fl
 	void shape_queryRemoveFromDynamic(CuboidSet& cuboids) const;
 	// -Movement and pathing.
 	// TODO: Some methods from shape probably belong here instead.
+	void move_removeUnenterableFrom(CuboidSet& cuboids) const;
 	[[nodiscard]] SmallSet<Cuboid> move_splitCuboidByPartitions(const Cuboid cuboid) const;
 	[[nodiscard]] CuboidSet move_queryPathable(const Cuboid cuboid, const MoveTypeId moveType) const;
 	[[nodiscard]] bool move_cuboidCanBeEnteredFrom(const Cuboid from, const Cuboid to, const MoveTypeId moveType) const;

@@ -16,7 +16,7 @@ longRangePath::IntermediateResult longRangePath::getPathInnerLoop(const Enterabl
 		assert(params.huristicDestination.exists());
 	if constexpr(detour)
 		assert(depthFirst);
-	const Cuboid startCuboid = rtree.queryGetLeaf(params.start);
+	const Cuboid startCuboid = rtree.queryGetOneCuboid(params.start);
 	assert(startCuboid.exists());
 	// Check if short range condition is true for starting position and facing.
 	Point3D targetFoundForStartingPosition = shortRangeCondition(params.start, params.startFacing);
@@ -26,7 +26,7 @@ longRangePath::IntermediateResult longRangePath::getPathInnerLoop(const Enterabl
 	openList.clear();
 	ClosedListLongRange& closedListToFrom = memo.closedListToFrom;
 	closedListToFrom.clear();
-	bool useShortRangeForStart = checkCuboidNotFreelyNavigable(startCuboid, params);
+	bool useShortRangeForStart = checkCuboidNotFreelyNavigable(rtree, startCuboid, params);
 	if constexpr(detour)
 	{
 		const Space& space = params.area.getSpace();
@@ -143,7 +143,7 @@ SmallMap<Cuboid, bool> longRangePath::getAccessableCuboidsLongRange(const Entera
 	SmallMap<Cuboid, bool> output;
 	const Space& space = params.area.getSpace();
 	const MoveTypeId moveType = params.moveType;
-	rtree.queryForEach(current.inflated({1}), [&space, &output, &params, current, moveType](const Cuboid candidate){
+	rtree.queryForEachCuboid(current.inflated({1}), [&space, &output, &params, current, moveType](const Cuboid candidate){
 		if(candidate == current)
 			return;
 		if(!space.move_cuboidCanBeEnteredFrom(current, candidate, moveType))
@@ -174,7 +174,7 @@ SmallMap<Cuboid, bool> longRangePath::getAccessableCuboidsShortRange(const Enter
 {
 	const Space& space = params.area.getSpace();
 	Cuboid inflatedCurrent = current.inflated({1});
-	CuboidSet candidatesCuboidSet = rtree.queryGetLeaves(inflatedCurrent);
+	CuboidSet candidatesCuboidSet = rtree.queryGetAllCuboids(inflatedCurrent);
 	candidatesCuboidSet.remove(current);
 	SmallSet<Cuboid> candidates = candidatesCuboidSet.m_cuboids;
 	SmallMap<Cuboid, bool> output;
@@ -229,10 +229,10 @@ SmallMap<Cuboid, bool> longRangePath::getAccessableCuboidsShortRange(const Enter
 								if(space.shape_queryAnyDynamic(candidate))
 									useShortRangeForCandidate = true;
 								else if constexpr(!singleTile)
-									useShortRangeForCandidate = !checkPortalSize(candidate, current, params) || checkCuboidNotFreelyNavigable(candidate, params);
+									useShortRangeForCandidate = !checkPortalSize(candidate, current, params) || checkCuboidNotFreelyNavigable(rtree, candidate, params);
 							}
 							else if constexpr(!singleTile)
-								useShortRangeForCandidate = !checkPortalSize(candidate, current, params) || checkCuboidNotFreelyNavigable(candidate, params);
+								useShortRangeForCandidate = !checkPortalSize(candidate, current, params) || checkCuboidNotFreelyNavigable(rtree, candidate, params);
 							output.maybeInsert(candidate, useShortRangeForCandidate);
 							if(output.size() == candidates.size())
 								// All candidates found.
@@ -363,23 +363,23 @@ template<longRangePath::LongRangeCondition LongRangeConditionT, longRangePath::S
 	assert(!intermediateResult.cuboids.empty());
 	assert(intermediateResult.cuboids.back().contains(params.start));
 	// If a cuboid path was found then use it as boundry to generate a point path using the target as destination huristic.
-	SmallSet<Point3D> path;
+	std::pair<SmallSet<Point3D>, Point3D> pathAndTarget;
 	//TODO: move the calls to cuboidPathtoPointPath to getPathUnreserved, so that detour and single tile are template paramaters.
 	if(params.detour)
 	{
 		if(params.singleTile)
-			path = cuboidPathToPointPath<true, true>(shortRangeCondition, params, intermediateResult, getMemo().shortRangeMemo);
+			pathAndTarget = cuboidPathToPointPath<true, true>(shortRangeCondition, params, intermediateResult, getMemo().shortRangeMemo);
 		else
-			path = cuboidPathToPointPath<false, true>(shortRangeCondition, params, intermediateResult, getMemo().shortRangeMemo);
+			pathAndTarget = cuboidPathToPointPath<false, true>(shortRangeCondition, params, intermediateResult, getMemo().shortRangeMemo);
 	}
 	else
 	{
 		if(params.singleTile)
-			path = cuboidPathToPointPath<true, false>(shortRangeCondition, params, intermediateResult, getMemo().shortRangeMemo);
+			pathAndTarget = cuboidPathToPointPath<true, false>(shortRangeCondition, params, intermediateResult, getMemo().shortRangeMemo);
 		else
-			path = cuboidPathToPointPath<false, false>(shortRangeCondition, params, intermediateResult, getMemo().shortRangeMemo);
+			pathAndTarget = cuboidPathToPointPath<false, false>(shortRangeCondition, params, intermediateResult, getMemo().shortRangeMemo);
 	}
-	return {path, intermediateResult.target};
+	return {pathAndTarget.first, pathAndTarget.second};
 }
 // Alternative entry point.
 template<longRangePath::LongRangeCondition LongRangeConditionT, longRangePath::ShortRangeCuboidCondition ShortRangeConditionT>
@@ -476,7 +476,7 @@ template<longRangePath::LongRangeCondition LongRangeConditionT, longRangePath::S
 	return getPathMaxRange(rtree, longRangeCondition, wrappedShortRangeCondition, params);
 }
 template<bool singleTile, bool detour, longRangePath::ShortRangeCondition ShortRangeConditionT>
-SmallSet<Point3D> longRangePath::cuboidPathToPointPath(ShortRangeConditionT&& shortRangeCondition, const PathParamaters& params, const IntermediateResult& intermediateResult, ShortRangeMemo& memo)
+std::pair<SmallSet<Point3D>, Point3D> longRangePath::cuboidPathToPointPath(ShortRangeConditionT&& shortRangeCondition, const PathParamaters& params, const IntermediateResult& intermediateResult, ShortRangeMemo& memo)
 {
 	const std::vector<Cuboid>& cuboidPath = intermediateResult.cuboids;
 	std::vector<std::pair<Point3D, int>>& openList = memo.openListWithCuboidIndex;
@@ -503,7 +503,10 @@ SmallSet<Point3D> longRangePath::cuboidPathToPointPath(ShortRangeConditionT&& sh
 		(*iter) = openList.back();
 		openList.pop_back();
 		Point3D previous = std::ranges::find(history, current, &std::pair<Point3D, Point3D>::first)->second;
-		if(previous.exists() && shortRangeCondition(current, previous.getFacingTwords(current)).exists())
+		Point3D target;
+		if(previous.exists())
+			target = shortRangeCondition(current, previous.getFacingTwords(current));
+		if(target.exists())
 		{
 			// Destination found, walk closed list and reconstruct path.
 			SmallSet<Point3D> output;
@@ -514,7 +517,7 @@ SmallSet<Point3D> longRangePath::cuboidPathToPointPath(ShortRangeConditionT&& sh
 				output.insert(current);
 				current = std::ranges::find(history, current, &std::pair<Point3D, Point3D>::first)->second;
 			}
-			return output;
+			return {output, target};
 		}
 		//TODO:(optimization) Make releventCuboids a CuboidArray<2>.
 		CuboidSet releventCuboids = CuboidSet::create(cuboidPath[cuboidIndex]);

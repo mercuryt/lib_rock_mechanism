@@ -116,7 +116,7 @@ namespace longRangePath
 	// Get deflection point for portal.
 	[[nodiscard]] Point3D findCrossingPointNearestForShape(const Area& area, RectangleWithFacing portal, Point3D huristic, ShapeId shape, ShortRangeMemo& memo);
 	// Check if a cuboid is small enough that short range pathing is needed. Checking if shape can turn and if vertical clearence is enough for height everywhere in the cuboid.
-	[[nodiscard]] bool checkCuboidNotFreelyNavigable(const Cuboid cuboid, const PathParamaters& params);
+	[[nodiscard]] bool checkCuboidNotFreelyNavigable(const Enterable& enterable, const Cuboid cuboid, const PathParamaters& params);
 	// Check if a shape can pass freely between two adjacent cuboids or if we must do a detailed check to see that the shape fits. Return true for freely pathable.
 	// May return a false negitive.
 	[[nodiscard]] bool checkPortalSize(const Cuboid to, const Cuboid from, const PathParamaters& params);
@@ -128,8 +128,9 @@ namespace longRangePath
 	// A helper for cuboidPathToPointPathStringPulling.
 	[[nodiscard]] SmallSet<Point3D> generateSegmentStringPulling(const Area& area, ShapeId shape, Point3D start, Point3D end, std::vector<RectangleWithFacing>::iterator startPortal, std::vector<RectangleWithFacing>::iterator endPortal, ShortRangeMemo& memo);
 	// Constructs whole path point by point while using cuboids to constrain search space.
+	// Returns path and target which passed short range condition.
 	template<bool detour, ShortRangeCondition ShortRangeConditionT>
-	[[nodiscard]] SmallSet<Point3D> cuboidPathToPointPath(ShortRangeConditionT&& shortRangeCondition, const PathParamaters& params, const IntermediateResult& intermediateResult, ShortRangeMemo& memo);
+	[[nodiscard]] std::pair<SmallSet<Point3D>, Point3D> cuboidPathToPointPath(ShortRangeConditionT&& shortRangeCondition, const PathParamaters& params, const IntermediateResult& intermediateResult, ShortRangeMemo& memo);
 	template<bool detour, bool singleTile>
 	[[nodiscard]] bool shapeCanEnterFrom(const Point3D to, const Point3D from, const PathParamaters& params);
 	template<bool detour, bool singleTile>

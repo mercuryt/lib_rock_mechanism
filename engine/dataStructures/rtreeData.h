@@ -111,7 +111,8 @@ class RTreeData
 	// Sort m_nodes by hilbert order of center. The node in position 0 is the top level and never moves.
 	void sort();
 	static void addIntersectedChildrenToOpenList(const Node& node, const BitSet intersecting, SmallSet<RTreeNodeIndex>& openList);
-	[[nodiscard]] virtual bool canOverlap(const T&, const T&) const { return true; }
+	[[nodiscard]] bool canOverlap(const T&, const T&) const { return true; }
+	[[nodiscard]] bool canMerge(const Cuboid, const Cuboid) const { return true; }
 public:
 	RTreeData();
 	void beforeJsonLoad();
@@ -201,7 +202,7 @@ public:
 	{
 		// stopAfterOne is only safe to use for non-overlaping leaves, otherwise the result would be hard to predict.
 		if(queryConfig.stopAfterOne)
-			assert(!config_.leavesCanOverlap && !config_.splitAndMerge);
+			assert(!config_.leavesCanOverlap);
 		auto condition = [](const T&){ return true; };
 		updateActionWithCondition<queryConfig>(shape, action, condition);
 	}
@@ -537,10 +538,42 @@ public:
 		}
 		return T::create(nullPrimitive);
 	}
+	[[nodiscard]] Cuboid queryGetFirstCuboid(const auto& shape) const
+	{
+		SmallSet<RTreeNodeIndex> openList;
+		openList.insert(RTreeNodeIndex::create(0));
+		while(!openList.empty())
+		{
+			auto index = openList.back();
+			openList.popBack();
+			const Node& node = m_nodes[index];
+			const auto& nodeCuboids = node.getCuboids();
+			const auto& intersectMask = nodeCuboids.indicesOfIntersectingCuboids(shape);
+			if(!intersectMask.any())
+				continue;
+			const auto leafCount = node.getLeafCount();
+			BitSet intersectBitSet = BitSet::create(intersectMask);
+			const RTreeArrayIndex arrayIndex{intersectBitSet.getNext()};
+			if(arrayIndex < leafCount)
+				return node.getCuboids()[arrayIndex.get()];
+			if(node.hasChildren())
+			{
+				intersectBitSet.clearAllBefore(leafCount);
+				if(intersectBitSet.any())
+					addIntersectedChildrenToOpenList(node, intersectBitSet, openList);
+			}
+		}
+		return Cuboid::null();
+	}
 	[[nodiscard]] const T queryGetOne(const auto& shape) const
 	{
 		assert(!config_.leavesCanOverlap);
 		return queryGetFirst(shape);
+	}
+	[[nodiscard]] Cuboid queryGetOneCuboid(const auto& shape) const
+	{
+		assert(!config_.leavesCanOverlap);
+		return queryGetFirstCuboid(shape);
 	}
 	[[nodiscard]] std::pair<T, Cuboid> queryGetOneWithCuboidAndCondition(const auto& shape, const auto& condition) const
 	{

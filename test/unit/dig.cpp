@@ -129,8 +129,8 @@ TEST_CASE("dig")
 		CHECK(actors.move_hasPathRequest(dwarf1));
 		CHECK(!space.isReserved(stairsLocation1, faction));
 		MoveTypeId moveType = actors.getMoveType(dwarf1);
-		Cuboid startingEnterable = area.m_hasPaths.get(moveType).m_enterable.queryGetLeaf(actors.getLocation(dwarf1));
-		Cuboid stairsEnterable = area.m_hasPaths.get(moveType).m_enterable.queryGetLeaf(stairsLocation1.above());
+		Cuboid startingEnterable = area.m_hasPaths.get(moveType).m_enterable.queryGetOneCuboid(actors.getLocation(dwarf1));
+		Cuboid stairsEnterable = area.m_hasPaths.get(moveType).m_enterable.queryGetOneCuboid(stairsLocation1.above());
 		CHECK(space.move_cuboidCanBeEnteredFrom(startingEnterable, stairsEnterable, moveType));
 		CHECK(longRangePath::shapeCanEnterFrom<false, true>(stairsLocation1, aboveStairs, PathParamaters({
 			.area = area,

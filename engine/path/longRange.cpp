@@ -44,11 +44,15 @@ Point3D longRangePath::findCrossingPointNearestForShape(const Area& area, Rectan
 	// There must be some point where we can cross because it was already checked when finding cuboids.
 	assert(false);
 }
-bool longRangePath::checkCuboidNotFreelyNavigable(const Cuboid cuboid, const PathParamaters& params)
+bool longRangePath::checkCuboidNotFreelyNavigable(const Enterable& enterable, const Cuboid cuboid, const PathParamaters& params)
 {
 	// Check if cuboid is too small to freely navigate.
 	Distance narrowestDimension = std::min(cuboid.sizeX(), cuboid.sizeY());
-	return narrowestDimension < params.width || narrowestDimension < params.length || cuboid.sizeZ() < params.height;
+	if(narrowestDimension < params.width || narrowestDimension < params.length)
+		return true;
+	// TODO:(optimization) store vertical clearance as distance from bottom rather then top.
+	Distance verticalClearance = enterable.queryGetOne(cuboid).verticalClearance;
+	return narrowestDimension < params.width || narrowestDimension < params.length || cuboid.sizeZ() + verticalClearance < params.height;
 }
 bool longRangePath::checkPortalSize(const Cuboid to, const Cuboid from, const PathParamaters& params)
 {

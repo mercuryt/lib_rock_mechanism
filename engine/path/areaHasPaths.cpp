@@ -33,13 +33,43 @@ void AreaHasPathsForMoveType::doStep(Area& area)
 }
 void AreaHasPathsForMoveType::update(Area& area, const Cuboid cuboid)
 {
-	m_enterable.maybeRemove(cuboid);
 	Space& space = area.getSpace();
+	// Update enterable cuboids.
+	m_enterable.maybeRemove(cuboid);
 	CuboidSet enterable = space.move_queryPathable(cuboid, m_moveType);
 	for(const Cuboid enterableCuboid : enterable)
 		for(const Cuboid partitionedCuboid : space.move_splitCuboidByPartitions(enterableCuboid))
 			m_enterable.insert(partitionedCuboid);
 	m_enterable.prepare();
+	// Update vertical clearance below.
+	CuboidSet levelBelow = CuboidSet::create(cuboid.getFaceBelow());
+	Distance z = cuboid.m_low.z();
+	const Distance cuboidBottom = cuboid.m_low.z();
+	SmallSet<Cuboid> toUpdate;
+	// TODO:(optimization) This doesn't have to be a linear search.
+	while(z != 0)
+	{
+		levelBelow.shift({0, 0, -1}, {1});
+		--z;
+		// Remove all solid or features which block enterance from all directions.
+		space.move_removeUnenterableFrom(levelBelow);
+		if(levelBelow.empty())
+			break;
+		m_enterable.queryForEachWithCuboids(levelBelow, [&toUpdate, cuboidBottom](Cuboid enterableCuboid, EnterableData enterableData){
+			Distance clearanceLevel = enterableCuboid.m_high.z() + enterableData.verticalClearance;
+			if(clearanceLevel >= cuboidBottom)
+				// The vertical clearance level is high enough to be effected by changes in cuboid.
+				toUpdate.maybeInsert(enterableCuboid);
+		});
+		// Remove features which block entrance from below from query set.
+		space.pointFeature_queryForEachWithCuboids(levelBelow.boundry(), [&levelBelow](Cuboid featureCuboid, PointFeature feature){
+			if(feature.blocksVerticalTravel())
+				levelBelow.maybeRemove(featureCuboid);
+		});
+		if(levelBelow.empty())
+			break;
+	}
+	m_enterable.updateVerticalClearance(toUpdate);
 }
 void AreaHasPathsForMoveType::recordPathRequest(std::unique_ptr<PathRequest> pathRequest)
 {

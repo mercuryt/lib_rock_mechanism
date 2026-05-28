@@ -380,6 +380,21 @@ Cuboid Space::getZLevel(const Distance  z)
 {
 	return Cuboid({m_sizeX - 1, m_sizeY - 1, z}, {Distance::create(0), Distance::create(0), z});
 }
+Distance Space::getVerticalClearance(Cuboid cuboid) const
+{
+	// TODO:(optimization) binary rather then linear search?
+	Distance output{0};
+	Distance max = m_sizeZ - 1 - cuboid.m_high.z();
+	Cuboid query = cuboid.getFaceAbove();
+	while(output != max)
+	{
+		query.shift(Facing6::Above, {1});
+		if(solid_isAny(query) || !pointFeature_canEnterFromBelowAll(query))
+			return output;
+		++output;
+	}
+	return max;
+}
 CuboidSet Space::collectAdjacentsInRange(const Point3D point, const Distance  range)
 {
 	auto condition = [&](const Point3D b){ return b.taxiDistanceTo(point) <= range; };

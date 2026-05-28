@@ -261,3 +261,9 @@ bool Space::move_canSwimInAny(const Cuboid cuboid, const MoveTypeId moveType) co
 	});
 	return result;
 }
+void Space::move_removeUnenterableFrom(CuboidSet& cuboids) const
+{
+	m_solid.queryRemove(cuboids);
+	if(!cuboids.empty())
+		m_features.queryRemoveWithCondition(cuboids, [](PointFeature feature){ return feature.blocksEntrance(); });
+}

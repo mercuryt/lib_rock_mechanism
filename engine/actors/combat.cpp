@@ -374,7 +374,7 @@ CuboidSet Actors::combat_makeMalicePoints(const ActorIndex index) const
 	Cuboid zone = Cuboid::create(location, location);
 	zone.inflate(Distance::create((float)m_speedActual[index].get() * Config::fractionOfMoveSpeedToMakeDistanceHuristicForCanMoveToSoon));
 	// Get points in zone which are enterable by this move type.
-	CuboidSet set = m_area.m_hasPaths.get(m_moveType[index]).m_enterable.queryGetLeaves(zone);
+	CuboidSet set = m_area.m_hasPaths.get(m_moveType[index]).m_enterable.queryGetAllCuboids(zone);
 	// Trim parts of set which could be entered by this move type somewhere but are not directly connected to location.
 	// TODO:(bug) does not respect zero thickness partitions such as floor.
 	set = set.adjacentRecursive(location);

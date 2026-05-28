@@ -27,5 +27,10 @@ concept Numeric = std::integral<T> || std::floating_point<T>;
 
 template<typename T>
 concept Sortable = requires(T a, T b) {
-	{ a < b } -> std::same_as<bool>; // Check if operator< exists and returns bool
+	{ a < b } -> std::same_as<bool>; // Check if operator< exists and returns bool.
+};
+
+template<typename T>
+concept Mergable = requires(T a, T b) {
+	{ a.merge(b) } -> std::same_as<T>; // Check if merge exists and returns T.
 };
