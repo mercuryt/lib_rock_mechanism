@@ -13,7 +13,8 @@ struct AreaHasPathsForMoveType
 	Enterable m_enterable;
 	MoveTypeId m_moveType;
 	std::vector<std::unique_ptr<PathRequest>> m_pathRequests;
-	void doStep(Area& area);
+	void readStepForRequest(Area& area, PathRequest& pathRequest);
+	void writeStep(Area& area);
 	void recordPathRequest(std::unique_ptr<PathRequest> pathRequest);
 	void cancelPathRequest(PathRequest& pathRequest);
 	void update(Area& area, const Cuboid cuboid);
@@ -31,6 +32,7 @@ struct AreaHasPathsForMoveType
 class AreaHasPaths
 {
 	std::vector<AreaHasPathsForMoveType> m_data;
+	std::vector<std::pair<int, int>> m_outerAndInnerIndices;
 public:
 	void doStep(Area& area);
 	void registerMoveType(Area& area, const MoveTypeId id);

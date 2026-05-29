@@ -11,17 +11,16 @@ AreaHasPathsForMoveType::AreaHasPathsForMoveType(Area& area, const MoveTypeId mo
 {
 	update(area, area.getSpace().boundry());
 }
-void AreaHasPathsForMoveType::doStep(Area& area)
+void AreaHasPathsForMoveType::readStepForRequest(Area& area, PathRequest& pathRequest)
 {
-	Actors& actors = area.getActors();
-	actors.move_clearAllPathRequests();
-	for(std::unique_ptr<PathRequest>& pathRequestPtr : m_pathRequests)
-	{
-		PathRequest& pathRequest = *pathRequestPtr.get();
-		auto [path, target] = pathRequest.readStep(area, *this);
-		pathRequest.path = path;
-		pathRequest.target = target;
-	}
+	auto [path, target] = pathRequest.readStep(area, *this);
+	// There is a potential for false sharing here, but because pathRequest is stored in a unique_ptr it is remote.
+	// If PathRequest's vtable is replaced with a variant/visit pattern it will need alignas.
+	pathRequest.path = path;
+	pathRequest.target = target;
+}
+void AreaHasPathsForMoveType::writeStep(Area& area)
+{
 	auto requests = std::move(m_pathRequests);
 	m_pathRequests.clear();
 	for(std::unique_ptr<PathRequest>& pathRequestPtr : requests)
@@ -150,8 +149,25 @@ bool AreaHasPathsForMoveType::accessable(const PathParamaters& params) const
 }
 void AreaHasPaths::doStep(Area& area)
 {
+	Actors& actors = area.getActors();
+	// instead of clearing each request as it is processed we clear all of them now.
+	actors.move_clearAllPathRequests();
+	// Read step inner iteration is done here rather then AreaHasPathsForMoveType having a readStep method so omp can paralelize the two for loops together.
+	// Because the 2d iteration space is jagged we need to collect index pairs for omp to get a total count.
+	m_outerAndInnerIndices.clear();
+	for(int i = 0; i < (int)m_data.size(); ++i)
+		for(int j = 0; j != (int)m_data[i].m_pathRequests.size(); ++j)
+			m_outerAndInnerIndices.emplace_back(i, j);
+	#pragma omp parallel for
+	for(int i = 0; i != (int)m_outerAndInnerIndices.size(); ++i)
+	{
+		int outer = m_outerAndInnerIndices[i].first;
+		int inner = m_outerAndInnerIndices[i].second;
+		m_data[outer].readStepForRequest(area, *m_data[outer].m_pathRequests[inner]);
+	}
+	// WriteStep.
 	for(AreaHasPathsForMoveType& hasPathsForMoveType : m_data)
-		hasPathsForMoveType.doStep(area);
+		hasPathsForMoveType.writeStep(area);
 }
 void AreaHasPaths::registerMoveType(Area& area, const MoveTypeId moveType) { m_data.emplace_back(area, moveType); }
 void AreaHasPaths::maybeRegisterMoveType(Area& area, const MoveTypeId moveType)

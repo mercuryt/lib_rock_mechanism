@@ -5,6 +5,7 @@ template<typename T>
 class WatermarkingStackVector
 {
 	int m_start;
+	// This could cause false sharing but it should be rare due to buffers stabilizing in size.
 	static std::vector<std::vector<T>> s_buffer;
 	std::vector<T>& get();
 public:
@@ -25,8 +26,8 @@ public:
 	public:
 		[[nodiscard]] T operator*() const;
 		[[nodiscard]] T& operator*();
-		[[nodiscard]] bool operator==(const iterator& other) const;
-		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) const;
+		[[nodiscard]] bool operator==(const iterator& other) const = default;
+		[[nodiscard]] std::strong_ordering operator<=>(const iterator& other) const = default;
 		void operator++();
 		void operator--();
 	};

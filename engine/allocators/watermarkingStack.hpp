@@ -47,11 +47,7 @@ template<typename T>
 T WatermarkingStackVector<T>::iterator::operator*() const { return get()[m_index]; }
 template<typename T>
 T& WatermarkingStackVector<T>::iterator::operator*() { return get()[m_index]; }
-template<typename T>
-bool WatermarkingStackVector<T>::iterator::operator==(const iterator& other) const = default;
-template<typename T>
-std::strong_ordering WatermarkingStackVector<T>::iterator::operator<=>(const iterator& other) const = default;
-template<typename T>
+template <typename T>
 void WatermarkingStackVector<T>::iterator::operator++() { ++m_index; }
 template<typename T>
 void WatermarkingStackVector<T>::iterator::operator--() { --m_index; }
