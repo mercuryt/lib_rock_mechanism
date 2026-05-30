@@ -195,7 +195,7 @@ std::tuple<Cuboid, RTreeArrayIndex, RTreeArrayIndex> RTreeBoolean::findPairWithL
 SmallSet<Cuboid> RTreeBoolean::gatherLeavesRecursive(const RTreeNodeIndex parent) const
 {
 	SmallSet<Cuboid> output;
-	SmallSet<RTreeNodeIndex> openList;
+	OpenList openList;
 	openList.insert(parent);
 	while(!openList.empty())
 	{
@@ -213,7 +213,7 @@ SmallSet<Cuboid> RTreeBoolean::gatherLeavesRecursive(const RTreeNodeIndex parent
 }
 void RTreeBoolean::destroyWithChildren(const RTreeNodeIndex index)
 {
-	SmallSet<RTreeNodeIndex> openList;
+	OpenList openList;
 	openList.insert(index);
 	while(!openList.empty())
 	{
@@ -267,7 +267,7 @@ void RTreeBoolean::tryToMergeLeaves(Node& parent)
 }
 void RTreeBoolean::clearAllContained(const RTreeNodeIndex index, const Cuboid cuboid)
 {
-	SmallSet<RTreeNodeIndex> openList;
+	OpenList openList;
 	openList.insert(index);
 	while(!openList.empty())
 	{
@@ -412,7 +412,7 @@ void RTreeBoolean::addToNodeRecursive(const RTreeNodeIndex index, const Cuboid c
 	else
 		parent.insertLeaf(cuboid);
 }
-void RTreeBoolean::removeFromNode(const RTreeNodeIndex index, const Cuboid cuboid, SmallSet<RTreeNodeIndex>& openList)
+void RTreeBoolean::removeFromNode(const RTreeNodeIndex index, const Cuboid cuboid, OpenList& openList)
 {
 	const RTreeNodeIndex index2 = index;
 	{
@@ -599,7 +599,7 @@ void RTreeBoolean::sort()
 	}
 	m_nodes = std::move(sortedNodes);
 }
-void RTreeBoolean::addIntersectedChildrenToOpenList(const Node& node, BitSet& intersectMask, SmallSet<RTreeNodeIndex>& openList)
+void RTreeBoolean::addIntersectedChildrenToOpenList(const Node& node, BitSet& intersectMask, OpenList& openList)
 {
 	[[maybe_unused]] const auto offsetOfFirstChild = node.offsetOfFirstChild();
 	// Any bits representing leaves have already been cleared.
@@ -621,7 +621,7 @@ void RTreeBoolean::maybeRemove(const Cuboid cuboid)
 	// Erase all contained branches and leaves.
 	constexpr RTreeNodeIndex rootIndex = RTreeNodeIndex::create(0);
 	clearAllContained(rootIndex, cuboid);
-	SmallSet<RTreeNodeIndex> openList;
+	OpenList openList;
 	SmallSet<RTreeNodeIndex> toUpdateBoundryMaybe;
 	openList.insert(rootIndex);
 	while(!openList.empty())
@@ -731,7 +731,7 @@ void RTreeBoolean::assertAllLeafsAreUnique() const
 template<typename ShapeT>
 bool RTreeBoolean::queryBody(const ShapeT shape) const
 {
-	SmallSet<RTreeNodeIndex> openList;
+	OpenList openList;
 	openList.insert(RTreeNodeIndex::create(0));
 	while(!openList.empty())
 	{
@@ -760,7 +760,7 @@ bool RTreeBoolean::query(const Point3D begin, const Point3D end) const { return 
 template<typename ShapeT>
 Cuboid RTreeBoolean::queryGetLeafBody(ShapeT shape) const
 {
-	SmallSet<RTreeNodeIndex> openList;
+	OpenList openList;
 	openList.insert(RTreeNodeIndex::create(0));
 	while(!openList.empty())
 	{
@@ -785,7 +785,7 @@ Cuboid RTreeBoolean::queryGetLeaf(const CuboidSet& cuboids) const { return query
 template<typename ShapeT>
 Point3D RTreeBoolean::queryGetPoint(ShapeT&& shape) const
 {
-	SmallSet<RTreeNodeIndex> openList;
+	OpenList openList;
 	openList.insert(RTreeNodeIndex::create(0));
 	while(!openList.empty())
 	{
@@ -857,7 +857,7 @@ template<typename ShapeT>
 CuboidSet RTreeBoolean::queryGetLeavesBody(ShapeT shape) const
 {
 	CuboidSet output;
-	SmallSet<RTreeNodeIndex> openList;
+	OpenList openList;
 	openList.insert(RTreeNodeIndex::create(0));
 	while(!openList.empty())
 	{
@@ -907,7 +907,7 @@ CuboidSet RTreeBoolean::queryGetIntersection(const Cuboid cuboid) const { return
 // Remove any part of set which intersects the rtree.
 void RTreeBoolean::queryRemove(CuboidSet& set) const
 {
-	SmallSet<RTreeNodeIndex> openList;
+	OpenList openList;
 	openList.insert(RTreeNodeIndex::create(0));
 	while(!openList.empty())
 	{

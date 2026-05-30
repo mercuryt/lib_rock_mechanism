@@ -1,4 +1,5 @@
 #pragma once
+#include "allocators/watermarkingStack.h"
 
 namespace threads
 {

@@ -1,29 +1,31 @@
 #pragma once
 #include "../numericTypes/index.h"
+#include "../dataStructures/smallSet.h"
 
 template<typename T>
-class WatermarkingStackVector
+class ThreadStripedWatermarkingStack
 {
 	int m_start;
 	// This could cause false sharing but it should be rare due to buffers stabilizing in size.
-	static std::vector<std::vector<T>> s_buffer;
-	std::vector<T>& get();
+	inline static std::vector<std::vector<T>> s_buffer;
+	static std::vector<T>& get();
 public:
-	WatermarkingStackVector();
-	~WatermarkingStackVector();
-	[[ondiscard]] T operator[](int) const;
-	[[ondiscard]] T& operator[](int);
+	ThreadStripedWatermarkingStack();
+	~ThreadStripedWatermarkingStack();
+	[[nodiscard]] T operator[](int) const;
+	[[nodiscard]] T& operator[](int);
 	[[nodiscard]] T popAndReturnBack();
 	[[nodiscard]] T back();
 	[[nodiscard]] T front();
 	[[nodiscard]] bool empty() const;
-	void push_back(T);
-	void pop_back();
+	[[nodiscard]] bool contains(const T& value) const;
+	[[nodiscard]] int size() const;
+	void insert(T);
+	void popBack();
 	void clear();
-	class iterator
+	struct iterator
 	{
 		int m_index;
-	public:
 		[[nodiscard]] T operator*() const;
 		[[nodiscard]] T& operator*();
 		[[nodiscard]] bool operator==(const iterator& other) const = default;
@@ -34,10 +36,10 @@ public:
 	[[nodiscard]] iterator begin();
 	[[nodiscard]] iterator end();
 	[[nodiscard]] iterator find(T);
-	class const_iterator : public iterator
+	struct const_iterator : public iterator
 	{
 		[[nodiscard]] T operator*() = delete;
-		[[nodiscard]] T operator*() const;
+		[[nodiscard]] const T operator*() const;
 	};
 	[[nodiscard]] const_iterator begin() const;
 	[[nodiscard]] const_iterator end() const;

@@ -1,5 +1,4 @@
 #include "threads.h"
-#include "dataStructures/rtreeOpenList.h"
 #include "path/longRange.h"
 #include <omp.h>
 namespace threads
@@ -16,7 +15,7 @@ namespace threads
 			}
 		}
 		// Reserve memory per thread (physical) for hot spots.
-		RTreeOpenListBuffer::init();
 		longRangePath::init();
+		ThreadStripedWatermarkingStack<RTreeNodeIndex>::init(max);
 	}
 }

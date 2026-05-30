@@ -7,6 +7,7 @@
 #include "../numericTypes/index.h"
 #include "../concepts.h"
 #include "../config/config.h"
+#include "../allocators/watermarkingStack.h"
 #include "strongVector.hpp"
 #include "strongArray.h"
 #include "smallMap.h"
@@ -36,6 +37,7 @@ class RTreeData
 	static constexpr int nodeSize = Config::rtreeNodeSize;
 	static constexpr RTreeDataConfig config = config_;
 	using BitSet = BitSet64;
+	using OpenList = ThreadStripedWatermarkingStack<RTreeNodeIndex>;
 	union DataOrChild { T::Primitive data; RTreeNodeIndex::Primitive child; };
 	class Node
 	{
@@ -96,8 +98,8 @@ class RTreeData
 	void clearAllContainedWithValueRecursive(Node& parent, const Cuboid cuboid, const T& value);
 	void addToNodeRecursive(const RTreeNodeIndex index, const Cuboid cuboid, const T& value);
 	// Removes intersecting leaves and contained branches. Intersecting branches are added to openList.
-	void removeFromNode(const RTreeNodeIndex index, const Cuboid cuboid, SmallSet<RTreeNodeIndex>& openList);
-	void removeFromNodeWithValue(const RTreeNodeIndex index, const Cuboid cuboid, SmallSet<RTreeNodeIndex>& openList, const T& value);
+	void removeFromNode(const RTreeNodeIndex index, const Cuboid cuboid, OpenList& openList);
+	void removeFromNodeWithValue(const RTreeNodeIndex index, const Cuboid cuboid, OpenList& openList, const T& value);
 	void removeFromNodeByMask(Node& node, const Eigen::Array<bool, 1, Eigen::Dynamic>& mask);
 	void removeFromNodeByMask(Node& node, BitSet mask);
 	void updateBoundriesMaybe(const SmallSet<RTreeNodeIndex>& indices);
@@ -110,7 +112,7 @@ class RTreeData
 	void defragment();
 	// Sort m_nodes by hilbert order of center. The node in position 0 is the top level and never moves.
 	void sort();
-	static void addIntersectedChildrenToOpenList(const Node& node, const BitSet intersecting, SmallSet<RTreeNodeIndex>& openList);
+	static void addIntersectedChildrenToOpenList(const Node& node, const BitSet intersecting, OpenList& openList);
 	[[nodiscard]] bool canOverlap(const T&, const T&) const { return true; }
 	[[nodiscard]] bool canMerge(const Cuboid, const Cuboid) const { return true; }
 public:
@@ -215,7 +217,7 @@ public:
 	template<UpdateActionConfig queryConfig>
 	void updateActionWithCondition(const auto& shape, auto&& action, const auto& condition)
 	{
-		SmallSet<RTreeNodeIndex> openList;
+		OpenList openList;
 		openList.insert(RTreeNodeIndex::create(0));
 		bool found = false;
 		// Track space which was not updated. If queryConfig.create is true then fill this space in at the end with the result of action(T::create(nullPrimitive)).
@@ -443,7 +445,7 @@ public:
 	}
 	[[nodiscard]] bool queryAny(const auto& shape) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
+		OpenList openList;
 		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
@@ -466,7 +468,7 @@ public:
 	}
 	[[nodiscard]] bool queryAnyWithCondition(const auto& shape, const auto& condition) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
+		OpenList openList;
 		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
@@ -513,7 +515,7 @@ public:
 	}
 	[[nodiscard]] const T queryGetFirst(const auto& shape) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
+		OpenList openList;
 		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
@@ -540,7 +542,7 @@ public:
 	}
 	[[nodiscard]] Cuboid queryGetFirstCuboid(const auto& shape) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
+		OpenList openList;
 		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
@@ -577,7 +579,7 @@ public:
 	}
 	[[nodiscard]] std::pair<T, Cuboid> queryGetOneWithCuboidAndCondition(const auto& shape, const auto& condition) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
+		OpenList openList;
 		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
@@ -659,7 +661,7 @@ public:
 	}
 	void queryForEachWithCuboids(const auto& shape, auto&& action) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
+		OpenList openList;
 		SmallSet<T> output;
 		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
@@ -1005,7 +1007,7 @@ public:
 	}
 	[[nodiscard]] T queryNearestWithCondition(const auto& shape, const Point3D location, auto&& condition) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
+		OpenList openList;
 		openList.insert(RTreeNodeIndex::create(0));
 		Distance closestDistance = Distance::max();
 		T output;

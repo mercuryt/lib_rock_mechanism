@@ -6,6 +6,7 @@
 #include "../strongInteger.h"
 #include "../json.h"
 #include "../config/config.h"
+#include "../allocators/watermarkingStack.h"
 #include "strongVector.h"
 #include "smallMap.h"
 #include "smallSet.h"
@@ -16,6 +17,7 @@ class RTreeBoolean
 {
 	static constexpr int nodeSize = Config::rtreeNodeSize;
 	using BitSet = BitSet64;
+	using OpenList = ThreadStripedWatermarkingStack<RTreeNodeIndex>;
 	class Node
 	{
 		CuboidArray<nodeSize> m_cuboids;
@@ -64,7 +66,7 @@ class RTreeBoolean
 	void clearAllContained(const RTreeNodeIndex index, const Cuboid cuboid);
 	void addToNodeRecursive(const RTreeNodeIndex index, const Cuboid cuboid);
 	// Removes intercepting leaves and contained branches. Intercepting branches are added to openList.
-	void removeFromNode(const RTreeNodeIndex index, const Cuboid cuboid, SmallSet<RTreeNodeIndex>& openList);
+	void removeFromNode(const RTreeNodeIndex index, const Cuboid cuboid, OpenList& openList);
 	void merge(const RTreeNodeIndex destination, const RTreeNodeIndex source);
 	// Iterate m_toComb and try to recursively merge leaves.
 	// Then check for single child nodes and splice them out. If the child is a leaf re-add the parent to m_toComb.
@@ -74,7 +76,7 @@ class RTreeBoolean
 	void defragment();
 	// Sort m_nodes by hilbert order of center. The node in position 0 is the top level and never moves.
 	void sort();
-	static void addIntersectedChildrenToOpenList(const Node& node, BitSet& intersecting, SmallSet<RTreeNodeIndex>& openList);
+	static void addIntersectedChildrenToOpenList(const Node& node, BitSet& intersecting, OpenList& openList);
 	// Customization point.
 	[[nodiscard]] bool canMerge(const Cuboid, const Cuboid) const { return true; }
 public:
@@ -93,12 +95,11 @@ public:
 	void prepare();
 	void queryForEach(const auto& shape, auto&& action) const
 	{
-		SmallSet<RTreeNodeIndex> openList;
+		OpenList openList;
 		openList.insert(RTreeNodeIndex::create(0));
 		while(!openList.empty())
 		{
-			auto index = openList.back();
-			openList.popBack();
+			auto index = openList.popAndReturnBack();
 			const Node& node = m_nodes[index];
 			const auto& nodeCuboids = node.getCuboids();
 			auto intersectMask = nodeCuboids.indicesOfIntersectingCuboids(shape);

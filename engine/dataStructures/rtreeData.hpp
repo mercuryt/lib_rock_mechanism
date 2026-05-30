@@ -374,7 +374,7 @@ template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
 SmallSet<std::pair<Cuboid, T>> RTreeData<T, config_, nullPrimitive>::gatherLeavesRecursive(const RTreeNodeIndex parent) const
 {
 	SmallSet<std::pair<Cuboid, T>> output;
-	SmallSet<RTreeNodeIndex> openList;
+	OpenList openList;
 	openList.insert(parent);
 	while(!openList.empty())
 	{
@@ -393,7 +393,7 @@ SmallSet<std::pair<Cuboid, T>> RTreeData<T, config_, nullPrimitive>::gatherLeave
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
 void RTreeData<T, config_, nullPrimitive>::destroyWithChildren(const RTreeNodeIndex index)
 {
-	SmallSet<RTreeNodeIndex> openList;
+	OpenList openList;
 	openList.insert(index);
 	while(!openList.empty())
 	{
@@ -473,7 +473,7 @@ void RTreeData<T, config_, nullPrimitive>::tryToMergeLeaves(Node& parent)
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
 void RTreeData<T, config_, nullPrimitive>::clearAllContained(const RTreeNodeIndex index, const Cuboid cuboid)
 {
-	SmallSet<RTreeNodeIndex> openList;
+	OpenList openList;
 	openList.insert(index);
 	while(!openList.empty())
 	{
@@ -676,7 +676,7 @@ void RTreeData<T, config_, nullPrimitive>::addToNodeRecursive(const RTreeNodeInd
 		parent.insertLeaf(cuboid, value);
 }
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
-void RTreeData<T, config_, nullPrimitive>::removeFromNode(const RTreeNodeIndex index, const Cuboid cuboid, SmallSet<RTreeNodeIndex>& openList)
+void RTreeData<T, config_, nullPrimitive>::removeFromNode(const RTreeNodeIndex index, const Cuboid cuboid, OpenList& openList)
 {
 	RTreeNodeIndex indexCopy = index;
 	// These node references are going to be invalidated by inserting fragments, which may generate a new node.
@@ -724,7 +724,7 @@ void RTreeData<T, config_, nullPrimitive>::removeFromNode(const RTreeNodeIndex i
 	m_toComb.maybeInsert(index);
 }
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
-void RTreeData<T, config_, nullPrimitive>::removeFromNodeWithValue(const RTreeNodeIndex index, const Cuboid cuboid, SmallSet<RTreeNodeIndex>& openList, const T& value)
+void RTreeData<T, config_, nullPrimitive>::removeFromNodeWithValue(const RTreeNodeIndex index, const Cuboid cuboid, OpenList& openList, const T& value)
 {
 	assert(value != T::create(nullPrimitive));
 	const RTreeNodeIndex indexCopy = index;
@@ -987,7 +987,7 @@ void RTreeData<T, config_, nullPrimitive>::sort()
 	m_nodes = std::move(sortedNodes);
 }
 template<Sortable T, RTreeDataConfig config_, T::Primitive nullPrimitive>
-void RTreeData<T, config_, nullPrimitive>::addIntersectedChildrenToOpenList(const Node& node, BitSet interceptMask, SmallSet<RTreeNodeIndex>& openList)
+void RTreeData<T, config_, nullPrimitive>::addIntersectedChildrenToOpenList(const Node& node, BitSet interceptMask, OpenList& openList)
 {
 	assert(interceptMask.getNext() >= node.offsetOfFirstChild());
 	const auto& nodeDataAndChildIndices = node.getDataAndChildIndices();
@@ -1031,7 +1031,7 @@ void RTreeData<T, config_, nullPrimitive>::maybeRemove(const Cuboid cuboid)
 		validate();
 		return;
 	}
-	SmallSet<RTreeNodeIndex> openList;
+	OpenList openList;
 	SmallSet<RTreeNodeIndex> toUpdateBoundryMaybe;
 	openList.insert(rootIndex);
 	while(!openList.empty())
@@ -1066,7 +1066,7 @@ void RTreeData<T, config_, nullPrimitive>::maybeRemove(const Cuboid cuboid, cons
 	// Erase all contained branches and leaves.
 	constexpr RTreeNodeIndex rootIndex = RTreeNodeIndex::create(0);
 	clearAllContainedWithValueRecursive(m_nodes[rootIndex], cuboid, value);
-	SmallSet<RTreeNodeIndex> openList;
+	OpenList openList;
 	SmallSet<RTreeNodeIndex> toUpdateBoundryMaybe;
 	openList.insert(rootIndex);
 	while(!openList.empty())

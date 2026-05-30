@@ -3,7 +3,7 @@
 template<typename ShapeT>
 Cuboid RTreeBoolean::queryGetLeafWithCondition(ShapeT&& shape, auto&& condition) const
 {
-	SmallSet<RTreeNodeIndex> openList;
+	OpenList openList;
 	openList.insert(RTreeNodeIndex::create(0));
 	while(!openList.empty())
 	{
